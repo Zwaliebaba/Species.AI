@@ -365,3 +365,774 @@ Other rules [C]: `CreateData(name, …)` replaces an existing field of the same 
 
 **Discrepancies / hazards** (remote-input robustness): unvalidated sub-directory count and VOID length, fatal INTS assert, desynchronising safe-string substitution — all reachable from any datagram [C]. A new engine should use a length-prefixed, schema-checked message format with hard size limits.
 
+---
+
+## 4 Level and game-definition files
+
+<a id="fmt-level-file"></a>
+### 4.1 Level files — map and mission (`map_*`, `mp_*`, `mission_*`)
+
+#### 4.1.1 Purpose, files, build reality
+
+A level is **one map file** (terrain, lights, static buildings, Multiwiniа options — and in Multiwinia also units and camera data) plus an optional **mission file** (dynamic buildings, units, objectives, camera data; Darwinia campaign only). `LevelFile(missionName, mapName, textFileLevel)` parses the mission file first (unless its name is `null`), then the map file, then `GenerateAutomaticObjectives` [C] `code/level_file.cpp:LevelFile::LevelFile`. `Location::LoadLevel` passes `textFileLevel = (extension of the map name == "txt")`; any other extension is loaded as a `.mwm` container ([fmt-mwm](#fmt-mwm)) [C] `code/location.cpp:Location::LoadLevel`. In Multiwinia the requested mission is always `"null"` (set in `App::Initialise`, again when a client receives the map name, and by the editor) so only the map file is read [C] `code/app.cpp:App::Initialise`, `code/network/clienttoserver.cpp:ClientToServer::ProcessServerLetters`, `code/interface/multiwinia_window.cpp`.
+
+| File set | Count | Kind | Loaded by | Build tag |
+|---|---|---|---|---|
+| `data/levels/mp_*.txt` | 57 | map | lobby map list (`GameMenu::CreateMapList`, `ListResources("levels/","mp_*")`) and `LevelFile` | [B:FULL]; 8 (`mp_assault_stress`, `mp_benchmark_1`, `mp_sandbox`, `mp_sandbox_all`, `mp_tankbattle_2P`, `mp_tankbattle_3P`, `mp_tankbattle_4P`, `mp_cts_3p_3`) are excluded from the retail `main.dat` by `tools/multiwinia_exclusions.txt`, leaving **49 shipped maps** (= `VALID_ACHIEVEMENT_LEVELS` 49 in `code/achievement_tracker.cpp`) [C] |
+| `data/levels/map_*.txt` | 12 | map | Darwinia campaign via `game.txt` | [B:LEGACY]; excluded from retail (`levels/map_*`) |
+| `data/levels/mission_*.txt` | 17 | mission | Darwinia campaign | [B:LEGACY]; excluded (`levels/mission_*`) |
+| `data/levels/old/*.txt` | 30 | map | nothing — `ListResources` matches only the exact directory `data/levels/` (`stricmp(dirPart, desiredDir)`) [C] `code/lib/resource.cpp:Resource::ListResources` | [B:DEAD] data; excluded (`levels/old/*`) |
+| `data/purity/map_mine.txt`, `data/purity/mission_mine_enable.txt` | 2 | map / mission | nothing (no code opens `data/purity/`) | [B:DEAD]; excluded (`purity`) |
+
+**Encoding.** Single-byte ASCII, CRLF, every level file newline-terminated [C] survey. Map files are read through `Resource::GetTextReader("levels/<name>")`; if that fails, `<profile>/maps/<name>` with a plain `TextFileReader`; the release assert `"Invalid map file specified"` fires if neither opens [C] `LevelFile::ParseMapFile(char const*)`. Mission files try the campaign save `<P>users/<profile>/<name>` first (unless editing), then `levels/<name>`; `"Invalid level specified"` (fatal) if neither [C] `LevelFile::ParseMissionFile`.
+
+#### 4.1.2 Top-level grammar and block dispatch
+
+```ebnf
+level_file   = { blank_line | block | stray_line } ;
+block        = start_line , block_body , end_line ;            (* body grammar per block, §4.1.4 - §4.1.15 *)
+start_line   = BLOCKNAME '_StartDefinition' , { ignored_token } , EOL ;
+end_line     = BLOCKNAME '_EndDefinition' , { ignored_token } , EOL ;   (* recognised only as the FIRST token *)
+stray_line   = any other first token , EOL ;                   (* AppDebugAssert(0); ignored in release *)
+```
+
+The dispatcher reads the first token of every non-blank line and hands the reader to the block parser, which consumes lines up to and including its own end keyword [C] `LevelFile::ParseMapFile(TextReader*)`, `LevelFile::ParseMissionFile`. A block whose end keyword is missing swallows the rest of the file.
+
+| Block (`X_StartDefinition`) | In a map file | In a mission file | Parser | Notes |
+|---|---|---|---|---|
+| `MultiwiniaOptions` | yes | rejected (debug assert, body lines re-read at top level) | `ParseMultiwiniaOptions` | Multiwinia only; must be first so the menu scanner can stop early (§4.1.4) |
+| `Landscape` | yes | rejected | `ParseLandscapeData` | **no blank lines** inside |
+| `LandscapeTiles` | yes | rejected | `ParseLandscapeTiles` | |
+| `LandFlattenAreas` | yes | rejected | `ParseLandFlattenAreas` | |
+| `Lights` | yes | rejected | `ParseLights` | first non-empty block wins |
+| `Buildings` | yes → **static** (`m_dynamic = false`) | yes → **dynamic** | `ParseBuildings(in, dynamic)` | `ParseMapFile` has a second, unreachable `Buildings` branch with `dynamic = true`; every map-file block is static |
+| `CameraMounts` | yes | yes | `ParseCameraMounts` | |
+| `CameraAnimations` | yes | yes | `ParseCameraAnims` | |
+| `InstantUnits` | yes | yes | `ParseInstantUnits` | |
+| `Routes` | yes | yes | `ParseRoutes` | no shipped file uses it |
+| `PrimaryObjectives` | yes | yes | `ParsePrimaryObjectives` | **no blank lines** inside |
+| `RunningPrograms` | — | yes | `ParseRunningPrograms` | save game only |
+| `Difficulty` | — | yes | `ParseDifficulty` | |
+| `LeaderboardStats` | — | yes | `ParseLeaderboardStats` | save game only |
+
+Block order written by `LevelFile::SaveMapFile`: `MultiwiniaOptions` (only when `g_app->m_multiwinia` exists), `Landscape`, `LandscapeTiles`, `LandFlattenAreas`, `Lights`, `Buildings`, then (Multiwinia) `CameraMounts`, `InstantUnits`. Mission files: `Difficulty`, `CameraMounts`, `CameraAnimations`, `Buildings`, `InstantUnits`, `Routes`, `PrimaryObjectives`, `RunningPrograms`, `LeaderboardStats` [C] `LevelFile::SaveMapFile`, `LevelFile::SaveMissionFile`. Shipped orders [C] `X1a_level_survey.py` (re-run):
+
+| File set | Files | Block order |
+|---|---|---|
+| mp | 47 | MultiwiniaOptions > Landscape > LandscapeTiles > LandFlattenAreas > Lights > Buildings > CameraMounts > CameraAnimations > Buildings > InstantUnits > PrimaryObjectives |
+| mp | 10 | MultiwiniaOptions > Landscape > LandscapeTiles > LandFlattenAreas > Lights > Buildings > CameraMounts > InstantUnits |
+| map | 11 | Landscape > LandscapeTiles > LandFlattenAreas > Lights > Buildings |
+| map | 1 | Landscape > LandscapeTiles > LandFlattenAreas > Lights > Buildings > CameraMounts > CameraAnimations > Buildings > InstantUnits > PrimaryObjectives |
+| mission | 14 | CameraMounts > CameraAnimations > Buildings > InstantUnits > PrimaryObjectives |
+| mission | 3 | Difficulty > CameraMounts > CameraAnimations > Buildings > InstantUnits > PrimaryObjectives |
+| old | 28 | MultiwiniaOptions > … (same as the 47-file mp order) |
+| old | 2 | Landscape > … > PrimaryObjectives (as the 1-file map order) |
+| purity | 1 + 1 | mission order (14-file form); map order (11-file form) |
+
+#### 4.1.3 Object defaults before parsing [C] `LevelFile::LevelFile`, `code/level_file.h:LandscapeDef`, `LandscapeFlattenArea`, `InstantUnit`, `CamAnimNode`
+
+| Member | Default | Member | Default |
+|---|---|---|---|
+| `m_landscapeColourFilename` | `landscape_default.bmp` | `m_levelName` | `NewLevel` |
+| `m_wavesColourFilename` | `waves_default.bmp` | `m_description` | `LevelDescription` |
+| `m_waterColourFilename` | `water_default.bmp` | `m_author` | `Author` |
+| `m_thumbnailFilename` | `default.bmp` (no keyword sets it; `.mwm` only) | `m_difficultyRating` | NULL |
+| `m_levelDifficulty` | −1 | `m_gameTypes` | −1 |
+| `m_populationCap`, `m_defenderPopulationCap`, `m_numPlayers`, `m_defaultPlayTime` | −1 | `m_coop`, `m_forceCoop`, `m_official` | false |
+| `m_levelOptions[0..14]` | −1 (`memset`), then options 0, 1, 4, 9, 10 set to 0 | `m_effects[0..4]`, `m_invalidCrates[*]`, `m_attacking[0..5]` | false |
+| `m_mapId` | −1 | `m_leaderboardLevelTime` / `m_lastLeaderboardLevelTime` | 0.0 / 9 999 999.0 |
+| `LandscapeDef.m_cellSize` | 12.0 | `LandscapeDef.m_worldSizeX/Z` | 2000 / 2000 |
+| `LandscapeDef.m_outsideHeight` | −10 | `LandscapeDef.m_maxHeight` | 0.0 |
+
+Buffers [C] `code/level_file.h`: `m_levelName`, colour file names: `char[MAX_FILENAME_LEN]` = 512; `m_author` `char[64]`; `m_description` `char[512]`; all filled with unchecked `strcpy`.
+
+#### 4.1.4 `MultiwiniaOptions` block [C] `LevelFile::ParseMultiwiniaOptions`
+
+```ebnf
+mw_options   = 'MultiwiniaOptions_StartDefinition' EOL , { mw_line } , 'MultiwiniaOptions_EndDefinition' EOL ;
+mw_line      = blank
+             | 'PopulationCap' INT | 'DefenderPopulationCap' INT | 'NumPlayers' INT | 'PlayTime' INT
+             | 'GameTypes' GAMETYPE { GAMETYPE }                 (* LevelFile keeps only the first token *)
+             | 'Effects' { EFFECT }
+             | 'LevelOptions' { level_option }
+             | 'InvalidCrates' { CRATENAME }
+             | 'AttackingTeams' { INT }
+             | 'CoopGroup1Positions' { INT } | 'CoopGroup2Positions' { INT }
+             | 'CoopMode' | 'ForceCoop' | 'OfficialLevel'
+             | 'Name' REST | 'Author' REST | 'Description' REST
+             | 'Difficulty' WORD
+             | OTHER_WORD { any } ;                              (* silently ignored *)
+level_option = 'nohandicap' | 'instantspawnpointcapture' | 'nogunturrets' | 'forceradarteammatch' | 'noradarcontrol'
+             | ( 'trunkportreinforcements' | 'trunkportarmour' | 'attackerreinforcements' | 'defenderreinforcements'
+               | 'airstrikecapturezones' | 'futurewinianteam' | 'attackreinforcementoption' | 'defendreinforcementoption' ) INT
+             | ( 'defenderreinforcementtype' | 'attackerreinforcementtype' ) RESEARCHNAME
+             | OTHER_WORD ;                                      (* ignored, no argument consumed *)
+GAMETYPE     = 'Domination' | 'KingOfTheHill' | 'CaptureTheStatue' | 'Assault' | 'RocketRiot' | 'Blitzkrieg' | 'TankBattle' ;  (* (cs) *)
+EFFECT       = 'snow' | 'dustwind' | 'soulrain' | 'lightning' | 'SpecialLighting' ;                                              (* (cs) *)
+```
+
+Case and failure rules [C]: first tokens and `level_option` words are case-insensitive in `LevelFile` (`stricmp`) but **case-sensitive in the menu scanner** (`code/game_menu.cpp:GameMenu::AddMap`, `strcmp`); `GAMETYPE` must equal a blueprint name of [fmt-multiwinia-txt](#fmt-multiwinia-txt) by `strcmp` in both; `EFFECT` words are `strcmp`. Every scalar `INT`/`WORD`/`RESEARCHNAME`/`REST` argument is MISSING ⇒ CRASH; list keywords check `TokenAvailable`. A scalar keyword may repeat — the last wins (`mp_cts_4p_3.txt` has `PopulationCap -1` then `PopulationCap 2000` → 2000); lists accumulate.
+
+| Keyword | Type | Units | Default | Range / valid values (shipped) | Semantics (consumer) | Parser ref |
+|---|---|---|---|---|---|---|
+| `PopulationCap` | INT | Darwinians | −1 (no cap) | ≥1 or −1; shipped −1…2500 | total cap; each team's cap = cap / `NumPlayers` [C] `code/worldobject/spawnpoint.cpp:SpawnPoint` ([05](05_economy_and_population.md)) | `ParseMultiwiniaOptions` |
+| `DefenderPopulationCap` | INT | Darwinians | −1 | −1, 200, 250, 275, 350 | Assault defender cap [C] `code/worldobject/spawnpoint.cpp`, `code/worldobject/trunkport.cpp` | same |
+| `NumPlayers` | INT | start positions | −1 | 2–4 (absent only in `mp_sandbox_all.txt`) | lobby slot count; Assault rotation [C] `code/multiwinia.cpp`, `GameMenu::AddMap` | same; menu scanner |
+| `PlayTime` | INT | minutes | −1 | 5, 10, 15, 20 | `MapData::m_playTime`, suggested match length [C] `GameMenu::AddMap`; lobby use [I] ([09](09_meta_systems.md)) | same; menu scanner |
+| `GameTypes` | GAMETYPE list | – | −1 | blueprint names | `LevelFile`: index of the **first** token's blueprint → `m_gameTypes`; menu: **every** matching token adds the map to that type's list (a token repeated twice adds the map twice); a map with no matching token is discarded ("didn't contain a game type") | same; `GameMenu::AddMap` |
+| `Effects` | EFFECT list | – | none | `snow`→`LevelEffectSnow`, `dustwind`→`LevelEffectDustStorm`, `soulrain`→`LevelEffectSoulRain`, `lightning`→`LevelEffectLightning`, `SpecialLighting`→`LevelEffectSpecialLighting` | weather / lighting effects run by `Location::Advance` [C] `code/location.cpp` ([23](23_terrain_and_landscape.md), [24](24_rendering.md)) | same |
+| `LevelOptions` | option list | – | §4.1.3 | §4.1.5 | per-level rule switches | same |
+| `InvalidCrates` | crate names | – | none | names of `Crate::GetName(i)` (`stricmp`), 0 ≤ i < `NumCrateRewards` | reward excluded on this map [C] `code/worldobject/crate.cpp` ([04](04_crates_powerups_and_weapons.md)) | same |
+| `AttackingTeams` | INT list | team position | none | 0…5; **no bounds check** — out-of-range writes past `m_attacking[6]` | Assault attacking positions [C] `code/multiwinia.cpp` | same |
+| `CoopGroup1Positions`, `CoopGroup2Positions` | INT list | position | empty | ≥ 2 entries expected (`Location` reads [0] and [1]) | co-op pairing [C] `code/location.cpp` | same |
+| `CoopMode` | flag | – | false | – | co-op allowed | same; menu scanner |
+| `ForceCoop` | flag | – | false | – | co-op mandatory | same; menu scanner |
+| `OfficialLevel` | flag | – | false | – | `m_official = true`, `m_mapId = 0`; counted by the menu for official-map achievements | same; menu scanner |
+| `Name` | REST | – | `NewLevel` | ≤ 511 bytes | display name; the 10 shipped files that have it say `NewLevel` — real names come from the language table [I] | same; menu scanner |
+| `Author` | REST | – | `Author` | ≤ 63 bytes (`char[64]`, unchecked) | unused by shipped maps; **the menu scanner stops scanning at `Author`** (`break`) | same; menu scanner |
+| `Description` | REST | – | `LevelDescription` | ≤ 511 bytes | unused by shipped maps | same; menu scanner |
+| `Difficulty` | WORD | – | NULL | `basic`, `intermediate`, `advanced`; menu sorts by substring `basic` < `inter` < `advan`, other = 0 | lobby sort and badge | same; menu scanner |
+
+**Menu scanner (second, independent parser)** [C] `code/game_menu.cpp:GameMenu::AddMap`, `GameMenu::CreateMapList`: reads every `data/levels/mp_*` file (loose and archived; `.mwm` from `<P>maps/` only under `LOCATION_EDITOR`), compares the first token of each line **case-sensitively** with `Name`, `GameTypes`, `NumPlayers`, `Author`, `Description`, `PlayTime`, `Difficulty`, `CoopMode`, `ForceCoop`, `OfficialLevel`, and stops at the first `MultiwiniaOptions_EndDefinition` or at an `Author` line. It does not check that it is inside the options block (a file without the block is scanned to the end). It then computes the map CRC ([fmt-map-crc](#fmt-map-crc)) and sorts each game-type list by `NumPlayers`, then difficulty.
+
+#### 4.1.5 `LevelOptions` words (`LevelFile::NumLevelOptions` = 15) [C] `code/level_file.h` enum, `ParseMultiwiniaOptions`
+
+| # | Enum | Word | Argument | Default | Shipped values | Consumer / semantics |
+|---|---|---|---|---|---|---|
+| 0 | `LevelOptionNoHandicap` | `nohandicap` | – (sets 1) | 0 | 1 file (old/) | handicap forced off [C] `code/worldobject/spawnpoint.cpp` |
+| 1 | `LevelOptionInstantSpawnPointCapture` | `instantspawnpointcapture` | – | 0 | 5 files | no 30 s capture timer [C] `spawnpoint.cpp` |
+| 2 | `LevelOptionTrunkPortReinforcements` | `trunkportreinforcements` | INT Darwinians per wave | −1 | 60, 75, 100, 250 | trunk-port reinforcement waves [C] `code/multiwinia.cpp` |
+| 3 | `LevelOptionTrunkPortArmour` | `trunkportarmour` | INT max armour | −1 | 1, 3 | trunk-port armour spawns [C] `code/multiwinia.cpp`, `code/worldobject/crate.cpp` |
+| 4 | `LevelOptionNoGunTurrets` | `nogunturrets` | – | 0 | 2 files | no GunTurret reinforcement tasks [C] `code/multiwinia.cpp` |
+| 5 | `LevelOptionAttackerReinforcements` | `attackerreinforcements` | INT | −1 | none | Assault attacker reinforcement count |
+| 6 | `LevelOptionDefenderReinforcements` | `defenderreinforcements` | INT | −1 | none | Assault defender reinforcement count |
+| 7 | `LevelOptionDefenderReinforcementType` | `defenderreinforcementtype` | research name → `GlobalResearch::GetType` (−1 unknown) | −1 | `AirStrike`, `Armour`, `DropShip` (old/) | defender reinforcement task type |
+| 8 | `LevelOptionAttackerReinforcementType` | `attackerreinforcementtype` | research name | −1 | `HotFeet`, `AirStrike` (old/) | attacker reinforcement task type |
+| 9 | `LevelOptionForceRadarTeamMatch` | `forceradarteammatch` | – | 0 | 1 file | radar dishes link only when same owner [C] `code/worldobject/radardish.cpp` |
+| 10 | `LevelOptionNoRadarControl` | `noradarcontrol` | – | 0 | 1 file | radar dishes cannot be aimed [C] `code/location_input.cpp`, `code/worldobject/ai.cpp`, `code/gamecursor.cpp` |
+| 11 | `LevelOptionAirstrikeCaptureZones` | `airstrikecapturezones` | INT zones | −1 | 3 | Blitzkrieg: zones before turrets become airstrikes [C] `code/multiwinia.cpp` |
+| 12 | `LevelOptionFuturewinianTeam` | `futurewinianteam` | INT team position | −1 | 2 (old/) | that position fields Futurewinians [C] `code/team.cpp`, `code/worldobject/darwinian.cpp` |
+| 13 | `LevelOptionAttackReinforcementMode` | `attackreinforcementoption` | INT | −1 | 1, 2 (old/) | `task->m_option` for attacker reinforcements |
+| 14 | `LevelOptionDefendReinforcementMode` | `defendreinforcementoption` | INT | −1 | none | `task->m_option` for defender reinforcements |
+
+Semantics and units of every option in play: [01](01_game_modes.md), [03](03_buildings_and_world_objects.md), [05](05_economy_and_population.md). Writer quirk [C] `LevelFile::WriteMultiwiniaOptions`: only options whose value is **> 0** are written (research type 0 = `Darwinian` can never be saved), and the `futurewinianteam` case falls through into `attackreinforcementoption` (missing `break`), so a saved map with a Futurewinian team gains a spurious `attackreinforcementoption <same value>`.
+
+#### 4.1.6 `Landscape` block [C] `LevelFile::ParseLandscapeData`, `WriteLandscapeData`
+
+```ebnf
+landscape = 'Landscape_StartDefinition' EOL , { ls_line } , 'Landscape_EndDefinition' EOL ;
+ls_line   = KEY , VALUE , { ignored } , EOL ;          (* KEY case-insensitive; unknown KEY ignored; NO blank/comment lines *)
+```
+
+The loop calls `GetNextToken()` with no `TokenAvailable()` check, so a blank or comment-only line passes `NULL` to `stricmp` (crash); a known key without value passes `NULL` to `atoi`/`iv_atof`/`strcpy` (crash). The end keyword is tested last, after the keys [C].
+
+| Key | Type | Units | Default | Shipped range / values | Semantics | Parser ref |
+|---|---|---|---|---|---|---|
+| `worldSizeX` | INT | world units (wu) | 2000 | all 100 map files | landscape extent along x | `ParseLandscapeData` |
+| `worldSizeZ` | INT | wu | 2000 | all | extent along z | same |
+| `cellSize` | F32 | wu per height-map cell | 12.0 | all | height-map resolution | same |
+| `outsideHeight` | F32 | wu | −10 | all | height outside the tiles (sea floor) | same |
+| `maxHeight` | FLOAT (`atof`, not F32-rounded) | wu | 0.0 | 41 mp files | upper height clamp, 0 = none ([23](23_terrain_and_landscape.md)) | same |
+| `landColourFile` | WORD ≤ 511 | file in `data/terrain/` | `landscape_default.bmp` | all | slope × height colour ramp ([fmt-colour-ramp](#fmt-colour-ramp)) | same |
+| `wavesColourFile` | WORD ≤ 511 | file in `data/terrain/` | `waves_default.bmp` | all | wave colour table | same |
+| `waterColourFile` | WORD ≤ 511 | file in `data/terrain/` | `water_default.bmp` | all | tiled sea texture | same |
+
+Algorithmic meaning of each field: [23](23_terrain_and_landscape.md).
+
+#### 4.1.7 `LandscapeTiles` block [C] `LevelFile::ParseLandscapeTiles`, `code/landscape.cpp:LandscapeTile::GuideGridSetPower`, `GuideGridFromString`, `GuideGridToString`
+
+```ebnf
+tiles     = 'LandscapeTiles_StartDefinition' EOL , { blank | tile_row } , 'LandscapeTiles_EndDefinition' EOL ;
+tile_row  = posX posY posZ size fractalDim heightScale desiredHeight genMethod seed lowlandSmoothing guidePower [ guideGrid ] EOL ;
+guideGrid = { LETTER LETTER } ;    (* exactly 2*(2^guidePower - 1)^2 letters; present iff guidePower > 0 *)
+LETTER    = 'A'..'P' ;             (* value = c - 'A' (0..15); cell = 16*hi + lo (0..255) *)
+```
+
+| Col | Field | Type | Units | Default | Range (shipped) | Semantics | Parser ref |
+|---|---|---|---|---|---|---|---|
+| 1 | `m_posX` | INT (decimals truncated) | wu | – | – | tile origin x | `ParseLandscapeTiles` |
+| 2 | `m_posY` | F32 | wu | – | – | vertical offset | same |
+| 3 | `m_posZ` | INT | wu | – | – | tile origin z | same |
+| 4 | `m_size` | INT | wu | – | – | tile edge length | same |
+| 5 | `m_fractalDimension` | F32 | – | – | – | roughness | same |
+| 6 | `m_heightScale` | F32 | – | – | – | height multiplier | same |
+| 7 | `m_desiredHeight` | F32 | wu | – | – | target peak height | same |
+| 8 | `m_generationMethod` | INT | enum | – | 0, 1 | generator ([23](23_terrain_and_landscape.md)) | same |
+| 9 | `m_randomSeed` | INT | – | – | – | private per-tile generator seed | same |
+| 10 | `m_lowlandSmoothingFactor` | F32 | – | – | – | lowland smoothing | same |
+| 11 | guide power | INT | – | – | 0…5 | grid resolution `2^p − 1` cells per side; 0 = no grid | `GuideGridSetPower` |
+| 12 | guide grid | WORD | – | – | – | row-major, z outer, x inner; **no length check** — a short string reads past the token | `GuideGridFromString` |
+
+All 11 leading columns are MISSING ⇒ CRASH. Shipped tile rows [C] survey: 209 with p = 0 (11 tokens); 41 / 292 / 40 / 101 / 46 with p = 1 / 2 / 3 / 4 / 5 (12 tokens) — all grid lengths exact.
+
+#### 4.1.8 `LandFlattenAreas` block [C] `LevelFile::ParseLandFlattenAreas`
+
+```ebnf
+flatten_row = centreX centreY centreZ size [ flattenType heightThreshold ] EOL ;    (* blank lines allowed *)
+```
+
+| Col | Field | Type | Units | Default | Range | Semantics | Parser ref |
+|---|---|---|---|---|---|---|---|
+| 1–3 | `m_centre` | F32 ×3 | wu | – | – | area centre (y = target height) | `ParseLandFlattenAreas` |
+| 4 | `m_size` | F32 | wu (radius) [I] | 40.0 (ctor) | – | extent | same |
+| 5 | `m_flattenType` | INT | enum | 0 (`FlattenTypeAbsolute`) when absent | 0 Absolute, 1 Add, 2 Subtract, 3 Smooth, 4 Subtract2 | flatten mode ([23](23_terrain_and_landscape.md)) | same |
+| 6 | `m_heightThreshold` | F32 | wu | 40.0 (ctor) | – | read only when column 5 is present, then MISSING ⇒ CRASH | same |
+
+Shipped: 14 rows with 4 tokens (campaign-era maps), 54 rows with 6 tokens [C] survey.
+
+#### 4.1.9 `Lights` block [C] `LevelFile::ParseLights`, `WriteLights`
+
+```ebnf
+light_row = frontX frontY frontZ red green blue EOL ;       (* six F32, MISSING => CRASH; blank lines allowed *)
+```
+
+| Col | Field | Type | Units | Default | Range | Semantics | Parser ref |
+|---|---|---|---|---|---|---|---|
+| 1–3 | `m_front` | F32 ×3 | direction | – | any non-zero | `(x,y,z,0)` normalised — an infinitely distant directional light | `ParseLights` |
+| 4–6 | `m_colour` | F32 ×3 | intensity multipliers | – | unclamped; shipped up to 2.00 | `(r,g,b,0)` | same |
+
+Precedence [C]: if any light already exists when a `Lights` block starts, the **whole block is ignored** (`ignoreLights`). The code comment says this lets a mission override map lights, but `ParseMissionFile` rejects `Lights`, so only a second `Lights` block in one map file is affected. Every shipped map has one block with 1–2 lights (198 rows / 100 files) [C] survey. The writer dumps the *current* `Location` lights with `%6.2f`.
+
+#### 4.1.10 `Buildings` block [C] `LevelFile::ParseBuildings`, `code/worldobject/building.cpp:Building::CreateBuilding(char*)`, `Building::Read`, `Building::BuildingIsBlocked`, each subclass `Read`
+
+```ebnf
+buildings = 'Buildings_StartDefinition' EOL , { blank | b_row } , 'Buildings_EndDefinition' EOL ;
+b_row     = TYPENAME id x z team frontX frontZ isGlobal { extra } EOL ;
+```
+
+Load rules [C]:
+
+1. `TYPENAME` is compared case-insensitively with `Building::GetTypeName(i)` for i = 0…74. A blocked type (`BLOCK_OLD_DARWINIA_OBJECTS`, 39 types in FULL), `Invalid`, or an unknown name makes `CreateBuilding` return NULL and the **whole line is ignored** (no error).
+2. Base columns (all MISSING ⇒ CRASH):
+
+| Col | Field | Type | Units | Default | Range | Semantics | Parser ref |
+|---|---|---|---|---|---|---|---|
+| 2 | `id` | INT | – | – | ≥ 0; unique within this `LevelFile` (map + mission) else `AppReleaseAssert("%s UniqueId was not unique in %s")` — **fatal** | `WorldObjectId(team, UNIT_BUILDINGS = −100, −1, id)`; target of all link columns | `Building::Read`, `ParseBuildings` |
+| 3 | `x` | F32 | wu | – | – | position x (y from the landscape [I]) | `Building::Read` |
+| 4 | `z` | F32 | wu | – | – | position z | same |
+| 5 | `team` | INT → `unsigned char` | team id | – | 0…5 (`NUM_TEAMS` = 6, `code/globals.h`) or 255 = none; shipped 0 ×747, 1 ×1899, 2 ×352, 3 ×119, 255 ×5325 rows | owner | same |
+| 6 | `frontX` | F32 | – | – | – | facing `(frontX, 0, frontZ)` normalised | same |
+| 7 | `frontZ` | F32 | – | – | – | | same |
+| 8 | `isGlobal` | BOOL | – | – | 0/1; **must be 1** for `TrunkPort`, `ControlTower`, `RadarDish`, `Incubator`, `FenceSwitch`, else `AppReleaseAssert("Non-global %s found in %s")` — fatal | campaign-global flag | `ParseBuildings` |
+
+3. Extra columns are read by the subclass (table below); surplus tokens are ignored.
+4. Mission rows get `m_dynamic = true`, map rows `false`.
+5. Difficulty scaling (Darwinia legacy) for team 1: `SpawnPopulationLock.maxPopulation ×= f`, `AntHill.numAntsInside ×= f`, `AISpawnPoint.period /= f`, `Triffid.reloadTime /= f` with `f = 1 + difficultyLevel/5` when the level has no `Difficulty` block; `App::UpdateDifficultyFromPreferences` hard-codes `m_difficultyLevel = 0`, so `f = 1.0` [C] `code/app.cpp:App::UpdateDifficultyFromPreferences`.
+6. Every row constructs a template object and some constructors draw synchronised random numbers, so the set and order of rows must be identical on every peer [C] ([22](22_determinism_and_networking.md)). Parsed objects are templates; `Location` later creates live buildings with `CreateBuilding(type)` + `Initialise(template)` — behaviour of every column: [03](03_buildings_and_world_objects.md).
+
+**Per-type extra columns** (75 type names = enum 0…74, `NumBuildingTypes` = 75). Legend: R required (MISSING ⇒ CRASH); O optional, read only if a token remains, nested (a later O is read only if the earlier O was present); `*` = list to end of line. Row counts are over all 118 level files [C] `X1a_level_survey.py` → `_work/drafts/X1a_level_field_usage.csv`.
+
+| # | Type name | Class (`Read`) | Extra columns after `isGlobal` | Optional defaults | Blocked in FULL | Shipped rows (files) |
+|---|---|---|---|---|---|---|
+| 0 | `Invalid` | – | – (NULL) | – | n/a | 0 |
+| 1 | `Factory` | Factory | R `initialCapacity` INT | – | yes | 0 |
+| 2 | `Cave` | Cave | – | – | yes | 0 |
+| 3 | `RadarDish` | RadarDish | O `forceConnection` INT, O `autoConnectAtStart` INT, `validLinkId`* INT | 0, 0, empty | no | 164 (22) |
+| 4 | `LaserFence` | LaserFence | R `nextLaserFenceId` INT, O `scale` F32, O `mode` F32→int (0 Disabled, 1 Enabling, 2 Enabled, 3 Disabling, 4 NeverOn, 5 AlwaysOn) | 1.0, 0 | no | 764 (17) |
+| 5 | `ControlTower` | ControlTower | R `controlBuildingId` INT | – | no | 150 (20) |
+| 6 | `GunTurret` | GunTurret | O `state` INT (turret type 0 Standard, 1 Rocket, 2 Mortar, 3 Flame, 4 Subversion), O group {`targetX` F32, `targetZ` F32, `targetRadius` F32, `targetForce` F32} (all four R once `targetX` is present) | 0, (0,0,0,0) | no | 264 (23) |
+| 7 | `Bridge` | Bridge | R `nextBridgeId` INT, R `bridgeType` INT | – | yes | 0 |
+| 8 | `Powerstation` | Powerstation | R `linkedBuildingId` INT | – | yes | 0 |
+| 9 | `Tree` | Tree | R `height` F32, R `budsize` F32, R `pushOut` F32, R `pushUp` F32, R `iterations` INT, R `seed` INT, R `branchColour` INT (packed RGBA, signed decimal), R `leafColour` INT (packed RGBA), O `leafDropRate` INT, O `spiritDropRate` INT, O `evil` INT (== 1 → true) | 0, 0, false | no | 1041 (69) |
+| 10 | `Wall` | Wall | O `objectiveLink` INT | −1 | no | 374 (12) |
+| 11 | `TrunkPort` | TrunkPort | O `targetLocationId` INT | −1 | no | 173 (49) |
+| 12 | `ResearchItem` | ResearchItem | R `researchType` research name (`GlobalResearch::GetType`, −1 unknown), O `level` INT | 1 | yes | 8 (6) ignored |
+| 13 | `Library` | Library | – | – | yes | 0 |
+| 14 | `Generator` | PowerBuilding | R `powerLink` INT | – | yes | 1 (1) ignored |
+| 15 | `Pylon` | PowerBuilding | R `powerLink` INT | – | no | 389 (22) |
+| 16 | `PylonStart` | PylonStart | R `powerLink` INT, R `reqBuildingId` INT | – | yes | 1 (1) ignored |
+| 17 | `PylonEnd` | PowerBuilding | R `powerLink` INT | – | no | 98 (21) |
+| 18 | `SolarPanel` | PowerBuilding | R `powerLink` INT | – | no | 274 (21) |
+| 19 | `PowerSplitter` | PowerSplitter | R `powerLink` INT, `linkId`* INT | empty | no | 27 (8) |
+| 20 | `TrackLink` | MineBuilding | R `trackLink` INT | – | yes | 111 (2) ignored |
+| 21 | `TrackJunction` | TrackJunction | R `trackLink` INT, `trackLinks`* INT | – | yes | 3 (1) ignored |
+| 22 | `TrackStart` | TrackStart | R `trackLink` INT, R `reqBuildingId` INT | – | yes | 1 (1) ignored |
+| 23 | `TrackEnd` | TrackEnd | R `trackLink` INT, R `reqBuildingId` INT | – | yes | 2 (2) ignored |
+| 24 | `Refinery` | MineBuilding | R `trackLink` INT | – | yes | 1 (1) ignored |
+| 25 | `Mine` | MineBuilding | R `trackLink` INT | – | yes | 4 (1) ignored |
+| 26 | `Yard` | ConstructionYard | – | – | yes | 1 (1) ignored |
+| 27 | `DisplayScreen` | DisplayScreen | – | – | yes | 0 |
+| 28 | `UpgradePort` | UpgradePort | – | – | yes | 0 |
+| 29 | `PrimaryUpgrade` | PrimaryUpgradePort | – | – | yes | 0 |
+| 30 | `Incubator` | Incubator | O `numStartingSpirits` INT | 0 | no | 96 (30) |
+| 31 | `AntHill` | AntHill | R `numAntsInside` INT (< 0 or > 10 000 logged and replaced by 0) | – | no | 13 (2) |
+| 32 | `SafeArea` | SafeArea | R `size` F32, R `entitiesRequired` INT, R `entityTypeRequired` INT (entity enum §4.1.13) | – | yes | 4 (3) ignored |
+| 33 | `Triffid` | Triffid | R `size` F32, R `pitch` F32, R `force` F32, R `variance` F32, R `reloadTime` F32, R `useTrigger` INT, R `triggerX` F32, R `triggerZ` F32, R `triggerRadius` F32, then up to 10 O spawn flags INT (== 1 → true) in the order Virii, Centipede, Spider, Spirits, Eggs, TriffidEggs, Ants, SporeGenerator, SoulDestroyer, Darwinians | missing flags false | no | 47 (13) |
+| 34 | `SpiritReceiver` | ReceiverBuilding | R `spiritLink` INT | – | yes | 49 (1) ignored |
+| 35 | `ReceiverLink` | ReceiverBuilding | R `spiritLink` INT | – | yes | 83 (2) ignored |
+| 36 | `SpiritSpawner` | ReceiverBuilding | R `spiritLink` INT | – | yes | 1 (1) ignored |
+| 37 | `SpiritProcessor` | ReceiverBuilding | R `spiritLink` INT | – | yes | 1 (1) ignored |
+| 38 | `SpawnPoint` | SpawnBuilding | `link`* INT (`SetBuildingLink` each) | empty | no | 471 (55) |
+| 39 | `SpawnPopulationLock` | SpawnPopulationLock | R `searchRadius` F32 (wu), R `maxPopulation` INT | – | no | 166 (39) |
+| 40 | `SpawnPointMaster` | MasterSpawnPoint | `link`* INT | empty | no | 55 (55) |
+| 41 | `SpawnLink` | SpawnBuilding | `link`* INT | empty | no | 464 (37) |
+| 42 | `AITarget` | AITarget | O `linkId` INT, O `priorityModifier` FLOAT (`atof`, not F32), O `checkCliffs` INT | −1, 0.0, 1 | no | 1577 (81) |
+| 43 | `AISpawnPoint` | AISpawnPoint | R `activatorId` INT, R `entityType` INT, R `count` INT, R `period` INT, O `spawnLimit` INT, O `routeId` INT | −1, −1 | yes | 19 (6) ignored |
+| 44 | `BlueprintStore` | BlueprintBuilding | R `buildingLink` INT | – | yes | 1 (1) ignored |
+| 45 | `BlueprintConsole` | BlueprintConsole | R `buildingLink` INT, R `segment` INT | – | yes | 4 (1) ignored |
+| 46 | `BlueprintRelay` | BlueprintRelay | R `buildingLink` INT, R `altitude` F32 | – | yes | 12 (1) ignored |
+| 47 | `ScriptTrigger` | ScriptTrigger | R `linkId` INT, R `range` F32, R `scriptFilename` WORD (≤ 255), R `entityType` WORD (`always`, `never`, `camenter`, `camview`, or an entity type name; case-insensitive) | – | yes | 25 (11) ignored |
+| 48 | `Spam` | Spam | – | – | yes | 3 (1) ignored |
+| 49 | `GodDish` | GodDish | – | – | yes | 2 (2) ignored |
+| 50 | `StaticShape` | StaticShape | R `scale` F32, R `shapeName` WORD (file in `data/shapes/`) | – | no | 257 (30) |
+| 51 | `FuelGenerator` | FuelBuilding | R `fuelLink` INT | – | no | 64 (9) |
+| 52 | `FuelPipe` | FuelBuilding | R `fuelLink` INT | – | no | 217 (9) |
+| 53 | `FuelStation` | FuelBuilding | R `fuelLink` INT | – | no | 64 (9) |
+| 54 | `EscapeRocket` | EscapeRocket | R `fuelLink` INT, R `fuel` F32, R `passengers` INT, R `spawnBuildingId` INT, R `spawnCompleted` INT | – | no | 22 (9) |
+| 55 | `FenceSwitch` | FenceSwitch | R `linkedBuildingId` INT, R `linkedBuildingId2` INT, R `switchValue` INT (−1 → copy of `linkedBuildingId`), R `lockable` INT, R `script` WORD, O `locked` INT (== 1) | false | yes | 0 |
+| 56 | `DynamicHub` | DynamicHub | R `buildingLink` INT, R `shapeName` WORD, R `requiredScore` INT, R `currentScore` INT, R `minActiveLinks` INT | – | yes | 0 |
+| 57 | `DynamicNode` | DynamicNode | R `buildingLink` INT, R `shapeName` WORD, R `scoreValue` INT, R `scoreSupplied` INT | – | yes | 0 |
+| 58 | `FeedingTube` | FeedingTube | R `receiverId` INT | – | yes | 0 |
+| 59 | `MultiwiniaZone` | MultiwiniaZone | R `size` FLOAT (`atof`; radius wu [I]), `blitzkriegLink`* INT | empty | no | 182 (29) |
+| 60 | `ChessPiece` | ChessPiece | – | – | yes | 0 |
+| 61 | `ChessBase` | ChessBase | R `width` INT, R `depth` INT | – | yes | 2 (1) ignored |
+| 62 | `CloneLab` | CloneLab (Incubator) | O `numStartingSpirits` INT | 0 | no | 15 (4, old/ only) |
+| 63 | `ControlStation` | ControlStation | R `controlBuildingId` INT | – | no | 54 (13) |
+| 64 | `Portal` | Portal | – | – | yes | 91 (10, old/) ignored |
+| 65 | `Crate` | Crate | – | – | yes (spawned at run time) | 0 |
+| 66 | `Statue` | Statue | – | – | yes | 1 (1) ignored |
+| 67 | `WallBuster` | WallBuster | – | – | no | 3 (1) |
+| 68 | `PulseBomb` | PulseBomb | R `startTime` F32 (s), `link`* INT | empty | no | 10 (10) |
+| 69 | `RestrictionZone` | RestrictionZone | R `size` F32 (wu), O `blockPowerups` INT | false | no | 35 (14) |
+| 70 | `JumpPad` | JumpPad | R `force` F32, R `angle` F32 (radians, [03](03_buildings_and_world_objects.md)) | – | no | 27 (4) |
+| 71 | `AIObjective` | AIObjective | R `nextObjective` INT | – | no | 98 (10) |
+| 72 | `AIObjectiveMarker` | AIObjectiveMarker | R `scanRange` F32 (wu), R `objectiveId` INT, O `armourObjective` INT, O `pickupOnly` INT | 0, 0 | no | 345 (17) |
+| 73 | `EruptionMarker` | EruptionMarker | – | – | no | 1 (1) |
+| 74 | `SmokeMarker` | SmokeMarker | – | – | no | 9 (2) |
+
+Forced-global types at construction (`RadarDish`, `ControlTower`, `TrunkPort`, `Incubator`, `DynamicHub`, `FenceSwitch`) are overwritten by column 8 anyway [C] `Building::CreateBuilding(int)`. Spot-verified for this document: `Tree::Read` (`code/worldobject/tree.cpp`), `GunTurret::Read` (`code/worldobject/gunturret.cpp`), `AITarget::Read` (`code/worldobject/ai.cpp`) match the table exactly [C].
+
+#### 4.1.11 `CameraMounts` block [C] `LevelFile::ParseCameraMounts`, `WriteCameraMounts`
+
+```ebnf
+mount_row = NAME posX posY posZ frontX frontY frontZ upX upY upZ EOL ;    (* 10 tokens, all MISSING => CRASH *)
+```
+
+| Col | Field | Type | Units | Default | Range | Semantics | Parser ref |
+|---|---|---|---|---|---|---|---|
+| 1 | `m_name` | WORD, `strncpy` 63 chars into `char[64]` | – | – | keep ≤ 62 characters (a 63+ character name is not NUL-terminated by `strncpy`) | mount name, looked up case-insensitively (`LevelFile::GetCameraMount`) | `ParseCameraMounts` |
+| 2–4 | `m_pos` | F32 ×3 | wu | – | – | camera position | same |
+| 5–7 | `m_front` | F32 ×3 | direction | – | non-zero | normalised after reading | same |
+| 8–10 | `m_up` | F32 ×3 | direction | – | non-zero | normalised after reading | same |
+
+Names consumed by code [C]: `player<N>` (N = the local team's position index) is the start camera in Multiwinia (`code/main.cpp`, `sprintf(camname, "player%d", …)`); `start` is the default start mount (`code/main.cpp`, `SetTarget("start")`); `CamPosBefore` is reserved (`MAGIC_MOUNT_NAME_START_POS`, `code/level_file.h`). Shipped `mp_*`: `player0` 51, `player1` 51, `player2` 31, `player3` 13, `start` 7 rows [C] survey.
+
+#### 4.1.12 `CameraAnimations` block [C] `LevelFile::ParseCameraAnims`, `WriteCameraAnims`
+
+```ebnf
+cam_anims = 'CameraAnimations_StartDefinition' EOL , { blank | animation } , 'CameraAnimations_EndDefinition' EOL ;
+animation = ANIMNAME EOL , { blank | node } , 'End' EOL ;          (* ANIMNAME strncpy 63 into char[64] *)
+node      = ( 'Move' | 'Cut' ) MOUNTNAME DURATION EOL ;            (* all MISSING => CRASH *)
+```
+
+| Field | Type | Units | Default | Range | Failure | Parser ref |
+|---|---|---|---|---|---|---|
+| transition | word → `CamAnimNode::GetTransitModeId` (`Move` = `TransitionMove` 0, `Cut` = `TransitionCut` 1) | – | – | `Move`, `Cut` | unknown word → `AppReleaseAssert("Bad camera animation camera mode in level file %s")` — fatal | `ParseCameraAnims` |
+| `m_mountName` | WORD (`strdup`) | – | – | a mount defined **earlier** (this file or the mission parsed before), or `CamPosBefore` | `"Bad camera animation mount name"` — fatal | same |
+| `m_duration` | F32 | seconds | – | 0.0 ≤ d < 60.0 | `"Bad camera animation transition time"` — fatal | same |
+
+Shipped: 96 blocks, all empty [C] survey; consumed only by the script command `CamAnim` ([fmt-script](#fmt-script)) [B:LEGACY].
+
+#### 4.1.13 `InstantUnits` block [C] `LevelFile::ParseInstantUnits`, `code/level_file.h:InstantUnit`
+
+```ebnf
+iu_row = ENTITYTYPE team x z count inAUnit state spread [ waypointX waypointZ ] [ routeId [ routeWaypointId [ runAsTask ] ] ] EOL ;
+```
+
+| Col | Field | Type | Units | Default (ctor) | Range | Semantics / failure | Parser ref |
+|---|---|---|---|---|---|---|---|
+| 1 | `m_type` | entity type name, case-insensitive (`Entity::GetTypeId`) | – | −1 | names below | unknown, or `Entity::EntityIsBlocked` (FULL blocks `AI`, `ArmyAnt`, `DropShip`, `Egg`, `Lander`, `LaserTroop`, `Meteor`, `Nuke`, `Officer`, `Shaman`, `SpaceInvader`, `Tentacle`, `TriffidEgg`, `Tripod`, `InvalidType`, `SpaceShip`) → line skipped | `ParseInstantUnits` |
+| 2 | `m_teamId` | INT | team id | −1 | 0…5 | R | same |
+| 3–4 | `m_posX`, `m_posZ` | F32 | wu | 0.0 | – | group centre, R | same |
+| 5 | `m_number` | INT | entities | 0 | – | R | same |
+| 6 | `m_inAUnit` | BOOL | – | false | – | R; `Squadie` with 0 is skipped (legacy crash guard) | same |
+| 7 | `m_state` | INT | entity state enum | −1 | −1 = default state | R | same |
+| 8 | `m_spread` | F32 | wu (radius) | 200.0 | – | R | same |
+| 9–10 | `m_waypointX/Z` | F32 | wu | 0.0, 0.0 | – | the pair is read when **one** token remains, so a single extra token ⇒ CRASH | same |
+| 11 | `m_routeId` | INT | – | −1 | – | O | same |
+| 12 | `m_routeWaypointId` | INT | – | −1 | – | O (nested) | same |
+| 13 | `m_runAsTask` | BOOL | – | false | – | O (nested) | same |
+
+Entity type names and indices (also used by the `entityType` columns of `AISpawnPoint` and `SafeArea` and by [fmt-stats-txt](#fmt-stats-txt) row order) [C] `code/worldobject/entity.cpp:Entity::GetTypeName`: 0 `InvalidType`, 1 `LaserTroop`, 2 `Engineer`, 3 `Virii`, 4 `Squadie` (= `TypeInsertionSquadie`), 5 `Egg`, 6 `SporeGenerator`, 7 `Lander`, 8 `Tripod`, 9 `Centipede`, 10 `SpaceInvader`, 11 `Spider`, 12 `Darwinian`, 13 `Officer`, 14 `ArmyAnt`, 15 `Armour`, 16 `SoulDestroyer`, 17 `TriffidEgg`, 18 `AI`, 19 `Shaman`, 20 `Harvester`, 21 `Nuke`, 22 `Tentacle`, 23 `Meteor`, 24 `Tank`, 25 `SpaceShip`, 26 `DropShip`.
+
+Shipped rows [C] survey: `Darwinian` 390 rows in 64 files (39 mp), `Armour` 7 (4 mp), `Tank` 9 (3 mp, TankBattle maps), `Engineer` 3 (old/); campaign missions add `Virii`, `Centipede`, `Spider`, `SporeGenerator`, `SoulDestroyer`; blocked and skipped: `AI` 7, `ArmyAnt` 1, `Shaman` 9. Team-1 difficulty scaling (`number ×= f`, centipede splitting with non-synchronised `sfrand(60)`, `spread ×= 1.2^(difficulty/5)`) is inert because `f = 1` [C].
+
+#### 4.1.14 `Routes` block [C] `LevelFile::ParseRoutes`, `LevelFile::ParseRoute`, `code/routing_system.h:WayPoint`
+
+```ebnf
+routes     = 'Routes_StartDefinition' EOL , { blank | route | other_line } , 'Routes_EndDefinition' EOL ;
+route      = 'Route' ID EOL , { blank | waypoint } , 'End' EOL ;   (* ID INT, debug-asserted 0 <= ID < 10000 *)
+waypoint   = '0' x y z EOL            (* WayPoint::Type3DPos, F32 x3 *)
+           | '1' x z EOL              (* WayPoint::TypeGroundPos, F32 x2 *)
+           | '2' buildingId EOL ;     (* WayPoint::TypeBuilding, INT *)
+other_line = any line whose first token is not 'Route' ;          (* ignored *)
+```
+
+The type is `atoi(first token)` (debug assert that it starts with a digit); any other number creates a waypoint at (0,0,0) of that type [C]. No shipped file contains a `Routes` block [C] survey.
+
+#### 4.1.15 `PrimaryObjectives` block [C] `LevelFile::ParsePrimaryObjectives`, `code/global_world.cpp:GlobalEventCondition`
+
+```ebnf
+objectives = 'PrimaryObjectives_StartDefinition' EOL , { objective } , 'PrimaryObjectives_EndDefinition' EOL ;   (* NO blank lines *)
+objective  = condition [ STRINGID [ CUTSCENE ] ] EOL ;
+condition  = ( 'BuildingOnline' | 'BuildingOffline' ) LOCATIONNAME BUILDINGID
+           | 'ResearchOwned' RESEARCHNAME
+           | 'DebugKey' INT
+           | 'NeverTrue'
+           | 'AlwaysTrue' | 'NotInLocation' ;           (* debug-asserted as invalid here *)
+```
+
+| Field | Type | Default | Range | Semantics | Parser ref |
+|---|---|---|---|---|---|
+| condition word | word → `GlobalEventCondition::GetType` (case-insensitive) | – | `AlwaysTrue` 0, `BuildingOnline` 1, `BuildingOffline` 2, `ResearchOwned` 3, `NotInLocation` 4, `DebugKey` 5, `NeverTrue` 6; unknown → −1 (debug assert; line still stored) | condition type | `ParsePrimaryObjectives` |
+| `LOCATIONNAME` | WORD → `GlobalWorld::GetLocationId` | – | a name derived from `game.txt` (§4.4) | in Multiwinia the global world is empty → −1 [C] `code/app.cpp:App::Initialise` | same |
+| `BUILDINGID` | INT | – | – | building id in that location | same |
+| `STRINGID` | WORD | none | phrase id | objective text | same |
+| `CUTSCENE` | WORD | none | script file | run on completion | same |
+
+The loop has no `TokenAvailable` guard — a blank line inside crashes [C]. If the block is absent or empty, `GenerateAutomaticObjectives` adds one `NeverTrue` objective and derives secondary objectives from `ResearchItem`/`TrunkPort` buildings (blocked or campaign-only) [C]. Shipped [C] survey: 77 files `NeverTrue` (one `NeverTrue -1 -1`), 19 files `BuildingOnline` (16 missions, `mp_sandbox`/`mp_sandbox_all` with `:sandbox,2`, `map_sandbox`), 1 `ResearchOwned`. In Multiwinia objectives have no gameplay effect [I: only Darwinia's `Location::MissionComplete` evaluates them].
+
+#### 4.1.16 Mission-only blocks [B:LEGACY] [C] `LevelFile::ParseDifficulty`, `ParseRunningPrograms`, `ParseLeaderboardStats`, `WriteRunningPrograms`
+
+| Block | Grammar | Field semantics, units, defaults |
+|---|---|---|
+| `Difficulty` | `'CreatedAsDifficulty' INT` (other words ignored) | `m_levelDifficulty = n − 1`, clamped ≥ 0 (1-based in the file); present in 3 shipped missions, value 1 |
+| `RunningPrograms` | `ENTITYTYPE count state data waypointX waypointZ { posX posZ health } × count` — all MISSING ⇒ CRASH; `count` ≤ 10 (fixed arrays `m_positionX[10]`, **no bounds check**) | save-game record of running Engineer/Squad tasks (`data` = engineer spirits or squad weapon type); the writer's squad branch uses `%8.2` with no conversion letter → malformed output |
+| `LeaderboardStats` | `'Time' FLOAT`, `'Kills' INT`, `'Survivors' …` | `Time` parsed with `sscanf("%f")` into a `double` → garbage; `Kills` written straight into `m_location->m_teams[2]->m_teamKills` (requires a live location) |
+
+#### 4.1.17 Writer notes [C] `LevelFile::Save`, `LevelFile::SaveMapFile`, `LevelFile::SaveMissionFile`, `Building::Write`, `LevelFile::WriteLandscapeTiles`
+
+* Map save target: `TARGET_DEBUG` → `data/levels/<map>` via `Resource::GetTextFileWriter`; otherwise `<P>maps/<map>` (plain). Mission save: `<P>users/<profile>/<mission>` (obfuscated unless `TARGET_DEBUG`, [fmt-profile-save](#fmt-profile-save)).
+* Building rows: `"\t%-20s"` type name then `%-8d %-8.2f %-8.2f %-8d %-8.2f %-8.2f %-8d` for the base columns, then the subclass `Write` — positions and fronts keep **2 decimals**, so a load/save round trip is lossy.
+* `WriteLandscapeTiles` writes `desiredHeight` with `%6.0f` and concatenates `lowlandSmoothing %6.2f` and `guidePower %6d` without a separator — readable only because of the field widths.
+
+#### 4.1.18 Verification
+
+Parsers re-read for this document: `LevelFile::ParseMissionFile`, `ParseMapFile` (both overloads), `ParseMultiwiniaOptions`, `ParseBuildings`, `ParseInstantUnits`, `ParseLandscapeData`, `ParseLandscapeTiles`, `ParseLandFlattenAreas`, `ParseLights`, `ParseRoute`, `ParseRoutes`, `ParsePrimaryObjectives`, `ParseCameraMounts`, `ParseCameraAnims`, the two `LevelFile` constructors, `Building::Read`, `Tree::Read`, `GunTurret::Read`, `AITarget::Read`, `GameMenu::AddMap`. Survey: `X1a_level_survey.py` (re-run; output identical to `_work/drafts/X1a_level_field_usage.csv`) over **118 level files** (57 mp, 12 map, 17 mission, 30 old, 2 purity): every strict part of the grammar (no blank lines in `Landscape`/`PrimaryObjectives`, every required column present, every `isGlobal` constraint met, guide-grid lengths exact) is respected by shipped data; 10 anomalies listed below.
+
+#### 4.1.19 Minimal valid examples (written for this document)
+
+Two-player map (`mp_example_2p.txt`) with one tile, one flatten area, a spawn network and two cameras:
+
+```text
+MultiwiniaOptions_StartDefinition
+    GameTypes       Domination
+    NumPlayers      2
+    PopulationCap   800
+    PlayTime        10
+    Difficulty      intermediate
+    LevelOptions    instantspawnpointcapture
+MultiwiniaOptions_EndDefinition
+
+Landscape_StartDefinition
+    worldSizeX      1600
+    worldSizeZ      1000
+    cellSize        12.0
+    outsideHeight   -10.0
+    landColourFile  landscape_default.bmp
+    wavesColourFile waves_default.bmp
+    waterColourFile water_default.bmp
+Landscape_EndDefinition
+
+LandscapeTiles_StartDefinition
+    200  0.0  100  1200  1.10  1.00  90  0  4242  1.00  0
+LandscapeTiles_EndDefinition
+
+LandFlattenAreas_StartDefinition
+    800.0 30.0 600.0 60.0 0 30.0
+LandFlattenAreas_EndDefinition
+
+Lights_StartDefinition
+    0.30 0.80 0.50  1.00 0.95 0.90
+Lights_EndDefinition
+
+Buildings_StartDefinition
+    SpawnPointMaster  10  800.0  600.0  255  0.0  1.0  0  11 12
+    SpawnPoint        11  400.0  600.0  0    1.0  0.0  0
+    SpawnPoint        12  1200.0 600.0  1   -1.0  0.0  0
+    TrunkPort         13  800.0  300.0  255  0.0  1.0  1
+Buildings_EndDefinition
+
+CameraMounts_StartDefinition
+    player0  250.0 250.0 600.0   0.60 -0.60  0.00   0.60 0.60 0.00
+    player1  1350.0 250.0 600.0 -0.60 -0.60  0.00  -0.60 0.60 0.00
+CameraMounts_EndDefinition
+
+InstantUnits_StartDefinition
+    Darwinian  0  400.0  600.0  15  0  -1  40.0
+    Darwinian  1  1200.0 600.0  15  0  -1  40.0
+InstantUnits_EndDefinition
+```
+
+Campaign mission ([B:LEGACY]) with a difficulty block and one objective:
+
+```text
+Difficulty_StartDefinition
+    CreatedAsDifficulty 2
+Difficulty_EndDefinition
+
+Buildings_StartDefinition
+    Incubator  20  300.0 450.0  1  0.0 1.0  1  5
+Buildings_EndDefinition
+
+PrimaryObjectives_StartDefinition
+    BuildingOnline sample,20  sample_objective_text
+PrimaryObjectives_EndDefinition
+```
+
+#### 4.1.20 Discrepancies between shipped files and the parsers [C] `X1a_level_survey.py`
+
+| # | Finding | Files | Effect |
+|---|---|---|---|
+| 1 | `GameTypes none` | `mp_assault_stress`, `mp_benchmark_1`, `mp_sandbox`, `mp_sandbox_all` + 6 old/ | map dropped from the lobby list; reached only by other paths [I] |
+| 2 | `GameTypes Shaman`, `GameTypes Skirmish` | 10 + 6 old/ maps | unknown names → ignored (old naming) |
+| 3 | top-level `GameTypes` line before any block | `old/mp_chess1.txt` | debug assert; ignored |
+| 4 | `CarryableBuilding` building type | `map_sandbox.txt` | not a type name → line ignored |
+| 5 | `AIObjective` with 2 extra tokens (needs 1) | `mp_assault_stress.txt` (3 rows), `old/mp_assault_3P_1.txt` (3) | surplus ignored |
+| 6 | `Triffid` with 20 extra tokens (max 19) | `old/mp_shaman_2P.txt` (2 rows) | surplus ignored |
+| 7 | 39 blocked Darwinia types present (`Portal` 91 rows in old/, `ScriptTrigger` 25, `TrackLink` 111, `SpiritReceiver` 49, `ReceiverLink` 83, plus the other rows marked "ignored" in §4.1.10) | campaign maps, old/ | silently ignored in Multiwinia |
+| 8 | blocked entity types in `InstantUnits` (`AI`, `ArmyAnt`, `Shaman`) | missions, old/ | skipped |
+| 9 | `Name NewLevel` placeholder | 10 mp maps | menu shows language-table names [I] |
+| 10 | `Author`, `Description`, `Routes`, `RunningPrograms`, `LeaderboardStats` parsed but never present; `maxHeight` only in 41 mp maps | – | editor / save features only |
+| 11 | duplicate `PopulationCap` | `mp_cts_4p_3.txt` | last (2000) wins |
+| 12 | second `Buildings` block in 47 mp maps (after `CameraAnimations`) | 47 mp | also static (dynamic branch unreachable) |
+
+<a id="fmt-level-enum"></a>
+### 4.2 `level_enum.txt` — achievement level ids
+
+**Purpose.** Maps map file names to the small integer ids used by the achievement bitsets ("Master of Multiwinia", "Explorer") [C] `code/achievement_tracker.cpp:AchievementTracker::AchievementTracker`, `AddVictoryOnLevel`, `AddVisitedLevel`.
+
+**Files.** `data/levels/level_enum.txt` (59 lines), read through `Resource::GetTextReader(ACHIEVEMENT_LEVEL_ENUM)`; a missing file only logs `"Failed to load level_enum.txt"` [C].
+
+**Encoding.** ASCII, CRLF, **no final newline** (last line `mp_PDLC2_rocketriot_3P_1.txt 59`) [C] survey.
+
+```ebnf
+level_enum = { blank | MAPFILENAME LEVELID EOL } ;      (* LEVELID INT; a one-token line => atoi(NULL) crash *)
+```
+
+| Field | Type | Units | Default | Range | Semantics | Parser ref |
+|---|---|---|---|---|---|---|
+| `MAPFILENAME` | WORD | – | – | file name incl. `.txt`; unique case-insensitively (a duplicate key is `AppAbort("Error with HashTable")` — **fatal**) | key of `m_levelList` (`HashTable<int>`, case-insensitive) and value of `m_levelListReverse` (`std::map<int,std::string>`) | `AchievementTracker::AchievementTracker`, `contrib/systemiv/lib/tosser/hash_table.cpp:HashTable::GetInsertPos` |
+| `LEVELID` | INT | – | – | 1…49 used; > `MAX_LEVEL_ID` (49) ignored by `AddVictoryOnLevel`/`AddVisitedLevel` | bit index into `m_won[8]`, `m_visited[8]`; achievements need `VALID_ACHIEVEMENT_LEVELS` = 49 (41 without `INCLUDEGAMEMODE_ASSAULT`) | same |
+
+Both containers copy the token, so the reader buffer may be freed [C] `HashTable::PutData`.
+
+**Verification.** Parser re-read for this document (loop with `TokenAvailable` guard, unguarded second `GetNextToken`). Data check (X1a script): ids 1…49 are exactly the 49 retail maps (every `mp_*` not excluded by `tools/multiwinia_exclusions.txt`), no gaps, no duplicates; ids 50…59 name `mp_PDLC1_*`/`mp_PDLC2_*` maps absent from the tree [C].
+
+**Minimal valid example**
+
+```text
+mp_alpha_2p_1.txt   1
+mp_beta_4p_2.txt    2
+```
+
+**Discrepancies.** (1) `tools/multiwinia_exclusions.txt` excludes `levels/level_enum.txt` from the retail `main.dat`, so in a packaged retail build the file is not found and the two achievements can never be awarded unless another archive supplies it [C] list; whether `patch.dat` did is **29-U1**. (2) Because the last line is unterminated, it would be dropped if read from an archive (§3.1) — harmless (id 59 > 49).
+
+<a id="fmt-multiwinia-txt"></a>
+### 4.3 `multiwinia.txt` — game types and lobby parameters
+
+**Purpose.** Defines the Multiwinia game types in **file order** (that order *is* the game-type index used by maps, network, UI) and each type's lobby parameters [C] `code/multiwinia.cpp:Multiwinia::LoadBlueprints`, `MultiwiniaGameBlueprint::MultiwiniaGameBlueprint`, `MultiwiniaGameParameter::MultiwiniaGameParameter`.
+
+**Files.** `data/multiwinia.txt` [B:FULL]; `data/multiwinia-testbed.txt` replaces it only under `TESTBED_ENABLED` [B:DEAD]. Missing file: `AppReleaseAssert("Couldn't load multiwinia.txt")` — fatal [C].
+
+**Encoding.** ASCII, CRLF (71 lines) [C] survey.
+
+```ebnf
+mw_file  = { blank | gametype } ;
+gametype = 'GAMETYPE' NAME EOL , { param } , 'END' EOL ;    (* NO blank or comment-only line between GAMETYPE and END *)
+param    = PARAMNAME MIN MAX DEFAULT CHANGE EOL ;           (* WORD F32 F32 F32 INT, all MISSING => CRASH *)
+```
+
+The top-level keyword is only debug-asserted to be `GAMETYPE`; in release any first token starts a game type. Inside a block the parser does `ReadLine(); GetNextToken()` with no `TokenAvailable` check, so a blank line inside a block crashes (`stricmp(NULL, "END")`). `END` is case-insensitive [C].
+
+| Field | Type | Units | Default | Range | Semantics | Parser ref |
+|---|---|---|---|---|---|---|
+| `NAME` | WORD (`char[256]`) | – | – | identity, case-sensitive | blueprint name; level `GameTypes` must match it with `strcmp`; phrase id `multiwinia_gametype_<lower(NAME)>`; index order must equal `Multiwinia::GameType*`: 0 `Domination` (`GameTypeSkirmish`), 1 `KingOfTheHill`, 2 `CaptureTheStatue`, 3 `Assault`, 4 `RocketRiot`, 5 `Blitzkrieg` (`GameTypeBlitzkreig`), 6 `TankBattle` [C] `code/multiwinia.h` | `LoadBlueprints` |
+| `PARAMNAME` | WORD (`char[256]`) | – | – | – | looked up case-insensitively by `Multiwinia::GetGameOption(name)` (−1 if absent); phrase id `multiwinia_param_<lower(PARAMNAME)>` | same |
+| `MIN`, `MAX`, `DEFAULT` | F32 (stored `double`, used as int by the lobby) | per parameter ([01](01_game_modes.md)) | – | – | slider/drop-down range and initial value | same |
+| `CHANGE` | INT | – | – | −1 checkbox, 0 drop-down, > 0 slider step | UI widget type [C] `code/UI/GameMenuWindow.cpp` | same |
+
+At most `MULTIWINIA_MAXPARAMS` = 64 parameters per type are storable in `Multiwinia::m_params[64]`; the loader does not check [I].
+
+Shipped parameters (`name min max default change`) [C] `data/multiwinia.txt`:
+
+| Game type (index) | Parameters |
+|---|---|
+| Domination (0) | ScoreMode 0 1 0 0; TimeLimit 0 60 10 1; Handicap 0 90 90 10; CrateDropRate 0 300 40 10; StartingPowerups 0 3 0 1; RetributionMode 0 1 1 −1; SuddenDeath 0 1 1 −1; CrateDropMode 0 1 1 0 |
+| KingOfTheHill (1) | ScoreMode 0 3 0 0; TimeLimit 1 60 5 1; Handicap 0 90 90 10; CrateDropRate 0 300 40 10; StartingPowerups 0 3 0 1; RetributionMode 0 1 1 −1; SuddenDeath 0 1 1 −1; CrateDropMode 0 1 1 0 |
+| CaptureTheStatue (2) | TimeLimit 1 60 10 1; CrateDropRate 0 300 40 10; RetributionMode 0 1 1 −1; SuddenDeath 0 1 1 −1; CrateDropMode 0 1 1 0 |
+| Assault (3) | Handicap 0 90 90 10; CrateDropRate 0 300 40 10 |
+| RocketRiot (4) | CrateDropRate 0 300 40 10; ReinforcementTimer 10 300 60 10; ReinforcementCount 1 100 40 1; MaxArmour 1 10 2 1; TurretFrequency 0 10 7 1; MaxTurrets 0 5 3 1 |
+| Blitzkrieg (5) | TimeLimit 0 60 15 1; CrateDropRate 0 300 40 10; ReinforcementTimer 10 300 60 10; ReinforcementCount 1 100 40 1; MaxArmour 1 10 2 1; TurretFrequency 0 10 2 1; RetributionMode 0 1 1 −1; SuddenDeath 0 1 1 −1; MaxTurrets 0 5 2 1 |
+| TankBattle (6) | NumTanks 3 10 3 1 (game type compiled out: `INCLUDEGAMEMODE_TANKBATTLE` undefined) |
+
+`multiwinia-testbed.txt` differs only by an extra comment and `TimeLimit 0 60 10 1` appended to RocketRiot [C] diff.
+
+**Verification.** `Multiwinia::LoadBlueprints` re-read (unguarded inner loop confirmed). Data: `data/multiwinia.txt` 7 blocks, 53 token lines, no blank line inside a block [C] `X1a_text_survey.py`.
+
+**Minimal valid example**
+
+```text
+GAMETYPE Domination
+    TimeLimit      1   30   12   1
+    CrateDropMode  0    1    0   0
+END
+```
+
+**Discrepancies.** The header comment of `data/multiwinia.txt` (`Change: 0 = DropDownMenu, -1 = CheckBox`) matches the code [C]. Adding, removing or reordering a `GAMETYPE` block silently renumbers every game type on maps, network and UI.
+
+<a id="fmt-game-txt"></a>
+### 4.4 `game.txt` family — campaign world definition [B:LEGACY]
+
+**Purpose.** `GlobalWorld::LoadGame(name)` builds the Darwinia campaign world (locations, global buildings, research, scripted events). Reached only through `App::LoadProfile`/`App::SaveProfile`, whose callers are campaign/prologue paths; the FULL Multiwinia flow creates an **empty** `GlobalWorld` (the `LoadProfile()` call in `App::Initialise` is commented out) [C] `code/app.cpp:App::LoadProfile`, `App::Initialise`, `code/global_world.cpp:GlobalWorld::LoadGame`.
+
+**Files**
+
+| File | Selected when | Tag |
+|---|---|---|
+| `data/game.txt` | `GAMEDATAFILE` = `game.txt` (`DEMOBUILD`/`DEMO2` undefined) [C] `code/app.cpp` | [B:LEGACY] |
+| `data/game_demo.txt` | `DEMOBUILD` only | [B:DEAD] |
+| `data/game_demo2.txt` | `DEMO2` only | [B:DEAD] |
+| `data/game_unlockall.txt` | `LoadProfile` with a full version and profile `AccessAllAreas` or `AttractMode` (every trunk port online, every location available) [C] `App::LoadProfile` | [B:LEGACY] |
+| `data/purity/game.txt` | never (no code opens `purity/`) | [B:DEAD] |
+| `<P>users/<name>/game.txt` | save game, tried first ([fmt-profile-save](#fmt-profile-save)) | [B:LEGACY] |
+
+Load order [C] `GlobalWorld::LoadGame`: user save (`UnicodeTextFileReader` → `TextFileReader`) else `Resource::GetTextReader(name)`; then `locations.txt` (§4.5); then every location's map file and every `levels/mission_<location>*.txt` are parsed to register global buildings and completed missions; finally `EvaluateEvents()`.
+
+**Encoding.** ASCII, CRLF [C] survey.
+
+```ebnf
+game_file   = { blank | section | other_line } ;                       (* other_line ignored *)
+section     = locations | gbuildings | research | events | tutorial | leveltimes | squaddies ;
+locations   = 'Locations_StartDefinition' EOL , { blank | loc_row } , 'Locations_EndDefinition' EOL ;
+loc_row     = ID AVAILABLE MAPFILE MISSIONFILE EOL ;                    (* INT INT WORD WORD, MISSING => CRASH *)
+gbuildings  = 'Buildings_StartDefinition' EOL , { blank | gb_row } , 'Buildings_EndDefinition' EOL ;
+gb_row      = ID TEAMID LOCID TYPE LINK ONLINE EOL ;                    (* six INT, MISSING => CRASH *)
+research    = 'Research_StartDefinition' EOL , { blank | r_line } , 'Research_EndDefinition' EOL ;
+r_line      = 'Research' RESEARCHNAME PROGRESS LEVEL | 'CurrentResearch' RESEARCHNAME | 'CurrentPoints' INT ;
+events      = 'Events_StartDefinition' EOL , { blank | event } , 'Events_EndDefinition' EOL ;
+event       = 'Event' { condition } EOL , { blank | action_line } , 'End' EOL ;
+condition   = 'AlwaysTrue' | 'NotInLocation' | 'NeverTrue'
+            | ( 'BuildingOnline' | 'BuildingOffline' ) LOCATIONNAME BUILDINGID
+            | 'ResearchOwned' RESEARCHNAME | 'DebugKey' INT ;
+action_line = 'Action' ( 'SetMission' LOCATIONNAME MISSIONFILE | 'RunScript' SCRIPTNAME | 'MakeAvailable' LOCATIONNAME ) EOL ;
+tutorial    = 'Tutorial_StartDefinition' EOL , { WORD WORD INT EOL } , 'Tutorial_EndDefinition' EOL ;   (* e.g. "CurrentChapter = 3" *)
+leveltimes  = 'LevelTimes_StartDefinition' EOL , { INDEX VALUE EOL } , 'LevelTimes_EndDefinition' EOL ;
+squaddies   = 'SquaddiesUsed_StartDefinition' EOL , { INDEX VALUE EOL } , 'SquaddiesUsed_EndDefinition' EOL ;
+```
+
+All keywords case-insensitive; `:` and `,` are separators, so conditions are conventionally written `BuildingOnline:garden,8` (three tokens) [C].
+
+| Section / field | Type | Units | Default | Range | Semantics | Parser ref |
+|---|---|---|---|---|---|---|
+| `loc_row.ID` | INT | – | – | 1…12 in Darwinia | location id (referenced by `gb_row.LOCID`, `TrunkPort.targetLocationId`, `locations.txt`) | `GlobalWorld::ParseLocations` |
+| `loc_row.AVAILABLE` | BOOL | – | – | 0/1 | reachable on the world map | same |
+| `loc_row.MAPFILE` | WORD ≤ 255 | – | – | `map_<name>.txt` | map file; **location name = MAPFILE minus its first 4 and last 4 characters** (`map_garden.txt` → `garden`); a name shorter than 8 characters underflows | same |
+| `loc_row.MISSIONFILE` | WORD ≤ 255 | – | – | file or `null` | current mission | same |
+| `gb_row` | 6 × INT | – | – | shipped type 0 | `GlobalBuilding{id, teamId, locationId, type, link, online}`, looked up by (id, locationId) | `GlobalWorld::ParseBuildings` |
+| `Research NAME PROGRESS LEVEL` | research name, INT, INT | points, level | – | 29 names (below) | sets level, then progress; **an unknown name writes `m_researchLevel[-1]`** (out of bounds) | `GlobalResearch::Read` |
+| `CurrentResearch NAME` | research name | – | – | – | current research (−1 unknown) | same |
+| `CurrentPoints INT` | INT | points | – | – | research points | same |
+| other word inside `Research` | – | – | – | – | `AppReleaseAssert("Error loading GlobalResearch")` — **fatal** | same |
+| `Event` conditions | as §4.1.15; `LOCATIONNAME` resolved against locations loaded so far | – | – | – | conjunction: fires when all are true | `GlobalWorld::ParseEvents`, `GlobalEvent::Read` |
+| `Action` lines | – | – | – | – | executed **one per evaluation** in order; a first token other than `Action` is debug-asserted but parsed as an action; an unknown action word leaves `m_type` uninitialised → undefined on execute | `GlobalEventAction::Read` |
+| `SetMission LOC FILE` | WORD WORD | – | – | – | set the location's mission | same |
+| `RunScript NAME` | WORD | – | – | – | `Script::RunScript`: a name containing `.txt` runs `data/scripts/NAME`; otherwise a Sepulveda phrase sequence, **no-op in FULL** (e.g. `RunScript gardenfinished`) | same |
+| `MakeAvailable LOC` | WORD | – | – | – | location becomes available | same |
+| `Tutorial` lines | WORD WORD INT | chapter | – | `-1` deletes | Darwinia demo tutorial chapter; whole section only under `USE_SEPULVEDA_HELP_TUTORIAL` [B:DEAD] | `GlobalWorld::ParseTutorial` |
+| `LevelTimes INDEX VALUE` | INT INT | – | – | no bounds check | `m_spLevelTimes[INDEX] = VALUE` | `GlobalWorld::ParseLevelTimes` |
+| `SquaddiesUsed INDEX VALUE` | INT INT | – | – | no bounds check | **bug**: also writes `m_spLevelTimes[INDEX]` | `GlobalWorld::ParseSquaddiesUsed` |
+
+Research names (case-insensitive, `GlobalResearch::GetTypeName`, index order): `Darwinian`, `Officer`, `Squad`, `Laser`, `Grenade`, `Rocket`, `Controller`, `AirStrike`, `Armour`, `TaskManager`, `Engineer`, `Harvester`, `Nuke`, `Subversion`, `PersonalShield`, `HotFeet`, `GunTurret`, `Shaman`, `Infection`, `MagicalForest`, `DarkForest`, `AntNest`, `Plague`, `Egg`, `MeteorShower`, `FireExtinguisher`, `Rage`, `Tank`, `DropShip` [C] `code/global_world.cpp`.
+
+Writers [C] `GlobalWorld::SaveGame`: `WriteLocations` (`"\t%4d %4d %30s %40s"`), `WriteBuildings` (`"\t%4d %4d %6d %6d %6d %6d"`), `GlobalResearch::Write` (29 rows + `CurrentResearch` + `CurrentPoints`), `GlobalEvent::Write`, `WriteLevelTimes`/`WriteSquaddiesUsed` (empty), `WriteTutorial` (DEMO2 only).
+
+**Verification.** Grammar from X1a's reading of `GlobalWorld::LoadGame` and helpers [C]; not re-read line by line for this document (legacy-only format) — the block keywords and the research-name list were re-checked by grep. Data: all five shipped files have Locations, Buildings, Research, Events: `game.txt` 11/2/11/18 (locations / global buildings / research rows / events), `game_unlockall.txt` 11/2/11/13, `game_demo.txt` 1/1/9/0, `game_demo2.txt` 8/8/9/1, `purity/game.txt` 11/0/11/6 [C] X1a survey; `game_demo2.txt` uses `BuildingOnline:launchpad:1` (colon instead of comma — equivalent).
+
+**Minimal valid example**
+
+```text
+Locations_StartDefinition
+    1  1  map_sample.txt  mission_sample.txt
+Locations_EndDefinition
+
+Research_StartDefinition
+    Research Officer 0 2
+    CurrentResearch Officer
+    CurrentPoints 10
+Research_EndDefinition
+
+Events_StartDefinition
+    Event BuildingOnline:sample,20
+        Action MakeAvailable sample
+    End
+Events_EndDefinition
+```
+
+**Discrepancies.** `docs/top level map.txt` says each level file names its map at the start and that global data has "X Z position"; the pairing is actually given by `Locations` rows and `locations.txt` stores X Y Z [C].
+
+<a id="fmt-locations-txt"></a>
+### 4.5 `locations.txt` — world-map positions [B:LEGACY]
+
+**Purpose.** Positions of campaign locations on the sphere world map [C] `code/global_world.cpp:GlobalWorld::LoadLocations`, `GlobalWorld::SaveLocations`.
+
+**Files.** `data/locations.txt` (read through `Resource::GetTextReader("locations.txt")`; a missing file dereferences `NULL` — crash) [C].
+
+**Encoding.** ASCII, CRLF.
+
+```ebnf
+locations_file = { blank | ID X Y Z { ignored } EOL } ;      (* INT F32 F32 F32, MISSING => CRASH *)
+```
+
+| Field | Type | Units | Default | Range | Semantics | Parser ref |
+|---|---|---|---|---|---|---|
+| `ID` | INT | – | – | an id already loaded from the game file; others ignored (e.g. 12 in the shipped file) | location | `LoadLocations` |
+| `X`, `Y`, `Z` | F32 | world-map renderer units [I] | – | – | `GlobalLocation::m_pos` | same |
+
+**Verification.** From X1a's reading of `LoadLocations`/`SaveLocations` [C]; shipped file 12 rows, 11 matching `game.txt` ids [C].
+
+**Minimal valid example**
+
+```text
+1   -120.00   40.00   95.00
+```
+
+**Discrepancies.** The editor writer (`GlobalWorldEditorWindow`, [B:EDITOR]) emits `"%-6d %-8.2 %-8.2 %-8.2\n"` — the `%-8.2` conversions lack a type letter, so a saved file is malformed [C] `GlobalWorld::SaveLocations`.
+
+<a id="fmt-map-crc"></a>
+### 4.6 Map identity CRC and `code/mapcrc.h`
+
+**Purpose.** A map's identity is the CRC of its level-file bytes; a build tool writes the shipped values into a header used for map whitelists, demo limits and tutorial buttons [C] `contrib/systemiv/lib/math/filecrc.cpp:FileCRC`, `ReadFileData`, `contrib/unrar/crc.cpp:CRC`, `code/level_file.cpp:LevelFile::CalculeCRC`, `tools/MapCRC/main.cpp:GenerateMapCRCs`. Tool, build integration and consumers: [31 §10](31_platform_build_and_tools.md).
+
+**Files.** Input: every top-level `data/levels/*.txt`; output `code/mapcrc.h` (87 `MAPID_*` defines).
+
+**Algorithm (binary)**
+
+| Aspect | Value |
+|---|---|
+| Bytes covered | raw file bytes read with `BinaryReader::ReadU8` until `m_eof`, **plus one trailing 0xFF** (the failing EOF read is stored before the loop tests `m_eof`) — identical for disk and archive readers ([fmt-binary-common](#fmt-binary-common)) |
+| Size cap | static buffer `MAXSIZE` = 100 000; the loop stores index 0…100 000 before breaking, so a file ≥ 100 000 bytes overflows the buffer by one byte; largest shipped level 46 085 bytes |
+| CRC | CRC-32, reflected polynomial 0xEDB88320, **initial value 0, no final XOR** (`CRC(0, buf, len)`) — not the standard CRC-32 |
+| Result | `int`; −1 from `CalculeCRC` if the file cannot be opened |
+| Line endings | hashed as stored: CRLF ↔ LF conversion changes the id |
+
+**Generated header grammar** [C] `tools/MapCRC/main.cpp:GenerateMapCRCs`:
+
+```ebnf
+mapcrc_h  = '#ifndef _included_mapcrc_h' EOL , '#define _included_mapcrc_h' EOL , EOL , EOL ,
+            '// Auto-generated IDs for each map.' EOL , '// DO NOT MODIFY' EOL , EOL , EOL ,
+            { define_line } , EOL , EOL , '#endif' EOL ;
+define_line = '#define   MAPID_' SANITISED ( padded to 40 ) ' 0x' HEX8 EOL ;   (* printf "#define   MAPID_%-40s 0x%08x\n" *)
+SANITISED   = upper-case file name without ".txt", with '.', '-' and ' ' replaced by '_' ;
+```
+
+| Field | Type | Semantics |
+|---|---|---|
+| `SANITISED` | identifier | `MAPID_MP_KOTH_2P_1` etc. |
+| `HEX8` | 8 lower-case hex digits | the CRC above |
+
+**Verification.** `FileCRC`/`ReadFileData` re-read for this document; `BinaryDataReader::ReadU8` confirmed to return 0xFF and set `m_eof` past the end. `_work/scripts/P11_mapcrc.py` reproduces all 87 `MAPID_*` values in `code/mapcrc.h` (87 OK, 0 mismatches) [C] (P11; re-run by S31).
+
+**Minimal valid example.** A 2-byte file `AB` hashes the 3 bytes `41 42 FF` with init 0, no final XOR; the header line would be `#define   MAPID_EXAMPLE` + padding + ` 0x<crc>`.
+
+**Discrepancies.** Peers start a match by map *file name* only; no CRC is exchanged before the simulation starts, so a locally modified map desyncs instead of being rejected [I] ([22](22_determinism_and_networking.md)).

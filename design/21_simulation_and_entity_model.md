@@ -1302,3 +1302,241 @@ Other push helpers [C]:
 ### 8.9 Explosions and area effects
 
 `Location::Bang(pos, range, damage, team, fromBuilding)` is the only area-damage primitive: entities within 2 × range take `damage × clamp(2·(2r − d)/r, 0, 1)` (operator-precedence effect: full damage to d ≤ 1.5 r, linear to 0 at 2 r) and are knocked back; buildings within 3 × range take `damage × (1 − d/3r)`; a shockwave effect and (D3D) a deform punch are created; kills are counted. Entity iteration is in entity-grid order (§6.2), which decides kill credit order [C] `code/location.cpp:Location::Bang` ([04 §6.1](04_crates_powerups_and_weapons.md#61-shared-explosion-model--locationbang)).
+
+## 9 Team and ownership model
+
+### 9.1 Team slots and ids
+
+| Id | Role | Ref |
+|---|---|---|
+| 0–3 | player positions (human local/remote, CPU or spectator); a map's start positions 0..numPlayers−1 are assigned to team ids at load (§9.5) | [C] `code/location.cpp:Location::GetTeamPosition` |
+| 4 | **monster team** (virus/creature owner) — `GetMonsterTeamId()` returns 4 (−1 when `m_allowMonsterTeam` is false); colour RGB (10, 10, 10), colour id 8 (`MULTIWINIA_NUM_TEAMCOLOURS`); a CPU team with client −1 | [C] `Location::GetMonsterTeamId`, `InitMonsterTeam` |
+| 5 | **Futurewinian team** — `GetFuturewinianTeamId()` returns 5; colour RGB (200, 200, 200), colour id 9; CPU, client −1 | [C] `Location::GetFuturewinianTeamId`, `InitFuturewinianTeam` |
+| 255 | no team / neutral: unowned buildings, weather effects, crates, team-less ids; never stored in the entity grid; never anyone's friend | [C] `EntityGrid::AddObject`, `Location::IsFriend` |
+| −1 | used as "everyone" for effects such as `Fireball` (stored as 255 in the `unsigned char` id) | [C] `Location::LaunchFireball` |
+
+There are always `NUM_TEAMS = 6` slots (`code/globals.h`; comment: "If increased, location.cpp's IsFriend method must also be updated") and all six `Team` objects exist in every match, unused ones with `TeamTypeUnused` [C] `Location::InitTeams`. In Multiplayer the monster and Futurewinian teams are initialised in `Location::Init` step 11 and also on demand by `SpawnEntities`; each gets an `AI` entity like every CPU team ([07 §2.3](07_ai.md#23-instantiation-and-lifetime-c)). Spirits are never created for the monster team (`SpawnSpirit` refuses) [C].
+
+### 9.2 `LobbyTeam` and `Team`
+
+Two objects per slot: the persistent **`LobbyTeam`** in `Multiwinia::m_teams[6]` (survives lobby → match → results) and the per-match **`Team`** in `Location::m_teams[6]`. `Team` binds `m_teamId`, `m_clientId`, `m_teamType` and `m_colour` as **C++ references** to the `LobbyTeam` fields, so a write through either object is seen by both [C] `code/team.h:Team`.
+
+```mermaid
+classDiagram
+    class Multiwinia {
+      +LobbyTeam m_teams_x6
+    }
+    class LobbyTeam {
+      +int m_teamId
+      +int m_clientId
+      +int m_teamType
+      +int m_colourId
+      +RGBAColour m_colour
+      +int m_score
+    }
+    class Team {
+      +int_ref m_teamId
+      +int_ref m_clientId
+      +int_ref m_teamType
+      +RGBAColour_ref m_colour
+      +LobbyTeam* m_lobbyTeam
+      +FastDArray_Unit m_units
+      +SliceDArray_Entity m_others
+      +TaskManager* m_taskManager
+      +int m_currentUnitId
+      +int m_currentEntityId
+      +int m_currentBuildingId
+    }
+    class TaskManager
+    Multiwinia *-- "6" LobbyTeam
+    Team ..> LobbyTeam : references fields
+    Team *-- TaskManager
+```
+
+Team types (`code/team.h` enum) [C]:
+
+| Value | Name | Meaning |
+|---|---|---|
+| −1 | `TeamTypeUnused` | empty slot; skipped by `AdvanceTeams` and `GetEntity` |
+| 0 | `TeamTypeLocalPlayer` | the human on this client (sets `GlobalWorld::m_myTeamId`) |
+| 1 | `TeamTypeRemotePlayer` | a human on another client (its presence disables pause) |
+| 2 | `TeamTypeCPU` | AI-controlled (an `Entity::TypeAI` is spawned for it); also the monster and Futurewinian teams |
+| 3 | `TeamTypeSpectator` | spectator slot |
+
+`LobbyTeam` fields [C] `code/team.h:LobbyTeam`, `code/team.cpp:LobbyTeam::LobbyTeam`:
+
+| Field | Init | Meaning |
+|---|---|---|
+| `m_teamId` | −1 | slot |
+| `m_clientId` | −1 | owning network client, set by `Multiwinia::InitialiseTeam(team, type, clientId)`; −1 for the monster and Futurewinian teams |
+| `m_teamType` | Unused | §above |
+| `m_colourId` | −1 | index into the Multiwinia colour tables (0–7 players, 8 monster, 9 Futurewinian) |
+| `m_colour` | — | RGBA used for rendering |
+| `m_coopGroupPosition` | 0 | 1 or 2 = which member of a co-op pair (picks the shade table) |
+| `m_score`, `m_prevScore` | 0 | game-mode score ([01](01_game_modes.md)) |
+| `m_rocketId` | −1 | Rocket Riot rocket building |
+| `m_disconnected` | true | |
+| `m_ready` | false | lobby ready flag |
+| `m_demoPlayer` | false | demo-key player |
+| `m_teamName` | empty | player name |
+| `m_accurateCPUTakeOverTime` | −1.0 (float) | when a CPU takes over a dropped player ([22](22_determinism_and_networking.md)) |
+| `m_achievementMask` | 0 | |
+| `m_iframe`, `m_syncDifferences` | NULL / empty | sync-error forensics (`SyncDiff::Render` per team) |
+
+`Team` fields [C] `code/team.h:Team`, `code/team.cpp:Team::Team`:
+
+| Field | Init | Meaning |
+|---|---|---|
+| `m_teamId`, `m_clientId`, `m_teamType`, `m_colour` | references into the LobbyTeam | |
+| `m_colourID` | uninitialised, unused | |
+| `m_lobbyTeam` | pointer | back-pointer |
+| `m_units` | `FastDArray<Unit*>` step 5 | squads and other units |
+| `m_others` | `SliceDArray<Entity*>` step 100, 10 slices | every free entity (Darwinians, officers, armour, engineers, harvesters, AI, creatures not in units) |
+| `m_specials` | `LList<WorldObjectId>` | officers, armour, harvesters, engineers (MP), tanks, shamans — quick lookup |
+| `m_taskManager` | NULL → `new TaskManager(teamId)` in `Initialise` | per-team task slots ([06](06_player_control_and_input.md)) |
+| `m_ready` | false | in-match ready (grace period) |
+| `m_currentUnitId`, `m_currentEntityId`, `m_currentBuildingId` | −1 | **current selection; changed only by network commands** (§3.5 rule 7) |
+| `m_currentMousePos` | — | last mouse position received in this team's `TeamControls` |
+| `m_monsterTeam`, `m_futurewinianTeam` | false | special-team flags |
+| `m_numDarwiniansSelected`, `m_selectedDarwinianCentre` | 0 | latched at slice 0 from the previous tick's accumulation |
+| `m_newNumDarwiniansSelected`, `m_newSelectedDarwinianCentre` | 0 | accumulators during the tick |
+| `m_selectionCircleCentre`, `m_selectionCircleRadius` | zero, 0.0 | **client-local** selection-circle UI state (written by `LocationInput` for the local team only) |
+| `m_lastOrdersSet` | 0.0 | client-local throttle timestamp (game time) |
+| `m_teamKills`, `m_oldKills` | 0 | kill counter (Darwinian kills only in Multiwinia, added by `Bang`/lasers) and milestone tracker |
+| `m_blockUnitChange` | false | when true `SelectUnit` is ignored |
+| `m_evolutions[NumEvolutions]` | `EvolutionFormationSize` = **90**, `EvolutionRockets` = 0 | per-team upgrades (officer formation cap; Rocketwinians crate) |
+
+`Team` methods [C] `code/team.cpp`:
+
+| Method | Semantics |
+|---|---|
+| `Initialise()` | create the `TaskManager`; build texture `sprites/viriifull.bmp` (160 × 512) if absent: 32 shrinking copies of `sprites/virii.bmp` (size 32 − i/2) plus `textures/glow.bmp` 128 × 128 at x = 32 (render data) |
+| `SetTeamType(t)` | |
+| `SelectUnit(unit, entity, building)` | ignored if `m_blockUnitChange`; sets the three ids; local team: cursor arrows ×2.0; selecting an Officer clears the current task; "Selected" sound (local); clears `m_underPlayerControl` on all of this team's Darwinians if any were selected; task-manager sounds; local team + GunTurret → camera turret-aim mode; GunTurret → `m_fireTimer = 0.5` |
+| `RegisterSpecial(id)` / `UnRegisterSpecial(id)` | maintain `m_specials` |
+| `RayHitEntity(start, end)` | first hit among units then loose entities |
+| `GetMyUnit()` / `GetMyEntity()` | resolve the current selection (NULL if invalid) |
+| `NewUnit(type, n, *unitId, pos)` | §5.7 |
+| `NewEntity(type, unitId, *index)` | unit −1 → `Entity::NewEntity(type)` into `m_others`; else delegate to the unit |
+| `GetTeamName()` | lobby name (CPU prefix `teamtype_2`, or `teamtype_left` after game over; demo prefix `teamtype_demo`); unnamed: monster `multiwinia_team_virus`, Futurewinian `multiwinia_team_future`, else by colour id 0–7 `multiwinia_team_{green,red,yellow,blue,orange,purple,cyan,pink}` (+ CPU prefix); other → "BAD TEAM NAME" |
+| `NumEntities(type)` | count in units + loose list (type 255 = all) |
+| `Advance(slice)` | §5.6 |
+| `Render()` | units in view (`Unit::Render`), `RenderOthers`, `RenderVirii`, `RenderDarwinians`, `RenderSyncErrors` ([24](24_rendering.md)) |
+| `GetTeamType(t)` (static) | returns a heap string `"teamtype_<t>"` (leaks) |
+| `IsFuturewinianTeam()` | level option `LevelOptionFuturewinianTeam` equals this team's position, or `m_futurewinianTeam` |
+| `Eliminate()` | `ChangeHealth(−2 × StatHealth)` on every unit member and loose entity; `StopAllTasks()`; every TrunkPort owned by the team → team 255 |
+
+### 9.3 Ownership of objects
+
+| Object | Owner representation | Can ownership change? | How | Ref |
+|---|---|---|---|---|
+| Entity | `m_id.GetTeamId()`, fixed by the team container that holds it | **no** — an entity never changes team in place | conversion = spawn a new entity of the new team at the same position (`SpawnEntities`) and set `m_destroyed` on the old one: subversion lasers, Futurewinian pulse wave, spam infection ([04](04_crates_powerups_and_weapons.md)) | [C] `code/worldobject/weapons.cpp:Laser::Advance` |
+| Unit members | as entity | no | — | [C] |
+| Building | `m_id` team; 255 = neutral | **yes** | `Building::SetTeamId` (sound, GlobalBuilding mirror) or direct `m_id.SetTeamId` (no sound): capture rules ([03 §3.7](03_buildings_and_world_objects.md#37-capture-model-summary-every-capturable-type)), `Team::Eliminate` (trunk ports → 255), PulseBomb, SolarPanel empty → 255 | [C] [03 §3.9](03_buildings_and_world_objects.md#39-ownership-change-paths) |
+| Level-file building | the level stores a **start position**; `InitBuildings` maps it to a team with `GetTeamFromPosition` | at load | §9.5 | [C] |
+| Effect | firing team in `m_id` (shells, rockets, grenades, lasers via `m_fromTeamId`); 255 for weather; −1/255 for fireballs | no | — | [C] |
+| Spirit | `m_teamId` (the releasing team) and `m_id` team | no; collectors may take any team's spirits ([05 §5.3](05_economy_and_population.md#53-who-can-collect-a-spirit)) | — | [C] |
+| Crate-spawned creatures | the task-placing team, except Soul Destroyers (monster team in MP) and ant hills (monster team) | no | ([02](02_units_and_entities.md), [04](04_crates_powerups_and_weapons.md)) | [C] `code/worldobject/crate.cpp` |
+
+### 9.4 Friendship — `Location::IsFriend(a, b)`
+
+[C] `code/location.cpp:Location::IsFriend`:
+
+```
+if a == 255 or b == 255: return false
+if Multiplayer:
+    if coop mode: return m_coopGroups[a] == m_coopGroups[b]
+    return a == b
+return SINGLE_PLAYER_TABLE[a][b]          # [B:LEGACY]
+```
+
+- In co-op every team whose group is 0 (the monster team 4, the Futurewinian team 5, unused slots) is a "friend" of every other group-0 team — so in a co-op match teams 4 and 5 are friends of each other [C].
+- Single-player table (rows a, columns b; 1 = friend): row 0 {0, 2}, row 1 {1}, row 2 {0, 2}, row 3 {0, 3}, rows 4 and 5 none — **not symmetric** (IsFriend(0, 3) false, IsFriend(3, 0) true) and teams 4/5 are not even their own friends [B:LEGACY] [C].
+- Used by the entity grid (`GetEnemies`/`GetFriends`/counts), laser fences, damage filters and AI ([§6.2](#62-entitygrid)).
+
+### 9.5 Colours, start positions and alliances at level load
+
+Colour tables [C] `code/multiwinia.cpp` (`teamColours`, `groupColours1`, `groupColours2`), `MULTIWINIA_NUM_TEAMCOLOURS = 8`:
+
+| Id | teamColours (RGB) | Name key | groupColours1 (member 1) | groupColours2 (member 2) |
+|---|---|---|---|---|
+| 0 | 100, 255, 100 | green | 0, 150, 20 | 90, 200, 100 |
+| 1 | 255, 50, 50 | red | 150, 0, 20 | 255, 80, 80 |
+| 2 | 255, 255, 50 | yellow | 150, 150, 20 | 200, 200, 90 |
+| 3 | 120, 180, 255 | blue | 20, 0, 150 | 90, 90, 200 |
+| 4 | 255, 150, 0 | orange | 150, 90, 0 | 200, 150, 60 |
+| 5 | 150, 0, 255 | purple | 180, 120, 255 | 100, 60, 180 |
+| 6 | 70, 200, 200 | cyan | 0, 140, 140 | 110, 210, 210 |
+| 7 | 255, 150, 255 | pink | 255, 90, 255 | 255, 190, 255 |
+| 8 | 10, 10, 10 | monster | 10, 10, 10 | 10, 10, 10 |
+| 9 | 200, 200, 200 | future | 200, 200, 200 | 200, 200, 20 |
+
+Rules [C] `code/location.cpp`, `code/multiwinia.cpp:Multiwinia::InitialiseTeam`:
+- **Free-for-all**: `Multiwinia::InitialiseTeam` sets `colourId = teamId` when not co-op and not Assault; human choices arrive through `NET_DARWINIA_REQUEST_COLOUR` ([22](22_determinism_and_networking.md)). CPU teams re-roll at `Location::Init`: `GetCPUColour()` = random colour 0–3 used by no team (tutorial: colour = team index). Failsafe in `InitTeams`: a team still at −1 gets the first colour 0–7 used by nobody (`GetNextAvailableColour`).
+- **Start positions**: `GetTeamPosition(team)` — non-multiplayer, tutorial and teams 4/5: identity; otherwise lazily assigns `unused[syncrand() % unused.Size()]` among positions 0..numPlayers−1 (−1 if none free). `GetTeamFromPosition(pos)` — single-player identity, else the first team i < numPlayers with `m_teamPosition[i] == pos` (forcing assignment), 255 if none. `RotatePositions()`: `new[i] = old[(i + 1) mod numPlayers]` (rematch rotation). Level-file building owners and instant units are matched by position; the opening camera mount is `"player<position>"`.
+- **Assault** (`SetupAssault`): positions cleared; for each player without a colour: attackers full → defender colour (`ASSAULT_DEFENDER_COLOURID = 0`, green), defenders full → attacker (`ASSAULT_ATTACKER_COLOURID = 1`, red), else `syncrand() % 2`; position = a random free defender/attacker position; co-op Assault additionally sets the group (1 if the position is in `m_coopGroup1Positions`, else 2) and the shade. `IsAttacking(team)` / `IsDefending(team)` read `m_levelFile->m_attacking[GetTeamPosition(team)]`.
+- **Co-op (2v2)** (`SetupCoop`): determine the team's group from the level's group position lists; if the group is full move the team to the other group's first free position, re-rolling any team that held it; solo group → `SetSoloTeam` (keep colour or random unused 0–3); no predefined groups → `SetCoopTeam(team)` (pair teams that chose the same colour, else one with none, else any unpaired team, giving a random free colour `(syncrand() % 8) / 2`); predefined group → `SetCoopTeam(team, group)` (partner takes the group's other position, shared colour id, shade 1/2). The local team then sends `ReliableSetTeamColour(colourId)`.
+- **Shades**: `GetGroupColour(group)` returns the member-0 shade the first time, member-1 afterwards; white if the group has no colour.
+- **Unused slots** (< 4 players): random unused colour 0–3 each, so "random team colour" effects have a full palette (§5.9 step 9).
+
+All of this consumes the synced RNG during `Location::Init` in team-index order, so every peer must load with identical `LobbyTeam` state [C] ([22](22_determinism_and_networking.md)).
+
+### 9.6 `Unit` — groups of entities in formation
+
+`Unit` (`code/unit.h:Unit`) is a team-owned container of same-type entities moving as a group (`m_troopType`). Live in Multiwinia through `InsertionSquad` (Squad crate), `AirstrikeUnit` (`TypeSpaceInvader` bombers), `ViriiUnit`; the base class serves `LaserTrooper` [B:LEGACY], Centipede segments, ant groups and level instant units with `m_inAUnit` [C] `code/team.cpp:Team::NewUnit`.
+
+| Field | Meaning |
+|---|---|
+| `m_wayPoint` (protected) | formation anchor |
+| `m_aiTimer` (protected) | 0.0, for subclasses |
+| `m_routeId`, `m_routeWayPointId` | level route following (−1 none) |
+| `m_teamId`, `m_unitId`, `m_troopType` | identity |
+| `m_entities` | `SliceDArray<Entity*>` 10 slices, step 100, presized to the requested count |
+| `m_centrePos`, `m_vel`, `m_radius` | group centroid, velocity, bounding radius |
+| `m_targetDir` | (1, 0, 0) initially; set towards the mouse on move |
+| `m_attackAccumulator` | fire-rate regulator |
+| `s_offsets` (static) | 100 random formation jitters, lazily generated with `syncfrand(1.0)` on the first `GetFormationOffset`; deleted in `Location::Init`/`Empty` |
+| `m_accumulatedCentre`, `m_accumulatedRadiusSquared`, `m_numAccumulated` (protected) | filled by members each tick through `UpdateEntityPosition` |
+| enum | `FormationRectangle = 0`, `FormationAirstrike = 1`, `NumFormations = 2` |
+
+| Method | Semantics [C] `code/unit.cpp` |
+|---|---|
+| ctor / dtor | dtor clears the team's `m_currentUnitId` if it pointed here; deletes the members |
+| `Begin()` | virtual, empty |
+| `NewEntity(*index)` / `AddEntity(e)` / `RemoveEntity(index, x, z)` | slot management; removal also removes from the entity grid at the given position |
+| `AdvanceEntities(slice)` | §5.6 |
+| `Advance(unitIndex)` (slice 0) | `m_centrePos = accumulated / n`; `m_vel = (centre − old) / SERVER_ADVANCE_PERIOD`; `m_radius = sqrt(max r²)`; no used slot → radius 0, return true; reset accumulators; follow the route; LaserTroop: each trooper within 0.2 of its target steps 1.0 towards its unit target, snapped to the ground and pushed from obstructions. Division by `SERVER_ADVANCE_PERIOD` would be by zero at game speed 0, which cannot occur because `Location::Advance` is skipped while paused [I] |
+| `Attack(pos, withGrenade)` | grenade: the nearest live member throws `EffectThrowableGrenade`; then all enabled, live, not-reloading members are candidates; `timeToWait = StatRate(type) / NumEntities()`; `m_attackAccumulator += SERVER_ADVANCE_PERIOD / timeToWait`; while ≥ 1 pick a random candidate (`syncfrand(count)` truncated) and `Attack(pos)` |
+| `UpdateEntityPosition(pos, r)` | accumulate the centroid; max of `(|pos − centre| + r)²` |
+| `GetWayPoint()` / `SetWayPoint(pos)` (virtual) | |
+| `GetFormationOffset(formation, index)` | index −1 → 0; spacing 4.0; jitter `s_offsets[index % 100]` ∈ [0, 1). Rectangle: `rowLen = int(sqrt(NumEntities()))`; x = (index % rowLen − rowLen/2) × 4 + j; z = (index / rowLen − rowLen/2) × 4 + j; returns **(z, 0, x)** (axes swapped). Airstrike: rowLen 4; x = (i % 4 − 2) × 24 + j; y = (i / 4 − 2) × 12 + j; z = (i / 4 − 2) × 24 + j; returns (x, −y, z). (`rowLen` is 0 for an empty unit → integer division by zero [I]) |
+| `GetOffset(formation, index)` | formation offset; the "obstruction-aware" comment is not implemented (`(m_wayPoint + off) − m_wayPoint`) |
+| `RecalculateOffsets()` | live members get consecutive `m_formationIndex` 0..n−1, dead −1; LaserTroop: each trooper's `m_unitTargetPos = PushFromObstructions(m_wayPoint + GetFormationOffset(Rectangle, slot))` |
+| `IsSelectable()` | false (subclasses override) |
+| `FollowRoute()` | §7.5 |
+| `RayHit(start, dir)` | first member hit |
+| `DirectControl(teamControls)`, `RunAI(ai)` | virtual, empty |
+| `IsInView()` / `Render(t)` | frustum sphere test; members extrapolated (§4.6) |
+
+### 9.7 `TeamControls` — the continuous per-team input packet
+
+`TeamControls` (`code/team.h`) carries the continuously sampled control state that each client sends 10 times per second in `NET_DARWINIA_ALIVE` letters; `Location::UpdateTeam` applies it to the owning team on every peer [C] `code/team.cpp:TeamControls::Advance`, `TeamControls::Pack`, `code/location.cpp:Location::UpdateTeam`.
+
+| Field | Bit (`GetFlags`) | Sampled from (`TeamControls::Advance`) |
+|---|---|---|
+| `m_unitMove` | 0x0001 | `ControlUnitSetTarget` && !secondaryFireTarget && canSetMove (false with gamepad + squad selected) |
+| `m_directUnitMove` | 0x0002 | `ControlUnitMove` (left stick) produced a vector |
+| `m_primaryFireTarget` | 0x0004 | `ControlUnitPrimaryFireTarget` && !camera look-around |
+| `m_secondaryFireTarget` | 0x0008 | `ControlUnitSecondaryFireTarget` |
+| `m_targetDirected` | 0x0010 | `ControlTargetMoveSecondary` or right stick (`ControlUnitTargetDirected`) |
+| `m_secondaryFireDirected` | 0x0020 | `ControlUnitSecondaryFireDirected` |
+| `m_cameraEntityTracking` | 0x0040 | camera in `ModeEntityTrack` |
+| `m_unitSecondaryMode` | 0x0080 | `ControlIssueSpecialOrders` |
+| `m_endSetTarget` | 0x0100 | `ControlUnitEndSetTarget` |
+| `m_consoleController` | 0x0200 | input mode == gamepad |
+| `m_leftButtonPressed` | 0x0400 | `ControlLeftButtonPressed` |
+| `m_mousePos` | — | `UserInput::GetMousePos3d()` (landscape hit), possibly snapped |
+| `m_directUnitMoveDx/Dy` (short) | — | stick vector rotated into world space (`right` = camera control vector, `front = up × −right`; waypoint = right·(−x) + front·(−y); stores (x, z)) |
+| `m_directUnitTargetDx/Dy` (short) | — | right-stick target vector; also steers `camera->m_wantedTargetVector` |
+
+Flags are ORed over all frames between sends and cleared after each send. Wire format (`Pack`/`Unpack`): `uint16 flags`; if `directUnitMove`: `int16 dx, int16 dy`; if `targetDirected` or `secondaryFireDirected`: `int16 tdx, int16 tdy`; then `Vector3 m_mousePos` [C] `TeamControls::Pack`. `Location::UpdateTeam` ignores all controls while `GamePaused()` or after `GameOver()` in Multiplayer [C]. Control semantics: [06](06_player_control_and_input.md); message layout: [22](22_determinism_and_networking.md).

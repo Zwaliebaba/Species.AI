@@ -1133,3 +1133,163 @@ Scripts: `_work/scripts/X3_rng_sites.py` (comment-stripping, evaluates every `#i
 | Buildings | 20 | 114 | 70 | 2 | 42 |
 | **Total** | 55 | 655 | 410 | 179 | 66 |
 
+#### 14.5.1 Synced draws per class — what they decide (from the partition notes, spot-checked against the CSV)
+
+Ranges: `syncfrand(x)` ∈ [0, x), `syncsfrand(x)` ∈ [−x/2, x/2), `syncrand()` 32-bit, `FRAND/SFRAND` = synced wrappers. [C] for every row (P03, P04, P05, P06, P07, P08, P02 notes; `X3_syncrand_sites.csv`).
+
+| File:function | Calls (per invocation) | When |
+|---|---|---|
+| `entity.cpp:Entity::SetType` | `syncfrand(Rate)` | every spawn — twice for Darwinians |
+| `entity.cpp:Entity::Attack` | `syncsfrand(15)` × 2 | each shot |
+| `entity.cpp:Entity::PushFromObstructions` | `syncsfrand(1)` | when `y ≤ 1` |
+| `location.cpp:Location::SpawnEntities / FindValidSpawnPosition` | `syncfrand(spread)`, `syncfrand(2π)` per try (≤ 10); Darwinian front `SFRAND(1)` × 2 | spawn |
+| `darwinian.cpp:Darwinian::Darwinian` | `syncfrand(5)`, `syncfrand(60)` | constructor |
+| `Darwinian::Advance` | `syncfrand(1)` | every re-target (1–2 s) |
+| `Darwinian::AdvanceIdle` | `syncfrand(60)`, `syncfrand(40)`, `syncfrand(2π)` | dead path in MP |
+| `Darwinian::AdvanceWatchingSpectacle` | `syncfrand(min/2)` | too close to the spectacle (unreachable in MP, §14.11) |
+| `Darwinian::AdvanceApproachingCarriableBuilding` | `syncfrand(2π)` | waypoint far |
+| `Darwinian::AdvanceInsideArmour` | `SFRAND(1)` × 2, `syncfrand(20)` (armour destroyed); `syncsfrand(π/2)`, `syncfrand(10)` (unload) | events |
+| `Darwinian::AdvanceCombat` | `syncsfrand(π/2)` (every tick, movement), `syncfrand(20)` (approach), `syncrand()` (fire roll, non-formation), `syncsfrand(60)` × 2 (rage), `syncfrand(8)` (grenade timer), `syncfrand(4)` × 2 (insane rocket) | every combat tick |
+| `Darwinian::AdvanceUnderControl` | `syncfrand(0.5)`, `syncfrand(numControlled)`, `syncfrand(2π)` | every 0.5–1 s |
+| `Darwinian::AdvanceFollowingOrders` | `syncfrand(10)`, `syncfrand(2π)` | teleport wiggle |
+| `Darwinian::AdvanceFollowingShaman` / `AdvanceFollowingOfficer` | `syncfrand(r)`, `syncfrand(2π)` | 5-s re-target / arrival |
+| `Darwinian::AdvanceAttackingBuilding` | `syncfrand(50)` | every tick |
+| `Darwinian::SearchForRandomPosition` | `syncfrand(1)`, then `syncsfrand(2π)` (70 %) | idle |
+| `Darwinian::SearchForCrates` | `syncfrand(2·35/3)`, `syncfrand(2π)`, `syncfrand(35/3)` | found crate |
+| `Darwinian::SearchForFlags` | `SFRAND(20)` × 2 | found zone |
+| `Darwinian::SearchForArmour` / `SearchForOfficers` / `SearchForPorts` (× 2) / `SearchForCarryableBuilding` | `syncrand()` | candidates exist (`SearchForPorts` draws one that is then overridden by the nearest-building loop) |
+| `Darwinian::SearchForOfficers`, `GiveOrders`, `FollowRoute`, `SearchForShamans` | `syncfrand(r)`, `syncfrand(2π)` | — |
+| `Darwinian::SearchForSpirits` | `syncrand()` | SP only |
+| `Darwinian::SearchForThreats` | `syncrand()` (ant-nest 1/500) | every search past the tree check |
+| `Darwinian::BeginVictoryDance` | `syncfrand(5)` (team 0 only), `syncfrand(15)` | idle re-target |
+| `Darwinian::AdvanceToTargetPosition` | `syncrand()` | infected, every tick |
+| `Darwinian::PushFromObstructions` | `syncsfrand(1)` | `y ≤ 1` |
+| `Darwinian::AdvanceOnFire` | `SFRAND(100)` × 2, `syncfrand(10)` | every burning tick |
+| `Darwinian::AdvanceSacraficing` | `syncsfrand(1)`, `syncfrand(20)` | legacy |
+| `Darwinian::AdvanceBeingAbducted` | `syncfrand(1)` (cosmetic spark) | every abducted tick |
+| `Darwinian::AdvanceInfection` | `syncfrand(5)`, `syncrand()` per neighbour, `syncrand()`, `syncfrand(10)` | every 5–10 s |
+| `Darwinian::Sacrafice`, `Infect` | `syncfrand(2.5)`, `syncfrand(10)` | events |
+| `Darwinian::FireSubversion` | `syncsfrand(15)` × 2 | each shot |
+| `BoxKite::BoxKite / Advance` | `syncsfrand(1)`; `syncfrand(2)` (released), `syncfrand(0.5)` every tick (cosmetic brightness) | SP |
+| `officer.cpp:Officer::ChangeHealth` | `SFRAND(40)` × 2 per shield spirit | — |
+| `Officer::SearchForRandomPosition` | `syncsfrand(2π)` | no caller found in its file |
+| `Officer::Advance` | `syncfrand(1)` | SP Goto, every tick |
+| `Officer::RunAI` | `syncfrand(20)`, `syncfrand(2π)` | AI re-order |
+| `spirit.cpp:Spirit::Begin` | `syncfrand(10)`, `syncfrand(2)` × 3 | spawn |
+| `Spirit::Advance` | `syncsfrand(1)` × 3 every tick (+ `syncfrand(0.5)` Birth, `syncfrand(10)` Birth-high, `syncsfrand(60)` Birth→Floating, `syncfrand(2)` Death) | **every spirit, every tick** |
+| `Spirit::BreakSpirit` | `FRAND(5)` × 3 × 5 (cosmetic particles) | once |
+| `unit.cpp:Unit::GetFormationOffset` | 100 × `syncfrand(1.0)` | first call after level load |
+| `armyant.cpp:ArmyAnt::Advance` | `syncrand()%3` leg shape | every tick per ant (cosmetic) |
+| `ArmyAnt::AdvanceToTargetPosition` | `syncsfrand(0.2)` heading jitter | every tick |
+| `meteor.cpp:Meteor::Advance` | `syncsfrand(60)` × 5 fire size (cosmetic); slow-motion `RequestSpeedChange` from sim | every tick |
+| `triffid.cpp:Triffid::Advance` | `syncsfrand(100 × size)` burning particle size (cosmetic) | burning |
+| `snow.cpp:Snow::Advance`, `souldestroyer.cpp:Zombie::Advance` | `syncsfrand(1)` × 3 + `syncfrand(20)` wobble (no gameplay effect; snow unlogged) | every object every tick |
+| `location.cpp:Location::AdvanceChristmas / AdvanceDustWind / AdvanceLightning` | `syncfrand`, `FRAND` spawn positions (dust-ball vortex and lightning strikes are gameplay; the shared `m_christmasTimer` couples maps that enable more than one effect) | slice 3 |
+| `lightning.cpp:Lightning::Advance` | `syncfrand(1) < 0.01` strike roll (1 % per tick, sets fire) | every tick |
+| `virii.cpp:Virii::FindNearbyEgg` | `int(syncfrand(n))` | — |
+| `tree.cpp:Tree::Advance` spirit drop | `syncrand()` test → `syncfrand(h)` (x) → `syncfrand(2π)` (yaw) → `syncfrand(6)` until a valid team; spawn timer `syncfrand(5)` | — |
+| `Tree::CreateAnotherTree` | `syncfrand(H)` → (`syncsfrand(π/4)` or `syncfrand(2π)`) → `syncfrand(99999)` seed → `syncsfrand(0.2)` height (with `volatile` temporaries) | offspring |
+| `Tree` (evil) | `syncfrand(10)` every tick, Zombie `syncsfrand(1)`, `syncfrand(25)`; corruption `syncfrand(5)` | — |
+| `laserfence.cpp:LaserFence` | `syncfrand(10)` in `Initialise`, `syncfrand(4)` per spark | — |
+| `eruptionmarker.cpp:EruptionMarker::Advance` | `syncrand()` every idle tick, `syncfrand(4)` (cosmetic) | — |
+| `randomiser.cpp:Randomiser` | `syncfrand(2.5)`, `syncrand()` per converted Darwinian | — |
+| `gunturret.cpp:GunTurret` | shell casings `SFRAND(0.5)` × 3 + `syncfrand(20)` per shot; overheat smoke `syncfrand` per particle; `Initialise` 3 draws | — |
+| `solarpanel` (inside `generator.cpp`) | per-tick `syncfrand(20)` (gameplay, drawn even when unmanned) | every tick |
+| `radardish.cpp:RadarDish` | beam-loss kick | — |
+| `spawnpoint.cpp:SpawnPoint` | constructor 2 draws; `SpawnPopulationLock` 1 | construction |
+| `weapons.cpp`, `airstrike/napalm`, `nuke`, `insertion_squad.cpp`, `armour.cpp`, `harvester.cpp`, `engineer.cpp`, `tank.cpp` | laser damage `20 + syncfrand(20)` and push, shockwave ignite chance, bomb count `3 + syncrand()%5`, marker scatter `SFRAND(100)`, nuke scatter `syncsfrand(300)`, squad target choice/aim/grenade chance, Armour AI choices and conversion jitter, Harvester wander and spirit snap offsets, Tank AI scatter, Engineer `m_idleRotateRate`; cosmetic synced draws: ThrowableWeapon trail, AirStrikeMarker smoke, Rocket smoke, Missile trail, Armour exhaust | — |
+| `crate.cpp`, `ai.cpp`, `aiobjective.cpp` | crate spawning, falling, capture, reward choice and every effect; AITarget priorities and AI decisions (rejection loops R4, short-circuit R5) | — |
+| `multiwinia.cpp` | `syncrand` (statue spawn choice, retribution reward, CPU colour, statue shape), `syncfrand` (statue timer, trunk-port spawn offsets/velocities), `SFRAND` inside `Vector3(...)` (statue facing) | slice 8 |
+
+`code/routing_system.cpp`, `code/entity_grid*.cpp`, `code/obstruction_grid.cpp`, `code/worldobject/worldobject.cpp`, `code/worldobject/entity_leg.cpp`: **no RNG** [C].
+
+### 14.6 Non-synced randomness inside simulation code — every live site, with verdict
+
+Generated list: `_work/drafts/X3_unsynced_rng_sites.csv` (417 rows; 328 baseline call sites in compiled files: `sfrand` 144, `frand` 128, `AppRandom` 40, `rand` 9, `AppSeedRandom` 7; by context: `*Advance*` 132, other 99, render 53, init 19, loaders 11 [B:DEAD content], particle/explosion system 7, UI 4, sound 3). Every non-render site in simulation files was read; verdicts [C]:
+
+| Site(s) | What the unsynced value drives | Verdict | Ref |
+|---|---|---|---|
+| `Tree::GenerateBranches/GenerateLeaves/Generate` (`AppSeedRandom(m_seed)` then `frand` per branch) | branch geometry **and the simulation hit sphere** (leaf centroid, maximum leaf distance × 0.8) | deterministic **only** while nothing else touches G6 between the reseed and the end of the pass — §14.7 | [C] `code/worldobject/tree.cpp` |
+| `Tree::Advance` fire particles (`frand`, `sfrand`), leaf drop (`rand() % (51 − leafDropRate)`) | particles only | cosmetic | [C] |
+| `Entity::Advance`, `AntHill::Advance`, `Centipede::Advance`, `Triffid::Advance` — `m_renderDamaged = frand(0.75)·(…) > healthFraction` (with wall-clock `g_gameTime`) | render flicker flag stored in the sim object | cosmetic (never read by the sim) [I] | [C] `code/worldobject/entity.cpp:Entity::Advance` |
+| `Darwinian::AdvanceOnFire`, `AdvanceSacraficing` [B:LEGACY], `AdvanceHotFeet`, `AdvanceInfection` (`rand()%2`), `AdvanceOpeningCrate`, `SetBooster`, `GiveHotFeet`, `GiveMindControl`, `GiveRage`, `TakeControl`, `LoseControl` | particle counts/velocities; `AppRandom()%30` / `%100` gates the "OnFire" sound | cosmetic | [C] `code/worldobject/darwinian.cpp` |
+| `Darwinian::SearchForThreats` `frand(200) < 1.0` | "SeenThreatAttackHorn" sound, rate-limited by a function-static game-time stamp shared by all Darwinians | cosmetic | [C] |
+| `Location::Bang` (core/debris particle counts, sizes), `Location::PromoteDarwinian/DemoteOfficer`, `Task::Promote/Demote` (flash particles) | particles | cosmetic | [C] `code/location.cpp`, `code/taskmanager.cpp` |
+| `Crate::RunExtinguisher` (200 fire particles, rejection loop on `sfrand`) | particles | cosmetic (loop length local) | [C] `code/worldobject/crate.cpp` |
+| `Laser::Advance`, `TurretShell::Advance`, `Fireball::Advance`, `FlameGrenade::Advance`, `ControllerGrenade::Advance`, `Rocket::Explode` (firework colours/cores), `Lightning::Advance`, `Meteor::Advance` (positions), `Harvester::AdvanceEngines`, `SpaceShip::AdvanceEngines`, `EscapeRocket::Advance`, `FuelGenerator::Advance`, `FuelStation::BoardRocket`, `EruptionMarker::Advance`, `SmokeMarker::Advance`, `LaserFence::Spark`, `Incubator::SpawnEntity` [content LEGACY], `ControlTower::Advance` [content LEGACY], `Engineer::AdvanceResearching` [B:LEGACY], `Tentacle::AdvanceSlam` / `Tentacle::HandleGroundCollision` [B:LEGACY], `SpamInfection::AdvanceAttackingEntity` / `AdvanceAttackingSpirit`, `Shaman::SacraficeDarwinians` [B:LEGACY] | particles | cosmetic | [C] `code/worldobject/weapons.cpp`, `lightning.cpp`, `meteor.cpp`, `harvester.cpp`, `spaceship.cpp`, `rocket.cpp`, `eruptionmarker.cpp`, `smokemarker.cpp`, `laserfence.cpp`, `incubator.cpp`, `controltower.cpp`, `engineer.cpp`, `tentacle.cpp`, `spam.cpp`, `shaman.cpp` |
+| `SoulDestroyer::SoulDestroyer` (`m_spiritPosition[]`), `SoulDestroyer::Attack` (`AppRandom() % SOULDESTROYER_MAXSPIRITS` slot, value = `GetHighResTime()`) | the trail of captured-spirit sprites (render) | cosmetic; the source comment says it does not need to be sync-safe | [C] `code/worldobject/souldestroyer.cpp` |
+| `Explosion`/`Tumbler` (`frand`, `sfrand`, `AppRandom`), `Particle::Initialise/Advance` | shatter debris and particles; advanced with wall-clock `g_advanceTime` (explosions) or inside the sim slice (particles) | cosmetic; nothing in the sim reads particles or explosions (`CreateParticle` returns `void`) | [C] `code/explosion.cpp`, `code/particle_system.cpp` |
+| `Camera::Advance` shake (`sfrand`) | local camera | local | [C] `code/camera.cpp` |
+| `LevelFile::ParseInstantUnits` centipede copies `sfrand(60)` | instant-unit positions — **sim state, drawn from G6 in whatever state previous local consumers left it** (`LoadLevel` runs before `AppSeedRandom(1)`) | unreachable in Multiwinia: copies are made only for team-1 centipedes when `loadDifficultyFactor > 1`, i.e. `m_difficultyLevel > 0`, which the MW build never sets — **except** via the Difficulty leak (§14.11 L13) [C code, I reachability] | [C] `code/level_file.cpp:LevelFile::ParseInstantUnits`, `code/app.cpp:App::UpdateDifficultyFromPreferences` |
+| `ResearchItem::ResearchItem`, `Spam::Spam` (`m_front.RotateAroundY(frand(2π))`) | building orientation (hashed in debug IFrames) | [B:LEGACY] (both blocked) — would desync if reachable; `Spam::Render` also mutates `m_front/m_up` used by `Advance` | [C] |
+| `GlobalWorld::TransferSpirits`, `SphereWorld::AddLocation`, `GlobalInternet` | Darwinia global world | [B:LEGACY] | [C] |
+| `MultiwiniaHelp::AttachTo3d` (`rand() % numPlayers`) | which help tab to show | local UI | [C] |
+| `Randomiser::Render` (`rand() % NUM_TEAMS`) | particle colour in a render function | cosmetic (render calling `CreateParticle` — particle count depends on frame rate) | [C] `code/worldobject/randomiser.cpp:Randomiser::Render` |
+| `SoundInstance::OpenStream`, `GetAttachedObject`, `SoundParameter::Recalculate` | sample choice, emitter choice, randomised parameters | cosmetic ([27](27_audio_engine.md)) | [C] `code/sound/sound_instance.cpp`, `code/sound/sound_parameter.cpp` |
+| `GetLandscapeColour` (`AppSeedRandom`/`AppRandom` chain after `Location::Init`'s `AppSeedRandom(1)`), `Water` shore noise (`sfrand`) | landscape colours, water shore | cosmetic | [C] `code/landscape_renderer.cpp`, `code/water.cpp` |
+| `EclRegisterWindow` (`AppRandom` window placement), `NetworkQuality::Write` [B:DEAD], loaders [B:DEAD] (`GetRandomLoaderIndex` reseeds G6 from wall-clock time), MetaServer WAN thread `sfrand(3.0)` | UI / test / network timing | local | [C] `contrib/eclipse/eclipse.cpp`, `code/network/network_quality.cpp`, `code/loaders/loader.cpp`, `contrib/systemiv/lib/metaserver/metaserver.cpp` |
+
+**Table C — unsynced generator call sites per file (baseline compiled files, 328 calls).** Context buckets as Table A plus `render`.
+
+| File | Calls | sfrand | frand | AppRandom | rand | AppSeedRandom | advance | init | render | other |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `code/3d_sierpinski_gasket.cpp` | 1 | 0 | 0 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
+| `code/camera.cpp` | 2 | 2 | 0 | 0 | 0 | 0 | 2 | 0 | 0 | 0 |
+| `code/clouds.cpp` | 7 | 1 | 5 | 1 | 0 | 0 | 0 | 0 | 7 | 0 |
+| `code/explosion.cpp` | 5 | 3 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 5 |
+| `code/global_internet.cpp` | 7 | 3 | 2 | 1 | 0 | 1 | 0 | 4 | 2 | 1 |
+| `code/global_world.cpp` | 6 | 0 | 6 | 0 | 0 | 0 | 0 | 0 | 3 | 3 |
+| `code/landscape_renderer.cpp` | 3 | 1 | 0 | 1 | 0 | 1 | 0 | 0 | 3 | 0 |
+| `code/level_file.cpp` | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 2 |
+| `code/loaders/credits_loader.cpp` | 9 | 0 | 0 | 9 | 0 | 0 | 0 | 0 | 0 | 9 |
+| `code/loaders/loader.cpp` | 2 | 0 | 0 | 1 | 0 | 1 | 0 | 0 | 0 | 2 |
+| `code/location.cpp` | 17 | 6 | 8 | 2 | 0 | 1 | 0 | 1 | 0 | 16 |
+| `code/multiwiniahelp.cpp` | 2 | 0 | 0 | 0 | 2 | 0 | 0 | 0 | 0 | 2 |
+| `code/network/network_quality.cpp` | 1 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 1 |
+| `code/particle_system.cpp` | 2 | 0 | 2 | 0 | 0 | 0 | 0 | 0 | 0 | 2 |
+| `code/sound/sound_instance.cpp` | 2 | 0 | 0 | 2 | 0 | 0 | 0 | 0 | 0 | 2 |
+| `code/sound/sound_parameter.cpp` | 1 | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 1 |
+| `code/taskmanager.cpp` | 8 | 4 | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 8 |
+| `code/taskmanager_interface_icons.cpp` | 3 | 0 | 3 | 0 | 0 | 0 | 3 | 0 | 0 | 0 |
+| `code/water.cpp` | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 1 |
+| `code/worldobject/anthill.cpp` | 2 | 0 | 2 | 0 | 0 | 0 | 1 | 0 | 1 | 0 |
+| `code/worldobject/armour.cpp` | 1 | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 1 | 0 |
+| `code/worldobject/centipede.cpp` | 1 | 0 | 1 | 0 | 0 | 0 | 1 | 0 | 0 | 0 |
+| `code/worldobject/controltower.cpp` | 3 | 3 | 0 | 0 | 0 | 0 | 3 | 0 | 0 | 0 |
+| `code/worldobject/crate.cpp` | 5 | 4 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 5 |
+| `code/worldobject/darwinian.cpp` | 47 | 12 | 27 | 7 | 1 | 0 | 18 | 0 | 0 | 29 |
+| `code/worldobject/engineer.cpp` | 3 | 2 | 1 | 0 | 0 | 0 | 3 | 0 | 0 | 0 |
+| `code/worldobject/entity.cpp` | 1 | 0 | 1 | 0 | 0 | 0 | 1 | 0 | 0 | 0 |
+| `code/worldobject/eruptionmarker.cpp` | 3 | 2 | 1 | 0 | 0 | 0 | 3 | 0 | 0 | 0 |
+| `code/worldobject/harvester.cpp` | 7 | 6 | 1 | 0 | 0 | 0 | 7 | 0 | 0 | 0 |
+| `code/worldobject/incubator.cpp` | 4 | 2 | 1 | 1 | 0 | 0 | 0 | 4 | 0 | 0 |
+| `code/worldobject/insertion_squad.cpp` | 1 | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 1 | 0 |
+| `code/worldobject/laserfence.cpp` | 10 | 5 | 5 | 0 | 0 | 0 | 0 | 0 | 0 | 10 |
+| `code/worldobject/lightning.cpp` | 9 | 4 | 5 | 0 | 0 | 0 | 9 | 0 | 0 | 0 |
+| `code/worldobject/meteor.cpp` | 6 | 6 | 0 | 0 | 0 | 0 | 6 | 0 | 0 | 0 |
+| `code/worldobject/officer.cpp` | 1 | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 1 | 0 |
+| `code/worldobject/portal.cpp` | 8 | 0 | 5 | 0 | 3 | 0 | 0 | 0 | 8 | 0 |
+| `code/worldobject/randomiser.cpp` | 2 | 0 | 0 | 0 | 2 | 0 | 0 | 0 | 2 | 0 |
+| `code/worldobject/researchitem.cpp` | 1 | 0 | 1 | 0 | 0 | 0 | 0 | 1 | 0 | 0 |
+| `code/worldobject/rocket.cpp` | 13 | 8 | 4 | 1 | 0 | 0 | 9 | 0 | 0 | 4 |
+| `code/worldobject/shaman.cpp` | 5 | 2 | 2 | 1 | 0 | 0 | 0 | 0 | 1 | 4 |
+| `code/worldobject/smokemarker.cpp` | 3 | 2 | 1 | 0 | 0 | 0 | 3 | 0 | 0 | 0 |
+| `code/worldobject/souldestroyer.cpp` | 4 | 3 | 0 | 1 | 0 | 0 | 0 | 3 | 0 | 1 |
+| `code/worldobject/spaceship.cpp` | 9 | 6 | 3 | 0 | 0 | 0 | 9 | 0 | 0 | 0 |
+| `code/worldobject/spam.cpp` | 9 | 4 | 3 | 2 | 0 | 0 | 8 | 1 | 0 | 0 |
+| `code/worldobject/spider.cpp` | 1 | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 1 | 0 |
+| `code/worldobject/sporegenerator.cpp` | 1 | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 1 | 0 |
+| `code/worldobject/tank.cpp` | 2 | 0 | 2 | 0 | 0 | 0 | 0 | 0 | 2 | 0 |
+| `code/worldobject/tentacle.cpp` | 6 | 4 | 2 | 0 | 0 | 0 | 3 | 0 | 0 | 3 |
+| `code/worldobject/tree.cpp` | 12 | 4 | 4 | 0 | 1 | 3 | 8 | 3 | 1 | 0 |
+| `code/worldobject/triffid.cpp` | 9 | 6 | 3 | 0 | 0 | 0 | 8 | 0 | 1 | 0 |
+| `code/worldobject/weapons.cpp` | 53 | 35 | 17 | 1 | 0 | 0 | 27 | 0 | 17 | 9 |
+| `contrib/eclipse/eclipse.cpp` | 4 | 0 | 0 | 4 | 0 | 0 | 0 | 0 | 0 | 4 |
+| `contrib/systemiv/lib/metaserver/metaserver.cpp` | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 |
+
+### 14.7 The shared non-synced LCG is a simulation input for trees — and it is not thread-safe
+
+[C] code facts: `holdrand` is a single unsynchronised global; `Tree::Generate` (called by `Tree::SetDetail` from `Location::InitBuildings` — `newBuilding->SetDetail( 1 )` — during level load on the **worker thread**, by `CreateAnotherTree` at runtime, and by `Tree::RenderAlphas` whenever the display lists were flushed) first compiles the leaf display list (`GenerateLeaves` accumulates `m_hitcheckCentre`/`m_numLeafs`), then reseeds and runs a radius pass on the calling thread; `Resource::CreateDisplayListAsync` runs the compile synchronously on the main thread or, from another thread, queues it to the loading screen and blocks until done. Concurrent G6 users exist: the loading-screen loop calls `SoundSystem::Advance` (sample choice `AppRandom`) on the main thread while the worker thread runs the radius pass; the MetaServer WAN registration thread calls `sfrand(3.0)` each period on the host. `Tree::SetDetail` asserts detail 1 because other values change the hit sphere (source comment) [C] `code/worldobject/tree.cpp:Tree::SetDetail`.
+
+[I] consequence: a G6 draw from another thread between the reseed and the end of a tree's pass changes that tree's crown sphere on that peer only → fire spread (`Tree::Advance` neighbour test `theirRadius + ourRadius >= distance`) diverges → a desync detectable only once it changes synced draws. Frequency unknown (22-U9). The beta release notes list "synchronization errors related to trees and height maps" as fixed [C] `docs/multiwiniareleasenotes-beta.txt`, consistent with this area being fragile. **Design rule for the new game**: geometry that feeds the simulation must use its own local generator object (or be baked into level data), never a process-global one.
+
