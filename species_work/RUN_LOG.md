@@ -103,3 +103,4 @@
 ## Phase 3 — Rewrite
 
 - Common brief: `species_work/phase3_brief.md`. Rolling queue with at most 6 running, in this order: G00, G05, C-SIM-a, C-SIM-b, C-SIM-c, X-GLO-1 | X-GLO-2, G01, G02a1, G02a2, G02b, C-RND-a | G03a, G03b, G04, G06, G07, C-RND-b | G08a, G08b, G09a, G09b, G10, G11 | C-TER, C-AST, C-VFX, C-AEN, C-UI-a, C-UI-b | C-INP, C-CAM, C-DAT, C-PLT, C-BLD, C-DBG.
+- Phase 3 rolling queue started: G00, G05, C-SIM-a, C-SIM-b, C-SIM-c, X-GLO-1. Acceptance script `scripts/accept_package.py` (§9.0) runs as each package reports.
