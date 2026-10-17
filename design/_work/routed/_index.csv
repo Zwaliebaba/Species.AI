@@ -193,7 +193,7 @@ P10_input_camera,Appendix — dead/legacy code,meta:appendix,1967
 P11_terrain_world,[→ 23_terrain_and_landscape] 23.1 Pipeline overview,23,2083
 P11_terrain_world,[→ 23_terrain_and_landscape] 23.2 Numeric primitives the pipeline depends on (must be replicated bit-for-bit),23,2982
 P11_terrain_world,[→ 23_terrain_and_landscape] 23.3 Landscape definition data (every field),23,5772
-P11_terrain_world,[→ 23_terrain_and_landscape] 23.4 Tile generation — exact algorithm (`LandscapeTile::Generate`),23,4756
+P11_terrain_world,[→ 23_terrain_and_landscape] 23.4 Tile generation — exact algorithm (`LandscapeTile::Generate`),23,5000
 P11_terrain_world,[→ 23_terrain_and_landscape] 23.5 Guide-grid encoding,23,1198
 P11_terrain_world,"[→ 23_terrain_and_landscape] 23.6 Height-map composition across tiles (`Landscape::GenerateHeightMap`, `MergeTileIntoLandscape`)",23,2423
 P11_terrain_world,[→ 23_terrain_and_landscape] 23.7 Flatten areas (`Landscape::FlattenArea`),23,1181
@@ -282,16 +282,16 @@ P14_platform_lib,[→ 31_platform_build_and_tools] 31.12 Audit scripts (`FindUnu
 P14_platform_lib,[→ 31_platform_build_and_tools] 31.13 Crash handling,31,5062
 P14_platform_lib,[→ 31_platform_build_and_tools] 31.14 System information collection,31,1972
 P14_platform_lib,[→ 31_platform_build_and_tools] 31.15 Root files,31,1717
-P14_platform_lib,[→ 31_platform_build_and_tools] 31.16 `targets/` inventory (one row per file),31,6316
-P14_platform_lib,"[→ 31_platform_build_and_tools] 31.17 `tools/` inventory (one row per file, 174 rows)",31,28545
+P14_platform_lib,[→ 31_platform_build_and_tools] 31.16 `targets/` inventory (one row per file),31,6362
+P14_platform_lib,"[→ 31_platform_build_and_tools] 31.17 `tools/` inventory (one row per file, 174 rows)",31,28632
 P14_platform_lib,[→ 20_architecture] 20.T Threading primitives and thread map,20,7398
 P14_platform_lib,[→ 29_data_formats_reference] 29.T Text-file tokeniser (`TextReader` family) — rules used by every text format,29,7393
 P14_platform_lib,[→ 29_data_formats_reference] 29.P Preferences file (`preferences.txt`),29,6041
 P14_platform_lib,[→ 29_data_formats_reference] 29.L Language files and caption markup (`LANGUAGEPHRASE`),29,5905
 P14_platform_lib,"[→ 29_data_formats_reference] 29.D `Directory` binary format (network letters, metaserver data)",29,2429
 P14_platform_lib,"[→ 29_data_formats_reference] 29.B Binary readers, CRCs, hashes, keys",29,4417
-P14_platform_lib,"[→ 22_determinism_and_networking] 22.R Random numbers, float discipline and hashing helpers",22,6211
-P14_platform_lib,[→ 32_debug_test_and_performance] 32.P Profiler,32,2300
+P14_platform_lib,"[→ 22_determinism_and_networking] 22.R Random numbers, float discipline and hashing helpers",22,6237
+P14_platform_lib,[→ 32_debug_test_and_performance] 32.P Profiler,32,2312
 P14_platform_lib,"[→ 32_debug_test_and_performance] 32.D Debug output, asserts, black box, leak tracking",32,3781
 P14_platform_lib,[→ 21_simulation_and_entity_model] 21.C Core containers and their ordering semantics,21,5195
 P14_platform_lib,[→ 31_platform_build_and_tools] 31.18 `docs/` inventory (supporting evidence only; skimmed),31,7610
@@ -435,3 +435,5 @@ P19_help_tutorial_script,[U] Unknowns,meta:unknowns,1511
 P19_help_tutorial_script,Docs-vs-code discrepancies,meta:discrepancies,1083
 P19_help_tutorial_script,IP register,meta:ip,3003
 P19_help_tutorial_script,Appendix — dead/legacy code,meta:appendix,1607
+P20_sequences_loaders_bench,[→ 09_meta_systems] 0. Build reality and reachability of every P20 feature,09,5731
+X1a_text_formats,[→ 29_data_formats_reference] 1. Shared line reader and tokeniser (`TextReader` family),29,9342

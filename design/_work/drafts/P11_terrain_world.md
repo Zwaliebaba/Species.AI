@@ -11,6 +11,7 @@ Helper scripts written for this partition (all `python3 -I`, path args):
 - `OUT/_work/scripts/P11_levelstats.py` — survey of landscape/option usage in `data/levels/*`.
 - `OUT/_work/scripts/P11_log2check.py` — checks the float-truncated `Log2` against exact `ceil(log2)`.
 - `OUT/_work/scripts/P11_bmpinfo.py` — BMP header dump for `data/terrain/*`.
+- `OUT/_work/scripts/P11_bmpascii.py` — ASCII preview of a BMP (orientation checks of ramps and the outline texture).
 
 ---
 
@@ -120,11 +121,11 @@ sfrand(R): (0.5 - next()/32767.0) * R            // uniform in [-R/2, +R/2]
 ```
 The result bits 16–30 are identical whether `long` is 32 or 64 bit, so a `uint32` state reproduces it [I] (low-order bits of a product depend only on low-order bits of the operands). The tile's state is seeded with `m_randomSeed` immediately before the iteration loop and is not shared with anything else [C].
 
-**Step 1 — allocate.** `reqWorldCells = (int)(m_size / cellSize)` (double division, truncation); `k = GetPowerOfTwo(reqWorldCells − 1)`; `n = iv_pow(2,k) + 1` (exact). The tile map is n×n samples with cell size 1.0 and origin 0 (re-used if already n×n) [C]. Edge case: `reqWorldCells == 1` ⇒ `log(0)` ⇒ undefined [I]; not present in shipped data (min size/cell ≈ 104/12 = 8).
+**Step 1 — allocate.** `reqWorldCells = (int)(m_size / cellSize)` (double division, truncation); `k = GetPowerOfTwo(reqWorldCells − 1)`; `n = iv_pow(2,k) + 1` (exact). The tile map is n×n samples with cell size 1.0 and origin 0 (re-used if already n×n) [C]. Shipped tiles use n ∈ {9, 17, 33, 65, 129, 257} and always satisfy k ≥ p [C] (computed over all `mp_*`/`map_*` tiles with `P11_terrain_ref.py`). Edge case: `reqWorldCells == 1` ⇒ `log(0)` ⇒ undefined [I]; not present in shipped data (min size/cell ≈ 104/12 = 8).
 
 **Step 2 — initialise.** All n² samples = `m_outsideHeight` (= the landscape's outsideHeight, copied in by `GenerateHeightMap`).
 
-**Step 3 — guide grid.** If p > 0: `r = 2^p − 1`, `scale = (n−1)/(r+1)` (integer division = 2^(k−p)); for z in 0..r−1, x in 0..r−1: `sample((x+1)·scale, (z+1)·scale) = guide[x,z]` (raw byte 0–255 used as a height). Requires k ≥ p; if k < p, scale = 0 and every guide value lands on sample (0,0) [I]. The tile border (row/column 0 and n−1) is never a guide point.
+**Step 3 — guide grid.** If p > 0: `r = 2^p − 1`, `scale = (n−1)/(r+1)` (integer division = 2^(k−p)); for z in 0..r−1, x in 0..r−1: `sample((x+1)·scale, (z+1)·scale) = guide[x,z]` (raw byte 0–255 used as a height). Requires k ≥ p; if k < p, scale = 0 (every guide value is written to sample (0,0)) and the iteration count k+1−p ≤ 0, so no displacement runs at all [I] (not present in shipped data). The tile border (row/column 0 and n−1) is never a guide point.
 
 **Step 4 — compensated noise gain.**
 ```

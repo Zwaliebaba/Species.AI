@@ -1,0 +1,103 @@
+gametype_index,gametype,mode_in_FULL,scope,menu_index,file,english_name,numplayers,difficulty,playtime
+0,Domination,Y,all_in_tree,0,data/levels/mp_domination_2P_2.txt,The Eternal Guardians,2,basic,
+0,Domination,Y,all_in_tree,1,data/levels/mp_skirmish_2p_4.txt,Hamburger Hill,2,basic,
+0,Domination,Y,all_in_tree,2,data/levels/mp_domination_2P_1.txt,Barriers to Progress,2,intermediate,
+0,Domination,Y,all_in_tree,3,data/levels/mp_koth_2P_2.txt,Shrine of Memory,2,intermediate,10
+0,Domination,Y,all_in_tree,4,data/levels/mp_koth_2P_3.txt,The Bitter Front,2,intermediate,10
+0,Domination,Y,all_in_tree,5,data/levels/mp_domination_3P_1.txt,Field of Unending Dawn,3,basic,10
+0,Domination,Y,all_in_tree,6,data/levels/mp_skirmish_3P_1.txt,Leap of Faith,3,advanced,
+0,Domination,Y,all_in_tree,7,data/levels/mp_domination_4P_1.txt,The Holy Tree,4,intermediate,15
+0,Domination,Y,all_in_tree,8,data/levels/mp_domination_4P_2.txt,A Monument to the Heavens,4,advanced,10
+0,Domination,Y,retail,0,data/levels/mp_domination_2P_2.txt,The Eternal Guardians,2,basic,
+0,Domination,Y,retail,1,data/levels/mp_skirmish_2p_4.txt,Hamburger Hill,2,basic,
+0,Domination,Y,retail,2,data/levels/mp_domination_2P_1.txt,Barriers to Progress,2,intermediate,
+0,Domination,Y,retail,3,data/levels/mp_koth_2P_2.txt,Shrine of Memory,2,intermediate,10
+0,Domination,Y,retail,4,data/levels/mp_koth_2P_3.txt,The Bitter Front,2,intermediate,10
+0,Domination,Y,retail,5,data/levels/mp_domination_3P_1.txt,Field of Unending Dawn,3,basic,10
+0,Domination,Y,retail,6,data/levels/mp_skirmish_3P_1.txt,Leap of Faith,3,advanced,
+0,Domination,Y,retail,7,data/levels/mp_domination_4P_1.txt,The Holy Tree,4,intermediate,15
+0,Domination,Y,retail,8,data/levels/mp_domination_4P_2.txt,A Monument to the Heavens,4,advanced,10
+1,KingOfTheHill,Y,all_in_tree,0,data/levels/mp_koth_2P_1.txt,The Eternal Guardians,2,basic,
+1,KingOfTheHill,Y,all_in_tree,1,data/levels/mp_koth_2P_3b.txt,The Bitter Front,2,intermediate,10
+1,KingOfTheHill,Y,all_in_tree,2,data/levels/mp_koth_3P_2.txt,Field of Unending Dawn,3,basic,5
+1,KingOfTheHill,Y,all_in_tree,3,data/levels/mp_koth_3P_1.txt,Pursuit of Victory,3,intermediate,10
+1,KingOfTheHill,Y,all_in_tree,4,data/levels/mp_koth_3P_3.txt,The Deceitful Vale,3,intermediate,10
+1,KingOfTheHill,Y,all_in_tree,5,data/levels/mp_koth_3P_4.txt,The Walled Garden,3,intermediate,10
+1,KingOfTheHill,Y,all_in_tree,6,data/levels/mp_koth_4P_4.txt,Barbs of Madness,4,basic,
+1,KingOfTheHill,Y,all_in_tree,7,data/levels/mp_koth_4P_1.txt,The Holy Tree,4,intermediate,10
+1,KingOfTheHill,Y,all_in_tree,8,data/levels/mp_koth_4P_3.txt,A Monument to the Heavens,4,advanced,10
+1,KingOfTheHill,Y,retail,0,data/levels/mp_koth_2P_1.txt,The Eternal Guardians,2,basic,
+1,KingOfTheHill,Y,retail,1,data/levels/mp_koth_2P_3b.txt,The Bitter Front,2,intermediate,10
+1,KingOfTheHill,Y,retail,2,data/levels/mp_koth_3P_2.txt,Field of Unending Dawn,3,basic,5
+1,KingOfTheHill,Y,retail,3,data/levels/mp_koth_3P_1.txt,Pursuit of Victory,3,intermediate,10
+1,KingOfTheHill,Y,retail,4,data/levels/mp_koth_3P_3.txt,The Deceitful Vale,3,intermediate,10
+1,KingOfTheHill,Y,retail,5,data/levels/mp_koth_3P_4.txt,The Walled Garden,3,intermediate,10
+1,KingOfTheHill,Y,retail,6,data/levels/mp_koth_4P_4.txt,Barbs of Madness,4,basic,
+1,KingOfTheHill,Y,retail,7,data/levels/mp_koth_4P_1.txt,The Holy Tree,4,intermediate,10
+1,KingOfTheHill,Y,retail,8,data/levels/mp_koth_4P_3.txt,A Monument to the Heavens,4,advanced,10
+2,CaptureTheStatue,Y,all_in_tree,0,data/levels/mp_cts_2p_1.txt,Mountain of Lost Souls,2,basic,
+2,CaptureTheStatue,Y,all_in_tree,1,data/levels/mp_cts_2p_4.txt,The Unending Peaks,2,basic,
+2,CaptureTheStatue,Y,all_in_tree,2,data/levels/mp_cts_2p_2.txt,The Bloody Shrine,2,intermediate,
+2,CaptureTheStatue,Y,all_in_tree,3,data/levels/mp_cts_2p_3.txt,Price of War,2,intermediate,
+2,CaptureTheStatue,Y,all_in_tree,4,data/levels/mp_cts_3p_3.txt,The Outreach Peaks,3,,10
+2,CaptureTheStatue,Y,all_in_tree,5,data/levels/mp_cts_3p_1.txt,Melting Pot,3,intermediate,
+2,CaptureTheStatue,Y,all_in_tree,6,data/levels/mp_cts_3P_2.txt,The Tortured Expanse,3,intermediate,
+2,CaptureTheStatue,Y,all_in_tree,7,data/levels/mp_cts_4P_1.txt,Field of Unlife,4,advanced,
+2,CaptureTheStatue,Y,all_in_tree,8,data/levels/mp_cts_4P_2.txt,Scorched Earth,4,advanced,
+2,CaptureTheStatue,Y,all_in_tree,9,data/levels/mp_cts_4p_3.txt,Maze of Despair,4,advanced,
+2,CaptureTheStatue,Y,retail,0,data/levels/mp_cts_2p_1.txt,Mountain of Lost Souls,2,basic,
+2,CaptureTheStatue,Y,retail,1,data/levels/mp_cts_2p_4.txt,The Unending Peaks,2,basic,
+2,CaptureTheStatue,Y,retail,2,data/levels/mp_cts_2p_2.txt,The Bloody Shrine,2,intermediate,
+2,CaptureTheStatue,Y,retail,3,data/levels/mp_cts_2p_3.txt,Price of War,2,intermediate,
+2,CaptureTheStatue,Y,retail,4,data/levels/mp_cts_3p_1.txt,Melting Pot,3,intermediate,
+2,CaptureTheStatue,Y,retail,5,data/levels/mp_cts_3P_2.txt,The Tortured Expanse,3,intermediate,
+2,CaptureTheStatue,Y,retail,6,data/levels/mp_cts_4P_1.txt,Field of Unlife,4,advanced,
+2,CaptureTheStatue,Y,retail,7,data/levels/mp_cts_4P_2.txt,Scorched Earth,4,advanced,
+2,CaptureTheStatue,Y,retail,8,data/levels/mp_cts_4p_3.txt,Maze of Despair,4,advanced,
+3,Assault,Y,all_in_tree,0,data/levels/mp_assault_2P_1.txt,Beneath the Baleful Eye,2,basic,15
+3,Assault,Y,all_in_tree,1,data/levels/mp_assault_2p_3.txt,Dog Green Sector,2,intermediate,15
+3,Assault,Y,all_in_tree,2,data/levels/mp_assault_2P_2.txt,The Woeful Plateau,2,advanced,15
+3,Assault,Y,all_in_tree,3,data/levels/mp_assault_3p_1.txt,The Third Kind,2,advanced,15
+3,Assault,Y,all_in_tree,4,data/levels/mp_assault_3p_3.txt,Fort Zulu,3,intermediate,15
+3,Assault,Y,all_in_tree,5,data/levels/mp_assault_3P_2.txt,The Hard Way,3,advanced,15
+3,Assault,Y,all_in_tree,6,data/levels/mp_assault_4P_1.txt,Beyond the Pale,4,advanced,15
+3,Assault,Y,all_in_tree,7,data/levels/mp_assault_4P_2.txt,The Last Stand,4,advanced,20
+3,Assault,Y,retail,0,data/levels/mp_assault_2P_1.txt,Beneath the Baleful Eye,2,basic,15
+3,Assault,Y,retail,1,data/levels/mp_assault_2p_3.txt,Dog Green Sector,2,intermediate,15
+3,Assault,Y,retail,2,data/levels/mp_assault_2P_2.txt,The Woeful Plateau,2,advanced,15
+3,Assault,Y,retail,3,data/levels/mp_assault_3p_1.txt,The Third Kind,2,advanced,15
+3,Assault,Y,retail,4,data/levels/mp_assault_3p_3.txt,Fort Zulu,3,intermediate,15
+3,Assault,Y,retail,5,data/levels/mp_assault_3P_2.txt,The Hard Way,3,advanced,15
+3,Assault,Y,retail,6,data/levels/mp_assault_4P_1.txt,Beyond the Pale,4,advanced,15
+3,Assault,Y,retail,7,data/levels/mp_assault_4P_2.txt,The Last Stand,4,advanced,20
+4,RocketRiot,Y,all_in_tree,0,data/levels/mp_rocketriot_2P_4.txt,Bridge of Light,2,basic,
+4,RocketRiot,Y,all_in_tree,1,data/levels/mp_rocketriot_2P_2.txt,Echoes of the Future,2,intermediate,
+4,RocketRiot,Y,all_in_tree,2,data/levels/mp_rocketriot_2p_3.txt,Stairway to Heaven,2,intermediate,
+4,RocketRiot,Y,all_in_tree,3,data/levels/mp_rocketriot_3p_1.txt,The Second Beginning,3,basic,
+4,RocketRiot,Y,all_in_tree,4,data/levels/mp_rocketriot_3P_2.txt,Wake of Eternity,3,intermediate,
+4,RocketRiot,Y,all_in_tree,5,data/levels/mp_rocketriot_3P_3.txt,Heart of Chaos,3,advanced,
+4,RocketRiot,Y,all_in_tree,6,data/levels/mp_rocketriot_4P_1.txt,Threads of Fate,4,advanced,
+4,RocketRiot,Y,retail,0,data/levels/mp_rocketriot_2P_4.txt,Bridge of Light,2,basic,
+4,RocketRiot,Y,retail,1,data/levels/mp_rocketriot_2P_2.txt,Echoes of the Future,2,intermediate,
+4,RocketRiot,Y,retail,2,data/levels/mp_rocketriot_2p_3.txt,Stairway to Heaven,2,intermediate,
+4,RocketRiot,Y,retail,3,data/levels/mp_rocketriot_3p_1.txt,The Second Beginning,3,basic,
+4,RocketRiot,Y,retail,4,data/levels/mp_rocketriot_3P_2.txt,Wake of Eternity,3,intermediate,
+4,RocketRiot,Y,retail,5,data/levels/mp_rocketriot_3P_3.txt,Heart of Chaos,3,advanced,
+4,RocketRiot,Y,retail,6,data/levels/mp_rocketriot_4P_1.txt,Threads of Fate,4,advanced,
+5,Blitzkrieg,Y,all_in_tree,0,data/levels/mp_blitzkrieg_2p_1.txt,Confrontation Point,2,basic,
+5,Blitzkrieg,Y,all_in_tree,1,data/levels/mp_blitzkrieg_2P_3.txt,The Eye of the World,2,intermediate,
+5,Blitzkrieg,Y,all_in_tree,2,data/levels/mp_blitzkrieg_2p_2.txt,The Bleak Mountains,2,advanced,
+5,Blitzkrieg,Y,all_in_tree,3,data/levels/mp_blitzkrieg_2P_4.txt,The Apex of Infinity,2,advanced,
+5,Blitzkrieg,Y,all_in_tree,4,data/levels/mp_blitzkrieg_3P_2.txt,The Wheel,3,basic,
+5,Blitzkrieg,Y,all_in_tree,5,data/levels/mp_blitzkrieg_3P_1.txt,Upon the Blazing Sea,3,intermediate,
+5,Blitzkrieg,Y,all_in_tree,6,data/levels/mp_blitzkrieg_4P_2.txt,Gridlock,4,advanced,
+5,Blitzkrieg,Y,retail,0,data/levels/mp_blitzkrieg_2p_1.txt,Confrontation Point,2,basic,
+5,Blitzkrieg,Y,retail,1,data/levels/mp_blitzkrieg_2P_3.txt,The Eye of the World,2,intermediate,
+5,Blitzkrieg,Y,retail,2,data/levels/mp_blitzkrieg_2p_2.txt,The Bleak Mountains,2,advanced,
+5,Blitzkrieg,Y,retail,3,data/levels/mp_blitzkrieg_2P_4.txt,The Apex of Infinity,2,advanced,
+5,Blitzkrieg,Y,retail,4,data/levels/mp_blitzkrieg_3P_2.txt,The Wheel,3,basic,
+5,Blitzkrieg,Y,retail,5,data/levels/mp_blitzkrieg_3P_1.txt,Upon the Blazing Sea,3,intermediate,
+5,Blitzkrieg,Y,retail,6,data/levels/mp_blitzkrieg_4P_2.txt,Gridlock,4,advanced,
+6,TankBattle,N(INCLUDEGAMEMODE_TANKBATTLE off),all_in_tree,0,data/levels/mp_tankbattle_2P.txt,2P TankBattle Arena,2,basic,
+6,TankBattle,N(INCLUDEGAMEMODE_TANKBATTLE off),all_in_tree,1,data/levels/mp_tankbattle_3P.txt,3P TankBattle Arena,3,basic,
+6,TankBattle,N(INCLUDEGAMEMODE_TANKBATTLE off),all_in_tree,2,data/levels/mp_tankbattle_4P.txt,4P TankBattle Arena,4,basic,

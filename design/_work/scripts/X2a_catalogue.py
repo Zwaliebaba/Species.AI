@@ -500,7 +500,8 @@ def scan_code_file(path, rel):
         if func_depth is None:
             mf = FUNC_RE.match(code)
             if mf and mf.group(1).split('::')[-1] not in CTRL and not cs.endswith(';') \
-                    and not cs.startswith(('return', 'else', '#')) and '=' not in code.split('(')[0]:
+                    and not cs.startswith(('return', 'else', '#', ':', ',')) and '=' not in code.split('(')[0] \
+                    and not mf.group(1).startswith('m_') and not cs.endswith(','):
                 name = mf.group(1)
                 if '::' not in name and cur_class and rel.endswith('.h'):
                     name = cur_class + '::' + name
@@ -548,3 +549,119 @@ if os.environ.get('X2A_DEBUG_LITS'):
         if pat in c['lit'].lower():
             print(c['file'], c['line'], c['sym'], '|', c['cond'], c['live'], c['commented'], c['built'], '|', c['lit'])
     sys.exit(0)
+
+# ----------------------------------------------------------------------------------
+# 6. Reference resolution
+# ----------------------------------------------------------------------------------
+refs = defaultdict(list)     # asset rel -> list of ref dicts
+missing = []                 # names that look like assets but have no file
+basename_idx = defaultdict(list); stem_idx = defaultdict(list)
+for rel in assets:
+    rn = res_name(rel); bn = rn.rsplit('/', 1)[-1]
+    basename_idx[bn].append(rel); stem_idx[bn.rsplit('.', 1)[0]].append(rel)
+
+file_cache = {}
+def flines(rel):
+    if rel not in file_cache:
+        try:
+            file_cache[rel] = open(os.path.join(SRC, rel), encoding='latin-1').read().split('\n')
+        except Exception:
+            file_cache[rel] = []
+    return file_cache[rel]
+
+GLP = re.compile(r'gl(?:TexParameter[if]|BlendFunc|TexEnv[if]|Enable|Disable)\s*\(([^)]*)\)')
+def site_state(rel, ln):
+    """GL texture/blend state set within the 4 lines before and 14 after a load/bind site [I]."""
+    L = flines(rel); st = []
+    for k in range(max(0, ln - 5), min(len(L), ln + 14)):
+        for m in GLP.finditer(L[k]):
+            a = re.sub(r'\s+', '', m.group(1)).replace('GL_TEXTURE_2D,', '').replace('GL_TEXTURE_', '').replace('GL_', '')
+            fn = m.group(0).split('(')[0].replace('gl', '')
+            if fn in ('Enable', 'Disable') and a not in ('BLEND', 'TEXTURE_2D', 'ALPHA_TEST', 'DEPTH_TEST', 'CULL_FACE'):
+                continue
+            if fn in ('Enable', 'Disable'):
+                st.append('%s(%s)' % (fn, a))
+            elif fn.startswith('TexParameter'):
+                st.append(a.replace(',', '='))
+            elif fn == 'BlendFunc':
+                st.append('Blend(%s)' % a)
+            else:
+                st.append('TexEnv(%s)' % a.split(',')[-1])
+    # de-duplicate keeping order
+    seen = set(); out = []
+    for x in st:
+        if x not in seen:
+            seen.add(x); out.append(x)
+    return ' '.join(out)
+
+CALL_RE = re.compile(r'(GetTextureWithAlpha|GetTextureWithFlags|GetTexture|GetBitmap|DoesTextureExist|GetShapeCopy|GetShape|DoesShapeExist|SetupTeamShape|GetBinaryReader|GetTextReader|Shader::Create|GetTextureInfo|DeleteTexture)\s*\(')
+def call_flags(text, lit):
+    """Classify the resource call wrapping a literal and its texture flags (Resource::GetTexture defaults
+    mip=true, mask=true, compressed=false)."""
+    idx = text.find('"' + lit)
+    pre = text[:idx] if idx >= 0 else text
+    calls = list(CALL_RE.finditer(pre))
+    if not calls:
+        return '', ''
+    c = calls[-1].group(1)
+    if c == 'GetTexture':
+        after = text[idx + len(lit) + 2:] if idx >= 0 else ''
+        m = re.match(r'\s*((?:,\s*[\w:!]+\s*)*)\)', after)
+        args = [a.strip() for a in (m.group(1).split(',')[1:] if m else [])]
+        mip = args[0] if len(args) > 0 else 'true'; mask = args[1] if len(args) > 1 else 'true'
+        comp = args[2] if len(args) > 2 else 'false'
+        return c, 'mip=%s mask=%s%s' % (mip, mask, ' compressed=%s' % comp if comp != 'false' else '')
+    if c == 'GetTextureWithAlpha':
+        return c, 'mip=true alpha=green->A (no mask)'
+    return c, ''
+
+def add_ref(asset, kind, where, sym, ln, cond, live, built, how, flags='', state='', strength='C'):
+    refs[asset].append({'kind': kind, 'file': where, 'sym': sym, 'line': ln, 'cond': cond,
+                        'live': live, 'built': built, 'how': how, 'flags': flags, 'state': state,
+                        'strength': strength})
+
+ASSETISH = re.compile(r'^(?:data/)?(?:textures|sprites|shapes|animations|terrain|icons|thumbnails|mwhelp|shaders|sepulveda)/[^%\s]+$|^[\w\-]+\.(?:bmp|shp|anim|vs|ps|ps3)$', re.I)
+for c in code_lits:
+    L = c['lit'].replace('\\\\', '/').replace('\\', '/').lower()
+    if L.startswith('data/'):
+        L = L[5:]
+    if not L or len(L) > 120:
+        continue
+    fn, flags = call_flags(c['text'], c['lit'])
+    common = dict(where=c['file'], sym=c['sym'], ln=c['line'], cond=c['cond'], live=c['live'],
+                  built=c['built'])
+    state = ''
+    def st():
+        return site_state(c['file'], c['line'])
+    if c['commented']:
+        tgt = by_resname.get(L) or by_resname.get(L + '.bmp')
+        if tgt:
+            add_ref(tgt, 'commented-out', how='literal in // comment', **common)
+        continue
+    if L in by_resname:
+        add_ref(by_resname[L], 'literal', how=fn or 'literal', flags=flags, state=st(), **common)
+    elif L + '.bmp' in by_resname and '/' in L:
+        add_ref(by_resname[L + '.bmp'], 'literal+ext', how=(fn or 'literal') + ' (ext appended)', flags=flags, state=st(), **common)
+    elif L.startswith('shadow_') and L[7:] in by_resname:
+        add_ref(by_resname[L[7:]], 'shadow-derived', how='runtime blurred copy name ' + L, flags=flags, state=st(), **common)
+    elif '/' not in L and L in basename_idx and L.endswith('.shp'):
+        add_ref(basename_idx[L][0], 'shape-name', how=fn or 'literal shape name', **common)
+    elif '/' not in L and L in basename_idx:
+        for t in basename_idx[L]:
+            add_ref(t, 'basename', how=(fn or 'literal') + ' (bare file name; directory supplied elsewhere)', strength='I', **common)
+    elif '/' not in L and L in stem_idx and len(L) >= 3 and re.match(r'^[a-z0-9_\-]+$', L):
+        for t in stem_idx[L]:
+            if assets[t]['dir'] in ('icons', 'mwhelp', 'thumbnails', 'animations', 'sprites', 'textures', 'terrain', 'shapes'):
+                add_ref(t, 'stem', how='bare stem literal', strength='I', **common)
+    elif ASSETISH.match(L) and '%' not in L and not L.endswith('/') and '*' not in L:
+        missing.append(dict(name=L, **{k: v for k, v in common.items()}, how=fn))
+    elif '%' in L and re.search(r'\.(bmp|shp|anim)$|^(textures|sprites|shapes|animations|terrain|icons|thumbnails|mwhelp|shaders|sepulveda)/', L):
+        rx = '^' + re.sub(r'%[0-9\.\-]*[sdixXcu]', '(.+)', re.escape(L).replace('\\%', '%')) + '$'
+        rx2 = re.compile(rx)
+        hits = [r for r in assets if rx2.match(res_name(r)) or rx2.match(res_name(r).rsplit('/', 1)[-1])]
+        for t in hits:
+            add_ref(t, 'format-pattern', how='printf pattern "%s" (value set: see rule)' % c['lit'], strength='I', **common)
+        if not hits:
+            missing.append(dict(name=L, **{k: v for k, v in common.items()}, how='pattern matches no file'))
+
+print('refs after literals', sum(len(v) for v in refs.values()), 'missing', len(missing))
