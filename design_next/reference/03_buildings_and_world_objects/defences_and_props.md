@@ -488,3 +488,127 @@ With one burning neighbour adding 1 per tick against the decay of 0.1, a tree ig
 
 **R-BLDG-506** (MUST) A jump pad's sphere and mesh tests never hit, and its ray test is against a sphere of radius `ref.sim.structure.default_radius` (13 wu; README table 2.12-A). It is drawn as an animated arrow strip of `marker.jump_pad`, `ref.bldg.jump_pad.arrow_length` (80 wu) long and ±`ref.bldg.jump_pad.arrow_half_width` (20 wu) wide along its launch direction, with brightness `ref.bldg.jump_pad.brightness_base` + `ref.bldg.jump_pad.brightness_pulse` × |sin t| (0.3 + 0.7 × |sin t|) over the presentation time t.
 
+### 2.11 Hive
+
+**R-BLDG-507** (MUST) A Hive (`Hive`) is a Rogue faction nest, `mesh.structure.hive_mound`, that sends ants out to capture Workers, collect Essence orbs, attack enemies and scout, and turns the orbs that they bring home into more ants. Its ants are specified in [02 Creatures](../02_units/creatures.md) §2.7. It holds an integer health of `ref.bldg.hive.health` (100), its ants inside, its orbs inside, its objectives and its ant group. Its team is fixed; it is never captured.
+
+**R-BLDG-508** (MUST) The Hive outcome ([04 Crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md), which owns when it occurs and its validity limit) creates `ref.bldg.hive.outcome_count` (2) Hives, always of the Rogue faction whoever triggered it (DEC-021, DEC-107). For each Hive, in this order: position = target point + (U[−100, 100), 0, U[−100, 100)) (`ref.bldg.hive.outcome_spread`, 200 wu); front = normalise(U[−0.5, 0.5), 0, U[−0.5, 0.5)); ants inside = `ref.bldg.hive.outcome_ants_base` − U{0..`ref.bldg.hive.outcome_ants_spread` − 1} (75 − U{0..24}, so 51 to 75). Each Hive is snapped to the terrain, created with a new serial and initialised (R-BLDG-030), and shatters its mesh once as a build-in effect (presentation). The outcome then spawns one ant at the target point to wake the Rogue faction ([02 Creatures](../02_units/creatures.md) R-UNIT-560), shows the map marker `icon.power.hive` and shows its message (reference/04).
+
+**R-BLDG-509** (MUST) A Hive's map record holds the base fields and its ants inside, an integer; a value outside [0, `ref.bldg.hive.map_ants_max`] (10,000) becomes 0, and the default is 0. A map may place a Hive; no reference map does.
+
+**R-BLDG-510** (MUST) A Hive acts only while its team is a bot team (`TeamKind::Bot`; the Rogue faction always is). Its first ant release comes `ref.bldg.hive.first_release_ticks` (50 ticks) after its initialisation. Before each sortie it applies the population check of [05 Population flow](../05_population_flow.md) R-ECON-056; while that check holds it back, the Hive is **locked**: it creates no objective and releases no ant, while its orb conversion continues. Its own ants are not counted (see DEC-084).
+
+**R-BLDG-511** (MUST) An unlocked Hive keeps at most clamp(⌊ants inside ÷ `ref.bldg.hive.objective_divisor`⌋, `ref.bldg.hive.objective_min`, `ref.bldg.hive.objective_max`) objectives (⌊ants ÷ 10⌋, 1 to 6). While it has fewer and its search deadline has passed, it sets the next deadline to now + `ref.bldg.hive.search_step_ticks` × U{0..1} (0 or 10 ticks) and makes one search chosen by U{0..4}, within `ref.bldg.hive.search_range` (400 wu):
+
+| Draw | Search | Objective |
+|---|---|---|
+| 0 or 1 | the nearest enemy Worker that is not captured and not yet an objective of this Hive | that Worker |
+| 2 | the first enemy actor in result order that is not yet an objective of this Hive; a bot controller is not excluded (see DEC-311) | that actor |
+| 3 | the first Essence orb in the Birth or Floating state that lies more than `ref.bldg.hive.orb_separation` (20 wu) from every existing objective | that orb |
+| 4 | a scout point at distance `ref.bldg.hive.scout_base` + U[0, `ref.bldg.hive.scout_spread`) (200 to 400 wu) and angle U[0, 2π) from the Hive, accepted only when the terrain height there is above 0 | that point |
+
+A search that finds nothing creates no objective. A new objective is to receive ⌊⌊`ref.bldg.hive.sortie_ants_base` + U[0, `ref.bldg.hive.sortie_ants_spread`)⌋ + ants inside ÷ `ref.bldg.hive.sortie_ants_divisor`⌋ ants (⌊⌊5 + U[0, 5)⌋ + ants ÷ 20⌋).
+
+**R-BLDG-512** (MUST) An unlocked Hive with ants inside and at least one objective releases one ant every `ref.bldg.hive.release_interval_ticks` (2 ticks, 0.2 s): it chooses an objective by U{0..count − 1}; spawns an ant of its own team into its ant group, created on first use, at the Hive with spawn spread `ref.bldg.hive.release_spread` (10 wu); gives it the ScoutArea order with the waypoint objective position + an offset of length U[0, `ref.bldg.hive.waypoint_scatter`) (30 wu) at angle U[0, 2π), pushed clear of obstacles; and lowers its ants inside by 1 and the objective's count by 1, removing the objective at 0.
+
+**R-BLDG-513** (MUST) A returning ant adds 1 to the Hive's ants inside, a carried orb adds 1 to its orbs inside, and a carried Worker is killed at the Hive so that its orb is released there ([02 Creatures](../02_units/creatures.md) R-UNIT-566). While orbs are inside, the Hive turns one orb into `ref.econ.hive.ants_per_orb` (6) ants every `ref.econ.hive.conversion_ticks` (10 or 11 ticks, reference/05 R-ECON-084).
+
+**R-BLDG-514** (MUST) When a Hive's ants inside stay at or below 0 for `ref.bldg.hive.empty_ticks` (30) consecutive ticks, its ants inside become `ref.bldg.hive.refill_ants` (10) and it damages itself by −`ref.bldg.hive.refill_damage` (10). The count is per tick and scales with game speed (DEC-092).
+
+**R-BLDG-515** (MUST) A Hive's damage operation raises `hive.damaged` and adds the signed amount to its integer health, truncating the sum towards 0. Each time the health falls past a multiple of `ref.bldg.hive.damage_band` (20), the Hive shatters part of its mesh, the fraction 1 − health ÷ 100, and raises `hive.damaged` again. At a health of 0 or below it shatters fully, releases (ants inside + orbs inside) Essence orbs of its own team in a disc of radius `ref.bldg.hive.burst_radius` (20 wu) at speeds U[0, `ref.bldg.hive.burst_speed`) (50 wu/s), raises `hive.explode` and requests its removal. Because every Hive belongs to the Rogue faction, whose orb spawns are refused, no orb appears (see DEC-084). Destroying a Hive with an intensity sets its health to 0 first (R-BLDG-037).
+
+**R-BLDG-516** (MUST) A burning tree burns every Hive within its reach each tick (R-BLDG-468). Each burn damages the Hive by −`ref.bldg.hive.burn_damage` (1) with the chance `ref.bldg.hive.burn_damage_chance` (0.3), tested against U[0, 1), and, while its ants inside are above 0, releases one ant with the ScoutArea order towards the point `ref.bldg.hive.burn_flee_distance` (200 wu) from the Hive at angle U[0, 2π) and lowers its ants inside by 1; the count never falls below 0, and the empty-Hive rule of R-BLDG-514 applies unchanged (DEC-460).
+
+**R-BLDG-517** (MUST) Enemy Workers attack a Hive through the structure check of their threat search, which names this Hive by its structure id (DEC-105; [02 Worker](../02_units/worker.md) threat search step 5). A Hive's damage sources are explosions (R-BLDG-035), turret rounds (README R-BLDG-036), burning trees (R-BLDG-516) and its own empty-Hive rule (R-BLDG-514). Its damage flicker is presentation and draws from the presentation generator. Its sound events, besides the base events of README table 2.14-A, are the `hive.damaged` repeats of R-BLDG-515 and `hive.explode`.
+
+### 2.12 Spitter Plant
+
+**R-BLDG-518** (MUST) A Spitter Plant (`SpitterPlant`) is a rooted plant, `mesh.structure.spitter_plant_head` (sockets `launch_point` and `stem`), that lobs Seed Pods ([02 Creatures](../02_units/creatures.md) §2.2), each of which bursts into a group of creatures. Its team is fixed; it is never captured. The plants of the Spitter Plants outcome belong to the Rogue faction, so their creatures are hostile to everyone (DEC-021, DEC-107), unlike the creatures of the Brood outcome, whose owner is DEC-121.
+
+**R-BLDG-519** (MUST) The Spitter Plants outcome, which only an unopened Supply crate yields ([04 Crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md)), creates 1 + U{0..`ref.bldg.spitter_plant.outcome_count_spread` − 1} (1 to 3) plants of the Rogue faction. For each plant, in this order: position = target point + (U[−25, 25), 0, U[−25, 25)) (`ref.bldg.spitter_plant.outcome_spread`, 50 wu), with its front pointing horizontally away from the target point; pitch = `ref.bldg.spitter_plant.outcome_pitch_base` + U[0, `ref.bldg.spitter_plant.outcome_pitch_spread`) (0.6 to 1.2); force = `ref.bldg.spitter_plant.outcome_force_base` + U[0, `ref.bldg.spitter_plant.outcome_force_spread`) (60 to 120); variance = U[0, `ref.bldg.spitter_plant.outcome_variance_max`) (0 to 0.5); reload = `ref.bldg.spitter_plant.outcome_reload_base_ticks` + ⌈U[0, `ref.bldg.spitter_plant.outcome_reload_spread_ticks`)⌉ ticks (400 to 1000 ticks). Its size is 1, its trigger is off, and every kind of Seed Pod release is enabled except Essence orbs (kind 3) and Crawler eggs (kind 4). The outcome shows the map marker `icon.power.spitter_plants` and its message (reference/04).
+
+**R-BLDG-520** (MUST) A Spitter Plant's map record holds the base fields and then, with the defaults that a map record uses:
+
+| Field | Default | Meaning |
+|---|---|---|
+| size | `ref.bldg.spitter_plant.default_size` (1.0) | scale of the head and of the launch |
+| pitch | `ref.bldg.spitter_plant.default_pitch` (0.6) | launch pitch |
+| force | `ref.bldg.spitter_plant.default_force` (250) | launch speed |
+| variance | `ref.bldg.spitter_plant.default_variance` (π/8) | thrash amplitude while burning |
+| reload | `ref.bldg.spitter_plant.default_reload_ticks` (600 ticks) | ticks between launches |
+| trigger | off | off: always armed; on: armed only while enemies are in the trigger circle |
+| trigger x, trigger z | 0 | offset of the trigger circle from the plant |
+| trigger radius | `ref.bldg.spitter_plant.default_trigger_radius` (100 wu) | radius of the trigger circle, and the roam range of its Seed Pods |
+| kinds 0 to 9 | none enabled | the enabled Seed Pod kinds, in the kind order of [02 Creatures](../02_units/creatures.md) R-UNIT-519 |
+
+A map may place a Spitter Plant; no reference map does. Besides these fields a plant holds a damage meter of `ref.bldg.spitter_plant.damage_meter` (50) and a pod budget of `ref.bldg.spitter_plant.pod_budget` (3).
+
+**R-BLDG-521** (MUST) At initialisation a plant draws its first launch deadline, now + `ref.bldg.spitter_plant.first_delay_ticks` (100) + 10 × U{0..⌊reload ÷ 10⌋ − 1} ticks (10 s plus whole seconds below the reload), and its first trigger check after ⌈U[0, `ref.bldg.spitter_plant.trigger_check_ticks`)⌉ ticks (0 to 50 ticks) (DEC-652).
+
+**R-BLDG-522** (MUST) A plant is armed while its trigger is off or it is burning. Otherwise it checks every `ref.bldg.spitter_plant.trigger_check_ticks` (50 ticks) whether enemies are present in the trigger circle, by the cell-granular presence test `EnemiesInCells(position + trigger offset, trigger radius, team)` (reference/12 R-SIM-312); when it changes from unarmed to armed, its launch deadline is drawn again as R-BLDG-521 specifies.
+
+**R-BLDG-523** (MUST) While a plant is armed, its tick count is past its launch deadline and its pod budget is above 0, it launches (R-BLDG-524), lowers its pod budget by 1 and sets its next deadline to now + ⌈reload × (1 + U[−`ref.bldg.spitter_plant.reload_jitter` ÷ 2, `ref.bldg.spitter_plant.reload_jitter` ÷ 2))⌉ ticks (±5 %). When the budget reaches 0, the plant damages itself by −`ref.bldg.spitter_plant.budget_damage` (100), which sets it burning (R-BLDG-526): a plant launches three pods and then withers.
+
+**R-BLDG-524** (MUST) A launch chooses one enabled kind by U{0..count − 1} over the enabled kinds in kind order, and launches nothing when no kind is enabled. The Seed Pod starts at the head's `launch_point` socket, takes the plant's position + trigger offset as its spawn point and the trigger radius as its roam range, and draws its size, launch velocity (the socket's forward × force × size × a random factor) and burst timer by [02 Creatures](../02_units/creatures.md) R-UNIT-511 and R-UNIT-515. The launch raises `spitter_plant.launch` (silent, see DEC-565).
+
+**R-BLDG-525** (MUST) The head pose is a simulation function of match time, because it sets the launch socket. With t = match time + serial × `ref.bldg.spitter_plant.phase_per_serial` (10): the head sits at position + up × `ref.bldg.spitter_plant.head_height` (30 wu) × size; it is pitched by pitch × `ref.bldg.spitter_plant.pitch_scale` (0.5) × (1 + `ref.bldg.spitter_plant.pose_wobble` (0.1) × sin t); it bobs by (4 sin(t ÷ 1.3), sin(t ÷ 1.5), 3 sin(t ÷ 1.2)) wu (`ref.bldg.spitter_plant.bob`); it recoils by −front × `ref.bldg.spitter_plant.recoil` (10 wu) × ((deadline − now) ÷ reload)^`ref.bldg.spitter_plant.recoil_exponent` (5); its scale is size × (1 + `ref.bldg.spitter_plant.pose_wobble` × sin t); and while it burns its front thrashes, rotated about the vertical by sin(`ref.bldg.spitter_plant.thrash_rate` × t) × variance (5 rad/s).
+
+**R-BLDG-526** (MUST) A plant's damage operation raises `spitter_plant.damaged` and adds the amount to its damage meter; when the meter first falls to 0 or below, the plant starts burning and starts its `spitter_plant.burning` loop. Every tick while it burns, its size falls by `ref.bldg.spitter_plant.burn_shrink` (0.006) and its launch deadline moves `ref.bldg.spitter_plant.burn_deadline_advance_ticks` (5 ticks) earlier; at a size of `ref.bldg.spitter_plant.remove_size` (0.3) or below its head shatters and it requests its removal, 117 ticks after ignition from size 1. While it burns it also releases, from the presentation generator, `ref.bldg.spitter_plant.fire_particles` (2) fire particles of size 100 + U[−50 × size, 50 × size) per tick and debris with the chance `ref.bldg.spitter_plant.debris_chance` (0.1) per tick. Its damage sources are explosions, turret rounds and firebomb canisters (README R-BLDG-035, R-BLDG-036) and its own pod budget (R-BLDG-523); enemy Workers attack it by its structure id (DEC-105).
+
+**R-BLDG-527** (MUST) A plant is drawn as yellow stem lines from its base to the head, the head mesh at its pose, and, during the last `ref.bldg.spitter_plant.held_pod_fraction` (25 %) of each reload, the next pod (`mesh.creature.seed_pod`) held at the launch socket. Its sound events, besides the base events, are `spitter_plant.burning` and `spitter_plant.launch`.
+
+### 2.13 Allegiance Scrambler effect
+
+**R-BLDG-528** (MUST) The Allegiance Scrambler effect (`AllegianceScramblerEffect`) is an effect in the match world's effect pool, not a structure, created at its target point by the Allegiance Scrambler outcome ([04 Crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md)); no map places it. It lives `ref.bldg.allegiance_scrambler.life_ticks` (150 ticks, 15 s) and is then removed. The team that triggered the outcome only receives the message and the fixed map marker `icon.power.allegiance_scrambler`.
+
+**R-BLDG-529** (MUST) The effect pulses on its first tick and then every `ref.bldg.allegiance_scrambler.pulse_base_ticks` + ⌈U[0, `ref.bldg.allegiance_scrambler.pulse_spread_ticks`)⌉ ticks (5 to 30 ticks). A pulse visits every actor of every team within `ref.bldg.allegiance_scrambler.range` (100 wu) (`InRange`, reference/12 R-SIM-311); for each Worker that is not inside a Transport, it draws a team U{0..P − 1}, with P the map's player count, spawns a new Worker of that team at the old Worker's position with its velocity, and sets the old Worker's destroyed flag. The drawn team may be the old one. Every slot below the player count holds a team in play, because empty slots are filled with bots (DEC-079, DEC-305). The new Worker is a new actor: its state, orders and health are those of a fresh spawn, no Essence orb is released and no population cap is checked ([05 Population flow](../05_population_flow.md)).
+
+**R-BLDG-530** (MUST) Each rendered frame the effect draws two muzzle-flash particles (`fx.muzzle_flash`) of size `ref.bldg.allegiance_scrambler.flash_size` (60) at the two ends of an arm of radius `ref.bldg.allegiance_scrambler.range` (100 wu) that turns at `ref.bldg.allegiance_scrambler.spin_rate` (3 rad/s) of presentation time, `ref.bldg.allegiance_scrambler.flash_height` (5 wu) above the ground, each in a team colour chosen by the presentation generator. These particles never reach simulation state, and their number follows the frame rate.
+
+### 2.14 Presentation events of these objects
+
+**R-BLDG-531** (MUST) The objects of this document raise the presentation events of table 2.14-A besides the base events of README table 2.14-A. The sample bindings are those of `assets/asset_manifest.csv` ([10 Audio design](../10_audio_design.md)); an event marked silent has no binding (see DEC-565).
+
+Table 2.14-A Presentation events and their sample groups.
+
+| Event | Trigger | Sample group |
+|---|---|---|
+| `turret.spawn` | initialisation | `sfx.building.turret.spawn` |
+| `turret.target_sighted` | a search finds a new target (R-BLDG-411) | silent |
+| `turret.fire_gun` | a turret round or a gun-turret Convert bolt (R-BLDG-420, R-BLDG-421) | `sfx.unit.trooper.fire_laser` |
+| `turret.fire_rocket` | a rocket | silent |
+| `turret.fire_grenade` | a mortar grenade | none in the manifest |
+| `turret.fire_flame` | a fireball | `sfx.building.turret.fire_flame` |
+| `turret.kill_tick` | a credited kill (R-BLDG-427) | `sfx.ui.match_ui.countdown_tick` |
+| `barrier_emitter.spawn` | initialisation; starts the presence loop | `sfx.building.barrier_emitter.presence_loop` |
+| `barrier_emitter.spark` | a spark (R-BLDG-447) | `sfx.building.barrier_emitter.spark` |
+| `barrier_emitter.electrocute` | a kill by a field (R-BLDG-442) | silent |
+| `barrier_emitter.damaged` | any damage (R-BLDG-034) | `sfx.building.barrier_emitter.damaged` |
+| `tree.spawn` | initialisation | `sfx.building.tree.spawn` |
+| `tree.ambient_normal`, `tree.ambient_essence`, `tree.ambient_blight` | the presence loop chosen at initialisation (R-BLDG-488) | `sfx.building.tree.ambient_normal` for the first two, `sfx.building.tree.ambient_blight` |
+| `tree.burning` | loop from ignition (R-BLDG-466) | `sfx.building.tree.burning` |
+| `hive.damaged` | each damage and each band crossing (R-BLDG-515) | `sfx.building.hive.damaged` |
+| `hive.explode` | destruction (R-BLDG-515) | `sfx.weapon.grenade.explode` |
+| `spitter_plant.damaged` | each damage (R-BLDG-526) | `sfx.creature.brood_drifter.hurt` |
+| `spitter_plant.burning` | loop from ignition (R-BLDG-526) | `sfx.building.spitter_plant.burning` |
+| `spitter_plant.launch` | a Seed Pod launch (R-BLDG-524) | silent |
+
+The wall, the scenery mesh, the exclusion zone, the smoke column, the volcano vent, the jump pad and the Allegiance Scrambler effect raise no events of their own.
+
+### 2.15 Reference map usage
+
+**R-BLDG-532** (MUST) The reference maps use these kinds as follows; the per-mode map counts are in README table 2.4-A, and no reference map name is carried ([08 Maps and level design](../08_maps_and_level_design/README.md)). Map content is data, so these facts constrain the reference map set, not the rules.
+
+| Kind | Reference map facts |
+|---|---|
+| turret | every map turret has no team at the start; the maps place only gun turrets and, on three Siege maps, 11 flame turrets; each Siege map places 12 to 40; no map places a rocket turret, a mortar turret or a Convert Turret |
+| Barrier Emitter | 677 records on 14 maps; teams 0 to 3 and no team; scale 0.30 to 2.50 (1.00 ×252, 2.00 ×137, 1.50 ×124); initial mode Raised on 658 records, Lowered 20, RelayOnly 2, AlwaysRaised 23; 36 records end a chain |
+| wall | 323 records on 9 maps: seven Siege maps (78, 14, 20, 29, 94, 25 and 34 walls), one Flag Chain map (17) and one Zone Control map (12) |
+| tree | 661 records on 39 maps; height 43.54 to 272.65 wu; leaf width 0 to 43.97; push out 0.34 to 1.31; push up 0.43 to 1.32; iterations 4 (24 records), 5 (165), 6 (516), 7 (50); 33 branch colours and 39 leaf colours; leaf drop rate 35 on 18 records; essence drop rate always 0; two Relic Run maps place only blight trees (45 and 59), with white colours |
+| scenery mesh | 193 records on 19 maps; scale 1.00 on 163, otherwise 0.83 to 1.76 and once 6.10; the seven `mesh.scenery.prop` pieces, and on one map the Abductor hull `mesh.creature.abductor_hull` |
+| exclusion zone | 35 records on 14 maps; size 300 to 1118.8 wu; the power flag set on 9 |
+| smoke column | 6 records, all on one Siege map |
+| volcano vent | 1 record, on one Flag Chain map |
+| jump pad | 23 records on 3 maps (one Siege map 3, one Flag Chain map 2, one Spawn Control map 18); force 76.17 to 227.38 wu/s; angle 0.51 to 1.08 rad |
+| Hive, Spitter Plant | none; only the outcomes create them |
+

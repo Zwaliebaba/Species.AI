@@ -295,7 +295,7 @@ With 3 depots at full pressure the steady rate is 1.2 fuel points per second, so
 
 **R-BLDG-334** (MUST) In **Countdown** a Launch Vessel draws attackers, and its countdown falls by `ref.bldg.launch_vessel.countdown_rate` (0.5) × dt per tick, kept at 0 or above; when it is exactly 0, after `ref.bldg.launch_vessel.countdown_ticks` (200 ticks, 20 s of game time for the displayed 10 to 0), the vessel enters Flight.
 
-**R-BLDG-335** (MUST) In **Flight** a Launch Vessel's thrust is max(2 × √(height − ground height), `ref.bldg.launch_vessel.min_thrust` (0.1)) wu/s, with the factor `ref.bldg.launch_vessel.thrust_factor` (2); its velocity is (0, thrust, 0) and its position grows by velocity × dt (drawn with velocity extrapolation). Flight cannot be damaged and is terminal: it ends only in the launch result (DEC-076).
+**R-BLDG-335** (MUST) In **Flight** a Launch Vessel's thrust is max(2 × √(height − ground height), `ref.bldg.launch_vessel.min_thrust` (0.1)) wu/s, with the factor `ref.bldg.launch_vessel.thrust_factor` (2); its velocity is (0, thrust, 0) and its position grows by velocity × dt (drawn with velocity extrapolation); the square root follows the Species maths library (see DEC-241). Flight cannot be damaged and is terminal: it ends only in the launch result (DEC-076).
 
 **R-BLDG-336** (MUST) In **Wrecked** a Launch Vessel, each tick:
 

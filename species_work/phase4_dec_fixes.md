@@ -43,3 +43,6 @@
 | 39 | C-RND-a | ADR-0018 | the fixed sampler set has no point-wrap sampler for the clouds | amend ADR-0018 |
 | 40 | C-RND-a | ADR-0003, ADR-0013 | specular lighting for the terrain grid and the special lighting is not mentioned | amend the ADRs |
 | 41 | C-RND-a | new | five DEC requests (team slot 5 never shows ownership lights; poster screenshots use a different FOV); two manifest rows need corrections | DEC triage; X-AST pass 2 |
+| 42 | G03a vs G01 | — | **Core Device countdown: 900 (G03a) or 1,200 (siege.md)** | decide from ORIG; fix the losing document |
+| 43 | G03a | DEC-459 vs DEC-561 | overlap (Open against Resolved) | supersede or cross-cite; 7 DEC requests (mostly unstated tie rules) in reports/G03a.md |
+| 44 | G03a | — | missing asset: the Launch Vessel fuelling-loop sample group; wrong role: `mesh.structure.structure_default` is the port pad; fuel-chain consumer paths need correcting | X-AST pass 2 |
