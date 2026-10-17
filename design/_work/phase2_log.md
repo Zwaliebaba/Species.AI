@@ -275,3 +275,7 @@
 ## Fix F2 (02, 04) — done: 31 accepted, 2 partly, 0 rejected, 8 n/a; checks clean
 - Shockwave 02 §2.7 ring 39, 10-wide band, 2–3 hits; Bang table recomputed (R2's own size 1.0/0.25 values were wrong — replay 39→75, 39→43). Difficulty writer added (no desync per V1; only speed scales). 02: immunity bypass (conversions, creature contact), dead IsInvincible, spawn-front rule, m_spawnPoint, 151-tick hold, corpse-fade truncation, NEXTWEAPON no-op (V2), AI table (V6), SpaceShip 244 decision. 04: rocket 8 or 9 moves (slot rule), full shield list, four new outcome tables, casing axis, max(1, life). 04-U2, 04-U6 closed; 04-U1 cites data.
 - Requests: 26 shockwave ring values, 03 turret self-destruct, 06 dish link, 21 fade formula, 41 resolved items, 07 optional.
+
+## Fix F7 (23, 24, 26 + terrain port) — done: 35 findings (29 accepted, 2 partly, 1 rejected — 23 right, 3 n/a); checks clean
+- V12 fixed in P11_terrain_ref.py (sequential += from centre); oracle re-run: exactly 11 digests changed, all equal R7's G1 values; other 58 unchanged → all 69 match independent reviewer. Nuke sea min unchanged 0.2623 (mp_assault_3p_3); building-at-sea counts unchanged. 24 §3.2 rows 7b/7e/24 full state (24 always empty), "—" defined, 3a culling explained; new §4.9.1 per-entity render state. 26 §4.6 per-class damage-flicker table; Christmas lights replaced; debris cap 502; V3/V10/V11 tags; new terrain test vectors.
+## ALL FIXERS F1–F8 DONE. Final pass: F9a (content-doc cross requests), F9b (Part C 40/41/90/README).

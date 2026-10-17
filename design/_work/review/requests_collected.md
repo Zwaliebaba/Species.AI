@@ -63,3 +63,12 @@
 7. **24 `24_rendering.md` L1808 (optional):** note that `globalworld_*.shp` are loaded at every start-up (FULL, load-only), although they are never drawn in a match.
 
 === FIX_BRIEF.md
+=== F7.md
+
+1. **08 (owner of 08_levels_and_level_design.md)**, R7 X2: §6.1 (≈ L806) says "tiles are merged in file order (later tiles win where they overlap)". The code takes the per-sample **maximum**, so tile order matters only through flatten areas (`code/landscape.cpp:501-505`; 23 §7.5).
+2. **22 (determinism)**, R7 X4: §14.8.9 T6 (≈ L1539) lists `Landscape::SphereHit` as a simulation consumer. It has no caller anywhere (`code/landscape.cpp:1063`; 23 §14).
+3. **22**, R7 X5: ≈ L1346 says the `LevelFile` landscape `m_maxHeight` keeps full double precision. It is a `float` field assigned from `atof` (`code/level_file.h:151`, `code/level_file.cpp:787`; 23 §4.2). It is also used only by the colour ramp.
+4. **07 (AI)**, R3 §4: §8 can now link `Location::IsVisible` to [23 §14](../../23_terrain_and_landscape.md#14-landscape-queries-used-by-gameplay), which has a new row for it.
+5. **04 (F2)**: 04-U1's figure is **unchanged** after the V12 port fix. `C_nuke_sea_check.py SRC 25` still gives a minimum sea fraction of 0.2623 (`mp_assault_3p_3`), so no edit is needed. Optionally, 04-U1 could cite 23 §9.4 in place of `_work/drafts/C_nuke_sea_check.csv` to satisfy rule 5.
+6. **Coordinator**, R7 G4: decide whether `design/_work/scripts/P11_terrain_ref.py` and `S_23_terrain_oracle.py` ship as a named deliverable. Doc 23 now inlines enough vectors (§8, §16.3, §16.5, §18) to test an implementation without them, but `dump`/`trace` remain the debugging tools.
+
