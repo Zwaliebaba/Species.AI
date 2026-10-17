@@ -8,7 +8,7 @@ This folder specifies the engine-level model of a reference match: what kinds of
 
 Per-kind behaviour (state machines, stats, weapons) is not here: it is in [units](../02_units/README.md), [buildings and world objects](../03_buildings_and_world_objects/README.md), [supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md) and [bots](../07_bots.md). Terrain generation and height queries are the [terrain component](../../architecture/components/terrain.md); render passes are the [renderer](../../architecture/components/renderer/README.md).
 
-Every requirement in this folder uses the prefix `R-SIM`, and every tuning key starts with `ref.sim.`.
+Every requirement in this folder uses the prefix `R-SIM`, and every tuning key of the folder has the form ref.sim.<object>.<parameter>.
 
 ## The model at a glance
 

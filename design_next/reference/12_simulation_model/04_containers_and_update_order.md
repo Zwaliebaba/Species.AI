@@ -113,7 +113,7 @@ Table 2.2-A Simulation containers.
 
 **R-SIM-213** (MUST) A sliced pool computes the bounds of [01](01_tick_timing_and_main_loop.md) R-SIM-514 from its capacity at the moment each slice starts. A pool that grows during a tick computes the bounds of its later slices in that tick from its new capacity. Slices 0 to 8 each cover ⌊capacity ÷ `ref.sim.update_slices`⌋ + 1 slots; slice 9 runs from the slot after the last slot of slice 8 to capacity − 1, and is empty when that range is empty.
 
-**R-SIM-214** (MUST) Every tick runs its slices in the order 0 to 9, without skipping or repeating a slice. Test builds check that every pool receives its slices in the order 0, 1, …, 9, 0, except for its first slice after it is created or emptied, which can be any slice.
+**R-SIM-214** (MUST) Every tick runs its slices in the order 0 to 9, without skipping or repeating a slice. Test builds check that every pool receives its slices in ascending order from 0 to 9, followed by 0 in the next tick, except for its first slice after it is created or emptied, which can be any slice.
 
 **R-SIM-215** (MUST) A sliced pool that has just been created or emptied records slot 0 as its last advanced slot, not "none". When its first slice of a tick is a slice s greater than 0, that slice starts at slot 1, so slot 0 is not advanced in that tick; from the next tick on, slice 0 starts at slot 0 again. This applies to the member pool of an actor group created during a tick, whose members first advance in a later slice, and to the pools of a team slot initialised during a tick (DEC-006, DEC-455).
 

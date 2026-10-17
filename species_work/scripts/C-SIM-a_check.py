@@ -28,6 +28,11 @@ for f in glob.glob(os.path.join(NEXT, '**', '*.md'), recursive=True):
         if m:
             defs.setdefault(m.group(1), []).append(os.path.relpath(f, NEXT))
 
+planned = set()
+for pf in glob.glob(os.path.join(REPO, 'species_work', 'packages', '*.json')):
+    for tgt in json.load(open(pf, encoding='utf-8')).get('targets', []):
+        planned.add(tgt.rstrip('/'))
+        planned.add(tgt.rstrip('/') + '/README.md' if tgt.endswith('/') else tgt)
 problems = []
 all_ids = []
 alltext = ''
@@ -74,8 +79,9 @@ for name in MINE:
         if target.startswith('http'):
             continue
         tp = os.path.normpath(os.path.join(FOLDER, target))
-        if not os.path.exists(tp):
-            problems.append(f'{name}: link target missing (may be another package): {target}')
+        rel = os.path.relpath(tp, NEXT).replace(os.sep, '/')
+        if not os.path.exists(tp) and rel not in planned:
+            problems.append(f'{name}: link target is neither on disk nor a package target: {target}')
 
 seen = {}
 lo, hi = (int(x) for x in pkg['id_ranges']['R-SIM'].split('-'))
