@@ -990,3 +990,80 @@ String ids cited from other documents: `mode.<mode>.name`, `mode.<mode>.objectiv
 | `ref.map.players.min`, `ref.map.thumbnail.width_fraction`, `ref.map.thumbnail.aspect` | [reference/08](../08_maps_and_level_design/rules_and_conventions.md) |
 | `ref.sim.weather.snow_*` | [reference/12 containers and update order](../12_simulation_model/04_containers_and_update_order.md) |
 | `ref.meta.layout.*` (`ref.meta.layout.picture_inset` among them) | [front_end_presentation.md](front_end_presentation.md) |
+
+## 5 Edge cases and interactions
+
+1. **Map play time and the time limit.** Choosing a map sets the time limit from its play time, and entering the match setup page resets the options to their defaults; the host applies the map's defaults once and the reset keeps the play-time limit, so the row's play time and the applied limit always agree (R-META-052, R-META-054 step 7; DEC-067).
+2. **The mode changes while the match setup page shows.** The page is rebuilt, and on the host the first map of the list is chosen (R-META-054 step 3).
+3. **No team slot yet.** The mode buttons stay hidden and the match setup page stays empty until the session has seated the local player (R-META-041, R-META-054 step 2); a joining player can therefore see an empty match setup page for a moment after the connecting page.
+4. **A map choice not yet applied.** Play does nothing while the local map choice and the match setup's map differ, and the map-select page stays empty until the pressed mode has been applied (R-META-046, R-META-096).
+5. **Slot 0.** A remote human in slot 0 has no kick control (R-META-100).
+6. **Leaving while ready.** A ready joining player who presses Back first withdraws readiness and then lands on the title page, not on the host-or-join page (R-META-103). With the host silent for 5.0 s or more, it leaves at once.
+7. **Unreported removals.** A removal reason without a message sends the player to the title page without an error page; DEC-244 item 11 asks that every failed join report a reason (R-META-070).
+8. **No connecting timeout.** The connecting page waits until Back or a removal (R-META-067).
+9. **The chat rename.** "/name " and "/rename " are found anywhere in a line but the name is taken from a fixed index, and a line holding "//" is never a rename (R-META-112).
+10. **Sudden death and the time limit.** Setting the time limit to "no limit" forces sudden death off and disables it; leaving "no limit" forces it back on, whatever the host had chosen before (R-META-060).
+11. **Siege side rows.** The taken test counts the local slot when a row is pressed but not when it is drawn, so a row drawn as free can still refuse the press: on a 3-player map a defender pressing the defender row again counts 1 defender and is refused (R-META-091).
+12. **Changing the map or mode.** The host must end its session to change either, which drops every joined player (R-META-088).
+13. **Closed slots.** A joining player is offered only an open empty slot, and a session whose open slots are all held is full even when closed slots remain (R-META-101).
+14. **Single player readiness.** The local slot is never ready in single player, so the automatic start never fires and only Play starts the match (R-META-098).
+15. **Long play times.** The play-time column always shows "0:" and the minutes, so a 60-minute play time reads 0:60 (R-META-049).
+16. **Seasonal dates.** Participants whose local dates differ still play one seasonal state, the one that the host's match setup recorded (R-META-113; DEC-118).
+17. **A spectator flag.** A participant that arrives as a spectator gets a match setup page, although no player-facing path creates one (R-META-054 step 2, R-META-102).
+
+## 6 Acceptance criteria
+
+- **AC-META-01** (R-META-003, R-META-033) Given a fresh start, when the front end opens, then the title page shows single player, multiplayer, tutorials, help and options, credits and quit in that navigation order, and no page for credentials, trial editions or updates exists.
+- **AC-META-02** (R-META-007, R-META-011) Given a finished tutorial match, when the player leaves it, then the match rules are reset and the new front-end screen opens at the tutorials page; after any other match it opens at the title page.
+- **AC-META-03** (R-META-027, R-META-028, R-META-029) Given a forward page button, when it is pressed, then the menu-select cue plays and a 1.0 s forward transition starts; given a Back button, then the menu-select cue and then the menu-back cue play and the transition runs backwards.
+- **AC-META-04** (R-META-041, R-META-042) Given the mode-select page before the local player holds a team slot, then no mode button is drawn; when the slot arrives and Spawn Control is pressed, then all eight Spawn Control options are at their defaults in one update and the map-select page opens.
+- **AC-META-05** (R-META-047, R-META-049) Vectors for the play-time column: map play time 15, mode Zone Control → "0:15"; no play time, Relic Run → "0:10"; no play time, Launch Race → "-"; no play time, Spawn Control with its default → "0:10".
+- **AC-META-06** (R-META-049) Given a 3-player map that forces co-op, then the Worker badges take colours 0, 1 and 1; given a 4-player map that forces co-op, then 0, 0, 1 and 1.
+- **AC-META-07** (R-META-052, R-META-054) Given the host on the map-select page for Zone Control, when it presses a map with a play time of 20 that does not allow co-op, then the co-op flag is clear, the match setup page opens, and after its set-up the time limit is 20 and every other option is at its default.
+- **AC-META-08** (R-META-055, R-META-087) Given a joining player's match setup page, then it has no advanced options button, no bot difficulty list and no slot controls, and it has the chat log and the chat input.
+- **AC-META-09** (R-META-058, R-META-059) Given the time-limit spinner of Spawn Control at 1, when the decrease glyph is pressed, then the value is "no limit", shown by `match.options.time_limit.none`; when the glyph is held for 1 s with the speed-up action held, then the value steps 50 times, clamped to the range.
+- **AC-META-10** (R-META-060) Given Spawn Control with sudden death off and a time limit of 10, when the time limit becomes "no limit", then sudden death is off and inactive; when the time limit becomes 1 again, then sudden death is on and active.
+- **AC-META-11** (R-META-063) Given a typed name of 20 characters, when the player options page is left, then the player-name setting holds its first 16 characters and `SetTeamName` carries the same 16 characters; given an empty name, then the setting holds `ui.player.default_name`.
+- **AC-META-12** (R-META-091) Vectors for the Siege side rows on a 3-player map, drawn for a player who holds no side: 0 defenders → defender row free; 1 defender → defender row taken; 1 attacker → attacker row free; 2 attackers → attacker row taken; the random row is never taken. On a 4-player map with 2 defenders, the defender row is taken.
+- **AC-META-13** (R-META-096, R-META-099, R-META-101) Given single player on a 4-player map with slot 3 closed, when Play is pressed, then bot teams are requested for slots 1 and 2 only, slot 3 stays unused for the whole match and `StartMatch` is issued once.
+- **AC-META-14** (R-META-098, R-META-068) Given a host with two joined players, when the last human readies up, then bot teams fill the open empty slots, `StartMatch` is issued exactly once and the wait-for-start page shows until the match-start command executes.
+- **AC-META-15** (R-META-100, R-META-070) Given a remote human in slot 2, when the host presses its kick control, then that participant leaves the session and sees `ui.error.kicked` with Back to the title page; given a remote human in slot 0, then no kick control exists.
+- **AC-META-16** (R-META-103) Given a ready joining player whose host last spoke 1 s ago, when Back is pressed, then readiness is withdrawn first and the player ends on the title page; given the host silent for 6 s, then the player leaves at once to the host-or-join page.
+- **AC-META-17** (R-META-066) Given the connecting page in the connecting state at t = 1.2 s, then the first line ends in 2 dots; given the connected state with 300 of 1,200 command frames processed, then the second line shows 25.
+- **AC-META-18** (R-META-070) Vectors of removal reasons to messages and back pages: full → `ui.error.session_full`, session browser; wrong password → `ui.error.wrong_password`, session browser; kicked → `ui.error.kicked`, title; duplicate identity → `ui.error.duplicate_identity`, title; an unlisted reason → no error page, title.
+- **AC-META-19** (R-META-112) Vectors for a submitted chat line: "/name Ann" → name "Ann"; "/rename Bob" → name "Bob"; "hi //name x" → a chat line; "hi /name x" → the name is the text from index 6, "me x"; a 20-character name after "/name " → its first 15 characters.
+- **AC-META-20** (R-META-113) Given the host's local date of 25 December, then the match setup records the seasonal theme as on for every participant; given 27 December, then off, whatever the joining players' dates.
+- **AC-META-21** (R-META-073, R-META-074) Given a running match with a remote human, when the menu action is pressed with no window open, then the in-match menu opens, the interface hides and the match is not paused; when leave is pressed, then the leave confirmation opens; after game over, leave leaves at once.
+- **AC-META-22** (R-META-002, R-META-085) Given any page, when the player changes any match setup setting, then the change reaches the match setup only as a match-setup command, and no front-end code writes simulation state.
+
+## 7 Dependencies
+
+- **Reference documents:** [front_end_presentation.md](front_end_presentation.md) (layout, backdrop, loading view, explainer panel); [options_localisation_and_hooks.md](options_localisation_and_hooks.md) (settings, localisation, achievement and leaderboard hooks); [01 Skirmish rules and modes](../01_skirmish_rules_and_modes/README.md) (match options, colours, co-op, Siege sides, grace period, HUD, game over); [06 Controls, camera and commands](../06_controls_camera_and_commands/actions_and_bindings.md) (the menu, chat, ready and gamepad actions); [07 Bots](../07_bots/README.md) (bot difficulty); [08 Maps and level design](../08_maps_and_level_design/rules_and_conventions.md) (map catalogue, map display, thumbnails); [10 Audio design](../10_audio_design.md) (the match UI sound events); [11 Tutorial and help](../11_tutorial_and_help.md) (tutorials and help pages); [12 Simulation model](../12_simulation_model/README.md) (lifetimes, teardown, team kinds, colours and the player command catalogue).
+- **Engine components:** [UI framework](../../architecture/components/ui_framework/README.md) with [core and widgets](../../architecture/components/ui_framework/core_and_widgets.md), [layout, rendering, input and localisation](../../architecture/components/ui_framework/layout_rendering_input_and_localisation.md) and [pages and screen recipes](../../architecture/components/ui_framework/pages_and_screen_recipes.md) (ADR-0030 to ADR-0034, ADR-0063); [input](../../architecture/components/input.md); [audio engine](../../architecture/components/audio_engine.md); [platform layer](../../architecture/components/platform_layer.md); [data schemas](../../architecture/components/data_schemas.md) (typed match options).
+- **Assets:** `help.mode_card`, `ui.difficulty_badge`, `ui.worker_badge`, `ui.menu_highlight`, `ui.icon_locked`, `cursor.unavailable`, `thumb.spawn_control`, `thumb.zone_control`, `thumb.relic_run`, `thumb.siege`, `thumb.launch_race`, `thumb.flag_chain`, `map.spawn_control`, `map.zone_control`, `map.relic_run`, `map.siege`, `map.launch_race`, `map.flag_chain`, `amb.lobby_bed`, `sfx.ui.match_ui.menu_select`, `sfx.ui.match_ui.menu_back`, `sfx.ui.power_slots.icon_hover`, `sfx.ui.match_ui.chat_message`, and the string tables `strings.en_gb`, `strings.de_de`, `strings.es_es`, `strings.fr_fr`, `strings.it_it`, `strings.ja_jp`, `strings.ko_kr`, `strings.pt_br` and `strings.ru_ru`. The presentation assets are listed in [front_end_presentation.md](front_end_presentation.md) §7.
+
+## 8 Open decisions
+
+Open decisions whose reference default this document specifies:
+
+- DEC-048 — a post-match results screen; the hooks only (R-META-012, R-META-139, R-META-140).
+- DEC-101 — the seasonal theme; the host's date rule meanwhile (R-META-113).
+- DEC-115 — the fixed match research levels (R-META-081).
+- DEC-202 — command validation and authority (R-META-083).
+- DEC-205 — join, leave and session continuity: the connecting states and the leave threshold (R-META-066, R-META-067, R-META-103).
+- DEC-221 — the application state machine; the screen flow is reference behaviour (R-META-005, R-META-076).
+- DEC-241 — integer option values with inclusive bounds (R-META-059).
+- DEC-243 — lobby authority, the match-setup state and the option versions (R-META-040, R-META-042, R-META-078, R-META-083, R-META-085, R-META-086, R-META-101).
+- DEC-244 — join, admission and spectators: the password, the removal reasons, closed slots and spectators (R-META-057, R-META-064, R-META-066, R-META-070, R-META-101, R-META-102).
+- DEC-245 — session discovery and the browser pages (R-META-040, R-META-064).
+- DEC-248 — identity and entitlement; no credential page (R-META-003, R-META-008, R-META-035).
+- DEC-249 — online services and quick match (R-META-003, R-META-035, R-META-039).
+- DEC-314 — the order of tied maps (R-META-047).
+- DEC-319 — no ambience during loading views (R-META-030).
+- DEC-450 — the colours of bot and unused slots (R-META-095).
+- DEC-802 — maps that match setup does not list (R-META-047).
+- DEC-024, DEC-047, DEC-050, DEC-066, DEC-200 and DEC-226 are cited where the rules touch them.
+
+Resolved decisions applied: DEC-004, DEC-005, DEC-006 (R-META-001); DEC-007 (R-META-002); DEC-026 (R-META-003, the shared match setup page); DEC-035 (a player who leaves a match is replaced by a bot; [reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-069, R-META-140); DEC-036 (the ready-up barrier, R-META-139); DEC-038 (the in-match menu does not pause; pause is a command, R-META-073); DEC-067 (R-META-052, R-META-054); DEC-069 (R-META-139); DEC-073 (R-META-078); DEC-077 (R-META-055); DEC-079 (R-META-099, R-META-101); DEC-099 (R-META-032); DEC-118 (R-META-113); DEC-120 (R-META-059).
+
+Dropped: DEC-054 (the start-up mini-programs, the intro sequence and the attract mode); DEC-333 (trial-edition gating and credential files); DEC-335 (online-service listing fields); DEC-061 (user profiles and mods).
