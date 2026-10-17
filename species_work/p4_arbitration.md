@@ -634,6 +634,90 @@ Not on the item list; C-TER asked G08b to check a statement that only ORIG settl
 - `reference/04_supply_crates_powers_and_weapons/README.md`, R-CRATE-031, last clause: "…; the second tutorial switches it on at its end step, the same step that releases its bots ([reference/11](../11_tutorial_and_help.md) R-TUT-117)."
 - Closes: RA-030.
 
+## A-31 When a Transport frees its sea routes (route RA-093)
+
+**Question.** R-SIM-357 says that only a Transport frees routes, its own sea routes, but no document says when (on a new route, on arrival or on removal). Does ORIG give the trigger?
+
+**Statements.**
+- `reference/12_simulation_model/05_space_routing_and_physics.md` **R-SIM-357**: simulation routes stay until the match world is destroyed; "only a Transport frees routes, its own sea routes"; the default of the Open DEC-651.
+- `reference/02_units/transport.md`: no trigger stated.
+
+**ORIG evidence.**
+- `21_simulation_and_entity_model.md` l.1203: "`DeleteRoute(id)` frees a slot; it is called only by [the local route preview] … and by `Armour` for sea routes [C] grep of `DeleteRoute`"; l.923: simulation routes are never deleted.
+- `02_units_and_entities.md` l.1364 and `07_ai.md` l.974: a Transport creates a route only when a bot order sets its conversion point, which routes directly when the line is clear and otherwise through the sea routing system; player orders never create a route.
+- No ORIG line says at which moment the Transport calls the delete.
+
+**Verdict.** ORIG does **not** settle the trigger: it records only that a Transport deletes its own sea routes. **Design choice** for X-DEC-P4b (fold into DEC-651). Recommendation: the Transport frees its previous sea route when it creates a new route for itself, and frees its current sea route when it is removed. That keeps at most one live sea route per Transport, and it is the only reading under which the delete has any effect, since a bot order is the only place a Transport creates a route.
+
+**Replacements.**
+- `reference/12_simulation_model/05_space_routing_and_physics.md`, R-SIM-357, append: "The reference does not define the moment at which a Transport frees one of its sea routes; the default is that a Transport frees its previous sea route when it creates a new route for itself, and its current sea route when it is removed (DEC-651)."
+- Design-choice note for X-DEC-P4b (DEC-651): "Trigger of a Transport's sea-route freeing: unspecified in the reference. Options: A — free the previous sea route on each new route and the current one on removal (default); B — never free. Recommendation: A."
+- Closes: RA-093 (once X-DEC-P4b records the default).
+
+## A-32 Initialisation draws of a bot controller (route RA-219, the draw-count point)
+
+**Question.** R-SIM-626 counts 4 initialisation draws for a bot controller; reference/07 R-BOT-009 makes exactly 2 (the Beam Dish phase, then the main-cycle phase). Which count is right?
+
+**Statements.**
+- `reference/12_simulation_model/07_randomness_and_integrity.md` **R-SIM-626**: "the initial values of a bot controller (4)", listed apart from "the rate that an actor draws when its kind is set, which a Worker draws once per spawn"; the reference note: "a Worker draws its rate twice per spawn".
+- `reference/07_bots/README.md` **R-BOT-009**: "exactly two draws in this order: the Beam Dish phase … and then the main-cycle phase"; **R-BOT-008**: no placement search and no draw.
+- `reference/02_units/README.md` **R-UNIT-015**: setting an actor's kind draws its initial reload timer once per spawn.
+
+**ORIG evidence.**
+- `07_ai.md` l.189 (bot controller constructor body): "`SetType(TypeAI)`; … `m_radarReposTimer = syncfrand(10)`; `m_timer = syncfrand(20)` (Easy) / `syncfrand(10)` (Standard) / `syncfrand(1)` (Hard …)". These are the two own-value draws, Beam Dish (radar) phase first, plus the rate draw of setting the kind.
+- `02_units_and_entities.md` l.231: setting the kind "also sets `m_reloading = syncfrand(Rate)`"; a constructor that sets the kind is followed by the spawn routine setting it again, so such a spawn draws the rate twice; l.2401, l.2403: the two phase draws.
+- `22_determinism_and_networking.md` l.1055: "`AI::AI` (4 draws)". This total is 1 rate draw in the constructor, the 2 phase draws, and 1 rate draw when the spawn sets the kind again; it does not include the spawn-position search.
+
+**Verdict.** ORIG settles it: the bot controller's own initial values take **2 draws** (Beam Dish phase, then main-cycle phase), as R-BOT-009 says. The reference's 4 also counts the rate draw of setting its kind twice, which R-SIM-626 already lists separately as the per-kind rate draw. R-SIM-626 must give 2 for the bot controller and extend its reference note to the bot controller. R-BOT-009 gains the order relative to the rate draw.
+
+**Replacements.**
+- `reference/12_simulation_model/07_randomness_and_integrity.md`, R-SIM-626: "the initial values of a bot controller (4)" becomes "the initial values of a bot controller (2: the Beam Dish phase, then the main-cycle phase; [../07_bots/README.md](../07_bots/README.md) R-BOT-009)"; and the last sentence ends "…, so each map-placed bot objective marker draws twice at load, and a Worker and a bot controller each draw their rate twice per spawn."
+- `reference/07_bots/README.md`, R-BOT-009, first sentence: "In the initialisation step that creates the bot controller (DEC-652), after the rate draw that setting its kind makes ([02 Units](../02_units/README.md) R-UNIT-015), its state takes the initial values of table 2.3-A, with exactly two draws in this order: …". The rest stays.
+- Not arbitrated (no ORIG question; routing keeps them): RA-219's other points, R-SIM-690 "issues no command", R-SIM-628 (the reference search that DEC-087 replaces) and R-SIM-663.
+- Closes: the draw-count point of RA-219.
+
+## A-33 Three Power-rule readings between reference/04 and reference/06 (route RA-166)
+
+**Question.** (1) Under the tutorial stop block, does a one-shot Power stay Running or Waiting after it fires? (2) Which grant sources does the received-Power pop-up record? (3) Does a Power's fixed map marker vanish 8 s after it is first seen, or after 8 s of on-screen time?
+
+**Statements.**
+- `reference/04_supply_crates_powers_and_weapons/README.md` **R-CRATE-021** ("A one-shot Power then stays Running after it fires and can be fired again"), **R-CRATE-023** (source "Supply crate, starting powers or Comeback Bonus"), **R-CRATE-028** item 2 ("disappears `ref.power.marker.lifetime_s` (8 s of real time) after the local player first sees it") and the tuning note of `ref.power.marker.lifetime_s` ("from the first time the local player sees the marker").
+- `reference/06_controls_camera_and_commands/selection_and_power_slots.md` **R-CTRL-210** step 3 (every cancel is refused, including the self-ending of one-shot Powers, which can therefore be fired again), **R-CTRL-186** step 6 (sources "a Supply crate, a reinforcement or the Comeback Bonus"); `cursor_and_markers.md` **R-CTRL-381**, fixed row ("removed once its on-screen time reaches `ref.power.marker.lifetime_s` after it was seen").
+
+**ORIG evidence.**
+- (1) `06_player_control_and_input.md` l.524: in the tutorials the delete is refused, "so one-shot tasks (Nuke, Infection, forests, AntNest, Plague, Eggs, Meteor) whose `Target` relies on self-termination remain `StateStarted` and **can be fired again**; AirStrike sets Running first and is removed by `Advance` when its effect object disappears"; l.392: a one-shot type goes from Started straight to removal. Started is the Species Waiting state (R-CRATE-025).
+- (2) `06_player_control_and_input.md` l.318: the pop-up source record has "`m_source` (0 crate, 1 reinforcement, 2 retribution)"; l.418: every grant pushes source 0; `05_economy_and_population.md` l.600 tags Transit Gate reinforcement grants with source 1; `04_crates_powerups_and_weapons.md` l.508 and l.519 tag Comeback Bonus grants with source 2. Starting powers are granted through the same grant path and keep source 0.
+- (3) `06_player_control_and_input.md` l.1062 (fixed marker): "removed when `m_onscreenTimer ≥ 8 s` once seen"; l.1075: "on-screen accumulates `m_onscreenTimer`; seen after 1 s". `04_crates_powerups_and_weapons.md` l.200 ("disappears 8 s after first being seen") is a summary of the same rule.
+
+**Verdict.** ORIG settles all three for **reference/06**: (1) the one-shot Power stays **Waiting**; the airstrike (both bomb kinds) becomes Running and ends when its effect is gone. (2) The sources are **Supply crate, reinforcement and Comeback Bonus**; a starting power records the Supply crate source. (3) The marker goes when its **accumulated on-screen time** reaches 8 s; it is tested only once it has been seen, and time off screen does not count. (The Sickness entry of the ORIG list is never a Power, A-7, so it is left out of the Species list.)
+
+**Replacements.**
+- `reference/04_supply_crates_powers_and_weapons/README.md`, R-CRATE-021:
+  > **R-CRATE-021** (MUST) During the first tutorial, and during the second tutorial until its bot is allowed to spawn, no Power can be stopped. A one-shot Power whose effect ends it at once (Missile Barrage, Swarm, Essence Grove, Blight Grove, Hive, Brood and meteor shower) therefore stays Waiting after it fires and can be fired again; the airstrike Power (both bomb kinds) is unaffected by the block, because it becomes Running when it fires and ends when its effect is gone ([reference/06](../06_controls_camera_and_commands/selection_and_power_slots.md) R-CTRL-210). This is the reference default of DEC-550.
+- Same file, R-CRATE-023, the parenthesis: "(a Supply crate, a reinforcement or the Comeback Bonus; a starting power records the Supply crate source)", and add "([reference/06](../06_controls_camera_and_commands/selection_and_power_slots.md) R-CTRL-186)".
+- Same file, R-CRATE-028 item 2: "**Map marker**: a fixed marker at the effect's position with the outcome's icon, in the colour of the team the effect belongs to; it is removed when its accumulated on-screen time for the local player reaches `ref.power.marker.lifetime_s` (8 s of real time), tested once the player has seen it, so time off screen does not count ([reference/06](../06_controls_camera_and_commands/cursor_and_markers.md) R-CTRL-381)."
+- Same file, tuning row `ref.power.marker.lifetime_s`, notes: "presentation; accumulated on-screen time, tested once the local player has seen the marker".
+- No change to reference/06.
+- Closes: RA-166.
+
+## A-34 Which commands boost the selection arrows (route RA-200, point b)
+
+**Question.** R-SIM-405 step 6 has selecting a unit or structure boost the cursor's selection arrows; reference/06 has only `SelectPower` do it (R-CTRL-200, R-CTRL-375). Which commands boost?
+
+**Statements.**
+- `reference/12_simulation_model/06_teams_and_player_commands.md` **R-SIM-405** step 6: selecting emits presentation events for the team's own participant, including "the cursor arrows grow (×2.0 …)".
+- `reference/06_controls_camera_and_commands/selection_and_power_slots.md` **R-CTRL-200** and `cursor_and_markers.md` **R-CTRL-375**: "Executing `SelectPower` emits a presentation event that boosts the selection arrows by `ref.ctrl.cursor.selection_boost`"; R-CTRL-375 adds that a match draws no selection arrows, so the boost has no visible effect.
+
+**ORIG evidence.**
+- `06_player_control_and_input.md` l.1046: "`BoostSelectionArrows(s)` …; called with 2.0 by `TaskManager::SelectTask` **and** `Team::SelectUnit` for the local team [C] — arrows are drawn only by the [single-player] render path, so in [a match] the call has no visible effect"; l.467: the Power selection calls it.
+
+**Verdict.** ORIG settles it: **both** commands boost, selecting a unit or structure (R-SIM-405) and selecting a Power (R-CTRL-200). Both documents are partly right; R-CTRL-375 must name both. R-SIM-405 stays.
+
+**Replacements.**
+- `reference/06_controls_camera_and_commands/cursor_and_markers.md`, R-CTRL-375, first sentence: "Executing `Select` ([Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-405) and executing `SelectPower` (R-CTRL-200) each emit a presentation event that boosts the selection arrows by `ref.ctrl.cursor.selection_boost`." The rest stays.
+- No change to R-SIM-405 or R-CTRL-200.
+- Closes: point (b) of RA-200 (the other points of RA-200 are alignment fixes with no ORIG question).
+
 ---
 
 ## Summary
@@ -665,5 +749,14 @@ Not on the item list; C-TER asked G08b to check a statement that only ORIG settl
 | A-23 | report G02b | Wisp wobble draws per tick | three `NextSigned(1)` and one `NextUnit(20)` | yes | creatures.md (R-UNIT-596, one tuning key) |
 | A-24 | report C-TER | tile writer separator | values separate through the power field's padding | yes | reference/08 map_editor_hooks.md (R-MAP-387 clause) |
 | A-25 | coordinator | damage-flicker cadence | once per tick period; frames only read the flag | yes | reference/02 README (R-UNIT-051) |
+| A-26 | RA-066 | Frenzy and the Fury damage factor | only a Fury link gives the factor | yes | worker.md (R-UNIT-125, R-UNIT-116 step 4) |
+| A-27 | RA-073 | Worker stand distance at a Flag post | 20 wu stand distance, separate from the 40 wu capture radius | yes | worker.md (R-UNIT-095, new key) |
+| A-28 | RA-324 | match option definitions | 38 in scope (39 with the debug-only mode) | yes | reference/00 (R-VIS-019, tuning row) |
+| A-29 | RA-117 | hostile outcomes and map exclusions | owner decision O18 (DEC-107) stands; ORIG gives the superseded default | owner decision | reference/00 (R-VIS-124, §8 row) |
+| A-30 | RA-030 | second tutorial switches basic outcomes on | at the end step, which also releases the bots | yes | reference/04 README (R-CRATE-031) |
+| A-31 | RA-093 | trigger of a Transport's sea-route freeing | not stated in ORIG | **design choice** | reference/12 05 (R-SIM-357 sentence); note for X-DEC-P4b (DEC-651) |
+| A-32 | RA-219 | bot controller initialisation draws | 2 own draws after the kind's rate draw; the reference total of 4 counts the rate twice | yes | reference/12 07 (R-SIM-626), reference/07 README (R-BOT-009) |
+| A-33 | RA-166 | three Power rules | stays Waiting; sources crate, reinforcement, Comeback Bonus; accumulated on-screen time | yes | reference/04 README (R-CRATE-021, R-CRATE-023, R-CRATE-028, tuning note) |
+| A-34 | RA-200 (b) | commands that boost the selection arrows | both `Select` and `SelectPower` | yes | reference/06 cursor_and_markers.md (R-CTRL-375) |
 
-Design choices for X-DEC-P4b: A-19 and A-20 (both item 118). DEC text for X-DEC-P4a: A-3 (DEC-085). No other entry needs a DEC change; A-12 means the proposed action of item 52 ("G07 states 21 with DEC-064") is not taken.
+Design choices for X-DEC-P4b: A-19 and A-20 (both item 118) and A-31 (DEC-651). DEC text for X-DEC-P4a: A-3 (DEC-085). No other entry needs a DEC change; A-12 means the proposed action of item 52 ("G07 states 21 with DEC-064") is not taken.

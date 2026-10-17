@@ -4,7 +4,7 @@
 
 | File | Size | Content |
 |---|---|---|
-| `species_work/p4_arbitration.md` | 78.0 KB | 25 entries A-1 to A-25, each with question, statements, ORIG evidence (file and line), verdict and replacement text; summary table at the end |
+| `species_work/p4_arbitration.md` | 101.7 KB | 34 entries A-1 to A-34, each with question, statements, ORIG evidence (file and line), verdict and replacement text; summary table at the end |
 | `species_work/scripts/` helper named X-ARB + `_extract_replacements.py` (the mandated `<ID>_*.py` form; its name trips one technology pattern of the forbidden list, a false positive) | 1.3 KB | pulls the replacement blocks out of the working file so they can be scanned on their own |
 | `species_work/reports/X-ARB.md` | this file | |
 
@@ -44,16 +44,28 @@ Extra conflicts found in the Phase 3 reports that only ORIG could settle:
 Coordinator request (after the first hand-back):
 - A-25 (VFX-126 against R-UNIT-051): settled for VFX-126. ORIG computes the damage-flicker flag once per tick inside the per-tick advance; each render frame only reads it. The sine uses the unscaled wall time. Fix: R-UNIT-051 (full replacement in A-25).
 
+Coordinator request 2 (conflicts flagged by the routing agents; route ids closed):
+- A-26 (RA-066): only a Fury link gives the 0.75 damage factor; the Frenzy timer gives the combat behaviours only. Fix: R-UNIT-125, R-UNIT-116 step 4.
+- A-27 (RA-073): the Worker's 20 wu stand distance is a separate constant; the Flag post's capture radius is 40 wu. Fix: R-UNIT-095, plus a new key `ref.unit.worker.flag_stand_range`.
+- A-28 (RA-324): 38 option definitions in scope; the 39th belongs to the debug-only mode. Fix: R-VIS-019 and its tuning row.
+- A-29 (RA-117): owner decision O18 (DEC-107) stands. ORIG only confirms that hostile outcomes ignore exclusions in the reference behaviour, which O18 replaces. Fix: R-VIS-124 and the §8 row.
+- A-30 (RA-030): basic outcomes are switched on at the second tutorial's end step, the same step that releases the bots. Fix: R-CRATE-031 wording.
+- A-31 (RA-093): ORIG does not say when a Transport frees its sea routes. **Design choice**: default is to free the previous route on each new route and the current one on removal. Note for X-DEC-P4b (DEC-651); R-SIM-357 gains one sentence.
+- A-32 (RA-219, draw count only): the bot controller makes 2 draws of its own, after the rate draw that setting its kind makes. The reference total of 4 counts the rate draw twice. Fix: R-SIM-626 and R-BOT-009. The other points of RA-219 stay with the routing pass.
+- A-33 (RA-166): reference/06 is right on all three points. A one-shot Power stays Waiting. The pop-up sources are Supply crate, reinforcement and Comeback Bonus. The marker is removed after 8 s of accumulated on-screen time. Fix: R-CRATE-021, R-CRATE-023, R-CRATE-028 and a tuning note.
+- A-34 (RA-200 point b): both `Select` and `SelectPower` boost the selection arrows. Fix: R-CTRL-375.
+- X-ROUTE-b: none of its X-ARB rows is a new conflict. RB-051, RB-056, RB-173, RB-174, RB-208, RB-221, RB-224 and RB-292 apply existing entries. RB-091 is a citation fix: A-1 confirms that R-BLDG-048 should cite `ref.match.colour.no_group`. RB-306 waits on X-DEC-P4b.
+
 ## Hand-offs
 
 - **X-DEC-P4a:** the DEC-085 replacement text in A-3. A-12 means item 52's proposed action is not taken.
-- **X-DEC-P4b:** the design-choice notes in A-19 and A-20, for the item 118 entry.
+- **X-DEC-P4b:** the design-choice notes in A-19 and A-20 (item 118) and A-31 (DEC-651).
 - **Document fixers / X-ROUTE:** every "Replacements" block. The summary table at the end of `p4_arbitration.md` lists, for each entry, the file and requirement ids that must change.
 - **Not arbitrated** (no ORIG question): G07's request to align R-UNIT-359 with R-BOT-014. It belongs to the routing pass and to the Open DEC of item 50.
 
 ## Checks
 
-- Replacement text: the extraction helper pulls all 122 replacement lines into a scratch file. `scan_patterns.py` with `forbidden_patterns.tsv` prints nothing on it, and with `soft_patterns.tsv` prints nothing either.
+- Replacement text: the extraction helper pulls all 165 replacement lines into a scratch file. `scan_patterns.py` with `forbidden_patterns.tsv` prints nothing on it, and with `soft_patterns.tsv` prints nothing either.
 - Whole working file: it has hits (137 forbidden, plus soft-pattern hits). Every hit is on the header line or inside an ORIG evidence quote, which the X-ARB brief allows for this working file. Nothing in this file is meant for `design_next/`.
 
 ## Could not do
