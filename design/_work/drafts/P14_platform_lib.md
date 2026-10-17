@@ -833,10 +833,11 @@ line      := blank | item | other
 blank     := a line with no alphanumeric character before the first '#'  (kept verbatim as template text)
 item      := { non_alnum } key value_sep value
 key       := alnum { alnum }                      ; iswalnum — letters/digits only; '_' or '.' END the key
-value_sep := ' ' { ' ' | '\t' | '=' }             ; the char right after the key is consumed unconditionally,
-                                                  ; then any whitespace or '=' is skipped
+value_sep := any_char { wspace | '=' }           ; the char right after the key is consumed unconditionally (whatever it is),
+                                                  ; then any iswspace() char or '=' is skipped
 value     := rest of line (after TextReader comment stripping; trailing spaces kept)
 ```
+Because the line first goes through the tokeniser's cleaning (§29.T.2), a value can never contain `#` (e.g. a player name with `#` is truncated on the next load); `:` and `,` inside values are preserved (rest-of-line), but leading `:`/`,` before the key are skipped.
 Value typing [C] `PrefsItem::PrefsItem`:
 
 | Condition on `value` | Type | Stored as |
