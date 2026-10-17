@@ -3024,3 +3024,97 @@ AddSequenceItem 3 1234
 ```
 
 **Discrepancies.** `BuildGameEntries` stores `maps.GetData(i)->m_mapId` (game-type index `i`) instead of `GetData(x)` [C].
+
+---
+
+## 12 Re-implementation guidance for the new engine
+
+Recommendations for the format layer of the new game (Windows, C++23, DirectX 12, multiplayer) [I unless marked]:
+
+1. **One tokeniser, fixed traps.** Keep a single line reader for any legacy-compatible text format, but: process an unterminated last line in every reader; accept UTF-8 (with or without BOM) besides UTF-16; add a quoting rule for free text; never hand a NULL token to a parser — every block parser checks token availability and reports `file:line: expected <field>`; stop after a terminator instead of reading past it (§3.1).
+2. **Table-driven schemas.** Describe every block as keyword → (type, units, default, range) so the lobby scanner and the level loader share one definition (today they diverge in case sensitivity, §4.1.4) and so writers emit full precision (today 2 decimals, §4.1.17, §5.1, §7.4).
+3. **Identity vs display.** Treat game-type names, building/entity/research type names, phrase ids, control names and marker names as stable ids distinct from display text; validate every cross-reference at load (mount names, link ids, objective locations, sample names, effect names).
+4. **No positional binding.** Bind `stats.txt`-style and `effects.txt`-style tables by key, not row order (§7.1, §7.5); keep the order only as a migration aid.
+5. **Determinism.** Parse simulation numbers with a platform-independent decimal parser and round to the simulation type (the original's F32 rounding, §1.3); exchange a content hash of the map and of all simulation tables before a match starts (§4.6).
+6. **Archives.** Replace RAR with an open indexed pack (e.g. zip-store or a custom PAK) keeping ordered mounts, last-mount-wins, loose-file override, case-insensitive `/`-separated keys (§10.1).
+7. **Assets.** Replace `.shp` with glTF 2.0 (nodes = fragments, empties = markers, per-vertex colour) and BMP with PNG/DDS (BCn) carrying real alpha; keep the pink-key and green-as-alpha conventions only in an importer (§8.1, §8.3).
+8. **Network container.** Replace `Directory` with a schema-checked, length-prefixed message format with hard limits on counts, string lengths and total datagram size (≤ the path MTU), and versioned field ids (§3.5).
+9. **Runtime files.** No `redshirt2`; versioned headers on every runtime-written file; preferences stored atomically as typed values (TOML/JSON) with one defaults table (§3.3, §5.1).
+
+---
+
+## Open questions and unknowns
+
+| Id | Question | Tag | What would resolve it |
+|---|---|---|---|
+| 29-U1 | Did any retail archive (e.g. `patch.dat`) ship `levels/level_enum.txt`, without which "Master of Multiwinia"/"Explorer" are never awarded? (§4.2) | [U] | list a retail `main.dat` / `patch.dat` |
+| 29-U2 | Was `data/default_preferences.txt` ever installed loose, so that first-run defaults (`WaitVerticalRetrace = 0`, `NetworkClientPort = 4001`) applied? (§5.1) | [U] | check `tools/init.list` against a retail `init.dat`, or a clean retail install |
+| 29-U3 | Did retail editions ship complete Japanese/Korean/Portuguese language files (the tree's are ~10 % complete with no English fallback)? (§6.1) | [U] | inspect a retail `language.dat` and the `tools/*language.list` used for each SKU |
+| 29-U4 | Are data-only marker names (`MarkerIsland*`, `MarkerTrunk*to*`, `MarkerFloat*`, …) looked up through a `sprintf` pattern the literal grep missed? (§8.1) | [U] | full call-graph search of `LookupMarker` arguments |
+| 29-U5 | Exact `tools/Rar.exe` version and whether retail `.dat` files used RAR 2.9 or 3.x method numbering (`animator.dat` shows unpack version 29) (§10.1) | [U] | run `Rar.exe` without arguments, or read a retail `.dat` header |
+| 29-U6 | Exact failure mode of a NULL token in release (`atoi(NULL)` access violation vs CRT invalid-parameter termination) (§1.4) | [U] (immaterial for a re-implementation) | run the original with a truncated file |
+| 29-U7 | Was the shipped `MultiwiniaSupport.exe` built from `contrib/XCrashReport` unchanged? (§11.14) | [U] | compare resources/strings of the shipped binary |
+| 29-U8 | What `animator.exe` writes beyond `AnimatedPanel::Write` (no source in tree) (§8.6) | [U] | run the tool and diff its output |
+| 29-U9 | Contents of `patch.dat` and `branding.dat` (could supply missing icons such as `icons/compass_empty.bmp`) (§8.7, §10.1) | [U] | inspect the archives of a retail install |
+| 29-U10 | Whether `new CameraMount()` zero-initialises the POD under MSVC 2005 (decides whether a 63+ character mount name is terminated) (§4.1.11) | [I] | compile a test with the original toolchain |
+| 29-U11 | Hang on an unterminated `[` in a phrase (`inOffset += len + 1` with `len = −2`) — derived from arithmetic, not observed (§6.1) | [I] design-critical for localisation tooling | add an unterminated `[` to a test language file and run |
+| 29-U12 | Letters larger than the 1 500-byte receive buffer are dropped and resent forever (§3.5) | [I] design-critical for the network format | send an oversized letter in a LAN test |
+| 29-U13 | Marker `front` sign convention differs from fragments in the exporter (marker along +Y, fragment along −Y of the Max node) (§8.2) | [I] | export a test scene with the plug-in |
+| 29-U14 | A locally modified map desyncs instead of being rejected because no map CRC is exchanged before a match (§4.6) | [I] design-critical | two-client test with one edited map |
+| 29-U15 | Whether replaying `serverHistory.dat` reproduces a match (no version header; seq-id equality quirk) (§11.6) | [I] | record and replay a LAN match with `RecordDemo` 1/2 |
+
+---
+
+## Docs-vs-code discrepancies
+
+| Doc / comment | Says | Code does | Ref |
+|---|---|---|---|
+| `docs/input_preferences_syntax.txt` | grammar without `~` icon lines, `value`/`alias` drivers, `repeat`, `key any`/`mouse any`, thumbstick directions, `lefttriggerb`/`righttriggerb` | all of these are accepted (§5.2) | `code/lib/input/input.cpp:InputManager::parseInputPrefs`, `code/lib/input/inputdriver_xinput.cpp` |
+| `docs/input_preferences_syntax.txt` | "A preference value is always false if there is no corresponding preference manager entry" | `pref X` with a non-existent key **fails to parse** (binding rejected) | `code/lib/input/inputdriver_prefs.cpp:PrefsInputDriver::parseInputSpecification` |
+| `docs/input_preferences_syntax.txt` | user prefs override the FIRST binding of the system file | true for each user line, but several user lines for one control overwrite each other (replace semantics) | `code/lib/input/control_bindings.cpp:ControlBindings::bind` |
+| `docs/top level map.txt` | each level file specifies a map file at the start; global data has an "X Z position" per map | map/mission pairing comes from `game.txt` `Locations` rows; `locations.txt` stores X Y Z | `code/global_world.cpp:GlobalWorld::ParseLocations`, `LoadLocations` |
+| `docs/changes.txt` (Darwinia Steam notes) | default language read from `HKCU\software\valve\steam\language` | `GetLocaleInfo(LOCALE_SENGLANGUAGE)`; no registry read | `code/app.cpp:App::InitLanguage` |
+| `docs/changes.txt` (Darwinia) | mods in `mods/<name>/`; "stats.txt reloaded when a mod is selected" | mod look-up compiled out (`USE_DARWINIA_MOD_SYSTEM` undefined) | `code/lib/resource.cpp:Resource::GetTextReader`, `GetBinaryReader` |
+| `data/multiwinia.txt` header | `Change: 0 = DropDownMenu, -1 = CheckBox` | consistent | `code/UI/GameMenuWindow.cpp` |
+| `data/language/english.txt` comment | `*BETATESTERS` is replaced by all beta-tester names | consistent; the phrase must be exactly `*BETATESTERS` | `code/UI/GameMenuWindow.cpp:ReadCredits` |
+| `data/effects.txt` header | "Default: the starting value" | defaults are not applied to parameters omitted in `sounds.txt` (they are fixed 0); the editor seeds with the minimum | `code/sound/soundsystem.cpp:SoundSystem::ParseSoundEffect`, `code/interface/soundeditor_window.cpp` |
+| `data/stats.txt` header | `SPED` in m/s, `RATE` "secs to reload", `NAME` = creature name | rows bound by position; speed × (1 + difficulty/10); instance copies truncated to `unsigned char` | `code/worldobject/entity.cpp:EntityBlueprint::Initialise`, `GetStat`, `Entity::SetType` |
+| `code/lib/bitmap.h` comment on `ConvertColourToAlpha` | luminance → alpha | **green channel** → alpha, RGB := white | `code/lib/bitmap.cpp:BitmapRGBA::ConvertColourToAlpha` |
+| `tools/ShapeExporter` description | "Futurewar Shape Format v1.0" (the exporter writes loadable files) | the exporter no longer compiles against `code/lib/shape.h`; shipped strip-encoded shapes came from an older exporter | `tools/ShapeExporter/ShapeExporter.cpp:ShapeExporter::BuildShapeFragment` |
+| `code/lib/shape.cpp:ShapeFragment::WriteToFile` | writes a loadable `.shp` | broken `%5.2`/`%7.3`/`%6.3` formats; colours not un-scaled | `ShapeFragment::WriteToFile`, `ShapeMarker::WriteToFile` |
+| `code/gesture_demo.h:GestureDemo::GetCoords` comment | returns a mouse position scaled for the current screen resolution | scales both axes by screen **height**; interpolation weights swapped | `code/gesture_demo.cpp:GestureDemo::GetCoords` |
+| `code/level_file.cpp:LevelFile::ParseLights` comment | mission lights override map lights | `ParseMissionFile` rejects `Lights` blocks; only a second `Lights` block in one map file is ignored | `LevelFile::ParseLights`, `LevelFile::ParseMissionFile` |
+| `code/sound/sample_cache.cpp` comment | "Largest song takes 13 MB" | the largest shipped track decodes to 29.0 MiB | `CachedSample::CachedSample` |
+| `code/team.h:TeamControls` comment | update `NetworkUpdate::GetByteStream` when adding flags | that function no longer exists; packing is `TeamControls::Pack` | `code/team.cpp:TeamControls::Pack` |
+| `MultiwiniaSupport.ini`, installers | user files `userprefs.txt`, `authkey` in the install directory | the game writes `user_input_preferences.txt`, reads `authkey.dev`, under `<P>` | `code/lib/input/file_paths.cpp`, `code/app.cpp:App::InitMetaServer`, `App::GetProfileDirectory` |
+
+---
+
+## IP items
+
+| Item | Kind | Ref | Neutral placeholder |
+|---|---|---|---|
+| "Multiwinia", "Darwinia", "Darwinian(s)", "Futurewinian", "Rocketwinians" (in `multiwinia.txt`, `stats.txt`, `sounds.txt` source names such as `MultiwiniaInterface`, file names `darwinian*.bmp`) | name / brand | `data/multiwinia.txt`, `data/stats.txt`, `data/sounds.txt`, `code/worldobject/crate.cpp:Crate::GetName` | "the game", "Sprite", "Future Sprite", "Rocket Sprites" |
+| Game-type names `Domination`, `KingOfTheHill`, `CaptureTheStatue`, `Assault`, `RocketRiot`, `Blitzkrieg`, `TankBattle` (as this specific set) | name | `data/multiwinia.txt` | `ZoneControl`, `HoldTheCentre`, `CarryTheIdol`, `AttackDefend`, `RocketRace`, `ZoneChain`, `ArmourMatch` |
+| Map file names `mp_*` and location names (`garden`, `containment`, `mine`, `generator`, `yard`, `escort`, `pattern_buffer`, `biosphere`, `receiver`, `temple`, `launchpad`, `sandbox`) | name | `data/levels/`, `data/game.txt` | `map_<mode>_<players>p_<n>`, `region_<n>` |
+| Every phrase text of `data/language/*.txt` (UI strings, credits, help) | text | `data/language/` | new text; keep only the id scheme |
+| Beta-tester and credit names | text (personal names) | `data/betatesters.txt`, `data/multiwinia_betatesters.txt`, `multiwinia_credits_*` | never reuse; own credits |
+| Dr Sepulveda portraits, `OTHER Sepulveda` sound source, `puritycontrol_*` dialogue, `buyme` cut-scene | character / art / text | `data/sepulveda/*`, `data/sounds.txt`, `data/purity/buyme.txt` | "Mentor portrait 1–5"; do not implement purity control |
+| "Purity Control" data set | text / name | `data/purity/*` | omit |
+| Building / entity / research type names used as file keywords (`SpawnPointMaster`, `TrunkPort`, `SoulDestroyer`, `Virii`, `Triffid`, …) | name | §4.1.10, §4.1.13, §4.4 | new neutral ids (`SpawnHub`, `Portal`, …) |
+| 139 `.shp` models and 133 `.max` sources | art | `data/shapes/`, `data/shapes/source/` | new models (glTF) |
+| 506 BMP images (icons, help pictures, thumbnails, sprites, textures, font pages, terrain ramps, animation sprites) | art | `data/**/*.bmp` | new art; terrain ramps may be regenerated procedurally |
+| 6 `.anim` choreographies | art / animation | `data/animations/*.anim` | new explainer animations |
+| 1 332 Ogg samples incl. licensed retro tracks by "Tresk", "Trash80", "DMA-SC" (file names) | audio (incl. third-party music) | `data/sounds/`, `data/mwsounds/` | new audio library |
+| `sounds.txt` / `effects.txt` authored mix data | data (creative tuning) | `data/sounds.txt`, `data/effects.txt` | re-author; effect *types* (chorus, echo …) are generic |
+| Gesture training vectors and demo strokes | data | `data/gestures.txt`, `data/gesture_demos/*` | retrain (the Rubine algorithm is public) |
+| Value-driver names `Pecan`, `Hummingbird`; test-bed name `TESTBED_GodOfCode`; profile names `AccessAllAreas`, `AttractMode` | name | `code/lib/input/inputdriver_values.inc`, `testbedconfig.txt`, `code/app.cpp` | `AlwaysTrue`, `FeatureFlagA`, `DevProfile` |
+| Obfuscation magic `redshirt2` and its key table; exporter name "Futurewar"; author string "Introversion Software" | text / brand | `contrib/systemiv/lib/filesys/text_stream_readers.cpp`, `contrib/systemiv/lib/filesys/text_file_writer.cpp`, `tools/ShapeExporter/ShapeExporter.cpp` | none (no obfuscation; own tool names) |
+| Folder / bundle names `Introversion\Multiwinia`, `uk.co.introversion.*` | brand | `code/app.cpp:App::GetProfileDirectory`, `App::GetPreferencesPath` | `<Company>\<Game>` |
+| Auth-key format, demo-key literal, `DEMO`/`AMBR` prefixes | brand / credential | `contrib/systemiv/lib/metaserver/authentication.cpp` | own licensing scheme |
+| Crash tool name `MultiwiniaSupport` | brand | `MultiwiniaSupport.ini`, `contrib/XCrashReport` | `<Game>Support` |
+| `animator.exe`, `animator.dat` (tool binary and its UI data) | software | repository root | own tooling |
+| `banner_template.psp` | art source | `data/icons/banner_template.psp` | omit |
+| Third-party formats and names: RAR/UnRAR (format licence), DirectSound effect names `DSound_*` (Microsoft), Paint Shop Pro, Photoshop `.grd`, amBX (`ambx.dat`) | third-party | as listed | avoid RAR; generic effect names |
+
+---

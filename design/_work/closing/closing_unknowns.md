@@ -1,9 +1,68 @@
 # Collected "unknowns" sections
 
+<!-- from 00_overview.md -->
+### From 00_overview.md
+
+Only the unknowns that change what the game *is* at overview level; each links the document that owns it.
+
+| ID | Question | Tag | What would resolve it | Owner |
+|---|---|---|---|---|
+| 00-U1 | Did the retail (Steam / Xbox Live) build have a real achievement layer replacing the PC stubs, and were achievements persisted? | [U] | the retail branch or binary; not in this tree | [01](01_game_modes.md#open-questions-and-unknowns) 01-U4, [09](09_meta_systems.md#open-questions-and-unknowns) 09-U1 |
+| 00-U2 | Is the 11-tick "second" intended pacing or an accident that the balance was then tuned around? | [I] accident; balance tuned under it | design decision for the new game | [01](01_game_modes.md#open-questions-and-unknowns) 01-U2 |
+| 00-U3 | What was the handicap meant to do (binary, diluted by the two special teams)? | [U] | design notes or patch history | [05](05_economy_and_population.md#open-questions-and-unknowns) 05-U5 |
+| 00-U4 | Intended per-team cap divisor (level `NumPlayers`, alliances not pooled) and why two co-op maps are uncapped | [U] | design notes; play-testing data | [05](05_economy_and_population.md#open-questions-and-unknowns) 05-U6 |
+| 00-U5 | Intended role of the monster and Futurewinian teams in win checks (inconsistent across modes) | [I] | design intent not recorded | [01](01_game_modes.md#open-questions-and-unknowns) 01-U10 |
+| 00-U6 | Was multi-round Assault (the manual's "switches around") ever enabled in a shipped patch? | [U] | later source or patch notes | [01](01_game_modes.md#open-questions-and-unknowns) 01-U11 |
+| 00-U7 | How the external metaserver / matchmaker behaved (listing, demo restrictions, NAT relay) — its server side is not in the tree | [U] | metaserver source or packet capture | [09](09_meta_systems.md#open-questions-and-unknowns) 09-U11, [22 §12](22_determinism_and_networking.md#12-lobby-and-server-discovery-protocol) |
+| 00-U8 | What the retail `patch.dat` and `branding.dat` archives contained (they are loaded but no build list exists; they could override shipped data or supply assets the tree lacks) | [U] | retail install contents | [31](31_platform_build_and_tools.md), [25](25_textures_and_assets.md) |
+| 00-U9 | Whether `default_preferences.txt` is applied on first run of a packaged install (it lives in `main.dat`, read before archives load) | [I] | first launch of a packaged build | [09](09_meta_systems.md#open-questions-and-unknowns) 09-U4 |
+| 00-U10 | Was lobby or match music ever planned beyond the ambience beds? | [U] | designer interview; moot for the new game | [10](10_audio_design.md#open-questions-and-unknowns) 10-U12 |
+
+<!-- from 01_game_modes.md -->
+### From 01_game_modes.md
+
+| Id | Question | Status / current best reading | What would resolve it |
+|---|---|---|---|
+| 01-U1 | Does the lobby keep the map's PlayTime or the mode default TimeLimit (§3.5, B8)? | [I] usually PlayTime: the default re-request normally carries the same option version and is discarded; default wins only if the server echo arrives between the two frames | instrumented host session logging `GameOptionVersion` for `GAME_PARAM[TimeLimit]` around a map click |
+| 01-U2 | Is the 11-tick "second" (B1) intended pacing or an accident? | [I] accident of `t −= 0.1; if (t <= 0)` in double; but every shipped balance value was tuned under it | design decision for the new game (keep 1.1 s or re-tune) |
+| 01-U3 | How long does a besieged rocket survive (attackers throw grenades, damage ×0.2, decay 0.33/s)? | [U] needs grenade damage on buildings | combine [04](04_crates_powerups_and_weapons.md) grenade damage with [02 §4.4](02_units_and_entities.md#4-darwinian) AttackingBuilding rate; or measure |
+| 01-U4 | Did the retail (Steam) build have a real achievement layer replacing the stubs? | [U] not in this tree | retail binary / Steamworks integration |
+| 01-U5 | Effect of the out-of-bounds `m_teams[255]` read on a Blitzkrieg draw (B11) | [I] reads unrelated `Multiwinia` memory; result only feeds a stub | debugger on a Blitzkrieg draw with SuddenDeath off |
+| 01-U6 | Can attackers flip a detonation into a win by completing station capture during the pulse wave (B19)? | [I] code allows it; the wave kills non-friendly Darwinians, so rare | in-game test on a small Assault map |
+| 01-U7 | Can a rocket in Flight be destroyed by air strikes or nukes (B20)? | [I] code allows it | in-game test |
+| 01-U8 | Exact distribution of 10- vs 11-tick recount periods for zones, flags and statues | [I] replay of an accumulating double clock gives ~57 % 11-tick periods | instrumented run logging recount ticks |
+| 01-U9 | Whether the Domination co-op loop bound (B13) can end a game early on shipped co-op maps | [I] only if a hostile team sits in a slot ≥ totalTeams | enumerate slot layouts for `mp_domination_4P_1/4P_2` |
+| 01-U10 | Intended behaviour of special teams (monster, Futurewinian) in win checks — they block Domination's "last team standing" and can win KOTH and Blitzkrieg time-outs | [I] inconsistent by mode (§5) | design intent not recorded; play-test frequency of Futurewinian arrivals |
+| 01-U11 | Was multi-round Assault (manual: "play then switches around") ever enabled in a shipped patch? | [U] no control in this tree; `m_assaultSingleRound` fixed true | later source or patch notes |
+| 01-U12 | Do sudden-death losers (wiped by `Team::Eliminate`, spawn points kept) realistically recover before the tie breaks? | [I] possible in principle | play-test |
+
+Resolved during synthesis (no longer open): P02-U1 port occupancy → [03 §3.6](03_buildings_and_world_objects.md#3-building-base-class); P02-U4 capacity of an eliminated team = 2 ([06 §3.5](06_player_control_and_input.md#3-task-manager)); P02-U5 `RGBAColour` float constructor → bytes 0,0,0,1 (B22); P02-U7 PlayTime units = minutes (copied into TimeLimit); P18-U1 server does not check option senders (B16); P08 "retribution never called" → live (§2.9).
+
 <!-- from 02_units_and_entities.md -->
 ### From 02_units_and_entities.md
 
-_Pending — being written._
+Every [U] item and every design-critical [I] item in this document.
+
+| # | Item | Tag | What would resolve it |
+|---|---|---|---|
+| 02-U1 | Runtime value of the `unsigned char` speed stat for SpaceShip (blueprint 500) and Meteor (350): C++ undefined behaviour; MSVC x86 probably yields 244 / 94. SpaceShip movement uses the byte | [U] | disassemble `Entity::SetType` in the shipped `multiwinia.exe`, or log `m_stats[StatSpeed]` in a running build |
+| 02-U2 | Eggs-crate creatures belong to the task owner (they fight for the player), unlike Triffids/Ant Nest/Infection (Monster team) — intentional? | [U] intent | design notes or playtest of the shipped build |
+| 02-U3 | (resolved by coordinator after 22) Does the wall-clock `m_front` written in `Darwinian::AdvanceWatchingSpectacle` (EscapeRocket launch in Rocket Riot) desync matches? **No:** `code/worldobject/rocket.cpp:EscapeRocket::IsSpectacle` returns false whenever `App::Multiplayer()` is true — always the case in Multiwinia — so the spectacle path is never entered; see [22 L9](22_determinism_and_networking.md). | [C] | — |
+| 02-U4 | Meteor-shower and nuke damage are not team-filtered (the owner's units are hit) — intentional? | [U] intent | playtest / design notes |
+| 02-U5 | SpaceShip wander targets confined to the low-x/low-z quarter (SFRAND range + heightmap index wrap) | [I] | instrument `SpaceShip::FindNewTarget` or read `SurfaceMap2D::GetValue` out-of-range handling in detail |
+| 02-U6 | Squads always use grenades in Multiwinia — no reachable setter of `InsertionSquad::m_weaponType` was found | [I] | exhaustive search of input/task-manager code paths in the FULL build, or playtest |
+| 02-U7 | Whether the lobby option `GAMEOPTION_GAME_RESEARCH_LEVEL` (`Multiwinia::SetGameResearch`) can override the fixed MP research table set in `Location::Init` | [U] | trace the order of `SetGameResearch` vs `Location::Init` at match start ([01](01_game_modes.md), [22](22_determinism_and_networking.md)) |
+| 02-U8 | Local-only routes (the formation preview route in `Officer::SetFormation` for the local team) are allocated from the same routing-system id space that Darwinians and officers resolve by id on every peer; if ids diverge, route-following may desync | [I] | read `RoutingSystem::GenerateRoute` slot allocation and test a formation order in a 2-peer match ([21](21_simulation_and_entity_model.md)) |
+| 02-U9 | A spirit left in `StateHarvested` when its Harvester disappears (`Task::Stop` path does not release spirits) has no fallback in `Spirit::Advance` — it would hang in place forever | [I] | test, or confirm `Harvester` removal paths call `ReleaseSpirits` |
+| 02-U10 | `Virii::s_viriiPopulation[team]` is never reset explicitly; correctness between matches relies on every Virii destructor running at `Location` teardown | [U] | verify `Location::Empty` deletes every team's entities before the next match |
+| 02-U11 | Airstrike and nuke timings on real terrain (the simulations assume flat ground; bombers ignore terrain, nuke arcs depend on target height) | [U] | instrument `AirstrikeUnit::Advance` and `Nuke::AdvanceToTarget` in a running build |
+| 02-U12 | Unbounded search loops: `Crate::RunNuke` (needs sea), `SpaceShip::FindNewTarget` and `Crate::RunSpaceShip` (need terrain ≥ 30 / ≥ 10) would hang on maps without such terrain | [U] | heightmap scan of every shipped `mp_*` map ([23](23_terrain_and_landscape.md)) |
+| 02-U13 | The AI entity sits in the entity grid at (20, ·, 20) and `Darwinian::SearchForThreats` does not exclude `TypeAI`; enemy Darwinians near that corner may lock onto an invulnerable target | [I] | test on a map with spawn points near (20, 20), or add the exclusion |
+| 02-U14 | Harvester waiting forever at a spawn point when its head spirit index is invalid; Engineer drop loop spinning on an invalid index | [I] | confirm collected/attached spirits can never be removed by another system |
+| 02-U15 | Armour cannot unload over water and flips to Idle when told to (registration skipped → MP auto-Idle) | [I] design-critical | test an unload order over sea |
+| 02-U16 | Nuke launch compensation (`/100`) does not equalise arrival times (mean flight ≈ 47 u/s) — nearer subs hit first | [I] design-critical | run `_work/scripts/P04_nuke_sim.py` against real maps or instrument a build |
+| 02-U17 | Whether any shipped map contains Control Towers, Research Items or Incubators (Engineer reprogramming relevance); only `mp_sandbox*` among MP-named maps do | [U] | confirm whether the sandbox maps are listed by the menu / shipped archives ([08](08_levels_and_level_design.md)) |
+| 02-U18 | Spider leg swing uses the wall clock; assumed cosmetic because foot state does not feed body motion or synced RNG | [I] | sync-log test with a spider on screen at different frame rates |
 
 <!-- from 03_buildings_and_world_objects.md -->
 ### From 03_buildings_and_world_objects.md
@@ -108,10 +167,137 @@ Contradictions resolved by re-reading the code (11): (1) control scheme selectab
 | 07-U11 | Whether `Team::m_specials` can hold ids of dead entities (would make `AI::RunForest` crash, B18, contrary to the changelog's "fixed") | [U] | read `Team::m_specials` maintenance ([21](21_simulation_and_entity_model.md)) |
 | 07-U12 | The AI entity's slice (index 0 assumed) and the one-tick ordering between AI decisions and node recounts | [I] | read `Team::NewEntity` and `SliceDArray::GetNextSliceBounds`; only affects one-tick latency |
 
+<!-- from 08_levels_and_level_design.md -->
+### From 08_levels_and_level_design.md
+
+| Id | Question | Status | What would resolve it |
+|---|---|---|---|
+| 08-U1 | Did the retail product ship `levels/level_enum.txt` (e.g. in a patch archive)? Without it no level is recorded for the "Master of Multiwinia" achievement | [U] | list a retail `main.dat` / `patch.dat` |
+| 08-U2 | How `mp_benchmark_1` and `mp_assault_stress` were started in the hardware-compat / stress builds despite `GameTypes none` | [U] | data of those builds, or a launcher/test-bed path not in this tree |
+| 08-U3 | Contents of the inclusion list `multiwinia_inclusions_ambx.txt` (referenced by `tools/build_multiwinia_data.bat` for platform `platambx`; the file is absent from `tools/`) | [U] | the missing file |
+| 08-U4 | Exact tie order inside each menu list (depends on archive index order through `OrderedInsert`'s off-by-one) | [I] | run `CreateMapList` against a real `main.dat` |
+| 08-U5 | Content of the 10 PDLC maps named in `level_enum.txt` (ids 50–59) | [U] | PDLC data (not in the tree) |
+| 08-U6 | Whether the released metaserver sent a demo map list different from the 5-map default | [U] | metaserver data / retail logs |
+| 08-U7 | Tool used to make the 400×300 thumbnails (no in-engine writer) | [U] | art-pipeline notes |
+| 08-U8 | Effect of a load → save → load round trip on terrain and CRC (writer quantisation, §8.7) | [I] | run `scripts/S_23_terrain_oracle.py` on a re-saved map |
+| 08-U9 | Outcome of opening a plain-text map named `.mwm` (certain failure in `MapFile::MapFile`; crash vs. garbage level) | [I] mechanism [C] | run an editor build |
+| 08-U10 | Whether a `.mwm` read with 4 trailing bytes past the zlib stream and an unchecked `uncompress` ever mis-loads | [I] | fuzz `MapFile::MapFile` with editor-written files |
+| 08-U11 | Group-A beta build: 13 included maps vs 3 whitelisted, with only CTS compiled → would list 1 map | [I] | the group-A build or its release notes |
+| 08-U12 | Design intent of concentric KOTH zones, duplicate CTS statue zones, KOTH team-owned zones starting owned, fill/key light pairs, twin terrains | [I] | designer notes; play-test in the original |
+| 08-U13 | `CalculeCRC` buffer is 100 000 bytes: a > 100 000-byte level overflows by one byte (largest shipped 46 085) | [I] | n/a for shipped data; avoid in the new design |
+
+<!-- from 09_meta_systems.md -->
+### From 09_meta_systems.md
+
+Every [U] and every design-critical [I] in this document. Resolved during synthesis (not counted): server-side enforcement of host-only options (§4.4, resolved — none); `PageDarwinia` reachability (§1.2.1, debug only); in-match exit path (§2.1, Esc menu only); duplicate English help key (§8.1); persisted player-name truncation (§3.8); tutorial map CRCs — the P11/X4 CRC re-computation reproduces every `MAPID_*` value in `code/mapcrc.h`, so the tutorial buttons are active in a full install ([08](08_levels_and_level_design.md)).
+
+| Id | Question | Tag | What would resolve it |
+|---|---|---|---|
+| 09-U1 | Did the retail Steam / Xbox Live build have a real achievement layer replacing the `App::EarnedAchievement` / `GiveAchievement` stubs, and were achievements persisted (`achievements.txt`)? | [U] | the retail branch or a retail binary; not in this tree |
+| 09-U2 | Which authentication key file shipped: start-up reads `<profile>authkey.dev`, typed keys are written to `<profile>authkey` (support INI and installers reference `authkey`). If the retail build matched this tree, hand-typed keys were lost on restart | [U] | retail binary / release branch, or a retail install's profile folder |
+| 09-U3 | Final `TimeLimit` after picking a map with a non-zero `PlayTime`: timing-dependent (map PlayTime if the lobby is built before the echo — the usual case — else the blueprint default) | [I] | instrumented run logging `GAMEOPTION_GAME_PARAM` versions on host and clients |
+| 09-U4 | Whether `default_preferences.txt` is applied on first run in a packaged install (prefs created when only `init.dat` is parsed; the file lives in `main.dat`) — affects first-run `NetworkServerPort`, `WaitVerticalRetrace`, `DarwinianScaleFactor` | [I] | first launch of a packaged build with an empty profile folder; inspect the written `preferences.txt` |
+| 09-U5 | Could the external metaserver inject key `"dy"` into listings (which would make the "show passworded games" filter hide those servers)? | [U] | metaserver source or packet capture |
+| 09-U6 | Exact visual of the 1.0 s menu transition (slide vs fade, curve) used by every page change | [U] | [24](24_rendering.md)/[28](28_ui_framework.md) `Renderer::RenderMenuTransition`, or a run |
+| 09-U7 | Whether the metaserver protocol could carry leaderboard / TrueSkill data; none of the defined fields is used for it (`PLAYERSCORE` unused) | [U] | metaserver source |
+| 09-U8 | Whether `data/mwhelp/background.bmp` is referenced indirectly (e.g. by a data file or skin); no code reference found | [U] | full-text search of `data/` and `contrib/eclipse`, or remove and run |
+| 09-U9 | Whether `GL_BLEND` is enabled when `CreditsLoader::FlipBuffers` draws its fading clear quad (decides whether the first 7 s smear) | [U] | GL state trace at `Script::RunCommand_RunCredits` / outro camera (legacy path) |
+| 09-U10 | Exact visual change of the `RenderBuildingDetail == 1` / `< 3` branches in `Building::RenderPorts`, `LaserFence::RenderAlphas`, `MineBuilding::*`, `SpawnBuilding::RenderAlphas` | [U] | read those functions in full ([03](03_buildings_and_world_objects.md) owners) |
+| 09-U11 | How MetaServer / MatchMaker behave server-side: which fields they add to LISTRESULT (`PROTOCOLMATCH`, `DEMORESTRICTED`, `DEMOSERVER`), how they decide "demo-restricted" (the release-notes LAN rule), how REQUEST_CONNECT is relayed | [U] | metaserver source (not in this tree) or packet captures |
+| 09-U12 | The real key-check algorithm (`Authentication_SimpleKeyCheck`, `Authentication_GenerateKey` are stubbed in this release) | [U] | original `authentication.cpp`; irrelevant for a new game using platform entitlements |
+| 09-U13 | Manual `ServerN` browser entries are effectively unjoinable (no version / protocol / map CRC ⇒ "incompatible") | [I] | run with a `Server1` pref pointing at a LAN host |
+| 09-U14 | With Japanese, Korean or Portuguese selected about 90 % of the UI shows raw phrase ids; whether any SKU shipped those files | [I] | retail SKU manifests (`language.dat` contents of each release) |
+| 09-U15 | Tutorial 2 relies on radar dish 4 becoming player-owned and on CPU team 2 taking spawn 83 before the player; if not, steps are skipped or no tab appears | [I]/[U] | runtime observation ([30 §2.4](30_scripting_tutorial_and_cutscenes.md)) |
+| 09-U16 | `LoadingScreen::m_rendering` is uninitialised until the first `Render()`; whether any early `IsRendering()` call reads it (affects resource locking and sound suppression) | [U] | trace calls before the first `Render()` in `App::App` |
+| 09-U17 | Demo players: the client enforces only mode/map/host/multiplayer predicates; `m_maxGameSize` is never read — whether the external metaserver or a retail server enforced a demo game-size cap | [U] | metaserver source / retail server behaviour |
+
+<!-- from 10_audio_design.md -->
+### From 10_audio_design.md
+
+| Id | Item | Class | What would resolve it |
+|---|---|---|---|
+| 10-U1 | Audible content of the voice files — intelligible words (needing replacement and possibly localisation) or gibberish: `YesSir*`, `Attack*`, `Retreat*`, `CrateReward_*`, `GDSpeech*`, `GameOver*`, `YouWon`, `YouLost2` | [U] | Audition the files |
+| 10-U2 | Whether the retail `sounds.dat` / `sounds2.dat` / `menusounds.dat` match this tree's manifests (archives are not in the repository) | [U] | List a retail install's archives |
+| 10-U3 | Provenance of the non-music samples (in-house recordings vs licensed libraries) | [U] | Ask the rights holder; affects only the legal note (all treated as IP) |
+| 10-U4 | Stationary loops never stopped: does the Assault pulse-bomb choir really keep playing after the bomb is destroyed and after the match? | [I], design-critical for Assault | Play an Assault match to completion; trace `SoundSystem::m_sounds` |
+| 10-U5 | Audible effect of the 316 wu `MonophonicNearest` radius on Darwinian spawn chatter, the reload click and `EscapeRocket Unhappy` at normal camera heights | [I], design-critical (crowd design) | Play-test at several camera heights, log culls (27-U8) |
+| 10-U6 | Whether the hard-cut of attached sounds at emitter removal was intended (a graceful release path exists but is almost never reached) | [I], design-critical | Designer intent / listening test (27-U5) |
+| 10-U7 | Exact DirectSound 3D panning / roll-off of `DS3DALG_DEFAULT` on shipping drivers | [U] | Measure the shipped game (27-U1) |
+| 10-U8 | Do idle Darwinians perform victory jumps (`VictoryJump`) on the 10 `mp_*` maps without `PrimaryObjectives` (`mp_assault_2p_3`, `mp_assault_3p_1`, `mp_assault_3p_3`, `mp_assault_4P_2`, `mp_blitzkrieg_4P_2`, `mp_domination_2P_1`, `mp_domination_4P_1`, `mp_koth_2P_3`, `mp_koth_2P_3b`, `mp_skirmish_3P_1`)? | [I] | Run one of those maps; check how the level loader leaves the objective list |
+| 10-U9 | Exact text produced by the `Capturing_%pc` bug under MSVC 2005 | [I] (moot: it never matches) | Run and log the event name |
+| 10-U10 | Audible effect of team 255 passing every friend/foe filter (both KotH/Blitzkrieg stings on neutralisation; zone stings at Blitzkrieg start when bases are set neutral, possibly dropped by the loading-screen gate) | [I] | Play a Blitzkrieg match and listen at the first neutralisation |
+| 10-U11 | Duplicate Rocket Riot loops from keep-alive polling before the first sound tick | [I], design-critical for Rocket Riot audio | Trace `m_sounds` during a Rocket Riot match (27-U14) |
+| 10-U12 | Was lobby music ever planned beyond the ambience beds (`docs/multiwinia audio.docx`: "Lobby — Sounds + music ?")? | [U] | Designer interview; moot for the new game (§14.5) |
+| 10-U13 | Whether the compression of smoothed random pitch ranges on the first note (e.g. 0.75–1.35 → ≈ 0.88–1.16) was intended | [I] | Listening comparison (27-U10) |
+| 10-U14 | Render-rate dependence of `Grenade Flash` / `AirStrikeBomb Flash` and the in-game timer ticks (hidden HUD, low frame rate) | [I] | Run with the HUD hidden / at low frame rate |
+| 10-U15 | Whether the early `menusounds.dat` load was meant to allow lobby ambience during loading (commented-out trigger in `App::CheckSounds`) | [I] | Designer intent; irrelevant to the new game beyond §2.6 |
+| 10-U16 | Audible character of the game-over "tape stop" (√ of a smoothed game speed down to 0.1× pitch) | [I] | Record the end of a match |
+
 <!-- from 20_architecture.md -->
 ### From 20_architecture.md
 
-<!-- SU -->
+| # | Item | Status | What would resolve it |
+|---|---|---|---|
+| 20-U1 | Real frame rate of the shipped GL build: the code sets no swap interval, so vsync depends on driver settings; the host's frame rate bounds the server tick rate (§10.2, §10.5) | [U] | measure a retail build on reference hardware with driver vsync on/off |
+| 20-U2 | Behaviour when the host renders below 10 fps: one server tick per frame ⇒ the whole session slows; clients cannot run ahead | [I] (from one-tick-per-call) | timing test with an artificially slowed host |
+| 20-U3 | Pacing results of §10.4/§10.9 assume zero network latency and perfectly periodic letters | [I] (model) | instrumented run logging slices per frame on host and remote clients |
+| 20-U4 | `Multiwinia::ResetLocation` (multi-round Assault) rebuilds the world after `AdvanceAndCatchUp` returns, so peers may have run different numbers of slices after the round-end flag; also no `ResetUniqueIdSeed` | [I] design-critical (if the mode were enabled) | confirm with [01](01_game_modes.md) that no UI sets multiple rounds; otherwise a two-client test |
+| 20-U5 | `SpawnPoint::s_numSpawnPoints[6]` (team 5) is never reset between matches (§5.3); impact depends on whether team 5 (Futurewinian) can own spawn points | [C] gap / [I] impact | [05](05_economy_and_population.md)/X4 level data: does any map give team 5 spawn points or let it capture them |
+| 20-U6 | `GameTimer` residue across matches can drive the game speed to −∞ and NaN (§10.7 item 6); reachability requires leaving a match during a crate hold and a quick restart | [I] design-critical for the port (reset everything) | reproduce in the original build: leave mid-hold, restart within the hold, wait > 110 s before readying |
+| 20-U7 | `m_fillsRequested` race between the waveOut callback thread and the main thread (H5) | [I] | audio stress test / code inspection of `TopupBuffer` buffer accounting ([27](27_audio_engine.md)) |
+| 20-U8 | Server listener running during `~Server` (H7) | [I] | review of `NetSocketListener::StopListening` blocking semantics in `contrib/systemiv/lib/netlib/net_socket_listener.cpp` |
+| 20-U9 | OpenMP in `Release\|Win32`: no `OpenMP` attribute → Visual Studio default (off) | [I] (default), [C] attribute absent | build log of the baseline configuration (`/openmp` absent) |
+| 20-U10 | `WorkQueue::RunThread` calling-convention mismatch (H1) is harmless in practice | [I] | disassembly of the shipped binary or a debug run |
+| 20-U11 | Whether DirectSound/winmm internal threads touch game memory beyond `WaveOutProc` | [I] | API documentation review; no game callbacks other than `WaveOutProc` are registered [C] |
+| 20-U12 | `g_fileSystem` (SystemIV `FileSystem`) is never instantiated | [I] | grep for `new FileSystem` across compiled sources ([31](31_platform_build_and_tools.md)) |
+| 20-U13 | `Teleport::m_teleportMap` has no per-match clear | [I] | read `code/worldobject/teleport.cpp` fully ([03](03_buildings_and_world_objects.md)) |
+| 20-U14 | Texture lookups via `Resource::GetTextureWithFlags` are unlocked outside loading screens; safe only if no worker touches `Resource` then (thumbnail preload runs under a loading screen) | [I] | audit every `Resource` call reachable from the SndL thread after boot |
+
+Resolved in this document (previously open in drafts or `_meta_unknowns`): P01 U1 (frame throttling, §10.5), P01 U7 (who ends a match, §8.2), `_meta_unknowns` U2 (`GetNetworkTime` vs `GetGameTime`, §10.1), U5 and "slice cadence" (once per tick, §10.3), "real-time vs game-time cadence of `Tick`" (§10.7), "semantics of `g_predictionTime`" (§10.6), "is `g_app->m_location` assigned before `Location::Init`" (§8.4), the thread count (§11.2), the sound preloader's existence on PC (§11.2), the thread on which the boot archives are parsed (§6.1), the OpenMP attribute (§10.3).
+
+<!-- from 21_simulation_and_entity_model.md -->
+### From 21_simulation_and_entity_model.md
+
+| # | Item | Tag | What would resolve it |
+|---|---|---|---|
+| 21-U1 | Whether the shared non-synced LCG race during `Tree::Generate` (reseed with `AppSeedRandom(m_seed)`, then another thread — sound on the loading-screen loop, the metaserver registration thread — draws from the same generator) ever changes a tree's crown hit sphere on one peer (§10.3) | [U] | instrument `AppRandom` with a thread-id check during `Tree::Generate`; long multi-client soak test |
+| 21-U2 | Whether the `EntityGridCache` staleness (≤ ~1.1 s, half-range reuse, requested range ignored) was a deliberate gameplay property or only an optimisation (§6.3) | [U] | designer intent; compare Darwinian combat behaviour with the cache disabled |
+| 21-U3 | Whether any shipped map has a building whose bounding sphere reaches within half a cell beyond the far map edge, which would feed the never-cleared obstruction-grid outside cell and could make `Entity::EnterTeleports` dereference a deleted building (§6.4) | [U] | compute building bounding spheres (shape radius) against the world size for the 57 `mp_*` maps, or run a debug build with the assert enabled |
+| 21-U4 | Route ids differ between peers (preview routes share `m_routes`, lowest-free-slot re-use); the analysis that this is harmless rests on ids never being transmitted, hashed (the debug IFrame does not hash routes) or compared across entities (§7.6) | [I] design-critical | audit every read of `m_routeId`, `m_orderRouteId`, `Unit::m_routeId` for equality tests or ordering; a replay comparing two clients' route ids |
+| 21-U5 | Real-world frequency of the `InsertionSquad::DirectControl` free-look leak L1 (§10.4) | [U] | two-client play test or a replay harness logging per-tick squad state |
+| 21-U6 | Spirit handles are slot indices without a generation check; Harvester (`m_spirits`), Engineer (`m_spirits`) and Darwinian (`m_spiritId`) hold them across ticks. Whether a held spirit can be removed (lifetime expiry, another collector) so that the index silently designates a newer spirit (§3.5 rule 3) | [U] | read the Spirit attached/harvested states ([02 §6](02_units_and_entities.md#6-spirit)) for removal paths while held; test with a debug check in `GetSpirit(int)` |
+| 21-U7 | `Team::m_currentEntityId` is a raw slot index; after the selected entity dies, the selection can designate the entity that re-uses the slot. Whether any command path (SELECTUNIT, TERMINATE, PROMOTE, TOGGLEENTITY) then acts on the wrong entity (§3.5 rule 7) | [I] | trace the command handlers in `ClientToServer::ProcessServerUpdates` and `Team::GetMyEntity` validation ([22](22_determinism_and_networking.md)) |
+| 21-U8 | Whether the unbounded building push loop in `Entity::PushFromObstructions` (zero-length push vector when the entity stands exactly on a building's base point) is reachable (§8.5) | [I] | bound the loop and log in a test build |
+| 21-U9 | Whether designers tuned thresholds (grenade decision, zone contest, AI under-attack tests) against the approximate count/presence queries; i.e. whether exact queries would change balance (§6.2) | [U] | designer intent; A/B simulation with exact counts |
+| 21-U10 | Whether any by-value pool pointer (`Spirit*`, `Laser*`) is held across a creation into the same pool (growth copies the array, §4.4) | [I] | audit `GetPointer` results kept in locals across `SpawnSpirit`/`FireLaser` calls; none found in the P03 files |
+| 21-U11 | Dead airborne entities skip the landing test and fall through the terrain while fading (§8.3); whether any grid user counts them (most queries skip `m_dead`, the approximate counts do not) | [I] | audit grid users for `m_dead` checks; counts are cell-based and include dead entities [C] for `GetNumNeighbours` |
+
+<!-- from 22_determinism_and_networking.md -->
+### From 22_determinism_and_networking.md
+
+| # | Question | Tag | What would resolve it |
+|---|---|---|---|
+| 22-U1 | MetaServer/MatchMaker server-side behaviour: which fields it adds to LISTRESULT (PROTOCOLMATCH, DEMORESTRICTED, DEMOSERVER), how it relays REQUEST_CONNECT, how it validates keys, the hash-token policy | [U] | the metaserver source (not in this tree) or packet captures of the live service |
+| 22-U2 | The real key algorithm (`Authentication_SimpleKeyCheck`, `Authentication_GenerateKey` are stubbed in this release) | [U] | the original `authentication.cpp`; irrelevant for a new game (use platform entitlements) |
+| 22-U3 | Whether a single UPDATE letter > 1500 bytes ever occurred in shipped play (stall, §3) and whether Windows `recvfrom` drops it (`WSAEMSGSIZE`) as inferred | [I] design-critical | measure letter sizes with 6 players + option bursts; test `recvfrom` with an oversize datagram |
+| 22-U4 | Intent of the dead time-based branch in `GetNumSlicesToAdvance` (time-based vs backlog-based pacing) | [U] intent | developer history; irrelevant for a new design |
+| 22-U5 | Measured steady-state backlog/latency (§2.4 is analytic) | [I] | instrumented two-machine run |
+| 22-U6 | Whether joining a match in progress was intended for release (it works but replays from frame 0) | [U] | release notes or a UI that greys in-progress games (`GameServerButton` does not) |
+| 22-U7 | Whether the VS2005 x87 CRT `sin/cos/pow/acos` produce identical doubles on all x86 CPUs of the era (how much work `iv_trunc_low_nibble` did on PC-only games) | [U] | disassemble the CRT of the shipped binary or run a cross-CPU comparison |
+| 22-U8 | Real-world frequency of L1 (holding `CameraFreeMovement` while another team's selected squad moves) | [U] | two-client play-test or a replay harness logging per-tick state |
+| 22-U9 | Whether the tree / global-LCG race (§14.7) ever fires (sound triggers during level load, WAN-thread wake-ups) | [U] | instrument `AppRandom` with a thread-id check during `Tree::Generate` |
+| 22-U10 | VS2005 defaults assumed for absent project attributes (`/fp:precise`, x87 code generation, OpenMP off) | [I] | the shipped binary's `cl` command line / build log |
+| 22-U11 | Whether VS2005 `atof` is correctly rounded for every literal in the shipped data (matters only for non-MSVC peers) | [U] | compare `atof` with a correctly rounded parser over all numeric tokens in `data/` |
+| 22-U12 | Cross-CRT equality of `pow/exp/log` results after binary32 rounding for terrain generation | [U] | run the terrain oracle (`_work/scripts/S_23_terrain_oracle.py`) against another libm |
+| 22-U13 | Whether PC and Mac clients actually played together (the precision helper and `iv_*` wrappers imply the intent) | [U] | Mac target files / release notes for a cross-platform lobby |
+| 22-U14 | Whether `EntityGridCache` staleness (≤ 1 s, half-range reuse) was a deliberate gameplay property | [U] | designer intent; compare behaviour with the cache disabled |
+| 22-U15 | Whether the D3D configuration was ever used for multiplayer (it would not interoperate with the GL build) | [U] | release history; the D3D build probably does not compile at this commit ([24](24_rendering.md)) |
+| 22-U16 | Which key file name shipped (`authkey.dev` read vs `authkey` written) | [U] | a retail install or the release branch ([09](09_meta_systems.md), [31](31_platform_build_and_tools.md)) |
+| 22-U17 | Whether team slot 5 ever owns spawn points in a shipped mode (stale `s_numSpawnPoints[6]`, §14.12) | [I] | census of team assignments per mode/map ([01](01_game_modes.md), [05](05_economy_and_population.md)) |
+| 22-U18 | Whether a rejoin into a full match is refused (the departed client's reserved `ServerTeam` counts toward the limit) | [I] | two-client test |
+| 22-U19 | What all clients experience when the host quits mid-match (server deleted by `ShutdownCurrentGame`; inferred: lost-connection banner, then nothing) | [I] design-critical | two-client test |
+| 22-U20 | Whether `RecordDemo` replays ever reproduced a match (seed not stored; loaded after the replaying session's START_GAME) | [I] | run with `RecordDemo` 1 then 2 |
+| 22-U21 | Release-time size of the frame-level command stream for 6-player games and its effect on late join | [I] | measurement |
 
 <!-- from 23_terrain_and_landscape.md -->
 ### From 23_terrain_and_landscape.md
@@ -155,6 +341,39 @@ Design-critical inferences:
 
 Resolved during synthesis (no longer open): special-lighting levels (`mp_koth_2P_3`, `mp_koth_2P_3b`, `mp_koth_3P_1`, §5.5); `g_predictionTime` semantics (§2.4); background/fog colour (constant black, §3.2); landscape D3D path does not restore the emulator vertex declaration — `Water::RenderFlatWater` works around it by resetting `s_pCustomVertexDecl` [C] (§4.2); visual content of `StartSequence` is moot (never instantiated, §3.2); `sprites/viriifull.bmp` is generated at run time (§4.9).
 
+<!-- from 25_textures_and_assets.md -->
+### From 25_textures_and_assets.md
+
+| # | Question | Tag | What would resolve it |
+|---|---|---|---|
+| 25-U1 | Contents of `patch.dat` and `branding.dat` (e.g. whether `carryspecialshape.shp` or replacement art was delivered there); no builder exists in `tools/` | [U] | list the archives of a retail install (`code/lib/resource.cpp:Resource::ParseArchive` semantics) |
+| 25-U2 | Which language list each retail SKU's `language.dat` was built with (decides which font atlases shipped; currency atlases ship in none) | [U] | release logs or archive listings of each SKU |
+| 25-U3 | Which of the 52 FULL assets whose consumers have no placement in live maps are instantiated at run time (crate or mode spawning) | [I] | cross-reference [03](03_buildings_and_world_objects.md) and [04](04_crates_powerups_and_weapons.md) spawn analyses, or instrument a play session |
+| 25-U4 | Whether period GL drivers treated `GL_CLAMP` as clamp-to-edge and accepted non-mip textures left with `MIN = LINEAR_MIPMAP_LINEAR` (affects edge darkening and the no-mip `laser.bmp` draws after a flush) | [U] | run on period hardware or a strict GL implementation |
+| 25-U5 | Whether an accurate shape hit test is ever run on `carryweights.shp` or `sporegenerator.shp` (heap overrun, §4.5) | [I] | trace `RayHit`/`SphereHit` callers with `accurate = true` for statues and spore generators |
+| 25-U6 | Visible result of the `marker_colour.bmp` processing conflict in the first frame (which pass requests it first after each flush) | [I] | capture the first match frame after a mode change |
+| 25-U7 | Exact `tools/Rar.exe` version / RAR method used for retail `.dat` files | [U] | run `Rar.exe` on Windows or inspect a retail archive header |
+| 25-U8 | Whether the retail sound archives match this tree's manifests | [U] | list a retail install's `sounds.dat`/`sounds2.dat`/`menusounds.dat` |
+| 25-U9 | Audible content of voice samples (`data/mwsounds/YesSir*`, `Attack*`, `CrateReward_*`, `GameOver*`, `YouWon`, `YouLost2`) — words or gibberish | [U] | audition the files |
+| 25-U10 | Whether data-only marker names (`MarkerIsland*`, `MarkerTrunk*to*`, `MarkerFloat*`) are looked up through a formatted name not caught by the literal scan | [I] | full call-graph search of `LookupMarker` arguments |
+
+<!-- from 26_animation_and_vfx.md -->
+### From 26_animation_and_vfx.md
+
+| Id | Item | Kind | What would resolve it |
+|---|---|---|---|
+| 26-U1 | What each `.anim` file visually depicts (§3.6 "What it shows" column is inferred from track data) | [I] | run the shipped build and capture the grace-period panel for each mode |
+| 26-U2 | Whether Christmas mode can be enabled on some peers and not others (date checked per client; command applied only by receivers at the main menu), causing a snow-RNG desync | [U] | test a lobby with mismatched clocks on 24 Dec; inspect server relay of `NET_DARWINIA_CHRISTMASMODE` in [22](22_determinism_and_networking.md) |
+| 26-U3 | Real particle and explosion counts and render cost in heavy matches (no caps exist) | [U] | profile the shipped build (`g_profiler` "Render Particles", "Advance Explosions") on a 4-player Domination map |
+| 26-U4 | `animator.exe` behaviour and any fields it writes beyond `AnimatedPanel::Write` | [U] | run the tool on Windows |
+| 26-U5 | Whether anything reads Spider foot positions in the simulation (only rendering, sounds and gait planning found) | [I] (§12.3 #3) | exhaustive grep of `m_legs`/`m_foot` readers in a full-project index; none found in `code/worldobject/spider.cpp` |
+| 26-U6 | Exact on-screen look of the D3D build's debris (unlit, MODULATE instead of DECAL) and deform effects | [U] | build `ReleaseDirect3D` (may not compile, [24 §1.2](24_rendering.md#12-is-the-d3d-configuration-buildable-at-this-commit-i)) and capture |
+| 26-U7 | Precise semantics of `g_predictionTime` used by every render extrapolation | [U] (owned by 24-U3) | trace `code/gametimer.h` and `code/main.cpp` in the architecture owner's document [20](20_architecture.md) |
+| 26-U8 | Whether the "binary saturated" team colours of the booster and Futurewinian bubbles (byte values passed to `glColor4f`) were intended | [I] (§4.4) | compare with shipped screenshots |
+| 26-U9 | Whether `SoundDSP` was ever enabled for players (effects.txt inert otherwise) | [I] (§9.4) | check retail `preferences.txt` defaults or patch notes |
+
+Design-critical inferred items: §12.3 #1 (tree hit volume from render), #4–#6 (cosmetic RNG coupling), §5.1 wall-clock leg timing.
+
 <!-- from 27_audio_engine.md -->
 ### From 27_audio_engine.md
 
@@ -190,6 +409,45 @@ Resolved during synthesis (no longer open): special-lighting levels (`mp_koth_2P
 | 28-U8 | Whether any window in a shipped flow is opened while the Eclipse screen size is stale (screen size is only refreshed in `AdjustWindowPositions`) | [I] | audit every screen-mode change path (`RestartWindowManagerAndRenderer`, `UnlockFullGameButton`, `SetWindowed`) |
 | 28-U9 | Whether a demo-key player whose demo limitations forbid hosting can still host: `App::HostGamePermitted()` is consulted only to set the no-op `m_disabled` flag on the Host button (F17), so the UI does not block it | [I] design-critical (demo gating) | check `App::StartMultiPlayerServer` / `ClientToServer::GetDemoLimitations` and the metaserver side ([22](22_determinism_and_networking.md), [09](09_meta_systems.md)) |
 
+<!-- from 29_data_formats_reference.md -->
+### From 29_data_formats_reference.md
+
+| Id | Question | Tag | What would resolve it |
+|---|---|---|---|
+| 29-U1 | Did any retail archive (e.g. `patch.dat`) ship `levels/level_enum.txt`, without which "Master of Multiwinia"/"Explorer" are never awarded? (§4.2) | [U] | list a retail `main.dat` / `patch.dat` |
+| 29-U2 | Was `data/default_preferences.txt` ever installed loose, so that first-run defaults (`WaitVerticalRetrace = 0`, `NetworkClientPort = 4001`) applied? (§5.1) | [U] | check `tools/init.list` against a retail `init.dat`, or a clean retail install |
+| 29-U3 | Did retail editions ship complete Japanese/Korean/Portuguese language files (the tree's are ~10 % complete with no English fallback)? (§6.1) | [U] | inspect a retail `language.dat` and the `tools/*language.list` used for each SKU |
+| 29-U4 | Are data-only marker names (`MarkerIsland*`, `MarkerTrunk*to*`, `MarkerFloat*`, …) looked up through a `sprintf` pattern the literal grep missed? (§8.1) | [U] | full call-graph search of `LookupMarker` arguments |
+| 29-U5 | Exact `tools/Rar.exe` version and whether retail `.dat` files used RAR 2.9 or 3.x method numbering (`animator.dat` shows unpack version 29) (§10.1) | [U] | run `Rar.exe` without arguments, or read a retail `.dat` header |
+| 29-U6 | Exact failure mode of a NULL token in release (`atoi(NULL)` access violation vs CRT invalid-parameter termination) (§1.4) | [U] (immaterial for a re-implementation) | run the original with a truncated file |
+| 29-U7 | Was the shipped `MultiwiniaSupport.exe` built from `contrib/XCrashReport` unchanged? (§11.14) | [U] | compare resources/strings of the shipped binary |
+| 29-U8 | What `animator.exe` writes beyond `AnimatedPanel::Write` (no source in tree) (§8.6) | [U] | run the tool and diff its output |
+| 29-U9 | Contents of `patch.dat` and `branding.dat` (could supply missing icons such as `icons/compass_empty.bmp`) (§8.7, §10.1) | [U] | inspect the archives of a retail install |
+| 29-U10 | Whether `new CameraMount()` zero-initialises the POD under MSVC 2005 (decides whether a 63+ character mount name is terminated) (§4.1.11) | [I] | compile a test with the original toolchain |
+| 29-U11 | Hang on an unterminated `[` in a phrase (`inOffset += len + 1` with `len = −2`) — derived from arithmetic, not observed (§6.1) | [I] design-critical for localisation tooling | add an unterminated `[` to a test language file and run |
+| 29-U12 | Letters larger than the 1 500-byte receive buffer are dropped and resent forever (§3.5) | [I] design-critical for the network format | send an oversized letter in a LAN test |
+| 29-U13 | Marker `front` sign convention differs from fragments in the exporter (marker along +Y, fragment along −Y of the Max node) (§8.2) | [I] | export a test scene with the plug-in |
+| 29-U14 | A locally modified map desyncs instead of being rejected because no map CRC is exchanged before a match (§4.6) | [I] design-critical | two-client test with one edited map |
+| 29-U15 | Whether replaying `serverHistory.dat` reproduces a match (no version header; seq-id equality quirk) (§11.6) | [I] | record and replay a LAN match with `RecordDemo` 1/2 |
+
+---
+
+<!-- from 30_scripting_tutorial_and_cutscenes.md -->
+### From 30_scripting_tutorial_and_cutscenes.md
+
+| Id | Item | Class | Why it matters | What would resolve it |
+|---|---|---|---|---|
+| 30-U1 | Whether newly spawned, uninstructed player Darwinians wander into port range of ControlStation 51 (224.6 wu from spawn 3) so that radar dish 4 becomes player-owned and Tutorial 2 can start showing tabs (§3.9 a) | [I] design-critical | If they do not, Tutorial 2 shows nothing at the start and the player must discover the station unaided | Runtime observation of Tutorial 2, or a simulation of Darwinian idle wandering (`Darwinian::SearchForRandomPosition`, `SearchForPorts`) from spawn 3 |
+| 30-U2 | Whether CPU team 2 reliably captures spawn 83 before the player in Tutorial 2 (§3.9 b) | [I] design-critical | Decides whether the formation-attack and break-formation lessons are ever shown | Repeated runtime observation of Tutorial 2 |
+| 30-U3 | Whether `RecordDemo = 1` / `2` reproduces a Multiwinia match (history includes the lobby; team/client layout, sync seed and live client commands must match) (§7.1) | [U] | Determines whether a replay feature can be built on the existing history format unchanged | Record a local match with `RecordDemo 1`, replay with `RecordDemo 2`, compare per-frame sync bytes and final scores |
+| 30-U4 | Behaviour when a script omits a mandatory 2nd–4th argument: `GetNextToken()` returns NULL and is passed to `iv_atof`/`atoi`/`stricmp` (§2.2) | [I] (likely access violation) | Robustness of authored scripts | Run a script with a truncated `CamMove` line under the original build |
+| 30-U5 | The local player is team 0 in both tutorials (Tutorial 2 hard-codes team 0) (§3.6) | [I] strong (the local client requests its team before any CPU team; the server assigns the first free slot) | A different assignment would make Tutorial 2 test the wrong team | Trace `Server` team-slot assignment ([22](22_determinism_and_networking.md)) during a tutorial start |
+| 30-U6 | `GlobalWorldGameLoop` (where `Script::Advance` is also called) exits immediately in Multiwinia because `m_atMainMenu` is set (§2.1) | [I] | Confirms the second tick site is inert | [20](20_architecture.md) main-loop analysis |
+| 30-U7 | Duration of a late-join catch-up replay (≈ 10 min for a 20-min match at +20 frames/s) (§7.2) | [I] | Join-in-progress UX | [22](22_determinism_and_networking.md) measurement |
+| 30-U8 | Whether `GL_BLEND` is enabled when the credits loader (script op `RunCredits`, outro camera) draws its fading clear quad | [U] | Visual only, legacy path | GL state trace at `Script::RunCommand_RunCredits` ([09](09_meta_systems.md)) |
+
+Resolved during synthesis (not counted): P19 U1 (music event names are matched with `stricmp`), U2 (map CRCs reproduce), U3 (dish 4 is captured through ControlStation 51 — mechanism; the residual question is 30-U1), U4 (`_kbd`/`_xin` resolution, see [29](29_data_formats_reference.md)).
+
 <!-- from 31_platform_build_and_tools.md -->
 ### From 31_platform_build_and_tools.md
 
@@ -200,7 +458,7 @@ Resolved during synthesis (no longer open): special-lighting levels (`mp_koth_2P
 | 31-U3 | Exact x87 control word on the main thread after D3D9 `CreateDevice`/`Reset` in `[B:D3D]` (expected 24-bit precision) | [I] | read `_control87(0,0)` after device creation at run time |
 | 31-U4 | Behaviour of `throw;` with no active exception under the VS2008 static CRT inside `AppMain`'s `__try` (SEH 0xE06D7363 reaching `RecordExceptionInfo`, or `terminate()` → `abort()` bypassing it) | [U] | trigger an `AppReleaseAssert` in a Release build |
 | 31-U5 | Which authentication-key file the retail build read (`authkey.dev` here; installers and the support INI know only `authkey`), and whether retail used `metaserver-mwdev` or a production host | [U] | inspect a retail executable/install |
-| 31-U6 | Behaviour of the absent tools: `autopatch.exe`, `copy_assist.exe`, `ProfileLocator.exe`, `ncftpput.exe`, `tools/build_ambx_dat.bat`, `tools/convert_bmp_to_tex.cmd`, `tools/macosx/add-appcast-url.rb`, `tools/macosx/add-svn-revision.rb`, `tools/PasswordGenerator/main.cpp`; in particular whether the auto-patcher writes `userprefs.txt`, `game-history.txt`, `stdout.txt` and the `backup_*`/`revert_*` folders | [U] | obtain the release-branch `tools/` |
+| 31-U6 | Behaviour of the absent tools: `autopatch.exe`, `copy_assist.exe`, `ProfileLocator.exe`, `ncftpput.exe` and, under `tools/`, `build_ambx_dat.bat`, `convert_bmp_to_tex.cmd`, `macosx/add-appcast-url.rb`, `macosx/add-svn-revision.rb`, `PasswordGenerator/main.cpp`; in particular whether the auto-patcher writes `userprefs.txt`, `game-history.txt`, `stdout.txt` and the `backup_*`/`revert_*` folders | [U] | obtain the release-branch `tools/` |
 | 31-U7 | Contents and producers of `ambx.dat`, `branding.dat`, `patch.dat` | [U] | retail media / patch archives |
 | 31-U8 | Was `default_preferences.txt` ever shipped loose (or by a patch) so that first-run defaults applied in packaged installs (§8.9)? | [U] | retail install tree |
 | 31-U9 | Exact role of `tools/SlashSort.exe` | [I] | run it on a `TRACK_MEMORY_LEAKS` log |
@@ -212,3 +470,20 @@ Resolved during synthesis (no longer open): special-lighting levels (`mp_koth_2P
 | 31-U15 | Did the Mac 1.3.1 port play lockstep games with Windows clients bit-exactly (its `-mfpmath=387`/`-mno-fused-madd` flags suggest the intent)? | [U] | cross-platform network test with period binaries |
 
 Design-critical inferences (not unknowns, but [I]): GL and D3D clients in one game are a desync risk (§7.10); no map-content check between peers (§10.3); worker-thread crashes bypass the crash reporter (§6.2); a hand-typed authentication key is not reloaded at the next start (§5.3); first-run defaults ignore `default_preferences.txt` in packaged installs (§8.9).
+
+<!-- from 32_debug_test_and_performance.md -->
+### From 32_debug_test_and_performance.md
+
+| Id | Question | Kind | What would resolve it |
+|---|---|---|---|
+| 32-U1 | What `throw;` with no active exception does in `AppReleaseAssertFailed` under the shipped CRT: caught by the `AppMain` SEH filter (ERRORLOG + minidump + support tool after the black box) or `terminate()` → `abort()` bypassing it | [U] | trigger a release assert in a `Release|Win32` build and observe which files appear |
+| 32-U2 | Real per-frame and per-system cost, draw-call counts and the population at which the shipped build drops below 30 / 15 fps on the EULA minimum hardware — no measurement exists in the tree | [U] | run a DEBUG build with the Profiler window (glFinish off) or an external profiler on `mp_benchmark_1` and a 2000-population map |
+| 32-U3 | Whether the hardware-compatibility (and assault-stress) SKUs were built with `BENCHMARK_AND_FTP`, and how they started `mp_benchmark_1` / `mp_assault_stress` although `GameTypes none` makes `GameMenu::AddMap` discard them (the hwcompat packaging copies `ncftpput.exe`) | [U] / design-critical [I] that hwcompat was the benchmark SKU | build logs or the `universal_include.h` revision used for those SKUs; their data archives |
+| 32-U4 | Whether the dxdiag filter ever captured `GFX` / `SND` lines (the reader stops at the first blank line) | [I] only `SYS` | run `dxdiag /t` on a period machine and feed it to `BenchMark::BuildDxDiag` |
+| 32-U5 | Whether the black-box EBP walk yields a usable trace in `Release|Win32` (`/O2` implies frame-pointer omission on x86 unless overridden) | [I] unreliable | inspect the compiled prologues or the `cl` command line of the shipped exe |
+| 32-U6 | What the MSVC 2005 CRT prints for the malformed formats `"%2.1 Kb/sec"`, `"%2.1 secs"` (network window) and `"%4.1"`, `"%4.0"` (profiler rows) | [U] | run the window |
+| 32-U7 | Whether the testbed compiles and runs at this commit (never-defined macro; `!GetTestBedMode() == TESTBED_ON` precedence slip in `code/UI/GameServerButton.h`; out-of-range reads noted in §6.2) | [U] | build with `TESTBED_ENABLED` and run a server and a client |
+| 32-U8 | Which build the beta release note "debugging code … to track rand sync errors" refers to (`TRACK_SYNC_RAND` is commented out for the beta targets here; beta groups do have snapshot IFrames) | [U] | beta-build configuration history |
+| 32-I1 | Network-safety classification of the 23 cheats (§4.3), in particular "Allow Arbitrary Placement" desyncing on the first otherwise-invalid placement and "Clear Resources" being simulation-safe | design-critical [I] | a two-client DEBUG session using each cheat while watching the network window |
+| 32-I2 | The catch-up spiral of §12.2 (a slow client spends up to 0.3 s per frame simulating, lowering fps further) and the 0-slice dead band for 1–3 pending slices | design-critical [I] (code [C], effect inferred) | instrument `GetNumSlicesToAdvance` on a throttled client |
+| 32-I3 | "Give all research" being a no-op in Multiwinia | [I] | run it in a DEBUG match and compare research levels |
