@@ -31,7 +31,7 @@ Chosen option: "SHA-256 over cooked entries, combined in a content manifest".
 
 * **Entry hash:** SHA-256 of the uncompressed cooked bytes of each entry. The content build's output is canonical (sorted, no timestamps), so the same content always gives the same hash.
 * **Map identity:** the entry hash of the cooked map asset, which contains the map header, every placed object and every terrain input. Code and data refer to maps by their stable map id (`map_<mode>_<players>p_<nn>`); the hash is the content version of that id, never a substitute name.
-* **Simulation content identity:** SHA-256 over the sorted list of (key, entry hash) pairs of every entry flagged simulation-relevant in the current mount set, including the simulation-relevant runtime feature flags of [ADR-056](ADR-056-editions-build-flavours-and-feature-flags.md).
+* **Simulation content identity:** SHA-256 over the sorted list of (key, entry hash) pairs of every entry flagged simulation-relevant in the current mount set, including the simulation-relevant runtime feature flags of [ADR-056](ADR-056-products-configurations-and-feature-flags.md).
 * **Content manifest:** written by the content build next to the packs; lists every entry's key, hash and simulation-relevant flag, and the simulation content identity per edition.
 * **Display:** logs and the build details screen show the first 16 hexadecimal digits; every comparison uses the full 32 bytes.
 * **Out of scope:** when and how client and server exchange and compare identities, and what a mismatch does to a session (networking design); how stored worlds record the content they were created with (persistence design).

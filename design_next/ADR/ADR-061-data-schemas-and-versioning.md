@@ -70,6 +70,6 @@ Chosen option: "Schema-defined text authoring compiled to versioned binary recor
 
 ## More Information
 
-* Related: [ADR-060](ADR-060-content-identity-by-hash.md) (record hashes), [ADR-056](ADR-056-editions-build-flavours-and-feature-flags.md) (edition manifests are schema records).
+* Related: [ADR-060](ADR-060-content-identity-by-hash.md) (record hashes), [ADR-056](ADR-056-products-configurations-and-feature-flags.md) (edition manifests are schema records).
 * Component: data schemas (`DAT`).
 * **Amendment 2026-10-17.** Simulation values are stored in the representation of the current numeric default (DEC-241) until DEC-240 decides the numeric model, as the data schemas component specifies (DAT-010, DAT-023); omitted fields take their declared defaults (DAT-012, DEC-567); engine definition tables such as the effect-kind table are compiled into the engine and read by the validator, with no pack entry (DAT-273).

@@ -8,9 +8,9 @@ Rows for `design_next/ADR/README.md`; links are relative to `design_next/ADR/`.
 | [ADR-051](ADR-051-windows-toolchain-and-compiler-policy.md) | Windows toolchain: pinned MSVC Build Tools, Windows SDK and compiler policy | Accepted | 2026-10-17 |
 | [ADR-052](ADR-052-cpp23-language-standard.md) | Language standard: C++23, with a portable subset for shared and server code | Accepted | 2026-10-17 |
 | [ADR-053](ADR-053-modules-and-import-std.md) | Modules: `import std` behind a build option; first-party code stays header-based | Proposed | 2026-10-17 |
-| [ADR-054](ADR-054-build-system-cmake-presets.md) | Build system: CMake presets with the Ninja Multi-Config generator | Proposed | 2026-10-17 |
-| [ADR-055](ADR-055-dependencies-vcpkg-manifest-mode.md) | Third-party dependencies: vcpkg in manifest mode with pinned baseline and overlay triplets | Accepted | 2026-10-17 |
-| [ADR-056](ADR-056-editions-build-flavours-and-feature-flags.md) | Products, build flavours and feature flags: one preset per product and flavour, data-driven runtime flags | Accepted | 2026-10-17 |
+| [ADR-054](ADR-054-build-system-msbuild-solution.md) | Build system: CMake presets with the Ninja Multi-Config generator | Proposed | 2026-10-17 |
+| [ADR-055](ADR-055-dependencies-three-nuget-packages.md) | Third-party dependencies: vcpkg in manifest mode with pinned baseline and overlay triplets | Accepted | 2026-10-17 |
+| [ADR-056](ADR-056-products-configurations-and-feature-flags.md) | Products, build flavours and feature flags: one preset per product and flavour, data-driven runtime flags | Accepted | 2026-10-17 |
 | [ADR-057](ADR-057-version-identity.md) | Version identity: one generated build identity used by every consumer | Accepted | 2026-10-17 |
 | [ADR-058](ADR-058-pack-files-and-mount-policy.md) | Pack files: own indexed, chunked and hashed format; explicit mount order; loose files only in development builds | Accepted | 2026-10-17 |
 | [ADR-059](ADR-059-content-build-and-validators.md) | Content build: one declarative, incremental, validating content build tool | Accepted | 2026-10-17 |

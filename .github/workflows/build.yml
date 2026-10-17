@@ -179,6 +179,7 @@ jobs:
         run: |
           msbuild "${{ steps.solution.outputs.path }}" `
             /p:Configuration=$env:CONFIGURATION /p:Platform=$env:PLATFORM `
+            /p:EngineBuildNumber=${{ github.run_number }} `
             /m /nologo /v:minimal /warnaserror `
             /flp:LogFile=build.log`;Verbosity=normal
 

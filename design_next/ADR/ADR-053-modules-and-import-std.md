@@ -27,7 +27,7 @@ Does Species use C++ modules or `import std`?
 
 ## Decision Outcome
 
-The proposed option, "`import std` behind a build option", is **rejected**, and so are named modules and header units. Species uses headers only: every translation unit includes the standard headers it needs, after `pch.h`, the Windows and SDK headers and the project headers (`AGENTS.md` §4). No module interface unit (`.ixx`) exists, because `AGENTS.md` R7 allows `.h` and `.cpp` files only, and no translation unit uses `import std`, because a build option for it would add a second way to reach the standard library and a project setting outside the alignment rules of [ADR-054](ADR-054-build-system-cmake-presets.md). Using modules later needs a new ADR and a change to `AGENTS.md`.
+The proposed option, "`import std` behind a build option", is **rejected**, and so are named modules and header units. Species uses headers only: every translation unit includes the standard headers it needs, after `pch.h`, the Windows and SDK headers and the project headers (`AGENTS.md` §4). No module interface unit (`.ixx`) exists, because `AGENTS.md` R7 allows `.h` and `.cpp` files only, and no translation unit uses `import std`, because a build option for it would add a second way to reach the standard library and a project setting outside the alignment rules of [ADR-054](ADR-054-build-system-msbuild-solution.md). Using modules later needs a new ADR and a change to `AGENTS.md`.
 
 ### Consequences
 

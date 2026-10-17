@@ -46,8 +46,8 @@ Also, for item 2: RND-170 (`renderer/world_renderers.md`) now says the turret dr
 | `architecture/components/build_tooling_and_distribution.md` | 117,530 (unchanged size) | (d) |
 | `CONVENTIONS.md` | 71,322 | 6, (d) |
 | `ADR/ADR-022-audio-engine-on-xaudio2.md` | 8,210 | 8 |
-| `ADR/ADR-054-build-system-cmake-presets.md` | 9,605 | (a) |
-| `ADR/ADR-056-editions-build-flavours-and-feature-flags.md` | 7,741 | (a) |
+| `ADR/ADR-054-build-system-msbuild-solution.md` | 9,605 | (a) |
+| `ADR/ADR-056-products-configurations-and-feature-flags.md` | 7,741 | (a) |
 | `ADR/ADR-059-content-build-and-validators.md` | 7,204 | 8, (a) |
 | `ADR/ADR-062-authoring-syntax-and-schema-language.md` | 6,999 | (a) |
 | `ADR/ADR-070-continuous-integration.md` | 8,317 | (b) |

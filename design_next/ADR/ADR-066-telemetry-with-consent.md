@@ -72,4 +72,4 @@ Chosen option: "Opt-in HTTPS telemetry with a fixed data set and no embedded sec
 * Related: [ADR-065](ADR-065-crash-reporting.md) (crash data uses its own, OS-consented path), [ADR-068](ADR-068-profiling-and-gpu-timing.md) (the timing sources).
 * Component: diagnostics, test and performance (`DBG`); the HTTPS client belongs to the platform layer (`PLT`).
 * **Amendment 2026-10-17.** The scene is called the repeatable performance scene, as the diagnostics component names it (DBG-183). The HTTPS client is the platform layer's (PLT-099), on the stack of [ADR-077](ADR-077-client-http-stack.md).
-* **Amendment 2026-10-17 (AGENTS.md, O21).** Telemetry is compiled into Debug and Release alike ([ADR-056](ADR-056-editions-build-flavours-and-feature-flags.md)); a third-party analytics SDK is excluded by `AGENTS.md` R14.
+* **Amendment 2026-10-17 (AGENTS.md, O21).** Telemetry is compiled into Debug and Release alike ([ADR-056](ADR-056-products-configurations-and-feature-flags.md)); a third-party analytics SDK is excluded by `AGENTS.md` R14.

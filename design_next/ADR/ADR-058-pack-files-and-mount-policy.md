@@ -38,7 +38,7 @@ Chosen option: "An own indexed pack format with independently compressed chunks"
 * **Reads:** through one asynchronous I/O interface, backed by memory-mapped files or streamed reads. DirectStorage is **not** adopted in v1; the chunk size and alignment keep a DirectStorage back-end addable behind the same interface, which needs an owner decision that adds its package to the allow-list of `AGENTS.md` R14.
 * **Integrity:** the TOC hash is checked at mount in every configuration. Every simulation-relevant entry is checked against its hash on every load; other entries are checked in Debug builds, in QA runs and by the repair function.
 * **Mount order:** an ordered mount manifest lists the base packs, then patch packs. A later pack overrides an earlier entry only where the manifest marks it as a patch for that pack; every override is logged. A missing required pack is a start-up error with a clear message; optional packs are declared as optional.
-* **Loose files:** a loose-content directory can be mounted last, by an explicit start-up option, in Debug builds only. Release builds do not contain the loose-file mount code ([ADR-056](ADR-056-editions-build-flavours-and-feature-flags.md)). A session that runs with loose files reports a modified content identity.
+* **Loose files:** a loose-content directory can be mounted last, by an explicit start-up option, in Debug builds only. Release builds do not contain the loose-file mount code ([ADR-056](ADR-056-products-configurations-and-feature-flags.md)). A session that runs with loose files reports a modified content identity.
 
 ### Consequences
 

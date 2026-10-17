@@ -67,5 +67,5 @@ Chosen option: "One process-relative monotonic clock behind an injectable time-s
 * Component: platform layer (`PLT`).
 * Related: [ADR-068](ADR-068-profiling-and-gpu-timing.md) (profiling markers read the real source directly through the platform layer).
 * Tick rate, the per-tick budget and the threading model are design-phase decisions.
-* **Amendment 2026-10-17 (AGENTS.md, O21).** Development builds are Debug builds, the only configuration with the command-history feature ([ADR-056](ADR-056-editions-build-flavours-and-feature-flags.md)).
+* **Amendment 2026-10-17 (AGENTS.md, O21).** Development builds are Debug builds, the only configuration with the command-history feature ([ADR-056](ADR-056-products-configurations-and-feature-flags.md)).
 * **Amendment 2026-10-17.** The source can be replaced after the settings load in Debug builds, with continuity, as the platform layer specifies (PLT-049, PLT-051) for the command-history feature of the diagnostics component (DBG-241).

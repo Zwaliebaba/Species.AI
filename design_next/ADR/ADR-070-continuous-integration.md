@@ -8,7 +8,7 @@ decision-makers: Species technology lead; workflow decided by the owner's AGENTS
 
 ## Context and Problem Statement
 
-Every change to Species code or content must be built, checked and tested before it is merged. The repository holds its CI workflow, `.github/workflows/build.yml`, which the engineering rules describe (`AGENTS.md` §6): a Windows job and two Linux jobs (formatting and the design checks), every step that has something to run blocks, and a step whose input does not exist yet is skipped and says so, never faked. CI builds `Debug|x64` only; the static check of the two configurations stands in for a Release build ([ADR-054](ADR-054-build-system-cmake-presets.md)). Long-running checks (a soak of many matches, fuzzing, GPU validation, performance runs) and the design checks are needed too, without slowing every change and without weakening the guard rule. The CI service is GitHub Actions, as the workflow file implies; agent hosting beyond the hosted runners is an infrastructure choice outside this ADR.
+Every change to Species code or content must be built, checked and tested before it is merged. The repository holds its CI workflow, `.github/workflows/build.yml`, which the engineering rules describe (`AGENTS.md` §6): a Windows job and two Linux jobs (formatting and the design checks), every step that has something to run blocks, and a step whose input does not exist yet is skipped and says so, never faked. CI builds `Debug|x64` only; the static check of the two configurations stands in for a Release build ([ADR-054](ADR-054-build-system-msbuild-solution.md)). Long-running checks (a soak of many matches, fuzzing, GPU validation, performance runs) and the design checks are needed too, without slowing every change and without weakening the guard rule. The CI service is GitHub Actions, as the workflow file implies; agent hosting beyond the hosted runners is an infrastructure choice outside this ADR.
 
 What does Species' continuous integration run, and how does it grow?
 
@@ -35,7 +35,7 @@ Chosen option: "The committed workflow as the baseline, with further jobs added 
   * print the toolchain it got: the runner image, Visual Studio, MSBuild, clang-tidy and Python;
   * locate the solution: exactly one `.slnx` or `.sln` at the repository root, or none while the tree is empty; two fail the job;
   * check the build shape and the project registries with `Build\CheckProjectFiles.py`, guarded on the script;
-  * restore the allow-listed NuGet packages ([ADR-055](ADR-055-dependencies-vcpkg-manifest-mode.md)) with `/t:Restore /p:RestorePackagesConfig=true` before the build, guarded on the solution and on a `packages.config` anywhere in the tree;
+  * restore the allow-listed NuGet packages ([ADR-055](ADR-055-dependencies-three-nuget-packages.md)) with `/t:Restore /p:RestorePackagesConfig=true` before the build, guarded on the solution and on a `packages.config` anywhere in the tree;
   * build `Debug|x64` through the solution with MSBuild warnings as errors, guarded on the solution;
   * run the test suites: one suite per `*Tests.vcxproj`, each of which must have produced its DLL, run by `vstest.console.exe` with a `.trx` log ([ADR-069](ADR-069-test-framework.md)), guarded on the solution;
   * run clang-tidy over the tree with `Build\RunClangTidy.py`, guarded on the script; clang-tidy is pinned (22.1.8, installed from pip) so that a runner-image change cannot turn the build red;

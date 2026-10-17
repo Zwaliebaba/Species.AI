@@ -8,7 +8,7 @@ decision-makers: Species technology lead; decided by the owner's AGENTS.md (O21)
 
 ## Context and Problem Statement
 
-The component specifications require unit, property, golden-image, golden-hash and performance tests, each citing requirement ids. Tests must build as projects of the solution ([ADR-054](ADR-054-build-system-cmake-presets.md)), run on developer machines and in CI, report results per test case, and never pass by being empty. The executable and its test suites may use no third-party library (`AGENTS.md` R14), and the repository's engineering rules name the runner: `vstest.console.exe`, over every suite the build produced, with a `SuiteSmoke` placeholder in every test project (`AGENTS.md` §3). Content loaders, which read files that players can tamper with, also need fuzz testing.
+The component specifications require unit, property, golden-image, golden-hash and performance tests, each citing requirement ids. Tests must build as projects of the solution ([ADR-054](ADR-054-build-system-msbuild-solution.md)), run on developer machines and in CI, report results per test case, and never pass by being empty. The executable and its test suites may use no third-party library (`AGENTS.md` R14), and the repository's engineering rules name the runner: `vstest.console.exe`, over every suite the build produced, with a `SuiteSmoke` placeholder in every test project (`AGENTS.md` §3). Content loaders, which read files that players can tamper with, also need fuzz testing.
 
 Which test framework and test kinds does Species use?
 

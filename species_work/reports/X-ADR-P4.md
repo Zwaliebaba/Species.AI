@@ -220,9 +220,9 @@ The other records need no change: 002, 004, 006, 008, 009, 011–016, 018–021,
 ### 8.4 Coordinator notes
 
 - File slugs no longer match three titles. Suggested renames, which need link repointing, so I did not do them:
-  - `ADR-054-build-system-cmake-presets.md` → `ADR-054-build-system-msbuild-solution.md`;
-  - `ADR-055-dependencies-vcpkg-manifest-mode.md` → `ADR-055-dependencies-three-nuget-packages.md`;
-  - `ADR-056-editions-build-flavours-and-feature-flags.md` → `ADR-056-products-configurations-and-feature-flags.md`.
+  - `ADR-054-build-system-msbuild-solution.md` → `ADR-054-build-system-msbuild-solution.md`;
+  - `ADR-055-dependencies-three-nuget-packages.md` → `ADR-055-dependencies-three-nuget-packages.md`;
+  - `ADR-056-products-configurations-and-feature-flags.md` → `ADR-056-products-configurations-and-feature-flags.md`.
 - `species_work/standards_baseline.md` (not mine) still holds the CMake, vcpkg, server-compiler, Opus and DXC-redistributable lines; the README copy is now the aligned one.
 - The `decision-makers` front matter of the records decided by AGENTS.md reads "Species technology lead; decided by the owner's AGENTS.md (O21)".
 

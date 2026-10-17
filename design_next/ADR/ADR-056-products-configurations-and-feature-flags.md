@@ -8,7 +8,7 @@ decision-makers: Species technology lead; decided by the owner's AGENTS.md (O21)
 
 ## Context and Problem Statement
 
-Species produces several programs from one codebase: the game client (which can also host the integrated server, vision O10), the headless dedicated server (vision O5), the content build tool and the test suites. The solution has exactly two configurations, `Debug|x64` and `Release|x64`, which differ only in their optimisation settings ([ADR-054](ADR-054-build-system-cmake-presets.md), `AGENTS.md` §3). Development features (the developer console, debug commands, the development overlay, development checks) must exist where the team works and must be absent from what players run. Some content or features differ between test builds and releases (for example a test build that enables only some match modes). A build must never be ambiguous about which program it is.
+Species produces several programs from one codebase: the game client (which can also host the integrated server, vision O10), the headless dedicated server (vision O5), the content build tool and the test suites. The solution has exactly two configurations, `Debug|x64` and `Release|x64`, which differ only in their optimisation settings ([ADR-054](ADR-054-build-system-msbuild-solution.md), `AGENTS.md` §3). Development features (the developer console, debug commands, the development overlay, development checks) must exist where the team works and must be absent from what players run. Some content or features differ between test builds and releases (for example a test build that enables only some match modes). A build must never be ambiguous about which program it is.
 
 How are products, development features and feature variants expressed?
 
@@ -31,7 +31,7 @@ How are products, development features and feature variants expressed?
 
 Chosen option: "One project per product, development features keyed on `NDEBUG`, data-driven runtime feature flags". Accepted: the owner's `AGENTS.md` decides it (O21).
 
-* **Products** are projects: in the game's solution the client (the game executable, `species.exe`), the server (headless; links no graphics, audio, input or text-rendering library) and one test project `<Project>Tests` per library ([ADR-069](ADR-069-test-framework.md)); in the separate tools solution under `Tools/`, the content build tool, a development tool ([ADR-059](ADR-059-content-build-and-validators.md), [ADR-054](ADR-054-build-system-cmake-presets.md), `AGENTS.md` §2). The libraries they link are projects too. A product is built by building its project through the solution (`/t:<ProjectName>`); no macro or variable selects a product.
+* **Products** are projects: in the game's solution the client (the game executable, `species.exe`), the server (headless; links no graphics, audio, input or text-rendering library) and one test project `<Project>Tests` per library ([ADR-069](ADR-069-test-framework.md)); in the separate tools solution under `Tools/`, the content build tool, a development tool ([ADR-059](ADR-059-content-build-and-validators.md), [ADR-054](ADR-054-build-system-msbuild-solution.md), `AGENTS.md` §2). The libraries they link are projects too. A product is built by building its project through the solution (`/t:<ProjectName>`); no macro or variable selects a product.
 * **Configurations:** `Debug` and `Release` only. What each compiles in:
 
 | Feature | `Debug` | `Release` |
@@ -60,7 +60,7 @@ Chosen option: "One project per product, development features keyed on `NDEBUG`,
 
 ### Confirmation
 
-* `Build\CheckProjectFiles.py` confirms that Debug and Release differ only in the settings of `AGENTS.md` §3 ([ADR-054](ADR-054-build-system-cmake-presets.md)).
+* `Build\CheckProjectFiles.py` confirms that Debug and Release differ only in the settings of `AGENTS.md` §3 ([ADR-054](ADR-054-build-system-msbuild-solution.md)).
 * Before a release, the shipping builder checks the Release binaries for the developer-console and loose-file symbols and fails if any is present.
 * The content build rejects edition manifests with unknown flags.
 
