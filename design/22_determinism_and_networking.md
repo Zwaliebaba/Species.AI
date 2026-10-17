@@ -456,3 +456,298 @@ Defined but never sent in the baseline (the "4 unused") [C] grep of all call sit
 | 8 | Disconnect_KeyAuthFailed | "key authentication failed" | metaserver status < 0 (auth −3) |
 | 9 | Disconnect_KickedByServer | "kicked by server" | host pressed kick (`code/UI/KickPlayerButton.h` → `Server::KickClient`) |
 
+---
+
+## 6 Server sequencing and client ordering
+
+### 6.1 `Server::Advance()` — one tick (every 0.1 s) [C] `code/network/server.cpp:Server::Advance`
+
+```
+letter = new UPDATE {COMMAND="ek"}
+while (msg = inbox.pop_front()):              // inbox filled by the listener thread, FIFO
+    if msg.name != "ba" or no string COMMAND: discard
+    cmd, ack = msg.COMMAND, msg.LASTSEQID
+    clientId = lookup(msg.FROMIP, msg.FROMPORT)            // -1 if unknown
+    if ip:port is in disconnectedClients and cmd != JOIN:  HandleDisconnectedClient  // re-send DISCONNECT
+    elif cmd == JOIN:          if clientId == -1: forget disconnected record; RegisterNewClient; SendClientId
+    elif cmd == LEAVE:         if known: RemoveClient(id, ClientLeave)
+    elif cmd == REQUEST_TEAM:  if known: RegisterNewTeam(id, TEAMTYPE, DESIREDTEAMID)
+    elif cmd == REQUEST_SPECTATOR: (§5.4 row 3)   // may 'return' early, leaking the letter
+    elif cmd == SYNCHRONISE:   if known: HandleSyncMessage
+    elif cmd == FILESEND:      if known: client.ftp.ReceiveLetter(msg)
+    else:
+        if known and GetDataUChar(TEAMID) != 255:
+            if cmd == ALIVE:            client.lastAlive      = msg  (replace)
+            elif cmd == SELECTUNIT:     client.lastSelectUnit = msg  (replace)
+            elif cmd == REQUEST_COLOUR: client.lastTeamColour = msg  (replace)
+            elif cmd == START_GAME and one was already relayed: drop
+            else letter.addSubdir(copy(msg) minus FROMIP/FROMPORT/LASTSEQID)
+    if known (still registered): client.lastMessageReceived = now; client.lastKnownSeq = max(client.lastKnownSeq, ack)
+for client in clients (array order): append lastAlive, lastSelectUnit, lastTeamColour (then clear them)
+SendLetter(letter)          // SEQID = m_sequenceId++; history.append
+UpdateClients()             // §6.2
+AuthenticateClients()       // §8.4
+AdvanceSender()             // serialise and send outbox (main thread)
+if !m_noAdvertise: Advertise()   // §12.3
+```
+
+Properties [C]: (1) command order inside a frame = server arrival order, except the three "latest-only" kinds, which come last in client-array order; (2) every tick produces exactly one UPDATE, even if empty (except the single-player REQUEST_SPECTATOR early return, which simply does not consume a sequence id); (3) the history (`m_history`, LList) is **never trimmed** — 10 letters/s for the whole server lifetime (lobby + match), and `ServerToClient::m_sync` grows the same way; (4) `Server::ReceiveLetter` routes Directories named `"match"` to the matchmaker instead of the inbox; (5) the receive-rate counter is updated on the listener thread without a lock.
+
+### 6.2 `Server::UpdateClients()` — per-client resend/ack window [C]
+
+For each registered client `c` (`H = m_history.Size()`, threshold `T = 10`):
+
+```
+if (not _DEBUG) and now - c.lastMessageReceived > 20.0: RemoveClient(c, ClientDrop); continue
+c.lastSent = max(c.lastSent, c.lastKnown)
+from = c.lastSent + 1 ;  to = min(H, from + 3)
+if c.lastKnown < H - T:           c.caughtUp = false
+elif c.lastKnown > H - T/2 - 1:   c.caughtUp = true          // i.e. > H - 6
+if !c.caughtUp:
+    if c.lastKnown < c.lastSent - T: from = c.lastKnown + 1   // rewind
+    to = from + 3
+n = number of consecutive empty UPDATE letters in history starting at 'from'
+if n > 5 and now - c.lastMessageReceived < 5.0:
+    queue {UPDATE, NUMEMPTYUPDATES=n, SEQID=from}; c.lastSent = from + n - 1
+else for l in [from, to) if history[l] exists:
+    copy = history[l] (+receiver c)
+    p = c.lastKnown + (l - from) + 1 ;  if !c.caughtUp: p -= 9
+    if p < l and history[p] exists: attach copy of history[p] renamed "en"
+    queue copy ; c.lastSent = l
+FTP: queue c.ftp.MakeSendLetters()
+IFrame relay: if c.syncErrorSeq != -1 and c.ftp has completed file "IFrame <c.id> <seq>": SendFile to every other client's FTP manager
+```
+
+Net effect: in steady state one new letter per tick, carrying a copy of the oldest unacknowledged letter whenever the round trip exceeds one tick; a lagging client receives 3 letters per tick (30/s, so it gains 20 frames/s on the 10/s production); long idle stretches (lobby) collapse into one RLE letter. A lost letter is repaired either by the next letter's piggy-back or, once the client is more than 10 behind, by the rewind.
+
+### 6.3 `Server::AdvanceSender()` [C]
+
+Locks `m_outboxMutex`; for each queued letter: stamp `LASTSEQID = m_sequenceId`; if the receiver is the local client id → `ClientToServer::ReceiveLetter` directly; else look the receiver up among connected, then disconnected, clients, `Directory::Write`, `NetSocketSession::WriteData` (one `sendto`), count `size + 32` in `m_sendRate`; delete (a letter whose receiver is found in neither list is removed from the outbox but not deleted — a leak). Before the host client knows its own id (`m_clientId == −1`), its CLIENTID reply goes through the real socket to its own LAN IP:client port and arrives via its listener thread [C]. `RemoveClient` and `HandleDisconnectedClient` append to `m_outbox` without `m_outboxMutex` (benign: only the main thread touches the outbox) [C].
+
+### 6.4 Client connection states [C] `code/network/clienttoserver.h`
+
+| State | Entered by | Behaviour |
+|---|---|---|
+| StateDisconnected (0) | construction; `ClientLeave` | inbox flushed every Advance, `g_sliceNum = −1`; all received game letters discarded |
+| StateConnecting (1) | `ClientJoin(ip, port)` (resets sequence ids, creates a `NetSocketSession` unless hosting) | every 1.0 s: matchmaker REQUEST_CONNECT (if the own public identity is known) + CLIENT_JOIN; attempts counted (shown in the UI); unlimited in the baseline (`CTOS_MAX_CONNECTION_ATTEMPTS` = 50 enforced only under `TESTBED_ENABLED`) |
+| StateHandshaking (2) | CLIENTID received | replaying the history; only messages, no team yet |
+| StateConnected (3) | own CLIENTHELLO executed (reached in the replayed stream) | periodic REQUEST_TEAM / name / colour / achievements / Christmas (§8.2) |
+
+### 6.5 `ClientToServer::ReceiveLetter` (client listener thread, or main thread for the host) [C]
+
+```
+count bytes; [B:DEBUG] drop if ControlDebugDropPacket
+if name == "match": MatchMaker_ReceiveMessage; return
+if state == Disconnected: drop
+require name "ba" and int SEQID else drop
+if has subdir "en": detach, rename "ba", ReceiveLetter(it)   (recursion)
+m_serverSequenceId = max(m_serverSequenceId, LASTSEQID)      (unlocked)
+if SEQID == -1: inbox.push_front; if COMMAND == DISCONNECT: m_lastValidSequenceIdFromServer++ ; return
+if SEQID <= m_lastValidSequenceIdFromServer: drop (duplicate)
+estimatedServerStartTime = min(it, now - SEQID*0.1)         (unlocked)
+sorted insert by SEQID from the back; equal SEQID => drop
+recompute m_lastValidSequenceIdFromServer = highest contiguous SEQID in the inbox (an RLE letter counts as SEQID..SEQID+N-1)
+```
+
+### 6.6 `GetNextLetter` [C]
+
+Returns the inbox head only if: (`m_clientId == −1` ⇒ only `SEQID == −1`); `SEQID == g_lastProcessedSequenceId + 1` or `−1`. Stale heads (`SEQID ≤ last processed`) are deleted; future heads wait. Combined with §2.2 this gives strict in-order execution with unsequenced letters jumping the queue.
+
+### 6.7 Outgoing [C] `ClientToServer::AdvanceSender`
+
+Only when state > Disconnected. Stamps `LASTSEQID = m_lastValidSequenceIdFromServer`. Host: hand to `Server::ReceiveLetter(letter, GetOurIP_String(), GetLocalPort())`. Remote: `Directory::Write` into a 16 384-byte buffer, single `sendto`. A compile-time switch `NETWORKQUALITY_TESTING` (commented out) routes writes through `NetworkQuality(200 ms, 0.25 loss, 8000 B/s)` (§11.3).
+
+---
+
+## 7 IFrames
+
+An `IFrame` is the per-frame sync record created by `ClientToServer::GenerateSyncValue` after every executed UPDATE frame [C] `code/network/iframe.cpp`, `code/network/iframe.h`.
+
+### 7.1 Two build variants of `IFrame::Generate`
+
+| Build | Sync value per frame | IFrame payload |
+|---|---|---|
+| **Baseline FULLGAME** (neither `TARGET_DEBUG` nor `TARGET_BETATEST_GROUP`) | `m_hashValue = 255 * syncfrand(1)` stored into `unsigned char` — the next number of the synchronised Mersenne-Twister stream scaled to 0..254. Detects only divergence of the **count/order of sync-RNG draws**, not world-state divergence. With no location (lobby) `Generate` returns before drawing and the value stays 0. | none (`m_data = NULL`, `m_length = 0`, `m_sequenceId = 0`) |
+| [B:DEBUG] / beta-test groups (`TARGET_BETATEST_GROUP` is defined by every `TARGET_BETATEST_GROUP_*` target) | low 8 bits of word 0 of SHA-1 over the serialised world snapshot below | full snapshot (newest 50 kept) |
+
+[C] `code/network/iframe.cpp:IFrame::Generate`, `IFrame::CalculateHashValue`; `code/lib/universal_include.h`. Both variants consume exactly one sync-RNG draw per frame on every client (`syncfrand(1)` vs `syncfrand(255)` inside the snapshot), so the RNG stream stays aligned between builds of the same kind [C].
+
+### 7.2 Snapshot layout ([B:DEBUG]/beta only; all values via §4.1) [C] `IFrame::Generate`, `ReadIFrameData`
+
+| # | Field | Type / bytes |
+|---|---|---|
+| 1 | `g_lastProcessedSequenceId` | int 4 |
+| 2 | `GetNetworkTime()` | double 8 |
+| 3 | tag `"Teams"` | 5 ASCII bytes |
+| 4 | for t = 0..5: `teamUsed` (= teamType ≠ Unused) | bool 1 |
+| 4a | if used: `unitsSize` | int 4 |
+| 4b | per unit slot: `valid` bool 1; if valid: `centrePos` Vector3 24, `entitiesSize` int 4, per entity slot: `valid` bool 1; if valid: `pos`, `vel`, `front` (3 × 24) + `uniqueId` int 4 | — |
+| 4c | `othersSize` int 4; per slot: `valid` bool 1; if valid: `pos`, `vel`, `front` (72) + `uniqueId` 4 | — |
+| 5 | tag `"Lasers"` (6), `size` int, per slot: valid bool; if valid `pos`, `vel` (48) | — |
+| 6 | tag `"Effects"` (7), `size` int, per slot: valid bool; if valid `pos`, `vel` (48) | — |
+| 7 | tag `"Buildings"` (9), `size` int, per slot: valid bool; if valid `pos`, `vel` (48), `radius` double 8, `uniqueId` int 4, `front`, `up`, `centrePos` (72; three zero vectors for crates) | — |
+| 8 | tag `"RandValue"` (9), `syncfrand(255)` | double 8 |
+
+Hash: SHA-1 (unrar's `hash_process`, run on a copy because it scribbles the buffer); `m_hashValue = word0 & 0xFF`; `m_sequenceId = g_lastProcessedSequenceId` (which also overwrites the id read from received frames — a harmless quirk). History: `ClientToServer::AddIFrame` keeps the newest **50** [C] `IFrame::CalculateHashValue`, `ClientToServer::AddIFrame`. A `CHECK_IFRAME_SERIALISATION` self-check re-reads the snapshot (commented out) [C].
+
+### 7.3 Exchange and diff
+
+On the first NETSYNCERROR a client calls `SendIFrame(seq)`: it looks up its frame with `SequenceId() == seq`, uploads it through the FTP manager as file `"IFrame <myClientId> <seq>"` and keeps its own copy via `Multiwinia::SaveIFrame`. The server relays each completed upload to every other client's FTP manager (§6.2). Each `ClientToServer::Advance` while desynced retrieves completed `"IFrame <otherClient> <seq>"` files → `SaveIFrame` → for local vs remote frames with different hashes `IFrame::CalculateDiff`: an index-aligned diff of units/entities/others/lasers/effects/buildings with descriptions `"Local only"`, `"Remote only"`, `"[POS][VEL][FRONT][UP][CENTRE][RADIUS]"`, `"[CENTREPOS]"`, `"[n ENTITY DIFFS]"`, `"Network Time Different"`, `"Sync Rand Different"` → `DumpSyncDiffs` to `syncdiff-….txt`, and `Team::RenderSyncErrors` draws each `SyncDiff` (arrow from 500 units above down to the object, size 20, two text lines size 5) [C] `code/network/iframe.cpp:IFrame::CalculateDiff`, `code/multiwinia.cpp:Multiwinia::SaveIFrame`, `ClientToServer::SendIFrame`, `ClientToServer::Advance`.
+
+In the baseline build the exchange is inert: no snapshot exists and frames keep `SequenceId() == 0`, so `SendIFrame(seq)` finds nothing to send [C].
+
+`SyncDiff` record [C] `code/network/syncdiff.h`: `{WorldObjectId m_id; Vector3 m_pos; char *m_name; char *m_description; RGBAColour m_colour;}`; `Print` format `syncdiff: id: (team: T, unit: U, index: I, uniqueId: N) (x, y, z)  - name - description` [C] `code/network/syncdiff.cpp`.
+
+---
+
+## 8 Session lifecycle
+
+### 8.1 Connect, join and handshake [C] `ClientToServer::ClientJoin/Advance/ProcessServerLetters`, `Server::RegisterNewClient/SendClientId`
+
+1. `ClientJoin(ip, port)`: state Connecting, sequence ids −1, send socket bound to the client listener (port 4001 or OS-chosen).
+2. Every 1.0 s: matchmaker REQUEST_CONNECT (if the client's public identity is known, §12.4) and CLIENT_JOIN.
+3. Server, on the first JOIN from an ip:port: new `ServerToClient` (next client id, counting from 0 per server lifetime), copy auth key / key id / password, `Authentication_RequestStatus(key, 4, keyId, ip)` (asynchronous metaserver check), sequenced CLIENTHELLO broadcast, then direct CLIENTID at the front of the outbox.
+4. Client, on CLIENTID: Handshaking, `g_lastProcessedSequenceId = −1`, `syncrandseed(RANDSEED)`, `Multiwinia::Reset()`, reset option versions, then execute the **entire history from sequence 0** (lobby options, existing teams, chat and — if the match already started — START_GAME and every frame since). The connecting page shows `100 × lastProcessed / serverSeq` % (`code/UI/WaitingButton.h`).
+5. When the replay reaches its own CLIENTHELLO: Connected. From then on, every 0.1 s while `m_myTeamId == 255` and not a spectator: REQUEST_TEAM(LocalPlayer). The in-code comment says "once a second" but the gate is the 0.1-s timer [C].
+6. Next server tick: `AuthenticateClient` (§8.4) may kick the newcomer.
+
+```mermaid
+sequenceDiagram
+    participant C as Joining client
+    participant MM as MetaServer and MatchMaker port 5113
+    participant S as Host server port 4000
+    participant H as Host own client
+    Note over C: Join page calls StartIdentifying
+    loop every 10 s
+        C->>MM: match REQUEST_IDENTITY with uid, game, version, key
+        MM-->>C: match IDENTIFY with uid, your IP, your port
+    end
+    Note over S,MM: the host does the same for its server listener while advertising
+    C->>C: ClientJoin, state Connecting
+    loop every 1.0 s until CLIENTID arrives
+        C->>MM: REQUEST_CONNECT with own and target ip and port, key
+        MM-->>S: relayed REQUEST_CONNECT (inferred, server side not in tree)
+        S-->>C: RECEIVED_CONNECT opens the host NAT
+        C->>S: CLIENT_JOIN with version, PC, key hash, key id, password
+    end
+    S->>S: RegisterNewClient assigns id N, starts key check
+    S-->>H: sequenced CLIENTHELLO id N, start time, random (seq k)
+    S-->>C: direct CLIENTID N with seq -1, version, RANDSEED, MAKE_SPECTATOR
+    C->>C: state Handshaking, syncrandseed RANDSEED, lastProcessed = -1
+    loop 3 letters per tick plus RLE runs
+        S-->>C: history letters seq 0 to k and beyond
+        C->>S: SYNCHRONISE per executed UPDATE plus LASTSEQID ack
+    end
+    C->>C: executes own CLIENTHELLO seq k, state Connected
+    S->>S: next tick AuthenticateClient checks key, duplicate, full, password
+    loop every 0.1 s until a team is assigned
+        C->>S: REQUEST_TEAM LocalPlayer
+    end
+    S-->>C: sequenced TEAMASSIGN team t for client N (to all clients)
+    C->>C: InitialiseTeam t, m_myTeamId = t
+    C->>S: REQUEST_TEAMNAME and REQUEST_COLOUR, relayed to all
+```
+
+### 8.2 Lobby synchronisation and identity upkeep [C] `ClientToServer::Advance`
+
+- Everything in the lobby is a sequenced command (§5.3–§5.4): game type, map name, parameters, research levels, AI mode, co-op, single-round Assault, basic crates (host UI controls bound through `NetworkValue`), team names and colours (each player's own), ready toggles, chat, spectator conversion, achievement masks, START_GAME. Late joiners obtain the lobby by history replay; per-option version numbers make every option converge.
+- While Connected with a team, a client sends REQUEST_TEAMNAME at most once per second while the lobby name differs from the `ReliableSetTeamName` value; REQUEST_COLOUR every 0.1 s while the colour differs from `ReliableSetTeamColour` (not in co-op or Assault unless at the main menu with no location); SET_PLAYERACHIEVEMENTS every 60 s; CHRISTMASMODE once when `App::UseChristmasMode()` at the main menu. Every Advance also refreshes the metaserver client properties (key, game name, version, origin version).
+- The server enforces only slot counts, the password and key checks at join; option ownership is not enforced (§14.13). The lobby UI flow is in [09 §5](09_meta_systems.md#5-multiplayer-front-end-versus-cpu-quick-match-lanwan-browser-hostjoin-lobby).
+
+### 8.3 Team assignment — `Server::RegisterNewTeam(client, type, desired)` [C]
+
+`maxPlayers = App::GetMaxNumberofPlayers()` = `m_numPlayers` of the currently requested map in the current game type, or 0 if none (`code/app.cpp`).
+
+```
+if client is spectator: ignore
+LocalPlayer:  ignore if client already owns a LocalPlayer team
+              single-player server and any Local/Remote team exists -> RemoveClient(ServerFull)
+              maxPlayers != 0 and teams >= maxPlayers                 -> RemoveClient(ServerFull)
+CPU:          ignore if teams >= maxPlayers   (so CPU requests are ignored while no map is chosen)
+other types:  ignore if client owns any team; single player or full -> RemoveClient(ServerFull)
+teamId = first free slot in m_teams (0..5); broadcast TEAMASSIGN(teamId, type, client, [demo])
+```
+
+On receipt every client calls `Multiwinia::InitialiseTeam` (remote humans → RemotePlayer). The CPU team is owned by the requesting client id — the host in practice (Resolved: P01 U2 asked which client id CPU teams carry; it is the requester's) [C].
+
+### 8.4 Server-side admission checks — `AuthenticateClients` every tick [C] `code/network/server.cpp:Server::AuthenticateClients`, `Server::AuthenticateClient`
+
+| Step | Condition | `m_basicAuthCheck` | Kick reason |
+|---|---|---|---|
+| once (`m_basicAuthCheck == 0`) | `Authentication_SimpleKeyCheck(key) < 0` (hash keys "hsh…" always pass; otherwise length must be 31) | −1 | InvalidKey |
+| once | another client has the same key string, or another client's plain key hashed with the current hash token equals this key (skipped under `TESTBED_ENABLED`/`TARGET_DEBUG`) | −2 | DuplicateKey |
+| once | `maxPlayers != 0 && teams != 0 && teams >= maxPlayers` | −5 | ServerFull |
+| once | server password non-empty and the client password differs (exact UnicodeString compare) | −4 | BadPassword |
+| once | otherwise | 1 | — |
+| **every tick** | `Authentication_GetStatus(key) < 0` (metaserver verdict, §12.5) | −3 | KeyAuthFailed |
+| every tick | `m_basicAuthCheck < 0` and not single player | — | `RemoveClient(reason)` (`AUTHENTICATION_LEVEL == 1`) |
+
+An unknown status (metaserver unreachable) never kicks. A key revoked mid-game kicks the player mid-game.
+
+### 8.5 Game start
+
+1. The host's UI sets options (SETGAMEOPTION*), fills empty slots with CPU teams (REQUEST_TEAM CPU × (numPlayers − filled)) and sends START_GAME (`code/UI/GameMenuWindow.cpp:UpdateGameOptions`, `code/UI/PlayGameButton.h`) [C].
+2. The server relays only the first START_GAME of its lifetime (§5.4 row 24).
+3. Each client executing it sets `m_loadingLocation = true` and `GameModeMultiwinia`, resets the game timer (speed 0) and stops processing further letters until the level is loaded; `Location::Init` runs on the loading worker thread and draws from the synced RNG at the same logical point on every peer (§14.3). The loading screen keeps sending KEEPALIVE syncs (1/s) and, on the host, keeps ticking the server [C] `code/loading_screen.cpp:LoadingScreen::Render`, `ClientToServer::KeepAlive`.
+4. After loading, the client catches up on the buffered frames (20 slices per iteration, ≤ 0.3 s per render frame). The match starts frozen (speed 0); players press Ready (TOGGLE_READY); when every human and spectator team is ready the 3.0-s grace countdown runs in `Multiwinia::Advance` (slice 8, even while paused), then speed 1.0 is requested [C] `code/multiwinia.cpp:Multiwinia::AdvanceGracePeriod`.
+
+```mermaid
+sequenceDiagram
+    participant HU as Host UI
+    participant S as Server
+    participant A as Every client incl. host
+    HU->>S: SETGAMEOPTION commands for type, map, params via the host client
+    S-->>A: UPDATE with SETGAMEOPTION, versioned, applied in order
+    HU->>S: REQUEST_TEAM CPU for each empty slot
+    S-->>A: TEAMASSIGN CPU for each slot
+    HU->>S: START_GAME
+    S-->>A: UPDATE seq n containing START_GAME
+    A->>A: loadingLocation = true, mode Multiwinia, GameTimer Reset to speed 0
+    Note over A: level loads on the worker thread, the loading screen<br/>sends KEEPALIVE syncs and keeps the host server ticking
+    S-->>A: UPDATE n+1, n+2 and later, buffered in the inbox
+    A->>A: load done, Location InitialiseTeam spawns AI entities for CPU teams<br/>then catch up at 20 slices per iteration, max 0.3 s per frame
+    A->>S: TOGGLE_READY for own team during the grace period
+    S-->>A: UPDATE containing TOGGLE_READY
+    A->>A: all human and spectator teams ready, grace 3.0 s counts down 0.1 per frame<br/>then RequestSpeedChange 1.0 and the simulation runs
+```
+
+### 8.6 One frame of input flow
+
+```mermaid
+sequenceDiagram
+    participant P as Player client P
+    participant S as Server
+    participant Q as Other client Q
+    P->>P: TeamControls Advance reads input, UI clicks call Request functions
+    P->>S: ALIVE with team and packed controls every 0.1 s, plus commands and LASTSEQID ack
+    Q->>S: ALIVE and commands, LASTSEQID ack
+    Note over S: tick every 0.1 s real time
+    S->>S: drain inbox, commands in arrival order,<br/>then latest ALIVE, SELECTUNIT, COLOUR per client
+    S->>S: SendLetter assigns seq k and appends to history
+    S-->>P: UPDATE k plus copy of the oldest unacked letter
+    S-->>Q: UPDATE k plus copy of the oldest unacked letter
+    P->>P: inbox sorted, when k equals lastProcessed+1 and sliceNum is -1<br/>apply commands, GameTimer Tick, sync byte
+    P->>S: SYNCHRONISE k with sync byte
+    P->>P: slices 0 to 9 of Location Advance spread over render frames<br/>slice 8 also runs Multiwinia Advance
+    Q->>Q: identical execution of UPDATE k
+    Q->>S: SYNCHRONISE k with sync byte
+```
+
+### 8.7 Pause, leaving, timeouts and lag [C]
+
+- Pause: §2.6.
+- Graceful leave: `ClientLeave()` sends CLIENT_LEAVE × 3 (only if state > Connecting), flushes immediately under `g_app->m_networkMutex`, sleeps 100 ms, then resets everything (`m_clientId = −1`, `g_lastProcessedSequenceId = −2`, `m_myTeamId = 255`, `m_requestedMap = "null"`, out-of-sync list and IFrame history emptied, FTP reset, identity requests stopped, inbox flushed) [C] `ClientToServer::ClientLeave`. Called from `App::ShutdownCurrentGame`, DISCONNECT handling and error paths. `App::ShutdownCurrentGame` (end of every match) also deletes the `Server`, so every new game creates a new server session with a new seed [C] `code/app.cpp:App::ShutdownCurrentGame`.
+- Server drop timeout: **20.0 s** without any message (`Server::UpdateClients`, only `#ifndef _DEBUG`; a 60-s variant uses a `TESTBED` macro that is never defined).
+- `RemoveClient`: sequenced CLIENTGOODBYE to all; direct DISCONNECT to the victim unless it left voluntarily; immediate send; the record moves to `m_disconnectedClients` (kept for the server's lifetime) with the reason; in the lobby all `ServerTeam`s owned by that client are deleted; in game the slot stays reserved on the server [C] `Server::RemoveClient`.
+- The client has no timeout of its own: after **5.0 s** without a server letter it draws "multiwinia_error_lostconnection" (lobby or location, not single player) (`code/renderer.cpp`), and the post-game finish button treats > 5 s as lagged (`code/UI/FinishMultiwiniaButton.h`).
+- Packets from a removed ip:port (other than JOIN) get the DISCONNECT re-sent (`HandleDisconnectedClient`).
+- Client reaction to DISCONNECT [C] `ProcessServerLetters`: `ClientLeave()` then, if the main-menu window exists: ServerFull → dialogue "multiwinia_error_serverfull", back to the Join page; DuplicateKey → "dialog_duplicate_key", main page; KickedByServer → "multiwinia_error_kickedbyserver", main page; BadPassword → "multiwinia_error_badpass", Join page; any other reason → main page without a dialogue.
+
+### 8.8 Reconnect, late join, spectators, kick, password
+
+- **No session resumption** [C]: a JOIN from a previously removed ip:port deletes the old record and registers a **new** client id; the player replays the whole history and must obtain a new team (the old in-game team was turned into a CPU team, §10). Because the departed client's `ServerTeam` stays reserved in game and counts toward `teams >= maxPlayers`, a rejoin into a full match is refused [I from `RegisterNewTeam`].
+- **Late join** [C]: joining a match in progress is not refused anywhere (the server never checks `GameRunning()`; the browser lists in-progress games and blocks only full/incompatible/missing-map/demo-restricted ones). A late joiner replays from sequence 0; network catch-up is bounded at +20 frames/s (§6.2), so joining a 20-minute match (12 000 frames) needs ≈ 10 minutes of replay [I computed]. If a slot is free its LocalPlayer team is created mid-game (`Multiwinia::InitialiseTeam` → `Location::InitialiseTeam` when teams are already initialised); otherwise the server-full rules kick it. Whether in-progress joining was intended for release is unknown (22-U6).
+- **Spectators** [C]: joining a server whose client count exceeds the map's player count yields CLIENTID.MAKE_SPECTATOR = 1, which the client treats as "server full" and leaves. In the lobby a seated player can convert to spectator (REQUEST_SPECTATOR → ASSIGN_SPECTATOR, `g_app->m_spectator = true`, team removed). Advertised spectator counts are always 0/0. `JoinServerAsSpectator` only sets a menu flag and joins normally.
+- **Kick** [C]: host-only `KickPlayerButton` → `Server::KickClient(clientId)` → `RemoveClient(KickedByServer)`.
+- **Password** [C]: the host sets it via `Server::SetPassword` (`code/UI/GameMenuWindow.h`); the joiner types it on the password page; it is sent **in clear text** in CLIENT_JOIN.
+

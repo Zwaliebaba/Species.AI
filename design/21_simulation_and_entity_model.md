@@ -729,3 +729,245 @@ Determinism consequence: ids are identical on all peers only if every peer creat
 | Route trails | `RoutingSystem::Render` | wall clock (pulse) and `g_advanceTime` (fade) | [C] `code/routing_system.cpp:RoutingSystem::Render` |
 
 Render order of the whole frame: [24](24_rendering.md).
+
+## 5 Location: containers, creation, removal and update ordering
+
+`Location` (`code/location.h:Location`) is the container and service façade for everything simulated in one match. Exactly one exists at a time (`g_app->m_location`); it is created on the loading worker thread in `DoEnterLocation` and destroyed by `App::ShutdownCurrentGame` ([20 §8](20_architecture.md#8-lifetimes-process-session-match)). Simulation code reaches it through the global, never as a parameter [C] `code/main.cpp:DoEnterLocation`, `code/app.cpp:App::ShutdownCurrentGame`.
+
+### 5.1 Location members
+
+[C] `code/location.h`, `code/location.cpp:Location::Location`, `Location::Init`.
+
+| Member | Type | Initial value | Meaning |
+|---|---|---|---|
+| `m_lastSliceProcessed` (protected) | int | 0 | last slice passed to `Advance`; read by the cloud render offset |
+| `m_missionComplete` (protected) | bool | false | Darwinia objective flag [B:LEGACY] |
+| `m_coopGroupColourTaken[2][2]` (private) | bool | false | per co-op group: member-0 / member-1 shade already handed out by `GetGroupColour` |
+| `m_showCrateDropMessage` (private) | bool | true | show the "crate_drop" message only for the first crate |
+| `m_landscape` | `Landscape` (by value) | — | height map, normal map, render data ([23](23_terrain_and_landscape.md)) |
+| `m_entityGrid` | `EntityGrid*` | NULL; `new EntityGrid(32.0, 32.0)` in `Init` | spatial hash of entities (§6.2) |
+| `m_entityGridCache` | `EntityGridCache*` | NULL; created in `Init`; deleted in `~Location` and `Empty` | memo of enemy queries (§6.3) |
+| `m_obstructionGrid` | `ObstructionGrid*` | NULL; `new ObstructionGrid(s, s)`, s = **32.0 in Multiplayer, 64.0 otherwise** | building footprint grid (§6.4) |
+| `m_levelFile` | `LevelFile*` | NULL; `LoadLevel` | parsed map + mission ([08](08_levels_and_level_design.md), [29](29_data_formats_reference.md)) |
+| `m_clouds` | `Clouds*` | NULL; `Init` | sky clouds; advanced at slice 3 (cosmetic) |
+| `m_water` | `Water*` | NULL; `Init` | advanced per render frame by the main loop (cosmetic) |
+| `m_routingSystem` | `LandRoutingSystem` | — | land pathfinding (§7) |
+| `m_seaRoutingSystem` | `SeaRoutingSystem` | — | sea pathfinding for Armour (§7) |
+| `m_teams[NUM_TEAMS]` | `Team*[6]` | NULL; `InitTeams` creates **all six** (even unused) | §9 |
+| `m_teamPosition[NUM_TEAMS]` | int | −1 | team id → map start position (0..numPlayers−1) |
+| `m_christmasTimer` | double | −99.9 | shared timer of the snow, dust and lightning spawners (< −90 = first-run burst) |
+| `m_spawnSync` | double | 0.0 | soul-rain spawner timer |
+| `m_crateTimer` | double | 0.0 | crate-drop countdown ([04 §1.3](04_crates_powerups_and_weapons.md#13-drop-timer--locationadvancecrates)) |
+| `m_spawnManiaTimer`, `m_bitzkreigTimer` | double | 0.0 | crate effect timers, decremented at slice 8 |
+| `m_allowMonsterTeam` | bool | true | gates `GetMonsterTeamId`/`GetFuturewinianTeamId` (→ −1 when false) |
+| `m_teamsInitialised` | bool | false | set at the end of `InitTeams` |
+| `m_messageTimer`, `m_message`, `m_messageTeam`, `m_messageNoOverwrite` | double, UnicodeString, int, bool | 0.0, empty, −1, false | centre-screen message (real-time expiry 3.0 s; team 255 = white) — presentation |
+| `m_lights` | `FastDArray<Light*>` | step 1 | level lights (render data) |
+| `m_buildings` | `SliceDArray<Building*>` | step 10, 10 slices | all buildings, crates included |
+| `m_spirits` | `SliceDArray<Spirit>` (by value) | size 100, step 100, 10 slices | released souls |
+| `m_lasers` | `SliceDArray<Laser>` (by value) | step 100, 10 slices | laser bolts |
+| `m_effects` | `SliceDArray<WorldObject*>` | step 100, 10 slices | grenades, rockets, shells, fireballs, shockwaves, muzzle flashes, snow, dust balls, lightning, pulse waves, spam infections, zombies, order markers, unprocessed spirits and the other effect classes of [04 §6](04_crates_powerups_and_weapons.md#6-weapons-projectiles-and-effect-objects) |
+| `m_chatMessages` | `LList<ChatMessage*>` | — | newest first; presentation only |
+| `m_windDirection` | Vector3 | zero | set by the dust-wind spawner |
+| `m_coopGroups[NUM_TEAMS]` | int | 0 | 0 = none, 1 / 2 = alliance group (§9.5) |
+| `m_groupColourId[2]` | int | −1 | colour id chosen for each co-op group |
+| `m_burnPatches` | `LList<BurnPatch>` | — | scorched terrain patches; adding one rebuilds landscape GL state [B:LEGACY] in practice ([23 §11.5](23_terrain_and_landscape.md#115-burn-patches-blegacy)) |
+| `m_christmasMode` | bool | false | copied from `ClientToServer::m_christmasMode` at `Init` |
+| `m_sortedBuildingsAlphas`, `m_sizeSortedBuildingsAlphas` (private) | `DepthSortedBuilding*`, int | NULL, 0 | growable scratch buffer (step 128) for the alpha depth sort — render only |
+| `s_neighbours` (static) | `std::vector<WorldObjectId>` | — | shared scratch result buffer for grid queries |
+| `s_neighboursInUse` (static) | bool | false | re-entrancy guard used only by `Bang` (falls back to a local vector when set) |
+
+Structs: `ChatMessage {m_msg, m_clientId, m_recievedTime (real time), m_colour, m_senderName}`; `BurnPatch {m_pos, m_radius}`; `DepthSortedBuilding {m_buildingIndex, m_distance (float, squared distance)}` [C] `code/location.h`.
+
+### 5.2 Every simulation container
+
+| Container | Owner | Type | Element identity | Added by | Removed when | Sliced? |
+|---|---|---|---|---|---|---|
+| `m_others` | `Team` | `SliceDArray<Entity*>` step 100 | (team, −1, slot, uid) | `Location::SpawnEntities` → `Team::NewEntity(type, −1)` → `Entity::NewEntity` | `Advance(NULL)` true → grid remove at the pre-Advance position, `RemoveData`, `delete` | yes |
+| `m_entities` | `Unit` | `SliceDArray<Entity*>` step 100, presized to the requested count | (team, unit, slot, uid) | `SpawnEntities` with `unitId ≠ −1` → `Unit::NewEntity` | `Advance(unit)` true → `Unit::RemoveEntity` (grid remove + delete) | yes |
+| `m_units` | `Team` | `FastDArray<Unit*>` step 5 | unit slot | `Team::NewUnit` (class by troop type: `InsertionSquad`, `AirstrikeUnit`, `ViriiUnit`, else `Unit`) | `Unit::Advance` true (no used slot) at slice 0 → `RemoveData`, `delete` | no (all units every slice) |
+| `m_specials` | `Team` | `LList<WorldObjectId>` | id copy | `Team::RegisterSpecial` (Officer, Armour, Harvester, Engineer (MP), Tank, Shaman in their `Begin`) | `UnRegisterSpecial` | no (lookup list) |
+| `m_buildings` | `Location` | `SliceDArray<Building*>` step 10 | (team, `UNIT_BUILDINGS`, −1, uid) | `InitBuildings`, `CreateRandomCrate`, runtime creators (§3.4) | `Advance()` true → `RemoveData`, `delete`; `RecalculateAITargets()` if AITarget/Wall; `ObstructionGrid::CalculateAll()` after the slice | yes |
+| `m_spirits` | `Location` | `SliceDArray<Spirit>` by value, presized 100, step 100 | (team, `UNIT_SPIRITS`, slot, −1) | `SpawnSpirit` (−1 for the monster team) | `Spirit::Advance()` true → `RemoveData` | yes |
+| `m_lasers` | `Location` | `SliceDArray<Laser>` by value, step 100 | none | `FireLaser` | `Laser::Advance()` true → `RemoveData` | yes |
+| `m_effects` | `Location` | `SliceDArray<WorldObject*>` step 100 | (team or 255, `UNIT_EFFECTS`, slot, uid) | §3.4 | `Advance()` true → `RemoveData`, `delete` | yes |
+| `m_lights` | `Location` | `FastDArray<Light*>` | — | `InitLights` | `Empty` | render data |
+| `m_chatMessages`, `m_burnPatches` | `Location` | `LList` | — | chat / `AddBurnPatch` | after 60 s / never | presentation |
+| `m_cells[team][cell]` | `EntityGrid` | growable id arrays per team per cell | `WorldObjectId` | `AddObject` | `RemoveObject` | — (§6.2) |
+| `m_cache` | `EntityGridCache` | `FastDArray<EntityGridCacheElement*>` size 20, step 20 | slot | cache miss in `GetEnemies` | older than 1.0 s game time at slice 7 | — (§6.3) |
+| `m_cells` | `ObstructionGrid` | `SurfaceMap2D<ObstructionGridCell>`; each cell `LList<int>` of building ids | building uid | `CalculateAll` | `CalculateAll` clears | — (§6.4) |
+| `m_nodes`, `m_routes` | `RoutingSystem` | `DArray<RouteNode*>`, `DArray<Route*>` | slot | `Initialise`, `GenerateRoute` | never / `DeleteRoute` | — (§7) |
+| `m_ports` | `Building` | `LList<BuildingPort*>` | port index | `SetShapePorts` | `SetDetail` rebuilds | — ([03 §3.6](03_buildings_and_world_objects.md#36-ports-occupancy-and-reservation)) |
+| `m_particles` | `ParticleSystem` | `SliceDArray<Particle>` | none | `CreateParticle` (returns void) | life over | cosmetic; all particles advance at slice 0 only ([26](26_animation_and_vfx.md)) |
+
+[C] `code/location.h`, `code/team.h`, `code/unit.h`, `code/particle_system.h`, `code/location.cpp:Location::Location`, `code/team.cpp:Team::Team`, `code/unit.cpp:Unit::Unit`.
+
+### 5.3 Container semantics: iteration order and slot re-use
+
+All are header templates whose bodies live in the `.cpp` the header includes [C] `contrib/systemiv/lib/tosser/*.h`, `code/lib/*.h`. The simulation uses `LList`, `DArray`, `FastDArray`, `SliceDArray`, `Array2D`/`SurfaceMap2D` and `std::vector`; the others are listed because they define the ordering of data the simulation reads (language tables, archives).
+
+| Container | Storage | Insert | Remove | Iteration order | Notes |
+|---|---|---|---|---|---|
+| `LList<T>` | doubly linked list + cached cursor (`m_previous`, `m_previousIndex`) | `PutData` = `PutDataAtEnd`, `PutDataAtStart`, `PutDataAtIndex` (O(n)) | `RemoveData(i)` | index order 0…n−1 (insertion order unless inserted at an index) | `GetData(i)` walks from first/last/cursor, whichever is nearest; sequential access O(1) amortised; **const reads move the cursor** (not thread-safe); `GetData` on an invalid index returns `(T)0` |
+| `DArray<T>` | array + `shadow` used-flags | `PutData(x)` takes the **lowest free index** (linear scan), else grows; `PutData(x, i)` grows until i fits | `RemoveData(i)` clears the flag (no compaction; indices stable) | slot order 0…Size()−1 skipping unused (`ValidIndex`) | grow step default 1 (`SetStepDouble` → doubling); `Size()` = capacity, `NumUsed()` counts flags; accessors bounds-check with **release asserts** |
+| `FastDArray<T>` : DArray | + free list | `PutData(x)` / `GetNextFree()` pop the **head of the free list = most recently freed slot (LIFO)**; when full, grows by the step (or doubles for step −1): new slots are linked in ascending order and the last new slot links to the previous head | `RemoveData(i)` pushes i on the free-list head | slot order | `PutData(x, i)` / `MarkUsed` rebuild the free list ascending; growth **copies by-value elements** (pointers into the array dangle) |
+| `SliceDArray<T>` : FastDArray | + slice bookkeeping (`totalNumSlices`, `lastSlice`, `lastUpdated`) | as FastDArray | as FastDArray | slot order; `GetNextSliceBounds` (§5.4) | the constructor is declared `(newstepsize, totalNumSlices)` but defined `(totalNumSlices, newstepsize)` — the first argument is the slice count; every simulation container sets both explicitly (`SetTotalNumSlices`, `SetStepSize`) so the mismatch is inert |
+| `BoundedArray<T>` | fixed array | — | — | index | release-assert bounds check |
+| `PresizedArray<T,N>` | `T m_data[N]` | — | — | index | debug-only bounds assert |
+| `BTree<T>` | unbalanced binary search tree keyed by `char*`, `stricmp` | `PutData` (equal keys go left; duplicates allowed) | `RemoveData` (replaces the node with its left child and appends the right subtree; leaks nodes) | `ConvertToDArray` / `ConvertIndexToDArray` give **pre-order** (node, left, right) — not sorted; depends on insertion order | `GetData` returns 0 if absent; language tables, archive maps (`Resource::m_resourceFiles`) |
+| `HashTable<T>` | open addressing, linear probing, `char*` keys, `stricmp` | `PutData` grows ×2 when `slotsFree × 2 ≤ size` (load ≤ 50 %); **inserting an existing key aborts** (`AppAbort("Error with HashTable")`) | `RemoveData` marks + full rehash | slot order (hash-dependent) | hash: 16-bit sum over character pairs `(c0 & 0xDF) + ~(c1 & 0xDF)` (+ last odd character), masked by `size − 1`; initial size 4; max 65536 (release assert) |
+| `SortingHashTable<T>` : HashTable | + `short` linked list in alphabetical (`stricmp`) order | O(n) ordered insert | buggy when removing the first element (walk runs off the list) | `StartOrderedWalk` / `GetNextOrderedIndex` alphabetical | profiler only |
+| `Array2D<T>` | row-major `T[cols × rows]` (`unsigned short` dimensions) | `PutData(x, y)` ignores out-of-range | — | — | out-of-range `GetData`/`GetPointer` return the single shared `m_outsideValue` |
+| `SurfaceMap2D<T>` : Array2D | + world transform (`m_x0`, `m_y0`, cell sizes) | — | — | — | `GetValue` interpolates bilinearly; `GetValueNearest`/`GetPointerNearest` use `floor(x / cell)` **without subtracting `m_x0`** (only correct for origin 0, which every user has); height map, normal map, water depth, obstruction grid ([23 §7.3](23_terrain_and_landscape.md#73-bilinear-resampling-and-the-unsigned-short-conversion-edge-cases)) |
+| `auto_vector<T>` | `std::vector<T*>` owning pointers | `push_back(auto_ptr)`, `insert` | `erase` deletes | vector order | input system lists |
+| `Directory` | DArrays of data and subdirectories | `CreateData` (replace by name) | `RemoveData` | slot order | network letters ([29](29_data_formats_reference.md)) |
+
+[C] `contrib/systemiv/lib/tosser/llist.cpp`, `darray.cpp`, `fast_darray.cpp`, `bounded_array.h`, `btree.cpp`, `hash_table.cpp`, `sorting_hash_table.cpp`, `code/lib/slice_darray.cpp`, `code/lib/2d_array.cpp`, `code/lib/2d_surface_map.cpp`, `code/lib/auto_vector.h`.
+
+Guarantees a re-implementation must reproduce for bit-compatibility, or replace by one documented policy [C]/[I]:
+- Iteration of every simulation array is by **ascending slot index**, including the slots created during the iteration (§5.4).
+- `FastDArray` re-use is **LIFO** (most recently freed first); `DArray` re-use is **lowest index first**. The same sequence of operations therefore yields different slots in the two container kinds [C]; routes (`DArray`) and entities/effects (`FastDArray`) differ.
+- Slot indices never move; removal never compacts.
+- No simulation code iterates a hash map, sorts by pointer, or depends on allocation addresses (`qsort` is used only for the alpha depth sort; `std::map<Entity*, …>` only in the `TRACK_SYNC_RAND` watch list) [C] grep over `code/worldobject`, `location`, `team`, `unit`, `taskmanager`, `multiwinia`, `entity_grid`, `routing_system`, `obstruction_grid`, `level_file`, `global_world` (X3).
+
+### 5.4 Slice partitioning
+
+`SliceDArray::GetNextSliceBounds(slice, &lower, &upper)` [C] `code/lib/slice_darray.cpp`:
+
+```
+lower = (slice == 0) ? 0 : lastUpdated + 1
+upper = (slice == totalNumSlices - 1) ? Size() - 1
+                                      : lower + int(Size() / (float)totalNumSlices)
+lastUpdated = upper; lastSlice = slice
+```
+
+- `Size()` is the **capacity** (empty slots included), read at the moment each slice starts. Slices 0–8 each cover `int(Size()/10) + 1` slots (inclusive bounds) and slice 9 the remainder, which can be empty or negative-length [C].
+- An object created during a tick into a slot **above** the current `lastUpdated` is advanced later in the same tick; one created into a re-used slot **at or below** it waits until the next tick. If the container grows during a tick, later slice bounds are computed from the new capacity [C]/[I] arithmetic.
+- Every object present for the whole tick is advanced exactly once per tick [C] ([20 §10.3](20_architecture.md#103-client-tick-and-slices)).
+- Within a tick, objects in earlier slices see the previous-tick state of objects in later slices; ordering between objects is by slot index, which is history-dependent but identical on all peers [C]/[I].
+- `GetLastUpdated()` (the last upper bound) is what renderers compare slot indices against to pick the extrapolation offset (§4.6).
+- A debug assert enforces that slices are requested in order 0, 1, …, 9, 0 [C].
+
+### 5.5 Per-slice update order (exact)
+
+The only caller of `Location::Advance` is `ClientToServer::ProcessAllServerLetters` on the main thread, once per slice while `!App::GamePaused()` [C] `code/network/clienttoserver.cpp:ClientToServer::ProcessAllServerLetters`. Within one tick, before slice 0, the server letter's commands are applied (`ProcessServerUpdates`: ALIVE → `Location::UpdateTeam`, SELECTUNIT, RUNPROGRAM, …), the game timer ticks and the sync byte is generated ([20 §10.3](20_architecture.md#103-client-tick-and-slices), [22](22_determinism_and_networking.md)).
+
+`Location::Advance(slice)` [C] `code/location.cpp:Location::Advance`:
+
+1. `m_lastSliceProcessed = slice`.
+2. Sub-steps 0–4, serially in this order (written as `#pragma omp parallel for schedule(dynamic)` over `step = 0..4`, but OpenMP is off in every configuration, so the loop is serial — see [20 §10.3](20_architecture.md#103-client-tick-and-slices)):
+   1. **Teams** — `AdvanceTeams(slice)`: teams 0…5 in index order, skipping `TeamTypeUnused`; each `Team::Advance(slice)` (§5.6).
+   2. **Weapons** — `AdvanceWeapons(slice)`: this slice of `m_lasers` (`Laser::Advance`, remove), then this slice of `m_effects` (`WorldObject::Advance`, remove + delete).
+   3. **Buildings** — `AdvanceBuildings(slice)`: this slice of `m_buildings`, each bracketed by `SyncRandLogText(LogState)`; removals as in §5.2; then, if anything was removed, `ObstructionGrid::CalculateAll()`.
+   4. **Spirits** — `AdvanceSpirits(slice)`: this slice of `m_spirits`.
+   5. **Clouds** — `AdvanceClouds(slice)`: `m_clouds->Advance()` only when slice == 3 (cosmetic offset, no RNG).
+3. Darwinia objectives: `!m_missionComplete && MissionComplete()` → `DoMissionCompleteActions()` (Multiwinia maps carry only the automatic never-true objective) [B:LEGACY].
+4. slice == 3: level effects, in this order — `LevelEffectSnow` → `AdvanceChristmas()`; `LevelEffectSoulRain` → `AdvanceSoulRain()`; `LevelEffectDustStorm` → `AdvanceDustWind()`; `LevelEffectLightning` → `AdvanceLightning()`; then `ChristmasModEnabled()` → `AdvanceChristmas()` again (§5.10).
+5. slice == 7: `m_entityGridCache->Advance()` (evict entries older than 1.0 s).
+6. `Multiplayer()` and slice == 8: `AdvanceCrates()`; `m_spawnManiaTimer −= SERVER_ADVANCE_PERIOD` if > 0; `m_bitzkreigTimer −= SERVER_ADVANCE_PERIOD` if > 0.
+
+After `Location::Advance(slice)` returns: `ParticleSystem::Advance(slice)` (cosmetic); and at slice 8 in Multiplayer `Multiwinia::Advance()` (mode rules, scoring, victory) — which runs **even while paused** [C] `code/network/clienttoserver.cpp:ClientToServer::ProcessAllServerLetters` ([01](01_game_modes.md)).
+
+Which work runs on which slice:
+
+| Slice | Work |
+|---|---|
+| every slice 0–9 | one tenth of every team's `m_others` and of every unit's `m_entities`; one tenth of `m_lasers`, `m_effects`, `m_buildings`, `m_spirits` |
+| 0 | every `Unit::Advance` (centroid/radius/velocity, route following, empty-unit removal); per-team selected-Darwinian count and centre latched; all particles |
+| 1 | every team's `TaskManager::Advance()`; team kill-milestone messages (local team only) |
+| 3 | clouds; weather and level-effect spawners |
+| 7 | entity-grid cache eviction |
+| 8 | crates and crate timers (inside `Location::Advance`), then `Multiwinia::Advance()` |
+
+### 5.6 `Team::Advance(slice)` and `Unit::AdvanceEntities(slice)`
+
+`Team::Advance(slice)` runs only when `m_teamType > TeamTypeUnused` [C] `code/team.cpp:Team::Advance`:
+
+1. slice 1: `m_taskManager->Advance()`; if `m_teamKills` changed and this is the local team, the first crossed milestone of 500 / 1000 / 2000 / 3000 / 4000 / 5000 shows `multiwinia_kills_N` (else-if chain: one per tick); `m_oldKills = m_teamKills`.
+2. Every slice: for each valid unit in slot order, `Unit::AdvanceEntities(slice)`.
+3. slice 0: for each valid unit in slot order, `Unit::Advance(unitIndex)`; true → `RemoveData` + `delete`.
+4. slice 0: `m_numDarwiniansSelected = m_newNumDarwiniansSelected`; `m_selectedDarwinianCentre = m_newSelectedDarwinianCentre / count` (**division by zero when count is 0** → NaN/∞ centre, consumed only by the UI route preview and order code that first checks the count [I]); accumulators reset.
+5. This slice of `m_others`: for each valid **enabled** entity: remember `oldPos` and `myId = (team, −1, slot, uid)`; `dead = Advance(NULL)`; a live, not-dead Darwinian with `m_underPlayerControl` adds to the selection accumulators; then dead → grid `RemoveObject(myId, oldPos, radius)`, `RemoveData`, `delete`; else if now disabled → grid `RemoveObject`; else grid `UpdateObject(myId, oldPos → m_pos, radius)`.
+
+`Unit::AdvanceEntities(slice)` [C] `code/unit.cpp:Unit::AdvanceEntities`: for this slice of `m_entities`, each enabled entity: `oldPos`; `dead = Advance(this)`; dead → `RemoveEntity(slot, oldPos)` (grid remove + delete); else `UpdateObject((team, unit, slot, uid), oldPos → m_pos, radius)`. Unlike `Team::Advance` it does not remove an entity that disabled itself during its `Advance` from the grid [C].
+
+Ordering consequence: all units' members of team 0 advance before team 0's loose entities, which advance before any entity of team 1 [C].
+
+### 5.7 Creation rules
+
+| Kind | Rule | Ref |
+|---|---|---|
+| Entities | only through `Location::SpawnEntities(pos, team, unitId, type, n, vel, spread, range = −1, routeId = −1, routeWaypointId = −1)`. If `team` is the monster (4) or Futurewinian (5) slot and it is unused, the slot is initialised first. For each of `n`: `Team::NewEntity` → `SetType` → position `FindValidSpawnPosition(pos, spread)` (up to 10 tries of `r = syncfrand(spread)`, `θ = syncfrand(2π)`, accepting on-map points with height > 0, else `pos` clamped to [20, size − 20]) → `m_onGround = false` → velocity, front (normalised velocity; else (1,0,0), Darwinians a random horizontal front from two synced `SFRAND(1)`) → id → `m_spawnPoint = pos` → `m_roamRange` (`range`, or `spread` when `range == −1`) → route ids → `Begin()` → `EntityGrid::AddObject(id, x, z, m_radius)`. Then `unit->RecalculateOffsets()` if spawned into a unit. The population-cap check is commented out (caps are enforced by spawning buildings, [05](05_economy_and_population.md)) | [C] `code/location.cpp:Location::SpawnEntities`, `FindValidSpawnPosition` |
+| Units | `Team::NewUnit(troopType, n, &unitId, pos)`: slot `m_units.GetNextFree()`; class by type (`TypeInsertionSquadie` → `InsertionSquad`, `TypeSpaceInvader` → `AirstrikeUnit`, `TypeVirii` → `ViriiUnit`, else `Unit`); `PutData(unit, slot)`; `Begin()` | [C] `code/team.cpp:Team::NewUnit` |
+| Spirits | `Location::SpawnSpirit(pos, vel, team, ownerId)`: refused (−1) for the monster team; slot `GetNextFree()`; `pos + up`, `vel`, team, owner id; `Begin()` | [C] `Location::SpawnSpirit` |
+| Effects | `new` + `m_effects.PutData` + id (§3.4); the creating helper usually also creates a `MuzzleFlash` effect (`ThrowWeapon`, `FireRocket`, `FireTurretShell`, `FireLaser`) | [C] `code/location.cpp` |
+| Buildings | §4.3; level buildings in `InitBuildings` (owner position → team; `Initialise(template)`, `SetDetail(1)`); runtime creators then `CalculateAll()` | [C] `Location::InitBuildings` |
+| Creation inside a tick | allowed from any `Advance`; visibility to the rest of the same tick follows §5.4 | [C]/[I] |
+| Creation outside the tick | must not happen; the known exceptions are listed in §10.4 (tutorial director, local preview routes) | [C] |
+
+### 5.8 Removal rules
+
+| Kind | Who removes | Side effects | Ref |
+|---|---|---|---|
+| Entity | container owner after `Advance` returned true (or the entity was `m_destroyed`) | entity-grid removal at the pre-Advance position with the current radius; `delete` (dtor: `s_entityPopulation−−`; subclass dtors unregister specials) | [C] `Team::Advance`, `Unit::RemoveEntity` |
+| Dead entity | stays in its container and the grid while fading (`m_dead`), still visible to grid queries; most queries skip `m_dead` explicitly (e.g. `GetBestEnemy`) | — | [C] `EntityGrid::GetBestEnemy` |
+| Whole team | `Team::Eliminate()` (game rules) calls `ChangeHealth(−2 × StatHealth)` on every member and loose entity, stops all tasks and neutralises owned trunk ports; removal then follows the normal death path | [C] `code/team.cpp:Team::Eliminate` |
+| Unit | `Team::Advance` slice 0 when `Unit::Advance` reports no used slot | `~Unit` clears the team's selection if it pointed here | [C] |
+| Building | `AdvanceBuildings` | `RecalculateAITargets` (AITarget, Wall); `ObstructionGrid::CalculateAll` once per slice; routing node tables untouched | [C] |
+| Effect / laser / spirit | `AdvanceWeapons` / `AdvanceSpirits` | none | [C] |
+| Route | only `RoutingSystem::DeleteRoute`; simulation routes are never deleted (§7.6) | — | [C] |
+| Everything | `Location::Empty()` (and `~Location`): delete water, landscape, lights, buildings, effects; empty spirits, lasers; delete `Unit::s_offsets`; delete all teams; delete level file, entity grid, cache, obstruction grid, clouds; reset AIObjective/Armour/Engineer statics; `~Location` also zeroes `Entity::s_entityPopulation` | — | [C] `Location::Empty`, `Location::~Location` |
+
+### 5.9 Level-load order (`Location::Init(mission, map)`)
+
+Exact order [C] `code/location.cpp:Location::Init` (runs on the loading worker thread for a normal start, [20 §9.3](20_architecture.md#93-entering-a-match-enterlocation--doenterlocation)):
+
+1. `LoadLevel(mission, map)` → `m_levelFile = new LevelFile(mission, map, ext(map) == "txt")`; if `MissionComplete()` already, mark the global location complete (false for Multiwinia's automatic objective).
+2. `AppSeedRandom(1)` — reseeds the **non-synchronised** generator ([22](22_determinism_and_networking.md)).
+3. Reset statics: `GlobalWorld::s_nextUniqueBuildingId = 0`; `Crate::s_crates = 0`; `Crate::s_spaceShipUsed = false`; `AIObjective::s_objectivesInitialised = false`; `Armour::s_armourObjectives.Empty()`; `Engineer::s_buildingIds` / `s_researchIds.EmptyAndDelete()`; `SpawnPopulationLock::Reset()`; `SoulDestroyer::s_numSoulDestroyers = 0`; `DustBall::s_vortexTimer = 0`, `s_vortexPos = 0`; delete `Unit::s_offsets`; for each team i: `AI::s_ai[i] = NULL`, `SpawnPoint::s_numSpawnPoints[i] = 0`, `GetTeamPosition(i)` (assigns start positions — consumes `syncrand`), `PulseBomb::s_pulseBombs[i] = −1`, `MultiwiniaZone::s_blitzkriegBaseZone[i] = −1`.
+4. Christmas: `m_clientToServer->m_christmasMode` → `m_christmasMode`.
+5. `InitLights()`, `InitLandscape()` ([23](23_terrain_and_landscape.md)), `m_water = new Water()`.
+6. Team colours / alliances (§9.5): Assault → `SetupAssault()`; else co-op → `SetupCoop(i)` per player position not yet grouped; else every CPU team gets `Multiwinia::GetCPUColour()` (tutorial: colour = team index).
+7. Not editing: `InitBuildings()` → `RecalculateAITargets()` (**before** the obstruction grid exists, so AI-target links ignore walls — [07 §4](07_ai.md#4-the-aitarget-node-graph--the-ais-map)) → `m_entityGrid = new EntityGrid(32, 32)` → `m_entityGridCache` → `m_obstructionGrid(32 or 64)` (its constructor runs `CalculateAll`) → `m_clouds` → `m_routingSystem.Initialise()` → `m_seaRoutingSystem.Initialise()` (both **after** the obstruction grid, so routing edges see walls). Editing [B:EDITOR]: only snap level buildings to the terrain.
+8. `InitTeams()`: for i in 0..5: a lobby colour of −1 → `GetNextAvailableColour()`; `m_teams[i] = new Team(lobbyTeam)`; type ≠ Unused → `InitialiseTeam(i)`; `m_teamsInitialised = true`.
+9. Fewer than 4 players: each team slot i ≥ numPlayers (except 4 and 5) gets a random unused colour `(syncrand() % 8) / 2` (0–3), colour only.
+10. Difficulty: level difficulty −1 → store `g_app->m_difficultyLevel` (0 in Multiwinia) in it; else copy it into `m_difficultyLevel`.
+11. `m_allowMonsterTeam = true`; Multiplayer: `InitMonsterTeam(4)`, `InitFuturewinianTeam(5)`; fixed research levels (every item 3, then Squad 1, Laser 2, Grenade 2, Rocket 2, AirStrike 2, Darwinian 4).
+
+`InitBuildings()` and `InitialiseTeam(team)` (AI entity, starting power-ups, one Darwinian per port of owned spawn points and solar panels, instant units, terrain snap) are specified in [03 §3.4](03_buildings_and_world_objects.md#34-lifecycle) and [05 §6.7](05_economy_and_population.md#67-starting-units) [C] `code/location.cpp:Location::InitBuildings`, `Location::InitialiseTeam`.
+
+### 5.10 Weather and ambient spawners (slice 3, dt = `SERVER_ADVANCE_PERIOD`)
+
+| Function | Behaviour [C] `code/location.cpp` |
+|---|---|
+| `AdvanceChristmas` | if `m_christmasTimer < −90`: 150 `Snow` effects at (FRAND(sizeX), syncfrand(1000), FRAND(sizeZ)). Timer −= dt; when ≤ 0: timer = 0.1 s and one `Snow` at y = 700 + syncfrand(300). Ids (255, `UNIT_EFFECTS`, slot, generated uid) |
+| `AdvanceSoulRain` | `m_spawnSync −= dt`; when ≤ 0: 1.0 s; one `UnprocessedSpirit` at (FRAND(sizeX), 700 + syncfrand(300), FRAND(sizeZ)) into `m_effects` **without an id**. No shipped `mp_` map sets `soulrain` [C] scan of `data/levels/mp_*.txt` `Effects` lines |
+| `AdvanceDustWind` | `DustBall::s_vortexTimer −= dt`; when ≤ 0: timer = 15 + syncfrand(15); if `syncrand() % 10 == 0` and no vortex: vortex at a random point (FRAND(sizeX), FRAND(500), FRAND(sizeZ)) re-rolled while terrain ≤ 1.0; else clear the vortex and set `m_windDirection = normalise(random − random)`. First run (`m_christmasTimer < −90`): 300 `DustBall`s at y = syncfrand(1000), size += syncfrand(20). Shared timer −= dt; when ≤ 0: two dust balls (timer 0.1). Active vortex: every grid neighbour within 50 of the vortex ground point that is an on-ground Darwinian → `StateInVortex`, airborne |
+| `AdvanceLightning` | shared timer −= dt; when ≤ 0: timer = syncfrand(15); one `Lightning` effect at y = 1200 over a random land point (height > 1.0, re-rolled) |
+
+`AdvanceChristmas`, `AdvanceDustWind` and `AdvanceLightning` share `m_christmasTimer`, so a level with several of these effects (or Christmas mode plus dust) makes them interfere; in Christmas mode on a snow level `AdvanceChristmas` runs twice per tick [C]. Crate drops (`AdvanceCrates`, `CreateRandomCrate`, slice 8): [04 §1.3–1.4](04_crates_powerups_and_weapons.md#13-drop-timer--locationadvancecrates).
+
+### 5.11 Location query and service API
+
+[C] `code/location.cpp`. Functions specified elsewhere are linked.
+
+| Function | Semantics |
+|---|---|
+| `GetWorldObject(id)`, `GetEntity(id)`, `GetEntitySafe(id, type)`, `GetUnit(id)`, `GetEffect(id)`, `GetBuilding(uid)`, `GetSpirit(index)`, `GetSpirit(ownerId)` | §3.2 |
+| `GetEntity(rayStart, dir)` / `GetBuilding(rayStart, dir)` | first entity (teams 0–5, `Team::RayHitEntity`) / building (`DoesRayHit`) hit; `GetBuilding(ray)` returns `false` cast to NULL when nothing is hit |
+| `GetBuildingId(rayStart, dir, team, maxDist, *range)` | buildings of `team` or 255 except ControlTower; RadarDish/GunTurret use exact `DoesRayHit` and win immediately (range 0); others ray–sphere at 0.75 × radius; best = smallest screen-space distance between building centre and hit point (local picking) |
+| `GetUnitId(rayStart, dir, team, *range)` | ray vs unit sphere (1.5 × radius) then per-member sphere (1.5 × radius), screen-distance best (local picking) |
+| `GetEntityId(rayStart, dir, team, *range, ignoreDarwinians)` | over `m_others`: Officer → `CalculateBoundingSphere` (camera-scaled, local only); Armour → `RayHit` (wins with range 0.001); others sphere 1.0 × radius (local picking) |
+| `IsWalkable`, `GetWalkingDistance` | §7.2 |
+| `IsVisible(from, to)` | landscape ray from `from + 20·dir`; visible if no hit or the hit lies beyond `|to − from| + 20` |
+| `SpawnEntities`, `FindValidSpawnPosition`, `SpawnSpirit` | §5.7 |
+| `ThrowWeapon`, `FireRocket`, `FireTurretShell`, `LaunchFireball`, `FireLaser`, `CreateShockwave`, `Bang` | [04 §6.0–6.1](04_crates_powerups_and_weapons.md#60-conventions-class-inventory-and-fire-helpers) |
+| `SelectDarwinians`, `IssueDarwinianOrders`, `PromoteDarwinian`, `DemoteOfficer`, `UpdateTeam` | command application ([06](06_player_control_and_input.md)) |
+| `IsFriend`, `GetMonsterTeamId`, `GetFuturewinianTeamId`, `InitMonsterTeam`, `InitFuturewinianTeam`, `GetTeamPosition`, `GetTeamFromPosition`, `RotatePositions`, `IsAttacking`, `IsDefending`, `SetupCoop`, `SetupAssault`, `SetCoopTeam`, `SetSoloTeam`, `GetGroupColour`, `SetGroupColourId` | §9 |
+| `RecalculateAITargets()` | every live AITarget recomputes its neighbours, then links culled ([07 §4.3](07_ai.md#43-link-culling--locationrecalculateaitargets-c)) |
+| `ViablePosition(pos)` | true if `IsWalkable(pos, aiTarget, false, true)` to any AITarget |
+| `GetMyTeam()` / `GetMyTaskManager()` | via `GlobalWorld::m_myTeamId` (255 → NULL) — local |
+| `DumpWorldToSyncLog(file)` | appends `LogState()` of all unit members, loose entities, effects (except snow) and buildings ([22](22_determinism_and_networking.md)) |
+| `Render`, `RenderChatMessages`, `SetupFog`, `SetupLights`, `SetupSpecialLights`, `FlushOpenGlState`, `RegenerateOpenGlState`, `SetCurrentMessage`, `NewChatMessage`, `AddBurnPatch` | presentation ([24](24_rendering.md)) |
+| `MissionComplete`, `DoMissionCompleteActions` | [B:LEGACY] |
+| `GetLastProcessedSlice` / `SetLastProcessedSlice` | accessors |

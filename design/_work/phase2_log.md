@@ -182,3 +182,6 @@
 
 ## S09 (09_meta_systems.md) — done, ~390 KB, checks pass
 - 7 contradictions: server never checks sender of option/start/ready commands (lobby restrictions UI-only; modified client can change any setting or start game); post-match only Esc → Exit Game returns to menu ("press Ready" path test-build-only); PageDarwinia debug-only (P20 campaign fade bug not player-visible); PlayTime vs default TimeLimit race usually map wins; P17b duplicate help key wrong (two others duplicated); saved player name is truncated one; tutorial map CRCs match → tutorial buttons active. 09-U1..U17. scripts/S_09_lang_coverage.py, S_09_source_map.py.
+
+## S10 (10_audio_design.md) — done, ~319 KB, checks pass
+- 10 contradictions (R1–R10): music RELEASE 3.29–20.71 s on 14/17 blocks (27 said 0 → coordinator corrected 27 after verifying data); 22 effect uses in 22 blocks (27 said 21 → corrected); no zero beep when timed game ends (code in branch that only runs while time remains); master volume slider live (filename-case include). scripts/S_10_audio_tables.py re-parses sounds.txt (0 mismatches vs P16/X2b): 469 rows, 74 bound-but-silent pairs, 22 effect uses, 77-file call-site map. 10-U1..U16.

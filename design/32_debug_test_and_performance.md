@@ -664,7 +664,7 @@ The developers' own instrumentation is the best available map of what they consi
 | `code/interface/profilewindow.cpp` | `ProfileWindow::Render`: "render profile" |
 | `code/landscape_renderer.cpp` | `LandscapeRenderer::Render`: "Render Landscape Main", "Render Landscape Overlay" |
 | `code/lib/bitmap.cpp` | `BitmapRGBA::ApplyBlurFilter`: "ApplyBlur" |
-| `code/location.cpp` | `Location::AdvanceWeapons`: "Advance Lasers", "Advance Effects"; `Location::AdvanceBuildings`: "Advance Buildings", ‹Building::GetTypeName( building-›m_type )›; `Location::AdvanceSpirits`: "Advance Spirits"; `Location::AdvanceClouds`: "Advance Clouds"; `Location::RenderSpirits`: "Render Spirits"; `Location::Render`: "Render Routing System", "RenderCurrentMessage"; `Location::RenderBuildings`: "Render Buildings", ‹Building::GetTypeName( building-›m_type )›; `Location::RenderBuildingAlphas`: "Render Building Alphas", ‹Building::GetTypeName( building-›m_type )›, "Depth Sort"; `Location::RenderClouds`: "Render Clouds"; `Location::RenderWeapons`: "Render Weapons" |
+| `code/location.cpp` | `Location::AdvanceWeapons`: "Advance Lasers", "Advance Effects"; `Location::AdvanceBuildings`: "Advance Buildings", run-time name `Building::GetTypeName( building->m_type )`; `Location::AdvanceSpirits`: "Advance Spirits"; `Location::AdvanceClouds`: "Advance Clouds"; `Location::RenderSpirits`: "Render Spirits"; `Location::Render`: "Render Routing System", "RenderCurrentMessage"; `Location::RenderBuildings`: "Render Buildings", run-time name `Building::GetTypeName( building->m_type )`; `Location::RenderBuildingAlphas`: "Render Building Alphas", run-time name `Building::GetTypeName( building->m_type )`, "Depth Sort"; `Location::RenderClouds`: "Render Clouds"; `Location::RenderWeapons`: "Render Weapons" |
 | `code/main.cpp` | `LocationGameLoop`: "Client Main Loop" |
 | `code/markersystem.cpp` | `MarkerSystem::Render`: "RenderMarkerSystem" |
 | `code/multiwinia.cpp` | `Multiwinia::Render`: "Multiawinia::Render" |
@@ -680,8 +680,8 @@ The developers' own instrumentation is the best available map of what they consi
 | `code/taskmanager_interface_gestures.cpp` | `TaskManagerInterfaceGestures::Render`: "Render Taskman"; `TaskManagerInterfaceGestures::RenderGestures`: "Render Gestures", "Create Bitmap", "ConvertToTexture", "Clear", "Draw lines", "Draw texture" |
 | `code/taskmanager_interface_icons.cpp` | `TaskManagerInterfaceIcons::Render`: "Render Taskman"; `TaskManagerInterfaceIcons::RenderGestures`: "Render Gestures", "Create Bitmap", "ConvertToTexture", "Clear", "Draw lines", "Draw texture" |
 | `code/taskmanager_interface_multiwinia.cpp` | `TaskManagerInterfaceMultiwinia::Render`: "Render Taskman" |
-| `code/team.cpp` | `Team::Advance`: "Advance Unit Entities", "Advance Units", "Advance Others", ‹entityName›; `Team::Render`: "Render Units", ‹Entity::GetTypeName( unit-›m_troopType )›, "Render Others", "Render Virii", "Render Darwinians", "Render Sync Errors"; `Team::RenderOthers`: ‹Entity::GetTypeName( entity-›m_type )› |
-| `code/unit.cpp` | `Unit::AdvanceEntities`: ‹Entity::GetTypeName( s-›m_type )› |
+| `code/team.cpp` | `Team::Advance`: "Advance Unit Entities", "Advance Units", "Advance Others", run-time name `entityName`; `Team::Render`: "Render Units", run-time name `Entity::GetTypeName( unit->m_troopType )`, "Render Others", "Render Virii", "Render Darwinians", "Render Sync Errors"; `Team::RenderOthers`: run-time name `Entity::GetTypeName( entity->m_type )` |
+| `code/unit.cpp` | `Unit::AdvanceEntities`: run-time name `Entity::GetTypeName( s->m_type )` |
 | `code/user_input.cpp` | `UserInput::Advance`: "Advance UserInput"; `UserInput::Render`: "Render UserInput" |
 | `code/water.cpp` | `Water::UpdateDynamicWater`: "LookupTables", "VertexHeights", "VertexBuffer"; `Water::Render`: "Render Water"; `Water::Advance`: "Advance Water" |
 | `code/water_reflection.cpp` | `WaterReflectionEffect::PreRenderWaterReflection`: "Water Pre-render", "Render Clear" |

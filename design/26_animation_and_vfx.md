@@ -659,3 +659,205 @@ The flag uses wall time and frame time only, so it is purely presentational [C].
 | Turret empty shells | `TurretEmptyShell::Advance` (sim) | spin about `front + (frac(id·0.1), frac(id·0.3), frac(id·0.7))`, bounce with `m_force·0.5` until ≤ 0.2 | [B:FULL] |
 | Grenade tumble | `ThrowableWeapon::Render` | tumbling `throwable.shp` plus 1-s blink (§4.5) | [B:FULL] |
 
+## 6 Particle system
+
+### 6.1 Ownership and lifecycle [C]
+
+- One global `ParticleSystem` owned by `App` (`g_app->m_particleSystem`), created in `App::Initialise`, emptied (`ParticleSystem::Empty`) in `App::ShutdownCurrentGame` [C] `code/app.cpp`.
+- Storage `SliceDArray<Particle>`: initial size **1500**, growth step **200**, `SetTotalNumSlices(NUM_SLICES_PER_FRAME = 10)` [C] `code/particle_system.cpp:ParticleSystem::ParticleSystem`, `code/globals.h`. There is **no maximum** — the array grows without bound (§12.1).
+- `ParticleSystem::Advance(slice)` is called by the network client loop once per simulation slice right after `Location::Advance(slice)` (not while paused) [C] `code/network/clienttoserver.cpp:ClientToServer::ProcessAllServerLetters`; it does work **only for slice 0** (the per-slice variant is commented out), i.e. once per server advance with `dt = SERVER_ADVANCE_PERIOD` [C] `ParticleSystem::Advance`.
+- `ParticleSystem::Render()` is called once per frame from `Renderer::RenderFrame` immediately after `g_explosionManager.Render()` (pass 15 in [24 §3.2](24_rendering.md#32-ordered-pass-table--one-multiwinia-match-frame-bfull)) [C] `code/renderer.cpp:Renderer::RenderFrame`.
+- `CreateParticle(pos, vel, type, size = −1, colour = NULL)` returns immediately while `g_app->GamePaused()`; otherwise takes a free slot and calls `Particle::Initialise`; a non-NULL colour overrides the random type colour [C] `ParticleSystem::CreateParticle`. (Edge case: the "no colour" sentinel is an `RGBAColour` constructed from `NULL`, so an explicit all-zero colour is indistinguishable from "no colour" [I] `code/lib/rgb_colour.h`.)
+- **No simulation code can read particle state** — `m_particles` is private and the class exposes only `CreateParticle`, `Advance`, `Render`, `Empty` [C] `code/particle_system.h:ParticleSystem`. This resolves the earlier open question (P09 U2, `_meta_unknowns`) of whether sim-spawned particles can affect the simulation: they cannot; only the **RNG draws made to compute their arguments** can (§12.3).
+
+### 6.2 Particle record [C] `code/particle_system.h:Particle`, `code/particle_system.cpp:Particle::Initialise`
+
+| Field | Type | Meaning |
+|---|---|---|
+| `m_pos` | Vector3 | world position (world units) |
+| `m_vel` | Vector3 | velocity (world units / s) |
+| `m_birthTime` | **float** | sim time at creation (`g_gameTimer.GetGameTime()`) |
+| `m_typeId` | int | `Particle::Type*` |
+| `m_size` | float | size argument, or the type size when `size == −1` |
+| `m_colour` | RGBAColour | `colour1·a + colour2·(1 − a)` with `a = frand()` (unsynchronised), unless overridden |
+
+### 6.3 `ParticleType` fields and defaults [C] `code/particle_system.cpp:ParticleType::ParticleType`
+
+`m_spin = 0`, `m_fadeInTime = 0`, `m_fadeOutTime = 0`, `m_life = 10.0`, `m_size = 1000.0`, `m_friction = 0`, `m_gravity = 0`, `m_colour1 = (0.5,0.5,0.5)`, `m_colour2 = (0.95,0.95,0.95)`. **`m_spin`, `m_fadeInTime` and `m_fadeOutTime` are never read** (header comments describe spin in rad/s; the render fade is hard-coded, §6.6) [C].
+
+### 6.4 Every particle type — full parameter table [C] `code/particle_system.cpp:Particle::SetupParticles`, `Particle::Advance`, `Particle::Render`, `ParticleSystem::Render`
+
+Common to all types: texture `textures/particle.bmp` (16×16, flat grey 156 with a lighter 237–255 rim, no magenta; MAG filter forced **NEAREST** during the pass), quad = camera-aligned **diamond** of half-extent `size/16`, no spin, alpha 90/255 until 75 % of life then linear to 0 at death (fade-out over the last 25 %, no fade-in), depth test on / depth write off, cull off. "Smoke" blend = `SRC_ALPHA, ONE_MINUS_SRC_COLOR` with vertex alpha 0 (darkens what is behind, §6.6); "Glow" = `SRC_ALPHA, ONE` (additive). Gravity is in world units/s² **scaled by `size / typeSize`**; positive falls, negative rises. Friction multiplies velocity by `1 − dt·friction` per tick.
+
+| # | Enum | Life (s) | Type size | Half-extent at type size | Gravity | Friction | Colour1 → Colour2 (RGB) | Special rule | Blend | Principal emitters and rates (full list §6.8) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| −1 | `TypeInvalid` | – | – | – | – | – | – | sentinel | – | – |
+| 0 | `TypeRocketTrail` | 2.0 | 15 | 0.94 | 15.0 | 0.6 | 128,128,128 → 200,200,200 | — | glow | laser hitting a building (1), turret-shell terrain hits, walls, tentacle slams [B:DEBUG] |
+| 1 | `TypeExplosionCore` | 2.0 | 150 | 9.4 | 10.0 | 0.2 | 200,100,100 → 255,120,120 | — | glow | `Location::Bang`: `n = int(R·D·0.01)`, plus `frand(n)` more (n…2n), size 120–240, vel `(±15, 10–20, ±15)`, at `pos + up·0.3R`; `Building::Destroy`: `int(intensity/4)` at size 100 with synced velocities ±50; rocket fireworks |
+| 2 | `TypeExplosionDebris` | 6.0 | 40 | 2.5 | 20.0 | 0.2 | 200,128,128 → 250,200,200 | each tick spawns a `TypeMissileTrail` puff with probability `0.5·dt·10` (0.5 at normal speed) at its position, `vel/5`, size `m_size/1.5` | **smoke** | `Location::Bang`: `clamp(R·D·0.01, 2, 30)` evenly around a ring, speed 20–50, vel.y 2–4 (before normalisation), size 20–40, at `pos + up·0.2R`; lightning strikes (5, size 150–250); fireballs, triffid launches |
+| 3 | `TypeMuzzleFlash` | 1.0 | 10 | 0.63 | 0 | 0.2 | 255,128,128 → 200,100,100 | — | glow | Virii bites (3), order confirmations (75 + 60 sizes in team colour), route highlight, task target-area markers per frame (60), randomiser (60), damage hits on Engineer / Harvester / SpaceInvader |
+| 4 | `TypeFire` | 4.0 | 50 | 3.1 | −4.0 | 0 | 150,50,50 → 150,120,50 | rises | glow | tree fire `int(h/12)/RenderBuildingDetail` per tick (size `2h·(1±0.25)`); rocket trail (probability 0.8 per tick); airstrike marker smoke (1/tick, size 100); napalm (20 per bomb); lightning (10 per strike, 160–280); meteor trail; EscapeRocket explosion (3 windows/tick, 150–300); extinguisher (team-coloured) |
+| 5 | `TypeControlFlash` | 1.0 | 30 | 1.9 | −2.0 | 0 | 50,50,150 → 50,50,250 | rises | glow | Darwinian take/lose control, promotion/demotion, selection circle (**30 per frame**, size = circle radius ≤ 100), spirit break (5, synced velocities), rocket boarding, incubator spawns |
+| 6 | `TypeSpark` | 4.0 | 15 | 0.94 | 15.0 | 1.5 | 250,200,0 → 250,200,50 | bounces on terrain | glow | laser-fence contact: `5 + frand(5)` sparks, speed 40–60 along the fence normal, size 25–50 |
+| 7 | `TypeBlueSpark` | 4.0 | 15 | 0.94 | 15.0 | 1.5 | 50,50,200 → 50,70,255 | bounces | glow | spaceship engines (1 per engine per tick, 80–160, (150,150,255)), abduction (synced 50 %/tick, size 30), crate capture, engineer research, control tower |
+| 8 | `TypeBrass` | 2.0 | 4 | 0.25 | 30.0 | 0.5 | 250,200,0 → 250,200,50 | bounces | glow | squaddie laser fire (1 per shot) |
+| 9 | `TypeMissileTrail` | 5.0 | 200 | 12.5 | 1.0 | 0 | 100,100,100 → 200,200,200 | — | **smoke** | grenade/bomb trail (probability `1 − 0.1/gameSpeed` per tick, size 60), smoke markers (3/tick, 200–300, speed 50 up), armour exhaust (`1 + int(speed/20)` per tick, 50–99), harvester engines (1 per engine per tick), EscapeRocket booster (4 of 15 per tick, size 500), burning Darwinians (`i > 4` of `AppRandom() % 8`), debris puffs |
+| 10 | `TypeMissileFire` | 0.5 | 300 | 18.8 | 0 | 0 | 150,50,50 → 150,120,50 | — | glow | `Rocket::Render` and `Missile::Render` (5 per **frame**), harvester engines (5 per engine per tick, size 75, (50,50,250)), spaceship engines (11 per engine per tick, size 500, blue), EscapeRocket booster (11 of 15 per tick, size 500) |
+| 11 | `TypeDarwinianFire` | 1.0 | 25 | 1.6 | −10.0 | 0 | 150,50,50 → 150,120,50 | rises fast | glow | burning Darwinian (`i ≤ 4` of `AppRandom() % 8` per tick, size 20–50); power-up grant bursts (×20, team colour) for booster / hot feet / mind control / rage; fuel generator |
+| 12 | `TypeLeaf` | 60.0 | 25 | 1.6 | 5.0 | 1.5 | 50,150,50 → 50,200,50 | bounces | glow | healthy trees: 1 per tick with probability `1/(51 − leafDropRate)` (CRT `rand`), coloured with the tree's leaf colour |
+| 13 | `TypePlague` | 2.0 | 25 | 1.6 | −0.5 | 0 | 40,200,40 → 50,200,50 | slow rise | glow | infected Darwinians, 50 % per tick (CRT `rand`), size 20–40, colour (140,200,5,150) |
+| 14 | `TypeHotFeet` | 1.0 | 25 | 1.6 | 0 | 0 | 150,50,50 → 150,120,50 | — | glow | hot-feet Darwinians, `i ≤ 4` of `AppRandom() % 8` per tick at ground level, size 20–50; portal [B:DEBUG] |
+| 15 | `TypeSelectionMarker` | 0.3 | 10 | 0.63 | 0 | 0.2 | 255,128,128 → 200,100,100 | — | glow | SP placement sparkles (10 or 30 per frame) [B:LEGACY]; jump-pad emitter commented out |
+| 16 | `TypeFireball` | 1.0 | 25 | 1.6 | 0 | 0 | 150,50,50 → 150,120,50 | dies on terrain contact | glow | flame-turret fireball (80 on its first tick), napalm bomb (51 per bomb, 150–250) |
+| 17 | `TypeVolcano` | 12.0 | 400 | 25.0 | 10.0 | 0 | 150,50,50 → 150,120,50 | dies on terrain contact | glow | eruption marker: 10 per tick while erupting, speed 100, size 300–500 |
+| 18 | `TypePortalFire` | 2.0 | 50 | 3.1 | −4.0 | 0 | 100,50,50 → 120,100,50 | rises | glow | `Portal::RenderAlphas` (per frame) [B:DEBUG] |
+| 19 | `TypeNumTypes` | – | – | – | – | – | – | count | – | – |
+
+All colours are RGB with alpha replaced at render time; spawn counts quoted with `frand`/`AppRandom` are unsynchronised unless marked synced.
+
+### 6.5 Advance — per server tick (`dt = SERVER_ADVANCE_PERIOD`) [C] `code/particle_system.cpp:Particle::Advance`
+
+```
+for each live particle p (slice 0 only):
+    T = types[p.type]
+    if simTime >= p.birth + T.life:            remove; continue
+    p.pos += p.vel * dt
+    p.vel *= (1 - dt * T.friction)             # no clamp
+    if T.gravity != 0: p.vel.y -= dt * T.gravity * (p.size / T.size)
+    if p.type in {Fireball, Volcano} and p.pos.y <= H(p.pos.xz): remove; continue
+    spawned = false
+    if p.type == ExplosionDebris and frand() < 0.5 * dt * 10:
+        create(MissileTrail, pos = p.pos, vel = p.vel / 5, size = p.size / 1.5); spawned = true
+    if not spawned and p.type in {Spark, Brass, BlueSpark, Leaf} and p.pos.y <= H(p.pos.xz):
+        p.pos.y = H(p.pos.xz)                  # the intended mid-point uses lastPos = pos, so no back-off
+        n = N(p.pos.xz)
+        p.vel -= n * 2 * (n · p.vel) * 0.7     # normal component becomes -0.4x, tangential unchanged
+```
+
+Notes [C]: friction 1.5 at dt 0.1 → ×0.85 per tick; the debris puff is created *inside* the loop (the code copies the needed fields first because the array may reallocate); a debris particle that spawned a puff that tick skips the bounce test (irrelevant — debris does not bounce).
+
+### 6.6 Render — once per frame [C] `code/particle_system.cpp:ParticleSystem::Render`, `Particle::Render`
+
+- Prediction: particles with index ≤ `m_particles.GetLastUpdated()` use `g_predictionTime`, the rest `g_predictionTime + SERVER_ADVANCE_PERIOD` (slice-aware); position `pos + t·vel`; age uses `simTime + t`.
+- Alpha: `90` while `age < 0.75·life`, then `90 − 90·(age − 0.75·life)/(0.25·life)`, floored at 0 (integer).
+- Quad vertices (camera up `U`, right `R`, both scaled by `size/16`): `(p − U, uv 0,0)`, `(p + R, 0,1)`, `(p + U, 1,1)`, `(p − R, 1,0)` — a diamond.
+- Batch 1, **smoke** (`TypeMissileTrail`, `TypeExplosionDebris`), only particles whose unpredicted position passes `Camera::PosInViewFrustum`: blend `SRC_ALPHA, ONE_MINUS_SRC_COLOR`, vertex colour `rgb·alpha/100`, **vertex alpha 0** → `dst = dst·(1 − src.rgb)`: dark, order-independent smoke.
+- Batch 2, **glow** (all other types, **no frustum test**): blend `SRC_ALPHA, ONE`, colour `rgb`, computed alpha.
+- Both batches in one texture bind, each one `glBegin(GL_QUADS)`. Full state entry/exit in [24 §4.11](24_rendering.md#411-particles-pass-15--26).
+
+### 6.7 Emitter idioms
+
+| Idiom | Where | Notes |
+|---|---|---|
+| Burst on event | `Location::Bang`, crate/power-up grants, promotion, spirit break | counts scale with blast size (`R·D·0.01`) |
+| Continuous per sim tick | burning Darwinians, smoke markers, engines, trails, tree fire, leaves | rates in §6.4; tick-locked, so they scale with game speed |
+| Per rendered frame | selection circle, target areas, randomiser, rocket and missile flames, portal | rate depends on frame rate (more particles at higher FPS) [C]/[I] |
+| Particle-spawns-particle | `TypeExplosionDebris` → `TypeMissileTrail` | only chain in the system |
+
+### 6.8 Emitter catalogue — every `CreateParticle` call site [C]
+
+Generated by `_work/scripts/S_26_particle_emitters.py` (comments stripped, so commented-out emitters such as `JumpPad::RenderAlphas`, `SafeArea::Render`, `Wall::Advance` and `Nuke::Advance` are excluded). "Path": *sim/event* = inside an `Advance`/event function (runs on every peer), *per frame* = inside a `Render` function (local only). "RNG within 8 lines" flags synchronised (`syncfrand`, `syncsfrand`, `syncrand`, `FRAND`, `SFRAND`) and unsynchronised (`frand`, `sfrand`, `AppRandom`, `rand`) draws near the call — synced draws used for cosmetic particles are the §12.3 hazard. "(var)" = the type is chosen through a variable assigned just above the call.
+
+| Site (`path:Symbol`) | Line | Build | Path | Particle type | Size arg | Colour arg | RNG within 8 lines |
+|---|---|---|---|---|---|---|---|
+| `code/gamecursor.cpp:GameCursor::RenderSelectionCircle` | L397 | [B:FULL] | per frame (render) | `TypeControlFlash` | `predictedCircleRadius` |  | – |
+| `code/gamecursor.cpp:GameCursor::Render` | L1459 | [B:LEGACY] (SP cursor branch) | per frame (render) | `TypeSelectionMarker` | `size` |  | – |
+| `code/gamecursor.cpp:GameCursor::Render` | L1846 | [B:LEGACY] (SP cursor branch) | per frame (render) | `TypeControlFlash` | `predictedCircleRadius` |  | – |
+| `code/location.cpp:Location::IssueDarwinianOrders` | L3767 | [B:FULL] | sim/event | `TypeMuzzleFlash` | `75.0` | `colour` | – |
+| `code/location.cpp:Location::IssueDarwinianOrders` | L3768 | [B:FULL] | sim/event | `TypeMuzzleFlash` | `60.0` | `colour` | – |
+| `code/location.cpp:Location::PromoteDarwinian` | L4447 | [B:FULL] | sim/event | `TypeControlFlash` | `type default` |  | unsynced |
+| `code/location.cpp:Location::DemoteOfficer` | L4489 | [B:FULL] | sim/event | `TypeControlFlash` | `type default` |  | unsynced |
+| `code/location.cpp:Location::Bang` | L4532 | [B:FULL] | sim/event | `TypeExplosionCore` | `size` |  | unsynced |
+| `code/location.cpp:Location::Bang` | L4549 | [B:FULL] | sim/event | `TypeExplosionDebris` | `size` |  | unsynced |
+| `code/routing_system.cpp:RoutingSystem::HighlightRoute` | L368 | [B:FULL] | sim/event | `TypeMuzzleFlash` | `75.0` | `colour` | – |
+| `code/routing_system.cpp:RoutingSystem::HighlightRoute` | L369 | [B:FULL] | sim/event | `TypeMuzzleFlash` | `60.0` | `colour` | – |
+| `code/taskmanager.cpp:Task::Promote` | L298 | [B:FULL] | sim/event | `TypeControlFlash` | `type default` |  | unsynced |
+| `code/taskmanager.cpp:Task::Demote` | L336 | [B:FULL] | sim/event | `TypeControlFlash` | `type default` |  | unsynced |
+| `code/taskmanager_interface_gestures.cpp:TaskManagerInterfaceGestures::RenderTargetAreas` | L1050 | [B:LEGACY] | per frame (render) | `TypeMuzzleFlash` | `60.0f` |  | – |
+| `code/taskmanager_interface_gestures.cpp:TaskManagerInterfaceGestures::RenderTargetAreas` | L1054 | [B:LEGACY] | per frame (render) | `TypeMuzzleFlash` | `60.0f` |  | – |
+| `code/taskmanager_interface_icons.cpp:TaskManagerInterfaceIcons::RenderTargetAreas` | L1749 | [B:LEGACY] | per frame (render) | `TypeMuzzleFlash` | `60.0f` |  | – |
+| `code/taskmanager_interface_icons.cpp:TaskManagerInterfaceIcons::RenderTargetAreas` | L1753 | [B:LEGACY] | per frame (render) | `TypeMuzzleFlash` | `60.0f` |  | – |
+| `code/taskmanager_interface_multiwinia.cpp:TaskManagerInterfaceMultiwinia::RenderTargetAreas` | L1298 | [B:FULL] | per frame (render) | `TypeMuzzleFlash` | `60.0f` |  | – |
+| `code/taskmanager_interface_multiwinia.cpp:TaskManagerInterfaceMultiwinia::RenderTargetAreas` | L1302 | [B:FULL] | per frame (render) | `TypeMuzzleFlash` | `60.0f` |  | – |
+| `code/worldobject/airstrike.cpp:SpaceInvader::ChangeHealth` | L320 | [B:FULL] | sim/event | `TypeMuzzleFlash` | `type default` |  | – |
+| `code/worldobject/armour.cpp:Armour::Advance` | L446 | [B:FULL] | sim/event | `TypeMissileTrail` | `size` |  | synced |
+| `code/worldobject/armyant.cpp:ArmyAnt::AdvanceAttackEnemy` | L327 | [B:FULL] | sim/event | `TypeMuzzleFlash` | `type default` |  | synced |
+| `code/worldobject/building.cpp:Building::Destroy` | L605 | [B:FULL] | sim/event | `TypeExplosionCore` | `100.0` |  | synced |
+| `code/worldobject/controltower.cpp:ControlTower::Advance` | L150 | [B:FULL] (no shipped map) | sim/event | `TypeBlueSpark` | `type default` |  | unsynced |
+| `code/worldobject/crate.cpp:Crate::RunExtinguisher` | L2047 | [B:FULL] | sim/event | `TypeFire` | `size` | `col` | unsynced |
+| `code/worldobject/darwinian.cpp:Darwinian::AdvanceOpeningCrate` | L1539 | [B:FULL] | sim/event | `TypeBlueSpark` | `size` | `col` | unsynced |
+| `code/worldobject/darwinian.cpp:Darwinian::TakeControl` | L3528 | [B:FULL] | sim/event | `TypeControlFlash` | `type default` |  | unsynced |
+| `code/worldobject/darwinian.cpp:Darwinian::LoseControl` | L3545 | [B:FULL] | sim/event | `TypeControlFlash` | `type default` |  | unsynced |
+| `code/worldobject/darwinian.cpp:Darwinian::AdvanceOnFire` | L3586 | [B:FULL] | sim/event | `TypeDarwinianFire (var)`, `TypeMissileTrail (var)` | `fireSize` |  | unsynced |
+| `code/worldobject/darwinian.cpp:Darwinian::AdvanceSacraficing` | L3663 | [B:LEGACY] | sim/event | `TypeDarwinianFire (var)`, `TypeMissileTrail (var)` | `fireSize` |  | unsynced |
+| `code/worldobject/darwinian.cpp:Darwinian::AdvanceBeingAbducted` | L3779 | [B:FULL] | sim/event | `TypeBlueSpark` | `30` | `RGBAColour(150,150,255,155)` | synced |
+| `code/worldobject/darwinian.cpp:Darwinian::AdvanceHotFeet` | L3864 | [B:FULL] | sim/event | `TypeHotFeet (var)`, `TypeMissileTrail (var)` | `fireSize` |  | unsynced |
+| `code/worldobject/darwinian.cpp:Darwinian::AdvanceInfection` | L3898 | [B:FULL] | sim/event | `TypePlague` | `size` | `RGBAColour(140, 200, 5, 150)` | unsynced |
+| `code/worldobject/darwinian.cpp:Darwinian::SetBooster` | L4908 | [B:FULL] | sim/event | `TypeDarwinianFire (var)` | `size` | `g_app->m_location->m_teams[m_id.GetTeamId()]->m_colour` | unsynced |
+| `code/worldobject/darwinian.cpp:Darwinian::GiveHotFeet` | L4931 | [B:FULL] | sim/event | `TypeDarwinianFire (var)` | `size` | `g_app->m_location->m_teams[m_id.GetTeamId()]->m_colour` | unsynced |
+| `code/worldobject/darwinian.cpp:Darwinian::GiveMindControl` | L4960 | [B:FULL] | sim/event | `TypeDarwinianFire (var)` | `size` | `g_app->m_location->m_teams[m_id.GetTeamId()]->m_colour` | unsynced |
+| `code/worldobject/darwinian.cpp:Darwinian::GiveRage` | L4983 | [B:FULL] | sim/event | `TypeDarwinianFire (var)` | `size` | `g_app->m_location->m_teams[m_id.GetTeamId()]->m_colour` | unsynced |
+| `code/worldobject/engineer.cpp:Engineer::ChangeHealth` | L311 | [B:FULL] | sim/event | `TypeMuzzleFlash` | `type default` |  | – |
+| `code/worldobject/engineer.cpp:Engineer::AdvanceResearching` | L900 | [B:FULL] | sim/event | `TypeBlueSpark` | `type default` |  | unsynced |
+| `code/worldobject/eruptionmarker.cpp:EruptionMarker::Advance` | L41 | [B:FULL] | sim/event | `TypeVolcano` | `size` |  | unsynced |
+| `code/worldobject/gunturret.cpp:GunTurret::Advance` | L882 | [B:FULL] | sim/event | `TypeMissileTrail` | `size` |  | synced |
+| `code/worldobject/harvester.cpp:Harvester::ChangeHealth` | L181 | [B:FULL] | sim/event | `TypeMuzzleFlash` | `type default` |  | – |
+| `code/worldobject/harvester.cpp:Harvester::AdvanceEngines` | L252 | [B:FULL] | sim/event | `TypeMissileFire` | `size` | `RGBAColour( 50, 50, 250 )` | unsynced |
+| `code/worldobject/harvester.cpp:Harvester::AdvanceEngines` | L258 | [B:FULL] | sim/event | `TypeMissileTrail` | `size` |  | unsynced |
+| `code/worldobject/incubator.cpp:Incubator::SpawnEntity` | L237 | [B:FULL] (no shipped map) | sim/event | `TypeControlFlash` | `type default` |  | unsynced |
+| `code/worldobject/insertion_squad.cpp:Squadie::Attack` | L947 | [B:FULL] | sim/event | `TypeBrass` | `type default` |  | synced |
+| `code/worldobject/lander.cpp:Lander::ChangeHealth` | L65 | [B:LEGACY] | sim/event | `TypeMuzzleFlash` | `type default` |  | – |
+| `code/worldobject/laserfence.cpp:LaserFence::Spark` | L103 | [B:FULL] | sim/event | `TypeSpark` | `size` |  | unsynced |
+| `code/worldobject/lightning.cpp:Lightning::Advance` | L61 | [B:FULL] | sim/event | `TypeExplosionDebris` | `size` |  | unsynced |
+| `code/worldobject/lightning.cpp:Lightning::Advance` | L74 | [B:FULL] | sim/event | `TypeExplosionDebris (var)`, `TypeFire (var)` | `fireSize` |  | unsynced |
+| `code/worldobject/meteor.cpp:Meteor::Advance` | L69 | [B:FULL] | sim/event | `TypeFire` | `size` |  | synced/unsynced |
+| `code/worldobject/officer.cpp:Officer::SetOrders` | L1487 | [B:FULL] | sim/event | `TypeMuzzleFlash` | `75.0` | `colour` | – |
+| `code/worldobject/officer.cpp:Officer::SetOrders` | L1488 | [B:FULL] | sim/event | `TypeMuzzleFlash` | `60.0` | `colour` | – |
+| `code/worldobject/officer.cpp:Officer::SetFormation` | L1568 | [B:FULL] | sim/event | `TypeMuzzleFlash` | `40.0` | `myTeam->m_colour` | – |
+| `code/worldobject/officer.cpp:Officer::SetFormation` | L1569 | [B:FULL] | sim/event | `TypeMuzzleFlash` | `40.0` | `myTeam->m_colour` | – |
+| `code/worldobject/officer.cpp:OfficerOrders::Advance` | L1973 | [B:FULL] | sim/event | `TypeMuzzleFlash` | `30.0` | `colour` | – |
+| `code/worldobject/portal.cpp:Portal::RenderAlphas` | L241 | [B:DEBUG] | per frame (render) | `TypePortalFire (var)`, `TypeMissileTrail (var)` | `size` |  | unsynced |
+| `code/worldobject/portal.cpp:Portal::RenderAlphas` | L260 | [B:DEBUG] | per frame (render) | `TypeHotFeet (var)`, `TypeMissileTrail (var)` | `size` |  | unsynced |
+| `code/worldobject/randomiser.cpp:Randomiser::Render` | L77 | [B:FULL] | per frame (render) | `TypeMuzzleFlash` | `60.0` | `col` | unsynced |
+| `code/worldobject/randomiser.cpp:Randomiser::Render` | L84 | [B:FULL] | per frame (render) | `TypeMuzzleFlash` | `60.0` | `col` | unsynced |
+| `code/worldobject/rocket.cpp:FuelGenerator::Advance` | L357 | [B:FULL] | sim/event | `TypeDarwinianFire` | `size` |  | unsynced |
+| `code/worldobject/rocket.cpp:FuelStation::BoardRocket` | L615 | [B:FULL] | sim/event | `TypeControlFlash` | `type default` |  | unsynced |
+| `code/worldobject/rocket.cpp:EscapeRocket::AdvanceExploding` | L1363 | [B:FULL] | sim/event | `TypeFire` | `fireSize` |  | synced |
+| `code/worldobject/rocket.cpp:EscapeRocket::AdvanceExploding` | L1364 | [B:FULL] | sim/event | `TypeMissileTrail` | `smokeSize` |  | synced |
+| `code/worldobject/rocket.cpp:EscapeRocket::Advance` | L1629 | [B:FULL] | sim/event | `TypeMissileTrail` | `size` |  | unsynced |
+| `code/worldobject/rocket.cpp:EscapeRocket::Advance` | L1633 | [B:FULL] | sim/event | `TypeMissileFire` | `size` |  | – |
+| `code/worldobject/shaman.cpp:Shaman::RenderTeleportTargets` | L354 | [B:LEGACY] | per frame (render) | `TypeMuzzleFlash` | `60.0` |  | – |
+| `code/worldobject/shaman.cpp:Shaman::RenderTeleportTargets` | L358 | [B:LEGACY] | per frame (render) | `TypeMuzzleFlash` | `60.0` |  | – |
+| `code/worldobject/shaman.cpp:Shaman::SacraficeDarwinians` | L487 | [B:LEGACY] | sim/event | `TypeFire` | `size` |  | unsynced |
+| `code/worldobject/smokemarker.cpp:SmokeMarker::Advance` | L30 | [B:FULL] | sim/event | `TypeMissileTrail` | `size` |  | unsynced |
+| `code/worldobject/spaceship.cpp:SpaceShip::AdvanceEngines` | L142 | [B:FULL] | sim/event | `TypeBlueSpark` | `size` | `RGBAColour(150,150,255,255)` | unsynced |
+| `code/worldobject/spaceship.cpp:SpaceShip::AdvanceEngines` | L164 | [B:FULL] | sim/event | `TypeMissileFire` | `size` | `RGBAColour( 50, 50, 250 )` | – |
+| `code/worldobject/spam.cpp:SpamInfection::AdvanceAttackingEntity` | L548 | [B:FULL] | sim/event | `TypeFire` | `size` |  | unsynced |
+| `code/worldobject/spam.cpp:SpamInfection::AdvanceAttackingSpirit` | L612 | [B:FULL] | sim/event | `TypeFire` | `size` |  | unsynced |
+| `code/worldobject/spirit.cpp:Spirit::BreakSpirit` | L463 | [B:FULL] | sim/event | `TypeControlFlash` | `-1.0` | `g_app->m_location->m_teams[ m_id.GetTeamId() ]->m_colour` | synced |
+| `code/worldobject/tentacle.cpp:Tentacle::AdvanceSlam` | L285 | [B:DEBUG] | sim/event | `TypeRocketTrail` | `size` |  | unsynced |
+| `code/worldobject/tentacle.cpp:Tentacle::HandleGroundCollision` | L353 | [B:DEBUG] | sim/event | `TypeRocketTrail` | `size` |  | unsynced |
+| `code/worldobject/tree.cpp:Tree::Advance` | L169 | [B:FULL] | sim/event | `TypeFire` | `fireSize` |  | unsynced |
+| `code/worldobject/tree.cpp:Tree::Advance` | L290 | [B:FULL] | sim/event | `TypeLeaf` | `-1.0` | `RGBAColour (m_leafColourArray[0], m_leafColourArray[1], m_leafColourArray[2] )` | unsynced |
+| `code/worldobject/triffid.cpp:Triffid::Advance` | L384 | [B:FULL] | sim/event | `TypeFire` | `fireSize` |  | synced/unsynced |
+| `code/worldobject/triffid.cpp:Triffid::Advance` | L389 | [B:FULL] | sim/event | `TypeFire` | `fireSize` |  | synced/unsynced |
+| `code/worldobject/triffid.cpp:Triffid::Advance` | L393 | [B:FULL] | sim/event | `TypeExplosionDebris` | `type default` |  | unsynced |
+| `code/worldobject/virii.cpp:Virii::AdvanceAttacking` | L445 | [B:FULL] | sim/event | `TypeMuzzleFlash` | `type default` |  | synced |
+| `code/worldobject/weapons.cpp:ThrowableWeapon::Advance` | L106 | [B:FULL] | sim/event | `TypeMissileTrail` | `60.0` |  | synced |
+| `code/worldobject/weapons.cpp:AirStrikeMarker::Advance` | L290 | [B:FULL] | sim/event | `TypeFire` | `100.0` |  | synced |
+| `code/worldobject/weapons.cpp:ControllerGrenade::Advance` | L363 | [B:LEGACY] | sim/event | `TypeControlFlash` | `100.0` |  | unsynced |
+| `code/worldobject/weapons.cpp:ControllerGrenade::Advance` | L371 | [B:LEGACY] | sim/event | `TypeControlFlash` | `100.0` |  | – |
+| `code/worldobject/weapons.cpp:Rocket::Advance` | L459 | [B:FULL] | sim/event | `TypeFire` | `type default` |  | synced |
+| `code/worldobject/weapons.cpp:Rocket::Explode` | L533 | [B:FULL] | sim/event | `TypeExplosionCore` | `size` | `colour` | unsynced |
+| `code/worldobject/weapons.cpp:Rocket::Render` | L583 | [B:FULL] | per frame (render) | `TypeMissileFire` | `size` |  | unsynced |
+| `code/worldobject/weapons.cpp:Laser::Advance` | L677 | [B:FULL] | sim/event | `TypeRocketTrail` | `type default` |  | unsynced |
+| `code/worldobject/weapons.cpp:Missile::Advance` | L1275 | [B:DEBUG] (Tank only) | sim/event | `TypeMissileTrail` | `size` |  | synced |
+| `code/worldobject/weapons.cpp:Missile::Advance` | L1276 | [B:DEBUG] (Tank only) | sim/event | `TypeMissileTrail` | `size` |  | synced |
+| `code/worldobject/weapons.cpp:Missile::Render` | L1326 | [B:DEBUG] (Tank only) | per frame (render) | `TypeMissileFire` | `size` |  | unsynced |
+| `code/worldobject/weapons.cpp:TurretShell::Advance` | L1486 | [B:FULL] | sim/event | `TypeMissileTrail` | `size` |  | unsynced |
+| `code/worldobject/weapons.cpp:TurretShell::Advance` | L1519 | [B:FULL] | sim/event | `TypeRocketTrail` | `size` |  | unsynced |
+| `code/worldobject/weapons.cpp:Fireball::Advance` | L1626 | [B:FULL] | sim/event | `TypeFireball (var)` | `size` |  | unsynced |
+| `code/worldobject/weapons.cpp:FlameGrenade::Advance` | L2049 | [B:FULL] | sim/event | `TypeFireball (var)`, `TypeFire (var)`, `TypeMissileTrail (var)` | `size` |  | unsynced |
+
+98 call sites.
+
