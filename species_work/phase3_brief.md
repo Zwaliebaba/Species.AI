@@ -34,6 +34,7 @@ Rewrite **every** KEEP, MERGE and KEEP-HOOKS input range of your package into yo
   - reference documents: `ref.<area>.<object>.<parameter>`, for example `ref.unit.worker.move_speed`;
   - components: `<prefix lower>.<topic>.<parameter>`, for example `ter.generator.octaves`.
   Rules cite the key.
+- **Tuning-key ownership.** Define keys only for values your own document owns. When you need a value another document owns, cite that document's key by name (for example "`ref.unit.worker.move_speed` in reference/02_units/worker.md") instead of defining a duplicate key.
 - **Units.** Use `wu` for distance and ticks for durations, with seconds only as a derived display value.
 - **Decisions.** Cite DEC ids where they apply, for example "(see DEC-016)". Every Open DEC in your `decs_to_cite` must be cited by at least one of your requirements. A Resolved DEC is stated as the fixed rule and cited. Never invent a DEC. If you find a new decision, put it in your report.
 - **ADRs.** Components cite the ADRs that decide their technology (`adr/README.md`) and never contradict them. A conflict goes in your report.

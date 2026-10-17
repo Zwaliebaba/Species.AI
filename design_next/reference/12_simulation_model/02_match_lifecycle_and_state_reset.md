@@ -50,7 +50,7 @@ Table 2.1-A Lifetime classes.
 
 **R-SIM-007** (MUST) A session acts on its first match-start command only. A further match-start command in the same session has no effect.
 
-**R-SIM-008** (MUST) When a participant executes the match-start command, it enters the loading state, switches the application to match mode, resets the tick clock with game speed `ref.sim.match.start_speed`, and executes no further tick until the match world has loaded. Ticks that arrive during the load wait in arrival order (01).
+**R-SIM-008** (MUST) When a participant executes the match-start command, it enters the loading state, switches the application to match mode, resets the tick clock, which starts at game speed `ref.sim.speed.stopped` ([01](01_tick_timing_and_main_loop.md) R-SIM-551), and executes no further tick until the match world has loaded. Ticks that arrive during the load wait in arrival order (01).
 
 **R-SIM-009** (MUST) The simulation generator (`SimRng`) is seeded from the match's recorded seed when the match starts, before any step of match-world initialisation draws from it, and no simulation draw happens before match start (DEC-013). Match-world initialisation (§2.4) then makes the same simulation draws in the same order on every participant, before the first tick of the match executes. Every initialisation draw belongs to an explicit initialisation step of §2.4 or of an object's spawn step, never to a constructor (DEC-652). The generators and the draw discipline are [07](07_randomness_and_integrity.md).
 
@@ -58,9 +58,9 @@ Table 2.1-A Lifetime classes.
 
 **R-SIM-011** (MUST) When the load has finished, the participant executes the ticks buffered during the load under the catch-up rule of [01](01_tick_timing_and_main_loop.md) before the match runs at normal pace.
 
-**R-SIM-012** (MUST) The match opens frozen, at game speed `ref.sim.match.start_speed`. Each player marks their team ready with the Ready command (06). When every human team and every spectator team is ready, the match rules run the grace countdown of `ref.match.grace_period` ([skirmish rules](../01_skirmish_rules_and_modes/README.md)) in their slice of every tick, although the match is still frozen; when the countdown ends, the match rules request game speed `ref.sim.match.run_speed`, which takes effect at once (01), and the match runs.
+**R-SIM-012** (MUST) The match opens frozen, at game speed `ref.sim.speed.stopped`. Each player marks their team ready with the Ready command (06). When every human team and every spectator team is ready, the match rules run the grace countdown of `ref.match.grace_period` ([skirmish rules](../01_skirmish_rules_and_modes/README.md)) in their slice of every tick, although the match is still frozen; when the countdown ends, the match rules request game speed `ref.sim.speed.normal`, which takes effect at the next tick, and the match runs. The countdown and the speed request are specified in [01](01_tick_timing_and_main_loop.md) R-SIM-552.
 
-**R-SIM-013** (MUST) A match reaches its end state by the rules of its mode (reference/01): game speed is set to `ref.sim.match.start_speed` and locked, so that no later speed request changes it, and the match loop then fades out and runs teardown (§2.6). The speed lock is [01](01_tick_timing_and_main_loop.md).
+**R-SIM-013** (MUST) A match reaches its end state by the rules of its mode ([skirmish rules](../01_skirmish_rules_and_modes/README.md)). The match rules then bring game speed to `ref.sim.speed.stopped` and lock the tick clock, so that no later speed request changes it ([01](01_tick_timing_and_main_loop.md) R-SIM-555), and the match loop fades out and runs teardown (§2.6).
 
 ### 2.3 Match entry
 
@@ -293,8 +293,6 @@ Caption: Diagram 3-C, match entry (table 2.3-A) with match-world initialisation 
 |---|---|---|---|---|---|
 | `ref.sim.id.first_serial` | 1 | serial | the counter is reset to 0 and incremented before each use, so the first serial of a match is 1 | R-SIM-014 | DEC-011 |
 | `ref.sim.id.structure_serial_start` | 0 | serial | value of the structure serial counter at initialisation step 3; after the map-placed structures it becomes the highest map structure id + 1 | R-SIM-018 | DEC-011 |
-| `ref.sim.match.start_speed` | 0 | game-speed factor | the frozen start, and the locked speed of a finished match | R-SIM-008, R-SIM-012, R-SIM-013 | — |
-| `ref.sim.match.run_speed` | 1.0 | game-speed factor | requested at the end of the grace countdown | R-SIM-012 | — |
 | `ref.sim.match.presentation_seed` | 1 | seed | presentation generator seed at every match-world initialisation | R-SIM-016 | DEC-013 |
 | `ref.sim.match_entry.camera_border` | 200 | wu | margin outside the map on both horizontal axes | R-SIM-014 | — |
 | `ref.sim.match_entry.fallback_camera_height` | 1000 | wu | height of the fallback camera position | R-SIM-014 | — |
@@ -314,7 +312,7 @@ Caption: Diagram 3-C, match entry (table 2.3-A) with match-world initialisation 
 | `ref.sim.init.power_level.worker` | 4 | level | | R-SIM-016 | — |
 | `ref.sim.state.transport_cycle_debounce` | 3 | ticks | 0.3 s of game time; a toggle needs strictly more than this since the same Transport's previous toggle | R-SIM-021 | DEC-011 |
 
-The tick period `ref.sim.tick_period` and the slice of the match-rules update `ref.sim.slice.match_rules` are defined in [01](01_tick_timing_and_main_loop.md); the grace period `ref.match.grace_period` is defined in [skirmish rules](../01_skirmish_rules_and_modes/README.md). Every value in this table is a reference value adopted as the Species starting value (DEC-004).
+The tick period `ref.sim.tick_period`, the slice of the match-rules update `ref.sim.slice.match_rules` and the game speeds `ref.sim.speed.stopped` and `ref.sim.speed.normal` are defined in [01](01_tick_timing_and_main_loop.md); the grace period `ref.match.grace_period` is defined in [skirmish rules](../01_skirmish_rules_and_modes/README.md). Every value in this table is a reference value adopted as the Species starting value (DEC-004).
 
 ## 5 Edge cases and interactions
 
@@ -344,7 +342,7 @@ The tick period `ref.sim.tick_period` and the slice of the match-rules update `r
 | AC-11 | a two-player match on a four-player map | initialisation completes | slots 2 and 3 are bot teams created by the match setup, and each has a colour | R-SIM-006, R-SIM-016 |
 | AC-12 | a match that has ended | teardown runs | the steps of table 2.6-A run in order, the particle pool and world markers are empty, and the session is gone on every participant | R-SIM-003, R-SIM-005, R-SIM-028 |
 | AC-13 | a session that has started its match | a second match-start command arrives | nothing happens | R-SIM-007 |
-| AC-14 | every human team ready during the frozen start | ticks continue | the grace countdown of `ref.match.grace_period` runs, then game speed becomes `ref.sim.match.run_speed` | R-SIM-012 |
+| AC-14 | every human team ready during the frozen start | ticks continue | the grace countdown of `ref.match.grace_period` runs, then game speed becomes `ref.sim.speed.normal` | R-SIM-012 |
 | AC-15 | multi-round Siege enabled in a test build | a round ends | the rebuild runs at the next tick boundary on every participant, and the object serial counter keeps its value | R-SIM-029, R-SIM-030 |
 | AC-16 | a match in progress | the process is restarted | no match, lobby or session state is restored | R-SIM-031 |
 
