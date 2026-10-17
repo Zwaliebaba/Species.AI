@@ -578,7 +578,7 @@ Every pointer member, in declaration order. "Thread" = thread that runs the cons
 | `m_networkMutex` | `NetMutex` | member | — | process | FULL | taken by `StartSinglePlayerServer`, `ClientToServer::ClientLeave` (flush), and try-locked by the loading screen before pumping the network (§11.3) |
 | `m_delayedJobListMutex` | `NetMutex` | member | — | process | FULL | guards `m_delayedJobs` |
 | `m_originVersion` | `char*` | literal `"unknown"`, replaced by `strdup` of the first line of the file `origin` if present | never freed | process | FULL | reported to the metaserver |
-| 24 testbed members (`m_eTestBedMode` … `m_iTerminationSequenceID`) | various | | | | [B:DEAD] `TESTBED_ENABLED` | Appendix |
+| 24 testbed members (`m_eTestBedMode` … `m_iTerminationSequenceID`) | `TESTBED_MODE`, `TESTBED_TYPE`, `TESTBED_STATE` (×2), `float` (×3), `int` (×13), `char[100]` (×2), `bool`, `UnicodeString` | | | | [B:DEAD] `TESTBED_ENABLED` | Appendix |
 | `m_netLib` | `NetLib*` | `App::App` (main) first statement after `g_app = this`; `Initialise()` = Winsock start-up | `~App` (second to last) | process | FULL | |
 | `m_mainThreadId` | `NetThreadId` | member initialiser `NetGetCurrentThreadId()` | — | process | FULL | compared by every GL-job producer and by the sound trigger gate (§11.4) |
 | `m_renderer` | `Renderer*` | `App::App` (main); `Initialise()` creates the window and GL context, `SetOpenGLState()` | `~App` | process | FULL | the GL context is bound to the main thread for the whole run |
@@ -1926,23 +1926,3 @@ Generated evidence (not part of the source tree): `_work/scripts/S_20_module_gra
 - **[B:D3D]** `WindowManagerDirectX` `WinMain`, D3D mip-map worker thread, `g_fixedPipeline`, device globals, deform/water-reflection effect objects.
 - **Not compiled / never started**: Mac sound preloader thread and `Finalise` queue draining; Steam authentication threads; `Water::UpdateWaterThread`; gesture-recording thread (`code/gesture_demo_win32.cpp`, `code/gesture_demo_sdl.cpp`); SDL event handler/drivers and `SoundLibrary2dSDL`; Linux/Mac `NetStartThread`/mutex implementations.
 - **Inert in FULL**: `#pragma omp parallel for` in `Location::Advance`; `GameTimer::DebugRender`; the time-based branch of `GetNumSlicesToAdvance`; `Server::SkipToTime`; `App::DoStartServer`, `App::DoCheckForPDLC` (no definitions); `m_steamInited`; `TARGET_FRAME_RATE_INCREMENT`; `MINIMUM_RENDER_PERIOD`; `g_inputFilterManager`; the `continue` after `HandleCommonConditions()`.
-
-## Open questions and unknowns
-
-<!-- SU -->
-
-## Docs-vs-code discrepancies
-
-<!-- SD -->
-
-## IP items
-
-<!-- SIP -->
-
-## Source map
-
-<!-- SSM -->
-
-## Appendix — dead/legacy code
-
-<!-- SAPP -->

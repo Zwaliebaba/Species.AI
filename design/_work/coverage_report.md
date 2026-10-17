@@ -2,22 +2,23 @@
 
 Documents scanned for citations: 16 (01_game_modes.md, 02_units_and_entities.md, 03_buildings_and_world_objects.md, 04_crates_powerups_and_weapons.md, 05_economy_and_population.md, 06_player_control_and_input.md, 07_ai.md, 09_meta_systems.md, 10_audio_design.md, 20_architecture.md, 23_terrain_and_landscape.md, 24_rendering.md, 27_audio_engine.md, 28_ui_framework.md, 30_scripting_tutorial_and_cutscenes.md, 31_platform_build_and_tools.md)
 
-Manifest entries: 6189; live source files: 761; data files: 2332
+Manifest entries: 6189; live source files: 779; data files: 2332
 
-Distinct manifest files cited: 2948; directories cited: 80
+Distinct manifest files cited: 2949; directories cited: 81
 
-Evidence tags in documents: {'[C]': 4255, '[I]': 489, '[U]': 80}
+Evidence tags in documents: {'[C]': 4350, '[I]': 505, '[U]': 89}
 
 World-object classes found in code/worldobject/*.h: 159
 
-### (a) live source files never cited — 67
+### (a) live source files never cited — 68
 - code/animatedpanel_renderer.h
-- code/entity_grid_cache.cpp
 - code/entity_grid_cache.h
 - code/keygen.h
 - code/lib/auto_vector.h
+- code/lib/float_vector3.h
 - code/lib/matrix33.h
 - code/lib/matrix34.h
+- code/lib/matrix_cache.h
 - code/lib/plane.cpp
 - code/lib/plane.h
 - code/lib/presized_array.h
@@ -1092,7 +1093,7 @@ World-object classes found in code/worldobject/*.h: 159
 - data/mwsounds/GDSpeech9.ogg
 - … 1730 more (see JSON)
 
-### Cited paths that do not exist in the manifest (possible errors) — 95
+### Cited paths that do not exist in the manifest (possible errors) — 96
 - code/interface/pokey_window  ← 31_platform_build_and_tools.md
 - code/interface/pokey_window.{cpp,h}  ← 31_platform_build_and_tools.md
 - code/lib/command_buffer  ← 31_platform_build_and_tools.md
@@ -1153,6 +1154,7 @@ World-object classes found in code/worldobject/*.h: 159
 - data/english_demo.txt  ← 31_platform_build_and_tools.md
 - data/fonts/verdana-bold.bmp  ← 31_platform_build_and_tools.md
 - data/icons/mouse_  ← 24_rendering.md
+- data/input/keyboards/<layout>.txt  ← 09_meta_systems.md
 - data/levels/map_  ← 23_terrain_and_landscape.md
 - data/levels/mp_  ← 01_game_modes.md, 02_units_and_entities.md, 07_ai.md, 23_terrain_and_landscape.md, 24_rendering.md
 - data/levels/mp_assault_  ← 02_units_and_entities.md

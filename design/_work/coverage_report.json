@@ -1,12 +1,13 @@
 {
  "a": [
   "code/animatedpanel_renderer.h",
-  "code/entity_grid_cache.cpp",
   "code/entity_grid_cache.h",
   "code/keygen.h",
   "code/lib/auto_vector.h",
+  "code/lib/float_vector3.h",
   "code/lib/matrix33.h",
   "code/lib/matrix34.h",
+  "code/lib/matrix_cache.h",
   "code/lib/plane.cpp",
   "code/lib/plane.h",
   "code/lib/presized_array.h",
@@ -3140,59 +3141,62 @@
   "tools/<lang>language.list": [
    "09_meta_systems.md"
   ],
-  "data/terrain/waves_": [
+  "data/input/keyboards/<layout>.txt": [
+   "09_meta_systems.md"
+  ],
+  "data/terrain/water_": [
+   "23_terrain_and_landscape.md"
+  ],
+  "data/levels/map_": [
    "23_terrain_and_landscape.md"
   ],
   "data/terrain/landscape_": [
    "23_terrain_and_landscape.md",
    "24_rendering.md"
   ],
-  "data/levels/map_": [
+  "data/terrain/waves_": [
    "23_terrain_and_landscape.md"
   ],
-  "data/terrain/water_": [
-   "23_terrain_and_landscape.md"
+  "code/lib/texture.{h,cpp}": [
+   "24_rendering.md"
   ],
   "code/lib/opengl_directx_dlist.{h,cpp}": [
-   "24_rendering.md"
-  ],
-  "code/lib/opengl_directx_matrix_stack.{h,cpp}": [
-   "24_rendering.md"
-  ],
-  "data/sepulveda/sepulveda1..5.bmp": [
-   "24_rendering.md"
-  ],
-  "data/shapes/<lowercased name>": [
-   "24_rendering.md"
-  ],
-  "data/icons/mouse_": [
-   "24_rendering.md"
-  ],
-  "code/lib/shader.{h,cpp}": [
-   "24_rendering.md"
-  ],
-  "data/shaders/fixedfunc": [
    "24_rendering.md"
   ],
   "code/worldobject/{centipede,tank,insertion_squad,tentacle,officer,sporegenerator,entity_leg,engineer,souldestroyer,harvester,triffid,researchitem,spider}.cpp": [
    "24_rendering.md"
   ],
-  "code/lib/opengl_trace.{h,cpp}": [
-   "24_rendering.md"
-  ],
-  "code/lib/texture.{h,cpp}": [
+  "data/sepulveda/sepulveda1..5.bmp": [
    "24_rendering.md"
   ],
   "code/worldobject/{spam,spawnpoint,crate,portal,rocket,pulsebomb,tree,building,laserfence,constructionyard,goddish,researchitem,mine,spiritreceiver}.cpp": [
    "24_rendering.md"
   ],
-  "code/lib/window_manager_sdl.{cpp,h}": [
+  "data/shapes/<lowercased name>": [
    "24_rendering.md"
   ],
-  "code/lib/opengl_directx_dlist_dev.{h,cpp}": [
+  "code/lib/opengl_trace.{h,cpp}": [
    "24_rendering.md"
   ],
   "code/lib/fixedpipeline.{h,cpp}": [
+   "24_rendering.md"
+  ],
+  "data/shaders/fixedfunc": [
+   "24_rendering.md"
+  ],
+  "code/lib/shader.{h,cpp}": [
+   "24_rendering.md"
+  ],
+  "code/lib/window_manager_sdl.{cpp,h}": [
+   "24_rendering.md"
+  ],
+  "data/icons/mouse_": [
+   "24_rendering.md"
+  ],
+  "code/lib/opengl_directx_matrix_stack.{h,cpp}": [
+   "24_rendering.md"
+  ],
+  "code/lib/opengl_directx_dlist_dev.{h,cpp}": [
    "24_rendering.md"
   ],
   "contrib/systemiv/interface/components/{checkbox, core, drop_down_menu, filedialog, inputfield, message_dialog, scrollbar}": [
@@ -3201,228 +3205,228 @@
   "contrib/systemiv/lib/{debug_utils, memory_leak, network_stream, profiler, string_utils, filesys/*, netlib/*, metaserver/{authentication, matchmaker, metaserver}, math/{filecrc, hash, math_stubs, random_number}, tosser/*, unicode/*}": [
    "28_ui_framework.md"
   ],
-  "tools/macosx/add-appcast-url.rb": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/autopatcher/*": [
-   "31_platform_build_and_tools.md"
-  ],
-  "data/dialogs/{animator-controlpanel,animator-mainmenu,animator-panel,file-dialog,mainmenu}.txt": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/sound/macosx/cabitoperations.h": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/ui/xblaselectsessiontype.h": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/lib/{preferences,language_table,hi_res_time}": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/autopatcher/copy_assist.exe": [
-   "31_platform_build_and_tools.md"
-  ],
-  "targets/vs2005/gdf/resource": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/profilelocatorwin32": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/lib/x.h": [
-   "31_platform_build_and_tools.md"
-  ],
-  "data/fonts/verdana-bold.bmp": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/lib/command_buffer": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/ui/pdlcoptionsbutton.h": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/autopatcher/{autopatch,copy_assist}.exe": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/network/x360_qnet.h": [
-   "31_platform_build_and_tools.md"
-  ],
   "data/n": [
-   "31_platform_build_and_tools.md"
-  ],
-  "contrib/netclass": [
-   "31_platform_build_and_tools.md"
-  ],
-  "contrib/systemiv/lib/x.h": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/sound/pokey": [
-   "31_platform_build_and_tools.md"
-  ],
-  "contrib/oggvorbis/lib": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/ui/downloadpdlcbutton.h": [
-   "31_platform_build_and_tools.md"
-  ],
-  "data/english.txt": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/build_multiwinia_retail.bat [lang]": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/multiwinia_inclusions_ambx.txt": [
-   "31_platform_build_and_tools.md"
-  ],
-  "contrib/systemiv/lib/{preferences,language_table,hi_res_time}.{h,cpp}": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/build_ambx_dat.bat": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/profilelocatorwin32/profilelocator.exe": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/network/multiwinia.spa.h": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/profilelocatorwin32/*": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/build_multiwinia_pc_preview.bat [lang]": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/sound/macosx/{aswsdlringbuffer,caringbuffer}.{cpp,h}": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/multiwinia_exclusions_xbox.txt": [
-   "31_platform_build_and_tools.md"
-  ],
-  "data/english_demo.txt": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/interface/pokey_window.{cpp,h}": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/unicode/sound_library_": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/autopatcher": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/convert_bmp_to_tex.cmd": [
-   "31_platform_build_and_tools.md"
-  ],
-  "contrib/binreloc": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/lib/text_stream_readers.cpp": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/sound/macosx/aswsdlringbuffer": [
-   "31_platform_build_and_tools.md"
-  ],
-  "contrib/steam": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/ui/customgametypeselection.h": [
-   "31_platform_build_and_tools.md"
-  ],
-  "targets/vs2005/resource1.h": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/lib/{debug_utils,text_stream_readers,\u2026}.cpp": [
-   "31_platform_build_and_tools.md"
-  ],
-  "data/<dir>": [
-   "31_platform_build_and_tools.md"
-  ],
-  "data/animations/{cloudyglow,darwinian,laser,plusone,spawnpoint,zone-back,zone-front,zone}.bmp": [
-   "31_platform_build_and_tools.md"
-  ],
-  "contrib/systemiv/lib/{preferences,language_table,hi_res_time}.*": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/sound/pokey.{cpp,h}": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/lib/command_buffer.{cpp,h}": [
    "31_platform_build_and_tools.md"
   ],
   "contrib/systemiv/lib/crypticon/ccrypticon.{cpp,h}": [
    "31_platform_build_and_tools.md"
   ],
-  "code/sound/macosx": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/lib/window_manager_xbox.h": [
-   "31_platform_build_and_tools.md"
-  ],
-  "data/<name>": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/macosx/add-svn-revision.rb": [
-   "31_platform_build_and_tools.md"
-  ],
-  "targets/vs2005/invisible.cur": [
-   "31_platform_build_and_tools.md"
-  ],
   "code/ui/inviteplayersbutton.h": [
    "31_platform_build_and_tools.md"
   ],
-  "code/lib/{debug_utils,math_utils,matrix33,\u2026}.cpp": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/multiwinia_inclusions_": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/network/x360_qnet.cpp": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/sound/macosx/*": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/sound/macosx/aswsdlringbuffer.*": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/interface/pokey_window": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/network/networkupdate.cpp": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/passwordgenerator/main.cpp": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/lib/debug_xbox.{cpp,h}": [
+  "targets/vs2005/gdf/resource": [
    "31_platform_build_and_tools.md"
   ],
   "tools/upx --best build/multiwinia.exe": [
    "31_platform_build_and_tools.md"
   ],
-  "contrib/systemiv/contrib/xcrashreport/client/{exception_handler,getwinver,miniversion}.*": [
+  "tools/autopatcher/{autopatch,copy_assist}.exe": [
+   "31_platform_build_and_tools.md"
+  ],
+  "data/<name>": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/ui/downloadpdlcbutton.h": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/lib/{preferences,language_table,hi_res_time}": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/interface/pokey_window.{cpp,h}": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/lib/text_stream_readers.cpp": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/lib/{debug_utils,math_utils,matrix33,\u2026}.cpp": [
+   "31_platform_build_and_tools.md"
+  ],
+  "tools/multiwinia_exclusions_xbox.txt": [
+   "31_platform_build_and_tools.md"
+  ],
+  "tools/multiwinia_inclusions_ambx.txt": [
+   "31_platform_build_and_tools.md"
+  ],
+  "tools/profilelocatorwin32/*": [
+   "31_platform_build_and_tools.md"
+  ],
+  "contrib/systemiv/lib/{preferences,language_table,hi_res_time}.{h,cpp}": [
+   "31_platform_build_and_tools.md"
+  ],
+  "tools/multiwinia_inclusions_": [
+   "31_platform_build_and_tools.md"
+  ],
+  "tools/passwordgenerator/main.cpp": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/sound/macosx": [
+   "31_platform_build_and_tools.md"
+  ],
+  "targets/vs2005/resource1.h": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/network/networkupdate.cpp": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/sound/macosx/*": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/ui/xblaselectsessiontype.h": [
+   "31_platform_build_and_tools.md"
+  ],
+  "contrib/systemiv/lib/x.h": [
+   "31_platform_build_and_tools.md"
+  ],
+  "data/fonts/verdana-bold.bmp": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/network/x360_qnet.h": [
+   "31_platform_build_and_tools.md"
+  ],
+  "targets/vs2005/invisible.cur": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/lib/x.h": [
    "31_platform_build_and_tools.md"
   ],
   "targets/vs2005/version_resource.h": [
    "31_platform_build_and_tools.md"
   ],
-  "code/lib/debug_xbox": [
+  "code/ui/customgametypeselection.h": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/lib/debug_xbox.{cpp,h}": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/ui/pdlcoptionsbutton.h": [
+   "31_platform_build_and_tools.md"
+  ],
+  "contrib/systemiv/lib/crypticon/ccrypticon": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/sound/macosx/{aswsdlringbuffer,caringbuffer}.{cpp,h}": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/sound/pokey": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/lib/command_buffer.{cpp,h}": [
+   "31_platform_build_and_tools.md"
+  ],
+  "tools/autopatcher": [
    "31_platform_build_and_tools.md"
   ],
   "tools/autopatcher/autopatch.exe": [
    "31_platform_build_and_tools.md"
   ],
+  "data/<dir>": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/network/multiwinia.spa.h": [
+   "31_platform_build_and_tools.md"
+  ],
+  "contrib/binreloc": [
+   "31_platform_build_and_tools.md"
+  ],
+  "data/dialogs/{animator-controlpanel,animator-mainmenu,animator-panel,file-dialog,mainmenu}.txt": [
+   "31_platform_build_and_tools.md"
+  ],
+  "data/english.txt": [
+   "31_platform_build_and_tools.md"
+  ],
+  "contrib/systemiv/lib/{preferences,language_table,hi_res_time}.*": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/sound/macosx/cabitoperations.h": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/sound/pokey.{cpp,h}": [
+   "31_platform_build_and_tools.md"
+  ],
+  "tools/macosx/add-svn-revision.rb": [
+   "31_platform_build_and_tools.md"
+  ],
+  "contrib/oggvorbis/lib": [
+   "31_platform_build_and_tools.md"
+  ],
+  "tools/macosx/add-appcast-url.rb": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/lib/debug_xbox": [
+   "31_platform_build_and_tools.md"
+  ],
+  "data/english_demo.txt": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/lib/{debug_utils,text_stream_readers,\u2026}.cpp": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/unicode/sound_library_": [
+   "31_platform_build_and_tools.md"
+  ],
+  "tools/build_multiwinia_retail.bat [lang]": [
+   "31_platform_build_and_tools.md"
+  ],
+  "tools/build_ambx_dat.bat": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/network/x360_qnet.cpp": [
+   "31_platform_build_and_tools.md"
+  ],
+  "tools/profilelocatorwin32": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/lib/command_buffer": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/lib/window_manager_xbox.h": [
+   "31_platform_build_and_tools.md"
+  ],
+  "data/animations/{cloudyglow,darwinian,laser,plusone,spawnpoint,zone-back,zone-front,zone}.bmp": [
+   "31_platform_build_and_tools.md"
+  ],
+  "tools/autopatcher/*": [
+   "31_platform_build_and_tools.md"
+  ],
+  "contrib/systemiv/contrib/xcrashreport/client/{exception_handler,getwinver,miniversion}.*": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/sound/macosx/aswsdlringbuffer": [
+   "31_platform_build_and_tools.md"
+  ],
+  "tools/autopatcher/copy_assist.exe": [
+   "31_platform_build_and_tools.md"
+  ],
+  "contrib/steam": [
+   "31_platform_build_and_tools.md"
+  ],
   "data/textures/unicode/{editor,square}.0410.042f.bmp": [
    "31_platform_build_and_tools.md"
   ],
-  "contrib/systemiv/lib/crypticon/ccrypticon": [
+  "tools/convert_bmp_to_tex.cmd": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/interface/pokey_window": [
+   "31_platform_build_and_tools.md"
+  ],
+  "tools/profilelocatorwin32/profilelocator.exe": [
+   "31_platform_build_and_tools.md"
+  ],
+  "code/sound/macosx/aswsdlringbuffer.*": [
+   "31_platform_build_and_tools.md"
+  ],
+  "contrib/netclass": [
+   "31_platform_build_and_tools.md"
+  ],
+  "tools/build_multiwinia_pc_preview.bat [lang]": [
    "31_platform_build_and_tools.md"
   ]
  },
  "oversize_excerpts": [],
  "tags": {
-  "[C]": 4255,
-  "[I]": 489,
-  "[U]": 80
+  "[C]": 4350,
+  "[I]": 505,
+  "[U]": 89
  },
  "classes": {
   "AI": [
