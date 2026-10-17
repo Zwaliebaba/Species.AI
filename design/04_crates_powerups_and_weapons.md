@@ -1257,7 +1257,7 @@ Expanding ring created by every `Bang` with `size = R/20`, `m_life = size` [C] `
 | Knock-back | only when `ChangeHealth` returned true and the victim is on the ground (not InsertionSquadie/Officer/Shaman): `push = normalise(victim − centre)`, `y = 3`, length `25 × fraction`, airborne — a Darwinian set on fire instead of damaged is not pushed |
 | Render | yellow→pink triangle-fan disc at y + 5, α `0.6 × life/size`; full-screen white flash for the first 0.1 s if on-screen, α `(1 − age/0.1) × max(0, 1 − dist/500)`, camera shake; `starburst.bmp` and `glow.bmp` billboards for the first 1 s |
 
-Duration and reach by source: grenade 0.625 s (6 active ticks, r 39 → 59); airstrike bomb 1.25 s (r 39 → ≈ 83); rocket 0.75 s (r 39 → ≈ 63); meteor / nuke 2.5 s (24 active ticks, r 39 → 131) [I arithmetic]. A stationary ground target is inside the band for 2–3 consecutive ticks, taking `40 × fraction` each time [I].
+Duration and reach by source: grenade 0.625 s (6 active ticks, r 39 → 59); airstrike bomb 1.25 s (r 39 → ≈ 83); rocket 0.75 s (r 39 → ≈ 63); meteor / nuke 2.5 s (24 active ticks, r 39 → 131) [I arithmetic]. A stationary ground target is inside the band for 2–3 consecutive ticks in the interior of the reach, taking `40 × fraction` each time; only once for 29 < d ≤ 33 and within 4 below the last ring; never for d ≤ 29 [I]. Per-explosion table: [02 §2.7](02_units_and_entities.md#27-explosions--locationbang-and-shockwave).
 
 Resolved: P04 described a 20-wide band hit for ≈ 5 ticks starting at radius 35; the code decrements life before computing the radius (first ring 39) and only considers entities with XZ distance below r, so the band is effectively 10 wide and a target is hit 2–3 times [C code, I count].
 
