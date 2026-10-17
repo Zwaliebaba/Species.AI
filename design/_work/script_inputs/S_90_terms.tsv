@@ -7,20 +7,20 @@
 # ---- Build tags ----
 [B:FULL]	build tag	Present and reachable in the baseline build: `Release|Win32` (OpenGL) with `TARGET_PC_FULLGAME`, shipped as `multiwinia.exe`.	31:7.6;20:1	no
 [B:D3D]	build tag	Only in the secondary `ReleaseDirect3D` configuration (`USE_DIRECT3D`), where a Direct3D 9 layer emulates the OpenGL API; [I] probably does not compile at this commit.	24:1.5;31:7.9	no
-[B:DEBUG]	build tag	Only under `TARGET_DEBUG` (cheat menu, sound and gesture editors, `TRACK_SYNC_RAND`, Tank Battle, The Beast crate).	32:2;31:7.6	no
+[B:DEBUG]	build tag	Only under `TARGET_DEBUG` (cheat menu, sound and gesture editors, `TRACK_SYNC_RAND`, The Beast crate, and the permission for Tank Battle, whose game type is compiled into every build).	32:2;31:7.6	no
 [B:EDITOR]	build tag	Only under `LOCATION_EDITOR`, which every shipped target leaves commented out: the in-game map editor and its windows.	08:8	no
 [B:DEMO]	build tag	Restricted by the demo gate: either the runtime check `IS_DEMO` (no valid full-version key) inside the full build, or the separate `TARGET_MULTIWINIA_DEMOONLY` product target; each use states which.	09:6	no
-[B:LEGACY]	build tag	Compiled into the full build but unreachable in Multiwinia: Darwinia campaign code, objects blocked by `BLOCK_OLD_DARWINIA_OBJECTS`, single-player-only branches.	03:12;21:2.8	no
-[B:DEAD]	build tag	Not compiled in any PC configuration (macro never defined, file excluded, or platform-only); documented only in appendices.	31:2.5;32:2	no
+[B:LEGACY]	build tag	Compiled into the full build but unreachable in Multiwinia: Darwinia campaign code, objects blocked by `BLOCK_OLD_DARWINIA_OBJECTS`, single-player-only branches, and compiled features that nothing reaches (`StartSequence`, `CreditsLoader`, the Tools menu).	03:12;21:2.8	no
+[B:DEAD]	build tag	Not compiled in any PC configuration (macro never defined, file excluded, or platform-only), or compiled only in a non-baseline configuration and unreachable even there (the AVI Grabber: `TARGET_DEBUG` code that nothing opens); documented only in appendices.	31:2.5;32:2	no
 # ---- Build configurations, targets and macros ----
 Release|Win32	engine (build macro)	The baseline Visual Studio 2005 configuration: OpenGL renderer, `NDEBUG`, output `darwinia_gl.exe`, renamed to `multiwinia.exe` by every Multiwinia packaging script.	31:7.3	no
 ReleaseDirect3D	engine (build macro)	The secondary Visual Studio configuration that defines `USE_DIRECT3D`, links Direct3D 9 and emits `darwinia.exe`; only Darwinia-era scripts package it. See [B:D3D].	31:7.3;24:1.2	no
 Debug / DebugDirect3D	engine (build macro)	The two developer configurations (`darwinia_d_gl.exe`, `darwinia_d.exe`); unrelated to the `TARGET_DEBUG` product target, which is a separate source switch.	31:7.3	no
 TARGET_PC_FULLGAME	engine (build macro)	The single active product target in `code/lib/universal_include.h`; it enables LAN/WAN play, all six shipped modes, basic and advanced crates, the tutorial and `BLOCK_OLD_DARWINIA_OBJECTS`.	31:7.6	no
-TARGET_DEBUG	engine (build macro)	Developer product target: adds Tank Battle, Prologue/Campaign menu entries, the cheat menu, sound and gesture editors, AVI capture, `TRACK_SYNC_RAND` and The Beast crate. Source of [B:DEBUG].	31:7.6;32:2.1	no
+TARGET_DEBUG	engine (build macro)	Developer product target: permits Tank Battle and adds the Prologue/Campaign menu entries, the cheat menu, sound and gesture editors, the AVI Grabber code (never opened, so [B:DEAD]), `TRACK_SYNC_RAND` and The Beast crate. Source of [B:DEBUG].	31:7.6;32:2.1	no
 TARGET_MULTIWINIA_DEMOONLY	engine (build macro)	Commented-out product target for a stand-alone demo executable (single-player only, KOTH and CTS, basic crates). Distinct from the runtime `IS_DEMO` gate.	31:7.6;09:6.1	no
 Other product targets	engine (build macro)	`TARGET_PC_PREVIEW`, `TARGET_PC_HARDWARECOMPAT`, `TARGET_ASSAULT_STRESSTEST`, `TARGET_BETATEST_GROUP_ALL`, `TARGET_BETATEST_GROUP_A/B/C`: commented-out targets that restrict modes, crates and `PERMITTED_MAPS` for previews, hardware tests, stress tests and beta groups.	31:7.6	no
-INCLUDEGAMEMODE_*	engine (build macro)	One macro per mode (`_DOMINATION`, `_KOTH`, `_CTS`, `_ROCKET`, `_ASSAULT`, `_BLITZ`, `_TANKBATTLE`, `_PROLOGUE`, `_CAMPAIGN`) that compiles that mode's code; FULLGAME defines the first six.	01:1.2;31:7.6	no
+INCLUDEGAMEMODE_*	engine (build macro)	One macro per mode (`_DOMINATION`, `_KOTH`, `_CTS`, `_ROCKET`, `_ASSAULT`, `_BLITZ`, `_TANKBATTLE`, `_PROLOGUE`, `_CAMPAIGN`) that compiles that mode's rule body and permits the mode (`App::IsGameModePermitted`); FULLGAME defines the first six. Without `_TANKBATTLE`, Tank Battle's game type, options and Tank entity are still compiled; only its rules and permission are missing.	01:1.2;31:7.6	no
 INCLUDE_CRATES_BASIC / INCLUDE_CRATES_ADVANCED	engine (build macro)	Compile the 7 basic crate outcomes and the 24 advanced ones respectively; both are on in FULLGAME.	04:1.1	no
 INCLUDE_TUTORIAL	engine (build macro)	Compiles the two live Multiwinia tutorials and the Tutorials page; on in FULLGAME.	30:3.1	no
 INCLUDE_THEBEAST	engine (build macro)	Defined inside `code/worldobject/crate.h` only under `TARGET_DEBUG`; compiles The Beast crate outcome, which makes it [B:DEBUG].	04:5.30	no
@@ -33,7 +33,7 @@ TRACK_SYNC_RAND	engine (build macro)	[B:DEBUG] switch that logs every synced ran
 DEBUG_RENDER_ENABLED	engine (build macro)	Defined globally, so the debug drawing primitives and overlays are compiled into the shipped executable.	32:11.1	no
 CHEATMENU_ENABLED	engine (build macro)	[B:DEBUG] switch for the cheat window and its 23 cheats.	32:4	no
 SOUND_EDITOR	engine (build macro)	[B:DEBUG] switch for the sound editor, sound statistics, profile windows and the POKEY `EffectProcessor`.	27:13.2	no
-GESTURE_EDITOR / AVI_GENERATOR	engine (build macro)	[B:DEBUG] switches for the gesture training window and the AVI video grabber.	32:5.4;32:5.5	no
+GESTURE_EDITOR / AVI_GENERATOR	engine (build macro)	[B:DEBUG] switches for the gesture training window and the AVI video grabber; the grabber code `AVI_GENERATOR` compiles is [B:DEAD], because nothing opens its window.	32:5.4;32:5.5	no
 LAN_PLAY_ENABLED / WAN_PLAY_ENABLED / MULTIPLAYER_DISABLED	engine (build macro)	Product-target switches for LAN browsing, Internet (metaserver) play, or no multiplayer at all; FULLGAME enables LAN and WAN.	31:7.6;09:1.1	no
 PERMITTED_MAPS	engine (build macro)	Optional whitelist of map ids for restricted targets (preview, hardware-compat, stress, beta groups); undefined in FULLGAME, so every map is allowed.	08:2.4;31:8.6	no
 IS_DEMO	engine (build macro)	Macro for `!g_app->IsFullVersion()`: the runtime demo gate based on the authentication key, applied inside the full build.	09:6.2	no
@@ -41,18 +41,18 @@ GRACE_TIME	engine (build macro)	`#define` of 3.0 s: length of the all-ready coun
 FLOAT_NUMERICS	engine (build macro)	Global switch that makes SystemIV's `Fixed` numeric type a wrapper around `double`; the fixed-point alternatives `USE_FIXED` and `FIXED64_NUMERICS` are never defined.	22:14.8	no
 USE_CRASHREPORTING / DUMP_DEBUG_LOG	engine (build macro)	Global crash-report hook (structured-exception report and support tool) and the switch that writes `debug.txt`; DUMP_DEBUG_LOG is on in FULLGAME.	31:6;32:10.1	no
 USE_DISPLAY_LISTS	engine (build macro)	Enables OpenGL display lists for shapes, trees and the global internet; emulated under Direct3D by `opengl_directx_dlist*`.	24:4.5;25:2.11	no
-USE_LOADERS	engine (build macro)	Commented out: gates the boot-loader mini-programs and the first-time start sequence, so they are [B:DEAD].	09:A.1	no
+USE_LOADERS	engine (build macro)	Commented out: gates the seven boot-loader mini-programs and `RunBootloader`, so they are [B:DEAD]; `StartSequence`, which only `RunBootloader` would construct, is compiled but never reached ([B:LEGACY]).	09:A.1	no
 AUTHENTICATION_LEVEL	engine (build macro)	Set to 1 in FULLGAME: the server removes any remote client whose authentication-key check fails (`Server::AuthenticateClients`).	22:12.5	no
 STRETCH_RECT	engine (build macro)	Defined in `code/deform.cpp`; selects the StretchRect capture path of the [B:D3D] deform effect, which makes its pre-render `Start()` a no-op (source comment: it "should make FSAA possible").	24:4.13	no
 # ---- Abbreviations ----
 ADSR	abbreviation	Attack, Decay, Sustain, Release: the four-stage volume envelope a sound instance applies over its playback.	27:6.3	no
 AI	abbreviation	Artificial intelligence; in this set usually the CPU player, which is the entity class `AI` (one per CPU team) driving that team's officers, tasks and crowds. See `AI` entity.	07:1	no
-ALIVE_DATA	abbreviation	Network data-field code `dg` carrying a packed `TeamControls` record, the continuous per-team input sent every frame.	22:5.2;29:11.7	no
+ALIVE_DATA	abbreviation	Network data-field code `dg` carrying a packed `TeamControls` record, the continuous per-team input sent every 0.1 s of real time (`IAMALIVE_PERIOD`). The server keeps only the latest ALIVE per client per tick (`SaveLast`), so an earlier packet's one-shot flags (clicks, fire, move) in the same tick are lost.	22:5.2;22:6.1;29:11.7	no
 API	abbreviation	Application programming interface.	20:3.4	no
 ARB / WGL / GLU	abbreviation	OpenGL extension-family prefix (Architecture Review Board), the Windows OpenGL binding layer, and the OpenGL utility library; all three are used by the native renderer.	24:1.3	no
 ASCII	abbreviation	7-bit character encoding; most data text files are ASCII or 8-bit, widened byte-for-byte to Unicode on load.	29:3.1	no
 ASLT / DOM / RR / BLITZ / TANK	abbreviation	Short mode tokens used in tables: Assault, Domination, Rocket Riot, Blitzkrieg, Tank Battle (with KOTH and CTS).	08:3.1;01:1.1	yes → Siege, Spawn Control, Launch Race, Flag Chain, Armour Duel
-AVI	abbreviation	Audio Video Interleave video file; written only by the [B:DEBUG] grabber (`AVIGenerator`).	31:3.12	no
+AVI	abbreviation	Audio Video Interleave video file; written only by the [B:DEAD] grabber (`AVIGenerator`: compiled only in `TARGET_DEBUG`, never opened).	31:3.12	no
 BGR24 / BGRA32 / P4 / P8 / RLE8	abbreviation	Bitmap pixel layouts found in the shipped `.bmp` files: 24-bit and 32-bit direct colour, 16- and 256-entry palettised, and run-length-encoded 8-bit (one file, which the decoder cannot read). All decode to RGBA8.	25:2.2;29:8.3	no
 BOM	abbreviation	Byte-order mark; no shipped text file has one, and a UTF-8 BOM would be read as part of the first token.	29:3.1	no
 CJK	abbreviation	Chinese, Japanese and Korean scripts; served by bitmap font atlases under `data/textures/unicode/`.	25:2.15;28:10.5	no
@@ -153,7 +153,7 @@ Capture the Statue	player concept	Game type `GameTypeCaptureTheStatue`: groups o
 Assault	player concept	Game type `GameTypeAssault`: attackers must capture every control station linked to the defenders' pulse bomb before its countdown ends; if the countdown reaches zero the bomb detonates and the defenders win. Single round only in the shipped code.	01:4.4	yes → Siege
 Rocket Riot	player concept	Game type `GameTypeRocketRiot`: capture solar panels to power the fuel chain into your escape rocket, load 100 Darwinians at 95 % fuel, launch; the first rocket above world height y = 600 wins. No time limit, no draw.	01:4.5	yes → Launch Race
 Blitzkrieg	player concept	Game type `GameTypeBlitzkreig` (sic): capture flag zones linked in a graph; a team is eliminated when an enemy captures its home flag while holding an unbroken chain of owned flags back to its own home flag. At time-up, flags held plus 10 per elimination decide.	01:4.6	yes → Flag Chain
-Tank Battle	player concept	Game type `GameTypeTankBattle`, compiled only with `INCLUDEGAMEMODE_TANKBATTLE` ([B:DEBUG]): each team has `NumTanks` tank lives; last team with tanks wins.	01:4.7	yes → Armour Duel
+Tank Battle	player concept	Game type `GameTypeTankBattle` ([B:DEBUG]): its rule body and its permission exist only with `INCLUDEGAMEMODE_TANKBATTLE`, defined only under `TARGET_DEBUG`; the game type, options and the Tank entity are compiled into every build. Each team has `NumTanks` tank lives; the last team with tanks wins.	01:4.7	yes → Armour Duel
 Game type	player concept; engine	One of the seven `Multiwinia::GameType*` values (Skirmish = Domination, KingOfTheHill, CaptureTheStatue, Assault, RocketRiot, Blitzkreig, TankBattle); selects the per-mode `Advance*` rule function and the option blueprint in `data/multiwinia.txt`.	01:1.1	yes → mode names in §3
 Match	player concept	One played map from the end of loading to the results screen; the lifetime of a `Location` and of the per-match state.	20:8.3;01:2.2	no
 Grace period	player concept	The frozen pre-match phase (game speed 0) during which every human team must press Ready; once all are ready a 3-second countdown (`GRACE_TIME`) runs and un-readying restarts it. CPU teams are never waited for.	01:2.4	no
@@ -180,13 +180,14 @@ Lobby	player concept	The game-setup page (`PageGameSetup`) where the host picks 
 Host / client	player concept	The host runs the `Server` and a `ClientToServer` in one process; every other player is a client of that server. All simulation runs on every client.	22:1.2	no
 Spectator	player concept	A connected participant without a team (team type `TeamTypeSpectator`); the dedicated spectator UI is [B:DEAD].	22:8.8	no
 Late join	player concept	Joining a session already in progress: the client replays the server's entire letter history from sequence 0 to reconstruct the match.	22:8.8;30:7.2	no
-Desync (out of sync)	player concept	Divergence of a client's simulation from its peers, detected by the per-frame sync byte; the affected client is reported out of sync and the game pauses for it, with no recovery.	22:9	no
+Desync (out of sync)	player concept	Divergence of a client's simulation from its peers, detected by the per-frame sync byte; the affected client is reported out of sync and the game pauses for it, with no recovery. The live paths in the shipped game are squad free-look (L1), the zone counter surviving between matches (L20) and the tree hit-sphere LCG race (L21).	22:9;22:14.11	no
 Pause	player concept	Allowed only with no remote human players; ramps game speed to 0 over about 2 s (rate 0.2 per frame) and back.	22:2.6	no
 Game speed	player concept; engine	`GameTimer::m_gameSpeed`, the multiplier on game time per tick (1 = normal); changed deterministically by pause, the Slow Down and Speed Up crates, meteor slow motion and the end of a match.	20:10.7;22:2.6	no
 Map	player concept	A level file `data/levels/mp_*.txt` named `mp_<mode>_<n>P_<k>` (57 Multiwinia maps, 49 in retail) defining terrain, buildings, starting units and mode options.	08:3	yes → new maps named `map_<mode>_<players>p_<nn>`
 Map options	player concept	Per-level `MultiwiniaOptions` block: supported game types, player count, population cap, co-op flag, invalid crates, trunk-port settings and level options such as `instantspawnpointcapture`.	08:5	no
 Game options	player concept	The lobby parameters of a mode defined in `data/multiwinia.txt` (39 definitions over 14 names: `ScoreMode`, `TimeLimit`, `Handicap`, `CrateDropRate`, `StartingPowerups`, `RetributionMode`, `SuddenDeath`, `CrateDropMode`, `ReinforcementTimer`, `ReinforcementCount`, `MaxArmour`, `TurretFrequency`, `MaxTurrets`, `NumTanks`), replicated to all peers.	01:3;09:4	no
 AI type (difficulty)	player concept	Lobby option for CPU players (`Multiwinia::m_aiType` ∈ `AITypeEasy`, `AITypeStandard`, `AITypeHard`; shown as Easy, Normal, Hard); one setting for every CPU team.	07:13	no
+Difficulty level (`m_difficultyLevel`)	engine	Darwinia's global difficulty setting, read by simulation code (speed stat × (1 + d/10), level-load factors, spore-generator chances). In Multiwinia it is always 0: every level load resets it (`LevelFile::LevelFile` → `App::UpdateDifficultyFromPreferences`), so the `Difficulty` preference has no effect and is not a desync path. Not the CPU "AI type".	22:14.11;22:14.12	no
 Tutorial	player concept	The two live Multiwinia tutorials ("The Basics" on `mp_koth_2P_1`, "Advanced Concepts" on `mp_koth_3P_1`), driven by `MultiwiniaTutorial` with scripted CPU behaviour.	30:3	yes → new tutorial maps and copy
 Help overlays	player concept	Contextual in-match hints (`MultiwiniaHelp`) that replace Darwinia's control-help system: short prompts about selection, promotion, crates and modes.	09:8.2;06:10.4	no
 Animated panel	player concept	Front-end mode explainer animation played from a `.anim` script (`AnimatedPanel`), one per shipped mode.	09:9.3;26:3	yes → new explainer animations
@@ -197,10 +198,10 @@ Server browser	player concept	The LAN/WAN list of joinable games (`PageJoinGame`
 Quick match	player concept	Automatic match-finding page (`PageQuickMatchGame`), compiled but unreachable.	09:5.9	no
 Christmas mode	player concept	Seasonal theme negotiated in the lobby: snow weather, Santa hats on Darwinians and icy terrain ramps.	09:5.16;26:4.3	yes → optional seasonal theme with new art
 # ---- Player concepts: units, economy, control ----
-Population cap	player concept	Per-team limit on cap-counted bodies (`Team::m_others`) that freezes spawn-point and trunk-port production: the level's `PopulationCap` divided by the level's `NumPlayers` (Assault has separate attacker and defender caps).	05:4	no
+Population cap	player concept	Per-team limit on cap-counted bodies (`Team::m_others`, including the CPU team's AI entity, minus Virii) that freezes spawn-point and trunk-port production: the level's `PopulationCap` divided by the level's `NumPlayers` (Assault has separate attacker and defender caps).	05:4;05:4.1	no
 Activation delay	player concept	The 30.0 s (300 ticks) after any ownership change before a spawn point produces; skipped for a team's only spawn point and on maps with `instantspawnpointcapture`.	05:2.3	no
 Burst / pause cycle	player concept	The spawn-point request rhythm: while owned, activated and under the cap a point requests one virtual spirit every 0.2 s until it has requested `int(20 × handicap multiplier)` (20 without handicap), then pauses 10–15 s; the timer freezes while the cap is reached.	05:3.1	no
-Virtual spirit	player concept; engine	A `SpawnBuildingSpirit`: a token travelling along spawn links from the master spawn point to a requesting spawn point (1 s per link) that becomes one Darwinian on arrival; it has no position and cannot be intercepted.	03:4.2;05:3.4	no
+Virtual spirit	player concept; engine	A `SpawnBuildingSpirit`: a token travelling along spawn links from the master spawn point to a requesting spawn point that becomes one Darwinian on arrival (10h + 1 ticks for h links: 11 for the first link, 10 for each further one); it has no position and cannot be intercepted.	03:4.2;05:3.4	no
 Spawn network	player concept	The level's tree of master spawn point, spawn links and spawn points along which virtual spirits travel.	03:4;05:2	yes → Source Node, Relays, Spawn Nodes
 Port	player concept; engine	A slot on a building, created from a `MarkerPort` shape marker, that one Darwinian occupies to operate or capture it; ports also carry per-team reservation counters.	03:3.6	no
 Capture (building)	player concept	Ownership change of a building by occupation or proximity. Each capturable type has its own rule and period (spawn point: a single team with at least 3 of 5 port occupants, re-evaluated every 2–3 s; gun turret 1 s; solar panel and control station every tick; zones and carryables 1 s).	03:3.7	no
@@ -317,9 +318,9 @@ Factory (building factory)	engine	`Building::CreateBuilding(type or name)`: the 
 Global building	engine	A building with `m_isGlobal` set (forced for RadarDish, ControlTower, TrunkPort, Incubator, DynamicHub, FenceSwitch), mirrored as a `GlobalBuilding` record (team, online flag, link) in `g_app->m_globalWorld`: the Darwinia campaign's cross-level persistence, mostly inert in Multiwinia.	03:3.13	no
 SpawnBuilding	engine (class)	Abstract base of the spawn network (SpawnLink, MasterSpawnPoint, SpawnPoint): outgoing links and the virtual spirits travelling on them.	03:4.2	no
 SpawnBuildingLink	engine (class)	One outgoing spawn-network link: neighbour id, the spawn points reachable through it, and the spirits in transit.	03:4.2	no
-SpawnBuildingSpirit	engine (class)	A virtual spirit in transit on a spawn link (target spawn point and progress 0–1); drawn only, never interceptable.	03:4.2	no
+SpawnBuildingSpirit	engine (class)	A virtual spirit in transit on a spawn link (target spawn point and progress 0–1, +0.1 per tick, so the first link takes 11 ticks and each further link 10); drawn only, never interceptable.	03:4.2;05:3.4	no
 SpawnLink (spawn link)	engine (class)	Pure relay node of the spawn tree; indestructible, no ports.	03:4.3	yes → Relay
-MasterSpawnPoint (master spawn point)	engine (class)	Virtual source of all spawn spirits, one per level, usually invisible; level name `SpawnPointMaster`.	03:4.4	yes → Source Node
+MasterSpawnPoint (master spawn point)	engine (class)	Virtual source of all spawn spirits, one per level, usually invisible; level name `SpawnPointMaster`. Live ([B:FULL]): present in 34 of the 57 `mp_*` maps; the cached id `s_masterSpawnPointId` is rewritten at every `MasterSpawnPoint::Advance`.	03:4.4	yes → Source Node
 SpawnPoint (spawn point)	engine (class)	The territory node of the economy: a 5-port capturable building that, when owned and activated, requests virtual spirits and emits Darwinians for its owner.	03:4.5;05:2	yes → Spawn Node
 SpawnPopulationLock (population lock)	engine (class)	Invisible regional population limiter (radius 500, max 100 by default), used only when a map has no `PopulationCap`; inert on shipped maps.	03:4.6;05:4.8	yes → Population Limiter
 GunTurret (gun turret)	player concept; engine (class)	4-port manned weapon emplacement (types Standard, Rocket, Mortar, Flame, Subversion via the `state` field) owned by whoever mans it; fires automatically and can be aimed by its owner.	03:5.1	no (generic)
@@ -393,7 +394,7 @@ Rocket	engine (class)	Rocket projectile fired by rocket turrets and by Rocketwin
 Laser	engine (class)	Pooled laser bolt fired by Darwinians, squads and subversion weapons (0.6 s life, ricochets once off terrain); mind-control lasers convert.	04:6.7	no
 TurretShell / TurretEmptyShell	engine (class)	Standard gun-turret shell (0.6 s, 500 wu/s) and its ejected casing.	04:6.8;04:6.9	no
 Fireball	engine (class)	Flame-turret projectile that grows and sets Darwinians of any team on fire.	04:6.10	no
-Shockwave	engine (class)	Expanding damage ring created by every `Bang`.	04:6.11	no
+Shockwave	engine (class)	Expanding damage ring created by every `Bang`: the first damaging ring has radius 39 and grows by 4 wu per tick; a target is hit while its distance lies in the 10-wide band just inside the ring, so a stationary target is hit 2–3 times.	04:6.11;02:2.7	no
 MuzzleFlash	engine (class)	Short-lived cosmetic flash at a firing point.	04:6.12	no
 Missile	engine (class)	Guided missile written for the tank and armour; no live caller.	04:6.13	no
 LandMine	engine (class)	Proximity mine written for the tank; no live caller.	04:6.14	no
@@ -429,7 +430,7 @@ EntityGrid / EntityGridCache	engine (class)	Per-team uniform grid of entity ids 
 ObstructionGrid	engine (class)	Spatial index of buildings: each world cell lists the unique ids of the buildings overlapping it; used for obstacle pushes and placement tests.	21:6.4	no
 RoutingSystem / LandRoutingSystem	engine (class)	Path-finding: a waypoint graph over walkable land built at load (`LandRoutingSystem::Initialise`) and route generation between points.	21:7	no
 Route	engine	A generated path (list of waypoints) held in a slot-shared array; a unit follows it point by point.	21:7.5;21:7.6	no
-TeamControls	engine (class)	The continuous per-team input packet (cursor world position, button states, unit-control flags) packed into `ALIVE_DATA` every frame and executed by `Location::UpdateTeam`.	21:9.7;06:6.1	no
+TeamControls	engine (class)	The continuous per-team input packet (cursor world position, button states, unit-control flags) packed into `ALIVE_DATA` every 0.1 s (one-shot flags are ORed over the render frames since the last send) and executed by `Location::UpdateTeam`.	21:9.7;06:6.1	no
 TaskManager / Task	engine (class)	Per-team container of granted powers (`code/taskmanager.h`): 6 slots in multiplayer; each `Task` moves through Idle, Started (waiting to be placed), Running and Stopping.	06:3	yes → Power slots / Power
 TaskManagerInterfaceMultiwinia	engine (class)	The live task-bar interface: power slots at the screen edge, the running-task bar and the "power-up received" pop-up.	06:4.3	no
 Instant units	data format	Level-file `InstantUnits` rows `type team x z count inAUnit state spread [waypoint [route [runAsTask]]]` placing starting entities for the team at that start position; 16 blocked entity types are refused.	08:6.6	no
@@ -478,7 +479,7 @@ BinaryReader	engine (class)	Reader for binary resources (archives, bitmaps, Ogg 
 Unrar (UncompressedArchive, MemMappedFile)	engine	The linked `contrib/unrar` library that opens `.dat` archives into memory-mapped files; not thread-safe, which serialises sound loading.	31:8.8;20:3.1	no
 FileSystem (SystemIV)	engine (class)	SystemIV archive-aware file system: compiled but unused.	31:8.10	no
 WorkQueue	engine (class)	Job queue served by its own worker thread; `App` uses one to load sounds in the background.	20:11.2	no
-Profiler	engine (class)	SystemIV section profiler (`contrib/systemiv/lib/profiler`) displayed in the profiler window.	32:9	no
+Profiler	engine (class)	SystemIV section profiler (`contrib/systemiv/lib/profiler`) displayed in the profiler window, which only the cheat window opens, in `TARGET_DEBUG` ([B:DEBUG]); `g_profiler` is inert in FULL.	32:9	no
 # ---- Engine: terrain, rendering, assets, VFX ----
 Landscape	engine (class)	The terrain height field (`code/landscape.cpp`): one `SurfaceMap2D<double>` generated once per level load from the level's landscape blocks; sea level is y = 0.	23:1;23:2	no
 LandscapeTile	engine (class)	One square fractal height map (midpoint displacement with a private LCG, optional guide grid, peak rescale) merged into the world by per-sample maximum.	23:5;23:7	no
@@ -550,11 +551,11 @@ WindowManager	engine (class)	Window and display-mode abstraction: `WindowManager
 Data build pipeline	engine	`tools/build_multiwinia_data.bat` and Perl list tools that pack `data/` into the `.dat` archives per SKU using exclusion and inclusion lists.	31:8	no
 Map CRC tool	engine	`tools/MapCRC`: computes the identity CRC of every map file into `code/mapcrc.h`.	31:10;08:2.3	no
 ShapeExporter	engine	3ds Max plug-in (`tools/ShapeExporter`) that writes `.shp` files from `.max` scenes.	31:11.1	no
-AVIGenerator	engine (class)	[B:DEBUG] AVI video grabber; no code adds frames, so it is non-functional.	31:3.12;32:5.4	no
+AVIGenerator	engine (class)	[B:DEAD] AVI video grabber: compiled only in `TARGET_DEBUG`, but `DebugKeyBindings::GrabberButton` has no caller, so it is never created; no code adds frames either.	31:3.12;32:5.4	no
 Crash reporter (MultiwiniaSupport.exe)	engine	The SEH crash handler writes `ERRORLOG.TXT` and `CRASH.DMP`; the support tool (XCrashReport-based) gathers the files listed in `MultiwiniaSupport.ini`.	31:6.4	yes → own crash reporter
 Black box	engine	Release-assert report `blackbox.txt` with recent debug output.	31:6.5;29:11.8	no
 AppDebugOut / AppReleaseAssert	engine	Debug logging into `debug.txt` and the always-on assertion that writes the black box and exits.	32:10.1;32:10.2	no
-Debug menu / DebugKeyBindings	engine	18 static debug entry points and the unreachable "Tools Menu".	32:3	no
+Debug menu / DebugKeyBindings	engine	18 static debug entry points and the "Tools Menu" (`DebugMenu`), which is compiled into every build but never constructed (its F1 opener is commented out): [B:LEGACY].	32:3	no
 Cheat window	engine	[B:DEBUG] window of 23 cheats (`CHEATMENU_ENABLED`), several of which desynchronise network games.	32:4	no
 Network statistics window	engine	The F9 "Network Stats" window, shipped in FULL (`NETWORK_STATS_ENABLED`).	32:5.1;22:11.2	no
 Testbed	engine	[B:DEAD] automated server/client test sequence driven by `testbedconfig.txt`.	32:6	no

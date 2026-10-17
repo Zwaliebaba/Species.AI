@@ -1252,7 +1252,7 @@ if not dead:
 ```
 
 - **Dead airborne entities never land**: the landing test is skipped for `m_dead`, so a corpse thrown into the air keeps falling (through the terrain) while `AdvanceDead` fades it at −2 health per tick (100 → 0 in 50 ticks = 5 s at normal speed); it is drawn below ground [C] `Entity::AdvanceInAir`, `Entity::AdvanceDead`; [I] visual only.
-- Who calls it: subclasses while `!m_onGround` (Darwinian, Officer, Squadie, ArmyAnt and others; [02](02_units_and_entities.md)) [C].
+- Who calls it: subclasses while `!m_onGround` — the complete caller set is `ArmyAnt`, `Darwinian`, `Egg`, `InsertionSquad` (Squadie), `JumpPad` (launching entities), `LaserTrooper` (two call sites), `Officer` and `Shaman` ([02](02_units_and_entities.md)) [C] `code/worldobject/{armyant,darwinian,egg,insertion_squad,jumppad,lasertrooper,officer,shaman}.cpp`.
 - Knock-back: `Location::Bang` adds `normalise((dir.x, onGround ? damage : −1, dir.z)) × fraction` to velocity and sets `m_onGround = false` (except InsertionSquadie, Officer, Shaman) [C] `code/location.cpp:Location::Bang` ([04 §6.1](04_crates_powerups_and_weapons.md#61-shared-explosion-model--locationbang)).
 
 ### 8.4 Water
@@ -1283,7 +1283,7 @@ Other push helpers [C]:
 | Helper | Rule | Live callers |
 |---|---|---|
 | `Darwinian::PushFromObstructions` | Darwinian-specific water, wall, fence (sets enemies on fire), tree and generic rules | Darwinian ([02 §4.9](02_units_and_entities.md#49-darwinian--terrain-and-obstacles-darwinianpushfromobstructionspos-killem--true)) |
-| `Building::PushFromBuilding(pos, r)` | while sphere (pos, r) hits the building, step 2.0 units directly away from `m_pos` | port placement (r = 5.0) and others ([03 §3.5](03_buildings_and_world_objects.md#35-virtual-and-member-function-catalogue)) |
+| `Building::PushFromBuilding(pos, r)` | while sphere (pos, r) hits the building, step 2.0 units directly away from `m_pos` | port placement (r = 5.0, `code/worldobject/building.cpp:Building::SetShapePorts`) and `Incubator` spirit placement (r = 5.0, `code/worldobject/incubator.cpp`) — the only two callers ([03 §3.5](03_buildings_and_world_objects.md#35-virtual-and-member-function-catalogue)) |
 | `Entity::PushFromCliffs(pos, oldPos)` | slope `(pos.y − old.y) / horizDist > 1.0` → spiral `d = 0..50` step 0.2, angle `d·2π`, first point with slope < 1.0 | none in Multiwinia [B:LEGACY] |
 | `Entity::PushFromEachOther(pos)` | grid neighbours within 2.0: `result += normalise(pos − other) × 0.1 / |pos − other|`; y = terrain | only `LaserTrooper` [B:LEGACY]; commented out in `Entity::Advance` |
 

@@ -1147,7 +1147,7 @@ SANITISED   = upper-case file name without ".txt", with '.', '-' and ' ' replace
 
 | Field | Type | Semantics |
 |---|---|---|
-| `SANITISED` | identifier | `MAPID_MP_KOTH_2P_1` etc. |
+| `SANITISED` | identifier | e.g. `MAPID_MP_KOTH_2P_1` (the full set of 87 ids is tabulated in [08](08_levels_and_level_design.md)) |
 | `HEX8` | 8 lower-case hex digits | the CRC above |
 
 **Verification.** `FileCRC`/`ReadFileData` re-read for this document; `BinaryDataReader::ReadU8` confirmed to return 0xFF and set `m_eof` past the end. An independent re-implementation of this definition, run over the 87 top-level `data/levels/*.txt`, reproduces all 87 `MAPID_*` values in `code/mapcrc.h` (87 OK, 0 mismatches) [C scripted; [31 §10](31_platform_build_and_tools.md#10-map-crc-tool-and-runtime-map-identity)].

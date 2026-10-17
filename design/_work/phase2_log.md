@@ -282,3 +282,7 @@
 
 ## Fix F9a (cross-doc requests on content docs) — done: 9 accepted, 5 partly, 13 already applied by owners (verified), 2 rejected, 11 out of scope (Part C); Mermaid 156/156; 0 bad citations
 - Pushback verified in code: F5's "defensive officers" rename wrong (Officer::RunAI calls SetFormation) → kept "formation", clarified; m_mostRecentEntity filed as history-dependent not order-dependent. Coordinator spot-check: 22 T6 SphereHit "no caller" ✓; 08 tile merge per-sample max ✓.
+
+## Fix F9b (Part C: 40, 41, 90, README) — done: 48 rows, 0 rejected; links 0 broken. 40 live desyncs = L1, L20(a), L21; latest-only qualified (F59, C9–C12). 41 rebuilt: 235 entries, 195 open / 40 resolved; terrain S_41_* scripts identical after port fix; 04-U3 corrected (−10 at (0,0) on 40 of 57 maps, not all). 90: 20 entries corrected, 1 added. README exec summary + reference tools.
+## Coordinator final: 01 B2 retagged [C arithmetic]; 5 residual "etc./and others" truncations replaced with exact enumerations (callers verified in code; Building::SetShapePorts citation corrected).
+## FINAL STATE: 29 numbered docs + README (7.8 MB). Phase 4: (a) 0 (b) 0 (c) 0 (d) 0 (e) 0, bad citations 0, oversize excerpts 0 (2 verbatim excerpts total), Mermaid 156/156, 99 = 6,189 rows all cited or justified, 0 "etc." truncations, 0 credential strings. 41 register: 235 entries, 195 open (source rows: 121 open [U], 151 open design-critical [I]).

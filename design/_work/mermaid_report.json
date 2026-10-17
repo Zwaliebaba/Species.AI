@@ -26,7 +26,7 @@
  {
   "file": "01_game_modes.md",
   "index": 1,
-  "line": 908,
+  "line": 940,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -34,7 +34,7 @@
  {
   "file": "01_game_modes.md",
   "index": 2,
-  "line": 1042,
+  "line": 1075,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -50,7 +50,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 1,
-  "line": 710,
+  "line": 725,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -58,7 +58,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 2,
-  "line": 988,
+  "line": 1003,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -66,7 +66,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 3,
-  "line": 1006,
+  "line": 1021,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -74,7 +74,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 4,
-  "line": 1141,
+  "line": 1156,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -82,7 +82,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 5,
-  "line": 1220,
+  "line": 1235,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -90,7 +90,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 6,
-  "line": 1356,
+  "line": 1371,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -98,7 +98,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 7,
-  "line": 1447,
+  "line": 1462,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -106,7 +106,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 8,
-  "line": 1538,
+  "line": 1553,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -114,7 +114,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 9,
-  "line": 1610,
+  "line": 1625,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -122,7 +122,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 10,
-  "line": 1651,
+  "line": 1666,
   "ok": true,
   "error": null,
   "head": "sequenceDiagram"
@@ -130,7 +130,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 11,
-  "line": 1699,
+  "line": 1714,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -138,7 +138,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 12,
-  "line": 1748,
+  "line": 1763,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -146,7 +146,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 13,
-  "line": 1811,
+  "line": 1826,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -154,7 +154,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 14,
-  "line": 1873,
+  "line": 1888,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -162,7 +162,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 15,
-  "line": 1927,
+  "line": 1942,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -170,7 +170,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 16,
-  "line": 1999,
+  "line": 2014,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -178,7 +178,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 17,
-  "line": 2064,
+  "line": 2079,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -186,7 +186,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 18,
-  "line": 2126,
+  "line": 2141,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -194,7 +194,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 19,
-  "line": 2223,
+  "line": 2238,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -202,7 +202,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 20,
-  "line": 2289,
+  "line": 2304,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -210,7 +210,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 21,
-  "line": 2298,
+  "line": 2313,
   "ok": true,
   "error": null,
   "head": "sequenceDiagram"
@@ -218,7 +218,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 22,
-  "line": 2352,
+  "line": 2367,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -226,7 +226,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 23,
-  "line": 2414,
+  "line": 2444,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -234,7 +234,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 24,
-  "line": 2541,
+  "line": 2571,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -274,7 +274,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 4,
-  "line": 875,
+  "line": 876,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -282,7 +282,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 5,
-  "line": 959,
+  "line": 960,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -290,7 +290,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 6,
-  "line": 995,
+  "line": 996,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -298,7 +298,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 7,
-  "line": 1031,
+  "line": 1032,
   "ok": true,
   "error": null,
   "head": "flowchart LR"
@@ -306,7 +306,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 8,
-  "line": 1068,
+  "line": 1069,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -314,7 +314,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 9,
-  "line": 1172,
+  "line": 1173,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -322,7 +322,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 10,
-  "line": 1248,
+  "line": 1249,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -330,7 +330,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 11,
-  "line": 1363,
+  "line": 1364,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -338,7 +338,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 12,
-  "line": 1461,
+  "line": 1462,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -346,7 +346,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 13,
-  "line": 1516,
+  "line": 1517,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -354,7 +354,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 14,
-  "line": 1579,
+  "line": 1580,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -362,7 +362,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 15,
-  "line": 1631,
+  "line": 1632,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -370,7 +370,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 16,
-  "line": 1707,
+  "line": 1708,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -378,7 +378,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 17,
-  "line": 1721,
+  "line": 1722,
   "ok": true,
   "error": null,
   "head": "classDiagram"
@@ -386,7 +386,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 18,
-  "line": 1833,
+  "line": 1834,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -394,7 +394,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 19,
-  "line": 1907,
+  "line": 1908,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -402,7 +402,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 20,
-  "line": 1958,
+  "line": 1959,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -410,7 +410,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 21,
-  "line": 1998,
+  "line": 1999,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -418,7 +418,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 22,
-  "line": 2022,
+  "line": 2023,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -426,7 +426,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 23,
-  "line": 2142,
+  "line": 2143,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -434,7 +434,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 24,
-  "line": 2190,
+  "line": 2191,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -458,7 +458,7 @@
  {
   "file": "04_crates_powerups_and_weapons.md",
   "index": 2,
-  "line": 968,
+  "line": 996,
   "ok": true,
   "error": null,
   "head": "classDiagram"
@@ -466,7 +466,7 @@
  {
   "file": "04_crates_powerups_and_weapons.md",
   "index": 3,
-  "line": 1306,
+  "line": 1334,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -490,7 +490,7 @@
  {
   "file": "05_economy_and_population.md",
   "index": 2,
-  "line": 508,
+  "line": 520,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -506,7 +506,7 @@
  {
   "file": "06_player_control_and_input.md",
   "index": 1,
-  "line": 266,
+  "line": 269,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -514,7 +514,7 @@
  {
   "file": "06_player_control_and_input.md",
   "index": 2,
-  "line": 384,
+  "line": 387,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -522,7 +522,7 @@
  {
   "file": "06_player_control_and_input.md",
   "index": 3,
-  "line": 501,
+  "line": 504,
   "ok": true,
   "error": null,
   "head": "sequenceDiagram"
@@ -530,7 +530,7 @@
  {
   "file": "06_player_control_and_input.md",
   "index": 4,
-  "line": 1094,
+  "line": 1097,
   "ok": true,
   "error": null,
   "head": "flowchart TD"
@@ -538,7 +538,7 @@
  {
   "file": "06_player_control_and_input.md",
   "index": 5,
-  "line": 1230,
+  "line": 1233,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -546,7 +546,7 @@
  {
   "file": "06_player_control_and_input.md",
   "index": 6,
-  "line": 1722,
+  "line": 1725,
   "ok": true,
   "error": null,
   "head": "flowchart LR"
@@ -554,7 +554,7 @@
  {
   "file": "06_player_control_and_input.md",
   "index": 7,
-  "line": 1757,
+  "line": 1760,
   "ok": true,
   "error": null,
   "head": "sequenceDiagram"
@@ -562,7 +562,7 @@
  {
   "file": "06_player_control_and_input.md",
   "index": 8,
-  "line": 1782,
+  "line": 1785,
   "ok": true,
   "error": null,
   "head": "classDiagram"
@@ -602,7 +602,7 @@
  {
   "file": "07_ai.md",
   "index": 4,
-  "line": 1058,
+  "line": 1069,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -618,7 +618,7 @@
  {
   "file": "08_levels_and_level_design.md",
   "index": 1,
-  "line": 1451,
+  "line": 1452,
   "ok": true,
   "error": null,
   "head": "sequenceDiagram"
@@ -626,7 +626,7 @@
  {
   "file": "08_levels_and_level_design.md",
   "index": 2,
-  "line": 1519,
+  "line": 1520,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -642,7 +642,7 @@
  {
   "file": "09_meta_systems.md",
   "index": 1,
-  "line": 363,
+  "line": 364,
   "ok": true,
   "error": null,
   "head": "flowchart TD"
@@ -650,7 +650,7 @@
  {
   "file": "09_meta_systems.md",
   "index": 2,
-  "line": 880,
+  "line": 881,
   "ok": true,
   "error": null,
   "head": "sequenceDiagram"
@@ -658,7 +658,7 @@
  {
   "file": "09_meta_systems.md",
   "index": 3,
-  "line": 919,
+  "line": 920,
   "ok": true,
   "error": null,
   "head": "sequenceDiagram"
@@ -666,7 +666,7 @@
  {
   "file": "09_meta_systems.md",
   "index": 4,
-  "line": 1683,
+  "line": 1688,
   "ok": true,
   "error": null,
   "head": "flowchart TD"
@@ -674,7 +674,7 @@
  {
   "file": "09_meta_systems.md",
   "index": 5,
-  "line": 1749,
+  "line": 1754,
   "ok": true,
   "error": null,
   "head": "sequenceDiagram"
@@ -682,7 +682,7 @@
  {
   "file": "09_meta_systems.md",
   "index": 6,
-  "line": 1946,
+  "line": 1951,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -690,7 +690,7 @@
  {
   "file": "09_meta_systems.md",
   "index": 7,
-  "line": 1969,
+  "line": 1974,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -826,7 +826,7 @@
  {
   "file": "21_simulation_and_entity_model.md",
   "index": 7,
-  "line": 993,
+  "line": 994,
   "ok": true,
   "error": null,
   "head": "flowchart LR"
@@ -834,7 +834,7 @@
  {
   "file": "21_simulation_and_entity_model.md",
   "index": 8,
-  "line": 1328,
+  "line": 1329,
   "ok": true,
   "error": null,
   "head": "classDiagram"
@@ -842,7 +842,7 @@
  {
   "file": "22_determinism_and_networking.md",
   "index": 0,
-  "line": 614,
+  "line": 621,
   "ok": true,
   "error": null,
   "head": "sequenceDiagram"
@@ -850,7 +850,7 @@
  {
   "file": "22_determinism_and_networking.md",
   "index": 1,
-  "line": 694,
+  "line": 701,
   "ok": true,
   "error": null,
   "head": "sequenceDiagram"
@@ -858,7 +858,7 @@
  {
   "file": "22_determinism_and_networking.md",
   "index": 2,
-  "line": 716,
+  "line": 723,
   "ok": true,
   "error": null,
   "head": "sequenceDiagram"
@@ -866,7 +866,7 @@
  {
   "file": "22_determinism_and_networking.md",
   "index": 3,
-  "line": 784,
+  "line": 791,
   "ok": true,
   "error": null,
   "head": "sequenceDiagram"
@@ -930,7 +930,7 @@
  {
   "file": "25_textures_and_assets.md",
   "index": 0,
-  "line": 197,
+  "line": 218,
   "ok": true,
   "error": null,
   "head": "flowchart TD"
@@ -946,7 +946,7 @@
  {
   "file": "26_animation_and_vfx.md",
   "index": 1,
-  "line": 548,
+  "line": 562,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -986,7 +986,7 @@
  {
   "file": "27_audio_engine.md",
   "index": 4,
-  "line": 1041,
+  "line": 1043,
   "ok": true,
   "error": null,
   "head": "classDiagram"
@@ -994,7 +994,7 @@
  {
   "file": "27_audio_engine.md",
   "index": 5,
-  "line": 1119,
+  "line": 1121,
   "ok": true,
   "error": null,
   "head": "flowchart LR"
@@ -1082,7 +1082,7 @@
  {
   "file": "30_scripting_tutorial_and_cutscenes.md",
   "index": 3,
-  "line": 535,
+  "line": 536,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -1090,7 +1090,7 @@
  {
   "file": "30_scripting_tutorial_and_cutscenes.md",
   "index": 4,
-  "line": 633,
+  "line": 634,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -1098,7 +1098,7 @@
  {
   "file": "30_scripting_tutorial_and_cutscenes.md",
   "index": 5,
-  "line": 791,
+  "line": 799,
   "ok": true,
   "error": null,
   "head": "classDiagram"
@@ -1106,7 +1106,7 @@
  {
   "file": "30_scripting_tutorial_and_cutscenes.md",
   "index": 6,
-  "line": 864,
+  "line": 872,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -1114,7 +1114,7 @@
  {
   "file": "30_scripting_tutorial_and_cutscenes.md",
   "index": 7,
-  "line": 955,
+  "line": 963,
   "ok": true,
   "error": null,
   "head": "gantt"
@@ -1122,7 +1122,7 @@
  {
   "file": "30_scripting_tutorial_and_cutscenes.md",
   "index": 8,
-  "line": 1187,
+  "line": 1195,
   "ok": true,
   "error": null,
   "head": "flowchart LR"
@@ -1130,7 +1130,7 @@
  {
   "file": "30_scripting_tutorial_and_cutscenes.md",
   "index": 9,
-  "line": 1259,
+  "line": 1267,
   "ok": true,
   "error": null,
   "head": "flowchart LR"
@@ -1186,7 +1186,7 @@
  {
   "file": "31_platform_build_and_tools.md",
   "index": 6,
-  "line": 891,
+  "line": 938,
   "ok": true,
   "error": null,
   "head": "flowchart LR"
@@ -1214,5 +1214,37 @@
   "ok": true,
   "error": null,
   "head": "sequenceDiagram"
+ },
+ {
+  "file": "40_carry_forward_assessment.md",
+  "index": 0,
+  "line": 284,
+  "ok": true,
+  "error": null,
+  "head": "flowchart LR"
+ },
+ {
+  "file": "40_carry_forward_assessment.md",
+  "index": 1,
+  "line": 395,
+  "ok": true,
+  "error": null,
+  "head": "flowchart TB"
+ },
+ {
+  "file": "40_carry_forward_assessment.md",
+  "index": 2,
+  "line": 427,
+  "ok": true,
+  "error": null,
+  "head": "sequenceDiagram"
+ },
+ {
+  "file": "40_carry_forward_assessment.md",
+  "index": 3,
+  "line": 641,
+  "ok": true,
+  "error": null,
+  "head": "flowchart LR"
  }
 ]

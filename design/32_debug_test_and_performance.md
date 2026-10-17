@@ -227,7 +227,7 @@ Consequence in FULL [C]: opening the F9 window during a match (Auto + one window
 | 8 | Spawn Armour | `SpawnTankButton` | `SpawnEntities(P, team 2, −1, TypeArmour, 1, zero, 0)` — always team 2 | same |
 | 9 | Spawn Virii | `SpawnViriiButton` | `SpawnEntities(P, monster team, −1, TypeVirii, 20, zero, spread 0, range 1000)` | same |
 | 10 | Spawn Spirits | `SpawnSpiritButton` | 10 × `Location::SpawnSpirit(P + (SFRAND(20), 0, SFRAND(20)), zero, team 2, empty id)` — `SFRAND` is the **synced** RNG (±10 units jitter) | same |
-| 11 | Allow Arbitrary Placement | `AllowArbitraryPlacementButton` | `GetMyTaskManager()->m_verifyTargetting = false` — `TaskManager::IsValidTargetArea` then skips its placement rules (officer needs a Darwinian within 10, etc.) | same |
+| 11 | Allow Arbitrary Placement | `AllowArbitraryPlacementButton` | `GetMyTaskManager()->m_verifyTargetting = false` — `TaskManager::IsValidTargetArea` then skips all of its per-task placement rules (e.g. an officer needs a Darwinian within 10 units; the complete rule set is [06 §3.6](06_player_control_and_input.md#36-targeting-rules)) | same |
 | 12 | Enable Generator and Mine | `EnableGeneratorAndMineButton` | global buildings `TypeGenerator` at location "generator" and `TypeRefinery` at "mine" → `m_online = true`; `GlobalWorld::EvaluateEvents()` | always; [B:LEGACY] (Darwinia campaign) |
 | 13 | Enable Receiver and Buffer | `EnableReceiverAndBufferButton` | same for `TypeSpiritProcessor` at "receiver" and `TypeBlueprintStore` at "pattern_buffer" | [B:LEGACY] |
 | 14 | Open All Locations | `OpenAllLocationsButton` | every `GlobalLocation::m_available = true` | [B:LEGACY] |
