@@ -209,18 +209,17 @@ def trace(src, name, idx, limit):
         events.append(f'noise(half={half!r}, base={height!r}) = {v!r}')
         return v
     t.rnd = rnd; t.noise = noise
-    # log writes once the tile map exists: wrap Map2D.put for this tile only
+    # log every write into this tile's own map (guide-grid pins, displacement writes; the posY shift
+    # updates the array directly and is not listed)
     orig_put = ref.Map2D.put
     def put(self, x, y, v):
-        if self is getattr(t, 'hm', None) and logging[0]: events.append(f'put({x},{y}) = {v!r}')
+        if self is getattr(t, 'hm', None): events.append(f'put({x},{y}) = {v!r}')
         return orig_put(self, x, y, v)
-    logging = [False]
     ref.Map2D.put = put
-    orig_seed_assign = None
-    # enable logging after guide grid placement: approximate by enabling always (guide writes are listed too)
-    logging[0] = True
-    t.generate(land['cell'], land['outside'])
-    ref.Map2D.put = orig_put
+    try:
+        t.generate(land['cell'], land['outside'])
+    finally:
+        ref.Map2D.put = orig_put
     for e in events[:limit]: print(e)
     print(f'... {len(events)} events total; tile highest after posY = {t.hm.highest()!r}')
 

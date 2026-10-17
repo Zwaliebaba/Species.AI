@@ -2329,3 +2329,235 @@ Behaviour [C] `FenceSwitch::Advance/Switch`: 20 s start-up delay (`m_timer` 20, 
 
 Level name `PrimaryUpgrade`; no level lines anywhere. Shape `primaryupgradeport.shp`. `ReprogramComplete` increments `m_controlTowersOwned`; at exactly 3 → GlobalBuilding online. No extra fields. [C] `PrimaryUpgradePort::ReprogramComplete`.
 
+## 13 Multiwinia-live set summary
+
+### 13.1 Live building types by mode
+
+Counts are official maps containing the type / official maps of that mode (census, §1.5); "rt" = created at runtime; "crate" = only via a crate outcome where the outcome is valid ([04](04_crates_powerups_and_weapons.md)). [C] `_work/scripts/S_03_building_census.py`.
+
+| Type | Domination (9) | KOTH (9) | CTS (9) | Assault (8) | Rocket Riot (7) | Blitzkrieg (7) | Section |
+|---|---|---|---|---|---|---|---|
+| AITarget | 9 + rt | 9 + rt | 9 + rt | 8 + rt | 7 + rt | 7 + rt | §10.1 |
+| SpawnPoint | 9 | 8 | 9 | – | 2 | 4 | §4.5 |
+| SpawnPointMaster | 9 | 8 | 9 | – | 2 | 4 | §4.4 |
+| SpawnLink | 8 | 8 | 2 | – | – | 3 | §4.3 |
+| SpawnPopulationLock (inert) | 2 | 7 | 6 | 2 | – | 4 | §4.6 |
+| Tree | 9 + crate | 9 + crate | 8 + crate | 5 + crate | 4 + crate | 4 + crate | §7.3 |
+| StaticShape | 6 | 5 | 1 | 6 | – | 1 | §7.4 |
+| RestrictionZone | 1 | 1 | – | 6 | 4 | 2 | §7.5 |
+| LaserFence | 2 | – | – | 6 | 1 | 5 | §7.1 |
+| Wall | – | 1 | – | 7 | – | 1 | §7.2 |
+| SolarPanel, Pylon, PylonEnd | 1 | – | – | 5 | 7 | 3 | §6 |
+| PowerSplitter | – | – | – | – | 7 | – | §6.5 |
+| GunTurret | 1 + crate | 1 + crate | crate | 8 + crate | 1 + crate + reinforcement | 2 + crate + reinforcement | §5.1 |
+| RadarDish | 2 | 2 | – | 3 | – | – | §5.3 |
+| ControlStation | – | 1 | – | 8 | – | – | §5.4 |
+| JumpPad | 1 | – | – | 1 | – | 1 | §5.5 |
+| TrunkPort | 2 | 4 | – | 8 | 7 | 7 | §8.6 |
+| MultiwiniaZone | – | 9 | 9 | – | – | 7 | §8.1 |
+| Statue | – | – | rt | – | – | – | §8.4 |
+| WallBuster | – | – | – | 1 | – | – | §8.5 |
+| PulseBomb | – | – | – | 8 | – | – | §8.7 |
+| AIObjective | – | – | – | 8 | – | – | §10.2 |
+| AIObjectiveMarker | – | – | – | 8 | 7 | – | §10.3 |
+| FuelGenerator, FuelPipe, FuelStation, EscapeRocket | – | – | – | – | 7 | – | §8.8–8.12 |
+| SmokeMarker | – | – | – | 1 | – | – | §7.6 |
+| EruptionMarker | – | – | – | – | – | 1 | §7.7 |
+| AntHill, Triffid | crate | crate | crate | crate | crate | crate | §9.1, §9.2 |
+| Crate | rt | rt | rt | rt | rt | rt | [04](04_crates_powerups_and_weapons.md) |
+
+Live non-enum helpers: Building, BuildingPort, SpawnBuilding, SpawnBuildingLink, SpawnBuildingSpirit, Teleport, PowerBuilding, CarryableBuilding, FuelBuilding, Flag, Randomiser (crate effect), GunTurretTarget. [C].
+
+### 13.2 Not live
+
+- UNUSED (loadable, no official map): ControlTower, Incubator, CloneLab (§11).
+- DEBUG: Portal (§9.3).
+- LEGACY (36 blocked types, §12 and §6.6–6.8, §10.4): Factory, Cave, Bridge, Powerstation, ResearchItem, Library, Generator, PylonStart, TrackLink, TrackJunction, TrackStart, TrackEnd, Refinery, Mine, Yard (ConstructionYard), DisplayScreen, UpgradePort, PrimaryUpgradePort, SafeArea, SpiritReceiver, ReceiverLink, SpiritSpawner (ReceiverSpiritSpawner), SpiritProcessor, AISpawnPoint, BlueprintStore, BlueprintConsole, BlueprintRelay, ScriptTrigger, Spam, GodDish, FenceSwitch, DynamicHub, DynamicNode, FeedingTube, ChessPiece, ChessBase; helpers ReceiverBuilding, UnprocessedSpirit, SpiritStore, BlueprintBuilding, DynamicBase, MineBuilding, MineCart.
+
+### 13.3 What a new game minimally needs to reproduce Multiwinia's building layer [I]
+
+1. Port-operated capture (SpawnPoint ≥ 3/5 exclusive, GunTurret plurality-exclusive, SolarPanel plurality-shared, ControlStation threshold-majority).
+2. The spawn tree (virtual spirits, 1 s per hop) feeding owned spawn points with a 30 s activation delay.
+3. Proximity capture (KOTH hill, Blitzkrieg progress flags, carryables).
+4. Surge-based power with team-tagged surges, friend-only fence powering, and splitter routing.
+5. Barriers: laser fences (lethal, route-blocking), walls (threshold destruction), trees (fire spread, regrowth), static meshes, invisible restriction zones.
+6. Mode objects: trunk ports, pulse bomb + stations, statues, wall busters, the rocket fuel chain and rocket state machine.
+7. AI scaffolding: AITarget graph, objectives and markers (→ [07](07_ai.md)).
+
+## 14 Consolidated constants
+
+All values [C] unless marked; "literal" = hard-coded number, `#define` = macro. Economy constants (spawn burst size, pause, caps, handicap, trunk-port waves) are in [05](05_economy_and_population.md).
+
+| Class | Constant | Value | Unit | Kind | Ref |
+|---|---|---|---|---|---|
+| Building | default radius (no shape) | 13.0 | wu | ctor literal | `Building::Building` |
+| Building | port push-out radius / step | 5.0 / 2.0 | wu | literal | `SetShapePorts`, `PushFromBuilding` |
+| Building | port occupant search radius | 5.0 | wu | literal | `EvaluatePorts` |
+| Building | port counter decay / cap | −4 per tick when empty / 50 | — | literal | `EvaluatePorts`, `OperatePort` |
+| Building | light flash schedule | team t flashes when `(seq % 10)/2 == t` | — | literal | `RenderLights` |
+| Building | light / port star size | 6.0 (10 nested quads for lights) | wu | literal | `RenderLights`, `RenderPorts` |
+| Building | `Destroy(i)` | 3 explosions; `Bang(i, i/4)`; i/4 particles size 100 | — | literal | `Building::Destroy` |
+| Location | building blast falloff | `damage × (1 − d/(3·range))` within 3·range | — | literal | `Location::Bang` |
+| Darwinian | port search range | 100 (`DARWINIAN_SEARCHRANGE_PORTS`) beyond building radius | wu | `#define` | `darwinian.h` |
+| Darwinian | port reservation limit | 1 (MP) / 20 (SP) per team | — | literal | `Darwinian::SearchForPorts` |
+| Darwinian | carryable search range | 150 (`DARWINIAN_SEARCHRANGE_CARRYABLE`) | wu | `#define` | `darwinian.h` |
+| Darwinian | carry-position tolerance | 20 × gameSpeed × speed ratio | wu | literal | `Darwinian::AdvanceCarryingBuilding` |
+| SpawnBuilding | time per link | 1.0 | s | derived (`progress += dt` until 1) | `SpawnBuilding::Advance` |
+| SpawnPoint | ownership period | `2.0 + syncfrand(1.0)` (first `syncfrand(2.0)`) | s | literal | `SpawnPoint::Advance`, ctor |
+| SpawnPoint | capture threshold | ≥ 3 of 5 ports, no non-allied occupant | Darwinians | literal | `RecalculateOwnership` |
+| SpawnPoint | activation delay | 30.0 | s | literal | `RecalculateOwnership`, `Advance` |
+| SpawnPoint | initial spawn timer | `2.0 + syncfrand(2.0)` | s | literal | ctor |
+| SpawnPoint | MP door velocity | `(front + syncsfrand(1)³) × 10` | u/s | literal | `SpawnDarwinian` |
+| SpawnPopulationLock | defaults | radius 500.0, max 100 | wu / Darwinians | ctor | `SpawnPopulationLock` |
+| SpawnPopulationLock | recount cycle | `10 + syncsfrand(2)` | s | literal | `Advance` |
+| GunTurret | see §5.1 stats table | | | | |
+| RadarDish | transport period / speed | 0.1 s / 50 u/s | — | `#define` | `radardish.h` |
+| RadarDish | entry distance | 15 (Bridge 25) | wu | literal | `Entity::EnterTeleports` |
+| RadarDish | yaw dead-band / pitch clamp | π/3000 / y ∈ [−0.2, 0.3] | rad / — | literal | `RadarDish::Advance` |
+| RadarDish | beam-loss damage | −500 | hp | literal | `UpdateEntityInTransit` |
+| RadarDish | beam tube radii / alphas | 10, 9, 8, 4 / 0.4, 0.2, 0.2, 0.5 | wu / — | literal | `RenderSignal` |
+| Teleport | default send period | 1.0 | s | ctor literal | `Teleport::Teleport` |
+| ControlStation | capture threshold | > 2 (5-port) / > 1 (bomb-linked, 3-port) | Darwinians | literal | `RecalculateOwnership` |
+| JumpPad | radius / period | `JUMPPAD_RADIUS` 40 / 0.3 s | wu / s | `#define` / literal | `jumppad.cpp` |
+| PowerBuilding | surge speed | 2 hops/s MP (dt × 2), 4 SP | — | literal | `PowerBuilding::Advance` |
+| SolarPanel | surge probability | fraction/20 per tick | — | literal | `SolarPanel::Advance` |
+| SolarPanel | operate thresholds | > 0.6 on, < 0.3 off | fraction | literal | `SolarPanel::Advance` |
+| SolarPanel | markers | `SOLARPANEL_NUMGLOWS` 4, `SOLARPANEL_NUMSTATUSMARKERS` 5 | — | `#define` | `generator.h` |
+| Generator | throughput EMA / online | 0.8/0.2 per 1 s / > 6.5 | — | literal | `Generator::Advance` |
+| PylonStart | surge chance | 0.3 per tick | — | literal | `PylonStart::Advance` |
+| LaserFence | raise speed | 0.3 per s | status | `#define` | `laserfence.h` |
+| LaserFence | chain hand-off | status 0.5 | — | literal | `Advance` |
+| LaserFence | spark interval | `syncfrand(10)`, then `8 + syncfrand(4)` | s | literal | `Initialise`, `Advance` |
+| LaserFence | spark particles | `5 + frand(5)` sparks, speed `40 + frand(20)`, size `25 + frand(25)`, height `frand(50 × scale)` | — | literal | `Spark` |
+| LaserFence | solar timeout | 5.0 | s | literal | `Advance` |
+| LaserFence | full height | 48.28 × scale | wu | data | `laserfence.shp` |
+| LaserFence | curtain skirt / alpha | h/3 / 150 | — / 255 | literal | `RenderAlphas` |
+| LaserFence | texture scroll | `gameTime/15`; solar `gameTime/1.5`, 7× tiling | uv | literal | `RenderAlphas` |
+| LaserFence | edge line width | 2.0 (0.5 solar) | px | literal | `RenderAlphas` |
+| LaserFence | entity kill / Darwinian push band | −9999 / `5 + uniqueId % 10`, step 20 | hp / wu | literal | `Entity::PushFromObstructions`, `Darwinian::PushFromObstructions` |
+| Wall | collision length / depth / ray height | 100 / 20 / 37.5 | wu | `#define` | `wall.cpp` |
+| Wall | destroy threshold | single hit ≤ −300 | damage | literal | `Wall::Damage` |
+| Wall | explosion fraction | 3.0 | — | literal | `Wall::Damage` |
+| Wall | Darwinian push | probe 4, step 5 along ±front, clear radius 1 | wu | literal | `Darwinian::PushFromObstructions` |
+| Tree | defaults height / budsize / pushOut / pushUp / iterations / seed | 50.0 / 1.0 / 1.0 / 1.0 / 6 / 0 | — | ctor | `Tree::Tree` |
+| Tree | branch / leaf quad half-width | 0.1 × len / 0.1 × budsize × len | — | literal | `RenderBranch` |
+| Tree | children per segment / child start t / sideways reach | 4 / `0.3 + frand(0.6)` / `0.4 × len × pushOut` | — | literal | `RenderBranch` |
+| Tree | crown radius shrink | × 0.8 (hit), × 1.5 (`m_radius`) | — | literal | `Generate`, `SetDetail` |
+| Tree | trunk hit sphere | 10.0 | wu | literal | `DoesSphereHit` |
+| Tree | min actual height | 1% of height | — | literal | `GetActualHeight` |
+| Tree | ignition threshold / decay / clamp | > 50 / −1 per s / [0, 100] | damage | literal | `Damage`, `Advance` |
+| Tree | burn rate / regrow SP / MP | 0.02 / 0.01 / 0.05 per s | phase | literal | `Advance` |
+| Tree | healthy window | −0.3 < onFire ≤ 0 | phase | literal | `Advance` |
+| Tree | drop chance per tick | 1/(51 − rate) | — | literal | `Advance` |
+| Tree | propagation delay / neighbourhood | `5 + syncfrand(5)` s / 100 wu | — | literal | `Advance`, `CreateAnotherTree` |
+| Tree | offspring height | height × 0.75 × (1 + syncsfrand(0.2)) | — | literal | `CreateAnotherTree` |
+| Tree | obstruction push step / probe | 2.0 / 1.0 | wu | literal | `PushFromObstructions` |
+| Tree | AntHill ignition reach | ourCrownR × 1.5 + 100 | wu | literal | `Advance` |
+| Tree | evil kill chance / damage | 2% per tick / −999 | — / hp | literal | `Advance` |
+| Tree | zombie launch vy | `20 + syncfrand(25)` | u/s | literal | `Advance` |
+| Tree | corruption check / to-evil delay | initial 5.0 then `10 + syncfrand(5)` / 10 | s | literal | ctor, `Advance` |
+| Tree | sway amplitude normal / evil | 0.003 / 0.01, ω 2 rad/s | — | literal | `RenderAlphas` |
+| Tree | fire particle count | `int(actualH/12) / RenderBuildingDetail` | per tick | literal | `Advance` |
+| Tree | RenderTreeDetail leaf alpha boost | × 1.3^detail if > 1 | — | literal | `Generate` |
+| StaticShape | default scale / shape / placeholder sphere | 1.0 / "none" / 40 | — / — / wu | ctor / literal | `StaticShape` |
+| RestrictionZone | default size / blockPowerups | 300.0 / 0 | wu / bool | ctor | `RestrictionZone` |
+| RestrictionZone | crate re-roll limit | 100 tries, height < 20 rejected | — | literal | `Location::CreateRandomCrate` |
+| SmokeMarker | particles | 3/tick, speed 50, jitter ±0.2 xz, size `200 + frand(100)` | — | literal | `SmokeMarker::Advance` |
+| SmokeMarker | accidental hit sphere | 13.0 | wu | ctor default | `Building::Building` |
+| EruptionMarker | start chance / duration | 1/1000 per tick / `3 + syncfrand(4)` s | — | literal | `EruptionMarker::Advance` |
+| EruptionMarker | particles | 10/tick, speed 100, size `300 + frand(200)` | — | literal | same |
+| MultiwiniaZone | default size | 50.0 | wu | ctor | `MultiwiniaZone` |
+| MultiwiniaZone | KOTH / Blitzkrieg recount | 1.0 | s | literal | `Advance_*` |
+| MultiwiniaZone | CTS delivery radius / period | 30 / 2.0 s | wu / s | literal | `Advance_CaptureTheStatue` |
+| MultiwiniaZone | Blitzkrieg count radius | 40 | wu | literal | `Advance_Blitzkrieg` |
+| MultiwiniaZone | Blitzkrieg gain | `5.0 × top × top/total × dt` per recount | points | literal | same |
+| MultiwiniaZone | Blitzkrieg neutral decay | `10 × dt` per recount | points | literal | same |
+| MultiwiniaZone | under-attack message throttle | 20.0 | s | literal | same |
+| CarryableBuilding | ownership radius / period | 50 / 1.0 s | — | literal | `CalculateOwnership` |
+| CarryableBuilding | speed | `16 × (lifters/max) × speedScale × |sin t|` | u/s | literal | `Advance` |
+| CarryableBuilding | vote threshold / waypoint reach | > 0.66 × lifters / 10 | — / wu | literal | `Advance`, `FollowRoute` |
+| CarryableBuilding | carry ring angle | `uniqueId × 123.467` rad, offset `vel × 0.5` | — | literal | `GetCarryPosition` |
+| Statue | lifters / radius | 20–50 / 33 | — | literal | `Statue` |
+| Statue | destruction tilt / water | `m_up.y < 0.7` / `y < 0` | — | literal | `Statue::Advance` |
+| Statue | AI target follow distance | 1.5 × carry radius | wu | literal | `Statue::Advance` |
+| WallBuster | lifters / speed scale / scale / radius | 10–30 / 0.6 / 10 / 13 | — | literal | `WallBuster` |
+| WallBuster | wall trigger / break radius / break damage | 20 / 200 / −1000 | wu / wu / damage | literal | `Advance`, `BreakWalls` |
+| WallBuster | breach Bang / scuttle Bang / scuttle timer | (50, 150) / (50, 500) / 10 s | — | literal | `Advance` |
+| WallBuster | AI wall search radius | 500 from objective markers | wu | literal | `RunAI` |
+| TrunkPort | heightmap max size | `TRUNKPORT_HEIGHTMAP_MAXSIZE` 16 | cells | `#define` | `trunkport.h` |
+| PulseBomb | scale / warning / PulseWave radius | 0.75 / 60 s / 200 | — | literal | `PulseBomb` |
+| PulseBomb | destroy Bang | (75, 5) | — | literal | `Destroy` |
+| FuelBuilding | fuel EMA | `0.2 × dt` (× 3 when falling) | per tick | literal | `ProvideFuel` |
+| FuelGenerator | max surges MP / SP / render | 20 / 10 / 15 | surges | literal | `Advance`, `Render` |
+| FuelGenerator | surge decay / online | 1.0 per s / > 8 | surges | literal | `Advance` |
+| FuelPipe | sound threshold | 0.2 | level | literal | `FuelPipe::Advance` |
+| FuelStation | boarding search radius | 300 | wu | literal | `FuelStation::Advance` |
+| EscapeRocket | thresholds | refuelled ≥ 95 fuel; launch > 95 fuel and ≥ 100 passengers; attackers when fuel > 33 | — | literal | `Advance*` |
+| EscapeRocket | refuel | rate EMA 0.99/0.01, `pipeCount × level × 0.4` | fuel/s | literal | `Refuel` |
+| EscapeRocket | damage | ×0.2 of incoming; explode > 100; decay 0.33/s (+1/s exploding, +2/s when empty) | — | literal | `Damage`, `Advance`, `AdvanceExploding` |
+| EscapeRocket | timers MP | Ignition 0; Ready 10 s; Countdown 10 at half speed (20 s) | s | literal | `AdvanceIgnition/Ready/Countdown` |
+| EscapeRocket | exploding fuel loss | 5 per s down to 50% | fuel | literal | `AdvanceExploding` |
+| EscapeRocket | attacker search / interval / count | 150 / `1 + syncfrand(2)` s / `1 + rand % (1 + int(n × 0.05))` | — | literal | `SetupAttackers` |
+| EscapeRocket | flight thrust / win height | `max(2√(y − ground), 0.1)` / y > 600 | u/s / wu | literal | `AdvanceFlight`, [01](01_game_modes.md) |
+| AntHill | health / search range / first release | 100 / `ANTHILL_SEARCHRANGE` 400 / 5.0 s | — | literal / `#define` | `anthill.*` |
+| AntHill | MP objective cap / release interval / spirit conversion | `ants/10` in [1, 6] / 0.2 s / +6 ants per spirit per 1.0 s | — | literal | `AntHill::Advance` |
+| AntHill | empty refill | 30 ticks → 10 ants, `Damage(−10)` | — | literal | same |
+| Triffid | defaults size / pitch / force / variance / reload / trigger radius | 1.0 / 0.6 / 250 / π/8 / 60 s / 100 | — | ctor | `Triffid` |
+| Triffid | health / MP egg budget / burn shrink | 50 / 3 / −0.006 size per tick to 0.3 | — | literal | `Triffid` |
+| Portal [B:DEBUG] | growth / tentacles / thrash / build-up / Bang / cooldown | +1 radius per tick to 100 / `NUM_TENTACLES` 6 × 12 / 45 s / 10 s / (200, 255) / 1 s | — | literal | `portal.cpp` |
+| Randomiser | range / life / pulse | `RANDOMISER_RANGE` 100 / 15 s / `0.5 + syncfrand(2.5)` s | — | `#define` / literal | `randomiser.cpp` |
+| AITarget | link range / recount | `AITARGET_LINKRANGE` 600 / 2.0 s | wu / s | `#define` / literal | `ai.*` |
+| AIObjective / Marker | advance periods | 5.0 s / 2.0 s | s | literal | `aiobjective.cpp` |
+| ControlTower | ownership step / trunk-port check / radius | ±0.1 per call / 2.0 s / 4.0 | — | literal | `controltower.cpp` |
+| Incubator | process time SP / MP | `INCUBATOR_PROCESSTIME` 5.0 / `INCUBATOR_PROCESSTIME_MULTIPLAYER` 0.2 | s | `#define` | `incubator.h` |
+| CloneLab | capture threshold | > 2 of 5 ports, plurality | Darwinians | literal | `RecalculateOwnership` |
+| ConstructionYard | primitives / rung spikes / surges / build / cap | `YARD_NUMPRIMITIVES` 9 / `YARD_NUMRUNGSPIKES` 6 / > 50 / 30 s / 5 armour | — | `#define` / literal | `constructionyard.*` |
+| DisplayScreen | rays | `DISPLAYSCREEN_NUMRAYS` 3 | — | `#define` | `constructionyard.h` |
+| ReceiverBuilding | spirit speed | 0.8 link/s | — | literal | `ReceiverBuilding::Advance` |
+| SpiritReceiver | status markers / pull radius / capture | `SPIRITRECEIVER_NUMSTATUSMARKERS` 5 / 200 / < 10 | — | `#define` / literal | `SpiritReceiver::Advance` |
+| SpiritProcessor | initial spirits / spawn / window / online | 150 / 1 per 0.2 s / 10 s × 7 / > 50 | — | literal | `SpiritProcessor::Advance` |
+| BlueprintStore | segments | `BLUEPRINTSTORE_NUMSEGMENTS` 4 | — | `#define` | `blueprintstore.h` |
+| Bridge | transport period / speed | `BRIDGE_TRANSPORTPERIOD` 0.1 / `BRIDGE_TRANSPORTSPEED` 50 | s / u/s | `#define` | `bridge.h` |
+| Cave | spawn interval / crowd cap | `syncfrand(0.5)` s / 30 within 100 | — | literal | `Cave::Advance` |
+| Spam | reload / health | 60 − 30 × difficulty/10 s / 100 | — | literal | `spam.cpp` |
+
+## 15 Defects, determinism and implementation hazards
+
+Numbered for reference from [22](22_determinism_and_networking.md) and [41](41_risks_and_open_questions.md). Live = affects FULL Multiwinia.
+
+| # | Item | Live? | Evidence | Recommendation for the new game |
+|---|---|---|---|---|
+| 1 | SmokeMarker `float` signatures do not override the `double` virtuals → invisible 13-unit obstacle in collision and the obstruction grid | yes (`mp_assault_3p_1`) | [C] code; [I] effect | explicit non-colliding flag on marker objects |
+| 2 | Tree hit spheres are a by-product of display-list compilation using the unsynced app RNG (deterministic only because every pass reseeds; `SetDetail ≠ 1` forbidden) | yes | [C] `Tree::Generate`, `SetDetail` | compute hit volumes in the simulation from a deterministic generator, or store them as level data |
+| 3 | Empty SolarPanel re-fires `ChangeTeam` every tick (`SetTeamId(−1)` vs stored 255) | yes | [C] `SolarPanel::RecalculateOwnership` | type-safe team ids |
+| 4 | Port occupancy accepts any `StateOperatingPort` Darwinian within 5 units, not tied to the building/port | yes | [C] `Building::EvaluatePorts` | bind occupant to (building, port) |
+| 5 | `SpawnBuilding::ExploreLinks` has no cycle detection; `TriggerSpirit` can insert one spirit on several links | latent (shipped graphs are trees) | [C] | validate spawn graphs at load |
+| 6 | `MasterSpawnPoint::s_masterSpawnPointId` never reset | latent | [C] | per-level reference |
+| 7 | `s_numMultiwiniaZones` accumulates across Blitzkrieg games (feeds airstrike threshold) | yes | [C] `code/multiwinia.cpp` | reset per match |
+| 8 | `FenceSwitch::Switch` runs from local input without a network message | no (blocked, no map) | [C] | route all interactions through commands |
+| 9 | `NET_DARWINIA_TOGGLELASERFENCE` handler without sender | no | [C] grep | remove or implement |
+| 10 | `LaserFence::RenderAlphas` writes `m_nextLaserFenceId = −1` for unresolved links (render path mutates sim) | only with invalid links | [C] | never mutate sim state while rendering |
+| 11 | LaserFence lethal quad uses this post's height for both ends; rendering uses each post's height | yes (posts of different scale) | [C] | one geometry for render and collision |
+| 12 | `ControlStation::LinkToPulseBomb` drops old ports with `Empty()` (leak) and re-runs `Building::Initialise` (Create sound, GlobalBuilding lookup) | yes (Assault) | [C] | rebuild ports explicitly |
+| 13 | PulseBomb never removed; capture check keeps running after detonation (double `RecordDefenseTime`); with no linked stations the bomb is destroyed immediately | yes / edge | [C] code, [I] effect | explicit end state |
+| 14 | `PowerBuilding::Advance` casts `m_powerLink` to PowerBuilding without a type check | latent | [C] | type-checked links |
+| 15 | EscapeRocket can be damaged into Exploding during Flight and later "refuel" mid-air | edge | [C] code, [I] reachability | state guard |
+| 16 | Darwinian AntHill/Triffid attack passes the obstruction-list index as the building id | yes (1/500 per threat search) | [C] `Darwinian::SearchForThreats` | pass the unique id |
+| 17 | Darwinian building-attack grenades use team 1 regardless of thrower | yes (Rocket Riot) | [C] `Darwinian::AdvanceAttackingBuilding` | use own team |
+| 18 | GunTurret sound list `RegisteredKill` vs triggered `RegisterKill` | yes (audio) | [C] | single event table |
+| 19 | GunTurret consumes synced RNG for cosmetic smoke and computes mortar scatter for every turret type | yes (determinism only) | [C] | separate visual RNG |
+| 20 | FuelGenerator render uses 15 max surges, advance 20 | yes (visual) | [C] | one constant |
+| 21 | ChessBase reads nonexistent options `TotalSize`/`SizeVariance` → no pieces; `Write` uses malformed `%2.2` | no | [C] | — |
+| 22 | Randomiser team pick `syncrand() % NumPlayers` may choose an unused team slot | possibly | [C] code, [U] effect (03-U10) | pick from playing teams |
+| 23 | `Teleport::m_teleportMap` is process-static | latent | [C] | per-level state |
+| 24 | `GetNetworkTime() > t + 1.0` timers fire after 10 or 11 ticks | yes | [I] | integer tick counters |
+| 25 | Per-tick probabilities/growth (SolarPanel surge, EruptionMarker, Portal radius, Tree drops, Triffid shrink, AntHill empty counter) ignore game speed | yes | [C] | express rates per second |
+| 26 | `Location::Init` calls `SetTeamId` on the **template** building, firing `ChangeTeam` sound events for templates at load | yes (audio at load) | [C] code, [I] audibility | remap teams without side effects |
+| 27 | AntHill `Burn()` releases an ant even when empty (count goes negative, then refilled to 10 by the empty rule) | yes (crate) | [C] | guard on count |
+| 28 | CarryableBuilding collision list is a static array of 32 | latent | [C] `CalculateCollisions` | dynamic list |
+| 29 | Statue billboard variant references a missing shape | yes (visual) | [C] | — |
+| 30 | MultiwiniaZone `m_aiTarget` never assigned; Wall → `AIObjective::m_wallTarget` write-only | dead code | [C] | remove |
+| 31 | GunTurret discards the level front vector | yes | [C] | honour or drop the field |
+| 32 | Legacy null dereferences / division by zero: Powerstation link, TrackEnd building, DynamicHub `requiredScore/minActiveLinks` | no | [C] | — |
+| 33 | ResearchItem and Spam mutate orientation in `Render` (used by `Advance`) and use unsynced RNG in constructors | no | [C] | — |
+

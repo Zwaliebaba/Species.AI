@@ -89,7 +89,7 @@ flowchart TB
 | `contrib/systemiv/lib/math/random_number.*` | `AppRandom()` (non-synchronised RNG, `APP_RAND_MAX = 32767`) for automatic child-window placement — does not touch the lock-step RNG | [C] `contrib/eclipse/eclipse.cpp:EclRegisterWindow`, `contrib/systemiv/lib/math/random_number.h` |
 | `contrib/systemiv/lib/debug_utils.*` | included by `eclipse.cpp` (assertions are commented out) | [C] `contrib/eclipse/eclipse.cpp` |
 | `contrib/systemiv/lib/metaserver/authentication.*` | `AUTHENTICATION_KEYLEN`, key check/status phrases in the auth-key page | [C] `code/UI/AuthInputField.h:AuthInputField` |
-| (shadowed, **not** used) `contrib/systemiv/lib/language_table.*`, `preferences.*`, `hi_res_time.*` | Multiwinia uses `code/lib/language_table.*` etc. | [C] `_work/drafts/P14_platform_lib.md` |
+| (shadowed, **not** used) `contrib/systemiv/lib/language_table.*`, `preferences.*`, `hi_res_time.*` | Multiwinia uses `code/lib/language_table.*`, `code/lib/preferences.*`, `code/lib/hi_res_time.*` | [C] `_work/drafts/P14_platform_lib.md` |
 
 ### 1.3 Component status
 
@@ -123,7 +123,7 @@ flowchart TB
 | `EclInitialise(screenW, screenH)` | `code/user_input.cpp:UserInput::UserInput` (constructed in `code/app.cpp:App::Initialise`); again in `code/interface/prefs_screen_window.cpp:AdjustWindowPositions` after a resolution change | Stores screen size, dirties the full screen [C] |
 | `EclUpdateMouse(x, y, lmb, rmb)` then `EclUpdate()` | `code/user_input.cpp:UserInput::AdvanceMenus`, called from `UserInput::Advance` once per main-loop iteration in every loop (main menu, location, editor) [C] `code/main.cpp` | `x,y` = `g_target->X()/Y()` (the game cursor, which follows the mouse or the controller-emulated cursor); `lmb = controlEvent(ControlEclipseLMousePressed)` (level: "mouse left pressed"); `rmb = controlEvent(ControlEclipseRMousePressed)` (bound to "mouse right **down**", an edge) [C] `data/input/input_preferences.txt`. After pumping, if `ControlEclipseLMouseDown` fired over any window the event is suppressed (`InputManager::suppressEvent`) so the game world does not also receive the click [C] |
 | `EclUpdateKeyboard(keyCode, shift, ctrl, alt, ascii)` | `code/lib/input/inputdriver_win32.cpp` `WM_CHAR` case | `keyCode = wParam` (a UTF-16 code unit: the window class is registered with `RegisterClassW`/`CreateWindowW` [C] `code/lib/window_manager_win32.cpp`), `ascii = (unsigned char) wParam`, modifiers from `g_keys[KEY_SHIFT/KEY_CONTROL/KEY_ALT] == 1` [C]. Consequence: widgets receive **characters, not virtual keys** (§4.1). There is no `WM_KEYDOWN` path into Eclipse and no IME handling (`WM_IME_*` never handled) [C] grep |
-| `EclRender()` | `code/user_input.cpp:UserInput::Render`, inside `g_editorFont.BeginText2D()/EndText2D()` with `GL_BLEND` on, culling off, depth test off, depth writes off; restored afterwards | 2D orthographic projection matching the viewport, shifted −0.325 px [C] `code/lib/text_renderer.cpp:TextRenderer::BeginText2D`. Position in the frame: after `MarkerSystem`, `MultiwiniaHelp`, `ShamanInterface`; before the game cursor, in-game chat lines, `Camera::Render`, `TaskManagerInterface::Render`, debug renderer, control help, fade, the Multiwinia HUD (`Multiwinia::Render`) and the FPS counter; the menu-transition overlay is drawn after everything, just before `Flip` [C] `code/renderer.cpp:Renderer::RenderFrame`, `Renderer::Render` |
+| `EclRender()` | `code/user_input.cpp:UserInput::Render`, inside `g_editorFont.BeginText2D()/EndText2D()` with `GL_BLEND` on, culling off, depth test off, depth writes off; restored afterwards | 2D orthographic projection matching the viewport, shifted −0.325 px [C] `code/lib/text_renderer.cpp:TextRenderer::BeginText2D`. Position in the frame: after `MarkerSystem`, `MultiwiniaHelp`, `ShamanInterface`; before the game cursor, in-game chat lines, `Camera::Render`, `TaskManagerInterface::Render`, debug renderer, control help, fade, the Multiwinia HUD (`Multiwinia::Render`) and the FPS counter; the menu-transition overlay is drawn after everything, just before `Flip` (`AdvanceMenuTransition`) [C] `code/renderer.cpp:Renderer::RenderFrame` |
 | `EclShutdown()` | `code/main.cpp:Finalise` | Deletes every window (and through `~EclWindow` every button) and every dirty rect [C] |
 | `WindowsOnScreen()` / `RemoveAllWindows()` | `code/main.cpp` | `WindowsOnScreen` = window list non-empty. `RemoveAllWindows` = if in a location warp the cursor to screen centre, then remove `windows[0]` until the list is empty [C] |
 
@@ -317,7 +317,7 @@ Every function declared in `contrib/eclipse/eclipse.h`, `eclwindow.h`, `eclbutto
 | `EclGenerateUniqueWindowName(name)` | §2.2 | no |
 | `EclGetWindows()` | pointer to the z-ordered list | yes (`RemoveAllWindows`, `WindowsOnScreen`, cheat hot-key guard, `DarwiniaWindow` destructor, `AdjustWindowPositions`) |
 | `EclRegisterClearFunction(fn)` | §2.8 | no |
-| `EclDirtyWindow(name)` / `EclDirtyWindow(window)` / `EclDirtyRectangle(x,y,w,h)` | §2.8 | yes (`ScrollBar::SetCurrentValue` etc.) |
+| `EclDirtyWindow(name)` / `EclDirtyWindow(window)` / `EclDirtyRectangle(x,y,w,h)` | §2.8 | yes (`ScrollBar::SetNumRows`/`SetCurrentValue`/`SetWinSize`, `FileDialog`, `MultiwiniaFileDialog`) |
 | `EclRectangleOverlap(...)` | inclusive overlap test | internal |
 | `EclResetDirtyRectangles()` / `EclGetDirtyRects()` | §2.8 | no |
 | `EclGetAccurateTime()` | Win32 `GetTickCount()`; other platforms `gettimeofday` ms since first call | internal |
@@ -685,7 +685,7 @@ Window classes built on `GameOptionsWindow` [C] (window name in quotes; function
 | `m_transitionDirection` | +1 | +1 "forward" (`MenuSelect`), −1 "back" (`MenuCancel`) |
 | `s_previousHighlightButton` (static) | NULL | last highlighted widget, for the roll-over sound |
 
-`MouseUp()`: trigger `"MenuSelect"` (direction +1) or `"MenuCancel"` (−1) on `SoundSourceBlueprint::TypeMultiwiniaInterface`, then `Renderer::InitialiseMenuTransition(1.0, m_transitionDirection)` (captures the current frame for the page-swipe, §8.7). Subclasses call it first and then do their action. **`m_disabled` has no effect at all on `GameMenuButton`** (neither colour nor click): e.g. `NewServerButton` is given `m_disabled = true` when hosting is not permitted and stays clickable [C] `code/UI/GameMenuWindow.cpp:GameMenuWindow::SetupNewOrJoinPage`, `code/UI/NewServerButton.h`. Click suppression in the front end is done with `m_inactive` and an explicit early return in `MouseUp` (Resolved: P18 called `m_disabled` "Eclipse-level"; `m_inactive` is the `EclButton` field, `m_disabled` the `DarwiniaButton` field).
+`MouseUp()`: trigger `"MenuSelect"` (direction +1) or `"MenuCancel"` (−1) on `SoundSourceBlueprint::TypeMultiwiniaInterface`, then `Renderer::InitialiseMenuTransition(1.0, m_transitionDirection)` (captures the current frame for the page-swipe, §6.7). Subclasses call it first and then do their action. **`m_disabled` has no effect at all on `GameMenuButton`** (neither colour nor click): e.g. `NewServerButton` is given `m_disabled = true` when hosting is not permitted and stays clickable [C] `code/UI/GameMenuWindow.cpp:GameMenuWindow::SetupNewOrJoinPage`, `code/UI/NewServerButton.h`. Click suppression in the front end is done with `m_inactive` and an explicit early return in `MouseUp` (Resolved: P18 called `m_disabled` "Eclipse-level"; `m_inactive` is the `EclButton` field, `m_disabled` the `DarwiniaButton` field).
 
 `Render(realX, realY, highlighted, clicked)` [C]:
 1. **Birth cascade**: `numButtons = parent->m_buttonOrder.Size()`; `showTime = birth + 0.6 × realY/H`; `flashShowTime = birth + (5/numButtons) × realY/H`. While `birth > 0` and `now < flashShowTime`: the button is drawn shifted left by `(showTime − now) × 0.1 × W` px and an additive white box `(1,1,1, clamp(flashShowTime − now, 0, 0.9))` with `SRC_ALPHA, ONE` covers it. Buttons lower on screen appear later (top-to-bottom cascade); with few navigable buttons the flash lasts longer.
@@ -698,7 +698,7 @@ Window classes built on `GameOptionsWindow` [C] (window name in quotes; function
 ### 5.3 `BackPageButton` and `MenuCloseButton` [C] `code/game_menu.cpp:BackPageButton::*`, `code/interface/mainmenus.h:MenuCloseButton`
 
 - `BackPageButton(page)` (caption argument `"multiwinia_menu_back"`; callers pass the translated caption to `SetShortProperties`): `MouseUp` = `GameMenuButton::MouseUp()` (so `MenuSelect` and a +1 transition fire), then `"MenuCancel"` and `InitialiseMenuTransition(1.0, −1)` (the later call wins), then `((GameMenuWindow*)m_parent)->m_newPage = page`. `Render`: base render; in `INPUT_MODE_GAMEPAD` it draws `icons/button_b.bmp` (size `m_fontSize`) at `realX + g_gameFont.GetTextWidth(len, size) + 60` (+ `w/2` if centred) and **calls its own `MouseUp()` when `ControlMenuClose` fires** — the pad "back" of a `GameMenuWindow` page lives in this render function.
-- `MenuCloseButton(name)` (for `GameOptionsWindow` pages): `MouseUp` → `"MenuCancel"`, `InitialiseMenuTransition(1.0, −1)`, `EclRemoveWindow(parent)`, `g_app->m_doMenuTransition = true`. Its `Render` draws the same B glyph in gamepad mode but does **not** poll `ControlMenuClose`; pad back on those pages works through `DarwiniaWindow::Update` (`m_closeable` true, `m_backButton` = this button). `MainCloseButton` (in-game menu) is a `MenuCloseButton` subclass [C] `code/interface/mainmenus.cpp`.
+- `MenuCloseButton(name)` (for `GameOptionsWindow` pages): `MouseUp` → `"MenuCancel"`, `InitialiseMenuTransition(1.0, −1)`, `EclRemoveWindow(parent)`, `g_app->m_doMenuTransition = true`. Its `Render` draws the same B glyph in gamepad mode but does **not** poll `ControlMenuClose`; pad back on those pages works through `DarwiniaWindow::Update` (`m_closeable` true) because every live page assigns its Back/Cancel button to `m_backButton` (`HelpAndOptionsWindow`, help pages, options pages, `LocationWindow`, `ConfirmExitWindow`, `OptionsMenuWindow`) [C] grep `m_backButton =` in `code/interface/*.cpp`. `MainCloseButton` (in-game menu) is a `MenuCloseButton` subclass [C] `code/interface/mainmenus.cpp`.
 
 ### 5.4 Titles, highlight beam and fill boxes [C] `code/game_menu.cpp`
 
@@ -720,7 +720,7 @@ Window classes built on `GameOptionsWindow` [C] (window name in quotes; function
 - Gamepad editing of numbers: when the field is the navigation cursor and not a string type, `ControlMenuLeft` / `ControlMenuRight` look up the `"<name> left"` / `"<name> right"` scroller and apply `v->Set(v->Get() + scroller.m_change)` through a `NetworkInt` cast — clamped only if the bound adaptor clamps inside `Set` (networked options do; `Local*` values do not, §4.12).
 - Style 1 (default): row box as the drop-down; caption at `x + 0.05 w` (outline + green/red); string value right-aligned at `x + w − fontSize`; numeric value at `0.8 × fontSize` right-aligned at `x + w − 2 × fontSize`; editing caret = 5 px line at the fixed position `x + w − 0.95 × fontSize` (it does not follow the text), 1 Hz.
 - Style 2 (`m_renderStyle2`, string types only): black box `(10,10,10,255)` with white outline, text centred, 3 px caret after the centred text.
-- `MouseUp` starts editing only for string types; `Keypress` sets the parent's `m_skipUpdate` on Enter so the same Enter does not also "activate" the navigation cursor next update, then calls the base.
+- `MouseUp` starts editing only for string types; `Keypress` sets the parent's `m_skipUpdate` on Enter (the next `DarwiniaWindow::Update` is skipped, so wherever Enter is also bound to `MenuActivate` — the Darwinia control set — the same key does not activate the navigation cursor), then calls the base.
 - Roll-over sound guard compares `m_currentTextEdit` with `"none"` (lower case) while the sentinel is `"None"` → `strcmp` never matches and **input fields never play `MenuRollOver`** [C] `GameMenuInputField::Render`.
 - `GameMenuInputScroller : InputScroller`: renders its `<`/`>` caption at `(realX, realY)` in `g_titleFont` (outline + green, red when highlighted/cursor), then `CheckInput` (hold-to-repeat every 0.1 s, ×5 with Shift, ints/bools bounded, §4.2).
 
@@ -1049,6 +1049,8 @@ Page composition conventions [C] (all `Setup*Page`, `GameOptionsWindow` subclass
 | Placement | caller-set before `EclRegisterWindow`; child windows placed randomly near the parent when left at (0,0) (§2.2); clamped on-screen at registration |
 | Large menus | every `GetMenuSize`/`SetMenuSize` value × `0.96 H / 460` (§3.2) — front-end pages are unaffected except that `GameOptionsWindow` sizes itself with `SetMenuSize(W, H)` (defect F15) |
 
+Older Darwinia small-window pattern (P17b §11.5) [C]: the legacy windows (key bindings, new profile, mods, really-quit, save-on-quit, about, profiler) use fixed pixel sizes passed through `SetMenuSize`/`GetMenuSize` (scaled only when Large Menus = 2), centred placement, `InvertedBox` panels, a `CloseButton`, `CreateValueControl` numeric/string fields and `g_editorFont`. No live Multiwinia options screen uses this pattern; in `[B:FULL]` it survives only in the F9 `NetworkWindow` and the renderer/sound `MessageDialog`s.
+
 ### 7.3 Resolution changes [C] `code/interface/prefs_screen_window.cpp:RestartWindowManagerAndRenderer`, `AdjustWindowPositions`
 
 On a screen-mode change the renderer and window are destroyed and re-created (a temporary 640×480 windowed mode is created first when switching resolution in full-screen); then, if the size changed, `EclInitialise(newW, newH)` is called and every window is re-centred proportionally — `centre' = centre × new/old` per axis — keeping its size; the Screen Options apply then rebuilds the menus (full-screen pages recompute their layout from the new size) [C] (P17b §3.1). The only other `EclInitialise` call is the legacy `WebsiteButton` (800×600) [C] `code/interface/mainmenus.cpp`.
@@ -1133,6 +1135,7 @@ Front-end layer (RGBA 0–1) [C] §5–§6:
 | `textures/mwtitle.bmp` | `GameMenuWindow::Render` (when the localised title is exactly "MULTIWINIA") | aspect 5.4:1, width = text width × 1.1 |
 | `sprites/darwinian.bmp`, `mwhelp/gear.bmp` | `GameMenuWindow::RenderBigDarwinian` | backdrop |
 | `textures/unicode/<font>.<lo>.<hi>.bmp` | all text | glyph atlases ([24](24_rendering.md), [25](25_textures_and_assets.md)) |
+| `camera.shp` (shape) | editor camera-mount gizmo drawn by `LocationEditor::Render` | [B:EDITOR] ([08](08_levels_and_level_design.md)) |
 
 ### 8.5 Front-end composition order of one frame (main menu)
 
@@ -1182,7 +1185,7 @@ There are **no keyboard bindings for `MenuUp/Down/Left/Right/Activate/Close`** i
 4. **Back**: `MenuClose` → `m_backButton->MouseUp()` on closeable windows; on `GameMenuWindow` pages each `BackPageButton` polls `MenuClose` from its render in gamepad mode [C] §5.3.
 5. **Left/Right** only change numeric `GameMenuInputField`s that are the cursor; drop-downs in cycle mode change only on Activate (next value) [C] §5.5, §5.6.
 6. **Mouse and pad coexist**: in keyboard input mode the hovered widget becomes the cursor (`UpdateButtonHighlight`); any pad move clears hover mode for one update so the two never fight; a widget draws focused when (hover mode and hovered) or it is the cursor [C] §3.5.
-7. **Text entry** is modal per window: while `m_currentTextEdit ≠ "None"` every `WM_CHAR` goes to that field; navigation keeps running (pad buttons are not characters), and `GameMenuInputField` sets `m_skipUpdate` on Enter so Enter does not also activate [C] §4.1, §5.6.
+7. **Text entry** is modal per window: while `m_currentTextEdit ≠ "None"` every `WM_CHAR` goes to that field; navigation keeps running (pad buttons are not characters), and `GameMenuInputField` sets `m_skipUpdate` on Enter so that one navigation update is skipped [C] §4.1, §5.6.
 8. **Locks**: `m_lockMenu` freezes navigation (error dialogues, tutorial launch); `m_skipUpdate` skips exactly one update [C].
 9. **Open drop-down**: the full-screen list window is front-most and focused; its own `m_buttonOrder` holds the options with the current value as the cursor; choosing an option closes it [C] §5.5.
 10. **Input mode** (P10): `INPUT_MODE_KEYBOARD` (1) or `INPUT_MODE_GAMEPAD` (2), chosen by the most recently active driver with the gamepad preferred; it controls hover-to-focus, the B-glyph hints, the `_kbd`/`_xin` phrase variants (§10.2) and the controller-unplugged dialogue [C] `code/lib/input/input.cpp:InputManager::getInputMode` ([06](06_player_control_and_input.md)).
@@ -1319,6 +1322,7 @@ Rules recovered from the code [C]:
 | Key-as-fallback localisation | raw ids on screen | fall back to the source language per string; build-time check that every key exists in every shipped language |
 | Fixed-function immediate draw, state leaks (§8.6) | not portable to DX12 | one batched UI vertex stream, three blend states, scissor stack (§8.7) |
 | Error dialogue as a `m_lockMenu` flag | input leaks, pad soft-locks (F10) | modal layer on the page stack that owns focus and Back |
+| Scattered string-keyed `g_prefsManager->GetInt(key, default)` calls with inconsistent call-site defaults, no change notification | options apply inconsistently; defaults drift | typed settings schema (key, type, default, range, apply scope = immediate / rebuild-renderer / restart) with change notifications (P17b §11.4) |
 
 **Networking note**: the lobby widgets must keep sending *requests* and displaying *echoed* values; the server must validate ownership/host rights (the UI only hides controls — see [22](22_determinism_and_networking.md)).
 
@@ -2482,6 +2486,35 @@ All values [C] at the cited symbol.
 | Language-table limits | 1024 output chars; 64 marker key; 96 final key | `#define` | `code/lib/language_table.cpp` |
 | Old language table lifetime | 5 main-loop iterations | literal | `code/app.cpp:App::SetLanguage` |
 
+Page-level constants of `GameMenuWindow` (routed from P18 §13; page behaviour in [09](09_meta_systems.md)) [C]:
+
+| Constant | Value | Kind | Ref |
+|---|---|---|---|
+| `MULTIWINIA_MAXPARAMS` | 64 | `#define` | `code/multiwinia.h` |
+| `MULTIWINIA_NUM_TEAMCOLOURS` | 8 | `#define` | `code/multiwinia.h` |
+| `ASSAULT_ATTACKER_COLOURID` / `ASSAULT_DEFENDER_COLOURID` | 1 / 0 | `#define` | `code/multiwinia.h` |
+| Browser rebuild interval | 2.0 s (1.0 s when empty and the WAN list has been received) | literal | `GameMenuWindow::UpdateJoinGamePage` |
+| WAN list request interval | 10.0 s (browser and quick match) | literal | `GameMenuWindow::UpdateJoinGamePage`, `GameMenuWindow::UpdateQuickMatchGamePage` |
+| Quick-match rebuild interval | 1.0 s | literal | `GameMenuWindow::UpdateQuickMatchGamePage` |
+| Manual server prefs | `Server1` … `Server30`; default port pref `NetworkServerPort` = 4000; synthetic max teams 4; mode `i mod 6` | literal | `GameMenuWindow::UpdateJoinGamePage` |
+| Auth-box "recent change" window | 2.0 s | literal | `GameMenuWindow::ShowAuthBox` |
+| Client lag threshold on leave | 5.0 s since the last server letter | literal | `code/UI/FinishMultiwiniaButton.h:FinishMultiwiniaButton::MouseUp` |
+| Achievement row | height `(H/16) × 1.6` ("64 px images"); slide-in 750 px/s; 4 px per scroll step | literal | `GameMenuWindow::SetupAchievementsPage`, `code/UI/AchievementButton.h` |
+| Thumbnail / mode image | `0.8 rW × 0.6 rW` (4:3) / `0.8 rW × (2/3)(0.8 rW)` | literal | `GameMenuWindow::SetupMultiplayerPage`, `GameMenuWindow::SetupGameSelectPage` |
+| Lobby gamer-tag column | origin `leftY + 6 bH`; `w = 0.45 bW`; `h = 0.75 bH`; step `1.5 h`; kick button at `+1.05 w` | literal | `GameMenuWindow::SetupMultiplayerPage` |
+| Lobby small controls | `0.66 × bH` (Advanced button, AI drop-down, map name) | literal | `GameMenuWindow::SetupMultiplayerPage` |
+| Browser row | `0.6 × bH` high; `0.9 × titleW` wide; header `0.6 bH` | literal | `GameMenuWindow::SetupJoinGamePage` |
+| Browser columns | host `0.05 w`, type `0.30 w`, map `0.40 w`, count `0.90 w`, header players right-aligned at `0.98 w`; player boxes from `count − 80 px`, `(0.66 (h − 8)) × (h − 8)`, 2 px gap | literal | `code/UI/GameServerButton.h:GameServerButton::Render`, `code/UI/ServerTitleInfoButton.h` |
+| Map-list columns | name `0.025 w`, time `0.65 w`, players `0.83 w` | literal | `code/UI/LevelSelectButtonBase.h:LevelSelectButtonBase::GetColumnPositions` |
+| Lobby chat box | fill alpha 200/255; wrap width `1.75 w`; stops 5 % from the top; line `1.1 × font` | literal | `code/UI/GameMenuWindow.cpp:GameMenuChatButton::Render` |
+| Buy-now art | prices aspect 40/300 at `0.6 bW`; box art 149/394 at `0.8 rW` | literal | `GameMenuWindow::SetupBuyMePage` |
+| Windowed fallback for the store | 1024 × 768 | literal | `code/UI/UnlockFullGameButton.h:UnlockFullGameButton::MouseUp` |
+| Store URL | `http://store.introversion.co.uk` (IP item) | literal | `code/app.cpp:App::GetBuyNowURL` |
+| Error overlay (dead) | `W/3 × H/3` centred | literal | `GameMenuWindow::RenderErrorDialogue` |
+| Help image (dead) | 600 × 400 px | literal | `GameMenuWindow::SetupHelpPage` |
+| Prefs read/written by the front end | `PlayerName`, `PlayerPreferedColour` (default −1), `FilterShowDemos`, `FilterShowIncompatible`, `FilterShowFullGames`, `FilterShowCustomMaps`, `FilterShowPassworded` (default 1), `Server1`…`Server30`, `NetworkServerPort`, `TextLanguage`, `ScreenWindowed`, `ScreenWidth`, `ScreenHeight` | pref keys | `GameMenuWindow::GameMenuWindow`, `SaveFiltersButton`, `ApplyNameButton`, `FancyColourButton`, `UpdateJoinGamePage`, `MOTDButton`, `UnlockFullGameButton` |
+| Files touched by the front end | `<profile>authkey`, `<profile>authkey.dev`, `multiwinia_betatesters.txt`, `autopatch.exe`; (dead) `testbedconfig.txt` | literal | `code/UI/AuthInputField.h`, `GameMenuWindow::PasteFromClipboard`, `code/UI/PlayDemoAuthkeyButton.h`, `ReadMultiwiniaBetaTesters`, `code/UI/update_page_buttons.h` |
+
 ---
 
 ## Open questions and unknowns
@@ -2523,6 +2556,7 @@ All values [C] at the cited symbol.
 | UI sound events `MenuSelect`, `MenuCancel`, `MenuRollOver`, `LobbyAmbience`, `ChatMessage` (`SoundSourceBlueprint::TypeMultiwiniaInterface`) | audio | `code/game_menu.cpp`, `code/interface/mainmenus.h`, `code/UI/GameMenuWindow.cpp` | `ui.select`, `ui.back`, `ui.hover`, `ui.lobbyLoop`, `ui.chat` |
 | Framework phrase ids and their English text: `dialog_close`, `dialog_ok`, `dialog_cancel`, `dialog_back`, `dialog_multiplefiles`, `editor_coloureditor`, `editor_red`, `editor_green`, `editor_blue`, `editor_alpha`, `error`, `multiwinia_editor_success`, `multiwinia_editor_selectmap`, `multiwinia_menu_back`, `multiwinia_presstotalk`, `authentication_result`, `dialog_auth_status_demo_user` | text | `data/language/*.txt` | own string table (ids may be reused as neutral keys, texts not) |
 | Literal English captions in framework code: "Close", "Close this window", "Value left", "Value right", "New Window", "New Button", "New Scrollbar", "Failed to set requested screen resolution of …", "Failed to set requested sound settings", "Restart Required" / "Please restart Darwinia …" (Linux) | text | `code/interface/darwinia_window.cpp`, `code/interface/input_field.cpp`, `code/game_menu.cpp`, `contrib/eclipse/*`, `code/interface/scrollbar.cpp`, `code/renderer.cpp`, `code/sound/soundsystem.cpp`, `code/interface/prefs_screen_window.cpp` | rewrite |
+| Store URL `http://store.introversion.co.uk` (`App::GetBuyNowURL`), update URL / `autopatch.exe` launch | brand / URL | `code/app.cpp`, `code/UI/UnlockFullGameButton.h`, `code/UI/update_page_buttons.h` | own store/updater URLs from configuration |
 | Menu page and button strings (every `multiwinia_*` id used by `code/UI`) and window names | text | enumerated in the IP registers of [09](09_meta_systems.md) and `_work/drafts/P17b_strings.csv`, `_work/drafts/P17a_ui_framework_editor_ui_strings.csv` | own strings |
 
 ## Source map
@@ -2567,7 +2601,7 @@ UI framework and front-end sources (every file in `contrib/eclipse/`, `code/inte
 | `code/interface/prefs_screen_window.cpp` | screen options; `RestartWindowManagerAndRenderer`, `AdjustWindowPositions` (resolution change, §7.3) |
 | `code/interface/prefs_graphics_window.h` | `PrefsGraphicsWindow` — screen ([09](09_meta_systems.md)) |
 | `code/interface/prefs_graphics_window.cpp` | graphics options — screen ([09](09_meta_systems.md)) |
-| `code/interface/prefs_other_window.h` | `PrefsOtherWindow`, `OTHER_LARGEMENUS` etc. — §3.2, §10.7 |
+| `code/interface/prefs_other_window.h` | `PrefsOtherWindow`; pref-key defines `OTHER_HELPENABLED`, `OTHER_CONTROLHELPENABLED`, `OTHER_BOOTLOADER`, `OTHER_CHRISTMASENABLED`, `OTHER_LANGUAGE`, `OTHER_DIFFICULTY`, `OTHER_LARGEMENUS`, `OTHER_AUTOMATICCAM`, `OTHER_USEPORTFORWARDING`, `OTHER_SERVERPORT`, `OTHER_CLIENTPORT` — §3.2, §10.7 |
 | `code/interface/prefs_other_window.cpp` | other options; language switch and large-menu apply — §10.7 |
 | `code/interface/prefs_sound_window.h` | `PrefsSoundWindow` — screen ([27](27_audio_engine.md)) |
 | `code/interface/prefs_sound_window.cpp` | sound options — screen ([27](27_audio_engine.md)) |

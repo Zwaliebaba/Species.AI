@@ -1168,7 +1168,219 @@ Note the order consequence [C]/[I]: input sampled in steps 3–5 and 10 is sent 
 
 ## 10 Frame timing
 
-<!-- S10 -->
+### 10.1 Clocks
+
+| Clock | Definition | Unit | Advances | Used for | Network-safe |
+|---|---|---|---|---|---|
+| `GetHighResTime()` | `QueryPerformanceCounter` relative to its first call (or a fake clock in demo/AVI capture) [C] `code/lib/hi_res_time.cpp` | real s | continuously | every wall-clock schedule: server tick, ALIVE sends, keep-alive, UI timers, sound envelopes, prediction | no |
+| `g_gameTime` | last value of `GetHighResTime()` taken by `UpdateAdvanceTime`; frozen while `GamePaused()` | real s | once per frame | render-time animation; legacy objects misuse it in sim (e.g. `Tripod`, [22](22_determinism_and_networking.md)) | no |
+| `g_advanceTime` | `now − g_gameTime`, clamped to **≤ 0.25 s**; unchanged while paused; `1 / DemoFrameRate` (pref, default 25) and `IncrementFakeTime` while pref `RecordDemo` ∈ {1, 2} [C] `code/main.cpp:UpdateAdvanceTime` | real s | once per frame | ~99 call sites of per-frame cosmetic animation: camera, UI, water, sound accumulator | no |
+| `GetNetworkTime()` ≡ `g_gameTimer.GetGameTime()` (macro) | `GameTimer::m_gameTime` | game s | `+= 0.1 × gameSpeed` per processed UPDATE, unless `GamePaused()` | all simulation timing | **yes** |
+| `SERVER_ADVANCE_PERIOD` ≡ `g_gameTimer.GetServerAdvancePeriod()` (macro) | `0.1 × m_gameSpeed` | game s per tick | changes with game speed | simulation dt of one tick | **yes** |
+| `g_predictionTime` ≡ `g_gameTimer.GetPredictionTime()` (macro) | `0` if paused, else `min(now − m_lastClientAdvance, 1.0) × m_gameSpeed` | game s | continuously | render extrapolation (§10.6) | no |
+| `GameTimer::GetAccurateTime()` | `m_accurateTime += (now − m_lastCallToAccurateTime) × m_gameSpeed` | game-speed-scaled real s | per call (14 call sites) | smooth cosmetic time; "NOT net-safe, NOT thread-safe"; `GetAccurateTime(futureTime)` is a side-effect-free projection | no |
+| `Server::m_nextServerAdvanceTime` | `start + 0.1`, then `+= 0.1` per tick | real s | per server tick | server tick schedule (§10.2) | n/a |
+| `SoundSystem::m_timeSync` | `+= g_advanceTime`; one update of `SOUNDSYSTEM_UPDATEPERIOD = 0.05 s` per `Advance` call when ≥ 0.05 [C] `code/sound/soundsystem.cpp:SoundSystem::Advance` | real s | per `SoundSystem::Advance` | 20 Hz sound logic; below 20 fps it falls behind, hence the extra `Advance` when `m_fps < 15` | no |
+| loading-screen frame | `frameStart + 1/60 s` then `Sleep` | real s | per loading frame | 60 Hz cap during loads only | n/a |
+
+Resolved (`_meta_unknowns` U2 "whether `GetNetworkTime()` and `g_gameTimer.GetGameTime()` are the same synced clock"): `GetNetworkTime` is literally `#define GetNetworkTime g_gameTimer.GetGameTime` [C] `code/gametimer.h`. Resolved (`_meta_unknowns` "exact semantics of `g_predictionTime`"): see the table above and §10.6 [C] `code/gametimer.cpp:GameTimer::GetPredictionTime`.
+
+### 10.2 Server tick — 10 Hz of real time
+
+[C] `code/network/server.cpp:Server::Initialise`, `Server::AdvanceIfNecessary`:
+
+- `Server::Initialise` sets `m_nextServerAdvanceTime = GetHighResTime() + 0.1`.
+- `AdvanceIfNecessary(now)`: if `now > m_nextServerAdvanceTime` → `Server::Advance()` once, then `m_nextServerAdvanceTime += 0.1`. At most **one** tick per call. The schedule is additive (`+= 0.1`, not `now + 0.1`): after a stall the server owes ticks and emits one per call until the schedule has caught up — it never skips a tick and never emits two in one call. `Server::SkipToTime(now)` would re-anchor the schedule but has no caller. (`TESTBED_ENABLED` adds an extra `+= 0.1` "10 times faster" path [B:DEAD].)
+- Callers: `MainMenuLoop`, `LocationGameLoop`, `GlobalWorldGameLoop` (stub) and `LoadingScreen::Render` (under `m_networkMutex.TryLock()`). Because each caller invokes it once per frame, **the effective tick rate is min(10 Hz, host frame rate)**; a host rendering below 10 fps slows the whole session [C] for one-tick-per-call, [I] for the consequence.
+- The tick rate does not depend on game speed or pause: pause and speed crates change only the dt of each tick (§10.7).
+- Each tick `Server::Advance` drains the server inbox into one sequenced `NET_DARWINIA_UPDATE` letter (`m_sequenceId++`), stores it in the history, sends it (plus resends of un-acknowledged letters) synchronously on the main thread, authenticates clients and refreshes the advertisement ([22](22_determinism_and_networking.md)).
+
+Docs-vs-code: `docs/Network.txt` says the server "ticks at 25 FPS" and sleeps until `lastFrameTimeStamp + 1/25`; the code ticks at 10 Hz and never sleeps (see the discrepancy table).
+
+### 10.3 Client tick and slices
+
+One UPDATE letter = one simulation tick, executed as `NUM_SLICES_PER_FRAME = 10` slices [C] `code/globals.h`, `code/network/clienttoserver.cpp:ClientToServer::ProcessAllServerLetters`. Pseudocode in this document's own words:
+
+```
+ProcessAllServerLetters(catchUp):
+    n = GetNumSlicesToAdvance(catchUp)                  # §10.4
+    for i in 1..n:
+        if sliceNum == -1:                               # need the next tick
+            letter = GetNextLetter()                     # in-order only; seq -1 letters any time
+            if letter:
+                handled = ProcessServerLetters(letter)   # connection-level letters
+                if letter.seq != -1:
+                    isUpdate = (not handled) and ProcessServerUpdates(letter)   # apply all commands
+                    lastProcessedSeq = letter.seq
+                    if isUpdate:
+                        sliceNum = 0
+                        gameTimer.Tick()                 # game time and speed (10.7)
+                        GenerateSyncValue(); SendSyncronisation()
+                if app.loadingLocation: return           # START_GAME just processed
+        if sliceNum != -1:
+            if location exists:
+                if not app.GamePaused():
+                    location.Advance(sliceNum); particleSystem.Advance(sliceNum)
+                if app.Multiplayer() and sliceNum == 8:
+                    multiwinia.Advance()                 # also while paused
+            sliceNum = sliceNum + 1 if sliceNum < 9 else -1
+```
+
+Rules that follow [C]:
+
+- The sync byte is generated immediately after the tick's commands are applied and **before** slice 0 runs, i.e. it hashes the state at the end of the previous tick plus this tick's command effects ([22](22_determinism_and_networking.md)).
+- Sequenced non-UPDATE letters (CLIENTHELLO, CLIENTGOODBYE, TEAMASSIGN, NETSYNCERROR, …) consume a sequence id and one loop iteration but start no tick, do not tick the timer and produce no sync byte.
+- While paused, slices are still consumed (and `Multiwinia::Advance` still runs at slice 8, which is how the grace countdown runs at game speed 0), but `Location::Advance` and `ParticleSystem::Advance` are skipped.
+- Inside `Location::Advance(slice)` every slice-partitioned container advances one tenth of its slots: `SliceDArray::GetNextSliceBounds` gives slice `s` the index range `[s == 0 ? 0 : lastUpdated + 1, s == 9 ? Size − 1 : lower + int(Size / 10)]`, so slices 0–8 each cover `int(Size/10) + 1` slots and slice 9 the remainder (possibly empty) [C] `code/lib/slice_darray.cpp:SliceDArray::GetNextSliceBounds`. Every object present for the whole tick is therefore advanced **exactly once per tick with dt = `SERVER_ADVANCE_PERIOD`**; objects created mid-tick in a slot above the current bound are advanced later in the same tick, those placed in a lower (re-used) slot wait for the next tick [C]/[I]. This resolves the `_meta_unknowns` questions U5 ("each building advances exactly once per 0.1-s tick") and "exact `Location::Advance` slice cadence". Which work runs on which slice (teams/weapons/buildings/spirits every slice; clouds and weather on slice 3; entity-grid cache on slice 7; crates and Multiwinia timers on slice 8) is specified in [21](21_simulation_and_entity_model.md).
+- `Location::Advance` wraps its five sub-steps in `#pragma omp parallel for schedule(dynamic)`. OpenMP is not enabled for the baseline: `Release|Win32` sets no `OpenMP` attribute (Visual Studio default: off) and `ReleaseDirect3D|Win32` sets `OpenMP="false"`, so the loop runs serially in step order 0 (teams), 1 (weapons), 2 (buildings), 3 (spirits), 4 (clouds) [C] `targets/vs2005/Darwinia.vcproj`. Resolved: P01 cited `OpenMP="false"` as the baseline setting; that attribute exists only in the `ReleaseDirect3D` block. A port must keep the serial order.
+
+### 10.4 Pacing: how many slices per render frame
+
+[C] `code/network/clienttoserver.cpp:ClientToServer::GetNumSlicesToAdvance`, `AdvanceAndCatchUp`:
+
+```
+GetNumSlicesToAdvance(catchUp):
+    if catchUp: return 20
+    pending = (lastValidSeqFromServer - lastProcessedSeq) * 10
+    if sliceNum != -1: pending += 10 - sliceNum
+    n = int(pending * 0.3)
+    # a branch for pending <= 10 computes a time-based count into a shadowed local variable: no effect
+    return clamp(n, 0, 20)
+
+AdvanceAndCatchUp():
+    if app.loadingLocation: KeepAlive(); return
+    start = now
+    repeat:
+        catchUp = lastProcessedSeq < lastValidSeqFromServer - 20 and clientId != -1
+        Advance()                                    # connection logic, FTP, send outbox
+        ProcessAllServerLetters(catchUp)
+        if app.loadingLocation: return
+    while catchUp and now - start <= 0.3            # comment says "every 500 iterations"; it is every iteration
+```
+
+Consequences:
+
+- Normal play: about 30 % of the backlog per frame, never more than 2 ticks' worth (20 slices); a backlog of ≤ 3 slices yields `int(0.9) = 0` and is not drained until the next letter arrives [C].
+- More than 20 ticks behind (late join, after a load, after a stall): 20 slices per iteration, iterating for up to 0.3 s of real time per frame — the renderer then runs at roughly 3 fps until caught up [C]/[I].
+- Steady-state behaviour, simulated by `_work/scripts/S_20_slice_pacing_sim.py` (zero network latency, one letter per 0.1 s) [I]:
+
+| Render rate | Slices run per frame (share of frames) | Mean delay letter arrival → its 10th slice | Max delay |
+|---|---|---|---|
+| 15 fps | 5 slices: 33%, 7 slices: 33%, 8 slices: 33% | 217 ms | 233 ms |
+| 20 fps | 4 slices: 50%, 6 slices: 50% | 150 ms | 150 ms |
+| 30 fps | 2 slices: 33%, 3 slices: 33%, 5 slices: 33% | 133 ms | 133 ms |
+| 60 fps | 0 slices: 17%, 1 slices: 33%, 2 slices: 17%, 3 slices: 33% | 100 ms | 100 ms |
+| 120 fps | 0 slices: 58%, 1 slices: 17%, 2 slices: 8%, 3 slices: 17% | 100 ms | 100 ms |
+| 144 fps | 0 slices: 65%, 1 slices: 14%, 2 slices: 7%, 3 slices: 14% | 103 ms | 106 ms |
+
+  At ≥ 60 fps the last three slices of every tick (7, 8, 9 — including `Multiwinia::Advance` and crate drops at slice 8) wait for the next letter, so each tick completes about one tick period after it arrives; total command latency ≈ wait for the next server tick (0–100 ms) + network round trip + this pacing delay ([22](22_determinism_and_networking.md) gives the input-latency budget).
+
+### 10.5 Render rate
+
+- One `Renderer::Render()` per loop iteration; the loops never sleep, so the frame rate is limited only by `SwapBuffers` (`WindowManagerWin32::Flip`) [C] `code/main.cpp`, `code/renderer.cpp:Renderer::Render`.
+- OpenGL baseline: no `wglSwapIntervalEXT` call exists, and `WindowManagerWin32::CreateWin` accepts `_waitVRT` but never uses it, so vsync is whatever the driver default/control panel says; the `WaitVerticalRetrace` preference has no effect [C] `code/lib/window_manager_win32.cpp:WindowManagerWin32::CreateWin`, grep. [B:D3D]: `PresentationInterval = waitVRT ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE`, and `Renderer::Initialise` passes a literal `true` on its first two `CreateWin` attempts ([24](24_rendering.md)). This resolves P01 U1 ("whether anything throttles the frame loop").
+- `Renderer::m_fps` = frames counted in the last 1-s window (initial 60); used for the debug overlay and the low-fps sound rule [C] `code/renderer.cpp`.
+- `MINIMUM_RENDER_PERIOD = 1.0` ("Render at least this frequently") and `TARGET_FRAME_RATE_INCREMENT = 0.25` are defined but unused [C] `code/globals.h`, `code/main.cpp`.
+
+### 10.6 Prediction: render-time extrapolation
+
+- `m_lastClientAdvance` is the wall-clock time of the last `GameTimer::Tick`, i.e. the moment the client **took** the current tick's letter (before its slices ran) [C] `code/gametimer.cpp:GameTimer::Tick`.
+- `g_predictionTime = min(now − m_lastClientAdvance, 1.0) × gameSpeed`, or 0 when paused [C].
+- Every renderer draws an object at `pos + vel × t` (fragments also `angVel × t`). For slice-partitioned containers the renderer compares the slot index with `GetLastUpdated()`: slots already advanced in the current tick get `t = g_predictionTime`; slots not yet advanced get `t = g_predictionTime + SERVER_ADVANCE_PERIOD` [C] `code/location.cpp:Location::RenderBuildings`, `Location::RenderSpirits`, `Team::RenderOthers`, `Unit::Render`. Both halves of a half-advanced container are therefore shown at the same nominal time: the end of the current tick plus `g_predictionTime`.
+- This is **extrapolation (dead reckoning), not interpolation** between two stored states; there is no previous-state copy anywhere. When a new tick is taken, `g_predictionTime` drops back to 0; any extrapolation error (turns, stops, collisions) appears as a small snap. The 1.0-s clamp limits runaway extrapolation when updates stop arriving [C]/[I]. Renderer-side details: [24](24_rendering.md).
+
+### 10.7 GameTimer API and semantics
+
+`GameTimer` (`code/gametimer.h`, `code/gametimer.cpp`; single global `g_gameTimer`) — the header describes it as "a network-safe timer … allows the rate of time to change (eg proper pause support, 1/2 speed, 2x speed etc)" and as replacing `g_gameTime`, `GetNetworkTime`, `SERVER_ADVANCE_PERIOD`.
+
+Fields [C]:
+
+| Field | Access | Initial (ctor) | `Reset()` | Meaning |
+|---|---|---|---|---|
+| `m_gameSpeed` | public | 0.0 | `Multiplayer() ? 0.0 : 1.0` | current speed (1 = normal, 0 = stopped) |
+| `m_gameTime` | public | 0.0 | 0.0 | simulation time (game s) |
+| `m_accurateTime` | public | 0.0 | **not reset** | smooth speed-scaled time for `GetAccurateTime` |
+| `m_lastClientAdvance` | public | 0.0 | 0.0 | wall time of the last `Tick` |
+| `m_estimatedServerStartTime` | public | 0.0 | `GetHighResTime()` | written also by the client listener thread (min over received letters of `now − seqId × 0.1`); used only for the latency statistics |
+| `m_requestedSpeed` | protected | -1 | -1 | target speed; < 0 = none |
+| `m_requestedSpeedOfChange` | protected | -1 | -1 | blend factor per tick (1 = immediate) |
+| `m_requestedSpeedLength` | protected | -1 | **not reset** | hold duration in seconds after the target is reached (< 0 = forever) |
+| `m_lastCallToAccurateTime` | protected | 0.0 | **not reset** | |
+| `m_lockSpeedChange` | protected | false | false | when true `RequestSpeedChange` is ignored |
+
+Functions [C]:
+
+| Function | Semantics |
+|---|---|
+| `Reset()` | as in the table above; called by the START_GAME update, `App::StartSinglePlayerServer`, `Multiwinia::ResetLocation` |
+| `Tick()` | called once per processed UPDATE (§10.3). 1) `m_lastClientAdvance = now`. 2) if `!g_app->GamePaused()`: `m_gameTime += 0.1 × m_gameSpeed` (speed **before** this tick's blend). 3) if `m_requestedSpeed ≥ 0`: `m_gameSpeed += (m_requestedSpeed − m_gameSpeed) × m_requestedSpeedOfChange`; if `|m_gameSpeed − m_requestedSpeed| < 0.01` → snap to the target and clear the request (-1). 4) if no request is pending (or it has just been reached) and `m_requestedSpeedLength ≥ 0`: `m_requestedSpeedLength −= 0.1`; when it becomes ≤ 0 → length = -1 and request speed 1.0 **keeping the previous rate** |
+| `GetGameSpeed()`, `GetRequestedGameSpeed()`, `GetGameTime()` | accessors (`GetGameTime` inline) |
+| `GetAccurateTime()` / `GetAccurateTime(future)` | see §10.1 |
+| `GetServerAdvancePeriod()` | `0.1 × m_gameSpeed` |
+| `GetPredictionTime()` | §10.6 |
+| `IsPaused()` | `m_gameSpeed < 0.01` |
+| `RequestSpeedChange(speed, rate, length)` | ignored when locked; otherwise overwrites all three request fields (a new request replaces any running one) |
+| `LockSpeedChange()` | sets the lock (game over) |
+| `DebugRender()` | returns immediately (body dead) |
+
+Semantics that a re-implementation must reproduce or consciously change:
+
+1. **Game time vs real time.** Ticks are fixed at 10 per real second; game speed scales only the per-tick dt. Every "seconds" constant in simulation code is game seconds if it is decremented by `SERVER_ADVANCE_PERIOD`, but **ticks** if it is decremented by a literal 0.1 or counted per call (e.g. the grace countdown, Multiwinia "one-second" timers, many creature timers — [22](22_determinism_and_networking.md), [02](02_units_and_entities.md)). Hold durations of speed requests (`m_requestedSpeedLength`) are decremented by 0.1 per tick and are therefore **real seconds**. Resolves `_meta_unknowns` "real-time vs game-time behaviour of `GameTimer::Tick` cadence while game speed ≠ 1" [C].
+2. **Pause.** `App::GamePaused()` is true while a location exists and (speed < 0.01, or this client has at least one out-of-sync peer, or it lost focus in a Darwinia single-player mode). Paused ⇒ game time frozen, `Location`/`ParticleSystem` not advanced, `g_predictionTime = 0`, `g_gameTime`/`g_advanceTime` frozen; ticks, the speed blend, `Multiwinia::Advance` and all UI keep running. User pause is not instantaneous: it is a 0.2-rate blend to 0 (about 2.1 s of slow-down, during which ≈ 0.5 game s elapse) [C] code / [I] numbers from the simulation below. Pause is only allowed when no `LobbyTeam` is a remote human, outside the grace period and before game over (`App::ToggleGamePaused`).
+3. **Game start.** In Multiwinia `Reset()` leaves speed 0, so the world is frozen (paused) until `Multiwinia::AdvanceGracePeriod` reaches 0 and requests `(1.0, 1.0, -1)` — speed 1 on the next tick [C] `code/multiwinia.cpp` L2414.
+4. **Game over.** `(0.0, 0.2, -1)` then `LockSpeedChange()`: a 2.1-s slow-motion to a halt; later requests (crates, meteors, pause) are ignored [C] `code/multiwinia.cpp` L4226.
+5. **Speed crates and meteors** — all requested from simulation code, therefore identical on all peers [C] `code/worldobject/crate.cpp:Crate::RunSlowDownTime`, `Crate::RunSpeedUpTime` (`INCLUDE_CRATES_ADVANCED`, both return early after game over), `code/worldobject/meteor.cpp` (meteor within 200 units of its target).
+
+Speed requests and their real durations, computed by `_work/scripts/S_20_gametimer_sim.py` (exact re-implementation of `Tick` in IEEE double, one tick per 0.1 s, out-of-sync/focus pause ignored) [C] for the request parameters, [I] for the computed durations:
+
+| Request | Speed change | Rate | Hold | Reaches target after | Back at 1.0 after | Game time elapsed |
+|---|---|---|---|---|---|---|
+| grace period end | 0.00 → 1.00 | 1.00 | none | 1 tick (0.1 s) | — | 0.000 game s over 0.1 real s |
+| user pause (`NET_DARWINIA_PAUSE`) | 1.00 → 0.00 | 0.20 | none | 21 ticks (2.1 s) | — | 0.495 game s over 2.1 real s |
+| user unpause | 0.00 → 1.00 | 0.20 | none | 21 ticks (2.1 s) | — | 1.605 game s over 2.1 real s |
+| game won (then locked) | 1.00 → 0.00 | 0.20 | none | 21 ticks (2.1 s) | — | 0.495 game s over 2.1 real s |
+| slow-down crate, target 0.2 (range 0.2 + syncfrand(0.2)) | 1.00 → 0.20 | 0.05 | 15.0 s | 86 ticks (8.6 s) | 322 ticks (32.2 s) | 13.320 game s over 32.2 real s |
+| slow-down crate, target 0.3 | 1.00 → 0.30 | 0.05 | 15.0 s | 83 ticks (8.3 s) | 316 ticks (31.6 s) | 15.290 game s over 31.6 real s |
+| slow-down crate, target 0.4 | 1.00 → 0.40 | 0.05 | 15.0 s | 80 ticks (8.0 s) | 310 ticks (31.0 s) | 17.200 game s over 31.0 real s |
+| speed-up crate, target 1.30 (range 1.3 + syncfrand(0.7)) | 1.00 → 1.30 | 0.05 | 15.0 s | 67 ticks (6.7 s) | 284 ticks (28.4 s) | 34.910 game s over 28.4 real s |
+| speed-up crate, target 1.65 | 1.00 → 1.65 | 0.05 | 15.0 s | 82 ticks (8.2 s) | 314 ticks (31.4 s) | 46.480 game s over 31.4 real s |
+| speed-up crate, target 2.00 | 1.00 → 2.00 | 0.05 | 15.0 s | 90 ticks (9.0 s) | 330 ticks (33.0 s) | 57.000 game s over 33.0 real s |
+| meteor within 200 of target | 1.00 → 0.40 | 0.10 | 4.0 s | 39 ticks (3.9 s) | 117 ticks (11.7 s) | 7.020 game s over 11.7 real s |
+
+6. **Residue across matches** [C] for the missing resets, [I] for reachability: `Reset()` restores the request fields to -1 but leaves `m_requestedSpeedLength` untouched and sets the rate to -1. If a match is left while a crate hold is still counting down and the next START_GAME arrives before the remaining hold has expired (the hold keeps counting only while updates are being processed), the expiry in the new match issues "speed 1.0" with rate **-1**: `speed ← speed + (1 − speed) × (−1) = 2·speed − 1`, which runs away from 0 to −1, −3, −7, … and reaches −∞ after about 1 090 ticks; the game stays "paused" because the speed is below 0.01. If the grace period ends before that, the `(1.0, 1.0, -1)` request repairs the speed within two ticks; if the players take longer than ≈ 110 s to ready up, `−∞ + ∞` yields **NaN** game speed at grace end (reproduced with `S_20_gametimer_sim.py`). Earlier drafts (P01 contradiction 6) judged the residue harmless; it is harmless only in the common cases. The new design should reset every timer field per match (item 20-U6).
+
+### 10.8 Frame-timing diagram
+
+```mermaid
+sequenceDiagram
+  participant W as Wall clock
+  participant M as Main loop frame
+  participant S as Server - host
+  participant C as ClientToServer
+  participant G as GameTimer
+  participant L as Location
+  participant R as Renderer
+  Note over W: t = 0.000 server tick k due
+  M->>S: AdvanceIfNecessary(now): now > next, Advance, next += 0.1
+  S-->>C: UPDATE k into inbox - local letters bypass sockets
+  M->>C: AdvanceAndCatchUp, n = int(0.3 x pending) <= 20
+  C->>C: slice -1: take UPDATE k, apply commands
+  C->>G: Tick: lastClientAdvance = now, gameTime += 0.1 x speed, blend speed
+  C->>C: GenerateSyncValue, SendSyncronisation
+  C->>L: Advance(slice 0..n-1) with dt = 0.1 x speed
+  M->>R: Render: predictionTime = (now - lastClientAdvance) x speed
+  Note over W: t = 0.017 next frame
+  M->>S: AdvanceIfNecessary: not due
+  M->>C: AdvanceAndCatchUp: slices n..m
+  C->>L: Advance(slices), slice 8 also Multiwinia::Advance
+  M->>R: Render: advanced slots at predictionTime, others at predictionTime + 0.1 x speed
+  Note over W: every 0.1 s: SendIAmAlive with TeamControls
+  Note over W: t = 0.100 server tick k+1 due, cycle repeats
+```
+
+### 10.9 Worked example (60 fps host, normal speed)
+
+[I] from §10.2–10.6 and the pacing simulation: at t = 0 the host's server emits UPDATE k; the same frame the host's client takes it (`Tick`, `g_predictionTime` restarts at 0), runs 3 slices (pending = 10 → 3) — actually the backlog also contains the 3 unrun slices of tick k−1, which run first; over the next five frames it runs 1, 2, 3, 1, 0 slices; the remaining slices of tick k run after UPDATE k+1 arrives at t = 0.1. Rendering in each frame uses `g_predictionTime` = 0.000, 0.017, 0.033, 0.050, 0.067, 0.083 s; ALIVE (team controls) leaves once per 0.1 s; the sound system processes one 50-ms update every third frame; `g_advanceTime` ≈ 0.0167 s drives camera and UI.
 
 ## 11 Threading model
 

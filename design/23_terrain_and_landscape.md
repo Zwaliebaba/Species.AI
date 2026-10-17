@@ -129,7 +129,7 @@ The terrain is defined by these primitives as much as by the algorithm; an imple
 | `Vector3 a ^ b` | cross product `(a.y·b.z − a.z·b.y, a.z·b.x − a.x·b.z, a.x·b.y − a.y·b.x)` | [C] `code/lib/vector3.h:Vector3::operator^` |
 | Signed `long` LCG arithmetic | 32-bit `long` on Win32; overflow wraps (MSVC); `>> 16` of a negative value is arithmetic but bits 16–30 are then masked, so the result equals the unsigned computation | [C] `code/landscape.h:LandscapeTile::m_holdrand`; [I] wrap behaviour of MSVC |
 | Text tokens | separators `" \t\n\r:,"`; `#` starts a comment to end of line; a file whose first line starts with `redshirt2` is decrypted line by line first | [C] `contrib/systemiv/lib/filesys/text_stream_readers.cpp:TextReader::CleanLine`, `TextReader::GetNextToken` (formal grammar in [29](29_data_formats_reference.md)) |
-| Arithmetic precision | Release|Win32 compiles x87 code with the default `/fp:precise` (no `FloatingPointModel` attribute) and the level-load thread runs with 53-bit x87 precision, so double expressions round like IEEE double | [C] `targets/vs2005/Darwinia.vcproj` (`Release|Win32` block has no `FloatingPointModel`; `ReleaseDirect3D|Win32` has `FloatingPointModel="2"` = `/fp:fast`); [I] equivalence of x87-PC53 to SSE2 double for these magnitudes (no denormals or overflow occur) |
+| Arithmetic precision | Release\|Win32 compiles x87 code with the default `/fp:precise` (no `FloatingPointModel` attribute) and the level-load thread runs with 53-bit x87 precision, so double expressions round like IEEE double | [C] `targets/vs2005/Darwinia.vcproj` (`Release\|Win32` block has no `FloatingPointModel`; `ReleaseDirect3D\|Win32` has `FloatingPointModel="2"` = `/fp:fast`); [I] equivalence of x87-PC53 to SSE2 double for these magnitudes (no denormals or overflow occur) |
 
 ## 4 Landscape definition data — every field
 
@@ -172,7 +172,7 @@ One tile per non-empty line, appended in file order (order matters: §7). Positi
 | 2 | `y` | `m_posY` | double via `iv_atof` | world units (tile space) | – | −25.93 … 83.90 (all 69 files: −27.41 … 83.90); editor −1000 – 1000 step 0.5 | added to **every** tile sample after generation, before the peak rescale (§5.2 step 7, §7.2) | same |
 | 3 | `z` | `m_posZ` | int (`atoi`) | world units | – | 1 … 5 215 for on-map tiles (parked tiles at −80 089 and −35 486); editor −10 000 – 10 000 | world Z of the tile's low corner | same |
 | 4 | `size` | `m_size` | int (`atoi`) | world units | 256 (editor "new tile" uses 384) | 124 – 4 484 (all 69 files: 104 – 4 484); editor 0 – 10 000 step 10 | edge length of the square footprint on the world grid | same |
-| 5 | `frac dim` | `m_fractalDimension` | double via `iv_atof` | dimensionless | 1.2 | 0.57 – 7.88 (1.2 in 230 of 445 `mp_*` tiles); editor label `editor_noiseperiod`, 0 – 10 step 0.01 | roughness exponent: noise amplitude at a level ∝ (2560·h/n)^fd (§5.4). Higher values exaggerate the coarse levels relative to the fine ones and, through the compensation factor 30.7·e^(−6.5·fd), reduce overall gain | same |
+| 5 | `frac dim` | `m_fractalDimension` | double via `iv_atof` | dimensionless | 1.2 | 0.57 – 7.88 (1.2 in 230 of 445 `mp_*` tiles); editor label `editor_noiseperiod`, 0 – 10 step 0.01 | roughness exponent: noise amplitude at a level ∝ (2560·h/n)^fd (§5.4). Higher values exaggerate the coarse levels relative to the fine ones (smoother terrain); the compensation factor 30.7·e^(−6.5·fd) roughly cancels the growth of the coarse-level amplitude | same |
 | 6 | `height scale` | `m_heightScale` | double via `iv_atof` | dimensionless gain | 1.0 | 0.0 – 10.0 (0.0 in 4 `mp_*` tiles); editor `editor_noisescale` 0 – 10 step 0.02 | linear noise gain; 0 ⇒ no noise (the tile is the midpoint interpolation of its guide grid / border) | same |
 | 7 | `desired height` | `m_desiredHeight` | double via `iv_atof` | world units | 200 | 30 – 961 (all 69 files: 21 – 961); editor `editor_height` 0 – 1000 step 5 | the tile's highest sample is mapped to this height (relative to `outsideHeight`, §7.2). The editor writer rounds it to an integer (`%6.0f`) | same; writer `code/level_file.cpp:LevelFile::WriteLandscapeTiles` |
 | 8 | `gen method` | `m_generationMethod` | int | enum 0–2 | 1 | `mp_*`: method 1 ×356, 2 ×59, 0 ×30 (all 69 files: 449 / 72 / 39); editor 0 – 2 | 0 = average of 4 parents; 1 = average of a random opposite pair; 2 = copy one random parent (§5.3). Any other value leaves the base height uninitialised (undefined) [C] (switch has no default) | same |
@@ -323,7 +323,7 @@ Interpretation [I] (derived from the formula, not from comments):
 - **Height-dependent roughness.** E grows with |b|: samples whose tile-space height is near 0 get the 0.1 floor (smooth), high or deeply negative samples get more noise. Because tiles start at `outsideHeight` (negative) and guide values are ≥ 0, "lowland" here means tile-space heights near zero, not sea level after rescaling.
 - **Absolute scale is mostly irrelevant** because §7.2 rescales the tile peak to `desiredHeight`; what matters is the relative size of noise versus guide-grid values and `posY`, and the non-linear envelope.
 
-Representative magnitude: tile 2 of `mp_koth_2P_1` (n = 65, fd = 1.2, hs = 1, ls = 1) has comp = 0.008700047, R(32) = f32(1260.31^1.2) ≈ 5 257, E(−15.39) = 2.4085, so its first displacement (r = 41) is +54.92 world units in tile space (§16.3).
+Representative magnitude: tile 2 of `mp_koth_2P_1` (n = 65, fd = 1.2, hs = 1, ls = 1) has comp = 0.008700047, R(32) = f32(1260.3077^1.2000000477) = 5254.9917, E(−15.39) = 2.4085001, so its first displacement (r = 41) is (0.5 − 41/32767)·5254.9917·0.008700047·2.4085001 = +54.918938 world units in tile space (§16.3).
 
 ### 5.5 Worked RNG / call order for one pass
 
@@ -398,7 +398,7 @@ MergeTile(tile):
     posZi    = (unsigned short)((double)tile.posZ / cellSize + 0.5)
     numCells = (int)((double)tile.size / cellSize)                    # world samples covered per side
     range    = tile.GetHighestValue() - outsideHeight + 0.001
-    factor   = (tile.desiredHeight - outsideHeight) / range
+    heightFactor = (tile.desiredHeight - outsideHeight) / range
     # re-target the tile map from tile-sample space to world space:
     tile.x0 = tile.posX ; tile.y0 = tile.posZ
     tile.cellX = tile.size / (double)n ; tile.cellY = tile.size / (double)n    # NB: divided by n, not n - 1
@@ -408,19 +408,19 @@ MergeTile(tile):
         for x in 0 .. numCells-1:
             wx = world.GetRealX(x + posXi)
             h1 = tile.GetValue(wx, wz)                                # bilinear, section 3 / 7.3
-            h1 = h1 - outsideHeight ; h1 = h1 * factor ; h1 = h1 + outsideHeight
+            h1 = h1 - outsideHeight ; h1 = h1 * heightFactor ; h1 = h1 + outsideHeight
             if h1 > world.GetData(x + posXi, z + posZi):              # indices wrap modulo 2^16
                 world.PutData(x + posXi, z + posZi, h1)               # out-of-grid writes are dropped
 ```
 
-The function also computes `int posY = tile.m_posY` and a `factor` of (n − 1)/(numCells − 1) that are never used [C].
+The function also computes `int posY = tile.m_posY` and a local `factor` = (n − 1)/(numCells − 1); neither is used [C].
 
 ### 7.2 Peak rescale
 
 Every tile is linearly remapped about the sea-floor level so that its **highest sample becomes `desiredHeight`** and a sample equal to `outsideHeight` stays at `outsideHeight`: h_world = outside + (h_tile − outside)·(desired − outside)/(highest − outside + 0.001). The +0.001 only prevents division by zero for a flat tile. Consequences [C]+[I]:
 
 - The absolute output of §5 matters only through its shape; `desiredHeight` sets the tile's peak.
-- Because the peak is measured **after** the `posY` shift, `posY` changes the relief, not the peak: the border moves to `outside + posY·factor` (above the sea floor when posY > 0 — the whole footprint becomes a plinth; below it when posY < 0 — the border never wins the max and the tile blends into existing terrain), and the interior is compressed or expanded accordingly.
+- Because the peak is measured **after** the `posY` shift, `posY` changes the relief, not the peak: the border moves to `outside + posY·heightFactor` (above the sea floor when posY > 0 — the whole footprint becomes a plinth; below it when posY < 0 — the border never wins the max and the tile blends into existing terrain), and the interior is compressed or expanded accordingly.
 - The world peak can be lower than `desiredHeight` because the world grid does not necessarily sample the tile's peak sample (e.g. `mp_koth_2P_1` tile 2: desired 300, world maximum 273.38, §16).
 
 ### 7.3 Bilinear resampling and the `unsigned short` conversion edge cases
@@ -431,7 +431,7 @@ Every tile is linearly remapped about the sea-floor level so that its **highest 
 |---|---|---|---|
 | 0 ≤ fx < n − 1 | normal bilinear between tile columns ⌊fx⌋ and ⌊fx⌋ + 1 | almost all calls | yes |
 | −1 < fx < 0 (first world sample slightly before the tile origin, because posXi rounds to nearest) | `(unsigned short)fx` truncates toward zero → x1 = 0, x2 = 1, weight fx − ⌊fx⌋ = fx + 1 on column 1: the value is mirrored into the tile (at fx = −0.3 the result is 0.3·col0 + 0.7·col1). Well-defined C++ | 22 771 / 29 051 calls | **yes** — a `floor`-based sampler (x1 = −1) that clamps or returns the outside value gives a different height, and the difference survives the max-composite whenever the tile border is above the existing terrain |
-| fx ≤ −1 | double → `unsigned short` of a value whose truncation is negative: undefined in C++; MSVC converts through a 32-bit integer and keeps the low 16 bits (→ ≥ 32 768 ≥ n → column 0) [I] | **0 / 0** calls (fx > −1 always, because cellSize/tileCell = n/reqWorldCells ≤ 1.96 and the offset is at most half a world cell) | no, for the shipped maps |
+| fx ≤ −1 | double → `unsigned short` of a value whose truncation is negative: undefined in C++; MSVC converts through a 32-bit integer and keeps the low 16 bits (→ ≥ 32 768 ≥ n → column 0) [I] | **0 / 0** calls. It cannot occur for a tile with a non-negative origin: the first world sample is at most half a world cell before the tile origin, and half a world cell is less than one tile cell because cellSize/tileCell ≤ n/reqWorldCells < 2 (n = 2^k + 1 with 2^k < 2·(reqWorldCells − 1)) | no, for tiles with x, z ≥ 0 |
 | fx ≥ n − 1 (far edge of the footprint: the tile's last sample is at size·(n − 1)/n, short of the footprint edge) | x1 and/or x2 ≥ n → set to 0 → column 0. Columns 0 and n − 1 are both border samples (`outside + posY`), so the result equals clamping to the border | 15 334 / 16 162 calls (includes the parked tiles of §7.4) | only its value: "clamp to border" is equivalent |
 
 (Counts by `S_23_terrain_oracle.py survey`, columns `samp_frac_neg`, `samp_le_minus1`, `samp_far_wrap`.) Resolved: phase-2 notes flagged "negative double → unsigned short conversion in the bilinear sampler" as a bit-exactness risk; the measurement shows the undefined (≤ −1) case never occurs in shipped data, while the well-defined (−1, 0) truncation case occurs about 23 000 times and is the one that must be emulated.
@@ -439,6 +439,8 @@ Every tile is linearly remapped about the sea-floor level so that its **highest 
 ### 7.4 Tiles outside the world grid ("parked" tiles)
 
 World indices that fall outside the grid are dropped by `PutData`, so tiles may hang off the map edge [C]. Two shipped tiles are parked far outside the map (`mp_blitzkrieg_2p_1`: x = −67 487, z = −80 089; `mp_cts_4p_3`: x = −59 979, z = −35 486). For them `posX/cellSize + 0.5` is far below −1, so the `unsigned short` conversion of posXi/posZi is undefined in C++ (MSVC: low 16 bits of the truncated int, e.g. 59 914 and 58 863 for the first tile) [I] (23-U4). Either way the tile has no effect: with MSVC wrapping every destination index is ≥ cols and every write is dropped; with a saturating conversion (posXi = posZi = 0) the tile would be sampled far outside its own grid, return its border value `outside + posY`, which with their negative posY (−2.57, −1.00) rescales below `outsideHeight` and loses the max [I]. A re-implementation should simply skip tiles whose footprint does not intersect the grid.
+
+Tiles that only partly hang off the **low** edge (origin below −cellSize/2 but footprint overlapping the grid) behave pathologically under the MSVC conversion [I]: the destination index `x + posXi` wraps modulo 2¹⁶ back onto the grid, but the sampling coordinate `GetRealX(x + posXi)` is computed from the un-wrapped int (≈ 65 536 cells away), so the tile is sampled far outside itself and writes only its border value `outside + posY·heightFactor` where it overlaps the map. No shipped tile is in this situation (on-map origins are ≥ −1); a new editor should forbid or correctly support negative origins.
 
 ### 7.5 Composition rules
 
@@ -505,7 +507,7 @@ The same table applies independently on the z axis (rows). So off-map reads retu
 
 There is **no water-level parameter**: the sea surface is y = 0 everywhere [C]. Evidence: `Location::IsWalkable` uses a local `waterLevel = 0.0` and rejects paths with ≥ 40 units under water (sampled every 20 units) [C] `code/location.cpp:Location::IsWalkable`; the renderer culls quads whose six neighbouring samples are all ≤ 0 and sinks vertices below 0.3 to −10 [C] `code/landscape_renderer.cpp:LandscapeRenderer::BuildVertArrayAndTriStrip`; the shore mask treats height > 0 as land [C] `code/water.cpp:Water::GenerateLightMap`; the dynamic water mesh rests at y = 0 [C] `code/water.cpp:Water::BuildTriangleStrips`. Many entity rules test `y < 0` / `≤ 0` for "in water" (drowning, armour unloading, statue destruction) — see [02](02_units_and_entities.md) and [03](03_buildings_and_world_objects.md).
 
-Every shipped map has sea: land (height > 0) covers 8.0 % – 70.1 % of the world samples of the 57 `mp_*` maps (mean 43.5 %), and the whole map border is under water in all 69 files [C] (`S_23_terrain_oracle.py`, columns `land_frac`, `edge_max`). This resolves the phase-2 open question "does any shipped map lack sea (which would hang the AI's nuke-target search)": none does (see [07](07_ai.md)).
+Every shipped map has sea: land (height > 0) covers 8.0 % – 70.1 % of the world samples of the 57 `mp_*` maps (mean 43.5 %), and the whole map border is under water in all 69 files [C] (`S_23_terrain_oracle.py`, columns `land_frac`, `edge_max`). This resolves the phase-2 open question "does any shipped map lack sea?" raised for `Crate::RunNuke`, which re-rolls random positions in [0, sizeX − 100) × [0, sizeZ − 100) until the height is ≤ 0 and would loop forever on a map without water: every shipped map has sea inside that range (at least 29.9 % sea samples and a submerged border), so the loop terminates (see [04](04_crates_powerups_and_weapons.md)).
 
 ## 10 Normals — simulation versus render
 
@@ -776,7 +778,7 @@ Produced by `python3 -I _work/scripts/S_23_terrain_oracle.py <SRC> detail mp_kot
 | comp | 4 × 0.012578859… × 0.691640… = 0.03480018982936636 | 0.03480018982936636 | 0.00870004745734159 |
 | tile highest after posY | 11.67633525289311 | 27.39792619447322 | 39.5289374012995 |
 | range = highest − outside + 0.001 | 27.067335596215866 | 42.78892653779597 | 54.91993774462225 |
-| factor = (desired − outside)/range | 8.696459963951211 | 5.501189662596465 | 5.742723194805618 |
+| heightFactor = (desired − outside)/range | 8.696459963951211 | 5.501189662596465 | 5.742723194805618 |
 | posXi = (ushort)(x / cell + 0.5) | ⌊12.944 + 0.5⌋ = 13 | ⌊80.84 + 0.5⌋ = 81 | ⌊71.64 + 0.5⌋ = 72 |
 | posZi | ⌊16.497 + 0.5⌋ = 16 | ⌊8.376 + 0.5⌋ = 8 | **62** (see below) |
 | numCells | 143 | 64 | 52 |

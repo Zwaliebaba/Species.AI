@@ -111,6 +111,22 @@ def main():
         for k, v in counts.items():
             f.write("%s retail_or_listed=%d all_in_tree=%d\n" % (k, v[0], v[1]))
 
+    # Source-map rows: one per data/levels/mp_*.txt
+    lrows = ["| File | Role |", "|---|---|"]
+    for f in sorted(k for k in lv if os.path.basename(k).startswith("mp_") and os.path.dirname(k) == "data/levels"):
+        x = lv[f]
+        gt = x["gametypes_tokens"] or "none"
+        ships = "ships in retail data" if x["ships_retail"] == "Y" else "not in retail data"
+        if gt in ("none", ""):
+            role = "level with `GameTypes none` — never listed by the menu (%s)" % ships
+        elif gt == "TankBattle":
+            role = "TankBattle arena [B:DEBUG] (mode compiled out of FULL; %s)" % ships
+        else:
+            role = "%s map, %s players (%s)" % (gt, x["numplayers"], ships)
+        lrows.append("| `%s` | %s |" % (f, role))
+    with open(os.path.join(outdir, "S_01_levelrows.md"), "w", encoding="utf-8") as f:
+        f.write("\n".join(lrows) + "\n")
+
     srows = list(csv.DictReader(open(strings, newline="", encoding="utf-8")))
     sout = ["| # | String id | First use (file:line at f909630) | English text (IP — rewrite) |", "|---|---|---|---|"]
     for i, r in enumerate(srows, 1):

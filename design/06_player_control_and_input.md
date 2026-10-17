@@ -2176,11 +2176,156 @@ Every control not listed here has identical bindings in `data/input/input_prefer
 3. **Multiwinia-only bindings** (main file, not the Darwinia file): `LeftButtonPressed = mouse left pressed` (squad move, §6.3), `LeftButtonDown`, `LobbyChat = key enter down`, `ToggleRendering = key r down` (`TESTBED_ENABLED` only), `OrderSpecialMove = XInput x down`.
 4. **Mac file** ([B:DEAD] on PC) adds Ctrl+left-click equivalents for every right-button action (`DarwinianPromote`, `IssueSpecialOrders`, `UnitSetTarget`, `UnitEndSetTarget`, `IssueDarwinianOrders`, `UnitPrimaryFireTarget`) and moves `OrderDirectRoute` to `key meta pressed` and `UnitSecondaryFireTarget` to `key meta down && mouse left pressed` — both of which **fail to parse** (`META` outside the key lookup range).
 5. **Keyboard-layout overrides** (primary binding replaced): de_DE `CameraZoom = key y pressed` (the other camera keys restated unchanged); fr_FR `CameraLeft = key q pressed`, `CameraUp = key a pressed`, `CameraForwards = key z pressed`, `CameraZoom = key w pressed` (others restated). The secondary arrow-key bindings remain.
-6. **Duplicate physical inputs** (resolved by consumers, not by the input layer): F9 → `ToggleEditor` (dead) and `ToggleNetworkStats`; Tab → `UnitCycleRight`, `GesturesSwitchUnit`, `IconsTaskManagerDisplay`; Space → `UnitDeselect`, `CloseTaskHelp`, `ToggleReady`, `StopAttractMode`; right mouse → `CameraSlowdown`, `CameraDebugRotate`, `DarwinianPromote`, `IssueSpecialOrders`, `UnitSetTarget`, `IssueDarwinianOrders`, `UnitPrimaryFireTarget`, `EclipseRMousePressed`; left mouse down → `UnitSelect`, `SelectLocation`, `BeginSelectionCircle`, `UnitCreate`, `CloseTaskHelp`, `EclipseLMouseDown`, `LeftButtonDown`, `TileSelect`; Shift → `CameraSpeedup`, `OrderSpecialMove`, `ScrollSpeedup`; Ctrl → `OrderDirectRoute`, `FileMultiSelect`; P → `CreateScreenShot` (and loader keys); C → `IconsTaskManagerEndTask`, `CameraDeZoom`, `RTLoaderResolutionDecrease`; left trigger → `CameraDown`, `CameraRotate`, `CameraRotateLeft`, `UnitSecondaryFireTarget`; right trigger → `CameraUp`, `CameraRotateRight` (and `righttriggerb` → `UnitPrimaryFireTarget`); X button → `DarwinianPromote`, `IssueDarwinianOrders`, `OrderSpecialMove`, `UnitSetTarget`, `GesturesTaskManagerDisplay`; A button → `UnitSelect`, `BeginSelectionCircle`, `IssueSpecialOrders`, `UnitCreate`, `ToggleReady`, `MenuActivate`; right-stick click → `CameraZoom`, `CameraFreeMovement`. Consequence for design: the same right-click means *promote*, *toggle*, *order*, *fire* or *move* depending on context (§1.3) — a new game should model this as an explicit context resolver, not as overlapping bindings.
+6. **Duplicate physical inputs** are resolved by the consumers' context checks, not by the input layer; the complete reverse index is §12.7 (e.g. left mouse feeds 20 control bindings, pad A 15, right mouse 11). Design consequence: the same right-click means *promote*, *toggle*, *order*, *fire* or *move* depending on context (§1.3) — a new game should model this as an explicit context resolver rather than as overlapping bindings.
 7. **Failed / ignored lines in the PC file**: four `SpaceNav` lines (no 3D-mouse driver exists in this tree), `UnitPrimaryFireDirected ~ icons/button_ra.bmp` (no such control), `TaskManagerSwitchTask INPUT_TYPE_BOOL` (no `=`).
 8. **Controls with no binding** in the PC file (17): `CameraZoomChange`, `CameraSwitchMode` (commented out), `UnitSecondaryAim`, `UnitStartSecondaryFireDirected`, `UnitSecondaryFireDirected` (icons only), `TaskManagerSelectNextTask`, `TaskManagerDisplay`, `TaskManagerHide`, `TaskManagerSwitchTask`, `TaskManagerEndTask`, `RTLoaderMotionBlurDecrease`, `RTLoaderRMB`, `StartAttractMode`, `MouseMovement`, `IconsTaskManagerQuickUnit`, `IconsTaskManagerQuickUnitCreate`, `GameDebugQuit`. Of these, `UnitSecondaryFireDirected`, `TaskManagerEndTask` and `GameDebugQuit` are read by live code but can never fire.
 9. **Bound but unread in the FULL build**: `CameraDeZoom`, `CameraRotate`, `CameraRotateLeft/Right` (uncalled helper), `LeftButtonDown`, `WeaponCycleLeft`, `WeaponCycleRight`, `GesturesTaskManagerHide`, `TileSelect`/`TileDrop`/`TileDrag` (`LOCATION_EDITOR`), `DebugDropPacket` (`TARGET_DEBUG`), `LoaderHelp` and all `GOLLoader*`/`RTLoader*` (`USE_LOADERS`; `RTLoaderPixelWave*` also read by the `CHEATMENU_ENABLED` lighting cheat), `SepulvedaHelp` and `SkipTutorial` (`USE_SEPULVEDA_HELP_TUTORIAL`), `DebugCameraFixUp` (`_DEBUG`), `ToggleEditor` (commented out under `LOCATION_EDITOR`), `ToggleCheatMenu` (`CHEATMENU_ENABLED`), `ToggleRendering` (`TESTBED_ENABLED`), `StopAttractMode`/`StartAttractMode` (read only in `AttractMode::Advance`, called only under `ATTRACTMODE_ENABLED`) [C] `code/main.cpp`, `code/attract.cpp:AttractMode::Advance`.
 10. **Gamepad-only controls** (no keyboard/mouse binding): all `Menu*` navigation except `MenuEscape`, `MenuClose`, `MainMenuActivate`; `Leaderboard*`, `XBoxMenuCycle*`, `CameraMove`, `TargetMoveSecondary`, `CameraRotate*`, `UnitMove`, `UnitMoveDirectionChange`, `UnitTargetDirected`, `WeaponCycle*`, `IconsTaskManagerDisplayDown/Pressed/Up`, `IconsTaskManagerQuickUnit{Left,Right,Up,Down}`, `CameraSquadZoomIn/Out`, `ControllerPlugged/Unplugged`, `ShowMouseCursor`. On keyboard, menu navigation is mouse-driven (Eclipse windows) and the analogue camera/unit controls have digital equivalents.
 11. **Controller hot-plug** [C] `code/main.cpp:HandleCommonConditions`: `ControllerUnplugged` (`XInput plug up`) opens the `controller_unplugged` dialog once; `ControllerPlugged` (`XInput plug down`) closes it; while unplugged and the input mode is still GAMEPAD the app treats itself as unfocused (`m_lostFocusPause`). `ControlGameDebugQuit` would set `m_requestQuit` but is unbound.
 12. **Analogue payload conventions**: `CameraMove`/`UnitMove`/`TargetMoveSecondary`/`UnitTargetDirected` deliver the scaled stick (x right-positive, **y up-negative**, left about ±40, right about ±20 at sensitivity 100, §11.6.6); `TargetMove` delivers mouse pixels per frame; `TargetMoveZ` wheel notches per frame (forward = +1). `CameraUp`/`CameraDown` on the triggers are BOOL controls fed by 1D specs (true while the trigger is outside its threshold).
+
+### 12.7 Reverse index — physical input to controls (PC default file)
+
+Generated by `_work/scripts/S_06_reverse_index.py` from the same CSV (every binding that parses in `data/input/input_preferences.txt`; ⚑ = unknown-condition fallback). Operands of `&&` and `++` are indexed individually.
+
+| Physical input | Bound controls (condition; "+&&" = operand of a conjunction, "+chord" = operand of a chord) | Count |
+|---|---|---|
+| `key 1` | `TaskManagerSelectTask1` (down), `RTLoaderCameraMode1` (pressed) | 2 |
+| `key 2` | `TaskManagerSelectTask2` (down), `RTLoaderCameraMode2` (pressed) | 2 |
+| `key 3` | `TaskManagerSelectTask3` (down), `RTLoaderCameraMode3` (pressed) | 2 |
+| `key 4` | `TaskManagerSelectTask4` (down) | 1 |
+| `key 5` | `TaskManagerSelectTask5` (down) | 1 |
+| `key 6` | `TaskManagerSelectTask6` (down) | 1 |
+| `key 7` | `TaskManagerSelectTask7` (down) | 1 |
+| `key 8` | `TaskManagerSelectTask8` (down) | 1 |
+| `key 9` | `TaskManagerSelectTask9` (down) | 1 |
+| `key a` | `CameraLeft` (pressed), `GestureLeft` (down) | 2 |
+| `key alt` | `GesturesTaskManagerDisplay` (pressed), `GesturesTaskManagerHide` (up), `ToggleInterface` (pressed +&&) | 3 |
+| `key b` | `RTLoaderBrightnessIncrease` (pressed) | 1 |
+| `key c` | `CameraDeZoom` (pressed), `GesturesTaskManagerEndTask` (down/pressed +chord), `IconsTaskManagerEndTask` (down), `RTLoaderResolutionDecrease` (down) | 4 |
+| `key closebrace` | `UnitCycleRight` (down) | 1 |
+| `key control` | `OrderDirectRoute` (pressed), `GesturesTaskManagerEndTask` (down/pressed +chord), `FileMultiSelect` (pressed) | 3 |
+| `key d` | `CameraRight` (pressed), `GestureRight` (down) | 2 |
+| `key down` | `CameraBackwards` (pressed) | 1 |
+| `key e` | `CameraDown` (pressed) | 1 |
+| `key enter` | `SkipMessage` (down), `SkipCutscene` (down), `ActivateTMButton` (down), `StopAttractMode` (down), `CloseTaskHelp` (down), `LobbyChat` (down) | 6 |
+| `key esc` | `MenuEscape` (down), `SkipMessage` (down), `StopAttractMode` (down), `CloseTaskHelp` (down) | 4 |
+| `key f` | `DebugDropPacket` (pressed) | 1 |
+| `key f1` | `IconsTaskManagerNewSquad` (down) | 1 |
+| `key f11` | `ToggleCheatMenu` (down) | 1 |
+| `key f2` | `IconsTaskManagerNewEngineer` (down), `CameraFreeMovement` (pressed) | 2 |
+| `key f3` | `IconsTaskManagerNewOfficer` (down) | 1 |
+| `key f4` | `IconsTaskManagerNewArmour` (down) | 1 |
+| `key f5` | `IconsTaskManagerSelectGrenade` (down) | 1 |
+| `key f6` | `IconsTaskManagerSelectRocket` (down) | 1 |
+| `key f7` | `IconsTaskManagerSelectAirStrike` (down) | 1 |
+| `key f8` | `IconsTaskManagerSelectController` (down) | 1 |
+| `key f9` | `ToggleEditor` (down), `ToggleNetworkStats` (down) | 2 |
+| `key g` | `GOLLoaderReset` (down), `DebugCameraFixUp` (pressed) | 2 |
+| `key h` | `LoaderHelp` (pressed), `SepulvedaHelp` (down) | 2 |
+| `key i` | `RTLoaderPixelBlurIncrease` (down) | 1 |
+| `key k` | `RTLoaderPixelWaveDecrease` (pressed) | 1 |
+| `key l` | `GesturesChatLog` (pressed), `IconsChatLog` (pressed), `RTLoaderPixelWaveIncrease` (pressed) | 3 |
+| `key left` | `CameraLeft` (pressed), `GestureLeft` (down) | 2 |
+| `key m` | `RTLoaderMotionBlurIncrease` (pressed) | 1 |
+| `key o` | `GOLLoaderSlowdown` (pressed), `RTLoaderReflectivenessDecrease` (pressed) | 2 |
+| `key openbrace` | `UnitCycleLeft` (down) | 1 |
+| `key p` | `GOLLoaderSpeedup` (pressed), `RTLoaderReflectivenessIncrease` (pressed), `CreateScreenShot` (down) | 3 |
+| `key pause` | `GamePause` (down) | 1 |
+| `key q` | `CameraUp` (pressed) | 1 |
+| `key r` | `ToggleRendering` (down) | 1 |
+| `key right` | `CameraRight` (pressed), `GestureRight` (down) | 2 |
+| `key s` | `CameraBackwards` (pressed), `TaskManagerScrollDown` (down) | 2 |
+| `key shift` | `CameraSpeedup` (pressed), `OrderSpecialMove` (pressed), `ScrollSpeedup` (pressed) | 3 |
+| `key space` | `UnitDeselect` (down), `StopAttractMode` (down), `ToggleReady` (down), `CloseTaskHelp` (down) | 4 |
+| `key t` | `SkipTutorial` (pressed) | 1 |
+| `key tab` | `UnitCycleRight` (down), `GesturesSwitchUnit` (down), `IconsTaskManagerDisplay` (down), `IconsTaskManagerHide` (up) | 4 |
+| `key u` | `RTLoaderPixelBlurDecrease` (down) | 1 |
+| `key up` | `CameraForwards` (pressed) | 1 |
+| `key v` | `RTLoaderBrightnessDecrease` (pressed) | 1 |
+| `key w` | `CameraForwards` (pressed), `TaskManagerScrollUp` (down) | 2 |
+| `key x` | `RTLoaderResolutionIncrease` (down), `ToggleInterface` (down +&&) | 2 |
+| `key z` | `CameraZoom` (pressed) | 1 |
+| `mouse axes` | `TargetMove` (move) | 1 |
+| `mouse left` | `GestureActive` (pressed), `BeginSelectionCircle` (down), `EnlargeSelectionCircle` (pressed), `EndSelectionCircle` (up), `LeftButtonPressed` (pressed), `LeftButtonDown` (down), `UnitSelect` (down), `UnitSecondaryFireTarget` (down +&&), `UnitCreate` (down), `ActivateTMButton` (up), `EclipseLMouseDown` (down), `EclipseLMousePressed` (pressed), `SelectLocation` (down), `LocationDragActive` (pressed), `DeselectLocation` (up), `TileSelect` (down), `TileDrop` (up), `TileDrag` (pressed), `RTLoaderLMB` (pressed), `CloseTaskHelp` (down) | 20 |
+| `mouse middle` | `CameraZoom` (pressed) | 1 |
+| `mouse right` | `CameraSlowdown` (pressed), `CameraDebugRotate` (pressed), `DarwinianPromote` (down), `IssueDarwinianOrders` (down), `IssueSpecialOrders` (down), `UnitEndSetTarget` (up), `UnitSetTarget` (pressed), `UnitPrimaryFireTarget` (pressed), `UnitSecondaryFireTarget` (pressed +&&), `EclipseRMousePressed` (down), `RTLoaderLMB` (pressed) | 11 |
+| `mouse wheel` | `TargetMoveZ` (move) | 1 |
+| `XInput a` | `MenuActivate` (down), `SkipMessage` (down), `GestureActive` (pressed), `BeginSelectionCircle` (down), `EnlargeSelectionCircle` (pressed), `EndSelectionCircle` (up), `IssueSpecialOrders` (down), `UnitSelect` (down), `UnitCreate` (down), `ActivateTMButton` (up), `EclipseLMouseDown` (down +&&), `EclipseLMousePressed` (pressed +&&), `SelectLocation` (down), `ToggleReady` (down), `CloseTaskHelp` (down) | 15 |
+| `XInput b` | `MenuClose` (down), `SkipMessage` (down), `SkipCutscene` (down), `UnitDeselect` (down), `IconsTaskManagerHide` (down), `StopAttractMode` (down), `ToggleReady` (down) | 7 |
+| `XInput back` | `MenuClose` (down), `IconsTaskManagerDisplayDown` (down), `IconsTaskManagerDisplayPressed` (pressed), `IconsTaskManagerDisplayUp` (up), `IconsTaskManagerHide` (down) | 5 |
+| `XInput dpaddown` | `MenuDown` (repeat), `IconsTaskManagerQuickUnitDown` (down), `CameraSquadZoomOut` (pressed) | 3 |
+| `XInput dpadleft` | `MenuLeft` (repeat), `WeaponCycleLeft` (down), `GestureLeft` (donw ⚑), `IconsTaskManagerQuickUnitLeft` (down) | 4 |
+| `XInput dpadright` | `MenuRight` (repeat), `WeaponCycleRight` (down), `GestureRight` (down), `IconsTaskManagerQuickUnitRight` (down) | 4 |
+| `XInput dpadup` | `MenuUp` (repeat), `IconsTaskManagerQuickUnitUp` (down), `CameraSquadZoomIn` (pressed) | 3 |
+| `XInput leftbumper` | `UnitCycleLeft` (down), `XBoxMenuCycleUp` (repeat), `GestureLeft` (down), `ShowMouseCursor` (pressed) | 4 |
+| `XInput leftthumbstick` | `CameraMove` (position), `CameraSpeedup` (pressed), `UnitMove` (position), `UnitMoveDirectionChange` (move) | 4 |
+| `XInput leftthumbstickdown` | `MenuDown` (repeat) | 1 |
+| `XInput leftthumbstickleft` | `MenuLeft` (repeat) | 1 |
+| `XInput leftthumbstickright` | `MenuRight` (repeat) | 1 |
+| `XInput leftthumbstickup` | `MenuUp` (repeat) | 1 |
+| `XInput lefttrigger` | `LeaderboardLTrigger` (repeat ⚑), `CameraDown` (position), `CameraRotate` (position), `CameraRotateLeft` (position), `UnitSecondaryFireTarget` (down ⚑) | 5 |
+| `XInput plug` | `ControllerUnplugged` (up), `ControllerPlugged` (down) | 2 |
+| `XInput rightbumper` | `UnitCycleRight` (down), `XBoxMenuCycleDown` (repeat), `GestureRight` (down) | 3 |
+| `XInput rightthumbstick` | `CameraZoom` (pressed), `TargetMoveSecondary` (position), `UnitTargetDirected` (position), `CameraFreeMovement` (pressed) | 4 |
+| `XInput rightthumbstickdown` | `MenuDown` (repeat) | 1 |
+| `XInput rightthumbstickleft` | `MenuLeft` (repeat) | 1 |
+| `XInput rightthumbstickright` | `MenuRight` (repeat) | 1 |
+| `XInput rightthumbstickup` | `MenuUp` (repeat) | 1 |
+| `XInput righttrigger` | `LeaderboardRTrigger` (repeat ⚑), `CameraUp` (position), `CameraRotateRight` (position) | 3 |
+| `XInput righttriggerb` | `UnitPrimaryFireTarget` (pressed) | 1 |
+| `XInput start` | `MenuEscape` (down), `SkipMessage` (down), `StopAttractMode` (down), `MainMenuActivate` (down) | 4 |
+| `XInput x` | `DarwinianPromote` (down), `IssueDarwinianOrders` (down), `OrderSpecialMove` (down), `UnitEndSetTarget` (up), `UnitSetTarget` (pressed), `GesturesTaskManagerDisplay` (pressed), `GesturesTaskManagerHide` (up) | 7 |
+| `XInput y` | `LeaderboardWeekly` (down), `SkipMessage` (down), `GesturesTaskManagerEndTask` (down), `IconsTaskManagerEndTask` (down) | 4 |
+| `alias ShowMouseCursor` | `EclipseLMouseDown` (— +&&), `EclipseLMousePressed` (— +&&) | 2 |
+| `idle` | `StopAttractMode` (no longer) | 1 |
+
+
+## 13 Known defects and desync paths in the input layer
+
+Severity: **desync** = can make peers' simulations diverge; **latent** = would desync if a dormant path became reachable; **wrong** = deterministic but incorrect behaviour; **UX** = player-facing quirk; **robustness** = parser/driver bug. Determinism context: [22](22_determinism_and_networking.md).
+
+| # | Defect | Severity | Status in FULL | Evidence |
+|---|---|---|---|---|
+| X1 | `InsertionSquad::DirectControl` (simulation, run on every peer for the networked `TeamControls` of whichever team is processed) early-outs on `!controls.m_cameraEntityTracking && !g_app->m_camera->m_camLookAround` — the **local** camera's look-around flag — and then uses the **local** `Camera::GetControlVector()`; a peer holding F2/R3 runs way-point, stop and extra `Attack` logic (which consumes `syncfrand`) for other teams' squads that peers not holding it skip. It also writes the local camera's `m_targetVector`/`m_wantedTargetVector` | **desync** | live (rare trigger: a player holding look-around while any squad is controlled without entity tracking) | [C] `code/worldobject/insertion_squad.cpp:InsertionSquad::DirectControl`; called from `code/location.cpp:Location::UpdateTeam`, whose own comment warns that input state is invalid there |
+| X2 | `FenceSwitch::Switch()` toggled directly on the clicking client, no network message | latent desync | unreachable: FenceSwitch is blocked and appears in no shipped level | [C] `code/location_input.cpp:LocationInput::SelectObjectUnderMouse`, `code/worldobject/switch.cpp:FenceSwitch::Switch` |
+| X3 | Route-preview lines (generated every frame, deleted next frame) are allocated from the same `RoutingSystem` free list as simulation routes (`IssueDarwinianOrders`, `Officer::SetOrders`), so route **ids** handed to Darwinians may differ between peers | possible desync | live; impact depends on whether route ids are ever compared/hashed (06-U4) | [C] `LocationInput::AdvanceTeamControl` (`m_routeId`), `code/routing_system.cpp`; [I] impact (P01 D15) |
+| X4 | `GameCursor::RenderCrosshair` uses `building->m_type = Building::TypeRadarDish` (assignment) — render code overwrites the selected building's type on the local client | latent desync | no-op today (only GunTurret and RadarDish are selectable) | [C] `code/gamecursor.cpp:GameCursor::RenderCrosshair` |
+| X5 | Simulation calls UI singletons: `TaskManager::SelectTask` → `GameCursor::BoostSelectionArrows`; `Task::*` → `TaskManagerInterface::SetCurrentMessage`, sounds, camera requests; `Location::IssueDarwinianOrders`/`UpdateTeam` → `GameCursor::CreateMarker`; `Team::SelectUnit` → camera turret-aim. All guarded by "local team" or cosmetic | latent | live (cosmetic) | [C] `code/taskmanager.cpp`, `code/location.cpp`, `code/team.cpp:Team::SelectUnit` |
+| X6 | UI writes a replicated field: `TaskManagerInterfaceMultiwinia::Advance` sets `tm->m_mostRecentTaskId = −1` on the owning client only (1 s after the pop-up starts minimising, or 1 s after creation with `HelpEnabled` 0). Simulation reads `m_mostRecentTaskId` right after `RunTask` (crate turret/napalm option, instant units, AI officer) — safe only because those reads follow a successful `RunTask` in the same tick | latent desync | live | [C] `code/taskmanager_interface_multiwinia.cpp:TaskManagerInterfaceMultiwinia::Advance`; `code/worldobject/crate.cpp:Crate::CaptureCrate` |
+| X7 | Wall-clock values inside replicated objects: `m_mostRecentTaskIdTimer`, `TaskSource::m_timer`, edited by `TaskManager::Advance` (simulation tick) | latent | live (UI-only readers) | [C] `TaskManager::RunTask`, `TaskManager::Advance` |
+| X8 | Dormant **local** task terminations: `RunScreenZone("DeleteTask")` (unbound key / never-visible zones) and the Gestures interface's `AdvanceTerminate` call `TerminateTask` without a network message | latent desync | unreachable in MP | [C] `TaskManagerInterfaceMultiwinia::RunScreenZone`, `TaskManagerInterfaceGestures::AdvanceTerminate` |
+| X9 | The `TOGGLEENTITY` officer branch calls `RequestSelectUnit` from inside command execution on **every** peer → N identical `SELECTUNIT` commands from one click (idempotent; the server keeps only the last `SELECTUNIT` per client per tick) | wrong (benign) | live | [C] `ClientToServer::ProcessServerUpdates`; `code/network/server.cpp:Server::Advance` (`SaveLast`) |
+| X10 | Task ids travel as one byte: ids ≥ 256 alias (`id mod 256`); id 255 is the "entity" sentinel for `TERMINATE` and cannot be terminated | wrong | live (needs ≥ 256 tasks for one team) | [C] `ClientToServer::RequestTargetProgram`, `RequestSelectProgram`, `RequestTerminateProgram` |
+| X11 | The server relays any team command from any registered client (only TEAMID ≠ 255 is checked) — a modified client can order, select or terminate for another team | security | live | [C] `code/network/server.cpp:Server::Advance` (P15) |
+| X12 | Squad camera distance is an `int`: zoom-in moves 1 u per frame (frame-rate dependent), zoom-out (+10·dt) never changes it unless dt ≥ 0.1 s | UX | live (pad) | [C] `code/camera.h:Camera::m_trackingCameraDist`, `Camera::AdvanceAutomaticTracking` |
+| X13 | Unknown binding-condition words are accepted as `down` with type 0 (4 shipped bindings rely on it) | robustness | live | [C] `code/lib/input/inputdriver.cpp:InputDriver::getDefaultConditionID` |
+| X14 | Analogue trigger value `floor(raw·6.3)` stored in a `BYTE` overflows for raw > 40 (06-U2); only zero/non-zero is robust | robustness | live (no shipped binding uses trigger magnitude) | [C] `code/lib/input/inputdriver_xinput.cpp:Controller::scaleInputs` |
+| X15 | Rebinding writes the *translated* key noun into the binding string; 16 keys (CTRL, Ins, `=`, `-`, `/`, `.`, `*`, `@`, `\`, `~`, `{`, `}`, NUM_+, NUM_-, NUM_DEL, NUM_/) produce unreadable strings, so the rebind silently fails | robustness | unreachable (key-binding window not reachable in FULL) | [C] `W32InputDriver::getInputDescription`, `code/interface/prefs_keybindings_window.cpp:ApplyKeybindingsButton::MouseUp` |
+| X16 | Lost or phantom edges: a press and release within one frame loses the `down` edge; mouse clicks shorter than one frame are lost entirely; `key alt down/up` never fire; keys released while ALT is held give no `up`; Alt+key auto-repeat re-fires `down` (Alt+X toggles repeatedly); F10 is unbindable | UX | live | [C] `code/lib/input/inputdriver_win32.cpp:W32InputDriver::WndProc`, `W32InputDriver::Advance` |
+| X17 | `key minus_pad` binds VK 108 (separator) because the name table and `KEY_MINUS_PAD` (109) disagree; `META` (224) is outside the lookup range | robustness | live | [C] `code/lib/input/keynames.cpp:getKeyNames`, `code/lib/input/keydefs.h` |
+| X18 | Driver bugs with no shipped trigger: Prefs driver key index off by one; Value driver leaves `spec.type` uninitialised; Idle driver reads past its 3-entry word table on an unknown word; Pipe driver throws on parse and needs a never-created filter manager; Alias recursion unguarded | robustness | dormant | [C] `inputdriver_prefs.cpp`, `inputdriver_value.cpp`, `inputdriver_idle.cpp`, `inputdriver_pipe.cpp`, `inputdriver_alias.cpp` |
+| X19 | The XInput `repeat` timer table is static, shared by all four pads and by every binding on the same control, and mutated during queries | robustness | live (menus) | [C] `inputdriver_xinput.cpp` (`s_nextrepeat`) |
+| X20 | Any of the four connected pads drives the single local player (first pad satisfying a spec wins); there is no per-player pad assignment | UX | live | [C] `XInputDriver::getInput`; `setControllerMask` has no caller |
+| X21 | The MP task bar is display-only for the mouse; clicking an icon does nothing (selection by keys, Tab, bumpers or world click only) | UX | live | [C] `TaskManagerInterfaceMultiwinia::AdvanceScreenZones` |
+| X22 | In MP, `GameCursor::CreateMarker` adds a move-confirmation marker on every order but only the SP path renders and deletes them → unbounded list growth during a match | wrong (leak) | live | [C] `code/gamecursor.cpp:GameCursor::RenderMarkers`, `code/location.cpp:Location::IssueDarwinianOrders` |
+| X23 | `Location::IssueDarwinianOrders` divides by the number of controlled Darwinians; if they all died between the click and the command (or the group was released), the route starts at NaN | wrong (deterministic) | live [I] (timing-dependent) | [C] `code/location.cpp:Location::IssueDarwinianOrders` |
+| X24 | One left click with nothing selected calls `SelectObjectUnderMouse` twice (`ControlUnitSelect` and `ControlSelectLocation` are both LMB down) → two identical `SELECTUNIT` letters (collapsed by the server's latest-only rule) and two local camera-mode requests | wrong (benign) | live | [C] `LocationInput::AdvanceTeamControl`, `LocationInput::AdvanceNoSelection` |
+| X25 | The first two frames after any camera mode change run the debug fly-camera advancer | UX | live | [C] `code/camera.cpp:Camera::Advance` |
+| X26 | Horizontal camera bounds are stored but the clamp is commented out — the camera can fly arbitrarily far from the map | UX | live | [C] `Camera::AdvanceFreeMovementMode`, `code/main.cpp:DoEnterLocation` |
+| X27 | `WM_INPUTLANGCHANGE` is only logged: a keyboard-layout change at run time does not reload the layout bindings; "Restore defaults" does not re-apply the layout layer | UX | live / unreachable window | [C] `code/lib/input/win32_eventhandler.cpp:W32EventHandler::WndProc`, `RestoreDefaultsButton::MouseUp` |
+| X28 | `Team::SelectUnit` triggers interface sounds `TaskManagerSelectTask`/`TaskManagerDeselectTask` for **every** team's selection (not only the local team); harmless only because neither event is defined in `data/sounds.txt` | latent UX | silent | [C] `code/team.cpp:Team::SelectUnit`; grep of `data/` |
+| X29 | Control help is computed every frame but never displayed in MP; the gamepad has no on-screen control guidance during a match except the §10.4 text hints | UX | live | [C] `code/control_help.cpp:ControlHelpSystem::Render` |
+
+## 14 Re-implementation notes
+
+Design guidance distilled from the findings above (not a description of the original; see [40](40_carry_forward_assessment.md) for the full carry-forward assessment).
+
+1. **Command model.** Keep the split between *discrete commands* (select, place, terminate, promote, order, toggle) and a *continuous control packet* sampled at the simulation rate — but convert every camera-relative quantity to world space on the sending client and make simulation code read only the packet (fixes X1). Emit no network commands from simulation code (X9) and route every simulation → UI side effect through an event queue consumed by the local presentation layer (X5, X6, X7, X22).
+2. **Authority.** Validate on the host that the sender owns the team a command addresses (X11); use ≥ 16-bit task ids with no in-band sentinel (X10).
+3. **Context resolver.** The original overloads the right button with five meanings (§12.6 note 6). Model "what does a click mean here?" as an explicit, testable resolver over (selection, hovered object, placing task, modifiers), with the priority order of §1.3 (toggle on hovered officer/armour → promote hovered Darwinian → order selection → error hint).
+4. **Input layer.** A binding graph with drivers and composite operators is a good fit for DirectInput/XInput/GameInput back-ends; keep the formal grammar (§11.11) but reject unknown conditions (map the four shipped quirks explicitly), use one VK → name table, use Raw Input or per-event queues so sub-frame presses are not lost (X16), support per-player pad assignment (X20), and expose a reachable rebinding UI that serialises canonical names, not translated nouns (X15).
+5. **Camera.** The cursor-follow free camera (§9.5) is distinctive and cheap; store distances as floats (X12), clamp to level bounds (X26), and drop the debug-advancer grace frames (X25). Camera mounts per player slot are the only mount feature Multiwinia uses.
+6. **Task bar.** Make the power-up bar clickable (X21), show empty slots (capacity 6) explicitly, and keep the slot-ordering rules (§3.5) only if keyboard slot numbers must stay stable — otherwise prefer stable slot positions.
+7. **Gestures** are optional; if kept, port the recogniser with the documented defects only if the original training data is reused, otherwise fix f3/f4/f8/Mahalanobis and retrain on new symbols (IP).
 

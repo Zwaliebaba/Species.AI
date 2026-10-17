@@ -82,9 +82,11 @@ for name, items in cited_by_doc.items():
         else:
             # tolerate a cited stem without extension: code/foo -> code/foo.cpp/.h
             stem_hits = [m for m in by_lower if m.rsplit('.', 1)[0] == p]
+            # a bare (un-backticked) match truncated at a space in a real file name, e.g. "docs/sound changes.txt"
+            space_hits = [m for m in by_lower if m.startswith(p + ' ')]
             if stem_hits:
                 for h in stem_hits: cited_files[h].add(name)
-            else:
+            elif not space_hits:
                 bad_citations[p].add(name)
 
 # ---------- coverage fragments ----------

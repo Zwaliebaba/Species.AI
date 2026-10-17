@@ -6,7 +6,18 @@
 
 ## Contents
 
-(filled at the end)
+- [1 Backend architecture](#1-backend-architecture) — 1.1 backend selection and per-file guards · 1.2 D3D build viability (four blockers) · 1.3 native OpenGL path (API surface, extensions and blacklist, WGL context/vsync/MSAA, `safegl`) · 1.4 hardware-compatibility fallbacks · 1.5 D3D9 GL-emulation layer (module map, device, vertex format, state cache, capability and enum tables, complete entry-point table, immediate mode, matrix stacks, display lists, VBOs/textures/mips, FixedPipeline, present/device loss, defects D1–D29, tracing)
+- [2 Renderer object, initialisation and baseline state](#2-renderer-object-initialisation-and-baseline-state) — members, window-creation fallback chain, baseline GL state contract, prediction convention, screenshots, fade/pause/logo/menu transition
+- [3 Frame composition](#3-frame-composition) — frame types, **ordered pass table with full state per pass**, branches, reachability in a Multiwinia match, **pipeline diagram**
+- [4 Renderer components](#4-renderer-components) — 4.1 landscape · 4.2 water · 4.3 water reflection · 4.4 clouds/sky · 4.5 shapes (format, hierarchy, display lists, team colouring, hit tests) · 4.6 buildings · 4.7 trees · 4.8 laser fences · 4.9 entities/sprites/billboards · 4.10 lasers/beams/lightning/blasts · 4.11 particles · 4.12 explosions · 4.13 deform · 4.14 pixel effect · 4.15 glow/starburst/god-rays/blur · 4.16 sphere renderer · 4.17 route lines · 4.18 markers · 4.19 cursor · 4.20 task-manager/HUD · 4.21 UI windows · 4.22 text and font atlases (Unicode/CJK) · 4.23 debug renderers · 4.24 global internet/sphere world · 4.25 loading screen
+- [5 Camera, projection, frustum, fog, lighting, shadows](#5-camera-projection-frustum-fog-lighting-shadows) — projection/view, near-plane depth bias, frustum tests, fog, lighting model and level lights, shadows, screen-space effects
+- 6 Shaders — all 14 files of `data/shaders/` with inputs, outputs, uniforms, effect and binding code
+- 7 Visual style; resolution and aspect
+- 8 Graphics options, quality presets and performance budgets
+- [9 Direct3D 12 mapping notes per component](#9-direct3d-12-mapping-notes-per-component)
+- [Open questions and unknowns](#open-questions-and-unknowns) · [Docs-vs-code discrepancies](#docs-vs-code-discrepancies) · [IP items](#ip-items) · [Source map](#source-map) · [Appendix — dead/legacy code](#appendix--deadlegacy-code)
+
+Reading guide: everything not tagged otherwise is **[B:FULL]** (the shipped OpenGL `multiwinia.exe`). The D3D9 path ([B:D3D]) is documented completely in §1.5 and §6 but is a secondary, probably non-building configuration. Content of individual objects is owned by [02](02_units_and_entities.md), [03](03_buildings_and_world_objects.md) and [04](04_crates_powerups_and_weapons.md); particle/explosion models by [26](26_animation_and_vfx.md); textures and the asset catalogue by [25](25_textures_and_assets.md); terrain generation by [23](23_terrain_and_landscape.md); UI widgets by [28](28_ui_framework.md); window management by [31](31_platform_build_and_tools.md).
 
 ## 1 Backend architecture
 
@@ -260,7 +271,7 @@ classDiagram
 | `g_supportsHwVertexProcessing` | `bool` (default true) | `caps.DevCaps & D3DDEVCAPS_HWTRANSFORMANDLIGHT` |
 | `g_currentVertexBuffer` | `IDirect3DVertexBuffer9 **` | slot of the VBO bound by `glBindBufferD3D` |
 
-`Direct3DInit` (summary; full table in [31](31_platform_build_and_tools.md)) [C]: `D3DADAPTER_DEFAULT`, `D3DDEVTYPE_HAL`; hardware vertex processing if `D3DDEVCAPS_HWTRANSFORMANDLIGHT` else software; behaviour flags contain **no `D3DCREATE_FPU_PRESERVE` and no `D3DCREATE_MULTITHREADED`** (x87 precision drops to 24-bit, see [22](22_determinism_and_networking.md)); windowed = desktop format, fullscreen colour 24/32 → `X8R8G8B8` (fallback `A8R8G8B8`), 15/16 → `X1R5G5B5` (fallbacks `R5G6B5`, `A1R5G5B5`); depth 16→`D16`, 24→`D24X8`, 32→`D32`, no stencil; `SwapEffect=DISCARD`, one back buffer; `PresentationInterval = waitVRT ? ONE : IMMEDIATE`; no multisampling; refresh-rate preference not applied (`FullScreen_RefreshRateInHz` = 0). After creation: `InitialiseData()` (matrix stacks, vertex declaration, 1024-vertex immediate buffer, cleared texture table, cull/hints/attribute reset, mip work queue), `BeginScene`, `SetVertexDeclaration`, `CreateD3DResources()` → `DeformEffect::Create`, `WaterReflectionEffect::Create`, `new FixedPipeline`.
+`Direct3DInit` (summary; full table in [31](31_platform_build_and_tools.md)) [C]: `D3DADAPTER_DEFAULT`, `D3DDEVTYPE_HAL`; hardware vertex processing if `D3DDEVCAPS_HWTRANSFORMANDLIGHT` else software; behaviour flags contain **no `D3DCREATE_FPU_PRESERVE` and no `D3DCREATE_MULTITHREADED`** (x87 precision then drops to 24-bit [I], see [22](22_determinism_and_networking.md), 24-U13); windowed = desktop format, fullscreen colour 24/32 → `X8R8G8B8` (fallback `A8R8G8B8`), 15/16 → `X1R5G5B5` (fallbacks `R5G6B5`, `A1R5G5B5`); depth 16→`D16`, 24→`D24X8`, 32→`D32`, no stencil; `SwapEffect=DISCARD`, one back buffer; `PresentationInterval = waitVRT ? ONE : IMMEDIATE`; no multisampling; refresh-rate preference not applied (`FullScreen_RefreshRateInHz` = 0). After creation: `InitialiseData()` (matrix stacks, vertex declaration, 1024-vertex immediate buffer, cleared texture table, cull/hints/attribute reset, mip work queue), `BeginScene`, `SetVertexDeclaration`, `CreateD3DResources()` → `DeformEffect::Create`, `WaterReflectionEffect::Create`, `new FixedPipeline`.
 
 #### 1.5.3 Vertex format [C] `code/lib/opengl_directx_internals.h:CustomVertex`, `s_customVertexDesc`
 
@@ -812,11 +823,11 @@ flowchart TD
     S2 --> B{"frame type"}
     B -->|"main menu"| GM["GameMenu::Render: clouds only"]
     B -->|"global world LEGACY"| GW["GlobalWorld::Render"]
-    B -->|"match, Multiplayer true"| LR
+    B -->|"match, Multiplayer true"| LOC
     B -->|"single player + RenderPixelShader LEGACY"| PX["PreRenderPixelEffect 256x256 then copy texture"]
     PX --> D3["D3D only: water reflection RT, deform Start"]
-    D3 --> LR
-    subgraph LR["Location::Render true"]
+    D3 --> LOC
+    subgraph LOC["Location::Render true"]
       C1["Sky grid, blobby clouds, flat clouds: additive, fog black"] --> L1["Landscape main: lit, flat, fogged"]
       L1 --> L2["Landscape outline overlay: additive, depth write off"]
       L2 --> W1["Flat water: 2 texture units, cull off"]
@@ -826,8 +837,8 @@ flowchart TD
       T --> BA["Building alphas: lights and ports, depth sorted far to near"]
       BA --> FX["Effects additive"] --> LZ["Lasers near x1.2"] --> SP["Spirits"] --> RT["Route lines no depth test"] --> MSG["Location message text"]
     end
-    LR --> AP["ApplyPixelEffect: single player only"]
-    LR --> EX["Explosion debris: DECAL wireframe, lit"]
+    LOC --> AP["ApplyPixelEffect: single player only"]
+    LOC --> EX["Explosion debris: DECAL wireframe, lit"]
     AP --> EX
     EX --> PA["Particles: smoke darkening, then glow additive"]
     PA --> DF["D3D deform Stop: single player only"]
@@ -1069,14 +1080,14 @@ Marker: <name>                   # up to 100
 
 - **Solid pass** (pass 6): `Location::RenderBuildings` sets fog, `SetObjectLighting` (or special lighting, §5.5) and calls `Building::Render` for every in-view building with the slice-aware prediction time. Default `Building::Render` = `m_shape->Render(t, Matrix34(m_front, m_up, m_pos))` plus, when editing, a debug arrow. Subclasses add extras (team-coloured turret barrels, fence posts with `GL_NORMALIZE`, scaled static shapes).
 - **Alpha pass** (pass 8): fog enabled for the whole pass. Buildings whose `PerformDepthSort(centrePos)` returns false are drawn first in container order; the others are collected into `m_sortedBuildingsAlphas` (grown in steps of 128 = `StepDepthSortedBuildings`), sorted ascending by squared camera distance with `qsort` and drawn **from the end (farthest) to the start (nearest)**.
-- **Ownership lights** `Building::RenderLights` (for every `MarkerLight*` marker, buildings with team ≠ 255 only): shown only when `(m_lastValidSequenceIdFromServer % 10) / 2 == teamId` (or editing) — a team-staggered blink: each team's lights are on for 2 of every 10 server sequence ids (0.2 s on, 1.0 s period at 10 Hz); 10 nested camera-facing quads of half-size `6·i/10` (i = 0..9) with `textures/starburst.bmp`, team colour, additive, depth write off, cull off.
+- **Ownership lights** `Building::RenderLights` (for every shape marker whose name contains `MarkerLight`, collected in `Building::Initialise`; buildings with team ≠ 255 only): shown only when `(m_lastValidSequenceIdFromServer % 10) / 2 == teamId` (or editing) — a team-staggered blink: each team's lights are on for 2 of every 10 server sequence ids (0.2 s on, 1.0 s period at 10 Hz); since `(id % 10)/2` ranges 0–4, **team id 5 never shows ownership lights** [C]; 10 nested camera-facing quads of half-size `6·i/10` (i = 0..9) with `textures/starburst.bmp`, team colour, additive, depth write off, cull off.
 - **Ports** `Building::RenderPorts`: per port, the shared `controlpad.shp` lit with `SetObjectLighting` at terrain height + 0.5 (only when `RenderBuildingDetail < 3`), then a 6-unit starburst billboard at the pad's status marker, green (0.3,1.0,0.3) when occupied, red (1.0,0.3,0.3) when empty, additive, depth write off.
 - **Per-building render features** (content owned by [03](03_buildings_and_world_objects.md)):
 
 | Building | Solid pass | Alpha pass | Textures | Blend / depth notes |
 |---|---|---|---|---|
 | SpawnPoint / SpawnLink / MasterSpawnPoint | shape (`masterspawnpoint.shp` only if `m_isGlobal` or editing) | spirit-link beams (`textures/laser.bmp`, half-width 1 inner / 3 outer) between link markers; in-transit spirits as diamonds (inner 2, outer 6) in the **target** spawn point's team colour (grey 120 neutral); status stars per port (grey 150 empty / occupant colour); 20/10/3 glow blobs (`textures/cloudyglow.bmp`, detail 1/2/3) above the building, alpha = occupied/total, colour lerps grey (100,100,100,200) → team colour as `m_activationTimer` 30 → 0; spirit-link laser glow only at detail 1 | laser, cloudyglow, starburst | additive, depth write off |
-| GunTurret | team-coloured turret copy (`battlecannonturret.shp_<colour>_<group>`) on `battlecannonbase.shp` markers | lights, ports, muzzle flashes (`TypeMuzzleFlash` particles), shells as effects | shapes, starburst | — |
+| GunTurret | team-coloured turret copy (`battlecannonturret.shp_<colour>_<group>`) on `battlecannonbase.shp` markers | lights, ports; barrel smoke as `TypeMissileTrail` particles; ejected shells (`TurretEmptyShell`) and shells/target as `m_effects` objects | shapes, starburst | — |
 | RadarDish | dish shape (per-instance colour copy) | 4 nested beam tubes radius 10/9/8/4, alpha 0.4/0.2/0.2/0.5, `textures/laserfence.bmp` × `textures/radarsignal.bmp` (multitexture), clipped by two user clip planes (`GL_CLIP_PLANE0/1`) at the dish planes; preview beams to every valid link while hovered/selected; [B:D3D] resets the vertex declaration | laserfence, radarsignal | additive |
 | JumpPad | shape | animated arrow strip (`icons/thickarrow.bmp`) 80 long, ±20 wide, brightness `0.3 + 0.7·|sin t|` | thickarrow | additive |
 | PowerBuilding / Pylon / SolarPanel | shapes | power-line beam between `MarkerPowerLocation`s; surges as 20-unit stars in the surge team colour with a 3-sprite trail; SolarPanel status lights green/red and, when owned and occupied, 4 glow quads (60×40) pulsing `0.5 + 0.5·|sin t|` in team colour; `PylonEnd` draws nothing | laser, starburst, glow | additive |
@@ -1222,7 +1233,7 @@ Entire file inside `#ifdef USE_DIRECT3D`; **absent from the shipped OpenGL build
 | `DT_TEAR` (1) | `textures/deform3.bmp` | 1 s | `10·(maxage − (maxage − age)²/maxage)` (ease-out 0→10) | `0.15·(1−a)` | `max(a, 0.03)` | 0.6 |
 | Spirit diamond | `textures/deform1c.bmp` | per frame | 0.32 | 0.12 | `(GetTickCount() % 1000)/1000` | 1.3 |
 
-  Effective sprite depth = `range·extraDepth·depth`.
+  Sprite width passed = `range·width`, depth = `range·extraDepth·depth`; the shader "time" is passed in `glColor3f(time,0,0)` with `time = max(age/maxage, 0.03)` (punch: its square root).
 - `Stop()` algorithm: (1) depth write/test off, cull off; `StretchRect` back buffer → `m_screenTexture`. (2) render target = `m_deformTexture`, half-res viewport, clear, blend `ONE, ONE` (additive accumulation of displacement vectors). (3) sort non-attached spirits by squared camera distance far-to-near (`CompareSoulDistance`), render each with `deformDiamond.ps` (sampler `deformSampler` = `deform1c.bmp`). (4) for type in {PUNCH, TEAR}: bind `deformSphere.ps` with that type's table; iterate deformations newest-first; drop expired; render sprite. (5) blend back to default, disabled; `g_pd3dDevice->Resolve(D3DRESOLVE_RENDERTARGET0, …)` into `m_deformTexture` (build blocker B3). (6) full-screen viewport, clear colour, one full-screen quad with `deformFullscreen.ps` (`deformSampler` = `m_deformTexture`, `screenSampler` = `m_screenTexture`); re-enable cull/depth. [I] The render target is never reset to `m_oldRenderTarget` after step 2 (and the `GetRenderTarget` reference leaks); on PC the composite would be drawn into the deform texture.
 - `RenderSprite(shader, posWorld, width, depth, redux)` [C]: project `posWorld` with `gluProject` into a unit viewport; if in front (`z < 1`), project a point 1 world unit sideways (perpendicular to the look direction in XZ) to get on-screen size per world unit; `size = min(0.4, 10·|Δ|·(aspect,1))` (0.001 if more than one screen off); vertex attributes `TEXCOORD0 = (sx, 1−sy)` (centre), `TEXCOORD1 = (1/(size·width), size·width·depth·4)` (invSize, height), `COLOR.r = time`; corners at clip-space `centre·2 − 1 ± (size·width, size·width·aspect)·redux`; depth == 0 → full-screen quad (−1..1).
 - Samplers: `deformSampler` LINEAR/LINEAR/no mip, U WRAP (time axis), V CLAMP (distance axis); `screenSampler` LINEAR/LINEAR/no mip, CLAMP/CLAMP; uniform `aspect = ScreenW/ScreenH` [C] `DeformEffect::RenderSpritesBegin`.
@@ -1738,4 +1749,406 @@ Resolved during synthesis (no longer open): special-lighting levels (`mp_koth_2P
 
 ## Source map
 
+One row per file (generated by `_work/scripts/S_24_source_map.py`, which verifies every path against `_work/manifest.csv`; the 138 font atlases are listed individually at the end). The complete texture/shape catalogue is in [25](25_textures_and_assets.md).
+
+| File | Role |
+|---|---|
+| `code/renderer.cpp` | Renderer: init, baseline state, frame composition, fade/pause/logo, menu transition, pixel effect, poster |
+| `code/renderer.h` | Renderer class, PosterMaker states, CHECK_OPENGL_STATE |
+| `code/location.cpp` | Location::Render pass order; buildings, alphas (depth sort), weapons, spirits, clouds, messages, chat; SetupFog, SetupLights, SetupSpecialLights |
+| `code/location.h` | Location render members (m_lights, m_christmasMode, sorted alpha buffer) |
+| `code/landscape_renderer.cpp` | terrain strip mesh, normals, colours, UVs, VBO/display-list/array paths, 2 passes |
+| `code/landscape_renderer.h` | LandVertex layout, render modes |
+| `code/landscape.cpp` | Landscape::Render/Init; RenderLandscapeDetail literal |
+| `code/landscape.h` | LIGHTMAP_SCALEFACTOR orphan |
+| `code/water.cpp` | flat and dynamic water passes, shore mask, wave update, D3D buffers (build blocker B1) |
+| `code/water.h` | Water class, sea-plane design comment |
+| `code/water_reflection.cpp` | [B:D3D] reflection pre-pass and water shader binding |
+| `code/water_reflection.h` | [B:D3D] WaterReflectionEffect |
+| `code/clouds.cpp` | sky grid, blobby/flat cloud layers, sky face |
+| `code/clouds.h` | Clouds class |
+| `code/deform.cpp` | [B:D3D] deform effect (build blocker B3) |
+| `code/deform.h` | [B:D3D] DeformEffect API |
+| `code/particle_system.cpp` | particle render batches (model in 26) |
+| `code/particle_system.h` | Particle/ParticleType |
+| `code/explosion.cpp` | explosion debris render (model in 26) |
+| `code/explosion.h` | ExplosionManager |
+| `code/camera.cpp` | projection, modelview, frustum tests, water reflect, camera shake |
+| `code/camera.h` | Camera FOV and frustum members |
+| `code/team.cpp` | Team::Render units/others/Virii/Darwinians/sync errors; runtime viriifull atlas |
+| `code/team.h` | Team render entry points |
+| `code/app.cpp` | background colour, negative renderer, fonts/SetLanguage, Multiplayer(), UseChristmasMode, SetOpenGLState call |
+| `code/app.h` | m_backgroundColour, m_negativeRenderer |
+| `code/main.cpp` | LocationGameLoop render cadence, UpdateAdvanceTime, GlobalWorldGameLoop, StartSequence creation |
+| `code/gametimer.cpp` | GetPredictionTime |
+| `code/gametimer.h` | g_predictionTime macro |
+| `code/globals.h` | MINIMUM_RENDER_PERIOD, NUM_TEAMS |
+| `code/game_menu.cpp` | main-menu cloud backdrop and camera |
+| `code/game_menu.h` | GameMenu |
+| `code/global_world.cpp` | [B:LEGACY] sphere world render, global lights/fog, commented god rays |
+| `code/global_world.h` | [B:LEGACY] GlobalWorld/SphereWorld |
+| `code/global_internet.cpp` | [B:LEGACY] global internet generation and render |
+| `code/global_internet.h` | [B:LEGACY] GlobalInternet |
+| `code/loading_screen.cpp` | loading-screen frame, g_openGLMutex, GL job pump |
+| `code/loading_screen.h` | LoadingScreen |
+| `code/markersystem.cpp` | marker icons and off-screen arrows |
+| `code/markersystem.h` | LocationMarker types |
+| `code/gamecursor.cpp` | MouseCursor and GameCursor rendering, highlights |
+| `code/gamecursor.h` | cursor objects |
+| `code/multiwiniahelp.cpp` | help overlay pass |
+| `code/multiwinia.cpp` | match HUD pass |
+| `code/shaman_interface.cpp` | shaman wheel pass (unreachable in MW) |
+| `code/user_input.cpp` | Eclipse UI pass |
+| `code/control_help.cpp` | control help pass (draws nothing in MW) |
+| `code/taskmanager_interface_multiwinia.cpp` | task-manager overlay pass |
+| `code/taskmanager_interface_gestures.cpp` | [B:LEGACY] gesture trail render |
+| `code/routing_system.cpp` | route-line pass |
+| `code/startsequence.cpp` | [B:LEGACY] start-sequence pass |
+| `code/3d_sierpinski_gasket.cpp` | Sierpinski point cloud (unreachable) |
+| `code/3d_sierpinski_gasket.h` | Sierpinski3D |
+| `code/sepulveda.cpp` | [B:DEAD] god-ray highlights, near x1.5 |
+| `code/script.cpp` | [B:LEGACY] Darwin logo trigger |
+| `code/level_file.cpp` | Lights and Effects (SpecialLighting) parsing |
+| `code/level_file.h` | LevelEffect enum |
+| `code/network/syncdiff.cpp` | sync-difference debug markers |
+| `code/network/clienttoserver.cpp` | Christmas-mode request/handling; lost-connection timing |
+| `code/lib/universal_include.h` | backend header selection, APP_NAME_W, DEBUG_RENDER_ENABLED |
+| `code/lib/opengl_directx.cpp` | [B:D3D] GL-on-D3D9 emulator core, device lifecycle, textures, display lists |
+| `code/lib/opengl_directx.h` | [B:D3D] GL prototypes and enums |
+| `code/lib/opengl_directx_inline.h` | [B:D3D] inline vertex/colour wrappers |
+| `code/lib/opengl_directx_internals.h` | [B:D3D] CustomVertex, device externs |
+| `code/lib/opengl_directx_stubs.cpp` | [B:D3D] stubbed entry points |
+| `code/lib/opengl_directx_matrix_stack.cpp` | [B:D3D] matrix stacks |
+| `code/lib/opengl_directx_matrix_stack.h` | [B:D3D] MatrixStack classes |
+| `code/lib/opengl_directx_dlist.cpp` | [B:D3D] DisplayList playback |
+| `code/lib/opengl_directx_dlist.h` | [B:D3D] Command classes |
+| `code/lib/opengl_directx_dlist_dev.cpp` | [B:D3D] DisplayListDevice recorder |
+| `code/lib/opengl_directx_dlist_dev.h` | [B:D3D] DisplayListDevice |
+| `code/lib/ogl_extensions.cpp` | GL extension pointers, blacklist, queries |
+| `code/lib/ogl_extensions.h` | extension enums and pointer declarations |
+| `code/lib/ogl_extensions_directx.cpp` | [B:D3D] multitexture and VBO emulation (build blocker B4 is in opengl_directx.cpp) |
+| `code/lib/ogl_extensions_sdl.cpp` | [B:DEAD] SDL extension loading |
+| `code/lib/safegl.cpp` | glNewList mutex wrapper |
+| `code/lib/safegl.h` | glNewList/glEndList redefinition |
+| `code/lib/opengl_trace.cpp` | [B:D3D] GL call tracing |
+| `code/lib/opengl_trace.h` | [B:D3D] GL_TRACE macros |
+| `code/lib/FixedPipeline.cpp` | [B:D3D] fixed-function emulation |
+| `code/lib/FixedPipeline.h` | [B:D3D] FixedPipeline state |
+| `code/lib/shader.cpp` | [B:D3D] HLSL compile/bind/constants |
+| `code/lib/shader.h` | [B:D3D] Shader |
+| `code/lib/texture.cpp` | [B:D3D] render-target texture wrapper |
+| `code/lib/texture.h` | [B:D3D] Texture |
+| `code/lib/texture_uv.cpp` | landscape UV type |
+| `code/lib/texture_uv.h` | TextureUV |
+| `code/lib/shape.cpp` | .shp load, hierarchy, render, display lists, hit tests |
+| `code/lib/shape.h` | Shape/ShapeFragment/ShapeMarker |
+| `code/lib/3d_sprite.cpp` | Render3DSprite billboard |
+| `code/lib/3d_sprite.h` | Render3DSprite |
+| `code/lib/sphere_renderer.cpp` | icosphere wireframe |
+| `code/lib/sphere_renderer.h` | Sphere |
+| `code/lib/render_utils.cpp` | split-quad helpers (no callers) |
+| `code/lib/render_utils.h` | split-quad declarations |
+| `code/lib/debug_render.cpp` | debug primitives |
+| `code/lib/debug_render.h` | debug primitive API |
+| `code/lib/persisting_debug_render.cpp` | persistent debug queue |
+| `code/lib/persisting_debug_render.h` | g_debugRenderer |
+| `code/lib/text_renderer.cpp` | font atlases, glyph UVs, 2D/3D text |
+| `code/lib/text_renderer.h` | TextRenderer, DEF_FONT_SIZE |
+| `code/lib/poster_maker.cpp` | tiled screenshots |
+| `code/lib/poster_maker.h` | PosterMaker |
+| `code/lib/targetcursor.cpp` | abstract input cursor |
+| `code/lib/targetcursor.h` | TargetCursor |
+| `code/lib/resource.cpp` | texture/shape/display-list caches, flush/regenerate |
+| `code/lib/resource.h` | Resource API |
+| `code/lib/bitmap.cpp` | upload, POT rescale, blur for shadows (detail in 25) |
+| `code/lib/bitmap.h` | BitmapRGBA |
+| `code/lib/math_utils.cpp` | RequirePowerOfTwoTextures, RequireSquareTextures |
+| `code/lib/math_utils.h` | clamp, nearestPowerOfTwo |
+| `code/lib/window_manager.cpp` | window manager base, resolution helpers |
+| `code/lib/window_manager.h` | pure-virtual CreateWin (wchar_t title) |
+| `code/lib/window_manager_win32.cpp` | WGL context, Flip, display modes |
+| `code/lib/window_manager_win32.h` | WindowManagerWin32 |
+| `code/lib/window_manager_directx.cpp` | [B:D3D] D3D window (build blocker B2) |
+| `code/lib/window_manager_directx.h` | [B:D3D] CreateWin(char*) signature |
+| `code/lib/window_manager_sdl.cpp` | [B:DEAD] SDL window with MSAA |
+| `code/lib/preferences.cpp` | render preference defaults |
+| `code/interface/prefs_graphics_window.cpp` | graphics options UI and apply |
+| `code/interface/prefs_screen_window.cpp` | screen options UI, renderer restart |
+| `code/interface/prefs_other_window.cpp` | ChristmasEnabled pref (unused for theme) |
+| `code/interface/prefs_other_window.h` | OTHER_CHRISTMASENABLED |
+| `code/interface/cheat_window.cpp` | [B:DEBUG] sky face trigger, flush/regenerate GL state |
+| `contrib/eclipse/eclipse.cpp` | EclRender window order |
+| `code/worldobject/worldobject.cpp` | Light default |
+| `code/worldobject/worldobject.h` | effect type enum |
+| `code/worldobject/building.cpp` | default building render, lights, ports |
+| `code/worldobject/entity.cpp` | team shape colouring, blob shadows |
+| `code/worldobject/darwinian.cpp` | Darwinian card sprites, drop shadows, Santa hats |
+| `code/worldobject/virii.cpp` | Virii render, near x1.05 |
+| `code/worldobject/spirit.cpp` | spirit quads |
+| `code/worldobject/weapons.cpp` | laser bolts, shockwave, flash |
+| `code/worldobject/lightning.cpp` | lightning bolts and cloud glow |
+| `code/worldobject/tree.cpp` | procedural tree geometry and render |
+| `code/worldobject/laserfence.cpp` | fence curtain multitexture |
+| `code/worldobject/wall.cpp` | wall render and shatter |
+| `code/worldobject/staticshape.cpp` | scaled static shapes |
+| `code/worldobject/clonelab.cpp` | clone-lab port billboards |
+| `code/worldobject/armour.cpp` | armour shape colouring |
+| `code/worldobject/radardish.cpp` | radar beams, clip planes, D3D decl fix |
+| `code/worldobject/spawnpoint.cpp` | spawn links, blobs, stars |
+| `code/worldobject/gunturret.cpp` | team-coloured turret shapes |
+| `code/worldobject/crate.cpp` | crate stars, target shadow icon |
+| `code/worldobject/nuke.cpp` | submarine shadow sprite |
+| `code/worldobject/egg.cpp` | blob shadow user |
+| `code/worldobject/sporegenerator.cpp` | blob shadow user |
+| `code/worldobject/engineer.cpp` | blob shadow user, pixel-effect override |
+| `code/worldobject/souldestroyer.cpp` | blob shadows, deform tearing |
+| `code/worldobject/harvester.cpp` | blob shadow user |
+| `code/worldobject/triffid.cpp` | blob shadow user |
+| `code/worldobject/lasertrooper.cpp` | [B:LEGACY] sprite drop shadow |
+| `code/worldobject/insertion_squad.cpp` | Squadie pixel effect off in MP |
+| `code/worldobject/spider.cpp` | deform tearing (D3D) |
+| `code/worldobject/centipede.cpp` | team shape colouring; commented deform |
+| `code/worldobject/entity_leg.cpp` | commented deform call |
+| `code/worldobject/rocket.cpp` | exhaust loops by detail, near x1.2 |
+| `code/worldobject/portal.cpp` | [B:DEBUG] portal glow, near x1.5 |
+| `code/worldobject/spam.cpp` | blob counts by detail |
+| `code/worldobject/pulsebomb.cpp` | blob counts by detail |
+| `code/worldobject/mine.cpp` | mine glow sprite, near x1.1 |
+| `code/worldobject/dustball.cpp` | Render3DSprite user |
+| `code/worldobject/snow.cpp` | Render3DSprite user |
+| `code/worldobject/officer.cpp` | officer shape colouring, flag |
+| `code/worldobject/meteor.cpp` | MarkUsedCells user |
+| `code/worldobject/spiritreceiver.cpp` | [B:LEGACY] receiver render, near x1.1 |
+| `code/worldobject/smokemarker.cpp` | smoke plume particles |
+| `code/worldobject/randomiser.cpp` | random-colour muzzle flashes |
+| `code/worldobject/jumppad.cpp` | arrow strip |
+| `code/worldobject/controltower.cpp` | control line beams |
+| `code/worldobject/multiwiniazone.cpp` | DarwinianScaleFactor reader |
+| `code/loaders/amiga_loader.cpp` | [B:DEAD] Sierpinski user |
+| `code/loaders/gameoflife_loader.cpp` | [B:DEAD] glTraceEnable caller |
+| `targets/vs2005/Direct3D.vsprops` | USE_DIRECT3D configuration |
+| `targets/vs2005/OpenGL.vsprops` | OpenGL configuration |
+| `targets/vs2005/Darwinia.vcproj` | file membership per configuration |
+| `docs/OpenGLState.txt` | documented GL state contract (stale) |
+| `docs/HardwareComplianceIssues.txt` | hardware issues note |
+| `docs/landscape lightmap.txt` | stale lightmap design |
+| `docs/sphere world.txt` | legacy sphere-world design |
+| `docs/top level map.txt` | legacy top-level map design |
+| `data/default_preferences.txt` | WaitVerticalRetrace, DarwinianScaleFactor overrides |
+| `data/shaders/globals.h` | [B:D3D] DEFORM_PRECISION |
+| `data/shaders/FixedFunc0.vs` | [B:D3D] lit untextured VS |
+| `data/shaders/FixedFunc0Maps.ps` | [B:D3D] pass-through PS |
+| `data/shaders/FixedFunc1.vs` | [B:D3D] one-texture VS |
+| `data/shaders/FixedFunc1Maps.ps` | [B:D3D] one-texture PS |
+| `data/shaders/FixedFunc2.vs` | [B:D3D] two-texture VS |
+| `data/shaders/FixedFunc2Maps.ps` | [B:D3D] two-texture PS |
+| `data/shaders/deform.vs` | [B:D3D] deform sprite VS |
+| `data/shaders/deformSphere.ps` | [B:D3D] radial displacement |
+| `data/shaders/deformDiamond.ps` | [B:D3D] spirit displacement |
+| `data/shaders/deformFullscreen.ps` | [B:D3D] refraction composite |
+| `data/shaders/water-meshwaves.vs` | [B:D3D] water reflection VS |
+| `data/shaders/water-meshwaves.ps` | [B:D3D] water PS ps_2 |
+| `data/shaders/water-meshwaves.ps3` | [B:D3D] water PS ps_3 |
+| `data/textures/particle.bmp` | particle diamond texture |
+| `data/textures/shapewireframe.bmp` | explosion edge texture (DECAL) |
+| `data/textures/triangleoutline.bmp` | terrain outline texture (requested as triangleOutline.bmp, lower-cased on load) |
+| `data/textures/laser.bmp` | sky grid, lasers, link beams |
+| `data/textures/clouds.bmp` | cloud layers |
+| `data/textures/starburst.bmp` | lights, ports, blasts, fire glow |
+| `data/textures/glow.bmp` | blob shadows, glows, viriifull atlas source |
+| `data/textures/cloudyglow.bmp` | spawn-point blobs, dust balls |
+| `data/textures/tree.bmp` | tree quads |
+| `data/textures/laserfence.bmp` | fence curtain unit 0, radar beams |
+| `data/textures/laserfence2.bmp` | fence curtain unit 1/overlay, global internet links |
+| `data/textures/lightning.bmp` | lightning bolts |
+| `data/textures/subversion.bmp` | mind-control laser bolts |
+| `data/textures/radarsignal.bmp` | radar beam second texture |
+| `data/textures/godray.bmp` | [B:DEAD] god rays |
+| `data/textures/deform1c.bmp` | [B:D3D] spirit deform table |
+| `data/textures/deform3.bmp` | [B:D3D] tear deform table |
+| `data/textures/deform36c.bmp` | [B:D3D] punch deform table |
+| `data/textures/interface_red.bmp` | UI window body |
+| `data/sprites/darwinian.bmp` | Darwinian sprite, loading spinner |
+| `data/sprites/virii.bmp` | source of runtime viriifull atlas |
+| `data/sprites/santahat.bmp` | Christmas hats |
+| `data/sprites/subshadow.bmp` | submarine shadow |
+| `data/icons/darwin_research_associates.bmp` | [B:LEGACY] logo overlay |
+| `data/icons/mouse_game.bmp` | standard pointer |
+| `data/icons/marker_shadow.bmp` | marker/task-bar shadow |
+| `data/icons/widearrow.bmp` | route-line arrows |
+| `data/icons/thickarrow.bmp` | jump-pad arrows |
+| `data/shapes/controlpad.shp` | port pad shape |
+| `data/sepulveda/sepulveda1.bmp` | [B:DEBUG] sky face image 1 of 5 |
+| `data/sepulveda/sepulveda2.bmp` | [B:DEBUG] sky face image 2 of 5 |
+| `data/sepulveda/sepulveda3.bmp` | [B:DEBUG] sky face image 3 of 5 |
+| `data/sepulveda/sepulveda4.bmp` | [B:DEBUG] sky face image 4 of 5 |
+| `data/sepulveda/sepulveda5.bmp` | [B:DEBUG] sky face image 5 of 5 |
+| `data/terrain/landscape_icecaps.bmp` | Christmas terrain ramp |
+| `data/terrain/water_icecaps.bmp` | Christmas water texture |
+| `data/terrain/waves_earth.bmp` | Christmas wave table |
+| `data/textures/unicode/editor.0020.00ff.bmp` | font atlas (editor) |
+| `data/textures/unicode/editor.0410.042f.bmp` | font atlas (editor) |
+| `data/textures/unicode/editor.0430.044f.bmp` | font atlas (editor) |
+| `data/textures/unicode/editor.20a0.20af.bmp` | font atlas (editor) |
+| `data/textures/unicode/speccy.0020.00ff.bmp` | font atlas (speccy) |
+| `data/textures/unicode/speccy.0410.042f.bmp` | font atlas (speccy) |
+| `data/textures/unicode/speccy.0430.044f.bmp` | font atlas (speccy) |
+| `data/textures/unicode/speccy.20a0.20af.bmp` | font atlas (speccy) |
+| `data/textures/unicode/square.0020.00ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.0410.042f.bmp` | font atlas (square) |
+| `data/textures/unicode/square.0430.044f.bmp` | font atlas (square) |
+| `data/textures/unicode/square.20a0.20af.bmp` | font atlas (square) |
+| `data/textures/unicode/square.3000.30ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.4e00.4eff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.4f00.4fff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.5000.50ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.5100.51ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.5200.52ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.5300.53ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.5400.54ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.5500.55ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.5600.56ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.5700.57ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.5800.58ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.5900.59ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.5a00.5aff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.5b00.5bff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.5c00.5cff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.5d00.5dff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.5e00.5eff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.5f00.5fff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.6000.60ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.6100.61ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.6200.62ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.6300.63ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.6400.64ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.6500.65ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.6600.66ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.6700.67ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.6800.68ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.6900.69ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.6a00.6aff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.6b00.6bff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.6c00.6cff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.6d00.6dff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.6e00.6eff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.6f00.6fff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.7000.70ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.7100.71ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.7200.72ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.7300.73ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.7400.74ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.7500.75ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.7600.76ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.7700.77ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.7800.78ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.7900.79ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.7a00.7aff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.7b00.7bff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.7c00.7cff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.7d00.7dff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.7e00.7eff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.7f00.7fff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.8000.80ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.8100.81ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.8200.82ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.8300.83ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.8400.84ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.8500.85ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.8600.86ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.8700.87ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.8800.88ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.8900.89ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.8a00.8aff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.8b00.8bff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.8c00.8cff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.8d00.8dff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.8e00.8eff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.8f00.8fff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.9000.90ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.9100.91ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.9200.92ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.9300.93ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.9400.94ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.9500.95ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.9600.96ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.9700.97ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.9800.98ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.9900.99ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.9a00.9aff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.9b00.9bff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.9c00.9cff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.9d00.9dff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.9e00.9eff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.ac00.acff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.ad00.adff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.ae00.aeff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.af00.afff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.b000.b0ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.b100.b1ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.b200.b2ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.b300.b3ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.b400.b4ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.b500.b5ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.b600.b6ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.b700.b7ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.b800.b8ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.b900.b9ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.ba00.baff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.bb00.bfff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.bc00.bcff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.bd00.bdff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.be00.beff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.bf00.bfff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.c000.c0ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.c100.c1ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.c200.c2ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.c300.c3ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.c400.c4ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.c500.c5ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.c600.c6ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.c700.c7ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.c800.c8ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.c900.c9ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.ca00.caff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.cb00.cbff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.cc00.ccff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.cd00.cdff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.ce00.ceff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.cf00.cfff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.d000.d0ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.d100.d1ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.d200.d2ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.d300.d3ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.d400.d4ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.d500.d5ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.d600.d6ff.bmp` | font atlas (square) |
+| `data/textures/unicode/square.d700.d7ff.bmp` | font atlas (square) |
+
 ## Appendix — dead/legacy code
+
+| Item | State | Ref |
+|---|---|---|
+| Entire D3D9 emulation layer, `FixedPipeline`, `Shader`, `Texture`, `DeformEffect`, `WaterReflectionEffect`, `opengl_trace`, `WindowManagerDirectX` | [B:D3D] only; probably not buildable at this commit (§1.2); deform and reflection pre-pass additionally single-player only | `code/lib/opengl_directx*.cpp`, `code/lib/FixedPipeline.cpp`, `code/lib/shader.cpp`, `code/lib/texture.cpp`, `code/deform.cpp`, `code/water_reflection.cpp`, `code/lib/window_manager_directx.cpp` |
+| Pixel effect (`PreRenderPixelEffect`, `ApplyPixelEffect`, `PaintPixels`, `RasteriseSphere`, `MarkUsedCells`, `RenderPixelEffect` overrides) | compiled, unreachable in Multiwinia [B:LEGACY] | `code/renderer.cpp`, `code/worldobject/*` |
+| `GlobalWorld::Render`, `GlobalInternet`, `SphereWorld` rendering | [B:LEGACY] (data still built at start-up) | `code/global_world.cpp`, `code/global_internet.cpp` |
+| Darwin logo overlay; `StartSequence` | [B:LEGACY] (script-only trigger; constructor under `USE_LOADERS`) | `code/renderer.cpp`, `code/startsequence.cpp`, `code/main.cpp` |
+| `GameModePrologue` special lighting; LaserTrooper drop shadows; spirit receivers; God Dish shadows; burn patches | [B:LEGACY] | `code/location.cpp`, `code/worldobject/lasertrooper.cpp`, `spiritreceiver.cpp`, `goddish.cpp`, `portal.cpp` |
+| Sky face (`Clouds::RenderFace`) | [B:DEBUG] (cheat window) | `code/clouds.cpp` |
+| `Renderer::RenderLogo` (`PROMOTIONAL_BUILD`), `RenderFlatTexture` (call commented), `privatedemo.bmp` (missing) | [B:DEAD] | `code/renderer.cpp` |
+| Poster `PosterMakerPixelEffect` pre-pass (`#if 0`); old `RenderMenuTransition` (`#if 0`) | [B:DEAD] | `code/renderer.cpp` |
+| `USE_SEPULVEDA_HELP_TUTORIAL` renders (help system, tutorial, demo-end sequence, Sepulveda incl. god-ray highlights); god rays in `SphereWorld::RenderIslands` (commented) | [B:DEAD] | `code/renderer.cpp`, `code/sepulveda.cpp`, `code/global_world.cpp` |
+| `LOCATION_EDITOR` render branch, editor water grid, RestrictionZone/EruptionMarker spheres | [B:EDITOR] | `code/renderer.cpp`, `code/water.cpp`, `code/worldobject/restrictionzone.cpp` |
+| `TARGET_OS_VISTA` thumbnail; `TESTBED_ENABLED` render gating | [B:DEAD] | `code/renderer.cpp`, `code/particle_system.cpp`, `code/explosion.cpp`, `code/location.cpp` |
+| `Sierpinski3D` (only user under `USE_LOADERS`) | compiled, unreachable | `code/3d_sierpinski_gasket.cpp` |
+| `RenderSplitUpQuadTextured/MultiTextured` | compiled, no callers | `code/lib/render_utils.cpp` |
+| `ShapeFragment::BuildDisplayList`, cylinder hit volumes, `RenderHitCheck`/`RenderMarkers` callers; exporter-only constructors and `WriteToFile` (malformed `%5.2` formats) | compiled, unused / exporter only | `code/lib/shape.cpp` |
+| Deform callers in `Centipede` and `EntityLeg` | commented out | `code/worldobject/centipede.cpp`, `entity_leg.cpp` |
+| Legacy single-bitmap font path, `textures/editor_font*.bmp`, `textures/speccy_font_*.bmp` | compiled, unused | `code/lib/text_renderer.cpp` |
+| `Renderer::SetScreenGamma` | [B:D3D], no callers | `code/renderer.cpp` |
+| `CheckOpenGLState` / `CHECK_OPENGL_STATE` | `OPENGL_DEBUG_ASSERTS` never defined | `code/renderer.h` |
+| `WindowManagerWin32::m_hRC2` secondary context; `gglChoosePixelFormatARB`; `OpenGLRegisterD3DTexture`; emulator attribute stack; `fogColour` uniform; `environmentDiffuse/Specular` samplers | compiled, unused | `code/lib/window_manager_win32.cpp`, `code/lib/ogl_extensions.cpp`, `code/lib/opengl_directx.cpp`, `data/shaders/FixedFunc2.vs`, `code/lib/FixedPipeline.cpp` |
+| Water `UpdateWaterThread` (120 Hz); Mac water throttling | [B:D3D] never started; [B:DEAD] | `code/water.cpp` |
+| SDL window manager (4× MSAA, swap control) and SDL extension loader | not in the `.vcproj` [B:DEAD] | `code/lib/window_manager_sdl.cpp`, `code/lib/ogl_extensions_sdl.cpp` |
+| `RenderLandscapeDetail` reads; `RenderFog` (`FOG_PREFERENCE`); graphics-menu landscape and pixel-effect controls | commented out / never defined | `code/landscape.cpp`, `code/main.cpp`, `code/interface/prefs_graphics_window.cpp` |
+| `GameCursor::RenderMarkers`, `RenderSelectionArrows`, `RenderOffscreenArrow`, `RenderWeaponMarker` | single-player paths [B:LEGACY] (marker list grows unbounded in MP, see [06](06_player_control_and_input.md)) | `code/gamecursor.cpp` |

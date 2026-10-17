@@ -1260,3 +1260,214 @@ In-game chat *display* (chat log): [06](06_player_control_and_input.md) / [24](2
 - The preference `ChristmasEnabled` (read by `PrefsOtherWindow`, default 1) is never used, so the player cannot opt out [C].
 
 ---
+## 6 Demo/full-game gating and the authentication-key UI
+
+### 6.1 Definitions and the demo limits
+
+- **Two different "demo" notions.** (a) `TARGET_MULTIWINIA_DEMOONLY` — a separate compile target (`MULTIWINIA_DEMOONLY`, `MULTIPLAYER_DISABLED`, no Domination/Rocket/Assault/Blitz), off in the baseline [B:DEMO compile-time]. (b) The **runtime demo gate** inside the full build: `IS_DEMO` ≡ `!g_app->IsFullVersion()` ≡ the stored authentication key is a *demo key* (`Authentication_IsDemoKey`) [C] `code/game_menu.h:IS_DEMO`, `code/app.cpp:App::IsFullVersion` (under `MULTIWINIA_DEMOONLY` always demo; under `GIVE_ALL_LEVELS`, not defined, always full; the code comment says "this needs to be updated once metaserver fullgame checks are implemented for the PC version"). This section documents (b) [B:DEMO runtime].
+- **Demo key** ⇔ in a two-entry blacklist, or the metaserver says KeyNotFound, or (not a hash and) starts with `"DEMO"` [C] `contrib/systemiv/lib/metaserver/authentication.cpp:Authentication_IsDemoKey`.
+- **Demo limits** are fetched from metaserver datum `Demo2Limits` (`NET_METASERVER_DATA_DEMO2LIMITS`) on every query; if the datum is absent or any field is missing the compiled defaults apply [C] `code/network/clienttoserver.cpp:ClientToServer::GetDemoLimitations`, `code/network/demo_limitations.cpp:DemoLimitations::Initialise`:
+
+| Field | Metaserver key | Default | Used by |
+|---|---|---|---|
+| `m_maxGameSize` | `NET_METASERVER_MAXDEMOGAMESIZE` (int) | 4 | **nothing** in compiled code [C grep] |
+| `m_maxDemoPlayers` | `NET_METASERVER_MAXDEMOPLAYERS` (int) | 4 | `App::MultiplayerPermitted` (> 0) |
+| `m_allowDemoServers` | `NET_METASERVER_ALLOWDEMOSERVERS` (bool) | true | `App::HostGamePermitted`; WAN registration of demo hosts (`metaserver.cpp` L629–631) |
+| `m_allowedGameModes` (bit mask, bit = game type) | `NET_METASERVER_DEMOMODES` (int) | KOTH (bit 1) \| CTS (bit 2) \| Rocket Riot (bit 4) = 0x16 | `DemoLimitations::GameModePermitted` |
+| `m_allowedMapCRCs` | `NET_METASERVER_DEMOMAPS` (int list) | `MAPID_MP_KOTH_2P_1`, `MAPID_MP_KOTH_4P_1`, `MAPID_MP_CTS_2P_1`, `MAPID_MP_KOTH_3P_1`, `MAPID_MP_ROCKETRIOT_3P_1` | `DemoLimitations::MapPermitted` |
+
+Derived predicates [C] `code/app.cpp`: `IsGameModePermitted(m)` = (full, or demo mask has m) **and** m compiled in (`INCLUDEGAMEMODE_*`: in FULL Domination, KOTH, CTS, Rocket Riot, Assault, Blitzkrieg — **not** Tank Battle); `IsMapPermitted(m, crc)` = mode permitted and `IsMapPermitted(crc)` (full, or crc in the demo list; `PERMITTED_MAPS` builds use a fixed list instead); `IsMapAvailableInDemo(m, crc)` = demo mask has m and crc in the list; `MultiplayerPermitted()` = full or `m_maxDemoPlayers > 0` (false under `MULTIPLAYER_DISABLED`); `HostGamePermitted()` = full or `m_allowDemoServers`.
+
+Server-side marking [C] `code/network/server.cpp:Server::SendClientId` (L332–335), `Server::RegisterNewTeam` (L648–651): a demo-key client gets `NET_DARWINIA_CLIENTISDEMO` in its hello and team-assign letters, which sets `LobbyTeam::m_demoPlayer` → "(DEMO)" prefix on its gamer tag and in-game name (`code/team.cpp` L881–885). Whether a listing is "demo-restricted" (`"demo"` key) is decided by the external metaserver [I]; the client only reacts to the flag.
+
+### 6.2 Every gate the UI applies
+
+| Where | Gate | Effect | Ref |
+|---|---|---|---|
+| Start-up | key fails the local check | forced to `PageAuthKeyEntry` | [C] `GameMenuWindow::GameMenuWindow` |
+| Main | demo | Tutorial button listed first; "Buy full game" button added | [C] `SetupMainPage` |
+| Main | `!MultiplayerPermitted()` | Multiplayer button inactive → click opens BuyMeNow | [C] `code/UI/NewOrJoinButton.h` |
+| Main | auth status | status box while demo or not accepted (§6.5) | [C] `ShowAuthBox` |
+| NewOrJoin | `!HostGamePermitted()` | Host button disabled | [C] `SetupNewOrJoinPage` |
+| GameSelect | mode not permitted | button inactive (greyed); click on demo → BuyMeNow; "Full Game Only" over the mode picture | [C] `code/UI/GameTypeButton.h`, `code/UI/GameTypeImageButton.h` |
+| MapSelect | map not permitted | row inactive; demo-restricted row greyed (name, time, icons); click → BuyMeNow; "Full Game Only" over the thumbnail | [C] `code/UI/LevelSelectButton.h`, `code/UI/MapImageButton.h` |
+| Lobby | demo key | Advanced Options and AI drop-down created disabled + inactive; Advanced click ignored | [C] `SetupMultiplayerPage`, `code/UI/AdvancedOptionsModeButton.h` |
+| Lobby | demo + restricted map | Play/Ready button hidden; host never auto-starts | [C] `code/UI/PlayGameButton.h`, `UpdateMultiplayerPage` |
+| Lobby | demo player on a team | gamer tag prefixed `teamtype_demo` | [C] `code/UI/GamerTagButton.h` |
+| Advanced Options | demo | co-op checkbox not offered | [C] `SetupAdvancedOptionsPage` |
+| Browser | `NET_METASERVER_DEMORESTRICTED` on an entry | yellow row, map column `authentication_demorestricted`, sorted after good servers, click → BuyMeNow | [C] `code/UI/GameServerButton.h` |
+| Browser filter | "show demo games" off | hides `NET_METASERVER_DEMOSERVER` entries | [C] `ApplyFilterShowDemos` |
+| Help pages | `HIDE_INVALID_GAMETYPES` / `MULTIWINIA_DEMOONLY` only | non-permitted modes hidden from How To Play | [C] `code/interface/helpandoptions_windows.cpp` L318 |
+| Auth page | "Play Demo" | generates and stores a demo key | [C] `code/UI/PlayDemoAuthkeyButton.h` |
+| Runtime upgrade | `IS_DEMO` changes while on `PageDemoSinglePlayer` | jump to `PageDarwinia` ([B:DEBUG] path) | [C] `GameMenuWindow::Update` |
+| Campaign | demo | Campaign button ignored / not navigable [B:DEBUG] | [C] `code/UI/CampaignButton.h` |
+| Editor | demo | editor button → BuyMeNow [B:EDITOR] | [C] `code/UI/MultiwiniaEditorButton.h` |
+| Achievements | demo | `AchievementTracker::Save` returns early (moot — it does nothing anyway) | [C] `code/achievement_tracker.cpp` |
+
+(The v1.2.0 release-notes rule "demo users can join any LAN game on any map if hosted by a full-game player" is not implemented client-side; the client only reacts to the demo-restricted flag supplied by the server listing [I] — Docs-vs-code table.)
+
+### 6.3 Authentication keys
+
+[C] `contrib/systemiv/lib/metaserver/authentication.cpp`, `contrib/systemiv/lib/math/hash.cpp:HashData`. Internals in [22](22_determinism_and_networking.md).
+
+| Status code | Name | UI phrase |
+|---|---|---|
+| 1 | Accepted | `dialog_auth_accepted` |
+| 0 | Unknown | `dialog_auth_unknown` |
+| −1 | KeyInvalid | `dialog_auth_key_invalid` |
+| −2 | KeyBanned | `dialog_auth_key_banned` |
+| −3 | KeyRevoked | `dialog_auth_key_revoked` |
+| −4 | KeyNotFound | `dialog_auth_key_not_found` |
+| −5 | VersionRevoked | `dialog_auth_version_revoked` |
+| −6 | KeyInactive | `dialog_auth_key_inactive` |
+| −7 | VersionNotFound | `dialog_auth_version_not_found` |
+| −8 | KeyDead | `dialog_auth_key_dead` |
+| −9 | WrongPlatform | `dialog_auth_wrong_platform` |
+| −10 | UnknownGame | `dialog_auth_unknown_game` |
+| (demo key) | — | `dialog_auth_status_demo_user` |
+
+- Key format: `AUTHENTICATION_KEYLEN` 32 including NUL ⇒ 31 characters, `XXXXXX-XXXXXX-XXXXXX-XXXXXX-XXX`. In this source release `Authentication_SimpleKeyCheck` only checks the length and `Authentication_GenerateKey` always yields a fixed demo key — the real algorithm was stripped [C].
+- Hash for transmission: `"hsh" + 5 × %04x` of SHA-1(`"<key>-<hashToken>"`), token supplied by the metaserver in AUTHRESULT. Remote joiners send the hash + key id; the host's own client and demo keys send the plain key.
+- Authentication thread: every 2 s, the first key with status Unknown and < 5 tries: simple-check failure ⇒ that status; demo key ⇒ Accepted locally; else REQUEST_AUTH. Results are cached per key string for the session.
+- Server use: duplicate-key detection (`Disconnect_DuplicateKey` → "dialog_duplicate_key") and rejection of dodgy keys in `Server::AuthenticateClients` ([22](22_determinism_and_networking.md)).
+
+### 6.4 Authentication-key page (PageAuthKeyEntry 23)
+
+[C] `GameMenuWindow::SetupAuthKeyPage`, `code/UI/AuthInputField.h`, `code/UI/PasteKeyButton.h`, `code/UI/EnterAuthKeyButton.h`, `code/UI/PlayDemoAuthkeyButton.h`, `code/UI/QuitAuthKeyButton.h`, `GameMenuWindow::PasteFromClipboard`, `GameMenuWindow::CheckNewAuthKeyStatus`.
+
+| # | Widget | Name | Caption | Position | Build |
+|---|---|---|---|---|---|
+| — | title | `title` | `multiwinia_enterauthkey` | | all |
+| — | `AuthInputField` | `auth_input` | — | (bx, lY + 0.5bh + 1.3bh + bh + gap, bw, bh/2); character cell width = font = bw/31; text edit starts immediately | all |
+| 1 | `PasteKeyButton` | `paste` | `multiwinia_menu_paste` (tooltip `multiwinia_menu_paste_tooltip`) | lY + lH − 5bh | `TARGET_MSVC` / `TARGET_OS_MACOSX` |
+| 2 | `PlayDemoAuthkeyButton` | `multiwinia_menu_play_demo` | same | lY + lH − 3bh | all except HWCOMPAT / BETATEST / ASSAULT_STRESSTEST targets |
+| 3 | `EnterAuthkeyButton` | `multiwinia_menu_done` | same | lY + lH − 2bh | all |
+| (4) | `QuitAuthkeyButton` | `multiwinia_menu_quit_auth_key` | `multiwinia_menu_quit` | lY + lH − 2bh, right half | HWCOMPAT / BETATEST / ASSAULT_STRESSTEST only (not FULL) |
+
+There is no Back button (from Help and Options the user leaves with Done).
+
+Key field behaviour [C] `AuthInputField`:
+- Displays 31 character cells (`KEYLEN − 1`), upper-case; cell separator lines alpha 100/255, brighter (255) where `i mod 7 ≥ 5` (marks every 6 + 1 group); blinking block cursor (on for the first 0.5 s of each second) while editing and length < 32.
+- Typing: accepted only while length < 31 (Backspace always); the buffer is upper-cased, `Authentication_SetKey`, and **saved on every keystroke** to `<profile dir>authkey`; after a non-backspace key, when the length becomes 6, 13, 20 or 27 a `-` is appended automatically (saved on the next keystroke).
+- Enter: `CheckNewAuthKeyStatus()` — local `Authentication_SimpleKeyCheck`; if accepted and not a demo key it also asks the metaserver for the real status (`Authentication_RequestStatus`); returns true when locally accepted → `PageMain`.
+- Status line once ≥ 31 chars: `authentication_result` with flag `S` replaced by the status phrase (§6.3) or `dialog_auth_status_demo_user`; green, 1.5× font, six field-heights below.
+- Mouse click on a field still holding `"authkey not found"` clears it. Mac only: Ctrl/Cmd-V pastes.
+
+Buttons: **Paste** reads up to 31 chars of `CF_TEXT` from the Windows clipboard, upper-cases, `SetKey`s and saves the key to `<profile dir>authkey.dev`, runs `CheckNewAuthKeyStatus()` (stays on the page). **Done** (reverse transition) → if locally accepted: `CheckNewAuthKeyStatus()` and → Main. **Play Demo** (reverse transition) generates a demo key `Authentication_GenerateKey(buf, 4, true)`; if it passes the simple check it is set and saved to `<profile dir>authkey.dev` and → Main, otherwise the buffer is cleared.
+
+**Key-file inconsistency** [C file names; I consequence]: start-up reads only `<profile>authkey.dev` (`code/app.cpp:App::InitMetaServer` L477); pasted and demo keys are saved to `authkey.dev`, but **typed** keys are saved to `<profile>authkey` (`code/UI/AuthInputField.h` L149). A key typed by hand is therefore not found on the next launch, and the player is sent to the key page again. The support INI and installers reference `authkey`. Which name the retail build used is 09-U2.
+
+### 6.5 Authentication status box (Main page)
+
+[C] `GameMenuWindow::ShowAuthBox`, `code/UI/AuthStatusButton.h`. `ShowAuthBox()` is true when (a) the auth status (`Authentication_GetStatus(key)`) or the demo-key flag changed within the last **2.0 s** (function-static tracking), or (b) status ≠ `AuthenticationAccepted`, or (c) the key is a demo key; always false under `MULTIWINIA_DEMOONLY`. The box shows `dialog_auth_status` (small) and the status phrase (med) — `dialog_auth_status_demo_user` for a demo key whose status ≥ Unknown, otherwise the phrase for the status code; Unknown is drawn at α 0.66. The constructor gate uses only the local algorithmic check; metaserver-rejected keys are surfaced only through this box [C].
+
+### 6.6 Buy-now page (PageBuyMeNow 16) [B:DEMO runtime]
+
+[C] `GameMenuWindow::SetupBuyMePage`, `code/UI/UnlockFullGameButton.h`, `code/UI/ImageButton.cpp`.
+
+| # | Widget | Name | Caption / content | Geometry |
+|---|---|---|---|---|
+| — | title | `title` | `launchpad_buyme_1` | |
+| — | `TextButton` | `info` | `multiwinia_buy_prices` (1.3·small, shadow, centred) | y0 = lY + bh + 0.5bh + 0.5bh + bh |
+| — | `ImageButton("textures/prices.bmp")` (no border) | `image` | price artwork | (bx + 0.2bw, y0 + 3bh, 0.6bw, (40/300)·0.6bw) |
+| 1 | `UnlockFullGameButton` | `launchpad_button_buynow` | same (centred, 1.2·med) | (bx + 0.2bw, y0 + 4.5bh, 0.6bw, 2bh); `m_url = App::GetBuyNowURL()` |
+| 2 | `BackPageButton(prev)` | `multiwinia_menu_back` | | lY + lH − 2bh |
+| — | `ImageButton("textures/multiwinia.bmp")` (border) | `image` | box art | right (rX + 0.1rW, rY + 0.1rH, 0.8rW, (149/394)·0.8rW) |
+| — | `TextButton` | `info` | `multiwinia_buynow` (small, shadow) | below the box art, rW × rH |
+
+`UnlockFullGameButton`: vertical gradient white → black (α 0.5), outline, caption, own additive highlight (α 0.2) on hover/click, URL printed at the bottom (font 0.13·h), gamepad "A" glyph `icons/button_a.bmp` in gamepad mode. Click: open the URL (`App::GetBuyNowURL()` = `http://store.introversion.co.uk`) in the browser; if running full-screen (`ScreenWindowed` = 0) switch to **windowed 1024 × 768** (prefs `ScreenWindowed`, `ScreenWidth`, `ScreenHeight`), recreate the GL window/renderer, flush/regenerate GL state, save prefs, re-initialise Eclipse at 1024 × 768, remove all windows and rebuild the front end from scratch [C]. `BuyNowInfoButton` (five lines `multiwinia_buynow_1` … `_5`) exists but is never placed [B:LEGACY]. The Darwinia-era `DemoEndWindow` ("WANT MORE? … BUY NOW / EXIT DEMO") is dead — Appendix A.8.
+
+---
+
+## 7 Achievements, statistics and leaderboards
+
+### 7.1 Achievement catalogue and exact unlock conditions
+
+[C] enum `code/app.h:App` (`DarwiniaAchievement*`, L278–290); call sites as cited (all verified).
+
+| Id | Enum | Code comment | Exact unlock condition in code | Where |
+|---|---|---|---|---|
+| 0 | `DarwiniaAchievementDominator` | domination achievement | Domination, **non-co-op**, the local team is the last non-eliminated team (`totalTeams − 1 == numEliminated`; win by elimination, not by time-out) | `code/multiwinia.cpp:Multiwinia::AdvanceSkirmish` (L566–578) |
+| 1 | `DarwiniaAchievementHoarder` | CTS achievement | CTS time-out win by the local team with `highScore > 2 × secondHighest` **and** `highScore > 3` (special monster/Futurewinian teams excluded from second place) | `Multiwinia::AdvanceCaptureStatue` (L1505–1519) |
+| 2 | `DarwiniaAchievementHailToTheKing` | king of the hill achievement | KOTH time-out win by the local team with `highestScore > secondHighest × 1.5` | `Multiwinia::AdvanceKingOfTheHill` (L725–737) |
+| 3 | `DarwiniaAchievementUncladSkies` | rocket riot achievement | local rocket wins with `m_damage <= 0.01` and no other used, non-special team's rocket has `m_fuel > 50` | `Multiwinia::AdvanceRocketRiot` (L925–943) |
+| 4 | `DarwiniaAchievementAggravatedAssault` | Assault achievement | Assault single-round end, the local team is defending, and `m_defendedAll` — every objective (bomb and linked stations) owned by a defending team on every tick since the start (`m_defendedAll &= IsDefending(...)`, L1762) | `Multiwinia::AdvanceAssault` (L1849–1855) |
+| 5 | `DarwiniaAchievementMasterPlayer` | beat someone who already has Master Player | the local team wins a **non-co-op** game in which another non-CPU, used team's `m_achievementMask & VIRAL_MASTER_ACHIEVEMENT_MASK (0x01)`; also sets `AchievementTracker::m_isMasterPlayer = true`, which is then broadcast as the viral mask (`NET_DARWINIA_SET_PLAYERACHIEVEMENTS`, `RequestSendViralPlayerAchievements`, L1261–1268; stored on receipt L2390–2404) | `Multiwinia::CheckMasterAchievement` (L4253–4272), called from `DeclareWinner` when the local team wins |
+| 6 | `DarwiniaAchievementMasterOfMultiwinia` | won a game on every single game map | `AddVictoryOnLevel` makes `NumWonLevels() == VALID_ACHIEVEMENT_LEVELS` (49 with Assault compiled, else 41); only level ids 1–49 (`MAX_LEVEL_ID`) from `data/levels/level_enum.txt` count | `code/achievement_tracker.cpp:AchievementTracker::AddVictoryOnLevel` |
+| 7 | `DarwiniaAchievementExplorer` | played a game on every single map | `AddVisitedLevel` (called when the grace countdown ends) makes `NumVisitedLevels() == 49 / 41` | `AchievementTracker::AddVisitedLevel`; caller `Multiwinia::AdvanceGracePeriod` (L2416) |
+| 8 | `DarwiniaAchievementCarnage` | "killed more than 3000 enemy darwinians in a single game" | local `Team::m_teamKills >= 2000` on the tick the game ends (`GameOver()`) | `Multiwinia::Advance` (L2577–2587) |
+| 9 | `DarwiniaAchievementBlitzMaster` | blitzkrieg achievement | Blitzkrieg win by the local team with `m_startTime <= m_timeRemaining + 300` (comment "300 is 5 minutes!"; compares a start timestamp with remaining seconds — practically always true) | `Multiwinia::AdvanceBlitkrieg` (L2343–2352) |
+| 10 | `DarwiniaAchievementWrongGame` | nuke one of your allies in a 4p coop game | co-op, the local team's Nuke explodes within **120** units of a SpawnPoint owned by a friend (`IsFriend`, which includes the player's own spawn points); also shows message `dialog_wronggame` "Wrong Game!" (visible even though the achievement is stubbed) | `code/worldobject/nuke.cpp` (L196–215) |
+| 11 | `DarwiniaAchievementGenocide` | "Kill a total of 100,000 Darwinians" | `m_totalKills >= 1000000` after `AddToTotalKills` (called from every `DeclareWinner` with the local `m_teamKills`; `m_totalKills` starts at **−1**) | `AchievementTracker::AddToTotalKills` |
+| 12 | `NumAchievements` | | | |
+
+Comment-vs-code thresholds [C]: Carnage comment "more than 3000", code `>= 2000`; Genocide comment "100,000", code `>= 1000000`.
+
+### 7.2 Platform reality in the PC baseline — achievements are stubbed
+
+[C] `code/app.cpp:App::GiveAchievement`, `App::EarnedAchievement`, `App::CheckMasterAchievement`:
+
+- `App::GiveAchievement(id)`: for every id except MasterPlayer, Carnage and Genocide, returns early if any of the first `m_levelFile->m_numPlayers` lobby slots is a CPU team ("achievements should only be available in games without AI players"); then `if (EarnedAchievement(id)) return;` — and does nothing else.
+- `App::EarnedAchievement` always returns false; `App::CheckMasterAchievement` is empty.
+- ⇒ **No achievement is ever recorded, persisted or shown in the PC build.** These are hooks whose platform layer (Xbox Live / Steam [I]) was removed from this release.
+- The Achievements page (`GameMenuWindow::SetupAchievementsPage`) builds only a title (`multiwinia_menu_achievements`), a scroll bar and a Back button (→ Main) and would show the blinking "Loading achievements" effect forever, because `AchievementTracker::m_hasLoaded` is never set true; `m_achievementButtons` is never filled; no code assigns `m_newPage = PageAchievements` [C]. `AchievementButton` (if ever created): row `achievement<N>`, slides down into place at 750 px/s after the menu transition, scrolls 4 px per scroll-bar step, clipped to the scroll-bar band, draws only a grey (0.4, α 0.5) background (image/text drawing removed), marks itself disabled + inactive; helper `MakeNumberHumanReadable` formats thousands with commas [C] `code/UI/AchievementButton.h`. The Darwinia `MainMenuWindow`'s `AchievementsButton` has no `MouseUp` override [C] `code/interface/mainmenus.h`.
+
+### 7.3 `AchievementTracker` (session progress)
+
+[C] `code/achievement_tracker.h`, `code/achievement_tracker.cpp`.
+
+| Member | Meaning |
+|---|---|
+| `HashTable<int> m_levelList`, `std::map<int, std::string> m_levelListReverse` | map file name ↔ id from `data/levels/level_enum.txt` (`<filename> <id>` per line; 59 entries with ids 1–59, no gaps — the last line has no trailing newline; only ids 1–49 can count, ids 50–59 (PDLC maps) are ignored by `MAX_LEVEL_ID`) |
+| `unsigned char m_visited[8]`, `m_won[8]` | 64-bit bitsets indexed by level id |
+| `bool m_isMasterPlayer` | viral flag (mask bit `VIRAL_MASTER_ACHIEVEMENT_MASK = 0x01`) |
+| `bool m_hasLoaded` | never set true |
+| `int m_numOfficialLevels` | set by `SetNumLevels` from `GameMenu::CreateMapList` (unused) |
+| `int m_totalKills` | starts −1; `AddToTotalKills(k)` adds and calls `Save()` |
+
+Methods: `AddVisitedLevel` / `AddVictoryOnLevel` (ignore unknown names and ids > `MAX_LEVEL_ID` = 49; set the bit; `Save()`; completion check), `AlreadyWonLevel`, `AlreadyVisitedLevel`, `GetWonLevels`, `GetVisitedLevels`, `NumWonLevels`, `NumVisitedLevels` (popcount over 64 bits), `GetCurrentLevelId`, `GetLevelName`, `GetLevelId`, `SetNumLevels`, `GetViralAchievementMask`, `HasLoaded`, `GetTotalKills`. `Load()` is empty; `Save()` returns immediately for a demo key and does nothing otherwise; `ACHIEVEMENT_RECORD_FILENAME "achievements.txt"` is unused. ⇒ All tracking is in memory for the session and lost on exit [C].
+
+### 7.4 Statistics
+
+#### 7.4.1 What is recorded
+
+| Statistic | Scope | Where it goes | Ref |
+|---|---|---|---|
+| Per-team score (`LobbyTeam::m_score`) | match | in-match scoreboard and game-over list ([01 §3.10](01_game_modes.md)); `ClientToServer::SendTeamScores` sends `NET_DARWINIA_TEAM_SCORES` ("c3", six ints + winner id) on every `DeclareWinner`, and every client **ignores** it on receipt (`/* Ignore this */`, L2407–2410) — no statistics server | [C] `code/multiwinia.cpp:Multiwinia::DeclareWinner`, `code/network/clienttoserver.cpp:ClientToServer::SendTeamScores` |
+| Team kills (`Team::m_teamKills`) | match | Carnage check; added to the session total | [C] |
+| Session total kills (`AchievementTracker::m_totalKills`) | session | Genocide check only | [C] |
+| Visited / won levels | session | Explorer / Master of Multiwinia checks only | [C] |
+| Darwinia single-player level times (`LevelFile::ParseLeaderboardStats`, `LevelFile::m_leaderboardLevelTime`, `GlobalWorld::m_spLevelTimes` written by `TaskManagerInterfaceIcons`) | campaign | no UI reads them [B:LEGACY] | [C] `code/level_file.cpp`, `code/global_world.cpp`, `code/taskmanager_interface_icons.cpp` |
+| Network statistics (bandwidth, latency, sync) | session | debug network window (F9) and the dead benchmark recorder | [32](32_debug_test_and_performance.md) |
+
+There is no statistics screen, no persisted career record and no post-match summary page beyond the in-match game-over overlay.
+
+#### 7.4.2 Rocket Riot status panel (per-player in-match status) [B:FULL]
+
+[C] `code/rocket_status_panel.h`, `code/rocket_status_panel.cpp`, `Multiwinia::RenderRocketStatusPanel`. Created lazily each frame in Rocket Riot: `m_teamId = myTeamId`, `m_w = ScreenH × 0.2`, `m_x = ScreenW − m_w − 10`, `m_y = 10`; height `h = 1.5 × m_w`. Members `float m_x, m_y, m_w; int m_teamId; double m_lastDamage, m_damageTimer, m_previousFuelLevel`. `GetMyRocket()` returns the LobbyTeam's `m_rocketId` building only if it is an EscapeRocket owned by the team; nothing is drawn otherwise (spectators, before the rocket is found).
+
+Layers, bottom to top:
+1. Background quad in team colour × 0.2, alpha 200.
+2. While fuel < 100 %: scrolling `textures/laser.bmp` "refuelling" sheet in team colour, alpha 128 (texture v offset `fuel% × −100 + 0.5`).
+3. Fuel column: `textures/laser-long.bmp` gradient black → team colour, alpha 200, from `y + 0.97h` up by `0.95h × fuel%`; soft shadow above it.
+4. Overlay bitmap `icons/rocketstatuspanel.bmp`.
+5. Damage overlay `icons/rocketcracked.bmp`, additive, alpha = damage/100.
+6. If fuel ≥ 100 % or passengers > 0: 100 unit sprites (`sprites/darwinian.bmp`) in a 10 × 10 staggered grid inside the rocket window (x from 0.25w, width 0.45w, y from 0.225h, height 0.55h, sprite size 0.04h, slight sinusoidal jitter); the first `passengers` drawn in team colour, the rest dim (× 0.3 colour, 20 % alpha).
+7. Engine flame (`textures/muzzleflash.bmp`, flicker at 30 Hz) in Ready / Countdown / Flight.
+8. Caption (first matching rule; title font, word-wrapped, centred at `y + 0.6h`, height `0.05h`): (1) damage increased within the last 10 real seconds and not exploding → "YOUR ROCKET IS UNDER ATTACK! DAMAGE n%" (red, flashing); (2) Countdown → `countdown + 1` (4× size); (3) Flight → "LIFTOFF!" (1.5×, flashing); (4) Exploding → "Your Rocket is on FIRE!" (flashing); (5) fuel ≥ 100 % and passengers < 5 → "Load your rocket with 100 Multiwinians" (flashing); (6) refuel rate < 0.05 and fuel < 1 % → "Capture solar panels to begin refueling rocket" (flashing); (7) fuel < 100 % → "Fuel nn.n%" (75 % alpha).
+9. 20 %-white border.
+
+Between 95 % and 100 % fuel the rocket is already Loading but the caption still shows "Fuel 9x.x%" [C/I].
+
+### 7.5 Leaderboards [B:LEGACY — no data source]
+
+`LeaderBoardButton` ("Leaderboards") appears only in the unreachable `MainMenuWindow` and is created `m_inactive = true` (its `MouseUp` returns when inactive). `LeaderboardLoader` is a stub: `IsNewSearchNeeded()` → false, `ScrollUp/Down()` → false, `DoLeaderboardSearch()` empty, `GetRowsToShow()` → true without filling anything, `m_searchIndexOffset` never initialised; `LeaderboardWindow::Update()` is empty; `GameMenuWindow::SetupLeaderBoardSelectPage` / `SetupLeaderboardPage` are `return;` [C] `code/interface/leaderboards_window.cpp:LeaderboardLoader::DoLeaderboardSearch`, `code/UI/GameMenuWindow.cpp:GameMenuWindow::SetupLeaderboardPage`. The UI that exists (useful only as a statement of intent):
+
+| Window | Content |
+|---|---|
+| `LeaderboardSelectionWindow` | title "Leaderboards"; four `LeaderBoardTypeButton`s: **Darwinia** (`LeaderboardTypeSP` = 1), **Multiwinia (CPU)** (`TypeCPU` = 2), **Multiwinia (ranked)** (`TypeMPRanked` = 3), **Multiwinia (standard)** (`TypeMPStandard` = 4) (`LeaderboardTypeNone` = 0); each opens `LeaderboardWindow(type)` and asks `GameMenuWindow` to `SetupNewPage(PageLeaderBoard)`; **Back** |
+| `LeaderboardWindow(type)` | full width. Board selector `LeaderBoardListButton` cycled with `ControlXBoxMenuCycleUp/Down` (LB/RB) with an alpha-fade/slide caption animation (alpha step ±0.1 every 0.025 s, offset ±1 px per step, displacement `offset³ × 0.5`): SP boards = All levels, Garden, Containment, Mine, Generator, Yard, Escort, Pattern Buffer, Biosphere, Receiver, Temple, Prologue; other types = All Games, Domination, King Of The Hill, Rocket Riot, Capture The Statue, Blitzkrieg (no Assault). View selector cycled with `ControlLeaderboardLTrigger/RTrigger`: Friends, My Score, Overall. `ToggleCaptions` would relabel a `"multiwinia_leaderboard_score"` column header to "TrueSkill rank" (half font) when the board caption is "TrueSkill rankings", else "Points" — neither that header nor such a board is ever created (dead logic). "Loading" message; "Showing rows *R to *S of *T total entries" with 0/0/0; weekly toggle (`ControlLeaderboardWeekly` = pad Y) between "Show weekly stats" / "Show all stats"; Back. `GetRankTextBit(rank)` returns English ordinal suffixes st/nd/rd/th (11–19 → th) |
+
+Design takeaway: leaderboards were planned (TrueSkill-ranked + standard + versus-CPU, weekly/all-time, friends/mine/overall) but there is **no backend**: a case-insensitive grep for "leaderboard" over `code/` and `contrib/systemiv/lib/metaserver` finds only these UI files, `code/lib/input/control_types.inc` (control ids) and the Darwinia level-time stats above; the metaserver message set (§5.2.1) carries no ranking fields (`PLAYERSCORE` "ps" is defined but unused) [C]. Whether the external metaserver could serve rankings is 09-U7.
+
+---

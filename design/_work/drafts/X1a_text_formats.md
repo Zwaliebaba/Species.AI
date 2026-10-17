@@ -8,6 +8,34 @@ Conventions used in every grammar below:
 * `INT` = whatever C `atoi` accepts (optional sign, decimal digits, leading junk stops the scan, no error reporting; an unparsable token yields 0). `FLOAT` = whatever C `atof` accepts (decimal, optional exponent). `F32` = `FLOAT` then rounded to IEEE-754 single precision and widened back to `double` (`iv_atof` ≡ `(double)(float)atof(s)`, `contrib/systemiv/lib/math/math_stubs.cpp:iv_atof`, `iv_trunc_low_nibble`) [C]. The F32 rounding is a determinism measure; a re-implementation must replicate it for any value that feeds the simulation.
 * "MISSING ⇒ CRASH" means the parser calls `GetNextToken()` without checking `TokenAvailable()`; a short line gives a `NULL` token which is passed to `atoi`/`atof`/`strcpy`/`stricmp` → access violation or CRT invalid-parameter termination [C: code path; I: exact failure mode is MSVC CRT behaviour; no `_set_invalid_parameter_handler` exists in `code/` or `contrib/systemiv/lib`].
 
+## Format index
+
+| Anchor | Format | Files | Section | Build |
+|---|---|---|---|---|
+| `fmt-textreader` | shared line reader / tokeniser | all text formats | §1 | [B:FULL] |
+| `fmt-level-file` | level map / mission files | `data/levels/**`, `data/purity/map_*`, `mission_*` | §2 | mp: [B:FULL]; campaign: [B:LEGACY] |
+| `fmt-level-enum` | achievement level ids | `data/levels/level_enum.txt` | §2.19 | [B:FULL] |
+| `fmt-game-txt` | campaign world | `data/game*.txt`, `data/purity/game.txt` | §3 | [B:LEGACY]/[B:DEAD] |
+| `fmt-locations-txt` | world-map positions | `data/locations.txt` | §3.4 | [B:LEGACY] |
+| `fmt-multiwinia-txt` | game types & parameters | `data/multiwinia.txt`, `data/multiwinia-testbed.txt` | §4 | [B:FULL] / [B:DEAD] |
+| `fmt-betatesters` | credit name lists | `data/betatesters.txt`, `data/multiwinia_betatesters.txt` | §5 | [B:LEGACY] / [B:FULL] |
+| `fmt-preferences` | preferences | `<P>preferences.txt`, `data/default_preferences.txt` | §6 | [B:FULL] |
+| `fmt-input-bindings` | key/mouse/pad bindings | `data/input/input_preferences*.txt`, `<P>user_input_preferences.txt` | §7 | [B:FULL] |
+| `fmt-keyboard-layout` | layout overrides | `data/input/keyboards/*.txt` | §7.6 | [B:FULL] |
+| `fmt-locales` | LANGID → layout | `data/input/locales.txt` | §7.7 | [B:FULL] |
+| `fmt-language` | phrase tables | `data/language/*.txt`, `strings_*.txt` overlays | §8 | [B:FULL] |
+| `fmt-script` | cutscene scripts | `data/scripts/*.txt` | §9 | [B:LEGACY] |
+| `fmt-purity-misc` | purity data set | `data/purity/*` | §10 | [B:DEAD] |
+| `fmt-testbedconfig` | test-bed sequence | `testbedconfig.txt` | §11 | [B:DEAD] |
+| `fmt-support-ini` | crash-report file list | `MultiwiniaSupport.ini` | §12 | [B:FULL tool] |
+| `fmt-runtime-files` | runtime-written files (index) | profile directory, cwd | §13 | various |
+| `fmt-profile-save` | campaign save games | `<P>users/<profile>/*` | §13.3 | [B:LEGACY] |
+| `fmt-authkey` | authentication key | `<P>authkey.dev`, `<P>authkey` | §13.4 | [B:FULL] |
+| `fmt-sync-dump` | desync dumps | `<P>syncerror-*.txt`, `<P>syncdiff-*.txt` | §13.5 | [B:FULL] |
+| `fmt-mwm` | custom map container | `<P>maps/*.mwm` | §13.6 | [B:EDITOR] |
+
+Generated tables: `_work/drafts/X1a_level_field_usage.csv` (every block/field/value × file set, from `_work/scripts/X1a_level_survey.py`), `_work/drafts/X1a_encoding_survey.csv` (from `_work/scripts/X1a_text_survey.py`). Other helper scripts: `_work/scripts/X1a_language_survey.py`, `X1a_input_lines.py`, `X1a_extract_read_funcs.py`.
+
 <a id="fmt-textreader"></a>
 ## [→ 29_data_formats_reference] 1. Shared line reader and tokeniser (`TextReader` family)
 
@@ -69,9 +97,20 @@ token_line    := { separator } [ token { 1*separator token } ] { separator }
 rest_of_line  := everything after the leading separators, verbatim
 ```
 
-### 1.6 Encoding survey of the files in scope [C] `X1a_text_survey.py`
+### 1.6 Encoding survey of the files in scope [C] `_work/scripts/X1a_text_survey.py` → `_work/drafts/X1a_encoding_survey.csv` (190 files)
 
-See the coverage table at the end of this document and the per-format sections; summary: every file is single-byte ASCII/Latin-1 with CRLF line ends **except** 8 of the 9 language files (UTF-16 with BOM: big-endian French, German, Italian, Korean, Portuguese, Spanish; little-endian Japanese, Russian). `data/betatesters.txt` and `data/multiwinia_betatesters.txt` contain Latin-1 bytes (accented names) which pass through the narrow reader unchanged and are then widened byte-for-byte by `UnicodeString(char const*)` (each byte becomes the code unit of the same value, i.e. ISO-8859-1) [C] `contrib/systemiv/lib/unicode/unicode_string.cpp:UnicodeString::UnicodeString(char const*)`. The reverse conversion (`CopyUnicodeToCharArray`) maps every code unit > 255 to `?` [C].
+| Group | Files | Encoding | Line ends / final newline |
+|---|---|---|---|
+| `data/levels/*.txt` | 87 | ASCII | CRLF; `level_enum.txt` lacks a final newline |
+| `data/levels/old/*.txt` | 30 | ASCII | CRLF |
+| `data/purity/*.txt` | 4 | ASCII | CRLF |
+| `data/scripts/*.txt` | 42 | ASCII | CRLF |
+| `data/input/*.txt`, `data/input/keyboards/*.txt` | 6 | ASCII | CRLF |
+| `data/*.txt` in scope | 10 | ASCII, except `betatesters.txt` and `multiwinia_betatesters.txt` (Latin-1 bytes in accented names) | CRLF |
+| `data/language/*.txt` | 9 | `english.txt` single-byte (2 Latin-1 bytes); French, German, Italian, Korean, Portuguese, Spanish **UTF-16BE + BOM**; Japanese, Russian **UTF-16LE + BOM** | CRLF; Portuguese mixes 217 LF-only lines; Japanese, Korean, Portuguese lack a final newline |
+| root `testbedconfig.txt`, `MultiwiniaSupport.ini` | 2 | ASCII | CRLF; `testbedconfig.txt` lacks a final newline |
+
+No file starts with `redshirt2`; no UTF-8 BOM is present (a UTF-8 BOM would *not* be recognised — it would become part of the first token). Latin-1 bytes pass through the narrow reader unchanged and are then widened byte-for-byte by `UnicodeString(char const*)` (each byte becomes the code unit of the same value, i.e. ISO-8859-1) [C] `contrib/systemiv/lib/unicode/unicode_string.cpp:UnicodeString::UnicodeString(char const*)`. The reverse conversion (`CopyUnicodeToCharArray`) maps every code unit > 255 to `?` [C].
 
 ### 1.7 Re-implementation notes
 
@@ -308,7 +347,7 @@ b_row       := TYPENAME id x z team frontX frontZ isGlobal { extra }
 | 2 | `id` | INT | 0…; must be unique among all buildings of this `LevelFile` (map + mission), else `AppReleaseAssert("%s UniqueId was not unique in %s")` — **fatal in release** | `WorldObjectId(team, UNIT_BUILDINGS=−100, −1, id)`; referenced by every link column |
 | 3 | `x` | F32 | wu | position x (y is taken from the landscape at init [I]) |
 | 4 | `z` | F32 | wu | position z |
-| 5 | `team` | INT, stored as `unsigned char` | 0…5 (`NUM_TEAMS`=6, `code/globals.h`); shipped values 0, 1, 2, 255 (255 = no team/neutral [I]) | owner |
+| 5 | `team` | INT, stored as `unsigned char` | 0…5 (`NUM_TEAMS`=6, `code/globals.h`); shipped values 0, 1, 2, 255; 255 = no team (e.g. `Location::IsFriend` returns false for 255, `code/location.cpp` L2615) [C] | owner |
 | 6 | `frontX` | F32 | – | facing; `m_front = (frontX, 0, frontZ)` normalised (ctor default front (1,0,0) supplies y = 0) |
 | 7 | `frontZ` | F32 | – | |
 | 8 | `isGlobal` | INT → bool | 0/1 | campaign-global building (tracked by `GlobalWorld`). **Must be 1** for `TrunkPort`, `ControlTower`, `RadarDish`, `Incubator`, `FenceSwitch`, else `AppReleaseAssert("Non-global %s found in %s")` — fatal in release. All shipped rows comply (173/150/164/96/0 rows) [C] survey |
@@ -1011,7 +1050,7 @@ marker    := '[IFMODE KEYBOARD]' | '[ELSE]' | '[ENDIF]'        ; nestable condit
 
 * `[IFMODE KEYBOARD]` … `[ELSE]` … `[ENDIF]`: text between is written only in keyboard mode / only in gamepad mode. Only the word `KEYBOARD` is understood; `[IFMODE GAMEPAD]` increments the nesting depth but falls through to the phrase-reference rule (consumed, writes nothing). No shipped phrase uses IFMODE [C] survey.
 * `[KEY<name>]`: `<name>` (1…63 chars) is looked up with `InputManager::getControlID` (case-insensitive) and replaced by the bound input's description noun (`getBoundInputDescription`). An unknown control or unbound control falls through to the phrase-reference rule and is removed. English uses 87 such markers [C].
-* `[<key>]`: `<key>` (1…63 chars, lower-cased) is replaced by the mode-specific raw phrase (`<key>_kbd`/`<key>_xin` preferred, else `<key>`), recursively expanded; an unknown key is removed. **Any `[…]` pair is therefore markup**: `multiwinia_notpermitted  [Not permitted]` (English) expands to an empty string [C] by code path; [I] visible effect.
+* `[<key>]`: `<key>` (1…63 chars, lower-cased) is replaced by the mode-specific raw phrase (`<key>_kbd`/`<key>_xin` preferred, else `<key>`), recursively expanded; an unknown key is removed. **Any `[…]` pair is therefore markup**: `multiwinia_notpermitted  [Not permitted]` (English) expands to an empty string [C] by code path; the id is not referenced anywhere in `code/` (grep), so there is no visible effect [C].
 * Output is capped at `SEPULVEDA_MAX_PHRASE_LENGTH` = 1024 code units; marker contents ≥ 64 code units are removed unexpanded.
 * Hazard: an unterminated `[` makes `markerLength` return 0 and `consumeOtherMarker` move the read position back by one, so `buildCaption` **never terminates** [C]. No shipped phrase has one [C] survey.
 * Hazard: `consumeMarker`/`consume*Marker` copy the partially built caption through freshly allocated, uninitialised buffers (`UnicodeString::Resize` copies only `min(old,new)` units of an empty source); correct output depends on heap block reuse [I]. A re-implementation should simply append the expansion to the output buffer.
@@ -1260,3 +1299,89 @@ LF '=========================' LF '=      STACKTRACE       =' LF '==============
 
 Truncated at each language load when pref `TextLanguageTest` = 1; one line per finding: `ERROR : Failed to find translation for string ID '<id>'`, `ERROR : String ID appears not to be translated : '<id>'` (text identical to English), `ERROR : Found new string ID not present in original English : '<id>'`. (A second writer in `code/sepulveda.cpp` appends to the same file under `USE_SEPULVEDA_HELP_TUTORIAL` [B:DEAD].)
 
+## [→ 29_data_formats_reference] 14. Re-implementation guidance (format layer of the new game)
+
+* Keep **one** tokeniser (§1) for all legacy-compatible text formats, but fix its traps: process an unterminated last line in every reader, accept UTF-8 (with or without BOM) in addition to UTF-16, add a quoting rule for free-text values, and never return a NULL token to a parser — every block parser must check token availability and report `file:line: expected <field>` instead of crashing.
+* Make block parsers **table-driven** (keyword → field descriptor with type, default, range), so that the menu scanner and the level loader share one definition (the original has two divergent parsers, §2.4.3).
+* Separate shipped content from save data: no `redshirt2` obfuscation; versioned headers on every runtime-written file; preferences written atomically with typed values and full float precision.
+* Treat every name used as an identity (`GAMETYPE` names, building/entity/research type names, phrase ids, control names) as a stable *id* distinct from display text, and validate cross-references at load time (mount names, building link ids, objective location names).
+* For determinism, parse numeric simulation fields with an explicit, platform-independent decimal parser and round to the simulation's numeric type (the original's F32 rounding, §Conventions).
+
+## Cross-partition notes
+
+- [→ 23_terrain_and_landscape] P11: semantics of `Landscape`, `LandscapeTiles` (guide grid), `LandFlattenAreas` fields; this document fixes their syntax (§2.5–§2.7).
+- [→ 03_buildings_and_world_objects] P06/P07/P08/P02: behaviour of every building column in §2.9.3; the shipped row counts per type are in `X1a_level_field_usage.csv` (P06 has an equivalent `P06_level_building_usage.csv`).
+- [→ 01_game_modes] P02: meaning and units of every `multiwinia.txt` parameter and of the `LevelOptions` (§2.4.4, §4.3).
+- [→ 06_player_control_and_input] P10: run-time semantics of binding specs; P10 §1.11 grammar is consistent with §7.3 here, which adds the case-sensitivity rules, the thumbstick dual type, the `STATE_*` results and the shipped-file statistics.
+- [→ 09_meta_systems] P17b/P14: the preference-key register (`P17b_prefs_accesses.csv`, `P14_platform_lib_pref_keys.csv`); §6 gives only the file format and the default sources.
+- [→ 30_scripting_tutorial_and_cutscenes] P19: command semantics for §9.
+- [→ 22_determinism_and_networking] P15/X3: `Directory` serialisation used by `.mwm` and `serverHistory.dat` (§13.6–§13.7); sync dump formats (§13.5) are the forensic output of the sync check.
+- X1b (data formats part B): `sounds.txt`, `effects.txt`, `stats.txt`, `gestures.txt`, `.anim`, `.shp`, bitmaps, `.dat` archives, colour ramps are not covered here.
+- P18: the credits page consumes `multiwinia_betatesters.txt` (§5) and `GameMenu::AddMap` builds the map list (§2.4.3).
+- P14 correction: archive lookups are **case-insensitive** — `Resource::m_resourceFiles` is a `HashTable` (case-folding hash + `stricmp`) and SystemIV `FileSystem` uses a `BTree` with `stricmp` [C] `code/lib/resource.h`, `contrib/systemiv/lib/tosser/hash_table.cpp:HashTable::HashFunc`, `contrib/systemiv/lib/tosser/btree.cpp:BTree::LookupTree`; P14 §31.5.3/§31.5.4 state that callers must pass lower-case names / that the lookup is case-sensitive.
+
+## Contradictions / open questions
+
+1. P14 §31.5.3 vs code: archive lookup case sensitivity (see Cross-partition notes) — the code is case-insensitive [C].
+2. `CameraAnimations` parsing comment says mission lights override map lights; `ParseMissionFile` rejects `Lights` blocks (§2.8) [C].
+3. `level_enum.txt` is excluded from the retail `main.dat` although `AchievementTracker` needs it for the "Master of Multiwinia"/"Explorer" achievements — either the retail game ships it elsewhere or those achievements could never fire [U].
+4. The auth key typed in the auth field is saved to `<P>authkey` but read from `<P>authkey.dev` (§13.4) — confirmed contradiction (also noted by P14).
+5. Partial `japanese.txt`/`korean.txt`/`portuguese.txt` would show raw phrase ids for ~90 % of the UI (no English fallback) — either these languages were never selectable in a retail edition or complete files existed outside this tree [U].
+6. `NetworkServerPort`/`NetworkClientPort` (live) coexist with the dead `ServerAddress`/`ServerPort`/`BypassNetwork` defaults — the latter are Darwinia leftovers [C].
+
+## [U] Unknowns
+
+1. Whether `level_enum.txt` reached retail installs (resolve: list a retail `main.dat`/`patch.dat`).
+2. Whether retail editions shipped complete Japanese/Korean/Portuguese language files (resolve: retail `language.dat` and `tools/*language.list`).
+3. Whether `default_preferences.txt` is reachable at first run in a packaged install (`PrefsManager` is created before `main.dat` is parsed) — affects first-run `WaitVerticalRetrace`, `NetworkClientPort` etc. (resolve: check `tools/init.list` against a retail `init.dat`, or run a clean install). P14 rates the "not found" outcome [I, strong].
+4. Exact failure mode of a NULL token in release (`atoi(NULL)` access violation vs CRT invalid-parameter termination for `stricmp`) — immaterial for a re-implementation (resolve: run the original with a truncated file).
+5. Whether `MultiwiniaSupport.exe` in `tools/multiwiniasupport/` was built from `contrib/XCrashReport` unchanged (resolve: compare resources/strings of the binary).
+
+## Docs-vs-code discrepancies
+
+| Doc | Doc says | Code does |
+|---|---|---|
+| `docs/input_preferences_syntax.txt` | grammar without `~` icon lines, `value`/`alias` drivers, `repeat`, `key any`/`mouse any`, thumbstick directions, `lefttriggerb`/`righttriggerb` | all of these are accepted (§7.3) [C] |
+| `docs/input_preferences_syntax.txt` | "A preference value is always false if there is no corresponding preference manager entry" | `pref X` with a non-existent key **fails to parse** (binding rejected) [C] `PrefsInputDriver::parseInputSpecification` |
+| `docs/input_preferences_syntax.txt` | user prefs override the FIRST binding of the system file | true for each user line, but several user lines for one control overwrite each other (replace semantics) [C] P10 §1.10 |
+| `docs/top level map.txt` | "Each level file specifies a map file at the start"; global data has "X Z position" per map | map/mission pairing is given by `game.txt` `Locations` rows; `locations.txt` stores X Y Z [C] §3 |
+| `docs/changes.txt` (Darwinia Steam notes) | default language read from `HKCU\software\valve\steam\language` | Multiwinia uses `GetLocaleInfo(LOCALE_SENGLANGUAGE)`; no registry read in `code/` [C] §8.1 |
+| `data/multiwinia.txt` header comment | `Change: 0 = DropDownMenu, -1 = CheckBox` | consistent with `GameMenuWindow` [C] |
+| `data/language/english.txt` comment | `*BETATESTERS … is replaced by all the names of the beta testers` | consistent; requires the phrase to be exactly `*BETATESTERS` [C] `ReadCredits` |
+
+## IP register
+
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| "Multiwinia", "Darwinia", "Darwinian(s)", "Futurewinian", "Rocketwinians" | name/brand | `data/multiwinia.txt`, crate names `code/worldobject/crate.cpp:Crate::GetName`, level options | "the game", "Sprite", "Future Sprite", "Rocket Sprites" |
+| Game-type names `Domination`, `KingOfTheHill`, `CaptureTheStatue`, `Assault`, `RocketRiot`, `Blitzkrieg`, `TankBattle` (as presented in this specific set) | name | `data/multiwinia.txt` | `ZoneControl`, `HoldTheCentre`, `CarryTheIdol`, `AttackDefend`, `RocketRace`, `ZoneChain`, `ArmourMatch` |
+| Map file names `mp_*` and location names (`garden`, `containment`, `mine`, `generator`, `yard`, `escort`, `pattern_buffer`, `biosphere`, `receiver`, `temple`, `launchpad`, `sandbox`) | name | `data/levels/`, `data/game.txt` | `map_<mode>_<players>p_<n>`, `region_<n>` |
+| Every phrase text in `data/language/*.txt` (UI strings, credits, help) | text | `data/language/` | write new text; keep only the id scheme |
+| Beta-tester and credit names | text (personal names) | `data/betatesters.txt`, `data/multiwinia_betatesters.txt`, `multiwinia_credits_*` | never reuse; generate own credits |
+| Dr Sepulveda / `puritycontrol_*` dialogue, `buyme` cutscene | character/text | `data/purity/buyme.txt`, `code/sepulveda.cpp` | none (do not implement) |
+| Building/entity/research type names used as file keywords (`SpawnPointMaster`, `TrunkPort`, `SoulDestroyer`, `Virii`, `Triffid`, …) | name | §2.9.3, §2.12, §3.3 | new neutral ids (`SpawnHub`, `Portal`, …) |
+| Asset names referenced from level files (`rockhead.shp`, `landscape_launchpad.bmp`, `waves_*.bmp`, `water_*.bmp`) | art | level files | new asset names |
+| Value-driver names `Pecan`, `Hummingbird`; test-bed name `TESTBED_GodOfCode`; profile names `AccessAllAreas`, `AttractMode` | name | `code/lib/input/inputdriver_values.inc`, `testbedconfig.txt`, `code/app.cpp` | `AlwaysTrue`, `FeatureFlagA`, `DevProfile` |
+| Obfuscation header `redshirt2` and its key table | brand-ish/secret | `text_stream_readers.cpp`, `text_file_writer.cpp` | none (use no obfuscation) |
+| Folder/bundle names `Introversion\Multiwinia`, `uk.co.introversion.*` | brand | `App::GetProfileDirectory`, `App::GetPreferencesPath` | `<Company>\<Game>` |
+| Auth-key format and demo-key literal | brand/credential | `contrib/systemiv/lib/metaserver/authentication.cpp` | own licensing scheme |
+| Crash tool name `MultiwiniaSupport` | brand | root INI, `contrib/XCrashReport` | `<Game>Support` |
+
+## Appendix — dead/legacy code
+
+| Item | Tag | Ref |
+|---|---|---|
+| `game_demo.txt` / `game_demo2.txt` selection (`DEMOBUILD`, `DEMO2`) | [B:DEAD] | `code/app.cpp` `GAMEDATAFILE` |
+| Whole campaign world loader (`game.txt`, `game_unlockall.txt`, `locations.txt`, missions, `map_*`) | [B:LEGACY] | §3, §2.1 |
+| `Tutorial_StartDefinition` section, `RunScript <phrase-id>` sequences, `SetCutsceneMode` | [B:DEAD] (`USE_SEPULVEDA_HELP_TUTORIAL`) | `GlobalWorld::ParseTutorial`, `Script::RunScript` |
+| `multiwinia-testbed.txt`, `testbedconfig.txt`, `TestBedLog.txt` | [B:DEAD] (`TESTBED_ENABLED`) | §4.1, §11 |
+| `data/purity/*`, `Script::RunCommand_PurityControl` | [B:DEAD] data / [B:LEGACY] command | §10 |
+| `input_preferences_darwinia.txt` (needs `MultiwiniaControlMethod` = 0, forced to 1) | [B:LEGACY] | §7.1 |
+| `input_preferences_mac.txt` | Mac only | §7.1 |
+| Mod overlay paths `<P>mods/<mod>/…` | [B:DEAD] (`USE_DARWINIA_MOD_SYSTEM`) | `Resource::GetTextReader` |
+| SystemIV `FileSystem` (compiled, never instantiated) | [B:FULL] unreachable | §1.1 |
+| `Script::TestScript` | [B:DEAD] (`SCRIPT_TEST_ENABLED`) | §9 |
+| `CreditsLoader::GenerateBetaTesterList` (`betatesters.txt`) | [B:LEGACY] | §5 |
+| Benchmark output, Vista `.dsg`, gesture/sound editor saves, `achievements.txt` | [B:DEAD]/[B:DEBUG]/never written | §13.1 |
+| `LevelFile::WriteRunningPrograms`, `WriteLeaderboardStats`, `GlobalWorld::SaveLocations` (malformed `%-8.2` output) | [B:LEGACY]/[B:EDITOR] | §2.15, §3.4 |
+| Building types blocked by `BLOCK_OLD_DARWINIA_OBJECTS` (39) and entity types blocked by `EntityIsBlocked` (16) | [B:LEGACY] (lines ignored) | §2.9.3, §2.12 |

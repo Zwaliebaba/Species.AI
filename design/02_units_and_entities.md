@@ -73,7 +73,7 @@ This document specifies **every simulated entity type** of the Multiwinia PC bui
 | 15 | `TypeArmour` | `Armour` (`code/worldobject/armour.h`) | no | [B:FULL] | crate reward *Armour* → `Task::TargetArmour`; trunk-port armour reinforcements (`Multiwinia::AdvanceTrunkPorts`); level `InstantUnits` with `runAsTask` (7 armours on `mp_assault_2P_1`, `mp_assault_3P_2`, `mp_assault_3p_1`, `mp_assault_4P_1`); `ConstructionYard` [B:LEGACY]; cheat window [B:DEBUG] | **no** | [8](#8-armour) |
 | 16 | `TypeSoulDestroyer` | `SoulDestroyer` (`code/worldobject/souldestroyer.h`) | no | [B:FULL] | `TriffidEgg::Spawn` (`SpawnSoulDestroyer`; MP: Monster team, max 2 alive, never in Assault) | yes (base) | [21](#21-souldestroyer) |
 | 17 | `TypeTriffidEgg` | `TriffidEgg` (`code/worldobject/triffid.h`) | yes | [B:FULL] | `Triffid::Launch` (Triffids crate), `Crate::RunEggs` (Eggs crate task), nested `SpawnTriffidEggs` | yes (base) | [14](#14-triffidegg) |
-| 18 | `TypeAI` | `AI` (`code/worldobject/ai.h`) | yes | [B:FULL] | one per CPU team, spawned by `Location::InitialiseTeam` at (−100, 0, −100) | n/a (invulnerable) | [24](#24-ai) |
+| 18 | `TypeAI` | `AI` (`code/worldobject/ai.h`) | yes | [B:FULL] | one per CPU team (including the Monster and Futurewinian teams), spawned by `Location::InitialiseTeam` with a requested position (−100, 0, −100) that `FindValidSpawnPosition` rejects as off-map, so it lands at the clamped fallback (20, ·, 20) | n/a (invulnerable) | [24](#24-ai) |
 | 19 | `TypeShaman` | `Shaman` (`code/worldobject/shaman.h`) | yes | [B:LEGACY] | `Task::TargetShaman` only (no crate/UI runs it); deletes itself on its first tick | — | [27](#27-shaman) |
 | 20 | `TypeHarvester` | `Harvester` (`code/worldobject/harvester.h`) | no | [B:FULL] | crate reward *Harvester* → `Task::TargetHarvester` | **no** | [9](#9-harvester) |
 | 21 | `TypeNuke` | `Nuke` (`code/worldobject/nuke.h`) | yes | [B:FULL] | crate reward *Nuke* → `Task::TargetNuke` → `Crate::RunNuke` (10 warheads) | yes in principle (base, never in practice) | [12](#12-nuke) |
@@ -182,6 +182,8 @@ These rules apply to every entity in sections 3–31. Each entity section restat
 | Speed changes | *Slow Down Time* crate: target `0.2 + syncfrand(0.2)`; *Speed Up Time* crate: `1.3 + syncfrand(0.7)`; both ease at 5 % of the gap per tick and hold for a length counter of 15.0 decremented by 0.1 per tick (≈150 ticks); a Meteor within 200 of its target requests 0.4 (ease 10 %/tick, length 4.0 ≈ 40 ticks); afterwards the speed returns to 1.0 | [C] `code/worldobject/crate.cpp:Crate::RunSlowDownTime`, `Crate::RunSpeedUpTime`, `code/worldobject/meteor.cpp:Meteor::Advance`, `code/gametimer.cpp:GameTimer::Tick`, `GameTimer::RequestSpeedChange`; [I] the length counter is decremented once per server tick |
 | Wall clock | `g_gameTime` is **wall-clock time** (`GetHighResTime()` every rendered frame), not game time; `g_advanceTime` is the real frame delta (capped 0.25 s) | [C] `code/main.cpp:UpdateAdvanceTime`, `code/main.h` (comment "Updated from GetHighResTime every frame") |
 | Slicing | each 0.1 s tick is processed as `NUM_SLICES_PER_FRAME` = 10 slices; every sliced container advances one tenth of its slots per slice, so each entity/spirit advances exactly once per tick, in slot order ([21](21_simulation_and_entity_model.md)) | [C] `code/globals.h`, `code/location.cpp:Location::Advance` |
+
+**Float countdowns.** A timer started at a whole number of seconds and decremented by 0.1 until `≤ 0` takes one tick more or less than expected because 0.1 is not exactly representable: 1.0 → 11 ticks, 2.0 → 20, 5.0 → 51, 6.0 → 61, 10.0 → 101, 15.0 → 151, 20.0 → 200, 60.0 → 600 [C] arithmetic in IEEE double (checked with a script); so an "every 1 s" unit timer (e.g. `Officer::RunAI`, `Armour::RunAI`, `Squadie::RunAI` retarget) actually fires every 1.1 s ([07](07_ai.md) uses the same 11/101/200-tick periods). A new engine should count integer ticks.
 
 **Three kinds of timer appear in entity code, and a re-implementation must keep them apart:**
 
@@ -1099,9 +1101,9 @@ Terrain/obstacles: walks with `Entity::PushFromObstructions` (sprite-style spher
 
 ### 6.1 Spirit — role and acquisition
 
-- **Role**: the soul released when an entity dies. In Multiwinia free spirits are a **harvestable resource**: a Harvester (or legacy Engineer) collects them and converts each into one Darwinian at a friendly spawn point (§9, §10). Creatures also use them (Virii ferry them into Eggs, Centipedes eat them, ants carry them home, SoulDestroyers delete their victims' spirits). Uncollected spirits ascend and vanish. Economy view: [05](05_economy_and_population.md).
+- **Role**: the soul released when an entity dies. In Multiwinia free spirits are a **harvestable resource**: a Harvester or an Engineer (both live crate units) collects them and converts each into one Darwinian at a friendly spawn point (§9, §10). Creatures also use them (Virii ferry them into Eggs, Centipedes eat them, ants carry them home, SoulDestroyers delete their victims' spirits). Uncollected spirits ascend and vanish. Economy view: [05](05_economy_and_population.md).
 - **Created by** `Location::SpawnSpirit(pos, vel, team, ownerId)`: returns −1 (no spirit) for the Monster team; otherwise takes the next free slot, `pos = pos + (0,1,0)`, `vel` as given (deaths pass the corpse velocity × 0.5), `m_teamId = team`, `m_worldObjectId = ownerId` (the dead entity's id, used by `Location::GetSpirit(WorldObjectId)`), then `Begin()` [C] `code/location.cpp:Location::SpawnSpirit`.
-- **Producers** [C] grep `SpawnSpirit(`: `Entity::ChangeHealth` (every base death), `Officer` (shield loss, shield attack — team 0, invalid owner), `Darwinian` (legacy sacrifice), `AntHill` destruction (ants + stored spirits, [03](03_buildings_and_world_objects.md)), `SporeGenerator` (pre-fertilised eggs), `Tree` ([03](03_buildings_and_world_objects.md)), `TriffidEgg` `SpawnSpirits` (unused by crate masks), `Location` (Engineer running-program restore; one other site), cheat window [B:DEBUG].
+- **Producers** [C] grep `SpawnSpirit(`: `Entity::ChangeHealth` (every base death), `Officer` (shield loss, shield attack — team 0, invalid owner), `Darwinian` (legacy sacrifice), `AntHill` destruction (ants + stored spirits — but hills belong to the Monster team, so `SpawnSpirit` returns −1 and none appear, [03](03_buildings_and_world_objects.md)), `SporeGenerator` (pre-fertilised eggs), `Tree` ([03](03_buildings_and_world_objects.md)), `TriffidEgg` `SpawnSpirits` (unused by crate masks), `Location` (Engineer running-program restore; one other site), cheat window [B:DEBUG].
 
 ### 6.2 Spirit — members
 
@@ -1467,7 +1469,7 @@ Per-state detail [C] `Harvester::Advance*`:
 - **ToWaypoint**: fly to `m_wayPoint`.
 - **ToSpirit**: target = the chosen spirit's position; on the way, once (`m_fieldFound`), if > 30 floating spirits lie within 75 the target becomes their centroid.
 - **Harvesting** (stationary): every Floating spirit within 75 is collected while `count < capacity` (`CollectSpirit` → `Spirit::Harvest(id)` → `StateHarvested`); grenades captured (§9.5). Stays while any spirit is still `StateHarvested`.
-- **ToSpawnPoint**: target = spawn-point position at hover height; on arrival (within 5) **one** spirit per tick is deleted and `SpawnPoint::SpawnDarwinian()` creates one Darwinian of the spawn point's team at its door; sound "DropSpirit". If the remembered building is gone, it re-searches but then requires the spawn point to be **its own team** (`sp->m_id.GetTeamId() != m_id.GetTeamId()` → Idle). **Yield: 1 Darwinian per spirit, 10 per second** at the spawn point [I] (one per tick). If the head spirit index has become invalid it is not removed, and the harvester would hover at the spawn point indefinitely [C] code path; [I] reachability (collected spirits do not expire).
+- **ToSpawnPoint**: target = spawn-point position at hover height; on arrival (within 5) **one** spirit per tick is deleted and `SpawnPoint::SpawnDarwinian()` creates one Darwinian of the spawn point's team at its door; sound "DropSpirit". If the remembered building is gone, it re-searches but then requires the spawn point to be **its own team** (`sp->m_id.GetTeamId() != m_id.GetTeamId()` → Idle). **Yield: 1 Darwinian per spirit, 10 per second** at the spawn point [I] (one per tick). `SpawnPoint::SpawnDarwinian` checks neither the population cap nor the spawn point's activation delay (it only refuses neutral team 255), so harvester deliveries bypass both [C] `code/worldobject/spawnpoint.cpp:SpawnPoint::SpawnDarwinian`; economy consequences in [05](05_economy_and_population.md). If the head spirit index has become invalid it is not removed, and the harvester would hover at the spawn point indefinitely [C] code path; [I] reachability (collected spirits do not expire).
 - **ToIncubator**: dock via `Incubator::GetDockPoint`; one spirit per tick `Incubator::AddSpirit`. Incubators are Darwinia buildings absent from shipped MP maps [I].
 - Every tick (all states): `AdvanceSpirits`, `AdvanceGrenades`, `AdvanceEngines`; when it did not move this tick it bobs at hover height; then `Entity::Advance`.
 
@@ -2087,15 +2089,176 @@ stateDiagram-v2
 
 ## 19 Spider
 
-_Pending — being written._
+`class Spider : Entity`, type `TypeSpider` (11) [C] `code/worldobject/spider.h`, `code/worldobject/spider.cpp`. [B:FULL]. Not blocked.
+
+### 19.1 Spider — role and acquisition
+
+- **Role**: a large walker with 8 procedurally animated legs (`EntityLeg`, §20) that pounces on enemies from up to 150 away, crushing everything where it lands, and lays Virii eggs near spirits.
+- **Obtained by** `TriffidEgg::Spawn` `SpawnSpider` (Eggs/Triffids crates; roam 150) and `SpamInfection` (5 % of spirit conversions, Monster team, roam 200) [C] `code/worldobject/triffid.cpp:TriffidEgg::Spawn`, `code/worldobject/spam.cpp:SpamInfection::AdvanceAttackingSpirit`. Campaign and Shaman paths [B:LEGACY].
+
+### 19.2 Spider — stats and constants
+
+| Item | Value | Ref |
+|---|---|---|
+| Health | 200 | [C] `data/stats.txt` |
+| Speed | blueprint 50 **unused**; walking speed `min(distance, 30)` u/s | [C] `Spider::AdvanceToTarget` |
+| Rate | 1 (unused) | [C] |
+| `SPIDER_NUM_LEGS` | 8 | [C] `spider.h` |
+| `HOVER_HEIGHT` | 3.0 (body follows terrain + hover with blend `dt` per tick) | [C] `spider.cpp`, `Spider::Advance` |
+| `TURN_RATE` | 0.1 rad/tick (0.05 when dot > 0.9); must face within dot 0.999 before `FaceTarget` succeeds; moves only when dot > 0.5 | [C] `Spider::FaceTarget`, `AdvanceToTarget` |
+| `ATTACK_SEARCH_MIN_RADIUS` / `MAX_RADIUS` | 100 / 250 | [C] |
+| `SPIRIT_MINSEARCHRANGE` / `MAXSEARCHRANGE` | 30 / 100 (spirits higher than 10 with < 3 nearby eggs) | [C] `Spider::SearchForSpirits` |
+| `MAX_PATH_HEIGHT` | 100 (a random wander target is rejected if the path crosses terrain > 100 or < 0.1; 10 tries) | [C] `Spider::IsPathOK`, `SearchForRandomPos` |
+| Pounce trigger | facing and ≤ 150 from the pounce target | [C] `Spider::AdvanceAttack` |
+| Pounce launch | `vel = normalise(dir with y = 0.5) × 24·√distance` | [C] |
+| Pounce gravity | `vel.y −= 40` **per tick** (per-tick constant) | [C] `Spider::AdvancePouncing` |
+| Landing squash | enemies within 40: `fraction = (40 − d)/40 × (1 + syncfrand(0.3))`; those within **20** take `100 × fraction` damage; all are pushed (`front` with y = 5·|front|, length `min(30·fraction, 20)`) and made airborne | [C] `Spider::AdvancePouncing` |
+| Retarget | 5 s idle/egg-laying; 3 s set at pounce; 6 s after landing | [C] |
+| Spider–spider avoidance | another spider within 22 of `pos + vel` → retarget 40 along the summed escape vector (uses `syncrand() % numFound`: picks a random neighbour, not the spider found — bug) | [C] `Spider::DetectCollisions` |
+| Unused `#define`s | `NORMAL_SPEED` 300, `ATTACK_SPEED` 90, `ATTACK_PREAMBLE` 5; `FOOT_DAMAGE_RADIUS` 20 and `FOOT_DAMAGE_STRENGTH` 10 are used only by `StompFoot`, whose only call is commented out | [C] `spider.cpp` |
+| Gait `#define`s | `FOOT_MOVE_THRESHOLD` 5, `FOOT_EMERGENCY_THRESHOLD` 12 | [C] `Spider::CalcWhichFootToMove` |
+| Lifetime | until killed | — |
+
+### 19.3 Spider — state machine
+
+States `StateIdle`, `StateEggLaying`, `StateAttack`, `StatePouncing` [C] `spider.h`.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Attack: retarget, enemy at 100-250, pounce target = its position then
+    Idle --> EggLaying: retarget, suitable spirit, target 45 beyond the spirit
+    Idle --> Idle: retarget, random reachable point within roamRange of spawn
+    EggLaying --> Attack: retarget after 5 s and enemy found
+    EggLaying --> Idle: arrived within 5, lay one Egg, sound LayEgg
+    Attack --> Attack: turn to face, walk if farther than 150
+    Attack --> Pouncing: facing and within 150, sounds Attack and Pounce
+    Pouncing --> Idle: lands below ground + 1, squash, sound PounceLand
+```
+
+[C] `Spider::Advance`, `AdvanceIdle`, `AdvanceEggLaying`, `AdvanceAttack`, `AdvancePouncing`. The pounce target is a **position snapshot** taken at search time; the spider does not track the moving enemy [C] `Spider::SearchForEnemies`.
+
+### 19.4 Spider — legs and gait
+
+`Spider::Advance` runs the state handler, then either `UpdateLegsPouncing` (each leg `EntityLeg::AdvanceSpiderPounce(2 × seconds since pounce)`) or, on the ground, eases the body to terrain + 3 and calls `UpdateLegs` [C] `Spider::Advance` (resolved: P05's constant table said the `UpdateLegs` call is commented out — only the `StompFoot` call inside it is). `UpdateLegs`: up to two feet lifted per tick via `CalcWhichFootToMove` (emergency lift for any planted foot scoring > 12; otherwise the best score > 5 is lifted and further lifts are locked out for `m_delayBetweenLifts`, measured in network time); the active `SpiderParameters` set is the one whose `m_idealSpeed` is nearest |vel|; leg parameters are copied from it (`m_idealLegSlope × 2.5`); each leg's `Advance()` plants feet, and every plant plays "FootFall" [C] `Spider::UpdateLegs`, `Spider::CalcWhichFootToMove`. Leg swing timing uses the wall clock (`g_gameTime`, §20.4); foot state affects only rendering, sounds and the lift lock-out, not the body position [I].
+
+### 19.5 Spider — targeting, terrain, damage, colour, control, sounds
+
+- Targeting: nearest enemy at 100–250 (snapshot); spirits for egg laying. Darwinians treat spiders as scary, grenade-worthy targets.
+- Terrain: walks over terrain (body height from the heightmap), wander paths limited to height 0.1–100; no building push.
+- Damage: **immune to lasers**; amounts ≥ −1 ignored; others base + partial shape explosion; death → base spirit (unless Monster team) + "Die" [C] `Spider::ChangeHealth`.
+- Team colouring: `spider.shp` fully team-coloured (`SetShape(…, true)` in `Begin`); legs `spider_leg_upper.shp` / `spider_leg_lower.shp` (not recoloured); markers `MarkerEggLay`, `MarkerLeg0`–`MarkerLeg7`; damaged flicker scales the body; [B:D3D] tearing deform path behind a pounce [C] `Spider::Begin`, `Spider::Render`, `Spider::AdvancePouncing`.
+- Control: none. Sounds: "Pounce", "PounceLand", "FootFall", "LayEgg", "Attack" + base.
+
+### 19.6 SpiderParameters — gait parameter set
+
+`class SpiderParameters { double m_legLift; double m_idealLegSlope; double m_legSwingDuration; double m_delayBetweenLifts; double m_lookAheadCoef; double m_idealSpeed; }` [C] `code/worldobject/spider.h`. [B:FULL]. `Spider` owns three instances initialised in its constructor; the spider starts with set 2 and `UpdateLegs` switches each tick to the set whose ideal speed is nearest the current speed [C] `Spider::Spider`, `Spider::UpdateLegs`:
+
+| Set | `m_idealSpeed` | `m_legLift` | `m_idealLegSlope` (× 2.5 when applied) | `m_legSwingDuration` | `m_delayBetweenLifts` | `m_lookAheadCoef` |
+|---|---|---|---|---|---|---|
+| 0 | 10 | 3.0 | 2.6 | 0.4 s | 0.11 s | 0.75 |
+| 1 | 30 | 3.0 | 2.6 | 0.25 s | 0.06 s | 0.3 |
+| 2 | 50 | 3.0 | 2.6 | 0.25 s | 0.04 s | 0.2 |
 
 ## 20 EntityLeg
 
-_Pending — being written._
+Classes `EntityLeg` and `EntityFoot` (no base) [C] `code/worldobject/entity_leg.h`, `code/worldobject/entity_leg.cpp`. Procedural leg helper owned by `Spider` (8 legs, **live — [B:FULL]**) and `Tripod` (3 legs, [B:LEGACY]). Resolved: P03 stated that only the (blocked) Tripod uses `EntityLeg` and that the spider has its own gait; the code shows `Spider::Begin` creates `new EntityLeg(i, this, "spider_leg_upper.shp", "spider_leg_lower.shp", "MarkerLeg<i>")` and drives them every tick [C] `code/worldobject/spider.cpp:Spider::Begin`, `Spider::UpdateLegs`. Animation background: [26](26_animation_and_vfx.md).
+
+### 20.1 EntityFoot — data
+
+`EntityFoot { Vector3 m_pos; Vector3 m_targetPos; FootState m_state ∈ {OnGround, Swinging, Pouncing}; double m_leftGroundTimeStamp; Vector3 m_lastGroundPos; Vector3 m_bodyToFoot; }` — `m_bodyToFoot` is used while pouncing [C] `entity_leg.h`.
+
+### 20.2 EntityLeg — data
+
+Tuning: `m_legLift` (foot lift height), `m_idealLegSlope` (0 = vertical, 1 = 45°), `m_legSwingDuration` (s), `m_lookAheadCoef` (velocity look-ahead). State: `m_legNum`, `m_foot`, `m_rootMarker` (marker on the parent shape), `m_shapeUpper`/`m_shapeLower` (thigh/shin shapes), `m_thighLen`/`m_shinLen` (distance to each shape's `MarkerEnd`), `m_parent` [C] `entity_leg.h`, `EntityLeg::EntityLeg`.
+
+### 20.3 EntityLeg — algorithm
+
+1. **Leg root** = parent shape marker transformed by `Matrix34(parent.front, up, parent.pos)` (`GetLegRootPos`).
+2. **Foot home** (`CalcFootHomePos(hover)`): root + horizontal(root − body centre) × groundNormal.y × (`idealLegSlope × hover`), then y −= hover — the foot splays outward in proportion to body height.
+3. **Desire to move** (`CalcFootsDesireToMove`): distance from the foot to its home (the direction weighting is a constant 1). The owner decides which foot to lift (Spider: up to two per tick with thresholds 12/5 and a lock-out; Tripod: one at a time when all are planted and score > 1.0).
+4. **Lift** (`LiftFoot`): target = home + parent velocity rotated by half the expected yaw (`1.2 × angVel.y × 0.5`) × `lookAheadCoef`, y snapped to terrain; state Swinging; `m_leftGroundTimeStamp = g_gameTime`; last ground position remembered.
+5. **Swing** (`Advance`): `f = RampUpAndDown(start, duration, g_gameTime)` (ease-in-out `2t²` for t < 0.5, else `1 − 2(1 − t)²`; 1.0001 after the duration) → position = lerp(lastGround, target, f) + vertical arc (`3·f·lift` in the first third, `3·(1 − f)·lift` in the last third, `lift` in between). `f > 1` → **plant** (pos = target, OnGround), return true.
+6. **Knee** (`CalcKneePos`): rotate the vector foot → root, scaled to the shin length, about the horizontal axis perpendicular to centre → root by `θ = −acos(min(1, 0.4·|root − foot| / thighLen))`. Shin rendered foot → knee, thigh knee → root (`Render`; `RenderPixelEffect` marks pixel-effect cells).
+7. **Pounce** (`AdvanceSpiderPounce(f)`): foot = body − bodyToFoot × (1 − f for f < 0.5, else f) + vel × f × 0.05; last-ground and target set to it.
+
+### 20.4 EntityLeg — determinism and behaviour notes
+
+Swing timing uses `g_gameTime`, which is **wall-clock** (§2.1), and `PlantFoot` timing therefore differs between peers [C]. For the Spider, foot positions feed only rendering, the "FootFall" sound and the network-time lift lock-out, not the body position or any synced RNG, so the divergence stays cosmetic [I]; for the Tripod the foot state also drives the body fall (legacy). A new engine must drive legs from simulation time or keep them strictly presentational. No RNG is used [C].
 
 ## 21 SoulDestroyer
 
-_Pending — being written._
+`class SoulDestroyer : Entity` (type `TypeSoulDestroyer` = 16) and `class Zombie : WorldObject` (effect `EffectZombie`) [C] `code/worldobject/souldestroyer.h`, `code/worldobject/souldestroyer.cpp`. [B:FULL]. Not blocked.
+
+### 21.1 SoulDestroyer — role and acquisition
+
+- **Role**: a fast flying serpent (head + tail drawn from its own position history) that dives through enemies, killing them and **destroying their spirits** (souls never return to the economy). The strongest monster.
+- **Obtained by** `TriffidEgg::Spawn` `SpawnSoulDestroyer`: from Triffids-crate triffids (their spawn mask includes it) and from `SpawnTriffidEggs` sub-eggs (Eggs or Triffids crates; the Eggs crate excludes it from its first roll). Multiplayer limits: never in Assault, at most **2** alive (`s_numSoulDestroyers < 2`), always on the **Monster team**; otherwise the egg yields Virii (roam 200) [C] `code/worldobject/triffid.cpp:TriffidEgg::Spawn`, `code/worldobject/crate.cpp:Crate::RunEggs`, `Crate::RunTriffids`. Campaign placements and Shaman [B:LEGACY].
+
+### 21.2 SoulDestroyer — stats and constants
+
+| Item | Value | Ref |
+|---|---|---|
+| Health | 255 | [C] `data/stats.txt` |
+| Speed | blueprint 150 is **overridden by a hard-coded 130 u/s** | [C] `SoulDestroyer::AdvanceToTargetPosition` |
+| Rate | 1 (unused) | [C] |
+| `SOULDESTROYER_MINSEARCHRANGE` / `MAXSEARCHRANGE` | 200 / 300 (target dropped beyond 300) | [C] `souldestroyer.h`, `SoulDestroyer::Advance` |
+| `SOULDESTROYER_DAMAGERANGE` | 25: every tick (when `m_panic < 0.1`) each enemy within 25 is pushed out to 25 (grid record updated) and takes `int((25 − d)·50)` — a direct hit ≈ −1250, an instant kill | [C] `SoulDestroyer::Attack` |
+| `SOULDESTROYER_MAXSPIRITS` | 50 (render-only "eaten soul" list) | [C] |
+| Turn blend | `dt × 2` per tick; without a target entity the heading weaves: target direction rotated about the right axis by `sin(6·now)·1.5` rad | [C] `SoulDestroyer::AdvanceToTargetPosition` |
+| Ground avoidance | if the point 50 ahead along the target direction is under terrain → steer straight up | [C] |
+| Arrival / retarget | < 40; retarget every 5 s or on arrival | [C] `SoulDestroyer::Advance` |
+| Acquire rule | only when ≥ 50 above terrain and not on a scripted route (`m_routeId == −1`); nearest enemy at 200–300 (sound "EnemySighted") | [C] `SoulDestroyer::SearchForTargetEnemy` |
+| Wander | 160 steps at `100 ± 50` above terrain; return-to-spawn chance `horizontal d / roamRange` (roam 200 when egg-spawned) | [C] `SoulDestroyer::SearchForRandomPosition` |
+| Panic | any non-laser hit → `Panic(2 + syncfrand(2))` s; while panicking, 50 %/tick retreat 50 directly away (±90°) from the nearest enemy within 300 (y capped 300), no attacks | [C] `SoulDestroyer::ChangeHealth`, `SearchForRetreatPosition` |
+| Tail length | `clamp(roamRange/30, 9, 25)` history samples of the tail marker (9 when egg-spawned) | [C] `SoulDestroyer::RecordHistoryPosition` |
+| Hit radius | shape radius × 1.5 | [C] `SoulDestroyer::Begin` |
+| Spawn | at terrain height (rises after) | [C] |
+| Route trigger distance | 50 (scripted routes, legacy) | [C] `SoulDestroyer::SoulDestroyer` |
+| Counter | `s_numSoulDestroyers` ++ctor / −−dtor; reset in `Location::Init` | [C] |
+| Lifetime | until killed | — |
+
+### 21.3 SoulDestroyer — state machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> Wander
+    Wander --> Hunt: retarget, at least 50 above ground, enemy at 200-300
+    Hunt --> Wander: target gone or beyond 300
+    Hunt --> Hunt: steer to the target position, dive, Attack every tick
+    Wander --> Wander: arrived within 40 or 5 s, new 160 wander point
+    Wander --> Panic: hit
+    Hunt --> Panic: hit
+    Panic --> Wander: panic timer expires
+    Wander --> Dead: health 0
+    Hunt --> Dead: health 0
+    Dead --> [*]: base fade, 2.5 s ground or 5 s air
+```
+
+### 21.4 SoulDestroyer — soul destruction and targeting
+
+When its contact damage kills an entity, the spirit just spawned by that death (`Location::GetSpirit(victimId)`) is **removed** from the world; if the victim was a Darwinian a **Zombie** is created at the corpse (front = victim front, up tilted by `syncsfrand(1)`, velocity = 0.5 × SoulDestroyer velocity with y = `20 + syncfrand(25)`, team = victim team). The eaten soul is added to a render list (time stamp from the wall clock, slot chosen by unsynced `AppRandom` when full) and drawn orbiting the head as fading red-brown sprites for 60 s [C] `SoulDestroyer::Attack`, `SoulDestroyer::Render`, `SoulDestroyer::RenderSpirit`. Targets: enemies only (`GetEnemies`), all entity types. Darwinians always run from it (scary list, §4.6).
+
+### 21.5 SoulDestroyer — damage, terrain, colour, control, sounds
+
+- Damage: **lasers ignored**; only negative amounts processed; base death (spirit — moot for the Monster team); bug: `ChangeHealth` explodes every tail segment on **every** hit, not only on death (`if( fractionDead )` with fractionDead ≥ 0.5) [C] `SoulDestroyer::ChangeHealth`.
+- Terrain: flies; steers up when the terrain ahead is higher.
+- Team colouring: per-team red-region recoloured `souldestroyerhead.shp` and `souldestroyertail.shp` (marker `MarkerTail`); tail segment scale `max(1.5·(1 − i/n), 0.5)`, last one 0.8; shadows 50 (head) and `20 × scale`; [B:D3D] tearing deform along the tail [C] `SoulDestroyer::Begin`, `RenderShapes`, `Advance`.
+- Control: none (`SetWaypoint` sets `m_targetPos` for scripted use).
+- Sounds: "EnemySighted", "Panic", "Attack" (per contact) + base "Create", "LoseHealth", "Die".
+
+### 21.6 Zombie — ghost effect
+
+`class Zombie : WorldObject` (`m_type = EffectZombie`) [C] `code/worldobject/souldestroyer.h`, `souldestroyer.cpp:Zombie::Zombie`, `Zombie::Advance`, `Zombie::Render`. [B:FULL]. A purely visual ghost left behind by Darwinians killed by a SoulDestroyer or by Dark-Forest evil trees ([03](03_buildings_and_world_objects.md) `Tree::Advance`); also by legacy Shaman sacrifice. Nothing else reads `EffectZombie` [C].
+
+| Item | Value | Ref |
+|---|---|---|
+| Constructor | `m_positionOffset = syncfrand(10)`, axis rates `syncfrand(2)` × 3 | [C] |
+| Life | 600 s, then removed | [C] `Zombie::Advance` |
+| Motion | `vel *= 0.9` per tick; wobble like a spirit (rates random-walk `syncsfrand(1)` per tick in [0, 2], `hover = sin(offset) × rate`) | [C] |
+| Render | 5 (inner) + 10 (outer) `sprites/ghost.bmp` quads, colour (0.9, 0.9, 1.0), alpha `clamp(1 − life/10, 0.1, 0.7)`, outer `(0.7 − alpha) × 0.1`, fading over the final 100 s | [C] `Zombie::Render` |
+
+Zombies consume 3 synced random numbers per tick each for a cosmetic wobble ([22](22_determinism_and_networking.md)).
 
 ## 22 Meteor
 

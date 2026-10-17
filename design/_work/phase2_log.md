@@ -135,3 +135,8 @@
 - 799 in-scope files catalogued (each under data/... path in markdown, script-checked). 666 non-source: 544 referenced in FULL, 71 unused, 23 legacy-only, 17 D3D-only, 10 debug-only, 1 editor-only; 133 .max authoring sources never read. Shapes: 139 files, 441 fragments, 150,820 triangles, 425 markers. Outputs: drafts/X2a_textures.csv, X2a_shapes.csv, X2a_refs.csv, X2a_missing.csv; scripts/X2a_catalogue.py, X2a_assemble.py (hand-written inputs copied to _work/script_inputs/X2a_part{A,C}.md). [U]=5.
 - Critical: contents of patch.dat / branding.dat unknown — live MarkerSystem::RenderCompass can request missing icons/compass_empty.bmp → fatal assert unless an archive supplies it; which font atlases each retail SKU shipped (currency atlases in no language list); 52 FULL-referenced assets used only by buildings absent from MP maps.
 ## Phase 3 launched: S25
+
+## S04 (04_crates_powerups_and_weapons.md) — done, ~196 KB
+- All 22 class headings present with parameter tables; 31 shipped rewards + Beast (debug) + 3 commented; per-level probability table regenerated (scripts/S_04_crate_tables.py, 0 mismatches vs P08_crate_pools.csv); scripts/S_04_grenade_sim.py.
+- 10 contradictions resolved: Retribution live (option-gated, effectively on unless 0); Squad crate = 3 squaddies not 5; Beast debug-only; shockwave ring starts r=39, ~10-wide band → 2–3 hits; rocket ~95 wu range; 5 enum comments contradict code (shield coverage, Spawn Mania, Mega Rage, Rage, tree/egg counts); −0.1/tick timers finish one tick late (1.0 s → 11 ticks).
+- 04-U1: any map without sea would hang Nuke (no per-map heightmap scan done) — candidate for Phase 5 check using scripts/P11_* terrain port.

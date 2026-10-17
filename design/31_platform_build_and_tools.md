@@ -875,3 +875,222 @@ Consequence for this design set: the D3D path is documented in [24](24_rendering
 
 The Mac target compensates explicitly (`-mfpmath=387` on i386, `-mno-fused-madd` on PPC, x87 precision bit cleared at start-up) [C] §2.4, §2.3 — evidence that Introversion relied on cross-platform x87 bit-compatibility for lockstep [I].
 
+---
+
+## 8 Data build pipeline and the .dat archives
+
+### 8.1 Pipeline overview
+
+```mermaid
+flowchart LR
+  subgraph Inputs
+    D["data/ tree"]
+    SL["tools/sounds.txt (1297 Oggs)"]
+    ML["tools/menu_sounds.txt (18 Oggs)"]
+    EX["tools/multiwinia_exclusions*.txt"]
+    IN["tools/multiwinia_inclusions_*.txt"]
+    IL["tools/init.list"]
+    LL["tools/*language.list"]
+  end
+  SL --> CE["completeExclusions = sounds.txt + menu_sounds.txt + platform exclusions"]
+  ML --> CE
+  EX --> CE
+  D --> LF["perl listfiles.pl data completeExclusions -> listAll"]
+  CE --> LF
+  LF --> G1["grep -v sounds/ -> listData"]
+  G1 --> CP["perl copyfiles.pl -> build/data (+ inclusion list)"]
+  IN --> CP
+  CP --> FX["dir filter: tex bmp jpg shp txt vs ps ps3 h anim"]
+  FX --> MAIN["rar a -m5 -s -idp main.dat"]
+  IL --> INIT["copyfiles + rar a -m5 -s -idp init.dat"]
+  LL --> LANG["build_language_dat.bat -> rar -m5 -s language.dat"]
+  ML --> MS["rar a -m2 -s -idp menusounds.dat"]
+  SL --> SS["rar a -m2 -s -idp sounds.dat"]
+  LF --> G2["grep .ogg listAll"] --> S2["rar a -m2 -s -idp sounds2.dat"]
+  MAIN --> B["build/"]
+  INIT --> B
+  LANG --> B
+  MS --> B
+  SS --> B
+  S2 --> B
+  B --> V["darwinia_gl.exe --write-version -> build/version; save_symbols.cmd"]
+```
+
+### 8.2 Invocation and SKU arguments [C] `tools/build_multiwinia_data.bat`, `tools/build_language_dat.bat`
+
+`build_multiwinia_data.bat [platform] [language]`, run from `tools\` (it `CD`s to the repository root); `%BUILD%` defaults to `build`; `PLATFORM=plat%1`, `LANGUAGE=lang%2` → language defaults to `all` (and is forced to `all` for xbox).
+
+| `%1` | Exclusion list appended | Extra inclusion list for `main.dat` | `language.dat` contents | Used by |
+|---|---|---|---|---|
+| *(none)* | `multiwinia_exclusions.txt` | – | **English only** (`build_language_dat` honours the language only for `platretail`) | `build_multiwinia.bat`, `build_multiwinia_crashreporter.bat`, `build_multiwinia_gold.bat` |
+| `retail` | `multiwinia_exclusions.txt` | – | per `%2`: `all` → `language.list`; `efigs` → English + French + German + Italian + Spanish lists; `english`, `french`, `german`, `italian`, `spanish`, `korean`, `russian`, `portuguese`, `japanese` → that list (case-insensitive); anything else → nothing | `build_multiwinia_retail.bat` (default `English`), `_efigs`, `_russian` |
+| `pchwcompat` | `multiwinia_exclusions_hwcompat.txt` | `multiwinia_inclusions_hwcompat.txt` | English | `build_multiwinia_hwcompat*.bat` |
+| `pcassaultstress` | `multiwinia_exclusions_hwcompat.txt` | `multiwinia_inclusions_assaultstresstest.txt` | English | no script in tree |
+| `pcbetatest` | `multiwinia_exclusions_beta_test.txt` | `multiwinia_inclusions_beta_test_%2.txt` (the raw second argument, e.g. `group_a`) | English | no script in tree |
+| `pcpreview` | `multiwinia_exclusions_beta_test.txt` | `multiwinia_inclusions_previewcopy.txt` | English | `build_multiwinia_pc_preview.bat` |
+| `ambx` | `multiwinia_exclusions_beta_test.txt` (the echo says "hwcompat") | `multiwinia_inclusions_ambx.txt` (absent) | English | no script in tree |
+| `xbox` | `multiwinia_exclusions_xbox.txt` (absent) | – (DXT conversions instead) | all languages, fonts converted to `.tex` [B:DEAD] | no script in tree |
+
+Resolved: P14's packaging table said a no-argument build packs "all languages"; the `ELSE` branch of `build_language_dat.bat` packs only `englishlanguage.list` for every platform other than `retail`/`xbox` [C].
+
+### 8.3 Step sequence [C] `tools/build_multiwinia_data.bat`
+
+1. `copy /b tools\sounds.txt+tools\menu_sounds.txt completeExclusions`, then `type <platform exclusion file> >> completeExclusions` (all three list files end in CRLF, so lines do not merge).
+2. Delete stale `main.dat`, `sounds.dat`, `sounds2.dat` in the root; delete and recreate `%BUILD%`.
+3. `call build_language_dat %PLATFORM% %LANGUAGE% %BUILD% %TOOLS%` → `%BUILD%\language.dat` (§12.2).
+4. `call build_ambx_dat %BUILD% %TOOLS%` — script absent; the error is ignored and the batch continues.
+5. **init.dat**: `perl tools\copyfiles.pl data %BUILD%\data < tools\init.list`; (xbox: convert `xboxlivearcade.bmp`/`ivlogo.bmp` to DXT1 `.tex`); delete `textures\xboxlivearcade.bmp`; `dir *.* /s/b/a-d`, rewrite paths with `sed "s_.*data\\_data\\_"` (greedy: keeps the text after the **last** `data\` in the absolute path), `rar a -m5 -s -idp init.dat @data\list2`.
+6. **main.dat**: `perl tools\listfiles.pl data completeExclusions > listAll`; `grep -v sounds/ < listAll > listData` (also removes `mwsounds/`); copy; apply the platform inclusion list; (xbox: convert `mwhelp/*.bmp` and `thumbnails/*.bmp` to DXT1, `360_controller.bmp` to DXT3); `dir *.tex *.bmp *.jpg *.shp *.txt *.vs *.ps *.ps3 *.h *.anim /s/b` (+ `*.wmv` on xbox); same path rewrite; `rar a -m5 -s -idp main.dat`.
+7. **menusounds.dat**: prefix `data/` to each line of `tools\menu_sounds.txt` (`sed s/^mwsounds/data\/mwsounds/`, `s/^sounds/data\/sounds/`); `rar a -m2 -s -idp`.
+8. **sounds.dat**: `sed s/^/data\//` over `tools\sounds.txt`; `rar a -m2 -s -idp`.
+9. **sounds2.dat** (step echoes "Making sounds.dat" — cosmetic): `grep .ogg < listAll` — i.e. every Ogg not removed by `completeExclusions`, which already contains every `sounds.txt`/`menu_sounds.txt` entry; prefix `data/`; `rar a -m2 -s -idp`.
+10. Non-xbox: in `%BUILD%`, `..\darwinia_gl.exe --write-version` (writes `build\version` = "dev"), then `call tools\save_symbols.cmd "%BUILD%" "tools\"` (archives `Darwinia.pdb` + `darwinia_gl.exe` to `symbols\<version>\<yyyy.mm.dd>\<n>\` and `symbols\<version>\latest\` when the PDB's timestamp/size changed; date from `tools/EnglishDate.exe`).
+
+RAR switches [C scripts; I meanings from the RAR command-line conventions]: `a` add, `-m5` best / `-m2` fast compression (Ogg is already compressed), `-s` **solid** archive, `-idp` no percentage output, `@file` list file. No `-p` password switch is ever used and the game passes `NULL` as the password to every `ParseArchive` call ⇒ **archives are not encrypted** [C]. (Text files may still be individually obfuscated with the "redshirt2" scheme, [29](29_data_formats_reference.md).)
+
+### 8.4 Exclusion / inclusion list grammar [C] `tools/listfiles.pl`, `tools/copyfiles.pl`
+
+```
+exclusion_file := { line EOL }                  ; CRLF and LF accepted (\r\n -> \n, chomp)
+line           := short_excl | glob_excl
+short_excl     := "**/" name                    ; prune any file or directory whose basename == name
+                                                ; (exact, case-sensitive; File::Find $_ comparison)
+glob_excl      := bsd_glob_pattern               ; '\' normalised to '/'; expanded with File::Glob::bsd_glob
+                                                ; after chdir(data/); a pattern without wildcards is kept
+                                                ; verbatim (GLOB_NOMAGIC); a visited path equal, ignoring
+                                                ; case, to any expanded entry is pruned (a directory prunes
+                                                ; its whole subtree)
+inclusion_file := { relpath EOL }               ; exact file paths relative to data/, no globs;
+                                                ; copyfiles.pl dies ("<path> <errno>") if one is missing
+```
+
+`listfiles.pl` prints every surviving **file** (directories are traversed, not printed) as a `/`-separated path relative to `data/`, in `File::Find` traversal order [C]. All list entries resolve to existing `data/` files when compared case-insensitively (e.g. `mp_koth_2p_1.txt` vs on-disk `mp_koth_2P_1.txt`); on a case-sensitive file system 30 entries would fail [C scripted, P14]. `Marketing/LogitechG15/landrotate.bmp` in the exclusion lists matches nothing in `data/` [C].
+
+### 8.5 Per-SKU exclusion lists — every entry [C]
+
+* `tools/multiwinia_exclusions.txt` (retail, 49 lines): `**/.svn`, `**/.DS_Store`, `shapes/source`, `language`, `purity`, `english_demo.txt`, `egames.txt`, `textures/editor_font*`, `textures/speccy_font*`, `textures/unicode`, `shaders/FixedFunc0.vs`, `shaders/FixedFunc0Maps.ps`, `shaders/FixedFunc1.vs`, `shaders/FixedFunc1Maps.ps`, `shaders/FixedFunc2.vs`, `shaders/FixedFunc2Maps.ps`, `sprites/darwinian.bmp`, `textures/xboxlivearcade.bmp`, `textures/ivlogo.bmp`, `textures/ambrosia_logo.bmp`, `levels/old/*`, `levels/pdlc/*`, `levels/level_enum.txt`, `levels/map_*`, `levels/mission_*`, `sounds/tresk*`, `sounds/trash80*`, `sounds/dma_sc*`, `sounds/twoataris*`, `sounds/pang*`, `sounds/speccyloader.ogg`, `sounds/matrix.ogg`, `sounds/fodder.ogg`, `gesture_demos/*`, `Marketing/LogitechG15/landrotate.bmp`, `scripts/*`, `textures/plusmenu/*`, `textures/msn_oberon_combosplash.bmp`, `textures/dmacrew.bmp`, `textures/speccy_screen.bmp`, `mwhelp/360_controller.bmp`, `levels/mp_assault_stress.txt`, `levels/mp_benchmark_*`, `levels/mp_sandbox*`, `levels/mp_tankbattle_*`, `thumbnails/mp_benchmark_*`, `thumbnails/mp_tankbattle_*`, `levels/mp_cts_3p_3.txt`, `thumbnails/mp_cts_3p_3.bmp`.
+* `tools/multiwinia_exclusions_beta_test.txt` (42 lines): identical to the retail list from `**/.svn` through `mwhelp/360_controller.bmp` except that it lacks `textures/ambrosia_logo.bmp`, and it ends with `levels/mp_*`, `thumbnails/mp_*` (every multiplayer map excluded; inclusion lists add the permitted ones back).
+* `tools/multiwinia_exclusions_hwcompat.txt` (30 lines): `**/.svn`, `**/.DS_Store`, `shapes/source`, `language`, `purity`, `english_demo.txt`, `egames.txt`, `textures/editor_font*`, `textures/speccy_font*`, `textures/unicode`, the six `shaders/FixedFunc*` files, `sprites/darwinian.bmp`, `textures/xboxlivearcade.bmp`, `textures/ivlogo.bmp`, `levels/old/*`, `levels/level_enum.txt`, `levels/map_*`, `levels/mission_*`, `levels/mp_*`, `thumbnails/mp_*`, `sounds/tresk*`, `sounds/trash80*`, `sounds/dma_sc*`, `sounds/twoataris*`, `sounds/pang*`. Unlike retail it does **not** exclude `scripts/*`, `gesture_demos/*`, `levels/pdlc/*`, `textures/plusmenu/*` or the speccy/matrix/fodder loader sounds, so the hardware-compatibility `main.dat` carries the 42 Darwinia scripts and 8 gesture demos.
+
+Why these exclusions matter for the design set: the retail `main.dat` contains no `scripts/*`, no `levels/map_*` / `levels/mission_*` (Darwinia campaign) and none of the licensed retro music — corroborating that scripts and the campaign are unreachable in Multiwinia ([30](30_scripting_tutorial_and_cutscenes.md), [08](08_levels_and_level_design.md), [10](10_audio_design.md)).
+
+### 8.6 Inclusion lists and `PERMITTED_MAPS` [C] `tools/multiwinia_inclusions_*.txt`, `code/lib/universal_include.h`
+
+| List | Adds (level + thumbnail for each) | Matches the target's `PERMITTED_MAPS`? |
+|---|---|---|
+| `multiwinia_inclusions_hwcompat.txt` | `mp_koth_2P_1`, `mp_benchmark_1`, `mp_koth_4P_1` | yes (`TARGET_PC_HARDWARECOMPAT`) |
+| `multiwinia_inclusions_previewcopy.txt` | `mp_koth_2P_1`, `mp_koth_4P_1`, `mp_cts_2P_1` | yes (`TARGET_PC_PREVIEW`) |
+| `multiwinia_inclusions_assaultstresstest.txt` | `levels/mp_assault_stress.txt` only (no thumbnail) | yes (`TARGET_ASSAULT_STRESSTEST`) |
+| `multiwinia_inclusions_beta_test_group_a.txt` | `mp_koth_2p_1`, `mp_koth_3P_1`, `mp_assault_2p_3`, `mp_assault_3p_2`, `mp_assault_3p_3`, `mp_assault_4p_2`, `mp_rocketriot_2p_3`, `mp_rocketriot_3p_2`, `mp_rocketriot_4p_1`, `mp_cts_2p_2`, `mp_cts_2p_4`, `mp_cts_3p_1`, `mp_cts_4p_1` (13) | **no** — `TARGET_BETATEST_GROUP_A` permits `CTS_2P_1`, `CTS_3P_1`, `CTS_4P_3`; the list equals the commented-out 13-map list under `TARGET_BETATEST_GROUP_ALL` |
+| `multiwinia_inclusions_beta_test_group_b.txt` | `mp_blitzkrieg_2p_2`, `mp_blitzkrieg_3P_2`, `mp_blitzkrieg_4P_2` | yes (`GROUP_B`) |
+| `multiwinia_inclusions_beta_test_group_c.txt` | `mp_rocketriot_2P_4`, `mp_rocketriot_2p_3`, `mp_rocketriot_3p_1` | yes (`GROUP_C`) |
+
+### 8.7 The archives — names, contents, load order, override rules
+
+Contents below are computed by `_work/scripts/S_31_archive_contents.py`, which re-implements the batch/Perl logic of §8.2–§8.4 over the checked-in `data/` tree (Windows case-insensitive globbing) [C scripted].
+
+| Load order | Archive | Parsed in (thread) | Built by | Retail content (`retail all`) | RAR options |
+|---|---|---|---|---|---|
+| 1 | `init.dat` | `App::App` before `PrefsManager` (main thread) | step 5 from `tools/init.list` | 16 files: 14 shaders (`deform.vs`, `deformDiamond.ps`, `deformFullscreen.ps`, `deformSphere.ps`, `FixedFunc0.vs`, `FixedFunc0Maps.ps`, `FixedFunc1.vs`, `FixedFunc1Maps.ps`, `FixedFunc2.vs`, `FixedFunc2Maps.ps`, `globals.h`, `water-meshwaves.ps`, `water-meshwaves.ps3`, `water-meshwaves.vs`), `sprites/darwinian.bmp` (loading spinner), `textures/ivlogo.bmp` | `a -m5 -s -idp` |
+| 2 | `language.dat` | `App::Initialise` before `InitLanguage` (loading-screen worker) | `tools/build_language_dat.bat` | 140 files: 9 language texts + 131 font pages (`all`); 8 for `efigs`; 10 for `russian`; 4 for English-only | `a -m5 -s -idp` |
+| 3 | `main.dat` | `App::Initialise` (worker) | step 6 | 565 files: data root 14 (`betatesters.txt`, `default_preferences.txt`, `effects.txt`, `game.txt`, `game_demo.txt`, `game_demo2.txt`, `game_unlockall.txt`, `gestures.txt`, `locations.txt`, `multiwinia-testbed.txt`, `multiwinia.txt`, `multiwinia_betatesters.txt`, `sounds.txt`, `stats.txt`), animations 31, icons 121, input 6, levels 49 (all shipped `mp_*` maps), mwhelp 50, sepulveda 5, shaders 8, shapes 139, sprites 16, terrain 36, textures 38, thumbnails 52 | `a -m5 -s -idp` |
+| 4 | `patch.dat` | `App::Initialise` (worker) | none in tree (`tools/patch.full.list` is Darwinia-era) | patch overrides [I] | – |
+| 5 | `menusounds.dat` | `App::Initialise` (worker) | step 7 | 18 Oggs (10 `mwsounds/multilobbyamb*.ogg`; `sounds/shipheartbeat1`, `mouse2`, `mouse3`, `menuscroll2`, `menuscroll1`, `alien_lands3`, `evil`, `rumble1`) | `a -m2 -s -idp` |
+| 6 | `branding.dat` | `App::Initialise` (worker) | none in tree; the euro installer's line is commented out | distributor branding overrides [I: name] | – |
+| 7 | `sounds.dat` | `App::LoadSounds` on `App::m_soundsWorkQueue` | step 8 | 1297 Oggs (362 `mwsounds/`, 935 `sounds/`) | `a -m2 -s -idp` |
+| 8 | `sounds2.dat` | `App::LoadSounds` | step 9 | 6 Oggs in retail: `mwsounds/beep_harsh_malfunction.ogg`, `chat.ogg`, `mouseclick1.ogg`, `rollover1a.ogg`, `rollover1b.ogg`, `rollover1c.ogg` (9 for hwcompat, which keeps the speccy/matrix/fodder loader sounds) | `a -m2 -s -idp` |
+| – | `ambx.dat` | **never opened** by the code [C grep] | `build_ambx_dat` (absent) | amBX ambient-lighting data [I] | – |
+
+[C] `code/app.cpp:App::App`, `App::Initialise`, `App::LoadSounds`. Further facts from the emulation [C scripted]: 8 shader files (`deform*`, `globals.h`, `water-meshwaves.*`) are packed into **both** `init.dat` and `main.dat` (only `FixedFunc*` are excluded from `main.dat`), so `main.dat` overrides them with identical bytes; in the retail build 298 `data/` files are packed in no archive (levels 68 — Darwinia maps, test maps and `levels/old/`; shapes 133 — the `.max` sources; scripts 42; textures 24 — editor/speccy font sheets, the 7 unicode pages in no language list, plusmenu, marketing images; sounds 11 — licensed/loader music; gesture_demos 8; purity 4; thumbnails 5; mwhelp 1; icons 1 — `banner_template.psp`; data root 1 — `Untitled Gradients.grd`). Packing other SKUs: `pcpreview` main.dat 472 files (3 levels), `pcbetatest group_a` 492 (13 levels), `pchwcompat` 528 (3 levels + 42 scripts + 8 gesture demos), `pcassaultstress` 523.
+
+Extension filter check: outside `sounds/`/`mwsounds/`, `data/` holds 506 `.bmp`, 200 `.txt`, 139 `.shp`, 133 `.max`, 7 `.ps`, 6 `.anim`, 5 `.vs`, 1 `.ps3`, 1 `.h`, 1 `.psp`, 1 `.grd`; every type the game loads is covered by the filter; the unmatched types are authoring files never packed [C scripted, P14].
+
+**Load-order guarantee**: `App::App` blocks in `LoadingScreen::Render` until the loading worker queue (which runs `App::Initialise`) is empty, and only then queues `App::LoadSounds` on the separate sound queue, so no two archives are ever decompressed concurrently — required because unrar is not thread-safe ("Can't unrar too files at once") [C] `code/app.cpp:App::App`, `code/loading_screen.cpp:LoadingScreen::Render`. Resolved: earlier notes implied sound archives load "in parallel"; they load after `main.dat` completes. On Mac `LoadSounds` runs on the loading worker itself.
+
+### 8.8 Runtime archive semantics and lookup precedence [C] `code/lib/resource.cpp:Resource::ParseArchive`, `GetTextReader`, `GetBinaryReader`, `GetUncompressedFile`, `ListResources`, `contrib/unrar/unrar.cpp:UncompressedArchive::UncompressedArchive`, `MemMappedFile::MemMappedFile`, `contrib/unrar/unrar.h`, `contrib/systemiv/lib/tosser/hash_table.cpp:HashTable::GetIndex`
+
+* A missing archive is silently skipped (`DoesFileExist`). Any exception during decompression → the archive is ignored.
+* The **whole archive is decompressed into memory** at mount time (`UncompressedArchive` runs the unrar `x` command into `MemMappedFile` buffers); at most `MAX_FILES = 16384` entries per archive. The `UncompressedArchive` object is deleted but its files are kept (ownership moves to the resource table).
+* Entry names: `\` → `/`, then `strlwr`. **Zero-byte entries are dropped** (`m_size > 0` test).
+* **Later archives override earlier ones** for the same name (the old `MemMappedFile` is deleted). Effective precedence: `sounds2 > sounds > branding > menusounds > patch > main > language > init`.
+* The table is a `HashTable<MemMappedFile*>` with a case-folding hash (`& 0xDF`) and `stricmp` comparison, and every access is under the resource `NetMutex` ⇒ archive lookups are **case-insensitive** and thread-safe. Resolved: P14 stated that callers must pass lower-case names; the hash table makes the case irrelevant [C].
+* Lookup for a resource name `N`:
+  1. (`USE_DARWINIA_MOD_SYSTEM` only [B:DEAD]) `<P>mods/<mod>/N`, then (Vista) `mods/<mod>/N`;
+  2. **loose file `data/N`** relative to the working directory — text: UTF-16 BOM → `UnicodeTextFileReader`, else `TextFileReader`; binary → `BinaryFileReader`;
+  3. archive entry `data/N` — text: BOM → `UnicodeTextDataReader`, else `TextDataReader`; binary → `BinaryDataReader`;
+  4. not found → `NULL` (text lookups log `Failed to find text resource: data/N`).
+* `Resource::FileExists(N)` = `GetBinaryReader(N) != NULL`. `ListResources(dir, filter)` lists loose `data/<dir>` files and then merges matching archive entries (the language selector's fallback uses it, §12.1).
+* Consequence: loose `data/` always beats archives — the development tree runs with no archives at all, and users or patches can override any file by placing it under `data/` [C].
+
+### 8.9 First-run defaults ordering [C] `code/app.cpp:App::App`, `code/lib/preferences.cpp:PrefsManager::CreateDefaultValues`
+
+`App::App` parses `init.dat` and immediately constructs `PrefsManager(<P>preferences.txt)`. If that file is absent (first run) or its first line looks corrupted, `CreateDefaultValues()` adds the hard-coded defaults and then overlays `default_preferences.txt` via `g_app->m_resource->GetTextReader(...)` with overwrite enabled. At that moment only `init.dat` is mounted and `default_preferences.txt` is not in `tools/init.list`; it lives in `main.dat` (mounted later in `App::Initialise`). In the development tree the loose `data/default_preferences.txt` is found; in a packaged install, whose installers copy only the `.dat` files and executables (no loose `data\`, §9.2), it is not [C], so **first-run defaults come only from code** and `Renderer::Initialise` immediately saves them to `preferences.txt` — after which `default_preferences.txt` is never consulted again [C]. Whether a patch ever shipped a loose copy is 31-U8. The 11 keys of `data/default_preferences.txt` are listed in [09](09_meta_systems.md)/[29](29_data_formats_reference.md).
+
+### 8.10 SystemIV `FileSystem` (compiled, unused) [C] `contrib/systemiv/lib/filesys/file_system.cpp`
+
+`FileSystem` implements the same idea (search paths → raw path → archive BTree) but `g_fileSystem` is never instantiated by Multiwinia; only non-compiled SystemIV modules (`lib/sound`, `lib/resource`) use it [C grep: no `new FileSystem` in `code/`]. Quirks if re-used: archive lookup is case-sensitive on the requested name; `ListArchive` ignores `fullFilename` for archive results; `OrderedInsert` never compares against the last element (duplicates possible) [C] `FileSystem::ListArchive`, `OrderedInsert` — note that `Resource::ListResources` calls this same `OrderedInsert`.
+
+---
+
+## 9 Packaging scripts and installers
+
+### 9.1 Packaging scripts (build → `build\`) [C] each script
+
+| Script | Data build call | Copies into `build\` | Post-processing |
+|---|---|---|---|
+| `tools/build_multiwinia.bat` | `build_multiwinia_data.bat` (no args → retail exclusions, **English-only** `language.dat`) | `darwinia_gl.exe` → `multiwinia.exe`, `contrib\systemIV\contrib\XCrashReport\dbghelp.dll` | `tools\upx --best build\multiwinia.exe` |
+| `tools/build_multiwinia_crashreporter.bat` | (no args) | exe, dbghelp, `MultiwiniaSupport.ini`, `MultiwiniaSupport.exe` (from the repository root — absent there) | none (UPX "causes problems with debugging tools") |
+| `tools/build_multiwinia_gold.bat` | (no args) | exe, dbghelp, `MultiwiniaSupport.ini`, `tools\multiwiniasupport\MultiwiniaSupport.exe`, `tools\autopatcher\autopatch.exe`, `tools\autopatcher\copy_assist.exe`, `tools\profilelocatorwin32\profilelocator.exe`, `docs\multiwinia_manual.pdf` → `manual.pdf` | none |
+| `tools/build_multiwinia_retail.bat [lang]` | `retail <lang>` (default `English`) | as gold, except `autopatch.exe` chosen per language: `autopatch_fr.exe` (french), `autopatch_it.exe` (italian), `autopatch_de.exe` (german), `autopatch_es.exe` (spanish), `autopatch.exe` for english/all/efigs/russian ("Use english autopatcher for now") | none |
+| `tools/build_multiwinia_retail_efigs.bat` | → `build_multiwinia_retail efigs` | | |
+| `tools/build_multiwinia_retail_russian.bat` | → `build_multiwinia_retail russian` | | first `perl subst.pl ..\darwinia_gl.exe retail\... retail.ru` (binary regex patch of the exe; no `retail.` string exists in this tree, so a no-op here [C grep]); afterwards `echo buka > ..\build\origin` (distributor tag) |
+| `tools/build_multiwinia_hwcompat.bat` | `pchwcompat` | exe, `ncftpput.exe` (absent) | UPX |
+| `tools/build_multiwinia_hwcompat_crashreporter.bat` | `pchwcompat` | exe, `ncftpput.exe`, `MultiwiniaSupport.ini/.exe` (root), dbghelp | none |
+| `tools/build_multiwinia_pc_preview.bat [lang]` | `pcpreview %1` (English-only `language.dat`) | exe only | none |
+| `tools/build_figs_languages.bat` | – | four standalone `language.dat` files under `build\french`, `build\italian`, `build\german`, `build\spanish` | – |
+
+Every Multiwinia script expects the baseline `Release|Win32` output `darwinia_gl.exe` in the repository root [C]. Inputs referenced but absent from the tree: `tools/autopatcher/*`, `tools/profilelocatorwin32/*`, root `MultiwiniaSupport.exe`, `ncftpput.exe`, `tools/build_ambx_dat.bat`, `tools/convert_bmp_to_tex.cmd`, `tools/multiwinia_exclusions_xbox.txt`, `tools/multiwinia_inclusions_ambx.txt` [C absence]. The scripts `cd` relative to `%~dp0`; `build_multiwinia_retail_russian.bat` uses relative `..\` paths and must be run from `tools\` [C].
+
+Darwinia-era scripts `tools/build_demo.bat`, `tools/build_demo2.bat`, `tools/build_final.bat`, `tools/build_vista.bat`, `tools/build_tools.bat` use `rsx rar32`, `grep_dos`, `sed_dos`, `sort_dos` (absent) and package `darwinia.exe` (the `ReleaseDirect3D` output) [B:LEGACY] (§14.3).
+
+### 9.2 Inno Setup scripts (Multiwinia) [C] `tools/InstallerScript*.iss`
+
+Common skeleton (all nine Multiwinia scripts): `AppPublisher=Introversion Software Ltd`, `Compression=zip/5`, `DefaultDirName={pf}\<AppName>`, `DefaultGroupName=<AppName>`, `LicenseFile=..\docs\IntroversionEULA.txt` (Russian: `..\docs\Multiwinia-Buka-Russian-EULA.txt`), `OutputBaseFilename=setup`, `SetupIconFile=..\targets\vs2005\darwinia.ico`; optional desktop icon task; files from `..\build\` to `{app}` with `ignoreversion`; `origin` with `onlyifdoesntexist` (euro: also `nocompression dontverifychecksum` — presumably so a distributor can patch the stored `origin` bytes inside the finished installer [I: purpose]); **shortcuts launch `autopatch.exe`** with `WorkingDir: "{app}"` (the auto-patcher starts the game), plus "Repair Multiwinia" (`autopatch.exe --repair`), website/support URLs, "Open Multiwinia Profile" (`ProfileLocator.exe`), uninstall.
+
+| Script | AppName / version | Archives installed | Other differences |
+|---|---|---|---|
+| `tools/InstallerScript.iss` | Multiwinia v1.9.20 | init, language, main, menusounds, sounds, sounds2, **ambx** | no crash reporter; no manual |
+| `tools/InstallerScript_crashreporter.iss` | Multiwinia v1.9.20 | the six built archives | + `MultiwiniaSupport.exe/.ini`; uninstall also deletes `dxdiag_info.txt`, `multiwinia.zip`, `multiwinia.zip.*` |
+| `tools/InstallerScript_gold_crashreporter.iss` | Multiwinia v1.0.3 | six | + `manual.pdf` + "Manual (PDF)" shortcut |
+| `tools/InstallerScript_retail_crashreporter.iss` | Multiwinia v1.0.4 | six | = gold |
+| `tools/InstallerScript_retail_crashreporter_euro.iss` | Multiwinia v1.2.3 | six + **ambx**; `branding.dat` line commented out | `[Languages]` en/fr/it/de/es, `[CustomMessages]` for shortcut names, `ShowLanguageDialog=no` |
+| `tools/InstallerScript_retail_crashreporter_euro_preload.iss` | Multiwinia (PRELOAD) | init, language, menusounds, sounds, sounds2 (**`multiwinia.exe` and `main.dat` commented out**) | pre-load installer distributed before release without playable content |
+| `tools/InstallerScript_retail_crashreporter_russian.iss` | Multiwinia v1.0.0 | six | languages ru/en, `LanguageDetectionMethod=none`, Buka Russian EULA, CP1251 custom messages |
+| `tools/InstallerScript_multiwinia_beta_test_crashreporter.iss` | Multiwinia Beta Test v1.9.33 | six + **ambx** | own folder; "Revert to previous Multiwinia" (`autopatch.exe --revert`); forum support link; commented-out `[Code]` DirectX check (`d3dx9_32.dll` and `xinput1_3.dll` in System32, skippable with `--NoDirectXCheck`); `ncftpput.exe` line commented |
+| `tools/InstallerScript_multiwinia_hwcompat_crashreporter.iss` | Multiwinia Hardware Compatibility v1.9.7 | six | shortcuts launch `multiwinia.exe` directly (no auto-patcher); ships `ncftpput.exe`; uninstall deletes `multiwinia.zip.0001` … `.0032` individually |
+
+Resolved: P14 listed only `InstallerScript.iss` and the beta installer as needing `ambx.dat`; the euro retail installer does too [C]. No script in the tree builds `ambx.dat`.
+
+`[UninstallDelete]` (gold, the superset) [C]: directories `{app}\users`, `{app}\benchmarks`, `{app}\screenshots`, `{app}\backup_*`, `{app}\revert_*`; files `preferences.txt`, `authkey`, `debug.txt`, `syncerror-*.txt`, `inputprefs_debug.txt`, `userprefs.txt`, `game-history.txt`, `blackbox.txt`, `dxdiag.txt`, `stdout.txt`, `autopatch_debug.txt`, `copier_stdout.txt`, `copier_debug.txt`, `CRASH.DMP`, `ERRORLOG.TXT`, `dxdiag_info.txt`, `multiwinia.zip`, `multiwinia.zip.*`. `InstallerScript.iss` lacks the last three; the hardware-compatibility script lacks `syncerror-*.txt` and the autopatcher/copier logs. These target `{app}` although the game writes them to `%LOCALAPPDATA%\Introversion\Multiwinia\` on Windows 2000+ (only `--NoProfile` installs write to `{app}`); `authkey.dev` is never deleted; `userprefs.txt`, `game-history.txt`, `stdout.txt` are written by no code in `code/` or `contrib/systemiv/lib` (probably the auto-patcher or older builds) [C grep] → docs-vs-code discrepancies.
+
+### 9.3 Darwinia-era installers [B:LEGACY] [C]
+
+| Installer | Product | Notes |
+|---|---|---|
+| `tools/DemoInstallerScript.iss` | Darwinia Demo 2 | `darwinia.exe`, `main.dat`, `sounds.dat`, `ambx.dat` |
+| `tools/InstallerScriptEGames.iss` | Darwinia v1.42 for the eGames / Cinemaware Marquee distributor | installs `cinemaware.avi` (consumer `AviPlayer`, `EGAMESBUILD`) |
+| `tools/NSIS Installer/darwiniainstall.nsi` | Darwinia: Vista Edition | Vista-only check; DirectX redistributable (`DXSETUP.exe /silent`) when `d3dx9_32.dll`/`xinput1_3.dll` are missing; `GESetup` plugin for Game Explorer, rich saved games (`.dsg`) and a Media Center shortcut (root `darwinia.mcl`/`darwinia.png`); Perdition mod; per-user/all-users registry uninstall keys |
+| `tools/loki/*` | Darwinia Linux (demo and full) | Loki Setup (GTK and console installers, CD-ROM data copy) |
+
+### 9.4 Version metadata (inconsistent across artefacts) [C]
+
+| Artefact | Version |
+|---|---|
+| `code/lib/universal_include.h` `DARWINIA_VERSION` (network/protocol string, `build\version`) | "dev" |
+| `targets/vs2005/version.rc` (`DARWINIA_EXE_VERSION`) | 6.0.0.0 |
+| Installers | 1.0.0 (Russian), 1.0.3 (gold), 1.0.4 (retail), 1.2.3 (euro), 1.9.7 (hwcompat), 1.9.20, 1.9.33 (beta) |
+| Game Explorer GDF compiled into the exe | Darwinia 1.5.4.0 |
+| Mac `Info.plist` | 1.3.1 |
+
+The new game should derive every one of these from a single version source in the build.
+

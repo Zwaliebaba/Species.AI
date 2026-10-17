@@ -1,0 +1,378 @@
+"""S_10: generate the catalogue tables of 10_audio_design.md and verify the drafts' counts.
+
+Usage (always with -I; paths are arguments, data files are treated as data only):
+  python3 -I S_10_audio_tables.py <SRC multiwinia root> <OUT/_work> <target .md or ->
+
+* Independently re-parses data/sounds.txt (sources, EVENT blocks, SAMPLEGROUPs, every field)
+  and data/effects.txt, prints the statistics used in 10 §2-§3, and cross-checks them against
+  _work/drafts/P16_sound_events.csv and _work/drafts/X2b_sound_events.csv.
+* Renders, from X2b_sound_events.csv (469 rows = 256 bound pairs + 213 code-only pairs):
+    EVENTS   - every object type x event bound in data (256 rows)
+    CODEONLY - every object type x event fired by code with no data (213 rows)
+    DEADDATA - bound pairs that never sound in FULL (74 rows)
+    SOURCES  - per-source summary (68 sources)
+    FIELDS   - shipped usage of every instance field
+    FX       - every EFFECT use in the shipped data
+* If a target .md is given, replaces the text between <!-- S10:<NAME>:BEGIN --> and
+  <!-- S10:<NAME>:END --> markers with the rendered table; otherwise prints them.
+"""
+import sys, os, re, csv, collections
+
+# Enclosing symbols for six call sites the X2b extractor could not name (verified by reading
+# the source: class bodies defined inline in the .cpp files).
+SYMBOL_FIX = {
+    'code/interface/helpandoptions_windows.cpp:?:L33': 'code/interface/helpandoptions_windows.cpp:HelpWindowButton::MouseUp:L33',
+    'code/interface/helpandoptions_windows.cpp:?:L50': 'code/interface/helpandoptions_windows.cpp:CrateHelpWindowButton::MouseUp:L50',
+    'code/interface/helpandoptions_windows.cpp:?:L69': 'code/interface/helpandoptions_windows.cpp:OptionsButton::MouseUp:L69',
+    'code/interface/leaderboards_window.cpp:?:L146': 'code/interface/leaderboards_window.cpp:LeaderboardSmallFontRenderingButton::Render:L146',
+    'code/interface/multiwinia_window.cpp:?:L153': 'code/interface/multiwinia_window.cpp:SelectMapButton::MouseUp:L153',
+    'code/interface/multiwinia_window.cpp:?:L171': 'code/interface/multiwinia_window.cpp:NewMapWindowButton::MouseUp:L171',
+}
+
+POS = {'0': '2D', '1': 'Stat', '2': 'Att', '3': 'Ed'}
+LOOP = {'0': 'Once', '1': 'Loop', '2': 'LoopADSR'}
+INST = {'0': 'Poly', '1': 'MonoRandom', '2': 'MonoNearest'}
+TEAM = {'0': 'All', '1': 'MyTeam', '2': 'Enemy'}
+SRCT = {'0': 'Sample', '1': 'Group'}
+PARAMS = ('VOLUME', 'FREQUENCY', 'ATTACK', 'SUSTAIN', 'RELEASE', 'LOOPDELAY')
+
+
+def parse_sounds(path):
+    """Token-level re-implementation of SoundSystem::LoadBlueprints (keywords case-insensitive)."""
+    lines = open(path, encoding='latin-1').read().splitlines()
+    sources = []          # (group, type, [blocks])
+    groups = []           # (name, [samples]) in file order, duplicates kept
+    i = 0
+    while i < len(lines):
+        t = lines[i].split(); i += 1
+        if not t or t[0].startswith('#'):
+            continue
+        k = t[0].upper()
+        if k in ('ENTITY', 'BUILDING', 'OTHER'):
+            src = (k, t[1], [])
+            sources.append(src)
+            ev = None; fx = None
+            while i < len(lines):
+                tt = lines[i].split(); i += 1
+                if not tt or tt[0].startswith('#'):
+                    continue
+                kk = tt[0].upper()
+                if fx is not None:
+                    if kk == 'END':
+                        ev['EFFECTS'].append(fx); fx = None
+                    else:
+                        fx[1].append(tt)
+                    continue
+                if ev is not None:
+                    if kk == 'END':
+                        src[2].append(ev); ev = None
+                    elif kk == 'EFFECT':
+                        fx = (tt[1], [])
+                    elif kk in PARAMS:
+                        ev[kk] = tt[2:]     # skip the PARAMETER token
+                    else:
+                        ev[kk] = tt[1] if len(tt) > 1 else ''
+                    continue
+                if kk == 'END':
+                    break
+                if kk == 'EVENT':
+                    ev = {'EVENT': tt[1], 'EFFECTS': []}
+        elif k == 'SAMPLEGROUP':
+            g = (t[1], [])
+            while i < len(lines):
+                tt = lines[i].split(); i += 1
+                if not tt:
+                    continue
+                if tt[0].upper() == 'END':
+                    break
+                g[1].append(tt[1].lower().rsplit('.', 1)[0] if len(tt) > 1 else '')
+            groups.append(g)
+    return sources, groups
+
+
+def parse_effects(path):
+    out = []
+    cur = None
+    for line in open(path, encoding='latin-1').read().splitlines():
+        t = line.split()
+        if not t or t[0].startswith('#'):
+            continue
+        if t[0].upper() == 'EFFECT':
+            cur = (t[1], []); out.append(cur)
+        elif t[0].upper() == 'END':
+            cur = None
+        elif cur is not None:
+            cur[1].append(t[:5])
+    return out
+
+
+def ptype(p):
+    if not p:
+        return 'absent'
+    return {'TypeFixedValue': 'fixed', 'TypeRangedRandom': 'random', 'TypeLinked': 'linked'}.get(p[0], p[0])
+
+
+def stats(sources, groups, effects):
+    out = collections.OrderedDict()
+    blocks = [(g, ty, b) for g, ty, bl in sources for b in bl]
+    out['sources'] = collections.Counter(g for g, _, _ in sources)
+    out['blocks'] = collections.Counter(g for g, _, _ in blocks)
+    out['pairs'] = len({(g, ty, b['EVENT'].lower()) for g, ty, b in blocks})
+    for f, m in (('SOURCETYPE', SRCT), ('POSITIONTYPE', POS), ('INSTANCETYPE', INST),
+                 ('LOOPTYPE', LOOP), ('TEAMMATCHTYPE', TEAM)):
+        out[f] = collections.Counter(m.get(b.get(f, ''), b.get(f, '?')) for _, _, b in blocks)
+    md = collections.Counter(b.get('MINDISTANCE') for _, _, b in blocks)
+    out['MINDISTANCE'] = md
+    vals = [float(x) for x in md.elements()]
+    out['MINDISTANCE_range'] = (min(vals), max(vals))
+    out['PRIORITY'] = sum(1 for _, _, b in blocks if 'PRIORITY' in b)
+    for p in PARAMS:
+        out[p] = collections.Counter(ptype(b.get(p)) for _, _, b in blocks)
+        out[p + '_once'] = sum(1 for _, _, b in blocks if b.get(p) and b[p][-1] == 'UpdateOncePerLoop')
+        out[p + '_noupd'] = sum(1 for _, _, b in blocks if b.get(p) and b[p][-1] not in ('UpdateOncePerLoop', 'UpdateConstantly'))
+        links = collections.Counter(b[p][6] for _, _, b in blocks if b.get(p) and b[p][0] == 'TypeLinked')
+        out[p + '_links'] = links
+        fixed = [float(b[p][1]) for _, _, b in blocks if b.get(p) and b[p][0] == 'TypeFixedValue']
+        out[p + '_fixed_range'] = (min(fixed), max(fixed)) if fixed else None
+    smooth = 0
+    for _, _, b in blocks:
+        for p in PARAMS:
+            v = b.get(p)
+            if v and v[0] == 'TypeRangedRandom' and float(v[3]) > 0: smooth += 1
+            if v and v[0] == 'TypeLinked' and float(v[5]) > 0: smooth += 1
+    out['smoothed_params'] = smooth
+    fxuse = collections.Counter(fx[0] for _, _, b in blocks for fx in b['EFFECTS'])
+    out['fx_uses'] = fxuse
+    out['fx_blocks'] = sum(1 for _, _, b in blocks if b['EFFECTS'])
+    out['groups_defs'] = len(groups)
+    out['groups_names'] = len({g[0].lower() for g in groups})
+    out['sample_lines'] = sum(len(g[1]) for g in groups)
+    first = collections.OrderedDict()
+    for n, s in groups:
+        first.setdefault(n.lower(), s)
+    out['distinct_entries'] = sum(len(s) for s in first.values())
+    out['dup_groups'] = [n for n, c in collections.Counter(g[0].lower() for g in groups).items() if c > 1]
+    referenced = {b.get('SOUNDNAME', '').lower() for _, _, b in blocks if b.get('SOURCETYPE') == '1'}
+    out['unreferenced_groups'] = sorted(n for n in first if n not in referenced)
+    out['group_sizes'] = (min(len(s) for s in first.values()), max(len(s) for s in first.values()))
+    out['effects'] = [(n, len(p)) for n, p in effects]
+    vol = [b['VOLUME'] for _, _, b in blocks if b.get('VOLUME')]
+    fx_v = [float(v[1]) for v in vol if v[0] == 'TypeFixedValue']
+    out['VOLUME_fixed_mean'] = sum(fx_v) / len(fx_v)
+    return out, blocks
+
+
+RUN = re.compile(r'^(.*?)(\d+)$')
+
+
+def compress_stems(stems):
+    """['laser1','laser2',...,'laser24'] -> 'laser1–24'; keeps non-numbered stems."""
+    byp = collections.OrderedDict()
+    plain = []
+    for s in stems:
+        m = RUN.match(s)
+        if m and not m.group(2).startswith('0'):
+            byp.setdefault(m.group(1), []).append(int(m.group(2)))
+        else:
+            plain.append(s)
+    parts = list(plain)
+    for p, nums in byp.items():
+        nums = sorted(set(nums))
+        run = [nums[0], nums[0]]
+        for n in nums[1:] + [None]:
+            if n is not None and n == run[1] + 1:
+                run[1] = n
+                continue
+            if run[0] == run[1]:
+                parts.append('%s%d' % (p, run[0]))
+            elif run[1] == run[0] + 1:
+                parts.append('%s%d, %s%d' % (p, run[0], p, run[1]))
+            else:
+                parts.append('%s%d–%d' % (p, run[0], run[1]))
+            if n is not None:
+                run = [n, n]
+    return ', '.join(sorted(parts, key=lambda x: x.lower()))
+
+
+def render_samples(field):
+    if not field:
+        return '—'
+    byf = collections.OrderedDict()
+    for p in field.split(';'):
+        p = p.strip()
+        if not p:
+            continue
+        folder, name = p.rsplit('/', 1)
+        folder = folder.replace('data/', '')
+        byf.setdefault(folder, []).append(name.rsplit('.', 1)[0])
+    return '<br>'.join('`%s/`{%s}' % (f, compress_stems(s)) for f, s in byf.items())
+
+
+def render_sites(field):
+    if not field:
+        return '—'
+    out = []
+    for s in field.split(';'):
+        s = s.strip()
+        if not s:
+            continue
+        m = re.match(r'^(\S+?)(\s+\[(.*)\])?$', s)
+        site, tag = m.group(1), (m.group(3) or '')
+        site = SYMBOL_FIX.get(site, site)
+        txt = '`%s`' % site
+        if tag and tag != 'FULL':
+            txt += ' [%s]' % tag
+        out.append(txt)
+    return '<br>'.join(out)
+
+
+def esc(s):
+    return s.replace('|', '\\|').replace('\n', ' ')
+
+
+def render_blueprint(bp):
+    return '<br>'.join(esc(x.strip()) for x in bp.split(' || ')) if bp else '—'
+
+
+def table_events(rows):
+    h = ['| # | Source | Event | Blueprint (one line per EVENT block) | Samples that can play | Fired in FULL | Where the object exists | Ed | Gameplay trigger | Code trigger site(s) |',
+         '|---|---|---|---|---|---|---|---|---|---|']
+    for n, r in enumerate(rows, 1):
+        h.append('| %d | %s %s | %s | %s | %s (%s) | %s | %s | %s | %s | %s |' % (
+            n, r['group'], r['object_type'], r['event'], render_blueprint(r['blueprint']),
+            render_samples(r['samples']), r['n_samples'], r['fired_in_FULL'], esc(r['type_reach']),
+            r['listed_in_ListSoundEvents'] or '—', esc(r['gameplay_trigger']), render_sites(r['code_sites'])))
+    return '\n'.join(h)
+
+
+def table_codeonly(rows):
+    h = ['| # | Source | Event (fired, no data → silent) | Fired in FULL | Where the object exists | Ed | Meaning | Code trigger site(s) |',
+         '|---|---|---|---|---|---|---|---|']
+    for n, r in enumerate(rows, 1):
+        h.append('| %d | %s %s | %s | %s | %s | %s | %s | %s |' % (
+            n, r['group'], r['object_type'], esc(r['event']), r['fired_in_FULL'], esc(r['type_reach']),
+            r['listed_in_ListSoundEvents'] or '—', esc(r['gameplay_trigger']), render_sites(r['code_sites'])))
+    return '\n'.join(h)
+
+
+def table_deaddata(rows):
+    h = ['| # | Source | Event | Why it never sounds in FULL | Files |', '|---|---|---|---|---|']
+    n = 0
+    for r in rows:
+        if r['fired_in_FULL'] == 'yes':
+            continue
+        n += 1
+        h.append('| %d | %s %s | %s | %s — %s | %s |' % (
+            n, r['group'], r['object_type'], r['event'], r['fired_in_FULL'], esc(r['type_reach']), r['n_samples']))
+    return '\n'.join(h)
+
+
+def table_sources(sources, rows):
+    by = collections.defaultdict(list)
+    for r in rows:
+        by[(r['group'], r['object_type'])].append(r)
+    h = ['| # | Source | EVENT blocks | Bound events | Bound & fired in FULL | Fired with no data | Where the object exists |',
+         '|---|---|---|---|---|---|---|']
+    for n, (g, ty, bl) in enumerate(sources, 1):
+        rr = by.get((g, ty), [])
+        bound = [r for r in rr if r['in_data'] == 'yes']
+        live = [r for r in bound if r['fired_in_FULL'] == 'yes']
+        code = [r for r in rr if r['in_data'] == 'no']
+        reach = rr[0]['type_reach'] if rr else ''
+        h.append('| %d | %s %s | %d | %d | %d | %d | %s |' % (n, g, ty, len(bl), len(bound), len(live), len(code), esc(reach)))
+    return '\n'.join(h)
+
+
+def fmt_counter(c):
+    return ', '.join('%s %d' % (k, v) for k, v in c.most_common())
+
+
+def table_fields(st):
+    rows = [
+        ('SOURCETYPE', fmt_counter(st['SOURCETYPE'])),
+        ('POSITIONTYPE', fmt_counter(st['POSITIONTYPE'])),
+        ('INSTANCETYPE', fmt_counter(st['INSTANCETYPE'])),
+        ('LOOPTYPE', fmt_counter(st['LOOPTYPE'])),
+        ('TEAMMATCHTYPE', fmt_counter(st['TEAMMATCHTYPE'])),
+        ('MINDISTANCE', 'range %.2f–%.2f; 100.00 ×%d, 200.00 ×%d, %d distinct values' % (
+            st['MINDISTANCE_range'][0], st['MINDISTANCE_range'][1], st['MINDISTANCE']['100.00'],
+            st['MINDISTANCE']['200.00'], len(st['MINDISTANCE']))),
+        ('PRIORITY', 'present in %d blocks' % st['PRIORITY']),
+    ]
+    for p in PARAMS:
+        rng = st[p + '_fixed_range']
+        rows.append((p, '%s; UpdateOncePerLoop on %d; links: %s%s' % (
+            fmt_counter(st[p]), st[p + '_once'], fmt_counter(st[p + '_links']) or 'none',
+            ('; fixed values %.2f–%.2f' % rng) if rng else '')))
+    rows.append(('EFFECT', '%d uses in %d blocks: %s' % (sum(st['fx_uses'].values()), st['fx_blocks'], fmt_counter(st['fx_uses']))))
+    h = ['| Field | Shipped usage over all %d EVENT blocks (independent re-parse of `data/sounds.txt`) |' % sum(st['blocks'].values()),
+         '|---|---|']
+    h += ['| %s | %s |' % r for r in rows]
+    return '\n'.join(h)
+
+
+def table_fx(blocks):
+    h = ['| # | Source | Event | Sound | Effect chain (parameters in file order) |', '|---|---|---|---|---|']
+    n = 0
+    for g, ty, b in blocks:
+        for fx in b['EFFECTS']:
+            n += 1
+            ps = '; '.join('%s %s' % (t[0], ' '.join(t[2:])) for t in fx[1])
+            h.append('| %d | %s %s | %s | %s | **%s** — %s |' % (n, g, ty, b['EVENT'], b.get('SOUNDNAME', ''), fx[0], esc(ps)))
+    return '\n'.join(h)
+
+
+def replace_marker(text, name, body):
+    b, e = '<!-- S10:%s:BEGIN -->' % name, '<!-- S10:%s:END -->' % name
+    i, j = text.find(b), text.find(e)
+    if i < 0 or j < 0:
+        print('marker %s not found' % name)
+        return text
+    return text[:i + len(b)] + '\n' + body + '\n' + text[j:]
+
+
+def main(src, work, target):
+    sources, groups = parse_sounds(os.path.join(src, 'data', 'sounds.txt'))
+    effects = parse_effects(os.path.join(src, 'data', 'effects.txt'))
+    st, blocks = stats(sources, groups, effects)
+    for k, v in st.items():
+        print('%-22s %s' % (k, v))
+    rows = list(csv.DictReader(open(os.path.join(work, 'drafts', 'X2b_sound_events.csv'), encoding='utf-8')))
+    p16 = list(csv.DictReader(open(os.path.join(work, 'drafts', 'P16_sound_events.csv'), encoding='utf-8')))
+    # cross-checks
+    mine = collections.Counter((g, ty, b['EVENT'].lower()) for g, ty, b in blocks)
+    x2b = {(r['group'], r['object_type'], r['event'].lower()): int(r['blocks']) for r in rows if r['in_data'] == 'yes'}
+    bad = [k for k in set(mine) | set(x2b) if mine.get(k) != x2b.get(k)]
+    print('X2b rows', len(rows), 'bound', len(x2b), 'code-only', sum(1 for r in rows if r['in_data'] == 'no'))
+    print('pair/block-count mismatches vs X2b:', bad)
+    p16k = collections.Counter((r['group'], r['object_type'], r['event'].lower(), r['SOUNDNAME'].lower(),
+                                r['POSITIONTYPE'], r['LOOPTYPE']) for r in p16)
+    minek = collections.Counter((g, ty, b['EVENT'].lower(), b.get('SOUNDNAME', '').lower(),
+                                 b.get('POSITIONTYPE'), b.get('LOOPTYPE')) for g, ty, b in blocks)
+    print('block mismatches vs P16:', list((p16k - minek).items()) + list((minek - p16k).items()))
+    fired = collections.Counter(r['fired_in_FULL'] for r in rows if r['in_data'] == 'yes')
+    print('bound fired_in_FULL:', dict(fired))
+    print('code-only fired_in_FULL:', dict(collections.Counter(r['fired_in_FULL'] for r in rows if r['in_data'] == 'no')))
+    bound = [r for r in rows if r['in_data'] == 'yes']
+    code = [r for r in rows if r['in_data'] == 'no']
+    tables = {
+        'EVENTS': table_events(bound),
+        'CODEONLY': table_codeonly(code),
+        'DEADDATA': table_deaddata(bound),
+        'SOURCES': table_sources(sources, rows),
+        'FIELDS': table_fields(st),
+        'FX': table_fx(blocks),
+    }
+    if target == '-':
+        for k, v in tables.items():
+            print('\n=== %s\n%s' % (k, v))
+        return
+    text = open(target, encoding='utf-8').read()
+    for k, v in tables.items():
+        text = replace_marker(text, k, v)
+    open(target, 'w', encoding='utf-8').write(text)
+    print('wrote', target, len(text), 'bytes')
+
+
+if __name__ == '__main__':
+    main(sys.argv[1], sys.argv[2], sys.argv[3])
