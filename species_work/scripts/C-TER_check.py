@@ -47,7 +47,7 @@ print('tuning keys', len(rows))
 if len(rows) != len(set(rows)):
     problems.append('duplicate tuning keys')
 body = re.sub(r'^\| `ter\.[^\n]*$', '', txt, flags=re.M)
-used = set(re.findall(r'`(ter\.[a-z0-9_.]+)`', body))
+used = set(re.findall(r'`(ter\.[a-z0-9_.]+)`', body)) | set(re.findall(r'\b(ter\.[a-z0-9_]+(?:\.[a-z0-9_]+)+)', body))
 unused = sorted(set(rows) - used)
 undefined = sorted(used - set(rows))
 if unused:

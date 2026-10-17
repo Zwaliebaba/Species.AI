@@ -77,11 +77,11 @@ EV = {
     ('Darwinian', 'GivenOrders'): ('ordered', 'a Leader signpost hands it an order'),
     ('Darwinian', 'GivenOrdersFromPlayer'): ('ordered_by_player', 'a crowd order; also alternating with `worker.lift_relic` while carrying'),
     ('Darwinian', 'SeenThreatAttack'): ('attack_bark', 'a brave reaction to a new threat'),
-    ('Darwinian', 'SeenThreatAttackHorn'): ('attack_horn', 'a rare brave reaction (R-AUD-372)'),
+    ('Darwinian', 'SeenThreatAttackHorn'): ('attack_horn', 'a rare brave reaction (R-AUD-317)'),
     ('Darwinian', 'SeenThreatRunAway'): ('flee_bark', 'a scared reaction: a grenade or airstrike target marker nearby, a burning tree, or enemies'),
     ('Darwinian', 'VictoryJump'): ('victory_jump', 'a victory celebration hop'),
-    ('Darwinian', 'OnFire'): ('burning', 'while burning, a presentation chance per tick (R-AUD-371)'),
-    ('Darwinian', 'LiftBuilding'): ('lift_relic', 'the carry chant while carrying a carryable structure (R-AUD-373)'),
+    ('Darwinian', 'OnFire'): ('burning', 'while burning, a presentation chance per tick (R-AUD-316)'),
+    ('Darwinian', 'LiftBuilding'): ('lift_relic', 'the carry chant while carrying a carryable structure (R-AUD-318)'),
     ('Darwinian', 'EnterTeleport'): ('enter_gate', 'a successful teleport entry'),
     ('Darwinian', 'ExitTeleport'): ('exit_gate', 'arrival at the far Beam Dish'),
     # Leader
@@ -240,7 +240,7 @@ EV = {
     ('EscapeRocket', 'Refueling'): ('refuelling', 'the refuelling loop of the vessel\'s sound selection'),
     # Control Zone
     ('MultiwiniaZone', 'Create'): ('spawn', 'initialisation; the presence loop'),
-    ('MultiwiniaZone', 'ChangeTeam'): ('owner_changed', 'the owner of the zone or Flag post changes (R-AUD-027)'),
+    ('MultiwiniaZone', 'ChangeTeam'): ('owner_changed', 'the owner of the zone or Flag post changes (R-AUD-026)'),
     ('MultiwiniaZone', 'CaptureStatue'): ('relic_scored', 'a Relic is delivered into the zone'),
     # Relic
     ('Statue', 'Create'): ('spawn', 'a Relic appears (not during the grace period)'),
@@ -302,8 +302,8 @@ EV = {
     ('Ambience', 'EnterLocation'): ('match_enter', 'every match start; stopped when the match loop exits'),
     ('Ambience', 'ExitLocation'): ('match_exit', 'after the match loop exits'),
     # match UI
-    ('MultiwiniaInterface', 'CountdownTick'): ('countdown_tick', 'the grace countdown and the match clock (R-AUD-310, R-AUD-312)'),
-    ('MultiwiniaInterface', 'CountdownZeroTick'): ('countdown_zero', 'the grace countdown reaches 0 (R-AUD-311); time-up (R-AUD-313)'),
+    ('MultiwiniaInterface', 'CountdownTick'): ('countdown_tick', 'the grace countdown and the match clock (R-AUD-303, R-AUD-305)'),
+    ('MultiwiniaInterface', 'CountdownZeroTick'): ('countdown_zero', 'the grace countdown reaches 0 (R-AUD-304); time-up (R-AUD-306)'),
     ('MultiwiniaInterface', 'SelectionCircle'): ('selection_circle', 'the player starts growing a selection circle; stopped when it ends'),
     ('MultiwiniaInterface', 'LobbyAmbience'): ('lobby_bed', 'the front end is built; stopped when the front end exits'),
     ('MultiwiniaInterface', 'MenuRollOver'): ('menu_hover', 'focus or the pointer enters a menu control'),
@@ -314,7 +314,7 @@ EV = {
     ('MultiwiniaInterface', 'MouseError'): ('error', 'an invalid click'),
     ('MultiwiniaInterface', 'ToggleUnitState'): ('toggle_state', 'a click on an own selected Transport or Leader'),
     ('MultiwiniaInterface', 'ChatMessage'): ('chat_message', 'a chat line arrives in the lobby or in a match'),
-    ('MultiwiniaInterface', 'GameOver'): ('game_over', 'a result is declared (R-AUD-314)'),
+    ('MultiwiniaInterface', 'GameOver'): ('game_over', 'a result is declared (R-AUD-307)'),
     ('MultiwiniaInterface', 'YouWon'): ('victory', 'the declared winner is the local team'),
     ('MultiwiniaInterface', 'YouLost'): ('defeat', 'the declared winner is another team, or a draw'),
 }
@@ -628,7 +628,7 @@ def main():
                 total_layers += 1
             if full in NOTEAM:
                 a, pb, md, lv = NOTEAM[full]
-                lines.append('| \u2033 layer %d | no team (R-AUD-026, DEC-097) | `%s` | %s | %s | %s |  |  |  |' % (
+                lines.append('| \u2033 layer %d | no team (R-AUD-025, DEC-097) | `%s` | %s | %s | %s |  |  |  |' % (
                     len(blocks) + 1, a, pb, md, lv))
                 total_layers += 1
         out['tables'][src] = lines
