@@ -168,3 +168,7 @@
 
 ## S02 (02_units_and_entities.md) — done, ~330 KB, checks pass (resumed after rate limit)
 - 26 entity types full template; 47 class headings. ~17 contradictions resolved: ant capture of Darwinians live; Spider leg update runs → EntityLeg live via Spider; dormant Eggs never decay (120 s limit dead); Harvester + Engineer fully team-coloured, Squadie + SpaceInvader fixed colours; Armour has no turret; airstrike formation offsets regenerated per match; AI entity at (20,·,20); Harvester any-team souls + bypasses pop cap; Virii slope sign corrected. 02-U1..U18.
+
+## S20 (20_architecture.md) — done, ~206 KB, checks pass
+- 12 contradictions: 10 game-created threads + OS waveOut callback (not 8/9); server 10 Hz vs docs 25 FPS; boot archives parsed on loading worker thread (P16 wrong); ExitLevelButton sets both flags → finished match returns straight to main menu; OpenMP only in ReleaseDirect3D; g_log/g_fogLogging/g_fogEnabled not compiled in shipped exe; testbed counts 23 members/27 methods; GetNetworkTime == GetGameTime; every object advances exactly once per tick; frame throttling only from driver vsync; m_location assigned before Location::Init.
+- New: game speed can run away to −∞/NaN if a speed-crate hold is active at next match start; team-5 spawn-point counter slot never reset between matches. 20-U1..U14.
