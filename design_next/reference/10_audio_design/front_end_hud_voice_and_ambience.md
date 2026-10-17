@@ -75,7 +75,7 @@ Between the battles the player hears an endless, slowly changing pad under the m
 
 ### 2.4 Voice
 
-**R-AUD-312** (MUST) The reference has no dialogue system, no subtitles, no lip-sync and no localised audio (R-AUD-046). Its voiced content is short non-verbal or one-word barks bound to events. Whether Species voice lines are worded, and so need a recording per language, is DEC-317; every Species voice line is authored new.
+**R-AUD-312** (MUST) The reference has no dialogue system, no subtitles, no lip-sync and no localised audio (R-AUD-047). Its voiced content is short non-verbal or one-word barks bound to events. Whether Species voice lines are worded, and so need a recording per language, is DEC-317; every Species voice line is authored new.
 
 **R-AUD-313** (MUST) The voice sets are these groups:
 
@@ -99,7 +99,7 @@ Between the battles the player hears an endless, slowly changing pad under the m
 
 **R-AUD-315** (MUST) **Battle cry and retreat.** A Worker raises `worker.attack_bark` or `worker.flee_bark` once per new threat, by its brave or scared reaction ([02 Worker](../02_units/worker.md) R-UNIT-151); its threat sounds are stopped when the threat clears or its state changes (R-AUD-039).
 
-**R-AUD-316** (MUST) **Burning.** A burning Worker raises `worker.burning` with a presentation chance of 1 in `ref.unit.worker.burning_sound_odds` (30) per tick; about half of the group's members are silent (R-AUD-065).
+**R-AUD-316** (MUST) **Burning.** A burning Worker raises `worker.burning` with a presentation chance of 1 in `ref.unit.worker.burning_sound_odds` (30) per tick; about half of the group's members are silent (R-AUD-066).
 
 **R-AUD-317** (MUST) **War horn.** At a threat check, a Worker raises `worker.attack_horn` with a presentation chance of 1 in `ref.unit.worker.horn_odds` (200), only if it is not already shouting and at least `ref.unit.worker.horn_cooldown` (40 ticks, 4 s of game time) have passed since the last horn of any Worker of the match ([02 Worker](../02_units/worker.md) R-UNIT-098).
 
@@ -115,7 +115,7 @@ Between the battles the player hears an endless, slowly changing pad under the m
 
 **R-AUD-322** (MUST) When the front-end loop exits, the lobby bed is stopped: its two note-loop layers fade out over their releases (10.84 s and 10.26 s), and the heartbeat, which has no release, stops at the next audio update.
 
-**R-AUD-323** (MUST) **Match bed.** `ambience.match_enter` is raised at the start of every match loop and plays three two-dimensional layers whose levels follow the camera's altitude through the `altitude` link (R-AUD-051): a note loop of `amb.match_bed`, at −2.1 dB at or below 232 wu of altitude and fading to −49.5 dB at 736 wu; a white-noise loop of `amb.match_bed_b`, rising from −34.85 dB at altitude 0 to −14.85 dB at 992 wu; and a note loop of the seven high-altitude layers of `amb.match_bed_c` with a random pitch and a random sustain per note, rising from −49.7 dB at altitude 0 to −20.15 dB at 988 wu. Ground rumble therefore gives way to a high-altitude wind bed and white noise as the camera climbs. The values are the catalogue's.
+**R-AUD-323** (MUST) **Match bed.** `ambience.match_enter` is raised at the start of every match loop and plays three two-dimensional layers whose levels follow the camera's altitude through the `altitude` link (R-AUD-052): a note loop of `amb.match_bed`, at −2.1 dB at or below 232 wu of altitude and fading to −49.5 dB at 736 wu; a white-noise loop of `amb.match_bed_b`, rising from −34.85 dB at altitude 0 to −14.85 dB at 992 wu; and a note loop of the seven high-altitude layers of `amb.match_bed_c` with a random pitch and a random sustain per note, rising from −49.7 dB at altitude 0 to −20.15 dB at 988 wu. Ground rumble therefore gives way to a high-altitude wind bed and white noise as the camera climbs. The values are the catalogue's.
 
 **R-AUD-324** (MUST) When the match loop exits, `ambience.match_enter` is stopped: its two note-loop layers release over 10.00 s and 10.45 s, and the white-noise layer, which has no release, stops at once; then `ambience.match_exit` is raised, which has no definition ([12 tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-582).
 

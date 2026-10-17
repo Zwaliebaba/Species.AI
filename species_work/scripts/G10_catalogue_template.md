@@ -40,14 +40,14 @@ This file is the Species sound-event set: every sound source, every event that g
 
 **R-AUD-125** (MUST) **Reading the tables.** Each table row is one layer; the first row of an event names the event and the moment that raises it, and the further rows (″) are its further layers. The columns are:
 
-- **Sample group:** the asset id of [assets/asset_manifest.csv](../../assets/asset_manifest.csv) that the layer plays (R-AUD-044).
-- **Playback:** the position (`2d`, `fix`, `att`), the loop kind (`once`, `loop`, `note`), the sharing when not one voice per trigger (`share-rnd`, `share-near`) and the audience when not all (`own`, `enemy`, `none`) (R-AUD-048).
+- **Sample group:** the asset id of [assets/asset_manifest.csv](../../assets/asset_manifest.csv) that the layer plays (R-AUD-045).
+- **Playback:** the position (`2d`, `fix`, `att`), the loop kind (`once`, `loop`, `note`), the sharing when not one voice per trigger (`share-rnd`, `share-near`) and the audience when not all (`own`, `enemy`, `none`) (R-AUD-049).
 - **Min (wu):** the minimum distance.
-- **Level (dB):** the level: a number is fixed; `rnd a to b` is random; `link x1 to x2 → y1 to y2` is linked, the input range x1 to x2 of the link mapping to the output range y1 to y2 (R-AUD-050, R-AUD-051).
+- **Level (dB):** the level: a number is fixed; `rnd a to b` is random; `<link> x1 to x2 → y1 to y2` is linked to the named link, its input range x1 to x2 mapping to the output range y1 to y2 (R-AUD-051, R-AUD-052).
 - **Pitch (×):** the pitch multiplier, in the same forms; empty is 1.0.
 - **Envelope and loop (s):** `a` attack, `s` sustain, `r` release, `ld` loop delay, in the same forms; an absent value is 0.
-- **Effect:** the effect use of [event model](event_model_and_sound_data.md) R-AUD-081, which runs only when effects are enabled (DEC-567).
-- `sN` after a value is its smoothing (R-AUD-053); `/note` marks a value evaluated once per note (R-AUD-052).
+- **Effect:** the effect use of [event model](event_model_and_sound_data.md) R-AUD-082, which runs only when effects are enabled (DEC-567).
+- `sN` after a value is its smoothing (R-AUD-054); `/note` marks a value evaluated once per note (R-AUD-053).
 
 ### 2.2 Units
 
@@ -279,7 +279,7 @@ Table 2.7-D ambience sound events.
 |---|---|---|
 {{SILENT}}
 
-**R-AUD-142** (MUST) The events marked "bound" in table R-AUD-141 are bound in Species by Resolved decisions: laser fire is audible, so `laser_bolt.spawn`, `laser_bolt.hit_structure` and `laser_bolt.kill` play new laser-bolt groups (DEC-564); the Strike team grenade throw plays a new throw sound (DEC-097); and the match end plays the game-over announcement and the victory or defeat sting (DEC-097, DEC-049; R-AUD-307). Their groups, except the two stings, are not yet in the asset manifest (R-AUD-413).
+**R-AUD-142** (MUST) The events marked "bound" in table R-AUD-141 are bound in Species by Resolved decisions: laser fire is audible, so `laser_bolt.spawn`, `laser_bolt.hit_structure` and `laser_bolt.kill` play new laser-bolt groups (DEC-564), moments for which the reference set holds unused recordings of laser charging, structure hits, actor hits, ground hits and ricochets; the Strike team grenade throw plays a new throw sound (DEC-097); and the match end plays the game-over announcement and the victory or defeat sting (DEC-097, DEC-049; R-AUD-307). Their groups, except the two stings, are not yet in the asset manifest (R-AUD-413).
 
 **R-AUD-143** (MUST) The events marked "silent (DEC-565)" stay silent until DEC-565 binds them; the reference sound set holds unused takes for some of them (R-AUD-314). The events marked "silent" stay silent with no open decision.
 
@@ -309,7 +309,7 @@ This file defines no tuning keys: the values in its tables are the sound data of
 
 ## 5 Edge cases and interactions
 
-- **Shared groups.** One group can serve several events with different layer data; R-AUD-066 lists them. The Leader's acknowledgement group, for example, plays for `leader.spawn`, `leader.selected`, `worker.ordered` and the acknowledgement layers of the Leader's order events.
+- **Shared groups.** One group can serve several events with different layer data; R-AUD-067 lists them. The Leader's acknowledgement group, for example, plays for `leader.spawn`, `leader.selected`, `worker.ordered` and the acknowledgement layers of the Leader's order events.
 - **A spawn that is a loop.** The `spawn` events of most creatures, vehicles and structures play a presence loop that lasts for the emitter's life (R-AUD-040); the Transport, Reaper Serpent and Abductor add one-shot or further loop layers.
 - **Grace-period Relics.** A Relic that appears during the grace period raises no `relic.spawn` (R-BLDG-284).
 - **Turret kill tick.** `turret.kill_tick` plays the countdown tick at the turret, positioned, so a kill credited far away is quiet.

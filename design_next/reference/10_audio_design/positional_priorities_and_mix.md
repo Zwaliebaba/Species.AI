@@ -38,7 +38,7 @@ The roll-off is 1, and the design data sets no maximum distance (DEC-566). The s
 | 1000 | −26.0 dB | −20.0 dB | −14.0 dB | −6.0 dB |
 | 2000 | −32.0 dB | −26.0 dB | −20.0 dB | −12.0 dB |
 
-**R-AUD-204** (MUST) The minimum distance is the designer's "how big is this sound" control: a large source such as an aircraft has a large minimum distance and a tiny one such as an insect a small one, and a quiet but large source, such as a waterfall, combines a low level with a large minimum distance. The event set uses 5.98 wu to 10000 wu (R-AUD-074), and its linked values imply camera altitudes up to about 1000 wu.
+**R-AUD-204** (MUST) The minimum distance is the designer's "how big is this sound" control: a large source such as an aircraft has a large minimum distance and a tiny one such as an insect a small one, and a quiet but large source, such as a waterfall, combines a low level with a large minimum distance. The event set uses 5.98 wu to 10000 wu (R-AUD-075), and its linked values imply camera altitudes up to about 1000 wu.
 
 ### 2.3 Panning
 
@@ -58,11 +58,11 @@ The roll-off is 1, and the design data sets no maximum distance (DEC-566). The s
 
 **R-AUD-208** (MUST) Every real positioned voice is recalculated at every audio update, whatever its movement (ADR-0027).
 
-**R-AUD-209** (MUST) **Removal of an emitter.** An attached instance stops at once, without its release, on the first audio update after its emitter has left the match world, or when no emitter of a shared instance can be chosen (R-AUD-213). This is the reference default of DEC-321; a graceful path, in which the instance becomes world-fixed at the emitter's last position and plays its release, exists but almost never runs. Attached deaths (R-AUD-068) are therefore cut on the first audio update after their actor is deleted, and every vehicle and creature loop ends with a hard cut.
+**R-AUD-209** (MUST) **Removal of an emitter.** An attached instance stops at once, without its release, on the first audio update after its emitter has left the match world, or when no emitter of a shared instance can be chosen (R-AUD-213). This is the reference default of DEC-321; a graceful path, in which the instance becomes world-fixed at the emitter's last position and plays its release, exists but almost never runs. Attached deaths (R-AUD-069) are therefore cut on the first audio update after their actor is deleted, and every vehicle and creature loop ends with a hard cut.
 
 ### 2.5 Height and altitude
 
-**R-AUD-210** (MUST) Height affects a sound only through linked values (R-AUD-051): `height` for flyer pitch and loop delays, `altitude` for the camera-altitude ambience, which therefore acts as a zoom-dependent mix, and `camera_distance` for the near and far layers of `meteor.land`. There is no automatic filtering by altitude.
+**R-AUD-210** (MUST) Height affects a sound only through linked values (R-AUD-052): `height` for flyer pitch and loop delays, `altitude` for the camera-altitude ambience, which therefore acts as a zoom-dependent mix, and `camera_distance` for the near and far layers of `meteor.land`. There is no automatic filtering by altitude.
 
 ### 2.6 Game-speed pitch bend
 
@@ -74,11 +74,11 @@ The roll-off is 1, and the design data sets no maximum distance (DEC-566). The s
 
 **R-AUD-213** (MUST) A shared-nearest instance follows, at every audio update, the emitter of its emitter set nearest the camera, but only an emitter within `ref.aud.crowd.nearest_radius` (316.2 wu) of the camera can be chosen. When no emitter is that close as the instance is first updated, it has no emitter, counts as an attached instance whose emitter is gone (R-AUD-209) and is removed in the same update. A shared-random instance has no such radius. The radius is the default of the crowd priority class (DEC-109, DEC-097).
 
-**R-AUD-214** (MUST) The affected layers are `worker.spawn`, the reload layer of `worker.attack` and `launch_vessel.hungry` (R-AUD-070). The Worker spawn chatter and the reload click are therefore heard only while the camera is within about 316 wu of a spawning or firing Worker; at strategic camera heights they are silent, which keeps the mix of a large battle clear.
+**R-AUD-214** (MUST) The affected layers are `worker.spawn`, the reload layer of `worker.attack` and `launch_vessel.hungry` (R-AUD-071). The Worker spawn chatter and the reload click are therefore heard only while the camera is within about 316 wu of a spawning or firing Worker; at strategic camera heights they are silent, which keeps the mix of a large battle clear.
 
 ### 2.8 Priorities and voices
 
-**R-AUD-215** (MUST) **Audibility.** At every audio update each live instance has an audibility: full level for a two-dimensional instance; otherwise base × g(d), where base is the instance's current envelope level while it plays, and its level target while it waits. A playing instance in a long release tail therefore ranks lower as it fades (R-AUD-073).
+**R-AUD-215** (MUST) **Audibility.** At every audio update each live instance has an audibility: full level for a two-dimensional instance; otherwise base × g(d), where base is the instance's current envelope level while it plays, and its level target while it waits. A playing instance in a long release tail therefore ranks lower as it fades (R-AUD-074).
 
 **R-AUD-216** (MUST) **Copies of one event.** The instances are ranked by audibility, loudest first, and each further instance of the same full event id is multiplied by `ref.aud.rank.copy_decay` (0.75) once per louder copy: priority = audibility × 0.75^k, with k the number of louder instances of the same event in this update (1, 0.75, 0.5625, 0.421875 for the first four). Copies of one event therefore limit themselves as a group without a hard cap.
 
@@ -136,7 +136,7 @@ The buses are submix buses of the audio engine's data-defined bus graph, which f
 
 ### 2.11 The reference mix
 
-**R-AUD-227** (MUST) The authored level range is narrow (R-AUD-074), so the match mix is dominated by distance and by the two-dimensional layer. The lobby and match ambience beds are authored at −10 dB to −2 dB and are always present. Because the match ambience follows the camera's altitude, a zoomed-out camera hears louder wind and white noise while positioned combat grows quieter: the strategic view has its own mix by design ([front end, HUD, voice and ambience](front_end_hud_voice_and_ambience.md) R-AUD-323).
+**R-AUD-227** (MUST) The authored level range is narrow (R-AUD-075), so the match mix is dominated by distance and by the two-dimensional layer. The lobby and match ambience beds are authored at −10 dB to −2 dB and are always present. Because the match ambience follows the camera's altitude, a zoomed-out camera hears louder wind and white noise while positioned combat grows quieter: the strategic view has its own mix by design ([front end, HUD, voice and ambience](front_end_hud_voice_and_ambience.md) R-AUD-323).
 
 ## 3 States and flows
 

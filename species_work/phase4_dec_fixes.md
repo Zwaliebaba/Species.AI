@@ -77,3 +77,6 @@
 | 73 | G11 | DEC-050 / routing | DEC-050 says the library records the objective cards, but ORIG 09 §8.3 was routed DROP; 16 `help.hint.*` pictures (launch) are drawn by no rule, although G03a, G04 and G01 describe them as shown | re-route 09 §8.3 as KEEP (fix pass, or G09a addendum), or reprioritise the 16 rows |
 | 74 | G11 | DEC-103 | the tutorial director's placement: G11 made it a per-tick, participant-side evaluator whose world changes go out as sequenced tutorial events | add the tutorial events to the command catalogue (C-SIM-b file 06); confirm DEC-103 |
 | 75 | G11 | — | the ledger's string prefix is `tutorial.` (the brief's example `tut.` was wrong) | none |
+| 76 | C-TER | — | **keep `species_work/scripts/C-TER_generator.py`**: an independent generator written from the terrain spec text that reproduces the test values exactly | move it to `tools/reference-models/terrain_generator.py` at the cutover (forbidden scan first), with a README; cite it from terrain.md §7 |
+| 77 | C-TER vs G08a | — | R-MAP-081 says a guide-grid cell has 16 levels; it has 256 (one byte, written as two letters) | fix R-MAP-081 (G08b asked C-TER the same question) |
+| 78 | C-TER | new | 7 DEC requests (rays parallel to an axis, a grid-size limit, colour-variation seeding); terrain.md is 117.2 KB, so any addition means a `terrain/` folder | DEC triage |
