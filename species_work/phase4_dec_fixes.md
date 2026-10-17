@@ -12,3 +12,6 @@
 | 8 | G05 | — | about 45 values repeated from other documents, marked "owner" | merge into references to the owner keys |
 | 9 | C-SIM-b | DEC-016 vs DEC-650 | DEC-016 orders actor-grid results by cell slot, while DEC-650 says the registration schedule has no visible effect; both hold only if the order within a cell is history-free | reconcile: make the order within a cell history-free (sorted by a stable key) in a Resolved DEC |
 | 10 | C-SIM-b | new | defaults chosen for gaps: the route query when no corridor test runs; an actor group that reports no positions in a tick; a group attack with no candidates; the obstacle push on a structure's base point; the colour command sent after co-op setup | five new Open DECs, with C-SIM-b's defaults (see reports/C-SIM-b.md) |
+| 11 | C-SIM-c | new | how game-speed tick scheduling works at speed 0 (and the other gaps listed in reports/C-SIM-c.md: six requests in total) | new Open DECs with C-SIM-c's defaults |
+| 12 | C-SIM-c | DEC-116 | conflict between DEC-116 and the start hold | reconcile in DEC-116 |
+| 13 | C-SIM-c | — | the mode-second constant is owned by reference/01 (G01), and 01_tick_timing names it without a key until G01 defines one | Phase 4: link 01_tick_timing to G01's key |

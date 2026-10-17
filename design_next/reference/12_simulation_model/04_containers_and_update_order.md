@@ -56,11 +56,11 @@ Table 2.1-A Match-world members.
 | Essence-orb pool | `ref.sim.container.orb_presize` free slots | Essence orbs | simulation |
 | laser-bolt pool | empty | laser bolts | simulation |
 | effect pool | empty | every effect kind of [03](03_entity_model_and_identity.md) table 2.3-B | simulation |
-| chat messages | empty | newest first | presentation |
+| chat messages | empty | newest first; each holds its text, the sender's participant id, its receive time (real time), its colour and the sender's name | presentation |
 | wind direction | the zero vector | set by the dust-storm spawner (§2.8) | simulation |
 | co-op group per team slot | 0 | 0 for none, 1 or 2 for an alliance group ([06](06_teams_and_player_commands.md)) | simulation |
 | colour of each co-op group | "none" | the colour id chosen for each of the two groups | simulation |
-| burn patches | empty | scorched terrain patches | presentation |
+| burn patches | empty | scorched terrain patches, each a position and a radius | presentation |
 | seasonal-theme flag | false | copied from the match setup at initialisation step 4 (DEC-118) | simulation |
 | alpha depth-sort storage | empty | storage for the far-to-near sort of the structure alpha pass | presentation |
 
@@ -176,7 +176,7 @@ Table 2.5-A Work per slice.
 
 1. the team's actor creation ([03](03_entity_model_and_identity.md) R-SIM-108), into the group when one is given, else among the ungrouped actors;
 2. set its kind ([03](03_entity_model_and_identity.md) R-SIM-109);
-3. its position: the valid-spawn-position search around the position with the spread ([05](05_space_routing_and_physics.md) R-SIM-368);
+3. its position: the valid-spawn-position search around the position with the spread ([05](05_space_routing_and_physics.md) R-SIM-368); each attempt draws a distance `SimRng::NextUnit(spread)` and then an angle `SimRng::NextUnit(2π)` around the position, and is accepted when it lies on the map and the terrain height there is above `ref.sim.physics.sea_level`;
 4. clear its on-ground flag;
 5. its velocity: the given velocity;
 6. its front: for a Worker, a random horizontal direction from two signed unit-fraction draws of the simulation generator; for every other kind, the normalised velocity, or `ref.sim.spawn.default_front` when the velocity is zero;

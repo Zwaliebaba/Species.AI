@@ -436,7 +436,7 @@ Table 2.3-A Simulated-object contract.
 
 **R-SIM-118** (MUST) A structure is initialised once, from its map record or from the values its creator gives (DEC-652): its height is snapped to the terrain; its centre and radius are computed from its mesh, or the radius is `ref.sim.structure.default_radius` when it has no mesh; its map lights and its ports are collected; and its ports are rebuilt.
 
-**R-SIM-119** (MUST) A structure is inserted into the match world's structure pool. A creator that inserts a structure during a match updates the obstacle grid incrementally, and the affected route-graph edges are rebuilt (DEC-095, [05](05_space_routing_and_physics.md)).
+**R-SIM-119** (MUST) A structure is inserted into the match world's structure pool. A creator that inserts a structure during a match (a tree creating its offspring, a Supply crate and its outcomes, a Builder, a Transport) updates the obstacle grid incrementally, and the affected route-graph edges are rebuilt (DEC-095, [05](05_space_routing_and_physics.md)).
 
 **R-SIM-120** (MUST) The base structure advance requests removal if the structure is destroyed; otherwise it evaluates the structure's ports and requests no removal. Every structure advances exactly once per tick (DEC-117).
 
@@ -681,7 +681,7 @@ The keys `ref.sim.id.first_serial` and `ref.sim.id.structure_serial_start` are d
 ## 7 Dependencies
 
 - Reference documents: [01 Tick timing and main loop](01_tick_timing_and_main_loop.md), [02 Match lifecycle and state reset](02_match_lifecycle_and_state_reset.md), [04 Containers and update order](04_containers_and_update_order.md), [05 Space, routing and physics](05_space_routing_and_physics.md), [06 Teams and player commands](06_teams_and_player_commands.md), [07 Randomness and integrity](07_randomness_and_integrity.md), [units](../02_units/README.md) and its kind documents, [buildings and world objects](../03_buildings_and_world_objects/README.md) and its kind documents, [supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md), [population flow](../05_population_flow.md), [bots](../07_bots.md), [maps and level design](../08_maps_and_level_design/rules_and_conventions.md), [audio design](../10_audio_design.md).
-- Engine components: [renderer](../../architecture/components/renderer/README.md) (the passes of table 2.3-C), [data schemas](../../architecture/components/data_schemas/README.md) (map records and the actor stat table), [diagnostics, test and performance](../../architecture/components/diagnostics_test_and_performance.md) (handle range and finiteness checks in test builds).
+- Engine components: [renderer](../../architecture/components/renderer/README.md) (the passes of table 2.3-C), [data schemas](../../architecture/components/data_schemas.md) (map records and the actor stat table), [diagnostics, test and performance](../../architecture/components/diagnostics_test_and_performance.md) (handle range and finiteness checks in test builds).
 - Assets: none.
 
 ## 8 Open decisions
