@@ -7,6 +7,7 @@ Usage:
   python3 -I S_23_terrain_oracle.py <SRC_ROOT> dump <file.txt> <out.f64>  # raw little-endian float64 grid, row-major (z outer)
   python3 -I S_23_terrain_oracle.py <SRC_ROOT> trace <file.txt> <tileIndex> <N>  # first N RNG draws / noise calls / writes of one tile
   python3 -I S_23_terrain_oracle.py <SRC_ROOT> table <survey.csv>  # markdown digest table (mp_* rows) from a survey CSV
+  python3 -I S_23_terrain_oracle.py <SRC_ROOT> sourcemap <survey.csv>  # source-map rows (one per landscape-bearing level file)
 
 Survey columns:
   file, cols, rows, cell, worldSize, tiles, flats, min, max,
@@ -234,6 +235,18 @@ def table(csvpath):
         print(f"| `{r[0][:-4]}` | {r[ix['cols']]}×{r[ix['rows']]} | {float(r[ix['cell']]):.6g} | {r[ix['worldSize']]} | {r[ix['tiles']]} | {r[ix['flats']]} | "
               f"{r[ix['min']]} | {r[ix['max']]} | {land} | `{r[ix['sha256_16']]}` |")
 
+def sourcemap(src, csvpath):
+    rows = [l.rstrip('\n').split(',') for l in open(csvpath)]
+    ix = {h: i for i, h in enumerate(rows[0])}
+    for r in rows[1:]:
+        fn = r[0]
+        ramp = ''
+        for line in open(os.path.join(src, 'data', 'levels', fn), errors='replace'):
+            t = line.split('#')[0].split()
+            if len(t) > 1 and t[0].lower() == 'landcolourfile': ramp = t[1]
+        tag = '[B:FULL]' if fn.startswith('mp_') else '[B:LEGACY]'
+        print(f"| `data/levels/{fn}` | landscape blocks: {r[ix['tiles']]} tiles, {r[ix['flats']]} flatten areas, ramp `{ramp or 'landscape_default.bmp (default)'}`, grid {r[ix['cols']]}×{r[ix['rows']]} {tag} |")
+
 if __name__ == '__main__':
     src, mode = sys.argv[1], sys.argv[2]
     if mode == 'survey': survey(src)
@@ -241,4 +254,5 @@ if __name__ == '__main__':
     elif mode == 'dump': dump(src, sys.argv[3], sys.argv[4])
     elif mode == 'trace': trace(src, sys.argv[3], int(sys.argv[4]), int(sys.argv[5]))
     elif mode == 'table': table(sys.argv[3])
+    elif mode == 'sourcemap': sourcemap(src, sys.argv[3])
     else: print(__doc__)

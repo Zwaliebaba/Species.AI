@@ -2046,3 +2046,286 @@ Source: `code/worldobject/ai.{h,cpp}`. **[B:LEGACY]** (blocked; 3 campaign lines
 
 [C] `AISpawnPoint::Read`.
 
+## 11 Compiled, loadable, but unused by shipped content
+
+These three classes are not blocked, so a level file may place them, but no official map does; they appear only in dev maps (`mp_sandbox`, `mp_sandbox_all`) or `data/levels/old`. Whether dev maps can be opened from the shipped UI is 03-U3. Treat them as optional design ideas.
+
+### 11.1 ControlTower
+
+Source: `code/worldobject/controltower.{h,cpp}`. **[B:FULL]** code; placed only in Darwinia maps (118 lines) and the GameTypes-none dev maps `mp_sandbox`/`mp_sandbox_all` (3 lines) → effectively [B:LEGACY] content. [C] census.
+
+| Aspect | Specification | Ref |
+|---|---|---|
+| Function | remote "reprogramming" console: an Engineer standing at one of 3 reprogrammer slots changes its ownership; full ownership hands the linked building to the Engineer's team | [C] |
+| Shape | `controltower.shp` (MarkerReprogrammer0–2, MarkerConsole0–2, MarkerLightPos (counts as a light), MarkerDishPos) + static `controltowerdish.shp` aimed at the target building's centre (computed on the first Advance); radius forced 4.0 | [C] ctor, `Advance` |
+| `m_ownership` | 0–100 (100 = strongly owned); first Advance: 0 if the target building is neutral, else 100 | [C] |
+| `Reprogram(team)` (called by `Engineer` each tick while reprogramming) | if `team ≠ owner`: ownership −0.1; at ≤ 0 the tower and the target (if different) switch to `team`. If `team == owner` and ownership < 100: +0.1 (cap 100), `target->Reprogram(ownership)`; at 100: sound `ReprogramComplete`, `target->ReprogramComplete()`, `SetTeamId`, research points `GLOBALRESEARCH_POINTS_CONTROLTOWER`, GlobalBuilding online, profile saved → returns true. 1000 calls (≈ 100 s at one call per tick) from 0 to 100 | [C] `ControlTower::Reprogram`; `code/worldobject/engineer.cpp` |
+| Slots | `GetAvailablePosition` → first free slot of 3; `BeginReprogram/EndReprogram(slot)`; sparks while a slot is busy | [C] |
+| TrunkPort link | every 2.0 s: if linked to a TrunkPort whose `m_openTimer > 0` and the tower is not team 2, the tower becomes team 2 with ownership 100 (campaign) | [C] |
+| Inputs / outputs | Engineer reprogramming in; ownership of `controlBuildingId` out | [C] |
+| Damage | indestructible | [C] |
+| Global | forced global; isGlobal must be 1 | [C] |
+| Rendering | pulsing "control line to heaven" (10 segments, height 50 + id % 50 each), brightness 1.0 within 200 of the camera else 0.1 (smoothed); signal flash size `ownership/5` | [C] `RenderAlphas` |
+
+| # | Field | Type | Default | Meaning | Write |
+|---|---|---|---|---|---|
+| 8 | controlBuildingId | int | −1 | building reprogrammed by this tower | `%6d` |
+
+```mermaid
+stateDiagram-v2
+    [*] --> Held : first Advance, ownership 100 or 0 if target neutral
+    Held --> Eroding : enemy Engineer reprograms, ownership -0.1 per call
+    Eroding --> Captured : ownership reaches 0, tower and target switch team
+    Captured --> Consolidating : same-team Engineer, ownership +0.1 per call
+    Consolidating --> Complete : ownership 100, ReprogramComplete, research points
+    Complete --> Eroding : enemy Engineer
+```
+
+### 11.2 Incubator
+
+Source: `code/worldobject/incubator.{h,cpp}`. **[B:FULL]** code (not blocked; forced global); placed only in Darwinia missions (40 lines) and the dev maps `mp_sandbox*` (3 lines) → effectively [B:LEGACY] content. Spirit-economy consequences in [05](05_economy_and_population.md). [C] census.
+
+| Aspect | Specification | Ref |
+|---|---|---|
+| Function | converts stored spirits into Darwinians of the owner's team | [C] |
+| Shape | `incubator.shp`: MarkerSpirits (store centre), MarkerExit, MarkerDock, MarkerSpiritIncoming0–2, 4 lights | [C] ctor |
+| Members | `m_spirits : FastDArray<Spirit>` (step 20), `m_troopType` (= TypeDarwinian), `m_timer` (5.0), `m_incoming` (beam effects), `m_numStartingSpirits` | [C] |
+| Initialise | creates `m_numStartingSpirits` spirits at the store centre ± `SFRAND(20)`, team = owner (or `syncfrand(NUM_TEAMS)` if neutral), state `StateInStore` | [C] `Incubator::Initialise` |
+| Inputs | `AddSpirit(spirit)` (from Engineers; copies team, state `StateInStore`, incoming beam effect, sound `AddSpirit`) | [C] `Incubator::AddSpirit` |
+| Output | while owned (≠ 255) and spirits > 0: `m_timer −= dt`; at ≤ 0 → `SpawnEntity()` and `m_timer = INCUBATOR_PROCESSTIME_MULTIPLAYER` **0.2 s** (MP) or `INCUBATOR_PROCESSTIME` 5.0 − spirits/10 (min 0.5) (SP). `SpawnEntity`: one Darwinian of the **owner's** team (spirit team ignored) at the exit marker (MP: +20 y, velocity `(exit.front + syncsfrand(0.2)³) × 10`), first stored spirit removed, outgoing beam effect, sound `SpawnEntity` | [C] `Incubator::Advance`, `SpawnEntity` |
+| Ownership | fixed from the level (no capture code) | [C] |
+| Damage | indestructible | [C] |
+| Global | forced global; isGlobal must be 1 | [C] |
+
+| # | Field | Type | Default | Meaning | Write |
+|---|---|---|---|---|---|
+| 8 | numStartingSpirits | int, optional | 0 | spirits stocked at start | `%6d` |
+
+### 11.3 CloneLab
+
+Source: `code/worldobject/clonelab.{h,cpp}`. **[B:FULL]** compiled and loadable; appears only in 4 prototype maps under `data/levels/old/` (`mp_firetop`, `mp_kingspass`, `mp_sabrepoint`, `mp_silverisle`, 15 lines) and in no shipped `mp_*` map → Multiwinia prototype content. Not forced global and not asserted global. [C] census.
+
+| Aspect | Specification | Ref |
+|---|---|---|
+| Function | capturable Incubator: whichever team controls its 5 ports converts the stored spirits into its own Darwinians | [C] |
+| Shape | `clonelab.shp` with 5 ports (`MarkerPort01–05`); the Incubator constructor resolved `MarkerSpirits`, `MarkerExit`, `MarkerDock` in `incubator.shp` before CloneLab swapped the shape, so spirit-centre/exit/dock positions come from the incubator mesh's markers (quirk) | [C] ctor, `data/shapes/clonelab.shp` |
+| Capture | every tick: first team (index order) with **> 2** port occupants, replaced by a later team with > 2 and strictly more; none → 255 (`SetTeamId` fires `ChangeTeam`) | [C] `CloneLab::RecalculateOwnership` |
+| Advance | if no AITarget and spirits > 0 → create an AITarget at the exit marker (ground height at the lab), new id, added to the building list (AI attraction; neighbours not recalculated); remember `m_startingSpirits` on the first tick (unused); recalculate ownership; if spirits == 0 and an AI target exists → mark it destroyed ("this building is now worthless"); owned → `Incubator::Advance` (one Darwinian per 0.2 s in MP); neutral → spirits only orbit, then `Building::Advance` | [C] `CloneLab::Advance` |
+| Destructor | marks its AI target destroyed | [C] |
+| Damage | indestructible | [C] |
+| Rendering | per port a 6-unit camera-facing additive `textures/starburst.bmp` 5 above ground at the control-pad status marker, grey (150,150,150) empty or occupant team colour | [C] `CloneLab::RenderPorts` |
+
+| # | Field | Type | Default | Meaning | Write |
+|---|---|---|---|---|---|
+| 8 | numStartingSpirits | int, optional (inherited `Incubator::Read`) | 0 | spirits stocked at start (old maps: 150, 250) | `%6d` |
+
+```mermaid
+stateDiagram-v2
+    [*] --> Neutral : spirits stocked, AI target created
+    Neutral --> Owned : a team holds more than 2 of 5 ports
+    Owned --> Owned : another team holds more than 2 and strictly more
+    Owned --> Neutral : no team above 2
+    Owned --> Exhausted : spirits reach 0 while converting
+    Neutral --> Exhausted : spirits 0
+    Exhausted --> Exhausted : AI target removed, no output
+```
+
+## 12 Darwinia-legacy buildings (blocked)
+
+Every class in this section is compiled into `multiwinia.exe` but is **[B:LEGACY]**: its type is in `Building::BuildingIsBlocked` (§3.12), so level lines naming it are dropped at parse time, and no live Multiwinia code creates it by id (exceptions noted). Specifications are brief but list every field. "Mode usage: none" applies to all. Census sources: `data/levels/map_*`, `mission_*` and `data/levels/old/*`. [C] `code/worldobject/building.cpp:BuildingIsBlocked`, census.
+
+### 12.1 ConstructionYard
+
+Level name `Yard`, `code/worldobject/constructionyard.{h,cpp}`; 1 campaign line (`map_yard`).
+- Function: tank (Armour) factory. Shape `constructionyard.shp` (12 ports, MarkerPrimitive01–09), rungs `constructionyardrung.shp` (MarkerSpike01–06), primitive `mineprimitive1.shp`.
+- Inputs: primitives via `AddPrimitive()` (max `YARD_NUMPRIMITIVES` 9; from mine carts at a TrackEnd) and power surges via `AddPowerSurge()` (from a PylonEnd).
+- Online: GlobalBuilding online when any port is occupied, ≥ 1 surge and ≥ 1 primitive.
+- Build cycle: idle (`m_timer < 0`) → when primitives = 9 and surges > 50: `m_timer = 30`; the timer decreases by `fractionPopulated × dt` (12 ports); at ≤ 0: if ≥ 5 Armour already exist in the *local player's* team specials → retry in 30 s, else spawn 1 `Armour` for **team 2** at MarkerPrimitive06, front (0,0,1), waypoint pos + (0,0,500); primitives = 0, surges = 1.
+- Ownership: level; damage: indestructible; level fields: none beyond the base 8. Visuals: rung bobbing ∝ fractionPopulated; glow alpha `1 − timer/60` while building.
+[C] `ConstructionYard::Advance`, `IsPopulationLocked`.
+
+### 12.2 DisplayScreen
+
+`code/worldobject/constructionyard.{h,cpp}`; no level lines anywhere. Cosmetic: `displayscreen.shp` with `DISPLAYSCREEN_NUMRAYS` 3 ray markers projecting light rays onto a slowly rotating ×3-scale `armour.shp` hologram 75 units above the centre. No ownership logic, inputs, outputs, damage or extra fields. [C] `DisplayScreen::RenderAlphas`.
+
+### 12.3 ReceiverBuilding
+
+Abstract base of the Darwinia spirit-receiver network (`code/worldobject/spiritreceiver.{h,cpp}`; map `map_receiver`).
+- Members: `m_spiritLink` (next building id), `m_spirits : LList<double>` (progress values).
+- Advance: each spirit `progress += 0.8 × dt` (1.25 s per link); at ≥ 1 → `link->TriggerSpirit(0)`; `TriggerSpirit` pushes a new spirit at the list front + sound `TriggerSpirit`; spirit beam drawn between `MarkerSpiritLink`s ([B:D3D] batched rendering and water-reflection skip).
+- Ownership: level; damage: indestructible.
+- Level field: [8] spiritLink (int, `%-8d`).
+- Static `ReceiverBuilding::GetSpiritProcessor()` caches the first SpiritProcessor.
+[C] `ReceiverBuilding::Advance/TriggerSpirit/Read`.
+
+### 12.4 SpiritProcessor
+
+Level name `SpiritProcessor` (1 campaign line). Shape `spiritprocessor.shp`. Owns the world's UnprocessedSpirit cloud: 150 spawned at Initialise (x, z = `FRAND(world size)`, y = `syncfrand(1000)`), then one more every 0.2 s at y = `700 + syncfrand(300)`. Throughput: every 10 s, `n = arrivals × 7`; `throughput = n` if higher, else `0.8·t + 0.2·n`; GlobalBuilding online when > 50; objective text `objective_throughput`. Always in view. Level field: spiritLink. [C] `SpiritProcessor::Advance`.
+
+### 12.5 ReceiverLink
+
+Level name `ReceiverLink` (83 campaign lines). Shape `receiverlink.shp`; pure relay of the receiver network (§12.3). Level field: spiritLink. [C].
+
+### 12.6 ReceiverSpiritSpawner
+
+Level name `SpiritSpawner` (1 campaign line). Shape `receiverlink.shp`; injects a spirit into the network with probability 0.1 per tick (`syncfrand(10) < 1`). Level field: spiritLink. [C].
+
+### 12.7 SpiritReceiver
+
+Level name `SpiritReceiver` (49 campaign lines). Shape `spiritreceiver.shp` (5 ports, `SPIRITRECEIVER_NUMSTATUSMARKERS` 5) + `spiritreceiverhead.shp`; orientation follows the terrain normal. If any port is occupied: every floating UnprocessedSpirit within 200 is pulled (`vel += dir × 20 × (1 − d/200) × fractionOccupied × dt`, target raised by up to 100 when within 100); captured at < 10 → deleted and `TriggerSpirit(0)` into the network. Ownership: level; level field spiritLink. [C] `SpiritReceiver::Advance`.
+
+### 12.8 UnprocessedSpirit
+
+`WorldObject` in `code/worldobject/spiritreceiver.h`. States Falling (hover y velocity `(−10 − syncfrand(10)) × min(1, h/100)` until < 15 above ground) → Floating for `30 + syncsfrand(30)` s ∈ [15, 45) → Death 10 s (fade) → removed; drift: `vel *= 0.9` per tick, hover axes random-walk ±0.5 per tick clamped [0, 2]; clamped to the world rectangle. Created only by SpiritProcessor. [C].
+
+### 12.9 SpiritStore
+
+Helper container (`code/worldobject/spiritstore.{h,cpp}`), not a Building. `Initialise(initial, max, pos, sx, sy, sz)` sets capacity (`max`, step `max/2`) and pre-fills `initial` team-0 spirits; `AddSpirit` copies a spirit to a synced-random position within ±0.75 × size (`syncsfrand(1.5 × size)`) and sets `StateInStore`, `m_numNearbyEggs = 0`; `RemoveSpirits(n)` removes the first *n*; `Advance` advances each; `Render` draws a translucent `triangleOutline.bmp` box plus the spirits. Only user: Factory (§12.10). [C] `spiritstore.cpp`, `code/worldobject/factory.cpp`.
+
+### 12.10 Factory
+
+`code/worldobject/factory.{h,cpp}`; no level lines. Shape `factory.shp`; level field [8] initialCapacity (int, default 10) → embedded `SpiritStore` (capacity 200 max, at `MarkerSpiritStore` + 11 y, half-sizes 5/10/5). `RequestUnit(type, n)`: creation time `n × 0.1` s, one unit per consumed spirit at `pos + (±2.5, 20 ± 2.5, 20)` with velocity `(SFRAND(1), SFRAND(1), 5 + syncsfrand(1))`; then 3 s `StateRecharging`. States `StateUnused → StateCreating → StateRecharging → StateUnused`; `SetTeamId` resets to Unused. `Factory::RequestUnit` has **no caller** in `code/` → dead even in Darwinia. Ownership: level; indestructible. [C] `Factory::*`, grep `RequestUnit(`.
+
+### 12.11 BlueprintBuilding
+
+Abstract base of the Darwinia "Pattern Buffer" infection puzzle (`code/worldobject/blueprintstore.{h,cpp}`; `map_pattern_buffer`: 1 store, 4 consoles, 12 relays). Field [8] buildingLink (int, `%-8d`) — next building in the relay chain. `Initialise` looks up `MarkerBlueprint`; `m_infected` = 100 if team 1 else 0. `Advance`: if `m_infected > 80` → `link->SendBlueprint(segment, true)`; if `< 20` → `SendBlueprint(segment, false)`. Default `SendBlueprint`: store the segment id, `m_infected ± 10/s` clamped [0, 100]. Render: shape + additive `textures/laser.bmp` ribbon (half-width 20) to the link, colour (infected, 0.7 − 0.7·infected, 0), alpha `0.1 + 0.2|sin t|` when both ends agree within 0.01 else `0.5 + 0.5|sin t|`. [C].
+
+### 12.12 BlueprintStore
+
+`blueprintstore.shp`, `BLUEPRINTSTORE_NUMSEGMENTS` 4. `m_segments[4]` start at 100 (team 1) or 0. `SendBlueprint`: segment ± 1/s. `Advance`: with f = segments at exactly 100 and c = 4 − f, each segment < 100 gains `f × 0.9 / c` per second; all segments 0 → GlobalBuilding online. Objective counter `objective_totalinfection N%`. Render: a 100 × 100 billboard of `sprites/darwinian.bmp` with per-corner colours from the four segments plus two scrolling `interface_grey.bmp` overlay passes. Level field buildingLink. [C].
+
+### 12.13 BlueprintConsole
+
+`blueprintconsole.shp`; fields [8] buildingLink, [9] segment (int). Ownership: team with > 2 port occupants and a plurality, else 255 (the CloneLab rule). Team 1 → `SendBlueprint(seg, true)`, team 0 → `SendBlueprint(seg, false)` every tick. Port status starbursts as CloneLab. [C].
+
+### 12.14 BlueprintRelay
+
+`blueprintrelay.shp`; fields [8] buildingLink, [9] altitude (float, default 400, `%-2.2f`). Floats at Y = altitude; `Advance` drifts its position by `(sin(t/1.5), sin(t/1.3), cos(t/1.7))` per tick with t = gameTime + uniqueId + index (simulation position driven by game time); `m_vel` derived. [C].
+
+### 12.15 Bridge
+
+`code/worldobject/bridge.{h,cpp}`, subclass of Teleport (§5.2); no level lines anywhere. Created at runtime only by `Engineer::BeginBridge`, which returns unless Engineer research ≥ 5 (maximum 4) → unreachable in every build. Fields: [8] nextBridgeId (int), [9] bridgeType (0 = `BridgeTypeEnd` → `bridgeend.shp`, 1 = `BridgeTypeTower` → `bridgetower.shp`; marker `MarkerSignal`). `BRIDGE_TRANSPORTPERIOD` 0.1 s, `BRIDGE_TRANSPORTSPEED` 50 u/s. `m_status` = 100 while an Engineer operates it (`BeginOperation`/`EndOperation`), else 0; < 0 → removed. Only End-type bridges with an operated, linked next bridge send entities; entities fly signal-to-signal at 50 u/s, hop through Tower bridges via `EnterTeleport`, exit at the final End bridge's entrance; loss of the carrier signal mid-transit → `ChangeHealth(−500)` and a random drop (`SFRAND(10), FRAND(10), SFRAND(10)`). Entry distance 25 (`Entity::EnterTeleports`). Render: 3-px smoothed line between signal markers in team colour, alpha = status/100. [C] `code/worldobject/engineer.cpp:Engineer::BeginBridge`, `bridge.cpp`.
+
+### 12.16 Cave
+
+`code/worldobject/cave.{h,cpp}`; no level lines. `cave.shp`, marker `MarkerSpawnPoint`; no extra fields. For a used team: every `syncfrand(0.5)` s spawns one `Entity::TypeVirii` at the spawn marker if fewer than 30 friends within 100. `Damage(d)` destroys it (shape explosion, `m_dead`) only if `d > 80` — but damage is passed as negative numbers everywhere (e.g. `Location::Bang`), so caves are effectively indestructible. [C] `Cave::Advance`, `Cave::Damage`; [I] "never" relies on every caller passing negative values.
+
+### 12.17 ChessBase
+
+`code/worldobject/chess.{h,cpp}`; prototype Multiwinia mode (`data/levels/old/mp_chess1.txt`, 2 lines). Fields [8] width, [9] depth (read with `atoi` → integers; `Write` uses the malformed format `"%2.2 %2.2"` with no conversion letter — writer bug). `m_sparePoints = GetGameOption("TotalSize")`; neither `TotalSize` nor `SizeVariance` exists in any game blueprint, so `Multiwinia::GetGameOption` returns −1 and **no pieces ever spawn**. Logic (if it worked): every 1 s spawn a ChessPiece of scale `1 + syncsfrand(variance/100)` clamped [0.1, spare] while spare > 0.3, pushed 10 units at a time away from overlapping pieces (`50·scaleA + 50·scaleB`); an enemy piece whose 35·scale sphere (offset 35·scale behind it) intersects the width × depth zone triggers `HandleSuccess`. Render: team-coloured line loop of the zone 5 above ground. [C] `code/multiwinia.cpp:Multiwinia::GetGameOption`, `chess.cpp`.
+
+### 12.18 ChessPiece
+
+`CarryableBuilding` subclass (`chesspiece.shp`), created only by ChessBase. `HandleCollision(force)`: damage += force × dt; every 2.0 → scale −0.05 + shatter 0.3; dies when scale < 0.1. `HandleSuccess`: respawn a piece of the same scale at its own base, `Multiwinia::AwardPoints(team, int(10 × scale))`, then die. `SetWaypoint` only accepts waypoints on one side of the piece (forward-only). The only ChessPiece selection path is `LocationInput` (turret-aim branch). Ownership: CarryableBuilding rule. No level fields of its own. [C] `chess.cpp`, `code/location_input.cpp`.
+
+### 12.19 FeedingTube
+
+`code/worldobject/feedingtube.{h,cpp}`; no level lines. `feedingtube.shp`, marker `MarkerFocus`; field [8] receiverId (int). Purely visual link: each tick `m_range` = distance between the two focus markers. Render: 4 nested textured tubes (radii 10, 9, 8, 4; alphas 0.4, 0.2, 0.2, 0.5), 20 radial segments, `distance/200` length steps, `laserfence.bmp` (REPLACE) × `radarsignal.bmp` (MODULATE), scrolling, clipped by two planes. Sphere hit uses the shape at 1.5× probe radius. Sound events `BeginRotation`, `EndRotation`, `ConnectionEstablished`, `ConnectionLost` (listed, never triggered). [C].
+
+### 12.20 DynamicBase
+
+Abstract base of a generic objective network (`code/worldobject/generichub.{h,cpp}`; design notes in `docs/new building docs.txt`). Fields [8] buildingLink (int), [9] shapeName (token; "none" → debug sphere 40). Sound `TriggerSurge`. [C].
+
+### 12.21 DynamicHub
+
+Forced global. Fields [10] requiredScore, [11] currentScore, [12] minActiveLinks (ints). `m_reprogrammed` true if no ControlTower links to it, or the linking tower has the hub's team; counts linked nodes. Enabled when all nodes are active (`ActivateLink`/`DeactivateLink`) or (score mode) `currentScore ≥ requiredScore` and `activeLinks ≥ minActiveLinks`; when `currentScore ≥ requiredScore` → GlobalBuilding online, else offline. `ChangeScore` clamps to requiredScore. `PointsPerHub = requiredScore / minActiveLinks` (**integer division by zero if minActiveLinks = 0**). Objective counter "percent complete: N" (hard-coded English). Sound `Enable`. [C].
+
+### 12.22 DynamicNode
+
+Fields [10] scoreValue, [11] scoreSupplied. Operates when all ports are occupied and none by team 1 → `hub->ActivateLink()`; stops when any port empties. While operating with scoreValue > 0: every 1 s add `±scoreValue` (− if any red occupant) while `PointsPerHub() > scoreSupplied`. Portless nodes activate on `ReprogramComplete`. Sound `Operate`. [C].
+
+### 12.23 GodDish
+
+`code/worldobject/goddish.{h,cpp}`; `map_temple`, `old/mp_temple` (1 line each). `goddish.shp`; no extra fields. Script-driven (`Script::RunCommand_GodDishActivate`, `RunCommand_GodDishDeactivate`, `RunCommand_GodDishSpawnSpam`, `RunCommand_GodDishSpawnResearch`, `RunCommand_SpamTrigger` in `code/script.cpp`; scripts cannot run in Multiwinia, [30](30_scripting_tutorial_and_cutscenes.md)). `Activate`: all team-0 Darwinians `WatchSpectacle`/`CastShadow`, sound `ConnectToGod`; timer counts up; deactivated timer decays ×(1 − 2·dt) (`DisconnectFromGod`). `SpawnSpam(isResearch)`: creates a `Spam` building 1125 up and 675 forward, falling at 80 u/s. `TriggerSpam`: every Spam → `SpawnInfection()`. Render: additive `cloudyglow.bmp` blobs (50/25/10 by RenderBuildingDetail) and `starburst.bmp` stars (10/5/2), alpha `min(timer × 0.1, 1)`. [C].
+
+### 12.24 Spam
+
+`code/worldobject/spam.{h,cpp}`; created only by GodDish (3 campaign lines). [C] `Spam::*`.
+- `SPAM_RELOADTIME`: `SpamReloadTime()` = 60 s − 30 s × difficulty/10 between emissions of 20 `SpamInfection` entities (team = Spam team, sound `Attack`); the live Multiwinia "Infection" crate swarm is specified in [04](04_crates_powerups_and_weapons.md).
+- `SPAM_DAMAGE`: 100 health; explosion per 10-point band; at 0: the matching GlobalBuilding goes online, sound `Explode`, removed (`Destroy(i)` → base).
+- Movement: hovers 20 above ground; `SendFromHeaven` drops it (inactive); slides with friction `dt × 0.3`; pushes off other Spam.
+- Research mode: `SetAsResearch` → blue glow, inactive, sound `CreateResearch`.
+- Visual: `researchitem.shp` tumbling, 20 `cloudyglow` blobs + 10 starbursts (red; blue if research).
+- Determinism defects (legacy only): constructor uses unsynced `frand` for `m_front`; `Spam::Render` mutates `m_front/m_up`, which `Advance` uses for `CalculateCentre`.
+- No level fields beyond the base 8.
+
+### 12.25 Library
+
+`code/worldobject/library.{h,cpp}`; no level lines. `library.shp`; no extra fields. Each tick, for every research type the player owns that has not been shown, spawns a `ResearchItem` (in-library) at marker `MarkerResearch%02d` (1-based). [C].
+
+### 12.26 ResearchItem
+
+`code/worldobject/researchitem.{h,cpp}`; 8 campaign lines. `researchitem.shp`, markers `MarkerGrab1/2`; fields [8] researchType (token, `GlobalResearch::GetType` name), [9] level (int, optional, default 1). Hovers 20 above ground; reprogram progress `m_reprogrammed` 100 → 0 at 3/s while an Engineer works it (`Reprogram`); at 0 → shatter, `AddResearch`, set level, sound `AquireResearch`, task-manager message; removed when the research is already owned at ≥ level. The constructor orients it with unsynced `frand`; `Render` rotates `m_front/m_up` every frame (render-path mutation of state that `Advance` uses). Non-colliding except rays. Visuals: blue (0.1, 0.2, 0.8) `cloudyglow` blobs, starbursts and a 1050-unit "control line to heaven" (`laser.bmp`) fading with progress. [C].
+
+### 12.27 MineBuilding
+
+Abstract base of the Darwinia mine/yard conveyor (`code/worldobject/mine.{h,cpp}`; `map_mine`, `map_yard`: 111 TrackLinks, 3 junctions, 1 start, 2 ends, 4 mines, 1 refinery). Field [8] trackLink (int). Shared static shapes `wheel.shp`, `minecart.shp` (markers `MarkerTrack1/2`, `MarkerContents1–3`), `minepolygon1.shp`, `mineprimitive1.shp`. `m_carts : LList<MineCart*>`; `Initialise` seeds carts at progress `0.2 + syncfrand(1.5)` cumulative steps < 1. Speed `RefinerySpeed()` (global, recomputed every 0.1 s): fraction of occupied ports of the first Refinery or Yard found, else 1.0 if the global Refinery on location "mine" is online, else 0; then `× |sin(2·gameTime)| × 0.5` progress/s (`numFuelGenerators` is never incremented → its branch is dead). Carts advance by speed·dt; overflow passes to the link via `TriggerCart`. Sound `CogTurn` when speed rises above 0.1. Render: two `laser.bmp` rails between track markers; carts hang 40 below the rail midpoint. [C].
+
+### 12.28 MineCart
+
+Plain helper struct (`code/worldobject/mine.h`): `m_progress` (0–1 along the current track), `m_polygons[3]`, `m_primitives[3]` (cargo flags). Not a world object; no ownership or collision. [C].
+
+### 12.29 TrackLink
+
+Plain conveyor segment (`tracklink.shp`); MineBuilding behaviour; field trackLink. [C].
+
+### 12.30 TrackJunction
+
+Fields [8] trackLink, then any number of extra link ids (read while tokens remain, `%-4d`); routes each arriving cart to `syncrand() % n` of its links. [C].
+
+### 12.31 TrackStart
+
+Fields [8] trackLink, [9] reqBuildingId; while that GlobalBuilding is online, carts past 50% get one random primitive. [C].
+
+### 12.32 TrackEnd
+
+Shape name spelled `trackLink.shp`. Fields [8] trackLink, [9] reqBuildingId; online if that building is a TrunkPort with open timer > 0, a Yard, or a FuelGenerator; carts past 50% unload primitives (into `ConstructionYard::AddPrimitive` if a Yard) and clear polygons. Dereferences the building without a NULL check. [C].
+
+### 12.33 Refinery
+
+`refinery.shp`, wheels `MarkerWheel01–03`, `MarkerCounter`. A cart with polygons and no primitives becomes one random primitive and increments `GlobalBuilding::m_link` (refined count); at ≥ 20 refined → online; counter text `objective_refined` rendered in 3D. Field trackLink. [C].
+
+### 12.34 Mine
+
+`mine.shp`, wheels `MarkerWheel01–02`. An empty arriving cart is filled with polygons with probability = occupied ports / ports. Field trackLink. [C].
+
+### 12.35 SafeArea
+
+`code/worldobject/safearea.{h,cpp}`; 4 campaign lines. Objective circle. Fields [8] size (float, default 50), [9] entitiesRequired (int), [10] entityTypeRequired (int entity type id, default Darwinian). Every 2.0 s counts live friendly entities of that type within `size`; team 1 → online when count ≤ required; other teams → online when count ≥ required. Objective counter `objective_currentcount : N`. Editor-only circle render. [C].
+
+### 12.36 ScriptTrigger
+
+`code/worldobject/scripttrigger.{h,cpp}`; 25 campaign lines. Invisible trigger that runs a script file (`Script::RunScript`) or (only with `USE_SEPULVEDA_HELP_TUTORIAL`, never defined → [B:DEAD]) walks through numbered Sepulveda phrases.
+
+| # | Field | Type | Default | Meaning |
+|---|---|---|---|---|
+| 8 | linkId | int | −1 | building to highlight (Sepulveda path only) |
+| 9 | range | float | 100.0 | trigger radius |
+| 10 | scriptFilename | token | "NewScript" | contains ".txt" → script file to run; otherwise a phrase-id prefix |
+| 11 | entityType | token | "never" | `always` (999), `never` (998), `camenter` (997), `camview` (996), or an entity type name (`Entity::GetTypeId`) |
+
+Write format `%-6d %-6.2f %s %s`. Behaviour: `never` does nothing; otherwise, while not triggered, no script running and the camera interactive, every 1.0 s test: `always` → fire; `camenter` → camera within `range` and camera speed < 5; `camview` → (camera within `range + 300`, speed < 5, forward ray hits sphere(pos, range)) or (within `range`, speed < 5); entity type → at least one entity of that type **and of the trigger's own team** within `range`. `Trigger()`: ".txt" → `RunScript`, `m_triggered = −1` → removed next tick; otherwise `m_triggered = 1` → removed next tick without effect. Non-colliding. [C] `ScriptTrigger::Advance/Trigger/Read/Write`.
+
+### 12.37 FenceSwitch
+
+`code/worldobject/switch.{h,cpp}`; no level line in any file (census: zero, including all `mp_*` maps). Forced global by `CreateBuilding(int)`; `ParseBuildings` asserts non-global FenceSwitches. Shape `fenceswitch.shp` with 4 ports (`MarkerPort01–04`) and `MarkerConnectionLocation`. [C] census, `building.cpp`, `level_file.cpp`.
+
+| # | Field | Type | Default | Meaning |
+|---|---|---|---|---|
+| 8 | linkedBuildingId | int | −1 | primary LaserFence |
+| 9 | linkedBuildingId2 | int | −1 | optional second LaserFence (toggled opposite to the first) |
+| 10 | switchValue | int | −1 → set to linkedBuildingId | currently selected (enabled) link |
+| 11 | lockable | int | 0 | 1 = lock after the first switch |
+| 12 | script | token | "none" | script run when the switch acts (if it contains ".txt") |
+| 13 | locked | int, optional | 0 | 1 = start locked |
+
+Behaviour [C] `FenceSwitch::Advance/Switch`: 20 s start-up delay (`m_timer` 20, raised to ≥ 10 by `SetDetail`); team = 2 (Darwinia player) when all ports are occupied and none by team 1, else team 1 — every tick; when all ports are occupied and the GlobalBuilding is offline: friendly → `m_switchable = true`, apply `switchValue` (enable selected, disable the other); hostile → primary enabled, secondary disabled; then GlobalBuilding online + `EvaluateEvents()`. When ports are no longer all occupied and it is online: reset to primary (no second link → disable primary; else enable primary/disable secondary); offline. Any change → run script, lock if lockable. `Switch()` is called **locally** from `LocationInput::SelectObjectUnderMouse` when the player clicks the switch, not via a network message — a simulation change from local input that would desync a multiplayer game. Resolved (phase-2 question X4): no `mp_*` map (official, dev or old) contains a FenceSwitch, the type is blocked, and nothing creates it at runtime, so this path is unreachable in Multiwinia. Render: additive `laser.bmp` ribbon to each linked fence (yellow (0.9,0.9,0.5) selected, grey (0.5,0.5,0.5) other); ownership lights green when the primary link is selected, red otherwise. [C] `code/location_input.cpp`, census.
+
+### 12.38 UpgradePort
+
+`code/worldobject/upgrade_port.{h,cpp}`; no level lines anywhere. Shape `upgrade_port.shp`; no behaviour beyond `Building`, no extra fields. [C].
+
+### 12.39 PrimaryUpgradePort
+
+Level name `PrimaryUpgrade`; no level lines anywhere. Shape `primaryupgradeport.shp`. `ReprogramComplete` increments `m_controlTowersOwned`; at exactly 3 → GlobalBuilding online. No extra fields. [C] `PrimaryUpgradePort::ReprogramComplete`.
+

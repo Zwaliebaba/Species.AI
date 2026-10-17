@@ -1055,7 +1055,116 @@ Protocol semantics of all of these are in [22](22_determinism_and_networking.md)
 
 ## 9 Main loops
 
-<!-- S9 -->
+All loops are busy loops on the main thread; none sleeps or yields (the only `Sleep` in a frame path is the loading screen's 60 Hz cap, §9.5) [C] grep of `Sleep(`/`NetSleep(` in `code/`.
+
+### 9.1 Outer loop (`RunTheGame`)
+
+```
+after Initialise:
+    loadingScreen.initialLoad = false
+    loop forever:
+        if requestBootloader:                 # RunBootloader is compiled out (USE_LOADERS off)
+            requestBootloader = false
+        if app.atMainMenu:            MainMenuLoop()
+        elif app.requestedLocationId != -1:  EnterLocation()      # Multiwinia: id 999
+        else:                         EnterGlobalWorld()   # Darwinia world stub, returns at once
+        inputManager.Advance()
+```
+[C] `code/main.cpp:RunTheGame`. The loop never returns; the process ends inside `HandleCommonConditions` (§7.1).
+
+### 9.2 `MainMenuLoop` — front end and lobby
+
+While `m_atMainMenu && !m_requestToggleEditing`, each iteration [C] `code/main.cpp:MainMenuLoop`:
+
+1. `UpdateAdvanceTime()` (§10.1).
+2. `m_renderer->Render()` — draws the menu backdrop (clouds/sphere world) and the Eclipse windows.
+3. `m_userInput->Advance()` — `InputManager::Advance` (which pumps Win32 messages through `W32InputDriver::Advance` → `PollForEvents` → `WindowManagerWin32::NastyPollForMessages`), then Eclipse mouse/update.
+4. `m_soundSystem->Advance()` if initialised.
+5. `HandleCommonConditions()` (one delayed job, controller dialog, focus, memory log, quit, `CheckSounds`).
+6. `m_achievementTracker->Load()` until `HasLoaded()`.
+7. If `!m_gameMenu->m_menuCreated` and the renderer's fade is complete → `m_gameMenu->CreateMenu()`.
+8. If hosting: `m_server->AdvanceIfNecessary(GetHighResTime())` — the lobby runs the same 10 Hz server tick as a match.
+9. `m_clientToServer->AdvanceAndCatchUp()` — lobby commands (team assignment, options, chat, START_GAME) are executed as sequenced updates exactly like in-match commands; `GameTimer::Tick` and the sync byte are produced for every update even here.
+
+On exit: `m_requestToggleEditing` → `m_editing = true`, `m_atMainMenu = false` [B:EDITOR]; stop sound `"MultiwiniaInterface LobbyAmbience"`; `m_gameMenu->DestroyMenu()`; `m_requireSoundsLoaded = true`.
+
+### 9.3 Entering a match (`EnterLocation` → `DoEnterLocation`)
+
+[C] `code/main.cpp:EnterLocation`, `DoEnterLocation`:
+
+1. `m_loadingLocation = true` (already set by the START_GAME update; while true `ClientToServer::AdvanceAndCatchUp` only calls `KeepAlive()`, so buffered updates wait in the inbox).
+2. `g_loadingScreen->m_workQueue->Add(&DoEnterLocation)`; `g_loadingScreen->Render()` — the main thread runs the loading-screen loop (§9.5); because `m_requireSoundsLoaded` is now true it also waits for `m_soundsLoaded`. On the Load thread, `DoEnterLocation`:
+   1. if `!Multiplayer()` → `StartSinglePlayerServer()` (Darwinia campaign path [B:LEGACY]; Multiwinia already has its session).
+   2. `TaskManagerInterface::CreateTaskManager()` (now the Multiwinia variant).
+   3. `WorldObjectId::ResetUniqueIdSeed()` (object ids restart at 0 — determinism).
+   4. `m_location = new Location()`; `m_locationInput = new LocationInput()`.
+   5. (`PERMITTED_MAPS` targets: CRC check of `m_requestedMap`.)
+   6. `m_location->Init(m_requestedMission, m_requestedMap)`.
+   7. `GunTurret::SetupTeamShapes()`.
+   8. `m_locationId = m_requestedLocationId` (999).
+   9. `m_camera->UpdateEntityTrackingMode()`.
+   10. pref `RecordDemo` == 2 and hosting → `m_server->LoadHistory("ServerHistory.dat")` (replay).
+   11. camera bounds `[-200, worldSizeX + 200]` on both axes (`borderSize = 200.0`); fallback target position (maxX, 1000, maxX) looking (-1, -0.7, -1); then mount `"start"`; `CutToTarget()`.
+   12. (`PERMITTED_MAPS` failure: `m_requestedLocationId = -1`, `m_atMainMenu = true` unless campaign.)
+3. Back on the main thread: not editing → camera `DebugModeAuto`, `RequestMode(ModeFreeMovement)`, `LocationGameLoop()` (editing → `LocationEditorLoop` [B:EDITOR]).
+
+### 9.4 `LocationGameLoop` — the in-match frame
+
+Set-up [C] `code/main.cpp:LocationGameLoop`: `m_loadingLocation = false`; `m_hideInterface = false`; `iAmAClient = true`; `iAmAServer = (m_server != NULL)`; `nextIAmAliveMessage = lastRenderTime = GetHighResTime()`; local `TeamControls teamControls`; `m_renderer->StartFadeIn(0.6)`; trigger sound `"EnterLocation"` (Ambience).
+
+Per iteration, in exact order [C]:
+
+1. **Exit check**: if not fading and `m_requestedLocationId != m_locationId` → `StartFadeOut()`; if fading and `IsFadeComplete()` → `m_controlHelpSystem->Shutdown()` and leave the loop.
+2. **Player camera**: in Multiwinia, once `m_location->GetMyTeam()` exists (first frame after team initialisation) → camera target mount `"player<N>"` with N = `GetTeamPosition(m_myTeamId)`, `CutToTarget()`, once.
+3. `g_inputManager->PollForEvents()` (Win32 message pump).
+4. `ControlToggleInterface` → toggle `m_hideInterface`.
+5. `ControlMenuEscape` (only when the fade is complete): if a script is running → (Sepulveda skip, dead); else if any Eclipse window is open → `RemoveAllWindows()`, `m_hideInterface = false`; else if the task manager is visible → hide it; else camera `DebugModeAuto`, `EclRegisterWindow(new LocationWindow())`, `m_hideInterface = true`. In all cases then `m_userInput->Advance()`.
+6. `g_loadingScreen->RunJobs()` — executes GL jobs queued by worker threads ("Clear out any display lists wanting to be created").
+7. `HandleCommonConditions()` (returns false in every path; the `continue` is dead): `App::HandleDelayedJobs()`; controller unplugged → `ControllerUnpluggedWindow`, replugged → remove it; `m_lostFocusPause = !focus` (forced unfocused when the controller is unplugged in gamepad mode); memory log every 60 s; `ControlGameDebugQuit` → `m_requestQuit`; `App::CheckSounds()`; quit → `Finalise(); exit(0)`.
+8. `timeNow = GetHighResTime()`.
+9. Host only: `m_server->AdvanceIfNecessary(timeNow)` — at most one server tick.
+10. If no Eclipse window is open: `teamControls.Advance()` (accumulates continuous input, [06](06_player_control_and_input.md)).
+11. Client part (always):
+    1. if `timeNow > nextIAmAliveMessage`: `SendTeamControlsToNetwork(teamControls)` (fills mouse target from the object under the cursor, clears flags if the task manager, a window or the chat log is visible, `SendIAmAlive(m_myTeamId, teamControls)`, `teamControls.Clear()`); `nextIAmAliveMessage += IAMALIVE_PERIOD` (0.1 s); if still behind → `nextIAmAliveMessage = timeNow + 0.1` (no burst catch-up).
+    2. `m_clientToServer->AdvanceAndCatchUp()` — network pump and **the whole simulation step** (§10.3–10.4).
+    3. if `m_multiwinia->m_resetLevel` → `Multiwinia::ResetLocation()` (§8.4) and re-arm step 2.
+    4. `UpdateAdvanceTime()`; `lastRenderTime = GetHighResTime()`; `g_profiler->Advance()` if a profiler exists.
+    5. `m_userInput->Advance()`.
+    6. `SwitchTaskManagerForX360Controller()` (re-create the task-manager UI on a keyboard ↔ gamepad switch while it is hidden).
+    7. `m_location->m_water->Advance()`.
+    8. `g_soundLibrary2d->TopupBuffer()` if the sound system is initialised (fills pending waveOut buffers — the mixer runs here, on the main thread).
+    9. `m_camera->Advance()` only if the window has focus.
+    10. `m_locationInput->Advance()`.
+    11. `m_taskManagerInterface->Advance()`.
+    12. `m_script->Advance()`.
+    13. `g_explosionManager.Advance()`.
+    14. `m_soundSystem->Advance()` if initialised.
+    15. `m_controlHelpSystem->Advance()`, `m_shamanInterface->Advance()`, `m_markerSystem->Advance()`, `m_multiwiniaHelp->Advance()`.
+    16. `m_globalWorld->EvaluateEvents()` ("DELETEME: for debug purposes only").
+    17. `m_renderer->Render()` (uses `g_predictionTime`, §10.6; ends with `g_windowManager->Flip()`).
+    18. if `m_renderer->m_fps < 15` → one extra `m_soundSystem->Advance()` (the sound system processes at most one 50 ms update per call, so it would otherwise fall behind below 20 fps; §10.1).
+
+After the loop: stop `"Ambience EnterLocation"`, trigger `"ExitLocation"` (Ambience), `ShutdownCurrentGame()`.
+
+Note the order consequence [C]/[I]: input sampled in steps 3–5 and 10 is sent (step 11.1) before the simulation step; the camera and HUD advance (11.5–11.15) **after** the simulation step, so they always see the newest state; rendering happens last with an extrapolation time measured from the last `GameTimer::Tick`.
+
+### 9.5 `LoadingScreen::Render` — the loading loop
+
+[C] `code/loading_screen.cpp:LoadingScreen::Render` (full behaviour and visuals: [09](09_meta_systems.md)):
+
+1. `m_rendering = true`; `m_fadeOutLogo = m_initialLoad`; `m_startFadeOutTime = 0`.
+2. Loop while any of: Load queue not `Empty()` (the running item counts); `m_jobs` not empty; `m_requireSoundsLoaded && !m_soundsLoaded`; `m_fadeOutLogo`; [B:D3D] `GeneratingMipmaps()`:
+   1. `UpdateAdvanceTime()`; `frameStart = GetHighResTime()`.
+   2. `g_inputManager->PollForEvents()` (messages pumped, but input is not `Advance`d — no control events fire).
+   3. if `g_app`, `m_resource` and `m_renderer` exist: `RenderFrame()` (holds `g_openGLMutex`; logo/spinner; `Flip`); `SoundSystem::Advance()` if initialised; if `m_networkMutex.TryLock()` succeeds → `m_clientToServer->KeepAlive()` (a SYNCHRONISE letter at most once per 1.0 s once a sequence id has been processed) and `m_server->AdvanceIfNecessary(now)` (the host keeps ticking at 10 Hz, so remote clients do not time out); unlock.
+   4. run one queued main-thread `Job`; keep running jobs until `frameStart + 1/60 s`; `Sleep()` the remainder → loading screen capped at **60 Hz**.
+3. `m_rendering = false`; `m_startTime = 0`.
+
+`m_rendering` is not initialised by the constructor (it is set before first use by `Render`, but `IsRendering()` called before the first `Render` would read an indeterminate value) [C].
+
+### 9.6 `GlobalWorldGameLoop` stub [B:LEGACY]
+
+`EnterGlobalWorld` puts the camera in `ModeSphereWorld` at height 50 and calls `GlobalWorldGameLoop`, which starts a 0.25 s fade-in, triggers `"EnterGlobalWorld"`, sets `m_atMainMenu = true` and then breaks out of its loop on the first check, stopping `"Ambience EnterGlobalWorld"` [C] `code/main.cpp:GlobalWorldGameLoop`. Its loop body (input, `HandleCommonConditions`, server/client advance, `Script`, `GlobalWorld::Advance`, camera, sound, render) is unreachable. `GlobalWorldEditorLoop` returns immediately (`if (true) { m_editing = false; return; }`) [C]. `LocationEditorLoop` is [B:EDITOR] (Appendix).
 
 ## 10 Frame timing
 

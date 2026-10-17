@@ -436,3 +436,81 @@ Each row: what the original does, why it is a hazard for a modern lockstep (or r
 3. Simulated objects hold no presentation fields; presentation state is keyed by entity id in the client (§5.3).
 4. Hit volumes used by gameplay are data or sim-computed, never by-products of rendering (§2.6, §5.3).
 5. The only time source is the tick counter (D20); the only randomness is the sim RNG (D3).
+
+## Cross-partition notes
+
+- **P15 (network)**: this draft relies on P15 for message layouts, server sequencing, reliability and session lifecycle; it adds (a) baseline sync byte = draw-count detector (§6.1), (b) NETSYNCERROR being sequenced resolves P01 D4 — every peer pauses at the same sequence id [C] `Server::SendLetter`, (c) the seed is per server session = per match (§2.2), (d) `RecordDemo` replay lacks the seed (§6.3).
+- **P01 (app core)**: frame/slice order and `StandardiseCPUPrecision` confirmed; `Release|Win32` has no `OpenMP` attribute at all (P01 quotes the D3D config's `OpenMP="false"`; both mean off).
+- **P02 (modes)**: D1 (11-tick seconds) and D4 (`s_numMultiwiniaZones`) are integrated as D11/D9; the Assault reset-timing hazard (§7.3) belongs to the multi-round path P02 found unreachable.
+- **P03 (entities/routing)**: route-id sharing with local previews (L6) confirmed; Spider legs use wall clock but do not feed Spider movement (§5.1) — Spider is live in MW (P05), so the "irrelevant, Tripod blocked" note should mention Spider is safe for a different reason.
+- **P04 (military)**: L1 (`InsertionSquad::DirectControl` camera leak) — P04 listed it; this draft establishes the trigger (local `CameraFreeMovement` control held, default F2 / right-stick click) and the effect (waypoint reset and extra `Attack` on that peer only) → reachable desync. P04's claim that `Unit::s_offsets` is never reset is superseded (reset in `Location::Init`/`Empty`). P04's RNG table calls `_syncfrand` an "LCG" — it is MT19937.
+- **P07 (misc buildings)**: Portal is not reachable through The Beast in the baseline (`INCLUDE_THEBEAST` is defined only under `TARGET_DEBUG`); laser-fence render reset verified harmless for shipped data (0 dangling links).
+- **P08 (crates/AI)**: variable-length draw loops and short-circuit draw counts are carried into R4/R5 (§2.3).
+- **P09 (task manager)**: D2/D3/D4 verified [C] (L3, L4, L2).
+- **P11 (terrain)**: terrain uses a private per-tile LCG (G8); landscape colours reseed the global LCG (G6).
+- **P13 (math)**: numeric environment table consistent; `DecomposeToYDR` (raw `atan2`) has no simulation caller.
+- **P16 (sound)**: audio uses G6 on the main thread — it is one of the concurrent users in the tree race (§2.6).
+- **P17b (options)**: `PrefsOtherWindow` Apply writes `g_app->m_difficultyLevel` from the `Difficulty` pref (§7.1) — a live desync vector despite the Difficulty control being hidden.
+- **P19 (tutorial)**: tutorial director mutates sim state from the render-frame loop (L5).
+- **For 21**: §4.3–4.4 (containers, ids, slices), §5 (state classification, render writes), §9 (rules).
+- **For 40/41**: risk register §8.
+
+## Contradictions / open questions
+
+1. `build_matrix.md` §4 lists `INCLUDE_THEBEAST` as "on" (defined in `crate.h`); the definition is inside `#ifdef TARGET_DEBUG`, so it is **off** in the baseline and `Crate::CrateRewardTheBeast` does not exist there [C] `code/worldobject/crate.h`. P07's "Portal [B:FULL] via The Beast" inherits the error; P05 has it right.
+2. P04 §0.2 describes `syncfrand` as an LCG; it is MT19937 [C] `random_number.cpp`.
+3. P04 X3.6 says `Unit::s_offsets` is never reset between games; `Location::Init` and `Location::Empty` delete it [C].
+4. Header comments vs implementation for every float generator range (`frand` inclusive upper bound, `sfrand`/`syncsfrand` are ±r/2) — documented as code (§2.1).
+5. Whether the D3D configuration was ever used for multiplayer is open; it would not interoperate with the GL build (§3.4).
+
+## [U] Unknowns
+
+| # | Unknown | What would resolve it |
+|---|---|---|
+| U1 | Whether the VS2005 x87 CRT `sin/cos/pow/acos` produce identical doubles on all x86 CPUs of the era (e.g. differing `fsin` argument reduction between vendors), i.e. how much work `iv_trunc_low_nibble` actually did on PC-only games | Disassemble the CRT used by the shipped binary or run a cross-CPU comparison |
+| U2 | Real-world frequency of L1 (holding `CameraFreeMovement` while an opponent's squad moves) | Play-test with two clients or a replay harness that logs per-tick state |
+| U3 | Whether the tree/global-LCG race (§2.6) ever fires in practice (sound triggers during level load, WAN thread wake-ups) | Instrument `AppRandom` with a thread-id check during `Tree::Generate` |
+| U4 | Whether VS2005 `atof` is correctly rounded for every literal in the shipped data (matters only for non-MSVC peers) | Compare `atof` against a correctly-rounded parser over all numeric tokens in `data/` |
+| U5 | Whether PC and Mac clients actually played together (the precision helper and `iv_*` wrappers imply the intent) | Mac target files / release notes for a cross-platform lobby |
+| U6 | Whether `EntityGridCache` staleness (≤ 1 s, half-range reuse) was a deliberate gameplay property | Designer intent; compare behaviour with cache disabled |
+| U7 | VS2005 defaults assumed for absent attributes (`/fp:precise`, x87 code generation, OpenMP off) | Build log of the shipped binary (`cl` command line) |
+
+## Docs-vs-code discrepancies
+
+| Doc | Says | Code | Ref |
+|---|---|---|---|
+| `docs/Network.txt` | client sends a "ResyncMe" message when it detects a gap | no resync message; gaps are filled by the server's resend window, and a desync is never repaired | [C] `ClientToServer::ReceiveLetter`, `Server::UpdateClients`, §6.2 |
+| `docs/multiwinia_todo.txt` | "(DONE) … fix determinism; ensure floating point accuracy over multiple platforms" | implemented as `_PC_53` precision control plus binary32 rounding of transcendental results | §3 |
+| `docs/multiwiniareleasenotes-beta.txt` (1.9.20) | beta builds enable debugging code to track rand sync errors | in this tree `TRACK_SYNC_RAND` is commented out for `TARGET_BETATEST_GROUP_ALL`; beta targets instead hash the full IFrame snapshot | [C] `code/lib/universal_include.h`, `iframe.cpp` |
+| `contrib/systemiv/lib/math/random_number.h` comments | `frand`: `0 ≤ r < range`; `sfrand`, `_syncsfrand`: `−range < r < range` | `frand` ∈ [0, range]; `sfrand` ∈ [−range/2, range/2]; `syncsfrand` ∈ [−range/2, range/2) | [C] `random_number.cpp` |
+| `code/lib/vector3.h` comment | `operator==` uses FLT_EPSILON | absolute tolerance 1e-6 (`NearlyEquals`) | [C] |
+
+## IP register
+
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| "Multiwinia" in string ids `multiwinia_error_syncerror`, `multiwinia_error_lostconnection` | name/text | `code/renderer.cpp` | `net_error_desync`, `net_error_connection_lost` |
+| "Darwinian" in debug state lines (`DARWINIAN Id[…]`) and entity type names | name | `code/worldobject/darwinian.cpp:Darwinian::LogState` | `UNIT` / "Worker" |
+| Sync error report filenames `syncerror-…`, `syncdiff-…` | text (generic, not IP) | `ClientToServer::GetSyncFileName` | may be reused |
+| MT19937 reference implementation (BSD-style licence, Matsumoto & Nishimura) | third-party code | `random_number.cpp`, `code/lib/math_utils.cpp` | use the C++ standard `std::mt19937` or PCG/xoshiro (own implementation) — attribution if the reference code is copied |
+| SHA-1 from the bundled unrar sources used for seeds and IFrame hashes | third-party code (unrar licence) | `code/network/iframe.cpp`, `code/network/server.cpp:GenSyncRandSeed` (`contrib/unrar/sha1`) | any public-domain hash (xxHash, BLAKE3) |
+| Ambrosia Software credit in `math_stubs` | third-party name | `contrib/systemiv/lib/math/math_stubs.cpp` | — (do not copy) |
+
+## Appendix — dead/legacy code
+
+| Item | Status | Ref |
+|---|---|---|
+| Orphan MT19937 `::syncrand()` (no seed function, never called) | [B:DEAD in effect] | `code/lib/math_utils.cpp` |
+| Mac `StandardiseCPUPrecision` (`fnstenv`/`fldenv`, clear bit 8) | [B:DEAD] (`TARGET_OS_MACOSX && __i386__`) | `code/main.cpp` |
+| `iv_strtod` declaration | no definition | `math_stubs.cpp` |
+| `RandomNormalNumber`, `RandomApplyVariance` | no callers | `random_number.cpp` |
+| `TRACK_SYNC_RAND` logging, entity watch list, debug IFrame snapshot/diff, `CHECK_IFRAME_SERIALISATION` (commented) | [B:DEBUG] | §6.3 |
+| `INCLUDE_THEBEAST` crate outcome (`Portal`/`Tentacle` chain) | [B:DEBUG] | `crate.h` |
+| `NetworkQuality` packet-loss simulator (`AppRandom`) | [B:DEAD] (`NETWORKQUALITY_TESTING` commented out) | `code/network/network_quality.cpp` |
+| Testbed `srand(time)`/`rand()` fake server lists | [B:DEAD] (`TESTBED_ENABLED`) | `code/UI/GameMenuWindow.cpp` |
+| Loader RNG (`AppSeedRandom(time(NULL))`, credits, egames `srand(0)`) | [B:DEAD] (`USE_LOADERS` off) | `code/loaders/*` |
+| `SpiritStore::AddSpirit` unordered triple draw | [B:LEGACY] | `spiritstore.cpp` |
+| Spectacle watching (wall-clock facing), Tripod wall-clock timers, `ResearchItem`/`Spam` random orientation, Armour direct local `SetOrders`, `GlobalWorld::TransferSpirits` | [B:LEGACY] | §2.5, §5.4 |
+| `#pragma omp parallel for` in `Location::Advance` | inert (OpenMP off) | `code/location.cpp` |
+| Time-based branch of `GetNumSlicesToAdvance` (shadowed local) | dead statement | `clienttoserver.cpp` |
+| `Server::SkipToTime` | no caller | `server.cpp` |

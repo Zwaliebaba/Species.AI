@@ -100,19 +100,60 @@ def cell(v, code=True):
 def consumers(v):
     v = (v or '').strip()
     if not v:
-        return '*none (dead in FULL)*'
+        return '—'
     return ', '.join('`code/%s`' % c for c in v.split(';'))
 
 
 lines = []
-lines.append('| # | ControlType | Type | Purpose (source comment) | Keyboard / mouse default | Pad (XInput) default | Other drivers | Pad icon (`~`) | Live consumers (FULL build) |')
-lines.append('|---|---|---|---|---|---|---|---|---|')
+# Consumer-file classification (documented in 06 section 12.1). 'match' = code reached during a
+# Multiwinia match; 'menus' = Multiwinia front-end windows; everything else is legacy/unreachable.
+MATCH = {'location_input.cpp', 'team.cpp', 'camera.cpp', 'lib/targetcursor.cpp', 'main.cpp',
+         'user_input.cpp', 'taskmanager_interface.cpp', 'taskmanager_interface_multiwinia.cpp',
+         'gamecursor.cpp', 'multiwiniahelp.cpp', 'renderer.cpp', 'interface/input_field.cpp',
+         'interface/controllerunplugged_window.cpp'}
+MENUS = {'UI/GameMenuWindow.cpp', 'game_menu.cpp', 'interface/darwinia_window.cpp',
+         'interface/mainmenus.cpp'}
+# Function/branch-level overrides, each verified in the code (06 section 12.1):
+OVERRIDE = {
+    'CameraRotateLeft': 'none (reader is an uncalled helper)',
+    'CameraRotateRight': 'none (reader is an uncalled helper)',
+    'MenuLeft': 'menus (in-match readers inert)',
+    'MenuRight': 'menus (in-match readers inert)',
+    'MenuUp': 'menus (in-match reader inert)',
+    'MenuDown': 'menus (in-match reader inert)',
+    'ActivateTMButton': 'inert (TM overlay never visible; Shaman cut)',
+    'IconsTaskManagerDisplay': 'inert (opens only the cut Shaman UI)',
+    'IconsTaskManagerDisplayDown': 'inert (opens only the cut Shaman UI)',
+    'IconsTaskManagerDisplayPressed': 'inert (TM overlay never visible)',
+    'IconsTaskManagerDisplayUp': 'inert (TM overlay never visible)',
+    'IconsTaskManagerHide': 'inert (hides only the cut Shaman UI)',
+    'CloseTaskHelp': 'menus (in-match read has an empty body)',
+    'GesturesSwitchUnit': 'match only if pref ControlMethod = 0',
+    'GesturesChatLog': 'match only if pref ControlMethod = 0',
+}
+
+
+def use(r):
+    if r['control'] in OVERRIDE:
+        return OVERRIDE[r['control']]
+    files = [f for f in r['live_consumers'].split(';') if f]
+    if not files:
+        return 'none'
+    unbound = not (r['kbm_default'].strip() or r['xinput_default'].strip() or r['other_default'].strip())
+    if any(f in MATCH for f in files):
+        return '**match** (but unbound)' if unbound else '**match**'
+    if any(f in MENUS for f in files):
+        return 'menus (but unbound)' if unbound else 'menus'
+    return 'legacy only'
+
+lines.append('| # | ControlType | Type | Purpose (source comment) | Keyboard / mouse default | Pad (XInput) default | Other drivers | Pad icon (`~`) | Consumers (compiled `code/` files) | Use in FULL |')
+lines.append('|---|---|---|---|---|---|---|---|---|---|')
 for r in rows:
-    lines.append('| %s | `%s` | %s | %s | %s | %s | %s | %s | %s |' % (
+    lines.append('| %s | `%s` | %s | %s | %s | %s | %s | %s | %s | %s |' % (
         r['idx'], r['control'], r['type'],
         (r['comment'] or '—').replace('|', '\\|').strip('"'),
         cell(r['kbm_default']), cell(r['xinput_default']), cell(r['other_default']),
-        ('`%s`' % r['icon']) if r['icon'] else '—', consumers(r['live_consumers'])))
+        ('`%s`' % r['icon']) if r['icon'] else '—', consumers(r['live_consumers']), use(r)))
 
 lines.append('')
 lines.append('VARIANTS')
@@ -131,6 +172,8 @@ for r in rows:
 with open(OUT, 'w', encoding='utf-8') as f:
     f.write('\n'.join(lines) + '\n')
 
+import collections
+print('use:', dict(collections.Counter(use(r) for r in rows)))
 print('controls=%d rows=%d raw_lines_checked=%d variant_rows=%d problems=%d'
       % (len(controls), len(rows), checked, nvar, len(problems)))
 for p in problems:

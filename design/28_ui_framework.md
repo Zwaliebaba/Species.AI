@@ -2496,6 +2496,7 @@ All values [C] at the cited symbol.
 | 28-U6 | Consequence of F21 (server-row navigation entries removed at the wrong index) in real browsing sessions | [I] | instrument `UpdateJoinGamePage` or step through with a shrinking list |
 | 28-U7 | Whether `EclUpdate` skipping a window when another window is removed during the same iteration (§2.9) ever drops a frame of navigation in practice | [I] | trace `EclUpdate` with drop-down windows that self-remove in `DropDownWindow::Update` |
 | 28-U8 | Whether any window in a shipped flow is opened while the Eclipse screen size is stale (screen size is only refreshed in `AdjustWindowPositions`) | [I] | audit every screen-mode change path (`RestartWindowManagerAndRenderer`, `UnlockFullGameButton`, `SetWindowed`) |
+| 28-U9 | Whether a demo-key player whose demo limitations forbid hosting can still host: `App::HostGamePermitted()` is consulted only to set the no-op `m_disabled` flag on the Host button (F17), so the UI does not block it | [I] design-critical (demo gating) | check `App::StartMultiPlayerServer` / `ClientToServer::GetDemoLimitations` and the metaserver side ([22](22_determinism_and_networking.md), [09](09_meta_systems.md)) |
 
 ## Docs-vs-code discrepancies
 

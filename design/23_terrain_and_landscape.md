@@ -1078,3 +1078,192 @@ Design-critical inferences:
 | Editor UI string ids: `editor_noiseperiod`, `editor_noisescale`, `editor_height`, `editor_method`, `editor_lowlandsmooth`, `editor_posX`, `editor_posY`, `editor_posZ`, `editor_size`, `editor_seed`, `editor_generate`, `editor_randomise`, `editor_delete`, `editor_clone`, `editor_guidegrid`, `editor_flattentype`, `editor_flatten_absolute`, `editor_flatten_add`, `editor_flatten_subtract`, `editor_flatten_subtract2`, `editor_flatten_smooth`, `editor_threshold`, `editor_newtile`, `editor_newflattenarea`, `editor_scaledown`, `editor_scaleup`, `editor_outsideheight`, `editor_cellsize`, `editor_worldsizex`, `editor_worldsizez`, `editor_maxheight`, `editor_movebuildings`, `editor_selectterrain`, `editor_selectwaves`, `editor_selectwater`, `editor_resolution`, `editor_toolsize` | text | `code/interface/landscape_window.cpp` | new string table |
 | `redshirt2` text-file cipher marker | text | `contrib/systemiv/lib/filesys/text_stream_readers.cpp:TextReader::CleanLine` | none (use signed/hashed assets) |
 
+## Source map
+
+Code, build and documentation files:
+
+| File | Role |
+|---|---|
+| `code/landscape.h` | `LandscapeTile` and `Landscape` declarations; `LIGHTMAP_SCALEFACTOR` |
+| `code/landscape.cpp` | tile generation (LCG, guide grid, midpoint displacement, noise), merge, flatten areas, normals, `Init`, queries (`RayHit`, `SphereHit`, `IsInLandscape`, world size) |
+| `code/level_file.h` | `LandscapeDef`, `LandscapeFlattenArea` (enum, defaults), colour-file members |
+| `code/level_file.cpp` | parsers and writers of the three landscape blocks; block dispatch in `ParseMapFile`/`ParseMissionFile`; colour-file defaults; `CalculeCRC` (map identity) |
+| `code/lib/2d_array.h` | `Array2D` declaration (`unsigned short` indices, outside value) |
+| `code/lib/2d_array.cpp` | `GetData`/`PutData`/`AddToData`/`SetAll` semantics |
+| `code/lib/2d_surface_map.h` | `SurfaceMap2D` declaration |
+| `code/lib/2d_surface_map.cpp` | grid sizing, bilinear `GetValue` with wrap rules, `GetHighestValue`, index/real conversions |
+| `code/lib/math_utils.h` | `Round` macro (truncation) used by the wave colours |
+| `code/lib/math_utils.cpp` | `Log2` (used by `GetPowerOfTwo`) |
+| `code/lib/vector3.h` | `Normalise`, cross product (normals) |
+| `code/lib/universal_include.h` | `iv_*` float-truncating math macros |
+| `code/lib/bitmap.h` | `BitmapRGBA` declaration (ramp, wave table, shore mask) |
+| `code/lib/bitmap.cpp` | BMP loading (row order, alpha), pixel access |
+| `code/lib/resource.cpp` | `Resource::GetBitmap` (ramp and wave-table loading, cache by name) |
+| `code/lib/rgb_colour.h` | `RGBAColour` (float → `unsigned char` in the shore mask) |
+| `code/lib/work_queue.h` | `WorkQueue` declaration (level-load thread) |
+| `code/lib/work_queue.cpp` | worker thread sets x87 precision before running the level load |
+| `code/landscape_renderer.h` | `LandVertex` layout, `m_highest` |
+| `code/landscape_renderer.cpp` | strip mesh, render normals, colour-ramp formula, burn patches, UVs, Christmas override |
+| `code/water.h` | sea-plane definition comment, `GetColour` clamp |
+| `code/water.cpp` | shore mask, depth map, flat-water tiles, wave mesh selection, shore noise, wave animation and colours; D3D compile error |
+| `code/location.h` | `Location` members used here (`m_landscape`, `m_water`, `m_burnPatches`) |
+| `code/location.cpp` | level-load order and `AppSeedRandom(1)`, `InitLandscape`, `SetupFog`, `IsWalkable` (sea level 0), `AddBurnPatch`, `RegenerateOpenGlState`, `ChristmasModEnabled` |
+| `code/main.cpp` | `EnterLocation`/`DoEnterLocation` (level load on the work queue; camera bounds), `LocationGameLoop` (water advance per frame) |
+| `code/loading_screen.cpp` | main-thread loop during loading (sound advance, GL jobs) |
+| `code/sound/sound_instance.cpp` | main-thread `AppRandom` draws during loading (colour-chain race, §11.6) |
+| `code/worldobject/building.cpp` | `Building::Initialise` places buildings on the height map; `BuildingIsBlocked` (Portal) |
+| `code/worldobject/portal.cpp` | only caller of `AddBurnPatch` [B:LEGACY] |
+| `code/interface/landscape_window.h` | editor window declarations [B:EDITOR] |
+| `code/interface/landscape_window.cpp` | editor tile/flatten/guide-grid windows, value ranges, scaling, randomise, file pickers [B:EDITOR] |
+| `code/location_editor.cpp` | `MoveBuildingsInTile` when tiles are dragged [B:EDITOR] |
+| `code/interface/prefs_graphics_window.cpp` | mid-game landscape and water regeneration on "apply" |
+| `code/interface/prefs_other_window.cpp` | same for the Other options screen |
+| `code/mapcrc.h` | generated map CRC constants (map identity, §17.1) |
+| `contrib/systemiv/lib/math/math_stubs.cpp` | `iv_trunc_low_nibble`, `iv_atof` |
+| `contrib/systemiv/lib/math/random_number.h` | `APP_RAND_MAX`, `sfrand` comment |
+| `contrib/systemiv/lib/math/random_number.cpp` | global `AppRandom`/`AppSeedRandom`/`sfrand` (colours, shore noise) |
+| `contrib/systemiv/lib/filesys/text_stream_readers.cpp` | tokeniser, comments, `redshirt2` decryption |
+| `targets/vs2005/Darwinia.vcproj` | per-configuration FP model (`/fp:precise` vs `/fp:fast`), `/O2`, static CRT |
+| `docs/landscape lightmap.txt` | stale description of a landscape shadow lightmap (§12) |
+| `data/textures/triangleoutline.bmp` | landscape overlay grid texture (pass details in [24](24_rendering.md)) |
+| `data/shaders/water-meshwaves.vs` | [B:D3D] water vertex shader using the wave normals of §13.5 ([24](24_rendering.md)) |
+| `data/shaders/water-meshwaves.ps` | [B:D3D] water pixel shader, ps_2 ([24](24_rendering.md)) |
+| `data/shaders/water-meshwaves.ps3` | [B:D3D] water pixel shader, ps_3 ([24](24_rendering.md)) |
+
+Terrain assets (`data/terrain/`, all 36 files):
+
+| File | Role |
+|---|---|
+| `data/terrain/landscape_beach.bmp` | colour ramp, unreferenced |
+| `data/terrain/landscape_containment.bmp` | colour ramp, unreferenced |
+| `data/terrain/landscape_dark.bmp` | colour ramp (5 `mp_*`) |
+| `data/terrain/landscape_default.bmp` | colour ramp (10 `mp_*`, 5 `map_*`; default) |
+| `data/terrain/landscape_desert.bmp` | colour ramp (3 `mp_*`, 1 `map_*`) |
+| `data/terrain/landscape_earth.bmp` | colour ramp (8 `mp_*`, 1 `map_*`) |
+| `data/terrain/landscape_field.bmp` | colour ramp, unreferenced |
+| `data/terrain/landscape_firetop.bmp` | colour ramp (3 `mp_*`) |
+| `data/terrain/landscape_icecaps.bmp` | colour ramp (10 `mp_*`, 1 `map_*`; Christmas override) |
+| `data/terrain/landscape_icecaps_peaked.bmp` | colour ramp, unreferenced |
+| `data/terrain/landscape_jailbreak.bmp` | colour ramp (2 `mp_*`) |
+| `data/terrain/landscape_launchpad.bmp` | colour ramp (5 `mp_*`, 1 `map_*`) |
+| `data/terrain/landscape_marble.bmp` | colour ramp (1 `mp_*`) |
+| `data/terrain/landscape_marble2.bmp` | colour ramp, unreferenced |
+| `data/terrain/landscape_mine.bmp` | colour ramp (5 `mp_*`, 3 `map_*`) |
+| `data/terrain/landscape_mine2.bmp` | colour ramp, unreferenced |
+| `data/terrain/landscape_ridges.bmp` | colour ramp, unreferenced |
+| `data/terrain/landscape_shrine.bmp` | colour ramp (1 `mp_*`) |
+| `data/terrain/landscape_silver.bmp` | colour ramp (1 `mp_*`) |
+| `data/terrain/landscape_stronghold.bmp` | colour ramp (2 `mp_*`) |
+| `data/terrain/landscape_trippy.bmp` | colour ramp (1 `mp_*`) |
+| `data/terrain/landscape_volcanic.bmp` | colour ramp, unreferenced |
+| `data/terrain/landscape_volcanicplain.bmp` | colour ramp, unreferenced |
+| `data/terrain/water_default.bmp` | flat-water texture (30 `mp_*`, 8 `map_*`; default) |
+| `data/terrain/water_icecaps.bmp` | flat-water texture (20 `mp_*`, 3 `map_*`; Christmas override) |
+| `data/terrain/water_launchpad.bmp` | flat-water texture (5 `mp_*`, 1 `map_*`) |
+| `data/terrain/water_yellow.bmp` | flat-water texture (2 `mp_*`) |
+| `data/terrain/waves_containmentfield.bmp` | wave colour table (10 `mp_*`, 4 `map_*`) |
+| `data/terrain/waves_default.bmp` | wave colour table (17 `mp_*`, 2 `map_*`; default) |
+| `data/terrain/waves_desert.bmp` | wave colour table, unreferenced |
+| `data/terrain/waves_dull.bmp` | wave colour table (1 `mp_*`) |
+| `data/terrain/waves_earth.bmp` | wave colour table (11 `mp_*`, 2 `map_*`; Christmas override) |
+| `data/terrain/waves_generator.bmp` | wave colour table (3 `mp_*`, 2 `map_*`) |
+| `data/terrain/waves_icecaps.bmp` | wave colour table (8 `mp_*`, 1 `map_*`) |
+| `data/terrain/waves_launchpad.bmp` | wave colour table (4 `mp_*`, 1 `map_*`) |
+| `data/terrain/waves_yellow.bmp` | wave colour table (3 `mp_*`) |
+
+Level files carrying landscape blocks (all 69; generated by `S_23_terrain_oracle.py sourcemap`; `mission_*` files carry none, and the 30 superseded maps in `data/levels/old/` are not listed by the game — see [08](08_levels_and_level_design.md)):
+
+| File | Role |
+|---|---|
+| `data/levels/map_biosphere.txt` | landscape blocks: 8 tiles, 0 flatten areas, ramp `landscape_earth.bmp`, grid 229×229 [B:LEGACY] |
+| `data/levels/map_containment.txt` | landscape blocks: 12 tiles, 0 flatten areas, ramp `landscape_default.bmp`, grid 259×259 [B:LEGACY] |
+| `data/levels/map_escort.txt` | landscape blocks: 4 tiles, 0 flatten areas, ramp `landscape_default.bmp`, grid 309×309 [B:LEGACY] |
+| `data/levels/map_garden.txt` | landscape blocks: 7 tiles, 0 flatten areas, ramp `landscape_default.bmp`, grid 188×188 [B:LEGACY] |
+| `data/levels/map_generator.txt` | landscape blocks: 11 tiles, 1 flatten areas, ramp `landscape_mine.bmp`, grid 345×345 [B:LEGACY] |
+| `data/levels/map_launchpad.txt` | landscape blocks: 13 tiles, 0 flatten areas, ramp `landscape_launchpad.bmp`, grid 234×234 [B:LEGACY] |
+| `data/levels/map_mine.txt` | landscape blocks: 13 tiles, 4 flatten areas, ramp `landscape_mine.bmp`, grid 190×190 [B:LEGACY] |
+| `data/levels/map_pattern_buffer.txt` | landscape blocks: 6 tiles, 0 flatten areas, ramp `landscape_icecaps.bmp`, grid 244×244 [B:LEGACY] |
+| `data/levels/map_receiver.txt` | landscape blocks: 18 tiles, 0 flatten areas, ramp `landscape_mine.bmp`, grid 240×240 [B:LEGACY] |
+| `data/levels/map_sandbox.txt` | landscape blocks: 2 tiles, 0 flatten areas, ramp `landscape_default.bmp`, grid 246×246 [B:LEGACY] |
+| `data/levels/map_temple.txt` | landscape blocks: 9 tiles, 0 flatten areas, ramp `landscape_desert.bmp`, grid 306×306 [B:LEGACY] |
+| `data/levels/map_yard.txt` | landscape blocks: 12 tiles, 3 flatten areas, ramp `landscape_default.bmp`, grid 236×236 [B:LEGACY] |
+| `data/levels/mp_assault_2P_1.txt` | landscape blocks: 5 tiles, 0 flatten areas, ramp `landscape_desert.bmp`, grid 137×137 [B:FULL] |
+| `data/levels/mp_assault_2P_2.txt` | landscape blocks: 7 tiles, 0 flatten areas, ramp `landscape_firetop.bmp`, grid 150×150 [B:FULL] |
+| `data/levels/mp_assault_2p_3.txt` | landscape blocks: 10 tiles, 3 flatten areas, ramp `landscape_dark.bmp`, grid 302×302 [B:FULL] |
+| `data/levels/mp_assault_3P_2.txt` | landscape blocks: 1 tiles, 0 flatten areas, ramp `landscape_launchpad.bmp`, grid 193×193 [B:FULL] |
+| `data/levels/mp_assault_3p_1.txt` | landscape blocks: 11 tiles, 2 flatten areas, ramp `landscape_earth.bmp`, grid 225×225 [B:FULL] |
+| `data/levels/mp_assault_3p_3.txt` | landscape blocks: 7 tiles, 1 flatten areas, ramp `landscape_icecaps.bmp`, grid 257×257 [B:FULL] |
+| `data/levels/mp_assault_4P_1.txt` | landscape blocks: 15 tiles, 5 flatten areas, ramp `landscape_desert.bmp`, grid 204×204 [B:FULL] |
+| `data/levels/mp_assault_4P_2.txt` | landscape blocks: 19 tiles, 5 flatten areas, ramp `landscape_icecaps.bmp`, grid 270×270 [B:FULL] |
+| `data/levels/mp_assault_stress.txt` | landscape blocks: 5 tiles, 0 flatten areas, ramp `landscape_default.bmp`, grid 200×200 [B:FULL] |
+| `data/levels/mp_benchmark_1.txt` | landscape blocks: 10 tiles, 0 flatten areas, ramp `landscape_stronghold.bmp`, grid 167×167 [B:FULL] |
+| `data/levels/mp_blitzkrieg_2P_3.txt` | landscape blocks: 12 tiles, 0 flatten areas, ramp `landscape_default.bmp`, grid 188×188 [B:FULL] |
+| `data/levels/mp_blitzkrieg_2P_4.txt` | landscape blocks: 7 tiles, 1 flatten areas, ramp `landscape_icecaps.bmp`, grid 150×150 [B:FULL] |
+| `data/levels/mp_blitzkrieg_2p_1.txt` | landscape blocks: 6 tiles, 2 flatten areas, ramp `landscape_earth.bmp`, grid 292×292 [B:FULL] |
+| `data/levels/mp_blitzkrieg_2p_2.txt` | landscape blocks: 8 tiles, 4 flatten areas, ramp `landscape_earth.bmp`, grid 223×223 [B:FULL] |
+| `data/levels/mp_blitzkrieg_3P_1.txt` | landscape blocks: 7 tiles, 1 flatten areas, ramp `landscape_marble.bmp`, grid 334×334 [B:FULL] |
+| `data/levels/mp_blitzkrieg_3P_2.txt` | landscape blocks: 9 tiles, 0 flatten areas, ramp `landscape_dark.bmp`, grid 184×184 [B:FULL] |
+| `data/levels/mp_blitzkrieg_4P_2.txt` | landscape blocks: 25 tiles, 0 flatten areas, ramp `landscape_icecaps.bmp`, grid 200×200 [B:FULL] |
+| `data/levels/mp_cts_2p_1.txt` | landscape blocks: 4 tiles, 0 flatten areas, ramp `landscape_launchpad.bmp`, grid 148×148 [B:FULL] |
+| `data/levels/mp_cts_2p_2.txt` | landscape blocks: 1 tiles, 0 flatten areas, ramp `landscape_icecaps.bmp`, grid 148×148 [B:FULL] |
+| `data/levels/mp_cts_2p_3.txt` | landscape blocks: 5 tiles, 0 flatten areas, ramp `landscape_jailbreak.bmp`, grid 167×167 [B:FULL] |
+| `data/levels/mp_cts_2p_4.txt` | landscape blocks: 3 tiles, 0 flatten areas, ramp `landscape_earth.bmp`, grid 223×223 [B:FULL] |
+| `data/levels/mp_cts_3P_2.txt` | landscape blocks: 17 tiles, 6 flatten areas, ramp `landscape_icecaps.bmp`, grid 188×188 [B:FULL] |
+| `data/levels/mp_cts_3p_1.txt` | landscape blocks: 5 tiles, 0 flatten areas, ramp `landscape_desert.bmp`, grid 190×190 [B:FULL] |
+| `data/levels/mp_cts_3p_3.txt` | landscape blocks: 5 tiles, 0 flatten areas, ramp `landscape_trippy.bmp`, grid 215×215 [B:FULL] |
+| `data/levels/mp_cts_4P_1.txt` | landscape blocks: 14 tiles, 6 flatten areas, ramp `landscape_default.bmp`, grid 188×188 [B:FULL] |
+| `data/levels/mp_cts_4P_2.txt` | landscape blocks: 18 tiles, 0 flatten areas, ramp `landscape_dark.bmp`, grid 215×215 [B:FULL] |
+| `data/levels/mp_cts_4p_3.txt` | landscape blocks: 7 tiles, 0 flatten areas, ramp `landscape_icecaps.bmp`, grid 182×182 [B:FULL] |
+| `data/levels/mp_domination_2P_1.txt` | landscape blocks: 8 tiles, 0 flatten areas, ramp `landscape_silver.bmp`, grid 167×167 [B:FULL] |
+| `data/levels/mp_domination_2P_2.txt` | landscape blocks: 3 tiles, 0 flatten areas, ramp `landscape_launchpad.bmp`, grid 172×172 [B:FULL] |
+| `data/levels/mp_domination_3P_1.txt` | landscape blocks: 1 tiles, 0 flatten areas, ramp `landscape_default.bmp`, grid 147×147 [B:FULL] |
+| `data/levels/mp_domination_4P_1.txt` | landscape blocks: 15 tiles, 1 flatten areas, ramp `landscape_default.bmp`, grid 188×188 [B:FULL] |
+| `data/levels/mp_domination_4P_2.txt` | landscape blocks: 5 tiles, 0 flatten areas, ramp `landscape_mine.bmp`, grid 215×215 [B:FULL] |
+| `data/levels/mp_koth_2P_1.txt` | landscape blocks: 3 tiles, 0 flatten areas, ramp `landscape_launchpad.bmp`, grid 172×172 [B:FULL] |
+| `data/levels/mp_koth_2P_2.txt` | landscape blocks: 3 tiles, 0 flatten areas, ramp `landscape_shrine.bmp`, grid 192×192 [B:FULL] |
+| `data/levels/mp_koth_2P_3.txt` | landscape blocks: 10 tiles, 0 flatten areas, ramp `landscape_icecaps.bmp`, grid 173×173 [B:FULL] |
+| `data/levels/mp_koth_2P_3b.txt` | landscape blocks: 11 tiles, 4 flatten areas, ramp `landscape_icecaps.bmp`, grid 173×173 [B:FULL] |
+| `data/levels/mp_koth_3P_1.txt` | landscape blocks: 8 tiles, 1 flatten areas, ramp `landscape_earth.bmp`, grid 250×250 [B:FULL] |
+| `data/levels/mp_koth_3P_2.txt` | landscape blocks: 1 tiles, 0 flatten areas, ramp `landscape_default.bmp`, grid 147×147 [B:FULL] |
+| `data/levels/mp_koth_3P_3.txt` | landscape blocks: 8 tiles, 3 flatten areas, ramp `landscape_mine.bmp`, grid 175×175 [B:FULL] |
+| `data/levels/mp_koth_3P_4.txt` | landscape blocks: 3 tiles, 1 flatten areas, ramp `landscape_earth.bmp`, grid 230×230 [B:FULL] |
+| `data/levels/mp_koth_4P_1.txt` | landscape blocks: 15 tiles, 3 flatten areas, ramp `landscape_default.bmp`, grid 188×188 [B:FULL] |
+| `data/levels/mp_koth_4P_3.txt` | landscape blocks: 5 tiles, 0 flatten areas, ramp `landscape_mine.bmp`, grid 215×215 [B:FULL] |
+| `data/levels/mp_koth_4P_4.txt` | landscape blocks: 10 tiles, 0 flatten areas, ramp `landscape_stronghold.bmp`, grid 167×167 [B:FULL] |
+| `data/levels/mp_rocketriot_2P_2.txt` | landscape blocks: 6 tiles, 0 flatten areas, ramp `landscape_dark.bmp`, grid 278×278 [B:FULL] |
+| `data/levels/mp_rocketriot_2P_4.txt` | landscape blocks: 1 tiles, 0 flatten areas, ramp `landscape_earth.bmp`, grid 203×203 [B:FULL] |
+| `data/levels/mp_rocketriot_2p_3.txt` | landscape blocks: 15 tiles, 0 flatten areas, ramp `landscape_mine.bmp`, grid 139×139 [B:FULL] |
+| `data/levels/mp_rocketriot_3P_2.txt` | landscape blocks: 22 tiles, 0 flatten areas, ramp `landscape_firetop.bmp`, grid 239×239 [B:FULL] |
+| `data/levels/mp_rocketriot_3P_3.txt` | landscape blocks: 7 tiles, 3 flatten areas, ramp `landscape_mine.bmp`, grid 282×282 [B:FULL] |
+| `data/levels/mp_rocketriot_3p_1.txt` | landscape blocks: 7 tiles, 0 flatten areas, ramp `landscape_launchpad.bmp`, grid 278×278 [B:FULL] |
+| `data/levels/mp_rocketriot_4P_1.txt` | landscape blocks: 17 tiles, 0 flatten areas, ramp `landscape_icecaps.bmp`, grid 233×233 [B:FULL] |
+| `data/levels/mp_sandbox.txt` | landscape blocks: 1 tiles, 0 flatten areas, ramp `landscape_default.bmp`, grid 162×162 [B:FULL] |
+| `data/levels/mp_sandbox_all.txt` | landscape blocks: 1 tiles, 0 flatten areas, ramp `landscape_default.bmp`, grid 162×162 [B:FULL] |
+| `data/levels/mp_skirmish_2p_4.txt` | landscape blocks: 2 tiles, 0 flatten areas, ramp `landscape_earth.bmp`, grid 167×167 [B:FULL] |
+| `data/levels/mp_skirmish_3P_1.txt` | landscape blocks: 10 tiles, 1 flatten areas, ramp `landscape_firetop.bmp`, grid 300×300 [B:FULL] |
+| `data/levels/mp_tankbattle_2P.txt` | landscape blocks: 1 tiles, 0 flatten areas, ramp `landscape_default.bmp`, grid 167×167 [B:FULL] |
+| `data/levels/mp_tankbattle_3P.txt` | landscape blocks: 2 tiles, 0 flatten areas, ramp `landscape_jailbreak.bmp`, grid 167×167 [B:FULL] |
+| `data/levels/mp_tankbattle_4P.txt` | landscape blocks: 1 tiles, 0 flatten areas, ramp `landscape_dark.bmp`, grid 167×167 [B:FULL] |
+
+Helper scripts (not source files of the game): `_work/scripts/P11_terrain_ref.py`, `_work/scripts/P11_terrain_check.py`, `_work/scripts/P11_log2check.py`, `_work/scripts/P11_mapcrc.py`, `_work/scripts/P11_bmpinfo.py`, `_work/scripts/P11_bmpascii.py`, `_work/scripts/P11_levelstats.py`, `_work/scripts/S_23_terrain_oracle.py`.
+
+## Appendix — dead/legacy code
+
+| Item | Status | Evidence |
+|---|---|---|
+| `Landscape(double, int, int)` constructor, `LandscapeRenderer::Initialise`, `Water::RenderReflectiveWater` | declared, never defined or called | [C] grep of `code/` |
+| `LandscapeTile::Landscapefrand` | defined, never called | [C] grep |
+| `Landscape::RenderHitNormals` | defined, no caller | [C] grep |
+| `Landscape::SphereHit` | defined, no caller outside `code/landscape.cpp` | [C] grep |
+| `LIGHTMAP_SCALEFACTOR` | defined, unused (remnant of the documented lightmap, §12) | [C] |
+| Landscape shadow lightmap of `docs/landscape lightmap.txt` | [B:DEAD] — not in the code | §12 |
+| `RenderLandscapeDetail` reads (cell scaling in `Landscape::Init`, overlay skip) | commented out; literal 1 | [C] `code/landscape.cpp:Landscape::Init`, `code/landscape_renderer.cpp` |
+| Unused locals `posY` and `factor` in `MergeTileIntoLandscape`; commented-out rescale block in `FlattenArea`; commented-out bounding-box version of `RayHitCell` | dead code inside live functions | [C] |
+| `SurfaceMap2D::GetValueNearest` / `GetPointerNearest` (ignore the origin) | not used by the landscape (one use in `code/obstruction_grid.cpp`) | [C] grep |
+| Burn patches (`Location::AddBurnPatch`, colour darkening) | [B:LEGACY]: only `Portal`, a blocked building | [C] §11.5 |
+| Landscape editor: tile/flatten/guide-grid windows, `DeleteTile`, clone, randomise, scaling, `MoveBuildingsInTile`, file pickers | [B:EDITOR] (`LOCATION_EDITOR` off in every target) | [C] `code/interface/landscape_window.cpp`, `code/location_editor.cpp` |
+| Editor water grid in `Water::Render` | [B:EDITOR] (`g_app->m_editing`) | [C] |
+| [B:D3D] landscape: normals negated and the strip expanded to a triangle list (`USE_DIRECT3D_TRILIST`) for first-vertex flat shading | secondary configuration, which does not compile at this commit | [C] `code/landscape_renderer.cpp:LandscapeRenderer::BuildOpenGlState` |
+| [B:D3D] water: colour packing branch uses `bmp.GetPixel` on a `const BitmapRGBA *` — a hard compile error; triangle-list conversion; 10 rotating dynamic vertex buffers; `UpdateWaterThread` never started; reflection shader | does not compile | [C] `code/water.cpp:Water::Water` (line 119), `code/water.cpp:Water::UpdateWaterThread` |
+| Mac water update throttling (every other call, ≤ 15 Hz) | [B:DEAD] on PC (`TARGET_OS_MACOSX`) | [C] `code/water.cpp:Water::UpdateDynamicWater` |
+| Darwinia `map_*` landscapes | [B:LEGACY]: parsed only on the unreachable campaign path; same pipeline | [C] §18 |

@@ -120,3 +120,8 @@
 - 19 format sections, 23 anchors (15 requested + text-common, redshirt, pack-list, icons, mwhelp, thumbnail, sepulveda, purity); EBNF/byte layouts verified against parsers + survey scripts (scripts/X1b_*.py). [U]=5.
 - Archive lookups case-insensitive (contradicts P14 "callers must pass lower-case"); loose files always override archives; no encryption of archives/data — only user saves use "redshirt2"; effects.txt and stats.txt bind by ROW POSITION not name; effects.txt "Default" column never applied; blank line inside sounds.txt EVENT/EFFECT/SAMPLEGROUP crashes loader; 11 Darwinia music/loader samples absent from retail archives → fatal if triggered; textures/shaman_background.bmp is RLE8 (undecodable); 4/8-bit row padding latent bug; two shapes overrun memory in accurate hit tests (more positions than vertices); in-tree exporter outdated vs engine headers.
 ## Phase 3 launched: S26
+
+## S07 (07_ai.md) — done, ~153 KB
+- 16 contradictions resolved against code. Behaviour-changing: **Retribution IS live** (Multiwinia::Advance calls AdvanceRetribution when RetributionMode option set — verified by coordinator; P08 was wrong) → RunForest reachable; WallBuster AITarget doesn't exist (creation commented out); monster + Futurewinian teams always get AI entity; AI entity spawns at (20,0,20) clamped; Assault armour "mobile bomb" never runs; spawn-point Goto officers created in every mode + tutorials; timer periods 11/101/200 ticks not 1/10/20 s.
+- New: officer promotion stalls when CPU team has selection (orphaned Officer tasks fill 6 slots); initial node graph built before walls/fences known; IsWalkable measures slope vs start point not per step. 12 open items.
+- Corrections relayed to S04 and S01.
