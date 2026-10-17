@@ -72,7 +72,7 @@ These facts are shared engine behaviour that every class below relies on; they a
 | Drowning | `Entity::AdvanceInWater`: after `m_inWater > 10.0` s → `ChangeHealth(-500)`; swims at 5 m/s, bobbing `y = -sin(3t) - 4`. | [C] `code/worldobject/entity.cpp:Entity::AdvanceInWater` |
 | Map clamp | `Entity::Advance` clamps x,z into `[0, worldSize]`. | [C] `code/worldobject/entity.cpp:Entity::Advance` |
 | Spawning | `Location::SpawnEntities(pos, team, unitId, type, n, vel, spread, range)`: if team is the Monster team (id **4**) or Futurewinian team (id **5**) and unused, initialises it first (`InitMonsterTeam`/`InitFuturewinianTeam`); then `SetType`, position = `FindValidSpawnPosition(pos, spread)`, `m_onGround=false`, `m_spawnPoint=pos`, `m_roamRange = range` (or `spread` if `range==-1`), `Begin()`. | [C] `code/location.cpp:Location::SpawnEntities` |
-| Monster team | Team 4, `TeamTypeCPU`, colour RGB(10,10,10) near-black, `m_colourId = MULTIWINIA_NUM_TEAMCOLOURS`. Returns -1 if `m_allowMonsterTeam` false. | [C] `code/location.cpp:Location::GetMonsterTeamId`, `Location::InitMonsterTeam` |
+| Monster team | Team 4, `TeamTypeCPU`, colour RGB(10,10,10) near-black, `m_colourId = MULTIWINIA_NUM_TEAMCOLOURS`. Returns -1 if `m_allowMonsterTeam` is false, but the only writers set it true (constructor and `Location::Init`). | [C] `code/location.cpp:Location::GetMonsterTeamId`, `Location::InitMonsterTeam` |
 | Futurewinian team | Team 5, `TeamTypeCPU`, colour RGB(200,200,200), `m_colourId = MULTIWINIA_NUM_TEAMCOLOURS+1`. Owner of the crate SpaceShip. | [C] `code/location.cpp:Location::GetFuturewinianTeamId`, `Location::InitFuturewinianTeam` |
 | Level-file blocking | `Entity::EntityIsBlocked` (true for `TypeAI, TypeArmyAnt, TypeDropShip, TypeEgg, TypeLander, TypeLaserTroop, TypeMeteor, TypeNuke, TypeOfficer, TypeShaman, TypeSpaceInvader, TypeTentacle, TypeTriffidEgg, TypeTripod, TypeInvalid, TypeSpaceShip`) is consulted **only** when loading `InstantUnits` from a level file and by the (editor-only) instant-unit window. It does **not** stop code from creating these types with `SpawnEntities`/`NewEntity`. Likewise `Building::BuildingIsBlocked` only filters `Building::CreateBuilding(char *name)` (level-file/editor by-name creation), not `CreateBuilding(int type)`. | [C] `code/worldobject/entity.cpp:Entity::EntityIsBlocked`, `code/level_file.cpp:LevelFile::ParseInstantUnits` (L684), `code/interface/instant_unit_window.cpp` (L324), `code/worldobject/building.cpp:Building::CreateBuilding(char*)` |
 | Random numbers | `syncrand()/syncfrand(x)/syncsfrand(x)` = network-synchronised MT19937 (`syncfrand(x)∈[0,x)`, `syncsfrand(x)∈[-x/2,x/2)`). `FRAND(x)/SFRAND(x)` are wrapper structs that resolve to `_syncfrand/_syncsfrand` (i.e. **synced**) when passed to `Vector3` constructors/`FromRand`. Bare `frand(x)/sfrand(x)` are the **unsynced** LCG (`AppRandom`, `frand∈[0,x]`, `sfrand∈(-x/2,x/2]`) and must only affect rendering. | [C] `contrib/systemiv/lib/math/random_number.cpp:_syncfrand,_syncsfrand,frand,sfrand`, `code/lib/vector3.h:FRAND`, `code/lib/vector3.cpp:FromRand` |
@@ -936,3 +936,78 @@ Event names are passed to `SoundSystem::TriggerEntityEvent` / `TriggerBuildingEv
 | Crate powerups (`OTHER`/CratePowerup type, `Crate::TriggerSoundEvent`) | AntNest, Eggs, Meteor, Spam(Infection), SpaceShip, Triffids, DarkForest, Plague | e.g. Meteor=cratereward_meteor4 (others owned by P08) |
 \* generic `Entity` events: `Create` from `Entity::Begin`, `LoseHealth`/`Die` from `Entity::ChangeHealth`. Lightning, Snow, DustBall, Zombie, SpamInfection, WallBuster, DropShip, Lander and Tentacle raise no sound events of their own. [C] `code/worldobject/entity.cpp:Entity::Begin`, `Entity::ChangeHealth`.
 
+## Cross-partition notes
+- **Crates (P08)**: outcome selection, probabilities, `IsValid` exclusions, task UI and messages live in `code/worldobject/crate.cpp` / `code/taskmanager.cpp`; this draft specifies the effect mechanics of AntNest, Eggs, Triffids, Meteor, Infection (Spam), SpaceShip, TheBeast (Tentacle) and the Zombie side-effect of DarkForest. `INCLUDE_THEBEAST` is defined only under `TARGET_DEBUG` in `code/worldobject/crate.h` (see contradictions). [C]
+- **Darwinian (entity-core partition)**: states this partition drives — `StateCapturedByAnt` (`Darwinian::AntCapture`, `AdvanceCapturedByAnt`), `StateInVortex` (`AdvanceInVortex`), `StateBeingAbducted` (`Abduct`, `AdvanceBeingAbducted`), `SetFire` (Lightning), and `Darwinian::SearchForThreats` treating enemy AntHills/Triffids as threats. [C] `code/worldobject/darwinian.cpp`.
+- **Spirit (entity-core/economy)**: `Spirit::CollectorArrives`, `CollectorDrops`, `InEgg`, `EggDestroyed`, `NumNearbyEggs`/`GetNearbyEggs` (range `VIRII_MAXSEARCHRANGE` 60 m, cap `SPIRIT_MAXNEARBYEGGS` 8), states `StateBirth/Floating/Attached/InEgg/Death`. [C] `code/worldobject/spirit.cpp`.
+- **Location (simulation core)**: `SpawnEntities` (auto-inits teams 4/5), `SpawnSpirit`, `GetSpirit(id)`, `Bang(pos, range, damage, team)` (meteor, wallbuster, lander), `FireLaser` (tripod), `GetBuildingId(pos, front, team, range)` (centipede look-ahead), ambient effect generators and the shared `m_christmasTimer`, static resets in `Location::Init`. [C] `code/location.cpp`.
+- **EntityLeg (P-agent owning `entity_leg.cpp`)**: gait/IK for Spider and Tripod (`LiftFoot`, `PlantFoot`, `CalcFootsDesireToMove`, `AdvanceSpiderPounce`, `EntityFoot::OnGround/Pouncing`). [C] `code/worldobject/entity_leg.cpp`.
+- **CarryableBuilding (P-agent owning it)**: lifter attachment, movement and ownership for WallBuster (`m_minLifters`, `m_maxLifters`, `m_speedScale`, `m_carryRadius`). [C] `code/worldobject/carryablebuilding.cpp`.
+- **Tree (other partition)**: Dark Forest evil trees create Zombies (`Tree::Advance` L373); burning trees call `AntHill::Burn`; Lightning damages Trees. [C] `code/worldobject/tree.cpp`.
+- **AI (07)**: `AI::AdvanceCurrentTasks` dispatches crate tasks (`RunSpam`, `RunPlague`, `RunAntNest`, `RunDarkForest`, `RunEggs`, `RunMeteor`); `WallBuster::RunAI` routes carried bombs; `code/worldobject/ai.cpp` L949 references WallBusters. [C]
+- **Game timer (22)**: Meteor triggers `GameTimer::RequestSpeedChange(0.4, 0.1, 4.0)`; Slow/Speed-time crates change `SERVER_ADVANCE_PERIOD`, which per-tick constants in this partition do not compensate for. [C] `code/gametimer.cpp`.
+- **Rendering/VFX (24/26)**: particle types used — `TypeMuzzleFlash`, `TypeFire`, `TypeExplosionDebris`, `TypeExplosionCore` (via Bang), `TypeBlueSpark`, `TypeMissileFire`, `TypeRocketTrail`; shape explosions via `g_explosionManager.AddExplosion(shape, mat, fraction)`; D3D tearing (`g_deformEffect->AddTearingPath`) for Spider pounce and SoulDestroyer tail [B:D3D]; `Renderer::MarkUsedCells`/`RasteriseSphere` pixel-effect hooks (`RenderPixelEffect`). [C]
+- **Levels (08)**: `Effects` keyword (`snow`, `dustwind`, `lightning`, `soulrain`, `SpecialLighting`) parsed in `LevelFile::ParseMultiwiniaOptions`; `defenderreinforcementtype`/`attackerreinforcementtype` can name `DropShip`; AntHill/Triffid level-file fields (`AntHill::Read`, `Triffid::Read`). [C]
+- **Meta (09)**: Christmas mode flag from the server (`ClientToServer::m_christmasMode`, `App::UseChristmasMode`) forces snow. [C]
+
+## Contradictions / open questions
+1. **`INCLUDE_THEBEAST`**: `build_matrix.md` §4 lists it as "on" (defined in `worldobject/crate.h`), but `code/worldobject/crate.h` wraps the `#define` in `#ifdef TARGET_DEBUG`, so in `TARGET_PC_FULLGAME` it is **off** and `CrateRewardTheBeast` does not exist (Portal/Tentacle unreachable). [C] `code/worldobject/crate.h`. Coordinator should correct the build matrix.
+2. **Eggs crate owner**: `Crate::RunEggs` spawns TriffidEggs on the *task owner's* team, so hatched Virii/Centipedes/Spiders/SporeGenerators fight for the player who used the task, while the uncaptured variants (Triffids/Infection/AntNest) are Monster-team. Intentional design? [C] behaviour; intent [U] — resolve by playtesting the shipped build.
+3. **Meteor shower friendly fire**: `Location::Bang` is not team-filtered, so the user's own units in the 420 m square are hit. [C]; intent [U].
+4. **SpaceShip wander bias** to the low-x/low-z quarter (SFRAND + heightmap wrap). [I] — resolve by instrumenting `SpaceShip::FindNewTarget` in a build.
+5. **`Triffid::GetSpawnName` table order** (`SpawnDarwinians`, `SpawnAnts`, `SpawnSoulDestroyer`, `SpawnSporeGenerator` at indices 6–9) does not match the enum (`SpawnAnts`=6, `SpawnSporeGenerator`=7, `SpawnSoulDestroyer`=8, `SpawnDarwinians`=9); only affects names/translations (`spawnname_*`). [C] `code/worldobject/triffid.cpp:Triffid::GetSpawnName`.
+6. **SoulDestroyer hit FX** run the death tail-explosion on every hit (`if( fractionDead )` always true). [C]
+7. **Virii trail scatter** (`Virii::AdvanceDead()`) is dead code due to a signature mismatch. [C]
+8. **Spider** `StompFoot` (foot damage) never called; `NORMAL_SPEED`/`ATTACK_SPEED`/`ATTACK_PREAMBLE`/blueprint speed unused. [C]
+9. **DropShip `ScaleRadius(0.2)`** mutates the shared `spaceship.shp` used by SpaceShip. [C] call; effect on SpaceShip picking/culling [I].
+10. **SpaceShip speed stat** relies on out-of-range double→`unsigned char` conversion (500). [I] value 244 under MSVC.
+11. **Centipede radius** fixed at `Begin` (10 × size at that moment) while size later converges; contact range therefore depends on spawn order. [C] code; gameplay impact [I].
+
+## [U] Unknowns
+| # | Unknown | What would resolve it |
+|---|---|---|
+| U1 | Whether `data/levels/old/*.txt` (only user of `DropShip` reinforcements, Shaman/Portal maps) ship in the retail `.dat` archives | Inspect `tools/build_multiwinia_data.bat` include lists / retail data archive |
+| U2 | Exact runtime value of the SpaceShip byte speed stat (UB conversion) | Run the shipped binary or disassemble `Entity::SetType` |
+| U3 | Designer intent for Eggs-crate creatures belonging to the task owner (contradiction 2) | Playtest / design notes |
+| U4 | Whether `Virii::s_viriiPopulation` returns to 0 between games (no explicit reset; relies on destructors) | Verify `Location` teardown deletes every Virii |
+| U5 | Behaviour of Futurewinian-team Darwinians after drop (CPU team with no spawn points/AI entity?) | Read `Location::InitFuturewinianTeam` callers and AI creation for team 5 (07_ai) |
+| U6 | `Location::Bang` damage falloff formula `(_range*2 - d)/_range*2` (operator precedence) — confirmed in code; whether intended | Design intent; documented as-is |
+
+## Docs-vs-code discrepancies
+- `docs/multiwinia_todo.txt` (L74–76) suggests creatures such as Triffids should belong to "a generic non-player team… reserve team 0". Code uses a dedicated **Monster team = 4** (and Futurewinian team = 5), created lazily by `Location::InitMonsterTeam`. [C] `code/location.cpp:Location::GetMonsterTeamId`.
+- `docs/sound changes.txt` lists CratePowerup events including `PersonalShield` and `Infection`; code names the Infection reward `CrateRewardSpam` whose sound event name is produced by `Crate::GetName` (P08 to reconcile names). The `Meteor: Land` event in the same doc matches `Meteor::Advance`. [C]
+- `docs/bad guys.txt` is a brainstorm (egg fields, mother wasps, flocking); the implemented egg cycle is SporeGenerator/Spider → Egg → (spirit) → Virii, and Triffid → TriffidEgg → creature. No other docs describe these creatures. [C]
+
+## IP register
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| "Virii" (creature name, `TypeVirii`, `stats.txt` row) | name | `code/worldobject/virii.h`, `data/stats.txt` | "Crawler" |
+| "Soul Destroyer" | name | `code/worldobject/souldestroyer.h` | "Reaper Serpent" |
+| "Triffid" / "Triffid egg" (also a third-party literary term) | name | `code/worldobject/triffid.h` | "Pod Launcher" / "Seed Pod" |
+| "SporeGenerator" | name | `code/worldobject/sporegenerator.h` | "Brood Drifter" |
+| "Centipede", "Spider", "ArmyAnt", "AntHill", "Tripod", "Tentacle", "Lander", "Egg" (generic words; the specific designs are IP) | name/design | respective headers | keep generic nouns, redesign creatures |
+| "Futurewinian(s)" | name/character | `code/location.cpp:Location::GetFuturewinianTeamId`, `code/worldobject/spaceship.h` comments | "Visitors" |
+| "Darwinian(s)" (abducted/dropped, captured by ants) | name/character | throughout | "Sprites" / "Units" |
+| "SPAM" / "Spam" infection, `researchitem.shp` pod | name/brand-joke | `code/worldobject/spam.h` | "Contagion" / "Blight" |
+| "Zombie" ghost | name | `code/worldobject/souldestroyer.h` | "Wisp" |
+| "The Beast" crate | name | `code/worldobject/crate.cpp:Crate::RunTheBeast` | "The Maw" |
+| "WallBuster" | name | `code/worldobject/wallbuster.h` | "Breach Charge" |
+| "Multiwinia" (team/crate strings, `multiwinia_exclamation`) | brand/text | `code/worldobject/crate.cpp` | product name TBD |
+| UI strings: `crate_message_run_antnest`, `crate_message_auto_eggs`, `crate_message_run_eggs`, `crate_message_run_meteor`, `crate_message_auto_infection`, `crate_message_auto_plague`, `crate_message_spaceship`, `crate_message_thebeast`, `crate_message_run_darkforest`, `dialog_wallbreach`, `spawnname_*`, `cratename_*` | text | `data/language/*` via `LANGUAGEPHRASE` | rewrite all strings |
+| Shapes: `anthill.shp`, `armyant.shp`, `armyant2.shp`, `armyant3.shp`, `centipede.shp`, `centipedehead.shp`, `spider.shp`, `spider_leg_upper.shp`, `spider_leg_lower.shp`, `sporegenerator.shp`, `souldestroyerhead.shp`, `souldestroyertail.shp`, `triffidhead.shp`, `triffidegg.shp`, `meteor.shp`, `spaceship.shp`, `tripod.shp`, `tripod_leg_part.shp`, `lander.shp`, `wallbuster.shp`, `researchitem.shp` | art | `data/shapes/` (loaded by name in each ctor/`Begin`) | new models |
+| Textures/sprites: `sprites/egg.bmp`, `sprites/viriifull.bmp`, `sprites/ghost.bmp`, `textures/lightning.bmp`, `textures/glow.bmp`, `textures/starburst.bmp`, `textures/cloudyglow.bmp`, `textures/laser.bmp`, icons `icons/icon_antnest.bmp`, `icon_egg.bmp`, `icon_triffid.bmp`, `icon_meteorshower.bmp`, `icon_infection.bmp`, `icon_plague.bmp`, `icon_darkforest.bmp` | art | per-class Render; `Crate::Run*` markers | new art |
+| Audio samples: virusattack, viruspain, eggsplat, sporegengroan, sporegenlosehealt, sporegeneratordie, spideregglay, tripodcreate, tprdattac, trpodlosehealth, ttripoddie, spidercreate, spiderpounce, spiderdeath, spiderfeet, antatack, antcreat, antlosehealth, antdeath, souldestroycreate, souldestpain, souldestdeath, soulattack, soulenemysighted, triffidegglaunc, triffideggbounce, triffeggbursts, meteorhitclose1, meteorhitfar1, rocketthrust2loop, rumble2_loop, theramins, ufo_engine1, ufo_engine2, tractorbeam2, 1anthilldamage, triffidburn, samcreate, emaildamage, spamattack, spamboom, researchcreate, cratereward_meteor4, newsamplegroup3/9/11/13/25/26/27/28 | audio | `data/sounds.txt` | new sound set |
+
+## Appendix — dead/legacy code
+- **[B:LEGACY] Spam building** (`Spam`): blocked; emits SpamInfections every 30–60 s; research-mode variant; render-mutates orientation (desync). `code/worldobject/spam.cpp`.
+- **[B:LEGACY] Tripod / TripodNavData**: no creator; hex navigation, two-leg fall physics, crouch-and-fire-lasers cycle; uses render clocks in sim. `code/worldobject/tripod.cpp`.
+- **[B:LEGACY] Lander**: no creator; beach craft spawning LaserTroopers; overload/signature bugs. `code/worldobject/lander.cpp`.
+- **[B:LEGACY] DropShip**: only reachable through the `DropShip` reinforcement level option used by an `old/` map. `code/worldobject/dropship.cpp`, `code/taskmanager.cpp:Task::TargetDropShip`.
+- **[B:DEBUG]/[B:LEGACY] Tentacle**: Portal-only (The Beast crate in debug builds; Shaman maps). `code/worldobject/tentacle.cpp`.
+- **[B:LEGACY] Shaman summon paths** for ArmyAnt/Centipede/Spider/SporeGenerator/SoulDestroyer/Tripod/Virii: `Shaman::CanSummonEntity` returns false; the switch is commented out. `code/worldobject/shaman.cpp`.
+- **[B:LEGACY] Cave → Virii**: `Cave` is blocked. `code/worldobject/cave.cpp`.
+- **[B:LEGACY] Darwinia campaign placements**: `data/levels/map_*.txt`, `mission_*.txt` instant units (AI 6, ArmyAnt 1, Centipede 55, Darwinian 60, SoulDestroyer 8, Spider 45, SporeGenerator 26, Virii 118) and buildings (AntHill 13, GodDish 1, Spam 3, Triffid 30) — campaign mode is not compiled into FULLGAME (`INCLUDEGAMEMODE_CAMPAIGN` off); ArmyAnt instant units are additionally blocked. [C] grep of `data/levels`.
+- **[B:LEGACY] Single-player branches** inside live classes: SP-only constants (AntHill objective rules, Triffid unlimited launching, Centipede SP explosions, SpamInfection SP target team 1/2 rules, SporeGenerator hover start) — retained in the sections above as SP vs MP rows.
+- **[B:EDITOR] Triffid trajectory/trigger preview** in `Triffid::RenderAlphas` under `LOCATION_EDITOR`.
+- **[B:DEBUG] Cheat window Virii spawn** (`CHEATMENU_ENABLED`): 20 Monster Virii, roam 1000. `code/interface/cheat_window.cpp`.
+- **Dead code inside live classes**: `Virii::AdvanceDead()`, `Virii::AdvanceDeadPositionVector`, commented `Virii::RenderLowDetail/RenderGlow`, `Spider::StompFoot`, `SpaceShip::FindNewTarget` enemy-seeking block (commented), `WallBuster` AI-target creation (commented), `DustBall` alternative vortex steering (commented), Centipede D3D tearing (commented), Triffid `SpawnTripod` case (commented), `Egg::StateOpen` (never set), `Meteor::m_life` decrement after `return`, `SporeGenerator` constructor shape code (commented).

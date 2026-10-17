@@ -55,9 +55,9 @@ Additional non-building / abstract classes defined in scope: `BlueprintBuilding`
 
 ---
 
-## [→ 03_buildings_and_world_objects] Tree — procedural, flammable, spreading scenery [B:FULL]
+## [→ 03_buildings_and_world_objects] Tree — procedural flammable spreading scenery [B:FULL]
 
-**Function.** Decorative but gameplay-relevant scenery: blocks movement/projectiles via hit spheres, catches fire, burns down and regrows, sets nearby units on fire, can drop spirits ("magic" trees), can spread new trees, and in its *evil* variant kills Darwinians and corrupts nearby trees. Trees are the single most numerous building in Multiwinia maps (755 level lines in 45 of 57 `mp_*` files) [C] census. They are also created at runtime by the Dark Forest crate outcomes (`Crate::GenerateTrees`, `Crate::GenerateEvilTrees`) [C] `code/worldobject/crate.cpp`, and by tree self-propagation (`Tree::CreateAnotherTree`) [C].
+**Function.** Decorative but gameplay-relevant scenery: blocks movement/projectiles via hit spheres, catches fire, burns down and regrows, sets nearby units on fire, can drop spirits ("magic" trees), can spread new trees, and in its *evil* variant kills Darwinians and corrupts nearby trees. Trees are the most numerous *visible* building in Multiwinia maps (755 level lines in 45 of 57 `mp_*` files; only the invisible `AITarget`, 1112 lines, is more numerous) [C] census. They are also created at runtime by the Dark Forest crate outcomes (`Crate::GenerateTrees`, `Crate::GenerateEvilTrees`) [C] `code/worldobject/crate.cpp`, and by tree self-propagation (`Tree::CreateAnotherTree`) [C].
 
 **Ownership.** Always neutral in practice. Level lines use team 255 (704 lines) or team slot 1 (51 lines in `mp_domination_4P_2`, `mp_koth_4P_3`, `mp_skirmish_2p_4`, `mp_sandbox_all`) [C] census; the team id has no effect on any tree logic [C] (no `m_id.GetTeamId()` read in `code/worldobject/tree.cpp`). Runtime-created trees use team 255 [C] `Tree::CreateAnotherTree`. Not capturable, no ports.
 

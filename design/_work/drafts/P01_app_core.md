@@ -483,7 +483,7 @@ Per iteration, in exact order [C]:
 
 After the loop: stop "Ambience EnterLocation", trigger "ExitLocation", `ShutdownCurrentGame()`.
 
-There is **no sleep/yield** anywhere in the in-match or menu loops (busy loop; vsync in the renderer is the only throttle) [C] for this partition; [U] whether `Renderer::Render`/`WindowManager::Flip` sleeps (P12/P13).
+There is **no sleep/yield** anywhere in the in-match or menu loops of this partition (busy loop) [C]; any throttling must come from inside `Renderer::Render` / buffer flip (vsync) — [U] U1 (P12/P13).
 
 ```mermaid
 sequenceDiagram
@@ -673,7 +673,7 @@ Note `AdvanceChristmas`, `AdvanceDustWind` and `AdvanceLightning` all use the sa
 - Skipped entirely in tutorial 1, and in tutorial 2 until `m_multiwiniaHelp->m_tutorial2AICanSpawn`.
 - `maxCrates = int(worldSizeX / 500.0)`; no drop when `Crate::s_crates ≥ maxCrates`.
 - `crateTime = GameOption("CrateDropRate")`; 0 or -1 disables. Timer initialised (when exactly 0) and reset after each drop to `crateTime × (1.5 − syncfrand(1.0))` ⇒ uniform in (0.5, 1.5] × crateTime seconds.
-- `CreateRandomCrate` with `GameOption("CrateDropMode")`: 0/-1 → random; 1 → **weighted** drop: over live non-monster/non-future teams compute `total`, `high`, `low` scores; `chance = max(high/total, 1 − low/total)`; if `syncfrand(1) > chance` → random, else pick a drop team with weight `total/score` (score 0 → weight `total`) and place within ±100 (`syncsfrand(200)`) of a random building of that team (`CRATE_START_HEIGHT + syncfrand(200)` height), up to 1000 tries. **Bug:** the land check is `GetValue(pos.x, pos.z > 20.0)` — the comparison is inside the call, so it tests the height at z∈{0,1} [C]; effectively any position passes when the map edge height is non-zero.
+- `CreateRandomCrate` with `GameOption("CrateDropMode")`: 0/-1 → random; 1 → **weighted** drop: over live non-monster/non-future teams compute `total`, `high`, `low` scores; `chance = max(high/total, 1 − low/total)`; if `syncfrand(1) > chance` → random, else pick a drop team with weight `total/score` (score 0 → weight `total`) and place within ±100 (`syncsfrand(200)`) of a random building of that team (`CRATE_START_HEIGHT + syncfrand(200)` height), up to 1000 tries. **Bug:** the land check is written `GetValue(pos.x, pos.z > 20.0)` — the comparison is inside the call, so the test becomes "height at (x, z = 0 or 1) is non-zero", i.e. a lookup on the map's z≈0 edge row; any candidate passes when that row has non-zero height [C].
 - Random placement: re-roll `(FRAND(sizeX), CRATE_START_HEIGHT + syncfrand(200), FRAND(sizeZ))` while ground height < 20 or `RestrictionZone::IsRestricted`; if crates exist, a candidate within `CRATE_SCAN_RANGE × 10` (horizontal) of any crate is zeroed (forces another roll); give up after 100 tries.
 - Creation: id (255, UNIT_BUILDINGS, -1, `GlobalWorld::GenerateBuildingId()`); `Building::CreateBuilding(TypeCrate)`; `Initialise(template)`; `SetDetail(1)`; `MarkerSystem::RegisterMarker_Crate`; first crate shows "crate_drop" message.
 
@@ -686,7 +686,7 @@ Called by `Renderer` (P12) — normal pass and `WaterReflectionEffect` (`Render(
 3. `RenderLandscape()`.
 4. `RenderWater()` (if flag; D3D: else disable clip plane 2).
 5. `RenderBuildings()` — fog on (linear, start = fogEnd/3, end = max(4000, worldX+1000, worldZ+1000), colour = background), object lighting, special lights if pref `RenderSpecialLighting`==1 or Rocket Riot or level effect `SpecialLighting` or Prologue; each in-view building `Render(t)`.
-6. `RenderTeams()` (not editing) — `Team::Render` for all 6 teams (§4.3).
+6. `RenderTeams()` (not editing) — `Team::Render` for all 6 teams (§4.2).
 7. `RenderBuildingAlphas()` — non-sorted alphas immediately; buildings with `PerformDepthSort` collected, `qsort` by squared camera distance, drawn far→near.
 8. (not editing) `RenderParticles()` (empty), `RenderWeapons()` (effects in frustum or of type PulseWave/SpamInfection/Lightning, additive; lasers as quads with texture `textures/laser.bmp`, near plane ×1.2), `RenderSpirits()` (monster-team spirits subtractive `GL_ONE_MINUS_SRC_COLOR` first, then others additive).
 9. `m_routingSystem.Render()` (route highlights).
@@ -724,7 +724,7 @@ Every render path uses the extrapolation rule of §2.5 (`t = g_predictionTime`, 
 | `IsWalkable(from, to, evaluateCliffs, permitSteepDownhill, *laserFenceId)` | false if either end ≤ water level 0; step 20 units: >40 units cumulative under water → false; cliffs: gradient > 2.4 → false; normal.y < 0.8 → false (only uphill when `permitSteepDownhill`); a Wall sphere-hit (radius 13.2 = 20×0.66) → false; enabled LaserFence sphere-hit (radius 10) only reports its id |
 | `GetWalkingDistance(from, to, checkObstructions)` | step 40 units; ≥40 under water → -1; Wall or enabled LaserFence sphere-hit (radius 20) → -1; distance = Σ segment length × (1 + max(0, 1.5 × gradient)) |
 | `IsVisible(from, to)` | landscape ray from `from + 20·dir`; visible if no hit or hit beyond target + 20 |
-| `UpdateTeam(teamId, controls)` | applies one team's continuous controls (§5.4) |
+| `UpdateTeam(teamId, controls)` | applies one team's continuous controls (§5.3) |
 | `SpawnSpirit(pos, vel, team, sourceId)` | -1 for monster team; else spirit at pos+up, id (team, UNIT_SPIRITS, slot, -1), `Begin()` |
 | `ThrowWeapon(pos, target, type, team, force=0, life=0, explodeOnImpact=false)` | force = `sqrt(dist) × 8` capped at `ThrowableWeapon::GetMaxForce(grenadeResearch)` (team 1 single-player → research 4), override if `_force ≠ 0`; launch dir = normalise(normalise(target−pos) with y := 1); types `EffectThrowableGrenade`, `EffectThrowableAirstrikeMarker`, `EffectThrowableControllerGrenade` (binds current squad task id); plus a `MuzzleFlash(pos, front, 20, 3)`; returns effect slot |
 | `FireRocket(pos, target, team, life=-1, fromBuilding=-1, firework=false)` | `Rocket` effect + muzzle flash (20, 3) |
@@ -738,7 +738,7 @@ Every render path uses the extrapolation rule of §2.5 (`t = g_predictionTime`, 
 | `AdvanceChristmas/SoulRain/DustWind/Lightning()` | §3.5 |
 | `SelectDarwinians(team, pos, radius)` | grid query (team only) within radius; marks Darwinians `m_underPlayerControl` unless state ∈ {OperatingPort, BeingSacraficed, OnFire, InsideArmour}; "Selected" sound for local team; returns `numFound > 0` |
 | `IssueDarwinianOrders(team, pos, directRoute)` | §5.5 |
-| `PromoteDarwinian(team, index)` | refuse if on fire; spawn Officer at Darwinian pos with its velocity (team = myTeam in single-player); cosmetic flashes (non-synced RNG); Darwinian `m_promoted = true` (it removes itself, P03); officer marker for local team; returns officer slot |
+| `PromoteDarwinian(team, index)` | refuse if on fire; spawn Officer at Darwinian pos with its velocity (team = myTeam in single-player); cosmetic flashes (non-synced RNG); Darwinian `m_promoted = true` (the Darwinian presumably removes itself on its next Advance [I], P03); officer marker for local team; returns officer slot |
 | `DemoteOfficer(team, index)` | officer `m_demoted = true`; spawn Darwinian at its pos; returns slot |
 | `CreateRandomCrate()` | §3.6 |
 | `ChristmasModEnabled()` | `m_christmasMode` (comment claims 0/1/2 but it is a bool) |
@@ -1160,7 +1160,7 @@ Lockstep model: every client runs the full simulation from the same ordered comm
 | D8 | Slice partitioning uses array **capacity** and `int(Size()/10.0f)` (float division); slot reuse is LIFO | `code/lib/slice_darray.cpp`, `contrib/systemiv/lib/tosser/fast_darray.cpp` | [C] creation/deletion order fully determines which slot (and thus which slice and which tick) a new object is advanced in |
 | D9 | Sync RNG = MT19937 (`_syncrand`) seeded once at client join (`NET_DARWINIA_RANDSEED`); **not reseeded at `Location::Init`** — the stream continues from whatever the lobby/previous matches consumed | `code/network/clienttoserver.cpp` (`syncrandseed`), `contrib/systemiv/lib/math/random_number.cpp` | [I] risk: any sync-RNG use outside lockstep (lobby UI, render) desynchronises the next match; X3 should grep all `syncrand` callers for non-sim contexts |
 | D10 | `Location::Init` reseeds the **non-synced** LCG (`AppSeedRandom(1)`, MSVC constants 214013/2531011) | `code/location.cpp:Location::Init` | [C] non-synced RNG must only feed cosmetics; in this partition it does (`Bang` particle counts/velocities via `frand/sfrand`; promote/demote flashes via `AppRandom`) |
-| D11 | `FRAND(x)`/`SFRAND(x)` are **synced** wrappers whose evaluation order inside `Vector3(...)` constructors is forced left-to-right | `code/lib/vector3.h`, `code/lib/vector3.cpp:FromRand` | [C] weather and crate placement use them; a port must keep argument evaluation order explicit |
+| D11 | `FRAND(x)`/`SFRAND(x)` are **synced** wrappers whose evaluation order inside `Vector3(...)` constructors is forced left-to-right | `code/lib/vector3.h`, `code/lib/vector3.cpp:FromRand` | [C] weather and crate placement use them; note the call order in the spawners is y first (`posY = syncfrand(...)` on its own line), then x, then z; a port must keep argument evaluation order explicit |
 | D12 | `WorldObjectId::ResetUniqueIdSeed()` at match load; `GlobalWorld::s_nextUniqueBuildingId` reset then set to max level id + 1 | `code/main.cpp:DoEnterLocation`, `code/location.cpp:Init/InitBuildings` | [C] |
 | D13 | Start positions, CPU colours, coop pairing, Assault sides and starting power-ups consume `syncrand` during `Location::Init` (loading thread), in team-index order (`GetTeamPosition(i)` is called for all 6 slots in step 3) | `code/location.cpp:Init/GetTeamPosition/SetupCoop/SetupAssault/InitialiseTeam` | [C] all clients must load with identical `LobbyTeam` state (colour ids, types) at the same RNG position |
 | D14 | `Unit::s_offsets` (formation jitter) is generated lazily on first `GetFormationOffset` call from sim code with 100 `syncfrand` calls; reset at Init/Empty | `code/unit.cpp:Unit::GetFormationOffset` | [C] deterministic; a port should generate it eagerly at a fixed point to avoid hidden RNG consumption |

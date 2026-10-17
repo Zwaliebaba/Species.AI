@@ -174,11 +174,11 @@ Derived from `Grenade`; colour (255,100,100); `m_type=EffectFlameGrenade` [C]. C
 | Sounds | `Create` / `Explode` (TypeRocket); stops `Rocket Create` loop on explode | [C] |
 | Trail | sim: `TypeFire` particle with prob. `syncfrand(1) > 0.2`; render: 5× `TypeMissileFire` per frame (non-synced) | [C] |
 
-Effective rocket range in Multiwinia ≈ Σ distance over 7–8 ticks ≈ (60+72+86+104+124+149+179)·0.1 ≈ **77 world units** before timing out [I] (arithmetic from the table; first tick moves at 60 because acceleration happens before the move).
+Effective rocket range in Multiwinia: the rocket lives 7–8 ticks (expiry test `now > spawnTime + 0.75`), covering (60+72+86.4+103.7+124.4+149.3+179.2)·0.1 ≈ **77.5 u**, or ≈ 95 u if an 8th tick runs, before timing out [I] (arithmetic; acceleration is applied before the move, so the first tick moves at 60).
 
 ### 1.7 `Laser`
 - Pooled; `Initialise(lifeTime)`: `m_harmless=false`, `m_bounced=false`, sound `Create` (TypeLaser) [C].
-- Lifetime (from `Location::FireLaser`): Laser research 2 → **0.6 s** (table 0→0.2, 1→0.4, 2→0.6, 3→0.8, 4→1.0); ×2 for mind-control lasers ("subversion lasers are half speed") [C] `code/location.cpp:Location::FireLaser`. Speed is the caller's velocity (generic `Entity::Attack`: 150 → range 90 u; subversion turret: shell vel/4).
+- Lifetime (from `Location::FireLaser`): Laser research 2 → **0.6 s** (table 0→0.2, 1→0.4, 2→0.6, 3→0.8, 4→1.0); ×2 for mind-control lasers ("subversion lasers are half speed") [C] `code/location.cpp:Location::FireLaser`. Speed is the caller's velocity (generic `Entity::Attack`: 150 → range 90 u; squaddie 200 → 120 u; Subversion Darwinian `Darwinian::FireSubversion`: 75 with ×2 life → 90 u; subversion turret: shell vel/4).
 - `FireLaser` also spawns `MuzzleFlash(pos, dir, size 25·lifetime, life 1.5)` [C].
 - `Laser::Advance` per tick [C]:
   1. If `m_fromTeamId` is −1/255 → removed. `m_life -= dt`; ≤0 → removed.
@@ -392,6 +392,96 @@ stateDiagram-v2
 - `Nuke::RenderDeaths` ("Darwinia Hit, %d Dead" text) exists but the call is commented out [C] → appendix.
 - Sounds: Entity events + `Explode` [C] `Nuke::ListSoundEvents`.
 
+## [→ 02_units_and_entities] [→ 04_crates_powerups_and_weapons] 4. Insertion Squad (`code/worldobject/insertion_squad.{h,cpp}`)
+
+Classes: `InsertionSquad : Unit` (the squad), `Squadie : Entity` (type `TypeInsertionSquadie`), `HistoricWayPoint` (breadcrumb record: `m_pos`, monotonically increasing `m_id` from static `s_lastId`). Build: [B:FULL].
+
+### 4.1 How it is obtained
+- Captured crate reward *Squad* → `RunTask(TypeSquad)` → player targets ground → `Task::TargetSquad(pos)`: `numEntities = 2 + CurrentLevel(TypeSquad)` = **3** squaddies; `Team::NewUnit(TypeInsertionSquadie, 3, …, pos)` creates an `InsertionSquad`, `Location::SpawnEntities(pos, team, unit, TypeInsertionSquadie, 3, zero, spread 10)`; the unit is selected; optional camera entity-tracking (pref `OTHER_AUTOMATICCAM` = 2, or gamepad); crate sound `"Squad"` [C] `code/taskmanager.cpp:Task::TargetSquad`.
+- Level `InstantUnits` with `runAsTask` (`TypeInsertionSquadie` → `TypeSquad`) [C] `code/location.cpp`.
+- **Lifetime**: `Task::Start` sets `m_lifeTimer = 60 s`; in Multiplayer `Task::Advance` counts it down and calls `Task::Stop()`, which applies `ChangeHealth(-1000)` to every squaddie → squad dies after **60 s** [C]. The task also ends when the unit has no live entities.
+
+### 4.2 Stats & constants
+| Item | Value | Kind / Ref |
+|---|---|---|
+| Health | 75 | `data/stats.txt` InsertionSquadie |
+| Speed | 30 u/s (×(1+difficulty/10)) × slope factor | stats.txt; [C] `Squadie::Advance` |
+| RATE | 0.5 s (blueprint double) — per-entity `m_stats[RATE]` truncates to **0** | stats.txt; [C] `entity.h` (`unsigned char m_stats`) |
+| Squad size | 3 (Multiwinia) | [C] `Task::TargetSquad` |
+| Spacing | `GAP_BETWEEN_MEN = 10.0` along the breadcrumb path | `#define` [C] `insertion_squad.h` |
+| Laser speed / life / range | 200 u/s / 0.6 s / **120 u** | [C] `Squadie::Attack`, `Location::FireLaser` |
+| Laser aim jitter | `syncsfrand(7)` in x,z (±3.5) | [C] |
+| Laser damage | 20–39 (§1.7) | |
+| Auto-target search | `EntityGrid::GetBestEnemy(pos, 0, 100, team)`, re-evaluated every 1.0 s | [C] `Squadie::RunAI` |
+| Max turn rate | 20 rad/s (`angVel = (front × desired)·4`, y-axis only) | [C] |
+| Secondary cooldown per squaddie | Grenade 4.0 s, Rocket 4.0 s, AirStrike marker 20.0 s, Controller 4.0 s | [C] `Squadie::FireSecondaryWeapon` |
+| Shape | `squad.shp`, markers `MarkerLaser` (muzzle), `MarkerBrass` (ejection) — fatal assert if missing | [C] `Squadie::Squadie` |
+
+### 4.3 Squad movement & formation
+- `InsertionSquad::SetWayPoint(pos)`: `m_wayPoint = m_focusPos = pos`; pushes a `HistoricWayPoint` at the **point man's current position** (or `pos` if no point man) to the front of `m_positionHistory` (never pruned) [C]. If the squad runs a Controller task, appends the new breadcrumb to the controller's route when > 20 from its last waypoint [B:LEGACY]. If `pos` is within 5 of a connected `RadarDish` or `Bridge` (Teleport), `m_teleportId` is set and the waypoint becomes the teleport entrance [C].
+- `GetTargetPos(d)`: d ≤ 0 or teleporting → waypoint; else walk back from the point man along `pointMan → history[0] → history[1] → …` and return the point at path-distance d (the end of history if shorter) [C]. Squaddie *i* (formation index *i*) targets `GetTargetPos(10·i)` → **single-file "snake" following the leader's footsteps**; the point man (index 0) heads straight to the waypoint.
+- `Squadie::Advance` (alive, on ground, not in water) [C]:
+  - velocity toward target at SPEED; **slope factor** `f = 1 − (h_next − h_now)/3`, clamped [0.2, 2.0]; if terrain normal `y < 0.6` and going uphill (f < 1) → f = 0 (cannot climb steep slopes). Arrival snap if the remaining distance < one step. `PushFromObstructions`; y = ground + 0.1.
+  - Facing: if this squad is the team's **currently selected unit**, face the team's mouse position (`team->m_currentMousePos`); otherwise face velocity, run `Squadie::RunAI`, and face the current enemy if any. Teleporting: face the target directly.
+  - If `y ≤ 0` (water): `m_inWater = syncfrand(3)` (the 10 s drowning clock starts 0–3 s advanced) [C].
+  - Airborne (knocked up) → `Entity::AdvanceInAir`. Position clamped to the world. If teleporting and `Entity::EnterTeleports(m_teleportId)` succeeds → squaddie removed from this unit (re-created at the other end by the teleport, which copies `m_weaponType`) [C] `code/worldobject/teleport.cpp`.
+  - On death the unit `RecalculateOffsets()`.
+- Player-controlled squad ignores `Unit` formation offsets; formation = breadcrumb snake [C].
+
+### 4.4 Squaddie state machine
+```mermaid
+stateDiagram-v2
+  [*] --> Following : spawned (3 at target, spread 10)
+  Following --> Following : waypoint set (breadcrumb added)
+  Following --> Airborne : m_onGround false (e.g. spawn drop) — never from damage, see note
+  Airborne --> Following : lands (AdvanceInAir)
+  Following --> InWater : pos.y <= 0
+  InWater --> Following : terrain under it > 0
+  InWater --> Dead : >10 s in water (ChangeHealth -500)
+  Following --> Teleporting : unit.m_teleportId set and entrance reached → removed from unit
+  Following --> Dead : health <= 0 / task 60 s expiry (ChangeHealth -1000)
+  Dead --> [*] : AdvanceDead fade (40/s on ground)
+```
+Note: `Squadie::ChangeHealth` always returns **false**, so lasers, `Bang` and shockwaves never apply knock-back to squaddies (and `Bang`/`Shockwave` explicitly exclude `TypeInsertionSquadie` anyway) [C].
+
+### 4.5 Combat
+**Primary (lasers)** — two paths:
+1. *Player-fired* `InsertionSquad::Attack(pos, withSecondary=false)` (sent each tick while the primary fire control is held): builds the list of alive, enabled squaddies with `m_reloading == 0` (always true, RATE truncated to 0); `m_attackAccumulator += dt / (RATE_blueprint / N)` = `0.2·N` per tick; while accumulator ≥ 1 pick a random (`syncfrand`) eligible squaddie (without replacement) and call `Squadie::Attack(pos)` → **2 shots/s per squaddie, 6 shots/s for a full squad**, evenly spread [C] `InsertionSquad::Attack`.
+2. *Autonomous* (squad not selected): `Squadie::RunAI` each tick fires at the current best enemy with probability `P(syncfrand(d/2) < 2) = min(1, 4/d)` where d is the distance → e.g. 10 %/tick at 40 u, every tick within 4 u; no reload gate [C].
+- `Squadie::Attack(pos)`: laser from `MarkerLaser` world position, speed 200 toward `pos ± 3.5`; `TypeBrass` particle ejected from `MarkerBrass` (`front·(5+syncfrand(10)) + SFRAND(5)` per axis); sounds `Attack`, `FireLaser` [C].
+
+**Secondary** — `InsertionSquad::Attack(pos, true)`: the alive, enabled squaddie **nearest to the target** whose secondary timer ≤ 0 calls `FireSecondaryWeapon(pos)` (in addition to the primary laser logic) [C]. Requires `HasResearch(m_weaponType)` (level > 0). Weapon by `m_weaponType` (default **`TypeGrenade`**):
+| Weapon | Effect | Cooldown | Sound |
+|---|---|---|---|
+| Grenade | `ThrowWeapon(muzzle, pos, EffectThrowableGrenade)` (force ≤ 110, fuse 3 s, Bang R12.5 D50) | 4 s | `ThrowGrenade` |
+| Rocket | `FireRocket(muzzle, pos, team)` (§1.6) | 4 s | `FireRocket` |
+| AirStrike | `ThrowWeapon(…, EffectThrowableAirstrikeMarker)` → one marker → 2 bombers (§2) | 20 s | `ThrowAirStrike` |
+| Controller | `ThrowWeapon(…, EffectThrowableControllerGrenade)` (§1.5) | 4 s | `ThrowController` |
+When the timer expires: sound `WeaponReturns` [C].
+
+**Weapon selection in Multiwinia**: `CycleSecondary()` (Grenade → Rocket → AirStrike → Controller → Grenade, skipping types with research 0) is only called for gamepad control **in single-player** (`code/location.cpp` team-control block under `IsSinglePlayer()`); the keyboard weapon-cycle block in `code/location_input.cpp` and the Multiwinia task-manager weapon shortcuts (`code/taskmanager_interface_multiwinia.cpp`) are commented out; `TaskManager::RunTask(TypeGrenade/TypeRocket/TypeController)` would call `SetWeaponType` but Multiwinia crates never run those task types, and in Multiplayer `RunTask(TypeAirStrike)` creates a stand-alone airstrike task instead [C]. ⇒ In Multiwinia a squad's secondary is **always the grenade** [I] (no reachable setter found). Rocket/AirStrike/Controller squad secondaries → [B:LEGACY].
+
+### 4.6 Player control model
+| Control | Effect | Ref |
+|---|---|---|
+| Select | squad becomes `team->m_currentUnitId`; squaddies face the mouse | [C] |
+| Left button held (without primary fire) | `unitMove`: `SetWayPoint(mouse)`, `m_targetDir`, `RecalculateOffsets`; ground cursor marker on release (`m_endSetTarget`) | [C] `code/location.cpp` (team-control block) |
+| Primary fire target held | `unit->Attack(mouse, false)` each tick → lasers | [C] |
+| Primary + secondary fire held | `unit->Attack(mouse, true)` → also one grenade | [C] (`secondaryFire = primaryFireTarget && secondaryFireTarget`) |
+| Gamepad direct control | `InsertionSquad::DirectControl`: (only while camera entity-tracking or look-around) move point man by `(dx, dy)` stick deltas (snaps to a connected teleport's position if the target cell contains one); stop by re-setting the waypoint to the point man when moving; fire at `(m_directUnitTargetDx, 0, m_directUnitTargetDy)` (absolute target) and grenade when secondary is held | [C] `InsertionSquad::DirectControl` |
+| Terminate task | `Task::Stop` kills all squaddies | [C] `Task::Stop` |
+Exact key bindings → 06_player_control_and_input (P-other).
+
+### 4.7 AI (`InsertionSquad::RunAI`, CPU teams) [→ 07_ai]
+- `maxRange = GetApproxMaxRange(GetMaxForce(grenadeLevel))` = 2.3125·110 ≈ **254.4** [C].
+- Every 1.0 s: scan enemies within 500 of the squad centre; iterate nearer-first (updating the running minimum) and pick the first enemy whose 75-radius contains ≥ 20 enemies → waypoint `pos − 0.8·maxRange·dir` (stand off ≈ 204 short of it). Otherwise go to the highest-priority (`AITarget::m_priority[team]`) walkable neighbour of the nearest AITarget, or that AITarget itself [C].
+- Every tick: if enemies within maxRange: target = their centroid + `syncsfrand(30)` (±15) in x,z; if within maxRange → `Attack(target, syncrand()%5 == 0)` (grenade attempt with 20 % chance per tick, still gated by the 4 s cooldown) [C].
+
+### 4.8 Damage, death, visuals, sounds
+- `Squadie::ChangeHealth`: accepts all damage types equally; at ≤ 0 → health 100 (fade counter), `m_dead`, sound `Die`, shape-fragment explosion of `squad.shp`; **no spirit spawned** [C]. Returns false always.
+- Render: lit `squad.shp` (no team recolour in this class — [I] team identity comes from shape/selection UI); damaged flicker uses non-synced `frand()`; `RenderPixelEffect` disabled in Multiplayer [C].
+- Sounds: Entity events + `FireLaser`, `ThrowGrenade`, `FireRocket`, `ThrowAirStrike`, `ThrowController`, `WeaponReturns` [C] `Squadie::ListSoundEvents`.
+
 ## [→ 02_units_and_entities] [→ 04_crates_powerups_and_weapons] 5. Armour (troop transport) (`code/worldobject/armour.{h,cpp}`)
 
 `Armour : Entity` (type `TypeArmour`). Build: [B:FULL]. A hovering transport that carries Darwinians; **it has no weapon** in Multiwinia (the missile-launch code `Armour::SetMissileTarget/LaunchMissile` is commented out [C]). It is a "special" of its team (`Team::RegisterSpecial` in `Begin`, unregistered in the destructor) [C].
@@ -496,96 +586,6 @@ Dispatch by game type: Rocket Riot → `RunRocketRiotAI`; Assault → `RunAssaul
 
 ### 5.9 Sounds & effects
 Entity events + `LoadDarwinian`, `UnloadDarwinian`, `SetOrders` [C] `Armour::ListSoundEvents`. Exhaust `TypeMissileTrail` smoke; shape-fragment damage explosions; death `Bang`. Team colouring: whole hull recoloured to team colour ×0.1 (lighting brightens it) [C].
-
-## [→ 02_units_and_entities] [→ 04_crates_powerups_and_weapons] 4. Insertion Squad (`code/worldobject/insertion_squad.{h,cpp}`)
-
-Classes: `InsertionSquad : Unit` (the squad), `Squadie : Entity` (type `TypeInsertionSquadie`), `HistoricWayPoint` (breadcrumb record: `m_pos`, monotonically increasing `m_id` from static `s_lastId`). Build: [B:FULL].
-
-### 4.1 How it is obtained
-- Captured crate reward *Squad* → `RunTask(TypeSquad)` → player targets ground → `Task::TargetSquad(pos)`: `numEntities = 2 + CurrentLevel(TypeSquad)` = **3** squaddies; `Team::NewUnit(TypeInsertionSquadie, 3, …, pos)` creates an `InsertionSquad`, `Location::SpawnEntities(pos, team, unit, TypeInsertionSquadie, 3, zero, spread 10)`; the unit is selected; optional camera entity-tracking (pref `OTHER_AUTOMATICCAM` = 2, or gamepad); crate sound `"Squad"` [C] `code/taskmanager.cpp:Task::TargetSquad`.
-- Level `InstantUnits` with `runAsTask` (`TypeInsertionSquadie` → `TypeSquad`) [C] `code/location.cpp`.
-- **Lifetime**: `Task::Start` sets `m_lifeTimer = 60 s`; in Multiplayer `Task::Advance` counts it down and calls `Task::Stop()`, which applies `ChangeHealth(-1000)` to every squaddie → squad dies after **60 s** [C]. The task also ends when the unit has no live entities.
-
-### 4.2 Stats & constants
-| Item | Value | Kind / Ref |
-|---|---|---|
-| Health | 75 | `data/stats.txt` InsertionSquadie |
-| Speed | 30 u/s (×(1+difficulty/10)) × slope factor | stats.txt; [C] `Squadie::Advance` |
-| RATE | 0.5 s (blueprint double) — per-entity `m_stats[RATE]` truncates to **0** | stats.txt; [C] `entity.h` (`unsigned char m_stats`) |
-| Squad size | 3 (Multiwinia) | [C] `Task::TargetSquad` |
-| Spacing | `GAP_BETWEEN_MEN = 10.0` along the breadcrumb path | `#define` [C] `insertion_squad.h` |
-| Laser speed / life / range | 200 u/s / 0.6 s / **120 u** | [C] `Squadie::Attack`, `Location::FireLaser` |
-| Laser aim jitter | `syncsfrand(7)` in x,z (±3.5) | [C] |
-| Laser damage | 20–39 (§1.7) | |
-| Auto-target search | `EntityGrid::GetBestEnemy(pos, 0, 100, team)`, re-evaluated every 1.0 s | [C] `Squadie::RunAI` |
-| Max turn rate | 20 rad/s (`angVel = (front × desired)·4`, y-axis only) | [C] |
-| Secondary cooldown per squaddie | Grenade 4.0 s, Rocket 4.0 s, AirStrike marker 20.0 s, Controller 4.0 s | [C] `Squadie::FireSecondaryWeapon` |
-| Shape | `squad.shp`, markers `MarkerLaser` (muzzle), `MarkerBrass` (ejection) — fatal assert if missing | [C] `Squadie::Squadie` |
-
-### 4.3 Squad movement & formation
-- `InsertionSquad::SetWayPoint(pos)`: `m_wayPoint = m_focusPos = pos`; pushes a `HistoricWayPoint` at the **point man's current position** (or `pos` if no point man) to the front of `m_positionHistory` (never pruned) [C]. If the squad runs a Controller task, appends the new breadcrumb to the controller's route when > 20 from its last waypoint [B:LEGACY]. If `pos` is within 5 of a connected `RadarDish` or `Bridge` (Teleport), `m_teleportId` is set and the waypoint becomes the teleport entrance [C].
-- `GetTargetPos(d)`: d ≤ 0 or teleporting → waypoint; else walk back from the point man along `pointMan → history[0] → history[1] → …` and return the point at path-distance d (the end of history if shorter) [C]. Squaddie *i* (formation index *i*) targets `GetTargetPos(10·i)` → **single-file "snake" following the leader's footsteps**; the point man (index 0) heads straight to the waypoint.
-- `Squadie::Advance` (alive, on ground, not in water) [C]:
-  - velocity toward target at SPEED; **slope factor** `f = 1 − (h_next − h_now)/3`, clamped [0.2, 2.0]; if terrain normal `y < 0.6` and going uphill (f < 1) → f = 0 (cannot climb steep slopes). Arrival snap if the remaining distance < one step. `PushFromObstructions`; y = ground + 0.1.
-  - Facing: if this squad is the team's **currently selected unit**, face the team's mouse position (`team->m_currentMousePos`); otherwise face velocity, run `Squadie::RunAI`, and face the current enemy if any. Teleporting: face the target directly.
-  - If `y ≤ 0` (water): `m_inWater = syncfrand(3)` (the 10 s drowning clock starts 0–3 s advanced) [C].
-  - Airborne (knocked up) → `Entity::AdvanceInAir`. Position clamped to the world. If teleporting and `Entity::EnterTeleports(m_teleportId)` succeeds → squaddie removed from this unit (re-created at the other end by the teleport, which copies `m_weaponType`) [C] `code/worldobject/teleport.cpp`.
-  - On death the unit `RecalculateOffsets()`.
-- Player-controlled squad ignores `Unit` formation offsets; formation = breadcrumb snake [C].
-
-### 4.4 Squaddie state machine
-```mermaid
-stateDiagram-v2
-  [*] --> Following : spawned (3 at target, spread 10)
-  Following --> Following : waypoint set (breadcrumb added)
-  Following --> Airborne : m_onGround false (e.g. spawn drop) — never from damage, see note
-  Airborne --> Following : lands (AdvanceInAir)
-  Following --> InWater : pos.y <= 0
-  InWater --> Following : terrain under it > 0
-  InWater --> Dead : >10 s in water (ChangeHealth -500)
-  Following --> Teleporting : unit.m_teleportId set and entrance reached → removed from unit
-  Following --> Dead : health <= 0 / task 60 s expiry (ChangeHealth -1000)
-  Dead --> [*] : AdvanceDead fade (40/s on ground)
-```
-Note: `Squadie::ChangeHealth` always returns **false**, so lasers, `Bang` and shockwaves never apply knock-back to squaddies (and `Bang`/`Shockwave` explicitly exclude `TypeInsertionSquadie` anyway) [C].
-
-### 4.5 Combat
-**Primary (lasers)** — two paths:
-1. *Player-fired* `InsertionSquad::Attack(pos, withSecondary=false)` (sent each tick while the primary fire control is held): builds the list of alive, enabled squaddies with `m_reloading == 0` (always true, RATE truncated to 0); `m_attackAccumulator += dt / (RATE_blueprint / N)` = `0.2·N` per tick; while accumulator ≥ 1 pick a random (`syncfrand`) eligible squaddie (without replacement) and call `Squadie::Attack(pos)` → **2 shots/s per squaddie, 6 shots/s for a full squad**, evenly spread [C] `InsertionSquad::Attack`.
-2. *Autonomous* (squad not selected): `Squadie::RunAI` each tick fires at the current best enemy with probability `P(syncfrand(d/2) < 2) = min(1, 4/d)` where d is the distance → e.g. 10 %/tick at 40 u, every tick within 4 u; no reload gate [C].
-- `Squadie::Attack(pos)`: laser from `MarkerLaser` world position, speed 200 toward `pos ± 3.5`; `TypeBrass` particle ejected from `MarkerBrass` (`front·(5+syncfrand(10)) + SFRAND(5)` per axis); sounds `Attack`, `FireLaser` [C].
-
-**Secondary** — `InsertionSquad::Attack(pos, true)`: the alive, enabled squaddie **nearest to the target** whose secondary timer ≤ 0 calls `FireSecondaryWeapon(pos)` (in addition to the primary laser logic) [C]. Requires `HasResearch(m_weaponType)` (level > 0). Weapon by `m_weaponType` (default **`TypeGrenade`**):
-| Weapon | Effect | Cooldown | Sound |
-|---|---|---|---|
-| Grenade | `ThrowWeapon(muzzle, pos, EffectThrowableGrenade)` (force ≤ 110, fuse 3 s, Bang R12.5 D50) | 4 s | `ThrowGrenade` |
-| Rocket | `FireRocket(muzzle, pos, team)` (§1.6) | 4 s | `FireRocket` |
-| AirStrike | `ThrowWeapon(…, EffectThrowableAirstrikeMarker)` → one marker → 2 bombers (§2) | 20 s | `ThrowAirStrike` |
-| Controller | `ThrowWeapon(…, EffectThrowableControllerGrenade)` (§1.5) | 4 s | `ThrowController` |
-When the timer expires: sound `WeaponReturns` [C].
-
-**Weapon selection in Multiwinia**: `CycleSecondary()` (Grenade → Rocket → AirStrike → Controller → Grenade, skipping types with research 0) is only called for gamepad control **in single-player** (`code/location.cpp` team-control block under `IsSinglePlayer()`); the keyboard weapon-cycle block in `code/location_input.cpp` and the Multiwinia task-manager weapon shortcuts (`code/taskmanager_interface_multiwinia.cpp`) are commented out; `TaskManager::RunTask(TypeGrenade/TypeRocket/TypeController)` would call `SetWeaponType` but Multiwinia crates never run those task types, and in Multiplayer `RunTask(TypeAirStrike)` creates a stand-alone airstrike task instead [C]. ⇒ In Multiwinia a squad's secondary is **always the grenade** [I] (no reachable setter found). Rocket/AirStrike/Controller squad secondaries → [B:LEGACY].
-
-### 4.6 Player control model
-| Control | Effect | Ref |
-|---|---|---|
-| Select | squad becomes `team->m_currentUnitId`; squaddies face the mouse | [C] |
-| Left button held (without primary fire) | `unitMove`: `SetWayPoint(mouse)`, `m_targetDir`, `RecalculateOffsets`; ground cursor marker on release (`m_endSetTarget`) | [C] `code/location.cpp` (team-control block) |
-| Primary fire target held | `unit->Attack(mouse, false)` each tick → lasers | [C] |
-| Primary + secondary fire held | `unit->Attack(mouse, true)` → also one grenade | [C] (`secondaryFire = primaryFireTarget && secondaryFireTarget`) |
-| Gamepad direct control | `InsertionSquad::DirectControl`: (only while camera entity-tracking or look-around) move point man by `(dx, dy)` stick deltas (snaps to a connected teleport's position if the target cell contains one); stop by re-setting the waypoint to the point man when moving; fire at `(m_directUnitTargetDx, 0, m_directUnitTargetDy)` (absolute target) and grenade when secondary is held | [C] `InsertionSquad::DirectControl` |
-| Terminate task | `Task::Stop` kills all squaddies | [C] `Task::Stop` |
-Exact key bindings → 06_player_control_and_input (P-other).
-
-### 4.7 AI (`InsertionSquad::RunAI`, CPU teams) [→ 07_ai]
-- `maxRange = GetApproxMaxRange(GetMaxForce(grenadeLevel))` = 2.3125·110 ≈ **254.4** [C].
-- Every 1.0 s: scan enemies within 500 of the squad centre; iterate nearer-first (updating the running minimum) and pick the first enemy whose 75-radius contains ≥ 20 enemies → waypoint `pos − 0.8·maxRange·dir` (stand off ≈ 204 short of it). Otherwise go to the highest-priority (`AITarget::m_priority[team]`) walkable neighbour of the nearest AITarget, or that AITarget itself [C].
-- Every tick: if enemies within maxRange: target = their centroid + `syncsfrand(30)` (±15) in x,z; if within maxRange → `Attack(target, syncrand()%5 == 0)` (grenade attempt with 20 % chance per tick, still gated by the 4 s cooldown) [C].
-
-### 4.8 Damage, death, visuals, sounds
-- `Squadie::ChangeHealth`: accepts all damage types equally; at ≤ 0 → health 100 (fade counter), `m_dead`, sound `Die`, shape-fragment explosion of `squad.shp`; **no spirit spawned** [C]. Returns false always.
-- Render: lit `squad.shp` (no team recolour in this class — [I] team identity comes from shape/selection UI); damaged flicker uses non-synced `frand()`; `RenderPixelEffect` disabled in Multiplayer [C].
-- Sounds: Entity events + `FireLaser`, `ThrowGrenade`, `FireRocket`, `ThrowAirStrike`, `ThrowController`, `WeaponReturns` [C] `Squadie::ListSoundEvents`.
 
 ## [→ 02_units_and_entities] 6. Tank (`code/worldobject/tank.{h,cpp}`)
 
@@ -700,6 +700,54 @@ Per-state details [C]:
 - Sounds: `DropSpirit` (triggered, not listed); `ListSoundEvents` lists `BeginReprogramming`, `EndReprogramming`, `ReprogrammingComplete` (Engineer leftovers, never triggered here) [C].
 - UI action strings: `engineer_idle`, `engineer_towaypoint`, `engineer_tospirit`, `engineer_toincubator` (Harvesting/ToSpawnPoint fall back to `engineer_idle`) [C] `Harvester::GetCurrentAction`.
 
+## [→ 02_units_and_entities] 8. LaserTrooper (`code/worldobject/lasertrooper.{h,cpp}`) — [B:LEGACY]
+
+`LaserTrooper : Entity` (type `TypeLaserTroop`). Compiled in FULL, unreachable in Multiwinia: `TypeLaserTroop` is in `EntityIsBlocked` (level files cannot place it) and the only runtime creator is `Lander` (`code/worldobject/lander.cpp`), which itself is blocked and has no other spawner [C]. Stats: health 20, speed 15, rate 1 s [C] `data/stats.txt`.
+- `Advance`: moves straight toward `m_targetPos` at SPEED (snap when within one step); `m_front = vel`; `EnterTeleports()`; air/water handling; own reload countdown; dead fade; optional victory dance (1 % per tick hop `10 + syncfrand(10)` up) [C]. `m_targetPos` is fed by `Unit::Advance` for `TypeLaserTroop` (moves the target ≤ 1 unit per tick toward `m_unitTargetPos` = waypoint + rectangle-formation offset) [C] `code/unit.cpp:Unit::Advance`, `Unit::RecalculateOffsets`. Fires via the generic `Unit::Attack`/`Entity::Attack` (laser speed 150, reload RATE) [C].
+- Render: team-coloured sprite quad (×0.7 while reloading, ×(0.5+0.5·health)), ground shadow, side-on additive line; dead → 3 black fragments drifting apart (alpha = health·2.55) [C]. The previous Darwinia `Advance` is commented out (appendix).
+
+## [→ 02_units_and_entities] 9. Shaman (`code/worldobject/shaman.{h,cpp}`) and Shaman Interface (`code/shaman_interface.{h,cpp}`) — [B:LEGACY]
+
+### 9.1 Reachability
+- `Shaman::Advance` has its entire body commented out and **returns true**, so a Shaman is deleted on its first simulation tick [C] `code/worldobject/shaman.cpp:Shaman::Advance`.
+- Creation paths: `Task::TargetShaman` (task type `TypeShaman`) — no crate/UI path runs it in FULL; the `GameTypeShaman` start-up block is commented out [C] `code/location.cpp` (team init), `code/multiwinia.cpp:Multiwinia::Advance`; level-file instant units are blocked (`EntityIsBlocked` lists `TypeShaman`) [C]. ⇒ Shaman is a cut "Shaman" game-mode unit. The task manager refuses to terminate Shaman tasks (`TaskManager::TerminateTask`: "you can't terminate shamans") [C] `code/taskmanager.cpp`.
+- Stats if it existed: health 200, speed 25, rate 2 [C] `data/stats.txt`; shape `officer.shp` [C].
+
+### 9.2 Abilities as coded (for the record; none reachable)
+| Ability | Trigger | Mechanics | Cost / cooldown | Ref |
+|---|---|---|---|---|
+| Move | move order → `SetWaypoint` | walk at SPEED with slope factor clamp [0.1, 2.0], turn blend 0.6/tick, `PushFromObstructions`; waypoint within 5 of a connected RadarDish/Bridge → enter teleport, exit + 30 | — | [C] `Shaman::AdvanceToTargetPosition`, `SetWaypoint` |
+| Change mode | primary fire on/near (≤ 20) itself → `ChangeMode` (else shows teleport target rings) | cycles `ModeNone → ModeCreateDarwinians → ModeFollow → ModeNone`; label "Creating Darwinians" / "Darwinians Following" drawn above it | 0.3 s debounce | [C] `Shaman::ChangeMode`, `Render` |
+| Create Darwinians (mode) | `AdvanceCreateDarwinians` (called only from the commented-out Advance) | every Floating spirit within 50 → spawn one Darwinian of the shaman's team, spirit set to `StateDeath` + `SkipStage()` | none | [C] |
+| Follow (mode) | `CallingDarwinians()` true in ModeFollow → Darwinians follow it (`Darwinian::SearchForShamans`) | — | — | [C]/[I] `code/worldobject/darwinian.cpp` |
+| Teleport | secondary fire → `TeleportToPos(mouse)` | instant jump if the target is inside any own-team `Portal` radius (`Portal::m_portalRadius`); entity grid updated | 0.3 s debounce (shared with mode change) | [C] `Shaman::TeleportToPos`, `ValidTeleportPos`, `GetTargetArea` |
+| Summon (via Shaman Interface) | `ShamanInterface` ring menu → `RequestShamanSummon` → `Shaman::SummonEntity(type)` → `BeginSummoning` (**body commented out**) | sacrifice Darwinians within 50 (`SacraficeDarwinians`: one batch per 1.0 s, each `Darwinian::Sacrafice(shamanId, portal)`) until `GetSoulRequirement(type)` | souls below | [C] (inert) |
+| Capture portal | icon "capture" (`Entity::NumEntityTypes`) shown if `CanCapturePortal()`: nearest Portal not ours, ≤ 300 away, no summonable monster within 300 | 25 souls | — | [C] |
+| Paralyze | `Paralyze()` (final summon) | freezes, invulnerable, health reset | — | [C] |
+
+Summon table (`Shaman::GetSummonTime/GetDefaultSpawnNumber/GetSoulRequirement/GetEggType`, `IsSummonable`) [C]:
+| Entity | Summonable (`IsSummonable`) | Summon time (s) | Spawn count | Souls | Egg type (`Triffid::Spawn*`) | Icon |
+|---|---|---|---|---|---|---|
+| Centipede | yes | 20 | 1 | 30 | SpawnCentipede | `shaman_centipede.bmp` |
+| ArmyAnt | no | 10 | 3 | 20 | SpawnAnts | `shaman_ants.bmp` |
+| SoulDestroyer | yes | 60 | 1 | 100 | SpawnSoulDestroyer | `shaman_souldestroyer.bmp` |
+| Spider | yes | 30 | 3 | 25 | SpawnSpider | `shaman_spider.bmp` |
+| SporeGenerator | yes | 10 | 1 | 15 | SpawnSporeGenerator | `shaman_sporegenerator.bmp` |
+| Tripod | no | 15 | 1 | 15 | — | `shaman_tripod.bmp` |
+| Virii | yes | 5 | 1 | 15 | SpawnVirii | `shaman_virii.bmp` |
+| Darwinian | no | 10 | 1 | 20 | SpawnDarwinians | `shaman_darwinian.bmp` |
+| Special final summon (255 / −1) | — | — | — | 200 | — | `shaman_special.bmp` |
+| Capture portal (`NumEntityTypes`) | — | — | — | 25 | — | `shaman_capture.bmp` |
+| other | — | −1 | 0 | 999 | −1 | none |
+`CanSummonEntity` always returns false (portal-count rules commented out) [C]. `MAX_EGGS = 3` (unused) [C].
+- Damage: `Shaman::ChangeHealth` only while `m_vunerable` (default true); death → shape explosion, no spirit [C]. Lasers and Bang/Shockwave never push it (excluded types) [C].
+
+### 9.3 Shaman Interface (radial summon menu) [C] `code/shaman_interface.cpp`
+- Shown when the local player's current entity is a Shaman and the task-manager key is pressed (`taskmanager_interface_multiwinia.cpp`/`taskmanager_interface_icons.cpp` hijack); hidden by `ControlIconsTaskManagerHide` or after a selection. `ShamanInterface::Advance` is called every frame from `code/main.cpp`; `Render` from `code/renderer.cpp`.
+- Icons: one per `IsSummonable` type (Centipede, SoulDestroyer, Spider, SporeGenerator, Virii — in enum order), + special-summon icon (condition commented out → never), + capture icon if `CanCapturePortal`. Ring of radius 175 px around screen centre, starting at −90°, icon size 120 px (scaled by 8/N when N > 8), shadow `icons/shaman_shadow.bmp`, background `textures/shaman_background.bmp` (550 px), selection ring `icons/mouse_selection.bmp` (130 px, yellow) at the top slot; centre shows the current summon's icon greyed [C].
+- Input: `ControlMenuLeft/Right` rotate the ring one slot (animation `0.1 rad` per frame until `2π/N`), sound `MouseOverIcon` (TypeInterface); `ControlActivateTMButton` → `RequestShamanSummon(team, shamanUniqueId, iconType)` and hide [C]. Mouse hover selection (`AdvanceMouseInIcon`, 60 px) is disabled [C].
+- Network: letter `NET_DARWINIA_SHAMANSUMMON` {`TEAMID`, `ENTITYID` = shaman unique id, `ENTITYTYPE` = summon type (uchar)} [C] `code/network/clienttoserver.cpp:ClientToServer::RequestShamanSummon`; the handler finds the shaman among the team's specials and calls `Shaman::SummonEntity(type)` [C].
+
 ## [→ 02_units_and_entities] [→ 04_crates_powerups_and_weapons] 10. Engineer (`code/worldobject/engineer.{h,cpp}`)
 
 `Engineer : Entity` (type `TypeEngineer`). Build: [B:FULL] (Darwinia-heritage unit kept for Multiwinia). A small hovering drone that **collects spirits one by one (snake-train) and returns each to a friendly Spawn Point as a new Darwinian**; in maps with Darwinia buildings it also reprograms Control Towers/Research Items and operates Bridges. Registered as a team special only in `GameModeMultiwinia` [C] `Engineer::Begin`.
@@ -765,54 +813,6 @@ stateDiagram-v2
 - AI (`Engineer::RunAI`, every 1 s): if Idle → waypoint = nearest spirit (any state) [C].
 - Render: lit shape (front y halved), shadow, blue (0.2,0.4,1.0) pulsing `textures/laser.bmp` beam while reprogramming/operating/researching; `RenderPixelEffect` disabled in Multiplayer [C].
 - Sounds: Entity events + `BeginReprogramming`, `EndReprogramming`, `ReprogrammingComplete`, `DropSpirit` [C] `Engineer::ListSoundEvents`. UI strings `engineer_idle`, `engineer_towaypoint`, `engineer_tospirit`, `engineer_toincubator`, `engineer_reprogramming`, `engineer_researching`, `engineer_bridge` [C] `Engineer::GetCurrentAction`.
-
-## [→ 02_units_and_entities] 8. LaserTrooper (`code/worldobject/lasertrooper.{h,cpp}`) — [B:LEGACY]
-
-`LaserTrooper : Entity` (type `TypeLaserTroop`). Compiled in FULL, unreachable in Multiwinia: `TypeLaserTroop` is in `EntityIsBlocked` (level files cannot place it) and the only runtime creator is `Lander` (`code/worldobject/lander.cpp`), which itself is blocked and has no other spawner [C]. Stats: health 20, speed 15, rate 1 s [C] `data/stats.txt`.
-- `Advance`: moves straight toward `m_targetPos` at SPEED (snap when within one step); `m_front = vel`; `EnterTeleports()`; air/water handling; own reload countdown; dead fade; optional victory dance (1 % per tick hop `10 + syncfrand(10)` up) [C]. `m_targetPos` is fed by `Unit::Advance` for `TypeLaserTroop` (moves the target ≤ 1 unit per tick toward `m_unitTargetPos` = waypoint + rectangle-formation offset) [C] `code/unit.cpp:Unit::Advance`, `Unit::RecalculateOffsets`. Fires via the generic `Unit::Attack`/`Entity::Attack` (laser speed 150, reload RATE) [C].
-- Render: team-coloured sprite quad (×0.7 while reloading, ×(0.5+0.5·health)), ground shadow, side-on additive line; dead → 3 black fragments drifting apart (alpha = health·2.55) [C]. The previous Darwinia `Advance` is commented out (appendix).
-
-## [→ 02_units_and_entities] 9. Shaman (`code/worldobject/shaman.{h,cpp}`) and Shaman Interface (`code/shaman_interface.{h,cpp}`) — [B:LEGACY]
-
-### 9.1 Reachability
-- `Shaman::Advance` has its entire body commented out and **returns true**, so a Shaman is deleted on its first simulation tick [C] `code/worldobject/shaman.cpp:Shaman::Advance`.
-- Creation paths: `Task::TargetShaman` (task type `TypeShaman`) — no crate/UI path runs it in FULL; the `GameTypeShaman` start-up block is commented out [C] `code/location.cpp` (team init), `code/multiwinia.cpp:Multiwinia::Advance`; level-file instant units are blocked (`EntityIsBlocked` lists `TypeShaman`) [C]. ⇒ Shaman is a cut "Shaman" game-mode unit. The task manager refuses to terminate Shaman tasks (`TaskManager::TerminateTask`: "you can't terminate shamans") [C] `code/taskmanager.cpp`.
-- Stats if it existed: health 200, speed 25, rate 2 [C] `data/stats.txt`; shape `officer.shp` [C].
-
-### 9.2 Abilities as coded (for the record; none reachable)
-| Ability | Trigger | Mechanics | Cost / cooldown | Ref |
-|---|---|---|---|---|
-| Move | move order → `SetWaypoint` | walk at SPEED with slope factor clamp [0.1, 2.0], turn blend 0.6/tick, `PushFromObstructions`; waypoint within 5 of a connected RadarDish/Bridge → enter teleport, exit + 30 | — | [C] `Shaman::AdvanceToTargetPosition`, `SetWaypoint` |
-| Change mode | primary fire on/near (≤ 20) itself → `ChangeMode` (else shows teleport target rings) | cycles `ModeNone → ModeCreateDarwinians → ModeFollow → ModeNone`; label "Creating Darwinians" / "Darwinians Following" drawn above it | 0.3 s debounce | [C] `Shaman::ChangeMode`, `Render` |
-| Create Darwinians (mode) | `AdvanceCreateDarwinians` (called only from the commented-out Advance) | every Floating spirit within 50 → spawn one Darwinian of the shaman's team, spirit set to `StateDeath` + `SkipStage()` | none | [C] |
-| Follow (mode) | `CallingDarwinians()` true in ModeFollow → Darwinians follow it (`Darwinian::SearchForShamans`) | — | — | [C]/[I] `code/worldobject/darwinian.cpp` |
-| Teleport | secondary fire → `TeleportToPos(mouse)` | instant jump if the target is inside any own-team `Portal` radius (`Portal::m_portalRadius`); entity grid updated | 0.3 s debounce (shared with mode change) | [C] `Shaman::TeleportToPos`, `ValidTeleportPos`, `GetTargetArea` |
-| Summon (via Shaman Interface) | `ShamanInterface` ring menu → `RequestShamanSummon` → `Shaman::SummonEntity(type)` → `BeginSummoning` (**body commented out**) | sacrifice Darwinians within 50 (`SacraficeDarwinians`: one batch per 1.0 s, each `Darwinian::Sacrafice(shamanId, portal)`) until `GetSoulRequirement(type)` | souls below | [C] (inert) |
-| Capture portal | icon "capture" (`Entity::NumEntityTypes`) shown if `CanCapturePortal()`: nearest Portal not ours, ≤ 300 away, no summonable monster within 300 | 25 souls | — | [C] |
-| Paralyze | `Paralyze()` (final summon) | freezes, invulnerable, health reset | — | [C] |
-
-Summon table (`Shaman::GetSummonTime/GetDefaultSpawnNumber/GetSoulRequirement/GetEggType`, `IsSummonable`) [C]:
-| Entity | Summonable (`IsSummonable`) | Summon time (s) | Spawn count | Souls | Egg type (`Triffid::Spawn*`) | Icon |
-|---|---|---|---|---|---|---|
-| Centipede | yes | 20 | 1 | 30 | SpawnCentipede | `shaman_centipede.bmp` |
-| ArmyAnt | no | 10 | 3 | 20 | SpawnAnts | `shaman_ants.bmp` |
-| SoulDestroyer | yes | 60 | 1 | 100 | SpawnSoulDestroyer | `shaman_souldestroyer.bmp` |
-| Spider | yes | 30 | 3 | 25 | SpawnSpider | `shaman_spider.bmp` |
-| SporeGenerator | yes | 10 | 1 | 15 | SpawnSporeGenerator | `shaman_sporegenerator.bmp` |
-| Tripod | no | 15 | 1 | 15 | — | `shaman_tripod.bmp` |
-| Virii | yes | 5 | 1 | 15 | SpawnVirii | `shaman_virii.bmp` |
-| Darwinian | no | 10 | 1 | 20 | SpawnDarwinians | `shaman_darwinian.bmp` |
-| Special final summon (255 / −1) | — | — | — | 200 | — | `shaman_special.bmp` |
-| Capture portal (`NumEntityTypes`) | — | — | — | 25 | — | `shaman_capture.bmp` |
-| other | — | −1 | 0 | 999 | −1 | none |
-`CanSummonEntity` always returns false (portal-count rules commented out) [C]. `MAX_EGGS = 3` (unused) [C].
-- Damage: `Shaman::ChangeHealth` only while `m_vunerable` (default true); death → shape explosion, no spirit [C]. Lasers and Bang/Shockwave never push it (excluded types) [C].
-
-### 9.3 Shaman Interface (radial summon menu) [C] `code/shaman_interface.cpp`
-- Shown when the local player's current entity is a Shaman and the task-manager key is pressed (`taskmanager_interface_multiwinia.cpp`/`taskmanager_interface_icons.cpp` hijack); hidden by `ControlIconsTaskManagerHide` or after a selection. `ShamanInterface::Advance` is called every frame from `code/main.cpp`; `Render` from `code/renderer.cpp`.
-- Icons: one per `IsSummonable` type (Centipede, SoulDestroyer, Spider, SporeGenerator, Virii — in enum order), + special-summon icon (condition commented out → never), + capture icon if `CanCapturePortal`. Ring of radius 175 px around screen centre, starting at −90°, icon size 120 px (scaled by 8/N when N > 8), shadow `icons/shaman_shadow.bmp`, background `textures/shaman_background.bmp` (550 px), selection ring `icons/mouse_selection.bmp` (130 px, yellow) at the top slot; centre shows the current summon's icon greyed [C].
-- Input: `ControlMenuLeft/Right` rotate the ring one slot (animation `0.1 rad` per frame until `2π/N`), sound `MouseOverIcon` (TypeInterface); `ControlActivateTMButton` → `RequestShamanSummon(team, shamanUniqueId, iconType)` and hide [C]. Mouse hover selection (`AdvanceMouseInIcon`, 60 px) is disabled [C].
-- Network: letter `NET_DARWINIA_SHAMANSUMMON` {`TEAMID`, `ENTITYID` = shaman unique id, `ENTITYTYPE` = summon type (uchar)} [C] `code/network/clienttoserver.cpp:ClientToServer::RequestShamanSummon`; the handler finds the shaman among the team's specials and calls `Shaman::SummonEntity(type)` [C].
 
 ## [→ 04_crates_powerups_and_weapons] 11. Crate-delivered military effects — mechanics summary
 
@@ -1035,7 +1035,7 @@ The simulation is lock-step over the network: every peer must advance identicall
 | manual (Squads) | "deadly units, but only as long as you control them"; grenade = hold right + left click | autonomous fire is probabilistic `min(1,4/d)`/tick; `secondaryFire = primaryFireTarget && secondaryFireTarget` ✔ | [C] `Squadie::RunAI`, `code/location.cpp` |
 | `docs/multiwiniachanges-beta.txt` | "Darwinians surviving armour explosions (Issue 710)" listed as an issue | passengers are now ejected in `StateOnFire` | [C] `Darwinian::AdvanceInsideArmour` |
 | `docs/multiwinia-changes.txt` | "Napalm Strikes will now set fire to trees much more reliably" | trees/triffids within 100 take flat −200 with no falloff | [C] `FlameGrenade::Advance` |
-| Code comment in `Location::FireLaser` | "subversion lasers are half speed" | speed is the caller's: Subversion turret uses shell vel/4 (quarter) | [C] `code/worldobject/gunturret.cpp` |
+| Code comment in `Location::FireLaser` | "subversion lasers are half speed" | speed is the caller's: Subversion Darwinians fire at 75 (half the generic 150) ✔, but the Subversion gun turret fires at shell velocity / 4 | [C] `code/worldobject/darwinian.cpp:Darwinian::FireSubversion`, `code/worldobject/gunturret.cpp` |
 
 ## IP register
 | Item | Kind | Where (ref) | Neutral placeholder |

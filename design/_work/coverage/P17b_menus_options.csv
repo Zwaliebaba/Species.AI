@@ -1,0 +1,82 @@
+path,depth,reason,sections
+code/game_menu.cpp,full,,5.2 GameMenu versus GameMenuWindow;5.3 Map catalogue;11 UI patterns;Constants table;IP register;Appendix
+code/game_menu.h,full,,5.2 GameMenu versus GameMenuWindow;11.2 Widget family;Constants table
+code/interface/chatinput_window.cpp,full,,1 Inventory;5.6 Chat input;Constants table
+code/interface/chatinput_window.h,full,,5.6 Chat input
+code/interface/controllerunplugged_window.cpp,full,,1 Inventory;5.7 Controller unplugged
+code/interface/controllerunplugged_window.h,full,,5.7 Controller unplugged
+code/interface/demoend_window.cpp,full,,1 Inventory;5.8 Demo gating;IP register;Appendix
+code/interface/demoend_window.h,full,,5.8 Demo gating
+code/interface/helpandoptions_windows.cpp,full,,1 Inventory;5.4 Help and Options branch;Contradictions;Appendix
+code/interface/helpandoptions_windows.h,full,,5.4 Help and Options branch
+code/interface/leaderboards_window.cpp,full,,1 Inventory;5.9 Leaderboards;IP register;Appendix
+code/interface/leaderboards_window.h,full,,5.9 Leaderboards
+code/interface/mainmenus.cpp,full,,1 Inventory;3 User options;5.5 In-game menu;5.12 Other in-scope windows;11.1 Layout;Appendix
+code/interface/mainmenus.h,full,,1 Inventory;5.5 In-game menu;11.2 Widget family
+code/interface/mods_window.cpp,full,,1 Inventory;5.11 Mods;Appendix
+code/interface/mods_window.h,full,,5.11 Mods
+code/interface/multiwiniaoptions_window.cpp,full,,1 Inventory;10 Editor-only map options window;Appendix
+code/interface/multiwiniaoptions_window.h,full,,10 Editor-only map options window
+code/interface/prefs_graphics_window.cpp,full,,3.2 Graphics Options;4.2 Register;Contradictions
+code/interface/prefs_graphics_window.h,full,,3.2 Graphics Options
+code/interface/prefs_keybindings_window.cpp,full,,3.5 Control Options;Appendix
+code/interface/prefs_keybindings_window.h,full,,3.5 Control Options
+code/interface/prefs_other_window.cpp,full,,3.4 Other Options;4.2 Register;Contradictions
+code/interface/prefs_other_window.h,full,,3.4 Other Options
+code/interface/prefs_screen_window.cpp,full,,3.1 Screen Options;4.2 Register
+code/interface/prefs_screen_window.h,full,,3.1 Screen Options
+code/interface/profilewindow.cpp,full,,1 Inventory;5.12 Other in-scope windows;Appendix
+code/interface/profilewindow.h,full,,5.12 Other in-scope windows
+code/interface/reallyquit_window.cpp,full,,1 Inventory;5.12 Other in-scope windows;Appendix
+code/interface/reallyquit_window.h,full,,5.12 Other in-scope windows
+code/interface/save_on_quit_window.cpp,full,,1 Inventory;5.12 Other in-scope windows;Appendix
+code/interface/save_on_quit_window.h,full,,5.12 Other in-scope windows
+code/interface/userprofile_window.cpp,full,,1 Inventory;5.10 User profiles;Contradictions;Appendix
+code/interface/userprofile_window.h,full,,5.10 User profiles
+data/default_preferences.txt,full,,2.2 First-run default set;4.1 default_preferences.txt keys
+code/lib/preferences.cpp,full,read to document storage (outside partition),2 Preferences system;2.2 First-run default set
+code/lib/preferences.h,full,read to document storage (outside partition),2 Preferences system
+code/lib/preference_names.h,full,screen pref key names,3.1 Screen Options
+code/lib/input/file_paths.cpp,full,input prefs paths,2.3 Related stores;4.1 default_preferences.txt keys
+code/app.cpp,skimmed,targeted reads: App ctor/Initialise/language/profile/paths/Multiplayer,2 Preferences system;3.4 Other Options;5.10 User profiles
+code/main.cpp,skimmed,targeted reads: game loops/HandleCommonConditions/SetPreferenceOverrides,1 Inventory;5.5 In-game menu;5.7 Controller unplugged
+code/renderer.cpp,skimmed,targeted reads: Renderer::Initialise/RenderFrame/SetScreenGamma,3.1 Screen Options;3.2 Graphics Options
+code/water.cpp,skimmed,RenderWaterDetail readers,3.2 Graphics Options
+code/clouds.cpp,skimmed,RenderCloudDetail readers,3.2 Graphics Options
+code/team.cpp,skimmed,RenderEntityDetail readers,3.2 Graphics Options
+code/worldobject/virii.cpp,skimmed,RenderEntityDetail readers,3.2 Graphics Options
+code/worldobject/darwinian.cpp,skimmed,DarwinianScaleFactor and highDetail use,3.2 Graphics Options;4.1 default_preferences.txt keys
+code/worldobject/officer.cpp,skimmed,DarwinianScaleFactor readers,4.1 default_preferences.txt keys
+code/worldobject/multiwiniazone.cpp,skimmed,DarwinianScaleFactor reader,4.1 default_preferences.txt keys
+code/landscape.cpp,skimmed,RenderLandscapeDetail reader,3.2 Graphics Options
+code/landscape_renderer.cpp,skimmed,RenderLandscapeDetail/RenderLandscapeMode readers,3.2 Graphics Options
+code/lib/window_manager_win32.cpp,skimmed,CreateWin/ListAllDisplayModes,3.1 Screen Options;3.6 Options that do not exist
+code/lib/window_manager_directx.cpp,skimmed,_waitVRT handling,3.1 Screen Options
+code/lib/window_manager.h,skimmed,CreateWin signature,3.1 Screen Options
+code/camera.cpp,skimmed,AutomaticCamera/ControlMethod readers,3.4 Other Options;3.5 Control Options
+code/taskmanager.cpp,skimmed,AutomaticCamera reader,3.4 Other Options
+code/taskmanager_interface.cpp,skimmed,ControlMethod readers,3.5 Control Options
+code/control_help.cpp,skimmed,ControlHelpEnabled readers,3.4 Other Options
+code/taskmanager_interface_icons.cpp,skimmed,ControlHelpEnabled readers,3.4 Other Options
+code/multiwiniahelp.cpp,skimmed,HelpEnabled reader,3.4 Other Options
+code/location_input.cpp,skimmed,chat open/HelpEnabled/MultiwiniaControlMethod/ControlRemap,5.6 Chat input;4.2 Register
+code/network/server.cpp,skimmed,port/ServerName readers,3.4 Other Options
+code/network/clienttoserver.cpp,skimmed,port readers and SendChatMessage,3.4 Other Options;5.6 Chat input
+code/interface/darwinia_window.cpp,skimmed,Update navigation/GetMenuSize/GameExitButton,11.3 Input/focus pattern;3.4 Other Options
+code/interface/darwinia_window.h,skimmed,members and CreateValueControl signatures,11 UI patterns
+code/interface/drop_down_menu.cpp,skimmed,RegisterInt/SelectOption,3.1 Screen Options
+code/interface/input_field.cpp,skimmed,InputScroller::CheckInput,11.2 Widget family
+code/network/networkvalue.h,skimmed,LocalType reference semantics,3.1 Screen Options
+code/interface/debugmenu.cpp,skimmed,reachability of ProfileWindow/ReallyQuit/SetWindowed,1 Inventory
+code/user_input.cpp,skimmed,debug hotkeys commented out,1 Inventory
+code/sound/soundsystem.cpp,skimmed,SaveOnQuitWindow reachability,1 Inventory
+code/UI/GameMenuWindow.cpp,skimmed,HelpAndOptionsButton/chat/leaderboard pages (P18 file),1 Inventory;5.9 Leaderboards
+code/UI/GameMenuWindow.h,skimmed,page enum,5.2 GameMenu versus GameMenuWindow
+code/UI/GameMenuOptionsButton.h,full,unused OptionsMenuWindow opener,Appendix
+code/UI/MapData.cpp,skimmed,CalculeMapId,5.3 Map catalogue
+code/level_file.cpp,skimmed,CalculeCRC and leaderboard stats,5.3 Map catalogue;5.9 Leaderboards
+code/level_file.h,skimmed,LevelOption/LevelEffect enums,10 Editor-only map options window
+code/location_editor.cpp,skimmed,MultiwiniaOptionsWindow opener,10 Editor-only map options window
+contrib/systemiv/lib/tosser/llist.cpp,skimmed,GetItem bounds,3.4 Other Options
+data/language/english.txt,skimmed,lookup of string ids via P17b_strings.py,IP register;5.4 Help and Options branch
+data/input/input_preferences.txt,skimmed,control bindings used by menus,5.6 Chat input;5.7 Controller unplugged

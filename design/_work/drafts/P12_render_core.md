@@ -1,9 +1,7 @@
 # P12_render_core — Renderer, effects, shapes, textures, text, resources
 Scope: `code/renderer.*`, `code/particle_system.*`, `code/explosion.*`, `code/deform.*`, `code/effect_processor.*`, `code/3d_sierpinski_gasket.*`, `code/lib/{shape,3d_sprite,sphere_renderer,render_utils,debug_render,persisting_debug_render,text_renderer,bitmap,texture,texture_uv,resource,shader,FixedPipeline,targetcursor,poster_maker}.*`; plus `data/shaders/*` (deform*, water-meshwaves binding; FixedFunc* briefly — P13 owns the GL→D3D9 layer). Pass table built by reading `code/location.cpp` Render* and its callees (read outside scope, recorded in coverage). Build baseline: see build_matrix.md (`Release|Win32` OpenGL, `TARGET_PC_FULLGAME`). P11 owns landscape/water/clouds internals; P13 owns `lib/opengl_directx*`.
 
-Conventions: GL state names are OpenGL 1.x fixed-function. "Default state" means the state set by `Renderer::SetOpenGLState` at frame start (§24.1.3); each pass is documented as the *delta* it applies and whether it restores. All file paths of assets are relative to `data/`.
-
-<!-- SECTION ORDER: 24.1 backend/frame, 24.2 pass table, 24.3 components, 24.4 shaders, 24.5 style/options, 25 textures/resources, 26 VFX -->
+Conventions: GL state names are OpenGL 1.x fixed-function. "Default state" means the state set by `Renderer::SetOpenGLState` at frame start (§24.1, "Baseline GL state"); each pass is documented as the *delta* it applies and whether it restores. All file paths of assets are relative to `data/`.
 
 ## [→ 26_animation_and_vfx] Particle system
 
@@ -53,7 +51,7 @@ Conventions: GL state names are OpenGL 1.x fixed-function. "Default state" means
 | 18 | `TypePortalFire` | 2.0 | 50.0 | -4.0 | 0.0 | 100,50,50 | 120,100,50 | rises | additive | `worldobject/portal.cpp` |
 | 19 | `TypeNumTypes` | – | – | – | – | – | – | count | – | – |
 
-All particle types share **one texture**: `textures/particle.bmp` (mag filter NEAREST, min filter whatever the resource manager set — see §25) [C] `code/particle_system.cpp:ParticleSystem::Render`. Spin is not applied: billboards are always the same diamond orientation.
+All particle types share **one texture**: `textures/particle.bmp` — 16×16 4-bit, almost uniformly grey (156,156,156) with a lighter (237–255) rim, no magenta [C] (histogram) — so a particle is a flat-grey **diamond** (the quad's corners lie on the camera up/right axes) tinted by its colour; mag filter NEAREST, min filter LINEAR_MIPMAP_LINEAR from upload [C] `code/particle_system.cpp:ParticleSystem::Render`. Spin is not applied.
 
 ### Advance (per server tick, `dt = SERVER_ADVANCE_PERIOD`) [C] `code/particle_system.cpp:Particle::Advance`
 1. If `gameTime >= birthTime + life` → remove.
@@ -122,7 +120,7 @@ Legacy commented-out set (Darwinia-era): lifetime 50, speed 0.01, ang vel 0.01, 
 ### Render [C] `ExplosionManager::Render`, `Explosion::Render`
 - State: `GL_TEXTURE_2D` on with `textures/shapewireframe.bmp` (mag LINEAR, min LINEAR_MIPMAP_LINEAR), tex env **`GL_DECAL`**; `Renderer::SetObjectLighting()` (lighting + LIGHT0 + LIGHT1, material diffuse 1, spec 0, ambient 0, shininess 127); `GL_COLOR_MATERIAL` on; cull off; blend on with default `SRC_ALPHA, ONE_MINUS_SRC_ALPHA`; depth test/write default (on).
 - Per triangle: `glColor4ub(r,g,b,(1-age)*255)` where `age = (5 + now - timeToDie)/5` (0→1), normal = `rotMat*norm`, vertices `rotMat*v + pos`, tex coords (0,0),(0,1),(1,1) — the wireframe texture's edge lines appear along the triangle edges. Restores tex env MODULATE, lighting off, colour material off, cull on, blend off.
-- [I] Because GL_DECAL with an RGB(A) texture blends texture over the lit colour by texture alpha, the debris shows bright wire edges over lit facets — the same "wireframe" look as buildings (§24.3 Shape).
+- `shapewireframe.bmp` is 128×128 with only two colours: magenta (255,0,255) background (16003 px) and white lines (381 px) [C] (histogram via `OUT/_work/scripts/P12_bmphist.py`). Loaded with the default pink mask, the background becomes alpha 0 and the lines alpha 1; `GL_DECAL` outputs `Cf*(1-At) + Ct*At` with the fragment's alpha, so each shard shows its **lit facet colour with white edge lines** and fades out by vertex alpha. A new engine can reproduce this with a barycentric edge mask.
 
 ## [→ 24_rendering] Deform effect (screen-space distortion) [B:D3D]
 
@@ -257,7 +255,7 @@ App start then calls `SetOpenGLState()` and `BitmapRGBA::SetMaxTextureSize(GL_MA
 ### Fade, pause, logo, transitions [C]
 - **Fade** (`RenderFadeOut`, drawn every frame unless `IsFirsttimeSequencing()`): its own static wall-clock timer, dt clamped to 0.05 s; `m_fadeDelay` counts down first; then `m_fadedness += m_fadeRate*dt`, clamped 0..1 (rate cleared at the limits). `StartFadeOut`: rate +1/s, no delay. `StartFadeIn(delay)`: fadedness 1, rate −1/s. Draws a black quad with alpha `fadedness*255` (blend default, depth test/write off). `IsFadeComplete` ⇔ rate ≈ 0.
 - **Paused banner** (`RenderPaused`): only if no Eclipse windows and (`gameMode != Multiwinia` and window unfocused) or `m_userRequestsPause`; "PAUSED" (literal English, not localised) centred at (W/2, 0.4H), size 80, outline pass (colour (1,1,1,0)) then white.
-- **Darwin logo** (`m_renderDarwinLogo ≥ 0`): `icons/darwin_research_associates.bmp`, square h=0.7H at y=0.05H, alpha ramps 0→1 over 3 s, holds to 8 s, ramps down to 10 s; drawn as 9 offset copies (±4 px) with `SRC_ALPHA, ONE_MINUS_SRC_COLOR` (dark halo) then one additive copy; caption `launchpad_logo_1` at 0.8H size H/9 [B:LEGACY] (set by Darwinia-era scripts [I]).
+- **Darwin logo** (`m_renderDarwinLogo ≥ 0`): `icons/darwin_research_associates.bmp`, square h=0.7H at y=0.05H, alpha ramps 0→1 over 3 s, holds to 8 s, ramps down to 10 s; drawn as 9 offset copies (±4 px) with `SRC_ALPHA, ONE_MINUS_SRC_COLOR` (dark halo) then one additive copy; caption `launchpad_logo_1` at 0.8H size H/9. Triggered only by the script command `Script::RunCommand_ShowDarwinLogo` (`code/script.cpp`) [C]; [I] Darwinia-campaign scripts → [B:LEGACY].
 - **Private-demo logo** (`RenderLogo`) only under `PROMOTIONAL_BUILD` (never defined) [B:DEAD]; `RenderFlatTexture` commented out [B:DEAD].
 - **Menu transition** (state machine, `AdvanceMenuTransition` runs just before every `Flip`):
 ```mermaid
@@ -300,7 +298,7 @@ Scope of the table: one frame of `Renderer::RenderFrame` while **in a Multiwinia
 | 10b | Lasers | `RenderWeapons` (part 2) → `Laser::Render` | laser bolt quads (one glBegin for all) | additive | on / off | off | default | off | off | `textures/laser.bmp` **no mip** (min filter left LINEAR_MIPMAP_LINEAR from upload → [I] see 25.2) | `GL_LINE_SMOOTH` on (irrelevant to quads); projection near×1.2 | worldobject |
 | 11 | Spirits | `Location::RenderSpirits` → `Spirit::RenderWithoutGlBegin` | untextured inner/outer quads per spirit; monster-team spirits first | monster: `SRC_ALPHA, ONE_MINUS_SRC_COLOR` (dark); others additive | on / **off** | **off** | default | off | off | off | inner/outer size 1.0/3.0 (×0.5 in Multiwinia), alpha 255/100 (halved in MP) | worldobject |
 | 12 | Route lines | `RoutingSystem::Render` | player route preview lines fading at 0.25/s | on (default func) | **off** / on | default | default | off | off | per line | line width 1 | P-routing |
-| 13 | Location message | `Location::RenderCurrentMessage` | large centred caption (40 px, scaled to fit, grows by `sqrt(2-t)*15` in the last 2 s) at y = 370·W/1280, team-coloured, outline pass first | text (see 24.3 Text) | 2D | | | | | font | `BeginText2D/EndText2D` | P12 (text) / P-location |
+| 13 | Location message | `Location::RenderCurrentMessage` | large centred caption (40 px, scaled to fit, grows by `sqrt(2-t)*15` in the last 2 s) at y = 370·W/1280, team-coloured, outline pass first | text (see 24.7) | 2D | | | | | font | `BeginText2D/EndText2D` | P12 (text) / P-location |
 | 14 | Explosion debris | `ExplosionManager::Render` | shattered triangles | default func | on / on | **off** | off | off | **on** (`SetObjectLighting`) + COLOR_MATERIAL | `textures/shapewireframe.bmp` mip, **GL_DECAL** | restores MODULATE | P12 |
 | 15 | Particles | `ParticleSystem::Render` | smoke batch then glow batch | smoke: `SRC_ALPHA, ONE_MINUS_SRC_COLOR`; glow: `SRC_ALPHA, ONE` | on / **off** | **off** | default | off | off | `textures/particle.bmp`, MAG **NEAREST** (restored LINEAR) | billboards | P12 |
 | 16 | Markers | `MarkerSystem::Render` | off-screen/on-screen location markers and labels | default func | per marker | off | | | | | `SetupMatricesFor3D` then 2D | P-UI |
@@ -405,7 +403,7 @@ Result: a blocky low-resolution additive ghost image of selected units overlaid 
 | `ScreenZDepth` | 24 | | 16/24 | depth buffer | same |
 | `WaitVerticalRetrace` | 1 (`data/default_preferences.txt` sets 0) | | 0/1 | written back but the first `CreateWin` call passes literal `true` | same |
 | `RenderLandscapeDetail` | 1 | **commented out of the menu** | 1–4 | reads replaced by literal 1 in `landscape.cpp`/`landscape_renderer.cpp` → no effect [C] | P11 |
-| `RenderWaterDetail` | 1 | High/Med/Low (1/2/3) | >0 | `>0` builds and renders the dynamic wave mesh (`Water::Water` checks `detail > 0` before building it, ~L86); the menu never offers 0 | P11 |
+| `RenderWaterDetail` | 1 | High/Med/Low (1/2/3) | >0 | `>0` builds and renders the dynamic wave mesh (`Water::Water` (`code/water.cpp` ~L86) checks `detail > 0` before building it); the menu never offers 0 | P11 |
 | `RenderCloudDetail` | 1 | Sky detail 1/2/3 | | blobby layers: 3 at 1, 2 at 2, 1 at 3; flat layers: 2 at 1, 1 otherwise, alpha 0.5 at 3 | `code/clouds.cpp` |
 | `RenderBuildingDetail` | 1 | 1/2/3 | | decorative counts at detail 1/2/3 — blobs: spam 20/10/0, spawn point 20/10/3, crate 20/10/0, construction yard 50/25/10, god dish 50/25/10, portal 50/25/10; stars: spam, crate, construction yard, god dish, portal 10/5/2; spawn-point spirit-link laser glow only at 1; tree fire particles `numFire /= detail`; building port control pads and a laser-fence texture layer only when detail < 3; spirit receiver extras only at 1 | `worldobject/{spam,spawnpoint,crate,constructionyard,goddish,portal,tree,building,laserfence,spiritreceiver}.cpp` (grep) |
 | `RenderEntityDetail` | 1 | 1/2/3 | | Darwinian high-detail distance 99999.9/1000/500; Virii LOD thresholds | `Team::RenderDarwinians`, `RenderVirii`, `virii.cpp` |
@@ -433,7 +431,7 @@ Not present: anti-aliasing/FSAA option on Win32 (SDL path only requests 4× MSAA
 | Water reflection RT | half-res back-buffer format [D3D] | `WaterReflectionEffect` |
 | Max texture size | `GL_MAX_TEXTURE_SIZE` (downscale only; lost when power-of-two rescale also applies, see 25.2) | `App::App`, `BitmapRGBA::ConvertToTexture` |
 | Display-list names | decimal strings, must be < 20 chars | `Resource::GetDisplayList` |
-| Main-loop slow-frame reaction | `m_fps < 15` branch after render | `code/main.cpp` (P-architecture) |
+| Main-loop slow-frame reaction | if `m_fps < 15`, the sound system is advanced a second time after rendering | `code/main.cpp:LocationGameLoop` |
 | Frame time clamp | `g_advanceTime ≤ 0.25 s`; fade dt ≤ 0.05 s | `code/main.cpp:UpdateAdvanceTime`, `RenderFadeOut` |
 
 ## [→ 24_rendering] 24.5 Shape rendering (`.shp` meshes)
@@ -692,6 +690,10 @@ Lookup: (1) `m_textures` hash keyed by the **exact name string** (case-sensitive
 ## [→ 24_rendering] 24.8 Render-time prediction (interpolation) convention
 
 Every world container that is advanced in slices (`SliceDArray`/`FastDArray` with `GetLastUpdated()`) is rendered with an extrapolation time: objects at index ≤ `GetLastUpdated()` (already advanced this server tick) get `g_predictionTime`; objects beyond it (not yet advanced) get `g_predictionTime + SERVER_ADVANCE_PERIOD` [C] `Location::RenderBuildings`, `RenderBuildingAlphas`, `RenderWeapons`, `RenderSpirits`, `RenderClouds` (threshold `m_lastSliceProcessed >= 3`), `Team::RenderOthers/RenderVirii/RenderDarwinians`, `ParticleSystem::Render`, `Renderer::PreRenderPixelEffect`. Renderers extrapolate `pos + vel*t` (and fragment `angVel*t`) — there is no interpolation between two stored states. The definition of `g_predictionTime` lives in `code/gametimer.*` (P-architecture).
+
+## [→ 24_rendering] 24.9 Particle and explosion rendering (pointer)
+
+The renderer-facing specification of particles (billboard construction, two blend batches, texture, prediction, state) and of explosion debris (DECAL wireframe texture, lighting, alpha fade) is in the `[→ 26_animation_and_vfx]` sections "Particle system" and "Explosions" of this draft; their position in the frame is passes 14–15 of §24.2. Lasers/beams/lightning and laser fences are drawn by worldobject code inside pass 10 (`Location::RenderWeapons`) — only their shared state (additive, depth-write off, `laser.bmp`, near-plane ×1.2) is specified here.
 
 ## Constants table (this partition)
 

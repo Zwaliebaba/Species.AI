@@ -234,7 +234,7 @@ Effect functions are all `static` in `Crate` and are reused by tasks (`code/task
 
 Global/untargeted immediate effects pass team 255 to the sound and no team to the message [C].
 
-## [→ 04_crates_powerups_and_weapons] 7. Per-level exclusion — `InvalidCrates`
+## [→ 04_crates_powerups_and_weapons] 7. Per-level exclusion — InvalidCrates
 
 - **Syntax** (inside `MultiwiniaOptions_StartDefinition … MultiwiniaOptions_EndDefinition`): `InvalidCrates <Key> <Key> …` where each key is matched case-insensitively (`stricmp`) against `Crate::GetName(i)`; unknown keys are ignored silently [C] `code/level_file.cpp:LevelFile::ParseMultiwiniaOptions`.
 - Storage: `bool LevelFile::m_invalidCrates[Crate::NumCrateRewards]`, zeroed in both `LevelFile` constructors; written back by `LevelFile::WriteMultiwiniaOptions` as `\tInvalidCrates\t<Key>\t…` (after `LevelOptions`, before `PlayTime`) only if any are set [C] `code/level_file.cpp:LevelFile::WriteMultiwiniaOptions`.
@@ -293,7 +293,7 @@ classDiagram
     class AI{
       +static AI* s_ai[NUM_TEAMS]
       +int m_currentObjective
-      +LList~RRSolarPanelInfo*~ m_rrObjectiveList
+      +LList~RRSolarPanelInfo~ m_rrObjectiveList
       #double m_timer
       #double m_radarReposTimer
       #bool m_tutorialCentreZoneCaptured
@@ -361,7 +361,7 @@ classDiagram
 - **Simulation-resident and lockstep**: the AI is an ordinary entity in `Team::m_others`, advanced once per tick inside `Team::Advance(slice)` (each `m_others` entry is in exactly one of the 10 slices) on **every peer**; all its randomness is `syncrand/syncfrand/syncsfrand`; it issues orders by direct calls (`Darwinian::GiveOrders`, `Officer::SetOrders/SetWaypoint`, `TaskManager::RunTask/TargetTask/TerminateTask`, `Armour::AISetConversionPoint`, `RadarDish::Aim`) — **no network messages** [C] `code/team.cpp:Team::Advance`, `code/taskmanager.cpp:TaskManager::TargetTask`. Docs describe an AI "running locally" on a client — see discrepancies.
 - AI has **perfect information**: it reads every building, every AITarget's per-team counts and the entity grid for any team [C]. No resource cheats were found: `m_aiType` is not referenced by spawn points, population or damage code (grep of `m_aiType` across `code/`) [C].
 
-## [→ 07_ai] 11. AITarget node graph (the AI's "map")
+## [→ 07_ai] 11. AITarget node graph (the AI's map)
 
 ### 11.1 Placement
 - **Level file** (designer-placed; 1112 AITargets across the 57 shipped `mp_*.txt` levels [C count]): `AITarget <id> <x> <z> <team> <rx> <rz> <isGlobal> [<linkId> [<priorityModifier> [<checkCliffs>]]]` [C] `AITarget::Read/Write`; e.g. `AITarget 56 602.17 1461.32 255 1.00 0.00 0 -1 0.00 0`. `Initialise` copies link/modifier/checkCliffs; `m_waterTarget = (pos.y ≤ 0)`.
@@ -426,21 +426,21 @@ if MP and KOTH and scoreZone: if zone.team != t or zone.totalCount − zone.team
 ### 12.1 `AI::Advance` (every tick) [C]
 ```mermaid
 flowchart TD
-    A[AI::Advance tick] --> B["Recall strays: n = max(1, int(0.02*|m_others|)) random picks"]
-    B --> C{Darwinian on ground?}
-    C -- wallHits>10 & not in armour --> C1[state = Idle, wallHits = 0]
-    C -- Idle/Worship/Watching --> C2{"dist to nearest AITarget > 70?"}
-    C2 -- yes --> C3["GiveOrders(target + polar(20+U(0,20) [Blitz: 0+U(0,20)], U(0,2pi)))"]
-    B --> D["m_timer -= dt; m_radarReposTimer = max(0, m_radarReposTimer - dt)"]
-    D --> E{Multiplayer?}
-    E -- yes --> F[AdvanceRadarDishAI; AdvanceSpecialsAI: e->RunAI for each special; AdvanceUnitAI: unit->RunAI]
-    E --> G{m_timer > 0?}
-    F --> G
-    G -- yes --> Z[return]
-    G -- no --> H[m_timer = 1.0]
-    H --> I{Multiplayer?}
-    I -- yes --> J[AdvanceMultiwiniaAI]
-    I -- no --> K["AdvanceSinglePlayerAI [B:LEGACY]"]
+    A["AI::Advance (tick)"] --> B["Recall strays: n = max(1, int(0.02 x size of m_others)) random picks"]
+    B --> C{"Picked Darwinian on ground?"}
+    C -->|"wallHits above 10 and not inside armour"| C1["state = Idle, wallHits = 0"]
+    C -->|"Idle / WorshipSpirit / WatchingSpectacle"| C2{"Distance to nearest AITarget above 70?"}
+    C2 -->|yes| C3["GiveOrders(target + polar offset r = 20 + U(0,20), Blitzkrieg r = U(0,20), angle U(0,2pi))"]
+    B --> D["m_timer -= dt, m_radarReposTimer = max(0, m_radarReposTimer - dt)"]
+    D --> E{"Multiplayer?"}
+    E -->|yes| F["AdvanceRadarDishAI, then AdvanceSpecialsAI (RunAI on each special), then AdvanceUnitAI (RunAI on each unit)"]
+    E -->|no| G
+    F --> G{"m_timer still positive?"}
+    G -->|yes| Z["return"]
+    G -->|no| H["m_timer = 1.0"]
+    H --> I{"Multiplayer?"}
+    I -->|yes| J["AdvanceMultiwiniaAI"]
+    I -->|no| K["AdvanceSinglePlayerAI (B:LEGACY)"]
 ```
 
 ### 12.2 `AI::AdvanceMultiwiniaAI` (main cycle) [C]
@@ -452,10 +452,10 @@ flowchart TD
     P --> Q[AdvanceCaptureTheStatueAI - CTS only]
     Q --> R[AdvanceRocketRiotAI - RR only]
     R --> AS{Assault?}
-    AS -- yes --> AA["AdvanceAssaultAI (sets m_timer = 3 unless Hard)"]
-    AS --> W[Collect 'well-defended' friendly AITargets]
+    AS -->|yes| AA["AdvanceAssaultAI (sets m_timer = 3 unless Hard)"]
+    AS -->|no| W["Collect well-defended friendly AITargets"]
     AA --> W
-    W --> X[For each: optional officer use, FindTargetBuilding, send idle Darwinians]
+    W --> X["For each: optional officer use, FindTargetBuilding, send idle Darwinians"]
 ```
 "Well-defended" set: friendly AITargets (owner `IsFriend` with AI team) where `(idle > limit && noAttack) || !IsImportant()`; `limit = 10` (the neighbour loop also sets 10 — no-op), ×3 (= 30) for an Assault attacker on a radar target; `noAttack = enemy < 0.33 × friend`, and on Standard/Hard outside Assault `noAttack = false` whenever `enemy > 0` ("never send Darwinians away if enemies present").
 

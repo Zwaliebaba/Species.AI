@@ -1,0 +1,54 @@
+path,depth,reason,sections
+code/app.cpp,full,,"[→ 20_architecture] 1. The App class — the root object;[→ 20_architecture] 2. Main loops, frame timing and threads;[→ 22_determinism_and_networking] 6. Determinism notes for X3;[→ 20_architecture] 7. Constants table;IP register;Appendix — dead/legacy code"
+code/app.h,full,,[→ 20_architecture] 1. The App class — the root object;[→ 20_architecture] 7. Constants table;IP register;Appendix — dead/legacy code
+code/gametimer.cpp,full,,"[→ 20_architecture] 2. Main loops, frame timing and threads;[→ 22_determinism_and_networking] 6. Determinism notes for X3;[→ 20_architecture] 7. Constants table"
+code/gametimer.h,full,,"[→ 20_architecture] 2. Main loops, frame timing and threads"
+code/globals.h,full,,"[→ 20_architecture] 2. Main loops, frame timing and threads;[→ 21_simulation_and_entity_model] 4. Teams, ownership and units;[→ 20_architecture] 7. Constants table;Docs-vs-code discrepancies"
+code/location.cpp,full,,"[→ 21_simulation_and_entity_model] 3. Location — the match world;[→ 21_simulation_and_entity_model] 4. Teams, ownership and units;[→ 06_player_control_and_input] 5. In-match player input: UserInput, LocationInput, TeamControls;[→ 22_determinism_and_networking] 6. Determinism notes for X3;[→ 20_architecture] 7. Constants table;IP register;Appendix — dead/legacy code"
+code/location.h,full,,[→ 21_simulation_and_entity_model] 3. Location — the match world
+code/location_input.cpp,full,,"[→ 06_player_control_and_input] 5. In-match player input: UserInput, LocationInput, TeamControls;[→ 22_determinism_and_networking] 6. Determinism notes for X3;[→ 20_architecture] 7. Constants table;Appendix — dead/legacy code"
+code/location_input.h,full,,"[→ 06_player_control_and_input] 5. In-match player input: UserInput, LocationInput, TeamControls"
+code/main.cpp,full,,"[→ 20_architecture] 1. The App class — the root object;[→ 20_architecture] 2. Main loops, frame timing and threads;[→ 06_player_control_and_input] 5. In-match player input: UserInput, LocationInput, TeamControls;[→ 22_determinism_and_networking] 6. Determinism notes for X3;[→ 20_architecture] 7. Constants table;IP register;Appendix — dead/legacy code"
+code/main.h,full,,"[→ 20_architecture] 1. The App class — the root object;[→ 20_architecture] 2. Main loops, frame timing and threads"
+code/team.cpp,full,,"[→ 21_simulation_and_entity_model] 4. Teams, ownership and units;[→ 06_player_control_and_input] 5. In-match player input: UserInput, LocationInput, TeamControls;[→ 20_architecture] 7. Constants table;IP register"
+code/team.h,full,,"[→ 21_simulation_and_entity_model] 4. Teams, ownership and units;[→ 06_player_control_and_input] 5. In-match player input: UserInput, LocationInput, TeamControls"
+code/unit.cpp,full,,"[→ 21_simulation_and_entity_model] 4. Teams, ownership and units;[→ 22_determinism_and_networking] 6. Determinism notes for X3;[→ 20_architecture] 7. Constants table"
+code/unit.h,full,,"[→ 21_simulation_and_entity_model] 4. Teams, ownership and units"
+code/user_input.cpp,full,,"[→ 06_player_control_and_input] 5. In-match player input: UserInput, LocationInput, TeamControls;[→ 20_architecture] 7. Constants table"
+code/user_input.h,full,,"[→ 06_player_control_and_input] 5. In-match player input: UserInput, LocationInput, TeamControls"
+code/network/clienttoserver.cpp,skimmed,"out of scope (P15); read AdvanceAndCatchUp, ProcessAllServerLetters, GetNumSlicesToAdvance, AdvanceSender, START_GAME/PAUSE/SELECTUNIT/ORDERGOTO/PROMOTE/TOGGLEENTITY handlers, Request* functions, randseed","[→ 20_architecture] 2. Main loops, frame timing and threads;[→ 06_player_control_and_input] 5. In-match player input: UserInput, LocationInput, TeamControls;[→ 22_determinism_and_networking] 6. Determinism notes for X3;Cross-partition notes"
+code/network/server.cpp,skimmed,"out of scope (P15); read AdvanceIfNecessary, Advance header, AdvanceSender call sites","[→ 20_architecture] 2. Main loops, frame timing and threads;Docs-vs-code discrepancies"
+code/lib/work_queue.cpp,full,out of scope (P14); read to document threading,"[→ 20_architecture] 2. Main loops, frame timing and threads"
+code/lib/work_queue.h,full,out of scope (P14),"[→ 20_architecture] 2. Main loops, frame timing and threads"
+code/lib/slice_darray.cpp,full,out of scope (P14); slice bounds semantics,[→ 21_simulation_and_entity_model] 3. Location — the match world;[→ 22_determinism_and_networking] 6. Determinism notes for X3
+code/lib/slice_darray.h,full,out of scope (P14),[→ 21_simulation_and_entity_model] 3. Location — the match world
+contrib/systemiv/lib/tosser/fast_darray.cpp,skimmed,out of scope (P14); free-list reuse order only,[→ 21_simulation_and_entity_model] 3. Location — the match world;[→ 22_determinism_and_networking] 6. Determinism notes for X3
+contrib/systemiv/lib/math/random_number.h,full,out of scope (P14/X3),[→ 22_determinism_and_networking] 6. Determinism notes for X3
+contrib/systemiv/lib/math/random_number.cpp,skimmed,"out of scope; AppSeedRandom, AppRandom, syncrand/frand ranges",[→ 22_determinism_and_networking] 6. Determinism notes for X3
+code/lib/vector3.h,skimmed,out of scope (P13); FRAND/SFRAND wrappers,[→ 22_determinism_and_networking] 6. Determinism notes for X3
+code/lib/vector3.cpp,skimmed,out of scope (P13); FromRand,[→ 22_determinism_and_networking] 6. Determinism notes for X3
+code/loading_screen.h,full,out of scope (P20),"[→ 20_architecture] 2. Main loops, frame timing and threads"
+code/loading_screen.cpp,skimmed,out of scope (P20); work queue and Render wait condition,"[→ 20_architecture] 2. Main loops, frame timing and threads"
+code/multiwinia.cpp,skimmed,"out of scope (P02); colour tables, GetCPUColour, GetNextAvailableColour, InitialiseTeam, speed requests","[→ 20_architecture] 2. Main loops, frame timing and threads;[→ 21_simulation_and_entity_model] 4. Teams, ownership and units;Cross-partition notes"
+code/multiwinia.h,skimmed,out of scope (P02); colour defines,"[→ 21_simulation_and_entity_model] 4. Teams, ownership and units"
+code/taskmanager_interface.cpp,skimmed,out of scope (P09); CreateTaskManager,[→ 20_architecture] 1. The App class — the root object
+code/lib/input/file_paths.cpp,skimmed,out of scope (P10); input prefs path selection,"[→ 06_player_control_and_input] 5. In-match player input: UserInput, LocationInput, TeamControls"
+data/input/input_preferences.txt,skimmed,X1a/P10 own it; looked up default bindings of controls used here,"[→ 06_player_control_and_input] 5. In-match player input: UserInput, LocationInput, TeamControls"
+data/input/input_preferences_darwinia.txt,skimmed,X1a/P10 own it; looked up alternative bindings,"[→ 06_player_control_and_input] 5. In-match player input: UserInput, LocationInput, TeamControls"
+code/lib/runnable.cpp,skimmed,out of scope (P14); DelayedJob counter,[→ 20_architecture] 1. The App class — the root object
+code/lib/runnable.h,skimmed,out of scope (P14),[→ 20_architecture] 1. The App class — the root object
+code/worldobject/switch.cpp,skimmed,out of scope (P07); FenceSwitch::Switch networking check,"[→ 06_player_control_and_input] 5. In-match player input: UserInput, LocationInput, TeamControls;[→ 22_determinism_and_networking] 6. Determinism notes for X3"
+code/global_world.cpp,skimmed,"out of scope (P11); GetLocation, GlobalEventCondition::Evaluate",[→ 21_simulation_and_entity_model] 3. Location — the match world
+code/level_file.cpp,skimmed,out of scope (P11); GenerateAutomaticObjectives,[→ 21_simulation_and_entity_model] 3. Location — the match world
+code/routing_system.cpp,skimmed,out of scope (P03); route id allocation,[→ 22_determinism_and_networking] 6. Determinism notes for X3
+code/worldobject/crate.cpp,skimmed,out of scope (P08); RunSlowDownTime/RunSpeedUpTime,"[→ 20_architecture] 2. Main loops, frame timing and threads"
+code/worldobject/meteor.cpp,skimmed,out of scope (P05); time-slow request,"[→ 20_architecture] 2. Main loops, frame timing and threads"
+code/worldobject/worldobject.h,skimmed,out of scope (P03); UNIT_* defines,[→ 21_simulation_and_entity_model] 3. Location — the match world
+code/lib/window_manager_win32.cpp,skimmed,out of scope (P13); WinMain,[→ 20_architecture] 1. The App class — the root object
+code/lib/universal_include.h,skimmed,out of scope (P14); GRACE_TIME,Appendix — dead/legacy code
+contrib/systemiv/lib/profiler.cpp,skimmed,out of scope (P14); Start/Stop,[→ 20_architecture] 1. The App class — the root object
+targets/vs2005/Darwinia.vcproj,skimmed,out of scope (P14); OpenMP setting,"[→ 20_architecture] 2. Main loops, frame timing and threads;[→ 22_determinism_and_networking] 6. Determinism notes for X3"
+docs/Network.txt,full,supporting evidence,Docs-vs-code discrepancies
+docs/NetworkThreads.txt,full,supporting evidence,Docs-vs-code discrepancies
+docs/network overview.txt,full,supporting evidence,Docs-vs-code discrepancies
+docs/integrating virtual players into network system.txt,full,supporting evidence (no discrepancy found for this partition),Docs-vs-code discrepancies

@@ -711,3 +711,217 @@ sequenceDiagram
     Note over A,C: no NETSYNCFIXED in baseline; game stays frozen until<br/>the desynced client leaves (CLIENTGOODBYE → SetSyncState(true))
 ```
 
+## [→ 09_meta_systems] 15. Lobby, server discovery and matchmaking
+
+### 15.1 Components and endpoints [C] `code/app.cpp:App::InitMetaServer`, `contrib/systemiv/lib/metaserver/metaserver_defines.h`
+| Component | Role | Endpoint |
+|---|---|---|
+| MetaServer (WAN directory, external service, not in this tree) | server registration/listing, key authentication, small data items (MOTD, latest version…) | host `metaserver-mwdev.introversion.co.uk`, UDP port `PORT_METASERVER_LISTEN` = **5113** |
+| MatchMaker (same host and port) | tells a socket its public IP:port (STUN-like) and relays hole-punch requests | same as above |
+| MetaServer client listener (in game) | receives list results, auth results, data, and LAN broadcasts | local UDP **5009** (`PORT_METASERVER_CLIENT_LISTEN`), falls back to an OS-chosen port (then LAN discovery cannot work) |
+| LAN discovery | game servers broadcast REGISTER every 5 s | destination `255.255.255.255:5009`, sent from the metaserver listener socket with `SO_BROADCAST` |
+| Game server / client | lockstep traffic | UDP 4000 / 4001 (prefs `NetworkServerPort` / `NetworkClientPort`) |
+Startup [C]: `Authentication_LoadKey("<profile>authkey.dev")`, `SetKey`, `RequestStatus(key, METASERVER_GAMETYPE_MULTIWINIA=4)`, `MetaServer_Initialise` (WinSock), `MetaServer_Connect(host, 5009)`, `MatchMaker_LocateService(host, 5113)`. Game type ids: Defcon 2, Multiwinia 4. A Defcon port 5008 constant also exists.
+
+All metaserver traffic is Directory-encoded (§4.2) with node name `NET_METASERVER_MESSAGE` = `"m"` and command field `"c"`; matchmaker node name is `"match"`. [C]
+
+### 15.2 Metaserver/matchmaker message catalogue [C] `metaserver.cpp`, `matchmaker.cpp`, `authentication.cpp`
+| Code | Symbol | Direction | Fields | Notes |
+|---|---|---|---|---|
+| ma | REGISTER | game server → metaserver (WAN, every TTL/3 ± 1.5 s or on change) and → LAN broadcast (every 5 s or on change) | server properties (§15.3) + COMMAND | demo-key servers skip WAN registration when Demo2Limits.AllowDemoServers is false |
+| mb | REQUEST_LIST | client → metaserver | client properties: AUTHKEY, GAMENAME, GAMEVERSION, [ORIGINVERSION "dH"] | refused locally if own key fails the simple check |
+| mc | LISTRESULT | metaserver → client | one server's properties incl. IP "da", PORT "db" [+ metaserver-added fields, I: PROTOCOLMATCH "dp", DEMORESTRICTED "demo", DEMOSERVER "dz"] | `MetaServer_UpdateServerList(ip, port, WAN, dir)` |
+| mg | LISTRESULT_ENVELOPE | metaserver → client | any number of VOID fields, each a serialised LISTRESULT Directory | unpacked recursively |
+| md | REQUEST_AUTH | client/server → metaserver | AUTHKEY, AUTHKEYID, GAMENAME, GAMEVERSION, [IP of the joining client] | from the authentication thread |
+| me | AUTHRESULT | metaserver → requester | AUTHRESULT "me" int status, AUTHKEY, AUTHKEYID, [HASHTOKEN "ds" int] | sets key status and hash token |
+| mf | REQUEST_DATA | both directions | request: DataType, [LANGUAGE "ec"], GAMENAME, GAMEVERSION, AUTHKEY, ORIGINVERSION; reply: DataType + payload fields + optional DataTTL (s; < 0 never expires) | cached per type |
+| mh | REQUESTSERVERDETAILS | client → metaserver | client properties + IP, PORT | `MetaServer_RequestServerDetails` — no caller in `code/` |
+| mi | UNREGISTER | game server → metaserver (×3) and LAN (×3) | PORT (WAN: advertised port; LAN: the local port value under key PORT) | receiver expects LOCALPORT and an AUTHKEY, neither of which is sent → LAN delisting never matches; entries simply expire [C] |
+| aa | REQUEST_IDENTITY ("match") | any listener → matchmaker, every 10 s | UNIQUEID "ae" int, GAMENAME, GAMEVERSION, AUTHKEY | keeps the NAT mapping alive |
+| ab | IDENTIFY ("match") | matchmaker → listener | UNIQUEID, YOURIP "af" str, YOURPORT "ag" int | first answer per request id wins |
+| ac | REQUEST_CONNECT ("match") | joining client → matchmaker (every 1 s while connecting), relayed to the target server [I] | GAMENAME, GAMEVERSION, AUTHKEY, IP (client public IP), PORT (public port, or local listener port with port forwarding), TARGETIP "ah", TARGETPORT "ai" | server side requires IP and PORT |
+| ad | RECEIVED_CONNECT ("match") | game server → client's public ip:port | — | the outbound packet punches the server's NAT; client only logs it. Any other "match" command ⇒ `AppAbort` (remote crash vector) |
+| sa…sh | STEAM_* | — | Steam auth | **dead** (files not compiled) |
+Field key table for server/client properties: IP da, PORT db, FROMIP dc, FROMPORT dd, LOCALIP de, LOCALPORT df, SERVERNAME dg, GAMENAME dh, GAMEVERSION di, NUMTEAMS dj, NUMDEMOTEAMS dk (unused), MAXTEAMS dl, NUMSPECTATORS dm, MAXSPECTATORS dn, PROTOCOL do (unused), PROTOCOLMATCH dp, AUTHKEY dq, AUTHKEYID dr, HASHTOKEN ds, PASSWORD dt (unused), RECEIVETIME du (unused), GAMEINPROGRESS dv, GAMEMODE dw, SCOREMODE dx (unused), GAMETIME dy (unused), DEMOSERVER dz, DELISTED dA, RANDOM dB, STARTTIME dC, SEARCHRESULT dD (unused), MAPCRC dE, MAPINDEX dF (unused), MASTERPLAYER dG (unused), ORIGINVERSION dH, HASPASSWORD dI, CUSTOMMAPNAME dJ ([B:EDITOR]), DEMORESTRICTED "demo", LANGAME "lan", PLAYERNAME pn / PLAYERSCORE ps / PLAYERALLIANCE pa (unused), NUMHUMANTEAMS ea, MODPATH eb (unused), LANGUAGE ec. [C] `metaserver_defines.h`; "unused" = no reader/writer in compiled code [C grep].
+Data types (`DataType` values): Time, MOTD (`code/UI/motdButton.h`, requested with language), DemoLimits (unused), Demo2Limits (§12.5), KeyLimits (unused), LatestVersion (main menu shows "update available" and an update page when ≠ `APP_VERSION`, `code/UI/GameMenuWindow.cpp`), UpdateURL (`code/UI/update_page_buttons.h`), StressServers/StressClients (unused), ServerTTL (string seconds; default 60, minimum 10). Reply fields DataTTL, DataExpired, TimeHours, TimeMinutes, MaxDemoGameSize, MaxDemoPlayers, AllowDemoServers, AllowDemoLanPlay (unused), DMo, DMa. [C]
+`MetaServer_RequestData` caching [C]: first call creates an empty entry expiring in 1 s and returns NULL; a request is only sent when an existing entry has expired (so the first network request goes out on a call ≥ 1 s after the first); retry interval 1 s, 60 s after more than 10 failed retries; expired-but-present data is still returned with a `DataExpired` counter.
+
+### 15.3 What a hosting server advertises — `Server::Advertise` (every server tick) [C]
+Not advertised when: no map chosen (`m_requestedMap` "null"/empty), `m_noAdvertise` (set at server start; cleared when a non-null map is chosen on a multiplayer host), game type −1, own key fails the simple check, or single player. Otherwise both LAN and WAN registration run.
+| Field | Value |
+|---|---|
+| SERVERNAME | pref `ServerName`, default pref `PlayerName`, default `"NewServer"` |
+| GAMENAME / GAMEVERSION | `"Multiwinia"` / `APP_VERSION` (`DARWINIA_VERSION` = `"dev"` in this tree) |
+| STARTTIME / RANDOM | server wall-clock start (u64) / `m_random` — the browser's de-duplication key |
+| LOCALIP / LOCALPORT | `GetLocalHostIP()` / server listener port |
+| NUMTEAMS | `m_teams.NumUsed()` (humans + CPU), uchar |
+| MAXTEAMS | requested map's `m_numPlayers` (1 if map not found), uchar |
+| NUMHUMANTEAMS | `m_clients.NumUsed()` (connected clients, incl. host), uchar |
+| NUMSPECTATORS / MAXSPECTATORS | 0 / 0 |
+| GAMEINPROGRESS | `Multiwinia::GameRunning()` (0/1) |
+| GAMEMODE | `Multiwinia::m_gameType` (0 Domination/Skirmish, 1 KotH, 2 CtS, 3 Assault, 4 Rocket Riot, 5 Blitzkrieg, 6 Tank Battle) |
+| HASPASSWORD | 1 if a password is set (field absent otherwise) |
+| MAPCRC | map id/CRC of the requested map |
+| AUTHKEY | the host's **full plaintext key** |
+| PORT | local port if `NetworkUsePortForwarding`, else the matchmaker-identified public port if known, else absent |
+`MetaServer_SetServerProperties` stores a copy and signals both registration threads only when the properties changed (`Directory::operator!=`), so changes propagate immediately while unchanged properties are re-sent at the normal period.
+
+### 15.4 NAT traversal [C] `matchmaker.cpp`, `Server::Advertise`, `ClientToServer::Advance`, `code/UI/GameMenuWindow.cpp`
+1. When a host starts WAN advertising it starts identity requests for its game listener; when a player opens the Join Game or Quick Match page the client starts identity requests for its client listener (stopped when leaving those pages unless moving to the connecting page, and on `ClientLeave`).
+2. The public IP:port learned through IDENTIFY becomes the server's advertised PORT and the client's "our details".
+3. While connecting, the client sends REQUEST_CONNECT via the matchmaker and CLIENT_JOIN directly every second; the server's RECEIVED_CONNECT reply to the client's public address opens the server-side NAT so the next JOIN gets through [I standard UDP hole punch; matchmaker behaviour is server-side and not in the tree].
+4. LAN shortcut: when joining, if the client's own public IP equals the server's listed IP, it connects to the server's LOCALIP:LOCALPORT instead (`GameMenuWindow::JoinServer`).
+5. `NetworkUsePortForwarding` = 1 bypasses identity for the advertised/declared port.
+
+### 15.5 Authentication keys [C] `authentication.*`, `contrib/systemiv/lib/math/hash.cpp:HashData`
+Status codes: −10 UnknownGame, −9 WrongPlatform, −8 KeyDead, −7 VersionNotFound, −6 KeyInactive, −5 VersionRevoked, −4 KeyNotFound, −3 KeyRevoked, −2 KeyBanned, −1 KeyInvalid, 0 Unknown, 1 Accepted (UI phrases `dialog_auth_*`).
+- Key format: `AUTHENTICATION_KEYLEN` 32 incl. NUL ⇒ 31 characters (e.g. `XXXXXX-XXXXXX-XXXXXX-XXXXXX-XXX`). In this source release `Authentication_SimpleKeyCheck` only checks the length and `Authentication_GenerateKey` always yields a fixed demo key — the real algorithm was stripped [C].
+- Demo key ⇔ in a two-entry blacklist, or metaserver says KeyNotFound, or (not a hash and) starts with `"DEMO"`. Ambrosia keys start with `"AMBR"` (unused).
+- Hash for transmission: `"hsh" + 5 × %04x` of SHA-1(`"<key>-<hashToken>"`), token supplied by the metaserver in AUTHRESULT. Remote joiners send the hash + key id; the host's own client and demo keys send the plain key.
+- Authentication thread: every 2 s, the first key with status Unknown and < 5 tries: simple-check failure ⇒ that status; demo key ⇒ Accepted locally; else REQUEST_AUTH. Results are cached per key string for the session.
+- Server use: §9.4. UI use: key entry/validation and status button (`code/UI/GameMenuWindow.cpp`, `code/UI/AuthStatusButton.h` — P18).
+
+### 15.6 Client-side server list [C] `metaserver.cpp`
+- Entries `GameServer {identity "ip:port", updateTime, authResult, receivedWan, receivedLan, Directory *data}` under `s_serverListMutex`.
+- Update: matched by identity, or by equal AUTHKEY (unless the entry is demo-restricted — "one key can only run one server at once"); LAN receipt adds `"lan" = true`. LAN identity = broadcast source IP + LOCALPORT.
+- Purge on every `GetServerList`: drop entries not refreshed within `s_serverTTL` = **30 s** (`MetaServer_SetServerTTL` has no caller).
+- `GetServerList(authRequired, wan, lan, max)`: copies, adds AUTHRESULT, skips WAN entries without PORT.
+- `MetaServer_GraduallySortList` (one bubble pass; no caller in `code/`): score 0 open lobby with room, 10/20 otherwise; running 30 − players or 40; game over 50 (spectator terms read the team fields — bug).
+
+### 15.7 Server browser (Join Game page) — data and rules [C] `code/UI/GameMenuWindow.cpp:UpdateServerList/ApplyServerFilters/ApplyBasicServerListSort/JoinServer`, `code/UI/GameServerButton.h`
+- List = LAN entries + WAN entries, minus WAN duplicates of LAN entries (same STARTTIME+RANDOM), minus delisted entries; WAN list requested on page entry (and periodically by the page update, P18).
+- Filters (menu toggles): invalid game types (only under `HIDE_INVALID_GAMETYPES`, not baseline), game-type filter, hide full (`NUMTEAMS ≥ MAXTEAMS`), hide incompatible (`PROTOCOLMATCH` if present, else `GAMEVERSION == APP_VERSION`), hide demo servers (`DEMOSERVER`), hide missing maps (MAPCRC not installed), hide passworded (tests field `"dy"` — the *game* password key — while servers advertise `HASPASSWORD "dI"`, so this filter never removes anything [C]).
+- Sort: compatible & joinable first, then full or demo-restricted, incompatible last.
+- Row shows: host name (SERVERNAME), game-mode short caption, map name (from MAPCRC; "unknown map"; "INCOMPATIBLE : <version>"; demo-restricted text), players `NUMTEAMS/MAXTEAMS` (human count `NUMHUMANTEAMS` when running), colour coding for incompatible / LAN / demo-restricted / joinable / full / missing map, password indicator.
+- Click: incompatible → error; demo-restricted → "buy now" page; full → error; missing map → error; has password → password page; else `JoinServer`.
+
+### 15.8 Quick match [C] `GameMenuWindow::SetupQuickMatchGamePage`, `UpdateQuickMatchGamePage`
+Starts identity discovery; every 1.0 s rebuilds the filtered list; joins the **first** entry that is protocol-compatible and not full (no regard to ping, mode, password or map availability beyond the active filters); requests a fresh WAN list every 10 s. There is no skill/region matchmaking.
+
+### 15.9 Lobby/game-setup synchronisation between host and clients [C]
+- Everything is a sequenced command (§5.3–§5.4): game type, map name, parameters, research levels, AI mode, co-op, single-round Assault, basic crates (host UI controls bound through `NetworkValue`), team names/colours (each player's own), ready toggles, chat, spectator conversion, achievements masks, START_GAME.
+- Late joiners obtain the lobby by history replay; versions make each option converge.
+- The host's "versus CPU"/quick start fills remaining slots with CPU teams before START_GAME (§11). The server enforces only slot counts; host-only rules for options are UI-side [I].
+- Game-mode/map availability for demo keys is limited by Demo2Limits (§12.5); in-progress games remain listed (GAMEINPROGRESS) and joinable (§9.7).
+
+## [→ 22_determinism_and_networking] 16. Constants
+
+| Constant | Value | Kind | Ref |
+|---|---|---|---|
+| Server tick / frame period | 0.1 s real time (10 Hz) | literal `0.1f` | [C] `Server::AdvanceIfNecessary`, `Server::Initialise` |
+| Game time per frame | 0.1 × game speed s | `GameTimer::GetServerAdvancePeriod` | [C] `code/gametimer.cpp` |
+| Slices per frame | 10 (`NUM_SLICES_PER_FRAME`) | #define | [C] `code/globals.h` |
+| Multiwinia::Advance slice | 8 | literal | [C] `ProcessAllServerLetters` |
+| ALIVE period | 0.1 s (`IAMALIVE_PERIOD`) | #define | [C] `code/globals.h`, `code/main.cpp` |
+| Slice pacing gain / cap | 0.3 × pending, max 20 per render frame | literal | [C] `GetNumSlicesToAdvance` |
+| Catch-up trigger / per-iteration slices / time budget | > 20 frames behind / 20 / 0.3 s | literal | [C] `AdvanceAndCatchUp` |
+| Server resend window | 3 letters per client per tick | literal | [C] `UpdateClients` |
+| Fallen-behind threshold | 10 letters (caught-up again at > H−6); rewind −9 for piggy-back | literal | [C] `UpdateClients` |
+| RLE trigger | > 5 consecutive empty UPDATEs and client heard within 5.0 s | literal | [C] `UpdateClients` |
+| Server client timeout | 20.0 s (`#ifndef _DEBUG`) | literal | [C] `UpdateClients` |
+| Client lag banner | 5.0 s since last server letter | literal | [C] `code/renderer.cpp` |
+| Connect retry | 1.0 s | literal | [C] `ClientToServer::Advance` |
+| Team request / colour retry | 0.1 s | literal | [C] |
+| Team name retry | 1.0 s | literal | [C] |
+| Achievement mask resend | 60.0 s | literal | [C] |
+| Keep-alive while loading | 1.0 s | literal | [C] `KeepAlive` |
+| Leave burst | 3 × CLIENT_LEAVE then 100 ms sleep | literal | [C] `ClientLeave` |
+| Max connection attempts | 50 (`CTOS_MAX_CONNECTION_ATTEMPTS`), TESTBED only | #define | [C] `clienttoserver.h` |
+| IFrame history | 50 | literal | [C] `AddIFrame` |
+| Max UDP payload received | 1500 bytes (`MAX_PACKET_SIZE`) | #define | [C] `net_lib.h` |
+| Client send buffer | 16 384 bytes | literal | [C] `ClientToServer::AdvanceSender` |
+| Accounted UDP/IP header | 32 bytes (`UDP_HEADER_SIZE`) | #define | [C] `server.h`, `metaserver.cpp` |
+| Bandwidth averaging interval | 5.0 s | literal | [C] `BandwidthCounter::Count` |
+| FTP block / initial window / initial RTT / timeout / acks / ack list | 1024 B / 10 / 0.1 s / 3×RTT / 3 / 256 | #define/literal | [C] `ftp_manager.cpp` |
+| Network-quality test profile | 200 ms, 25 % loss, 8000 B/s (dead) | literal | [C] `clienttoserver.cpp` |
+| Default ports | server 4000, client 4001, metaserver 5113, metaserver client/LAN 5009, Defcon metaserver 5008 | prefs default / #define | [C] |
+| LAN register period | 5 s (`PERIOD_SERVER_REGISTER_LAN`) | #define | [C] |
+| WAN register period | ServerTTL/3 + U(−1.5, +1.5) s; ServerTTL default 60, min 10 | computed | [C] `ServerRegisterWANThread`, `MetaServer_GetServerTTL` |
+| Auth retry period / max tries per key | 2 s (`PERIOD_AUTHENTICATION_RETRY`) / 5 | #define/literal | [C] |
+| Matchmaker identity period | 10 s (`PERIOD_MATCHMAKER_REQUESTID`) | #define | [C] |
+| `PERIOD_MATCHMAKER_REQUESTCONNECTION` | 3 s — **unused** (client retries every 1 s) | #define | [C] |
+| Local server-list TTL | 30 s (`s_serverTTL`) | static | [C] |
+| Data request retry | 1 s; 60 s after > 10 retries | literal | [C] `MetaServer_RequestData` |
+| Bind retries | 6 attempts, sleep n×100 ms | literal | [C] `NetSocketListener::Bind` |
+| `NetSocket` timeout / poll | 10 000 ms / 100 ms | literal | [C] |
+| Listener stop delay | 250 ms | literal | [C] |
+| Quick match list refresh / WAN request | 1.0 s / 10.0 s | literal | [C] `UpdateQuickMatchGamePage` |
+| Grace countdown | `GRACE_TIME` 3.0 s (20.0 s under `TESTBED_ENABLED`) | #define | [C] `code/lib/universal_include.h`, `code/multiwinia.cpp` |
+| Pause ramp | 0.2 of remaining difference per frame | literal | [C] `ProcessServerUpdates` (PAUSE) |
+| Max teams | 6 (`NUM_TEAMS`) | #define | [C] |
+| Team colours | 8 (`MULTIWINIA_NUM_TEAMCOLOURS`) | #define | [C] |
+| Game params | 64 (`MULTIWINIA_MAXPARAMS`) | #define | [C] |
+| Key length | 31 chars (`AUTHENTICATION_KEYLEN` 32) | #define | [C] |
+
+## Cross-partition notes
+- **P01_app_core**: `App::StartNetwork/StartSinglePlayerServer/StartMultiPlayerServer/ShutdownCurrentGame/ToggleGamePaused/GamePaused/GetMaxNumberofPlayers/IsFullVersion/MultiplayerPermitted/HostGamePermitted/IsGameModePermitted/IsMapPermitted/InitMetaServer` (`code/app.cpp`); main loops call order `Server::AdvanceIfNecessary` → `TeamControls::Advance` → `SendTeamControlsToNetwork` → `ClientToServer::AdvanceAndCatchUp` (`code/main.cpp:LocationGameLoop`); `GameTimer` (`code/gametimer.cpp`) is driven exclusively by `ClientToServer::ProcessAllServerLetters`. `g_lastProcessedSequenceId`, `g_sliceNum` globals live in main.
+- **P02_game_modes**: `Multiwinia::Advance` runs at slice 8 of every frame even while paused; `Multiwinia::InitialiseTeam/RemoveTeams/Reset/SetGameOption(s)/SetGameResearch/SetTeamColour/SaveIFrame/GameInLobby/GameRunning/GameInGracePeriod/AdvanceGracePeriod`; `SendTeamScores` at game over (relayed, ignored).
+- **P03/P09**: `Location::UpdateTeam(teamId, TeamControls)`, `SelectDarwinians`, `IssueDarwinianOrders`, `PromoteDarwinian`, `DemoteOfficer`, `InitialiseTeam`, `DumpWorldToSyncLog`, `NewChatMessage`; `Team::SelectUnit`, `TaskManager::RunTask/TargetTask/SelectTask/TerminateTask`; `Team::RenderSyncErrors`. Simulation code must only use `syncrand/syncfrand` for gameplay randomness and only `GetNetworkTime()`/`SERVER_ADVANCE_PERIOD` for time.
+- **P04/P05/P08**: Officer (`SetNextMode/SetPreviousMode/SetFollowMode/CancelOrders/SetOrders/SetWaypoint`), Armour (`SetDirectOrders/SetOrders/SetWayPoint/ToggleLoading/ToggleConversionAction`), Shaman `SummonEntity`, RadarDish `Aim`, LaserFence `Toggle` are invoked only from network commands; CPU teams = `Entity::TypeAI` (`code/location.cpp:Location::InitialiseTeam`, `code/multiwinia.cpp:RemoveTeams`).
+- **P10_input_camera**: `TeamControls` packing (§5.2), `ControlToggleReady`, `ControlToggleNetworkStats`, `ControlDebugDropPacket` [B:DEBUG].
+- **P13_gfx_backend_math**: `syncrandseed/_syncrand/_syncfrand` (MT19937), `sfrand`, `AppRandom`, SHA-1 helpers `HashData` and `contrib/systemiv/lib/hash.h:Hash`; `iv_trunc_low_nibble` used by `NetworkFloat/NetworkDouble`.
+- **P14_platform_lib**: `Directory` (tosser) is the universal message container — its byte format (§4.2) is part of the protocol; `WorkQueue` runs the client listener.
+- **P17b/P18 (menus, game menu)**: `GameMenuWindow` owns the lobby option bindings, server list filters/sort, Join/Quick Match/password/connecting pages, `KickPlayerButton`, `CSpectatorButton`, `WaitingButton`, `GameServerButton`, `FinishMultiwiniaButton`, `motdButton`, `update_page_buttons`; `interface/network_window.cpp` (stats); `interface/chatinput_window.cpp` (chat).
+- **P20 (benchmark)**: `code/benchmark.cpp` reads bandwidth/latency counters and uploads via external FTP (`ftp.introversion.co.uk`, `BENCHMARK_AND_FTP` off) — not this partition's FTPManager.
+
+## Contradictions / open questions
+1. NETSYNCERROR's CLIENTID is the server's `m_clients` array index while every other message uses client ids; `RegisterNewTeam` also indexes `m_clients[_clientId]` to look up the demo flag. Equivalent only while no client has left. Intended: client id [I].
+2. Server `REQUEST_SPECTATOR` handling `return`s from `Server::Advance` in single player, skipping that tick's UPDATE (frame gap is not created — the sequence id simply isn't consumed — but the letter object leaks) [C].
+3. Comment in `ClientToServer::Advance` says team requests are sent "once a second"; the timer gate actually fires every 0.1 s [C].
+4. `GetNumSlicesToAdvance` contains a dead time-based branch (shadowed variable); unknown whether the intended pacing was time-based [U: intent only].
+5. `HandleDisconnectedClient` and `RemoveClient` append to `m_outbox` without `m_outboxMutex` (benign: only the main thread touches the outbox) [C].
+6. Late joining in progress is technically possible but impractically slow; whether it was intended for release is unclear [U: release notes or UI that greys in-progress games would resolve; `GameServerButton` does not].
+7. In-game the server does not remove a departed client's `ServerTeam`; whether the CPU-converted slot can be re-occupied by a rejoiner depends on `RegisterNewTeam` counting it (it does count it), so a rejoin into a full match is refused [I].
+
+## [U] Unknowns
+1. **MetaServer/MatchMaker server-side behaviour** (which fields it adds to LISTRESULT such as PROTOCOLMATCH/DEMORESTRICTED/DEMOSERVER, how it relays REQUEST_CONNECT, how it validates keys, hash token policy). Resolve: the metaserver source (not in this tree) or packet captures.
+2. Real key algorithm (`Authentication_SimpleKeyCheck`, `GenerateKey` stubbed in this release). Resolve: original authentication.cpp. Irrelevant for a new game (replace with platform auth).
+3. The exact host-only gating of lobby option controls (UI side). Resolve: P18 (`GameMenuWindow` page setup).
+4. Steady-state backlog/latency numbers in §2.4 are analytic; measured values would need instrumentation.
+5. Whether `DEBUG_RENDER_ENABLED` sync-diff markers are visible to players in baseline (they only appear after an IFrame diff, which never happens in baseline) — effectively never.
+
+## Docs-vs-code discrepancies
+| Doc | Doc says | Code does |
+|---|---|---|
+| `docs/Network.txt` | Server ticks at **25 FPS** | 10 Hz (0.1 s) [C] `Server::AdvanceIfNecessary` |
+| `docs/Network.txt` | each chunk also sends copies of the previous two frames | at most one piggy-backed copy (oldest unacked) + up to 3 letters per tick [C] `UpdateClients` |
+| `docs/Network.txt` | watchdog: client dead after 1.0 s silence | 20.0 s [C] |
+| `docs/Network.txt` | client sends a "ResyncMe" message on gaps; I'm-alive only when idle | no resync message — cumulative ack `LASTSEQID` on every letter; ALIVE always every 0.1 s in game [C] |
+| `docs/Network.txt` | heavy physics at 25 fps on a separate thread | 10 frames/s × 10 slices on the main thread [C] |
+| `docs/NetworkThreads.txt` | separate client/server send threads | sends happen synchronously on the main thread [C] |
+| `docs/NetworkThreads.txt` | "light weight advance" extrapolates positions from last received velocity | there is no state reception; rendering interpolates locally via `g_predictionTime` (P12) [C for no state; I for rendering] |
+| `docs/network overview.txt` | lobby over **TCP**, broadcast "Are you a server?" query, LOAD MAP + confirm handshake, then UDP 4000/4001 | everything is UDP in one channel; servers broadcast REGISTER every 5 s (clients never query); START_GAME is just a sequenced command — no confirm; clients catch up after loading [C] |
+| `docs/network overview.txt` | ports 4000 server / 4001 client | matches defaults [C] |
+| `docs/integrating virtual players…` | `ServerToClient` index = team id; proposes separate team and client arrays | implemented as proposed (`m_teams` + `m_clients`) [C] |
+
+## IP register
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| `metaserver-mwdev.introversion.co.uk` | brand / service hostname | `code/app.cpp:App::InitMetaServer` | `directory.example.net` |
+| `80.175.29.66` (route-probe address) | Introversion-owned IP [I] | `contrib/systemiv/lib/netlib/net_lib.cpp:GetLocalHostIP` | use OS interface enumeration |
+| `ftp.introversion.co.uk`, user/password `multiwinia_stats` | brand / credentials | `code/benchmark.cpp` (P20) | none — do not reuse |
+| `http://store.introversion.co.uk` | brand URL | `code/app.cpp:App::GetBuyNowURL` | store URL of new title |
+| `"Multiwinia"` (`APP_NAME`, GAMENAME on the wire) | name | `code/lib/universal_include.h` | `<NewTitle>` |
+| `METASERVER_GAMETYPE_MULTIWINIA` = 4, `_DEFCON` = 2, "defcon-steam3" | product ids / names | `metaserver_defines.h`, `steamauth_server.cpp` | new product id |
+| Fixed demo key `DEMOTP-AXYVLW-SGIZLU-DNLXPK-OJS`; blacklisted keys `ATHETA-DKFOPQ-OGPUSS-CCKOPL-TNF`, `OWRGIO-CLMQEE-URWUDL-SUVUCC-WYQ` | key strings | `authentication.cpp` | none |
+| Key prefixes `"DEMO"`, `"AMBR"` (Ambrosia distributor), hash prefix `"hsh"` | text / partner brand | `authentication.cpp` | platform entitlements |
+| `authkey.dev` / `authkey` file names | text | `code/app.cpp`, `steamauth_client.cpp` | — |
+| Steam app id 1520 | partner id | `steamauth_client.cpp` (dead) | — |
+| UI phrases `multiwinia_error_serverfull`, `_kickedbyserver`, `_badpass`, `_connection`, `_syncerror`, `_lostconnection`, `_incompatible`, `_missingmap`, `_unknownmap`, `multiwinia_player_left`, `multiwinia_menu_connected`, `multiwinia_menu_attempts`, `multiwinia_update_available`, `dialog_duplicate_key`, `dialog_auth_*`, `dialog_steam_progress_*`, `authentication_demorestricted`, chat tokens `PLAYERJOIN`/`PLAYERLEAVE` | UI string ids (text in data/language) | `clienttoserver.cpp`, `renderer.cpp`, `GameServerButton.h`, `multiwinia.cpp`, `authentication.cpp` | neutral ids, new text |
+| Default server name `"NewServer"`, fallback `"Multiwinia"` | text | `Server::Advertise` | `"New Server"` |
+| Map ids `MAPID_MP_KOTH_2P_1`, `_KOTH_3P_1`, `_KOTH_4P_1`, `_CTS_2P_1`, `_ROCKETRIOT_3P_1` (demo map list) | level names | `demo_limitations.cpp`, `code/mapcrc.h` | new map ids |
+| Game-mode names (Domination/Skirmish, King of the Hill, Capture the Statue, Assault, Rocket Riot, Blitzkrieg, Tank Battle) in `GAMEMODE` | names | `code/multiwinia.h` | generic mode names |
+| Message code names "DARWINIA" etc. (`NET_DARWINIA_*`) | brand in identifiers | `network_defines*.h` | `NET_GAME_*` |
+
+## Appendix — dead/legacy code
+- `code/network/network_defines_debug.h` [B:DEAD]: human-readable alternative codes ("DARWINIA", "CMD", "ClientJoin", …, incl. obsolete fields X/Y/Z/Flags/DUMoveDX…); not included anywhere.
+- `code/network/networkupdate.inc` [B:DEAD]: inline accessors for a removed `NetworkUpdate` class (Darwinia).
+- `contrib/systemiv/lib/metaserver/metaserver_defines_old.h` [B:DEAD]: older readable protocol (metaserver port 5008, LAN period 2 s, WAN 10 s, discard 20 s, names "METASERVER"/"Register"/…).
+- `contrib/systemiv/lib/metaserver/steamauth_client.*`, `steamauth_server.*` [B:DEAD]: Steam authentication state machine (NotStarted → Started → StartingSteam → StartingSteamAPI → LoggingOnToSteam → GettingSteamId → GettingSteam3Auth → RequestAuthentication → Success/SuccessDemo/Failed; ≤ 10 retries with n×100 ms backoff), STEAM_AUTHENTICATE "sa" carrying the Steam3 ticket; server side wraps Steam GameServer auth (approve ⇒ Accepted, `k_EDenyNoLicense` ⇒ Demo, else Failed). Not in the vcproj; requires Steam SDK headers.
+- `contrib/systemiv/lib/netlib/net_lib_linux.h`, `net_lib_apple.h`, `net_mutex_linux.cpp`, `net_thread_linux.cpp` [B:DEAD on PC]: pthread/BSD-socket ports (recursive pthread mutex, cond-var events, POSIX semaphores, detached threads).
+- `contrib/systemiv/lib/network_stream_inlines.cpp`: not a compilation unit but `#include`d by `network_stream.h` — live.
+- `code/network/network_quality.*` (simulator), `code/network/listener.*`, both `bytestream.h` [compiled, unused].
+- [B:DEBUG]/`TARGET_BETATEST_GROUP`: full IFrame snapshots and diffs (§8.2); `TRACK_SYNC_RAND` per-letter logging (`DecodeCmd`, `WriteSummary`, `SyncRandLog`, `DumpSyncRandLog`); `ControlDebugDropPacket`.
+- [B:DEBUG] `TESTBED_ENABLED`: rand-seed override, spectator auto-registration (`RegisterSpectator` → SPECTATORASSIGN), SET_TEAM_READY, 50-attempt connect limit, testbed server names.
+- [B:EDITOR] `LOCATION_EDITOR`: REQUESTMAP join flag, CUSTOMMAPNAME advertising/browser display.
+- Console remnants: XUID, PDLC bit mask, JOIN_VIA_INVITE, ENCRYPTION_PADDING_*, `Disconnect_ClientNeedsPDLC`, `IQNetPlayer` forward declarations (Xbox 360 QNet).

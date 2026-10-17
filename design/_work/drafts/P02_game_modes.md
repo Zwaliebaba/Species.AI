@@ -919,3 +919,102 @@ Layers (top to bottom of draw order):
    7. fuel < 100% → "Fuel nn.n%" (75% alpha).
 9. 20%-white border.
 Note: between 95% and 100% fuel the rocket is already Loading but the caption still shows "Fuel 9x.x%" [C/I].
+
+---
+
+## 8. Determinism notes (for X3)
+
+| # | Issue | Evidence | Design guidance |
+|---|---|---|---|
+| D1 | All "1-second" countdowns (`m_timer`, `m_reinforcementTimer`, `m_positionTimer`) do `t -= 0.1; if (t <= 0) t = 1.0;` in IEEE double. `1.0 − 10×0.1 = 1.39e-16 > 0`, so each period is **11 ticks** (verified numerically). Grace `3.0 − n×0.1` reaches ≤ 0 after 30 ticks; victory timers 10/15/5 take 101/151/51 ticks; retribution 45 → 450 ticks. | `code/multiwinia.cpp` (all Advance* functions), `code/gametimer.cpp:GetServerAdvancePeriod` | Use integer tick counters in the new game; decide explicitly whether a "second" is 10 ticks. Replicating the original pace requires 11. |
+| D2 | `Multiwinia::Advance` is lockstep simulation (runs on every peer from `ClientToServer::AdvanceAndCatchUp`, slice 8 of 10). Synchronised RNG used: `syncrand` (statue spawn choice, retribution reward, CPU colour, statue shape), `syncfrand` (statue timer, trunk-port spawn offsets/velocities), `SFRAND` inside `Vector3(...)` ctor (statue facing; synced and left-to-right ordered by the `RandomFloat` wrapper) | `code/multiwinia.cpp`, `code/lib/vector3.{h,cpp}`, `contrib/systemiv/lib/math/random_number.h` | Every random draw in rule code must come from the shared seeded stream in a fixed order. |
+| D3 | `AdvanceTrunkPorts` can run twice per tick (Blitzkrieg maps with `trunkportreinforcements`/`trunkportarmour`: `mp_blitzkrieg_2P_3`, `_2p_1`, `_2p_2`) → reinforcement countdown and turret cadence advance at ~2× (6-tick steps) | `Multiwinia::Advance` step 7 + `AdvanceBlitkrieg` | Deterministic, but almost certainly unintended; call once. |
+| D4 | File-static `s_numMultiwiniaZones` is reset only by KOTH's per-second loop; Blitzkrieg's init **adds** to it. Its value depends on which games this process played before, and it feeds simulation (`AdvanceTrunkPorts`: GunTurret vs AirStrike award). Peers with different session histories can diverge → **desync hazard** | `code/multiwinia.cpp` (L49, L609, L2181, L1118) | Make all rule state per-match and reset at match start. |
+| D5 | Local-only effects inside simulation code (messages, sounds, help notifications, achievements, `AddToTotalKills`, `m_isMasterPlayer`) keyed on `m_globalWorld->m_myTeamId` | throughout | Keep presentation side effects out of the deterministic step or make them pure observers. |
+| D6 | Mixed clocks: Assault `m_defendedAll` gate compares `GetHighResTime()` (wall clock) with `m_startTime` (game time) — achievement only; rocket panel and blink effects use wall clock — render only | `AdvanceAssault`, `rocket_status_panel.cpp` | Never mix wall-clock into sim. |
+| D7 | Tie-breaks depend on fixed iteration order: KOTH zone owner = lowest team index among equal counts; Rocket Riot simultaneous launch → lowest team index; Assault single-round winner = lowest attacking/defending team index; CTS co-op winner = last member of the winning group; Rocket lookup = last matching building; statue spawn = first zone with max distance | cited sections | Specify explicit tie rules. |
+| D8 | Float→int truncations in scoring (`m_score = fuel; += passengers; += height`), integer divisions in handicap and population caps | §4.5, §6.2, §6.3 | Specify rounding explicitly. |
+| D9 | `SERVER_ADVANCE_PERIOD` scales with game speed (speed crates, end-of-game slow-down) while the grace decrement is a literal 0.1 | `gametimer.h`, `AdvanceGracePeriod` | Separate "real tick" from "game dt". |
+| D10 | `GetCPUColour` loops until a free colour 0–3 is drawn — unbounded if all four are taken (consumes an unbounded number of sync random numbers) | `Multiwinia::GetCPUColour` | Bound the search. |
+| D11 | `m_rocketsFound` is uninitialised but only read in dead code; `m_defendedAll`, `m_timeRemaining` uninitialised in ctor until first use | `code/multiwinia.cpp` ctor | Initialise everything. |
+| D12 | Rule step ordering: per server advance, `Location::Advance` for slices 0–9 (P01) with `Multiwinia::Advance` after slice 8's location advance; buildings (zones, rockets, bombs, stations) advance inside `Location::Advance` | `code/network/clienttoserver.cpp` (L~1965–1990) | Fix and document the order (rules after world update). |
+
+---
+
+## 9. Constants table (all mode/rule constants in scope)
+
+| Constant | Value | Kind | Where |
+|---|---|---|---|
+| Server tick | 0.1 s × game speed | code (`GetServerAdvancePeriod`) | `code/gametimer.cpp` |
+| Mode second | 11 ticks | emergent (D1) | `code/multiwinia.cpp` |
+| GRACE_TIME | 3.0 s (30 ticks) | `#define` | `code/lib/universal_include.h` |
+| Grace decrement | 0.1 per tick | literal | `AdvanceGracePeriod` |
+| Domination elimination protection | 30 game s after start | literal | `AdvanceSkirmish` |
+| Domination elimination countdown | 30 mode s | literal (`m_eliminationTimer` reset 30) | `AdvanceSkirmish`, `Reset` |
+| KOTH sudden-death extension | 60 mode s | literal | `AdvanceKingOfTheHill` |
+| HailToTheKing margin | 1.5× second place | literal | `AdvanceKingOfTheHill` |
+| Hoarder margin | > 2× second place and > 3 | literal | `AdvanceCaptureStatue` |
+| CTS Futurewinian/Evilinian fallback win | > 50 entities | literal | `AdvanceCaptureStatue` |
+| Statue spawn timer | `max = 60·S/Z`; `max/2 + U(0,max/2)`, min 10 mode s | literal | `AdvanceCaptureStatue` |
+| Statue spawn min distance to nearest statue | > 30 units | literal | `AdvanceCaptureStatue` |
+| CTS delivery radius / check period | 30 units / 2.0 game s | literal | `MultiwiniaZone::Advance_CaptureTheStatue` |
+| Statue lifters min/max | 20 / 50 | ctor | `Statue::Statue` |
+| Statue carry radius | 33 | literal | `Statue::Initialise` |
+| Statue ownership count radius / period | 50 units / 1.0 game s | literal | `CarryableBuilding::CalculateOwnership` (P06) |
+| Statue destroy tilt / water | `up.y < 0.7` / `y < 0` | literal | `Statue::Advance` |
+| Statue shapes | 8 | literal | `Statue::Initialise` |
+| KOTH zone default size | 50 | ctor | `MultiwiniaZone::MultiwiniaZone` |
+| Zone recount period | 1.0 game s | literal | `MultiwiniaZone::Advance_*` |
+| KOTH "IsEliminated" Darwinian floor | < 50 Darwinians, 0 spawn points | literal | `Multiwinia::IsEliminated` |
+| Blitzkrieg flag count radius | 40 units | literal | `Advance_Blitzkrieg` |
+| Blitzkrieg capture rate | `5·top·(top/total)` × 0.1 per recount | literal | `Advance_Blitzkrieg` |
+| Blitzkrieg neutral decay | 10 × 0.1 per recount | literal | `Advance_Blitzkrieg` |
+| Blitzkrieg ownership range | 0–100 | literal | `Advance_Blitzkrieg` |
+| Base-under-attack message throttle | 20 game s | literal | `Advance_Blitzkrieg` |
+| Blitzkrieg time-out score | flags + 10 × eliminations | literal | `AdvanceBlitkrieg` |
+| BlitzMaster window | 300 (see text) | literal | `AdvanceBlitkrieg` |
+| `BLITZKRIEG_FLAGCAPTURE_RANGE` | 20.0 | `#define` | `multiwiniazone.h` (used by `darwinian.cpp`, P03) |
+| `BLITZKRIEGSCORE_*` | 10000–10005 | `#define` | `multiwinia.h` |
+| Flag raise offset | 50 + (100 − ownership) units | literal | `RenderBlitzkrieg` |
+| Rocket win height | world y > 600 | literal | `AdvanceRocketRiot` |
+| UncladSkies thresholds | damage ≤ 0.01; others' fuel ≤ 50 | literal | `AdvanceRocketRiot` |
+| Rocket refuel→loading / loading→ignition | fuel ≥ 95 / fuel > 95 and passengers ≥ 100 | literal | `EscapeRocket::AdvanceRefueling/Loading` |
+| Rocket refuel EMA | 0.99 / 0.01 per tick; rate = pipes × level × 0.4 | literal | `EscapeRocket::Refuel` |
+| Fuel cap | 100 | literal | `Refuel` |
+| FuelBuilding level EMA | 0.2×dt (×3 when decreasing) | literal | `FuelBuilding::ProvideFuel` |
+| Fuel pipe "flowing" threshold | level > 0.1 (counts a pipe), sound at > 0.2 | literal | `EscapeRocket::ProvideFuel`, `FuelPipe::Advance` |
+| FuelGenerator max surges | 20 MP / 10 SP (render 15/10) | literal | `FuelGenerator::Advance/Render` |
+| Surge decay | 1 per game s | literal | `FuelGenerator::Advance` |
+| Attract-attackers threshold / range / period / count | fuel > 33 / 150 units (300 SP) / 1+U(0,2) s / 1 + rand%(1+0.05·n) | literal | `SetupAttackers` |
+| Rocket damage multiplier (MP) / decay | ×0.2 / 0.33 per game s | literal | `EscapeRocket::Damage/Advance` |
+| Rocket explode threshold | damage > 100 | literal | `Damage` |
+| Under-fire sound threshold | damage ≥ 75 → Malfunction | literal | `SetupSounds` |
+| Explosion: damage decay / extra / fuel loss / fuel floor | 1/s / +2/s when empty / 5/s / 50% of pre-explosion fuel | literal | `AdvanceExploding` |
+| Ignition countdown (SP) / Ready (MP) / Countdown | 18 (forced 0 in MP) / 10 s / 10 at half speed | literal | `AdvanceIgnition/Ready/Countdown` |
+| Flight thrust | `max(2√(y−ground), 0.1)` u/s | literal | `AdvanceFlight` |
+| Camera shake on ignition | 5.0 decaying 1/s | literal | `AdvanceIgnition`, `Advance` |
+| Fuel station recruit radius | 300 units, 1 candidate per tick | literal | `FuelStation::Advance` |
+| Rocket passengers required | 100 | literal | `AdvanceLoading`, `Darwinian::AdvanceBoardingRocket` |
+| Trunk port spawn offset | up 50, random radius ≤ 40 | literal | `AdvanceTrunkPorts` |
+| Trunk port exit speed | 20 + U(0,15) | literal | `AdvanceTrunkPorts` |
+| Trunk port armour target | front × 75, ground + 5 | literal | `AdvanceTrunkPorts` |
+| Default ReinforcementTimer fallback | 60 | literal | `AdvanceTrunkPorts` |
+| Default MaxTurrets fallback | 2 | literal | `AdvanceTrunkPorts` |
+| Trunk port surface grid | 16 / detail, 90 units | `#define`/literal | `trunkport.h/.cpp` |
+| Pulse bomb scale | 0.75 | ctor | `PulseBomb::PulseBomb` |
+| Pulse bomb timer (official maps) | 900.00 s | data | `data/levels/mp_assault_*.txt` |
+| Pulse bomb warnings | ≤ 60 (message), ≤ 10 (3D countdown) | literal | `PulseBomb::Advance/RenderCountdown` |
+| Pulse wave start radius / growth | 200 / ×1.03 per tick | literal | `PulseBomb::Advance`, `weapons.cpp:PulseWave::Advance` |
+| Pulse bomb destruction bang | `Bang(pos, 75, 5)` | literal | `PulseBomb::Destroy` |
+| Assault victory delay | 10 s single / 15 s multi | literal | `RecordDefenseTime` |
+| Assault next-round text shown | victory timer < 11 | literal | `Render` |
+| Control station capture threshold | > 2 occupants (5 ports) / > 1 (3 ports, bomb-linked) | literal + data | `ControlStation::RecalculateOwnership`, shapes |
+| Retribution interval | 45 game s (first 5 if never reset) | literal | `AdvanceRetribution`, `Reset` |
+| One-minute warning | `0 < remaining ≤ 60` | literal | `Advance` |
+| Carnage | ≥ 2000 kills | literal | `Advance` |
+| Genocide | ≥ 1,000,000 total kills | literal | `AchievementTracker::AddToTotalKills` |
+| Achievement levels | ids ≤ 49; 49 required (41 without Assault) | `#define` | `achievement_tracker.cpp` |
+| WrongGame radius | 120 units | literal | `nuke.cpp` |
+| HUD reference height | 800 px | literal | `Render` |
+| Scoreboard box | 440 (530 RR) × (50 + rows·18.2) at (10,10) | literal | `Render` |
+| Rocket panel | w = 0.2·ScreenH, h = 1.5w, at (ScreenW − w − 10, 10) | literal | `RenderRocketStatusPanel` |

@@ -5,13 +5,13 @@ Scope: `code/multiwiniahelp.{cpp,h}`, `code/helpsystem.{cpp,h}`, `code/tutorial.
 
 | Component | Files | Compiled in FULL? | Reachable in Multiwinia? | Tag |
 |---|---|---|---|---|
-| Script interpreter (`Script`) | `code/script.{h,cpp}` | Yes (only `Say`/`ShutUp`/`Highlight`/`ClearHighlights`/`DemoGesture`/`SetCutsceneMode`/`WaitPlayerNotBusy` bodies and `ShowDemoEndSequence` are hollowed out by `USE_SEPULVEDA_HELP_TUTORIAL`) | Ticked every frame in the location loop, but **no Multiwinia path ever loads a script** (see §1.6) | **[B:FULL] engine, [B:LEGACY] content** |
+| Script interpreter (`Script`) | `code/script.{h,cpp}` | Yes (only `Say`/`ShutUp`/`Highlight`/`ClearHighlights`/`DemoGesture`/`SetCutsceneMode`/`WaitPlayerNotBusy` bodies and `ShowDemoEndSequence` are hollowed out by `USE_SEPULVEDA_HELP_TUTORIAL`) | Ticked every frame in the location loop, but **no Multiwinia path ever loads a script** (see §1.5), and `scripts/*` is excluded from the PC data archive (`tools/multiwinia_exclusions.txt` L36) | **[B:FULL] engine, [B:LEGACY] content** |
 | Multiwinia in-game help tabs + the two Multiwinia tutorials (`MultiwiniaHelp`) | `code/multiwiniahelp.{h,cpp}` | Yes; tutorial logic under `INCLUDE_TUTORIAL` (defined in FULLGAME) | Yes | **[B:FULL]** |
 | Darwinia help system (`HelpSystem`) | `code/helpsystem.{h,cpp}` | Whole file inside `#ifdef USE_SEPULVEDA_HELP_TUTORIAL` | No | **[B:DEAD]** |
 | Dr Sepulveda dialogue (`Sepulveda`) | `code/sepulveda.{h,cpp}`, `code/sepulveda_strings.cpp` | Whole files inside `#ifdef USE_SEPULVEDA_HELP_TUTORIAL` | No | **[B:DEAD]** |
 | Darwinia demo tutorials (`Tutorial`, `Demo1Tutorial`, `Demo2Tutorial`) | `code/tutorial.{h,cpp}`, `code/tutorial_demo1.cpp`, `code/tutorial_demo2.cpp` | Whole files inside `#ifdef USE_SEPULVEDA_HELP_TUTORIAL` | No | **[B:DEAD]** |
 
-Evidence: [C] `code/tutorial.h` L5 `#ifdef USE_SEPULVEDA_HELP_TUTORIAL` … L88 `#endif`; `code/tutorial.cpp` L3/L240; (the same wrapping for helpsystem/sepulveda/tutorial_demo* is recorded per-file in §5/§6 below). `INCLUDE_TUTORIAL` defined for FULLGAME: [C] `code/lib/universal_include.h` (L97 FULLGAME block).
+Evidence: [C] `code/tutorial.h` L5 `#ifdef USE_SEPULVEDA_HELP_TUTORIAL` … L88 `#endif`; `code/tutorial.cpp` L3/L240; (the same whole-file wrapping for `sepulveda*`, `tutorial_demo*` and `helpsystem*` is cited in §4, §5 and §6 below). `INCLUDE_TUTORIAL` defined for FULLGAME: [C] `code/lib/universal_include.h` (L97 FULLGAME block).
 
 **Design consequence.** The *Multiwinia* tutorial is not the Darwinia `Tutorial` class family in `tutorial*.cpp`; it is a context-sensitive "help tab" director implemented inside `MultiwiniaHelp` (`AttachTutorialTo3d` / `AttachTutorial2To3d`) and running on ordinary KOTH maps (`mp_koth_2P_1`, `mp_koth_3P_1`). There is no narrator character, no voice, no script file and no cutscene in the shipped Multiwinia tutorials. [C] `code/multiwiniahelp.cpp:MultiwiniaHelp::Advance` (L1232–1244), `code/UI/GameMenuWindow.cpp:GameMenuWindow::SetupTutorial`, `SetupTutorial2`.
 
@@ -31,7 +31,7 @@ Evidence: [C] `code/tutorial.h` L5 `#ifdef USE_SEPULVEDA_HELP_TUTORIAL` … L88 
 - Line oriented; one command per line; tokens separated by any of `space`, `TAB`, `\n`, `\r`, `:`, `,` (TextReader default separators). [C] `contrib/systemiv/lib/filesys/text_stream_readers.cpp` `DEFAULT_SEPERATOR_CHARS " \t\n\r:,"`.
 - `#` starts a comment to end of line (also mid-line, e.g. `GodDishSpawnResearch  # Research comes through`). A line containing three or more adjacent `<`/`>` characters asserts (merge-conflict guard). Optional "redshirt2" line-encryption header is supported by the reader (not used by any script). [C] `text_stream_readers.cpp:TextReader::CleanLine`.
 - Command keywords are matched **case-insensitively** (`stricmp`) against `g_opCodeNames` (e.g. `CamFOV` in `launchpad_purpose.txt` resolves to `CamFov`). Unknown keyword → opcode −1 → `AppDebugAssert(false)` (no-op in release). [C] `code/script.cpp:Script::GetOpCode`, `Script::AdvanceScript` default branch.
-- Leading whitespace is allowed (indented comment lines in `launchpad_intro.txt`).
+- Leading whitespace is allowed (indented comment lines in `launchpad_intro.txt`); `GetNextToken` skips leading separators. [C] `text_stream_readers.cpp:TextReader::GetNextToken`.
 - Argument parsing: the token after the keyword is read as both a string (`nextWord`) and a float (`nextFloat = iv_atof(nextWord)`); further arguments are pulled on demand with `GetNextToken()`. Missing numeric args parse as 0 (`Wait` with no argument = `Wait 0`, as in `temple_intro.txt`). Extra trailing tokens are ignored (`CamCut booster1 1`). [C] `Script::AdvanceScript`.
 
 EBNF:
@@ -430,7 +430,7 @@ Pre-amble each frame: if `m_tutorial2AICanSpawn && m_currentTutorialHelp == -1` 
 | Condition | Tab (anchor, offset) / effect |
 |---|---|
 | formation within 200 of spawn 83, numEnemies < 10, spawn 83 not player-owned | `HelpTutorial2BreakFormation` (formationPos, 40) |
-| spawn 83 owned by a CPU team (not 255/0) and a formation exists | `HelpTutorial2FormationAttack` (spawn 83, 40) |
+| spawn 83 owned by a CPU team (not 255/0) and a formation exists | `HelpTutorial2FormationAttack` (spawn 83, 40) — AITarget 92 at (1309.43, 1645.08), next to spawn 83, gets team-2 priority 1.0 while `!AICanSpawn`, so CPU team 2 (home spawn 1) is steered there [C data, I behaviour] |
 | spawn 83 owned by player: spawn armour crate once (no tutorial crate yet and ≥ 10 s since last tab change) | crate at building 66 + (+100, +300, 0), reward `CrateRewardArmour`, marker, message `crate_drop` |
 | … crate on ground | `HelpTutorialCrateCollect` (crate, 80) (falling: no tab) |
 | … crate gone; spawn 20 owned by player | → `ArmourHelpDone = true` |
@@ -916,3 +916,131 @@ Building help (`m_buildingHelp` by building type; for the camera's `GetBestBuild
 
 `RunDefaultHelp()` (on H): speaks per current selection — squad: `help_squad_use`, `help_deselect`, plus `help_squad_grenade` / `help_squad_setgrenade` / `help_squad_setrocket` / `help_squad_setairstrike` depending on research and current weapon; engineer: `help_engineer_use`, `help_deselect`; officer: `help_officer_use`, (`help_officer_toggle` if officer research level > 2), `help_deselect`; armour: `help_armour_use`, `help_deselect`; selected radar → `help_radardish_2`; gun turret → `help_gunturret_2`; highlighted building help; task being placed: officer `help_officer_create_2`, squad `help_squad_summon_2`, engineer `help_engineer_summon_2`, armour `help_armour_summon`; otherwise by task usage: 0 tasks → `help_taskmanager_1`, `help_taskmanager_2` (queued twice, de-duplicated by `Say`), `help_showobjectives`; full → `task_manager_full`, `help_taskmanager_4`; else `help_taskmanager_4`, `help_taskmanager_2`, `help_showobjectives`. [C]
 
+
+---
+
+## [→ 30_scripting_tutorial_and_cutscenes] [→ 09_meta_systems] 7. Constants table
+
+All values are literals in code unless the *Kind* column says otherwise. Times are seconds of wall-clock (`GetHighResTime`/`g_gameTime`), distances world units, screen sizes pixels (H = screen height, W = width). Script-engine constants: §1.7.
+
+| Subsystem | Constant | Value | Kind | Ref |
+|---|---|---|---|---|
+| MW tutorial | min gap between different tabs | 0.5 s | literal | `MultiwiniaHelp::RunTutorialHelp` |
+| MW tutorial | breather after MoveToSpawnPoint / MoveToMainZone / SendToZone / CaptureZone | 10.0 s | literal | same |
+| MW tutorial | breather after UseAirstrike | 20.0 s | literal | same |
+| MW tutorial | crate-drop delay after last tab change (T1 and T2) | 10.0 s | literal | `AttachTutorialTo3d`, `AttachTutorial2To3d` |
+| MW tutorial | T1 crate offset from AITarget 43 | (−100, +800, −200) | literal | `AttachTutorialTo3d` |
+| MW tutorial | T2 crate offset from AITarget 66 | (+100, +300, 0) | literal | `AttachTutorial2To3d` |
+| MW tutorial | T1 Scores window / initial latch | 40 s / 10 s | literal | `AttachTutorialTo3d` |
+| MW tutorial | T2 End tab lifetime | 20 s | literal | `AttachTutorial2To3d` |
+| MW tutorial | T2 frozen time remaining | 300 s | literal | `AttachTutorial2To3d` |
+| MW tutorial | idle-Darwinian search radius (T1) | 100 | literal | `AttachTutorialTo3d` |
+| MW tutorial | "going here" order tolerance | 80 | literal | `CountDarwiniansGoingHere` |
+| MW tutorial | officer position / order-target tolerance | 100 / 100 | literal | `CountOfficersWithGotoHere` |
+| MW tutorial | formation waypoint tolerance | 150 | literal | `CountFormationOfficersGoingHere` |
+| MW tutorial | formation anchor offset | officer pos + front·30 | literal | `GetFormationOfficerPosition` |
+| MW tutorial | T1 thresholds | rule A > 15 idle, < 10 heading, spawn "taken" ≥ 10 heading; rule B ≥ 20 idle, < 10 heading; rule C zone count > 5, next spawn > 10 heading, ≥ 10 idle; rule D ≥ 3 spawns, ≥ 2 officers, final zone ≥ 10 heading, > 10 idle | literal | `AttachTutorialTo3d` |
+| MW tutorial | T2 thresholds | > 10 idle within 50 of dish 9; > 10 idle within 100 of spawn 3; formation < 200 from spawn 83 with < 10 enemies within 100; armour ≥ 20 passengers; armour/waypoint > 150 or < 200 from spawn 20 | literal | `AttachTutorial2To3d` |
+| MW tutorial | tab anchor offsets (up) | 20, 30, 40, 60, 80 (per tab, see §2.3/§2.4) | literal | same |
+| MW tutorial | tab width | 8 × 35 = 280 px × (1 + 0.02·sin(8t)) | literal | `RenderTutorialHelp`, `RenderTab3d` |
+| MW tutorial | tab fonts | title 0.12·w, body 0.06·w; wrap factors 0.6 / 0.55 | literal | `RenderTab3d` |
+| MW tutorial | tab box padding | +25 px height; title bar +10; text inset 13 | literal | `RenderTab3d` |
+| MW tutorial | select-task screen anchor | (0.5 W, 0.85 H); dismiss-info (0.5 W, 0.65 H) | literal | `RenderTab3d` |
+| MW tutorial | grace picture | w = 0.2·H × 1.5, h = w·128/304, y = 0.70·H, tex u-width 304/512, flash 0.3 s per 1 s | literal | `RenderGracePeriodHelp` |
+| MW tutorial | tutorial airstrike markers | 10 (normal 3 + rand%5) | literal | `code/worldobject/crate.cpp:Crate::RunAirStrike` |
+| MW tutorial | T2 spawn lock | ≥ 100 spirits requested per spawn; player > 200 `m_others` | literal | `SpawnPoint::PopulationLocked` |
+| MW help | grace period length | `GRACE_TIME` 3.0 s (20.0 s under `TESTBED_ENABLED`) | `#define` | `code/lib/universal_include.h` |
+| MW help | animated panel | scale H/1300; y = H − 1.15·h·scale; border 5, title 25, caption 15 | literal | `InitialiseAnimatedPanel` |
+| MW help | help message box | w 0.35·H (0.55·H oversize), font 0.02·H, y 0.78·H; building layout x 0.1·W, y H − 1.5·h | literal | `RenderHelpMessage` |
+| MW help | deselect hint | +1.0 (cap 3.0) while showing; −0.75 per stray click; show if < −1.0; show time 3.0 s; decay 0.33/s | literal | `ShowSpaceDeselectHelp`, `Render` |
+| MW help | shift hint | forward held > 4.0 s; shown 3.0 s | literal | `code/camera.cpp`; `ShowShiftSpeedupHelp` |
+| MW help | pref `HelpEnabled` | default 1 | preference | `MultiwiniaHelp::Render` |
+| MW help (unused tabs) | size, gap, accomplished scale, highlight cycle | min(0.2·H, 200), 10, 0.66, 5.0 s | literal | `Advance` |
+| Help pages | general pages | `MAX_PAGES` 5 | `#define` | `code/interface/helpandoptions_windows.cpp` |
+| Help pages | image side | leftBoxH / 3.5 | literal | `GeneralHelpWindow::Create`, `GameTypeHelpWindow::Create` |
+| Sepulveda | pref `TextSpeed` | default 15 chars/s | preference | `CalculateTextTime` |
+| Sepulveda | typing / pause factors | 0.6·len/speed; len/speed (×0.5 outside cutscene) | literal | `CalculateTextTime`, `CalculatePauseTime` |
+| Sepulveda | history fade | 20 s linear | literal | `GetCaptionAlpha` |
+| Sepulveda | chat-log re-highlight | now − 3 s | literal | `Advance` |
+| Sepulveda | cutscene history push | −30 s per frame | literal | `Advance` |
+| Sepulveda | portrait frame time | 0.4 s; p(zoom change)=1/6, zoom<0.1; p(offset change)=1/6, |offset|<0.1; p(mouth)=0.1; p(eyes shut)=0.09; smoothing 4·dt; crossfade ×0.75 | literal | `RenderFace` |
+| Sepulveda | layouts | virtual height 600; box width 600; face 80×100 (normal/cutscene), 48×60 (task mgr) | literal | `RenderTextBox*` |
+| Sepulveda | highlight | alpha ±0.02/frame; beam top +(0,1500,1000), bottom −(0,200,133); wobble 10; width radius·0.5 | literal | `SepulvedaHighlight` |
+| Sepulveda | gesture replay | sample 0.04 s, fade 2 s, width 40 px, loop pause 2 s, default start delay 2.0 s | literal | `RenderGestureDemo`, callers |
+| Sepulveda | max phrase length | 1024 | `#define SEPULVEDA_MAX_PHRASE_LENGTH` | `code/sepulveda.h` |
+| Darwinia tutorial | repeat period default | 20.0 s | default arg | `Tutorial::RepeatMessage` |
+| Darwinia tutorial | `SetChapter` resume delay | 3 s | literal | `Tutorial::SetChapter` |
+| Darwinia tutorial | player-busy hold | 3.0 s; enemy radius 100 | literal | `Demo2Tutorial::IsPlayerBusy` |
+| HelpSystem | quiet interval | `HELPSYSTEM_ACTIONHELP_INTERVAL` 90 s | `#define` | `code/helpsystem.h` |
+
+---
+
+## Cross-partition notes
+- **Camera** (`code/camera.cpp`): script/tutorial use `SetTarget(mount|pos,front,up|focus,range,height)`, `CutToTarget`, `SetMoveDuration`, `RequestMode(ModeMoveToTarget|ModeFreeMovement|ModeSphereWorld|ModeSphereWorldScripted|ModeSphereWorldOutro)`, `RequestBuildingFocusMode`, `RequestSphereFocusMode`, `PlayAnimation`/`StopAnimation`/`IsAnimPlaying`, `SetFOV`/`SetTargetFOV`, `RecordCameraPosition`, `ChatLogVisible`, `GetBestBuildingInView`; magic mount `CamPosBefore`. The camera owner should document mode semantics; this draft gives only what scripts rely on (§1.3).
+- **Level files** (`code/level_file.*`, owner of 08/29): `CameraMounts` and `CameraAnimations` blocks, `PrimaryObjectives` (3rd column = cutscene script, `GlobalEventCondition::m_cutScene`), `m_attacking[]`, `m_numPlayers`; all `mp_*` maps use `NeverTrue`/`BuildingOnline :sandbox,2` objectives without cutscenes.
+- **Global world events** (`code/global_world.cpp`): `GlobalEventAction::RunScript`, `EvaluateEvents` blocked while a script runs; `ParseTutorial`/`WriteTutorial` save block (dead).
+- **Blocked buildings**: `ScriptTrigger`, `FenceSwitch`, `GodDish`, `Crate` (by-name creation only), `Statue` are in `Building::BuildingIsBlocked` (`code/worldobject/building.cpp`); the tutorial creates `Crate` via `CreateBuilding(int)`, bypassing the block.
+- **EscapeRocket** (`code/worldobject/rocket.cpp`): state names for `WaitRocket`; single-player-only `launchpad_victory.txt` trigger; `NotifyFueledUp` call.
+- **Sound** (`code/sound/soundsystem.*`, 10/27): events `Music <name>` (TypeMusic), Sepulveda `Appear`/`Disappear`/`TextAppear` (TypeSepulveda), `ShowLogo` (TypeInterface), `MouseError`, `CountdownTick` (TypeMultiwiniaInterface).
+- **ControlHelpSystem** (`code/control_help.cpp`): the live on-screen control hints in Multiwinia; suppressed while a script runs; used by Demo2 for "on-screen aids".
+- **AnimatedPanelRenderer** (`code/animatedpanel_renderer.*`) + `data/animations/*.anim`: grace-period mode explainer.
+- **MarkerSystem**: `CalculateScreenPosition` (tab projection), `RegisterMarker_Crate`, `m_isOrderMarkerUnderMouse`.
+- **Tutorial hooks in simulation code** (owners of 02/03/05/07): `ai.cpp`, `spawnpoint.cpp`, `crate.cpp`, `officer.cpp`, `darwinian.cpp`, `radardish.cpp`, `taskmanager.cpp`, `location.cpp`, `multiwinia.cpp` — table in §2.2.
+- **Menus** (owner of 09/28): `GameMenuWindow::SetupTutorialPage`, `SetupTutorial*`, `TutorialButton`, `HelpAndOptionsWindow`, `SelectHelpWindow`, `GeneralHelpWindow`, `GameTypeHelpWindow`, `GameTypeImageButton`, `RenderBigDarwinian`.
+- **Language table**: `LANGUAGEPHRASE`, `ISLANGUAGEPHRASE(_ANY)`, `DoesPhraseExist`; `_kbd`/`_xin` suffixed ids in `english.txt` imply input-mode-dependent resolution inside the table [I].
+- **Data build** (31): `tools/multiwinia_exclusions.txt` excludes `scripts/*`, `levels/map_*`, `levels/mission_*`, `gesture_demos/*`, `mwhelp/360_controller.bmp` from the PC `main.dat` — corroborates that scripts and Darwinia levels are not shipped.
+- **Loaders**: `RunCredits` uses `Loader::GetLoaderIndex("credits")` (P20 / `USE_LOADERS`).
+
+## Contradictions / open questions
+1. The brief listed `tutorial.cpp`, `tutorial_demo1.cpp`, `tutorial_demo2.cpp` as "the Multiwinia tutorial(s)"; the code shows these are the Darwinia demo tutorials and are not compiled. The Multiwinia tutorials are in `multiwiniahelp.cpp`. [C]
+2. `data/mwhelp/*.txt` was expected; the directory contains only 51 BMPs. [C]
+3. `MultiwiniaHelp` computes 18 objective tabs every frame (and keeps "accomplished" notifications from 6 call sites) but never draws them (renderer under a never-defined macro). Either a cut feature or a deliberate disable; a new team should decide whether to revive "objective cards". [C fact / I intent]
+4. `Script::RunCommand_Wait` uses `GetHighResTime()` but `Advance` compares with `g_gameTime` (equal except while paused or demo-recording, where `g_gameTime` freezes / uses fake time) — waits keep running while paused. [C+I]
+5. `WaitSay` and `WaitPlayerNotBusy` silently stop blocking in FULL because their checks are compiled out; any script relying on them would race. [C]
+6. `MultiwiniaHelp::Reset` does not reset the T1 score-help latches (second run of T1 loses the Scores tab). [C]
+7. T1 rule B can request two different tabs in one frame; the second is rejected by the 0.5 s limiter (first spawn in iteration order wins). [C]
+
+## [U] Unknowns
+| # | Unknown | Would be resolved by |
+|---|---|---|
+| U1 | Whether Multiwinia's `data/sounds.txt` still defines the `Music cutscene1..5`, `endsequence`, `Demo2Intro`, `Demo2Mid` events used by scripts (moot in FULL) | P-audio agent's sounds.txt enumeration |
+| U2 | That `MAPID_MP_KOTH_2P_1`/`_3P_1` CRCs correspond to the current `mp_koth_2P_1.txt`/`mp_koth_3P_1.txt` (if the file was edited after the CRC was generated the tutorial button would be inactive) | run the map-CRC tool (`tools/`) on the two files |
+| U3 | How RadarDish 4 becomes player-owned at the start of Tutorial 2 (no tab is shown until then) | RadarDish ownership rules (P-buildings, `code/worldobject/radardish.cpp`) |
+| U4 | Exact runtime resolution of `_kbd`/`_xin` phrase suffixes (affects which help strings appear) | `code/lib/language_table.cpp` (other partition) |
+| U5 | Whether `data/mwhelp/background.bmp` is referenced indirectly (e.g. by a data file or eclipse skin) | full-text search of `data/` and `contrib/eclipse` (none found in `code/`) |
+| U6 | Visual layout of `AnimatedPanelRenderer` panels and the content of `data/animations/*.anim` | animation/UI partition |
+| U7 | Whether CPU team 2 reliably captures spawn 83 in T2 before the player (inferred: AITarget 92 at (1309.43, 1645.08) is 47 units from spawn 83 and gets team-2 priority 1.0 while `!AICanSpawn`; team 2 home = spawn 1 (545.70, 2528.04), team 1 home = spawn 2) — if the player takes 83 first, the FormationAttack/BreakFormation steps are skipped | runtime observation |
+
+## Docs-vs-code discrepancies
+- `docs/help system.txt` describes a Sepulveda context-help design with F1 to request help, "fixed messages" (BuildingCaptured, BuildingOnline, NewGestureAvailable, objective complete…) and "failure help" (SquadCreationOutOfBounds…), and action items GestureBasics, ThrowAirstrike, FireRocket, Persuadatron, EngineerBuildBridge, EngineerHarvestSpirits, EngineerCaptureBuilding, AimRadarDish, PopulateWithDarwinians. Code: key is `SepulvedaHelp = key h`, the enum is the 20 items of §6, no fixed-message or failure-help classes exist, and the whole system is compiled out of Multiwinia. [C] `code/helpsystem.h`, `data/input/input_preferences.txt` L255.
+- `docs/multiwinia-changes.txt` ("Power-ups in the Advanced Tutorial will now terminate correctly upon use") is consistent with code only after the T2 End step (`TerminateTask` is blocked while `!m_tutorial2AICanSpawn`). [C+I]
+- `docs/multiwiniachanges-beta.txt` / `multiwiniareleasenotes-beta.txt` mention a "quick tutorial" and an "Advanced Concepts tutorial" — match Tutorial 1/2. No discrepancy.
+
+## IP register
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| Dr Sepulveda (character name, advisor persona) | name/character | `code/sepulveda.*`, phrase ids `sepulveda_*` | "Advisor" |
+| Sepulveda portraits `sepulveda1..5.bmp` (256×256 8-bit) | art | `data/sepulveda/` | placeholder advisor portrait set (5 frames: 3 neutral, eyes-shut, mouth-open) |
+| All Sepulveda/cutscene dialogue lines (267 script `Say` lines, `tutorial_*`, `launchpad_tutorial_*`, `help_*`, `research_explanation_*`, `outro_*`, `yardend_*`, `temple_*`, `containment*`, `pixelmines_*`, …) | text | `data/language/english.txt`, `data/scripts/*` | rewrite all narration |
+| Script files themselves (42 Darwinia cutscene scripts, camera choreography) | text/data | `data/scripts/*` | author new scripts |
+| Darwinia location names: biosphere, biosphere_gamma, containment, generator, mine, yard, receiver, pattern_buffer, temple, launchpad, garden, escort, labs, "heaven" | name | scripts, `data/game*.txt` | generic sector names |
+| "Darwinian", "Multiwinian", "Multiwinia", "Darwinia" in help strings | brand/name | `multiwinia_help_*`, `multiwinia_helppage_*` | "unit"/"drone", product placeholder |
+| Multiwinia help/tutorial text (`multiwinia_help_*`, `multiwinia_help_title_*`, `multiwinia_helppage_*`, `multiwinia_animdesc_*`, `multiwinia_rmbhelp*`, `multiwinia_deselect*`, `multiwinia_shiftspeedhelp`, `multiwinia_officerterminate*`, `multiwinia_armourtoggle*`, `crate_drop`) | text | `data/language/english.txt` | rewrite |
+| Tutorial titles "Part 1: The Basics", "Part 2: Advanced Concepts" | text | `multiwinia_menu_tutorial1/2` | own titles |
+| Help-page illustrations `general1..5.bmp`, `help_*_*.bmp`, mode cards `mode_*.bmp`, `gear.bmp`, `control_camera*.bmp`, tab icons (`starthere`, `koth`, `spawnpoint*`, `crates`, `liftstatues`, `capturestatues`, `wallbuster`, `pulsebomb*`, `rocketriot1/2`, `reinforcements`, `blitzkrieg1/2`), `360_controller.bmp`, `background.bmp` | art | `data/mwhelp/` | new art |
+| Game-mode names "King of the Hill", "Capture the Statue", "Rocket Riot", "Blitzkrieg", "Assault", "Domination" (generic terms, but the specific set/branding) | name | blueprints, phrases | review; generic names acceptable |
+| Music cue names `cutscene1..5`, `endsequence`, `Demo2Intro`, `Demo2Mid` and their audio | audio | scripts / `data/sounds` | new score |
+| Sepulveda UI sounds `Appear`, `Disappear`, `TextAppear` | audio | `Sepulveda::Advance`/render | new SFX |
+| "Darwin logo" splash (`ShowDarwinLogo`, renderer `m_renderDarwinLogo`, sound `ShowLogo`) | brand/art | `code/script.cpp` | product logo placeholder |
+| Gesture demos `squad.txt`, `engineer.txt`, `officer.txt`, `armour.txt` | data | `data/gesture_demos/` | not needed |
+| `textures/godray.bmp` beam texture | art | Sepulveda highlights | generic beam |
+| Cheat/profile names `AccessAllAreas`, `AttractMode`; `PurityControl` kill-switch + buy-now URL | name/behaviour | `code/script.cpp`, `code/app.cpp` | drop |
+
+## Appendix — dead/legacy code
+- [B:DEAD] `code/helpsystem.*`, `code/sepulveda.*`, `code/sepulveda_strings.cpp`, `code/tutorial.*`, `code/tutorial_demo1.cpp`, `code/tutorial_demo2.cpp` — entire files under `USE_SEPULVEDA_HELP_TUTORIAL`; documented in §4–§6 as reference designs.
+- [B:DEAD] `Script::TestScript`, `Script::ReportError` (under `SCRIPT_TEST_ENABLED`): offline validator checking mount names, location names, phrase ids, building ids, `CamMove`/`Wait` durations 0.01–20 s.
+- [B:DEAD] Attract mode (`code/attract.cpp`): `AttractMode::Advance` only called under `ATTRACTMODE_ENABLED`; would switch to profile `AttractMode`, lock the task manager, run `attractmode.txt` and stop on `ControlStopAttractMode` or script end (`endattract.txt`).
+- [B:LEGACY] Script content and Darwinia triggers (ScriptTrigger, FenceSwitch, game.txt events, objective cutscenes, rocket victory) — §1.5–§1.6.
+- [B:DEAD-in-effect, compiled] `MultiwiniaHelp` objective tabs rendering (`THIS_IS_FUCKING_SHIT_AND_IT_ALWAYS_HAS_BEEN`), `RenderControlHelp()`, `RenderBasicControlHelp()`, `RenderCurrentTaskHelp()`, `RenderCurrentUnitHelp()`, `HighlightingDarwinian()`, `GetHelpType()`, `GetResearchType()`, `GameTypeHelpWindow::GetLabelPos()`; `GameMenuWindow` `PageHelpMenu`/`PageHelp` (no entry button).
+- [B:DEBUG] `CrateHelpWindow` (`INCLUDE_CRATE_HELP_WINDOW`), `mode_prologue.bmp`/`mode_campaign.bmp` buttons (`INCLUDEGAMEMODE_PROLOGUE/_CAMPAIGN`).
+- Platform: `multiwinia_help_movetospawnpoint_mac`, `multiwinia_rmbhelp_mac`, `multiwinia_helppage_general%d_mac`, Mac `part_leftclick` defines — `TARGET_OS_MACOSX` only.
