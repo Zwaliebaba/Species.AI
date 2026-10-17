@@ -83,7 +83,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 - **New UI layout and palette.** Panels, windows and menus keep their roles (an accent panel, a neutral panel, a highlight beam, positive and negative captions, glowing boxes) with a new palette and new layout.
 - **New logo and wordmark**, and a studio mark placeholder until the studio's own mark exists.
 - **New presentations** where the reference has a distinctive one: the Missile Barrage launcher and its ground symbol, the Abductor and its abduction effect, the front-end backdrop with its large figure.
-- An art lead signs off each asset as an original design before it replaces its placeholder.
+- An art lead signs off each asset as a new Species design before it replaces its placeholder.
 
 ### 2.9 Accessibility limits on the look
 
@@ -105,14 +105,14 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 **18 files, 18 asset ids**, all additive greyscale on black except the tree canopy mask (an alpha mask) and the shatter-shard edge pattern (a cut-out decal).
 
-- Flares and glows 128x128 (round glow, cloudy glow, starburst, bubble sphere, barrier field, dish signal, terrain grid, fuel flow); beam strips 128x32 (short and long beams, Convert beam); lightning strip 64x256; muzzle flash 64x64; particle dot 16x16; sky cloud tile 16x16; wide barrier field 256x64; canopy mask 128x32.
+- Flares and glows 128x128 (round glow, cloudy glow, starburst, bubble sphere, barrier field, dish signal, terrain grid, fuel flow); beam strips 128x32 (short and long beams, Convert beam); lightning strip 64x256; muzzle flash 64x64; particle dot 16x16; sky cloud tile 16x16; wide barrier field 256x64; canopy mask 128x32; shard edge pattern 128x128.
 - Tiled and scrolled textures (beams in the sky grid, barrier fields, fuel flow, terrain grid, cloud tile) tile seamlessly along their repeat axis.
 - The terrain grid draws one triangle outline per terrain cell: a clean thin bright line on black, centred on the cell edges.
 - Keep falloffs smooth to black; avoid baked colour. Effects read through intensity and shape.
 
 ## 5 UI panels, title and logo
 
-**15 files, 13 asset ids**: accent and neutral panel strips (64x512), a blurred fill strip, the menu highlight beam, the title wordmark, two logo marks, a studio splash placeholder, the Worker badge for map buttons, three difficulty badges, a check-box tick, a lock icon and the front-end backdrop wheel.
+**15 files, 13 asset ids**: accent and neutral panel strips (about 64x512), a blurred fill strip, the menu highlight beam, the title wordmark, two logo marks, a studio splash placeholder, the Worker badge for map buttons, three difficulty badges, a check-box tick, a lock icon and the front-end backdrop wheel.
 
 - Panel strips tile along their long axis and must work at any panel height.
 - The wordmark and logos are new identity design for Species; the wordmark works on black, at 1x and 2x, and as a halo-darkened mark over busy backgrounds.
@@ -140,7 +140,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 **13 files, 13 asset ids**: four face buttons by position (south, east, west, north), two shoulder buttons, two triggers, three shadow layers and the keyboard Tab key.
 
 - Platform-neutral: shapes and labels describe a control's position, never a console maker's colours, letters or trade dress.
-- 64x64 for face buttons and Tab (128x128 for Tab on the power-slot panel), 50x50 for shoulders, triggers and shadows; shadows are darkening layers.
+- 64x64 for face buttons, 128x128 for the Tab key, 50x50 for shoulders, triggers and shadows; shadows are darkening layers.
 
 ## 9 Terrain ramps, water and waves
 
@@ -172,9 +172,9 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 ## 12 Sound effects by source and event
 
-**863 files in 167 sample groups**, plus 25 outcome stings within them, from 40 sound sources (units, creatures, weapons, structures, Supply crates).
+**863 files in 167 sample groups** from 39 sound sources (units, creatures, weapons, structures, the Supply crate), including the 25 Supply-crate outcome stings.
 
-- Each group keeps the reference variant count, so the mix keeps its variety: the Worker attack group has 24 variants, the Worker hit bark 36, the Worker charge bark 37.
+- Each group keeps the reference variant count, so the mix keeps its variety: the Worker attack group has 24 variants, the laser-hit bark 36, the Worker charge bark 37.
 - Mono, 48 kHz, 24-bit sources. Loops are seamless (no click at the wrap); one-shots start on the transient. Reference durations in each row are targets for timing, not limits.
 - The behaviour (volume, pitch spread, distance roll-off, looping, priority, which variant plays) lives in the sound-event data, not in the files. Files are recorded clean and full; the data shapes them.
 - **Crowd voice.** Worker, Leader and Trooper barks (selection, orders, fleeing, charging, being hit) are new voice sets for the small figures. Their character is the audio director's choice; whether they use words is an open question (words need one recording per language).
@@ -199,7 +199,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 **6 files proposed, 4 asset ids**: a front-end theme, three in-match beds and victory and defeat stings. The reference plays no music in a match; Species commissions new music, and the design phase sets the final list and triggers.
 
 - Stereo, 48 kHz, streamed; beds loop seamlessly and mix below the effects.
-- Character: sparse, electronic, cool timbres that leave room for crowd sound and match the glow-on-black look; original composition, no pastiche of any existing score.
+- Character: sparse, electronic, cool timbres that leave room for crowd sound and match the glow-on-black look; newly composed, no pastiche of any existing score.
 
 ## 16 Fonts
 

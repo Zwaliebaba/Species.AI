@@ -38,7 +38,7 @@ The first-playable set is one skirmish mode, Spawn Control for 2 players, with t
 
 | Category | Constraints the new assets keep |
 |---|---|
-| Unit sprites | Square power-of-two cards, 32-128 px; cut-out alpha (alpha test 0.04 for Workers, 0.02 for other units); white or light-grey bodies for vertex tinting; four hurt variants, a side view and an alternative faction card; full mip chains |
+| Unit sprites | Power-of-two cards, 32-128 px (square except the 32x64 side view); cut-out alpha (alpha test 0.04 for Workers, 0.02 for other units); white or light-grey bodies for vertex tinting; four hurt variants, a side view and an alternative faction card; full mip chains |
 | VFX textures | Additive on black, greyscale intensity, tinted at draw; strips 128x32 and 64x256, flares 128x128; wrap repeat where scrolled or tiled; the particle dot is magnified with NEAREST |
 | UI panels and title | Straight alpha or opaque, no mip-maps, linear filtering; authored at 2x display size; panel strips tile along their long axis; new palette with the same token roles |
 | HUD, supply-crate and power icons | 128x128 icons (64x64 and 50x50 for small read-outs), white or grey art tinted at draw, darkening halo behind; one icon per power or outcome, reused on crates, slots, cursors and markers |

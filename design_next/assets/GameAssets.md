@@ -562,10 +562,10 @@ Sound effects are sample groups named by **source and event**: a group holds the
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/spider/spider_lay_egg_{01..10}.wav` (10 files) | `sfx.creature.spider.lay_egg` | lays an egg | `spider.lay_egg` | mono, 48 kHz; positional, follows the source; one-shot; reference duration 1.20-2.64 s | 10 variants | launch |
+| `content/audio/sfx/spider/spider_lay_egg_{01..10}.wav` (10 files) | `sfx.creature.spider.lay_egg` | lays an egg | `brood_drifter.lay_egg` | mono, 48 kHz; positional, follows the source; one-shot; reference duration 1.20-2.64 s | 10 variants | launch |
 | `content/audio/sfx/spider/spider_presence_loop_{01..17}.wav` (17 files) | `sfx.creature.spider.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 0.51-2.25 s | 17 variants | launch |
 | `content/audio/sfx/spider/spider_die_{01..05}.wav` (5 files) | `sfx.creature.spider.die` | dies | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 2.81-3.16 s | 5 variants + 2 shared | launch |
-| `content/audio/sfx/spider/spider_leap_{01..06}.wav` (6 files) | `sfx.creature.spider.pounce` | pounces | `spider.pounce` | mono, 48 kHz; positional, follows the source; one-shot; reference duration 3.42-4.39 s | 6 variants | launch |
+| `content/audio/sfx/spider/spider_leap_{01..06}.wav` (6 files) | `sfx.creature.spider.pounce` | pounces | `spider.attack` | mono, 48 kHz; positional, follows the source; one-shot; reference duration 3.42-4.39 s | 6 variants | launch |
 | `content/audio/sfx/spider/spider_hurt_{01..02}.wav` (2 files) | `sfx.creature.spider.hurt` | takes damage | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 2.81-3.15 s | 2 variants | launch |
 | `content/audio/sfx/spider/spider_footstep_{01..13}.wav` (13 files) | `sfx.creature.spider.footstep` | footstep | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.11-0.36 s | 13 variants | launch |
 
@@ -608,7 +608,7 @@ Sound effects are sample groups named by **source and event**: a group holds the
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/leader/leader_spawn_{01..06}.wav` (6 files) | `sfx.unit.leader.spawn` | appears | `leader.spawn`, `leader.order_waypoint (layer 2)`, `leader.selected`, `leader.order_formation (layer 2)` | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.27-0.53 s | 6 variants | skirmish-first-playable |
+| `content/audio/sfx/leader/leader_spawn_{01..06}.wav` (6 files) | `sfx.unit.leader.spawn` | appears | `worker.ordered`, `leader.order_waypoint (layer 2)`, `leader.selected`, `leader.order_formation (layer 2)` | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.27-0.53 s | 6 variants | skirmish-first-playable |
 | `content/audio/sfx/leader/leader_order_waypoint_{01..17}.wav` (17 files) | `sfx.unit.leader.order_waypoint` | is given a waypoint order | `leader.order_formation` | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 3.00-3.00 s | 17 variants | skirmish-first-playable |
 
 ### 13.10 ant (27 files)
@@ -635,7 +635,7 @@ Sound effects are sample groups named by **source and event**: a group holds the
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
 | `content/audio/sfx/reaper_serpent/reaper_serpent_presence_loop_{01..11}.wav` (11 files) | `sfx.creature.reaper_serpent.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 0.81-2.01 s | 11 variants | launch |
-| `content/audio/sfx/reaper_serpent/reaper_serpent_hurt_{01..10}.wav` (10 files) | `sfx.creature.reaper_serpent.hurt` | takes damage | `reaper_serpent.hurt` | mono, 48 kHz; positional, follows the source; one-shot; reference duration 1.61-3.35 s | 10 variants | launch |
+| `content/audio/sfx/reaper_serpent/reaper_serpent_hurt_{01..10}.wav` (10 files) | `sfx.creature.reaper_serpent.hurt` | takes damage | `reaper_serpent.spawn (layer 2)` | mono, 48 kHz; positional, follows the source; one-shot; reference duration 1.61-3.35 s | 10 variants | launch |
 | `content/audio/sfx/reaper_serpent/reaper_serpent_die_{01..10}.wav` (10 files) | `sfx.creature.reaper_serpent.die` | dies | `seed_pod.die` | mono, 48 kHz; positional, follows the source; one-shot; reference duration 2.29-3.42 s | 10 variants | launch |
 | `content/audio/sfx/reaper_serpent/reaper_serpent_attack_{01..07}.wav` (7 files) | `sfx.creature.reaper_serpent.attack` | attacks | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 1.44-2.11 s | 7 variants | launch |
 | `content/audio/sfx/reaper_serpent/reaper_serpent_enemy_sighted_{01..09}.wav` (9 files) | `sfx.creature.reaper_serpent.enemy_sighted` | sights an enemy | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 1.23-3.04 s | 9 variants | launch |
@@ -652,8 +652,8 @@ Sound effects are sample groups named by **source and event**: a group holds the
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/abductor/abductor_presence_loop_b.wav` | `sfx.creature.abductor.presence_loop_b` | loop while it exists (additional layer) | `abductor.presence_loop (layer 2)` | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 1.39 s | 1 variant | launch |
-| `content/audio/sfx/abductor/abductor_presence_loop_c.wav` | `sfx.creature.abductor.presence_loop_c` | loop while it exists (additional layer) | `abductor.presence_loop (layer 3)` | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 6.63 s | 1 variant | launch |
+| `content/audio/sfx/abductor/abductor_presence_loop_b.wav` | `sfx.creature.abductor.presence_loop_b` | loop while it exists (additional layer) | `collector.presence_loop` | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 1.39 s | 1 variant | launch |
+| `content/audio/sfx/abductor/abductor_presence_loop_c.wav` | `sfx.creature.abductor.presence_loop_c` | loop while it exists (additional layer) | `collector.presence_loop (layer 2)` | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 6.63 s | 1 variant | launch |
 | `content/audio/sfx/abductor/abductor_presence_loop_{01..09}.wav` (9 files) | `sfx.creature.abductor.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 15.14-23.43 s | 9 variants | launch |
 | `content/audio/sfx/abductor/abductor_tractor_beam.wav` | `sfx.creature.abductor.tractor_beam` | tractor beam loop | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 3.99 s | 1 variant | launch |
 
@@ -737,7 +737,7 @@ Sound effects are sample groups named by **source and event**: a group holds the
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/grenade/grenade_explode_{01..05}.wav` (5 files) | `sfx.weapon.grenade.explode` | explodes | `grenade.explode` | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 3.70-4.08 s | 5 variants | skirmish-first-playable |
+| `content/audio/sfx/grenade/grenade_explode_{01..05}.wav` (5 files) | `sfx.weapon.grenade.explode` | explodes | `hive.explode` | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 3.70-4.08 s | 5 variants | skirmish-first-playable |
 | `content/audio/sfx/grenade/grenade_spawn_{01..05}.wav` (5 files) | `sfx.weapon.grenade.spawn` | appears | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 3.25-3.25 s | 5 variants | skirmish-first-playable |
 | `content/audio/sfx/grenade/grenade_fuse_blink.wav` | `sfx.weapon.grenade.fuse_blink` | fuse blink | `airstrike_bomb.fuse_blink` | mono, 48 kHz; positional, follows the source; one-shot; reference duration 1.00 s | 1 variant | skirmish-first-playable |
 | `content/audio/sfx/grenade/grenade_bounce_{01..06}.wav` (6 files) | `sfx.weapon.grenade.bounce` | bounces | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.37-0.73 s | 6 variants | skirmish-first-playable |
@@ -894,7 +894,7 @@ Interface sounds: menus, selection, countdown, chat and the power-slot panel. Th
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/ui/ui_countdown_tick.wav` | `sfx.ui.match_ui.countdown_tick` | countdown tick | `match_ui.countdown_tick`, `match_ui.countdown_zero` | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 0.09 s | 1 variant | skirmish-first-playable |
+| `content/audio/ui/ui_countdown_tick.wav` | `sfx.ui.match_ui.countdown_tick` | countdown tick | `turret.kill_tick`, `match_ui.countdown_zero` | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 0.09 s | 1 variant | skirmish-first-playable |
 | `content/audio/ui/ui_power_input_begin.wav` | `sfx.ui.power_input.begin` | power input starts | `match_ui.selection_circle` | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 3.54 s | 1 variant | skirmish-first-playable |
 | `content/audio/ui/ui_power_input_confirm.wav` | `sfx.ui.power_input.confirm` | power input succeeds | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 2.21 s | 1 variant | skirmish-first-playable |
 | `content/audio/ui/ui_power_slot_discard.wav` | `sfx.ui.power_slots.discard` | a power is discarded | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 2.51 s | 1 variant | skirmish-first-playable |

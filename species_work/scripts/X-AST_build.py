@@ -1149,7 +1149,9 @@ def describe_bindings(b, bank_ids):
     for bank, aid in bank_ids.items():
         g = b.groups[aid]
         binds = []
-        for otype, ev, idx, mode in g['bindings']:
+        prim = tuple(g['primary'])
+        ordered = sorted(g['bindings'], key=lambda p: 0 if (p[0], p[1]) == prim else 1)
+        for otype, ev, idx, mode in ordered:
             kind, src, cons, prio = SOURCES[otype]
             if otype == 'CratePowerup':
                 binds.append('crate.outcome.%s' % CRATE_OUTCOME[ev])
@@ -1167,6 +1169,8 @@ def describe_bindings(b, bank_ids):
             g['role'] = 'Announcement sting when a Supply crate yields %s' % CRATE_OUTCOME[ev].replace('_', ' ')
         else:
             g['role'] = 'Sample group for %s %s' % (src.replace('_', ' '), binds[0].split('.', 1)[1])
+        if len(binds) > 1:
+            g['role'] += '; also plays for ' + ', '.join(binds[1:])
         if g['shared_files']:
             g['notes'].append('also plays %d file(s) owned by another group' % len(g['shared_files']))
 
