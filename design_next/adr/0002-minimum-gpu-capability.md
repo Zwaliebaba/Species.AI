@@ -42,7 +42,7 @@ Proposed option: **1**. **Default while Proposed:** the team builds and tests ag
 - If no adapter passes, the client shows a localised message that names the missing capability and the adapter, writes it to the log, and exits without creating a swap chain.
 - Every shader compiles to `*_6_6` profiles (ADR-0003). A feature of Shader Model 6.7 or later, 16-bit shader types, mesh or amplification shaders, or variable-rate shading may be used only as an optional fast path behind its own capability check, with a 6.6 path that produces the same image, and only with an ADR.
 - The renderer does not depend, in any required path, on a capability that feature level 12_1 adds over 12_0 (conservative rasterisation, rasteriser-ordered views). This keeps option 2 open as a compatible relaxation if hardware data later shows players blocked by the floor.
-- Optional capabilities the renderer queries at start-up for other decisions: `EnhancedBarriersSupported` (ADR-0007), tearing support (ADR-0012), HDR output (ADR-0013).
+- Optional capabilities the renderer queries at start-up for other decisions: `EnhancedBarriersSupported` (ADR-0007), tearing support (ADR-0012), HDR output (ADR-0014).
 
 ### Consequences
 

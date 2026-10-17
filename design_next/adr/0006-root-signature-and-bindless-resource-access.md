@@ -39,7 +39,7 @@ Proposed option: **1, one global bindless root signature**. **Default while Prop
   - a root constant-buffer view for **per-pass constants**, used by passes that need them;
   - **per-draw root constants**: the draw's world transform as a 3x4 matrix, its tint, and the heap indices of its instance buffer, textures and material parameters. Instanced draws put per-instance transforms and colours in a structured buffer and pass only its index.
 - **Heaps.** One shader-visible CBV/SRV/UAV heap and one shader-visible sampler heap, each bound once per command list. The CBV/SRV/UAV heap has a persistent region (allocated when an asset loads, released when it unloads, and reused only after every frame in flight that could reference it has completed) and a transient region used as a ring per frame in flight. Index 0 of each resource kind holds a valid default resource, so an unset index never reads an undefined descriptor.
-- **Samplers.** The closed sampler set of ADR-0017 lives in the sampler heap at fixed indices declared in the shared header.
+- **Samplers.** The closed sampler set of ADR-0018 lives in the sampler heap at fixed indices declared in the shared header.
 - **Vertex input.** Mesh vertex streams come through the input assembler from vertex and index buffers; per-instance and per-draw data come from structured buffers through heap indices.
 - **Shader rules.** Shaders index `ResourceDescriptorHeap[]` and `SamplerDescriptorHeap[]` with indices from root constants or buffers, and wrap any index that can differ within a wave in `NonUniformResourceIndex`.
 - **Layouts.** Every constant and structured-buffer layout is declared once in the shared C++/HLSL header (ADR-0003).
@@ -82,4 +82,4 @@ Proposed option: **1, one global bindless root signature**. **Default while Prop
 ## More Information
 
 - Technology baseline item 4.3 (see [the index](README.md#technology-baseline)); sources checked 2026-10-17: https://raw.githubusercontent.com/microsoft/DirectX-Specs/master/d3d/HLSL_SM_6_6_DynamicResources.md · https://learn.microsoft.com/windows/win32/api/d3d12/ne-d3d12-d3d_shader_model.
-- Related: ADR-0002 (Shader Model 6.6 and Resource Binding Tier 3), ADR-0003 (shared layouts), ADR-0005 (catalogue), ADR-0008 (frames in flight and memory), ADR-0009 (instance buffers), ADR-0017 (sampler set).
+- Related: ADR-0002 (Shader Model 6.6 and Resource Binding Tier 3), ADR-0003 (shared layouts), ADR-0005 (catalogue), ADR-0008 (frames in flight and memory), ADR-0009 (instance buffers), ADR-0018 (sampler set).

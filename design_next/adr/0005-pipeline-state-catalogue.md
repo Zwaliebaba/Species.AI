@@ -37,7 +37,7 @@ Chosen option: **1, a build-time catalogue derived from the pass table**, becaus
 | Group | Default |
 |---|---|
 | Rasteriser | solid fill; back faces culled; counter-clockwise triangles are front-facing; depth clip on; no depth bias |
-| Depth | test on, write on; comparison equivalent to less-or-equal in the depth convention of ADR-0015 |
+| Depth | test on, write on; comparison equivalent to less-or-equal in the depth convention of ADR-0016 |
 | Stencil | off (no pass uses stencil) |
 | Blend | off |
 | Alpha cut-out | off; when a material enables it, the pixel is kept only if its alpha is greater than 0.01 |
@@ -50,7 +50,7 @@ Chosen option: **1, a build-time catalogue derived from the pass table**, becaus
 |---|---|---|---|
 | opaque | — | — | facets, terrain, opaque scenery |
 | alpha | `SRC_ALPHA` | `INV_SRC_ALPHA` | alpha-blended buildings and panels |
-| premultiplied | `ONE` | `INV_SRC_ALPHA` | glyph atlases and premultiplied textures (ADR-0017, ADR-0033) |
+| premultiplied | `ONE` | `INV_SRC_ALPHA` | glyph atlases and premultiplied textures (ADR-0018, ADR-0034) |
 | additive | `SRC_ALPHA` | `ONE` | glow, sprites, particles, normal text |
 | darkening | `ZERO` | `INV_SRC_COLOR` | darkening layers, dark smoke, text outlines and shadows |
 | ink | `SRC_ALPHA` | `INV_SRC_COLOR` | UI content whose darkening also depends on source alpha |
@@ -106,5 +106,5 @@ Darkening is order-independent (each layer multiplies the destination by one min
 
 ## More Information
 
-- Related: ADR-0003 (material shaders and permutations), ADR-0004 (frame graph and pass table), ADR-0013 (HDR formats), ADR-0014 (sample counts), ADR-0015 (depth convention), ADR-0017 (alpha modes), ADR-0030 (UI blend states).
+- Related: ADR-0003 (material shaders and permutations), ADR-0004 (frame graph and pass table), ADR-0014 (HDR formats), ADR-0015 (sample counts), ADR-0016 (depth convention), ADR-0018 (alpha modes), ADR-0031 (UI blend states).
 - The renderer component (`architecture/components/renderer/`) lists the ordered pass table with each pass's catalogue keys.

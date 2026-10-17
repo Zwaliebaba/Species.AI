@@ -38,7 +38,7 @@ Chosen option: **1**, because it gives the fastest memory for static data, the c
 - **Dynamic data** is written into a **persistently mapped upload ring buffer**, one segment per frame in flight. Allocation is a linear bump with 256-byte alignment for constant-buffer views. A segment is reused only after the fence of the frame that last used it has completed. If a frame overflows its segment, the frame takes a one-off overflow buffer, the overflow is logged, and the ring is enlarged at the next reconfiguration.
 - **Transient render targets** are placed resources in heaps that the frame graph aliases (ADR-0004).
 - **Long-lived allocations** go through one engine allocator that pools placed resources by heap type and size class and records every allocation by asset id for diagnostics. Video-memory use is read from `IDXGIAdapter3::QueryVideoMemoryInfo` and shown in the development overlay; the baseline does not page resources in and out, because a match's assets fit in memory.
-- **No CPU shadow copies.** Every GPU resource can be recreated from its source: static resources from the asset system's packages, dynamic resources by the next frame, and rasterised glyphs by the glyph cache (ADR-0033).
+- **No CPU shadow copies.** Every GPU resource can be recreated from its source: static resources from the asset system's packages, dynamic resources by the next frame, and rasterised glyphs by the glyph cache (ADR-0034).
 - **Device removal.** `DXGI_ERROR_DEVICE_REMOVED` and `DXGI_ERROR_DEVICE_RESET`, whether returned by `Present`, by command-list execution or found by a fence that will never complete, start recovery:
   1. read the removal reason and the DRED auto-breadcrumbs and page-fault data, and write them to the log and the crash-report attachments;
   2. release every device object;
@@ -90,5 +90,5 @@ Chosen option: **1**, because it gives the fastest memory for static data, the c
 ## More Information
 
 - Technology baseline items 4.1 and 11.1 (DRED in crash reports; see [the index](README.md#technology-baseline)).
-- Related: ADR-0001 (explicit renderer), ADR-0004 (frame graph and transient aliasing), ADR-0005 (pipeline library), ADR-0012 (frames in flight and swap-chain resize), ADR-0033 (glyph cache).
+- Related: ADR-0001 (explicit renderer), ADR-0004 (frame graph and transient aliasing), ADR-0005 (pipeline library), ADR-0012 (frames in flight and swap-chain resize), ADR-0034 (glyph cache).
 - The asset pipeline component (`architecture/components/asset_pipeline_and_resources.md`) specifies how packages are read and reloaded; the pack-file decisions are in the content-pipeline ADRs (0050–0099).

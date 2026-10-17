@@ -33,10 +33,10 @@ The problem is where particles and shatter debris are simulated, how their numbe
 
 Chosen option: **1, a GPU-simulated particle pool with shard buffers for debris**, because it keeps particle cost off the CPU, bounds it by construction, and decouples particle motion from the simulation tick.
 
-- **Pool.** One GPU particle pool (`ParticlePool`) holds every live particle in a structured buffer, with a free list and a live list managed by compute passes (append and consume buffers, or an equivalent ring). Each particle (`ParticleInstance`) records its type index, so per-type parameters come from one parameter buffer built from the effect definitions (ADR-0035).
+- **Pool.** One GPU particle pool (`ParticlePool`) holds every live particle in a structured buffer, with a free list and a live list managed by compute passes (append and consume buffers, or an equivalent ring). Each particle (`ParticleInstance`) records its type index, so per-type parameters come from one parameter buffer built from the effect definitions (ADR-0036).
 - **Emission.** Each frame the VFX runtime turns the effect events it has received into emission requests in an upload buffer; an emit pass allocates from the free list.
 - **Caps and LOD.** The pool has a hard global capacity, and each type has its own cap. An emission that would exceed a cap is dropped, lowest-priority types first. Emission is scaled down with camera distance, and nothing is emitted beyond a type's LOD distance. The capacities, priorities and distances are VFX component tuning values.
-- **Integration.** A simulate pass advances every live particle at a **fixed sub-step of the presentation clock** (ADR-0035), running as many sub-steps as the frame needs, up to a maximum after which the clock is clamped. Particle motion therefore does not depend on the simulation tick or on the frame rate.
+- **Integration.** A simulate pass advances every live particle at a **fixed sub-step of the presentation clock** (ADR-0036), running as many sub-steps as the frame needs, up to a maximum after which the clock is clamped. Particle motion therefore does not depend on the simulation tick or on the frame rate.
 - **Terrain interaction.** The simulate pass samples a terrain height-field texture to apply each type's bounce and die-on-contact rules.
 - **Drawing.** A compact pass writes the indirect arguments from the live count; particles are drawn as instanced quads (ADR-0009) in two passes per frame: an additive pass for glow types and a darkening pass for smoke types, both unsorted.
 - **Shatter debris.** A shatter event carries the mesh, its transform, the fraction of triangles to release and the facet colours. The VFX runtime fills a per-explosion shard buffer (one entry per triangle: centre, velocity, tumbler index, colour, death time) and a small set of tumbler rotations that a compute pass advances. Each explosion is one instanced draw of its shards; the lit-facet-with-white-edges look comes from the barycentric edge mask of ADR-0003, with no edge texture.
@@ -78,5 +78,5 @@ Chosen option: **1, a GPU-simulated particle pool with shard buffers for debris*
 
 ## More Information
 
-- Related: ADR-0003 (edge mask), ADR-0005 (additive and darkening blend states), ADR-0009 (quad expansion and indirect draws), ADR-0011 (terrain height-field texture), ADR-0035 (effect events, presentation clock and effect definitions).
+- Related: ADR-0003 (edge mask), ADR-0005 (additive and darkening blend states), ADR-0009 (quad expansion and indirect draws), ADR-0011 (terrain height-field texture), ADR-0036 (effect events, presentation clock and effect definitions).
 - The animation and VFX component (`architecture/components/animation_and_vfx.md`) specifies the particle types and their parameter sets, the caps, priorities and LOD distances, and the shatter parameters.

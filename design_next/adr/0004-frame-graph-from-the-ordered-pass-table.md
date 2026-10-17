@@ -81,6 +81,6 @@ Proposed option: **1, a static frame graph compiled from the pass table**. **Def
 
 ## More Information
 
-- Related: ADR-0001 (explicit renderer), ADR-0005 (pipeline state catalogue), ADR-0007 (barrier model), ADR-0008 (uploads and memory), ADR-0012 (frames in flight and presentation), ADR-0014 (anti-aliasing targets).
+- Related: ADR-0001 (explicit renderer), ADR-0005 (pipeline state catalogue), ADR-0007 (barrier model), ADR-0008 (uploads and memory), ADR-0012 (frames in flight and presentation), ADR-0015 (anti-aliasing targets).
 - The renderer component (`architecture/components/renderer/`) holds the ordered pass table and the recording function of every pass.
 - The threading model that decides which threads record passes is deferred to the design phase (see [the index](README.md#deferred-to-the-design-phase)).
