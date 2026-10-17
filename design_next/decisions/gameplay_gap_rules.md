@@ -157,7 +157,7 @@ This file records the gameplay rules that the reference documents had to choose 
 
 ### DEC-860 Structure rule details
 - Status: Open
-- Affects: reference/03_buildings_and_world_objects/mode_objects.md (R-BLDG-275, R-BLDG-324, R-BLDG-325), reference/03_buildings_and_world_objects/economy_and_spawn_objects.md (R-BLDG-149), reference/03_buildings_and_world_objects/README.md (R-BLDG-046)
+- Affects: reference/03_buildings_and_world_objects/mode_objects.md (R-BLDG-275, R-BLDG-324, R-BLDG-325), reference/03_buildings_and_world_objects/economy_and_spawn_objects.md (R-BLDG-149), reference/03_buildings_and_world_objects/README.md (R-BLDG-046), architecture/components/renderer/world_renderers.md (RND-170)
 - Specified behaviour:
   1. **Carryable ownership tie.** In the ownership recount of a carryable structure, a later team in slot order replaces the candidate only with a strictly higher Worker count, so a tie goes to the lowest team slot (R-BLDG-275, DEC-016).
   2. **Launch Vessel damage floor.** A Launch Vessel's damage that decays to 0 or below is set to 0, and its attack-warning flag is cleared (R-BLDG-324).

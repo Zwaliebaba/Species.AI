@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# Code signing: every distributed PE file and package signed in CI with SHA-256 and an RFC 3161 timestamp
+# Code signing: every distributed PE file and package signed in the release procedure with SHA-256 and an RFC 3161 timestamp
 
 ## Context and Problem Statement
 
@@ -21,19 +21,19 @@ How, where and with what does Species sign its binaries and packages?
 
 ## Considered Options
 
-* Azure Artifact Signing from CI, with an OV certificate in a hardware-backed or cloud key store as the fallback
+* Azure Artifact Signing, with an OV certificate in a hardware-backed or cloud key store as the fallback
 * An OV certificate in a hardware-backed or cloud key store
 * An EV certificate
 * Store signing only
 
 ## Decision Outcome
 
-Chosen option: "Azure Artifact Signing from CI, with an OV certificate in a hardware-backed or cloud key store as the fallback". This is the default the team proceeds with; which branch applies depends on whether the publishing entity meets Artifact Signing's eligibility (supported regions and, for organisations, a verifiable tax history of three years or more).
+Chosen option: "Azure Artifact Signing, with an OV certificate in a hardware-backed or cloud key store as the fallback". This is the default the team proceeds with; which branch applies depends on whether the publishing entity meets Artifact Signing's eligibility (supported regions and, for organisations, a verifiable tax history of three years or more).
 
 * **What is signed:** `species.exe`, the dedicated server's Windows executable, every first-party DLL and tool executable distributed with the game, and every installer or publisher-signed package.
 * **How:** `SignTool sign /fd SHA256 /tr <timestamp URL> /td SHA256 <certificate or signing-service options> <file>`, so every signature has an RFC 3161 timestamp.
-* **Where:** a CI signing step on release-candidate and release builds only; Debug builds and local builds are unsigned or self-signed for local testing.
-* **Keys:** held by the signing service or the key store; the CI step is the only path to them.
+* **Where:** the signing step of the release procedure that whoever ships runs before a release (build tooling BLD-107, BLD-122), on the `Release|x64` builds of release candidates and releases only. CI builds `Debug|x64` only and signs nothing (`AGENTS.md` §6, [ADR-070](ADR-070-continuous-integration.md)); Debug builds and local builds are unsigned or self-signed for local testing.
+* **Keys:** held by the signing service or the key store; the signing step is the only path to them.
 * **Registration:** the publisher registers the certificate with the Windows Desktop Application Program, so crash data covers every signed executable.
 * **MSIX in the Store:** the Store signs the package; no certificate is needed for that channel.
 * **Non-Windows server artefacts** (if the design phase adds them) are published with checksums and a detached signature whose scheme the design phase chooses.
@@ -47,14 +47,14 @@ Chosen option: "Azure Artifact Signing from CI, with an OV certificate in a hard
 
 ### Confirmation
 
-* A CI check verifies the signature and timestamp of every PE file in a release candidate before publication.
+* A check of the release procedure verifies the signature and timestamp of every PE file and package in a release candidate before publication (BLD-108).
 * A repository scan rejects certificate and key files.
 
 ## Pros and Cons of the Options
 
 ### Azure Artifact Signing with OV fallback
 
-* Good, because Microsoft names it the recommended option for non-Store distribution; it integrates with CI and ties reputation to the verified publisher (about USD 9.99 a month; short-lived certificates).
+* Good, because Microsoft names it the recommended option for non-Store distribution; it integrates with build pipelines and ties reputation to the verified publisher (about USD 9.99 a month; short-lived certificates).
 * Bad, because eligibility depends on region and, for organisations, tax history.
 
 ### OV certificate in a key store
@@ -76,3 +76,4 @@ Chosen option: "Azure Artifact Signing from CI, with an OV certificate in a hard
 * Related: [ADR-072](ADR-072-distribution-channels-and-package-formats.md).
 * Component: build tooling and distribution (`BLD`).
 * **Amendment 2026-10-17 (AGENTS.md, O21).** Signing applies to Release builds only, since CI builds Debug only and the build has no other configuration ([ADR-054](ADR-054-build-system-cmake-presets.md), [ADR-070](ADR-070-continuous-integration.md)); the signing step runs where Release is built.
+* **Amendment 2026-10-17 (AGENTS.md §6, `build.yml`).** The committed workflow has no Release build and no signing step, and CI produces no release candidate. Signing is a step of the release procedure (build tooling BLD-107, BLD-122), and the signature check runs there (BLD-108). The title, the chosen option, "Where", "Keys" and the confirmation no longer name a CI signing step.

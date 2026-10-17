@@ -34,7 +34,7 @@ Table 2.1-A Match-world members.
 | last processed slice | 0 | the last slice passed to the world step; the sky renderer reads it for its offset | presentation reads it |
 | co-op group colour taken, per co-op group and per member | false | whether the first and the second shade of each co-op group's colour have been handed out ([06](06_teams_and_player_commands.md)) | simulation |
 | crate-drop announcement pending | true | the drop announcement shows only for the first Supply crate of the match | presentation |
-| terrain height field (`TerrainField`) | built at initialisation step 5 | heights, normals and render data ([terrain](../../architecture/components/terrain.md)) | simulation |
+| terrain height field (`TerrainField`) | built at initialisation step 5 | heights, normals and render data ([terrain](../../architecture/components/terrain/README.md)) | simulation |
 | actor grid (`ActorGrid`) | built at initialisation step 7 | spatial index of actors, cells of `ref.sim.actor_grid.cell_size` ([05](05_space_routing_and_physics.md)) | simulation |
 | actor grid cache (`ActorGridCache`) | built at initialisation step 7 | memo of enemy queries ([05](05_space_routing_and_physics.md)) | simulation |
 | obstacle grid (`ObstacleGrid`) | built at initialisation step 7 | structure footprint grid, cells of `ref.sim.obstacle_grid.cell_size` ([05](05_space_routing_and_physics.md)) | simulation |
@@ -107,7 +107,7 @@ Table 2.2-A Simulation containers.
 
 **R-SIM-211** (MUST) Every outcome that the iteration order decides is an explicit rule over a stable key (DEC-016; see DEC-260). The stable key of iteration is the slot order that R-SIM-206 to R-SIM-209 produce, which every participant computes identically because every creation and removal happens inside the tick. The register of such outcomes is §2.9. Whether an object created or handed over during a tick advances in that same tick is DEC-455; its default is [01](01_tick_timing_and_main_loop.md) R-SIM-516.
 
-**R-SIM-212** (MUST) A 2-D grid of the simulation (`Grid2D`, `SurfaceGrid`) returns its one shared outside value for a read outside its range and ignores a write outside its range. Its nearest-cell look-up is the integer part of coordinate ÷ cell size without subtracting the grid origin, which is correct because every simulation grid has its origin at 0. Value reads between cells interpolate bilinearly ([05](05_space_routing_and_physics.md), [terrain](../../architecture/components/terrain.md)).
+**R-SIM-212** (MUST) A 2-D grid of the simulation (`Grid2D`, `SurfaceGrid`) returns its one shared outside value for a read outside its range and ignores a write outside its range. Its nearest-cell look-up is the integer part of coordinate ÷ cell size without subtracting the grid origin, which is correct because every simulation grid has its origin at 0. Value reads between cells interpolate bilinearly ([05](05_space_routing_and_physics.md), [terrain](../../architecture/components/terrain/README.md)).
 
 ### 2.4 Slice partitioning
 
@@ -428,7 +428,7 @@ The slice keys `ref.sim.slice.power_slots`, `ref.sim.slice.sky`, `ref.sim.slice.
 ## 7 Dependencies
 
 - Reference documents: [01 Tick timing and main loop](01_tick_timing_and_main_loop.md) (tick structure, slice bounds, slice keys, same-tick rule, held world, extrapolation), [02 Match lifecycle and state reset](02_match_lifecycle_and_state_reset.md) (initialisation steps, teardown), [03 Entity model and identity](03_entity_model_and_identity.md) (handles, contracts, effect kinds), [05 Space, routing and physics](05_space_routing_and_physics.md) (grids, routes, spawn-position search, ray tests, area damage), [06 Teams and player commands](06_teams_and_player_commands.md), [07 Randomness and integrity](07_randomness_and_integrity.md) (draw sites), [skirmish rules and modes](../01_skirmish_rules_and_modes/README.md) and the mode documents, [Worker](../02_units/worker.md), [buildings and world objects](../03_buildings_and_world_objects/README.md) and its kind documents, [supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md), [population flow](../05_population_flow.md), [bots](../07_bots/README.md), [maps](../08_maps_and_level_design/rules_and_conventions.md).
-- Engine components: [terrain](../../architecture/components/terrain.md), [renderer](../../architecture/components/renderer/README.md), [diagnostics, test and performance](../../architecture/components/diagnostics_test_and_performance.md) (the slice-order check of R-SIM-214).
+- Engine components: [terrain](../../architecture/components/terrain/README.md), [renderer](../../architecture/components/renderer/README.md), [diagnostics, test and performance](../../architecture/components/diagnostics_test_and_performance/README.md) (the slice-order check of R-SIM-214).
 - Assets: none.
 
 ## 8 Open decisions

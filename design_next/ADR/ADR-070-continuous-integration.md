@@ -8,7 +8,7 @@ decision-makers: Species technology lead; workflow decided by the owner's AGENTS
 
 ## Context and Problem Statement
 
-Every change to Species code or content must be built, checked and tested before it is merged. The repository holds its CI workflow, `.github/workflows/build.yml`, which the engineering rules describe (`AGENTS.md` §6): a Windows job and a Linux job, every step that has something to run blocks, and a step whose input does not exist yet is skipped and says so, never faked. CI builds `Debug|x64` only; the static check of the two configurations stands in for a Release build ([ADR-054](ADR-054-build-system-cmake-presets.md)). Long-running checks (a soak of many matches, fuzzing, GPU validation, performance runs) and the design checks are needed too, without slowing every change and without weakening the guard rule. The CI service is GitHub Actions, as the workflow file implies; agent hosting beyond the hosted runners is an infrastructure choice outside this ADR.
+Every change to Species code or content must be built, checked and tested before it is merged. The repository holds its CI workflow, `.github/workflows/build.yml`, which the engineering rules describe (`AGENTS.md` §6): a Windows job and two Linux jobs (formatting and the design checks), every step that has something to run blocks, and a step whose input does not exist yet is skipped and says so, never faked. CI builds `Debug|x64` only; the static check of the two configurations stands in for a Release build ([ADR-054](ADR-054-build-system-cmake-presets.md)). Long-running checks (a soak of many matches, fuzzing, GPU validation, performance runs) and the design checks are needed too, without slowing every change and without weakening the guard rule. The CI service is GitHub Actions, as the workflow file implies; agent hosting beyond the hosted runners is an infrastructure choice outside this ADR.
 
 What does Species' continuous integration run, and how does it grow?
 
@@ -35,15 +35,15 @@ Chosen option: "The committed workflow as the baseline, with further jobs added 
   * print the toolchain it got: the runner image, Visual Studio, MSBuild, clang-tidy and Python;
   * locate the solution: exactly one `.slnx` or `.sln` at the repository root, or none while the tree is empty; two fail the job;
   * check the build shape and the project registries with `Build\CheckProjectFiles.py`, guarded on the script;
+  * restore the allow-listed NuGet packages ([ADR-055](ADR-055-dependencies-vcpkg-manifest-mode.md)) with `/t:Restore /p:RestorePackagesConfig=true` before the build, guarded on the solution and on a `packages.config` anywhere in the tree;
   * build `Debug|x64` through the solution with MSBuild warnings as errors, guarded on the solution;
   * run the test suites: one suite per `*Tests.vcxproj`, each of which must have produced its DLL, run by `vstest.console.exe` with a `.trx` log ([ADR-069](ADR-069-test-framework.md)), guarded on the solution;
   * run clang-tidy over the tree with `Build\RunClangTidy.py`, guarded on the script; clang-tidy is pinned (22.1.8, installed from pip) so that a runner-image change cannot turn the build red;
   * upload the build log and the test results.
-* **Linux job:** check formatting with `Build\CheckFormat.py` on clang-format 18 (installed from the Ubuntu packages, 18.1.3), guarded on the script.
+* **Formatting job** (Linux): check formatting with `Build\CheckFormat.py` on clang-format 18 (installed from the Ubuntu packages, 18.1.3), guarded on the script.
+* **Design job** (Linux): install the pinned Mermaid checker (`npm ci --prefix Tools/DesignCheck`, then Playwright's Chromium) and run `python3 Tools/DesignCheck/CheckDesign.py Design`, both guarded on `Tools/DesignCheck/CheckDesign.py` and `Design/README.md` (`AGENTS.md` §6).
 * **Release is not built in CI.** Before a release, whoever ships builds `Release|x64` and runs the release checks of the other records (mitigation flags, symbols, version resource, no development or loose-file code, install contents).
-* **Restore:** the first project that references an allow-listed package ([ADR-055](ADR-055-dependencies-vcpkg-manifest-mode.md)) adds a NuGet restore step (`/t:Restore /p:RestorePackagesConfig=true`) before the build, guarded on a `packages.config` file, by amendment of the workflow and of this record.
 * **Further jobs** are added by amendment of this record and of the workflow, each guarded on the file it needs, in this order of need:
-  * the design checks (`Tools/DesignCheck/`) on every change under the design library;
   * the content build of every edition with all validators ([ADR-059](ADR-059-content-build-and-validators.md));
   * a scheduled job for the headless bot soak (the server plays matches between bots on every mode and map at maximum speed and reports crashes, assertion failures, simulation update-time percentiles and peak population per match), fuzzing ([ADR-069](ADR-069-test-framework.md)), the reproducibility check of the content build, and performance tests against component budgets;
   * on an agent with a GPU, golden-image tests and a client run with the Direct3D 12 debug layer and GPU-based validation.
@@ -60,7 +60,7 @@ Chosen option: "The committed workflow as the baseline, with further jobs added 
 ### Confirmation
 
 * The workflow has no `continue-on-error` step; every skipped step names its missing input in the log.
-* The merge rule requires the Windows and Linux jobs to pass.
+* The merge rule requires the Windows job and both Linux jobs to pass.
 * Each amendment that adds a job states its guard and its input, and removes the guard once the input is permanently present.
 
 ## Pros and Cons of the Options
@@ -86,3 +86,4 @@ Chosen option: "The committed workflow as the baseline, with further jobs added 
 * Components: diagnostics, test and performance (`DBG`), build tooling and distribution (`BLD`).
 * **Amendment 2026-10-17.** Job presets carry the product suffix of ADR-054 (`<os>-<compiler>-<flavour>-<product>`, BLD-006); the build tooling component lists the jobs and their workflow presets.
 * **Amendment 2026-10-17 (AGENTS.md, O21).** CI is the committed `build.yml`: a Windows job (build shape check, `Debug|x64` build, test suites, clang-tidy) and a Linux job (pinned clang-format); Release is not built in CI; the design checks, content build, nightly soak, fuzzing, GPU and performance jobs are added by amendment, guarded the same way. The preset-based jobs of the earlier amendment above, the analysis builds and the `import std` build are removed.
+* **Amendment 2026-10-17 (`build.yml`, O27).** The committed workflow already holds the NuGet restore step (guarded on the solution and on a `packages.config`) and the design-checks job (guarded on `Tools/DesignCheck/CheckDesign.py` and `Design/README.md`), so neither is a future amendment any more: the decision lists the restore step in the Windows job and the design job beside the formatting job, and the list of further jobs starts with the content build.

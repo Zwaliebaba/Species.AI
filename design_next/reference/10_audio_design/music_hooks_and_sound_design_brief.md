@@ -1,6 +1,6 @@
 # Audio design: music hooks and the sound-design brief
 
-> Status: Reference · Prefix: R-AUD · Related: [Folder index](README.md) · [Event catalogue](event_catalogue.md) · [Positional, priorities and mix](positional_priorities_and_mix.md) · [assets/GameAssets.md](../../assets/GameAssets.md) · [assets/art_and_audio_briefs.md](../../assets/art_and_audio_briefs.md) · [audio engine](../../architecture/components/audio_engine.md)
+> Status: Reference · Prefix: R-AUD · Related: [Folder index](README.md) · [Event catalogue](event_catalogue.md) · [Positional, priorities and mix](positional_priorities_and_mix.md) · [assets/GameAssets.md](../../assets/GameAssets.md) · [assets/art_and_audio_briefs.md](../../assets/art_and_audio_briefs.md) · [audio engine](../../architecture/components/audio_engine/README.md)
 
 ## 1 Purpose and player experience
 
@@ -107,7 +107,7 @@ The acceptance checks of the Species sound set:
 ## 7 Dependencies
 
 - **Reference documents:** [event catalogue](event_catalogue.md) (the event set); [event model and sound data](event_model_and_sound_data.md) (entry kinds, stops, the validator); [positional, priorities and mix](positional_priorities_and_mix.md) (the music bus); [front end, HUD, voice and ambience](front_end_hud_voice_and_ambience.md) (beds, match end); [01 Skirmish rules and modes](../01_skirmish_rules_and_modes/README.md) (the one-minute warning).
-- **Engine components:** [audio engine](../../architecture/components/audio_engine.md) (the music path of ADR-024; streaming of ADR-025).
+- **Engine components:** [audio engine](../../architecture/components/audio_engine/README.md) (the music path of ADR-024; streaming of ADR-025).
 - **Assets:** `music.front_end.theme`, `music.match.bed`, `music.match.sting_victory`, `music.match.sting_defeat`; [assets/art_and_audio_briefs.md](../../assets/art_and_audio_briefs.md) §12 to §15 (the style of the sound set and the music). The new groups of the Resolved bindings (R-AUD-413): `sfx.weapon.laser_bolt.spawn`, `sfx.weapon.laser_bolt.hit_structure`, `sfx.weapon.laser_bolt.kill`, `sfx.unit.trooper.throw_grenade`, `sfx.ui.match_ui.game_over`.
 
 ## 8 Open decisions

@@ -8,7 +8,7 @@ decision-makers: Species technology lead
 
 ## Context and Problem Statement
 
-Species can reach players through storefront depots (for example Steam or the Epic Games Store), the Microsoft Store as an MSIX or MSI/EXE package, direct download of a signed MSIX with an `.appinstaller` update feed, or a signed installer. Which storefronts Species uses is a business and online-services choice for the design phase. The engine needs a default now, so that CI produces installable builds from the first playable onwards, and so that no engine choice closes a channel.
+Species can reach players through storefront depots (for example Steam or the Epic Games Store), the Microsoft Store as an MSIX or MSI/EXE package, direct download of a signed MSIX with an `.appinstaller` update feed, or a signed installer. Which storefronts Species uses is a business and online-services choice for the design phase. The engine needs a default now, so that the release procedure produces installable builds from the first playable onwards, and so that no engine choice closes a channel.
 
 What does the build produce for distribution, and how does each channel get its package?
 
@@ -30,7 +30,7 @@ What does the build produce for distribution, and how does each channel get its 
 
 Chosen option: "Install directory plus a signed archive now; channel wrappers added when channels are chosen". This is the default the team proceeds with.
 
-* **CI output for every release-candidate build:** the install directory and a signed archive of it, with a small setup script that runs the two prerequisites of [ADR-071](ADR-071-install-layout-runtime-files-and-user-data.md). This serves internal, QA and closed-test distribution.
+* **Release-candidate output:** for every release candidate, the release procedure (a `Release|x64` build by whoever ships, because CI builds `Debug|x64` only: `AGENTS.md` §6, [ADR-070](ADR-070-continuous-integration.md)) produces the install directory and a signed archive of it, with a small setup script that runs the two prerequisites of [ADR-071](ADR-071-install-layout-runtime-files-and-user-data.md). This serves internal, QA and closed-test distribution.
 * **Channel wrappers** are added per chosen channel, each generated from the same directory: a storefront depot definition; an MSIX package (Store-signed for the Microsoft Store, or publisher-signed with an `.appinstaller` feed for direct download); or a signed offline MSI/EXE installer for the Store's MSI/EXE path.
 * **Updates:** delivered by the channel (storefront client, Store auto-update, `.appinstaller` feed). Species has no first-party patcher in v1.
 * **Before choosing the Microsoft Store MSIX channel:** a test submission confirms that a package containing the Agility SDK runtime and the GameInput prerequisite passes Store certification. The Windows App Certification Kit is deprecated, and certification runs at submission in Partner Center.
@@ -45,7 +45,7 @@ Chosen option: "Install directory plus a signed archive now; channel wrappers ad
 ### Confirmation
 
 * An install test unpacks the archive on a clean Windows 11 image, runs the setup script as a standard user and starts the client.
-* Each channel wrapper, once added, has an install, update and uninstall test in CI.
+* Each channel wrapper, once added, has an install, update and uninstall test, run in the release procedure or by a CI job that an amendment of [ADR-070](ADR-070-continuous-integration.md) adds.
 
 ## Pros and Cons of the Options
 
@@ -73,3 +73,4 @@ Chosen option: "Install directory plus a signed archive now; channel wrappers ad
 * Facts and sources: technology baseline item 11.2 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): Store publishing FAQ, distribution-path choice and MSIX package requirements on learn.microsoft.com. The Windows App Certification Kit status was re-checked for this ADR because the baseline marked it unverified: "Windows App Certification Kit (WACK) is deprecated and no longer maintained" and "Official certification is performed automatically when you submit your package to Partner Center", https://learn.microsoft.com/windows/msix/package/packaging-uwp-apps#validate-your-app-package (checked 2026-10-17). Whether a package with the Agility SDK passes Store certification remains unverified.
 * Related: [ADR-073](ADR-073-code-signing.md).
 * Component: build tooling and distribution (`BLD`).
+* **Amendment 2026-10-17 (AGENTS.md §6, `build.yml`).** CI builds `Debug|x64` only and produces no release candidate. The install directory, the signed archive and its setup script come from the release procedure that whoever ships runs before a release (build tooling BLD-122), and the install tests run there or in a CI job added by amendment of ADR-070 (BLD-105). The context, the release-candidate output and the confirmation say so.

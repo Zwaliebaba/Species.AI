@@ -52,6 +52,7 @@ MERMAID_CHECK = os.path.join(HERE, 'MermaidCheck.js')
 MERMAID_JS = os.path.join(HERE, 'node_modules', 'mermaid', 'dist', 'mermaid.min.js')
 
 MAX_PHRASE_WORDS = 5           # denylist entries are phrases of one to five words
+MIN_AFFIX_CHARS = 6            # a listed word of this length or more is also found at the start or end of a word
 MAX_FILE_BYTES = 120 * 1024
 SIZE_EXEMPT = ('assets/GameAssets.md',)
 OUTSIDE_FOLDERS = ('vision', 'prompts')
@@ -76,6 +77,7 @@ REGEX_META = set('.^$*+?{}[]|()')
 # One normalisation for the denylist entries and for the scanned text, so that equal text gives equal hashes.
 
 WORD_STRIP = re.compile(r'[^a-z0-9!]')
+JOIN_SPLIT = re.compile(r'[^a-z0-9_]+')
 DASHES = re.compile('[-‐-―−⸺⸻﹘﹣－]')
 NON_ALNUM = re.compile(r'[^A-Za-z0-9]+')
 CASE_STEP = re.compile(r'(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])')
@@ -97,13 +99,23 @@ def phrase_words(text):
   return [w for w in (WORD_STRIP.sub('', chunk) for chunk in fold(DASHES.sub(' ', text)).lower().split()) if w]
 
 
+def joined_words(text):
+  """The second view of scanned text: as phrase_words, but split at every character that is not a letter, a digit or
+  an underscore, and with the underscores removed, so that a listed file stem or identifier is found before a file
+  extension, inside a path or before ::."""
+  return [w for w in (c.replace('_', '') for c in JOIN_SPLIT.split(fold(DASHES.sub(' ', text)).lower())) if w]
+
+
 def split_words(text):
-  """The second view of scanned text: split at every character that is not an ASCII letter or digit (accents are
-  folded first) and at every lower-to-upper case step, so that a listed name inside a longer identifier, before a
+  """The third view of scanned text: split at every character that is not an ASCII letter or digit (accents are
+  folded first) and at every lower-to-upper case step, so that a listed name inside a CamelCase identifier, before a
   possessive or between slashes is found too."""
   if not text.isascii():
     text = ''.join(c for c in unicodedata.normalize('NFKD', text) if not unicodedata.combining(c))
   return [part.lower() for chunk in NON_ALNUM.split(text) for part in CASE_STEP.split(chunk) if part]
+
+
+VIEWS = (phrase_words, joined_words, split_words)
 
 
 def normalise_phrase(text):
@@ -133,9 +145,11 @@ def load_hashes(path):
 
 
 def text_phrases(text):
-  """Yield (line, phrase) for every 1 to MAX_PHRASE_WORDS word n-gram of both views of the text. N-grams run across
-  line breaks inside a paragraph and stop at a blank line; the line is that of the n-gram's first word."""
-  for view in (phrase_words, split_words):
+  """Yield (line, phrase) for every 1 to MAX_PHRASE_WORDS word n-gram of the three views of the text, and for every
+  prefix and suffix of MIN_AFFIX_CHARS or more characters of each longer word of the joined view (a listed name inside
+  a compound or before a plural ending). N-grams run across line breaks inside a paragraph and stop at a blank line;
+  the line is that of the n-gram's first word."""
+  for view in VIEWS:
     words, lines = [], []
     for ln, line in enumerate(text.split('\n'), 1):
       if not line.strip():
@@ -146,6 +160,11 @@ def text_phrases(text):
       words.extend(w)
       lines.extend([ln] * len(w))
     yield from _ngrams(words, lines)
+  for ln, line in enumerate(text.split('\n'), 1):
+    for w in joined_words(line):
+      for k in range(MIN_AFFIX_CHARS, len(w)):
+        yield ln, w[:k]
+        yield ln, w[-k:]
 
 
 def _ngrams(words, lines):
@@ -158,20 +177,13 @@ def _ngrams(words, lines):
 
 
 class Denylist:
-  """A hashed phrase denylist. Phrases of one or two words recur across files, so their result is cached; longer
-  phrases are hashed once per file (the cache stays small)."""
+  """A hashed phrase denylist. Each distinct phrase of a file is hashed once."""
 
   def __init__(self, hashes):
     self.hashes = hashes
-    self.cache = {}
 
   def listed(self, phrase):
-    if phrase.count(' ') > 1:
-      return digest(phrase) in self.hashes
-    hit = self.cache.get(phrase)
-    if hit is None:
-      hit = self.cache[phrase] = digest(phrase) in self.hashes
-    return hit
+    return digest(phrase) in self.hashes
 
   def scan(self, text):
     """Hits as (line, phrase), one per phrase and line, in line order."""
@@ -510,7 +522,8 @@ class Check:
     self.def_rx = re.compile(r'\*\*(' + pfx + r')-(\d{3})\*\*')
     any_def = re.compile(r'\*\*((?:R-)?[A-Z]{2,6})-(\d{3})\*\*')
     self.cite_rx = re.compile(r'(?<![\w-])(' + pfx + r')-(\d{3})(?!\d)')
-    range_rx = re.compile(r'(?<![\w-])(' + pfx + r')-\d{3}\s*(?:to|–|—|-|…|\.\.)\s*(?:(?:' + pfx + r')-)?\d{3}(?!\d)')
+    range_rx = re.compile(r'(?<![\w-])(' + pfx + r')-\d{3}\s*(?:to|–|—|-|…|\.\.)\s*(?:(?:' + pfx + r')-)?'
+                          r'\d{3}(?!\d)')
     self.defs = defaultdict(list)     # id -> [(file, line)]
     self.req_blocks = {}              # id -> requirement text, from the id to the next definition or blank line
     for f, t in self.text.items():
@@ -564,7 +577,8 @@ class Check:
               st = s.group(1)
               break
           status[int(m.group(1))] = st
-    adrs = {int(os.path.basename(p)[4:7]) for p in glob.glob(os.path.join(self.root, 'ADR', 'ADR-[0-9][0-9][0-9]-*.md'))}
+    adr_files = glob.glob(os.path.join(self.root, 'ADR', 'ADR-[0-9][0-9][0-9]-*.md'))
+    adrs = {int(os.path.basename(p)[4:7]) for p in adr_files}
     for f, t in self.text.items():
       t2 = re.sub(r'(DEC|ADR)-\d{3}\s*(?:to|–|-|…)\s*(?:DEC-|ADR-)?\d{3}', ' ', t)
       for m in sorted(set(re.findall(r'DEC-(\d{3})\b', t2))):

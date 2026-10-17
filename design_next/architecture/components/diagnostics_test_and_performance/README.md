@@ -293,7 +293,7 @@ Caption: Listing 2.1-A, the diagnostics interface (declarations only). `ProfileN
 
 ### 2.2 Debug entry points and development bindings
 
-**DBG-020** (MUST) Debug builds add the development binding layer of the [input](../input.md) component on top of its default binding set (INP-094 to INP-096, table 3.11-A); the default set binds no developer key other than `action.debug.network_stats` (INP-009). The input component owns every binding; this component defines the debug actions, their contexts and their effects:
+**DBG-020** (MUST) Debug builds add the development binding layer of the [input](../input/README.md) component on top of its default binding set (INP-094 to INP-096, table 3.11-A); the default set binds no developer key other than `action.debug.network_stats` (INP-009). The input component owns every binding; this component defines the debug actions, their contexts and their effects:
 
 | Action | Binding | Context and conditions | Effect | Configurations |
 |---|---|---|---|---|
@@ -397,7 +397,7 @@ Caption: Listing 2.1-A, the diagnostics interface (declarations only). `ProfileN
 | PIX captures and ETW traces | PIX and Windows Performance Analyzer | captures taken by a developer | Debug and Release |
 | test reports and performance results | the test harness | CI artefacts (ADR-070) | test builds |
 
-Key-binding parse errors go to the log ([input](../input.md)). The world-state dump on divergence is DEC-206. The version file is the platform layer's (PLT-023).
+Key-binding parse errors go to the log ([input](../input/README.md)). The world-state dump on divergence is DEC-206. The version file is the platform layer's (PLT-023).
 
 ## 4 Behaviour and algorithms
 

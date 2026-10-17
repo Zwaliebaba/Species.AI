@@ -35,7 +35,7 @@ Maps that declare no mode, such as development, test and benchmark maps, are nev
 - **Map authors** start with [rules_and_conventions.md](rules_and_conventions.md) §2.4 (the map definition), §2.8 to §2.14 (what a map can express) and §2.16 to §2.21 (the conventions and the validation rules of each mode).
 - **Mode and economy designers** read §2.6 and §2.7 (the match options that a map sets, and how map values meet lobby defaults), then the mode documents of [reference/01](../01_skirmish_rules_and_modes/README.md) and the population rules of [reference/05](../05_population_flow.md).
 - **Tool builders** read [map_editor_hooks.md](map_editor_hooks.md) and the schema family of the map definition in [data schemas](../../architecture/components/data_schemas/README.md).
-- **Terrain and rendering** use §2.8 to §2.10 for the authored inputs; the generator algorithm is [terrain](../../architecture/components/terrain.md) (DEC-025, DEC-246, DEC-247) and the lights and sea are [renderer](../../architecture/components/renderer/README.md).
+- **Terrain and rendering** use §2.8 to §2.10 for the authored inputs; the generator algorithm is [terrain](../../architecture/components/terrain/README.md) (DEC-025, DEC-246, DEC-247) and the lights and sea are [renderer](../../architecture/components/renderer/README.md).
 
 ## Decisions that shape this folder
 

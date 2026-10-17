@@ -14,7 +14,7 @@ How are products, development features and feature variants expressed?
 
 ## Decision Drivers
 
-* Each program is one project of the solution, chosen by building that project, never by editing source.
+* Each program is one project of its solution, chosen by building that project, never by editing source.
 * Debug and Release differ only in the settings `AGENTS.md` §3 lists.
 * Development features cannot reach a Release binary by construction.
 * Logging, crash context, profiling markers and opt-in telemetry exist in every binary that players or testers run.
@@ -31,7 +31,7 @@ How are products, development features and feature variants expressed?
 
 Chosen option: "One project per product, development features keyed on `NDEBUG`, data-driven runtime feature flags". Accepted: the owner's `AGENTS.md` decides it (O21).
 
-* **Products** are projects of the solution: the client (the game executable, `species.exe`); the server (headless; links no graphics, audio, input or text-rendering library); the content build tool, a development tool under `Tools/` ([ADR-059](ADR-059-content-build-and-validators.md)); and one test project `<Project>Tests` per library ([ADR-069](ADR-069-test-framework.md)). The libraries they link are projects too. A product is built by building its project through the solution (`/t:<ProjectName>`); no macro or variable selects a product.
+* **Products** are projects: in the game's solution the client (the game executable, `species.exe`), the server (headless; links no graphics, audio, input or text-rendering library) and one test project `<Project>Tests` per library ([ADR-069](ADR-069-test-framework.md)); in the separate tools solution under `Tools/`, the content build tool, a development tool ([ADR-059](ADR-059-content-build-and-validators.md), [ADR-054](ADR-054-build-system-cmake-presets.md), `AGENTS.md` §2). The libraries they link are projects too. A product is built by building its project through the solution (`/t:<ProjectName>`); no macro or variable selects a product.
 * **Configurations:** `Debug` and `Release` only. What each compiles in:
 
 | Feature | `Debug` | `Release` |
@@ -87,3 +87,4 @@ Chosen option: "One project per product, development features keyed on `NDEBUG`,
 * Related: [ADR-057](ADR-057-version-identity.md) (each build records its product and configuration in its version identity).
 * Component: build tooling and distribution (`BLD`); the edition manifest schema belongs to the data schemas component (`DAT`); the facilities per configuration are listed by the diagnostics component (`DBG`).
 * **Amendment 2026-10-17 (AGENTS.md, O21).** Products are projects of the solution, the build has the configurations `Debug` and `Release` only, and development features are compiled into Debug and out of Release under `NDEBUG`, while logging, the black box, PIX markers and opt-in telemetry stay in both. The flavours `Development`, `Profile` and `Shipping` and the product variable are removed; editions and data-driven feature flags are unchanged. Status Accepted, decided by the owner's `AGENTS.md`.
+* **Amendment 2026-10-17 (AGENTS.md §2, O26).** The content build tool is a project of the separate tools solution under `Tools/`, not of the game's solution; the client, the server and the test projects stay projects of the game's solution.

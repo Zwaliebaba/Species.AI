@@ -6,7 +6,7 @@
 
 This folder specifies the engine-level model of a reference match: what kinds of simulated objects exist, how they are identified, stored, created, advanced in time, removed and found in space, how they move, collide and find routes, who owns them, which random streams they draw from, how player intent reaches them, and how simulated state is kept apart from what is drawn. It also holds the single definition of the reference tick rate, which every tick-denominated value of the reference library depends on.
 
-Per-kind behaviour (state machines, stats, weapons) is not here: it is in [units](../02_units/README.md), [buildings and world objects](../03_buildings_and_world_objects/README.md), [supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md) and [bots](../07_bots/README.md). Terrain generation and height queries are the [terrain component](../../architecture/components/terrain.md); render passes are the [renderer](../../architecture/components/renderer/README.md).
+Per-kind behaviour (state machines, stats, weapons) is not here: it is in [units](../02_units/README.md), [buildings and world objects](../03_buildings_and_world_objects/README.md), [supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md) and [bots](../07_bots/README.md). Terrain generation and height queries are the [terrain component](../../architecture/components/terrain/README.md); render passes are the [renderer](../../architecture/components/renderer/README.md).
 
 Every requirement in this folder uses the prefix `R-SIM`, and every tuning key of the folder has the form ref.sim.<object>.<parameter>.
 

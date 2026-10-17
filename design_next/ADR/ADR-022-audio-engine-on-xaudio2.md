@@ -36,7 +36,7 @@ Chosen option: **1, in-box XAudio2 2.9 with X3DAudio**, because it provides the 
 - **Module plan.** The audio engine (`AudioEngine`) is built in five layers, each depending only on the ones below it, listed from the top:
   - layer 5, **binding**: (source, event) lookups into the sound source and event definitions (`SoundSourceDef`, `SoundEventDef`);
   - layer 4, **instances**: playing and virtual sound instances (`SoundVoice`), their parameters (`SoundParam`) and priorities (ADR-023);
-  - layer 3, **sample data**: resident banks and streams owned by the asset system (`SampleCache`, `SampleBank`, `AudioStream`, `AudioDecoder`; ADR-025);
+  - layer 3, **sample data**: resident banks and streams owned by the asset system (`SampleCache`, `SampleBank`, `AudioStream`; ADR-025);
   - layer 2, **voices and device**: the XAudio2 graph (`AudioBusGraph`), the pooled source voices (`SourceVoiceSlot`), spatialisation (ADR-027) and device handling;
   - layer 1, **effects**: XAPO chains on buses (ADR-024).
 - **Threading.** The game thread only enqueues commands; the audio engine applies them on its own update and in XAudio2 callbacks that never block (ADR-026).
@@ -49,7 +49,7 @@ Chosen option: **1, in-box XAudio2 2.9 with X3DAudio**, because it provides the 
 - Good, because the voice graph, floating-point mixing, sample-rate conversion, effects and spatial calculations come from the OS, with no redistributable.
 - Good, because the engine follows the default device and the user's spatial-sound format without Species code for either.
 - Good, because the five-layer plan keeps the data-driven binding model independent of the API below it.
-- Bad, because XAudio2 has no streaming or decoding of its own beyond PCM and ADPCM, so streaming and the music codec are Species code (ADR-025).
+- Bad, because XAudio2 streams nothing itself and decodes only its own formats, so streaming is Species code and the stream format is one that XAudio2 decodes (ADR-025).
 - Bad, because the graph's processing quantum (10 ms on Windows) sets a floor on start latency, which the command timing of ADR-026 must respect.
 
 ### Confirmation
@@ -81,6 +81,7 @@ Chosen option: **1, in-box XAudio2 2.9 with X3DAudio**, because it provides the 
 
 - Technology baseline item 7 (see [the index](README.md#technology-baseline)); sources checked 2026-10-17: https://learn.microsoft.com/windows/win32/xaudio2/xaudio2-versions · https://learn.microsoft.com/uwp/win32-and-com/win32-apis#apis-from-xaudio2_9dll · https://learn.microsoft.com/windows/win32/xaudio2/xaudio2-redistributable · https://learn.microsoft.com/windows/win32/xaudio2/xaudio2-audio-graph.
 - Related: ADR-023 (virtual voices), ADR-024 (buses and effects), ADR-025 (codecs and residency), ADR-026 (command queue and callbacks), ADR-027 (spatialisation).
-- The audio engine component (`architecture/components/audio_engine.md`) specifies each layer; the audio design (`reference/10_audio_design/`) specifies the binding model and the sound data.
+- The audio engine component (`architecture/components/audio_engine/`) specifies each layer; the audio design (`reference/10_audio_design/`) specifies the binding model and the sound data.
 - **Amendment 2026-10-17 (AGENTS.md, O21).** Definitions reload in Debug builds only; commercial audio middleware is excluded by `AGENTS.md` R14.
 - **Amendment 2026-10-17.** The layer names and numbers follow the audio engine component (AEN-002): `SoundVoice` is the sound instance of layer 4, as the naming ledger defines it, and the pooled source voice of layer 2 is `SourceVoiceSlot`.
+- **Amendment 2026-10-17 (ADR-025, AEN-002).** Layer 3 holds `SampleCache`, `SampleBank` and `AudioStream` and no decoder type: resident sounds are 16-bit PCM and streamed sounds MS-ADPCM, and XAudio2 decodes both (ADR-025), so the engine has no decoder of its own and `AudioDecoder` is removed. The consequence on streaming is restated to match: Species code streams the encoded blocks, XAudio2 decodes them.

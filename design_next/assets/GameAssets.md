@@ -1129,14 +1129,14 @@ The reference documents and engine components cite 579 string ids and id pattern
 | `ui.confirm_leave.*` | 3 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
 | `ui.connecting.*` | 11 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
 | `ui.credits.*` | 4 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
-| `ui.dev.*` | 22 | [diagnostics_test_and_performance](../architecture/components/diagnostics_test_and_performance.md) |
+| `ui.dev.*` | 22 | [diagnostics_test_and_performance](../architecture/components/diagnostics_test_and_performance/README.md) |
 | `ui.dialog.*` | 6 | [ui_framework/core_and_widgets](../architecture/components/ui_framework/core_and_widgets.md) and 4 more |
 | `ui.error.*` | 18 | [platform_layer](../architecture/components/platform_layer.md) and 6 more |
 | `ui.help.*` | 51 | [11_tutorial_and_help](../reference/11_tutorial_and_help.md) and 2 more |
 | `ui.help_and_options.*` | 3 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
 | `ui.help_select.*` | 2 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) and 1 more |
 | `ui.host_or_join.*` | 3 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
-| `ui.input.*` | 5 | [input](../architecture/components/input.md) |
+| `ui.input.*` | 5 | [input](../architecture/components/input/README.md) |
 | `ui.language.*` | 9 | [09_front_end_and_match_flow/options_localisation_and_hooks](../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) |
 | `ui.leaderboard.*` | 14 | [09_front_end_and_match_flow/options_localisation_and_hooks](../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) |
 | `ui.loading.*` | 1 | [09_front_end_and_match_flow/front_end_presentation](../reference/09_front_end_and_match_flow/front_end_presentation.md) |
@@ -1144,7 +1144,7 @@ The reference documents and engine components cite 579 string ids and id pattern
 | `ui.main.*` | 7 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
 | `ui.map_editor.*` | 16 | [08_maps_and_level_design/map_editor_hooks](../reference/08_maps_and_level_design/map_editor_hooks.md) |
 | `ui.map_select.*` | 5 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
-| `ui.match.*` | 4 | [diagnostics_test_and_performance](../architecture/components/diagnostics_test_and_performance.md) and 4 more |
+| `ui.match.*` | 4 | [diagnostics_test_and_performance](../architecture/components/diagnostics_test_and_performance/README.md) and 4 more |
 | `ui.match_menu.*` | 4 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
 | `ui.mode_select.*` | 1 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
 | `ui.options.*` | 42 | [09_front_end_and_match_flow/options_localisation_and_hooks](../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) |
@@ -1166,11 +1166,11 @@ String ids named in pass 2a, with the documents that cite them:
 | `ui.error.os_unsupported`, `ui.error.user_data_unavailable`, `ui.error.user_data_inside_install`, `ui.error.language_missing`, `ui.error.internal` | start-up errors of the platform layer, also compiled into the executable | [platform_layer](../architecture/components/platform_layer.md) and 1 more |
 | `ui.error.content_missing`, `ui.error.content_damaged` | a game file is missing or damaged | [asset_pipeline_and_resources](../architecture/components/asset_pipeline_and_resources.md) and 2 more |
 | `ui.error.gpu_unsupported`, `ui.error.display_mode`, `ui.error.resolution_rejected` | graphics start-up and display-mode errors | [platform_layer](../architecture/components/platform_layer.md) and 2 more |
-| `ui.match.cheats_used` | the marker shown and recorded when development commands changed a match | [diagnostics_test_and_performance](../architecture/components/diagnostics_test_and_performance.md) |
+| `ui.match.cheats_used` | the marker shown and recorded when development commands changed a match | [diagnostics_test_and_performance](../architecture/components/diagnostics_test_and_performance/README.md) |
 | `ui.match.paused` | the match-paused message | [renderer/frame_graph_and_passes](../architecture/components/renderer/frame_graph_and_passes.md) |
 | `ui.dialog.close`, `ui.dialog.error`, `ui.dialog.success` | message-dialog captions and button | [ui_framework/core_and_widgets](../architecture/components/ui_framework/core_and_widgets.md) |
 | `ui.dialog.sound_settings_failed` | the sound-settings failure that the audio engine shows through the message dialog | not yet cited |
-| `ui.input.key.<name>`, `ui.input.mouse.<name>`, `ui.input.pad.<name>`, `ui.input.condition.<condition>`, `ui.input.not` | display names of the 113 keys, 6 mouse controls, 25 gamepad controls and 9 binding conditions, and the negation word | [input](../architecture/components/input.md) |
+| `ui.input.key.<name>`, `ui.input.mouse.<name>`, `ui.input.pad.<name>`, `ui.input.condition.<condition>`, `ui.input.not` | display names of the 113 keys, 6 mouse controls, 25 gamepad controls and 9 binding conditions, and the negation word | [input](../architecture/components/input/README.md) |
 | `bot.label`, `match.team_left`, `match.player_left`, `ui.lobby.player_joined`, `ui.team.invalid_name`, `faction.rogue.name`, `faction.visitor.name` | team, player and faction names and messages | [12_simulation_model/06_teams_and_player_commands](../reference/12_simulation_model/06_teams_and_player_commands.md) and 3 more |
 | `team.colour.green`, `team.colour.red`, `team.colour.yellow`, `team.colour.blue`, `team.colour.orange`, `team.colour.purple`, `team.colour.cyan`, `team.colour.pink` | the eight team colour names | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 2 more |
 | `match.kill_milestone` | the kill-milestone message (proposed id; the owning match-rules document assigns it) | not yet cited |

@@ -55,8 +55,8 @@ Scope: Units, creatures, hazards, projectiles. Back to the [requirements index](
 | R-UNIT-047 | Units raise sounds as presentation events named by source and event, for example `worker.attack` (DEC-007; | [README.md](../reference/02_units/README.md#213-presentation-binding) |
 | R-UNIT-048 | Units create particles only as presentation, from the presentation generator (DEC-013). | [README.md](../reference/02_units/README.md#213-presentation-binding) |
 | R-UNIT-049 | A unit mesh that takes damage or dies may shatter: | [README.md](../reference/02_units/README.md#213-presentation-binding) |
-| R-UNIT-050 | A unit's ground shadow is a blob of `fx.glow_round` draped on the terrain, coloured (0.6, 0.6, 0.6, 0) and blended with source factor | [README.md](../reference/02_units/README.md#213-presentation-binding) |
-| R-UNIT-051 | A unit flickers to show damage: | [README.md](../reference/02_units/README.md#213-presentation-binding) |
+| R-UNIT-050 | A unit's ground shadow is a blob of `fx.glow_round` draped on the terrain, coloured `ref.unit.shadow.colour` (0.6, 0.6, 0.6, 0) and blended | [README.md](../reference/02_units/README.md#213-presentation-binding) |
+| R-UNIT-051 | A unit flickers to show damage. | [README.md](../reference/02_units/README.md#213-presentation-binding) |
 | R-UNIT-052 | The base attack of an actor fires a laser bolt at a target point: | [README.md](../reference/02_units/README.md#214-weapons-used-by-units) |
 | R-UNIT-053 | The weapons that units use are those of table 2.14-A. | [README.md](../reference/02_units/README.md#214-weapons-used-by-units) |
 | R-UNIT-054 | The reference has no build queue and no per-unit command of the population. | [README.md](../reference/02_units/README.md#215-control-model) |
@@ -117,7 +117,7 @@ Scope: Units, creatures, hazards, projectiles. Back to the [requirements index](
 | R-UNIT-109 | A waypoint that a rule computes for a Worker passes through the Worker's obstacle push with kill set, unless the rule states kill clear | [worker.md](../reference/02_units/worker.md#29-movement-routes-and-orders) |
 | R-UNIT-110 | Route following applies in OnWaypointOrder and FollowingLeader, on routes of the land route graph (reference/12). | [worker.md](../reference/02_units/worker.md#29-movement-routes-and-orders) |
 | R-UNIT-111 | Waypoint order. Giving a Worker a waypoint order with a target and a route (or none): | [worker.md](../reference/02_units/worker.md#29-movement-routes-and-orders) |
-| R-UNIT-112 | A Worker replaces the obstacle push of reference/12 with its own `WorkerPush(candidate, kill = true)`, which returns the position the | [worker.md](../reference/02_units/worker.md#210-terrain-and-obstacles) |
+| R-UNIT-112 | A Worker replaces the obstacle push of reference/12 with its own `WorkerPush(_candidate, _kill = true)`, which returns the position the | [worker.md](../reference/02_units/worker.md#210-terrain-and-obstacles) |
 | R-UNIT-113 | For an enabled Barrier Emitter of a team that is not a friend of the Worker's team, with closest = `ref.unit.worker.emitter_margin_base` + | [worker.md](../reference/02_units/worker.md#210-terrain-and-obstacles) |
 | R-UNIT-114 | For a wall hit within `ref.unit.worker.wall_hit_radius` (4 wu), the candidate is pushed by `ref.unit.worker.wall_push_step` (5 wu) along | [worker.md](../reference/02_units/worker.md#210-terrain-and-obstacles) |
 | R-UNIT-115 | Rules that compute a waypoint for an order or a route call `WorkerPush` with kill clear, so that planning a path through a Barrier Emitter | [worker.md](../reference/02_units/worker.md#210-terrain-and-obstacles) |
@@ -130,7 +130,7 @@ Scope: Units, creatures, hazards, projectiles. Back to the [requirements index](
 | R-UNIT-122 | Shield. A Shield Power (reference/04) links the Workers it reaches, except a Worker that is InTransport. | [worker.md](../reference/02_units/worker.md#211-damage-status-effects-and-powers) |
 | R-UNIT-123 | Speed Boost. A Speed Boost Power links the Workers it reaches; | [worker.md](../reference/02_units/worker.md#211-damage-status-effects-and-powers) |
 | R-UNIT-124 | Power links. A Worker holds at most one link of each kind: | [worker.md](../reference/02_units/worker.md#211-damage-status-effects-and-powers) |
-| R-UNIT-125 | Fury. A Fury Power links the Workers it reaches, and every Worker has Fury while the Frenzy outcome's match-wide timer runs (reference/04). | [worker.md](../reference/02_units/worker.md#211-damage-status-effects-and-powers) |
+| R-UNIT-125 | Fury. A Fury Power links the Workers it reaches, and every Worker has the Fury behaviours while the Frenzy outcome's match-wide timer runs | [worker.md](../reference/02_units/worker.md#211-damage-status-effects-and-powers) |
 | R-UNIT-126 | Convert. A Worker's Convert link, its convert tag, is set only by the Convert Power: | [worker.md](../reference/02_units/worker.md#211-damage-status-effects-and-powers) |
 | R-UNIT-127 | Sickness infection. The Sickness outcome infects the Workers within its radius (reference/04), and sick Workers spread it. | [worker.md](../reference/02_units/worker.md#211-damage-status-effects-and-powers) |
 | R-UNIT-128 | A sick Worker stops dead on a tick of its movement with a chance of 1 in `ref.unit.worker.sick_stop_odds` (20) (R-UNIT-105). | [worker.md](../reference/02_units/worker.md#211-damage-status-effects-and-powers) |
@@ -141,7 +141,7 @@ Scope: Units, creatures, hazards, projectiles. Back to the [requirements index](
 | R-UNIT-133 | Core Device pulse wave (Siege only). | [worker.md](../reference/02_units/worker.md#211-damage-status-effects-and-powers) |
 | R-UNIT-134 | A Worker leaves the match by the paths of table 2.12-A. | [worker.md](../reference/02_units/worker.md#212-death) |
 | R-UNIT-135 | Workers accept no per-unit command. | [worker.md](../reference/02_units/worker.md#213-player-control) |
-| R-UNIT-136 | Crowd selection. `PlayerCommand::SelectWorkers(team, centre, radius)` sets the under-control flag on every Worker of the team within the | [worker.md](../reference/02_units/worker.md#213-player-control) |
+| R-UNIT-136 | Crowd selection. `PlayerCommand::SelectWorkers(team, center, radius)` sets the under-control flag on every Worker of the team within the | [worker.md](../reference/02_units/worker.md#213-player-control) |
 | R-UNIT-137 | Selection clearing. Any selection change of a team clears the under-control flag on every Worker of the team while the team has at least | [worker.md](../reference/02_units/worker.md#213-player-control) |
 | R-UNIT-138 | A Worker selected before it started manning a port keeps its under-control flag, so a crowd order reaches it as it reaches every other | [worker.md](../reference/02_units/worker.md#213-player-control) |
 | R-UNIT-139 | Promotion. `PlayerCommand::PromoteWorker(team, actor)` on a Worker of the team that is not Burning creates a Leader and selects it, and | [worker.md](../reference/02_units/worker.md#213-player-control) |
@@ -174,18 +174,18 @@ Scope: Units, creatures, hazards, projectiles. Back to the [requirements index](
 | R-UNIT-166 | ToWaypoint. In formation mode, while the formation angle is not set, the Leader turns in place towards its waypoint, without moving, until | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#24-behaviour-states) |
 | R-UNIT-167 | GivingOrders. Its velocity is 0, and by its order: | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#24-behaviour-states) |
 | R-UNIT-168 | A Leader that is the team's selected actor, has the order PrepareWaypoint and is not walking faces the team's current pointer position, as | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#24-behaviour-states) |
-| R-UNIT-169 | `AssignWaypoint(target)`: | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#25-orders-and-formation-operations) |
+| R-UNIT-169 | `AssignWaypoint(_target)`: | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#25-orders-and-formation-operations) |
 | R-UNIT-170 | A click is a formation toggle exactly when the match is not the first tutorial (reference/11), the Leader's no-formations flag is clear, no | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#25-orders-and-formation-operations) |
-| R-UNIT-171 | `AssignOrders(target, straight)` acts in this order: | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#25-orders-and-formation-operations) |
-| R-UNIT-172 | `FormUp(target)` does nothing in the first tutorial. | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#25-orders-and-formation-operations) |
+| R-UNIT-171 | `AssignOrders(_target, _straight)` acts in this order: | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#25-orders-and-formation-operations) |
+| R-UNIT-172 | `FormUp(_target)` does nothing in the first tutorial. | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#25-orders-and-formation-operations) |
 | R-UNIT-173 | `ClearOrders()` sets the order None, switches formation mode off and sets the waypoint to the Leader's position. | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#25-orders-and-formation-operations) |
 | R-UNIT-174 | `EnterFollowMode()` sets the order Follow when the team's Leader research level is above `ref.unit.leader.follow_level` (2); | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#25-orders-and-formation-operations) |
 | R-UNIT-175 | The commands reach a Leader as reference/12 states: | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#25-orders-and-formation-operations) |
 | R-UNIT-176 | The order state machine of diagram 3-B holds in a match: | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#25-orders-and-formation-operations) |
 | R-UNIT-177 | A formation slot (`FormationSlot`) holds the handle of one member Worker and a timer in ticks. | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#26-formations-and-formation-slots) |
 | R-UNIT-178 | Formation upkeep, each tick while the formation flag is set: | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#26-formations-and-formation-slots) |
-| R-UNIT-179 | `RefreshSlot(member)` adds one tick to the member's slot timer. | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#26-formations-and-formation-slots) |
-| R-UNIT-180 | `SlotPositionFor(member)` returns the position of the member's slot when it holds one. | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#26-formations-and-formation-slots) |
+| R-UNIT-179 | `RefreshSlot(_member)` adds one tick to the member's slot timer. | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#26-formations-and-formation-slots) |
+| R-UNIT-180 | `SlotPositionFor(_member)` returns the position of the member's slot when it holds one. | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#26-formations-and-formation-slots) |
 | R-UNIT-181 | A formation is full when its number of occupied slots is at least the team's formation size (R-UNIT-162). | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#26-formations-and-formation-slots) |
 | R-UNIT-182 | The position of formation index i, for a Leader at position p with front f, is: | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#26-formations-and-formation-slots) |
 | R-UNIT-183 | A Leader is in formation mode when its order is Follow and its formation flag is set. | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#26-formations-and-formation-slots) |
@@ -240,10 +240,10 @@ Scope: Units, creatures, hazards, projectiles. Back to the [requirements index](
 | R-UNIT-335 | A Strike team is an actor group of one team whose members are Troopers (teams and player commands R-SIM-424, entity model R-SIM-102). | [strike_team.md](../reference/02_units/strike_team.md#22-role-acquisition-and-lifetime) |
 | R-UNIT-336 | A Strike team is created when the Strike team outcome's Power is targeted at a ground position (`PlayerCommand::TargetPower`, crates and | [strike_team.md](../reference/02_units/strike_team.md#22-role-acquisition-and-lifetime) |
 | R-UNIT-337 | A map may also place a Strike team as starting units that run as a Power (population flow R-ECON-109); | [strike_team.md](../reference/02_units/strike_team.md#22-role-acquisition-and-lifetime) |
-| R-UNIT-338 | A Strike team's Power starts with a life of `ref.unit.strike_team.life_ticks` (600 ticks, nominal 60 s). | [strike_team.md](../reference/02_units/strike_team.md#22-role-acquisition-and-lifetime) |
+| R-UNIT-338 | A Strike team's Power starts with a life of `ref.unit.strike_team.life_ticks` (601 ticks, nominal 60 s). | [strike_team.md](../reference/02_units/strike_team.md#22-role-acquisition-and-lifetime) |
 | R-UNIT-339 | A Strike team whose Troopers leave through a Beam Dish is registered again as a new Power: | [strike_team.md](../reference/02_units/strike_team.md#22-role-acquisition-and-lifetime) |
 | R-UNIT-340 | A Trooper has health `ref.unit.trooper.health` (75) and a ground speed of `ref.unit.trooper.speed` (30 wu/s) times its slope factor | [strike_team.md](../reference/02_units/strike_team.md#23-trooper-stats) |
-| R-UNIT-341 | A Trooper's own reload interval is `ref.unit.trooper.reload_ticks` (0 ticks): | [strike_team.md](../reference/02_units/strike_team.md#23-trooper-stats) |
+| R-UNIT-341 | A Trooper's own reload interval is its per-actor rate `ref.unit.trooper.actor_rate` (0, Units R-UNIT-014): | [strike_team.md](../reference/02_units/strike_team.md#23-trooper-stats) |
 | R-UNIT-342 | A Trooper is drawn with the mesh `mesh.unit.trooper_figure`, whose `muzzle` socket is the origin of its laser bolts and grenades and whose | [strike_team.md](../reference/02_units/strike_team.md#23-trooper-stats) |
 | R-UNIT-343 | A move order to position p sets the Strike team's waypoint and focus to p, sets its target direction towards p (teams and player commands | [strike_team.md](../reference/02_units/strike_team.md#24-movement-and-formation) |
 | R-UNIT-344 | A trail point holds a position and an id. | [strike_team.md](../reference/02_units/strike_team.md#24-movement-and-formation) |
@@ -254,21 +254,21 @@ Scope: Units, creatures, hazards, projectiles. Back to the [requirements index](
 | R-UNIT-349 | A Trooper that comes down at or below sea level (`ref.sim.physics.sea_level`) starts its in-water count at a head start drawn from | [strike_team.md](../reference/02_units/strike_team.md#24-movement-and-formation) |
 | R-UNIT-350 | While its Strike team has a teleport target, a Trooper that reaches the Beam Dish entrance tries to enter it (`TryEnterTeleport` with that | [strike_team.md](../reference/02_units/strike_team.md#24-movement-and-formation) |
 | R-UNIT-351 | A Trooper is never knocked back. | [strike_team.md](../reference/02_units/strike_team.md#24-movement-and-formation) |
-| R-UNIT-352 | Primary fire. `Attack(position, withGrenade)` on a Strike team runs the primary fire every time, and the secondary fire (R-UNIT-355) as | [strike_team.md](../reference/02_units/strike_team.md#25-combat) |
+| R-UNIT-352 | Primary fire. `Attack(_position, _withGrenade)` on a Strike team (teams and player commands R-SIM-428) runs the primary fire every time, | [strike_team.md](../reference/02_units/strike_team.md#25-combat) |
 | R-UNIT-353 | Autonomous behaviour. | [strike_team.md](../reference/02_units/strike_team.md#25-combat) |
 | R-UNIT-354 | Single shot. A Trooper's shot fires one laser bolt from the world position of its `muzzle` socket at `ref.unit.trooper.laser_speed` (200 | [strike_team.md](../reference/02_units/strike_team.md#25-combat) |
-| R-UNIT-355 | Secondary fire. With withGrenade set, the alive, enabled Trooper nearest the target position whose secondary cooldown has expired throws | [strike_team.md](../reference/02_units/strike_team.md#25-combat) |
+| R-UNIT-355 | Secondary fire. With `_withGrenade` set, the alive, enabled Trooper nearest the target position whose secondary cooldown has expired throws | [strike_team.md](../reference/02_units/strike_team.md#25-combat) |
 | R-UNIT-356 | In a match a Strike team's secondary weapon is always the grenade: | [strike_team.md](../reference/02_units/strike_team.md#25-combat) |
 | R-UNIT-357 | A player controls a Strike team through these commands and control-state fields (teams and player commands R-SIM-439, R-SIM-450; | [strike_team.md](../reference/02_units/strike_team.md#26-player-control) |
 | R-UNIT-358 | Direct control. Direct control of a selected Strike team runs only while the sender's team command state reports camera tracking | [strike_team.md](../reference/02_units/strike_team.md#26-player-control) |
-| R-UNIT-359 | A bot team's Strike team runs its own bot behaviour each tick (the bot controller acts directly and sends no commands, teams and player | [strike_team.md](../reference/02_units/strike_team.md#27-bot-behaviour) |
-| R-UNIT-360 | Every `ref.unit.strike_team.bot_scan_ticks` (11 ticks), the bot Strike team scans the enemies within `ref.unit.strike_team.bot_scan_range` | [strike_team.md](../reference/02_units/strike_team.md#27-bot-behaviour) |
+| R-UNIT-359 | A bot team's Strike team runs its own bot behaviour each tick: | [strike_team.md](../reference/02_units/strike_team.md#27-bot-behaviour) |
+| R-UNIT-360 | Every `ref.unit.strike_team.bot_scan_ticks` (11 ticks), the bot Strike team takes the enemies within `ref.unit.strike_team.bot_scan_range` | [strike_team.md](../reference/02_units/strike_team.md#27-bot-behaviour) |
 | R-UNIT-361 | Every tick, when enemies lie within the engagement range of its centre, the bot Strike team aims at their centroid displaced by two draws | [strike_team.md](../reference/02_units/strike_team.md#27-bot-behaviour) |
 | R-UNIT-362 | Every damage type affects a Trooper alike. | [strike_team.md](../reference/02_units/strike_team.md#28-death-and-presentation) |
 | R-UNIT-363 | A Trooper is not team-coloured. | [strike_team.md](../reference/02_units/strike_team.md#28-death-and-presentation) |
 | R-UNIT-364 | A Trooper is drawn as a lit mesh. | [strike_team.md](../reference/02_units/strike_team.md#28-death-and-presentation) |
 | R-UNIT-365 | A Strike team stays selected only while it exists; | [strike_team.md](../reference/02_units/strike_team.md#28-death-and-presentation) |
-| R-UNIT-366 | A Trooper raises these sound events, bound as listed (reference/10): | [strike_team.md](../reference/02_units/strike_team.md#28-death-and-presentation) |
+| R-UNIT-366 | A Trooper raises these sound events, bound as listed (event catalogue table 2.2-C and R-AUD-141): | [strike_team.md](../reference/02_units/strike_team.md#28-death-and-presentation) |
 | R-UNIT-367 | The values of §4 are the reference tuning baseline (DEC-004), and the rules of this document are the specification of record for the | [transport.md](../reference/02_units/transport.md#21-baseline) |
 | R-UNIT-368 | A Transport is an ungrouped actor of its team and a special unit: | [transport.md](../reference/02_units/transport.md#22-role-acquisition-and-lifetime) |
 | R-UNIT-369 | A Transport enters a match only in these ways: | [transport.md](../reference/02_units/transport.md#22-role-acquisition-and-lifetime) |
@@ -302,19 +302,19 @@ Scope: Units, creatures, hazards, projectiles. Back to the [requirements index](
 | R-UNIT-397 | Boarding. Workers board by the Worker rules (worker.md): | [transport.md](../reference/02_units/transport.md#27-passengers) |
 | R-UNIT-398 | Leaving. While its Transport is unloading and the terrain under the entrance socket is above sea level, one Worker per tick jumps out of | [transport.md](../reference/02_units/transport.md#27-passengers) |
 | R-UNIT-399 | No unloading over sea. | [transport.md](../reference/02_units/transport.md#27-passengers) |
-| R-UNIT-400 | A Worker that boards raises the Transport's boarding event, and a Worker that leaves raises its leaving event; | [transport.md](../reference/02_units/transport.md#27-passengers) |
+| R-UNIT-400 | A Worker that boards raises the Transport's event `transport.load_worker`, and a Worker that leaves raises `transport.unload_worker`; | [transport.md](../reference/02_units/transport.md#27-passengers) |
 | R-UNIT-401 | A player controls a Transport through these commands (teams and player commands R-SIM-450, R-SIM-452; | [transport.md](../reference/02_units/transport.md#28-player-control) |
 | R-UNIT-402 | A bot team's Transport thinks at an interval set by the bot's difficulty: | [transport.md](../reference/02_units/transport.md#29-bot-behaviour) |
 | R-UNIT-403 | A bot sets a Transport's arrival point by pushing the chosen point out of obstacles, displacing it by two draws from | [transport.md](../reference/02_units/transport.md#29-bot-behaviour) |
 | R-UNIT-404 | Standard behaviour. | [transport.md](../reference/02_units/transport.md#29-bot-behaviour) |
-| R-UNIT-405 | Siege behaviour. The Siege behaviour runs in every Siege match (DEC-087). | [transport.md](../reference/02_units/transport.md#29-bot-behaviour) |
+| R-UNIT-405 | Siege behaviour. The bot's Siege Transport objective list is filled once every Transport marker has registered (bots R-BOT-127), so the | [transport.md](../reference/02_units/transport.md#29-bot-behaviour) |
 | R-UNIT-406 | Flag Chain behaviour. | [transport.md](../reference/02_units/transport.md#29-bot-behaviour) |
 | R-UNIT-407 | Launch Race behaviour. | [transport.md](../reference/02_units/transport.md#29-bot-behaviour) |
 | R-UNIT-408 | A Transport's whole hull takes its team colour: | [transport.md](../reference/02_units/transport.md#210-presentation-and-sound) |
 | R-UNIT-409 | Each tick a Transport emits 1 + trunc(speed ÷ `ref.unit.transport.exhaust_speed_step` (20 wu/s)) exhaust smoke particles; | [transport.md](../reference/02_units/transport.md#210-presentation-and-sound) |
 | R-UNIT-410 | A Transport is drawn raised by `ref.unit.transport.bob_amplitude` × sin(t + serial), as R-UNIT-385 states for its hit test, with its up | [transport.md](../reference/02_units/transport.md#210-presentation-and-sound) |
 | R-UNIT-411 | A Transport's Power slot shows its state with `icon.hud.transport_state`: | [transport.md](../reference/02_units/transport.md#210-presentation-and-sound) |
-| R-UNIT-412 | A Transport raises these sound events, bound as listed (reference/10): | [transport.md](../reference/02_units/transport.md#210-presentation-and-sound) |
+| R-UNIT-412 | A Transport raises these sound events, bound as listed (event catalogue table 2.2-D and R-AUD-141): | [transport.md](../reference/02_units/transport.md#210-presentation-and-sound) |
 | R-UNIT-413 | The values of §4 are the reference tuning baseline (DEC-004), and the rules of this document are the specification of record for the | [collector.md](../reference/02_units/collector.md#21-baseline) |
 | R-UNIT-414 | A Collector is an ungrouped actor of its team and a special unit: | [collector.md](../reference/02_units/collector.md#22-role-acquisition-and-end) |
 | R-UNIT-415 | A Collector is created when the Collector outcome's Power is targeted at a ground position (`PlayerCommand::TargetPower`): | [collector.md](../reference/02_units/collector.md#22-role-acquisition-and-end) |
@@ -369,7 +369,7 @@ Scope: Units, creatures, hazards, projectiles. Back to the [requirements index](
 | R-UNIT-464 | A bot team's Builder thinks every `ref.unit.builder.bot_think_ticks` (11 ticks): | [builder.md](../reference/02_units/builder.md#27-targeting-control-and-bot-hook) |
 | R-UNIT-465 | A Builder's whole mesh takes its team colour: | [builder.md](../reference/02_units/builder.md#28-presentation-and-sound) |
 | R-UNIT-466 | A Builder shows its activity with these string ids: | [builder.md](../reference/02_units/builder.md#28-presentation-and-sound) |
-| R-UNIT-467 | A Builder raises these sound events (reference/10): | [builder.md](../reference/02_units/builder.md#28-presentation-and-sound) |
+| R-UNIT-467 | A Builder raises these sound events (event catalogue table 2.2-F and R-AUD-141): | [builder.md](../reference/02_units/builder.md#28-presentation-and-sound) |
 | R-UNIT-500 | The values of §4 are the reference tuning baseline (DEC-004), and the rules of this document and of hazards and projectiles are the | [creatures.md](../reference/02_units/creatures.md#21-rules-shared-by-every-creature-and-hazard) |
 | R-UNIT-501 | The stats of each kind are the keys `ref.unit.<kind>.health`, `ref.unit.<kind>.speed` and `ref.unit.<kind>.rate` of the actor stat table in | [creatures.md](../reference/02_units/creatures.md#21-rules-shared-by-every-creature-and-hazard) |
 | R-UNIT-502 | The tick rules of the README (R-UNIT-005, R-UNIT-006) apply: | [creatures.md](../reference/02_units/creatures.md#21-rules-shared-by-every-creature-and-hazard) |
@@ -381,14 +381,14 @@ Scope: Units, creatures, hazards, projectiles. Back to the [requirements index](
 | R-UNIT-508 | The hostile Supply crate outcomes and the Hive creatures belong to the Rogue faction (team slot `ref.sim.team.rogue_slot`, 4), and the | [creatures.md](../reference/02_units/creatures.md#21-rules-shared-by-every-creature-and-hazard) |
 | R-UNIT-509 | A creature's enemy search uses the actor-grid queries of reference/12 with the ranges and exclusions stated for it, and no other exclusion; | [creatures.md](../reference/02_units/creatures.md#21-rules-shared-by-every-creature-and-hazard) |
 | R-UNIT-510 | A Seed Pod burst, a Crawler egg hatch and the Brood outcome check no population cap: | [creatures.md](../reference/02_units/creatures.md#21-rules-shared-by-every-creature-and-hazard) |
-| R-UNIT-511 | A Spitter Plant of the Spitter Plants outcome launches Seed Pods (crates and powers gives the outcome, which only an unopened Supply crate | [creatures.md](../reference/02_units/creatures.md#22-seed-pod) |
+| R-UNIT-511 | A Spitter Plant of the Spitter Plants outcome launches Seed Pods (crates and powers gives the outcome, which only the bad branch of an | [creatures.md](../reference/02_units/creatures.md#22-seed-pod) |
 | R-UNIT-512 | The Brood outcome, placed at a target point by a player or a bot, creates `ref.unit.seed_pod.group_count_min` + (`SimRng::NextUint` mod | [creatures.md](../reference/02_units/creatures.md#22-seed-pod) |
 | R-UNIT-513 | The Brood kind is one `SimRng::NextUint` draw modulo 5 over the list (Crawlers, centipede, spider, Seed Pods, Brood Drifter), which are | [creatures.md](../reference/02_units/creatures.md#22-seed-pod) |
 | R-UNIT-514 | A Seed Pod of kind 5 (nested pods) releases `ref.unit.seed_pod.group_count_min` + (`SimRng::NextUint` mod | [creatures.md](../reference/02_units/creatures.md#22-seed-pod) |
 | R-UNIT-515 | The spawn step of every Seed Pod draws its default burst timer, `ref.unit.seed_pod.default_burst_base` + | [creatures.md](../reference/02_units/creatures.md#22-seed-pod) |
 | R-UNIT-516 | A Seed Pod has health `ref.unit.seed_pod.health` (50); | [creatures.md](../reference/02_units/creatures.md#22-seed-pod) |
 | R-UNIT-517 | A Seed Pod starts with force f = `ref.unit.seed_pod.initial_force` (1.0) and moves each tick by: | [creatures.md](../reference/02_units/creatures.md#22-seed-pod) |
-| R-UNIT-518 | When its burst timer has elapsed, a Seed Pod emits a shatter effect, releases its kind by R-UNIT-519, emits the burst-open sound and is | [creatures.md](../reference/02_units/creatures.md#22-seed-pod) |
+| R-UNIT-518 | When its burst timer has elapsed, a Seed Pod emits a shatter effect, releases its kind by R-UNIT-519, raises `seed_pod.burst_open` and is | [creatures.md](../reference/02_units/creatures.md#22-seed-pod) |
 | R-UNIT-519 | The release of a Seed Pod depends on its kind. | [creatures.md](../reference/02_units/creatures.md#22-seed-pod) |
 | R-UNIT-520 | Kind 8 releases a Reaper Serpent only when the mode is not Siege and fewer than `ref.unit.reaper_serpent.alive_limit` (2) Reaper Serpents | [creatures.md](../reference/02_units/creatures.md#22-seed-pod) |
 | R-UNIT-521 | Presentation: the Seed Pod uses `mesh.creature.seed_pod`, tinted entirely in its team colour. | [creatures.md](../reference/02_units/creatures.md#22-seed-pod) |
@@ -407,7 +407,7 @@ Scope: Units, creatures, hazards, projectiles. Back to the [requirements index](
 | R-UNIT-534 | A new idle direction is chosen as follows, with d the Crawler's distance from its spawn point (R-UNIT-020) and R its roam range: | [creatures.md](../reference/02_units/creatures.md#24-crawler-crawler-group-and-crawler-trail-sample) |
 | R-UNIT-535 | A Crawler keeps a position history of Crawler trail samples, newest first. | [creatures.md](../reference/02_units/creatures.md#24-crawler-crawler-group-and-crawler-trail-sample) |
 | R-UNIT-536 | A laser bolt that hits a Crawler damages it but never pushes or turns it (weapons and projectiles). | [creatures.md](../reference/02_units/creatures.md#24-crawler-crawler-group-and-crawler-trail-sample) |
-| R-UNIT-537 | A Crawler dies by the base death rule (R-UNIT-507, its die sound): | [creatures.md](../reference/02_units/creatures.md#24-crawler-crawler-group-and-crawler-trail-sample) |
+| R-UNIT-537 | A Crawler dies by the base death rule (R-UNIT-507, `crawler.die`): | [creatures.md](../reference/02_units/creatures.md#24-crawler-crawler-group-and-crawler-trail-sample) |
 | R-UNIT-538 | A Crawler group exists only when a map places Crawlers as a group (R-UNIT-506); | [creatures.md](../reference/02_units/creatures.md#24-crawler-crawler-group-and-crawler-trail-sample) |
 | R-UNIT-539 | Presentation: a Crawler is drawn from `sprite.crawler.segment` as a worm strip of half-width `ref.unit.crawler.worm_half_width` (3 wu) | [creatures.md](../reference/02_units/creatures.md#24-crawler-crawler-group-and-crawler-trail-sample) |
 | R-UNIT-540 | Brood Drifters are released by Seed Pods of kind 7 with roam range 200 wu (R-UNIT-519). | [creatures.md](../reference/02_units/creatures.md#25-brood-drifter) |
@@ -470,7 +470,7 @@ Scope: Units, creatures, hazards, projectiles. Back to the [requirements index](
 | R-UNIT-597 | Presentation: an inner card of `ref.unit.wisp.inner_size` (5 wu) and an outer card of `ref.unit.wisp.outer_size` (10 wu) of | [creatures.md](../reference/02_units/creatures.md#211-wisp) |
 | R-UNIT-700 | The shared rules R-UNIT-500 to R-UNIT-510 of creatures apply to every hazard of this document: | [hazards_and_projectiles.md](../reference/02_units/hazards_and_projectiles.md#21-shared-rules) |
 | R-UNIT-701 | A hazard that a Power delivers is aimed once: | [hazards_and_projectiles.md](../reference/02_units/hazards_and_projectiles.md#21-shared-rules) |
-| R-UNIT-702 | Only an unopened Supply crate yields the Abductor outcome; | [hazards_and_projectiles.md](../reference/02_units/hazards_and_projectiles.md#22-abductor) |
+| R-UNIT-702 | Only the bad branch of an opened Supply crate yields the Abductor outcome: | [hazards_and_projectiles.md](../reference/02_units/hazards_and_projectiles.md#22-abductor) |
 | R-UNIT-703 | The Abductor is invulnerable (R-UNIT-027) and has the speed stat `ref.unit.abductor.speed` (244, DEC-090, R-UNIT-013). | [hazards_and_projectiles.md](../reference/02_units/hazards_and_projectiles.md#22-abductor) |
 | R-UNIT-704 | Its states are Idle (the descent), Abducting, Waiting, Dropping and Leaving. | [hazards_and_projectiles.md](../reference/02_units/hazards_and_projectiles.md#22-abductor) |
 | R-UNIT-705 | Each tick the Abductor turns its facing by `ref.unit.abductor.yaw_per_tick` (0.01 rad) about the vertical axis and moves by: | [hazards_and_projectiles.md](../reference/02_units/hazards_and_projectiles.md#22-abductor) |
@@ -479,7 +479,7 @@ Scope: Units, creatures, hazards, projectiles. Back to the [requirements index](
 | R-UNIT-708 | Each tick in Dropping, while abductees remain: | [hazards_and_projectiles.md](../reference/02_units/hazards_and_projectiles.md#22-abductor) |
 | R-UNIT-709 | The dropped Workers belong to the Visitor faction, count against its population (population flow R-ECON-119), follow its bot controller | [hazards_and_projectiles.md](../reference/02_units/hazards_and_projectiles.md#22-abductor) |
 | R-UNIT-710 | Presentation: `mesh.creature.abductor_hull` in its authored colours, lit with the special lights of the renderer. | [hazards_and_projectiles.md](../reference/02_units/hazards_and_projectiles.md#22-abductor) |
-| R-UNIT-711 | An airstrike runs from these sources: | [hazards_and_projectiles.md](../reference/02_units/hazards_and_projectiles.md#23-airstrike-airstrike-flight-and-bomber) |
+| R-UNIT-711 | An airstrike runs only from these sources: | [hazards_and_projectiles.md](../reference/02_units/hazards_and_projectiles.md#23-airstrike-airstrike-flight-and-bomber) |
 | R-UNIT-712 | An airstrike at a point P throws `ref.hazard.airstrike.marker_count_base` + (`SimRng::NextUint` mod | [hazards_and_projectiles.md](../reference/02_units/hazards_and_projectiles.md#23-airstrike-airstrike-flight-and-bomber) |
 | R-UNIT-713 | A marker that is at least `ref.hazard.airstrike.marker_summon_delay` (20 ticks, nominal 2.0 s) old and at rest, with its force at most | [hazards_and_projectiles.md](../reference/02_units/hazards_and_projectiles.md#23-airstrike-airstrike-flight-and-bomber) |
 | R-UNIT-714 | A new flight sets its attack position to the marker's position with y = the ground height + `ref.hazard.airstrike.attack_height` (70 wu), | [hazards_and_projectiles.md](../reference/02_units/hazards_and_projectiles.md#23-airstrike-airstrike-flight-and-bomber) |

@@ -212,7 +212,7 @@ enum class ContentBuildStage : std::uint8_t
   CookRecordsAndGenerate,
   CheckReferences,
   SelectEditions,
-  Localisation,
+  Localization,
   MapIdentities,
   WritePacks,
   WriteManifestsAndReports
@@ -254,7 +254,7 @@ struct RunResult
   int exitCode;                                // table 2.2-C
   std::vector<Diagnostic> diagnostics;         // every diagnostic of the run, grouped by file
   std::vector<MapIdentityEntry> mapIdentities; // per edition
-  std::vector<LanguageFindings> localisation;  // per edition
+  std::vector<LanguageFindings> localization;  // per edition
 };
 
 class ContentBuild
@@ -572,7 +572,7 @@ Table 4.5-A Stage order of a content-build run.
 | 7 | `CookRecordsAndGenerate` | cook data records, maps, string tables and explainer scripts; render thumbnails; generate the map index and the residency lists | AST-065 step 6, DAT-033 |
 | 8 | `CheckReferences` | check every reference and the unreferenced assets | AST-065 step 7, BLD-069 |
 | 9 | `SelectEditions` | select the entries of each edition | AST-065 step 8, BLD-049 |
-| 10 | `Localisation` | decide the offered languages of each edition, write the localisation report | §4.7 |
+| 10 | `Localization` | decide the offered languages of each edition, write the localisation report | §4.7 |
 | 11 | `MapIdentities` | write the map-identity listing and compare it with the previous build | §4.6 |
 | 12 | `WritePacks` | write the packs, the asset indexes and the mount manifests | AST-065 step 9 |
 | 13 | `WriteManifestsAndReports` | write the content manifest, the validation report, the placeholder report and the files of §3.4 | AST-065 step 10 |

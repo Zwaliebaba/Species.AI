@@ -1,6 +1,6 @@
 # Audio design: event model and sound data
 
-> Status: Reference · Prefix: R-AUD · Related: [Folder index](README.md) · [Event catalogue](event_catalogue.md) · [Positional, priorities and mix](positional_priorities_and_mix.md) · [02 Units](../02_units/README.md) · [03 Buildings and world objects](../03_buildings_and_world_objects/README.md) · [audio engine](../../architecture/components/audio_engine.md) · [data schemas](../../architecture/components/data_schemas/README.md)
+> Status: Reference · Prefix: R-AUD · Related: [Folder index](README.md) · [Event catalogue](event_catalogue.md) · [Positional, priorities and mix](positional_priorities_and_mix.md) · [02 Units](../02_units/README.md) · [03 Buildings and world objects](../03_buildings_and_world_objects/README.md) · [audio engine](../../architecture/components/audio_engine/README.md) · [data schemas](../../architecture/components/data_schemas/README.md)
 
 ## 1 Purpose and player experience
 
@@ -110,7 +110,7 @@ Outside a match, and on a participant with no local team, the own and enemy audi
 
 **R-AUD-043** (MUST) **Match exit.** When the match loop exits, the match ambience stops (R-AUD-324) and every other instance raised during the match stops or begins its release within `ref.aud.exit.release_start_limit` (2 s) (DEC-097). Attached instances end when their emitters are torn down (R-AUD-209).
 
-**R-AUD-044** (MUST) With no audio device, the audio engine retires every instance as if its voice had ended, so waiting instances never accumulate over a session (DEC-097); the reference keeps them for the whole session. The behaviour without a device is otherwise the [audio engine](../../architecture/components/audio_engine.md)'s.
+**R-AUD-044** (MUST) With no audio device, the audio engine retires every instance as if its voice had ended, so waiting instances never accumulate over a session (DEC-097); the reference keeps them for the whole session. The behaviour without a device is otherwise the [audio engine](../../architecture/components/audio_engine/README.md)'s.
 
 ### 2.5 From a sample group to sound
 
@@ -143,7 +143,7 @@ Outside a match, and on a participant with no local team, the own and enemy audi
 | loop delay | a modulatable value, s, at most `ref.aud.layer.loop_delay_max` | 0 s | R-AUD-059, R-AUD-060 |
 | effects | zero or more effects of §2.11, each with its parameters | none | R-AUD-076 to R-AUD-082 |
 
-The reference sound data has no authored priority: a priority field, where present, is ignored. Besides these fields, a layer carries the engine fields of the [audio engine](../../architecture/components/audio_engine.md) AEN-062, each with an audio-design default: the copy decay (R-AUD-216), the patience window of a `once` layer (R-AUD-061), the per-event real-voice cap, the maximum distance, and the Doppler, distance-filter and distance-reverb factors. The per-event cool-down (R-AUD-220) belongs to the event, not to its layers. The schema of every layer field, these engine fields included, with its key and value domain, is table 3.3-B of [data schemas](../../architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md), and the event fields with the cool-down are its table 3.3-A.
+The reference sound data has no authored priority: a priority field, where present, is ignored. Besides these fields, a layer carries the engine fields of the [audio engine](../../architecture/components/audio_engine/README.md) AEN-062, each with an audio-design default: the copy decay (R-AUD-216), the patience window of a `once` layer (R-AUD-061), the per-event real-voice cap, the maximum distance, and the Doppler, distance-filter and distance-reverb factors. The per-event cool-down (R-AUD-220) belongs to the event, not to its layers. The schema of every layer field, these engine fields included, with its key and value domain, is table 3.3-B of [data schemas](../../architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md), and the event fields with the cool-down are its table 3.3-A.
 
 **R-AUD-050** (MUST) Effect parameters are matched to their effect's parameter list by position; a parameter that a layer's effect omits is 0.0, not its declared default, in the reference (DEC-567, R-AUD-078). Species authors every effect parameter by name, and the content build cooks each binding's parameters in its kind's parameter order of R-AUD-077, the positions by which the audio engine reads them, so the positional matching holds for the cooked data while the order in the authoring file carries no meaning ([data schemas](../../architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md) DAT-270 to DAT-272).
 
@@ -181,7 +181,7 @@ The reference sound data has no authored priority: a priority field, where prese
 
 ### 2.8 Envelopes and loops
 
-**R-AUD-056** (MUST) **Attack.** An instance fades in linearly in dB from the envelope floor of −50 dB, the bottom of the ten-step scale (R-AUD-004), to its level over its attack, timed from the moment the event is raised; an attack of 0 starts at full level. The exact envelope arithmetic is the [audio engine](../../architecture/components/audio_engine.md)'s AEN-166.
+**R-AUD-056** (MUST) **Attack.** An instance fades in linearly in dB from the envelope floor of −50 dB, the bottom of the ten-step scale (R-AUD-004), to its level over its attack, timed from the moment the event is raised; an attack of 0 starts at full level. The exact envelope arithmetic is the [audio engine](../../architecture/components/audio_engine/README.md)'s AEN-166.
 
 **R-AUD-057** (MUST) **Sustain.** After the attack, an instance holds its level for its sustain and then releases by itself. A sustain of 0 holds until the instance is stopped or its sample ends. There is no decay stage and no sustain level.
 
@@ -191,9 +191,9 @@ The reference sound data has no authored priority: a priority field, where prese
 
 **R-AUD-060** (MUST) **Note loop.** A `note` layer is a re-triggering note: at each release a new copy of the layer starts after its loop delay, with a new group member and new per-note values, and cross-fades with the fading previous note. This is the generative-pad mechanism of the ambience beds ([front end, HUD, voice and ambience](front_end_hud_voice_and_ambience.md) R-AUD-320).
 
-**R-AUD-061** (MUST) **One-shot patience.** A `once` instance that gets no voice within `ref.aud.layer.one_shot_patience_updates` (3 audio updates, 0.15 to 0.20 s after the event) is retired unheard; a looping instance waits for a voice for as long as it lives. The reference counts these updates from the event. The Species engine keeps waiting instances virtual for the event's patience window, whose default is this value (0.15 s), and counts the window from the instance's start time, which is the trigger's issue time plus the engine's scheduling latency `aen.update.schedule_latency` (0.03 s) ([audio engine](../../architecture/components/audio_engine.md) AEN-024, AEN-146; ADR-023).
+**R-AUD-061** (MUST) **One-shot patience.** A `once` instance that gets no voice within `ref.aud.layer.one_shot_patience_updates` (3 audio updates, 0.15 to 0.20 s after the event) is retired unheard; a looping instance waits for a voice for as long as it lives. The reference counts these updates from the event. The Species engine keeps waiting instances virtual for the event's patience window, whose default is this value (0.15 s), and counts the window from the instance's start time, which is the trigger's issue time plus the engine's scheduling latency `aen.update.schedule_latency` (0.03 s) ([audio engine](../../architecture/components/audio_engine/README.md) AEN-024, AEN-146; ADR-023).
 
-**R-AUD-062** (MUST) Envelope ramps change level smoothly in elapsed audio time; the reference steps them once per audio update, and the exact ramp arithmetic is the [audio engine](../../architecture/components/audio_engine.md)'s.
+**R-AUD-062** (MUST) Envelope ramps change level smoothly in elapsed audio time; the reference steps them once per audio update, and the exact ramp arithmetic is the [audio engine](../../architecture/components/audio_engine/README.md)'s.
 
 ### 2.9 Sample groups
 
@@ -283,7 +283,7 @@ Kinds 0 to 8 are standard effects whose processing is defined by their parameter
 
 **R-AUD-078** (MUST) A parameter that an effect binding omits is 0.0 in the reference, not its declared default. The schema default of each effect parameter is chosen deliberately, 0.0 for parity or the declared value, and it is audible only once effects are enabled (DEC-567).
 
-**R-AUD-079** (MUST) The own-algorithm effects behave as follows; their exact arithmetic is the [audio engine](../../architecture/components/audio_engine.md)'s:
+**R-AUD-079** (MUST) The own-algorithm effects behave as follows; their exact arithmetic is the [audio engine](../../architecture/components/audio_engine/README.md)'s:
 
 | Effect | Behaviour |
 |---|---|
@@ -297,7 +297,7 @@ Every effect computes its time constants and coefficients from the sample rate a
 
 **R-AUD-080** (MUST) **Chains.** A layer holds at most one effect of each kind; a second effect of the same kind on one layer is a content-build error. The own-algorithm effects of a chain run in kind order, whatever their order in the data, and the standard effects run after them. Every effect parameter is a modulatable value (R-AUD-051), evaluated like the layer's own values.
 
-**R-AUD-081** (MUST) In Species, an effect that the design attaches to a group of sounds is realised by routing those sounds to a bus whose chain has the effect, or by a send to such a bus ([audio engine](../../architecture/components/audio_engine.md), ADR-024); no voice carries its own effect chain.
+**R-AUD-081** (MUST) In Species, an effect that the design attaches to a group of sounds is realised by routing those sounds to a bus whose chain has the effect, or by a send to such a bus ([audio engine](../../architecture/components/audio_engine/README.md), ADR-024); no voice carries its own effect chain.
 
 **R-AUD-082** (MUST) The event set names these 15 effects, one per layer; with effects enabled they would apply, and with the default of DEC-567 none runs:
 
@@ -397,7 +397,7 @@ Diagram 3-C: the Supply crate capture sounds (R-AUD-030, R-AUD-031).
 | `ref.aud.group.worker_burning_members` | 13 | members | of `sfx.unit.worker.burning` | R-AUD-066 | — |
 | `ref.aud.group.worker_burning_audible` | 6 | members | members 07 to 13 are silent | R-AUD-066 | — |
 
-Keys cited here and defined elsewhere: `ref.crate.open.full_progress` in [04 crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md); `ref.sim.frame.audio_update_period` in [reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md); `ref.aud.level.reference_step_db` in the [folder index](README.md); `aen.update.schedule_latency` in the [audio engine](../../architecture/components/audio_engine.md).
+Keys cited here and defined elsewhere: `ref.crate.open.full_progress` in [04 crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md); `ref.sim.frame.audio_update_period` in [reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md); `ref.aud.level.reference_step_db` in the [folder index](README.md); `aen.update.schedule_latency` in the [audio engine](../../architecture/components/audio_engine/README.md).
 
 ## 5 Edge cases and interactions
 
@@ -429,7 +429,7 @@ Keys cited here and defined elsewhere: `ref.crate.open.full_progress` in [04 cra
 ## 7 Dependencies
 
 - **Reference documents:** [event catalogue](event_catalogue.md) (the events and their layer data); [positional, priorities and mix](positional_priorities_and_mix.md) (position kinds, ranking, buses); [front end, HUD, voice and ambience](front_end_hud_voice_and_ambience.md) (note-loop beds); [02 Units](../02_units/README.md) R-UNIT-047 and [03 Buildings and world objects](../03_buildings_and_world_objects/README.md) R-BLDG-049 (base events); [03 mode objects](../03_buildings_and_world_objects/mode_objects.md) R-BLDG-337 (Launch Vessel loops); [04 crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) R-CRATE-117 and R-CRATE-145 (crate sounds); [09 options](../09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-454 (effects setting); [12 tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) (audio update period).
-- **Engine components:** [audio engine](../../architecture/components/audio_engine.md) (ADR-022, ADR-023, ADR-024, ADR-026; AEN-024, AEN-062, AEN-146, AEN-166); [data schemas](../../architecture/components/data_schemas/README.md) (the sound-event schema and its domains; DAT-267 and DAT-270 to DAT-272 and tables 3.3-A and 3.3-B of [entity, audio, geometry and panel schemas](../../architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md)); [asset pipeline and resources](../../architecture/components/asset_pipeline_and_resources.md).
+- **Engine components:** [audio engine](../../architecture/components/audio_engine/README.md) (ADR-022, ADR-023, ADR-024, ADR-026; AEN-024, AEN-062, AEN-146, AEN-166); [data schemas](../../architecture/components/data_schemas/README.md) (the sound-event schema and its domains; DAT-267 and DAT-270 to DAT-272 and tables 3.3-A and 3.3-B of [entity, audio, geometry and panel schemas](../../architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md)); [asset pipeline and resources](../../architecture/components/asset_pipeline_and_resources.md).
 - **Assets:** the groups named in R-AUD-067, `sfx.unit.worker.burning`, `sfx.unit.worker.die`, `sfx.unit.worker.die_b`, `sfx.creature.spider.pounce`, `sfx.creature.spider.die`, `sfx.creature.spider.hurt`; every other group is cited where it is bound in the [event catalogue](event_catalogue.md).
 
 ## 8 Open decisions

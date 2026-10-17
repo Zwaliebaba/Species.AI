@@ -1,6 +1,6 @@
 # Audio design: positional rules, priorities and the mix
 
-> Status: Reference · Prefix: R-AUD · Related: [Folder index](README.md) · [Event model and sound data](event_model_and_sound_data.md) · [Event catalogue](event_catalogue.md) · [06 camera](../06_controls_camera_and_commands/README.md) · [09 options](../09_front_end_and_match_flow/options_localisation_and_hooks.md) · [12 tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) · [audio engine](../../architecture/components/audio_engine.md)
+> Status: Reference · Prefix: R-AUD · Related: [Folder index](README.md) · [Event model and sound data](event_model_and_sound_data.md) · [Event catalogue](event_catalogue.md) · [06 camera](../06_controls_camera_and_commands/README.md) · [09 options](../09_front_end_and_match_flow/options_localisation_and_hooks.md) · [12 tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) · [audio engine](../../architecture/components/audio_engine/README.md)
 
 ## 1 Purpose and player experience
 
@@ -78,7 +78,7 @@ The roll-off is 1, and the design data sets no maximum distance (DEC-566). The s
 
 ### 2.8 Priorities and voices
 
-**R-AUD-215** (MUST) **Audibility.** At every audio update each live instance has an audibility: full level for a two-dimensional instance; otherwise base × g(d), where base is the instance's current envelope level once it has played, that is once it has ever had a voice, including while it is kept virtual after losing its voice (R-AUD-218), and its level target while it has never had a voice ([audio engine](../../architecture/components/audio_engine.md) AEN-140). A playing instance in a long release tail therefore ranks lower as it fades (R-AUD-074). In the reference allocation (R-AUD-219) an instance that loses its voice is removed or restarts from its beginning, so there the two cases are an instance with a voice and an instance waiting for one.
+**R-AUD-215** (MUST) **Audibility.** At every audio update each live instance has an audibility: full level for a two-dimensional instance; otherwise base × g(d), where base is the instance's current envelope level once it has played, that is once it has ever had a voice, including while it is kept virtual after losing its voice (R-AUD-218), and its level target while it has never had a voice ([audio engine](../../architecture/components/audio_engine/README.md) AEN-140). A playing instance in a long release tail therefore ranks lower as it fades (R-AUD-074). In the reference allocation (R-AUD-219) an instance that loses its voice is removed or restarts from its beginning, so there the two cases are an instance with a voice and an instance waiting for one.
 
 **R-AUD-216** (MUST) **Copies of one event.** The instances are ranked by audibility, loudest first, and each further instance of the same full event id is multiplied by `ref.aud.rank.copy_decay` (0.75) once per louder copy: priority = audibility × 0.75^k, with k the number of louder instances of the same event in this update (1, 0.75, 0.5625, 0.421875 for the first four). Copies of one event therefore limit themselves as a group without a hard cap.
 
@@ -191,7 +191,7 @@ Diagram 3-B: the Species buses (R-AUD-221); the pitch bend acts on the voice and
 | `ref.aud.mix.master_step_db` | 0.32 | dB per step | 255 steps; step 0 = −81.6 dB | R-AUD-225 | — |
 | `ref.aud.mix.floor_db` | −100 | dB | | R-AUD-225 | — |
 
-Keys cited here and defined elsewhere: `ref.meta.options.sound.volume_max` in [09 options](../09_front_end_and_match_flow/options_localisation_and_hooks.md); `ref.ctrl.select.sound_interval` and `ref.ctrl.cursor.highlight_sound_interval` in [06](../06_controls_camera_and_commands/README.md); `ref.unit.worker.horn_odds`, `ref.unit.worker.horn_cooldown` and `ref.unit.worker.burning_sound_odds` in [02 Worker](../02_units/worker.md). The real-voice budget, the per-bus and per-event caps, the steal margin and the time constant of the pitch-bend smoothing are audio engine tuning values with the starting values of DEC-570 and DEC-751 ([audio engine](../../architecture/components/audio_engine.md)).
+Keys cited here and defined elsewhere: `ref.meta.options.sound.volume_max` in [09 options](../09_front_end_and_match_flow/options_localisation_and_hooks.md); `ref.ctrl.select.sound_interval` and `ref.ctrl.cursor.highlight_sound_interval` in [06](../06_controls_camera_and_commands/README.md); `ref.unit.worker.horn_odds`, `ref.unit.worker.horn_cooldown` and `ref.unit.worker.burning_sound_odds` in [02 Worker](../02_units/worker.md). The real-voice budget, the per-bus and per-event caps, the steal margin and the time constant of the pitch-bend smoothing are audio engine tuning values with the starting values of DEC-570 and DEC-751 ([audio engine](../../architecture/components/audio_engine/README.md)).
 
 ## 5 Edge cases and interactions
 
@@ -217,7 +217,7 @@ Keys cited here and defined elsewhere: `ref.meta.options.sound.volume_max` in [0
 ## 7 Dependencies
 
 - **Reference documents:** [event model and sound data](event_model_and_sound_data.md) (position kinds, sharing, levels); [event catalogue](event_catalogue.md) (the per-layer data); [front end, HUD, voice and ambience](front_end_hud_voice_and_ambience.md) (the countdown schedule, the altitude-driven beds); [06 Controls, camera and commands](../06_controls_camera_and_commands/README.md) (the camera, the selection and highlight rate limits); [02 Worker](../02_units/worker.md) (horn and burning odds); [09 options](../09_front_end_and_match_flow/options_localisation_and_hooks.md) (master and bus volumes, swap left and right, voice count); [12 tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) (game speed).
-- **Engine components:** [audio engine](../../architecture/components/audio_engine.md) (ADR-023 virtual voices and stealing, ADR-024 buses and the limiter, ADR-026 control rate, ADR-027 spatialisation).
+- **Engine components:** [audio engine](../../architecture/components/audio_engine/README.md) (ADR-023 virtual voices and stealing, ADR-024 buses and the limiter, ADR-026 control rate, ADR-027 spatialisation).
 - **Assets:** none directly; the layers that use these rules cite their groups in the [event catalogue](event_catalogue.md).
 
 ## 8 Open decisions

@@ -291,7 +291,7 @@ Keys cited from other documents (their values are defined there):
 ## 7 Dependencies
 
 - **Reference documents:** [Units](README.md) (death path, kinds that release no orb); [collector.md](collector.md); [builder.md](builder.md); [README.md](README.md) (Crawler, Crawler egg, ant, centipede, Reaper Serpent, Brood Drifter, Seed Pod); [population flow](../05_population_flow.md) §2.15 to §2.20 (producers, timers, conversions); [crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (Essence Grove, Swarm streak); [defences and props](../03_buildings_and_world_objects/defences_and_props.md) (Hive); [entity model](../12_simulation_model/03_entity_model_and_identity.md) (handles, owner search); [containers and update order](../12_simulation_model/04_containers_and_update_order.md) (the pool, sub-step order); [space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) (obstacle grid); [randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md) (draw discipline); reference/10 (audio events).
-- **Engine components:** [renderer](../../architecture/components/renderer/README.md) (camera-facing glow batches, team colours); [animation and VFX](../../architecture/components/animation_and_vfx/README.md); [audio engine](../../architecture/components/audio_engine.md).
+- **Engine components:** [renderer](../../architecture/components/renderer/README.md) (camera-facing glow batches, team colours); [animation and VFX](../../architecture/components/animation_and_vfx/README.md); [audio engine](../../architecture/components/audio_engine/README.md).
 - **Assets:** `fx.glow_round` (the orb glow quads), `sfx.unit.essence_orb.collected` (the collected sound).
 
 ## 8 Open decisions
