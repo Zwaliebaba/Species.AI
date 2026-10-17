@@ -470,4 +470,4 @@
 | 468 | OTHER Laser | HitBuilding | — (no data: silent) | 0 | code/worldobject/weapons.cpp:Laser::Advance:L678 [FULL] | yes | Laser hits a building (Laser::Advance) - no data. |
 | 469 | OTHER Laser | HitEntity | — (no data: silent) | 0 | code/worldobject/weapons.cpp:Laser::Advance:L730 [commented-out] | no(commented-out) | Commented out. |
 | 470 | OTHER Laser | KilledEntity | — (no data: silent) | 0 | code/worldobject/weapons.cpp:Laser::Advance:L765 [FULL] ; code/worldobject/weapons.cpp:TurretShell::Advance:L1415 [FULL] | yes | Laser/turret shell kills an entity (Laser::Advance, TurretShell::Advance) - no data. |
-| 471 | OTHER AirStrikeBomb | Bounce | — (no data: silent) | 0 | code/worldobject/weapons.cpp:ThrowableWeapon::Advance:L122 -> TriggerSoundEvent (bomb Grenade with m_type=EffectThrowableAirstrikeBomb) [FULL] | yes |  |
+| 471 | OTHER AirStrikeBomb | Bounce | — (no data: silent) | 0 | code/worldobject/weapons.cpp:ThrowableWeapon::Advance:L122 -> TriggerSoundEvent (bomb Grenade with m_type=EffectThrowableAirstrikeBomb) [FULL] | yes | Air-strike bomb bounces (ThrowableWeapon::Advance) - no AirStrikeBomb Bounce data: silent. |

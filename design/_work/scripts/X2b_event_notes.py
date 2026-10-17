@@ -500,6 +500,7 @@
  'ENTITY|SetOrderNone': 'Officer orders cleared - no data.',
  'ENTITY|SetOrders': 'Armour order - no data for this type.',
  'OTHER|BeginAscent': 'Commented out in Spirit::Advance.',
+ 'OTHER|Bounce': 'Air-strike bomb bounces (ThrowableWeapon::Advance) - no AirStrikeBomb Bounce data: silent.',
  'OTHER|Create': 'Spirit::Begin (commented out) / Laser::Initialise (every laser bolt) - no data: silent.',
  'OTHER|Dropped': 'Commented out in Spirit::CollectorDrops.',
  'OTHER|EggDestroyed': 'Commented out in Spirit::EggDestroyed.',

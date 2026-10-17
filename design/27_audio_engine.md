@@ -419,6 +419,92 @@ Consequences [C/I]:
 
 Effect on live sounds [C/I]: `SoundInstance`s survive in `m_sounds` but every channel slot is now invalid, so `IsPlaying()` is false for all of them. Looping sounds re-queue and restart from the start of their sample (or a fresh group member); one-shots enter the 3-tick patience window and, if they win a channel, replay from the beginning; the music instance keeps its `CachedSampleHandle` position and continues on the new music buffer (its `m_channelIndex` is not refreshed: correct for DirectSound where the id is always −1, stale for the software mixer if the channel count changed [I]). The options-screen Apply additionally calls `PropagateBlueprints()` or `StopAllDSPEffects()` depending on pref `SoundDSP` (§12.1) [C] `code/interface/prefs_sound_window.cpp:RestartSoundButton::MouseUp`.
 
+## 3 Update rate: the 20 Hz tick
+
+### 3.1 Accumulator
+
+`#define SOUNDSYSTEM_UPDATEPERIOD 0.05f` (seconds) [C] `code/sound/soundsystem.cpp:SoundSystem::Advance`:
+
+1. If `g_app->m_requestQuit && !m_quitWithoutSave` and `AreBlueprintsModified()` → cancel the quit. `AreBlueprintsModified()` returns `false` unconditionally ("Currently broken due to mod support"), so this never fires [C].
+2. Return if `!m_channels` or `g_systemInfo->m_audioInfo.m_preferredDevice == -1` (null device: no tick at all).
+3. `m_mainProfiler->Advance()`, `m_eventProfiler->Advance()` (every call, before the accumulator).
+4. `m_timeSync += g_advanceTime`; if `m_timeSync >= 0.05` run **exactly one** tick and `m_timeSync -= 0.05`. There is no catch-up loop; surplus carries over.
+
+Clock inputs [C] `code/main.cpp:UpdateAdvanceTime`: `g_advanceTime` is the real frame delta, capped at 0.25 s; while the game is paused it is not recomputed (the last value keeps being added); with pref `RecordDemo` 1 or 2 it is fixed at `1/DemoFrameRate` (default 25). The tick uses neither the simulation tick nor `g_gameTimer`.
+
+Effective rate [C/I]: one tick per call while frames are shorter than 50 ms; at ≤ 20 fps one tick per frame and the backlog grows; below 15 fps `LocationGameLoop` calls `Advance()` twice per frame and each call adds `g_advanceTime` again, so up to two ticks per frame run (the accumulated time is double-counted). Envelopes and loop delays use the wall clock (`GetHighResTime()`), so tick rate changes only granularity and the voice-start rate, not durations.
+
+### 3.2 Tick steps, in order
+
+[C] `code/sound/soundsystem.cpp:SoundSystem::Advance` (profile section names in quotes):
+
+| # | Step | Detail |
+|---|---|---|
+| 1 | Music ("Shutdown Music") | If `m_music`: `m_music->Advance()`; if it returns done → `ShutdownSound(m_music)`, `m_music = NULL`. Then if `m_music == NULL && m_requestedMusic` → promote: `m_music = m_requestedMusic`, `OpenStream(false)`, `m_channelIndex = g_soundLibrary3d->m_musicChannelId`, `ResetChannel(musicId)`, `SetChannelFrequency(musicId, sample native rate)` (§8) |
+| 2 | "Propagate Blueprints" | If `m_propagateBlueprints` (true only while the Sound Editor window exists, [B:DEBUG]) → `PropagateBlueprints()` (§13) |
+| 3 | "Allocate Sorted Array" | Function-static `SoundInstanceId` array, initial 128, doubled until ≥ `m_sounds.NumUsed()` |
+| 4 | "Perceived Volumes" (pass 1) | For each live instance: if not playing and `m_loopType == SinglePlay` → `m_restartAttempts--`; if `m_restartAttempts < 0` → `ShutdownSound`; else if `Type3DAttachedToObject` and `GetAttachedObject() == NULL` → `ShutdownSound` (hard stop, no release); else `CalculatePerceivedVolume()` and append its id |
+| 5 | "Sort Samples" | `qsort` ids by `m_perceivedVolume` descending (`SoundInstanceCompare`; ties unordered) |
+| 6 | "Recalculate Priorities" (pass 2) | `m_calculatedPriority = m_perceivedVolume × M[eventName]`, per-event decay 0.75 (§5.3); remember the **non-playing** instance with the highest priority strictly > 0 |
+| 7 | "Find best Channel", "Stop Old Sound", "Start New Sound", "Reset Channel" | If a candidate exists: `ch = FindBestAvailableChannel()`; evict the occupant (one-shot → `ShutdownSound`; looping → `StopPlaying()`); `StartPlaying(ch)`; on success `m_channels[ch] = id`, else `ShutdownSound(candidate)`; always `ResetChannel(ch)` |
+| 8 | "Advance All Channels" ("Shutdown Sound") | For each channel with a live instance: `instance->Advance()`; if it returns done → `ShutdownSound` |
+| 9 | — | `g_soundLibrary3d->m_forceVolumeUpdate = false` (set by `SetMasterVolume`, so each channel re-sends its volume once) |
+| 10 | "UpdateListener" | Listener = camera: position `GetPos()`, front `GetFront()`, up `GetUp()` **negated unless** pref `SoundSwapStereo` = 1 (read every tick), velocity `GetVel() × 0.2` → `SetListenerPosition` |
+| 11 | "SoundLibrary3d Advance" | Device pump: DirectSound commits deferred 3D settings and refills every ring (this is where most PCM callbacks run); the software library calls `TopupBuffer()` |
+
+```mermaid
+flowchart TD
+  A["Advance: profilers, m_timeSync += g_advanceTime"] -->|"m_timeSync < 0.05"| Z["return"]
+  A -->|"m_timeSync >= 0.05"| M["music: advance, finish, promote request"]
+  M --> PB["PropagateBlueprints if editor open"]
+  PB --> P1["pass 1: expire one-shots, cull orphaned attached sounds, perceived volume"]
+  P1 --> S["sort ids by perceived volume, descending"]
+  S --> P2["pass 2: priority = perceived x 0.75^k per event name; best non-playing candidate"]
+  P2 -->|"candidate"| C["FindBestAvailableChannel: first free, else lowest priority"]
+  C --> E["evict occupant: one-shot destroyed, loop parked"]
+  E --> SP["StartPlaying candidate; ResetChannel"]
+  P2 -->|"none"| AC
+  SP --> AC["Advance every playing instance: envelope, pitch, DSP params, 3D position"]
+  AC --> L["listener = camera"]
+  L --> D["SoundLibrary3d::Advance: refill rings, PCM callbacks"]
+```
+
+## 4 Triggering: from game event to queued instance
+
+The design-level binding model (which events exist, layering several `EVENT` blocks, team-specific variants, the `sounds.txt` content) is in [10_audio_design](10_audio_design.md). Engine mechanics [C] `code/sound/soundsystem.cpp:SoundSystem::TriggerEntityEvent`, `TriggerBuildingEvent`, `TriggerOtherEvent` (two overloads), `InitialiseSound`:
+
+| Entry point | Blueprint array (index) | Instance initial state | Team passed to `TeamMatch` |
+|---|---|---|---|
+| `TriggerEntityEvent(Entity*, name)` | `m_entityBlueprints[entity->m_type]` | `m_pos = entity->m_pos`, `m_vel = entity->m_vel`, `m_objIds += entity->m_id` | `entity->m_id.GetTeamId()` |
+| `TriggerBuildingEvent(Building*, name)` | `m_buildingBlueprints[building->m_type]` | `m_pos = building->m_pos`, `m_objIds += building->m_id` (velocity 0) | building team |
+| `TriggerOtherEvent(WorldObject* or NULL, name, type)` | `m_otherBlueprints[type]` | object `m_pos` and id if given; else origin, no id. **Music type** is diverted to the music slot (§8) | object team, or 255 when NULL |
+| `TriggerOtherEvent(Vector3 pos, name, type, teamId)` | `m_otherBlueprints[type]` | `m_pos = pos`, no id (music is **not** diverted here) | `teamId` |
+
+Per call, for **every** `EVENT` block of that source whose name matches case-insensitively (`stricmp`) and whose `TeamMatch` passes, a new `SoundInstance` is `Copy`'d from the block's prototype and passed to `InitialiseSound` [C]. `TeamMatch(team)`: false if the block has no prototype; true if `team == 255`; else `AllTeams` → true, `MyTeamOnly` → `team == g_app->m_globalWorld->m_myTeamId`, `EnemyTeamOnly` → `team != m_myTeamId` (both false when `m_globalWorld` is NULL) [C] `code/sound/soundsystem.cpp:SoundEventBlueprint::TeamMatch`.
+
+`InitialiseSound(instance)` [C]:
+
+- **Monophonic merge**: if the instance's `m_instanceType` is not `Polyphonic`, search `m_sounds` for any non-polyphonic instance with the same event name (`stricmp`); if found, append copies of the new instance's object ids to that instance and return false (the caller then deletes the new instance via `ShutdownSound`).
+- Otherwise: `m_id.m_index = m_sounds.PutData(instance)`, `m_id.m_uniqueId = GenerateUniqueId()`, `m_restartAttempts = 3`, return true. The instance is now **queued** (not playing).
+- There is no cap on queued instances (`FastDArray`); the only bound is the 3-tick patience of one-shots (§5.4).
+
+`SoundInstance::Copy(prototype)` [C] `code/sound/sound_instance.cpp:SoundInstance::Copy`: copies name, position/instance/loop/source/team-match types, min distance, `strdup` of the full event name (`"<SourceName> <EventName>"`, built at load by `SetEventName`), the six parameters (each followed by one evaluation, §6.7), and — **only if pref `SoundDSP` ≠ 0 at copy time** — a copy of every `DspHandle`; sets `m_parent = prototype`. The envelope timer `m_adsrTimer` was already set to `GetHighResTime()` by the constructor, i.e. at trigger time.
+
+Other public operations [C] `code/sound/soundsystem.cpp`:
+
+| Operation | Semantics |
+|---|---|
+| `StopAllSounds(objId, partialName)` | If `partialName` contains `"Music"` → `m_music->BeginRelease(true)` (whatever music is playing) and nothing else. Otherwise for every instance whose **selected emitter** `m_objId == objId` and whose event name **contains** `partialName` (`strstr`; or all when NULL): playing → `BeginRelease(true)`, queued → `ShutdownSound`. An invalid `objId` matches instances whose `m_objId` was never set (2D and stationary sounds) |
+| `TriggerDuplicateSound(instance)` | New instance `Copy`'d from the live instance (not the prototype), `m_parent` = original prototype, same pos/vel/object ids, normal `InitialiseSound`; if it is a `TypeInEditor` sound its id becomes `m_editorInstanceId` |
+| `ShutdownSound(instance)` | Remove from `m_sounds` (if indexed), `StopPlaying()`, delete (releases its `CachedSampleHandle` → cache unlock) |
+| `IsSoundPlaying(id)` | Index of the channel holding `id`, else −1 |
+| `NumInstancesPlaying(objId, name)` | Count of channel occupants with exact (`stricmp`) event name and matching emitter (any if `objId` invalid). Latent defect: with a **valid** `objId` an empty channel dereferences NULL; every shipped caller passes an invalid id (`code/script.cpp`) [C] |
+| `NumInstances(objId, name)` | Same over all queued + playing instances; used by `code/worldobject/rocket.cpp` to keep loops alive |
+| `StopAllDSPEffects()` | Deletes every `DspHandle` of every live instance (channel DSP is not disabled until the instance stops) |
+| `NumSoundInstances()`, `NumChannelsUsed()`, `NumSoundsDiscarded()` | live count; occupied channels; live − occupied (editor statistics) |
+
+Caveat for game code [C]: `m_objId` (used by `StopAllSounds`, `NumInstances`, `NumInstancesPlaying`) is filled only by `GetAttachedObject()` during a tick, and never for 2D or stationary sounds. A "keep this loop alive" poll made before the next tick, or for a non-attached sound, sees 0 and may re-trigger (possible duplicate loops) [I]. A new engine should record the emitter id at trigger time.
+
 <!-- BODY -->
 
 ## Open questions and unknowns
