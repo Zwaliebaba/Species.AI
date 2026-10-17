@@ -53,16 +53,21 @@ code/main.h,skimmed,g_gameTime/g_advanceTime declarations,5. Simulated vs cosmet
 code/mapcrc.h,skimmed,head only,7. Session-level preconditions and cross-match state
 code/multiwinia.cpp,skimmed,"ResetLocation, AdvanceAssault end, AdvanceGracePeriod statics, SaveIFrame, DeclareWinner speed","4. Timestep, frame structure and update ordering;6. Sync checking, desync reaction and forensics;7. Session-level preconditions and cross-match state"
 code/multiwiniahelp.cpp,skimmed,"tutorial crate creation, rand()","2. Random number sources;4. Timestep, frame structure and update ordering;5. Simulated vs cosmetic state"
+code/network/bandwidth.cpp,skimmed,scanned by scripts/X3_local_state_sites.py for local-state references; flagged lines read in context,5. Simulated vs cosmetic state
 code/network/clienttoserver.cpp,skimmed,"AdvanceAndCatchUp, SendSyncronisation, SetSyncState, GetNumSlicesToAdvance, GenerateSyncValue, KeepAlive, DecodeCmd, ProcessAllServerLetters, ProcessServerLetters, ProcessServerUpdates, AddIFrame/SendIFrame","1. Determinism model at a glance;2. Random number sources;4. Timestep, frame structure and update ordering;6. Sync checking, desync reaction and forensics"
 code/network/clienttoserver.h,skimmed,sync members (grep),"6. Sync checking, desync reaction and forensics"
+code/network/ftp_manager.cpp,skimmed,scanned by scripts/X3_local_state_sites.py for local-state references; flagged lines read in context,5. Simulated vs cosmetic state
 code/network/iframe.cpp,full,,"6. Sync checking, desync reaction and forensics"
 code/network/iframe.h,full,,"6. Sync checking, desync reaction and forensics"
 code/network/network_quality.cpp,skimmed,AppRandom packet loss,2. Random number sources
 code/network/networkvalue.cpp,skimmed,NetworkFloat/Double parse truncation,3. Floating-point model
 code/network/server.cpp,skimmed,"MakeRandom, GenSyncRandSeed, Initialise, SendLetter, AdvanceIfNecessary, HandleSyncMessage, NotifyNetSync*, Save/LoadHistory","1. Determinism model at a glance;2. Random number sources;6. Sync checking, desync reaction and forensics"
+code/network/servertoclient.cpp,skimmed,scanned by scripts/X3_local_state_sites.py for local-state references; flagged lines read in context,5. Simulated vs cosmetic state
 code/network/servertoclient.h,skimmed,sync members (grep),"6. Sync checking, desync reaction and forensics"
+code/obstruction_grid.cpp,skimmed,scanned by scripts/X3_local_state_sites.py for local-state references; flagged lines read in context,5. Simulated vs cosmetic state
 code/particle_system.cpp,skimmed,"ParticleSystem::Advance, Particle::Advance RNG",2. Random number sources;5. Simulated vs cosmetic state
 code/renderer.cpp,skimmed,sync error banner,"6. Sync checking, desync reaction and forensics"
+code/routing_system.cpp,skimmed,scanned by scripts/X3_local_state_sites.py for local-state references; flagged lines read in context,5. Simulated vs cosmetic state
 code/sepulveda.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
 code/sound/sound_instance.cpp,skimmed,OpenStream AppRandom,2. Random number sources
 code/sound/sound_parameter.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
@@ -75,28 +80,40 @@ code/water.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; fl
 code/worldobject/ai.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
 code/worldobject/ai.h,skimmed,RRSolarPanelInfo float,3. Floating-point model
 code/worldobject/aiobjective.cpp,skimmed,ctor draw (CSV),2. Random number sources
+code/worldobject/airstrike.cpp,skimmed,scanned by scripts/X3_local_state_sites.py for local-state references; flagged lines read in context,5. Simulated vs cosmetic state
 code/worldobject/anthill.cpp,skimmed,difficulty use,7. Session-level preconditions and cross-match state
 code/worldobject/armour.cpp,skimmed,"SetDirectOrders, SetOrders, IsUnloading",7. Session-level preconditions and cross-match state
 code/worldobject/armyant.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
+code/worldobject/blueprintstore.cpp,skimmed,scanned by scripts/X3_local_state_sites.py for local-state references; flagged lines read in context,5. Simulated vs cosmetic state
 code/worldobject/bridge.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
 code/worldobject/building.cpp,skimmed,"BuildingIsBlocked, CreateBuilding, Advance, Does*Hit, LogState","5. Simulated vs cosmetic state;6. Sync checking, desync reaction and forensics"
+code/worldobject/carryablebuilding.cpp,skimmed,scanned by scripts/X3_local_state_sites.py for local-state references; flagged lines read in context,5. Simulated vs cosmetic state
 code/worldobject/cave.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
 code/worldobject/centipede.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
 code/worldobject/chess.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
+code/worldobject/clonelab.cpp,skimmed,scanned by scripts/X3_local_state_sites.py for local-state references; flagged lines read in context,5. Simulated vs cosmetic state
+code/worldobject/constructionyard.cpp,skimmed,scanned by scripts/X3_local_state_sites.py for local-state references; flagged lines read in context,5. Simulated vs cosmetic state
+code/worldobject/controlstation.cpp,skimmed,scanned by scripts/X3_local_state_sites.py for local-state references; flagged lines read in context,5. Simulated vs cosmetic state
 code/worldobject/controltower.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
 code/worldobject/crate.cpp,skimmed,"SetDetail, Render, hit tests, RunExtinguisher, speed crates, LogState","2. Random number sources;4. Timestep, frame structure and update ordering;5. Simulated vs cosmetic state"
 code/worldobject/crate.h,skimmed,"INCLUDE_THEBEAST guard, reward enum",2. Random number sources
 code/worldobject/darwinian.cpp,skimmed,"AdvanceOnFire/Sacraficing/Infection/OpeningCrate/WatchingSpectacle/Combat, SearchFor*, GetCrateOffset, LogState, Render",2. Random number sources;3. Floating-point model;5. Simulated vs cosmetic state
+code/worldobject/dropship.cpp,skimmed,scanned by scripts/X3_local_state_sites.py for local-state references; flagged lines read in context,5. Simulated vs cosmetic state
+code/worldobject/egg.cpp,skimmed,scanned by scripts/X3_local_state_sites.py for local-state references; flagged lines read in context,5. Simulated vs cosmetic state
 code/worldobject/engineer.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
 code/worldobject/entity.cpp,skimmed,"LogState, EntityIsBlocked, CreateEntity, GetStat, m_renderDamaged","2. Random number sources;6. Sync checking, desync reaction and forensics;7. Session-level preconditions and cross-match state"
 code/worldobject/entity_leg.cpp,skimmed,"LiftFoot, Advance (wall clock)",5. Simulated vs cosmetic state
 code/worldobject/eruptionmarker.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
 code/worldobject/factory.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
+code/worldobject/feedingtube.cpp,skimmed,scanned by scripts/X3_local_state_sites.py for local-state references; flagged lines read in context,5. Simulated vs cosmetic state
+code/worldobject/flag.cpp,skimmed,scanned by scripts/X3_local_state_sites.py for local-state references; flagged lines read in context,5. Simulated vs cosmetic state
 code/worldobject/generator.cpp,skimmed,SolarPanel Initialise/Render orientation,5. Simulated vs cosmetic state
+code/worldobject/goddish.cpp,skimmed,scanned by scripts/X3_local_state_sites.py for local-state references; flagged lines read in context,5. Simulated vs cosmetic state
 code/worldobject/gunturret.cpp,skimmed,"Render editor write, m_turretFront use",5. Simulated vs cosmetic state
 code/worldobject/harvester.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
 code/worldobject/incubator.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
 code/worldobject/insertion_squad.cpp,skimmed,DirectControl,5. Simulated vs cosmetic state
+code/worldobject/jumppad.cpp,skimmed,scanned by scripts/X3_local_state_sites.py for local-state references; flagged lines read in context,5. Simulated vs cosmetic state
 code/worldobject/lander.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
 code/worldobject/laserfence.cpp,skimmed,"RenderAlphas link reset, Read, Advance link use",5. Simulated vs cosmetic state
 code/worldobject/lasertrooper.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
@@ -104,13 +121,16 @@ code/worldobject/lightning.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RN
 code/worldobject/meteor.cpp,skimmed,Advance particles and slow-mo,"2. Random number sources;4. Timestep, frame structure and update ordering"
 code/worldobject/mine.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
 code/worldobject/multiwiniazone.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
+code/worldobject/nuke.cpp,skimmed,scanned by scripts/X3_local_state_sites.py for local-state references; flagged lines read in context,5. Simulated vs cosmetic state
 code/worldobject/officer.cpp,skimmed,"CalculateBoundingSphere, SetNextMode statics, LogState, Advance",5. Simulated vs cosmetic state;7. Session-level preconditions and cross-match state
 code/worldobject/portal.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
+code/worldobject/pulsebomb.cpp,skimmed,scanned by scripts/X3_local_state_sites.py for local-state references; flagged lines read in context,5. Simulated vs cosmetic state
 code/worldobject/radardish.cpp,skimmed,"RenderAlphas save/restore, receiver fields",5. Simulated vs cosmetic state
 code/worldobject/randomiser.cpp,skimmed,Render rand(),2. Random number sources
 code/worldobject/researchitem.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
 code/worldobject/rocket.cpp,skimmed,EscapeRocket::SetupSpectacle/IsSpectacle,5. Simulated vs cosmetic state
 code/worldobject/rocket.h,skimmed,float member,3. Floating-point model
+code/worldobject/scripttrigger.cpp,skimmed,scanned by scripts/X3_local_state_sites.py for local-state references; flagged lines read in context,5. Simulated vs cosmetic state
 code/worldobject/shaman.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
 code/worldobject/smokemarker.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
 code/worldobject/snow.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
@@ -124,6 +144,7 @@ code/worldobject/spiritreceiver.cpp,skimmed,scanned by scripts/X3_rng_sites.py f
 code/worldobject/spiritstore.cpp,full,,2. Random number sources
 code/worldobject/sporegenerator.cpp,skimmed,difficulty use,7. Session-level preconditions and cross-match state
 code/worldobject/statue.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
+code/worldobject/switch.cpp,skimmed,scanned by scripts/X3_local_state_sites.py for local-state references; flagged lines read in context,5. Simulated vs cosmetic state
 code/worldobject/tank.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
 code/worldobject/teleport.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources
 code/worldobject/tentacle.cpp,skimmed,scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context,2. Random number sources

@@ -1,4 +1,5 @@
 format_id,name,patterns
+level-enum,Level enumeration (achievement level ids),data/levels/level_enum.txt
 level-file,Level files (map_/mission_/mp_ text definitions),data/levels/*.txt;data/purity/map_*.txt;data/purity/mission_*.txt
 game-txt,Game definition files (game*.txt),data/game.txt;data/game_demo.txt;data/game_demo2.txt;data/game_unlockall.txt;data/purity/game.txt
 locations-txt,Global-world locations file,data/locations.txt
@@ -27,10 +28,18 @@ dat-archive,Packed .dat (RAR) archives built from data/,
 psp,Paint Shop Pro source image,data/icons/*.psp
 grd,Photoshop gradient,data/untitled gradients.grd
 text-common,Common text tokenisation conventions for asset text files,
-redshirt,"redshirt2" obfuscated user save files (runtime-written),
+redshirt,redshirt2 obfuscated user save files (runtime-written),
 pack-list,Data-build inclusion/exclusion list files (tools/*.txt lists),
 icons,Icon naming convention (data/icons),
 mwhelp,Help-image naming convention (data/mwhelp),
 thumbnail,Map thumbnail naming convention (data/thumbnails),
 sepulveda,Sepulveda portrait images (data/sepulveda),
 purity,Purity-control data files (data/purity),
+authkey,Authentication key file (runtime-written),
+mwm,.mwm user map files (editor builds),
+profile-save,User profile / save files (runtime-written),
+runtime-files,"Other runtime-written files (logs, serverHistory.dat)",
+support-ini,MultiwiniaSupport.ini (root),
+sync-dump,Sync/desync dump files (runtime-written),
+testbedconfig,testbedconfig.txt (root),
+textreader,TextReader tokenisation shared by text formats,

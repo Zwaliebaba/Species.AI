@@ -29,6 +29,15 @@ SYMBOL_FIX = {
     'code/interface/multiwinia_window.cpp:?:L171': 'code/interface/multiwinia_window.cpp:NewMapWindowButton::MouseUp:L171',
 }
 
+# Call sites whose event-name argument is a variable: what the variable holds (verified in code).
+VARNAMES = {
+    '(char *) _event': 'Music <script event> (Script::RunCommand_TriggerSound)',
+    'newSound': 'Capturing_<20..100>pc / Capturing_%pc bug',
+    'eventName': 'CratePowerup <Crate::GetName(reward)>',
+    'requiredSoundName': 'EscapeRocket Refueling/Unhappy/Malfunction/Happy/Flight',
+    '_event': 'Grenade/AirStrikeBomb Create/Bounce/Flash/Explode (ThrowableWeapon::TriggerSoundEvent)',
+}
+
 POS = {'0': '2D', '1': 'Stat', '2': 'Att', '3': 'Ed'}
 LOOP = {'0': 'Once', '1': 'Loop', '2': 'LoopADSR'}
 INST = {'0': 'Poly', '1': 'MonoRandom', '2': 'MonoNearest'}
@@ -175,7 +184,7 @@ def compress_stems(stems):
             byp.setdefault(m.group(1), []).append(int(m.group(2)))
         else:
             plain.append(s)
-    parts = list(plain)
+    parts = [((x.lower(), -1), x) for x in plain]
     for p, nums in byp.items():
         nums = sorted(set(nums))
         run = [nums[0], nums[0]]
@@ -183,15 +192,16 @@ def compress_stems(stems):
             if n is not None and n == run[1] + 1:
                 run[1] = n
                 continue
+            key = (p.lower(), run[0])
             if run[0] == run[1]:
-                parts.append('%s%d' % (p, run[0]))
+                parts.append((key, '%s%d' % (p, run[0])))
             elif run[1] == run[0] + 1:
-                parts.append('%s%d, %s%d' % (p, run[0], p, run[1]))
+                parts.append((key, '%s%d, %s%d' % (p, run[0], p, run[1])))
             else:
-                parts.append('%s%d–%d' % (p, run[0], run[1]))
+                parts.append((key, '%s%d–%d' % (p, run[0], run[1])))
             if n is not None:
                 run = [n, n]
-    return ', '.join(sorted(parts, key=lambda x: x.lower()))
+    return ', '.join(t for _, t in sorted(parts))
 
 
 def render_samples(field):
@@ -208,20 +218,42 @@ def render_samples(field):
     return '<br>'.join('`%s/`{%s}' % (f, compress_stems(s)) for f, s in byf.items())
 
 
+def split_sites(field):
+    """Split on ';' that are not inside [...] (status tags may contain ';')."""
+    items, cur, depth = [], '', 0
+    for ch in field:
+        if ch == '[':
+            depth += 1
+        elif ch == ']':
+            depth = max(0, depth - 1)
+        if ch == ';' and depth == 0:
+            items.append(cur); cur = ''
+        else:
+            cur += ch
+    items.append(cur)
+    return [i.strip() for i in items if i.strip()]
+
+
 def render_sites(field):
     if not field:
         return '—'
     out = []
-    for s in field.split(';'):
-        s = s.strip()
-        if not s:
-            continue
-        m = re.match(r'^(\S+?)(\s+\[(.*)\])?$', s)
-        site, tag = m.group(1), (m.group(3) or '')
-        site = SYMBOL_FIX.get(site, site)
+    for s in split_sites(field):
+        tag = ''
+        m = re.search(r'\s+\[([^\[\]]*(?:\[[^\]]*\][^\[\]]*)*)\]$', s)
+        if m:
+            tag = m.group(1).replace(';', ',')
+            s = s[:m.start()]
+        parts = s.split(' ', 1)
+        site = SYMBOL_FIX.get(parts[0], parts[0])
         txt = '`%s`' % site
+        if len(parts) > 1:
+            rest = parts[1]
+            # a second citation joined with ' / ' (Grenade::Advance / FlameGrenade::Advance)
+            rest = re.sub(r'^/ (\S+)', lambda mm: '/ `code/worldobject/weapons.cpp:%s`' % mm.group(1), rest)
+            txt += ' ' + esc(rest)
         if tag and tag != 'FULL':
-            txt += ' [%s]' % tag
+            txt += ' [%s]' % esc(tag)
         out.append(txt)
     return '<br>'.join(out)
 
@@ -311,14 +343,76 @@ def table_fields(st):
     return '\n'.join(h)
 
 
-def table_fx(blocks):
-    h = ['| # | Source | Event | Sound | Effect chain (parameters in file order) |', '|---|---|---|---|---|']
+def fmt_param(t):
+    """['TypeFixedValue','27.42','UpdateConstantly'] -> '27.42'; ranged -> 'rnd lo..hi'; linked -> 'Link in..->out..'."""
+    once = '/once' if t and t[-1] == 'UpdateOncePerLoop' else ''
+    if not t:
+        return '?'
+    if t[0] == 'TypeFixedValue':
+        return t[1] + once
+    if t[0] == 'TypeRangedRandom':
+        sm = (' s%s' % t[3]) if float(t[3]) > 0 else ''
+        return 'rnd %s..%s%s%s' % (t[1], t[2], sm, once)
+    if t[0] == 'TypeLinked':
+        sm = (' s%s' % t[5]) if float(t[5]) > 0 else ''
+        return '%s %s..%s->%s..%s%s%s' % (t[6], t[1], t[3], t[2], t[4], sm, once)
+    return ' '.join(t)
+
+
+def table_fx(blocks, effects):
+    names = {n.lower(): [row[0] for row in p] for n, p in effects}
+    h = ['| # | Source | Event | Sound | Effect | Parameters (file order = `data/effects.txt` order; value, `rnd lo..hi`, or `Link inLo..inHi->outLo..outHi`) |',
+         '|---|---|---|---|---|---|']
     n = 0
     for g, ty, b in blocks:
         for fx in b['EFFECTS']:
             n += 1
-            ps = '; '.join('%s %s' % (t[0], ' '.join(t[2:])) for t in fx[1])
-            h.append('| %d | %s %s | %s | %s | **%s** — %s |' % (n, g, ty, b['EVENT'], b.get('SOUNDNAME', ''), fx[0], esc(ps)))
+            # each line is: <ParamName> PARAMETER <spec>; the name is not checked by the loader (position matters)
+            ps = '; '.join('%s %s' % (t[0], fmt_param(t[2:])) for t in fx[1])
+            h.append('| %d | %s %s | %s | %s | %s | %s |' % (n, g, ty, b['EVENT'], b.get('SOUNDNAME', ''), fx[0], esc(ps)))
+    return '\n'.join(h)
+
+
+def table_sourcemap(src, work):
+    """Every code file that fires, stops or queries sound events (from X2b_callsites.csv + a scan)."""
+    calls = list(csv.DictReader(open(os.path.join(work, 'drafts', 'X2b_callsites.csv'), encoding='utf-8')))
+    manifest = {r['path'] for r in csv.DictReader(open(os.path.join(work, 'manifest.csv'), encoding='utf-8'))}
+    ev = collections.OrderedDict()
+    for c in calls:
+        name = c['event_arg'].strip().strip('"')
+        name = VARNAMES.get(name, name)
+        ev.setdefault(c['file'], set()).add(name if name else '"" (empty-name stub, commented out)')
+    stops = collections.defaultdict(int)
+    queries = collections.defaultdict(int)
+    for root, _, files in os.walk(os.path.join(src, 'code')):
+        for f in files:
+            if not f.endswith(('.cpp', '.h')):
+                continue
+            full = os.path.join(root, f)
+            rel = os.path.relpath(full, src).replace(os.sep, '/')
+            if rel.startswith('code/sound/'):
+                continue
+            txt = open(full, encoding='latin-1').read()
+            stops[rel] += txt.count('StopAllSounds(')
+            queries[rel] += txt.count('NumInstances(') + txt.count('NumInstancesPlaying(')
+    files = sorted(set(ev) | {k for k, v in stops.items() if v} | {k for k, v in queries.items() if v})
+    h = ['| File | Role (events fired with `Trigger*Event`; `StopAllSounds` / `NumInstances*` call counts) | In manifest |',
+         '|---|---|---|']
+    missing = []
+    for f in files:
+        names = sorted(ev.get(f, set()), key=str.lower)
+        role = []
+        if names:
+            role.append('fires ' + ', '.join(esc(x.replace('\\', '')) for x in names))
+        if stops.get(f):
+            role.append('%d StopAllSounds' % stops[f])
+        if queries.get(f):
+            role.append('%d NumInstances queries' % queries[f])
+        inm = 'yes' if f in manifest else 'NO'
+        if f not in manifest:
+            missing.append(f)
+        h.append('| `%s` | %s | %s |' % (f, '; '.join(role), inm))
+    print('source-map call-site files:', len(files), 'missing from manifest:', missing)
     return '\n'.join(h)
 
 
@@ -361,7 +455,8 @@ def main(src, work, target):
         'DEADDATA': table_deaddata(bound),
         'SOURCES': table_sources(sources, rows),
         'FIELDS': table_fields(st),
-        'FX': table_fx(blocks),
+        'FX': table_fx(blocks, effects),
+        'SOURCEMAP': table_sourcemap(src, work),
     }
     if target == '-':
         for k, v in tables.items():

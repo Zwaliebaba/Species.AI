@@ -35,7 +35,7 @@
 - **No in-game rebinding.** The key-binding window exists but its menu button is commented out (`OptionsMenuWindow::Create`); only a hand-edited `user_input_preferences.txt` or `preferences.txt` changes controls [C] `code/interface/mainmenus.cpp:OptionsMenuWindow::Create`. *Resolved: P10 listed controls as "user-rebindable (Options UI)"; P17b said rebinding is unreachable; the code confirms P17b.*
 - **The task bar is not clickable.** In Multiwinia the task-manager overlay can never become visible, mouse hover is only evaluated while visible, so tasks are chosen with keys 1–9, Tab/`[`/`]`, pad bumpers, or by selecting the task's unit in the world [C] `code/taskmanager_interface_multiwinia.cpp:TaskManagerInterfaceMultiwinia::Advance`, `AdvanceScreenZones`.
 - **Gestures, icon task manager and gamepad control help are dead in Multiwinia** (Darwinia-campaign only) [C] `code/taskmanager_interface.cpp:TaskManagerInterface::CreateTaskManager`, `code/control_help.cpp:ControlHelpSystem::Render`.
-- **Input graph.** A query-driven binding graph: 164 logical controls, each an OR-list of specs evaluated by 9 registered drivers (3 composite: `&&`, `++`, `not`; 6 leaf/utility) [C] `code/main.cpp:InitialiseInputManager`, `code/lib/input/input.cpp:InputManager::controlEvent`.
+- **Input graph.** A query-driven binding graph: 164 logical controls, each an OR-list of specs evaluated by up to 9 registered drivers (4 composite that recurse into the manager: `&&`, `++`, `not`, `alias`; 5 leaf: Win32 key/mouse, XInput (only if `xinput1_3.dll` loads), idle timer, preference, constant value) [C] `code/main.cpp:InitialiseInputManager`, `code/lib/input/input.cpp:InputManager::controlEvent`.
 - **Design-critical defects:** a confirmed desync path (`InsertionSquad::DirectControl` reads the local camera's look-around flag inside simulation), 1-byte task ids on the wire, render code writing simulation state, unknown binding conditions silently becoming "down" (§13).
 
 ## 1 Player-action master table
@@ -54,7 +54,7 @@
 
 ### 1.2 Pipeline and authority model
 
-Per-frame order inside the location loop [C] `code/main.cpp:LocationGameLoop` (P01 §2.6): `InputManager::PollForEvents` → escape/interface keys → `TeamControls::Advance` (if no Eclipse window) → `SendTeamControlsToNetwork` (every `IAMALIVE_PERIOD` = 0.1 s, `code/globals.h`) → simulation catch-up → `UserInput::Advance` → `Camera::Advance` (only while the window has focus) → `LocationInput::Advance` → `TaskManagerInterface::Advance` → script/sound/control-help/shaman/marker/help advances.
+Per-frame order inside the location loop [C] `code/main.cpp:LocationGameLoop` (main-loop details in [20](20_architecture.md)): `InputManager::PollForEvents` → escape/interface keys → `TeamControls::Advance` (if no Eclipse window) → `SendTeamControlsToNetwork` (every `IAMALIVE_PERIOD` = 0.1 s, `code/globals.h`) → simulation catch-up → `UserInput::Advance` → `Camera::Advance` (only while the window has focus) → `LocationInput::Advance` → `TaskManagerInterface::Advance` → script/sound/control-help/shaman/marker/help advances.
 
 ```mermaid
 sequenceDiagram
@@ -72,7 +72,7 @@ sequenceDiagram
     TC->>C2S: SendIAmAlive every 0.1 s, then Clear
     C2S->>SV: letters
     SV->>SIM: one sequenced update per 0.1 s tick
-    SIM->>SIM: ProcessServerUpdates applies commands and Location::UpdateTeam before slice 0
+    SIM->>SIM: ProcessServerUpdates applies commands and UpdateTeam before slice 0
     LI-->>LI: local-only feedback: sounds, route previews, hints, camera modes
 ```
 
@@ -87,7 +87,7 @@ Column "Cmd" lists the network command letter (full catalogue §1.4); "ALIVE" = 
 | **Camera and view** (local only, never networked) | | | | | | | |
 | A1 | Pan camera | `CameraLeft/Right/Forwards/Backwards` = A/D/W/S or ←/→/↑/↓ (held) | `CameraMove` = left stick | Free-movement camera; TM and Shaman UI hidden | Target point moves 250 u/s along the horizontal camera basis; stick: 10 u/s per stick unit (≤ ≈393 u/s) | — | [C] `code/camera.cpp:Camera::AdvanceFreeMovementMode` |
 | A2 | Fast pan | `CameraSpeedup` = Shift (held) | L3 (left-stick click, held) | with A1 | ×4 key speed (1000 u/s); the stick path ignores it | — | [C] same |
-| A3 | Raise / lower camera | `CameraUp` = Q, `CameraDown` = E (held); `TargetMoveZ` = mouse wheel | `CameraUp` = right trigger, `CameraDown` = left trigger | No Eclipse window; Q/E/triggers ignored while aiming a radar dish or gun turret | Height `+= delta·2·√|h − ground|` (§9.4) | — | [C] `code/camera.cpp:Camera::AdvanceComponentMouseWheelHeight` |
+| A3 | Raise / lower camera | `CameraUp` = Q, `CameraDown` = E (held); `TargetMoveZ` = mouse wheel | `CameraUp` = right trigger, `CameraDown` = left trigger | No Eclipse window; Q/E/triggers ignored while aiming a radar dish or gun turret | Height `+= delta·2·√abs(h − ground)` (§9.4) | — | [C] `code/camera.cpp:Camera::AdvanceComponentMouseWheelHeight` |
 | A4 | Aim (mouse-look) | `TargetMove` = mouse movement | `TargetMoveSecondary` = right stick (only with no window open and TM hidden) | Free-movement, radar-aim and turret-aim modes; not while chat log held | The camera turns to face the ground point under the cursor; the cursor stays glued to that ground point (§9.4) | — | [C] `code/lib/targetcursor.cpp:TargetCursor::Advance`; `Camera::AdvanceFreeMovementMode` |
 | A5 | Zoom (narrow FOV) | `CameraZoom` = Z or MMB (held) | R3 (right-stick click, held) | No Eclipse window; not in entity-track (there it re-centres behind the squad, §9.6) | FOV target ÷4 (60° → 15°) while held | — | [C] `Camera::AdvanceComponentZoom` |
 | A6 | Look around (freeze camera) | `CameraFreeMovement` = F2 (held) | R3 (held) | Ignored while `UnitPrimaryFireTarget` is held | Freezes camera position and entity tracking; orientation still follows the cursor. **Also changes squad simulation on this peer (desync, §13 X1)** | — | [C] `code/camera.cpp:Camera::SwitchEntityTracking` |
@@ -145,7 +145,7 @@ Front-end menu navigation (pad d-pad/sticks with `repeat`, A/B/Back/Start, `Menu
 
 ### 1.4 Network commands emitted by player input
 
-Command letters carry the field codes of [22](22_determinism_and_networking.md) (`TEAMID` `de` char, `UNITID` `dl` int, `ENTITYID` `dm` int, `BUILDINGID` `dn` int, `PROGRAM` `dq` char, `RADIUS` `dp` float, `POSITION` `df` Vector3, `DIRECTROUTE` `cob` char, `FORCEONLYMOVE` `cod` char, `SECONDARYFUNCTION` `coe` char) [C] `code/network/network_defines.h`. All are relayed by the server to every client and executed in sequence order. The server checks only that the sender is registered and TEAMID ≠ 255 — **not that the sender owns the team** [C] `code/network/server.cpp:Server::Advance` (P15).
+Command letters carry the field codes of [22](22_determinism_and_networking.md) (`TEAMID` `de` char, `UNITID` `dl` int, `ENTITYID` `dm` int, `BUILDINGID` `dn` int, `PROGRAM` `dq` char, `RADIUS` `dp` float, `POSITION` `df` Vector3, `DIRECTROUTE` `cob` char, `FORCEONLYMOVE` `cod` char, `SECONDARYFUNCTION` `coe` char) [C] `code/network/network_defines.h`. All are relayed by the server to every client and executed in sequence order. The server checks only that the sender is registered and TEAMID ≠ 255 — **not that the sender owns the team** [C] `code/network/server.cpp:Server::Advance` ([22](22_determinism_and_networking.md)).
 
 | Command (code) | Sender function | Payload | Executed on every peer | Raised by (§1.3) |
 |---|---|---|---|---|
@@ -199,7 +199,7 @@ Consequence: enemy units are never pickable; all player clicks address the playe
 | Squad weapon cycling (`WeaponCycleLeft/Right` = d-pad left/right) → `RUNPROGRAM(weapon)` | — | [B:DEAD] (commented out) | [C] same |
 | Pad squad secondary cycling `InsertionSquad::CycleSecondary` on `m_unitSecondaryMode` | `IssueSpecialOrders` | [B:LEGACY] (`IsSinglePlayer()`) | [C] `Location::UpdateTeam` |
 | Order Darwinians with pad right trigger (`UnitSecondaryFireDirected`) | unbound (icon line only) | dead (live code, no binding) | [C] `LocationInput::AdvanceTeamControl`; `data/input/input_preferences.txt` |
-| Game over → press `ToggleReady` to return to menu | Space | [B:DEAD] (`TESTBED_ENABLED` only). *Resolved: P09 §2.6 listed it as live; code places it inside `#ifdef TESTBED_ENABLED`* | [C] `LocationInput::Advance` |
+| Game over → press `ToggleReady` to return to menu | Space | [B:DEAD] (`TESTBED_ENABLED` only). *Resolved: the P09 draft listed it as live; code places it inside `#ifdef TESTBED_ENABLED`* | [C] `LocationInput::Advance` |
 | `ToggleRendering` (R) testbed rendering switch | R | [B:DEAD] (`TESTBED_ENABLED`) | [C] same |
 | Cheat menu (F11), special-lighting cheat (`RTLoaderPixelWaveIncrease/Decrease`) | F11; L/K | [B:DEBUG] (`CHEATMENU_ENABLED`) | [C] `UserInput::Advance`; `code/location.cpp:Location::RenderBuildings` |
 | Debug quit (`GameDebugQuit`) | unbound (commented `XInput leftbumper down`) | dead | [C] `code/main.cpp:HandleCommonConditions` |
@@ -341,7 +341,7 @@ Task type ids are the `GlobalResearch` enum (29 values, `NumResearchItems` = 29)
 | Id | Enum | Name string | Created by `RunTask(int)`? | `Start()` | `Target(pos)` effect | Ends (`Advance`) when | `Stop()` on terminate | Multiwinia source |
 |---|---|---|---|---|---|---|---|---|
 | 0 | TypeDarwinian | Darwinian | no (returns false) | – | – | – | – | – (research item only) |
-| 1 | TypeOfficer | Officer | yes | – | promote nearest own Darwinian within 10 u to Officer, then **terminate own task** (§3.6) | never (state forced back to Started each tick) | – | AI only (`code/ai.cpp`); the player promotes with O2 |
+| 1 | TypeOfficer | Officer | yes | – | promote nearest own Darwinian within 10 u to Officer, then **terminate own task** (§3.6) | never (state forced back to Started each tick) | – | AI only (`code/worldobject/ai.cpp`); the player promotes with O2 |
 | 2 | TypeSquad | Squad | yes | `m_lifeTimer = 60` | spawn a squad unit of `2 + CurrentLevel(TypeSquad)` InsertionSquadies (MP level 1 → **3**) at pos, spread 10; select it; optional camera tracking | MP: life timer reaches 0 → `Stop()`; any: unit gone or `NumAliveEntities() == 0` | every squaddie `ChangeHealth(−1000)` | crate "Squad" |
 | 3 | TypeLaser | Laser | no | – | – | – | – | – (squad weapon research) |
 | 4 | TypeGrenade | Grenade | special: sets the current squad's weapon | – | – | – | – | – |
@@ -373,7 +373,7 @@ Task type ids are the `GlobalResearch` enum (29 values, `NumResearchItems` = 29)
 Evidence [C] `code/taskmanager.cpp:Task::Start`, `Task::Target` and every `Task::Target*`, `Task::Advance`, `Task::Stop`, `TaskManager::RunTask(int)`; crate mapping `code/worldobject/crate.cpp:Crate::CaptureCrate` (both overloads; crate semantics in [04](04_crates_powerups_and_weapons.md)); reinforcement and retribution `code/multiwinia.cpp:Multiwinia::AdvanceRetribution` and the reinforcement block ([01](01_game_modes.md)); instant units `code/location.cpp:Location::InitialiseTeam`.
 
 Notes:
-- `TypeController`, `TypeGrenade`, `TypeRocket` (and `TypeAirStrike` in SP) are not slot tasks: `RunTask(type)` looks up the *current* task; if it is a Squad whose unit is an `InsertionSquad` it calls `InsertionSquad::SetWeaponType(type)` and shows `MessageSuccess`, else `MessageFailure` and returns false — a squad **weapon selection** [C] `TaskManager::RunTask(int)`. No Multiwinia path calls it, so squads always throw grenades [I] (P04).
+- `TypeController`, `TypeGrenade`, `TypeRocket` (and `TypeAirStrike` in SP) are not slot tasks: `RunTask(type)` looks up the *current* task; if it is a Squad whose unit is an `InsertionSquad` it calls `InsertionSquad::SetWeaponType(type)` and shows `MessageSuccess`, else `MessageFailure` and returns false — a squad **weapon selection** [C] `TaskManager::RunTask(int)`. No Multiwinia path calls it, so squads always throw grenades [I] ([02](02_units_and_entities.md)).
 - Unknown types return false [C].
 - `MapGestureToTask(gestureId)`: 0 → Squad, 1 → Engineer, 2 → Grenade, 3 → Rocket, 4 → AirStrike, 5 → Controller, 6 → Officer, 7 → Armour, else −1 [C] `TaskManager::MapGestureToTask` (§7.7).
 
@@ -518,7 +518,7 @@ sequenceDiagram
 
 | # | Behaviour [C] | Ref |
 |---|---|---|
-| E1 | Multiwinia tutorial 1 (and tutorial 2 until `m_tutorial2AICanSpawn`): `TerminateTask` refuses, so one-shot tasks (Nuke, Infection, forests, AntNest, Plague, Eggs, Meteor) whose `Target` relies on self-termination remain `StateStarted` and **can be fired again**; AirStrike sets Running first and is removed by `Advance` when its effect object disappears. | `Task::TargetNuke` etc., `TaskManager::TerminateTask` |
+| E1 | Multiwinia tutorial 1 (and tutorial 2 until `m_tutorial2AICanSpawn`): `TerminateTask` refuses, so one-shot tasks (Nuke, Infection, forests, AntNest, Plague, Eggs, Meteor) whose `Target` relies on self-termination remain `StateStarted` and **can be fired again**; AirStrike sets Running first and is removed by `Advance` when its effect object disappears. | `Task::TargetNuke`, `Task::TargetInfection`, `Task::TargetMagicalForest`, `Task::TargetDarkForest`, `Task::TargetAntNest`, `Task::TargetPlague`, `Task::TargetEggs`, `Task::TargetMeteorShower`, `TaskManager::TerminateTask` |
 | E2 | `Task::Stop()` refusing does not stop `TerminateTask` from deleting the task — the armour/turret survives without a slot. | `TaskManager::TerminateTask` |
 | E3 | Extinguisher and Tank `Target*` bodies are commented out: such a task would stay Started forever (not reachable in FULL). | `Task::TargetExtinguisher`, `Task::TargetTank` |
 | E4 | `Capacity()` in MP ignores research; an eliminated team gets 2 slots (for retribution powers, granted only if `CapacityUsed() < Capacity()`). *Resolves P02-U4: the "Two powerups max" string matches `Capacity()` = 2 for eliminated teams.* | `TaskManager::Capacity`; `Multiwinia::AdvanceRetribution` |
@@ -710,7 +710,7 @@ Officer behaviour as a unit (stats, state machine, AI, rendering) is specified i
 
 - **Promote** (O2): `PROMOTE(team, entityIndex)` → `Location::PromoteDarwinian` (refused if the Darwinian is on fire): spawns an Officer at its position and velocity, control-flash particles, marks the Darwinian `m_promoted` (removed next tick, no spirit), registers an officer marker for the local team (`MarkerSystem::RegisterMarker_Officer`, §8.12); the handler then selects the new officer (`SelectUnit(−1, officerIndex, −1)`) [C] `code/location.cpp:Location::PromoteDarwinian`, `code/network/clienttoserver.cpp:ClientToServer::ProcessServerUpdates`.
 - **Demote**: the same command applied to an Officer index calls `Location::DemoteOfficer` (officer `m_demoted = true`, removed on its next `Advance` with no spirit; one Darwinian of the team spawned at its position) and deselects. The live input layer never sends `PROMOTE` for an officer (the "click a selected officer to demote" block is commented out) [C] `LocationInput::AdvanceTeamControl` — so demotion is **unreachable** for players; C / pad Y *kills* a selected officer instead (T5).
-- The CPU AI promotes through the Officer *task* (`Task::TargetOfficer`, §3.6) [C] `code/ai.cpp`.
+- The CPU AI promotes through the Officer *task* (`Task::TargetOfficer`, §3.6) [C] `code/worldobject/ai.cpp`.
 - MP officer research level is 3 [C] `code/location.cpp:Location::Init`.
 
 ### 5.2 Order model
@@ -818,7 +818,7 @@ Executed on every peer for every `ALIVE` letter [C] `code/location.cpp:Location:
 Keyboard/mouse (camera not tracking — the default for keyboard players because pref `AutomaticCamera` defaults to 0 = automatic, which tracks only in gamepad mode) [C] `code/camera.cpp:Camera::UpdateEntityTrackingMode`:
 - **Move**: hold LMB → waypoint = cursor every update; squaddies follow the point man single-file along its breadcrumb trail ([02](02_units_and_entities.md)).
 - **Fire**: hold RMB → `InsertionSquad::Attack(cursor, false)` each tick: ≈ 2 laser shots/s per squaddie (6/s for a full squad), range 120 u.
-- **Grenade**: hold RMB and click LMB → `Attack(cursor, true)`: the alive squaddie nearest the target with its secondary timer ≤ 0 throws (4 s cooldown); in Multiwinia the secondary is always the grenade [I] (no reachable weapon setter, P04).
+- **Grenade**: hold RMB and click LMB → `Attack(cursor, true)`: the alive squaddie nearest the target with its secondary timer ≤ 0 throws (4 s cooldown); in Multiwinia the secondary is always the grenade [I] (no reachable weapon setter, [02](02_units_and_entities.md)).
 - Squaddies of the selected squad face `team->m_currentMousePos`.
 
 Gamepad (camera entity-tracks the squad, §9.6) — `InsertionSquad::DirectControl` [C] `code/worldobject/insertion_squad.cpp`:
@@ -843,7 +843,7 @@ Both: hold RMB (`UnitSetTarget`; pad X held) → `SetWaypoint(cursor)` and **des
 
 ### 6.7 Tank and Shaman [B:LEGACY]
 
-- **Tank**: selectable and fully wired in `UpdateTeam`, but no Tank can be created in FULL (crate reward and task spawn commented out; TankBattle compiled out) [C] (P04, `Task::TargetTank`).
+- **Tank**: selectable and fully wired in `UpdateTeam`, but no Tank can be created in FULL (crate reward and task spawn commented out; TankBattle compiled out) [C] ([02](02_units_and_entities.md), `Task::TargetTank`).
 - **Shaman**: `Shaman::Advance` has its body commented out and returns true, so a Shaman deletes itself on its first tick; its controls (move, mode change, teleport, Tab summon ring via `ShamanInterface` → `SHAMANSUMMON`) are unreachable [C] `code/worldobject/shaman.cpp:Shaman::Advance`, `code/shaman_interface.cpp`.
 
 ## 7 Gesture recognition
@@ -889,7 +889,7 @@ Computed in `CalculateFeatureSet` with n = number of samples; requires n ≥ 3, 
 | f7 | (y_{n−1} − y₀)/f5 | start–end sine |
 | f8 | Σ_{j=0}^{n−3} ‖s_{j+1} − s_j‖ | total length — **defect**: last segment omitted |
 | f9 | Σ_{k=1}^{n−2} θₖ, θₖ = atan((aₓ·b_y − bₓ·a_y)/(aₓ·bₓ + a_y·b_y)), a = s_{k+1} − s_k, b = s_k − s_{k−1} | total turning; CRT `atan` (not atan2) so each θ ∈ (−π/2, π/2) |
-| f10 | Σ |θₖ| | |
+| f10 | Σ abs(θₖ) | |
 | f11 | Σ θₖ² | |
 | f12 | max over consecutive pairs of (Δx² + Δy²)/Δt² (pairs with Δt = 0 skipped) | max speed², px²/ms² |
 | f13 | Σ Δt over pairs with Δt ≠ 0 | duration, ms |
@@ -1071,7 +1071,7 @@ Rendering `MarkerSystem::Render` [C]:
 - `CalculateScreenPosition`: project; on-screen if in front of the camera and inside the viewport; otherwise project a point 100 u from `camPos + front×1000` toward the target and intersect the centre→point ray with the screen rectangle (`FindScreenEdge`). Off-screen markers get `lineNormal` = direction from edge point to screen centre; icons are offset 50 px inward along it and the compass is oriented along it.
 - Alpha: on-screen accumulates `m_onscreenTimer`; seen after 1 s; seen and > 6 s → fade over 9 s; floor `minAlpha = max((camDist − 350)/500, 1 − distToCentre/(0.5·screenH))`; non-persistent markers additionally fade over 2 s after 6 s; `AlwaysAtFullAlpha` (own tasks/orders) ≥ 0.75 when visible; off-screen markers that may not show off-screen get α 0.
 - Size: `icon = screenH/20`, `shadow = icon + 10`, `compass = icon + screenH/30`; ×1.3 alternating α 0.2/1.0 every 0.2 s for 3 s when flashing; ×(2 − camDist/500) when camDist < 500; ×1.2 and α 1 when hovered/selected. On-screen icons are lifted `5·screenH/camDist` px.
-- Layers: `icons/marker_shadow.bmp` (black, α 0.9), compass `icons/compass_shadow.bmp` + `icons/compass.bmp` (additive) or `icons/compass_empty.bmp` when on-screen, `icons/marker_colour.bmp` colour circle (additive, filled to `percent`), then the icon (additive; texture coordinates rotated for spin).
+- Layers: `icons/marker_shadow.bmp` (black, α 0.9), compass `icons/compass_shadow.bmp` + `icons/compass.bmp` (additive) or `icons/compass_empty.bmp` when on-screen (**this file does not exist** in `data/icons/` — only `compass.bmp` and `compass_shadow.bmp` ship; §13 X30), `icons/marker_colour.bmp` colour circle (additive, filled to `percent`), then the icon (additive; texture coordinates rotated for spin).
 - Hover: `IsMOuseInside` uses the icon's screen box → `m_newMarkerUnderMouse` → `m_markerUnderMouse` at end of frame; order markers set `m_isOrderMarkerUnderMouse`.
 - Debug/AI overlays (pref `RenderAIInfo` 1, `AIInfoTeam`): AITargets print per-team priority text and draw team-coloured arrows; AIObjective spheres only under `LOCATION_EDITOR` [C] `code/worldobject/ai.cpp:AITarget::Render` ([07](07_ai.md)).
 
@@ -1277,7 +1277,7 @@ Kind: `#define` (D), class constant (S), literal (L).
 | Shift-help trigger | Forwards alone held > 4 s | L | same |
 | Zoom FOV divisor / rate | ÷4; change 100 (zooming), 30 (normal), 10 (sphere-scripted), 1 (move/do-nothing/building); factor `dt·change·0.1` | L | `AdvanceComponentZoom` |
 | Height key rate | 7 per s (wheel-notch units) | L | `AdvanceComponentMouseWheelHeight` |
-| Height scale (location) | `2·√|h − land|` per unit | L | same |
+| Height scale (location) | `2·√abs(h − land)` per unit | L | same |
 | Height scale (global) | `0.1·h + 5` per unit; clamp [0.1, 1000] | L | same |
 | Turret / radar height clamp | [10, 50] / [50, 120] | L | same |
 | Radar aim height / back-off | 80 / 1.5·h; smoothing 4 /s | L | `RequestRadarAimMode`, `AdvanceRadarAimMode` |
@@ -1286,7 +1286,7 @@ Kind: `#define` (D), class constant (S), literal (L).
 | Entity-track smoothing | 4 /s (×3 while resetting), clamp 1 | L | `AdvanceAutomaticTracking` |
 | Move-behind | min move² 10; toward-camera cos > 0.5; 10-sample history | L | `AdvanceCameraMoveBehind` |
 | Reset complete | < 5 u per axis (signed) | L | `AdvanceAutomaticTracking` |
-| Rotate-towards factor | `2·dt + |screenOffset|/10`, clamp 1 | L | `RotateTowardsEntity` |
+| Rotate-towards factor | `2·dt + length(screenOffset)/10`, clamp 1 | L | `RotateTowardsEntity` |
 | Control-vector threshold | 0.98 | S | `UpdateControlVector` |
 | Targeting cone | cos 20° = 0.939692621; range 225 u (unused) | L | `Camera::Camera`, `TargetEntity` |
 | Building focus | orbit −0.15 rad/s; height ×(1 + 0.5 sin 0.3t); range ×(1 + 0.3 sin 0.3t); ramp 1/s; lift 0.75·d·(2 − t) ≤ y 1000 for 2 s; floor land + 10 | L | `AdvanceBuildingFocusMode` |
@@ -2289,7 +2289,7 @@ Severity: **desync** = can make peers' simulations diverge; **latent** = would d
 |---|---|---|---|---|
 | X1 | `InsertionSquad::DirectControl` (simulation, run on every peer for the networked `TeamControls` of whichever team is processed) early-outs on `!controls.m_cameraEntityTracking && !g_app->m_camera->m_camLookAround` — the **local** camera's look-around flag — and then uses the **local** `Camera::GetControlVector()`; a peer holding F2/R3 runs way-point, stop and extra `Attack` logic (which consumes `syncfrand`) for other teams' squads that peers not holding it skip. It also writes the local camera's `m_targetVector`/`m_wantedTargetVector` | **desync** | live (rare trigger: a player holding look-around while any squad is controlled without entity tracking) | [C] `code/worldobject/insertion_squad.cpp:InsertionSquad::DirectControl`; called from `code/location.cpp:Location::UpdateTeam`, whose own comment warns that input state is invalid there |
 | X2 | `FenceSwitch::Switch()` toggled directly on the clicking client, no network message | latent desync | unreachable: FenceSwitch is blocked and appears in no shipped level | [C] `code/location_input.cpp:LocationInput::SelectObjectUnderMouse`, `code/worldobject/switch.cpp:FenceSwitch::Switch` |
-| X3 | Route-preview lines (generated every frame, deleted next frame) are allocated from the same `RoutingSystem` free list as simulation routes (`IssueDarwinianOrders`, `Officer::SetOrders`), so route **ids** handed to Darwinians may differ between peers | possible desync | live; impact depends on whether route ids are ever compared/hashed (06-U4) | [C] `LocationInput::AdvanceTeamControl` (`m_routeId`), `code/routing_system.cpp`; [I] impact (P01 D15) |
+| X3 | Route-preview lines (generated every frame, deleted next frame) are allocated from the same `RoutingSystem` free list as simulation routes (`IssueDarwinianOrders`, `Officer::SetOrders`), so route **ids** handed to Darwinians may differ between peers | possible desync | live; impact depends on whether route ids are ever compared/hashed (06-U4) | [C] `LocationInput::AdvanceTeamControl` (`m_routeId`), `code/routing_system.cpp`; [I] impact ([22](22_determinism_and_networking.md)) |
 | X4 | `GameCursor::RenderCrosshair` uses `building->m_type = Building::TypeRadarDish` (assignment) — render code overwrites the selected building's type on the local client | latent desync | no-op today (only GunTurret and RadarDish are selectable) | [C] `code/gamecursor.cpp:GameCursor::RenderCrosshair` |
 | X5 | Simulation calls UI singletons: `TaskManager::SelectTask` → `GameCursor::BoostSelectionArrows`; `Task::*` → `TaskManagerInterface::SetCurrentMessage`, sounds, camera requests; `Location::IssueDarwinianOrders`/`UpdateTeam` → `GameCursor::CreateMarker`; `Team::SelectUnit` → camera turret-aim. All guarded by "local team" or cosmetic | latent | live (cosmetic) | [C] `code/taskmanager.cpp`, `code/location.cpp`, `code/team.cpp:Team::SelectUnit` |
 | X6 | UI writes a replicated field: `TaskManagerInterfaceMultiwinia::Advance` sets `tm->m_mostRecentTaskId = −1` on the owning client only (1 s after the pop-up starts minimising, or 1 s after creation with `HelpEnabled` 0). Simulation reads `m_mostRecentTaskId` right after `RunTask` (crate turret/napalm option, instant units, AI officer) — safe only because those reads follow a successful `RunTask` in the same tick | latent desync | live | [C] `code/taskmanager_interface_multiwinia.cpp:TaskManagerInterfaceMultiwinia::Advance`; `code/worldobject/crate.cpp:Crate::CaptureCrate` |
@@ -2297,7 +2297,7 @@ Severity: **desync** = can make peers' simulations diverge; **latent** = would d
 | X8 | Dormant **local** task terminations: `RunScreenZone("DeleteTask")` (unbound key / never-visible zones) and the Gestures interface's `AdvanceTerminate` call `TerminateTask` without a network message | latent desync | unreachable in MP | [C] `TaskManagerInterfaceMultiwinia::RunScreenZone`, `TaskManagerInterfaceGestures::AdvanceTerminate` |
 | X9 | The `TOGGLEENTITY` officer branch calls `RequestSelectUnit` from inside command execution on **every** peer → N identical `SELECTUNIT` commands from one click (idempotent; the server keeps only the last `SELECTUNIT` per client per tick) | wrong (benign) | live | [C] `ClientToServer::ProcessServerUpdates`; `code/network/server.cpp:Server::Advance` (`SaveLast`) |
 | X10 | Task ids travel as one byte: ids ≥ 256 alias (`id mod 256`); id 255 is the "entity" sentinel for `TERMINATE` and cannot be terminated | wrong | live (needs ≥ 256 tasks for one team) | [C] `ClientToServer::RequestTargetProgram`, `RequestSelectProgram`, `RequestTerminateProgram` |
-| X11 | The server relays any team command from any registered client (only TEAMID ≠ 255 is checked) — a modified client can order, select or terminate for another team | security | live | [C] `code/network/server.cpp:Server::Advance` (P15) |
+| X11 | The server relays any team command from any registered client (only TEAMID ≠ 255 is checked) — a modified client can order, select or terminate for another team | security | live | [C] `code/network/server.cpp:Server::Advance` ([22](22_determinism_and_networking.md)) |
 | X12 | Squad camera distance is an `int`: zoom-in moves 1 u per frame (frame-rate dependent), zoom-out (+10·dt) never changes it unless dt ≥ 0.1 s | UX | live (pad) | [C] `code/camera.h:Camera::m_trackingCameraDist`, `Camera::AdvanceAutomaticTracking` |
 | X13 | Unknown binding-condition words are accepted as `down` with type 0 (4 shipped bindings rely on it) | robustness | live | [C] `code/lib/input/inputdriver.cpp:InputDriver::getDefaultConditionID` |
 | X14 | Analogue trigger value `floor(raw·6.3)` stored in a `BYTE` overflows for raw > 40 (06-U2); only zero/non-zero is robust | robustness | live (no shipped binding uses trigger magnitude) | [C] `code/lib/input/inputdriver_xinput.cpp:Controller::scaleInputs` |
@@ -2315,6 +2315,7 @@ Severity: **desync** = can make peers' simulations diverge; **latent** = would d
 | X26 | Horizontal camera bounds are stored but the clamp is commented out — the camera can fly arbitrarily far from the map | UX | live | [C] `Camera::AdvanceFreeMovementMode`, `code/main.cpp:DoEnterLocation` |
 | X27 | `WM_INPUTLANGCHANGE` is only logged: a keyboard-layout change at run time does not reload the layout bindings; "Restore defaults" does not re-apply the layout layer | UX | live / unreachable window | [C] `code/lib/input/win32_eventhandler.cpp:W32EventHandler::WndProc`, `RestoreDefaultsButton::MouseUp` |
 | X28 | `Team::SelectUnit` triggers interface sounds `TaskManagerSelectTask`/`TaskManagerDeselectTask` for **every** team's selection (not only the local team); harmless only because neither event is defined in `data/sounds.txt` | latent UX | silent | [C] `code/team.cpp:Team::SelectUnit`; grep of `data/` |
+| X30 | `MarkerSystem` binds `icons/compass_empty.bmp` for on-screen markers, but no such file exists in `data/icons/`; the texture lookup therefore fails at run time (what `Resource::GetTexture` returns for a missing file — an invalid id or a placeholder — is owned by [25](25_textures_and_assets.md)) | wrong (missing asset) | live | [C] `code/markersystem.cpp:MarkerSystem::RenderCompass`, `MarkerSystem::RenderCompassEmpty`; directory listing of `data/icons/` |
 | X29 | Control help is computed every frame but never displayed in MP; the gamepad has no on-screen control guidance during a match except the §10.4 text hints | UX | live | [C] `code/control_help.cpp:ControlHelpSystem::Render` |
 
 ## 14 Re-implementation notes
@@ -2329,3 +2330,375 @@ Design guidance distilled from the findings above (not a description of the orig
 6. **Task bar.** Make the power-up bar clickable (X21), show empty slots (capacity 6) explicitly, and keep the slot-ordering rules (§3.5) only if keyboard slot numbers must stay stable — otherwise prefer stable slot positions.
 7. **Gestures** are optional; if kept, port the recogniser with the documented defects only if the original training data is reused, otherwise fix f3/f4/f8/Mahalanobis and retrain on new symbols (IP).
 
+
+## Open questions and unknowns
+
+| # | Item | Kind | What would resolve it |
+|---|---|---|---|
+| 06-U1 | Exact XInput dead-zone / trigger-threshold values compiled into the shipped exe (`XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE`, `…_RIGHT_THUMB_DEADZONE`, `XINPUT_GAMEPAD_TRIGGER_THRESHOLD`; believed 7849 / 8689 / 30) — headers are not in the tree | [U] | the DirectX SDK version referenced by `targets/vs2005/Darwinia.vcproj` include paths, or disassembly of the shipped binary |
+| 06-U2 | Result of `BYTE = floor(trigger·6.3)` for raw > 40 under MSVC 2005 (wrap, saturate or undefined) — affects trigger magnitudes (X14) | [U] | compile the expression with VS2005 `/fp:precise` or read the generated code |
+| 06-U3 | Whether `UnicodeString` → `std::string` assignment in `W32InputDriver::getInputDescription` yields ASCII (assumed by X15) | [U] | read the conversion operators in `contrib/systemiv/lib/unicode/unicode_string.h` |
+| 06-U4 | Whether route ids diverge between peers because route-preview lines share the routing free list (X3), and whether that matters (route ids hashed or compared?) | [U] design-critical | two-client instrumented run comparing route ids after identical orders; check whether route ids enter the sync value ([22](22_determinism_and_networking.md)) |
+| 06-U5 | Whether any camera-state reader inside `code/worldobject/*` (frustum/distance LOD in 73 files) influences simulated state; one sim-side use found in the Darwinia-only `ScriptTrigger` | [U] | determinism audit of the listed files ([22](22_determinism_and_networking.md)) |
+| 06-U6 | Whether the extra `InputManager::Advance` at the bottom of `AppMain`'s top-level loop can swallow an edge between sub-loops | [U] | instrumented run logging edges across a menu → location transition |
+| 06-U7 | Practical frequency of the X1 desync (a player holding F2/R3 look-around while another team's squad is processed without tracking) | [I] design-critical | two-client test: one player holds F2 while another's squad moves/fires; compare sync values |
+| 06-U8 | InsertionSquad secondary weapon is always the grenade in Multiwinia (no reachable `SetWeaponType` caller) | [I] | runtime confirmation; full call-graph search for `SetWeaponType` ([02](02_units_and_entities.md)) |
+| 06-U9 | Whether an `ORDERDGS` can execute with zero controlled Darwinians (NaN route start, X23) in normal play | [I] | instrumented run: select, let the group die, right-click within the same 0.1 s tick |
+| 06-U10 | Entity-track of an officer/armour (stale orbit centre) is reachable only by selecting one while already tracking a squad | [I] | gamepad play test |
+| 06-U11 | §12 "Use in FULL" classification of front-end windows (leaderboards, profiles, file dialogs counted as legacy) | [I] | window-reachability graph in [09](09_meta_systems.md) / [28](28_ui_framework.md) |
+| 06-U12 | Return value of `Resource::GetTexture` for the missing `icons/compass_empty.bmp` (X30) and its on-screen effect | [U] | read `code/lib/resource.cpp:Resource::GetTexture` ([25](25_textures_and_assets.md)) |
+
+Resolved during synthesis (no longer open): P01-U5 (no shipped map contains a FenceSwitch, §1.6), P01-U8 (`TERMINATE` with PROGRAM 255 kills the entity via `ChangeHealth(−999)`, §1.4), P03-U1 (`m_underPlayerControl` cleared by `Team::SelectUnit`, §2.3), P04-U3 (`m_currentMousePos` travels in `ALIVE`, §6.2), P04-U6 (keyboard squad controls: hold LMB move, hold RMB lasers, RMB + LMB grenade, §6.3), P09-U1 (selection-circle fields are UI-only, §2.1), P09-U2 (particles never feed back into simulation, §3.6), P09-U3 (`RenderWeaponMarker`, `Task::Demote`, `GetNextTaskId` have no callers, §3.6–§3.7, §8.10), P09-U4 (`RestrictionZone::IsRestricted` semantics, §3.6), P10-U6 (keyboard entity tracking only via a hand-edited `AutomaticCamera = 2`, §9.6).
+
+Contradictions resolved by re-reading the code (11): (1) control scheme selectable vs forced (P01/P10 vs `PrefsManager::Load`) → forced to RTS; (2) rebinding reachable (P10) vs unreachable (P17b) → unreachable; (3) "game over → ToggleReady returns to menu" live (P09) vs testbed-only (P01) → `TESTBED_ENABLED` only; (4) officer terminate "demote" (P01, code comment) vs kill (P09) → `ChangeHealth(−999)` kill; (5) armour order flags (P01 wording) → plain RMB = move (`SetWayPoint`), Shift = move-and-deploy (`SetOrders`), FORCEONLYMOVE = !deploy; (6) armour orders marker registered by the local team in `code/location.cpp` (P08) → that call is commented out, only the network handler registers; (7) stick output range ±39/±19 (P10) → asymmetric [−40, 39] / [−20, 19] because of `floor`; (8) `m_cursorHighlight` size 30 (P09) → default 20, set by callers; (9) camera census "88 level files" (P10) → 87 top-level files (+30 under `data/levels/old/`); (10) `NEXTWEAPON`/`PREVWEAPON` listed with senders (P15) → `RequestNextWeapon` has an empty body and no `RequestPreviousWeapon` exists, never sent; (11) pad bindings for officer orders (P09 "special = X toggles") → A = walk, X = GOTO because of the gamepad inversion.
+
+## Docs-vs-code discrepancies
+
+| Doc / comment | Claim | Code reality |
+|---|---|---|
+| `docs/input_preferences_syntax.txt` | grammar lists no `repeat`, `~` icon lines, `alias`, `value`, `->` pipe, `mouse any`, `key any` | `repeat` exists for XInput BOOL controls; `~` sets icons; `alias`/`value` drivers exist; pipe exists but is unregistered; `any` parses but never fires [C] §11.6 |
+| same | `XInput <xinput_analog> <analog_cond> [with sensitivity <1-200>]` | sensitivity is also accepted after BOOL conditions on analogue controls and rejected on directional stick buttons [C] `XInputDriver::writeExtraSpecInfo` |
+| same | "The user input preferences will override the FIRST binding" | true, and the keyboard-layout file does the same; repeated lines in one override file overwrite each other [C] §11.10 |
+| same | unknown/invalid specs implied to fail | unknown condition words are silently accepted as `down` [C] §11.3 |
+| `docs/DarwiniaInput.rtf` | action words include `moved` | the word is `move`; `moved` hits the fallback and acts as `down` [C] |
+| same | `lib/input/transform.h` holds `Movement2D` | it is in `code/lib/input/movement2d.h` [C] |
+| same | `g_controlBindings->ControlEvent(ControlBindings::ControlDeselect)` (old API) | current API is `g_inputManager->controlEvent(ControlUnitDeselect)`; no `ControlDeselect` exists [C] |
+| `docs/betachanges.txt` | fixes for "Gestures Mode", "Icons task manager used when use Xbox 360 controller", Tab in Icons mode | these concern the Darwinia(+) interfaces, which exist but are unreachable in Multiwinia (§4.1) [C] |
+| `docs/game objects.txt` | power-ups "triggered by a gesture of some kind" | Multiwinia power-ups are placed by click, never by gesture [C] `TaskManagerInterface::CreateTaskManager` |
+| `docs/todo.txt` | key-binding window issues | the Controls options window is unreachable in the shipped build [C] `OptionsMenuWindow::Create` |
+| DebugMenu captions "(F2)…(F9)" | debug hot-keys | no such bindings; F1–F8 are legacy task-manager keys, F9 = network stats [C] `data/input/input_preferences.txt` ([32](32_debug_test_and_performance.md)) |
+| `code/location_input.cpp` comments "Player pressed CTRL-C, so demote this officer" / "so terminate this turret" | demote / terminate | the bound key is plain C; the officer is killed (`ChangeHealth(−999)`), the turret is only deselected (the damage call is commented out) [C] |
+| `code/camera.h` comment | "Remember to update the static string table at the end of camera.cpp" | no mode-name table exists [C] |
+| `code/camera.cpp` comment on `DistanceToBlockage` / `DirectDistanceToBlockage` | "If there is no blockage FLT_MAX is returned" | returns `_maxDist`; FLT_MAX only when there is no location [C] |
+| `code/lib/input/keynames.cpp` comment | `"QUOTE", //192` | QUOTE is index 222; MINUS_PAD/Unknown swapped vs `keydefs.h` [C] |
+| `code/lib/input/control_types.inc` comments | `CameraRotate` "rotate the cam in entity track mode"; `WeaponCycle*` "cycle weapons" | no consumer in the FULL build [C] |
+| `code/lib/input/control_bindings.cpp` comment | `ControlBindings::replacePrimaryBinding` | commented out; replace is a flag on `bind` [C] |
+| `docs/multiwinia_manual.pdf` (Officers) | "Right click on officer: set surrounding Multiwinians into formation" | consistent: RMB on an idle officer → `TOGGLEENTITY` → formation (§5.3); Darwinians join only if FOLLOW-searching within 150 u and the formation (90) is not full [C] |
+
+## IP items
+
+| Item | Kind | Ref | Neutral placeholder |
+|---|---|---|---|
+| "Task Manager", "program", "RUN PROGRAM", "SYNTAX ERROR", "PROGRAM TERMINATED", "ACQUIRED", "UPGRADED", "OBJECTIVES COMPLETED" | text / fiction | `data/language/english.txt` (`taskmanager_msg0..5`, `taskmanager_taskmanager`) | "Power slots"; "Ready", "Not available", "Cancelled", "Unlocked", "Improved", "Objectives complete" |
+| "*P TERMINATED", "Powerup Limit Reached!", "Retribution : Two powerups max" | text | `dialog_terminated`, `dialog_powerup_limit`, `multiwinia_retribution_maxtasks` | "<power> cancelled", "All power slots full", "Comeback powers: slots full" |
+| "crate opened", "reinforcements", "retribution" | text | `multiwinia_cratepowerupfound`, `multiwinia_reinforcementsgiven`, `multiwinia_retributiongiven` | "supply drop", "reinforcements", "comeback bonus" |
+| Power-up names ("Napalm Strike", "Hot Feet", "PersonalShield", "Subversion", "Rage", "Magical Forest", "Dark Forest", "Ant Nest", "Plague", "Eggs", "Meteor Shower", "Fire Extinguisher", "Gun Turret", "Rocket Turret", "Flame Turret", "Infection", "Shaman") and all `crate_tooltip_*` texts | names / text | `researchname_*`, `cratename_*`, `crate_tooltip_*` | functional names: "Air strike", "Incendiary strike", "Speed boost", "Shield", "Convert", "Frenzy", "Grove", "Blight grove", "Swarm nest", "Blight", "Brood", "Meteor storm", "Extinguisher", "Turret", "Missile turret", "Flame turret", "Contagion", "Mystic" |
+| "Darwinian(s)", "Multiwinian(s)", "Officer", "Engineer", "Squad", "Armour", "Harvester" as unit names; control names `DarwinianPromote`, `IssueDarwinianOrders` | names | `code/global_world.cpp:GlobalResearch::GetTypeName`, `code/lib/input/control_types.inc`, language file | "Worker", "Leader", "Builder", "Strike team", "Transport", "Collector"; `PromoteUnit`, `IssueCrowdOrders` |
+| "Sepulveda" (`SepulvedaHelp`); Dr Sepulveda lines (`task_manager_full`, `task_manager_targetfirst`, `research_notyetavailable`) | character / text | `control_types.inc`; `#ifdef USE_SEPULVEDA_HELP_TUTORIAL` blocks | `AdvisorHelp`; n/a (dead) |
+| "Multiwinia" / "Darwinia" in preference and file names (`MultiwiniaControlMethod`, `input_preferences_darwinia.txt`), string ids `multiwinia_control_*`, `multiwinia_*help`, `darwinia_tutorial_*` | brand | `code/lib/input/file_paths.cpp`, `code/control_help.cpp`, `code/multiwiniahelp.cpp` | `ControlScheme`, `bindings_classic.txt`, `ui_control_*` |
+| "Eclipse" (Introversion UI framework) in `EclipseLMouseDown`, `EclipseLMousePressed`, `EclipseRMousePressed` | name | `control_types.inc` | `UiPointerDown`, `UiPointerHeld`, `UiAltPointerDown` |
+| Internal codenames `Pecan`, `Hummingbird` | name | `code/lib/input/inputdriver_values.inc` | `AlwaysTrue`, `FeatureFlagX` |
+| Xbox / XInput / "360" naming (`XBoxMenuCycleUp/Down`, "360 Control Help", `_xbox` phrase suffixes, pad button art) and SpaceNav | third-party brand | `control_types.inc`; `data/language/english.txt`; `data/input/input_preferences.txt` | `PadMenuCycleUp/Down`; generic pad glyphs |
+| Gesture symbol designs (triangle, arch, arrow, star, zig-zag, V, shield) with their training data | art / design | `data/gestures.txt`, `data/gesture_demos/*`, `icons/gesture_*.bmp` | new symbol set and newly recorded training data |
+| All task-bar, cursor, marker and pad-glyph bitmaps listed in the Source map (`icons/icon_*.bmp`, `icons/gesture_*.bmp`, `icons/gestureguide.bmp`, `icons/gesture_alpha.bmp`, `icons/mouse_*.bmp`, `icons/compass*.bmp`, `icons/marker_*.bmp`, `icons/arrows_*.bmp`, `icons/button_*.bmp`, `icons/banner_*.bmp`, `icons/selectionarrow.bmp`, `icons/icon_crate.bmp`, `icons/icon_delete.bmp`, `icons/widearrow.bmp`, `textures/interface_*.bmp`, `textures/starburst.bmp`, `textures/particle.bmp`, `mwhelp/control_camera*.bmp`) | art | `data/icons`, `data/textures`, `data/mwhelp` | new UI icon set (e.g. `ui/glyph_pad_south.png`) |
+| Ghost models `battlecannonturret.shp`, `anthill.shp` | art | `GameCursor::RenderSelectedTaskIcon` | new placement-preview meshes |
+| UI sound event names `GestureBegin/End/Success/Fail`, `SelectTask`, `DeleteTask`, `MouseOverIcon`, `UnitHighlight`, `Show`, `Hide`, `Slide`, `MouseError`, `SelectUnit`, `SelectionCircle`, `ToggleUnitState`, `SetOrderGoto`, `SetOrders` and their audio | audio | sound calls in `code/location_input.cpp`, `code/taskmanager*.cpp`, `code/gamecursor.cpp` | new UI sound set |
+| UI strings `gc_*` (Select, Destroy, Create, Close, Deselect, Place, Promote, Move, Look, Fire, Grenade, Rocket, Airstrike, Change Weapon, Change Orders, Up, Down, Set Goto, Set Turret, Prev, Next, Zoom, Zoom In, Zoom Out, Cancel), `control_help_*`, `control_<key>`, hint texts ("Right mouse button to move / press SPACE to deselect", "Hold SHIFT to move faster", "press c to terminate a unit", "Right Click to toggle orders") | text | `data/language/english.txt` (and the other language files) | write new strings |
+| Camera-mount naming convention `player0..3`, `start`, `CamPosBefore` | level data | `data/levels/*.txt`; `code/level_file.h` | `spawn_view_<n>`, `default_view`, `previous_view` |
+| Prologue objectives text `prologue_objective_1..5`, "launchpad" location | text / level name | `TaskManagerInterfaceIcons::InitProgressBarList` | n/a (legacy) |
+
+## Source map
+
+Every row's path exists in `_work/manifest.csv` (checked by `_work/scripts/S_06_sourcemap_assets.py` for the asset and level rows and by an inline check for the code rows).
+
+| File | Role in this document |
+|---|---|
+| `code/location_input.cpp` | LocationInput: per-frame discrete player actions, object picking, selection circle, order/promote/toggle/terminate senders, route previews (§1, §2, §5, §6) |
+| `code/location_input.h` | LocationInput declaration |
+| `code/user_input.cpp` | UserInput: InputManager advance, Eclipse UI mouse routing and click suppression, pause key, network-stats key, cursor ground point (§1.5, §11.2) |
+| `code/user_input.h` | UserInput declaration |
+| `code/main.cpp` | InitialiseInputManager, ReadInputPreferences, LocationGameLoop input order, SendTeamControlsToNetwork, escape/interface keys, controller hot-plug, camera mounts at level load (§1.2, §6.1, §9.8, §11.2) |
+| `code/team.cpp` | TeamControls sampling/packing; Team::SelectUnit selection state; task-manager tick (§2.1, §6.1) |
+| `code/team.h` | Team, TeamControls declarations (selection fields, control flag bits) |
+| `code/location.cpp` | Location::UpdateTeam (continuous control dispatch), SelectDarwinians, IssueDarwinianOrders, PromoteDarwinian/DemoteOfficer, object ray picking (§2.3, §5.1, §6.2) |
+| `code/network/clienttoserver.cpp` | Request* command senders and ProcessServerUpdates handlers for every input command (§1.4) |
+| `code/network/server.cpp` | relay filter and latest-only collapsing of ALIVE/SELECTUNIT (§1.4, §13 X9/X11/X24) |
+| `code/network/network_defines.h` | command and data-field codes used by input commands (§1.4) |
+| `code/globals.h` | IAMALIVE_PERIOD (§6.1) |
+| `code/taskmanager.cpp` | Task and TaskManager: task types, states, capacity, targeting, selection, termination (§3) |
+| `code/taskmanager.h` | Task, TaskManager, TaskSource, TaskTargetArea, POWERUP_EFFECT_RANGE (§3.2) |
+| `code/taskmanager_interface.cpp` | interface factory and AdvanceTab cycling (§3.7, §4.1) |
+| `code/taskmanager_interface.h` | TaskManagerInterface base, ScreenZone, KeyboardShortcut (§4.2) |
+| `code/taskmanager_interface_multiwinia.cpp` | live Multiwinia task bar, pop-up, messages, key shortcuts, terminate (§4.3) |
+| `code/taskmanager_interface_multiwinia.h` | declaration |
+| `code/taskmanager_interface_icons.cpp` | [B:LEGACY] icon task-manager overlay (§4.4) |
+| `code/taskmanager_interface_icons.h` | declaration |
+| `code/taskmanager_interface_gestures.cpp` | [B:LEGACY] gesture task-manager overlay and capture (§4.5, §7) |
+| `code/taskmanager_interface_gestures.h` | declaration |
+| `code/gesture.cpp` | Rubine-style gesture recogniser (§7) |
+| `code/gesture.h` | gesture constants (§7.2) |
+| `code/gesture_demo.cpp` | [B:DEAD] gesture demo playback/recording (Appendix) |
+| `code/gesture_demo.h` | declaration |
+| `code/gesture_demo_win32.cpp` | [B:DEAD] recorder thread (Appendix) |
+| `code/lib/invert_matrix.cpp` | matrix inversion used by gesture training (§7.5) |
+| `code/lib/invert_matrix.h` | declaration |
+| `code/interface/gesture_window.cpp` | [B:DEAD] gesture editor window (§7.1) |
+| `code/gamecursor.cpp` | GameCursor and MouseCursor: cursors, highlights, crosshair, placement previews, formation preview (§8) |
+| `code/gamecursor.h` | declaration |
+| `code/markersystem.cpp` | MarkerSystem: world markers, hover picking used by input (§8.12) |
+| `code/markersystem.h` | LocationMarker types (§8.12) |
+| `code/camera.cpp` | Camera: all modes, components, tracking, animations (§9) |
+| `code/camera.h` | Camera::Mode enum, members (§9.1, §9.3) |
+| `code/level_file.cpp` | ParseCameraMounts / ParseCameraAnims (§9.8) |
+| `code/level_file.h` | camera mount/animation structures, CamPosBefore (§9.8) |
+| `code/control_help.cpp` | [B:LEGACY] ControlHelpSystem (§10.1–§10.3, §10.5) |
+| `code/control_help.h` | control-help constants (§10.6) |
+| `code/multiwiniahelp.cpp` | live Multiwinia control hints H2–H7 (§10.4) |
+| `code/lib/targetcursor.cpp` | TargetCursor virtual cursor fed by TargetMove/TargetMoveSecondary/TargetMoveZ (§11.8) |
+| `code/lib/targetcursor.h` | declaration |
+| `code/lib/preferences.cpp` | PrefsManager defaults and the MultiwiniaControlMethod = 1 override (§11.10) |
+| `code/lib/preferences.h` | PrefsManager::GetInt default argument (§2.2) |
+| `code/lib/language_table.cpp` | _kbd/_xin phrase variants by input mode (§11.2) |
+| `code/interface/prefs_keybindings_window.cpp` | key-binding window (unreachable in FULL), rebind/restore logic (§11.10, §13 X15) |
+| `code/interface/prefs_keybindings_window.h` | declaration |
+| `code/interface/mainmenus.cpp` | OptionsMenuWindow (key-binding button commented out) (§11.10) |
+| `code/interface/prefs_other_window.cpp` | options window that does not expose AutomaticCamera/ControlHelpEnabled (§9.6) |
+| `code/interface/controllerunplugged_window.cpp` | controller-unplugged dialog (§1.3 M7) |
+| `code/interface/chatinput_window.cpp` | in-match chat input opened by LobbyChat (§1.3 M2) |
+| `code/shaman_interface.cpp` | [B:LEGACY] Shaman summon ring (§6.7) |
+| `code/worldobject/officer.cpp` | Officer orders, formation toggle/geometry (§5) |
+| `code/worldobject/armour.cpp` | Armour orders, loading/conversion toggles (§6.4) |
+| `code/worldobject/insertion_squad.cpp` | InsertionSquad::DirectControl (pad squad control; desync X1) (§6.3) |
+| `code/worldobject/darwinian.cpp` | Darwinian::IsSelectable, response to officers (§2.2, §5.2) |
+| `code/worldobject/switch.cpp` | FenceSwitch::Switch local toggle (§13 X2) |
+| `code/worldobject/building.cpp` | BuildingIsBlocked (FenceSwitch blocked) (§1.6) |
+| `code/worldobject/restrictionzone.cpp` | RestrictionZone::IsRestricted used by task targeting (§3.6) |
+| `code/worldobject/teleport.cpp` | squad radar-dish migration re-registers its task (§3.5) |
+| `code/worldobject/shaman.cpp` | Shaman::Advance self-deletes (Shaman controls unreachable) (§6.7) |
+| `code/worldobject/crate.cpp` | crate rewards create tasks (§3.3) |
+| `code/app.cpp` | App::IsSinglePlayer / Multiplayer / ToggleGamePaused; constructs Gesture, ControlHelpSystem (§1.1, §7.1) |
+| `code/renderer.cpp` | overlay render order, screenshot key, projection constants (§8.2, §9.11) |
+| `code/global_world.h` | GlobalResearch enum = task types (§3.3) |
+| `code/global_world.cpp` | GlobalResearch::GetTypeName (§3.3) |
+| `code/attract.cpp` | [B:DEAD] attract mode (StopAttractMode consumer, TM lock) (§4.1, §12.6) |
+| `code/script.cpp` | [B:LEGACY] script camera commands (§9.8) |
+| `code/lib/math_utils.cpp` | RampUpAndDown used by MoveToTarget (§9.8) |
+| `code/lib/input/input.cpp` | InputManager: advance, controlEvent, parser (§11.5, §11.11) |
+| `code/lib/input/input.h` | InputManager declaration |
+| `code/lib/input/control_bindings.cpp` | ControlBindings storage and type acceptance (§11.4) |
+| `code/lib/input/control_bindings.h` | declaration |
+| `code/lib/input/control_types.inc` | the 164 logical controls (§12) |
+| `code/lib/input/control_types.h` | ControlType enum, NumControlTypes |
+| `code/lib/input/control_types.cpp` | unused duplicate action table (macro bug) (§11.4) |
+| `code/lib/input/input_types.cpp` | InputDescription::translate (§11.3) |
+| `code/lib/input/input_types.h` | InputType, InputDetails, InputMode (§11.3) |
+| `code/lib/input/inputspec.cpp` | InputSpec helpers |
+| `code/lib/input/inputspec.h` | InputSpec record (§11.3) |
+| `code/lib/input/inputspeclist.h` | spec list container |
+| `code/lib/input/inputdriver.cpp` | condition table and lookup bug (§11.3) |
+| `code/lib/input/inputdriver.h` | InputDriver base, InputCondition, InputParserState (§11.6.0) |
+| `code/lib/input/inputdriver_simple.cpp` | SimpleInputDriver 3-token parser (§11.6.0) |
+| `code/lib/input/inputdriver_simple.h` | declaration |
+| `code/lib/input/inputdriver_conjoin.cpp` | && driver (§11.6.1) |
+| `code/lib/input/inputdriver_conjoin.h` | declaration |
+| `code/lib/input/inputdriver_chord.cpp` | ++ driver (§11.6.2) |
+| `code/lib/input/inputdriver_chord.h` | declaration |
+| `code/lib/input/inputdriver_invert.cpp` | not/! driver (§11.6.3) |
+| `code/lib/input/inputdriver_invert.h` | declaration |
+| `code/lib/input/inputdriver_idle.cpp` | idle driver (§11.6.4) |
+| `code/lib/input/inputdriver_idle.h` | declaration |
+| `code/lib/input/inputdriver_win32.cpp` | Win32 key/mouse driver (§11.6.5) |
+| `code/lib/input/inputdriver_win32.h` | declaration, NUM_MB/NUM_AXES |
+| `code/lib/input/keydefs.h` | virtual-key constants (§11.6.5) |
+| `code/lib/input/keynames.cpp` | key-name table (§11.6.5) |
+| `code/lib/input/keynames.h` | declaration |
+| `code/lib/input/inputdriver_xinput.cpp` | XInput driver: dead zones, curves, repeat (§11.6.6) |
+| `code/lib/input/inputdriver_xinput.h` | declaration, MaxControllers |
+| `code/lib/input/inputdriver_prefs.cpp` | pref driver (§11.6.7) |
+| `code/lib/input/inputdriver_prefs.h` | declaration |
+| `code/lib/input/inputdriver_value.cpp` | value driver (§11.6.8) |
+| `code/lib/input/inputdriver_value.h` | declaration |
+| `code/lib/input/inputdriver_values.inc` | Pecan/Hummingbird constants (§11.6.8) |
+| `code/lib/input/inputdriver_alias.cpp` | alias driver (§11.6.9) |
+| `code/lib/input/inputdriver_alias.h` | declaration |
+| `code/lib/input/inputdriver_pipe.cpp` | [B:LEGACY] pipe driver, never registered (§11.6.10) |
+| `code/lib/input/inputdriver_pipe.h` | declaration |
+| `code/lib/input/inputfilter.cpp` | [B:LEGACY] filter base (§11.7) |
+| `code/lib/input/inputfilter.h` | declaration |
+| `code/lib/input/inputfilter_withdelta.cpp` | [B:LEGACY] delta filter (§11.7) |
+| `code/lib/input/inputfilter_withdelta.h` | declaration |
+| `code/lib/input/inputfilter_direction.cpp` | [B:LEGACY] direction filter (§11.7) |
+| `code/lib/input/inputfilter_direction.h` | declaration |
+| `code/lib/input/inputfiltermanager.cpp` | [B:LEGACY] filter manager (§11.7) |
+| `code/lib/input/inputfiltermanager.h` | declaration |
+| `code/lib/input/inputfilterspec.cpp` | [B:DEAD] not in the vcproj (§11.7) |
+| `code/lib/input/inputfilterspec.h` | InputFilterSpec (§11.7) |
+| `code/lib/input/movement2d.cpp` | Movement2D helpers; DPadMovement used by the debug camera (§11.8) |
+| `code/lib/input/movement2d.h` | declaration |
+| `code/lib/input/transform.cpp` | ControlEventFunctor / ToggleInputTransform (§11.8) |
+| `code/lib/input/transform.h` | declaration |
+| `code/lib/input/eventhandler.cpp` | EventHandler base (§11.9) |
+| `code/lib/input/eventhandler.h` | declaration |
+| `code/lib/input/win32_eventhandler.cpp` | W32EventHandler::WndProc focus/quit/Alt-Tab (§11.9) |
+| `code/lib/input/win32_eventhandler.h` | declaration |
+| `code/lib/input/win32_eventproc.h` | W32EventProcessor interface (§11.9) |
+| `code/lib/input/file_paths.cpp` | InputPrefs: system/layout/user file paths, locale (§11.10) |
+| `code/lib/input/file_paths.h` | declaration |
+| `code/lib/input/inputdriver_sdl_key.cpp` | [B:DEAD] SDL keyboard driver (Appendix) |
+| `code/lib/input/inputdriver_sdl_key.h` | declaration |
+| `code/lib/input/inputdriver_sdl_mouse.cpp` | [B:DEAD] SDL mouse driver (Appendix) |
+| `code/lib/input/inputdriver_sdl_mouse.h` | declaration |
+| `code/lib/input/sdl_eventhandler.cpp` | [B:DEAD] SDL event handler (Appendix) |
+| `code/lib/input/sdl_eventhandler.h` | declaration |
+| `code/lib/input/sdl_eventproc.h` | [B:DEAD] SDL processor interface |
+| `code/lib/input/xbox_eventhandler.cpp` | [B:DEAD] Xbox event handler, ExcludedFromBuild (Appendix) |
+| `code/lib/input/xbox_eventhandler.h` | declaration |
+| `contrib/systemiv/lib/filesys/text_stream_readers.cpp` | TextReader tokeniser for binding files (§11.11) |
+| `contrib/systemiv/lib/math/random_number.cpp` | AppRandom/sfrand (non-synced RNG used by camera shake, promote flash) (§9.4, §3.6) |
+| `data/input/input_preferences.txt` | live system binding file (§11.10, §12) |
+| `data/input/input_preferences_darwinia.txt` | [B:LEGACY] Darwinia-style binding file (§12.3) |
+| `data/input/input_preferences_mac.txt` | [B:DEAD] Mac binding file (§12.3) |
+| `data/input/locales.txt` | LANGID to layout mapping (§11.10) |
+| `data/input/keyboards/de_DE.txt` | German layout overrides (§11.10) |
+| `data/input/keyboards/fr_FR.txt` | French layout overrides (§11.10) |
+| `data/default_preferences.txt` | ControlMethod / MultiwiniaControlMethod defaults (§11.10) |
+| `data/gestures.txt` | gesture training data, 8 symbols × 20 trainers (§7.6) |
+| `data/gesture_demos/airstrike.txt` | gesture demo stroke (§7.7) |
+| `data/gesture_demos/armour.txt` | gesture demo stroke (§7.7) |
+| `data/gesture_demos/controller.txt` | gesture demo stroke (§7.7) |
+| `data/gesture_demos/engineer.txt` | gesture demo stroke (§7.7) |
+| `data/gesture_demos/grenade.txt` | gesture demo stroke (§7.7) |
+| `data/gesture_demos/officer.txt` | gesture demo stroke (§7.7) |
+| `data/gesture_demos/rocket.txt` | gesture demo stroke (§7.7) |
+| `data/gesture_demos/squad.txt` | gesture demo stroke (§7.7) |
+| `data/language/english.txt` | task-manager messages, control nouns, hint phrases (§4.2, §10, §11.6.5) |
+| `data/multiwinia.txt` | MaxTurrets game option (§3.11) |
+| `data/sounds.txt` | interface sound events (absence of TaskManagerSelectTask, §13 X28) |
+| `docs/input_preferences_syntax.txt` | stale grammar description (Docs-vs-code) |
+| `docs/DarwiniaInput.rtf` | stale input-system design note (Docs-vs-code) |
+| `docs/betachanges.txt` | beta notes on gesture/icon task managers (Docs-vs-code) |
+| `data/icons/arrows_load.bmp` | art referenced by the input/cursor/task-bar UI (§4) |
+| `data/icons/arrows_moving.bmp` | art referenced by the input/cursor/task-bar UI (§4) |
+| `data/icons/arrows_unload.bmp` | art referenced by the input/cursor/task-bar UI (§4) |
+| `data/icons/banner_none.bmp` | art referenced by the input/cursor/task-bar UI (§5) |
+| `data/icons/button_a.bmp` | art referenced by the input/cursor/task-bar UI (§10, §12) |
+| `data/icons/button_abxy_shadow.bmp` | art referenced by the input/cursor/task-bar UI (§10) |
+| `data/icons/button_b.bmp` | art referenced by the input/cursor/task-bar UI (§10, §12) |
+| `data/icons/button_control_shadow.bmp` | art referenced by the input/cursor/task-bar UI (§10) |
+| `data/icons/button_dpad.bmp` | art referenced by the input/cursor/task-bar UI (§10) |
+| `data/icons/button_dpad_lr.bmp` | art referenced by the input/cursor/task-bar UI (§12) |
+| `data/icons/button_la.bmp` | art referenced by the input/cursor/task-bar UI (§10, §12) |
+| `data/icons/button_lb.bmp` | art referenced by the input/cursor/task-bar UI (§4, §10, §12) |
+| `data/icons/button_lb_shadow.bmp` | art referenced by the input/cursor/task-bar UI (§10) |
+| `data/icons/button_lt.bmp` | art referenced by the input/cursor/task-bar UI (§10, §12) |
+| `data/icons/button_lt_ra.bmp` | art referenced by the input/cursor/task-bar UI (§12) |
+| `data/icons/button_ra.bmp` | art referenced by the input/cursor/task-bar UI (§10, §12) |
+| `data/icons/button_rb.bmp` | art referenced by the input/cursor/task-bar UI (§10, §12) |
+| `data/icons/button_rb_shadow.bmp` | art referenced by the input/cursor/task-bar UI (§10) |
+| `data/icons/button_rt.bmp` | art referenced by the input/cursor/task-bar UI (§10, §12) |
+| `data/icons/button_rt_ra.bmp` | art referenced by the input/cursor/task-bar UI (§12) |
+| `data/icons/button_tab.bmp` | art referenced by the input/cursor/task-bar UI (§4) |
+| `data/icons/button_trigger_shadow.bmp` | art referenced by the input/cursor/task-bar UI (§10) |
+| `data/icons/button_x.bmp` | art referenced by the input/cursor/task-bar UI (§10, §12) |
+| `data/icons/button_y.bmp` | art referenced by the input/cursor/task-bar UI (§10, §12) |
+| `data/icons/compass.bmp` | art referenced by the input/cursor/task-bar UI (§4, §8) |
+| `data/icons/compass_shadow.bmp` | art referenced by the input/cursor/task-bar UI (§4, §8) |
+| `data/icons/gesture_airstrike.bmp` | art referenced by the input/cursor/task-bar UI (§7) |
+| `data/icons/gesture_alpha.bmp` | art referenced by the input/cursor/task-bar UI (§4, §7) |
+| `data/icons/gesture_armour.bmp` | art referenced by the input/cursor/task-bar UI (§7) |
+| `data/icons/gesture_controller.bmp` | art referenced by the input/cursor/task-bar UI (§7) |
+| `data/icons/gesture_engineer.bmp` | art referenced by the input/cursor/task-bar UI (§7) |
+| `data/icons/gesture_grenade.bmp` | art referenced by the input/cursor/task-bar UI (§7) |
+| `data/icons/gesture_officer.bmp` | art referenced by the input/cursor/task-bar UI (§7) |
+| `data/icons/gesture_rocket.bmp` | art referenced by the input/cursor/task-bar UI (§7) |
+| `data/icons/gesture_squad.bmp` | art referenced by the input/cursor/task-bar UI (§7) |
+| `data/icons/gestureguide.bmp` | art referenced by the input/cursor/task-bar UI (§4, §7) |
+| `data/icons/icon_crate.bmp` | art referenced by the input/cursor/task-bar UI (§4, §8) |
+| `data/icons/icon_darwinian.bmp` | art referenced by the input/cursor/task-bar UI (§8) |
+| `data/icons/icon_delete.bmp` | art referenced by the input/cursor/task-bar UI (§4) |
+| `data/icons/icon_officer.bmp` | art referenced by the input/cursor/task-bar UI (§8) |
+| `data/icons/icon_shadow.bmp` | art referenced by the input/cursor/task-bar UI (§4) |
+| `data/icons/icon_statue.bmp` | art referenced by the input/cursor/task-bar UI (§8) |
+| `data/icons/marker_colour.bmp` | art referenced by the input/cursor/task-bar UI (§4, §8) |
+| `data/icons/marker_shadow.bmp` | art referenced by the input/cursor/task-bar UI (§4, §8) |
+| `data/icons/mouse_disabled.bmp` | art referenced by the input/cursor/task-bar UI (§8) |
+| `data/icons/mouse_enter.bmp` | art referenced by the input/cursor/task-bar UI (§8) |
+| `data/icons/mouse_game.bmp` | art referenced by the input/cursor/task-bar UI (§8) |
+| `data/icons/mouse_highlight.bmp` | art referenced by the input/cursor/task-bar UI (§4, §8) |
+| `data/icons/mouse_movehere.bmp` | art referenced by the input/cursor/task-bar UI (§8) |
+| `data/icons/mouse_placement.bmp` | art referenced by the input/cursor/task-bar UI (§8) |
+| `data/icons/mouse_selection.bmp` | art referenced by the input/cursor/task-bar UI (§8) |
+| `data/icons/mouse_turrettarget.bmp` | art referenced by the input/cursor/task-bar UI (§8) |
+| `data/icons/selectionarrow.bmp` | art referenced by the input/cursor/task-bar UI (§8) |
+| `data/icons/widearrow.bmp` | art referenced by the input/cursor/task-bar UI (§5) |
+| `data/mwhelp/control_camera.bmp` | art referenced by the input/cursor/task-bar UI (§10) |
+| `data/mwhelp/control_camera_french.bmp` | art referenced by the input/cursor/task-bar UI (§10, §11) |
+| `data/shapes/anthill.shp` | art referenced by the input/cursor/task-bar UI (§8) |
+| `data/shapes/battlecannonturret.shp` | art referenced by the input/cursor/task-bar UI (§8) |
+| `data/textures/interface_divider.bmp` | art referenced by the input/cursor/task-bar UI (§4) |
+| `data/textures/interface_grey.bmp` | art referenced by the input/cursor/task-bar UI (§4) |
+| `data/textures/interface_red.bmp` | art referenced by the input/cursor/task-bar UI (§4) |
+| `data/textures/particle.bmp` | art referenced by the input/cursor/task-bar UI (§5, §8) |
+| `data/textures/starburst.bmp` | art referenced by the input/cursor/task-bar UI (§4) |
+| `data/levels/mp_assault_2P_1.txt` | camera mounts used at match start (§9.8): `player0`, `player1` |
+| `data/levels/mp_assault_2P_2.txt` | camera mounts used at match start (§9.8): `player1`, `player0` |
+| `data/levels/mp_assault_2p_3.txt` | camera mounts used at match start (§9.8): `player0`, `player1` |
+| `data/levels/mp_assault_3P_2.txt` | camera mounts used at match start (§9.8): `player1`, `player2`, `player0` |
+| `data/levels/mp_assault_3p_1.txt` | camera mounts used at match start (§9.8): `player1`, `player2`, `player0` |
+| `data/levels/mp_assault_3p_3.txt` | camera mounts used at match start (§9.8): none |
+| `data/levels/mp_assault_4P_1.txt` | camera mounts used at match start (§9.8): `player1`, `player0`, `player2`, `player3` |
+| `data/levels/mp_assault_4P_2.txt` | camera mounts used at match start (§9.8): `player0`, `player1`, `player2`, `player3` |
+| `data/levels/mp_assault_stress.txt` | camera mounts used at match start (§9.8): none |
+| `data/levels/mp_benchmark_1.txt` | camera mounts used at match start (§9.8): `player0`, `player2`, `player1`, `player3` |
+| `data/levels/mp_blitzkrieg_2P_3.txt` | camera mounts used at match start (§9.8): `player0`, `player1` |
+| `data/levels/mp_blitzkrieg_2P_4.txt` | camera mounts used at match start (§9.8): `player0`, `player1` |
+| `data/levels/mp_blitzkrieg_2p_1.txt` | camera mounts used at match start (§9.8): `player0`, `player2`, `player1` |
+| `data/levels/mp_blitzkrieg_2p_2.txt` | camera mounts used at match start (§9.8): `player0`, `player1` |
+| `data/levels/mp_blitzkrieg_3P_1.txt` | camera mounts used at match start (§9.8): `player0`, `player1`, `player2` |
+| `data/levels/mp_blitzkrieg_3P_2.txt` | camera mounts used at match start (§9.8): `player0`, `player1`, `player2` |
+| `data/levels/mp_blitzkrieg_4P_2.txt` | camera mounts used at match start (§9.8): `player3`, `player2`, `player1`, `player0` |
+| `data/levels/mp_cts_2p_1.txt` | camera mounts used at match start (§9.8): `start`, `player0`, `player1` |
+| `data/levels/mp_cts_2p_2.txt` | camera mounts used at match start (§9.8): `start`, `player0`, `player1` |
+| `data/levels/mp_cts_2p_3.txt` | camera mounts used at match start (§9.8): `player0`, `player1` |
+| `data/levels/mp_cts_2p_4.txt` | camera mounts used at match start (§9.8): `player0`, `player1` |
+| `data/levels/mp_cts_3P_2.txt` | camera mounts used at match start (§9.8): `player0`, `player1`, `player2` |
+| `data/levels/mp_cts_3p_1.txt` | camera mounts used at match start (§9.8): `player0`, `player1`, `player2` |
+| `data/levels/mp_cts_3p_3.txt` | camera mounts used at match start (§9.8): `player2`, `player1`, `player0` |
+| `data/levels/mp_cts_4P_1.txt` | camera mounts used at match start (§9.8): `player0`, `player1`, `player2`, `player3` |
+| `data/levels/mp_cts_4P_2.txt` | camera mounts used at match start (§9.8): `player2`, `player0`, `player1`, `player3` |
+| `data/levels/mp_cts_4p_3.txt` | camera mounts used at match start (§9.8): `player0`, `player1`, `player2`, `player3` |
+| `data/levels/mp_domination_2P_1.txt` | camera mounts used at match start (§9.8): `player0`, `player1` |
+| `data/levels/mp_domination_2P_2.txt` | camera mounts used at match start (§9.8): `start`, `player0`, `player1` |
+| `data/levels/mp_domination_3P_1.txt` | camera mounts used at match start (§9.8): `player0`, `player1`, `player2` |
+| `data/levels/mp_domination_4P_1.txt` | camera mounts used at match start (§9.8): `player0`, `player1`, `player2`, `player3` |
+| `data/levels/mp_domination_4P_2.txt` | camera mounts used at match start (§9.8): `player3`, `player2`, `player0`, `player1` |
+| `data/levels/mp_koth_2P_1.txt` | camera mounts used at match start (§9.8): `start`, `player1`, `player0` |
+| `data/levels/mp_koth_2P_2.txt` | camera mounts used at match start (§9.8): `player0`, `player1` |
+| `data/levels/mp_koth_2P_3.txt` | camera mounts used at match start (§9.8): `player0`, `player1` |
+| `data/levels/mp_koth_2P_3b.txt` | camera mounts used at match start (§9.8): `player0`, `player1` |
+| `data/levels/mp_koth_3P_1.txt` | camera mounts used at match start (§9.8): `player0`, `player1`, `player2` |
+| `data/levels/mp_koth_3P_2.txt` | camera mounts used at match start (§9.8): `player0`, `player1`, `player2` |
+| `data/levels/mp_koth_3P_3.txt` | camera mounts used at match start (§9.8): `player2`, `player0`, `player1` |
+| `data/levels/mp_koth_3P_4.txt` | camera mounts used at match start (§9.8): `player0`, `player1`, `player2` |
+| `data/levels/mp_koth_4P_1.txt` | camera mounts used at match start (§9.8): `player0`, `player1`, `player2`, `player3` |
+| `data/levels/mp_koth_4P_3.txt` | camera mounts used at match start (§9.8): `player3`, `player2`, `player0`, `player1` |
+| `data/levels/mp_koth_4P_4.txt` | camera mounts used at match start (§9.8): `player0`, `player2`, `player1`, `player3` |
+| `data/levels/mp_rocketriot_2P_2.txt` | camera mounts used at match start (§9.8): `player1`, `player0` |
+| `data/levels/mp_rocketriot_2P_4.txt` | camera mounts used at match start (§9.8): `player0`, `player1` |
+| `data/levels/mp_rocketriot_2p_3.txt` | camera mounts used at match start (§9.8): `start`, `player1`, `player0` |
+| `data/levels/mp_rocketriot_3P_2.txt` | camera mounts used at match start (§9.8): `player0`, `player1`, `player2` |
+| `data/levels/mp_rocketriot_3P_3.txt` | camera mounts used at match start (§9.8): `player0`, `player1`, `player2` |
+| `data/levels/mp_rocketriot_3p_1.txt` | camera mounts used at match start (§9.8): `player0`, `player1`, `player2` |
+| `data/levels/mp_rocketriot_4P_1.txt` | camera mounts used at match start (§9.8): `player0`, `player1`, `player2`, `player3` |
+| `data/levels/mp_sandbox.txt` | camera mounts used at match start (§9.8): `start` |
+| `data/levels/mp_sandbox_all.txt` | camera mounts used at match start (§9.8): `start` |
+| `data/levels/mp_skirmish_2p_4.txt` | camera mounts used at match start (§9.8): `player0`, `player2`, `player1` |
+| `data/levels/mp_skirmish_3P_1.txt` | camera mounts used at match start (§9.8): `player0`, `player1`, `player2` |
+| `data/levels/mp_tankbattle_2P.txt` | camera mounts used at match start (§9.8): `player0`, `player1` |
+| `data/levels/mp_tankbattle_3P.txt` | camera mounts used at match start (§9.8): none |
+| `data/levels/mp_tankbattle_4P.txt` | camera mounts used at match start (§9.8): none |
+
+## Appendix — dead/legacy code
+
+- **[B:LEGACY] Darwinia-campaign control paths** compiled into FULL but unreachable in Multiwinia (`IsSinglePlayer()` false in every Multiwinia game): `TaskManagerInterfaceIcons` and `TaskManagerInterfaceGestures` (§4.4, §4.5); SP branches of `GameCursor::Render` (§8.11); SP task target areas (ControlTower, open TrunkPort), SP auto-select on `RunTask`, SP `Capacity` (§3); quick-unit d-pad creation and SP officer follow/none controls, SP armour deployment (local sim mutation), pad squad secondary cycling (§1.6); the Darwinia-style binding scheme `data/input/input_preferences_darwinia.txt` (forced off by `PrefsManager::Load`); `ControlHelpSystem` rendering, conditions and help panel (§10); sphere-world, building-focus, move-to-target, first-person and entity-follow camera modes and camera animations (§9.3, §9.8); the Pipe driver and the input-filter subsystem (§11.6.10, §11.7); `code/lib/input/control_types.cpp` duplicate action table; `W32EventHandler::BindAltTab/UnbindAltTab/ResetWindowHandle` (no live caller); Shaman and Tank controls (§6.7); `RegisterTask` restore of saved Darwinia running programs [C].
+- **[B:DEAD] `GestureDemo`** (`code/gesture_demo.{h,cpp}`, entirely under `USE_SEPULVEDA_HELP_TUTORIAL`): loads `data/gesture_demos/<name>` (one "x y" pair per line, normalised by screen height, 40 ms per sample = 25 Hz); `GetTotalDuration = count·0.040 s`; `GetCoords(t)`: index = t·25, interpolates between the floor/ceil samples **with the weights swapped** (the fractional part weights the *lower* sample), clamps to the last sample, scales by screen height. Played by `Sepulveda::RenderGestureDemo` (40 px GL lines in 0.04 s steps, colour fading over 2 s, loops 2 s after the end, cursor at the pen tip) [C] `code/sepulveda.cpp`. Recorder `GestureRecordingThread` samples `g_target` every 40 ms while `ControlGestureActive` and writes `gesture_demos/new_gesture_demo.txt` (`%.3f %.3f`).
+- **[B:DEAD] `code/gesture_demo_win32.cpp`**: `RecordGestureDemo()` spawns the recorder on a `THREAD_PRIORITY_TIME_CRITICAL` Win32 thread; requires `GESTURE_EDITOR` (TARGET_DEBUG) **and** `USE_SEPULVEDA_HELP_TUTORIAL` (never) [C]. The gesture editor window `code/interface/gesture_window.cpp` has the same double gate.
+- **[B:D3D]** `TaskManagerInterfaceGestures::ReleaseD3dResources()` frees the gesture bitmaps/textures on device loss (`USE_DIRECT3D`) [C].
+- **[B:DEAD] SDL input** (Mac/Linux, not in the vcproj): `code/lib/input/inputdriver_sdl_key.{h,cpp}` (SDL key → Win32 VK mapping: punctuation, arrows, shifts → `KEY_SHIFT/CONTROL/ALT/META`, a–z −32, 0–9/backspace/tab unchanged, F-keys −170, others 0), `inputdriver_sdl_mouse.{h,cpp}` (same `mouse` grammar as W32), `sdl_eventhandler.{h,cpp}` (`SDL_QUIT` → quit; `WindowHasFocus` uses `(SDL_GetAppState() | SDL_APPACTIVE) != 0`, always true — bug), `sdl_eventproc.h`; `code/lib/input_sdl.cpp` (the only user of `ModeReplay`) [C].
+- **[B:DEAD] Xbox event handler**: `code/lib/input/xbox_eventhandler.{h,cpp}` — the `.cpp` is `ExcludedFromBuild` in all four configurations [C] `targets/vs2005/Darwinia.vcproj`.
+- **[B:DEAD]** `code/lib/input/inputfilterspec.cpp` (`newFilterSpecID`) — not in the vcproj.
+- **[B:DEAD] `TESTBED_ENABLED`** paths in `LocationInput::Advance`: `ToggleRendering`, automatic `SET_TEAM_READY`, sync-error/termination bookkeeping, "game over → `ToggleReady` returns to the menu" [C].
+- **[B:DEAD] `ATTRACTMODE_ENABLED`**: attract mode (`StartAttractMode`/`StopAttractMode`, `m_lockTaskManager`) [C] `code/attract.cpp`.
+- **[B:DEAD] `USE_SEPULVEDA_HELP_TUTORIAL`**: `HelpSystem::PlayerDoneAction(...)` notifications in `code/camera.cpp`, `code/location_input.cpp`, `code/location.cpp`, `code/taskmanager.cpp`; `code/tutorial_demo2.cpp` control-help aids; `SepulvedaHelp`, `SkipTutorial` bindings [C].
+- **[B:DEBUG]** `CHEATMENU_ENABLED` (cheat menu F11, special-lighting cheat), `_DEBUG` `DebugCameraFixUp`, `TARGET_DEBUG` `DebugDropPacket` [C].
+- **Commented-out code** (not compiled): Controller task creation, squad weapon cycling in `LocationInput`, `Task::TargetExtinguisher`, `Task::TargetTank`, the Shaman game-type start task, MP "special" Darwinian/officer pseudo-slots in the task bar, keyboard F-key shortcuts in the MP interface, the Options menu's key-binding button, the `Location::UpdateTeam` armour block, the camera clamp to level bounds, `AdvanceManualRotateCamera`/`AdvanceManualCameraHeight` calls, the demote-selected-officer click [C].

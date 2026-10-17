@@ -255,6 +255,16 @@
 7. `animatedpanel.cpp` includes `lib/render/renderer.h`, which resolves (via the `..\..\contrib\SystemIV` include path) to the uncompiled SystemIV renderer header [I] — nothing from it appears to be used; a re-implementation can ignore it.
 8. `RequestBootloaderSequence` leaves `g_RenderingFirstTimeBL = true` forever in FULL builds → fade-outs suppressed after a Campaign launch (§1.6) [C].
 
+<!-- from X1a_text_formats -->
+## Contradictions / open questions
+
+1. P14 §31.5.3 vs code: archive lookup case sensitivity (see Cross-partition notes) — the code is case-insensitive [C].
+2. `CameraAnimations` parsing comment says mission lights override map lights; `ParseMissionFile` rejects `Lights` blocks (§2.8) [C].
+3. `level_enum.txt` is excluded from the retail `main.dat` although `AchievementTracker` needs it for the "Master of Multiwinia"/"Explorer" achievements — either the retail game ships it elsewhere or those achievements could never fire [U].
+4. The auth key typed in the auth field is saved to `<P>authkey` but read from `<P>authkey.dev` (§13.4) — confirmed contradiction (also noted by P14).
+5. Partial `japanese.txt`/`korean.txt`/`portuguese.txt` would show raw phrase ids for ~90 % of the UI (no English fallback) — either these languages were never selectable in a retail edition or complete files existed outside this tree [U].
+6. `NetworkServerPort`/`NetworkClientPort` (live) coexist with the dead `ServerAddress`/`ServerPort`/`BypassNetwork` defaults — the latter are Darwinia leftovers [C].
+
 <!-- from X1b_asset_formats -->
 ## Contradictions / open questions
 1. P14 states archive keys must be requested in lower case; code shows case-insensitive look-up (above) — resolved in favour of code [C].

@@ -45,5 +45,12 @@ Rules for the final text:
 9. Write incrementally (skeleton first, then fill sections), because your context may be compacted.
 10. Do not modify drafts, other agents' documents, or anything in `SRC`. Do not git commit/push.
 
+
+## Mandatory pre-finish checks
+1. **Mermaid syntax** — run and fix until your document reports 0 failed blocks:
+   `NODE_PATH=/opt/node-tools/node_modules node /home/user/Species.AI/design/_work/scripts/mermaid_check.js /home/user/Species.AI/design /tmp/claude-0/-home-user-Species-AI/f64da416-5c15-5870-ada9-978a3bb49e15/scratchpad/mermaidcheck/node_modules/mermaid/dist/mermaid.min.js 2>&1 | grep -E "YOUR_DOC|blocks="`
+   Common causes: `:` / `(` / `"` / `→` / `<` inside state-diagram transition labels or state names (use plain words, or `state "Label with: chars" as Id`), unquoted special characters in sequence-diagram messages, `;` and `#` in labels, node ids containing spaces or punctuation.
+2. **Citations** — `python3 -I /home/user/Species.AI/design/_work/scripts/coverage_check.py /home/user/gene9/darwinia-and-multiwinia-source-code/multiwinia /home/user/Species.AI/design` then read `_work/coverage_report.md` section "Cited paths that do not exist" and fix any entries attributed to your document (other sections of the report concern the whole set; ignore them).
+
 ## Final reply (≤ 200 words)
 Document(s) written with size; number of contradictions resolved; [U] count; any §5 bullet you could not satisfy and why.

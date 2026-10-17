@@ -1471,3 +1471,590 @@ Between 95 % and 100 % fuel the rocket is already Loading but the caption still 
 Design takeaway: leaderboards were planned (TrueSkill-ranked + standard + versus-CPU, weekly/all-time, friends/mine/overall) but there is **no backend**: a case-insensitive grep for "leaderboard" over `code/` and `contrib/systemiv/lib/metaserver` finds only these UI files, `code/lib/input/control_types.inc` (control ids) and the Darwinia level-time stats above; the metaserver message set (§5.2.1) carries no ranking fields (`PLAYERSCORE` "ps" is defined but unused) [C]. Whether the external metaserver could serve rankings is 09-U7.
 
 ---
+## 8 Help system and tutorial content
+
+Live help in [B:FULL] consists of: (1) **How To Play** pages in Help and Options (§8.1); (2) **in-game contextual hints** from `MultiwiniaHelp` (§8.2); (3) the **animated game-mode panel** during the pre-game wait (§9.3); (4) the two **tutorials** (§8.4); (5) gamepad **control prompts** from `ControlHelpSystem` (gamepad mode only; [06](06_player_control_and_input.md)). The Darwinia Sepulveda-driven `HelpSystem`, the Darwinia demo tutorials and the older `GameMenuWindow` help pages are dead or unreachable (Appendix A.4, §3.19). All help text lives in `data/language/*.txt`; `data/mwhelp/` holds only 51 BMP images and **no `.txt` files** [C].
+
+### 8.1 Help pages ("Help and Options" → "How To Play") [B:FULL]
+
+Navigation: §3.20. Page content [C] `code/interface/helpandoptions_windows.cpp:GeneralHelpWindow::Create`, `GameTypeHelpWindow::Create`:
+
+- `GeneralHelpWindow` page p (1…5): image `mwhelp/general<p>.bmp` (square, side = leftBoxH/3.5) at the left, word-wrapped text `multiwinia_helppage_general<p>` (Mac: `…_mac` variant if present) in `g_editorFont` at the small font size.
+- `GameTypeHelpWindow(t)` page p: image `mwhelp/help_<t>_<p>.bmp` (t 0-based game type), text `multiwinia_helppage_<t+1>_<p>`; the number of pages per mode is data-driven by which text phrases exist.
+- Gamepad variants: ids with an `_xin` suffix are chosen automatically in gamepad mode by the language table's per-input-mode tables (`_kbd` / `_xin` resolution [C] `code/lib/language_table.cpp:LangTable::RebuildTables`; grammar in [29](29_data_formats_reference.md)).
+
+Page ↔ asset map (game-type index from `code/multiwinia.h`: 0 Domination / `GameTypeSkirmish`, 1 KingOfTheHill, 2 CaptureTheStatue, 3 Assault, 4 RocketRiot, 5 Blitzkrieg) [C] `data/language/english.txt` L2514–2586, `data/mwhelp/`:
+
+| Page | Image | Text phrase (variants) | Topic (English text is IP; first words for identification) |
+|---|---|---|---|
+| General 1 | `general1.bmp` (150×150) | `multiwinia_helppage_general1` (`_mac`, `_xin`) | the units and that they make up the whole army |
+| General 2 | `general2.bmp` | `multiwinia_helppage_general2` (`_xin`) | promoting units to Officers with the right mouse button |
+| General 3 | `general3.bmp` (150×149) | `multiwinia_helppage_general3` | units are created at Spawn Points |
+| General 4 | `general4.bmp` | `multiwinia_helppage_general4` | units auto-attack nearby enemies |
+| General 5 | `general5.bmp` | `multiwinia_helppage_general5` (`_xin`) | crates with random power-ups fall from the sky |
+| Domination 1 | `help_0_1.bmp` | `multiwinia_helppage_1_1` | capture as many Spawn Points as possible |
+| KOTH 1 | `help_1_1.bmp` | `multiwinia_helppage_2_1` | control as many Hill-Zones as possible |
+| KOTH 2 | `help_1_2.bmp` | `multiwinia_helppage_2_2` | capture a zone by moving units inside it |
+| CTS 1 | `help_2_1.bmp` | `multiwinia_helppage_3_1` | score by lifting statues and carrying them home |
+| CTS 2 | `help_2_2.bmp` | `multiwinia_helppage_3_2` (`_xin`) | lifting needs many units |
+| CTS 3 | `help_2_3.bmp` | `multiwinia_helppage_3_3` | contesting a statue held by enemies |
+| Assault 1 | `help_3_1.bmp` | `multiwinia_helppage_4_1` | players split into Attackers and Defenders |
+| Assault 2 | `help_3_2.bmp` | `multiwinia_helppage_4_2` | the defenders' WMD |
+| Assault 3 | `help_3_3.bmp` | `multiwinia_helppage_4_3` | mobile explosives (Wall Busters) |
+| Rocket Riot 1 | `help_4_1.bmp` | `multiwinia_helppage_5_1` | the three objectives |
+| Rocket Riot 2 | `help_4_2.bmp` | `multiwinia_helppage_5_2` | capturing Solar Panels like Spawn Points |
+| Rocket Riot 3 | `help_4_3.bmp` | `multiwinia_helppage_5_3` | loading begins at fuel 95 |
+| Rocket Riot 4 | `help_4_4.bmp` | `multiwinia_helppage_5_4` | defending the rocket once fuel reaches 70 |
+| Blitzkrieg 1 | `help_5_1.bmp` | `multiwinia_helppage_6_1` | eliminate teams by capturing their flags |
+| Blitzkrieg 2 | `help_5_2.bmp` | `multiwinia_helppage_6_2` | the first captured flag is the home flag |
+| Blitzkrieg 3 | `help_5_3.bmp` | `multiwinia_helppage_6_3` | eliminating every other team wins |
+
+Pages per mode in the English data: Domination 1, KOTH 2, CTS 3, Assault 3, Rocket Riot 4, Blitzkrieg 3 [C]. Page titles `multiwinia_help_gametypetitle_0..5` ("How to play Domination" …, L2528–2559). The General button's caption is `multiwinia_helppage_1`; `multiwinia_helppage_2..5` are leftovers of the unreachable `PageHelpMenu` topics.
+
+Resolved: P17b listed `multiwinia_helppage_3_2` as defined twice in `english.txt`; a key census shows it is defined once (the second line is the `_xin` variant). The two genuinely duplicated keys are `buildingname_grenadeturret` and `multiwinia_help_title_crates`; the language parser keeps the **later** definition [C] `data/language/english.txt`, `code/lib/language_table.cpp:LangTable::ParseLanguageFile`.
+
+### 8.2 In-game contextual help (`MultiwiniaHelp`, outside tutorials) [B:FULL]
+
+Lifecycle [C]: single instance `g_app->m_multiwiniaHelp`, created in `App::App`, deleted in `App::~App`, `Reset()` on location shutdown (`App::ShutdownCurrentGame`). `Advance()` runs once per frame in the location loop (after `MarkerSystem::Advance`) and returns immediately unless `g_app->Multiplayer()` and the local team exists; `Render()` runs in the renderer's 2D overlay pass after `MarkerSystem::Render`, skipped when: no location, not multiplayer, `m_hideInterface`, game over, Assault victory timer running, no local team. An input-mode change (keyboard ↔ gamepad) reloads tab icon file names [C] `code/multiwiniahelp.cpp:MultiwiniaHelp::Advance`, `MultiwiniaHelp::Render`, `MultiwiniaHelp::LoadIcons`; `code/main.cpp` (L578); `code/renderer.cpp` (L646).
+
+| # | Output | When shown | Content (phrase id → English) | Duration / frequency | Ref |
+|---|---|---|---|---|---|
+| H1 | Game-mode animated panel | grace period, not a tutorial, `m_gracePeriodTimer ≥ GRACE_TIME` (waiting for players to ready up) | title = blueprint name upper-cased; caption `multiwinia_animdesc_<blueprint>` (six mode one-liners, `english.txt` L2356–2361) | lazily created once per match; §9.3 | `MultiwiniaHelp::InitialiseAnimatedPanel`, `RenderAnimatedPanel` |
+| H2 | Camera-controls picture | grace period **in a tutorial**, keyboard mode | `mwhelp/control_camera.bmp` (or `control_camera_french.bmp` for a French keyboard locale) | whole grace period | `MultiwiniaHelp::RenderGracePeriodHelp` |
+| H3 | "Deselect" hint after a mis-click | after grace, pref `HelpEnabled` ≠ 0 (default 1), `m_showSpaceDeselectHelp > 0` | `multiwinia_rmbhelp` "Right mouse button to move / press SPACE to deselect" (`_xbox`, Mac `_mac`) when triggered by LMB-on-nothing; `multiwinia_deselect` "press SPACE to deselect" (`_xbox`) when triggered by RMB while placing a task | state machine below | `MultiwiniaHelp::ShowSpaceDeselectHelp`, `Render` |
+| H4 | "Hold SHIFT to move faster" | after grace, `HelpEnabled`, keyboard mode, `m_showShiftToSpeedUpHelp > 0` | `multiwinia_shiftspeedhelp` | set to 3.0 s every frame once camera-forward has been held alone (no left/right/back, no speed-up) for > 4.0 s; counts down in real frame time | `code/camera.cpp` (L695–707), `ShowShiftSpeedupHelp` |
+| H5 | Deselect-building hint | after grace, `HelpEnabled`, the local team's selected building is a GunTurret or RadarDish | `multiwinia_deselect` / `_xbox`, in the *building* layout (left of screen) | every frame while selected; box flashes white while camera keys are pressed | `Render` |
+| H6 | Terminate-officer hint | after grace, `HelpEnabled`, entity under the cursor is an Officer with `OrderNone` | `multiwinia_officerterminate` "press c to terminate a unit" / `_xbox` "press b…" | every frame while hovered | `Render` |
+| H7 | Toggle-armour-orders hint | after grace, `HelpEnabled`, an order marker under the mouse belongs to an Armour with `m_conversionOrder == Armour::StateIdle` | `multiwinia_armourtoggle` "Right Click to toggle orders" / `_xbox` | every frame while hovered | `Render` |
+| H8 | Tutorial tabs | tutorials only | §8.4 | §8.4 | `RenderTutorialHelp` |
+
+H3 state machine (`m_showSpaceDeselectHelp`, float seconds) [C] `ShowSpaceDeselectHelp`, `Render`:
+
+```
+on trigger(immediate, showRMB):
+    if v > 0:  v = min(v + 1.0, 3.0)                  # extend while showing
+    else:
+        v -= 0.75
+        if v < -1.0 or immediate: rmbFlag = showRMB; v = 3.0
+per rendered frame (HelpEnabled, after grace):
+    if v > 0: draw with alpha = min(1, v); v -= dt
+    elif v < 0: v = min(v + 0.33*dt, 0)               # "suspicion" decays back to 0
+```
+
+A single stray click is tolerated; two stray clicks within ≈ 1.5 s show the hint for 3 s; RMB-while-placing shows it immediately [C + I arithmetic]. Triggers [C] `code/location_input.cpp`: (1) LMB on empty ground with `MultiwiniaControlMethod == 1` while something is selected and not placing a task, not controlling an insertion squad, not a gamepad move of an officer/armour, and not `ControlUnitSetTarget` → sound `MouseError` (TypeMultiwiniaInterface) + `ShowSpaceDeselectHelp()`; (2) `ControlIssueSpecialOrders` (RMB) while a task is in `StateStarted` (being placed) on keyboard → `MouseError` + `ShowSpaceDeselectHelp(true, false)`.
+
+`RenderHelpMessage(alpha, caption, buildingPosition, oversize)` layout [C]: width 0.35·H (0.55·H if `oversize`, the Mac-only RMB case), font height 0.02·H (`g_editorFont`, outline + fill), box height (lines + 1)·font; centred at x = W/2, y = 0.78·H; building layout x = 0.1·W, y = H − 1.5·boxH; box black α·0.75, border white α·0.5; additive white α·0.6 fill while any camera direction key is pressed (building layout only).
+
+Pref `HelpEnabled` (Other Options "Help System") gates H3–H7 only; it is also read, with no remaining effect, in `TaskManagerInterfaceMultiwinia::Advance` and `LocationInput::AdvanceTeamControl` (bodies commented out) [C].
+
+### 8.3 Objective tabs — computed every frame but never drawn (cut feature)
+
+`MultiwiniaHelp::Advance` computes, for each of 18 non-tutorial help ids, `m_appropriate`, a world anchor and a stacked screen layout, and cycles a highlight every 5.0 s — but the only renderer for non-tutorial tabs is inside `#ifdef THIS_IS_FUCKING_SHIT_AND_IT_ALWAYS_HAS_BEEN` (never defined), and the `RenderCurrentTaskHelp` / `RenderCurrentUnitHelp` call sites are commented out (`code/taskmanager_interface_multiwinia.cpp` L1721, L1736) [C] `MultiwiniaHelp::Render` (L2317–2385). Designed-but-cut "objective cards":
+
+| Enum (value) | Icon (`mwhelp/…bmp`) | Appropriate when | Anchor (nearest to camera) / world size / offset | Title → body (English) | "Accomplished" notification |
+|---|---|---|---|---|---|
+| `HelpStartHere` (0) | `starthere` | grace and mode ∉ {RocketRiot, Assault, Blitzkrieg} | own SpawnPoint / 6 / 0 | YOU → Start Here | — |
+| `HelpReinforcements` (1) | `reinforcements` | mode ∈ {RocketRiot, Assault, Blitzkrieg} | own TrunkPort / 6 / 0 | TRUNKPORT → Give Reinforcements | `NotifyReinforcements` ×3 |
+| `HelpSpawnPoints` (2) | `spawnpoint` | grace, spawn points exist, ≥ 1 neutral spawn, not tutorial | SpawnPoint with nobody within 100 / 6 / 0 | CAPTURE → Creates Multiwinians | `max(accomplished, SpawnPointsOwned − 1)` each frame |
+| `HelpKoth` (3) | `koth` | grace, KOTH, not tutorial | nearest MultiwiniaZone / 10 / 0 | CONTROL → Gives Points | `NotifyCapturedKothZone(n)` |
+| `HelpLiftStatue` (4) | `liftstatues` | grace, CTS | nearest Statue of team 255 / 10 / 80 | LIFT → Using Multiwinians | `NotifyLiftedStatue` (`code/worldobject/statue.cpp`) |
+| `HelpCaptureStatue` (5) | `capturestatues` | grace, CTS | own MultiwiniaZone / 6 / 10 | CAPTURE → Gives Points | `NotifyCapturedStatue` (`code/worldobject/multiwiniazone.cpp`) |
+| `HelpSolarPanels` (6) | `rocketriot2` | RocketRiot | nearest SolarPanel / 9 / 50 | CAPTURE → Refuels Rocket | `NotifyFueledUp` (`code/worldobject/rocket.cpp`) |
+| `HelpRocketRiot` (7) | `rocketriot1` | RocketRiot | own EscapeRocket / 12 / 100 | LOAD → Multiwinians to Launch | `NotifyFueledUp` |
+| `HelpSpawnPointsConquer` (8) | `spawnpoint_assault` | grace, Domination | SpawnPoint not mine with people within 100 / 10 / 0 | CAPTURE → To Win | — |
+| `HelpCrates` (9) | `crates` | grace, `Crate::s_crates > 0` | — | CRATES → Random Powerup | `NotifyCapturedCrate` (`code/worldobject/crate.cpp`) |
+| `HelpDarwinians` (10) | `darwinian` (**file absent**) | never (hard-coded false) | — | (no strings) | group-select ≥ 1 and promote ≥ 1 |
+| `HelpWallBuster` (11) | `wallbuster` | I attack and the map has a WallBuster | nearest WallBuster / 6 / 0 | CARRY → Destroys Walls | — |
+| `HelpStationAttack` (12) | `pulsebomb_attack` | Assault, I attack | nearest ControlStation / 6 / 0 | CAPTURE → all to Win | — |
+| `HelpStationDefend` (13) | `pulsebomb_defend` | Assault, I defend | nearest ControlStation / 6 / 0 | DEFEND → Hold to Win | — |
+| `HelpPulseBombAttack` (14) | `pulsebomb` | Assault, I attack | nearest PulseBomb / 12 / 100 | WIN → Before Detonation | — |
+| `HelpPulseBombDefend` (15) | `pulsebomb` | Assault, I defend | nearest PulseBomb / 12 / 100 | DEFEND → Until Detonation | — |
+| `HelpBlitzkrieg1` (16) | `blitzkrieg1` | Blitzkrieg | nearest MultiwiniaZone / 10 / 0 | CAPTURE → Gives Points | — |
+| `HelpBlitzkrieg2` (17) | `blitzkrieg2` | Blitzkrieg | base zone `MultiwiniaZone::s_blitzkriegBaseZone[t]` of a random other team (`rand()`, unsynced) / 10 / 0 | WIN → Capture Enemy Flag | — |
+| 18–48 | — | tutorial tabs (§8.4) | — | — | — |
+
+Anchors are only (re)computed during the grace period while still zero. Layout (unused): tab size min(0.2·H, 200) px, stacked from (W − size − 10, 10) with 10 px gaps; after grace they would shrink to 0.66·size and move at 2·dt (×3 horizontally) clamped to H/5 per frame, alpha 0.5 when accomplished; highlight link circle radius `10000·worldSize/camDist`; highlight blink alpha 0 for 1 s, then alternating 1.0 / 0.3 every 0.2 s until 2 s, then 1 [C] `MultiwiniaHelp::Advance`, `RenderTabLink`, `CalculateHighlightAlpha`.
+
+Unused helpers compiled in FULL [C]: `RenderControlHelp()` (contextual LMB/RMB/C-key boxes with captions `multiwinia_control_{close,select,grenade,move,formation,order,unload,load,laser,destroy,place,promote}`, `control_help_secondaryfire`, icons `icons/<name>.bmp`) and `RenderBasicControlHelp()` (`mwhelp/basic_select*.bmp`, `mwhelp/basic_promote*.bmp` — files absent) have no callers; `GetHelpType` / `GetResearchType` return −1; `HighlightingDarwinian` has no caller.
+
+### 8.4 Tutorials — player-facing content (mechanics in [30 §2](30_scripting_tutorial_and_cutscenes.md))
+
+Two tutorials, both a *help-tab director* inside `MultiwiniaHelp` running on top of an ordinary single-player King-of-the-Hill match against an Easy CPU; every frame the director re-evaluates the world and shows **at most one** instruction tab anchored to a world object (title bar + body, box flashing in the team colour, arrow pointing at the object, clamped to the screen edges). All tutorial code is under `#ifdef INCLUDE_TUTORIAL` (defined in FULLGAME) [C] `code/multiwiniahelp.cpp:MultiwiniaHelp::AttachTutorialTo3d`, `AttachTutorial2To3d`, `RunTutorialHelp`, `RenderTab3d`.
+
+| Item | Tutorial 1 "Part 1: The Basics" | Tutorial 2 "Part 2: Advanced Concepts" |
+|---|---|---|
+| Menu | Main → Tutorials → `multiwinia_menu_tutorial1` | → `multiwinia_menu_tutorial2` |
+| Mode / map | KOTH on `mp_koth_2P_1` (`MAPID_MP_KOTH_2P_1`, 2 players) | KOTH on `mp_koth_3P_1` (`MAPID_MP_KOTH_3P_1`, 3 players) |
+| Opponents | 1 Easy CPU | 2 Easy CPUs (switched to Standard at the end) |
+| Options | all KOTH defaults (TimeLimit 5 min, ScoreMode 0, crates every 40 s, …) | same; team colours forced to 0, 1, 2; time frozen at 5:00 until the end step |
+| Grace period | camera-controls picture instead of the animated panel | same |
+| Gameplay changes while tutorial | no random crates; formations disabled; tasks cannot be terminated; the director spawns one Airstrike crate | no random crates until the end; grenades disabled; spawn points throttled; AI held back until the player forms a formation; the director spawns one Armour crate; full rules (basic crates, Standard AI) after the end step |
+| End | no explicit completion event: the KOTH match continues to its normal end; the menu returns to the Tutorials page | after "WIN THE GAME" (20 s) the director stops; the 3-player KOTH match continues normally |
+
+Instruction sequence (player view; the director is stateless for T1 and can step back if progress is lost) [C] tab ids and phrases `data/language/english.txt`:
+
+| Order | Tab title (phrase → English) | What the player is asked to do | Tutorial |
+|---|---|---|---|
+| 1 | `multiwinia_help_title_groupselect` "SELECT SOME MULTIWINIANS" | hold LMB to group-select units near the home spawn | T1, T2 |
+| 2 | `multiwinia_help_title_movetospawnpoint` "CAPTURE SPAWN POINT" | RMB on the next neutral spawn point | T1 |
+| 3 | `multiwinia_help_title_movetomainzone` "MOVE TO SCORE ZONE" | RMB inside the central score zone (explains King of the Hill scoring) | T1 |
+| 4 | `multiwinia_help_title_promote` "PROMOTE AN OFFICER" | RMB a unit to promote an officer (two variants: basic / advanced text) | T1, T2 |
+| 5 | `multiwinia_help_title_sendtozone` "CAPTURE SCORE ZONE" | RMB in the zone to give the officer a standing goto order | T1 |
+| 6 | `multiwinia_help_title_capturezone` "CAPTURE SCORE ZONE" | send units into the far score zone | T1 |
+| 7 | `multiwinia_help_title_crates` "CRATES" | watch a crate fall | T1 |
+| 8 | `multiwinia_help_title_cratecapture` "CAPTURE CRATE" | move units onto the crate | T1, T2 |
+| 9 | `multiwinia_help_title_taskselect` "SELECT AIRSTRIKE" | press TAB (right bumper) to select the new power-up | T1 |
+| 10 | `multiwinia_help_title_airstrike` "LAUNCH AIRSTRIKE" | LMB on the enemy spawn point | T1 |
+| 11 | `multiwinia_help_title_scores` "SCORES" | read the scoring explanation (40 s) | T1 |
+| 12 | `multiwinia_help_title_radardish` "RADAR DISH" | select the captured radar dish | T2 |
+| 13 | `multiwinia_help_title_aimdish` "AIM DISH" | LMB the target dish to connect them | T2 |
+| 14 | `multiwinia_help_title_deselect` "DESELECT" | press Space to deselect | T2 |
+| 15 | `multiwinia_help_title_useradar` "USE RADAR" | RMB the dish to send units (or the officer's standing order) | T2 |
+| 16 | `multiwinia_help_title_radartransit` "RADAR" | watch units travel across the link | T2 |
+| 17 | `multiwinia_help_title_makeformation` "CREATE FORMATION" | RMB near the officer to form up | T2 |
+| 18 | `multiwinia_help_title_moveformation` "MOVE FORMATION" | RMB to move the formation into the score zone | T2 |
+| 19 | `multiwinia_help_title_formations` "FORMATIONS" | read about formation firepower | T2 |
+| 20 | `multiwinia_help_title_fattack` "ATTACK" | attack the enemy spawn point with the formation | T2 |
+| 21 | `multiwinia_help_title_breakformation` "CANCEL FORMATION" | RMB the officer or flag to release the units | T2 |
+| 22 | `multiwinia_help_title_selectarmour` "SELECT ARMOUR" | press TAB to select the Armour power-up | T2 |
+| 23 | `multiwinia_help_title_placearmour` "PLACE ARMOUR" | place it next to an owned building | T2 |
+| 24 | `multiwinia_help_title_loadarmour` "LOAD ARMOUR" | load units into the armour | T2 |
+| 25 | `multiwinia_help_title_movearmour` "MOVE ARMOUR" | drive to the marked spawn point | T2 |
+| 26 | `multiwinia_help_title_unloadarmour` "UNLOAD ARMOUR" | RMB the armour or its marker to unload | T2 |
+| 27 | `multiwinia_help_title_station` "CAPTURE RADAR" | capture the control station that owns a radar dish | T2 |
+| 28 | `multiwinia_help_title_win` "WIN THE GAME" | use everything learnt to capture score zones | T2 |
+| (dead) | `multiwinia_help_title_clearinfo` "PRESS SPACE" | dismiss the power-up info box (callers commented out) | — |
+
+Rate limits seen by the player [C] `RunTutorialHelp`: at least 0.5 s between different tabs; a 10 s "breather" with no tab after a movement objective (spawn point, main zone, send to zone, capture zone) and 20 s after the airstrike. Tab body phrases have `_xbox` variants chosen in gamepad mode (e.g. TAB → right bumper). Every phrase id (keyboard and `_xbox`) exists in `english.txt` [C]. Determinism caveat: the director mutates simulation state locally (spawns crates, rewrites radar links, freezes the timer) — safe only because tutorials are single player ([30 §2.6](30_scripting_tutorial_and_cutscenes.md)).
+
+### 8.5 Complete `data/mwhelp/` usage map (51 files)
+
+[C] directory listing vs `code/multiwiniahelp.cpp`, `code/UI/*Help*Button.h`, `code/interface/helpandoptions_windows.cpp`.
+
+| File | Size (px, bpp) | Consumer | Status |
+|---|---|---|---|
+| `360_controller.bmp` | 600×389, 32 | none in code; excluded from the PC data build (`tools/multiwinia_exclusions.txt` L41) | unused on PC [B:DEAD] |
+| `background.bmp` | 200×200, 24 | none | orphan (shipped, unused; 09-U8) |
+| `blitzkrieg1.bmp`, `blitzkrieg2.bmp` | 200×200, 24 | `MultiwiniaHelp::LoadIcons` (tabs 16, 17) | loaded name only; never rendered (§8.3) |
+| `capturestatues.bmp`, `liftstatues.bmp` | 200×200, 24 | tabs 5, 4 | never rendered |
+| `control_camera.bmp`, `control_camera_french.bmp` | 512×128, 32 (alpha) | `MultiwiniaHelp::RenderGracePeriodHelp` | **live** (tutorials) |
+| `crates.bmp` | 200×200, 24 | tab 9 | never rendered |
+| `gear.bmp` | 426×406, 24 | `GameMenuWindow::PreloadTextures`, `GameMenuWindow::RenderBigDarwinian` | **live** (menu backdrop) |
+| `general1.bmp` … `general5.bmp` | 150×150 (general3 150×149), 24 | `GeneralHelpWindow` pages 1–5 | **live** |
+| `help_0_1.bmp`, `help_1_1.bmp`, `help_1_2.bmp`, `help_2_1.bmp`, `help_2_2.bmp`, `help_2_3.bmp`, `help_3_1.bmp`, `help_3_2.bmp`, `help_3_3.bmp`, `help_4_1.bmp`, `help_4_2.bmp`, `help_4_3.bmp`, `help_4_4.bmp`, `help_5_1.bmp`, `help_5_2.bmp`, `help_5_3.bmp` (16 files) | 150×150, 24 | `GameTypeHelpWindow` | **live** |
+| `koth.bmp` | 200×200, 24 | tab 3 | never rendered |
+| `mode_assault.bmp`, `mode_blitzkrieg.bmp`, `mode_capturethestatue.bmp`, `mode_domination.bmp`, `mode_kingofthehill.bmp`, `mode_rocketriot.bmp`, `mode_tankbattle.bmp` | 300×200, 24 | `GameTypeImageButton::Render`, preloaded in `SetupGameSelectPage` / `SetupSPDemoPage` | **live** (tankbattle never shown — mode compiled out) |
+| `mode_campaign.bmp`, `mode_prologue.bmp` | 400×300, 24 | `GameTypeImageButton` for `GAMETYPE_CAMPAIGN` / `GAMETYPE_PROLOGUE` | [B:DEBUG] |
+| `pulsebomb.bmp`, `pulsebomb_attack.bmp`, `pulsebomb_defend.bmp` | 200×200, 24 | tabs 14/15, 12, 13 | never rendered |
+| `reinforcements.bmp` | 200×200, 24 | tab 1 | never rendered |
+| `rocketriot1.bmp`, `rocketriot2.bmp` | 200×200, 24 | tabs 7, 6 | never rendered |
+| `spawnpoint.bmp`, `spawnpoint_assault.bmp` | 200×200, 24 | tabs 2, 8 | never rendered |
+| `starthere.bmp` | 200×200, 24 | tab 0 | never rendered |
+| `wallbuster.bmp` | 200×200, 24 | tab 11 | never rendered |
+
+Referenced by code but **absent** from `data/mwhelp/`: `darwinian.bmp` (tab 10), `officercontrol[_xbox].bmp`, `darwiniancontrol[_xbox].bmp`, `basic_select[_xbox].bmp`, `basic_promote[_xbox].bmp`, `helppage_<n>_<m>.bmp` — all on dead paths [C].
+
+---
+## 9 Attract mode, start sequences, loading screens, animated panels and credits
+
+### 9.1 Build reality of every sequence feature
+
+Every file below is listed in `targets/vs2005/Darwinia.vcproj` for all four configurations, but most content is removed by preprocessor gates or has no live call site. "Compiled" = the function bodies survive the preprocessor in `Release|Win32` + `TARGET_PC_FULLGAME` [C] `code/lib/universal_include.h` (macro block "PICK ONE OF THESE TARGETS", L68 `//#define USE_LOADERS`, L347 `//#define BENCHMARK_AND_FTP`), `code/main.cpp:RunBootloader`, `code/main.cpp:RunTheGame`, `code/app.cpp:App::App`.
+
+| Feature | Body compiled in [B:FULL]? | Gate(s) | Live call path in [B:FULL]? | Tag |
+|---|---|---|---|---|
+| `LoadingScreen` (spinner + logo + job pump) | yes | none | yes — start-up, every level load, map-select thumbnail preload | **[B:FULL]** |
+| `AnimatedPanel` + `AnimatedPanelRenderer` (mode "how to play" panel) | yes | none | yes — `MultiwiniaHelp` during the grace period | **[B:FULL]** |
+| Grace-period ready-up / 3-2-1 countdown (the live match start sequence) | yes | none | every match | **[B:FULL]** (§9.4.1) |
+| `Loader` base class (`SetupFor2D`, `FlipBuffers`, `AdvanceSound`, factory) | yes | enum members and factory cases for the 8 mini-programs under `USE_LOADERS` | only via `CreditsLoader` paths | [B:LEGACY] |
+| `CreditsLoader` (units carry the credit letters) | yes (`GenerateEGamesList` under `EGAMESBUILD`; one line under `OBERONBUILD`) | — | only script op `RunCredits` (used by **no** file in `data/scripts`) and `Camera::AdvanceSphereWorldOutroMode` after 70 s (Darwinia ending) | [B:LEGACY] |
+| `SpeccyLoader`, `MatrixLoader`, `FodderLoader`, `RayTraceLoader`, `SoulLoader`, `GameOfLifeLoader` (+ Glow), `AmigaLoader` | **no** — each `.h` / `.cpp` wrapped in `#ifdef USE_LOADERS` | `USE_LOADERS` commented out | no | [B:DEAD] |
+| `Sierpinski3D` (used only by `AmigaLoader`) | yes (`code/3d_sierpinski_gasket.cpp` ungated) | — | no caller outside `amiga_loader.cpp` | [B:DEAD] by call graph |
+| `EgamesLoader` (AVI intro) | no — `#ifdef EGAMESBUILD` | `EGAMESBUILD` | no call site even if defined | [B:DEAD] |
+| `OberonLoader` (distributor splash) | no — body `#ifdef OBERONBUILD`; class declaration unguarded | `OBERONBUILD` | no call site even if defined | [B:DEAD] |
+| `RunBootloader()` (dispatcher + first-time intro) | no — `#ifdef USE_LOADERS` | `USE_LOADERS` | the main loop's call is also inside `#ifdef USE_LOADERS` | [B:DEAD] |
+| `RequestBootloaderSequence()` / `IsFirsttimeSequencing()` | yes | — | `CampaignButton::LoadCampaign` sets the request (debug-only page, §1.2.1); nothing consumes it | [B:LEGACY] |
+| `StartSequence` (90 s first-time intro) | yes (ungated) | — | only constructed in `RunBootloader` (`USE_LOADERS`) → never; the `Renderer::Render` hook `if (g_app->m_startSequence)` is compiled but always false | [B:LEGACY] |
+| `DemoEndSequence` (prologue end screen) | no — `#ifdef USE_SEPULVEDA_HELP_TUTORIAL` | — | `Script::RunCommand_ShowDemoEndSequence` compiles to an empty function | [B:DEAD] |
+| `AttractMode` | yes (`code/attract.cpp` ungated) | object constructed only under `#ifdef ATTRACTMODE_ENABLED` (defined nowhere), both `Advance` call sites gated | no (`g_app->m_attractMode` stays NULL) | [B:DEAD] feature; profile-name special cases in `App` compiled → [B:LEGACY] |
+| `BenchMark` | no — whole `.cpp` under `#ifdef BENCHMARK_AND_FTP` | `BENCHMARK_AND_FTP` | no (all 5 call sites gated) | [B:DEAD] |
+| `TestHarness` | no — `#ifdef TEST_HARNESS_ENABLED` | — | no | [B:DEAD] |
+
+```mermaid
+flowchart TD
+    subgraph FULL["Release Win32 + TARGET_PC_FULLGAME"]
+      LS["LoadingScreen::Render"]:::live
+      AP["MultiwiniaHelp to AnimatedPanelRenderer"]:::live
+      GR["Grace period ready-up and countdown"]:::live
+      CB["CampaignButton::LoadCampaign (debug-only page)"] -->|"RequestBootloaderSequence"| RQ["requestBootloader = true"]:::legacy
+      RQ -->|"main loop: ifdef USE_LOADERS RunBootloader"| X1(("no-op")):::dead
+      SC["Script op RunCredits"]:::legacy --> CL["CreditsLoader::Run"]:::legacy
+      CO["Camera ModeSphereWorldOutro after 70 s"]:::legacy --> CL
+    end
+    subgraph DEAD["Not compiled or never constructed"]
+      RB["RunBootloader"]:::dead --> SS["StartSequence"]:::dead
+      RB --> L8["Speccy / Matrix / Fodder / RayTrace / Soul / GoL / GoLGlow / Amiga"]:::dead
+      AM["AttractMode"]:::dead
+      BM["BenchMark"]:::dead
+      TH["TestHarness"]:::dead
+      DE["DemoEndSequence"]:::dead
+      EG["EgamesLoader / OberonLoader"]:::dead
+    end
+    classDef live fill:#cfc,stroke:#393;
+    classDef legacy fill:#ffc,stroke:#993;
+    classDef dead fill:#fcc,stroke:#933;
+```
+
+**Design consequence.** In the shipped PC build the only player-visible features of this family are the **loading screen**, the **animated game-mode panels** and the **grace-period countdown**. Everything else is Darwinia-era or development tooling; it is specified (briefly, Appendix A.1–A.3) because it is a design capability present in the codebase.
+
+### 9.2 Loading screen (`LoadingScreen`) [B:FULL]
+
+#### 9.2.1 Role
+
+A blocking, main-thread "please wait" loop that (1) keeps the window alive and animated while a **background worker thread** performs a load, (2) executes on the main thread the OpenGL work the worker cannot do (texture upload/delete, display-list creation, VBO binding) and (3) keeps sound and networking ticking. It shows **no progress bar or percentage** — only a spinning sprite and, on first start-up, a publisher logo [C] `code/loading_screen.cpp:LoadingScreen::RenderFrame`. Single global instance `g_loadingScreen`, created in `code/main.cpp:Initialise` **before** `App` is constructed [C].
+
+#### 9.2.2 Data members [C] `code/loading_screen.h:LoadingScreen`
+
+| Member | Type | Initial | Meaning |
+|---|---|---|---|
+| `m_rendering` | bool | **uninitialised** (constructor does not set it) | true while `Render()` is looping; read by `IsRendering()` |
+| `m_texId` | int | −1 | GL texture of the spinner; set by `Resource` once resources are loaded (`code/lib/resource.cpp` L~954: `GetTexture("sprites/darwinian.bmp")`) or lazily by `RenderFrame` |
+| `m_initialLoad` | bool | true | true only for the very first load; cleared in `code/main.cpp:RunTheGame` after `Initialise` |
+| `m_platformLogoShown` | bool | false | Mac only |
+| `m_startTime` | double | 0.0 | time of the first rendered frame of the current `Render()`; reset to 0 on exit |
+| `m_workQueue` | `WorkQueue*` | new | the background loader thread and its FIFO of `Runnable`s |
+| `m_lock` | `NetMutex` | — | protects `m_jobs` |
+| `m_jobs` | `LList<Job*>` | empty | FIFO of main-thread jobs queued by worker threads |
+| `m_startFadeOutTime` | double | 0.0 | when the logo fade-out began |
+| `m_fadeOutLogo` | bool | false | keeps the loop alive until the logo has faded (initial load only) |
+
+#### 9.2.3 Threading model (loading **is** on a background thread)
+
+- The `WorkQueue` constructor starts one OS thread (`NetStartThread(WorkQueue::RunThread)`); the thread calls `StandardiseCPUPrecision()` (per-thread FPU mode — [22](22_determinism_and_networking.md)) then loops: wait on `m_event`; pop-front, run, delete each `Runnable`; signal `m_doneJob`; exit on `m_quit` [C] `code/lib/work_queue.cpp:WorkQueue::Run`.
+- The first item queued by the `LoadingScreen` constructor is `SetWorkingThreadProcessor`, which calls `SetThreadAffinityMask(thread, 0x01 | 0x04 | 0x10 | 0x40)` (logical CPUs 0, 2, 4, 6; the main thread uses 0x02 | 0x08 | 0x20 | 0x80) under `WIN32` [C] `code/loading_screen.cpp` L31, `code/app.cpp:App::App`.
+- Work put on the loader thread [C]:
+
+| Producer | Runnable queued | When |
+|---|---|---|
+| `App::App` | `App::Initialise` | start-up (then `g_loadingScreen->Render()` blocks the main thread) |
+| `code/main.cpp:EnterLocation` | `DoEnterLocation` (start network/task manager, load level) | every level load |
+| `GameMenuWindow::SetupMapSelectPage` | `GameMenuWindow::PreloadThumbnails` | entering the map-select page |
+| `CampaignButton::MouseUp` / `PrologueButton::MouseUp` | `LoadCampaign` / `LoadPrologue` | Darwinia modes [B:DEBUG] |
+
+- Sounds are **not** loaded on this thread on PC: after the initial `Render()` returns, `App::App` queues `SetWorkingThreadProcessor` + `App::LoadSounds` on a *second* `WorkQueue` (`App::m_soundsWorkQueue`) because "unrar not thread safe" (two archive reads must not overlap) [C] `code/app.cpp:App::App`. On Mac both run on the loader queue.
+- **Main-thread jobs.** A worker that needs GL creates a stack `Job` subclass, calls `g_loadingScreen->QueueJob(&job)` and blocks in `job.Wait()` (a `NetEvent`) until the main thread has run `Job::Process()` (= `Run()` + signal) [C] `code/lib/runnable.cpp:Job::Process`. Producers: `BitmapRGBA::ConvertToTextureAsync` (`TextureToConvert`), `Resource::DeleteTextureAsync` (`DeleteTextureByName`), `Resource::CreateDisplayListAsync` and two further resource jobs (`code/lib/resource.cpp` L~766/830/848), `LandscapeRenderer` VBO binding (`RunnableJob` over `LandscapeRenderer::DoBindBuffers`). Each producer first checks `NetGetCurrentThreadId() == g_app->m_mainThreadId` and runs synchronously if already on the main thread [C].
+- Jobs queued while no loading screen is up are drained by `g_loadingScreen->RunJobs()` once per frame in the location game loop [C] `code/main.cpp` (L~496).
+- While `IsRendering()`: `Resource::GetTextureWithFlags` takes `Resource::m_mutex` around texture-map lookups; `SoundSystem::NotReadyForGameSoundsYet()` returns true, so every `TriggerEntityEvent` / `TriggerOtherEvent` is dropped [C] `code/lib/resource.cpp`, `code/sound/soundsystem.cpp`. `RenderFrame` holds `g_openGLMutex` for the whole frame [C].
+
+```mermaid
+sequenceDiagram
+    participant M as "Main thread (GL)"
+    participant LS as LoadingScreen
+    participant W as "Loader worker thread"
+    M->>W: m_workQueue->Add(DoEnterLocation)
+    M->>LS: Render() (blocks)
+    loop until queue empty and no jobs and sounds ok and logo faded
+        LS->>LS: UpdateAdvanceTime, PollForEvents
+        LS->>M: RenderFrame (spinner / logo, Flip)
+        LS->>M: SoundSystem::Advance
+        LS->>M: try-lock networkMutex: client KeepAlive, server AdvanceIfNecessary
+        W-->>LS: QueueJob(TextureToConvert) then Wait()
+        LS->>LS: TryDequeueJob, Process() (GL upload), signal
+        LS-->>W: job event signalled, worker resumes
+        LS->>LS: more jobs until 1/60 s used, Sleep(rest)
+    end
+    LS-->>M: return (m_rendering=false, m_startTime=0)
+```
+
+#### 9.2.4 `Render()` loop [C] `code/loading_screen.cpp:LoadingScreen::Render`
+
+1. `m_rendering = true`; `m_fadeOutLogo = m_initialLoad`; `m_startFadeOutTime = 0`.
+2. Loop **while** any of: worker queue not empty; `m_jobs` not empty; `g_app->m_requireSoundsLoaded && !g_app->m_soundsLoaded`; `m_fadeOutLogo`; [B:D3D] `GeneratingMipmaps()`.
+   - `UpdateAdvanceTime()` (global frame clock, capped 0.25 s — [20](20_architecture.md)).
+   - `g_inputManager->PollForEvents()` only (input is **not** advanced, so no control events fire during loading).
+   - If `g_app`, `m_resource`, `m_renderer` exist: `RenderFrame()`; `SoundSystem::Advance()` if initialised; if `g_app->m_networkMutex.TryLock()` succeeds: `m_clientToServer->KeepAlive()` and `m_server->AdvanceIfNecessary(now)` (a hosting server keeps ticking and clients do not time out during a level load), unlock.
+   - Run one main-thread job, then keep running jobs until `frameStart + 1/60 s`; `Sleep(remaining ms)` if time remains → loading-screen frame cap **60 Hz** (L331–347).
+3. `m_rendering = false`; `m_startTime = 0`.
+
+`m_requireSoundsLoaded` is set true when the player leaves `MainMenuLoop` [C] `code/main.cpp:MainMenuLoop` — the first level load waits for the background sound load; the main menu itself does not.
+
+#### 9.2.5 What a frame shows [C] `LoadingScreen::RenderFrame`, `RenderIVLogo`, `RenderSpinningDarwinian`
+
+If `m_texId == -1`: try `Resource::DoesTextureExist("sprites/darwinian.bmp")` → `GetTexture`; draw nothing and do not `Flip` (the screen keeps its last frame). Otherwise:
+
+1. `m_startTime` := now on the first such frame. Clear colour (0, 0, 0, 0) + depth.
+2. **Menu backdrop**: if `!m_initialLoad && !g_app->m_loadingLocation && g_app->m_atMainMenu && renderer fade complete` → render `GameMenu` and `UserInput` (e.g. during thumbnail preload the menu stays visible under the spinner).
+3. `g_editorFont.BeginText2D()` (2D pixel projection), blend on, cull off.
+4. **Publisher logo (initial load only)**: PC constants `platformLogoDuration = 0`, `ivLogoStartTime = 0`, `ivLogoFadeInDuration = 1.0 s`. `alpha = min(elapsed, 1)`; when the worker queue is empty and no jobs remain the fade-out starts: `alpha = 1 − (now − m_startFadeOutTime)` (1 s), and at `alpha ≤ 0` → `m_fadeOutLogo = false` (lets the loop end). Texture `textures/ivlogo.bmp` (600×600 source) centred, size `500·(ScreenH/1024)` square, colour (1, 1, 1, alpha). **Rating notice** (`WAN_PLAY_ENABLED && !TARGET_OS_MACOSX` → [B:FULL]): if phrase `esrb_warning` exists ("ESRB Notice: Game Experience May Change During Online Play" class text, `english.txt` L2851), draw it centred at (W/2, 0.95·H), font 0.02·H, `g_editorFont`, colour (1, 1, 1, alpha − 0.5) (at most 50 % opacity).
+5. **Spinner** (always on PC): sprite `sprites/darwinian.bmp`, 100 × 100 px, centre (W − 100, H − 100), colour (0.2, 0.8, 0.2, 1), rotation `fmod(t·90°, 360°)` about its centre (90°/s; a commented alternative stepped 18° at 5 Hz). Restores cull on, blend off.
+6. `EndText2D`, `g_windowManager->Flip()`.
+
+[B:DEAD] Mac only: a 5 s platform logo (1 s fade in / 1 s fade out) before the publisher logo; spinner hidden during it.
+
+#### 9.2.6 Latent side effect: `RequestBootloaderSequence`
+
+`CampaignButton::LoadCampaign` calls `RequestBootloaderSequence()`, which sets `requestBootloader = true` **and** `g_RenderingFirstTimeBL = true`. Only `RunBootloader` (compiled out) resets `g_RenderingFirstTimeBL`; the main loop clears `requestBootloader` but not the other flag; `Renderer::Render` skips `RenderFadeOut()` while `IsFirsttimeSequencing()` is true → after a Campaign launch, screen fade-outs are never drawn again for the session [C] `code/main.cpp`, `code/renderer.cpp:Renderer::Render` (L~671). The Campaign button is reachable only from the debug-only `PageDarwinia` (§1.2.1), so this bug is **not** player-visible in [B:FULL]. Do not replicate.
+
+#### 9.2.7 Re-implementation notes
+
+Keep: background loading thread; main-thread (or copy-queue) job queue for GPU work with a per-frame time budget; network keep-alive and server ticking during loads; first-run publisher splash with fade; minimal spinner; menu-backdrop variant for small loads. Change: add real progress reporting; initialise every member; let the OS schedule threads instead of fixed affinity masks; DX12 permits multi-threaded resource creation, removing most of the job marshalling.
+
+### 9.3 Animated game-mode panels (`AnimatedPanel`, `AnimatedPanelRenderer`) [B:FULL]
+
+#### 9.3.1 What they are
+
+A small keyframed 2D cartoon (sprites moving, rotating, fading) in a framed box at the bottom-centre of the screen **during the pre-game grace period**, titled with the mode name and captioned with a one-line rule summary — a "how this mode works" explainer. One `.anim` file per mode in `data/animations/` [C] `code/multiwiniahelp.cpp:MultiwiniaHelp::InitialiseAnimatedPanel`. The `.anim` text grammar (`WIDTH / HEIGHT / START / STOP`, `BEGIN Object … END`, `BEGIN Keyframe … END` with `TIMEINDEX IMAGENAME XPOS YPOS COLOUR SCALE ANGLE FLIPHORIZ ALPHA`; unknown commands ignored; only the first token after a command is read, so image names cannot contain spaces) is in [29](29_data_formats_reference.md) [C] `code/animatedpanel.cpp:AnimatedPanel::Read`, `AnimatedPanelObject::Read`, `AnimatedPanelKeyframe::Read`.
+
+#### 9.3.2 Selection, lifetime and trigger [C]
+
+| Game type (`Multiwinia::m_gameType`) | File |
+|---|---|
+| `GameTypeSkirmish` (Domination) | `animations/domination.anim` |
+| `GameTypeKingOfTheHill` | `animations/koth.anim` |
+| `GameTypeCaptureTheStatue` | `animations/cts.anim` |
+| `GameTypeAssault` | `animations/assault_defend.anim` |
+| `GameTypeRocketRiot` | `animations/rocket.anim` |
+| `GameTypeBlitzkreig` | `animations/blitz.anim` |
+| `GameTypeTankBattle` (compiled out) | none → no panel |
+
+- Created lazily in `MultiwiniaHelp::Advance` (which returns early unless `g_app->Multiplayer()`) when `m_animatedPanel == NULL && Multiwinia::GameInGracePeriod()` (`m_gracePeriodTimer > 0`). If the file cannot be opened, no panel.
+- Deleted only by `MultiwiniaHelp::Reset()` (from `App::ShutdownCurrentGame`) — created once per match.
+- Rendered from `MultiwiniaHelp::Render` (2D matrices) only while `GameInGracePeriod()` **and** `g_app->m_multiwiniaTutorial == NULL` **and** `m_gracePeriodTimer >= GRACE_TIME`. `Multiwinia::AdvanceGracePeriod` holds the timer at exactly `GRACE_TIME` (3.0 s) until every human team is ready and only then counts down in 0.1 steps, so the panel is visible **while waiting for players to ready up** and disappears as soon as the 3-2-1 countdown starts. Also suppressed by `Render`'s early-outs (no location, not multiplayer, `m_hideInterface`, game over, Assault victory timer, no local team).
+
+#### 9.3.3 Layout [C] `MultiwiniaHelp::InitialiseAnimatedPanel`
+
+`scale = ScreenH / 1300`; `screenW = m_width·scale`, `screenH = m_height·scale`, `screenX = ScreenW/2 − screenW/2`, `screenY = ScreenH − m_height·1.15·scale`; `borderSize = 5`, `titleH = 25`, `captionH = 15` (pixels, unscaled). Design sizes and contents from the files [C] `data/animations/*.anim` headers (object/keyframe counts from `BEGIN Object` / `BEGIN Keyframe` / `IMAGENAME` lines):
+
+| File | Design size | Loop | Objects | Keyframes | Images used (`data/animations/`) |
+|---|---|---|---|---|---|
+| `assault_defend.anim` | 900 × 250 | 0–12.02 s | 14 | 135 | cloudyglow, darwinian, darwinian_ouch4, muzzleflash, trunkport, turretbarrel, turretbase, wmd |
+| `blitz.anim` | 900 × 250 | 0–24.01 s | 28 | 180 | cloudyglow, darwinian, darwinian_ouch4, flag, flag_down, flag_locked, flag_up, fuelpumper, laser, muzzleflash, trunkport |
+| `cts.anim` | 924 × 250 | 0–20.01 s | 23 | 111 | cloudyglow, darwinian, darwinian_ouch4, laser, muzzleflash, plusone, spawnpoint, statue, zone-back, zone-front |
+| `domination.anim` | 800 × 250 | 0–15.01 s | 28 | 169 | cloudyglow, darwinian, darwinian_ouch4, laser, muzzleflash, spawnpoint |
+| `koth.anim` | 800 × 250 | 0–15.66 s | 17 | 108 | cloudyglow, darwinian, darwinian_ouch4, laser, muzzleflash, plusone, spawnpoint, zone-back, zone-front |
+| `rocket.anim` | 1000 × 250 | 0–30.01 s | 21 | 173 | armour, cloudyglow, darwinian, fuelpump, fuelpumper, island, laser, muzzleflash, rocket, solarpanel, trunkport, water |
+
+#### 9.3.4 Data model [C] `code/animatedpanel.h`
+
+`AnimatedPanel`: `m_objects` (LList), `m_width` = 600, `m_height` = 300, `m_start` = 0, `m_stop` = 30 (defaults, overridden by the file), `m_time` = 0 (current playback time, s). `AnimatedPanelObject`: `m_keyframes` (LList, **unsorted** — order as read).
+
+| `AnimatedPanelKeyframe` field | Type | Default | Interpolated? |
+|---|---|---|---|
+| `m_timeIndex` | float s | 0 | key |
+| `m_imageName` | char[256] | `"darwinian.bmp"` | no (step: left keyframe's value) |
+| `m_x`, `m_y` | float, panel design units | 100, 100 | eased (ramp) |
+| `m_colour` | int enum | `ColourNone` | no |
+| `m_scale` | float (× image pixel size) | 0.3 | eased (ramp) |
+| `m_angle` | float degrees | 0 | linear |
+| `m_flipHoriz` | int bool | 0 | no |
+| `m_alpha` | int 0–255 | 255 | linear (integer truncation on assignment) |
+
+Colour enum: `ColourNone` = 0 (white 255, 255, 255), `ColourFriendly` = 1 (local team's `Team::m_colour`), `ColourEnemy` = 2 (colour of the first team index `i` in 0..NUM_TEAMS−1 that is not `TeamTypeUnused` and not a friend (`Location::IsFriend`) of `m_myTeamId`; white if none), `ColourInvisible` = 3 (RGBA 255, 255, 255, 0 — keyframe alpha ignored) [C] `code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects`. Editing API present but unused (no editor calls it) [I from grep]: `NewObject`, `DeleteObject`, `NewKeyframe(obj, t)`, `GetKeyframe(obj, t, maxDiff)`, `DeleteKeyframe` (removes **without deleting** — leak), `Write(TextFileWriter*)`.
+
+#### 9.3.5 Interpolation [C] `code/animatedpanel.cpp:AnimatedPanel::CalculateObjectProperties`
+
+1. `left` = keyframe with the greatest `timeIndex ≤ t`; `right` = keyframe with the smallest `timeIndex ≥ t` (linear scan; ties → first found).
+2. None → not drawn. Only `left` → hold `left`. Only `right` → **not drawn** (the object does not exist before its first key). `left == right` or `|right.t − left.t| < 0.01` → `left`.
+3. Else `lin = (t − left.t)/(right.t − left.t)`; `ramp = CalculateRampUpAndDown(left.t, right.t − left.t, t)` with `f = (t − start)/duration`: `f > 1` → 1; `f < 0.5` → `2f²`; else `1 − 2(1 − f)²` (quadratic ease-in-out).
+4. Result = copy of `left`, then `x, y, scale` lerped with `ramp`; `angle, alpha` lerped with `lin`.
+
+#### 9.3.6 Playback and rendering [C] `code/animatedpanel_renderer.cpp`
+
+- Clock: on the first `RenderObjects`, `m_time = 0`, `m_animTimer = now`; each call `m_time += now − m_animTimer`; if `m_time > m_stop` → `m_time = m_start` (loop; overshoot discarded); `m_animTimer = now`. Real time, not game time.
+- `RenderBackground(alpha = 0.9)`: black quad (alpha 0.9) over `[screenX − border, screenY − titleH − border] … [screenX + screenW + border, screenY + screenH + border + captionH]`; outer line loop white alpha 0.45 on the same rectangle; inner line loop white alpha 0.225 on `[screenX, screenY − titleH] … [screenX + screenW, screenY + screenH + captionH]`.
+- `RenderObjects`: scissor (`Renderer::Clip`) to `(screenX + 1, screenY − titleH + 1, screenW − 1, screenH + titleH + captionH − 1)`; `scale = screenW / m_width`; each object (list order = draw order) with a valid sample: image `animations/<imageName>` (bitmap needed for its pixel size; texture mip-mapped, linear, clamp); `w = imgW·kf.scale·scale`, `h = imgH·kf.scale·scale`; centre `(screenX + kf.x·scale, screenY + kf.y·scale)`; rotated by `kf.angle` degrees about the centre; horizontal flip via texture u 1 → 0; colour per §9.3.4 with `a = kf.alpha` (unless invisible). Blending is whatever `MultiwiniaHelp::Render` set (`SRC_ALPHA, ONE_MINUS_SRC_ALPHA`) [I].
+- `RenderTitle(title)`: `g_titleFont` size 30, centred at `(screenX + screenW/2, screenY − titleH + 10)`; outline pass (1, 1, 1, 0) then fill (1, 1, 1, 1). Title = `LANGUAGEPHRASE(blueprint->GetName())` upper-cased.
+- `RenderCaption(caption)`: `g_editorFont` size 18; `WordWrapText(caption, screenW, 18/1.7)`; lines centred at x = `screenX + screenW/2`, bottom line at `y = screenY + screenH + captionH − 12`, earlier lines 18 px above; outline + fill. Caption key `multiwinia_animdesc_<blueprint m_name>` (lookup is case-insensitive) — six keys in `english.txt`.
+- `BeginRender()` / `EndRender()` are declared but defined nowhere and never called [C grep].
+
+### 9.4 Start sequences
+
+#### 9.4.1 The live match start sequence (grace period)
+
+Every Multiwinia match starts the same way [C] `code/multiwinia.cpp:Multiwinia::AdvanceGracePeriod`, `RenderOverlay_GracePeriod` (owned by [01 §3.7](01_game_modes.md)):
+
+1. The loading screen finishes (§9.2); in multiplayer the game timer runs at speed 0 until the grace period ends (`GameTimer::Reset` sets speed 0 when `Multiplayer()`).
+2. Grace: `m_gracePeriodTimer = GRACE_TIME = 3.0` (20.0 under `TESTBED_ENABLED`). Only LocalPlayer / RemotePlayer / Spectator teams are counted; CPU teams are never waited for. While not all counted teams are ready the timer snaps back to 3.0, the player sees "PRESS SPACE WHEN READY" and the animated mode panel (§9.3) — or, in a tutorial, the camera-controls picture (§8.4). CTS spawns a starting statue if none exists.
+3. Once all are ready: `CountdownTick` on the first ready tick, then `timer −= 0.1` per server tick (literal, independent of game speed) with a tick sound near each integer; overlay "GAME STARTING IN n".
+4. At ≤ 0 (30 ticks = 3.0 s after everyone is ready): `CountdownZeroTick`, timer = −1, `g_gameTimer.RequestSpeedChange(1.0, 1.0, −1.0)` (immediate full speed), `AchievementTracker::AddVisitedLevel(mapFilename)`.
+
+#### 9.4.2 `StartSequence` — first-time intro [B:LEGACY] (summary; timeline in [30 §6](30_scripting_tutorial_and_cutscenes.md))
+
+Compiled but never constructed: its only `new StartSequence()` is in `RunBootloader` (`code/main.cpp` L1248, inside `#ifdef USE_LOADERS`), which would play it when pref `BootLoader == "firsttime"` on the first Darwinia campaign launch, then set the pref to `"random"`. Mechanism: up to 90 s (skippable with `SkipMessage` = Enter / Esc / pad Start/A/B/Y), music event `StartSequence`, camera flight `Camera::ModeSphereWorldIntro` from deep space to the world, ten timed typewriter captions `intro_1..10` (20 characters/s, blinking block cursor), fade from black over 0–3 s and to white over 87–89 s, a growing 3D line grid from 50 s. There is **no Multiwinia-mode intro** in this tree [C].
+
+#### 9.4.3 `DemoEndSequence` [B:DEAD]
+
+Prologue end screen (fade to white, drifting ghost sprites, "press SPACE to exit" after 20 s) — compiled out (`USE_SEPULVEDA_HELP_TUTORIAL`); [30 §7](30_scripting_tutorial_and_cutscenes.md).
+
+### 9.5 Boot-loader mini-programs — reachability summary
+
+"Boot loaders" are self-contained full-screen retro / demo-scene mini-programs that Darwinia played *instead of* a plain loading screen when entering the campaign; each owns its render loop, plays one music event and returns when finished, skipped (`SkipMessage`) or quitting. They load nothing (cosmetic). All are [B:DEAD] in Multiwinia because `USE_LOADERS` is commented out [C] `code/lib/universal_include.h` L68; the dispatcher and full algorithms are in Appendix A.1.
+
+| Index (with `USE_LOADERS`) | Enum | Name (`GetLoaderName`, pref `BootLoader` value) | Class | Random weight | Music event | Duration |
+|---|---|---|---|---|---|---|
+| 0 | `TypeSpeccyLoader` | `Spectrum` | `SpeccyLoader` | 0 | `LoaderSpeccy` | ≈ 57.6 s |
+| 1 | `TypeMatrixLoader` | `Matrix` | `MatrixLoader` | 10 | `LoaderMatrix` | 23 s |
+| 2 | `TypeFodderLoader` | `Fodder` | `FodderLoader` | 0 | `LoaderFodder` | until the song ends |
+| 3 | `TypeRayTraceLoader` | `Raytrace` | `RayTraceLoader` | 10 | `LoaderRaytrace` | until skipped |
+| 4 | `TypeSoulLoader` | `Soul` | `SoulLoader` | 10 | `LoaderSoul` | until skipped |
+| 5 | `TypeGameOfLifeLoader` | `GameOfLife` | `GameOfLifeLoader(false)` | 0 | `LoaderGameOfLife` | until skipped |
+| 6 | `TypeGameOfLifeLoaderGlow` | `GameOfLife_Glow` | `GameOfLifeLoader(true)` | 10 | `LoaderGameOfLife` | until skipped |
+| 7 | `TypeAmigaLoader` | `Amiga` | `AmigaLoader` | 0 | `LoaderAmiga` | 89 s |
+| 8 | `TypeCreditsLoader` | `Credits` | `CreditsLoader` | 0 (left unassigned → memset 0) | `Credits` | emergent |
+| 9 | `NumLoaders` | — | — | — | — | — |
+
+In [B:FULL] (`USE_LOADERS` off) the enum collapses to `TypeCreditsLoader = 0`, `NumLoaders = 1`, the name table to `{"Credits"}` and the random table to `{Credits: 10}` [C] `code/loaders/loader.cpp`. `GetLoaderIndex(name)`: `"random"` → `GetRandomLoaderIndex()`; else case-insensitive match; no match → −1 (`"none"` plays nothing). `GetRandomLoaderIndex()` **reseeds the application RNG** with `time(NULL)` (side effect on every later `AppRandom` / `frand` user) [C].
+
+### 9.6 Credits
+
+#### 9.6.1 Live credits: the front-end page
+
+`PageCredits` (§3.18): a static auto-scrolling text page built from `multiwinia_credits_1..66` with the beta-tester list spliced in at the `*BETATESTERS` phrase [C].
+
+#### 9.6.2 `CreditsLoader` — the carried-letters credits roll [B:LEGACY] (structure only — text is IP)
+
+Reachability: Darwinia campaign only — script op `RunCredits` (`code/script.cpp:Script::RunCommand_RunCredits`; no shipped script uses it [C grep `data/scripts`]) and the Darwinia ending camera `Camera::AdvanceSphereWorldOutroMode` once its running time exceeds 70 s (entered via script op `GameOver`, `data/scripts/gameover.txt`); afterwards the camera returns to `ModeSphereWorld` at (0, 0, 100) [C] `code/camera.cpp`.
+
+Concept: on a black 800-wide virtual canvas, small unit sprites walk on from the screen edges, pick up words or single letters and carry them into place to spell each page; when a page is complete they carry the pieces off (or re-use identical pieces for the next page).
+
+- Objects [C] `code/loaders/credits_loader.h`: `CreditsItem` (`m_string` — one word or one character; `m_pos`; `m_targetPos` (centre); `m_size` (font size); `m_used` — assigned to the page being built); `CreditsDarwinian` carrier (`m_pos`, `m_targetPos`, `m_itemId`, `m_state ∈ {StateWalkingToItem, StateCarryingItem, StateLeaving}`); global `g_creditsLoader`.
+- Page construction `CreateNextScene()` (whenever **no carriers remain**): (1) `DeleteUnusedStrings` — delete every `!m_used` item that is off-screen; (2) emit the page through `GenerateWordsCentre(x, y, size, text)` (split at spaces, one item per word, laid out left → right from `x − width(text)/2`, advance = width(word + 1 char); 256-wchar buffer limit) or `GenerateCharsCentre(x, y, size, text)` (one item per non-space character, advance = width(1 char), spaces advance too); each emission → `AddString(x, y, size, s)`: re-use the first existing `!m_used` item with an identical string (case-sensitive) — it keeps its position — else create one at `GenerateOffscreenPosition(1000 + AppRandom()%200)`; `m_used = true`, `targetPos = (x + width(s)/2, y)`; a carrier is created per emitted item, starting at the item (if the item is off-screen) or at `GenerateOffscreenPosition(200 + AppRandom()%100)`, state WalkingToItem; (3) `RemoveUnusedStrings`: every remaining `!m_used` item gets `targetPos = GenerateOffscreenPosition(150)` and a fresh carrier from `GenerateOffscreenPosition(40 + AppRandom()%50)`; (4) `++m_sceneIndex`.
+- `GenerateOffscreenPosition(d)`: edge `AppRandom()%4`: 0 → (−d, rand%600); 1 → (rand%800, −d); 2 → (800 + d, rand%600); 3 → (rand%800, 600 + d). `IsOffscreen(p)`: x < 0, y < 0, x > 800 or y > 600 (fixed 800 × 600 even on wide screens [C]).
+- Page layout (keys `bootloader_credits_<n>`; W = per word, C = per character; all centred at x = 400; mode y size key):
+
+| Scene | Items |
+|---|---|
+| 0 | W 150 30 `_1`; C 250 40 `_2`; C 300 40 `_3` |
+| 1 | W 150 30 `_4`; C 200 50 `_5`; C 300 40 `_6`; C 350 40 `_7`; C 400 40 `_8`; C 450 40 `_9` |
+| 2 | W 150 30 `_41`; C 200 40 `_42`; C 250 40 `_43`; C 300 40 `_44` |
+| 3 | W 150 30 `_10`; C 250 40 `_11`; C 300 40 `_12` |
+| 4 | W 150 30 `_13`; C 250 50 `_14`; [`OBERONBUILD` only: W 400 30 `_15`] |
+| 5 | W 150 30 `_16`; C 200 40 `_17`; C 270 40 `_18`; W 400 30 `_19`; C 450 40 `_20` |
+| 6 | W 150 30 `_21`; C 250 50 `_22`; W 300 30 `_23`; C 400 50 `_24`; W 450 30 `_25` |
+| 7 | W 150 30 `_26`; C 200 40 `_27`; C 250 40 `_28`; W 400 30 `_29`; C 450 40 `_30` |
+| 8 | W 150 30 `_31`; C 250 40 `_32` |
+| 9 | [`EGAMESBUILD`: `GenerateEGamesList`] else W 150 30 `_33`; C 200 40 `_34`; W 350 30 `_35`; C 400 40 `_36` |
+| 10 | W 50 30 `_37`; then the beta-tester list |
+| 11 | C 200 60 `_38`; W 300 20 `_39`; W 330 20 `_40` |
+| 12 | empty page (everything is carried off) |
+| 13 | finished → `Run` exits |
+
+Pattern [I from layout]: per-word size-30 lines are role headings, per-character size-40/50 lines are names; 44 `bootloader_credits_*` keys exist in `english.txt` [C].
+- Beta-tester page (`GenerateBetaTesterList`): read `data/betatesters.txt` (38 non-empty lines [C]); each line with `strlen > 1` is a name; two columns at x = 200 and 600; `y0 = 75`; `perCol = int(N/2) − 1`; `gap = (800·ScreenH/ScreenW − 115)/perCol`; `textSize = gap·2/3`; per name `y += gap`; at `i == perCol` → `x += 400`, `y = 75` (N ≤ 3 → division by zero; a blank line would crash `strlen(NULL)` — the shipped file has none [C]).
+- Carrier state machine [C] `CreditsDarwinian::Advance`, `AdvanceToTargetPos`:
+
+```mermaid
+stateDiagram-v2
+    [*] --> WalkingToItem
+    WalkingToItem --> Leaving: item deleted (target offscreen 30)
+    WalkingToItem --> CarryingItem: reached item.pos + (0, size/2)
+    CarryingItem --> Leaving: item deleted (offscreen 30)
+    CarryingItem --> [*]: reached target and carrier off-screen (removal trip)
+    CarryingItem --> Leaving: reached on-screen target (target offscreen 100), item.m_used = false
+    Leaving --> [*]: reached target
+```
+
+While carrying, `item.pos = carrier.pos − (0, size/2)`. `AdvanceToTargetPos(dt)` — speed **150 px/s**, "horizontal then vertical" walk: `v = target − pos` with `v.y *= 0.3`; if `|v| > 10` move `150·dt` along `v̂`; else move `150·dt·|v|/10` and continue only when `|v| ≤ 2`; then the same with `v.x *= 0.3`; arrived when that distance ≤ 2.
+- Rendering / timing [C] `CreditsLoader::Render`, `FlipBuffers(alpha)`, `Run`: carriers `sprites/darwinian.bmp` 30 × 30, colour (100, 255, 100); items `g_gameFont.DrawText2DCentre(pos, size)` outline pass (1, 1, 1, 0) then fill (1, 1, 1, 1); `FlipBuffers(alpha)` clears depth only, then draws a full-canvas black quad with `alpha = min((t − start)/7, 1)` → frames smear during the first 7 s [I: relies on blending enabled — 09-U9]; `Run` starts music `Credits`, `SetupFor2D(800)`, loops until skip / quit or `CreateNextScene()` returns true, then stops `"Music Cutscene3"` — a name mismatch with the started `Credits` event (non-looping, so harmless) [C]. Total length is emergent.
+
+### 9.7 Attract mode (`AttractMode`) [B:DEAD]
+
+Feature gate `ATTRACTMODE_ENABLED` is defined nowhere; the object is constructed only under it (`code/app.cpp:App::App` L394–396) [C].
+
+- Triggers [C] `code/attract.cpp:AttractMode::Advance`, `data/input/input_preferences.txt` L280–287: would be advanced each frame in the global-world loop and, while running, in the location loop (where it can only stop). Start: `ControlStartAttractMode` — both shipped bindings are **commented out**: `#StartAttractMode = key f1 down` and `#StartAttractMode = idle reaches 60` (60 s without input; code comment "change to a timer for user idleness"). Stop: `ControlStopAttractMode` (`idle no longer`, `key space down`, `key enter down`, `key esc down`, `XInput start down`, `XInput b down`) **or** the attract script has finished (`!Script::IsRunningScript()`).
+- `StartAttractMode()`: remember the profile name; `App::SaveProfile(true, true)`; `App::SetProfileName("AttractMode")` (special-cased: not written to pref `UserProfile`; `LoadProfile` loads `game_unlockall.txt` with every trunk port online and every location available; `SaveProfile` refuses to save) [C] `code/app.cpp:App::SetProfileName`, `App::LoadProfile`, `App::SaveProfile`; `TaskManagerInterface::m_lockTaskManager = true`; if `LoadProfile()` succeeds → `Script::RunScript("attractmode.txt")`, `m_running = true`; remove all Eclipse windows.
+- `data/scripts/attractmode.txt` [C] (Darwinia campaign levels — IP names): setup `SetMission mine mission_mine_attract.txt`, `SetMission pattern_buffer mission_pattern_buffer_attract.txt`, `SetMission biosphere mission_biosphere_attract.txt`; location 1 `EnterLocation mine`, `CamMove attract1 10`, `WaitCam`, `CamMove attract2 10`, `WaitCam`, `CamMove attract3 10`, `WaitCam`, `CamMove attract4 10`, `WaitCam`, `CamMove attract5 10`, `Wait 7`, `ExitLocation`; location 2 `EnterLocation pattern_buffer`, `CamMove attract1 20`, `WaitCam`, then `attract2` … `attract6` at 10 s each with `WaitCam` between (last followed by `Wait 7`), `ExitLocation`; location 3 `EnterLocation biosphere`, `attract1` … `attract6` at 10 s each with `WaitCam`, final `Wait 7`, `ExitLocation`; end `CamReset`, `CamReset`, `ExitLocation`. Approximate run time (the last `CamMove` of each location is cut short by `Wait 7`): 47 + 67 + 57 ≈ 171 s plus level loads [I].
+- `EndAttractMode()`: `Script::m_waitForCamera = false`; `RunScript("endattract.txt")` (2 lines: `CamReset`, `ExitLocation`); restore the saved profile name and `LoadProfile()`; unlock the task manager; `m_running = false`, profile name buffer := `"none"`.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Running: ControlStartAttractMode (unbound) / save profile, profile AttractMode, lock task manager, run attractmode.txt
+    Running --> Idle: ControlStopAttractMode (any input) or script finished / run endattract.txt, restore profile, unlock task manager
+```
+
+Note for the new game: attract mode = "idle → cinematic fly-through of scripted camera mounts over live levels with a throw-away unlocked profile; any input returns to the menu". Worth re-implementing for kiosk / demo builds; the original never shipped it.
+
+---
+## 10 Localisation coverage
+
+### 10.1 Mechanism (summary; grammar in [29](29_data_formats_reference.md), build in [31](31_platform_build_and_tools.md))
+
+- Every user-visible string is looked up by key through `LANGUAGEPHRASE(key)` = `g_app->m_langTable->LookupPhrase(key)`; **a missing key returns the key text itself** (no per-phrase fallback to English) [C] `code/lib/language_table.cpp:LangTable::LookupPhrase`. Phrase existence tests (`ISLANGUAGEPHRASE`) drive data-driven page counts (help pages, credits).
+- Language selection at start-up [C] `code/app.cpp:App::InitLanguage`, `App::TrySetLanguage`, `App::SetLanguage`: try pref `TextLanguage` (first-run value `unknown`), then the OS locale's English language name (`SystemInfo::m_localeInfo.m_language`, e.g. "French"), then `"english"`, then the first file in `language/`; the first that loads is stored in `TextLanguage`; fatal `AppReleaseAssert("Failed to load language file")` if all fail. `SetLanguage` loads `language/<name>.txt` into a new `LangTable`, calls `setlocale(LC_CTYPE, name)`, overlays `strings_<name>.txt` or `strings_default.txt` if present (none ships in `data/`), and for `chinese-trad`, `chinese-simp`, `korean`, `japanese` switches all three fonts to the CJK-capable `square` atlas with 1.0 glyph width (§10.4).
+- In-game switch: Other Options → Language (§11.8) lists one entry per file in `language/` (caption `language_<name>` if that phrase exists — it does for english, french, german, italian, spanish — else the raw file name, i.e. `japanese`, `korean`, `portuguese`, `russian` appear untranslated) [C] `code/interface/prefs_other_window.cpp`.
+- Input-mode variants: keys suffixed `_kbd` / `_xin` (and some `_xbox` / `_mac` chosen in code) give keyboard / gamepad / Mac wording; caption markup `[KEY<control>]`, `[IFMODE KEYBOARD] … [ELSE] … [ENDIF]`, `[phrase]` references are expanded at table-build time [C] `code/lib/language_table.cpp:LangTable::RebuildTables` ([29](29_data_formats_reference.md)).
+- Placeholders in strings use `*<letter>` flags replaced at run time (`UnicodeString::ReplaceStringFlag`, e.g. `*T`, `*S`, `*P`, `*H`) [C] `contrib/systemiv/lib/unicode/unicode_string.cpp`.
+- QA aid: pref `TextLanguageTest = 1` → `LangTable::TestAgainstEnglish` writes `language_errors.txt` listing missing translations, untranslated (identical) strings and keys absent from English [C] `code/lib/language_table.cpp:LangTable::TestAgainstEnglish`.
+- MOTD is requested from the metaserver in the current `TextLanguage` (§5.15); localised control-help images are chosen by `TextLanguage` / keyboard locale (`control_camera_french.bmp`).
+
+### 10.2 Phrase-table coverage per language (computed)
+
+Generated by `_work/scripts/S_09_lang_coverage.py` (run `python3 -I S_09_lang_coverage.py <SRC>/data/language`; parser approximates `LangTable::ParseLanguageFile`: key = first token, `#` comments, later duplicates replace earlier) over the nine shipped files [C data].
+
+| Language file | Encoding | Size (bytes) | Keys | Duplicate keys | Keys shared with English | Coverage of English keys | `multiwinia_*` / `mp_*` keys covered | Keys absent from English | Values identical to English |
+|---|---|---|---|---|---|---|---|---|---|
+| `english.txt` | 8-bit (ASCII except two Latin-1 bytes in a credits name) | 228611 | 2423 | 2 | 2423 | 100.0 % | 827/827 (100.0 %) | 0 | — |
+| `french.txt` | UTF-16 BE | 569322 | 2514 | 2 | 2416 | 99.7 % | 824/827 (99.6 %) | 98 | 176 |
+| `german.txt` | UTF-16 BE | 556882 | 2487 | 2 | 2415 | 99.7 % | 823/827 (99.5 %) | 72 | 183 |
+| `italian.txt` | UTF-16 BE | 513930 | 2361 | 4 | 2361 | 97.4 % | 797/827 (96.4 %) | 0 | 155 |
+| `japanese.txt` | UTF-16 LE | 25112 | 221 | 0 | 219 | 9.0 % | 214/827 (25.9 %) | 2 | 21 |
+| `korean.txt` | UTF-16 BE | 19066 | 161 | 0 | 159 | 6.6 % | 155/827 (18.7 %) | 2 | 8 |
+| `portuguese.txt` | UTF-16 BE | 24298 | 161 | 0 | 159 | 6.6 % | 155/827 (18.7 %) | 2 | 8 |
+| `russian.txt` | UTF-16 LE | 480568 | 2141 | 1 | 2141 | 88.4 % | 622/827 (75.2 %) | 0 | 109 |
+| `spanish.txt` | UTF-16 BE | 569994 | 2514 | 2 | 2416 | 99.7 % | 824/827 (99.6 %) | 98 | 139 |
+
+Coverage by English key family (number of English keys of that prefix present in each translation):
+
+| Prefix | English keys | french | german | italian | japanese | korean | portuguese | russian | spanish |
+|---|---|---|---|---|---|---|---|---|---|
+| `multiwinia_` | 713 | 710 | 709 | 685 | 214 | 155 | 155 | 512 | 710 |
+| (other) | 554 | 551 | 551 | 546 | 4 | 4 | 4 | 542 | 551 |
+| `editor_` | 196 | 196 | 196 | 194 | 0 | 0 | 0 | 168 | 196 |
+| `launchpad_` | 177 | 177 | 177 | 177 | 0 | 0 | 0 | 177 | 177 |
+| `dialog_` | 157 | 156 | 156 | 155 | 1 | 0 | 0 | 141 | 156 |
+| `mp_` | 114 | 114 | 114 | 112 | 0 | 0 | 0 | 110 | 114 |
+| `bootloader_` | 101 | 101 | 101 | 101 | 0 | 0 | 0 | 101 | 101 |
+| `help` | 85 | 85 | 85 | 85 | 0 | 0 | 0 | 85 | 85 |
+| `control` | 83 | 83 | 83 | 83 | 0 | 0 | 0 | 83 | 83 |
+| `tutorial` | 78 | 78 | 78 | 78 | 0 | 0 | 0 | 78 | 78 |
+| `crate_` | 69 | 69 | 69 | 51 | 0 | 0 | 0 | 50 | 69 |
+| `newcontrols_` | 38 | 38 | 38 | 38 | 0 | 0 | 0 | 38 | 38 |
+| `cratename_` | 35 | 35 | 35 | 34 | 0 | 0 | 0 | 34 | 35 |
+| `taskmanager_` | 21 | 21 | 21 | 21 | 0 | 0 | 0 | 21 | 21 |
+| `authentication_` | 2 | 2 | 2 | 1 | 0 | 0 | 0 | 1 | 2 |
+
+Findings [C data; I effect]:
+
+- **Complete**: English, French, German, Spanish (≥ 99.5 % of the Multiwinia strings); Italian nearly complete (96.4 % of Multiwinia strings; crate tooltips partly missing).
+- **Partial**: Russian (75 % of Multiwinia strings, 88 % overall) — missing keys display as raw ids.
+- **Stubs**: Japanese, Korean and Portuguese contain only an early Xbox-era subset (team-type labels, menu titles, XBLA session/sign-in strings, PDLC upsell, leaderboard titles, some option labels — e.g. `multiwinia_session_type_xblas`, `multiwinia_signin_xbla`, `multiwinia_pdlc_1..4`, `multiwinia_mainmenu_title360`). With one of these selected about 90 % of the UI would show raw key ids [I]. Shipping-list evidence: these three have their own `tools/<lang>language.list`, but no retail script selects them (§10.3).
+- Duplicates [C]: English `buildingname_grenadeturret`, `multiwinia_help_title_crates` (later definition wins).
+- Code-side gaps that no translation can fix [C]: phrase `Spectator` and `multiwinia_gametype_tankbattle` exist in no file; drop-down captions use raw parameter names (`ScoreMode`, `CrateDropMode`); the Update button caption "Update", the Sound Options slider caption "Master Volume" and the sound-restart failure box are hard-coded English; the debug / editor / profiler windows use literal English ([28](28_ui_framework.md)).
+
+### 10.3 Language packaging per SKU
+
+[C] `tools/build_language_dat.bat`, `tools/build_multiwinia_data.bat`, `tools/build_multiwinia_retail.bat`, `tools/build_multiwinia_retail_efigs.bat`, `tools/build_multiwinia_retail_russian.bat`, `tools/*language.list`.
+
+| Build argument | Files copied into `language.dat` | Retail script |
+|---|---|---|
+| `all` (default when no language is given; always for Xbox) | `tools/language.list` — all nine `language/*.txt` + 131 of the 138 font atlases (140 lines; it omits `editor.0410.042f`, `editor.0430.044f`, `square.0410.042f`, `square.0430.044f` and the three `*.20a0.20af` currency atlases, so in an "all" build Russian text has Cyrillic glyphs only in the `speccy` font [C list vs directory; I effect]) | `build_multiwinia_retail.bat` without an argument passes `English` |
+| `efigs` | english + french + german + italian + spanish lists | `build_multiwinia_retail_efigs.bat` |
+| `english` / `french` / `german` / `italian` / `spanish` / `portuguese` | `language/<lang>.txt` + the three Latin-1 atlases (4 lines each) | per-language argument (autopatcher variants `autopatch_fr/it/de/es.exe` copied for FR/IT/DE/ES) |
+| `russian` | `russian.txt` + Latin-1 and Cyrillic atlases for editor, speccy, square (10 lines) | `build_multiwinia_retail_russian.bat` (also writes `build/origin` = `buka`, a distributor tag sent to the metaserver as `ORIGINVERSION` "dH" [C] `code/app.cpp:App::Initialise`, `code/network/clienttoserver.cpp` L399) |
+| `korean` (49 lines: 45 `square` CJK/Hangul atlases) / `japanese` (86 lines: 83 `square` atlases) | language file + Latin-1 atlases + CJK atlases | none |
+| any non-retail, non-Xbox platform | English only | — |
+
+### 10.4 Font support
+
+[C] `code/app.cpp` (font setup ~L688–731), `code/lib/text_renderer.cpp`, `data/textures/unicode/` (138 files); full atlas rules in [24 §24.7](24_rendering.md).
+
+| Font global | Atlas name | Role | Scripts covered |
+|---|---|---|---|
+| `g_gameFont` | `speccy` | in-game captions, banners | Latin-1 U+0020–00FF, Cyrillic U+0410–044F, currency U+20A0–20AF |
+| `g_editorFont` | `editor` | UI / body text, chat | same three ranges |
+| `g_titleFont` | `square` | titles; **the only font with CJK and Hangul atlases** | Latin-1, Cyrillic, currency, CJK punctuation + kana U+3000–30FF, CJK ideographs U+4E00–9EFF (81 blocks), Hangul U+AC00–D7FF (44 blocks; one file misnamed `square.bb00.bfff.bmp`) |
+
+For `chinese-trad`, `chinese-simp`, `korean` and `japanese` all three fonts become the `square` atlas with glyph width 1.0·size (Latin characters below U+3000 stay at 0.6·size). No Chinese language file ships although the code path exists. Rendering limits: fixed-advance cells, no kerning, shaping or BiDi, Basic Multilingual Plane only (surrogate decoding is wrong and stored back into 16 bits), word-wrap breaks at spaces or after CJK characters (U+3000–U+D7FF) [C] `code/lib/language_table.cpp:WordWrapText`, `code/lib/text_renderer.cpp:TextRenderer::DrawText2DSimple`. Narrow-string conversions (`UnicodeString → const char*`) turn non-Latin-1 characters into `?` where translated text is passed through `char*` APIs (editor value labels and drop-down options) [C].
+
+---

@@ -1364,7 +1364,7 @@ sequenceDiagram
   M->>S: AdvanceIfNecessary(now): now > next, Advance, next += 0.1
   S-->>C: UPDATE k into inbox - local letters bypass sockets
   M->>C: AdvanceAndCatchUp, n = int(0.3 x pending) <= 20
-  C->>C: slice -1: take UPDATE k, apply commands
+  C->>C: after the remaining slices of tick k-1: take UPDATE k, apply commands
   C->>G: Tick: lastClientAdvance = now, gameTime += 0.1 x speed, blend speed
   C->>C: GenerateSyncValue, SendSyncronisation
   C->>L: Advance(slice 0..n-1) with dt = 0.1 x speed
@@ -1380,15 +1380,305 @@ sequenceDiagram
 
 ### 10.9 Worked example (60 fps host, normal speed)
 
-[I] from §10.2–10.6 and the pacing simulation: at t = 0 the host's server emits UPDATE k; the same frame the host's client takes it (`Tick`, `g_predictionTime` restarts at 0), runs 3 slices (pending = 10 → 3) — actually the backlog also contains the 3 unrun slices of tick k−1, which run first; over the next five frames it runs 1, 2, 3, 1, 0 slices; the remaining slices of tick k run after UPDATE k+1 arrives at t = 0.1. Rendering in each frame uses `g_predictionTime` = 0.000, 0.017, 0.033, 0.050, 0.067, 0.083 s; ALIVE (team controls) leaves once per 0.1 s; the sound system processes one 50-ms update every third frame; `g_advanceTime` ≈ 0.0167 s drives camera and UI.
+Trace from `_work/scripts/S_20_slice_pacing_sim.py` (zero latency, frames every 16.7 ms; "k.s" = slice s of tick k) [I]:
+
+| Frame | t (s) | Event | Pending slices | Slices run | `g_predictionTime` at render |
+|---|---|---|---|---|---|
+| f | 0.000 | server emits UPDATE k (host: same frame, before the client step) | 13 (3 left of tick k−1 + 10) | k−1.7, k−1.8, k−1.9 (slice 8: `Multiwinia::Advance`, crates) | ≈ 0.083 (still measured from the `Tick` of k−1, taken at t ≈ −0.083) |
+| f+1 | 0.017 | client takes UPDATE k: commands applied, `GameTimer::Tick`, sync byte | 10 | k.0, k.1, k.2 | ≈ 0.000 |
+| f+2 | 0.033 | | 7 | k.3, k.4 | ≈ 0.017 |
+| f+3 | 0.050 | | 5 | k.5 | ≈ 0.033 |
+| f+4 | 0.067 | | 4 | k.6 | ≈ 0.050 |
+| f+5 | 0.083 | | 3 | none (`int(0.9) = 0`) | ≈ 0.067 |
+| f+6 | 0.100 | server emits UPDATE k+1 | 13 | k.7, k.8, k.9 | ≈ 0.083 |
+
+Alongside: ALIVE (team controls) leaves once per 0.1 s; the sound system runs one 50-ms update every third frame; `g_advanceTime` ≈ 0.0167 s drives camera and UI animation.
 
 ## 11 Threading model
 
-<!-- S11 -->
+### 11.1 Primitives
+
+[C] `code/lib/runnable.h`, `code/lib/runnable.cpp`, `code/lib/work_queue.h`, `code/lib/work_queue.cpp`, `contrib/systemiv/lib/netlib/net_mutex.h`, `net_mutex_win32.cpp`, `net_thread_win32.cpp`, `net_lib_win32.h`.
+
+```mermaid
+classDiagram
+  class Runnable {
+    <<abstract>>
+    +Run() const
+  }
+  class NoOp {
+    +Run() const
+  }
+  class Function {
+    -m_func : void fn()
+    +Run() const
+  }
+  class Method~T~ {
+    -m_func : void T fn()
+    -m_this : T*
+    +Run() const
+  }
+  class Method1~T_A1~ {
+    -m_func : void T fn(A1)
+    -m_this : T*
+    -m_arg : A1
+    +Run() const
+  }
+  Runnable <|-- NoOp
+  Runnable <|-- Function
+  Runnable <|-- Method
+  Runnable <|-- Method1
+  class Job {
+    <<abstract>>
+    -m_event : NetEvent
+    +Process()
+    +Wait()
+    #Run()
+  }
+  class RunnableJob {
+    -m_r : Runnable*
+    #Run()
+  }
+  Job <|-- RunnableJob
+  class DelayedJob {
+    -m_runnable : Runnable*
+    -m_counter : int
+    +ReadyToRun() bool
+    +Run()
+  }
+  class WorkQueue {
+    -m_lock : NetMutex
+    -m_event : NetEvent
+    -m_quit : NetEvent
+    -m_finished : NetEvent
+    -m_doneJob : NetEvent
+    -m_queue : LList of Runnable*
+    +Add(func)
+    +Add(method, this)
+    +Wait()
+    +Empty() bool
+  }
+  WorkQueue o-- Runnable
+  DelayedJob o-- Runnable
+  RunnableJob o-- Runnable
+```
+
+| Primitive | Exact semantics [C] |
+|---|---|
+| `NetMutex` (Win32) | `CRITICAL_SECTION` — recursive on the owning thread; `TryLock` = `TryEnterCriticalSection`; `m_locked`/`IsLocked()` is informational only (not reliable across threads) |
+| `NetLockMutex` | RAII scope lock (`Lock` in constructor, `Unlock` in destructor) |
+| `NetEvent` (Win32) | **auto-reset**, initially non-signalled (`CreateEvent(NULL, false, false, NULL)`); `Signal` = `SetEvent` (signals coalesce); `Wait(ms)` takes milliseconds as `double`, negative → `INFINITE`, returns true iff signalled |
+| `NetSemaphore` | `CreateSemaphore(initial, MAXLONG)`; `Wait(ms)` as above (present, not used by the threads below) |
+| `NetStartThread(fn, arg)` | `CreateThread(NULL, 0, fn, arg, 0, &id)`; the handle is neither kept nor closed (fire-and-forget; no join is possible); `NetThreadFunc` = `unsigned long (WINAPI *)(void *)` |
+| `NetGetCurrentThreadId()` | `GetCurrentThreadId()` |
+| `NetSleep(ms)` | `Sleep(ms)` |
+| `WorkQueue::WorkQueue()` | starts **one dedicated worker thread** via `NetStartThread((NetThreadFunc) &WorkQueue::RunThread, this)`; `RunThread` calls `StandardiseCPUPrecision()` (x87 precision is per thread) and then `Run()`. The cast hides a calling-convention mismatch (`static void RunThread(WorkQueue*)` vs `WINAPI`); it works only because the routine returns solely at shutdown [C]/[I] |
+| `WorkQueue::Add(f)` / `Add(&T::m, this)` | under `m_lock`, append `new Function(f)` / `new Method<T>(m, this)` to the tail and signal `m_event` |
+| `WorkQueue::Run()` | loop: while the queue is empty → `m_event.Wait(-1)`, then if `m_quit.Wait(0)` → signal `m_finished` and return; read item 0 under the lock; **run it outside the lock**; remove item 0 under the lock; delete it; signal `m_doneJob`. Strictly FIFO and serial |
+| `WorkQueue::Empty()` | `m_queue.Size() == 0` under the lock; the running item stays queued until it has finished, so "empty" means "idle" |
+| `WorkQueue::Wait()` | `while (!Empty()) m_doneJob.Wait(-1)` |
+| `WorkQueue::~WorkQueue()` | signal `m_quit` and `m_event`, then wait for `m_finished`; because quit is checked only when the queue is empty, pending items are drained first; a running item that never returns (the client listener) must be unblocked first (`~ClientToServer` calls `m_listener->StopListening()` before deleting its queue) |
+| `Job::Process()` / `Job::Wait()` | `Run()` then signal its private event / block on that event — a one-shot synchronous hand-off between two threads; jobs are stack objects owned by the waiting thread |
+| `RunnableJob` | `Job` wrapper around a `Runnable` |
+| `DelayedJob` | `ReadyToRun()` decrements `m_counter` and returns false while it was > 0, true when it is 0; `~DelayedJob` deletes the runnable; polled by `App::HandleDelayedJobs` (one head-of-queue poll per main-loop iteration) |
+
+### 11.2 Thread inventory
+
+Resolved: the drafts disagreed on the number of threads (P14: "8 threads" including the Mac sound preloader and the D3D mip-map worker; P15: "9 threads" counting the loading-screen pump, which is the main thread, and omitting the loading and sound-loader workers). Reading every `NetStartThread`, `new WorkQueue` and `CreateThread` call site in compiled code gives **ten game-created threads** in the baseline plus one OS callback thread [C] `grep NetStartThread|new WorkQueue|CreateThread` over `code/`, `contrib/systemiv/lib`, `contrib/eclipse`. The SoundSystem preload queue is created only under `#ifdef TARGET_OS_MACOSX` [C] `code/sound/soundsystem.cpp:SoundSystem::Initialise`, so it does not exist on PC.
+
+| # | Thread | Created by → entry function | Runs | Lifetime | Affinity | x87 precision | Synchronisation | Hand-off to main |
+|---|---|---|---|---|---|---|---|---|
+| T1 | **Main** | process → `WinMain` → `AppMain` → `RunTheGame` | every loop; input; network pump, server sequencing and **all sends**; the entire simulation; rendering and all GL; sound logic and PCM mixing (`TopupBuffer`); executes GL jobs | process | `0x02\|0x08\|0x20\|0x80` (CPUs 1,3,5,7) set in `App::App` | 53-bit (`Initialise`) | owns every lock below at some point | — |
+| T2 | **Load** (loading-screen worker) | `LoadingScreen::LoadingScreen` → `WorkQueue` → `WorkQueue::RunThread` | `SetWorkingThreadProcessor`; `App::Initialise` (boot); `DoEnterLocation` (every match: task manager, `new Location`, `Location::Init` level load); `GameMenuWindow::PreloadThumbnails` (map-select page); `LoadCampaign`/`LoadPrologue` [B:LEGACY] | process (never joined; `g_loadingScreen` is never deleted) | `0x01\|0x04\|0x10\|0x40` (CPUs 0,2,4,6) | 53-bit | `WorkQueue` lock/events; `LoadingScreen::m_lock` (job list); `Job` events; `Resource::m_mutex` | every producer is immediately followed by `g_loadingScreen->Render()` on the main thread, which spins until the queue is idle; GL work via `QueueJob` + `Job::Wait` (§11.4) |
+| T3 | **SndL** (sound loader) | `App::App` member init → `WorkQueue` | `SetWorkingThreadProcessor`, then `App::LoadSounds` (`sounds.dat`, `sounds2.dat`) | process (joined by `~App`) | `0x55` | 53-bit | `Resource::m_mutex` inside `ParseArchive`; `SoundSystem::m_initializedEvent` | sets plain `bool m_soundsLoaded`, polled by `SoundSystem::NotReadyForGameSoundsYet` and the loading-screen loop |
+| T4 | **CL** (client listener) | `ClientToServer::OpenConnections` → `WorkQueue` → item `ListenThread` → `NetSocketListener::StartListening(ClientToServerListenCallback)` (blocking receive loop) | receive UDP, decode `Directory`, `ClientToServer::ReceiveLetter`: sorted insert into the inbox, update `m_lastValidSequenceIdFromServer` (under the inbox lock), `m_serverSequenceId` and `g_gameTimer.m_estimatedServerStartTime` (unlocked), bandwidth counters | process (stopped in `~ClientToServer`) | default (no affinity job queued) | 53-bit (WorkQueue thread) | `m_inboxMutex`; `s_listenersMutex` for matchmaker replies | main pops letters with `GetNextLetter` under `m_inboxMutex` |
+| T5 | **SL** (server listener) | `Server::Initialise` → `NetStartThread(ListenThread)` → `Server::StartListening` → `StartListening(ServerListenCallback)` | receive client UDP into `Server::m_inbox` (`Server::ReceiveLetter`); reads `g_app->m_server` | session, host only (stopped in `~Server`) | default | default (not a WorkQueue; does no simulation) | `Server::m_inboxMutex`; `s_listenersMutex` | main drains the inbox in `Server::Advance` |
+| T6 | **MetaServer listener** | `MetaServer_Connect` → `NetStartThread(ListenThread)` (`contrib/systemiv/lib/metaserver/metaserver.cpp`) → `StartListening(MetaserverListenCallback)` | server list, metaserver data cache, NAT replies | process | default | default | `s_serverListMutex`, `s_metaServerDataMutex`, `s_authResultsMutex` | main polls through the `MetaServer_*` API (server browser, demo limits) |
+| T7 | **Authentication** | first `Authentication_RequestStatus` (from `App::InitMetaServer`) → `NetStartThread(AuthenticationThread, gameType)` | every `PERIOD_AUTHENTICATION_RETRY` = 2 s: query the next key whose status is unknown (at most 5 tries per key) | process | default | default | `s_authResultsMutex` | main polls `Authentication_GetStatus` |
+| T8 | **WAN registration** | `MetaServer_StartRegisteringOverWAN` (from `Server::Advertise`) → `ServerRegisterWANThread` | while connected and registering: demo-key permission check, send REGISTER, then wait `(TTL/3 + sfrand(3.0)) × 1000` ms on `s_wanRegisterEvent` | while advertised over WAN | default | default | `s_serverPropertiesMutex`, `s_wanRegisterEvent`; uses the unsynchronised cosmetic RNG (`sfrand`) concurrently with the main thread | none (fire-and-forget) |
+| T9 | **LAN registration** | `MetaServer_StartRegisteringOverLAN` → `ServerRegisterLANThread` | while registering: broadcast REGISTER, wait `PERIOD_SERVER_REGISTER_LAN` = 5 s on `s_lanRegisterEvent` | while advertised on LAN | default | default | `s_serverPropertiesMutex`, `s_socketToLANMutex`, `s_lanRegisterEvent` | none |
+| T10 | **MatchMaker identity** (one per listener) | `MatchMaker_StartRequestingIdentity(listener)` → `NetStartThread(RequestIdentityThread, listener)` | every `PERIOD_MATCHMAKER_REQUESTID` = 10 s: send REQUEST_IDENTITY from that listener's socket | while identifying (client: join page; server: WAN advertising) | default | default | `s_listenersMutex` (P15: the thread later deletes its record without the lock) | identity result read by main |
+| T11 | **waveOut callback** (OS-owned) | `waveOutOpen(…, WaveOutProc, 0, CALLBACK_FUNCTION)` in `SoundLibrary2dWin32` | on `WOM_DONE`: `m_fillsRequested++` (plain `unsigned int`) | while the device is open | OS | OS | none: the main thread's `TopupBuffer` decrements the same counter | main fills buffers in `TopupBuffer` [C] `code/sound/sound_library_2d_win32.cpp:WaveOutProc`, `SoundLibrary2dWin32::TopupBuffer` |
+| — | DirectSound internal threads | OS | — | — | — | — | — | [I] |
+| T12 [B:D3D] | D3D mip-map worker | first `Direct3DInit` → `s_workQueue = new WorkQueue` + `SetWorkingThreadProcessor` (`code/lib/opengl_directx.cpp`) | `MipMapTask::GenerateMipmaps` | process | `0x55` | 53-bit | `s_texturesToMipmapMutex` | tasks reaped by `GenerateMipmaps()` at the start of every `Direct3DSwapBuffers`; `GeneratingMipmaps()` keeps the loading screen up ([24](24_rendering.md)) |
+
+Not present in the baseline [C]: Mac sound preloader (`SoundSystem::m_PreloadQueue`, `BackgroundSoundLoad`), Steam threads (`SteamAuthenticationMainThread`, `SteamAPICallbacksThread` in `contrib/systemiv/lib/metaserver/steamauth_*.cpp`, not compiled), the D3D water update thread (`Water::UpdateWaterThread`, never started), the gesture-recording thread (`code/gesture_demo_win32.cpp`, `GESTURE_EDITOR` + `USE_SEPULVEDA_HELP_TUTORIAL`), SDL audio/recording threads (Mac/Linux).
+
+There is **no simulation, render, audio-mixing or network-send thread**. `docs/NetworkThreads.txt` describes dedicated server/client send threads; the code sends synchronously from the main thread (discrepancy table).
+
+### 11.3 Shared data and synchronisation
+
+| Shared data | Writers | Readers | Protection [C] | Hazard |
+|---|---|---|---|---|
+| `ClientToServer::m_inbox` | CL (`ReceiveLetter`), Main (local letters from the host's server) | Main (`GetNextLetter`, catch-up checks) | `m_inboxMutex` | — |
+| `ClientToServer::m_outbox` | Main (`SendLetter`) | Main (`AdvanceSender`) | `m_outboxMutex` | some appends without the lock are benign: only the main thread touches the outbox ([22](22_determinism_and_networking.md)) |
+| `m_lastValidSequenceIdFromServer` | CL (under inbox lock) | Main (`GetNumSlicesToAdvance`, `AdvanceAndCatchUp`) unlocked | partial | torn reads impossible for aligned `int` on x86 [I]; ordering not guaranteed |
+| `m_serverSequenceId`, `g_gameTimer.m_estimatedServerStartTime`, bandwidth counters | CL unlocked | Main (statistics only) | none | statistics only |
+| `Server::m_inbox` | SL | Main (`Server::Advance`) | `Server::m_inboxMutex` | — |
+| server/client lifetime vs listener | Main (`ShutdownCurrentGame` deletes `m_server`) | SL reads `g_app->m_server` in its callback | `StopListening()` before delete, no lock on the pointer | a packet in flight during `~Server` could reach a half-destroyed server [I] |
+| `LoadingScreen::m_jobs` | Load, any worker (`QueueJob`) | Main (`TryDequeueJob`, `JobsToDo`) | `LoadingScreen::m_lock` | — |
+| `WorkQueue::m_queue` | Main (`Add`) | worker | `WorkQueue::m_lock` (`LList` read accessors mutate a cached cursor, so even reads need the lock [C] `contrib/systemiv/lib/tosser/llist.cpp:LList::GetData`) | — |
+| `Resource` archive map and texture map | Load, SndL (`ParseArchive`), Main | all | `Resource::m_mutex` for archive files, `DoesTextureExist`, `GetUncompressedFile`; `GetTextureWithFlags` locks only while `g_loadingScreen->IsRendering()` | texture lookups from the main thread outside loading screens are unlocked (safe only because no worker uploads then) [I] |
+| `App::m_delayedJobs` | any (`AddDelayedJob`) | Main (`HandleDelayedJobs`) | `m_delayedJobListMutex` (`TryLock` on the consumer side) | — |
+| `App::m_soundsLoaded` | SndL | Main | none (plain bool) | relies on x86 store ordering [I] |
+| `SoundLibrary2dWin32::m_fillsRequested` | T11 (`++`) | Main (`--`) | none | lost increments/decrements possible → occasional starved or over-filled buffer [I] |
+| `g_app->m_networkMutex` | — | — | taken by `StartSinglePlayerServer`, `ClientLeave` (flush), try-locked by `LoadingScreen::Render` before `KeepAlive` / `Server::AdvanceIfNecessary` | prevents the loading-screen pump from touching the network while `StartSinglePlayerServer` runs on the Load thread (campaign path) |
+| GL context | Main only | Main only | context created on and never made current elsewhere (a secondary context "for loading thread" is created but never made current, [24](24_rendering.md)); `g_openGLMutex` brackets loading frames and display-list compiles | worker GL calls must go through §11.4 |
+| unsynced RNG state (`holdrand`, `AppRandom`/`frand`/`sfrand`) | Main; T8 | Main; T8 | none | concurrent use; cosmetic stream only ([22](22_determinism_and_networking.md)) |
+| SystemIV path helpers (`GetDirectoryPart`, `GetFilenamePart`, `RemoveExtension`) | any | any | none; return one shared static buffer | not re-entrant [C] `contrib/systemiv/lib/filesys/filesys_utils.cpp` |
+| `App::GetProfileDirectory` static buffer | any | any | none | rebuilt on every call into one static buffer [C] |
+
+Serialisation rule for archives: all `.dat` loads go through unrar, which the code comments call "not thread safe"; the boot sequence therefore runs `App::Initialise` (Load) to completion before queueing `App::LoadSounds` (SndL) [C] `code/app.cpp:App::App`. After boot no other code parses archives, so the two workers never decompress concurrently [I].
+
+### 11.4 Hand-off to the main thread
+
+1. **GL jobs** [C] `code/loading_screen.cpp:LoadingScreen::QueueJob`, `TryDequeueJob`, `RunJobs`, `Render`; `code/lib/runnable.cpp:Job::Process`. A worker that needs the GPU builds a stack `Job`, calls `g_loadingScreen->QueueJob(&job)` (append under `m_lock`) and blocks in `job.Wait()`. The main thread processes jobs (a) inside `LoadingScreen::Render`: one per loading frame plus as many as fit before the 1/60-s frame deadline, and (b) once per in-match frame via `g_loadingScreen->RunJobs()` (drains all). Each producer first checks `NetGetCurrentThreadId() == g_app->m_mainThreadId` and runs the operation directly on the main thread. Producers:
+
+| Producer | Job class | Operation |
+|---|---|---|
+| `BitmapRGBA::ConvertToTextureAsync` (`code/lib/bitmap.cpp`) | `TextureToConvert` | texture upload; returns the GL id (`WaitTexId`) |
+| `Resource::DeleteTextureAsync` (`code/lib/resource.cpp`) | `DeleteTextureByName` | texture delete |
+| `Resource::CreateDisplayListAsync` | `DisplayListToCreate` | compile a display list (runs the caller's render callbacks on the main thread); returns the id (`WaitId`) |
+| `Resource::DeleteDisplayListAsync(int)` / `(const char*)` | `DeleteDisplayListById` / `DeleteDisplayListByName` | display-list delete (under `USE_DIRECT3D` executed directly on any thread) |
+| `LandscapeRenderer` VBO set-up (`code/landscape_renderer.cpp`) | `RunnableJob(Method<LandscapeRenderer>(&LandscapeRenderer::DoBindBuffers))` | vertex-buffer creation/binding |
+
+   Deadlock-freedom relies on the invariant that whenever a worker can produce a job the main thread is inside `LoadingScreen::Render` or `LocationGameLoop` (every `m_workQueue->Add` is immediately followed by `g_loadingScreen->Render()`) [C]. `MainMenuLoop` does not call `RunJobs`.
+2. **Work completion**: the main thread learns that `App::Initialise` / `DoEnterLocation` finished only by `m_workQueue->Empty()` turning true inside `LoadingScreen::Render`; results are published through `g_app` members (`m_location`, `m_locationInput`, …) without further synchronisation [C].
+3. **Flags**: `m_soundsLoaded` (SndL → Main), `m_rendering`/`IsRendering()` (Main → workers and the sound gate) [C].
+4. **Network letters**: listeners only enqueue; all interpretation happens on the main thread [C].
+5. **Deferred deletion**: `App::AddDelayedJob(new DelayedJob(runnable, n))`; the head job runs on the main thread after `n + 1` polls of `App::HandleDelayedJobs` (one poll per main-loop iteration); the only producer is the old-language-table deletion (`n = 5`) so that windows still holding phrases from the old table survive a few frames [C] `code/app.cpp:App::SetLanguage`, `App::HandleDelayedJobs`.
+6. **Sound triggers**: any `SoundSystem::Trigger*Event` from a non-main thread, during a loading screen, or before `m_soundsLoaded` is **dropped** (not queued) [C] `code/sound/soundsystem.cpp:SoundSystem::NotReadyForGameSoundsYet`.
+
+### 11.5 Concurrency hazards (summary)
+
+| # | Hazard | Ref | Status |
+|---|---|---|---|
+| H1 | `WorkQueue::RunThread` cast to `NetThreadFunc` (calling-convention mismatch) | `code/lib/work_queue.cpp:WorkQueue::WorkQueue` | [C] code, [I] effect |
+| H2 | Thread handles never closed; no thread is joined except via `WorkQueue` destructors | `contrib/systemiv/lib/netlib/net_thread_win32.cpp:NetStartThread` | [C] |
+| H3 | x87 precision set only for the main thread and `WorkQueue` threads; listener/metaserver threads run with the default precision (they do no simulation) | `code/main.cpp:StandardiseCPUPrecision`, `code/lib/work_queue.cpp:WorkQueue::RunThread` | [C] |
+| H4 | Hard-coded affinity masks assume ≤ 8 logical CPUs; the main thread is restricted to odd CPUs, workers to even ones (comments disagree: "Even processors" for 0xAA, "Odd processors" / "% 3 == 2" for 0x55) | `code/app.cpp:App::App`, `SetWorkingThreadProcessor`; `code/loading_screen.cpp:SetWorkingThreadProcessor` | [C] |
+| H5 | `m_fillsRequested` incremented by the waveOut thread and decremented by the main thread without synchronisation | `code/sound/sound_library_2d_win32.cpp` | [C] code, [I] effect |
+| H6 | Plain-bool publication (`m_soundsLoaded`) and unlocked pointer publication of objects built on the Load thread | `code/app.cpp` | [I] works on x86 |
+| H7 | Server listener may run during `~Server`; `g_app->m_server` read without a lock | `code/network/server.cpp:ServerListenCallback`, `Server::~Server` | [I] |
+| H8 | Cosmetic RNG used concurrently by the WAN-registration thread | `contrib/systemiv/lib/metaserver/metaserver.cpp:ServerRegisterWANThread` | [C] |
+| H9 | `~ClientToServer` busy-waits `while (m_outbox.Size() > 0) {}` without sending | `code/network/clienttoserver.cpp:ClientToServer::~ClientToServer` | [C] (would hang if anything were queued) |
+| H10 | `LoadingScreen::m_rendering` uninitialised until the first `Render()` | `code/loading_screen.cpp:LoadingScreen::LoadingScreen` | [C] |
+| H11 | Objects constructed on the Load thread (e.g. `SoundSystem`, `ClientToServer`) are read by the main thread's loading-screen loop while `App::Initialise` is still running (`g_app->m_soundSystem`, `g_app->m_clientToServer` checked for NULL) | `code/loading_screen.cpp:LoadingScreen::Render` | [I] benign on x86 |
 
 ## 12 Constants
 
-<!-- S12 -->
+### 12.1 Architecture, timing and threading constants
+
+Spot-verified against the code in this pass [C].
+
+| Constant | Value | Unit | Kind | Meaning | Ref |
+|---|---|---|---|---|---|
+| `NUM_TEAMS` | 6 | teams | `#define` | team slots (comment: "If increased, location.cpp's IsFriend method must also be updated") | `code/globals.h` |
+| `NUM_SLICES_PER_FRAME` | 10 | slices per tick | `#define` | work split of one simulation tick | `code/globals.h` |
+| `IAMALIVE_PERIOD` | 0.1 | real s | `#define` | team-controls send interval | `code/globals.h` |
+| `MINIMUM_RENDER_PERIOD` | 1.0 | s | `#define` | "Render at least this frequently" — no user | `code/globals.h` |
+| `GRAVITY` | 10.0 | units/s² | `#define` | entity physics ([21](21_simulation_and_entity_model.md)) | `code/globals.h` |
+| `GRACE_TIME` | 3.0 (20.0 under `TESTBED_ENABLED`) | s | `#define` | grace countdown start | `code/lib/universal_include.h` |
+| server tick period | 0.1 | real s | literal | `m_nextServerAdvanceTime += 0.1` (first tick at start + 0.1) | `code/network/server.cpp:Server::AdvanceIfNecessary`, `Server::Initialise` |
+| sim dt | `0.1 × gameSpeed` | game s | literal | `GameTimer::GetServerAdvancePeriod` | `code/gametimer.cpp` |
+| pause / snap threshold | 0.01 | speed | literal | `IsPaused` (speed < 0.01) and request snap (\|Δ\| < 0.01) | `code/gametimer.cpp` |
+| speed-hold decrement | 0.1 | s per tick | literal | `m_requestedSpeedLength −= 0.1` | `code/gametimer.cpp:GameTimer::Tick` |
+| prediction clamp | 1.0 | real s | literal | max extrapolation | `code/gametimer.cpp:GameTimer::GetPredictionTime` |
+| speed requests | (1.0, 1.0, −1) grace end; (0.0, 0.2, −1) game won + lock; (0.0, 0.2, −1)/(1.0, 0.2, −1) pause toggle; (0.2 + syncfrand(0.2), 0.05, 15.0) slow crate; (1.3 + syncfrand(0.7), 0.05, 15.0) fast crate; (0.4, 0.1, 4.0) meteor | (speed, rate/tick, hold s) | literal | §10.7 | `code/multiwinia.cpp` L2414/L4226, `code/network/clienttoserver.cpp` L2383/L2387, `code/worldobject/crate.cpp`, `code/worldobject/meteor.cpp` |
+| meteor slow-motion trigger distance | 200 | units | literal | meteor within 200 of its target | `code/worldobject/meteor.cpp` |
+| catch-up threshold | 20 | ticks behind | literal | enter catch-up | `code/network/clienttoserver.cpp:ClientToServer::AdvanceAndCatchUp` |
+| catch-up budget | 0.3 | real s per frame | literal | max time in catch-up per frame | same |
+| slices per call | `clamp(int(pending × 0.3), 0, 20)`; 20 in catch-up | slices | literal | `GetNumSlicesToAdvance` | same |
+| keep-alive interval | 1.0 | real s | literal | SYNCHRONISE while loading | `code/network/clienttoserver.cpp:ClientToServer::KeepAlive` |
+| leave burst | 3 letters, then `NetSleep(100)` | letters, ms | literal | `ClientLeave` | `code/network/clienttoserver.cpp:ClientToServer::ClientLeave` |
+| client / server UDP ports | 4001 / 4000 (prefs `NetworkClientPort` / `NetworkServerPort`; client falls back to any port) | port | pref | listeners | `code/network/clienttoserver.cpp:OpenConnections`, `code/network/server.cpp:Server::Initialise` |
+| metaserver ports | 5009 client listen, 5113 metaserver/matchmaker | port | `#define` | `PORT_METASERVER_CLIENT_LISTEN`, `PORT_METASERVER_LISTEN` | `contrib/systemiv/lib/metaserver/metaserver_defines.h` |
+| helper-thread periods | authentication retry 2 s; LAN register 5 s; matchmaker identity 10 s; matchmaker connect 3 s; WAN register `TTL/3 + sfrand(3.0)` s | s | `#define` (`SECONDS` = `* 1000` ms) | §11.2 | `contrib/systemiv/lib/metaserver/metaserver_defines.h`, `metaserver.cpp` |
+| authentication tries | 5 | per key | literal | `m_numTries < 5` | `contrib/systemiv/lib/metaserver/authentication.cpp` |
+| `g_advanceTime` clamp | 0.25 | real s | literal | frame-delta cap | `code/main.cpp:UpdateAdvanceTime` |
+| `DemoFrameRate` default | 25 | fps | pref | fixed step while `RecordDemo` ∈ {1,2} | `code/main.cpp:UpdateAdvanceTime` |
+| `TARGET_FRAME_RATE_INCREMENT` | 0.25 | — | `#define` | unused | `code/main.cpp` |
+| `SOUNDSYSTEM_UPDATEPERIOD` | 0.05 | real s | `#define` | 20 Hz sound logic, one update per call | `code/sound/soundsystem.cpp` |
+| low-fps sound threshold | 15 | fps | literal | extra `SoundSystem::Advance` | `code/main.cpp:LocationGameLoop` |
+| loading-screen frame | 1/60 | s | literal | job budget and `Sleep` cap | `code/loading_screen.cpp:LoadingScreen::Render` |
+| publisher-logo fade | in 1.0 s, out 1.0 s (PC) | s | literal | initial load | `code/loading_screen.cpp` ([09](09_meta_systems.md)) |
+| memory log interval | 60 | real s | literal | `AdvanceAvailableMemoryCheck` | `code/main.cpp` |
+| location fade-in | 0.6 | s | literal | `LocationGameLoop` start | `code/main.cpp` |
+| front-end / global-world fade-in | 0.25 | s | literal | `GameMenu::CreateMenu`, `GlobalWorldGameLoop` | `code/game_menu.cpp`, `code/main.cpp` |
+| main / worker affinity | `0xAA` (CPUs 1,3,5,7) / `0x55` (CPUs 0,2,4,6) | CPU mask | literal | §11.2 | `code/app.cpp`, `code/loading_screen.cpp`, `code/lib/opengl_directx.cpp` |
+| x87 precision | `_PC_53` | mantissa bits | literal | `StandardiseCPUPrecision` | `code/main.cpp` |
+| `DelayedJob` counter for the language table | 5 | polls (runs on the 6th) | literal | `App::SetLanguage` | `code/app.cpp` |
+| Multiwinia location id | 999 | id | literal | `m_requestedLocationId` at START_GAME | `code/network/clienttoserver.cpp` |
+| no-team id | 255 | id | literal | `m_myTeamId` reset | `code/app.cpp:ShutdownCurrentGame`, `code/network/clienttoserver.cpp:ClientLeave` |
+| camera border | 200.0 | units | `const` | camera bounds margin | `code/main.cpp:DoEnterLocation` |
+| fallback camera | (maxX, 1000, maxX) looking (−1, −0.7, −1) | units | literal | if mount `"start"` is missing | same |
+| front-end camera | position (−900, 3000, 3970), direction (0, 0.5, −1), `ModeSphereWorldFocus` | units | literal | `GameMenu::CreateMenu` | `code/game_menu.cpp` |
+| global-world camera height | 50.0 | units | literal | `EnterGlobalWorld` [B:LEGACY] | `code/main.cpp` |
+| font spacing | editor 0.91, title 1.03 | factor | literal | `App::SetLanguage` | `code/app.cpp` |
+| font horizontal scale | 0.6 (Latin) / 1.0 (CJK) | factor | literal | same | `code/app.cpp` |
+| large-menus option | 2 | pref value | literal | `OTHER_LARGEMENUS` | `code/app.cpp:App::Initialise` |
+| Christmas mode | 24–26 December (`tm_mon == 11`) | dates | literal | `App::UseChristmasMode` | `code/app.cpp` |
+| `ControlMouseButtons` default | 3 | buttons | pref | read in `SendTeamControlsToNetwork`, unused | `code/main.cpp` |
+| `Renderer::m_fps` initial | 60 | fps | literal | until the first 1-s window completes | `code/renderer.cpp` |
+
+### 12.2 Other constants of the app-core partition
+
+These constants were collected by P01 in the same source files (`code/location.cpp`, `team.cpp`, `unit.cpp`, `location_input.cpp`, `user_input.cpp`, `multiwinia.h`) and routed here; their behavioural context is specified in [21](21_simulation_and_entity_model.md), [06](06_player_control_and_input.md), [05](05_economy_and_population.md), [04](04_crates_powerups_and_weapons.md) and [24](24_rendering.md). Spot-verified in this pass: entity-grid cell, obstruction-grid cell, container step sizes, crate cap, fog, Christmas timer [C] `code/location.cpp`.
+
+| Constant | Value | Unit | Kind | Meaning | Ref |
+|---|---|---|---|---|---|
+| monster / future team id | 4 / 5 | team | literal | special teams | `code/location.cpp` |
+| monster / future colour | (10,10,10) / (200,200,200); colour ids 8 / 9 | RGB | literal | | `code/location.cpp:InitMonsterTeam`, `InitFuturewinianTeam` |
+| `MULTIWINIA_NUM_TEAMCOLOURS` | 8 | colours | `#define` | | `code/multiwinia.h` |
+| `ASSAULT_ATTACKER_COLOURID` / `ASSAULT_DEFENDER_COLOURID` | 1 / 0 | colour id | `#define` | | `code/multiwinia.h` |
+| entity grid cell | 32.0 × 32.0 | units | literal | | `code/location.cpp:Location::Init` |
+| obstruction grid cell | 32.0 (MP) / 64.0 | units | literal | | same |
+| container step sizes | lights 1, buildings 10, spirits 100 (initial size 100), lasers 100, effects 100, team others 100, units 5, unit entities 100 | slots | literal | growth step | `Location::Location`, `Team::Team`, `Unit::Unit` |
+| forced research (MP) | all 3; Squad 1, Laser 2, Grenade 2, Rocket 2, AirStrike 2, Darwinian 4 | level | literal | | `code/location.cpp:Location::Init` |
+| `m_christmasTimer` initial / burst threshold | −99.9 / < −90 | s | literal | | `code/location.cpp` |
+| snow | 150 initial; 1 per 0.1 s at y 700–1000 | count, s, units | literal | | `Location::AdvanceChristmas` |
+| soul rain | 1 per 1.0 s at y 700–1000 | | literal | | `Location::AdvanceSoulRain` |
+| dust | vortex every 15–30 s, 1/10 chance; 300 initial; 2 per 0.1 s; size +0–20; vortex capture radius 50; land test height > 1.0; vortex y 0–500 | | literal | | `Location::AdvanceDustWind` |
+| lightning | every 0–15 s at y 1200 | | literal | | `Location::AdvanceLightning` |
+| crate cap | `int(worldSizeX / 500)` | crates | literal | | `Location::AdvanceCrates` |
+| crate interval | `CrateDropRate × U(0.5, 1.5]` | s | option × literal | | `Location::AdvanceCrates` |
+| crate placement | land height ≥ 20; weighted ±100 around a building; 1000 / 100 tries; separation `CRATE_SCAN_RANGE × 10`; height `CRATE_START_HEIGHT` + 0–200 | units | literal / defines | | `Location::CreateRandomCrate` |
+| spawn search | 10 tries; clamp 20 from edge | | literal | | `Location::FindValidSpawnPosition` |
+| spirit spawn offset | +1 (up vector) | units | literal | | `Location::SpawnSpirit` |
+| `IsVisible` tolerance | 20.0 | units | literal | | `Location::IsVisible` |
+| `GetWalkingDistance` | step 40; water limit 40; gradient weight 1.5; obstacle sphere 20 | units | literal | | `Location::GetWalkingDistance` |
+| `IsWalkable` | step 20; water limit 40; max gradient 2.4; min normal.y 0.8; wall sphere 13.2; fence sphere 10 | units | literal | | `Location::IsWalkable` |
+| picking | unit sphere ×1.5, unit-entity ×1.5, entity ×1.0, building ×0.75, armour range 0.001 | factor | literal | | `Location::GetUnitId`, `GetEntityId`, `GetBuildingId` |
+| throw force | `sqrt(dist) × 8`, capped by research max | | literal | | `Location::ThrowWeapon` |
+| muzzle flashes | throw/rocket (20, 3); turret (60, 2) at +dt/2; laser (25 × life, 1.5) | size, life | literal | | `Location::ThrowWeapon`, `FireRocket`, `FireTurretShell`, `FireLaser` |
+| turret shell life | research 0/1 → 0.5, 2 → 1.0, 3 → 1.5, 4 → 2.0; MP 0.6 | s | literal | | `Location::FireTurretShell` |
+| laser life | research 0..4 → 0.2/0.4/0.6/0.8/1.0; ×2 mind-control | s | literal | | `Location::FireLaser` |
+| promote flashes | 5 + rand%5; velocity sfrand(5), frand(15), sfrand(5) | | literal | cosmetic | `Location::PromoteDarwinian` |
+| `Bang` | damage radius 2r (full ≤ 1.5r); building radius 3r; push y = damage (ground) / −1 (air); cores r·d·0.01 (+0–100 %); debris max(2, r·d·0.01) ≤ 30; shockwave r/20 | | literal | | `Location::Bang` |
+| fog | start = end/3; end = max(4000, worldSizeX + 1000, worldSizeZ + 1000); linear; density 1.0 | units | literal | | `Location::SetupFog` |
+| lights | Christmas (1.3, 1.2, 1.2); special direction (0, 1, 0.5) colour (2.0, 1.5, 0.75), shininess 10 | | literal | | `Location::SetupLights`, `SetupSpecialLights` |
+| AI link cull | 0.8 | ratio | literal | | `Location::RecalculateAITargets` |
+| centre message | 3.0 s; size 40; y 370 @ 1280 width; last 2 s grow 15·sqrt(2 − t) | s, px | literal | | `Location::SetCurrentMessage`, `RenderCurrentMessage` |
+| chat | font 14 × scale; fade 55 → 60 s; wrap 40 % width; box 25 % width | | literal | | `Location::RenderChatMessages` |
+| kill milestones | 500, 1000, 2000, 3000, 4000, 5000 | kills | literal | | `Team::Advance` |
+| `IssueDarwinianOrders` | armour search radius 30; particle colour (255,100,255); 1000 iterations | | literal | | `Location::IssueDarwinianOrders` |
+| starting power-ups | task start timer 30.0 | s | literal | | `Location::InitialiseTeam` |
+| CPU AI entity spawn | (−100, 0, −100) | units | literal | | `Location::InitialiseTeam` |
+| `EvolutionFormationSize` default | 90 | officer formation cap | literal | | `Team::Team` |
+| viriifull texture | 160 × 512; 32 copies; glow 128 | px | literal | | `Team::Initialise` |
+| turret select | `m_fireTimer = 0.5`; cursor boost 2.0 | s | literal | | `Team::SelectUnit` |
+| render LOD | virii 300/500/600/1000; darwinian 500/1000/99999.9; alpha refs 0.02 / 0.04 / 0.01; near plane ×1.05 (virii), ×1.2 (lasers) | units | literal | | `Team::Render*`, `Location::RenderWeapons` |
+| TeamControls camera | acceleration 6/256 when ‖δ‖² > 175; target length cap 125 (‖v‖² > 15625) | | literal | | `TeamControls::Advance` |
+| TeamControls flag bits | 0x0001 … 0x0400 (11 bits) | | literal | | `TeamControls::GetFlags` |
+| formation | 100 jitter values in [0, 1); spacing 4.0; airstrike row 4, ×6 (x, z), ×3 (y) | units | `const`/literal | | `Unit::GetFormationOffset` |
+| laser-trooper lead | 1.0 step, trigger 0.2 | units | literal | | `Unit::Advance` |
+| route waypoint reach | 10.0 | units | literal | | `Unit::FollowRoute` |
+| order throttle | 1.0 | game s | literal | Darwinian orders | `LocationInput::AdvanceTeamControl` |
+| selection circle | growth 100 /s (real), max radius 100 | units | literal | | same |
+| wall-buster direct route | ≥ 25 % of selection | ratio | literal | | same |
+| select sound throttle | 0.5 | real s | literal | | `LocationInput::SelectObjectUnderMouse` |
+| officer follow radius | 50 (2500 squared) | units | literal | single-player | same |
+| mouse fallback spheres | worldSize × 40; 36000 (global world) | units | literal | | `UserInput::RecalcMousePos3d` |
 
 ## 13 Architecture for the new game
 

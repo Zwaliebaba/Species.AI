@@ -34,7 +34,7 @@ Conventions used in every grammar below:
 | `fmt-sync-dump` | desync dumps | `<P>syncerror-*.txt`, `<P>syncdiff-*.txt` | §13.5 | [B:FULL] |
 | `fmt-mwm` | custom map container | `<P>maps/*.mwm` | §13.6 | [B:EDITOR] |
 
-Generated tables: `_work/drafts/X1a_level_field_usage.csv` (every block/field/value × file set, from `_work/scripts/X1a_level_survey.py`), `_work/drafts/X1a_encoding_survey.csv` (from `_work/scripts/X1a_text_survey.py`). Other helper scripts: `_work/scripts/X1a_language_survey.py`, `X1a_input_lines.py`, `X1a_extract_read_funcs.py`.
+Generated tables: `_work/drafts/X1a_level_field_usage.csv` (every block/field/value × file set, from `_work/scripts/X1a_level_survey.py`), `_work/drafts/X1a_encoding_survey.csv` (from `_work/scripts/X1a_text_survey.py`). Other helper scripts: `_work/scripts/X1a_language_survey.py`, `X1a_input_lines.py`, `X1a_script_check.py`, `X1a_extract_read_funcs.py`, `X1a_coverage.py` (all run with `python3 -I`, paths as arguments).
 
 <a id="fmt-textreader"></a>
 ## [→ 29_data_formats_reference] 1. Shared line reader and tokeniser (`TextReader` family)
@@ -55,7 +55,7 @@ Selection is done by `code/lib/resource.cpp:Resource::GetTextReader(name)` [C]:
 
 1. (`USE_DARWINIA_MOD_SYSTEM` only — [B:DEAD]) `<profile>/mods/<mod>/<name>`, then (`TARGET_OS_VISTA`) `mods/<mod>/<name>`.
 2. Loose file `data/<name>` (relative to the working directory): try `UnicodeTextFileReader`; if `IsUnicode()` is false (no BOM) delete it and use `TextFileReader`.
-3. Archive entry `data/<name>` (exact, case-sensitive key; archive keys are lower-cased by `Resource::ParseArchive`, so callers must pass lower-case names to hit an archive) — `UnicodeTextDataReader`, else `TextDataReader`.
+3. Archive entry `data/<name>` — `UnicodeTextDataReader`, else `TextDataReader`. Archive keys are lower-cased by `Resource::ParseArchive` and stored in a `HashTable` whose hash folds case and whose compare is `stricmp`, so the lookup is **case-insensitive** [C] `code/lib/resource.h` (`HashTable<MemMappedFile*> m_resourceFiles`), `contrib/systemiv/lib/tosser/hash_table.cpp:HashTable::HashFunc`.
 4. Otherwise `NULL` and the debug log line `Failed to find text resource: <path>`.
 
 A few callers bypass `Resource` and construct `TextFileReader`/`UnicodeTextFileReader` on an absolute or cwd-relative path directly (preferences, profile saves, `testbedconfig.txt`, `origin`, input bindings): they are listed per format. `contrib/systemiv/lib/filesys/file_system.cpp:FileSystem::GetTextReader` is compiled but `g_fileSystem` is never created by Multiwinia [C] (grep: no `new FileSystem` under `code/`) — ignore it.
@@ -65,7 +65,7 @@ A few callers bypass `Resource` and construct `TextFileReader`/`UnicodeTextFileR
 ### 1.2 Physical lines
 
 * A line ends at LF (`0x0A` / `L'\n'`). The final line may lack an LF. Lines may be arbitrarily long: the buffer starts at 128 characters and doubles; a line longer than 65 536 characters triggers `AppReleaseAssert("Text file contains line with more than 65536 characters")` [C] `TextReader::DoubleMaxLineLen`, `UnicodeTextReader::DoubleMaxLineLen`.
-* End of file: only `TextFileReader` processes an unterminated last line (its `ReadLine` returns `true` for a final line without LF and `false` on the following call). `TextDataReader` (archive), `UnicodeTextFileReader` and `UnicodeTextDataReader` load the unterminated last line but return `false` for it, so the `while (in->ReadLine())` loop body **never sees it** [C] `TextDataReader::ReadLine` (`eof = true` when no `\n` is found), `UnicodeTextFileReader::ReadUnicodeLine` (returns `NULL` as soon as `feof`), `UnicodeTextDataReader::ReadLine`. Rule for authors: **always end a text file with a newline** (every shipped file in scope does — survey §1.6).
+* End of file: only `TextFileReader` processes an unterminated last line (its `ReadLine` returns `true` for a final line without LF and `false` on the following call). `TextDataReader` (archive), `UnicodeTextFileReader` and `UnicodeTextDataReader` load the unterminated last line but return `false` for it, so the `while (in->ReadLine())` loop body **never sees it** [C] `TextDataReader::ReadLine` (`eof = true` when no `\n` is found), `UnicodeTextFileReader::ReadUnicodeLine` (returns `NULL` as soon as `feof`), `UnicodeTextDataReader::ReadLine`. Rule for authors: **always end a text file with a newline** — five shipped files do not (`level_enum.txt`, `testbedconfig.txt`, `japanese.txt`, `korean.txt`, `portuguese.txt`; consequences in §2.19, §8.2, §11).
 * A U+0000 code unit in a UTF-16 disk file is skipped without being stored (the slot keeps stale data) [C] `UnicodeTextFileReader::ReadUnicodeLine` (`temp != NULL` test) — never emit NUL.
 
 ### 1.3 Line cleaning (`TextReader::CleanLine`, `UnicodeTextReader::CleanLine`) — applied to every line, in this order [C]
@@ -74,15 +74,15 @@ A few callers bypass `Resource` and construct `TextFileReader`/`UnicodeTextFileR
 2. **Comment removal.** Scan left to right; the first `#` and everything after it is deleted. There is **no escape and no quoting**: a `#` inside what looks like a string still starts a comment. While scanning, runs of `<` / `>` are counted and three adjacent angle brackets trip `AppDebugAssert` (merge-conflict detector; debug builds only — [B:DEBUG]).
 3. **Line-end removal.** Truncate at the first `\n`, then truncate at the first `\r`. Consequence: a stray CR in the middle of a line silently discards the rest of that line.
 
-Edge case (UTF-16 disk files): `UnicodeTextFileReader::ReadLine` converts the wide line to the narrow mirror buffer (`UnicodeString::CopyUnicodeToCharArray`, every code unit > 255 becomes `?`) **before** `CleanLine` runs on the wide buffer, so the narrow mirror still contains the comment text; `UnicodeTextDataReader::ReadLine` cleans first and converts afterwards [C]. Tokenising of the first token is done on the narrow mirror (`TextReader::GetNextToken` is not virtual) while `TokenAvailable`/`GetNextUnicodeToken`/`GetRestOfUnicodeLine` are overridden and use the wide buffer. Because both buffers have identical indices (1 code unit ↔ 1 byte), this only matters for a line whose *first* token is followed by `#`: the narrow first token is still correct (a comment can only start after a separator or at the token start, see below) [I]. A line that is entirely a comment is correctly skipped because `TokenAvailable` looks at the cleaned wide buffer [C].
+Edge case (UTF-16 disk files): `UnicodeTextFileReader::ReadLine` converts the wide line to the narrow mirror buffer (`UnicodeString::CopyUnicodeToCharArray`, every code unit > 255 becomes `?`) **before** `CleanLine` runs on the wide buffer, so the narrow mirror still contains the comment text; `UnicodeTextDataReader::ReadLine` cleans first and converts afterwards [C]. Tokenising of the first token is done on the narrow mirror (`TextReader::GetNextToken` is not virtual) while `TokenAvailable`/`GetNextUnicodeToken`/`GetRestOfUnicodeLine` are overridden and use the wide buffer. Both buffers have identical indices (1 code unit ↔ 1 byte), so the rest-of-line read from the wide buffer is correct; but a first token with a comment glued to it (`key#note`) is returned as `key#note` from the narrow mirror (with a separator before `#` it is unaffected) [C]. A line that is entirely a comment is correctly skipped because `TokenAvailable` looks at the cleaned wide buffer [C].
 
 ### 1.4 Tokens
 
-* Separator set (default): space, TAB, LF, CR, `:` and `,` — `" \t\n\r:,"` for the narrow readers; the Unicode readers additionally treat form-feed `\f` as a separator (`L" \f\t\n\r:,"`) [C] `DEFAULT_SEPERATOR_CHARS` in both `.cpp` files. A caller may replace the set with `SetSeperatorChars` (max 15 characters) — only the input-binding parser does (§7).
+* Separator set (default): space, TAB, LF, CR, `:` and `,` — `" \t\n\r:,"` for the narrow readers; the Unicode readers additionally treat form-feed `\f` as a separator (`L" \f\t\n\r:,"`) [C] `DEFAULT_SEPERATOR_CHARS` in both `.cpp` files. `SetSeperatorChars` (max 15 characters) can replace the set, but no caller in `code/` or `contrib/systemiv/lib` uses it (grep) — every format in this document uses the default set [C].
 * `GetNextToken()`: skip separators; if end of line → `NULL`; else return the maximal run of non-separators and overwrite the following separator with NUL. `:` and `,` are therefore exactly equivalent to whitespace — `BuildingOnline :mine,90` is the three tokens `BuildingOnline`, `mine`, `90`.
 * `GetRestOfLine()`: skip separators, return the remainder of the line **verbatim** (internal separators, trailing spaces and tabs preserved — there is no right-trim) or `NULL` at end of line. Because of the leading skip, a "rest of line" value can never begin with space, tab, `:` or `,`.
 * `TokenAvailable()`: true iff a non-separator character remains on the line.
-* There is **no quoting, no escaping and no line continuation** at this level. Individual formats add their own conventions (the language table's `\n`, §9).
+* There is **no quoting, no escaping and no line continuation** at this level. Individual formats add their own conventions (the language table's `\n`, §8).
 * Case: the reader never changes case. Keyword comparisons are done by each parser (mostly `stricmp`, i.e. ASCII case-insensitive; exceptions flagged **(cs)**).
 
 ### 1.5 Formal summary
@@ -122,7 +122,7 @@ No file starts with `redshirt2`; no UTF-8 BOM is present (a UTF-8 BOM would *not
 
 ### 2.1 Purpose, files, build reality
 
-A level is described by **one map file** (terrain, lights, static buildings, Multiwinia options — and, in Multiwinia, also units/camera data) plus an optional **mission file** (dynamic buildings, units, objectives, camera data; Darwinia campaign only). `LevelFile(missionName, mapName, textFileLevel)` parses the mission file first, then the map file [C] `code/level_file.cpp:LevelFile::LevelFile`. `Location::LoadLevel` passes `textFileLevel = (extension of map name == "txt")`; any other extension is loaded as a `.mwm` container (§13.6) [C] `code/location.cpp:Location::LoadLevel`. In Multiwinia `m_requestedMission` stays `"null"` (set in `App::Initialise`) so only the map file is read [C] `code/app.cpp:App::Initialise`, [I] for every network-started game (the server sends only the map name — `code/network/clienttoserver.cpp` sets `m_requestedMap`).
+A level is described by **one map file** (terrain, lights, static buildings, Multiwinia options — and, in Multiwinia, also units/camera data) plus an optional **mission file** (dynamic buildings, units, objectives, camera data; Darwinia campaign only). `LevelFile(missionName, mapName, textFileLevel)` parses the mission file first, then the map file [C] `code/level_file.cpp:LevelFile::LevelFile`. `Location::LoadLevel` passes `textFileLevel = (extension of map name == "txt")`; any other extension is loaded as a `.mwm` container (§13.6) [C] `code/location.cpp:Location::LoadLevel`. In Multiwinia `m_requestedMission` is `"null"` (set in `App::Initialise`, again when the client receives the map name from the server, and by the editor's map window) so only the map file is read [C] `code/app.cpp:App::Initialise`, `code/network/clienttoserver.cpp` (L2618), `code/interface/multiwinia_window.cpp`.
 
 | File set | Count | Kind | Loaded by | Build tag |
 |---|---|---|---|---|
@@ -218,7 +218,7 @@ Keywords (first tokens and `level_option` words) are case-insensitive in `LevelF
 | `PopulationCap` | INT | Darwinians | −1 = no map cap | ≥1 or −1; shipped −1…2500 | total Darwinian cap shared by the teams in play: each team's cap = `cap / numTeams` [C] `code/worldobject/spawnpoint.cpp:SpawnPoint` (L732–L744) |
 | `DefenderPopulationCap` | INT | Darwinians | −1 | −1 or ≥1; shipped −1, 200, 250, 275, 350 | Assault defender cap [C] `spawnpoint.cpp` L717, `code/worldobject/trunkport.cpp` L362 |
 | `NumPlayers` | INT | teams | −1 | 2–4 in shipped maps (`NumPlayers` absent only in `mp_sandbox_all.txt`) | number of start positions; lobby uses it; Assault rotation counts [C] `code/multiwinia.cpp` L1138, L1777; `GameMenu::AddMap` |
-| `PlayTime` | INT | minutes | −1 | shipped 5, 10, 15, 20 | default match length shown/used by the lobby [C] `GameMenu::AddMap` (`m_playTime`) |
+| `PlayTime` | INT | minutes | −1 | shipped 5, 10, 15, 20 | stored as `MapData::m_playTime` [C] `GameMenu::AddMap`; used by the lobby as the suggested match length [I] (consumer owned by P18) |
 | `GameTypes` | GAMETYPE | – | −1 (map rejected by menu) | names of `multiwinia.txt` | `LevelFile`: index of the **first** matching blueprint → `m_gameTypes`; menu: **every** matching token adds the map to that game type's list; a map with no valid token is discarded ("didn't contain a game type") [C] `GameMenu::AddMap` |
 | `Effects` | EFFECT* | – | none | `snow`→Snow, `dustwind`→DustStorm, `soulrain`→SoulRain, `lightning`→Lightning, `SpecialLighting`→SpecialLighting | `Location::Advance` runs `AdvanceChristmas/AdvanceSoulRain/AdvanceDustWind/AdvanceLightning`; SpecialLighting switches the lighting mode [C] `code/location.cpp` L1388–L1391, L2008 |
 | `LevelOptions` | option list | – | see §2.3 | §2.4.4 | |
@@ -347,7 +347,7 @@ b_row       := TYPENAME id x z team frontX frontZ isGlobal { extra }
 | 2 | `id` | INT | 0…; must be unique among all buildings of this `LevelFile` (map + mission), else `AppReleaseAssert("%s UniqueId was not unique in %s")` — **fatal in release** | `WorldObjectId(team, UNIT_BUILDINGS=−100, −1, id)`; referenced by every link column |
 | 3 | `x` | F32 | wu | position x (y is taken from the landscape at init [I]) |
 | 4 | `z` | F32 | wu | position z |
-| 5 | `team` | INT, stored as `unsigned char` | 0…5 (`NUM_TEAMS`=6, `code/globals.h`); shipped values 0, 1, 2, 255; 255 = no team (e.g. `Location::IsFriend` returns false for 255, `code/location.cpp` L2615) [C] | owner |
+| 5 | `team` | INT, stored as `unsigned char` | 0…5 (`NUM_TEAMS`=6, `code/globals.h`); shipped values 0 (747 rows), 1 (1899), 2 (352), 3 (119), 255 (5325); 255 = no team (e.g. `Location::IsFriend` returns false for 255, `code/location.cpp` L2615) [C] | owner |
 | 6 | `frontX` | F32 | – | facing; `m_front = (frontX, 0, frontZ)` normalised (ctor default front (1,0,0) supplies y = 0) |
 | 7 | `frontZ` | F32 | – | |
 | 8 | `isGlobal` | INT → bool | 0/1 | campaign-global building (tracked by `GlobalWorld`). **Must be 1** for `TrunkPort`, `ControlTower`, `RadarDish`, `Incubator`, `FenceSwitch`, else `AppReleaseAssert("Non-global %s found in %s")` — fatal in release. All shipped rows comply (173/150/164/96/0 rows) [C] survey |
@@ -1116,7 +1116,7 @@ Argument signatures (syntax only; R = required, O = optional, "w" = word, "f" = 
 | `ActivateTrunkPort`, `ActivateTrunkPortFull` | ARG1 i building |
 | `CamGlobalWorldFocus`, `CamReset`, `ExitLocation`, `ShutUp`, `WaitSay`, `WaitCam`, `WaitFade`, `WaitPlayerNotBusy`, `ClearHighlights`, `GameOver`, `ResetResearch`, `RestoreResearch`, `RunCredits`, `GodDishActivate`, `GodDishDeactivate`, `GodDishSpawnSpam`, `GodDishSpawnResearch`, `TriggerSpam`, `PurityControl`, `ShowDarwinLogo`, `ShowDemoEndSequence`, `PermitEscape` | none (extra tokens ignored) |
 
-Shipped files: 42 (`attractmode.txt` … `yard_primary3.txt`), all single-byte ASCII, CRLF, terminated [C] survey. `SCRIPT_TEST_ENABLED` (`Script::TestScript`, a static checker of mount/animation names) is never defined [B:DEAD].
+Shipped files: 42 (`attractmode.txt` … `yard_primary3.txt`), all single-byte ASCII, CRLF, terminated [C] survey. Arity check over the 42 scripts + `data/purity/buyme.txt` (`_work/scripts/X1a_script_check.py`): 37 of the 43 opcodes are used (most frequent `Say` 273, `WaitSay` 112, `CamMove` 72, `Wait` 54, `CamBuildingFocus` 52), no unknown opcode, no missing required argument; one surplus argument (`CamCut … 1` in `launchpad_victory.txt`, ignored) [C]. Never used: `CamAnim`, `RunCredits`, `SetCutsceneMode`, `DestroyBuilding`, `ActivateTrunkPort`, `ActivateTrunkPortFull`. `SCRIPT_TEST_ENABLED` (`Script::TestScript`, a static checker of mount/animation names) is never defined [B:DEAD].
 
 Minimal example:
 

@@ -251,6 +251,19 @@
 | `docs/todo.txt` L19, `docs/betachanges.txt` L46/L57, `docs/buglist.txt` L21 | Bootloader issues (GoL-glow frame rate, Spectrum text distortion, ray-tracer performance, widescreen stretching) | Loaders not compiled in Multiwinia; widescreen stretching is consistent with fixed 320×256 / 800×600 canvases in Speccy/Amiga/Credits (`IsOffscreen` 800×600) | loader sources |
 | `contrib/systemiv/lib/math/random_number.h` comment | `sfrand(range)`: −range < result < range | Implementation returns `(0.5 − U)·range`, i.e. ±range/2 (affects Soul/DemoEnd spawn spreads quoted above) | `contrib/systemiv/lib/math/random_number.cpp:sfrand` |
 
+<!-- from X1a_text_formats -->
+## Docs-vs-code discrepancies
+
+| Doc | Doc says | Code does |
+|---|---|---|
+| `docs/input_preferences_syntax.txt` | grammar without `~` icon lines, `value`/`alias` drivers, `repeat`, `key any`/`mouse any`, thumbstick directions, `lefttriggerb`/`righttriggerb` | all of these are accepted (§7.3) [C] |
+| `docs/input_preferences_syntax.txt` | "A preference value is always false if there is no corresponding preference manager entry" | `pref X` with a non-existent key **fails to parse** (binding rejected) [C] `PrefsInputDriver::parseInputSpecification` |
+| `docs/input_preferences_syntax.txt` | user prefs override the FIRST binding of the system file | true for each user line, but several user lines for one control overwrite each other (replace semantics) [C] P10 §1.10 |
+| `docs/top level map.txt` | "Each level file specifies a map file at the start"; global data has "X Z position" per map | map/mission pairing is given by `game.txt` `Locations` rows; `locations.txt` stores X Y Z [C] §3 |
+| `docs/changes.txt` (Darwinia Steam notes) | default language read from `HKCU\software\valve\steam\language` | Multiwinia uses `GetLocaleInfo(LOCALE_SENGLANGUAGE)`; no registry read in `code/` [C] §8.1 |
+| `data/multiwinia.txt` header comment | `Change: 0 = DropDownMenu, -1 = CheckBox` | consistent with `GameMenuWindow` [C] |
+| `data/language/english.txt` comment | `*BETATESTERS … is replaced by all the names of the beta testers` | consistent; requires the phrase to be exactly `*BETATESTERS` [C] `ReadCredits` |
+
 <!-- from X1b_asset_formats -->
 ## Docs-vs-code discrepancies
 | Doc / comment | Says | Code does | Ref |

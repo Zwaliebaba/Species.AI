@@ -233,6 +233,15 @@
 3. [U] Whether `GL_BLEND` is enabled when `CreditsLoader::FlipBuffers` draws its fading clear quad (state inherited from the caller) — determines whether the first 7 s smear. Resolve by tracing GL state at `Script::RunCommand_RunCredits` / outro camera.
 4. [U] Exact reachability of `PageDarwinia` (and therefore `CampaignButton`) in FULL — P18 to confirm; affects whether §1.6's bug is player-visible.
 
+<!-- from X1a_text_formats -->
+## [U] Unknowns
+
+1. Whether `level_enum.txt` reached retail installs (resolve: list a retail `main.dat`/`patch.dat`).
+2. Whether retail editions shipped complete Japanese/Korean/Portuguese language files (resolve: retail `language.dat` and `tools/*language.list`).
+3. Whether `default_preferences.txt` is reachable at first run in a packaged install (`PrefsManager` is created before `main.dat` is parsed) — affects first-run `WaitVerticalRetrace`, `NetworkClientPort` etc. (resolve: check `tools/init.list` against a retail `init.dat`, or run a clean install). P14 rates the "not found" outcome [I, strong].
+4. Exact failure mode of a NULL token in release (`atoi(NULL)` access violation vs CRT invalid-parameter termination for `stricmp`) — immaterial for a re-implementation (resolve: run the original with a truncated file).
+5. Whether `MultiwiniaSupport.exe` in `tools/multiwiniasupport/` was built from `contrib/XCrashReport` unchanged (resolve: compare resources/strings of the binary).
+
 <!-- from X1b_asset_formats -->
 ## [U] Unknowns
 1. Exact version of `tools/Rar.exe` (strings are packed; no version resource found) and whether retail `.dat` files were produced with RAR 2.9 or 3.x method numbering — resolve by running `Rar.exe` without arguments on Windows or by inspecting a retail `.dat` header (`animator.dat` shows unpack version 29).

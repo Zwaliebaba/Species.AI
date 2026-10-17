@@ -311,6 +311,20 @@
 - **P02 (game modes)**: grace-period timer semantics drive panel visibility; `mp_benchmark_1` (`GameTypes none`).
 - **`.anim` grammar owner**: in-memory semantics in §2.4–2.6 must agree with the grammar doc (`WIDTH/HEIGHT/START/STOP`, `BEGIN Object … END`, `BEGIN Keyframe … END` with `TIMEINDEX IMAGENAME XPOS YPOS COLOUR SCALE ANGLE FLIPHORIZ ALPHA`; unknown commands ignored; parser takes only the first token after a command, so image names cannot contain spaces) [C] `AnimatedPanel::Read`, `AnimatedPanelObject::Read`, `AnimatedPanelKeyframe::Read`.
 
+<!-- from X1a_text_formats -->
+## Cross-partition notes
+
+- [→ 23_terrain_and_landscape] P11: semantics of `Landscape`, `LandscapeTiles` (guide grid), `LandFlattenAreas` fields; this document fixes their syntax (§2.5–§2.7).
+- [→ 03_buildings_and_world_objects] P06/P07/P08/P02: behaviour of every building column in §2.9.3; the shipped row counts per type are in `X1a_level_field_usage.csv` (P06 has an equivalent `P06_level_building_usage.csv`).
+- [→ 01_game_modes] P02: meaning and units of every `multiwinia.txt` parameter and of the `LevelOptions` (§2.4.4, §4.3).
+- [→ 06_player_control_and_input] P10: run-time semantics of binding specs; P10 §1.11 grammar is consistent with §7.3 here, which adds the case-sensitivity rules, the thumbstick dual type, the `STATE_*` results and the shipped-file statistics.
+- [→ 09_meta_systems] P17b/P14: the preference-key register (`P17b_prefs_accesses.csv`, `P14_platform_lib_pref_keys.csv`); §6 gives only the file format and the default sources.
+- [→ 30_scripting_tutorial_and_cutscenes] P19: command semantics for §9.
+- [→ 22_determinism_and_networking] P15/X3: `Directory` serialisation used by `.mwm` and `serverHistory.dat` (§13.6–§13.7); sync dump formats (§13.5) are the forensic output of the sync check.
+- X1b (data formats part B): `sounds.txt`, `effects.txt`, `stats.txt`, `gestures.txt`, `.anim`, `.shp`, bitmaps, `.dat` archives, colour ramps are not covered here.
+- P18: the credits page consumes `multiwinia_betatesters.txt` (§5) and `GameMenu::AddMap` builds the map list (§2.4.3).
+- P14 correction: archive lookups are **case-insensitive** — `Resource::m_resourceFiles` is a `HashTable` (case-folding hash + `stricmp`) and SystemIV `FileSystem` uses a `BTree` with `stricmp` [C] `code/lib/resource.h`, `contrib/systemiv/lib/tosser/hash_table.cpp:HashTable::HashFunc`, `contrib/systemiv/lib/tosser/btree.cpp:BTree::LookupTree`; P14 §31.5.3/§31.5.4 state that callers must pass lower-case names / that the lookup is case-sensitive.
+
 <!-- from X1b_asset_formats -->
 ## Cross-partition notes
 - **P14 (31.5)**: archive look-ups are case-insensitive (`HashTable::HashFunc` masks bit 0x20, `GetIndex` uses `stricmp`), so P14's "callers must pass lower-case names" is not required [C] `contrib/systemiv/lib/tosser/hash_table.cpp:HashTable::HashFunc`, `HashTable::GetIndex`. Also: zero-size entries are leaked, `MAX_FILES` overflow crashes rather than truncating.

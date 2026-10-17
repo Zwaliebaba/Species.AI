@@ -420,6 +420,25 @@ All English strings behind the phrase ids below are Introversion text (`data/lan
 | `APP_NAME` shown by the ray tracer, `DARWINIA_VERSION_STRING` in benchmark files | brand | `code/loaders/raytrace_loader.cpp:RenderMessage`, `code/benchmark.cpp` | new product constant |
 | Profile names `AttractMode`, `AccessAllAreas`, `game_unlockall.txt` | names | `code/app.cpp:App::LoadProfile` | `__attract__`, `__unlockall__` |
 
+<!-- from X1a_text_formats -->
+## IP register
+
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| "Multiwinia", "Darwinia", "Darwinian(s)", "Futurewinian", "Rocketwinians" | name/brand | `data/multiwinia.txt`, crate names `code/worldobject/crate.cpp:Crate::GetName`, level options | "the game", "Sprite", "Future Sprite", "Rocket Sprites" |
+| Game-type names `Domination`, `KingOfTheHill`, `CaptureTheStatue`, `Assault`, `RocketRiot`, `Blitzkrieg`, `TankBattle` (as presented in this specific set) | name | `data/multiwinia.txt` | `ZoneControl`, `HoldTheCentre`, `CarryTheIdol`, `AttackDefend`, `RocketRace`, `ZoneChain`, `ArmourMatch` |
+| Map file names `mp_*` and location names (`garden`, `containment`, `mine`, `generator`, `yard`, `escort`, `pattern_buffer`, `biosphere`, `receiver`, `temple`, `launchpad`, `sandbox`) | name | `data/levels/`, `data/game.txt` | `map_<mode>_<players>p_<n>`, `region_<n>` |
+| Every phrase text in `data/language/*.txt` (UI strings, credits, help) | text | `data/language/` | write new text; keep only the id scheme |
+| Beta-tester and credit names | text (personal names) | `data/betatesters.txt`, `data/multiwinia_betatesters.txt`, `multiwinia_credits_*` | never reuse; generate own credits |
+| Dr Sepulveda / `puritycontrol_*` dialogue, `buyme` cutscene | character/text | `data/purity/buyme.txt`, `code/sepulveda.cpp` | none (do not implement) |
+| Building/entity/research type names used as file keywords (`SpawnPointMaster`, `TrunkPort`, `SoulDestroyer`, `Virii`, `Triffid`, …) | name | §2.9.3, §2.12, §3.3 | new neutral ids (`SpawnHub`, `Portal`, …) |
+| Asset names referenced from level files (`rockhead.shp`, `landscape_launchpad.bmp`, `waves_*.bmp`, `water_*.bmp`) | art | level files | new asset names |
+| Value-driver names `Pecan`, `Hummingbird`; test-bed name `TESTBED_GodOfCode`; profile names `AccessAllAreas`, `AttractMode` | name | `code/lib/input/inputdriver_values.inc`, `testbedconfig.txt`, `code/app.cpp` | `AlwaysTrue`, `FeatureFlagA`, `DevProfile` |
+| Obfuscation header `redshirt2` and its key table | brand-ish/secret | `text_stream_readers.cpp`, `text_file_writer.cpp` | none (use no obfuscation) |
+| Folder/bundle names `Introversion\Multiwinia`, `uk.co.introversion.*` | brand | `App::GetProfileDirectory`, `App::GetPreferencesPath` | `<Company>\<Game>` |
+| Auth-key format and demo-key literal | brand/credential | `contrib/systemiv/lib/metaserver/authentication.cpp` | own licensing scheme |
+| Crash tool name `MultiwiniaSupport` | brand | root INI, `contrib/XCrashReport` | `<Game>Support` |
+
 <!-- from X1b_asset_formats -->
 ## IP register
 | Item | Kind | Where (ref) | Neutral placeholder |

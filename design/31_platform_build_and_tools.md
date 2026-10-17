@@ -161,7 +161,7 @@ Resolved: P14's note "1158 `.cpp` references" — the project has 384 distinct `
 classDiagram
   class WindowManager{
     <<abstract>>
-    +LList~Resolution*~ m_resolutions
+    +LList~Resolution~ m_resolutions
     +bool m_mousePointerVisible
     +bool m_invertY
     #int m_mouseOffsetX
@@ -175,7 +175,7 @@ classDiagram
     #int m_desktopColourDepth
     #int m_desktopRefresh
     +GetResolutionId(w, h) int
-    +GetResolution(id) Resolution*
+    +GetResolution(id) Resolution
     +SuggestDefaultRes(w, h, refresh, depth)
     +GetClosestResolution(w, h, refresh)
     +CreateWin(w, h, windowed, colourDepth, refresh, zDepth, waitVRT, antiAlias, title)*
@@ -310,10 +310,10 @@ Same structure as Win32 with these differences: ANSI `WNDCLASS/RegisterClass/Cre
 
 ```mermaid
 sequenceDiagram
-  participant R as "Renderer (per frame)"
-  participant W as "WindowManagerDirectX::Flip"
-  participant E as "Direct3DSwapBuffers"
-  participant D as "IDirect3DDevice9"
+  participant R as Renderer per frame
+  participant W as WindowManagerDirectX Flip
+  participant E as Direct3DSwapBuffers
+  participant D as IDirect3DDevice9
   R->>W: Flip()
   W->>E: Direct3DSwapBuffers()
   E->>E: GenerateMipmaps() reaps finished mip tasks
@@ -653,7 +653,7 @@ Black-box stack quality: Release is built `/O2`, which on x86 implies frame-poin
 
 Crash-report helpers [C]: `code/lib/GetWinVer.cpp:GetWinVer` maps `GetVersionEx` platform/major/minor/build to names Windows 95 … Windows Server 2003 and CE (codes `W95=1 … WME=7`, `WNT351=101 … W2003SERVER=105`, `WCE=201`); Vista and later report "unknown Windows version". `code/lib/MiniVersion.cpp:CMiniVersion` reads version resources. `code/lib/user_info.cpp:GetUserInfoData(file, &username, &email)` parses a two-line `Username …`/`Email …` file and is never called [B:LEGACY].
 
-OS checks [C] `code/main.cpp`: `IsRunningAtLeast2k` (major version ≥ 5) gates the profile directory; `IsRunningVista` (major ≥ 6 and workstation) is used only by the dead `DoVistaChecks` (Vista-only check and parental-controls check with the Darwinia Game Explorer GUID) [B:DEAD].
+OS checks [C] `code/main.cpp`: `IsRunningAtLeast2k` (major version ≥ 5) gates the profile directory; `IsRunningVista` (major ≥ 6 and workstation) is used only by the dead `DoVistaChecks` (Vista-only check, then a Windows Parental Controls `IsBlocked` check for game GUID `F58175C7-E99C-4151-800D-7BB5E89E4960` — which differs from the `gameID` `{15763826-11C0-4AF7-93FB-011CC32D38A4}` of the Game Explorer GDF compiled into the exe) [B:DEAD].
 
 ---
 
@@ -1094,3 +1094,989 @@ Resolved: P14 listed only `InstallerScript.iss` and the beta installer as needin
 
 The new game should derive every one of these from a single version source in the build.
 
+---
+
+## 10 Map CRC tool and runtime map identity
+
+### 10.1 The tool — `tools/MapCRC/main.cpp:GenerateMapCRCs(targetDir, outputFile)` [C]
+
+1. Build an output line list: `#ifndef _included_mapcrc_h`, `#define _included_mapcrc_h`, two blank lines, `// Auto-generated IDs for each map.`, `// DO NOT MODIFY`, two blank lines.
+2. `ListDirectory(targetDir, "*.txt", false)` (SystemIV `contrib/systemiv/lib/filesys/filesys_utils.cpp`; Win32 `_findfirst` order) — only the top level of `data/levels/`, so `levels/old/` is ignored.
+3. For each file: `FileCRC(BinaryFileReader(targetDir + name))` (§10.3).
+4. Name sanitising (`SanitiseFilename`): drop the last 4 characters (`.txt`), replace `.`, `-` and space with `_`, upper-case (`strupr`; a local `strupr` is supplied on Mac).
+5. Emit `"#define   MAPID_%-40s 0x%08x\n"` per file, then two blank lines and `#endif`.
+6. Compare line by line (`fgets`, 1024 chars) with the existing output file, including "no extra trailing lines"; if identical print `No map changes found.` and return 0 without touching the file (so incremental builds are not invalidated); else rewrite it.
+7. Entry points: Win32 `WinMain` splits the raw command line at the **first space** into `<dir> <outfile>` (paths with spaces are impossible); POSIX `main(argc==3)`.
+
+Build integration [C]: Visual Studio pre-build event in all four configurations, `"../../tools/MapCRC/MapCRC.exe" ../../data/levels/ ../../code/mapcrc.h` (`targets/vs2005/Darwinia.vcproj`), using the prebuilt `tools/MapCRC/MapCRC.exe` (project `tools/MapCRC/MapCRC.vcproj`: `main.cpp` + `contrib/unrar/crc.cpp` + SystemIV `filecrc`, `binary_stream_readers`, `filesys_utils`, `debug_utils`, `string_utils`; stub `tools/MapCRC/lib/universal_include.h` with `APP_NAME "MapCRC"`, `APP_VERSION "1.0"`); Xcode target `Generate Map CRCs` with the same arguments (§2.4). The checked-in `code/mapcrc.h` holds **87** `MAPID_*` defines — one per top-level `data/levels/*.txt` file (Darwinia `map_*`/`mission_*` levels included).
+
+### 10.2 CRC definition [C] `contrib/systemiv/lib/math/filecrc.cpp:FileCRC`, `ReadFileData`, `contrib/unrar/crc.cpp:CRC`
+
+| Aspect | Value |
+|---|---|
+| Bytes covered | the raw file bytes as read by `BinaryReader::ReadU8` until EOF, **plus one trailing `0xFF`** (the EOF read is stored before the loop sees `m_eof`) |
+| Size cap | static buffer `MAXSIZE = 100000`; the loop stores up to index `maxSize` inclusive before breaking, so up to 100 001 bytes are written — a file ≥ 100 000 bytes overflows the buffer by one byte [C structure]; the largest shipped level is 46 085 bytes |
+| Polynomial | CRC-32, reflected `0xEDB88320` (unrar's table) |
+| Initial value / final XOR | **0** / **none** (`CRC(0, buf, len)`) — not the standard CRC-32 (which uses `0xFFFFFFFF` both ways) |
+| Result type | `int` (printed `0x%08x`); `LevelFile::CalculeCRC` returns −1 if the file cannot be opened |
+| Line endings | bytes are hashed as stored, so a CRLF ↔ LF conversion of a level file changes its ID |
+
+**Verification** [C scripted]: `_work/scripts/P11_mapcrc.py` (re-run for this document) recomputes all 87 top-level `data/levels/*.txt` with this definition and reproduces every `MAPID_*` constant in `code/mapcrc.h` exactly (87 OK, 0 mismatches).
+
+### 10.3 Runtime use [C]
+
+At run time `LevelFile::CalculeCRC(file)` (`code/level_file.cpp`) computes the same CRC over resource `levels/<file>` through `Resource::GetBinaryReader` — i.e. over the loose file or the archive entry, whichever wins (§8.8) — so map identity = content CRC.
+
+| Consumer | Use | Evidence |
+|---|---|---|
+| `MapData::m_mapId` (front-end map list) | `LevelFile::CalculeCRC(m_fileName)`; −1 ⇒ `m_customMap = true` | `code/UI/MapData.cpp`, `code/game_menu.cpp` |
+| `App::GetMapID(gameMode, crc)` | map CRC → index in `m_gameMenu->m_maps[gameMode]` (−1 if absent) | `code/app.cpp:App::GetMapID` |
+| `App::IsMapPermitted(mapId)` | `PERMITTED_MAPS` whitelist (zero-terminated) when defined; else, for non-full (demo) versions, `DemoLimitations::MapPermitted` | `code/app.cpp:App::IsMapPermitted` |
+| `DoEnterLocation` | refuses to start a map whose CRC is not permitted | `code/main.cpp:DoEnterLocation` |
+| `DemoLimitations::m_allowedMapCRCs` | default `{MAPID_MP_KOTH_2P_1, MAPID_MP_KOTH_4P_1, MAPID_MP_CTS_2P_1, MAPID_MP_KOTH_3P_1, MAPID_MP_ROCKETRIOT_3P_1}` or a list from the metaserver | `code/network/demo_limitations.cpp` ([09](09_meta_systems.md)) |
+| Metaserver game listing | host advertises `NET_METASERVER_MAPCRC`; browsers resolve the name by CRC | `code/network/server.cpp`, `code/UI/GameMenuWindow.cpp` ([22](22_determinism_and_networking.md)) |
+| Tutorials / quick start | hard-coded `MAPID_MP_KOTH_2P_1`, `MAPID_MP_KOTH_3P_1`; the tutorial buttons are disabled if `GetMapID` returns −1 | `code/UI/GameMenuWindow.cpp` ([30](30_scripting_tutorial_and_cutscenes.md)) |
+
+Risks [I]: the game itself is started by **file name** (`GAMEOPTION_MAPNAME`) and no map CRC is compared between peers before the simulation starts, so a locally modified map desyncs instead of being rejected ([22](22_determinism_and_networking.md), [23](23_terrain_and_landscape.md)); any edit to a shipped level changes its ID and therefore silently breaks `PERMITTED_MAPS`, the demo map list and the tutorial buttons unless the exe is rebuilt (the pre-build step only runs when the exe is built).
+
+---
+
+## 11 ShapeExporter and 3DGeometry
+
+### 11.1 ShapeExporter (3ds Max → `.shp`) [C] `tools/ShapeExporter/ShapeExporter.cpp`, `tools/ShapeExporter/ShapeExporter.h`, `tools/ShapeExporter/DllEntry.cpp`
+
+A 3ds Max 5 SDK `SceneExport` plug-in (`ShapeExporter.dle`; extension `shp`; long description "Futurewar Shape Format v1.0"; `Class_ID(0x3288038e, 0x40eff553)`; string-table class name "Exporter1"; `.def` `LIBRARY exporter1`).
+
+| Step | Behaviour (`DoExport`, `ExportNode`, `ExportMesh`, `ExportMarker`, `LookupPosition`) |
+|---|---|
+| Root | `ShapeFragment("scene root")`; for each child of the Max root node, `ExportNode(node, root, depth=1)`; a failing subtree aborts its recursion |
+| Node filter | only `GEOMOBJECT_CLASS_ID` objects; target objects (`TARGET_CLASS_ID`) skipped |
+| Markers | nodes whose name starts with `marker` (case-insensitive `strnicmp`) → `ShapeMarker(name, parentName, depth, localTM)` added to the parent's `m_childMarkers` |
+| Fragments | other geometry → converted to a `TriObject` (empty meshes skipped) → `ShapeFragment`; children recursed with `depth+1`; at most 256 fragments (`m_fragments[256]`) |
+| Transform | local = `nodeTM × inverse(parentTM)` at time 0. **Axis conversion Max (x, y, z) → game (x, z, −y)** for positions and the right/up rows; the front row is converted as `(−f.x, −f.z, f.y)` for fragments but `(f.x, f.z, −f.y)` for markers (sign inconsistency); matrices normalised |
+| Vertex data | positions de-duplicated with squared-distance threshold `0.001² = 1e-6`; colours de-duplicated exactly on RGB (per-vertex colours ×255, else material diffuse, else node wire colour); vertices = unique (position id, colour id) pairs; triangles copied from Max faces (no stripping, although NvTriStrip is included) |
+| Output | `fopen(name, "w")` then the engine's own `Shape::WriteToFile` (text `.shp`, grammar in [29](29_data_formats_reference.md); exporter-only constructors under `EXPORTER_BUILD`, [25](25_textures_and_assets.md)) |
+| Buildability | the VC6 projects (`ShapeExporter.dsp`, `ShapeExporterDLL.dsp`) reference `code/lib/{debug_utils,text_stream_readers,…}.cpp`, which have since moved to SystemIV ⇒ cannot be rebuilt from this tree [C absence]; the prebuilt `tools/binaries/ShapeExporter.dle` remains |
+
+The 133 `.max` scenes in `data/shapes/source/` are its inputs and are excluded from every archive (§8.5).
+
+### 11.2 3DGeometry [C] `tools/3DGeometry/main.cpp`, `tools/3DGeometry/3DGeometry.dsp`
+
+An Allegro/AllegroGL OpenGL sandbox (VC6 project with Allegro and fmod paths) linking `code/lib/{debug_utils,math_utils,matrix33,…}.cpp` to visualise ray/sphere/triangle intersection maths (`SphereTriangleIntersection` and related helpers of `code/lib/math_utils.cpp`); stale (references moved files), developer-only.
+
+---
+
+## 12 Localisation build
+
+### 12.1 Runtime language selection [C] `code/app.cpp:App::InitLanguage`, `App::TrySetLanguage`, `App::SetLanguage`, `App::GetFirstAvailableLanguage`
+
+1. Candidate list, in order: pref `TextLanguage` (default `"unknown"`; skipped on Mac, which always follows the OS), the OS locale's English language name (`SystemInfo::m_localeInfo.m_language`, e.g. "French"), `"english"`, and the first file found by `ListResources("language/", "*.*")` minus its extension.
+2. `TrySetLanguage(name)`: lower-case `language/<name>.txt`; require `Resource::FileExists`; store pref `TextLanguage = name`; `SetLanguage(name, pref TextLanguageTest)`.
+3. All four fail → `AppReleaseAssert("Failed to load language file")`.
+4. `SetLanguage`: load `language/<name>.txt` into a new `LangTable`; if `TextLanguageTest` run `TestAgainstEnglish` (§12.6); `setlocale(LC_CTYPE, name)` (for upper-casing); overlay `strings_<name>.txt` or else `strings_default.txt` if present (mod strings); the previous table is deleted 5 main-loop iterations later (`DelayedJob`, [20](20_architecture.md)).
+5. Because `language/` is excluded from `main.dat` (§8.5), only the languages packed in `language.dat` are selectable: an English-only `language.dat` (no-argument and non-retail builds) forces English regardless of the OS locale [C].
+
+### 12.2 `language.dat` build [C] `tools/build_language_dat.bat`, `tools/*language.list`
+
+`build_language_dat.bat <platform> <language> <build> <tools>` copies the files named by the selected list(s) into `<build>\data` (`copyfiles.pl`), then packs `*.bmp *.dds *.tex *.txt` with `rar a -m5 -s -idp language.dat`. Selection: §8.2. `tools/build_figs_languages.bat` builds four standalone single-language archives (`platretail` with `french`, `italian`, `german`, `spanish`) into `build\<language>\`.
+
+| List | Language file | Font pages | Total |
+|---|---|---|---|
+| `tools/englishlanguage.list` | `language/english.txt` | Latin-1 `0020.00ff` of `editor`, `speccy`, `square` | 4 |
+| `tools/frenchlanguage.list`, `germanlanguage.list`, `italianlanguage.list`, `spanishlanguage.list`, `portugueselanguage.list` | that language's `.txt` | the same 3 Latin-1 pages | 4 each |
+| `tools/russianlanguage.list` | `language/russian.txt` | Latin-1 + Cyrillic `0410.042f`, `0430.044f` for all three fonts (9 pages) | 10 |
+| `tools/japaneselanguage.list` | `language/japanese.txt` | 3 Latin-1 + `square.3000.30ff` and `square.4e00.4eff` … `square.9e00.9eff` (85 pages) | 86 |
+| `tools/koreanlanguage.list` | `language/korean.txt` | 3 Latin-1 + Hangul `square.ac00.acff` … `square.d700.d7ff` incl. the odd range `square.bb00.bfff` (47 pages) | 48 (+1 blank line) |
+| `tools/language.list` (`all`) | all 9 language files | 131 pages: `editor` Latin-1; `speccy` Latin-1 + Cyrillic; `square` Latin-1 + CJK + Hangul | 140 |
+
+Gaps found [C scripted]: `language.list` (the "all languages" build) omits the `editor` and `square` Cyrillic pages that `russianlanguage.list` includes, so Russian text in an all-languages build has Cyrillic glyphs only in the `speccy` font (matching the stale `docs/RussianFontRequest.txt`); the Euro-sign pages `editor.20a0.20af`, `speccy.20a0.20af`, `square.20a0.20af` exist in `data/textures/unicode/` but are in no list and therefore never shipped. Font page naming `textures/unicode/<font>.<first>.<last>.bmp` and glyph layout: [24](24_rendering.md), [25](25_textures_and_assets.md).
+
+### 12.3 Text encodings shipped [C] file inspection of `data/language/*`, `contrib/systemiv/lib/unicode/unicode_text_stream_reader.cpp`
+
+| File | Encoding |
+|---|---|
+| `data/language/english.txt` | 8-bit ASCII (starts `# `) |
+| `data/language/french.txt`, `german.txt`, `italian.txt`, `korean.txt`, `portuguese.txt`, `spanish.txt` | UTF-16 **BE** (BOM `FE FF`) |
+| `data/language/japanese.txt`, `russian.txt` | UTF-16 **LE** (BOM `FF FE`) |
+
+The reader accepts both byte orders; the translation tooling (`tools/language/report.pl`) accepts only UCS-2 BE (docs-vs-code discrepancy). Language-file grammar and caption markup: [29](29_data_formats_reference.md).
+
+### 12.4 Translation tooling [C] `tools/language/*`, `tools/copystrings.pl`, `tools/build-data-english.mk`
+
+| Tool | Role |
+|---|---|
+| `tools/language/report.pl` | change tracker for translators: reads old English, new English and the old translation (UCS-2 BE); applies key/markup substitutions; expands `[part]`/`[ part]` references into `_kbd`/`_xin` variants and drops `part_` keys; detects renames; classifies inserted/deleted/changed strings, ignoring typo-level edits (same word count, same first/last letters, Levenshtein ≤ 2); writes `<lang>-strings.txt`, `<lang>-report.txt` and a summary |
+| `tools/language/make_reports.bat`, `make_reports_russian.bat` | run `report.pl -a` per language (French also emits `english-strings.txt`), then zip per-language packs with `tools/language/7za.exe` |
+| `tools/language/README.txt` | inputs must be UCS-2 BE; required files `english.old.txt`, `english.txt`, `french/german/italian/spanish.txt` |
+| `tools/language/test_translation.tcl` (+ wrapped `test_translation.exe`) | Tcl emulator of the in-game caption markup (`[key]`, `[ key]`, `[KEYx]`, `[IFMODE x]…[ELSE]…[ENDIF]`) that prints/compares/reports expanded strings per input mode (`_kbd`/`_xin`) and flags errors as ANSI or HTML |
+| `tools/copystrings.pl` + `tools/build-data-english.mk` | Darwinia demo string subset: copy a language file up to the `demo_endoffile` marker (the key still exists in `data/language/english.txt`) [B:LEGACY] |
+
+### 12.5 In-game QA [C] `code/lib/language_table.cpp:LangTable::TestAgainstEnglish`
+
+Pref `TextLanguageTest = 1` → on language load, write `./language_errors.txt` (working directory, mode `"wt"`) listing missing translations, untranslated strings (identical to English) and keys absent from English. (A Darwinia-era variant in `code/sepulveda.cpp` appends to the same file [B:DEAD].)
+
+---
+
+## 13 Analysis and audit scripts
+
+### 13.1 `tools/FindUnusedResources.sh` [C]
+
+1. Refuses to run unless the current directory is named `Darwinia` or `darwinia` (stale guard — the repository folder is `multiwinia`).
+2. In `code/`: for each of `shape`, `sound`, `texture`, collect lines matching case-insensitive `get<kind>[ \t]*(` from all `*.cpp`/`*.h`; keep only lines containing `"`; strip everything up to the call's opening quote; strip any directory prefix (`.*[/\\]`); strip from the closing quote; sort/uniq case-insensitively → list A (names referenced by code).
+3. In `data/`: `find` all `*.BMP *.SHP *.OGG *.JPG *.WAV` (both cases), strip paths, sort/uniq case-insensitively → list B.
+4. `diff -i A B`: lines only in A → `Missing:`, only in B → `Reduntant:` (sic); drop lines matching any regex in `tools/FindUnusedResourcesExceptions.txt` (`editor_font.bmp`, `landscape.bmp`, `viriifull.bmp`).
+
+Limitations [I: from the regex pipeline]: names built at run time (`sprintf`, concatenation) and names referenced from data files (`sounds.txt`, level files, `effects.txt`, shape names inside `.shp` hierarchies, sprite names in `.anim`) are reported as "Reduntant"; calls split across lines are missed; only basenames are compared, so same-named files in different directories collapse. Use the asset catalogue in [25](25_textures_and_assets.md) instead.
+
+### 13.2 Other audit and crash-forensics scripts [C]
+
+| Script | What it does |
+|---|---|
+| `tools/findAllOpts.sh` | `grep g_prefsManager` over every `*.cpp`, extract the first string literal per line, sort/uniq → preference-key inventory (the maintained equivalent is `_work/drafts/P14_platform_lib_pref_keys.csv`) |
+| `tools/unused_samples.sh` | compares `SOUNDNAME`/`SAMPLE` entries in `data/sounds.txt` against files in `data/sounds` (Darwinia layout; ignores `data/mwsounds`) |
+| `tools/unused_sample_groups.sh` | compares `SAMPLEGROUP` definitions with `SOUNDNAME` references in `sounds.txt` |
+| `tools/FindErrors.sh` | `grep -i ERROR test_log.txt`, strip up to `ERROR: `, sort/uniq (test-harness output, [32](32_debug_test_and_performance.md)) |
+| `tools/trace.pl` | parses a linker `.map` file (two line formats: `<seg:off> <symbol> <rva+base> <f> <object>` and `<addr> <flag> <symbol>`), then maps every `retAddress = 0x…` line of a stack file to the nearest preceding symbol |
+| `tools/traceblackbox.bat` | `perl trace.pl blackbox.txt darwinia.map > traceblackbox.txt` (hard-coded developer Perl path; the baseline Release map is written under the linker's default name, not `darwinia.map` [I]) |
+| `tools/rarcmp.pl` | compares two RAR archives by `rar v` listing (name, size, CRC of every entry); exit 0 if identical |
+| `tools/copy-same-dats.pl` | for each `*.dat` in a from-dir: if `rarcmp` says content-identical but the bytes differ, copy it over the to-dir copy (keeps auto-patcher diffs minimal) |
+| `tools/SlashSort.exe` | [I] groups memory-log lines by source file (`slashsort memory.log > output`, banner `Filename groupings:`) — likely for `TRACK_MEMORY_LEAKS` output; unreferenced |
+
+---
+
+## 14 File inventories (root, targets, tools, docs)
+
+One row per file, generated by `_work/scripts/S_31_inventory.py` from the P14 inventory tables with the S31 corrections applied (rows for `tools/build_multiwinia.bat`, `tools/build_multiwinia_crashreporter.bat`, `tools/build_multiwinia_gold.bat`, `tools/build_multiwinia_pc_preview.bat`, `tools/InstallerScript_retail_crashreporter_euro.iss`, `tools/multiwiniasupport/MultiwiniaSupport.exe`, `tools/SlashSort.exe`, `tools/traceblackbox.bat`, `tools/MapCRC/MapCRC.exe`, `targets/linux/Makefile`, `targets/macosx/Multiwinia/Multiwinia.xcodeproj/project.pbxproj`, `targets/macosx/Multiwinia/data`, `docs/Network.txt`) and checked for completeness against `_work/manifest.csv` (10 root + 64 `targets/` + 174 `tools/` + 70 `docs/` files, 0 missing). Roles of binaries come from `file`/`strings` inspection and script references. These tables are part of this document's source map.
+
+### 14.1 Repository root (10 files)
+
+| # | File | Role | Evidence |
+|---|---|---|---|
+| 1 | `EULA.txt` | Source-code licence (copying/distribution terms of the Darwinia/Multiwinia source; derivative works must require a purchased copy; no non-English or non-PC/Mac/Linux versions without permission) | [C] |
+| 2 | `README.TXT` | Development readme: VS2008, solution in `targets\vs2005`, configuration→exe list, DirectX SDK requirement, optional Vista SDK for `TARGET_OS_VISTA`, set working dir to `..\..` | [C] |
+| 3 | `MultiwiniaSupport.ini` | Support-tool file list (§6.4) | [C] |
+| 4 | `animator.exe` | Introversion sprite-animation tool (PE32 GUI) [I: name + data] | [C] file type |
+| 5 | `animator.dat` | Solid RAR v4 data for animator.exe: 15 files `data\animations\{cloudyglow,darwinian,laser,plusone,spawnpoint,zone-back,zone-front,zone}.bmp`, `data\fonts\verdana-bold.bmp`, `data\dialogs\{animator-controlpanel,animator-mainmenu,animator-panel,file-dialog,mainmenu}.txt`, `data\english.txt` | [C] `_work/scripts/P14_rar_list.py` header walk |
+| 6 | `darwinia.gdf` | Darwinia Vista Game Definition File (UTF-16; v1.5.4.0, release 2005-03-04, executable `darwinia.exe`) | [C] |
+| 7 | `darwinia.mcl` | Windows Media Center application descriptor for Darwinia (installed by the NSIS Vista installer) | [C] |
+| 8 | `darwinia.png` | 256×256 Media Center/box image (listed in the vcproj as a non-built file) | [C] |
+| 9 | `testbedconfig.txt` | Example test-bed script: `SetProgression RANDOM`, `SetTestBedName TESTBED_GodOfCode`, `AddSequenceItem <gameIndex> <randSeed>` ×2 (`TESTBED_ENABLED` only; grammar owned by [29](29_data_formats_reference.md)/[09](09_meta_systems.md)) | [C] [B:DEAD] |
+| 10 | `.emacs-dirvars` | Emacs settings (`tab-width: 4`, `c-file-style: "stroustrup"`) | [C] |
+
+### 14.2 `targets/` (64 files)
+
+| # | File | Role | Build tag |
+|---|---|---|---|
+| 1 | `targets/linux/Makefile` | Darwinia-era Linux makefile (`CXX=apg++`, `-g -Os`, `-DTARGET_OS_LINUX -DHAVE_SOCKET -DHAVE_SELECT -DHAVE_GETHOSTBYNAME -DHAVE_INET_NTOA`, SDL/GL/GLU/vorbisfile/vorbis/ogg, `TARGET_DEMOGAME`/`TARGET_FULLGAME` variants); 247 `code/`+`contrib/` sources listed, 23 absent (17 under `code/`, 6 under `contrib/netclass`/`contrib/binreloc`) | [B:DEAD] |
+| 2 | `targets/linux/Makefile.keygen-1` | Builds Darwinia `keygen-1` registration tool | [B:DEAD] |
+| 3 | `targets/macosx/Darwinia/Darwinia.xcode/project.pbxproj` | Darwinia Xcode 2 project | [B:DEAD] |
+| 4 | `targets/macosx/Darwinia/English.lproj/InfoPlist.strings` | Darwinia bundle strings | [B:DEAD] |
+| 5 | `targets/macosx/Darwinia/MainMenu.nib/classes.nib` | Darwinia menu nib | [B:DEAD] |
+| 6 | `targets/macosx/Darwinia/MainMenu.nib/info.nib` | Darwinia menu nib | [B:DEAD] |
+| 7 | `targets/macosx/Darwinia/MainMenu.nib/objects.nib` | Darwinia menu nib | [B:DEAD] |
+| 8 | `targets/macosx/Darwinia/MainMenuCallbacks.cpp` | Mac menu → debug menu/FPS/profiler/fullscreen/quit | [B:DEAD] |
+| 9 | `targets/macosx/Darwinia/MainMenuCallbacks.h` | prototypes | [B:DEAD] |
+| 10 | `targets/macosx/Darwinia/SDLMain.h` | SDL Cocoa main (Darwinia) | [B:DEAD] |
+| 11 | `targets/macosx/Darwinia/SDLMain.m` | SDL Cocoa main (Darwinia) | [B:DEAD] |
+| 12 | `targets/macosx/Multiwinia/English.lproj/AboutCredits1.rtf` | Mac About box credits (Introversion / Ambrosia port developers) | [B:DEAD] |
+| 13 | `targets/macosx/Multiwinia/English.lproj/AboutCredits2.rtf` | Mac About box credits page 2 | [B:DEAD] |
+| 14 | `targets/macosx/Multiwinia/English.lproj/Acknowledgements.rtf` | Third-party notices (SDL LGPL, …) | [B:DEAD] |
+| 15 | `targets/macosx/Multiwinia/English.lproj/InfoPlist.strings` | "Multiwinia 1.3.1", ©2009-2010 Introversion & Ambrosia | [B:DEAD] |
+| 16 | `targets/macosx/Multiwinia/English.lproj/Release Notes.rtf` | Mac release notes 1.3.0 (3/5/2009), 1.3.1 (2/18/2010) | [B:DEAD] |
+| 17 | `targets/macosx/Multiwinia/English.lproj/SDLMain.nib/classes.nib` | Mac main nib | [B:DEAD] |
+| 18 | `targets/macosx/Multiwinia/English.lproj/SDLMain.nib/info.nib` | Mac main nib | [B:DEAD] |
+| 19 | `targets/macosx/Multiwinia/English.lproj/SDLMain.nib/keyedobjects.nib` | Mac main nib | [B:DEAD] |
+| 20 | `targets/macosx/Multiwinia/English.lproj/UserManual.pdf` | Mac user manual (same structure as docs/multiwinia_manual.pdf) | [B:DEAD] |
+| 21 | `targets/macosx/Multiwinia/Info.plist` | bundle plist (`uk.co.introversion.multiwinia`, 1.3.1, principal class SDLApplication) | [B:DEAD] |
+| 22 | `targets/macosx/Multiwinia/MainMenu.nib/classes.nib` | legacy menu nib | [B:DEAD] |
+| 23 | `targets/macosx/Multiwinia/MainMenu.nib/info.nib` | legacy menu nib | [B:DEAD] |
+| 24 | `targets/macosx/Multiwinia/MainMenu.nib/objects.nib` | legacy menu nib | [B:DEAD] |
+| 25 | `targets/macosx/Multiwinia/Multiwinia.icns` | Mac icon (IP art) | [B:DEAD] |
+| 26 | `targets/macosx/Multiwinia/Multiwinia.xcodeproj/project.pbxproj` | Multiwinia 1.3.1 Mac Xcode project: targets `Multiwinia` (app), `Generate Map CRCs` (builds `tools/MapCRC/main.cpp`, run as a build phase on `data/levels/` -> `code/mapcrc.h`) and `OggVorbis`; ppc+i386; defines in §7.8; 936 file references resolve, 26 do not (Ambrosia frameworks, `code/sound/macosx/*`, `pokey`, `command_buffer`, `debug_xbox`, `Crypticon`) | [B:DEAD] on PC |
+| 27 | `targets/macosx/Multiwinia/MultiwiniaCocoaBridge.cpp` | Cocoa→game bridge (fullscreen, pause, wake skip) | [B:DEAD] |
+| 28 | `targets/macosx/Multiwinia/MultiwiniaCocoaBridge.h` | bridge prototypes | [B:DEAD] |
+| 29 | `targets/macosx/Multiwinia/SDLApp_Prefix.pch` | prefix header (SDL.h, Cocoa) | [B:DEAD] |
+| 30 | `targets/macosx/Multiwinia/SDLMain.h` | SDL Cocoa app delegate interface | [B:DEAD] |
+| 31 | `targets/macosx/Multiwinia/SDLMain.mm` | SDL Cocoa app delegate (Sparkle, sleep/wake, working dir) | [B:DEAD] |
+| 32 | `targets/macosx/Multiwinia/data` | 80-byte Subversion "special" link file (`link <absolute developer-machine path>/data`) — **not** a working symlink in this checkout; the Xcode build phase instead runs `ln -sf "$SRCROOT/../../../data"` inside the bundle Resources | [B:DEAD] |
+| 33 | `targets/vs2005/Common.vsprops` | common compiler/linker settings (§7.2) | [B:FULL] |
+| 34 | `targets/vs2005/Darwinia.sln` | VS2008 solution | [B:FULL] |
+| 35 | `targets/vs2005/Darwinia.vcproj` | game project, 4 configs | [B:FULL] |
+| 36 | `targets/vs2005/DarwiniaVista.ico` | Darwinia Vista 256×256 icon (used by build_vista.bat) | [B:LEGACY] |
+| 37 | `targets/vs2005/Direct3D.vsprops` | `USE_DIRECT3D` sheet | [B:D3D] |
+| 38 | `targets/vs2005/GDF/DEU/Darwinia.gdf.xml` | German Game Explorer GDF (Darwinia) | [B:FULL resource, LEGACY content] |
+| 39 | `targets/vs2005/GDF/DEU/boxart_DEU.png` | GDF thumbnail 256×256 | same |
+| 40 | `targets/vs2005/GDF/DEU/gameicon_DEU.ico` | GDF icon | not referenced by .rc [C] |
+| 41 | `targets/vs2005/GDF/Darwinia.aps` | VS resource-editor binary cache | n/a |
+| 42 | `targets/vs2005/GDF/Darwinia.h` | `ID_ICON 101` | n/a (rc includes `..\resource.h`) |
+| 43 | `targets/vs2005/GDF/Darwinia.rc` | Game Explorer resource script (§7.5) | [B:FULL] |
+| 44 | `targets/vs2005/GDF/ENU/Darwinia.gdf.xml` | English GDF | [B:FULL resource] |
+| 45 | `targets/vs2005/GDF/ENU/boxart_ENU.png` | thumbnail | [B:FULL resource] |
+| 46 | `targets/vs2005/GDF/ENU/gameicon_ENU.ico` | icon | not referenced |
+| 47 | `targets/vs2005/GDF/ESP/Darwinia.gdf.xml` | Spanish GDF | [B:FULL resource] |
+| 48 | `targets/vs2005/GDF/ESP/boxart_ESP.png` | thumbnail | [B:FULL resource] |
+| 49 | `targets/vs2005/GDF/ESP/gameicon_ESP.ico` | icon | not referenced |
+| 50 | `targets/vs2005/GDF/FRA/Darwinia.gdf.xml` | French GDF | [B:FULL resource] |
+| 51 | `targets/vs2005/GDF/FRA/boxart_FRA.png` | thumbnail | [B:FULL resource] |
+| 52 | `targets/vs2005/GDF/FRA/gameicon_FRA.ico` | icon | not referenced |
+| 53 | `targets/vs2005/GDF/ITA/Darwinia.gdf.xml` | Italian GDF | [B:FULL resource] |
+| 54 | `targets/vs2005/GDF/ITA/boxart_ITA.png` | thumbnail | [B:FULL resource] |
+| 55 | `targets/vs2005/GDF/ITA/gameicon_ITA.ico` | icon | not referenced |
+| 56 | `targets/vs2005/GDF/NEU/Darwinia.gdf.xml` | neutral GDF | [B:FULL resource] |
+| 57 | `targets/vs2005/GDF/NEU/boxart_NEU.png` | thumbnail | [B:FULL resource] |
+| 58 | `targets/vs2005/GDF/NEU/gameicon_NEU.ico` | only ICON resource in the exe (`ID_ICON`), hence the Explorer icon [I] | [B:FULL resource] |
+| 59 | `targets/vs2005/GDF/darwinia.GDFMakerProject` | GDF Maker project (UTF-16) mapping languages to GDF files | n/a |
+| 60 | `targets/vs2005/OpenGL.vsprops` | OpenGL sheet | [B:FULL] |
+| 61 | `targets/vs2005/darwinia.exe.intermediate.manifest` | empty assembly manifest (ReleaseDirect3D) | [B:D3D] |
+| 62 | `targets/vs2005/darwinia.ico` | installer/setup icon; listed in vcproj | [B:FULL file] |
+| 63 | `targets/vs2005/resource.h` | resource-editor constant dump (§7.5) | [B:FULL] |
+| 64 | `targets/vs2005/version.rc` | VERSIONINFO 6.0.0.0 | [B:FULL] |
+
+### 14.3 `tools/` (174 files)
+
+Status column: *live* = used for the Multiwinia PC build or release; *variant* = non-baseline SKU; *legacy* = Darwinia-era; *third-party*; *authoring* = content tool; *dev audit*; *unreferenced*; *stale*.
+
+| # | File | Category | Role | Status |
+|---|---|---|---|---|
+| 1 | `tools/3DGeometry/.cvsignore` | 3DGeometry | CVS ignore list | n/a |
+| 2 | `tools/3DGeometry/3DGeometry.dsp` | 3DGeometry | VC6 project (Allegro, fmod paths) | dev sandbox |
+| 3 | `tools/3DGeometry/3DGeometry.dsw` | 3DGeometry | VC6 workspace | dev sandbox |
+| 4 | `tools/3DGeometry/main.cpp` | 3DGeometry | Allegro/AllegroGL OpenGL sandbox to visualise ray/sphere/triangle maths (debugging math_utils intersection code) | dev sandbox (stale) |
+| 5 | `tools/DemoInstallerScript.iss` | installer | Darwinia Demo2 Inno script (darwinia.exe, main/sounds/ambx.dat) | legacy |
+| 6 | `tools/EnglishDate.exe` | binary | Prints the date as dd/mm/yyyy regardless of locale (consumed by save_symbols.cmd) | live helper |
+| 7 | `tools/FindErrors.sh` | audit script | Lists unique ERROR lines from test_log.txt (test harness output) | dev audit |
+| 8 | `tools/FindUnusedResources.sh` | audit script | Cross-checks Get(Shape/Sound/Texture)("...") literals in code against bmp/shp/ogg/jpg/wav basenames in data (case-insensitive) and prints Missing:/Reduntant: lines, filtered by FindUnusedResourcesExceptions.txt | dev audit |
+| 9 | `tools/FindUnusedResourcesExceptions.txt` | audit script | Regex exceptions for FindUnusedResources.sh: editor_font.bmp, landscape.bmp, viriifull.bmp | dev audit |
+| 10 | `tools/InstallerScript.iss` | installer | Inno Setup: Multiwinia v1.9.20 (no crash reporter) - installs exe, 7 .dat (incl. ambx.dat), dbghelp, autopatch, copy_assist, version, origin (onlyifdoesntexist), ProfileLocator; shortcuts launch autopatch.exe; long UninstallDelete list | live (beta era) |
+| 11 | `tools/InstallerScriptEGames.iss` | installer | Darwinia v1.42 for distributor eGames/Cinemaware Marquee (cinemaware.avi) | legacy |
+| 12 | `tools/InstallerScript_crashreporter.iss` | installer | As InstallerScript.iss (no ambx.dat) + MultiwiniaSupport.exe/.ini; extra uninstall deletes (dxdiag_info.txt, multiwinia.zip*) | live (beta era) |
+| 13 | `tools/InstallerScript_gold_crashreporter.iss` | installer | Gold master v1.0.3 with manual.pdf and Manual shortcut | live (release) |
+| 14 | `tools/InstallerScript_multiwinia_beta_test_crashreporter.iss` | installer | Beta test v1.9.33 into "Multiwinia Beta Test": adds ambx.dat, Revert shortcut (`autopatch --revert`), forum support link; commented-out DirectX check [Code] (d3dx9_32.dll + xinput1_3.dll, --NoDirectXCheck) | variant |
+| 15 | `tools/InstallerScript_multiwinia_hwcompat_crashreporter.iss` | installer | HW-compat v1.9.7: runs multiwinia.exe directly, ships ncftpput.exe, deletes multiwinia.zip.0001-0032 | variant |
+| 16 | `tools/InstallerScript_retail_crashreporter.iss` | installer | Retail v1.0.4 (otherwise = gold) | live (release) |
+| 17 | `tools/InstallerScript_retail_crashreporter_euro.iss` | installer | Retail v1.2.3 EFIGS: `[Languages]` en/fr/it/de/es with localised `[CustomMessages]` shortcut names, `ShowLanguageDialog=no`; **ships `ambx.dat`**; `branding.dat` line commented out; `origin` installed `onlyifdoesntexist nocompression dontverifychecksum` | live (release) |
+| 18 | `tools/InstallerScript_retail_crashreporter_euro_preload.iss` | installer | EFIGS preload installer: same but multiwinia.exe and main.dat commented out (pre-release download without playable content) | live (release) |
+| 19 | `tools/InstallerScript_retail_crashreporter_russian.iss` | installer | Russian (Buka) v1.0.0: Russian+English languages, Buka EULA, CP1251 custom messages | live (release) |
+| 20 | `tools/MapCRC/MapCRC.exe` | binary | Prebuilt MapCRC (Win32 GUI-subsystem exe, entry `WinMain`) invoked by the `Darwinia.vcproj` pre-build event `"../../tools/MapCRC/MapCRC.exe" ../../data/levels/ ../../code/mapcrc.h` in all four configurations | live |
+| 21 | `tools/MapCRC/MapCRC.sln` | MapCRC | VS2005 solution for MapCRC | live |
+| 22 | `tools/MapCRC/MapCRC.vcproj` | MapCRC | VS project: main.cpp + contrib unrar crc.cpp + systemIV filecrc/binary_stream_readers/filesys_utils/debug_utils/string_utils | live |
+| 23 | `tools/MapCRC/lib/universal_include.h` | MapCRC | Stub universal include (APP_NAME "MapCRC", APP_VERSION "1.0") | live |
+| 24 | `tools/MapCRC/main.cpp` | MapCRC | Generates code/mapcrc.h: for every *.txt in the levels dir emits `#define MAPID_<NAME> 0x<crc>` (name = filename minus .txt, `.`/`-`/space -> `_`, uppercased); rewrites only if content changed | live (pre-build step) |
+| 25 | `tools/NSIS Installer/Contrib/ExDLL/exdll.c` | installer | NSIS SDK sample plugin source | third-party |
+| 26 | `tools/NSIS Installer/Contrib/ExDLL/exdll.dpr` | installer | NSIS SDK Delphi sample | third-party |
+| 27 | `tools/NSIS Installer/Contrib/ExDLL/exdll.dsp` | installer | NSIS SDK sample project | third-party |
+| 28 | `tools/NSIS Installer/Contrib/ExDLL/exdll.dsw` | installer | NSIS SDK sample workspace | third-party |
+| 29 | `tools/NSIS Installer/Contrib/ExDLL/exdll.h` | installer | NSIS plugin API header (stack/variables) | third-party |
+| 30 | `tools/NSIS Installer/Contrib/ExDLL/exdll_with_unit.dpr` | installer | NSIS SDK Delphi sample | third-party |
+| 31 | `tools/NSIS Installer/Contrib/ExDLL/extdll.inc` | installer | NSIS plugin API header variant | third-party |
+| 32 | `tools/NSIS Installer/Contrib/ExDLL/nsis.pas` | installer | NSIS SDK Delphi unit | third-party |
+| 33 | `tools/NSIS Installer/DXInstall/DEC2006_d3dx9_32_x64.cab` | binary | DirectX redistributable component (Dec 2006 D3DX9_32 / Oct 2006 XInput 1.3) installed silently by darwiniainstall.nsi `DXSETUP.exe /silent` | third-party redist |
+| 34 | `tools/NSIS Installer/DXInstall/DEC2006_d3dx9_32_x86.cab` | binary | DirectX redistributable component (Dec 2006 D3DX9_32 / Oct 2006 XInput 1.3) installed silently by darwiniainstall.nsi `DXSETUP.exe /silent` | third-party redist |
+| 35 | `tools/NSIS Installer/DXInstall/DSETUP.dll` | binary | DirectX redistributable component (Dec 2006 D3DX9_32 / Oct 2006 XInput 1.3) installed silently by darwiniainstall.nsi `DXSETUP.exe /silent` | third-party redist |
+| 36 | `tools/NSIS Installer/DXInstall/DXSETUP.exe` | binary | DirectX redistributable component (Dec 2006 D3DX9_32 / Oct 2006 XInput 1.3) installed silently by darwiniainstall.nsi `DXSETUP.exe /silent` | third-party redist |
+| 37 | `tools/NSIS Installer/DXInstall/OCT2006_xinput_x64.cab` | binary | DirectX redistributable component (Dec 2006 D3DX9_32 / Oct 2006 XInput 1.3) installed silently by darwiniainstall.nsi `DXSETUP.exe /silent` | third-party redist |
+| 38 | `tools/NSIS Installer/DXInstall/OCT2006_xinput_x86.cab` | binary | DirectX redistributable component (Dec 2006 D3DX9_32 / Oct 2006 XInput 1.3) installed silently by darwiniainstall.nsi `DXSETUP.exe /silent` | third-party redist |
+| 39 | `tools/NSIS Installer/DXInstall/dsetup32.dll` | binary | DirectX redistributable component (Dec 2006 D3DX9_32 / Oct 2006 XInput 1.3) installed silently by darwiniainstall.nsi `DXSETUP.exe /silent` | third-party redist |
+| 40 | `tools/NSIS Installer/DXInstall/dxdllreg_x86.cab` | binary | DirectX redistributable component (Dec 2006 D3DX9_32 / Oct 2006 XInput 1.3) installed silently by darwiniainstall.nsi `DXSETUP.exe /silent` | third-party redist |
+| 41 | `tools/NSIS Installer/DXInstall/dxupdate.cab` | binary | DirectX redistributable component (Dec 2006 D3DX9_32 / Oct 2006 XInput 1.3) installed silently by darwiniainstall.nsi `DXSETUP.exe /silent` | third-party redist |
+| 42 | `tools/NSIS Installer/GESetup.dll` | binary | Prebuilt GESetup NSIS plugin | legacy |
+| 43 | `tools/NSIS Installer/GESetup/GESetup.sln` | installer | Solution for GESetup | legacy |
+| 44 | `tools/NSIS Installer/GESetup/GESetup/GESetup.cpp` | installer | NSIS plugin DLL: IsUserAdmin, CheckForVista, SetupGameExplorerRequirements (IGameExplorer::AddGame + PlayTasks shortcut + rich saved games .dsg), RemoveFromGameExplorer, CreateMediaCenterShortcut, GetMediaCenterPath | legacy |
+| 45 | `tools/NSIS Installer/GESetup/GESetup/GESetup.vcproj` | installer | VS project for GESetup.dll | legacy |
+| 46 | `tools/NSIS Installer/GESetup/GESetup/ReadMe.txt` | installer | VS AppWizard boilerplate readme | legacy |
+| 47 | `tools/NSIS Installer/GESetup/GESetup/stdafx.cpp` | installer | PCH source | legacy |
+| 48 | `tools/NSIS Installer/GESetup/GESetup/stdafx.h` | installer | PCH header (WINVER 0x0501) | legacy |
+| 49 | `tools/NSIS Installer/darwinia.bmp` | installer | NSIS welcome/finish page bitmap 164x314 (Darwinia art) | legacy (IP) |
+| 50 | `tools/NSIS Installer/darwiniainstall.nsi` | installer | NSIS installer for Darwinia: Vista Edition (Vista-only check, DirectX redist if d3dx9_32/xinput1_3 missing, Games Explorer registration, Media Center shortcut, Perdition mod, per-user/all-users) | legacy |
+| 51 | `tools/NSIS Installer/header.bmp` | installer | NSIS header bitmap 150x57 | legacy (IP) |
+| 52 | `tools/NSIS Installer/licence.txt` | installer | Introversion EULA text shown by NSIS | legacy (IP text) |
+| 53 | `tools/Rar.exe` | binary | RARLAB command-line archiver used to create all .dat archives (`a -m5/-m2 -s -idp @list`) | live |
+| 54 | `tools/ReplaceVistaIcon.exe` | binary | Replaces the exe icon with targets/vs2005/DarwiniaVista.ico (build_vista.bat) | legacy |
+| 55 | `tools/ShapeExporter/.cvsignore` | ShapeExporter | CVS ignore list | n/a |
+| 56 | `tools/ShapeExporter/DllEntry.cpp` | ShapeExporter | Max plugin DLL entry points (LibDescription, LibNumberClasses, LibClassDesc, LibVersion) | authoring |
+| 57 | `tools/ShapeExporter/ShapeExporter.cpp` | ShapeExporter | 3ds Max 5 scene exporter to .shp: walks node tree; nodes named marker* become ShapeMarkers, other geometry becomes ShapeFragments (local TM, unique positions/colours, vertices, triangles); writes via Shape::WriteToFile | authoring (stale build refs) |
+| 58 | `tools/ShapeExporter/ShapeExporter.def` | ShapeExporter | DLL export definitions (LIBRARY exporter1) | authoring |
+| 59 | `tools/ShapeExporter/ShapeExporter.dsp` | ShapeExporter | VC6 project (Max SDK 5 paths; references code/lib files that have since moved to SystemIV) | authoring (stale) |
+| 60 | `tools/ShapeExporter/ShapeExporter.dsw` | ShapeExporter | VC6 workspace | authoring |
+| 61 | `tools/ShapeExporter/ShapeExporter.h` | ShapeExporter | SceneExport subclass declaration (max 256 fragments) | authoring |
+| 62 | `tools/ShapeExporter/ShapeExporter.rc` | ShapeExporter | Plugin resources (string table IDS_CLASS_NAME "Exporter1", dialog) | authoring |
+| 63 | `tools/ShapeExporter/ShapeExporterDLL.dsp` | ShapeExporter | Alternate VC6 DLL project | authoring (stale) |
+| 64 | `tools/ShapeExporter/resource.h` | ShapeExporter | Resource IDs for the plugin | authoring |
+| 65 | `tools/SlashSort.exe` | binary | [I] Console filter that groups the lines of a memory log by source file name: its only readable strings are the usage line `slashsort memory.log > output` and the banner `Filename groupings:` — most likely post-processing for `TRACK_MEMORY_LEAKS` output; referenced by no script | unreferenced |
+| 66 | `tools/binaries/ShapeExporter.dle` | binary | Prebuilt 3ds Max exporter plugin | authoring |
+| 67 | `tools/build-data-english.mk` | Darwinia localisation | Make rule producing data/english_demo.txt via copystrings.pl | legacy |
+| 68 | `tools/build_demo.bat` | Darwinia packaging | Darwinia demo 1 build (mine level only, english.txt truncated by copystrings.pl), rar32 via rsx | legacy |
+| 69 | `tools/build_demo2.bat` | Darwinia packaging | Darwinia demo 2 build (launchpad + purity placeholder maps) | legacy |
+| 70 | `tools/build_figs_languages.bat` | MW localisation | Builds four separate language.dat files (French, Italian, German, Spanish) into build\<lang>\ | live helper |
+| 71 | `tools/build_final.bat` | Darwinia packaging | Darwinia final: language.dat, sounds.dat, main.dat, darwinia.exe (ReleaseDirect3D output), UPX | legacy |
+| 72 | `tools/build_language_dat.bat` | MW data build | Builds language.dat: copies the language file + font bitmaps selected by a *language.list for the requested language (all/efigs/english/french/german/italian/spanish/korean/russian/portuguese/japanese; xbox converts fonts to .tex), RAR -m5 solid | live |
+| 73 | `tools/build_multiwinia.bat` | MW packaging | Calls `build_multiwinia_data.bat` with **no arguments** (platform `plat`, retail exclusion list, and an **English-only** `language.dat`, because `build_language_dat.bat` honours the language only for platform `retail`); copies `darwinia_gl.exe` -> `build\multiwinia.exe` and `contrib\systemIV\contrib\XCrashReport\dbghelp.dll`; `upx --best` on the exe | live (plain) |
+| 74 | `tools/build_multiwinia_crashreporter.bat` | MW packaging | As `build_multiwinia.bat` (no-argument data build, English-only `language.dat`) plus `MultiwiniaSupport.ini` and `MultiwiniaSupport.exe` copied from the repository root (the exe is absent there); UPX lines commented out ("Cause problems with debugging tools") | live (refs absent file) |
+| 75 | `tools/build_multiwinia_data.bat` | MW data build | Master data build: assembles exclusion list (sounds.txt+menu_sounds.txt+per-target exclusions), builds language.dat (via build_language_dat), init.dat, main.dat, menusounds.dat, sounds.dat, sounds2.dat into %BUILD%; runs `darwinia_gl.exe --write-version`; saves symbols. Args: %1 platform (retail/pchwcompat/pcbetatest/pcpreview/pcassaultstress/ambx/xbox), %2 language | live (Multiwinia) |
+| 76 | `tools/build_multiwinia_gold.bat` | MW packaging | Gold-master package: no-argument data build (English-only `language.dat`) + exe + dbghelp + `MultiwiniaSupport.ini` + `tools\multiwiniasupport\MultiwiniaSupport.exe` + `tools\autopatcher\{autopatch,copy_assist}.exe` + `tools\profilelocatorwin32\profilelocator.exe` + `docs\multiwinia_manual.pdf` as `manual.pdf`; no UPX | live (autopatcher/profilelocator dirs absent) |
+| 77 | `tools/build_multiwinia_hwcompat.bat` | MW packaging | Hardware-compatibility test SKU: data build `pchwcompat`, exe + ncftpput.exe (benchmark upload), UPX | variant (TARGET_PC_HARDWARECOMPAT) |
+| 78 | `tools/build_multiwinia_hwcompat_crashreporter.bat` | MW packaging | As hwcompat + MultiwiniaSupport + dbghelp, no UPX | variant |
+| 79 | `tools/build_multiwinia_pc_preview.bat` | MW packaging | PC preview SKU: data build `pcpreview %1` (beta-test exclusions + `multiwinia_inclusions_previewcopy.txt`; English-only `language.dat` because the platform is not `retail`), exe only, UPX commented out | variant (TARGET_PC_PREVIEW) |
+| 80 | `tools/build_multiwinia_retail.bat` | MW packaging | Retail package per language (%1, default English): data build `retail <lang>`, exe + support tools, language-specific autopatch_<fr/it/de/es>.exe, manual | live (autopatcher absent) |
+| 81 | `tools/build_multiwinia_retail_efigs.bat` | MW packaging | One-liner: `build_multiwinia_retail efigs` (English+French+Italian+German+Spanish) | live |
+| 82 | `tools/build_multiwinia_retail_russian.bat` | MW packaging | Binary-patches darwinia_gl.exe via subst.pl (regex `retail\...` -> `retail.ru`), builds Russian retail, writes `buka` into build\origin (distributor tag read by App::Initialise); no `retail.` string exists in this source tree, so the patch is a no-op here [C grep] | live (Russian/Buka SKU) |
+| 83 | `tools/build_tools.bat` | Darwinia packaging | Very early Darwinia build (all data into main.dat, ogg into sounds.dat, userid.txt) | legacy |
+| 84 | `tools/build_vista.bat` | Darwinia packaging | Darwinia Vista edition build: dats, icon replace, Authenticode sign, archive exe+pdb | legacy |
+| 85 | `tools/copy-same-dats.pl` | pipeline helper | For each *.dat in from-dir: if rarcmp says content-identical but bytes differ, copies it over to-dir (keeps patcher diffs minimal) | live helper |
+| 86 | `tools/copyfiles.pl` | pipeline helper | Copies every relative path read from stdin from <srcdir> to <destdir>, creating directories; dies if a source is missing | live |
+| 87 | `tools/copystrings.pl` | Darwinia localisation | Copies a language file up to the `demo_endoffile` marker (demo string subset) | legacy (marker still in data/language/english.txt) |
+| 88 | `tools/demo2_exclusions.txt` | list | Darwinia demo 2 exclusions (build_demo2.bat) | legacy |
+| 89 | `tools/demo_exclusions.txt` | list | Darwinia demo 1 exclusions (build_demo.bat) | legacy |
+| 90 | `tools/englishlanguage.list` | list | english.txt + Latin-1 pages of editor/speccy/square fonts | live |
+| 91 | `tools/findAllOpts.sh` | audit script | Extracts every string literal used with g_prefsManager (preference key inventory) | dev audit |
+| 92 | `tools/frenchlanguage.list` | list | french.txt + Latin-1 font pages | live |
+| 93 | `tools/full_exclusions.txt` | list | Darwinia full-game exclusions (build_final.bat) | legacy |
+| 94 | `tools/germanlanguage.list` | list | german.txt + Latin-1 font pages | live |
+| 95 | `tools/grep.exe` | binary | GNU grep for Win32 (pipeline filtering) | live helper |
+| 96 | `tools/init.list` | list | Files packed into init.dat (loaded first, before preferences): 14 shaders (deform*, FixedFunc0-2 vs/Maps.ps, globals.h, water-meshwaves.*), sprites/darwinian.bmp, textures/xboxlivearcade.bmp (deleted on PC), textures/ivlogo.bmp | live |
+| 97 | `tools/italianlanguage.list` | list | italian.txt + Latin-1 font pages | live |
+| 98 | `tools/japaneselanguage.list` | list | japanese.txt + Latin-1 pages + square font pages 3000-30ff and 4e00-9eff (CJK) | live |
+| 99 | `tools/koreanlanguage.list` | list | korean.txt + Latin-1 pages + square font Hangul pages ac00-d7ff | live |
+| 100 | `tools/language.list` | list | All-languages language.dat contents: 9 language files + 130 font pages (Latin-1, Cyrillic speccy, CJK square pages) | live |
+| 101 | `tools/language/7za.exe` | binary | 7-Zip command line used by make_reports*.bat | live helper |
+| 102 | `tools/language/README.txt` | MW localisation | Says inputs to make_reports must be UCS-2 BE; required files english.old.txt, english.txt, french/german/italian/spanish.txt | live helper |
+| 103 | `tools/language/make_reports.bat` | MW localisation | Runs report.pl -a for French (also emits english-strings.txt), Italian, German, Spanish; zips per-language packs with 7za | live helper |
+| 104 | `tools/language/make_reports_russian.bat` | MW localisation | Same for Russian | live helper |
+| 105 | `tools/language/report.pl` | MW localisation | Translation change tracker: reads old English, new English, old translation (UCS-2 BE); applies key/markup substitutions, expands [part]/[ part] references into _kbd/_xin variants, drops part_ keys, detects renames, classifies inserted/deleted/changed (ignoring typo-level edits: same word count, same first/last letters, Levenshtein <=2), writes <lang>-strings.txt, <lang>-report.txt, summary | live helper |
+| 106 | `tools/language/test_translation.exe` | binary | Self-contained (zip-wrapped Tcl) build of test_translation.tcl | live helper |
+| 107 | `tools/language/test_translation.tcl` | MW localisation | Tcl emulator of the in-game caption markup ([key], [ key], [KEYx], [IFMODE x]..[ELSE]..[ENDIF]) to print/compare/report expanded strings per input mode (_kbd/_xin) and flag errors as ANSI or HTML | live helper |
+| 108 | `tools/libiconv2.dll` | binary | Runtime DLL for GnuWin32 grep/sed | live helper |
+| 109 | `tools/libintl3.dll` | binary | Runtime DLL for GnuWin32 grep/sed | live helper |
+| 110 | `tools/listfiles.pl` | pipeline helper | Recursively lists files under <dir> excluding entries of an exclusion file: lines `**/X` prune any path component named X; other lines are bsd_glob patterns (relative to dir) matched case-insensitively against the full relative path and pruned (directories pruned recursively) | live |
+| 111 | `tools/loki/common/setup.data/bin/Linux/x86/glibc-2.1/setup.gtk` | binary | Loki Setup GTK installer (ELF x86) | third-party |
+| 112 | `tools/loki/common/setup.data/bin/Linux/x86/glibc-2.1/xsu` | binary | Loki xsu graphical su helper (ELF x86) | third-party |
+| 113 | `tools/loki/common/setup.data/bin/Linux/x86/setup` | binary | Loki Setup console installer (ELF x86) | third-party |
+| 114 | `tools/loki/common/setup.data/bin/Linux/x86/uninstall` | binary | Loki uninstaller (ELF x86) | third-party |
+| 115 | `tools/loki/common/setup.data/config.sh` | Linux installer | Loki bootstrap overrides (all commented) | third-party |
+| 116 | `tools/loki/common/setup.data/locale/de/LC_MESSAGES/loki-uninstall.mo` | Linux installer | Loki Setup gettext catalogue (de) for loki-uninstall.mo | third-party |
+| 117 | `tools/loki/common/setup.data/locale/de/LC_MESSAGES/setup.mo` | Linux installer | Loki Setup gettext catalogue (de) for setup.mo | third-party |
+| 118 | `tools/loki/common/setup.data/locale/en_GB/LC_MESSAGES/loki-uninstall.mo` | Linux installer | Loki Setup gettext catalogue (en_GB) for loki-uninstall.mo | third-party |
+| 119 | `tools/loki/common/setup.data/locale/en_GB/LC_MESSAGES/setup.mo` | Linux installer | Loki Setup gettext catalogue (en_GB) for setup.mo | third-party |
+| 120 | `tools/loki/common/setup.data/locale/es/LC_MESSAGES/loki-uninstall.mo` | Linux installer | Loki Setup gettext catalogue (es) for loki-uninstall.mo | third-party |
+| 121 | `tools/loki/common/setup.data/locale/es/LC_MESSAGES/setup.mo` | Linux installer | Loki Setup gettext catalogue (es) for setup.mo | third-party |
+| 122 | `tools/loki/common/setup.data/locale/fr/LC_MESSAGES/loki-uninstall.mo` | Linux installer | Loki Setup gettext catalogue (fr) for loki-uninstall.mo | third-party |
+| 123 | `tools/loki/common/setup.data/locale/fr/LC_MESSAGES/setup.mo` | Linux installer | Loki Setup gettext catalogue (fr) for setup.mo | third-party |
+| 124 | `tools/loki/common/setup.data/locale/it/LC_MESSAGES/loki-uninstall.mo` | Linux installer | Loki Setup gettext catalogue (it) for loki-uninstall.mo | third-party |
+| 125 | `tools/loki/common/setup.data/locale/it/LC_MESSAGES/setup.mo` | Linux installer | Loki Setup gettext catalogue (it) for setup.mo | third-party |
+| 126 | `tools/loki/common/setup.data/locale/nl/LC_MESSAGES/loki-uninstall.mo` | Linux installer | Loki Setup gettext catalogue (nl) for loki-uninstall.mo | third-party |
+| 127 | `tools/loki/common/setup.data/locale/nl/LC_MESSAGES/setup.mo` | Linux installer | Loki Setup gettext catalogue (nl) for setup.mo | third-party |
+| 128 | `tools/loki/common/setup.data/locale/ru/LC_MESSAGES/loki-uninstall.mo` | Linux installer | Loki Setup gettext catalogue (ru) for loki-uninstall.mo | third-party |
+| 129 | `tools/loki/common/setup.data/locale/ru/LC_MESSAGES/setup.mo` | Linux installer | Loki Setup gettext catalogue (ru) for setup.mo | third-party |
+| 130 | `tools/loki/common/setup.data/locale/sv/LC_MESSAGES/loki-uninstall.mo` | Linux installer | Loki Setup gettext catalogue (sv) for loki-uninstall.mo | third-party |
+| 131 | `tools/loki/common/setup.data/locale/sv/LC_MESSAGES/setup.mo` | Linux installer | Loki Setup gettext catalogue (sv) for setup.mo | third-party |
+| 132 | `tools/loki/common/setup.data/setup.glade` | Linux installer | Loki Setup GTK UI definition | third-party |
+| 133 | `tools/loki/common/setup.data/splash.xpm` | Linux installer | Installer splash image 653x189 | legacy (IP art) |
+| 134 | `tools/loki/common/setup.sh` | Linux installer | Loki Setup bootstrap shell script (arch/libc detection, optional root) | third-party |
+| 135 | `tools/loki/setup.demo.xml` | Linux installer | Loki Setup product description for Darwinia demo (darwinia.bin.x86, main/sounds.dat, SDL/ogg/vorbis libs) | legacy (Linux Darwinia) |
+| 136 | `tools/loki/setup.full.xml` | Linux installer | Loki Setup for Darwinia full (patch.dat + main/sounds.dat copied from CD) | legacy |
+| 137 | `tools/menu_sounds.txt` | list | List of 18 Ogg files (lobby ambience + menu clicks) packed into menusounds.dat (loaded early so menus have sound before sounds.dat) | live |
+| 138 | `tools/mkdmg` | Mac packaging | Shell script creating a compressed (UDZO, encrypted) Mac OS X .dmg from a folder via hdiutil/newfs_hfs | legacy (Mac) |
+| 139 | `tools/multiwinia_exclusions.txt` | list | Retail main.dat exclusions (Darwinia campaign maps/scripts, language, fonts, init.dat shaders, test maps: mp_assault_stress, mp_benchmark_*, mp_sandbox*, mp_tankbattle_*, mp_cts_3p_3, Darwinia music) | live |
+| 140 | `tools/multiwinia_exclusions_beta_test.txt` | list | Beta/preview exclusions: as retail but excludes ALL levels/mp_* and thumbnails/mp_* (maps re-added from inclusion lists) | variant |
+| 141 | `tools/multiwinia_exclusions_hwcompat.txt` | list | HW-compat/assault-stress exclusions (all mp_* maps excluded, re-added by inclusion lists) | variant |
+| 142 | `tools/multiwinia_inclusions_assaultstresstest.txt` | list | Adds levels/mp_assault_stress.txt | variant |
+| 143 | `tools/multiwinia_inclusions_beta_test_group_a.txt` | list | Adds 13 maps + thumbnails for beta group A (KOTH/Assault/RocketRiot/CTS) | variant |
+| 144 | `tools/multiwinia_inclusions_beta_test_group_b.txt` | list | Adds 3 Blitzkrieg maps + thumbnails for beta group B | variant |
+| 145 | `tools/multiwinia_inclusions_beta_test_group_c.txt` | list | Adds 3 Rocket Riot maps + thumbnails for beta group C | variant |
+| 146 | `tools/multiwinia_inclusions_hwcompat.txt` | list | Adds mp_koth_2P_1, mp_benchmark_1, mp_koth_4P_1 (+ thumbnails) - matches PERMITTED_MAPS of TARGET_PC_HARDWARECOMPAT | variant |
+| 147 | `tools/multiwinia_inclusions_previewcopy.txt` | list | Adds mp_koth_2P_1, mp_koth_4P_1, mp_cts_2P_1 (+ thumbnails) - matches TARGET_PC_PREVIEW PERMITTED_MAPS | variant |
+| 148 | `tools/multiwiniasupport/MultiwiniaSupport.exe` | binary | Crash/support reporter launched by `RecordExceptionInfo`; built from `contrib/XCrashReport` (identical dialog/protocol strings): runs `dxdiag /t <profile>dxdiag_info.txt`, zips the files listed in `MultiwiniaSupport.ini` into `<profile>multiwinia.zip`, and **only when the user presses Send** uploads over TCP to `crashreports.introversion.co.uk:4537` (§6.4) | live |
+| 149 | `tools/oggdec.exe` | binary | Ogg Vorbis decoder (audio authoring; not referenced by scripts) | authoring |
+| 150 | `tools/oggenc.exe` | binary | Ogg Vorbis encoder (audio authoring; not referenced by scripts) | authoring |
+| 151 | `tools/open-www.sh` | Linux runtime | Launches a browser (kfmclient/firefox/mozilla/galeon/opera) with a URL; shipped with Linux builds | legacy (Linux) |
+| 152 | `tools/patch.full.list` | list | Darwinia-era patch.dat content list (sounds.txt, icons, map_containment/temple, mp_*.txt, chesspiece.shp...) - no script in tree consumes it [I] | legacy |
+| 153 | `tools/pcre.dll` | binary | Runtime DLL for GnuWin32 grep | live helper |
+| 154 | `tools/pdlc_exclusions.txt` | list | Only .svn/.DS_Store exclusions (premium DLC map packaging; no consuming script in tree) | unreferenced |
+| 155 | `tools/portugueselanguage.list` | list | portuguese.txt + Latin-1 font pages | live |
+| 156 | `tools/pscp.exe` | binary | PuTTY scp client (uploads; not referenced by scripts) | unreferenced |
+| 157 | `tools/rarcmp.pl` | pipeline helper | Compares two RAR archives by listing (`rar v`) name+size+CRC of every entry; exit 0 if identical | live helper |
+| 158 | `tools/readme-linux.txt` | Linux docs | Darwinia Linux readme: requirements, ~/.darwinia/{demo,full}/preferences.txt, RenderLandscapeMode, ManuallyScaleTextures, XineramaHack, SDL_AUDIODRIVER | legacy |
+| 159 | `tools/rsx.exe` | binary | RSX DPMI DOS extender used to run 32-bit DOS tools (rar32) in Darwinia-era scripts | legacy |
+| 160 | `tools/russianlanguage.list` | list | russian.txt + Latin-1 and Cyrillic (0410-042f, 0430-044f) pages for all three fonts | live |
+| 161 | `tools/save_symbols.cmd` | pipeline helper | Archives Darwinia.pdb + darwinia_gl.exe to build\..\symbols\<version>\<yyyy.mm.dd>\<n>\ and \latest\ when the PDB timestamp/size changed (uses EnglishDate.exe and build\version) | live |
+| 162 | `tools/sed.exe` | binary | GNU sed for Win32 (path rewriting `s_.*data\\_data\\_`) | live helper |
+| 163 | `tools/set-origin.pl` | pipeline helper | Replaces the 24-byte placeholder `MWORIGINMWORIGINMWORIGIN` in a binary with a NUL-padded origin string (placeholder not present in this source tree) | stale |
+| 164 | `tools/signtool.exe` | binary | Microsoft Authenticode signing tool (build_vista.bat) | legacy (Darwinia Vista) |
+| 165 | `tools/sounds.txt` | list | List of 1297 Ogg files (362 mwsounds/*, 935 sounds/*) packed into sounds.dat; also part of the main.dat exclusion list | live |
+| 166 | `tools/spanishlanguage.list` | list | spanish.txt + Latin-1 font pages | live |
+| 167 | `tools/subst.pl` | pipeline helper | Generic in-place binary regex substitution (used by Russian build) | live helper |
+| 168 | `tools/trace.pl` | crash tooling | Symbolises `retAddress = 0x...` lines of blackbox.txt against a linker .map file | live helper |
+| 169 | `tools/traceblackbox.bat` | crash tooling | Adds a developer-local Perl path, runs `perl trace.pl blackbox.txt darwinia.map > traceblackbox.txt` (the baseline Release link writes its map under the default name, not `darwinia.map` [I]) | live helper |
+| 170 | `tools/uniq_dos.exe` | binary | DJGPP uniq (Darwinia-era build_tools.bat) | legacy |
+| 171 | `tools/unused_sample_groups.sh` | audit script | Compares SAMPLEGROUP definitions with SOUNDNAME references in sounds.txt | dev audit |
+| 172 | `tools/unused_samples.sh` | audit script | Compares SOUNDNAME/SAMPLE entries in data/sounds.txt against files in data/sounds | dev audit (Darwinia layout) |
+| 173 | `tools/upx.exe` | binary | UPX executable packer (`--best`) used by some packaging scripts | live (optional) |
+| 174 | `tools/vista_exclusions.txt` | list | Darwinia Vista exclusions (build_vista.bat) | legacy |
+
+### 14.4 `docs/` (70 files, supporting evidence only)
+
+| # | File | Content (summary) | Relevance / discrepancy note |
+|---|---|---|---|
+| 1 | `docs/.cvsignore` | ignores `diary.txt` | none |
+| 2 | `docs/ChrisTodo.txt` | one Darwinia todo (objectives counters) | Darwinia-era |
+| 3 | `docs/DarwiniaInput.rtf` | Darwinia input system guide (InputManager, InputDrivers, InputSpec lists, `control_types.inc`, `DEF_CONTROL_TYPE`) | [06](06_player_control_and_input.md) evidence |
+| 4 | `docs/HardwareComplianceIssues.txt` | 2 lines (Linux box lacks ARB multitexture, cursor transparency) | [24](24_rendering.md) |
+| 5 | `docs/ImplementationNotes/LandscapeCoastLine.jpg` | scanned diagram (coastline) | [23](23_terrain_and_landscape.md) |
+| 6 | `docs/ImplementationNotes/LandscapeTriangleStripDetails.jpg` | scanned diagram (landscape strips) | [23](23_terrain_and_landscape.md)/[24](24_rendering.md) |
+| 7 | `docs/ImplementationNotes/LandscapeTriangleStripVertices.jpg` | scanned diagram | [23](23_terrain_and_landscape.md)/[24](24_rendering.md) |
+| 8 | `docs/ImplementationNotes/ObjectGrid.txt` | sizing assumptions for an object grid (100,000 objects, 632×632 cells, 10 Hz updates) | design intent; [21](21_simulation_and_entity_model.md) |
+| 9 | `docs/ImplementationNotes/RampUpAndDown.gif` | 400×478 diagram (sound ramp) | [27](27_audio_engine.md) |
+| 10 | `docs/ImplementationNotes/SortingHashtable.jpg` | diagram of `SortingHashTable` ordered index chain | matches [21](21_simulation_and_entity_model.md) |
+| 11 | `docs/ImplementationNotes/SoundEffectBlueprint.jpg` | sound blueprint diagram | [27](27_audio_engine.md) |
+| 12 | `docs/ImplementationNotes/SoundEffectBlueprint2.jpg` | sound blueprint diagram | [27](27_audio_engine.md) |
+| 13 | `docs/ImplementationNotes/SoundSystemData.jpg` | sound data diagram | [27](27_audio_engine.md) |
+| 14 | `docs/ImplementationNotes/SoundSystemData2.jpg` | sound data diagram | [27](27_audio_engine.md) |
+| 15 | `docs/ImplementationNotes/SoundSystemSamplePath.jpg` | sample path diagram | [27](27_audio_engine.md) |
+| 16 | `docs/ImplementationNotes/Sounds_DiskToSpeaker.gif` | 1233×2925 sound pipeline diagram | [27](27_audio_engine.md) |
+| 17 | `docs/ImplementationNotes/TripodLegs1.jpg` | tripod leg IK sketch | [02](02_units_and_entities.md) |
+| 18 | `docs/ImplementationNotes/TripodLegs2.jpg` | tripod leg IK sketch | [02](02_units_and_entities.md) |
+| 19 | `docs/IntroversionEULA.txt` | end-user licence used by installers | IP text |
+| 20 | `docs/MacPlan.txt` | 2005 Darwinia Mac port plan (SDL/GCC, endian, sound mixer) | Darwinia-era |
+| 21 | `docs/MinDistAndVolume.jpg` | sound attenuation sketch | [27](27_audio_engine.md) |
+| 22 | `docs/Multiwinia-Buka-Russian-EULA.txt` | Russian EULA (CP1251) for the Buka SKU | used by Russian installer |
+| 23 | `docs/Network.txt` | early design: server ticks 25 FPS, sends last 3 frames' updates via UDP, 1 s watchdog | stale: code ticks the server at 10 Hz (`SERVER_ADVANCE_PERIOD`, see [22](22_determinism_and_networking.md)) |
+| 24 | `docs/NetworkThreads.txt` | early design of send/receive threads and main loop | compare [20](20_architecture.md) (actual: dedicated listen threads, sends from main thread — [22](22_determinism_and_networking.md)) |
+| 25 | `docs/OpenGLState.txt` | assumed default GL state | [24](24_rendering.md)/[24](24_rendering.md) |
+| 26 | `docs/RussianFontRequest.txt` | says only Speccy has Cyrillic glyphs | data now has Cyrillic pages for editor/square too (`data/textures/unicode/{editor,square}.0410.042f.bmp`) — discrepancy (stale) |
+| 27 | `docs/ThoughtsOnSoundSystem.txt` | DirectSound filter notes | [27](27_audio_engine.md) |
+| 28 | `docs/World.jpg` | world sketch | Darwinia-era |
+| 29 | `docs/adsr.gif` | ADSR envelope diagram | [27](27_audio_engine.md) |
+| 30 | `docs/bad guys.txt` | enemy behaviour brainstorm | Darwinia-era |
+| 31 | `docs/betachanges.txt` | Darwinia 1.5.x beta changelog | Darwinia-era |
+| 32 | `docs/betatesters.txt` | beta-tester handles and e-mail addresses | **personal data — do not reproduce** |
+| 33 | `docs/buglist.txt` | Darwinia bug notes (ids, research strings) | Darwinia-era |
+| 34 | `docs/changes.txt` | Darwinia 1.4x changelog | Darwinia-era |
+| 35 | `docs/cpu cycles.txt` | Darwinia "CPU cycles"/task-manager/gesture design | [06](06_player_control_and_input.md) background; brief requested cross-check of "known hotspots" — the file is a gameplay design, not a performance note |
+| 36 | `docs/darwin digital life.txt` | story brainstorm ("Future War") | IP |
+| 37 | `docs/detailed schedule.txt` | Darwinia coding schedule | Darwinia-era |
+| 38 | `docs/donelist.txt` | done list (trees burn, walls, gestures) | Darwinia-era |
+| 39 | `docs/engineers.txt` | engineer task ideas | Darwinia-era |
+| 40 | `docs/game objects.txt` | object brainstorm | Darwinia-era |
+| 41 | `docs/help system.txt` | Sepulveda help system design | [30](30_scripting_tutorial_and_cutscenes.md) (`USE_SEPULVEDA_HELP_TUTORIAL` dead) |
+| 42 | `docs/input_preferences_syntax.txt` | grammar of `input_preferences.txt` incl. `pref [not] <boolean_preference_name>` ("positive non-zero is true") | [06](06_player_control_and_input.md); note: such prefs must be **int-typed** (`GetInt` returns the default for float/string items, [29](29_data_formats_reference.md)) |
+| 43 | `docs/integrating virtual players into network system.txt` | plan: separate Teams and Clients arrays in the server | [22](22_determinism_and_networking.md) |
+| 44 | `docs/landscape lightmap.txt` | code sketch `Landscape::ApplyLightmap` | [23](23_terrain_and_landscape.md) (verify) |
+| 45 | `docs/mission progression.doc` | Word doc, Darwinia mission list (sandbox, labs, containment, yard, generator, mines, biosphere, receiver) | Darwinia-era |
+| 46 | `docs/multiwinia audio.docx` | audio todo (crate sound events, crate reward enum list) | [27](27_audio_engine.md)/[04](04_crates_powerups_and_weapons.md) evidence |
+| 47 | `docs/multiwinia names.txt` | candidate titles | IP/brand |
+| 48 | `docs/multiwinia-changes.txt` | Multiwinia 1.1.0–1.2.0 release notes (demo limits, lobby chat, `/name`) | [22](22_determinism_and_networking.md)/[09](09_meta_systems.md) |
+| 49 | `docs/multiwinia_manual.pdf` | 28-page player manual; system requirements 2.0 GHz CPU, 512 MB RAM, Windows XP/Vista, GeForce 6200/Radeon 9600 | packaged as `manual.pdf` by gold/retail scripts |
+| 50 | `docs/multiwinia_todo.txt` | early MP plan (netlib, lobby, determinism "fix determinism", master server) | [22](22_determinism_and_networking.md) background |
+| 51 | `docs/multiwiniachanges-beta.txt` | beta changelog to 1.9.35 (sync fixes, Virii limits) | [22](22_determinism_and_networking.md)/[22](22_determinism_and_networking.md) evidence |
+| 52 | `docs/multiwiniareleasenotes-beta.txt` | beta release notes to 1.9.31; asks users to send `syncerror-*.txt`, `debug.txt`, `dxdiag.txt`, `preferences.txt` | consistent with §5.3 |
+| 53 | `docs/network overview.txt` | lobby design (TCP lobby, UDP 4000/4001, broadcast discovery) | [22](22_determinism_and_networking.md) (ports match prefs defaults 4000/4001) |
+| 54 | `docs/new building docs.txt` | Darwinia building notes (FenceSwitch linking order and behaviour, other Darwinia buildings) | Darwinia-era |
+| 55 | `docs/newdemo.txt` | 2005 demo schedule | Darwinia-era |
+| 56 | `docs/possible removals.txt` | Darwinia scope cuts | Darwinia-era |
+| 57 | `docs/research and development.txt` | Darwinia research list | Darwinia-era |
+| 58 | `docs/retro music.txt` | licensed retro music shortlist (artist/track ratings) | IP (third-party music) |
+| 59 | `docs/schedule.txt` | Darwinia task list | Darwinia-era |
+| 60 | `docs/sdl_problems.txt` | SDL limitations (no wheel, low-res timer) | platform appendix |
+| 61 | `docs/sepulveda_interview.txt` | in-fiction interview with Dr Sepulveda (Protologic 68000) | IP (story) |
+| 62 | `docs/sepulvedas themepark.txt` | Darwinia world design | IP |
+| 63 | `docs/sound changes.txt` | sound requests/changes (Nov 2007) | [27](27_audio_engine.md) |
+| 64 | `docs/sphere world.txt` | Darwinia global world sphere design | [23](23_terrain_and_landscape.md) legacy |
+| 65 | `docs/spirit resource system.txt` | spirit economy design | [02](02_units_and_entities.md)/[03](03_buildings_and_world_objects.md) background |
+| 66 | `docs/start seqs.txt` | retro start-sequence inspirations | [09](09_meta_systems.md) |
+| 67 | `docs/story material.txt` | Dr Sepulveda / Protologic backstory | IP (story) |
+| 68 | `docs/todo.txt` | late todo (D3D leaks, ATI issues, Steam upsell) | [24](24_rendering.md) |
+| 69 | `docs/top level map.txt` | map/mission file separation design | [23](23_terrain_and_landscape.md) |
+| 70 | `docs/vista installer check list.txt` | Darwinia Vista release checklist (`TARGET_VISTA`, `ReleaseD3D`, `DarwiniaSupport.*`) | names differ from code (`TARGET_OS_VISTA`, `ReleaseDirect3D`, `MultiwiniaSupport`) |
+
+---
+
+## 15 Carry-forward notes
+
+Detailed keep/adapt/replace verdicts are in [40](40_carry_forward_assessment.md); the platform-and-build specifics recovered here translate as follows for a Windows / C++23 / DirectX 12 / multiplayer successor:
+
+| Area | Original | Recommendation |
+|---|---|---|
+| Product variants | one hand-edited `#define TARGET_*` in a header; VS configs only pick the renderer | build presets (CMake/MSBuild) per SKU + data-driven runtime feature flags; refuse to build with zero or two SKUs (keep the `#error` idea) |
+| Version identity | five unrelated version numbers (§9.4); network compatibility = `"dev"` string | one generated version header (semantic version + commit + content hash) used by the exe resource, installer, network handshake and crash reports |
+| Floating point | `/fp:precise` + x87 53-bit control word per thread; D3D build `/fp:fast` and FPU-clobbering device | x64/SSE2 only, `/fp:precise` (or `/fp:strict` for simulation translation units), no FP-environment changes by graphics APIs (D3D12 does not alter it), lockstep-sensitive maths in an isolated, tested deterministic library ([22](22_determinism_and_networking.md)) |
+| Window / swap chain | Win32 window + WGL or D3D9, vsync ignored on GL, no MSAA, no gamma, 4-step mode-switch retry | DXGI flip-model swap chain, borderless-windowed by default, explicit present interval and frame-rate cap, `DXGI_ERROR_DEVICE_REMOVED` recovery instead of D3D9 lost-device polling |
+| Timing | QPC, process-relative, fake mode | keep the design (§4.4) |
+| User data | `%LOCALAPPDATA%\Introversion\Multiwinia\`, `--NoProfile` | `SHGetKnownFolderPath` (LocalAppData or Saved Games) under the new studio/game name; logs and dumps in a `logs/` and `crashes/` sub-folder; never in the install folder |
+| Crash handling | SEH on the main thread only, overwrite-in-place log, unquoted support-tool path, clear-text TCP upload including the auth key | `SetUnhandledExceptionFilter` + `std::set_terminate` + per-thread coverage, minidumps with thread lists, consented HTTPS upload, never attach credentials |
+| Archives | solid RAR via linked unrar, decompressed wholly into RAM, loose `data/` overrides everything, case-insensitive table | own pack format with per-file compression and hashes, memory-mapped/streamed reads, explicit mount order and an opt-in loose-file override for development builds only |
+| Data build | Windows batch + Perl + GnuWin32 tools, exclusion lists, map/thumbnail inclusion lists per SKU | a content build tool with declarative per-SKU manifests and validation (missing files, case mismatches, unreferenced assets) |
+| Map identity | CRC-32 (init 0) of the level text, compile-time `mapcrc.h`, no lobby exchange | content hash computed by the content build, shipped in a manifest, exchanged and compared in the lobby before start |
+| Localisation | UTF-16 BE/LE text tables, per-language bitmap font pages chosen by lists | UTF-8 string tables, generated font atlases, per-SKU language manifests |
+| Authoring tools | 3ds Max 5 exporter (unbuildable), Allegro maths sandbox | glTF/FBX import pipeline; unit-tested geometry library |
+
+---
+
+## Open questions and unknowns
+
+| Id | Question | Tag | What would resolve it |
+|---|---|---|---|
+| 31-U1 | Does `ReleaseDirect3D` compile at this commit, or was it built from another branch/with uncommitted fixes? Four breakages found (§7.9) | [I] strong "no" | build `ReleaseDirect3D` with VS2008 + DirectX SDK March 2008 |
+| 31-U2 | Are `D3DRS_LINEWIDTH` and `IDirect3DDevice9::Resolve`/`D3DRESOLVE_RENDERTARGET0` absent from every PC DirectX 9 SDK referenced by `Common.vsprops`? | [I] | inspect `d3d9.h`/`d3d9types.h` of the SDK versions listed in §7.2 |
+| 31-U3 | Exact x87 control word on the main thread after D3D9 `CreateDevice`/`Reset` in `[B:D3D]` (expected 24-bit precision) | [I] | read `_control87(0,0)` after device creation at run time |
+| 31-U4 | Behaviour of `throw;` with no active exception under the VS2008 static CRT inside `AppMain`'s `__try` (SEH 0xE06D7363 reaching `RecordExceptionInfo`, or `terminate()` → `abort()` bypassing it) | [U] | trigger an `AppReleaseAssert` in a Release build |
+| 31-U5 | Which authentication-key file the retail build read (`authkey.dev` here; installers and the support INI know only `authkey`), and whether retail used `metaserver-mwdev` or a production host | [U] | inspect a retail executable/install |
+| 31-U6 | Behaviour of the absent tools: `autopatch.exe`, `copy_assist.exe`, `ProfileLocator.exe`, `ncftpput.exe`, `tools/build_ambx_dat.bat`, `tools/convert_bmp_to_tex.cmd`, `tools/macosx/add-appcast-url.rb`, `tools/macosx/add-svn-revision.rb`, `tools/PasswordGenerator/main.cpp`; in particular whether the auto-patcher writes `userprefs.txt`, `game-history.txt`, `stdout.txt` and the `backup_*`/`revert_*` folders | [U] | obtain the release-branch `tools/` |
+| 31-U7 | Contents and producers of `ambx.dat`, `branding.dat`, `patch.dat` | [U] | retail media / patch archives |
+| 31-U8 | Was `default_preferences.txt` ever shipped loose (or by a patch) so that first-run defaults applied in packaged installs (§8.9)? | [U] | retail install tree |
+| 31-U9 | Exact role of `tools/SlashSort.exe` | [I] | run it on a `TRACK_MEMORY_LEAKS` log |
+| 31-U10 | Which string the Russian build's `subst.pl … retail\... retail.ru` patch targeted (absent from this tree) | [U] | diff a Russian retail exe against an English one |
+| 31-U11 | Is the debug menu (hence the Grabber window and profiler) reachable from the shipped FULL build's input bindings? | [U] | see [32](32_debug_test_and_performance.md)/[06](06_player_control_and_input.md) binding analysis |
+| 31-U12 | Name of the map file the baseline `Release` link produces (linker default) — `tools/traceblackbox.bat` expects `darwinia.map` | [I] | link the Release configuration |
+| 31-U13 | Is QPC monotonic across the main (0xAA) and worker (0x55) affinity sets on the 2008 target hardware? Cross-core skew would surface directly in `GetHighResTime` (§4.1) | [I] | measure on period hardware; irrelevant for the new engine |
+| 31-U14 | Was the shipped Windows binary built from this commit? (`DARWINIA_VERSION "dev"`, development metaserver host, versionless `.rc`) — design-critical because every [B:FULL] claim assumes it | [I] probably a development snapshot close to release | compare behaviour/strings with a retail `multiwinia.exe` |
+| 31-U15 | Did the Mac 1.3.1 port play lockstep games with Windows clients bit-exactly (its `-mfpmath=387`/`-mno-fused-madd` flags suggest the intent)? | [U] | cross-platform network test with period binaries |
+
+Design-critical inferences (not unknowns, but [I]): GL and D3D clients in one game are a desync risk (§7.10); no map-content check between peers (§10.3); worker-thread crashes bypass the crash reporter (§6.2); a hand-typed authentication key is not reloaded at the next start (§5.3); first-run defaults ignore `default_preferences.txt` in packaged installs (§8.9).
+
+## Docs-vs-code discrepancies
+
+| Doc / artefact | Claim | Code reality |
+|---|---|---|
+| `README.TXT` | "There are four possible build configurations" — then lists six, including "PC OpenGL (Release) produces darwinia_gl.exe" and "PC OpenGL (ReleaseDirect3D) produces darwinia.exe" | the vcproj has four configurations; the solution adds `PC OpenGL (Debug)`/`(Release)` solution configurations mapped to `Debug`/`Release`; no "PC OpenGL (ReleaseDirect3D)" exists [C] `targets/vs2005/Darwinia.sln` |
+| `README.TXT` | "Debug and Release build Darwinia…" | the product built is Multiwinia (`APP_NAME`) |
+| `tools/readme-linux.txt` | preferences in `~/.darwinia/demo` or `~/.darwinia/full` | Multiwinia Linux path is `~/.multiwinia/<DARWINIA_GAMETYPE>/` [C] `code/app.cpp:App::GetProfileDirectory` |
+| Installers' `[UninstallDelete]`, `MultiwiniaSupport.ini` | user files live in `{app}` | written to `%LOCALAPPDATA%\Introversion\Multiwinia\` on Windows 2000+ unless `--NoProfile` [C] |
+| Installers, `MultiwiniaSupport.ini` | files `userprefs.txt`, `game-history.txt`, `stdout.txt`; key file `authkey` | no code in `code/` or `contrib/systemiv/lib` writes the first three; the game reads `authkey.dev` [C grep] |
+| Support-tool success message | "This reference is also recorded in errorlog.txt in your Multiwinia directory" | `ERRORLOG.TXT` is written to the profile directory, not the install directory [C] |
+| `docs/vista installer check list.txt` | `TARGET_VISTA`, `ReleaseD3D`, `DarwiniaSupport.ini/.exe` | `TARGET_OS_VISTA`, `ReleaseDirect3D`, `MultiwiniaSupport.*` |
+| `docs/RussianFontRequest.txt` | only Speccy has Cyrillic glyphs | `data/textures/unicode/` has Cyrillic pages for `editor`, `speccy` and `square`; but the all-languages `tools/language.list` packs only the `speccy` ones (§12.2) |
+| `tools/language/README.txt` | translation inputs must be UCS-2 BE | `data/language/japanese.txt` and `russian.txt` are UTF-16 LE; the game accepts both, `report.pl` only BE |
+| `tools/FindUnusedResources.sh` | must run from a folder named `Darwinia` | repository folder is `multiwinia` |
+| `docs/cpu cycles.txt` | (requested by the specification as performance notes) | a gameplay design note (task manager/gestures); no performance data |
+| `docs/Network.txt` | server ticks at 25 FPS | 10 Hz in code ([22](22_determinism_and_networking.md)) |
+| `targets/vs2005/GDF/*.gdf.xml` (compiled into the exe) | "Darwinia" 1.5.4.0, `darwinia.exe`, saved games `Darwinia\users` | the product is Multiwinia / `multiwinia.exe`; Game Explorer metadata is stale |
+| `targets/vs2005/version.rc` vs installers vs `DARWINIA_VERSION` | 6.0.0.0 vs 1.0.x–1.9.x vs "dev" | no single version source (§9.4) |
+| `code/lib/window_manager_win32.cpp` comment | secondary GL context "for loading thread" | never made current; worker GL work is marshalled to the main thread |
+| `code/app.cpp` comments | affinity `0x02|0x8|0x20|0x80` "Even processors", `0x01|0x4|0x10|0x40` "Processor Number % 3 == 2" / "Odd processors" | the masks select CPUs 1,3,5,7 and 0,2,4,6 (0-based) respectively |
+| `tools/build_multiwinia_data.bat` echoes | sounds2 step prints "Making sounds.dat"; `ambx` platform prints "…hwcompat.txt" | builds `sounds2.dat`; appends the beta-test exclusion list |
+| `targets/vs2005/Common.vsprops` | include path `contrib/steam/` | directory absent from the tree |
+| `_work/build_matrix.md` §3 (earlier phase note) | target table complete | omitted `LAN/WAN_PLAY_IF_NOT_ENABLED_NO_MESSAGE`, `TARGET_BETATEST_GROUP`; corrected in §7.6 |
+
+## IP items
+
+| Item | Kind | Ref | Neutral placeholder |
+|---|---|---|---|
+| "Multiwinia", "Darwinia" product names; `APP_NAME`/`APP_NAME_W` window title and class name; `DARWINIA_*` macro names; `darwinia*.exe`, `multiwinia.exe` | brand | `code/lib/universal_include.h`, `targets/vs2005/*`, `tools/*.bat` | `GAME_NAME`, `game.exe` |
+| "Introversion Software" (version resource, installers' `AppPublisher`), profile folder `Introversion\Multiwinia\`, Mac bundle id `uk.co.introversion.multiwinia` | brand | `targets/vs2005/version.rc`, `tools/InstallerScript*.iss`, `code/app.cpp:App::GetProfileDirectory`, `targets/macosx/Multiwinia/Info.plist` | own studio name / bundle id / folder |
+| Host names and endpoints: `metaserver-mwdev.introversion.co.uk`, `crashreports.introversion.co.uk:4537`, `multiwinia.co.uk`, `forums.introversion.co.uk`, `darwinia.co.uk`, fallback crash e-mail address | brand / service | `code/app.cpp:App::InitMetaServer`, `contrib/XCrashReport/SendEmail.cpp`, `contrib/XCrashReport/EmailDefines.h`, installers | `example.com` services of the new studio |
+| Crash-report magic `0B9432AF`; Vista Game Explorer GUID `F58175C7-E99C-4151-800D-7BB5E89E4960` | identifiers | `code/main.cpp:AppMain`, `code/main.cpp:DoVistaChecks` | new ids |
+| Distributors and partners: Ambrosia Software, Buka (`origin` tag `buka`), eGames/Cinemaware Marquee, Logitech G15, amBX, Sparkle | brand (third party) | `targets/macosx/Multiwinia/*`, `tools/build_multiwinia_retail_russian.bat`, `tools/InstallerScriptEGames.iss`, exclusion lists | omit |
+| "Futurewar Shape Format" exporter description; Dr Sepulveda / Protologic story documents | name / text | `tools/ShapeExporter/ShapeExporter.cpp`, `docs/sepulveda_interview.txt`, `docs/story material.txt` | "Shape format v1"; omit |
+| Icons and box art: `targets/vs2005/darwinia.ico`, `targets/vs2005/DarwiniaVista.ico`, `targets/vs2005/GDF/*/boxart_*.png`, `targets/vs2005/GDF/*/gameicon_*.ico`, `targets/macosx/Multiwinia/Multiwinia.icns`, root `darwinia.png`, `tools/NSIS Installer/darwinia.bmp`, `tools/NSIS Installer/header.bmp`, `tools/loki/common/setup.data/splash.xpm` | art | listed | new art |
+| Fonts packed into `language.dat` (`editor`, `speccy`, `square` pages); `verdana-bold.bmp` inside root `animator.dat` | art | `data/textures/unicode/*`, `animator.dat` | licensed/open fonts |
+| Sound lists naming every audio asset; licensed retro music excluded from retail (`tresk*`, `trash80*`, `dma_sc*`, `twoataris*`, `pang*`) | audio (own and third-party) | `tools/sounds.txt`, `tools/menu_sounds.txt`, `tools/multiwinia_exclusions.txt` | new audio set; never reuse the licensed tracks |
+| Language/UI text tables | text | `data/language/*.txt` | new string table |
+| EULAs | text | `EULA.txt`, `docs/IntroversionEULA.txt`, `docs/Multiwinia-Buka-Russian-EULA.txt`, `tools/NSIS Installer/licence.txt` | own licence |
+| Personal data: beta-tester credit lists packed into retail `main.dat` (`data/betatesters.txt`, `data/multiwinia_betatesters.txt`), `docs/betatesters.txt` (handles and e-mail addresses), developer machine path in `targets/macosx/Multiwinia/data`, developer names in Mac credits and code headers | personal data / names | listed | never reproduce |
+| Map names in `MAPID_*` (87, e.g. `MAPID_MP_KOTH_2P_1`) and in inclusion lists | name (level names) | `code/mapcrc.h`, `tools/multiwinia_inclusions_*.txt` | new map names |
+| Third-party code: crash-report sample code (XCrashReport, public domain), `GetWinVer`/`MiniVersion` (public domain), unrar (RARLAB licence), `Rar.exe`, UPX, GnuWin32 grep/sed, 7-Zip, PuTTY `pscp`, NSIS SDK samples, Loki Setup, DirectX redistributable cabinets, AVIGenerator sample | third-party | `contrib/XCrashReport/*`, `code/lib/GetWinVer.cpp`, `contrib/unrar/*`, `tools/*.exe`, `tools/NSIS Installer/*`, `tools/loki/*`, `code/lib/avi_generator.cpp` | use the platform/standard equivalents named in §15; respect their licences |
+
+## Source map
+
+Code, contrib and data files that implement or feed this document's subject (generated by `_work/scripts/S_31_source_map.py`; every path verified present in `_work/manifest.csv`). Every file under `tools/`, `targets/`, `docs/` and the repository root is listed with its role in §14.1–§14.4, which are part of this source map. Audio files named by `tools/sounds.txt`/`tools/menu_sounds.txt` are catalogued in [10](10_audio_design.md)/[27](27_audio_engine.md) and are not repeated.
+
+| File | Role in this document |
+|---|---|
+| `code/lib/window_manager.h` | abstract `WindowManager`, `Resolution`, `PlatformWindow` (§3.1) |
+| `code/lib/window_manager.cpp` | base class: display-mode helpers, closest resolution, mouse-capture helpers, `g_windowManager` (§3.1) |
+| `code/lib/window_manager_win32.h` | OpenGL window manager declaration (§3.3) |
+| `code/lib/window_manager_win32.cpp` | baseline `WinMain`, `CreateWin`, `EnableOpenGL`, display modes, mouse, `OpenWebsite` (§3.3) |
+| `code/lib/window_manager_directx.h` | D3D window manager declaration; `const char*` title (§3.4, §7.9) |
+| `code/lib/window_manager_directx.cpp` | D3D `WinMain`, `CreateWin`, Vista command line [B:D3D] (§3.4) |
+| `code/lib/window_manager_sdl.h` | SDL window manager declaration [B:DEAD] (§2.2) |
+| `code/lib/window_manager_sdl.cpp` | SDL window manager (Mac target) [B:DEAD] (§2.2, §3.11) |
+| `code/lib/opengl_directx.cpp` | `Direct3DInit`, `Direct3DSwapBuffers`, `WaitAndResetDevice`, `glLineWidth` breakage [B:D3D] (§3.5, §3.6, §7.9) |
+| `code/lib/opengl_directx.h` | D3D emulation API [B:D3D] (§2.2) |
+| `code/lib/opengl_directx_internals.h` | `LPDIRECT3DDEVICE9 g_pd3dDevice` declaration (§7.9) |
+| `code/lib/ogl_extensions.cpp` | WGL extension loading, `wglChoosePixelFormatARB` loaded but unused (§3.11) |
+| `code/lib/ogl_extensions_directx.cpp` | D3D extension stand-ins [B:D3D] (§2.2) |
+| `code/lib/ogl_extensions_sdl.cpp` | SDL extension loading [B:DEAD] (§2.2) |
+| `code/lib/safegl.cpp` | display-list mutex wrapper, inactive in baseline (§2.2) |
+| `code/lib/safegl.h` | display-list macro redirection (D3D/Mac only) (§2.2) |
+| `code/renderer.cpp` | `Renderer::Initialise` retry chain, prefs write-back, `SetScreenGamma` (§3.7, §3.11) |
+| `code/lib/preference_names.h` | screen preference key names (§3.8) |
+| `code/interface/prefs_screen_window.cpp` | screen options dialog, `RestartWindowManagerAndRenderer`, `SetWindowed`, `HAVE_REFRESH_RATES` (§3.2, §3.9) |
+| `code/lib/input/win32_eventhandler.cpp` | window message handling, focus, Alt-Tab hot key (§3.10) |
+| `code/lib/input/win32_eventhandler.h` | Win32 event handler declaration (§3.10) |
+| `code/interface/prefs_keybindings_window.cpp` | commented-out Alt-Tab binding (§3.10) |
+| `code/interface/mainmenus.cpp` | `ResetWindowHandle` call (§3.10) |
+| `code/lib/avi_generator.cpp` | AVI capture [B:DEBUG] (§3.12) |
+| `code/lib/avi_generator.h` | AVI capture declaration (§3.12) |
+| `code/lib/avi_player.cpp` | AVI playback for the eGames loader [B:DEAD] (appendix) |
+| `code/lib/avi_player.h` | AVI playback declaration [B:DEAD] (appendix) |
+| `code/interface/grabber_window.cpp` | debug Grabber window: fake time + AVI generator (§3.12, §4.2) |
+| `code/interface/debugmenu.cpp` | opens the Grabber window (§3.12) |
+| `code/lib/hi_res_time.h` | timer API (§4.1) |
+| `code/lib/hi_res_time.cpp` | QPC clock, fake time, dead RDTSC path (§4) |
+| `code/lib/hi_res_time_gcc.cpp` | QPC variant for GCC [B:DEAD] (§4.3) |
+| `code/lib/hi_res_time_sdl.cpp` | `gettimeofday` variant (Mac target) [B:DEAD] (§4.3) |
+| `code/main.cpp` | `AppMain` SEH wrapper, `--write-version`, `Initialise` (`--NoProfile`, log redirect, `StandardiseCPUPrecision`), `UpdateAdvanceTime`, OS checks, `HandleCommonConditions` (§3.10, §4, §5, §6) |
+| `code/loading_screen.cpp` | loading-screen frame pacing (1/60 s) and archive-load serialisation (§3.11, §8.7) |
+| `code/app.cpp` | `App::App` (init.dat, prefs, renderer), `Initialise` (origin, archives, language), `LoadSounds`, `GetProfileDirectory`, `GetPreferencesPath`, `GetScreenshotDirectory`, `GetMapDirectory`, `InitMetaServer` (`authkey.dev`), `InitLanguage`, `IsMapPermitted`, `GetMapID`, `GamePaused` (§5, §8, §10, §12) |
+| `code/app.h` | `App` members referenced (`m_lostFocusPause`, `m_originVersion`) (§3.10, §5.3) |
+| `code/UI/AuthInputField.h` | typed authentication key saved to `<P>authkey` (§5.3) |
+| `code/UI/PlayDemoAuthkeyButton.h` | generated demo key saved to `<P>authkey.dev` (§5.3) |
+| `code/UI/GameMenuWindow.cpp` | `PasteFromClipboard` (`authkey.dev`), map-ID uses in tutorials/lobby (§2.3, §5.3, §10.3) |
+| `code/lib/input/file_paths.cpp` | input-preference file names and user path (§5.3) |
+| `code/lib/input/input.cpp` | `inputprefs_debug.txt` (§5.3) |
+| `code/network/clienttoserver.cpp` | `GetSyncFileName` desync dump naming (§5.3) |
+| `code/benchmark.cpp` | `dxdiag.txt` generation and parsing (§5.3) |
+| `code/lib/poster_maker.cpp` | screenshot directory consumer (§5.3) |
+| `code/lib/preferences.cpp` | `PrefsManager` load, `CreateDefaultValues` + `default_preferences.txt` overlay (§8.9) |
+| `code/lib/exception_handler.cpp` | `RecordExceptionInfo`, `GetExceptionDescription`, minidump, support-tool launch (§6.2, §6.3) |
+| `code/lib/exception_handler.h` | crash handler declaration (§6.2) |
+| `code/lib/GetWinVer.cpp` | Windows version naming for crash logs (§6.6) |
+| `code/lib/GetWinVer.h` | version codes (§6.6) |
+| `code/lib/MiniVersion.cpp` | version-resource reader for crash logs (§6.6) |
+| `code/lib/MiniVersion.h` | `CMiniVersion` declaration (§6.6) |
+| `code/lib/system_info.cpp` | locale, audio devices, DirectX version (§6.6) |
+| `code/lib/system_info.h` | `SystemInfo` declaration (§6.6) |
+| `code/lib/system_info_macosx.cpp` | Mac system info [B:DEAD] (§2.2) |
+| `code/lib/macosx_hardware_detect.cpp` | Mac hardware detection [B:DEAD] (§2.2) |
+| `code/lib/user_info.cpp` | unused user-info file parser [B:LEGACY] (§6.6) |
+| `code/lib/user_info.h` | user-info declaration [B:LEGACY] (§6.6) |
+| `code/sound/sound_library_3d_dsound.cpp` | DirectX ≥ 9 assertion (§6.6) |
+| `contrib/systemiv/lib/debug_utils.cpp` | `AppDebugOut`, redirect, `AppReleaseAssertFailed`, `AppReleaseExit`, `AppGenerateBlackBox`, log paths (§5.3, §6.5) |
+| `contrib/systemiv/lib/debug_utils.h` | assert macros (§6.5) |
+| `contrib/XCrashReport/CrashFileNames.h` | crash file names and support-tool exe name (§6.2, §6.4) |
+| `contrib/XCrashReport/XCrashReport.cpp` | support tool argument parsing (§6.4) |
+| `contrib/XCrashReport/Dlg.cpp` | support tool dialog, INI file list, zip, Send (§6.4) |
+| `contrib/XCrashReport/SendEmail.cpp` | TCP upload protocol to port 4537 (§6.4) |
+| `contrib/XCrashReport/SystemInfoGatering.cpp` | `dxdiag /t` collection (§6.4) |
+| `contrib/XCrashReport/IniDefines.h` | INI name and section names (§6.4) |
+| `contrib/XCrashReport/EmailDefines.h` | fallback e-mail address (§6.4) |
+| `contrib/XCrashReport/BackupFile.cpp` | backs up an existing zip (`.zip.0001`…) (§6.4) |
+| `contrib/XCrashReport/XZip.cpp` | zip writer (§6.4) |
+| `contrib/XCrashReport/XCrashReport.ini` | sample INI (§6.4) |
+| `contrib/XCrashReport/XCrashReport.vcproj` | support tool project (§6.4) |
+| `contrib/XCrashReport/XCrashReport.sln` | support tool solution (§6.4) |
+| `contrib/systemiv/contrib/XCrashReport/dbghelp.dll` | `dbghelp.dll` shipped next to the exe (§9.1) |
+| `contrib/systemiv/contrib/XCrashReport/client/exception_handler.cpp` | SystemIV copy of the crash handler, not compiled (appendix) |
+| `code/lib/universal_include.h` | product targets, feature macros, platform blocks, version strings (§7.6, §7.7) |
+| `code/lib/universal_include.cpp` | precompiled-header creator (§7.4) |
+| `code/deform.cpp` | D3D breakage 3 (`Resolve`) [B:D3D] (§7.9) |
+| `code/water.cpp` | D3D breakage 4 (`bmp.GetPixel`) (§7.9) |
+| `code/worldobject/crate.h` | `INCLUDE_THEBEAST` under `TARGET_DEBUG` (§7.6) |
+| `contrib/unrar/Unrar.vcproj` | unrar sub-project (§7.1) |
+| `contrib/eclipse/eclipse.vcproj` | Eclipse UI sub-project (§7.1) |
+| `contrib/libvorbis-1.1.2/win32/vorbis_static.vcproj` | vorbis sub-project (§7.1) |
+| `contrib/libvorbis-1.1.2/win32/vorbisfile_static.vcproj` | vorbisfile sub-project (§7.1) |
+| `contrib/libogg-1.1.3/win32/ogg_static.vcproj` | ogg sub-project (§7.1) |
+| `contrib/lpng1215/projects/visualc71/libpng.vcproj` | libpng sub-project (§7.1) |
+| `contrib/lpng1215/projects/visualc71/zlib.vcproj` | zlib sub-project (§7.1) |
+| `code/lib/resource.cpp` | `ParseArchive`, `GetTextReader`, `GetBinaryReader`, `GetUncompressedFile`, `FileExists`, `ListResources` (§8.8) |
+| `code/lib/resource.h` | `HashTable<MemMappedFile*> m_resourceFiles` (§8.8) |
+| `contrib/unrar/unrar.cpp` | `UncompressedArchive`, `MemMappedFile` (§8.8) |
+| `contrib/unrar/unrar.h` | `MAX_FILES = 16384` (§8.8) |
+| `contrib/unrar/extinfo.cpp` | includes `win32acl.cpp`/`win32stm.cpp` (§2.2) |
+| `contrib/unrar/win32acl.cpp` | NTFS ACL extraction (compiled via include) (§2.2) |
+| `contrib/unrar/win32stm.cpp` | NTFS stream extraction (compiled via include) (§2.2) |
+| `contrib/unrar/crc.cpp` | CRC-32 table and `CRC()` used by `FileCRC` (§10.2) |
+| `contrib/unrar/crc.h` | CRC declaration (§10.2) |
+| `contrib/systemiv/lib/tosser/hash_table.cpp` | case-insensitive hash table used for archive entries (§8.8) |
+| `contrib/systemiv/lib/filesys/file_system.cpp` | unused SystemIV `FileSystem`, `OrderedInsert` (§8.10) |
+| `contrib/systemiv/lib/filesys/filesys_utils.cpp` | `ListDirectory`, `FindCaseInsensitive`, `CreateDirectoryRecursively` (§2.3, §10.1) |
+| `contrib/systemiv/lib/filesys/binary_stream_readers.cpp` | `BinaryReader::ReadU8` EOF behaviour for `FileCRC` (§10.2) |
+| `contrib/systemiv/lib/math/filecrc.cpp` | `FileCRC`, `ReadFileData` (§10.2) |
+| `contrib/systemiv/lib/math/filecrc.h` | `FileCRC` declaration (§10.2) |
+| `contrib/systemiv/lib/netlib/net_thread_win32.cpp` | `CreateThread` wrapper, no SEH (§2.3, §6.2) |
+| `contrib/systemiv/lib/netlib/net_mutex_win32.cpp` | Win32 mutex/event (§2.3) |
+| `contrib/systemiv/lib/netlib/net_lib_win32.h` | Winsock platform header (§2.2) |
+| `contrib/systemiv/lib/netlib/net_thread_linux.cpp` | pthreads variant [B:DEAD] (§2.2) |
+| `contrib/systemiv/lib/netlib/net_mutex_linux.cpp` | pthreads variant [B:DEAD] (§2.2) |
+| `contrib/systemiv/lib/network_stream.cpp` | `wchar_t` size handling on the wire (§2.3) |
+| `code/unicode/unicode_text_file_writer.cpp` | UTF-16/UTF-32 conversion per platform (§2.3) |
+| `code/lib/work_queue.cpp` | worker threads call `StandardiseCPUPrecision`; no SEH (§2.3, §6.2) |
+| `code/mapcrc.h` | generated 87 `MAPID_*` defines (§10) |
+| `code/level_file.cpp` | `LevelFile::CalculeCRC` (§10.3) |
+| `code/UI/MapData.cpp` | `m_mapId` from CRC (§10.3) |
+| `code/game_menu.cpp` | custom-map flag when CRC = −1 (§10.3) |
+| `code/network/demo_limitations.cpp` | default demo map CRC list (§10.3) |
+| `code/network/server.cpp` | metaserver map CRC advertisement (§10.3) |
+| `code/lib/language_table.cpp` | `LangTable`, `TestAgainstEnglish` → `language_errors.txt` (§12.5) |
+| `contrib/systemiv/lib/unicode/unicode_text_stream_reader.cpp` | UTF-16 BE/LE detection (§12.3) |
+| `code/sepulveda.cpp` | Darwinia `language_errors.txt` append path [B:DEAD] (§12.5) |
+| `code/lib/shape.cpp` | `Shape::WriteToFile` used by the exporter (§11.1) |
+| `code/lib/math_utils.cpp` | intersection maths visualised by 3DGeometry (§11.2) |
+| `data/default_preferences.txt` | first-run default overlay, not reachable before `main.dat` (§8.9) |
+| `data/shaders/deform.vs` | `init.dat` member (`tools/init.list`); also packed in `main.dat` (§8.7) |
+| `data/shaders/deformDiamond.ps` | `init.dat` member (`tools/init.list`); also packed in `main.dat` (§8.7) |
+| `data/shaders/deformFullscreen.ps` | `init.dat` member (`tools/init.list`); also packed in `main.dat` (§8.7) |
+| `data/shaders/deformSphere.ps` | `init.dat` member (`tools/init.list`); also packed in `main.dat` (§8.7) |
+| `data/shaders/FixedFunc0.vs` | `init.dat` member (`tools/init.list`) (§8.7) |
+| `data/shaders/FixedFunc0Maps.ps` | `init.dat` member (`tools/init.list`) (§8.7) |
+| `data/shaders/FixedFunc1.vs` | `init.dat` member (`tools/init.list`) (§8.7) |
+| `data/shaders/FixedFunc1Maps.ps` | `init.dat` member (`tools/init.list`) (§8.7) |
+| `data/shaders/FixedFunc2.vs` | `init.dat` member (`tools/init.list`) (§8.7) |
+| `data/shaders/FixedFunc2Maps.ps` | `init.dat` member (`tools/init.list`) (§8.7) |
+| `data/shaders/globals.h` | `init.dat` member (`tools/init.list`); also packed in `main.dat` (§8.7) |
+| `data/shaders/water-meshwaves.ps` | `init.dat` member (`tools/init.list`); also packed in `main.dat` (§8.7) |
+| `data/shaders/water-meshwaves.ps3` | `init.dat` member (`tools/init.list`); also packed in `main.dat` (§8.7) |
+| `data/shaders/water-meshwaves.vs` | `init.dat` member (`tools/init.list`); also packed in `main.dat` (§8.7) |
+| `data/sprites/darwinian.bmp` | `init.dat` member (`tools/init.list`) (§8.7) |
+| `data/textures/xboxlivearcade.bmp` | listed in `tools/init.list`, deleted before packing on PC (§8.7) |
+| `data/textures/ivlogo.bmp` | `init.dat` member (`tools/init.list`) (§8.7) |
+| `data/levels/level_enum.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/map_biosphere.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/map_containment.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/map_escort.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/map_garden.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/map_generator.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/map_launchpad.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/map_mine.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/map_pattern_buffer.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/map_receiver.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/map_sandbox.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/map_temple.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/map_yard.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mission_biosphere_attract.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mission_biosphere_recapture.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mission_containment_enable.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mission_escort_escort.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mission_garden_liberate.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mission_generator_enable.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mission_launchpad.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mission_mine_attract.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mission_mine_demo.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mission_mine_enable.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mission_pattern_buffer_attract.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mission_pattern_buffer_recapture.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mission_receiver_recapture.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mission_sandbox_tutorial.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mission_temple_cutscene.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mission_temple_recapture.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mission_yard_enable.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_assault_2P_1.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_assault_2P_2.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_assault_2p_3.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_assault_3P_2.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_assault_3p_1.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_assault_3p_3.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_assault_4P_1.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_assault_4P_2.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_assault_stress.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_benchmark_1.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_blitzkrieg_2P_3.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_blitzkrieg_2P_4.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_blitzkrieg_2p_1.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_blitzkrieg_2p_2.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_blitzkrieg_3P_1.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_blitzkrieg_3P_2.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_blitzkrieg_4P_2.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_cts_2p_1.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_cts_2p_2.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_cts_2p_3.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_cts_2p_4.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_cts_3P_2.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_cts_3p_1.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_cts_3p_3.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_cts_4P_1.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_cts_4P_2.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_cts_4p_3.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_domination_2P_1.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_domination_2P_2.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_domination_3P_1.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_domination_4P_1.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_domination_4P_2.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_koth_2P_1.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_koth_2P_2.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_koth_2P_3.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_koth_2P_3b.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_koth_3P_1.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_koth_3P_2.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_koth_3P_3.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_koth_3P_4.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_koth_4P_1.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_koth_4P_3.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_koth_4P_4.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_rocketriot_2P_2.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_rocketriot_2P_4.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_rocketriot_2p_3.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_rocketriot_3P_2.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_rocketriot_3P_3.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_rocketriot_3p_1.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_rocketriot_4P_1.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_sandbox.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_sandbox_all.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_skirmish_2p_4.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_skirmish_3P_1.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_tankbattle_2P.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_tankbattle_3P.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/levels/mp_tankbattle_4P.txt` | MapCRC input; `MAPID_*` source (§10) |
+| `data/language/english.txt` | `language.dat` member; encoding in §12.3 |
+| `data/language/french.txt` | `language.dat` member; encoding in §12.3 |
+| `data/language/german.txt` | `language.dat` member; encoding in §12.3 |
+| `data/language/italian.txt` | `language.dat` member; encoding in §12.3 |
+| `data/language/japanese.txt` | `language.dat` member; encoding in §12.3 |
+| `data/language/korean.txt` | `language.dat` member; encoding in §12.3 |
+| `data/language/portuguese.txt` | `language.dat` member; encoding in §12.3 |
+| `data/language/russian.txt` | `language.dat` member; encoding in §12.3 |
+| `data/language/spanish.txt` | `language.dat` member; encoding in §12.3 |
+| `data/textures/unicode/editor.0020.00ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/editor.0410.042f.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/editor.0430.044f.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/editor.20a0.20af.bmp` | Euro-sign font page in no `tools/*language.list` — never shipped (§12.2) |
+| `data/textures/unicode/speccy.0020.00ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/speccy.0410.042f.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/speccy.0430.044f.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/speccy.20a0.20af.bmp` | Euro-sign font page in no `tools/*language.list` — never shipped (§12.2) |
+| `data/textures/unicode/square.0020.00ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.0410.042f.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.0430.044f.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.20a0.20af.bmp` | Euro-sign font page in no `tools/*language.list` — never shipped (§12.2) |
+| `data/textures/unicode/square.3000.30ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.4e00.4eff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.4f00.4fff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.5000.50ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.5100.51ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.5200.52ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.5300.53ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.5400.54ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.5500.55ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.5600.56ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.5700.57ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.5800.58ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.5900.59ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.5a00.5aff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.5b00.5bff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.5c00.5cff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.5d00.5dff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.5e00.5eff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.5f00.5fff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.6000.60ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.6100.61ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.6200.62ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.6300.63ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.6400.64ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.6500.65ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.6600.66ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.6700.67ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.6800.68ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.6900.69ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.6a00.6aff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.6b00.6bff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.6c00.6cff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.6d00.6dff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.6e00.6eff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.6f00.6fff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.7000.70ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.7100.71ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.7200.72ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.7300.73ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.7400.74ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.7500.75ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.7600.76ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.7700.77ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.7800.78ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.7900.79ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.7a00.7aff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.7b00.7bff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.7c00.7cff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.7d00.7dff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.7e00.7eff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.7f00.7fff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.8000.80ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.8100.81ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.8200.82ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.8300.83ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.8400.84ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.8500.85ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.8600.86ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.8700.87ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.8800.88ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.8900.89ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.8a00.8aff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.8b00.8bff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.8c00.8cff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.8d00.8dff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.8e00.8eff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.8f00.8fff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.9000.90ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.9100.91ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.9200.92ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.9300.93ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.9400.94ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.9500.95ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.9600.96ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.9700.97ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.9800.98ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.9900.99ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.9a00.9aff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.9b00.9bff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.9c00.9cff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.9d00.9dff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.9e00.9eff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.ac00.acff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.ad00.adff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.ae00.aeff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.af00.afff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.b000.b0ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.b100.b1ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.b200.b2ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.b300.b3ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.b400.b4ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.b500.b5ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.b600.b6ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.b700.b7ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.b800.b8ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.b900.b9ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.ba00.baff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.bb00.bfff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.bc00.bcff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.bd00.bdff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.be00.beff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.bf00.bfff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.c000.c0ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.c100.c1ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.c200.c2ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.c300.c3ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.c400.c4ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.c500.c5ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.c600.c6ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.c700.c7ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.c800.c8ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.c900.c9ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.ca00.caff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.cb00.cbff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.cc00.ccff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.cd00.cdff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.ce00.ceff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.cf00.cfff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.d000.d0ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.d100.d1ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.d200.d2ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.d300.d3ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.d400.d4ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.d500.d5ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.d600.d6ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+| `data/textures/unicode/square.d700.d7ff.bmp` | font page named by `tools/*language.list` (§12.2) |
+
+## Appendix — dead/legacy code
+
+| Item | Build tag | Note |
+|---|---|---|
+| `AviPlayer` (`code/lib/avi_player.cpp`, `code/lib/avi_player.h`) | [B:DEAD] (`EGAMESBUILD`) | VfW playback for the eGames distributor loader (`code/loaders/egames_loader.cpp`): `OpenAvi` opens video stream 0 and audio stream 0, begins streaming at speed 2000, allocates a fixed 512×256×3 RGB frame; `DecodeVideoFrame(int)` copies the DIB from `AVIStreamGetFrame` into the power-of-two buffer with BGR→RGB swizzle (row stride 512·3; returns 1 at end) and counts displayed/missed frames; `DecodeVideoFrame(float t)` → `AVIStreamTimeToSample(t·1000)`; `GetAudioData(n, short*)` reads n PCM samples sequentially; `CloseAvi` releases everything |
+| `AVIGenerator` (§3.12) | [B:DEBUG], effectively non-functional | `AddFrame()` never called |
+| `WindowManagerDirectX` `TARGET_OS_VISTA` command line (`-mediacenter`, save-file argument), `DoVistaChecks`, Vista screenshot folder, Vista mod paths | [B:DEAD] | `TARGET_OS_VISTA` never defined |
+| `WindowManagerWin32::m_hRC2` secondary context; declared-but-undefined `UseSecondaryContext/ReleaseSecondaryContext/DestroySecondaryContext`; `gglChoosePixelFormatARB` | compiled, unused | §3.3 |
+| `Renderer::SetScreenGamma` | [B:D3D], no callers | §3.11 |
+| RDTSC timer path (`USE_PENTIUM_COUNTER 0`), `code/lib/hi_res_time_gcc.cpp`, `code/lib/hi_res_time_sdl.cpp` | [B:DEAD] | §4.3 |
+| `code/lib/window_manager_sdl.*`, `code/lib/ogl_extensions_sdl.cpp`, SDL input drivers, `code/sound/sound_library_2d_sdl.*`, `code/lib/system_info_macosx.cpp`, `code/lib/macosx_hardware_detect.*`, `code/interface/buynow_window.*`, `code/interface/updateavailable_window.*`, `code/gesture_demo_sdl.cpp`, Mac branches of `StandardiseCPUPrecision`, `debug_utils`, `unicode_string`, `network_stream`, `unicode_text_file_writer`, `contrib/systemiv/lib/tosser/hash_map_darwin.h` | [B:DEAD] on PC (Mac target only) | §2.2, §2.4 |
+| `code/lib/input_sdl.cpp`, `code/lib/debug_logging.*`, `code/lib/debug_fog_logging.cpp`, `code/lib/tri_tri.cpp`, `code/lib/mouse_cursor.*`, `code/lib/input/inputfilterspec.cpp`, `code/unicode/sound_library_*` | [B:DEAD] (not in the vcproj) | §2.2 |
+| Xbox 360 remnants: `code/lib/input/xbox_eventhandler.*` (excluded), `code/sound/sound_library_3d_xaudio.*` (`HAVE_XAUDIO`), absent `x360_qnet.*`, `Multiwinia.spa.h`, `window_manager_xbox.h`, XBLA/PDLC UI headers; `platxbox` branches of the data build, `convert_bmp_to_tex.cmd`, DXT conversions, `textures/xboxlivearcade.bmp` in `tools/init.list`, `D3DRS_LINEWIDTH`, `Resolve()` | [B:DEAD] | §7.4, §7.9, §8.3 |
+| `code/gesture_demo_win32.cpp` | [B:DEAD] (`GESTURE_EDITOR && USE_SEPULVEDA_HELP_TUTORIAL`) | §2.2 |
+| `contrib/systemiv/lib/filesys/file_system.cpp:FileSystem` | compiled, never instantiated | §8.10 |
+| `contrib/systemiv/lib/{preferences,language_table,hi_res_time}.*` | [B:DEAD] (shadowed by `code/lib`) | §7.2 |
+| `contrib/systemiv/lib/gucci/*` window managers and input, `contrib/systemiv/lib/sound/*` | [B:DEAD] (not compiled) | §2.2 |
+| `contrib/systemiv/contrib/XCrashReport/client/{exception_handler,GetWinVer,MiniVersion}.*` | [B:DEAD] (SystemIV copies; `code/lib` versions are compiled) | §6 |
+| `code/keygen.cpp` (Darwinia registration key generator), `code/lib/user_info.cpp:GetUserInfoData` | [B:LEGACY] compiled, never called | [29](29_data_formats_reference.md), §6.6 |
+| `contrib/systemiv/lib/memory_leak.cpp` (`TRACK_MEMORY_LEAKS`), `tools/SlashSort.exe` | [B:DEAD] | [32](32_debug_test_and_performance.md) |
+| `TRACK_SYNC_RAND` log, `SINGLE_THREADED_PROFILER` | [B:DEBUG] / Mac only | [22](22_determinism_and_networking.md), [32](32_debug_test_and_performance.md) |
+| `targets/linux/*`, `targets/macosx/Darwinia/*` | [B:DEAD]/[B:LEGACY] | §2.5 |
+| Darwinia-era tools: `tools/build_demo.bat`, `tools/build_demo2.bat`, `tools/build_final.bat`, `tools/build_vista.bat`, `tools/build_tools.bat`, `tools/DemoInstallerScript.iss`, `tools/InstallerScriptEGames.iss`, `tools/NSIS Installer/*`, `tools/loki/*`, `tools/3DGeometry/*`, `tools/patch.full.list`, `tools/full_exclusions.txt`, `tools/demo_exclusions.txt`, `tools/demo2_exclusions.txt`, `tools/vista_exclusions.txt`, `tools/copystrings.pl`, `tools/build-data-english.mk`, `tools/rsx.exe`, `tools/uniq_dos.exe`, `tools/ReplaceVistaIcon.exe`, `tools/signtool.exe`, `tools/mkdmg`, `tools/open-www.sh`, `tools/readme-linux.txt`, root `darwinia.gdf`, `darwinia.mcl`, `darwinia.png` | [B:LEGACY] | §9.3, §14 |
+| `tools/set-origin.pl` (placeholder `MWORIGINMWORIGINMWORIGIN` absent from this tree), `tools/pdlc_exclusions.txt`, `tools/pscp.exe`, `tools/oggenc.exe`, `tools/oggdec.exe` | stale / unreferenced | §14.3 |

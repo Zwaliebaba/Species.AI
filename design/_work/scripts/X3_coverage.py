@@ -4,12 +4,13 @@
 Manual rows (files read by hand) + one row per file that contains a hit in the generated
 RNG CSVs (scanned by X3_rng_sites.py) not already listed by hand.
 
-Usage: python3 -I X3_coverage.py <SYNC_CSV> <UNSYNC_CSV> <OUT_CSV>
+Usage: X3_SRC=<SRC_ROOT> python3 -I X3_coverage.py <SYNC_CSV> <UNSYNC_CSV> <OUT_CSV> [<LOCAL_STATE_CSV>]
 """
 import csv
 import sys
 
 sync_csv, unsync_csv, out_csv = sys.argv[1:4]
+local_csv = sys.argv[4] if len(sys.argv) > 4 else None
 
 S1 = '1. Determinism model at a glance'
 S2 = '2. Random number sources'
@@ -143,6 +144,13 @@ for csv_path, label in ((sync_csv, 'synced'), (unsync_csv, 'unsynced')):
             if p in rows:
                 continue
             rows[p] = [p, 'skimmed', 'scanned by scripts/X3_rng_sites.py for RNG call sites; flagged lines read in context', S2]
+
+if local_csv:
+    with open(local_csv, newline='') as fh:
+        for r in csv.DictReader(fh):
+            p = r['file']
+            if p not in rows:
+                rows[p] = [p, 'skimmed', 'scanned by scripts/X3_local_state_sites.py for local-state references; flagged lines read in context', S5]
 
 with open(out_csv, 'w', newline='') as fh:
     w = csv.writer(fh)

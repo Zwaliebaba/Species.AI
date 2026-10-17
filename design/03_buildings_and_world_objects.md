@@ -34,7 +34,7 @@
 Every class derived from `Building` (the level-placeable / statically-positioned world-object hierarchy), plus the non-`Building` helper objects that only exist to serve buildings (`BuildingPort`, `SpawnBuildingLink`, `SpawnBuildingSpirit`, `MineCart`, `SpiritStore`, `UnprocessedSpirit`, `Flag`, `Randomiser`). For each type: function, capture/ownership rules, inputs/outputs (spirits, Darwinians, power, fuel), activation conditions, links to other buildings, damageability, mode usage and level-file parameters, with a Mermaid state machine where the type is stateful. [C] class list from `code/worldobject/*.h` (`_work/class_assignment.csv`).
 
 Owned elsewhere (linked, not repeated):
-- Mobile entities (Darwinian, Officer, Armour, ArmyAnt, TriffidEgg, Tentacle, Engineer …) → [02](02_units_and_entities.md).
+- Every mobile entity type (every value of the `Entity::Type*` enum, e.g. Darwinian, Officer, Armour, ArmyAnt, TriffidEgg, Tentacle, Engineer) → [02](02_units_and_entities.md).
 - `Crate` (enum value 65) and every crate outcome's selection rules → [04](04_crates_powerups_and_weapons.md); this document only specifies the buildings that crate outcomes create (GunTurret, AntHill, Triffid, Portal, Randomiser, Trees).
 - Spawn-point economy formulae (burst/pause rate, population caps, handicap, trunk-port reinforcement waves, spirit lifecycle) → [05](05_economy_and_population.md). Here each spawn building's function and parameters are given and the formulae are linked.
 - Game-mode rules that read buildings (KOTH scoring, CTS scoring, Blitzkrieg elimination, Assault timer, Rocket Riot win) → [01](01_game_modes.md).
@@ -383,7 +383,7 @@ stateDiagram-v2
 | `OperatePort(i, team)` | `counter[team] = min(counter[team] + 1, 50)` | — | [C] |
 | `GetPortOperatorCount(i, team)` | `counter[team]`, or −1 for a bad index | — | [C] |
 | `GetObjectiveCounter(UnicodeString&)` | empty | MasterSpawnPoint, Generator, SpiritProcessor, FuelGenerator, EscapeRocket, BlueprintStore, DynamicHub, SafeArea, Refinery | [C] |
-| `DoesSphereHit(pos, r)` | exact shape-sphere test; without shape: `|pos − m_pos| ≤ r + m_radius` | §3.14 | [C] |
+| `DoesSphereHit(pos, r)` | exact shape-sphere test; without shape: `abs(pos − m_pos) ≤ r + m_radius` | §3.14 | [C] |
 | `DoesShapeHit(shape, mat)` | shape-vs-shape; without shape: sphere (`m_pos`, `m_radius`) vs shape | §3.14 | [C] |
 | `DoesRayHit(start, dir, len, pos, norm)` | shape ray test (`pos/norm` not filled); without shape: ray-sphere | §3.14 | [C] |
 | `ListSoundEvents(list)` | `Create`, `Reprogramming` (comment "Remove me"), `ReprogramComplete`, `ChangeTeam`, `Damage` | most | [C] |
@@ -421,7 +421,11 @@ stateDiagram-v2
 | AIObjectiveMarker | 0 | 2.0 s | bound building's team, or scan-range majority (×4 rule) | 255 | [C] `AIObjectiveMarker::Advance` ([07](07_ai.md)) |
 | TrunkPort | 0 | — | fixed by level; neutralised by `Team::Eliminate` and PulseBomb events | — | [C] §8.6 |
 | ControlTower (unused) | 0 (3 reprogrammer slots) | per Engineer call | ownership ±0.1 per call | — | [C] §11.1 |
-| BlueprintConsole, DynamicNode, FenceSwitch, Powerstation, SafeArea (legacy) | various | various | §12 | — | [C] |
+| BlueprintConsole (legacy) | 4 (`blueprintconsole.shp`) | every tick | team with > 2 occupants and a plurality | 255 | [C] §12.13 |
+| DynamicNode (legacy) | shape ports | every tick | operates (no team change) when all ports are occupied and none by team 1 | inactive | [C] §12.22 |
+| FenceSwitch (legacy) | 4 (`fenceswitch.shp`) | every tick | team 2 when all ports occupied and none by team 1, else team 1 | team 1 | [C] §12.37 |
+| Powerstation (legacy) | 4 (`powerstation.shp`) | every tick | no team change; enables its fence when all ports occupied | fence disabled at ≤ 3/4 | [C] §6.8 |
+| SafeArea (legacy) | 0 | 2.0 s | no team change; online test by entity count | — | [C] §12.35 |
 | All others (Incubator, JumpPad, Portal, SpawnLink, MasterSpawnPoint, SpawnPopulationLock, Pylon, PylonEnd, PowerSplitter, LaserFence, Wall, Tree, StaticShape, RestrictionZone, markers, PulseBomb, Fuel*, EscapeRocket, AntHill, Triffid) | — | — | team fixed by level file or creator; never recomputed | — | [C] (no ownership code) |
 
 ### 3.8 Damage and destruction
@@ -704,7 +708,7 @@ stateDiagram-v2
     state Active {
         [*] --> Burst
         Burst --> Burst : every 0.2 s request 1 spirit while counter below N
-        Burst --> Pause : counter reaches N = int(20 x handicap), timer 10 + syncfrand(5)
+        Burst --> Pause : counter reaches N = int of 20 x handicap, timer 10 + syncfrand of 5
         Pause --> Burst : timer elapsed
         Burst --> Locked : PopulationLocked
         Pause --> Locked : PopulationLocked
@@ -758,7 +762,7 @@ Projectile characteristics (owned by [04](04_crates_powerups_and_weapons.md)/[02
 | TurretShell | 500 u/s straight | 0.6 s in MP (≈ 300 u); Darwinia 0.5/0.5/1.0/1.5/2.0 s by armour research 0–4 | each enemy entity whose `RayHit` intersects the swept segment: `ChangeHealth(−15, DamageTypeTurretShell)`, knock-back 20 u/s + airborne; Tree/AntHill/Triffid buildings −2; kills credited to the turret (`RegisterKill`) and team; MP shell team = turret team |
 | Rocket | starts 50 u/s, ×1.2 per tick until ≥ 150 | 1.0 s or ground/building contact | `Bang(pos, 15, 25, team, turretId)` |
 | Grenade (mortar) | ballistic, level `force` | explodes on impact (life 1000) | power 25 → `Bang(pos, 12.5, 50, team)` |
-| Fireball | 100 u/s | 1.0 s; radius `20 · min(1, |1 − life|)` | each Darwinian in radius once: `FireDamage(30 · radius/dist · max(1, life))` |
+| Fireball | 100 u/s | 1.0 s; radius `20 · min(1, abs(1 − life))` | each Darwinian in radius once: `FireDamage(30 · radius/dist · max(1, life))` |
 | Subversion laser | 125 u/s | Darwinia laser-research lifetime (0.2, 0.4, 0.6, 0.8, 1.0 s for level 0–4) × 2 | mind-control laser (converts) — MP laser research level is [U] (03-U4) |
 
 **Firing cadence.** Barrel *i* fires only if **port *i*** is occupied. `PrimaryFire` returns immediately while `m_fireTimer > 0`; otherwise it examines `m_nextBarrel` and the next one (one barrel for Rocket), firing each manned barrel, and sets `m_fireTimer = reload` after a shot (the second barrel in the same call still fires). `m_fireTimer` is decremented by `SERVER_ADVANCE_PERIOD` before `PrimaryFire` in the same tick. Every examined manned barrel consumes three synced random numbers (mortar scatter, computed for all types) plus the cartridge-ejection draws. [C] `GunTurret::Advance`, `GunTurret::PrimaryFire`.
@@ -882,7 +886,7 @@ Source: `code/worldobject/radardish.{h,cpp}`. **[B:FULL]** (the D3D vertex-decla
 | Shape | per-instance copy of `radardish.shp` (colours changed per team); fragments `Dish` (pitch) and `UpperMount` (yaw); markers `MarkerFocus` (beam origin), `MarkerTeleportEntrance`; 2 lights; no ports | [C] ctor |
 | Ownership | no own capture logic; in MP set by a linked **ControlStation** via `SetTeamId(winner)` (§5.4). MP dishes are placed neutral except two team-0 dishes in `mp_assault_2p_3` (auto-connected, with level option `forceradarteammatch`). On team change in MP the shape copy is recoloured to the team colour (white when neutral) | [C] `RadarDish::Advance`, `ControlStation::RecalculateOwnership`, data |
 | Aiming | `Aim(worldPos)`: if the dish has a valid-link list **and** `m_forceConnection`, the request is ignored unless the ray from the focus towards `worldPos` hits (ray–sphere on centre/radius) one of the listed dishes with terrain visibility. Otherwise store `m_target`, clear both alignment flags, sound `BeginRotation`. Aim requests come from the network command `NET_DARWINIA_AIMBUILDING` (accepted only if the dish's team equals the commanding team) and from the AI; humans can only select their own dish, and not at all with level option `noradarcontrol` | [C] `RadarDish::Aim`; `code/network/clienttoserver.cpp:ClientToServer::ProcessServerUpdates` (≈L2684); `code/location_input.cpp`; `code/worldobject/ai.cpp` |
-| Rotation | yaw first: axis = currentFront × targetFront (horizontal); `axis.y /= 4`; while `|axis.y| > π/3000`, `UpperMount.angVel.y = sign(axis.y)·sqrt(|axis.y|)`; then pitch: target direction y clamped to [−0.2, +0.3], `Dish.angVel = Dish.transform.r × (worldMat.u · targetFront)` until `|angVel| < 0.001`; both integrated with dt. Sounds `BeginRotation`, `EndRotation` | [C] `RadarDish::Advance` |
+| Rotation | yaw first: axis = currentFront × targetFront (horizontal); `axis.y /= 4`; while `abs(axis.y) > π/3000`, `UpperMount.angVel.y = sign(axis.y)·sqrt(abs(axis.y))`; then pitch: target direction y clamped to [−0.2, +0.3], `Dish.angVel = Dish.transform.r × (worldMat.u · targetFront)` until `abs(angVel) < 0.001`; both integrated with dt. Sounds `BeginRotation`, `EndRotation` | [C] `RadarDish::Advance` |
 | Connection test (every tick once a target exists) | among all other RadarDishes: the ray from this focus along the focus front must hit the other's bounding sphere, the other's dish front must face back (`dot < 0`), focus-to-focus terrain visibility (`Location::IsVisible`), the nearest such dish wins, and it must pass `ValidReceiverDish` | [C] |
 | `ValidReceiverDish(id)` | in the MP tutorial building 11 is never valid; with `forceradarteammatch`: receiver team must equal ours; else if the valid-link list is empty any dish is valid, otherwise only listed ids | [C] |
 | Connected state | `m_receiverId`, `m_range` (focus-to-focus distance), `m_signal = 1`; `Connected() = receiver ≠ −1 && signal > 0`; `ReadyToSend = Connected && m_timeSync ≤ 0`. Transitions play `ConnectionEstablished` / `ConnectionLost` and set `GlobalBuilding.m_link` | [C] |
@@ -961,7 +965,7 @@ Source: `code/worldobject/jumppad.{h,cpp}`. **[B:FULL]** (trajectory preview [B:
 | Behaviour | `m_launchTimer −= dt`; when ≤ 0 → `m_launchTimer = 0.3`; launch vector = `m_front` rotated about `m_front × up` by `m_angle` (radians), length `m_force`; every Darwinian from the entity grid within `JUMPPAD_RADIUS` **40** that is on the ground and not `StateInsideArmour` gets `vel = launch`, `m_onGround = false`, `StateIdle`, waypoint cleared, orders cleared | [C] `JumpPad::Advance` |
 | Note | does **not** call `Building::Advance` (no port evaluation; `m_destroyed` never honoured) | [C] |
 | Damage | indestructible | [C] |
-| Rendering | animated arrow strip (`icons/thickarrow.bmp`) 80 long, ±20 wide, brightness `0.3 + 0.7·|sin(g_gameTime)|` (render clock) | [C] `RenderAlphas` |
+| Rendering | animated arrow strip (`icons/thickarrow.bmp`) 80 long, ±20 wide, brightness `0.3 + 0.7·abs(sin(g_gameTime))` (render clock) | [C] `RenderAlphas` |
 | Mode usage | 23 placed in 3 official maps: Assault `mp_assault_2P_2` (3), Blitzkrieg `mp_blitzkrieg_2P_3` (2), Domination `mp_skirmish_3P_1` (18); force 76.17–227.38, angle 0.51–1.08 rad | [C] census, data |
 
 | # | Field | Type | Default | Meaning | Write |
@@ -1008,7 +1012,7 @@ flowchart LR
 | Assault knock-out rule | in Assault, if the panel has a starting team and is now owned by a **different** team, all its ports are deleted → next evaluation sets it neutral and it never produces again (attackers permanently knock out defender panels) | [C] `SolarPanel::Advance`; [I] design intent |
 | Start of game | `Location::InitialiseTeam` spawns one Darwinian per port on every SolarPanel owned by the team and evaluates ownership | [C] |
 | Defect | empty panels re-fire `ChangeTeam` every tick (§3.9) | [C] |
-| Rendering | status lights green/red; when occupied and owned, 4 glow quads (60 × 40) pulsing `0.5 + 0.5·|sin t|` in team colour (Darwinia blue (100,100,250)) | [C] `RenderPorts`, `RenderAlphas` |
+| Rendering | status lights green/red; when occupied and owned, 4 glow quads (60 × 40) pulsing `0.5 + 0.5·abs(sin t)` in team colour (Darwinia blue (100,100,250)) | [C] `RenderPorts`, `RenderAlphas` |
 | Mode usage | 16 official maps: Rocket Riot 7/7, Assault 5/8, Blitzkrieg 3/7, Domination 1/9 (`mp_domination_2P_1`); 225 lines | [C] census |
 | Level fields | `powerLink` (§6.1) | [C] |
 
@@ -1318,14 +1322,29 @@ stateDiagram-v2
     Regrowing --> Burning : fireDamage above 50, m_onFire = -m_onFire
     Burning --> Regrowing : Extinguisher crate, m_onFire = -m_onFire
     Regrowing --> Healthy : m_onFire reaches 0
-    note right of Healthy : leaf drop, spirit drop and propagation run while -0.3 < m_onFire <= 0
+    note right of Healthy : leaf drop, spirit drop and propagation run while m_onFire is in the range -0.3 to 0
 ```
 
 Orthogonal corruption sub-state: `Normal → Corrupted (timer −10) → Evil (after 10 s) → [burn-out] → Normal`; level-placed `evil = 1` trees start Evil and are only cleansed by burning if also corrupted (they are not), so they stay evil. [C].
 
 Sounds: `CreateNormal`, `CreateEvil`, `CreateMagic` (chosen in `Initialise`: evil → CreateEvil, spiritDropRate > 0 → CreateMagic, else CreateNormal), `Burn` (looping; stopped with `StopAllSounds(id, "Tree Burn")`), plus base `Create`, `Damage`. [C] `Tree::ListSoundEvents`, `Tree::Initialise`.
 
-**Rendering summary** (→ [24](24_rendering.md)) [C] `Tree::RenderAlphas`: everything in the alpha pass (`PerformDepthSort` at `m_pos + hitC·m_height`); `textures/tree.bmp`, additive blend, cull off, depth write off; transform `Matrix34(m_front, up, m_pos)` × `actualHeight`; branch list in branch colour then (unless Christmas mod or evil) leaf list in leaf colour. Sway = breathing scale `1 + sin((realTime + uniqueId·2)·2) × 0.003` (evil 0.01). Magic trees pulse the leaf blue channel. Evil: black branches (0,0,0,200), no leaves. Corrupting: drawn twice (darkening pass + silhouette). Burning: branches scaled to black by `min(m_onFire × 10, 1)`, leaves fading, 4 additive starburst billboards (0.8,0.2,0.1, alpha 0.5 × actualH/height), fire particles `int(actualHeight/12) / RenderBuildingDetail` per tick (unsynced). Regrowing: leaves invisible while |m_onFire| > 0.5. Christmas mod (`Location::ChristmasModEnabled`): branches (180,100,50), no leaves. `RenderTreeDetail` pref (default 1) > 1 boosts leaf alpha ×1.3^detail. D3D bakes colour into the display list ([B:D3D]). `Location::FlushOpenGlState` deletes tree display lists; regenerated lazily.
+**Rendering** (→ [24](24_rendering.md)) [C] `Tree::RenderAlphas`, `Tree::Render`:
+- `Render` draws nothing; all drawing is in the alpha pass (`PerformDepthSort` returns true with sort centre `m_pos + hitC·m_height`).
+- State: `GL_TEXTURE_2D` on, texture `textures/tree.bmp` (loaded with alpha), MAG `GL_LINEAR`, MIN `GL_LINEAR_MIPMAP_LINEAR`; blend `SRC_ALPHA, ONE` (additive); cull off; depth write off. Transform = `Matrix34(m_front, up, m_pos)` × uniform scale `actualHeight`. Draw the branch list with the branch colour, then (unless Christmas mod or evil) the leaf list with the leaf colour. Restore: depth write on, cull on, blend `SRC_ALPHA, ONE_MINUS_SRC_ALPHA`, texture off, blend off.
+- Sway: `actualHeight *= 1 + sin((realTime + uniqueId·2)·2) × 0.003` (evil: 0.01) — a breathing scale, not per-branch animation (a per-branch wobble is commented out).
+- Magic tree (spiritDropRate > 0): leaf blue channel pulses `B = B·f + 255·(1 − f)`, `f = abs(sin(realTime + uniqueId·10))`.
+- Evil: branch colour (0,0,0,200), leaves hidden, normal alpha blend (dark silhouette).
+- Corrupting (timer ≤ 0, not yet evil): rendered **twice** in one call — pass A darkens branch RGB and alpha by `factor = (10 + timer + prediction)/10` and leaf alpha × (1 − factor); pass B (recursive call) draws the black silhouette with branch alpha `200 × factor`.
+- Burning: alpha blend; branch RGB scaled towards black by `min(m_onFire × 10, 1)`, branch alpha 255; leaves black with alpha × (1 − m_onFire); plus 4 camera-facing `textures/starburst.bmp` billboards with depth test off, colour (0.8, 0.2, 0.1, 0.5 × actualH/height), centre `m_pos + (sin(2g + i)·i·1.7, 0.8·actualH + cos(2g + i), cos(2g + i)·i·1.7)` with g = game time, half-size `max(2·actualH, 5)`.
+- Regrowing: leaves invisible while abs(m_onFire) > 0.5, else alpha × (1 − 2·abs(m_onFire)).
+- Christmas mod (`Location::ChristmasModEnabled`): branches (180, 100, 50), no leaves.
+- `RenderTreeDetail` preference (default 1, not exposed in the graphics options UI): if > 1, leaf alpha × 1.3^detail (capped 255) at generation. Fire particles per tick = `int(actualHeight/12) / RenderBuildingDetail` (`Particle::TypeFire`, unsynced `frand`: position radius `frand(0.6h)`, height `0.7h + 0.3·frand(h)`, random yaw, size `2h·(1 + sfrand(0.5))`).
+- [B:D3D]: the colour is baked into the display list (`glColor4ubv` inside `GenerateBranches/GenerateLeaves`), so runtime colour changes do not apply under D3D except via the global colour.
+- `Location::FlushOpenGlState` deletes all tree display lists (e.g. on video-mode change); they are regenerated lazily on the next `RenderAlphas`. [C] `code/location.cpp:Location::FlushOpenGlState`.
+- Debug: `RenderHitCheck` draws both hit spheres under `DEBUG_RENDER_ENABLED` (call commented out in `Render`).
+
+Determinism notes (→ [22](22_determinism_and_networking.md)): geometry RNG is the unsynced global LCG, deterministic only because every pass reseeds it — any other consumer of `frand()` (fire particles in `Tree::Advance`) shares that state, harmless only because generation reseeds first [I]; the simulation crown sphere is derived from the generated geometry with `iv_sqrt`-based `Normalise`/`Mag` in double precision, so a re-implementation must reproduce the generator bit-exactly on all peers or treat the hit sphere as data [I]; synced draws: spirit drop, team choice, spawn timer, propagation offsets, offspring seed/height, evil kill roll, Zombie launch, corruption timer; offspring height uses `volatile` temporaries to fix evaluation order (source comment) [C]; `RenderTreeDetail`/`RenderBuildingDetail` alter visuals only and `SetDetail ≠ 1` is forbidden to protect sync [C].
 
 **Mode usage**: official maps Domination 9/9, KOTH 9/9, CTS 8/9, Assault 5/8, Blitzkrieg 4/7, Rocket Riot 4/7 (39 maps). [C] census.
 
@@ -1392,7 +1411,7 @@ It consumes the synced RNG every idle tick, so it is part of the deterministic R
 
 ```mermaid
 stateDiagram-v2
-    Idle --> Erupting : syncrand mod 1000 == 0, timer 3 + syncfrand(4)
+    Idle --> Erupting : syncrand mod 1000 == 0, timer 3 + syncfrand of 4
     Erupting --> Idle : timer reaches 0
 ```
 
@@ -1524,7 +1543,7 @@ Damage: none at this level (base `Damage`; `HandleCollision` empty). Hit tests: 
 
 ### 8.4 Statue
 
-Source: `code/worldobject/statue.{h,cpp}`. **[B:FULL]**, created only at runtime in Capture the Statue (`TypeStatue` is blocked for level placement; one dev line in `mp_sandbox_all` is dropped). [C] `code/multiwinia.cpp` CTS block, census.
+Source: `code/worldobject/statue.{h,cpp}`. **[B:FULL]**, created only at runtime in Capture the Statue (`TypeStatue` is blocked for level placement; the one dev line in `mp_sandbox` is dropped). [C] `code/multiwinia.cpp` CTS block, census.
 
 | Aspect | Specification | Ref |
 |---|---|---|
@@ -1689,7 +1708,7 @@ classDiagram
     }
 ```
 
-**Fuel flow.** Surges reach a FuelGenerator from a PylonEnd (§6.4). On Rocket Riot maps the chain is SolarPanel → (SolarPanel…) → PowerSplitter → team Pylon… → PylonEnd → FuelGenerator → FuelPipe(s) → FuelStation → EscapeRocket; each team has its own generator, 3 stations (each station's `fuelLink` = the rocket id) and a rocket. [C] `data/levels/mp_rocketriot_2P_4.txt`, `code/worldobject/generator.cpp:PylonEnd::TriggerSurge`.
+**Fuel flow.** Surges reach a FuelGenerator from a PylonEnd (§6.4). On Rocket Riot maps the chain is SolarPanel (one or more, daisy-chained) → PowerSplitter → team Pylon (one or more) → PylonEnd → FuelGenerator → FuelPipe (one or more) → FuelStation → EscapeRocket; each team has its own generator, 3 stations (each station's `fuelLink` = the rocket id) and a rocket. [C] `data/levels/mp_rocketriot_2P_4.txt`, `code/worldobject/generator.cpp:PylonEnd::TriggerSurge`.
 
 | Aspect | Specification | Ref |
 |---|---|---|
@@ -1759,7 +1778,7 @@ Per-state behaviour (MP) [C] `EscapeRocket::Advance*`:
 - **Ready**: the Darwinia launch-pad attacker spawner (buildings 18/51/52/54 must be team-0 spawn points and `countdown > 95`) cannot trigger in MP; `SetupAttackers`; `countdown −= dt`; at ≤ 0 → Countdown with `countdown = 10` (**10 s in Ready**).
 - **Countdown**: `countdown −= 0.5 × dt` (half speed: **20 s** of game time for the displayed 10 → 0), clamped ≥ 0; `SetupAttackers`; exactly 0 → Flight.
 - **Flight**: `thrust = max(2·sqrt(y − ground), 0.1)`; `vel = (0, thrust, 0)`; `pos += vel × dt` (rendered with velocity prediction). Not protected from damage (`Damage` only excludes Exploding) — a flight rocket damaged past 100 would explode and later return to Refueling in mid-air [I] (P02 contradiction 13).
-- **Exploding**: per tick `damage −= 0.1` (on top of the general 0.033 decay → 1.33/s); fuel −0.5/tick (5/s) down to 50% of `m_fuelBeforeExplosion`; one passenger ejected per tick from a random window as an own-team Darwinian with outward velocity 10–40 (50% set on fire, synced); shape debris while fuel > 0; 3 fire + 3 smoke particles per tick (synced sizes); once passengers = 0 and fuel at its minimum an extra `damage −= 0.2`/tick; at `damage ≤ 0` → damage 0, `m_currentLevel = 0`, `m_spawnCompleted`, Refueling (passengers must be re-loaded; fuel must again reach 95). Typical exploding duration ≈ 35 s from 100 damage [I].
+- **Exploding**: per tick `damage −= 0.1` (on top of the general 0.033 decay → 1.33/s; resolved: P02 gave 1/s, but `EscapeRocket::Advance` applies its 0.33/s decay in every state including Exploding); fuel −0.5/tick (5/s) down to 50% of `m_fuelBeforeExplosion`; one passenger ejected per tick from a random window as an own-team Darwinian with outward velocity 10–40 (50% set on fire, synced); shape debris while fuel > 0; 3 fire + 3 smoke particles per tick (synced sizes); once passengers = 0 and fuel at its minimum an extra `damage −= 0.2`/tick; at `damage ≤ 0` → damage 0, `m_currentLevel = 0`, `m_spawnCompleted`, Refueling (passengers must be re-loaded; fuel must again reach 95). Typical exploding duration ≈ 35 s from 100 damage [I].
 - Every tick after the state step: `SetupSounds()` (ambience by state: Refueling → `Refueling` if level > 0.2 else `Unhappy`; Loading…Countdown → `Happy`; `Malfunction` whenever damage ≥ 75; Exploding → `Malfunction` if fuel > 0 else `Unhappy`; Flight → `Flight`; `EngineBurn` loop in Ready/Countdown/Flight); camera shake decays; in Ready/Countdown/Flight 15 booster particles per tick (11 `TypeMissileFire`, 4 `TypeMissileTrail`, size 500, unsynced). Glow sprites (`textures/starburst.bmp`) with alpha = fuel/100.
 
 ```mermaid
@@ -1889,7 +1908,7 @@ Spawn types (`Triffid::Spawn*`, level flags in this order): 0 `SpawnVirii`, 1 `S
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Waiting : timer = now + rand(reload) + 10
+    [*] --> Waiting : timer = now + random share of reload + 10
     Waiting --> Armed : useTrigger 0, or enemies in trigger circle (checked every 5 s)
     Armed --> Waiting : trigger circle empty
     Armed --> Launching : now passes timer and eggs remain (MP budget 3)
@@ -2474,7 +2493,7 @@ All values [C] unless marked; "literal" = hard-coded number, `#define` = macro. 
 | MultiwiniaZone | Blitzkrieg neutral decay | `10 × dt` per recount | points | literal | same |
 | MultiwiniaZone | under-attack message throttle | 20.0 | s | literal | same |
 | CarryableBuilding | ownership radius / period | 50 / 1.0 s | — | literal | `CalculateOwnership` |
-| CarryableBuilding | speed | `16 × (lifters/max) × speedScale × |sin t|` | u/s | literal | `Advance` |
+| CarryableBuilding | speed | `16 × (lifters/max) × speedScale × abs(sin t)` | u/s | literal | `Advance` |
 | CarryableBuilding | vote threshold / waypoint reach | > 0.66 × lifters / 10 | — / wu | literal | `Advance`, `FollowRoute` |
 | CarryableBuilding | carry ring angle | `uniqueId × 123.467` rad, offset `vel × 0.5` | — | literal | `GetCarryPosition` |
 | Statue | lifters / radius | 20–50 / 33 | — | literal | `Statue` |
@@ -2561,3 +2580,459 @@ Numbered for reference from [22](22_determinism_and_networking.md) and [41](41_r
 | 32 | Legacy null dereferences / division by zero: Powerstation link, TrackEnd building, DynamicHub `requiredScore/minActiveLinks` | no | [C] | — |
 | 33 | ResearchItem and Spam mutate orientation in `Render` (used by `Advance`) and use unsynced RNG in constructors | no | [C] | — |
 
+## Open questions and unknowns
+
+| ID | Question | Tag | What would resolve it |
+|---|---|---|---|
+| 03-U1 | Exact composition of `Team::m_others` (which entity types count against the PopulationCap used by SpawnPoint, TrunkPort and AntHill `PopulationLocked`) | [U] | read `code/team.cpp` (`Team::NewEntity` / `m_others` insertion) — owned by [05](05_economy_and_population.md) |
+| 03-U2 | Whether every building is advanced exactly once per 0.1 s tick (all 10 slices of `NUM_SLICES_PER_FRAME` processed every tick) | [I] | `code/lib/slice_darray.h:GetNextSliceBounds` and the main-loop slice driver ([21](21_simulation_and_entity_model.md)) |
+| 03-U3 | Whether the GameTypes-none dev maps (`mp_sandbox`, `mp_sandbox_all`) can be opened from the shipped UI, making ControlTower and Incubator reachable | [U] | map-list construction in the game menu ([09](09_meta_systems.md)) |
+| 03-U4 | Multiplayer research level of `TypeLaser` (subversion-laser lifetime) | [U] | callers of `Multiwinia::SetGameResearch` and the MP research table |
+| 03-U5 | Origin and lifetime of `Darwinian::m_subversionTaskId` (turns Standard turret shots into subversion lasers) | [U] | crate/task code ([04](04_crates_powerups_and_weapons.md)) |
+| 03-U6 | How Darwinians react to `GunTurretTarget` (flee radius and trigger) | [U] | `Darwinian::SearchForThreats` ([02](02_units_and_entities.md)) |
+| 03-U7 | Behaviour when a mandatory level-file token is missing (`GetNextToken` returning NULL/empty passed to `atoi`/`iv_atof`) | [U] | `TextReader::GetNextToken` ([29](29_data_formats_reference.md)) |
+| 03-U8 | Whether any `GlobalBuilding` records exist during Multiwinia matches (so that `m_isGlobal` touch points are truly inert) | [I] | `GlobalWorld` setup on Multiwinia start ([20](20_architecture.md)) |
+| 03-U9 | Whether the six SmokeMarkers of `mp_assault_3p_1` (invisible 13-unit obstacles) sit on walkable routes | [U] | plot marker positions against the map's AITargets/routes or run the map |
+| 03-U10 | Whether the Randomiser can hand Darwinians to an unused team slot (`syncrand() % NumPlayers`) and what `SpawnEntities` does for an unused team | [U] | `Location::SpawnEntities` and team initialisation for unused slots |
+| 03-U11 | Design intent of dividing PopulationCap by the level's `NumPlayers` rather than by playing teams | [U] | design decision; see [05](05_economy_and_population.md) |
+| 03-U12 | Visual/collision impact of the unrotated tree crown sphere (hit centre ignores `m_front`) | [U] | reproduce the generator numerically for sample trees |
+| 03-U13 | Effective rocket damage per Darwinian attack (grenades aimed 50 above the rocket base but damage measured to the base) | [I] | simulate `Location::ThrowWeapon` ballistics with grenade bounces and fuse 3 s against the rocket position |
+| 03-U14 | Whether the per-tick `ChangeTeam` events of empty solar panels and of level templates are audible | [U] | `data/sounds.txt` bindings for `SolarPanel ChangeTeam` and generic building `ChangeTeam` ([10](10_audio_design.md)) |
+| 03-U15 | Exact 10-vs-11-tick pattern of the `GetNetworkTime() > t + 1.0` recount timers | [I] | replay the double accumulation of `m_gameTime += 0.1` |
+| 03-U16 | Design intent of the Assault SolarPanel knock-out (ports deleted when captured from the starting team) | [I] | design documentation or play-testing; code behaviour is [C] |
+| 03-U17 | Whether shipped `isGlobal 1` MasterSpawnPoints (11 `mp_*` files, visible) differ in behaviour from `isGlobal 0` ones beyond rendering | [I] | `MasterSpawnPoint::Advance` shows the only global-specific branch is single-player; confirm no other reader of `m_isGlobal` for masters |
+
+## Docs-vs-code discrepancies
+
+| Doc | Claim | Code reality | Ref |
+|---|---|---|---|
+| `docs/spirit resource system.txt` (Darwinia design note) | spirits of dead enemies are collected and used by factories to spawn units | Multiwinia spawn points use virtual master-emitted spirits; collected-spirit production exists only via Engineers/Harvesters delivering to spawn points and in legacy Factory/Incubator code | [C] `code/worldobject/spawnpoint.cpp`, `factory.cpp`, `incubator.cpp` |
+| `docs/multiwiniachanges-beta.txt` (issue 756) | "Gun turret/Incubators emplacements shared by friendly teams don't fire/spawn" (bug report) | GunTurret ownership explicitly allows allied co-occupation (`IsFriend` check); the turret fires for the winning ally | [C] `GunTurret::RecalculateOwnership` |
+| `docs/multiwinia-changes.txt` | "Virii no longer count towards your population limit" | consistent: population = `m_others.NumUsed() − Virii::s_viriiPopulation` | [C] `SpawnPoint::PopulationLocked` |
+| `docs/game objects.txt` "Tree / forest" | "acts as an obstacle to anything in the air, but can be walked through" | ground units are pushed out of the trunk and crown spheres — trees block walking | [C] `Darwinian::PushFromObstructions`, `Entity::PushFromObstructions` |
+| `docs/game objects.txt` "Tree / forest" | "? spawn seeds which sprout into new trees ?" (speculative) | implemented (`CreateAnotherTree`) but only crate-created trees and their offspring have a spawn budget; level trees never spread | [C] `Tree::CreateAnotherTree`, `Crate::GenerateTrees` |
+| `docs/game objects.txt` "Laser Fence" | "can only be shut down by disconnecting / destroying power source" | in Multiwinia a fence keeps its level mode unless it is solar-linked (then it drops 5 s after the last friendly surge); fences are indestructible | [C] `LaserFence::Advance` |
+| `docs/game objects.txt` "Wall" | "can be blown up with enough force" | matches: a single hit ≤ −300; in FULL only WallBuster paths reach it | [C] `Wall::Damage`, §7.2 |
+| `docs/new building docs.txt` FenceSwitch | mentions "Pylon 1 / Pylon 2" values for passing on power surges | `FenceSwitch` has no pylon fields or surge handling (reads 2 fence links, switchValue, lockable, script, locked) | [C] `code/worldobject/switch.cpp:FenceSwitch::Read` |
+| `contrib/systemiv/lib/math/random_number.h` comment | `sfrand`: "−range < result < range" | returns [−range/2, range/2] | [C] (P07) |
+| `docs/multiwinia_manual.pdf` (Assault) | "sabotage the three control stations" | 3–4 linked stations per official map | [C] level files |
+| `docs/multiwinia_manual.pdf` (Rocket Riot) | an explosion burns "all the fuel and all the Multiwinians inside, re-setting the rocket to its starting point" | MP: fuel burns down to 50% of its pre-explosion value; passengers are ejected (50% set on fire, the rest survive); the rocket returns to Refueling | [C] `EscapeRocket::AdvanceExploding` |
+| `docs/multiwinia_manual.pdf` (CTS) | a shattered statue "re-appears randomly in one of the Statue Zones" | respawn after a randomised timer at the neutral zone farthest from existing statues (random only when none exist) | [C] `code/multiwinia.cpp` CTS block ([01](01_game_modes.md)) |
+| source comment in `building.h` | "When you add an entry here remember to update building.cpp" | consistent (75 names for 75 values) | [C] |
+
+## IP items
+
+| Item | Kind | Ref | Neutral placeholder |
+|---|---|---|---|
+| "Darwinian(s)", "Multiwinian(s)" | name | `Entity::TypeDarwinian`, UI strings | "Sprite" / "worker unit" |
+| "Multiwinia", "Darwinia" | brand | `Multiwinia::*`, `App::GameModeMultiwinia` | "<Game>" / "legacy campaign" |
+| "Futurewinian" team, "Evilinian" | name | `Location::GetFuturewinianTeamId`, `GunTurret::RecalculateOwnership`, `Tree::Advance` | "Vanguard faction" / "Rogue faction" |
+| "The Beast" (Portal crate), Tentacle | name | `Crate::RunTheBeast`, `portal.cpp` | "Rift Horror" |
+| "Spawn Mania", "Hot Feet" | name | `Location::m_spawnManiaTimer`, Hot Feet task | "Spawn Surge", "Speed Boost" |
+| "Dark Forest", "Magical Forest", "Randomiser", "Ant Nest", "Triffids", "Eggs" crate outcomes | name | `code/worldobject/crate.cpp`, `taskmanager.cpp` | "Blight Grove", "Spirit Grove", "Allegiance Scrambler", "Hive", "Spore Pods", "Brood" |
+| "Trunk Port", "Pulse Bomb", "WMD", "WMD Control Panel", "Escape Rocket", "Solar Panel", "Laser Fence", "Radar Dish", "Spawn Point", "Wall Buster", "Statue" (as mode object), "Triffid", "Shaman", "Soul Destroyer", "Spam", "GodDish", "Sepulveda", "Pattern Buffer", "Blueprint Store/Console/Relay", "Control Tower", "Incubator", "Clone Lab" | name | class names and language keys `buildingname_*` | "Warp Gate", "Core Device", "Uplink Console", "Launch Vessel", "Energy Collector", "Barrier Emitter", "Relay Dish", "Spawn Node", "Breach Charge", "Relic", "Pod Plant", "Summoner", "Wraith", — (do not reuse legacy names) |
+| "Gq/s" output unit | text | `Generator::GetObjectiveCounter` | "units/s" |
+| UI/language keys: `buildingname_<Type>`, `buildingname_gunturret/rocketturret/grenadeturret/flameturret/subversionturret`, `crate_message_run_gunturret`, `crate_message_thebeast`, `crate_message_run_antnest`, `multiwinia_exclamation`, `multiwinia_cts_statuecapture`, `multiwinia_rr_refueled`, `multiwinia_rr_otherrefueled`, `multiwinia_rr_launchprep`, `multiwinia_rr_launchprepother`, `dialog_rocketunderattack`, `dialog_rocketdestroyed`, `dialog_wallbreach`, `dialog_oneminutewarning`, `dialog_pulsebombdestroyed`, `dialog_baseunderattack`, `objective_redpopulation`, `objective_output`, `objective_throughput`, `objective_totalinfection`, `objective_currentcount`, `objective_refined`, `objective_fuel`, `objective_passengers`, on-turret text "FF!" | text | per-class code | own string table |
+| Shapes (art): `spawnpointmultiwinia.shp`, `spawnpoint.shp`, `spawnlink.shp`, `masterspawnpoint.shp`, `controlpad.shp`, `battlecannonbase.shp`, `battlecannonturret.shp`, `battlecannonbarrel.shp`, `cannon_bullets.shp`, `cannon_flame.shp`, `cannon_rocket.shp`, `radardish.shp`, `controlstation.shp`, `pulsebombcontrolstation.shp`, `solarpanel.shp`, `pylon.shp`, `generator.shp`, `powerstation.shp`, `laserfence.shp`, `wall.shp`, `beachheadobstruction.shp`, `temple2.shp`, `temple3.shp`, `temple4.shp`, `rockhead.shp`, `statue.shp`, `spaceship.shp`, `carryspider.shp`, `carrystatue.shp`, `carrysquaddie.shp`, `carryglobe.shp`, `carrytelescope.shp`, `carryweights.shp`, `carrycube.shp`, `carryteapot.shp`, `carrybillboard.shp`, `wallbuster.shp`, `trunkport.shp`, `trunkport_mp.shp`, `pulsebomb.shp`, `rocket.shp`, `fuelgenerator.shp`, `fuelgeneratorpump.shp`, `fuelpipe.shp`, `fuelpipebase.shp`, `fuelstation.shp`, `anthill.shp`, `triffidhead.shp`, `aitarget.shp`, `controltower.shp`, `controltowerdish.shp`, `incubator.shp`, `clonelab.shp`, legacy `constructionyard.shp`, `constructionyardrung.shp`, `mineprimitive1.shp`, `displayscreen.shp`, `armour.shp`, `spiritreceiver.shp`, `spiritreceiverhead.shp`, `receiverlink.shp`, `spiritprocessor.shp`, `factory.shp`, `blueprintstore.shp`, `blueprintconsole.shp`, `blueprintrelay.shp`, `bridgeend.shp`, `bridgetower.shp`, `cave.shp`, `chesspiece.shp`, `feedingtube.shp`, `goddish.shp`, `library.shp`, `researchitem.shp`, `mine.shp`, `minecart.shp`, `minepolygon1.shp`, `wheel.shp`, `refinery.shp`, `tracklink.shp`, `fenceswitch.shp`, `upgrade_port.shp`, `primaryupgradeport.shp` | art | `data/shapes/` | new meshes |
+| Textures/icons: `textures/starburst.bmp`, `laser.bmp`, `cloudyglow.bmp`, `laserfence.bmp`, `laserfence2.bmp`, `radarsignal.bmp`, `glow.bmp`, `fuel.bmp`, `tree.bmp`, `triangleOutline.bmp`, `interface_grey.bmp`, `sprites/darwinian.bmp`, `icons/thickarrow.bmp`, `icons/arrow.bmp`, `icons/icon_gunturret.bmp`, `icons/icon_antnest.bmp`, `icons/icon_triffid.bmp`, `icons/icon_randomizer.bmp` | art | render code | new textures |
+| Sound event names (bindings in `data/sounds.txt`): `Create`, `Reprogramming`, `ReprogramComplete`, `ChangeTeam`, `Damage`, `Explode`, `TurnOn`, `TurnOff`, `TargetSighted`, `FireShell`, `FireFlame`, `FireGrenade`, `FireRocket`, `RegisterKill`, `BeginRotation`, `EndRotation`, `ConnectionEstablished`, `ConnectionLost`, `ExitTeleport`, `TriggerSurge`, `Operate`, `Enable`, `Spark`, `Electrocute`, `CreateNormal`, `CreateEvil`, `CreateMagic`, `Burn`, `Lift`, `Carry`, `Drop`, `CaptureStatue`, `PowerUp`, `PumpUp`, `PumpDown`, `PumpFuel`, `LoadPassenger`, `Refueling`, `Happy`, `Unhappy`, `Flight`, `Malfunction`, `EngineBurn`, `LaunchEgg`, `AddSpirit`, `SpawnEntity`, `ConnectToGod`, `DisconnectFromGod`, `CogTurn`, `AquireResearch`, `CreateResearch`, `Attack` | audio binding | `ListSoundEvents` implementations | new event ids |
+| Map file names `mp_<mode>_<n>P_<k>` and layouts; Darwinia campaign map names (`biosphere`, `containment`, `escort`, `garden`, `generator`, `launchpad`, `mine`, `pattern_buffer`, `receiver`, `sandbox`, `temple`, `yard`); prototype map names under `data/levels/old` | content / name | `data/levels/` | new maps and names |
+| Darwinia script `launchpad_victory.txt` | text/script | `EscapeRocket::AdvanceIgnition` [B:LEGACY] | — |
+| Christmas-mod tree styling | feature/art | `Location::ChristmasModEnabled` in `Tree::RenderAlphas` | optional seasonal theme |
+
+## Source map
+
+Generated by `_work/scripts/S_03_source_map.py` (every path checked against `_work/manifest.csv`).
+
+| File | Role |
+|---|---|
+| `code/worldobject/building.h` | Building class, type enum (75 values), BuildingPort |
+| `code/worldobject/building.cpp` | Building base behaviour, ports, damage, Read/Write, factory, name table, BuildingIsBlocked |
+| `code/worldobject/spawnpoint.h` | SpawnBuilding, SpawnBuildingLink, SpawnBuildingSpirit, SpawnLink, MasterSpawnPoint, SpawnPoint, SpawnPopulationLock declarations |
+| `code/worldobject/spawnpoint.cpp` | spawn network behaviour, capture, activation, population lock |
+| `code/worldobject/gunturret.h` | GunTurret constants, turret types, GunTurretTarget |
+| `code/worldobject/gunturret.cpp` | GunTurret capture, targeting, firing, damage; GunTurretTarget |
+| `code/worldobject/teleport.h` | Teleport base declaration |
+| `code/worldobject/teleport.cpp` | Teleport transit and unit re-assembly |
+| `code/worldobject/radardish.h` | RadarDish constants |
+| `code/worldobject/radardish.cpp` | RadarDish aiming, connection, transport |
+| `code/worldobject/controlstation.h` | ControlStation declaration |
+| `code/worldobject/controlstation.cpp` | ControlStation capture and bomb linking |
+| `code/worldobject/jumppad.h` | JumpPad declaration |
+| `code/worldobject/jumppad.cpp` | JumpPad launch behaviour |
+| `code/worldobject/generator.h` | PowerBuilding family declarations |
+| `code/worldobject/generator.cpp` | PowerBuilding, SolarPanel, Pylon, PylonEnd, PowerSplitter, Generator, PylonStart |
+| `code/worldobject/powerstation.h` | Powerstation declaration |
+| `code/worldobject/powerstation.cpp` | Powerstation (legacy) |
+| `code/worldobject/laserfence.h` | LaserFence modes and constants |
+| `code/worldobject/laserfence.cpp` | LaserFence behaviour, power, hit tests, rendering |
+| `code/worldobject/wall.h` | Wall declaration |
+| `code/worldobject/wall.cpp` | Wall constants, damage, hit tests |
+| `code/worldobject/tree.h` | Tree members |
+| `code/worldobject/tree.cpp` | Tree generation, fire, propagation, evil trees |
+| `code/worldobject/staticshape.h` | StaticShape declaration |
+| `code/worldobject/staticshape.cpp` | StaticShape behaviour |
+| `code/worldobject/restrictionzone.h` | RestrictionZone declaration |
+| `code/worldobject/restrictionzone.cpp` | RestrictionZone registry and IsRestricted |
+| `code/worldobject/smokemarker.h` | SmokeMarker declaration (float signature bug) |
+| `code/worldobject/smokemarker.cpp` | SmokeMarker particles |
+| `code/worldobject/eruptionmarker.h` | EruptionMarker declaration |
+| `code/worldobject/eruptionmarker.cpp` | EruptionMarker eruptions |
+| `code/worldobject/multiwiniazone.h` | MultiwiniaZone members |
+| `code/worldobject/multiwiniazone.cpp` | KOTH / CTS / Blitzkrieg zone behaviour |
+| `code/worldobject/flag.h` | Flag declaration |
+| `code/worldobject/flag.cpp` | Flag cloth rendering |
+| `code/worldobject/carryablebuilding.h` | CarryableBuilding declaration |
+| `code/worldobject/carryablebuilding.cpp` | carrying, ownership, movement |
+| `code/worldobject/statue.h` | Statue declaration |
+| `code/worldobject/statue.cpp` | Statue behaviour |
+| `code/worldobject/wallbuster.h` | WallBuster declaration |
+| `code/worldobject/wallbuster.cpp` | WallBuster breach and scuttle |
+| `code/worldobject/trunkport.h` | TrunkPort declaration |
+| `code/worldobject/trunkport.cpp` | TrunkPort population lock and rendering |
+| `code/worldobject/pulsebomb.h` | PulseBomb declaration |
+| `code/worldobject/pulsebomb.cpp` | PulseBomb countdown, capture, detonation |
+| `code/worldobject/rocket.h` | FuelBuilding family and EscapeRocket states |
+| `code/worldobject/rocket.cpp` | fuel chain and EscapeRocket state machine |
+| `code/worldobject/anthill.h` | AntHill declaration |
+| `code/worldobject/anthill.cpp` | AntHill behaviour |
+| `code/worldobject/triffid.h` | Triffid and TriffidEgg declarations, spawn enum |
+| `code/worldobject/triffid.cpp` | Triffid behaviour and egg spawning |
+| `code/worldobject/portal.h` | Portal states |
+| `code/worldobject/portal.cpp` | Portal (The Beast) behaviour |
+| `code/worldobject/randomiser.h` | Randomiser declaration |
+| `code/worldobject/randomiser.cpp` | Randomiser effect |
+| `code/worldobject/ai.h` | AITarget, AISpawnPoint declarations |
+| `code/worldobject/ai.cpp` | AITarget graph and AISpawnPoint |
+| `code/worldobject/aiobjective.h` | AIObjective, AIObjectiveMarker declarations |
+| `code/worldobject/aiobjective.cpp` | Assault objective chain |
+| `code/worldobject/controltower.h` | ControlTower declaration |
+| `code/worldobject/controltower.cpp` | ControlTower reprogramming |
+| `code/worldobject/incubator.h` | Incubator constants |
+| `code/worldobject/incubator.cpp` | Incubator spirit conversion |
+| `code/worldobject/clonelab.h` | CloneLab declaration |
+| `code/worldobject/clonelab.cpp` | CloneLab capture |
+| `code/worldobject/constructionyard.h` | ConstructionYard, DisplayScreen declarations |
+| `code/worldobject/constructionyard.cpp` | ConstructionYard, DisplayScreen (legacy) |
+| `code/worldobject/spiritreceiver.h` | receiver network and UnprocessedSpirit declarations |
+| `code/worldobject/spiritreceiver.cpp` | receiver network (legacy) |
+| `code/worldobject/spiritstore.h` | SpiritStore declaration |
+| `code/worldobject/spiritstore.cpp` | SpiritStore (legacy) |
+| `code/worldobject/factory.h` | Factory declaration |
+| `code/worldobject/factory.cpp` | Factory (legacy) |
+| `code/worldobject/blueprintstore.h` | Blueprint family declarations |
+| `code/worldobject/blueprintstore.cpp` | Blueprint family (legacy) |
+| `code/worldobject/bridge.h` | Bridge constants |
+| `code/worldobject/bridge.cpp` | Bridge (legacy) |
+| `code/worldobject/cave.h` | Cave declaration |
+| `code/worldobject/cave.cpp` | Cave (legacy) |
+| `code/worldobject/chess.h` | ChessBase, ChessPiece declarations |
+| `code/worldobject/chess.cpp` | chess prototype (legacy) |
+| `code/worldobject/feedingtube.h` | FeedingTube declaration |
+| `code/worldobject/feedingtube.cpp` | FeedingTube (legacy) |
+| `code/worldobject/generichub.h` | DynamicBase/Hub/Node declarations |
+| `code/worldobject/generichub.cpp` | dynamic objective network (legacy) |
+| `code/worldobject/goddish.h` | GodDish declaration |
+| `code/worldobject/goddish.cpp` | GodDish (legacy) |
+| `code/worldobject/spam.h` | Spam declaration |
+| `code/worldobject/spam.cpp` | Spam building (legacy) |
+| `code/worldobject/library.h` | Library declaration |
+| `code/worldobject/library.cpp` | Library (legacy) |
+| `code/worldobject/researchitem.h` | ResearchItem declaration |
+| `code/worldobject/researchitem.cpp` | ResearchItem (legacy) |
+| `code/worldobject/mine.h` | MineBuilding family and MineCart declarations |
+| `code/worldobject/mine.cpp` | mine conveyor (legacy) |
+| `code/worldobject/safearea.h` | SafeArea declaration |
+| `code/worldobject/safearea.cpp` | SafeArea (legacy) |
+| `code/worldobject/scripttrigger.h` | ScriptTrigger declaration |
+| `code/worldobject/scripttrigger.cpp` | ScriptTrigger (legacy) |
+| `code/worldobject/switch.h` | FenceSwitch declaration |
+| `code/worldobject/switch.cpp` | FenceSwitch (legacy) |
+| `code/worldobject/upgrade_port.h` | UpgradePort, PrimaryUpgradePort declarations |
+| `code/worldobject/upgrade_port.cpp` | UpgradePort family (legacy) |
+| `code/worldobject/crate.h` | INCLUDE_THEBEAST gating, crate rewards that create buildings |
+| `code/worldobject/crate.cpp` | runtime creators: RunGunTurret, RunAntNest, RunTriffids, RunTheBeast, RunRandomiser, GenerateTrees |
+| `code/worldobject/darwinian.h` | search ranges for ports and carryables |
+| `code/worldobject/darwinian.cpp` | Darwinian side of ports, carrying, building attack, fence/wall push-out |
+| `code/worldobject/entity.cpp` | Entity::EnterTeleports, PushFromObstructions (fence lethality) |
+| `code/worldobject/engineer.cpp` | Engineer bridge, tower reprogramming, spirit delivery |
+| `code/worldobject/weapons.cpp` | projectile damage to buildings |
+| `code/worldobject/armyant.cpp` | ant delivery to AntHill |
+| `code/worldobject/armour.cpp` | Armour conversion to GunTurret, fence route check |
+| `code/worldobject/lightning.cpp` | tree ignition |
+| `code/worldobject/nuke.cpp` | explosion damage to buildings |
+| `code/worldobject/meteor.cpp` | explosion damage to buildings |
+| `code/worldobject/lander.cpp` | explosion damage to buildings |
+| `code/worldobject/worldobject.h` | WorldObjectId (unsigned char team) |
+| `code/location.cpp` | building instantiation, AdvanceBuildings, Bang, IsFriend, GetTeamFromPosition, InitialiseTeam, CreateRandomCrate |
+| `code/level_file.cpp` | ParseBuildings: name lookup, global asserts, difficulty scaling |
+| `code/obstruction_grid.cpp` | building rasterisation (CalculateAll, CalculateBuildingArea) |
+| `code/multiwinia.cpp` | mode rules reading buildings; GetGameOption; s_numMultiwiniaZones; AdvanceTrunkPorts |
+| `code/gametimer.h` | SERVER_ADVANCE_PERIOD, GetNetworkTime |
+| `code/gametimer.cpp` | game clock and tick period |
+| `code/globals.h` | NUM_TEAMS, NUM_SLICES_PER_FRAME |
+| `code/team.cpp` | Team::Eliminate (trunk ports), SelectUnit (turrets) |
+| `code/taskmanager.cpp` | turret tasks, IsValidTargetArea (RestrictionZone) |
+| `code/taskmanager.h` | POWERUP_EFFECT_RANGE |
+| `code/location_input.cpp` | selection of turrets, dishes, FenceSwitch::Switch call |
+| `code/network/clienttoserver.cpp` | NET_DARWINIA_AIMBUILDING and TOGGLELASERFENCE handling |
+| `code/lib/resource.cpp` | shape loading, CreateDisplayListAsync (tree hit volume) |
+| `code/lib/universal_include.h` | BLOCK_OLD_DARWINIA_OBJECTS, INCLUDE_CRATES_ADVANCED, game-mode macros |
+| `code/particle_system.cpp` | particle types used by markers, trees, rockets |
+| `code/explosion.cpp` | shape-shattering explosions for buildings |
+| `code/script.cpp` | GodDish/Spam script commands (legacy) |
+| `code/global_world.cpp` | GlobalBuilding records, GenerateBuildingId |
+| `code/interface/buildings_window.cpp` | editor building palette honours the block list [B:EDITOR] |
+| `code/interface/tree_window.cpp` | editor ranges for tree parameters [B:EDITOR] |
+| `data/levels/level_enum.txt` | official map list (census definition) |
+| `data/multiwinia.txt` | game-option blueprints read by GetGameOption (TurretFrequency, MaxTurrets, Handicap) |
+| `data/sounds.txt` | sound bindings for building events |
+| `data/stats.txt` | entity stats referenced by building outputs |
+| `docs/game objects.txt` | design notes on trees, fences, walls (docs-vs-code) |
+| `docs/new building docs.txt` | design notes on FenceSwitch and dynamic hubs (docs-vs-code) |
+| `docs/spirit resource system.txt` | design note on spirits (docs-vs-code) |
+| `docs/multiwiniachanges-beta.txt` | beta change log: turret/incubator sharing bug report (docs-vs-code) |
+| `docs/multiwinia-changes.txt` | change log: Virii and population caps (docs-vs-code) |
+| `docs/multiwinia_manual.pdf` | player manual: Assault stations, Rocket Riot explosion, CTS respawn (docs-vs-code) |
+| `contrib/systemiv/lib/math/random_number.h` | AppRandom / sfrand used by tree generation and visual effects |
+| `data/levels/map_biosphere.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/map_containment.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/map_escort.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/map_garden.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/map_generator.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/map_launchpad.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/map_mine.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/map_pattern_buffer.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/map_receiver.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/map_sandbox.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/map_temple.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/map_yard.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/mission_biosphere_attract.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/mission_biosphere_recapture.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/mission_containment_enable.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/mission_escort_escort.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/mission_garden_liberate.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/mission_generator_enable.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/mission_launchpad.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/mission_mine_attract.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/mission_mine_demo.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/mission_mine_enable.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/mission_pattern_buffer_attract.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/mission_pattern_buffer_recapture.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/mission_receiver_recapture.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/mission_sandbox_tutorial.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/mission_temple_cutscene.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/mission_temple_recapture.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/mission_yard_enable.txt` | Darwinia campaign map/mission: building lines (census only, [B:LEGACY]) |
+| `data/levels/mp_assault_2P_1.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_assault_2P_2.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_assault_2p_3.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_assault_3P_2.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_assault_3p_1.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_assault_3p_3.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_assault_4P_1.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_assault_4P_2.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_assault_stress.txt` | dev map: Buildings block (census) |
+| `data/levels/mp_benchmark_1.txt` | dev map: Buildings block (census) |
+| `data/levels/mp_blitzkrieg_2P_3.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_blitzkrieg_2P_4.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_blitzkrieg_2p_1.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_blitzkrieg_2p_2.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_blitzkrieg_3P_1.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_blitzkrieg_3P_2.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_blitzkrieg_4P_2.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_cts_2p_1.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_cts_2p_2.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_cts_2p_3.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_cts_2p_4.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_cts_3P_2.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_cts_3p_1.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_cts_3p_3.txt` | dev map: Buildings block (census) |
+| `data/levels/mp_cts_4P_1.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_cts_4P_2.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_cts_4p_3.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_domination_2P_1.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_domination_2P_2.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_domination_3P_1.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_domination_4P_1.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_domination_4P_2.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_koth_2P_1.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_koth_2P_2.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_koth_2P_3.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_koth_2P_3b.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_koth_3P_1.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_koth_3P_2.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_koth_3P_3.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_koth_3P_4.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_koth_4P_1.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_koth_4P_3.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_koth_4P_4.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_rocketriot_2P_2.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_rocketriot_2P_4.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_rocketriot_2p_3.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_rocketriot_3P_2.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_rocketriot_3P_3.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_rocketriot_3p_1.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_rocketriot_4P_1.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_sandbox.txt` | dev map: Buildings block (census) |
+| `data/levels/mp_sandbox_all.txt` | dev map: Buildings block (census) |
+| `data/levels/mp_skirmish_2p_4.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_skirmish_3P_1.txt` | official map: Buildings block (placement, census) |
+| `data/levels/mp_tankbattle_2P.txt` | dev map: Buildings block (census) |
+| `data/levels/mp_tankbattle_3P.txt` | dev map: Buildings block (census) |
+| `data/levels/mp_tankbattle_4P.txt` | dev map: Buildings block (census) |
+| `data/levels/old/mp_assault1.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_assault_3P_1.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_cauldron.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_chess1.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_crossroads.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_crucible.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_firetop.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_gateway.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_ghosttown.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_hamburgerhill.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_kingspass.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_knightspatch.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_koth_2P_4.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_marblecanyon.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_rocketriot_2p_1.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_sabrepoint.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_shaman.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_shaman2.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_shaman_2P.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_shaman_2P_1.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_shaman_2P_2.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_shaman_2P_3.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_shaman_3P_1.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_shaman_3P_2.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_shaman_3P_3.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_silverisle.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_taintedflats.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_temple.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_thestretch.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/levels/old/mp_twistedhighlands.txt` | prototype map (old): building lines (census only, [B:LEGACY]) |
+| `data/icons/arrow.bmp` | texture used by a building class (render/collision/markers) |
+| `data/icons/icon_antnest.bmp` | texture used by a building class (render/collision/markers) |
+| `data/icons/icon_gunturret.bmp` | texture used by a building class (render/collision/markers) |
+| `data/icons/icon_randomizer.bmp` | texture used by a building class (render/collision/markers) |
+| `data/icons/icon_triffid.bmp` | texture used by a building class (render/collision/markers) |
+| `data/icons/thickarrow.bmp` | texture used by a building class (render/collision/markers) |
+| `data/shapes/aitarget.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/anthill.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/armour.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/battlecannonbarrel.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/battlecannonbase.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/battlecannonturret.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/beachheadobstruction.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/blueprintconsole.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/blueprintrelay.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/blueprintstore.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/bridgeend.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/bridgetower.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/cannon_bullets.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/cannon_flame.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/cannon_rocket.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/carrybillboard.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/carrycube.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/carryglobe.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/carryspider.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/carrysquaddie.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/carrystatue.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/carryteapot.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/carrytelescope.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/carryweights.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/cave.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/chesspiece.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/clonelab.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/constructionyard.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/constructionyardrung.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/controlpad.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/controlstation.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/controltower.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/controltowerdish.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/displayscreen.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/factory.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/feedingtube.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/fenceswitch.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/fuelgenerator.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/fuelgeneratorpump.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/fuelpipe.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/fuelpipebase.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/fuelstation.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/generator.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/goddish.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/incubator.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/laserfence.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/library.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/masterspawnpoint.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/mine.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/minecart.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/minepolygon1.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/mineprimitive1.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/powerstation.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/primaryupgradeport.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/pulsebomb.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/pulsebombcontrolstation.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/pylon.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/radardish.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/receiverlink.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/refinery.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/researchitem.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/rocket.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/rockhead.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/solarpanel.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/spaceship.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/spawnlink.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/spawnpoint.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/spawnpointmultiwinia.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/spiritprocessor.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/spiritreceiver.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/spiritreceiverhead.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/statue.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/temple2.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/temple3.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/temple4.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/tracklink.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/triffidhead.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/trunkport.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/trunkport_mp.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/upgrade_port.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/wall.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/wallbuster.shp` | shape used by a building class (render/collision/markers) |
+| `data/shapes/wheel.shp` | shape used by a building class (render/collision/markers) |
+| `data/sprites/darwinian.bmp` | texture used by a building class (render/collision/markers) |
+| `data/textures/cloudyglow.bmp` | texture used by a building class (render/collision/markers) |
+| `data/textures/darwinian.bmp` | texture used by a building class (render/collision/markers) |
+| `data/textures/fuel.bmp` | texture used by a building class (render/collision/markers) |
+| `data/textures/glow.bmp` | texture used by a building class (render/collision/markers) |
+| `data/textures/interface_grey.bmp` | texture used by a building class (render/collision/markers) |
+| `data/textures/laser.bmp` | texture used by a building class (render/collision/markers) |
+| `data/textures/laserfence.bmp` | texture used by a building class (render/collision/markers) |
+| `data/textures/laserfence2.bmp` | texture used by a building class (render/collision/markers) |
+| `data/textures/radarsignal.bmp` | texture used by a building class (render/collision/markers) |
+| `data/textures/starburst.bmp` | texture used by a building class (render/collision/markers) |
+| `data/textures/tree.bmp` | texture used by a building class (render/collision/markers) |
+| `data/textures/triangleoutline.bmp` | texture used by a building class (render/collision/markers) |
+
+## Appendix — dead/legacy code
+
+| Item | Build tag | Note | Ref |
+|---|---|---|---|
+| All 36 blocked legacy building types (§12, §6.6–6.8, §10.4) | [B:LEGACY] | compiled, dropped at level load, no live creator | [C] `Building::BuildingIsBlocked` |
+| Portal and the "The Beast" crate outcome | [B:DEBUG] | `INCLUDE_THEBEAST` only under `TARGET_DEBUG` | [C] `code/worldobject/crate.h` |
+| ControlTower, Incubator, CloneLab | [B:FULL] code, unused content | only dev/old maps | [C] census |
+| Darwinia single-player branches: SpawnPoint SP spawn formula, MasterSpawnPoint red-team objective and spirit acceleration, GunTurret SP control loss and green→yellow remap, Incubator SP timing, EscapeRocket SP refuel/ignition/script, FuelGenerator SP max surges, Tree SP regrow rate | [B:LEGACY] | `!Multiplayer()` / `IsSinglePlayer()` paths | [C] |
+| `Engineer::BeginBridge` (Bridge creation) | dead in every build | requires research ≥ 5 | [C] `code/worldobject/engineer.cpp` |
+| `Factory::RequestUnit` | dead | no caller | [C] grep |
+| `FenceSwitch::Switch` local-input path, `NET_DARWINIA_TOGGLELASERFENCE` handler | unreachable / dead | no FenceSwitch exists; no sender | [C] |
+| ChessBase piece spawning | dead | options `TotalSize`/`SizeVariance` absent | [C] |
+| `Portal::SpecialSummon`, `SummonStateLoweringPortal`, master-portal scoring in `multiwinia.cpp` | dead / [B:LEGACY] | Shaman blocked; code commented out | [C] |
+| Commented-out code: SpawnBuilding target-type check, SpawnPoint alternate team assignment, RadarDish MP `ValidReceiverDish` block and AI priority block, GunTurret "fire nonstop if enemies present", GunTurret crosshair/manual-input code, JumpPad particle ring and arrow quad, CarryableBuilding debug text, WallBuster AITarget creation, Wall sinking/falling animation and damage accumulation, LaserFence obstruction-grid recalculation, Tree per-branch wobble and hit-check render | dead | — | [C] |
+| `MultiwiniaZone::m_aiTarget` priority code; `m_life` zone expiry | dead | never assigned / only from a commented-out spawner | [C] |
+| `AIObjective::m_wallTarget` | dead | written by Walls, never read | [C] |
+| `LOCATION_EDITOR` blocks: GunTurret mortar arc, JumpPad trajectory, SpawnPopulationLock / RestrictionZone / SmokeMarker / EruptionMarker editor spheres, Triffid trajectory, editor windows (`code/interface/buildings_window.cpp`, `tree_window.cpp`) | [B:EDITOR] | no shipped target defines `LOCATION_EDITOR` | [C] |
+| `DEBUG_RENDER_ENABLED` helpers: `RenderHitCheck`, `RenderLink`, PylonStart requirement arrow, editor arrows, StaticShape placeholder sphere | [B:FULL] (compiled, debug overlay) | drawn only while editing or when called | [C] |
+| `USE_DIRECT3D`: RadarDish vertex-declaration reset, ReceiverBuilding/SpiritProcessor water-reflection skip and batched spirit rendering, Tree colour baked into display lists | [B:D3D] | secondary configuration | [C] |
+| `USE_SEPULVEDA_HELP_TUTORIAL`: ScriptTrigger phrase sequencing | [B:DEAD] | never defined | [C] |
+| `#pragma omp parallel for` in `Location::Advance` | inert | OpenMP not enabled | [C] (P06) |
+| `Building::m_timeOfDeath` | unused | never read | [C] |

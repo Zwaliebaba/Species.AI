@@ -504,7 +504,7 @@ Fixed building ids [C] `MultiwiniaHelp::AttachTutorialTo3d`; positions [C] `data
 
 Helper counts [C] `MultiwiniaHelp::CountIdleDarwinians`, `CountDarwiniansGoingHere`, `CountOfficersWithGotoHere`:
 - `idle(pos, r)` = local-team Darwinians within `r` (entity grid `GetFriends`) that are alive, on the ground and in `StateIdle`.
-- `heading(pos)` = local-team Darwinians whose current order target `m_orders` lies within 80 of `pos` (includes ones that already arrived while the order stands). [C] / [I] for the arrival reading.
+- `heading(pos)` = local-team Darwinians whose order target `m_orders` lies within 80 of `pos`. `m_orders` is not cleared when a Darwinian arrives (`AdvanceFollowingOrders` only sets `StateIdle` and `m_ordersSet = false`), so Darwinians that already arrived still count as "heading here". [C] `code/worldobject/darwinian.cpp:Darwinian::AdvanceFollowingOrders`.
 - `gotoOfficers(pos, target)` = local-team officers within 100 of `pos` with `OrderGoto` whose order position lies within 100 of `target`.
 - `selected` = `Team::m_numDarwiniansSelected`; `entity` = `Team::GetMyEntity()` (selected officer/armour/other unit).
 
@@ -778,5 +778,499 @@ All literals in code unless stated; times are wall-clock seconds (`GetHighResTim
 | T2 spawn lock | ≥ 100 spirits requested per spawn; team 0 > 200 `m_others` | literal | [C] `SpawnPoint::PopulationLocked` |
 | Control-station capture | > 2 occupants of one team | literal | [C] `ControlStation::RecalculateOwnership` |
 | Grace period length | `GRACE_TIME` 3.0 s (20.0 s under `TESTBED_ENABLED`) | `#define` | [C] `code/lib/universal_include.h` |
+
+---
+## 4 Camera animation and camera mounts
+
+The scripted camera is part of the single `Camera` class (all modes, free movement and per-frame order: [06](06_player_control_and_input.md) §camera; projection: [24](24_rendering.md)). This section specifies only what scripts, animations and level start-up use. The camera is local to each machine and never networked. [C] `code/camera.h:Camera`.
+
+### 4.1 Data model
+
+[C] `code/level_file.h:CameraMount`, `CamAnimNode`, `CameraAnimation`, `LevelFile`; `code/level_file.cpp:LevelFile::ParseCameraMounts`, `LevelFile::ParseCameraAnims`, `LevelFile::GetCameraMount`, `LevelFile::GetCameraAnimId`, `CamAnimNode::GetTransitModeId`.
+
+```mermaid
+classDiagram
+    class LevelFile {
+        +LList~CameraMount*~ m_cameraMounts
+        +LList~CameraAnimation*~ m_cameraAnimations
+        +GetCameraMount(name) CameraMount*
+        +GetCameraAnimId(name) int
+    }
+    class CameraMount {
+        +char m_name[64]
+        +Vector3 m_pos
+        +Vector3 m_front
+        +Vector3 m_up
+    }
+    class CameraAnimation {
+        +char m_name[64]
+        +LList~CamAnimNode*~ m_nodes
+    }
+    class CamAnimNode {
+        +int m_transitionMode
+        +char* m_mountName
+        +double m_duration
+    }
+    LevelFile "1" o-- "*" CameraMount
+    LevelFile "1" o-- "*" CameraAnimation
+    CameraAnimation "1" o-- "*" CamAnimNode
+    CamAnimNode ..> CameraMount : "by name or CamPosBefore"
+```
+
+| Element | Field / rule | Value | Ref |
+|---|---|---|---|
+| `CameraMount` | `m_name` | ≤ 63 characters (`CAMERA_MOUNT_MAX_NAME_LEN`), `strncpy` into `char[64]` | [C] `code/level_file.h` |
+| | `m_pos`, `m_front`, `m_up` | world units; `m_front` and `m_up` normalised on load (not orthogonalised) | [C] `ParseCameraMounts` |
+| `CamAnimNode` | `m_transitionMode` | `TransitionMove` = 0 (`Move`), `TransitionCut` = 1 (`Cut`); default Move | [C] `code/level_file.cpp` `g_transitionModeNames` |
+| | `m_mountName` | `strdup`; must name a mount defined **earlier** (same file or the mission file parsed before) unless it is `CamPosBefore`, else fatal `AppReleaseAssert` | [C] `ParseCameraAnims` |
+| | `m_duration` | double seconds, 0 ≤ d < 60, else fatal; default 1.0 | [C] same |
+| | unknown transition word | `GetTransitModeId` → −1 → fatal (the assert compares against `Camera::ModeNumModes` instead of `TransitionNumModes`; harmless) | [C] same |
+| `CameraAnimation` | `m_name` | ≤ 63 characters; looked up case-insensitively | [C] `GetCameraAnimId` |
+| Magic mount | `CamPosBefore` (`MAGIC_MOUNT_NAME_START_POS`) | the pose stored in `m_posBeforeAnim/m_frontBeforeAnim/m_upBeforeAnim` (by `PlayAnimation` or `RecordCameraPosition`); need not exist in the file | [C] `code/camera.cpp:Camera::SetTarget(char const*)` |
+
+Level-file blocks (formal grammar: [29](29_data_formats_reference.md) camera-block sections; level design use: [08](08_levels_and_level_design.md)) [C] `LevelFile::ParseCameraMounts`, `ParseCameraAnims`, `WriteCameraMounts`, `WriteCameraAnims`:
+```
+camera_mounts := "CameraMounts_StartDefinition" EOL
+                 { name px py pz fx fy fz ux uy uz EOL }
+                 "CameraMounts_EndDefinition" EOL ;
+camera_anims  := "CameraAnimations_StartDefinition" EOL
+                 { animName EOL
+                   { ("Move" | "Cut") mountName seconds EOL }
+                   "End" EOL }
+                 "CameraAnimations_EndDefinition" EOL ;
+```
+Writer formats: mounts `\t%-15s %7.2f %7.2f %7.2f %4.2f %4.2f %4.2f %4.2f %4.2f %4.2f` (front and up keep only 2 decimals), animations `\t%s`, nodes `\t\t%-8s %-15s %.2f`, terminator `\t\tEnd`. `LevelFile::SaveMapFile` (the Multiwinia map writer) writes `CameraMounts` but **not** `CameraAnimations` (`//WriteCameraAnims(_out);`), so an editor round-trip of a map drops its animations; `SaveMissionFile` writes both. [C] `code/level_file.cpp:LevelFile::SaveMapFile`.
+
+Census [C] (`OUT/_work/drafts/X1a_level_survey` data and a re-count for this document over `data/levels/mp_*.txt`): mounts `player0` 51 files, `player1` 51, `player2` 31, `player3` 13, `start` 7; every `CameraAnimations` block in all `data/levels/*.txt` (including the Darwinia `map_*`/`mission_*` files) is empty; no script uses `CamAnim`. Six `mp_*` maps define no player mounts (`mp_assault_3p_3`, `mp_assault_stress`, `mp_sandbox`, `mp_sandbox_all`, `mp_tankbattle_3P`, `mp_tankbattle_4P`). [C] P10 census.
+
+### 4.2 Live use in Multiwinia: start-of-match mounts [B:FULL]
+
+[C] `code/main.cpp:DoEnterLocation` (L1338–1345), location loop (L452–461):
+1. On level load: `SetBounds(−200, sizeX + 200, −200, sizeX + 200)` (X size reused for Z; the clamp code itself is commented out), fallback `SetTarget((maxX, 1000, maxX), (−1, −0.7, −1))`, then `SetTarget("start")` (ignored if absent), `CutToTarget()`.
+2. As soon as the local team exists (first loop iteration where `GetMyTeam()` is non-NULL, repeated after a level reset): `SetTarget("player<N>")` with `N = Location::GetTeamPosition(myTeamId)`, `CutToTarget()`. A map without that mount keeps the `start`/fallback pose.
+3. Level designers therefore author one `player<N>` mount per player position, plus optionally `start` (the view during loading/lobby).
+
+### 4.3 Animation playback state machine [B:LEGACY]
+
+[C] `code/camera.cpp:Camera::PlayAnimation`, `Camera::AdvanceAnim`, `Camera::StopAnimation`, `Camera::IsAnimPlaying`, `Camera::Advance`.
+
+- `PlayAnimation(anim)`: ignored when the animation has 0 nodes. Stores `m_anim`, node index 0, `m_animNodeStartTime = g_gameTime`, `m_modeBeforeAnim = m_mode` and the current pose into the `…BeforeAnim` fields (this is what `CamPosBefore` returns). `SetTarget(node0.mount)`; Move → `RequestMode(ModeMoveToTarget)` (captures start pose/time) then `SetMoveDuration(d0)`; Cut → `RequestMode(ModeDoNothing)` (camera holds still).
+- `AdvanceAnim()` runs first in `Camera::Advance` while `m_anim` is set: when `g_gameTime > nodeStart + node.duration`: if the **ending** node is a Cut → `CutToTarget()` (so a Cut node *holds the previous pose for its duration, then jumps*); advance the index; if another node exists: `SetTarget(next.mount)`, restart the node timer, Move → MoveToTarget with `SetMoveDuration(d)`, Cut → DoNothing; otherwise `RequestMode(m_modeBeforeAnim)` and `m_anim = NULL`.
+- `StopAnimation()`: if playing, `RequestMode(m_modeBeforeAnim)`, `m_anim = NULL` (used by `CamReset`).
+- `IsAnimPlaying()` = `m_anim != NULL` or mode == `ModeMoveToTarget` (what `WaitCam` waits on).
+- While an animation is active, the debug-camera advancer is suppressed; without an animation, the first two frames after any `RequestMode` run the debug advancer instead of the mode advancer (`m_framesInThisMode < 2`). [C] `Camera::Advance`.
+- A missing mount at play time (`SetTarget` returns false) leaves the previous target in place — no error. [C]
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> NodeMove: "PlayAnimation, node 0 is Move: save pose and mode, MoveToTarget(d0)"
+    Idle --> NodeCut: "PlayAnimation, node 0 is Cut: save pose and mode, DoNothing"
+    NodeMove --> NodeMove: "node time elapsed, next node Move"
+    NodeMove --> NodeCut: "node time elapsed, next node Cut"
+    NodeCut --> NodeMove: "node time elapsed: CutToTarget, next node Move"
+    NodeCut --> NodeCut: "node time elapsed: CutToTarget, next node Cut"
+    NodeMove --> Idle: "last node elapsed: restore previous mode"
+    NodeCut --> Idle: "last node elapsed: CutToTarget, restore previous mode"
+    NodeMove --> Idle: "StopAnimation"
+    NodeCut --> Idle: "StopAnimation"
+```
+
+### 4.4 Interpolation and scripted camera modes
+
+| Mode / operation | Requested by | Motion law (per rendered frame, `dt` = `g_advanceTime`, capped 0.25 s) | Ends | Ref |
+|---|---|---|---|---|
+| `CutToTarget` | `CamCut`, Cut nodes, level start | pose := target pose, `m_height = target.y`, re-orthonormalise | instantly | [C] `Camera::CutToTarget`, `Camera::Normalise` |
+| `ModeMoveToTarget` | `CamMove`, `CamBuildingApproach`, Move nodes, `RestoreCameraPosition(false)` (3 s) | `f = max(0.2, (g_gameTime − start)/duration)`; `dir`, `dist` = start→target; `vmax = 2·dist/duration`; position `+= dir·vmax·2·f·dt` for f < 0.5, `+= dir·vmax·2·(1−f)·dt` for 0.5 ≤ f < 1 (triangular speed profile peaking at `2·dist/T`); orientation: `mid` = start front rotated about `start × target` by `0.5·|start × target|` rad (½·sin θ, an approximation of half the angle); `front` = normalise(lerp(start, mid, a)) then normalise(lerp(mid, target, a)) with `a` from `RampUpAndDown` (quadratic ease-in/out: `2·(2f)²/2` in the first half, `1 − (2(1−f))²` remapped in the second); `up` forced to world up every frame | at f ≥ 1: `RequestMode(ModeDoNothing)`, `front = targetFront`; **position is not snapped** | [C] `Camera::AdvanceMoveToTargetMode`; `code/lib/math_utils.cpp:RampUpAndDown` |
+| (consequence) | | The 0.2 floor makes the first 20 % of the move faster than the ideal ramp: the camera travels 1.04–1.08 × the start→mount distance along the straight line (simulated for T = 0.5–30 s at 20–144 fps by `OUT/_work/scripts/S_30_movetotarget_sim.py`; analytic limit 1.08), i.e. it overshoots the mount and is never snapped back. `CamMove m 0` gives `f = +∞` on its first advance (the request is made after that frame's camera advance), so only the orientation snaps — hence the scripts' `CamMove m 0` + `CamCut m` idiom. | | | [I] simulation of the [C] formula |
+| `ModeBuildingFocus` | `CamBuildingFocus` | `m_trackVector` (horizontal unit vector building→camera at request) rotated about Y by `−0.15·dt` rad; height `h·(1 + 0.5·sin(0.3·g_gameTime))`, radius `|r|·(1 + 0.3·sin(0.3·g_gameTime))`; target point = building centre + trackVector·radius, y = centre.y + height; ramp `mf = min(1, t_since_request)`; for the first 2 s target y `+= 0.75·|pos − target|·(2 − t)` capped at y 1000; `pos = lerp(pos, target, 0.5·mf·dt)`; `front = lerp(front, normalise(centre − pos), mf·dt)` (x and z negated when `r < 0`, i.e. look away); up rebuilt from (0,−1,0); `pos.y ≥ land + 10`; target FOV 60° at request | never (needs `CamReset` / another mode) | [C] `Camera::RequestBuildingFocusMode`, `Camera::AdvanceBuildingFocusMode` |
+| `SetTarget(focus, distance, height)` | `CamBuildingApproach` | target pos = focus + normalise(camPos − focus)·distance, y = focus.y + height; front = normalise(focus − targetPos); up = (front × worldUp) × front | — | [C] `Camera::SetTarget(Vector3 const&, float, float)` |
+| FOV easing | `CamFov … 0`, every mode | `k = dt·change·0.1`; `fov = fov·(1−k) + targetFov·k`; `change` = 30 default, 100 while the zoom key is held (target ÷ 4), 10 in `ModeSphereWorldScripted`, **1** in MoveToTarget / DoNothing / BuildingFocus (time constant 10 s — script FOV changes during moves are deliberately slow); skipped while the task manager is visible and in EntityTrack | — | [C] `Camera::AdvanceComponentZoom` |
+| `RecordCameraPosition` / `RestoreCameraPosition(cut)` | (Darwinia tutorial 2) | save pose into `…BeforeAnim`; restore by cut or by a 3 s MoveToTarget | — | [C] `Camera::RecordCameraPosition`, `Camera::RestoreCameraPosition` |
+| `ModeSphereWorldScripted` | `CamLocationFocus` | world-map orbit: height 50, focus wobble ±4000 x / ±2000 y / ±4000 z at 0.5 / 0.4 / 0.3 rad/s, front eased to `m_targetPos` | — | [C] `Camera::AdvanceSphereWorldScriptedMode` (P10 §3.8) |
+| `ModeSphereWorldFocus` | `CamGlobalWorldFocus`; main menu | FOV 100; orbit radius 100 000·(1 + 0.4·sin 0.3t) at y −110 000 + 50 000·sin 0.2t, looking at (0, 10 000, 0) | — | [C] `Camera::RequestSphereFocusMode`, `Camera::AdvanceSphereWorldFocusMode` (P10 §3.8) |
+| `ModeSphereWorldIntro` | `StartSequence` | §5.1 | sequence end | [C] `Camera::AdvanceSphereWorldIntroMode` |
+| `ModeSphereWorldOutro` | `GameOver` | FOV 70; reverse flight from the origin: speed `clamp(4·√|pos|, 1000, 2000)·62` wu/s, velocity eased toward the away-from-target direction at `dt·4000/30000`, roll `sin(0.1t + 0.4)·0.6`; target (−1 000 000, 4 000 000, 397 000), after 30 s (−965 852, 1 720 000, 2 600 000); after 70 s runs the credits loader, then `ModeSphereWorld` at (0, 0, 100) | 70 s | [C] `Camera::AdvanceSphereWorldOutroMode` |
+
+### 4.5 Script ↔ camera API mapping
+
+| Script command | Camera API | Mode after |
+|---|---|---|
+| `CamCut m` | `SetTarget(m)`, `CutToTarget()` | unchanged |
+| `CamMove m d` | `SetTarget(m)`, `RequestMode(ModeMoveToTarget)`, `SetMoveDuration(d)` | MoveToTarget → DoNothing |
+| `CamAnim a` | `PlayAnimation(anim)` | per node, then previous mode |
+| `CamFov f [i]` | `SetFOV(f)` / `SetTargetFOV(f)` | unchanged |
+| `CamBuildingFocus b r h` | `RequestBuildingFocusMode(b, r, h)` | BuildingFocus |
+| `CamBuildingApproach b r h d` | `SetTarget(centre, r, h)`, `SetMoveDuration(d)`, `RequestMode(ModeMoveToTarget)` | MoveToTarget → DoNothing |
+| `CamLocationFocus l f` | `RequestMode(ModeSphereWorldScripted)`, `SetTargetFOV(f)`, `SetTarget(locPos, (0,0,1), up)` | SphereWorldScripted |
+| `CamGlobalWorldFocus` | `RequestSphereFocusMode()` | SphereWorldFocus |
+| `CamReset` | `StopAnimation()`, `RequestMode(ModeFreeMovement or ModeSphereWorld)` | FreeMovement / SphereWorld |
+| `GameOver` | `RequestMode(ModeSphereWorldOutro)` | SphereWorldOutro |
+| `WaitCam` | polls `IsAnimPlaying()` | — |
+| abort via `PermitEscape` + `SkipCutscene` | `RequestMode(ModeFreeMovement or ModeSphereWorld)` (animation pointer not cleared) | FreeMovement / SphereWorld |
+
+Note: the escape path requests free movement without calling `StopAnimation`, so an active `CamAnim` would keep driving the camera on the next frames until its nodes end. [C] `Script::Advance`; [I] consequence.
+
+### 4.6 Authoring tools [B:EDITOR]
+
+`code/interface/camera_mount_window.cpp` and `code/interface/camera_anim_window.cpp` (both `#ifdef LOCATION_EDITOR`, which no shipped target defines): create/delete/select animations (new name `CamAnim<AppRandom() & 0x3ff>`), arm "new node" then click a mount or the `CamPosBefore` button to append a node, delete nodes by mount name, Start/Stop Preview (`PlayAnimation`/`StopAnimation`). Defect: the `CamPosBefore` button stores the string literal `MAGIC_MOUNT_NAME_START_POS` in `m_mountName`, which `~CamAnimNode` later `free()`s. [C] `code/interface/camera_anim_window.cpp:CamBeforeMountButton::MouseUp`; `code/level_file.h:CamAnimNode::~CamAnimNode`. Editor overview: [08](08_levels_and_level_design.md).
+
+---
+
+## 5 Start sequence, logo splash and demo end sequence
+
+### 5.1 First-time intro `StartSequence` [B:LEGACY] (compiled, never constructed)
+
+**Trigger.** Only `RunBootloader()` constructs it, when preference `BootLoader` equals `firsttime` (case-insensitive) — i.e. (with `USE_LOADERS`) the first launch of the **Darwinia campaign** from the front end (`CampaignButton::LoadCampaign` → `RequestBootloaderSequence`). `RunBootloader` and its call in the main loop are inside `#ifdef USE_LOADERS`, which is commented out, so `g_app->m_startSequence` is always NULL in every PC build. Afterwards the preference becomes `random` and is saved (the intro plays once). `PrefsManager::CreateDefaultValues` writes `BootLoader = firsttime` for a fresh install. There is no Multiwinia-mode intro in this tree. [C] `code/main.cpp:RunBootloader`; `code/lib/preferences.cpp` (L377); `code/lib/universal_include.h` (`//#define USE_LOADERS`).
+
+**Driver loop** — `RunBootloader` loops `{ UpdateAdvanceTime(); if (StartSequence::Advance()) break; }` [C] `code/startsequence.cpp:StartSequence::Advance`:
+1. First call per process (function-static `started`, once `now > m_startTime`): trigger music event `StartSequence` (`TypeMusic`); camera `SetDebugMode(DebugModeAuto)`, `RequestMode(ModeSphereWorldIntro)`.
+2. `PollForEvents`. If the window lacks focus: `Sleep(1)`, `UserInput::Advance()`, return false — the sequence clock (`now − m_startTime`) keeps running, so unfocused time is lost, not paused.
+3. Finish (stop `"Music StartSequence"`, return true) on `ControlSkipMessage` (Enter, Esc, XInput Start/A/B/Y — `data/input/input_preferences.txt` L32–37), on `g_app->m_requestQuit`, or when elapsed > **90 s**.
+4. Else: `UserInput::Advance`, `Camera::Advance`, `SoundSystem::Advance` (if initialised), profiler advance; blend `SRC_ALPHA, ONE`; `Renderer::Render()` (the full sphere-world render), which calls `StartSequence::Render()` as an overlay (`if (g_app->m_startSequence)` hook). Islands are not drawn in intro/outro camera modes and the promotional logo is suppressed. [C] `code/renderer.cpp:Renderer::Render` (L796); `code/global_world.cpp` (SphereWorld island early-out).
+5. After the loop `RunBootloader` deletes the sequence, cuts the camera to (1000, 500, 1000) with front (0, −0.5, −1), and saves `BootLoader = random`. [C] `RunBootloader`.
+
+**Camera flight** [C] `code/camera.cpp:Camera::AdvanceSphereWorldIntroMode` (the live definition at L369; an earlier implementation above it is commented out): target FOV 70. Own static clock. First frame (static `fixMeUp`, once per process; `ControlDebugCameraFixUp` resets it under `_DEBUG`): pos (−965 852, 1 720 000, 2 600 000), front (−1, 0, 0), up normalise(0.15, 0.93, 0.31). Look-at target (−1 000 000, 4 000 000, 397 000) for the first 30 s, then (1000, 500, 1000). `forwardSpeed = 3000`, reduced to `3000·distance/1 070 000` when distance < 2 000 000 and t > 30 s. Each frame: `front = front·(1−k) + targetDir·k` with `k = frameTime·4000/30000`; `up` rotated about `front` by `frameTime·(4000/30000)·sin(0.1t + 0.4)·1.6` rad; `pos += front·forwardSpeed·frameTime·62`.
+
+**Overlay** [C] `StartSequence::StartSequence`, `StartSequence::RegisterCaption`, `StartSequence::Render`: virtual canvas 800 × `screenH` with `screenH = 800·ScreenH/ScreenW` (600 at 4:3, 450 at 16:9), y down (`gluOrtho2D(0, 800, screenH, 0)`), cull/depth/lighting off. Caption origin x = 150, `y0 = screenH·4/5`.
+
+| Key | Content category (text is IP — not reproduced) | x | y | size | visible from (s) | to (s) |
+|---|---|---|---|---|---|---|
+| `intro_1` | publisher "presents" credit | 150 | y0 | 10 | 3 | 15 |
+| `intro_2` | game title | 150 | y0 + 15 | 20 | 8 | 15 |
+| `intro_3` | fictional "connecting to project server…" log line | 150 | y0 + 40 | 10 | 30 | 45 |
+| `intro_4` | "data stream established" log line | 150 | y0 + 50 | 10 | 42 | 45 |
+| `intro_5` | in-fiction welcome line | 150 | y0 | 10 | 54 | 65 |
+| `intro_6` | in-fiction advice about the native creatures | 150 | y0 | 10 | 66 | 74 |
+| `intro_7` | "errors detected in data stream" warning | 150 | y0 + 15 | 10 | 72 | 74 |
+| `intro_8` | in-fiction farewell naming the scientist character | 150 | y0 | 10 | 74 | 90 |
+| `intro_9` | repeat of the error warning | 150 | y0 + 15 | 15 | 82 | 90 |
+| `intro_10` | the same warning with deliberately corrupted spelling | 150 | y0 + 30 | 15 | 86 | 90 |
+
+- **Typewriter:** a caption active at time `t` (start ≤ t ≤ end) shows its first `floor((t − start)·20)` characters (20 chars/s) via `g_gameFont.DrawText2D`, colour (1, 1, 1, 0.8).
+- **Cursor:** the *last* active caption in registration order owns a block cursor at `(x + width(visibleChars, size), y − 7.25)`, size `0.7·size × 0.88·size`, same colour. Solid while typing; once the whole string is shown (`visibleCount > length`) it blinks (drawn while `fmod(t, 1) < 0.5`). No cursor when no caption is active (detected as `cursorPos == (0, 0)`).
+- **Fades:** t < 3 s black full-canvas quad α `1 − t/3` (fade in); t > 87 s white quad α `(t − 87)/2` (opaque at 89 s; the sequence ends at 90 s).
+- **Grid:** from t > 50 s, after `SetupMatricesFor3D`, a line grid in world space under `glScalef(1000)`: height −400, spacing 100, both axes from −8000 to `xEnd = 4000 − 8000·p` with `p = max(1 − (t − 50)/10, 0)` — grows from a 4000-wide to a 12 000-wide square over 10 s (final world extent −8 000 000 … +4 000 000 on X and Z at y = −400 000). Lines colour (0.5, 0.5, 1.0, 0.5), additive, `GL_LINE_SMOOTH`, depth-tested, linear fog 0 … 5 810 000 to black; afterwards `GlobalWorld::SetupFog()` and fog disabled.
+
+```mermaid
+gantt
+    dateFormat s
+    axisFormat %S
+    title StartSequence overlay (seconds)
+    section Fades
+    Fade from black      :0, 3s
+    Fade to white        :87, 3s
+    section Captions
+    intro_1              :3, 12s
+    intro_2              :8, 7s
+    intro_3              :30, 15s
+    intro_4              :42, 3s
+    intro_5              :54, 11s
+    intro_6              :66, 8s
+    intro_7              :72, 2s
+    intro_8              :74, 16s
+    intro_9              :82, 8s
+    intro_10             :86, 4s
+    section 3D
+    Grid grows then stays :50, 40s
+    Camera target switch  :milestone, 30, 0s
+```
+
+Design note: a fake boot/connection log typed onto the screen while the camera dives from deep space into the world, with escalating "data corruption" foreshadowing. Keep the *mechanism* (timed typewriter captions, cursor, fades, camera spline) data-driven; replace all text, title and character names. [I]
+
+### 5.2 Logo splash (`ShowDarwinLogo`) [B:LEGACY]
+
+Script op `ShowDarwinLogo` sets `Renderer::m_renderDarwinLogo = now` and triggers interface sound `ShowLogo`. Each frame while ≥ 0, `Renderer::Render` draws texture `icons/darwin_research_associates.bmp` as a centred square of side `0.7·H` at y = `0.05·H`: α ramps 0→1 over 3 s, holds to 8 s, ramps down to 10 s, then the timer resets to −1. Drawn first as a 3 × 3 "shadow" (offsets −4, 0, +4 px; blend `SRC_ALPHA, ONE_MINUS_SRC_COLOR`, colour (α, α, α, 0) — a darkening halo), then additively (`SRC_ALPHA, ONE`, white α). `SkipCutscene` hides it (`m_renderDarwinLogo = −1`). Used only by `launchpad_intro.txt`. [C] `code/script.cpp:Script::RunCommand_ShowDarwinLogo`; `code/renderer.cpp:Renderer::Render` (L798–860).
+
+### 5.3 Demo end sequence `DemoEndSequence` [B:DEAD]
+
+Compiled only with `USE_SEPULVEDA_HELP_TUTORIAL` (defined nowhere); `App::m_demoEndSequence` and its deletion in `GameMenu::CreateMenu` are gated too. Trigger (if compiled): script op `ShowDemoEndSequence`, used by `data/scripts/launchpad_victory.txt` (end of the Darwinia Prologue level). [C] `code/demoendsequence.cpp`; `code/app.h`; `code/game_menu.cpp`.
+
+Behaviour as written [C] `code/demoendsequence.cpp:DemoEndSequence::DemoEndSequence`, `DemoEndSequence::Render`:
+- Constructor: `m_timer = now`; first sprite after 20 s (0 s if not single-player); in single-player delete the profile's saved mission file (`<profileDir>users/<profile>/<missionFile>`) and `game_demo2.txt` (the Prologue restarts fresh next time); `g_app->m_levelReset = true`.
+- `Render()` each frame on the 800-wide canvas: full-screen white quad, α `min(0.2·t, 1)` in single-player (`min(…, 0.8)` otherwise) — fades to white over 5 s.
+- Every 3 s (first after 20 s; timer driven by `g_advanceTime` inside `Render`): a "ghost" sprite at (850, frand(screenH)) moving left at 10–20 px/s (`−10 − frand(10)`) with vertical drift `sfrand(10)` (= ±5 px/s, since `sfrand(r)` returns ±r/2), spinning at ±(0.3–0.6) rad/s, size `50 + sfrand(25)` = 50 ± 12.5; drawn as `sprites/ghost.bmp` with colour (0.8, 0.3, 0.8, 0) and blend `SRC_ALPHA, ONE_MINUS_SRC_COLOR` (a darkening silhouette on the white field) plus a 70 %-size `sprites/darwinian.bmp` in (0.3, 1, 0.3, 0.1); removed when x < −100.
+- After 20 s (single-player, narrator silent): centred prompt `multiwinia_spacetoexit` (keyboard) or `multiwinia_atoexit` (gamepad) at (ScreenW/2, 0.9·ScreenH), `g_titleFont` height `0.05·ScreenH`, outline then fill; `ControlToggleReady` → `m_requestedLocationId = −1`, `m_atMainMenu = true`.
+- A separate `DemoEndWindow` UI (buy online / exit demo / return to game buttons, 4 s exit delay, fade α cap 0.9) is compiled but instantiated only under `DEMO2` → [B:DEAD]; see [09](09_meta_systems.md). [C] `code/interface/demoend_window.cpp` (P17b/P18).
+
+### 5.4 Attract mode as a script consumer [B:DEAD]
+
+`AttractMode` (owned by [09](09_meta_systems.md)) would save the profile, switch to the special profile `AttractMode` (loads `game_unlockall.txt`, never saved), lock the task manager and run `attractmode.txt` (three Darwinia levels, mounts `attract1`…`attract6`, ≈ 171 s plus load times [I]); any input or script end runs `endattract.txt`, restores the profile and unlocks the task manager. It cannot start in any PC build (`ATTRACTMODE_ENABLED` undefined; both `StartAttractMode` bindings commented out). [C] `code/attract.cpp:AttractMode::Advance`, `StartAttractMode`, `EndAttractMode`; `data/input/input_preferences.txt` L280–287.
+
+---
+
+## 6 Dr Sepulveda dialogue system [B:DEAD]
+
+### 6.1 Build gating
+
+The whole of `code/sepulveda.{h,cpp}` and `code/sepulveda_strings.cpp` is inside `#ifdef USE_SEPULVEDA_HELP_TUTORIAL` (defined nowhere); `g_app->m_sepulveda` exists and is constructed only under that macro (`code/app.cpp` L458–460, `code/app.h` member gated), and every live call site is wrapped too (`code/script.cpp`, `code/main.cpp`, `code/taskmanager_interface_multiwinia.cpp`, `code/renderer.cpp` L662–665). Even if compiled, `Say()` returns immediately when `g_app->Multiplayer()`. [C] `code/sepulveda.cpp:Sepulveda::Say`. It is documented in full as the reference design for a narrator/advisor.
+
+`sepulveda_strings.cpp` contains only debug-trace macros (`JAL_DEBUG 0`), key-length limits `MAX_READ_KEY_LENGTH 64`, `MAX_FINAL_KEY_LENGTH 96` and a `CaptionParserMode` stream printer; the caption parser it once served is gone (`BuildCaption` copies ≤ 1023 wide characters). [C] `code/sepulveda_strings.cpp`; `Sepulveda::BuildCaption`.
+
+### 6.2 Data model
+
+| Member | Meaning | Ref |
+|---|---|---|
+| `m_caption` (UnicodeString) | line currently being "spoken" (empty = silent) | [C] `code/sepulveda.h` |
+| `m_msgQueue` (LList<char*>) | FIFO of pending phrase ids | [C] |
+| `m_timeSync` | time the current caption started (s, `GetHighResTime`) | [C] |
+| `m_fade` | text-box / face fade 0..1 | [C] |
+| `m_previousNumChars` | for the per-character typing sound | [C] |
+| `m_cutsceneMode` | cutscene layout (bigger face/text, history hidden) | [C] |
+| `m_scrollbarOffset` | history scroll (chat-log mode) | [C] |
+| `m_gestureDemo`, `m_gestureStartTime`, `m_mouseCursor` (`icons/mouse_main.bmp`) | mouse-gesture replay | [C] |
+| `m_highlights` (LList<SepulvedaHighlight*>) | named building/position light beams | [C] |
+| `m_history` (LList<SepulvedaCaption*>, newest first) | spoken lines `{stringId, timeSync}` | [C] |
+| `m_langDefines` (BTree) | OS-specific substitutions `part_leftclick` = "Left click"/"Click" (Mac), `part_rightclick`, `part_leftmousebutton`, `part_leftclicking` (unused by the current `BuildCaption`) | [C] `Sepulveda::Sepulveda` |
+| `SEPULVEDA_MAX_PHRASE_LENGTH` | 1024 | [C] `#define` |
+
+The constructor pre-caches `sepulveda/sepulveda1..5.bmp` (no mipmaps). With preference `TextLanguageTest == 1` it validates every language phrase and writes `language_errors.txt` (phrases empty after build are errors; phrases containing "gesture"/"Gesture"/"[TAB]" without an `<id>_icons` variant are warnings). [C] `Sepulveda::Sepulveda`.
+
+### 6.3 Text queue — `Say(id)` [C] `Sepulveda::Say`
+
+1. Ignored entirely in multiplayer.
+2. Variant selection (later rules override earlier): `<id>_1mb` if preference `ControlMouseButtons == 1` and that phrase exists; `<id>_icons` if `ControlMethod == 1` and it exists; `<id>_demogame` if `!IsFullVersion()` and it exists; else `<id>`.
+3. Empty id → ignored. Same id as `m_history[0]` while still talking → ignored. Already in the queue → ignored.
+4. Appended to the queue tail.
+
+`ShutUp()`: clear the caption, fade out all highlights, drop the gesture demo, empty the queue. `PlayerSkipsMessage()` (ESC during a script): clear the current caption only. [C]
+
+### 6.4 Timing (per frame `Advance`) [C] `Sepulveda::Advance`, `Sepulveda::CalculateTextTime`, `Sepulveda::CalculatePauseTime`
+
+- `speed` = preference `TextSpeed` (default **15** chars/s; `data/default_preferences.txt` L10); `len` = caption length in wide characters.
+- Typing time `T = 0.6·len/speed`; pause `P = len/speed`, halved when not in cutscene mode.
+- The caption is removed when `now ≥ timeSync + T + P` **or** `ControlSkipMessage` fires (Enter, Esc, XInput Start/A/B/Y). Total on screen: normal 1.1·len/speed s, cutscene 1.6·len/speed s (a 100-character line: 7.33 s / 10.67 s).
+- While a caption shows, `m_history[0].timeSync` is refreshed every frame (its 20 s fade starts when it ends).
+- When silent the next queued id is popped. Sound events (`SoundSourceBlueprint::TypeSepulveda`): `Appear` when speech starts from silence, `Disappear` when the last caption ends, `TextAppear` each time the number of revealed characters changes.
+- `IsTalking()` = caption non-empty **or** queue non-empty (what `WaitSay` waits on). `IsVisible()` = talking or newest history `alpha·0.8 > 0.1`.
+- History fade `alpha = clamp(1 − (now − timeSync)/20, 0, 1)`. Opening the chat log (`Camera::ChatLogVisible`, key L) bumps every history item to ≥ now − 3 s. Cutscene mode subtracts 30 s from every history item each frame (instant hide).
+- Cutscene mode is entered automatically when the camera is in BuildingFocus, MoveToTarget, DoNothing, SphereWorldScripted, SphereWorldOutro or SphereWorldFocus and the task manager is hidden; it is left once `m_fade ≤ 0.01` outside those modes. [C] `Sepulveda::Render` (L1300–1312).
+- Highlights fade in/out by 0.02 α **per frame** (frame-rate dependent) and are deleted when fully faded.
+
+### 6.5 Portrait, text box, highlights and gesture demos [C] `Sepulveda::Render`, `RenderTextBox*`, `RenderFace`, `SepulvedaHighlight::Render`, `RenderGestureDemo`
+
+All 2D layouts use a virtual screen 600 units high and `600·aspect` wide (`gluOrtho2D`).
+
+| Layout | Selected when | Face rect (x, y, w, h) | Text | Background / extras |
+|---|---|---|---|---|
+| Normal | task manager hidden, not cutscene | (X − 90, 490, 80, 100), X = W/2 − 300 + 20 | 15-unit lines, newest at y = 580 drawn upwards; only lines with 450 < y < 585 visible; ">" marker on the first line of each item; history items below the current one, α −0.2 per rendered item | vertical gradient quad rgba(0.1, 0.1, 0.5, 0.8·α) from y = 590 to the smoothed top − 10 (top smoothed `0.95·old + 0.05·new` when growing, instant when shrinking; drawn only if top < 579); queue indicator "`sepulveda_pressreturn` (n)" at (X + 600, 590) size 7 right-aligned; scroll bar in chat-log mode |
+| Cutscene | cutscene mode (§6.4), task manager hidden | (X − 90, 430, 80, 100) | 18-unit lines from y = 440 downward; fade snaps 0/1 | prompt `sepulveda_pressreturn_skipall` if the script set `PermitEscape`, else "`sepulveda_pressreturn` (n)" or plain |
+| Task manager | task manager visible | (X′ − 48, 514, 48, 60), X′ = W/2 − 300 | 15-unit lines from y = 524; typing 1.5× slower | box 600 × 60 rgba(0.1, 0.1, 0.5, 0.75·fade); border rgb(199, 214, 220) |
+
+- Typing: characters revealed = `len·clamp((now − timeSync)/T, 0, 1)` (task-manager layout uses 1.5·T); text drawn twice (outline, then fill). Fade (normal/task layouts): `fade = 0.95·fade + 0.05` while talking, `·0.95` otherwise (per frame).
+- Portrait (`RenderFace`, static state): every 0.4 s while α > 0.9: with probability 1/6 a new zoom ∈ [0, 0.1); with 1/6 a new x-offset ∈ [−0.1, 0.1); image `sepulveda5.bmp` (mouth open) with p = 0.1, else `sepulveda4.bmp` (eyes shut) with p = 0.1 (overall 0.09), else uniformly `sepulveda1..3.bmp`. Zoom and offset smoothed by `4·dt`, offset clamped to ±zoom; UV rect [zoom + offset, zoom] … [1 − zoom + offset, 1 − zoom]. For 0.4 s after a change the previous image is cross-faded on top with α `α·(1 − Δt/0.4)·0.75` (if α > 0.75). 1-px white border. Uses the non-synced `frand`/`AppRandom`.
+- Highlights (`SepulvedaHighlight`): additive "god-ray" beam with `textures/godray.bmp` from `pos + (0, 1500, 1000)` to `pos − (0, 200, 133)`; 3 quads whose bottom ends orbit a 10-unit circle (`sin/cos(t + i)`), width `radius·0.5` perpendicular to the view, colour (1, 1, 0.5 + 0.5·|sin(t·i)|, 0.5·α); depth writes off; near plane ×1.5; not drawn in multiplayer. Highlights are named (`ScriptHighlight`, `HelpSystem`, `research`, `Tutorial`) so each caller clears only its own.
+- Gesture demo: replays a recorded mouse path (`Resource::GetGestureDemo(name)`, files `data/gesture_demos/*.txt` — one "x y" pair per line normalised by screen height, 40 ms per sample; excluded from the Multiwinia data build) after a start delay: line segments every 0.04 s of path time, 40 px wide, colour fading with segment age over 2 s, mouse-cursor sprite at the head; loops with a 2 s pause; suppressed when `ControlMethod == 1`. [C] `RenderGestureDemo`, `Sepulveda::DemoGesture`; `code/gesture_demo.cpp:GestureDemo` (dead, see appendix).
+
+### 6.6 Phrase ids
+
+Phrase families spoken (all present in `data/language/english.txt`; Darwinia content): the script lines of §2.6 (267 `Say` lines across 34 scripts), `tutorial_*` (Demo 1), `launchpad_tutorial_*` (Demo 2), `help_*` (HelpSystem), `research_explanation_1..4`, `task_manager_full`, `tutorial_skipped`, `dialog_skiptutorial`, `sepulveda_pressreturn`, `sepulveda_pressreturn_skipall`, `help_pressh`. Input-specific `_kbd`/`_xin` suffixes are resolved by the language table. [C] grep `english.txt`; [29](29_data_formats_reference.md).
+
+### 6.7 Consumers
+
+`Script` (`Say`, `ShutUp`, `Highlight`, `ClearHighlights`, `DemoGesture`, `SetCutsceneMode`, `WaitSay`), `ScriptTrigger` phrase sequencing, `Tutorial`/`Demo1Tutorial`/`Demo2Tutorial` (§9), `HelpSystem` (context help with 20 action items, H key, 90 s quiet interval — specified in [09](09_meta_systems.md)), `Officer::SetOrders` / task-manager messages (dead lines such as `officer_notwalkable`, `task_manager_full`). [C] call sites listed in §6.1.
+
+---
+
+## 7 Demo recording, playback and replay
+
+There is **no player-facing replay or demo-recording feature** in [B:FULL]. What exists:
+
+| # | Mechanism | What it records / plays | Build | Ref |
+|---|---|---|---|---|
+| D1 | Server command-history record/replay (preference `RecordDemo`) | `1`: on game shutdown the server writes its whole sequenced command history to `serverHistory.dat` (cwd); `2`: after a level loads, the server replaces its history with `ServerHistory.dat` | [B:FULL] hidden developer preference (absent from `data/default_preferences.txt`, no UI) | §7.1 |
+| D2 | Fixed-step "demo" timing | While `RecordDemo` is 1 or 2, every frame uses `g_advanceTime = 1/DemoFrameRate` (preference, default 25) and advances the fake clock | [B:FULL] (same preference) | §7.1 |
+| D3 | Late-join / reconnect catch-up | A joining client receives the full lockstep stream from sequence 0 and re-simulates it | [B:FULL] | §7.2; [22](22_determinism_and_networking.md) |
+| D4 | AVI capture (`GrabberWindow` Start/Stop Record, `AVIGenerator`) with fake time | renders frames to an AVI at a fixed step | [B:DEBUG] (`AVI_GENERATOR` = `TARGET_DEBUG` only) | §7.3 |
+| D5 | SDL input/camera event log and replay (`InputManager` `m_logging`/`m_replaying`, camera mode `ModeReplay`) | raw window messages + camera poses per frame, replayed into an AVI | [B:DEAD] (`code/lib/input_sdl.cpp` not built on PC; body also under `AVI_GENERATOR`) | §7.3 |
+| D6 | Gesture demos | recorded mouse paths for the narrator | [B:DEAD] | §6.5 |
+| D7 | Benchmark telemetry recorder | per-second fps / bandwidth / latency / entity count per match, uploaded by FTP | [B:DEAD] (`BENCHMARK_AND_FTP`) | §7.4; [32](32_debug_test_and_performance.md) |
+
+### 7.1 `RecordDemo` — command-history record and replay [B:FULL, hidden]
+
+[C] `code/main.cpp:UpdateAdvanceTime`; `code/app.cpp:App::ShutdownCurrentGame` (L1109–1113); `code/main.cpp:DoEnterLocation` (L1330–1336) and the editor loop (L691–694, [B:EDITOR]); `code/network/server.cpp:Server::SaveHistory`, `Server::LoadHistory`; `code/lib/hi_res_time.cpp:IncrementFakeTime`, `SetFakeTimeMode`.
+- **Save** (`RecordDemo == 1`, in `ShutdownCurrentGame`, only when this machine hosts the server): binary file = `int32 historySize`, then each history letter's `Directory` written with `Directory::Write` (format: [29](29_data_formats_reference.md) `Directory`). The commented-out `g_inputManager->StopLogging("inputLog.dat")` shows a former input log.
+- **Load** (`RecordDemo == 2`, after `Location` init, not editing, server present): `m_history.EmptyAndDelete()`, read the count and each `Directory` into a new `ServerToClientLetter`; for each letter with `SEQID > m_sequenceId`, `m_sequenceId = SEQID + 1` (so an equal id does not advance it — quirk). The normal `Server::UpdateClients` path then streams the loaded letters to clients. [C] / [I] streaming consequence.
+- **Timing:** `UpdateAdvanceTime` sets `g_advanceTime = 1/DemoFrameRate` and calls `IncrementFakeTime(1/DemoFrameRate)` each frame; but `g_gameTime` is still taken from `GetHighResTime()`, which returns the fake clock only after `SetFakeTimeMode()` (called only by the debug grabber window and SDL focus loss). In FULL the fake clock therefore advances unused, frame-based systems step at the fixed rate, and `GamePaused()` is ignored in this mode. [C] / [I] consequence.
+- **Validity as a replay:** the replayed history includes the lobby (options, team assignments, START_GAME) and later commands; whether a replay reproduces a match depends on identical code/data, the same team/client layout and sync seed, and on the live clients not adding conflicting commands — not verified. [U] → 30-U3.
+
+### 7.2 Late-join replay from sequence 0 [B:FULL]
+
+The lobby and the game run in one lockstep channel; a client that connects (or reconnects as a new client id) is sent every sequenced letter from id 0 and re-simulates the whole match before it is "caught up", at a bounded catch-up rate (+20 frames per second per P15), so joining a 20-minute match would take on the order of 10 minutes [I]. Full specification: [22](22_determinism_and_networking.md). [C] `code/network/clienttoserver.cpp:ClientToServer::ProcessServerUpdates`; `code/network/server.cpp:Server::UpdateClients` (P15 §9.5, §12.6). This is the only replay-like mechanism a player experiences.
+
+### 7.3 Fake-time frame capture [B:DEBUG] and SDL input replay [B:DEAD]
+
+- `GrabberWindow` (`#ifdef AVI_GENERATOR`): Start Record → `SetFakeTimeMode()` (freeze `GetHighResTime` at the current value; from then on it returns `g_fakeTime`), create an `AVIGenerator` sized to the screen (24-bit RGB, `Untitled.avi`); Stop Record → `SetRealTimeMode()` (resume real time with a shift so time does not jump), release. Combined with `RecordDemo`'s fixed `IncrementFakeTime` step this yields deterministic-step video capture. [C] `code/interface/grabber_window.cpp`; `code/lib/avi_generator.cpp`; `code/lib/hi_res_time.cpp`.
+- `code/lib/input_sdl.cpp` (SDL input driver; not in the PC project): logs window messages with frame numbers and per-frame camera poses, and in replay feeds them back through `EventHandler`, cuts the camera to each logged pose, and ends the AVI when the log is exhausted; window focus changes switch fake/real time. [C] `code/lib/input_sdl.cpp:InputManager::Advance`, `InputManager::ChangeWindowHasFocus`.
+
+### 7.4 Benchmark recorder [B:DEAD]
+
+`BenchMark` (`#ifdef BENCHMARK_AND_FTP`, commented out in every target): at each Multiwinia match start writes a header (auth key, build, game type, map, screen mode, filtered `dxdiag` lines) to `<profileDir>benchmarks/game <authKey> <time>.txt`, appends one line per second `time, fps, bandwidth in, bandwidth out, latency ms, entity count` (`"%s,%5d,%6d,%6d,%5d,%5d"`), appends `@` at match end and uploads the file with an external FTP client (credentials hard-coded in the source; not reproduced). Full specification: [32](32_debug_test_and_performance.md). [C] `code/benchmark.cpp:BenchMark::Begin`, `BenchMark::Advance`, `BenchMark::End`, `BenchMark::Upload`.
+
+---
+
+## 8 What the new game needs
+
+1. **A data-driven presentation script, not a gameplay script.** Keep the proven core: one statement per line, typed commands, explicit blocking waits (`Wait`, `WaitCam`, `WaitFade`, `WaitCondition`), skip-to-next-wait and abort-if-permitted semantics (§2.4). Execute all non-blocking statements of a step in one frame (not one line per frame), parse and validate the whole file at load (the original only validated under `SCRIPT_TEST_ENABLED`), and report errors with file/line.
+2. **Network-safe effects.** Script/tutorial side effects that change the world (spawning crates, AI permissions, timers, game options) must be authoritative sequenced simulation events; camera, captions, music and UI remain client-local (§2.8, §3.10).
+3. **Triggers as first-class level objects** modelled on `ScriptTrigger` (always / camera-enter / camera-view / unit-type-in-volume, one-shot, 1 s polling) plus objective and game-state triggers (§2.5) — but evaluate camera-based triggers client-side only.
+4. **Camera timeline**: mounts and Move/Cut node lists are sufficient; replace the triangular-speed MoveToTarget with an exact spline/ease that lands on the mount (the original overshoots by 4–8 % and never snaps, §4.4), slerp orientations, and write animations when saving maps (§4.1).
+5. **Tutorial = declarative step graph.** Re-express the two Multiwinia tutorials (§3.5–§3.6) as explicit steps with entry conditions, anchors, completion conditions, timeouts and fallbacks, keyed to object tags rather than hard-coded building ids and team 0; add a skip control, progress persistence and analytics; reset all state per run (§3.2 bug).
+6. **Narrator system (optional)** from §6: queue with de-duplication, input-device-specific text variants, typing time `0.6·len/speed` + pause, portrait animation — with new character, art, text and audio.
+7. **Intro/outro sequences** as timelines (captions with typewriter/cursor, fades, grid/overlay effects, camera path) authored in data (§5).
+8. **Replays**: the lockstep design makes command-stream replays cheap (§7.1–§7.2); a new game should formalise a replay file (version, map hash, seed, team layout, command stream) and fast-forward/seek, and use the same mechanism for reconnect.
+9. **Drop**: `PurityControl`, `GiveResearch accessallareas/modsystem`, the logo splash, all Darwinia scripts, phrase ids, portraits, gesture demos and the benchmark FTP uploader.
+
+---
+
+## 9 Darwinia demo tutorials (`tutorial*.cpp`) [B:DEAD] — reference tables
+
+Compiled only with `USE_SEPULVEDA_HELP_TUTORIAL`; instantiated only under `DEMOBUILD` (`Demo2Tutorial` if `DEMO2`, else `Demo1Tutorial`) — none of these macros is defined. [C] `code/app.cpp` (L401–407). Demo 1 = Darwinia demo level "mine" (`data/game_demo.txt` → `map_mine.txt` + `mission_mine_demo.txt`, intro script `mine_demo_intro.txt`); Demo 2 = "launchpad" (`data/game_demo2.txt` → `map_launchpad.txt` + `mission_launchpad.txt`, intro `launchpad_intro.txt`). Both levels are excluded from the Multiwinia data build. The player is team 2 (Darwinia convention). Chapter counts: Demo 1 **38** `TriggerChapter` cases, Demo 2 **50** (chapter 12 of Demo 2 is an empty case never entered). [C] `code/tutorial_demo1.cpp:Demo1Tutorial::TriggerChapter`, `code/tutorial_demo2.cpp:Demo2Tutorial::TriggerChapter` (case counts re-counted for this document); `tools/multiwinia_exclusions.txt` L24–25.
+
+### 9.1 Base class mechanics [C] `code/tutorial.cpp:Tutorial`
+
+- `Advance()`: nothing during a level reset, without location/teams, or while team 2 is unused. `ControlSkipTutorial` (key `t` pressed; XInput Back commented out — `data/input/input_preferences.txt` L293–294) → narrator `tutorial_skipped`, delete the tutorial, camera free movement. Chapter 0 → `TriggerChapter(1)` once the fade is complete and no script runs. While a script runs nothing advances. When `AdvanceCurrentChapter()` returns true the tutorial deletes itself.
+- `AdvanceCurrentChapter()` (base): if `m_nextChapterTimer > 0` → when reached, `TriggerChapter(m_chapter + 1)`; return false (subclass logic skipped while a timer is pending). Else, if a repeat message is set, the narrator is not visible and `now ≥ m_repeatMessageTimer` → re-say it (and replay its gesture with 2.0 s delay), re-arm; return true (subclass runs).
+- `TriggerChapter(n)`: `m_chapter = n`, clear the timer and repeat message, `ShutUp()`; the subclass then performs the chapter's actions.
+- `RepeatMessage(id, period = 20.0 s, gesture = NULL)`.
+- `SetChapter(n)` (from the saved game's `Tutorial_StartDefinition` block, `GlobalWorld::ParseTutorial`): 0 → 0; n > 0 → `m_chapter = n − 1`, timer now + 3 s (chapter n triggers in 3 s); n < 0 → −1 (deletes the tutorial).
+- `Render()`: blinking (`int(gameTime) % 2 == 0`) `dialog_skiptutorial` at top centre (y 15, size 15).
+- "Set `m_chapter = k` and the timer" is used as a *goto k + 1 after a delay* idiom by the death handlers.
+
+### 9.2 Demo 1 chapter table [C] `code/tutorial_demo1.cpp`
+
+Buildings (`map_mine.txt` / `mission_mine_demo.txt`): 52 ControlTower, 55 ControlTower, 97 Incubator, 12 Incubator, 90 Refinery. Camera mounts: `gamestart`, `tutorial1`…`tutorial7`. "Say" = narrator line; "rep" = `RepeatMessage` (20 s unless stated); HSD/HSD2/HED/HED2 = recovery handlers below.
+
+| Ch | On enter | Advance rule → next |
+|---|---|---|
+| 1 | Say + rep `tutorial_1` | camera > 100 from mount `gamestart` → +5 s → 2 |
+| 2 | Say + rep `tutorial_2` | camera height differs > 100 from `gamestart` → +10 s → 3 |
+| 3 | BuildingFocus(52, 200, 200); Say `tutorial_3`, `_3b` | not talking → 4 |
+| 4 | FreeMovement; Say `tutorial_4`, `_4b`; rep `_4b` | task manager visible → 5 |
+| 5 | Say `tutorial_5`; gesture `squad.txt`; rep 30 s + gesture | current task Squad → 6; other task type → terminate it, Say `tutorial_5_error` |
+| 6 | MoveToTarget `tutorial1` 3 s | camera idle → 7 |
+| 7 | FreeMovement; Say + rep `tutorial_7` | HSD; squad task Running → 8 |
+| 8 | Say + rep `tutorial_8` | team-2 unit waypoint > 50 from its centre → +5 s → 9 |
+| 9 | Say + rep `tutorial_9` | HSD; > 3 lasers in flight → +5 s → 10 |
+| 10 | Say + rep `tutorial_10` | HSD; a ThrowableGrenade effect exists → +5 s → 11 |
+| 11 | Say `tutorial_11`; rep 60 s | HSD; enemies of team 2 within 300 of 52 ≤ 20 → 12 |
+| 12 | Say `tutorial_12` | HSD; ≤ 5 → 13 |
+| 13 | Say `tutorial_13` | HSD; = 0 → 20 |
+| 20 | BuildingFocus(97, 120, 120); Say `tutorial_20`, `_20b`, `_20c` | not talking → 21 |
+| 21 | FreeMovement; Say `tutorial_21`; gesture `engineer.txt`; rep 30 s + gesture | current task Engineer → 22 |
+| 22 | Say + rep `tutorial_22` | HED; an Engineer within 150 of 52 → 23 |
+| 23 | BuildingFocus(52, 70, 70); Say `tutorial_23` | HED; tower 52 team 2 and ownership > 98 → 24 |
+| 24 | FreeMovement; Say `tutorial_24`, `_24b`, `_24c` | HED; a team-2 Darwinian within 100 of 97 → 25 |
+| 25 | MoveToTarget `tutorial2` 3 s; Say `tutorial_25` | not talking → 26 |
+| 26 | MoveToTarget `tutorial3` 15 s; Say `tutorial_26` | not talking → 30 |
+| 27 | FreeMovement (only ever a *timer base* for → 28) | — |
+| 28 | MoveToTarget `tutorial6` 3 s; Say `tutorial_28`; gesture `squad.txt`; rep 30 s + gesture | current task Squad → 29 |
+| 29 | FreeMovement; Say + rep `tutorial_29` | squad task Running → 32 |
+| 30 | MoveToTarget `tutorial4` 3 s; Say `tutorial_30` | always → +5 s → 31 |
+| 31 | MoveToTarget `tutorial5` 15 s; Say `tutorial_31`, `_31b` | not talking → 32 |
+| 32 | Say `tutorial_32` | HSD2; enemies within 400 of incubator 12 = 0 → 33 |
+| 33 | MoveToTarget `tutorial7` 4 s; Say `tutorial_33`, `_33b` | not talking → 34 |
+| 34 | FreeMovement; Say `tutorial_34`; rep 40 s | HED2; tower 55 team 2 and ownership > 98 → 35 |
+| 35 | MoveToTarget `tutorial2` 30 s; Say `tutorial_35`, `_35b`, `_35c` | not talking → 351 |
+| 351 | FreeMovement; Say `tutorial_351`; gesture `officer.txt`; rep 30 s + gesture | current task Officer → 36 |
+| 36 | FreeMovement; Say + rep `tutorial_36` | team 2 has ≥ 1 special (officer) → 37 |
+| 37 | Say `tutorial_37`, `_37b`; rep `_37b` | an officer has `OrderGoto` → +10 s → 38 |
+| 38 | BuildingFocus(90, 400, 100); Say `tutorial_38`, `_38b` … `_38e` | not talking → 39 |
+| 39 | FreeMovement; Say `tutorial_39` | **end** (returns true next frame) |
+| 40 | FreeMovement; Say `tutorial_40`, `_40b`; rep `_40b` | squad task Running → 32 |
+| 41 | Say `tutorial_41`; gesture `engineer.txt`; rep 30 s + gesture | current task Engineer → 42 |
+| 42 | Say + rep `tutorial_42` | engineer task Running → 34 |
+| 43 | Say `tutorial_43`, `_43b`; rep `_43b` | engineer task Running → 34 |
+
+Recovery handlers: **HSD** (ch 7, 9–13): if the current task is not a squad, reselect any running squad task; if none, Say `tutorial_squaddeath`, goto 5 after 10 s. **HSD2** (ch 32): squad exists but deselected → goto 40 now; none → Say `tutorial_squaddeath`, goto 28 after 10 s. **HED** (ch 22–24): reselect the engineer; none → Say `tutorial_engineerdeath`, goto 21 after 10 s. **HED2** (ch 34): engineer exists but deselected → goto 43 now; none → Say `tutorial_engineerdeath`, goto 41 after 10 s.
+
+```mermaid
+flowchart LR
+    C1["1 camera move"] --> C2["2 camera height"] --> C3["3 show tower 52"] --> C4["4 open task manager"] --> C5["5 squad task"] --> C6["6 camera to tutorial1"] --> C7["7 place squad"] --> C8["8 move squad"] --> C9["9 lasers"] --> C10["10 grenade"] --> C11["11 enemies 20 or fewer"] --> C12["12 5 or fewer"] --> C13["13 none"]
+    C13 --> C20["20 show incubator 97"] --> C21["21 engineer task"] --> C22["22 engineer at 52"] --> C23["23 reprogram 52"] --> C24["24 darwinians born"] --> C25["25 camera tutorial2"] --> C26["26 camera tutorial3"] --> C30["30 camera tutorial4"] --> C31["31 camera tutorial5"] --> C32["32 clear incubator 12"] --> C33["33 camera tutorial7"] --> C34["34 reprogram 55"] --> C35["35 camera tutorial2"] --> C351["351 officer task"] --> C36["36 promote"] --> C37["37 goto order"] --> C38["38 refinery 90"] --> C39(("39 end"))
+    C7 & C9 & C10 & C11 & C12 & C13 -. "squad lost" .-> C5
+    C32 -. "squad deselected" .-> C40["40 reselect squad"] --> C32
+    C32 -. "squad lost" .-> C28["28 new squad"] --> C29["29 place"] --> C32
+    C22 & C23 & C24 -. "engineer lost" .-> C21
+    C34 -. "engineer deselected" .-> C43["43 reselect"] --> C34
+    C34 -. "engineer lost" .-> C41["41 new engineer"] --> C42["42 place"] --> C34
+```
+
+### 9.3 Demo 2 chapter table [C] `code/tutorial_demo2.cpp`
+
+Buildings (`map_launchpad.txt` / `mission_launchpad.txt`): 0 EscapeRocket, 1 FuelGenerator, 25 SolarPanel, 66 and 67 RadarDish, 75 and 85 ControlTower, 86 Incubator, 129 ResearchItem, 6 ScriptTrigger. Mounts: `start`, `incubator1..3`, `attack6`, `wherenext1`. "Aid" = `ControlHelpSystem::AddOnScreenAid(icon, shadow, phrase, control[, checker])` (`code/control_help.cpp`, see [06](06_player_control_and_input.md)).
+
+| Ch | On enter | Advance rule → next |
+|---|---|---|
+| 1 | Say `launchpad_tutorial_1`, `_2`; rep `_2`; clear aids; aids LA `control_help_cameramove` (ControlCameraMove), RA `control_help_cameraturn` (ControlTargetMoveSecondary) | camera > 200 from mount `start` → +5 s → 2 |
+| 2 | Say + rep `_3`; aids RT `control_help_cameraup`, LT `control_help_cameradown` | height differs > 100 → +10 s → 3 |
+| 3 | Say + rep `_4`; aid X `control_help_quickunitstart` | task manager visible → 4 |
+| 4 | Say + rep `_5`; aid A `control_help_quickunitcreate` (checker `HasSquadRunning`) | current task Squad → 5; other → terminate, Say `_5_error`, aids X `darwinia_tutorial_taskmanager`, A `darwinia_tutorial_createunit` |
+| 5 | camera to (building 85 pos − front·50) at range 400, height 300, 2 s | camera idle → 6 |
+| 6 | FreeMovement; Say + rep `_6`; aid A `control_help_quickunitplace` | HSD; squad Running → 7 |
+| 7 | Say + rep `_7`; aids LA `control_help_move`, LT `control_help_camerarotateleft`, RT `…right` | HSD; team-2 unit waypoint > 20 from centre → +5 s → 8 |
+| 8 | Say + rep `_8` | HSD; any laser from team 2 → +5 s → 9 |
+| 9 | — | → 10 immediately |
+| 10 | Say `_9` | HSD; ResearchItem 129 gone → +5 s → 11; no enemies within 200 of 129 → +5 s → 11 |
+| 11 | Highlight 129 ("research"); Say `_10`, `_11`; rep `_11`; aids X quickunitstart, LA `darwinia_tutorial_engineer` (ControlMenuDown), A quickunitcreate | 129 exists and current task Engineer → 13 |
+| 12 | empty case (no actions; never entered — 11 goes to 13) | — |
+| 13 | ClearHighlights; Say + rep `_12`; aid A quickunitplace | 129 exists and an Engineer within 150 → 14 |
+| 14 | record camera; BuildingFocus(129, 150, 20); FOV 30; Say `_12b`, `_12c`, `_12d` | not talking → 141 |
+| 141 | BuildingFocus(129, 250, 150); FOV 60; Say `_12e` | player has Grenade research → 15 |
+| 15 | FreeMovement; Say `_13`, `_13b`; rep `_13b` | squad Running → 16 |
+| 16 | Say + rep `_14`; aid RT `darwinia_tutorial_grenade` | team-2 grenade effect exists → +5 s → 17 |
+| 17 | — | `TriggerChapter(18)` then falls through into chapter 18's test in the same frame |
+| 18 | Say `_15`, `_16` | no enemies within 200 of tower 75 → +5 s → 19 |
+| 19 | record camera; BuildingFocus(66, 150, 50); Say `_17` … `_20` | not talking → 191 |
+| 191 | — (restore commented out) | camera idle → 20 |
+| 20 | FreeMovement; Say `_21`; rep 60 s | an Engineer within 150 of dish 66 → 21 |
+| 21 | Say `_22` | dish 66 owned by team 2 → +2 s → 22 |
+| 22 | Say + rep `_23` | dish 66 selected → 23 |
+| 23 | Highlight 67 ("Tutorial"); Say + rep `_24` | dish 66 connected to 67 → 24 |
+| 24 | ClearHighlights("Tutorial"); Say + rep `_25` | misalignment check (selected dish not linked to 67 → 22, or → 23 if 67 itself selected); squad Running → 25 |
+| 25 | Say + rep `_26` | selected squad has no enabled live member (all in transit) → +3 s → 26 |
+| 26 | — | no enemies within 250 of incubator 86 → set 39, +2 s → 40; nag `launchpad_tutorial_clearincubator` if squad > 500 from 86, ScriptTrigger 6 consumed and not talking |
+| 40 | BuildingFocus(86, 200, 150); Say `_40`, `_41`, `_42` | not talking → +2 s → 41 |
+| 41 | FreeMovement; Say `_43`; rep 60 s | incubator 86 owned by team 2 → +5 s → 42 |
+| 42 | Say `_44` … `_48` | any team-0 Darwinian within 300 of 86 → +1 s → 43 |
+| 43 | `BeginPlayerBusyCheck` | `!IsPlayerBusy` → +1 s → 44 |
+| 44 | cut to `incubator1`, move to `incubator2` 30 s, FOV 40; Say `_49`, `_50`, `_51` | not talking → +1 s → 45 |
+| 45 | move to `incubator3` 15 s, FOV 40; Say `_52`, `_53` | not talking → +1 s → 46 |
+| 46 | FreeMovement | player has Officer research → 461 |
+| 461 | `BeginPlayerBusyCheck` | `!IsPlayerBusy` → 47 |
+| 47 | BuildingFocus(0, 600, 100); Say `_54`, `_54b`, `_55` | not talking → 48 |
+| 48 | BuildingFocus(1, 400, 300); Say `_56` … `_58` | not talking → 49 |
+| 49 | BuildingFocus(25, 400, 200); Say `_59` … `_61` | not talking → 50 |
+| 50 | move to `incubator2` 5 s; Say `_62` | not talking → 51 |
+| 51 | rep `_62`; FreeMovement | current task Officer → 52 |
+| 52 | Say + rep `_63` | Officer selected → 53 |
+| 53 | Say + rep `_64` | selected officer `OrderFollow` → 54 |
+| 54 | Say `_65`, `_66`; rep `_66` | selected officer `OrderGoto` → 55 |
+| 55 | Say `_67`, `_68`; rep `_68` 60 s | primary objective 0 `Evaluate()` true → +5 s → 56 |
+| 56 | BuildingFocus(25, 400, 250); Say `_69`, `_70` | not talking → 57 |
+| 57 | BuildingFocus(1, 400, 300); Say `_71` … `_73` | not talking → 58 |
+| 58 | move to `attack6` 10 s; Say `_74` | not talking → 59 |
+| 59 | move to `wherenext1` 8 s; Say `_75` … `_77` | not talking → 60 |
+| 60 | FreeMovement | **end** |
+| other ids | Say `launchpad_tutorial_done` | — |
+
+HSD (Demo 2, ch 6, 7, 8, 10): reselect a running squad; none → Say `launchpad_tutorial_9_error`, goto 3 after 5 s. `IsPlayerBusy()` = true if the selected insertion squad is firing (`ControlUnitPrimaryFireTarget`) or enemies are within 100 of its waypoint (both reset the 3 s busy timer), or `now < busyTimer + 3.0`; used by chapters 43/461 and the `WaitPlayerNotBusy` script command. [C] `Demo2Tutorial::IsPlayerBusy`, `Demo2Tutorial::BeginPlayerBusyCheck`.
+
+```mermaid
+flowchart LR
+    D1["1 camera"] --> D2["2 height"] --> D3["3 task manager"] --> D4["4 squad task"] --> D5["5 camera to 85"] --> D6["6 place"] --> D7["7 move"] --> D8["8 lasers"] --> D9["9"] --> D10["10 clear research 129"] --> D11["11 engineer task"] --> D13["13 engineer at 129"] --> D14["14 focus 129"] --> D141["141 grenade research"] --> D15["15 reselect squad"] --> D16["16 grenade"] --> D17["17"] --> D18["18 clear tower 75"] --> D19["19 show dish 66"] --> D191["191"] --> D20["20 engineer to 66"] --> D21["21 reprogram 66"] --> D22["22 select 66"] --> D23["23 aim at 67"] --> D24["24 squad into dish"] --> D25["25 transit"] --> D26["26 clear incubator 86"] --> D40["40 show 86"] --> D41["41 reprogram 86"] --> D42["42 darwinians born"] --> D43["43 not busy"] --> D44["44 incubator flyby"] --> D45["45"] --> D46["46 officer research"] --> D461["461 not busy"] --> D47["47 rocket"] --> D48["48 fuel generator"] --> D49["49 solar panel"] --> D50["50"] --> D51["51 officer task"] --> D52["52 select officer"] --> D53["53 follow"] --> D54["54 goto"] --> D55["55 objective 0"] --> D56["56"] --> D57["57"] --> D58["58"] --> D59["59"] --> D60(("60 end"))
+    D6 & D7 & D8 & D10 -. "squad lost" .-> D3
+    D24 -. "dish misaligned" .-> D22
+```
+
+### 9.4 Darwinia tutorial constants
+
+| Constant | Value | Kind | Ref |
+|---|---|---|---|
+| Repeat period default | 20.0 s | default argument | [C] `Tutorial::RepeatMessage` |
+| `SetChapter` resume delay | 3 s | literal | [C] `Tutorial::SetChapter` |
+| Gesture replay delay on repeat | 2.0 s | literal | [C] `Tutorial::AdvanceCurrentChapter` |
+| Player-busy hold / enemy radius | 3.0 s / 100 | literal | [C] `Demo2Tutorial::IsPlayerBusy` |
+| Skip key | `SkipTutorial = key t pressed` | binding | [C] `data/input/input_preferences.txt` L293 |
 
 ---

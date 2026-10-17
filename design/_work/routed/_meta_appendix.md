@@ -362,6 +362,26 @@ No level lines anywhere. `UpgradePort`: shape `upgrade_port.shp`, no behaviour. 
 - **`SpeccyLoader` unused members** (`m_monoBmp`, `m_currentPixel`, `m_startJ`, `EndFrame`) and **`AmigaLoader` unused mode enum** (`ModeSilence/Header/Data/Screen`, copied from the Speccy loader) [C].
 - **Commented code**: ray-tracer refraction and floor reflection, pixel-wave auto-ramp after 45 s, FPS readout; credits target-ghost; spinner stepped rotation; Intro camera's earlier implementation (block comment in `camera.cpp`).
 
+<!-- from X1a_text_formats -->
+## Appendix — dead/legacy code
+
+| Item | Tag | Ref |
+|---|---|---|
+| `game_demo.txt` / `game_demo2.txt` selection (`DEMOBUILD`, `DEMO2`) | [B:DEAD] | `code/app.cpp` `GAMEDATAFILE` |
+| Whole campaign world loader (`game.txt`, `game_unlockall.txt`, `locations.txt`, missions, `map_*`) | [B:LEGACY] | §3, §2.1 |
+| `Tutorial_StartDefinition` section, `RunScript <phrase-id>` sequences, `SetCutsceneMode` | [B:DEAD] (`USE_SEPULVEDA_HELP_TUTORIAL`) | `GlobalWorld::ParseTutorial`, `Script::RunScript` |
+| `multiwinia-testbed.txt`, `testbedconfig.txt`, `TestBedLog.txt` | [B:DEAD] (`TESTBED_ENABLED`) | §4.1, §11 |
+| `data/purity/*`, `Script::RunCommand_PurityControl` | [B:DEAD] data / [B:LEGACY] command | §10 |
+| `input_preferences_darwinia.txt` (needs `MultiwiniaControlMethod` = 0, forced to 1) | [B:LEGACY] | §7.1 |
+| `input_preferences_mac.txt` | Mac only | §7.1 |
+| Mod overlay paths `<P>mods/<mod>/…` | [B:DEAD] (`USE_DARWINIA_MOD_SYSTEM`) | `Resource::GetTextReader` |
+| SystemIV `FileSystem` (compiled, never instantiated) | [B:FULL] unreachable | §1.1 |
+| `Script::TestScript` | [B:DEAD] (`SCRIPT_TEST_ENABLED`) | §9 |
+| `CreditsLoader::GenerateBetaTesterList` (`betatesters.txt`) | [B:LEGACY] | §5 |
+| Benchmark output, Vista `.dsg`, gesture/sound editor saves, `achievements.txt` | [B:DEAD]/[B:DEBUG]/never written | §13.1 |
+| `LevelFile::WriteRunningPrograms`, `WriteLeaderboardStats`, `GlobalWorld::SaveLocations` (malformed `%-8.2` output) | [B:LEGACY]/[B:EDITOR] | §2.15, §3.4 |
+| Building types blocked by `BLOCK_OLD_DARWINIA_OBJECTS` (39) and entity types blocked by `EntityIsBlocked` (16) | [B:LEGACY] (lines ignored) | §2.9.3, §2.12 |
+
 <!-- from X1b_asset_formats -->
 ## Appendix — dead/legacy code
 - `code/gesture_demo.cpp`, `code/gesture_demo_win32.cpp` (`USE_SEPULVEDA_HELP_TUTORIAL`, `GESTURE_EDITOR`), `Resource::GetGestureDemo` — [B:DEAD]; `code/gesture_demo_sdl.cpp` not in the project.

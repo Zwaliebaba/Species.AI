@@ -674,7 +674,7 @@ Uncaptured (Monster-team) airstrikes exist in the code but are unreachable (§3.
 Delivery: Task `TypeNuke`, target anywhere outside `blockPowerups` zones; `Task::TargetNuke` calls `Crate::RunNuke(pos, team)` and terminates the task [C] `code/taskmanager.cpp:Task::TargetNuke`.
 
 `Crate::RunNuke` [C] `code/worldobject/crate.cpp:Crate::RunNuke`:
-1. Spawns **10** `Nuke` entities of the owner. Each at a random **sea** position `(FRAND(worldX − 100), 0, FRAND(worldZ − 100))`, re-rolled while terrain height > 0 — an **unbounded loop that hangs the game on a map without water** (04-U1).
+1. Spawns **10** `Nuke` entities of the owner. Each at a random **sea** position `(FRAND(worldX − 100), 0, FRAND(worldZ − 100))`, re-rolled while terrain height > 0 — an **unbounded loop that would hang the game on a map without water**; every shipped `mp_*` map has ≥ 26 % sea in the sampling rectangle, so it terminates in practice (04-U1, resolved [I]).
 2. Target: nuke 0 → exactly `pos`, `m_renderMarker = true` (ground marker `icons/nukesymbol.bmp`); nukes 1–9 → `pos + (syncsfrand(300), 0, syncsfrand(300))` (±150). `target.y = ground − 5`.
 3. Message, marker `icons/icon_nuke.bmp`, sound `Nuke`.
 
@@ -1442,7 +1442,7 @@ Full treatment in [22](22_determinism_and_networking.md); the points specific to
 
 | Id | Question | Status | What would resolve it |
 |---|---|---|---|
-| 04-U1 | Does any shipped map lack sea (terrain ≤ 0 inside `[0, X−100] × [0, Z−100]`)? `Crate::RunNuke` re-rolls forever there and would hang every peer. | [U] | Generate each level's heightmap with the landscape pipeline ([23](23_terrain_and_landscape.md)) and scan for sea cells; or play a Nuke on every map. |
+| 04-U1 | (resolved by coordinator) Does any shipped map lack sea inside the `Crate::RunNuke` sampling rectangle `[0, X−100) × [0, Z−100)`? **No.** Re-generating every `mp_*` heightmap with the P11 terrain port (`_work/scripts/C_nuke_sea_check.py`, 25-unit sampling grid; results in `_work/drafts/C_nuke_sea_check.csv`) gives a sea fraction between 26.2 % (`data/levels/mp_assault_3p_3.txt`) and the maximum for every map, so the expected number of re-rolls is ≤ 4 and the loop terminates on all shipped maps. The hazard remains for user/edited maps without water. | [I] (port is not bit-exact, but the margin is large) | Bit-exact height dump from a running build would make it [C]; the new game should bound the loop or pre-compute a sea-cell list. |
 | 04-U2 | Weighted crate drops accept a position iff the terrain at z ∈ {0, 1} (the `pos.z > 20.0` bug) is non-zero. Which maps accept on the first try (sea-bed ≠ 0) and which always fall back to random (edge height exactly 0)? Weighted drops may also land in water and expire unreachable. | [I] mechanism, [U] per map | Heightmap scan of the z = 0/1 rows per level; instrument `Location::CreateRandomCrate`. |
 | 04-U3 | Edge cases at the (0,0) corner: random-mode crates start from the template position (0,0,0) and the Space Ship from (0,0,0); if that corner were land (≥ 20 resp. ≥ 10) and unrestricted, the crate / ship would spawn there at y = 0. | [I] | Heightmap value at (0,0) per level (expected sea). |
 | 04-U4 | Design intent of: bad outcomes ignoring `InvalidCrates` and the AntNest limit; Eggs creatures belonging to the task owner while every other monster outcome is Monster-team; Meteor and Plague hitting the user's own units; `InitMonsterTeam(capturer)` no-op. | [U] intent ([C] behaviour) | Designer notes or playtest of the shipped build; decide per item for the new game. |

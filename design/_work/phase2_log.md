@@ -140,3 +140,19 @@
 - All 22 class headings present with parameter tables; 31 shipped rewards + Beast (debug) + 3 commented; per-level probability table regenerated (scripts/S_04_crate_tables.py, 0 mismatches vs P08_crate_pools.csv); scripts/S_04_grenade_sim.py.
 - 10 contradictions resolved: Retribution live (option-gated, effectively on unless 0); Squad crate = 3 squaddies not 5; Beast debug-only; shockwave ring starts r=39, ~10-wide band → 2–3 hits; rocket ~95 wu range; 5 enum comments contradict code (shield coverage, Spawn Mania, Mega Rage, Rage, tree/egg counts); −0.1/tick timers finish one tick late (1.0 s → 11 ticks).
 - 04-U1: any map without sea would hang Nuke (no per-map heightmap scan done) — candidate for Phase 5 check using scripts/P11_* terrain port.
+
+## S23 (23_terrain_and_landscape.md) — done, ~145 KB
+- 5 contradictions resolved: undefined negative→u16 case never occurs in shipped maps (defined truncation case 29,051× must be copied); "landscape lightmap" is actually the water shore mask; Round truncates; far-edge wrap == clamp; no maps without sea (also independently confirmed by coordinator C_nuke_sea_check.py: min 26.2 % sea). 39.7M pow calls, only 17 near rounding boundary (all pow(x,2) exact). cellSize parsed at float precision shifts a tile by one cell in mp_koth_2P_1. scripts/S_23_terrain_oracle.py (SHA-256 digests). 23-U1..U5.
+
+## X3_determinism_sync — done
+- 10 RNG generators, 7 usage rules; FP model; timestep/slice schedule/container order/id allocation; sim-vs-cosmetic classification; render-writes-sim scan; 12 local-state leaks; sync tooling; statics surviving between matches; 20-row risk register. Tables: X3_syncrand_sites.csv (655 synced calls, none in UI/render/sound), X3_unsynced_rng_sites.csv (328 with verdicts), X3_local_state_refs.csv (1,941). [U]=7.
+- Shipped sync byte = next synced-RNG output (only catches RNG draw-count divergence); InsertionSquad::DirectControl reads local free-look flag (F2) → live desync; Armour::SetDirectOrders function-static timer persists across matches; hand-edited Difficulty pref reaches sim via Options→Other→Apply; Tree hit spheres from shared non-thread-safe global LCG.
+## Phase 2 complete except X1a. Phase 3 launched: S21, S22
+
+## S24 (24_rendering.md) — done, ~258 KB
+- 12 contradictions resolved: D3D build has 4 compile blockers (2 certain, 2 SDK-dependent); clear/fog colour always black; Darwinians are camera-turning cards; fake decal shadows exist (blob + flattened sprite); sprites/viriifull.bmp built at run time; 3 levels enable special lighting (mp_koth_2P_3, mp_koth_2P_3b, mp_koth_3P_1). New: team 5 never shows building ownership lights. No encoded perf budgets (24-U6); High/Medium/Low derived from 4 detail settings. 24-U1..U15.
+
+## X1a_text_formats — done (Phase 2 COMPLETE)
+- 21 fmt-* anchors: shared tokeniser; level files (14 block types, 18 MultiwiniaOptions keys, 15 LevelOptions, all 75 building type names, 27 entity names); level_enum; game.txt family; locations.txt; multiwinia.txt; betatester lists; preferences; input bindings/keyboard layouts/locales; language files (markup, _kbd/_xin keys, placeholders); scripts (43 opcodes); purity; testbedconfig; MultiwiniaSupport.ini; runtime-written files (auth key, sync dumps, .mwm, saves, logs, serverHistory.dat). drafts/X1a_level_field_usage.csv, X1a_encoding_survey.csv; scripts/X1a_*.py (7). [U]=5.
+- level_enum.txt excluded from retail main.dat but "Master of Multiwinia" + "Explorer" depend on it (ids 1–49 match 49 retail maps); default_preferences.txt possibly never applied in packaged install; ja/ko/pt language files ~10% coverage, no English fallback. Archive lookups case-insensitive (confirms X1b vs P14).
+## Phase 3 launched: S08, S29

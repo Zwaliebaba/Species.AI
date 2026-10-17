@@ -2262,51 +2262,565 @@ Zombies consume 3 synced random numbers per tick each for a cosmetic wobble ([22
 
 ## 22 Meteor
 
-_Pending — being written._
+`class Meteor : Entity`, type `TypeMeteor` (23) [C] `code/worldobject/meteor.h`, `code/worldobject/meteor.cpp`. [B:FULL]. `TypeMeteor` is in `EntityIsBlocked`. The crate outcome itself (probabilities, validity) is in [04](04_crates_powerups_and_weapons.md).
+
+### 22.1 Meteor — role and acquisition
+
+- **Role**: one rock of a *Meteor Shower*: it falls in a straight line from high above the map onto a point near the target and explodes like a nuke warhead, slowing the whole game to 0.4× around the first impact.
+- **Obtained by** the captured crate reward *Meteor Shower* → task `GlobalResearch::TypeMeteorShower` → `Task::TargetMeteorShower` → `Crate::RunMeteorShower(pos, ownerTeam)`; CPU: `AI::RunMeteor` (from `AI::AdvanceCurrentTasks`). Not an uncaptured-crate outcome. Requires `INCLUDE_CRATES_ADVANCED` [C] `code/worldobject/crate.cpp:Crate::CaptureCrate`, `Crate::RunMeteorShower`, `code/taskmanager.cpp:Task::TargetMeteorShower`, `code/worldobject/ai.cpp:AI::AdvanceCurrentTasks`.
+- `Crate::RunMeteorShower`: `5 + syncrand() % 5` (**5–9**) meteors; each target = `pos + (syncsfrand(420), 0, syncsfrand(420))` (a 420 × 420 square, ±210; `420 = POWERUP_EFFECT_RANGE (70) × 6`), y = terrain − 10; each starts at `(FRAND(sizeX), 1500 + syncfrand(500), FRAND(sizeZ))` — anywhere over the map at 1500–2000 altitude — owned by the task owner (kill credit); marker `icons/icon_meteorshower.bmp`; message `crate_message_run_meteor`; crate sound [C] `Crate::RunMeteorShower`, `code/taskmanager.h:POWERUP_EFFECT_RANGE`.
+
+### 22.2 Meteor — stats
+
+| Item | Value | Ref |
+|---|---|---|
+| Speed | **350 u/s**, read directly from `EntityBlueprint::GetStat` (the byte stat would overflow) | [C] `Meteor::AdvanceToTarget`, `data/stats.txt` |
+| Health | 255 (base `ChangeHealth`; nothing targets meteors) | [C] |
+| Radius | 20 (`Begin`) | [C] `Meteor::Begin` |
+| Flight | straight line start → target, step capped at `350·dt`; flight time = distance/350 (a 2 km diagonal ≈ 5.7 s at speed 1) | [C] `Meteor::AdvanceToTarget` |
+| Impact | within 10 of the target **or** below terrain height | [C] |
+| Explosion | `Location::Bang(pos, 50, 100, ownerTeam)` — full 100 damage to every entity of **every team** within 75, linear to 0 at 100; buildings within 150 take `100·(1 − d/150)`; shockwave ring 35 → 135; the meteor is removed immediately | [C] `Meteor::Advance`, `code/location.cpp:Location::Bang` |
+| Slow motion | the first time a meteor comes within 200 of its target: `g_gameTimer.RequestSpeedChange(0.4, 0.1, 4.0)` (§2.1) | [C] `Meteor::Advance`, `code/gametimer.cpp:GameTimer::RequestSpeedChange` |
+| `m_life` | 5.0, meaningful only after death — dead meteors return immediately (the decrement after `return true` is unreachable) | [C] |
+| Lifetime | until impact | — |
+
+### 22.3 Meteor — state machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> Falling: spawned at 1500-2000 altitude
+    Falling --> Falling: move 350 times dt toward the target, 5 fire particles
+    Falling --> SlowMotionRequested: first time within 200 of the target
+    SlowMotionRequested --> Falling: continues
+    Falling --> [*]: within 10 of the target or below terrain, sound Land, Bang, removed
+```
+
+```mermaid
+sequenceDiagram
+    participant P as Player task
+    participant C as Crate RunMeteorShower
+    participant M as Meteor x5 to 9
+    participant T as GameTimer
+    participant L as Location Bang
+    P->>C: target point
+    C->>M: spawn at a random map point, y 1500-2000, target = point plus or minus 210
+    loop every tick
+        M->>M: move 350 times dt toward the target, 5 fire particles
+        M-->>T: first time within 200, RequestSpeedChange(0.4, 0.1, 4.0)
+    end
+    M->>L: impact, Bang(pos, 50, 100, team), sound Land
+```
+
+### 22.4 Meteor — targeting, terrain, colour, control, sounds, VFX
+
+- Targeting: a fixed point; damage is **not team-filtered** — the owner's own units in the square are hit (02-U4).
+- Terrain: impacts terrain on the way if it is below the surface (mountains between start and target stop it early).
+- Team colouring: none — `meteor.shp` tumbling at 5 rad/s (accurate time) with 10 orbiting additive `textures/starburst.bmp` sprites RGBA(0.8, 0.2, 0.1, 0.35) of size `4 × radius` = 80 [C] `Meteor::Render`.
+- Control: none after targeting.
+- Sounds: "Land" (bound to `meteorhitclose1`, `meteorhitfar1`) + base "Create" (bound to `rocketthrust2loop`, `rumble2_loop`) [C] `Meteor::Advance`, `data/sounds.txt`. VFX: 5 `TypeFire` particles per tick (size `300 + syncsfrand(60)` — synced RNG for a cosmetic size; positions from the unsynced `sfrand`).
 
 ## 23 SpaceShip
 
-_Pending — being written._
+`class SpaceShip : Entity`, type `TypeSpaceShip` (25) [C] `code/worldobject/spaceship.h`, `code/worldobject/spaceship.cpp`. [B:FULL]. `TypeSpaceShip` is in `EntityIsBlocked`.
+
+### 23.1 SpaceShip — role and acquisition
+
+- **Role**: a large UFO event that descends, abducts every non-Futurewinian Darwinian under its beam for a minute or two, then drops the same number (up to 100) of **Futurewinian-team (5)** Darwinians and leaves. A neutral "third party" disruption.
+- **Obtained by** the crate reward `CrateRewardSpaceShip`, an **uncaptured-crate** outcome only (re-rolled away on capture), at most **once per game** (`Crate::s_spaceShipUsed`), never in Assault [C] `code/worldobject/crate.cpp:Crate::RunUncapturedCrate`, `Crate::RunSpaceShip`, `Crate::IsValid`, `Crate::CaptureCrate`. `Crate::RunSpaceShip()`: picks `(FRAND(sizeX), 5000, FRAND(sizeZ))` until the terrain under it is ≥ 10; spawns one SpaceShip on the Futurewinian team (initialised on demand, §2.5); global message `crate_message_spaceship`; crate sound "SpaceShip" (team 255); sets `s_spaceShipUsed` [C].
+- The Futurewinian team is a CPU team with its own `AI` entity (§24), so dropped Futurewinians follow the normal CPU Darwinian logic ([07](07_ai.md)) and fight with subversion lasers (§4.10) [C] `code/location.cpp:Location::Init`, `Location::InitialiseTeam`.
+
+### 23.2 SpaceShip — stats and constants
+
+| Item | Value | Ref |
+|---|---|---|
+| Health | 255, **invulnerable** (`ChangeHealth` returns false) | [C] `SpaceShip::ChangeHealth` |
+| Speed stat | blueprint 500 stored in the byte — out of range (02-U1; [I] 244 under MSVC) — and this byte **is used** below | [C] `data/stats.txt`, `Entity::SetType` |
+| `SPACESHIP_HOVERHEIGHT` | 500 above terrain while working | [C] `spaceship.cpp` |
+| `SPACESHIP_ABDUCTIONBEAM_RADIUS` | 45 (horizontal) | [C] |
+| Abduction duration | `m_abductionTimer = 60 + syncfrand(60)` s (counts only while Abducting), then Waiting 5 s | [C] `SpaceShip::Begin`, `AdvanceAbducting` |
+| Drop cap | 100 Futurewinians, 1 per tick; **none** if the terrain under the ship is < 20 (over water the abductees are simply lost) | [C] `SpaceShip::AdvanceDropping` |
+| Rotation | `m_front` yaws 0.01 rad per tick | [C] `SpaceShip::Advance` |
+| Speed law | `m_speed += 100·dt`, capped `2 × speedStat`; while Idle above 1000: `m_speed = max((y − 1000)/5000 × 8000, 2 × speedStat)` (fast descent from 5000); within 200 of the target: `m_speed −= 100·dt`, floor `0.1 × speedStat`; heading 90 % current / 10 % target per tick. `m_vel` is set to length `speed × dt` and then the position advances by `m_vel × dt`, so the effective velocity is `m_speed × dt` = `m_speed/10` u/s at speed 1 (with stat 244: ≤ 48.8 u/s cruising, ≈640 u/s at the start of the descent). Arrival < 100 | [C] `SpaceShip::AdvanceToTargetPos` |
+| Wander targets | `FindNewTarget`: random `(SFRAND(sizeX), terrain, SFRAND(sizeZ))` re-rolled (unbounded loop) until terrain ≥ 30; because `SFRAND(x)` ∈ [−x/2, x/2) and out-of-range height reads wrap to row/column 0, valid picks fall in the low-x/low-z quarter of the map [I] (02-U5) | [C] `SpaceShip::FindNewTarget`; [I] `code/lib/2d_surface_map.cpp:SurfaceMap2D::GetValue` |
+| Leave | waypoint `(FRAND(x), 2000, FRAND(z))`; removed once y ≥ 1900 | [C] `SpaceShip::AdvanceDropping`, `SpaceShip::Advance` |
+| Lifetime | ≈ descent + 60–120 s + 5 s + drop + climb | — |
+
+### 23.3 SpaceShip — state machine
+
+States `ShipStateIdle`, `ShipStateAbducting`, `ShipStateWaiting`, `ShipStateDropping`, `ShipStateLeaving` [C] `spaceship.h`.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle: spawned at y 5000
+    Idle --> Abducting: reached its first target, sound TractorBeam
+    Abducting --> Abducting: arrived or no waypoint, FindNewTarget, abduct every tick
+    Abducting --> Waiting: abduction timer over and at target
+    Waiting --> Dropping: 5 s
+    Dropping --> Dropping: 1 Futurewinian Darwinian per tick while abductees remain
+    Dropping --> Leaving: abductees 0 and the last drop has landed, stop TractorBeam
+    Leaving --> [*]: y at least 1900
+```
+
+- **Abduction** (`AdvanceAbducting`, every tick): every Darwinian within the 45-radius beam column (any height, entity grid query) that is not Futurewinian and not inside an Armour is set to `StateBeingAbducted` (`Darwinian::Abduct`); it spirals up (§4.4 state 23) and on reaching the ship is **removed without a spirit** and counted (`IncreaseAbductees`). If the ship stops abducting they revert to Idle [C] `SpaceShip::AdvanceAbducting`, `code/worldobject/darwinian.cpp:Darwinian::Abduct`, `AdvanceBeingAbducted`.
+- **Dropping**: Futurewinian Darwinians spawn at the ship (500 up) airborne and fall under `Entity::AdvanceInAir` gravity (no fall damage).
+
+### 23.4 SpaceShip — targeting, terrain, colour, control, sounds, VFX
+
+- Targeting: positions only (the enemy-seeking block in `FindNewTarget` is commented out); the beam takes Darwinians of every team except the Futurewinian team.
+- Terrain: hovers at terrain + 500; never collides.
+- Team colouring: `spaceship.shp` fixed colours; the beam is 30 stacked **team-coloured** rings scrolling up (abducting) or down (dropping) at 50 u/s; rendered with `SetupSpecialLights` [C] `SpaceShip::RenderBeam`, `SpaceShip::Render`. `DropShip`'s constructor calls `ScaleRadius(0.2)` on the shared `spaceship.shp` resource, which would also shrink this ship's bounding radius if a DropShip ever existed (legacy) [C] `code/worldobject/dropship.cpp:DropShip::DropShip`.
+- Control: none. Sounds: "TractorBeam" (looped; stopped with `StopAllSounds(id, "SpaceShip TractorBeam")`) + base "Create" (bound to `theramins`, `ufo_engine2`, `ufo_engine1`, `rumble2_loop`) [C].
+- VFX: 4 engines (`MarkerEngine1`–`MarkerEngine4`): 1 `TypeBlueSpark` (size 80–160) + 11 `TypeMissileFire` (500, blue; × 2.5 velocity when leaving) per engine per tick, unsynced [C] `SpaceShip::AdvanceEngines`.
 
 ## 24 AI
 
-_Pending — being written._
+`class AI : Entity`, type `TypeAI` (18) [C] `code/worldobject/ai.h`, `code/worldobject/ai.cpp`. [B:FULL]. Short specification; the CPU player's strategy, target graph (`AITarget`), difficulty levels and per-mode logic are specified in [07](07_ai.md).
+
+- **Role**: the invisible "brain" entity of a CPU team. It is simulated identically on every peer like any other entity (no separate AI process), so CPU behaviour is deterministic lock-step state [C] `code/location.cpp:Location::InitialiseTeam`.
+- **Creation**: `Location::InitialiseTeam` spawns one AI entity for every `TeamTypeCPU` team in `GameModeMultiwinia` — including the Monster (4) and Futurewinian (5) teams, which `Location::Init` initialises as CPU teams after `InitTeams` — with requested position (−100, 0, −100); `FindValidSpawnPosition` rejects it as off-map and returns the fallback clamped 20 inside the edges, so the entity sits at **(20, ·, 20)** [C] `Location::InitialiseTeam`, `Location::FindValidSpawnPosition`, `Location::InitMonsterTeam`, `InitFuturewinianTeam`. `TypeAI` is blocked for level placement.
+- **Fields**: `m_timer` (main think timer; initial phase `syncfrand(20/10/1)` for Easy/Standard/Hard), `m_radarReposTimer` (initial `syncfrand(10)`), `m_currentObjective`, `m_tutorialCentreZoneCaptured`, `m_ctsScoreZones`, `m_rrObjectiveList` (`RRSolarPanelInfo`), static `s_ai[NUM_TEAMS]` (set in `Begin`) [C] `AI::AI`, `AI::Begin`.
+- **Behaviour** (`AI::Advance`): every tick it picks `max(1, 2 % of m_others.Size())` random slots of its team's `m_others` (`syncrand`); for each grounded Darwinian: more than 10 wall hits (and not inside armour) → reset to Idle and clear the counter; an Idle/WorshipSpirit/WatchingSpectacle Darwinian more than 70 from its nearest AI target gets `GiveOrders(target + disc(20 + syncfrand(20)))` (Blitzkrieg: disc 0–20). Then it decrements its timers and, in Multiplayer, runs `AdvanceRadarDishAI`, `AdvanceSpecialsAI` (calls `RunAI` of officers, armour, harvesters, engineers, tanks — §5.7, §8.8, §9.8, §10.4), `AdvanceUnitAI` (squads, §7.8), and on its main timer the per-mode logic and crate-task use (`AdvanceCurrentTasks`: squad, armour, harvester, engineer, airstrike, nuke, tank, gun turret, spam, forest, ant nest, eggs, plague, meteor, dark forest, power-ups) [C] `AI::Advance`, `ai.h`. Timer periods (11/101/200 ticks) follow §2.1's float-countdown rule.
+- **Invulnerable and untargetable**: `ChangeHealth` returns false; `EntityGrid::GetBestEnemy` skips `TypeAI` ("An AI entity is *never* a target"); it does not count toward `s_entityPopulation` (the constructor decrements it) and never calls `Entity::Advance` [C] `AI::ChangeHealth`, `code/entity_grid.cpp:EntityGrid::GetBestEnemy`, `AI::AI`. It is still inserted into the entity grid at (20, 20); `Darwinian::SearchForThreats` does not exclude `TypeAI`, so enemy Darwinians standing near that map corner could pick it as a (harmless, unkillable) threat [I] (02-U13).
+- **Team colouring, sounds, control**: none (render is a debug aid) [C] `AI::Render`.
 
 ## 25 Tank
 
-_Pending — being written._
+`class Tank : Entity`, type `TypeTank` (24) [C] `code/worldobject/tank.h`, `code/worldobject/tank.cpp`. Compiled in [B:FULL] but **not obtainable in the baseline**: the crate reward `CrateRewardTank` is commented out [C] `code/worldobject/crate.cpp:Crate::CaptureCrate`; `Task::TargetTank`'s body is commented out (a Tank task spawns nothing) [C] `code/taskmanager.cpp:Task::TargetTank`; the only maps placing tanks (`data/levels/mp_tankbattle_2P.txt`, `_3P.txt`, `_4P.txt`, 9 instant units with `runAsTask`, i.e. through the spawn-nothing task) belong to `GameTypeTankBattle`, whose logic `Multiwinia::AdvanceTankBattle` compiles only with `INCLUDEGAMEMODE_TANKBATTLE` (TARGET_DEBUG) [C] `code/multiwinia.cpp`, `_work/build_matrix.md` §3. Tag: **[B:DEBUG]** (Tank Battle mode) / unreachable in FULL — and because those instant units run the commented-out task, no build at this commit actually creates a Tank [C]. `TypeTank` is not blocked.
+
+### 25.1 Tank — role and acquisition
+
+A player-driven tank with a turret firing rockets (a cut crate unit and the Tank Battle mode's only unit). Obtained only through the commented-out paths above (and level instant units in debug builds) [C].
+
+### 25.2 Tank — stats and constants
+
+| Item | Value | Ref |
+|---|---|---|
+| Health | 150 | [C] `data/stats.txt` |
+| Max speed | 50 u/s; +10 u/s² when the waypoint is > 50 away, else −20 u/s² | [C] `Tank::Advance` |
+| Hull turn | 0.05 rad per tick while `dot(front, toWaypoint) < 0.999` | [C] |
+| Turret turn | `0.05 + 0.15·(1 − dot)` rad per tick toward the attack target (only in StateCombat) | [C] |
+| Arrival | within 5 → waypoint cleared | [C] |
+| RATE | 2 s between shots in Tank Battle; ÷ 4 = 0.5 s in any other game type | [C] `Tank::PrimaryFire` |
+| Main gun | `FireRocket(barrelEnd − 2y, target, team, lifeTime 2.0)` → Rocket (Bang R 15 D 25), life 2.0 s (range ≈310 [I] from the rocket acceleration table in [04](04_crates_powerups_and_weapons.md)) | [C] |
+| Misaligned turret | `dot(turretFront, toTarget) < 0.75` → fired straight along the turret to `pos + turretFront·300` | [C] |
+| Mine | `DropMine`: `LandMine` at the hull, `m_mineTimer = 1.0` s — **never called** | [C] |
+| Missile | `LaunchMissile`: guided `Missile` (Bang R 20 D 100, life 15 s, 200 u/s) from pos + 30 up toward `GetMissileTarget()` — **never called** | [C] |
+| Passenger constants | `TANK_CAPACITY` 40, `TANK_UNLOADPERIOD` 0.1, `TANK_NUMFLOATERS` 3 — passenger code dead | `#define` [C] `tank.h` |
+| Task life | 30 s in Multiplayer outside Tank Battle (`Task::Start`), then `Task::Stop` kills it | [C] `code/taskmanager.cpp` |
+| Shapes | `tank_body.shp` (markers `MarkerTurret`, `MarkerEntrance`), `tank_turret.shp` (`MarkerBarrelEnd`) | [C] `Tank::Begin` |
+
+### 25.3 Tank — state machine
+
+```mermaid
+stateDiagram-v2
+  [*] --> Combat : Begin, registers as special
+  Combat --> Combat : SetWayPoint and SetAttackTarget(mouse) every tick while selected
+  Combat --> Dead : health 0
+  Dead --> [*] : fade
+```
+
+`m_state` is always `StateCombat` (Loading/Unloading reachable only through commented-out code) [C].
+
+### 25.4 Tank — targeting, terrain, damage, death, colour, control, sounds
+
+- Targeting: player mouse when selected; AI (`Tank::RunAI`): Tank Battle → best enemy within 50–3000, waypoint = enemy ± `syncsfrand(250)` (±125), fire if 50 < d < 300; other modes → if no waypoint go to the nearest enemy-owned `AITarget` farther than 50, fire at the best enemy within 50–300 [C].
+- Terrain: ignores obstructions (no `PushFromObstructions`), y = terrain (may go below sea level; render clamps to ≥ 0), `m_up` = terrain normal. Quirk: when idle (`m_wayPoint == 0`) the hull still turns toward the world origin [C].
+- Damage: lasers ignored; other types full; shape-fragment explosion of body and turret on every hit and at death; **no spirit, no Bang**; `StopAllSounds(id)` on death [C] `Tank::ChangeHealth`.
+- Team colouring: body and turret copies cached as `tank_body.shp_<colour>_<group>`, every fragment team colour × 0.5 [C] `Tank::Begin`.
+- Control: move → `SetWayPoint(mouse)`; primary fire (mouse) or gamepad secondary → `PrimaryFire()`; every tick `SetAttackTarget(mouse)` [C] `code/location.cpp` (`TypeTank` branch).
+- Sounds: base events; render bob `2·sin(t + id)`, damaged flicker unsynced; `RenderPixelEffect` disabled [C].
+- Tank Battle scoring [B:DEBUG]: each team's score = `NumTanks` option − tank deaths; a team without a tank loses a life and re-runs a Tank task (which spawns nothing) [C]/[I] `Multiwinia::AdvanceTankBattle`.
 
 ## 26 LaserTrooper
 
-_Pending — being written._
+`class LaserTrooper : Entity`, type `TypeLaserTroop` (1) [C] `code/worldobject/lasertrooper.h`, `code/worldobject/lasertrooper.cpp`. **[B:LEGACY]**: compiled in FULL but unreachable — `TypeLaserTroop` is in `EntityIsBlocked` (no level placement) and the only runtime creator is `Lander::AdvanceLanded`, and no code creates Landers [C] `code/worldobject/lander.cpp`, grep of `SpawnEntities`.
+
+| Template item | Specification |
+|---|---|
+| Role | Darwinia's basic laser infantry, landed in groups by a Lander |
+| Obtained | `Lander` spawns 2–3 per landing interval (§31) |
+| Stats | health 20, speed 15, rate 1 s [C] `data/stats.txt` |
+| Behaviour | `Advance`: moves straight toward `m_targetPos` at speed (snap when within one step), `m_front = vel`; `EnterTeleports()`; air/water handling; own reload countdown; dead fade; optional victory hop (1 %/tick, `10 + syncfrand(10)` up). `m_targetPos` is fed by `Unit::Advance` for `TypeLaserTroop`: it moves ≤ 1 unit per tick toward `waypoint + rectangle-formation offset` [C] `LaserTrooper::Advance`, `code/unit.cpp:Unit::Advance`, `Unit::RecalculateOffsets`. The Darwinia-era `Advance` is commented out |
+| State machine | `Marching → (teleport) → removed / → Dead`; no explicit state enum in the live code [C] |
+| Targeting | through the generic `Unit::Attack`/`Entity::Attack` (laser speed 150, reload 1 s) [C] |
+| Terrain | ground-snapped; uses `Entity::PushFromEachOther` (its only user) [C] |
+| Death | base (spirit) |
+| Team colouring | team-coloured sprite quad (× 0.7 while reloading, × (0.5 + 0.5·health)), ground shadow, side-on additive line; dead → 3 black fragments drifting apart (alpha = health × 2.55) [C] `LaserTrooper::Render` |
+| Control | unit waypoint (legacy task model) |
+| Sounds | base events |
 
 ## 27 Shaman
 
-_Pending — being written._
+`class Shaman : Entity`, type `TypeShaman` (19) [C] `code/worldobject/shaman.h`, `code/worldobject/shaman.cpp`; summon menu `ShamanInterface` [C] `code/shaman_interface.h`, `code/shaman_interface.cpp`. **[B:LEGACY]** (a cut "Shaman" game-mode unit).
+
+### 27.1 Shaman — reachability
+
+- `Shaman::Advance` has its whole body commented out and **returns true**, so a Shaman is deleted on its first simulation tick [C] `Shaman::Advance`.
+- Creation paths: `Task::TargetShaman` (task `TypeShaman`) — no crate or UI runs it in FULL; the `GameTypeShaman` start-up block is commented out; level instant units are blocked [C] `code/location.cpp:Location::InitialiseTeam`, `code/multiwinia.cpp:Multiwinia::Advance`, `Entity::EntityIsBlocked`. The task manager refuses to terminate Shaman tasks ("you can't terminate shamans") and `StartingPowerups` exempts them from the start delay [C] `code/taskmanager.cpp:TaskManager::TerminateTask`, `code/location.cpp`.
+- Stats if it existed: health 200, speed 25, rate 2 [C] `data/stats.txt`; shape `officer.shp` (native colours); registers as a special.
+
+### 27.2 Shaman — abilities as coded (none reachable)
+
+| Ability | Trigger | Mechanics | Cost / cooldown |
+|---|---|---|---|
+| Move | move order → `SetWaypoint` | walk at speed with slope factor [0.1, 2.0], turn blend 0.6/tick, `PushFromObstructions`; a connected RadarDish/Bridge within 5 → teleport, exit + 30 | — |
+| Change mode | primary fire within 20 of itself → `ChangeMode` (else teleport target rings) | `ModeNone → ModeCreateDarwinians → ModeFollow → ModeNone`; label "Creating Darwinians" / "Darwinians Following" | 0.3 s debounce |
+| Create Darwinians | `AdvanceCreateDarwinians` (only from the commented Advance) | every Floating spirit within 50 → one Darwinian of the shaman's team; spirit → Death + `SkipStage()` | — |
+| Follow | `CallingDarwinians()` in ModeFollow → `Darwinian::SearchForShamans` (call commented out) | Darwinians follow it | — |
+| Teleport | secondary fire → `TeleportToPos(mouse)` | instant jump inside any own-team `Portal` radius (`Portal::m_portalRadius`) | 0.3 s debounce |
+| Summon | `ShamanInterface` → `RequestShamanSummon` → `Shaman::SummonEntity(type)` → `BeginSummoning` (body commented out) | sacrifice Darwinians within 50 (one batch per 1.0 s, `Darwinian::Sacrafice(shamanId, portal)`) until `GetSoulRequirement(type)` | souls below |
+| Capture portal | "capture" icon (`Entity::NumEntityTypes`) if `CanCapturePortal()`: nearest Portal not ours, ≤ 300 away, no summonable monster within 300 | 25 souls | — |
+| Paralyze | `Paralyze()` (final summon) | freeze, invulnerable, health reset | — |
+
+Summon table (`GetSummonTime`, `GetDefaultSpawnNumber`, `GetSoulRequirement`, `GetEggType`, `IsSummonable`) [C]:
+
+| Entity | Summonable | Summon time (s) | Spawn count | Souls | Egg type | Icon |
+|---|---|---|---|---|---|---|
+| Centipede | yes | 20 | 1 | 30 | SpawnCentipede | `shaman_centipede.bmp` |
+| ArmyAnt | no | 10 | 3 | 20 | SpawnAnts | `shaman_ants.bmp` |
+| SoulDestroyer | yes | 60 | 1 | 100 | SpawnSoulDestroyer | `shaman_souldestroyer.bmp` |
+| Spider | yes | 30 | 3 | 25 | SpawnSpider | `shaman_spider.bmp` |
+| SporeGenerator | yes | 10 | 1 | 15 | SpawnSporeGenerator | `shaman_sporegenerator.bmp` |
+| Tripod | no | 15 | 1 | 15 | — | `shaman_tripod.bmp` |
+| Virii | yes | 5 | 1 | 15 | SpawnVirii | `shaman_virii.bmp` |
+| Darwinian | no | 10 | 1 | 20 | SpawnDarwinians | `shaman_darwinian.bmp` |
+| Special final summon (255 / −1) | — | — | — | 200 | — | `shaman_special.bmp` |
+| Capture portal (`NumEntityTypes`) | — | — | — | 25 | — | `shaman_capture.bmp` |
+| any other | — | −1 | 0 | 999 | −1 | none |
+
+`CanSummonEntity` always returns false (portal-count rules commented out); `MAX_EGGS = 3` unused. Damage: only while `m_vunerable` (default true); death → shape explosion, **no spirit**; never pushed by lasers, `Bang` or shockwaves [C] `Shaman::ChangeHealth`.
+
+### 27.3 ShamanInterface — radial summon menu
+
+Shown when the local player's current entity is a Shaman and the task-manager key is pressed (`code/taskmanager_interface_multiwinia.cpp`, `code/taskmanager_interface_icons.cpp`); hidden by `ControlIconsTaskManagerHide` or after a choice; `Advance` every frame from `code/main.cpp`, `Render` from `code/renderer.cpp`. Icons: one per summonable type in enum order, the special icon (condition commented out → never), the capture icon if `CanCapturePortal`; ring radius 175 px around screen centre starting at −90°, icons 120 px (× 8/N when N > 8), shadow `icons/shaman_shadow.bmp`, background `textures/shaman_background.bmp` (550 px), selector `icons/mouse_selection.bmp` (130 px, yellow) at the top slot. Input: `ControlMenuLeft/Right` rotate one slot (0.1 rad per frame until 2π/N), sound "MouseOverIcon" (`TypeInterface`); `ControlActivateTMButton` → `RequestShamanSummon(team, shamanUniqueId, iconType)` and hide; mouse hover selection disabled. Network letter `NET_DARWINIA_SHAMANSUMMON {TEAMID, ENTITYID, ENTITYTYPE}` → handler finds the shaman and calls `SummonEntity` [C] `code/shaman_interface.cpp`, `code/network/clienttoserver.cpp:ClientToServer::RequestShamanSummon`. Team colour: native `officer.shp`; sacrifice ring in team colour (grey for team 255).
 
 ## 28 DropShip
 
-_Pending — being written._
+`class DropShip : Entity`, type `TypeDropShip` (26) [C] `code/worldobject/dropship.h`, `code/worldobject/dropship.cpp`. **[B:LEGACY]** (dormant reinforcement transport).
+
+| Template item | Specification |
+|---|---|
+| Role | small transport (0.2-scale `spaceship.shp`) that flies from the map corner nearest the target to 250 above it, drops 20 Darwinians of its team one per tick, and leaves |
+| Obtained | only `Task::TargetDropShip` for a `GlobalResearch::TypeDropShip` task; no code issues that task except the level-option reinforcement type `DropShip` (`defenderreinforcementtype` / `attackerreinforcementtype`), used solely by `data/levels/old/mp_assault_3P_1.txt`, which the menu never lists (`ListResources("levels/", "mp_*", false)` is non-recursive) and `tools/multiwinia_exclusions.txt` (`levels/old/*`, consumed by `tools/build_multiwinia_data.bat`) keeps out of the shipped archives [C] `code/taskmanager.cpp:Task::TargetDropShip`, `code/multiwinia.cpp`, `code/level_file.cpp:LevelFile::ParseMultiwiniaOptions`, `code/game_menu.cpp` |
+| Stats | health 255 (invulnerable — `ChangeHealth` returns false), speed 255, rate 0 [C] |
+| Constants | entry: the corner (x ∈ {100, X − 100}, y 500, z ∈ {100, Z − 100}) nearest the target; `DROPSHIP_HOVERHEIGHT` 250 above the target terrain; `DROPSHIP_ABDUCTIONBEAM_RADIUS` 20 (beam render only); 20 passengers, 1 per tick; speed starts 1000, `+100·dt` capped `10 × speedStat`, within 500 `−100·dt` floored `0.1 × speedStat`, same `dt²` integration quirk as SpaceShip; arrival < 10 [C] `DropShip::DropShip`, `DropShip::AdvanceToTargetPos` |
+| State machine | `DropShipStateArriving → (arrived) Dropping → (out of passengers and the last drop grounded or dead) Leaving (waypoint + 1000 up) → removed on arrival or y > 1000`; the task counts as running until the ship is gone [C] `DropShip::Advance`, `code/taskmanager.cpp` |
+| Targeting / terrain | fixed point; flies |
+| Death | never |
+| Team colouring | `spaceship.shp` native; beam rings |
+| Side effect | the constructor calls `m_shape->ScaleRadius(0.2)` on the **shared** `spaceship.shp` resource (also used by SpaceShip) [C] |
+| Control | none |
+| Sounds | base "Create" only |
 
 ## 29 Tripod
 
-_Pending — being written._
+`class Tripod : Entity` (type `TypeTripod` = 8) and `class TripodNavData` [C] `code/worldobject/tripod.h`, `code/worldobject/tripod.cpp`. **[B:LEGACY]**: `TypeTripod` is in `EntityIsBlocked`; nothing spawns it (the Triffid `SpawnTripod` case is commented out; `Shaman::CanSummonEntity` always returns false); no map in the tree places one [C] grep of `data/levels`.
+
+### 29.1 Tripod — specification
+
+| Template item | Specification |
+|---|---|
+| Role | three-legged walker that crouches and fires twin lasers |
+| Stats | health 155, speed 20, rate 1 (speed/rate unused — own navigation) [C] `data/stats.txt` |
+| Legs | 3 `EntityLeg`s (`tripod_leg_part.shp`, markers `MarkerLeg0`–`MarkerLeg2`), `LEG_LIFT` 3.0, `IDEAL_LEG_SLOPE` 0.2, `LEG_SWING_DURATION` 0.5 s, `LOOK_AHEAD_COEF` 1.2, `FOOT_MOVE_THRESHOLD` 1.0; a foot moves only when all three are planted (§20) [C] `Tripod::Begin`, `Tripod::CalcWhichFootToMove` |
+| Hover heights | start 27; `STATIONARY_HOVER_HEIGHT` 30 − `HOVER_LOWER_WITH_SPEED_FACTOR` 0.2 × |speed|; `ATTACK_HOVER_HEIGHT` 18; body y blends to terrain + hover at `dt` per tick [C] `Tripod::AdvanceWalk`, `Tripod::Advance` |
+| Navigation | `TripodNavData`, §29.2; destination within ±150 (no enemies) or ±50 of a random enemy within `NAVIGATION_SEARCH_RADIUS` 1000, re-rolled with chance 1/40 per tick [C] `Tripod::DoNavigation`, `Tripod::ChooseDestination` |
+| Two-leg fall | while a foot is lifted the body pivots about the line between the planted feet under `GRAVITY` (`DoFallForTwoLegs`; contains an operator-precedence bug `!state == OnGround`) [C] |
+| State machine | `ModeWalking → (≥ 17 s since the last attack and an enemy within ATTACK_SEARCH_RADIUS 200) ModePreAttack (stop, crouch to 18, tilt to target) → ModeAttacking for ATTACK_DURATION 7 s (after 1 s, on odd 0.1-s slots, two lasers ±4 either side, speed 80, aim jitter syncsfrand(0.1), via Location::FireLaser) → ModePostAttack (rise to 30) → ModeWalking` [C] `Tripod::AdvanceWalk`, `AdvancePreAttack`, `AdvanceAttack`, `AdvancePostAttack` |
+| Damage | lasers ignored; **only damageable while ModeAttacking** [C] `Tripod::ChangeHealth` |
+| Death | when the body falls below the terrain: explosion, removed [C] `Tripod::Advance` |
+| Determinism | mode timers use `g_gameTime` and rotation `g_advanceTime` (render clocks) inside `Advance` — not lock-step safe [C] |
+| Team colouring | `tripod.shp` via `SetShape` (red regions) [C] `Tripod::Begin` |
+| Control | none |
+| Sounds | base "Create" only from code (bound: `tripodcreate`, attack/health/death samples unused) |
+
+```mermaid
+stateDiagram-v2
+    [*] --> Walking
+    Walking --> PreAttack: 17 s since last attack and enemy within 200
+    PreAttack --> Attacking: crouched and aimed
+    Attacking --> PostAttack: 7 s
+    PostAttack --> Walking: risen to 30
+    Walking --> [*]: body below terrain
+```
+
+### 29.2 TripodNavData — hex-direction navigator
+
+`class TripodNavData { Vector2 m_directions[6]; int m_dir; Vector2 m_targetPos; }` [C] `code/worldobject/tripod.h`, `tripod.cpp:TripodNavData::TripodNavData`. [B:LEGACY]. Six unit directions 60° apart: (0.5, 0.86603), (1, 0), (0.5, −0.86603), (−0.5, −0.86603), (−1, 0), (−0.5, 0.86603). Each tick `Tripod::DoNavigation` picks the direction with the largest dot to the destination, stepping `m_dir` by ±1 when the angle exceeds 30°, and adds 1.0 u/s of velocity per tick in that direction; `m_targetPos` is the current destination (`ChooseDestination`) [C].
 
 ## 30 Tentacle
 
-_Pending — being written._
+`class Tentacle : Entity`, type `TypeTentacle` (22) [C] `code/worldobject/tentacle.h`, `code/worldobject/tentacle.cpp`. **[B:DEBUG] / [B:LEGACY]**: spawned only by `Portal::AdvanceStateExpanding` (6 tentacles × 12 segments on the Monster team, `NUM_TENTACLES` 6); portals come from Darwinia/Shaman maps (`levels/old/`, excluded from the shipped data) or the *The Beast* crate (`Crate::RunTheBeast`), which exists only when `INCLUDE_THEBEAST` is defined — inside `#ifdef TARGET_DEBUG` in `code/worldobject/crate.h` [C] `code/worldobject/portal.cpp:Portal::AdvanceStateExpanding`, `code/worldobject/portal.h`, `code/worldobject/crate.cpp:Crate::RunTheBeast`. `TypeTentacle` is blocked.
+
+| Template item | Specification |
+|---|---|
+| Role | portal tentacles that slam and swipe, flinging and killing anything near |
+| Stats | health 255 × `2 × size`, speed 100, rate 0; **invulnerable** (`ChangeHealth` returns false) [C] |
+| Segments | one Unit of N (12): entity *i* gets `m_next` = entity *i − 1* and `m_prev` = entity *i + 1*; the segment with no `m_prev` (last entity) is the **base** and runs the state machine; the segment with no `m_next` (entity 0) is the tip (head shape). Sizes: entity 0 = 1.0, × 1.05 per index; radius `25 × size`; `m_positionId = i` [C] `Tentacle::Begin`, `Tentacle::Advance` |
+| Follow | each non-base segment asks the one below (`m_prev`) for `pos = below.pos + below.lastRecordedDirection × 3 × below.m_positionId` and moves there only if that point is ≥ size/2 above terrain, higher than itself, or the state is Swipe; it copies the base's state [C] `Tentacle::GetTrailPosition` |
+| State machine | `TentacleStateIdle` (sway ±0.1; 1/50 per tick → Slam unless the portal is exploding) → `TentacleStateSlamGround` (bend toward a point 10 outward and 5 below ground at `2·dt`; on reaching it 20 dust particles, then 2/3 → `TentacleStateSwipeAcross` after 2 s, else Idle for 4 s) → `TentacleStateSwipeAcross` (bend across toward the portal centre at `3·dt`, then Idle) [C] `Tentacle::AdvanceIdle`, `AdvanceSlam`, `AdvanceSwipe` |
+| Targeting | contact: every segment, every tick, **any** entity of any team within `m_radius` except Tentacles/Shamans is flung away at 60 u/s and takes `ChangeHealth(−255)` [C] `Tentacle::Attack` |
+| Terrain | upper segments below `size` above terrain are clamped, with a 20-particle `TypeRocketTrail` puff per impact [C] `Tentacle::HandleGroundCollision` |
+| Lifetime | removed when its portal no longer exists [C] |
+| Constructor bug | sets `m_type = TypeCentipede` (corrected by `SetType(TypeTentacle)` in `SpawnEntities`) [C] |
+| Team colouring | reuses per-team red-region recoloured `centipedehead.shp` / `centipede.shp` [C] `Tentacle::Begin` |
+| Control | none |
+| Sounds / VFX | none of its own; when the portal is in `SummonStateExplode` the head draws `Portal::RenderBeam` to the portal [C] `Tentacle::Render` |
 
 ## 31 Lander
 
-_Pending — being written._
+`class Lander : Entity`, type `TypeLander` (7) [C] `code/worldobject/lander.h`, `code/worldobject/lander.cpp`. **[B:LEGACY]**: creatable only via level-file instant units, which `EntityIsBlocked` forbids; no code spawns it [C] grep of `TypeLander`.
+
+| Template item | Specification |
+|---|---|
+| Role | Darwinia beach-landing craft that sails in and unloads LaserTroopers |
+| Stats | health 255, speed 40, rate 1 (= landed spawn interval) [C] `data/stats.txt` |
+| State machine | `StateSailing` (heads −X: `m_front = (−1, 0, 0)` forced every tick, speed 40 on the sea; lands when terrain > 0) → `StateLanded` (every `Rate` = 1 s spawns `int(2 + syncfrand(2))` (2–3) LaserTroopers in a new unit created on **team 0** but with entities on the lander's team — bug — and sends them 750 ahead ± 100 sideways) [C] `Lander::AdvanceSailing`, `Lander::AdvanceLanded` |
+| Death | after the base fade, `Location::Bang(pos, 30, 50)` [C] `Lander::Advance` |
+| Overload defects | `ChangeHealth(int)` and `Render(double, int)` do **not** override the virtual `Entity` signatures, so the base versions run (base damage with spirit; base render draws nothing) [C] `code/worldobject/lander.h` vs `code/worldobject/entity.h` |
+| Team colouring | `lander.shp` team tint, darker while reloading — only in the non-overriding `Render` overload (never called) [C] |
+| Control / targeting / sounds | none / none / base events |
 
 ## 32 Control model summary
 
-_Pending — being written._
+Multiwinia has **no build queue and no per-unit command of the population**: Darwinians act autonomously; the player steers them through group orders, officers, armour and power-ups, and directly drives only the small number of crate units. Every player action is an input → network command → deterministic handler on every peer ([06](06_player_control_and_input.md) for bindings and the input graph, [22](22_determinism_and_networking.md) for the command stream). The per-team control state each tick is a `TeamControls` record (mouse position, buttons, unit-move/primary/secondary flags) applied by `Location::UpdateTeam`, which returns early while the game is paused or over [C] `code/location.cpp:Location::UpdateTeam`.
+
+| Entity | Control category | Player inputs and effects | Ref |
+|---|---|---|---|
+| Darwinian | **indirect / group order** | select a circle of own Darwinians (`NET_DARWINIA_SELECTDGS` → `SelectDarwinians`), order them to a point (`NET_DARWINIA_ORDERDGS` → `IssueDarwinianOrders`: route, `GiveOrders`, or board a nearby armour); promote one to an Officer (`NET_DARWINIA_PROMOTE`); they obey officers they pass; power-ups target areas | §4.12 |
+| Officer | **officer orders + formation** | GOTO order (far click: `SetOrders` → route, officer stays, redirects passers-by within 100); formation (click within 50: `SetFormation`, up to 90 followers in a block that marches with the officer); move the officer itself (`FORCEONLYMOVE` → `SetWaypoint`); demote (promote command again); while PrepareGoto and nearly still, the officer faces the team's mouse position | §5.5, `Location::UpdateTeam` |
+| Formation members | **formation** | inherit the officer's moves; volley fire; × 0.6 explosive damage; no grenades | §4.7, §5.5 |
+| InsertionSquad | **direct control** | move (left button), laser fire (primary held, 6 shots/s per squad), grenade (primary + secondary), gamepad stick control; autonomous when deselected; 60 s life | §7.6 |
+| Armour | **direct + task-style orders** | move (left click / `FORCEONLYMOVE`), go-and-load/unload order (right click > 50 away → conversion point), toggle load/unload (right click on the armour, next/previous-weapon keys), toggle the pending order on its marker | §8.7 |
+| Harvester | **direct move only** | move order (`SetWaypoint`, deselects); otherwise autonomous | §9.8 |
+| Engineer | **direct move only** | move order (deselects); secondary → bridge (no-op) | §10.4 |
+| Airstrike, Napalm, Nuke, Meteor | **task (targeted power-up)** | choose a target point once; then autonomous | §11, §12, §22 |
+| Eggs, Ant Nest, Infection, Dark Forest crates | **task (targeted power-up)** | choose a point; created creatures are autonomous (Eggs: owned by the player; Ant Nest/Infection: Monster team) | §13–§21, [04](04_crates_powerups_and_weapons.md) |
+| Creatures, SpaceShip, Zombie, Spirit | **none** | — | §13–§23, §6 |
+| AI | **CPU player** | issues the same unit calls as a player through `RunAI` hooks and `GiveOrders` | §24, [07](07_ai.md) |
+| Tank [B:DEBUG], Shaman/LaserTrooper/Lander/Tripod/DropShip/Tentacle [B:LEGACY] | direct (Tank, Shaman) / none | — | §25–§31 |
+
+Ownership of the controlled object is not validated by the server: a command names a team id and the handler acts on that team's selected unit/entity ([22](22_determinism_and_networking.md)); `Location::PromoteDarwinian` additionally trusts the entity index's type (§4.12) [C]/[I].
 
 ## 33 Cross-entity summaries
 
-_Pending — being written._
+### 33.1 Who attacks whom
+
+| Attacker | Selects targets by | Attack | Team filter | Section |
+|---|---|---|---|---|
+| Darwinian | `SearchForThreats` (§4.6): grenades/markers within 60 (any team, flee), burning trees, enemies within ≈90 via the entity-grid cache, excluding Eggs, Harvesters, Engineers and moving Armour | laser 20–39 every ≈4 s; grenade/rocket every 12–20 s at > 75 | enemies (IsFriend); insane: everyone | §4.7 |
+| Squadie | player cursor, or `GetBestEnemy(0, 100)` every 1 s when deselected | laser 20–39 (6 shots/s per squad); grenade every 4 s | enemies | §7.5 |
+| SpaceInvader | the marker point | 1 bomb (Bang R 25 D 100 / napalm) | none (explosion hits all) | §11 |
+| Nuke | chosen point ± 150 | Bang R 50 D 100 + shockwave | none | §12 |
+| Meteor | chosen point ± 210 | Bang R 50 D 100 + shockwave | none | §22 |
+| ArmyAnt | hill objectives; spirits/enemies within 10 | capture Darwinians (killed at the hill), 1 HP/tick bites on others | enemies (never Harvesters) | §13 |
+| Virii | `GetBestEnemy(30, 60)` grounded | 20 HP/tick contact | enemies | §16 |
+| Centipede | `GetBestEnemy(75·size, 150·size)` | `(radius − d)·10` per tick per segment | enemies | §18 |
+| Spider | enemy at 100–250 (position snapshot) | pounce: 100·fraction within 20, push within 40 | enemies | §19 |
+| SoulDestroyer | enemy at 200–300 while ≥ 50 up | `(25 − d)·50` per tick; deletes the victim's spirit | enemies | §21 |
+| Tentacle [B:DEBUG] | contact | −255 and fling | **any** team | §30 |
+| Officer (shield) [B:LEGACY] | `GetBestEnemy(0, 10)` | −10 per soul | enemies | §5.10 |
+| Armour, Harvester, Engineer, SpaceShip, SporeGenerator, Egg, TriffidEgg, Zombie, AI | — (no attack) | — | — | — |
+
+### 33.2 How Darwinians react to each entity type
+
+| Target type | Counted as threat | Scared (always flee) | Grenade-worthy | Notes |
+|---|---|---|---|---|
+| Darwinian (enemy) | yes | only if > 5 enemies and no friends | if > 5 enemies and < 2 friends within 50 | soldiers hover ≈100 off, close to 20–40 when higher |
+| Officer | yes | no | crowd rule | |
+| Squadie | yes | **yes** | **yes** | |
+| Armour | only when moving < 15 u/s | **yes** | **yes** | |
+| Harvester, Engineer | **no** | — | — | ignored entirely |
+| SpaceInvader | yes | **yes** | crowd rule | lasers cannot hurt it |
+| Nuke, Meteor | yes (if in range) | no | crowd rule | |
+| ArmyAnt, Virii, Centipede | yes | no | crowd rule | |
+| Spider, SporeGenerator, TriffidEgg | yes | **yes** | **yes** | lasers cannot hurt them |
+| SoulDestroyer, Tripod | yes | **yes** | crowd rule | lasers cannot hurt them |
+| Egg | **no** | — | — | |
+| Tank | yes | no | **yes** | |
+| SpaceShip | yes | no | **never** | invulnerable |
+| AI | not excluded (02-U13) | no | crowd rule | invulnerable, at (20, ·, 20) |
+| Grenade / airstrike marker (any team) | flee within 60 | yes | — | ignored while raging |
+| Burning tree | flee within 2 × burn range | yes | — | cancels orders |
+| Enemy AntHill / Triffid | 1/500 per search: `AttackBuilding` (index bug) | — | grenade at the building | §4.6 step 5 |
+
+[C] `code/worldobject/darwinian.cpp:Darwinian::SearchForThreats`, `Darwinian::AdvanceCombat`.
+
+### 33.3 Soul interactions by entity
+
+| Entity | Effect on spirits / population | Ref |
+|---|---|---|
+| Any base death (non-Monster team) | +1 spirit of the dead entity's team | [C] `Entity::ChangeHealth`, `Location::SpawnSpirit` |
+| Squadie, Armour, Harvester, Engineer, SpaceInvader, Tank, Egg, Shaman | die without a spirit | §2.6 |
+| Harvester | collects up to 100 Floating spirits of any team; each delivered spirit = 1 Darwinian at a friendly spawn point (bypasses population cap and activation delay) | §9 |
+| Engineer | same with 25 spirits, one-by-one train | §10 |
+| ArmyAnt | carries spirits and captured Darwinians home; Monster hills produce no spirits | §13 |
+| Virii / Egg | ferry spirits into Eggs; 1 spirit → 4 Virii after 15 s | §15, §16 |
+| SporeGenerator | lays eggs; 25 % come with a newly created spirit | §17 |
+| Centipede | eats spirits (chance size/2 per tick within 10), +1 segment per 4 | §18 |
+| Spider | lays one Egg 45 beyond a spirit | §19 |
+| SoulDestroyer | deletes every victim's spirit; Darwinian victims leave a Zombie | §21 |
+| SpaceShip | removes abducted Darwinians without spirits; adds as many (≤ 100) Futurewinian Darwinians | §23 |
+| SpamInfection ([04](04_crates_powerups_and_weapons.md)) | deletes spirits, spawning Monster Virii (95 %) / Spiders (5 %) | [C] `code/worldobject/spam.cpp:SpamInfection::AdvanceAttackingSpirit` |
+
+Economy formulae: [05](05_economy_and_population.md).
+
+### 33.4 Sound events and their bindings
+
+Events raised in code (see each section) and the sample groups bound to them in `data/sounds.txt` (`ENTITY <TypeName>` sections; group names are Introversion audio assets, see IP items) [C] `data/sounds.txt`, extracted with `_work/scripts/P05_sounds.py`; engine and grammar: [10](10_audio_design.md), [27](27_audio_engine.md).
+
+| Entity (sounds.txt section) | Events raised in code | Bindings in `data/sounds.txt` |
+|---|---|---|
+| Darwinian | Create, Attack, LoseHealth, EnterTeleport, Die, Selected, SeenThreatAttack, SeenThreatAttackHorn, SeenThreatRunAway, TakenControl, EscapedControl, GivenOrders, GivenOrdersFromPlayer, VictoryJump, OnFire, LiftBuilding | Die = darwiniandie, laserhitdarwinian; LoseHealth = darwinianlosehealth; Create = darwiniancreate; GivenOrders = officercreate; SeenThreatRunAway = darwinrunaway, combatvoxretreat; Attack = 0lasers, laserreload; VictoryJump = victoryjum; OnFire = darwinnianburncry; Selected = dselect; GivenOrdersFromPlayer = dselect; LiftBuilding = carrystatue; SeenThreatAttack = combatvoxattack; SeenThreatAttackHorn = darwinseethreatattack |
+| Officer | base + SetOrderNone, SetOrderGoto, SetOrderFollow, SetOrderAbsorb, SetOrderFormation | Create = officercreate; LoseHealth = darwinianlosehealth; Die = darwiniandie; Attack = darwinseethreatattack; EnterTeleport = enterteleport; SetOrderGoto = officerleftright, officercreate; Selected = officercreate; SetOrderFormation = officerleftright, officercreate |
+| Squadie | base + FireLaser, ThrowGrenade, FireRocket, ThrowAirStrike, ThrowController, WeaponReturns | Create = newsamplegroup1; LoseHealth = newsamplegroup5; WeaponReturns = grenade_return3; ThrowAirStrike = airstrike_alarm; FireLaser = turretfire; Die = squaddiedeath; EnterTeleport = enterteleport; ExitTeleport = exitteleport |
+| Armour | base + LoadDarwinian, UnloadDarwinian, SetOrders | Create = tank_hover, tankcreate; LoseHealth = tankloseheath; Die = tankdeath; SetOrders = officerordergoto |
+| Harvester | DropSpirit (+ listed unused reprogramming events) | Create = ufo_engine2, ufo_engine1, rumble2_loop; DropSpirit = incubatoraddspirit |
+| Engineer | base + BeginReprogramming, EndReprogramming, ReprogrammingComplete, DropSpirit | Create = engineer_hover; BeginReprogramming = engineer_reprog_radar_loop; EndReprogramming = engineer_repog_radar_loop_end; LoseHealth = engineerinjury; Die = engineerdie |
+| SpaceInvader | base + DropGrenade | DropGrenade = airstrike_drop; Create = airstrike_hover2 |
+| Nuke | base + Explode | Create = rocketthrustloop; Explode = nukedetonatenear, nukedetonatefar |
+| ArmyAnt | Attack + base | Attack = antatack; Create = antcreat; LoseHealth = antlosehealth; Die = antdeath |
+| TriffidEgg | Bounce, BurstOpen + base | Create = triffidegglaunc; Bounce = triffideggbounce; BurstOpen = triffeggbursts; Die = souldestdeath |
+| Egg | Create only | Die = eggsplat (never triggered) |
+| Virii | Attack, ChangeDirection + base | Attack = virusattack; LoseHealth = viruspain; ChangeDirection = newsamplegroup11; Die = newsamplegroup9 |
+| SporeGenerator | LayEgg + base | Create = sporegengroan; LoseHealth = sporegenlosehealt; Die = sporegeneratordie; LayEgg = spideregglay |
+| Centipede | Panic, EnemySighted, Grow, Attack + base | Attack = newsamplegroup25; Create = newsamplegroup26; Die = newsamplegroup27; LoseHealth = newsamplegroup28 |
+| Spider | Pounce, PounceLand, FootFall, LayEgg, Attack + base | Create = spidercreate; Die = newsamplegroup13; Attack = spiderpounce; Pounce = spiderpounce; LayEgg = spideregglay; LoseHealth = spiderdeath; FootFall = spiderfeet |
+| SoulDestroyer | EnemySighted, Panic, Attack + base | Create = souldestroycreate, souldestpain; LoseHealth = souldestpain; Die = souldestdeath; Attack = soulattack; EnemySighted = soulenemysighted |
+| Meteor | Land + Create | Land = meteorhitclose1, meteorhitfar1; Create = rocketthrust2loop, rumble2_loop |
+| SpaceShip | TractorBeam + Create | Create = theramins, ufo_engine2, ufo_engine1, rumble2_loop; TractorBeam = tractorbeam2 |
+| Tank [B:DEBUG] | base | Create = tankenginefar, tankcreate; LoseHealth = tankloseheath; Die = tankdeath |
+| Tripod [B:LEGACY] | Create | Create = tripodcreate; Attack = tprdattac; LoseHealth = trpodlosehealth; Die = ttripoddie |
+| LaserTroop [B:LEGACY] | base | Attack = 0lasers; Die = darwiniandie |
+| Spirit (`OTHER Spirit`) | PickedUp | PickedUp = sonar |
+| Shaman, DropShip, Lander, Tentacle, AI, Zombie | none of their own | no section |
+
+Events with no binding play nothing (e.g. Darwinian "TakenControl", Officer "SetOrderNone", Centipede "Grow").
+
+### 33.5 Visual assets per entity
+
+| Entity | Shapes | Sprites / textures / icons |
+|---|---|---|
+| Darwinian | — (sprite) | `sprites/darwinian.bmp`, `sprites/darwinian_ouch1.bmp`–`darwinian_ouch4.bmp`, `sprites/darwinian_side.bmp`, `sprites/futurewinian.bmp`, `sprites/santahat.bmp`, `sprites/brainwaves.bmp`, `textures/glow.bmp`, `textures/bubble.bmp`, `textures/laser.bmp` |
+| Officer | `officer.shp` | `icons/banner_none.bmp`, `icons/banner_follow.bmp`, `icons/banner_formation.bmp`, `icons/banner_absorb.bmp`, `textures/glow.bmp`; order effects `textures/starburst.bmp`, `icons/widearrow.bmp` |
+| Spirit | — | quads (team colour), drawn by `Location` |
+| Squadie | `squad.shp` | — |
+| Armour | `armour.shp` | — |
+| Harvester | `harvester.shp` | `textures/bubble.bmp` |
+| Engineer | `engineer.shp` | `textures/laser.bmp` |
+| SpaceInvader | `spaceinvader.shp`, `throwable.shp` (carried bomb) | — |
+| Nuke | — | `sprites/sub.bmp`, `sprites/subshadow.bmp`, `sprites/nuke.bmp`, `textures/laser.bmp`, `icons/nukesymbol.bmp` (+ generated `shadow_icons/nukesymbol.bmp`), `icons/icon_nuke.bmp` |
+| ArmyAnt | `armyant.shp`, `armyant2.shp`, `armyant3.shp` | — |
+| TriffidEgg | `triffidegg.shp` | — |
+| Egg | — | `sprites/egg.bmp` |
+| Virii | — | `sprites/viriifull.bmp` |
+| SporeGenerator | `sporegenerator.shp` | tails (untextured strips) |
+| Centipede | `centipedehead.shp`, `centipede.shp` | — |
+| Spider | `spider.shp`, `spider_leg_upper.shp`, `spider_leg_lower.shp` | — |
+| SoulDestroyer | `souldestroyerhead.shp`, `souldestroyertail.shp` | eaten-soul sprites |
+| Zombie | — | `sprites/ghost.bmp` |
+| Meteor | `meteor.shp` | `textures/starburst.bmp`, `icons/icon_meteorshower.bmp` |
+| SpaceShip, DropShip | `spaceship.shp` | beam rings |
+| Tank [B:DEBUG] | `tank_body.shp`, `tank_turret.shp`, `missile.shp`, `flying_egg.shp` (land mine) | — |
+| Shaman [B:LEGACY] | `officer.shp` | `icons/shaman_centipede.bmp`, `shaman_ants.bmp`, `shaman_souldestroyer.bmp`, `shaman_spider.bmp`, `shaman_sporegenerator.bmp`, `shaman_tripod.bmp`, `shaman_virii.bmp`, `shaman_darwinian.bmp`, `shaman_special.bmp`, `shaman_capture.bmp`, `icons/shaman_shadow.bmp`, `textures/shaman_background.bmp`, `icons/mouse_selection.bmp` |
+| Tripod [B:LEGACY] | `tripod.shp`, `tripod_leg_part.shp` | — |
+| Tentacle [B:DEBUG] | `centipedehead.shp`, `centipede.shp` | — |
+| Lander [B:LEGACY] | `lander.shp` | — |
+| All entities | — | shadow `textures/glow.bmp` (`Entity::RenderShadow`) |
+
+Shapes are in `data/shapes/`, sprites/textures/icons under `data/` ([25](25_textures_and_assets.md) catalogue).
+
+### 33.6 `#define` index
+
+Every value `#define` in the entity source files of this document (generated by `_work/scripts/S_02_defines.py`; the commented-out duplicate centipede block in `code/worldobject/tentacle.h` is omitted). `AITARGET_LINKRANGE` belongs to the AI target graph ([07](07_ai.md)); `GRAVITY` used by the Tripod comes from the math library [C].
+
+| Constant | Value | File |
+|---|---|---|
+| `UNIT_BUILDINGS` | -100 | `code/worldobject/worldobject.h` |
+| `UNIT_SPIRITS` | -101 | `code/worldobject/worldobject.h` |
+| `UNIT_LASERS` | -102 | `code/worldobject/worldobject.h` |
+| `UNIT_EFFECTS` | -103 | `code/worldobject/worldobject.h` |
+| `COEF_OF_RESTITUTION` | 0.85 | `code/worldobject/worldobject.cpp` |
+| `ID_MAXTEAMS` | 256 | `code/worldobject/worldobject.cpp` |
+| `ID_MAXUNITS` | 65536 | `code/worldobject/worldobject.cpp` |
+| `ID_MAXTROOPS` | 65536 | `code/worldobject/worldobject.cpp` |
+| `DARWINIAN_SEARCHRANGE_OFFICERS` | 100.0f | `code/worldobject/darwinian.h` |
+| `DARWINIAN_SEARCHRANGE_OFFICERFOLLOW` | 150.0f | `code/worldobject/darwinian.h` |
+| `DARWINIAN_SEARCHRANGE_ARMOUR` | 150.0f | `code/worldobject/darwinian.h` |
+| `DARWINIAN_SEARCHRANGE_SPIRITS` | 50.0f | `code/worldobject/darwinian.h` |
+| `DARWINIAN_SEARCHRANGE_THREATS` | 90.0f | `code/worldobject/darwinian.h` |
+| `DARWINIAN_SEARCHRANGE_GRENADES` | 60.0f | `code/worldobject/darwinian.h` |
+| `DARWINIAN_SEARCHRANGE_TURRETS` | 50.0f | `code/worldobject/darwinian.h` |
+| `DARWINIAN_SEARCHRANGE_PORTS` | 100.0f | `code/worldobject/darwinian.h` |
+| `DARWINIAN_SEARCHRANGE_CARRYABLE` | 150.0f | `code/worldobject/darwinian.h` |
+| `DARWINIAN_SEARCHRANGE_CRATES` | 150.0f | `code/worldobject/darwinian.h` |
+| `DARWINIAN_UNDERCONTROL_MAXPUSHRANGE` | 100.0f | `code/worldobject/darwinian.h` |
+| `DARWINIAN_FEARRANGE` | 200.0f | `code/worldobject/darwinian.h` |
+| `DARWINIAN_INFECTIONRANGE` | 30.0f | `code/worldobject/darwinian.h` |
+| `OFFICER_ATTACKRANGE` | 10.0 | `code/worldobject/officer.h` |
+| `OFFICER_ABSORBRANGE` | 10.0 | `code/worldobject/officer.h` |
+| `SPIRIT_MAXNEARBYEGGS` | 8 | `code/worldobject/spirit.h` |
+| `GAP_BETWEEN_MEN` | 10.0 | `code/worldobject/insertion_squad.h` |
+| `ARMOUR_UNLOADPERIOD` | 0.1 | `code/worldobject/armour.h` |
+| `HARVESTER_COLLECTION_RANGE` | 75.0f | `code/worldobject/harvester.cpp` |
+| `ENGINEER_RETARGETTIMER` | 1.0 | `code/worldobject/engineer.h` |
+| `ENGINEER_SEARCHRANGE` | 200.0 | `code/worldobject/engineer.h` |
+| `ARMYANT_SEARCHRANGE` | 10 | `code/worldobject/armyant.h` |
+| `TRIFFIDEGG_BOUNCEFRICTION` | 0.65 | `code/worldobject/triffid.h` |
+| `EGG_DORMANTLIFE` | 120 | `code/worldobject/egg.h` |
+| `VIRII_MAXSEARCHRANGE` | 60.0 | `code/worldobject/virii.h` |
+| `VIRII_MINSEARCHRANGE` | 30.0 | `code/worldobject/virii.h` |
+| `VIRII_TAILLENGTH` | 175.0 | `code/worldobject/virii.h` |
+| `VIRII_POPULATIONLIMIT` | 250 | `code/worldobject/virii.h` |
+| `SPOREGENERATOR_NUMTAILS` | 4 | `code/worldobject/sporegenerator.h` |
+| `SPOREGENERATOR_HOVERHEIGHT` | 100.0 | `code/worldobject/sporegenerator.cpp` |
+| `SPOREGENERATOR_EGGLAYHEIGHT` | 20.0 | `code/worldobject/sporegenerator.cpp` |
+| `SPOREGENERATOR_SPIRITSEARCHRANGE` | 200.0 | `code/worldobject/sporegenerator.cpp` |
+| `CENTIPEDE_MINSEARCHRANGE` | 75.0 | `code/worldobject/centipede.h` |
+| `CENTIPEDE_MAXSEARCHRANGE` | 150.0 | `code/worldobject/centipede.h` |
+| `CENTIPEDE_SPIRITEATRANGE` | 10.0 | `code/worldobject/centipede.h` |
+| `CENTIPEDE_NUMSPIRITSTOREGROW` | 4 | `code/worldobject/centipede.h` |
+| `CENTIPEDE_NUMSPIRITSTOREGROW_MP` | 4 | `code/worldobject/centipede.h` |
+| `CENTIPEDE_MAXSIZE` | 20 | `code/worldobject/centipede.h` |
+| `SPIDER_NUM_LEGS` | 8 | `code/worldobject/spider.h` |
+| `FOOT_MOVE_THRESHOLD` | 5.0 | `code/worldobject/spider.cpp` |
+| `FOOT_EMERGENCY_THRESHOLD` | 12.0 | `code/worldobject/spider.cpp` |
+| `FOOT_DAMAGE_RADIUS` | 20.0 | `code/worldobject/spider.cpp` |
+| `FOOT_DAMAGE_STRENGTH` | 10.0 | `code/worldobject/spider.cpp` |
+| `HOVER_HEIGHT` | 3.0 | `code/worldobject/spider.cpp` |
+| `TURN_RATE` | 0.1 | `code/worldobject/spider.cpp` |
+| `NORMAL_SPEED` | 300.0 | `code/worldobject/spider.cpp` |
+| `ATTACK_SPEED` | 90.0 | `code/worldobject/spider.cpp` |
+| `MAX_PATH_HEIGHT` | 100.0 | `code/worldobject/spider.cpp` |
+| `ATTACK_SEARCH_MAX_RADIUS` | 250.0 | `code/worldobject/spider.cpp` |
+| `ATTACK_SEARCH_MIN_RADIUS` | 100.0 | `code/worldobject/spider.cpp` |
+| `ATTACK_PREAMBLE` | 5.0 | `code/worldobject/spider.cpp` |
+| `SPIRIT_MAXSEARCHRANGE` | 100.0 | `code/worldobject/spider.cpp` |
+| `SPIRIT_MINSEARCHRANGE` | 30.0 | `code/worldobject/spider.cpp` |
+| `SOULDESTROYER_MINSEARCHRANGE` | 200.0 | `code/worldobject/souldestroyer.h` |
+| `SOULDESTROYER_MAXSEARCHRANGE` | 300.0 | `code/worldobject/souldestroyer.h` |
+| `SOULDESTROYER_DAMAGERANGE` | 25.0 | `code/worldobject/souldestroyer.h` |
+| `SOULDESTROYER_MAXSPIRITS` | 50 | `code/worldobject/souldestroyer.h` |
+| `SPACESHIP_HOVERHEIGHT` | 500.0f | `code/worldobject/spaceship.cpp` |
+| `SPACESHIP_ABDUCTIONBEAM_RADIUS` | 45.0f | `code/worldobject/spaceship.cpp` |
+| `AITARGET_LINKRANGE` | 600.0 | `code/worldobject/ai.h` |
+| `TANK_NUMFLOATERS` | 3 | `code/worldobject/tank.h` |
+| `TANK_CAPACITY` | 40 | `code/worldobject/tank.h` |
+| `TANK_UNLOADPERIOD` | 0.1 | `code/worldobject/tank.h` |
+| `MAX_EGGS` | 3 | `code/worldobject/shaman.cpp` |
+| `DROPSHIP_HOVERHEIGHT` | 250.0 | `code/worldobject/dropship.cpp` |
+| `DROPSHIP_ABDUCTIONBEAM_RADIUS` | 20.0 | `code/worldobject/dropship.cpp` |
+| `FOOT_MOVE_THRESHOLD` | 1.0 | `code/worldobject/tripod.cpp` |
+| `IDEAL_LEG_SLOPE` | 0.2 | `code/worldobject/tripod.cpp` |
+| `LEG_LIFT` | 3.0 | `code/worldobject/tripod.cpp` |
+| `LEG_SWING_DURATION` | 0.5 | `code/worldobject/tripod.cpp` |
+| `LOOK_AHEAD_COEF` | 1.2 | `code/worldobject/tripod.cpp` |
+| `ATTACK_HOVER_HEIGHT` | 18.0 | `code/worldobject/tripod.cpp` |
+| `STATIONARY_HOVER_HEIGHT` | 30.0 | `code/worldobject/tripod.cpp` |
+| `HOVER_LOWER_WITH_SPEED_FACTOR` | 0.2 | `code/worldobject/tripod.cpp` |
+| `NAVIGATION_SEARCH_RADIUS` | 1000.0 | `code/worldobject/tripod.cpp` |
+| `ATTACK_SEARCH_RADIUS` | 200.0 | `code/worldobject/tripod.cpp` |
+| `ATTACK_DURATION` | 7.0 | `code/worldobject/tripod.cpp` |
 
 ## Open questions and unknowns
 

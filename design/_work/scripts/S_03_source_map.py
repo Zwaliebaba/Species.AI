@@ -146,12 +146,16 @@ CODE = [
  ('code/interface/buildings_window.cpp', 'editor building palette honours the block list [B:EDITOR]'),
  ('code/interface/tree_window.cpp', 'editor ranges for tree parameters [B:EDITOR]'),
  ('data/levels/level_enum.txt', 'official map list (census definition)'),
- ('data/multiwinia.txt', 'game-option blueprints read by GetGameOption (TurretFrequency etc.)'),
+ ('data/multiwinia.txt', 'game-option blueprints read by GetGameOption (TurretFrequency, MaxTurrets, Handicap)'),
  ('data/sounds.txt', 'sound bindings for building events'),
  ('data/stats.txt', 'entity stats referenced by building outputs'),
  ('docs/game objects.txt', 'design notes on trees, fences, walls (docs-vs-code)'),
  ('docs/new building docs.txt', 'design notes on FenceSwitch and dynamic hubs (docs-vs-code)'),
  ('docs/spirit resource system.txt', 'design note on spirits (docs-vs-code)'),
+ ('docs/multiwiniachanges-beta.txt', 'beta change log: turret/incubator sharing bug report (docs-vs-code)'),
+ ('docs/multiwinia-changes.txt', 'change log: Virii and population caps (docs-vs-code)'),
+ ('docs/multiwinia_manual.pdf', 'player manual: Assault stations, Rocket Riot explosion, CTS respawn (docs-vs-code)'),
+ ('contrib/systemiv/lib/math/random_number.h', 'AppRandom / sfrand used by tree generation and visual effects'),
 ]
 
 def main():

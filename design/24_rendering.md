@@ -17,7 +17,7 @@
 - [9 Direct3D 12 mapping notes per component](#9-direct3d-12-mapping-notes-per-component)
 - [Open questions and unknowns](#open-questions-and-unknowns) · [Docs-vs-code discrepancies](#docs-vs-code-discrepancies) · [IP items](#ip-items) · [Source map](#source-map) · [Appendix — dead/legacy code](#appendix--deadlegacy-code)
 
-Reading guide: everything not tagged otherwise is **[B:FULL]** (the shipped OpenGL `multiwinia.exe`). The D3D9 path ([B:D3D]) is documented completely in §1.5 and §6 but is a secondary, probably non-building configuration. Content of individual objects is owned by [02](02_units_and_entities.md), [03](03_buildings_and_world_objects.md) and [04](04_crates_powerups_and_weapons.md); particle/explosion models by [26](26_animation_and_vfx.md); textures and the asset catalogue by [25](25_textures_and_assets.md); terrain generation by [23](23_terrain_and_landscape.md); UI widgets by [28](28_ui_framework.md); window management by [31](31_platform_build_and_tools.md).
+Asset names (`textures/…`, `sprites/…`, `icons/…`, `terrain/…`, `shaders/…`) are written as the code requests them, relative to `data/`; the resource loader lower-cases paths, so `textures/triangleOutline.bmp` loads `data/textures/triangleoutline.bmp`. Reading guide: everything not tagged otherwise is **[B:FULL]** (the shipped OpenGL `multiwinia.exe`). The D3D9 path ([B:D3D]) is documented completely in §1.5 and §6 but is a secondary, probably non-building configuration. Content of individual objects is owned by [02](02_units_and_entities.md), [03](03_buildings_and_world_objects.md) and [04](04_crates_powerups_and_weapons.md); particle/explosion models by [26](26_animation_and_vfx.md); textures and the asset catalogue by [25](25_textures_and_assets.md); terrain generation by [23](23_terrain_and_landscape.md); UI widgets by [28](28_ui_framework.md); window management by [31](31_platform_build_and_tools.md).
 
 ## 1 Backend architecture
 
@@ -27,8 +27,8 @@ All game render code (`code/renderer.cpp`, `code/location.cpp`, `code/lib/shape.
 
 | Build | Define | Headers included by `universal_include.h` | What `glXxx()` resolves to |
 |---|---|---|---|
-| `Release|Win32` / `Debug|Win32` **[B:FULL]** (ships as `multiwinia.exe`) | (none) | `<GL/gl.h>`, `<GL/glu.h>` | real `opengl32.dll` / `glu32.dll` entry points; WGL context created by `WindowManagerWin32` |
-| `ReleaseDirect3D|Win32` / `DebugDirect3D|Win32` **[B:D3D]** | `USE_DIRECT3D` (`targets/vs2005/Direct3D.vsprops`) | `<d3d9.h>`, `<d3dx9.h>`, `lib/opengl_directx.h`, `lib/safegl.h` | free functions **of the same names** implemented in `code/lib/opengl_directx*.cpp` on top of `IDirect3DDevice9` + runtime-compiled HLSL |
+| `Release\|Win32` / `Debug\|Win32` **[B:FULL]** (ships as `multiwinia.exe`) | (none) | `<GL/gl.h>`, `<GL/glu.h>` | real `opengl32.dll` / `glu32.dll` entry points; WGL context created by `WindowManagerWin32` |
+| `ReleaseDirect3D\|Win32` / `DebugDirect3D\|Win32` **[B:D3D]** | `USE_DIRECT3D` (`targets/vs2005/Direct3D.vsprops`) | `<d3d9.h>`, `<d3dx9.h>`, `lib/opengl_directx.h`, `lib/safegl.h` | free functions **of the same names** implemented in `code/lib/opengl_directx*.cpp` on top of `IDirect3DDevice9` + runtime-compiled HLSL |
 | Mac OS X **[B:DEAD]** | `TARGET_OS_MACOSX` | `<OpenGL/gl.h>`, `<OpenGL/glu.h>`, `lib/safegl.h` | Apple OpenGL |
 
 Evidence: `code/lib/universal_include.h` (`#ifdef USE_DIRECT3D … #include "lib/opengl_directx.h" … #else #include <GL/gl.h>`) [C]. `opengl_directx.h` re-declares every GL entry point used by the game **without `APIENTRY`/`__stdcall` DLL linkage**, with its own `#define` for every GL enum used [C] `code/lib/opengl_directx.h`. Two signatures are *extended* relative to real GL: `glTexImage2D(…, bool _compressed = false)` and `gluBuild2DMipmaps(…, bool _compressed = false)` (the flag selects DXT1) [C].
@@ -128,7 +128,7 @@ A second, commented-out `blacklistIntel[]` of full Windows driver names and a co
 | Query site | Extension | Fallback when absent |
 |---|---|---|
 | `code/landscape_renderer.cpp:LandscapeRenderer::LandscapeRenderer` (pref `RenderLandscapeMode` = −1, the default) | `IsOGLExtensionPerfectlySupported("GL_ARB_vertex_buffer_object")` | `RenderModeDisplayList` instead of `RenderModeVertexBufferObject` — every Intel/SiS GPU gets display lists by default |
-| same, after the mode is chosen | `!gglBindBufferARB || !IsOGLExtensionSupported("GL_ARB_vertex_buffer_object")` | forced to `RenderModeDisplayList` even if the preference asked for VBO |
+| same, after the mode is chosen | `!gglBindBufferARB \|\| !IsOGLExtensionSupported("GL_ARB_vertex_buffer_object")` | forced to `RenderModeDisplayList` even if the preference asked for VBO |
 | `code/lib/math_utils.cpp:RequirePowerOfTwoTextures` | `strstr(glGetString(GL_EXTENSIONS), "GL_ARB_texture_non_power_of_two")` (raw substring, cached in a function static) | true ⇒ `code/lib/bitmap.cpp` rescales textures to `nearestPowerOfTwo`; `code/renderer.cpp:Renderer::CaptureFrameBuffer` copies a POT-sized region and scales UVs by `W/nearestPowerOfTwo(W)` |
 | `code/lib/math_utils.cpp:RequireSquareTextures` | `strstr(…, "GL_ARB_texture_rectangle")` | true ⇒ `bitmap.cpp` makes textures square |
 | `GL_ARB_multitexture` | never queried | none (crash if absent) |
@@ -1071,7 +1071,7 @@ Marker: <name>                   # up to 100
 | `SphereHit(SpherePackage{pos,radius}, …)` | same with `SphereSphereIntersection` / `SphereTriangleIntersection` |
 | `ShapeHit(other, otherT, ourT, accurate)` | each of our fragments' bounding spheres tested with `other->SphereHit` |
 | `CalculateCentre(T)` | mean of all fragment centres (SceneRoot included) |
-| `CalculateRadius(T, centre)` | max over fragments of `|fragCentre − centre| + fragRadius` |
+| `CalculateRadius(T, centre)` | max over fragments of `\|fragCentre − centre\| + fragRadius` |
 | `ScaleRadius(s)` | multiplies every fragment radius |
 
 [I] `m_positionsInWS` is sized `m_numVertices` but indexed by position id and filled for `m_numPositions` entries — correct only when positions ≤ vertices (true for exporter output); the shared scratch makes hit tests non-reentrant. Hit tests run in the simulation → they must be deterministic across peers ([22](22_determinism_and_networking.md)). Debug visualisers `RenderHitCheck` (spheres) and `RenderMarkers` (arrows 20 front / 10 up, depth test off) exist under `DEBUG_RENDER_ENABLED` but `Building::Render` has the call commented out.
@@ -1089,8 +1089,8 @@ Marker: <name>                   # up to 100
 | SpawnPoint / SpawnLink / MasterSpawnPoint | shape (`masterspawnpoint.shp` only if `m_isGlobal` or editing) | spirit-link beams (`textures/laser.bmp`, half-width 1 inner / 3 outer) between link markers; in-transit spirits as diamonds (inner 2, outer 6) in the **target** spawn point's team colour (grey 120 neutral); status stars per port (grey 150 empty / occupant colour); 20/10/3 glow blobs (`textures/cloudyglow.bmp`, detail 1/2/3) above the building, alpha = occupied/total, colour lerps grey (100,100,100,200) → team colour as `m_activationTimer` 30 → 0; spirit-link laser glow only at detail 1 | laser, cloudyglow, starburst | additive, depth write off |
 | GunTurret | team-coloured turret copy (`battlecannonturret.shp_<colour>_<group>`) on `battlecannonbase.shp` markers | lights, ports; barrel smoke as `TypeMissileTrail` particles; ejected shells (`TurretEmptyShell`) and shells/target as `m_effects` objects | shapes, starburst | — |
 | RadarDish | dish shape (per-instance colour copy) | 4 nested beam tubes radius 10/9/8/4, alpha 0.4/0.2/0.2/0.5, `textures/laserfence.bmp` × `textures/radarsignal.bmp` (multitexture), clipped by two user clip planes (`GL_CLIP_PLANE0/1`) at the dish planes; preview beams to every valid link while hovered/selected; [B:D3D] resets the vertex declaration | laserfence, radarsignal | additive |
-| JumpPad | shape | animated arrow strip (`icons/thickarrow.bmp`) 80 long, ±20 wide, brightness `0.3 + 0.7·|sin t|` | thickarrow | additive |
-| PowerBuilding / Pylon / SolarPanel | shapes | power-line beam between `MarkerPowerLocation`s; surges as 20-unit stars in the surge team colour with a 3-sprite trail; SolarPanel status lights green/red and, when owned and occupied, 4 glow quads (60×40) pulsing `0.5 + 0.5·|sin t|` in team colour; `PylonEnd` draws nothing | laser, starburst, glow | additive |
+| JumpPad | shape | animated arrow strip (`icons/thickarrow.bmp`) 80 long, ±20 wide, brightness `0.3 + 0.7·\|sin t\|` | thickarrow | additive |
+| PowerBuilding / Pylon / SolarPanel | shapes | power-line beam between `MarkerPowerLocation`s; surges as 20-unit stars in the surge team colour with a 3-sprite trail; SolarPanel status lights green/red and, when owned and occupied, 4 glow quads (60×40) pulsing `0.5 + 0.5·\|sin t\|` in team colour; `PylonEnd` draws nothing | laser, starburst, glow | additive |
 | ControlTower | shape | pulsing "control line to heaven" (10 segments, height 50 + id%50 each), brightness 1.0 within 200 units of the camera else 0.1 (smoothed); signal flash size ownership/5 | laser, starburst | additive |
 | Statue / carryables (CTS) | random one of 8 shapes; `ExplodeShape(0.5)` on materialise | special lights set in `Render` | shapes | — |
 | Portal ("The Beast") [B:DEBUG] | shape; near ×1.5 for its glow | fire particles with unsynced `rand()` | glow, starburst | additive |
@@ -1189,7 +1189,7 @@ Rendering [C] `Tree::RenderAlphas`, `Tree::Render`:
 |---|---|---|
 | Laser bolt (pass 10b) | ribbon from `pos` to `pos + norm(vel)·10`, half-width 0.8 perpendicular to the camera ray (`(camToMid × (mid − to)).Normalise()·0.8`), drawn **5 times** (additive → 5× brightness), team colour (monster team white), `textures/laser.bmp`; mind-control bolts double the width and use `textures/subversion.bmp`; bolts within √200 ≈ 14 units of the camera trigger `Camera::CreateCameraShake(0.5)` from the render path (local only) | `code/worldobject/weapons.cpp:Laser::Render` |
 | Shockwave | smooth-shaded triangle fan ring at y + 5, radius `35 + 40·(size − life)`, centre (1,1,0,0) → rim (1,0.5,0.5, 0.6·life/size), depth test off; **screen flash**: in the first 0.1 s, if in view, a full-screen 2D white quad with alpha `(1 − age/0.1)·max(0, 1 − dist/500)` (additive in this pass) plus a camera shake of the same strength; "big blast" in the first second: 5 stacked camera billboards `textures/starburst.bmp` of size `size·500/√dist` growing ×1.2 each, colour (1,0.5,0.2, 1 − age), then 5 of `textures/glow.bmp` at `size·1000/√dist` | `code/worldobject/weapons.cpp:Shockwave::Render` |
-| Lightning | idle: 200-unit cloud glow `textures/glow.bmp`, alpha `|sin(2·g_gameTime)|`, oriented `right` = camera right, `up = worldUp × right`; striking: 3 bolt quads `textures/lightning.bmp` from the cloud to the ground (height = pos.y − terrain), width 30 ×1.2 per layer, alpha `|sin(life − t)|` halving per layer | `code/worldobject/lightning.cpp:Lightning::Render` |
+| Lightning | idle: 200-unit cloud glow `textures/glow.bmp`, alpha `\|sin(2·g_gameTime)\|`, oriented `right` = camera right, `up = worldUp × right`; striking: 3 bolt quads `textures/lightning.bmp` from the cloud to the ground (height = pos.y − terrain), width 30 ×1.2 per layer, alpha `\|sin(life − t)\|` halving per layer | `code/worldobject/lightning.cpp:Lightning::Render` |
 | Spawn-point links, radar beams, power lines, fence-switch links | §4.6 | [03](03_buildings_and_world_objects.md) |
 
 ### 4.11 Particles (pass 15) → [26](26_animation_and_vfx.md)
@@ -1200,6 +1200,31 @@ The particle model (19 types `TypeRocketTrail` … `TypePortalFire`, their life/
 - Single texture `textures/particle.bmp` (16×16, flat grey with a lighter rim), MAG **NEAREST**.
 - Two batches under one bind: **smoke** (`TypeMissileTrail`, `TypeExplosionDebris`; only if the unpredicted position passes `PosInViewFrustum`): blend `SRC_ALPHA, ONE_MINUS_SRC_COLOR`, colour `rgb·alpha/100`, **vertex alpha 0** — the destination is multiplied by `(1 − srcColour)` (dark smoke without sorting); **glow** (all other types, no frustum test): `SRC_ALPHA, ONE`, colour `rgb`, computed alpha.
 - State: cull off, blend on, texture on, depth write off (test on). Restores depth write, texture off, MAG LINEAR, blend off, default func, cull on.
+- Render-relevant parameters of every type (life in s, base size → billboard half-extent size/16, colour lerped between colour1 and colour2 by an unsynced random factor; full physics in [26](26_animation_and_vfx.md)) [C] `Particle::SetupParticles`:
+
+| # | Type | Life | Size | Colour1 (RGB) | Colour2 (RGB) | Batch |
+|---|---|---|---|---|---|---|
+| 0 | `TypeRocketTrail` | 2.0 | 15 | 128,128,128 | 200,200,200 | glow |
+| 1 | `TypeExplosionCore` | 2.0 | 150 | 200,100,100 | 255,120,120 | glow |
+| 2 | `TypeExplosionDebris` | 6.0 | 40 | 200,128,128 | 250,200,200 | smoke |
+| 3 | `TypeMuzzleFlash` | 1.0 | 10 | 255,128,128 | 200,100,100 | glow |
+| 4 | `TypeFire` | 4.0 | 50 | 150,50,50 | 150,120,50 | glow |
+| 5 | `TypeControlFlash` | 1.0 | 30 | 50,50,150 | 50,50,250 | glow |
+| 6 | `TypeSpark` | 4.0 | 15 | 250,200,0 | 250,200,50 | glow |
+| 7 | `TypeBlueSpark` | 4.0 | 15 | 50,50,200 | 50,70,255 | glow |
+| 8 | `TypeBrass` | 2.0 | 4 | 250,200,0 | 250,200,50 | glow |
+| 9 | `TypeMissileTrail` | 5.0 | 200 | 100,100,100 | 200,200,200 | smoke |
+| 10 | `TypeMissileFire` | 0.5 | 300 | 150,50,50 | 150,120,50 | glow |
+| 11 | `TypeDarwinianFire` | 1.0 | 25 | 150,50,50 | 150,120,50 | glow |
+| 12 | `TypeLeaf` | 60.0 | 25 | 50,150,50 | 50,200,50 | glow |
+| 13 | `TypePlague` | 2.0 | 25 | 40,200,40 | 50,200,50 | glow |
+| 14 | `TypeHotFeet` | 1.0 | 25 | 150,50,50 | 150,120,50 | glow |
+| 15 | `TypeSelectionMarker` | 0.3 | 10 | 255,128,128 | 200,100,100 | glow |
+| 16 | `TypeFireball` | 1.0 | 25 | 150,50,50 | 150,120,50 | glow |
+| 17 | `TypeVolcano` | 12.0 | 400 | 150,50,50 | 150,120,50 | glow |
+| 18 | `TypePortalFire` | 2.0 | 50 | 100,50,50 | 120,100,50 | glow |
+
+`TypeInvalid` (−1) and `TypeNumTypes` (19) are sentinels. Smoke particles darken (dark smoke on a black world reads as a shadowy veil); every other type adds light.
 
 ### 4.12 Explosions — shape shattering (pass 14) → [26](26_animation_and_vfx.md)
 
@@ -1403,8 +1428,8 @@ Holds `g_openGLMutex` for the whole frame; once the spinner texture (`sprites/da
 | Near / far in a location | **5 / 15 000** world units, re-set every frame | `Renderer::RenderFrame` |
 | Near / far outside a location (menu, global world) | 50 / 10 000 000 | same |
 | Initial near / far | 5 / 150 000 | `Renderer::Renderer` |
-| Poster tiling | when `PosterMakerTiling`: `scale = fov/78`, `left = −scale·near`, `top = −(H/W)·scale·near`, tile size `2|left|/N × 2|top|/N`, tile `(x, y) = (idx % N, idx / N)`, `glFrustum` per tile ([B:D3D]: `glFrustum` is a stub) | `SetupProjMatrixFor3D` |
-| View matrix | `glLoadIdentity`; `gluLookAt(pos, pos + front·|pos|, up·|pos|)` (vectors scaled by distance from the origin, presumably for precision) | `Camera::SetupModelviewMatrix` |
+| Poster tiling | when `PosterMakerTiling`: `scale = fov/78`, `left = −scale·near`, `top = −(H/W)·scale·near`, tile size `2\|left\|/N × 2\|top\|/N`, tile `(x, y) = (idx % N, idx / N)`, `glFrustum` per tile ([B:D3D]: `glFrustum` is a stub) | `SetupProjMatrixFor3D` |
+| View matrix | `glLoadIdentity`; `gluLookAt(pos, pos + front·\|pos\|, up·\|pos\|)` (vectors scaled by distance from the origin, presumably for precision) | `Camera::SetupModelviewMatrix` |
 | 2D overlay | `SetupMatricesFor2D`: identity modelview, `gluOrtho2D(vx, vx+vw, vy+vh, vy)` (y down, pixel units); text uses its own ortho shifted −0.325 px | `Renderer::SetupMatricesFor2D`, `TextRenderer::BeginText2D` |
 | Total matrix | `UpdateTotalMatrix` caches MV × P (double); `Get2DScreenPos` multiplies by it (row-vector convention), divides by w, maps to [0,W]×[0,H], z = w; returns early (output untouched) when w ≤ 0 | `Renderer::UpdateTotalMatrix`, `Get2DScreenPos` |
 | Clip | `Renderer::Clip(x,y,w,h)` projects two points with `Camera::Get2DScreenPos` and enables `GL_SCISSOR_TEST`; `EndClip` disables it | `Renderer::Clip` |
@@ -1461,10 +1486,10 @@ Because the background is black, linear fog fades distant terrain and buildings 
 | Object lighting | `SetObjectLighting`: material specular (0,0,0,0), diffuse (1,1,1,1), ambient (0,0,0,1), shininess 127; enables lighting + LIGHT0 + LIGHT1; `UnsetObjectLighting` disables them |
 | Landscape materials | §4.1 (main: diffuse 1, shininess 100, no specular; overlay: diffuse 1.2, specular 0.5, shininess 40) |
 | Special lighting | `SetupSpecialLights`: one light `normalise(0, 1, 0.5)`, diffuse = specular (2.0, 1.5, 0.75, 1), ambient black; material specular (1,1,1,1), diffuse 1, shininess 10; LIGHT1 disabled. Used for buildings when pref `RenderSpecialLighting == 1`, **or** the game type is Rocket Riot, **or** the level has the `SpecialLighting` effect, **or** game mode Prologue [B:LEGACY]. Levels with `Effects … SpecialLighting`: `mp_koth_2P_3`, `mp_koth_2P_3b`, `mp_koth_3P_1` [C] (resolves P12-U7). Cheat keys under `CHEATMENU_ENABLED` toggle the pref [B:DEBUG] |
-| Christmas theme | `Location::m_christmasMode` (copied from `ClientToServer::m_christmasMode` at `Location::Init`; requested automatically on 24–26 December, `App::UseChristmasMode`): light colours forced to (1.3, 1.2, 1.2); terrain ramp `landscape_icecaps.bmp`; water `water_icecaps.bmp`; waves `waves_earth.bmp`; trees leafless brown; Santa hats on every 3rd Darwinian | `code/location.cpp`, `landscape_renderer.cpp`, `water.cpp`, `worldobject/tree.cpp`, `worldobject/darwinian.cpp` |
-| Default `Light` | colour (1.3,1.3,1.3,0), front (0,0,1) | `code/worldobject/worldobject.cpp:Light::Light` |
-| Unlit | water, clouds, sprites, particles, effects, UI | — |
-| Light-direction timing | specified before the camera matrix each frame (§2.3) [I] | `Renderer::SetOpenGLState` |
+| Christmas theme | `Location::m_christmasMode` (copied from `ClientToServer::m_christmasMode` at `Location::Init`; requested automatically on 24–26 December, `App::UseChristmasMode`): light colours forced to (1.3, 1.2, 1.2); terrain ramp `landscape_icecaps.bmp`; water `water_icecaps.bmp`; waves `waves_earth.bmp`; trees leafless brown; Santa hats on every 3rd Darwinian — ref `code/location.cpp`, `code/landscape_renderer.cpp`, `code/water.cpp`, `code/worldobject/tree.cpp`, `code/worldobject/darwinian.cpp` |
+| Default `Light` | colour (1.3,1.3,1.3,0), front (0,0,1) — ref `code/worldobject/worldobject.cpp:Light::Light`  |
+| Unlit | water, clouds, sprites, particles, effects, UI |
+| Light-direction timing | specified before the camera matrix each frame (§2.3) [I] — ref `Renderer::SetOpenGLState`  |
 
 ### 5.6 Shadows [C]
 
@@ -1508,12 +1533,12 @@ There are **no shadow maps, no stencil shadows and no projected-geometry shadows
 | 6 | `data/shaders/FixedFunc2.vs` | VS | `POSITION0`, `COLOR0`, `TEXCOORD0`, `TEXCOORD1` | `POSITION`, `TEXCOORD2` = colour, `TEXCOORD0`, `TEXCOORD1` | as #4 plus `float4 fogColour` (**never set, never used**) | same; two UV sets; no lighting | `FixedPipeline::Bind` when units 0 and 1 on |
 | 7 | `data/shaders/FixedFunc2Maps.ps` | PS | `TEXCOORD2` colour, `TEXCOORD0`, `TEXCOORD1` | `COLOR` | `sampler map0`, `sampler map1` (stages 0/1 [I]) | `colour · tex2D(map0, uv0) · tex2D(map1, uv1)` (fixed MODULATE×MODULATE — flat water's COMBINE and the fence's REPLACE are not honoured) | with #6 |
 | 8 | `data/shaders/deform.vs` | VS | `POSITION` (clip-space xy), `TEXCOORD0` = sprite centre (u,v), `TEXCOORD1` = (invSize, height), `COLOR` (x = time) | `POSITION` = input; `COLOR` = (centre.x, centre.y, invSize, height); `TEXCOORD0.xy` = screen UV `(0.5(1+x)+0.0003, 0.5(1−y)+0.0003)` (offset "protects against ugly interference on Radeon X300"), `TEXCOORD0.z` = time | none | passes per-sprite parameters through the colour interpolator | `DeformEffect` (all three PS) |
-| 9 | `data/shaders/deformSphere.ps` | PS | `TEXCOORD0` (uv, time), `COLOR` (centre, invSize, height) | float4 (dx, dy, −dx, −dy) | `sampler deformSampler`, `float aspect` | radial displacement: `dir = uv − centre; dist = |dir·(aspect, 1)|; delta = tex(deformSampler, (time, dist·invSize)).x · height/dist · dir · DEFORM_PRECISION`; the signed vector is split into positive (xy) and negated (zw) channels so additive blending into an unsigned target accumulates both signs | `DeformEffect::Stop` (punch, tear) |
-| 10 | `data/shaders/deformDiamond.ps` | PS | same | same; `clip(−1)` where delta == 0 | `deformSampler`, `aspect`, unused `noiseSampler` | diamond (L1) metric `|dx|·aspect + |dy|`, lookup at `(time, 1 − dist·invSize)`, **inward** (negated) displacement | `DeformEffect::Stop` (spirits) |
+| 9 | `data/shaders/deformSphere.ps` | PS | `TEXCOORD0` (uv, time), `COLOR` (centre, invSize, height) | float4 (dx, dy, −dx, −dy) | `sampler deformSampler`, `float aspect` | radial displacement: `dir = uv − centre; dist = \|dir·(aspect, 1)\|; delta = tex(deformSampler, (time, dist·invSize)).x · height/dist · dir · DEFORM_PRECISION`; the signed vector is split into positive (xy) and negated (zw) channels so additive blending into an unsigned target accumulates both signs | `DeformEffect::Stop` (punch, tear) |
+| 10 | `data/shaders/deformDiamond.ps` | PS | same | same; `clip(−1)` where delta == 0 | `deformSampler`, `aspect`, unused `noiseSampler` | diamond (L1) metric `\|dx\|·aspect + \|dy\|`, lookup at `(time, 1 − dist·invSize)`, **inward** (negated) displacement | `DeformEffect::Stop` (spirits) |
 | 11 | `data/shaders/deformFullscreen.ps` | PS | `TEXCOORD0` | `COLOR` | `sampler screenSampler`, `sampler deformSampler` | `screen(uv + (d.xy − d.zw)/DEFORM_PRECISION)` — pure refraction ("transparent"); commented alternatives: rainbow (− delta), darken (− delta.x), darken+brighten | `DeformEffect::Stop` final composite |
 | 12 | `data/shaders/water-meshwaves.vs` | VS | `POSITION`, `NORMAL` (unnormalised wave normal), `COLOR` | `TEXCOORD1` = world position, `POSITION` = pos·WVP, `TEXCOORD0` = (pos + (normal, 0))·WVP (reflection coordinates), `COLOR` | `float4x4 worldViewProjMatrix` (= `Renderer::GetTotalMatrix()`); `matCameraView` c0 and `matCameraViewIT` c4 declared, unused | projects water vertices; perturbs the reflection lookup by the wave normal | `WaterReflectionEffect::Start` |
 | 13 | `data/shaders/water-meshwaves.ps` | PS (ps_2) | `TEXCOORD0` reflection coords (xyw), `COLOR` | `COLOR` | `sampler water` | `uv = 0.5·((1,1) − refl.xy/refl.w)`; `uv.y += 0.004` ("fix 1pix seam between water and land"); `out = 0.7·colour + 0.7·(r+g+b)·tex(water, uv)`; `out.a = 0.7` | `WaterReflectionEffect::Create` when the PS profile is below ps_3 |
-| 14 | `data/shaders/water-meshwaves.ps3` | PS (≥ ps_3) | + `TEXCOORD1` world position | `COLOR` | `sampler water`, `float2 time` (x = seconds `(GetTickCount() % 10000000)/1000`, y = small-wave amplitude `0.001·1024/ScreenW`) | as #13 plus screen-space ripples `uv += time.y · sin((0.2·pos.yy + pos.xz)·0.25 + 4·time.x) / (|ddx(pos.x)| + |ddx(pos.z)|)` | chosen when `D3DXGetPixelShaderProfile` returns ps_3 or higher |
+| 14 | `data/shaders/water-meshwaves.ps3` | PS (≥ ps_3) | + `TEXCOORD1` world position | `COLOR` | `sampler water`, `float2 time` (x = seconds `(GetTickCount() % 10000000)/1000`, y = small-wave amplitude `0.001·1024/ScreenW`) | as #13 plus screen-space ripples `uv += time.y · sin((0.2·pos.yy + pos.xz)·0.25 + 4·time.x) / (\|ddx(pos.x)\| + \|ddx(pos.z)\|)` | chosen when `D3DXGetPixelShaderProfile` returns ps_3 or higher |
 
 **Uniform/register layout** [C for declarations; non-`register()` assignments are compiler-chosen (24-U3)]:
 

@@ -452,19 +452,27 @@ P20_sequences_loaders_bench,[U] Unknowns,meta:unknowns,1310
 P20_sequences_loaders_bench,Docs-vs-code discrepancies,meta:discrepancies,1669
 P20_sequences_loaders_bench,IP register,meta:ip,3803
 P20_sequences_loaders_bench,Appendix — dead/legacy code,meta:appendix,2286
-X1a_text_formats,[→ 29_data_formats_reference] 1. Shared line reader and tokeniser (`TextReader` family),29,9684
-X1a_text_formats,"[→ 29_data_formats_reference] [→ 08_levels_and_level_design] 2. Level files (`map_*.txt`, `mp_*.txt`, `mission_*.txt`)",29,48882
+X1a_text_formats,Format index,meta:other,2629
+X1a_text_formats,[→ 29_data_formats_reference] 1. Shared line reader and tokeniser (`TextReader` family),29,10759
+X1a_text_formats,"[→ 29_data_formats_reference] [→ 08_levels_and_level_design] 2. Level files (`map_*.txt`, `mp_*.txt`, `mission_*.txt`)",29,49081
 X1a_text_formats,[→ 29_data_formats_reference] 3. Campaign world files: `game.txt` family [B:LEGACY],29,8844
 X1a_text_formats,[→ 29_data_formats_reference] 4. `data/multiwinia.txt` — game types and their parameters [B:FULL],29,4050
 X1a_text_formats,"[→ 29_data_formats_reference] 5. Credit name lists: `betatesters.txt`, `multiwinia_betatesters.txt`",29,1438
 X1a_text_formats,"[→ 29_data_formats_reference] 6. Preferences (`preferences.txt`, `data/default_preferences.txt`, `user_input_preferences.txt`) [B:FULL]",29,8313
 X1a_text_formats,[→ 29_data_formats_reference] [→ 06_player_control_and_input] 7. Input binding files [B:FULL],29,11349
-X1a_text_formats,[→ 29_data_formats_reference] 8. Language files `data/language/<language>.txt` [B:FULL],29,8415
-X1a_text_formats,[→ 29_data_formats_reference] [→ 30_scripting_tutorial_and_cutscenes] 9. Cutscene scripts `data/scripts/*.txt` [B:LEGACY],29,3465
+X1a_text_formats,[→ 29_data_formats_reference] 8. Language files `data/language/<language>.txt` [B:FULL],29,8483
+X1a_text_formats,[→ 29_data_formats_reference] [→ 30_scripting_tutorial_and_cutscenes] 9. Cutscene scripts `data/scripts/*.txt` [B:LEGACY],29,3929
 X1a_text_formats,"[→ 29_data_formats_reference] 10. `data/purity/*` (anti-piracy ""purity control"" data set) [B:DEAD]",29,1521
 X1a_text_formats,[→ 29_data_formats_reference] 11. Root `testbedconfig.txt` — automated test-bed sequence [B:DEAD],29,1620
 X1a_text_formats,[→ 29_data_formats_reference] 12. Root `MultiwiniaSupport.ini` — crash-report file list [B:FULL tool],29,2115
-X1a_text_formats,[→ 29_data_formats_reference] 13. Runtime-written files,29,11871
+X1a_text_formats,[→ 29_data_formats_reference] 13. Runtime-written files,29,11940
+X1a_text_formats,[→ 29_data_formats_reference] 14. Re-implementation guidance (format layer of the new game),29,1360
+X1a_text_formats,Cross-partition notes,meta:cross,1959
+X1a_text_formats,Contradictions / open questions,meta:contradictions,1090
+X1a_text_formats,[U] Unknowns,meta:unknowns,995
+X1a_text_formats,Docs-vs-code discrepancies,meta:discrepancies,1516
+X1a_text_formats,IP register,meta:ip,2550
+X1a_text_formats,Appendix — dead/legacy code,meta:appendix,1650
 X1b_asset_formats,[→ 29_data_formats_reference] 29.B1 Shared text-file conventions (`TextReader`),29,3873
 X1b_asset_formats,"[→ 29_data_formats_reference] 29.B2 ""redshirt2"" obfuscated text",29,2098
 X1b_asset_formats,"[→ 29_data_formats_reference] 29.B3 `.shp` — hierarchical flat-shaded mesh (""shape"")",29,16320
@@ -534,14 +542,14 @@ X2b_asset_catalogue_audio,[U] Unknowns,meta:unknowns,737
 X2b_asset_catalogue_audio,Docs-vs-code discrepancies,meta:discrepancies,1404
 X2b_asset_catalogue_audio,IP register,meta:ip,3560
 X2b_asset_catalogue_audio,Appendix — dead/legacy code,meta:appendix,1270
-X3_determinism_sync,[→ 22_determinism_and_networking] 1. Determinism model at a glance,22,3196
-X3_determinism_sync,[→ 22_determinism_and_networking] 2. Random number sources,22,19001
-X3_determinism_sync,[→ 22_determinism_and_networking] 3. Floating-point model,22,11292
+X3_determinism_sync,[→ 22_determinism_and_networking] 1. Determinism model at a glance,22,3202
+X3_determinism_sync,[→ 22_determinism_and_networking] 2. Random number sources,22,20361
+X3_determinism_sync,[→ 22_determinism_and_networking] 3. Floating-point model,22,11534
 X3_determinism_sync,"[→ 22_determinism_and_networking] 4. Timestep, frame structure and update ordering",22,11419
-X3_determinism_sync,[→ 21_simulation_and_entity_model] 5. Simulated vs cosmetic state,21,12402
-X3_determinism_sync,"[→ 22_determinism_and_networking] 6. Sync checking, desync reaction and forensics",22,7492
+X3_determinism_sync,[→ 21_simulation_and_entity_model] 5. Simulated vs cosmetic state,21,12989
+X3_determinism_sync,"[→ 22_determinism_and_networking] 6. Sync checking, desync reaction and forensics",22,7494
 X3_determinism_sync,[→ 22_determinism_and_networking] 7. Session-level preconditions and cross-match state,22,6360
-X3_determinism_sync,"[→ 22_determinism_and_networking] 8. Determinism risk register for the new game (Windows, C++23, DirectX 12, multiplayer)",22,7430
+X3_determinism_sync,"[→ 22_determinism_and_networking] 8. Determinism risk register for the new game (Windows, C++23, DirectX 12, multiplayer)",22,7475
 X3_determinism_sync,[→ 21_simulation_and_entity_model] 9. Determinism rules a re-implementation must state in the entity model,21,745
 X3_determinism_sync,Cross-partition notes,meta:cross,2683
 X3_determinism_sync,Contradictions / open questions,meta:contradictions,850
