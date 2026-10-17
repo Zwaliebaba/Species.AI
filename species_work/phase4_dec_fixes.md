@@ -65,3 +65,6 @@
 | 61 | G08a vs G03a | — | R-BLDG-132 counts 286 Spawn Nodes over 57 files; G08a table 2.4-A counts 258 over the 49 maps | fix R-BLDG-132 to the in-scope 49-map count |
 | 62 | G08a vs C-RND-a | — | RND-229: special lighting on three Zone Control maps; G08a says two Zone Control and one Spawn Control | fix RND-229 |
 | 63 | G08a | new | 9 DEC requests (unlimited defender caps, closed-slot positions, map routes, Essence-orb rain, non-square maps) | DEC triage |
+| 64 | C-RND-b | ADR-0005, ADR-0018 | no `Ghost` blend in the PSO catalogue (with item 38); ADR-0018's blend pairing conflicts with the additively drawn icons, markers and cursors | amend the ADRs |
+| 65 | C-RND-b vs C-RND-a | — | RND-096 samples the captured frame linearly; the input specifies point filtering | fix RND-096 |
+| 66 | C-RND-b | new | 7 DEC requests (centipede scaled-normal lighting, Crawler egg shadow size, route-spot spacing); missing assets: route arrows, the empty compass, the Crawler trail texture variant | DEC triage; X-AST pass 2 |

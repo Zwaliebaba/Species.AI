@@ -118,7 +118,7 @@ std::expected<ImageRgba8, LookError> RenderLookScene(FrameRenderer& renderer, co
 | ink | `Ink` (source alpha, one minus source colour, with source alpha above 0) | ink text in the front end (RND-425), the Rogue faction's Crawler glow, barrage marker shadows |
 | translucent | `Alpha` | Worker cards and their ground shadows, translucent structure layers, route lines, marker and panel shadows, HUD panels |
 | premultiplied | `Premultiplied` | textures whose alpha mode is premultiplied (ADR-0018) |
-| ghost | `Ghost` (one, source colour) | placement ghost models (RND-372) |
+| ghost | `Ghost` (one, source colour) | placement ghost models (RND-365) |
 
 **RND-417** (MUST) Non-solid layers never write depth (RND-059). Additive layers saturate towards white where they overlap, and their order among themselves does not change the image; darkening layers multiply and are equally order-independent; both are therefore drawn unsorted. Only translucent alpha layers that the pass table marks as sorted are drawn back to front (RND-166).
 

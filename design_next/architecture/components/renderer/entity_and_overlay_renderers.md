@@ -8,7 +8,7 @@ This document specifies how the renderer draws everything that moves or points: 
 
 **RND-300** (MUST) This document's renderers record passes 7a, 7b, 7c, 7d, 10a, 10b, 12, 16, 20, 23 and 28 of the ordered pass table ([frame_graph_and_passes.md](frame_graph_and_passes.md) RND-070), with the catalogue entries of §3.3. Pass 11 (Essence orbs), pass 14 (shatter debris) and pass 15 (particles), and the Worker ground-shadow values of pass 7d, belong to [animation_and_vfx.md](../animation_and_vfx.md); passes 13, 17, 19 and 21 draw UI-framework content ([ui_framework/README.md](../ui_framework/README.md)).
 
-**RND-301** (MUST) These renderers MUST NOT write simulation state (see DEC-007). Every value that the reference look computes while drawing and keeps from frame to frame is presentation state that the renderer owns, keyed by the object's handle (`SimObjectId`) or the route handle, and never stored in a simulated object (DEC-222 item 2). The values are listed in §3.2: the Worker colour cross-fade after a conversion, the fade value of each drawn route, the walkable flag of the route preview, the visibility timers of world markers, and the cursor animation phases.
+**RND-301** (MUST) These renderers MUST NOT write simulation state (see DEC-007). Every value that the reference look computes while drawing and keeps from frame to frame is presentation state that the renderer owns, keyed by the object's handle (`SimObjectId`) or the route handle, and never stored in a simulated object (DEC-222 item 2). The values are listed in §3.2: the Worker colour cross-fade after a conversion, the fade value of each drawn route, the walkable flag of the route preview and the Crawler detail level of each group. The world markers' list and timers are the presentation state of the world markers ([cursor_and_markers.md](../../../reference/06_controls_camera_and_commands/cursor_and_markers.md) R-CTRL-380).
 
 **RND-302** (MUST) A renderer draws exactly the state that the presentation snapshot holds and never caps a list that the simulation tracks. In particular the energy-grid and fuel-chain renderers draw every energy surge that a fuel pump tracks; the one limit is `ref.bldg.fuel_pump.max_surges` (20) of [economy_and_spawn_objects.md](../../../reference/03_buildings_and_world_objects/economy_and_spawn_objects.md) R-BLDG-198, used by the simulation and the drawing alike (see DEC-463). When a frame has more instances than an instance buffer holds, the upload-ring overflow rule of the renderer applies (README RND-017, ADR-0008); no instance is dropped.
 
@@ -129,8 +129,6 @@ The corners of the first three modes are centre − right·w − up·h, centre +
 | Worker colour cross-fade | `SimObjectId` | previous team colour id, start time on the real clock | from the team-change event until `ref.unit.worker.convert_fade` has passed | RND-317 |
 | route fade | route handle | fade value in [0, 1]; under option B of DEC-651 a copy of the route's points | while the value is above 0 | RND-351, RND-352 |
 | route-preview walkable flag | — | one flag per frame | one frame | RND-354 |
-| world-marker visibility | marker | on-screen time, seen flag, flash start time | the marker's life | RND-358 to RND-360 |
-| selection-circle phase | — | the rotation angle of the selection-circle particles | the session | RND-373 |
 | Crawler level of detail | Crawler group | the detail level of the frame | one frame | RND-322 |
 
 **RND-307** (MUST) The renderer creates and deletes these records only from presentation events and from the snapshot; a record whose object no longer exists in the snapshot is deleted at the end of the frame, and no record is read by any simulation rule (DEC-007).
@@ -269,7 +267,7 @@ A higher level draws fewer samples, and level 4 draws no glow strip.
 | centipede segment (7a) | while alive and linked into its chain: `mesh.creature.centipede_head_segment` for a head, `mesh.creature.centipede_segment` otherwise, object lighting, scaled uniformly by the segment's size, with the scaled normals of RND-326 | — | `group_mesh_lit` |
 | Bomber (7a) | `mesh.unit.bomber_body`, object lighting, at the scale and colour of [reference/02_units/hazards_and_projectiles.md](../../../reference/02_units/hazards_and_projectiles.md) R-UNIT-720 | while armed: `mesh.projectile.thrown_weapon` below it (R-UNIT-720) | `group_mesh_lit` |
 | ant (7a in a Hive group; 7b when spawned on its own) | a variant of `mesh.creature.ant_body` (R-UNIT-569), object lighting, scaled uniformly by the ant's scale | — | `group_mesh_lit` (7a), `actor_mesh_lit` (7b) |
-| Leader (7b) | `mesh.unit.leader_figure`, object lighting, renormalised normals; flicker | its banner, a cloth flag with `marker.leader_banner` and the pointer `marker.flag_pointer` ([leader_and_formations.md](../../../reference/02_units/leader_and_formations.md) R-UNIT-191), drawn here only for a Leader of another team or while the interface is hidden; the local team's Leader banners are drawn by the world markers (RND-363) | `actor_mesh_lit`; flicker `actor_flicker_additive`; the banner entries of [animation_and_vfx.md](../animation_and_vfx.md) |
+| Leader (7b) | `mesh.unit.leader_figure`, object lighting, renormalised normals; flicker | its banner, a cloth flag with `marker.leader_banner` and the pointer `marker.flag_pointer` ([leader_and_formations.md](../../../reference/02_units/leader_and_formations.md) R-UNIT-191), drawn here only for a Leader of another team or while the interface is hidden; the local team's Leader banners are drawn by the world markers (R-CTRL-388, RND-358) | `actor_mesh_lit`; flicker `actor_flicker_additive`; the banner entries of [animation_and_vfx.md](../animation_and_vfx.md) |
 | Transport (7b) | `mesh.unit.transport_hull`, object lighting; flicker on its right or front axis | — | `actor_mesh_lit`; flicker `actor_flicker_additive` |
 | Builder (7b) | `mesh.unit.builder_body`, object lighting | shadow of half-size `rnd.shadow.blob.builder_size` | `actor_mesh_lit`, `blob_shadow` |
 | Collector (7b) | `mesh.unit.collector_body`, object lighting | the bubble `fx.bubble_sphere` as a `CameraFacing` card ([collector.md](../../../reference/02_units/collector.md) R-UNIT-444); while Harvesting, its beam (R-UNIT-444); shadow of half-size `rnd.shadow.blob.collector_size` | `actor_mesh_lit`, `actor_glow`, `actor_beam_alpha`, `blob_shadow` |
@@ -309,7 +307,7 @@ The Builder draws no beam in a match: none of its match states (R-UNIT-453) draw
 |---|---|---|
 | grenade | `GrenadeProjectile` | [weapons_and_projectiles.md](../../../reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md), `mesh.projectile.thrown_weapon` |
 | airstrike target marker | `AirstrikeTargetMarker` | [weapons_and_projectiles.md](../../../reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
-| airstrike bomb | a thrown weapon (`ThrownWeapon`) | [weapons_and_projectiles.md](../../../reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md), `mesh.projectile.thrown_weapon` |
+| airstrike bomb | a grenade (`GrenadeProjectile`) of the airstrike-bomb kind | [weapons_and_projectiles.md](../../../reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md), `mesh.projectile.thrown_weapon` |
 | turret round | `TurretRound` | [weapons_and_projectiles.md](../../../reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md), `mesh.projectile.turret_round` |
 | Swarm streak | `SwarmStreak` | [crates_and_powers.md](../../../reference/04_supply_crates_powers_and_weapons/crates_and_powers.md) |
 | snowflake | `SnowFlake` | [animation_and_vfx.md](../animation_and_vfx.md); the bottom-anchored billboard of RND-329 |
@@ -328,23 +326,23 @@ The Builder draws no beam in a match: none of its match states (R-UNIT-453) draw
 
 The order of this table carries no meaning. The spawn-network transit beams, the Beam Dish beams and the energy-grid power lines are structure layers of pass 8 ([world_renderers.md](world_renderers.md) RND-169, RND-171, RND-172). The full-screen flash and the camera shake of a shockwave are VFX screen effects (RND-246, [animation_and_vfx.md](../animation_and_vfx.md)).
 
-**RND-333** (MUST) A shockwave ring draws, during its whole life, a ground ring: a triangle-fan disc at its height + `rnd.shockwave.ring_lift` (5 wu), of radius `rnd.shockwave.ring_base_radius` (35 wu) + `rnd.shockwave.ring_growth` (40 wu per s) × (size − *λ*), where size is the ring's size, which is also its life in seconds, and *λ* = its remaining life − the extrapolation time *t* (RND-081). The fan's centre vertex has the colour `rnd.shockwave.centre_colour` (1, 1, 0, alpha 0) and its rim vertices `rnd.shockwave.rim_colour` (1, 0.5, 0.5) with alpha `rnd.shockwave.rim_alpha` (0.6) × *λ* ÷ size, interpolated across each triangle, drawn with `effect_gradient_nodepth` (no depth test).
+**RND-333** (MUST) A shockwave ring (R-CRATE-470, R-CRATE-473) draws, during its whole life, a ground ring: a triangle-fan disc at its height + `ref.weapon.shockwave.disc_lift` (5 wu), of radius `ref.weapon.shockwave.start_radius` (35 wu) + `ref.weapon.shockwave.growth` (40 wu per s) × (size − *λ*), where size is the ring's size in seconds, which is also its life (R-CRATE-470), and *λ* = its remaining life − the extrapolation time *t* (RND-081). The fan's centre vertex has the colour `rnd.shockwave.centre_colour` (1, 1, 0, alpha 0) and its rim vertices `rnd.shockwave.rim_colour` (1, 0.5, 0.5) with alpha `ref.weapon.shockwave.disc_alpha` (0.6) × *λ* ÷ size, interpolated across each triangle, drawn with `effect_gradient_nodepth` (no depth test).
 
-**RND-334** (MUST) During the first `rnd.shockwave.blast_duration` (1 s) of its life, at camera distance *D*, a shockwave ring also draws its blast: `rnd.shockwave.blast_layers` (5) stacked `CameraFacing` quads of `fx.starburst` whose first half-size is size × `rnd.shockwave.blast_star_scale` (500) ÷ √*D* and each further one × `rnd.shockwave.blast_layer_growth` (1.2), in `rnd.shockwave.blast_colour` (1, 0.5, 0.2) with alpha 1 − age in seconds; then 5 stacked quads of `fx.glow_round` whose first half-size is size × `rnd.shockwave.blast_glow_scale` (1000) ÷ √*D*, growing likewise, in the same colour, all with `effect_additive`.
+**RND-334** (MUST) During the first `ref.weapon.shockwave.billboard_time` (1 s) of its life, at camera distance *D*, a shockwave ring also draws its blast: `rnd.shockwave.blast_layers` (5) stacked `CameraFacing` quads of `fx.starburst` whose first half-size is size × `rnd.shockwave.blast_star_scale` (500) ÷ √*D* and each further one × `rnd.shockwave.blast_layer_growth` (1.2), in `rnd.shockwave.blast_colour` (1, 0.5, 0.2) with alpha 1 − age in seconds; then 5 stacked quads of `fx.glow_round` whose first half-size is size × `rnd.shockwave.blast_glow_scale` (1000) ÷ √*D*, growing likewise, in the same colour, all with `effect_additive`. Its full-screen flash and camera shake are those of R-CRATE-473, drawn and applied by the VFX screen effects (RND-246).
 
 **RND-335** (MUST) The ring's damaging radius is a simulation rule ([weapons_and_projectiles.md](../../../reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md)) and the drawn ring of RND-333 never feeds it; the drawn ring starts at radius 35 wu when the ring is created.
 
-**RND-336** (MUST) A lightning strike that is not striking draws its cloud glow: one quad of `fx.glow_round` at its position with the half-size `rnd.lightning.cloud_size` (200 wu), right axis = the camera right vector and up axis = (0, 1, 0) × right, with alpha |sin(`rnd.lightning.cloud_pulse_rate` (2 rad per s) × *g*)|, *g* the presentation frame time.
+**RND-336** (MUST) A lightning strike (R-CRATE-497) that is not striking draws its cloud glow: one quad of `fx.glow_round` at its position with the half-size `ref.weapon.lightning.glow_size` (200 wu), right axis = the camera right vector and up axis = (0, 1, 0) × right, with alpha |sin(`rnd.lightning.cloud_pulse_rate` (2 rad per s) × *g*)|, *g* the presentation frame time.
 
-**RND-337** (MUST) A striking lightning strike draws `rnd.lightning.bolt_layers` (3) `UprightCard` quads of `fx.lightning_strip` from its position down to the terrain under it (height = its y − the terrain height there), the first `rnd.lightning.bolt_width` (30 wu) wide and each further one × `rnd.lightning.bolt_width_growth` (1.2) wider, the first with alpha |sin(*λ* − *t*)|, where *λ* is the strike's remaining strike life in seconds and *t* the extrapolation time, and each further one with the previous alpha × `rnd.lightning.bolt_alpha_falloff` (0.5), all with `effect_additive`. The strike timing and its ground effects are simulation rules ([reference/08_maps_and_level_design/rules_and_conventions.md](../../../reference/08_maps_and_level_design/rules_and_conventions.md)).
+**RND-337** (MUST) A striking lightning strike draws `rnd.lightning.bolt_layers` (3) `UprightCard` quads of `fx.lightning_strip` from its position down to the terrain under it (height = its y − the terrain height there), the first `ref.weapon.lightning.bolt_width` (30 wu) wide and each further one × `rnd.lightning.bolt_width_growth` (1.2) wider, the first with alpha |sin(*λ* − *t*)|, where *λ* is the strike's remaining strike life in seconds (`ref.weapon.lightning.strike_life_ticks`) and *t* the extrapolation time, and each further one with the previous alpha × `rnd.lightning.bolt_alpha_falloff` (0.5), all with `effect_additive`. The strike timing and its ground effects are simulation rules (R-CRATE-495, R-CRATE-496).
 
 ### 4.7 Laser bolts (pass 10b)
 
 **RND-338** (MUST) Pass 10b draws every laser bolt of the match world as one instanced draw with the `laser_bolt` entry: additive, no culling, no depth write and the `bias_laser` variant (RND-219). Each bolt is drawn as `rnd.laser.layers` (5) identical `Segment` instances, so its additive brightness is five times one layer's before the clamp of RND-058.
 
-**RND-339** (MUST) A bolt's segment runs from its drawn position *p* (RND-081) to *p* + normalise(velocity) × `rnd.laser.length` (10 wu), with the half-width `rnd.laser.half_width` (0.8 wu) perpendicular to the camera ray (RND-306), in the team colour of the bolt's source team, or `rnd.laser.rogue_colour` (255, 255, 255) for the Rogue faction. A Convert bolt doubles the half-width (`rnd.laser.convert_width_factor` (2)) and samples `fx.convert_beam`; every other bolt samples `fx.beam_short`. Both textures are read through a view of mip level 0 only, with linear clamp-to-edge filtering, *u* along the bolt and *v* across it.
+**RND-339** (MUST) A bolt's segment (R-CRATE-445) runs from its drawn position *p* (RND-081) to *p* + normalise(velocity) × `ref.weapon.laser.billboard_length` (10 wu), with the half-width `rnd.laser.half_width` (0.8 wu) perpendicular to the camera ray (RND-306), in the team colour of the bolt's source team, or `rnd.laser.rogue_colour` (255, 255, 255) for the Rogue faction. A Convert bolt multiplies the half-width by `ref.weapon.laser.convert_width_factor` (2) and samples `fx.convert_beam`; every other bolt samples `fx.beam_short`. Both textures are read through a view of mip level 0 only, with linear clamp-to-edge filtering, *u* along the bolt and *v* across it.
 
-**RND-340** (MUST) A laser bolt that passes near the camera requests a camera shake through the VFX screen effects, with the distance and strength that [animation_and_vfx.md](../animation_and_vfx.md) specifies (RND-246); the request is presentation-only and local, and the renderer issues it while it writes the bolt's instances, never from the simulation.
+**RND-340** (MUST) A laser bolt that passes within √`ref.weapon.laser.shake_range_sq` (about 14 wu) of the camera requests a camera shake of `ref.weapon.laser.shake` (0.5) through the VFX screen effects (R-CRATE-445, RND-246), unless the match is over or paused; the request is presentation-only and local, and the renderer issues it while it writes the bolt's instances, never from the simulation.
 
 **RND-341** (MUST) The laser-bolt lifetime, its ricochet and its hits are simulation rules ([reference/02_units/README.md](../../../reference/02_units/README.md) R-UNIT-052, [weapons_and_projectiles.md](../../../reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md)); the drawing reads them and never feeds them.
 
@@ -358,7 +356,7 @@ The order of this table carries no meaning. The spawn-network transit beams, the
 
 **RND-353** (MUST) While its fade value is above 0, each leg of a route is drawn as a dotted line of `CameraFacing` spots of `fx.particle_dot`, spot *i* (counted from the route's start) having the half-size |camera position − spot position| ÷ `rnd.route.spot_size_divisor` (100) and placed one spot size after the previous one, with arrow heads along the leg showing the route's direction. Every spot's colour is the local team's colour when the preview is walkable (RND-354), otherwise `rnd.route.blocked_colour` (0, 0, 0, alpha 100 of 255), with `rnd.route.grey_offset` (50) added to each RGB channel and capped at 255; its alpha is that colour's alpha × the fade value × (`rnd.route.pulse_base` (0.5) + `rnd.route.pulse_amplitude` (0.5) × sin(`rnd.route.pulse_rate` (10 rad per s) × *r* + `rnd.route.pulse_phase_step` (0.7 rad) × *i*)), with *r* the real clock.
 
-**RND-354** (MUST) The route preview is walkable when the local team's selected actor is a Transport, a Builder or a Collector, which can cross water, or when every leg of the preview is walkable land ([05_space_routing_and_physics.md](../../../reference/12_simulation_model/05_space_routing_and_physics.md)). The flag is computed once per frame from the preview store (R-SIM-358, DEC-095), and the world cursor reads it to show the unavailable cursor for a route it cannot follow (RND-367).
+**RND-354** (MUST) The route preview is walkable when the local team's selected actor is a Transport, a Builder or a Collector, which can cross water, or when every leg of the preview is walkable land ([05_space_routing_and_physics.md](../../../reference/12_simulation_model/05_space_routing_and_physics.md)). The flag is computed once per frame from the preview store (R-SIM-358, DEC-095), and the icon near the pointer reads it to show the unavailable sprite for a route that cannot be followed ([cursor_and_markers.md](../../../reference/06_controls_camera_and_commands/cursor_and_markers.md) R-CTRL-366).
 
 **RND-355** (MUST) Pass 12 draws with the `route_line` entry: alpha blending, no depth test, so a route is always visible over the terrain, and no culling.
 
@@ -377,134 +375,43 @@ Caption: the fade record of one drawn route; a held route keeps its fade value a
 
 ### 4.9 World markers (pass 16)
 
-**RND-356** (MUST) Pass 16 draws the local client's world markers (`WorldMarkers`), whose kinds and registration are specified in [reference/06_controls_camera_and_commands/cursor_and_markers.md](../../../reference/06_controls_camera_and_commands/cursor_and_markers.md) and [reference/04_supply_crates_powers_and_weapons/README.md](../../../reference/04_supply_crates_powers_and_weapons/README.md), as 2-D icons over the 3-D view in the 2-D overlay space (RND-215), each clamped to the screen edge with a compass arrow when its target is off screen. Nothing is drawn without a match world, in the map editor or while the interface is hidden. In this section *H* is the height of the overlay target in pixels, which equals the render height at a render scale of 1 (RND-028), and *D* is the camera distance of the marker's target.
+**RND-356** (MUST) Pass 16 draws the world markers (`WorldMarkers`) of [reference/06_controls_camera_and_commands/cursor_and_markers.md](../../../reference/06_controls_camera_and_commands/cursor_and_markers.md) R-CTRL-380 to R-CTRL-388, whose types, screen positions, edge clamping, sort order, alpha, sizes and layers that document specifies, in the 2-D overlay space of RND-215, in the order of R-CTRL-382 (the nearest marker last). "Screen height" in those rules is the height of the overlay target in pixels, which equals the render height at a render scale of 1 (RND-028). The marker list is presentation state of the world markers, never simulation state (RND-301).
 
-**RND-357** (MUST) A marker's screen position follows this procedure:
+**RND-357** (MUST) The marker layers of R-CTRL-386 use these entries: the shadow `marker.team_disc_shadow` and the compass shadow `marker.edge_compass_shadow` with `overlay_alpha`; the compass arrow `marker.edge_compass`, the colour disc `marker.team_disc` and the icon with `overlay_additive`. On screen the compass layer draws the empty compass art instead of the arrow. A layer's alpha is the marker alpha of R-CTRL-384 × the layer's own alpha.
 
-```text
-s = ProjectToScreen(target)                                  # RND-216
-if s exists and 0 <= s.x < W and 0 <= s.y < H:
-    onScreen = true; position = s − (0, rnd.marker.lift_factor × H ÷ D)   # lifted 5·H ÷ D px
-else:
-    q = camera position + camera front × rnd.marker.offscreen_probe_distance   # 1000 wu ahead
-    probe = q + normalise(target − q) × rnd.marker.offscreen_probe_step          # 100 wu towards the target
-    e = the point where the ray from the screen centre through ProjectToScreen(probe)
-        leaves the screen rectangle
-    position = e − edgeNormal(e) × rnd.marker.edge_inset                        # 50 px inward
-    compassAngle = the direction of edgeNormal(e)
-```
+**RND-358** (MUST) The 3-D parts of the markers are drawn in pass 16 with the in-shader depth test of RND-309: the ground highlight of a Transport order marker is the highlight effect of R-CTRL-363 with the `cursor_ring` entry, and a local Leader's marker draws the Leader's banner (R-CTRL-388, R-UNIT-191) with the cloth-flag entries of [animation_and_vfx.md](../animation_and_vfx.md).
 
-The procedure uses `rnd.marker.lift_factor`, `rnd.marker.offscreen_probe_distance`, `rnd.marker.offscreen_probe_step` and `rnd.marker.edge_inset`; the edge normal points out of the screen at the edge that the ray crosses.
-
-**RND-358** (MUST) A marker accumulates its on-screen time *a* in real time while it is on screen; it is seen once *a* exceeds `rnd.marker.seen_time` (1 s).
-
-**RND-359** (MUST) A marker's alpha is, in this order:
-
-```text
-alpha = 1
-if seen and a > rnd.marker.fade_start:                       # 6 s
-    alpha = max(0, 1 − (a − rnd.marker.fade_start) ÷ rnd.marker.fade_length)   # over 9 s
-floor = max((D − rnd.marker.min_alpha_distance_start) ÷ rnd.marker.min_alpha_distance_range,   # (D − 350) ÷ 500
-            1 − distanceToScreenCentre ÷ (rnd.marker.min_alpha_centre_fraction × H))           # 0.5 × H
-alpha = max(alpha, floor)
-if the marker is not persistent and a > rnd.marker.fade_start:
-    alpha = alpha × max(0, 1 − (a − rnd.marker.fade_start) ÷ rnd.marker.transient_fade_length)   # over 2 s
-if the marker shows the local team's own Power or order: alpha = max(alpha, rnd.marker.own_min_alpha)   # 0.75
-if the marker is hovered or selected: alpha = 1
-alpha = clamp(alpha, 0, 1)
-```
-
-The procedure uses `rnd.marker.fade_start`, `rnd.marker.fade_length`, `rnd.marker.min_alpha_distance_start`, `rnd.marker.min_alpha_distance_range`, `rnd.marker.min_alpha_centre_fraction`, `rnd.marker.transient_fade_length` and `rnd.marker.own_min_alpha`. A transient marker therefore vanishes `ref.power.marker.lifetime_s` (8 s) after it is first seen ([reference/04_supply_crates_powers_and_weapons/README.md](../../../reference/04_supply_crates_powers_and_weapons/README.md) R-CRATE-028), the sum of `rnd.marker.fade_start` and `rnd.marker.transient_fade_length`.
-
-```mermaid
-stateDiagram-v2
-    [*] --> Unseen
-    Unseen --> Seen: on-screen time above 1 s
-    Seen --> Fading: on-screen time above 6 s
-    Fading --> Fading: alpha falls over 9 s, never below the distance and centre floor
-    Fading --> Gone: transient marker, 2 s after 6 s
-```
-
-Caption: the visibility of one world marker; own Powers and orders never fall below alpha 0.75, and a hovered or selected marker is fully opaque.
-
-**RND-360** (MUST) A marker's icon size is *H* ÷ `rnd.marker.icon_divisor` (20) px, multiplied by (2 − *D* ÷ `rnd.marker.near_distance` (500 wu)) when *D* < 500 wu, and by `rnd.marker.hover_scale` (1.2) while it is hovered or selected. During its first `rnd.marker.flash_duration` (3 s) a flashing marker is drawn at × `rnd.marker.flash_scale` (1.3) and alternates its alpha between the two values of `rnd.marker.flash_alphas` (0.2 and 1.0) every `rnd.marker.flash_period` (0.2 s). Its shadow is `rnd.marker.shadow_extra` (10 px) larger than the icon, and its compass is *H* ÷ `rnd.marker.compass_divisor` (30) px larger.
-
-**RND-361** (MUST) A marker draws these layers, in order, centred on its screen position:
-
-1. the shadow `marker.team_disc_shadow` in black with alpha `rnd.marker.shadow_alpha` (0.9) × the marker alpha, with `overlay_alpha`;
-2. off screen, the compass shadow `marker.edge_compass_shadow` with `overlay_alpha` and then the compass arrow `marker.edge_compass` with `overlay_additive`, both rotated to the compass angle; on screen, the empty compass art with `overlay_additive`;
-3. the colour disc `marker.team_disc` in the owner's team colour (or the no-team grey, [visual_language.md](visual_language.md) RND-405) with `overlay_additive`, filled from the bottom up to the marker's progress fraction;
-4. the marker's icon (for example a Power icon `icon.power.*`, `marker.supply_crate` or `marker.relic`) with `overlay_additive`, its texture coordinates rotated by the marker's spin angle.
-
-**RND-362** (MUST) An order marker (`OrderMarker`) also draws a 3-D ground ring: the unit highlight of RND-370 at its target with radius `rnd.marker.order_ring_size` (10 wu) + sin(`rnd.marker.order_ring_pulse_rate` (5 rad per s) × *g*), *g* the presentation frame time, in its team colour, with the `cursor_ring` entry.
-
-**RND-363** (MUST) A marker of one of the local team's Leaders draws, in place of layers 3 and 4, the Leader's 3-D banner (R-UNIT-191) with the cloth-flag entries of [animation_and_vfx.md](../animation_and_vfx.md) and the in-shader depth test of RND-309.
-
-**RND-364** (MUST) The bot priority overlay (per-team target priorities as text and team-coloured arrows) is a development overlay of [diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md), drawn in pass 16 only when its development setting is on.
+**RND-359** (MUST) The bot priority overlay (per-team target priorities as text and team-coloured arrows) is a development overlay of [diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md), drawn in pass 16 only when its development setting is on.
 
 ### 4.10 World cursor (pass 20)
 
-**RND-365** (MUST) A 2-D cursor is a textured quad in the 2-D overlay space (RND-215) at the pointer position (*x*, *y*) with a size *s* in pixels and a hotspot (*hx*, *hy*) given as fractions of the size: its top-left corner is (*x* − *s* × *hx*, *y* − *s* × *hy*), it is rotated by its angle about its centre, and its texture is upright. A cursor's defaults are the size `rnd.cursor.default_size` (20 px), the hotspot (0, 0), a shadow, the additive blend and white. Every cursor is drawn in this projected 2-D form; none is drawn as a 3-D object.
+**RND-365** (MUST) Pass 20 draws, in the order of [cursor_and_markers.md](../../../reference/06_controls_camera_and_commands/cursor_and_markers.md) R-CTRL-355 to R-CTRL-357, first the world-cursor pass in world space and then the always-on-top pass in the 2-D overlay space. The world-space items use the in-shader depth test of RND-309 and write no depth: the highlight effect of R-CTRL-363 (rings and glow cylinder) and the promotable-Worker ring with `cursor_ring`; the formation previews of R-CTRL-374 with `cursor_dots`; the area cylinder of R-CTRL-366 (row 1c) with `cursor_area`; and the placement ghost model of R-CTRL-366 (row 1b) with `cursor_ghost`, the `Ghost` blend (source factor one, destination factor source colour). The selection-circle particles of R-CTRL-370 belong to the particle pool of [animation_and_vfx.md](../animation_and_vfx.md) and are drawn in pass 15.
 
-**RND-366** (MUST) A shadowed cursor first draws its shadow, the blurred variant of its art (RND-243), over the same quad in colour (1, 1, 1, alpha 0) with `overlay_ink`, which with alpha 0 darkens the destination by the shadow texel (RND-058); then its art in its colour with `overlay_additive`, or with `overlay_alpha` for a cursor that is not additive. No cursor writes depth or is culled.
+**RND-366** (MUST) Every cursor of table 2.1-A of R-CTRL-350 is a 2-D quad placed and rotated as R-CTRL-352 states; none is drawn as a 3-D object. A shadowed cursor first draws its shadow, the blurred variant of its art produced offline by the cooker with the blur radius `ref.ctrl.cursor.shadow_blur` (RND-243, ADR-0018), over the same quad in colour (1, 1, 1, alpha 0) with `overlay_ink`, which with alpha 0 darkens the destination by the shadow texel (RND-058); then its art in its colour with `overlay_additive`, or with `overlay_alpha` for the crosshair. The icon near the pointer (R-CTRL-366) and the entering effect (R-CTRL-371) use the marker layers and entries of RND-357.
 
-**RND-367** (MUST) The cursors of a match are:
+**RND-367** (MUST) Cursor sizes are physical pixels at every render size: the standard pointer is 35 px (`ref.ctrl.cursor.set`) whatever the resolution. Under per-monitor DPI scaling, a cursor's art is chosen at the source size closest to its final pixel size (ADR-0033), and the size itself is not scaled by the render size.
 
-| Cursor | Art | Hotspot | Size | Colour and blend | Shadow | Shown |
-|---|---|---|---|---|---|---|
-| pointer | `cursor.world` | `rnd.cursor.pointer_hotspot` (0.055, 0.070) | `rnd.cursor.pointer_size` (35 px) | white, additive | yes | the default pointer |
-| entry marker | `cursor.place` | `rnd.cursor.centre_hotspot` (0.5, 0.5) | `rnd.cursor.entry_marker_size` (40 px) | white, additive | yes | while the selected unit tries to enter a Transport or a Transit Gate |
-| unavailable | `cursor.unavailable` | (0.5, 0.5) | `rnd.cursor.unavailable_size` (60 px) | `rnd.cursor.unavailable_colour` (255, 0, 0), additive | yes | an invalid entry target, and a route the selected unit cannot follow (RND-354) |
-| crosshair | `cursor.turret_aim` | (0.5, 0.5) | set by the turret-aiming rule ([cursor_and_markers.md](../../../reference/06_controls_camera_and_commands/cursor_and_markers.md)) | white, alpha | no | while a turret is aimed |
+**RND-368** (MUST) The rings and the glow cylinder of the highlight effect are generated each frame as vertex-colour strips from the rule of R-CTRL-363, draped on the terrain heights of `terrain_heights` (RND-063), and drawn with the `bias_cursor` variant factor `rnd.depth_bias.cursor` applied in the shader (RND-309).
 
-The context rules that choose a cursor are those of [reference/06_controls_camera_and_commands/cursor_and_markers.md](../../../reference/06_controls_camera_and_commands/cursor_and_markers.md). The move-here, selection and enter cursors are not drawn in a match; the highlight cursor art `cursor.highlight` serves the Power-slot focus of the Power slots panel (RND-378).
-
-**RND-368** (MUST) A cursor drawn animated has the size *s* + |sin(`rnd.cursor.pulse_rate` (4 rad per s) × *g*)| × *s* × `rnd.cursor.pulse_amplitude` (0.6), *g* the presentation frame time.
-
-**RND-369** (MUST) Cursor sizes are physical pixels at every render size: the pointer is 35 px whatever the resolution. Under per-monitor DPI scaling, a cursor's art is chosen at the source size closest to its final pixel size (ADR-0033), and the size itself is not scaled by the render size.
-
-**RND-370** (MUST) The unit highlight at position *p* with radius *ρ* and colour *c* is drawn with the `cursor_ring` entry (alpha blending, in-shader depth with `bias_cursor`, no depth write) as three rings and a glow cylinder:
-
-```text
-n     = max(rnd.cursor.ring_min_steps, rnd.cursor.ring_steps_per_radius × ρ)   # segments per ring: max(25, 2ρ)
-drape = min(1, rnd.cursor.ring_drape_distance ÷ camera distance)               # 75 wu ÷ distance
-ring 1: radii ρ − rnd.cursor.ring_team_band × ρ  to ρ,                               colour c
-ring 2: radii ρ − rnd.cursor.ring_inner_black × ρ to ρ − rnd.cursor.ring_team_band × ρ, black
-ring 3: radii ρ                                  to ρ + rnd.cursor.ring_outer_black × ρ, black
-ring vertex height = lerp(p.y, terrain height at the vertex, drape)   if drape > rnd.cursor.ring_drape_min
-                     p.y                                             otherwise
-glow cylinder: radius rnd.cursor.glow_radius_factor × ρ, height ρ × max(1, camera distance ÷ rnd.cursor.glow_height_distance),
-               colour c at its base and c with alpha 0 at its top, interpolated
-```
-
-The black rings take the alpha of *c*. The procedure uses `rnd.cursor.ring_min_steps`, `rnd.cursor.ring_steps_per_radius`, `rnd.cursor.ring_drape_distance`, `rnd.cursor.ring_drape_min`, `rnd.cursor.ring_team_band`, `rnd.cursor.ring_inner_black`, `rnd.cursor.ring_outer_black`, `rnd.cursor.glow_radius_factor` and `rnd.cursor.glow_height_distance`.
-
-**RND-371** (MUST) A started area Power shows its target area as a cylinder of `rnd.cursor.area_sides` (100) sides, drawn with `cursor_area`, with the radius and height of `rnd.cursor.area_default` (70 wu, 42 wu), or `rnd.cursor.area_meteor_shower` (280 wu, 70 wu) for a meteor shower and `rnd.cursor.area_missile_barrage` (210 wu, 70 wu) for a Missile Barrage, in the colour the world cursor passes, with alpha at its base and alpha 0 at its top. It blinks with the period `rnd.cursor.area_blink_period` (0.4 s): in the off half of each period its alpha is × `rnd.cursor.area_off_alpha` (0.5).
-
-**RND-372** (MUST) While a turret or a Hive is being placed, a ghost model of `mesh.structure.turret_head` or `mesh.structure.hive_mound` is drawn at the cursor's world point with its facet colours, unlit, with the `cursor_ghost` entry: the `Ghost` blend (source factor one, destination factor source colour), the in-shader depth test and no depth write.
-
-**RND-373** (MUST) While the selection circle grows (DEC-032), the cursor emits, every frame, `rnd.cursor.selection_particles` (30) control-flash particles evenly spaced on the circle at the circle's current radius, `rnd.cursor.selection_lift` (10 wu) above the terrain, the whole set rotated by the selection-circle phase, which advances by `rnd.cursor.selection_spin` (0.5 rad per s) of real time; the particles belong to the particle pool of [animation_and_vfx.md](../animation_and_vfx.md).
-
-**RND-374** (MUST) A formation preview draws, at each formation slot, a camera-facing diamond of `fx.particle_dot` whose corners are the slot position ± `rnd.cursor.formation_dot_size` (2 wu) × the camera up vector and ± the same size × the camera right vector, in the team colour, with the `cursor_dots` entry.
-
-**RND-375** (MUST) The badge beside the cursor (the icon of the selected unit or Power) draws the shadow, colour-disc and icon layers of RND-361 at the pointer position + `rnd.cursor.badge_offset` (5 px) × normalise(`rnd.cursor.badge_direction` (0.85, 1)), *y* downwards, with the size *H* ÷ `rnd.cursor.badge_divisor` (24) px.
-
-**RND-376** (MUST) The pointer art is drawn by the renderer with the operating system's pointer hidden over the match view, so its transparent texels show the scene; no driver or operating-system property of the pointer is specified (see DEC-337).
+**RND-369** (MUST) The pointer art is drawn by the renderer with the operating system's pointer hidden over the match view, so its transparent texels show the scene; no driver or operating-system property of the pointer is specified (see DEC-337).
 
 ### 4.11 Power slots panel and match HUD (passes 23 and 28)
 
-**RND-377** (MUST) The Power slots panel (`PowerSlotsPanel`, pass 23) and the match HUD (pass 28) are drawn in the HUD space of RND-028: an orthographic space `rnd.hud.ortho_height` (600) units high and 600 × the aspect ratio wide, origin top-left, independent of the render size. Their content and layout are those of [reference/06_controls_camera_and_commands/selection_and_power_slots.md](../../../reference/06_controls_camera_and_commands/selection_and_power_slots.md) (the Power bar, its pop-ups and messages), of [reference/01_skirmish_rules_and_modes/README.md](../../../reference/01_skirmish_rules_and_modes/README.md) (scores, timers and the mode HUD) and of [ui_framework/pages_and_screen_recipes.md](../ui_framework/pages_and_screen_recipes.md); this section states how they are drawn. Neither pass uses depth.
+**RND-377** (MUST) The Power slots panel (`PowerSlotsPanel`, pass 23) and the match HUD (pass 28) are drawn in the HUD space of RND-028: an orthographic space `rnd.hud.ortho_height` (600) units high and 600 × the aspect ratio wide, origin top-left, independent of the render size. Their content and layout are those of [reference/06_controls_camera_and_commands/selection_and_power_slots.md](../../../reference/06_controls_camera_and_commands/selection_and_power_slots.md) R-CTRL-220 to R-CTRL-239 (the power bar, the cycling hint, the placement sparkles, the Power help tooltip, the centre message and the Power-received pop-ups), of [reference/01_skirmish_rules_and_modes/README.md](../../../reference/01_skirmish_rules_and_modes/README.md) (scores, timers and the mode HUD) and of [ui_framework/pages_and_screen_recipes.md](../ui_framework/pages_and_screen_recipes.md); this section states how they are drawn. Neither pass uses depth.
 
 **RND-378** (MUST) The panel's elements are drawn as follows:
 
 | Element | Entry | Art |
 |---|---|---|
-| Power-slot shadow | `overlay_alpha` | `marker.team_disc_shadow` |
-| Power-slot colour disc | `overlay_additive` | `marker.team_disc` in the team colour |
-| Power icon | `overlay_additive` | the Power's `icon.power.*` |
-| Power-slot focus | `overlay_additive` | `cursor.highlight` |
-| compass | shadow `overlay_alpha`, then arrow `overlay_additive` | `marker.edge_compass_shadow`, `marker.edge_compass`, both through a view of mip level 0 only |
-| pop-up box | `overlay_alpha`; its gradient `overlay_gradient_alpha`; the Supply crate icon `overlay_additive`, clipped to the box by a scissor rectangle | `marker.supply_crate` |
+| bar-slot shadow (R-CTRL-231) | `overlay_alpha` | `marker.team_disc_shadow` |
+| bar-slot colour disc (R-CTRL-231) | `overlay_additive` | `marker.team_disc` in the team colour |
+| Power icon (R-CTRL-231) | `overlay_additive` | the Power's `icon.power.*` |
+| empty slot (R-CTRL-230) | `overlay_additive` | `icon.hud.slot_empty` |
+| focus highlight (R-CTRL-226) | `overlay_additive` | `cursor.highlight` |
+| slot compass (R-CTRL-233) | shadow `overlay_alpha`, then arrow `overlay_additive` | `marker.edge_compass_shadow`, `marker.edge_compass`, both through a view of mip level 0 only |
+| pop-up halo (R-CTRL-238) | `overlay_ink` with source alpha 0, which darkens | `icon.hud.icon_halo` |
+| pop-up box and its gradient (R-CTRL-238) | `overlay_alpha`; the gradient `overlay_gradient_alpha`; the Supply crate icon `overlay_additive`, clipped to the box by a scissor rectangle | `marker.supply_crate` |
+| placement sparkles (R-CTRL-235) | the particle pool of [animation_and_vfx.md](../animation_and_vfx.md) | `fx.muzzle_flash` |
 | text | the outline style (alpha 0) and then the fill style of the UI framework ([ui_framework/layout_rendering_input_and_localisation.md](../ui_framework/layout_rendering_input_and_localisation.md), ADR-0034) | the glyph cache |
 
 **RND-379** (MUST) The match HUD of pass 28 draws its panels with `overlay_alpha`, its gradients with `overlay_gradient_alpha` and its text in the UI framework's text styles, inside the 2-D block of passes 26 to 32 and therefore over the fade of pass 27 (RND-086).
@@ -527,8 +434,7 @@ The black rings take the alpha of *c*. The procedure uses `rnd.cursor.ring_min_s
 | an actor's mesh or card art is missing | the default resource at heap index 0 and a diagnostic (DEC-015); the actor is still drawn | RND-324 |
 | a presentation record names an object that no longer exists | the record is deleted at the end of the frame | RND-307 |
 | a route's points are no longer available during its fade (option B of DEC-651 not taken and the route freed) | the fade record is deleted and the route is no longer drawn | RND-352 |
-| a marker's target projects to no screen position and its probe also fails | the marker is drawn at the screen edge in the direction of its last valid position, or skipped in its first frame | RND-357 |
-| `cursor_ghost` names a mesh that does not exist | the default structure body `mesh.structure.structure_default` and a diagnostic | RND-372 |
+| `cursor_ghost` names a mesh that does not exist | the default structure body `mesh.structure.structure_default` and a diagnostic | RND-365 |
 
 Diagnostics: a development view lists, per instance type, the written and compacted instance counts and the GPU time of its draws; a development toggle draws every actor's cull sphere with the development sphere (RND-330).
 
@@ -552,13 +458,13 @@ Diagnostics: a development view lists, per instance type, the written and compac
 | T14 laser bolt | golden-image | a bolt in colour 0.1 over black, with a white texel, reads 0.5; a Convert bolt is twice as wide; a bolt coplanar with the terrain wins its depth tie | RND-338, RND-339 |
 | T15 route fade | unit | an intensity request of 1 fades to 0 after 4 s of frames; a second request of 0.5 at 1 s leaves the value at 0.75; a route ending off the land keeps its value and is not drawn | RND-351, RND-352 |
 | T16 route colour | unit | the spot colour of a walkable and of a blocked preview, the grey offset, and the pulse of spots 0 and 1 at *r* = 0 | RND-353, RND-354 |
-| T17 marker edge | unit | a target behind the camera is drawn 50 px inside the screen edge on the side of its direction, with its compass along the edge normal | RND-357 |
-| T18 marker alpha | unit | the alpha vectors of RND-359 for a persistent and a transient marker at on-screen times 0.5, 3, 7, 7.9 and 12 s, at camera distances 300 and 1200 wu, at the screen centre and near an edge | RND-358, RND-359 |
-| T19 marker size | unit | icon sizes at render height 1080 for *D* = 250, 500 and 1000 wu, hovered and flashing | RND-360 |
-| T20 cursor | golden-image | the pointer at 1080 and 2160 lines is 35 px with its hotspot at the pointer position and its shadow darkening the scene under it; the crosshair has no shadow and blends with alpha | RND-365 to RND-369 |
-| T21 highlight rings | golden-image | the ring bands of RND-370 for ρ = 10 and 40 wu at camera distances 50 and 1000 wu, draped and flat | RND-370 |
-| T22 ghost blend | golden-image | a ghost texel of 0.4 over a destination of 0.5 reads 0.6 | RND-372 |
-| T23 overlay depth | golden-image | a highlight ring partly behind a hill is hidden behind it and drawn after the UI windows | RND-309 |
+| T17 marker layers | golden-image | a Supply crate marker on screen and off screen: the shadow and compass shadow alpha-blended, the arrow, disc and icon additive, the empty compass art on screen | RND-356, RND-357 |
+| T18 marker 3-D parts | golden-image | a Transport order marker's ground highlight partly behind a hill is hidden behind it; a local Leader's banner is drawn by the marker | RND-358 |
+| T19 cursor shadow | golden-image | the standard pointer darkens the scene under its offline-blurred shadow and adds its art; the crosshair has no shadow and blends with alpha | RND-366 |
+| T20 cursor size | golden-image | the standard pointer is 35 px at 1080 and at 2160 lines, and at render scales 1 and 0.5 | RND-367 |
+| T21 highlight effect | golden-image | the rings and glow cylinder of a highlighted Transport, draped near the camera and flat far away, are hidden behind nearer terrain and drawn after the UI windows | RND-365, RND-368 |
+| T22 ghost blend | golden-image | a ghost texel of 0.4 over a destination of 0.5 reads 0.6 | RND-365 |
+| T23 overlay depth | golden-image | the in-shader test keeps a ring fragment exactly when its depth × 1.03 is at least the scene depth | RND-309 |
 | T24 surges | unit | a fuel pump tracking 20 surges draws 20 | RND-302 |
 
 ## 8 Open decisions
@@ -568,16 +474,15 @@ Diagnostics: a development view lists, per instance type, the written and compac
 | DEC-007 | Resolved | the renderers never write simulation state (RND-301, RND-317, RND-352) |
 | DEC-013 | Resolved | presentation randomness (RND-304) |
 | DEC-029 | Resolved | the crowd look: cards that turn into billboards, decal shadows (RND-314, RND-325) |
-| DEC-032 | Resolved | the selection circle the cursor draws (RND-373) |
 | DEC-055 | Dropped | no gesture trail or icon power bar (RND-380) |
 | DEC-062 | Dropped | actor kinds that no match creates are not drawn (RND-328) |
 | DEC-095 | Resolved | the route preview store (RND-354) |
 | DEC-222 | Open | presentation records instead of render-side writes (RND-301) |
 | DEC-224 | Open | parallel instance writing (RND-387) |
-| DEC-337 | Dropped | driver and pointer properties (RND-376) |
+| DEC-337 | Dropped | driver and pointer properties (RND-369) |
 | DEC-463 | Resolved | every tracked surge is drawn; one limit (RND-302) |
 | DEC-651 | Open | how the route fade gets its points (RND-352) |
-| ADR-0005 | Accepted | the `Ghost` blend (one, source colour) of RND-372 is a blend state of the renderer's catalogue (RND-058) |
+| ADR-0005 | Accepted | the `Ghost` blend (one, source colour) of RND-365 is a blend state of the renderer's catalogue (RND-058) |
 | ADR-0009 | Accepted | instancing, orientation modes and decal shadows |
 
 **Design-phase inputs.**
@@ -608,28 +513,19 @@ Diagnostics: a development view lists, per instance type, the written and compac
 | `rnd.sphere.ico_z` | 0.85065080835 | unit-sphere coordinate | icosahedron | RND-330 | |
 | `rnd.sphere.subdivisions` | 1 | levels | 80 triangles | RND-330 | |
 | `rnd.sphere.line_width` | 1 | px | wire drawing | RND-330 | |
-| `rnd.shockwave.ring_lift` | 5 | wu | above the ring's height | RND-333 | |
-| `rnd.shockwave.ring_base_radius` | 35 | wu | drawn radius at creation | RND-333 | |
-| `rnd.shockwave.ring_growth` | 40 | wu per s of life | | RND-333 | |
 | `rnd.shockwave.centre_colour` | 1, 1, 0, 0 | RGBA | fan centre | RND-333 | |
 | `rnd.shockwave.rim_colour` | 1, 0.5, 0.5 | RGB | fan rim | RND-333 | |
-| `rnd.shockwave.rim_alpha` | 0.6 | × remaining life ÷ size | | RND-333 | |
-| `rnd.shockwave.blast_duration` | 1 | s of age | | RND-334 | |
 | `rnd.shockwave.blast_layers` | 5 | quads | per texture | RND-334 | |
 | `rnd.shockwave.blast_star_scale` | 500 | × size ÷ √distance | first star half-size | RND-334 | |
 | `rnd.shockwave.blast_glow_scale` | 1000 | × size ÷ √distance | first glow half-size | RND-334 | |
 | `rnd.shockwave.blast_layer_growth` | 1.2 | × per layer | | RND-334 | |
 | `rnd.shockwave.blast_colour` | 1, 0.5, 0.2 | RGB | alpha 1 − age | RND-334 | |
-| `rnd.lightning.cloud_size` | 200 | wu, half-size | idle cloud glow | RND-336 | |
 | `rnd.lightning.cloud_pulse_rate` | 2 | rad per s of presentation frame time | alpha \|sin(2 g)\| | RND-336 | |
 | `rnd.lightning.bolt_layers` | 3 | quads | | RND-337 | |
-| `rnd.lightning.bolt_width` | 30 | wu | first layer | RND-337 | |
 | `rnd.lightning.bolt_width_growth` | 1.2 | × per layer | | RND-337 | |
 | `rnd.lightning.bolt_alpha_falloff` | 0.5 | × per layer | | RND-337 | |
 | `rnd.laser.layers` | 5 | instances per bolt | five times the brightness | RND-338 | |
-| `rnd.laser.length` | 10 | wu | along the velocity | RND-339 | |
 | `rnd.laser.half_width` | 0.8 | wu | | RND-339 | |
-| `rnd.laser.convert_width_factor` | 2 | × half-width | Convert bolts | RND-339 | |
 | `rnd.laser.rogue_colour` | 255, 255, 255 | RGB | Rogue faction bolts | RND-339 | |
 | `rnd.route.highlight_step` | 10 | wu | particle spacing along a highlighted route | RND-350 | |
 | `rnd.route.highlight_sizes` | 75, 60 | particle size | two particles per step | RND-350 | |
@@ -643,58 +539,3 @@ Diagnostics: a development view lists, per instance type, the written and compac
 | `rnd.route.pulse_amplitude` | 0.5 | alpha factor | | RND-353 | |
 | `rnd.route.pulse_rate` | 10 | rad per s of real time | | RND-353 | |
 | `rnd.route.pulse_phase_step` | 0.7 | rad per spot | | RND-353 | |
-| `rnd.marker.lift_factor` | 5 | px × H ÷ D | on-screen icon lift | RND-357 | |
-| `rnd.marker.offscreen_probe_distance` | 1000 | wu | ahead of the camera | RND-357 | |
-| `rnd.marker.offscreen_probe_step` | 100 | wu | towards the target | RND-357 | |
-| `rnd.marker.edge_inset` | 50 | px | inward from the screen edge | RND-357 | |
-| `rnd.marker.seen_time` | 1 | s of on-screen real time | | RND-358 | |
-| `rnd.marker.fade_start` | 6 | s of on-screen real time | | RND-359 | |
-| `rnd.marker.fade_length` | 9 | s | seen markers | RND-359 | |
-| `rnd.marker.transient_fade_length` | 2 | s | non-persistent markers; ends at 8 s | RND-359 | |
-| `rnd.marker.min_alpha_distance_start` | 350 | wu | alpha floor (D − 350) ÷ 500 | RND-359 | |
-| `rnd.marker.min_alpha_distance_range` | 500 | wu | | RND-359 | |
-| `rnd.marker.min_alpha_centre_fraction` | 0.5 | × H | alpha floor near the screen centre | RND-359 | |
-| `rnd.marker.own_min_alpha` | 0.75 | alpha | own Powers and orders | RND-359 | |
-| `rnd.marker.icon_divisor` | 20 | H ÷ this | icon size in px | RND-360 | |
-| `rnd.marker.near_distance` | 500 | wu | × (2 − D ÷ 500) below it | RND-360 | |
-| `rnd.marker.hover_scale` | 1.2 | × size | hovered or selected | RND-360 | |
-| `rnd.marker.flash_duration` | 3 | s of real time | | RND-360 | |
-| `rnd.marker.flash_scale` | 1.3 | × size | while flashing | RND-360 | |
-| `rnd.marker.flash_alphas` | 0.2, 1.0 | alpha | alternating | RND-360 | |
-| `rnd.marker.flash_period` | 0.2 | s | per alternation | RND-360 | |
-| `rnd.marker.shadow_extra` | 10 | px | shadow larger than the icon | RND-360 | |
-| `rnd.marker.compass_divisor` | 30 | H ÷ this, added | compass larger than the icon | RND-360 | |
-| `rnd.marker.shadow_alpha` | 0.9 | alpha | black shadow layer | RND-361 | |
-| `rnd.marker.order_ring_size` | 10 | wu | order-marker ring radius, ± 1 | RND-362 | |
-| `rnd.marker.order_ring_pulse_rate` | 5 | rad per s of presentation frame time | | RND-362 | |
-| `rnd.cursor.default_size` | 20 | px | | RND-365 | |
-| `rnd.cursor.pointer_size` | 35 | px, physical | at every resolution | RND-367, RND-369 | |
-| `rnd.cursor.pointer_hotspot` | 0.055, 0.070 | fraction of size | | RND-367 | |
-| `rnd.cursor.centre_hotspot` | 0.5, 0.5 | fraction of size | | RND-367 | |
-| `rnd.cursor.entry_marker_size` | 40 | px | | RND-367 | |
-| `rnd.cursor.unavailable_size` | 60 | px | | RND-367 | |
-| `rnd.cursor.unavailable_colour` | 255, 0, 0 | RGB | | RND-367 | |
-| `rnd.cursor.pulse_rate` | 4 | rad per s of presentation frame time | animated cursors | RND-368 | |
-| `rnd.cursor.pulse_amplitude` | 0.6 | × size | | RND-368 | |
-| `rnd.cursor.ring_min_steps` | 25 | segments | per ring | RND-370 | |
-| `rnd.cursor.ring_steps_per_radius` | 2 | segments per wu | | RND-370 | |
-| `rnd.cursor.ring_drape_distance` | 75 | wu | drape = min(1, 75 ÷ distance) | RND-370 | |
-| `rnd.cursor.ring_drape_min` | 0.1 | drape | rings stay flat at or below | RND-370 | |
-| `rnd.cursor.ring_team_band` | 0.2 | × radius | team-coloured band inside the radius | RND-370 | |
-| `rnd.cursor.ring_inner_black` | 0.275 | × radius | inner edge of the inner black band | RND-370 | |
-| `rnd.cursor.ring_outer_black` | 0.075 | × radius | outer black band | RND-370 | |
-| `rnd.cursor.glow_radius_factor` | 1.075 | × radius | glow cylinder | RND-370 | |
-| `rnd.cursor.glow_height_distance` | 300 | wu | height = ρ × max(1, distance ÷ 300) | RND-370 | |
-| `rnd.cursor.area_sides` | 100 | sides | area cylinder | RND-371 | |
-| `rnd.cursor.area_default` | 70, 42 | wu radius, wu height | | RND-371 | |
-| `rnd.cursor.area_meteor_shower` | 280, 70 | wu radius, wu height | | RND-371 | |
-| `rnd.cursor.area_missile_barrage` | 210, 70 | wu radius, wu height | | RND-371 | |
-| `rnd.cursor.area_blink_period` | 0.4 | s | on and off halves | RND-371 | |
-| `rnd.cursor.area_off_alpha` | 0.5 | × alpha | off half | RND-371 | |
-| `rnd.cursor.selection_particles` | 30 | particles per frame | | RND-373 | DEC-032 |
-| `rnd.cursor.selection_lift` | 10 | wu | above the terrain | RND-373 | |
-| `rnd.cursor.selection_spin` | 0.5 | rad per s of real time | | RND-373 | |
-| `rnd.cursor.formation_dot_size` | 2 | wu | diamond half-diagonal | RND-374 | |
-| `rnd.cursor.badge_offset` | 5 | px | from the pointer | RND-375 | |
-| `rnd.cursor.badge_direction` | 0.85, 1 | screen vector, normalised | *y* downwards | RND-375 | |
-| `rnd.cursor.badge_divisor` | 24 | H ÷ this | badge size in px | RND-375 | |
