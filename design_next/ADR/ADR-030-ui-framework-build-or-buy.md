@@ -40,7 +40,7 @@ Chosen option: **1, an own retained UI framework**, decided by the owner's `AGEN
 - **Text.** Text comes from string tables by string id (ADR-063) and is drawn through the glyph cache (ADR-034). Text entry goes through the UI's text service with IME support (ADR-028).
 - **Accessibility.** Every widget has an accessible name and role; palettes, including the high-contrast palette, are data; the text-scale setting feeds layout and the glyph cache (ADR-064).
 - **Guarantees.** Escape and Back never apply a change; input is handled in the update phase, never in drawing; message text is never interpreted as a format string; no widget storage has a fixed capacity that user data can overflow.
-- **Developer tools** may use a separate immediate-mode library for debug panels, drawn through the same batched pipeline; it is never used for player-facing UI.
+- **Developer tools** draw their debug panels with a small immediate-mode layer of the engine's own, on the same batched pipeline (no third-party UI library: AGENTS.md R14); it exists in Debug builds only and is never used for player-facing UI.
 
 ### Consequences
 
@@ -84,3 +84,4 @@ Chosen option: **1, an own retained UI framework**, decided by the owner's `AGEN
 - Related: ADR-028 (text input), ADR-031 (batched UI rendering), ADR-032 (focus graph and page stack), ADR-033 (layout, scaling and DPI), ADR-034 (text rendering), ADR-061 (data schemas), ADR-063 (localisation), ADR-064 (accessibility), ADR-068 (profiling overlay).
 - The UI framework component (`architecture/components/ui_framework/`) specifies the widget set, the page patterns and the screen recipes.
 - **Amendment 2026-10-17 (AGENTS.md, O21).** Status Accepted, decided by the owner's `AGENTS.md`: R14 excludes third-party UI middleware, so the own retained framework `UiCore` is the decision, no longer a default.
+* Amendment 2026-10-17 (AGENTS.md R14, coordinator ruling): the debug panels use no third-party immediate-mode library; an own minimal immediate-mode layer on the batched UI renderer draws them, in Debug builds only.
