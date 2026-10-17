@@ -933,3 +933,243 @@ Index = parameter index *i* within the mode (used by `multiwinia_option_<g>_<i>_
 | `MenuCancel` | buttons whose `m_transitionDirection == -1` (Done, Paste, Play Demo, auth status) play it instead of `MenuSelect`; every `BackPageButton` (direction left at +1) plays `MenuSelect` via the base call **and then** `MenuCancel`, and re-initialises the transition with direction −1 | [C] same, `BackPageButton::MouseUp` |
 | `MenuRollOver` | focus moves to a new button (base render, level rows, colour rows) | [C] `GameMenuButton::Render`, `LevelSelectButton.h`, `FancyColourButton.h` |
 | `ChatMessage` | lobby chat received (not joins) | [C] `NewChatMessage` |
+
+---
+
+## [→ 28_ui_framework] 12. How `GameMenuWindow` is built
+
+### 12.1 Class structure
+```mermaid
+classDiagram
+    EclWindow <|-- DarwiniaWindow
+    DarwiniaWindow <|-- GameMenuWindow
+    EclButton <|-- DarwiniaButton
+    DarwiniaButton <|-- GameMenuButton
+    DarwiniaButton <|-- GameMenuTitleButton
+    DarwiniaButton <|-- ImageButton
+    DarwiniaButton <|-- ScrollingTextButton
+    DarwiniaButton <|-- LevelSelectButtonBase
+    DarwiniaButton <|-- MapImageButton
+    DarwiniaButton <|-- GameTypeImageButton
+    DarwiniaButton <|-- HelpImageButton
+    DarwiniaButton <|-- MapListTitlesButton
+    DarwiniaButton <|-- ServerTitleInfoButton
+    DarwiniaButton <|-- WaitingButton
+    DarwiniaButton <|-- KickPlayerButton
+    DarwiniaButton <|-- BuyNowInfoButton
+    DarwiniaButton <|-- MapDetailsButton
+    DarwiniaButton <|-- GameMenuChatButton
+    ScrollingTextButton <|-- GameTypeInfoButton
+    ScrollingTextButton <|-- MapInfoButton
+    ScrollingTextButton <|-- OptionDetailsButton
+    ScrollingTextButton <|-- MOTDButton
+    LevelSelectButtonBase <|-- LevelSelectButton
+    LevelSelectButtonBase <|-- AnyLevelSelectButton
+    GameMenuButton <|-- BackPageButton
+    BackPageButton <|-- FinishMultiwiniaButton
+    BackPageButton <|-- FinishSinglePlayerButton
+    BackPageButton <|-- SaveFiltersButton
+    BackPageButton <|-- ApplyNameButton
+    GameMenuButton <|-- GameServerButton
+    GameMenuButton <|-- GamertagButton
+    GameMenuButton <|-- FancyColourButton
+    GameMenuButton <|-- GameTypeButton
+    GameMenuButton <|-- PlayGameButton
+    GameMenuButton <|-- UnlockFullGameButton
+    GameMenuButton <|-- AuthStatusButton
+    GameMenuButton <|-- OtherSimpleNavButtons
+    InputField <|-- AuthInputField
+    InputField <|-- GameMenuInputField
+    InputField <|-- ChatInputField
+    NetworkUnicodeString <|-- ServerPasswordString
+    NetworkUnicodeString <|-- PlayerNameString
+    GameMenuWindow o-- MapData : via GameMenu.m_maps
+    class GameMenuWindow {
+      +int m_currentPage
+      +int m_newPage
+      +NetworkGameOptionInt m_gameType
+      +NetworkGameOptionMapId m_requestedMapId
+      +NetworkIntArray m_params
+      +SetupNewPage(int)
+      +Update()
+      +Render(bool)
+    }
+```
+`OtherSimpleNavButtons` stands for the `GameMenuButton` subclasses that only override `MouseUp` (listed in §12.8). `GameMenuButton`, `BackPageButton`, `GameMenuTitleButton`, `GameMenuInputField`, `GameMenuInputScroller`, `GameMenuDropDown`, `GameMenuCheckBox`, `TextButton`, `HelpAndOptionsButton`, `ChatInputField` are defined outside `code/UI` (P17a/P17b) [C] `code/game_menu.h`, `code/interface/*.h`.
+
+### 12.2 Page lifecycle (state machine)
+```mermaid
+stateDiagram-v2
+    [*] --> Pending : ctor sets m_newPage (Main or AuthKeyEntry), m_currentPage = -1
+    Pending --> Building : Update() sees m_currentPage != m_newPage
+    Building --> Live : ShutdownPage(old); SetupNewPage(new): Remove() all buttons, delete scroll bar, call Setup*, StartMenuTransition, m_currentPage = new
+    Building --> Deferred : Setup* returned early (waiting for network echo / team id)
+    Deferred --> Building : per-page Update re-calls Setup* when the condition holds
+    Live --> Live : per-page Update*(); buttons set m_newPage
+    Live --> Building : next Update() (one-frame latency; last write to m_newPage wins)
+    Live --> Building : game type changed under GameSetup/MapSelect (rebuild same page)
+    Live --> [*] : DestroyMenu (window removed)
+```
+Ordered behaviour of `GameMenuWindow::Update` each frame [C]:
+1. Start `LobbyAmbience` once sounds are ready.
+2. Navigation: `DarwiniaWindow::Update()` only if the page has navigable buttons, no overlay error dialog, chat not visible and chat not toggled this frame; else, if the (dead) overlay dialog is up, `ControlCloseTaskHelp` dismisses it.
+3. Page switch: if `m_currentPage != m_newPage` → `ShutdownPage(current)`, `SetupNewPage(new)`, re-assert full-screen position/size; else if `m_reloadPage` → rebuild current (flag never set).
+4. Demo-status change check (§7.2).
+5. Per-page update switch (table in §2). Note the deliberate fall-through: `PageGameSetup` runs `UpdateMultiplayerPage()` **and** `UpdateGameOptions(true)`.
+6. If a page change was requested during this frame, `m_setupNewPage = true` (unused).
+
+Key properties [C] `SetupNewPage`:
+- **Destroy-and-rebuild**: every page change deletes all buttons (`DarwiniaWindow::Remove`: removes buttons, empties `m_buttonOrder`, resets focus to index 0, ends text edit) and the scroll bar; nothing persists in widgets — persistent state lives in `GameMenuWindow` members, `g_app`, network options and prefs.
+- `m_currentPage` is assigned **after** the `Setup*` call, so inside a setup function `m_currentPage` is the page being left. Pages use this for "return to caller" (`BackPageButton(m_currentPage)`) and for conditional set-up (lobby re-entry from PlayerOptions/AdvancedOptions keeps parameters).
+- A transition animation is started on every page build once the menu exists (`GameMenu::m_menuCreated`); the outgoing frame was captured earlier by the button's `InitialiseMenuTransition(1.0 s, ±1)` (P12 renders it).
+- Teardown hooks (`ShutdownPage`) exist only for JoinGame (stop identifying unless going to GameConnecting; forget server rows), GameConnecting (stop identifying), Achievements (forget rows).
+- An unknown page value release-asserts ("Game menu invalid page").
+
+### 12.3 Building widgets — registration pattern
+Every widget on every page is created with the same five steps [C] (all `Setup*Page` functions):
+1. `new <Class>(ctor args)` — ctor args are a caption/icon string for `GameMenuButton`s, a page id for `BackPageButton`s, a texture path for `ImageButton`, a phrase id for `WaitingButton`/`TextButton`, a colour id for `FancyColourButton`, a row index for `GameServerButton`/`AchievementButton`.
+2. `SetShortProperties(name, x, y, w, h, caption)` (or `SetProperties(…, caption, tooltip)` for the paste button and input scrollers). Names identify widgets (`GetButton(name)`), drive help-text look-ups (`<name>_description[_<mode>]`) and must be unique for `GetButton` to be meaningful: Eclipse `RegisterButton` prepends to the window's list and `GetButton` returns the most recently registered match, `RemoveButton` removes all matches [C] `contrib/eclipse/eclwindow.cpp`. (Duplicates do occur: `image` and `info` twice on BuyMeNow; `start_testbed_server` twice under TESTBED.)
+3. Set appearance/behaviour fields: `m_fontSize` (px), `m_inactive` (greyed, skipped by pad navigation, many `MouseUp`s early-out), `m_disabled` (Eclipse-level disable), `m_centered`, and widget-specific flags (`m_noBackground`, `m_cycleMode` for drop-downs; `m_shadow`, `m_centered` for `TextButton`; `m_border` for `ImageButton`; `m_renderStyle2` for input fields; `m_transitionDirection` = −1 for "cancel-like" buttons).
+4. Bind data where applicable: `RegisterNetworkInt(&networkValue)` (drop-down/checkbox on a network option), `RegisterInt(&int)` / `RegisterBool(&bool)` (local), `RegisterNetworkValue(type, value)` (input field), `RegisterString(buf, len)` (auth field), `RegisterUnicodeString(str)` (chat).
+5. `RegisterButton(widget)`; then `m_buttonOrder.PutData(widget)` **iff** it should be reachable by controller (titles, images, info panels, MOTD, status and chat log are not).
+
+Helper `CreateMenuControl(name, dataType, value, y, change, callback, x, w, fontSize)` [C]: creates a `GameMenuInputField` named and captioned `name` (height 30, callers then override `m_h`), registers it; for non-string types also creates two `GameMenuInputScroller`s named `"<name> left"` / `"<name> right"`, captions `<` / `>`, tooltips "Value left"/"Value right", size font×font at (x+w−4·font, y+font/2) and (x+w−font, y+font/2), `m_change = −change / +change`. Defaults: x = −1 → 10; w = −1 → window width − 2x. It returns the field; the caller adds it to `m_buttonOrder`. Value ranges come from `NetworkValue::SetBounds(min,max)`.
+
+Legacy helper `GetDefaultPositions(&x,&y,&gap)` (only the Research page uses it) [C]: x = min(200, W/1152·200); Main/Darwinia: y = H/864·200, gap = y; NewOrJoin/JoinGame/GameConnecting/GameSelect: y = H/864·175, gap = y/1.5; GameSetup/Research: y = H/864·70, gap = (H/864 integer-divided)·60; other pages leave y/gap unset.
+
+Dynamic rows (server browser) are created/destroyed incrementally inside the page's update, registered at runtime and inserted into `m_buttonOrder` before the last element [C] `UpdateJoinGamePage`.
+
+### 12.4 Controller / keyboard / mouse navigation (`m_buttonOrder`)
+Implemented by `DarwiniaWindow::Update` and `DarwiniaButton::UpdateButtonHighlight` (P17a owns them) and relied on by every P18 widget [C] `code/interface/darwinia_window.cpp`:
+- Active only while the window has Eclipse focus and `m_lockMenu` is false.
+- `ControlMenuDown` / `ControlMenuUp`: first offer the move to the current widget's `SpecialScroll(±1)` — **looked up as `m_buttons[m_currentButton]`, i.e. by index into the registration list (which Eclipse keeps newest-first), not into `m_buttonOrder`** — if it does not consume the move, step `m_currentButton` through `m_buttonOrder` with wrap-around, skipping `m_inactive` entries (at most Size+1 steps). Sets `m_buttonChangedThisUpdate`.
+- `ControlMenuActivate` (or `ControlMainMenuActivate` while at the main menu): `MouseUp()` on `m_buttonOrder[m_currentButton]`.
+- Back: the window is not closeable, so `ControlMenuClose` is handled by every `BackPageButton` itself — in gamepad mode its `Render` draws the "B" glyph (`icons/button_b.bmp`) after the caption and calls its own `MouseUp()` when `ControlMenuClose` fires [C] `code/game_menu.cpp:BackPageButton::Render`. (Pages without a BackPageButton — Main, AuthKeyEntry — have no pad "back".)
+- Mouse: in keyboard/mouse input mode, hovering a widget makes it the current button (`SetCurrentButton`) and sets `m_mouseHighlightMode`; a pad move clears mouse-highlight mode for all widgets. A widget draws as focused when (mouse-highlight mode and hovered) or it is `m_buttonOrder[m_currentButton]`. Several custom widgets ignore mouse hover entirely in gamepad mode (`KickPlayerButton`, `LevelSelectButtonBase::RenderBackground`).
+- Initial focus = first navigable widget (index 0) except the lobby, which focuses Play.
+- While the lobby chat input is visible (`ChatInputWindow::IsChatVisible()`) or was toggled this frame, the whole navigation step is skipped [C] `GameMenuWindow::Update`.
+- Text-entry pages begin editing immediately (`BeginTextEdit`: auth key, password); `EndTextEdit` happens in `Remove()`.
+- Open drop-down: only the owning button is rendered and it captures input (P17b `GameMenuDropDownWindow`).
+- `m_lockMenu` is set by `TutorialButton` (freeze while the tutorial launches) and cleared by the overlay-dialog dismissal path.
+
+### 12.5 Rendering conventions and animations
+- Text is drawn twice: an outline pass (`SetRenderOutline(true)`, colour alpha 0) and a fill pass. Fonts: `g_titleFont` (buttons, titles), `g_editorFont` (rows, chat, scrolling text), `g_gameFont` (server header, gamer tags, overlays) (P12).
+- Palette (RGBA 0–1): normal caption (0.6,1.0,0.4,1); focused caption (1.0,0.3,0.3,1); inactive caption = `m_ir,m_ig,m_ib,m_ia` = (0.5,0.5,0.5,1); `m_useEditorFont` caption (1,1,0.3,1); focus band (0.75,0.75,1.0,0.5); unfocused row band (1,1,1,0.1); title (0.75,1.0,0.45) outline + shadow pass [C] `code/game_menu.cpp:GameMenuButton::Render/GameMenuTitleButton::Render`, `LevelSelectButtonBase.h`.
+- **Button birth animation** (every `GameMenuButton`, `m_birthTime` = creation time) [C] `GameMenuButton::Render`: `showTime = birth + 0.6·y/H`; `flashTime = birth + (5/numNavigableButtons)·y/H`; while `now < flashTime` the button is shifted left by `(showTime−now)·0.1·W` px and covered by an additive white box of alpha `clamp(flashTime−now, 0, 0.9)`; once `now ≥ showTime` a 0.1 s "pop" redraws the caption in white with alpha `1−t/0.1` (left-aligned buttons also draw a 1.3×-size ghost with alpha `0.5−t/0.1`), then the animation is finished (`m_birthTime = −1000`). Buttons lower on screen therefore appear later (a top-to-bottom cascade).
+- **Level row cascade**: same idea with `1.0·y/H` s (§4.5).
+- **Menu transition**: buttons call `Renderer::InitialiseMenuTransition(1.0, direction)` (captures the current frame); `SetupNewPage` calls `StartMenuTransition()`; direction +1 for forward, −1 for back (P12 draws the captured frame sliding/fading over the new page) [C] `code/renderer.cpp:InitialiseMenuTransition/StartMenuTransition`.
+- Gamer-tag colour flash (1.0 s), achievement slide (750 px/s), connecting dots (2 Hz), blink (1 Hz, 50 % duty) for overlay captions and the auth cursor, background breathing (5·sin t px) and gear rotation (0.2 rad/s) — see §1.4, §4.6.3, §4.12, §4.19.
+- **Highlight beam**: `RenderHighlightBeam(x, centreY, w, h)` (P17b) behind titles and the lobby map name.
+- **Fill box**: `DrawFillBox` (P17b) — shadowed panel used for page regions.
+
+### 12.6 Scrolling text widget (`ScrollingTextButton`)
+[C] `code/UI/ScrollingTextButton.h`. Used by credits, MOTD, game-type info, map info and option details.
+- Clips drawing to its rectangle (`Renderer::Clip`/`EndClip`).
+- Unless `m_ignoreButtons`, whenever the parent's `m_currentButton` changes the scroll timer restarts (so descriptions start from the top when focus moves).
+- Layout: line gap = 1.2·font; top margin = 0.05·h, raised to 1.1·font if smaller than one font height; left margin 0.05·w.
+- Wrapping: `WordWrapText(text, 0.95·w, charWidth)`, cached in `m_wrapped`; `ClearWrapped()` invalidates it — the dynamic subclasses set `m_string` and call `ClearWrapped()` **every frame**, re-wrapping each frame.
+- Auto-scroll when content height (0.05·h + lines·gap) exceeds h: hold 1.5 s, then move up at `m_scrollSpeed` = 30 px/s; when the last line has scrolled above the original top, snap back and restart the timer (endless loop). MOTD sets the timer 5.0 s in the future for a longer initial hold.
+- A line starting with `-` is drawn at 1.25× size without the dash (heading markup).
+
+### 12.7 Image widgets
+- `ImageButton(filename)` [C] `code/UI/ImageButton.cpp`: draws the texture (if `Resource::DoesTextureExist`) as a full quad, linear filtering, white, alpha-blended; white outline unless `m_border = false`. Filename is `strdup`ed (never freed).
+- Specialised image widgets compute their texture from window state each frame: `GameTypeImageButton` (mode picture of `m_gameType`, or of `m_highlightedGameType` in single player / on GameSelect), `MapImageButton` (thumbnail of the focused or requested map), `HelpImageButton` (help page image) — all add the "Full Game Only" overlay where relevant and an outline.
+
+### 12.8 Inventory of every class in `code/UI`
+Status: **Live** = instantiated in `[B:FULL]`; **Unreached** = instantiated only on unreachable pages; **Unused** = compiled (header included) but never instantiated; **Uncompiled** = header not included anywhere (never compiled, though listed in the `.vcproj`) [C] include/instantiation grep over `code/`.
+
+| Class | File | Base | Overrides | Status | Purpose / action |
+|---|---|---|---|---|---|
+| `GameMenuWindow` | GameMenuWindow.h/.cpp | `DarwiniaWindow` | Create (empty), Update, Render | Live | the front end |
+| `ServerPasswordString` | GameMenuWindow.h | `NetworkUnicodeString` | Get/Set | Live | ≤16-char password; on host proxies `Server::Get/SetPassword` |
+| `GameMenuChatButton` | GameMenuWindow.cpp | `DarwiniaButton` | Render | Live | lobby chat log |
+| `AchievementButton` | AchievementButton.h | `GameMenuButton` | Render, MouseUp (empty) | Unused | achievement row |
+| `AdvancedOptionsModeButton` | AdvancedOptionsModeButton.h | `GameMenuButton` | MouseUp | Live | → AdvancedOptions unless demo key |
+| `AnyLevelSelectButton` | AnyLevelSelectButton.h | `LevelSelectButtonBase` | Render, MouseUp | Unreached (custom-game mode never on) | "any map" → JoinGame |
+| `ApplyNameButton` | ApplyNameButton.h | `BackPageButton` | MouseUp | Live | save PlayerName pref, back |
+| `AuthInputField` | AuthInputField.h | `InputField` | Render, Keypress, MouseUp | Live | key entry |
+| `AuthPageButton` | AuthPageButton.h | `GameMenuButton` | MouseUp | Live (in HelpAndOptionsWindow) | close parent window, menu → AuthKeyEntry |
+| `AuthStatusButton` | AuthStatusButton.h | `GameMenuButton` | Render, MouseUp (empty) | Live | auth status box |
+| `BuyNowInfoButton` | BuyNowInfoButton.h | `DarwiniaButton` | Render | Unused | 5 upsell lines |
+| `BuyNowModeButton` | BuyNowModeButton.h | `GameMenuButton` | MouseUp | Live (demo) | → BuyMeNow |
+| `CSpectatorButton` | CSpectatorButton.h | `GameMenuButton` | Render, MouseUp | Unused (`#ifdef TESTBED`) | request spectator |
+| `CampaignButton` | CampaignButton.h | `GameMenuButton` | MouseUp, Render, static LoadCampaign | Unreached `[B:DEBUG]` | Darwinia campaign (`game.txt`, `GameModeCampaign`) |
+| `ServerConnectButton` | ConnectButton.h | `GameMenuButton` | Render, MouseUp | Live | password Connect |
+| `DarwiniaModeButton` | DarwiniaModeButton.h | `GameMenuButton` | MouseUp | Live | "Single Player" |
+| `DarwiniaPlusMPButton` | DarwiniaPlusMPButton.h | `GameMenuButton` | MouseUp | Unused `[B:LEGACY]` | → NewOrJoin / BuyMeNow |
+| `DarwiniaPlusSPButton` | DarwiniaPlusSPButton.h | `GameMenuButton` | MouseUp | Unused `[B:LEGACY]` | sets single player |
+| `EnterAuthkeyButton` | EnterAuthKeyButton.h | `GameMenuButton` | MouseUp | Live | auth Done |
+| `FancyColourButton` | FancyColourButton.h | `GameMenuButton` | MouseUp, Render | Live | colour/side row |
+| `FiltersPageButton` | FiltersPageButton.h | `GameMenuButton` | MouseUp | Live | → Filters |
+| `FinishMultiwiniaButton` | FinishMultiwiniaButton.h | `BackPageButton` | MouseUp | Live | leave game/lobby (§4.6.6) |
+| `FinishSinglePlayerButton` | FinishMultiwiniaButton.h | `BackPageButton` | MouseUp | Live | SP lobby back |
+| `SaveFiltersButton` | FinishMultiwiniaButton.h | `BackPageButton` | MouseUp | Live | save filter prefs, back |
+| `GameMenuOptionsButton` | GameMenuOptionsButton.h | `GameMenuButton` | MouseUp | Uncompiled | open `OptionsMenuWindow` |
+| `GameServerButton` | GameServerButton.h | `GameMenuButton` | MouseUp, Render, SpecialScroll | Live | browser row |
+| `GameTypeAnyButton` | GameTypeAnyButton.h | `GameMenuButton` | MouseUp | Unused | "any mode" → JoinGame |
+| `GameTypeButton` | GameTypeButton.h | `GameMenuButton` | Render, MouseUp | Live | mode row |
+| `GameTypeImageButton` | GameTypeImageButton.h | `DarwiniaButton` | Render | Live | mode picture |
+| `GameTypeInfoButton` | GameTypeInfoButton.h | `ScrollingTextButton` | Render | Live | mode blurb |
+| `GamertagButton` | GamerTagButton.h | `GameMenuButton` | MouseUp, Render | Live | lobby slot |
+| `HelpImageButton` | HelpImageButton.h | `DarwiniaButton` | Render | Unreached | help image |
+| `HelpModeButton` | HelpModeButton.h | `GameMenuButton` | MouseUp | Uncompiled | → HelpMenu |
+| `HelpSelectButton` | HelpSelectButton.h | `GameMenuButton` | MouseUp | Unused | → Help page n |
+| `ImageButton` | ImageButton.h/.cpp | `DarwiniaButton` | Render | Live | static image |
+| `JoinGameButton` | JoinGameButton.h | `GameMenuButton` | MouseUp | Live | → JoinGame |
+| `KickPlayerButton` | KickPlayerButton.h | `DarwiniaButton` | MouseUp, Render | Live | kick |
+| `LevelSelectButton` | LevelSelectButton.h | `LevelSelectButtonBase` | MouseUp, Render | Live | map row |
+| `LevelSelectButtonBase` | LevelSelectButtonBase.h | `DarwiniaButton` | (helpers) | Live (base) | column layout, row background, animated name |
+| `MapData` | MapData.h/.cpp | — | — | Live | map metadata (§11.1) |
+| `MapImageButton` | MapImageButton.h | `DarwiniaButton` | Render | Live | thumbnail |
+| `MapInfoButton` | MapInfoButton.h | `ScrollingTextButton` | Render | Live | map description |
+| `MapListTitlesButton` | MapListTitlesButton.h | `DarwiniaButton` | Render | Live | map list header (also a GameSelect variant, unused) |
+| `MapSelectModeButton` | MapSelectModeButton.h | `GameMenuButton` | MouseUp (returns at once), Render | Live | lobby map name |
+| `MultiwiniaEditorButton` | MultiwiniaEditorButton.h | `GameMenuButton` | MouseUp | `[B:EDITOR]` | open editor |
+| `MultiwiniaModeButton` | MultiwiniaModeButton.h | `GameMenuButton` | MouseUp | Uncompiled | → GameSelect + MP server |
+| `MultiwiniaVersusCpuButton` | MultiwiniaVersusCpuButton.h | `GameMenuButton` | MouseUp | Unreached `[B:DEBUG]` | → GameSelect |
+| `NewOrJoinButton` | NewOrJoinButton.h | `GameMenuButton` | MouseUp | Live | "Multiplayer" |
+| `NewServerButton` | NewServerButton.h | `GameMenuButton` | MouseUp | Live | "Host" |
+| `NextHelpButton` | NextHelpButton.h | `GameMenuButton` | MouseUp | Unreached | next help image |
+| `OptionDetailsButton` | OptionDetailsButton.h | `ScrollingTextButton` | Render | Live | option help |
+| `PasteKeyButton` | PasteKeyButton.h | `GameMenuButton` | MouseUp | Live | paste key |
+| `PlayDemoAuthkeyButton` | PlayDemoAuthkeyButton.h | `GameMenuButton` | MouseUp | Live (not in HWCOMPAT/BETA/ASSAULT targets) | demo key |
+| `PlayGameButton` | PlayGameButton.h | `GameMenuButton` | Render, MouseUp | Live | Play / Ready |
+| `PrevHelpButton` | PrevHelpButton.h | `GameMenuButton` | MouseUp | Unreached | previous help image |
+| `PrologueButton` | PrologueButton.h | `GameMenuButton` | MouseUp, Render, static LoadPrologue | Unreached `[B:DEBUG]` | Darwinia prologue (`game_demo2.txt`, location `launchpad`) |
+| `QuickMatchButton` | QuickMatchButton.h | `GameMenuButton` | MouseUp | Unused | → QuickMatch |
+| `QuickStartButton` | QuickStartButton.h | `GameMenuButton` | Render, MouseUp | Uncompiled | quick KOTH game |
+| `QuitAuthkeyButton` | QuitAuthKeyButton.h | `GameMenuButton` | MouseUp | `[B:DEAD]` in FULL (HWCOMPAT/BETATEST/ASSAULT only) | quit |
+| `QuitButton` | QuitButton.h | `GameMenuButton` | MouseUp | Live | quit |
+| `RequestAIButton` | RequestAIButton.h | `GameMenuButton` | MouseUp | Uncompiled | add CPU team |
+| `ResearchModeButton` | ResearchModeButton.h | `GameMenuButton` | MouseUp | Uncompiled | → Research |
+| `RollingDemoButton` | RollingDemoButton.h | `GameMenuButton` | MouseUp | Uncompiled | attract/rolling demo game |
+| `ScrollingTextButton` | ScrollingTextButton.h | `DarwiniaButton` | Render | Live | §12.6 |
+| `ServerTitleInfoButton` | ServerTitleInfoButton.h | `DarwiniaButton` | Render | Live | browser header |
+| `StartTestbedButton` | TestBedButtons.h | `GameMenuButton` | MouseUp | `[B:DEAD]` (`TESTBED_ENABLED`) | start testbed |
+| `TutorialPageButton` | TutorialButton.h | `GameMenuButton` | MouseUp | Live (`INCLUDE_TUTORIAL`) | → Tutorials |
+| `TutorialButton` | TutorialButton.h | `GameMenuButton` | Render, MouseUp | Live | launch tutorial |
+| `UnlockFullGameButton` | UnlockFullGameButton.h | `GameMenuButton` | Render, MouseUp | Live (demo) | open store |
+| `WaitingButton` | WaitingButton.h | `DarwiniaButton` | Render | Live | connection status |
+| `CreditsButton` | credits_button.h | `GameMenuButton` | MouseUp | Live | → Credits |
+| `MapDetailsButton` | mapDetailsButton.h | `DarwiniaButton` | Render | Uncompiled | playtime/difficulty/players panel |
+| `MOTDButton` | motdButton.h | `ScrollingTextButton` | Render | Live | MOTD |
+| `UpdatePageButton` | update_page_buttons.h | `GameMenuButton` | MouseUp | Live (when update) | → UpdateAvailable |
+| `RunAutoPatcherButton` | update_page_buttons.h | `GameMenuButton` | MouseUp (Win32 only) | Live | run autopatch.exe, exit |
+| `RunSparkleButton` | update_page_buttons.h | `GameMenuButton` | MouseUp | macOS only `[B:DEAD]` | Sparkle update |
+| `VisitWebsiteButton` | update_page_buttons.h | `GameMenuButton` | MouseUp, Render | Live | open UpdateURL |
+Totals: 77 rows = 74 widget classes + `GameMenuWindow` + `ServerPasswordString` + `MapData` (plus the file-local `ServerKey` struct, §4.9.3). Of the 74 widget classes: 47 live in `[B:FULL]` (counting the base `LevelSelectButtonBase`), 7 unreached, 8 unused, 8 uncompiled, 4 other-build only (2 `[B:DEAD]`, 1 `[B:EDITOR]`, 1 macOS).
+
+### 12.9 Recipe — how a new screen is built in this framework
+1. Add a page constant (keep `s_pageNames` in step — the constructor asserts the counts match).
+2. Write `SetupXPage()`: fetch layout with `GetPosition_LeftBox/RightBox/TitleBar`, `GetFontSizes`, `GetButtonSizes`; add a `GameMenuTitleButton` "title"; stack widgets with the five-step pattern (§12.3); put the Back button (`BackPageButton(target)` or `BackPageButton(m_currentPage)` for "return to caller") at `lY+lH−2bh`; add info panels on the right box without adding them to `m_buttonOrder`.
+3. Add the `case` to `SetupNewPage`; add an `UpdateXPage()` and a `case` in `Update` if the page polls anything (network echo, metaserver, timers); add a `ShutdownXPage()` + `case` in `ShutdownPage` if it starts a service that must stop.
+4. Add a `case` in `Render` if the page needs non-default fill boxes or overlays.
+5. Navigation to the page: a small `GameMenuButton` subclass whose `MouseUp` calls `GameMenuButton::MouseUp()` (sound + transition) and sets `((GameMenuWindow*)m_parent)->m_newPage`.
+6. Any state that must survive the page rebuild goes in a `GameMenuWindow` member, a networked option (for lobby settings shared with clients) or a pref.
+7. Remember that setup can be deferred: if the page needs data that arrives via the network, return early and re-call setup from the page's update when it arrives (pattern used by MapSelect and GameSetup).
+
+### 12.10 Re-implementation notes for the new engine (non-normative, [I])
+- Replace "rebuild on change + `m_currentPage` as caller" with an explicit page stack and a declarative page description (widgets, focus order, bindings), keeping the one-frame deferred page switch.
+- Keep the split between *requested* (local) and *echoed* (server-confirmed) lobby values, but make the echo wait explicit (pending state) rather than empty pages.
+- Give navigation its own focus list object; do not index the registration list (`SpecialScroll` defect, §12.4).
+- Move all magic layout ratios into a layout table (see §13).

@@ -130,7 +130,7 @@ Constants: `CRATE_SCAN_RANGE = 35.0` (`#define`, crate.h), `CRATE_CAPTURE_TIME =
 On first ground tick the crate creates an **AITarget** at its ground position: `m_priorityModifier = 0.5`, `m_crateTarget = true`, unique building id, then `Location::RecalculateAITargets()` (see §AI) [C].
 
 Each tick:
-1. `RecalculateOwnership(num)`: for every used team t, count entities from `EntityGrid::GetNeighbours(pos, 35, includes={t})` that are `TypeDarwinian`, `!m_dead`, `state != StateInsideArmour`. `majority` = team with the strictly highest count (ties keep the earlier team index); 255 if all zero; `num` = that count. Officers, squads, armour, monsters do not count [C].
+1. `RecalculateOwnership(num)`: for every used team t, count entities from `EntityGrid::GetNeighbours(pos, 35, includes={t})` that are `TypeDarwinian`, `!m_dead`, `state != StateInsideArmour`. `majority` = team with the strictly highest count (ties keep the earlier team index); 255 if all zero; `num` = that count. Only Darwinians count (not officers, squaddies, armour or monsters), but Darwinians of *any* used team count — including the CPU-typed monster (4) and Futurewinian (5) teams, which can therefore capture crates and receive tasks [C code; I consequence].
 2. If `owner == majority && owner != 255`:
    - `Δ = min(0.05, SERVER_ADVANCE_PERIOD × num / 100)`; `m_captureTimer = min(2.5, m_captureTimer + Δ)`; `m_life = 60`.
    - Progress rate = `num/100` per game-second, capped at 0.05 per tick → **minimum capture time 50 ticks (5 s at speed 1) with ≥ 50 Darwinians**; 10 Darwinians → 25 s; 1 Darwinian → 250 s [C formula, I examples].
@@ -273,7 +273,7 @@ Rendering [C] `code/worldobject/crate.cpp:Crate::Render*` (render-side only, not
 
 Audio [C] `Crate::ListSoundEvents`: building events `Falling`, `Land`, `BeginCapture`, `Capturing_0pc`, `Capturing_20pc`, `Capturing_40pc`, `Capturing_60pc`, `Capturing_80pc`, `Captured`, `LostCapture`, `Expired`; power-up events named by `GetName(type)` in sound-source type `TypeCratePowerup` (enumerated by `code/sound/soundsystem.cpp` over all `NumCrateRewards`).
 
-UI: crate off-screen/on-screen marker (§MarkerSystem); `MultiwiniaHelp` "crates" help tab appropriate during grace period when `Crate::s_crates > 0` [C] `code/multiwiniahelp.cpp:MultiwiniaHelp::CratesOnLevel`; `NotifyCapturedCrate` increments the tab's accomplished count. Help-window tooltips `crate_tooltip_<Key>` and optional `crate_hint_<Key>` [B:DEBUG]. Messages go through `Location::SetCurrentMessage(msg, team, noOverwrite)` (3.0 s real time, team used for colour) [C] `code/location.cpp`.
+UI: crate off-screen/on-screen marker (§MarkerSystem); `MultiwiniaHelp` "crates" help tab appropriate during grace period when `Crate::s_crates > 0` [C] `code/multiwiniahelp.cpp:MultiwiniaHelp::CratesOnLevel`; `NotifyCapturedCrate` increments the tab's accomplished count. Help-window tooltips `crate_tooltip_<Key>` and optional `crate_hint_<Key>` [B:DEBUG]. Messages go through `Location::SetCurrentMessage(msg, team, noOverwrite)` (3.0 s real time; ignored while a no-overwrite message is showing; team presumably used for colouring [I]) [C] `code/location.cpp:Location::SetCurrentMessage`.
 
 ## [→ 07_ai] 10. CPU player architecture
 
@@ -350,7 +350,7 @@ classDiagram
 | `struct NeighbourInfo` | `int m_neighbourId` (AITarget building id); `int m_laserFenceId` (fence crossed by the link, −1 none) | [C] |
 | `AI` | see diagram; `m_currentObjective` init −1, `m_timer` init per difficulty (§14), `m_radarReposTimer = syncfrand(10)` | Entity type `TypeAI`; ctor does `Entity::s_entityPopulation--` (does not count toward population); `ChangeHealth` returns false (immortal); `Begin` sets `s_ai[team] = this`; `Render` draws only in editor [C] |
 | `AITarget` | see diagram; ctor: counts 0, `m_linkId −1`, `m_priorityModifier 0`, `m_checkCliffs 1`, `m_statueTarget −1`, `m_scoreZone −1`, flags false, `m_teamCountTimer = syncfrand(2)`; shape `aitarget.shp` | `AITARGET_LINKRANGE = 600.0` (`#define`) [C] |
-| `AIObjective` | ctor: `m_nextObjective −1`, `m_active true`, `m_timer 5.0`, `m_armourMarker −1`, `m_defenseObjective false`, `m_wallTarget −1` (unused) | [C] |
+| `AIObjective` | ctor: `m_nextObjective −1`, `m_active true`, `m_timer 5.0`, `m_armourMarker −1`, `m_defenseObjective false`, `m_wallTarget −1` (written by `Wall::Advance` for a Wall whose `m_objectiveLink` names this objective; never read) | [C] |
 | `AIObjectiveMarker` | ctor: `m_scanRange 100`, `m_objectiveId −1`, `m_registered false`, `m_armourObjective 0`, `m_objectiveBuildingId −1`, `m_pickupAvailable false`, `m_pickupOnly 0`, `m_defenseMarker false`, `m_timer = syncfrand(1)` | [C] |
 | `AISpawnPoint` | `m_timer, m_online, m_numSpawned, m_populationLock, m_entityType, m_count(20), m_period(60), m_activatorId, m_spawnLimit(−1), m_routeId` | **[B:LEGACY]** — `TypeAISpawnPoint` is in `BuildingIsBlocked`; Darwinia-era (blueprint store/console activators). Appendix. |
 
@@ -711,3 +711,62 @@ Everything else (stray recall, officer creation thresholds, crate-task use, rada
 | Marker flash | 3 s, 0.4 s period | literal | same |
 | Message duration | 3.0 s real time | literal | `Location::SetCurrentMessage` |
 
+## Cross-partition notes
+- **P09 (task manager)**: crate rewards are delivered as `TaskManager::RunTask(GlobalResearch::Type*)`; turret type and napalm are passed in `Task::m_option` set on `m_mostRecentTaskId` right after `RunTask` (`code/worldobject/crate.cpp:Crate::CaptureCrate`). Task targeting (`Task::Target*`) calls back into the static `Crate::Run*` effect functions. Capacity 6/2 and the "Powerup Limit Reached!" loss rule are in `TaskManager::RunTask/Capacity`. `TaskSource::m_source` 0 = crate, 1 = reinforcement, 2 = retribution (`code/taskmanager.h`). The AI uses `TaskManager::GetTargetArea/IsValidTargetArea/TargetTask/TerminateTask` directly.
+- **P04 (military entities)**: AI-specific behaviour lives in `Officer::RunAI`, `Armour::RunAI` (+`RunStandardAI/RunAssaultAI/RunBlitzkriegAI/RunRocketRiotAI/RunMobileBombAI/FindPickupPoint/RRFindPickupPoint/RRFindDropoffPoint/FindIdleDarwinians/GetBlitzkriegDropPoint`), `InsertionSquad::RunAI`, `Engineer::RunAI`, `Harvester::RunAI`, `Tank::RunAI` — summarised in §12.7; the effect entities spawned by crates (AirStrikeMarker/bombers, Nuke, Meteor, TriffidEgg, SpaceShip, SpamInfection, Randomiser, ArmyAnt) and Darwinian effects (`SetBooster`, `GiveMindControl`, `GiveHotFeet`, `GiveRage`, `Infect`, `HasRage`, `Team::EvolutionRockets`) need full specs there or in P05.
+- **P03 (Darwinian)**: `Darwinian::SearchForCrates` / `StateOpeningCrate`; `m_closestAITarget` maintained by `AITarget::RecountTeams`; `m_wallHits` reset by `AI::Advance`; `GiveOrders` used by the AI.
+- **P06/P07 (buildings)**: runtime AITargets created by RadarDish, Statue, GunTurret, FuelStation, WallBuster, CloneLab (§11.1); `MultiwiniaZone` Blitzkrieg priority injection (`GetBlitzkriegPriority`); `RestrictionZone`; `Tree` (`m_evil`, `m_spawnsRemaining`, `m_spiritDropRate`, `SetFireAmount(−1)`); `AntHill`; `Triffid`; `Portal` (TheBeast); `SpawnPoint` reacts to `m_spawnManiaTimer`; `Wall::Advance` writes `AIObjective::m_wallTarget`.
+- **P02 (game modes)**: `data/multiwinia.txt` options `CrateDropRate`, `CrateDropMode`, `StartingPowerups`, `RetributionMode` (dead); `Multiwinia::m_basicCratesOnly`, `m_aiType`, `GetGameOption`; HUD timers for Spawn Mania/Mega Rage in multiwinia.cpp render; `AdvanceRetribution` never called; Blitzkrieg score constants `BLITZKRIEGSCORE_*` (`code/multiwinia.h`).
+- **P11/P12 (world, render)**: `GameTimer::RequestSpeedChange` semantics (speed crates); `Location::RecalculateAITargets` cost (full rebuild, O(n²) links + O(n³) cull) triggered often (every crate landing/capture, radar change, statue move).
+- **P17b/P18 (menus)**: lobby difficulty drop-down and "Basic Crates Only" checkbox (`code/UI/GameMenuWindow.cpp`), network options `GAMEOPTION_AIMODE`, `GAMEOPTION_BASICCRATES` (= 7).
+- **P15 (network)**: iframes zero crate orientation; no AI traffic.
+- **P19 (help/tutorial)**: `MultiwiniaHelp` gates AI (`m_tutorial2AICanAct`, `m_tutorial2AICanSpawn`), spawns fixed-reward crates, forces basic crates/Standard AI in tutorial 2, `NotifyCapturedCrate`, crates help tab.
+
+## Contradictions / open questions
+1. build_matrix.md §4 says `INCLUDE_THEBEAST` is on in the baseline; `code/worldobject/crate.h` defines it only under `TARGET_DEBUG` → **off in FULL**, `NumCrateRewards = 31` [C]. Coordinator should correct the matrix.
+2. Enum comments vs code: SpawnMania comment "15 seconds" vs 5.0 s; Bitzkreig comment "always throw grenades for 10 seconds" vs code = 15 s global rage (`HasRage`); Forest comment "1–3 trees" vs 1–2; Eggs comment "1–3 eggs" vs 2–4; Rage comment "60 seconds" vs task life 30 s; Booster comment "immune to laser fire" vs effect defined in `Darwinian::SetBooster` (P04) [C].
+3. `aiobjective.h` header comment says multiple unlinked start objectives → "one will be selected randomly"; code keeps all unlinked objectives active and lets *each AI* pick (`syncrand`) or (defender) wait for the first attacked one, then deactivates its other own objectives [C].
+4. Bad-pool outcomes ignore `InvalidCrates` and the AntNest/CrateMania limits — design intent unclear (bug or deliberate) [C behaviour].
+5. `RunUncapturedCrate` calls `InitMonsterTeam(capturingTeam)` (no-op) — likely intended `InitMonsterTeam(monsterTeam)` [I].
+6. Several AI target-id bugs: `RunSpam` acceptable target = AI's own id; `RunPlague` and `Officer::RunAI` attack target use array index as building id; `RunGunTurret` neutral case returns the own target id; `RunPowerup` centroid divides a Darwinian-only sum by all-friend count. A re-implementation should fix them; behaviour as shipped is "partly random" [C code, I effect].
+7. Weighted crate drop height check bug (`pos.z > 20.0` inside `GetValue`) [C].
+
+## [U] Unknowns
+1. [U] Exact `Location::Advance` slice cadence (10 slices per tick assumed from `NUM_SLICES_PER_FRAME`) — resolve in P01/P03 (`code/location.cpp`, server advance loop). Affects only the "once per tick" statements for `AdvanceCrates` and `Team::Advance` ordering.
+2. [U] Whether `g_app->m_location` is assigned before `Location::Init` completes (needed for monster/Futurewinian AI spawn via `Multiwinia::InitialiseTeam`) — resolve by reading `code/multiwinia.cpp:Multiwinia::ResetLocation`/`App` location creation (P01/P02).
+3. [U] `TaskManager::IsValidTargetArea/GetTargetArea` placement rules (what areas the AI may target: own territory radius, restriction zones) — owned by P09.
+4. [U] Real-time vs game-time behaviour of `GameTimer::Tick` cadence while game speed ≠ 1 (determines real duration of SlowDown/SpeedUp holds) — P01/P15.
+5. [U] Whether any shipped map lacks sea (would hang `RunNuke`) — needs a heightmap scan of every level (`data/levels/map_*`/landscape definitions; P11).
+6. [U] Effect-entity behaviours (Randomiser radius/duration, SpaceShip abduction, AirStrike bomber counts, Nuke damage) — P04/P05.
+
+## Docs-vs-code discrepancies
+- `docs/integrating virtual players into network system.txt` suggests a client may host "an AI running locally"; in code the AI is a simulation entity executed identically on all peers, with no input messages [C] `code/team.cpp`, `code/location.cpp:Location::InitialiseTeam`.
+- `docs/multiwinia_todo.txt` lists "Creating a CPU player should automatically spawn an AI entity" as outstanding; implemented in `Location::InitialiseTeam` [C].
+- `docs/multiwiniachanges-beta.txt` mentions crate/powerup placement permitted near trunk ports in Assault (Issue 754) and "Impossible powerups/crate placement when Initial Powerups is higher than 0" (Issue 300) — consistent with `IsValidTargetArea` restrictions and the 30 s `m_startTimer` lock [I].
+- In-code comments vs behaviour: see Contradictions #2/#3.
+
+## IP register
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| "Multiwinians", "Darwinians" (crate reward and messages) | name/text | `data/language/english.txt` `cratename_darwinians`, `crate_message_darwinians`, `crate_tooltip_*`; `Crate::RunDarwinians` "Evil Darwinians!" | "Reinforcements", "Hostile units!" |
+| "Evilinians" (monster team), "Futurewinians" (SpaceShip team) | name | `multiwinia_team_virus`, `multiwinia_team_future`, `crate_message_spaceship` | "Corrupted", "Visitors" |
+| "Rocketwinians" | name | `cratename_rocketwinians`, `crate_message_rocketwinians` | "Rocket Troops" |
+| "Mega Rage" / "Bitzkreig" | name | `cratename_bitzkreig`, `multiwinia_blitzkrieg_timer` | "Frenzy" |
+| "Crate Mania", "Spawn Mania", "Hot Feet", "Personal Shield", "Subversion", "Infection", "Magical Forest", "Dark Forest", "Ants Nest", "Plague", "Randomiser", "Napalm Strike", "Slow Down", "Speed Up", "The Beast", "Space Ship" | names | `cratename_*` | generic descriptive names (e.g. "Supply Storm", "Rapid Spawn", "Haste", "Shield", "Convert", "Contagion", "Grove", "Blight Grove", "Hive", "Sickness", "Scrambler", "Firebomb Run", "Time Dilation", "Time Rush", "Summoned Horror", "Abductor") |
+| "Triffids" | name (third-party literary IP, John Wyndham) | `cratename_triffids`, `Triffid` class | "Spitter Plants" |
+| "I love the smell of Napalm in the morning..." | text (third-party film quote) | `crate_message_run_napalm` | "Firebombs inbound!" |
+| "Sloooow Dooown...", "Speed up!!", "The Beast Cometh!", "A familiar presence returns", "All Multiwinians just go nuts with their lasers!" and all `crate_tooltip_*` / `crate_message_*` / `crate_drop` / `crate_enemycapture` / `dialog_powerup_limit` / `multiwinia_spawnmania_timer` / `multiwinia_param_basiccrates*` strings | text | `data/language/*.txt` | rewrite all UI text |
+| "(CPU)", "(LEFT)" team prefixes; difficulty labels | text | `teamtype_2`, `teamtype_left`, `dialog_easy_difficulty`, `multiwinia_menu_normal`, `multiwinia_menu_hard` | own strings |
+| Crate model `researchitem.shp`; AI target model `aitarget.shp` | art | `Crate::Crate`, `AITarget::AITarget` | new meshes |
+| `textures/bubble.bmp`, `textures/starburst.bmp`, `textures/cloudyglow.bmp`, `icons/target.bmp` | art | `Crate::Render*` | new VFX textures |
+| `icons/icon_crate.bmp`, `icon_statue.bmp`, `icon_airstrike`, `icon_nuke`, `icon_subversion`, `icon_personalshield`, `icon_hotfeet`, `icon_gunturret`, `icon_infection`, `icon_magicalforest`, `icon_darkforest`, `icon_antnest`, `icon_plague`, `icon_egg`, `icon_meteorshower`, `icon_darwinian`, `icon_randomizer`, `icon_rage`, `icon_triffid` (+ other `icon_<task>` icons), `icons/marker_shadow.bmp`, `icons/compass.bmp`, `icons/compass_shadow.bmp`, `icons/compass_empty.bmp`, `icons/marker_colour.bmp` | art | `Crate::Run*`, `MarkerSystem::Render*`, `data/icons/` | new icon set |
+| Crate sound events (`Falling`, `Land`, `BeginCapture`, `Capturing_*pc`, `Captured`, `LostCapture`, `Expired`) and power-up sounds named by crate key | audio (assets bound via `sounds.txt`) | `Crate::ListSoundEvents`, `Crate::TriggerSoundEvent` | new audio; event names may be kept as neutral identifiers |
+| Level ids/names `mp_assault_2P_1` etc. (as used in InvalidCrates table) | name | `data/levels/` | new map names |
+| Developer names in code comments ("Chris", "Gary") | name | crate.cpp, location.cpp, aiobjective.h, restrictionzone.cpp | do not carry over |
+
+## Appendix — dead/legacy code
+- **[B:DEAD] commented-out rewards**: `CrateRewardFormationIncrease` (`RunFormtationIncrease` body commented; would set `Team::EvolutionFormationSize = 200`), `CrateRewardExtinguisher` (`RunExtinguisher` still compiled but uncalled; it uses **non-synced** `sfrand/frand` for particles — harmless cosmetics, but a desync trap if reused), `CrateRewardTank` (`Task::TargetTank` body commented). Declared-only `RunShaman`, `RunEngineers` (no definition) [C].
+- **[B:DEBUG]** `CrateRewardTheBeast` (`RunTheBeast` → Portal of monster team), crate help window, cheat-window crate spawner, `TRACK_SYNC_RAND` logging (`SyncRandLog` of `s_crates`).
+- **[B:EDITOR]** `InvalidCratesWindow`; editor rendering of AITarget link range sphere, AIObjective (red; blue when defence; white flash when active), AIObjectiveMarker (scan-range circle, arrow to bound building).
+- **Compiled but unreachable in FULL**: `Multiwinia::AdvanceRetribution` (never called; `RetributionMode` option is inert); `RunUncapturedCrate` forced-id branch and its Airstrike/Darwinians/Forest/Eggs/Meteor/NapalmStrike/SlowDown/SpeedUp cases; `CaptureCrate` Plague case (commented → assert); `AI::RunSpam`, `AI::RunPlague`, `AI::RunTank`, `Tank::RunAI` (no way to obtain those tasks without a forced reward / TankBattle); `AI::HasDarwinianPowerup`; `AI::GetClosestScoreZonePos` (only from commented code); `Location::InitMonsterTeam(capturer)` call in bad crates.
+- **[B:LEGACY]** `AI::AdvanceSinglePlayerAI` (Darwinia single-player: well-defended rule with idle limit 30, same sendChance formula, radius 150, `PushFromObstructions`, `RecountTeams` after each send); `AISpawnPoint` (blocked building type; spawns `m_count` entities of `m_entityType` every `m_period ± period/6` s once its activator — BlueprintStore with < `BLUEPRINTSTORE_NUMSEGMENTS` clean and ≤ 2 infected, BlueprintConsole owned by team 0, or online/absent global building — is on, until primary objectives are met or `m_spawnLimit` batches are used; respects SpawnPopulationLock); `ResearchItem` markers; `CloneLab` AITarget; single-player branches in `FindTargetBuilding` (25 % random) and `AITarget::GetRange` (100).

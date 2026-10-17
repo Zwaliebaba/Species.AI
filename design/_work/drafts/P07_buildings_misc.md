@@ -87,7 +87,7 @@ The tree is generated **once in unit space** (trunk from (0,0,0) to (0,1,0)); `h
 
 ```
 RNG (AppSeedRandom / AppRandom, code/../contrib/systemiv/lib/math/random_number.cpp):
-  state : 32-bit signed long, wraps modulo 2^32
+  state : 32-bit signed long on Win32, wraps modulo 2^32 (portable form: uint32 s; s = s*214013u + 2531011u; return (s >> 16) & 0x7FFF)
   seed(s):  state = s
   next():   state = state*214013 + 2531011 ; return (state >> 16) & 0x7FFF      // 0..32767
   frand(r): r * next() / 32767.0                                              // 0..r inclusive
@@ -104,7 +104,7 @@ Branch(from, to, n, pass):
   len = |d|
   w   = 0.1 * (n == 0 ? budsize : 1.0)
   if (n == 0 and pass == LEAF) or (n != 0 and pass == BRANCH):
-      emit quad  [from - A*len*w (u0,v0)], [from + A*len*w (0,1)], [to + A*len*w (1,1)], [to - A*len*w (1,0)]
+      emit quad  [from - A*len*w uv(0,0)], [from + A*len*w uv(0,1)], [to + A*len*w uv(1,1)], [to - A*len*w uv(1,0)]
       emit quad  same with B                         // two crossed planes per segment
   for i in 0..3:                                     // ALWAYS 4 children, even below a leaf
       dir   = [A, -A, B, -B][i]
@@ -229,7 +229,7 @@ Orthogonal corruption sub-state: `Normal → Corrupted (timer=-10) → Evil (aft
 
 ## [→ 03_buildings_and_world_objects] LaserFence — linked energy barrier [B:FULL]
 
-**Function.** A post (shape `laserfence.shp`) that, when raised, projects an energy curtain to the **next** fence post named by its link id. Chains of posts form barrier lines. Enemy units touching a raised curtain are killed (generic entities) or set on fire (Darwinians); raised curtains also block walking routes and AI routing. 703 lines in 15 `mp_*` maps (all Assault maps but `mp_assault_2P_1`/`3p_3`, four Blitzkrieg, `mp_domination_2P_1`, `mp_rocketriot_2p_3`, `mp_skirmish_3P_1`) [C] census.
+**Function.** A post (shape `laserfence.shp`) that, when raised, projects an energy curtain to the **next** fence post named by its link id. Chains of posts form barrier lines. Enemy units touching a raised curtain are killed (generic entities) or set on fire (Darwinians); raised curtains also block walking routes and AI routing. 703 lines in 15 `mp_*` maps (Assault: `mp_assault_2P_2`, `2p_3`, `3P_2`, `3p_1`, `4P_1`, `4P_2`, `stress`; Blitzkrieg: `mp_blitzkrieg_2P_3`, `2p_1`, `3P_1`, `3P_2`, `4P_2`; plus `mp_domination_2P_1`, `mp_rocketriot_2p_3`, `mp_skirmish_3P_1`) [C] census.
 
 ### Level-file parameters [C] `code/worldobject/laserfence.cpp:LaserFence::Read`, `LaserFence::Write`
 

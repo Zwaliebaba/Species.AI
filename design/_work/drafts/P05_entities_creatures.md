@@ -843,3 +843,96 @@ Rule: everything in `Advance` must use the synced generator (`syncrand`/`syncfra
 | Physics constants applied per tick, not per second | TriffidEgg gravity `9.8 × force`/tick; Spider pounce gravity 40/tick; ArmyAnt/AntHill counters in ticks (`m_antInsideCheck` 30); Lightning 1%/tick; SpaceShip/DropShip `dt²` integration | yes | behaviour changes with game speed (slow/fast-time crates alter `SERVER_ADVANCE_PERIOD` but these terms do not scale) | [C] per-class refs |
 | Float→byte stat conversion | `m_stats` is `unsigned char`; SpaceShip speed 500 | yes | implementation-defined; a new engine should store stats as floats | [C] `code/worldobject/entity.cpp:Entity::SetType`; [I] MSVC wrap |
 
+## [→ 02_units_and_entities] Constants table — every `#define` in this partition
+
+All are compile-time `#define`s (no `static const`, no preference-driven values in these files). Units: m = world units (metres), s = seconds. [C] each file listed.
+
+| Constant | Value | File | Used? |
+|---|---|---|---|
+| `ANTHILL_SEARCHRANGE` | 400.0 m | `code/worldobject/anthill.h` | yes |
+| `ARMYANT_SEARCHRANGE` | 10 m | `code/worldobject/armyant.h` | yes |
+| `CENTIPEDE_MINSEARCHRANGE` | 75.0 m | `code/worldobject/centipede.h` | yes |
+| `CENTIPEDE_MAXSEARCHRANGE` | 150.0 m | `code/worldobject/centipede.h` | yes |
+| `CENTIPEDE_SPIRITEATRANGE` | 10.0 m | `code/worldobject/centipede.h` | yes |
+| `CENTIPEDE_NUMSPIRITSTOREGROW` | 4 | `code/worldobject/centipede.h` | yes |
+| `CENTIPEDE_NUMSPIRITSTOREGROW_MP` | 4 (a commented copy in `tentacle.h` says 2) | `code/worldobject/centipede.h` | yes |
+| `CENTIPEDE_MAXSIZE` | 20 segments | `code/worldobject/centipede.h` | yes |
+| `DROPSHIP_HOVERHEIGHT` | 250.0 m | `code/worldobject/dropship.cpp` | yes |
+| `DROPSHIP_ABDUCTIONBEAM_RADIUS` | 20.0 m | `code/worldobject/dropship.cpp` | render only |
+| `DUSTBALL_SPEED` | 500.0 m/s | `code/worldobject/dustball.cpp` | yes |
+| `EGG_DORMANTLIFE` | 120 s | `code/worldobject/egg.h` | yes |
+| `SOULDESTROYER_MINSEARCHRANGE` | 200.0 m | `code/worldobject/souldestroyer.h` | yes |
+| `SOULDESTROYER_MAXSEARCHRANGE` | 300.0 m | `code/worldobject/souldestroyer.h` | yes |
+| `SOULDESTROYER_DAMAGERANGE` | 25.0 m | `code/worldobject/souldestroyer.h` | yes |
+| `SOULDESTROYER_MAXSPIRITS` | 50 | `code/worldobject/souldestroyer.h` | render list |
+| `SPACESHIP_HOVERHEIGHT` | 500.0 m | `code/worldobject/spaceship.cpp` | yes |
+| `SPACESHIP_ABDUCTIONBEAM_RADIUS` | 45.0 m | `code/worldobject/spaceship.cpp` | yes |
+| `SPAM_RELOADTIME` | 60.0 s | `code/worldobject/spam.h` | legacy |
+| `SPAM_DAMAGE` | 100.0 | `code/worldobject/spam.h` | legacy |
+| `SPAMINFECTION_MINSEARCHRANGE` | 100.0 m | `code/worldobject/spam.h` | yes |
+| `SPAMINFECTION_MAXSEARCHRANGE` | 200.0 m | `code/worldobject/spam.h` | yes |
+| `SPAMINFECTION_LIFE` | 10.0 s | `code/worldobject/spam.h` | yes |
+| `SPAMINFECTION_TAILLENGTH` | 30 samples | `code/worldobject/spam.h` | yes |
+| `SPIDER_NUM_LEGS` | 8 | `code/worldobject/spider.h` | yes |
+| `FOOT_MOVE_THRESHOLD` (spider) | 5.0 | `code/worldobject/spider.cpp` | yes |
+| `FOOT_EMERGENCY_THRESHOLD` | 12.0 | `code/worldobject/spider.cpp` | yes |
+| `FOOT_DAMAGE_RADIUS` | 20.0 m | `code/worldobject/spider.cpp` | only in uncalled `StompFoot` |
+| `FOOT_DAMAGE_STRENGTH` | 10.0 | `code/worldobject/spider.cpp` | only in uncalled `StompFoot` |
+| `HOVER_HEIGHT` (spider) | 3.0 m | `code/worldobject/spider.cpp` | yes |
+| `TURN_RATE` | 0.1 rad/tick (a commented-out block has 0.18) | `code/worldobject/spider.cpp` | yes |
+| `NORMAL_SPEED` | 300.0 | `code/worldobject/spider.cpp` | unused |
+| `ATTACK_SPEED` | 90.0 | `code/worldobject/spider.cpp` | unused |
+| `MAX_PATH_HEIGHT` | 100.0 m | `code/worldobject/spider.cpp` | yes |
+| `ATTACK_SEARCH_MAX_RADIUS` | 250.0 m | `code/worldobject/spider.cpp` | yes |
+| `ATTACK_SEARCH_MIN_RADIUS` | 100.0 m | `code/worldobject/spider.cpp` | yes |
+| `ATTACK_PREAMBLE` | 5.0 s | `code/worldobject/spider.cpp` | unused |
+| `SPIRIT_MAXSEARCHRANGE` (spider) | 100.0 m | `code/worldobject/spider.cpp` | yes |
+| `SPIRIT_MINSEARCHRANGE` (spider) | 30.0 m | `code/worldobject/spider.cpp` | yes |
+| `SPOREGENERATOR_HOVERHEIGHT` | 100.0 m | `code/worldobject/sporegenerator.cpp` | yes |
+| `SPOREGENERATOR_EGGLAYHEIGHT` | 20.0 m | `code/worldobject/sporegenerator.cpp` | yes |
+| `SPOREGENERATOR_SPIRITSEARCHRANGE` | 200.0 m | `code/worldobject/sporegenerator.cpp` | yes |
+| `SPOREGENERATOR_NUMTAILS` | 4 | `code/worldobject/sporegenerator.h` | render |
+| `TRIFFIDEGG_BOUNCEFRICTION` | 0.65 | `code/worldobject/triffid.h` | yes |
+| `FOOT_MOVE_THRESHOLD` (tripod) | 1.0 | `code/worldobject/tripod.cpp` | legacy |
+| `IDEAL_LEG_SLOPE` | 0.2 | `code/worldobject/tripod.cpp` | legacy |
+| `LEG_LIFT` | 3.0 | `code/worldobject/tripod.cpp` | legacy |
+| `LEG_SWING_DURATION` | 0.5 s | `code/worldobject/tripod.cpp` | legacy |
+| `LOOK_AHEAD_COEF` | 1.2 | `code/worldobject/tripod.cpp` | legacy |
+| `ATTACK_HOVER_HEIGHT` | 18.0 m | `code/worldobject/tripod.cpp` | legacy |
+| `STATIONARY_HOVER_HEIGHT` | 30.0 m | `code/worldobject/tripod.cpp` | legacy |
+| `HOVER_LOWER_WITH_SPEED_FACTOR` | 0.2 | `code/worldobject/tripod.cpp` | legacy |
+| `NAVIGATION_SEARCH_RADIUS` | 1000.0 m | `code/worldobject/tripod.cpp` | legacy |
+| `ATTACK_SEARCH_RADIUS` (tripod) | 200.0 m | `code/worldobject/tripod.cpp` | legacy |
+| `ATTACK_DURATION` | 7.0 s | `code/worldobject/tripod.cpp` | legacy |
+| `VIRII_MAXSEARCHRANGE` | 60.0 m | `code/worldobject/virii.h` | yes (also spirits' egg search) |
+| `VIRII_MINSEARCHRANGE` | 30.0 m | `code/worldobject/virii.h` | yes |
+| `VIRII_TAILLENGTH` | 175.0 m | `code/worldobject/virii.h` | value duplicated as a literal |
+| `VIRII_POPULATIONLIMIT` | 250 per team | `code/worldobject/virii.h` | yes |
+| `wormWidth`, `wormTexW`, `wormTexHeight`, `glowWidth`, `glowTexXpos`, `glowTexH` | 3.0; 32/160; 20/1024; 12.0; 32/160; 128/512 | `code/worldobject/virii.cpp:Virii::Render` (local) | render |
+| `POWERUP_EFFECT_RANGE` (external) | 70.0 m | `code/taskmanager.h` | meteor area ×6, plague radius |
+| `NUM_TENTACLES` (external) | 6 | `code/worldobject/portal.h` | legacy/debug |
+| Inline literals worth noting | Triffid default force 250, reload 60, damage 50, eggs 3; SoulDestroyer speed 130; Spider pounce ≤150 m, squash 40/20 m, damage 100; Meteor Bang(50,100), slow-mo (0.4, 0.1, 4.0) within 200 m; WallBuster lifters 10–30, breach radius 200, Bang(50,150)/(50,500), scuttle 10 s; AntHill MP conversion +6 ants per spirit per 1 s; SpamInfection 200 m/s, +1 s life per hit | per-class sections | – |
+
+## [→ 10_audio_design] Sound events raised by this partition and their bindings in `data/sounds.txt`
+
+Event names are passed to `SoundSystem::TriggerEntityEvent` / `TriggerBuildingEvent` (object type name = `ENTITY`/`BUILDING` section). The bound sample names below are Introversion audio assets (see IP register). [C] code refs in each section; `data/sounds.txt` sections `ENTITY <Type>` / `BUILDING <Type>` (extracted with `_work/scripts/P05_sounds.py`).
+
+| Object | Events raised in code | Samples bound in `data/sounds.txt` |
+|---|---|---|
+| Virii | Attack, ChangeDirection, LoseHealth\*, Die\*, Create\* | Attack=virusattack; LoseHealth=viruspain; ChangeDirection=newsamplegroup11; Die=newsamplegroup9 |
+| Egg | (none — `Egg::ChangeHealth` skips the generic events; Create\*) | Die=eggsplat (never triggered) |
+| SporeGenerator | LayEgg, LoseHealth\*, Die\*, Create\* | Create=sporegengroan; LoseHealth=sporegenlosehealt; Die=sporegeneratordie; LayEgg=spideregglay |
+| Centipede | Panic, EnemySighted, Grow, Attack, LoseHealth\*, Die\*, Create\* | Attack=newsamplegroup25; Create=newsamplegroup26; Die=newsamplegroup27; LoseHealth=newsamplegroup28 |
+| Spider | Pounce, PounceLand, FootFall, LayEgg, Attack, LoseHealth\*, Die\*, Create\* | Create=spidercreate; Die=newsamplegroup13; Attack=spiderpounce; Pounce=spiderpounce; LayEgg=spideregglay; LoseHealth=spiderdeath; FootFall=spiderfeet |
+| ArmyAnt | Attack, LoseHealth\*, Die\*, Create\* | Attack=antatack; Create=antcreat; LoseHealth=antlosehealth; Die=antdeath |
+| SoulDestroyer | EnemySighted, Panic, Attack, LoseHealth\*, Die\*, Create\* | Create=souldestroycreate (+ souldestpain); LoseHealth=souldestpain; Die=souldestdeath; Attack=soulattack; EnemySighted=soulenemysighted |
+| TriffidEgg | Bounce, BurstOpen, LoseHealth\*, Die\*, Create\* | Create=triffidegglaunc; Bounce=triffideggbounce; BurstOpen=triffeggbursts; Die=souldestdeath |
+| Meteor | Land, Create\* | Land=meteorhitclose1, meteorhitfar1; Create=rocketthrust2loop, rumble2_loop |
+| SpaceShip | TractorBeam (stopped via `StopAllSounds(id, "SpaceShip TractorBeam")`), Create\* | Create=theramins, ufo_engine2, ufo_engine1, rumble2_loop; TractorBeam=tractorbeam2 |
+| Tripod (legacy) | Create\* only from code | Create=tripodcreate; Attack=tprdattac; LoseHealth=trpodlosehealth; Die=ttripoddie |
+| AntHill | Damage, Explode | Damage=1anthilldamage; Explode=newsamplegroup3 |
+| Triffid | LaunchEgg, Burn | Damage=sporegenlosehealt; Burn=triffidburn (no binding for LaunchEgg found) |
+| Spam (legacy) | Attack, Explode, CreateResearch | Create=samcreate; Damage=emaildamage; Attack=spamattack; Explode=spamboom; CreateResearch=researchcreate |
+| Crate powerups (`OTHER`/CratePowerup type, `Crate::TriggerSoundEvent`) | AntNest, Eggs, Meteor, Spam(Infection), SpaceShip, Triffids, DarkForest, Plague | e.g. Meteor=cratereward_meteor4 (others owned by P08) |
+\* generic `Entity` events: `Create` from `Entity::Begin`, `LoseHealth`/`Die` from `Entity::ChangeHealth`. Lightning, Snow, DustBall, Zombie, SpamInfection, WallBuster, DropShip, Lander and Tentacle raise no sound events of their own. [C] `code/worldobject/entity.cpp:Entity::Begin`, `Entity::ChangeHealth`.
+

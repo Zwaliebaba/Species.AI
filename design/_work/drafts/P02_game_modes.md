@@ -797,3 +797,125 @@ Members: `m_controlBuildingId` (-1), `m_pulseBombId` (-1). Level field: `<contro
 | PulseBomb | – | – | – | ✔ (1) | – | – |
 | ControlStation | – | radar control (koth_3P_1) | – | ✔ | – | – |
 | Flag (render) | – | – | – | – | – | ✔ (+ officers/armour everywhere) |
+
+---
+
+## [→ 05_economy_and_population] 6. Reinforcements, population caps and other throughput rules owned by the rules object
+
+### 6.1 Trunk-port reinforcement waves — `Multiwinia::AdvanceTrunkPorts` [C] `code/multiwinia.cpp`
+
+Called every tick from `AdvanceRocketRiot` and `AdvanceBlitkrieg`, and from `Multiwinia::Advance` when the level has `trunkportreinforcements > 0` or `trunkportarmour > 0` (Assault maps, `mp_koth_3P_4`, `mp_cts_3p_3`, and three Blitzkrieg maps — where it therefore runs twice per tick, §8 D3). `#ifndef MULTIWINIA_DEMOONLY`.
+
+Algorithm (per call):
+1. `m_reinforcementTimer -= SERVER_ADVANCE_PERIOD`; at ≤ 0 → `= 1.0`, `--m_reinforcementCountdown`.
+2. If `m_reinforcementCountdown <= 0` → **wave**:
+   1. Help notification. `timer = ReinforcementTimer` option (−1 → 60); `m_reinforcementCountdown = timer`, minus 1 on the very first wave.
+   2. Parameters: `maxArmour = MaxArmour`, `reinforcementCount = ReinforcementCount`, `turretTimer = TurretFrequency`, `maxTurrets = MaxTurrets` (−1 → 2). If `reinforcementCount == -1` (mode lacks the option) → level `trunkportreinforcements`; in Assault `defenderCount = level defenderreinforcements`, `attackerCount = level attackerreinforcements`, each defaulting to `reinforcementCount`. Level `defenderreinforcementtype` / `attackerreinforcementtype` (GlobalResearch type names, e.g. `AirStrike`, `Armour`, `HotFeet`) read always. `maxArmour == -1` → level `trunkportarmour`. Level `nogunturrets` → `turretTimer = 0`.
+   3. Turret cadence: if `turretTimer > 0`: `--m_turretTimer`; at ≤ 0 → `giveTurrets = true`, `m_turretTimer = turretTimer` → turrets on waves 1, N+1, 2N+1, ….
+   4. For every **owned** TrunkPort (team ≠ 255):
+      - Assault: count = attackerCount if the owner's position is attacking else defenderCount.
+      - If not `PopulationLocked()`: spawn `count` Darwinians one by one at `portPos + up·50 + r`, where `r` = up-vector rotated about the port's front by `syncfrand(2π)` and scaled to `syncfrand(40)`; velocity = port front with `y = syncfrand(1)`, scaled by `20 + syncfrand(15)`; spawned airborne (`m_onGround = false`).
+      - Armour: if `CountNumTasks(Armour) < maxArmour` or `maxArmour == 0` (unlimited), and the team's side has no override type (defender side uses `defenderreinforcementtype == -1`, attacker side `attackerreinforcementtype == -1`; in non-Assault modes every team counts as "defender" because `m_attacking[]` is all false): create an Armour `Task`, `RunTask`; on success mark source 1 (trunk port), target it at `portPos + front·75` (ground + 5) and register a task marker. The UI's current task selection is restored afterwards; `m_blockUnitChange` and (after the first wave) `m_blockMostRecentPopup` are set around the grant.
+      - Turret: `taskType = GunTurret`; Blitzkrieg upgrades it to `AirStrike` (§4.6). If `giveTurrets && CountNumTasks(taskType) < maxTurrets` → `RunTask(taskType)` (untargeted; player places it), source 1.
+   5. If `defenderreinforcementtype != -1`: every used team in slots `< NumPlayers` whose position is **not** attacking gets one task of that type with `m_option = defendreinforcementoption`.
+   6. If `attackerreinforcementtype != -1`: every used team whose position is attacking — **or every team in non-Assault modes** — gets one task of that type with `m_option = attackreinforcementoption` (e.g. `mp_cts_3p_3`: HotFeet for everyone each wave).
+   7. Note steps 5–6 are per team, independent of how many trunk ports it owns; steps 4.x are per port (a team with 3 ports may receive up to 3 armour/turret tasks per wave, bounded by the caps).
+3. `m_firstReinforcements = false` (end of every call).
+
+Timing: the first wave fires on the first post-grace tick; the second after 59 further countdown steps, later waves every `ReinforcementTimer` steps; each step = 11 ticks (1.1 game s) when called once per tick, 6 ticks when called twice [I: derived from §8 D1/D3].
+
+Defaults per mode: Rocket Riot 40 Darwinians/port every 60 steps, armour cap 2, turret every 7th wave cap 3; Blitzkrieg 40/60, armour 2, turret every 2nd wave cap 2 [C] `data/multiwinia.txt`. Assault/KOTH/CTS maps: count from the level (60–100), timer 60, armour only if `trunkportarmour` set (as the cap), no turrets (TurretFrequency absent → −1) [C].
+
+### 6.2 Population caps at trunk ports — `TrunkPort::PopulationLocked` [C] `code/worldobject/trunkport.cpp`
+
+In multiplayer:
+1. Assault with `DefenderPopulationCap != -1`: neutral port → never locked; `pop = Team::m_others.NumUsed() − Virii::s_viriiPopulation[team]`; defender locked at `pop >= DefenderPopulationCap`; attacker locked at `pop >= (PopulationCap − numDefenders × DefenderPopulationCap) / numAttackers` (integer division).
+2. Else if `PopulationCap != -1`: locked at `pop >= PopulationCap / NumPlayers`.
+3. Fallback (and when no cap): the first `SpawnPopulationLock` within its `m_searchRadius` of the port (cached); locked when that lock's `m_teamCount[team] >= m_maxPopulation` (P06). The cached id is only queried when `> 0`, so a lock with unique id 0 is ignored [C].
+Worked example `mp_assault_2P_1` (PopulationCap 2000, DefenderPopulationCap 350, 1 attacker): defender 350, attacker 1650 [C level file, I arithmetic]. `pop` counts every non-unit entity of the team (Darwinians, plus other `m_others` such as engineers/armour?) minus Virii [I: `m_others` contents are P01/P03].
+The same Assault formula is duplicated in `SpawnPoint` (P06) [C] `code/worldobject/spawnpoint.cpp` (L~715).
+
+### 6.3 Handicap (option `Handicap`) — consumer `SpawnPoint::CalculateHandicap` (P06) [C] `code/worldobject/spawnpoint.cpp`
+
+Returns a spawn-rate multiplier: 1.0 if level `nohandicap`; 0.0 for team 255; 1.0 while any neutral spawn point exists (`s_numSpawnPoints[0] > 0`); 1.0 if Handicap is 0/−1 or the team is alone. Else `average = (Σ other used teams' spawn points) / (number of other used teams)` (integer division); if `average > own × 1.5` → `1 + Handicap/100 × factor` with `factor = 1 − ((own − 1) / total)` — `(own−1)/total` is integer division and therefore 0 for every reachable value, so the multiplier is effectively **binary: 1.0 or 1 + H/100 (1.9 at the default 90)** [C code, I consequence].
+
+### 6.4 Starting powerups (option `StartingPowerups`) — consumer `Location::InitialiseTeam` (P01) [C] `code/location.cpp` (L~3307)
+
+N (0–3) rewards per non-special team at start, each drawn with `syncrand() % Crate::NumCrateRewards` until a reward is valid (`Crate::IsValid`) and not one of: Randomiser, CrateMania, Darwinians, Bitzkreig, SpawnMania, Plague, RocketDarwinians, SpaceShip, Spam, Triffids, SpeedUpTime, SlowDownTime, Forest, TheBeast (`INCLUDE_THEBEAST`); granted via `Crate::CaptureCrate` (P08).
+
+### 6.5 Crate drops (options `CrateDropRate`, `CrateDropMode`) — consumer `Location::AdvanceCrates` / `CreateRandomCrate` (P08 owns the details) [C] `code/location.cpp`
+
+No crates in tutorial 1 or before tutorial-2 AI release; max simultaneous crates `int(worldSizeX / 500)`; interval `CrateDropRate × (1.5 − syncfrand(1))` game seconds (0.5×–1.5×), re-rolled per drop. Weighted mode: `chance = max(high/total, 1 − low/total)`; with that probability the crate is dropped near a random building of a team chosen with weight `total/score` (score 0 → weight `total`), otherwise random placement.
+
+### 6.6 Territory → score summary
+
+| Mode | Territory unit | Score unit per mode second |
+|---|---|---|
+| Domination | spawn point | +owned (cumulative) or = owned |
+| KOTH | zone | per ScoreMode table §4.2 |
+| CTS | statue delivered | +1 per delivery (event) |
+| Blitzkrieg | flag | time-out score = flags + 10 × eliminations |
+| Rocket Riot | solar panel → fuel | fuel% + passengers + rocket height |
+| Assault | control stations | defence time (s) |
+
+---
+
+## [→ 09_meta_systems] 7. Achievements, statistics and the Rocket Riot status panel
+
+### 7.1 Achievement ids and unlock conditions [C] `code/app.h` (enum), call sites as cited
+
+| Id | Enum (`App::DarwiniaAchievement*`) | Code comment | Exact unlock condition in code | Where |
+|---|---|---|---|---|
+| 0 | `Dominator` | domination achievement | Domination, non-co-op, local team is the last non-eliminated team (win by elimination; not by time-out) | `Multiwinia::AdvanceSkirmish` |
+| 1 | `Hoarder` | CTS achievement | CTS normal time-out win by local team with `highScore > 2 × secondHighest` and `highScore > 3` | `AdvanceCaptureStatue` |
+| 2 | `HailToTheKing` | KOTH achievement | KOTH time-out win by local team with `highest > 1.5 × secondHighest` | `AdvanceKingOfTheHill` |
+| 3 | `UncladSkies` | rocket riot achievement | local rocket wins with `m_damage <= 0.01` and no other used team's rocket has fuel > 50 | `AdvanceRocketRiot` |
+| 4 | `AggravatedAssault` | Assault achievement | Assault game end, local team defending, and every objective (bomb + linked stations) was owned by a defending team on every tick since start (`m_defendedAll`) | `AdvanceAssault` |
+| 5 | `MasterPlayer` | beat someone who already has Master Player | local team wins a non-co-op game in which another non-CPU used team's `m_achievementMask & 0x01`; sets `AchievementTracker::m_isMasterPlayer = true` (then broadcast as the viral mask) | `Multiwinia::CheckMasterAchievement`, `code/network/clienttoserver.cpp` (mask sent in team request, L~1265; stored L~2404) |
+| 6 | `MasterOfMultiwinia` | won on every map | `AddVictoryOnLevel` makes `NumWonLevels() == VALID_ACHIEVEMENT_LEVELS` (49 with Assault compiled, else 41); only level ids 1–49 from `levels/level_enum.txt` count | `code/achievement_tracker.cpp` |
+| 7 | `Explorer` | played every map | `AddVisitedLevel` (at grace end) makes `NumVisitedLevels() == 49/41` | `achievement_tracker.cpp` |
+| 8 | `Carnage` | "more than 3000 enemy darwinians in a single game" | local `Team::m_teamKills >= 2000` on the tick the game ends | `Multiwinia::Advance` |
+| 9 | `BlitzMaster` | blitzkrieg achievement | Blitzkrieg win by local team with `m_startTime <= m_timeRemaining + 300` (practically always true) | `AdvanceBlitkrieg` |
+| 10 | `WrongGame` | nuke an ally in 4p co-op | co-op, local team's Nuke explodes within 120 units of a SpawnPoint owned by a friend (includes own spawn points); also message "Wrong Game!" | `code/worldobject/nuke.cpp` (L~196–215) |
+| 11 | `Genocide` | "total of 100,000 Darwinians" | `m_totalKills >= 1000000` after `AddToTotalKills` | `AchievementTracker::AddToTotalKills` |
+| 12 | `NumAchievements` | | | |
+
+**Platform reality (PC baseline):** `App::GiveAchievement(id)` returns early if any of the first `NumPlayers` slots is CPU (except MasterPlayer, Carnage, Genocide), then calls `EarnedAchievement()` which always returns false — and does nothing else. `App::EarnedAchievement` and `App::CheckMasterAchievement` are stubs. **No achievement is ever recorded or shown in the PC build** [C] `code/app.cpp:App::GiveAchievement`, `EarnedAchievement`. The in-menu Achievements page (`GameMenuWindow::SetupAchievementsPage`) builds only a title, scroll bar and Back button and shows a "Loading achievements" effect forever because `AchievementTracker::m_hasLoaded` is never set true [C] `code/UI/GameMenuWindow.cpp`, `code/achievement_tracker.cpp`. These are Xbox-Live/Steam-era hooks with the platform layer removed [I].
+
+### 7.2 `AchievementTracker` [C] `code/achievement_tracker.{h,cpp}`
+
+| Member | Meaning |
+|---|---|
+| `HashTable<int> m_levelList`, `std::map<int,std::string> m_levelListReverse` | map file name ↔ id from `data/levels/level_enum.txt` (`<filename> <id>` per line; ids 1–59) |
+| `unsigned char m_visited[8]`, `m_won[8]` | 64-bit bitsets indexed by level id |
+| `bool m_isMasterPlayer` | viral flag (mask bit `VIRAL_MASTER_ACHIEVEMENT_MASK = 0x01`) |
+| `bool m_hasLoaded` | never set true |
+| `int m_numOfficialLevels` | set by `SetNumLevels` from `game_menu.cpp` (unused) |
+| `int m_totalKills` | starts **-1**; `AddToTotalKills(k)` adds and calls `Save()` |
+
+Methods: `AddVisitedLevel`/`AddVictoryOnLevel` (ignore unknown names and ids > `MAX_LEVEL_ID` = 49; set bit; `Save()`; completion check), `AlreadyWonLevel`, `AlreadyVisitedLevel`, `GetWonLevels`, `GetVisitedLevels`, `NumWonLevels`, `NumVisitedLevels` (popcount over 64 bits), `GetCurrentLevelId`, `GetLevelName`, `GetLevelId`, `SetNumLevels`, `GetViralAchievementMask`, `HasLoaded`, `GetTotalKills`. `Load()` is empty; `Save()` returns immediately in demo and does nothing otherwise; constants `ACHIEVEMENT_RECORD_FILENAME "achievements.txt"` unused. → All tracking is in-memory per session and lost on exit [C].
+
+Statistics recorded at game end: none persisted. `DeclareWinner` sends the score array to the server (ignored), `AddToTotalKills` (in-memory) [C]. Leaderboard button exists but is inactive (`LeaderBoardButton m_inactive = true`) [C] `code/interface/mainmenus.cpp`.
+
+### 7.3 Rocket status panel [B:FULL] `code/rocket_status_panel.{h,cpp}`
+
+Created lazily by `Multiwinia::RenderRocketStatusPanel` each frame in Rocket Riot: `m_teamId = myTeamId`, `m_w = ScreenH × 0.2`, `m_x = ScreenW − m_w − 10`, `m_y = 10`; height `h = 1.5 × m_w` [C]. Members: `float m_x, m_y, m_w; int m_teamId; double m_lastDamage, m_damageTimer, m_previousFuelLevel`. `GetMyRocket()` returns the LobbyTeam's `m_rocketId` building only if it is an EscapeRocket owned by the team; panel not drawn otherwise (spectators, before the rocket is found).
+
+Layers (top to bottom of draw order):
+1. Background quad in team colour × 0.2, alpha 200.
+2. While fuel < 100%: scrolling `textures/laser.bmp` "refuelling" sheet in team colour, alpha 128 (texture v offset `fuel% × −100 + 0.5`).
+3. Fuel column: `textures/laser-long.bmp` gradient black→team colour, alpha 200, from `y + 0.97h` up by `0.95h × fuel%`; soft shadow above it.
+4. Overlay bitmap `icons/rocketstatuspanel.bmp`.
+5. Damage overlay `icons/rocketcracked.bmp`, additive, alpha = damage/100.
+6. If fuel ≥ 100% or passengers > 0: 100 Darwinian sprites (`sprites/darwinian.bmp`) in a 10×10 staggered grid inside the rocket window (x from `0.25w`, width `0.45w`, y from `0.225h`, height `0.55h`, sprite size `0.04h`, slight sinusoidal jitter); the first `passengers` drawn in team colour, the rest dim (×0.3 colour, 20% alpha).
+7. Engine flame (`textures/muzzleflash.bmp`, flicker at 30 Hz) in Ready/Countdown/Flight.
+8. Caption (first matching rule; title font, word-wrapped, centred at `y + 0.6h`, height `0.05h`):
+   1. damage increased within the last 10 real seconds and not exploding → "YOUR ROCKET IS UNDER ATTACK! DAMAGE n%" (red, flashing);
+   2. Countdown → `countdown+1` (4× size);
+   3. Flight → "LIFTOFF!" (1.5×, flashing);
+   4. Exploding → "Your Rocket is on FIRE!" (flashing);
+   5. fuel ≥ 100% and passengers < 5 → "Load your rocket with 100 Multiwinians" (flashing);
+   6. refuel rate < 0.05 and fuel < 1% → "Capture solar panels to begin refueling rocket" (flashing);
+   7. fuel < 100% → "Fuel nn.n%" (75% alpha).
+9. 20%-white border.
+Note: between 95% and 100% fuel the rocket is already Loading but the caption still shows "Fuel 9x.x%" [C/I].

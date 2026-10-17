@@ -696,3 +696,208 @@ classDiagram
 | F13 | Scroll repeat & float scrollers are frame-rate dependent | inconsistent feel | §4.2, §4.4 |
 | F14 | `ScrollBarButton::Render` divides by `m_numRows` (0 for empty list) | degenerate thumb | `ScrollBarButton::Render` |
 | F15 | `SetMenuSize(screenW, screenH)` under large menus scales full-screen pages beyond the screen (then clamped to negative origin) | — | `DarwiniaWindow::SetMenuSize`, `MultiwiniaWindow::MultiwiniaWindow` |
+
+---
+
+## [→ 08_levels_and_level_design] E1. Map editor — build status and reachability [B:EDITOR]
+
+### E1.1 Per-file gating [C]
+
+| File | Gate | Notes |
+|---|---|---|
+| `code/location_editor.h/.cpp` | whole class inside `#ifdef LOCATION_EDITOR` | |
+| `code/interface/editor_window.*`, `buildings_window.*`, `camera_anim_window.*`, `camera_mount_window.*`, `landscape_window.*`, `lights_window.*`, `instant_unit_window.*`, `tree_window.*` | whole body inside `#ifdef LOCATION_EDITOR` | compile to empty objects in every shipped target |
+| `code/interface/multiwiniaoptions_window.*` (P17b file) | `#ifdef LOCATION_EDITOR` | the editor's "Other Options" page |
+| `code/interface/invalidcrates_window.*` | **none** | compiled into FULL; only instantiated by `LocationEditor` |
+| `code/interface/multiwinia_window.*`, `multiwinia_filedialog.*` | **none** | compiled into FULL; openers gated (below) |
+| `code/interface/globalworldeditor_window.*` | **none** | Darwinia global-world editor; [B:LEGACY] |
+| `code/interface/filedialog.*` | none | generic; editor & sound editor use it |
+| External: `code/main.cpp` (`LocationEditorLoop`, editor branch of `EnterLocation`), `code/renderer.cpp` (editor render path), `code/UI/GameMenuWindow.cpp` (main-menu "Map Editor" button), `code/game_menu.cpp` (listing user `.mwm` maps for play), `code/network/clienttoserver.cpp` / `server.cpp` / `code/UI/GameServerButton.h` (custom-map request / advertise `NET_METASERVER_CUSTOMMAPNAME`), `code/interface/debugmenu.*` (`EditorButton`), `code/user_input.cpp` (F9 `ToggleEditor`, commented out even inside the `#ifdef`), `code/worldobject/{ai,aiobjective,eruptionmarker,gunturret,jumppad,restrictionzone,smokemarker,spawnpoint,triffid}.cpp` (selected-building gizmos) | `#ifdef LOCATION_EDITOR` | — |
+
+`LOCATION_EDITOR` is commented out in every target of `code/lib/universal_include.h` (FULLGAME, DEBUG, and two other blocks) [C] (`build_matrix.md` §3).
+
+### E1.2 Is any editor functionality reachable in FULL? — **No** [C chain]
+
+1. The Multiwinia main-menu entry `MultiwiniaEditorButton` (caption `taskmanager_mapeditor` = "Map Editor"; `m_inactive` in demo → click goes to `PageBuyMeNow`) is created only under `#ifdef LOCATION_EDITOR` in `code/UI/GameMenuWindow.cpp` [C].
+2. The only other opener of `MultiwiniaWindow` is `MultiwiniaButton` in the Darwinia-era `MainMenuWindow` (`code/interface/mainmenus.cpp`), which is only registered by the Esc handler inside `GlobalWorldGameLoop` (`code/main.cpp`); that loop sets `g_app->m_atMainMenu = true` and then breaks on its first check `if (g_app->m_atMainMenu) break;` → never runs its body [C].
+3. Every other setter of `m_requestToggleEditing = true` is gated: `DebugKeyBindings::EditorButton` (`LOCATION_EDITOR`, and its menu button additionally needs `modsEnabled`, which is hard-wired false without `USE_DARWINIA_MOD_SYSTEM`), `code/interface/mods_window.cpp` (`USE_DARWINIA_MOD_SYSTEM`) [C].
+4. Even if `m_editing` became true, `EnterLocation()` would load the level and skip the compiled-out editor branch, returning straight to the caller [C] `code/main.cpp:EnterLocation`.
+5. Consequently FULL players cannot create, edit, list or host custom `.mwm` maps (the `.mwm` listing in `code/game_menu.cpp` and the network custom-map request are also `LOCATION_EDITOR`-only) [C].
+
+Design stance for the new game: treat the editor as a first-class capability recovered from code (it is complete enough to author every Multiwinia map feature listed in E4), but note it never shipped.
+
+### E1.3 Entry and exit flow (EDITOR build)
+
+```mermaid
+sequenceDiagram
+  participant MM as Main menu (GameMenuWindow)
+  participant MW as MultiwiniaWindow "dialog_multiwinia"
+  participant FD as MultiwiniaFileDialog "Select File"
+  participant NM as NewMapWindow "new_map"
+  participant App as main loop
+  participant LE as LocationEditor
+  MM->>MW: MultiwiniaEditorButton.MouseUp (sound "MenuSelect", menu transition +1)
+  alt Edit existing
+    MW->>FD: SelectMapButton (path = <profile>/maps/, filter "*.mwm") [DEBUG: 2nd button "Edit Official Maps", levels/, "mp_*"]
+    FD->>MW: OK/double-click → m_mapFilename.Set(file)
+    MW->>App: next Update: requestedMap=file, requestedMission="null", m_requestToggleEditing=true, requestedLocationId=999, RemoveAllWindows()
+  else Create new
+    MW->>NM: NewMapWindowButton
+    NM->>NM: CreateMapButton: file exists? error "multiwinia_editor_mapexists" : LevelFile{map=lower(name), mission="null"}.Save(); success "multiwinia_editor_mapcreated"
+  end
+  App->>App: MainMenuLoop exits: m_editing=true, m_atMainMenu=false
+  App->>LE: EnterLocation(): new LocationEditor(); camera DebugModeAlways; LocationEditorLoop()
+  loop until MenuEscape (Esc / pad Start)
+    App->>LE: UserInput.Advance, Camera.Advance, LocationEditor.Advance, Sound, Renderer.Render
+  end
+  App->>App: RemoveAllWindows; if map ext == "mwm": reload into game-menu map list; delete editor & location; m_editing=false; m_atMainMenu=true
+```
+
+[C] `code/interface/multiwinia_window.cpp:SelectMapButton::MouseUp`, `MultiwiniaWindow::Update`, `NewMapWindow::Create`, `CreateMapButton::MouseUp`; `code/UI/MultiwiniaEditorButton.h`; `code/main.cpp:MainMenuLoop`, `EnterLocation`, `LocationEditorLoop`.
+
+Notes [C]: the editor loop does **not** advance the simulation (no `Location::Advance`) — the world is static while editing; there is no save prompt on exit; `MultiwiniaWindow::Update` treats any non-`mp_blank.txt` filename as found because its fallback `new TextFileReader(...)` is never NULL; `requestedLocationId = 999` is the magic id for editor/custom maps; a map created by `NewMapWindow` defaults to `mp_newmap.txt` while "Edit Existing Map" lists only `*.mwm`, so a new map is only editable if the user typed a `.mwm` name [C] (whether `MapFile` can then read a plain `LevelFile` text written to a `.mwm` path is [U] — resolve in P11 `code/mapfile.cpp`).
+
+`MultiwiniaWindow` other state [C]: full-screen non-movable page; `m_gameType = 0`; `m_researchLevel[i] = 3` for all research items; `m_params[MULTIWINIA_MAXPARAMS]`; unused buttons `PlayMapButton`, `EditMapButton`, `CurrentMapButton` (creation commented out) would have started a test game with those options.
+
+## [→ 08_levels_and_level_design] E2. LocationEditor core (`code/location_editor.*`) [B:EDITOR]
+
+### E2.1 State [C] `code/location_editor.h:LocationEditor`
+
+| Member | Type | Initial | Meaning |
+|---|---|---|---|
+| `m_mode` | int (Mode enum) | `ModeNone` | current editing mode |
+| `m_tool` | int (Tool enum) | `ToolNone` | current manipulation tool |
+| `m_selectionId` | int | −1 | building unique id (ModeBuilding), tile/flatten-area/instant-unit **list index**, light index, camera-animation index |
+| `m_subSelectionId` | int | −1 | declared for routes/waypoints; unused in scope |
+| `m_waitingForRelease` | bool | false | swallow the drag/release that follows a selecting click |
+| `m_landscapeGrabX/Z` | int | — | grab offset between mouse and tile/area origin |
+| `m_newLandscapeX/Z` | int | — | pending (dragged) tile origin, applied on release |
+| `m_moveBuildingsWithLandscape` | int | 1 | move buildings with dragged tiles |
+
+| Mode | Value | Edit window created | Window name | Width |
+|---|---|---|---|---|
+| `ModeNone` | 0 | none | — | — |
+| `ModeLandTile` | 1 | `LandscapeEditWindow` | `editor_landscape` | 220 |
+| `ModeLandFlat` | 2 | `LandscapeEditWindow` | `editor_landscape` | 220 |
+| `ModeBuilding` | 3 | `BuildingsCreateWindow` | `editor_buildings` | 220 |
+| `ModeLight` | 4 | `LightsEditWindow` | `editor_lights` | 220 |
+| `ModeInstantUnit` | 5 | `InstantUnitCreateWindow` | `editor_instantunits` | 220 |
+| `ModeCameraMount` | 6 | `CameraMountEditWindow` | `editor_cameramounts` | 320 |
+| `ModeMultiwinia` | 7 | `MultiwiniaOptionsWindow` | `multiwiniaoptions_window` | 300 |
+| `ModeInvalidCrates` | 8 | `InvalidCratesWindow` | `InvalidCratesWindow` | 300 |
+| `ModeNumModes` | 9 | (also `MainEditWindowButton::TypeSave`) | | |
+
+| Tool | Value | Used by |
+|---|---|---|
+| `ToolNone` | 0 | default |
+| `ToolMove` | 1 | buildings, instant units, (tiles: set on select) |
+| `ToolRotate` | 2 | buildings, lights |
+| `ToolLink` | 3 | buildings |
+| `ToolCreate` | 4 | declared, unused [C] grep |
+| `ToolNumTypes` | 5 | — |
+
+Construction [C] `LocationEditor::LocationEditor`: creates `MainEditWindow("editor_mainedit")`, `w = 150`, `h = 140`, `x = ScreenW` (clamped on registration to `ScreenW − 150`, i.e. top-right), `y = 0`. Destruction removes the current edit window and the main window.
+
+`RequestMode(m)`: no-op if unchanged; if `m ≠ ModeNone` → `CreateEditWindowForMode(m)` (removes the previous edit window, creates the new one with `h = 100`, `x = 0`, `y = ScreenH − 100` — bottom-left, growing upward as buttons are added, and records it as `MainEditWindow::m_currentEditWindow`); then `m_mode = m`, `m_selectionId = −1`. Every mode window's destructor (except Multiwinia/InvalidCrates) calls `RequestMode(ModeNone)`, so closing it with its close box returns to ModeNone.
+
+### E2.2 Input gating and per-frame dispatch [C] `LocationEditor::Advance`
+
+```text
+if a UI window is under the cursor: return              # UI has priority, nothing reaches the world
+if m_waitingForRelease and (TileDrag held or TileDrop this frame): return
+m_waitingForRelease = false
+dispatch on m_mode: None | LandTile | LandFlat | Building | Light | InstantUnit | CameraMount
+(Multiwinia, InvalidCrates: no viewport interaction)
+```
+
+Bindings [C] `data/input/input_preferences.txt`: `SelectLocation` = mouse left down (also pad A); `TileSelect` = mouse left down; `TileDrag` = mouse left pressed (held); `TileDrop` = mouse left up. Mouse world position = `UserInput::GetMousePos3d()` (terrain hit, P10); pick rays = `Camera::GetClickRay(cursor)`. All *create/clone* buttons instead ray-cast from the **screen centre**, marked by a white ±30 px crosshair drawn by the editor (§E2.5).
+
+### E2.3 Picking [C]
+
+| Function | Test | Returns |
+|---|---|---|
+| `DoesRayHitBuilding` | `Building::DoesRayHit(ray)` over `levelFile->m_buildings` in list order | unique id of **first** hit (not nearest), −1 |
+| `DoesRayHitInstantUnit` | ray–sphere, centre `(posX, terrainH(posX,posZ), posZ)`, radius `√number × INSTANT_UNIT_SIZE_FACTOR (6.0)` | list index of first hit |
+| `DoesRayHitCameraMount` | ray–sphere, radius = bounding radius of `camera.shp` (identity transform) around mount position | list index |
+| `IsPosInLandTile(pos)` | `posX < x < posX+size` and same for z (strict) | index of the **smallest** containing tile |
+| `IsPosInFlattenArea(pos)` | `|x − cx| < size` and `|z − cz| < size` (`m_size` is a half-extent) | index of first |
+
+### E2.4 Per-mode behaviour [C] `LocationEditor::AdvanceMode*`
+
+**ModeNone** — on `SelectLocation`: building hit → `RequestMode(ModeBuilding)`; else instant unit → `ModeInstantUnit`; else camera mount → `ModeCameraMount`; else land tile under mouse → `ModeLandTile`; else flatten area → **`ModeLandTile`** (sic, not LandFlat). The clicked object is not selected (selection reset by `RequestMode`); a second click selects it.
+
+**ModeLandTile** (tiles = `levelFile->m_landscape.m_tiles`):
+```text
+newSel = TileSelect ? IsPosInLandTile(mouse3D) : -1
+if no selection and newSel != -1:
+    select newSel; m_tool = ToolMove; m_newLandscape = tile origin; waitingForRelease = true
+    open LandscapeTileEditWindow "editor_landscapetile" (w = landscape window w, h = 150, x = its x, y = its y - 150 - 10)
+if selection:
+    if TileDrop and m_newLandscape != tile origin:
+        if m_moveBuildingsWithLandscape: every building with tile.pos <= b.pos.xz <= tile.pos+size moves by delta
+        tile origin = m_newLandscape; Landscape::Init(levelFile landscape); rebuild Water
+    if TileSelect:
+        if newSel == selection: grab = mouse3D - tile origin           (start drag)
+        else: deselect; tool None; close "editor_landscapetile" and "editor_guidegrid"
+    elif TileDrag: m_newLandscape = mouse3D - grab                     (preview only; ints)
+```
+
+**ModeLandFlat** (areas = `m_flattenAreas`): select on `TileSelect` → window `"Flatten Area"` (`LandscapeFlattenAreaEditWindow`, w = landscape window w, h = 100, x = 0, y above). With selection: `TileSelect` on same area → grab offset from centre; on another/none → `m_selectionId = newSel` and close the window (so selecting a different area leaves it selected without a window — quirk); `TileDrag` → centre.xz = mouse − grab **live** (no regeneration until *Generate*).
+
+**ModeBuilding**:
+```text
+if "editor_buildingid" window exists and cursor in it: return
+newSel = TileSelect ? DoesRayHitBuilding(cursor ray) : -1
+if no selection and newSel != -1:
+    select; open BuildingEditWindow "editor_buildingid" (w = create window w, h = 140, above it); waitingForRelease
+    if building is TypeTree: open TreeWindow "editor_treeditor" (h = 230) above that
+elif selection:
+    if TileSelect:
+        newSel == -1        -> close "editor_buildingid", deselect
+        m_tool == ToolLink  -> building.SetBuildingLink(newSel); m_tool = ToolNone
+        (clicking another building otherwise does nothing — must click empty ground first)
+    elif TileDrag (newSel is -1 on drag frames):
+        ToolMove   -> building.m_pos = mouse3D (y = terrain height)
+        ToolRotate -> building.m_front.RotateAroundY(cursor dX × 0.01 rad/pixel)
+```
+In editor mode `Location::GetBuilding(id)` resolves against `levelFile->GetBuilding(id)` [C] `code/location.cpp:Location::GetBuilding`, so all edits act on the level-file objects that `LevelFile::Save` writes.
+
+**ModeLight**: if `m_selectionId` is a valid index into `location->m_lights` and `TileDrag` → front vector rotated about Y by `dX × 0.05 rad/pixel`, `Light::SetFront` [C]. Selection is made only from the Lights window.
+
+**ModeInstantUnit**: select on `TileSelect` hit → `InstantUnitEditWindow "editor_instantuniteditor"` (h = 160, above create window); with selection: `TileSelect` not on the selected unit → deselect + close; `TileDrag` with `ToolMove` → `posX/posZ = mouse3D.xz`.
+
+**ModeCameraMount**: on `TileSelect`, only if window `"editor_cameraanim"` exists and its `m_newNodeArmed`: hit mount → append `CamAnimNode{mountName = strdup(mount name)}` to animation `m_selectionId`, disarm, rebuild that window. Since nothing creates `"editor_cameraanim"` (§E4.10), this path is unreachable even in an EDITOR build [C].
+
+### E2.5 Editor rendering [C] `LocationEditor::Render` (called after `Location::Render` from `code/renderer.cpp` when `m_editing`)
+
+Order:
+1. Object lighting on; every level-file building `Render(0.0)`; lighting off. In ModeBuilding additionally every building `RenderAlphas(0.0)` and `RenderLink()` (link lines); selected buildings of several types draw their own gizmos (AI target link range sphere, objective spheres, turret target, triffid egg arc, spawn-point search radius…) [C] `code/worldobject/*.cpp` `LOCATION_EDITOR` blocks (P06/P07).
+2. Camera mounts: `camera.shp` at each mount oriented by (front, up), skipped when the camera is within **20.0** units.
+3. Instant units (`RenderUnit`): 3D label `"%d %s(s)"` (count, entity type name) at terrain + 15, size 15; a dot grid `maxX = ⌊√n⌋`, `maxZ = n / maxX`, pitch **10**, centred, each dot a camera-facing quad half-size 5 at terrain + 2, team colour with alpha 200 (additive, no depth write, no cull); in ModeInstantUnit a 30-segment spread circle of radius `m_spread` at terrain + 10 (min y 2), alpha 100, line width 2.
+4. Mode overlays:
+   - LandTile: every tile under the mouse (except the selected one) → translucent cube `RGBA(128,255,128,99)` with footprint origin `(posX − cellSizeX, posZ − cellSizeY)`, size `(size, desiredHeight − outsideHeight, size)`; selected tile → opaque cube `(128,255,128)`; pending move → blue `(0,0,255)` outline at `(newX, 1.0, newZ)`. If `"editor_guidegrid"` is open: guide-grid cells drawn as quads at heights `desiredHeight × value/256` over `posY`, cell size `size/(N+1)`, offset by one cell; two passes: no depth, width 1, `(1,0,0,0.2)`; depth, width 3, `(1,0,0,0.8)`.
+   - LandFlat: all areas as cubes centred at `centre`, size `(2·size, centre.y + 20, 2·size)`, alpha 99 (selected 255).
+   - Building: selected building → white bounding sphere of its shape (or `RenderHitCheck()` if no shape); ToolLink → line from `pos + (0,10,0)` to the mouse with a two-stroke arrowhead (10 % back, ±3 up), colour `(1,0.5,0.5)`, no depth test.
+   - InstantUnit: selected → sphere radius `√n × 6.0`.
+   - CameraMount: arrows between consecutive animation nodes' mounts (segments touching `"CamPosBefore"` skipped), bright `(255,255,0)` for animation index `m_selectionId`, else `(90,90,0)`.
+5. World axes: arrow `(10,200,0)→(worldSizeX/2,200,0)` width 4 with an "X" glyph made of two lines at `x = sizeX…sizeX+90`, `y = 150…250`; arrow `(0,200,10)→(0,200,worldSizeZ/2)` with a "Z" glyph.
+6. 2D crosshair: white lines ±30 px through the screen centre.
+
+## [→ 08_levels_and_level_design] E3. MainEditWindow (`code/interface/editor_window.*`) [B:EDITOR]
+
+`MainEditWindow("editor_mainedit")` (top-right, 150 wide). `Create()` does not call the base → **no close box** [C]. Buttons are `MainEditWindowButton` (BorderlessButton), x = 7, w = 135, auto h 15, y = 3 + 18k; the button whose `m_type` equals the current mode renders pressed:
+
+| # | Name | Caption (EN) | y | Action |
+|---|---|---|---|---|
+| 1 | `editor_editlandtiles` | Edit Land Tiles | 21 | `RequestMode(ModeLandTile)` |
+| 2 | `editor_editflattenareas` | Edit Flatten Areas | 39 | `ModeLandFlat` |
+| 3 | `editor_editlights` | Edit Lights | 57 | `ModeLight` |
+| 4 | `editor_editbuildings` | Edit Buildings | 75 | `ModeBuilding` |
+| 5 | `editor_editinstantunits` | Edit Instant Units | 93 | `ModeInstantUnit` |
+| 6 | `editor_editcameramounts` | Edit Camera Mounts | 111 | `ModeCameraMount` |
+| 7 | `editor_multiwiniaoptions` | `dialog_otheroptions` "Other Options" | 129 | `ModeMultiwinia` |
+| 8 | `editor_invalidcrates` | `dialog_invalidcrates` "Invalid Crates" | 147 | `ModeInvalidCrates` |
+| 9 | `editor_save` [TARGET_DEBUG only] | Save | 171 | `levelFile->Save()` (mission file unless "null"; map file to `levels/<map>` in DEBUG builds, to `<profile>/maps/<map>` otherwise [C] `code/level_file.cpp:LevelFile::Save`) |
+| 10 | `editor_publish` | "Publish" (DEBUG) / "Save" (non-DEBUG) | 171/189 | `MapFile().Save(<profile>/maps/<levelFile->m_mapFilename>)` — packaged `.mwm` (format: P11/29) |
+
+`TypeSave = ModeNumModes (9)`, `TypePublish = 255` [C]. A commented-out guard once refused saving without a loaded MOD.

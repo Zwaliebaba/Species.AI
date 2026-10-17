@@ -763,3 +763,32 @@ Source: `code/worldobject/portal.{h,cpp}`. Build tag: **[B:FULL]** via the crate
 
 Rendering uses **unsynced** `rand()`/`frand()` for fire particles (cosmetic only). [C] `Portal::RenderAlphas`.
 
+## [→ 03_buildings_and_world_objects] Legacy Darwinia buildings in this partition (ConstructionYard, DisplayScreen, spirit-receiver network, SpiritStore)
+
+All **[B:LEGACY]**: blocked from level files (`Yard`, `DisplayScreen`, `SpiritReceiver`, `ReceiverLink`, `SpiritSpawner`, `SpiritProcessor`) and never created at runtime in Multiwinia [C] `BuildingIsBlocked`, grep of `CreateBuilding(` callers. Documented fully because the code is compiled into the shipped binary.
+
+### ConstructionYard (`Yard`) — tank factory
+| Aspect | Spec | Ref |
+|---|---|---|
+| Shape | `constructionyard.shp` (12 ports, MarkerPrimitive01–09), rungs `constructionyardrung.shp` (MarkerSpike01–06), primitive `mineprimitive1.shp` | [C] ctor |
+| Inputs | primitives via `AddPrimitive()` (max `YARD_NUMPRIMITIVES` 9; from mine carts, other partition) and power surges via `AddPowerSurge()` (from PylonEnd) | [C] |
+| Online | GlobalBuilding online when any port occupied, ≥ 1 surge and ≥ 1 primitive | [C] `Advance` |
+| Build cycle | idle (`m_timer < 0`) → when primitives = 9 and surges > 50: `m_timer = 30`; timer decreases by `fractionPopulated × dt` (12 ports); at ≤ 0: if ≥ 5 Armour already in the *local player's* team specials → retry in 30 s, else spawn 1 `Armour` for **team 2** at MarkerPrimitive06, front (0,0,1), waypoint pos + (0,0,500); primitives = 0, surges = 1 | [C] `Advance`, `IsPopulationLocked` |
+| Visuals | rung bobbing ∝ fractionPopulated; glow alpha → `1 − timer/60` while building | [C] |
+
+### DisplayScreen
+Cosmetic: `displayscreen.shp` with 3 ray markers projecting light rays onto a slowly rotating ×3-scale `armour.shp` hologram 75 units above the centre. No gameplay. [C] `DisplayScreen::RenderAlphas`.
+
+### ReceiverBuilding family (spirit-receiver network)
+| Class | Shape | Behaviour | Ref |
+|---|---|---|---|
+| `ReceiverBuilding` (base) | — | `m_spiritLink` (next building id; level token `%-8d`), `m_spirits : LList<double>` progress values; each tick progress += **0.8·dt** (1.25 s per link); at ≥ 1 forwards `TriggerSpirit(0)` to the link; `TriggerSpirit` pushes a new spirit at the list front + sound `TriggerSpirit`; spirit beam drawn between `MarkerSpiritLink`s | [C] |
+| `SpiritProcessor` | `spiritprocessor.shp` | owns the world's **UnprocessedSpirit** cloud: 150 spawned at Initialise (x,z = FRAND(world size), y = syncfrand(1000)), then one more every 0.2 s at y = 700 + syncfrand(300). Throughput: every 10 s, `n = arrivals × 7`; `throughput = n` if higher else `0.8·t + 0.2·n`; GlobalBuilding online when > 50; objective text `objective_throughput`. Static lookup `ReceiverBuilding::GetSpiritProcessor()` caches the first processor | [C] |
+| `ReceiverLink` | `receiverlink.shp` | relay | [C] |
+| `ReceiverSpiritSpawner` | `receiverlink.shp` | injects a spirit with probability 0.1 per tick (`syncfrand(10) < 1`) | [C] |
+| `SpiritReceiver` | `spiritreceiver.shp` (5 ports, 5 status markers) + `spiritreceiverhead.shp`; orientation follows terrain normal | if any port occupied: every floating UnprocessedSpirit within 200 is pulled (`vel += dir·20·(1 − d/200)·fractionOccupied·dt`, target raised by up to 100 when within 100); captured at < 10 → deleted and `TriggerSpirit(0)` into the network | [C] `SpiritReceiver::Advance` |
+| `UnprocessedSpirit` (WorldObject) | — | states Falling (hover y = (−10 − syncfrand(10))·min(1, h/100) until < 15 above ground) → Floating for 30 + syncsfrand(30) s ∈ [15,45) → Death 10 s (fade) → removed; drift: `vel *= 0.9` per tick, hover axes random-walk ±0.5 per tick clamped [0,2]; clamped to the world rectangle | [C] |
+
+### SpiritStore (helper, not a Building)
+A box-shaped container of `Spirit` objects: `Initialise(initial, max, pos, sx, sy, sz)` sets capacity (`max`, step `max/2`) and pre-fills `initial` team-0 spirits; `AddSpirit` copies a spirit to a synced-random position within ±0.75·size (syncsfrand(1.5·size)) and sets `StateInStore`, `m_numNearbyEggs = 0`; `RemoveSpirits(n)` removes the first *n*; `Advance` advances each; `Render` draws a translucent `triangleOutline.bmp` box plus the spirits. Only user: the Darwinia `Factory` building (member `m_spiritStore`, initialised with capacity 200 and box half-size 5×10×5 at marker `MarkerSpiritStore`; the factory consumes one stored spirit per produced unit via `RemoveSpirits(1)`) [C] `code/worldobject/factory.cpp:Factory::Factory/Advance`. `Factory` is blocked → **[B:LEGACY]**. [C] `spiritstore.cpp`.
+

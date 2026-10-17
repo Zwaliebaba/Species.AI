@@ -144,7 +144,7 @@ All paths are relative to `SRC=multiwinia/`.
 
 ### 1.4 Process start-up order (exact)
 
-Entry: the platform window manager calls `AppMain(cmdLine)` (`code/lib/window_manager_win32.cpp` → `AppMain`; D3D build: `code/lib/window_manager_directx.cpp`). [C]
+Entry: `WinMain` stores `g_hInstance`, creates `g_windowManager = new WindowManagerWin32()` (D3D build: `WindowManagerDirectX`, `code/lib/window_manager_directx.cpp`) and calls `AppMain(cmdLine)`; on return it returns `WM_QUIT` [C] `code/lib/window_manager_win32.cpp:WinMain`.
 
 1. `AppMain` — `--write-version` writes file `version` with `DARWINIA_VERSION` and returns. Body wrapped in SEH `__try/__except(RecordExceptionInfo(...,"AppMain","0B9432AF",DARWINIA_VERSION))` (`USE_CRASHREPORTING && TARGET_MSVC`). [C] `code/main.cpp:AppMain`
 2. `RunTheGame(cmd)` → `Initialise(cmd)` (`code/main.cpp:Initialise`):
@@ -215,7 +215,7 @@ All defined at file scope; none are reference-counted; access is unsynchronised 
 | `g_inputManager` | `InputManager*` | `code/lib/input/input.*` | `InitialiseInputManager` | |
 | `g_inputFilterManager` | `InputFilterManager*` | `code/lib/input/inputfiltermanager.h` | P10 | |
 | `g_eventHandler` | `EventHandler*` | `code/lib/input/eventhandler.h` | `Initialise` | Win32 message pump/focus |
-| `g_windowManager` | `WindowManager*` | `code/lib/window_manager.h` | Renderer init (P13) | deleted in `Finalise` |
+| `g_windowManager` | `WindowManager*` | `code/lib/window_manager.h` | `WinMain` creates `WindowManagerWin32` (D3D: `WindowManagerDirectX`) **before** `AppMain` [C] `code/lib/window_manager_win32.cpp:WinMain` | deleted in `Finalise` |
 | `g_target` | `TargetCursor*` | `code/lib/targetcursor.h` | `Initialise` | mouse position abstraction |
 | `g_systemInfo` | `SystemInfo*` | `code/lib/system_info.h` | `Initialise` | |
 | `g_loadingScreen` | `LoadingScreen*` | `code/loading_screen.h` | `Initialise` | owns a `WorkQueue` thread |
@@ -227,7 +227,7 @@ All defined at file scope; none are reference-counted; access is unsynchronised 
 | `g_debugRenderer`, `g_log` | | `code/lib/persisting_debug_render.h`, `code/lib/debug_logging.h` | | |
 | `g_colourBlack/White`, `g_upVector`, `g_zeroVector`, `g_identityMatrix34` | const values | lib | | |
 | `g_openGLMutex` | `NetMutex` | `code/lib/safegl.cpp` | | guards GL between loading-screen thread and main thread (P12/P13) |
-| `g_profiler` | `Profiler*` | `contrib/systemiv/lib/profiler.h` | | `START_PROFILE/END_PROFILE` no-op when NULL |
+| `g_profiler` | `Profiler*` | `contrib/systemiv/lib/profiler.cpp` (=NULL) | `Profiler::Start()`, called only by the profile window (`code/interface/profilewindow.cpp`) — NULL in normal play | `START_PROFILE/END_PROFILE` no-op when NULL; `Profiler::Stop()` in `Finalise` |
 | D3D-only: `g_pd3dDevice`, `g_pd3dDeviceActual`, `g_d3dpp`, `g_currentVertexBuffer`, `g_fixedPipeline`, `g_supportsHwVertexProcessing` | | `code/lib/opengl_directx*` | | [B:D3D] |
 | `g_win32InputDriver`, `g_keys[]`, `g_keyDeltas[]`, `g_sdlMouseDriver`, `g_tracingOpenGL`, `g_fogLogging`, `g_fogEnabled` | | lib | | P10/P13 (`g_sdlMouseDriver` macOS only) |
 
@@ -353,7 +353,7 @@ stateDiagram-v2
 8. `m_server->AdvanceIfNecessary(GetHighResTime())` if hosting
 9. `m_clientToServer->AdvanceAndCatchUp()`
 
-Exit when `m_atMainMenu` false (set by `NET_DARWINIA_START_GAME` processing — `code/network/clienttoserver.cpp:ProcessServerLetters`) or editor toggle. On exit: stop sound "MultiwiniaInterface LobbyAmbience", `m_gameMenu->DestroyMenu()`, `m_requireSoundsLoaded = true`.
+Exit when `m_atMainMenu` false (set when the `NET_DARWINIA_START_GAME` command is applied — `code/network/clienttoserver.cpp:ClientToServer::ProcessServerUpdates`) or editor toggle. On exit: stop sound "MultiwiniaInterface LobbyAmbience", `m_gameMenu->DestroyMenu()`, `m_requireSoundsLoaded = true`.
 
 ### 2.3 Entering a match (`EnterLocation` / `DoEnterLocation`)
 

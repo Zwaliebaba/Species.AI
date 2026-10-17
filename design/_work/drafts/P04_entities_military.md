@@ -993,3 +993,74 @@ The simulation is lock-step over the network: every peer must advance identicall
 | Shaman ranges (dead) | sacrifice 50 every 1.0 s; create-Darwinians 50; capture 300; mode debounce 0.3 s | | literal | `shaman.cpp` |
 | Shaman interface ring | radius 175 px, icon 120 px, background 550 px, selector 130 px | px | literal | `shaman_interface.cpp` |
 
+## Cross-partition notes
+- **Location (core)**: `Location::Bang`, `CreateShockwave`, `ThrowWeapon`, `FireRocket`, `FireTurretShell`, `LaunchFireball`, `FireLaser`, `SpawnEntities`, `SpawnSpirit`, the research-level override in `Location::Init`, and the per-team control dispatcher (`code/location.cpp`, Unit/Entity branches for Squad, Engineer, Tank, Harvester, commented Armour) — owner of location.cpp should cross-check §0.7 and the control tables [C].
+- **Crates (P08)**: `Crate::CaptureCrate/CaptureCrate(int)/RunUncapturedCrate/RunAirStrike/RunNuke/IsValid/IsBasicCrate/TriggerSoundEvent` drive §2/§3/§11; `CrateRewardTank` and uncaptured Nuke are commented out; Harvester/Engineer/SpawnMania require spawn points; Armour disabled with trunk-port armour / Rocket Riot.
+- **Task manager / UI (P06/P09)**: `Task::Start/Target/Target*/Advance/Stop`, `TaskManager::RunTask/TerminateTask` (Shaman tasks cannot be terminated), `TaskManagerInterfaceMultiwinia` (weapon-select shortcuts commented out; Shaman interface hijack), `LocationInput::AdvanceTeamControl` armour branch, `control_help.cpp` strings `gc_setturret`, `gc_move`, `gc_cancel`, `gc_deselect`.
+- **Network (P-net)**: letters `NET_DARWINIA_ORDERGOTO` (+`DIRECTROUTE`, `FORCEONLYMOVE`, `POSITION`) for armour orders; `NET_DARWINIA_TOGGLEENTITY` (+`SECONDARYFUNCTION`); `NET_DARWINIA_NEXTWEAPON/PREVWEAPON` (armour toggle, officer mode); `NET_DARWINIA_SHAMANSUMMON`; `NET_DARWINIA_RUNPROGRAM` [C] `code/network/clienttoserver.cpp`.
+- **Darwinian partition**: armour states `StateApproachingArmour`/`StateInsideArmour` (`SearchForArmour`, `AdvanceApproachingArmour`, `AdvanceInsideArmour`), `SetFire`, `FireDamage`, `TakeControl` (controller grenade), `Sacrafice` (Shaman), `SearchForShamans`, grenade/rocket throwing (`EvolutionRockets`), `m_colourTimer`/`m_previousTeamId` after mind-control.
+- **Spirits / economy (P05)**: `Spirit` states `StateBirth, StateFloating, StateDeath, StateAttached (Engineer), StateHarvested, StateCollected (Harvester), StateShaman, StateInEgg, StateInStore`; `Spirit::Harvest`, `CollectorArrives`, `CollectorDrops`, `SkipStage`; Multiwinia spirit timers (floating 30–50 s, ascent 90 s) [C] `code/worldobject/spirit.cpp:Spirit::Advance`. Harvester/Engineer convert spirits into Darwinians via `SpawnPoint::SpawnDarwinian` — a population-throughput mechanic for 05.
+- **Buildings (P03)**: `GunTurret` fires TurretShell/Rocket(1.0 s)/Mortar grenade (explodeOnImpact, life 1000)/Fireball(1.0 s)/Subversion laser (vel/4, mind control) and ejects `TurretEmptyShell`; `GunTurret::RegisterKill`; `Armour::ConvertToGunTurret` (single-player); `PulseBomb` owns `PulseWave`; `SpawnPoint`, `Incubator::GetDockPoint/AddSpirit`, `ControlTower::Reprogram/BeginReprogram/EndReprogram/GetConsolePosition/GetAvailablePosition`, `Bridge`, `ResearchItem`, `Teleport`/`RadarDish` entry, `LaserFence::IsEnabled` (armour routing), `TrunkPort`, `EscapeRocket`, `MultiwiniaZone`, `AIObjective(Marker)`, `AITarget`, `Portal` (Shaman).
+- **AI (07)**: `Armour::RunAI` family, `InsertionSquad::RunAI`, `Tank::RunAI`, `Harvester::RunAI`, `Engineer::RunAI` (§4.7, §5.8, §6.2, §7.7, §10.4); `AI::FindNearestTarget`, `AI::m_rrObjectiveList` (`RRSolarPanelInfo`).
+- **Rendering / effects (24)**: `g_explosionManager.AddExplosion`, `ParticleSystem::CreateParticle` types §13.2, `Renderer::MarkUsedCells` / `RenderPixelEffect` (disabled in Multiplayer for squad/engineer), `g_deformEffect->AddPunch` [B:D3D].
+- **Unit (core)**: `Unit::GetFormationOffset` (`FormationRectangle`, `FormationAirstrike`), `Unit::Attack` accumulator, `Unit::RecalculateOffsets`, `Team::NewUnit` (InsertionSquad / AirstrikeUnit / ViriiUnit / Unit) [C] `code/unit.cpp`, `code/team.cpp`.
+- **Mode logic (01)**: Tank Battle scoring `Multiwinia::AdvanceTankBattle` [B:DEBUG]; trunk-port armour reinforcements `Multiwinia::AdvanceTrunkPorts`; co-op "Wrong Game" achievement in `Nuke::AdvanceToTarget`.
+
+## Contradictions / open questions
+1. `Entity::EntityIsBlocked` lists `TypeNuke`, `TypeSpaceInvader`, `TypeShaman`, `TypeOfficer`, `TypeLaserTroop` as "old Darwinia objects", yet Nuke, SpaceInvader and Officer are core Multiwinia units; the block only affects level-file `InstantUnits` parsing (and the editor's instant-unit window) [C]. Do not interpret it as "not in Multiwinia".
+2. Squad secondary weapon: four weapon types are fully implemented, but no reachable Multiwinia path changes `m_weaponType` from Grenade (§4.5) [I]. If the new game wants squad weapon choice it must add UI.
+3. `data/stats.txt` RATE for InsertionSquadie (0.5 s) truncates to 0 in `Entity::m_stats` (unsigned char); only the squad-level accumulator uses the 0.5 (via `EntityBlueprint::GetStat`), autonomous fire has no reload at all [C]. The intended per-squaddie reload is ambiguous.
+4. `Location::Bang` falloff formula has an operator-precedence bug producing a flat full-damage core to 1.5R (§0.7) [C]; designers balanced against the buggy behaviour.
+5. Nuke launch-time compensation (`/100`) does not match the actual mean flight speed (~47 u/s) — simultaneous impact was presumably intended [I].
+6. Harvester/SpaceInvader damage explosions scale against Engineer max health (copy-paste) [C] — visual only.
+7. Tank Battle respawn re-runs a Tank task whose `TargetTank` is commented out → respawn would spawn nothing even in a debug build [I].
+8. `Grenade::m_collected` freeze is not honoured by `FlameGrenade::Advance`; harmless today because Harvesters only capture `EffectThrowableGrenade` [C].
+9. Armour exits (unloading) are blocked over water (terrain ≤ 0 at the entrance) — passengers stay inside indefinitely while over sea [C]; intended.
+10. Squaddies spawn no spirit on death (custom `ChangeHealth`) whereas Darwinians do [C] — confirm intent (Harvester economy).
+
+## [U] Unknowns
+1. [U] Whether `squad.shp` / `spaceinvader.shp` / `harvester.shp` / `engineer.shp` carry any team colouring at render time (no recolour code in these classes). Resolve: inspect shape files' colour data and the generic entity render path in `code/location.cpp`/`code/renderer.cpp`, or run the game.
+2. [U] Exact airstrike/nuke timings on real terrain (simulations assume flat ground; bomber flight ignores terrain entirely, nuke arc depends on target height). Resolve: instrument `AirstrikeUnit::Advance` / `Nuke::AdvanceToTarget` in a running build.
+3. [U] Whether `team->m_currentMousePos` used by `Squadie::Advance` is network-synchronised for remote teams (facing only). Resolve: read `TeamControls` serialisation in `code/network/` (P-net).
+4. [U] Behaviour of a `Spirit` left in `StateHarvested` when its Harvester is destroyed via `Task::Stop` (no fallback in `Spirit::Advance`). Resolve: test, or read remaining `Spirit` code paths (P05).
+5. [U] Whether any shipped Multiwinia map is the `mp_sandbox*` map that contains Control Towers/Incubators (Engineer reprogramming relevance). Resolve: P08 map list / `PERMITTED_MAPS` / menu filters.
+6. [U] Final in-game key bindings for squad grenade/armour toggling (manual: right-click = lasers, hold right + left-click = grenade, right-click armour = toggle). Resolve: P06 input binding files `data/` input prefs.
+
+## Docs-vs-code discrepancies
+| Doc | Claim | Code | Ref |
+|---|---|---|---|
+| `contrib/systemiv/lib/math/random_number.h` comments | `sfrand`/`_syncsfrand`: "-range < result < range" | actual range (−range/2, +range/2) | [C] `random_number.cpp:sfrand/_syncsfrand` |
+| `data/stats.txt` header | RATE = "secs to reload" | fractional rates truncate to whole seconds per entity (`unsigned char`); speeds scaled by difficulty | [C] `entity.h`, `EntityBlueprint::GetStat` |
+| `docs/multiwinia_manual.pdf` (Armour) | "transport up to 100 Multiwinians … can go across water"; "Armours are vulnerable to attack" | capacity 100 ✔, hovers at max(terrain,0) ✔; **immune to lasers**, shells ÷3 (manual silent) | [C] `Armour::Capacity`, `ChangeHealth` |
+| manual (Squads) | "deadly units, but only as long as you control them"; grenade = hold right + left click | autonomous fire is probabilistic `min(1,4/d)`/tick; `secondaryFire = primaryFireTarget && secondaryFireTarget` ✔ | [C] `Squadie::RunAI`, `code/location.cpp` |
+| `docs/multiwiniachanges-beta.txt` | "Darwinians surviving armour explosions (Issue 710)" listed as an issue | passengers are now ejected in `StateOnFire` | [C] `Darwinian::AdvanceInsideArmour` |
+| `docs/multiwinia-changes.txt` | "Napalm Strikes will now set fire to trees much more reliably" | trees/triffids within 100 take flat −200 with no falloff | [C] `FlameGrenade::Advance` |
+| Code comment in `Location::FireLaser` | "subversion lasers are half speed" | speed is the caller's: Subversion turret uses shell vel/4 (quarter) | [C] `code/worldobject/gunturret.cpp` |
+
+## IP register
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| "Darwinian" / "Multiwinian" (unit name, text "Creating Darwinians", "Darwinia Hit, %d Dead") | name/text | `shaman.cpp:Shaman::Render`, `nuke.cpp:Nuke::RenderDeaths` | "Sprite-folk" / "Citizen" |
+| "Multiwinia" | brand | throughout | project codename |
+| "Insertion Squad" / "Squadie" | name | `insertion_squad.h` | "Strike Team" / "Trooper" |
+| "SpaceInvader" (bomber class name; echoes Taito's *Space Invaders* trademark) | name/brand | `airstrike.h`, `spaceinvader.shp` | "Bomber" |
+| "Shaman", summonable "Soul Destroyer", "Virii", "Spore Generator", "Triffid" (Wyndham), "Centipede", "Army Ant" | names | `shaman.cpp`, `shaman_interface.cpp` | "Mystic", "Wraith", "Swarmers", "Spore Pod", "Carnivore Plant", "Crawler", "Ant" |
+| "Futurewinian" team | name | `Location::GetFuturewinianTeamId` (referenced) | "Neutral future team" |
+| Achievement "Wrong Game" (`DarwiniaAchievementWrongGame`, `dialog_wronggame`) | text | `Nuke::AdvanceToTarget` | own achievement set |
+| String ids `crate_message_run_airstrike`, `crate_message_auto_airstrike`, `crate_message_run_napalm`, `crate_message_auto_napalm`, `crate_message_run_nuke`, `crate_message_auto_nuke`, `engineer_idle`, `engineer_towaypoint`, `engineer_tospirit`, `engineer_toincubator`, `engineer_reprogramming`, `engineer_researching`, `engineer_bridge`, `gc_setturret`, `gc_move`, `gc_cancel`, `gc_deselect` (text content in language files) | text | `crate.cpp`, `engineer.cpp`, `harvester.cpp`, `control_help.cpp` | rewrite all strings |
+| Shapes `throwable.shp`, `missile.shp`, `turretshell.shp`, `emptyshell.shp`, `flying_egg.shp`, `spaceinvader.shp`, `armour.shp`, `squad.shp`, `tank_body.shp`, `tank_turret.shp`, `harvester.shp`, `engineer.shp`, `officer.shp` | art | §13.3 | new meshes |
+| Textures/sprites/icons listed in §13.3 (`starburst`, `glow`, `laser`, `subversion`, `muzzleflash`, `laser-long`, `bubble`, `shaman_background`, `nuke`, `sub`, `subshadow`, `nukesymbol`, `icon_nuke`, `icon_airstrike`, `icon_engineer`, `shaman_*`, `mouse_selection`, banners) | art | §13.3 | new art |
+| Sound events and their sample banks (§13.1, bound in `data/sounds.txt`) | audio | §13.1 | new audio; event names may be kept as neutral ids |
+| Submarine-launched multi-warhead nuke with ground "nuke symbol" | design expression | §3 | acceptable mechanic; new presentation |
+
+## Appendix — dead/legacy code
+- [B:LEGACY] `ControllerGrenade` and squad Rocket/AirStrike/Controller secondaries (§1.5, §4.5): no Multiwinia path selects them.
+- [B:LEGACY] `LaserTrooper` (§8): only spawned by blocked `Lander`; old `LaserTrooper::Advance` fully commented out (formation, wobble, AI obey timer).
+- [B:LEGACY] `Shaman` (§9): `Advance` returns true immediately; `BeginSummoning`, `GrabSouls`, `CanSummonEntity` bodies commented out; `GameTypeShaman` start-up commented out; `Shaman Interface` reachable only with a live Shaman. `Nuke::RenderDeaths` call commented out.
+- [B:DEBUG]/unreachable `Tank` (§6): no FULL spawner; `Tank::DropMine`, `LaunchMissile`, `SetMissileTarget` have no callers in the tree (so `LandMine` and `Missile` are never created); passenger (`TANK_CAPACITY`) code and `SetAttackTarget` toggle block commented out.
+- [B:LEGACY] Armour single-player paths: damage clamp to −1, `m_awaitingDeployment` → `ConvertToGunTurret`, single-player `ToggleLoading` cycle, commented-out flag/banner rendering and missile launch, commented-out non-Multiplayer conversion block in `Armour::Advance`.
+- [B:LEGACY] Engineer bridge building (`BeginBridge` research ≥ 5), single-player marker registration for control towers / research items (`s_buildingIds`, `s_researchIds`).
+- [B:LEGACY] Research tables for levels other than the Multiwinia overrides (laser/rocket/grenade/armour/harvester/engineer/squad).
+- Commented code: `Laser` old per-type immunity list, `Fireball` ground-impact particles, `LandMine` beacon render, `Rocket` firework only for infected Darwinians, `SpaceInvader` old `ChangeHealth`, `Missile` `m_history` (filled, never read), `SpaceInvader::m_napalmDrops` (unused), `Nuke::m_armed` (never read), `Shaman::MAX_EGGS`.
+- `USE_SEPULVEDA_HELP_TUTORIAL` blocks (help-system callbacks in Squad/Task code) [B:DEAD].
+

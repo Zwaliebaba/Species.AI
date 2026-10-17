@@ -894,7 +894,7 @@ Every 1 s (`m_aiTimer`):
 | 1 | StateBirth | rise: `hover.y = max(hover.y, syncfrand(0.5))`; if > 10 above ground: `hover.y = (−10 − syncfrand(10)) × min(h/100, 1)` (pulled back down); else when `m_timeSync ≤ 0` (6 s) → Floating with `m_timeSync = 120 + syncsfrand(60)` (90–150 s), **÷3 in MP (30–50 s)** |
 | 2 | StateFloating | wobble; capturable (harvesters, engineers, eggs, Darwinian worship in SP); timer expiry → Death with `m_timeSync = 180` (**÷2 in MP = 90 s**); SP also `AddToGlobalWorld()` (`GlobalLocation::AddSpirits(1)`) |
 | 3 | StateAttached | held by a collector (Engineer, legacy): no wobble, no floor clamp (`CollectorArrives` / `CollectorDrops` → Floating, re-enable building push, new ground height) |
-| 4 | StateInStore | in a SpiritStore (legacy): timer frozen? — wobble still runs, no state logic, no building push |
+| 4 | StateInStore | in a SpiritStore (legacy): wobble and `m_timeSync` countdown still run but the state has no transition logic (never expires); no building push |
 | 5 | StateInEgg | fertilising an Egg (legacy): no wobble/floor (`InEgg`; `EggDestroyed` → Floating) |
 | 6 | StateDeath | ascend: `hover.y = max(hover.y, 2 + syncfrand(2))` (rises 2–4 u/s); when `m_timeSync ≤ 0` → **removed** (`Advance` returns true); no building push |
 | 7 | StateShaman | used by a shaman (legacy): timer forced 0; no wobble (`SetShamanMode` sets 5.0 then Advance zeroes it) |
@@ -941,4 +941,23 @@ stateDiagram-v2
 - **Darwinian worship of souls** (`StateWorshipSpirit`, BoxKites) is disabled in MP (`SearchForSpirits` returns false; `AdvanceWorshipSpirit` resets to Idle) [C].
 - **Population counters in scope**: `Entity::s_entityPopulation` (all live Entity objects, ++ctor/−−dtor); the population-cap check in `SpawnEntities` is commented out (`/*if( Entity::s_entityPopulation >= m_levelFile->m_populationCap …*/`) [C] `location.cpp:Location::SpawnEntities` — caps are enforced by the spawning buildings instead (P06/P02). `Team::Advance` counts selected Darwinians; team kill counters `Team::m_teamKills` are incremented by lasers (Darwinian kills), `Darwinian::FireDamage` (over-counts), and others (P04).
 - **Territory → throughput hooks in scope**: Darwinians operate building ports (`StateApproachingPort/OperatingPort`, `Building::OperatePort`, MP limit 1 operator per team per port) — this is the capture mechanic for spawn points and other port buildings (P06); crates are captured by standing near (`StateOpeningCrate`, P08); Blitzkrieg flags by `StateRaisingFlag` (P02); statues by `StateCarryingBuilding` (P02/P07).
+
+## [→ 02_units_and_entities] EntityLeg — legged locomotion helper
+
+[C] `code/worldobject/entity_leg.h`, `code/worldobject/entity_leg.cpp`. Used only by `Tripod` (`code/worldobject/tripod.cpp`, 3 legs) — `TypeTripod` is blocked under `BLOCK_OLD_DARWINIA_OBJECTS` ⇒ **[B:LEGACY]** in Multiwinia. (`spider.cpp` includes the header but uses its own `SpiderParameters` gait.) `AdvanceSpiderPounce` exists for a pouncing spider gait.
+
+### Data
+`EntityFoot`: `m_pos`, `m_targetPos`, `m_state` ∈ {`OnGround`, `Swinging`, `Pouncing`}, `m_leftGroundTimeStamp`, `m_lastGroundPos`, `m_bodyToFoot` (pounce).
+`EntityLeg`: tuning `m_legLift` (foot lift height, "metres"), `m_idealLegSlope` (0 = vertical, 1 = 45°), `m_legSwingDuration` (s), `m_lookAheadCoef` (velocity look-ahead); `m_legNum`, `m_foot`, `m_rootMarker` (marker on the parent shape), `m_shapeUpper`/`m_shapeLower` (thigh/shin shapes), `m_thighLen`/`m_shinLen` (= distance to each shape's `MarkerEnd`), `m_parent`.
+Tripod tuning [C] `tripod.cpp` `#define`s: `IDEAL_LEG_SLOPE 0.2`, `LEG_LIFT 3.0`, `LEG_SWING_DURATION 0.5`, `LOOK_AHEAD_COEF 1.2`, `FOOT_MOVE_THRESHOLD 1.0`; shapes `tripod_leg_part.shp` ×2.
+
+### Algorithm
+1. **Leg root** = parent shape marker transformed by `Matrix34(parent.front, up, parent.pos)`.
+2. **Foot home** (`CalcFootHomePos(hover)`): root + horizontal(root − body centre) × groundNormal.y × (`idealLegSlope × hover`), then y −= hover (foot splayed outward proportionally to body height).
+3. **Desire to move** (`CalcFootsDesireToMove`): distance from the foot to its home (direction weighting is commented out). The owner (Tripod) lifts the foot with the highest score, only when all feet are planted and score > `FOOT_MOVE_THRESHOLD` — a one-foot-at-a-time gait.
+4. **Lift** (`LiftFoot`): target = home + parent velocity rotated by half the expected yaw (`1.2 × angVel.y × 0.5`) × `lookAheadCoef`, y snapped to terrain; state Swinging; timestamp = `g_gameTime`; remember last ground pos.
+5. **Swing** (`Advance`): `f = RampUpAndDown(start, duration, g_gameTime)` (ease-in-out: `f = 2t²` for t < 0.5, else `1 − 2(1−t)²`; returns 1.0001 after the duration) — position = lerp(lastGround, target, f) + vertical arc (`3·f·lift` in the first third, `3·(1−f)·lift` in the last third, `lift` in between). `f > 1` → **plant** (pos = target, OnGround) and return true.
+6. **Knee** (`CalcKneePos`): rotate the vector foot→root, scaled to shin length, about the horizontal axis perpendicular to centre→root by `θ = −acos(min(1, 0.4·|root−foot| / thighLen))` (the FIXME notes cos θ could exceed 1). Shin rendered foot→knee, thigh knee→root (`Render`, `RenderPixelEffect` marks pixel-effect cells).
+7. **Pounce** (`AdvanceSpiderPounce(f)`): foot = body − bodyToFoot × (1−f for f<0.5, else f) + vel × f × 0.05.
+**Determinism**: swing timing uses `g_gameTime`, which is **wall-clock** (`GetHighResTime`, `code/main.cpp`) — foot positions, and anything the owner derives from them (Tripod body height/fall), are not lockstep-safe. Irrelevant in Multiwinia (Tripod blocked) but must not be copied.
 

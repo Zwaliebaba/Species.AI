@@ -754,3 +754,227 @@ Integration [C]: created by the debug **Grabber** window (`code/interface/grabbe
 
 Guarded by `EGAMESBUILD` (never defined; consumer `code/loaders/egames_loader.cpp`). `OpenAvi` opens video stream 0 + audio stream 0 via VfW, begins streaming at speed 2000, allocates a fixed **512×256×3** RGB frame buffer; `DecodeVideoFrame(int)` copies the DIB from `AVIStreamGetFrame` into the POT buffer with BGR→RGB swizzle (row stride 512·3; returns 1 at end, 0 otherwise, counts displayed/missed frames); `DecodeVideoFrame(float t)` → `AVIStreamTimeToSample(t·1000 ms)`; `GetAudioData(n, short*)` reads n PCM samples sequentially; `CloseAvi` releases everything. → Appendix only.
 
+---
+
+## [→ 22_determinism_and_networking] Math library and floating-point determinism
+
+All math types in `code/lib` are live in every build [B:FULL][B:D3D]. **The simulation's geometric types are `double`**, not `float` (`Vector2`, `Vector3`, `Matrix33`, `Matrix34`, `Plane` all store `double`) [C]; `float` is used for rendering colours (`RGBAColour` scale factors), GL/D3D calls and many entity fields declared elsewhere. `FLOAT_NUMERICS` is defined globally; the fixed-point alternatives `USE_FIXED` / `FIXED64_NUMERICS` are never defined [C] `code/lib/universal_include.h` (build_matrix §4).
+
+### Numeric environment [C unless marked]
+
+| Item | Baseline `Release|Win32` | `ReleaseDirect3D` | Ref |
+|---|---|---|---|
+| Compiler FP model | `FloatingPointModel` not set ⇒ VS2005 default `/fp:precise` [I: VS default] | `FloatingPointModel="2"` ⇒ **`/fp:fast`** | `targets/vs2005/Darwinia.vcproj` (config blocks) |
+| Instruction set | no `/arch:SSE2` ⇒ x87 code generation [I: VS2005 x86 default] | same | same |
+| x87 precision control | `StandardiseCPUPrecision()` = `_control87(_PC_53, _MCW_PC)` (53-bit mantissa) called at the start of `AppMain` and at the start of every `WorkQueue` thread ("FPU precision flags are maintained on a per-thread basis") | same, **but** `IDirect3D9::CreateDevice` is called without `D3DCREATE_FPU_PRESERVE`; D3D9 then sets the calling thread's x87 control word to single precision [I: documented D3D9 behaviour], i.e. the main (simulation) thread runs at 24-bit precision after `Direct3DInit` and after every device recreation | `code/main.cpp:StandardiseCPUPrecision`, `code/lib/work_queue.cpp:WorkQueue::RunThread`, `code/lib/opengl_directx.cpp:Direct3DInit` |
+| Mac precision | inline-asm `fldcw` variant for i386 [B:DEAD] | — | `code/main.cpp` |
+
+Consequence [I]: a GL client and a D3D client would not stay bit-identical in lockstep; the D3D build is not a safe multiplayer peer for the baseline (in addition to the build-viability doubt in 24).
+
+### `iv_*` wrappers and `iv_trunc_low_nibble` [C]
+
+`code/lib/universal_include.h` (C++ only) defines:
+
+| Macro | Expansion |
+|---|---|
+| `iv_sin(x)` | `iv_trunc_low_nibble(sin(double(x)))` |
+| `iv_cos(x)` | `iv_trunc_low_nibble(cos(double(x)))` |
+| `iv_tan(x)` | `iv_trunc_low_nibble(tan(double(x)))` |
+| `iv_sqrt(x)` | `iv_trunc_low_nibble(sqrt(double(x)))` |
+| `iv_pow(x,y)` | `iv_trunc_low_nibble(pow(double(x), double(y)))` |
+| `iv_exp(x)` | `iv_trunc_low_nibble(exp(double(x)))` |
+| `iv_log(x)` | `iv_trunc_low_nibble(log(double(x)))` |
+| `iv_asin(x)` | `iv_trunc_low_nibble(asin(double(x)))` |
+| `iv_acos(x)` | `iv_trunc_low_nibble(acos(double(x)))` |
+| `iv_atan(x)` | `iv_trunc_low_nibble(atan(double(x)))` |
+| `iv_abs(x)` (inline function) | `x >= 0.0 ? x : -x` (no truncation) |
+
+(There is no `iv_atan2`, `iv_floor`, `iv_fmod`.) Related helpers in `contrib/systemiv/lib/math/math_stubs.cpp` (compiled; owned by P14): `iv_atof(s) = iv_trunc_low_nibble(atof(s))`, `iv_wtof(ws)` = `swscanf("%lf")` then `iv_trunc_low_nibble` (0 on failure), `iv_wtoi(ws)` = `swscanf("%d")` (0 on failure). `NetworkFloat::FromUnicodeString` and `NetworkDouble::FromUnicodeString` also pass parsed values through `iv_trunc_low_nibble` [C] `code/network/networkvalue.cpp`.
+
+**Exact implementation** (non-Xbox):
+
+> **Verbatim excerpt** — `contrib/systemiv/lib/math/math_stubs.cpp:iv_trunc_low_nibble` (Introversion licence, ≤15 lines)
+```cpp
+double iv_trunc_low_nibble(double x)
+{
+	volatile float f = (float)x;
+	return f;
+}
+```
+
+Semantics and purpose:
+- It converts the double result to IEEE-754 **single precision** and back. Despite the name it neither truncates nor touches a "nibble": it discards the low **29** bits of the 53-bit significand, rounding with the current FPU rounding mode (default round-to-nearest-even) [C code; I for rounding-mode semantics of the C conversion]. Result precision ≈ 7.2 significant decimal digits; values outside float range become ±inf, tiny values flush through float denormals.
+- `volatile` forces a real 32-bit memory store, defeating x87's habit of keeping 80-bit (or 53-bit) values in registers, so the rounding really happens [I].
+- Purpose [I]: CRT transcendental functions (`sin`, `cos`, `pow`, `exp`, `log`, `asin`, `acos`, `atan`, `tan`) are not correctly rounded and differ in the last ulps across CRTs (MSVC vs Apple/GCC libm, x87 `fsin` vs software paths, CPU vendors). Rounding to float collapses those tiny differences to the same float in the vast majority of cases, giving cross-platform lockstep agreement (the code is credited to Ambrosia's Mac port, "Copyright 2007 Ambrosia Software"). It is **not a guarantee**: if two platforms' double results straddle a float rounding boundary, they still round to different floats (probability roughly k·2⁻²⁹ per call when the results differ by k double-ulps) [I]. `sqrt` is IEEE correctly rounded already, so `iv_sqrt` gains nothing for determinism but still loses precision.
+- Call-site counts in `code/` (grep, approximate): `iv_sin` 295, `iv_cos` 159, `iv_abs` 84, `iv_sqrt` 69, `iv_pow` 19, `iv_acos` 7, `iv_asin` 5, `iv_exp` 3, `iv_log` 3, `iv_atan` 2, `iv_tan` 1. Raw CRT calls remain: `sinf` 52, `cosf` 23, `fabs` 27, `fabsf` 15, `fmod` 13, `floor` 13, `ceil` 12, `pow` 12, `sqrtf` 10, `sqrt` 6, `sin` 6, `atan2` 6 (including `Matrix33/34::DecomposeToYDR`), `asin` 2, `atan` 2, `cos` 2, `exp` 2, `acos` 1, `acosf` 1, `log` 1. A sample of the sim-file uses (`darwinian.cpp`, `crate.cpp`, `aiobjective.cpp`) are render-time animation terms driven by `g_gameTime`; `fmod` is exactly specified by IEEE (deterministic); `code/location.cpp:L4158` mixes `iv_pow` with raw `pow` [C sample]. Full audit belongs to 22 (P15).
+
+### Deterministic RNG ordering inside `Vector3` [C] `code/lib/vector3.h`
+
+C++ leaves argument evaluation order unspecified, so `Vector3(syncfrand(a), syncfrand(b), syncfrand(c))` could consume the synced RNG in different orders on different compilers. The code therefore provides marker types and a templated constructor:
+
+- `FRAND(x)` → `RandomFloat(x)` (or `RandomFloat(x, __FILE__, __LINE__)` under `TRACK_SYNC_RAND`); `SFRAND(x)` → `SymmetricRandomFloat(x[, file, line])`. The marker only stores the range — no RNG call yet.
+- `template<X,Y,Z> Vector3(X,Y,Z)` and `template<X,Y,Z> Set(X,Y,Z)` assign `x = FromRand(_x); y = FromRand(_y); z = FromRand(_z);` **in that order**.
+- `FromRand(double d) = d`; `FromRand(RandomFloat r) = _syncfrand(r.v)` ∈ [0, v); `FromRand(SymmetricRandomFloat s) = _syncsfrand(s.v) = (_syncfrand(1) − 0.5)·v` ∈ [−v/2, v/2) [C] `code/lib/vector3.cpp`, `contrib/systemiv/lib/math/random_number.cpp`. Under `TRACK_SYNC_RAND`: `DebugSyncFrand(file, line, 0, v)` / `DebugSyncFrand(file, line, −v/2, v/2)` (logged).
+- Non-template `(double,double,double)` constructor is chosen for plain doubles; integer literal arguments go through the template with `FromRand(double)`.
+
+`code/lib/math_utils.cpp` also contains its own copy of MT19937 (`static mt[624]`, `init_genrand`, `unsigned long syncrand()` with default seed 5489). Every caller of `syncrand` includes `lib/math/random_number.h`, whose macro maps `syncrand` → `_syncrand` (or `DebugSyncRand`), so this copy is **unreferenced dead code** [I: grep shows no call site without the header]. The live synced RNG is `contrib/systemiv/lib/math/random_number.cpp` (P14/P15).
+
+### `Vector3` — every member [C] `code/lib/vector3.h`, `code/lib/vector3.cpp`
+
+| Member | Semantics |
+|---|---|
+| `double x, y, z` | components (world: y up) |
+| `Vector3()` | (0,0,0) |
+| `Vector3(double,double,double)` | direct |
+| `Vector3(Vector2 const&)` | (v.x, 0, v.y) — 2D "y" maps to world z |
+| `template Vector3(X,Y,Z)`, `template Set(X,Y,Z)` | ordered `FromRand` (above) |
+| `Zero()`, `Set(double,double,double)` | — |
+| `operator^(b)` | cross product (y·b.z − z·b.y, z·b.x − x·b.z, x·b.y − y·b.x) |
+| `operator*(b)` | dot product |
+| unary `-`, `+`, `-` | component-wise |
+| `operator*(double)`, global `operator*(double, Vector3)` | scale |
+| `operator/(double)`, `operator/=(double)` | multiply by `1.0/b` (one reciprocal, three multiplies — not bit-identical to three divisions) |
+| `operator=`, `*=`, `+=`, `-=` | component-wise; return `const&` |
+| `Normalise()` | `volatile double lenSqrd = x²+y²+z²` ("volatile for sync"); if `lenSqrd > 1e-10`: multiply by `1.0/iv_sqrt(lenSqrd)`; else **set to (0,0,1)**; returns `*this` |
+| `SetLength(len)` | `mag = Mag()`; if `NearlyEquals(mag,0)`: `x = len` (y,z untouched); else scale by `len/mag` |
+| `operator==`, `operator!=` | all components within `NearlyEquals` (|Δ| < 1e-6 absolute; header comment "Uses FLT_EPSILON" is wrong) |
+| `RotateAroundX/Y/Z(angle)` | `FastRotateAround((1,0,0)/(0,1,0)/(0,0,1), angle)` |
+| `FastRotateAround(n, angle)` | Rodrigues with unit n: `a = n·(v·n)`, `n1 = v − a`, `n2 = n × n1`, `v' = a + cos·n1 + sin·n2` (`iv_sin/iv_cos`); positive angle = counter-clockwise looking down −n (right-hand rule about n) [I] |
+| `RotateAround(axis)` | angle = |axis| (skip if |axis|² < 1e-8); `FastRotateAround(axis/angle, angle)` |
+| `Mag()` | `iv_sqrt(x²+y²+z²)` |
+| `MagSquared()` | x²+y²+z² |
+| `HorizontalAndNormalise()` | y = 0; scale x,z by `1/iv_sqrt(x²+z²)` — **no zero guard** (inf/NaN for vertical vectors) |
+| `GetData()`, `GetDataConst()` | `&x` (double[3], used for `glVertex3dv`-style calls) |
+| globals `g_upVector` (0,1,0), `g_zeroVector` (0,0,0) | `const` |
+
+### `Vector2` [C] `code/lib/vector2.*`
+
+`double x, y`; ctors `()`→(0,0), `(Vector3)`→(v.x, v.z), `(x,y)`; `Zero`, `Set`; `operator^` = 2D cross scalar `x·b.y − y·b.x`; `operator*` dot; unary −, +, −, `*(double)`, `/(double)` (reciprocal), global `double*Vector2`; `operator=(Vector2)` and `operator=(Vector3)` (takes x,z; both return `void`); `*=`, `/=` (reciprocal), `+=`, `-=` (return `void`); `==`/`!=` via `fabsf(x−b.x) < FLT_EPSILON && fabsf(y−b.y) < FLT_EPSILON` (**float** `fabsf` on a double difference, FLT_EPSILON ≈ 1.19e-7); `Normalise()` (if `lenSqrd > 0` scale by `1/iv_sqrt`, else (0,1)); `SetLength(len)` (no zero guard); `Mag()` (`iv_sqrt`), `MagSquared()`, `GetData()`.
+
+### `Matrix33` [C] `code/lib/matrix33.*`
+
+Rows `Vector3 r, u, f` = the object's right, up and forward axes expressed in parent/world coordinates. `static double m_openGLFormat[16]` (shared scratch → not thread-safe).
+
+| Member | Semantics |
+|---|---|
+| `Matrix33()` | members default-constructed ⇒ all zero |
+| `Matrix33(int)` | identity |
+| copy ctor / `operator=` | `memcpy` |
+| `Matrix33(r,u,f)`, `Matrix33(9 doubles)` | direct |
+| `Matrix33(yaw, dive, roll)` | identity, then `RotateAroundZ(roll)`, `RotateAroundX(dive)`, `RotateAroundY(yaw)` |
+| `OrientRU(r,u)` | `r=normalise(r)`; `f=normalise(r×u)`; `u=f×r` |
+| `OrientRF(r,f)` | `r=normalise(r)`; `u=normalise(f×r)`; `f=r×u` |
+| `OrientUF(u,f)` | `u=normalise(u)`; `r=normalise(u×f)`; `f=r×u` |
+| `OrientUR(u,r)` | `u=normalise(u)`; `f=normalise(r×u)`; `r=u×f` |
+| `OrientFR(f,r)` | `f=normalise(f)`; `u=normalise(f×r)`; `r=u×f` |
+| `OrientFU(f,u)` | `f=normalise(f)`; `r=normalise(u×f)`; `u=f×r` |
+| `RotateAroundX(θ)` (world X) | for each b∈{r,u,f}: `b.y' = b.y·c + b.z·s`, `b.z' = −b.y·s + b.z·c` |
+| `RotateAroundY(θ)` | `b.z' = b.z·c + b.x·s`, `b.x' = −b.z·s + b.x·c` |
+| `RotateAroundZ(θ)` | `b.x' = b.x·c + b.y·s`, `b.y' = −b.x·s + b.y·c` |
+| `RotateAroundR(θ)` (local) | `u' = u·c + f·s`, `f' = −u·s + f·c` |
+| `RotateAroundU(θ)` | `f' = f·c + r·s`, `r' = −f·s + r·c` |
+| `RotateAroundF(θ)` | `r' = r·c + u·s`, `u' = −r·s + u·c` |
+| `RotateAround(axisVec)` | angle = |axis|; no-op if |axis|² < (1e-5)²; `FastRotateAround(axis/|axis|, |axis|)` |
+| `RotateAround(n, θ)` | normalises n, then Rodrigues on r, u, f |
+| `FastRotateAround(n, θ)` | Rodrigues on r, u, f (n assumed unit) |
+| `Transpose()` | swaps off-diagonal terms |
+| `Invert()` | adjugate / determinant (`det = a1·r.x + a2·u.x + a3·f.x`); no singularity check |
+| `DecomposeToYDR(&y,&d,&r)` | `yaw = −atan2(f.x, f.z)`; `dive = atan2(f.y, u.y)` (comment: avoids `asin(f.y)` precision problems); rotate a copy by `−yaw` about Y and `−dive` about X; `roll = −atan2(r.y, r.x)` — **raw `atan2`** |
+| `DecomposeToYDR()` → Vector3 | returns `(yaw, dive, roll)` in (x,y,z) — the inline comment claims "x = dive, y = yaw" (contradiction in code) |
+| `SetToIdentity()` | zero then r.x=u.y=f.z=1 |
+| `Normalise()` | `f=normalise(f)`; `r=normalise(u×f)`; `u=f×r` |
+| `InverseMultiplyVector(v)` | `v.x·r + v.y·u + v.z·f` (local → world) |
+| global `Matrix33 * Vector3` and `Vector3 * Matrix33` | **both** `(r·v, u·v, f·v)` (world → local) |
+| `operator*`, `operator*=` | `(A·B).r = A.r.x·B.r + A.r.y·B.u + A.r.z·B.f` (likewise u,f) — "A expressed in B's parent": apply A, then B |
+| `ConvertToOpenGLFormat(pos*)` | column-major GL array `[r 0 u 0 f 0 pos|0 1]` in the static buffer |
+| `OutputToDebugStream()` | broken format string `"%4.1 "` (prints nothing useful) |
+
+### `Matrix34` [C] `code/lib/matrix34.*`
+
+`Vector3 r, u, f, pos`; `static double m_openGLFormat[16]`; global `const Matrix34 g_identityMatrix34(0)`.
+
+| Member | Semantics |
+|---|---|
+| ctors | `()` zeros; `(int)` identity; copy = `memcpy`; `(Matrix33, pos)`; `(f, u, pos)`: `r = normalise(u × f)`, `u = normalise(f × r)`, **f kept as given (not normalised)**; `(yaw, dive, roll)` as Matrix33 (pos = 0) |
+| `Orient*`, `RotateAround*`, `FastRotateAround`, `DecomposeToYDR`, `SetToIdentity`, `Normalise` | identical formulas to Matrix33 (pos untouched) |
+| `Transpose()` | `pos = (*this)·(−pos)` (forward transform incl. +pos) then transposes the 3×3 — **not** a rigid inverse (correct would be `pos' = −Rᵀ·pos`); no callers [C grep] |
+| `IsNormalised()` | |r|²,|u|²,|f|² ∈ [0.999, 1.001] and |r·u|, |r·f|, |f·u| ≤ 0.001 (via `fabsf`) |
+| `InverseMultiplyVector(s)` | `v = s − pos`, returns `v.x·r + v.y·u + v.z·f` — i.e. the **forward** rotation of (s−pos), not the inverse; only referenced from commented-out code in `code/lib/shape.cpp` |
+| global `Matrix34 * Vector3` and `Vector3 * Matrix34` | **both** `v.x·r + v.y·u + v.z·f + pos` (local → world) — note the opposite convention to `Matrix33 * Vector3` |
+| `operator*=`/`operator*` | rotation as Matrix33; `pos' = pos.x·o.r + pos.y·o.u + pos.z·o.f + o.pos` (child-in-parent composition: apply this, then `o`) |
+| `operator==` | `Vector3::operator==` (1e-6) on r, u, f, pos |
+| `ConvertToOpenGLFormat()` | `[r 0 u 0 f 0 pos 1]` (column-major model matrix for `glMultMatrixd`) |
+| `GetOr()` | `Matrix33(r,u,f)` |
+| `WriteToDebugStream()`, `Test()` | debug (broken `"%5.2 "` format) |
+
+### `Plane` [C] `code/lib/plane.*`
+
+`Vector3 m_normal; double m_distFromOrigin`, plane equation `n·p + d = 0` as returned by `GetCartesianDefinition(&a,&b,&c,&d)` (= n.x, n.y, n.z, d).
+- `Plane(a, b, c)`: `n = normalise((a−b) × (a−c))`, `d = −n·a` (consistent with the equation).
+- `Plane(n, point)`: `d = +n·point` — **opposite sign** (inconsistent); no callers in `code/` [C grep].
+- `Plane(n, d)`: direct.
+
+### `math_utils` [C] `code/lib/math_utils.*`
+
+| Symbol | Kind | Semantics / constants |
+|---|---|---|
+| `M_PI` | `#define` | `3.1415926535897932384626` (redefined after `#undef`) |
+| `sign(a)` / `signf(a)` | macro | `a<0 ? −1 : 1` / `a<0.0 ? −1.0 : 1.0` (sign(0) = +1) |
+| `Round(a)` | macro | `(int)(a)` — C truncation toward zero (deterministic; the x87 `fistp` variant and its "depends on rounding mode" warning are commented out) |
+| `clamp(a, low, high)` | statement macro | `if (a>high) a=high; else if (a<low) a=low;` (unsafe inside unbraced if/else) |
+| `NearlyEquals(a,b)` | macro | `fabs(a−b) < 1e-6` |
+| `ASSERT_FLOAT_IS_SANE(x)` | macro | `AppDebugAssert(x + 1.0 != x)` — catches ±inf and |x| ≥ 2⁵³; **NaN passes** |
+| `ASSERT_VECTOR3_IS_SANE(v)` | macro | above on x, y, z |
+| `Log2(x)` | fn | `iv_log(x) · (1/iv_log(2))`, reciprocal cached in a function-static |
+| `RampUpAndDown(start, dur, now)` | fn | `now > start+dur → 1.0001`; `t=(now−start)/dur`; `t<0.5 → 2t²`; else `1 − 2(1−t)²` (ease-in/out; used by camera MoveToTarget) |
+| `RequirePowerOfTwoTextures()` / `RequireSquareTextures()` | fn | see 24 extension section |
+| `nearestPowerOfTwo(x)` | fn | smallest power of two ≥ x (x=0→1); x > 2³¹ → 2³¹ |
+| `syncrand()` (+ static `init_genrand`) | fn | duplicate MT19937, unreferenced (above) |
+| `GetPlaneMatrix(t1,t2,t3,&m)` | fn | `f = normalise(t1−t2)`, `r = t2−t3`, `u = normalise(f×r)`, `r = f×u`, `pos = t1` |
+| `ProjectPointOntoPlane(p, m, &out)` | fn | `d = (p−m.pos)·m.u`; `out = p − m.u·d`; returns signed d |
+| `ConvertWorldSpaceIntoPlaneSpace(p, m, &v2)` | fn | `(Δ·m.r, Δ·m.f)` with `Δ = p − m.pos` |
+| `ConvertPlaneSpaceIntoWorldSpace(v2, m, &p)` | fn | `m.pos + m.f·v2.y + m.r·v2.x` |
+| `CalcTriArea(t1,t2,t3)` | fn | `0.5·|shoelace|` computed with **`fabsf`** (float rounding) |
+| `IsPointInTriangle(p,t1,t2,t3)` | fn | sub-triangle area sum ≤ `area·1.0001` (early exit after each sub-area) |
+| `PointSegDist2D(p,l0,l1,&nearest)` | fn | projection parameter clamped to the segment; returns distance |
+| `SegRayIntersection2D(s0,s1,r0,dir,&hit)` | fn | comp.graphics FAQ 1.03: segment parameter r ∈ [0,1] and ray parameter s ≥ 0; hit = r0 + dir·s; parallel ⇒ division by zero ⇒ NaN ⇒ false |
+| `RayRayDist(a,aDir,b,bDir,&pA,&pB)` | fn | `c = aDir×bDir`; plane A through a ⊃ aDir,c; plane B through b ⊃ bDir,c; `pA = line A ∩ planeB`, `pB = line B ∩ planeA`; returns |pA−pB|. Parallel lines leave outputs untouched (zero if caller passed none) |
+| `RaySegDist(p,dir,s0,s1,&pRay,&pSeg)` | fn | `RayRayDist` then segment parameter t from the first of x, y, z with `segDir > 0.0001` (positive only; else z — may divide by zero); returns dist if 0<t<1 else `dist·100000` |
+| `RayTriIntersection(o,dir,v0,v1,v2,len=1e10,&hit)` | fn | Möller–Trumbore; `|det| < 1e-7` → false; barycentrics u (result.y), v (result.z) bounded; **t (result.x) not checked ≥ 0**; rejects if `|(t,u,v)|² > len²` (compares the (t,u,v) vector, not t); hit = o + dir·t |
+| `RayPlaneIntersection(p,dir,plane,&hit)` | fn | returns 0 = parallel/no hit, 1 = line in plane, 2 = hit (writes `hit`, must be non-NULL); thresholds `|denominator| < 1e-7`, `|numerator| < 1e-7` |
+| `RaySphereIntersection(o,dir,c,r,len=1e10,&pos,&normal)` | fn | geometric test, dir assumed unit; false if `tca<0`, `d²>r²`, `t<0` (origin inside) or `t>len`; normal needs `pos` non-NULL |
+| `SphereSphereIntersection(c1,r1,c2,r2)` | fn | `|c1−c2|² ≤ (r1+r2)²` |
+| `SphereTriangleIntersection(c,r,t1,t2,t3)` | fn | plane matrix; signed distance > r → false (only the positive side is rejected); inside-triangle test in plane space else nearest edge point; final `|c − nearest|² ≤ r²` |
+| `TriTriIntersection(...)` | decl | defined in `code/lib/tri_tri.cpp`, which is excluded from the build; no callers [C grep] |
+
+### `invert_matrix` [C] `code/lib/invert_matrix.*`
+
+`InvertMatrix(double *in, double *out, int rows, int cols)` copies a row-major `rows×cols` array into a private heap `Matrix` class (1-based indexing, debug bounds asserts), calls `inv(A, Ainv)` — Gaussian elimination with **scaled partial pivoting** (row scale = max |a_ij|, pivot = max |a_ik|/scale), forward elimination storing multipliers, determinant sign tracking, back-substitution against the identity — and copies the result back. No singularity check (zero pivots ⇒ inf/NaN). Only caller: `code/gesture.cpp` (common covariance matrix of size `GESTURE_MAX_FEATURES+1 = 14`) — P09.
+
+### `RGBAColour` [C] `code/lib/rgb_colour.*`
+
+`unsigned char r, g, b, a` (memory order RGBA, matching `GL_RGBA`; `GetData()` returns `&r`). Default ctor leaves bytes **uninitialised**; `RGBAColour(r,g,b,a=255)`; `RGBAColour(int)` / `Set(int)`: r = bits 31–24, g = 23–16, b = 15–8, a = 7–0. `operator+`, `-`, `+=`, `-=`: byte arithmetic **wrapping modulo 256**; `operator*`/`/`/`*=`/`/=` (float): `(unsigned char)(c·k)` truncation, no clamping (values > 255 are undefined behaviour in C++); `|=` bitwise OR; `operator=` copies the 4 bytes through an `int*` type-pun ("only this one is inlined… 1% fps"); `==`, `!=`. `AddWithClamp(b)`: `c += int(b.c · b.a/255)` for r,g,b, clamped to [0,255], alpha unchanged. `MultiplyWithClamp(k)`: each of r,g,b,a = `c·k < 255 ? (uchar)(c·k) : 255`. Globals `g_colourBlack = (0,0,0,255)`, `g_colourWhite = (255,255,255,255)`.
+
+### `code/globals.h` constants (determinism-relevant, owned by P01) [C]
+
+| `#define` | Value | Unit / meaning |
+|---|---|---|
+| `NUM_TEAMS` | 6 | team slots ("If increased, location.cpp's IsFriend … must be updated") |
+| `NUM_SLICES_PER_FRAME` | 10 | heavy physics split into 10 slices per frame |
+| `IAMALIVE_PERIOD` | 0.1 | seconds between client IAmAlive messages |
+| `MINIMUM_RENDER_PERIOD` | 1.0 | seconds — render at least this often |
+| `GRAVITY` | 10.0 | world units / s² |
+
+### Determinism risk register (this partition)
+
+| # | Risk | Evidence | Severity for a lockstep re-implementation |
+|---|---|---|---|
+| R1 | x87 code + per-thread precision control; any thread/library that changes the control word (D3D9 without `FPU_PRESERVE`, some audio/driver DLLs) silently changes results | `StandardiseCPUPrecision`, `Direct3DInit` | High |
+| R2 | `/fp:fast` in `ReleaseDirect3D` vs `/fp:precise` in baseline | vcproj | High (cross-build) |
+| R3 | CRT transcendental last-ulp differences only *mostly* hidden by `iv_trunc_low_nibble` | `math_stubs.cpp` | Medium |
+| R4 | Raw `atan2` (`DecomposeToYDR`), raw `pow`/`sinf`/`cosf` in a few sim-adjacent sites | grep counts | Medium (needs audit, P15) |
+| R5 | Reciprocal-multiply division (`Vector3::operator/`), `volatile` placement and float-rounding helpers (`fabsf` in `Vector2::Compare`, `CalcTriArea`, `Matrix34::IsNormalised`) are part of the de-facto numeric spec | vector/matrix code | Low–Medium (must be replicated exactly for replay compatibility; irrelevant for a new game) |
+| R6 | Order of synced-RNG consumption must be fixed (`FRAND`/`SFRAND` templated ctor) | `vector3.h` | High if violated |
+| R7 | Unguarded degenerate cases produce NaN that `ASSERT_FLOAT_IS_SANE` cannot catch (`HorizontalAndNormalise`, `Vector2::SetLength`, `SegRayIntersection2D`, `Matrix33::Invert`, `InvertMatrix`) | math code | Medium (NaN propagates deterministically on the same platform but differs across platforms in sign/payload handling) |
+| R8 | Static scratch buffers (`Matrix33/34::m_openGLFormat`) shared across threads | headers | Low (render only) |
+

@@ -417,6 +417,7 @@ Result: a blocky low-resolution additive ghost image of selected units overlaid 
 | `RenderLandscapeMode` | (Linux/Mac default 2) | none | | landscape VBO/display-list/slow path | P11 |
 | `ManuallyScaleTextures` | 0 | none | 0/1 | force power-of-two rescale in GL | `BitmapRGBA::ConvertToTexture` |
 | `DarwinianScaleFactor` | 2.00 | | | sprite scale (P-entities) | `code/lib/preferences.cpp` |
+| `RenderFog` | 1 | none | 0/1/2 | read only under `FOG_PREFERENCE` / `FOG_LOGGING`, which are defined nowhere → no effect on Win32 [C grep] | `code/main.cpp:SetPreferenceOverrides` |
 All "1" defaults come from `GetDefaultGraphicsDetail()` = 1 and `GetDefaultPixelShader()` = 1 on Windows [C] `code/lib/preferences.cpp:PrefsManager::CreateDefaultValues`. Applying graphics options rebuilds the landscape and water for the current location [C] `code/interface/prefs_graphics_window.cpp:ApplyGraphicsButton::MouseUp`.
 
 Not present: anti-aliasing/FSAA option on Win32 (SDL path only requests 4× MSAA — `code/lib/window_manager_sdl.cpp`, not compiled on Win32), gamma option (only D3D `SetScreenGamma`, uncalled), anisotropic filtering, resolution scaling [C grep].
@@ -780,7 +781,7 @@ Every world container that is advanced in slices (`SliceDArray`/`FastDArray` wit
 4. [U] Whether shipped data contains any RLE or top-down BMP (decoder would fail silently in release; resolve: scan all `data/**/*.bmp` headers with `OUT/_work/scripts/P12_bmpinfo.py` — the 25 owner's catalogue).
 5. [U] Visual content of `StartSequence::Render`, `MultiwiniaHelp::Render`, `MouseCursor` passes (P-UI).
 6. [U] Real per-frame cost / draw-call budget (no budgets are encoded beyond the caps listed; resolve: profile the shipped build with `g_profiler`).
-7. [U] Whether `RenderSpecialLighting` is ever set in shipped prefs other than Rocket Riot auto-enable (resolve: `data/default_preferences.txt` has no entry — so only Rocket Riot/level effect in practice [I]).
+7. [U] Whether any shipped level sets `LevelEffectSpecialLighting` (resolve with the level-file agent). `RenderSpecialLighting` defaults to 0 and `data/default_preferences.txt` has no Render* entries [C], so in practice special lighting comes from Rocket Riot or the level effect.
 
 ## Docs-vs-code discrepancies
 | Doc | Doc says | Code does | Ref |
