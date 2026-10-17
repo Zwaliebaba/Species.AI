@@ -559,11 +559,11 @@ code/tutorial.h,code,source/h,1875,90,58,all,
 code/tutorial_demo1.cpp,code,source/cpp,29605,763,656,all,
 code/tutorial_demo2.cpp,code,source/cpp,39671,997,868,all,
 code/unicode/sound_library_2d.cpp,code,source/cpp,225,14,10,,
-code/unicode/sound_library_2d.h,code,source/h,1042,44,30,,code/interface/demoend_window.cpp;code/loaders/credits_loader.cpp;code/loaders/loader.cpp;code/main.cpp;code/sound/sound_library_2d.cpp
+code/unicode/sound_library_2d.h,code,source/h,1042,44,30,,
 code/unicode/sound_library_2d_sdl.cpp,code,source/cpp,3997,162,130,,
-code/unicode/sound_library_2d_sdl.h,code,source/h,1141,58,39,,code/sound/soundsystem.cpp
+code/unicode/sound_library_2d_sdl.h,code,source/h,1141,58,39,,
 code/unicode/sound_library_3d.cpp,code,source/cpp,1474,63,44,,
-code/unicode/sound_library_3d.h,code,source/h,4331,115,88,,code/interface/demoend_window.cpp;code/interface/prefs_sound_window.cpp;code/interface/sound_profile_window.cpp;code/interface/soundeditor_window.cpp;code/interface/soundstats_window.cpp
+code/unicode/sound_library_3d.h,code,source/h,4331,115,88,,
 code/unicode/unicode_text_file_writer.cpp,code,source/cpp,2809,125,105,all,
 code/unicode/unicode_text_file_writer.h,code,source/h,605,28,20,all,
 code/unit.cpp,code,source/cpp,14532,562,462,all,

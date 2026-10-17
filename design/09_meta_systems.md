@@ -2028,7 +2028,7 @@ Findings [C data; I effect]:
 
 - **Complete**: English, French, German, Spanish (≥ 99.5 % of the Multiwinia strings); Italian nearly complete (96.4 % of Multiwinia strings; crate tooltips partly missing).
 - **Partial**: Russian (75 % of Multiwinia strings, 88 % overall) — missing keys display as raw ids.
-- **Stubs**: Japanese, Korean and Portuguese contain only an early Xbox-era subset (team-type labels, menu titles, XBLA session/sign-in strings, PDLC upsell, leaderboard titles, some option labels — e.g. `multiwinia_session_type_xblas`, `multiwinia_signin_xbla`, `multiwinia_pdlc_1..4`, `multiwinia_mainmenu_title360`). With one of these selected about 90 % of the UI would show raw key ids [I]. Shipping-list evidence: these three have their own `tools/<lang>language.list`, but no retail script selects them (§10.3).
+- **Stubs**: Japanese, Korean and Portuguese contain only an early Xbox-era subset (team-type labels, menu titles, XBLA session/sign-in strings, PDLC upsell, leaderboard titles, some option labels — e.g. `multiwinia_session_type_xblas`, `multiwinia_signin_xbla`, `multiwinia_pdlc_1..4`, `multiwinia_mainmenu_title360`). With one of these selected about 90 % of the UI would show raw key ids [I]. Shipping-list evidence: these three have their own `tools/japaneselanguage.list`, `tools/koreanlanguage.list`, `tools/portugueselanguage.list`, but no retail script selects them (§10.3).
 - Duplicates [C]: English `buildingname_grenadeturret`, `multiwinia_help_title_crates` (later definition wins).
 - Code-side gaps that no translation can fix [C]: phrase `Spectator` and `multiwinia_gametype_tankbattle` exist in no file; drop-down captions use raw parameter names (`ScoreMode`, `CrateDropMode`); the Update button caption "Update", the Sound Options slider caption "Master Volume" and the sound-restart failure box are hard-coded English; the debug / editor / profiler windows use literal English ([28](28_ui_framework.md)).
 
@@ -2132,7 +2132,7 @@ Then every line of `default_preferences.txt` is added with overwrite (§11.11) �
 |---|---|---|---|
 | Authentication key | `<profile dir>authkey.dev` (read at start-up; written by Paste and Play Demo) and `<profile dir>authkey` (written by typing) | §6.4 | [C] `code/app.cpp:App::InitMetaServer`, `code/UI/AuthInputField.h` |
 | User key bindings | `<profile dir>user_input_preferences.txt` (own `PrefsManager` instance) | `ApplyKeybindingsButton::MouseUp` (unreachable window) | [C] `code/lib/input/file_paths.cpp:InputPrefs::GetUserPrefsPath`, `code/interface/prefs_keybindings_window.cpp` |
-| System bindings | `data/input/input_preferences.txt` (MultiwiniaControlMethod = 1) or `input_preferences_darwinia.txt` (= 0); per-keyboard overrides `data/input/keyboards/<layout>.txt` (`de_DE`, `fr_FR`) | data files ([06](06_player_control_and_input.md)) | [C] `InputPrefs::GetSystemPrefsPath`, `code/main.cpp:ReadInputPreferences` |
+| System bindings | `data/input/input_preferences.txt` (MultiwiniaControlMethod = 1) or `input_preferences_darwinia.txt` (= 0); per-keyboard overrides `data/input/keyboards/de_DE.txt`, `data/input/keyboards/fr_FR.txt` (selected by keyboard layout) | data files ([06](06_player_control_and_input.md)) | [C] `InputPrefs::GetSystemPrefsPath`, `code/main.cpp:ReadInputPreferences` |
 | Darwinia user profile | `<profile dir>users/<name>/` (global world `game.txt` + mission files) | `App::SaveProfile` — returns false unless full version **and** `IsSinglePlayer()` (Campaign / Prologue) and name not `none` / `AccessAllAreas` / `AttractMode` → never saves in Multiwinia | [C] `code/app.cpp:App::SaveProfile` |
 | Distributor origin tag | `origin` (one line, e.g. `buka` for the Russian SKU) | build script | [C] `code/app.cpp:App::Initialise`, `tools/build_multiwinia_retail_russian.bat` |
 | Server history (dev) | `serverHistory.dat` | pref `RecordDemo` = 1 | [C] `code/app.cpp:App::ShutdownCurrentGame` |
@@ -2354,7 +2354,7 @@ Every key read or written by compiled code (76 distinct literal keys from the ac
 | `FilterShowIncompatible` | Int | — | 1 | Filters page | §5.8.6 | [B:FULL] |
 | `FilterShowPassworded` | Int | — | 1 | Filters page | §5.8.6 ("dy" bug) | [B:FULL] |
 | `HelpEnabled` | Int | 1 | 1 (none in the apply-button compare) | Other Options | §11.8 | [B:FULL] |
-| `KeyboardLayout` | String | — | Windows keyboard-layout locale name via `data/input/locales.txt` | — | `InputPrefs::GetKeyboardLayout` → selects `input/keyboards/<layout>.txt` | [B:FULL] |
+| `KeyboardLayout` | String | — | Windows keyboard-layout locale name via `data/input/locales.txt` | — | `InputPrefs::GetKeyboardLayout` → selects the matching file in `data/input/keyboards/` (`de_DE.txt`, `fr_FR.txt`) | [B:FULL] |
 | `LargeMenus` | Int | — | 0 | hidden | §11.8 | [B:FULL] |
 | `ManuallyScaleTextures` | Int | — (FR only Linux / Mac) | 0 | — | §11.6 hidden table | [B:FULL] GL |
 | `Mod` | String | — | `none` | — | mod system | [B:DEAD] |
@@ -2445,3 +2445,848 @@ Verified by grep over `code/` for the option names and for any preference key co
 | Profile selection / save slots | none reachable (§1.2.2) |
 
 ---
+## 12 Constants
+
+Kind: `#define` = preprocessor; literal = inline constant; static = function-static; data = from `data/`; pref = preference. Loader / credits-roll / benchmark constants are in Appendix A.1–A.3.
+
+| Subsystem | Constant | Value | Unit | Kind | Ref |
+|---|---|---|---|---|---|
+| Front end | page slots (`NumPages`) | 38 (18 live) | — | enum | `code/UI/GameMenuWindow.h` |
+| Front end | `SERVERS_ON_SCREEN` | 13 | rows | `#define` | `code/game_menu.h` |
+| Front end | `MAX_GAME_TYPES` | 7 | — | `#define` | `code/game_menu.h` |
+| Front end | `GAMETYPE_PROLOGUE` / `GAMETYPE_CAMPAIGN` | 254 / 255 | — | `#define` | `code/game_menu.h` |
+| Front end | menu fade-in on `CreateMenu` | 0.25 | s | literal | `GameMenu::CreateMenu` |
+| Front end | menu transition | 1.0 | s | literal | `GameMenuButton::MouseUp` |
+| Front end | front-end camera target / front | (−900, 3000, 3970) / (0, 0.5, −1) | world units | literal | `GameMenu::CreateMenu` |
+| Front end | backdrop eye / rotations | (0, 600, 0); −1.899 rad about Y, −1.079 rad about Z; FOV 90 | — | literal | `GameMenu::Render` |
+| Layout | horizSplit / vertSplit / gap | 0.26·H / 0.6·W / 0.03·W | px | literal | `code/game_menu.cpp:GetPositions` |
+| Layout | widescreen threshold / inset | W/H > 1.4 / 0.08·W each side | — | literal | same |
+| Layout | fonts large / med / small | 0.095·H / 0.04·H / 0.022·H | px | literal | `GetFontSizes` |
+| Layout | button w / h / gap | 0.9·leftW / 0.052·H / 0.004·H | px | literal | `GetButtonSizes` |
+| Background | mascot centre / half-size / echoes | (0.75·W, 0.7·H) / 0.3·W + 5·sin t / 10 × 1.02 | px | literal | `GameMenuWindow::RenderBigDarwinian` |
+| Background | gear half-size / spin / copies | 0.6·W / 0.2 rad/s / 10 × 0.02 rad, alpha 0.06 | — | literal | same |
+| Background | low / high detail fps hysteresis | < 20 / ≥ 60 fps, smoothing k = 0.5·dt | — | literal | same |
+| Blink effects | "requesting list" / "loading achievements" | alpha 1.0 for 0.5 s then 0.5 per second | — | literal | `RenderRequestingEffect`, `RenderLoadingAchievementsEffect` |
+| Map list | row height / step | 0.7·bh / 0.7·(bh + gap) | px | literal | `SetupMapSelectPage` |
+| Map list | slide-in delay | 1.0·rowY/H | s | literal | `LevelSelectButtonBase::RenderMapName` |
+| Lobby | gamer-tag colour flash | 1.0 | s | literal | `GamertagButton::Render` |
+| Lobby | name / password length | 16 / 16 | chars | literal | `PlayerNameString`, `ServerPasswordString` |
+| Lobby | chat rename buffer | 16 (15 usable) | chars | literal | `ChatInputField::Keypress` |
+| Lobby | chat message buffer | 255 | chars | literal | `ChatInputWindow::Create` |
+| Lobby | client "not lagging" test before leave-while-ready | last server letter < 5.0 | s | literal | `FinishMultiwiniaButton` |
+| Browser | list rebuild / empty-list rebuild / WAN re-request | 2.0 / 1.0 / 10.0 | s | literal | `UpdateJoinGamePage` |
+| Browser | server TTL (client list purge) | 30 | s | literal | `contrib/systemiv/lib/metaserver/metaserver.cpp` |
+| Browser | manual server entries | `Server1` … `Server30` | — | literal | `UpdateJoinGamePage` |
+| Browser | scroll-bar window size | 10 (for 13 rows) | rows | literal | `SetupJoinGamePage` |
+| Quick match | list rebuild / WAN re-request | 1.0 / 10.0 | s | literal | `UpdateQuickMatchGamePage` |
+| Connecting | dot animation | one step per 0.5 s, 0–3 dots | — | literal | `WaitingButton` |
+| Connecting | timeout | none ([B:FULL]); 10 s under `TESTBED_ENABLED` | s | literal | `UpdateGameConnectingPage` |
+| Metaserver | metaserver / matchmaker port | 5113 | UDP | `#define PORT_METASERVER_LISTEN` | `metaserver_defines.h` |
+| Metaserver | client listener / LAN broadcast port | 5009 | UDP | `#define PORT_METASERVER_CLIENT_LISTEN` | same |
+| Metaserver | LAN REGISTER period | 5 | s | literal | `metaserver.cpp` |
+| Metaserver | WAN REGISTER period | ServerTTL/3 ± 1.5 (TTL default 60, min 10) | s | literal / data | same |
+| Metaserver | identity request period | 10 | s | literal | `matchmaker.cpp` |
+| Metaserver | REQUEST_CONNECT period while connecting | 1 | s | literal | same |
+| Metaserver | data request retry | 1 s (60 s after > 10 failures); first request ≥ 1 s after first call | s | literal | `MetaServer_RequestData` |
+| Network | default server / client ports | 4000 / 4001 | UDP | pref | `Server::Initialise`, `ClientToServer::OpenConnections` |
+| Auth | key length | 31 chars + NUL (`AUTHENTICATION_KEYLEN` 32) | chars | `#define` | `authentication.h` |
+| Auth | auto-hyphen positions | after 6, 13, 20, 27 chars | — | literal | `AuthInputField::Keypress` |
+| Auth | auth thread period / max tries | 2 s / 5 | — | literal | `authentication.cpp` |
+| Auth | status-box "recently changed" window | 2.0 | s | literal | `GameMenuWindow::ShowAuthBox` |
+| Demo | default limits | max game 4, max demo players 4, demo servers allowed, modes 0x16, 5 map CRCs | — | literal | `DemoLimitations::Initialise` |
+| MOTD | scroll start delay | 5.0 | s | literal | `MOTDButton::Render` |
+| Buy now | forced window size | 1024 × 768 windowed | px | literal | `UnlockFullGameButton` |
+| Achievements | `MAX_LEVEL_ID` / `VALID_ACHIEVEMENT_LEVELS` | 49 / 49 (41 without Assault) | level ids | `#define` | `code/achievement_tracker.cpp` |
+| Achievements | `VIRAL_MASTER_ACHIEVEMENT_MASK` | 0x01 | bit | `#define` | `code/achievement_tracker.h` |
+| Achievements | Hoarder / HailToTheKing / UncladSkies / Carnage / WrongGame / Genocide thresholds | 2× and > 3 / 1.5× / damage ≤ 0.01, others' fuel ≤ 50 / 2000 kills / 120 units / 1 000 000 kills | — | literal | §7.1 |
+| Grace | `GRACE_TIME` | 3.0 (20.0 under `TESTBED_ENABLED`) | s | `#define` | `code/lib/universal_include.h` |
+| Grace | countdown decrement | 0.1 per server tick | s | literal | `Multiwinia::AdvanceGracePeriod` |
+| Loading screen | frame budget | 1/60 | s | literal | `LoadingScreen::Render` |
+| Loading screen | worker / main affinity masks | 0x55 (CPUs 0, 2, 4, 6) / 0xAA (1, 3, 5, 7) | — | literal | `SetWorkingThreadProcessor`, `App::App` |
+| Loading screen | logo fade in / out | 1.0 / 1.0 | s | literal | `RenderFrame` |
+| Loading screen | logo size | 500·ScreenH/1024 | px | literal | `RenderIVLogo` |
+| Loading screen | rating notice y / size / alpha | 0.95·H / 0.02·H / logoAlpha − 0.5 | — | literal | `RenderIVLogo` |
+| Loading screen | spinner size / centre / colour / rate | 100 × 100 / (W − 100, H − 100) / (0.2, 0.8, 0.2, 1) / 90 °/s | — | literal | `RenderSpinningDarwinian` |
+| Loading screen | Mac platform-logo duration | 5.0 | s | literal [B:DEAD] | `RenderFrame` |
+| Animated panel | defaults width / height / start / stop | 600 / 300 / 0 / 30 | units, s | literal | `AnimatedPanel::AnimatedPanel` |
+| Animated panel | keyframe defaults x, y, scale, angle, alpha, image | 100, 100, 0.3, 0, 255, `darwinian.bmp` | — | literal | `AnimatedPanelKeyframe::AnimatedPanelKeyframe` |
+| Animated panel | coincident-key threshold | 0.01 | s | literal | `CalculateObjectProperties` |
+| Animated panel | placement scale / bottom offset | ScreenH/1300 / 1.15·height·scale | — | literal | `InitialiseAnimatedPanel` |
+| Animated panel | border / title / caption heights | 5 / 25 / 15 | px | literal | same |
+| Animated panel | background alpha (outer / inner lines) | 0.9 (0.45 / 0.225) | — | literal | `RenderBackground` |
+| Animated panel | title / caption font | 30 (`g_titleFont`) / 18 (`g_editorFont`, wrap 18/1.7) | px | literal | `RenderTitle`, `RenderCaption` |
+| Help pages | general pages `MAX_PAGES` | 5 | pages | `#define` | `code/interface/helpandoptions_windows.cpp` |
+| Help pages | image side | leftBoxH/3.5 | px | literal | `GeneralHelpWindow::Create`, `GameTypeHelpWindow::Create` |
+| Crate help | row slide speed | 750 | px/s | literal [B:DEBUG] | `CrateHelpWindow` |
+| In-game help | message box w / font / y | 0.35·H (0.55·H oversize) / 0.02·H / 0.78·H | px | literal | `RenderHelpMessage` |
+| In-game help | deselect hint | +1.0 (cap 3.0) while showing; −0.75 per stray click; show if < −1.0; 3.0 s; decay 0.33/s | s | literal | `ShowSpaceDeselectHelp` |
+| In-game help | shift hint | forward held > 4.0 s; shown 3.0 s | s | literal | `code/camera.cpp` |
+| Tutorial | tab gap / breathers | 0.5 s / 10 s (movement) / 20 s (airstrike) | s | literal | `RunTutorialHelp` |
+| Tutorial | T1 scores window / T2 end-tab lifetime / T2 frozen timer | 40 s / 20 s / 300 s | s | literal | `AttachTutorialTo3d`, `AttachTutorial2To3d` |
+| Tutorial | tab width | 8 × 35 = 280 px × (1 + 0.02·sin 8t) | px | literal | `RenderTab3d` |
+| Chat (in game) | font / box | 0.015·H / (0.25·W, 1.5·font) at (10·s, H − 10·s − 1.5·font) | px | literal | `ChatInputWindow::ChatInputWindow` |
+| Chat | caret blink | 0.5 on / 0.5 off | s | literal | `ChatInputField::Render` |
+| Christmas mode | active dates | 24–26 December (local time) | — | literal | `App::UseChristmasMode` |
+| Christmas mode | initial snow / spawn period / spawn height | 150 / 0.1 s / 700 + syncfrand(300) | — | literal | `Location::AdvanceChristmas` |
+| Graphics | water cell size | detail × max(worldX, worldZ)/100 | units | literal | `Water::Water` |
+| Graphics | entity-detail distance H | 99999.9 / 1000 / 500 | units | literal | `Team::RenderDarwinians` |
+| Graphics | `DarwinianScaleFactor` | 2.0 | — | data / pref | `data/default_preferences.txt` |
+| UI scale | large-menu scale | 0.96·screenH/460 | — | literal | `DarwiniaWindow::GetMenuSize` |
+| Prefs | `BootLoader` values | `none` / `random` / `firsttime` / loader name | — | pref | `RunBootloader`, `prefs_other_window.cpp` |
+
+---
+
+## 13 Design notes for the new game
+
+Non-normative [I] recommendations derived from the findings above; carry-forward decisions belong in [40](40_carry_forward_assessment.md).
+
+1. **Keep** the single-window, data-driven front end with one lobby page for single player, host and client; the "everything is a sequenced lobby command" model gives late-join and replay for free. **But** validate every lobby command on the server (sender is host; team ids belong to the sender; start only from the host) — the original enforces nothing (§4.4).
+2. Send map + time limit (and every option change) as one atomic, versioned lobby state update from the host instead of per-option version counters derived from local mirrors (§4.5).
+3. One namespaced key registry for network / directory fields; the `"dy"` collision silently broke the password filter (§5.8.6).
+4. Replace metaserver keys with platform entitlement / matchmaking services; implement quick match properly (skill, region, ping) or not at all; add browser sorting by column and a ping column.
+5. Achievements, statistics and leaderboards need a platform back end and persistence; the original's 12 conditions (§7.1) are a usable design list once the comment/code threshold mismatches are decided.
+6. Keep the contextual-help hint design (stray-click suspicion counter, shift-to-speed-up) and the animated mode explainers during ready-up; revive or drop the cut objective cards deliberately.
+7. Tutorials should drive their side effects through the authoritative simulation (scripted server-side events) rather than client-side mutation (§8.4).
+8. Loading: keep the background loader + main-thread GPU job queue + network keep-alive; add progress reporting; use DX12 copy queues.
+9. Options: centralise defaults (§11.13); add the commonly expected options missing here (§11.14): v-sync, anti-aliasing, gamma, separate volumes, key rebinding, mouse inversion, UI scale, subtitles.
+10. Localisation: per-key fallback to the base language instead of showing ids; complete or remove partial languages; use a proper glyph cache with shaping (§10).
+11. Store the authentication / entitlement token in one place (§6.4 key-file split).
+
+---
+## Open questions and unknowns
+
+Every [U] and every design-critical [I] in this document. Resolved during synthesis (not counted): server-side enforcement of host-only options (§4.4, resolved — none); `PageDarwinia` reachability (§1.2.1, debug only); in-match exit path (§2.1, Esc menu only); duplicate English help key (§8.1); persisted player-name truncation (§3.8); tutorial map CRCs — the P11/X4 CRC re-computation reproduces every `MAPID_*` value in `code/mapcrc.h`, so the tutorial buttons are active in a full install ([08](08_levels_and_level_design.md)).
+
+| Id | Question | Tag | What would resolve it |
+|---|---|---|---|
+| 09-U1 | Did the retail Steam / Xbox Live build have a real achievement layer replacing the `App::EarnedAchievement` / `GiveAchievement` stubs, and were achievements persisted (`achievements.txt`)? | [U] | the retail branch or a retail binary; not in this tree |
+| 09-U2 | Which authentication key file shipped: start-up reads `<profile>authkey.dev`, typed keys are written to `<profile>authkey` (support INI and installers reference `authkey`). If the retail build matched this tree, hand-typed keys were lost on restart | [U] | retail binary / release branch, or a retail install's profile folder |
+| 09-U3 | Final `TimeLimit` after picking a map with a non-zero `PlayTime`: timing-dependent (map PlayTime if the lobby is built before the echo — the usual case — else the blueprint default) | [I] | instrumented run logging `GAMEOPTION_GAME_PARAM` versions on host and clients |
+| 09-U4 | Whether `default_preferences.txt` is applied on first run in a packaged install (prefs created when only `init.dat` is parsed; the file lives in `main.dat`) — affects first-run `NetworkServerPort`, `WaitVerticalRetrace`, `DarwinianScaleFactor` | [I] | first launch of a packaged build with an empty profile folder; inspect the written `preferences.txt` |
+| 09-U5 | Could the external metaserver inject key `"dy"` into listings (which would make the "show passworded games" filter hide those servers)? | [U] | metaserver source or packet capture |
+| 09-U6 | Exact visual of the 1.0 s menu transition (slide vs fade, curve) used by every page change | [U] | [24](24_rendering.md)/[28](28_ui_framework.md) `Renderer::RenderMenuTransition`, or a run |
+| 09-U7 | Whether the metaserver protocol could carry leaderboard / TrueSkill data; none of the defined fields is used for it (`PLAYERSCORE` unused) | [U] | metaserver source |
+| 09-U8 | Whether `data/mwhelp/background.bmp` is referenced indirectly (e.g. by a data file or skin); no code reference found | [U] | full-text search of `data/` and `contrib/eclipse`, or remove and run |
+| 09-U9 | Whether `GL_BLEND` is enabled when `CreditsLoader::FlipBuffers` draws its fading clear quad (decides whether the first 7 s smear) | [U] | GL state trace at `Script::RunCommand_RunCredits` / outro camera (legacy path) |
+| 09-U10 | Exact visual change of the `RenderBuildingDetail == 1` / `< 3` branches in `Building::RenderPorts`, `LaserFence::RenderAlphas`, `MineBuilding::*`, `SpawnBuilding::RenderAlphas` | [U] | read those functions in full ([03](03_buildings_and_world_objects.md) owners) |
+| 09-U11 | How MetaServer / MatchMaker behave server-side: which fields they add to LISTRESULT (`PROTOCOLMATCH`, `DEMORESTRICTED`, `DEMOSERVER`), how they decide "demo-restricted" (the release-notes LAN rule), how REQUEST_CONNECT is relayed | [U] | metaserver source (not in this tree) or packet captures |
+| 09-U12 | The real key-check algorithm (`Authentication_SimpleKeyCheck`, `Authentication_GenerateKey` are stubbed in this release) | [U] | original `authentication.cpp`; irrelevant for a new game using platform entitlements |
+| 09-U13 | Manual `ServerN` browser entries are effectively unjoinable (no version / protocol / map CRC ⇒ "incompatible") | [I] | run with a `Server1` pref pointing at a LAN host |
+| 09-U14 | With Japanese, Korean or Portuguese selected about 90 % of the UI shows raw phrase ids; whether any SKU shipped those files | [I] | retail SKU manifests (`language.dat` contents of each release) |
+| 09-U15 | Tutorial 2 relies on radar dish 4 becoming player-owned and on CPU team 2 taking spawn 83 before the player; if not, steps are skipped or no tab appears | [I]/[U] | runtime observation ([30 §2.4](30_scripting_tutorial_and_cutscenes.md)) |
+| 09-U16 | `LoadingScreen::m_rendering` is uninitialised until the first `Render()`; whether any early `IsRendering()` call reads it (affects resource locking and sound suppression) | [U] | trace calls before the first `Render()` in `App::App` |
+| 09-U17 | Demo players: the client enforces only mode/map/host/multiplayer predicates; `m_maxGameSize` is never read — whether the external metaserver or a retail server enforced a demo game-size cap | [U] | metaserver source / retail server behaviour |
+
+## Docs-vs-code discrepancies
+
+| Doc | Doc says | Code does | Ref |
+|---|---|---|---|
+| `docs/multiwinia-changes.txt` (v1.1.0) | "Server filter settings are now saved" | the four visible checkboxes (plus the dead custom-maps flag) are saved; the **game-type filter** drop-down is not | `code/UI/FinishMultiwiniaButton.h:SaveFiltersButton` |
+| `docs/multiwinia-changes.txt` | "Server hosts may now password their servers" | hosting with a password works, but the browser's "show passworded" filter cannot detect passworded servers (`"dy"` vs `"dI"`) | §5.8.6 |
+| `docs/multiwinia-changes.txt` (v1.2.0) | demo users may join any LAN game on any map if hosted by a full-game player | not implemented client-side; the client only reacts to the listing's demo-restricted flag [I] | §6.2 |
+| `docs/multiwinia-changes.txt` | "Port forwarding configuration in Help and Options \| Settings \| Other Options" | matches (no discrepancy) | `code/interface/prefs_other_window.cpp` |
+| `docs/multiwinia-changes.txt` | power-ups in the Advanced Tutorial terminate correctly upon use | consistent only after the T2 end step (`TerminateTask` blocked while `!m_tutorial2AICanSpawn`) [C + I] | [30 §2.2](30_scripting_tutorial_and_cutscenes.md) |
+| `docs/multiwiniachanges-beta.txt` issue 264 | Back on map select goes to the lobby; Back on the lobby goes to game mode | MapSelect Back → GameSelect; lobby Back → GameSelect (host), MapSelect (single player), NewOrJoin (client) | §2.5 |
+| `docs/multiwiniachanges-beta.txt` issue 412 | "Leaderboards and Achievements appear in the in-game menu" (fixed) | the in-game `LocationWindow` has neither; the front-end pages exist but are unreachable/empty; the only buttons are in the unreachable Darwinia `MainMenuWindow` (inactive / handler-less) | §7.2, §7.5 |
+| `docs/todo.txt` | "Leaderboards — DONE (?)" | no leaderboard backend; UI unreachable stub | §7.5 |
+| `docs/todo.txt` | water reflection linked to the pixel-effect option | true only under D3D; the pixel-effect control itself is commented out | §11.6 |
+| `docs/todo.txt` | key-bindings window issues | the Control Options window is unreachable in the shipped build | §11.9 |
+| `docs/help system.txt` | Sepulveda context help with F1, fixed messages, failure help and action items (GestureBasics, ThrowAirstrike, …) | key is `SepulvedaHelp = key h`; the enum has the 20 items of Appendix A.4; no fixed-message or failure-help classes; the whole system is compiled out of Multiwinia | `code/helpsystem.h`, `data/input/input_preferences.txt` L255 |
+| `docs/multiwiniareleasenotes-beta.txt` L35 | beta records benchmarks and uploads them via FTP "when you exit" | feature compiled out in every target (`//#define BENCHMARK_AND_FTP`); when enabled the upload happens at the end of each match | `code/lib/universal_include.h`, `code/benchmark.cpp` |
+| `docs/changes.txt` L82–84 | "Show First Time Intro" option replays the intro next time the game starts | the intro runs only from `RunBootloader` (Campaign launch, `USE_LOADERS`); the option row is not built in the Multiwinia UI | `code/main.cpp:RunBootloader`, `code/interface/prefs_other_window.cpp` |
+| `docs/detailed schedule.txt` L19 | "(OPTIONAL) Intro bootloaders" planned | implemented but compiled out (`USE_LOADERS`) | `code/lib/universal_include.h` |
+| `docs/todo.txt` L19, `docs/betachanges.txt` L46/L57, `docs/buglist.txt` L21 | boot-loader issues (Game-of-Life glow frame rate, Spectrum text distortion, ray-tracer performance, widescreen stretching) | loaders not compiled in Multiwinia; widescreen stretching is consistent with the fixed 320 × 256 / 800 × 600 canvases | Appendix A.1 |
+| `docs/detailed schedule.txt` ("Translation System → Missed out") | the debug / sound / editor windows are untranslated | consistent — literal English captions | §10.2 |
+| `tools/language/README.txt` | translation inputs must be UCS-2 BE | `data/language/japanese.txt` and `russian.txt` are UTF-16 LE; the game accepts both BOMs | §10.2 |
+| `docs/RussianFontRequest.txt` | only the Speccy font has Cyrillic | Cyrillic atlases exist for editor, speccy and square (but the "all" language list ships only the speccy ones) | §10.3–10.4 |
+| `contrib/systemiv/lib/math/random_number.h` comment | `sfrand(range)` returns values in (−range, range) | implementation returns `(0.5 − U)·range`, i.e. ±range/2 (affects the dead Soul / DemoEnd spawn spreads) | Appendix A.1 |
+
+## IP items
+
+All English strings behind the phrase ids are Introversion text (`data/language/*.txt`); the ids may be reused as neutral keys but texts, names and art may not. Complete phrase-id inventories for this area: `_work/drafts/P17b_strings.csv` (194 ids) and `_work/drafts/P02_game_modes_strings.csv` (87 ids).
+
+| Item | Kind | Ref | Neutral placeholder |
+|---|---|---|---|
+| "MULTIWINIA" title, subtitle "Survival of the flattest", `textures/mwtitle.bmp`, logo `icons/mwlogo.bmp` | brand / text / art | `multiwinia_mainmenu_title`, `multiwinia_mainmenu_subtitle`, `GameMenuWindow::Render` | "<GAME TITLE>", new tagline, new logotype |
+| Menu mascot backdrop (giant unit sprite `sprites/darwinian.bmp`), gear `mwhelp/gear.bmp`, player icons `textures/darwinian.bmp` | character art | `GameMenuWindow::RenderBigDarwinian`, `code/UI/LevelSelectButton.h` | generic unit silhouette, abstract cog |
+| Unit / world names "Darwinia", "Darwinian", "Multiwinian(s)", "Futurewinian", "Evilinians" in strings and help pages | name | `multiwinia_helppage_general*`, `multiwinia_help_*`, rocket panel captions | "<world>", "<unit>" |
+| Game-mode names Domination, King of the Hill, Capture the Statue, Assault, Rocket Riot, Blitzkrieg, Tank Battle; short forms DOM / KOTH / CTS / ASLT / ROCKET / BLITZ | names / text | `multiwinia_gametype_*`, `multiwinia_gametypeshort_*` | descriptive generic names (Control Points, Hill, Relic Carry, Siege, Launch Race, Flag Assault) |
+| Mode blurbs, animated-panel captions `multiwinia_animdesc_*`, help pages `multiwinia_helppage_*`, `multiwinia_help_gametypetitle_*`, tutorial tab texts `multiwinia_help_*`, hint texts (`multiwinia_rmbhelp*`, `multiwinia_deselect*`, `multiwinia_shiftspeedhelp`, `multiwinia_officerterminate*`, `multiwinia_armourtoggle*`), `crate_drop`, "Wrong Game!" | text | §8, §9.3 | rewrite |
+| Tutorial titles "Part 1: The Basics", "Part 2: Advanced Concepts" | text | `multiwinia_menu_tutorial1/2` | own titles |
+| Help illustrations `mwhelp/general1–5.bmp`, `help_*_*.bmp`, mode cards `mode_*.bmp`, `control_camera*.bmp`, tab icons, `360_controller.bmp`, `background.bmp` | art | `data/mwhelp/` | new art |
+| Animated-panel sprites (`data/animations/*.bmp`) and the six `.anim` choreographies | art / animation | `data/animations/` | new sprite set and choreographies |
+| Map names / descriptions `<mapfile>_name`, `_description`, thumbnails `thumbnails/*.bmp` | level names / text / art | `code/UI/LevelSelectButton.h`, `code/UI/MapInfoButton.h`, `code/UI/MapImageButton.h` | new maps |
+| Credits `multiwinia_credits_1..66`, `bootloader_credits_1..44`; beta-tester lists `data/multiwinia_betatesters.txt` (69) and `data/betatesters.txt` (38) — real people's names | text / personal data | `GameMenuWindow::ReadCredits`, `CreditsLoader::GenerateBetaTesterList` | own credits (with consent) |
+| Publisher logo `textures/ivlogo.bmp`, "Introversion Software", `http://www.introversion.co.uk`, `http://store.introversion.co.uk`, `http://www.multiwinia.co.uk/`, `http://www.savedarwinia.com` | brand / URL | `LoadingScreen::RenderIVLogo`, `App::GetBuyNowURL`, `WebsiteButton`, `AboutDarwiniaWindow` | own publisher splash and URLs from config |
+| Metaserver host `metaserver-mwdev.introversion.co.uk`, product id `METASERVER_GAMETYPE_MULTIWINIA = 4` | brand / service | `App::InitMetaServer`, `metaserver_defines.h` | own service endpoint / product id |
+| Fixed demo key and blacklisted key strings, key prefixes `DEMO`, `AMBR` (distributor), hash prefix `hsh`, `authkey` / `authkey.dev` files | key strings / partner brand | `authentication.cpp`, §6 | platform entitlements |
+| Box art `textures/multiwinia.bmp`, price art `textures/prices.bmp` (+ `prices_ambrosia.bmp`, `prices_steam.bmp`), buy-now copy `launchpad_buyme_*`, `multiwinia_buy_prices`, `multiwinia_buynow*` | art / brand / text | `GameMenuWindow::SetupBuyMePage` | own store art and copy |
+| Rating notice `esrb_warning` | rating-board wording | `LoadingScreen::RenderIVLogo` | regenerate from the new game's actual rating |
+| Profile / cheat names `AccessAllAreas`, `AttractMode`, `game_unlockall.txt` | names | `App::LoadProfile` | `__unlockall__`, `__attract__` |
+| Darwinia location names (Garden, Containment, Mine, Generator, Yard, Escort, Pattern Buffer, Biosphere, Receiver, Temple, Prologue, launchpad) | names | leaderboard boards, attract scripts | generic sector names |
+| "TrueSkill" | third-party brand (Microsoft) | `multiwinia_leaderboards_tslb`, `_tsr` | "Skill rating" |
+| Controller glyphs `icons/button_*.bmp` and Xbox terminology (`ControlXBoxMenuCycle*`, XBLA pages) | third-party glyph art / brand | `GameMenuWindow::PreloadTextures`, `code/game_menu.cpp:BackPageButton::Render` | platform-neutral glyphs |
+| Interface sounds `LobbyAmbience`, `MenuSelect`, `MenuCancel`, `MenuRollOver`, `ChatMessage`, `MouseError`, `CountdownTick`, `CountdownZeroTick`, `GameOver`, `YouWon`, `YouLost` (sample assets) | audio | §2.7, §3.23 | new SFX |
+| Loader / intro / credits music (`speccyloader`, `matrix`, `fodder`, `pang`, `twoataris`, `dma_sc-visitors_from_dreams`, `tresk_-weeklies-_schroeders-failure`, `trash80_-_pain-fade-down`) — third-party chiptune artists | audio (third-party licence) | `data/sounds.txt` Music events | licensed / commissioned tracks |
+| Intro captions `intro_1..10` (publisher credit, title, fictional server log, scientist character), loader texts `bootloader_*`, Matrix block-letter product-name mask, Spectrum / demo-group art (`program_darwinia.bmp`, `speccy_screen.bmp`, `dmacrew.bmp`) | text / brand / art | Appendix A.1, [30 §6](30_scripting_tutorial_and_cutscenes.md) | new texts and art |
+| Distributor splash / video (`msn_oberon_combosplash.bmp`, `cinemaware.avi`), distributor origin tag `buka` | third-party brand | `OberonLoader`, `EgamesLoader`, `tools/build_multiwinia_retail_russian.bat` | none (drop) |
+| Front-end UI strings ("Help and Options", "How To Play", "Settings", "Screen / Graphics / Sound / Other Options", "Press Enter To Chat", "Your control pad has been unplugged…", "Quit This Game?", "Location Menu", "Exit Game", "Open/CPU", "(DEMO)", error and auth status phrases) | text | `P17b_strings.csv` | generic equivalents; do not copy the string table verbatim |
+| Defaults "NewPlayer", "NewServer" | text | §11.10 | keep generic or rename |
+
+## Source map
+
+One row per file that implements or feeds this document's subject (530 rows), generated by `_work/scripts/S_09_source_map.py` from `_work/manifest.csv` (run `python3 -I S_09_source_map.py manifest.csv`).
+
+| File | Role |
+|---|---|
+| `code/3d_sierpinski_gasket.cpp` | Amiga loader pyramid, dead by call graph (Appendix A.1) |
+| `code/3d_sierpinski_gasket.h` | Sierpinski declarations (Appendix A.1) |
+| `code/UI/AchievementButton.h` | achievement row widget, never created (§7.2) |
+| `code/UI/AdvancedOptionsModeButton.h` | lobby "Advanced Options" button, host only (§3.6) |
+| `code/UI/AnyLevelSelectButton.h` | "any level" row, custom-game path never active (§3.5) |
+| `code/UI/ApplyNameButton.h` | PlayerOptions Back: saves `PlayerName` (§3.8) |
+| `code/UI/AuthInputField.h` | authentication key field; saves to `authkey` (§6.4) |
+| `code/UI/AuthPageButton.h` | Help and Options "Authentication" button (§3.20) |
+| `code/UI/AuthStatusButton.h` | Main-page auth status box (§6.5) |
+| `code/UI/BuyNowInfoButton.h` | five-line buy-now text, never placed (§6.6) |
+| `code/UI/BuyNowModeButton.h` | Main "Buy full game" (demo) (§3.1) |
+| `code/UI/CSpectatorButton.h` | spectator registration button, TESTBED only (§5.12.6) |
+| `code/UI/CampaignButton.h` | Darwinia campaign launch, debug-only page (§3.19, §9.2.6) |
+| `code/UI/ConnectButton.h` | password page Connect (§3.11) |
+| `code/UI/DarwiniaModeButton.h` | Main "Single Player" (versus CPU) (§3.1, §5.1.1) |
+| `code/UI/DarwiniaPlusMPButton.h` | Darwinia+ remnant, unused (Appendix A.9) |
+| `code/UI/DarwiniaPlusSPButton.h` | Darwinia+ remnant, unused (Appendix A.9) |
+| `code/UI/EnterAuthKeyButton.h` | auth page Done (§6.4) |
+| `code/UI/ErrorDialog.cpp` | not in the vcproj — excluded from every build (Appendix A.9) |
+| `code/UI/ErrorDialog.h` | not in the vcproj — excluded from every build (Appendix A.9) |
+| `code/UI/FancyColourButton.h` | PlayerOptions colour / side rows, taken rules (§3.8, §5.11.2) |
+| `code/UI/FiltersPageButton.h` | browser Filters button (§5.8.1) |
+| `code/UI/FinishMultiwiniaButton.h` | lobby / GameSelect Back, leave-while-ready, `FinishSinglePlayerButton`, `SaveFiltersButton` (§5.12.5, §5.8.6) |
+| `code/UI/GameMenuOptionsButton.h` | options button, not included anywhere (dead) |
+| `code/UI/GameMenuWindow.cpp` | front-end window: every page, lobby, browser, filters, auth page, credits, chat, tutorials launch (§2–§6) |
+| `code/UI/GameMenuWindow.h` | page enum (38 slots), lobby state members, `ServerPasswordString` (§1.2.1, §5.7) |
+| `code/UI/GameServerButton.h` | browser row: rendering, colours, click rules (§5.8.5, §5.8.7) |
+| `code/UI/GameTypeAnyButton.h` | "any game type" button, included but never instantiated |
+| `code/UI/GameTypeButton.h` | GameSelect mode button, demo gate, parameter reset (§3.4) |
+| `code/UI/GameTypeImageButton.h` | mode picture `mwhelp/mode_*.bmp` (§3.4) |
+| `code/UI/GameTypeInfoButton.h` | mode blurb text (§3.4) |
+| `code/UI/GamerTagButton.h` | lobby player-slot widget (§5.11.1) |
+| `code/UI/HelpImageButton.h` | old help page image, unreachable (§3.19) |
+| `code/UI/HelpModeButton.h` | old help menu entry, never instantiated (§3.19) |
+| `code/UI/HelpSelectButton.h` | old help topic button, commented out (§3.19) |
+| `code/UI/ImageButton.cpp` | image widget (buy-now art) (§6.6) |
+| `code/UI/ImageButton.h` | image widget (§6.6) |
+| `code/UI/JoinGameButton.h` | NewOrJoin "Join" (§3.3) |
+| `code/UI/KickPlayerButton.h` | host kick button (§5.12.3) |
+| `code/UI/LevelSelectButton.h` | map row, map click actions, PlayTime request (§3.5, §4.5) |
+| `code/UI/LevelSelectButtonBase.h` | map-row columns and slide-in (§3.5) |
+| `code/UI/MapData.cpp` | map identity CRC (§2.4) |
+| `code/UI/MapData.h` | map metadata record (§2.4) |
+| `code/UI/MapImageButton.h` | map thumbnail (§3.5) |
+| `code/UI/MapInfoButton.h` | map description (§3.5) |
+| `code/UI/MapListTitlesButton.h` | map-list column header (§3.5) |
+| `code/UI/MapSelectModeButton.h` | lobby map-name strip, click disabled (§3.6) |
+| `code/UI/MultiwiniaEditorButton.h` | map-editor entry, LOCATION_EDITOR only (§3.1) |
+| `code/UI/MultiwiniaModeButton.h` | unused MP mode button (§5.1.4) |
+| `code/UI/MultiwiniaVersusCpuButton.h` | versus-CPU button on the debug-only page (§3.19) |
+| `code/UI/NewOrJoinButton.h` | Main "Multiplayer", MultiplayerPermitted gate (§3.1) |
+| `code/UI/NewServerButton.h` | NewOrJoin "Host", HostGamePermitted gate (§3.3) |
+| `code/UI/NextHelpButton.h` | old help page Next (§3.19) |
+| `code/UI/OptionDetailsButton.h` | Advanced Options help text panel (§3.7) |
+| `code/UI/PasteKeyButton.h` | auth page Paste (§6.4) |
+| `code/UI/PlayDemoAuthkeyButton.h` | auth page Play Demo; writes `authkey.dev` (§6.4) |
+| `code/UI/PlayGameButton.h` | lobby Play / Ready, CPU fill, start (§5.12.1) |
+| `code/UI/PrevHelpButton.h` | old help page Previous (§3.19) |
+| `code/UI/PrologueButton.h` | Darwinia prologue launch, debug-only (§3.19) |
+| `code/UI/QuickMatchButton.h` | quick-match entry, creation commented out (§5.9) |
+| `code/UI/QuickStartButton.h` | quick-start button, never instantiated (§5.1.4) |
+| `code/UI/QuitAuthKeyButton.h` | auth page Quit, non-FULL targets only (§6.4) |
+| `code/UI/QuitButton.h` | Main Quit (§3.1) |
+| `code/UI/RequestAIButton.h` | "Add AI Player", never instantiated (§5.12.4) |
+| `code/UI/ResearchModeButton.h` | research page entry, never instantiated (§3.19) |
+| `code/UI/RollingDemoButton.h` | rolling demo start, never instantiated (§5.1.4) |
+| `code/UI/ScrollingTextButton.h` | auto-scrolling text (credits) (§3.18) |
+| `code/UI/ServerTitleInfoButton.h` | browser column header (§5.8.1) |
+| `code/UI/TestBedButtons.h` | testbed start buttons, TESTBED only (§3.1) |
+| `code/UI/TutorialButton.h` | Tutorials page buttons and `TutorialPageButton` (§3.2, §5.1.3) |
+| `code/UI/UnlockFullGameButton.h` | buy-now button: opens store, forces windowed 1024x768 (§6.6) |
+| `code/UI/WaitingButton.h` | connecting / searching status text (§3.12) |
+| `code/UI/credits_button.h` | Main "Credits" (§3.1) |
+| `code/UI/mapDetailsButton.h` | map details widget, commented out (§3.6) |
+| `code/UI/motdButton.h` | message of the day (§5.15) |
+| `code/UI/soundsliderbutton.h` | master-volume slider variant, not in the vcproj (§11.7) |
+| `code/UI/update_page_buttons.h` | Update page: autopatcher, visit website, Main update button (§3.17) |
+| `code/achievement_tracker.cpp` | session achievement / level tracking (§7.3) |
+| `code/achievement_tracker.h` | tracker declarations, viral mask (§7.3) |
+| `code/animatedpanel.cpp` | animated panel model, file reader, interpolation (§9.3) |
+| `code/animatedpanel.h` | animated panel data model (§9.3) |
+| `code/animatedpanel_renderer.cpp` | animated panel playback and rendering (§9.3) |
+| `code/animatedpanel_renderer.h` | renderer declarations (§9.3) |
+| `code/app.cpp` | start-up order, metaserver init, permission predicates, achievements stub, language, profiles, Christmas date (§2.1, §6, §7.2, §10.1) |
+| `code/app.h` | achievement enum, tutorial enum, game-mode enum (§7.1) |
+| `code/attract.cpp` | attract mode, dead (§9.7) |
+| `code/attract.h` | attract mode declarations (§9.7) |
+| `code/benchmark.cpp` | benchmark recorder / upload, dead (§9.1) |
+| `code/benchmark.h` | benchmark declarations (§9.1) |
+| `code/camera.cpp` | shift-to-speed-up hint, AutomaticCamera, outro to credits (§8.2, §11.8, §9.6.2) |
+| `code/clouds.cpp` | Sky Detail effect (§11.6) |
+| `code/control_help.cpp` | gamepad control prompts gated by `ControlHelpEnabled` (§11.8) |
+| `code/control_help.h` | control help declarations (§11.8) |
+| `code/demoendsequence.cpp` | prologue end sequence, dead (§9.4.3) |
+| `code/demoendsequence.h` | demo-end sequence declarations (§9.4.3) |
+| `code/game_menu.cpp` | `GameMenu` controller, map catalogue, layout helpers, `PlayerNameString`, page names (§2) |
+| `code/game_menu.h` | `IS_DEMO`, menu constants, menu widget classes (§2, §6.1) |
+| `code/helpsystem.cpp` | Darwinia context help, dead (Appendix A.4) |
+| `code/helpsystem.h` | Darwinia help ids, 90 s interval (Appendix A.4) |
+| `code/interface/chatinput_window.cpp` | chat input window and field, /name command (§5.13) |
+| `code/interface/chatinput_window.h` | chat input declarations (§5.13) |
+| `code/interface/controllerunplugged_window.cpp` | controller-unplugged dialogue (§3.22.4) |
+| `code/interface/controllerunplugged_window.h` | controller-unplugged declarations (§3.22.4) |
+| `code/interface/darwinia_window.cpp` | Back/close navigation, large-menu scaling (§2.7, §11.8) |
+| `code/interface/darwinia_window.h` | base window declarations (§2.7) |
+| `code/interface/demoend_window.cpp` | Darwinia demo-end window, dead (Appendix A.8) |
+| `code/interface/demoend_window.h` | demo-end declarations (Appendix A.8) |
+| `code/interface/helpandoptions_windows.cpp` | Help and Options, How To Play, general / mode / crate help windows (§3.20, §8.1) |
+| `code/interface/helpandoptions_windows.h` | help windows, `TextButton` (§3.20) |
+| `code/interface/leaderboards_window.cpp` | leaderboard windows and loader stub (§7.5) |
+| `code/interface/leaderboards_window.h` | leaderboard declarations (§7.5) |
+| `code/interface/mainmenus.cpp` | Help and Options button, Settings, Esc menu, confirm exit, legacy Darwinia menus (§3.20–§3.22, §11.4) |
+| `code/interface/mainmenus.h` | menu window / button declarations incl. inactive Leaderboard and handler-less Achievements buttons (§7) |
+| `code/interface/mods_window.cpp` | mods windows, dead (Appendix A.7) |
+| `code/interface/mods_window.h` | mods declarations (Appendix A.7) |
+| `code/interface/multiwinia_window.cpp` | map-editor front page, editor only (§1.2.2) |
+| `code/interface/multiwinia_window.h` | map-editor front page declarations (§1.2.2) |
+| `code/interface/multiwiniaoptions_window.cpp` | level-options editor window, editor only (§1.2.2) |
+| `code/interface/multiwiniaoptions_window.h` | level-options editor declarations (§1.2.2) |
+| `code/interface/prefs_graphics_window.cpp` | Graphics Options (§11.6) |
+| `code/interface/prefs_graphics_window.h` | graphics pref key macros (§11.6) |
+| `code/interface/prefs_keybindings_window.cpp` | Control Options window, unreachable (§11.9) |
+| `code/interface/prefs_keybindings_window.h` | Control Options declarations (§11.9) |
+| `code/interface/prefs_other_window.cpp` | Other Options and hidden round-tripped prefs (§11.8) |
+| `code/interface/prefs_other_window.h` | other-options pref key macros (§11.8) |
+| `code/interface/prefs_screen_window.cpp` | Screen Options (§11.5) |
+| `code/interface/prefs_screen_window.h` | Screen Options declarations (§11.5) |
+| `code/interface/prefs_sound_window.cpp` | Sound Options (§11.7) |
+| `code/interface/prefs_sound_window.h` | Sound Options declarations (§11.7) |
+| `code/interface/profilewindow.cpp` | CPU profiler window, debug (§1.2.2) |
+| `code/interface/profilewindow.h` | profiler window declarations (§1.2.2) |
+| `code/interface/reallyquit_window.cpp` | "Really Quit?" window, unreachable (Appendix A.5) |
+| `code/interface/reallyquit_window.h` | really-quit declarations (Appendix A.5) |
+| `code/interface/save_on_quit_window.cpp` | sound-editor save prompt, dead (Appendix A.5) |
+| `code/interface/save_on_quit_window.h` | save-on-quit declarations (Appendix A.5) |
+| `code/interface/userprofile_window.cpp` | user-profile windows, unreachable (Appendix A.6) |
+| `code/interface/userprofile_window.h` | user-profile declarations (Appendix A.6) |
+| `code/lib/input/inputdriver_prefs.cpp` | `pref <key>` input driver (§11.12) |
+| `code/lib/language_table.cpp` | phrase lookup, input-mode tables, word wrap (§10.1) |
+| `code/lib/language_table.h` | `LANGUAGEPHRASE` macros (§10.1) |
+| `code/lib/preferences.cpp` | preference manager, first-run defaults (§11.1–§11.2) |
+| `code/lib/preferences.h` | preference manager declarations (§11.1) |
+| `code/lib/runnable.cpp` | main-thread `Job` hand-off (§9.2.3) |
+| `code/lib/runnable.h` | runnable / job declarations (§9.2.3) |
+| `code/lib/text_renderer.cpp` | font atlases and glyph rendering (§10.4) |
+| `code/lib/universal_include.h` | build gates: INCLUDE_TUTORIAL, USE_LOADERS, GRACE_TIME, target macros (§1, §9.1) |
+| `code/lib/work_queue.cpp` | loader worker thread (§9.2.3) |
+| `code/lib/work_queue.h` | work queue declarations (§9.2.3) |
+| `code/loaders/amiga_loader.cpp` | boot-loader mini-program / credits roll (§9.5, Appendix A.1) |
+| `code/loaders/amiga_loader.h` | boot-loader mini-program / credits roll (§9.5, Appendix A.1) |
+| `code/loaders/credits_loader.cpp` | boot-loader mini-program / credits roll (§9.5, Appendix A.1) |
+| `code/loaders/credits_loader.h` | boot-loader mini-program / credits roll (§9.5, Appendix A.1) |
+| `code/loaders/egames_loader.cpp` | boot-loader mini-program / credits roll (§9.5, Appendix A.1) |
+| `code/loaders/egames_loader.h` | boot-loader mini-program / credits roll (§9.5, Appendix A.1) |
+| `code/loaders/fodder_loader.cpp` | boot-loader mini-program / credits roll (§9.5, Appendix A.1) |
+| `code/loaders/fodder_loader.h` | boot-loader mini-program / credits roll (§9.5, Appendix A.1) |
+| `code/loaders/gameoflife_loader.cpp` | boot-loader mini-program / credits roll (§9.5, Appendix A.1) |
+| `code/loaders/gameoflife_loader.h` | boot-loader mini-program / credits roll (§9.5, Appendix A.1) |
+| `code/loaders/loader.cpp` | boot-loader mini-program / credits roll (§9.5, Appendix A.1) |
+| `code/loaders/loader.h` | boot-loader mini-program / credits roll (§9.5, Appendix A.1) |
+| `code/loaders/matrix_loader.cpp` | boot-loader mini-program / credits roll (§9.5, Appendix A.1) |
+| `code/loaders/matrix_loader.h` | boot-loader mini-program / credits roll (§9.5, Appendix A.1) |
+| `code/loaders/oberon_loader.cpp` | boot-loader mini-program / credits roll (§9.5, Appendix A.1) |
+| `code/loaders/oberon_loader.h` | boot-loader mini-program / credits roll (§9.5, Appendix A.1) |
+| `code/loaders/raytrace_loader.cpp` | boot-loader mini-program / credits roll (§9.5, Appendix A.1) |
+| `code/loaders/raytrace_loader.h` | boot-loader mini-program / credits roll (§9.5, Appendix A.1) |
+| `code/loaders/soul_loader.cpp` | boot-loader mini-program / credits roll (§9.5, Appendix A.1) |
+| `code/loaders/soul_loader.h` | boot-loader mini-program / credits roll (§9.5, Appendix A.1) |
+| `code/loaders/speccy_loader.cpp` | boot-loader mini-program / credits roll (§9.5, Appendix A.1) |
+| `code/loaders/speccy_loader.h` | boot-loader mini-program / credits roll (§9.5, Appendix A.1) |
+| `code/loading_screen.cpp` | loading screen loop, logo, spinner, job pump (§9.2) |
+| `code/loading_screen.h` | loading screen members (§9.2) |
+| `code/location.cpp` | Christmas snow, special-lighting pref (§5.16, §11.6) |
+| `code/location_input.cpp` | in-game chat open, mis-click hint triggers, game-over block (TESTBED only) (§2.1, §5.13, §8.2) |
+| `code/main.cpp` | MainMenuLoop, LocationGameLoop Esc menu, controller unplug, loading hooks, RunBootloader (dead) (§2.1, §3.22, §9) |
+| `code/mapcrc.h` | `MAPID_*` constants for tutorial and demo maps (§5.1.3, §6.1) |
+| `code/multiwinia.cpp` | blueprint loader, achievement conditions, grace period, DeclareWinner, colours (§4, §7.1, §9.4.1) |
+| `code/multiwiniahelp.cpp` | in-game hints, objective tabs, tutorial director, animated-panel lifecycle (§8.2–§8.4, §9.3) |
+| `code/multiwiniahelp.h` | help ids and tutorial flags (§8) |
+| `code/network/clienttoserver.cpp` | option requests/handlers, START_GAME, chat, disconnect errors, team scores, Christmas mode (§2.1, §4.4, §5) |
+| `code/network/demo_limitations.cpp` | demo limits and defaults (§6.1) |
+| `code/network/demo_limitations.h` | demo limits declarations (§6.1) |
+| `code/network/network_defines.h` | `GAMEOPTION_*` ids, `NET_DARWINIA_SERVER_PASSWORD` "dy" (§4.6, §5.8.6) |
+| `code/network/networkvalue.cpp` | networked option setters and versions (§4.5, §4.6) |
+| `code/network/server.cpp` | relay without host checks, advertise, kick, password, spectator/full rejection (§4.4, §5.3, §5.12) |
+| `code/renderer.cpp` | front-end backdrop call, screen-mode init and fallbacks, pixel-effect gate (§2.3, §11.5, §11.6) |
+| `code/rocket_status_panel.cpp` | Rocket Riot status panel (§7.4.2) |
+| `code/rocket_status_panel.h` | status panel members (§7.4.2) |
+| `code/startsequence.cpp` | first-time intro, never constructed (§9.4.2) |
+| `code/startsequence.h` | intro declarations (§9.4.2) |
+| `code/team.cpp` | entity-detail distances, demo name prefix (§6.1, §11.6) |
+| `code/testharness.cpp` | campaign test harness, dead (§9.1) |
+| `code/testharness.h` | test harness declarations (§9.1) |
+| `code/water.cpp` | Water Detail effect (§11.6) |
+| `code/worldobject/nuke.cpp` | Wrong Game achievement check (§7.1) |
+| `contrib/systemiv/lib/metaserver/authentication.cpp` | key status, demo key, hashing, auth thread (§6.3) |
+| `contrib/systemiv/lib/metaserver/authentication.h` | `AUTHENTICATION_KEYLEN`, status codes (§6.3) |
+| `contrib/systemiv/lib/metaserver/matchmaker.cpp` | NAT identity and hole punch (§5.4) |
+| `contrib/systemiv/lib/metaserver/matchmaker.h` | matchmaker API (§5.4) |
+| `contrib/systemiv/lib/metaserver/metaserver.cpp` | server registration, list, data requests (§5.2–§5.5) |
+| `contrib/systemiv/lib/metaserver/metaserver.h` | metaserver API (§5.2) |
+| `contrib/systemiv/lib/metaserver/metaserver_defines.h` | field keys incl. GAMETIME "dy", HASPASSWORD "dI", ports (§5.2.1) |
+| `contrib/systemiv/lib/tosser/directory.cpp` | missing-field fallbacks (`DIRECTORY_SAFECHAR`) behind the relay hole (§4.4) |
+| `data/animations/armour.bmp` | animated mode panel sprite (§9.3) |
+| `data/animations/assault_defend.anim` | animated mode panel choreography (§9.3) |
+| `data/animations/blitz.anim` | animated mode panel choreography (§9.3) |
+| `data/animations/cloudyglow.bmp` | animated mode panel sprite (§9.3) |
+| `data/animations/cts.anim` | animated mode panel choreography (§9.3) |
+| `data/animations/darwinian.bmp` | animated mode panel sprite (§9.3) |
+| `data/animations/darwinian_ouch4.bmp` | animated mode panel sprite (§9.3) |
+| `data/animations/domination.anim` | animated mode panel choreography (§9.3) |
+| `data/animations/flag.bmp` | animated mode panel sprite (§9.3) |
+| `data/animations/flag_down.bmp` | animated mode panel sprite (§9.3) |
+| `data/animations/flag_locked.bmp` | animated mode panel sprite (§9.3) |
+| `data/animations/flag_up.bmp` | animated mode panel sprite (§9.3) |
+| `data/animations/fuelpump.bmp` | animated mode panel sprite (§9.3) |
+| `data/animations/fuelpumper.bmp` | animated mode panel sprite (§9.3) |
+| `data/animations/island.bmp` | animated mode panel sprite (§9.3) |
+| `data/animations/koth.anim` | animated mode panel choreography (§9.3) |
+| `data/animations/laser.bmp` | animated mode panel sprite (§9.3) |
+| `data/animations/muzzleflash.bmp` | animated mode panel sprite (§9.3) |
+| `data/animations/plusone.bmp` | animated mode panel sprite (§9.3) |
+| `data/animations/rocket.anim` | animated mode panel choreography (§9.3) |
+| `data/animations/rocket.bmp` | animated mode panel sprite (§9.3) |
+| `data/animations/solarpanel.bmp` | animated mode panel sprite (§9.3) |
+| `data/animations/spawnpoint.bmp` | animated mode panel sprite (§9.3) |
+| `data/animations/statue.bmp` | animated mode panel sprite (§9.3) |
+| `data/animations/trunkport.bmp` | animated mode panel sprite (§9.3) |
+| `data/animations/turretbarrel.bmp` | animated mode panel sprite (§9.3) |
+| `data/animations/turretbase.bmp` | animated mode panel sprite (§9.3) |
+| `data/animations/water.bmp` | animated mode panel sprite (§9.3) |
+| `data/animations/wmd.bmp` | animated mode panel sprite (§9.3) |
+| `data/animations/zone-back.bmp` | animated mode panel sprite (§9.3) |
+| `data/animations/zone-front.bmp` | animated mode panel sprite (§9.3) |
+| `data/betatesters.txt` | credits-roll beta-tester list, legacy (§9.6.2) |
+| `data/default_preferences.txt` | first-run preference overrides (§11.11) |
+| `data/icons/locked.bmp` | front-end / status-panel icon (§2.3, §3.4, §5.8.5, §7.4.2) |
+| `data/icons/menu_advanced.bmp` | front-end / status-panel icon (§2.3, §3.4, §5.8.5, §7.4.2) |
+| `data/icons/menu_basic.bmp` | front-end / status-panel icon (§2.3, §3.4, §5.8.5, §7.4.2) |
+| `data/icons/menu_intermediate.bmp` | front-end / status-panel icon (§2.3, §3.4, §5.8.5, §7.4.2) |
+| `data/icons/mouse_disabled.bmp` | front-end / status-panel icon (§2.3, §3.4, §5.8.5, §7.4.2) |
+| `data/icons/mwlogo.bmp` | front-end / status-panel icon (§2.3, §3.4, §5.8.5, §7.4.2) |
+| `data/icons/rocketcracked.bmp` | front-end / status-panel icon (§2.3, §3.4, §5.8.5, §7.4.2) |
+| `data/icons/rocketstatuspanel.bmp` | front-end / status-panel icon (§2.3, §3.4, §5.8.5, §7.4.2) |
+| `data/input/input_preferences.txt` | menu, chat, ready, skip, attract and loader bindings (§2.7, §9.7) |
+| `data/language/english.txt` | phrase table — localisation coverage (§10.2) |
+| `data/language/french.txt` | phrase table — localisation coverage (§10.2) |
+| `data/language/german.txt` | phrase table — localisation coverage (§10.2) |
+| `data/language/italian.txt` | phrase table — localisation coverage (§10.2) |
+| `data/language/japanese.txt` | phrase table — localisation coverage (§10.2) |
+| `data/language/korean.txt` | phrase table — localisation coverage (§10.2) |
+| `data/language/portuguese.txt` | phrase table — localisation coverage (§10.2) |
+| `data/language/russian.txt` | phrase table — localisation coverage (§10.2) |
+| `data/language/spanish.txt` | phrase table — localisation coverage (§10.2) |
+| `data/levels/level_enum.txt` | achievement level ids (§7.3) |
+| `data/multiwinia-testbed.txt` | testbed blueprint variant, TESTBED only (§4.1) |
+| `data/multiwinia.txt` | game-setup option blueprints (§4.2) |
+| `data/multiwinia_betatesters.txt` | front-end credits beta-tester list (§3.18) |
+| `data/mwhelp/360_controller.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/background.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/blitzkrieg1.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/blitzkrieg2.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/capturestatues.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/control_camera.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/control_camera_french.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/crates.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/gear.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/general1.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/general2.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/general3.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/general4.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/general5.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/help_0_1.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/help_1_1.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/help_1_2.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/help_2_1.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/help_2_2.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/help_2_3.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/help_3_1.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/help_3_2.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/help_3_3.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/help_4_1.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/help_4_2.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/help_4_3.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/help_4_4.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/help_5_1.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/help_5_2.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/help_5_3.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/koth.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/liftstatues.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/mode_assault.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/mode_blitzkrieg.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/mode_campaign.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/mode_capturethestatue.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/mode_domination.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/mode_kingofthehill.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/mode_prologue.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/mode_rocketriot.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/mode_tankbattle.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/pulsebomb.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/pulsebomb_attack.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/pulsebomb_defend.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/reinforcements.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/rocketriot1.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/rocketriot2.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/spawnpoint.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/spawnpoint_assault.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/starthere.bmp` | help / menu image (§8.5) |
+| `data/mwhelp/wallbuster.bmp` | help / menu image (§8.5) |
+| `data/scripts/attractmode.txt` | attract-mode fly-through script, dead (§9.7) |
+| `data/scripts/endattract.txt` | attract-mode end script, dead (§9.7) |
+| `data/sounds.txt` | loader / intro / credits music events (§9.5) |
+| `data/textures/ivlogo.bmp` | front-end / loading-screen art (§2.3, §6.6, §9.2) |
+| `data/textures/multiwinia.bmp` | front-end / loading-screen art (§2.3, §6.6, §9.2) |
+| `data/textures/mwtitle.bmp` | front-end / loading-screen art (§2.3, §6.6, §9.2) |
+| `data/textures/prices.bmp` | front-end / loading-screen art (§2.3, §6.6, §9.2) |
+| `data/textures/prices_ambrosia.bmp` | front-end / loading-screen art (§2.3, §6.6, §9.2) |
+| `data/textures/prices_steam.bmp` | front-end / loading-screen art (§2.3, §6.6, §9.2) |
+| `data/textures/unicode/editor.0020.00ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/editor.0410.042f.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/editor.0430.044f.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/editor.20a0.20af.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/speccy.0020.00ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/speccy.0410.042f.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/speccy.0430.044f.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/speccy.20a0.20af.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.0020.00ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.0410.042f.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.0430.044f.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.20a0.20af.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.3000.30ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.4e00.4eff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.4f00.4fff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.5000.50ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.5100.51ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.5200.52ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.5300.53ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.5400.54ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.5500.55ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.5600.56ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.5700.57ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.5800.58ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.5900.59ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.5a00.5aff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.5b00.5bff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.5c00.5cff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.5d00.5dff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.5e00.5eff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.5f00.5fff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.6000.60ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.6100.61ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.6200.62ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.6300.63ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.6400.64ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.6500.65ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.6600.66ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.6700.67ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.6800.68ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.6900.69ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.6a00.6aff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.6b00.6bff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.6c00.6cff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.6d00.6dff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.6e00.6eff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.6f00.6fff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.7000.70ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.7100.71ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.7200.72ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.7300.73ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.7400.74ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.7500.75ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.7600.76ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.7700.77ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.7800.78ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.7900.79ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.7a00.7aff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.7b00.7bff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.7c00.7cff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.7d00.7dff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.7e00.7eff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.7f00.7fff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.8000.80ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.8100.81ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.8200.82ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.8300.83ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.8400.84ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.8500.85ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.8600.86ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.8700.87ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.8800.88ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.8900.89ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.8a00.8aff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.8b00.8bff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.8c00.8cff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.8d00.8dff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.8e00.8eff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.8f00.8fff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.9000.90ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.9100.91ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.9200.92ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.9300.93ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.9400.94ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.9500.95ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.9600.96ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.9700.97ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.9800.98ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.9900.99ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.9a00.9aff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.9b00.9bff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.9c00.9cff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.9d00.9dff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.9e00.9eff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.ac00.acff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.ad00.adff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.ae00.aeff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.af00.afff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.b000.b0ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.b100.b1ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.b200.b2ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.b300.b3ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.b400.b4ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.b500.b5ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.b600.b6ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.b700.b7ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.b800.b8ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.b900.b9ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.ba00.baff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.bb00.bfff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.bc00.bcff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.bd00.bdff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.be00.beff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.bf00.bfff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.c000.c0ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.c100.c1ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.c200.c2ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.c300.c3ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.c400.c4ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.c500.c5ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.c600.c6ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.c700.c7ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.c800.c8ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.c900.c9ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.ca00.caff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.cb00.cbff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.cc00.ccff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.cd00.cdff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.ce00.ceff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.cf00.cfff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.d000.d0ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.d100.d1ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.d200.d2ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.d300.d3ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.d400.d4ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.d500.d5ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.d600.d6ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/textures/unicode/square.d700.d7ff.bmp` | font atlas — localisation font support (§10.4) |
+| `data/thumbnails/default.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_assault_2P_1.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_assault_2P_2.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_assault_2p_3.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_assault_3P_1.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_assault_3P_2.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_assault_3P_3.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_assault_4P_1.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_assault_4P_2.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_benchmark_1.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_blitzkrieg_2p_1.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_blitzkrieg_2p_2.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_blitzkrieg_2p_3.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_blitzkrieg_2p_4.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_blitzkrieg_3P_1.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_blitzkrieg_3P_2.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_blitzkrieg_4P_2.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_cts_2p_1.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_cts_2p_2.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_cts_2p_3.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_cts_2p_4.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_cts_3P_2.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_cts_3p_1.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_cts_3p_3.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_cts_4P_1.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_cts_4P_2.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_cts_4p_3.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_domination_2P_1.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_domination_2P_2.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_domination_3P_1.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_domination_4P_1.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_domination_4P_2.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_koth_2P_1.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_koth_2P_2.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_koth_2P_3.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_koth_2P_3b.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_koth_2P_4.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_koth_3P_1.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_koth_3P_2.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_koth_3P_3.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_koth_3P_4.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_koth_4P_1.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_koth_4P_3.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_koth_4P_4.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_rocketriot_2P_2.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_rocketriot_2P_4.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_rocketriot_2p_3.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_rocketriot_3P_2.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_rocketriot_3P_3.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_rocketriot_3p_1.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_rocketriot_4P_1.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_skirmish_2p_3.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_skirmish_2p_4.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_skirmish_3P_1.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_tankbattle_2P.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_tankbattle_3P.bmp` | map-select thumbnail (§3.5) |
+| `data/thumbnails/mp_tankbattle_4P.bmp` | map-select thumbnail (§3.5) |
+| `tools/build_language_dat.bat` | language.dat packaging per SKU (§10.3) |
+| `tools/build_multiwinia_data.bat` | data build incl. language argument (§10.3) |
+| `tools/build_multiwinia_retail.bat` | retail build, language and autopatcher selection (§10.3) |
+| `tools/build_multiwinia_retail_efigs.bat` | EFIGS retail build (§10.3) |
+| `tools/build_multiwinia_retail_russian.bat` | Russian retail build, origin tag (§10.3) |
+| `tools/englishlanguage.list` | per-language packaging list (§10.3) |
+| `tools/frenchlanguage.list` | per-language packaging list (§10.3) |
+| `tools/germanlanguage.list` | per-language packaging list (§10.3) |
+| `tools/init.list` | init.dat contents — no default_preferences.txt (§11.2) |
+| `tools/italianlanguage.list` | per-language packaging list (§10.3) |
+| `tools/japaneselanguage.list` | per-language packaging list (§10.3) |
+| `tools/koreanlanguage.list` | per-language packaging list (§10.3) |
+| `tools/language.list` | "all" language list (§10.3) |
+| `tools/multiwinia_exclusions.txt` | PC data exclusions (360_controller.bmp, scripts) (§8.5) |
+| `tools/portugueselanguage.list` | per-language packaging list (§10.3) |
+| `tools/russianlanguage.list` | per-language packaging list (§10.3) |
+| `tools/spanishlanguage.list` | per-language packaging list (§10.3) |
+
+
+## Appendix — dead/legacy code
+
+### A.1 Boot-loader framework and mini-programs [B:DEAD] (`USE_LOADERS` commented out)
+
+**Dispatcher `RunBootloader()`** [C] `code/main.cpp:RunBootloader` (inside `#ifdef USE_LOADERS`), called from the top of the main loop in `RunTheGame` when `requestBootloader` is set (`CampaignButton::LoadCampaign`): (1) `g_loadingScreen->Render()` (finish any pending load); (2) `name` = pref `BootLoader` (lookup default `"none"`; first-run value `firsttime`); (3) `"firsttime"` (case-insensitive) → construct `StartSequence`, loop `{ UpdateAdvanceTime(); if (StartSequence::Advance()) break; }`, delete it, camera `SetTarget((1000, 500, 1000), (0, −0.5, −1))` + `CutToTarget()`, set pref `BootLoader = "random"` and save; (4) else `idx = Loader::GetLoaderIndex(name)`; if `idx != −1`: `CreateLoader(idx)->Run()`, delete; (5) `g_RenderingFirstTimeBL = false`. `CreateLoader` body is inside `#ifndef DEMOBUILD` (demo builds return NULL and the caller would crash); unknown type → `AppReleaseAssert`. Registry: §9.5.
+
+**Shared helpers** [C] `code/loaders/loader.cpp`: `SetupFor2D(screenW)` — `screenH = screenW·(ScreenH/ScreenW)` (aspect-preserving virtual canvas), identity modelview, `gluOrtho2D(0, screenW, screenH, 0)`, cull / depth / lighting off, returns `screenH`; `FlipBuffers()` — `PollForEvents`, `InputManager::Advance`, `glFinish`, `Flip`, clear colour (0, 0, 0, 1) + depth, `Sleep(1)`; `AdvanceSound()` — `g_advanceTime = now − g_gameTime; g_gameTime = now`; if sound is initialised `SoundSystem::Advance()` + `SoundLibrary2d::TopupBuffer()`. Loop contract: `while (!controlEvent(ControlSkipMessage))`, break on `m_requestQuit`; music via `TriggerOtherEvent(NULL, "<Event>", TypeMusic)`, stopped with `StopAllSounds(WorldObjectId(), "Music <Event>")`. Skip = `key enter down`, `key esc down`, XInput start / a / b / y (edge-triggered; the edge stays latched until the next `InputManager::Advance()` in `FlipBuffers`, so one press skips every remaining phase of a multi-phase loader [I]). Other loader bindings [C] `data/input/input_preferences.txt` L254–278: `LoaderHelp = key h pressed`; `GOLLoaderSpeedup = key p pressed`; `GOLLoaderSlowdown = key o pressed`; `GOLLoaderReset = key g down`; `RTLoaderReflectivenessIncrease = key p pressed`, `…Decrease = key o pressed`; `RTLoaderPixelWaveIncrease = key l pressed`, `…Decrease = key k pressed`; `RTLoaderMotionBlurIncrease = key m pressed` (Decrease commented out — unbound); `RTLoaderPixelBlurIncrease = key i down`, `…Decrease = key u down`; `RTLoaderBrightnessIncrease = key b pressed`, `…Decrease = key v pressed`; `RTLoaderResolutionIncrease = key x down`, `…Decrease = key c down`; `RTLoaderCameraMode1/2/3 = key 1/2/3 pressed`; `RTLoaderLMB = mouse left pressed` and `mouse right pressed`; `RTLoaderRMB` unbound.
+
+**Music events** [C] `data/sounds.txt` (Music section; samples are third-party, IP items):
+
+| Event | Sample | Loop | Volume | Attack / Release |
+|---|---|---|---|---|
+| `LoaderSpeccy` | `speccyloader` | no | 9.00 | — |
+| `LoaderMatrix` | `matrix` | no | 9.03 | release 7.55 |
+| `LoaderFodder` | `fodder` | no | 9.03 | — |
+| `LoaderRaytrace` | `dma_sc-visitors_from_dreams` | yes | 9.00 | release 10.06 |
+| `LoaderSoul` | `tresk_-weeklies-_schroeders-failure` | yes | 10.00 | release 10.06 |
+| `LoaderGameOfLife` | `twoataris` | no | 9.00 | release 10.26 |
+| `LoaderAmiga` | `pang` | no | 9.00 | release 10.06 |
+| `Credits` | `trash80_-_pain-fade-down` | no | 10.00 | attack 2.71, release 10.06 |
+| `StartSequence` | `dma_sc-visitors_from_dreams` | no | 9.00 | release 10.06 |
+
+`LoaderAmiga` is absent from the sound-editor event list `SoundSystem::GetEventNames` (TypeMusic) but bound in `sounds.txt` [C].
+
+**Spectrum tape loader (`SpeccyLoader`)** [C] `code/loaders/speccy_loader.cpp`: imitates a cassette load. Virtual screen 320 × 256; paper (32, 32)–(288, 224) colour (200, 200, 200). Phases, each exiting on skip / quit; the first three draw no banner: Silence 1.5 s → Header 4.8 s → Data 0.07 s → (banner from here) Silence 1.1 s → Header 2.0 s → Data 1.85 s → Silence 1.01 s → Header 5.05 s → Data 0.07 s → Silence 0.99 s → Header 1.9 s → Screen (pre-screen total 20.34 s). Silence: whole screen one colour of red (255, 0, 0) / cyan (0, 255, 255), 1/200 chance per frame to swap. Header: per scanline a 1-px line in the current colour; stripe switches start at `AppRandom()%4` and recur every 7 lines; at a switch line a random `x = AppRandom()%1000` splits old / new colour (x ≥ 320 invisible); colours red / cyan. Data: same with yellow (255, 255, 0) / blue (0, 0, 255), spacing `2 + AppRandom()%4`. Banner `textures/program_darwinia.bmp` (256 × 256, nearest) at (33, 40)–(289, 296), black, blended. Screen: picture `textures/speccy_screen.bmp` revealed one line per `0.194 s` after a `0.192 s` delay (at most one per frame), destination row `((y & 0x38) >> 3) + ((y & 0x07) << 3) + (y & 0xC0)` (Spectrum display-file interleave), 1-px quads at y = 32 + row, x 32–288, v from `(256 − row)/256`; returns when 192 lines are shown (≈ 37.2 s; the final frame is never flipped). Total ≈ 57.6 s. Unused members `m_monoBmp[256·192]`, `m_currentPixel`, `m_startJ`, `EndFrame` (planned procedural tape sound).
+
+**Matrix rain (`MatrixLoader`)** [C] `code/loaders/matrix_loader.cpp`: grid 40 × 30 brightness cells drawn as 20 × 20 px `sprites/darwinian.bmp` quads on the 800-wide canvas (y uses a fixed 600), colour (0.4, 1.0, 0.4, alpha). Static logo mask `s_highlights[30·40]` (rows 10–17: product name in block letters — IP). Tick every `MATRIXLOADER_UPDATEPERIOD` = 0.02 s: each column with probability ½ shifts down (`pos[i][j] = pos[i][j−1]`); a moving head (value 1.0) over a non-zero mask cell doubles it (cap 100); new top `pos[i][1] − 0.05` (0.5 behind a head), clamped ≥ 0. Spawning by elapsed t: < 1 s head in column 20; 1–15 s one head per tick at a random column; 15–20 s none; first tick after 20 s "fall away" (outside rows 10–18 := 0, rows 10–18 := `mask/100·(j − 10)/8`, masks := 0); returns at t > 23 s without stopping its music. Cell alpha `pos`, or with a mask `max(mask/100, pos)·(0.2 + 0.8·|sin(now + i·j)|)`.
+
+**"Not endorsed by" disclaimer (`FodderLoader`)** [C] `code/loaders/fodder_loader.cpp`: three centred lines `bootloader_fodder_1..3` at (400, 215 / 265 / 320), `g_gameFont` 35, white with a 5 s fade-in while the song plays; ends when the music instance finishes or on skip (without sound it ends after one frame [I]).
+
+**Real-time ray tracer (`RayTraceLoader`)** [C] `code/loaders/raytrace_loader.cpp`: 6 spheres (capacity `RAYTRACELOADER_MAXOBJECTS` = 10; sphere 0 radius 10 colour (200, 130, 100); spheres 1–5 radius 5, even (100, 200, 130), odd (200, 200, 130)); floor plane y = −40; directional light `normalise(1, 0, 1)`; camera (0, 0, −100) looking +Z; defaults resolution 2, reflectiveness 1.0, pixelWave 0, motionBlur 0.1, pixelBlur 2.0, brightness 1.2. Target `160·res × 120·res` (res 1–5, `RAYTRACELOADER_MAXRES`); horizontal FOV 90°, vertical `90°·H/W`. `CastRay` depth `RAYTRACELOADER_RENDERDEPTH` = 2 (up to 3 hits), intensity `brightness/pixelBlur`: nearest sphere (geometric test), hit adds `colour·clamp(−N·L, 0, 1)·intensity` and recurses along the reflection without attenuation (refraction index 1.4 commented out); miss → floor checker `((int)P.x XOR (int)(P.z + now·100)) & 32` (32-unit squares scrolling 100 units/s), white adds `(200, 200, 200, 200)·min(100000/|P|², 1)·intensity`. Animation: axis rotated 0.75 rad/s about X and Y; sphere 0 `z = max(700 − 150√t, 0)`, after 60 s `z = −2(t − 60)`, `y = −7 + 10·sin(T/6)`; satellites at `pos_0 + v·(10 + 5i)` with `v` rotated per frame; camera mode 2 orbit (`|pos| = 100 + 40·sin(0.5T)`, `y = 10 + 10·sin(0.8T)`). Controls: reflectiveness ±dt [0, 1]; pixelWave ±dt (≥ 0); motionBlur ±0.1·dt [0, 1]; pixelBlur ±1 per edge (≥ 1); brightness ±0.1·dt; resolution ±1 [1, 5]; camera modes 0 fixed / 1 free (20 units/s) / 2 orbit; LMB rotates the light by 0.01·dX rad. Compositing: background gradient with alpha `1 − motionBlur` over the uncleared buffer (trails; a vertex uses `y = W/2` instead of `H/2` — bug); additive ray quad strips with optional sine pixel wave; overlay message fades in 30–40 s and out 60–70 s (`bootloader_raytrace_1..9`, `APP_NAME`), help page `_10.._23` while `LoaderHelp` is held (the motion-blur line passes no argument to its `%2.2f` — undefined output). `#pragma omp parallel for` but OpenMP is enabled in no configuration. Under [B:D3D] the colour buffer is cleared every frame (no trails).
+
+**Floating souls (`SoulLoader`)** [C] `code/loaders/soul_loader.cpp`: `gluPerspective(20°, W/H, 1, 10000)`, additive, linear fog 50–1500 black. A spirit every 0.6 s at `(sfrand(200), −170, −frand(1000))` (`sfrand(r)` = ±r/2), removed above y = 200; motion `vel = (sin(offset)·xRate, 3 + frand(3), sin(offset)·zRate)` with rates drifting to 2; drawn as two camera-facing diamonds (sizes 1 and 3, alpha 255 / 150, colour (100, 200, 100), faded in over 10 s). Ten messages `bootloader_soul_0..9` (static schedule): 0–7 start at `T_i = T_{i−1} + 5·(1 + sfrand(0.4))` from `T_{−1} = 10`, last 30 s, size 3, growth 0.7, following private spirits spawned at `(sfrand(150), −170, −700)`; 8 at `T_7 + 30`, 30 s, size 5, growth 0.15, at (0, 0, −300); 9 at `T_8 + 10`, 20 s, size 2, growth 0.3, at (0, −5, −300); alpha ramps over the first 20 %, holds to 80 %, fades out; drawn 4× with shimmer offsets `(sin(T + j), cos(T/2 + j), sin(T/3 + 2j))·size·0.06`. Runs until skipped.
+
+**Game of Life (`GameOfLifeLoader`, plain and Glow)** [C] `code/loaders/gameoflife_loader.cpp`: `CELLSIZE` 20, `MAXAGE` 50, `MAXSPAWNAGE` 30, `MAXSPIRITAGE` 20; grid 128 × `int(128·H/W)`; states Empty 0 / Alive 1 / Dead 2 (afterglow); init 20 % alive via `syncrand()` (network-synchronised RNG — unintended); rules: not alive and n == 3 (n = alive neighbours younger than 30) → born; alive with 2 ≤ n ≤ 3 and age < 50 → survives (age + 1); alive otherwise → Dead; Dead with age < 20 → age + 1; else Empty. Generations computed incrementally by rows over `m_speed` seconds (ages updated in place); zoom `0.08 + t²/500`, speed `max(0.1/(5·zoom), 0.1)` overwritten each frame, so the speed keys have no effect; all-dead overlay `bootloader_life_17` + colony age and `_18` fading in over 5 s; G resets; help `bootloader_life`, `_1.._16b` (`_16b` hidden under `OBERONBUILD`). Alive cells `sprites/darwinian.bmp` (0.4, 1, 0.4, `1 − age/50`); dead cells two diamonds (half-sizes 6.6 / 2.178); Glow variant adds `textures/glow.bmp` halos. Runs until skipped.
+
+**Amiga cracktro (`AmigaLoader`)** [C] `code/loaders/amiga_loader.cpp`, `code/3d_sierpinski_gasket.cpp`: canvas 320 × 256; 4000 stars in a 1024 × 768 field moving left at 20–220 px/s (only ≈ 10 % visible — quirk); from 10 s a 10 000-point chaos-game Sierpinski pyramid (apex (0, 0, 20), base (±20, ±20, −20)) in `gluPerspective(80°, 1.33, 1, 1000)` with oscillating scale (`sin(4t) + 1.25` after 12 s) and a bang-bang pendulum spin (initial phase 20, ±2.1 accel); bouncing two-part logo `textures/dmacrew.bmp`; sine scroller `bootloader_amiga` at 450 px/s, pitch 32 px, glyph height 55 with shadow; fade to black from 72 s over 15 s; ends at 89 s.
+
+**Distributor loaders** [B:DEAD] (no call site even when enabled): `EgamesLoader` (`EGAMESBUILD`) — plays `cinemaware.avi` (absent from `data/`) on a tilted screen in 60° perspective with a static crowd of unit sprites, replacing the sound callback with AVI audio (silence-fill pointer bug `_buffer + n·sizeof(short)`), then `RestartSoundLibrary()` and 1 s black; `OberonLoader` (`OBERONBUILD`, not skippable) — distributor splash 0–1 s fade in, hold to 2.5 s, cross-fade to the publisher logo 2.5–3.5 s (400 × 400 at (200, 100)), hold to 5 s, fade out to 6.5 s [C] `code/loaders/egames_loader.cpp`, `code/loaders/oberon_loader.cpp`.
+
+### A.2 `RequestBootloaderSequence` fade-out bug
+
+§9.2.6 (latent in [B:FULL]; Campaign launch is debug-only).
+
+### A.3 Benchmark recorder and test harness
+
+`BenchMark` (`BENCHMARK_AND_FTP`) and `TestHarness` (`TEST_HARNESS_ENABLED`) are compiled out of every target; specified in [32](32_debug_test_and_performance.md). Pref `TestHarness` and the FTP upload are dead [C].
+
+### A.4 Darwinia context-sensitive help (`HelpSystem`) [B:DEAD]
+
+All of `code/helpsystem.h` and `code/helpsystem.cpp` is inside `#ifdef USE_SEPULVEDA_HELP_TUTORIAL`; it is constructed in `App::App` only under it, and its `Advance` (`code/main.cpp` L557–559), `Render` (`code/renderer.cpp` L621–623) and `PlayerDoneAction` hooks (e.g. `code/location_input.cpp` ~L800) are wrapped; it also disables itself in multiplayer and while a `Tutorial` exists [C].
+
+Algorithm [C] `HelpSystem::Advance`: `m_helpEnabled` = pref `HelpEnabled` (default 1), forced false in multiplayer or when `g_app->m_tutorial` exists; clears `"HelpSystem"` highlights whenever Sepulveda is silent. If disabled: `ControlSepulvedaHelp` (key `h`, `data/input/input_preferences.txt` L255) with an interactive camera → `RunDefaultHelp()`. If enabled (in a location): the quiet timer `m_actionHelpTimer` resets to −1 while Sepulveda talks or the player fires a squad; pressing H shuts up, forces the timer to `now − 90 − 10` and marks help requested; when quiet for > `HELPSYSTEM_ACTIONHELP_INTERVAL` (**90 s**) in keyboard mode → give the first (enum order) action help with `!m_actionDone && IsActionAvailable()`; if not firing, silent and the camera is interactive → `RunHighlightedBuildingHelp()`; if H was pressed and nothing was given → `RunDefaultHelp()`. `Render`: blinking `help_pressh` at top centre (keyboard only).
+
+| Action help (priority order) | Available when | Says | On `PlayerDoneAction` |
+|---|---|---|---|
+| CameraMovement | always | `help_camera_movement` | done |
+| CameraHeight | always | `help_camera_height` | done |
+| TaskBasics | always | `help_taskmanager_1` | ShutUp, `help_taskmanager_2`, done |
+| TaskShutdown | task capacity full | `help_taskmanager_3` (marks done) | done |
+| SquadSummon | capacity free and Squad research | `help_squad_summon_1` + gesture `squad.txt` | ShutUp, `help_squad_summon_2`, done |
+| SquadUse | a squad selected | `help_squad_use` | done |
+| SquadThrowGrenade | Grenade research and squad selected | `help_squad_grenade` | done |
+| SquadDeselect | squad selected | `help_deselect` (marks done) | done |
+| TaskReselect | tasks exist and nothing selected | `help_taskmanager_4` (marks done) | done |
+| EngineerSummon | capacity free, Engineer research, and (spirits exist or an unowned ControlTower exists) | `help_engineer_summon` + gesture `engineer.txt` | ShutUp, `help_engineer_use`, done |
+| EngineerDeselect | engineer selected | `help_deselect` (marks done) | done |
+| OfficerCreate | capacity free, Officer research, team 0 has a unit | `help_officer_create` + gesture `officer.txt` | ShutUp, `help_officer_use`, done |
+| UseArmour | never (base) | — | `help_armour_use`, done |
+| ShowObjectives | always | `help_showobjectives` | done |
+| CameraZoom | always | `help_camera_zoom` (marks done) | done |
+| CameraMoveFast | always | `help_camera_movefast` (marks done) | done |
+| ShowChatLog | always | `help_showchatlog` (marks done) | done |
+| UseRadarDish | (building help) | highlight + `help_radardish_1` | ShutUp, `help_radardish_2` |
+| UseGunTurret | (building help) | highlight + `help_gunturret_1` | ShutUp, `help_gunturret_2` |
+| ResearchUpgrade | never (base) | — | `research_explanation_1..4`, done |
+
+Building help (`m_buildingHelp` by type, for `Camera::GetBestBuildingInView()`): RadarDish and GunTurret (shared objects above) and a generic `SeenBuildingHelp` (highlight + `help_<TypeName>`) for Incubator, TrunkPort, Refinery, Mine, AntHill, ControlTower, ResearchItem; if the building is not the player's and a ControlTower links to it, both are highlighted and `help_building_reprogram` is said instead; a ControlTower already owned by team 2 gets no help [C] `HelpSystem::HelpSystem`, `RunHighlightedBuildingHelp`. `RunDefaultHelp()` speaks per selection: squad `help_squad_use`, `help_deselect` + `help_squad_grenade` / `help_squad_setgrenade` / `help_squad_setrocket` / `help_squad_setairstrike` by research and weapon; engineer `help_engineer_use`, `help_deselect`; officer `help_officer_use` (+ `help_officer_toggle` if officer research > 2), `help_deselect`; armour `help_armour_use`, `help_deselect`; selected radar → `help_radardish_2`; gun turret → `help_gunturret_2`; highlighted building help; task being placed: officer `help_officer_create_2`, squad `help_squad_summon_2`, engineer `help_engineer_summon_2`, armour `help_armour_summon`; otherwise by task usage: none → `help_taskmanager_1`, `help_taskmanager_2`, `help_showobjectives`; full → `task_manager_full`, `help_taskmanager_4`; else `help_taskmanager_4`, `help_taskmanager_2`, `help_showobjectives` [C].
+
+### A.5 Other unreachable or dead windows
+
+| Window | Behaviour | Tag |
+|---|---|---|
+| `MainMenuWindow` "Main Menu" (Darwinia global-world Esc menu) | Resume Game (`MainCloseButton`), Profile, (Mods if enabled), Help and Options, Leaderboards (inactive), Achievements (`AchievementsButton`, no `MouseUp`), About (OBERON) **or** Visit Website (`http://www.multiwinia.co.uk/`; EGAMES `http://www.savedarwinia.com`) + Multiwinia (→ `MultiwiniaWindow`), Leave (`MenuGameExitButton`: `m_atMainMenu = true`, fade out) | [B:LEGACY] |
+| `WebsiteButton` | if full screen: switch to windowed 800 × 600 (destroy window, new renderer, reset event-handler window handle, flush/regenerate GL state, save, `EclInitialise(800, 600)`, recentre parent), then `OpenWebsite(url)` | [B:LEGACY] |
+| `ResetLocationWindow` "Reset Location" | text `dialog_reset1..5`; Yes → close it and `"dialog_locationmenu"`, `App::ResetLevel(false)` (`DEMO2`: true); No | [B:LEGACY] |
+| `AboutDarwiniaWindow` | 350 × 250; unit icon; `APP_NAME " " DARWINIA_VERSION`, publisher credit, publisher URL | [B:DEAD] |
+| `ReallyQuitWindow` "Really Quit?" | 160 × 90 centred; "Leave Multiwinia" (`GameExitButton`: `m_atMainMenu = true`, fade out) and "No. Player On!" (sic) close | [B:LEGACY] |
+| `SaveOnQuitWindow` | 200 × 100; "! Save changes to sounds.txt?" Yes (`SoundSystem::SaveBlueprints`, quit) / No / Cancel | [B:DEAD] |
+| `GameMenuWindow::RenderErrorDialogue` overlay | centred W/3 × H/3 box, dismissed with `ControlCloseTaskHelp`; never switched on | [B:LEGACY] |
+
+[C] `code/interface/mainmenus.cpp`, `code/interface/reallyquit_window.cpp`, `code/interface/save_on_quit_window.cpp`.
+
+### A.6 User profiles [B:LEGACY]
+
+Profiles are a Darwinia campaign-save mechanism. In Multiwinia: `App::Initialise` sets the profile from pref `UserProfile` (first-run `AccessAllAreas`); `App::LoadProfile` with `AccessAllAreas` / `AttractMode` loads `game_unlockall.txt` (every global location available, trunk ports online), else `m_gameDataFile` (`game.txt`); `App::SaveProfile` refuses unless the game mode is Campaign / Prologue → never saves in Multiwinia [C] `code/app.cpp:App::LoadProfile`, `App::SaveProfile`, `App::SetProfileName`.
+
+| Window | Content |
+|---|---|
+| `UserProfileWindow` (title "Profile") | lists `users/*` subdirectories but the list / "Load Profile" / "Create New Profile" buttons are commented out; if pref `AccessAllAreasUnlocked == 1` an "Access All Areas" button (`LoadUserProfileButton`; inactive and captioned "(loaded)" when current; no `MouseUp`, so a click only plays the menu sound); "Reset Profile" (`ConfirmResetButton`, inactive when AAA) → `ConfirmResetWindow` ("Reset This Profile?" No / Yes); Close |
+| `ResetProfileButton` (Yes) | delete every file in `users/<profile>/` **relative to the working directory** (not the profile directory used by `SaveProfile` — would delete the wrong folder), `LoadProfile()`, `SaveProfile(true, false)`, close the window and `"dialog_mainmenu"` |
+| `NewUserProfileWindow` (unreachable) | 300 × 110; name field (default "NewUser", 256 chars); Cancel / Create → `SetProfileName`, `m_loadingNewProfile = true`, `LoadProfile()`, `SaveProfile(true, true)` |
+| `LoadUserProfileButton::SetShortProperties` | caption post-processing: if the caption contains `-`, the number after the last `-` is incremented by 1 ("Profile-1" → "Profile-2") |
+
+### A.7 Mods [B:DEAD]
+
+Everything inside `#ifdef USE_DARWINIA_MOD_SYSTEM` (never defined) and gated by pref `ModSystemEnabled`. `ModsWindow` 300 × (210 + 30 × mods): "Current Mod: <name | none>", one "Load Mod: '<name>'" button per subdirectory of `<profile dir>mods/` (`LoadModButton`: `Resource::LoadMod(name)`, `SetProfileName(name)`, `LoadProfile()`), "Unload Mod" (loads "none"), "Create New Mod" → `NewModWindow` (name default "MyNewMod"; Create: `LoadMod`, profile "none", new `GlobalWorld` with every research item at level 2, `SaveGame("game.txt")`, toggle editor), "Toggle Editor (F9)", Close [C] `code/interface/mods_window.cpp:ModsWindow::Create`.
+
+### A.8 Demo-end window (`DemoEndWindow`) [B:DEAD]
+
+Darwinia "Demo 2" end screen, created only by `ExitLevelButton` under `DEMO2` [C] `code/interface/demoend_window.cpp:DemoEndWindow::Render`, `code/app.cpp:App::GetBuyNowURL`: 800 × 600 centred; background `textures/interface_red.bmp` tiled (u 0…8) fading in with `alpha = clamp((now − t0)/fadeIn, 0, 0.9)`; texts `launchpad_buyme_1..5` (a large headline at (centre + 20, y + 50, size 70) and size-20 lines at y + 150 / 180 / 250 / 280); `BuyOnlineButton` 300 × 100 at (centre − 150, 360) captioned "BUY NOW" + URL; `ExitDemoButton` 140 × 40 at (centre − 70, 520) "EXIT DEMO", usable only after 4 s (`ShowExitButton`, alpha ≤ 0.1 before). Buy: optional `SaveProfile(true, true)`, stop and delete sound libraries, delete resources, `OpenWebsite(App::GetBuyNowURL())`, delete the window manager, `exit(0)`; Exit: the same without the website.
+
+### A.9 Other remnants
+
+- Xbox Live Arcade / PDLC / Darwinia+ page slots 13, 14, 19–22, 26–30 and the members `m_xbla*`, `m_darwiniaPlus*`, `m_showingDeviceSelector` (§1.2.1, §5.7); `code/UI/DarwiniaPlusMPButton.h`, `code/UI/DarwiniaPlusSPButton.h` unused.
+- `code/UI/ErrorDialog.cpp`, `code/UI/ErrorDialog.h` and `code/UI/soundsliderbutton.h` are not in the vcproj; `code/UI/GameMenuOptionsButton.h` is included nowhere; `code/UI/GameTypeAnyButton.h` is included but never instantiated [C].
+- Testbed: `StartTestbedButton`, `CSpectatorButton`, the 10 s connect timeout, `RequestSetTeamReady` auto-ready and the game-over auto-return are `TESTBED_ENABLED`-only [B:DEAD].
+- Vista Game Explorer thumbnail flag in `ExitLevelButton` and rich-presence headers (`TARGET_OS_VISTA`) [B:DEAD].
+- Steam authentication files `contrib/systemiv/lib/metaserver/steamauth_client.cpp`, `steamauth_server.cpp` are not compiled (STEAM_* messages) [B:DEAD].

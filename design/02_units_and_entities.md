@@ -84,7 +84,7 @@ This document specifies **every simulated entity type** of the Multiwinia PC bui
 | 26 | `TypeDropShip` | `DropShip` (`code/worldobject/dropship.h`) | yes | [B:LEGACY] | `Task::TargetDropShip`, reachable only through the `DropShip` reinforcement level option used by `data/levels/old/mp_assault_3P_1.txt` (not shipped) | n/a (invulnerable) | [28](#28-dropship) |
 | 27 | `NumEntityTypes` | — | — | — | sentinel (also used by the Shaman summon menu as the "capture portal" icon) | — | — |
 
-[C] class/header/blocked columns: `code/worldobject/entity.cpp:Entity::NewEntity`, `Entity::GetTypeName`, `Entity::EntityIsBlocked`. Creation sites: grep of `SpawnEntities`/`NewUnit` across `code/` (sites cited in each section). Instant-unit counts: [C] scan of the `InstantUnits` blocks of the 57 `data/levels/mp_*.txt` files (269 `Darwinian`, 7 `Armour`, 9 `Tank`; no other type).
+[C] class/header/blocked columns: `code/worldobject/entity.cpp:Entity::NewEntity`, `Entity::GetTypeName`, `Entity::EntityIsBlocked`. Creation sites: grep of `SpawnEntities`/`NewUnit` across `code/` (sites cited in each section). Instant-unit counts: [C] scan of the `InstantUnits` blocks of the 57 the `mp_` level files in `data/levels/` files (269 `Darwinian`, 7 `Armour`, 9 `Tank`; no other type).
 
 `Entity::GetTypeName` strings equal the enum names without `Type`, except `TypeInvalid` → `"InvalidType"`, `TypeLaserTroop` → `"LaserTroop"`, `TypeInsertionSquadie` → `"Squadie"`; `Entity::GetTypeId(name)` is a case-insensitive linear search over those strings, so a level file must write `Squadie`, not `InsertionSquadie` [C] `code/worldobject/entity.cpp:Entity::GetTypeName`, `Entity::GetTypeId`. `GetTypeNameTranslated` looks up language phrase `entityname_<TypeName>` and falls back to the raw name [C].
 
@@ -231,7 +231,7 @@ Each entity copies three stats from `EntityBlueprint` (§3.5) into `unsigned cha
 - Health can never exceed 255 (every `ChangeHealth` clamps).
 - Speed multipliers applied to the byte (`× 2` hot feet, `× 1.5` rage, `× 0.75` plague, `/ 2` plague) truncate.
 - `SetType` also sets `m_reloading = syncfrand(Rate)` — a random initial reload phase. `Darwinian`'s constructor calls `SetType` and `SpawnEntities` calls it again, so each Darwinian spawn consumes two such draws [C] `code/worldobject/darwinian.cpp:Darwinian::Darwinian`, `code/location.cpp:Location::SpawnEntities`.
-- Speeds are multiplied by `1 + m_difficultyLevel/10` for every type except SpaceInvader; `m_difficultyLevel` is 0 at start-up and is only overwritten by a level's `Difficulty_StartDefinition … CreatedAsDifficulty` block — none of the 57 `mp_*` maps has one (their `Difficulty basic` line is a rating string parsed into `m_difficultyRating`), so the multiplier is 1.0 in Multiwinia [C] `code/app.cpp:App::App`, `code/location.cpp:Location::Init`, `code/level_file.cpp:LevelFile::ParseDifficulty`, grep of `data/levels/mp_*.txt`.
+- Speeds are multiplied by `1 + m_difficultyLevel/10` for every type except SpaceInvader; `m_difficultyLevel` is 0 at start-up and is only overwritten by a level's `Difficulty_StartDefinition … CreatedAsDifficulty` block — none of the 57 `mp_*` maps has one (their `Difficulty basic` line is a rating string parsed into `m_difficultyRating`), so the multiplier is 1.0 in Multiwinia [C] `code/app.cpp:App::App`, `code/location.cpp:Location::Init`, `code/level_file.cpp:LevelFile::ParseDifficulty`, grep of the `mp_` level files in `data/levels/`.
 
 New-game recommendation: store stats as floats per instance.
 
@@ -1297,7 +1297,7 @@ Bindings: [06](06_player_control_and_input.md).
 |---|---|---|
 | Crate reward *Armour* | `RunTask(TypeArmour)` → player targets ground → `Task::TargetArmour(pos)` spawns 1 Armour, selects it; crate sound "Armour" | [C] `code/taskmanager.cpp:Task::TargetArmour` |
 | Trunk-port armour reinforcements (level option `LevelOptionTrunkPortArmour`) | `Multiwinia::AdvanceTrunkPorts` creates a `Task(TypeArmour)` targeted at `trunkport.pos + front·75` (y + 5) while the team has fewer than `maxArmour` armour tasks (or `maxArmour == 0`) | [C] `code/multiwinia.cpp:Multiwinia::AdvanceTrunkPorts` |
-| Level `InstantUnits` with `runAsTask = 1` | converted to a `TypeArmour` task targeted at the unit's position (task life −1): 7 armours on `mp_assault_2P_1`, `mp_assault_3P_2`, `mp_assault_3p_1`, `mp_assault_4P_1` | [C] `code/location.cpp:Location::InitialiseTeam`, `data/levels/mp_assault_*.txt` |
+| Level `InstantUnits` with `runAsTask = 1` | converted to a `TypeArmour` task targeted at the unit's position (task life −1): 7 armours on `mp_assault_2P_1`, `mp_assault_3P_2`, `mp_assault_3p_1`, `mp_assault_4P_1` | [C] `code/location.cpp:Location::InitialiseTeam`, the four Assault level files listed above |
 | `ConstructionYard` [B:LEGACY], cheat window [B:DEBUG] | spawn on team 2 | [C] `code/worldobject/constructionyard.cpp`, `code/interface/cheat_window.cpp` |
 
   Crate validity: the Armour crate is disabled in Rocket Riot and when `LevelOptionTrunkPortArmour > 0` [C] `code/worldobject/crate.cpp:Crate::IsValid` ([04](04_crates_powerups_and_weapons.md)). The task ends when the armour is dead or gone (`Task::Advance`).
@@ -2435,6 +2435,8 @@ stateDiagram-v2
 
 `class LaserTrooper : Entity`, type `TypeLaserTroop` (1) [C] `code/worldobject/lasertrooper.h`, `code/worldobject/lasertrooper.cpp`. **[B:LEGACY]**: compiled in FULL but unreachable — `TypeLaserTroop` is in `EntityIsBlocked` (no level placement) and the only runtime creator is `Lander::AdvanceLanded`, and no code creates Landers [C] `code/worldobject/lander.cpp`, grep of `SpawnEntities`.
 
+### 26.1 LaserTrooper — specification
+
 | Template item | Specification |
 |---|---|
 | Role | Darwinia's basic laser infantry, landed in groups by a Lander |
@@ -2498,6 +2500,8 @@ Shown when the local player's current entity is a Shaman and the task-manager ke
 
 `class DropShip : Entity`, type `TypeDropShip` (26) [C] `code/worldobject/dropship.h`, `code/worldobject/dropship.cpp`. **[B:LEGACY]** (dormant reinforcement transport).
 
+### 28.1 DropShip — specification
+
 | Template item | Specification |
 |---|---|
 | Role | small transport (0.2-scale `spaceship.shp`) that flies from the map corner nearest the target to 250 above it, drops 20 Darwinians of its team one per tick, and leaves |
@@ -2552,6 +2556,8 @@ stateDiagram-v2
 
 `class Tentacle : Entity`, type `TypeTentacle` (22) [C] `code/worldobject/tentacle.h`, `code/worldobject/tentacle.cpp`. **[B:DEBUG] / [B:LEGACY]**: spawned only by `Portal::AdvanceStateExpanding` (6 tentacles × 12 segments on the Monster team, `NUM_TENTACLES` 6); portals come from Darwinia/Shaman maps (`levels/old/`, excluded from the shipped data) or the *The Beast* crate (`Crate::RunTheBeast`), which exists only when `INCLUDE_THEBEAST` is defined — inside `#ifdef TARGET_DEBUG` in `code/worldobject/crate.h` [C] `code/worldobject/portal.cpp:Portal::AdvanceStateExpanding`, `code/worldobject/portal.h`, `code/worldobject/crate.cpp:Crate::RunTheBeast`. `TypeTentacle` is blocked.
 
+### 30.1 Tentacle — specification
+
 | Template item | Specification |
 |---|---|
 | Role | portal tentacles that slam and swipe, flinging and killing anything near |
@@ -2570,6 +2576,8 @@ stateDiagram-v2
 ## 31 Lander
 
 `class Lander : Entity`, type `TypeLander` (7) [C] `code/worldobject/lander.h`, `code/worldobject/lander.cpp`. **[B:LEGACY]**: creatable only via level-file instant units, which `EntityIsBlocked` forbids; no code spawns it [C] grep of `TypeLander`.
+
+### 31.1 Lander — specification
 
 | Template item | Specification |
 |---|---|

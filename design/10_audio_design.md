@@ -176,23 +176,23 @@ Every stop site outside `code/sound/` [C] (X2b §10.E, spot-checked in `crate.cp
 | `Ambience EnterGlobalWorld` | none | world loop exit / script [B:LEGACY] | `code/main.cpp:GlobalWorldGameLoop`, `code/script.cpp:Script::RunCommand_StopSound` |
 | `Music`, `Music <event>` | none | cutscene escape / script `StopSound` [B:LEGACY]; each loader stops its own track [B:DEAD]; `CreditsLoader` stops `Music Cutscene3` although it started `Credits` | `code/script.cpp:Script::RunCommand_StopSound`, `code/loaders/credits_loader.cpp:CreditsLoader::Run`, `code/startsequence.cpp:StartSequence::Advance` |
 | `Tree Burn` | tree | fire out / tree destroyed | `code/worldobject/tree.cpp:Tree::Advance` |
-| `RadarDish BeginRotation` | dish | before re-aiming; on alignment | `code/worldobject/radardish.cpp:RadarDish::Advance` |
+| `RadarDish BeginRotation` | dish | before re-aiming; on alignment | `code/worldobject/radardish.cpp:RadarDish::Advance`, `code/worldobject/radardish.cpp:RadarDish::Aim` |
 | `RadarDish ConnectionEstablished` | dish | link lost | `code/worldobject/radardish.cpp:RadarDish::Advance` |
 | `SolarPanel Operate` | panel | occupancy ≤ 60 % while operating | `code/worldobject/generator.cpp:SolarPanel::Advance` |
-| `SpaceShip TractorBeam` | ship | abduction ends | `code/worldobject/spaceship.cpp:SpaceShip::Advance` |
+| `SpaceShip TractorBeam` | ship | abduction ends | `code/worldobject/spaceship.cpp:SpaceShip::AdvanceDropping` |
 | `Officer SetOrderNone/Goto/Follow/Absorb/Formation` | officer | `Officer::CancelOrderSounds` before every new order sound | `code/worldobject/officer.cpp:Officer::CancelOrderSounds` |
-| `Crate Falling` | crate | lands | `code/worldobject/crate.cpp:Crate::Advance` |
+| `Crate Falling` | crate | lands | `code/worldobject/crate.cpp:Crate::AdvanceFloating` |
 | `Crate Capturing_` (all progress tones) | crate | `Crate::StopCaptureSounds` before each new tone, on capture and on loss | `code/worldobject/crate.cpp:Crate::StopCaptureSounds` |
 | `Crate BeginCapture` | crate | captured or lost | `code/worldobject/crate.cpp:Crate::AdvanceOnGround` |
-| `Engineer BeginReprogramming` | engineer | reprogramming ends [B:LEGACY] (7 sites) | `code/worldobject/engineer.cpp:Engineer::Advance` |
-| `GodDish ConnectToGod` | dish | deactivated [B:LEGACY] | `code/worldobject/goddish.cpp:GodDish::Deactivate` |
+| `Engineer BeginReprogramming` | engineer | reprogramming ends [B:LEGACY] (7 sites) | `code/worldobject/engineer.cpp:Engineer::Advance`, `code/worldobject/engineer.cpp:Engineer::AdvanceResearching`, `code/worldobject/engineer.cpp:Engineer::AdvanceReprogramming` |
+| `GodDish ConnectToGod` | dish | deactivated [B:LEGACY] | `code/worldobject/goddish.cpp:GodDish::DeActivate` |
 | `Spam Create` | spam | becomes research [B:LEGACY] | `code/worldobject/spam.cpp:Spam::Advance` |
-| `Rocket Create` | rocket | explodes | `code/worldobject/weapons.cpp:Rocket::Advance` |
-| `Darwinian SeenThreat` | Darwinian | threat cleared / state change | `code/worldobject/darwinian.cpp:Darwinian::SearchForThreats` |
+| `Rocket Create` | rocket | explodes | `code/worldobject/weapons.cpp:Rocket::Explode` |
+| `Darwinian SeenThreat` | Darwinian | threat cleared / state change | `code/worldobject/darwinian.cpp:Darwinian::AdvanceCombat`, `code/worldobject/darwinian.cpp:Darwinian::SearchForThreats` |
 | `Darwinian TakenControl` | Darwinian | released (both unbound) | `code/worldobject/darwinian.cpp:Darwinian::LoseControl` |
 | `FuelPipe PumpFuel` | pipe | fuel level ≤ 0.2 | `code/worldobject/rocket.cpp:FuelPipe::Advance` |
 | `EscapeRocket Refueling/Happy/Unhappy/Malfunction/Flight` | rocket | the wrong state sound is playing | `code/worldobject/rocket.cpp:EscapeRocket::SetupSounds` |
-| `EscapeRocket EngineBurn` | rocket | engines off | `code/worldobject/rocket.cpp:EscapeRocket::Advance` |
+| `EscapeRocket EngineBurn` | rocket | engines off | `code/worldobject/rocket.cpp:EscapeRocket::SetupSounds` |
 | `Statue Carry` | statue | dropped (`Carry` is unbound) | `code/worldobject/carryablebuilding.cpp:CarryableBuilding::Advance` |
 | all sounds of the tank | tank | tank dies [B:DEBUG] | `code/worldobject/tank.cpp:Tank::ChangeHealth` |
 
@@ -424,7 +424,7 @@ Rows are generated from `_work/drafts/X2b_sound_events.csv` by `_work/scripts/S_
 | 68 | OTHER MultiwiniaInterface | 15 | 12 | 12 | 3 | FULL: menus, HUD, selection |
 <!-- S10:SOURCES:END -->
 
-Object types with **no blueprint** (every event they fire is silent) [C] `code/worldobject/entity.cpp:Entity::GetTypeName`, `code/worldobject/building.cpp:Building::GetTypeName` vs `data/sounds.txt`: ENTITY `Lander`, `AI`, `Shaman`, `Tentacle`, `DropShip`; BUILDING `Factory`, `Cave`, `ControlTower`, `Bridge`, `Wall`, `PylonStart`, `PylonEnd`, `PowerSplitter`, `TrackJunction`, `TrackStart`, `TrackEnd`, `DisplayScreen`, `UpgradePort`, `PrimaryUpgrade`, `SafeArea`, `ReceiverLink`, `SpiritSpawner`, `SpawnPopulationLock`, `SpawnPointMaster`, `SpawnLink`, `AITarget`, `AISpawnPoint`, `ScriptTrigger`, `StaticShape`, `FenceSwitch`, `DynamicHub`, `DynamicNode`, `FeedingTube`, `ChessPiece`, `ChessBase`, `CloneLab`, `Portal`, `WallBuster`, `RestrictionZone`, `JumpPad`, `AIObjective`, `AIObjectiveMarker`, `EruptionMarker`, `SmokeMarker` (39 of the 74 building type names, `Invalid` not counted; the other 35 have blueprints). Live MW types among them whose silence matters: `JumpPad`, `Portal`, `Wall`, `Bridge` (teleport events go to the travelling entity), `SpawnPointMaster`, `AITarget`.
+Object types with **no blueprint** (every event they fire is silent) [C] `code/worldobject/entity.cpp:Entity::GetTypeName`, `code/worldobject/building.cpp:Building::GetTypeName` vs `data/sounds.txt`: ENTITY `Lander`, `AI`, `Shaman`, `Tentacle`, `DropShip`; BUILDING `Factory`, `Cave`, `ControlTower`, `Bridge`, `Wall`, `PylonStart`, `PylonEnd`, `PowerSplitter`, `TrackJunction`, `TrackStart`, `TrackEnd`, `DisplayScreen`, `UpgradePort`, `PrimaryUpgrade`, `SafeArea`, `ReceiverLink`, `SpiritSpawner`, `SpawnPopulationLock`, `SpawnPointMaster`, `SpawnLink`, `AITarget`, `AISpawnPoint`, `ScriptTrigger`, `StaticShape`, `FenceSwitch`, `DynamicHub`, `DynamicNode`, `FeedingTube`, `ChessPiece`, `ChessBase`, `CloneLab`, `Portal`, `WallBuster`, `RestrictionZone`, `JumpPad`, `AIObjective`, `AIObjectiveMarker`, `EruptionMarker`, `SmokeMarker` (39 of the 74 building type names, `Invalid` not counted; the other 35 have blueprints). Of these, the types that occur in `mp_*` level files are `AITarget`, `SpawnPointMaster`, `SpawnLink`, `SpawnPopulationLock`, `StaticShape`, `PylonEnd`, `AIObjectiveMarker`, `RestrictionZone`, `Wall`, `AIObjective`, `Portal`, `PowerSplitter`, `AISpawnPoint`, `JumpPad`, `CloneLab`, `SmokeMarker`, `EruptionMarker` [C] `_work/drafts/X4_level_buildings.csv`; most are invisible logic objects, but player-visible ones such as `JumpPad` launches and `Wall` hits are silent by omission.
 
 ### 4.3 The 12 OTHER sources
 
@@ -697,7 +697,7 @@ Data observations [C]: `PRIORITY` appears in no block; `OTHER Sepulveda Appear` 
 | 243 | OTHER CratePowerup | Triffids | [Sample cratereward_triffid] 2D/Once md100.00 v=9.10 | `mwsounds/`{CrateReward_Triffid} (1) | yes | FULL: crate rewards | — | Triffids (Crate::RunTriffids, team 255). | `code/worldobject/crate.cpp:Crate::RunTriffids:L2236` (team 255) |
 | 244 | OTHER CratePowerup | SpaceShip | [Sample cratereward_futurewinians] 2D/Once md100.00 v=10.00 | `mwsounds/`{CrateReward_Futurewinians} (1) | yes | FULL: crate rewards | — | Space ship (Crate::RunSpaceShip, team 255). | `code/worldobject/crate.cpp:Crate::RunSpaceShip:L2184` (team 255) |
 | 245 | OTHER MultiwiniaInterface | CountdownTick | [Sample countdownbeep3] 2D/Once md100.00 v=7.03 | `mwsounds/`{CountdownBeep3} (1) | yes | FULL: menus, HUD, selection | — | Pre-game countdown: first tick when all players ready, then each whole second of the grace period (Multiwinia::AdvanceGracePeriod); in-game timer at every whole minute and each of the last 10 s (Multiwinia::Render - render-driven). | `code/multiwinia.cpp:Multiwinia::AdvanceGracePeriod:L2385`<br>`code/multiwinia.cpp:Multiwinia::AdvanceGracePeriod:L2399`<br>`code/multiwinia.cpp:Multiwinia::Render:L3660` |
-| 246 | OTHER MultiwiniaInterface | CountdownZeroTick | [Sample countdownbeep3] 2D/Once md100.00 v=7.10 f=2.00 | `mwsounds/`{CountdownBeep3} (1) | yes | FULL: menus, HUD, selection | — | Grace period reaches 0 (game starts) and timed game reaches 0 (Multiwinia::Render). | `code/multiwinia.cpp:Multiwinia::AdvanceGracePeriod:L2412`<br>`code/multiwinia.cpp:Multiwinia::Render:L3664` |
+| 246 | OTHER MultiwiniaInterface | CountdownZeroTick | [Sample countdownbeep3] 2D/Once md100.00 v=7.10 f=2.00 | `mwsounds/`{CountdownBeep3} (1) | yes | FULL: menus, HUD, selection | — | Grace period reaches 0 (game starts; Multiwinia::AdvanceGracePeriod). The Multiwinia::Render site meant for a timed game reaching 0 is unreachable: it tests m_timeRemaining == 0 inside the m_timeRemaining > 0 guard (10 §1.6 R6). | `code/multiwinia.cpp:Multiwinia::AdvanceGracePeriod:L2412`<br>`code/multiwinia.cpp:Multiwinia::Render:L3664` [UNREACHABLE(inside the m_timeRemaining > 0 guard)] |
 | 247 | OTHER MultiwiniaInterface | SelectionCircle | [Sample filtersweep] 2D/Once md100.00 v=7.00 r=0.58<br>[Sample droneloop] 2D/Loop md100.00 v=8.84 a=1.35 r=0.97 | `mwsounds/`{DroneLoop, FilterSweep} (2) | yes | FULL: menus, HUD, selection | — | Player begins growing a selection circle (LocationInput::AdvanceTeamControl, not in grace period): sweep + looping drone, stopped by StopAllSounds "MultiwiniaInterface SelectionCircle" when the circle ends (location_input.cpp L739). | `code/location_input.cpp:LocationInput::AdvanceTeamControl:L707` |
 | 248 | OTHER MultiwiniaInterface | LobbyAmbience | [Group newsamplegroup8] 2D/LoopADSR md100.00 v=8.00 a=9.29 s=10.65 r=10.84<br>[Sample shipheartbeat1] 2D/Loop md200.10 v=8.50 f=0.50<br>[Group multilobbyambiences] 2D/LoopADSR md100.00 v=9.00 f=rnd 0.67..1.01/once s=10.65 r=10.26 | `sounds/`{alien_lands3, evil, rumble1, shipheartbeat1}<br>`mwsounds/`{MultiLobbyAmb1–10} (14) | yes | FULL: menus, HUD, selection | — | Front-end ambience, started once by GameMenuWindow::Update when sounds are ready; stopped when MainMenuLoop exits. | `code/UI/GameMenuWindow.cpp:GameMenuWindow::Update:L507`<br>`code/app.cpp:App::CheckSounds:L526` [commented-out] |
 | 249 | OTHER MultiwiniaInterface | MenuRollOver | [Group mouseovericon] 2D/Once md100.00 v=5.03 | `sounds/`{mouse2, mouse3} (2) | yes | FULL: menus, HUD, selection | — | Mouse moves onto a menu button/control (GameMenuButton/InputField/DropDown/CheckBox::Render, FancyColourButton, LevelSelectButton, leaderboards). | `code/UI/FancyColourButton.h:FancyColourButton::Render:L231`<br>`code/UI/LevelSelectButton.h:LevelSelectButton::Render:L328`<br>`code/game_menu.cpp:GameMenuButton::Render:L361`<br>`code/game_menu.cpp:GameMenuInputField::Render:L1339`<br>`code/game_menu.cpp:GameMenuDropDown::Render:L1722`<br>`code/game_menu.cpp:GameMenuCheckBox::Render:L1942`<br>`code/interface/leaderboards_window.cpp:LeaderboardSmallFontRenderingButton::Render:L146` |
@@ -1060,3 +1060,803 @@ These 74 pairs reference 242 files (2601.4 s) that can never play in a FULL matc
 ### 5.4 Unused samples and orphan groups
 
 192 files (73 in `data/sounds/`, 119 in `data/mwsounds/`, 402.2 s) are named by no `EVENT` block directly or through a referenced group, yet are shipped (191 in `sounds.dat`, `rollover1b.ogg` in `sounds2.dat`) [C] X2b §10.J; the full list is in [25](25_textures_and_assets.md). They are: the officer acknowledgement takes (`YesSir`, `Aye`, `Attention`, `Marching`, `Formation`), statue strain and carry takes (`DStrain`, `carry`, `Drop_Statue`, `StatueDrop`/`2`/`4`), match-end announcements (`GameOver1/2`, `YouWon`, `YouLost2`), 25 alternate crate-reward takes (including the misspelt `CrateRewrad_Darwinians1` and four `CreateReward_` names) plus `CrateReward_OtherTeam`, laser cock / hit / ricochet sets, extra `LaserHitDarwinian13`–`19`, flag waves, fuel-pipe loops, Darwinia mouse clicks, alternative drones (`DroneLoop2/3`, `PinkNoiseLoop`), spawn-point alternates, flame-turret loops, `TankEngineNear`, `CountdownBeep1`, `CountdownEndBeep`, `Bleep3`, `gesturestart`, `ident1`, `engneignite1`. `tools/unused_samples.sh` and `tools/unused_sample_groups.sh` (Darwinia-era checkers) see only part of this: the first ignores `data/mwsounds/` and orphan-group membership and, with the file's CRLF line ends, matches nothing on a POSIX shell [I]; emulated correctly it lists 27 files; the second lists exactly the 12 orphan groups [C] X2b §10.J.
+
+## 6 Music system
+
+### 6.1 What the engine offers (design view)
+
+Engine mechanics are in [27 §8](27_audio_engine.md#8-music-channel); the design-relevant rules [C] `code/sound/soundsystem.cpp:SoundSystem::TriggerOtherEvent`, `SoundSystem::Advance`, `SoundSystem::StopAllSounds`:
+
+| Rule | Behaviour |
+|---|---|
+| Content | Music = any `EVENT` of the `OTHER Music` source, triggered through `TriggerOtherEvent(WorldObject* or NULL, …)`. All 17 shipped music blocks are 2D, single-sample, VOLUME 9.0–10.0 |
+| Slots | exactly one playing track plus one pending request; music never competes for effect voices, never gets 3D, never gets DSP |
+| Re-trigger | requesting the track that is already playing (same file name) does nothing |
+| Change | a new request releases the current track (its own RELEASE); the new one starts on the first tick after the old one has finished and fades in by its own ATTACK (whose timer started at the request, so a long release eats into the attack). No cross-fade overlap, no beat or bar sync, no playlist |
+| Stop | any `StopAllSounds` whose name contains `"Music"` releases whatever track is playing; `StopAllSounds(…, NULL)` does not stop music |
+| Loop | `LOOPTYPE 1` tracks loop seamlessly (Cutscene1–4, LoaderRaytrace, LoaderSoul); `LOOPTYPE 0` tracks play once then release |
+| Level | the same 0–10 envelope and the global master volume; **no separate music volume**; never pitch-bent by game speed (2D) |
+| Data budget | the music file is decoded into RAM on demand, and its whole PCM buffer is allocated when it opens (29.0 MiB for the longest track) [27 §9](27_audio_engine.md#9-sample-cache) |
+
+Authored transitions (resolution R1): RELEASE values of 3.29–20.71 s on 14 of 17 blocks and ATTACK on five (Cutscene3 5.23 s, Cutscene4 2.90 s, Cutscene5 3.10 s, EndSequence 5.23 s, Credits 2.71 s) mean the Darwinia design was "long fade-out of the old cue, then the new cue fades in" [C] `data/sounds.txt` `OTHER Music`.
+
+### 6.2 Tracks and the blueprints that name them
+
+All in `data/sounds/`, Ogg Vorbis mono 44.1 kHz unless noted [C] X2b §10.F (`X2b_samples.csv`), `data/sounds.txt`:
+
+| File | Duration s | Size KiB | Encoder kbps | `OTHER Music` events (loop, envelope) | Original context | Status |
+|---|---|---|---|---|---|---|
+| `tresk_-_excuses.ogg` | 344.555 | 2510 | 65 | Cutscene1 (Loop, release 20.13 s), Cutscene5 (Once, attack 3.10 s, release 15.48 s) | Darwinia scripts `data/scripts/music1.txt`, `containment_intro.txt` (Cutscene1), `music5.txt`, `biosphere_intro.txt` (Cutscene5) | [B:LEGACY], not shipped |
+| `tresk_-_faces-of-a-fashion.ogg` | 278.648 | 2066 | 65 | Cutscene2 (Loop, r 20.13), EndSequence (Once, a 5.23, r 3.29), Demo2Mid (Once, r 20.71) | `music2.txt`, `containment_end.txt`, `gameover.txt`, `launchpad_purpose.txt` | [B:LEGACY], not shipped |
+| `trash80_-_pain-fade-down.ogg` | 213.943 | 1533 | 65 | Cutscene3 (Loop, a 5.23, r 20.13), Credits (Once, a 2.71, r 10.06), Demo2Intro (Once) | `music3.txt`, `yard_intro.txt`, `launchpad_intro.txt`, credits loader | [B:LEGACY], not shipped |
+| `tresk_-_impact-of-silence.ogg` | 172.130 | 982 | 65 | Cutscene4 (Loop, a 2.90, r 20.13) | `music4.txt`, `yard_end.txt` | [B:LEGACY], not shipped |
+| `tresk_-weeklies-_schroeders-failure.ogg` | 103.579 | 485 | 65 | LoaderSoul (Loop, r 10.06) | soul loader | [B:DEAD], not shipped |
+| `dma_sc-visitors_from_dreams.ogg` | 325.251 | 2285 | 65 | LoaderRaytrace (Loop, r 10.06), StartSequence (Once, r 10.06) | raytrace loader, first-run boot sequence | [B:DEAD], not shipped |
+| `twoataris.ogg` | 87.484 | 848 | 80 (libVorbis 20030909) | LoaderGameOfLife (Once, r 10.26) | game-of-life loader | [B:DEAD], not shipped |
+| `pang.ogg` | 87.121 | 626 | 60 (aoTuV b3) | LoaderAmiga (Once, r 10.06) | Amiga loader | [B:DEAD], not shipped |
+| `speccyloader.ogg` | 58.979 | 235 | 65 | LoaderSpeccy (Once) | ZX Spectrum loader | [B:DEAD], not shipped |
+| `matrix.ogg` | 24.000 | 188 | 65 | LoaderMatrix (Once, r 7.55) | matrix loader | [B:DEAD], not shipped |
+| `fodder.ogg` | 6.315 | 31 | 33 (22 050 Hz) | LoaderFodder (Once) | fodder loader (retro-game homage [I]) | [B:DEAD], not shipped |
+
+Total 1702.0 s, 12 070 545 bytes [C].
+
+### 6.3 Every music trigger and its reachability
+
+| Trigger site | Events | Reachability in FULL |
+|---|---|---|
+| Script op `TriggerSound <word>` → `Script::RunCommand_TriggerSound` (plays `Music <word>`); `StopSound <word>` → `Script::RunCommand_StopSound`; cutscene escape stops `"Music"` | the 13 Darwinia scripts listed in §6.2 use `cutscene1`–`cutscene5`, `endsequence`, `Demo2Intro`, `Demo2Mid` | [B:LEGACY]: no Multiwinia path runs a script and the `data/scripts/` directory is excluded from the PC data build ([30](30_scripting_tutorial_and_cutscenes.md)) |
+| `CreditsLoader::Run` | Credits (and it stops `Music Cutscene3`, apparently a bug) | [B:LEGACY]: compiled, but created only from `Camera::AdvanceSphereWorldOutroMode` and `Script::RunCommand_RunCredits` (Darwinia world-map outro and scripts) |
+| the seven loader `Run` methods (`code/loaders/speccy_loader.cpp`, `amiga_loader.cpp`, `matrix_loader.cpp`, `raytrace_loader.cpp`, `gameoflife_loader.cpp`, `fodder_loader.cpp`, `soul_loader.cpp`) | LoaderSpeccy, LoaderAmiga, LoaderMatrix, LoaderRaytrace, LoaderGameOfLife, LoaderFodder, LoaderSoul | [B:DEAD]: `USE_LOADERS` off in every target |
+| `StartSequence::Advance` | StartSequence | [B:DEAD]: only constructed by `RunBootloader` under `USE_LOADERS` |
+
+### 6.4 Why music is never heard in Multiwinia — and the assert
+
+Three independent lines of evidence [C unless noted]:
+
+1. **No reachable trigger** (§6.3).
+2. **No shipped tracks**: all 11 files are excluded from the Multiwinia PC data build by `tools/multiwinia_exclusions.txt` (`sounds/tresk*`, `sounds/trash80*`, `sounds/dma_sc*`, `sounds/twoataris*`, `sounds/pang*`, `sounds/speccyloader.ogg`, `sounds/matrix.ogg`, `sounds/fodder.ogg`) and listed in neither `tools/sounds.txt` nor `tools/menu_sounds.txt`.
+3. **It would crash if reached**: promoting a music request opens the sample; the cache looks up `sounds/<name>` then `mwsounds/<name>` and, finding neither in any archive, executes `AppReleaseAssert(m_soundStreamDecoder, "Failed to open sound stream decoder : %s\n", …)` — a fatal release assert, not silence [C] `code/sound/sample_cache.cpp:CachedSample::CachedSample`; [I] that testing would therefore have exposed any reachable music path.
+
+What the player hears instead is the lobby ambience in the front end and the altitude-driven location ambience in a match (§7.5). There is **no in-match music, no victory/defeat cue and no menu music track** [C]. `docs/multiwinia audio.docx` lists "Lobby — Sounds + music ?" as an open question, i.e. lobby music was considered and not done (10-U12). Design note: music support exists in the engine but has no live content or triggers — treat music as a **missing feature to design**, not a feature to port (§14.5).
+
+## 7 Front-end, UI, HUD, voice and ambience
+
+### 7.1 Menu, HUD and UI sounds
+
+All 2D (centred, never pitch-bent) and [B:FULL] unless noted [C] (X2b §10.G; call sites re-checked in `code/game_menu.cpp`, `code/location_input.cpp`, `code/gamecursor.cpp`, `code/taskmanager_interface_multiwinia.cpp`):
+
+| Event | Trigger | File(s) (duration s) | Vol / pitch |
+|---|---|---|---|
+| `MultiwiniaInterface MenuRollOver` | focus or mouse enters a menu control: `GameMenuButton::Render`, `GameMenuInputField::Render`, `GameMenuDropDown::Render`, `GameMenuCheckBox::Render` (`code/game_menu.cpp`), `FancyColourButton::Render`, `LevelSelectButton::Render`, `LeaderboardSmallFontRenderingButton::Render` (unreachable page) | group `mouseovericon`: `data/sounds/mouse2.ogg` (0.056), `mouse3.ogg` (0.050) | 5.03 |
+| `MultiwiniaInterface MenuSelect` | a button is activated: `GameMenuButton::MouseUp`, `LevelSelectButton::MouseUp`, `MultiwiniaEditorButton::MouseUp` [B:EDITOR], `GameOptionsWindow::CreateMenuControl` buttons, `ConfirmExitWindow::Create`, `HelpWindowButton::MouseUp`, `CrateHelpWindowButton::MouseUp`, `OptionsButton::MouseUp`, `HelpAndOptionsWindow::Create`, `SelectMapButton::MouseUp`, `NewMapWindowButton::MouseUp` | `data/sounds/menuscroll2.ogg` (1.862) | 9.00 |
+| `MultiwiniaInterface MenuCancel` | back / close: `GameMenuButton::MouseUp` (cancel), `BackPageButton::MouseUp`, `MenuCloseButton::MouseUp` | `data/sounds/menuscroll1.ogg` (2.171) | 8.00 |
+| `MultiwiniaInterface ChatMessage` | a chat line arrives in the lobby (`GameMenuWindow::NewChatMessage`, not for the player-join notice) or in a match (`Location::NewChatMessage`) | `data/mwsounds/chat.ogg` (0.216, 22 050 Hz) | 8.00 |
+| `MultiwiniaInterface LobbyAmbience` | §7.5 | 14 files | 8.0 / 8.5 / 9.0 |
+| `MultiwiniaInterface CountdownTick` / `CountdownZeroTick` | §7.2 | `data/mwsounds/CountdownBeep3.ogg` (0.094) | 7.03 / 7.10 at pitch 2.00 |
+| `MultiwiniaInterface SelectionCircle` | the player starts growing a selection circle (not in the grace period): a filter sweep plus a looping drone, both stopped when the circle ends | `data/mwsounds/FilterSweep.ogg` (3.538, release 0.58 s) + `DroneLoop.ogg` (5.957, Loop, attack 1.35 s, release 0.97 s) | 7.00 / 8.84 |
+| `MultiwiniaInterface SelectUnit` | unit selected by clicking, at most once per 0.5 s (wall clock) | `data/mwsounds/mouseclick1.ogg` (0.107) | 6.97 / pitch 0.33 |
+| `MultiwiniaInterface ToggleUnitState` | click on an own selected Armour (deploy / conversion toggle) or Officer (mode cycle) | `mouseclick1.ogg` | 9.03 / pitch 0.58 |
+| `MultiwiniaInterface MouseError` | invalid click: on nothing while something is selected, or right-click while placing a task | `data/mwsounds/beep_harsh_malfunction.ogg` (0.840) | 8.55 / pitch 0.62 |
+| `MultiwiniaInterface UnitHighlight` | the cursor highlight moves to another object, at most once per 0.2 s; **3D world-fixed at the object**, team 255 | group `unithighlight`: `data/mwsounds/rollover1a.ogg` (0.018), `rollover1c.ogg` (0.018) | 7.00 / pitch 0.90 |
+| `Interface MouseOverIcon` | task-manager highlight moves (`TaskManagerInterfaceMultiwinia::AdvanceScreenZones`, `TaskManagerInterface::AdvanceTab`) | group `mouseovericon` | 7.00 |
+| `Interface DeleteTask` | a task is terminated from the task manager | `data/sounds/deselect1.ogg` (2.508) | 9.13 |
+| `Gesture GestureBegin` | a task is started from the Multiwinia task manager (run program / select weapon) | `data/mwsounds/FilterSweep.ogg` | 6.97, release 0.39 s |
+| `Gesture GestureSuccess` | officer promotion, engineer deployed, weapon selected (`Task::TargetOfficer`, `Task::TargetEngineer`, Multiwinia task manager) | `data/sounds/gesturesuccess.ogg` (2.215) | 10.00 |
+| `Interface Show` / `Hide` / `Slide` | Darwinia task-manager open / close / scroll [B:LEGACY] | `taskin.ogg` (3.126) / `taskout.ogg` (0.972) / `menuscroll2.ogg` | 8.48 / 8.52 / 9.48 |
+| `Gesture GestureFail` | Darwinia gesture UI [B:LEGACY] | `gesturefail.ogg` (2.215) | 10.00 |
+| silent (no data) | `Interface SelectTask`, `TaskManagerSelectTask`, `TaskManagerDeselectTask`, `SetOrderGoto`, `ShowLogo` [B:LEGACY]; `Gesture GestureEnd` [B:LEGACY]; `MultiwiniaInterface GameOver`, `YouWon`, `YouLost` | — | — |
+
+### 7.2 Countdown, timer and match-end audio (verified schedule)
+
+| Moment | Sound | Exact rule | Ref |
+|---|---|---|---|
+| All players ready (grace period starts) | `CountdownTick` | fired when `m_gracePeriodTimer == GRACE_TIME` (3.0 s) at the first ready tick | [C] `code/multiwinia.cpp:Multiwinia::AdvanceGracePeriod` |
+| Each whole second of the grace period | `CountdownTick` | the timer drops 0.1 per 10 Hz simulation tick; when it is within 0.1 of an integer a flag schedules a tick on the next call (comment: needed after the float → double change). Simulated with the same double arithmetic: ticks after 1.0 s, 2.0 s and 3.0 s of countdown, i.e. at displayed 2, 1 and 0 | [C] code; schedule [C] by `python3` re-simulation of the loop |
+| Grace period over | `CountdownZeroTick` (same beep, pitch × 2) | timer ≤ 0 → zero tick, game speed requested back to 1.0; it coincides with the last `CountdownTick` | [C] `Multiwinia::AdvanceGracePeriod` |
+| Timed game, every whole minute and the last 10 s | `CountdownTick` | in the HUD render: `if (m_timeRemaining > 0 && !grace && !tutorialBlock)` and `secondsRemaining == 0 || m_timeRemaining <= 10`, once per change of `m_timeRemaining` (function-static last value) — render-driven, so it depends on the HUD being drawn [I] | [C] `code/multiwinia.cpp:Multiwinia::Render` |
+| Timed game reaches 0 | **nothing** | the `m_timeRemaining == 0` zero-tick branch is inside the `> 0` guard (R6) | [C] `Multiwinia::Render` |
+| Winner declared | `GameOver`, then `YouWon` (local team won) or `YouLost` — all **unbound** | then game speed → 0 and locked: 3D world sounds bend toward 0.1× pitch (§8.6) | [C] `code/multiwinia.cpp:Multiwinia::DeclareWinner` |
+
+### 7.3 Objective and reward stings (game-state feedback in the world)
+
+These are not UI-source events but serve as HUD feedback [C] (§4.4 rows):
+
+| Event | Audience | What it tells the player |
+|---|---|---|
+| `Crate Falling` → `Crate Land` | all | a crate is dropping / has landed (falling sound attached, echo in data) |
+| `Crate BeginCapture` (+ `Capturing_0pc`) | 3 blocks: MyTeam sting, Enemy sting, a looping bed for all | a team has started capturing a crate |
+| `Crate Capturing_20pc` … `_80pc` | all, LoopADSR | capture progress tones while the majority holds |
+| `Crate LostCapture` / `Crate Captured` | all | capture abandoned / completed (`Captured` world-fixed) |
+| `CratePowerup <reward>` | 2D; 25 live rewards | which reward the crate gave (one announcer sting per reward, played at the crate position for every listener — the blocks are all-teams) |
+| `Statue ChangeTeam` | 2D, MyTeam vs Enemy | my team / an enemy has grabbed the statue (CTS) |
+| `Statue Drop`, `Statue Create` | all | statue dropped / spawned |
+| `MultiwiniaZone CaptureStatue` | 2D, all + MyTeam bugle + Enemy bugle | a statue was delivered to a zone |
+| `MultiwiniaZone ChangeTeam` | attached, MyTeam (`koh_zone_captured`) vs Enemy (`koh_zone_lost`) | a KotH zone or Blitzkrieg flag changed owner (team 255 plays both, §2.3) |
+| `MultiwiniaZone Create` | attached loop | the active zone hum |
+| `SpawnPoint TurnOn` / `TurnOff` | attached | a spawn point was captured / lost |
+| `EscapeRocket Happy/Unhappy/Malfunction/Flight`, `EngineBurn`, `Explode`, `Damage`; `FuelGenerator PumpUp/PumpDown`, `FuelPipe PumpFuel`, `FuelStation LoadPassenger` | all | Rocket Riot state: refuelling progress, damage, launch |
+| `PulseBomb Create` | world-fixed loop (choir) | Assault pulse bomb is armed (never stops, §13 #2) |
+| `ControlStation Create` | attached loop | Assault control station hum |
+
+### 7.4 Voice and speech content
+
+There is no dialogue system, no subtitles, no lip-sync and no localisation of audio [C] (§2.6). Voiced content consists of short non-lexical or one-word barks bound to events; the file names suggest the content (`YesSir`, `Aye`, `Attention`, `Retreat`, `Attack`), but the recordings were not auditioned (10-U1).
+
+| Voice set | Files | Bound to (live unless tagged) |
+|---|---|---|
+| Darwinian spawn chatter | `darwin_create*.ogg` in `data/sounds/` (15, group `darwiniancreate`) | `Darwinian Create` (one shared MonophonicNearest voice) |
+| Darwinian acknowledgement | `DSelect1`–`DSelect10` in `data/mwsounds/` (group `dselect`) | `Darwinian Selected`, `Darwinian GivenOrdersFromPlayer` |
+| Darwinian battle cries | `Attack*.ogg` in `data/mwsounds/` (37, `combatvoxattack`); `darwinian_threat_attack*.ogg` (3, `darwinseethreatattack`) | `Darwinian SeenThreatAttack`; `SeenThreatAttackHorn` (and the dead `Officer Attack`) |
+| Darwinian retreat | `Retreat*.ogg` in `data/mwsounds/` (26, `combatvoxretreat`) + `darwinian_threat_run*.ogg` in `data/sounds/` (10, `darwinrunaway`) | `Darwinian SeenThreatRunAway` (two layered blocks) |
+| Darwinian pain | `darwin_losehealth*.ogg` (18, `darwinianlosehealth`); `Hit1`–`Hit36` in `data/mwsounds/` (`combatvoxinjured`) | `Darwinian LoseHealth`, `Officer LoseHealth`; `Laser InjuredEntity` |
+| Darwinian death | `darwin_death*.ogg` (8, `darwiniandie`); `LaserHitDarwinian1`–`12.ogg` (`laserhitdarwinian`); `darwin_burn_death1`–`6.ogg` + `silence1`–`7.ogg` (`darwinnianburncry`) | `Darwinian Die` (2 layers), `Officer Die`, legacy `LaserTroop Die`; `Darwinian OnFire` |
+| Darwinian effort / joy | `Carrying3a`–`3d.ogg` (`carrystatue`); `darwin_jump*.ogg` (9, `victoryjum`) | `Darwinian LiftBuilding`; `Darwinian VictoryJump` |
+| Officer voice | `officer_create4/5/6/9/10/11.ogg` (`officercreate`); `officer_order*.ogg` (17, `officerleftright`) | `Officer Create`, `Officer Selected`, `Darwinian GivenOrders`, owner confirmations of `SetOrderGoto` / `SetOrderFormation`; order loops |
+| Squad voice | `squaddie_chatter1`–`16`, `18`–`21` (20, `newsamplegroup1`), `squad_lose_health*.ogg`, `squad_death*.ogg` | `Squadie Create` (shared MonophonicRandom loop), `LoseHealth`, `Die` |
+| Evil-tree speech | `GDSpeech*.ogg` in `data/mwsounds/` (17, `gdspeechgroup`) | `Tree CreateEvil` (Dark Forest crate) |
+| Announcer stings | `CrateReward_*.ogg` in `data/mwsounds/`, `Crate_CaptureMyTeam.ogg`, `Crate_CaptureOtherTeam.ogg`, `Crate_LostCapture.ogg`, `Player_Capture_Statue.ogg`, `Enemy_Capture_Statue.ogg`, `KOH_Zone_Captured.ogg`, `KOH_Zone_Lost.ogg`, `SpawnPoint_PlayerTurnsOn2.ogg`, `SpawnPoint_PlayerTurnsOff2.ogg` | `CratePowerup *` (25 live; dead: FireExtinguisher, FormationBooster, Tank, FlameTurret), crate / statue / zone / spawn-point events |
+| **Unbound** takes | `YesSir1`–`12` (orphan `officerselected`), `Aye1`–`9` (`aye`), `Attention1`–`4` (`officerabsorb`), `Formation1`–`2` (`officersetorderformation`), `Marching1`–`5` (`officersetorderfollow`), `DStrain1`–`17`, `GameOver1`–`2`, `YouWon`, `YouLost2`, `CrateReward_OtherTeam`, 25 alternate crate-reward takes | none — intended officer acknowledgements and match-end announcements never wired, although the matching events are fired (§5.2) |
+
+Behavioural voice rules worth keeping [C] `code/worldobject/darwinian.cpp`:
+
+| Bark | Rule | Ref |
+|---|---|---|
+| Battle cry (`SeenThreatAttack`) / retreat (`SeenThreatRunAway`) | once per new threat; the threat sounds are stopped when the threat clears or the state changes | `Darwinian::SearchForThreats` |
+| War horn (`SeenThreatAttackHorn`) | `frand(200) < 1` per threat check, only if this Darwinian is not already shouting and > 4.0 s of game time have passed since the last horn of **any** Darwinian (function-static) | `Darwinian::SearchForThreats` |
+| Burning scream (`OnFire`) | `AppRandom() % 30 == 0` per simulation tick while on fire (1-in-100 in the legacy sacrifice path) | `Darwinian::AdvanceOnFire`, `Darwinian::AdvanceSacraficing` |
+| Statue-lifting chant (`LiftBuilding` / `GivenOrdersFromPlayer`) | every `soundFrequency = 15 + int((1 − percentLifted) × 20)` sequence ids the chant plays, and at half that phase the acknowledgement — fewer lifters → slower chant | `Darwinian::AdvanceCarryingBuilding` |
+| Victory jump (`VictoryJump`) | team-0 idle Darwinians above y = 10 when all level primary objectives are true; Multiwinia maps use `NeverTrue` objectives, but 10 `mp_*` maps define none, where the empty list may evaluate as victory (10-U8) | `Darwinian::BeginVictoryDance` |
+
+### 7.5 Ambience beds
+
+[C] `data/sounds.txt` (blocks re-read), call sites in `code/main.cpp`, `code/UI/GameMenuWindow.cpp`:
+
+| Bed | Fired by / stopped by | Blocks (all 2D) | Effect on the listener |
+|---|---|---|---|
+| `MultiwiniaInterface LobbyAmbience` | first `GameMenuWindow::Update` after the sound gate opens (a new `GameMenuWindow` is created each time the front end is built, so it restarts after every match [I from `code/game_menu.cpp:GameMenu::CreateMenu`]); stopped when `MainMenuLoop` exits | (a) group `newsamplegroup8` = `alien_lands3` (30.5 s), `rumble1` (22.1 s), `evil` (53.9 s): LoopADSR, vol 8.0, attack 9.29 s, sustain 10.65 s, release 10.84 s; (b) `shipheartbeat1` (1.4 s): Loop, vol 8.5, pitch 0.5, min distance 200.10; (c) group `multilobbyambiences` = `MultiLobbyAmb1`–`MultiLobbyAmb10` in `data/mwsounds/` (19.4–36.0 s each): LoopADSR, vol 9.0, pitch random 0.67–1.01 per note, no attack, sustain 10.65 s, release 10.26 s | an endless generative pad: every ≈ 10.65 s a new random pad (random pitch) starts at full level while the previous fades over ≈ 10 s, over a slow drone and a half-speed heartbeat |
+| `Ambience EnterLocation` | `LocationGameLoop` start (every match); stopped when the loop exits, then `Ambience ExitLocation` (unbound) | (a) group `newsamplegroup8`: LoopADSR, attack 10.00 s, sustain 10.84 s, release 10.00 s, **volume linked to camera altitude** Ypos ≤ 232 → 9.58, ≥ 736 → 0.10; (b) `white_noise` (29.0 s): Loop, volume Ypos 0 → 992 ↦ 3.03 → 7.03, Echo (inactive), min distance 500; (c) group `highaltitude` = `High1`–`High7` in `data/mwsounds/` (15.3–39.6 s): LoopADSR, pitch random 0.75–1.35 per note (smoothing 0.66), attack 10.84 s, sustain random 1.94–16.45 s per note, release 10.45 s, volume Ypos 0 → 988 ↦ 0.06 → 5.97 | ground-level rumble fades out and a high-altitude wind/choir bed plus white noise fade in as the camera climbs — the only "zoom-dependent mix" in the game |
+| `Ambience EnterGlobalWorld` [B:LEGACY] | `GlobalWorldGameLoop` start; stopped on exit / script | 5 blocks: group `worldviewdry` (Loop, vol 6.84, release 8.32 s, loop delay random 0–2.71 s, Echo), group `worldviewwet` (Loop, vol 6.10, loop delay random 0.19–2.52 s), group `worldamb` (LoopADSR, vol 6.0, pitch 0.37, attack 9.68 s, sustain 0.97 s, release 11.03 s, loop delay 0.39 s, Echo), `altitude1` (Loop, vol 5.23, pitch 0.70, attack 6.19 s, release 11.23 s), `rumble1` (Loop, vol 7.74, pitch 0.60, attack 5.42 s, release 6.00 s) | Darwinia world-map beds; never heard in Multiwinia |
+
+There are **no per-level ambiences, no weather sounds, no positional ambient emitters** (the level file has no audio fields) [C] `code/level_file.cpp` (no sound keys; P11/X4 found none). Building hums (`MultiwiniaZone Create`, `ControlStation Create`, `LaserFence Create`, `Tree CreateNormal` / `CreateMagic` / `CreateEvil`, `Powerstation Create` [B:LEGACY]) act as the only local ambient emitters.
+
+## 8 Positional rules
+
+### 8.1 Listener
+
+The listener is the **game camera**, updated every sound tick: position = camera position, orientation = camera front and up (the up vector is negated unless pref `SoundSwapStereo` = 1, which swaps left and right), velocity = camera velocity × 0.2 — irrelevant, because the Doppler factor is set to 0 [C] `code/sound/soundsystem.cpp:SoundSystem::Advance`, `code/sound/sound_library_3d_dsound.cpp:SoundLibrary3dDirectSound::Initialise`. There is no separate "microphone" position (requested in `docs/sound changes.txt`, not implemented), so an RTS camera far above the battlefield hears everything at the camera's distance, and zooming in is the only way to hear detail.
+
+### 8.2 Distance attenuation model (minimum-distance / volume curve)
+
+Both back-ends and the priority calculation use the same law [C] `code/sound/sound_instance.cpp:SoundInstance::CalculatePerceivedVolume`, `code/sound/sound_library_3d_software.cpp:SoundLibrary3dSoftware::CalcChannelVolumes`; DirectSound with its defaults (rolloff 1.0, maximum distance 1e9) [I from the absence of calls; 27-U1]:
+
+```
+d  = |emitter position − camera position|
+g(d) = 1               if d ≤ MINDISTANCE
+     = MINDISTANCE / d  otherwise           (inverse distance, −6.02 dB per doubling)
+heard level (dB) = 5 × (VOLUME_envelope − 10)  +  20·log10 g(d)  −  0.32 × (255 − SoundMasterVolume)
+```
+
+No maximum distance, no cone, no occlusion / obstruction, no air absorption, no low-pass with distance, no reverb send. This matches `docs/MinDistAndVolume.jpg` (flat to the minimum distance, then a hyperbolic fall-off; the chart's examples: a 100 m aeroplane vs a 2 cm bee, and a quiet waterfall with a large minimum distance) [C].
+
+Attenuation relative to full level for the common authored radii [C arithmetic from the law above]:
+
+| Distance d (wu) | MINDISTANCE 50 | 100 (170 blocks) | 200 (39 blocks) | 500 |
+|---|---|---|---|---|
+| 50 | 0.0 dB | 0.0 dB | 0.0 dB | 0.0 dB |
+| 100 | −6.0 dB | 0.0 dB | 0.0 dB | 0.0 dB |
+| 200 | −12.0 dB | −6.0 dB | 0.0 dB | 0.0 dB |
+| 316 | −16.0 dB | −10.0 dB | −4.0 dB | 0.0 dB |
+| 500 | −20.0 dB | −14.0 dB | −8.0 dB | 0.0 dB |
+| 1000 | −26.0 dB | −20.0 dB | −14.0 dB | −6.0 dB |
+| 2000 | −32.0 dB | −26.0 dB | −20.0 dB | −12.0 dB |
+
+MINDISTANCE is the designer's "how big is this sound" control: 5.98 wu (tree creation) to 10000 wu (one block); ≥ 450 wu only for `Meteor Land`, `Refinery Create`, `EscapeRocket Flight` and `Ambience EnterLocation` [C] §3.4. Its unit is the world unit (the code comment says metres); the linked parameter ranges imply camera altitudes up to ≈ 1000 wu [I].
+
+### 8.3 Panning
+
+DirectSound: hardware/driver 3D panning with `DS3DALG_DEFAULT` on software buffers (exact law driver-defined, 27-U1). Software mixer (non-default): linear pan `right = (direction · listenerRight + 1)/2`, `left = 1 − right`, so a centred 3D source sits 6 dB below a 2D source of equal volume on that back-end [C] [27 §11.3](27_audio_engine.md#113-volume-curves-verified). There is no stereo width control, no surround output (the primary buffer is stereo).
+
+### 8.4 Position types and sound lifetime
+
+| `POSITIONTYPE` | Where it sounds | Lifetime | Pitch | Priority | Use in data |
+|---|---|---|---|---|---|
+| 0 `Type2D` | head-relative at the listener: centred, no attenuation (MINDISTANCE irrelevant) | until it ends or is stopped by name | never bent by game speed | always ranks as 10 (the maximum) → out-ranks every 3D sound below volume 10 at any distance | UI, stings, ambience, owner-only voices (83 blocks) |
+| 1 `Type3DStationary` | fixed at the position at trigger time | survives the emitter; a looping one can never be stopped by emitter (§2.5) | bent by game speed | `v × g(d)` | deaths, explosions, impacts, landings (42 blocks) |
+| 2 `Type3DAttachedToObject` | follows the emitter every tick (buildings: their centre position) | **hard-cut without release** on the first tick after the emitter is gone (or when no emitter is selectable); the graceful "become stationary and release" path exists but is almost never reached (10-U6) | bent by game speed | `v × g(d)` | loops, bodies, voices, most one-shots (169 blocks) |
+| 3 `TypeInEditor` | head-relative at the editor cursor (x, 0, z) | editor preview | bent by game speed (not exempt) | 10 | only the dead `Sepulveda Appear/Disappear` blocks (data error) |
+
+[C] `code/sound/soundsystem.cpp:SoundSystem::Advance`, `code/sound/sound_instance.cpp:SoundInstance::Update3DPosition`, `GetFrequencyModifier`, `CalculatePerceivedVolume`. Position updates to DirectSound are sent only when the emitter moved more than 5 % of its distance to the listener ([27 §11.2](27_audio_engine.md#112-directsound-soundlibrary3ddirectsound--the-live-back-end-bfull)).
+
+### 8.5 Height and altitude
+
+Height is expressed only through linked parameters [C] §3.3: `HeightAboveGround` (flyer pitch, SporeGenerator loop delay), `Ypos` (the altitude-driven location ambience — for 2D sounds the link reads the **camera**, so the ambience is effectively a zoom-dependent mix), `CameraDistance` (`Meteor Land` close/far layering: volume 0 → 9.9 over 100 → 320 wu). There is no automatic altitude filtering.
+
+### 8.6 Game-speed pitch bend
+
+In any Multiwinia match outside the grace period, every non-2D voice's pitch is multiplied by `√s`, where `s` is a global smoother updated **on every call** as `s = 0.99·s + 0.01·gameSpeed` (floor 0.01) [C] `code/sound/sound_instance.cpp:GetFrequencyModifier`. Design consequences [I]: the SlowDown / SpeedUp time crates (`code/worldobject/crate.cpp:Crate::RunSlowDownTime`, `Crate::RunSpeedUpTime`) bend world sounds by √speed; the game-over freeze (speed → 0) produces a "tape stop" down to 0.1× pitch; because the smoother advances per call, the bend reacts faster when many 3D voices play (≈ 0.17 s time constant with 30 voices, ≈ 5 s with one); the smoother is never reset between matches. UI, stings, ambience and music (2D) are unaffected.
+
+### 8.7 Crowd sounds and the 316-unit rule
+
+`MonophonicNearest` instances choose, every tick, the emitter nearest to the camera — but the search starts from a squared distance of 99999.9, so only emitters within √99999.9 ≈ **316.2 wu** of the camera can be chosen [C] `code/sound/sound_instance.cpp:SoundInstance::GetAttachedObject`. If none is that close when a new instance is first ticked, it has no emitter, counts as an orphaned attached sound and is destroyed in the same tick [C mechanism, [27 §5.4](27_audio_engine.md#54-one-shot-patience-orphans-and-monophonic-emitters)]. Affected shipped blocks: `Darwinian Create` (spawn chatter), the `laserreload` layer of `Darwinian Attack`, `EscapeRocket Unhappy`. Audible effect [I] (10-U5): Darwinian spawn chatter and the reload click are heard only when the camera is within ≈ 316 wu of a spawning / firing Darwinian; at typical strategic heights they are silent, which conveniently de-clutters the mix but was probably not designed. `MonophonicRandom` (`Squadie Create`, `Squadie WeaponReturns`, `Yard Create`) has no such radius.
+
+### 8.8 Positional rules recommended for the new game
+
+| Rule | Shipped | Recommendation |
+|---|---|---|
+| Listener | camera | camera position for panning, but attenuate from a "focus point" on the ground under the camera (blend by zoom), so a high camera still hears the battle it looks at |
+| Distance law | `min/d`, no max | keep `min/d` (authoring compatibility), add a per-event max distance and a culling radius; virtualise inaudible voices instead of dropping them |
+| Lifetime | attached = hard-cut; stationary loops unstoppable | attached sounds detach and release (or finish one-shots) when the emitter dies; every instance remembers its emitter id from the trigger; all location sounds are released at location exit |
+| Crowd limiting | MonophonicNearest with an accidental 316 wu radius | explicit per-event "crowd" voices with a designed radius and a density-driven layer (e.g. 1–3 voices for any number of emitters, volume by emitter count) |
+| Game-speed bend | √ of a per-call smoother | time-based smoothing, explicit "slow-mo" bus effect, exclude UI and stings |
+| Doppler, occlusion | none | none needed for the top-down view; optional low-pass with distance |
+
+## 9 Priorities and voice limits
+
+### 9.1 Voice counts
+
+| Rule | Value | Ref |
+|---|---|---|
+| Requested channels | pref `SoundChannels`: options 8 / 16 / 32 / 64 (a 48 option is commented out), default 32 | [C] `code/interface/prefs_sound_window.cpp:PrefsSoundWindow::Create`, `code/lib/preferences.cpp` |
+| Effect voices | channels − 1 (DirectSound: `min(SoundChannels, 64) − 1`; with hardware 3D `dwMaxHw3DStreamingBuffers − 2` caps it) → **31 at default**, 7 / 15 / 31 / 63 for the four options | [C] `code/sound/sound_library_3d_dsound.cpp:SoundLibrary3dDirectSound::Initialise` |
+| Music voice | 1, separate | [C] |
+| Queued requests | unlimited; one-shots expire after 3 ticks without a voice (0.15–0.20 s after the trigger); loops wait forever | [C] `code/sound/soundsystem.cpp:SoundSystem::InitialiseSound`, `SoundSystem::Advance` |
+| Voice starts | **at most 1 per 50 ms tick** system-wide (≤ 20 starts/s) | [C] `SoundSystem::Advance` |
+
+### 9.2 Priority formula
+
+There is no authored priority (`PRIORITY` is ignored) [C]. Every tick [C] `code/sound/soundsystem.cpp:SoundSystem::Advance`, `code/sound/sound_instance.cpp:SoundInstance::CalculatePerceivedVolume`:
+
+1. **Perceived volume** = 10 for 2D (and editor) sounds; otherwise `base × g(d)` with `base` = the current envelope level if the sound is playing, else its VOLUME target (so a voice in a long release tail ranks lower as it fades; the code comment explains this was added because ≈ 10 s echo releases were filling channels).
+2. Sort all live instances by perceived volume, loudest first.
+3. Walk the sorted list keeping a multiplier per full event name: the first instance of an event gets × 1, each further one × 0.75 of the previous (1, 0.75, 0.5625, 0.421875, …): `priority = perceived × 0.75^k`, k = number of louder instances of the same event this tick.
+4. The **candidate** is the non-playing instance with the highest priority strictly greater than 0.
+
+### 9.3 Start and stealing rule
+
+| Rule | Behaviour |
+|---|---|
+| Voice choice | the first free voice; otherwise the voice whose occupant has the **lowest** priority (ties → lowest index) [C] `SoundSystem::FindBestAvailableChannel` |
+| Steal test | **none** — the candidate replaces that occupant even when the candidate's priority is lower [C] |
+| Victim | a one-shot victim is destroyed; a looping victim is parked (stays queued) and restarts from its beginning — or a new random group member — when it next wins a voice [C] |
+| Ping-pong | a parked loop can itself be the next candidate and steal back; nothing prevents alternation [I] |
+| Failed start | only a `[???]` name fails; the candidate is then destroyed |
+
+A worked four-tick example is in [27 §5.5](27_audio_engine.md#55-worked-example).
+
+### 9.4 Per-event limiting
+
+The only per-event controls are (a) the 0.75 decay above — many copies of one event self-limit as a group but never hard-cap; (b) `INSTANCETYPE` 1 / 2 — one shared voice for all emitters of an event (§8.7); (c) the layered-block count. There is no per-event or per-category voice cap, no "maximum instances", no cooldown in the data; rate limits that exist live in game code: `SelectUnit` 0.5 s, `UnitHighlight` 0.2 s, war horn 4.0 s, `OnFire` 1-in-30 per tick, `CountdownTick` once per displayed second [C] §7.
+
+### 9.5 Design implications [I]
+
+- In a dense battle the voice set churns: every 50 ms the quietest-ranked voice is replaced by the best queued request regardless of relative loudness; with one start per tick, a burst of 30 explosions takes 1.5 s to start and most one-shots expire unheard.
+- 2D UI and stings always win; a 2D-heavy moment (crate rewards, zone stings, countdown) can evict 3D combat voices.
+- Louder VOLUME, larger MINDISTANCE and being close to the camera are the only ways to protect an important world sound.
+- "Squadie laser fire goes missing too easily" is recorded as a known problem in `docs/ThoughtsOnSoundSystem.txt` [C].
+
+## 10 Filters / DSP
+
+### 10.1 Gating — no DSP runs in the shipped game
+
+[C] `code/sound/sound_instance.cpp:SoundInstance::Copy`, `code/lib/preferences.cpp:GetDefaultSoundDSP`, `code/interface/prefs_sound_window.cpp:RestartSoundButton::MouseUp`, `code/lib/universal_include.h`:
+
+| Switch | State | Effect |
+|---|---|---|
+| `USE_SOUND_DSPEFFECTS` (compile time) | commented out in every target | compiles only the options-screen check box `dialog_realtimeeffects` and its write of pref `SoundDSP` [B:DEAD] |
+| pref `SoundDSP` (run time) | default 0 on PC (1 only on a fast Mac) | read when each instance is copied from its blueprint: only if ≠ 0 are the block's effects attached |
+| Apply button (always compiled) | reads `SoundDSP` | ≠ 0 → re-propagate effect lists to live sounds; 0 → delete live effect handles (leaving device filters attached to their voices — a defect, [27 §12.1](27_audio_engine.md#121-gating--dsp-is-off-in-the-shipped-configuration)) |
+
+Net effect: the 22 effect uses in the data are inert unless `preferences.txt` is edited to `SoundDSP 1`. The audible design is therefore the **dry** sounds; the long releases authored for echo tails ring out as silence.
+
+### 10.2 The 14 filter types
+
+Enum order = `data/effects.txt` order = type id [C] `code/sound/sound_library_3d.h:SoundLibrary3d`, `data/effects.txt` (parameters: name min..max default; L = long (integer), else float):
+
+| Id | Enum | `effects.txt` name | Implementation | Parameters |
+|---|---|---|---|---|
+| 0 | `DSP_DSOUND_CHORUS` | DSound_Chorus | DirectX FX (DirectSound only) | WetDryMix 0..100 50; Depth 0..100 10; Feedback −99..99 25; Frequency 0..10 1.1; Waveform 0..1 1 L; Delay 0..20 16; Phase 0..4 3 L |
+| 1 | `DSP_DSOUND_COMPRESSOR` | DSound_Compressor | DirectX FX | Gain −60..60 0; Attack 0.01..500 10; Release 50..3000 200; Threshold −60..0 −20; Ratio 1..100 3; PreDelay 0..4 4 |
+| 2 | `DSP_DSOUND_DISTORTION` | DSound_Distortion | DirectX FX | Gain −60..0 −18; Edge 0..100 15; PostEQCentreFreq 100..8000 2400; PostEQBandwidth 100..8000 2400; PreLowpassCutoff 100..8000 8000 |
+| 3 | `DSP_DSOUND_ECHO` | DSound_Echo | DirectX FX | WetDryMix 0..100 50; Feedback 0..100 50; LeftDelay 1..2000 500; RightDelay 1..2000 500; PanDelay 0..1 0 L |
+| 4 | `DSP_DSOUND_FLANGER` | DSound_Flanger | DirectX FX | WetDryMix 0..100 50; Depth 0..100 100; Feedback −99..99 −50; Frequency 0..10 0.25; Waveform 0..1 1 L; Delay 0..4 2; Phase 0..4 2 L |
+| 5 | `DSP_DSOUND_GARGLE` | DSound_Gargle | DirectX FX | RateHz 1..100 20 L; WaveShape 0..1 0 L |
+| 6 | `DSP_DSOUND_I3DL2REVERB` | DSound_I3DL2Reverb | DirectX FX (+ quality) | Room −10000..0 −1000 L; RoomHF −10000..0 −100 L; RoomRolloffFactor 0..10 0; DecayTime 0.1..20 1.49; DecayHFRatio 0.1..2 0.83; Reflections −10000..1000 −2602 L; ReflectionsDelay 0..0.3 0.01; Reverb −10000..2000 200 L; ReverbDelay 0..0.1 0.01; Diffusion 0..100 100; Density 0..100 100; HFReference 20..20000 5000; Quality 0..3 2 L |
+| 7 | `DSP_DSOUND_PARAMEQ` | DSound_ParamEQ | DirectX FX | Centre 80..16000 8000; Bandwidth 1..36 12; Gain −15..15 0 |
+| 8 | `DSP_DSOUND_WAVESREVERB` | DSound_WavesReverb | DirectX FX | InGain −96..0 0; ReverbMix −96..0 0; ReverbTime 0.01..3000 1000; HighFreqRTRatio 0.01..0.99 0.01 |
+| 9 | `DSP_RESONANTLOWPASS` | ResonantLowPass | in-house `DspResLowPass` (both back-ends) | CutoffFrequency 100..20000 2500; Resonance 0.1..20 7; Gain 0..10 1 |
+| 10 | `DSP_BITCRUSHER` | BitCrusher | in-house `DspBitCrusher` | BitRate 1..16 16 |
+| 11 | `DSP_GARGLE` | Gargle | in-house `DspGargle` | WetDryMix 0..100 50; RateHz 0.01..100 20; WaveShape 0..1 0 L |
+| 12 | `DSP_ECHO` | Echo | in-house `DspEcho` | WetDryMix 0..100 50; Delay 1..3000 (ms) 200; Attenuation 0..100 50 |
+| 13 | `DSP_SIMPLE_REVERB` | SimpleReverb | in-house `DspReverb` | WetDryMix 0..100 50 (ignored by the code) |
+
+The "Default" column of `effects.txt` is **not** applied to parameters a block omits (they are 0) [C] `code/sound/soundsystem.cpp:SoundSystem::ParseSoundEffect`.
+
+### 10.3 What each in-house filter does (design summary)
+
+Exact arithmetic: [27 §12.5](27_audio_engine.md#125-in-house-algorithms) [C] `code/sound/sound_filter.cpp`.
+
+| Filter | Design behaviour |
+|---|---|
+| ResonantLowPass | resonant biquad low-pass; the 100..20000 control maps exponentially to ≈ 113 Hz..19.9 kHz (`f = e^(p/3850 + 4.7)`), resonance `Q = e^(r/4) − 1`, output gain; coefficients computed for 44.1 kHz regardless of the voice rate |
+| BitCrusher | quantises to 1–16 bits (`step = 65536 / 2^bits`) |
+| Gargle | amplitude modulation at RateHz, triangle (with wet/dry) or square (hard gating, wet/dry ignored) |
+| Echo | single feedback delay line up to 3 s: delay in ms, wet/dry mix, attenuation = feedback % |
+| SimpleReverb | fixed 6-tap feedback reverb (taps 1.1 / 3 / 11 / 19 / 29 / 46 ms); no controls |
+
+Chain rules [C] [27 §12.2](27_audio_engine.md#122-chain-structure): one slot per filter type per voice (two effects of the same type on a sound collide); in-house filters run in type-id order, not data order; DirectX FX (types 0–8) run after them on DirectSound and are ignored by the software mixer; every effect parameter is a `SoundParameter` (fixed / random / linked, re-evaluated each tick). The in-house time constants use `SoundMixFreq` (default 22 050 Hz) while the voice data runs at 44.1 kHz, so echo / reverb times would play at half length and the gargle rate doubled if DSP were enabled (27-U11). Further implementation defects: [27 §12.6](27_audio_engine.md#126-dsp-defects-do-not-copy).
+
+Design intent from `docs/ThoughtsOnSoundSystem.txt` [C]: Distortion and ParamEq were judged too expensive and Compressor pointless in software; the DirectX Gargle lacks wet/dry and fractional rates, and the DirectX Echo is needlessly stereo — hence the in-house Gargle and Echo.
+
+### 10.4 Every effect use in the shipped data
+
+22 uses, one per block; with DSP enabled these would apply [C] `data/sounds.txt` (generated):
+
+<!-- S10:FX:BEGIN -->
+| # | Source | Event | Sound | Effect | Parameters (file order = `data/effects.txt` order; value, `rnd lo..hi`, or `Link inLo..inHi->outLo..outHi`) |
+|---|---|---|---|---|---|
+| 1 | ENTITY Virii | LoseHealth | viruspain | Echo | WetDryMix 27.42; Delay 200.00; Attenuation 28.71 |
+| 2 | ENTITY Virii | Die | newsamplegroup9 | Echo | WetDryMix 50.00; Delay 200.00; Attenuation 50.00 |
+| 3 | ENTITY Squadie | Create | newsamplegroup1 | Echo | WetDryMix CameraDistance 180.00..620.00->0.00..97.10; Delay 200.00; Attenuation 50.00 |
+| 4 | ENTITY Squadie | LoseHealth | newsamplegroup5 | Echo | WetDryMix 50.00; Delay 200.00; Attenuation 50.00 |
+| 5 | ENTITY SporeGenerator | Die | sporegeneratordie | Echo | WetDryMix CameraDistance 140.00..620.00->0.00..93.55; Delay 200.00; Attenuation 50.00 |
+| 6 | ENTITY Centipede | Die | newsamplegroup27 | Echo | WetDryMix 50.00; Delay 281.55; Attenuation 3.23 |
+| 7 | ENTITY Spider | Die | newsamplegroup13 | DSound_Echo | WetDryMix 50.00; Feedback 50.00; LeftDelay 207.35; RightDelay 194.45; PanDelay 0.00 |
+| 8 | ENTITY Darwinian | LoseHealth | darwinianlosehealth | Echo | WetDryMix 50.00; Delay 200.00; Attenuation 50.00 |
+| 9 | ENTITY Darwinian | Create | darwiniancreate | Echo | WetDryMix 50.00; Delay 200.00; Attenuation 50.00 |
+| 10 | ENTITY Armour | Create | tank_hover | Gargle | WetDryMix 100.00; RateHz Velocity 0.00..14.40->2.59..10.01 s0.92; WaveShape 0.00 |
+| 11 | ENTITY Harvester | DropSpirit | incubatoraddspirit | Gargle | WetDryMix 36.77/once; RateHz 29.68; WaveShape 0.99 |
+| 12 | BUILDING RadarDish | ConnectionLost | radarlose | Echo | WetDryMix 50.00; Delay 407.32; Attenuation 64.84 |
+| 13 | BUILDING Mine | CogTurn | minerun | DSound_I3DL2Reverb | Room -193.55; RoomHF -100.00/once; RoomRolloffFactor 0.00; DecayTime 3.89; DecayHFRatio 0.14; Reflections -2602.00; ReflectionsDelay 0.01; Reverb 200.00; ReverbDelay 0.01; Diffusion 100.00; Density 100.00; HFReference 5000.00; Quality 2.00 |
+| 14 | BUILDING Incubator | AddSpirit | incubatoraddspirit | Gargle | WetDryMix 36.77/once; RateHz 29.68; WaveShape 0.99 |
+| 15 | BUILDING BlueprintStore | Create | elec_cackle | DSound_Echo | WetDryMix 50.00; Feedback 24.19; LeftDelay 194.45; RightDelay 291.18; PanDelay 0.00 |
+| 16 | BUILDING Spam | Damage | emaildamage | DSound_Echo | WetDryMix 50.00; Feedback 50.00; LeftDelay 500.00; RightDelay 500.00; PanDelay 0.00 |
+| 17 | BUILDING Spam | Explode | spamboom | DSound_Echo | WetDryMix 50.00; Feedback 50.00; LeftDelay 500.00; RightDelay 500.00; PanDelay 0.00 |
+| 18 | BUILDING Crate | Falling | cratefalling | DSound_Echo | WetDryMix 50.00; Feedback 90.32; LeftDelay 500.00; RightDelay 500.00; PanDelay 0.00 |
+| 19 | OTHER Grenade | Explode | newsamplegroup3 | DSound_WavesReverb | InGain -0.31; ReverbMix -8.98; ReverbTime 3000.00; HighFreqRTRatio 0.65 |
+| 20 | OTHER Ambience | EnterLocation | white_noise | Echo | WetDryMix 50.00; Delay 523.41; Attenuation 50.00 |
+| 21 | OTHER Ambience | EnterGlobalWorld | worldviewdry | Echo | WetDryMix 50.00; Delay rnd 117.09..523.41/once; Attenuation rnd 28.06..71.29/once |
+| 22 | OTHER Ambience | EnterGlobalWorld | worldamb | Echo | WetDryMix 50.00; Delay 200.00; Attenuation 77.74 |
+<!-- S10:FX:END -->
+
+## 11 Mix groups, volume categories and sound options
+
+### 11.1 There are no mix groups
+
+There is **one gain stage above the voices: the master volume** (pref `SoundMasterVolume`, 0–255), applied to every voice including music [C] (no other gain stage exists in `code/sound`). There are no music / SFX / voice / UI volumes, no buses or submixes, no ducking or side-chaining, no snapshots or states, no "highlight one event" mode (requested in `docs/sound changes.txt`, not implemented), no loudness normalisation and no limiter on the DirectSound path [C]. The only group-like mechanisms are implicit:
+
+| Mechanism | Acts like | Ref |
+|---|---|---|
+| `POSITIONTYPE 0` (2D) | a "UI / stings / ambience" layer: unattenuated, unbent, top priority | §8.4 |
+| `TEAMMATCHTYPE` | an audience filter (owner-only / enemy-only variants) | §2.3 |
+| Same-event 0.75 priority decay | a soft per-event voice budget | §9.2 |
+| `INSTANCETYPE` 1 / 2 | one voice per event (crowd group) | §8.7 |
+| The music slot | a dedicated "music bus" with no own volume (unused) | §6 |
+| Camera-altitude-linked ambience | a zoom-dependent ambience mix | §7.5 |
+
+### 11.2 Volume law
+
+[C] `code/sound/sound_library_3d_dsound.cpp:SoundLibrary3dDirectSound::SetChannelVolume`, `code/sound/sound_library_3d.cpp:SoundLibrary3d::SetMasterVolume` (full comparison with the software mixer: [27 §11.3](27_audio_engine.md#113-volume-curves-verified)):
+
+| Quantity | DirectSound (shipped) |
+|---|---|
+| Voice volume v (0..10 vol units) | `mB = −(5 − v/2) × 1000` → **5 dB per unit**: v 10 = 0 dB, 9 = −5 dB, 8 = −10 dB, 7 = −15 dB, 5 = −25 dB, 0 = −50 dB (not silence) |
+| Master m (0..255) | adds `(255 − m) × −32` mB → 0.32 dB per step; m 0 = −81.6 dB |
+| Floor | −100 dB (`DSBVOLUME_MIN`) |
+| Envelope ramps | linear in vol units = linear in dB, quantised to the 50 ms tick |
+
+### 11.3 Options that affect the mix (Sound Options screen)
+
+`PrefsSoundWindow` (`dialog_soundoptions`, reached through Help and Options → Sound in the front end and in the in-game Esc menu; flow in [09](09_meta_systems.md)) [C] `code/interface/prefs_sound_window.cpp:PrefsSoundWindow::Create`, `code/UI/soundsliderbutton.h:VolumeControl`, `code/lib/preferences.cpp:PrefsManager::CreateDefaultValues`:
+
+| # | Control (string id) | Pref | Values | Default (generated prefs / code fallback) | Applied | Effect | Build |
+|---|---|---|---|---|---|---|---|
+| 1 | drop-down `dialog_soundlibrary` | `SoundLibrary` | only `dialog_directsound` (1) under `HAVE_DSOUND` (`dialog_softwaresound` (0) otherwise); Apply writes `"dsound"` or `"software"` | `dsound` / `dsound` | Apply → library restart | back-end choice; `"none"` (hand-edited) disables audio | [B:FULL] |
+| 2 | cycle drop-down `dialog_mixfrequency` | `SoundMixFreq` | 11025 / 22050 / 44100 (`dialog_11khz`, `dialog_22khz`, `dialog_44khz`) | 22050 / 22050 (44100 in the waveOut library) | Apply → restart | output mix rate; the in-house DSP time base | [B:FULL] |
+| 3 | slider `volume`, caption hard-coded English "Master Volume" | `SoundMasterVolume` | 0–255 (slider fraction × 255, truncated) | 255 / 255 | **immediately** on mouse-down (every voice re-sends its volume next tick); saved on mouse-up; independent of Apply | global attenuation 0.32 dB per step for all sounds and music | [B:FULL] — **live** (R4) |
+| 4 | cycle drop-down `dialog_numchannels` | `SoundChannels` | 8 / 16 / 32 / 64 | 32 / 32 (the window's own fallback is 16) | Apply → restart | voice count (N − 1 effect voices + music) | [B:FULL] |
+| 5 | check box `dialog_swapstereo` | `SoundSwapStereo` | 0 / 1 | 0 / 0 | Apply (read every tick) | 1 swaps left and right | [B:FULL] |
+| 6 | drop-down `dialog_memoryusage` | `SoundMemoryUsage` | high 1 / medium 2 / low 3 | 1 / 1 | Apply → empty cache, reopen streams | restricts group variety to the first 100 / 50 / 25 % of members (still honoured at run time if hand-edited) | UI [B:DEAD] (`USE_SOUND_MEMORY`) |
+| 7 | check box `dialog_hw3dsound` | `SoundHW3D` | 0 / 1 | 0 / 0 | Apply → restart; on failure a message box "Failed to set requested sound settings", pref reset to 0, retry | hardware 3D buffers | UI [B:DEAD] (`USE_SOUND_HW3D`); pref read |
+| 8 | check box `dialog_realtimeeffects` | `SoundDSP` | 0 / 1 | 0 / 0 | Apply → propagate or strip DSP | enables the per-sound DSP chains (§10) | UI [B:DEAD] (`USE_SOUND_DSPEFFECTS`); pref read |
+| — | button `dialog_apply` (`RestartSoundButton`) | — | — | — | greyed while every control equals the stored prefs | writes prefs, restarts the library, DSP handling, saves | [B:FULL] |
+| — | button `dialog_close` (`multiwinia_menu_back`) | — | — | — | — | back | [B:FULL] |
+
+Hidden prefs: `SoundBufferSize` (software path only; 512 generated / 2000 fallback). A library restart keeps all queued and playing sounds but drops their voices: loops restart from the beginning, one-shots get their remaining patience, music resumes at its position [C/I] [27 §2.5](27_audio_engine.md#25-library-restart). The code after the early `return` in `PrefsSoundWindow::Render` (device name, sound CPU %, cache memory readout) is unreachable [C].
+
+### 11.4 Mix observations
+
+[I] from §4 and §11.2: the authored VOLUME range is narrow (most blocks 8–10, i.e. within 10 dB), so the in-game mix is dominated by distance and by the 2D layer; the lobby and location beds are authored at 8–9.6 vol units (−20 … −2 dB) and are always present; because ambience volume follows the camera altitude, a zoomed-out view gets louder wind / white noise while 3D combat gets quieter — the de-facto "strategic view" mix.
+
+## 12 Audio asset statistics (summary; per-file catalogue in 25)
+
+The one-row-per-file audio catalogue (path, duration, size, encoder, tags, events, archive, liveness) is in [25_textures_and_assets](25_textures_and_assets.md) (source table `_work/drafts/X2b_samples.csv`). Summary [C] `X2b_summary.txt` / `X2b_samples.csv`:
+
+| Set | Files | Duration | Bytes on disk | Decoded PCM (16-bit mono) |
+|---|---|---|---|---|
+| All audio | 1332 | 5636.7 s (93.9 min) | 57 467 611 (54.8 MiB) | 473.9 MiB |
+| `data/sounds/` | 954 | 4165.7 s | 34 323 117 | — |
+| `data/mwsounds/` | 378 | 1471.0 s | 23 144 494 | — |
+| referenced by some `EVENT` block | 1140 | 5234.5 s | 51 688 528 | — |
+| of which **live** (some referencing event fires in FULL) | 898 | 2633.1 s (43.9 min) | 32 721 754 (31.2 MiB) | 221.5 MiB |
+| of which dead data (only unreachable / never-fired events) | 242 | 2601.4 s | 18 966 774 | 218.6 MiB |
+| unused (no blueprint reference) | 192 (73 `sounds`, 119 `mwsounds`) | 402.2 s | 5 779 083 | 33.8 MiB |
+| `menusounds.dat` | 18 | 384.0 s | 4 950 327 | — |
+| `sounds.dat` | 1297 | 3933.5 s | 45 360 003 | — |
+| `sounds2.dat` | 6 | 1.2 s | 37 063 | — |
+| not shipped (music) | 11 | 1702.0 s | 12 070 545 | — |
+
+Format: 1332 Ogg Vorbis I, all **mono**; 1330 at 44 100 Hz, 2 at 22 050 Hz (`data/sounds/fodder.ogg`, `data/mwsounds/chat.ogg`). Nominal bit rate 65 kbps for 862 files (all in `data/sounds`), 128 kbps 458, 96 kbps 8, 33 / 40 / 60 / 80 kbps one each. Duration distribution: ≤ 0.25 s 117, ≤ 0.5 s 152, ≤ 1 s 236, ≤ 2 s 215, ≤ 5 s 414, ≤ 10 s 131, ≤ 30 s 48, ≤ 60 s 10, > 60 s 9; median 1.686 s, mean 4.232 s; shortest `data/mwsounds/rollover1a.ogg` / `rollover1c.ogg` 0.018 s; longest `data/sounds/tresk_-_excuses.ogg` 344.555 s. No language-specific audio. Memory implication [I]: the live set decodes to ≈ 221.5 MiB against the engine's 60 MiB LRU cache — a new engine should keep short sounds resident (compressed or ADPCM) and stream the long beds (`High*`, `MultiLobbyAmb*`, `evil`, `alien_lands3`, `white_noise`).
+
+Live content per source — the scope of a replacement asset set (files that can play in a FULL match, events fired in FULL only; files shared between sources counted per source, so the column sums exceed 898) [C] X2b §10.K:
+
+| Source | Live events | Files | Duration s |
+|---|---|---|---|
+| ENTITY Engineer | 3 | 15 | 31.3 |
+| ENTITY Virii | 4 | 47 | 11.0 |
+| ENTITY Squadie | 7 | 48 | 40.3 |
+| ENTITY SporeGenerator | 4 | 25 | 77.2 |
+| ENTITY Centipede | 4 | 21 | 48.8 |
+| ENTITY SpaceInvader | 2 | 2 | 7.9 |
+| ENTITY Spider | 7 | 53 | 89.2 |
+| ENTITY Darwinian | 13 | 200 | 173.3 |
+| ENTITY Officer | 7 | 55 | 71.4 |
+| ENTITY ArmyAnt | 4 | 27 | 6.7 |
+| ENTITY Armour | 4 | 30 | 129.4 |
+| ENTITY SoulDestroyer | 5 | 47 | 99.1 |
+| ENTITY TriffidEgg | 4 | 30 | 64.1 |
+| ENTITY Harvester | 2 | 9 | 17.7 |
+| ENTITY Nuke | 2 | 3 | 20.5 |
+| ENTITY Meteor | 2 | 4 | 17.7 |
+| ENTITY SpaceShip | 2 | 13 | 171.9 |
+| BUILDING RadarDish | 4 | 11 | 16.1 |
+| BUILDING LaserFence | 3 | 23 | 31.0 |
+| BUILDING GunTurret | 4 | 23 | 50.3 |
+| BUILDING Tree | 5 | 41 | 180.4 |
+| BUILDING Pylon | 1 | 22 | 8.1 |
+| BUILDING SolarPanel | 2 | 6 | 6.5 |
+| BUILDING AntHill | 2 | 15 | 54.8 |
+| BUILDING Triffid | 2 | 9 | 74.4 |
+| BUILDING SpawnPoint | 2 | 2 | 17.3 |
+| BUILDING FuelGenerator | 2 | 10 | 33.3 |
+| BUILDING FuelPipe | 1 | 1 | 4.2 |
+| BUILDING FuelStation | 1 | 5 | 3.6 |
+| BUILDING EscapeRocket | 7 | 29 | 132.7 |
+| BUILDING MultiwiniaZone | 3 | 6 | 18.8 |
+| BUILDING ControlStation | 1 | 4 | 30.7 |
+| BUILDING Crate | 10 | 18 | 188.4 |
+| BUILDING Statue | 3 | 4 | 11.2 |
+| BUILDING PulseBomb | 1 | 6 | 36.1 |
+| OTHER Laser | 1 | 36 | 16.0 |
+| OTHER Grenade | 4 | 17 | 39.8 |
+| OTHER Rocket | 2 | 6 | 22.4 |
+| OTHER AirStrikeBomb | 2 | 6 | 30.7 |
+| OTHER Spirit | 1 | 1 | 2.0 |
+| OTHER Gesture | 2 | 2 | 5.8 |
+| OTHER Ambience | 1 | 11 | 315.0 |
+| OTHER Interface | 2 | 3 | 2.6 |
+| OTHER CratePowerup | 25 | 25 | 121.9 |
+| OTHER MultiwiniaInterface | 12 | 26 | 394.8 |
+
+Encoder metadata [C] X2b §10.B: 863 files `Xiph.Org libVorbis I 20040920`, 466 `libVorbis I 20020717` (all carrying the bare comment `Sony Ogg Vorbis 1.0 Final`, an authoring-tool marker [I]; 27 of them carry `DATE=2005-09-05/06` and an `ENGINEER=` personal name — not reproduced here), 2 `20030909`, 1 `aoTuV b3`; no artist or title tags.
+
+## 13 Bugs and quirks that shape the shipped audio
+
+Each is a "do not copy" unless stated; [C] mechanism unless tagged.
+
+| # | Bug / quirk | Audible consequence | Ref |
+|---|---|---|---|
+| 1 | Crate decay tone formats `"Capturing_%pc"` (pointer conversion) instead of `%dpc` | while a crate's capture falls back, no progress tones play (the name never matches) | `code/worldobject/crate.cpp:Crate::AdvanceOnGround` |
+| 2 | World-fixed (`POSITIONTYPE 1`) loops get no emitter id and are not orphan-culled | the Assault pulse-bomb choir (`PulseBomb Create`) is never stopped — it keeps looping at its world position after the bomb is gone and after the match [I, 10-U4] | `code/sound/soundsystem.cpp:SoundSystem::Advance`, `StopAllSounds`; `data/sounds.txt` `BUILDING PulseBomb` |
+| 3 | Match-end events have no data | the end of a match has no win / loss sting although `GameOver1/2`, `YouWon`, `YouLost2` were recorded | `code/multiwinia.cpp:Multiwinia::DeclareWinner` |
+| 4 | Timed-game zero tick nested inside the `> 0` guard | no beep when a timed game runs out | `code/multiwinia.cpp:Multiwinia::Render` (R6) |
+| 5 | `MonophonicNearest` seed 99999.9 on squared distance | Darwinian spawn chatter, the reload click and `EscapeRocket Unhappy` are culled unless the camera is within ≈ 316 wu [I audible, 10-U5] | `code/sound/sound_instance.cpp:SoundInstance::GetAttachedObject` |
+| 6 | Attached sounds are hard-cut on the first tick after the emitter disappears | clicks / truncated tails on attached deaths and loops (`Virii Die`, `Spider Die`, `Squadie Die`, `Officer Die`, `ArmyAnt Die`, `SoulDestroyer Die`, every vehicle loop) [I audible, 10-U6] | `SoundSystem::Advance` pass 1 |
+| 7 | Voice stealing has no priority comparison and allows only one start per tick | in dense fights the quietest-ranked voice is replaced every 50 ms by whatever is queued; bursts of one-shots expire unheard; loops can ping-pong | `code/sound/soundsystem.cpp:SoundSystem::Advance`, `FindBestAvailableChannel` |
+| 8 | Keep-alive polling (`NumInstances`) cannot see an instance until a sound tick ran and never sees 2D / world-fixed ones | possible duplicate Rocket Riot loops (`EscapeRocket` state sounds, `FuelPipe PumpFuel`) [I, 10-U11] | `code/worldobject/rocket.cpp:EscapeRocket::SetupSounds`, `FuelPipe::Advance` |
+| 9 | Team 255 passes every friend/foe filter | a zone or flag going neutral plays both the "captured" and the "lost" sting; "lost" also plays when a zone moves between two enemies [I audible, 10-U10] | `code/sound/soundsystem.cpp:SoundEventBlueprint::TeamMatch` |
+| 10 | Every trigger waits for the full sound archives | the early `menusounds.dat` bank cannot be heard early; nothing plays during start-up and loading screens | `code/sound/soundsystem.cpp:SoundSystem::NotReadyForGameSoundsYet` |
+| 11 | A blueprint naming a missing sample or group is a fatal release assert | data errors crash rather than fall silent; harmless only because the 11 unshipped music files are unreachable | `code/sound/sample_cache.cpp:CachedSample::CachedSample`, `code/sound/sound_instance.cpp:SoundInstance::OpenStream` |
+| 12 | DSP disabled while the data keeps ≈ 10 s releases authored for echo tails | voices stay occupied by silent tails (mitigated by ranking playing voices on their envelope level) | §10.1, [27 §5.2](27_audio_engine.md#52-perceived-volume) |
+| 13 | Squad `ThrowGrenade` (the only reachable secondary) unbound while the unreachable `ThrowAirStrike` is bound | no throw sound for squads (the grenade's own `Create` plays) | `code/worldobject/insertion_squad.cpp:Squadie::FireSecondaryWeapon` |
+| 14 | Render-driven triggers | `Grenade Flash` / `AirStrikeBomb Flash` and the in-game timer ticks depend on the object / HUD being rendered [I] | `code/worldobject/weapons.cpp:ThrowableWeapon::Render`, `code/multiwinia.cpp:Multiwinia::Render` |
+| 15 | Game-speed pitch smoother updated per call, never reset | bend speed depends on voice count; state carries between matches | `code/sound/sound_instance.cpp:GetFrequencyModifier` |
+| 16 | Smoothed `UpdateOncePerLoop` random parameters start from the constructor value | authored random pitch ranges are compressed toward 1.0 on the first note [I, 27-U10] | `code/sound/sound_parameter.cpp:SoundParameter::Copy` |
+| 17 | `SoundMemoryUsage` 2 / 3 uses only the first ½ / ¼ of every group | less variety on low settings (UI hidden; pref honoured) | `code/sound/sound_instance.cpp:SoundInstance::OpenStream` |
+| 18 | `officercreate` defined twice | harmless (identical; first wins) | `data/sounds.txt` |
+| 19 | GunTurret editor list names `RegisteredKill`; code fires and data binds `RegisterKill` | harmless in game; the editor offers a name that never fires | `code/worldobject/gunturret.cpp:GunTurret::ListSoundEvents` |
+| 20 | Volume 0 is −50 dB, not silence | very quiet but audible "silent" settings | `code/sound/sound_library_3d_dsound.cpp:SoundLibrary3dDirectSound::SetChannelVolume` |
+| 21 | Data-error blocks: `Sepulveda TextAppear` named `[???]`, `Sepulveda Appear/Disappear` in-editor position | dead (Sepulveda is [B:DEAD]) | `data/sounds.txt` |
+| 22 | `CreditsLoader` starts `Credits` but stops `Music Cutscene3`; `MatrixLoader` returns without stopping its track | [B:LEGACY]/[B:DEAD] only | `code/loaders/credits_loader.cpp:CreditsLoader::Run`, `code/loaders/matrix_loader.cpp:MatrixLoader::Run` |
+| 23 | No audio device → queued instances are never freed | memory growth for the session on machines without audio | [27 §11.5](27_audio_engine.md#115-null-device) |
+| 24 | Victory jumps may fire on the 10 `mp_*` maps that define no primary objectives | idle Darwinians may cheer during a match [I, 10-U8] | `code/worldobject/darwinian.cpp:Darwinian::BeginVictoryDance` |
+
+## 14 Sound-design brief for the new game
+
+All 1332 samples, the 11 music tracks, the event and group names that embed Introversion names, and the specific ambience designs are Introversion (or third-party) IP and **must not ship** in the new game (IP items). What carries forward is the *model* and the *event list*.
+
+### 14.1 Keep / adapt / replace / drop
+
+| Element | Decision | Rationale |
+|---|---|---|
+| Event-driven binding (game code fires source × event; data decides) | **Keep** | clean separation; lets audio iterate without code changes |
+| Layered blocks per event, friend/foe variants (`TEAMMATCHTYPE`) | **Keep** | essential for multiplayer feedback; fix the team-255 rule (neutral = its own variant) |
+| Sample groups with random choice | **Adapt** | add "no immediate repeat" and weighted choice; keep variety-by-pitch |
+| Position types 2D / world-fixed / attached | **Adapt** | attached sounds detach and release when the emitter dies; every instance stoppable by emitter; release all location sounds at exit |
+| LoopADSR re-triggering notes | **Keep** (as a "generative loop" feature) | it is what makes the ambience beds work |
+| Linked parameters (`Velocity`, `HeightAboveGround`, `CameraDistance`, `Ypos`) | **Keep**, add links | add "age of object" (requested in `docs/multiwinia audio.docx`), "team count nearby", "game time remaining", "unit count" |
+| Monophonic crowd voices | **Replace** | explicit crowd/density system with a designed radius (not the accidental 316 wu) |
+| Priority (perceived volume × 0.75^k, no steal test, 1 start / tick) | **Replace** | authored priority classes + loudness, steal only when the candidate outranks the victim by a margin, virtual voices, per-event and per-bus caps, unlimited starts per frame |
+| Single master volume | **Replace** | buses: Master → {Music, SFX world, Voice/announcer, UI, Ambience}, user sliders for each, ducking of world SFX under announcer stings |
+| DSP per event (off) | **Replace** | per-bus effects (reverb send, limiter on master); per-event effects only where designed |
+| Music (unreachable, none shipped) | **Design new** | see §14.5 |
+| Volume authoring scale 0–10 (5 dB per unit) | **Adapt** | author in dB; if old data is imported use `dB = 5 × (v − 10)` |
+| Game-speed pitch bend | **Adapt** | time-based smoothing; keep the game-over "tape stop" as a deliberate effect if wanted |
+| Render-driven triggers, `%p` name, unbound match-end, silent laser create/hit | **Drop / fix** | §13 |
+
+### 14.2 The event set to author
+
+Minimum event list, by category, derived from the 182 live pairs plus the gameplay-relevant silent ones of §5.2 (names are placeholders — functional, not Introversion's):
+
+| Category | Events to author | Source in this design |
+|---|---|---|
+| Basic unit (the population unit) | spawn chatter (crowd), select ack, move-order ack, battle cry, war horn, retreat, pain, death (body + voice), burning scream, carry chant, victory cheer, weapon fire, reload, teleport in/out | §4 `Darwinian` rows, §7.4 |
+| Commander unit | create (owner 2D + world), select (owner), goto / formation / follow / absorb order loops + owner acks, pain, death | `Officer` rows; unbound acks §5.2 |
+| Squad | chatter (crowd loop), fire, grenade throw (missing), grenade ready, pain, death | `Squadie` rows |
+| Engineer, harvester, armour, tank | hover / engine loops (speed-linked), pain, death, boarding (missing), spirit drop | rows; §5.2 |
+| Creatures (6 kinds) | body loop, attack, pounce / land, egg lay, pain, death, panic / grow (missing) | `Virii`, `Spider`, `Centipede`, `ArmyAnt`, `SoulDestroyer`, `SporeGenerator`, `TriffidEgg`, `Triffid` rows |
+| Weapons | laser create / hit unit / hit building / kill (create and hits missing), grenade create / bounce / beep / explode, rocket create / explode, bomber engine / drop, bomb explode, nuke flight / explode, meteor fall / land (near and far) | `Laser`, `Grenade`, `Rocket`, `AirStrikeBomb`, `SpaceInvader`, `Nuke`, `Meteor` rows |
+| Buildings | turret fire (shell, flame, rocket) / kill / target acquired (missing), fence hum / spark / electrocute (missing), radar dish rotate / link / lost, spawn point on / off, tree hum (normal, magic, evil speech) and burn, solar / pylon surge, zone hum, control station hum, statue spawn / grab (friend, foe) / drop / lift-carry (missing), pulse-bomb armed loop | `BUILDING` rows |
+| Crates | fall, land, capture start (friend / foe / bed), progress steps 0–100 % **rising and falling**, lost, captured, expired (missing), one sting per reward (31 rewards incl. the 6 that never had a binding) | `Crate`, `CratePowerup` rows |
+| Rocket Riot | refuel bed, unhappy / happy / malfunction / flight, engine burn, fuel pump up / down / flow, passenger load, explode | `EscapeRocket`, `Fuel*` rows |
+| Match flow | countdown tick, go, timer minute tick, last-10-s tick, time-out, game over, you won, you lost, draw | §7.2 (end stings missing) |
+| UI | roll-over, select, back, chat, selection-circle sweep + drone, unit select, unit toggle, invalid action, unit highlight, task-manager highlight / select / delete | §7.1 |
+| Ambience | front-end bed (generative), in-match bed with altitude crossfade, optional per-map / per-biome beds | §7.5 |
+
+Asset counts for budgeting: the live original set uses ≈ 900 files for 182 events (≈ 5 variants per event on average; up to 37 for battle cries). A first playable needs 1 file per event; a polished set ≈ 3–8 variants for barks and impacts, 1–2 for stings and UI.
+
+### 14.3 Placeholder plan
+
+1. Keep the binding data model; write the new event table first, with every event of §14.2 present (silent placeholders allowed), so missing bindings show up in a data validator rather than as silence.
+2. Generate placeholder audio procedurally (sine / noise bursts, TTS for announcer lines) named by function — `vo_unit_select_01`, `sfx_laser_fire_01`, `sting_zone_captured_01`, `amb_lobby_pad_01` — never by original file names.
+3. Validator at load: every event fired by code must exist in data (log, not crash); every referenced asset must exist (log, not crash); unused assets and groups reported (replaces `tools/unused_samples.sh` and `tools/unused_sample_groups.sh`).
+4. Commission the final set from the per-source table in §12 (scope) and the brief above (character), with new music.
+
+### 14.4 Mix, priorities and voice budgets (proposal)
+
+| Bus | Contents | Default level | Voices (of 64 real) | Priority class |
+|---|---|---|---|---|
+| UI | §7.1 | 0 dB | 4 | highest, never stolen |
+| Announcer / stings | crate rewards, zones, statues, match flow | 0 dB, ducks World −6 dB for 1 s | 4 | high |
+| Voice (unit barks) | §7.4 | −3 dB | 16, per-event cap 3 | medium |
+| World SFX | weapons, impacts, buildings, creatures | −3 dB | 32, per-event cap 4–6 | by loudness at the focus point |
+| Ambience | beds | −10 dB | 4 | low but never stolen by SFX |
+| Music | new music system | −6 dB | 2 (cross-fade) | separate |
+
+Rules: steal only when the candidate outranks the victim by ≥ 3 dB; virtualise rather than drop; time-stamp triggers so start latency is not tick-quantised; per-event cooldowns in data (replacing the code-side 0.2 s / 0.5 s / 4 s rate limits).
+
+### 14.5 Music system (new)
+
+The original has none in play (§6). Proposal: a state-driven score with layers — front end; lobby; match intro; match low / high intensity (driven by units in combat near the focus point or by the score margin); last minute; victory; defeat; draw — implemented as a streamed two-voice cross-fading music bus with bar-synchronised transitions, its own user slider, and stingers that duck the music. Keep the useful original idea that **camera altitude** changes the ambience mix.
+
+### 14.6 Acceptance checks for the new audio
+
+- Every event of §14.2 fires and is bound (validator report empty).
+- No audible gap at match end, crate expiry, squad throw, laser create/hit (the original's silent moments).
+- All location sounds stop or release within 2 s of leaving a match (fixes §13 #2).
+- In a stress scene (500 units, 30 explosions in 1 s) UI and stings are never lost and no one-shot category disappears completely.
+- Audio never affects simulation state; per-peer differences (friend/foe, camera) are presentation-only.
+
+## Open questions and unknowns
+
+| Id | Item | Class | What would resolve it |
+|---|---|---|---|
+| 10-U1 | Audible content of the voice files — intelligible words (needing replacement and possibly localisation) or gibberish: `YesSir*`, `Attack*`, `Retreat*`, `CrateReward_*`, `GDSpeech*`, `GameOver*`, `YouWon`, `YouLost2` | [U] | Audition the files |
+| 10-U2 | Whether the retail `sounds.dat` / `sounds2.dat` / `menusounds.dat` match this tree's manifests (archives are not in the repository) | [U] | List a retail install's archives |
+| 10-U3 | Provenance of the non-music samples (in-house recordings vs licensed libraries) | [U] | Ask the rights holder; affects only the legal note (all treated as IP) |
+| 10-U4 | Stationary loops never stopped: does the Assault pulse-bomb choir really keep playing after the bomb is destroyed and after the match? | [I], design-critical for Assault | Play an Assault match to completion; trace `SoundSystem::m_sounds` |
+| 10-U5 | Audible effect of the 316 wu `MonophonicNearest` radius on Darwinian spawn chatter, the reload click and `EscapeRocket Unhappy` at normal camera heights | [I], design-critical (crowd design) | Play-test at several camera heights, log culls (27-U8) |
+| 10-U6 | Whether the hard-cut of attached sounds at emitter removal was intended (a graceful release path exists but is almost never reached) | [I], design-critical | Designer intent / listening test (27-U5) |
+| 10-U7 | Exact DirectSound 3D panning / roll-off of `DS3DALG_DEFAULT` on shipping drivers | [U] | Measure the shipped game (27-U1) |
+| 10-U8 | Do idle Darwinians perform victory jumps (`VictoryJump`) on the 10 `mp_*` maps without `PrimaryObjectives` (`mp_assault_2p_3`, `mp_assault_3p_1`, `mp_assault_3p_3`, `mp_assault_4P_2`, `mp_blitzkrieg_4P_2`, `mp_domination_2P_1`, `mp_domination_4P_1`, `mp_koth_2P_3`, `mp_koth_2P_3b`, `mp_skirmish_3P_1`)? | [I] | Run one of those maps; check how the level loader leaves the objective list |
+| 10-U9 | Exact text produced by the `Capturing_%pc` bug under MSVC 2005 | [I] (moot: it never matches) | Run and log the event name |
+| 10-U10 | Audible effect of team 255 passing every friend/foe filter (both KotH/Blitzkrieg stings on neutralisation; zone stings at Blitzkrieg start when bases are set neutral, possibly dropped by the loading-screen gate) | [I] | Play a Blitzkrieg match and listen at the first neutralisation |
+| 10-U11 | Duplicate Rocket Riot loops from keep-alive polling before the first sound tick | [I], design-critical for Rocket Riot audio | Trace `m_sounds` during a Rocket Riot match (27-U14) |
+| 10-U12 | Was lobby music ever planned beyond the ambience beds (`docs/multiwinia audio.docx`: "Lobby — Sounds + music ?")? | [U] | Designer interview; moot for the new game (§14.5) |
+| 10-U13 | Whether the compression of smoothed random pitch ranges on the first note (e.g. 0.75–1.35 → ≈ 0.88–1.16) was intended | [I] | Listening comparison (27-U10) |
+| 10-U14 | Render-rate dependence of `Grenade Flash` / `AirStrikeBomb Flash` and the in-game timer ticks (hidden HUD, low frame rate) | [I] | Run with the HUD hidden / at low frame rate |
+| 10-U15 | Whether the early `menusounds.dat` load was meant to allow lobby ambience during loading (commented-out trigger in `App::CheckSounds`) | [I] | Designer intent; irrelevant to the new game beyond §2.6 |
+| 10-U16 | Audible character of the game-over "tape stop" (√ of a smoothed game speed down to 0.1× pitch) | [I] | Record the end of a match |
+
+## Docs-vs-code discrepancies
+
+| Doc / comment | Says | Code / data does | Ref |
+|---|---|---|---|
+| `docs/sound changes.txt` (28 Aug 2007) | new crate event `Expired` | fired by code; no data → silent | `code/worldobject/crate.cpp:Crate::AdvanceOnGround`; `data/sounds.txt` `BUILDING Crate` |
+| `docs/sound changes.txt` (19 Sep 2007) | carryable-building events `Lift`, `Carry (loop)`, `Drop` | all three fired; only `Statue Drop` is bound (`statuedrop3`; `StatueDrop`, `StatueDrop2`, `StatueDrop4`, `Drop_Statue`, `Drop_Statue2`, `carry1`–`4` unused) | `code/worldobject/carryablebuilding.cpp:CarryableBuilding::Advance` |
+| `docs/sound changes.txt` (28 Aug 2007) | `CratePowerup` event list (Squad … Bitzkreig, incl. PersonalShield, Infection) | data adds FireExtinguisher, FormationBooster, Tank (never fired) and FlameTurret (never passed); lacks Engineer, RocketTurret, NapalmStrike, SlowDown, SpeedUp, TheBeast | `code/worldobject/crate.cpp:Crate::GetName`, `Crate::TriggerSoundEvent` |
+| `docs/sound changes.txt` (Requested) | microphone position; "drop all volumes to highlight a single sound event"; Darwinian orders spread over a second; lift frequency by number of carriers | microphone and highlight not implemented; orders not spread; the lift-chant frequency **is** implemented (`soundFrequency = 15 + 20 × (1 − percentLifted)`) | `code/sound/soundsystem.cpp:SoundSystem::Advance`, `code/worldobject/darwinian.cpp:Darwinian::AdvanceCarryingBuilding` |
+| `docs/multiwinia audio.docx` | Game Over / You've won / You've lost sounds; last-10-seconds timer; "Age of object" parameter link; Dark Forest and ghost ambiences; KotH warning alarm; CTS cheers / sighs | match-end events fired but unbound; last-10-s ticks implemented; no age link; no Dark Forest / ghost ambience (only `Tree CreateEvil` speech); no zone warning alarm; no cheers / sighs | `code/multiwinia.cpp:Multiwinia::DeclareWinner`, `code/sound/sound_parameter.h:SoundParameter` |
+| `docs/ThoughtsOnSoundSystem.txt` | 2D buffer fixed at 2000 samples; linear / log graph toggle wanted; "Sort out SetChannelVolume / SetChannel3dMode for software mixer" | buffer is pref `SoundBufferSize`; the toggle is commented out; both software-mixer functions are implemented | `code/sound/sound_library_2d_win32.cpp`, `code/interface/soundparameter_window.cpp`, `code/sound/sound_library_3d_software.cpp` |
+| `docs/adsr.gif` | classic ADSR with a decay stage and a sustain level | no decay stage; SUSTAIN is a hold duration; sustain level = VOLUME | `code/sound/sound_instance.cpp:SoundInstance::UpdateChannelVolume` |
+| `docs/MinDistAndVolume.jpg` | flat to the minimum distance, then fall-off | consistent (`min/d`) | `code/sound/sound_instance.cpp:SoundInstance::CalculatePerceivedVolume` |
+| `data/effects.txt` header | "Default: the starting value" | defaults are not applied to parameters omitted in `sounds.txt` (they are 0); the editor seeds new effects with the minimum | `code/sound/soundsystem.cpp:SoundSystem::ParseSoundEffect` |
+| `code/sound/sample_cache.cpp` comment | "Largest song takes 13 MB" | the largest track decodes to 30 389 760 bytes (29.0 MiB) but no music is shipped; the largest shipped files are `data/sounds/altitude1.ogg` (91.3 s ≈ 8.05 MB decoded, dead data) and, live, `data/sounds/evil.ogg` (53.9 s ≈ 4.75 MB) | `code/sound/sample_cache.cpp:CachedSampleManager::CleanUp` |
+| `code/sound/sound_instance.h` comment | VOLUME 0.0 = "silence" | 0.0 = −50 dB on DirectSound | `code/sound/sound_library_3d_dsound.cpp:SoundLibrary3dDirectSound::SetChannelVolume` |
+| `code/sound/soundsystem.h` comment on `StopAllSounds` | "Full event name required" | substring match | `code/sound/soundsystem.cpp:SoundSystem::StopAllSounds` |
+| `code/worldobject/gunturret.cpp:GunTurret::ListSoundEvents` | lists `RegisteredKill` | the code fires `RegisterKill` (bound in data) | `code/worldobject/gunturret.cpp` |
+| `code/sound/soundsystem.cpp:SoundSourceBlueprint::ListSoundEvents` | Music list without `LoaderAmiga`; MultiwiniaInterface list without `UnitHighlight` | both are bound in data and fired by code | `data/sounds.txt` |
+| `tools/unused_samples.sh`, `tools/unused_sample_groups.sh` | "run this script from the Darwinia data directory" (helpers for finding unused samples) | they ignore `data/mwsounds/` and orphan-group membership; CRLF in `sounds.txt` breaks the comparison on POSIX shells [I] | `tools/unused_samples.sh` |
+
+## IP items
+
+| Item | Kind | Ref | Neutral placeholder |
+|---|---|---|---|
+| All 1332 audio samples (954 `data/sounds/`, 378 `data/mwsounds/`; 898 live) and the archives carrying them (`sounds.dat`, `sounds2.dat`, `menusounds.dat`) | audio | `data/sounds/`, `data/mwsounds/`, `tools/sounds.txt`, `tools/menu_sounds.txt` | commission a new set from §12 / §14.2; name by function (`sfx_unit_die_01`) |
+| Third-party music `tresk_-_excuses`, `tresk_-_faces-of-a-fashion`, `tresk_-_impact-of-silence`, `tresk_-weeklies-_schroeders-failure`, `trash80_-_pain-fade-down`, `dma_sc-visitors_from_dreams` | audio (third-party artists; not shipped with Multiwinia) | `data/sounds/`, `OTHER Music` blocks | `music_*` (new licence) |
+| Retro-homage loader tunes `fodder`, `speccyloader`, `pang`, `matrix`, `twoataris` | audio (possibly derived from third-party game music) | `data/sounds/` | drop |
+| Artist / track list `docs/retro music.txt` | text (third-party) | `docs/retro music.txt` | do not reuse |
+| Signature ambience: lobby pads `MultiLobbyAmb1`–`10`, altitude bed `High1`–`7`, `evil`, `alien_lands3`, `rumble1`, `white_noise`, `shipheartbeat1` | audio | `data/mwsounds/`, `data/sounds/` | `amb_lobby_pad_01…`, `amb_altitude_01…`, `amb_ground_01…` |
+| Voice / bark sets (`darwin_*`, `DSelect*`, `Attack*`, `Retreat*`, `Hit*`, `LaserHitDarwinian*`, `officer_*`, `squaddie_chatter*`, `GDSpeech*`, `YesSir*`, `Aye*`, `Attention*`, `Marching*`, `Formation*`, `DStrain*`) | audio (character voices) | `data/sounds/`, `data/mwsounds/` | `vo_unit_select_01`, `vo_unit_attack_01`, `vo_commander_ack_01` |
+| Announcer stings `CrateReward_*` (incl. `CrateReward_Futurewinians`, `CrateReward_Rocketwinians`), `GameOver*`, `YouWon`, `YouLost2`, `Player_Capture_Statue`, `Enemy_Capture_Statue`, `KOH_Zone_*`, `Crate_Capture*` | audio + embedded IP names | `data/mwsounds/` | `vo_reward_<function>`, `vo_match_win`, `sting_zone_captured` |
+| Source / event names `Darwinian`, `Officer`, `Squadie`, `SoulDestroyer`, `Virii`, `Sepulveda`, `MultiwiniaInterface`, `MultiwiniaZone`, reward names `Bitzkreig`, `Rocketwinians`, `Darwinians`, `Infection`, `Plague` | name | `data/sounds.txt`, `code/sound/soundsystem.cpp:SoundSourceBlueprint::GetSoundSourceName`, `code/worldobject/crate.cpp:Crate::GetName` | `Unit`, `Commander`, `Trooper`, `Narrator`, `MatchUI`, `CaptureZone`, `Reward_<function>` |
+| Sample-group and file names embedding IP names (`darwiniandie`, `darwiniancreate`, `darwinnianonfire`, `darwinnianburncry`, `officercreate`, `CrateRewrad_Darwinians*`, `sepulveda_appear`, `koh_zone*`, `gdspeechgroup`, `souldestroyer*`, `redvirus_*`, `multilobbyambiences`) | name | `data/sounds.txt` | functional names (`unit_die`, `unit_spawn`, `zone_active`) |
+| UI strings of the sound options (`dialog_soundoptions`, `dialog_soundlibrary`, `dialog_directsound`, `dialog_softwaresound`, `dialog_mixfrequency`, `dialog_11khz`, `dialog_22khz`, `dialog_44khz`, `dialog_numchannels`, `dialog_8channels`, `dialog_16channels`, `dialog_32channels`, `dialog_64channels`, `dialog_memoryusage`, `dialog_high`, `dialog_medium`, `dialog_low`, `dialog_swapstereo`, `dialog_hw3dsound`, `dialog_unavailable`, `dialog_realtimeeffects`, `dialog_apply`, `dialog_close`, `multiwinia_menu_back`), hard-coded "Master Volume", "Failed to set requested sound settings" | text | `code/interface/prefs_sound_window.cpp`, `code/UI/soundsliderbutton.h` | new string table ("Audio", "Output", "Mix rate", "Voices", "Swap L/R", "Master volume", "Apply", "Back") |
+| Planning notes (`docs/multiwinia audio.docx`, `docs/sound changes.txt`) | text | `docs/` | do not reuse |
+| `docs/MinDistAndVolume.jpg` (apparently from DirectX documentation) | art (third-party) | `docs/MinDistAndVolume.jpg` | redraw |
+
+## Source map
+
+Core files (engine roles in detail: [27 Source map](27_audio_engine.md#source-map)):
+
+| File | Role for the audio design |
+|---|---|
+| `data/sounds.txt` | every sound source, `EVENT` block and `SAMPLEGROUP` (the content of §3–§7) |
+| `data/effects.txt` | the 14 DSP types and their parameter ranges (§10.2) |
+| `data/sounds/` (954 `.ogg`) | sample files — one row per file in [25](25_textures_and_assets.md) |
+| `data/mwsounds/` (378 `.ogg`) | Multiwinia sample files — one row per file in [25](25_textures_and_assets.md) |
+| `data/scripts/music1.txt`, `music2.txt`, `music3.txt`, `music4.txt`, `music5.txt`, `containment_intro.txt`, `containment_end.txt`, `yard_intro.txt`, `yard_end.txt`, `biosphere_intro.txt`, `launchpad_intro.txt`, `launchpad_purpose.txt`, `gameover.txt` | Darwinia scripts that trigger / stop music [B:LEGACY] (§6.3) |
+| `code/sound/soundsystem.h` | source enum (12 OTHER names), blueprint classes |
+| `code/sound/soundsystem.cpp` | triggering, team filter, matching, stop / query, 20 Hz voice allocation, music slot, loader |
+| `code/sound/sound_instance.h` | position / instance / loop / team-match / source enums, defaults |
+| `code/sound/sound_instance.cpp` | perceived volume, emitter selection (316 wu), pitch modifier, envelope, sample-group choice |
+| `code/sound/sound_parameter.h` | parameter and link enums |
+| `code/sound/sound_parameter.cpp` | fixed / random / linked evaluation and smoothing |
+| `code/sound/sample_cache.h` | cache declarations |
+| `code/sound/sample_cache.cpp` | `sounds/` then `mwsounds/` lookup and the fatal assert |
+| `code/sound/sound_stream_decoder.h` | decoder declaration |
+| `code/sound/sound_stream_decoder.cpp` | Ogg decoding (mono only) |
+| `code/sound/sound_library_3d.h` | device contract, 14 DSP type ids |
+| `code/sound/sound_library_3d.cpp` | master volume law |
+| `code/sound/sound_library_3d_dsound.h` | DirectSound declaration |
+| `code/sound/sound_library_3d_dsound.cpp` | shipped volume law, 3D, Doppler 0, voice count |
+| `code/sound/sound_library_3d_software.h` | software mixer declaration |
+| `code/sound/sound_library_3d_software.cpp` | software distance / pan law (non-default) |
+| `code/sound/sound_library_3d_xaudio.h` | Xbox 360 back-end declaration [B:DEAD] |
+| `code/sound/sound_library_3d_xaudio.cpp` | Xbox 360 back-end [B:DEAD] |
+| `code/sound/sound_library_2d.h` | 2D output contract |
+| `code/sound/sound_library_2d.cpp` | 2D base and null device |
+| `code/sound/sound_library_2d_win32.h` | waveOut declaration |
+| `code/sound/sound_library_2d_win32.cpp` | waveOut output (software path) |
+| `code/sound/sound_library_2d_sdl.h` | SDL output declaration [B:DEAD] |
+| `code/sound/sound_library_2d_sdl.cpp` | SDL output [B:DEAD] |
+| `code/sound/sound_filter.h` | in-house DSP declarations |
+| `code/sound/sound_filter.cpp` | in-house DSP algorithms (§10.3) |
+| `code/interface/prefs_sound_window.h` | sound options window; includes the master-volume slider |
+| `code/interface/prefs_sound_window.cpp` | sound options controls, Apply semantics (§11.3) |
+| `code/UI/soundsliderbutton.h` | master-volume slider `VolumeControl` (live) |
+| `code/interface/soundeditor_window.cpp` | editor ranges for every field [B:DEBUG] |
+| `code/lib/preferences.cpp` | sound preference defaults |
+| `code/lib/resource.cpp` | `.ogg` resolution, archives, case-insensitive lookup |
+| `code/lib/universal_include.h` | `HAVE_DSOUND`, `USE_SOUND_DSPEFFECTS`, `USE_SOUND_HW3D`, `USE_SOUND_MEMORY`, `SOUND_EDITOR`, `USE_LOADERS`, `GRACE_TIME` |
+| `code/multiwinia.h` | `m_timeRemaining` type (R6) |
+| `code/level_file.cpp` | level format: no audio keys (§7.5) |
+| `code/camera.cpp` | the listener (camera position, front, up, velocity) |
+| `code/gametimer.cpp` | game speed read by the pitch bend |
+| `contrib/systemiv/lib/math/random_number.cpp` | `AppRandom` / `frand` used by all audio randomness |
+| `contrib/systemiv/lib/tosser/hash_table.cpp` | case-insensitive archive name lookup |
+| `contrib/systemiv/lib/filesys/filesys_utils.cpp` | `RemoveExtension` applied to sample names |
+| `tools/sounds.txt` | `sounds.dat` manifest (1297 files) |
+| `tools/menu_sounds.txt` | `menusounds.dat` manifest (18 files) |
+| `tools/multiwinia_exclusions.txt` | excludes the 11 music files |
+| `tools/build_multiwinia_data.bat` | builds the three audio archives |
+| `tools/unused_samples.sh` | Darwinia-era unused-sample checker (§5.4) |
+| `tools/unused_sample_groups.sh` | unused-group checker (§5.4) |
+| `docs/sound changes.txt` | audio change log 2007 (discrepancies) |
+| `docs/multiwinia audio.docx` | Multiwinia audio plan (discrepancies, 10-U12) |
+| `docs/ThoughtsOnSoundSystem.txt` | DSP design notes |
+| `docs/adsr.gif` | ADSR reference (differs) |
+| `docs/MinDistAndVolume.jpg` | distance-model reference (consistent) |
+| `docs/retro music.txt` | third-party artist list (IP) |
+
+Every code file that fires, stops or queries sound events (generated by `S_10_audio_tables.py` from `_work/drafts/X2b_callsites.csv` plus a scan for `StopAllSounds(` / `NumInstances(`; every path checked against `_work/manifest.csv`):
+
+<!-- S10:SOURCEMAP:BEGIN -->
+| File | Role (events fired with `Trigger*Event`; `StopAllSounds` / `NumInstances*` call counts) | In manifest |
+|---|---|---|
+| `code/UI/FancyColourButton.h` | fires MenuRollOver | yes |
+| `code/UI/GameMenuWindow.cpp` | fires ChatMessage, LobbyAmbience | yes |
+| `code/UI/LevelSelectButton.h` | fires MenuRollOver, MenuSelect | yes |
+| `code/UI/MultiwiniaEditorButton.h` | fires MenuSelect | yes |
+| `code/app.cpp` | fires LobbyAmbience | yes |
+| `code/game_menu.cpp` | fires MenuCancel, MenuRollOver, MenuSelect | yes |
+| `code/gamecursor.cpp` | fires UnitHighlight | yes |
+| `code/interface/helpandoptions_windows.cpp` | fires MenuSelect | yes |
+| `code/interface/leaderboards_window.cpp` | fires MenuRollOver | yes |
+| `code/interface/mainmenus.cpp` | fires MenuSelect | yes |
+| `code/interface/mainmenus.h` | fires MenuCancel | yes |
+| `code/interface/multiwinia_window.cpp` | fires MenuSelect | yes |
+| `code/loaders/amiga_loader.cpp` | fires LoaderAmiga; 1 StopAllSounds | yes |
+| `code/loaders/credits_loader.cpp` | fires Credits; 1 StopAllSounds | yes |
+| `code/loaders/fodder_loader.cpp` | fires LoaderFodder; 1 StopAllSounds | yes |
+| `code/loaders/gameoflife_loader.cpp` | fires LoaderGameOfLife; 1 StopAllSounds | yes |
+| `code/loaders/matrix_loader.cpp` | fires LoaderMatrix; 1 StopAllSounds | yes |
+| `code/loaders/raytrace_loader.cpp` | fires LoaderRaytrace; 1 StopAllSounds | yes |
+| `code/loaders/soul_loader.cpp` | fires LoaderSoul; 1 StopAllSounds | yes |
+| `code/loaders/speccy_loader.cpp` | fires LoaderSpeccy; 1 StopAllSounds | yes |
+| `code/location.cpp` | fires ChatMessage, GivenOrdersFromPlayer, Selected, SetOrders | yes |
+| `code/location_input.cpp` | fires GestureBegin, GestureSuccess, MouseError, SelectionCircle, SelectUnit, SetOrderGoto, SetOrders, ToggleUnitState; 1 StopAllSounds | yes |
+| `code/main.cpp` | fires EnterGlobalWorld, EnterLocation, ExitLocation; 3 StopAllSounds | yes |
+| `code/multiwinia.cpp` | fires CountdownTick, CountdownZeroTick, GameOver, YouLost, YouWon | yes |
+| `code/script.cpp` | fires Music <script event> (Script::RunCommand_TriggerSound), ShowLogo; 3 StopAllSounds; 1 NumInstances queries | yes |
+| `code/sepulveda.cpp` | fires Appear, Disappear, TextAppear | yes |
+| `code/shaman_interface.cpp` | fires MouseOverIcon | yes |
+| `code/startsequence.cpp` | fires StartSequence; 1 StopAllSounds | yes |
+| `code/taskmanager.cpp` | fires GestureSuccess | yes |
+| `code/taskmanager_interface.cpp` | fires MouseOverIcon | yes |
+| `code/taskmanager_interface_gestures.cpp` | fires GestureBegin, GestureEnd, GestureFail, GestureSuccess | yes |
+| `code/taskmanager_interface_icons.cpp` | fires "" (empty-name stub, commented out), DeleteTask, GestureBegin, GestureSuccess, Hide, MouseOverIcon, SelectTask, Show, Slide | yes |
+| `code/taskmanager_interface_multiwinia.cpp` | fires DeleteTask, GestureBegin, GestureSuccess, Hide, MouseOverIcon, SelectTask, Show | yes |
+| `code/team.cpp` | fires Selected, TaskManagerDeselectTask, TaskManagerSelectTask | yes |
+| `code/worldobject/airstrike.cpp` | fires Die, DropGrenade, LoseHealth | yes |
+| `code/worldobject/anthill.cpp` | fires Damage, Explode | yes |
+| `code/worldobject/armour.cpp` | fires Die, LoadDarwinian, LoseHealth, UnloadDarwinian | yes |
+| `code/worldobject/armyant.cpp` | fires Attack | yes |
+| `code/worldobject/building.cpp` | fires ChangeTeam, Create, Damage, Explode, ReprogramComplete | yes |
+| `code/worldobject/carryablebuilding.cpp` | fires Carry, Drop, Lift; 1 StopAllSounds | yes |
+| `code/worldobject/centipede.cpp` | fires Attack, EnemySighted, Grow, Panic | yes |
+| `code/worldobject/controltower.cpp` | fires ReprogramComplete | yes |
+| `code/worldobject/crate.cpp` | fires BeginCapture, Captured, Capturing_0pc, Capturing_<20..100>pc / Capturing_%pc bug, CratePowerup <Crate::GetName(reward)>, Expired, Falling, Land, LostCapture; 4 StopAllSounds | yes |
+| `code/worldobject/darwinian.cpp` | fires Attack, EscapedControl, GivenOrders, GivenOrdersFromPlayer, LiftBuilding, OnFire, SeenThreatAttack, SeenThreatAttackHorn, SeenThreatRunAway, TakenControl, VictoryJump; 4 StopAllSounds | yes |
+| `code/worldobject/engineer.cpp` | fires BeginReprogramming, Die, DropSpirit, EndReprogramming, LoseHealth, ReprogrammingComplete; 7 StopAllSounds | yes |
+| `code/worldobject/entity.cpp` | fires Attack, Create, Die, EnterTeleport, LoseHealth | yes |
+| `code/worldobject/generator.cpp` | fires Enable, Operate, TriggerSurge; 1 StopAllSounds | yes |
+| `code/worldobject/generichub.cpp` | fires Enable | yes |
+| `code/worldobject/goddish.cpp` | fires ConnectToGod, DisconnectFromGod; 1 StopAllSounds | yes |
+| `code/worldobject/gunturret.cpp` | fires FireFlame, FireGrenade, FireRocket, FireShell, RegisterKill, TargetSighted | yes |
+| `code/worldobject/harvester.cpp` | fires Die, DropSpirit, LoseHealth | yes |
+| `code/worldobject/incubator.cpp` | fires AddSpirit, SpawnEntity | yes |
+| `code/worldobject/insertion_squad.cpp` | fires Attack, Die, FireLaser, FireRocket, LoseHealth, ThrowAirStrike, ThrowController, ThrowGrenade, WeaponReturns | yes |
+| `code/worldobject/laserfence.cpp` | fires Electrocute, Spark | yes |
+| `code/worldobject/meteor.cpp` | fires Land | yes |
+| `code/worldobject/mine.cpp` | fires CogTurn | yes |
+| `code/worldobject/multiwiniazone.cpp` | fires CaptureStatue | yes |
+| `code/worldobject/nuke.cpp` | fires Explode | yes |
+| `code/worldobject/officer.cpp` | fires SetOrderAbsorb, SetOrderFollow, SetOrderFormation, SetOrderGoto, SetOrderNone; 5 StopAllSounds | yes |
+| `code/worldobject/radardish.cpp` | fires BeginRotation, ConnectionEstablished, ConnectionLost, EndRotation, ExitTeleport; 3 StopAllSounds | yes |
+| `code/worldobject/researchitem.cpp` | fires AquireResearch | yes |
+| `code/worldobject/rocket.cpp` | fires EngineBurn, EscapeRocket Refueling/Unhappy/Malfunction/Happy/Flight, Explode, LoadPassenger, PumpDown, PumpFuel, PumpUp; 7 StopAllSounds; 3 NumInstances queries | yes |
+| `code/worldobject/shaman.cpp` | fires Die, LoseHealth | yes |
+| `code/worldobject/souldestroyer.cpp` | fires Attack, EnemySighted, Panic | yes |
+| `code/worldobject/spaceship.cpp` | fires TractorBeam; 1 StopAllSounds | yes |
+| `code/worldobject/spam.cpp` | fires Attack, CreateResearch, Explode; 1 StopAllSounds | yes |
+| `code/worldobject/spawnpoint.cpp` | fires TurnOff, TurnOn | yes |
+| `code/worldobject/spider.cpp` | fires Attack, FootFall, LayEgg, Pounce, PounceLand | yes |
+| `code/worldobject/spirit.cpp` | fires BeginAscent, Create, Dropped, EggDestroyed, PickedUp, PlacedInEgg | yes |
+| `code/worldobject/spiritreceiver.cpp` | fires TriggerSpirit | yes |
+| `code/worldobject/sporegenerator.cpp` | fires LayEgg | yes |
+| `code/worldobject/tank.cpp` | fires Die, LoseHealth; 1 StopAllSounds | yes |
+| `code/worldobject/tree.cpp` | fires Burn, CreateEvil, CreateMagic, CreateNormal; 2 StopAllSounds | yes |
+| `code/worldobject/triffid.cpp` | fires Bounce, Burn, BurstOpen, LaunchEgg | yes |
+| `code/worldobject/trunkport.cpp` | fires PowerUp | yes |
+| `code/worldobject/virii.cpp` | fires Attack, ChangeDirection | yes |
+| `code/worldobject/weapons.cpp` | fires Create, Explode, ExplodeController, Grenade/AirStrikeBomb Create/Bounce/Flash/Explode (ThrowableWeapon::TriggerSoundEvent), HitBuilding, HitEntity, InjuredEntity, KilledEntity; 1 StopAllSounds | yes |
+<!-- S10:SOURCEMAP:END -->
+
+## Appendix — dead/legacy code
+
+- **[B:DEAD] Loader and start-sequence music** (`USE_LOADERS`): `code/loaders/speccy_loader.cpp`, `amiga_loader.cpp`, `matrix_loader.cpp`, `raytrace_loader.cpp`, `gameoflife_loader.cpp`, `fodder_loader.cpp`, `soul_loader.cpp` (`Loader*` music events and their stops), `code/startsequence.cpp:StartSequence::Advance` (`StartSequence`).
+- **[B:DEAD] Sepulveda** sounds (`Appear`, `Disappear`, `TextAppear`) in `code/sepulveda.cpp` (`USE_SEPULVEDA_HELP_TUTORIAL`).
+- **[B:DEAD] Options UI** for `USE_SOUND_DSPEFFECTS`, `USE_SOUND_HW3D`, `USE_SOUND_MEMORY` and the unreachable tail of `PrefsSoundWindow::Render`.
+- **[B:DEAD] Back-ends** XAudio (`HAVE_XAUDIO`) and SDL; the commented-out `LobbyAmbience` trigger in `code/app.cpp:App::CheckSounds`; commented-out `Spirit Create/BeginAscent/Dropped/PlacedInEgg/EggDestroyed`, `Laser HitEntity`, and the `CratePowerup FormationBooster/FireExtinguisher/Tank` callers.
+- **[B:LEGACY]** Darwinia-only content compiled and loaded but never triggered in Multiwinia: music cutscene scripts (`TriggerSound` / `StopSound`, `code/script.cpp`), `CreditsLoader` (`code/loaders/credits_loader.cpp`), `Ambience EnterGlobalWorld`, the `TaskManagerInterfaceIcons` / `TaskManagerInterfaceGestures` UI sounds (`Show`, `Hide`, `Slide`, `GestureFail`, `GestureEnd`, `SelectTask`), `ShamanInterface` mouse-over, engineer reprogramming of control towers / research items, `Building::ReprogramComplete` / `Building::Destroy` paths, the blueprints of `Powerstation`, `ResearchItem`, `Library`, `Generator`, `TrackLink`, `Refinery`, `Mine`, `Yard`, `Incubator`, `SpiritReceiver`, `SpiritProcessor`, `BlueprintStore`, `BlueprintConsole`, `BlueprintRelay`, `Spam`, `GodDish`, `LaserTroop`, `Tripod`, squad `ThrowAirStrike` / `ThrowController` / `FireRocket`, `Grenade ExplodeController`.
+- **[B:DEBUG]** `Tank` blueprints (Tank Battle mode); sound editor, stats and profile windows, `EffectProcessor`, Purge Sounds ([27 §13](27_audio_engine.md#13-profiles-statistics-debug-and-editor-tooling)).
