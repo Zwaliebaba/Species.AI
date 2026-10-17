@@ -385,7 +385,7 @@ Every value is a reference tuning value that Species may adopt as its baseline (
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
-| `ref.bldg.port.radius_wu` | 5 | wu | strict, horizontal: dx² + dz² < 25; every port of every structure | R-BLDG-021 | DEC-094 |
+| `ref.bldg.port.radius_wu` | 5 | wu | strict, horizontal: dx² + dz² < 25; the ports of every structure kind | R-BLDG-021 | DEC-094 |
 | `ref.bldg.port.reservation_limit` | 1 | reservations | a port is available to a team below this count | R-BLDG-023 | — |
 | `ref.bldg.port.reservation_cap` | 50 | reservations | per team and port | R-BLDG-019, R-BLDG-023 | — |
 | `ref.bldg.port.reservation_decay_per_tick` | 4 | reservations per tick | applied to an unoccupied port | R-BLDG-022 | DEC-092 |
