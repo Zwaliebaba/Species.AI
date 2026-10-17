@@ -18,21 +18,21 @@ Flag Chain is a front-line mode. Flag posts are linked into a graph, and each te
 
 **R-MODE-453** (MUST) At each recount a Flag post evaluates its lock: a neutral Home post is unlocked; a partly owned Flag post (0 < progress < 100) is unlocked; any other Flag post is locked unless a linked Flag post is owned by a team **other than its own owner** (for a neutral Flag post, by any team). Neutral neighbours never unlock, so a neutral Flag post whose neighbours are all neutral is locked, an owned Flag post surrounded by its own and neutral Flag posts is locked, and capture spreads outward from the Home posts.
 
-**R-MODE-454** (MUST) A Flag post recounts every `ref.mode.recount.one_second` (11 ticks, DEC-064). The capture values are owned by [reference/03](../03_buildings_and_world_objects/mode_objects.md):
+**R-MODE-454** (MUST) A Flag post recounts every `ref.mode.recount.one_second` (11 ticks, DEC-064). The capture values are owned by [reference/03](../03_buildings_and_world_objects/mode_objects.md) (R-BLDG-262), whose keys these steps cite:
 
-1. When unlocked, it counts per used team the Workers within 40 wu (a fixed capture radius, not the Flag post's radius) that are not dead, not burning and not inside a Transport; the leader is the team with the strictly highest count. When locked, it refreshes no count and has no leader.
-2. With a leader whose count is top out of a total of counted Workers, change = 5 × top × (top / total). When the Flag post is owned, the capturing team becomes its owner. When the leader differs from the capturing team, the progress falls by change × one tick's duration, and at 0 or below the Flag post becomes neutral and the leader becomes the capturing team. When the leader is the capturing team, the progress rises by change × one tick's duration, and at 100 or above the leader owns the Flag post.
-3. With no leader, a neutral Flag post's progress falls by 10 × one tick's duration (at 0 or below its capturing team becomes none), and an owned Flag post's progress does not change.
+1. When unlocked, it counts per used team the Workers within `ref.bldg.flag_post.capture_radius_wu` (40 wu, a fixed capture radius, not the Flag post's radius) that are not dead, not burning and not inside a Transport; the leader is the team with the strictly highest count. When locked, it refreshes no count and has no leader.
+2. With a leader whose count is top out of a total of counted Workers, change = `ref.bldg.flag_post.capture_gain` (5) × top × (top / total). When the Flag post is owned, the capturing team becomes its owner. When the leader differs from the capturing team, the progress falls by change × one tick's duration, and at 0 or below the Flag post becomes neutral and the leader becomes the capturing team. When the leader is the capturing team, the progress rises by change × one tick's duration, and at `ref.bldg.flag_post.progress_max` (100) or above the leader owns the Flag post.
+3. With no leader, a neutral Flag post's progress falls by `ref.bldg.flag_post.neutral_decay_per_s` (10) × one tick's duration (at 0 or below its capturing team becomes none), and an owned Flag post's progress does not change.
 
 The update runs once per recount but scales by one tick's duration, so the progress changes by 0.5 × top² ÷ total per recount: 20 uncontested Workers capture a neutral Flag post in 10 recounts (110 ticks), and an enemy Flag post takes twice as long, because it is first driven to 0 and then raised to 100.
 
-**R-MODE-455** (MUST) A Flag post's trend is the sign of its last progress change; the flag picture `marker.flag_post_state` shows raised, lowered or neutral by the trend, or locked when it is locked.
+**R-MODE-455** (MUST) A Flag post's trend is the sign of its last progress change; the flag picture `marker.flag_post_state` shows raised, lowered or neutral by the trend, or locked when it is locked. The picture takes the team colour through its tint mask `marker.flag_post_state_tint`, one mask per state picture (ADR-020).
 
-**R-MODE-456** (MUST) While enemy Workers are within the radius of the local team's own Home post, the Home post emits `mode.flag_chain.base_under_attack` and sets its throttle to `ref.mode.flag_chain.under_attack_throttle` (200 recounts); the throttle falls by 1 per recount, so the announcement repeats at most every 200 recounts, 2,200 ticks (DEC-071 is open on a throttle of 200 ticks).
+**R-MODE-456** (MUST) While enemy Workers are within the radius of the local team's own Home post, the Home post emits `mode.flag_chain.base_under_attack` and sets its throttle to `ref.mode.flag_chain.under_attack_throttle` (200 recounts); the throttle falls by 1 per recount, so the announcement repeats at most every 200 recounts, 2,200 ticks (DEC-071 is open on a throttle of 200 ticks). The announcement is text only and raises no sound event ([reference/10](../10_audio_design/front_end_hud_voice_and_ambience.md) R-AUD-311).
 
 **R-MODE-457** (MUST) At each recount the nearest bot navigation node receives a per-team priority from the Flag post, or 1.0 for an Easy bot ([reference/07](../07_bots/README.md)).
 
-**R-MODE-458** (MUST) The options are time limit (0 to 60 minutes, default `ref.mode.flag_chain.option.time_limit`, 15; 0 means none), crate drop period, reinforcement interval, reinforcement count, Transport cap, turret frequency (default 2), Comeback Bonus, sudden death and turret cap (default 2) (README R-MODE-074).
+**R-MODE-458** (MUST) The options are time limit (none or 1 to 60 minutes, default `ref.mode.flag_chain.option.time_limit`, 15; none is the explicit no-limit value, never 0, DEC-120), crate drop period, reinforcement interval, reinforcement count, Transport cap, turret frequency (default 2), Comeback Bonus, sudden death and turret cap (default 2) (README R-MODE-074).
 
 ### 2.2 The mode step
 
@@ -49,21 +49,21 @@ The update runs once per recount but scales by one tick's duration, so the progr
 5. At time-up (time remaining at or below 0 and the match not unlimited), the time-up decider of R-MODE-463 gives the leader, a team or the draw value; it replaces the surviving team.
 6. When the leader is the draw value and sudden death is on: the first time, wipe every used player team whose time-up score differs from the highest, set the sudden-death flag and emit `match.sudden_death.start`; on later mode seconds the decider runs again with time still up, so the next Flag post change that breaks the tie ends the match. Otherwise, when there is a surviving team, or a time-up result (a team, or the draw value with sudden death off), it is declared; when the local team wins, the Flag Sweep achievement event is emitted (R-MODE-472).
 
-**R-MODE-462** (MUST) A Home post's status is the first that applies of: **enemy occupied**, owned by another team; **under attack**, owned by its team with enemy Workers within its radius at the latest recount; **unoccupied**, neutral; **under threat**, owned by its team and unlocked; **safe**, owned by its team and locked. A neutral Home post never reports itself under threat (DEC-078). The statuses are an ordered enumeration, safe highest and enemy occupied lowest, and every status ranks above every survival time, so the scoreboard lists the teams in play by status and then the eliminated teams by how long they survived.
+**R-MODE-462** (MUST) A Home post's status is the first that applies of: **enemy occupied**, owned by another team; **under attack**, owned by its team with enemy Workers within its radius at the latest recount; **unoccupied**, neutral; **under threat**, owned by its team and unlocked; **safe**, owned by its team and locked. A neutral Home post never reports itself under threat (DEC-078), and the under-attack status uses the condition of the base-under-attack announcement of R-MODE-456 (DEC-850 item 2). The statuses are an ordered enumeration, safe highest and enemy occupied lowest, and every status ranks above every survival time, so the scoreboard lists the teams in play by status and then the eliminated teams by how long they survived.
 
 **R-MODE-463** (MUST) The time-up decider gives every team slot that is not eliminated, except the Rogue and Visitor factions (DEC-082), the time-up score Flag posts owned + `ref.mode.flag_chain.elimination_points` (10) × eliminations scored. Unused slots take part with a score of 0. The highest time-up score wins; equal highest scores give the draw value, so all-zero scores are a draw. The decider reads only valid team indices; the no-team value is never an index (DEC-068).
 
 **R-MODE-464** (MUST) The route test checks whether team A holds an unbroken chain of fully captured Flag posts from Flag post z back to A's own Home post:
 
 ```
-ChainRouteExists(z, A, visited):
-    if z in visited:                                  return false
-    if owner(z) != A:                                 return false
-    if progress(z) < 100 and trend(z) < 0:            return false   # a Flag post being recaptured breaks the chain
-    visited := visited + {z}
-    if z is A's Home post:                            return true
-    for each Flag post n linked to z, in link order:
-        if ChainRouteExists(n, A, visited):           return true
+ChainRouteExists(_z, _a, _visited):                   # Flag post z, team A, the Flag posts visited
+    if _z in _visited:                                return false
+    if Owner(_z) != _a:                               return false
+    if Progress(_z) < 100 and Trend(_z) < 0:          return false   # a Flag post being recaptured breaks the chain
+    _visited := _visited + {_z}
+    if _z is the Home post of _a:                     return true
+    for each Flag post n linked to _z, in link order:
+        if ChainRouteExists(n, _a, _visited):         return true
     return false
 ```
 
@@ -85,7 +85,7 @@ The search is depth-first with backtracking, and the visited set bounds it by th
 
 ### 2.4 HUD and end of match
 
-**R-MODE-471** (MUST) Each scoreboard row shows its team's status text with no number: `mode.flag_chain.status.eliminated`, `mode.flag_chain.status.enemy_occupied`, `mode.flag_chain.status.under_attack`, `mode.flag_chain.status.unoccupied`, `mode.flag_chain.status.under_threat` or `mode.flag_chain.status.safe`. The game-over list is not drawn (README R-MODE-068). A Flag post shows a cloth flag on a pole, lowered by (100 − progress) wu while partly owned, with the picture of R-MODE-455 recoloured per team, and a ring whose owned fraction is drawn in the owner's or capturer's colour and the rest grey ([reference/03](../03_buildings_and_world_objects/mode_objects.md)). The hints `help.hint.flag_chain_01` and `help.hint.flag_chain_02` explain the chain and the attack on a Flag post.
+**R-MODE-471** (MUST) Each scoreboard row shows its team's status text with no number: `mode.flag_chain.status.eliminated`, `mode.flag_chain.status.enemy_occupied`, `mode.flag_chain.status.under_attack`, `mode.flag_chain.status.unoccupied`, `mode.flag_chain.status.under_threat` or `mode.flag_chain.status.safe`. The game-over list is not drawn (README R-MODE-068). A Flag post shows a cloth flag on a pole, lowered by (100 − progress) wu while partly owned, with the picture of R-MODE-455 tinted in the team colour, and a ring whose owned fraction is drawn in the owner's or capturer's colour and the rest grey ([reference/03](../03_buildings_and_world_objects/mode_objects.md)). The hints `help.hint.flag_chain_01` and `help.hint.flag_chain_02` explain the chain and the attack on a Flag post.
 
 **R-MODE-472** (MUST) The Flag Sweep hook's time test always passes, so the event accompanies every win of the local team; no achievement is awarded, and its condition is the design phase's (DEC-047).
 
@@ -145,7 +145,7 @@ String ids that this file uses, with their new text:
 2. **A breaking chain.** A Flag post of the chain that is partly owned and losing progress breaks the route, so recapturing any link of the chain saves the team (R-MODE-464).
 3. **Waves on maps that set gate values.** Three reference maps set a gate count of 100 and a Transport cap of 3; those map values apply, and the gates still advance once per tick, so waves come every 660 ticks at the default interval (R-MODE-459, DEC-065).
 4. **The factions on Flag posts.** The Rogue faction can own Flag posts, which can lock or unlock their neighbours, but it never scores at time-up (R-MODE-463, DEC-082).
-5. **Unlimited matches.** With a time limit of 0 only elimination ends the match, and a match in which no chain ever reaches a Home post never ends.
+5. **Unlimited matches.** With the time limit at none only elimination ends the match, and a match in which no chain ever reaches a Home post never ends.
 6. **The Control Zone counter.** The counter that the airstrike rule reads is the number of Flag posts on the map, because it starts at 0 in every match (R-MODE-451, R-MODE-467, DEC-011).
 
 ## 6 Acceptance criteria
@@ -160,11 +160,12 @@ String ids that this file uses, with their new text:
 ## 7 Dependencies
 
 - **Reference documents:** [README](README.md); [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) (Flag post, Home post, Transit Gate); [05 Population flow](../05_population_flow.md) (waves, the airstrike rule); [04 Supply crates](../04_supply_crates_powers_and_weapons/crates_and_powers.md); [07 Bots](../07_bots/README.md); [10 Audio design](../10_audio_design/README.md) (the announcement).
-- **Assets:** `mapfile.flag_chain`, `marker.flag_post_state`, `help.hint.flag_chain_01`, `help.hint.flag_chain_02`.
+- **Assets:** `mapfile.flag_chain`, `marker.flag_post_state`, `marker.flag_post_state_tint`, `help.hint.flag_chain_01`, `help.hint.flag_chain_02`.
 
 ## 8 Open decisions
 
 - DEC-071 — the interval of the base-under-attack announcement (R-MODE-456).
+- DEC-850 — the under-attack status of a Home post (R-MODE-462).
 - DEC-047 — the Flag Sweep hook (R-MODE-472).
 
-Resolved decisions applied: DEC-011, DEC-014, DEC-064, DEC-065, DEC-068, DEC-078, DEC-079, DEC-082, DEC-107, DEC-561.
+Resolved decisions applied: DEC-011, DEC-014, DEC-064, DEC-065, DEC-068, DEC-078, DEC-079, DEC-082, DEC-107, DEC-120, DEC-561.

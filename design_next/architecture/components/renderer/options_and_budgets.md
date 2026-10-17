@@ -1,12 +1,12 @@
 # Options and budgets
 
-> Status: Engine baseline · Prefix: RND · ADRs: [ADR-002](../../../ADR/ADR-002-minimum-gpu-capability.md) · [ADR-005](../../../ADR/ADR-005-pipeline-state-catalogue.md) · [ADR-009](../../../ADR/ADR-009-instanced-crowds-sprite-cards-and-shadows.md) · [ADR-010](../../../ADR/ADR-010-gpu-particles-and-shatter-debris.md) · [ADR-011](../../../ADR/ADR-011-world-surface-rendering.md) · [ADR-012](../../../ADR/ADR-012-swap-chain-presentation-and-frame-pacing.md) · [ADR-014](../../../ADR/ADR-014-hdr-output.md) · [ADR-015](../../../ADR/ADR-015-scene-anti-aliasing.md) · [ADR-017](../../../ADR/ADR-017-texture-container-and-block-compression.md) · [ADR-034](../../../ADR/ADR-034-text-rendering-and-glyph-cache.md) · [ADR-064](../../../ADR/ADR-064-accessibility-baseline-xag.md) · [ADR-066](../../../ADR/ADR-066-telemetry-with-consent.md) · [ADR-068](../../../ADR/ADR-068-profiling-and-gpu-timing.md) · [ADR-075](../../../ADR/ADR-075-application-window-and-dpi-awareness.md) · Related: [Renderer](README.md) · [Frame graph and passes](frame_graph_and_passes.md) · [World renderers](world_renderers.md) · [Entity and overlay renderers](entity_and_overlay_renderers.md) · [Visual language](visual_language.md) · [Platform layer](../platform_layer.md) · [Data schemas](../data_schemas/README.md) · [Diagnostics, test and performance](../diagnostics_test_and_performance.md)
+> Status: Engine baseline · Prefix: RND · ADRs: [ADR-002](../../../ADR/ADR-002-minimum-gpu-capability.md) · [ADR-005](../../../ADR/ADR-005-pipeline-state-catalogue.md) · [ADR-009](../../../ADR/ADR-009-instanced-crowds-sprite-cards-and-shadows.md) · [ADR-010](../../../ADR/ADR-010-gpu-particles-and-shatter-debris.md) · [ADR-011](../../../ADR/ADR-011-world-surface-rendering.md) · [ADR-012](../../../ADR/ADR-012-swap-chain-presentation-and-frame-pacing.md) · [ADR-014](../../../ADR/ADR-014-hdr-output.md) · [ADR-015](../../../ADR/ADR-015-scene-anti-aliasing.md) · [ADR-017](../../../ADR/ADR-017-texture-container-and-block-compression.md) · [ADR-034](../../../ADR/ADR-034-text-rendering-and-glyph-cache.md) · [ADR-064](../../../ADR/ADR-064-accessibility-baseline-xag.md) · [ADR-066](../../../ADR/ADR-066-telemetry-with-consent.md) · [ADR-068](../../../ADR/ADR-068-profiling-and-gpu-timing.md) · [ADR-075](../../../ADR/ADR-075-application-window-and-dpi-awareness.md) · Related: [Renderer](README.md) · [Frame graph and passes](frame_graph_and_passes.md) · [World renderers](world_renderers.md) · [Entity and overlay renderers](entity_and_overlay_renderers.md) · [Visual language](visual_language.md) · [Platform layer](../platform_layer.md) · [Data schemas](../data_schemas/README.md) · [Diagnostics, test and performance](../diagnostics_test_and_performance/README.md)
 
 This document specifies every graphics setting of the renderer (its default, its values and what it changes), the quality presets, how a change of settings is applied, and the renderer's performance budgets: the reference caps and costs, and the budget structure of the Species engine baseline.
 
 ## 1 Responsibilities and boundaries
 
-**RND-440** (MUST) This document owns the renderer's settings: their identifiers, defaults, value ranges and effects, and the quality presets. The settings are stored by the settings store (`SettingsStore`, [platform_layer.md](../platform_layer.md)) in the preferences schema ([README.md](../data_schemas/README.md)), with their defaults in the one defaults table of DEC-100, and shown on the options pages of [reference/09_front_end_and_match_flow/options_localisation_and_hooks.md](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) and [ui_framework/pages_and_screen_recipes.md](../ui_framework/pages_and_screen_recipes.md).
+**RND-440** (MUST) This document owns the renderer's settings: their identifiers, defaults, value ranges and effects, and the quality presets. The settings are stored by the settings store (`SettingsStore`, [platform_layer.md](../platform_layer.md)) in the preferences schema ([README.md](../data_schemas/README.md)), with their defaults in the one defaults table of DEC-100, and shown on the options pages of [reference/09_front_end_and_match_flow/options_localisation_and_hooks.md](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) and [ui_framework/pages_and_screen_recipes.md](../ui_framework/pages_and_screen_recipes.md). Each setting is stored under the setting key `render.<setting>` of the settings table ([config_input_and_strings.md](../data_schemas/config_input_and_strings.md)), named after its `rnd.option.<setting>.default` key; the render size is stored as `render.render_width` and `render.render_height`.
 
 **RND-441** (MUST) Renderer settings are presentation: no simulation rule reads one (see DEC-010), and changing one during a match changes no simulation state, re-snaps no structure and rebuilds no port (R-BLDG-047, R-SIM-367).
 
@@ -15,24 +15,47 @@ This document specifies every graphics setting of the renderer (its default, its
 The interface below is a C++23 declaration sketch, not an implementation.
 
 ```cpp
-namespace species::render {
+namespace Engine
+{
 
-enum class DetailLevel : std::uint8_t { High = 1, Medium = 2, Low = 3 };   // lower is higher quality
-enum class WindowMode : std::uint8_t { Windowed, BorderlessFullScreen };
-enum class AntiAliasing : std::uint8_t { Off, Msaa2x, Msaa4x };
-enum class QualityPreset : std::uint8_t { High, Medium, Low, Custom };
+enum class DetailLevel : std::uint8_t
+{
+  High = 1,
+  Medium = 2,
+  Low = 3
+}; // lower is higher quality
+enum class AntiAliasing : std::uint8_t
+{
+  Off,
+  Msaa2x,
+  Msaa4x
+};
+enum class QualityPreset : std::uint8_t
+{
+  High,
+  Medium,
+  Low,
+  Custom
+};
 
-struct RenderSettings {                          // defaults: §9 keys rnd.option.*
-  std::uint32_t renderWidth = 0, renderHeight = 0;     // 0 x 0: the desktop resolution on first run
+// WindowMode (Windowed, BorderlessFullScreen) is the platform layer's (platform_layer.md §2).
+
+struct RenderSettings // defaults: §9 keys rnd.option.*
+{
+  std::optional<std::uint32_t> renderWidth; // absent: the desktop resolution on first run (DAT-008)
+  std::optional<std::uint32_t> renderHeight;
   WindowMode windowMode = WindowMode::BorderlessFullScreen;
   PresentMode presentMode = PresentMode::VerticalSync;
-  std::optional<float> frameRateCap;                   // frames per second; none by default
+  std::optional<float> frameRateCap; // frames per second; none by default
   bool lowLatency = false;
   AntiAliasing antiAliasing = AntiAliasing::Msaa4x;
   bool hdr = false;
-  std::optional<float> hdrHighlightLimit;              // nits; none: the display's maximum
-  float brightness = 1.0f;                             // final-pass constant; 1 = unchanged
-  std::uint8_t seaDetail = 1, skyDetail = 1, structureDetail = 1, entityDetail = 1;
+  std::optional<float> hdrHighlightLimit; // nits; none: the display's maximum
+  float brightness = 1.0f;                // final-pass constant; 1 = unchanged
+  std::uint8_t seaDetail = 1;
+  std::uint8_t skyDetail = 1;
+  std::uint8_t structureDetail = 1;
+  std::uint8_t entityDetail = 1;
   std::uint8_t treeDetail = 1;
   bool specialLighting = false;
   std::uint32_t posterResolution = 1;
@@ -40,14 +63,14 @@ struct RenderSettings {                          // defaults: §9 keys rnd.optio
   float workerScaleFactor = 2.0f;
 };
 
-[[nodiscard]] QualityPreset PresetOf(const RenderSettings& s);         // RND-450
-void ApplyPreset(RenderSettings& s, QualityPreset preset);             // RND-450
-[[nodiscard]] RenderSettings Validated(const RenderSettings& stored);  // RND-451
+[[nodiscard]] QualityPreset PresetOf(const RenderSettings& _settings); // RND-450
+void ApplyPreset(RenderSettings& _settings, QualityPreset _preset);    // RND-450
+[[nodiscard]] RenderSettings Validated(const RenderSettings& _stored); // RND-451
 
 // FrameRenderer::ApplySettings(const RenderSettings&) maps the settings onto RenderConfig
 // (README §2) and the per-frame detail state (RND-449).
 
-}  // namespace species::render
+} // namespace Engine
 ```
 
 **Data contract.** The renderer reads the player's accessibility settings that bound the look (the flash-reduction and motion settings of ADR-064 and ADR-036, RND-248) from the settings store; it does not own them.
@@ -60,7 +83,7 @@ void ApplyPreset(RenderSettings& s, QualityPreset preset);             // RND-45
 
 | Setting | Default | Values | Reference UI | What it changes | Specified in |
 |---|---|---|---|---|---|
-| render size | `rnd.option.render_size.default` (0 × 0: the desktop resolution of the window's monitor on first run, then written back) | the offered render sizes (RND-026), snapped to the closest (RND-022) | screen options: resolution | the scene-target size and aspect, and every screen-scaled overlay | RND-021, RND-025, RND-028 |
+| render size | `rnd.option.render_size.default` (absent: the desktop resolution of the window's monitor on first run, then written back; DAT-008) | the offered render sizes (RND-026), snapped to the closest (RND-022) | screen options: resolution | the scene-target size and aspect, and every screen-scaled overlay | RND-021, RND-025, RND-028 |
 | window mode | `rnd.option.window_mode.default` (borderless full screen) | windowed, borderless full screen | screen options: windowed | the window style; the display mode is never changed | ADR-012, ADR-075, RND-029 |
 | present mode | `rnd.option.present_mode.default` (vertical sync) | vertical sync, uncapped | none; the reference's vertical-sync preference has no effect (R-SIM-575) | the present interval and tearing | ADR-012 |
 | frame-rate cap | `rnd.option.frame_rate_cap.default` (none) | none, or a rate in frames per second | none | an engine-timed cap before each frame | ADR-012 |
@@ -69,17 +92,17 @@ void ApplyPreset(RenderSettings& s, QualityPreset preset);             // RND-45
 | HDR output | `rnd.option.hdr.default` (off) | on, off; offered only where the output supports it | none | the scene and swap-chain formats and the final-pass conversion | ADR-014 |
 | HDR highlight limit | `rnd.option.hdr_highlight_limit.default` (the display's maximum) | a luminance up to the display's maximum, capped by the photosensitivity rule | none | the tone-mapping ceiling | ADR-014, ADR-064 |
 | brightness | `rnd.option.brightness.default` (1, unchanged) | a final-pass multiplier | none | the final pass; the system gamma ramp is never changed | ADR-012, RND-246 |
-| sea detail | `rnd.option.sea_detail.default` (1) | 1, 2, 3; the value 0 is accepted and never offered | graphics options: water detail | the coastline wave mesh: a cell of detail × max(*X*, *Z*) ÷ 100 ([terrain.md](../terrain.md)), so 200, 100 or about 67 cells across the twice-size sea plane; 0 draws the flat layer only | RND-144 |
+| sea detail | `rnd.option.sea_detail.default` (1) | 1, 2, 3; the value 0 is accepted and never offered | graphics options: water detail | the coastline wave mesh: a cell of detail × max(*X*, *Z*) ÷ 100 ([terrain](../terrain/edges_normals_colours_and_sea.md#414-sea-derivations) TER-200), so 200, 100 or about 67 cells across the twice-size sea plane; 0 draws the flat layer only | RND-144 |
 | sky detail | `rnd.option.sky_detail.default` (1) | 1, 2, 3 | graphics options: sky detail | blobby cloud layers 3, 2, 1; flat layers 2, 1, 1; flat-layer alpha 0.3, 0.3, 0.5 | RND-153 |
 | structure detail | `rnd.option.structure_detail.default` (1) | 1, 2, 3 | graphics options: building detail | the decorative counts and layers of RND-445 | RND-163, RND-445 |
 | entity detail | `rnd.option.entity_detail.default` (1) | 1, 2, 3 | graphics options: entity detail | the Worker high-detail distance and the Crawler detail levels of RND-446 | RND-446 |
 | tree detail | `rnd.option.tree_detail.default` (1) | 1 or more | none | the leaf alpha × `rnd.tree.leaf_alpha_boost` to the power of the level, above level 1, at generation | RND-191 |
-| special lighting | `rnd.option.special_lighting.default` (off) | on, off | none; a development cheat toggles it ([diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md)) | the warm single light on every structure of pass 6 | RND-229 |
+| special lighting | `rnd.option.special_lighting.default` (off) | on, off | none; a debug command toggles it in Debug builds ([../diagnostics_test_and_performance/README.md](../diagnostics_test_and_performance/README.md)) | the warm single light on every structure of pass 6 | RND-229 |
 | poster resolution | `rnd.option.poster_resolution.default` (1) | *N* ≥ 1 | none | screenshots as *N* × *N* tiles | RND-110 |
 | inverted style | `rnd.option.inverted_style.default` (off) | on, off | none | the ink-on-paper look | RND-434 (see DEC-040) |
 | Worker distance scale factor | `rnd.option.worker_scale_factor.default` (2.0) | 0 or more | none | the growth of Worker cards with camera distance; the Leader banner growth (R-UNIT-191) and the Control Zone drawing ([mode_objects.md](../../../reference/03_buildings_and_world_objects/mode_objects.md)) read it too | RND-314, RND-412 |
 
-**RND-443** (MUST NOT) The renderer has no setting for: the display refresh rate, colour depth, depth-buffer depth or overscan, which have no meaning when the display mode is never changed and depth is `D32_FLOAT` (ADR-012, RND-055); a terrain detail level, which in the reference has no effect, so the terrain is always drawn at full resolution (RND-138); a pixelation, deform or water-reflection effect (see DEC-059); a terrain storage mode or a power-of-two texture rescale; or a fog preference, which in the reference has no effect. The bot priority overlay is a development setting of [diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md), and the stored seasonal preference has no effect on the seasonal theme (see DEC-101).
+**RND-443** (MUST NOT) The renderer has no setting for: the display refresh rate, colour depth, depth-buffer depth or overscan, which have no meaning when the display mode is never changed and depth is `D32_FLOAT` (ADR-012, RND-055); a terrain detail level, which in the reference has no effect, so the terrain is always drawn at full resolution (RND-138); a pixelation, deform or water-reflection effect (see DEC-059); a terrain storage mode or a power-of-two texture rescale; or a fog preference, which in the reference has no effect. The bot priority overlay is a development setting of Debug builds ([../diagnostics_test_and_performance/README.md](../diagnostics_test_and_performance/README.md)), and the stored seasonal preference has no effect on the seasonal theme (see DEC-101).
 
 ### 3.2 Detail levels
 
@@ -89,7 +112,7 @@ void ApplyPreset(RenderSettings& s, QualityPreset preset);             // RND-45
 
 | Element | Detail 1 | Detail 2 | Detail 3 | Specified in |
 |---|---|---|---|---|
-| Spawn Node glow blobs | 20 | 10 | 3 | `rnd.structure.spawn.glow_count`, RND-169 |
+| Spawn Node glow blobs | 20 | 10 | 3 | `ref.bldg.spawn_node.glow_blobs_by_detail`, RND-169 |
 | spawn-network outer beam glow | drawn | not drawn | not drawn | RND-169 |
 | Supply crate trail cards | 10 | 5 | 2 | `ref.crate.render.trail_cards`, R-CRATE-142 |
 | Supply crate glow blobs | 20 | 10 | 0 | `ref.crate.render.glow_blobs`, R-CRATE-142 |
@@ -97,7 +120,7 @@ void ApplyPreset(RenderSettings& s, QualityPreset preset);             // RND-45
 | Launch Vessel glow blobs | 50 | 20 | 10 | `rnd.detail.launch_vessel_glow_blobs` |
 | Launch Vessel exhaust loops | 3 | 2 | 1 | `rnd.detail.launch_vessel_exhaust_loops`: clamp(4 − detail, 1, 3) |
 | burning-tree fire particles per tick | ⌊height ÷ 12⌋ | ÷ 2 | ÷ 3 | RND-190 |
-| structure port pads | drawn | drawn | not drawn | RND-168 |
+| structure port pads | drawn | drawn | not drawn | `ref.bldg.port.pad_detail_limit`, RND-168 |
 | Barrier Emitter textured curtain | drawn | drawn | not drawn | RND-199 |
 | Transit Gate surface grid | 16 cells per side | 16 ÷ 2 | 16 ÷ 3 | R-BLDG-144 |
 | fuel-line flow loops | by detail level | by detail level | by detail level | R-BLDG-196 |
@@ -135,7 +158,7 @@ Caption: no settings change rebuilds terrain, sea or tree geometry, and none tou
 
 ### 4.3 The reference options pages
 
-**RND-452** (MUST) The reference graphics options page shows exactly four choices, sea detail, sky detail, structure detail and entity detail, each with the values high, medium and low, plus apply and back actions; the screen options page shows the render size and the window mode. The reference has no anti-aliasing, anisotropic-filtering, gamma or brightness, vertical-sync, resolution-scale, texture-quality, shadow-quality or frame-rate-cap setting. The Species engine provides anti-aliasing, brightness, the present mode, the frame-rate cap and the render size (RND-442), and no anisotropic-filtering, texture-quality or shadow-quality setting. The Species options pages expose at least the reference settings; whether they also expose the engine settings of RND-442 (present mode, frame-rate cap, low latency, anti-aliasing, HDR, brightness) and further commonly expected options is decided by the design phase (see DEC-044).
+**RND-452** (MUST) The reference graphics options page shows exactly four choices, sea detail, sky detail, structure detail and entity detail, each with the values high, medium and low, plus apply and back actions; the screen options page shows the render size, the window mode, the refresh rate, the colour bits and the depth bits ([options_localisation_and_hooks.md](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-414 to R-META-420), and of these the Species engine has settings for the render size and the window mode only (RND-443). The reference has no anti-aliasing, anisotropic-filtering, gamma or brightness, vertical-sync, resolution-scale, texture-quality, shadow-quality or frame-rate-cap setting. The Species engine provides anti-aliasing, brightness, the present mode, the frame-rate cap and the render size (RND-442), and no anisotropic-filtering, texture-quality or shadow-quality setting. The Species options pages expose at least the reference settings; whether they also expose the engine settings of RND-442 (present mode, frame-rate cap, low latency, anti-aliasing, HDR, brightness) and further commonly expected options is decided by the design phase (see DEC-044).
 
 ### 4.4 Reference caps and costs
 
@@ -158,7 +181,7 @@ Caption: no settings change rebuilds terrain, sea or tree geometry, and none tou
 
 ### 4.5 Species budgets
 
-**RND-454** (MUST) The renderer's client target is `rnd.budget.target_frame_rate` (60 frames per second, 16.7 ms per frame) on minimum-specification hardware in a local Spawn Control match with the design population of 2,000 units (see DEC-228 item 6, DEC-106). The frame's CPU and GPU time at that population MUST fit the target; the per-pass-group budgets (world passes 3 to 6 and 8; actor passes 7a to 7d; effect passes 10a to 11, 14 and 15; overlay passes 16 to 34) are set from the prototype measurement of DEC-106 and recorded in this document, and the development overlay shows each pass's GPU time against its group's budget (RND-041, ADR-068).
+**RND-454** (MUST) The renderer's client target is `rnd.budget.target_frame_rate` (60 frames per second, 16.7 ms per frame) on minimum-specification hardware, measured on the pinned reference test machine (see DEC-971), in a local Spawn Control match with the design population of 2,000 units (see DEC-228 item 6, DEC-106). The frame's CPU and GPU time at that population MUST fit the target; the per-pass-group budgets (world passes 3 to 6 and 8; actor passes 7a to 7d; effect passes 10a to 11, 14 and 15; overlay passes 16 to 34) are set from the prototype measurement of DEC-106 and recorded in this document, and the development overlay of Debug builds shows each pass's GPU time against its group's budget (RND-041, ADR-068).
 
 **RND-455** (MUST) The number of draw and dispatch calls per frame is bounded by the pass table and the instance types, never by the population: crowds cost a fixed number of calls per instance type and pass (ADR-009, DEC-228 item 5), structures and trees are instanced per mesh, terrain chunks are drawn with one instanced or indirect draw (RND-138), and particles with one draw per particle batch (ADR-010).
 
@@ -178,7 +201,7 @@ Caption: no settings change rebuilds terrain, sea or tree geometry, and none tou
 | the stored render size is not offered | the closest offered size | RND-022, RND-451 |
 | the chosen sample count is not supported for the scene format | 2x, then Off; the setting shown is the one in effect | RND-442, ADR-015 |
 | HDR output becomes unavailable (output change) | SDR output; the setting stays on and applies again when HDR returns | RND-451, ADR-014 |
-| a frame exceeds its budget | no behaviour change; the development overlay marks the pass group, and telemetry records the frame time | RND-454, RND-457 |
+| a frame exceeds its budget | no behaviour change; in Debug builds the development overlay marks the pass group; telemetry records the frame time | RND-454, RND-457 |
 
 ## 7 Acceptance tests
 
@@ -208,6 +231,7 @@ Caption: no settings change rebuilds terrain, sea or tree geometry, and none tou
 | DEC-225 | Open | frame pacing and catch-up (RND-453) |
 | DEC-228 | Open | the design and stress populations and the client target (RND-454 to RND-456) |
 | DEC-327 | Open | the structure-detail branches (RND-445) |
+| DEC-971 | Open | the reference test machine and the minimum-specification hardware of the client target (RND-454) |
 
 **Design-phase inputs.**
 
@@ -220,7 +244,7 @@ Caption: no settings change rebuilds terrain, sea or tree geometry, and none tou
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
-| `rnd.option.render_size.default` | 0 × 0 | px | the desktop resolution on first run | RND-442 | DEC-100 |
+| `rnd.option.render_size.default` | absent | px | the desktop resolution of the window's monitor on first run (DAT-008); stored as `render.render_width` and `render.render_height` | RND-442 | DEC-100 |
 | `rnd.option.window_mode.default` | borderless full screen | mode | windowed or borderless full screen | RND-442 | |
 | `rnd.option.present_mode.default` | vertical sync | mode | vertical sync or uncapped | RND-442 | DEC-044 |
 | `rnd.option.frame_rate_cap.default` | none | frames per s | | RND-442 | DEC-044 |

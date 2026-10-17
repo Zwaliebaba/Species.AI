@@ -45,7 +45,7 @@ The pointer capture, the repeat timers, the batched draw, the text service, the 
 
 ## 2 Interfaces
 
-C++23 interface sketch (declarations only). Every type is in namespace `species::ui`; `UiCore`, `UiWindow`, `UiButtonBase`, `PanelId`, `WidgetId`, `PointF`, `RectF`, `StringId` and `DrawContext` are those of [core_and_widgets.md](core_and_widgets.md) §2.
+C++23 interface sketch (declarations only). Every type is in namespace `species::ui`; `UiCore`, `UiWindow`, `UiWidget`, `PanelId`, `WidgetId`, `PointF`, `RectF`, `StringId` and `DrawContext` are those of [core_and_widgets.md](core_and_widgets.md) §2.
 
 ```cpp
 namespace species::ui {
@@ -156,7 +156,7 @@ public:
 
 The last five are raised by the match's input rules ([reference/06](../../../reference/06_controls_camera_and_commands/actions_and_bindings.md)) and the match HUD, which recipe D builds; this table names them so that a HUD panel built by the recipe uses the same events.
 
-**UI-316** (MUST) The page host controls the screen transition only through the renderer's `InitialiseTransition(duration, direction)` and `StartTransition()` and its transition state ([frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-095 to RND-098). The UI never reads or copies the presented image itself (ADR-031).
+**UI-316** (MUST) The page host controls the screen transition only through the renderer's `InitializeTransition(duration, direction)` and `StartTransition()` and its transition state ([frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-095 to RND-098). The UI never reads or copies the presented image itself (ADR-031).
 
 ## 3 Data model
 
@@ -236,7 +236,7 @@ Table 3.3-A — the front-end widget kinds. "Base" is the base type of [core_and
 | `ModeDescription`, `MapDescription`, `OptionDetails` | `ScrollingText` | `ModeSelect`; `MapSelect` and `MatchSetup`; `AdvancedOptions` | the text of the highlighted mode, map or focused option, set every update from the view-model | UI-402, R-META-032, R-META-042, R-META-050 |
 | `StaticImage` | standard button | any page | a picture given by asset id | UI-410 |
 | `ModePicture`, `MapThumbnail`, `HelpPicture` | standard button | `ModeSelect` and `MatchSetup`; `MapSelect` and `MatchSetup`; help windows | a picture chosen every update from the view-model | UI-411 |
-| `ColourPickerRow` | page button | `PlayerOptions` | one colour or side choice with its swatch | UI-415 to UI-419 |
+| `ColorPickerRow` | page button | `PlayerOptions` | one colour or side choice with its swatch | UI-415 to UI-419 |
 | `ModeRow` | page button | `ModeSelect` | one mode, with its complexity badge `uitex.difficulty_badge` | R-META-030, R-META-031 |
 | `MapRow` | standard button | `MapSelect` | one map of the current mode, in columns, with its slide-in | UI-422, R-META-036 to R-META-041 |
 | `MapListHeader` | standard button | `MapSelect` | the column header strip | R-META-037 |
@@ -274,7 +274,7 @@ The match-setup Back buttons of single player, the host and a joining player, th
 
 Layout and drawing follow the update and only read the state it left ([core_and_widgets.md](core_and_widgets.md) UI-021).
 
-**UI-353** (MUST) The **match-setup sync** is the update step that keeps the participant's name and colour requests current on `ModeSelect`, `MapSelect`, `MatchSetup` and `PlayerOptions`, by R-META-082: it substitutes the preferred or the next available colour for a request that another slot holds, outside co-op and Siege, and it issues `SetColour` and `SetTeamName` only on `MatchSetup` and `PlayerOptions` and while a tutorial is starting. The title-page update performs the same requests during a tutorial launch (R-META-026).
+**UI-353** (MUST) The **match-setup sync** is the update step that keeps the participant's name and colour requests current on `ModeSelect`, `MapSelect`, `MatchSetup` and `PlayerOptions`, by R-META-082: it substitutes the preferred or the next available colour for a request that another slot holds, outside co-op and Siege, and it issues `SetColor` and `SetTeamName` only on `MatchSetup` and `PlayerOptions` and while a tutorial is starting. The title-page update performs the same requests during a tutorial launch (R-META-026).
 
 **UI-354** (MUST) On `MapSelect` and `MatchSetup`, after the match-setup sync, the page compares the mode it was built for with the match setup's confirmed mode. When both are set and they differ, it requests Rebuild: at the next frame the page's leave hook runs and its enter rule runs again with the page itself as `from`. A rebuild is not a page change: the stack is unchanged and the page's own enter rules decide what is kept (R-META-043).
 
@@ -382,7 +382,7 @@ sequenceDiagram
   Note over P,R: frame N, update phase
   P->>B: click, press and release on the button
   B->>B: raise match_ui.menu_select
-  B->>R: InitialiseTransition with the transition time and the button's direction
+  B->>R: InitializeTransition with the transition time and the button's direction
   B->>H: Request with the button's operation and target
   Note over P,R: frame N + 1, update phase
   H->>H: leave hook, remove the widgets, restack
@@ -511,7 +511,7 @@ No picture widget draws a trial-edition overlay (DEC-333).
 
 ### 4.8 The colour and side picker
 
-**UI-415** (MUST) `PlayerOptions` holds one colour picker row (`ColourPickerRow`) per colour id 0 to 7, in id order, or in Siege one row per side: random (no colour), attackers (`ref.sim.team.siege_attacker_colour_id`) and defenders (`ref.sim.team.siege_defender_colour_id`) (R-META-051). A row is identified by its colour id or by "none".
+**UI-415** (MUST) `PlayerOptions` holds one colour picker row (`ColorPickerRow`) per colour id 0 to 7, in id order, or in Siege one row per side: random (no colour), attackers (`ref.sim.team.siege_attacker_colour_id`) and defenders (`ref.sim.team.siege_defender_colour_id`) (R-META-051). A row is identified by its colour id or by "none".
 
 **UI-416** (MUST) The page computes whether each row is **taken** once per update, in its update hook, by one rule that both drawing and pressing use (DEC-102, DT-18): the rule of R-META-080 as it applies when a row is drawn, in which only used slots count and the local slot never counts:
 
@@ -547,7 +547,7 @@ The random row is never taken.
 
 ### 4.10 Recipe A: a tool window
 
-A tool window is the pattern of the development windows ([diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md)) and of the windows of a map editor, if the design phase builds one (DEC-045). The sketch below shows the shape of one; its names are examples.
+A tool window is the pattern of the development windows ([diagnostics, test and performance](../diagnostics_test_and_performance/README.md)) and of the windows of a map editor, if the design phase builds one (DEC-045). The sketch below shows the shape of one; its names are examples.
 
 ```cpp
 // Recipe A sketch: a development tool window. The names are examples.
@@ -589,7 +589,7 @@ void OpenExampleTool(UiCore& ui, ExampleToolModel& model, PanelId parent) {
 
 A tool window draws the standard window chrome ([core_and_widgets.md](core_and_widgets.md) §4.12), whose body is the accent panel strip `uitex.panel_accent`.
 
-**UI-431** (MUST) A tool window is never a page of the front-end screen and never opens in a player build unless its owner document says so: the development windows exist in development builds only ([diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md)), and the map editor's windows only in an editor build ([reference/08](../../../reference/08_maps_and_level_design/map_editor_hooks.md) R-MAP-301).
+**UI-431** (MUST) A tool window is never a page of the front-end screen and never opens in a player build unless its owner document says so: the development windows exist in development builds only ([diagnostics, test and performance](../diagnostics_test_and_performance/README.md)), and the map editor's windows only in an editor build ([reference/08](../../../reference/08_maps_and_level_design/map_editor_hooks.md) R-MAP-301).
 
 ### 4.11 Recipe B: a full-screen options screen
 
@@ -689,7 +689,7 @@ A tool window draws the standard window chrome ([core_and_widgets.md](core_and_w
 
 **UI-481** (MUST) When the row under the cursor is removed from a list, the cursor moves to the row that takes its place or, when none does, to the last remaining row, or to the Back button when no row remains; it never rests on a removed widget.
 
-**UI-482** (MUST) The page host writes every applied and every refused request to the UI log category (ADR-067), with the operation, the page left, the page entered and the frame. Development builds show in the diagnostics overlay ([diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md)) the current page id, the stack, whether the page is waiting and for how many frames, the pending request and the last refused request. The page framework sends no telemetry of its own; its timings reach the profiling overlay only (ADR-066, ADR-068).
+**UI-482** (MUST) The page host writes every applied and every refused request to the UI log category (ADR-067), with the operation, the page left, the page entered and the frame. Development builds show in the diagnostics overlay ([diagnostics, test and performance](../diagnostics_test_and_performance/README.md)) the current page id, the stack, whether the page is waiting and for how many frames, the pending request and the last refused request. The page framework sends no telemetry of its own; its timings reach the profiling overlay only (ADR-066, ADR-068).
 
 ## 7 Acceptance tests
 
@@ -706,7 +706,7 @@ A tool window draws the standard window chrome ([core_and_widgets.md](core_and_w
 | T7 | unit | `MapSelect` entered while the confirmed mode differs from the pressed mode returns `Waiting`, is entered again on every frame without its update hook running, and raises `PageEntered` once, in the frame in which the modes agree. | UI-362 |
 | T8 | unit | `MatchSetup` entered from `MapSelect` with a stale mode redirects: the current page is `MapSelect`, `MatchSetup` is not on the stack, and `MapSelect`'s enter rule receives the `from` of the request being applied. | UI-362 |
 | T9 | unit | Leaving `SessionBrowser` for `Connecting` keeps the session-discovery listener running; leaving it for `HostOrJoin` stops it and discards the rows; leaving `Connecting` stops it. | UI-363 |
-| T10 | integration | A page-button click calls `InitialiseTransition` with `ref.meta.nav.transition_time` and `Forward` in frame N, and `StartTransition` in frame N + 1 after the target's enter rule; a Back button, a back handler and a colour picker row pass `Backward`; a page change with the transition state `Finished` does not call `StartTransition`. | UI-360, UI-391 |
+| T10 | integration | A page-button click calls `InitializeTransition` with `ref.meta.nav.transition_time` and `Forward` in frame N, and `StartTransition` in frame N + 1 after the target's enter rule; a Back button, a back handler and a colour picker row pass `Backward`; a page change with the transition state `Finished` does not call `StartTransition`. | UI-360, UI-391 |
 | T11 | unit | The lobby bed event is raised exactly once per front-end screen, in the first update after the sound set has loaded, and is raised again by the next fresh screen. | UI-352 |
 | T12 | unit | The cursor does not move and no widget acts while the chat input is visible, in the update in which the chat was toggled, while the navigation is locked and while a layer is above the screen. | UI-352, UI-380, UI-388 |
 | T13 | integration | On every reachable page, `action.menu.close` leads to the Back target of table 3.1-A, also while the Back button is covered by a layer that has just closed in the same frame and while it is not drawn; on `Title` and `WaitForStart` it does nothing. | UI-383 |

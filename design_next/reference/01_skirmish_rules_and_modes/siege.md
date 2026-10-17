@@ -65,7 +65,7 @@ When the Core Device detonates, the Siege result is fixed and Command Console ca
 
 **R-MODE-370** (MUST) In Siege the rocket turret and Abductor outcomes are invalid; the Collector, Builder and Spawn Surge outcomes are invalid on maps without Spawn Nodes, which is every reference Siege map; the Transport outcome is invalid on a map with a Transport cap; and the map's excluded outcomes never drop (DEC-107; [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md)).
 
-**R-MODE-371** (MUST) Bots follow the objective chains with diffusion priorities; attacking bots dispatch every Worker once per main cycle, every `ref.bot.cycle.period_siege` (30 ticks) for Easy and Standard bots and every `ref.bot.cycle.period_hard` (11 ticks) at Hard ([reference/07](../07_bots/03_decision_loop_and_leaders.md) R-BOT-075, R-BOT-146); bots form no Leader formations and route through Breach Charge gaps ([reference/07](../07_bots/README.md)).
+**R-MODE-371** (MUST) Bots follow the objective chains with diffusion priorities; attacking bots dispatch every Worker once per main cycle, every `ref.bot.cycle.period_siege` (30 ticks) for Easy and Standard bots and every `ref.bot.cycle.period_hard` (11 ticks) at Hard ([reference/07](../07_bots/03_decision_loop_and_leaders.md) R-BOT-075, [mode strategies](../07_bots/05_mode_strategies_and_tutorials.md) R-BOT-146); bots form no Leader formations and route through Breach Charge gaps ([reference/07](../07_bots/README.md)).
 
 ### 2.4 HUD and end of match
 

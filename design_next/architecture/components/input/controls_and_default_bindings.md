@@ -81,12 +81,12 @@ Table 3.6-A Default bindings of the match actions.
 | 2 | `action.camera.pan_right` | Boolean | `key:d:held` · `key:right:held` | — | — | A1 |
 | 3 | `action.camera.pan_forward` | Boolean | `key:w:held` · `key:up:held` | — | — | A1 |
 | 4 | `action.camera.pan_back` | Boolean | `key:s:held` · `key:down:held` | — | — | A1 |
-| 5 | `action.camera.pan_stick` | Axis2 | — | `pad:stick_left:position` | left stick (no asset) | A1 |
+| 5 | `action.camera.pan_stick` | Axis2 | — | `pad:stick_left:position` | `glyph.pad.stick_left` | A1 |
 | 6 | `action.camera.fast_pan` | Boolean | `key:shift:held` | `pad:stick_left:held` | — | A2 |
-| 7 | `action.camera.raise` | Boolean | `key:q:held` | `pad:trigger_right:position` | left stick (no asset) | A3 |
-| 8 | `action.camera.lower` | Boolean | `key:e:held` | `pad:trigger_left:position` | right stick (no asset) | A3 |
+| 7 | `action.camera.raise` | Boolean | `key:q:held` | `pad:trigger_right:position` | `glyph.pad.stick_left` | A3 |
+| 8 | `action.camera.lower` | Boolean | `key:e:held` | `pad:trigger_left:position` | `glyph.pad.stick_right` | A3 |
 | 9 | `action.camera.height_wheel` | Axis1 | `mouse:wheel:move` | — | — | A3 |
-| 10 | `action.camera.aim` | Axis2 | `mouse:motion:move` | — | right stick (no asset) | A4 |
+| 10 | `action.camera.aim` | Axis2 | `mouse:motion:move` | — | `glyph.pad.stick_right` | A4 |
 | 11 | `action.camera.aim_stick` | Axis2 | — | `pad:stick_right:position` | — | A4 |
 | 12 | `action.camera.zoom` | Boolean | `key:z:held` · `mouse:middle:held` | `pad:stick_right:held` | — | A5 |
 | 13 | `action.camera.zoom_out` | Boolean | `key:c:held` | — | — | A11 |
@@ -127,7 +127,7 @@ Table 3.6-A Default bindings of the match actions.
 | 48 | `action.order.demote` | Boolean | `key:c:down` | `pad:face_north:down` | — | T5 |
 | 49 | `action.order.scrap` | Boolean | `key:c:down` | `pad:face_north:down` | — | T4 |
 | 50 | `action.direct.move_hold` | Boolean | `mouse:primary:held` | — | — | D1 |
-| 51 | `action.direct.move_stick` | Axis2 | — | `pad:stick_left:position` | left stick (no asset) | D1 |
+| 51 | `action.direct.move_stick` | Axis2 | — | `pad:stick_left:position` | `glyph.pad.stick_left` | D1 |
 | 52 | `action.direct.fire` | Boolean | `mouse:secondary:held` | `pad:trigger_right:held` | — | D2, D5 |
 | 53 | `action.direct.secondary_fire` | Boolean | `all(mouse:primary:down, mouse:secondary:held)` | `pad:trigger_left:down` | — | D3 |
 | 54 | `action.direct.aim_stick` | Axis2 | — | `pad:stick_right:position` | — | D2 |
@@ -149,13 +149,13 @@ Table 3.6-A Default bindings of the match actions.
 
 **INP-076** (MUST) `action.app.quit` has no binding. The platform layer raises it when the window receives a close request, which Alt+F4 also produces (ADR-028, ADR-075, R-CTRL-047 row M8). The key events of Alt and F4 still reach the router as ordinary events.
 
-**INP-077** (MUST) The UI navigation actions, their meanings, their context rules and their default bindings are defined by the UI framework ([layout, rendering, input and localisation](../ui_framework/layout_rendering_input_and_localisation.md) UI-203 and UI-204, ADR-032, ADR-064): `action.menu.up`, `action.menu.down`, `action.menu.left`, `action.menu.right`, `action.menu.activate`, `action.menu.front_end_activate`, `action.menu.close`, `action.menu.dismiss` and `action.menu.scroll_speedup`. Rows 1 to 9 of table 3.6-B state those defaults as binding nodes, with their order and their primary binding, and add nothing to them; the keyboard bindings are the Species baseline of UI-204, and the UI framework applies the Escape binding of `action.menu.close` only outside a match, where Escape is `action.match.menu` (R-META-014). Rows 10 to 14 bind the leaderboard hook page, which no UI requirement lists: `action.menu.cycle_up` (`PadMenuCycleUp`) and `action.menu.cycle_down` (`PadMenuCycleDown`) on the shoulder buttons with repeat, the view selector on the trigger presses and the period toggle on the north face button (DEC-047, DEC-553, R-META-500 to R-META-502). The match actions `action.match.menu`, `action.ui.pointer_down`, `action.ui.pointer_held` and `action.ui.alt_pointer_down` also act on UI windows (R-CTRL-047 rows M4 and M6).
+**INP-077** (MUST) The UI navigation actions, their meanings and their context rules are defined by the UI framework ([layout, rendering, input and localisation](../ui_framework/layout_rendering_input_and_localisation.md) UI-203 and UI-204, ADR-032, ADR-064): `action.menu.up`, `action.menu.down`, `action.menu.left`, `action.menu.right`, `action.menu.activate`, `action.menu.front_end_activate`, `action.menu.close`, `action.menu.dismiss` and `action.menu.scroll_speedup`. Their default bindings are owned here: table 3.6-B is the one binding table of every `action.menu.*` action, and the UI framework cites it. Every screen is usable with the keyboard alone, so rows 1 to 8 bind the arrow keys with repeat, Enter and Esc beside the gamepad bindings (UI-204; see DEC-950); the UI framework applies the Escape binding of `action.menu.close` only outside a match, where Escape is `action.match.menu` (R-META-014), and `action.menu.front_end_activate` only at the front end. Rows 10 to 14 bind the leaderboard hook page, which no UI requirement lists: `action.menu.cycle_up` (`PadMenuCycleUp`) and `action.menu.cycle_down` (`PadMenuCycleDown`) on the shoulder buttons with repeat, the view selector on the trigger presses and the period toggle on the north face button (DEC-047, DEC-553, R-META-500 to R-META-502). The match actions `action.match.menu`, `action.ui.pointer_down`, `action.ui.pointer_held` and `action.ui.alt_pointer_down` also act on UI windows (R-CTRL-047 rows M4 and M6).
 
 Table 3.6-B Default bindings of the UI navigation actions of UI-203 and UI-204, and of the leaderboard hook-page actions.
 
 | # | Action id | Kind | Keyboard and mouse | Gamepad | Glyph override | Defined by |
 |---|---|---|---|---|---|---|
-| 1 | `action.menu.left` | Boolean | `key:left:repeat` | `pad:dpad_left:repeat` · `pad:stick_left_left:repeat` · `pad:stick_right_left:repeat` | d-pad left and right (no asset) | UI-203, UI-204 |
+| 1 | `action.menu.left` | Boolean | `key:left:repeat` | `pad:dpad_left:repeat` · `pad:stick_left_left:repeat` · `pad:stick_right_left:repeat` | `glyph.pad.dpad_horizontal` | UI-203, UI-204 |
 | 2 | `action.menu.right` | Boolean | `key:right:repeat` | `pad:dpad_right:repeat` · `pad:stick_left_right:repeat` · `pad:stick_right_right:repeat` | — | UI-203, UI-204 |
 | 3 | `action.menu.up` | Boolean | `key:up:repeat` | `pad:dpad_up:repeat` · `pad:stick_left_up:repeat` · `pad:stick_right_up:repeat` | — | UI-203, UI-204 |
 | 4 | `action.menu.down` | Boolean | `key:down:repeat` | `pad:dpad_down:repeat` · `pad:stick_left_down:repeat` · `pad:stick_right_down:repeat` | — | UI-203, UI-204 |
@@ -176,7 +176,7 @@ Table 3.6-B Default bindings of the UI navigation actions of UI-203 and UI-204, 
 
 ### 3.7 Glyphs
 
-**INP-080** (MUST) A control's glyph is looked up by its control in table 3.7-A; the UI framework draws the darkening shadow first and the glyph on top. A control without a row has no glyph asset, and the UI shows its display text instead.
+**INP-080** (MUST) A control's glyph is looked up by its control in table 3.7-A; the UI framework draws the darkening shadow first and the glyph on top. A control without a row has no glyph asset, and the UI shows its display text instead. A glyph override (INP-081) is drawn over the shadow of its row.
 
 Table 3.7-A Glyph assets by control.
 
@@ -190,11 +190,14 @@ Table 3.7-A Glyph assets by control.
 | `pad:shoulder_right` | `glyph.pad.shoulder_right` | `glyph.pad.shoulder_right_shadow` |
 | `pad:trigger_left` | `glyph.pad.trigger_left` | `glyph.pad.trigger_shadow` |
 | `pad:trigger_right` | `glyph.pad.trigger_right` | `glyph.pad.trigger_shadow` |
+| `pad:stick_left` | `glyph.pad.stick_left` | `glyph.pad.stick_left_shadow` |
+| `pad:stick_right` | `glyph.pad.stick_right` | `glyph.pad.stick_right_shadow` |
+| `pad:dpad_left` and `pad:dpad_right` together, as a glyph override only | `glyph.pad.dpad_horizontal` | `glyph.pad.dpad_horizontal_shadow` |
 | `key:tab` | `glyph.key.tab` | none |
 
-**INP-081** (MUST) An action may carry one glyph override in the binding set (the "Glyph override" columns of tables 3.6-A and 3.6-B); when an action has several glyph entries, the last one wins. `Glyph(action)` returns the override. The overrides that name a stick or d-pad glyph need glyph assets that the asset manifest does not hold yet; until they exist, the content build leaves those overrides out of the cooked set (INP-222), and the UI shows the display text of the action's primary gamepad control.
+**INP-081** (MUST) An action may carry one glyph override in the binding set (the "Glyph override" columns of tables 3.6-A and 3.6-B); when an action has several glyph entries, the last one wins. `Glyph(action)` returns the override. The stick and d-pad overrides use `glyph.pad.stick_left`, `glyph.pad.stick_right` and `glyph.pad.dpad_horizontal`, each over its shadow (table 3.7-A); the content build checks every override against the asset manifest (INP-222).
 
-**INP-082** (MUST) The glyph overrides of `action.camera.raise` (the left-stick glyph) and `action.camera.lower` (the right-stick glyph) are part of the default set as table 3.6-A states, although both actions are bound to triggers on the gamepad.
+**INP-082** (MUST) The glyph overrides of `action.camera.raise` (the left-stick glyph) and `action.camera.lower` (the right-stick glyph) are part of the default set as table 3.6-A states, although both actions are bound to triggers on the gamepad (see DEC-954).
 
 ### 3.8 Reverse index
 
@@ -272,6 +275,31 @@ Table 3.8-A Physical input to actions, default binding set.
 | `pad:view` | `action.power.panel_show` (down), `action.power.panel_hide` (down), `action.menu.close` (down) | 3 |
 | `alias:action.ui.show_cursor` | `action.ui.pointer_down` (operand of all), `action.ui.pointer_held` (operand of all) | 2 |
 
+### 3.11 Development binding layer and conditional actions
+
+**INP-094** (MUST) Debug builds add a development binding layer on top of the default binding set: the debug actions of [diagnostics, test and performance](../diagnostics_test_and_performance/README.md) DBG-020 and the developer camera actions of the [camera](../camera_and_sequences.md) component (CAM-081, CAM-082), with the bindings of table 3.11-A. The layer is a binding-set record of the layer kind `development` (INP-070), which the content build validates like the default set (INP-170). The router reads it only where the development switch `ENGINE_DEVELOPMENT` is set, that is in Debug builds (ADR-056): a Release build neither reads the layer nor holds its action ids, so a user-layer entry that names one is skipped as `UnknownAction` (INP-171). INP-009 holds for the default set in every build.
+
+Table 3.11-A Development binding layer (Debug builds).
+
+| # | Action id | Kind | Keyboard and mouse | Gamepad | Defined by |
+|---|---|---|---|---|---|
+| 1 | `action.debug.command_window` | Boolean | `key:f11:down` | — | DBG-020 |
+| 2 | `action.debug.drop_packet` | Boolean | `key:f:held` | — | DBG-020 |
+| 3 | `action.debug.special_lighting_on` | Boolean | `key:l:held` | — | DBG-020 |
+| 4 | `action.debug.special_lighting_off` | Boolean | `key:k:held` | — | DBG-020 |
+| 5 | `action.debug.soak_rendering` | Boolean | `key:r:down` | — | DBG-020 |
+| 6 | `action.debug.overlay` | Boolean | `key:f5:down` | — | DBG-020 |
+| 7 | `action.debug.profile_view` | Boolean | `key:f10:down` | — | DBG-020 |
+| 8 | `action.debug.camera_fast` | Boolean | `key:shift:held` | — | CAM-081 |
+| 9 | `action.debug.camera_slow` | Boolean | `mouse:secondary:held` | — | CAM-081 |
+| 10 | `action.debug.camera_rotate` | Boolean | `mouse:secondary:held` | — | CAM-082 |
+
+**INP-095** (MUST) `Rebuild` appends the layer's entries after those of the default set, in entry order, before the layout layer and the user layer replace primary bindings (INP-162). No action of the layer has a default binding, so each binding of table 3.11-A is its action's primary binding. The bindings are the reference's developer keys: F11, F held, L, K, R, F5 and F10 (DBG-020), and the secondary pointer button held for both the slow-down and the rotation of the developer fly mode (CAM-084). The fast key, Shift held, is a Species baseline choice: the key that also speeds up the camera pan (`action.camera.fast_pan`). `key:f10:down` binds like every other key (INP-109, table 6.3-A row 16), which is what lets the profile view use it.
+
+**INP-096** (MUST) The layer shares physical inputs with the default set, and the router resolves no overlap (INP-085): in a Debug build `key:l` feeds `action.view.chat_log` and `action.debug.special_lighting_on`, and both act (DBG-020); `key:shift` adds `action.debug.camera_fast` to its actions of table 3.8-A, and `mouse:secondary` adds `action.debug.camera_slow` and `action.debug.camera_rotate`, which only the developer fly mode reads (CAM-081, CAM-082). The keys `f`, `k`, `r`, `f5`, `f10` and `f11` have no binding in the default set.
+
+**INP-097** (MUST) `action.sequence.skip`, the skip of a presentation timeline (CAM-105), exists only if the design phase adopts the presentation timelines of DEC-051. Until then it is not in the action id table (INP-067), no layer binds it, and an entry that names it is rejected as `UnknownAction`. When DEC-051 adopts timelines, the action joins table 3.6-A with the reference's bindings, `key:enter:down` · `pad:face_east:down`.
+
 ## 4 Behaviour and algorithms
 
 ### 4.16 Notes on the default scheme
@@ -280,7 +308,7 @@ Table 3.8-A Physical input to actions, default binding set.
 
 **INP-182** (MUST) 16 actions have gamepad bindings only: the stick actions (`action.camera.pan_stick`, `action.camera.aim_stick`, `action.direct.move_stick`, `action.direct.aim_stick`, `action.direct.move_direction_change`), the tracking distance actions, `action.ui.show_cursor`, the two connection actions, `action.menu.front_end_activate` and the five leaderboard actions. The analogue camera and unit controls have key and button equivalents. 26 actions have keyboard and mouse bindings only and 39 have both (tables 3.6-A and 3.6-B).
 
-**INP-183** (MUST) Value conventions of the default set: `action.camera.pan_stick`, `action.camera.aim_stick`, `action.direct.move_stick`, `action.direct.aim_stick` and `action.direct.move_direction_change` carry stick units, x positive to the right and y negative forward, up to `inp.pad.stick_left.scale` for the left stick and `inp.pad.stick_right.scale` for the right stick at sensitivity 100; `action.camera.aim` carries client pixels per frame; `action.camera.height_wheel` carries wheel notches per frame, forward positive; `action.camera.raise` and `action.camera.lower` are `Boolean` actions fed by trigger `position` bindings, true while the trigger is above its threshold. The camera's stick gain `ref.ctrl.camera.stick_gain` ([camera](../../../reference/06_controls_camera_and_commands/camera.md)) and the movement and aiming vectors of the team command state (R-SIM-440, R-CTRL-101) are defined on these units.
+**INP-183** (MUST) Value conventions of the default set: `action.camera.pan_stick`, `action.camera.aim_stick`, `action.direct.move_stick`, `action.direct.aim_stick` and `action.direct.move_direction_change` carry stick units, x positive to the right and y negative forward, up to `inp.pad.stick_left.scale` for the left stick and `inp.pad.stick_right.scale` for the right stick at sensitivity 100; `action.camera.aim` carries client pixels per frame; `action.camera.height_wheel` carries wheel notches per frame, forward positive; `action.camera.raise` and `action.camera.lower` are `Boolean` actions fed by trigger `position` bindings, true while the trigger is above its threshold. The camera's stick gain `ref.ctrl.camera.stick_gain` ([camera](../../../reference/06_controls_camera_and_commands/camera.md)) is defined on these units, and so are the direct-control vectors of the team command state: the sender converts the `action.direct.move_stick` value to world space with the camera's control vector and sends it as `directMoveVector`, by which the Strike team's waypoint moves in wu from the lead Trooper's position, and converts the aiming vector the same way into `directTargetVector`, which the Strike team attacks as the point (x, 0, z) (R-SIM-440, R-CTRL-101, R-UNIT-358; see DEC-854).
 
 **INP-184** (MUST) The input system reads these settings (R-META-455): the keyboard layout (INP-164); the mouse-button count, `ref.meta.settings.mouse_buttons.default` in [options and hooks](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md), which the client reads when it sends the team command state and on which no binding depends; the settings that setting nodes name, none in the default set; and the feature flag `FeatureFlagX`.
 

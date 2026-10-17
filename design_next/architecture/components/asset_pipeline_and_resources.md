@@ -1,14 +1,14 @@
 # Asset pipeline and resources
 
-> Status: Engine baseline · Prefix: AST · ADRs: [ADR-017](../../ADR/ADR-017-texture-container-and-block-compression.md) · [ADR-018](../../ADR/ADR-018-texture-import-manifest.md) · [ADR-019](../../ADR/ADR-019-mesh-source-format-and-cooked-meshes.md) · [ADR-020](../../ADR/ADR-020-flat-shading-and-team-tint.md) · [ADR-021](../../ADR/ADR-021-mesh-socket-schema.md) · [ADR-025](../../ADR/ADR-025-audio-formats-codecs-and-residency.md) · [ADR-058](../../ADR/ADR-058-pack-files-and-mount-policy.md) · [ADR-059](../../ADR/ADR-059-content-build-and-validators.md) · [ADR-060](../../ADR/ADR-060-content-identity-by-hash.md) · [ADR-061](../../ADR/ADR-061-data-schemas-and-versioning.md) · also [ADR-003](../../ADR/ADR-003-shader-language-compiler-and-material-shaders.md), [ADR-006](../../ADR/ADR-006-root-signature-and-bindless-resource-access.md), [ADR-008](../../ADR/ADR-008-gpu-memory-uploads-and-device-removal.md), [ADR-013](../../ADR/ADR-013-working-colour-space-and-blending.md), [ADR-016](../../ADR/ADR-016-view-projection-and-depth-conventions.md), [ADR-034](../../ADR/ADR-034-text-rendering-and-glyph-cache.md), [ADR-056](../../ADR/ADR-056-editions-build-flavours-and-feature-flags.md), [ADR-057](../../ADR/ADR-057-version-identity.md), [ADR-062](../../ADR/ADR-062-authoring-syntax-and-schema-language.md), [ADR-063](../../ADR/ADR-063-localisation.md), [ADR-071](../../ADR/ADR-071-install-layout-runtime-files-and-user-data.md) · Related: [Renderer](renderer/README.md) · [Data schemas](data_schemas/README.md) · [Build tooling and distribution](build_tooling_and_distribution.md) · [Audio engine](audio_engine.md) · [Terrain](terrain.md) · [Game assets](../../assets/GameAssets.md) · [Asset manifest](../../assets/asset_manifest.csv) · [Assets README](../../assets/README.md)
+> Status: Engine baseline · Prefix: AST · ADRs: [ADR-017](../../ADR/ADR-017-texture-container-and-block-compression.md) · [ADR-018](../../ADR/ADR-018-texture-import-manifest.md) · [ADR-019](../../ADR/ADR-019-mesh-source-format-and-cooked-meshes.md) · [ADR-020](../../ADR/ADR-020-flat-shading-and-team-tint.md) · [ADR-021](../../ADR/ADR-021-mesh-socket-schema.md) · [ADR-025](../../ADR/ADR-025-audio-formats-codecs-and-residency.md) · [ADR-058](../../ADR/ADR-058-pack-files-and-mount-policy.md) · [ADR-059](../../ADR/ADR-059-content-build-and-validators.md) · [ADR-060](../../ADR/ADR-060-content-identity-by-hash.md) · [ADR-061](../../ADR/ADR-061-data-schemas-and-versioning.md) · also [ADR-003](../../ADR/ADR-003-shader-language-compiler-and-material-shaders.md), [ADR-006](../../ADR/ADR-006-root-signature-and-bindless-resource-access.md), [ADR-008](../../ADR/ADR-008-gpu-memory-uploads-and-device-removal.md), [ADR-013](../../ADR/ADR-013-working-colour-space-and-blending.md), [ADR-016](../../ADR/ADR-016-view-projection-and-depth-conventions.md), [ADR-034](../../ADR/ADR-034-text-rendering-and-glyph-cache.md), [ADR-056](../../ADR/ADR-056-editions-build-flavours-and-feature-flags.md), [ADR-057](../../ADR/ADR-057-version-identity.md), [ADR-062](../../ADR/ADR-062-authoring-syntax-and-schema-language.md), [ADR-063](../../ADR/ADR-063-localisation.md), [ADR-071](../../ADR/ADR-071-install-layout-runtime-files-and-user-data.md) · Related: [Renderer](renderer/README.md) · [Data schemas](data_schemas/README.md) · [Build tooling and distribution](build_tooling_and_distribution.md) · [Audio engine](audio_engine/README.md) · [Terrain](terrain/README.md) · [Game assets](../../assets/GameAssets.md) · [Asset manifest](../../assets/asset_manifest.csv) · [Assets README](../../assets/README.md)
 
-This component specifies how Species content travels from the authored source files under the content root `content/` to the resources a running client or server uses. At build time it covers the import records that fix every processing choice per asset (format, colour space, alpha mode, mip policy, sampler, team-tint mask); the texture, mesh, collision and audio cookers; derived assets and processing variants; the placeholder that the content build generates for every manifest row with no authored file; the build-time validators; the pack files with their table of contents; and content hashing. At run time it covers the mount set with its explicit override order, case-insensitive look-up and the development-only loose-file mount; the asynchronous content reader over memory-mapped packs; the asset cache keyed by asset id and processing variant; the resident sound banks; and run-time generated textures. Its list of assets is [`assets/asset_manifest.csv`](../../assets/asset_manifest.csv), whose columns it consumes as §2.4 states.
+This component specifies how Species content travels from the authored source files under the content root `content/` to the resources a running client or server uses. At build time it covers the import records that fix every processing choice per asset (format, colour space, alpha mode, mip policy, sampler, team-tint mask); the texture, mesh, collision and audio cookers; derived assets and processing variants; the placeholder that the content build generates for every manifest row with no authored file; the build-time validators; the pack files with their table of contents; and content hashing. At run time it covers the mount set with its explicit override order, case-insensitive look-up and the loose-file mount of Debug builds; the asynchronous content reader over memory-mapped packs; the asset cache keyed by asset id and processing variant; the resident sound banks; and run-time generated textures. Its list of assets is [`assets/asset_manifest.csv`](../../assets/asset_manifest.csv), whose columns it consumes as §2.4 states.
 
 Notation: a **key** is the canonical name of a pack entry (§3.1); an **asset id** is the dotted id of a manifest row; a **member** is one file of a multi-file asset; a **variant** is a processing variant of an asset (a derived variant or a view, §3.5); KiB is 1024 bytes and MiB is 1024 KiB.
 
 ## 1 Responsibilities and boundaries
 
-**AST-001** (MUST) The asset pipeline owns these build-time parts of the content build (ADR-059): reading the asset manifest and the import record of every source (§3.2 to §3.11); the texture, mesh, collision and audio cookers (§4.2 to §4.6); derived variants (§4.3); placeholders (§4.7); the asset validators (§4.8); the pack writer (§4.9); and the entry hashes and the content manifest (§4.10).
+**AST-001** (MUST) The asset pipeline owns these build-time parts of the content build (ADR-059), which the content build tool runs, a development tool in the tools solution under `Tools/` that never ships and never links into the executable (AGENTS.md §2): reading the asset manifest and the import record of every source (§3.2 to §3.11); the texture, mesh, collision and audio cookers (§4.2 to §4.6); derived variants (§4.3); placeholders (§4.7); the asset validators (§4.8); the pack writer (§4.9); and the entry hashes and the content manifest (§4.10).
 
 **AST-002** (MUST) It owns these run-time parts: the mount set and the pack reader (§4.11); the asynchronous content reader (§4.13); the asset cache (`AssetCache`), which holds textures and meshes keyed by asset id and processing variant (§4.12, DEC-098); the resident sound banks held by the sample cache (`SampleCache`, ADR-025); and the registry of run-time textures built from RGBA8 images (`ImageRgba8`, §4.15).
 
@@ -18,20 +18,20 @@ Notation: a **key** is the canonical name of a pack entry (§3.1); an **asset id
 
 **AST-005** (MUST NOT) No simulation data is derived from render geometry. Collision volumes and simulation-relevant socket positions come only from the collision assets and simulation data records that the content build writes and validates (DEC-012, ADR-019, ADR-021). The asset pipeline never writes simulation state (DEC-007) and never draws from the simulation random generator.
 
-**AST-006** (MUST NOT) Profile and shipping builds contain no code that reads content from loose files; they read packed content only (ADR-058, ADR-056).
+**AST-006** (MUST NOT) Release builds contain no code that reads content from loose files; they read packed content only, and loose files are a feature of Debug builds (AST-105, ADR-058, ADR-056).
 
-**AST-007** (MUST) The dedicated-server product uses the same pack reader, mount set and content hashing as the client and loads only data records, maps, collision assets and simulation data records; it never creates GPU resources, sound banks or glyph pages (ADR-056).
+**AST-007** (MUST) The dedicated server uses the same pack reader, mount set and content hashing as the client and loads only data records, maps, collision assets and simulation data records; it never creates GPU resources, sound banks or glyph pages (ADR-056).
 
 Table 1-A Boundaries.
 
 | Neighbour | Gives the asset pipeline | Takes from it |
 |---|---|---|
 | [data schemas](data_schemas/README.md) (`DAT`) | the record schemas, the authoring parser, the import-record schemas, the map schema | cooked binary records with their schema id and version |
-| [build tooling and distribution](build_tooling_and_distribution.md) (`BLD`) | edition manifests, products and flavours, the CI jobs that run the content build | the packs, the mount manifest, the content manifest and the validation report |
+| [build tooling and distribution](build_tooling_and_distribution.md) (`BLD`) | edition manifests, the solution's projects and its Debug and Release configurations (ADR-054, ADR-056), the CI jobs that run the content build | the packs, the mount manifest, the content manifest and the validation report |
 | [renderer](renderer/README.md) (`RND`) | the device, the copy queue and its fences (ADR-008); the tint function, the cut-out thresholds and the look constants that the cookers apply | cooked textures and meshes by (asset id, variant); texture views |
-| [audio engine](audio_engine.md) (`AEN`) | the streaming threshold, the memory budgets per category and the stream decoder (`AudioDecoder`) (ADR-025) | resident sound banks and sound-stream entries |
+| [audio engine](audio_engine/README.md) (`AEN`) | the streaming threshold, the samples per block of the streams and the memory budget of each bank (ADR-025); the bank loads that `LoadBank` requests (AEN-244) | resident sound banks and MS-ADPCM sound-stream entries |
 | [UI framework](ui_framework/README.md) (`UI`) | the glyph cache (ADR-034) | font files and string tables |
-| [terrain](terrain.md) (`TER`) | the shore mask and the other run-time images it produces | run-time texture registrations |
+| [terrain](terrain/README.md) (`TER`) | the shore mask and the other run-time images it produces | run-time texture registrations |
 | [platform layer](platform_layer.md) (`PLT`) | the install directory, file mapping and the user-data folders (ADR-071) | none |
 | simulation ([reference/12](../../reference/12_simulation_model/05_space_routing_and_physics.md)) | none | data records, maps, collision assets and simulation socket records |
 
@@ -67,112 +67,215 @@ flowchart LR
 ### 2.1 Interface sketch
 
 ```cpp
-namespace species::assets {
+namespace Engine
+{
 
-// ---- identity -------------------------------------------------------------
-struct AssetId   { std::string value; };   // dotted, lower case, a row of the asset manifest
-struct VariantId { std::string value; };   // empty: the asset's default processing
-struct AssetKey  { AssetId asset; VariantId variant; auto operator<=>(const AssetKey&) const = default; };
-using  ContentKey   = std::string;                   // canonical pack key (§3.1)
-using  Sha256Digest = std::array<std::byte, 32>;
-struct AssetError;        // asset id, key, error kind and message (§6)
-struct MountOptions;      // flavour, optional loose-content directory (development builds only)
-struct MountOverride;     // key, overridden pack, overriding pack
-struct RuntimeTextureId { std::uint32_t value; };   // never collides with a manifest asset id
-class  ImageProducer;     // produces the pixels of a run-time texture on demand (§4.15)
+// ---- identity -------------------------------------------------------------------------
+struct AssetId   // dotted, lower case, a row of the asset manifest
+{
+  std::string value;
+};
+struct VariantId   // empty: the asset's default processing
+{
+  std::string value;
+};
+struct AssetKey
+{
+  AssetId asset;
+  VariantId variant;
+  auto operator<=>(const AssetKey& _other) const = default;
+};
+using ContentKey = std::string;                   // canonical pack key (§3.1)
+using Sha256Digest = std::array<std::byte, 32>;
+struct AssetError;       // asset id, key, error kind and message (§6)
+struct MountOptions;     // configuration, optional loose-content directory (Debug builds only)
+struct MountOverride;    // key, overridden pack, overriding pack
+struct RuntimeTextureId  // never collides with a manifest asset id
+{
+  std::uint32_t value;
+};
+class ImageProducer;     // produces the pixels of a run-time texture on demand (§4.15)
 
-enum class ContentType : std::uint8_t {
-  Texture, CpuTable, Mesh, Collision, SimRecord, Record, Map, MapIndex,
-  StringTable, Font, ResidentSound, SoundStream, ExplainerScript, Shader, AssetIndex };
-
-// ---- import records (schemas owned by data_schemas/, ADR-061) ---------
-enum class TextureKind : std::uint8_t { Colour, Ui, Normal, Mask, ExactData, CpuTable };
-enum class ColourSpace : std::uint8_t { Srgb, Linear };
-enum class AlphaMode   : std::uint8_t { Opaque, Straight, Premultiplied, Additive, Cutout };
-enum class MipPolicy   : std::uint8_t { Full, None };
-enum class SamplerId   : std::uint8_t { LinearClamp, LinearWrap, PointClamp };   // fixed heap indices (ADR-006)
-enum class Derivation  : std::uint8_t { BlurredShadow, StackedCopies, Greyscale, ToColour, ReplaceColour };
-
-struct TextureView    { VariantId id; std::uint32_t firstLevel; std::uint32_t levelCount; SamplerId sampler; };
-struct DerivedVariant { VariantId id; Derivation op; std::vector<float> parameters; };
-
-struct TextureImportRecord {
-  AssetId asset; std::uint32_t member;              // member index of a multi-file asset
-  TextureKind kind; ColourSpace colourSpace; AlphaMode alphaMode;
-  std::optional<float> cutoutThreshold;             // required with AlphaMode::Cutout
-  MipPolicy mips; SamplerId sampler; bool pixelExact; std::uint32_t authoringScale;
-  std::optional<AssetId> tintMask;                  // companion single-channel mask (ADR-020)
-  std::vector<DerivedVariant> derived; std::vector<TextureView> views;
+enum class ContentType : std::uint8_t
+{
+  Texture, CpuTable, Mesh, Collision, SimRecord, Record, Map, MapIndex, StringTable, Font, ResidentSound, SoundStream,
+  ExplainerScript, AssetIndex
 };
 
-enum class TintMarking : std::uint8_t { None, VertexWeight, MaterialFlag };
-struct MeshImportRecord {
-  AssetId asset; std::uint32_t member; std::string assetClass;   // selects the socket schema (ADR-021)
-  float unitScale;                                               // glTF metres to wu
-  TintMarking tint; std::vector<std::string> smoothPrimitives;   // ADR-020 exceptions
-  std::optional<AssetId> collision;                              // required for collidable meshes
+// ---- import records (schemas owned by data_schemas/, ADR-061) -------------------------
+enum class TextureKind : std::uint8_t
+{
+  Color, Ui, Normal, Mask, ExactData, CpuTable
+};
+enum class ColorSpace : std::uint8_t
+{
+  Srgb, Linear
+};
+enum class AlphaMode : std::uint8_t
+{
+  Opaque, Straight, Premultiplied, Additive, Cutout
+};
+enum class MipPolicy : std::uint8_t
+{
+  Full, None
+};
+enum class SamplerId : std::uint8_t   // fixed heap indices (ADR-006, ADR-018)
+{
+  LinearClamp, LinearWrap, PointClamp, PointMagnifyClamp
+};
+enum class Derivation : std::uint8_t
+{
+  BlurredShadow, StackedCopies, Grayscale, ToColor, ReplaceColor
 };
 
-struct AudioImportRecord {
-  AssetId asset; std::uint32_t member;
-  bool positional; std::optional<std::array<std::uint64_t, 2>> loopSamples;   // [start, end)
+struct TextureView
+{
+  VariantId id;
+  std::uint32_t firstLevel;
+  std::uint32_t levelCount;
+  SamplerId sampler;
+};
+struct DerivedVariant
+{
+  VariantId id;
+  Derivation op;
+  std::vector<float> parameters;
 };
 
-// ---- packs and mounting (ADR-058) ----------------------------------------
-enum class PackCodec : std::uint8_t { Stored, Zstd };
-struct EntryRef { std::uint32_t pack; std::uint32_t entry; };
-struct PackEntry {
-  ContentKey key; ContentType type; std::uint32_t schemaId, schemaVersion;
-  std::uint64_t size; std::uint32_t firstChunk, chunkOffset; bool simulationRelevant; Sha256Digest hash; };
+struct TextureImportRecord
+{
+  AssetId asset;
+  std::uint32_t member;                    // member index of a multi-file asset
+  TextureKind kind;
+  ColorSpace colorSpace;
+  AlphaMode alphaMode;
+  std::optional<float> cutoutThreshold;    // required with AlphaMode::Cutout
+  MipPolicy mips;
+  SamplerId sampler;
+  bool pixelExact;
+  std::uint32_t authoringScale;
+  std::optional<AssetId> tintMask;         // companion single-channel mask (ADR-020)
+  std::vector<DerivedVariant> derived;
+  std::vector<TextureView> views;
+};
 
-class PackFile {
- public:
-  static std::expected<PackFile, AssetError> Open(const std::filesystem::path& path);  // maps and checks the TOC
-  std::optional<std::uint32_t> Find(std::string_view canonicalKey) const;
+enum class TintMarking : std::uint8_t
+{
+  None, VertexWeight, MaterialFlag
+};
+enum class MeshRole : std::uint8_t
+{
+  Render, Collision
+};
+struct MeshImportRecord
+{
+  AssetId asset;
+  std::uint32_t member;
+  MeshRole role;                               // a collision source is cooked into a Collision entry (AST-044)
+  std::string assetClass;                      // selects the socket schema (ADR-021)
+  float unitScale;                             // glTF metres to wu
+  TintMarking tint;
+  std::vector<std::string> smoothPrimitives;   // ADR-020 exceptions
+  std::optional<AssetId> collision;            // required for collidable meshes
+};
+
+struct AudioImportRecord
+{
+  AssetId asset;
+  std::uint32_t member;
+  bool positional;
+  std::optional<std::array<std::uint64_t, 2>> loopSamples;   // [start, end); on MS-ADPCM block boundaries
+};
+
+// ---- packs and mounting (ADR-058) ------------------------------------------------------
+enum class PackCodec : std::uint8_t
+{
+  Stored, XpressHuffman   // further values reserved (AST-055)
+};
+struct EntryRef
+{
+  std::uint32_t pack;
+  std::uint32_t entry;
+};
+struct PackEntry
+{
+  ContentKey key;
+  ContentType type;
+  std::uint32_t schemaId;
+  std::uint32_t schemaVersion;
+  std::uint64_t size;
+  std::uint32_t firstChunk;
+  std::uint32_t chunkOffset;
+  bool simulationRelevant;
+  Sha256Digest hash;
+};
+
+class PackFile
+{
+public:
+  static std::expected<PackFile, AssetError> Open(const std::filesystem::path& _path);   // maps and checks the TOC
+  std::optional<std::uint32_t> Find(std::string_view _canonicalKey) const;
   std::span<const PackEntry> Entries() const;
 };
 
 struct MountManifest;   // ordered pack list with kinds and patch targets (§3.13)
-class MountSet {
- public:
-  static std::expected<MountSet, AssetError> Mount(const MountManifest&, const MountOptions&);
-  std::optional<EntryRef> Resolve(std::string_view requestedKey) const;   // canonicalises, then exact look-up
-  std::vector<ContentKey> List(std::string_view prefix) const;           // sorted, one per effective key
-  std::span<const ContentKey> MembersOf(const AssetId&) const;            // member keys in member order
-  bool Contains(const AssetId&) const;
+class MountSet
+{
+public:
+  static std::expected<MountSet, AssetError> Mount(const MountManifest& _manifest, const MountOptions& _options);
+  std::optional<EntryRef> Resolve(std::string_view _requestedKey) const;   // canonicalises, then exact look-up
+  std::vector<ContentKey> List(std::string_view _prefix) const;           // sorted, one per effective key
+  std::span<const ContentKey> MembersOf(const AssetId& _asset) const;     // member keys in member order
+  bool Contains(const AssetId& _asset) const;
   std::span<const MountOverride> Overrides() const;                       // every override, logged at mount
   Sha256Digest SimulationIdentity() const;                                // §4.10
 };
 
-// ---- asynchronous reads ---------------------------------------------------
-enum class ReadPriority : std::uint8_t { Immediate, Normal, Background };
-class ContentReader {   // one interface; memory-mapped or streamed back-ends
- public:
-  std::future<std::expected<std::vector<std::byte>, AssetError>> ReadEntry(EntryRef, ReadPriority);
+// ---- asynchronous reads ----------------------------------------------------------------
+enum class ReadPriority : std::uint8_t
+{
+  Immediate, Normal, Background
+};
+class ContentReader   // one interface; memory-mapped or streamed back-ends
+{
+public:
+  std::future<std::expected<std::vector<std::byte>, AssetError>> ReadEntry(EntryRef _entry, ReadPriority _priority);
 };
 
-// ---- the asset cache ------------------------------------------------------
-enum class LoadState : std::uint8_t { Queued, Reading, Creating, Uploading, Resident, Failed };
-struct TextureSize { std::uint32_t width, height, displayWidth, displayHeight, levels; };
-
-class LoadGroup;        // a residency scope: start-up, front end, match (§4.12)
-class TextureHandle;    // reference counted
-class MeshHandle;       // reference counted; exposes the cooked MeshAsset
-
-class AssetCache {
- public:
-  LoadGroup&    BeginGroup(std::string_view name);
-  TextureHandle RequestTexture(LoadGroup&, const AssetKey&, ReadPriority = ReadPriority::Normal);
-  MeshHandle    RequestMesh(LoadGroup&, const AssetId&, std::uint32_t member, ReadPriority = ReadPriority::Normal);
-  LoadState     State(const TextureHandle&) const;
-  TextureSize   Size(const TextureHandle&) const;          // valid once Resident
-  RuntimeTextureId Register(ImageProducer& producer);     // run-time textures (§4.15)
-  void EndGroup(LoadGroup&);                               // releases the group's references
-  void OnDeviceRebuilt();                                  // recreate resident GPU resources (ADR-008)
-  void Pump();                                             // once per frame: completions and events
+// ---- the asset cache -------------------------------------------------------------------
+enum class LoadState : std::uint8_t
+{
+  Queued, Reading, Creating, Uploading, Resident, Failed
+};
+struct TextureSize
+{
+  std::uint32_t width;
+  std::uint32_t height;
+  std::uint32_t displayWidth;
+  std::uint32_t displayHeight;
+  std::uint32_t levels;
 };
 
-}  // namespace species::assets
+class LoadGroup;       // a residency scope: start-up, front end, match (§4.12)
+class TextureHandle;   // reference counted
+class MeshHandle;      // reference counted; exposes the cooked MeshAsset
+
+class AssetCache
+{
+public:
+  LoadGroup& BeginGroup(std::string_view _name);
+  TextureHandle RequestTexture(LoadGroup& _group, const AssetKey& _key, ReadPriority _priority = ReadPriority::Normal);
+  MeshHandle RequestMesh(LoadGroup& _group, const AssetId& _asset, std::uint32_t _member,
+                         ReadPriority _priority = ReadPriority::Normal);
+  LoadState State(const TextureHandle& _handle) const;
+  TextureSize Size(const TextureHandle& _handle) const;   // valid once Resident
+  RuntimeTextureId Register(ImageProducer& _producer);    // run-time textures (§4.15)
+  void EndGroup(LoadGroup& _group);                       // releases the group's references
+  void OnDeviceRebuilt();                                 // recreate resident GPU resources (ADR-008)
+  void Pump();                                            // once per frame: completions and events
+};
+
+} // namespace Engine
 ```
 
 **AST-008** (MUST) The interface is the one above in substance: requests take an asset id and an optional declared variant; every handle is reference counted; every result that can fail is a `std::expected` or carries `LoadState::Failed` with an `AssetError` that names the asset id, the key and the reason.
@@ -187,7 +290,7 @@ class AssetCache {
 | `AssetFailed` | an entry fails to load (§6) | the asset key, the key and the `AssetError` |
 | `LoadGroupProgress` | at most once per frame while a group loads | the group, bytes done, bytes total, entries done, entries total |
 | `LoadGroupCompleted` | every entry of a group is resident or failed | the group and its failure count |
-| `AssetReloaded` | development builds only: a reload command replaced an entry (§4.14) | the asset key |
+| `AssetReloaded` | Debug builds only: a reload command replaced an entry (§4.14) | the asset key |
 
 Completion is always signalled by an event or a completed future, never inferred from an idle queue (DEC-226).
 
@@ -260,12 +363,12 @@ Table 3.3-A Texture import-record fields.
 
 | Field | Values | Default |
 |---|---|---|
-| kind | `Colour`, `Ui`, `Normal`, `Mask`, `ExactData`, `CpuTable` | from `target_format` (table 3.3-B) |
+| kind | `colour`, `ui`, `normal`, `mask`, `exact_data`, `cpu_table`: the kinds `Color`, `Ui`, `Normal`, `Mask`, `ExactData` and `CpuTable` of `TextureKind` | from `target_format` (table 3.3-B) |
 | colour space | `srgb` (colour art), `linear` (masks, ramps used as data, exact data) | from `colour_space` |
 | alpha mode | `opaque`, `straight`, `premultiplied`, `additive` (colour is added, alpha is ignored, black contributes nothing), `cutout` with a threshold | from `alpha_mode` (table 3.3-C) |
 | cut-out threshold | an alpha value; a texel is kept when its alpha is greater | required with `cutout`: the threshold of the pipeline-state entry that draws the art ([frame graph and passes](renderer/frame_graph_and_passes.md) RND-060) |
 | mip policy | `full`, or `none` for art drawn at or near its authored scale (pixel-exact art and UI pictures) | from `target_format` |
-| sampler | linear clamp-to-edge, linear wrap, point clamp-to-edge | linear clamp-to-edge; linear wrap when `spec` or `target_format` says "wrap repeat"; point clamp-to-edge when pixel-exact |
+| sampler | `linear_clamp` (linear clamp-to-edge), `linear_wrap` (linear wrap), `point_clamp` (point clamp-to-edge), `point_magnify_clamp` (point-magnify clamp-to-edge, AST-025) | `linear_clamp`; `linear_wrap` when `spec` or `target_format` says "wrap repeat"; `point_clamp` when pixel-exact |
 | tint mask | none, or the asset id of a companion single-channel mask whose value is the team-tint weight (ADR-020) | none |
 | pixel-exact | off or on (UI art that is neither compressed nor filtered) | off |
 | authoring scale | 1, or `ast.texture.ui_authoring_scale` (2) | 2 where `spec` says "author at 2x", otherwise 1 |
@@ -276,10 +379,10 @@ Table 3.3-B Texture kinds, runtime formats and the manifest's `target_format` (A
 
 | Kind | Runtime format | Colour space | Mips | `target_format` values |
 |---|---|---|---|---|
-| `Colour` | `BC7_UNORM_SRGB` | `srgb` | full | "DDS (DX10 header) BC7_UNORM_SRGB, full mip chain", also with ", wrap repeat" or "; team area recoloured per team at load" (read as a `Colour` texture with a tint mask, AST-022) |
+| `Color` | `BC7_UNORM_SRGB` | `srgb` | full | "DDS (DX10 header) BC7_UNORM_SRGB, full mip chain", also with ", wrap repeat" or "; the team colour is applied in the shader through the companion tint mask (AST-022)" |
 | `Ui` | `BC7_UNORM_SRGB`; `R8G8B8A8_UNORM_SRGB` when pixel-exact | `srgb` | none | "DDS (DX10 header) BC7_UNORM_SRGB, no mips" |
 | `Normal` | `BC5_UNORM`, Z reconstructed in the shader | `linear` | full | no row uses it |
-| `Mask` | `BC4_UNORM` | `linear` | full | "DDS (DX10 header) BC4_UNORM, full mip chain" |
+| `Mask` | `BC4_UNORM` | `linear` | full | "DDS (DX10 header) BC4_UNORM, full mip chain", also with "; cooked entry `<parent key>@shadow`" or "`<parent key>@trail`" for a derived variant (AST-028) |
 | `ExactData` | `R8_UNORM` or `R8G8_UNORM`, uncompressed | `linear` | as declared | no row uses it |
 | `CpuTable` | `R8G8B8A8_UNORM_SRGB`, uncompressed, one level; read on the CPU and never uploaded to the GPU | `srgb` | none | "uncompressed R8G8B8A8_UNORM_SRGB table in the pack, no mips; read on the CPU" |
 
@@ -287,26 +390,28 @@ Table 3.3-C The manifest's `alpha_mode` values and the import-record alpha mode.
 
 | `alpha_mode` | Kind | Alpha mode | Blend of the materials that draw it |
 |---|---|---|---|
-| opaque | `Colour` or `Ui` | `opaque` | opaque, or the blend of the material's combine mode |
-| opaque fill (blend chosen by the widget) | `Colour` | `opaque` | the widget's blend (UI framework) |
-| opaque (modulated by the sea light map) | `Colour` | `opaque` | the sea flat layer's combine ([world renderers](renderer/world_renderers.md) RND-142) |
-| straight alpha blend | `Colour` or `Ui` | `straight` | alpha |
-| straight alpha, tinted by vertex colour | `Colour` | `straight` | alpha |
-| straight alpha; pure-red texels take the team colour | `Colour` with a tint mask (AST-022) | `straight` | alpha |
-| cut-out (alpha test at the consumer threshold) | `Colour` | `cutout` with the threshold of AST-019 | opaque with alpha cut-out |
+| opaque | `Color` or `Ui` | `opaque` | opaque, or the blend of the material's combine mode |
+| opaque fill (blend chosen by the widget) | `Color` | `opaque` | the widget's blend (UI framework) |
+| opaque (modulated by the sea light map) | `Color` | `opaque` | the sea flat layer's combine ([world renderers](renderer/world_renderers.md) RND-142) |
+| straight alpha blend | `Color` or `Ui` | `straight` | alpha, or additive for glowing icons, markers and cursors (AST-021) |
+| straight alpha, tinted by vertex colour | `Color` | `straight` | alpha |
+| straight alpha; the team area takes the team colour by the weight of its companion tint mask | `Color` with a tint mask (AST-022) | `straight` | alpha |
+| cut-out (alpha test at the consumer threshold) | `Color` | `cutout` with the threshold of AST-019 | opaque with alpha cut-out |
 | additive (black adds nothing; colour from the draw tint) | `Mask` | `additive` | additive |
 | alpha mask (white colour, mask as alpha, tinted at draw) | `Mask`, sampled as white with the mask as alpha | `straight` where its pass alpha-blends it (`marker.team_disc_shadow`, `marker.edge_compass_shadow`); `additive` where its pass adds it (`marker.team_disc`, `fx.tree_canopy`) | alpha or additive, as the record states |
 | darkening layer (destination x (1 - texel)) | `Mask` | `opaque`: the single channel is the darkening weight | darkening or ink |
+| tint mask (team-tint weight read by the shader; never drawn on its own) | `Mask` | `opaque`: the single channel is the team-tint weight | none: read by the tint function of the material that draws its parent (AST-022) |
 | none (look-up table) | `CpuTable` | `opaque` | none: not drawn |
-| opaque (team parts painted mostly red) | not a texture: a mesh (§3.7) | `opaque` | the material shaders of ADR-003 |
+| opaque; team regions, where the mesh has any, marked by explicit tint weights (the `_SPECIES_TINT` vertex attribute or the `species_team_tint` material flag); opaque; no tint marking | not a texture: a mesh (§3.7, AST-034) | `opaque` | the material shaders of ADR-003 |
 | coverage (premultiplied in the UI shader) | not a texture: a font (§3.11) | none | the glyph cache's states (ADR-034) |
+| straight alpha | not a texture: the application icon `uitex.app_icon`, a Windows icon resource built into the executable and never packed | none | none |
 | n/a | not a texture | none | none |
 
 **AST-020** (MUST) The colour space agrees with the kind: `srgb` only with `BC7_UNORM_SRGB` and `R8G8B8A8_UNORM_SRGB`, `linear` only with `BC4_UNORM`, `BC5_UNORM`, `R8_UNORM` and `R8G8_UNORM`. The cooker tags sRGB textures as sRGB in the DX10 header, so the metadata stays truthful while the renderer samples encoded values through a `UNORM` view (ADR-013).
 
-**AST-021** (MUST) The validator pairs each texture with the blend state of every material and pipeline-state entry that draws it, as ADR-018 states: `straight` with the alpha blend, `premultiplied` with the premultiplied blend, `additive` with the additive blend, and `cutout` with the opaque state and alpha cut-out. Any other pairing of these four alpha modes is a build error naming the asset, the material and the pass. Textures of alpha mode `opaque` are drawn with the blend that their material declares, which is how darkening and ink layers and opaque fills are drawn.
+**AST-021** (MUST) The validator pairs each texture with the blend state of every material and pipeline-state entry that draws it, as ADR-018 states: `straight` with the alpha blend, or with the additive blend for glowing icons, markers and cursors (RND-393, RND-423), `premultiplied` with the premultiplied blend, `additive` with the additive blend, and `cutout` with the opaque state and alpha cut-out. Any other pairing of these four alpha modes is a build error naming the asset, the material and the pass. Textures of alpha mode `opaque` are drawn with the blend that their material declares, which is how darkening and ink layers and opaque fills are drawn.
 
-**AST-022** (MUST) Textured art that takes the team colour (the cloth of `marker.leader_banner` and `marker.flag_post_state`) names a companion tint mask in its import record: a `Mask` texture of the same size, whose value is the team-tint weight, 1 where the team colour applies fully. The art itself carries the intensity of the team area as grey levels. The renderer applies the tint from the instance's team palette index with the tint function of the renderer component (ADR-020); no per-team copy exists and nothing is recoloured at load. Which tint colour a cloth flag takes, for no team, while selected or highlighted, and otherwise, is a rule of the cloth renderer ([animation and VFX](animation_and_vfx/README.md)). A tint mask whose size differs from its parent's, or a team-tinted texture without one, is a build error.
+**AST-022** (MUST) Textured art that takes the team colour (the cloth of `marker.leader_banner` and `marker.flag_post_state`) names a companion tint mask in its import record (`marker.leader_banner_tint` and `marker.flag_post_state_tint`, one member for each member of the parent, in the parent's order): a `Mask` texture of the same size, whose value is the team-tint weight, 1 where the team colour applies fully. The art itself carries the intensity of the team area as grey levels. The renderer applies the tint from the instance's team palette index with the tint function of the renderer component (ADR-020); no per-team copy exists and nothing is recoloured at load. Which tint colour a cloth flag takes, for no team, while selected or highlighted, and otherwise, is a rule of the cloth renderer ([animation and VFX](animation_and_vfx/README.md)). A tint mask whose size differs from its parent's, or a team-tinted texture without one, is a build error.
 
 **AST-023** (MUST) A pixel-exact texture is cooked uncompressed as `R8G8B8A8_UNORM_SRGB` with mip policy `none` and the point clamp-to-edge sampler, and is drawn only at its authored scale (ADR-017).
 
@@ -314,11 +419,11 @@ Table 3.3-C The manifest's `alpha_mode` values and the import-record alpha mode.
 
 ### 3.4 Samplers and views
 
-**AST-025** (MUST) The sampler of a texture is one of the closed set of ADR-018, held in the sampler heap at the fixed indices of the shared header (ADR-006): linear clamp-to-edge (the default), linear wrap (repeating terrain, water and sky layers and every row whose `spec` says "wrap repeat"), and point clamp-to-edge (pixel-exact art). Clamp-to-edge never blends a border colour into edge texels.
+**AST-025** (MUST) The sampler of a texture is one of the closed set of ADR-018, held in the sampler heap at the fixed indices of the shared header (ADR-006): linear clamp-to-edge (the default), linear wrap (repeating terrain, water and sky layers and every row whose `spec` says "wrap repeat"), point clamp-to-edge (pixel-exact art), and point-magnify clamp-to-edge (`PointMagnifyClamp`: point filtering under magnification, linear filtering under minification and between levels, for art that the look magnifies into hard-edged blocks but minifies smoothly, AST-027). Clamp-to-edge never blends a border colour into edge texels.
 
 **AST-026** (MUST) A **view** is a declared variant that shares the cooked resource of its texture and restricts the levels a shader sees, or names another sampler of the closed set. A view never creates a second cooked copy. The baseline views are the views `level0` (first level 0, one level) of `fx.sky_cloud` (RND-153), of `fx.beam_short` and `fx.convert_beam` (RND-339), and of `marker.edge_compass` and `marker.edge_compass_shadow` (RND-378); a pass that draws one of these textures without mip-mapping requests that view.
 
-**AST-027** (MUST) Art that the look magnifies with nearest filtering, `fx.particle_dot` in the particle batches and `sprite.worker.front` on the front-end backdrop, declares a view `point` with the point clamp-to-edge sampler, and the passes that magnify it request that view. Under minification that view also samples the nearest level, where the look filters linearly, because the closed sampler set has no sampler that magnifies by nearest and minifies linearly (§8).
+**AST-027** (MUST) Art that the look magnifies with nearest filtering, `fx.particle_dot` in the particle batches and `sprite.worker.front` on the front-end backdrop, declares a view `point` with the point-magnify clamp-to-edge sampler (AST-025), and the passes that draw it request that view, so the art is hard-edged under magnification and filtered linearly under minification (ADR-018, RND-432).
 
 ### 3.5 Processing variants and derived assets
 
@@ -330,13 +435,13 @@ Table 3.5-A Derivations (the pseudocode is in §4.3).
 |---|---|---|
 | `BlurredShadow` | blur scale `rnd.shadow.icon_blur_radius` (10), normaliser `rnd.look.blur_normaliser` (0.0526), kernel `ast.derive.blur_kernel`, vertical gain `ast.derive.blur_vertical_gain` | a `Mask` texture of the parent's size, alpha mode `opaque`, drawn as a darkening layer under its parent ([view, lighting and fog](renderer/view_lighting_and_fog.md) RND-243, [visual language](renderer/visual_language.md) RND-422) |
 | `StackedCopies` | column width `rnd.crawler.trail_column_width` (32 px), column height `rnd.crawler.trail_column_height` (512 px), shrink `rnd.crawler.trail_copy_shrink` (1 px per two copies) | a column of shrinking copies of the parent, of the parent's kind, alpha mode and mip policy ([entity and overlay renderers](renderer/entity_and_overlay_renderers.md) RND-320) |
-| `Greyscale` | none | the parent with each colour replaced by the mean of its red, green and blue values |
-| `ToColour` | a colour *C* and a threshold *t* | the parent with every texel whose RGB mean is below *t* replaced by *C* × (255 − mean) ÷ 255 |
-| `ReplaceColour` | an old colour *O* and a new colour *N* | the parent with every texel whose RGB distance from *O* is below `ast.derive.replace_colour_distance` (10) replaced by *N*, alpha kept |
+| `Grayscale` | none | the parent with each colour replaced by the mean of its red, green and blue values |
+| `ToColor` | a colour *C* and a threshold *t* | the parent with every texel whose RGB mean is below *t* replaced by *C* × (255 − mean) ÷ 255 |
+| `ReplaceColor` | an old colour *O* and a new colour *N* | the parent with every texel whose RGB distance from *O* is below `ast.derive.replace_colour_distance` (10) replaced by *N*, alpha kept |
 
-**AST-029** (MUST) The look requires these derived variants: a `BlurredShadow` of every cursor of [cursor and markers](../../reference/06_controls_camera_and_commands/cursor_and_markers.md) table 2.1-A that is shadowed (R-CTRL-350), of `marker.crate_landing` and of `marker.barrage_target` (RND-243, RND-366, RND-422); and the `StackedCopies` Crawler trail of `sprite.crawler.segment` (RND-320). An artist MAY instead author a shadow as greyscale art, as its own manifest row with the darkening profile (RND-422).
+**AST-029** (MUST) The look requires these derived variants: a `BlurredShadow` of every cursor of [cursor and markers](../../reference/06_controls_camera_and_commands/cursor_and_markers.md) table 2.1-A that is shadowed (R-CTRL-350), which are `cursor.enter.shadow`, `cursor.highlight.shadow`, `cursor.move_target.shadow`, `cursor.place.shadow`, `cursor.select.shadow`, `cursor.unavailable.shadow` and `cursor.world.shadow`, and of `marker.crate_landing` and `marker.barrage_target`, which are `marker.crate_landing.shadow` and `marker.barrage_target.shadow` (RND-243, RND-366, RND-422); and the `StackedCopies` Crawler trail `sprite.crawler.segment.trail` of `sprite.crawler.segment` (RND-320). An artist MAY instead author a shadow as greyscale art, as its own manifest row with the darkening profile (RND-422).
 
-**AST-030** (MUST) The baseline has no team-tinted derived variant: every team colour is applied in the shader from the instance's palette index (ADR-020). A team-tinted variant is allowed only for art that a shader cannot tint, declared in its import record.
+**AST-030** (MUST) The baseline has no team-tinted derived variant: every team colour is applied in the shader from the instance's palette index (ADR-020). A team-tinted variant is allowed only for art that a shader cannot tint, declared in its import record. The cloth flags' team, no-team and selected looks are tint values of their draws over the tint mask of AST-022, not recoloured variants, so a flag texture has one cache entry per declared variant and none per team (DEC-098; [animation and VFX](animation_and_vfx/explainers_sprites_and_procedural_animation.md) VFX-141).
 
 **AST-031** (MUST) Each asset has one processing per use: two passes that need different processing of one image use two declared variants, never one cooked copy whose processing depends on which pass loads it first (DEC-098). In particular `marker.team_disc` has the single processing of its alpha-mask record and every pass draws that, and the passes that draw `fx.sky_cloud` and `fx.beam_short` without mip-mapping use their `level0` views.
 
@@ -422,7 +527,7 @@ Table 3.8-A Socket kinds.
 | `eye` | yes | no | no | none confirmed (DEC-330) |
 | `grab` | yes | no | no | none confirmed (DEC-330) |
 
-**AST-040** (MUST) The socket schema of an asset class is the `sockets:` clause of its manifest row's `spec`, each kind with the exact count listed, except where a consumer rule declares a range (the Collector's `engine` sockets, 0 to 4, R-UNIT-418); a parent-node constraint written as "(on node *n*)" is part of the schema. The cooker rejects a mesh with a missing or surplus socket, an unknown kind, a duplicate, a gap in the numbers of a kind, or a socket under the wrong parent node, and names the asset, the kind and the number (ADR-021, DEC-015).
+**AST-040** (MUST) The socket schema of an asset class is the `sockets:` clause of its manifest row's `spec`, each kind with the exact count listed, except where a consumer rule declares a range (the Collector's `engine` sockets, 0 to 4, R-UNIT-418); a parent-node constraint written as "(on node *n*)" is part of the schema. The cooker rejects a mesh with a missing or surplus socket, an unknown kind, a duplicate, a gap in the numbers of a kind, or a socket under the wrong parent node, and names the asset, the kind and the number (ADR-021, DEC-015). Among them are the sockets that procedural animation reads: `leg_01` to `leg_08` of `mesh.creature.spider_body`, `segment_end` of `mesh.creature.spider_thigh` and of `mesh.creature.spider_shin` ([animation and VFX](animation_and_vfx/explainers_sprites_and_procedural_animation.md) VFX-128), and `tail_01` to `tail_04` of `mesh.creature.brood_drifter_body` (VFX-138).
 
 **AST-041** (MUST) Every socket kind that a row's `spec` lists is part of its asset class's schema, including kinds whose consumer is not confirmed (`eye`, `grab`, `gate_exit`, `stem`); this is the default of DEC-330, whose option B would leave such kinds out of the schemas.
 
@@ -432,7 +537,7 @@ Table 3.8-A Socket kinds.
 
 ### 3.9 Collision assets and simulation data records
 
-**AST-044** (MUST) Every collidable mesh, that is every mesh that a structure's sphere, mesh or ray test reads ([buildings and world objects](../../reference/03_buildings_and_world_objects/README.md) R-BLDG-041, R-BLDG-042), has a **collision asset**: a separate asset with its own asset id and source, a glTF 2.0 file of triangle primitives with no materials, cooked into a `Collision` entry flagged simulation-relevant. A collidable mesh without a collision asset is a build error (ADR-019, DEC-012). Collision geometry is authored as its own source; render geometry never produces it.
+**AST-044** (MUST) Every collidable mesh, that is every mesh that a structure's sphere, mesh or ray test reads ([buildings and world objects](../../reference/03_buildings_and_world_objects/README.md) R-BLDG-041, R-BLDG-042), has a **collision asset**: a separate asset with its own asset id and source, a glTF 2.0 file of triangle primitives with no materials, cooked into a `Collision` entry flagged simulation-relevant. A collidable mesh without a collision asset is a build error (ADR-019, DEC-012). Collision geometry is authored as its own source; render geometry never produces it. The collision assets are `mesh.collision.abductor_hull`, `mesh.collision.barrier_emitter`, `mesh.collision.beam_dish`, `mesh.collision.command_console`, `mesh.collision.command_console_linked`, `mesh.collision.core_device`, `mesh.collision.fuel_depot`, `mesh.collision.fuel_line_foot`, `mesh.collision.fuel_pump_housing`, `mesh.collision.grid_pylon`, `mesh.collision.hive_mound`, `mesh.collision.relay_mast`, `mesh.collision.scenery_prop`, `mesh.collision.solar_array`, `mesh.collision.source_node`, `mesh.collision.spawn_node`, `mesh.collision.spawn_node_alt`, `mesh.collision.spitter_plant_head`, `mesh.collision.transit_gate`, `mesh.collision.transit_gate_alt`, `mesh.collision.turret_barrel`, `mesh.collision.turret_head` and `mesh.collision.wall_section`, each named by the import record of the render mesh it belongs to (§3.7) and listed per structure mesh in table 2.12-B of [buildings and world objects](../../reference/03_buildings_and_world_objects/README.md).
 
 **AST-045** (MUST) The mesh and collision validators reject a mesh with two nodes of the same name, and a primitive whose attribute accessors do not all have the same element count, which covers a hit-test mesh whose position count differs from its vertex count; they accept a socket-only mesh with no geometry node, such as `mesh.structure.turret_mount` (ADR-059, DEC-012).
 
@@ -448,15 +553,15 @@ Table 3.10-A Audio asset classes.
 
 | Class | Source | Runtime | Notes |
 |---|---|---|---|
-| sample groups `sfx.*` (by source and event, outcome stings, UI sounds) | WAV at `ast.audio.sample_rate` (48 kHz), 24-bit integer or 32-bit float PCM; mono for every positional sound, mono or stereo for 2-D sounds | `ResidentSound`: 16-bit PCM at 48 kHz in a resident bank; or `SoundStream`, as the row's `target_format` states | the members are the group's numbered files (`_NN`), in member order |
+| sample groups `sfx.*` (by source and event, outcome stings, UI sounds) | WAV at `ast.audio.sample_rate` (48 kHz), 24-bit integer or 32-bit float PCM; mono for every positional sound, mono or stereo for 2-D sounds | `ResidentSound`: 16-bit PCM at 48 kHz in a resident bank; or `SoundStream`: MS-ADPCM at 48 kHz, by the residency class of its group (AST-080) | the members are the group's numbered files (`_NN`), in member order |
 | ambience beds `amb.*` | as above, 2-D | `SoundStream` | seamless loops |
 | music `music.*` | WAV at 48 kHz, stereo | `SoundStream` | loops or one-shots |
 | sound-event and sound-source definitions (`SoundEventDef`, `SoundSourceDef`) | data records | `Record` | looping, gain, pitch and envelopes live here ([event model and sound data](../../reference/10_audio_design/event_model_and_sound_data.md)), never in an audio import record |
-| DSP filter definitions (`DspFilterDef`) | data records | `Record` | the effect chain of the audio engine |
+| DSP filter definitions (`DspFilterDef`) | the schema-defined effect-kind table `sound.effect_kinds` | none: compiled into the audio engine, with no pack entry ([data schemas](data_schemas/entity_audio_geometry_and_panel_schemas.md) DAT-273) | the effect chain of the audio engine (AEN-060) |
 
 **AST-049** (MUST) A sound-event layer names a sample group by its asset id, matched exactly after canonicalisation (AST-015); the group's members are found through the asset index, never by searching folders or appending extensions. Two sample groups with the same id are a build error (DEC-801), and so is a layer that names no group or a missing one (DEC-015).
 
-**AST-050** (MUST) An audio import record holds only what the source cannot state: whether the group is positional (which makes mono mandatory) and, for a stream, its loop points in samples, which default to the whole file. Audio is language-neutral: a group has one recording set for every language unless the voice decision gives spoken lines one set per language (see DEC-317), in which case each set is a member list keyed by its BCP 47 tag (ADR-063).
+**AST-050** (MUST) An audio import record holds only what the source cannot state: whether the group is positional (which makes mono mandatory) and, for a stream, its loop points in samples, which default to the whole file and lie on MS-ADPCM block boundaries (AST-080). Audio is language-neutral: a group has one recording set for every language unless the voice decision gives spoken lines one set per language (see DEC-317), in which case each set is a member list keyed by its BCP 47 tag (ADR-063).
 
 ### 3.11 Other content types
 
@@ -466,15 +571,16 @@ Table 3.11-A Other content types.
 
 | Content | Source under `content/` | Runtime entry | Schema owner |
 |---|---|---|---|
-| data records: statistics, rules, Supply-crate tables, sound bindings, effect definitions, input bindings, the engine asset table | JSON validated by JSON Schema (ADR-062) | `Record` | [data schemas](data_schemas/README.md) |
-| maps `map.*` | a JSON map definition in the Species map schema (ADR-062) | `Map`: a header readable without the terrain, the placed records, the terrain inputs of the terrain runtime model (see DEC-246) and the baked collision data of AST-047 | data schemas, [terrain](terrain.md) |
+| data records of the record-type registry ([data schemas](data_schemas/README.md) table 1-A): actor statistics, Supply-crate outcomes, match options, sound sources and groups, effect definitions, input bindings, interface records and camera timelines | JSON validated by JSON Schema (ADR-062) | `Record` | [data schemas](data_schemas/README.md) |
+| maps `map.*` | a JSON map definition in the Species map schema (ADR-062) | `Map`: a header readable without the terrain, the placed records, the terrain inputs of the terrain runtime model (see DEC-246) and the baked collision data of AST-047 | data schemas, [terrain](terrain/README.md) |
 | the map index | generated by the content build (AST-086) | `MapIndex` | data schemas |
 | thumbnails `thumb.*` | rendered by the content build (AST-087) | `Texture` of kind `Ui` | this component |
 | string tables `strings.*` | UTF-8 JSON mapping string ids to ICU MessageFormat text, with the BCP 47 tag stored in the file (ADR-063) | `StringTable` | data schemas, [UI framework](ui_framework/README.md) |
 | explainer scripts `anim.explainer` | JSON key-frame scripts that animate pictures by asset id | `ExplainerScript` | data schemas, UI framework |
 | fonts `font.*` | OpenType fonts licensed for embedding | `Font`, stored unchanged; glyphs are rasterised at run time into `R8_UNORM` glyph-cache pages (ADR-034) | UI framework |
-| shaders | HLSL, compiled offline by the pinned DXC with the options of ADR-003 | `Shader`: DXIL blobs only | [renderer](renderer/shaders.md) |
 | the asset index | generated by the pack writer (§3.13) | `AssetIndex`, one per pack | this component |
+
+Shaders are not content: the solution build compiles them into the executable as byte arrays (ADR-003, AGENTS.md §2), so no pack holds a shader and the content build cooks none.
 
 **AST-052** (MUST) The cooked mesh is the versioned `MeshAsset` record of ADR-019, stored as a pack entry of content type `Mesh`; it has no file of its own and no container format other than the pack.
 
@@ -488,7 +594,7 @@ Table 3.11-A Other content types.
 
 A zero-byte entry is a valid entry with no chunk.
 
-**AST-055** (MUST) The codec enumeration is, in this order: stored, Zstandard. Its further values are reserved, so that another codec (for example LZ4, or one that the GPU decompresses) can be added without a format change; a reader that meets an unknown codec id rejects the chunk with a diagnostic naming the pack and the chunk.
+**AST-055** (MUST) The codec enumeration (`PackCodec`) is, in this order: stored, and XPRESS with Huffman encoding of the in-box Windows Compression API (`COMPRESS_ALGORITHM_XPRESS_HUFF`, ADR-058); no third-party codec is used (AGENTS.md R14). Its further values are reserved, so that another codec of that API (MSZIP or LZMS) or one that the GPU decompresses can be added without a format change; a reader that meets an unknown codec id rejects the chunk with a diagnostic naming the pack and the chunk.
 
 ### 3.13 The mount manifest and the pack set
 
@@ -500,8 +606,8 @@ Table 3.13-A The baseline pack set.
 
 | Order | Pack id | Kind | Required | Contents |
 |---|---|---|---|---|
-| 1 | `startup` | base | yes | the shader blobs; the art that the loading view draws before the other packs are mounted: `sprite.worker.front` and `uitex.studio_splash` |
-| 2 | `locale` | base | yes | the fonts and string tables of the edition's languages |
+| 1 | `startup` | base | yes | the art that the loading view draws before the other packs are mounted: `sprite.worker.front` and `uitex.studio_splash` |
+| 2 | `locale` | base | yes | the fonts and string tables of the edition's offered languages; a listed language that is not complete is withheld ([build tooling and distribution](build_tooling_and_distribution.md) BLD-081) |
 | 3 | `core` | base | yes | every other texture, mesh, collision asset, simulation data record, data record, map, thumbnail, explainer script and the map index |
 | 4 | `audio` | base | yes | the resident sounds and the sound streams |
 | 5 and later | `update_<nn>`, two-digit *nn* from 01 | update | as each update declares | entries that replace entries of the base packs that the update names, and new entries |
@@ -532,7 +638,7 @@ Table 3.15-A Caches and their keys.
 
 **AST-061** (MUST) An RGBA8 image (`ImageRgba8`) is a decoded image in memory: its width, its height and its pixels row by row from the top, each pixel 8-bit red, green, blue and alpha, with straight alpha. It is the in-memory form of every decoded source image in the content build and of every run-time image. Its operations are: clear to a colour; read a pixel, where a read outside the image returns (0, 0, 0, 0); write a pixel, where a write outside the image does nothing; a scaled copy into a rectangle of another image with nearest or bilinear sampling; and the derivations of table 3.5-A.
 
-**AST-062** (MUST) A **run-time texture** is an image that a component produces while the game runs, registered with the asset cache through an `ImageProducer`: the terrain component's shore mask ([terrain](terrain.md)), and the sea tile and thumbnail embedded in a custom map (AST-063). It is uncompressed (`R8G8B8A8_UNORM_SRGB` for colour, `R8_UNORM` for a single channel), has one level, uses the linear clamp-to-edge sampler unless its producer names another sampler of the closed set, has an id that can never equal a manifest asset id, and is never written into a pack. After device removal the asset cache asks the producer for the pixels again; it keeps no CPU copy of its own for rebuilding (ADR-008).
+**AST-062** (MUST) A **run-time texture** is an image that a component produces while the game runs, registered with the asset cache through an `ImageProducer`: the terrain component's shore mask ([terrain](terrain/README.md)), and the sea tile and thumbnail embedded in a custom map (AST-063). It is uncompressed (`R8G8B8A8_UNORM_SRGB` for colour, `R8_UNORM` for a single channel), has one level, uses the linear clamp-to-edge sampler unless its producer names another sampler of the closed set, has an id that can never equal a manifest asset id, and is never written into a pack. After device removal the asset cache asks the producer for the pixels again; it keeps no CPU copy of its own for rebuilding (ADR-008).
 
 **AST-063** (MUST) The images embedded in a custom map ([map editor hooks](../../reference/08_maps_and_level_design/map_editor_hooks.md) R-MAP-391) take the place of the asset of their role for that map only: the land colour ramp and the shore-wave gradient as CPU tables handed to the terrain component, and the sea tile and the thumbnail as run-time textures. The custom-map container, its identity and its transfer are design-phase inputs (see DEC-204).
 
@@ -542,7 +648,7 @@ Table 3.15-A Caches and their keys.
 
 ### 4.1 Content-build flow
 
-**AST-065** (MUST) The content build runs these steps in this order; an error in any step fails the build, and CI runs the build on every change (ADR-059, ADR-070):
+**AST-065** (MUST) The content build runs these steps in this order; an error in any step fails the build, and CI runs the build on every change once its guarded job is added (ADR-059, ADR-070):
 1. read the asset manifest, the edition manifests and every import record;
 2. check every source (AST-068, AST-076, AST-079, AST-091);
 3. cook every member whose inputs changed (§4.2 to §4.6), where an output is rebuilt when the hash of any of its inputs, of the tool version or of its cook options changes;
@@ -554,7 +660,7 @@ Table 3.15-A Caches and their keys.
 9. write the packs, their asset indexes and the mount manifests (§4.9);
 10. write the content manifest and the validation report (§4.10).
 
-**AST-066** (MUST) Identical inputs give bit-identical packs: entries are written in byte-wise key order; no output holds a timestamp or a host path; every cook option, including the compression level `ast.pack.zstd_level` (19), is fixed by the tool version or stated in the import record; and CI encodes BC7 with the software codec (ADR-017, ADR-059).
+**AST-066** (MUST) Identical inputs give bit-identical packs: entries are written in byte-wise key order; no output holds a timestamp or a host path; every cook option, including the chunk codec `ast.pack.codec`, is fixed by the tool version or stated in the import record; the compressed bytes depend only on the tool version and the Windows build that runs it, while entry hashes are taken over uncompressed bytes (AST-097); and CI encodes BC7 with the software codec (ADR-017, ADR-059).
 
 **AST-067** (MUST) The content build writes a **residency list** for the start-up group, for the front end and for each map: the closure of the asset ids that it references, where a map's closure covers the map's records, the match rules of every mode the map supports, every Supply-crate outcome those rules can enable, and the entries of the engine asset table (AST-017) that are marked for that scope. Load groups request these lists (§4.12), and the audio engine's resident budgets are checked against them (ADR-025).
 
@@ -573,7 +679,7 @@ A source that fails a check is a build error naming the asset id, the member, th
 
 **AST-070** (MUST) With mip policy `full`, the cooker generates the full chain down to 1 × 1. sRGB-tagged levels are filtered with sRGB-aware filtering: decoded to linear values with the exact sRGB curve, averaged, and encoded again; linear levels are averaged on their stored values (ADR-013). For a `cutout` texture, each level's alpha is scaled so that the share of texels whose alpha is above the declared threshold equals that share in level 0, which keeps alpha-test coverage at every distance (ADR-018).
 
-**AST-071** (MUST) The cooker encodes each level in the format of its kind (table 3.3-B) with the DirectXTex library of ADR-017 and writes a DDS with the DX10 header, which states the format, its sRGB tag, the resource dimension and the array size. The loader rejects a DDS without the DX10 header, with an unknown format or with a truncated payload, and names the asset id (ADR-017).
+**AST-071** (MUST) The cooker encodes each level in the format of its kind (table 3.3-B) with the DirectXTex library, a pinned dependency of the content build tool only, recorded with its licence in ADR-017 (AGENTS.md §2, R14), and writes a DDS with the DX10 header, which states the format, its sRGB tag, the resource dimension and the array size. The loader rejects a DDS without the DX10 header, with an unknown format or with a truncated payload, and names the asset id (ADR-017).
 
 **AST-072** (MUST) A `CpuTable` entry is the decoded table in `R8G8B8A8_UNORM_SRGB`, one level, read by the component that uses it on the CPU (the terrain component for `terrain.ramp` and `terrain.shore_wave_gradient`); the asset cache never uploads it to the GPU.
 
@@ -600,7 +706,7 @@ for y in 0 .. H-1, for x in 0 .. W-1:
                 D(x, y+k).c := min(255, D(x, y+k).c + round(T(x, y).c * w[k] * ast.derive.blur_vertical_gain))
 ```
 
-The variant's value is the `Greyscale` mean of *D*'s red, green and blue, cooked as a `Mask` texture (§3.5). The parent's width and height lie between `ast.derive.blur_min_size` (1 px) and `ast.derive.blur_max_size` (1024 px); a parent outside that range is a build error.
+The variant's value is the `Grayscale` mean of *D*'s red, green and blue, cooked as a `Mask` texture (§3.5). The parent's width and height lie between `ast.derive.blur_min_size` (1 px) and `ast.derive.blur_max_size` (1024 px); a parent outside that range is a build error.
 
 **AST-074** (MUST) A `StackedCopies` variant of a square parent of side *s*₀ is a column of width *W* = `rnd.crawler.trail_column_width` and height *H* = `rnd.crawler.trail_column_height`, cleared to (0, 0, 0, 0), into which copies of the parent are placed from the top:
 
@@ -616,7 +722,7 @@ loop:
 
 With *s*₀ = 32 px this places 18 copies, of sides 32, 32, 31, 31, 30, 30, 29, 29, 28, 28, 27, 27, 26, 26, 25, 25, 24 and 24 px, filling 504 px of the 512 (RND-320).
 
-**AST-075** (MUST) The colour derivations of table 3.5-A use integer arithmetic on 8-bit channels: `Greyscale` sets each of red, green and blue to ⌊(*r* + *g* + *b*) ÷ 3⌋; `ToColour` computes the mean the same way and, for a mean below *t*, sets each channel *c* of red, green and blue to ⌊*C*.*c* × (255 − mean) ÷ 255⌋, leaving other texels unchanged; `ReplaceColour` replaces the red, green and blue of a texel whose Euclidean distance from *O* in 8-bit red, green and blue is below `ast.derive.replace_colour_distance` (10) by those of *N* and keeps its alpha. A derived variant is then cooked with its parent's import record, except where table 3.5-A states another output.
+**AST-075** (MUST) The colour derivations of table 3.5-A use integer arithmetic on 8-bit channels: `Grayscale` sets each of red, green and blue to ⌊(*r* + *g* + *b*) ÷ 3⌋; `ToColor` computes the mean the same way and, for a mean below *t*, sets each channel *c* of red, green and blue to ⌊*C*.*c* × (255 − mean) ÷ 255⌋, leaving other texels unchanged; `ReplaceColor` replaces the red, green and blue of a texel whose Euclidean distance from *O* in 8-bit red, green and blue is below `ast.derive.replace_colour_distance` (10) by those of *N* and keeps its alpha. A derived variant is then cooked with its parent's import record, except where table 3.5-A states another output.
 
 ### 4.4 Mesh cooking
 
@@ -638,8 +744,8 @@ for each mesh node n, for each primitive p of n:
         emit three vertices, each with its position, f, m, t and the barycentric corner
              (1, 0, 0), (0, 1, 0), (0, 0, 1)
     record n's rest transform, draw range, axis-aligned bounding box, vertical extent (lowest and
-        highest y) and bounding sphere (centre: the box centre; radius: the largest distance from it to
-        any vertex of n)
+        highest y) and bounding sphere (centre: the box centre, which is also the node centre that the
+        shatter effects push shards away from, VFX-227; radius: the largest distance from it to any vertex of n)
 write the socket table: for each kind in table 3.8-A order, the sockets in index order, each with its
     parent node, its transform relative to that node and its chain of nodes up to the root
 ```
@@ -654,11 +760,11 @@ Smooth-shaded primitives (AST-036) keep their vertex normals and colours and tak
 
 ### 4.6 Audio cooking
 
-**AST-079** (MUST) The audio cooker checks every source: a WAV file at `ast.audio.sample_rate` (48 kHz), 24-bit integer or 32-bit float PCM, mono when its group is positional (AST-050), mono or stereo otherwise. The content build resamples nothing, and a source at another rate or in another format is a build error (ADR-025).
+**AST-079** (MUST) The audio cooker checks every source: a WAV file at `ast.audio.sample_rate` (48 kHz), 24-bit integer or 32-bit float PCM, mono when its group is positional (AST-050), mono or stereo otherwise. The content build resamples nothing; a source at another rate or in another format, and a member with no sample frames (AEN-179), are build errors (ADR-025).
 
-**AST-080** (MUST) A member whose row's `target_format` is resident is converted to `ast.audio.resident_bits` (16-bit) PCM at 48 kHz, each sample rounded to the nearest 16-bit value with no dither, so that the output is reproducible; a resident member longer than the audio engine's streaming threshold (ADR-025, [audio engine](audio_engine.md)) is a build error. A member whose row's `target_format` is a stream is encoded to Opus at 48 kHz and stored in the Species stream format inside the pack: the Opus packets, a seek table and the loop points of its import record, so that seeking and looping are sample-accurate (ADR-025). Stream entries use the stored codec (AST-055).
+**AST-080** (MUST) The content build classifies each sample group as a whole (ADR-025): a group is streamed when its longest member is longer than the audio engine's streaming threshold `aen.residency.stream_threshold` ([audio engine](audio_engine/README.md) AEN-072), and every music group is streamed; every other group is resident. A row's `target_format` that disagrees with its group's class is a build error naming the group and its longest member (AST-012). A member of a resident group is converted to `ast.audio.resident_bits` (16-bit) PCM at 48 kHz, each sample rounded to the nearest 16-bit value with no dither, so that the output is reproducible. A member of a streamed group is encoded to MS-ADPCM at 48 kHz with `aen.stream.samples_per_block` samples per block by the content build tool's own encoder, and stored in the Species stream format of AEN-072 inside the pack: the header, the loop points of its import record and the ADPCM blocks; a loop point that is not on a block boundary is a build error (ADR-025). Stream entries use the stored codec (AST-055).
 
-**AST-081** (MUST) For every residency list (AST-067), the content build sums the resident sizes per audio-engine budget category and fails when a sum exceeds its budget, naming the list, the category and the largest members (ADR-025).
+**AST-081** (MUST) The content build composes the interface and match banks of the audio engine (AEN-074) from the residency lists (AST-067), with the stream heads of each bank, sums the resident sizes per bank and fails when a sum exceeds its budget (`aen.memory.interface_bank_budget`, `aen.memory.match_bank_budget`, and `aen.memory.stream_budget` for the stream heads with the stream rings), naming the list, the bank and the largest members (ADR-025).
 
 ### 4.7 Placeholders and generated outputs
 
@@ -717,7 +823,7 @@ Table 4.7-A Placeholder generators.
 
 **AST-094** (MUST) The pack writer lays the entries of each pack out in byte-wise key order into chunks of at most `ast.pack.chunk_max_kib` (256 KiB) uncompressed, each chunk starting at a multiple of `ast.pack.chunk_alignment_kib` (64 KiB) in the file. An entry of at most the chunk size never straddles two chunks: it starts a new chunk when it does not fit in the rest of the current one. A larger entry starts a new chunk and fills consecutive chunks (ADR-058).
 
-**AST-095** (MUST) A chunk that holds only stream entries is stored; every other chunk is compressed with Zstandard at `ast.pack.zstd_level`, and stored instead when compression does not make it smaller (AST-055).
+**AST-095** (MUST) A chunk that holds only stream entries is stored, because MS-ADPCM does not shrink; every other chunk is compressed with the codec `ast.pack.codec`, XPRESS with Huffman encoding of the Windows Compression API in buffer mode, one compressor call per chunk, and stored instead when compression does not make it smaller (AST-055, ADR-058).
 
 **AST-096** (MUST) The pack writer writes the TOC after the chunk area, computes the SHA-256 of the TOC, and writes the header last; it writes the asset index of the pack as an entry. Two base packs of one mount manifest never hold the same key; the content build fails when they would.
 
@@ -725,7 +831,7 @@ Table 4.7-A Placeholder generators.
 
 **AST-097** (MUST) The hash of an entry is the SHA-256 of its uncompressed cooked bytes (ADR-060). Because cooked output is canonical (AST-066), the same content always gives the same hash, and an edit of an authoring file that changes only its formatting or line endings leaves every hash unchanged.
 
-**AST-098** (MUST) These content types are **simulation-relevant**, and their entries carry the flag: `Map`, `Collision`, `SimRecord`, `MapIndex`, and every `Record` whose schema the data-schemas component marks as read by the simulation (statistics, rules, Supply-crate tables, match options). Textures, meshes, sounds, fonts, string tables, explainer scripts and shaders are not.
+**AST-098** (MUST) These content types are **simulation-relevant**, and their entries carry the flag: `Map`, `Collision`, `SimRecord`, `MapIndex`, and every `Record` whose record type the registry of the data-schemas component marks Sim ([data schemas](data_schemas/README.md) table 1-A): `actor.stats`, `crate.outcomes` and `mode.options`, and the feature flags of an edition that change simulation behaviour; there is no separate rules record. Textures, meshes, sounds, fonts, string tables and explainer scripts are not.
 
 **AST-099** (MUST) The identity of a map is the entry hash of its cooked map, which holds its header, every placed record, its baked collision data and every terrain input of the terrain runtime model; whichever terrain inputs the design phase chooses (see DEC-246), the hash covers what the cooked map contains. Code and data refer to a map by its map id (`map_<mode>_<players>p_<nn>`); the hash is the content version of that id, never a substitute name, and no source file embeds a map's hash (ADR-060).
 
@@ -733,9 +839,9 @@ Table 4.7-A Placeholder generators.
 
 ### 4.11 Mounting and look-up
 
-**AST-101** (MUST) At start-up the client and the server read the mount manifest and mount its packs in its order. Mounting a pack maps the file read-only, checks the header's magic value and format version, reads the TOC, verifies the TOC's SHA-256 in every build flavour, and adds the pack's entries to the mount table (ADR-058). The `startup` pack is mounted first and before the loading view's first frame, so that the loading view can draw from it; the other packs are then mounted on the I/O thread while the loading view runs.
+**AST-101** (MUST) At start-up the client and the server read the mount manifest and mount its packs in its order. Mounting a pack maps the file read-only, checks the header's magic value and format version, reads the TOC, verifies the TOC's SHA-256 in both configurations, and adds the pack's entries to the mount table (ADR-058). The `startup` pack is mounted first and before the loading view's first frame, so that the loading view can draw from it; the other packs are then mounted on the I/O thread while the loading view runs.
 
-**AST-102** (MUST) A required pack that is missing, has another format version, or fails its TOC check stops the start-up with a message that names the pack: the string ids `ui.error.content_missing` ("A game file is missing. Repair or reinstall the game.") and `ui.error.content_damaged` ("A game file is damaged. Repair or reinstall the game."). A missing optional pack is skipped and logged. No pack is ever skipped silently, and no damaged pack is mounted in part.
+**AST-102** (MUST) A required pack that is missing, has another format version, or fails its TOC check stops the start-up with a message that names the pack, shown on the pre-UI message path of the platform layer with text compiled into the executable ([platform layer](platform_layer.md) PLT-039, table 6.4-A): the string ids `ui.error.content_missing` ("A game file is missing. Repair or reinstall the game.") and `ui.error.content_damaged` ("A game file is damaged. Repair or reinstall the game."). A missing optional pack is skipped and logged. No pack is ever skipped silently, and no damaged pack is mounted in part.
 
 **AST-103** (MUST) The mount table resolves each key to the entry of the latest pack in mount order that holds it, under these rules (ADR-058):
 1. two base packs never hold the same key; if they do, mounting fails and names both packs;
@@ -747,14 +853,14 @@ The asset indexes merge under the same rules; an update that replaces an asset's
 
 **AST-104** (MUST) A look-up canonicalises the requested key (AST-015) and then looks it up exactly. `MountSet::Contains` answers whether an asset id exists without loading anything, which is how a custom map without a thumbnail shows the outline alone (R-MAP-022). `MountSet::List` returns the effective keys under a prefix, each once, in byte-wise order.
 
-**AST-105** (MUST) In `Debug` and `Development` builds, and only there, an explicit start-up option mounts a **loose-content directory** last: a directory of cooked entries laid out by key, as the content build's incremental output writes them. A loose entry replaces any packed entry of the same key; every replacement is logged; and the session's simulation content identity is computed over the effective entries and reported as modified (ADR-058). Profile and shipping builds contain no loose-file mount code (AST-006), and a CI check confirms it.
+**AST-105** (MUST) In Debug builds, and only there, the start-up option `--loose-content <directory>` ([platform layer](platform_layer.md) PLT-026, table 3.3-A) mounts a **loose-content directory** last: a directory of cooked entries laid out by key, as the content build's incremental output writes them. A loose entry replaces any packed entry of the same key; every replacement is logged; and the session's simulation content identity is computed over the effective entries and reported as modified (ADR-058). Release builds contain no loose-file mount code (AST-006), which a check of the Release binaries confirms before a release (ADR-058).
 
 **AST-106** (MUST NOT) No Species program writes into the install directory, into a pack or into the mount table while the game runs (ADR-071). Tools that save content, such as the map editor, write authoring files: under the content root of a development checkout, or into the player's map folder for custom maps ([map editor hooks](../../reference/08_maps_and_level_design/map_editor_hooks.md)), through the lossless and atomic writers of DEC-800.
 
 ```mermaid
 flowchart TD
   REQ["request: asset id or key"] --> CAN["canonicalise: A-Z to a-z, backslash to slash"]
-  CAN --> LOOSE{"Debug or Development build with a loose-content directory mounted?"}
+  CAN --> LOOSE{"Debug build with a loose-content directory mounted?"}
   LOOSE -- "yes, and the key is there" --> LE["loose entry; replacement logged; identity reported as modified"]
   LOOSE -- "no, or not there" --> UPD{"held by an update pack that names its base pack?"}
   UPD -- yes --> UE["entry of the latest such update pack"]
@@ -765,7 +871,7 @@ flowchart TD
 
 *Figure 2: key look-up and override order.*
 
-**AST-107** (MUST) Every simulation-relevant entry is checked against its SHA-256 on every load. Other entries are checked in `Debug` and `Development` builds, in QA runs and by the repair function (ADR-058). A mismatch fails the load of that entry, with a diagnostic naming the key and the pack. The asset pipeline provides the repair function's check: it verifies every entry of every mounted pack and lists the packs that fail.
+**AST-107** (MUST) Every simulation-relevant entry is checked against its SHA-256 on every load. Other entries are checked in Debug builds, in QA runs and by the repair function (ADR-058). A mismatch fails the load of that entry, with a diagnostic naming the key and the pack. The asset pipeline provides the repair function's check: it verifies every entry of every mounted pack and lists the packs that fail.
 
 **AST-108** (MUST) Entry reads go through the asynchronous content reader (`ContentReader`) over the read-only mapping of each pack. A stored chunk is served from the mapping; a compressed chunk is decompressed into a buffer; no pack is ever decompressed as a whole. Because packs and the mount table are immutable after mounting, concurrent reads need no locks and are safe by contract (DEC-226). The reader's back-end can be replaced by a DirectStorage back-end behind the same interface; DirectStorage is not used in the baseline (ADR-058).
 
@@ -781,7 +887,7 @@ flowchart TD
 
 **AST-113** (MUST) `AssetCache::Size` reports a texture's top-level size, its display size (AST-024) and its level count, read from the cooked entry; it never reports the size of a source file.
 
-**AST-114** (MUST) The resident sound banks of a load group are loaded by the sample cache (`SampleCache`) from the group's residency list and released with the group; streamed sounds are opened by the audio engine as stream entries and read through the content reader, never decoded whole (ADR-025).
+**AST-114** (MUST) The resident sound banks of a load group are loaded asynchronously by the sample cache (`SampleCache`) from the group's residency list when the audio engine's `LoadBank` asks for them (AEN-244), and are released with the group; streamed sounds are opened by the audio engine as stream entries and read buffer by buffer through the content reader, never held whole, and XAudio2 decodes them (ADR-025).
 
 **AST-115** (MUST) A failed load, which a validated build never produces unless its packs are damaged, is reported once per asset id in the log and by `AssetFailed`, and never ends the process (DEC-015). The requester then receives a built-in fallback that needs no pack: for a texture, an opaque grey and white checker of `ast.fallback.texture_size` (4 px) square; for a mesh, an empty mesh with no node, whose socket look-ups return the instance origin; for a sample group, silence. A failed data record or map is reported to its caller, which decides what follows.
 
@@ -837,19 +943,19 @@ sequenceDiagram
 
 **AST-120** (MUST NOT) A change of settings (window size, render size, sample count, HDR output, detail levels) never flushes or reloads the asset cache; the renderer's reconfiguration keeps every asset resource (RND-030).
 
-**AST-121** (MAY) In `Debug` and `Development` builds with a loose-content directory mounted, a development command reloads named assets, or every loose entry that changed since it was loaded; each replaced entry raises `AssetReloaded`, and simulation-relevant entries reload only between matches. Profile and shipping builds never reload content while they run (ADR-056).
+**AST-121** (MAY) In Debug builds with a loose-content directory mounted, a development command reloads named assets, or every loose entry that changed since it was loaded; each replaced entry raises `AssetReloaded`, and simulation-relevant entries reload only between matches. Release builds never reload content while they run (ADR-056).
 
 ### 4.15 Run-time textures
 
 **AST-122** (MUST) `AssetCache::Register` takes an `ImageProducer` that states the run-time texture's size, format and sampler (AST-062) and supplies its pixels as an RGBA8 image or a single-channel image; the cache creates the resource and uploads the pixels through the copy queue. A producer that changes its pixels triggers a new upload; the previous resource is destroyed once the frames in flight that may use it have completed. The id stays valid until the producer unregisters it.
 
-**AST-123** (MUST) The producer owns the content of its run-time textures and their reproducibility; the asset cache adds no processing. The shore mask is specified by the terrain component (TER-007, [terrain](terrain.md)).
+**AST-123** (MUST) The producer owns the content of its run-time textures and their reproducibility; the asset cache adds no processing. The shore mask is specified by the terrain component (TER-007, [terrain](terrain/README.md)).
 
 ## 5 Concurrency and performance budget
 
 **AST-124** (MUST) The content build cooks independent members in parallel, and its output does not depend on the number of threads or the order in which jobs finish (AST-066). Incremental builds rebuild only the outputs whose inputs changed, and cooked textures are cached by the hash of their source and cook options, because software BC7 encoding is slow (ADR-017, ADR-059).
 
-**AST-125** (SHOULD) The run-time asset system meets the baseline budgets of table 5-A on the reference test machine of the diagnostics component ([diagnostics, test and performance](diagnostics_test_and_performance.md)), which confirms them by its performance tests.
+**AST-125** (SHOULD) The run-time asset system meets the baseline budgets of table 5-A on the reference test machine of the diagnostics component ([diagnostics, test and performance](diagnostics_test_and_performance/README.md)), which confirms them by its performance tests; that machine is pinned and recorded, and its hardware is not yet named (DEC-971).
 
 Table 5-A Baseline budgets.
 
@@ -874,16 +980,16 @@ Table 5-A Baseline budgets.
 | a missing or wrong-kind reference | content build | build error with the file, line and field | AST-089 |
 | an unreferenced asset | content build | error for an edition marked for release, warning otherwise | AST-090 |
 | a placeholder in an edition marked for release | content build | build error listing the rows | AST-085 |
-| an audio source in the wrong format, or a resident budget exceeded | content build | build error | AST-079 to AST-081 |
+| an audio source in the wrong format or with no frames, a row whose residency class disagrees with its group, a streamed loop point off a block boundary, or a bank budget exceeded | content build | build error | AST-079 to AST-081 |
 | two base packs that hold the same key | content build and mounting | build error; mount failure naming both packs | AST-096, AST-103 |
 | a required pack missing, of another format version or with a bad TOC | start-up | start-up stops with `ui.error.content_missing` or `ui.error.content_damaged` | AST-102 |
 | an update pack that replaces an entry of a base pack it does not name | mounting | mount failure | AST-103 |
 | an entry whose hash does not match | load | the load fails with the key and the pack; fallback; never fatal | AST-107, AST-115 |
 | an unknown codec id, or a DDS without the DX10 header, of an unknown format or truncated | load | the entry is rejected with a diagnostic | AST-055, AST-071 |
 | a request for an undeclared variant | request | the request fails with a diagnostic; no resource | AST-028 |
-| loose content mounted in a development build | mounting | every replacement logged; the content identity reported as modified | AST-105 |
+| loose content mounted in a Debug build | mounting | every replacement logged; the content identity reported as modified | AST-105 |
 
-**AST-126** (MUST) The asset system logs in its own category of the logging system (ADR-067): mounts, overrides, failures (once per asset id), load-group start, progress and end, and device-rebuild reloads. The development overlay shows the resident bytes per load group and content type, the number of cache entries in each load state, the override list and the placeholder count; every GPU allocation is recorded by asset id (ADR-008). Load durations per load group are available to the diagnostics component; what reaches telemetry is the fixed data set of ADR-066.
+**AST-126** (MUST) The asset system logs in its own category of the logging system (ADR-067): mounts, overrides, failures (once per asset id), load-group start, progress and end, and device-rebuild reloads. The development overlay of Debug builds shows the resident bytes per load group and content type, the number of cache entries in each load state, the override list and the placeholder count; every GPU allocation is recorded by asset id (ADR-008). Load durations per load group are available to the diagnostics component; what reaches telemetry is the fixed data set of ADR-066.
 
 ## 7 Acceptance tests
 
@@ -891,27 +997,27 @@ Table 5-A Baseline budgets.
 |---|---|---|---|
 | T1 keys | unit, build fixture | requests in mixed case and with `\` resolve to the same entry; two keys or ids that differ only in case, or hold a character outside the set, fail the build | AST-014, AST-015 |
 | T2 variants | unit | two declared variants of one asset give two resources; an undeclared variant fails; the result never depends on the order of requests | AST-028, AST-031, AST-109 |
-| T3 views | unit | a `level0` view shares its parent's resource and shows one level | AST-026 |
+| T3 views | unit | a `level0` view shares its parent's resource and shows one level; the `point` view of `fx.particle_dot` samples with the point-magnify clamp-to-edge sampler | AST-025 to AST-027 |
 | T4 alpha modes | golden-image | one texture of each alpha mode, including cut-out coverage at the smallest level, matches its reference image | AST-021, AST-070 |
 | T5 texture checks | build fixture | a block-compressed source of 50 × 50 px, a source above 16384 px, a straight-alpha source without alpha and an sRGB mask each fail | AST-020, AST-068 |
 | T6 sRGB mips | unit | a level of an sRGB texture equals the encoded mean of the decoded texels of the level above | AST-070 |
 | T7 blurred shadow | unit | a one-texel white source and a 3 × 3 source give the outputs computed from AST-073; sources of 0 and 1025 px fail | AST-073 |
 | T8 Crawler trail | unit | a 32 px source gives 18 copies, of sides 32, 32, 31, 31 to 24, 24 px, at the x offsets of AST-074, filling 504 px | AST-074 |
-| T9 colour derivations | unit | vectors for `Greyscale`, `ToColour` and `ReplaceColour`, including a texel at distance exactly 10 that is kept | AST-075 |
+| T9 colour derivations | unit | vectors for `Grayscale`, `ToColor` and `ReplaceColor`, including a texel at distance exactly 10 that is kept | AST-075 |
 | T10 mesh cook | unit | a reference glTF mesh round-trips: hierarchy, transforms, facet colours encoded and × 0.85, facet normals, tint weights, bounds, vertical extents, socket table | AST-034, AST-076 |
 | T11 mesh fixtures | build fixture | differing corner colours, `NORMAL` without a smooth declaration, duplicate node names, unequal attribute counts, a disallowed extension, a socket gap, a socket under the wrong node, a team-tinted mesh without weights: each fails | AST-035 to AST-041, AST-045 |
 | T12 turret sockets | build fixture | a turret barrel member without its own `muzzle` sockets fails | AST-042 |
 | T13 simulation records | unit | the socket transforms of a record equal the render mesh's sockets in the rest pose; the Relic member order is in the record | AST-016, AST-043, AST-046 |
 | T14 tree crowns | unit | the baked crown of a map tree equals the generator's output, with its centre stated explicitly | AST-047 |
-| T15 audio | build fixture | a 44.1 kHz source, a stereo positional source, a resident member above the streaming threshold and a residency list above its budget each fail | AST-079 to AST-081 |
+| T15 audio | build fixture | a 44.1 kHz source, a stereo positional source, a zero-length member, a row classed against its group's longest member, a streamed loop point off a block boundary and a bank above its budget each fail | AST-079 to AST-081 |
 | T16 placeholders | build and integration | a manifest with no authored file builds, and a skirmish match runs on a generated test map; two builds give identical placeholder hashes; an edition marked for release with a placeholder fails | AST-082 to AST-085 |
 | T17 references | build fixture | a missing reference, a wrong-kind reference, an unreferenced asset and a stray file each give the diagnostic of §6 | AST-013, AST-089, AST-090 |
-| T18 reproducibility | CI | two builds of one revision on different agents give byte-identical packs | AST-066, AST-094 |
+| T18 reproducibility | CI | two builds of one revision on agents with the same Windows build give byte-identical packs, and builds on any agents give identical entry hashes | AST-066, AST-094 |
 | T19 reader fuzzing | fuzz | truncated packs, a wrong TOC hash, an out-of-range chunk reference and an unknown codec id are rejected without a crash | AST-053 to AST-055, AST-101, AST-102 |
 | T20 mounting | integration | base and update packs give the expected effective entry for every key and the expected override log; an update of an unnamed base pack and two base packs with one key both fail | AST-103 |
-| T21 loose files | CI check, integration | profile and shipping binaries contain no loose-file mount code; in a development build a loose entry replaces its packed entry and the identity is reported as modified | AST-006, AST-105 |
+| T21 loose files | release check, integration | Release binaries contain no loose-file mount code; in a Debug build a loose entry replaces its packed entry and the identity is reported as modified | AST-006, AST-105 |
 | T22 content identity | unit | reformatting an authoring file leaves its entry hash unchanged; changing one statistic changes its entry hash and the simulation content identity | AST-097, AST-098, AST-100 |
-| T23 integrity at load | integration | a corrupted simulation-relevant entry fails to load and names its key; other entries are checked in development builds only | AST-107, AST-115 |
+| T23 integrity at load | integration | a corrupted simulation-relevant entry fails to load and names its key; other entries are checked in Debug builds only | AST-107, AST-115 |
 | T24 asynchronous loading | integration | load-group progress never decreases and ends with `LoadGroupCompleted`; cancelling a queued entry frees it; a frame-time trace shows no presentation-thread wait on a load | AST-116 to AST-118 |
 | T25 device removal | integration | a forced removal during a match recreates every resident resource and run-time texture while the match continues | AST-119 |
 | T26 settings | integration | changing the render size reads no pack entry | AST-120 |
@@ -942,12 +1048,13 @@ Table 5-A Baseline budgets.
 | DEC-461 | Resolved | each turret type's sockets come from its own barrel mesh (AST-042) |
 | DEC-563 | Resolved | thumbnails and the map index are build outputs; no unreferenced asset is packaged (AST-086, AST-087, AST-090) |
 | DEC-801 | Resolved | duplicate keys and ids are build errors; declared maximum lengths (AST-014, AST-049, AST-092) |
+| DEC-971 | Open | the reference test machine of the budgets (AST-125) |
 | ADR-017, ADR-018, ADR-019, ADR-020, ADR-021, ADR-025, ADR-058, ADR-059, ADR-060, ADR-061 | Accepted (ADR-025 Proposed) | the decisions this component implements |
 
 **Design-phase inputs.**
 1. **World content streaming.** How a persistent world streams terrain and content: region packs or chunks, server-delivered content with its hash check, and whether the content reader gets a DirectStorage back-end (DEC-226, DEC-204, DEC-246, ADR-058).
 2. **Asset threads.** Which threads run the I/O and worker jobs of the asset system (DEC-224).
-3. **Player content.** Whether a shipping build ever mounts player content (mod packs, community maps), and how such content enters the content identity; loose files stay a development feature (ADR-058).
+3. **Player content.** Whether a Release build ever mounts player content (mod packs, community maps), and how such content enters the content identity; loose files stay a Debug feature (ADR-058).
 4. **Custom maps.** The custom-map container, its embedded images, its identity, listing and transfer (AST-063, DEC-204).
 5. **Voice.** One recording set for every language, or one per language (DEC-317).
 6. **Test editions.** Which placeholder rows a playtest edition may contain (AST-085).
@@ -960,7 +1067,7 @@ Table 5-A Baseline budgets.
 | `ast.pack.format_version` | 1 | format version | the first Species pack format | AST-053 | |
 | `ast.pack.chunk_max_kib` | 256 | KiB | uncompressed size limit of a chunk | AST-054, AST-094 | |
 | `ast.pack.chunk_alignment_kib` | 64 | KiB | alignment of every chunk in the file | AST-054, AST-094 | |
-| `ast.pack.zstd_level` | 19 | Zstandard level | fixed per content-build version, for reproducible packs | AST-066, AST-095 | |
+| `ast.pack.codec` | `xpress_huff` | codec id | XPRESS with Huffman encoding of the Windows Compression API, buffer mode, one compressor call per chunk; fixed per content-build version | AST-055, AST-066, AST-095 | |
 | `ast.pack.max_key_bytes` | 255 | bytes | longest key | AST-014 | DEC-801 |
 | `ast.hash.digest_bytes` | 32 | bytes | SHA-256; every comparison uses all of them | AST-100 | DEC-204 |
 | `ast.hash.display_hex_digits` | 16 | hexadecimal digits | shown in logs and the build details | AST-100 | |
@@ -983,4 +1090,4 @@ Table 5-A Baseline budgets.
 | `ast.load.main_thread_budget_ms` | 1.0 | ms per frame | presentation-thread time in `AssetCache::Pump()` | AST-116, AST-125 | |
 | `ast.mount.budget_ms` | 200 | ms | mounting the baseline pack set | AST-125 | |
 
-Values that the rules above use and other documents own: `rnd.mesh.colour_attenuation`, `rnd.mesh.max_nodes`, `rnd.mesh.max_sockets` ([world renderers](renderer/world_renderers.md)); `rnd.shadow.icon_blur_radius` ([view, lighting and fog](renderer/view_lighting_and_fog.md)); `rnd.look.blur_normaliser` ([visual language](renderer/visual_language.md)); `rnd.crawler.trail_column_width`, `rnd.crawler.trail_column_height`, `rnd.crawler.trail_copy_shrink` ([entity and overlay renderers](renderer/entity_and_overlay_renderers.md)); the cut-out thresholds `rnd.pso.*_cutout` ([frame graph and passes](renderer/frame_graph_and_passes.md)); `ref.map.thumbnail.aspect` ([maps: rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md)); the streaming threshold and resident budgets of the [audio engine](audio_engine.md).
+Values that the rules above use and other documents own: `rnd.mesh.colour_attenuation`, `rnd.mesh.max_nodes`, `rnd.mesh.max_sockets` ([world renderers](renderer/world_renderers.md)); `rnd.shadow.icon_blur_radius` ([view, lighting and fog](renderer/view_lighting_and_fog.md)); `rnd.look.blur_normaliser` ([visual language](renderer/visual_language.md)); `rnd.crawler.trail_column_width`, `rnd.crawler.trail_column_height`, `rnd.crawler.trail_copy_shrink` ([entity and overlay renderers](renderer/entity_and_overlay_renderers.md)); the cut-out thresholds `rnd.pso.*_cutout` ([frame graph and passes](renderer/frame_graph_and_passes.md)); `ref.map.thumbnail.aspect` ([maps: rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md)); the streaming threshold `aen.residency.stream_threshold`, the samples per block `aen.stream.samples_per_block` and the bank budgets `aen.memory.interface_bank_budget`, `aen.memory.match_bank_budget` and `aen.memory.stream_budget` of the [audio engine](audio_engine/README.md).

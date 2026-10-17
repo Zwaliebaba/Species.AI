@@ -15,23 +15,34 @@ This document specifies the explainer player, the conventions of sprite cards an
 The interface below is a C++23 declaration sketch, not an implementation.
 
 ```cpp
-namespace species::vfx {
+namespace Engine
+{
 
-enum class FootState : std::uint8_t { OnGround, Swinging, Pouncing };
-
-struct LegTuning { float lift, idealSlope, swingDuration, lookAhead; };   // from the active SpiderGait
-
-class ProceduralAnimator {
-public:
-  void Update(const PresentationSnapshot& snap, const PresentationTime& now);   // flicker, legs, cloth
-  void WriteActorInstances(PassId pass, InstanceWriter& out) const;            // 7a, 7b, 7d bodies and overlays
-  void WriteCrawlerStrips(InstanceWriter& out) const;                          // pass 7c (RND-319)
-  void RecordClothFlags(PassId pass, PassContext& context) const;              // 7b, 8, 16
-  [[nodiscard]] std::optional<float> PickClothFlag(const Ray& ray, SimObjectId owner) const;  // local picking
-  [[nodiscard]] bool Flickering(SimObjectId object) const;
+enum class FootState : std::uint8_t
+{
+  OnGround, Swinging, Pouncing
 };
 
-}  // namespace species::vfx
+struct LegTuning   // from the active SpiderGait
+{
+  float lift;
+  float idealSlope;
+  float swingDuration;
+  float lookAhead;
+};
+
+class ProceduralAnimator
+{
+public:
+  void Update(const PresentationSnapshot& _snap, const PresentationTime& _now);       // flicker, legs, cloth
+  void WriteActorInstances(std::string_view _passId, InstanceWriter& _out) const;     // 7a, 7b, 7d bodies and overlays
+  void WriteCrawlerStrips(InstanceWriter& _out) const;                                // pass 7c (RND-319)
+  void RecordClothFlags(std::string_view _passId, PassContext& _context) const;       // 7b, 8, 16
+  [[nodiscard]] std::optional<float> PickClothFlag(const Ray& _ray, SimObjectId _owner) const;   // local picking
+  [[nodiscard]] bool Flickering(SimObjectId _object) const;
+};
+
+} // namespace Engine
 ```
 
 **Events.** The animator raises the spider footstep presentation event at each foot plant (R-UNIT-578). The explainer player raises none.
@@ -87,7 +98,7 @@ Caption: the explainer panel exists at most once per match and shows while the p
 
 **VFX-107** (MUST) The playback clock runs on the real clock and ignores pause and game speed (R-META-229). On the first draw the playback time is 0, not the loop start, and the timer is set to now; on every draw the playback time grows by now − timer and the timer becomes now; when the playback time exceeds the loop end it is set to the loop start and the excess is discarded. The timer is refreshed only by a draw, so after a hidden span the first draw adds the whole span and the playback restarts at the loop start. These are the rules of the Open DEC-750; its default is the reference behaviour stated here.
 
-**VFX-108** (MUST) The panel's place and size are those of R-META-224. The reference computes them once, when the panel is created; the Species panel is a widget of the UI framework and is laid out again whenever the screen size, the DPI or the text scale changes (ADR-033).
+**VFX-108** (MUST) The panel's place and size are those of R-META-224. The reference computes them once, when the panel is created; the Species panel is a widget of the UI framework and is laid out again whenever the screen size, the DPI or the text scale changes (DEC-961, ADR-033).
 
 **VFX-109** (MUST) The panel draws its background, frame, objects, title and caption by R-META-230 to R-META-233, through the batched UI renderer (ADR-031) with standard alpha blending: each object is one textured quad of its picture, rotated about its centre by its angle, mirrored when its flip is on, inside the panel's clip rectangle. Colour roles are resolved at draw time against the local player's team colour (R-META-227, ADR-035).
 
@@ -151,7 +162,7 @@ A dead Worker's body is drawn in its colour × `ref.unit.worker.corpse_colour` (
 | seasonal hats on every Worker whose unit id is divisible by `ref.unit.worker.seasonal_hat_period` (3) | R-UNIT-148, VFX-118 |
 | snow on every map, from the presentation generator | R-SIM-234, R-CRATE-500, [particles](particles_shatter_and_screen_effects.md) VFX-224 |
 | trees with branches of `ref.bldg.tree.seasonal_branch_rgb` (180, 100, 50) and no leaves | [trees_and_crate_structures.md](../../../reference/03_buildings_and_world_objects/trees_and_crate_structures.md), [renderer/world_renderers.md](../renderer/world_renderers.md) |
-| the seasonal terrain ramp, sea tile and shore-wave gradient | [terrain.md](../terrain.md) TER-042 |
+| the seasonal terrain ramp, sea tile and shore-wave gradient | [terrain.md](../terrain/README.md) TER-042 |
 | every light colour replaced by `rnd.light.seasonal_colour` (1.3, 1.2, 1.2); the light's alpha keeps its map value | RND-013 |
 
 No other seasonal theme exists.
@@ -164,7 +175,7 @@ No other seasonal theme exists.
 |---|---|
 | the team colour of the colour table (RND-016), as 8-bit RGBA | sprites, laser bolts, Essence orbs, rings, beams, cloth flags, particles given an explicit colour |
 | the team palette index of a mesh instance (ADR-020) | shatter debris, which keeps the tinted facet colours of the mesh it came from ([particles](particles_shatter_and_screen_effects.md) §4.10) |
-| the red-channel team area of a cloth-flag texture (`marker.leader_banner`, `marker.flag_post_state`) | cloth flags (§4.10) |
+| the team area that the companion tint mask of a cloth-flag texture marks (`marker.leader_banner`, `marker.flag_post_state`; [asset pipeline](../asset_pipeline_and_resources.md) AST-022) | cloth flags (§4.10) |
 
 The Rogue faction's colour is near black, so its additive figures are drawn instead with the darkening or ink blend, or in white with alpha 0: Rogue faction Essence orbs, Crawler strips and laser bolts follow RND-327, RND-319 and RND-339.
 
@@ -172,17 +183,17 @@ The Rogue faction's colour is near black, so its additive figures are drawn inst
 
 ### 4.6 Other billboards and sprites
 
-**VFX-122** (MUST) Each live entry of a Reaper Serpent's eaten-orb display (R-UNIT-591) is drawn, while its age is below `ref.unit.reaper_serpent.eaten_display_ticks` (600 ticks of presentation time), at the head position + its offset, drawn when the entry is made as `FxRng::NextSigned`(2 × `vfx.serpent.eaten_offset`) per axis (± 10 wu), as two diamond billboards in `vfx.serpent.eaten_colour` (100, 50, 50) with a = 1 − age ÷ that span and d the camera distance: an inner one of half-extent `vfx.serpent.eaten_inner_size` (4) × a ÷ d^¼ at alpha `vfx.serpent.eaten_inner_alpha` (200) × a, and an outer one of half-extent `vfx.serpent.eaten_outer_size` (12) × a ÷ d^¼ at alpha `vfx.serpent.eaten_outer_alpha` (100) × a, additive with no depth test (`actor_glow_nodepth`). When the display is full, a new entry overwrites a slot chosen by `FxRng::NextUint` mod 50. An entry whose span has passed is removed by this component; the list is presentation state.
+**VFX-122** (MUST) Each live entry of a Reaper Serpent's eaten-orb display (R-UNIT-591) is drawn, while its age is below `ref.unit.reaper_serpent.eaten_display_ticks` (600 ticks of presentation time), at the head position + its offset, drawn when the entry is made as `FxRng::NextSigned`(2 × `vfx.serpent.eaten_offset`) per axis (± 10 wu, DEC-962 item 3), as two diamond billboards of `fx.glow_round` in `vfx.serpent.eaten_colour` (100, 50, 50) with a = 1 − age ÷ that span and d the camera distance: an inner one of half-extent `vfx.serpent.eaten_inner_size` (4) × a ÷ d^¼ at alpha `vfx.serpent.eaten_inner_alpha` (200) × a, and an outer one of half-extent `vfx.serpent.eaten_outer_size` (12) × a ÷ d^¼ at alpha `vfx.serpent.eaten_outer_alpha` (100) × a, additive with no depth test (`actor_glow_nodepth`). When the display is full, a new entry overwrites a slot chosen by `FxRng::NextUint` mod 50. An entry whose span has passed is removed by this component; the list is presentation state.
 
 **VFX-123** (MUST) A Wisp's two cards (R-UNIT-597) are drawn along the Wisp's own right and up axes, not facing the camera.
 
-**VFX-124** (MUST) An Essence orb whose broken marker is set (R-UNIT-308) hides its inner quad, sinks its outer quad at its break rate in wu per second and fades it by `vfx.orb.broken_fade` (10 of 255) per second; breaking an orb shows `vfx.orb.break_particles` (5) control-flash particles in its team colour, each with the velocity (`FxRng::NextUnit(5)`, `FxRng::NextUnit(5)`, `FxRng::NextUnit(5)`). No rule of a match breaks an orb (R-UNIT-308), so neither occurs in a match.
+**VFX-124** (MUST) An Essence orb whose broken marker is set (R-UNIT-308) hides its inner quad, sinks its outer quad at its break rate in wu per second and fades it by `vfx.orb.broken_fade` (10 of 255) per second; breaking an orb shows `vfx.orb.break_particles` (5) control-flash particles in its team colour, each with the velocity (`FxRng::NextUnit(5)`, `FxRng::NextUnit(5)`, `FxRng::NextUnit(5)`). No rule of a match breaks an orb (R-UNIT-308, DEC-871), so neither occurs in a match.
 
 **VFX-125** (MUST) The thrown weapon's tumble and fuse-blink flash (R-CRATE-414), the barrage missile's warhead, launcher and ground marker ([hazards_and_projectiles.md](../../../reference/02_units/hazards_and_projectiles.md), RND-324), the dust object (R-CRATE-505) and the snowflake (R-CRATE-501) are drawn as their owners state; the fuse blink's sound is a presentation event of the blink, never a sound started by drawing (DEC-007).
 
 ### 4.7 Damage flicker
 
-**VFX-126** (MUST) An object's damage-flicker flag is presentation state of this component, evaluated once per `vfx.flicker.step` (one `ref.sim.tick_period`, 0.1 s of scaled presentation time), the cadence of the reference, never inside a tick and never stored in a simulated object (R-UNIT-051, R-SIM-636). With t the unscaled presentation time and s = sin(t + `ref.unit.flicker.phase_per_id` (10) × unit id), the flag of an actor is set when `FxRng::NextUnit`(`ref.unit.flicker.chance_scale` (0.75)) × (1 − \|s\| × `ref.unit.flicker.sine_weight` (0.8)) > its health fraction. A Spitter Plant's flag is set when `FxRng::NextUnit`(`ref.unit.flicker.chance_scale`) × (1 − \|s\| × `vfx.flicker.structure_sine_weight` (1.2)) > its damage ÷ `vfx.flicker.spitter_damage_divisor` (50), and it flickers only while its damage is above 0; a Hive's flag uses the same expression with its health ÷ `vfx.flicker.hive_health_divisor` (100). An object at full health never flickers; at low health it flickers on most steps, modulated by its slow sine.
+**VFX-126** (MUST) An object's damage-flicker flag is presentation state of this component, evaluated once per `vfx.flicker.step` (one `ref.sim.tick_period`, 0.1 s of scaled presentation time), the cadence of the reference (DEC-963 item 2), never inside a tick and never stored in a simulated object (R-UNIT-051, R-SIM-636). With t the unscaled presentation time and s = sin(t + `ref.unit.flicker.phase_per_id` (10) × unit id), the flag of an actor is set when `FxRng::NextUnit`(`ref.unit.flicker.chance_scale` (0.75)) × (1 − \|s\| × `ref.unit.flicker.sine_weight` (0.8)) > its health fraction. A Spitter Plant's flag is set when `FxRng::NextUnit`(`ref.unit.flicker.chance_scale`) × (1 − \|s\| × `vfx.flicker.structure_sine_weight` (1.2)) > its damage ÷ `vfx.flicker.spitter_damage_divisor` (50), and it flickers only while its damage is above 0; a Hive's flag uses the same expression with its health ÷ `vfx.flicker.hive_health_divisor` (100). An object at full health never flickers; at low health it flickers on most steps, modulated by its slow sine.
 
 **VFX-127** (MUST) While its flag is set, the object's body draw is replaced by a draw in which one axis of its mesh transform, chosen at each evaluation by a presentation draw, is scaled, with the catalogue entry that RND-324 gives (`actor_flicker_additive` for additive one-one blending; `actor_flicker_darkening` for the spider). Because the world is black, an additive flicker shows a brighter, briefly stretched ghost of the object, and only the spider darkens:
 
@@ -199,7 +210,7 @@ The Collector, the Builder, the Worker, the Crawler and every other object never
 
 ### 4.8 Procedural legs and the spider gait
 
-**VFX-128** (MUST) The spider's eight procedural legs run on the client from the spider's presentation transform, entirely in presentation (DEC-007, ADR-035, R-UNIT-578); their state is that of VFX-102. Each leg's root is a socket `leg_00` to `leg_07` of `mesh.creature.spider_body`, and each segment's length is the distance from its mesh origin to the `segment_end` socket of `mesh.creature.spider_thigh` or `mesh.creature.spider_shin` (R-UNIT-580, R-UNIT-581, ADR-021); the content build rejects a spider mesh without these sockets (ADR-059).
+**VFX-128** (MUST) The spider's eight procedural legs run on the client from the spider's presentation transform, entirely in presentation (DEC-007, ADR-035, R-UNIT-578); their state is that of VFX-102. Each leg's root is a socket `leg_01` to `leg_08` of `mesh.creature.spider_body`, in leg order, and each segment's length is the distance from its mesh origin to the `segment_end` socket of `mesh.creature.spider_thigh` or `mesh.creature.spider_shin` (R-UNIT-580, R-UNIT-581, ADR-021); the content build rejects a spider mesh without these sockets (ADR-059).
 
 **VFX-129** (MUST) With H the spider's hover height `ref.unit.spider.hover_height` (3 wu), positions in world space and t the unscaled presentation time, a leg works as follows (R-UNIT-582 to R-UNIT-585):
 
@@ -275,7 +286,7 @@ for each sample s of the drawn share of the history, newest first (R-UNIT-539):
 
 The worm texture coordinate advances by `vfx.crawler.worm_v_per_wu` (6 ÷ 512, six pixels of the 512 px trail column per wu). The worm reaches alpha 0 after 200 wu and the glow after 150 wu, so with the 175 wu history (`ref.unit.crawler.tail_length`) the worm's tail ends near alpha 25. The worm colour is the team colour × the health fraction; the glow takes the worm colour. A Rogue faction Crawler uses the colours of R-UNIT-539 in the ink batch; a dead one is drawn in the additive batch. A dead Crawler has RGB `vfx.crawler.dead_rgb` (250, 250, 250), worm alpha = its health and glow alpha = `vfx.crawler.dead_glow_factor` (2.5) × its health.
 
-**VFX-138** (MUST) A Brood Drifter's body is drawn at its extrapolated position with a fixed orientation, front (0, 0, 1) and up the world up: it never turns. Its four tails (R-UNIT-547) start at the sockets `tail_01` to `tail_04` and share one smoothed velocity *u* for all Brood Drifters, updated once per drawn Brood Drifter at every step of VFX-018 as *u* = `vfx.brood.tail_smoothing` (0.95) × *u* + (1 − 0.95) × the Brood Drifter's velocity. With t the unscaled presentation time, tail i (0 to 3) is one strip of `ref.unit.brood_drifter.tail_segments` (3) segments:
+**VFX-138** (MUST) A Brood Drifter's body is drawn at its extrapolated position with a fixed orientation, front (0, 0, 1) and up the world up: it never turns. Its four tails (R-UNIT-547) start at the sockets `tail_01` to `tail_04` of `mesh.creature.brood_drifter_body` and share one smoothed velocity *u* for all Brood Drifters (DEC-856 item 4), updated once per drawn Brood Drifter at every step of VFX-018 as *u* = `vfx.brood.tail_smoothing` (0.95) × *u* + (1 − 0.95) × the Brood Drifter's velocity. With t the unscaled presentation time, tail i (0 to 3) is one strip of `ref.unit.brood_drifter.tail_segments` (3) segments:
 
 ```text
 p0  = socket i; dir = horizontalNormalise(socket i - body position)
@@ -293,14 +304,14 @@ with `vfx.brood.tail_step` (15 wu), `vfx.brood.tail_sway` (10 wu), `vfx.brood.ta
 
 ### 4.10 Cloth flags
 
-**VFX-139** (MUST) A cloth flag (`ClothFlag`, R-BLDG-271 to R-BLDG-273) is created on its owner's first draw as a grid of `ref.bldg.cloth_flag.resolution` (6) × 6 vertices, vertex[x][z] = position + (x ÷ 6) × front + (z ÷ 6) × up, and is advanced every frame on the unscaled presentation clock. With size its size, t the unscaled presentation time and Δ the unscaled frame step, which is 0 while the world is held (VFX-016), so that a flag holds its shape during a pause:
+**VFX-139** (MUST) A cloth flag (`ClothFlag`, R-BLDG-271 to R-BLDG-273) is created on its owner's first draw as a grid of `ref.bldg.cloth_flag.resolution` (6) × 6 vertices, vertex[x][z] = position + (x ÷ 6) × front + (z ÷ 6) × up, and is advanced every frame on the unscaled presentation clock. With size its size, t the unscaled presentation time and Δ the unscaled frame step, which is 0 while the world is held (VFX-016), so that a flag holds its shape during a pause (DEC-955 item 4); a large, highlighted or selected flag relaxes with a fixed factor that replaces the per-column factor (DEC-963 item 1), converted to the frame step (DEC-960):
 
 ```text
 for x in 0..5, z in 0..5:
     k = Δ * ref.bldg.cloth_flag.relax_rate * (6 - x) / 6
     if x == 0: k = 1
     if size > ref.bldg.cloth_flag.damped_size_wu or the flag is highlighted or selected:
-        k = ref.bldg.cloth_flag.damped_factor                    # replaces k, converted by VFX-018
+        k = ref.bldg.cloth_flag.damped_factor                    # replaces k (DEC-963), converted by VFX-018
     w = ref.bldg.cloth_flag.highlight_wobble if highlighted or selected, else 1
     target = position + up * size / 2 + (z / 5) * up * size     if x == 0
            = vertex[x - 1][z] + front * size / 5                otherwise
@@ -315,7 +326,7 @@ with `vfx.cloth.wobble_phases` (1.5, 1.1, 1.3) and `vfx.cloth.lift_gain` (3). A 
 
 **VFX-140** (MUST) Each frame the flag's bounding sphere is recomputed: its centre is the mean of the 36 vertices and its radius the largest distance from the centre to a vertex. The local picking ray test of a Leader's or Transport's flag uses it as a pre-test before testing two triangles per cell (R-BLDG-273); picking is presentation and input, never simulation (DEC-008).
 
-**VFX-141** (MUST) A flag draws, with the entries of VFX-014 for its pass: its pole, a white quad of half-width `ref.bldg.cloth_flag.pole_width_wu` ÷ 2 (0.2 wu) turned perpendicular to up × the camera front and size × `ref.bldg.cloth_flag.pole_height_factor` (1.5) high; then its 5 × 5 cells as 25 textured quads, filtered linearly through all mip levels. The texture's red-channel team area takes the team colour × `vfx.cloth.team_tint` (0.5), the full team colour while the owner is selected, and the grey `vfx.cloth.no_team_grey` (128, 128, 128) with no team; each recoloured variant is cached by (asset, variant) (R-BLDG-273, DEC-098). When the owner has a target, the pointer `marker.flag_pointer` is drawn over the flag with `cloth_pointer`, its texture coordinates turned so that the arrow points from the flag towards the target's screen position (RND-216).
+**VFX-141** (MUST) A flag draws, with the entries of VFX-014 for its pass: its pole, a white quad of half-width `ref.bldg.cloth_flag.pole_width_wu` ÷ 2 (0.2 wu) turned perpendicular to up × the camera front and size × `ref.bldg.cloth_flag.pole_height_factor` (1.5) high; then its 5 × 5 cells as 25 textured quads, filtered linearly through all mip levels. The team area that the texture's companion tint mask marks (`marker.leader_banner_tint`, `marker.flag_post_state_tint`; AST-022) takes the team colour × `vfx.cloth.team_tint` (0.5), the full team colour while the owner is selected, and the grey `vfx.cloth.no_team_grey` (128, 128, 128) with no team (R-BLDG-273); the renderer's tint function applies that colour in the shader as the draw's tint, so no recoloured copy of the texture exists and each texture keeps one cache entry per declared variant (ADR-020, AST-030, DEC-098). When the owner has a target, the pointer `marker.flag_pointer` is drawn over the flag with `cloth_pointer`, its texture coordinates turned so that the arrow points from the flag towards the target's screen position (RND-216).
 
 **VFX-142** (MUST) The owners of cloth flags are:
 
@@ -333,7 +344,7 @@ with `vfx.cloth.wobble_phases` (1.5, 1.1, 1.3) and `vfx.cloth.lift_gain` (3). A 
 |---|---|
 | tree breathing sway, regrowth, burn-down, blighting and the Essence Grove leaf pulse | [renderer/world_renderers.md](../renderer/world_renderers.md) (`rnd.tree.*`) |
 | Collector harvesting beam: `ref.unit.collector.beam_ring_count` (5) team-coloured rings rising from the ground to the hover height, and its bubble | R-UNIT-444, RND-324 |
-| Abductor beam rings scrolling up or down, and its hull's yaw | R-UNIT-710 |
+| Abductor beam rings of `fx.abductor_beam_ring` scrolling up or down, and its hull's yaw | R-UNIT-710 |
 | order markers: a travelling `fx.starburst` card of `vfx.motion.order_marker_flare` (15 wu) that fades over its last `ref.unit.leader.marker_fade_ticks` (10 ticks); order trail marks | R-UNIT-185, R-UNIT-186 |
 | Allegiance Scrambler: two muzzle-flash particles at the ends of a turning arm, at each step of VFX-018 | R-BLDG-654 |
 | shell casing spin and bounce | R-CRATE-456 |
@@ -386,11 +397,18 @@ Diagnostics: the development overlay can draw each spider's foot homes, targets 
 | DEC-008 | Resolved | flag picking is local (VFX-140) |
 | DEC-009 | Resolved | the launch spectacle is inactive (VFX-118) |
 | DEC-015 | Resolved | explainer animations are validated at build time (VFX-110) |
-| DEC-098 | Resolved | recoloured flag variants are cached by asset and variant (VFX-141) |
+| DEC-098 | Resolved | flag textures keep one cache entry per asset and variant; team looks are tint values (VFX-141) |
 | DEC-101 | Open | whether Species keeps the seasonal theme (VFX-119) |
 | DEC-118 | Resolved | the seasonal state is match state (VFX-119) |
 | DEC-328 | Open | saturated bubble colours (VFX-121) |
 | DEC-750 | Open | the explainer loop and visibility rules (VFX-107) |
+| DEC-856 | Open | one tail velocity shared by every Brood Drifter (VFX-138) |
+| DEC-871 | Dropped | no match breaks an Essence orb (VFX-124) |
+| DEC-955 | Resolved | a cloth flag holds its shape while the world is held (VFX-139) |
+| DEC-960 | Resolved | per-frame blend factors and emission run in fixed steps (VFX-138, VFX-139, VFX-143) |
+| DEC-961 | Resolved | the explainer panel is laid out again on every screen change (VFX-108) |
+| DEC-962 | Open | the eaten-orb offset range (VFX-122) |
+| DEC-963 | Open | the fixed factor of large and selected flags; the per-tick flicker cadence (VFX-126, VFX-139) |
 | ADR-035 | Accepted | client-side procedural animation, two-bone legs, explainer timelines |
 
 The design-phase inputs of this component are listed in the [folder README](README.md) §8.
@@ -429,7 +447,7 @@ The design-phase inputs of this component are listed in the [folder README](READ
 | `vfx.worker.fragment_spread_divisor` | 10 | display health per wu | drift = 10 − h ÷ 10 | VFX-118 | |
 | `vfx.worker.fragment_fade_ground` | 40 | display health per s | on the ground | VFX-118 | |
 | `vfx.worker.fragment_fade_air` | 20 | display health per s | airborne | VFX-118 | |
-| `vfx.serpent.eaten_offset` | 10 | wu per axis | orbit offset range; the reference range is not recorded | VFX-122 | |
+| `vfx.serpent.eaten_offset` | 10 | wu per axis | orbit offset range; the reference range is not recorded | VFX-122 | DEC-962 |
 | `vfx.serpent.eaten_colour` | 100, 50, 50 | RGB | eaten-orb display | VFX-122 | |
 | `vfx.serpent.eaten_inner_size` | 4 | × a ÷ d^¼ | inner diamond half-extent | VFX-122 | |
 | `vfx.serpent.eaten_inner_alpha` | 200 | × a, of 255 | | VFX-122 | |
@@ -437,7 +455,7 @@ The design-phase inputs of this component are listed in the [folder README](READ
 | `vfx.serpent.eaten_outer_alpha` | 100 | × a, of 255 | | VFX-122 | |
 | `vfx.orb.broken_fade` | 10 | alpha of 255 per s | broken orb shell | VFX-124 | |
 | `vfx.orb.break_particles` | 5 | particles | control flashes on a break | VFX-124 | |
-| `vfx.flicker.step` | 0.1 | s of scaled presentation time | one `ref.sim.tick_period` | VFX-126 | DEC-007 |
+| `vfx.flicker.step` | 0.1 | s of scaled presentation time | one `ref.sim.tick_period` | VFX-126 | DEC-007, DEC-963 |
 | `vfx.flicker.structure_sine_weight` | 1.2 | — | Spitter Plant and Hive | VFX-126 | |
 | `vfx.flicker.spitter_damage_divisor` | 50 | damage | | VFX-126 | |
 | `vfx.flicker.hive_health_divisor` | 100 | health | | VFX-126 | |
@@ -466,7 +484,7 @@ The design-phase inputs of this component are listed in the [folder README](READ
 | `vfx.cloth.still_step` | 0.1 | s per frame | reference relaxation step while the game speed is 0; not used by the Species clock | VFX-139 | |
 | `vfx.cloth.wobble_phases` | 1.5, 1.1, 1.3 | rad per column | x, y and z wobble phases | VFX-139 | |
 | `vfx.cloth.lift_gain` | 3 | × | vertical wobble amplitude | VFX-139 | |
-| `vfx.cloth.team_tint` | 0.5 | × team colour | red-channel team area | VFX-141 | DEC-098 |
+| `vfx.cloth.team_tint` | 0.5 | × team colour | the team area of the tint mask | VFX-141 | DEC-098 |
 | `vfx.cloth.no_team_grey` | 128, 128, 128 | RGB | flag with no team | VFX-141 | |
 | `vfx.cloth.banner_wobble` | 0.4 | rad | Leader banner wobble | VFX-142 | |
 | `vfx.cloth.banner_wobble_rate` | 2 | rad/s of unscaled presentation time | | VFX-142 | |

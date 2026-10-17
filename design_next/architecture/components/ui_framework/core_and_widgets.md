@@ -4,161 +4,248 @@
 
 This document specifies the lower two layers of the UI framework and the widget family of the front-end layer: the UI core, the standard window and button, the widget set, value binding, the options screen and the page widgets. Layout formulas, the palette, text styles, navigation input and localisation are in [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md); the page framework of the front-end screen is in [pages_and_screen_recipes.md](pages_and_screen_recipes.md).
 
-**Notation.** W and H are the client-area width and height in pixels. *m*(v) is the menu size of a tool-window length v (UI-048). A **draw point** is the position a text draw is given; [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-193 converts it into the glyph box. Colours are RGBA, either as bytes (0 to 255) or as fractions (0 to 1), as each palette key states. Times are seconds of the presentation clock ([reference/12](../../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-570) unless a rule says otherwise.
+**Notation.** W and H are the client-area width and height in pixels. *m*(v) is the menu size of a tool-window length v (UI-048). A **draw point** is the position a text draw is given; [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-193 converts it into the glyph box. Colours are RGBA, either as bytes (0 to 255) or as fractions (0 to 1), as each palette key states. Times are seconds of real time, the real reading of the presentation clock, which keeps running while a match is paused and ignores game speed ([reference/12](../../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-570, R-SIM-573; ADR-036, ADR-074; see DEC-951, DEC-955), unless a rule says otherwise.
 
 ## 1 Responsibilities and boundaries
 
-**UI-020** (MUST) This document owns: the UI core (`UiCore`) with its panel base (`UiPanelBase`) and button base (`UiButtonBase`) types; the standard window (`UiWindow`) and button (`UiButton`) and their variants; the widget set (value-bound controls, text field, increment glyphs, scroll bar, check box, drop-down, message dialog, chat entry); the value-binding model; and the front-end widget family (the options screen `OptionsScreen`, page buttons, Back and close buttons, page titles, the highlight beam, fill boxes, page drop-downs, page text fields, page increment glyphs and page check boxes). What each front-end page holds is [reference/09_front_end_and_match_flow/](../../../reference/09_front_end_and_match_flow/README.md)'s; how pages are hosted and switched is [pages_and_screen_recipes.md](pages_and_screen_recipes.md)'s.
+**UI-020** (MUST) This document owns: the UI core (`UiCore`) with its panel base (`UiPanel`) and button base (`UiWidget`) types; the standard window (`UiWindow`) and button (`UiButton`) and their variants; the widget set (value-bound controls, text field, increment glyphs, scroll bar, check box, drop-down, message dialog, chat entry); the value-binding model; and the front-end widget family (the options screen `OptionsScreen`, page buttons, Back and close buttons, page titles, the highlight beam, fill boxes, page drop-downs, page text fields, page increment glyphs and page check boxes). What each front-end page holds is [reference/09_front_end_and_match_flow/](../../../reference/09_front_end_and_match_flow/README.md)'s; how pages are hosted and switched is [pages_and_screen_recipes.md](pages_and_screen_recipes.md)'s.
 
 **UI-021** (MUST NOT) No widget reads input while it is drawn, and no draw changes widget, focus or view-model state: highlight decisions, focus moves caused by hover, Back handling, repeat stepping and roll-over sounds all happen in the update phase, and drawing only reads the state the update left (ADR-032, DEC-102).
 
 ## 2 Interfaces
 
-C++23 interface sketch (declarations only). Every type lives in namespace `species::ui`; `StringId` is a Species string id, `ColourRgba` the RGBA colour of the engine types, and `DrawContext` the handle to the batched UI stream ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §2).
+C++23 interface sketch (declarations only). Every type lives in namespace `Engine`; `StringId` is a Species string id, `ColorRgba` the RGBA colour of the engine types, and `DrawContext` the handle to the batched UI stream ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §2).
 
 ```cpp
-namespace species::ui {
+namespace Engine
+{
 
-struct PanelId  { std::uint32_t index = 0; std::uint32_t generation = 0; };   // UI-012
-struct WidgetId { std::uint32_t index = 0; std::uint32_t generation = 0; };
-struct PointF { float x = 0, y = 0; };
-struct SizeF  { float w = 0, h = 0; };
-struct RectF  { float x = 0, y = 0, w = 0, h = 0; };
+struct PanelId // UI-012
+{
+  std::uint32_t index = 0;
+  std::uint32_t generation = 0;
+};
+struct WidgetId
+{
+  std::uint32_t index = 0;
+  std::uint32_t generation = 0;
+};
+struct PointF
+{
+  float x = 0;
+  float y = 0;
+};
+struct SizeF
+{
+  float w = 0;
+  float h = 0;
+};
+struct RectF
+{
+  float x = 0;
+  float y = 0;
+  float w = 0;
+  float h = 0;
+};
 
-enum class PointerEventKind : std::uint8_t { PrimaryDown, PrimaryUp, AltDown };
-struct PointerEvent { PointerEventKind kind; PointF position; };
-struct TextInput { char32_t character; bool shift = false, ctrl = false, alt = false; };
-enum class EditCommand : std::uint8_t { CaretLeft, CaretRight, CaretHome, CaretEnd,
-    DeleteForward, SelectAll, Copy, Cut, Paste };                            // UI-067
+enum class PointerEventKind : std::uint8_t
+{
+  PrimaryDown,
+  PrimaryUp,
+  AltDown
+};
+struct PointerEvent
+{
+  PointerEventKind kind;
+  PointF position;
+};
+struct TextInput
+{
+  char32_t character;
+  bool shift = false;
+  bool ctrl = false;
+  bool alt = false;
+};
+enum class EditCommand : std::uint8_t // UI-067
+{
+  CaretLeft,
+  CaretRight,
+  CaretHome,
+  CaretEnd,
+  DeleteForward,
+  SelectAll,
+  Copy,
+  Cut,
+  Paste
+};
 using Callback = std::move_only_function<void()>;
 
-class UiButtonBase {                       // every widget derives from this type
+class UiWidget // every widget derives from this type
+{
 public:
-    virtual ~UiButtonBase() = default;
-    virtual void Draw(DrawContext&, PointF origin, bool highlighted, bool pressed) const {}
-    virtual void OnPress() {}                       // primary down edge on this widget
-    virtual void OnHeld(bool pointerInside) {}      // every update while this widget holds the capture
-    virtual void OnClick() {}                       // press and release on this widget (UI-031)
-    virtual void OnCancel() {}                      // the capture ended outside this widget
-    virtual void OnAltPress() {}                    // secondary down edge on this widget (UI-033)
-    virtual void OnText(const TextInput&) {}        // only while this widget is the text-edit target
-    virtual void OnEdit(EditCommand) {}
-    RectF rect;                                     // panel-relative
-    StringId caption, accessibleName;               // UI-012
-    bool inactive = false;                          // skipped by navigation, never acts
+  virtual ~UiWidget() = default;
+  virtual void Draw(DrawContext& _out, PointF _origin, bool _highlighted, bool _pressed) const {}
+  virtual void OnPress() {}                       // primary down edge on this widget
+  virtual void OnHeld(bool _pointerInside) {}     // every update while this widget holds the capture
+  virtual void OnClick() {}                       // press and release on this widget (UI-031)
+  virtual void OnCancel() {}                      // the capture ended outside this widget
+  virtual void OnAltPress() {}                    // secondary down edge on this widget (UI-033)
+  virtual void OnText(const TextInput& _input) {} // only while this widget is the text-edit target
+  virtual void OnEdit(EditCommand _command) {}
+  RectF rect;       // panel-relative
+  StringId caption; // UI-012
+  StringId accessibleName;
+  bool inactive = false; // skipped by navigation, never acts
 };
 
-class UiPanelBase {                        // every window derives from this type
+class UiPanel // every window derives from this type
+{
 public:
-    virtual ~UiPanelBase() = default;
-    virtual void Create() {}                        // builds the widgets (UI-022 step 5)
-    virtual void Remove() {}                        // removes the widgets
-    virtual void Update() {}                        // once per frame (UI-042)
-    virtual void Draw(DrawContext&, bool hasFocus) const;      // widgets oldest first (UI-043)
-    virtual void OnText(const TextInput&);          // default: forward to the text-edit target (UI-038)
-    virtual void OnEdit(EditCommand);
-    virtual void OnBackgroundPointer(bool down) {}  // a press or release on no widget
-    WidgetId RegisterWidget(std::unique_ptr<UiButtonBase>);    // UI-025
-    void RemoveWidget(WidgetId);
-    WidgetId WidgetAt(PointF panelRelative) const;  // UI-028
-    void BeginTextEdit(WidgetId);
-    void EndTextEdit();
-    WidgetId TextEditTarget() const;
-    RectF rect;
-    StringId title;
-    bool movable = true, resizable = true;
+  virtual ~UiPanel() = default;
+  virtual void Create() {}                                    // builds the widgets (UI-022 step 5)
+  virtual void Remove() {}                                    // removes the widgets
+  virtual void Update() {}                                    // once per frame (UI-042)
+  virtual void Draw(DrawContext& _out, bool _hasFocus) const; // widgets oldest first (UI-043)
+  virtual void OnText(const TextInput& _input);               // default: forward to the text-edit target (UI-038)
+  virtual void OnEdit(EditCommand _command);
+  virtual void OnBackgroundPointer(bool _down) {}             // a press or release on no widget
+  WidgetId RegisterWidget(std::unique_ptr<UiWidget> _widget); // UI-025
+  void RemoveWidget(WidgetId _widget);
+  WidgetId WidgetAt(PointF _panelRelative) const; // UI-028
+  void BeginTextEdit(WidgetId _widget);
+  void EndTextEdit();
+  WidgetId TextEditTarget() const;
+  RectF rect;
+  StringId title;
+  bool movable = true;
+  bool resizable = true;
 };
 
-class UiCore {
+class UiCore
+{
 public:
-    void Resize(SizeF clientSize, float dpiScale);                    // UI-009
-    PanelId RegisterPanel(std::unique_ptr<UiPanelBase>, PanelId parent = {});   // UI-022
-    void RemovePanel(PanelId);                                       // UI-023
-    void BringToFront(PanelId);
-    void SetPanelPosition(PanelId, PointF);
-    void SetPanelSize(PanelId, SizeF);                               // UI-024
-    PanelId PanelAt(PointF) const;                                   // UI-027
-    bool PointerInPanel(PanelId) const;                              // UI-029
-    bool PointerInWidget(PanelId, WidgetId) const;
-    void UpdatePointer(PointF position, std::span<const PointerEvent> events);   // UI-030
-    void Update();                                                   // UI-042
-    void OnText(const TextInput&);                                   // UI-038
-    void OnEdit(EditCommand);
-    void Draw(DrawContext&) const;                                   // UI-043
-    PanelId RegisterPopup(std::unique_ptr<UiPanelBase>);             // UI-040
-    void ClosePopup();
-    void Maximise(PanelId);                                          // UI-041
-    void Unmaximise();
-    PanelId Focus() const;
-    void SetFocus(PanelId);                                          // UI-036
-    WidgetId HoverWidget() const;
-    WidgetId CapturedWidget() const;
-    bool IsTextEditing() const;                                      // UI-039
-    bool WindowsOnScreen() const;                                    // UI-010
-    void RemoveAllWindows(bool matchRunning);
-    void SetTooltipHandler(std::move_only_function<void(PanelId, WidgetId)>);   // UI-045
-    void Shutdown();
+  void Resize(SizeF _clientSize, float _dpiScale);                              // UI-009
+  PanelId RegisterPanel(std::unique_ptr<UiPanel> _panel, PanelId _parent = {}); // UI-022
+  void RemovePanel(PanelId _panel);                                             // UI-023
+  void BringToFront(PanelId _panel);
+  void SetPanelPosition(PanelId _panel, PointF _position);
+  void SetPanelSize(PanelId _panel, SizeF _size); // UI-024
+  PanelId PanelAt(PointF _point) const;           // UI-027
+  bool PointerInPanel(PanelId _panel) const;      // UI-029
+  bool PointerInWidget(PanelId _panel, WidgetId _widget) const;
+  void UpdatePointer(PointF _position, std::span<const PointerEvent> _events); // UI-030
+  void Update();                                                               // UI-042
+  void OnText(const TextInput& _input);                                        // UI-038
+  void OnEdit(EditCommand _command);
+  void Draw(DrawContext& _out) const;                     // UI-043
+  PanelId RegisterPopup(std::unique_ptr<UiPanel> _panel); // UI-040
+  void ClosePopup();
+  void Maximize(PanelId _panel); // UI-041
+  void Unmaximize();
+  PanelId Focus() const;
+  void SetFocus(PanelId _panel); // UI-036
+  WidgetId HoverWidget() const;
+  WidgetId CapturedWidget() const;
+  bool IsTextEditing() const;   // UI-039
+  bool WindowsOnScreen() const; // UI-010
+  void RemoveAllWindows(bool _matchRunning);
+  void SetTooltipHandler(std::move_only_function<void(PanelId, WidgetId)> _handler); // UI-045
+  void Shutdown();
 };
 
-class UiWindow : public UiPanelBase {      // the standard window (§4.10 to §4.15)
+class UiWindow : public UiPanel // the standard window (§4.10 to §4.15)
+{
 public:
-    float MenuSize(float v) const;                                   // UI-048
-    void SetMenuSize(SizeF);
-    RectF ClientRect() const;                                        // UI-047
-    void AddToNavigation(WidgetId);                                  // UI-050
-    void SetCursor(WidgetId);
-    void SetBackAction(WidgetId);
-    void SkipNextUpdate();
-    bool closeable = true, locked = false;
-    WidgetId AddValueControl(StringId label, UiValueBinding&, float y, double step,
-                             double low, double high, Callback onChange = {},
-                             float x = -1, float w = -1);            // UI-062
-    void RemoveValueControl(WidgetId);
-    WidgetId AddColourControl(StringId label, ColourRgba&, float y, Callback onChange = {},
-                              float x = -1, float w = -1);           // UI-063
+  float MenuSize(float _length) const; // UI-048
+  void SetMenuSize(SizeF _size);
+  RectF ClientRect() const;               // UI-047
+  void AddToNavigation(WidgetId _widget); // UI-050
+  void SetCursor(WidgetId _widget);
+  void SetBackAction(WidgetId _widget);
+  void SkipNextUpdate();
+  bool closeable = true;
+  bool locked = false;
+  WidgetId AddValueControl(StringId _label, UiValueBinding& _binding, float _y, double _step, double _low, double _high,
+                           Callback _onChange = {}, float _x = -1, float _w = -1); // UI-062
+  void RemoveValueControl(WidgetId _field);
+  WidgetId AddColorControl(StringId _label, ColorRgba& _rgba, float _y, Callback _onChange = {}, float _x = -1,
+                           float _w = -1); // UI-063
 };
 
-class UiButton : public UiButtonBase {     // the standard button (§4.13)
+class UiButton : public UiWidget // the standard button (§4.13)
+{
 public:
-    virtual bool ConsumeScroll(int direction) { return false; }      // UI-052
-    float fontSize = 11.0f;                                          // ui.button.font_size
-    bool centred = false, disabled = false;
+  virtual bool ConsumeScroll(int _direction) // UI-052
+  {
+    return false;
+  }
+  float fontSize = 11.0f; // ui.button.font_size
+  bool centered = false;
+  bool disabled = false;
 };
 
 // The widget set (§4.14 to §4.22) and the front-end family (§4.24 to §4.30).
-class UiBorderlessButton;  class UiCloseButton;   class UiInsetPanel;
-class UiTextField;         class UiIncrementGlyph; class UiScrollBar;   class UiCheckBox;
-class UiDropDown;          class UiDropDownList;  class UiDropDownOption;
-class UiMessageDialog;     class UiChatEntry;     class UiChatField;
-class OptionsScreen;       class PageButton;      class PageBackButton;  class ScreenCloseButton;
-class PageTitle;           class PageDropDown;    class PageDropDownList; class PageDropDownOption;
-class PageTextField;       class PageIncrementGlyph; class PageCheckBox;
+class UiBorderlessButton;
+class UiCloseButton;
+class UiInsetPanel;
+class UiTextField;
+class UiIncrementGlyph;
+class UiScrollBar;
+class UiCheckBox;
+class UiDropDown;
+class UiDropDownList;
+class UiDropDownOption;
+class UiMessageDialog;
+class UiChatEntry;
+class UiChatField;
+class OptionsScreen;
+class PageButton;
+class PageBackButton;
+class ScreenCloseButton;
+class PageTitle;
+class PageDropDown;
+class PageDropDownList;
+class PageDropDownOption;
+class PageTextField;
+class PageIncrementGlyph;
+class PageCheckBox;
 
-class UiValueBinding {                     // §4.23
+class UiValueBinding // §4.23
+{
 public:
-    virtual ~UiValueBinding() = default;
-    virtual ValueType Type() const = 0;
-    virtual std::u8string ToText() const = 0;            // UI-095
-    virtual bool FromText(std::u8string_view) = 0;       // false: the text does not parse
-    virtual double Get() const = 0;                      // the confirmed value
-    virtual void Set(double requested) = 0;              // local: assigns; shared: requests
-    virtual bool ClampsOnSet() const = 0;
+  virtual ~UiValueBinding() = default;
+  virtual ValueType Type() const = 0;
+  virtual std::u8string ToText() const = 0;            // UI-095
+  virtual bool FromText(std::u8string_view _text) = 0; // false: the text does not parse
+  virtual double Get() const = 0;                      // the confirmed value
+  virtual void Set(double _requested) = 0;             // local: assigns; shared: requests
+  virtual bool ClampsOnSet() const = 0;
 };
 
-}  // namespace species::ui
+} // namespace Engine
 ```
 
-**Events.** The UI core raises a tooltip request (panel, widget) every update while the tooltip delay has passed (UI-045), and a cleared tooltip (no panel, no widget) when hover ends. Widgets raise their own callbacks (a value refresh, a click). Front-end widgets request the screen transition from the renderer through `InitialiseTransition(duration, direction)` ([frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-095) and trigger sound events of the match UI source ([reference/09](../../../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) R-META-018).
+**Events.** The UI core raises a tooltip request (panel, widget) every update while the tooltip delay has passed (UI-045), and a cleared tooltip (no panel, no widget) when hover ends. Widgets raise their own callbacks (a value refresh, a click). Front-end widgets request the screen transition from the renderer through `InitializeTransition(duration, direction)` ([frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-095) and trigger sound events of the match UI source ([reference/09](../../../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) R-META-018).
 
 **Threading contract.** Every interface of this document is called on the main thread only ([README](README.md) §2).
+
+**UI-128** (MUST) The UI framework meets these obligations to the input router ([input](../input/README.md)):
+
+1. at the end of each frame's UI update it supplies the frame gates (`FrameGates`) that the router reads at the start of the next frame: whether a UI window is open and whether a text entry, the chat input or a focused text field, is open (INP-156);
+2. when a primary press lands on a UI window, the UI input pump calls `Suppress` for the match's use of it (INP-093, [README](README.md) UI-006), and on a frame in which `action.match.menu` makes the pump run a second time it calls `AdvanceRepeatPass` before that pass (INP-102);
+3. it receives text characters with their Shift, Ctrl and Alt state, and the editing commands of the editing keys, from the router in event order (INP-112, INP-113; UI-038);
+4. it draws a controller glyph over its darkening shadow, the shadow first (INP-080, [pages_and_screen_recipes.md](pages_and_screen_recipes.md) UI-464);
+5. on `onModeChanged` it re-creates the Power slots panel variant while the panel is hidden (INP-152, UI-462), and every input-mode caption variant takes its mode from `Mode(player)` (INP-150, [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-223).
+
+**UI-129** (MUST) The UI host of the explainer player (`ExplainerPlayer`, [explainers, sprites and procedural animation](../animation_and_vfx/explainers_sprites_and_procedural_animation.md) VFX-104 to VFX-111) is the explainer panel, a HUD panel of the hint overlay ([pages_and_screen_recipes.md](pages_and_screen_recipes.md) UI-467). The panel lays the player out again on every screen, DPI or text-scale change (VFX-108) and has the player draw its frame into the batched UI stream with real time from the platform clock (VFX-107, VFX-109); the playback time is the player's own state, never widget or view-model state.
 
 ## 3 Data model
 
 | Type | Owner | Lifetime | Notes |
 |---|---|---|---|
 | `UiCore` | the client's composition root (DEC-221) | the process | holds the panel list (index 0 is front-most), the focus, the hover widget, the captured widget, the pressed panel, the popup and the maximised panel |
-| panel (`UiPanelBase` and subtypes) | `UiCore` | from registration to removal | holds its widget list (the newest registration first), its text-edit target, its title string id |
-| widget (`UiButtonBase` and subtypes) | its panel | from registration to the panel's `Remove()` or `RemoveWidget()` | rectangle relative to its panel; caption and accessible-name string ids; inactive flag |
+| panel (`UiPanel` and subtypes) | `UiCore` | from registration to removal | holds its widget list (the newest registration first), its text-edit target, its title string id |
+| widget (`UiWidget` and subtypes) | its panel | from registration to the panel's `Remove()` or `RemoveWidget()` | rectangle relative to its panel; caption and accessible-name string ids; inactive flag |
 | navigation order | its `UiWindow` | until the window's `Remove()` | an ordered list of widget handles and a cursor index (UI-050) |
 | scroll-bar helper (`UiScrollBar`) | the window that created it | until that window removes it | holds its window by handle (UI-074) |
 | open drop-down list (`UiDropDownList`, `PageDropDownList`) | `UiCore` | while open; at most one of each kind exists | UI-084, UI-118 |
@@ -254,10 +341,10 @@ The consequences for widgets are:
 | a standard window (`UiWindow`) is created | that window; it takes the focus when it is created, before it is registered |
 | a standard window is destroyed | the front-most remaining panel, if any |
 | the focused panel is removed | none, and then the rule above applies |
-| `Maximise(panel)` | that panel |
+| `Maximize(panel)` | that panel |
 | `SetFocus(panel)` | that panel; a stale handle gives none |
 
-**UI-037** (MUST) Only the focused panel receives text input (UI-038), hover and tooltip tracking (UI-032) and navigation (UI-051). Drawing passes each panel whether it has the focus; the options screen (UI-102) and the front-end screen draw only while they have the focus, so at most one full-screen page is visible at a time.
+**UI-037** (MUST) Only the focused panel receives text input (UI-038), hover and tooltip tracking (UI-032) and navigation (UI-051). Drawing passes each panel whether it has the focus; the options screen (UI-102) and the front-end screen draw only while they have the focus, so at most one full-screen page is visible at a time. The one exception is the front-end screen, which also draws while the chat input window is open above it ([pages_and_screen_recipes.md](pages_and_screen_recipes.md) UI-337).
 
 ### 4.5 Keyboard and text routing
 
@@ -269,11 +356,11 @@ The consequences for widgets are:
 
 **UI-040** (MUST) `RegisterPopup(panel)` removes the current popup, records the new one and registers it. The popup closes on every primary release that does not land on a widget, panel backgrounds included, and on every press outside all panels, so a popup closes on any click that is not on a widget. No reference screen registers a popup; the drop-down lists have their own single list (UI-084).
 
-**UI-041** (MUST) `Maximise(panel)` restores any previously maximised panel, saves the panel's rectangle, makes it the maximised panel, the pressed panel and the focused panel, and sets its position to (0, 0) and its size to W × H (UI-024). While a panel is maximised, only that panel is drawn; drawing it needs no callback, so the maximise path never dereferences a missing object (DEC-102). `Unmaximise()` restores the saved rectangle. No reference screen maximises a panel.
+**UI-041** (MUST) `Maximize(panel)` restores any previously maximised panel, saves the panel's rectangle, makes it the maximised panel, the pressed panel and the focused panel, and sets its position to (0, 0) and its size to W × H (UI-024). While a panel is maximised, only that panel is drawn; drawing it needs no callback, so the maximise path never dereferences a missing object (DEC-102). `Unmaximize()` restores the saved rectangle. No reference screen maximises a panel.
 
 ### 4.7 Update order
 
-**UI-042** (MUST) `UiCore::Update()` calls `Update()` on every panel, from the front of the list to the back. The iteration runs over the list as it stood when the update began: a panel removed during the update is skipped, and no other panel is skipped because of it. The base `UiPanelBase::Update()` does nothing; the standard window's navigation runs there (§4.11).
+**UI-042** (MUST) `UiCore::Update()` calls `Update()` on every panel, from the front of the list to the back. The iteration runs over the list as it stood when the update began: a panel removed during the update is skipped, and no other panel is skipped because of it. The base `UiPanel::Update()` does nothing; the standard window's navigation runs there (§4.11).
 
 ### 4.8 Draw order
 
@@ -286,7 +373,7 @@ The consequences for widgets are:
 
 ### 4.9 Tooltips
 
-**UI-045** (MUST) The UI core times tooltips: hovering the same widget of the focused panel for `ui.core.tooltip_delay` (1.0 s, on the presentation clock) raises a tooltip request every update until the hover ends (UI-032). The framework itself registers no tooltip handler, so no tooltip is shown; tooltip content is front-end design for the design phase (DEC-102, §8). The Power slots panel's tooltips are the panel's own ([reference/06](../../../reference/06_controls_camera_and_commands/selection_and_power_slots.md) R-CTRL-223), not this mechanism.
+**UI-045** (MUST) The UI core times tooltips: hovering the same widget of the focused panel for `ui.core.tooltip_delay` (1.0 s) raises a tooltip request every update until the hover ends (UI-032). The framework itself registers no tooltip handler, so no tooltip is shown; tooltip content is front-end design for the design phase (DEC-102, §8). The Power slots panel's tooltips are the panel's own ([reference/06](../../../reference/06_controls_camera_and_commands/selection_and_power_slots.md) R-CTRL-223), not this mechanism.
 
 ### 4.10 The standard window: creation, client rectangle and large-menu scaling
 
@@ -381,7 +468,7 @@ The scroll hook asks the cursor's own widget, and the search for the next active
 
 **UI-059** (MUST) The **borderless button** (`UiBorderlessButton`) is the base of the text field and of the drop-down option. Its automatic width is its caption's character count × `ui.button.auto_char_width` + `ui.button.auto_padding`, its height `ui.button.auto_height`, with no fallback caption. It draws pressed when it is its window's navigation cursor. Pressed, it draws the highlight gradient of UI-057 and its caption in ink mode with `ui.palette.text_ink`, twice. Otherwise it has no fill; when highlighted it draws 1 px edges, left and top `ui.palette.borderless_edge_light` and right and bottom black, and its caption in `ui.palette.text_normal` with a second pass in white at alpha `ui.button.borderless_glow_alpha` (0.5). Its caption is drawn at size *m*(font size) at the draw point y + `ui.button.borderless_baseline` (10 px). Making the hovered borderless button the cursor is the update-phase rule of UI-056, never a side effect of drawing (DEC-102).
 
-**UI-060** (MUST) The **close box** (`UiCloseButton`) removes its window when clicked. Iconised, it draws a quad of `ui.palette.close_fill`, or `ui.palette.close_hot` while highlighted or pressed, with 1 px edges, left and top `ui.palette.close_edge` and right and bottom `ui.palette.button_edge_dark`; not iconised, it draws as a standard button. Tool windows use it, such as the network statistics window of the [diagnostics](../diagnostics_test_and_performance.md) component.
+**UI-060** (MUST) The **close box** (`UiCloseButton`) removes its window when clicked. Iconised, it draws a quad of `ui.palette.close_fill`, or `ui.palette.close_hot` while highlighted or pressed, with 1 px edges, left and top `ui.palette.close_edge` and right and bottom `ui.palette.button_edge_dark`; not iconised, it draws as a standard button. Tool windows use it, such as the network statistics window of the [diagnostics](../diagnostics_test_and_performance/README.md) component.
 
 **UI-061** (MUST) The **inset panel** (`UiInsetPanel`) is a decorative recessed panel with no action: a quad of `ui.palette.inset_fill` with top and left edges black and right and bottom edges `ui.palette.inset_edge_light`. Tool windows use it.
 
@@ -396,7 +483,7 @@ The scroll hook asks the cursor's own widget, and the search for the next active
 
 `RemoveValueControl(field)` removes the field and both glyphs. A bool binding is a bool field: it is stepped and clamped as a bool, never as a byte (DEC-102).
 
-**UI-063** (MUST) `AddColourControl(label, rgba, y, onChange, x, w)` creates a colour swatch widget bound to a colour, `ui.value_control.colour_reserve` (13 px) narrower than w (which defaults to the window width − x, with x defaulting to `ui.value_control.x`) and `ui.value_control.height` (15 px) high, a height that large menus do not scale for this widget. It serves tool windows; the colour-editing window that a swatch opens belongs to a map editor, which the design phase designs (DEC-045).
+**UI-063** (MUST) `AddColorControl(label, rgba, y, onChange, x, w)` creates a colour swatch widget bound to a colour, `ui.value_control.colour_reserve` (13 px) narrower than w (which defaults to the window width − x, with x defaulting to `ui.value_control.x`) and `ui.value_control.height` (15 px) high, a height that large menus do not scale for this widget. It serves tool windows; the colour-editing window that a swatch opens belongs to a map editor, which the design phase designs (DEC-045).
 
 ### 4.16 Text field
 
@@ -420,7 +507,7 @@ stateDiagram-v2
 
 Diagram 4-B — the text field's editing states.
 
-**UI-065** (MUST) A text field holds a display buffer, a value type (none, byte, bool, integer, float, double or text), a binding and a refresh callback. A field binds exactly once: a second binding is a development-build error and is ignored. Its binding is either a local adaptor that the field owns or a shared binding that it does not own (§4.23). Numeric bindings have the default bounds `ui.field.default_bounds` (0 to 10 000) unless the caller gives others. Values convert to text as integers for byte, bool and integer types and with `ui.field.float_decimals` (2) decimal places for float and double types; text parses as a decimal number.
+**UI-065** (MUST) A text field holds a display buffer, a value type (none, byte, bool, integer, float, double or text), a binding and a refresh callback. A field binds exactly once: a second binding is a Debug-build error and is ignored. Its binding is either a local adaptor that the field owns or a shared binding that it does not own (§4.23). Numeric bindings have the default bounds `ui.field.default_bounds` (0 to 10 000) unless the caller gives others. Values convert to text as integers for byte, bool and integer types and with `ui.field.float_decimals` (2) decimal places for float and double types; text parses as a decimal number.
 
 **UI-066** (MUST) Each character that reaches a text field (UI-038) does the following, in this order of tests; "a text-type field" is a field whose value type is text:
 
@@ -431,7 +518,7 @@ Diagram 4-B — the text field's editing states.
 | Enter | applies the edit (UI-064) |
 | Escape | cancels the edit (UI-064) |
 | a digit 0 to 9 | inserted at the caret; a text-type field writes through and refreshes |
-| an upper-case letter A to Z in a text-type field | inserted lower-cased unless Shift is held, so letters typed with Caps Lock alone become lower case |
+| an upper-case letter A to Z in a text-type field | inserted lower-cased unless Shift is held, so letters typed with Caps Lock alone become lower case (see DEC-952) |
 | any other character, with Ctrl not held | inserted at the caret; this is how punctuation, lower-case letters and every non-Latin character arrive |
 | any other character with Ctrl held | not inserted; Ctrl combinations are editing commands (UI-067) |
 | after any insertion into a text-type field | the value is written through and the field refreshes |
@@ -449,7 +536,7 @@ A percent sign is an ordinary character: no text path of the UI reads formatting
 1. an edit well over the right `ui.field.well_fraction` (0.4) of its width: a quad of `ui.palette.well_fill`, top and left lines black, right and bottom lines `ui.palette.inset_edge_light`;
 2. its label with the borderless look of UI-059, drawn highlighted while the field is being edited;
 3. the value text in the body role at size *m*(`ui.text.default_size` (12)), right-aligned: its draw point is x + w − *m*(measured width + `ui.field.box_padding` (7 px)) + `ui.field.value_offset` (2 px), y + `ui.field.value_baseline` (10 px), with the width measured by the text layout (ADR-034);
-4. while editing, the caret: a 1 px vertical line at the text's draw x + the measured advance of the text before the caret + `ui.field.value_offset`, from y + `ui.field.caret_margin` (2 px) to y + h − 2 px, visible while the fractional part of the presentation time ÷ `ui.field.caret_blink_period` (1.0 s) is below `ui.field.caret_duty` (0.5).
+4. while editing, the caret: a 1 px vertical line at the text's draw x + the measured advance of the text before the caret + `ui.field.value_offset`, from y + `ui.field.caret_margin` (2 px) to y + h − 2 px, visible while the fractional part of the time ÷ `ui.field.caret_blink_period` (1.0 s) is below `ui.field.caret_duty` (0.5).
 
 ### 4.17 Increment glyphs
 
@@ -459,7 +546,7 @@ A percent sign is an ordinary character: no text path of the UI reads formatting
 2. each update while it holds the capture, the primary button is held and the pointer is inside it, the change is its step, × `ref.meta.option_controls.repeat_speedup` (5) while `action.menu.scroll_speedup` is held, and elapsed = now − start;
 3. for byte, integer and bool values: while elapsed > the repeat period, the value += change, clamped to the bounds, and start += the repeat period, so the glyph steps 10 times a second whatever the frame rate (DEC-102).
 
-**UI-072** (MUST) For float and double values the change is continuous and accelerating: while held, the value's rate of change is change × `ui.increment.float_gain` (0.2) × elapsed × `ui.increment.float_reference_rate` (60) per second, so after holding for e seconds the value has moved by change × 0.2 × 60 × e² ÷ 2, clamped to the bounds at every update. This is the reference curve at 60 updates per second, made independent of the frame rate (DEC-102).
+**UI-072** (MUST) For float and double values the change is continuous and accelerating: while held, the value's rate of change is change × `ui.increment.float_gain` (0.2) × elapsed × `ui.increment.float_reference_rate` (60) per second, so after holding for e seconds the value has moved by change × 0.2 × 60 × e² ÷ 2, clamped to the bounds at every update. This is the reference curve at 60 updates per second, made independent of the frame rate (DEC-102; see DEC-951).
 
 **UI-073** (MUST) The field refreshes after every update in which the glyph changed the value, so its callback runs then. The repeat ends when the capture ends, wherever the pointer is released (UI-035); pressing again starts it afresh.
 
@@ -477,7 +564,7 @@ A percent sign is an ordinary character: no text path of the UI reads formatting
 
 **UI-076** (MUST) The track draws a quad of `ui.palette.scroll_track` with an outline of `ui.palette.scroll_outline`. The thumb spans from the track top + h_t × first ÷ rows to the track top + min(h_t × (first + visible) ÷ rows, h_t − 1), where h_t is the track height, inset `ui.scroll.thumb_inset` (1 px) at the left and the top, in `ui.palette.scroll_thumb_pressed` while dragged, `ui.palette.scroll_thumb_hot` while highlighted and `ui.palette.scroll_thumb` otherwise. With no rows the thumb fills the track (DEC-102). An arrow draws as a standard button with the arrow art `cursor.pointer` inside it, inset `ui.scroll.arrow_inset` (5 %) on each side, flipped vertically for the up arrow, in white with the additive blend; the arrow's blend applies to its own batch only ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-183).
 
-**UI-077** (MUST) An arrow steps once when it is pressed and then once every `ui.scroll.arrow_repeat_period` (1/60 s) of presentation time while it holds the capture and the pointer is inside it, with no initial delay (DEC-102, ADR-032).
+**UI-077** (MUST) An arrow steps once when it is pressed and then once every `ui.scroll.arrow_repeat_period` (1/60 s) of real time (ADR-074) while it holds the capture and the pointer is inside it, with no initial delay (DEC-102, ADR-032; see DEC-951).
 
 **UI-078** (MUST) Track interaction:
 
@@ -500,9 +587,9 @@ A percent sign is an ordinary character: no text path of the UI reads formatting
 
 ### 4.20 Drop-down
 
-**UI-082** (MUST) A drop-down (`UiDropDown`, a standard button) holds a list of options, each a string id or a plain word with an integer value. `AddOption(word, value)` with no value gives the option the next value of the drop-down's counter, which advances in call order whatever the sorting; with sorting on, the option is inserted before the first existing option whose displayed text compares greater without regard to case (stable for equal texts), and otherwise it is appended. A sorted drop-down therefore lists alphabetically while its values follow insertion order. Clearing the list empties it and resets the counter to its initial value.
+**UI-082** (MUST) A drop-down (`UiDropDown`, a standard button) holds a list of options, each a string id or a plain word with an integer value. `AddOption(word, value)` with no value gives the option the next value of the drop-down's counter, which advances in call order whatever the sorting; with sorting on, the option is inserted before the first existing option whose displayed text compares greater without regard to case (stable for equal texts), and otherwise it is appended. A sorted drop-down therefore lists alphabetically while its values follow insertion order. The counter starts at 0, and clearing the list empties it and resets the counter to 0 (see DEC-952).
 
-**UI-083** (MUST) `Select(value)` makes the option with that value current, or no option when none has it; the caption becomes the option's text (its string id's text, or the plain word), or the drop-down's own label text when no option has the value; and the bound value is set to the value in either case. `SelectByWord(word)` selects by word without regard to case. The selection value is −1 when no option is current, and the selection text is the current option's text, with a correct bounds check (DEC-102). Binding a value (owned local integer or shared integer) selects the bound value at once; a drop-down bound before its options exist shows its label until it is selected again.
+**UI-083** (MUST) `Select(value)` makes the option with that value current, or no option when none has it; the caption becomes the option's text (its string id's text, or the plain word), or the drop-down's own label text when no option has the value; and the bound value is set to the value in either case (see DEC-952). `SelectByWord(word)` selects by word without regard to case. The selection value is −1 when no option is current, and the selection text is the current option's text, with a correct bounds check (DEC-102). Binding a value (owned local integer or shared integer) selects the bound value at once; a drop-down bound before its options exist shows its label until it is selected again.
 
 **UI-084** (MUST) A click on a drop-down that is not disabled toggles its list; the list is open when the drop-down's list window (`UiDropDownList`) exists. Opening removes any other open list first, so at most one list is open. The list window is a standard window at (window x + drop-down x + drop-down w, window y + drop-down y), to the right of the drop-down; it is sized before it is registered, so the on-screen rule of UI-022 step 3 applies to its full size, and it has no close box (DEC-102). It takes the focus.
 
@@ -581,9 +668,9 @@ The options screen (`OptionsScreen`) is the full-screen page style of the help, 
 
 ### 4.25 Page buttons
 
-**UI-105** (MUST) A page button (`PageButton`) holds: a font size of `ui.page_button.font_size` (20), which callers normally set to the medium font; an alternative-colour flag (false); the inactive caption colour `ui.palette.fe_caption_inactive`; an animation state, cascading from its creation time on the presentation clock, then popping, then finished; and a transition direction, +1 forward or −1 backward. The UI core holds, for the focused screen, the page widget that was last highlighted, for the roll-over cue (UI-110).
+**UI-105** (MUST) A page button (`PageButton`) holds: a font size of `ui.page_button.font_size` (20), which callers normally set to the medium font; an alternative-colour flag (false); the inactive caption colour `ui.palette.fe_caption_inactive`; an animation state, cascading from its creation time, then popping, then finished; and a transition direction, +1 forward or −1 backward. The UI core holds, for the focused screen, the page widget that was last highlighted, for the roll-over cue (UI-110).
 
-**UI-106** (MUST) The **base press** of a page button plays `sfx.ui.match_ui.menu_select` when its direction is +1, or `sfx.ui.match_ui.menu_back` when it is −1, and then starts a screen transition of `ref.meta.nav.transition_time` (1.0 s) in that direction (`InitialiseTransition`, RND-095; [reference/09](../../../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) R-META-016, R-META-018; DEC-316). Every button type of the page family runs the base press first and then its own action. An inactive or disabled page button neither plays a cue nor acts, and draws in its inactive colour (DEC-102, DEC-243).
+**UI-106** (MUST) The **base press** of a page button plays `sfx.ui.match_ui.menu_select` when its direction is +1, or `sfx.ui.match_ui.menu_back` when it is −1, and then starts a screen transition of `ref.meta.nav.transition_time` (1.0 s) in that direction (`InitializeTransition`, RND-095; [reference/09](../../../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) R-META-016, R-META-018; DEC-316). Every button type of the page family runs the base press first and then its own action. An inactive or disabled page button neither plays a cue nor acts, and draws in its inactive colour (DEC-102, DEC-243).
 
 **UI-107** (MUST) **Birth cascade.** With n = max(1, the size of the parent window's navigation order), y the button's screen y and t₀ its creation time: show time = t₀ + `ui.page_button.slide_time` (0.6 s) × y ÷ H, and flash time = t₀ + (`ui.page_button.flash_time` (5 s) ÷ n) × y ÷ H. While it is cascading, the button is drawn shifted left by (show time − now) × `ui.page_button.slide_speed` (0.1 × W per second) px, and, while now is also before the flash time, an additive box of `ui.palette.fe_flash` at alpha clamp(flash time − now, 0, `ui.page_button.flash_alpha_max` (0.9)) covers it. Lower buttons therefore appear later, top to bottom, and with few navigable buttons the flash lasts longer.
 
@@ -609,7 +696,7 @@ The options screen (`OptionsScreen`) is the full-screen page style of the help, 
 
 1. a darkening halo: four gradient quads `ui.fill_box.shadow_width` (0.01 × W) wide around the box, from `ui.palette.fe_box_shadow_edge` at the box edge to transparent black outside, in the ink state with alpha 0, so the destination is multiplied by one minus the colour: black at the edge, fading to unchanged outside ([frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-058);
 2. `uitex.fill_blur` tinted `ui.palette.fe_box_tint`, with u from 0 to w ÷ `ui.fill_box.blur_tile` (64 px) and v from 0 to 1, alpha blend;
-3. `fx.glow_cloudy`, additive, tinted `ui.palette.fe_box_glow`, with the texture origin (−0.01 × t, −0.02 × t) and the extent (w ÷ W + 0.01 × sin t, h ÷ H + 0.02 × sin t), where (0.01, 0.02) is `ui.fill_box.glow_motion` and t the presentation time in seconds, so the glow drifts slowly;
+3. `fx.glow_cloudy`, additive, tinted `ui.palette.fe_box_glow`, with the texture origin (−0.01 × t, −0.02 × t) and the extent (w ÷ W + 0.01 × sin t, h ÷ H + 0.02 × sin t), where (0.01, 0.02) is `ui.fill_box.glow_motion` and t the time in seconds, so the glow drifts slowly;
 4. an outline `ui.fill_box.outline_width` (2 px) wide in `ui.palette.fe_box_outline`, additive, and a 1 px inner outline `ui.fill_box.inner_inset` (3 px) inside it in the same colour at alpha `ui.palette.fe_box_inner_alpha`.
 
 ### 4.28 Page drop-downs
@@ -650,7 +737,7 @@ All work is on the main thread (README §2).
 
 | Condition | Behaviour | Diagnostics | Requirement |
 |---|---|---|---|
-| an action on a stale panel or widget handle | nothing happens | development-build warning | UI-023, UI-025 |
+| an action on a stale panel or widget handle | nothing happens | Debug-build warning | UI-023, UI-025 |
 | a panel larger than the screen | its origin becomes negative by the on-screen rule; full-screen pages are exactly the screen size | none | UI-022, UI-048 |
 | every entry of a navigation order is inactive | the cursor stays; navigation never loops | none | UI-051 |
 | a numeric entry that does not parse | the stored value is unchanged and shown again | none | UI-068 |
@@ -660,9 +747,9 @@ All work is on the main thread (README §2).
 | a text value at its maximum length | further characters are not inserted | none | UI-068 |
 | a widget's caption string id missing in the current language | the base-language text is shown (DEC-099) | logged once per id | [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-219 |
 | a widget without an accessible-name string id | the content build rejects the layout | build error naming the layout and the widget | README UI-012 |
-| a second binding of one widget | ignored | development-build error | UI-065, UI-080 |
+| a second binding of one widget | ignored | Debug-build error | UI-065, UI-080 |
 
-The UI core counts, per frame, panels, widgets, clicks and cancelled presses for the development overlay of [diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md); nothing is sent as telemetry.
+The UI core counts, per frame, panels, widgets, clicks and cancelled presses for the development overlay of [diagnostics, test and performance](../diagnostics_test_and_performance/README.md); nothing is sent as telemetry.
 
 ## 7 Acceptance tests
 
@@ -708,12 +795,14 @@ The UI core counts, per frame, panels, widgets, clicks and cancelled presses for
 - **DEC-316** (Open): the transition that the page widgets start (UI-106).
 - **DEC-045** (Open): a map editor and its windows (UI-063, design-phase input 2).
 - **DEC-013** (Resolved): automatic placement draws from the presentation generator (UI-022).
+- **DEC-951** (Resolved): repeats and float increments on real time, independent of the frame rate (UI-072, UI-077).
+- **DEC-952** (Open): reference behaviours kept as defaults: Caps Lock in text-type fields, automatic option values from 0, selecting an absent value (UI-066, UI-082, UI-083).
 
 **Design-phase inputs.**
 
 1. **Tooltips.** The UI core times tooltips (UI-045), but the framework shows none; whether Species has tooltips, and their look and content, is front-end design.
 2. **Editor pages in the front-end style (hook).** The reference map editor builds three pages in the options-screen style: its hub page (`MapEditorHubPage`), a new-map page and a map file picker (`MapFilePicker`). Each is a full-screen options screen (UI-099) with a page title at the standard title place (R-META-201), page buttons stacked one button step apart in the medium font and added to the navigation order, and a screen close button as its back action at the standard Back place. The new-map page takes the map file name through a menu control (UI-103) and reports success or failure through the in-page dialog (UI-101) with the file name inserted as an argument. The file picker follows the file-list model of a tool-window file dialog on an options screen: a fixed number of rows in the title role, a selected-row fill (RGBA 191, 191, 255, 127; the tool-window file list uses 0.3, 0.3, 1.0, 0.5 as fractions), a scroll bar at the left box's right edge, and OK and Back buttons in the navigation order; its file rows are not in the navigation order, so a gamepad cannot pick a file. It lists the maps in the mounted packs, and the files of the map folder when the packs hold none; choosing a file writes the name into the hub page. Whether Species builds a map editor, and its UI, is DEC-045.
-3. **Keyboard navigation bindings.** The reference binds the menu actions to the gamepad only; the keyboard defaults of [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-204 are the Species baseline that ADR-032 requires, for the design phase to confirm.
+3. **Keyboard navigation bindings.** The reference binds the menu actions to the gamepad only; the keyboard defaults of [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-204, bound in the input component's table 3.6-B, are the Species baseline that ADR-032 requires (DEC-950).
 4. **Text-entry details for chat and names in the world game**: profanity filtering, length limits beyond the bindings' maximums, and whether chat is rate-limited, which depend on the networking and moderation decisions (DEC-200).
 
 ## 9 Tuning table

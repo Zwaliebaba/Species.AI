@@ -20,9 +20,9 @@ The binding-set schema is [README](README.md) §3.5; the default binding set is 
 
 ### 4.13 Binding layers, keyboard layouts and locales
 
-**INP-162** (MUST) `Rebuild` builds the bindings from three layers in this order: the default binding set, whose entries are appended in entry order; the layout layer of the active keyboard layout, each of whose entries replaces the action's primary binding; and the user layer, each of whose entries replaces the action's primary binding (INP-065).
+**INP-162** (MUST) `Rebuild` builds the bindings from these layers in this order: the default binding set, whose entries are appended in entry order; in Debug builds, the development layer, whose entries are appended in the same way (INP-095); the layout layer of the active keyboard layout, each of whose entries replaces the action's primary binding; and the user layer, each of whose entries replaces the action's primary binding (INP-065).
 
-**INP-163** (MUST) Within a replacing layer, several entries for one action overwrite each other, the last one winning, and never add a binding; each overwrite is logged as a warning naming the action. An entry for an action that has no binding becomes its only binding.
+**INP-163** (MUST) Within a replacing layer, several entries for one action overwrite each other, the last one winning, and never add a binding; each overwrite is logged as a warning naming the action. Validated content never meets this rule: two entries for one action in one binding-set record are a content-build error (DAT-204, DEC-801), and the user layer is keyed, one settings entry `binding.<action id>` per action, whose repeated keys the settings reader already drops (DAT-199, DAT-202). An entry for an action that has no binding becomes its only binding.
 
 **INP-164** (MUST) The active keyboard layout is a layout tag: the value of the keyboard-layout setting when it is set (R-META-455), otherwise the language tag (BCP 47, ADR-063) of the operating system's active keyboard layout, looked up in table 4.13-A. A tag that the table does not list, or one whose layer does not exist, gives no layout layer and is logged at information level; the default bindings then apply unchanged.
 
@@ -51,23 +51,24 @@ Table 4.13-B Layout layers (primary bindings).
 | `action.camera.zoom` | `key:y:held` | `key:w:held` |
 | `action.camera.zoom_out` | `key:c:held` | `key:c:held` |
 
-**INP-166** (MUST) When the operating system reports a keyboard-layout change at run time, the router determines the active layout again; when it changed, the router runs `Rebuild` and raises `on_layout_changed` (DEC-554). The help system shows the camera-help variant of the active layout ([Tutorial and help](../../../reference/11_tutorial_and_help.md)).
+**INP-166** (MUST) When the operating system reports a keyboard-layout change at run time, the router determines the active layout again; when it changed, the router runs `Rebuild` and raises `onLayoutChanged` (DEC-554). The help system shows the camera-help variant of the active layout ([Tutorial and help](../../../reference/11_tutorial_and_help.md)).
 
-**INP-167** (MUST) Restoring the default bindings rebuilds them from the default set and the active layout layer, without the user layer (DEC-554). Whether the user layer's entries are then removed from the settings store is decided by the rebinding hook's apply step (DEC-050).
+**INP-167** (MUST) Restoring the default bindings rebuilds them from the default set, the development layer in Debug builds and the active layout layer, without the user layer (DEC-554). Whether the user layer's entries are then removed from the settings store is decided by the rebinding hook's apply step (DEC-050).
 
 **INP-168** (MUST) After every load of the settings store, and before the first `Rebuild`, the control-scheme setting is set to the match control scheme (R-META-405, DEC-056). There is one default binding set.
 
 ```mermaid
 flowchart TD
   ST["settings store loaded; control scheme set to the match scheme"] --> D["default binding set: append every entry"]
-  D --> T{"active layout: setting, or the system layout looked up in table 4.13-A"}
+  D --> DV["Debug builds only: development layer, append every entry"]
+  DV --> T{"active layout: setting, or the system layout looked up in table 4.13-A"}
   T -- "tag with a layer" --> LL["layout layer: replace each entry's primary binding"]
   T -- "no layer" --> U
   LL --> U["user layer in the settings store: validate each entry, then replace its primary binding"]
   U --> R["action bindings ready; repeat and latch state reset"]
   CH["keyboard-layout change at run time"] --> T2{"active layout changed?"}
   T2 -- yes --> D
-  RD["restore the defaults"] --> D2["default set, then the active layout layer, without the user layer"]
+  RD["restore the defaults"] --> D2["default set, the development layer in Debug builds, then the active layout layer, without the user layer"]
 ```
 
 Caption: Diagram 4.13-A, building the action bindings from their layers, and rebuilding them on a layout change or a restore (INP-162 to INP-168).

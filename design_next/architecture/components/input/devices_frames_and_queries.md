@@ -25,8 +25,8 @@ The data model is [README](README.md) §3 and, for the controls and the default 
 1. The platform layer creates the window and begins forwarding its keyboard, pointer and wheel input to the keyboard and mouse back-end (ADR-075).
 2. The router is created. It registers its node kinds in this fixed order, which is also the enumeration order of node kinds in cooked binding records: `all`, `chord`, `not`, `idle`, keyboard and mouse leaves, gamepad leaves, `setting`, `value`, `alias`, `latch`. A node contains only nodes of later kinds, with three exceptions: a `not` may contain a `not`; a `chord` contains only condition-free parts; and a `latch` may contain any `Boolean` node except a `latch`. So `all` is the outermost operator, a chord sits inside a conjunction, and a negation applies to a single operand.
 3. The gamepad back-end creates its GameInput instance and registers for device notices (INP-106); a failure is handled by INP-107.
-4. The settings store loads (DEC-250), and the control-scheme setting is set to the match control scheme (INP-168).
-5. `Rebuild` builds the action bindings from the default set, the layout layer of the active keyboard layout and the user layer, in that order (§4.13).
+4. The router reads its settings from the settings store, which the platform layer has already loaded at start-up, before the window exists ([platform layer](../platform_layer.md) PLT-038), and the control-scheme setting is set to the match control scheme (INP-168).
+5. `Rebuild` builds the action bindings from the default set, the development layer in Debug builds, the layout layer of the active keyboard layout and the user layer, in that order (§4.13).
 6. The pointer is created at the system pointer's position in the client area (§4.12).
 
 **INP-101** (MUST) `AdvanceFrame` runs as the first input step of every rendered frame (R-CTRL-020 step 1) and performs, in this order:
@@ -97,9 +97,11 @@ Caption: Diagram 4.1-A, one frame of input: the back-ends deliver ordered events
 4. `motion` is the pointer movement that the platform reports, in client pixels; `raw_motion` is the device movement, which no default binding uses.
 5. Three buttons are bindable, primary, secondary and middle, following the system's assignment of the physical buttons.
 
-**INP-111** (MUST) When the window loses focus, both back-ends emit release events for every held key and button and rest samples for every analogue control (ADR-028), so nothing stays held, including an Alt held through Alt+Tab. While the window has no focus, the back-ends deliver no presses and no analogue samples away from rest; device connection and disconnection notices still apply. When focus returns, a control that is physically held produces no press until it is released and pressed again.
+**INP-111** (MUST) When the window loses focus, both back-ends emit release events for every held key and button and rest samples for every analogue control (ADR-028), so nothing stays held, including an Alt held through Alt+Tab. While the window has no focus, the back-ends deliver no presses and no analogue samples away from rest; device connection and disconnection notices still apply. When focus returns, a control that is physically held produces no press until it is released and pressed again (see DEC-953).
 
 **INP-112** (MUST) Text characters and input-method composition never enter the event queue and never satisfy a binding; the router forwards them to the UI framework's text service with the modifier state of each character (ADR-032). A key that produces a character produces its key events as well, and the consumers' gates decide whether a match action applies while text is being entered (R-CTRL-012, R-CTRL-047 row M2).
+
+**INP-113** (MUST) The router forwards the editing keys to the UI framework's text service as editing commands (`EditCommand`, [core_and_widgets](../ui_framework/core_and_widgets.md) UI-038, UI-067), in the order of their key events among the characters and with the modifier state: `left` and `right` move the caret (`CaretLeft`, `CaretRight`), `home` and `end` move it to the start and the end (`CaretHome`, `CaretEnd`), `delete` deletes forward (`DeleteForward`), and Ctrl with `a`, `c`, `x` or `v` gives `SelectAll`, `Copy`, `Cut` or `Paste`. A held editing key repeats with the operating system's auto-repeat, as characters do; Backspace, Enter and Escape arrive as characters (UI-066). The UI core routes the commands only to a text-edit target (UI-038), and the key events of these keys still enter the event queue (INP-112).
 
 ### 4.3 Event queue
 
@@ -152,7 +154,7 @@ The dead zone is radial and rescaled, so the value is continuous at the dead-zon
 
 ### 4.7 Repeat timers
 
-**INP-133** (MUST) Each `repeat` leaf keeps its own timer for each device it reads; no timer is shared between bindings, controls or devices, and a query never changes a timer (DEC-554, ADR-029). In `AdvanceFrame`, for each `repeat` leaf and device:
+**INP-133** (MUST) Each `repeat` leaf keeps its own timer for each device it reads; no timer is shared between bindings, controls or devices, and a query never changes a timer (DEC-554, ADR-029). `repeat` is accepted on every Boolean view: keys, mouse buttons, triggers and stick directions as well as gamepad buttons (see DEC-953). The timers run on real time from the platform clock (ADR-074), so menus repeat at the same rate while a match is paused and at every game speed (see DEC-951). In `AdvanceFrame`, for each `repeat` leaf and device:
 
 1. if the control went down in this frame, the leaf fires once, and its next due time is the press's timestamp + `inp.repeat.initial_delay`;
 2. otherwise, if the control is held, the leaf fires once for every due time at or before the frame's time, and each firing moves the next due time on by `inp.repeat.period`;
@@ -176,7 +178,7 @@ A press and a release within one frame therefore fire once, by step 1.
 
 **INP-141** (MUST) `idle` reads the idle time of INP-153: `at_least` N is true when the idle time is N seconds or more, with the idle time as its value; `reaches` N is true in the frame in which the idle time passes N, that is when the previous frame's idle time is below N and this frame's is above N; `no_longer` is true in every frame in which the idle time is 0, not only on the frame in which input resumes. No default binding uses it.
 
-**INP-142** (MUST) `setting` is true when the integer value of the named setting is above 0, and `setting:not` when it is not; the router reads the values of the named settings once per frame (INP-101 step 8). A setting that neither the settings store nor its defaults table holds when the binding loads is a load error (§6.1), and a doubled negation is rejected. No default binding uses it (R-META-455).
+**INP-142** (MUST) `setting` is true when the integer value of the named setting is above 0, and `setting:not` when it is not; the router reads the values of the named settings once per frame (INP-101 step 8). A setting that neither the settings store nor its defaults table holds when the binding loads is a load error (§6.1); the content build checks the setting nodes of every binding set against the keys of `settings.defaults` (DAT-195), and a doubled negation is rejected. No default binding uses it (R-META-455).
 
 **INP-143** (MUST) `value:AlwaysTrue` is always true; `value:FeatureFlagX` is true while the feature flag `FeatureFlagX`, a setting, is above 0. Both are `Boolean`. No default binding uses them.
 
@@ -214,7 +216,7 @@ Caption: Diagram 4.9-A, evaluating one action query: the logical OR of the actio
 
 **INP-145** (MUST) Local players are numbered from 0. The reference has one local player per client, player 0, who owns the keyboard and the mouse. Each local player has at most one assigned gamepad, and a gamepad drives only the local player it is assigned to (DEC-554, R-CTRL-033).
 
-**INP-146** (MUST) In `AdvanceFrame`, when a button of a connected gamepad that is assigned to no player goes down, the gamepad is assigned to the lowest-numbered local player that has no assigned gamepad or whose assigned gamepad is disconnected (a transfer); the press that claims the gamepad counts as that player's input in the same frame. When no player can take it, the gamepad stays unassigned and drives nothing. Stick or trigger movement alone never claims a gamepad.
+**INP-146** (MUST) In `AdvanceFrame`, when a button of a connected gamepad that is assigned to no player goes down, the gamepad is assigned to the lowest-numbered local player that has no assigned gamepad or whose assigned gamepad is disconnected (a transfer); the press that claims the gamepad counts as that player's input in the same frame. When no player can take it, the gamepad stays unassigned and drives nothing. Stick or trigger movement alone never claims a gamepad (see DEC-953).
 
 **INP-147** (MUST) An assigned gamepad stays assigned while it is connected and after it disconnects; when the same device reconnects while still assigned, it resumes driving its player. A transfer ends the previous assignment.
 
@@ -236,7 +238,7 @@ Caption: Diagram 4.10-A, a local player's gamepad slot: assignment by the first 
 
 ### 4.11 Input mode and idle
 
-**INP-150** (MUST) Each local player has an input mode, the class of its last active device: `KeyboardMouse` or `Gamepad` (ADR-029, R-CTRL-011). In `AdvanceFrame`, the mode becomes `Gamepad` when the player's assigned gamepad was active in the frame, otherwise `KeyboardMouse` when the keyboard or the mouse was active (player 0 only), and otherwise stays as it was; when both were active in one frame, `Gamepad` wins. The initial mode is `KeyboardMouse`. A change raises `on_mode_changed`.
+**INP-150** (MUST) Each local player has an input mode, the class of its last active device: `KeyboardMouse` or `Gamepad` (ADR-029, R-CTRL-011). In `AdvanceFrame`, the mode becomes `Gamepad` when the player's assigned gamepad was active in the frame, otherwise `KeyboardMouse` when the keyboard or the mouse was active (player 0 only), and otherwise stays as it was; when both were active in one frame, `Gamepad` wins. The initial mode is `KeyboardMouse`. A change raises `onModeChanged`.
 
 **INP-151** (MUST) A device is active in a frame when: for the keyboard, a key is held or had an event; for the mouse, a button is held or had an event, or the pointer, the raw movement or the wheel moved; for a gamepad, a button is held or had an event, a stick is outside its dead zone or a trigger is above its threshold.
 
@@ -256,7 +258,7 @@ Caption: Diagram 4.10-A, a local player's gamepad slot: assignment by the first 
 4. the deltas are this frame's changes, and the moved flag is set when the position changed;
 5. the position is clamped to the client area, and when it differs from the system pointer's position the system pointer is moved there without producing a movement event.
 
-**INP-157** (MUST) The aiming stick moves the pointer by its stick-unit value in every frame, so the stick's pointer speed in pixels per second is proportional to the frame rate.
+**INP-157** (MUST) The aiming stick moves the pointer by its stick-unit value in every frame, so the stick's pointer speed in pixels per second is proportional to the frame rate (see DEC-954).
 
 **INP-158** (MUST) `WarpPointer(position)` sets the position, clamped to the client area, and moves the system pointer there without producing a movement event or a delta. The camera's cursor lock uses it to keep the pointer on its ground point while the camera moves (R-CTRL-464).
 

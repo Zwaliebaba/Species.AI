@@ -8,79 +8,118 @@ This document specifies how the UI framework lays out, draws, navigates and loca
 
 **UI-160** (MUST) This document owns: the layout functions of the framework and the tool-window layout values; the large-menu factor; the UI-scale, text-scale and DPI rules and relayout; the UI's use of the UI pass; the batched UI renderer's stream, batching and blend rules; the UI palette tokens and their reference values; text styles, the text draw point, font roles, the per-role spacing factors and the per-language horizontal scale; the glyph cache's tuning; the menu navigation actions the UI consumes and their navigation rules; and the string-table mechanism (look-up, fallback application, input-mode variants, markup expansion, widget use, case mapping, the font role per language, text entry of non-Latin text and the hand-over between tables at a language switch).
 
-**UI-161** (MUST NOT) This document does not define: which languages ship and when a language is offered (DEC-099; [reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-460 to R-META-463); the fallback policy, which is per string id to the base language `ref.meta.lang.base` (`en-GB`; DEC-099, R-META-464); the start-up language choice (R-META-465); the page-grid values, which [reference/09 front_end_presentation.md](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-200 and R-META-201 own; the string-table schema and markup syntax ([data schemas](../data_schemas/README.md)); the binding grammar, the device back-ends and the input mode's source ([input.md](../input.md), ADR-029); the screen transition ([frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-095, RND-096) and the HUD space (RND-377).
+**UI-161** (MUST NOT) This document does not define: which languages ship and when a language is offered (DEC-099; [reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-460 to R-META-463); the fallback policy, which is per string id to the base language `ref.meta.lang.base` (`en-GB`; DEC-099, R-META-464); the start-up language choice (R-META-465); the page-grid values, which [reference/09 front_end_presentation.md](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-200 and R-META-201 own; the string-table schema and markup syntax ([data schemas](../data_schemas/README.md)); the binding grammar, the device back-ends and the input mode's source ([input](../input/README.md), ADR-029); the screen transition ([frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-095, RND-096) and the HUD space (RND-377).
 
 ## 2 Interfaces
 
 C++23 interface sketch (declarations only), in namespace `species::ui`; the geometry types are those of [core_and_widgets.md](core_and_widgets.md) §2.
 
 ```cpp
-namespace species::ui {
+namespace Engine
+{
 
-struct PageGrid {                                   // UI-163
-    RectF title, left, right;
-    float fontLarge = 0, fontMedium = 0, fontSmall = 0;
-    float buttonWidth = 0, buttonHeight = 0, buttonGap = 0;
-    bool wide = false;
+struct PageGrid // UI-163
+{
+  RectF title;
+  RectF left;
+  RectF right;
+  float fontLarge = 0;
+  float fontMedium = 0;
+  float fontSmall = 0;
+  float buttonWidth = 0;
+  float buttonHeight = 0;
+  float buttonGap = 0;
+  bool wide = false;
 };
-PageGrid ComputePageGrid(SizeF client);
-float LargeMenuScale(float clientHeight, bool largeMenusOn);              // UI-167
+PageGrid ComputePageGrid(SizeF _client);
+float LargeMenuScale(float _clientHeight, bool _largeMenusOn); // UI-167
 
-struct UiScaleState { float dpiScale = 1, uiScale = 1, textScale = 1; };  // UI-168
-float ToolWindowScale(const UiScaleState&, float largeMenuScale);         // UI-170
-float FinalTextSize(float layoutSize, const UiScaleState&, float clientHeight);   // UI-171
+struct UiScaleState // UI-168
+{
+  float dpiScale = 1;
+  float uiScale = 1;
+  float textScale = 1;
+};
+float ToolWindowScale(const UiScaleState& _scale, float _largeMenuScale);                // UI-170
+float FinalTextSize(float _layoutSize, const UiScaleState& _scale, float _clientHeight); // UI-171
 
-enum class UiBlend : std::uint8_t { Alpha, Additive, Ink };              // UI-180
-struct UiVertex {                                                        // UI-178
-    float x, y;                 // pixels, origin top-left
-    float u, v;
-    std::uint32_t rgba;         // 8 bits per channel
-    std::uint32_t texture;      // texture or glyph-atlas page index
+enum class UiBlend : std::uint8_t // UI-180
+{
+  Alpha,
+  Additive,
+  Ink
+};
+struct UiVertex // UI-178
+{
+  float x; // pixels, origin top-left
+  float y;
+  float u;
+  float v;
+  std::uint32_t rgba;    // 8 bits per channel
+  std::uint32_t texture; // texture or glyph-atlas page index
 };
 
-enum class FontRole : std::uint8_t { Caption, Body, Title };             // UI-195
-enum class TextPass : std::uint8_t { Fill, Outline };
-enum class TextAlign : std::uint8_t { Left, Centre, Right };
-struct TextStyle {                                                       // UI-189
-    FontRole role = FontRole::Body;
-    float size = 12.0f;                         // ui.text.default_size
-    ColourRgba colour;
-    UiBlend blend = UiBlend::Additive;
-    TextPass pass = TextPass::Fill;
+enum class FontRole : std::uint8_t // UI-195
+{
+  Caption,
+  Body,
+  Title
+};
+enum class TextPass : std::uint8_t
+{
+  Fill,
+  Outline
+};
+enum class TextAlign : std::uint8_t
+{
+  Left,
+  Center,
+  Right
+};
+struct TextStyle // UI-189
+{
+  FontRole role = FontRole::Body;
+  float size = 12.0f; // ui.text.default_size
+  ColorRgba color;
+  UiBlend blend = UiBlend::Additive;
+  TextPass pass = TextPass::Fill;
 };
 
-class DrawContext {                                 // the batched UI stream (UI-177)
+class DrawContext // the batched UI stream (UI-177)
+{
 public:
-    void Quad(RectF, ColourRgba, UiBlend);
-    void TexturedQuad(RectF, AssetId texture, RectF uv, ColourRgba, UiBlend);
-    void Gradient(RectF, ColourRgba top, ColourRgba bottom, UiBlend);
-    void Line(PointF from, PointF to, float widthPx, ColourRgba, UiBlend);
-    void LineLoop(RectF, float widthPx, ColourRgba, UiBlend);
-    void Text(PointF drawPoint, std::u8string_view, const TextStyle&, TextAlign = TextAlign::Left);
-    void PushScissor(RectF);                        // UI-181
-    void PopScissor();
+  void Quad(RectF _rect, ColorRgba _color, UiBlend _blend);
+  void TexturedQuad(RectF _rect, AssetId _texture, RectF _uv, ColorRgba _color, UiBlend _blend);
+  void Gradient(RectF _rect, ColorRgba _top, ColorRgba _bottom, UiBlend _blend);
+  void Line(PointF _from, PointF _to, float _widthPixels, ColorRgba _color, UiBlend _blend);
+  void LineLoop(RectF _rect, float _widthPixels, ColorRgba _color, UiBlend _blend);
+  void Text(PointF _drawPoint, std::u8string_view _text, const TextStyle& _style, TextAlign _align = TextAlign::Left);
+  void PushScissor(RectF _rect); // UI-181
+  void PopScissor();
 };
 
-class GlyphRenderer {                               // ADR-034
+class GlyphRenderer // ADR-034
+{
 public:
-    float MeasureWidth(std::u8string_view, const TextStyle&) const;      // UI-200
-    void Draw(DrawContext&, PointF drawPoint, std::u8string_view, const TextStyle&, TextAlign);
-    void SetLanguage(LanguageTag);                                       // UI-234
-    void Prerasterise(std::span<const char32_t>);                        // UI-198
+  float MeasureWidth(std::u8string_view _text, const TextStyle& _style) const; // UI-200
+  void Draw(DrawContext& _out, PointF _drawPoint, std::u8string_view _text, const TextStyle& _style, TextAlign _align);
+  void SetLanguage(LanguageTag _language);                  // UI-234
+  void Prerasterize(std::span<const char32_t> _characters); // UI-198
 };
 
-enum class InputMode : std::uint8_t { KeyboardMouse, Gamepad };         // UI-205
+// InputMode is the input component's (INP-150); the UI reads it from InputRouter::Mode (UI-205).
 
-class TextView;                                     // keeps its table generation alive (UI-239)
-class StringTable {                                 // UI-218
+class TextView;   // keeps its table generation alive (UI-239)
+class StringTable // UI-218
+{
 public:
-    TextView Lookup(StringId, InputMode) const;     // never shows a string id (UI-219)
-    bool Exists(StringId) const;                    // UI-220
-    std::u8string Format(StringId, InputMode, const MessageArguments&) const;   // UI-227
-    LanguageTag Language() const;
+  TextView Lookup(StringId _id, InputMode _mode) const;                                          // never shows a string id (UI-219)
+  bool Exists(StringId _id) const;                                                               // UI-220
+  std::u8string Format(StringId _id, InputMode _mode, const MessageArguments& _arguments) const; // UI-227
+  LanguageTag Language() const;
 };
 
-}  // namespace species::ui
+} // namespace Engine
 ```
 
 **Events consumed.** Resize and DPI change (platform layer, ADR-075); UI-scale and text-scale setting changes; input-mode change and binding change (input router, ADR-029); language change (the other options apply, R-META-448). Each marks the open panels for relayout (UI-172).
@@ -355,7 +394,7 @@ There are no bitmap font atlases ([reference/09](../../../reference/09_front_end
 
 **UI-215** (MUST) When the cursor moves to a widget inside a scrolling list, the list scrolls so that the widget is visible (UI-053; ADR-032).
 
-**UI-216** (MUST) The menu directions repeat while held through the binding graph's repeat condition, with an initial delay and a rate measured in presentation time; both are tuning values of the input component ([input.md](../input.md); ADR-029), so navigation repeats at the same rate at every frame rate.
+**UI-216** (MUST) The menu directions repeat while held through the binding graph's repeat condition, with an initial delay and a rate measured in presentation time; both are tuning values of the input component ([input](../input/README.md); ADR-029), so navigation repeats at the same rate at every frame rate.
 
 **UI-217** (MUST) Back and Escape never apply a change: only an explicit confirmation does, such as the Apply button of an options page ([reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-412 item 4) or Enter in a text field (UI-064) (ADR-032, DEC-102).
 
@@ -393,7 +432,7 @@ There are no bitmap font atlases ([reference/09](../../../reference/09_front_end
 
 **UI-231** (MUST) Values substituted into a caption, such as a file name or a status, are named arguments (UI-227), never search-and-replace placeholders.
 
-**UI-232** (MUST) Every player-facing caption has a string id ([reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-470); the captions of the development windows are the [diagnostics](../diagnostics_test_and_performance.md) component's.
+**UI-232** (MUST) Every player-facing caption has a string id ([reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-470); the captions of the development windows are the [diagnostics](../diagnostics_test_and_performance/README.md) component's.
 
 **UI-233** (MUST) Upper-casing, as of window titles and page titles, uses the case mapping of the current language through ICU (ADR-063), never a process-wide locale setting.
 
@@ -469,7 +508,7 @@ Diagram 4-B — the runtime language switch and the hand-over between string-tab
 | a palette text token below its contrast minimum | the content build warns for the default palette and fails for the high-contrast palette | build message naming the token | UI-186 |
 | the busiest screen exceeds a budget | nothing changes at run time | the performance test fails | UI-240 |
 
-The UI counts draws, vertices, batches and glyphs rasterised per frame for the development overlay ([diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md)); these counts are part of the opt-in performance telemetry set only if that set names them (ADR-066).
+The UI counts draws, vertices, batches and glyphs rasterised per frame for the development overlay ([diagnostics, test and performance](../diagnostics_test_and_performance/README.md)); these counts are part of the opt-in performance telemetry set only if that set names them (ADR-066).
 
 ## 7 Acceptance tests
 
@@ -623,6 +662,6 @@ The palette tokens of UI-187 and UI-188 are the `ui.palette.*` rows; their value
 | `ref.meta.lang.base` | [reference/09 options_localisation_and_hooks.md](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) |
 | `rnd.hud.ortho_height` | [renderer/entity_and_overlay_renderers.md](../renderer/entity_and_overlay_renderers.md) RND-377 |
 | `ui.chrome.title_height`, `ui.chrome.close_box`, `ui.button.auto_char_width`, `ui.button.auto_padding`, `ui.button.auto_height`, `ui.core.auto_grow_margin` | [core_and_widgets.md](core_and_widgets.md) §9 |
-| the repeat delay and rate of the menu directions | [input.md](../input.md) |
+| the repeat delay and rate of the menu directions | [input](../input/README.md) |
 
 String ids cited: `ui.title.game_name` ([reference/09](../../../reference/09_front_end_and_match_flow/front_end_presentation.md)). Asset ids cited: `font.ui.primary`, `font.ui.primary_ja`, `font.ui.primary_ko`, `font.ui.stylised`, `font.ui.compact`, `strings.en_gb`, `strings.fr_fr`, `strings.de_de`, `strings.it_it`, `strings.es_es`, `strings.pt_br`, `strings.ru_ru`, `strings.ja_jp`, `strings.ko_kr`, `uitex.panel_accent`, `uitex.fill_blur`, `fx.glow_cloudy`, `glyph.pad.*`, `glyph.key.tab`.

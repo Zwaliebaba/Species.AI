@@ -58,7 +58,7 @@ Caption: the runtime reads the simulation's snapshot and events and feeds the re
 | renderer ([renderer/README.md](../renderer/README.md)) | the frame's pass contexts, the catalogue, the `terrain_heights` resource (RND-063), the per-frame constants | the particle pool and its indirect arguments, the shard buffers, instance data for passes 7b, 7d, 10a, 11, 14 and 15, camera-shake offsets and flash requests | create pipeline states during a frame; issue barriers (RND-051) |
 | camera ([camera_and_sequences.md](../camera_and_sequences.md)) | the view of the frame | the shake rotation offset of the frame (VFX-232) | move the camera or store an offset in its state |
 | UI framework ([ui_framework/README.md](../ui_framework/README.md)) | the explainer panel widget and its draw batch (ADR-030, ADR-031) | the explainer timeline player (VFX-104) | lay out widgets |
-| audio engine ([audio_engine.md](../audio_engine.md)) | nothing | presentation events that this component raises (the spider footstep, the thrown-weapon fuse blink) | start a voice directly |
+| audio engine ([audio_engine/README.md](../audio_engine/README.md)) | nothing | presentation events that this component raises (the spider footstep, the thrown-weapon fuse blink) | start a voice directly |
 | platform layer ([platform_layer.md](../platform_layer.md)) | the platform clock with injectable time (ADR-074) | nothing | read an operating-system clock |
 | content build ([asset_pipeline_and_resources.md](../asset_pipeline_and_resources.md), [data schemas](../data_schemas/README.md)) | cooked effect definitions, explainer animations, textures and meshes with their sockets | nothing | parse authoring files at run time |
 
@@ -76,7 +76,7 @@ Caption: the runtime reads the simulation's snapshot and events and feeds the re
 | 2 | a walking body whose motion depends on foot states timed by the real clock | no simulation body depends on a procedural foot; the only legged creature is the spider, whose legs are presentation only (DEC-007, VFX-128) |
 | 3 | spider feet timed by the real clock, read by foot-fall sounds and the next lift decision | foot and leg state is presentation state of this component on the presentation clock (DEC-007, ADR-035) |
 | 4 | simulation draws spent on cosmetic particle arguments inside simulation code | the simulation emits an effect event, and this component makes every cosmetic draw from its own presentation generator (DEC-013, DEC-222 item 7, R-SIM-622) |
-| 5 | simulation draws spent by purely visual simulation objects (the volcano vent's idle roll, snowflakes, Wisps) | these draws are presentation draws (R-SIM-622); the objects' simulated state never depends on them |
+| 5 | simulation draws spent by purely visual simulation objects (the volcano vent's idle roll, snowflakes, Wisps) | these draws are presentation draws (R-SIM-622); the objects' simulated state never depends on them, while the objects themselves stay in the simulated effect pool (DEC-266) |
 | 6 | presentation draws made inside simulation code for particle counts and velocities | every such draw is made by this component from an effect event, never inside a tick (R-SIM-640) |
 | 7 | render paths that write fields of simulated objects (a Worker's colour timer, a Barrier Emitter link, the world cursor's structure kind, the Reaper Serpent's eaten-orb list) | every such value is presentation state keyed by the object's handle (R-SIM-636, R-SIM-656, RND-301) |
 | 8 | the damage-flicker flag stored in a simulated object | the flag is presentation state of this component (VFX-126) and is never part of a simulation state hash (R-SIM-636) |
@@ -127,119 +127,141 @@ Caption: the runtime reads the simulation's snapshot and events and feeds the re
 | 35 | full-screen flashes | shockwaves, the pulse wave | Q §4.11 |
 | 36 | fades, the paused banner and the screen transition | UI | RND-085 to RND-098 |
 
-**VFX-008** (MUST NOT) The component provides no screen-space distortion, no pixelation ghosting, no gesture trail or gesture symbol display, no tutorial gesture playback, no Leader shield of orbiting orbs, no three-legged walker and no sound-chip envelope sequencer (DEC-059, DEC-336, DEC-062). The audio filter chain that a reference effects file configures belongs to the [audio engine](../audio_engine.md).
+**VFX-008** (MUST NOT) The component provides no screen-space distortion, no pixelation ghosting, no gesture trail or gesture symbol display, no tutorial gesture playback, no Leader shield of orbiting orbs, no three-legged walker and no sound-chip envelope sequencer (DEC-059, DEC-336, DEC-062). The audio filter chain that a reference effects file configures belongs to the [audio engine](../audio_engine/README.md).
 
 
 ## 2 Interfaces
 
-The interface below is a C++23 declaration sketch, not an implementation.
+The interface below is a C++23 declaration sketch, not an implementation. `TimeSource` is the platform layer's (ADR-074), `AssetId` the asset pipeline's, `PassContext`, `PresentationSnapshot` and `FrameView` the renderer's, `TeamPalette` the renderer's team palette (RND-016), `DrawContext` the UI framework's handle to the batched UI stream and `LoadError` the data schemas'; a pass is named by its id in the renderer's pass table (RND-070). `InstanceWriter` and `MatchSetupView` are placeholders for the renderer's instance writer and the simulation's match-setup view until their owners declare them.
 
 ```cpp
-namespace species::vfx {
+namespace Engine
+{
 
-struct PresentationTime {          // §3.1
-  double scaled = 0.0;             // frame step x game speed; stops while the world is held
-  double unscaled = 0.0;           // frame step; stops while the world is held
-  double real = 0.0;               // the real clock (R-SIM-570); never stops
+struct PresentationTime   // §3.1
+{
+  double scaled = 0.0;     // frame step x game speed; stops while the world is held
+  double unscaled = 0.0;   // frame step; stops while the world is held
+  double real = 0.0;       // the real clock (R-SIM-570); never stops
 };
 
-class PresentationClock {          // ADR-036; time comes from the platform clock (ADR-074)
+class PresentationClock   // ADR-036; time comes from the platform clock (ADR-074)
+{
 public:
-  explicit PresentationClock(const PlatformTimeSource& source);
-  void BeginFrame(double gameSpeed, bool worldHeld);           // VFX-016
+  explicit PresentationClock(const TimeSource& _source);
+  void BeginFrame(double _gameSpeed, bool _worldHeld);   // VFX-016
   [[nodiscard]] PresentationTime Now() const;
-  [[nodiscard]] double StepScaled() const;                     // this frame's advance
+  [[nodiscard]] double StepScaled() const;               // this frame's advance
   [[nodiscard]] double StepUnscaled() const;
 };
 
 enum class EffectKind : std::uint16_t;   // closed enumeration, particles table 4.7-A
 
-struct EffectEventId {                    // stable identity; seeds the presentation generator
+struct EffectEventId   // stable identity; seeds the presentation generator
+{
   std::uint32_t tick = 0;
-  SimObjectId emitter;                    // invalid for events with no emitter
-  std::uint16_t sequence = 0;             // order of the event among the emitter's events of the tick
+  SimObjectId emitter;           // invalid for events with no emitter
+  std::uint16_t sequence = 0;    // order of the event among the emitter's events of the tick
 };
 
-struct ShatterPayload {                   // EffectKind::Shatter (particles §4.10)
-  MeshAssetId mesh;
+struct ShatterPayload   // EffectKind::Shatter (particles §4.10)
+{
+  AssetId mesh;
   Mat3x4 transform;
-  float fraction = 1.0f;                  // share of facets released; >= 1 releases all
-  std::uint8_t paletteIndex = 0;          // team palette entry for the facet tint (ADR-020)
+  float fraction = 1.0f;          // share of facets released; >= 1 releases all
+  std::uint8_t paletteIndex = 0;  // team palette entry for the facet tint (ADR-020)
 };
 
-struct EffectEvent {
+struct EffectEvent
+{
   EffectKind kind;
   EffectEventId id;
-  SimObjectId subject;                    // the object the effect follows or comes from
-  Vec3 position, velocity, direction;
-  std::uint8_t colourId = 0xFF;           // team colour id (RND-016); 0xFF = none
-  float a = 0.0f, b = 0.0f;               // kind-specific scalars of particles table 4.7-A
+  SimObjectId subject;            // the object the effect follows or comes from
+  Vec3 position;
+  Vec3 velocity;
+  Vec3 direction;
+  std::uint8_t colorId = 0xFF;    // team colour id (RND-016); 0xFF = none
+  float a = 0.0f;                 // kind-specific scalars of particles table 4.7-A
+  float b = 0.0f;
   std::optional<ShatterPayload> shatter;
 };
 
-enum class ParticleKind : std::uint8_t {  // particles table 4.2-A, in this order
-  RocketTrail, ExplosionCore, ExplosionDebris, MuzzleFlare, Fire, ControlFlash, Spark,
-  BlueSpark, Casing, MissileTrail, MissileFire, WorkerFire, Leaf, Sickness, SpeedBoostTrail,
-  FireballFlame, Volcano
+enum class ParticleKind : std::uint8_t   // particles table 4.2-A, in this order
+{
+  RocketTrail, ExplosionCore, ExplosionDebris, MuzzleFlare, Fire, ControlFlash, Spark, BlueSpark, Casing, MissileTrail,
+  MissileFire, WorkerFire, Leaf, Sickness, SpeedBoostTrail, FireballFlame, Volcano
 };
-enum class ParticleBlend : std::uint8_t { Glow, Smoke };
-enum class TerrainRule : std::uint8_t { None, Bounce, DieOnContact };
+enum class ParticleBlend : std::uint8_t
+{
+  Glow, Smoke
+};
+enum class TerrainRule : std::uint8_t
+{
+  None, Bounce, DieOnContact
+};
 
-struct ParticleEmission {
+struct ParticleEmission
+{
   ParticleKind kind;
-  Vec3 position, velocity;
-  std::optional<float> size;              // none: the type size
-  std::optional<ColourRgba> colour;       // none: the type's random colour (VFX-202)
+  Vec3 position;
+  Vec3 velocity;
+  std::optional<float> size;        // none: the type size
+  std::optional<ColorRgba> color;   // none: the type's random colour (VFX-202)
 };
 
-class ParticlePool {                      // ADR-010
+class ParticlePool   // ADR-010
+{
 public:
-  void Emit(std::span<const ParticleEmission> requests);      // into the frame's upload buffer
-  void RecordSimulate(PassContext& compute, const PresentationTime& now);
-  void RecordDraw(PassContext& pass15) const;                 // darkening batch, then additive
-  void Empty();                                               // match teardown (R-SIM-005)
-  [[nodiscard]] PoolCounts Counts() const;                    // development read-back
+  void Emit(std::span<const ParticleEmission> _requests);                   // into the frame's upload buffer
+  void RecordSimulate(PassContext& _compute, const PresentationTime& _now);
+  void RecordDraw(PassContext& _pass15) const;                              // darkening batch, then additive
+  void Empty();                                                             // match teardown (R-SIM-005)
+  [[nodiscard]] PoolCounts Counts() const;                                  // Debug read-back
 };
 
-class ShatterEffects {                    // ADR-010
+class ShatterEffects   // ADR-010
+{
 public:
-  void Shatter(const ShatterPayload& request, FxRng& rng, const PresentationTime& now);
-  void RecordUpdate(PassContext& compute, const PresentationTime& now);
-  void RecordDraw(PassContext& pass14) const;
+  void Shatter(const ShatterPayload& _request, FxRng& _rng, const PresentationTime& _now);
+  void RecordUpdate(PassContext& _compute, const PresentationTime& _now);
+  void RecordDraw(PassContext& _pass14) const;
   void Reset();
 };
 
-class ScreenEffects {                     // ADR-036, ADR-064
+class ScreenEffects   // ADR-036, ADR-064
+{
 public:
-  void RequestShake(float intensity);                         // combined by maximum
-  void RequestFlash(float alpha, const PresentationTime& now);
-  [[nodiscard]] ShakeOffset ShakeOffsetFor(const PresentationTime& now) const;
-  void RecordFlash(PassContext& pass10a) const;
+  void RequestShake(float _intensity);   // combined by maximum
+  void RequestFlash(float _alpha, const PresentationTime& _now);
+  [[nodiscard]] ShakeOffset ShakeOffsetFor(const PresentationTime& _now) const;
+  void RecordFlash(PassContext& _pass10a) const;
 };
 
-class ExplainerPlayer {                   // the explainer timeline, hosted by the UI framework
+class ExplainerPlayer   // the explainer timeline, hosted by the UI framework
+{
 public:
-  static std::expected<ExplainerPlayer, LoadError> Load(const ExplainerAnimation& data);
-  void Draw(UiBatch& batch, const ExplainerLayout& layout, double realNow, const TeamColours& roles);
+  static std::expected<ExplainerPlayer, LoadError> Load(const ExplainerAnimation& _data);
+  void Draw(DrawContext& _batch, const ExplainerLayout& _layout, double _realNow, const TeamPalette& _roles);
 };
 
-class VfxRuntime {
+class VfxRuntime
+{
 public:
-  void OnMatchStart(const MatchSetupView& setup);            // seasonal state, team palette
-  void ConsumeTick(std::uint32_t tick, std::span<const EffectEvent> events);
-  void Update(const PresentationSnapshot& snap, const FrameView& view);
-  void RecordPass(PassId pass, PassContext& context);         // 7b, 7d, 8, 10a, 11, 14, 15, 16
+  void OnMatchStart(const MatchSetupView& _setup);   // seasonal state, team palette
+  void ConsumeTick(std::uint32_t _tick, std::span<const EffectEvent> _events);
+  void Update(const PresentationSnapshot& _snap, const FrameView& _view);
+  void RecordPass(std::string_view _passId, PassContext& _context);   // pass-table ids of 7b, 7d, 8, 10a, 11, 14, 15, 16
   void OnMatchEnd();
 };
 
-}  // namespace species::vfx
+} // namespace Engine
 ```
 
 **Events.** The component consumes the effect events of every tick ([particles](particles_shatter_and_screen_effects.md) table 4.7-A) and the route-highlight request of the renderer (RND-350), which it serves through the particle pool. It raises these presentation events for the audio engine: the spider footstep at every foot plant (R-UNIT-578) and the thrown weapon's fuse blink once per second of its age (R-CRATE-414). It raises no event that the simulation reads.
 
 **Data contracts.** Per drawn actor the presentation snapshot holds the fields of [renderer/README.md](../renderer/README.md) §2 and, for this component: the angular velocity about y, the unit id and slot index, the team colour id, the health fraction, the state and the flags that select overlays and emitters (Burning, sick, Shield, Speed Boost, Fury, Convert link, controlled, airborne, captured by an ant, inside a Transport), the Crawler trail samples (R-UNIT-535), the Reaper Serpent's tail history (R-UNIT-594) and the centipede links (R-UNIT-549). Per match it holds the seasonal state (DEC-118), the game speed, the world-held flag and the game-over flag. Effect definitions and explainer animations are records of the schemas of [data schemas](../data_schemas/README.md) (ADR-061), validated by the content build (ADR-059).
 
-**Threading contract.** `ConsumeTick` and `Update` run on the frame thread, `ConsumeTick` for each newly taken tick in tick order and before the frame's `Update` (ADR-036). GPU work is recorded into the passes and compute work of the frame graph and never issues barriers (RND-051). Every presentation generator instance belongs to one thread (R-SIM-608). In development builds a changed effect definition is reloaded between frames, never during one.
+**Threading contract.** `ConsumeTick` and `Update` run on the frame thread, `ConsumeTick` for each newly taken tick in tick order and before the frame's `Update` (ADR-036). GPU work is recorded into the passes and compute work of the frame graph and never issues barriers (RND-051). Every presentation generator instance belongs to one thread (R-SIM-608). In Debug builds a changed effect definition is reloaded between frames, never during one.
 
 
 ## 3 Data model
@@ -278,19 +300,19 @@ public:
 
 | Entry | Shader | Blend | Depth | Cull | Bias or fog | Pass | Draws |
 |---|---|---|---|---|---|---|---|
-| `orb_ink` | `unlit_textured` | `Ink` | `Test` | `None` | — | 11 | Essence orbs of the Rogue faction slot |
-| `orb_additive` | `unlit_textured` | `Additive` | `Test` | `None` | — | 11 | every other Essence orb |
-| `shard_lit` | `mesh_lit`, `EDGE_MASK` on | `Alpha` | `TestWrite` | `None` | — | 14 | shatter debris, with the object lighting (RND-228) |
-| `particle_darkening` | `unlit_textured`, point magnification | `Darkening` | `Test` | `None` | — | 15 | the smoke batch |
-| `particle_additive` | `unlit_textured`, point magnification | `Additive` | `Test` | `None` | — | 15 | the glow batch |
-| `cloth_cells` | `unlit_textured` | `Alpha` | `Test` | `None` | — | 7b | cloth-flag cells of Leaders and Transports |
-| `cloth_cells_fog` | `unlit_textured`, fog | `Alpha` | `Test` | `None` | level fog | 8 | cloth-flag cells of Flag posts |
-| `cloth_pole` | `unlit_vertex_colour` | `Alpha` | `Test` | `None` | — | 7b | cloth-flag poles |
-| `cloth_pole_fog` | `unlit_vertex_colour`, fog | `Alpha` | `Test` | `None` | level fog | 8 | Flag-post poles |
-| `cloth_pointer` | `unlit_textured` | `Alpha` | `Test` | `None` | `bias_flag_pointer` | 7b, 8 | the pointer `marker.flag_pointer` over a flag |
-| `cloth_overlay` | `world_overlay`, `SOURCE = textured` | `Alpha` | in-shader (RND-309) | `None` | — | 16 | the local team's Leader banners and their pointers |
+| `orb_ink` | `UnlitTextured` | `Ink` | `Test` | `None` | — | 11 | Essence orbs of the Rogue faction slot |
+| `orb_additive` | `UnlitTextured` | `Additive` | `Test` | `None` | — | 11 | every other Essence orb |
+| `shard_lit` | `MeshLit`, `EDGE_MASK` on | `Alpha` | `TestWrite` | `None` | — | 14 | shatter debris, with the object lighting (RND-228) |
+| `particle_darkening` | `UnlitTextured`, point magnification | `Darkening` | `Test` | `None` | — | 15 | the smoke batch |
+| `particle_additive` | `UnlitTextured`, point magnification | `Additive` | `Test` | `None` | — | 15 | the glow batch |
+| `cloth_cells` | `UnlitTextured` | `Alpha` | `Test` | `None` | — | 7b | cloth-flag cells of Leaders and Transports |
+| `cloth_cells_fog` | `UnlitTextured`, `FOG` on | `Alpha` | `Test` | `None` | level fog | 8 | cloth-flag cells of Flag posts |
+| `cloth_pole` | `UnlitVertexColor` | `Alpha` | `Test` | `None` | — | 7b | cloth-flag poles |
+| `cloth_pole_fog` | `UnlitVertexColor`, `FOG` on | `Alpha` | `Test` | `None` | level fog | 8 | Flag-post poles |
+| `cloth_pointer` | `UnlitTextured` | `Alpha` | `Test` | `None` | `bias_flag_pointer` | 7b, 8 | the pointer `marker.flag_pointer` over a flag |
+| `cloth_overlay` | `WorldOverlay`, `SOURCE = TEXTURED` | `Alpha` | in-shader (RND-309) | `None` | — | 16 | the local team's Leader banners and their pointers |
 
-The particle entries sample `fx.particle_dot` with point filtering under magnification and linear filtering under minification (RND-432). The depth-bias variant `bias_flag_pointer` sets `SlopeScaledDepthBias` = `vfx.cloth.pointer_slope_bias` (1.0) and `DepthBias` = `vfx.cloth.pointer_constant_bias` (5) units towards the camera, in the reversed-Z convention of ADR-016.
+The particle entries sample `fx.particle_dot` through its `point` view, whose point-magnify clamp-to-edge sampler filters by point under magnification and linearly under minification ([asset pipeline](../asset_pipeline_and_resources.md) AST-025, AST-027; RND-432). The depth-bias variant `bias_flag_pointer` sets `SlopeScaledDepthBias` = `vfx.cloth.pointer_slope_bias` (1.0) and `DepthBias` = `vfx.cloth.pointer_constant_bias` (5) units towards the camera, in the reversed-Z convention of ADR-016.
 
 ### 3.6 Lifetimes
 
@@ -301,7 +323,7 @@ The particle entries sample `fx.particle_dot` with point filtering under magnifi
 | `VfxRuntime`, the presentation clock, the presentation generators | the client process |
 | particle pool | the process; emptied at match teardown, holding content of the current match only (R-SIM-005) |
 | shatter effects | the process; reset at match teardown (R-SIM-005) |
-| effect definitions, particle parameter buffer | from content load to unload; replaced between frames on a development reload |
+| effect definitions, particle parameter buffer | from content load to unload; replaced between frames on a reload in Debug builds |
 | procedural state | table of VFX-102 |
 | explainer player | from the explainer panel's creation to match teardown (R-META-222) |
 | screen-effect state (shake scalar, active flash) | the match; cleared at match start and end |
@@ -338,7 +360,7 @@ flowchart TD
 
 Caption: one frame of the animation and VFX runtime; nothing on this path writes simulation state.
 
-**VFX-018** (MUST) No effect depends on the frame rate (ADR-036). A reference behaviour that runs once per rendered frame runs in Species as a fixed-rate step on the unscaled presentation clock, at `vfx.emit.step_rate` (60 steps per second): each step does exactly what the reference does in one frame, and a frame runs as many due steps as its clock advance holds, carrying the remainder to the next frame. A reference per-frame blend factor k becomes 1 − (1 − k)^(`vfx.emit.step_rate` × Δ) for a frame step Δ.
+**VFX-018** (MUST) No effect depends on the frame rate (ADR-036). A reference behaviour that runs once per rendered frame runs in Species as a fixed-rate step on the unscaled presentation clock, at `vfx.emit.step_rate` (60 steps per second): each step does exactly what the reference does in one frame, and a frame runs as many due steps as its clock advance holds, carrying the remainder to the next frame. A reference per-frame blend factor k becomes 1 − (1 − k)^(`vfx.emit.step_rate` × Δ) for a frame step Δ (DEC-960).
 
 ### 4.2 Effect events
 
@@ -406,7 +428,7 @@ The quality settings that change effects are the entity, structure and tree deta
 | VFX code includes the simulation generator's interface, or takes write access to simulation state | a build failure | VFX-005, VFX-011 |
 | an effect pass exceeds its budget | no behaviour change; the development overlay marks the pass group; telemetry records the frame time | VFX-023 |
 
-Diagnostics: every compute dispatch and pass of this component carries a PIX marker and GPU timestamps (ADR-068); a development overlay shows the live particle count per type and class, the dropped emissions per type, the live explosions and shards and the effect events per tick; a frozen-frame inspector reads back the pool (ADR-010); effect definitions reload while the game runs in development builds (ADR-036). With the player's consent, telemetry carries the distribution of the effect passes' GPU time and the peak particle and shard counts (ADR-066).
+Diagnostics: every compute dispatch and pass of this component carries a PIX marker and GPU timestamps (ADR-068); a development overlay shows the live particle count per type and class, the dropped emissions per type, the live explosions and shards and the effect events per tick; a frozen-frame inspector reads back the pool (ADR-010); effect definitions reload while the game runs in Debug builds (ADR-036, ADR-056). With the player's consent, telemetry carries the distribution of the effect passes' GPU time and the peak particle and shard counts (ADR-066).
 
 ## 7 Acceptance tests
 
@@ -437,11 +459,12 @@ The tests of the explainer player, the sprite recipes and the procedural animati
 | DEC-029 | Resolved | the visual language is kept: additive glow on black, darkening smoke, shattering meshes, procedural spider legs (VFX-025) |
 | DEC-059 | Dropped | screen-space distortion and pixelation ghosting are not specified (VFX-008) |
 | DEC-062 | Dropped | actor kinds that no match creates draw no effect (VFX-008) |
-| DEC-098 | Resolved | recoloured flag textures are cached by asset and variant (VFX-141) |
+| DEC-098 | Resolved | flag textures have one cache entry per asset and variant; their team looks are tint values (VFX-141) |
 | DEC-101 | Open | whether Species keeps the seasonal theme and who chooses it (VFX-119) |
 | DEC-106 | Open | the performance envelope: effect caps, budgets and level of detail are set by measurement (VFX-023) |
 | DEC-118 | Resolved | the seasonal state is match state (VFX-006 row 10, VFX-119) |
 | DEC-222 | Open | how the snapshot and the effect events reach presentation (VFX-003) |
+| DEC-266 | Open | snowflakes, Wisps, muzzle flashes and shell casings stay in the simulated effect pool (VFX-006 row 5) |
 | DEC-228 | Open | the stress population and the fixed-capacity effect pools (VFX-023) |
 | DEC-242 | Open | the simulation generator's algorithm; one presentation generator per thread (VFX-011) |
 | DEC-328 | Open | saturated team colours on the Shield and Visitor bubbles (VFX-121) |
@@ -450,6 +473,13 @@ The tests of the explainer player, the sprite recipes and the procedural animati
 | DEC-562 | Open | per-map weather switches or named weather presets (VFX-224) |
 | DEC-654 | Resolved | GPU work serves presentation only (VFX-004, VFX-005) |
 | DEC-750 | Open | the explainer loop and visibility rules (VFX-107) |
+| DEC-856 | Open | the one tail velocity that every Brood Drifter shares (VFX-138) |
+| DEC-955 | Resolved | the three clock readings, the camera clock and the additive shake offset (VFX-009, VFX-016, VFX-139, VFX-232) |
+| DEC-960 | Resolved | reference per-frame behaviour runs in fixed steps (VFX-018, VFX-139, VFX-209) |
+| DEC-961 | Resolved | the explainer panel is laid out again on every screen change (VFX-108) |
+| DEC-962 | Open | defaults for effect values that the reference does not record (VFX-122, VFX-219, VFX-229) |
+| DEC-963 | Open | the stiffer large and selected flags and the per-tick damage-flicker cadence (VFX-126, VFX-139) |
+| DEC-964 | Open | the accessibility limits for camera shake and flashes (VFX-232, VFX-235) |
 | ADR-010, ADR-035, ADR-036 | Accepted | the GPU particle pool and shard buffers, the procedural animation runtime, effect events and the presentation clock |
 
 **VFX-025** (MUST) The effects keep the visual language (DEC-029): additive glow on a black world, darkening smoke that multiplies the destination, flat-shaded facets that shatter into lit shards with white edges, small figures as cards blending to billboards, and spiders walking on procedurally animated legs.
@@ -459,10 +489,10 @@ The tests of the explainer player, the sprite recipes and the procedural animati
 1. **Effect budgets at world scale.** The particle and shard caps, the priority fill limits and the level-of-detail distances for battles of hundreds of crowd units at the strategic zoom, measured on the prototype (DEC-106, DEC-228).
 2. **Effect transport.** Which effect events a remote client receives and which it derives from replicated state, and what the event identity is across a region hand-over (DEC-222, DEC-200).
 3. **Seasonal theme and weather.** Whether Species keeps the seasonal theme (DEC-101) and whether maps select weather presets (DEC-562).
-4. **Accessibility defaults.** The reduced-flash and reduced-motion scales, the flash-onset limit and whether a setting turns shake off entirely (ADR-064).
+4. **Accessibility defaults.** The reduced-flash and reduced-motion scales, the flash-onset limit and whether a setting turns shake off entirely (ADR-064, DEC-964).
 5. **Explainers.** Whether the world game keeps explainer animations, and the loop rules (DEC-750).
-6. **Values the reference does not record.** The counts, sizes and velocities of the emitters whose reference values are not recorded (the control flashes on crowd control, the demotion burst, the blue sparks of a crate opening, the fireball launch's sizes, the terrain-hit dust of a turret round, the spiralling rocket's burst, the order-marker cadence), the orbit offset range of the eaten-orb display, and the width of the shard edge lines; this component states a default for each.
-7. **Reference quirks kept as defaults.** The one smoothed tail velocity shared by every Brood Drifter, the fixed relaxation factor of large or selected cloth flags, the frame-quantised explainer loop and the saturated bubble colours (DEC-328), each kept here as the reference look.
+6. **Values the reference does not record.** The counts, sizes and velocities of the emitters whose reference values are not recorded (the control flashes on crowd control, the demotion burst, the blue sparks of a crate opening, the fireball launch's sizes, the terrain-hit dust of a turret round, the spiralling rocket's burst, the order-marker cadence), the orbit offset range of the eaten-orb display, and the width of the shard edge lines; this component states a default for each (DEC-962).
+7. **Reference quirks kept as defaults.** The one smoothed tail velocity shared by every Brood Drifter, the fixed relaxation factor of large or selected cloth flags, the frame-quantised explainer loop (DEC-750) and the saturated bubble colours (DEC-328), each kept here as the reference look (DEC-963, DEC-856).
 
 ## 9 Tuning table
 

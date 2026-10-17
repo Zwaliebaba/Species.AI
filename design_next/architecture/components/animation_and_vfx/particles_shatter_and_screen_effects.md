@@ -15,32 +15,45 @@ This document specifies the particle pool and its particle types, their integrat
 The GPU records below are a declaration sketch in the shared C++ and HLSL header style of [renderer/shaders.md](../renderer/shaders.md), not an implementation; the CPU interfaces are those of [README.md](README.md) §2.
 
 ```cpp
-namespace species::vfx::gpu {
+namespace Engine
+{
 
-struct ParticleSlot {             // one slot of the pool's structured buffer
-  float3 position;  float birth;  // birth on the scaled presentation clock
-  float3 velocity;  float size;
-  uint colour;                    // RGBA8
-  uint kind;                      // ParticleKind
+struct ParticleSlot   // one slot of the pool's structured buffer
+{
+  float3 position;
+  float birth;   // birth on the scaled presentation clock
+  float3 velocity;
+  float size;
+  uint color;    // RGBA8
+  uint kind;     // ParticleKind
 };
 
-struct ParticleType {             // one entry per ParticleKind, from the effect definitions
+struct ParticleType   // one entry per ParticleKind, from the effect definitions
+{
   float life, typeSize, gravity, friction;
-  uint colour1, colour2;          // RGBA8
+  uint color1, color2;   // RGBA8
   uint blend, terrainRule, priorityClass, cap;
   float lodFull, lodCutoff;
 };
 
-struct Shard {                    // one released triangle (VFX-204)
-  float3 centre;    float deathTime;
-  float3 velocity;  uint tumbler;
+struct Shard   // one released triangle (VFX-204)
+{
+  float3 center;
+  float deathTime;
+  float3 velocity;
+  uint tumbler;
   float3 corner0, corner1, corner2;
-  float3 normal;    uint colour;  // tinted facet colour, RGBA8
+  float3 normal;
+  uint color;    // tinted facet colour, RGBA8
 };
 
-struct Tumbler { float3x3 rotation; float3 angularVelocity; };
+struct Tumbler
+{
+  float3x3 rotation;
+  float3 angularVelocity;
+};
 
-}  // namespace species::vfx::gpu
+} // namespace Engine
 ```
 
 **Events.** This document consumes the effect events of table 4.7-A and the route-highlight request of RND-350. Its screen effects receive the shake requests of VFX-233 and give the camera the frame's rotation offset.
@@ -129,9 +142,9 @@ Each type's keys are `.life`, `.size`, `.gravity`, `.friction` and `.colours` (�
 
 ### 4.3 Integration
 
-**VFX-209** (MUST) The simulate pass advances every live particle in fixed sub-steps of h = `vfx.particle.sub_step` (1/60 s of scaled presentation time), as many as the frame's scaled clock advance holds and at most `vfx.particle.max_sub_steps` (30) per frame, which covers a 0.25 s frame at the highest game speed, 2.0 (`ref.sim.speed.time_rush_min` + `ref.sim.speed.time_rush_spread`), carrying the remainder to the next frame (ADR-010). Particle motion is therefore independent of the simulation tick and of the frame rate.
+**VFX-209** (MUST) The simulate pass advances every live particle in fixed sub-steps of h = `vfx.particle.sub_step` (1/60 s of scaled presentation time), as many as the frame's scaled clock advance holds and at most `vfx.particle.max_sub_steps` (30) per frame, which covers a 0.25 s frame at the highest game speed, 2.0 (`ref.sim.speed.time_rush_min` + `ref.sim.speed.time_rush_spread`), carrying the remainder to the next frame (ADR-010, DEC-960). Particle motion is therefore independent of the simulation tick and of the frame rate.
 
-**VFX-210** (MUST) Each sub-step, with T = `ref.sim.tick_period` (0.1 s), the reference integration step at game speed 1, P the scaled presentation time and H, N the terrain height and normal sampled from `terrain_heights` (RND-063, [terrain.md](../terrain.md)):
+**VFX-210** (MUST) Each sub-step, with T = `ref.sim.tick_period` (0.1 s), the reference integration step at game speed 1, P the scaled presentation time and H, N the terrain height and normal sampled from `terrain_heights` (RND-063, [terrain.md](../terrain/README.md)):
 
 ```text
 for each live particle p with type T_p:
@@ -189,7 +202,7 @@ The smoke batch is drawn first. Smoke on a black world reads as a shadowy veil, 
 
 ### 4.7 The effect event catalogue
 
-**VFX-219** (MUST) The effect kinds (`EffectKind`) are exactly those of table 4.7-A, a closed enumeration whose order carries no meaning. Each row names the rule that raises the event, what its effect definition does, and the owner of the values; "U[a, b)" denotes a + `FxRng::NextUnit`(b − a), whose range includes b (R-SIM-607), "± x" denotes `FxRng::NextSigned`(2x), and "n of type" emits n particles of that type at the event position unless stated. Every draw is made by this component (VFX-011, DEC-013); a value marked with a key of this document is owned here.
+**VFX-219** (MUST) The effect kinds (`EffectKind`) are exactly those of table 4.7-A, a closed enumeration whose order carries no meaning. Each row names the rule that raises the event, what its effect definition does, and the owner of the values; "U[a, b)" denotes a + `FxRng::NextUnit`(b − a), whose range includes b (R-SIM-607), "± x" denotes `FxRng::NextSigned`(2x), and "n of type" emits n particles of that type at the event position unless stated. Every draw is made by this component (VFX-011, DEC-013); a value marked with a key of this document is owned here, and the values that the reference does not record are the defaults of DEC-962 item 1.
 
 Table 4.7-A Effect kinds.
 
@@ -198,9 +211,9 @@ Table 4.7-A Effect kinds.
 | `Explosion` | every explosion of range r and damage D (R-CRATE-406 step 1, R-UNIT-195) | cores: n = ⌊r × D × `ref.weapon.explosion.particle_factor`⌋, plus ⌊U[0, n)⌋ more, explosion cores at position + (0, `ref.weapon.explosion.core_lift` × r, 0), size `vfx.emit.explosion.core_size` (120 + U[0, 120)), velocity `vfx.emit.explosion.core_velocity` (± 15, 10 + U[0, 10), ± 15); debris: m = ⌊clamp(r × D × `ref.weapon.explosion.particle_factor`, `ref.weapon.explosion.debris_min`, `ref.weapon.explosion.debris_max`)⌋ explosion-debris particles at position + (0, `vfx.emit.explosion.debris_lift` (0.2) × r, 0), particle i at the angle i × 2π ÷ m with velocity normalise((cos, `vfx.emit.explosion.debris_rise` (2 + U[0, 2)), sin)) × `vfx.emit.explosion.debris_speed` (20 + U[0, 30)), size `vfx.emit.explosion.debris_size` (20 + U[0, 20)) | reference/04 and this document |
 | `RocketBurst` | a spiralling rocket's explosion (R-CRATE-432) | explosion cores as the `Explosion` core rule, all in one colour of the team colour table drawn per burst | this document |
 | `StructureDestroyed` | R-BLDG-037 | ⌊i ÷ `ref.bldg.structure.destroy_particle_divisor`⌋ explosion cores of size `ref.bldg.structure.destroy_particle_size`, velocity per axis `ref.bldg.structure.destroy_particle_speed`; the shatters of §4.10 | reference/03 |
-| `LaserHitStructure` | a laser bolt meeting a structure (R-CRATE-441 step 6) | `vfx.emit.laser_hit.count` (1) rocket trail | this document |
-| `RoundHitStructure` | a turret round meeting a structure (R-CRATE-451 step 4) | `vfx.emit.round_hit.structure_count` (3) missile trails; the round's shatter of §4.10 | this document |
-| `RoundHitTerrain` | a turret round meeting the terrain (R-CRATE-451 step 5) | `vfx.emit.round_hit.terrain_count` (1) rocket trail at the terrain hit; the round's shatter | this document |
+| `LaserHitStructure` | a laser bolt meeting a structure (R-CRATE-441 step 6) | `vfx.emit.laser_hit.count` (1) spark | this document |
+| `RoundHitStructure` | a turret round meeting a structure (R-CRATE-451 step 4) | `vfx.emit.round_hit.structure_count` (3) sparks; the round's shatter of §4.10 | this document |
+| `RoundHitTerrain` | a turret round meeting the terrain (R-CRATE-451 step 5) | dust at the terrain hit: `vfx.emit.round_hit.terrain_count` (1) rocket trail, a small grey puff (DEC-962); the round's shatter | this document |
 | `ThrownWeaponTrail` | each tick of a grenade, airstrike bomb or firebomb canister in flight (R-CRATE-414) | with probability 1 − `ref.weapon.thrown.trail_skip` ÷ game speed, one missile trail of size `ref.weapon.thrown.trail_size` at p − v × dt, velocity v ÷ 4 ± `ref.weapon.thrown.trail_jitter` ÷ 2 per axis | reference/04 |
 | `AirstrikeMarkerSmoke` | each tick of an airstrike target marker (R-CRATE-422) | one fire particle of size `ref.weapon.marker.smoke_size`, velocity v ÷ 4 + presentation jitter | reference/04 |
 | `RocketFlame` | each tick of a rocket (R-CRATE-433) | with probability `ref.weapon.rocket.trail_chance`, one fire particle | reference/04 |
@@ -248,7 +261,7 @@ Every sound that accompanies these effects is a sound event of its owner's rule 
 
 ### 4.8 Presentation emitters
 
-**VFX-220** (MUST) These emitters run in presentation from the snapshot and the local interface state, at the fixed step rate of [README.md](README.md) VFX-018; each step emits what the reference emits in one frame:
+**VFX-220** (MUST) These emitters run in presentation from the snapshot and the local interface state, at the fixed step rate of [README.md](README.md) VFX-018 (DEC-960); each step emits what the reference emits in one frame:
 
 | Emitter | Particles per step | Owner of the values |
 |---|---|---|
@@ -303,7 +316,7 @@ ShatterExplosion(node, T, fraction):
     tumblers[0..4] = { rotation = identity,
                        angular velocity = (NextSigned(4), NextSigned(4), NextSigned(4)) }
     deathTime = unscaled now + vfx.shatter.lifetime
-    total = node.transform * T; nodeCentre = total * node.centre
+    total = node.transform * T; nodeCenter = total * node.center
     for j in 0 .. node.triangleCount - 1:
         if fraction < 1 and NextUnit(1) > fraction: continue        # kept with probability fraction
         v1, v2, v3 = the triangle's corners under total
@@ -311,7 +324,7 @@ ShatterExplosion(node, T, fraction):
         if |v1 - v2| + |v2 - v3| + |v3 - v1| < vfx.shatter.min_perimeter: continue
         c = (v1 + v2 + v3) * vfx.shatter.centre_factor
         store the corners minus c, the facet normal and the tinted facet colour (ADR-020)
-        velocity = (c - nodeCentre) * vfx.shatter.initial_speed; velocity.y += vfx.shatter.rise
+        velocity = (c - nodeCenter) * vfx.shatter.initial_speed; velocity.y += vfx.shatter.rise
         position = c; tumbler = NextUint() mod 5
         keep the shard
         if j > vfx.shatter.triangle_cap_index: stop
@@ -321,7 +334,7 @@ A node therefore releases at most 502 shards: those of source indices 0 to 500 a
 
 **VFX-228** (MUST) Every frame, with Δ the unscaled step, a compute pass advances each tumbler by rotation ← rotation × R(angular velocity × Δ) and angular velocity × (1 − `vfx.shatter.spin_drag` × Δ), and each shard by position += velocity × Δ, then velocity × (1 − min(1, |velocity| × `vfx.shatter.drag` × Δ)), then velocity.y −= `vfx.shatter.gravity` × Δ. Shards do not collide with the terrain; they fall through it. An explosion is finished, and freed, when the unscaled time passes its death time.
 
-**VFX-229** (MUST) Pass 14 draws each explosion as one instanced draw of its shards with `shard_lit` (VFX-014), the object lighting and the depth test and write on. A shard's corner is rotation × corner + position and its normal rotation × facet normal, with rotation its tumbler's; its colour is its facet colour at alpha 1 − age, with age = (`vfx.shatter.lifetime` + now − death time) ÷ `vfx.shatter.lifetime`, so it fades linearly over its life. The edge mask gives every shard white edge lines: with *m* the smallest barycentric coordinate of the fragment and *e* = 1 − smoothstep(0, `vfx.shatter.edge_width` (1 ÷ 64), *m*), widened with screen-space derivatives so that the lines do not alias (ADR-003, ADR-015), the fragment colour is lerp(lit facet colour, white, *e*) with the shard's alpha; the lines are unlit. No edge texture is sampled at run time (ADR-010); the edge pattern `fx.shard_edges` is the art reference against which the edge mask is checked (T15).
+**VFX-229** (MUST) Pass 14 draws each explosion as one instanced draw of its shards with `shard_lit` (VFX-014), the object lighting and the depth test and write on. A shard's corner is rotation × corner + position and its normal rotation × facet normal, with rotation its tumbler's; its colour is its facet colour at alpha 1 − age, with age = (`vfx.shatter.lifetime` + now − death time) ÷ `vfx.shatter.lifetime`, so it fades linearly over its life. The edge mask gives every shard white edge lines: with *m* the smallest barycentric coordinate of the fragment and *e* = 1 − smoothstep(0, `vfx.shatter.edge_width` (1 ÷ 64, DEC-962 item 2), *m*), widened with screen-space derivatives so that the lines do not alias (ADR-003, ADR-015), the fragment colour is lerp(lit facet colour, white, *e*) with the shard's alpha; the lines are unlit. No edge texture is sampled at run time (ADR-010); the edge pattern `fx.shard_edges` is the art reference against which the edge mask is checked (T15).
 
 **VFX-230** (MUST) The live explosions hold at most `vfx.shatter.max_explosions` (1024) explosions and `vfx.shatter.max_shards` (131 072) shards, fixed capacities allocated at load (DEC-228); a new explosion that does not fit retires the oldest live explosions until it fits.
 
@@ -351,7 +364,7 @@ Table 4.10-A Shatter sources.
 
 ### 4.11 Camera shake and full-screen flashes
 
-**VFX-232** (MUST) Camera shake is one scalar of this component's screen effects. A request of intensity i sets shake := max(shake, i), so requests never accumulate and a request repeated every frame has the effect of one; while shake is above 0 it falls by 1 per second of unscaled presentation time (R-CTRL-463). At each step of [README.md](README.md) VFX-018 the screen effects draw a yaw and a roll from the presentation generator by `ref.ctrl.camera.shake` (yaw `FxRng::NextSigned`(0.05 × shake) rad, roll 0.3 × `FxRng::NextSigned`(shake) rad) and hold them until the next step; the camera turns its front by the yaw about the world vertical and rolls its up vector about the front by the roll, re-orthogonalises, and applies the result as an additive rotation offset of the frame's view, never stored in its state (ADR-036). The offset is scaled by the motion setting: × 1 at full motion and × `vfx.screen.reduced_motion_scale` (0.25) with reduced motion (ADR-064).
+**VFX-232** (MUST) Camera shake is one scalar of this component's screen effects. A request of intensity i sets shake := max(shake, i), so requests never accumulate and a request repeated every frame has the effect of one; while shake is above 0 it falls by 1 per second of unscaled presentation time (R-CTRL-463). At each step of [README.md](README.md) VFX-018 the screen effects draw a yaw and a roll from the presentation generator by `ref.ctrl.camera.shake` (yaw `FxRng::NextSigned`(0.05 × shake) rad, roll 0.3 × `FxRng::NextSigned`(shake) rad) and hold them until the next step; the camera turns its front by the yaw about the world vertical and rolls its up vector about the front by the roll, re-orthogonalises, and applies the result as an additive rotation offset of the frame's view, never stored in its state (ADR-036, DEC-955 item 5). The offset is scaled by the motion setting: × 1 at full motion and × `vfx.screen.reduced_motion_scale` (0.25) with reduced motion (ADR-064, DEC-964).
 
 **VFX-233** (MUST) The shake sources are exactly:
 
@@ -369,7 +382,7 @@ Table 4.10-A Shatter sources.
 | a shockwave ring | its first `ref.weapon.shockwave.flash_time` (0.1 s), age taken with the extrapolation time | (1 − age ÷ 0.1) × max(0, 1 − distance to the camera ÷ `ref.weapon.shockwave.flash_range` (500 wu)) | its centre in the view frustum; not game over; not paused |
 | the Core Device pulse wave | its first `ref.weapon.pulse_wave.flash_time` (0.3 s) of unscaled presentation time | `vfx.screen.pulse_flash_alpha` (1); the distance factor is not applied | not game over |
 
-**VFX-235** (MUST) Flashes obey the photosensitivity rule (ADR-064, RND-248): a flash whose alpha reaches `vfx.screen.flash_count_threshold` (0.1), a luminance change of 10 %, counts as a flash onset; at most `vfx.screen.flash_onsets` (3) onsets are shown in any `vfx.screen.flash_window` (1 s) of real time, and a further onset inside the window is not drawn. The reduced-flash setting multiplies every flash alpha by `vfx.screen.reduced_flash_scale` (0.25). The settings themselves are stored by the settings store, and this component reads them (RND-440).
+**VFX-235** (MUST) Flashes obey the photosensitivity rule (ADR-064, RND-248, DEC-964): a flash whose alpha reaches `vfx.screen.flash_count_threshold` (0.1), a luminance change of 10 %, counts as a flash onset; at most `vfx.screen.flash_onsets` (3) onsets are shown in any `vfx.screen.flash_window` (1 s) of real time, and a further onset inside the window is not drawn. The reduced-flash setting multiplies every flash alpha by `vfx.screen.reduced_flash_scale` (0.25). The settings themselves are stored by the settings store, and this component reads them (RND-440).
 
 ### 4.12 Other screen-space effects
 
@@ -421,6 +434,10 @@ Diagnostics: the counts of live and dropped particles per type and class, live e
 |---|---|---|
 | DEC-013 | Resolved | every cosmetic draw is a presentation draw (VFX-219) |
 | DEC-106 | Open | the caps and level-of-detail distances are measured on the prototype (VFX-214) |
+| DEC-955 | Resolved | camera shake is an additive view offset, never stored in the pose (VFX-232) |
+| DEC-960 | Resolved | particle sub-steps and fixed-step presentation emitters (VFX-209, VFX-220) |
+| DEC-962 | Open | defaults for emitter values and the shard edge width that the reference does not record (VFX-219, VFX-229) |
+| DEC-964 | Open | reduced motion, reduced flashing and the flash-onset limit (VFX-232, VFX-235) |
 | DEC-228 | Open | fixed-capacity effect pools (VFX-212, VFX-230) |
 | DEC-461 | Resolved | turret casings from each turret's own sockets (VFX-219) |
 | DEC-562 | Open | per-map weather switches or presets (VFX-224) |
@@ -545,9 +562,9 @@ The design-phase inputs of this component are listed in the [folder README](READ
 | `vfx.emit.explosion.debris_rise` | 2 + U[0, 2) | before normalisation | | VFX-219 | DEC-013 |
 | `vfx.emit.explosion.debris_speed` | 20 + U[0, 30) | wu/s | | VFX-219 | DEC-013 |
 | `vfx.emit.explosion.debris_size` | 20 + U[0, 20) | particle size | | VFX-219 | DEC-013 |
-| `vfx.emit.laser_hit.count` | 1 | particles | | VFX-219 | |
-| `vfx.emit.round_hit.structure_count` | 3 | particles | | VFX-219 | |
-| `vfx.emit.round_hit.terrain_count` | 1 | particles | reference count not recorded | VFX-219 | |
+| `vfx.emit.laser_hit.count` | 1 | particles | sparks | VFX-219 | |
+| `vfx.emit.round_hit.structure_count` | 3 | particles | sparks | VFX-219 | |
+| `vfx.emit.round_hit.terrain_count` | 1 | particles | rocket trails standing for the dust; the reference records neither count nor type | VFX-219 | DEC-962 |
 | `vfx.emit.fireball.count` | 80 | particles | first tick of a fireball | VFX-219 | |
 | `vfx.emit.firebomb.split` | 51, 20, 9 | particles | fireball flame, fire, missile trail | VFX-219 | |
 | `vfx.emit.firebomb.size` | 150 + U[0, 100) | particle size | | VFX-219 | |
@@ -556,7 +573,7 @@ The design-phase inputs of this component are listed in the [folder README](READ
 | `vfx.emit.lightning.fire_count` | 10 | particles | | VFX-219 | |
 | `vfx.emit.lightning.fire_size` | 160 + U[0, 120) | particle size | | VFX-219 | |
 | `vfx.emit.swarm_hit.count` | 5 + (NextUint mod 5) | particles | 5 to 9 | VFX-219 | |
-| `vfx.emit.control.count` | 1 | particles | reference count not recorded | VFX-219 | |
+| `vfx.emit.control.count` | 1 | particles | reference count not recorded | VFX-219 | DEC-962 |
 | `vfx.emit.order.sizes` | 75, 60 | particle size | two particles per order | VFX-219 | |
 | `vfx.emit.order_marker.size` | 30 | particle size | | VFX-219 | |
 | `vfx.emit.burning.count_mod` | 8 | — | NextUint mod 8 particles per tick | VFX-219 | |
@@ -597,12 +614,12 @@ The design-phase inputs of this component are listed in the [folder README](READ
 | `vfx.shatter.min_perimeter` | 6.0 | wu | | VFX-226 | |
 | `vfx.shatter.triangle_cap_index` | 500 | source index | at most 502 shards per node | VFX-226 | |
 | `vfx.shatter.centre_factor` | 0.3333 | — | as written, not exactly one third | VFX-226 | |
-| `vfx.shatter.edge_width` | 1/64 | barycentric | edge line width; not recorded by the reference | VFX-229 | |
+| `vfx.shatter.edge_width` | 1/64 | barycentric | edge line width; not recorded by the reference | VFX-229 | DEC-962 |
 | `vfx.shatter.max_explosions` | 1024 | explosions | engine baseline | VFX-230 | DEC-228 |
 | `vfx.shatter.max_shards` | 131 072 | shards | engine baseline | VFX-230 | DEC-228 |
-| `vfx.screen.reduced_motion_scale` | 0.25 | × shake offset | reduced-motion setting | VFX-232 | |
+| `vfx.screen.reduced_motion_scale` | 0.25 | × shake offset | reduced-motion setting | VFX-232 | DEC-964 |
 | `vfx.screen.pulse_flash_alpha` | 1 | alpha | pulse-wave flash | VFX-234 | |
-| `vfx.screen.flash_count_threshold` | 0.1 | alpha | a 10 % luminance change | VFX-235 | |
-| `vfx.screen.flash_onsets` | 3 | onsets | per window | VFX-235 | |
-| `vfx.screen.flash_window` | 1 | s of real time | | VFX-235 | |
-| `vfx.screen.reduced_flash_scale` | 0.25 | × flash alpha | reduced-flash setting | VFX-235 | |
+| `vfx.screen.flash_count_threshold` | 0.1 | alpha | a 10 % luminance change | VFX-235 | DEC-964 |
+| `vfx.screen.flash_onsets` | 3 | onsets | per window | VFX-235 | DEC-964 |
+| `vfx.screen.flash_window` | 1 | s of real time | | VFX-235 | DEC-964 |
+| `vfx.screen.reduced_flash_scale` | 0.25 | × flash alpha | reduced-flash setting | VFX-235 | DEC-964 |

@@ -223,11 +223,11 @@ Every blend result is clamped to [0, 1] per channel as it is written to the SDR 
 | 20 | world cursor | 3-D highlight rings and cylinders, formation dots, ghost models; then the 2-D icon, entry marker, crosshair or pointer | [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) | rings `Alpha` · `Test` · `None` with the cursor bias variant; ghost models `Ghost` · `Test`; pointer shadow `Ink`, then `Additive` (the crosshair `Alpha`) | off | unlit | — |
 | 21 | chat | the chat log and the talk hint (RND-075) | [ui_framework/README.md](../ui_framework/README.md) | text styles · `None` · `None` | off | unlit | — |
 | 23 | Power slots panel | target-area particles, the Power bar, pop-ups and messages | [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) | `Alpha` and `Additive` · `None` · `None` | off | unlit | — |
-| 24 | development drawing | queued debug shapes, Debug builds only | [diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md) | as that document states | off | unlit | — |
+| 24 | development drawing | queued debug shapes, Debug builds only | [../diagnostics_test_and_performance/README.md](../diagnostics_test_and_performance/README.md) | as that document states | off | unlit | — |
 | 26 | 2-D block start | nothing; the 2-D overlay projection of RND-215 is set up for passes 27 to 31 | this document | — | — | — | — |
 | 27 | fade | the full-screen black fade (RND-085) | this document | `fade`: `Alpha` · `None` · `None` | off | unlit | — |
 | 28 | match HUD | scores, timers and the mode HUD | [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md), [reference/01_skirmish_rules_and_modes/README.md](../../../reference/01_skirmish_rules_and_modes/README.md) | `Alpha` · `None` · `None` | off | unlit | — |
-| 29 | text overlays | the development overlays and the version string (RND-076) | this document, [diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md) | text styles · `None` · `None` | off | unlit | — |
+| 29 | text overlays | the development overlays and the version string (RND-076) | this document, [../diagnostics_test_and_performance/README.md](../diagnostics_test_and_performance/README.md) | text styles · `None` · `None` | off | unlit | — |
 | 32 | 2-D block end | nothing; the 3-D projection is restored | this document | — | — | — | — |
 | 33 | paused banner | the paused banner (RND-090) | this document | text styles · `None` · `None` | off | unlit | — |
 | 34 | screen transition and present | the captured-frame slide (RND-096), then the present | this document | `transition`: `Alpha` · `None` · `None` | off | unlit | — |

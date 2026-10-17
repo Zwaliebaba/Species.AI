@@ -419,7 +419,7 @@ Every value is a reference value adopted as the Species engine baseline (DEC-004
 
 **TER-253** (MUST) After every generation the terrain logs, in the terrain log category (ADR-067): the map id, the grid size, the world extent, the tile and flatten-area counts, the lowest and highest sample, the share of samples above sea level, the grid digest of TER-252 and the generation time. A Debug build can also record a per-tile trace: one record per guide pin, per draw, per noise value and per write, with every intermediate value, in the order of TER-107 (the trace of §7.2).
 
-**TER-254** (MUST) The terrain sends no telemetry of its own; its generation time is part of the load timing that the diagnostics component reports ([diagnostics, test and performance](../diagnostics_test_and_performance.md)).
+**TER-254** (MUST) The terrain sends no telemetry of its own; its generation time is part of the load timing that the diagnostics component reports ([diagnostics, test and performance](../diagnostics_test_and_performance/README.md)).
 
 ## 7 Acceptance tests
 

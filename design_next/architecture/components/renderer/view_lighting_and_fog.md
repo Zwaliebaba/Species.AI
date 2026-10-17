@@ -13,23 +13,43 @@ This document specifies how the renderer turns the camera's view parameters into
 ## 2 Interfaces
 
 ```cpp
-namespace species::render {
+namespace Engine
+{
 
-struct FrameView {                         // built in pass 1
-  Mat4 view, projection, viewProjection;   // row-major, row vectors (ADR-016)
-  Vec3 position, front, up;
-  float fovYRadians, nearPlane, farPlane;
-  std::uint32_t width, height;             // render size in pixels
+struct FrameView // built in pass 1
+{
+  Mat4 view; // row-major, row vectors (ADR-016)
+  Mat4 projection;
+  Mat4 viewProjection;
+  Vec3 position;
+  Vec3 front;
+  Vec3 up;
+  float fovYRadians;
+  float nearPlane;
+  float farPlane;
+  std::uint32_t width; // render size in pixels
+  std::uint32_t height;
 };
 
-struct DirectionalLight { Vec3 towardsLight; Vec3 colour; };   // colour is also the specular colour
-struct LightRig { std::array<DirectionalLight, 2> lights; };   // a missing light is black
-struct LitMaterial { Vec3 specular; float shininess; };        // diffuse and ambient follow the facet colour
+struct DirectionalLight
+{
+  Vec3 towardsLight;
+  Vec3 color; // also the specular colour
+};
+struct LightRig
+{
+  std::array<DirectionalLight, 2> lights; // a missing light is black
+};
+struct LitMaterial
+{
+  Vec3 specular; // diffuse and ambient follow the facet colour
+  float shininess;
+};
 
-[[nodiscard]] bool PointInView(const FrameView& v, const Vec3& p);                    // RND-234
-[[nodiscard]] bool SphereInView(const FrameView& v, const Vec3& centre, float radius); // RND-234
+[[nodiscard]] bool PointInView(const FrameView& _view, const Vec3& _point);                  // RND-234
+[[nodiscard]] bool SphereInView(const FrameView& _view, const Vec3& _center, float _radius); // RND-234
 
-}  // namespace species::render
+} // namespace Engine
 ```
 
 ## 3 Data model
@@ -54,7 +74,7 @@ struct LitMaterial { Vec3 specular; float shininess; };        // diffuse and am
 
 **RND-213** (MUST) The view matrix looks from the camera position towards position + front, with the camera's up vector.
 
-**RND-214** (MUST) In a poster tile (RND-111), with *N* tiles per side, tile index *i* and the vertical field of view *φ* in degrees, the scale is *k* = *φ* ÷ `rnd.view.poster_fov_divisor` (78). The whole poster frustum spans, at the near distance *n*, the horizontal range [−*k*·*n*, *k*·*n*] and the vertical range [−(*H* ÷ *W*)·*k*·*n*, (*H* ÷ *W*)·*k*·*n*], with *W* × *H* the render size; tile *i* is the off-centre perspective frustum of width 2·*k*·*n* ÷ *N* and height 2·(*H* ÷ *W*)·*k*·*n* ÷ *N* at column *i* mod *N* and row ⌊*i* ÷ *N*⌋, counting rows from the bottom, with the frame's near and far planes. The poster's field of view is therefore set by *φ* ÷ 78 rather than by the on-screen projection.
+**RND-214** (MUST) In a poster tile (RND-111), with *N* tiles per side, tile index *i* and the vertical field of view *φ* in degrees, the scale is *k* = *φ* ÷ `rnd.view.poster_fov_divisor` (78). The whole poster frustum spans, at the near distance *n*, the horizontal range [−*k*·*n*, *k*·*n*] and the vertical range [−(*H* ÷ *W*)·*k*·*n*, (*H* ÷ *W*)·*k*·*n*], with *W* × *H* the render size; tile *i* is the off-centre perspective frustum of width 2·*k*·*n* ÷ *N* and height 2·(*H* ÷ *W*)·*k*·*n* ÷ *N* at column *i* mod *N* and row ⌊*i* ÷ *N*⌋, counting rows from the bottom, with the frame's near and far planes. The poster's field of view is therefore set by *φ* ÷ 78 rather than by the on-screen projection (see DEC-958 item 2).
 
 **RND-215** (MUST) The 2-D overlay space is in pixels of the target it draws into, with the origin at the top-left corner and *y* growing downwards. Glyph placement within it is the UI framework's (ADR-034).
 
@@ -70,7 +90,7 @@ struct LitMaterial { Vec3 specular; float shininess; };        // diffuse and am
 
 | Variant | Factor *k* | Used by |
 |---|---|---|
-| `bias_cursor` | `rnd.depth_bias.cursor` (1.03) | the world cursor's highlight rings and formation preview (pass 20) |
+| `bias_cursor` | `ref.ctrl.cursor.depth_bias` (1.03) of [cursor_and_markers.md](../../../reference/06_controls_camera_and_commands/cursor_and_markers.md) (R-CTRL-363, R-CTRL-374) | the world cursor's highlight rings and formation preview (pass 20), the ground highlights of order markers (pass 16) |
 | `bias_crawler` | `rnd.depth_bias.crawler` (1.05) | Crawler trails (pass 7c) |
 | `bias_blob_shadow` | `rnd.depth_bias.blob_shadow` (1.05) | blob shadows (RND-242) |
 | `bias_laser` | `rnd.depth_bias.laser` (1.2) | laser bolts (pass 10b) and rockets |
@@ -97,7 +117,7 @@ struct LitMaterial { Vec3 specular; float shininess; };        // diffuse and am
 
 **RND-228** (MUST) The object lighting, used by lit meshes unless RND-229 applies, enables lights 0 and 1 with a material whose ambient and diffuse colours follow the facet colour, a specular colour of 0 and a shininess of `rnd.lighting.object_shininess` (127), which has no effect with a zero specular colour: lit meshes are diffuse only.
 
-**RND-229** (MUST) The special lighting replaces the map light rig always for Relics and for the Abductor, and for every structure of pass 6 when the special-lighting setting is on ([options_and_budgets.md](options_and_budgets.md)), in every Launch Race match, and on maps whose map effects include special lighting ([reference/08_maps_and_level_design/rules_and_conventions.md](../../../reference/08_maps_and_level_design/rules_and_conventions.md); three reference Zone Control maps use it). It is one light with the direction normalise(`rnd.lighting.special_direction` (0, 1, 0.5)) and the colour `rnd.lighting.special_colour` (2.0, 1.5, 0.75) as diffuse and specular, no ambient term, and light 1 off; the material has ambient and diffuse colours that follow the facet colour, the specular colour `rnd.lighting.special_specular` (1, 1, 1) and the shininess `rnd.lighting.special_shininess` (10). The special light is set while the frame's view is current, so it has no frame lag.
+**RND-229** (MUST) The special lighting replaces the map light rig always for Relics and for the Abductor, and for every structure of pass 6 when the special-lighting setting is on ([options_and_budgets.md](options_and_budgets.md)), in every Launch Race match, and on maps whose map effects include special lighting ([reference/08_maps_and_level_design/rules_and_conventions.md](../../../reference/08_maps_and_level_design/rules_and_conventions.md); three reference maps use it: two Zone Control maps and one Spawn Control map). It is one light with the direction normalise(`rnd.lighting.special_direction` (0, 1, 0.5)) and the colour `rnd.lighting.special_colour` (2.0, 1.5, 0.75) as diffuse and specular, no ambient term, and light 1 off; the material has ambient and diffuse colours that follow the facet colour, the specular colour `rnd.lighting.special_specular` (1, 1, 1) and the shininess `rnd.lighting.special_shininess` (10). The special light is set while the frame's view is current, so it has no frame lag.
 
 **RND-230** (MUST) The terrain uses two materials in its single pass ([world_renderers.md](world_renderers.md) RND-136): the surface material (ambient and diffuse follow the facet colour, specular 0, shininess `rnd.lighting.terrain_shininess` (100), which has no effect) and the grid material (ambient and diffuse follow the facet colour, specular `rnd.terrain.overlay_specular`, shininess `rnd.terrain.overlay_shininess`).
 
@@ -131,9 +151,9 @@ Neither test rejects beyond the far plane; the far plane and the fog end bound w
 
 **RND-241** (MUST) A **sprite ground shadow** is the actor's own sprite texture drawn as a black, flat quad lying on the terrain, offset along +*z* as if lit from a fixed direction, without depth write, with an alpha set by the actor's detail factor, skipped beyond a distance and while the actor is dead or abducted. The Worker's values are in [README.md](../animation_and_vfx/README.md) and its pass is 7d.
 
-**RND-242** (MUST) A **blob shadow** is a quad of half-size *s* with `fx.glow_round`, drawn with the `Darkening` blend, no culling, no depth write and the `bias_blob_shadow` variant, following the terrain slightly above it and skipped when all its corners lie above the caster. Its colour, lift and per-actor sizes are in [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md); its users are Crawler eggs, Brood Drifters, Builders, Reaper Serpents (head and tail segments), Collectors and Spitter Plants.
+**RND-242** (MUST) A **blob shadow** is a quad of half-size *s* with `fx.glow_round`, drawn with the `Darkening` blend, no culling, no depth write and the `bias_blob_shadow` variant, following the terrain slightly above it and skipped when all its corners lie above the caster. Its colour is `ref.unit.shadow.colour` (0.6, 0.6, 0.6, alpha 0) of [reference/02_units/README.md](../../../reference/02_units/README.md) R-UNIT-050; each corner lies `rnd.shadow.blob.lift` (0.9 wu) above the terrain and at least at `rnd.shadow.blob.min_height` (1.0 wu); the per-actor half-sizes are the shadow column of [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) RND-324, and the drawing is RND-325. Its users are Crawler eggs, Brood Drifters, Builders, Reaper Serpents (head and tail segments), Collectors and Spitter Plants.
 
-**RND-243** (MUST) A **blurred-icon shadow** is a blurred copy of an icon, produced offline as a derived texture variant (ADR-018) with a blur radius of `rnd.shadow.icon_blur_radius` (10 px), drawn first with the `Ink` blend and then followed by the icon drawn additively. Its users are the world cursor's icons (pass 20), the Supply crate target marker and the Missile Barrage's submarine sprite ([entity_and_overlay_renderers.md](entity_and_overlay_renderers.md)).
+**RND-243** (MUST) A **blurred-icon shadow** is a blurred copy of an icon, produced offline by the cooker as a derived texture variant (ADR-018) with the five-tap kernel of [asset_pipeline_and_resources.md](../asset_pipeline_and_resources.md) AST-073, whose weights the blur gain `rnd.shadow.icon_blur_radius` (10) multiplies; the kernel reaches ±2 px. It is drawn first with the `Ink` blend and source alpha 0, which darkens, and then followed by the icon drawn additively. The reference documents give the same value for each user's shadow blur (`ref.ctrl.cursor.shadow_blur`, `ref.crate.render.landing_marker_blur`, `ref.hazard.missile_barrage.marker_shadow_blur`). Its users are the shadowed cursors of the world cursor (pass 20; `cursor.world.shadow`, `cursor.highlight.shadow`, `cursor.select.shadow`, `cursor.move_target.shadow`, `cursor.place.shadow`, `cursor.enter.shadow`, `cursor.unavailable.shadow`; R-CTRL-350), the Supply crate landing marker (`marker.crate_landing.shadow`; [crates_and_powers.md](../../../reference/04_supply_crates_powers_and_weapons/crates_and_powers.md) R-CRATE-140) and the Missile Barrage ground marker (`marker.barrage_target.shadow`; [hazards_and_projectiles.md](../../../reference/02_units/hazards_and_projectiles.md) R-UNIT-729), as [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) RND-324 and RND-366 draw them. The Missile Barrage launcher's shadow is not a derived variant: it is the authored darkening card `sprite.missile_barrage.launcher_shadow` (R-UNIT-729).
 
 **RND-244** (MUST) Shadow quads are drawn unsorted in their owner's pass; darkening shadows are order-independent (RND-058).
 
@@ -151,7 +171,7 @@ Neither test rejects beyond the far plane; the far plane and the fog end bound w
 
 **RND-247** (MUST NOT) The look has no bloom, no blur, no post-process anti-aliasing and no screen-space distortion. Multisampling follows ADR-015, and its Off setting is the reference appearance of polygon edges.
 
-**RND-248** (MUST) Flash intensity and HDR highlight levels are capped by the photosensitivity rule, and camera shake is scaled by the player's motion setting (ADR-036, ADR-064).
+**RND-248** (MUST) Flash intensity and HDR highlight levels are capped by the photosensitivity rule, and camera shake is scaled by the player's motion setting (ADR-036, ADR-064), with the limits of [particles_shatter_and_screen_effects.md](../animation_and_vfx/particles_shatter_and_screen_effects.md) VFX-232 and VFX-235 (see DEC-964).
 
 ## 5 Concurrency and performance budget
 
@@ -161,11 +181,11 @@ Neither test rejects beyond the far plane; the far plane and the fog end bound w
 
 | Failure | Behaviour | Requirement |
 |---|---|---|
-| the camera supplies a degenerate front or up vector | the previous frame's view is kept and a development-build warning is logged | RND-213 |
+| the camera supplies a degenerate front or up vector | the previous frame's view is kept, and a warning is logged in Debug builds | RND-213 |
 | a map has no lights | a content-build warning (every reference map defines two); at run time both lights are black, so facets lit by the map rig render black | RND-226 |
 | a light direction has zero length | it is normalised to (0, 0, 1) | RND-012 |
 
-A development view shows the light directions, the fog range and the culling counts of the frame.
+A development view of Debug builds shows the light directions, the fog range and the culling counts of the frame.
 
 ## 7 Acceptance tests
 
@@ -190,6 +210,8 @@ A development view shows the light directions, the fog range and the culling cou
 | DEC-040 | Open | the inverted style's fog colour (RND-222) |
 | DEC-325 | Open | the one-frame light lag (RND-227) |
 | DEC-562 | Open | map lighting presets (RND-226, RND-229) |
+| DEC-958 | Open | the poster field of view of *φ* ÷ 78 (RND-214) |
+| DEC-964 | Open | the accessibility limits for camera shake and flashes (RND-248) |
 | ADR-016 | Proposed | reversed Z, row-major matrices and the depth-bias rule this document follows |
 
 **Design-phase inputs.** The far plane, the fog end and the sky ranges for a world larger than an arena map (DEC-247); whether lights become named presets (DEC-562); whether Species adds shadow maps for its strategic zoom, which needs a new ADR (RND-240).
@@ -205,7 +227,6 @@ A development view shows the light directions, the fog range and the culling cou
 | `rnd.view.fov_min` | 1 | degrees | clamp of the vertical field of view | RND-212 | |
 | `rnd.view.fov_max` | 180 | degrees | | RND-212 | |
 | `rnd.view.poster_fov_divisor` | 78 | degrees | poster scale *k* = *φ* ÷ 78 | RND-214 | |
-| `rnd.depth_bias.cursor` | 1.03 | near-plane factor | | RND-219 | |
 | `rnd.depth_bias.crawler` | 1.05 | near-plane factor | | RND-219 | |
 | `rnd.depth_bias.blob_shadow` | 1.05 | near-plane factor | | RND-219, RND-242 | |
 | `rnd.depth_bias.laser` | 1.2 | near-plane factor | laser bolts and rockets | RND-219 | |
@@ -221,4 +242,4 @@ A development view shows the light directions, the fog range and the culling cou
 | `rnd.lighting.special_shininess` | 10 | exponent | | RND-229 | |
 | `rnd.lighting.terrain_shininess` | 100 | exponent | surface material; no effect with zero specular | RND-230 | |
 | `rnd.frustum.point_tolerance` | 0.2 | cosine | point-in-view cone tolerance | RND-234 | |
-| `rnd.shadow.icon_blur_radius` | 10 | px | derived shadow variants of icons | RND-243 | |
+| `rnd.shadow.icon_blur_radius` | 10 | × kernel weight | the blur gain of the derived shadow variants of icons: it multiplies the five-tap weights of AST-073, whose taps reach ±2 px; not a radius in pixels | RND-243, RND-422 | |

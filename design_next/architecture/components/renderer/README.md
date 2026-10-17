@@ -177,7 +177,7 @@ public:
 | State | Initial value | Meaning |
 |---|---|---|
 | frames-per-second counter | `ref.sim.frame.fps_initial` (60) in [reference/12](../../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) | frames completed in the last `ref.sim.frame.fps_window` of real time (R-SIM-576) |
-| frame-rate overlay flag | off; exists in Debug builds only (ADR-056) | development overlay of frame rate and entity counts ([diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md)) |
+| frame-rate overlay flag | off; exists in Debug builds only (ADR-056) | development overlay of frame rate and entity counts ([../diagnostics_test_and_performance/README.md](../diagnostics_test_and_performance/README.md)) |
 | input-mode overlay flag | off; exists in Debug builds only (ADR-056) | development box that shows whether keyboard or gamepad input is active |
 | poster state | `PosterState::Inactive` | `Inactive` or `Tiling` (RND-110) |
 | poster tile index | 0 | the tile being rendered (RND-111) |
@@ -252,7 +252,7 @@ public:
 
 **RND-030** (MUST) A change of window size, render size, sample count or HDR output reconfigures the renderer: it waits for the GPU, releases its back-buffer references, resizes the swap chain (ADR-012), creates the pipeline-state entries whose target formats or sample counts changed behind a loading indicator (ADR-005), and recompiles the frame graph (ADR-004). The device, the asset resources, the terrain and sea buffers, the tree geometry and the remaining catalogue entries survive.
 
-**RND-031** (MUST) A change of the inverted style (see DEC-040) or of a detail option ([options_and_budgets.md](options_and_budgets.md)) rebuilds no terrain, sea or tree geometry: each is a choice of catalogue entry, shader permutation or per-pass constant, and takes effect on the next frame.
+**RND-031** (MUST) A change of the inverted style (see DEC-040) or of a detail option ([options_and_budgets.md](options_and_budgets.md)) rebuilds no terrain, sea or tree geometry: each is a choice of catalogue entry, shader permutation or per-pass constant, and takes effect on the next frame; the terrain height field is never regenerated (see DEC-967 item 2).
 
 **RND-032** (MUST) While the window is minimised, or a present reports the window occluded, the renderer stops rendering and polls at a low rate until the window is visible again; the simulation is unaffected (ADR-012).
 
@@ -320,6 +320,7 @@ Diagnostics: PIX markers and GPU timestamps per pass, in both configurations (AD
 | DEC-337 | Dropped | driver-specific cursor, glyph-atlas and texture-filtering behaviour is not specified |
 | DEC-562 | Open | map lighting presets (RND-013) |
 | DEC-654 | Resolved | gameplay is CPU-only (RND-003) |
+| DEC-967 | Resolved | option changes rebuild presentation data only and never regenerate the height field (RND-031) |
 
 **RND-045** (MUST NOT) The renderer specifies no alternative graphics back end, no screen-space pixelation or deform effect, no planar water reflection and no driver-specific workaround (see DEC-059, DEC-336, DEC-337).
 

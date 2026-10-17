@@ -19,17 +19,17 @@ The front-end pages themselves (what each page shows and where it leads) are spe
 
 **UI-001** (MUST) The UI framework is built in three layers, each depending only on the layers below it (diagram 1-A):
 
-1. **UI core** (`UiCore`), with its panel base type (`UiPanelBase`) and button base type (`UiButtonBase`): the panel list and its z-order; typed handles for panels and widgets; focus; the pointer state machine with pointer capture, panel moving and resizing; keyboard and text routing to the focused panel and its text-edit target; the tooltip timer; popups; maximising. The UI core knows nothing about drawing styles ([core_and_widgets.md](core_and_widgets.md) §4.1 to §4.9).
+1. **UI core** (`UiCore`), with its panel base type (`UiPanel`) and button base type (`UiWidget`): the panel list and its z-order; typed handles for panels and widgets; focus; the pointer state machine with pointer capture, panel moving and resizing; keyboard and text routing to the focused panel and its text-edit target; the tooltip timer; popups; maximising. The UI core knows nothing about drawing styles ([core_and_widgets.md](core_and_widgets.md) §4.1 to §4.9).
 2. **UI window layer**: the standard window (`UiWindow`) with its chrome, its navigation order for gamepad and keyboard, large-menu scaling and the value-control factory; the standard button (`UiButton`) with its highlight model and captions; and the widget set built on them: text field, increment glyphs, scroll bar, check box, drop-down, message dialog and chat entry ([core_and_widgets.md](core_and_widgets.md) §4.10 to §4.23).
 3. **Front-end layer**: the options screen (`OptionsScreen`), the full-screen page with title bar, content boxes and an in-page dialog; the page widget family (page buttons, Back and close buttons, page titles, highlight beam, fill boxes, page drop-downs, page text fields and page check boxes) ([core_and_widgets.md](core_and_widgets.md) §4.24 to §4.30); and the front-end screen (`FrontEndScreen`), the whole front end as one full-screen window with its page state machine ([pages_and_screen_recipes.md](pages_and_screen_recipes.md)).
 
-Tool-style windows (the development windows of the [diagnostics](../diagnostics_test_and_performance.md) component, and a map editor if the design phase builds one, DEC-045) are built on the UI window layer.
+Tool-style windows (the development windows of the [diagnostics](../diagnostics_test_and_performance/README.md) component, and a map editor if the design phase builds one, DEC-045) are built on the UI window layer.
 
 **UI-002** (MUST NOT) The UI framework never writes simulation state. It reads only the presentation state it is given (DEC-007), every player intent it produces leaves it as a player command of the command catalogue ([reference/12](../../../reference/12_simulation_model/06_teams_and_player_commands.md)), and an option widget bound to a shared match option only requests a change (§3, [core_and_widgets.md](core_and_widgets.md) §4.23). How the build enforces this boundary, and whether the UI reads per-tick snapshots, is the design phase's decision (DEC-222); until then the UI reads the read-only presentation view that DEC-222 option A describes and never includes a simulation header that grants write access.
 
 **UI-003** (MUST NOT) The UI framework draws nothing directly to the GPU and owns no GPU resource of its own except the glyph-cache atlas pages: widgets emit quads, gradients, lines and glyph runs into the batched UI stream ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §4.6; ADR-031), which the renderer records in its UI passes.
 
-**UI-004** (MUST NOT) The UI framework does not own the window, the swap chain, the binding system or the string-table file format. The platform layer owns the application window and reports size, DPI and focus changes (ADR-075); the renderer owns presentation and the screen transition ([frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-095); the input component owns devices, bindings and the input mode (ADR-029, [input.md](../input.md)); the data schemas own the string-table schema and its markup syntax ([data schemas](../data_schemas/README.md)).
+**UI-004** (MUST NOT) The UI framework does not own the window, the swap chain, the binding system or the string-table file format. The platform layer owns the application window and reports size, DPI and focus changes (ADR-075); the renderer owns presentation and the screen transition ([frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-095); the input component owns devices, bindings and the input mode (ADR-029, [input](../input/README.md)); the data schemas own the string-table schema and its markup syntax ([data schemas](../data_schemas/README.md)).
 
 **UI-005** (MUST) The UI core is one service with an explicit owner and lifetime, never reached through a process-wide global. Its owner is the client's composition root, which the design phase defines (DEC-221); until then the UI core lives for the process, from start-up to shutdown, and is passed by reference to the systems that open windows. Panels are owned by the UI core; widgets are owned by their panel; a scroll bar's helper object is owned by the window that created it.
 
@@ -44,7 +44,7 @@ flowchart TB
     UPD["Pointer state machine and panel update"]
     TXT["Text and key routing"]
     DRW["Draw panels back-most first"]
-    PB["UiPanelBase"] --- BB["UiButtonBase"]
+    PB["UiPanel"] --- BB["UiWidget"]
   end
   subgraph Window["Layer 2: UI window layer and widget set"]
     W["UiWindow"] --> PB
@@ -126,7 +126,7 @@ The type, ownership and lifetime of every UI object are listed in [core_and_widg
 
 ## 6 Failure modes, diagnostics and telemetry
 
-**UI-018** (MUST) No UI failure is fatal. A missing picture draws as its content-build placeholder; a missing string falls back per id to the base language (DEC-099); a stale handle is a no-op; a layout that does not fit applies its cell's overflow rule (ADR-033). Each of these is logged once per item in the UI log category (ADR-067), and development builds show a counter of them in the diagnostics overlay ([diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md)). The detailed failure tables are in each document's §6.
+**UI-018** (MUST) No UI failure is fatal. A missing picture draws as its content-build placeholder; a missing string falls back per id to the base language (DEC-099); a stale handle is a no-op; a layout that does not fit applies its cell's overflow rule (ADR-033). Each of these is logged once per item in the UI log category (ADR-067), and Debug builds show a counter of them in the diagnostics overlay ([diagnostics, test and performance](../diagnostics_test_and_performance/README.md)). The detailed failure tables are in each document's §6.
 
 ## 7 Acceptance tests
 
@@ -150,7 +150,7 @@ The type, ownership and lifetime of every UI object are listed in [core_and_widg
 - **DEC-221** (Open): the composition root, service lifetimes and the application state machine; the UI core's owner and lifetime follow it (UI-005).
 - **DEC-222** (Open): the simulation and presentation boundary; how the UI's read-only view of the match is enforced and fed (UI-002).
 - **DEC-045** (Open): a map editor, whose windows would be tool windows of the UI window layer (UI-001).
-- ADR-030 and ADR-034 are Proposed; the default each names is the baseline of this folder.
+- ADR-030 is Accepted (an own retained framework); ADR-034 is Proposed, and the default it names is the baseline of this folder.
 
 **Design-phase inputs.**
 

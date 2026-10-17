@@ -21,3 +21,7 @@ Items the wave B fixers could not apply, collected for one residual pass after r
 | 15 | FX-05 | two asset-manifest rows need reference/06 or 07 files as consumers (reports/FX-05.md §11) | X-AST pass 2b |
 | 16 | FX-05 | links to the diagnostics document broke when FX-11 split it into a folder | `p4_fix_links.py --apply` after wave B |
 | 17 | FX-05 | RA-249 not applied (reference/09 uses `ui.power_slots.map_editor` itself); RB-047 part (particle colour, 1,000 iterations of an out-of-scope effect) not applied | none (closed with reason) |
+| 18 | FX-02 | R-CRATE-100 still says a crate drop period of 0 means no Supply crates; use the explicit none value (DEC-120) | coordinator edit in reference/04 |
+| 19 | FX-02 | the match message and the Power slots panel's centre message share one layout: share keys or not | coordinator: keep separate keys, each owner's document states its own (no change) |
+| 20 | FX-02 | `ref.unit.transport.bot_turret_search_default` (200 wu) is the search radius for a target that is not a Flag post, not a default Flag post size | coordinator edit of the key's notes in reference/02 transport.md |
+| 21 | FX-02 | RA-257 (turret frequency 0) and RB-070 (8 px line) not applied, with reasons | closed |

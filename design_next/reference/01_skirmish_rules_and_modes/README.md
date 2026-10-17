@@ -61,7 +61,7 @@ A seventh, debug-only mode of the reference is not part of the catalogue (DEC-05
 
 ### 2.2 Teams, factions and start positions
 
-**R-MODE-007** (MUST) Every match has the six team slots of [reference/12](../12_simulation_model/06_teams_and_player_commands.md) (`ref.sim.max_teams`, R-SIM-392, R-SIM-393). Slots 0 to 3 are player positions. Slot 4 is the **Rogue faction** and slot 5 the **Visitor faction**. Both faction slots exist as bot teams in every match, and each always owns one bot controller, which runs the full bot controller of [reference/07](../07_bots/README.md) (DEC-558).
+**R-MODE-007** (MUST) Every match has the six team slots of [reference/12](../12_simulation_model/06_teams_and_player_commands.md) (`ref.sim.max_teams`, the constant `MAX_TEAMS`; R-SIM-392, R-SIM-393). Slots 0 to 3 are player positions. Slot 4 is the **Rogue faction** and slot 5 the **Visitor faction**. Both faction slots exist as bot teams in every match, and each always owns one bot controller, which runs the full bot controller of [reference/07](../07_bots/README.md) (DEC-558).
 
 **R-MODE-008** (MUST) The Rogue and Visitor factions are neutral-hostile in every mode: they never win a match and never block an elimination win. They can own Spawn Nodes, Control Zones, Flag posts and Relics, and they score where a mode file says so, but every winner, draw and last-team-standing test of every mode excludes them. Hostile Supply crate outcomes stay owned by the Rogue faction, and the Visitor faction still arrives with the Abductor (DEC-082). The hazard outcomes are team-blind (DEC-107), and the owner of Brood creatures is DEC-121.
 
@@ -159,7 +159,7 @@ The resulting colours apply inside this step on every participant; alliance assi
 | 4 | `MatchMode::LaunchRace` | `mode.launch_race.name` | `mode.launch_race.objective` | `mode.complexity.hard` | `help.mode_card`, `help.mode_page` (4 pages), `mapfile.launch_race` |
 | 5 | `MatchMode::FlagChain` | `mode.flag_chain.name` | `mode.flag_chain.objective` | `mode.complexity.hard` | `help.mode_card`, `help.mode_page` (3 pages), `mapfile.flag_chain` |
 
-The complexity label is drawn with the badge `uitex.difficulty_badge` on the mode buttons, and each mode has one explainer animation `anim.explainer` ([reference/11](../11_tutorial_and_help.md)). The debug-only mode of the reference is not an enumerator (DEC-058).
+The complexity label is drawn with the badge `uitex.difficulty_badge` on the mode buttons, and each mode has one explainer animation `anim.explainer` ([reference/11](../11_tutorial_and_help.md) R-TUT-020). The help pages per mode and their counts are reference/11 R-TUT-043 (`ref.tut.help_page.mode_pages`). The debug-only mode of the reference is not an enumerator (DEC-058).
 
 **R-MODE-030** (MUST) One bot difficulty applies to every bot team of a match: `BotDifficulty::Easy`, `BotDifficulty::Standard` or `BotDifficulty::Hard`, default Standard; a tutorial starts with Easy (R-MODE-083). The difficulty parameters are in [reference/07](../07_bots/README.md).
 
@@ -220,7 +220,7 @@ Texts 2 and 3 blink on the presentation clock: alpha `ref.match.grace_overlay.bl
 
 **R-MODE-043** (MUST) During the grace period each scoreboard row of a bot team and of a ready human shows `match.grace_period.ready` in place of its score.
 
-**R-MODE-044** (MUST) A pause request is refused during the grace period, after game over, and whenever a remote human takes part (R-SIM-553). The Supply crate drop rule has no grace-period gate of its own, but no world tick runs during the grace period, so no Supply crate drops in it, and a paused match stops the drops in the same way ([reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) R-CRATE-102, DEC-116).
+**R-MODE-044** (MUST) A pause request is refused during the grace period, after game over, and whenever a remote human takes part (R-SIM-553). The Supply crate drop rule has no grace-period gate of its own, but no world tick runs during the grace period, so no Supply crate drops in it, and a paused match stops the drops in the same way ([reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) R-CRATE-102, DEC-116, DEC-036).
 
 ### 2.10 Scores and rank announcements
 
@@ -791,7 +791,7 @@ The number of reference maps per mode and per player count is [reference/08](../
 ## 7 Dependencies
 
 - **Reference documents:** [00 Reference overview](../00_reference_overview.md) (core loop); [02 Units](../02_units/README.md) (Workers, Collectors, the Visitor faction's Workers); [03 Buildings and world objects](../03_buildings_and_world_objects/README.md) and [mode objects](../03_buildings_and_world_objects/mode_objects.md) (every mode object); [04 Supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (crate drops, outcome validity, Power slots); [05 Population flow](../05_population_flow.md) (Catch-up bonus, Comeback Bonus, reinforcement waves, caps, starting powers); [06 Controls, camera and commands](../06_controls_camera_and_commands/README.md) (the Ready action); [07 Bots](../07_bots/README.md); [08 Maps and level design](../08_maps_and_level_design/rules_and_conventions.md) (map options, per-mode validation); [09 Front end and match flow](../09_front_end_and_match_flow/screen_flow_and_match_setup.md) (lobby, loading, achievement hooks); [10 Audio design](../10_audio_design/README.md) (match sound events); [11 Tutorial and help](../11_tutorial_and_help.md) (tutorials, help pages, hints); [12 Simulation model](../12_simulation_model/README.md) (tick timing, teams, commands, match lifecycle).
-- **Engine components:** [UI framework](../../architecture/components/ui_framework/README.md) (HUD, lobby pages); [audio engine](../../architecture/components/audio_engine.md); [data schemas](../../architecture/components/data_schemas/README.md) (typed match options and map records).
+- **Engine components:** [UI framework](../../architecture/components/ui_framework/README.md) (HUD, lobby pages); [audio engine](../../architecture/components/audio_engine/README.md); [data schemas](../../architecture/components/data_schemas/README.md) (typed match options and map records).
 - **Assets:** `help.mode_card`, `help.mode_page`, `anim.explainer`, `uitex.difficulty_badge`, `mapfile.spawn_control`, `mapfile.zone_control`, `mapfile.relic_run`, `mapfile.siege`, `mapfile.launch_race`, `mapfile.flag_chain`, `sfx.ui.match_ui.countdown_tick`, `sfx.ui.match_ui.game_over`, `strings.en_gb`, `strings.de_de`, `strings.es_es`, `strings.fr_fr`, `strings.it_it`, `strings.ja_jp`, `strings.ko_kr`, `strings.pt_br`, `strings.ru_ru`.
 
 ## 8 Open decisions
