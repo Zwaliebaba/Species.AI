@@ -1099,3 +1099,218 @@ All are header templates; bodies live in the `.cpp` files that the headers `#inc
 | `Directory` | DArrays of data and subdirs | `CreateData` (replace by name) | `RemoveData` | slot order | §29.D |
 
 Determinism notes: `DArray::PutData` (lowest free slot) and `FastDArray::PutData` (LIFO free slot) give **different slot assignment for the same operation sequence**; a re-implementation must replicate the exact policy of whichever container a system used, or (better) adopt a single documented policy for all simulation containers and accept that old replays/sync logs are not comparable [I].
+
+---
+
+## [→ 31_platform_build_and_tools] 31.18 `docs/` inventory (supporting evidence only; skimmed)
+
+| # | File | Content (summary) | Relevance / discrepancy note |
+|---|---|---|---|
+| 1 | `docs/.cvsignore` | ignores `diary.txt` | none |
+| 2 | `docs/ChrisTodo.txt` | one Darwinia todo (objectives counters) | Darwinia-era |
+| 3 | `docs/DarwiniaInput.rtf` | Darwinia input system guide (InputManager, InputDrivers, InputSpec lists, `control_types.inc`, `DEF_CONTROL_TYPE`) | P10 evidence |
+| 4 | `docs/HardwareComplianceIssues.txt` | 2 lines (Linux box lacks ARB multitexture, cursor transparency) | P13 |
+| 5 | `docs/ImplementationNotes/LandscapeCoastLine.jpg` | scanned diagram (coastline) | P11 |
+| 6 | `docs/ImplementationNotes/LandscapeTriangleStripDetails.jpg` | scanned diagram (landscape strips) | P11/P12 |
+| 7 | `docs/ImplementationNotes/LandscapeTriangleStripVertices.jpg` | scanned diagram | P11/P12 |
+| 8 | `docs/ImplementationNotes/ObjectGrid.txt` | sizing assumptions for an object grid (100,000 objects, 632×632 cells, 10 Hz updates) | design intent; P03 |
+| 9 | `docs/ImplementationNotes/RampUpAndDown.gif` | 400×478 diagram (sound ramp) | P16 |
+| 10 | `docs/ImplementationNotes/SortingHashtable.jpg` | diagram of `SortingHashTable` ordered index chain | matches §21.C |
+| 11 | `docs/ImplementationNotes/SoundEffectBlueprint.jpg` | sound blueprint diagram | P16 |
+| 12 | `docs/ImplementationNotes/SoundEffectBlueprint2.jpg` | sound blueprint diagram | P16 |
+| 13 | `docs/ImplementationNotes/SoundSystemData.jpg` | sound data diagram | P16 |
+| 14 | `docs/ImplementationNotes/SoundSystemData2.jpg` | sound data diagram | P16 |
+| 15 | `docs/ImplementationNotes/SoundSystemSamplePath.jpg` | sample path diagram | P16 |
+| 16 | `docs/ImplementationNotes/Sounds_DiskToSpeaker.gif` | 1233×2925 sound pipeline diagram | P16 |
+| 17 | `docs/ImplementationNotes/TripodLegs1.jpg` | tripod leg IK sketch | P05 |
+| 18 | `docs/ImplementationNotes/TripodLegs2.jpg` | tripod leg IK sketch | P05 |
+| 19 | `docs/IntroversionEULA.txt` | end-user licence used by installers | IP text |
+| 20 | `docs/MacPlan.txt` | 2005 Darwinia Mac port plan (SDL/GCC, endian, sound mixer) | Darwinia-era |
+| 21 | `docs/MinDistAndVolume.jpg` | sound attenuation sketch | P16 |
+| 22 | `docs/Multiwinia-Buka-Russian-EULA.txt` | Russian EULA (CP1251) for the Buka SKU | used by Russian installer |
+| 23 | `docs/Network.txt` | early design: server ticks 25 FPS, sends last 3 frames' updates via UDP, 1 s watchdog | verify against `code/gametimer.h` `SERVER_ADVANCE_PERIOD` (P15); not verified here |
+| 24 | `docs/NetworkThreads.txt` | early design of send/receive threads and main loop | compare §20.T.2 (actual: dedicated listen threads, sends from main thread — P15) |
+| 25 | `docs/OpenGLState.txt` | assumed default GL state | P12/P13 |
+| 26 | `docs/RussianFontRequest.txt` | says only Speccy has Cyrillic glyphs | data now has Cyrillic pages for editor/square too (`data/textures/unicode/{editor,square}.0410.042f.bmp`) — discrepancy (stale) |
+| 27 | `docs/ThoughtsOnSoundSystem.txt` | DirectSound filter notes | P16 |
+| 28 | `docs/World.jpg` | world sketch | Darwinia-era |
+| 29 | `docs/adsr.gif` | ADSR envelope diagram | P16 |
+| 30 | `docs/bad guys.txt` | enemy behaviour brainstorm | Darwinia-era |
+| 31 | `docs/betachanges.txt` | Darwinia 1.5.x beta changelog | Darwinia-era |
+| 32 | `docs/betatesters.txt` | beta-tester handles and e-mail addresses | **personal data — do not reproduce** |
+| 33 | `docs/buglist.txt` | Darwinia bug notes (ids, research strings) | Darwinia-era |
+| 34 | `docs/changes.txt` | Darwinia 1.4x changelog | Darwinia-era |
+| 35 | `docs/cpu cycles.txt` | Darwinia "CPU cycles"/task-manager/gesture design | P09 background; brief requested cross-check of "known hotspots" — the file is a gameplay design, not a performance note |
+| 36 | `docs/darwin digital life.txt` | story brainstorm ("Future War") | IP |
+| 37 | `docs/detailed schedule.txt` | Darwinia coding schedule | Darwinia-era |
+| 38 | `docs/donelist.txt` | done list (trees burn, walls, gestures) | Darwinia-era |
+| 39 | `docs/engineers.txt` | engineer task ideas | Darwinia-era |
+| 40 | `docs/game objects.txt` | object brainstorm | Darwinia-era |
+| 41 | `docs/help system.txt` | Sepulveda help system design | P19 (`USE_SEPULVEDA_HELP_TUTORIAL` dead) |
+| 42 | `docs/input_preferences_syntax.txt` | grammar of `input_preferences.txt` incl. `pref [not] <boolean_preference_name>` ("positive non-zero is true") | P10; note: such prefs must be **int-typed** (`GetInt` returns the default for float/string items, §29.P.1) |
+| 43 | `docs/integrating virtual players into network system.txt` | plan: separate Teams and Clients arrays in the server | P15 |
+| 44 | `docs/landscape lightmap.txt` | code sketch `Landscape::ApplyLightmap` | P11 (verify) |
+| 45 | `docs/mission progression.doc` | Word doc, Darwinia mission list (sandbox, labs, containment, yard, generator, mines, biosphere, receiver) | Darwinia-era |
+| 46 | `docs/multiwinia audio.docx` | audio todo (crate sound events, crate reward enum list) | P16/P08 evidence |
+| 47 | `docs/multiwinia names.txt` | candidate titles | IP/brand |
+| 48 | `docs/multiwinia-changes.txt` | Multiwinia 1.1.0–1.2.0 release notes (demo limits, lobby chat, `/name`) | P15/P17b |
+| 49 | `docs/multiwinia_manual.pdf` | 28-page player manual; system requirements 2.0 GHz CPU, 512 MB RAM, Windows XP/Vista, GeForce 6200/Radeon 9600 | packaged as `manual.pdf` by gold/retail scripts |
+| 50 | `docs/multiwinia_todo.txt` | early MP plan (netlib, lobby, determinism "fix determinism", master server) | P15 background |
+| 51 | `docs/multiwiniachanges-beta.txt` | beta changelog to 1.9.35 (sync fixes, Virii limits) | P15/X3 evidence |
+| 52 | `docs/multiwiniareleasenotes-beta.txt` | beta release notes to 1.9.31; asks users to send `syncerror-*.txt`, `debug.txt`, `dxdiag.txt`, `preferences.txt` | consistent with §31.4.2 |
+| 53 | `docs/network overview.txt` | lobby design (TCP lobby, UDP 4000/4001, broadcast discovery) | P15 (ports match prefs defaults 4000/4001) |
+| 54 | `docs/new building docs.txt` | Darwinia FenceSwitch etc. | Darwinia-era |
+| 55 | `docs/newdemo.txt` | 2005 demo schedule | Darwinia-era |
+| 56 | `docs/possible removals.txt` | Darwinia scope cuts | Darwinia-era |
+| 57 | `docs/research and development.txt` | Darwinia research list | Darwinia-era |
+| 58 | `docs/retro music.txt` | licensed retro music shortlist (artist/track ratings) | IP (third-party music) |
+| 59 | `docs/schedule.txt` | Darwinia task list | Darwinia-era |
+| 60 | `docs/sdl_problems.txt` | SDL limitations (no wheel, low-res timer) | platform appendix |
+| 61 | `docs/sepulveda_interview.txt` | in-fiction interview with Dr Sepulveda (Protologic 68000) | IP (story) |
+| 62 | `docs/sepulvedas themepark.txt` | Darwinia world design | IP |
+| 63 | `docs/sound changes.txt` | sound requests/changes (Nov 2007) | P16 |
+| 64 | `docs/sphere world.txt` | Darwinia global world sphere design | P11 legacy |
+| 65 | `docs/spirit resource system.txt` | spirit economy design | P05/P06 background |
+| 66 | `docs/start seqs.txt` | retro start-sequence inspirations | P20 |
+| 67 | `docs/story material.txt` | Dr Sepulveda / Protologic backstory | IP (story) |
+| 68 | `docs/todo.txt` | late todo (D3D leaks, ATI issues, Steam upsell) | P13 |
+| 69 | `docs/top level map.txt` | map/mission file separation design | P11 |
+| 70 | `docs/vista installer check list.txt` | Darwinia Vista release checklist (`TARGET_VISTA`, `ReleaseD3D`, `DarwiniaSupport.*`) | names differ from code (`TARGET_OS_VISTA`, `ReleaseDirect3D`, `MultiwiniaSupport`) |
+
+---
+
+## Constants table (this partition)
+
+| Constant | Value | Kind | Evidence |
+|---|---|---|---|
+| `APP_NAME` | "Multiwinia" | `#define` | `code/lib/universal_include.h` |
+| `DARWINIA_VERSION` / `APP_VERSION` | "dev" | `#define` | same |
+| `DARWINIA_EXE_VERSION` | 6,0,0,0 | `#define` | same |
+| `DARWINIA_GAMETYPE` (FULL) | "multiwinia" | `#define` | same |
+| `GRACE_TIME` | 3.0 s (20.0 s testbed) | `#define` | same |
+| `USE_PENTIUM_COUNTER` | 0 | `#define` | `code/lib/hi_res_time.cpp` |
+| `APP_RAND_MAX` | 32767 | `#define` | `contrib/systemiv/lib/math/random_number.h` |
+| LCG multiplier / increment | 214013 / 2531011 | literal | `random_number.cpp:AppRandom` |
+| MT19937 N, M, MATRIX_A, UPPER/LOWER masks | 624, 397, 0x9908B0DF, 0x80000000, 0x7FFFFFFF | `#define` | `random_number.cpp` |
+| MT init multiplier; default seed for −1 | 1812433253; 5489 | literal | `random_number.cpp:syncrandseed` |
+| MT tempering masks | 0x9D2C5680, 0xEFC60000 | literal | `random_number.cpp:_syncrand` |
+| syncfrand divisor | 4294967296.0 | literal | `random_number.cpp:_syncfrand` |
+| TRACK_SYNC_RAND log cap | 100000 entries | `static int` | `random_number.cpp` |
+| `RandomNormalNumber` samples | 12 | literal | `random_number.cpp` |
+| `FileCRC` MAXSIZE | 100000 bytes | `#define` | `contrib/systemiv/lib/math/filecrc.cpp` |
+| CRC32 polynomial / init | 0xEDB88320 / 0 (no xorout) | literal | `contrib/unrar/crc.cpp:InitCRC`, `filecrc.cpp` |
+| Text separators | `" \t\n\r:,"`; UTF-16 `L" \f\t\n\r:,"` | `#define DEFAULT_SEPERATOR_CHARS` | text/unicode stream readers |
+| Initial line buffer / max line | 128 / 65536 chars | `#define INITIAL_LINE_LEN`, assert | same |
+| Encryption marker / offsets | "redshirt2"; {31,7,9,1,11,2,5,5,3,17,40,12,35,22,27,2} | literal / `static unsigned int[]` | `text_file_writer.cpp`, `text_stream_readers.cpp` |
+| UTF-16 BOMs | FF FE (LE), FE FF (BE) | literal | `unicode_text_stream_reader.cpp` |
+| Language limits | 1024 phrase chars; 64 marker key; 96 final key | `#define` | `code/lib/language_table.cpp` |
+| Language mode suffixes | `_kbd`, `_xin`; prefix `part_` | literal | same |
+| Directory limits | 1024 data items; 10240 string length | `#define DIRECTORY_MAXDIRSIZE/MAXSTRINGLENGTH` | `contrib/systemiv/lib/tosser/directory.cpp` |
+| Directory markers | '<' / '>' (1 byte) | `#define` | same |
+| Directory type ids | 0 UNKNOWN,1 INT,2 FLOAT,3 CHAR,4 STRING,5 BOOL,6 VOID,7 FIXED,8 INTS,9 ULLONG,10 UNICODE | `#define` | `directory.h` |
+| Directory safe values | −1, −1.0f, '?', "[SAFESTRING]", L"[SAFESTRING", false, (ull)−1 | `#define` | `directory.h` |
+| PackedInt escape | 255 | literal | `contrib/systemiv/lib/network_stream.cpp:WritePackedInt` |
+| HashTable initial size / max | 4 / 65536 | literal/assert | `hash_table.cpp` |
+| HashTable hash case mask | 0xDF | literal | `hash_table.cpp:HashFunc` |
+| Profiler frame-time history | 200 frames | literal | `profiler.cpp:Advance` |
+| `PROFILE_HISTORY_LENGTH` | 10 (unused) | `#define` | `profiler.cpp` |
+| Crash handler stack dump / code bytes | 3072 DWORDs / 16 bytes / 4 columns | `const int` | `exception_handler.cpp` |
+| hprintf buffer | 8192 chars | `#define` | same |
+| Crash file names | CRASH.DMP, ERRORLOG.TXT, REGISTRY.TXT, MultiwiniaSupport.exe | `#define` | `contrib/XCrashReport/CrashFileNames.h` |
+| App magic passed to support tool | "0B9432AF" | literal | `code/main.cpp:AppMain` |
+| Thread affinity masks | main 0xAA; workers 0x55 | literal | `code/app.cpp`, `code/loading_screen.cpp`, `code/lib/opengl_directx.cpp` |
+| Loading-screen job frame budget | 1/60 s | literal | `code/loading_screen.cpp` |
+| Language-table deferred delete | 5 frames | literal | `code/app.cpp:SetLanguage` |
+| Archive max files | 16384 | `#define MAX_FILES` | `contrib/unrar/unrar.h` |
+| keygen | seed 28477717, 1710 rounds, sysinfo 184–500 B, userinfo 28–200 B | literal | `code/keygen.cpp` |
+| Auth key length | 31 chars (+NUL = 32) | `#define AUTHENTICATION_KEYLEN` | `contrib/systemiv/lib/metaserver/authentication.h` |
+| Prefs float precision on save | 2 decimals | format | `code/lib/preferences.cpp:SaveItem` |
+| ShapeExporter position merge threshold | (0.001)² | literal | `tools/ShapeExporter/ShapeExporter.cpp:LookupPosition` |
+
+---
+
+## Cross-partition notes
+
+* **P01 (app/main):** `App::App` creates `Resource`, parses `init.dat`, then `PrefsManager` — before `main.dat`; first-run `default_preferences.txt` overrides therefore do not apply in packaged builds (§31.5.3). `SetThreadAffinityMask` main=0xAA. `--NoProfile`, `--write-version` command-line switches (`code/main.cpp`). `StandardiseCPUPrecision` lives in `code/main.cpp` but is required by `WorkQueue` threads. `AppMain` SEH wrapper protects only the main thread.
+* **P10 (input):** `docs/input_preferences_syntax.txt` `pref <name>` conditions depend on `PrefsManager::GetInt` typing rules (float-typed prefs read as false). Language captions call `g_inputManager->getControlID/getBoundInputDescription` for `[KEY…]` markers and `getInputMode()` for `_kbd`/`_xin` table selection (`code/lib/language_table.cpp`).
+* **P11 (terrain):** `SurfaceMap2D` interpolation details (wrap-to-zero at edges, `GetValueNearest` ignoring origin, double arithmetic) are determinism-relevant for height queries (§21.C).
+* **P12 (resources):** archive semantics (§31.5.2) and loose-file precedence; `Resource::GetTextReader` chooses UTF-16 vs 8-bit readers; text files packed in archives must end with a newline (§29.T.1).
+* **P13 (D3D backend):** device created without `D3DCREATE_FPU_PRESERVE` → x87 precision change in `[B:D3D]`; `ReleaseDirect3D` built with `/fp:fast`, `/Oy`, `/GS-`, linker `/PROFILE`.
+* **P15 (network):** `Directory` wire format (§29.D) incl. unchecked subdirectory count and VOID length; packed ints; sync seed via `syncrandseed`; `FlushSyncRandLog` on connect; `HashData` key hashing; `APP_VERSION` "dev" is the protocol version string.
+* **P16 (sound):** `SystemInfo::GetAudioDetails` preferred-device bug (always last device); `SoundBufferSize` default mismatch (prefs 512 vs call site 2000, see pref CSV); sound archives loaded on a dedicated serial queue.
+* **P17a/P17b/P18:** profiler window lifetime controls `g_profiler`; `AuthInputField` saves `authkey` while the game reads `authkey.dev`.
+* **X1a:** preferences/language grammars in §29.P/§29.L supersede sample-based inference; all text formats share §29.T tokenisation (colon and comma are separators; `#` comments; no quoting).
+* **X2a/X2b (asset catalogue):** `FindUnusedResources.sh` heuristic limitations (§31.12); `tools/sounds.txt` (1297) and `tools/menu_sounds.txt` (18) are the authoritative split of audio into `sounds.dat`/`menusounds.dat`, everything else Ogg → `sounds2.dat`.
+* **X3 (determinism):** RNG specifics (§22.R), `RandomNormalNumber`/`RandomApplyVariance` consume the synced stream; container slot-reuse policies (§21.C); `iv_*` float truncation.
+* **X4 (levels):** map IDs = `FileCRC` of level files (§29.B.2); per-SKU map subsets via inclusion lists (§31.6).
+
+## Contradictions / open questions
+
+1. `build_matrix.md` §6 says `targets/macosx/*` "still reference Darwinia and do not build Multiwinia". Only `targets/macosx/Darwinia/` is Darwinia; `targets/macosx/Multiwinia/Multiwinia.xcodeproj` is a maintained Multiwinia 1.3.1 Mac project (Ambrosia port) [C] `targets/macosx/Multiwinia/Info.plist`, `MultiwiniaCocoaBridge.cpp`.
+2. Authentication key file name: read `authkey.dev` (`code/app.cpp:InitMetaServer`, `code/UI/GameMenuWindow.cpp` L4989, `code/UI/PlayDemoAuthkeyButton.h`) vs written `authkey` (`code/UI/AuthInputField.h` L149); support INI and installers reference `authkey`. Which one shipped [U] — resolve by checking a retail install or the release branch.
+3. Beta group A: `tools/multiwinia_inclusions_beta_test_group_a.txt` (13 maps) ≠ `TARGET_BETATEST_GROUP_A` `PERMITTED_MAPS` (3 CTS maps) in `code/lib/universal_include.h`; it equals the commented list under `TARGET_BETATEST_GROUP_ALL` [C].
+4. Exe version metadata: `version.rc` says 6.0.0.0 while installers ship v1.0.3/1.0.4/1.2.3/1.9.x and the Game Explorer GDF says Darwinia 1.5.4.0 [C].
+5. `build_multiwinia_data.bat` names `sounds2.dat` step "Making sounds.dat" (cosmetic) and calls absent `build_ambx_dat`; `InstallerScript.iss` and the beta installer require `build\ambx.dat`, which no script in the tree produces [C].
+6. Is the debug menu (and so the profiler window) reachable in the shipped FULL exe? Depends on input bindings (P10/P17a) [U].
+
+## [U] Unknowns
+
+1. [U] Behaviour of `throw;` without an active exception under the VS2008 static CRT inside the `__try` of `AppMain` (expected: SEH 0xE06D7363 caught by `RecordExceptionInfo`, or `terminate()` → `abort()` bypassing it). Resolve by running an assert in a Release build.
+2. [U] Exact x87 control word after D3D9 device creation in `[B:D3D]` (expected 24-bit precision). Resolve by reading the control word after `CreateDevice` at run time.
+3. [U] Role of `tools/SlashSort.exe` (no script references it; only a usage banner is visible).
+4. [U] Contents/role of the absent `ambx.dat`, `branding.dat`, `patch.dat` builders and of `tools/autopatcher`, `tools/profilelocatorwin32` (referenced by packaging scripts, absent from the tree).
+5. [U] Which authentication key file name shipped (contradiction 2).
+6. [U] Whether `MultiwiniaSupport.exe` uploads automatically or only on user consent, and its protocol (binary only; strings mention `crashreports.introversion.co.uk`).
+7. [U] Whether shipped `default_preferences.txt` was ever placed loose next to the exe (would change first-run defaults, §31.5.3).
+
+## Docs-vs-code discrepancies
+
+| Doc | Claim | Code reality |
+|---|---|---|
+| `README.TXT` | 6 configurations incl. "PC OpenGL (Release) produces darwinia_gl.exe" and "PC OpenGL (ReleaseDirect3D) produces darwinia.exe" | The vcproj has 4 configs; the sln adds `PC OpenGL (Debug)`/`(Release)` solution configs mapped to `Debug`/`Release`; no "PC OpenGL (ReleaseDirect3D)" [C] `targets/vs2005/Darwinia.sln` |
+| `README.TXT` | "Debug and Release build Darwinia to use the OpenGL engine" | correct, but the product is Multiwinia (`APP_NAME`) |
+| `tools/readme-linux.txt` | prefs in `~/.darwinia/demo` or `~/.darwinia/full` | Multiwinia Linux path is `~/.multiwinia/<DARWINIA_GAMETYPE>/` [C] `code/app.cpp:GetProfileDirectory` |
+| Installers `[UninstallDelete]`, `MultiwiniaSupport.ini` | user files in `{app}` | written to `%LOCALAPPDATA%\Introversion\Multiwinia\` on Win2000+ unless `--NoProfile` [C] `code/app.cpp:GetProfileDirectory` |
+| `MultiwiniaSupport.ini`, installers | files `userprefs.txt`, `game-history.txt`, `stdout.txt` | no code in `code/` or `contrib/systemiv/lib` writes these names [C grep] (likely autopatcher/old versions) |
+| `docs/vista installer check list.txt` | `TARGET_VISTA`, `ReleaseD3D`, `DarwiniaSupport.ini/.exe` | `TARGET_OS_VISTA`, `ReleaseDirect3D`, `MultiwiniaSupport.*` |
+| `docs/RussianFontRequest.txt` | only Speccy has Cyrillic | Cyrillic pages exist for editor, speccy, square in `data/textures/unicode/` |
+| `tools/language/README.txt` | inputs must be UCS-2 BE | `data/language/japanese.txt` and `russian.txt` are UTF-16 LE; the game accepts both, report.pl only BE |
+| `contrib/systemiv/lib/math/random_number.h` comments | `AppRandom` < APP_RAND_MAX; `sfrand`, `syncsfrand` in (−range, range) | `AppRandom` ≤ 32767 inclusive; `sfrand`/`syncsfrand` ∈ [−range/2, range/2] (§22.R.1) |
+| `contrib/systemiv/lib/filesys/text_stream_readers.cpp` comment | "Returns 0 on EOF, 1 otherwise" | `TextDataReader` returns false on the last line when it lacks a newline |
+| `tools/FindUnusedResources.sh` | must run from `Darwinia` folder | repo folder is `multiwinia` |
+| `docs/cpu cycles.txt` | (requested as performance notes) | it is a gameplay design document (task manager/gestures), no performance data |
+| `docs/Network.txt` | server ticks at 25 FPS | not verified in P14 (see P15: `code/gametimer.h`) |
+| `targets/vs2005/GDF/*.gdf.xml` (compiled into exe) | "Darwinia" 1.5.4.0, `darwinia.exe`, saved games `Darwinia\users` | product is Multiwinia `multiwinia.exe`; Game Explorer metadata stale |
+
+## IP register
+
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| "Multiwinia", "Darwinia" product names, `APP_NAME`, `DARWINIA_*` macro names, `darwinia*.exe` | brand | `code/lib/universal_include.h`, `targets/vs2005/*`, `tools/*.bat` | `GAME_NAME`, `game.exe` |
+| "Introversion Software", web/support URLs (`introversion.co.uk`, `multiwinia.co.uk`, `darwinia.co.uk`, `crashreports.introversion.co.uk`, metaserver host) | brand | `targets/vs2005/version.rc`, installers, `MultiwiniaSupport.exe`, `code/app.cpp:InitMetaServer` | "Studio", `example.com` |
+| Ambrosia Software, Buka, eGames/Cinemaware Marquee (distributors), Logitech G15, amBX | brand (third-party) | targets/macosx, installers, exclusion lists | omit |
+| Dr Sepulveda, Protologic 68000, "Future War"/"Futurewar Shape Format", story documents | name/text | `docs/sepulveda_interview.txt`, `docs/story material.txt`, `tools/ShapeExporter/ShapeExporter.cpp:LongDesc` | omit / "Shape format v1" |
+| `"redshirt2"` encryption marker | text | `text_file_writer.cpp` | own marker (or drop obfuscation) |
+| UI/language strings (`data/language/*`, `LANGUAGEPHRASE` keys such as `multiwinia_enterauthkey`, `error_parental`) | text | `data/language/*.txt` | new string table |
+| Fonts `speccy`, `square`, `editor` font pages; `verdana-bold.bmp` in animator.dat | art | `data/textures/unicode/*`, `animator.dat` | licensed/open fonts |
+| Icons/box art: `darwinia.ico`, `DarwiniaVista.ico`, `GDF/*/boxart_*.png`, `gameicon_*.ico`, `Multiwinia.icns`, `darwinia.png`, NSIS `darwinia.bmp`/`header.bmp`, Loki `splash.xpm` | art | targets/, tools/, root | new art |
+| Sound lists naming assets (`mwsounds/*`, `sounds/*`, menu ambience) | audio | `tools/sounds.txt`, `tools/menu_sounds.txt` | new audio set |
+| Licensed retro music (Trash80, Tresk, DMA SC, Two Ataris…) | audio (third-party) | `docs/retro music.txt`, exclusion lists | do not reuse |
+| EULAs (`EULA.txt`, `docs/IntroversionEULA.txt`, Buka EULA, NSIS `licence.txt`) | text | root/docs/tools | own licence |
+| Beta tester handles/e-mails | personal data | `docs/betatesters.txt` | never reproduce |
+| Developer names in credits/comments (Mac port credits, "Hack by Chris", Bruce Dawson/Hans Dietrich headers) | name | targets/macosx rtfs, code comments | omit |
+| Third-party code: MT19937 (BSD-style notice), XCrashReport/ExceptionHandler (public domain/Dawson), GetWinVer/MiniVersion (Dietrich, public domain), auto_vector (Reliable Software), unrar (RARLAB licence), NSIS samples, Loki Setup | third-party | files listed | use standard libraries (`std::mt19937`, `minidumpwriter`, `std::vector<std::unique_ptr>`) |
+| Map ID names (`MAPID_MP_KOTH_2P_1` etc.) | name (level names) | `code/mapcrc.h`, inclusion lists | new map names |
+
+## Appendix — dead/legacy code (brief)
+
+* `code/keygen.cpp` — Darwinia registration key generator, compiled but uncalled [B:LEGACY] (§29.B.4).
+* `code/lib/user_info.cpp:GetUserInfoData` — uncalled [B:LEGACY].
+* `contrib/systemiv/lib/filesys/file_system.cpp:FileSystem` — compiled, never instantiated (§31.5.4).
+* `contrib/systemiv/lib/memory_leak.cpp` — only with `TRACK_MEMORY_LEAKS` [B:DEAD].
+* RDTSC timer path in `code/lib/hi_res_time.cpp` (`USE_PENTIUM_COUNTER 0`) [B:DEAD]; `code/lib/hi_res_time_gcc.cpp`, `hi_res_time_sdl.cpp`, `system_info_macosx.cpp`, `macosx_hardware_detect.cpp`, `debug_logging.{h,cpp}`, `debug_fog_logging.cpp` — not in the vcproj [B:DEAD].
+* `contrib/systemiv/lib/{preferences,language_table,hi_res_time}.*` — shadowed by `code/lib` versions, not compiled [B:DEAD].
+* `contrib/systemiv/lib/tosser/hash_map_darwin.h` — GNU `hash_map<std::string>` shim for Mac [B:DEAD].
+* `TRACK_SYNC_RAND` logging, `SINGLE_THREADED_PROFILER`, Mac/Linux branches of `debug_utils`, `unicode_string`, `network_stream`, `unicode_text_file_writer` [B:DEBUG]/[B:DEAD].
+* `targets/linux/*`, `targets/macosx/Darwinia/*`, Darwinia-era tools (build_demo*, build_final, build_vista, build_tools, Loki, NSIS/GESetup, eGames/Demo Inno scripts, 3DGeometry) [B:LEGACY].
+* Xbox remnants in the data pipeline (`platxbox` branches, `convert_bmp_to_tex.cmd`, DXT conversions, `textures/xboxlivearcade.bmp` in `init.list`) [B:DEAD].

@@ -748,3 +748,166 @@ Darwinia research progression [B:LEGACY] [C]: levels 0–4; progress needed for 
 Darwinia global-world file formats [B:LEGACY] [C] `GlobalWorld::Parse*`, `Write*`, `LoadLocations`:
 - `data/game.txt` (and `game_demo.txt`, `game_demo2.txt`, `game_unlockall.txt`): blocks `Locations` (`id avail mapFile missionFile`; location name = map file name minus `map_` and `.txt`), `Buildings` (`id teamId locId type link online`), `Research` (`Research <name> <progress> <level>`, `CurrentResearch <name>`, `CurrentPoints <n>`), `Events` (`Event <cond>…` then `Action SetMission <loc> <file>` / `Action RunScript <file>` / `Action MakeAvailable <loc>` … `End`), `Tutorial` (only with `USE_SEPULVEDA_HELP_TUTORIAL`), `LevelTimes` (`index time`), `SquaddiesUsed` (`index n` — parsed into `m_spLevelTimes` by mistake). Events are evaluated each frame; the first true event executes one action per call.
 - `data/locations.txt`: `id x y z` positions of the 12 Darwinia islands on the sphere (scaled ×120 at use); `SaveLocations` writes `%-8.2` (malformed format).
+
+---
+
+## [→ 22_determinism_and_networking] D. Determinism notes for X3 (terrain must be identical on every peer)
+
+| # | Topic | Finding | Tag |
+|---|---|---|---|
+| D.1 | Inputs | The height field depends only on the map text (parsed with float-rounding `iv_atof`) and integer seeds. No dependence on `syncrand`, `AppRandom`, time, preferences (`RenderLandscapeDetail` reads are hard-coded to 1) or hardware | [C] §23.3–23.8 |
+| D.2 | RNG | Each tile owns a private MSVC-`rand()`-style LCG seeded with its `seed` column, re-seeded at the start of every `Generate` — deterministic and independent of call history | [C] `LandscapeTile::LandscapeAppSeedRandom` |
+| D.3 | Floating point | Double arithmetic with forced float rounding at `iv_atof`, `iv_pow`, `iv_exp`, `iv_log` (`Log2`), `iv_sqrt` (`Normalise`) and `fabsf`. Reproduction on a new engine requires: IEEE double for the rest, no FMA contraction, no x87 extended precision, and pow/exp/log implementations whose results round to the same float as MSVC 2005's CRT (rounding to float hides most last-ulp CRT differences but not all) | [C] mechanism; [U] cross-CRT equality |
+| D.4 | Map identity | Peers load the map by **file name** (`GAMEOPTION_MAPNAME`); the CRC is only used for listing/demo gating. A peer with a different file of the same name generates different terrain and desyncs silently | [C] usage grep; [I] consequence |
+| D.5 | Index semantics | `unsigned short` wrap of negative indices, `GetValue` wrap-to-zero at the far edge, and double→`unsigned short` truncation are part of the observable terrain (tile merge sampling) and must be emulated exactly | [C] §23.2; [I] MSVC for values ≤ −1 |
+| D.6 | Simulation consumers | `m_heightMap->GetValue/GetData` (entity/building heights, bounce physics), `m_normalMap->GetValue`, `GetWorldSizeX/Z`, `IsInLandscape`, `RayHit`, `SphereHit`, building `m_pos.y` at load. Render-only: render normals/colours, water depth map (freed after the mesh is built), water waves, clouds | [C] |
+| D.7 | Non-synced randomness during load | `GetLandscapeColour` (`AppSeedRandom`/`AppRandom` chain from `Location::Init`'s `AppSeedRandom(1)`), `Water` shore noise (`sfrand`), `ParseInstantUnits` centipede copies (`sfrand`, inert because difficulty is 0), `GlobalInternet` at start-up. None reach simulation state in Multiwinia | [C]; [I] for "inert" |
+| D.8 | Mid-game regeneration | Applying graphics/other options regenerates landscape + water from the same `LandscapeDef`; height values are reproduced, so the sim is unaffected. No code caches the height-map pointer (all access via `g_app->m_location->m_landscape.m_heightMap`) | [C] `prefs_graphics_window.cpp`, `prefs_other_window.cpp`; [I] grep-based |
+| D.9 | Clouds | `Clouds::Advance` runs in simulation slice 3 but only moves a cosmetic texture offset; not part of any sync hash | [C] `Location::AdvanceClouds`; [I] |
+| D.10 | Water | Animation uses `g_gameTimer.GetAccurateTime()` on the render path; purely visual | [C] |
+| D.11 | Recommendation (new game) | Treat terrain generation as a pure function `bytes → heights`; ship a content hash in the lobby handshake; prefer baking height maps into the map asset (or a fixed-point generator) over relying on CRT transcendental functions | [I] |
+
+## Constants table (this partition)
+
+| Constant | Value | Kind | Where |
+|---|---|---|---|
+| Tile defaults: outsideHeight, size, guideGridPower, method, desiredHeight, fractalDimension, heightScale, lowlandSmoothing, seed | 0.0, 256, 0, 1, 200, 1.2, 1.0, 1.0, 1 | ctor | `code/landscape.cpp:LandscapeTile::LandscapeTile` |
+| `LandscapeDef` defaults: cellSize, worldSizeX/Z, outsideHeight, maxHeight | 12.0, 2000, 2000, −10, 0.0 | ctor | `code/level_file.h:LandscapeDef` |
+| `Landscape::m_outsideHeight` before Init | −20 | ctor | `code/landscape.cpp:Landscape::Landscape` |
+| Flatten defaults: size, type, threshold | 40.0, Absolute, 40.0 | ctor | `code/level_file.h:LandscapeFlattenArea` |
+| LCG multiplier / increment / output mask | 214013, 2531011, `(s>>16)&0x7FFF` | literal | `LandscapeTile::LandscapeAppRandom`, `AppRandom` |
+| `APP_RAND_MAX` | 32767 | `#define` | `contrib/systemiv/lib/math/random_number.h` |
+| Noise: length scale, length mult, envelope floor, envelope gain | 256.0, 10.0, 0.1, 0.15 | literal | `GenerateNoise` |
+| Compensation: 30.7·e^(−6.5·fd), 15.353·e^(−3.1·ls) | 30.7, −6.5, 15.353, −3.1 | literal | `Generate` |
+| Merge range epsilon | 0.001 | literal | `MergeTileIntoLandscape` |
+| Smooth divisor / passes | 6.0 / 2 | literal | `FlattenArea` |
+| `LIGHTMAP_SCALEFACTOR` | 1 (unused) | `#define` | `code/landscape.h` |
+| Render: near-sea sink threshold / depth | 0.3 → −10.0 | literal | `BuildVertArrayAndTriStrip` |
+| Colour: slope exponent, jitter numerator, jitter offset | 0.4, 0.45, +2.0 | literal | `GetLandscapeColour` |
+| Burn patch: outer radius factor, inner factor, colour | 1.5·r, r/2, (20,20,20) | literal | `BuildColourArray` |
+| Main material spec/diffuse/shininess | (0,0,0,0)/(1,1,1,0)/100 | literal | `RenderMainSlow` |
+| Overlay material spec/diffuse/shininess | (0.5,0.5,0.5,1)/(1.2,1.2,1.2,0)/40 | literal | `RenderOverlaySlow` |
+| Display list names | `"LandscapeMain"`, `"LandscapeOverlay"`, `"GlobalInternetLinks"`, `"GlobalInternetNodes"` | `#define` | renderer, global_internet |
+| Water: brightness scale, shore brightening, shore noise | 4.0, 250.0, 0.25 | `float const` | `code/water.cpp` |
+| Water mask size / blur taps / gain | 128 / 11 `{0.2,0.3,0.4,0.5,0.8,1.0,0.8,0.5,0.4,0.3,0.2}/5.4` / 855 | `#define`/literal | `GenerateLightMap` |
+| Flat water: tile ratio, height, texture repeats, scroll period | 4, −9.0, 30, 30 s | literal | `GenerateLightMap`, `RenderFlatWater` |
+| Water cell | `RenderWaterDetail × max(sizeX,sizeZ)/100` | pref-driven | `Water::Water` |
+| IsVertNeeded thresholds | land > 4.0, depth > 0.999 | literal | `IsVertNeeded` |
+| Wave amplitude scale | 7.0 | literal | `UpdateDynamicWater` |
+| Wave X terms (freq, speed, amp) | (0.01, 0.65, 1.2), (0.03, 1.5, 0.9) | literal | same |
+| Wave Z terms | (0.02, 0.75, 0.9), (0.03, 1.85, 0.65) | literal | same |
+| Wave colour mix | 0.7 / 0.3 | literal | same |
+| Waves table row / width | y = 1 / bitmap width (400 shipped) | literal | `Water::Water` |
+| D3D water buffers / thread rate | 10 / 120 Hz (thread never started) | `static const` | `water.h`, `UpdateWaterThread` |
+| Reflection RT size / clear grey / clip plane | ½ screen / 0.3 / `GL_CLIP_PLANE2 (0,1,0,0)` | literal | `water_reflection.cpp` |
+| Reflection shader: ripple amplitude, seam offset, blend | `0.001·1024/ScreenW`, 0.004, 0.7 | literal / shader | `WaterReflectionEffect::Start`, `water-meshwaves.ps*` |
+| Clouds initial / advance velocity | (0.04,0,0) / (0.03,0,−0.01) per second of `SERVER_ADVANCE_PERIOD` | literal | `Clouds::Clouds`, `Advance` |
+| Cloud layer heights / extents / detail | 1200, 1000, 800 / [−8000, 9000] / 9, 4.5, 1.8 | literal | `RenderBlobby`, `RenderFlat` |
+| Cloud colours | (0.7,0.7,0.9, 0.6 blobby / 0.3 flat / 0.5 flat at detail 3) | literal | same |
+| Sky grid: extent, spacing, half width, height, colour | [−4000, 6000], 80, 8, 1200, (0.5,0.5,1.0,0.3) | literal | `RenderSky` |
+| Sky/cloud fog | black; 2000–4000 sky, 2000–5000 clouds | literal | `RenderSky`, `RenderBlobby`, `RenderFlat` |
+| `RenderQuad` subdivision | 4 × 4 | literal | `Clouds::RenderQuad` |
+| Face: height, half size, delay, fade, end, frame time | 800, 800, 5 s, 1 s, 28/30 s, 0.4 s | literal | `RenderFace` [B:DEBUG] |
+| Location fog | start = end/3, end = max(4000, size+1000) | literal | `Location::SetupFog` |
+| Global internet: iterations, max nodes, max links, centre | 7, 13701, 13700, (−797,1949,−1135) | `#define`/literal | `global_internet.h/.cpp` |
+| Global internet render: scale, fog end, node size, packet size, burst, spawn prob | 1000, 5 810 000, 10, 30, 4.0 s, 11 % per frame | literal | `GlobalInternet::Render`, `RenderPackets` |
+| Global world: location scale, hit radius, attract radius | 120, 5000, 10000 | literal | `GetLocationPosition`, `LocationHit`, `Advance` |
+| Research thresholds / time per point / control-tower points | {1,50,100,200} / 10 s / 22 | literal / `#define` | `GlobalResearch`, `global_world.h` |
+| SP level-time default | 3 599 999 | literal | `GlobalWorld::GlobalWorld`, `WriteLeaderboardStats` |
+| Level file limits | mount/anim name 63, filename 512, route id < 10000, anim duration < 60 s, running program positions 10 | `#define`/literal | `level_file.h/.cpp` |
+| `MAGIC_MOUNT_NAME_START_POS` | `"CamPosBefore"` | `#define` | `level_file.h` |
+| InstantUnit default spread | 200.0 | ctor | `level_file.h:InstantUnit` |
+| Difficulty factor | `1 + difficulty/5` (difficulty forced 0) | literal | `ParseBuildings`, `ParseInstantUnits` |
+| Map CRC buffer | 100 000 bytes (+1 overflow) | `#define MAXSIZE` | `filecrc.cpp` |
+| CRC-32 polynomial / init / xorout | 0xEDB88320 / 0 / none | literal | `contrib/unrar/crc.cpp` |
+| MapFile keys | `MapData`, `MapLandscapeTexture`, `MapWavesTexture`, `MapWaterTexture`, `MapThumbnail`, `TextureWidth<n>`, `TextureHeight<n>`, `<key>Filename`; zlib level 9 | `#define`/literal | `mapfile.h/.cpp` |
+
+## Cross-partition notes
+
+- **Build matrix / P13**: `code/water.cpp:Water::Water` line 119 uses `bmp.GetPixel` on a `const BitmapRGBA *` inside the `USE_DIRECT3D` branch — a hard compile error, i.e. a third (and unambiguous) piece of evidence that `ReleaseDirect3D` does not build at this commit.
+- **P12 (render core)**: pass order clouds → landscape → water confirmed from `Location::Render`; the unit-1 texture of flat water is the **water shore mask** `"water_lightmap"`, not a landscape lightmap (P12's pass table calls it "landscape lightmap"). Max two effective lights for the landscape (LIGHT0/LIGHT1) agrees with P12. The menu path leaves `GL_FOG` enabled after clouds (no `Location`) — check effect on menu UI.
+- **P06 (buildings)**: `LevelFile::ParseBuildings` delegates per-type fields to `Building::Read`; global-flag requirement for TrunkPort/ControlTower/RadarDish/Incubator/FenceSwitch; building y is set from the height map in `Location::Init` (editor) / `InitBuildings`.
+- **P02 / P05 / P08 / P07**: consumers of `m_populationCap`, `m_defenderPopulationCap`, `m_levelOptions[]`, `m_attacking[]`, coop groups, `m_invalidCrates[]`, `m_effects[]` (snow, dust, soul rain, lightning, special lighting).
+- **P10 (camera)**: camera mounts (`player0..3`, `start`), camera animations (always empty in mp maps), camera bounds `[−200, sizeX+200]`.
+- **P15 (network)**: map chosen by `GAMEOPTION_MAPNAME` (file name); `NET_METASERVER_MAPCRC`, `NET_METASERVER_DEMOMAPS`; research levels via `GAMEOPTION_GAME_RESEARCH_LEVEL` write into `GlobalWorld::m_research`. No map-content hash is exchanged.
+- **P17a (editor)**: `LandscapeWindow` (tile/flatten editing, `DeleteTile`, terrain file pickers `landscape_*`, `waves_*`, `water_*`), `EditorWindow` save → `LevelFile::Save`, `MapFile::Save` (.mwm). All [B:EDITOR].
+- **P18 (game menu)**: `GameMenu::AddMap` re-parses `MultiwiniaOptions` with case-sensitive keys and multiple `GameTypes`; `LevelFile` takes only the first `GameTypes` token. `GameMenu::Render` draws the clouds/sky backdrop.
+- **P20 (loading)**: level load runs in `DoEnterLocation` on the loading-screen work queue; the landscape VBO upload is marshalled to the main thread via `g_loadingScreen->QueueJob`.
+- **P14 (prefs)**: `RenderLandscapeMode`, `RenderWaterDetail`, `RenderCloudDetail`, `RenderWaterEffect`, `RenderPixelShader` semantics as used here.
+- **X1a**: grammar of all `LevelFile` blocks and `game.txt`/`locations.txt` (this draft gives field tables, §8.3–8.4, §23.3). **X4**: catalogue of the 57 `mp_*` maps plus `data/levels/old/` (30 files not listed by the game). **X3**: §D.
+- **Achievements (P17/P18)**: `data/levels/level_enum.txt` maps mp file names to 1-based indices.
+
+## Contradictions / open questions
+
+1. `LevelFile::ParseMultiwiniaOptions` keeps only the first `GameTypes` token while `GameMenu::AddMap` lists a map under every token; for a multi-mode map the running game's `m_gameTypes` may disagree with the mode chosen in the menu. No shipped map lists more than one mode (survey shows one token per file) [C]/[I].
+2. `GlobalWorld::GetLocationIdFromMapFilename` is broken (`*mapName += 4`), so `GenerateAutomaticObjectives` can never create trunk-port secondary objectives — a Darwinia regression that is invisible in Multiwinia [C].
+3. Under [B:D3D] in a Multiwinia match the water shader samples a reflection target that is never rendered (pre-pass gated by `!Multiplayer()`) [I] (agrees with P12).
+4. `RenderMainSlow` enables blending in negative-renderer mode and never disables it; the overlay pass happens to disable it afterwards [C].
+5. `Clouds::RenderFace` fade-out logic ramps alpha up again after 28 s [C] — likely a bug.
+6. `LevelFile::WriteMultiwiniaOptions` missing `break` after `futurewinianteam` [C]; `WriteRunningPrograms` and `GlobalWorld::SaveLocations` use `%8.2`/`%-8.2` without a conversion character [C].
+7. `ParseLeaderboardStats` reads `%f` into a double [C].
+8. Landscape VBO is uploaded with the array's capacity (`Size()`), not its used count [C] — harmless but wasteful.
+9. The strip builder adds no degenerate join at row ends; land touching the map edge would produce a stray wrap-around triangle [I].
+
+## [U] Unknowns
+
+1. **Bit-exactness of the reconstructed terrain** versus `multiwinia.exe` — resolve by dumping `Landscape::m_heightMap` from a running build for a few maps and diffing against `scripts/P11_terrain_ref.py --dump`.
+2. MSVC 2005 x86 behaviour of `(unsigned short)` conversion of doubles ≤ −1 (affects `GetValue` on far-negative coordinates) — resolve by disassembly or a test program built with the original toolchain.
+3. Whether MSVC 2005's `pow/exp/log` round identically (after float truncation) to a modern CRT for every tile parameter in the shipped data — resolve by running the reference generator with both CRTs.
+4. Whether the loading-screen thread consumes the global `AppRandom` while `GetLandscapeColour` runs (would make terrain colours vary between runs) — resolve by reviewing `code/loading_screen.cpp` (P20).
+5. Which texture flags win for `textures/clouds.bmp` (requested both with and without mip-maps; the resource cache is keyed by name) — resolve in `Resource::GetTextureWithFlags` (P12/X?).
+6. Units of `PlayTime` (assumed minutes) — resolve in P02/P18 consumers.
+7. Design intent of `triangleOutline.bmp` (2×2 sub-cells, three diagonals) mapped once per height-map cell — visual check in a running build.
+8. Whether `ReleaseDirect3D` was ever built from this tree (three compile blockers now known) — attempt a build.
+
+## Docs-vs-code discrepancies
+
+| Doc | Says | Code | 
+|---|---|---|
+| `docs/landscape lightmap.txt` | Landscape has `GenerateLightMap/ApplyLightmap/DeleteLightMap`: ray-cast shadows from a point light at (700,200,100), shade 255/50, optional 5×5 smoothing, texture | No such functions; terrain is only GL vertex-lit; the sole "lightmap" is the water shore mask (`Water::GenerateLightMap`). Only `LIGHTMAP_SCALEFACTOR` survives |
+| `docs/OpenGLState.txt` | Fog start 800, end 2000, colour = world background | `Location::SetupFog`: start = end/3, end = max(4000, size+1000) |
+| `docs/sphere world.txt`, `docs/top level map.txt` | Top-level sphere map is the hub between islands | Present in code but unreachable in Multiwinia (`GlobalWorldGameLoop` exits immediately); menu shows only clouds |
+| `code/water.h` header comment | sea plane twice the land size, depth darkens and shrinks waves | Matches; plus deep water is not drawn at all (flat tiles and dynamic verts culled where depth ≥ 1 / > 0.999) |
+| `code/level_file.cpp:ParseLights` comment | mission-file lights take precedence over map lights | Mission files cannot contain `Lights` (asserted and skipped) |
+
+## IP register
+
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| "Multiwinia" in file-format keywords (`MultiwiniaOptions_StartDefinition`), class names | brand | `code/level_file.cpp:ParseMultiwiniaOptions` | `MatchOptions` block |
+| "Darwinian" (research type 0, level/instant-unit type names) | name | `code/global_world.cpp:GlobalResearch::GetTypeName` | "Unit" |
+| "Futurewinian" (`futurewinianteam` option) | name | `code/level_file.h` LevelOption 12 | "alien faction" |
+| Dr Sepulveda face images and cheat (`ShowDrSFace`) | character / art | `data/sepulveda/sepulveda1..5.bmp`, `code/clouds.cpp:RenderFace` | drop |
+| Map file names and IDs (`mp_koth_2P_1` …, `MAPID_*`, `level_enum.txt`) | name | `data/levels/*`, `code/mapcrc.h` | `map_<mode>_<n>` (X4 catalogue) |
+| Darwinia location names: sandbox, garden, containment, generator, mine, yard, escort, pattern_buffer, biosphere, receiver, temple, launchpad | name | `data/game*.txt`, `data/locations.txt`, `map_*`/`mission_*` | `region_01` … `region_12` |
+| Terrain colour ramps (23): landscape_beach, containment, dark, default, desert, earth, field, firetop, icecaps, icecaps_peaked, jailbreak, launchpad, marble, marble2, mine, mine2, ridges, shrine, silver, stronghold, trippy, volcanic, volcanicplain | art | `data/terrain/landscape_*.bmp` | new 64×64 ramps `ramp_<theme>` |
+| Water textures (4): water_default, icecaps, launchpad, yellow | art | `data/terrain/water_*.bmp` | new tileable textures |
+| Wave colour tables (9): waves_containmentfield, default, desert, dull, earth, generator, icecaps, launchpad, yellow | art | `data/terrain/waves_*.bmp` | new 1-D gradients |
+| Sky/cloud/grid textures: clouds.bmp, laser.bmp, triangleoutline.bmp, glow.bmp, starburst.bmp, laserfence2.bmp | art | `data/textures/` | new textures |
+| Global-world shapes: globalworld_outer/middle/inner.shp, trunkport.shp | art | `data/shapes/` | drop (legacy) |
+| "redshirt2" text-file cipher marker | text | `contrib/systemiv/lib/filesys/text_stream_readers.cpp:CleanLine` | new or none |
+| Research/crate type names that are distinctive: "TaskManager", "PersonalShield", "HotFeet", "MagicalForest", "DarkForest", "AntNest", "Rage", "Shaman", "Subversion" | name | `GlobalResearch::GetTypeName`, `Crate::GetName` | generic ability names |
+| Game type names "KingOfTheHill", "CaptureTheStatue", "RocketRiot", "Blitzkrieg", "Domination", "Assault", "TankBattle" | name (low risk, partly generic) | `data/multiwinia.txt` | `mode_hill`, `mode_relic`, `mode_race`, … |
+| Darwinia lore concepts used by global world: spirits, "heaven", digital islands, trunk ports | concept / text | `code/global_world.cpp`, `code/global_internet.cpp` | neutral meta-map or drop |
+| Language keys `location_%s`, `researchname_%s`, `research_%s_v%d`, `objective_research`, `objective_capture_trunk` | text ids | `code/global_world.cpp`, `code/level_file.cpp` | new string table |
+
+## Appendix — dead/legacy code
+
+| Item | Status | Evidence |
+|---|---|---|
+| `Landscape(double, int, int)` constructor, `LandscapeRenderer::Initialise`, `Water::RenderReflectiveWater` | declared, never defined/called | [C] grep |
+| `Landscape::RenderHitNormals` | defined, no caller | [C] |
+| `LIGHTMAP_SCALEFACTOR` | unused | [C] |
+| `RenderLandscapeDetail` reads (landscape cell scaling, overlay skip at detail ≥ 4) | commented out → literal 1 | [C] |
+| Water D3D `UpdateWaterThread` | never started | [C] |
+| `USE_DIRECT3D` paths of landscape/water + `WaterReflectionEffect` | [B:D3D]; water.cpp does not compile under D3D | [C] |
+| Mac water update throttling (`TARGET_OS_MACOSX`) | [B:DEAD] on PC | [C] |
+| Mission-file parsing, `SaveMissionFile`, `RunningPrograms`, `Difficulty`, `LeaderboardStats`, `GenerateInstantUnits`, `GenerateDynamicBuildings` (called from `App::SaveProfile` for single-player only) | [B:LEGACY] | [C] `code/app.cpp:SaveProfile` |
+| GlobalWorld locations/buildings/events/tutorial/level-times, `LoadGame`, `SaveGame`, `LoadLocations`, `SaveLocations`, `TransferSpirits`, `GlobalWorld::Advance` (island picking), `SphereWorld`, `GlobalInternet` rendering | [B:LEGACY] (constructed, never shown) | [C] §8.8, §24.5 |
+| `GlobalEventCondition::DebugKey` evaluation | only under `JAMES_FIX` (never defined) → falls to `AppDebugAssert(false)` | [C] |
+| `GlobalWorld::WriteTutorial` body | `DEMO2 && USE_SEPULVEDA_HELP_TUTORIAL` → empty | [C] |
+| `WriteLevelTimes`, `WriteSquaddiesUsed` | empty bodies | [C] |
+| `LevelFile::HasEffect` | always false | [C] |
+| Burn patches (`Location::AddBurnPatch`, only from `Portal`) | [B:LEGACY] | [C] grep |
+| Editor water grid, `DeleteTile`, `.mwm` save/list, global-world editor | [B:EDITOR] | [C] |
+| `Clouds::RenderFace` | [B:DEBUG] (cheat window) | [C] |
