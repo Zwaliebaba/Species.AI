@@ -438,7 +438,7 @@ Every tile is linearly remapped about the sea-floor level so that its **highest 
 
 ### 7.4 Tiles outside the world grid ("parked" tiles)
 
-World indices that fall outside the grid are dropped by `PutData`, so tiles may hang off the map edge [C]. Two shipped tiles are parked far outside the map (`mp_blitzkrieg_2p_1`: x = −67 487, z = −80 089; `mp_cts_4p_3`: x = −59 979, z = −35 486). For them `posX/cellSize + 0.5` is far below −1, so the `unsigned short` conversion of posXi/posZi is undefined in C++ (MSVC: low 16 bits of the truncated int, e.g. 59 914 and 58 863 for the first tile) [I]. Either way the tile has no effect: with MSVC wrapping every destination index is ≥ cols and every write is dropped; with a saturating conversion (posXi = posZi = 0) the tile would be sampled far outside its own grid, return its border value `outside + posY`, which with their negative posY (−2.57, −1.00) rescales below `outsideHeight` and loses the max [I]. A re-implementation should simply skip tiles whose footprint does not intersect the grid.
+World indices that fall outside the grid are dropped by `PutData`, so tiles may hang off the map edge [C]. Two shipped tiles are parked far outside the map (`mp_blitzkrieg_2p_1`: x = −67 487, z = −80 089; `mp_cts_4p_3`: x = −59 979, z = −35 486). For them `posX/cellSize + 0.5` is far below −1, so the `unsigned short` conversion of posXi/posZi is undefined in C++ (MSVC: low 16 bits of the truncated int, e.g. 59 914 and 58 863 for the first tile) [I] (23-U4). Either way the tile has no effect: with MSVC wrapping every destination index is ≥ cols and every write is dropped; with a saturating conversion (posXi = posZi = 0) the tile would be sampled far outside its own grid, return its border value `outside + posY`, which with their negative posY (−2.57, −1.00) rescales below `outsideHeight` and loses the max [I]. A re-implementation should simply skip tiles whose footprint does not intersect the grid.
 
 ### 7.5 Composition rules
 
@@ -619,7 +619,7 @@ For every `Location::m_burnPatches` entry P with distance d = |centre − P.pos|
 The colours are cosmetic — they never feed the simulation (only `m_verts[].m_col`) [C]. Their reproducibility:
 
 - `Location::Init` calls `AppSeedRandom(1)` immediately after parsing, so on a clean first load the chain of step 5–6 starts from a known state [C] `code/location.cpp:Location::Init`.
-- The level load runs on the work-queue thread while the main thread keeps calling `SoundSystem::Advance`, whose sample selection draws `AppRandom()` (`code/sound/sound_instance.cpp`), so concurrent draws can perturb the chain and colours may differ between runs or peers [I] `code/loading_screen.cpp:LoadingScreen::Render`.
+- The level load runs on the work-queue thread while the main thread keeps calling `SoundSystem::Advance`, whose sample selection draws `AppRandom()` (`code/sound/sound_instance.cpp`), so concurrent draws can perturb the chain and colours may differ between runs or peers [I] `code/loading_screen.cpp:LoadingScreen::Render` (23-U3).
 - Regeneration from the options screens re-runs the chain **without** reseeding (`code/interface/prefs_graphics_window.cpp`, `code/interface/prefs_other_window.cpp` call `Landscape::Init` directly), so colours change after "apply" while heights do not [C] (no `AppSeedRandom` on that path).
 
 For the new game: derive colour noise from a stateless hash of the triangle position (e.g. a 32-bit integer hash of the cell indices), not from a shared RNG.
@@ -838,13 +838,13 @@ All transcendental results pass through f32() (§3), so two C runtimes whose dou
 | `ceil`, `floor`, `fabsf` | grid sizing, sampler fractions, envelope | many | exact operations | none |
 | `sin` (`iv_sin`) | water waves | per frame | cosmetic | none |
 
-Conclusion [I]: for the shipped maps the generator's output is insensitive to the C runtime as long as `pow`, `exp` and `log` are accurate to within one double ulp and exact on exactly-representable results; MSVC 2005's static CRT (which may select x87 or SSE2 code paths by CPU at run time — toolchain behaviour, not visible in this source) and glibc are both expected to satisfy that. The remaining sources of mismatch are therefore the arithmetic environment (§17.3) and implementation choices (§17.4), not the CRT.
+Conclusion [I] (open as 23-U2): for the shipped maps the generator's output is insensitive to the C runtime as long as `pow`, `exp` and `log` are accurate to within one double ulp and exact on exactly-representable results; MSVC 2005's static CRT (which may select x87 or SSE2 code paths by CPU at run time — toolchain behaviour, not visible in this source) and glibc are both expected to satisfy that. The remaining sources of mismatch are therefore the arithmetic environment (§17.3) and implementation choices (§17.4), not the CRT.
 
 ### 17.3 Arithmetic environment
 
 - **Baseline [B:FULL]**: x87 code (`/fp:precise`, no `/arch:SSE2`), `/O2`; `StandardiseCPUPrecision()` sets 53-bit precision on the main thread and on every `WorkQueue` thread (the level load runs on one) [C] P14/P13 findings (`code/lib/work_queue.cpp`, `code/main.cpp`). With 53-bit precision and no extended-range effects at these magnitudes, x87 double expressions round like IEEE double [I]. x87 has no fused multiply-add, so **a re-implementation must disable FMA contraction** (MSVC: `/fp:precise` without `/fp:contract`; Clang/GCC: `-ffp-contract=off`) and must evaluate every expression in the order written in §5–§8.
 - **[B:D3D]**: `/fp:fast` (reassociation allowed) and the D3D9 device is created without `D3DCREATE_FPU_PRESERVE`, which drops the **main** thread to 24-bit x87 precision [I: documented D3D9 behaviour]. The first generation (work-queue thread, 53-bit) would therefore differ only through `/fp:fast` code generation, but a mid-game regeneration from the options screen (main thread) would run at 24-bit precision and change the heights [I]. Moot at this commit because the D3D configuration does not compile (§Appendix), but a reminder that terrain must never be regenerated under a different FP environment.
-- **Other platforms**: the maintained Mac project (`targets/macosx`, see [31](31_platform_build_and_tools.md)) uses a different compiler and CRT; cross-platform terrain equality would rest on the f32 masking of §17.2 [I] (untested).
+- **Other platforms**: the maintained Mac project (`targets/macosx`, see [31](31_platform_build_and_tools.md)) uses a different compiler and CRT; cross-platform terrain equality would rest on the f32 masking of §17.2 [I] (untested; 23-U5).
 
 ### 17.4 Implementation-defined and undefined behaviour that shapes the output
 
@@ -1035,11 +1035,11 @@ All literals in code unless noted. Units: world units (wu); "tile space" = befor
 
 Unknowns:
 
-- **23-U1** — Bit-exactness of the Python port (and hence of this specification) against `multiwinia.exe`. Evidence so far is indirect (§17.5). *Resolve*: instrument or patch a build of the original to dump `Landscape::m_heightMap` after `Landscape::Init` for several maps (at least `mp_koth_2P_1`, `mp_assault_2p_3`, `mp_rocketriot_2p_3`, `mp_skirmish_3P_1`, `mp_blitzkrieg_2p_1`) and compare with `S_23_terrain_oracle.py dump` / the digests of §18.
-- **23-U2** — Accuracy of the MSVC 2005 static CRT's `pow`/`exp`/`log` (x87 and SSE2 code paths), in particular whether `pow(x, 2.0)` is exact for the 17 exact-tie arguments of `mp_assault_2p_3` tile 5. *Resolve*: a test program linked against the VS2005 `/MT` CRT, run on SSE2 and non-SSE2 CPUs, evaluating the logged arguments (`S_23_terrain_oracle.py` can be extended to print them).
-- **23-U3** — Whether the main thread's sound-system `AppRandom` draws during level loading actually interleave with the colour chain of §11.6 (cosmetic: terrain colours varying between runs/peers). *Resolve*: log `AppRandom` calls with thread ids during a level load.
-- **23-U4** — MSVC 2005's conversion of doubles ≤ −1 to `unsigned short` (assumed: truncate to 32-bit int and keep the low 16 bits). Irrelevant to the shipped maps (§7.4, §17.4) but needed to predict user-made maps. *Resolve*: disassemble `SurfaceMap2D<double>::GetValue` and `Landscape::MergeTileIntoLandscape` in the shipped executable.
-- **23-U5** — Terrain equality between the PC and the maintained Mac build (different compiler and CRT). *Resolve*: dump heights from a Mac build and compare digests.
+- **23-U1** [U] — Bit-exactness of the Python port (and hence of this specification) against `multiwinia.exe`. Evidence so far is indirect (§17.5). *Resolve*: instrument or patch a build of the original to dump `Landscape::m_heightMap` after `Landscape::Init` for several maps (at least `mp_koth_2P_1`, `mp_assault_2p_3`, `mp_rocketriot_2p_3`, `mp_skirmish_3P_1`, `mp_blitzkrieg_2p_1`) and compare with `S_23_terrain_oracle.py dump` / the digests of §18.
+- **23-U2** [U] — Accuracy of the MSVC 2005 static CRT's `pow`/`exp`/`log` (x87 and SSE2 code paths), in particular whether `pow(x, 2.0)` is exact for the 17 exact-tie arguments of `mp_assault_2p_3` tile 5. *Resolve*: a test program linked against the VS2005 `/MT` CRT, run on SSE2 and non-SSE2 CPUs, evaluating the logged arguments (`S_23_terrain_oracle.py` can be extended to print them).
+- **23-U3** [U] — Whether the main thread's sound-system `AppRandom` draws during level loading actually interleave with the colour chain of §11.6 (cosmetic: terrain colours varying between runs/peers). *Resolve*: log `AppRandom` calls with thread ids during a level load.
+- **23-U4** [U] — MSVC 2005's conversion of doubles ≤ −1 to `unsigned short` (assumed: truncate to 32-bit int and keep the low 16 bits). Irrelevant to the shipped maps (§7.4, §17.4) but needed to predict user-made maps. *Resolve*: disassemble `SurfaceMap2D<double>::GetValue` and `Landscape::MergeTileIntoLandscape` in the shipped executable.
+- **23-U5** [U] — Terrain equality between the PC and the maintained Mac build (different compiler and CRT). *Resolve*: dump heights from a Mac build and compare digests.
 
 Design-critical inferences:
 

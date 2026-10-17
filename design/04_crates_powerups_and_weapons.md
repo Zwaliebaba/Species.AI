@@ -142,7 +142,7 @@ Each tick on the ground [C]:
 1. **Count.** `RecalculateOwnership(num)`: for every team whose `m_teamType != TeamTypeUnused`, count entities returned by `EntityGrid::GetNeighbours(pos.x, pos.z, 35, includes = {that team})` (exact XZ distance < 35) that are `TypeDarwinian`, not dead, and not `StateInsideArmour`. `majority` = the team with the **strictly** highest count (ties keep the lower team index); 255 if every count is 0; `num` = the winning count. Only Darwinians count — officers, squaddies, armour, engineers and monsters do not. Darwinians of **any** used team count, including the Monster team (4: converted by Infection, see §5.12) and the Futurewinian team (5: dropped by the Space Ship), which can therefore capture crates and receive the reward [C code; I consequence].
 2. **Owner holds the majority** (`owner == majority`, owner ≠ 255):
    - `Δ = min(0.05, SERVER_ADVANCE_PERIOD × num / 100)`; `m_captureTimer = min(2.5, m_captureTimer + Δ)`; `m_life = 60`.
-   - Progress rate = `num / 100` per game-second, capped at 0.05 per **tick** → minimum capture time **50 ticks** (5 s at speed 1) with ≥ 50 Darwinians; 25 Darwinians → 10 s; 10 → 25 s; 1 → 250 s [C formula, I examples]. The cap is per tick, so at ≥ 50 Darwinians the capture takes 50 ticks at any game speed [C].
+   - Progress rate = `num / 100` per game-second, capped at 0.05 per **tick** → minimum capture time **51 ticks** (5.1 s at speed 1; 50 × 0.05 accumulates to just under 2.5 in double arithmetic, so a 51st step is needed) with ≥ 50 Darwinians; 25 Darwinians → 10 s; 10 → 25 s; 1 → 250 s [C formula, I examples]. The cap is per tick, so at ≥ 50 Darwinians the capture takes 51 ticks at any game speed [C].
    - Sound: when the 20 % bucket `int(5 × timer / 2.5)` changes, stop "Crate Capturing_*" and trigger `Capturing_<bucket×20>pc` (0, 20, 40, 60, 80).
    - When `m_captureTimer ≥ 2.5` → **capture** (§1.9).
 3. **Otherwise** (contested, owner lost the majority, or still neutral): `m_captureTimer = max(0, timer − SERVER_ADVANCE_PERIOD)` — drains at 1.0 per game-second (a full bar drains in 2.5 s). When it reaches 0 and `owner != majority` → `SetTeamId(majority)`; if the new owner is 255 → sounds "LostCapture" (and the "BeginCapture" loop is stopped); else "BeginCapture" + "Capturing_0pc". A neutral crate with a majority team changes owner on the same tick. A challenger must first drain the previous owner's progress.
@@ -680,7 +680,7 @@ Delivery: Task `TypeNuke`, target anywhere outside `blockPowerups` zones; `Task:
 
 Per warhead (entity spec in [02 §12](02_units_and_entities.md#12-nuke)) [C] `code/worldobject/nuke.cpp`: submarine rises from y −30 to +30 at 10 wu/s (6 s), waits `m_subTimer = 2.5` s, then a launch countdown of `worldSizeX/100 − |sub − target|/100` s (farther subs launch sooner), then a lofted flight at 50 → 100 wu/s; explodes within `5 × gameSpeed` of the target with `Bang(groundPos, R 50, D 100, team −1)`; all deaths (any team) are added to the launching team's `m_teamKills`.
 
-Damage maths: full 100 within 75, linear to 0 at 100 (lethal to a full-health Darwinian within 87.5) for **every** team; buildings within 150 take `100·(1 − d/150)`; shockwave size 2.5 s (ring radius 39 → ≈ 131–135, §6.11) [C formula, I radii]. Ten warheads scattered ±150 around the point.
+Damage maths: full 100 within 75, linear to 0 at 100 (lethal to a full-health Darwinian within 87.5) for **every** team; buildings within 150 take `100·(1 − d/150)`; shockwave size 2.5 s (24 active ticks, ring radius 39 → 131, §6.11) [C formula, I radii]. Ten warheads scattered ±150 around the point.
 
 Timing [I] (`_work/scripts/P04_nuke_sim.py`, flat terrain): ≈ 28 s (sub 500 away) to ≈ 39 s (1 500 away) from targeting to impact on a 2 000-wide map; arrival is not simultaneous — nearer subs still land first.
 
@@ -816,7 +816,7 @@ Carried statues move faster with Hot Feet (changelog) — the carrying speed der
 | Start | `(FRAND(worldX), 1500 + syncfrand(500), FRAND(worldZ))` — anywhere over the map at 1 500–2 000 altitude | [C] |
 | Flight | straight line at the Meteor blueprint speed **350** wu/s (`EntityBlueprint::GetStat`, × (1 + difficulty/10)); impact within 10 of the target or below terrain → sound `Land`, `Bang(pos, R 50, D 100, owner)`, meteor removed; flight time = distance / 350 (≈ 3–6 s) | [C] `code/worldobject/meteor.cpp:Meteor::Advance`, `Meteor::AdvanceToTarget`; `data/stats.txt` |
 | Damage maths | per meteor as a nuke warhead: full 100 within 75, 0 at 100, buildings within 150; shockwave 2.5 s; **not team-filtered** — the owner's own units are hit; kills of other teams credited to the owner | [C] `code/location.cpp:Location::Bang` |
-| Slow motion | the first time each meteor comes within 200 of its target: `g_gameTimer.RequestSpeedChange(0.4, 0.1, 4.0)` → speed eases to 0.4× (10 % of the gap per tick, ≈ 39 ticks), holds 40 ticks, eases back (≈ 39 ticks); later meteors re-issue the request and restart the hold | [C] `Meteor::Advance`; `code/gametimer.cpp:GameTimer::Tick`; [I] tick counts |
+| Slow motion | the first time each meteor comes within 200 of its target: `g_gameTimer.RequestSpeedChange(0.4, 0.1, 4.0)` → speed eases to 0.4× (10 % of the gap per tick, ≈ 39 ticks), holds 40 ticks (`4.0 − 40 × 0.1` reaches ≤ 0 exactly on the 40th tick), eases back (≈ 39 ticks); later meteors re-issue the request and restart the hold | [C] `Meteor::Advance`; `code/gametimer.cpp:GameTimer::Tick`; [I] tick counts |
 | Feedback | `crate_message_run_meteor` "*T causes a Meteor Shower!", marker `icons/icon_meteorshower.bmp`, sound `Meteor` | [C] |
 | Entity spec | [02 §22](02_units_and_entities.md#22-meteor) | |
 
@@ -844,7 +844,7 @@ Carried statues move faster with Hot Feet (changelog) — the carrying speed der
 | Item | Value | Ref |
 |---|---|---|
 | Delivery | **Immediate**, global (all teams benefit) | [C] `Crate::RunSpawnMania` |
-| Effect | `Location::m_spawnManiaTimer = 5.0`, decremented each tick at slice 8. While > 0, every SpawnPoint that is owned, activated and not population-locked requests a spirit from the master spawn point **every tick** instead of on its normal timer — ≈ 50 extra requests per eligible spawn point (delivery through the pylon network, [05](05_economy_and_population.md)) | [C] `code/worldobject/spawnpoint.cpp:SpawnPoint::Advance`; `code/location.cpp:Location::Advance` |
+| Effect | `Location::m_spawnManiaTimer = 5.0`, decremented each tick at slice 8. While > 0, every SpawnPoint that is owned, activated and not population-locked requests a spirit from the master spawn point **every tick** instead of on its normal timer — the timer stays positive for **51 ticks** (5.0 − 50 × 0.1 leaves a positive residue in double arithmetic), i.e. ≈ 51 extra requests per eligible spawn point (delivery through the pylon network, [05](05_economy_and_population.md)) | [C] `code/worldobject/spawnpoint.cpp:SpawnPoint::Advance`; `code/location.cpp:Location::Advance` |
 | Validity | maps with spawn points only | [C] |
 | HUD | `multiwinia_spawnmania_timer` "SPAWN MANIA: *T" (seconds remaining) at top centre, red below 2 s | [C] `code/multiwinia.cpp` (HUD render) |
 | Feedback | `multiwinia_exclamation` → "Spawn Mania!", sound `SpawnMania` | [C] |
@@ -915,7 +915,7 @@ As §5.5 with `special = true` [C] `Crate::CaptureCrate` (`m_option = 1`), `Task
 |---|---|---|
 | Delivery | **Immediate**, global; does nothing once the game is over | [C] `Crate::RunSlowDownTime` |
 | Effect | `g_gameTimer.RequestSpeedChange(0.2 + syncfrand(0.2), 0.05, 15.0)` | [C] |
-| Speed law | every `GameTimer::Tick` (one per server tick): `speed += (target − speed) × 0.05`; snaps when within 0.01; then the hold counter (15.0) decreases by 0.1 per tick (150 ticks); then the target becomes 1.0 at the same 5 % rate with no hold. Requests are refused after `LockSpeedChange` (game won); a new request (another speed crate or a meteor) overwrites the current one | [C] `code/gametimer.cpp:GameTimer::Tick`, `GameTimer::RequestSpeedChange` |
+| Speed law | every `GameTimer::Tick` (one per server tick): `speed += (target − speed) × 0.05`; snaps when within 0.01; then the hold counter (15.0) decreases by 0.1 per tick (**151** ticks — the residue of 15.0 − 150 × 0.1 is positive); then the target becomes 1.0 at the same 5 % rate with no hold. Requests are refused after `LockSpeedChange` (game won); a new request (another speed crate or a meteor) overwrites the current one | [C] `code/gametimer.cpp:GameTimer::Tick`, `GameTimer::RequestSpeedChange` |
 | Durations | ticks run at 10 Hz real time, so: approach 1.0 → 0.3 ≈ 83 ticks (8.3 s real), hold 15 s real, return ≈ 83 ticks — ≈ 32 s of real time in total, during which every game-time quantity (timers, speeds per tick, crate drops) slows [I] | |
 | Feedback | `crate_message_slowdown` "Sloooow Dooown..."; no sound, no marker | [C] |
 
@@ -1229,7 +1229,7 @@ Expanding ring created by every `Bang` with `size = R/20`, `m_life = size` [C] `
 | Knock-back | if on ground (not InsertionSquadie/Officer/Shaman): `push = normalise(victim − centre)`, `y = 3`, length `25 × fraction`, airborne |
 | Render | yellow→pink triangle-fan disc at y + 5, α `0.6 × life/size`; full-screen white flash for the first 0.1 s if on-screen, α `(1 − age/0.1) × max(0, 1 − dist/500)`, camera shake; `starburst.bmp` and `glow.bmp` billboards for the first 1 s |
 
-Duration and reach by source: grenade 0.625 s (6 active ticks, r 39 → 59); airstrike bomb 1.25 s (r 39 → ≈ 83); rocket 0.75 s (r 39 → ≈ 63); meteor / nuke 2.5 s (r 39 → ≈ 131–135, the last tick depending on floating-point residue) [I arithmetic]. A stationary ground target is inside the band for 2–3 consecutive ticks, taking `40 × fraction` each time [I].
+Duration and reach by source: grenade 0.625 s (6 active ticks, r 39 → 59); airstrike bomb 1.25 s (r 39 → ≈ 83); rocket 0.75 s (r 39 → ≈ 63); meteor / nuke 2.5 s (24 active ticks, r 39 → 131) [I arithmetic]. A stationary ground target is inside the band for 2–3 consecutive ticks, taking `40 × fraction` each time [I].
 
 Resolved: P04 described a 20-wide band hit for ≈ 5 ticks starting at radius 35; the code decrements life before computing the radius (first ring 39) and only considers entities with XZ distance below r, so the band is effectively 10 wide and a target is hit 2–3 times [C code, I count].
 
@@ -1293,7 +1293,7 @@ Homing infection streak (crate Infection) [C] `code/worldobject/spam.h`, `code/w
 | `SPAMINFECTION_LIFE` | 10.0 s; **+1.0 s per successful hit or conversion**; decremented after the state update |
 | `SPAMINFECTION_MINSEARCHRANGE` / `MAXSEARCHRANGE` | 100 / 200 (entities and spirits) |
 | `SPAMINFECTION_TAILLENGTH` | 30 history samples |
-| Retarget | `m_retargetTimer` starts at `syncfrand(1)`, then every 1.0 s; in multiplayer the first retarget only decrements `m_startCounter = 1` (no search) |
+| Retarget | `m_retargetTimer` starts at `syncfrand(1)`, then reset to 1.0 — which fires every **11 ticks (1.1 s)**, because `1.0 − 10 × 0.1` is a small positive number in double arithmetic, so the `≤ 0` test first passes on the 11th decrement; in multiplayer the first retarget only decrements `m_startCounter = 1` (no search) |
 | Search order | 50/50 (`syncfrand(2) < 1`): entities then spirits, or spirits then entities; fallback `SearchForRandomPosition`: back to the parent Spam building if > 400 away (legacy), else `pos ± syncsfrand(200)` per axis, not below ground |
 | Entity search | `EntityGrid::GetBestEnemy(pos, 100, 200, team)` relative to team 1 (single-player) or the **Monster team** (multiplayer): nearest non-dead, non-AI enemy with XZ distance in [100, 200) |
 | Spirit search | nearest `Spirit::StateFloating` spirit 100–200 away and > 10 high (single-player skips spirits 50 % of the time) |
@@ -1453,7 +1453,7 @@ Full treatment in [22](22_determinism_and_networking.md); the points specific to
 | 04-U9 | Are the `GameTypes none` levels (`mp_sandbox`, `mp_sandbox_all`, `mp_benchmark_1`, `mp_assault_stress`) ever selectable in the FULL lobby (their crate rows in §3.5 would then apply with mode-defined options)? | [I] not selectable | Lobby map-list filter ([09](09_meta_systems.md), [08](08_levels_and_level_design.md)). |
 | 04-U10 | Can crates drop during the pre-game grace period? `Location::Advance` is not gated by the grace period. | [I] yes | Confirm the grace-period gating of `Location::Advance` in `code/network/clienttoserver.cpp` / [01](01_game_modes.md). |
 | 04-U11 | Grenade, rocket and shockwave effective ranges/hit counts (§6.3, §6.6, §6.11) are derived from re-implemented arithmetic on flat terrain. | [I] | Instrumented build; or adopt the formulas as the new game's spec. |
-| 04-U12 | Number of ticks a nuke/meteor shockwave stays alive (24 or 25) depends on floating-point residue of repeated `life −= 0.1`. | [I] | Bit-exact replay; irrelevant if the new game uses integer tick counters. |
+| 04-U12 | (resolved) Tick counts of `x −= 0.1` timers: computed by S04 with IEEE-754 doubles — 1.0 → 11 ticks, 2.5 → 25 (24 active), 5.0 → 51, 15.0 → 151, 45.0 → 450, 60.0 → 600; float `Task::m_lifeTimer` 30 → 300, 60 → 601. Any new implementation should use integer tick counters and decide the intended values. | [C] arithmetic | — |
 
 ## Docs-vs-code discrepancies
 
