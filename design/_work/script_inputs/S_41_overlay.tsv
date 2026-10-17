@@ -65,7 +65,7 @@
 04-U7	L — weapon timing on real terrain (flat-ground simulations)	Open		
 04-U8				20-U6
 04-U9				03-U3
-04-U10	L — crate pacing in the grace period	Resolved	Yes [C]: `ClientToServer::AdvanceAndCatchUp` runs `Location::Advance` for every slice unless `App::GamePaused()`; `Location::AdvanceCrates` (slice 8, Multiplayer) is not gated by `Multiwinia::GameInGracePeriod` (`code/network/clienttoserver.cpp`, `code/location.cpp:Location::Advance`). Verified by this register.	
+04-U10	L — crate pacing in the grace period	Resolved	Yes [C]: `ClientToServer::ProcessAllServerLetters` runs `Location::Advance` for every slice unless `App::GamePaused()`; `Location::AdvanceCrates` (slice 8, Multiplayer) is not gated by `Multiwinia::GameInGracePeriod` (`code/network/clienttoserver.cpp`, `code/location.cpp:Location::Advance`). Verified by this register.	
 04-U11	L — weapon ranges are derived arithmetic	Open	Adopt the formulas as the new spec or instrument a build.	
 04-U12	M — timer arithmetic	Resolved	IEEE-754 replay: 1.0 → 11 ticks, 2.5 → 25, 5.0 → 51, 15.0 → 151, 45.0 → 450, 60.0 → 600; float life timers 30 → 300, 60 → 601 ([04](04_crates_powerups_and_weapons.md)) [C]. The design choice remains 01-U2.	
 05-U1	H — capture rules: which Darwinian occupies a port	Resolved	Exact [C]: `Building::EvaluatePorts` calls `EntityGrid::GetNeighbours(…, 5.0, …)`, which tests `dx² + dz² < range²` for every candidate (only the count/presence helpers are cell-approximate) — `code/entity_grid.cpp:EntityGrid::GetNeighbours`. Verified by this register. Tie rule (Phase-5 review R1): the result order — cell x, then cell z, then team 0…5, then cell slot — decides which Darwinian is "first" at a port; the new game should define an explicit tie rule.	

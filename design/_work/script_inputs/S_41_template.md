@@ -29,7 +29,7 @@
 2. **Inline [U] scan.** `S_41_inline_u.py` lists every `[U]` in a document body outside the closing sections (`_work/drafts/S_41_inline_u.csv`, 17 lines). Every one either names an `NN-U` id that is in its owner's table (12 lines) or is a "Resolved: … left this [U]" note (5 lines: 02 §7.9 squad colouring, 08 §2.2 `LevelFile::m_gameTypes`, 22 §14.11 L17, 32 §1 items 2 and 4). No inline [U] was missing from a table, so nothing had to be added from that scan.
 3. **Prose-only design-critical [I].** [26](26_animation_and_vfx.md) (§12.3 and its closing note) and [31](31_platform_build_and_tools.md) (closing note) list design-critical inferences without ids; they are registered here as **26-I1…26-I4** and **31-I1…31-I5** (ids assigned by this register, `_work/script_inputs/S_41_extra_rows.tsv`). 23-I1…23-I5 and 32-I1…32-I3 are the owners' own ids.
 4. **Curation** (`_work/script_inputs/S_41_overlay.tsv`). Every row gets an impact rating — **H** changes a core design decision or the evidence base of the whole set, **M** changes one mechanic or subsystem, **L** is legacy, cosmetic or moot for the new game — and a status. Items raised by several documents are merged into one entry owned by the most specific document; the entry lists every id (e.g. "22-U8 / 06-U7 / 21-U5") and every other document's section keeps a "merged into" line, so no id disappears. The build script checks that every parsed row has a curation line, that every merge target is a primary entry and that declared merge lists point back.
-5. **Resolution sources.** An entry is **Resolved** when a later document, the coordinator (`_work/phase2_log.md`) or a check made for this register settles it; the resolution, its evidence tag and its link are in the Status cell. Phase-2 questions that the owning documents had already closed before writing their tables are listed in §3.0 so that none is silently dropped.
+5. **Resolution sources.** An entry is **Resolved** when a later document, the coordinator (`_work/phase2_log.md`) or a check made for this register settles it; the resolution, its evidence tag and its link are in the Status cell. Phase-2 questions that the owning documents had already closed before writing their tables are listed in §3.0 so that none is silently dropped. Findings of the Phase-5 independent reviews available at build time (`_work/review/R1.md`–`R5.md`, `R7.md`) that bear on register entries were applied: 03-U7, 05-U1, 06-U12 and 07-U6 closed, 07-U1 narrowed, 27-U1 given a normative fallback.
 6. **Discrepancies** (`S_41_discrepancies.py`) are grouped by source artefact and claim similarity with manual merge/split rules; **IP rows** are mapped onto replacement categories by keyword (`S_41_ip_categories.tsv`), and the build aborts if any IP row of any document maps to no category.
 
 ### 1.2 Per-document statistics
@@ -53,7 +53,7 @@ Ranked by how much of the new game's design, tuning or evidence base depends on 
 | 9 | 03-U13 / 01-U3 | How long a besieged rocket survives (grenades aimed 50 above the base, damage measured to the base, ×0.2, decay 0.33/s). | Rocket Riot balance (attack vs refuel race). | **S** with `_work/scripts/S_04_grenade_sim.py` ballistics; or **IB** | [03](03_buildings_and_world_objects.md) |
 | 10 | 05-U5 / 00-U3 | What the handicap was meant to do (binary, diluted by the two special teams, `(mine−1)/total` always 0). | Catch-up mechanics in Domination and KOTH. | **D** (shipped behaviour is [C]) | [05](05_economy_and_population.md) |
 | 11 | 22-U5 (with 20-U1 / 24-U7, 20-U2) | Measured steady-state backlog and input latency; the tick rate is bounded by the host's frame rate and driver vsync. | Input-delay and jitter-buffer targets of the new transport ([40](40_carry_forward_assessment.md) §4.7). | **IB** two-machine run logging slices per frame and command round trips | [22](22_determinism_and_networking.md) |
-| 12 | 07-U1 | How often the selection gate in `Task::TargetOfficer` stalls CPU officer creation and fills task slots with orphaned Officer tasks (CPU teams then lose crate rewards). | The perceived strength of CPU players at each difficulty; whether to keep the bug for parity. | **IB** logging every CPU team's task list on every shipped map | [07](07_ai.md) |
+| 12 | 07-U1 | How often (narrowed by Phase-5 review R3: more calls release the gate than 07 §7.4 lists) the selection gate in `Task::TargetOfficer` stalls CPU officer creation and fills task slots with orphaned Officer tasks (CPU teams then lose crate rewards). | The perceived strength of CPU players at each difficulty; whether to keep the bug for parity. | **IB** logging every CPU team's task list on every shipped map | [07](07_ai.md) |
 | 13 | 22-U3 / 29-U12 | Did a single UPDATE letter > 1500 bytes ever occur in shipped play (dropped on receive and resent forever → stall)? | Sizes the per-tick command budget and confirms the MTU/fragmentation requirement ([22](22_determinism_and_networking.md) N2, [40](40_carry_forward_assessment.md) P12). | **IB**: 6 players + option bursts, log letter sizes; `recvfrom` test with an oversize datagram | [22](22_determinism_and_networking.md) |
 | 14 | 27-U8 / 10-U5 | `MonophonicNearest` crowd sounds (`Darwinian Create`, `Darwinian Attack`, `EscapeRocket Unhappy`) are culled unless an emitter is within ≈ 316 wu of the camera — were they audible at RTS camera heights? | Crowd-audio design of the new mix (what players are meant to hear from a 1000-unit battle). | **E** play-test at several camera heights; **IB** logging culls | [27](27_audio_engine.md) |
 | 15 | 30-U1 / 09-U15 (+ 30-U2) | Tutorial 2 starts only if idle player Darwinians wander into ControlStation 51's port range (224.6 wu from spawn 3) and the CPU takes spawn 83 first. | Whether the shipped tutorial ever showed its lessons in order; the new tutorial must script these states explicitly. | **E** repeated observation; **S** of idle wandering | [30](30_scripting_tutorial_and_cutscenes.md) |
@@ -62,7 +62,7 @@ Already-confirmed design-critical facts that are **not** uncertainties (they dri
 
 ### 1.4 Items resolved while building this register
 
-These were open in their owning documents; each was settled by re-reading the code or by a terrain-port check written for this register, and is marked Resolved in §3.
+These were open in their owning documents; each was settled by re-reading the code, by a terrain-port check written for this register or (03-U7) by a Phase-5 review finding confirmed against [29](29_data_formats_reference.md), and is marked Resolved in §3.
 
 | Entry | Resolution | Evidence |
 |---|---|---|
@@ -73,10 +73,14 @@ These were open in their owning documents; each was settled by re-reading the co
 | 03-U14 | Empty solar panels' per-tick `ChangeTeam` is silent: `ChangeTeam` is bound only for `MultiwiniaZone` and `Statue` | [C] `data/sounds.txt` |
 | 04-U2 | Weighted crate drops always accept their first candidate (edge height at z ∈ {0, 1} is negative and never 0 on every map) — they may land in water or off-map | [C] `code/location.cpp:Location::CreateRandomCrate`; [I] `_work/scripts/S_41_crate_edge_check.py` |
 | 04-U3 | Height at (0, 0) is −10 on every map, so no loop accepts its start position | [I] same CSV, column `h00` |
-| 04-U10 | Crates drop during the grace period: `Location::Advance` (which calls `AdvanceCrates` on slice 8) is gated only by `App::GamePaused()` | [C] `code/network/clienttoserver.cpp:ClientToServer::AdvanceAndCatchUp`, `code/location.cpp:Location::Advance`, `Location::AdvanceCrates` |
+| 04-U10 | Crates drop during the grace period: `Location::Advance` (which calls `AdvanceCrates` on slice 8) is gated only by `App::GamePaused()` | [C] `code/network/clienttoserver.cpp:ClientToServer::ProcessAllServerLetters`, `code/location.cpp:Location::Advance`, `Location::AdvanceCrates` |
 | 05-U1 | Port occupancy is exact: `Building::EvaluatePorts` uses `EntityGrid::GetNeighbours(…, 5.0)`, which tests `dx² + dz² < r²` per candidate | [C] `code/worldobject/building.cpp:Building::EvaluatePorts`, `code/entity_grid.cpp:EntityGrid::GetNeighbours` |
+| 03-U7 / 30-U4 | A missing mandatory token crashes the loader: `TextReader::GetNextToken` returns NULL and callers pass it to `atoi`/`iv_atof`/`stricmp` | [C] `contrib/systemiv/lib/filesys/text_stream_readers.cpp:TextReader::GetNextToken`; [29](29_data_formats_reference.md) §4.1; Phase-5 review R3 |
+| 07-U6 | The officer's facing steers formation fire: `m_targetFront` turns `m_front` (0.06 per tick while not walking); formation members centre their threat search 0.66 × range ahead along the officer's `m_front` | [C] `code/worldobject/officer.cpp:Officer::Advance`, `code/worldobject/darwinian.cpp:Darwinian::SearchForThreats`, `Darwinian::AdvanceFollowingOfficer` |
 | 07-U11 | `Team::m_specials` cannot hold ids of deleted entities: every special registers in `Begin` and unregisters in its destructor | [C] `code/team.cpp:Team::RegisterSpecial`, `Team::UnRegisterSpecial`, `code/worldobject/harvester.cpp:Harvester::~Harvester`; [I] all removal paths run destructors |
 | D: `docs/RussianFontRequest.txt` | Drafts disagreed (25 "distinct atlases" vs 28 "byte-identical"); the three Cyrillic atlas pairs are byte-identical copies | [C] MD5 of `data/textures/unicode/editor.0410.042f.bmp`, `speccy.0410.042f.bmp`, `square.0410.042f.bmp` (and the `.0430.044f` trio) |
+
+The three terrain checks (`C_nuke_sea_check.py`, `S_41_spaceship_land_check.py`, `S_41_crate_edge_check.py`) use the P11 terrain port, which Phase-5 review R7 found to sum the smooth (type 3) flatten kernel in a different order from `code/landscape.cpp` (11 of 69 golden digests in [23](23_terrain_and_landscape.md) §18 affected). Smooth flatten areas are small and the margins of all three conclusions are large (worst case: 324 of 42 436 abductor samples accepted; every edge sample ≤ −6.93), so the conclusions stand [I]; re-run the scripts once the port is corrected.
 
 ## 2 Risk register for the new game
 
@@ -110,7 +114,7 @@ Target: Windows, C++23, DirectX 12, multiplayer. Likelihood (**L**) and impact (
 | R24 | Legal / IP | Personal data in the tree (beta-tester names and e-mail addresses, developer names) reaching the new game or its repository | L | H | Do not import any list; own credits with consent | §5 IP30 |
 | R25 | Legal / IP | INTERNAL_STUDY excerpts (≤ 15 lines each) migrating from this design set into the new code base | M | M | Code-review rule and an automated similarity scan of the new repository against the source tree | `_work/AGENT_BRIEF.md` rule 4 |
 | R26 | Schedule | The register is large ({{NOPEN}} open entries); unprioritised it stalls design work | M | M | Work the §1.3 top 15 first; most remaining entries are L (legacy, cosmetic or moot) and can be closed by design decision | §1.2, §3 |
-| R27 | Schedule | Many resolutions need an instrumented original build (VS2005/2008, DirectX SDK); the D3D configuration probably does not compile | M | M | Build only the GL `Release|Win32` baseline once, with logging hooks; budget it as a dedicated task; otherwise resolve by design decision | 24-U1, 31-U1, [31](31_platform_build_and_tools.md) §7 |
+| R27 | Schedule | Many resolutions need an instrumented original build (VS2005/2008, DirectX SDK); the D3D configuration probably does not compile | M | M | Build only the GL `Release\|Win32` baseline once, with logging hooks; budget it as a dedicated task; otherwise resolve by design decision | 24-U1, 31-U1, [31](31_platform_build_and_tools.md) §7 |
 | R28 | Schedule | Keep/fix decisions taken late force re-tuning and rework | M | H | Freeze the keep-list/fix-list of [40](40_carry_forward_assessment.md) §5 before content production; follow the build order of [40](40_carry_forward_assessment.md) §7 | [40](40_carry_forward_assessment.md) §5, §7 |
 
 ## 3 Open-question register
@@ -215,7 +219,7 @@ Files read to verify the resolutions recorded in this register (§1.4); every ot
 | `code/worldobject/crate.cpp` | `Crate::RunSpaceShip`, `Crate::RunNuke` loops (02-U12, 04-U1) |
 | `code/location.cpp` | `Location::Init` MP research table, `Location::Advance`, `Location::AdvanceCrates`, `Location::CreateRandomCrate`, `Location::UpdateTeam` (02-U6, 02-U7, 04-U2, 04-U10) |
 | `code/multiwinia.cpp` | `Multiwinia::SetGameResearch`, `Multiwinia::Advance` (02-U7, retribution) |
-| `code/network/clienttoserver.cpp` | `ClientToServer::AdvanceAndCatchUp` slice dispatch, option handlers (02-U7, 04-U10) |
+| `code/network/clienttoserver.cpp` | `ClientToServer::ProcessAllServerLetters` slice dispatch, option handlers (02-U7, 04-U10) |
 | `code/entity_grid.cpp` | `EntityGrid::GetNeighbours` exact range test (05-U1) |
 | `code/worldobject/building.cpp` | `Building::EvaluatePorts` (05-U1) |
 | `code/team.cpp` | `Team::RegisterSpecial`, `Team::UnRegisterSpecial` (07-U11) |
@@ -223,6 +227,11 @@ Files read to verify the resolutions recorded in this register (§1.4); every ot
 | `code/worldobject/ai.cpp` | `AI::RunForest` (07-U11) |
 | `code/worldobject/insertion_squad.cpp` | `InsertionSquad::CycleSecondary`, `SetWeaponType`, constructor default (02-U6) |
 | `code/worldobject/teleport.cpp` | weapon-type copy across teleports (02-U6) |
+| `code/worldobject/officer.cpp` | `Officer::Advance` facing toward `m_targetFront` (07-U6) |
+| `code/worldobject/darwinian.cpp` | `Darwinian::SearchForThreats` formation search centre, `Darwinian::AdvanceFollowingOfficer` (07-U6) |
+| `contrib/systemiv/lib/filesys/text_stream_readers.cpp` | `TextReader::GetNextToken` NULL at end of line (03-U7) |
+| `code/lib/resource.cpp` | `Resource::GetTextureWithFlags` fatal assert on a missing texture (06-U12) |
+| `code/taskmanager.cpp` | selection-clearing calls named by review R3 (07-U1) |
 | `data/sounds.txt` | `ChangeTeam` bindings (03-U14) |
 | `data/textures/unicode/speccy.0410.042f.bmp` | Cyrillic atlas identity check (§1.4) |
 | `data/levels/mp_assault_2p_3.txt` | worst-case map of the land/sea checks (02-U12, 04-U1) |
