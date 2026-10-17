@@ -175,6 +175,7 @@ struct MeshImportRecord
   std::string assetClass;                      // selects the socket schema (ADR-021)
   float unitScale;                             // glTF metres to wu
   TintMarking tint;
+  std::optional<float> tintScale;               // RND-161; absent: rnd.tint.factor
   std::vector<std::string> smoothPrimitives;   // ADR-020 exceptions
   std::optional<AssetId> collision;            // required for collidable meshes
 };
@@ -469,7 +470,7 @@ Table 3.6-A Texture usage conventions.
 
 ### 3.7 Mesh import record and the tint attribute
 
-**AST-033** (MUST) A mesh import record declares (ADR-019): the asset id and member; its role, `render` or `collision` (AST-077); for a `render` record the **asset class**, which selects the socket schema (§3.8); the unit scale from glTF metres to world units; the tint marking (AST-034); the primitives declared smooth-shaded, if any (AST-036); and, for a collidable mesh, the asset id of its collision asset (§3.9). The cooker converts glTF axes and units to Species world axes once, at cook time, with the conventions of ADR-016.
+**AST-033** (MUST) A mesh import record declares (ADR-019): the asset id and member; its role, `render` or `collision` (AST-077); for a `render` record the **asset class**, which selects the socket schema (§3.8); the unit scale from glTF metres to world units; the tint marking (AST-034) and the tint scale that the renderer's tint function reads (RND-161: absent means `rnd.tint.factor`; the Transport hull and the Collector body name their owners' keys); the primitives declared smooth-shaded, if any (AST-036); and, for a collidable mesh, the asset id of its collision asset (§3.9). The cooker converts glTF axes and units to Species world axes once, at cook time, with the conventions of ADR-016.
 
 **AST-034** (MUST) Team regions of a mesh are marked explicitly, in one of the two ways of ADR-020, and the import record names which:
 1. **vertex weight**: the application-specific glTF vertex attribute `_SPECIES_TINT`, a `SCALAR` accessor of `FLOAT`, or of normalised `UNSIGNED_BYTE` or `UNSIGNED_SHORT`, with values from 0 (keep the facet colour) to 1 (full team tint);

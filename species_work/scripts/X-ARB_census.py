@@ -3,9 +3,11 @@
 
 Usage: python3 -I X-ARB_census.py <ORIG 08 levels file>
 
-Reads the generated per-file camera-mount table of the ORIG levels document, drops the
-eight non-match files, and prints the per-name mount counts over the 49 match maps and
-over all 57 files, so the derivation in p4_arbitration.md A-36 can be checked.
+Reads two generated per-file tables of the ORIG levels document (the camera-mount table
+and the landscape table), drops the eight non-match files, and prints the per-name
+camera-mount counts and the per-asset use counts of land ramps, shore waves and sea
+tiles over the 49 match maps and over all 57 map files, so the derivations in
+p4_arbitration.md A-36 can be checked.
 """
 import re
 import sys
@@ -62,6 +64,22 @@ def main():
                 if name != '—':
                     c[name] += 1
         print(f'camera mounts over {scope} ({n} files):', dict(sorted(c.items())))
+    land = {}
+    for i, line in enumerate(lines):
+        if line.startswith('| File | worldSize |'):
+            for row in lines[i + 2:]:
+                if not row.startswith('|'):
+                    break
+                m = ROW.match(row)
+                if m:
+                    cells = [c.strip() for c in row.split('|')[1:-1]]
+                    land[m.group(1)] = (cells[6], cells[7], cells[8])
+            break
+    for scope, keep in (('57 files', lambda f: True), ('49 match maps', lambda f: f not in NON_MATCH)):
+        for idx, label in ((0, 'land ramp'), (1, 'waves'), (2, 'water')):
+            c = Counter(v[idx] for f, v in land.items() if keep(f))
+            print(f'{label} over {scope} ({sum(c.values())} files):',
+                  sorted(c.values(), reverse=True), dict(c))
     return 0
 
 

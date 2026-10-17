@@ -142,7 +142,7 @@ public:
 
 ### 4.1 Layout systems and the page grid
 
-**UI-162** (MUST) The framework has two layout systems. Tool-style windows ([core_and_widgets.md](core_and_widgets.md) §4.10 to §4.21) are laid out in fixed pixels scaled by UI-170. Front-end pages and options screens are laid out in fractions of the client size, recomputed whenever a page is built or laid out again. HUD panels use the renderer's HUD space of `rnd.hud.ortho_height` (600) units high ([entity_and_overlay_renderers.md](../renderer/entity_and_overlay_renderers.md) RND-377), which one layout function converts to pixels together with the other two (ADR-033).
+**UI-162** (MUST) The framework has two layout systems. Tool-style windows ([core_and_widgets.md](core_and_widgets.md) §4.10 to §4.21) are laid out in fixed pixels scaled by UI-170. Front-end pages and options screens are laid out in fractions of the client size, recomputed whenever a page is built or laid out again. HUD panels use the renderer's HUD space of `ref.ctrl.panel.canvas_height` (600) units high ([entity_and_overlay_renderers.md](../renderer/entity_and_overlay_renderers.md) RND-377; [reference/06](../../../reference/06_controls_camera_and_commands/selection_and_power_slots.md) R-CTRL-222), which one layout function converts to pixels together with the other two (ADR-033).
 
 **UI-163** (MUST) `ComputePageGrid(W, H)` computes the page grid of [reference/09](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-200 from its keys:
 
@@ -663,7 +663,7 @@ The palette tokens of UI-187 and UI-188 are the `ui.palette.*` rows; their value
 | `ref.meta.backdrop.glow_colour` | [reference/09 front_end_presentation.md](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-205 |
 | `ref.meta.option_controls.control_height`, `ref.meta.setup.small_control_height` | [reference/09 screen_flow_and_match_setup.md](../../../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
 | `ref.meta.lang.base` | [reference/09 options_localisation_and_hooks.md](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) |
-| `rnd.hud.ortho_height` | [renderer/entity_and_overlay_renderers.md](../renderer/entity_and_overlay_renderers.md) RND-377 |
+| `ref.ctrl.panel.canvas_height` (the HUD space of RND-377) | [reference/06 selection_and_power_slots.md](../../../reference/06_controls_camera_and_commands/selection_and_power_slots.md) R-CTRL-222 |
 | `ui.chrome.title_height`, `ui.chrome.close_box`, `ui.button.auto_char_width`, `ui.button.auto_padding`, `ui.button.auto_height`, `ui.core.auto_grow_margin` | [core_and_widgets.md](core_and_widgets.md) §9 |
 | `inp.repeat.initial_delay`, `inp.repeat.period` (the repeat of the menu directions) | [input](../input/README.md) §4.18 |
 

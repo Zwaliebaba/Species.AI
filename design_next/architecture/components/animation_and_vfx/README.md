@@ -312,7 +312,7 @@ public:
 | `cloth_pointer` | `UnlitTextured` | `Alpha` | `Test` | `None` | `bias_flag_pointer` | 7b, 8 | the pointer `marker.flag_pointer` over a flag |
 | `cloth_overlay` | `WorldOverlay`, `SOURCE = TEXTURED` | `Alpha` | in-shader (RND-309) | `None` | — | 16 | the local team's Leader banners and their pointers |
 
-The particle entries sample `fx.particle_dot` through its `point` view, whose point-magnify clamp-to-edge sampler filters by point under magnification and linearly under minification ([asset pipeline](../asset_pipeline_and_resources.md) AST-025, AST-027; RND-432). The depth-bias variant `bias_flag_pointer` sets `SlopeScaledDepthBias` = `vfx.cloth.pointer_slope_bias` (1.0) and `DepthBias` = `vfx.cloth.pointer_constant_bias` (5) units towards the camera, in the reversed-Z convention of ADR-016.
+The particle entries sample `fx.particle_dot` through its `point` view, whose point-magnify clamp-to-edge sampler filters by point under magnification and linearly under minification ([asset pipeline](../asset_pipeline_and_resources.md) AST-025, AST-027; RND-432). The depth-bias variant `bias_flag_pointer`, which this component defines beside the renderer's variants of RND-219, sets `SlopeScaledDepthBias` = `vfx.cloth.pointer_slope_bias` (1.0) and `DepthBias` = `vfx.cloth.pointer_constant_bias` (5) units towards the camera, in the reversed-Z convention of ADR-016.
 
 ### 3.6 Lifetimes
 

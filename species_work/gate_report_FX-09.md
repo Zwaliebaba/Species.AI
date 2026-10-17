@@ -3,21 +3,19 @@
 | Gate | Result | Failures | Summary |
 |---|---|---|---|
 | 1 Hard-fail patterns | PASS | 0 | 0 hard-fail hits |
-| 2 Soft-flag patterns | PASS | 0 | 35 soft hits, 35 allowed by CONVENTIONS §9, 0 not allowed |
-| 3 Links and anchors | FAIL | 743 | 13242 relative links checked |
+| 2 Soft-flag patterns | PASS | 0 | 40 soft hits, 40 allowed by CONVENTIONS §9, 0 not allowed |
+| 3 Links and anchors | FAIL | 741 | 13244 relative links checked |
 | 4 Mermaid | FAIL | 1 | SKIPPED (--skip-mermaid) |
-| 5 Requirement ids | PASS | 0 | 4939 requirement ids defined, 28262 citations, 25 prefixes registered |
+| 5 Requirement ids | PASS | 0 | 4941 requirement ids defined, 28308 citations, 25 prefixes registered |
 | 6 DEC and ADR references | PASS | 0 | 301 DECs (148 Open, 148 of them cited by a requirement), 64 ADRs |
 | 7 Asset closure | PASS | 0 | 453 asset ids (1412 manifest rows), 2598 asset citations in reference and component documents |
-| 8 Tuning keys | PASS | 0 | 3719 tuning keys, 0 cited by no requirement |
+| 8 Tuning keys | PASS | 0 | 3716 tuning keys, 0 cited by no requirement |
 | 9 Truncation words | PASS | 0 | 0 truncation words |
 | 10 Sizes, READMEs, templates | PASS | 0 | 219 documents, 83 checked for template headings |
 | 11 Requirements index | PASS | 0 | index not written (no --write-index) |
 
 ## Gate 3 Links and anchors
 
-- architecture/components/README.md:15 broken link: input.md
-- architecture/components/README.md:20 broken link: diagnostics_test_and_performance.md
 - architecture/components/data_schemas/README.md:3 broken link: ../audio_engine.md
 - architecture/components/data_schemas/README.md:3 broken link: ../input.md
 - architecture/components/data_schemas/README.md:58 broken link: ../input.md

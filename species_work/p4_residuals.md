@@ -29,3 +29,8 @@ Items the wave B fixers could not apply, collected for one residual pass after r
 | 23 | FX-08 | DEC-959 needs an item recording RND-176's defaults (camera-facing orientation, blend, number drawing) | decision edit |
 | 24 | FX-08 | AGENTS.md R9 against CONVENTIONS: renderer (and other component) types that know a game concept by name are registered in `Engine` | coordinator ruling: AGENTS.md wins; a type that names a game concept lives in `Species` (the game layer's presentation code) and builds on generic `Engine` types; one sweep over all component sketches and CONVENTIONS §8 after wave B |
 | 25 | FX-08 | about 33 files link the old terrain.md | `p4_fix_links.py --apply` |
+| 26 | FX-10 | RB-214 waits on DEC-051 (timelines) | closed while DEC-051 is Open; its default stands |
+| 27 | FX-10 | R-META-066 (reference/09) needs a change listed in reports/FX-10.md | coordinator edit |
+| 28 | FX-10 | ADR-030's debug-panel "immediate-mode library" is third-party code under R14 | coordinator ruling: no third-party debug UI; an own immediate-mode layer on the batched UI renderer; amend ADR-030 (FX-11 told for DBG) |
+| 29 | FX-10 | 190 gate-3 hits: links to the old input.md | `p4_fix_links.py --apply` |
+| 30 | FX-10 | new names for the ledger and CONVENTIONS §8 (reports/FX-10.md) | with residual 22 |
