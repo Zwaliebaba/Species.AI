@@ -158,20 +158,20 @@ Table 3.2-A Lines of the settings file.
 
 ### 3.3 The binding-set schema
 
-**DAT-202** (MUST) The default binding set and each keyboard-layout layer are records of the record type `input.binding_set`, with the fields of INP-070 in table 3.3-A; their binding nodes are the JSON nodes of INP-071, each an object with exactly one node-kind property (INP-073). The user layer is the `binding.<action id>` entries of the settings file (DAT-194). Because every node names its kind and holds its operands, the structure of a binding is explicit and no operator-precedence rule exists in the schema; the binding of a conjunction of chords, for example, is one `all` node whose operands are `chord` nodes.
+**DAT-202** (MUST) The default binding set, the development binding layer and each keyboard-layout layer are records of the record type `input.binding_set`, with the fields of INP-070 in table 3.3-A; their binding nodes are the JSON nodes of INP-071, each an object with exactly one node-kind property (INP-073). The user layer is the `binding.<action id>` entries of the settings file (DAT-194). Because every node names its kind and holds its operands, the structure of a binding is explicit and no operator-precedence rule exists in the schema; the binding of a conjunction of chords, for example, is one `all` node whose operands are `chord` nodes.
 
 Table 3.3-A Fields of a binding set.
 
 | Field | Key | Type | Presence | Rules |
 |---|---|---|---|---|
-| layer kind | `layer` | enumeration `default`, `layout` | required | exactly one record of kind `default` per content set |
-| layout tag | `layout` | text, a BCP 47 tag | required for `layout`, absent for `default` | unique among the layout layers |
-| entries | `entries` | list of entries | required | ordered: the default set appends in entry order (INP-162) |
+| layer kind | `layer` | enumeration `default`, `development`, `layout` | required | exactly one record of kind `default` and at most one of kind `development` per content set; a `development` record is the development binding layer, which only Debug builds read (INP-094) |
+| layout tag | `layout` | text, a BCP 47 tag | required for `layout`, absent for `default` and `development` | unique among the layout layers |
+| entries | `entries` | list of entries | required | ordered: the default set and the development layer append in entry order (INP-162, INP-095) |
 | entry action | `action` | an action id of INP-067 | required | at most one entry per action in one record (DEC-801 item 2) |
 | entry bindings | `bindings` | ordered list of binding nodes (INP-071) | required | exactly one in a layout layer (INP-070); index 0 is the primary binding (INP-065) |
 | entry glyph | `glyph` | asset reference to an input glyph | defaulted: none | one glyph per action; it replaces every list of glyph lines (INP-070) |
 
-**DAT-203** (MUST) The content build validates every binding set with the schema and the rules of INP-170 and INP-172: an unknown device word, control name, condition word, node property, action id or setting key is an error naming the record, the action, the path of the node and the word; a condition that the control does not accept is an error (DEC-553, DEC-554); an alias chain that leads back to its own action is an error (DEC-554). Nothing falls back to a default condition (DEC-096), and a binding line that binds nothing has no Species form (DEC-553).
+**DAT-203** (MUST) The content build validates every binding set with the schema and the rules of INP-170 and INP-172: an unknown device word, control name, condition word, node property, action id or setting key is an error naming the record, the action, the path of the node and the word; a condition that the control does not accept is an error (DEC-553, DEC-554); an alias chain that leads back to its own action is an error (DEC-554). Nothing falls back to a default condition (DEC-096), and a binding line that binds nothing has no Species form (DEC-553). A `development` record is validated against the action id table of a Debug build, which holds the actions of INP table 3.11-A (INP-067, INP-094).
 
 **DAT-204** (MUST) Within one record an action has at most one entry; a second entry for one action is a build error that names both (DEC-801 item 2). The replacing layers of INP-162 therefore never meet two entries for one action from content; the last-wins rule of INP-163 applies only where a run-time layer could hold two, which the keyed form of the user layer (one settings entry per action) also excludes.
 

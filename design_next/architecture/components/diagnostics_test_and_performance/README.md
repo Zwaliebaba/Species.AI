@@ -293,18 +293,18 @@ Caption: Listing 2.1-A, the diagnostics interface (declarations only). `ProfileN
 
 ### 2.2 Debug entry points and development bindings
 
-**DBG-020** (MUST) Debug builds add a development binding set on top of the default binding set of the [input](../input.md) component (INP-009), which binds no developer key other than `action.debug.network_stats`. The debug actions and their default bindings are:
+**DBG-020** (MUST) Debug builds add the development binding layer of the [input](../input.md) component on top of its default binding set (INP-094 to INP-096, table 3.11-A); the default set binds no developer key other than `action.debug.network_stats` (INP-009). The input component owns every binding; this component defines the debug actions, their contexts and their effects:
 
-| Action | Default binding | Context and conditions | Effect | Configurations |
+| Action | Binding | Context and conditions | Effect | Configurations |
 |---|---|---|---|---|
-| `action.debug.network_stats` | `key:f9:down` | the front end, the lobby and a match: the action is polled by the front-end loop and the match loop | opens the network statistics window when it is not open; it never closes it, the window's close box does (UI-060); in Release builds it does nothing | both bind it; Debug builds act on it |
-| `action.debug.command_window` | `key:f11:down` | only while no UI window is open | opens the debug-command window (§4.6) | Debug |
-| `action.debug.drop_packet` | `key:f:held` | a participant connected to a host | discards every incoming network message while held, as a manual packet-loss test (DEC-208) | Debug |
-| `action.debug.special_lighting_on`, `action.debug.special_lighting_off` | `key:l:held`, `key:k:held` | a match | sets the renderer's special-lighting setting on, or off (RND-442); `key:l` also drives `action.view.chat_log`, and both act | Debug |
-| `action.debug.soak_rendering` | `key:r:down` | a soak participant (§4.9) | toggles the participant's rendering and sound together | Debug |
-| `action.debug.overlay` | `key:f5:down` | any | shows or hides the development overlay (§4.4) | Debug |
-| `action.debug.profile_view` | `key:f10:down` | any | shows or hides the profile view (§4.3) | Debug |
-| `action.debug.camera_fast`, `action.debug.camera_slow`, `action.debug.camera_rotate` | the [input](../input.md) component's development bindings (CAM-084) | the developer fly mode | CAM-081, CAM-082 | Debug |
+| `action.debug.network_stats` | the default set (INP-009) | the front end, the lobby and a match: the action is polled by the front-end loop and the match loop | opens the network statistics window when it is not open; it never closes it, the window's close box does (UI-060); in Release builds it does nothing | both bind it; Debug builds act on it |
+| `action.debug.command_window` | INP table 3.11-A row 1 | only while no UI window is open | opens the debug-command window (§4.6) | Debug |
+| `action.debug.drop_packet` | row 2 | a participant connected to a host | discards every incoming network message while held, as a manual packet-loss test (DEC-208) | Debug |
+| `action.debug.special_lighting_on`, `action.debug.special_lighting_off` | rows 3 and 4 | a match | sets the renderer's special-lighting setting on, or off (RND-442); the key of `action.debug.special_lighting_on` also drives `action.view.chat_log`, and both act (INP-096) | Debug |
+| `action.debug.soak_rendering` | row 5 | a soak participant (§4.9) | toggles the participant's rendering and sound together | Debug |
+| `action.debug.overlay` | row 6 | any | shows or hides the development overlay (§4.4) | Debug |
+| `action.debug.profile_view` | row 7 | any | shows or hides the profile view (§4.3) | Debug |
+| `action.debug.camera_fast`, `action.debug.camera_slow`, `action.debug.camera_rotate` | rows 8 to 10 | the developer fly mode | the fast and slow factors and the rotation of the developer fly mode (CAM-081, CAM-082) | Debug |
 
 **DBG-021** (MUST) The screenshot action (`action.view.screenshot`) is a player action of [reference/06](../../../reference/06_controls_camera_and_commands/actions_and_bindings.md) row A10 and the renderer, not a debug action.
 

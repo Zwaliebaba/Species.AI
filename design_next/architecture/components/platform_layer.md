@@ -8,7 +8,7 @@ Notation used throughout:
 
 - **Platform time** is a reading of the platform clock: a signed 64-bit count of nanoseconds since the clock origin, shown in seconds where that reads better. It is presentation and scheduling time. Simulation durations are ticks, defined in [tick timing and main loop](../../reference/12_simulation_model/01_tick_timing_and_main_loop.md), and never platform time.
 - **Pixels** are physical pixels of the window's client area unless a rule says otherwise; "desktop coordinates" are the virtual-desktop coordinates of Windows.
-- `<Studio>` is the publisher-name parameter (CONVENTIONS §8.11) and `Species` is the product name `kProductName`. The user-data root is `%LOCALAPPDATA%\<Studio>\Species\`.
+- `<Studio>` is the publisher-name parameter (CONVENTIONS §8.11) and `Species` is the product name `PRODUCT_NAME`. The user-data root is `%LOCALAPPDATA%\<Studio>\Species\`.
 - A **pre-UI message** is a message box that the platform layer shows itself, before the UI framework exists or when it cannot draw (§4.1).
 
 ## 1 Responsibilities and boundaries
@@ -33,7 +33,7 @@ Table 1-A: platform services.
 | 12 | start-up options | ADR-056, ADR-057 | §3.3 |
 | 13 | language detection: the preferred user-interface languages as BCP 47 tags | ADR-063 | §4.6 |
 | 14 | pre-UI messages | ADR-050 | §4.1 |
-| 15 | HTTPS client | ADR-066 | §4.12 |
+| 15 | HTTPS client | ADR-066, ADR-077 | §4.12 |
 | 16 | clipboard text and web-address opening | ADR-032 | §4.13 |
 | 17 | audio-endpoint notices | ADR-022 | §4.14 |
 | 18 | screenshot and poster output | ADR-076 | §4.11 |
@@ -45,7 +45,7 @@ Table 1-A: platform services.
 
 **PLT-004** (MUST NOT) The platform layer does not own: the swap chain, presentation and the frame-rate cap's policy ([renderer](renderer/README.md), ADR-012); input decoding, bindings and gamepads ([input](input.md), ADR-028, ADR-029); layout, DPI-scaled sizes and text ([UI framework](ui_framework/README.md), ADR-033); the logger, the black-box contents, profiling and telemetry ([diagnostics](diagnostics_test_and_performance/README.md), ADR-065 to ADR-068); the symbol store, the crash-data collection programme, the version resource and packaging ([build tooling](build_tooling_and_distribution.md), ADR-057, ADR-065, ADR-071, ADR-072); the preferences schema, the settings-file grammar and the content of the defaults table ([data schemas](data_schemas/README.md), DEC-100); which settings exist and what the options pages show ([options, localisation and hooks](../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md)); pack files and mounting ([asset pipeline](asset_pipeline_and_resources.md), ADR-058). Section 2 states what each neighbour receives.
 
-**PLT-005** (MUST) The headless server product (`server`, ADR-056) uses only the portable platform services: the clock, threads and job queues, the floating-point environment, files and text conversion, the system summary without its display and audio parts, its own start-up options and the HTTPS client. It links no window, display, input-forwarding, clipboard, screenshot or audio-endpoint code. Its process roles, data locations and crash path are design-phase decisions (DEC-220, ADR-065, §8.2).
+**PLT-005** (MUST) The headless server (the server project, ADR-056) is a Windows build with the toolset of the client (ADR-051) and uses only the portable platform services: the clock, threads and job queues, the floating-point environment, files and text conversion, the system summary without its display and audio parts, its own start-up options and the HTTPS client. It links no window, display, input-forwarding, clipboard, screenshot or audio-endpoint code. Windows Error Reporting covers its crashes; its process roles, its data locations and where its crash reports go are design-phase decisions (DEC-220, ADR-065, §8.2).
 
 **PLT-006** (MUST) The baseline covers the platform facts of the reference as table 1-C states.
 
@@ -68,201 +68,367 @@ Table 1-C: platform facts of the reference and where the baseline covers them.
 
 ### 2.1 Interface sketch
 
-The sketch is a C++23 declaration outline, not an implementation. Every type is in `species::platform`; strings are UTF-8 and converted to UTF-16 only inside the platform layer (ADR-063).
+The sketch is a C++23 declaration outline, not an implementation. Every type is in namespace `Engine`; strings are UTF-8 and converted to UTF-16 only inside the platform layer (ADR-063).
 
 ```cpp
-namespace species::platform {
+namespace Engine
+{
 
-enum class PlatformError : std::uint8_t { Unsupported, AccessDenied, NotFound, Other };
+enum class PlatformError : std::uint8_t
+{
+  Unsupported,
+  AccessDenied,
+  NotFound,
+  Other
+};
 
 // ---- Platform clock (ADR-074) ----
-using Nanoseconds = std::chrono::duration<std::int64_t, std::nano>;  // since the clock origin
-enum class TimeSourceKind : std::uint8_t { Real, FixedStep, Manual };
-class TimeSource {
- public:
+using Nanoseconds = std::chrono::duration<std::int64_t, std::nano>; // since the clock origin
+enum class TimeSourceKind : std::uint8_t
+{
+  Real,
+  FixedStep,
+  Manual
+};
+class TimeSource
+{
+public:
   virtual ~TimeSource() = default;
   [[nodiscard]] virtual Nanoseconds Now() const noexcept = 0;
-  virtual void FrameBoundary() noexcept {}  // the fixed-step source advances here
+  virtual void FrameBoundary() noexcept {} // the fixed-step source advances here
 };
-class ManualTimeSource final : public TimeSource {  // tests only
- public:
-  void Advance(Nanoseconds step) noexcept;  // step >= 0
+// Tests only.
+class ManualTimeSource final : public TimeSource
+{
+public:
+  void Advance(Nanoseconds _step) noexcept; // _step >= 0
   [[nodiscard]] Nanoseconds Now() const noexcept override;
 };
-class PlatformClock {
- public:
-  [[nodiscard]] Nanoseconds Now() const noexcept;  // any thread; lock-free; never decreases
+class PlatformClock
+{
+public:
+  [[nodiscard]] Nanoseconds Now() const noexcept; // any thread; lock-free; never decreases
   [[nodiscard]] Nanoseconds Resolution() const noexcept;
   [[nodiscard]] TimeSourceKind SourceKind() const noexcept;
-  void FrameBoundary() noexcept;  // the frame loop, once per rendered frame
-  void WaitUntil(Nanoseconds deadline) const;  // returns at once under an injected source
-  [[nodiscard]] std::chrono::system_clock::time_point CalendarUtc() const;  // logs, reports, display
-  [[nodiscard]] std::chrono::minutes LocalUtcOffset() const;  // display only
-  void ReplaceSource(std::unique_ptr<TimeSource> source);  // start-up and Debug or Development tests only
+  void FrameBoundary() noexcept;                                           // the frame loop, once per rendered frame
+  void WaitUntil(Nanoseconds _deadline) const;                             // returns at once under an injected source
+  [[nodiscard]] std::chrono::system_clock::time_point CalendarUtc() const; // logs, reports, display
+  [[nodiscard]] std::chrono::minutes LocalUtcOffset() const;               // display only
+  void ReplaceSource(std::unique_ptr<TimeSource> _source);                 // start-up and Debug tests only
 };
 
 // ---- Window and displays (ADR-075) ----
 using NativeWindowHandle = struct HWND__*;
-struct PointPx { std::int32_t x = 0, y = 0; };
-struct SizePx  { std::uint32_t width = 0, height = 0; };
-struct RectPx  { std::int32_t left = 0, top = 0, right = 0, bottom = 0; };
-enum class WindowMode : std::uint8_t { Windowed, BorderlessFullScreen };
-enum class Permanence : std::uint8_t { Permanent, Temporary };
-struct DesktopMode { std::uint32_t width, height, bitsPerPixel, refreshHz; };
-struct ModeSize    { std::uint32_t width, height; std::vector<std::uint32_t> refreshRatesHz; };
-struct MonitorInfo {  // §3.4
+struct PointPx
+{
+  std::int32_t x = 0;
+  std::int32_t y = 0;
+};
+struct SizePx
+{
+  std::uint32_t width = 0;
+  std::uint32_t height = 0;
+};
+// Left, top, right, bottom: the Windows rectangle order.
+struct RectPx
+{
+  std::int32_t left = 0;
+  std::int32_t top = 0;
+  std::int32_t right = 0;
+  std::int32_t bottom = 0;
+};
+enum class WindowMode : std::uint8_t
+{
+  Windowed,
+  BorderlessFullScreen
+};
+enum class Permanence : std::uint8_t
+{
+  Permanent,
+  Temporary
+};
+struct DesktopMode
+{
+  std::uint32_t width;
+  std::uint32_t height;
+  std::uint32_t bitsPerPixel;
+  std::uint32_t refreshHz;
+};
+struct ModeSize
+{
+  std::uint32_t width;
+  std::uint32_t height;
+  std::vector<std::uint32_t> refreshRatesHz;
+};
+// A monitor record (§3.4); both rectangles are in desktop coordinates.
+struct MonitorInfo
+{
   std::string deviceName;
-  RectPx bounds, workArea;  // desktop coordinates
+  RectPx bounds;
+  RectPx workArea;
   std::uint32_t dpi;
   float dpiScale;
   bool primary;
   DesktopMode desktop;
-  std::vector<ModeSize> modeSizes;  // filtered, merged, in reported order
+  std::vector<ModeSize> modeSizes; // filtered, merged, in reported order
 };
 [[nodiscard]] std::vector<MonitorInfo> EnumerateMonitors();
 
-struct WindowPlacement { WindowMode mode; std::string monitorDeviceName; std::optional<RectPx> windowedClientRect; };
-struct WindowMessage { std::uint32_t id; std::uintptr_t wParam; std::intptr_t lParam; Nanoseconds time; };
-class WindowInputSink {  // the keyboard and mouse back-end of input
- public:
-  virtual ~WindowInputSink() = default;
-  virtual void OnWindowMessage(const WindowMessage& message) = 0;  // main thread
+struct WindowPlacement
+{
+  WindowMode mode;
+  std::string monitorDeviceName;
+  std::optional<RectPx> windowedClientRect;
 };
-struct Resized { SizePx client; };
-struct DpiChanged { float dpiScale; RectPx suggestedWindowRect; };
-struct FocusChanged { bool hasFocus; };
-struct Minimised {};
-struct Restored {};
-struct ModeChanged { WindowMode mode; };
-struct MonitorChanged { std::string deviceName; };
-struct DisplayConfigurationChanged {};
-struct KeyboardLayoutChanged { std::string languageTag; };  // BCP 47
-struct EndOfSession {};
-using WindowEvent = std::variant<Resized, DpiChanged, FocusChanged, Minimised, Restored, ModeChanged,
-                                 MonitorChanged, DisplayConfigurationChanged, KeyboardLayoutChanged, EndOfSession>;
+struct WindowMessage
+{
+  std::uint32_t id;
+  std::uintptr_t wParam;
+  std::intptr_t lParam;
+  Nanoseconds time;
+};
+// The keyboard and mouse back-end of input.
+class WindowInputSink
+{
+public:
+  virtual ~WindowInputSink() = default;
+  virtual void OnWindowMessage(const WindowMessage& _message) = 0; // main thread
+};
+struct Resized
+{
+  SizePx client;
+};
+struct DpiChanged
+{
+  float dpiScale;
+  RectPx suggestedWindowRect;
+};
+struct FocusChanged
+{
+  bool hasFocus;
+};
+struct Minimized
+{
+};
+struct Restored
+{
+};
+struct ModeChanged
+{
+  WindowMode mode;
+};
+struct MonitorChanged
+{
+  std::string deviceName;
+};
+struct DisplayConfigurationChanged
+{
+};
+struct KeyboardLayoutChanged
+{
+  std::string languageTag; /* BCP 47 */
+};
+struct EndOfSession
+{
+};
+using WindowEvent = std::variant<Resized, DpiChanged, FocusChanged, Minimized, Restored, ModeChanged, MonitorChanged,
+                                 DisplayConfigurationChanged, KeyboardLayoutChanged, EndOfSession>;
 
-class AppWindow {
- public:
-  [[nodiscard]] static std::expected<AppWindow, PlatformError> Create(const WindowPlacement& placement, SizePx renderSize);
-  [[nodiscard]] NativeWindowHandle Native() const noexcept;  // swap-chain creation only
+class AppWindow
+{
+public:
+  [[nodiscard]] static std::expected<AppWindow, PlatformError> Create(const WindowPlacement& _placement, SizePx _renderSize);
+  [[nodiscard]] NativeWindowHandle Native() const noexcept; // swap-chain creation only
   [[nodiscard]] SizePx ClientSize() const noexcept;
   [[nodiscard]] float DpiScale() const noexcept;
   [[nodiscard]] bool HasFocus() const noexcept;
-  [[nodiscard]] bool IsMinimised() const noexcept;
+  [[nodiscard]] bool IsMinimized() const noexcept;
   [[nodiscard]] const MonitorInfo& Monitor() const noexcept;
   [[nodiscard]] WindowPlacement Placement() const;
-  [[nodiscard]] std::string ActiveKeyboardLayoutTag() const;  // BCP 47
+  [[nodiscard]] std::string ActiveKeyboardLayoutTag() const; // BCP 47
   void Show();
-  void SetMode(WindowMode mode, Permanence permanence);
-  void PumpMessages();  // once per frame; never blocks
-  void ConfinePointer(bool on);  // INP-159
-  void WarpPointer(PointPx clientPosition);  // INP-158; no movement event
-  void SetInputSink(WindowInputSink* sink);
-  void AddListener(std::function<void(const WindowEvent&)> listener);
+  void SetMode(WindowMode _mode, Permanence _permanence);
+  void PumpMessages();                       // once per frame; never blocks
+  void ConfinePointer(bool _on);             // INP-159
+  void WarpPointer(PointPx _clientPosition); // INP-158; no movement event
+  void SetInputSink(WindowInputSink* _sink);
+  void AddListener(std::function<void(const WindowEvent&)> _listener);
 };
 
 // ---- Locations, files and settings (ADR-071, DEC-100, DEC-800) ----
-enum class UserFolder : std::uint8_t { Root, Settings, Logs, Crashes, Maps, Diagnostics };
-class PlatformPaths {
- public:
+enum class UserFolder : std::uint8_t
+{
+  Root,
+  Settings,
+  Logs,
+  Crashes,
+  Maps,
+  Diagnostics
+};
+class PlatformPaths
+{
+public:
   [[nodiscard]] const std::filesystem::path& InstallDirectory() const noexcept;
-  [[nodiscard]] const std::filesystem::path& Folder(UserFolder folder) const noexcept;
+  [[nodiscard]] const std::filesystem::path& Folder(UserFolder _folder) const noexcept;
   [[nodiscard]] const std::filesystem::path& ScreenshotFolder() const noexcept;
   [[nodiscard]] bool UserDataAvailable() const noexcept;
 };
-enum class FileError : std::uint8_t { NotFound, AccessDenied, DiskFull, Other };
-class MappedFile;  // read-only view, for pack files
-[[nodiscard]] std::expected<std::vector<std::byte>, FileError> ReadWholeFile(const std::filesystem::path& path);
-[[nodiscard]] std::expected<MappedFile, FileError> MapReadOnly(const std::filesystem::path& path);
-[[nodiscard]] std::expected<void, FileError> ReplaceFileAtomically(const std::filesystem::path& path,
-                                                                 std::span<const std::byte> bytes);
-[[nodiscard]] std::wstring ToUtf16(std::string_view utf8);  // operating-system boundary only
-[[nodiscard]] std::string ToUtf8(std::wstring_view utf16);
+enum class FileError : std::uint8_t
+{
+  NotFound,
+  AccessDenied,
+  DiskFull,
+  Other
+};
+class MappedFile; // read-only view, for pack files
+[[nodiscard]] std::expected<std::vector<std::byte>, FileError> ReadWholeFile(const std::filesystem::path& _path);
+[[nodiscard]] std::expected<MappedFile, FileError> MapReadOnly(const std::filesystem::path& _path);
+[[nodiscard]] std::expected<void, FileError> ReplaceFileAtomically(const std::filesystem::path& _path, std::span<const std::byte> _bytes);
+[[nodiscard]] std::wstring ToUtf16(std::string_view _utf8); // operating-system boundary only
+[[nodiscard]] std::string ToUtf8(std::wstring_view _utf16);
 
 using SettingValue = std::variant<bool, std::int64_t, double, std::string>;
-class SettingsStore {
- public:
-  [[nodiscard]] SettingValue Get(std::string_view key) const;  // the schema type; the default when unset
-  template <class T> [[nodiscard]] T GetAs(std::string_view key) const;
-  void Set(std::string_view key, SettingValue value);  // checked against the schema
-  void Subscribe(std::string_view keyPrefix, std::function<void(std::string_view key)> onChange);
-  std::future<std::expected<void, FileError>> Save();  // the save events of R-META-406 only
-  [[nodiscard]] bool LoadedFromFile() const noexcept;  // false on the first run
+class SettingsStore
+{
+public:
+  [[nodiscard]] SettingValue Get(std::string_view _key) const; // the schema type; the default when unset
+  template <class T> [[nodiscard]] T GetAs(std::string_view _key) const;
+  void Set(std::string_view _key, SettingValue _value); // checked against the schema
+  void Subscribe(std::string_view _keyPrefix, std::function<void(std::string_view)> _onChange);
+  std::future<std::expected<void, FileError>> Save(); // the save events of R-META-406 only
+  [[nodiscard]] bool LoadedFromFile() const noexcept; // false on the first run
 };
 
 // ---- Start-up options, lifecycle and messages ----
-struct StartupOptions {  // table 3.3-A
-  std::optional<std::filesystem::path> writeBuildIdentity, userDataRoot, looseContentDirectory;
+// Table 3.3-A.
+struct StartupOptions
+{
+  std::optional<std::filesystem::path> writeBuildIdentity;
+  std::optional<std::filesystem::path> userDataRoot;
+  std::optional<std::filesystem::path> looseContentDirectory;
   std::optional<std::uint32_t> fixedStepFramesPerSecond;
   bool verifyContent = false;
   std::vector<std::string> ignoredArguments;
 };
 [[nodiscard]] StartupOptions ParseCommandLine();
-enum class MessageSeverity : std::uint8_t { Notice, Error, Fatal };
-struct MessageArgument { std::string_view name; std::string value; };
-void ShowPlatformMessage(std::string_view stringId, std::span<const MessageArgument> arguments, MessageSeverity severity);
-class LifecycleHooks {  // implemented by the application (DEC-221)
- public:
+enum class MessageSeverity : std::uint8_t
+{
+  Notice,
+  Error,
+  Fatal
+};
+struct MessageArgument
+{
+  std::string_view name;
+  std::string value;
+};
+void ShowPlatformMessage(std::string_view _stringId, std::span<const MessageArgument> _arguments, MessageSeverity _severity);
+// Implemented by the application (DEC-221).
+class LifecycleHooks
+{
+public:
   virtual ~LifecycleHooks() = default;
   virtual void OnQuitRequested() = 0;
-  virtual void OnFocusChanged(bool hasFocus) = 0;
-  virtual void OnMinimisedChanged(bool minimised) = 0;
+  virtual void OnFocusChanged(bool _hasFocus) = 0;
+  virtual void OnMinimizedChanged(bool _minimized) = 0;
 };
-[[noreturn]] void ExitAfterTeardown(int exitCode);
-[[noreturn]] void EndWithMessage(std::string_view stringId, std::span<const MessageArgument> arguments);  // FatalExit, DBG-074
-[[noreturn]] void FailFast(std::string_view reason);  // fatal path, DBG-073
+[[noreturn]] void ExitAfterTeardown(int _exitCode);
+[[noreturn]] void EndWithMessage(std::string_view _stringId, std::span<const MessageArgument> _arguments); // FatalExit, DBG-074
+[[noreturn]] void FailFast(std::string_view _reason);                                                      // fatal path, DBG-073
 
 // ---- Threads and the floating-point environment (ADR-065, DEC-224, DEC-240) ----
-class PlatformThread {  // requests stop and joins on destruction
- public:
-  template <class Body> static PlatformThread Start(std::string_view name, Body&& body);  // body(std::stop_token)
+// Requests stop and joins on destruction.
+class PlatformThread
+{
+public:
+  template <class Body> static PlatformThread Start(std::string_view _name, Body&& _body); // _body(std::stop_token)
   void RequestStop() noexcept;
   void Join();
 };
-class JobQueue {  // one serial first-in-first-out worker
- public:
-  explicit JobQueue(std::string_view threadName);
-  template <class Job> auto Post(Job&& job) -> std::future<std::invoke_result_t<Job>>;
+// One serial first-in-first-out worker.
+class JobQueue
+{
+public:
+  explicit JobQueue(std::string_view _threadName);
+  template <class Job> auto Post(Job&& _job) -> std::future<std::invoke_result_t<Job>>;
   void Stop();
 };
 [[nodiscard]] bool IsDefaultFloatEnvironment() noexcept;
 void ApplyDefaultFloatEnvironment() noexcept;
 
 // ---- Crash context (ADR-065) ----
-enum class CrashFileKind : std::uint8_t { CurrentLog, Settings, DeviceRemovalData };
-class CrashContext {
- public:
-  void RegisterFile(const std::filesystem::path& path, CrashFileKind kind);
-  void RegisterMemoryBlock(std::span<const std::byte> block);  // the black box, the crash-context record
-  void ExcludeMemoryBlock(std::span<const std::byte> block);  // any thread; personal data
-  void RemoveExclusion(std::span<const std::byte> block);
+enum class CrashFileKind : std::uint8_t
+{
+  CurrentLog,
+  Settings,
+  DeviceRemovalData
+};
+class CrashContext
+{
+public:
+  void RegisterFile(const std::filesystem::path& _path, CrashFileKind _kind);
+  void RegisterMemoryBlock(std::span<const std::byte> _block); // the black box, the crash-context record
+  void ExcludeMemoryBlock(std::span<const std::byte> _block);  // any thread; personal data
+  void RemoveExclusion(std::span<const std::byte> _block);
 };
 
 // ---- System information and services ----
-struct SystemSummary;  // table 3.6-A
-[[nodiscard]] const SystemSummary& System() noexcept;  // immutable after collection
-struct HttpsRequest { std::string url, contentType; std::vector<std::byte> body; Nanoseconds timeout; };
-struct HttpsResponse { std::uint16_t status; std::vector<std::byte> body; };
-enum class HttpsError : std::uint8_t { NotHttps, Offline, Timeout, CertificateRejected, Other };
-class HttpsClient {
- public:
-  [[nodiscard]] std::future<std::expected<HttpsResponse, HttpsError>> Post(HttpsRequest request);
+struct SystemSummary;                                 // table 3.6-A
+[[nodiscard]] const SystemSummary& System() noexcept; // immutable after collection
+struct HttpsRequest
+{
+  std::string url;
+  std::string contentType;
+  std::vector<std::byte> body;
+  Nanoseconds timeout;
+};
+// A redirect status is a result and is never followed (PLT-099).
+struct HttpsResponse
+{
+  std::uint16_t status;
+  std::vector<std::byte> body;
+};
+enum class HttpsError : std::uint8_t
+{
+  NotHttps,
+  Offline,
+  Timeout,
+  CertificateRejected,
+  Other
+};
+class HttpsClient
+{
+public:
+  [[nodiscard]] std::future<std::expected<HttpsResponse, HttpsError>> Post(HttpsRequest _request);
 };
 [[nodiscard]] std::optional<std::string> ClipboardText();
-void SetClipboardText(std::string_view text);
-[[nodiscard]] bool OpenWebAddress(std::string_view httpsAddress);
-enum class AudioEndpointChange : std::uint8_t { DefaultChanged, Added, Removed, StateChanged };
-void SetAudioEndpointListener(std::function<void(AudioEndpointChange)> listener);  // main thread
-struct ScreenshotImage { SizePx size; std::span<const std::byte> rgba8TopDown; std::size_t rowPitch; };
-class ScreenshotWriter {  // PNG through WIC (ADR-076)
- public:
-  [[nodiscard]] std::future<std::expected<std::filesystem::path, FileError>> Save(ScreenshotImage image);
-  void BeginPoster(SizePx size);  // then one tile row at a time
-  void AppendPosterRows(std::span<const std::byte> rgba8TopDown, std::uint32_t rowCount, std::size_t rowPitch);
+void SetClipboardText(std::string_view _text);
+[[nodiscard]] bool OpenWebAddress(std::string_view _httpsAddress);
+enum class AudioEndpointChange : std::uint8_t
+{
+  DefaultChanged,
+  Added,
+  Removed,
+  StateChanged
+};
+void SetAudioEndpointListener(std::function<void(AudioEndpointChange)> _listener); // main thread
+struct ScreenshotImage
+{
+  SizePx size;
+  std::span<const std::byte> rgba8TopDown;
+  std::size_t rowPitch;
+};
+// PNG through WIC (ADR-076).
+class ScreenshotWriter
+{
+public:
+  [[nodiscard]] std::future<std::expected<std::filesystem::path, FileError>> Save(ScreenshotImage _image);
+  void BeginPoster(SizePx _size); // then one tile row at a time
+  void AppendPosterRows(std::span<const std::byte> _rgba8TopDown, std::uint32_t _rowCount, std::size_t _rowPitch);
   [[nodiscard]] std::future<std::expected<std::filesystem::path, FileError>> FinishPoster();
 };
 
-}  // namespace species::platform
+} // namespace Engine
 ```
 
 ### 2.2 Events and data contracts
@@ -291,7 +457,7 @@ class ScreenshotWriter {  // PNG through WIC (ADR-076)
 
 **PLT-015** (MUST) The install directory is the directory of the running executable, resolved from the executable's own module path, never from the working directory. It holds `species.exe`, the first-party libraries, `D3D12\`, `packs\` and the licence notices (ADR-071). Content opens relative to it, so the working directory has no effect on the client. Nothing is written to the install directory or to the registry at run time, and the client runs as a standard user (ADR-071).
 
-**PLT-016** (MUST) The user-data root is `%LOCALAPPDATA%\<Studio>\Species\`: the Local AppData known folder, from `SHGetKnownFolderPath` with `FOLDERID_LocalAppData`, then the folder `<Studio>`, the publisher name compiled into the build, then the folder `Species`, the product name `kProductName` (ADR-071). Each level is created when it is missing. Every build flavour uses the same root; only the start-up option `--user-data` replaces it (PLT-025). No flavour and no option writes user files to the working directory or beside the executable.
+**PLT-016** (MUST) The user-data root is `%LOCALAPPDATA%\<Studio>\Species\`: the Local AppData known folder, from `SHGetKnownFolderPath` with `FOLDERID_LocalAppData`, then the folder `<Studio>`, the publisher name compiled into the build, then the folder `Species`, the product name `PRODUCT_NAME` (ADR-071). Each level is created when it is missing. Debug and Release builds use the same root; only the start-up option `--user-data` replaces it (PLT-025). No configuration and no option writes user files to the working directory or beside the executable.
 
 **PLT-017** (MUST) The user-data root holds the folders of table 3.1-A, each created on first use, except `crashes\`, which is created at start-up (PLT-122). Screenshots go to the Pictures known folder (`FOLDERID_Pictures`) under `Species\` (ADR-071, ADR-076).
 
@@ -301,9 +467,9 @@ Table 3.1-A: user-data folders.
 |---|---|---|---|
 | `settings\` | the settings file | the settings store | §3.5, §4.7; DEC-250 |
 | `logs\` | one log file per run, rotated | the logger | ADR-067 |
-| `crashes\` | local dumps on development and test machines; device-removal data | Windows Error Reporting under the local-dump settings that CI provides; the renderer | ADR-065, ADR-008, [renderer](renderer/README.md) RND-034 |
+| `crashes\` | local dumps on development and test machines; device-removal data | Windows Error Reporting under the local-dump registry file that the build provides ([build tooling](build_tooling_and_distribution.md) BLD-113); the renderer | ADR-065, ADR-008, [renderer](renderer/README.md) RND-034 |
 | `maps\` | the player's map folder: custom maps | the map editor hooks | [map editor hooks](../../reference/08_maps_and_level_design/map_editor_hooks.md) R-MAP-391 |
-| `diagnostics\` | development outputs: command-history recordings, language-test reports, divergence dumps and binding dumps | development features, in `Debug` and `Development` builds only | [randomness and integrity](../../reference/12_simulation_model/07_randomness_and_integrity.md) R-SIM-740; [options, localisation and hooks](../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-473; DEC-206; [input](input.md) INP-242 |
+| `diagnostics\` | development outputs: command-history recordings, language-test reports, divergence dumps and binding dumps | development features, in Debug builds only | [randomness and integrity](../../reference/12_simulation_model/07_randomness_and_integrity.md) R-SIM-740; [options, localisation and hooks](../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-473; DEC-206; [input](input.md) INP-242 |
 | Pictures `Species\` | screenshots and posters | the screenshot writer | ADR-076, §4.11 |
 
 **PLT-018** (MUST) When the Local AppData known folder cannot be resolved, or the user-data root cannot be created or written, the client shows the pre-UI notice `ui.error.user_data_unavailable` with the folder's path, logs to the debugger and the ETW sink only (ADR-067), keeps its settings in memory, and continues; `UserDataAvailable` reports `false`, and every save reports its failure (R-META-407).
@@ -368,11 +534,11 @@ Table 3.3-A: start-up options.
 
 | Option | Effect | Builds | Owner |
 |---|---|---|---|
-| `--write-build-identity <file>` | writes the generated build identity (ADR-057) to the file and exits with `plt.lifecycle.exit_code.normal`, before any other initialisation (PLT-023, BLD-063) | every flavour | [build tooling](build_tooling_and_distribution.md) |
-| `--user-data <directory>` | replaces the user-data root (PLT-025) | every flavour | platform layer |
-| `--fixed-step [<frames per second>]` | selects the fixed-step time source; the rate defaults to `dbg.replay.capture_frame_rate` (25, [diagnostics](diagnostics_test_and_performance/README.md) DBG-041) (PLT-049) | every flavour | platform layer |
-| `--verify-content` | runs the repair check of the install's packs and exits ([build tooling](build_tooling_and_distribution.md) BLD-103) | every flavour | build tooling |
-| `--loose-content <directory>` | mounts a loose-content directory last ([asset pipeline](asset_pipeline_and_resources.md) AST-105) | `Debug`, `Development` | asset pipeline |
+| `--write-build-identity <file>` | writes the generated build identity (ADR-057) to the file and exits with `plt.lifecycle.exit_code.normal`, before any other initialisation (PLT-023, BLD-063) | Debug and Release | [build tooling](build_tooling_and_distribution.md) |
+| `--user-data <directory>` | replaces the user-data root (PLT-025) | Debug and Release | platform layer |
+| `--fixed-step [<frames per second>]` | selects the fixed-step time source; the rate defaults to `dbg.replay.capture_frame_rate` (25, [diagnostics](diagnostics_test_and_performance/README.md) DBG-041) (PLT-049) | Debug and Release | platform layer |
+| `--verify-content` | runs the repair check of the install's packs and exits ([build tooling](build_tooling_and_distribution.md) BLD-103) | Debug and Release | build tooling |
+| `--loose-content <directory>` | mounts a loose-content directory last ([asset pipeline](asset_pipeline_and_resources.md) AST-105) | Debug | asset pipeline |
 
 **PLT-023** (MUST) `--write-build-identity` is handled before the clock, the user-data root, the logger or any other service is created: the process writes the file in the form of [build tooling](build_tooling_and_distribution.md) BLD-063, ends with `plt.lifecycle.exit_code.normal` (0) and leaves no log file, window or user-data folder behind. A failed write ends the process with `plt.lifecycle.exit_code.fatal`.
 
@@ -380,13 +546,13 @@ Table 3.3-A: start-up options.
 
 **PLT-025** (MUST) `--user-data <directory>` makes the given directory the user-data root for every user file: settings, logs, custom maps and development outputs. Every consumer, the crash-context registration included, reads the root only after the command line has been parsed, so all of them follow the option. A directory inside the install directory is refused with the fatal message `ui.error.user_data_inside_install` (ADR-071). Screenshots still go to the Pictures folder, and local dumps still go to the folder that the registry file of [build tooling](build_tooling_and_distribution.md) BLD-113 names.
 
-**PLT-026** (MUST) In `Profile` and `Shipping` builds the `--loose-content` option is not compiled in (ADR-056, AST-105, AST-006) and is therefore an unknown argument. No start-up option selects a product, a flavour or a feature flag: those are fixed by the build and the edition manifest (ADR-056).
+**PLT-026** (MUST) In Release builds the `--loose-content` option is not compiled in (ADR-056, AST-105, AST-006) and is therefore an unknown argument. No start-up option selects a product, a configuration or a feature flag: those are fixed by the build and the edition manifest (ADR-056).
 
 ### 3.4 Display data and display settings
 
 **PLT-027** (MUST) A monitor record (`MonitorInfo`) holds: the monitor's device name, which identifies it in the window-placement setting; its bounds and its work area in desktop coordinates; its DPI and DPI scale (PLT-060); whether it is the primary monitor; its desktop mode, which is its current width, height, bits per pixel and refresh rate; and its mode sizes (PLT-070).
 
-**PLT-028** (MUST) The window placement is kept in the settings store as three settings: the window mode `render.window_mode`, whose default is the renderer's `rnd.option.window_mode.default` (borderless full screen; [renderer options](renderer/options_and_budgets.md) RND-442); and two platform settings, the monitor's device name `window.monitor`, absent by default (the primary monitor), and the windowed client rectangle `window.client_rect`, four integers in desktop coordinates, absent by default. The platform layer sets the monitor and the rectangle whenever the window settles in a new place, and they are saved with the next save event of R-META-406.
+**PLT-028** (MUST) The window placement is kept in the settings store as three settings: the window mode `render.window_mode`, whose default is the renderer's `rnd.option.window_mode.default` (borderless full screen; [renderer options](renderer/options_and_budgets.md) RND-442); and two platform settings, the monitor's device name `window.monitor`, absent by default (the primary monitor), and the windowed client rectangle `window.client_rect`, four integers in desktop coordinates in the order left, top, right, bottom, the Windows client-rectangle order (`RectPx`; [data schemas](data_schemas/config_input_and_strings.md) table 3.1-A), absent by default. The platform layer sets the monitor and the rectangle whenever the window settles in a new place, and they are saved with the next save event of R-META-406.
 
 **PLT-029** (MUST) The reference reads the display preferences of table 3.4-A when it creates its window and renderer, with the reader defaults shown. The options page has its own defaults for a missing setting (`ref.meta.options.screen.colour_default`, 16; `ref.meta.options.screen.refresh_default`, 60 Hz; [options, localisation and hooks](../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-418, R-META-419), which never apply after the first run, because the renderer's start-up writes every screen setting back and saves the store (R-META-424).
 
@@ -408,17 +574,17 @@ Table 3.4-A: reference display preferences and their Species counterparts.
 
 **PLT-030** (MUST) Each client process has one settings store (`SettingsStore`). It is created after the start-up options and the user-data root and before the window, the renderer and the audio engine (R-META-402), and it is destroyed after every reader at shutdown (PLT-043). It holds named, typed values. Keys, types, ranges and defaults are the preferences schema's ([data schemas](data_schemas/README.md)); the defaults come from the one defaults table, compiled into the executable and available before any pack is mounted (DEC-100).
 
-**PLT-031** (MUST) The store is backed by one settings file, `settings\settings.txt` in the user-data root, in the text form of [data schemas](data_schemas/config_input_and_strings.md) DAT-198 (UTF-8, one line per entry, comment or blank line). The file carries no schema version and is never migrated (R-META-409); versioning, forward migration and synchronisation are DEC-250.
+**PLT-031** (MUST) The store is backed by one settings file, `settings\settings.txt` in the user-data root, in the text form of [data schemas](data_schemas/config_input_and_strings.md) DAT-196 (UTF-8, one line per entry, comment or blank line). The file carries no schema version and is never migrated (R-META-409); versioning, forward migration and synchronisation are DEC-250.
 
 **PLT-032** (MUST NOT) No simulation rule reads the settings store, and the simulation library has no access to it: settings are presentation and process state, and a setting that would change simulation results exists only as a match option (DEC-010; R-META-401).
 
-**PLT-033** (MUST) A value is read with the type that the schema declares; `GetAs` with another type is a defect that a debug assertion reports ([diagnostics](diagnostics_test_and_performance/README.md) DBG-070). A stored value is data: no character of a text value, a percent sign included, is ever read as a formatting directive (DEC-800 items 4 and 5).
+**PLT-033** (MUST) A value is read with the type that the schema declares; `GetAs` with another type is a defect that a development check (`ENGINE_ASSERT`) reports ([diagnostics](diagnostics_test_and_performance/README.md) DBG-070). A stored value is data: no character of a text value, a percent sign included, is ever read as a formatting directive (DEC-800 items 4 and 5).
 
 **PLT-034** (MUST) `Set` changes the value in memory at once and then calls, on the main thread, every subscriber whose key prefix matches the key, in subscription order; a value equal to the stored one notifies nobody. Each setting's apply scope, which says what its readers do on a change, is the data schemas' ([data schemas](data_schemas/config_input_and_strings.md) table 3.1-A; [UI framework](ui_framework/pages_and_screen_recipes.md) UI-441).
 
 ### 3.6 System summary and crash-context record
 
-**PLT-035** (MUST) The system summary (`SystemSummary`) holds the fields of table 3.6-A. It never holds the Windows user name, and every path in it is written relative to the install directory or the user-data root, with the root itself shown as a placeholder, so no account name appears (PLT-125).
+**PLT-035** (MUST) The system summary (`SystemSummary`) holds the fields of table 3.6-A. It never holds the Windows user name, and every path in it is written relative to the install directory or the user-data root, with the root itself shown as a placeholder, so no account name appears (PLT-125; see DEC-970).
 
 Table 3.6-A: system summary.
 
@@ -431,7 +597,7 @@ Table 3.6-A: system summary.
 | graphics adapters | for every adapter: description, vendor and device ids, driver version, dedicated video memory | DXGI adapter enumeration, without creating a device |
 | audio | the number of active audio output endpoints and the default endpoint's friendly name | the audio endpoint enumerator |
 | languages | the preferred user-interface languages in order, and the user locale, each as a BCP 47 tag | `GetUserPreferredUILanguages`, `GetUserDefaultLocaleName` (ADR-063) |
-| process | the run id, the process start in UTC, the product and flavour, the build identity (ADR-057), the channel tag (BLD-021), whether user data is available | §4.1, §4.15 |
+| process | the run id, the process start in UTC, the product and configuration, the build identity (ADR-057), the channel tag (BLD-021), whether user data is available | §4.1, §4.15 |
 
 **PLT-036** (MUST) The run id is a 64-bit random value drawn from the operating system's cryptographic generator at start-up and written as 16 hexadecimal digits. It names the run's log file and appears in the crash-context record and in the message of a failed release check, so a player's report, a log and a dump can be matched. It is not an installation id and identifies no player.
 
@@ -473,7 +639,7 @@ Table 3.6-A: system summary.
 
 **PLT-044** (MUST) The process ends with `plt.lifecycle.exit_code.normal` (0) after a quit, and with `plt.lifecycle.exit_code.fatal` (−1) after a fatal exit. A fatal exit (`FatalExit`, [diagnostics](diagnostics_test_and_performance/README.md) DBG-074) serves failures of the environment, which are not defects: no supported display mode, no loadable language, a missing or damaged pack, an unsupported graphics adapter, a refused `--user-data` directory. The diagnostics component writes the black box and the log; the platform layer's part, `EndWithMessage`, shows the message as a pre-UI message and ends the process with the fatal exit code, without a crash report. Defects end through the fatal path instead (PLT-127).
 
-**PLT-045** (MUST) The platform layer calls the application's lifecycle hooks on the main thread: `OnQuitRequested` (PLT-042), `OnFocusChanged` on every focus change (PLT-064) and `OnMinimisedChanged` on minimise and restore (PLT-063). The application combines window focus with its own state into the focus that its rules read; for example, it treats itself as unfocused while the gamepad is disconnected in gamepad mode ([actions and bindings](../../reference/06_controls_camera_and_commands/actions_and_bindings.md) R-CTRL-047 row M7).
+**PLT-045** (MUST) The platform layer calls the application's lifecycle hooks on the main thread: `OnQuitRequested` (PLT-042), `OnFocusChanged` on every focus change (PLT-064) and `OnMinimizedChanged` on minimise and restore (PLT-063). The application combines window focus with its own state into the focus that its rules read; for example, it treats itself as unfocused while the gamepad is disconnected in gamepad mode ([actions and bindings](../../reference/06_controls_camera_and_commands/actions_and_bindings.md) R-CTRL-047 row M7).
 
 ### 4.2 Platform clock
 
@@ -494,14 +660,14 @@ The term *rest* × 1 000 000 000 stays below *frequency* × 10⁹, which fits a 
 
 **PLT-048** (MUST) Two injectable sources replace the real source; the process-relative clock with injectable time for capture and replays is the resolved diagnostics rule of DEC-041 (ADR-074):
 
-- the **fixed-step source** advances by one step at every `FrameBoundary` and stands still between two frame boundaries; its step is 10⁹ ÷ *rate* nanoseconds, rounded to the nearest nanosecond, where *rate* is the frames per second of `--fixed-step` or of the development setting `dev.capture_frame_rate`, by default `dbg.replay.capture_frame_rate` (25, a step of 40 ms; [diagnostics](diagnostics_test_and_performance/README.md) DBG-041);
+- the **fixed-step source** advances by one step at every `FrameBoundary` and stands still between two frame boundaries; its step is 10⁹ ÷ *rate* nanoseconds, rounded to the nearest nanosecond, where *rate* is the frames per second of `--fixed-step` or of the development setting `debug.capture_frame_rate`, by default `dbg.replay.capture_frame_rate` (25, a step of 40 ms; [diagnostics](diagnostics_test_and_performance/README.md) DBG-041);
 - the **manual source** advances only when a test calls `Advance`.
 
-**PLT-049** (MUST) The platform layer selects the time source at start-up: the fixed-step source when `--fixed-step` is given, otherwise the real source; tests create the manual source in-process. In `Debug` and `Development` builds, when the development setting `dev.command_history` is 1 or 2 (record or play back), the platform layer replaces the real source by the fixed-step source right after the settings store has loaded (PLT-038 step 10), with the continuity of PLT-051 ([diagnostics](diagnostics_test_and_performance/README.md) DBG-241). Components receive time only through the platform clock and never know which source runs (ADR-074).
+**PLT-049** (MUST) The platform layer selects the time source at start-up: the fixed-step source when `--fixed-step` is given, otherwise the real source; tests create the manual source in-process. In Debug builds, when the development setting `debug.command_history` is 1 or 2 (record or play back), the platform layer replaces the real source by the fixed-step source right after the settings store has loaded (PLT-038 step 10), with the continuity of PLT-051 ([diagnostics](diagnostics_test_and_performance/README.md) DBG-241). Components receive time only through the platform clock and never know which source runs (ADR-074).
 
 **PLT-050** (MUST) Under the fixed-step source every reader sees platform time advance by exactly one step per rendered frame, whatever the real duration of the frame. Every schedule that reads the platform clock follows it, including the tick schedule, the control-state send schedule, UI timers and audio envelopes, so a capture or replay run produces the same frame times on every machine (ADR-074; [tick timing and main loop](../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-573). In the reference only the presentation frame delta follows the capture rate while the real clock stays real (R-SIM-740); with one platform clock the two coincide. Video capture is done by external tools on the fixed-step source (ADR-076).
 
-**PLT-051** (MUST) `ReplaceSource` swaps the source while the process runs: at start-up for PLT-049, and in tests of `Debug` and `Development` builds. The clock adds a fixed offset to the new source so that its first reading equals the last reading of the old source, and time never jumps backwards.
+**PLT-051** (MUST) `ReplaceSource` swaps the source while the process runs: at start-up for PLT-049, and in tests of Debug builds. The clock adds a fixed offset to the new source so that its first reading equals the last reading of the old source, and time never jumps backwards.
 
 **PLT-052** (MUST) `WaitUntil(deadline)` under the real source sleeps on a high-resolution waitable timer (`CreateWaitableTimerExW` with `CREATE_WAITABLE_TIMER_HIGH_RESOLUTION`) until the platform time reaches the deadline, and returns at once when the deadline has passed. It never changes the system-wide timer resolution. Under an injected source it returns at once, because time advances only as the source says. The frame-rate cap of ADR-012 and the loading view's frame period (`ref.sim.frame.loading_frame_period`, 1/60 s; R-SIM-570) wait through it.
 
@@ -515,7 +681,7 @@ The term *rest* × 1 000 000 000 stays below *frequency* × 10⁹, which fits a 
 
 ### 4.3 Application window
 
-**PLT-057** (MUST) The platform layer registers one window class with the wide-character Win32 API and creates one window from it on the main thread (ADR-075). The class has no background brush, because the renderer fills the client area, and no class pointer, because the system pointer is hidden over the client area (PLT-068). The window's title is the product name `kProductName` and its icon is the executable's icon resource. The window is created hidden, at the stored placement (PLT-059), and is shown once the renderer has created its swap chain (PLT-038 step 13). When it is created, the platform layer registers it for raw mouse input (`RegisterRawInputDevices`, ADR-028).
+**PLT-057** (MUST) The platform layer registers one window class with the wide-character Win32 API and creates one window from it on the main thread (ADR-075). The class has no background brush, because the renderer fills the client area, and no class pointer, because the system pointer is hidden over the client area (PLT-068). The window's title is the product name `PRODUCT_NAME` and its icon is the executable's icon resource, which uses `uitex.app_icon` in its six sizes. The window is created hidden, at the stored placement (PLT-059), and is shown once the renderer has created its swap chain (PLT-038 step 13). When it is created, the platform layer registers it for raw mouse input (`RegisterRawInputDevices`, ADR-028).
 
 **PLT-058** (MUST) The window has two modes (ADR-075, ADR-012):
 
@@ -532,7 +698,7 @@ The default is the renderer's `rnd.option.window_mode.default` (borderless full 
 
 **PLT-062** (MUST) Size changes are coalesced: the window raises at most one `Resized` event per `PumpMessages` call, carrying the latest client size, and raises none while the window is minimised. While the player drags or sizes the window, Windows runs its own message loop and no frame runs; the next frame receives the final size as one resize.
 
-**PLT-063** (MUST) Minimising the window raises `Minimised` and restoring it raises `Restored`. While it is minimised, the renderer stops rendering and polls at a low rate ([renderer](renderer/README.md) RND-032), the frame loop keeps pumping messages, and the simulation is unaffected (ADR-012).
+**PLT-063** (MUST) Minimising the window raises `Minimized` and restoring it raises `Restored`. While it is minimised, the renderer stops rendering and polls at a low rate ([renderer](renderer/README.md) RND-032), the frame loop keeps pumping messages, and the simulation is unaffected (ADR-012).
 
 **PLT-064** (MUST) The window has focus while it is the foreground window. The platform layer evaluates this on every activation and focus message and raises `FocusChanged` on every change. On a focus loss the input back-ends release every held key and button, including an Alt key held through Alt+Tab ([input](input.md) INP-111); the pointer confinement is suspended until focus returns (INP-159); and the match camera stops advancing ([camera](../../reference/06_controls_camera_and_commands/camera.md) R-CTRL-453). Focus never pauses a match or holds the world ([randomness and integrity](../../reference/12_simulation_model/07_randomness_and_integrity.md) R-SIM-675).
 
@@ -545,7 +711,7 @@ Table 4.3-A: window messages.
 | Message | Handling |
 |---|---|
 | activation and focus (`WM_ACTIVATEAPP`, `WM_ACTIVATE`, `WM_SETFOCUS`, `WM_KILLFOCUS`) | evaluate focus and raise `FocusChanged` on a change (PLT-064); default handling |
-| `WM_SIZE` | minimised: `Minimised`; restored from minimised: `Restored`; otherwise record the client size for the coalesced `Resized` (PLT-062) |
+| `WM_SIZE` | minimised: `Minimized`; restored from minimised: `Restored`; otherwise record the client size for the coalesced `Resized` (PLT-062) |
 | `WM_DPICHANGED` | take the suggested rectangle; raise `DpiChanged` (PLT-060) |
 | `WM_GETMINMAXINFO` | in windowed mode, the minimum client size of PLT-059 |
 | `WM_MOVE`, `WM_WINDOWPOSCHANGED` | update the window's monitor and raise `MonitorChanged` when it changes; re-apply the pointer confinement; record the placement (PLT-028) |
@@ -651,11 +817,11 @@ Diagram 4-C: language choice at start-up (PLT-076).
 
 ### 4.7 Settings store
 
-**PLT-079** (MUST) Loading reads the settings file with the reader of [data schemas](data_schemas/config_input_and_strings.md) DAT-200 to DAT-202 and checks each entry against the settings schema: an entry that does not parse, or whose value lies outside its type or range, is written to the log and takes its default, and every other entry keeps its stored value (DEC-800 item 5); when a key occurs more than once, the first occurrence is used and every later one is written to the log and ignored; comment lines and blank lines are kept in place for the next save (R-META-404). No line, the first included, makes the store discard the file.
+**PLT-079** (MUST) Loading reads the settings file with the reader of [data schemas](data_schemas/config_input_and_strings.md) DAT-198 to DAT-200 and checks each entry against the settings schema: an entry that does not parse, or whose value lies outside its type or range, is written to the log and takes its default, and every other entry keeps its stored value (DEC-800 item 5); when a key occurs more than once, the first occurrence is used and every later one is written to the log and ignored; comment lines and blank lines are kept in place for the next save (R-META-404). No line, the first included, makes the store discard the file.
 
 **PLT-080** (MUST) When the settings file cannot be opened, which is the first run, the store takes every default from the one defaults table (DEC-100), then the forced value of R-META-405 applies, and the renderer's start-up writes the display settings back and saves the store (R-META-424). The defaults table is compiled into the executable and needs no pack, so a packaged install and a development tree start with the same defaults; there is no separate defaults file that a first run could miss.
 
-**PLT-081** (MUST) The store saves only on the events of R-META-406. `Save` copies the current values on the main thread; the platform's file writer then forms the file with the writer of [data schemas](data_schemas/config_input_and_strings.md) DAT-203 (every comment and blank line in its place, each loaded key once with its current value, then the keys the loaded file did not hold; DEC-800 items 1 and 2) and writes it through atomic replacement (PLT-089). A save that fails leaves the previous file in place, is written to the log, and its result reaches the main thread, which shows `ui.dialog.settings_save_failed` (DEC-800 item 3; R-META-407). Saves are written in the order in which they were requested.
+**PLT-081** (MUST) The store saves only on the events of R-META-406. `Save` copies the current values on the main thread; the platform's file writer then forms the file with the writer of [data schemas](data_schemas/config_input_and_strings.md) DAT-201 (every comment and blank line in its place, each loaded key once with its current value, then the keys the loaded file did not hold; DEC-800 items 1 and 2) and writes it through atomic replacement (PLT-089). A save that fails leaves the previous file in place, is written to the log, and its result reaches the main thread, which shows `ui.dialog.settings_save_failed` (DEC-800 item 3; R-META-407). Saves are written in the order in which they were requested.
 
 **PLT-082** (MUST) The settings store is used on the main thread only; only the file write of a save runs on the platform's file writer. A component that needs a setting on another thread receives the value from its owner on the main thread.
 
@@ -685,7 +851,7 @@ Diagram 4-C: language choice at start-up (PLT-076).
 
 **PLT-092** (MUST) The platform layer collects the system summary once at start-up (PLT-038 step 6), and again only for its display group when the display configuration changes (PLT-072). It reads everything in-process and launches no external program (ADR-066). It probes no graphics-runtime version: Direct3D 12 is part of the operating system and the Agility SDK runtime travels beside the executable (ADR-071), and the renderer's capability checks decide whether the adapter can run Species (RND-020).
 
-**PLT-093** (MUST) A query that fails leaves its field marked unknown and is written to the log; it is never fatal.
+**PLT-093** (MUST) A query that fails leaves its field marked unknown and is written to the log; it is never fatal (see DEC-970).
 
 **PLT-094** (MUST) The summary reports the audio endpoints and scores none of them: the audio engine plays on the default device (ADR-022), and the platform layer only reports changes (PLT-103).
 
@@ -697,13 +863,13 @@ Diagram 4-C: language choice at start-up (PLT-076).
 
 **PLT-097** (MUST) A screenshot or poster is written to the Pictures folder under `Species\`, created when missing, as `species_<date>-<time>.png`, where *date* is the UTC date as `YYYYMMDD` and *time* the UTC time as `HHMMSS` (ADR-076). When a file of that name exists, the writer appends `_2`, then `_3`, counting upwards until the name is free. A write that fails is logged and the image is dropped.
 
-**PLT-098** (MUST) A poster is one PNG of *N* × render width by *N* × render height pixels, written through `PosterWriter` one tile row at a time with the encoder's frame interface, so memory stays bounded by one tile row ([renderer](renderer/frame_graph_and_passes.md) RND-113, RND-114; ADR-076).
+**PLT-098** (MUST) A poster is one PNG of *N* × render width by *N* × render height pixels, written through the screenshot writer's poster calls (`BeginPoster`, `AppendPosterRows`, `FinishPoster`) one tile row at a time with the encoder's frame interface, so memory stays bounded by one tile row ([renderer](renderer/frame_graph_and_passes.md) RND-113, RND-114; ADR-076).
 
 ### 4.12 Network services
 
-**PLT-099** (MUST) The HTTPS client sends requests on its own worker thread and completes a future for each. It refuses every address that is not `https`, validates server certificates through the operating system, follows the system proxy settings, enforces the timeout that the caller gives, and embeds no credential, key or token in the binary (ADR-066). It never blocks the main thread. Its consumers are telemetry, which sends only with the player's consent ([diagnostics](diagnostics_test_and_performance/README.md), ADR-066), and the online services that the design phase specifies (DEC-248, DEC-249).
+**PLT-099** (MUST) The HTTPS client is built on the in-box WinHTTP (ADR-077) and sends requests on its own worker thread, completing a future for each; it never blocks the main thread. It refuses every address that is not `https` before any connection is made, opens every request as a secure request, and never sets an option that ignores certificate errors. A redirect status is returned to the caller as the result and never followed. Server certificates are validated through the operating system, revocation checking is enabled on every request, and a revoked certificate, or a revocation check that cannot complete, fails the request with `CertificateRejected`: the client fails closed. The TLS versions are the operating system's default. The session uses the system and per-user proxy settings, and Species has no proxy setting. Cookies are disabled, and default Windows credentials are never sent (automatic logon at the high security level), so no credential and no cookie travels that the caller did not supply; no credential, key or token is embedded in the binary (ADR-066, ADR-077). The caller's timeout bounds the whole request. Its consumers are telemetry, which sends only with the player's consent ([diagnostics](diagnostics_test_and_performance/README.md), ADR-066), and the online services that the design phase specifies (DEC-248, DEC-249).
 
-**PLT-100** (MUST) The baseline has no game transport, socket service, session discovery or online-service client: the replication model, the transport, identity and the directory services are DEC-200, DEC-207, DEC-248 and DEC-249. Service endpoints, when they exist, are configuration with separate development and production values, never addresses built into the binary (DEC-249).
+**PLT-100** (MUST) The baseline has no game transport, socket service, session discovery, online-service client or HTTP listener, and links no third-party HTTP or TLS library (ADR-077): the replication model, the transport, identity and the directory services are DEC-200, DEC-207, DEC-248 and DEC-249. Service endpoints, when they exist, are configuration with separate development and production values, never addresses built into the binary (DEC-249); credentials for such a service are passed per request by its client.
 
 ### 4.13 Clipboard and web addresses
 
@@ -715,15 +881,17 @@ Diagram 4-C: language choice at start-up (PLT-076).
 
 **PLT-103** (MUST) Before the audio engine is created, the platform layer registers for audio-endpoint notifications with the system's endpoint enumerator. It turns each notification into an `AudioEndpointChange`: the default output device changed, a device was added, a device was removed, or a device's state changed. It delivers each change to the audio engine's listener on the main thread (PLT-011), and the audio engine rebuilds its graph on the default device when the default changes or a device arrives ([audio engine](audio_engine.md) AEN-259). The registration is removed after the audio engine is destroyed.
 
-### 4.15 Build identity, products and flavours
+<a id="415-build-identity-products-and-flavours"></a>
 
-**PLT-104** (MUST) The platform layer reads the build identity that the build generates (ADR-057): every field except the content manifest hash comes from the generated header `species_build_identity.h` ([build tooling](build_tooling_and_distribution.md) BLD-020). It places the identity in the crash-context record and the system summary, and the logger writes it at the top of every log (ADR-067). The platform layer keeps no version number of its own.
+### 4.15 Build identity, products and configurations
+
+**PLT-104** (MUST) The platform layer reads the build identity that the build generates (ADR-057): every field except the content manifest hash comes from the generated header `BuildIdentity.h` ([build tooling](build_tooling_and_distribution.md) BLD-020). It places the identity in the crash-context record and the system summary, and the logger writes it at the top of every log (ADR-067). The platform layer keeps no version number of its own.
 
 **PLT-105** (MUST) Once the packs are mounted (PLT-038 step 11), the platform layer reads the content manifest hash from the mounted content manifest, composes the full build identity with the generated fields, and compares it with `build_identity.json` in the install directory. A mismatch, or a missing or unreadable `build_identity.json`, is logged as a warning that the installation is modified, and start-up continues; the composed identity replaces the earlier one in the crash-context record (BLD-020).
 
 **PLT-106** (MUST) At start-up the platform layer reads the channel tag from the first line of `channel_tag.txt` in the install directory, with the rules and the `unknown` fallback of [build tooling](build_tooling_and_distribution.md) BLD-021, and places it in the system summary's process group, from which the logger writes it into the log header next to the build identity. The tag never changes behaviour.
 
-**PLT-107** (MUST) The platform features that depend on the build flavour are: the `--loose-content` option (PLT-026); the `diagnostics\` outputs and the test use of `ReplaceSource`, present in `Debug` and `Development` builds only; and the check levels of PLT-126. Each is a compile-time switch derived from the flavour (ADR-056), never a run-time setting.
+**PLT-107** (MUST) The platform features that depend on the build configuration are: the `--loose-content` option (PLT-026); the `diagnostics\` outputs and the test use of `ReplaceSource`, present in Debug builds only; and the check levels of PLT-126. Each is compiled under the development switch `ENGINE_DEVELOPMENT`, which one engine header derives from `NDEBUG` (ADR-056), never a run-time setting.
 
 ### 4.16 Tuning table
 
@@ -822,7 +990,7 @@ Table 6.1-A: reference creation attempts.
 
 **PLT-121** (MUST) With a debugger attached, the debugger receives every exception first, and a failed check breaks into it (PLT-127; DBG-070).
 
-**PLT-122** (MUST) On development and test machines, the local-dump settings that CI provides make Windows Error Reporting write a dump of every crash of a Species executable to `crashes\` in the user-data root, as a custom dump with data segments and thread data ([build tooling](build_tooling_and_distribution.md) BLD-113; ADR-065, ADR-071). The platform layer creates the `crashes\` folder at start-up so that the dump folder exists.
+**PLT-122** (MUST) On development and test machines, the local-dump registry file that the build provides makes Windows Error Reporting write a dump of every crash of a Species executable to `crashes\` in the user-data root, as a custom dump with data segments and thread data ([build tooling](build_tooling_and_distribution.md) BLD-113; ADR-065, ADR-071). The platform layer creates the `crashes\` folder at start-up so that the dump folder exists.
 
 **PLT-123** (MUST) A window that stops processing messages for `plt.window.hang_threshold` while the user interacts produces a hang report with the same registered context (PLT-067, ADR-065).
 
@@ -849,9 +1017,9 @@ Table 6.3-A: crash report contents.
 | the report of a failed fatal check | the black box ([diagnostics](diagnostics_test_and_performance/README.md) DBG-047, DBG-048), whose check message is truncated to `dbg.blackbox.check_message_max_chars` (DBG-047 item 7) |
 | — | in addition: thread names (PLT-083), the current log and settings files, the black-box ring of the diagnostics component, device-removal data (ADR-008) |
 
-**PLT-125** (MUST NOT) The crash-context record and the system summary never contain the Windows user name, chat text, passwords or account tokens, and the black box follows the same rule (DBG-047); memory that may hold them is excluded from dumps (PLT-119, ADR-065).
+**PLT-125** (MUST NOT) The crash-context record and the system summary never contain the Windows user name, chat text, passwords or account tokens, and the black box follows the same rule (DBG-047); memory that may hold them is excluded from dumps (PLT-119, ADR-065; see DEC-970).
 
-**PLT-126** (MUST) The check levels, the flavours in which each is compiled in, and what a failure records are the diagnostics component's ([diagnostics](diagnostics_test_and_performance/README.md) DBG-070 to DBG-075). A failed development check follows DBG-070. The platform layer provides the last step of the fatal path (DBG-073 step 3) and of a fatal exit (DBG-074), with the pointer and message behaviour of both.
+**PLT-126** (MUST) The check levels, the configurations in which each is compiled in, and what a failure records are the diagnostics component's ([diagnostics](diagnostics_test_and_performance/README.md) DBG-070 to DBG-075). A failed development check follows DBG-070. The platform layer provides the last step of the fatal path (DBG-073 step 3) and of a fatal exit (DBG-074), with the pointer and message behaviour of both.
 
 **PLT-127** (MUST) The platform's fatal path (`FailFast`), which a failed release check, a container bounds check, an abort and the handlers of PLT-118 reach after the black box and the flushed fatal log record (DBG-073 steps 1 and 2), runs these steps:
 
@@ -906,7 +1074,7 @@ Table 6.4-A: failures.
 
 **PLT-129** (MUST) The platform layer logs in the `platform` category of ADR-067: at information level, the start-up options, the operating-system version and the check result, the user-data root and its availability, the monitors and every display configuration change, every window-mode and DPI change, every keyboard-layout change, each attempt of the fallback chain, the chosen language and why each earlier candidate was rejected, and at shutdown the clock's count of corrected readings; at debug level, focus changes, minimise and restore, and the start and end of every platform thread; warnings for ignored start-up arguments, invalid settings entries and repeated keys; errors for failed saves, failed system-summary queries and failed registrations.
 
-**PLT-130** (MUST) The platform layer provides the logger with the `logs\` folder, the run id for the file name and, in `Debug` and `Development` builds, the debugger output (ADR-067). The logger's file rotation is ADR-067's.
+**PLT-130** (MUST) The platform layer provides the logger with the `logs\` folder, the run id for the file name and, in Debug builds, the debugger output (ADR-067). The logger's file rotation is ADR-067's.
 
 **PLT-131** (MUST) Telemetry's hardware summary is taken from the system summary and is sent only with the player's consent, through the HTTPS client (ADR-066). Crash data never travels through telemetry; it uses its own operating-system-consented path (PLT-120).
 
@@ -918,7 +1086,7 @@ Tests run under the test framework of ADR-069; clock tests use the manual time s
 |---|---|---|---|
 | T1 clock monotonicity | unit | the first reading is 0 or more; one million reads on each of eight threads never decrease | PLT-046, PLT-047 |
 | T2 clock arithmetic | property | random counts and frequencies from 1 kHz to 9.2 GHz match a 128-bit reference | PLT-046 |
-| T3 fixed step | unit | `--fixed-step` without a rate: 100 frame boundaries advance exactly 4 s; `WaitUntil` returns at once; `dev.command_history` 1 selects the source after the settings load | PLT-048, PLT-049, PLT-050, PLT-052 |
+| T3 fixed step | unit | `--fixed-step` without a rate: 100 frame boundaries advance exactly 4 s; `WaitUntil` returns at once; `debug.command_history` 1 selects the source after the settings load | PLT-048, PLT-049, PLT-050, PLT-052 |
 | T4 source replacement | unit | a replaced source continues from the last reading | PLT-051 |
 | T5 calendar independence | integration | changing the time zone and the calendar time during a run changes no timing decision | PLT-053, PLT-055 |
 | T6 clock lint | static | a direct clock call outside the platform layer, or a platform-clock include in the simulation library, fails the build | PLT-002, PLT-003, PLT-055 |
@@ -935,7 +1103,7 @@ Tests run under the test framework of ADR-069; clock tests use the manual time s
 | T17 first run | integration | packaged and development layouts start with identical settings from the compiled-in table | PLT-080, PLT-115 |
 | T18 settings file | unit | an invalid entry takes its default; a repeated key keeps its first value; comments survive a save; a save interrupted after the temporary write leaves the old file | PLT-079, PLT-081, PLT-089, PLT-116 |
 | T19 install and user data | integration | a read-only install run as a standard user writes nothing outside the user-data folders and Pictures; `--user-data` moves every user file, the crash registrations included, and is refused inside the install directory | PLT-015, PLT-016, PLT-017, PLT-025 |
-| T20 start-up options | unit | options in any order are recognised and unknown ones logged; `--write-build-identity` exits 0 without a log file; `--verify-content` with a damaged pack creates no window, shows `ui.repair.failed` and exits with BLD-103's failure code; `--loose-content` is unknown in `Profile` and `Shipping` | PLT-022, PLT-023, PLT-024, PLT-026 |
+| T20 start-up options | unit | options in any order are recognised and unknown ones logged; `--write-build-identity` exits 0 without a log file; `--verify-content` with a damaged pack creates no window, shows `ui.repair.failed` and exits with BLD-103's failure code; `--loose-content` is unknown in Release | PLT-022, PLT-023, PLT-024, PLT-026 |
 | T21 operating-system check | unit | builds 26099, 26100 and 28000 give the notice, a pass and a pass | PLT-040 |
 | T22 crashes | integration | crashes on the main thread, on a worker, through the terminate, invalid-parameter and pure-call handlers, and a hang each give a report with the log, the settings file, the black box, the crash-context record and thread names; seeded chat text and an account token are absent | PLT-117, PLT-118, PLT-119, PLT-123, PLT-124, PLT-125, PLT-083 |
 | T23 fatal path and fatal exit | integration | a failed release check breaks into a debugger, or shows `ui.error.internal` and fails fast with a report; a fatal exit ends with −1 without a report | PLT-126, PLT-127, PLT-044 |
@@ -944,7 +1112,7 @@ Tests run under the test framework of ADR-069; clock tests use the manual time s
 | T26 floating-point environment | unit | every `PlatformThread` starts in the default environment; flush-to-zero fails the check | PLT-087, PLT-083 |
 | T27 job queue | unit | jobs run in posting order; futures complete; `Stop` cancels unstarted jobs and joins | PLT-085 |
 | T28 screenshots | integration | two screenshots in one second get distinct names; a 4 × 4 poster at 4K stays within one tile row of memory; encoding runs off the main thread | PLT-096, PLT-097, PLT-098 |
-| T29 HTTPS | unit | an `http` address is refused; a timeout gives `Timeout`; the binary holds no embedded key | PLT-099, PLT-100 |
+| T29 HTTPS | unit and integration | an `http` address is refused; a redirect is returned as the result and not followed; a timeout gives `Timeout`; self-signed, expired, wrong-name and revoked certificates, and one whose revocation check cannot complete, each give `CertificateRejected`; a configured system proxy is used; no request carries a cookie or a credential that the caller did not supply, against a server that challenges with NTLM and Negotiate; the binary holds no embedded key | PLT-099, PLT-100 |
 | T30 audio endpoints | integration | a default-device change reaches the audio engine on the main thread and playback continues (AEN-259) | PLT-103, PLT-011 |
 | T31 two clients | integration | concurrent saves never leave a partial file; each client has its own log | PLT-041, PLT-089 |
 | T32 lifecycle order | integration | an instrumented run records the steps of start-up and shutdown in order; quits from the front end, loading and a match, and an end of session, run one teardown | PLT-038, PLT-043, PLT-042, PLT-044, PLT-045 |
@@ -977,13 +1145,14 @@ Tests run under the test framework of ADR-069; clock tests use the manual time s
 | DEC-341 | Dropped | the runtime-library, compiler and debug-build details of the reference; Species defines its own checks and crash handling (PLT-126, PLT-117) |
 | DEC-060, DEC-061 | Dropped | benchmark upload and in-game video capture; profiles and mods (table 3.2-A) |
 | ADR-050, ADR-074, ADR-075, ADR-071 | Accepted | client platform, clock, window, install layout and user data |
-| ADR-065, ADR-076, ADR-028 | Proposed | crash reporting; screenshot encoding; input back-ends (defaults applied as stated) |
-| ADR-012, ADR-033, ADR-056, ADR-057, ADR-063, ADR-066, ADR-067, ADR-008 | Accepted | presentation, UI scaling, products and flavours, build identity, localisation, telemetry, logging, device removal |
+| ADR-065, ADR-076, ADR-028, ADR-077 | Proposed | crash reporting; screenshot encoding; input back-ends; the HTTPS client on WinHTTP (defaults applied as stated) |
+| ADR-012, ADR-033, ADR-051, ADR-056, ADR-057, ADR-063, ADR-066, ADR-067, ADR-008 | Accepted | presentation, UI scaling, the toolchain, products and configurations, build identity, localisation, telemetry, logging, device removal |
+| DEC-970 | Resolved | system-summary queries are never fatal; no user name and placeholder paths (PLT-035, PLT-093, PLT-125) |
 
 ### 8.2 Design-phase inputs
 
 1. **Process roles** (DEC-220): which of the platform services a dedicated server needs, its start-up options and configuration, and whether the client and the integrated server share one process with separate threads (DEC-225).
-2. **Dedicated-server host:** the vision recommends a Linux dedicated-server build for community hosts (vision brief §6 item 10). Choosing it requires a second implementation of the portable services of PLT-005: the clock, threads, files, data locations, the system summary and a crash path (ADR-065). The client stays Windows 11 x64 only (ADR-050).
+2. **Dedicated-server host:** the vision recommends a Linux dedicated-server build for community hosts (vision brief §6 item 10); the baseline server is a Windows build (ADR-051), and another host needs a later ADR. Choosing it requires a second implementation of the portable services of PLT-005, the HTTPS back-end among them (ADR-077): the clock, threads, files, data locations, the system summary and a crash path (ADR-065). The client stays Windows 11 x64 only (ADR-050).
 3. **Server data locations:** where a dedicated server keeps its world database, configuration, logs and crash data (DEC-251, ADR-065).
 4. **Composition and lifecycle** (DEC-221): the application's state machine, its lifetime scopes and the bounds of each teardown wait, built on the hooks of PLT-045.
 5. **Threads** (DEC-224): which threads exist, the job system on top of `PlatformThread`, priorities and affinity.
