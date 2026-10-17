@@ -254,3 +254,7 @@
 ## Fix F6 (20, 21, 22) — done: 35 findings (30 accepted, 1 partly, 0 rejected); checks clean
 - V1/V2 applied everywhere in 22 incl. risk register D7/D9/D10; L13 → resolved (GetStat scales only StatSpeed); L20 split (zone counter High; Armour debounce latent). Latest-only ALIVE confirmed (SaveLast replaces earlier ALIVE without merge → second ALIVE in same tick drops first one's clicks; tick with none applies no input for that team; not a desync) → 22 §6.1 row 7, 21 §9.7, N11 revised (coalesce continuous state, merge one-shot events), new risk N15.
 - Requests: 40 F29 drop L13 + Armour entries; 40 R17/K25 qualify "latest-only"; 41 R02/R04 same corrections.
+
+## Fix F1 (00, 01, 05) — done: 46 findings (36 accepted, 1 partly, 9 already correct, 0 rejected); checks clean
+- V7 (1/port = 5/building) in 00 §3.2, 05 §1.1, §9; 00 §7 Q8 live desync paths now L1 (squad camera), zone counter, tree race (V1–V5 listed as not live); Assault bomb 900/1200 mode s ≈ 990/1320 game s; 01 Q4 all uncapped sources, handicap neutral-spawn condition, tutorial overrides, CTS −1 fallback, Team::Eliminate damage, AI entity (20,0,20); added spirit RNG draw table, SetupCoop pseudocode, per-mode constants table; 05-U1 closed; V10 tags. S_01/S_05 generators updated.
+- Requests: 22/40/41 L13 + armour toggle (22 done by F6 — verify); 03 transit 1.0 s (F3 owns, V8).
