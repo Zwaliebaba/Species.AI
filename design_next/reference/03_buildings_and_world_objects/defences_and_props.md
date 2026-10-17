@@ -757,5 +757,6 @@ Each default is the behaviour that §2 specifies.
 - DEC-462 — turret facing from map data (R-BLDG-407).
 - DEC-551 — units that outlive their Power slot (R-BLDG-424).
 - DEC-565 — silent gameplay events: target sighted, rocket fired, electrocution (R-BLDG-429, R-BLDG-448).
+- DEC-859 — tick counts chosen for reference durations: the turret's hosing window (R-BLDG-415).
 
-Resolved decisions applied in this document: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-012, DEC-013, DEC-014, DEC-015, DEC-020, DEC-021, DEC-079, DEC-087, DEC-088, DEC-092, DEC-095, DEC-331, DEC-461, DEC-652 and DEC-653. Dropped entries applied: DEC-052 (no threat reaction to the turret aim marker in a match) and DEC-466 (the wall's bot-objective field).
+Resolved decisions applied in this document: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-012, DEC-013, DEC-014, DEC-015, DEC-020, DEC-021, DEC-079, DEC-087, DEC-088, DEC-092, DEC-095, DEC-331, DEC-461, DEC-652, DEC-653 and DEC-968 (a ring of relay-only Barrier Emitters is a build error). Dropped entries applied: DEC-052 (no threat reaction to the turret aim marker in a match) and DEC-466 (the wall's bot-objective field).
