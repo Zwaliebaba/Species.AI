@@ -39,6 +39,7 @@ META = set('.^$*+?{}[]|()')
 
 
 def norm_string(s):
+    s = s.replace('\\n', ' ')
     s = unicodedata.normalize('NFKD', s).encode('ascii', 'ignore').decode('ascii')
     s = s.lower()
     s = re.sub(r'%[-+ #0-9.]*[a-z]', ' ', s)

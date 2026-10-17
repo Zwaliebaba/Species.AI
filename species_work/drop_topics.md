@@ -1,23 +1,33 @@
-# Drop topics and reason classes (coordinator draft, Phase 0)
+# Drop topics and reason classes (coordinator draft, Phase 0; refined by F1, Phase 1)
 
-F2 routing agents use these reason-class codes from the start. F1 refines the **descriptions and examples** from `ORIG/40` §2–§3 and `ORIG/00` §2.5, and may **add** classes. F1 never renames or removes a class, because the routing CSVs already use them.
+F2 routing agents use these reason-class codes from the start. F1 refines the **descriptions and examples** from `ORIG/40` §2–§3 and `ORIG/00` §2.5, and may **add** classes. F1 never renames or removes a class, because the routing CSVs already use them. Classes F1 added are marked *(added by F1)* and sit at the end of each table.
 
-Sources: prompt §0 "Superseded verdicts", §2 table, build-tag rule, `ORIG/40` §1.2 D10.
+Sources: prompt §0 "Superseded verdicts", §2 table, build-tag rule; `ORIG/40` §1.2 (D1–D10), §2.1–§2.3 (R1–R30, G1–G72), §3.1–§3.2 (T1–T38, B1–B13); `ORIG/00` §2.5. This is a `WORK` file: it names original terms on purpose and is deleted at the cutover.
+
+## How to choose (read first)
+
+1. **Build tag first, verdict second.** `[B:LEGACY]`, `[B:DEAD]`, `[B:D3D]`, `[B:DEMO]` and `[B:DEBUG]` content is dropped **unless** `ORIG/40` gives it a Keep, Adapt or Replace verdict (§2.1–§2.3 rows R*, G*). Content with such a verdict is `KEEP` (behaviour or concept) and, where 40 says Replace, also `TO-ADR`.
+2. **"Drop (redesign)" in 40 is `KEEP-HOOKS`, not `DROP-LEGACY`.** Record the hooks the corpus describes and 40's verdict; do not design the feature.
+3. **Split mixed sections.** The in-scope behaviour is `KEEP`; the legacy mechanism is `DROP-LEGACY` (`DL-LEGACY-TECH` or a more specific class); the modern replacement is `TO-ADR`. A 40 §3.2 behavioural artefact (B1–B13) is also `TO-DEC`.
+4. **Superseded verdicts (prompt §0) are `DEFER-DESIGN`, not `DROP-LEGACY`.** Networking, lobby, numeric model, threading, sessions and services, the terrain runtime model and persistence go to one Open DEC per topic.
+5. **Kept from the netcode material** (prompt §9.1 F2b), never deferred: RNG streams and draw discipline; per-tick update ordering (including the update slicing); the player command catalogue; the simulation-integrity rules. All are `KEEP` into `reference/12_simulation_model.md`.
 
 ## Action `DROP-LEGACY`: reason classes
 
 | Code | What | Examples (in-corpus terms) |
 |---|---|---|
-| `DL-CAMPAIGN` | Single-player campaign content compiled in but unreachable in a match (`[B:LEGACY]`), blocked old objects, campaign buildings and saves | campaign levels `map_*` and `mission_*`, `BLOCK_OLD_DARWINIA_OBJECTS` objects, Pattern Buffer, Control Tower, Clone Lab, research items, campaign save obfuscation |
-| `DL-DEAD` | Not compiled in any PC configuration (`[B:DEAD]`) | attract mode, benchmark, loaders, AVI grabber, FTP benchmark upload |
-| `DL-D3D9` | The Direct3D 9 build and its OpenGL-emulation layer (`[B:D3D]`), including its shaders and configuration | `opengl_directx*`, FixedFunc shaders, `ReleaseDirect3D` |
-| `DL-DEMO` | Demo and full-game gating, authentication keys, demo limits (`[B:DEMO]`) | `IS_DEMO`, `authkey`, demo map lists |
-| `DL-DEBUG` | Debug-only content (`[B:DEBUG]`) **without** an `ORIG/40` keep verdict | Tank Battle mode and its maps, cheat menus not kept by 40 |
-| `DL-LEGACY-TECH` | The original's implementation of an in-scope behaviour in superseded technology. The **behaviour** is KEEP and the mechanism is dropped. | GL immediate mode, display lists, GL state tables, WGL, DirectSound, waveOut and the software mixer, x87 and `/fp` flags, VS2005/2008 builds, RAR archives, BMP decoding specifics, bitmap font atlases, positional text-table grammars, Inno Setup/NSIS, XCrashReport, Win32 window-manager specifics, XInput 1.3 |
-| `DL-PLATFORM` | Non-Windows ports and their code paths | Linux, macOS, SDL paths |
-| `DL-SERVICES` | The original's online services and their client code | metaserver, matchmaker, NAT punch-through, WAN registration, authentication-key validation |
-| `DL-CUT` | Features `ORIG/40` D10 drops without a redesign | the cut-scene script interpreter as a gameplay system, the narrator, the loader mini-programs, the gesture recogniser, the start sequence, the credits loader |
-| `DL-TESTMAPS` | Hidden, test, stress, benchmark, sandbox and cut maps | `mp_*_stress`, `mp_benchmark_1`, `mp_sandbox*`, `mp_tankbattle_*`, cut maps |
+| `DL-CAMPAIGN` | Darwinia single-player campaign content: compiled into FULL but unreachable in a match (`[B:LEGACY]`, guarded by `App::IsSinglePlayer()`); the 36 building types blocked by `BLOCK_OLD_DARWINIA_OBJECTS`; campaign units; the global world; research beyond the one multiplayer setting; campaign saves; buildings that only campaign or developer maps place (40 G69, R4) | 12 `map_*` and 17 `mission_*` levels; 42 campaign scripts; `GlobalWorld` world map and campaign leaderboards; Pattern Buffer and Blueprint buildings, Control Tower, Incubator, Clone Lab, GodDish, Spam building, Research Item, Library, Factory, Cave, Mine/Refinery/track system, Spirit Receiver network, Upgrade Ports, Yard; LaserTrooper, Lander, BoxKite, `OfficerOrders` (single-player order effect), `GunTurretTarget`; campaign save obfuscation; campaign location names. **Not** campaign: the multiplayer research tab (`TypeLaser` = 2, sets the Convert laser life) and the Engineer crate outcome (40 G24 Adapt) |
+| `DL-DEAD` | Not compiled in any PC configuration, or compiled only in a non-baseline configuration and unreachable even there (`[B:DEAD]`) | attract mode (`ATTRACTMODE_ENABLED`), benchmark recorder and FTP upload (`BENCHMARK_AND_FTP`, 40 G64, T35), boot-loader mini-programs (`USE_LOADERS`), AVI grabber (40 G65), demo-end sequence, the Darwinia mod system, network link simulator, Sepulveda dialogue system |
+| `DL-D3D9` | The Direct3D 9 build (`ReleaseDirect3D`) and its OpenGL-emulation layer (`[B:D3D]`), including its shaders, device handling and configuration (40 T4, T5, R20, G45) | `opengl_directx*` state cache and recorder devices; the 14 `FixedFunc*` shader files; `WaitAndResetDevice` and the lost-device path; D3D water reflection and deform passes; `WindowManagerDirectX`; the OpenMP pragma that exists only in this configuration (T33) |
+| `DL-DEMO` | Demo and full-game gating, authentication keys, demo limits and demo content (`[B:DEMO]`, 40 G39) | `IS_DEMO`, `TARGET_MULTIWINIA_DEMOONLY`, `authkey`/`authkey.dev`, fixed demo key and blacklisted keys, the five-map demo list, `Demo2Limits`, demo-end prompts, the authentication-key entry page. What entitlement must provide instead is `DD-SERVICES` |
+| `DL-DEBUG` | Debug-only content (`[B:DEBUG]`) **without** an `ORIG/40` keep verdict. Debug tooling **with** a verdict is `KEEP` into the diagnostics component: cheat window (G61 Replace), profiler (G62 Replace, PIX), sync-error dump (G59 Adapt), network statistics window (G60 Adapt), screenshots and poster maker (G66 Adapt), process-relative clock with fake time (G71 Keep) | Tank Battle mode, its arenas and the Tank unit (40 G26); The Beast outcome, its portal and tentacles (G21); `EffectProcessor` (POKEY envelope sequencer) and the sound-editor tool windows; the Sepulveda face in the clouds; debug captions such as "Profile (F6)" |
+| `DL-LEGACY-TECH` | The original's implementation of an in-scope behaviour in superseded technology (40 §3.1 T1–T38, R13, R14, R18, R20, R21, R23, R24, R26, R29). The **behaviour** is KEEP, the mechanism is dropped, and the modern replacement is TO-ADR. A behavioural artefact of the old technology (40 §3.2 B1–B13) is also TO-DEC | fixed-function pipeline and texture environments (T1); immediate mode `glBegin`/`glEnd` (T2); display lists (T3); GL extensions and hardware blacklists (T6); GLU and matrix stacks (T7); back-buffer copies (T8); WGL context and swap (T9); x87, `/fp` flags and `iv_*` wrappers as a mechanism (T10; the hazards are `DD-NUMERIC`); the MT19937 and MSVC `rand` implementations (T11; the draw discipline is KEEP); DirectSound 3D (T12); the software mixer and waveOut (T13); libvorbis versions and main-thread decode (T14); BMP decoding and colour-key alpha (T15); bitmap font atlases (T16, G52); RAR `.dat` archives and loose-file override (T17, G72); Win32 window-manager specifics (T18); Win32-message input driver (T19); XInput 1.3 (T20); Eclipse UI (T24); `TextReader` formats and positional binding (T25); `work_queue` loader thread (T27); VS2005/VS2008 toolchain, MBCS, static CRT (T28); batch, Perl and GnuWin32 data build and per-SKU exclusion lists (T29); Inno Setup and NSIS installers, DirectX redistributable, `autopatch` (T30); XCrashReport and `MultiwiniaSupport.exe` (T31); 3ds Max `ShapeExporter` and the `.shp` text mesh format (T34); profiler `glFinish` (T36); `AppDebugOut` (T37); libpng 1.2.15 (T38); the text level format with sentinels (R10); `mapcrc.h` identity (G67); landscape strip mesh without LOD (G46); CPU-rebuilt water (G47); SystemIV containers (`DArray`, `LList`, `BTree`) |
+| `DL-PLATFORM` | Non-Windows ports and their code paths (the Mac port and the Linux port) | Linux and macOS builds, SDL paths, Cocoa delegate, Sparkle update checks, Loki setup, Mac bundle and `Info.plist`, `input_preferences_mac.txt`. Linux stays allowed only as a server or CI host (soft-pattern rule) |
+| `DL-SERVICES` | The original's own online services and their client code, dropped outright. What the design phase must decide about services is `DD-SERVICES` | metaserver client, matchmaker, NAT punch-through, WAN registration, authentication-key validation, store and buy-now URLs, crash-report upload host, FTP host, route-probe address, Steam authentication client |
+| `DL-CUT` | Features `ORIG/40` drops without a redesign (D10, G10, G11, G21, G35, G68, R25) | the cut-scene script interpreter as a gameplay system (43 opcodes) and its script content; the narrator (Dr Sepulveda); the loader mini-programs; the gesture recogniser (8 symbols) and the icon task bar; the Darwinia control scheme; the intro start sequence; the credits loader; user profiles and mods; the Tank and FormationIncrease crate rewards (commented out); the Shaman unit; the Chess prototype mode; multi-round Assault side rotation where routing does not keep it as a DEC (40 G25 "Drop or expose") |
+| `DL-TESTMAPS` | Hidden, test, stress, benchmark, sandbox, debug and cut maps, and superseded map files | `mp_assault_stress`, `mp_benchmark_1`, `mp_sandbox`, `mp_sandbox_all`, `mp_tankbattle_2P/3P/4P`, the cut map `mp_cts_3p_3`, the 30 maps of `data/levels/old/`, PDLC ids 50–59 of `level_enum.txt`, the hard-coded tutorial map building ids |
+| `DL-IP-ONLY` *(added by F1)* | Content that is pure IP or personal data and carries no mechanic: credits, legal texts, branding, partner and store material (41 §5.1 IP02–IP08, IP30, IP32) | credits rolls (`multiwinia_credits_*`, `bootloader_credits_*`), beta-tester lists, developer names, EULAs and the rating notice, publisher splash and logos, distributor and partner branding (Ambrosia, Buka, eGames, Steam app id, Xbox Live Arcade, Logitech G15, amBX), store and buy-now art, Game Explorer metadata. The Species replacements (own credits, licence, rating text) are design-phase or release work |
+| `DL-EDITOR-UI` *(added by F1)* | The window-by-window user interface of the original map editor (`[B:EDITOR]`). The editor itself is `KH-EDITOR`: keep what it edits and its entry points, drop the window layouts | `LandscapeEditWindow`, `LandscapeTileEditWindow`, `BuildingEditWindow`, `TreeWindow`, `CameraMountWindow` and the rest of 08 §8.5: widget lists, sizes, captions |
 
 ## Action `DEFER-DESIGN`: topics the design phase decides
 
@@ -25,30 +35,37 @@ The content is dropped. Its key constraints and lessons go into one DEC per topi
 
 | Code | Topic | What to capture in the DEC |
 |---|---|---|
-| `DD-NET` | Networking model: lockstep transport, sync checks, wire encoding, input delay, desync handling | the failure modes the networking model must prevent; bandwidth and population figures |
-| `DD-LOBBY` | Lobby, discovery and session protocol | lobby authority rules, what the match setup needs |
-| `DD-NUMERIC` | Simulation numeric model (floating-point environment, transcendental rounding, fixed point) | determinism hazards a new numeric model must avoid |
-| `DD-THREADS` | Simulation threading and process architecture | integrity rules that the threading model must respect |
-| `DD-SERVICES` | Sessions, identity and platform services | what entitlement, identity and discovery must provide |
-| `DD-TERRAIN-RUNTIME` | Terrain runtime model (generated at load or baked) | the generator's determinism constraints and content-identity needs. The **algorithm** is KEEP. |
-| `DD-PERSIST` | Saves and persistence formats | none beyond the list of what is saved |
+| `DD-NET` | Networking model (40 D2, R17, T21, G56, G58–G60): lockstep transport, server-sequenced letters, `ALIVE`/`UPDATE` traffic, input delay, sync byte, IFrame snapshots and SHA-1 hashes, desync handling and dumps, late join by command-history replay, wire encoding (`Directory`), the network statistics window | the failure modes the networking model must prevent (command ownership not checked, unhashed state, map identity not exchanged, silent divergence, statics surviving between matches); bandwidth and population figures (1,400–2,000 simulated bodies per map plus orbs and projectiles); the coalescing of continuous control state with one-shot events. **Not deferred:** the command catalogue, RNG discipline, per-tick ordering and integrity rules (KEEP, reference/12) |
+| `DD-LOBBY` | Lobby, discovery and session protocol (40 R11 lobby part, G38, 22 §12): LAN broadcast and WAN listing, server browser with password and filters, lobby message set, slot assignment, host authority | lobby authority rules (client-side today), what the match setup needs (slots, teams, colours, options, ready state), password handling. The ready-up, countdown and grace-period rules are match flow: KEEP into reference/09 |
+| `DD-NUMERIC` | Simulation numeric model (40 D3, T10): floating-point environment, x87 precision control, transcendental rounding (`iv_trunc_low_nibble`), fixed point held in reserve | the determinism hazards a new numeric model must avoid; the operations whose rounding the reference rules depend on |
+| `DD-THREADS` | Simulation threading and process architecture (40 D4, R14, T26, T27): the god object and globals, hand-reset statics, single-threaded stepping, the sim/presentation boundary, the job system | the integrity rules the threading model must respect (presentation never writes simulation state; per-match state is owned and reset; no unsynchronised generator feeds the simulation). The 10-slice update order is reference behaviour (KEEP, reference/12) |
+| `DD-SERVICES` | Sessions, identity and platform services (40 D7, R30, T22, T23, G39): entitlements in place of keys and demo gating, discovery, relays, platform lobbies | what entitlement, identity and discovery must provide; the security lessons (lobby authority, clear-text password, advertised key) |
+| `DD-TERRAIN-RUNTIME` | Terrain runtime model (40 D8 terrain part, B12): generated at load or baked heightfields with a content hash | the generator's determinism constraints and content-identity needs. The **algorithm** is KEEP (terrain component) |
+| `DD-TICK` | Simulation tick rate and per-tick budget for the world game | the reference tick rate (kept in reference/12), the per-tick budget figures, and the stress population; added by the coordinator at G1 |
+| `DD-PERSIST` | Saves and persistence formats: preference and profile storage formats, achievement persistence, replay files | the list of what is saved; nothing else. Replays as a feature are `KH-REPLAY` |
+| `DD-ROADMAP` *(added by F1; first used by F2c)* | Build order, phases, milestones and work breakdown (`ORIG/40` §7) | the dependency constraints between engine components and reference systems that any build order must respect; the order itself is the design phase's plan |
 
-## Action `KEEP-HOOKS`: features 40 D10 says must be designed fresh
+## Action `KEEP-HOOKS`: features 40 says must be designed fresh
 
-Record what the corpus describes of their hooks and 40's verdict. Do not design them.
+Record what the corpus describes of their hooks and 40's verdict. Do not design them. The first five rows are the D10 set; the rows *added by F1* are the other "Drop (redesign)" verdicts of 40 §2.3.
 
-| Code | Feature |
-|---|---|
-| `KH-EDITOR` | map editor |
-| `KH-REPLAY` | replays |
-| `KH-ACHIEVE` | achievements and leaderboards |
-| `KH-RESULTS` | post-match results screen |
-| `KH-MUSIC` | music |
+| Code | Feature | Hooks to record (in-corpus terms) |
+|---|---|---|
+| `KH-EDITOR` | map editor (40 D10, R10, G70; `[B:EDITOR]`) | what a map can express and the editor edits: terrain tiles, flatten areas, guide grids, lights, building placement and links, routes, camera mounts and animations, instant units, per-map options; editor entry and exit flow; custom-map file handling. Window layouts are `DL-EDITOR-UI` |
+| `KH-REPLAY` | replays (40 D10, G57 `RecordDemo`) | command-history recording and playback, the determinism it relies on |
+| `KH-ACHIEVE` | achievements, statistics and leaderboards (40 D10, G36) | the 12 conditions and where the rules evaluate them, the stat counters, the leaderboard and skill-rating pages (stubs today) |
+| `KH-RESULTS` | post-match results screen (40 D10, G40; absent today) | the end-of-game sequence (`DeclareWinner`), the game-over overlay, the data available at match end (scores, kills, times) |
+| `KH-MUSIC` | music (40 D9, D10, G54) | the music engine, `OTHER Music` event blocks, the music channel, why nothing triggers it |
+| `KH-FRONTEND` *(added by F1)* | front-end features 40 drops for redesign: quick match (G37), key-rebinding window (G13), contextual control-help panel (G15), in-match objective tabs (G31), spectator team and UI (G30) | entry points, page slots, the data each would show, what is computed but never drawn |
+| `KH-TUTORIAL` *(added by F1)* | tutorials and presentation timelines (40 R25, G33) | the two tutorials on fixed maps, the help-tab director and its step triggers, the animated mode panels (G32 keeps the concept). `reference/11` writes new text only |
+| `KH-TESTBED` *(added by F1)* | menu-driving soak test (40 G63, `[B:DEAD]`) | what it drives and checks; it feeds the diagnostics component's test harness |
 
 ## Action `DROP-PROVENANCE`: reason classes
 
 | Code | What |
 |---|---|
 | `DP-CLOSING` | Open questions and unknowns, docs-vs-code discrepancies, IP items, source map, appendix of dead/legacy code (each document's closing sections). Open questions and unknowns are **also** routed `TO-DEC` when they concern in-scope content. |
-| `DP-METHOD` | method, statistics, "how this was built or checked", review and coverage material |
-| `DP-INDEX` | contents lists, cross-reference indexes, the coverage matrix |
+| `DP-METHOD` | method, statistics, "how this was built or checked", review and coverage material, evidence and build-tag conventions, citation conventions, licence-posture notes |
+| `DP-INDEX` | contents lists, cross-reference indexes, the coverage matrix, reading guides to the recovery set |
+| `DP-IP-REGISTER` *(added by F1)* | IP registers and placeholder tables consumed by the rename ledger and never reproduced: `ORIG/41` §5 (IP replacement register and map names), `ORIG/90` §3 (canonical placeholder names), `ORIG/40` §6 (IP replacement summary) |
+| `DP-DISCREPANCY` *(added by F1)* | discrepancy registers that compare documents with the code (`ORIG/41` §4). A discrepancy that changes an in-scope rule is **also** `TO-DEC` |

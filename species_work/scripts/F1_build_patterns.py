@@ -193,11 +193,11 @@ PROVENANCE = [
     (r'\[(C|I|U)\]', '', 'evidence tag'),
     (r'\[B:[A-Z]+\]', '', 'build tag'),
     (r'\bB:(?:FULL|LEGACY|DEAD|D3D|DEMO|DEBUG|EDITOR)\b', '', 'build tag without brackets'),
-    (r'Verbatim excerpt', 'i', 'closing-section and excerpt names'),
-    (r'Source map', 'i', 'closing-section name'),
-    (r'Docs-vs-code', 'i', 'closing-section name'),
+    (r'Verbatim excerpt', '', 'closing-section and excerpt names'),
+    (r'Source map', '', 'closing-section name'),
+    (r'Docs-vs-code', '', 'closing-section name'),
     (r'_work/', '', 'recovery work folder'),
-    (r'coverage matrix', 'i', 'recovery coverage matrix'),
+    (r'[Cc]overage matrix', '', 'recovery coverage matrix'),
     (r'\.(bmp|shp|mwm|dat|vcproj)\b', 'i', 'original file extension used as a file reference'),
     (r'\bf909630\b', '', 'recovered commit id'),
     (r'\b\d\d-U\d+\b', '', 'recovery unknown ids (NN-U<n>)'),
@@ -328,6 +328,7 @@ GENERIC_MAP_NAMES = {'Gridlock', 'Melting Pot', 'Scorched Earth', 'The Last Stan
 
 def norm_string(s):
     """Normalise an English string for the original-string match."""
+    s = s.replace('\\n', ' ')
     s = unicodedata.normalize('NFKD', s).encode('ascii', 'ignore').decode('ascii')
     s = s.lower()
     s = re.sub(r'%[-+ #0-9.]*[a-z]', ' ', s)  # printf placeholders

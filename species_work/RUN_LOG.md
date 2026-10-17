@@ -29,3 +29,32 @@
   - Six facts resolved in 41 §1.4 are MERGE to G02a, G02b, G04 and G10.
 - F2b2 done: 600 rows (522 distinct ranges, 26–32); coverage complete and its own column check gives 0 errors. No package over 150 KB, but C-UI sits at about 152 KB with hooks → split C-UI-a (28 §1–5, §7–10, §14, about 100 KB) / C-UI-b (28 §6, §11, §13, about 52 KB). C-DAT at 126 KB → `data_schemas/` folder likely. C-VFX 119 KB, C-AEN 104 KB. To confirm at G1: 32 §7.1 "test harness" is a campaign mission explorer → DL-CAMPAIGN (accepted by the coordinator: a campaign-only tool); the tick-rate row is tagged DD-THREADS for lack of a code → **add `DD-TICK`** with DD-ROADMAP after F1.
 - F3 done: `standards_baseline.md` (12 sections, sourced, checked 2026-10-17); 9 DEC and 17 ADR requests in `reports/F3.md`. Recommended: Windows 11 24H2 (build 10.0.26100 minimum; Windows 10 unsupported); MSVC Build Tools 14.51 (VS 2026 18.11) with `/std:c++23preview`, then `/std:c++23` from 14.52, and no C++26; Agility SDK 1.619.6; FL 12_1 plus SM 6.6, Resource Binding Tier 3 and WaveOps checks (12_2 not required); SM minimum 6.6 (current retail 6.9); DXC v1.9.2609. Unverified items are listed in the report. **G1 action:** the `docs/` provenance pattern matches URLs (three GameInput URLs) → add a look-behind so path patterns never match inside a URL.
+- F1 done: 687-row ledger (all 151 rows of 90 §3 and 161 IP rows of §2; no Species identifier equals one of the 2,588 original identifiers); 1,321 hard and 52 soft patterns; self-tests pass; CONVENTIONS §8 (311 rows); 8 codes added to drop_topics (incl. DD-ROADMAP); 546 IP tokens. Collisions: H1 Uplink Console→Command Console, H2 Subversion turret→Convert Turret, M1 Warp Gate→Transit Gate, M2 Relay Dish→Beam Dish, M3 Energy Collector→Solar Array, M4 power network→energy grid, M5 Spirit Grove→Essence Grove, M6 Relic Spawn Zone split from Relic Base; L1–L13 information only (L13: the title "Species" overlaps a 1995 film franchise and a 2018 game, so it is owner information).
+
+## Gate G1 (2026-10-17)
+
+- Ledger spot-check: 30 seeded rows read, all correct (role-preserving, IP word dropped, generic words kept with kind suffixes).
+- Pattern fixes:
+  - the path pattern gets a look-behind (it skips URLs, which fixes F3's three GameInput links, and longer paths);
+  - `tools/` allows `tools/design-models/`;
+  - `_work/` no longer matches inside `species_work/` or `species_design_work/`.
+  Verified on samples: provenance is still caught.
+- Packages that must never name `data/`, `code/` or `docs/` directories: C-AST, C-BLD, C-DAT (note in their packages).
+- CONVENTIONS §6: two soft hits reworded.
+- drop_topics: `DD-TICK` added; 32 L879 re-tagged DD-TICK; 40 §7 re-tagged DD-ROADMAP.
+- Routing check after the fixes: 1,990 rows, 0 errors, every line of 27 documents covered.
+- Coordinator accepted: 32 §7.1 as DL-CAMPAIGN; 24 §2.3 as KEEP + TO-ADR; about 23 KB of doc 20 to C-SIM.
+- `scripts/build_packages.py` → 49 packages (`packages/INDEX.md`), 0 unclaimed content rows, all ≤ 150 KB except two exempt ones:
+  - X-DEC-2a (DD-NET, read for lessons only);
+  - X-AST (script-driven from the CSVs).
+- Splits:
+  - G02a→a1/a2; G08→a/b (editor hooks); C-SIM→a/b/c; C-RND→a/b; C-UI→a/b;
+  - X-DEC→1, 2a, 2b, 2c, 3, 4a, 4b, 5a, 5b, 5c (two waves; wave 2b deduplicates against 2a); X-ADR→a/b; X-GLO→1/2.
+- New folder outputs:
+  - in `reference/`: 04, 08, 09, 12;
+  - in the components: `ui_framework/` and `data_schemas/`;
+  - also `decisions/` (an index plus per-package files and `deferred/`) and `glossary/`.
+  - The prompt §5 is updated; package JSONs are authoritative (§9.3 note).
+- DEC and ADR ids: unique within the assigned ranges; gaps allowed; never renumbered (prompt G2 updated).
+- Surviving files (`vision/`, `prompts/species-design-phase.md`, `design_next/CONVENTIONS.md`): 0 hard-fail hits with the full F1 pattern set.
+- Owner questions batch 1: pending.

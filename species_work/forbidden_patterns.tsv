@@ -143,17 +143,17 @@ Bruce Dawson|Hans Dietrich|Jonathan de Halleux	i	brand	third-party code authors
 \bintro_\d+\b	i	brand	intro caption keys
 \besrb_warning\b	i	brand	rating notice key
 \bPLAYERJOIN\b|\bPLAYERLEAVE\b		brand	chat tokens
-\b(code|data|contrib|targets|docs)/[\w./-]+		provenance	source path (prompt §7.1)
-\btools/(?!design-check)[\w./-]+		provenance	source path outside the retained tooling (prompt §7.1)
+(?<![\w/.:-])(code|data|contrib|targets|docs)/[\w./-]+		provenance	source path (prompt §7.1); look-behind skips URLs and longer paths (G1 fix)
+(?<![\w/.:-])tools/(?!design-check|design-models)[\w./-]+		provenance	source path outside the retained tooling (prompt §7.1); allows tools/design-models (G1 fix)
 :L\d+\b		provenance	line reference
 \[(C|I|U)\]		provenance	evidence tag
 \[B:[A-Z]+\]		provenance	build tag
 \bB:(?:FULL|LEGACY|DEAD|D3D|DEMO|DEBUG|EDITOR)\b		provenance	build tag without brackets
-Verbatim excerpt	i	provenance	closing-section and excerpt names
-Source map	i	provenance	closing-section name
-Docs-vs-code	i	provenance	closing-section name
-_work/		provenance	recovery work folder
-coverage matrix	i	provenance	recovery coverage matrix
+Verbatim excerpt		provenance	closing-section and excerpt names
+Source map		provenance	closing-section name
+Docs-vs-code		provenance	closing-section name
+(?<!\w)_work/		provenance	recovery work folder; not inside run-folder names such as species_work/ (G1 fix)
+[Cc]overage matrix		provenance	recovery coverage matrix
 \.(bmp|shp|mwm|dat|vcproj)\b	i	provenance	original file extension used as a file reference
 \bf909630\b		provenance	recovered commit id
 \b\d\d-U\d+\b		provenance	recovery unknown ids (NN-U<n>)

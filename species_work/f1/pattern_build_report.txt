@@ -3,4 +3,4 @@ soft patterns: 52
 identifier patterns by shape: {'file': 141, 'covered by brand or legacy pattern': 315, 'qualified': 269, 'compound': 459, 'macro': 69, 'generic API verb names exempt': 163, 'single': 60, 'snake': 33, 'lower': 18, 'member': 15}
 map display names: 51 (generic phrases 20); campaign level files: 29
 string keys: 326 (exact patterns 179)
-original strings (normalised, 3+ words): 451
+original strings (normalised, 3+ words): 447

@@ -149,11 +149,11 @@ Bruce Dawson|Hans Dietrich|Jonathan de Halleux	i	brand	6	2	third-party code auth
 \[(C|I|U)\]		provenance	8327	29	evidence tag
 \[B:[A-Z]+\]		provenance	4393	30	build tag
 \bB:(?:FULL|LEGACY|DEAD|D3D|DEMO|DEBUG|EDITOR)\b		provenance	4672	30	build tag without brackets
-Verbatim excerpt	i	provenance	4	3	closing-section and excerpt names
-Source map	i	provenance	70	29	closing-section name
-Docs-vs-code	i	provenance	437	28	closing-section name
+Verbatim excerpt		provenance	3	3	closing-section and excerpt names
+Source map		provenance	66	29	closing-section name
+Docs-vs-code		provenance	77	28	closing-section name
 _work/		provenance	371	30	recovery work folder
-coverage matrix	i	provenance	2	2	recovery coverage matrix
+[Cc]overage matrix		provenance	2	2	recovery coverage matrix
 \.(bmp|shp|mwm|dat|vcproj)\b	i	provenance	9041	29	original file extension used as a file reference
 \bf909630\b		provenance	18	13	recovered commit id
 \b\d\d-U\d+\b		provenance	1407	27	recovery unknown ids (NN-U<n>)

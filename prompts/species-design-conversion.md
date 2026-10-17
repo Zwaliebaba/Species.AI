@@ -122,21 +122,21 @@ design/                                   (built as NEXT/, renamed at cutover)
 ├── README.md                             what this library is (reference for the Species design phase), reading guide, document map, status
 ├── CONVENTIONS.md                        normative language, ID scheme and prefix registry, units, naming, diagram rules, allowed terms
 ├── REQUIREMENTS_INDEX.md                 generated: every requirement ID → file → one-line title
-├── glossary.md                           Species terms only (the design phase moves it into arc42 §12)
+├── glossary/                             README.md + a_to_l.md + m_to_z.md: Species terms only (the design phase moves it into arc42 §12)
 ├── reference/                            faithful reference mechanics (engine-agnostic: rules and behaviour)
 │   ├── 00_reference_overview.md          the reference core loop, what makes it distinctive, player-facing glossary
 │   ├── 01_skirmish_rules_and_modes/      README.md (shared match-rule skeleton) + one file per mode (6)
 │   ├── 02_units/                         README.md + player units + creatures and hazards
 │   ├── 03_buildings_and_world_objects/   README.md + economy and spawn objects + mode objects + defences and props
-│   ├── 04_supply_crates_powers_and_weapons.md   (folder if > 120 KB)
+│   ├── 04_supply_crates_powers_and_weapons/     README.md + crates_and_powers.md + weapons_and_projectiles.md
 │   ├── 05_population_flow.md             spawn economy, caps, essence, reinforcements, throughput
 │   ├── 06_controls_camera_and_commands.md
 │   ├── 07_bots.md                        bot architecture, decision loop, difficulty, per-mode strategy
-│   ├── 08_maps_and_level_design.md       map design rules, per-mode conventions, match options, map-editor hooks
-│   ├── 09_front_end_and_match_flow.md    screen flow, match setup, options, results, localisation hooks
+│   ├── 08_maps_and_level_design/         README.md + rules_and_conventions.md + map_editor_hooks.md
+│   ├── 09_front_end_and_match_flow/      README.md + screen_flow_and_match_setup.md + options_localisation_and_hooks.md
 │   ├── 10_audio_design.md
 │   ├── 11_tutorial_and_help.md
-│   └── 12_simulation_model.md            tick timing, entity model, update order, spatial grids, routing, RNG discipline, command catalogue, integrity rules
+│   └── 12_simulation_model/              README.md + 01_tick_timing_and_main_loop … 07_randomness_and_integrity: tick timing, entity model, update order, spatial grids, routing, RNG discipline, command catalogue, integrity rules
 ├── architecture/
 │   └── components/                       Species engine baseline (template §6.4)
 │       ├── renderer/                     README.md + frame graph and pass table + per-renderer specs + shaders + visual-language requirements
@@ -144,16 +144,18 @@ design/                                   (built as NEXT/, renamed at cutover)
 │       ├── asset_pipeline_and_resources.md
 │       ├── animation_and_vfx.md
 │       ├── audio_engine.md
-│       ├── ui_framework.md
+│       ├── ui_framework/                 README.md + core_and_widgets.md + layout_rendering_input_and_localisation.md + pages_and_screen_recipes.md
 │       ├── input.md
 │       ├── camera_and_sequences.md
-│       ├── data_schemas.md               (folder if > 120 KB)
+│       ├── data_schemas/                 README.md + one file per schema family
 │       ├── platform_layer.md
 │       ├── build_tooling_and_distribution.md     toolchain, CI, content build, packaging, crash reporting
 │       └── diagnostics_test_and_performance.md
 ├── adr/                                  README.md (index) + 0001-<slug>.md …   (MADR 4, engine technology only)
 ├── decisions/
-│   └── decision_register.md              DEC-NNN entries (§6.5)
+│   ├── README.md                         generated index of every DEC (id, title, status, file)
+│   ├── verdicts_and_fixes.md, open_questions.md, <topic>.md …   DEC-NNN entries (§6.5), one file per package
+│   └── deferred/                         one file per group of topics deferred to the design phase
 └── assets/
     ├── README.md                         what the reference mechanics need, by category: counts, priorities, technical constraints, placeholder strategy
     ├── asset_manifest.csv                one row per required asset id (columns in brief X-AST)
@@ -218,7 +220,7 @@ Folder splits are allowed wherever §4 rule 9 needs them. Every folder has a `RE
 ## 8 Open decisions                      DEC and ADR references, plus "Design-phase inputs": questions the world game must answer for this component (for example, terrain streaming for a large world)
 ```
 
-### 6.5 Decision register entry (`decisions/decision_register.md`)
+### 6.5 Decision register entry (`decisions/`)
 
 ```
 ### DEC-012 <title>
@@ -247,7 +249,7 @@ Brief F1 builds the full list in `WORK/forbidden_patterns.tsv`. It contains at l
 
 - **Brand and IP**: every form of the original product and studio names, including plurals, adjectives and code prefixes (for example `multiwinia`, `darwinia`, `darwinian`, `multiwinian`, `introversion`); character names (for example `sepulveda`); faction nicknames (for example `evilinian`, `futurewinian`); framework and library brand names of the original (for example `eclipse` as the UI framework, `systemiv`); **every** map display name and level file name from `ORIG/41` §5.2 and `ORIG/08` §3; every IP item in `ORIG/41` §5.1; every original string key prefix.
 - **Original identifiers**: every class, function, macro, enum value and file name of the original that F1 extracts from `ORIG/21`, `ORIG/90` §2 and `ORIG/91`, in code form (`Name::`, `` `Name` ``, `NAME_*`). Exempt only plain English words that the rename map keeps as generic (for example *spider*, *tree*, *wall*), in prose form.
-- **Provenance**: the path regex `\b(code|data|contrib|targets|docs)/[\w./-]+`, `\btools/(?!design-check)[\w./-]+`, `:L\d+\b`, `\[(C|I|U)\]`, `\[B:[A-Z]+\]`, `Verbatim excerpt`, `Source map`, `Docs-vs-code`, `_work/`, `coverage matrix`, and the original file extensions `\.(bmp|shp|mwm|dat|vcproj)\b` used as file references. Plain `.cpp`, `.h` and `.sln` stay allowed, because Species' own repository layout may name them.
+- **Provenance**: the path regex `(?<![\w/.:-])(code|data|contrib|targets|docs)/[\w./-]+` (the look-behind skips URLs and longer paths), `(?<![\w/.:-])tools/(?!design-check|design-models)[\w./-]+`, `:L\d+\b`, `\[(C|I|U)\]`, `\[B:[A-Z]+\]`, `Verbatim excerpt`, `Source map`, `Docs-vs-code`, `(?<!\w)_work/`, `coverage matrix`, and the original file extensions `\.(bmp|shp|mwm|dat|vcproj)\b` used as file references. Plain `.cpp`, `.h` and `.sln` stay allowed, because Species' own repository layout may name them.
 - **Legacy technology** (case-sensitive unless marked): `OpenGL`, `\bGL_\w+`, `\bgl(?!TF)[A-Z]\w+` (so `glTF` is not flagged), `\bglu[A-Z]\w*`, `\bWGL\b`, `\bARB_\w+`, `Direct3D ?9`, `\bD3D9\b`, `\bD3DX(?!12)` (so the `d3dx12.h` helpers are not flagged), `DirectX ?9`, `DirectX SDK`, `DirectSound`, `waveOut`, `XInput ?1\.3`, `xinput1_3`, `\bx87\b`, `_control87`, `Visual Studio 200[58]`, `VS ?200[58]`, `MSVC ?200[58]`, `\bMBCS\b`, `\bRAR\b`, `unrar` (any case), `Inno Setup`, `\bNSIS\b`, `GnuWin32`, `OpenMP`, `display lists?` (any case), `lost device` (any case), `metaserver` (any case), `authkey` (any case), `\bSDL\b`.
 
 The pattern file has the columns `pattern, flags (i = case-insensitive, empty = case-sensitive), class, note`. Patterns use Python `re` syntax, because some need look-ahead. Never scan with `grep -i`: it turns `gl[A-Z]` into a match for *glow*, *global* and *glyph*.
@@ -269,7 +271,7 @@ The script runs over `NEXT/` (and, at the cutover, over the whole repository wit
 7. Asset closure: every asset id cited in a reference document or a component exists in `assets/asset_manifest.csv`, and every manifest row names at least one consumer.
 8. Tuning keys: unique; each key is cited by at least one requirement.
 9. Truncation words (§4 rule 7) outside code blocks: zero.
-10. File size of 120 KB or less; every folder has a `README.md`; every document has the template headings of §6.3 or §6.4 (README files and `glossary.md` are exempt).
+10. File size of 120 KB or less; every folder has a `README.md`; every document has the template headings of §6.3 or §6.4 (README files and `glossary/` are exempt).
 11. Generate `REQUIREMENTS_INDEX.md`.
 
 ---
@@ -292,7 +294,7 @@ The script runs over `NEXT/` (and, at the cutover, over the whole repository wit
 - Commit.
 
 **Phase 2 — Decisions.** Spawn X-DEC and X-ADR in parallel. Then run gate **G2**:
-- Check that DEC and ADR numbering is contiguous. Check that every row of `ORIG/40` §5.2, every T-row of §3.1 and D1–D10 of §1.2 is accounted for, either as a DEC, as an ADR, or as "deferred to the design phase" (the topics of §0 "Superseded verdicts").
+- Check that DEC and ADR ids are unique and inside each package's assigned range (gaps between ranges are allowed; ids are never renumbered). Generate `NEXT/decisions/README.md` (the index) and merge the per-package `WORK/dec_map_<id>.csv` files into `WORK/dec_map.csv`. Check that every row of `ORIG/40` §5.2, every T-row of §3.1 and D1–D10 of §1.2 is accounted for, either as a DEC, as an ADR, or as "deferred to the design phase" (the topics of §0 "Superseded verdicts").
 - An ADR goes to **owner questions batch 2** only when it is Proposed **and** flagged `owner-decision: blocking`, meaning there is no defensible default. Every other Proposed ADR proceeds with its stated default.
 - Commit.
 
@@ -302,7 +304,7 @@ The script runs over `NEXT/` (and, at the cutover, over the whole repository wit
 
 **Phase 5 — Review.** Write `WORK/scripts/sample_facts.py`. With the fixed seed 20261017, it samples 20 lines per `ORIG` document from KEEP and MERGE routed ranges, taking only lines that carry a number, a state transition or an enumeration member. It writes `WORK/fidelity_sample.csv` (`orig_file, line, text, routed_target`). Then spawn R1a, R1b, R2, R3 and R4 in parallel.
 
-**Phase 6 — Fix rounds.** Merge the review findings into `WORK/fix_list.md`, grouped by owning file. Re-spawn the owners with their findings. Re-run all gates, both `check_design.py` and `TOOLS`. If findings remain after round 2: Medium and Low findings become entries in `decisions/decision_register.md`; a remaining High finding is reported to the owner and blocks the cutover. Gate **G4**.
+**Phase 6 — Fix rounds.** Merge the review findings into `WORK/fix_list.md`, grouped by owning file. Re-spawn the owners with their findings. Re-run all gates, both `check_design.py` and `TOOLS`. If findings remain after round 2: Medium and Low findings become entries in `decisions/` (a new register file, `review_findings.md`, DEC 900–949); a remaining High finding is reported to the owner and blocks the cutover. Gate **G4**.
 
 **Phase 7 — Cutover.** See §8.2.
 
@@ -381,7 +383,7 @@ Output each item as: current fact, source URL, date checked, and the implication
 
 **X-DEC — Decision register.**
 Inputs: `ORIG/40` §1.2, §2.3 and §5 (the keep-list and the 59-row fix-list, F1–F59); `ORIG/41` §1.3, §2 and §3; every routing row with `TO-DEC` or `DEFER-DESIGN`; `WORK/rename_map.tsv`; §0 "Superseded verdicts".
-Output: `NEXT/decisions/decision_register.md`, with an index table at the top and one entry per decision (§6.5). Rules:
+Output: the register file named in your package (under `NEXT/decisions/`), one entry per decision (§6.5), plus `WORK/dec_map_<id>.csv`. The coordinator generates the index `NEXT/decisions/README.md` at G2. Rules:
 - Where 40 or another document gives a recommendation, the status is **Resolved** and the recommendation is applied. Example: integer tick timers, with the mode second kept at 11 ticks as an explicit constant (40 D6).
 - Where there is no recommendation, the status is **Open**. The default is the reference behaviour, and you add your recommendation.
 - Fixes for crash defects, and for simulation-integrity defects (presentation writing simulation state, state surviving between matches, unsynchronised random generators feeding the simulation), are always Resolved.
@@ -402,7 +404,8 @@ Rules:
 
 ### 9.3 Phase 3 rewrite packages
 
-Each package agent receives: §4; §6; its package JSON (`ORIG` line ranges, targets, ID ranges); and the shared reads `WORK/rename_map.tsv`, `NEXT/CONVENTIONS.md`, `NEXT/decisions/decision_register.md` (with `WORK/dec_map.csv`) and `NEXT/adr/README.md`. Component agents also read `WORK/standards_baseline.md`.
+Each package agent receives: §4; §6; its package JSON (`ORIG` line ranges, targets, ID ranges); and the shared reads `WORK/rename_map.tsv`, `NEXT/CONVENTIONS.md`, `NEXT/decisions/` (the `README.md` index plus the register files, with `WORK/dec_map.csv`) and `NEXT/adr/README.md`. Component agents also read `WORK/standards_baseline.md`.
+**Packages at G1.** The coordinator splits and re-targets packages at G1 to respect the input budget and the 120 KB output limit. `WORK/packages/INDEX.md` and each package JSON are authoritative for targets, ID ranges and notes; the table below is the starting plan.
 **Common task for every package agent:** rewrite every KEEP and MERGE range of your package into your target files. Apply the templates of §6.3 or §6.4. Rename everything through the ledger. Cite DEC and ADR ids where they apply. Drop provenance and legacy material. Never lose an in-scope fact.
 
 | ID | Target (under `NEXT/`) | Main `ORIG` inputs (F2 routing decides the exact ranges) | Notes |
@@ -434,7 +437,7 @@ Each package agent receives: §4; §6; its package JSON (`ORIG` line ranges, tar
 | C-PLT | `…/platform_layer.md` | 31 §3–§6 | |
 | C-BLD | `…/build_tooling_and_distribution.md` | 31 §7–§11 | Toolchain, CI, content build, map-editor tooling hooks, client packaging, crash reporting |
 | C-DBG | `…/diagnostics_test_and_performance.md` | 32 | Developer tools that 40 keeps; test harness; profiling; the reference performance figures (bodies per map, frame and tick costs) |
-| X-GLO | `glossary.md` | 90 §2 (in-scope terms only), the ledger | Species terms, each defined and linked to its owning document. No original terms. |
+| X-GLO | `glossary/` | 90 §2 (in-scope terms only), the ledger | Species terms, each defined and linked to its owning document. No original terms. |
 | X-AST | `assets/README.md`, `assets/asset_manifest.csv`, `assets/art_and_audio_briefs.md`, plus `WORK/asset_origin_map.csv` | the CSVs `ORIG/_work/drafts/X2a_textures.csv`, `X2a_shapes.csv`, `X2a_refs.csv`, `X2b_samples.csv`, `X2b_sound_events.csv` and `X4_levels.csv`, plus the string CSVs; prose only from 25 §1, §2.4–§2.8, §4.3–§4.4 and §7, 10 §14, and 24 §7 | Two passes (Phase 3 wave 1, then Phase 4). See below. |
 
 **X-AST details.** Do not read the 25 per-file catalogue prose (§3–§6, about 600 KB): it is the CSVs in table form. Build the required asset set mechanically, with a script, from the CSVs: textures and shapes whose `reach` is `FULL` and whose consumer is in scope; audio samples whose `event_liveness` is live; one thumbnail per map; and one string id per player-facing text (the string ids are collected from `NEXT/` in pass 2). Collapse the originals into **Species asset ids** by role, not by file. Example: twelve laser samples become a sample group `sfx.unit.worker.attack` with its variant count.

@@ -36,7 +36,6 @@ campaignbutton loadcampaign debug only page
 capture bar full team t
 capture mouse uncapture if gamemodenone per mode advancer br location modes only if the landscape heightmap exists
 capture score zone
-capture solar npanels to begin nrefueling rocket
 capture solar panels to begin refueling rocket
 capture spawn point
 capture the statue
@@ -199,7 +198,6 @@ leaderboards and achievements appear in the in game menu
 left the game
 lmb rmb mmb
 load mod name
-load your rocket nwith 100 nmultiwinians
 load your rocket with 100 multiwinians
 loader worker thread
 loadingscreen doenterlocation on worker thread
@@ -215,7 +213,7 @@ mainmenuwindow darwinia unreachable
 map has been successfully created
 matchmaker node name
 metaserver added fields i protocolmatch
-missing string n id
+missing string id
 mode is sphereworld freemovement buildingfocus br entitytrack radaraim firstperson or turretaim
 more than 3000
 move to score zone
@@ -337,7 +335,6 @@ reset this profile
 retribution two powerups max
 right click on officer set surrounding multiwinians into formation
 right click to toggle orders
-right mouse button to move npress space to deselect
 right mouse button to move press space to deselect
 rotate the cam in entity track mode
 row compatible not full map installed no password
@@ -432,20 +429,19 @@ xinputgetstate 0 3
 yes returning from a tutorial
 you are eliminated
 you can't terminate shamans
-you cannot create a new location nyou must first create a mod from the main menu nbefore you can add locations
-you cannot save the location data nyou must first create a mod from the main menu nbefore you can edit and save locations
+you cannot create a new location you must first create a mod from the main menu before you can add locations
+you cannot save the location data you must first create a mod from the main menu before you can edit and save locations
 you will be eliminated in 30 seconds
 your base is under attack
 your control pad has been unplugged
 your control pad has been unplugged please plug it back in or press esc to continue
 your progress on this island
 your rocket has been refueled
-your rocket is nunder attack n ndamage
 your rocket is on fire
 your rocket is preparing for launch
 your rocket is under attack
+your rocket is under attack damage
 your rocket is under attack damage n
-your rocket nis on nfire
 z buffer depth
 zone population per second
 zones controlled per second

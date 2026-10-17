@@ -8,7 +8,7 @@ Every design area goes through a **propose → challenge → revise → decide**
 
 **Precondition.** The reference-library conversion has finished. `design/README.md` describes the reference library, `tools/design-check/` exists and passes on `design/`, and no recovery corpus is left in the tree. If any of these is not true, stop and tell the owner.
 
-Read this whole file, `vision/species-vision-brief.md`, `design/README.md`, `design/CONVENTIONS.md`, `design/decisions/decision_register.md` and `design/adr/README.md` before doing anything.
+Read this whole file, `vision/species-vision-brief.md`, `design/README.md`, `design/CONVENTIONS.md`, `design/decisions/README.md` (the decision index) and `design/adr/README.md` before doing anything.
 
 ---
 
@@ -131,7 +131,7 @@ design/
 │   ├── 14_audio_design.md
 │   └── 15_tutorial_and_help.md
 ├── architecture/                      arc42 01–12 (new) + components/ (reference baseline + new)
-│   ├── 01_introduction_and_goals.md … 12_glossary.md   (12 absorbs design/glossary.md)
+│   ├── 01_introduction_and_goals.md … 12_glossary.md   (12 absorbs design/glossary/)
 │   └── components/
 │       ├── server_and_hosting.md        (new)
 │       ├── world_simulation.md          (new; adapts reference/12)
@@ -146,7 +146,7 @@ design/
 │       └── (baseline components; their "Design-phase inputs" sections are answered by the owning area)
 ├── adr/                               extended with the deferred topics
 ├── decisions/
-│   ├── decision_register.md           extended (DEC numbering continues)
+│   ├── README.md + register files     extended (new DECs in a new file, `species_design.md`, from DEC-900)
 │   └── owner_decisions.md             O1 and up
 ├── rationale/                         one file per area (§3 step 5)
 ├── assets/                            extended with world-game needs
