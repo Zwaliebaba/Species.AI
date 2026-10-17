@@ -49,17 +49,55 @@ def rows(closing_dir):
 
 T1, T2 = 0.55, 0.62
 FORCE = {}
+# manual curation: rows are addressed by (doc, substring of claim)
+MERGE = [
+    [('00', 'Ticks at 25 FPS'), ('20', '"SERVER: Ticks at 25 FPS"'), ('21', 'the server sleeps until'), ('22', 'the server ticks at **25 FPS**'), ('31', 'server ticks at 25 FPS'), ('32', 'Ticks at 25 FPS')],
+    [('20', 'main-thread affinity'), ('20', 'worker affinity'), ('31', 'affinity')],
+    [('09', 'only the Speccy font'), ('25', 'only Speccy has Cyrillic'), ('28', 'only speccy had Cyrillic'), ('31', 'only Speccy has Cyrillic')],
+    [('02', 'RATE = "secs to reload"'), ('29', '`SPED` in m/s')],
+    [('06', 'grammar lists no'), ('29', 'grammar without')],
+    [('07', 'with an AI running locally'), ('22', '`ServerToClient` index')],
+    [('23', 'Landscape has `GenerateLightMap`'), ('24', '`Landscape::GenerateLightMap'), ('25', '`Landscape::ApplyLightmap`')],
+    [('24', 'lists `GL_TEXTURE_MAG_FILTER` twice'), ('25', 'MAG/MIN filters')],
+    [('04', 'events Squad'), ('10', '`CratePowerup` event list')],
+    [('04', 'suggest a bad effect'), ('10', 'new crate event `Expired`')],
+    [('00', 'gradually floats away'), ('02', 'gradually float away'), ('05', 'gradually floats away')],
+    [('02', 'creatures such as Triffids'), ],
+]
+SPLIT = [('01', 'Co-op "(4 players required)', 'coop'), ('08', 'co-op "(4 players required)', 'coop'),
+         ('01', 'CTS: a shattered statue', 'statue'), ('03', 'a shattered statue', 'statue'),
+         ('20', 'CLIENT: Runs heavy weight', 'thread'), ('21', 'runs as a separate thread', 'thread')]
+NOTES = {
+    ('09', 'only the Speccy font'): 'Resolved here: drafts disagreed ("distinct atlases" in 25 vs "byte-identical" in 28); MD5 of `data/textures/unicode/{editor,speccy,square}.0410.042f.bmp` and `.0430.044f.bmp` shows the three Cyrillic pairs are byte-identical copies [C], so the doc\'s "copied to Square and Editor" is accurate; only the packaging differs (`tools/language.list` ships the speccy pair only).',
+}
 
 def key(s):
     return re.sub(r'[^a-z0-9 ]', ' ', s.lower())
 
+def _find(rs, doc, sub):
+    for r in rs:
+        if r['doc'] == doc and sub in r['claim'] or (r['doc'] == doc and sub in r['source_cell']):
+            return r
+    raise SystemExit(f'discrepancy curation: no row {doc} {sub!r}')
+
 def groups(closing_dir):
     rs = rows(closing_dir)
+    split_ids = {id(_find(rs, d, sub)): lab for d, sub, lab in SPLIT}
+    for (d, sub), note in NOTES.items():
+        _find(rs, d, sub)['note'] = note
     gs = []
     for r in rs:
+        if id(r) in split_ids:
+            label = split_ids[id(r)]
+            for g in gs:
+                if g[0].get('split') == label: g.append(r); break
+            else:
+                r['split'] = label; gs.append([r])
+            continue
         best = None
         for g in gs:
             g0 = g[0]
+            if g0.get('split'): continue
             same_src = g0['source'].lower() == r['source'].lower()
             ratio = difflib.SequenceMatcher(None, key(g0['claim'])[:160], key(r['claim'])[:160]).ratio()
             ratio2 = difflib.SequenceMatcher(None, key(g0['code'])[:160], key(r['code'])[:160]).ratio()
@@ -67,6 +105,14 @@ def groups(closing_dir):
                 best = g; break
         if best is None: gs.append([r])
         else: best.append(r)
+    # forced merges
+    for spec in MERGE:
+        members = [_find(rs, d, sub) for d, sub in spec]
+        target = next(g for g in gs if members[0] in g)
+        for m in members[1:]:
+            g = next(g for g in gs if m in g)
+            if g is not target:
+                target.extend(g); gs.remove(g)
     return gs
 
 if __name__ == '__main__':

@@ -95,7 +95,7 @@ KOTH	abbreviation	King of the Hill, game type `GameTypeKingOfTheHill`.	01:4.2	ye
 LAN / WAN	abbreviation	Local-area network (broadcast discovery on UDP 5009) and wide-area network (Internet play through the metaserver).	22:12;09:5.2	no
 LCG	abbreviation	Linear congruential generator; the unsynced `AppRandom` family (`holdrand × 214013 + 2531011`) and the per-tile landscape generator use one.	22:14.2;23:5.1	no
 LMB / RMB	abbreviation	Left and right mouse button.	06:12.2	no
-LOD	abbreviation	Level of detail: distance-based render simplification, used in render code only.	24:5.3	no
+LOD	abbreviation	Level of detail: frustum- and distance-based render simplification in about 73 world-object files; camera state reaches the simulation only through squad direct control and the blocked `ScriptTrigger`.	24:5.3;22:14.11	no
 LRU	abbreviation	Least recently used, the eviction rule of the decoded-sample cache (above 60 MiB).	27:9	no
 LT / RT / LB / RB	abbreviation	Gamepad left and right triggers and shoulder buttons (XInput).	06:12.2	no
 MAG / MIN / LML / L	abbreviation	Texture filter shorthand in asset tables: magnification and minification filters, `LINEAR_MIPMAP_LINEAR` and `LINEAR`.	25:3.0	no
@@ -183,10 +183,10 @@ Late join	player concept	Joining a session already in progress: the client repla
 Desync (out of sync)	player concept	Divergence of a client's simulation from its peers, detected by the per-frame sync byte; the affected client is reported out of sync and the game pauses for it, with no recovery.	22:9	no
 Pause	player concept	Allowed only with no remote human players; ramps game speed to 0 over about 2 s (rate 0.2 per frame) and back.	22:2.6	no
 Game speed	player concept; engine	`GameTimer::m_gameSpeed`, the multiplier on game time per tick (1 = normal); changed deterministically by pause, the Slow Down and Speed Up crates, meteor slow motion and the end of a match.	20:10.7;22:2.6	no
-Map	player concept	A level file `data/levels/mp_<mode>_<n>P_<k>.txt` (57 Multiwinia maps, 49 in retail) defining terrain, buildings, starting units and mode options.	08:3	yes → new maps named `map_<mode>_<players>p_<nn>`
+Map	player concept	A level file `data/levels/mp_*.txt` named `mp_<mode>_<n>P_<k>` (57 Multiwinia maps, 49 in retail) defining terrain, buildings, starting units and mode options.	08:3	yes → new maps named `map_<mode>_<players>p_<nn>`
 Map options	player concept	Per-level `MultiwiniaOptions` block: supported game types, player count, population cap, co-op flag, invalid crates, trunk-port settings and level options such as `instantspawnpointcapture`.	08:5	no
 Game options	player concept	The lobby parameters of a mode defined in `data/multiwinia.txt` (39 definitions: time limit, handicap, crates, retribution, score mode and others), replicated to all peers.	01:3;09:4	no
-AI type (difficulty)	player concept	Lobby option for CPU players: Easy, Normal or Hard (`Multiwinia::m_aiType`); one setting for every CPU team.	07:13	no
+AI type (difficulty)	player concept	Lobby option for CPU players (`Multiwinia::m_aiType` ∈ `AITypeEasy`, `AITypeStandard`, `AITypeHard`; shown as Easy, Normal, Hard); one setting for every CPU team.	07:13	no
 Tutorial	player concept	The two live Multiwinia tutorials ("The Basics" on `mp_koth_2P_1`, "Advanced Concepts" on `mp_koth_3P_1`), driven by `MultiwiniaTutorial` with scripted CPU behaviour.	30:3	yes → new tutorial maps and copy
 Help overlays	player concept	Contextual in-match hints (`MultiwiniaHelp`) that replace Darwinia's control-help system: short prompts about selection, promotion, crates and modes.	09:8.2;06:10.4	no
 Animated panel	player concept	Front-end mode explainer animation played from a `.anim` script (`AnimatedPanel`), one per shipped mode.	09:9.3;26:3	yes → new explainer animations
@@ -213,7 +213,7 @@ Formation	player concept	A block of up to 90 Darwinians marching in rows of 6 to
 Direct control	player concept	Steering a single unit or building yourself (squad, armour, harvester, engineer, gun turret aim, radar dish aim) through the continuous `TeamControls` packet.	06:6	no
 Task (power, power-up)	player concept; engine	A granted ability (unit, strike, turret, buff) held by the `TaskManager` until the player places it on the map; called "program" in the Darwinia fiction.	06:3	yes → Power
 Power-up slot (task slot)	player concept	One of the 6 task-manager slots (2 while eliminated); a full manager rejects new grants with "Powerup Limit Reached!".	06:3.5	yes → Power slot
-Good / bad outcome	player concept	A captured crate draws from the good pool (90 %, rewards the capturing team); an uncaptured crate that expires, or the 10 % branch, draws from the bad pool and spawns hostile events on the monster team.	04:3	no
+Good / bad outcome	player concept	Every opened crate resolves once: with probability 0.9 a good outcome for the opening team (`Crate::CaptureCrate`, uniform over the valid good types), otherwise a bad outcome (`Crate::RunUncapturedCrate`) created for the monster team (Space Ship: the Futurewinian team). Basic-crates-only games always take the good branch.	04:3	no
 Reinforcements	player concept	Timed waves from owned trunk ports: every 60 mode seconds each owned port emits Darwinians and, per mode, armour, turret or air-strike tasks ("Reinforcements in *S").	05:6.1	no
 Starting units	player concept	Forces present at match start: the level's `InstantUnits` plus 5 Darwinians seeded on every port of every team-owned spawn point and solar panel.	05:6.7	no
 Harvesting	player concept	Collection of floating spirits of any team by a Harvester, which turns each into a Darwinian of its own team at a friendly spawn point, bypassing the population cap.	05:5.3;02:9	no
@@ -228,11 +228,11 @@ Futurewinian team	player concept	Team slot 5, the faction dropped by the Space S
 Trees (magic and evil)	player concept	Scenery `Tree` buildings: flammable, regrowing, blocking; Magical Forest trees drop spirits, Dark Forest ("evil") trees kill Darwinians and corrupt neighbours.	03:7.3	no
 Camera	player concept; engine (class)	`g_app->m_camera` (`code/camera.cpp`): 15 camera modes, of which free movement (the match camera), entity tracking and building aim are live in Multiwinia.	06:9;24:5.1	no
 # ---- Crates and every outcome ----
-Crate	player concept; engine (class)	`Crate` (Building): a falling bubble-wrapped box dropped every `CrateDropRate` seconds; the team with the strict Darwinian majority within 35 wu opens it; unopened crates expire after 60 s neutral and may trigger a bad outcome.	04:1	yes → Supply crate
+Crate	player concept; engine (class)	`Crate` (Building): a falling bubble-wrapped box dropped every `CrateDropRate` seconds; the team holding the strict Darwinian majority within 35 wu (`CRATE_SCAN_RANGE`) opens it; a crate left neutral on the ground for 60 s expires with no effect.	04:1	yes → Supply crate
 Crate reward enum	engine	`Crate::CrateReward*`, 31 outcomes in FULL (indices 0–30) plus The Beast (31) in DEBUG; `NumCrateRewards` sizes the per-level invalid-crate table.	04:2.1	no
 Crate drop rate / drop mode	player concept	Lobby options `CrateDropRate` (seconds between drops, 0 = none, default 40) and `CrateDropMode` (Random or Weighted placement).	04:1.2;01:3.2	no
 Invalid crates	data format	Level-file `InvalidCrates` list of outcome names excluded from the draws on that map.	04:4.1;08:5.1	no
-Squad (crate outcome)	player concept	Outcome 0 `CrateRewardSquad` (basic): a placed task spawning a 3-man insertion squad that lives 60 s.	04:5.1	yes → Strike team
+Squad (crate outcome)	player concept	Outcome 0 `CrateRewardSquad` (basic): a placed task spawning a 3-man insertion squad that lives 60 s.	04:5.1	no (generic; placeholder Strike team)
 Harvester (crate outcome)	player concept	Outcome 1 `CrateRewardHarvester` (advanced, needs spawn points): a placed flying spirit collector.	04:5.2	yes → Collector
 Engineer (crate outcome)	player concept	Outcome 2 `CrateRewardEngineer` (basic, needs spawn points): a placed hovering spirit collector.	04:5.3	yes → Builder
 Armour (crate outcome)	player concept	Outcome 3 `CrateRewardArmour` (basic; invalid in Rocket Riot and where `trunkportarmour` is set): a placed troop transport.	04:5.4	yes → Transport
@@ -314,7 +314,7 @@ BoxKite	engine (class)	[B:LEGACY] spirit-worship lantern released by worshipping
 Building	engine (class)	Abstract base of all static world objects: `Building::Type` (75 values, `TypeInvalid` 0 to `TypeSmokeMarker` 74), ports, team, shape, damage, level-file line format and factory.	03:3.1;03:2.1	no
 BuildingPort	engine (class)	Struct for one port: shape marker, current occupant, world transform and per-team reservation counters (0–50).	03:3.3	no
 Factory (building factory)	engine	`Building::CreateBuilding(type or name)`: the switch that instantiates the concrete class, forces `m_isGlobal` for six types and skips blocked types when creating by name.	03:3.11	no
-Global building	engine	A building with `m_isGlobal` set (forced for RadarDish, ControlTower, TrunkPort, Incubator, DynamicHub, FenceSwitch); in Darwinia it was registered in the global world.	03:3.13	no
+Global building	engine	A building with `m_isGlobal` set (forced for RadarDish, ControlTower, TrunkPort, Incubator, DynamicHub, FenceSwitch), mirrored as a `GlobalBuilding` record (team, online flag, link) in `g_app->m_globalWorld`: the Darwinia campaign's cross-level persistence, mostly inert in Multiwinia.	03:3.13	no
 SpawnBuilding	engine (class)	Abstract base of the spawn network (SpawnLink, MasterSpawnPoint, SpawnPoint): outgoing links and the virtual spirits travelling on them.	03:4.2	no
 SpawnBuildingLink	engine (class)	One outgoing spawn-network link: neighbour id, the spawn points reachable through it, and the spirits in transit.	03:4.2	no
 SpawnBuildingSpirit	engine (class)	A virtual spirit in transit on a spawn link (target spawn point and progress 0–1); drawn only, never interceptable.	03:4.2	no
@@ -351,7 +351,7 @@ PulseBomb (pulse bomb)	player concept; engine (class)	The Assault "WMD": a count
 FuelBuilding	engine (class)	Base of the Rocket Riot fuel chain (`m_fuelLink`, current fuel level).	03:8.8	no
 FuelGenerator (fuel generator)	engine (class)	Converts power surges into fuel pressure (surges / 20).	03:8.9	no
 FuelPipe	engine (class)	Relay segment of the fuel chain.	03:8.10	no
-FuelStation (fuel station)	engine (class)	Boarding gate of a rocket and the last fuel hop; sends idle own Darwinians aboard while the rocket loads.	03:8.11	no
+FuelStation (fuel station)	engine (class)	Boarding gate of a rocket and the last fuel hop; sends idle own Darwinians aboard while the rocket loads.	03:8.11	no (generic; "fuel depot")
 EscapeRocket (escape rocket)	player concept; engine (class)	Each team's Rocket Riot rocket: refuels, loads 100 passengers, counts down and launches; the first above y = 600 wins.	03:8.12	yes → Launch Vessel
 AntHill (ant hill)	engine (class)	Monster nest created by the Ants Nest outcome that sends army ants out and converts collected spirits into ants.	03:9.1	yes → Hive
 Triffid	engine (class)	Monster plant that launches triffid eggs (Triffids outcome).	03:9.2	yes → Spitter Plant
@@ -488,7 +488,7 @@ Outside height	player concept; engine	The negative sea-floor height of everythin
 Colour ramp	data format	A `data/terrain/landscape_*.bmp` image mapping terrain slope and height to a vertex colour (flat-shaded look); wave and water tables are similar ramps.	23:11;29:8.5	yes → `ramp_<theme>`
 LandscapeRenderer	engine (class)	Builds and draws the terrain mesh with per-vertex ramp colours and the wireframe overlay (VBO for the landscape).	24:4.1	no
 Water	engine (class)	Sea renderer: flat water tiles, shore mask, depth map and dynamic coastline waves.	24:4.2;23:13	no
-Clouds	engine (class)	Sky and cloud-layer renderer; in Darwinia also drew Dr Sepulveda's face ([B:DEAD]).	24:4.4	no
+Clouds	engine (class)	Sky and cloud-layer renderer (sky, blobby and flat layers); it can also cross-fade Dr Sepulveda's face into the sky, reachable only through a [B:DEBUG] cheat.	24:4.4	no
 Renderer	engine (class)	`g_app->m_renderer` (`code/renderer.cpp`): window and context creation, baseline GL state, frame composition, fades, pause banner, screenshots.	24:2.1;24:3	no
 Render pass table	engine	The ordered list of passes in one match frame (sky, landscape, water, buildings, entities, lasers, particles, explosions, markers, UI) with full state; maps to a PSO catalogue.	24:3.2	no
 Shape (.shp mesh)	engine (class)	A hierarchical flat-shaded mesh (`code/lib/shape.cpp`): tree of `ShapeFragment`s with transforms, triangles, colours and named `ShapeMarker`s.	24:4.5;29:8.1	no
@@ -509,7 +509,7 @@ GameCursor	engine (class)	The in-world cursor: highlights, selection circle, pla
 Christmas mod	engine	`Location::ChristmasModEnabled`: server-switched seasonal mode (snow, Santa hats, light colours).	26:4.3;09:5.16	no
 Level effects	data format	Map flags in `MultiwiniaOptions` `Effects`: `snow`, `dustwind`, `soulrain`, `lightning`, `SpecialLighting`.	08:5.3	no
 # ---- Engine: audio ----
-SoundSystem	engine (class)	`g_app->m_soundSystem` (`code/sound/sound_system.cpp`): loads sound blueprints, triggers events into sound instances and updates voices at 20 Hz.	27:1;27:3	no
+SoundSystem	engine (class)	`g_app->m_soundSystem` (`code/sound/soundsystem.cpp`): loads sound blueprints, triggers events into sound instances and updates voices at 20 Hz.	27:1;27:3	no
 SoundLibrary3d / SoundLibrary2d	engine (class)	Device back-end interfaces: DirectSound 3-D (live), a software mixer over waveOut, and null devices.	27:11	no
 SoundInstance	engine (class)	One playing or queued sound: blueprint parameters, position type, envelope, loop and priority.	27:6	no
 SoundSourceBlueprint / SoundEventBlueprint	engine (class)	The `data/sounds.txt` model: per object type, a list of named events, each with sound-instance parameter blocks.	27:1.4;10:2	no
@@ -582,8 +582,8 @@ stats.txt	data format	`data/stats.txt`: one row per entity type (name, health, s
 sounds.txt	data format	`data/sounds.txt`: sound-source blueprints (object type → events → instance parameter blocks and sample groups).	29:7.4;10:3	yes → new event set
 effects.txt	data format	`data/effects.txt`: the 14 DSP filter blueprints (audio, not visuals); bound by row position.	29:7.5;26:9	no
 gestures.txt / gesture demos	data format	Gesture-classifier training samples, parsed at start-up but unused in play; recorded demo strokes are [B:DEAD].	29:7.2;29:7.3	yes → drop
-Preferences file	data format	`<P>preferences.txt` (UTF-16LE, `key = value`) and `data/default_preferences.txt`, read by `PrefsManager`.	29:5.1;09:11	no
-Input binding file	data format	`data/input/input_preferences*.txt` and `<P>user_input_preferences.txt`: `ControlName = driver expression` lines plus icon lines.	29:5.2;06:11.11	no
+Preferences file	data format	`<P>preferences.txt` (saved as UTF-16LE) and `data/default_preferences.txt`: one `KEY = VALUE` item per line (alphanumeric, case-sensitive keys), read by `PrefsManager`.	29:5.1;09:11	no
+Input binding file	data format	`data/input/input_preferences*.txt` and `<P>user_input_preferences.txt`: `CONTROL = SPEC` binding lines (driver expressions) and `CONTROL ~ ICONPATH` icon lines over the 164 control names.	29:5.2;06:11.11	no
 Keyboard layout / locales.txt	data format	`data/input/keyboards/*.txt` key-name overrides per layout, and `locales.txt` mapping a Windows LANGID to a layout.	29:5.3;29:5.4	no
 Language file	data format	`data/language/<language>.txt`: `phrase_id text` lines (UTF-16 or 8-bit) with caption markup for input-mode variants; nine languages.	29:6.1;09:10	yes → own string table
 Cut-scene script	data format	`data/scripts/*.txt` (42 files) of script commands ([B:LEGACY] or [B:DEAD]).	29:6.2;30:2.6	yes → new scripts

@@ -11,11 +11,16 @@ Usage (always run with python3 -I):
         abbrev.tsv        upper-case abbreviations (2-7 chars) with counts
         backticks.tsv     most frequent backticked identifiers
         ipitems.tsv       every row of every document's "IP items" table
-  python3 -I S_90_terms.py render <design_dir> <terms_tsv> <out_md_fragment>
+  python3 -I S_90_terms.py render <design_dir> <terms_tsv> <out_md_fragment> [class_csv]
       Renders the curated glossary table (alphabetical, letter headings) from
       a TSV with columns Term, Kind, Definition, Link, IP. Link entries are
       "NN:<section-number>" or "NN:<heading text>" (several separated by ';').
       Every link is resolved against the real headings; unresolved links abort.
+      With class_csv, every class of the class list must appear in a term.
+  python3 -I S_90_terms.py insert <doc.md> <fragment.md>
+      Replaces the text between <!-- GLOSSARY:BEGIN --> and <!-- GLOSSARY:END -->.
+  python3 -I S_90_terms.py checklinks <design_dir> <doc.md>
+      Verifies every relative link (file and #anchor) of doc.md against real headings.
 """
 import csv
 import os
@@ -236,7 +241,7 @@ def sort_key(term):
     return t
 
 
-def render(design_dir, terms_tsv, out_md):
+def render(design_dir, terms_tsv, out_md, class_csv=None):
     docs = list_docs(design_dir)
     heads_cache = {}
     rows = []
@@ -285,13 +290,67 @@ def render(design_dir, terms_tsv, out_md):
             out.write("\n")
     kinds = Counter(r[2] for r in rows)
     print(f"rendered {len(rows)} terms; " + ", ".join(f"{k}={v}" for k, v in sorted(kinds.items())))
+    if class_csv:
+        words = set()
+        for r in rows:
+            words.update(re.findall(r"[A-Za-z_][A-Za-z0-9_]*", r[1]))
+        with open(class_csv, encoding="utf-8") as fh:
+            missing = [c["class"] for c in csv.DictReader(fh) if c["class"] not in words]
+        print(f"class coverage: {len(missing)} of the class list missing {missing}")
+        if missing:
+            sys.exit(1)
+
+
+def insert(doc_path, fragment_path):
+    """Replace the text between the GLOSSARY markers of doc_path with the fragment."""
+    with open(doc_path, encoding="utf-8") as fh:
+        doc = fh.read()
+    with open(fragment_path, encoding="utf-8") as fh:
+        frag = fh.read()
+    begin, end = "<!-- GLOSSARY:BEGIN -->", "<!-- GLOSSARY:END -->"
+    i, j = doc.index(begin), doc.index(end)
+    doc = doc[: i + len(begin)] + "\n" + frag.rstrip("\n") + "\n" + doc[j:]
+    with open(doc_path, "w", encoding="utf-8") as fh:
+        fh.write(doc)
+    print(f"inserted {len(frag)} characters into {doc_path}")
+
+
+def checklinks(design_dir, doc_path):
+    """Verify every relative markdown link of doc_path against real headings."""
+    with open(doc_path, encoding="utf-8") as fh:
+        text = fh.read()
+    cache = {}
+    bad = []
+    me = os.path.basename(doc_path)
+    for target, anchor in re.findall(r"\]\(([0-9A-Za-z_]*\.md)?#([^)\s]+)\)", text):
+        fname = target or me
+        path = os.path.join(design_dir, fname)
+        if not os.path.exists(path):
+            bad.append(f"missing file {fname}")
+            continue
+        if fname not in cache:
+            cache[fname] = {h[3] for h in doc_headings(path)}
+        if anchor not in cache[fname]:
+            bad.append(f"{fname}#{anchor}")
+    for target in re.findall(r"\]\(([0-9A-Za-z_]+\.md)\)", text):
+        if not os.path.exists(os.path.join(design_dir, target)):
+            bad.append(f"missing file {target}")
+    for b in bad:
+        print("BROKEN", b)
+    print(f"links checked; {len(bad)} broken")
+    if bad:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
     if len(sys.argv) >= 2 and sys.argv[1] == "harvest" and len(sys.argv) == 5:
         harvest(sys.argv[2], sys.argv[3], sys.argv[4])
-    elif len(sys.argv) >= 2 and sys.argv[1] == "render" and len(sys.argv) == 5:
-        render(sys.argv[2], sys.argv[3], sys.argv[4])
+    elif len(sys.argv) >= 2 and sys.argv[1] == "render" and len(sys.argv) in (5, 6):
+        render(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5] if len(sys.argv) == 6 else None)
+    elif len(sys.argv) == 4 and sys.argv[1] == "insert":
+        insert(sys.argv[2], sys.argv[3])
+    elif len(sys.argv) == 4 and sys.argv[1] == "checklinks":
+        checklinks(sys.argv[2], sys.argv[3])
     else:
         print(__doc__)
         sys.exit(2)
