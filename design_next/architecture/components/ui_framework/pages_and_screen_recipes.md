@@ -48,85 +48,140 @@ The pointer capture, the repeat timers, the batched draw, the text service, the 
 C++23 interface sketch (declarations only). Every type is in namespace `Engine`; `UiCore`, `UiWindow`, `UiWidget`, `PanelId`, `WidgetId`, `PointF`, `RectF`, `StringId` and `DrawContext` are those of [core_and_widgets.md](core_and_widgets.md) §2.
 
 ```cpp
-namespace species::ui {
+namespace Engine
+{
 
 // Page ids of the front-end screen (UI-320). The order of the enumerators carries no meaning.
-enum class PageId : std::uint8_t {
-    Title, Tutorials, HostOrJoin, ModeSelect, MapSelect, MatchSetup,
-    AdvancedOptions, PlayerOptions, SessionBrowser, BrowserFilters,
-    Password, Connecting, WaitForStart, Error, Credits,
-    QuickMatch, Achievements, LeaderboardSelect, Leaderboard,      // hook pages, never reachable (UI-321)
+enum class PageId : std::uint8_t
+{
+  Title,
+  Tutorials,
+  HostOrJoin,
+  ModeSelect,
+  MapSelect,
+  MatchSetup,
+  AdvancedOptions,
+  PlayerOptions,
+  SessionBrowser,
+  BrowserFilters,
+  Password,
+  Connecting,
+  WaitForStart,
+  Error,
+  Credits,
+  QuickMatch, // hook pages, never reachable (UI-321)
+  Achievements,
+  LeaderboardSelect,
+  Leaderboard
 };
 
-enum class NavOp : std::uint8_t { Push, Pop, Replace, UnwindTo, Rebuild };           // UI-331
-enum class TransitionDirection : std::int8_t { Backward = -1, None = 0, Forward = 1 };
-
-struct NavRequest {                       // UI-350
-    NavOp op = NavOp::Push;
-    PageId target = PageId::Title;        // ignored by Pop and Rebuild
+enum class NavOp : std::uint8_t // UI-331
+{
+  Push,
+  Pop,
+  Replace,
+  UnwindTo,
+  Rebuild
+};
+enum class TransitionDirection : std::int8_t
+{
+  Backward = -1,
+  None = 0,
+  Forward = 1
 };
 
-enum class EnterOutcome : std::uint8_t { Built, Waiting, Redirect };                 // UI-362
-struct EnterResult { EnterOutcome outcome = EnterOutcome::Built; PageId redirectTo = PageId::Title; };
+struct NavRequest // UI-350
+{
+  NavOp op = NavOp::Push;
+  PageId target = PageId::Title; // ignored by Pop and Rebuild
+};
 
-enum class FillBoxes : std::uint8_t { LeftOnly, LeftAndRight, TitleWidth };          // UI-323
+enum class EnterOutcome : std::uint8_t // UI-362
+{
+  Built,
+  Waiting,
+  Redirect
+};
+struct EnterResult
+{
+  EnterOutcome outcome = EnterOutcome::Built;
+  PageId redirectTo = PageId::Title;
+};
 
-class PageContext;                        // UI-311
-class FrontEndViewModel;                  // UI-334
-class WidgetBuilder;                      // builds widgets from a layout record (UI-370)
-class HudContext;                         // a HUD panel's view of the presentation state (UI-460)
+enum class FillBoxes : std::uint8_t // UI-323
+{
+  LeftOnly,
+  LeftAndRight,
+  TitleWidth
+};
 
-class FrontEndPage {                      // one per page id; built from its layout record (UI-323)
+class PageContext;       // UI-311
+class FrontEndViewModel; // UI-334
+class WidgetBuilder;     // builds widgets from a layout record (UI-370)
+class HudContext;        // a HUD panel's view of the presentation state (UI-460)
+
+class FrontEndPage // one per page id; built from its layout record (UI-323)
+{
 public:
-    virtual ~FrontEndPage() = default;
-    [[nodiscard]] virtual PageId Id() const noexcept = 0;
-    [[nodiscard]] virtual EnterResult OnEnter(PageContext& ctx, PageId from) = 0;     // UI-361
-    virtual void OnUpdate(PageContext& ctx) {}                                       // UI-352
-    virtual void OnLeave(PageContext& ctx, PageId to) {}                             // UI-361
-    [[nodiscard]] virtual std::optional<NavRequest> OnBack(PageContext& ctx);        // default: Pop (UI-383)
-    virtual void DrawOverlay(const PageContext& ctx, DrawContext& out) const {}      // UI-392
+  virtual ~FrontEndPage() = default;
+  [[nodiscard]] virtual PageId Id() const noexcept = 0;
+  [[nodiscard]] virtual EnterResult OnEnter(PageContext& _context, PageId _from) = 0; // UI-361
+  virtual void OnUpdate(PageContext& _context) {}                                     // UI-352
+  virtual void OnLeave(PageContext& _context, PageId _to) {}                          // UI-361
+  [[nodiscard]] virtual std::optional<NavRequest> OnBack(PageContext& _context);      // default: Pop (UI-383)
+  virtual void DrawOverlay(const PageContext& _context, DrawContext& _out) const {}   // UI-392
 };
 
-class PageHost {                          // owned by the front-end screen (UI-330)
+class PageHost // owned by the front-end screen (UI-330)
+{
 public:
-    void Request(NavRequest request);                     // the last request of a frame wins (UI-351)
-    void ApplyPending(PageContext& ctx);                  // step 1 of the per-frame order (UI-352)
-    [[nodiscard]] PageId Current() const noexcept;
-    [[nodiscard]] std::span<const PageId> Stack() const noexcept;   // bottom first
-    [[nodiscard]] bool CurrentIsWaiting() const noexcept;
-    void LockNavigation() noexcept;                        // UI-388
-    [[nodiscard]] bool NavigationLocked() const noexcept;
+  void Request(NavRequest _request);        // the last request of a frame wins (UI-351)
+  void ApplyPending(PageContext& _context); // step 1 of the per-frame order (UI-352)
+  [[nodiscard]] PageId Current() const noexcept;
+  [[nodiscard]] std::span<const PageId> Stack() const noexcept; // bottom first
+  [[nodiscard]] bool CurrentIsWaiting() const noexcept;
+  void LockNavigation() noexcept; // UI-388
+  [[nodiscard]] bool NavigationLocked() const noexcept;
 };
 
-class FrontEndScreen final : public UiWindow {            // the one full-screen window of the front end
+class FrontEndScreen final : public UiWindow // the one full-screen window of the front end
+{
 public:
-    [[nodiscard]] PageHost& Pages() noexcept;
-    [[nodiscard]] FrontEndViewModel& Model() noexcept;    // UI-334
-    void Update() override;                               // the per-frame order of UI-352
-    void Draw(DrawContext&, bool hasFocus) const override;   // UI-337
+  [[nodiscard]] PageHost& Pages() noexcept;
+  [[nodiscard]] FrontEndViewModel& Model() noexcept;           // UI-334
+  void Update() override;                                      // the per-frame order of UI-352
+  void Draw(DrawContext& _out, bool _hasFocus) const override; // UI-337
 };
 
 // Recipe A (UI-430).
-class ToolWindow : public UiWindow {
+class ToolWindow : public UiWindow
+{
 public:
-    virtual void Build(WidgetBuilder& builder) = 0;       // runs when opened and when the widget set changes
-    virtual void OnClose() {}                             // teardown side effects
+  virtual void Build(WidgetBuilder& _builder) = 0; // runs when opened and when the widget set changes
+  virtual void OnClose() {}                        // teardown side effects
 };
-struct ToolPlacement { float width = 0; float height = 0; PointF position{}; PanelId parent{}; };
+struct ToolPlacement
+{
+  float width = 0;
+  float height = 0;
+  PointF position{};
+  PanelId parent{};
+};
 template <class Tool, class... Args>
-PanelId OpenToolOnce(UiCore& ui, const ToolPlacement& placement, Args&&... args);   // no second instance
-template <class Tool> bool CloseTool(UiCore& ui);
-[[nodiscard]] StringId ToolString(std::string_view item);  // the tool's string id ui.debug.<tool>.<item>
+PanelId OpenToolOnce(UiCore& _ui, const ToolPlacement& _placement, Args&&... _args); // no second instance
+template <class Tool> bool CloseTool(UiCore& _ui);
+[[nodiscard]] StringId ToolString(std::string_view _item); // the tool's string id ui.debug.<tool>.<item>
 
 // Recipe D (UI-460).
-class HudPanel {
+class HudPanel
+{
 public:
-    virtual ~HudPanel() = default;
-    virtual void Advance(HudContext& ctx) = 0;            // update phase: view-model and screen zones (UI-461)
-    virtual void Draw(DrawContext& out) const = 0;        // reads only what Advance left
+  virtual ~HudPanel() = default;
+  virtual void Advance(HudContext& _context) = 0; // update phase: view-model and screen zones (UI-461)
+  virtual void Draw(DrawContext& _out) const = 0; // reads only what Advance left
 };
 
-}  // namespace species::ui
+} // namespace Engine
 ```
 
 **UI-310** (MUST) The page host is the only way to change the page of the front-end screen. Widgets, page hooks, the front-end controller and session events all call `PageHost::Request`; nothing writes the current page directly.
@@ -551,29 +606,34 @@ A tool window is the pattern of the development windows ([diagnostics, test and 
 
 ```cpp
 // Recipe A sketch: a development tool window. The names are examples.
-struct ExampleToolModel {                         // the window's state; widgets only bind to it
-    float strength = 1.0f;
-    bool  preview  = true;
+struct ExampleToolModel // the window's state; widgets only bind to it
+{
+  float strength = 1.0f;
+  bool preview = true;
 };
 
-class ExampleToolWindow final : public ToolWindow {
+class ExampleToolWindow final : public ToolWindow
+{
 public:
-    explicit ExampleToolWindow(ExampleToolModel& model);
-    void Build(WidgetBuilder& b) override {       // runs when opened and when the widget set changes
-        b.Title(ToolString("title"));             // the tool's string ids: ui.debug.<tool>.<item>
-        b.Button(ToolString("apply")).OnClick([this] { Apply(); });
-        b.FloatControl(ToolString("strength"), model_.strength, {.step = 0.1, .low = 0.0, .high = 10.0})
-         .OnChange([this] { RefreshPreview(); });  // the callback reacts to an edit
-        b.CheckBox(ToolString("preview"), model_.preview);
-    }
-    void OnClose() override;                      // teardown side effects
+  explicit ExampleToolWindow(ExampleToolModel& _model);
+  void Build(WidgetBuilder& _builder) override // runs when opened and when the widget set changes
+  {
+    _builder.Title(ToolString("title")); // the tool's string ids: ui.debug.<tool>.<item>
+    _builder.Button(ToolString("apply")).OnClick([this] { Apply(); });
+    _builder.FloatControl(ToolString("strength"), m_model.strength, {.step = 0.1, .low = 0.0, .high = 10.0})
+      .OnChange([this] { RefreshPreview(); }); // the callback reacts to an edit
+    _builder.CheckBox(ToolString("preview"), m_model.preview);
+  }
+  void OnClose() override; // teardown side effects
+
 private:
-    ExampleToolModel& model_;
+  ExampleToolModel& m_model;
 };
 
 // The opener: opens the window only when it is not open yet, so it can be called any number of times.
-void OpenExampleTool(UiCore& ui, ExampleToolModel& model, PanelId parent) {
-    OpenToolOnce<ExampleToolWindow>(ui, ToolPlacement{.width = kExampleWidth, .parent = parent}, model);
+void OpenExampleTool(UiCore& _ui, ExampleToolModel& _model, PanelId _parent)
+{
+  OpenToolOnce<ExampleToolWindow>(_ui, ToolPlacement{.width = EXAMPLE_WIDTH_PIXELS, .parent = _parent}, _model);
 }
 ```
 

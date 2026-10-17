@@ -1,0 +1,106 @@
+pattern	flags	gate	class	note
+(?<![\w/.:-])(code|data|contrib|targets|docs)/[\w./-]+		hard	provenance	source path; the look-behind skips URLs and longer paths
+(?<![\w/.:-])tools/(?!design-check|design-models)[\w./-]+		hard	provenance	source path outside the retained design tooling
+:L\d+\b		hard	provenance	line reference
+\[(C|I|U)\]		hard	provenance	evidence tag
+\[B:[A-Z]+\]		hard	provenance	build tag
+\bB:(?:FULL|LEG(?:ACY)|DEAD|D3D|DEM(?:O)|DEBUG|EDITOR)\b		hard	provenance	build tag without brackets
+Verbatim(?: )excerpt		hard	provenance	closing-section and excerpt names
+Source(?: )map		hard	provenance	closing-section name
+Docs(?:-)vs-code		hard	provenance	closing-section name
+(?<!\w)_work(?:/)		hard	provenance	work folder of the source corpus; not inside longer folder names
+[Cc]overage(?: )matrix		hard	provenance	coverage index of the source corpus
+(?:\.)(bmp|shp|mwm|dat|vcproj)\b	i	hard	provenance	file extension of the source corpus used as a file reference
+\bf9096(?:30)\b		hard	provenance	revision id of the source corpus
+\b\d\d-U\d+\b		hard	provenance	unknown-item ids of the source corpus (NN-U<n>)
+\b[PSX]\d+[ab]?_\w+\.(?:csv|md|tsv|py|json)\b		hard	provenance	draft and script files of the source corpus
+\bINTERNAL(?:_)STUDY\b		hard	provenance	licence marker of the source corpus
+\b(?:00_overview|01_game_modes|02_units_and_entities|03_buildings_and_world_objects|04_crates_powerups_and_weapons|05_economy_and_population|06_player_control_and_input|07_ai|08_levels_and_level_design|09_meta_systems|20_architecture|21_simulation_and_entity_model|22_determinism_and_networking|23_terrain_and_landscape|24_rendering|25_textures_and_assets|26_animation_and_vfx|27_audio_engine|28_ui_framework|29_data_formats_reference|30_scripting_tutorial_and_cutscenes|31_platform_build_and_tools|32_debug_test_and_performance|40_carry_forward_assessment|41_risks_and_open_questions|90_glossary|91_cross_reference_index|99_coverage_matrix)\.md\b		hard	provenance	link to a document of the source corpus
+Open(?:GL)		hard	superseded-tech	superseded graphics API
+\bopengl\w*	i	hard	superseded-tech	superseded graphics API identifiers
+\bGL_\w+		hard	superseded-tech	superseded graphics API constants
+\bgl(?!TF)[A-Z]\w+		hard	superseded-tech	superseded graphics API calls; glTF is allowed
+\bglu[A-Z]\w*		hard	superseded-tech	superseded graphics utility calls
+\bwgl[A-Z]\w+		hard	superseded-tech	superseded window-system calls
+\bWGL\b		hard	superseded-tech	superseded window-system binding
+\bARB_\w+		hard	superseded-tech	superseded graphics extensions
+Direct3D(?: ?)9		hard	superseded-tech	superseded graphics API version
+\bD3D9\b		hard	superseded-tech	superseded graphics API version
+\bD3DX(?!12)		hard	superseded-tech	superseded helper library; d3dx12.h is allowed
+DirectX(?: ?)9		hard	superseded-tech	superseded runtime version
+DirectX(?: )SDK		hard	superseded-tech	superseded SDK
+Direct(?:Sound)		hard	superseded-tech	superseded audio API
+\bDSound\w*		hard	superseded-tech	superseded audio API effect names
+wave(?:Out)		hard	superseded-tech	superseded audio API
+XInput(?: ?)1\.3		hard	superseded-tech	superseded input runtime
+xinput1(?:_)3	i	hard	superseded-tech	superseded input runtime
+\bx87\b		hard	superseded-tech	superseded floating-point unit
+_control(?:87)		hard	superseded-tech	superseded floating-point control
+Visual Studio(?: )200[58]		hard	superseded-tech	superseded toolchain
+\bVS ?200[58]\b	i	hard	superseded-tech	superseded toolchain
+MSVC(?: ?)200[58]		hard	superseded-tech	superseded toolchain
+\bvsprops\b	i	hard	superseded-tech	superseded toolchain property sheets
+\bMBCS\b		hard	superseded-tech	superseded character set
+\bRAR\b		hard	superseded-tech	superseded archive format
+un(?:rar)	i	hard	superseded-tech	superseded archive library
+Inno(?: )Setup		hard	superseded-tech	superseded installer
+\bNSIS\b		hard	superseded-tech	superseded installer
+Gnu(?:Win32)		hard	superseded-tech	superseded tool set
+Open(?:MP)		hard	superseded-tech	superseded threading
+display(?: )lists?	i	hard	superseded-tech	superseded graphics API feature
+lost(?: )device	i	hard	superseded-tech	superseded graphics API failure mode
+meta(?:server)	i	hard	superseded-tech	superseded online service
+auth(?:key)	i	hard	superseded-tech	superseded licence keys
+\bSDL\b		hard	superseded-tech	superseded platform library
+\bFixedFunc\d\w*|\bFixedPipeline\b|fixed(?:pipeline)		hard	superseded-tech	superseded emulation shaders of the fixed pipeline
+\boriginal(ly)?\b	i	soft	history	history narrative
+\bshipped\b	i	soft	history	history narrative
+\brecover(ed|y)\b	i	soft	history	history narrative
+\blegacy\b	i	soft	history	history narrative
+\bcarry[- ]forward\b	i	soft	history	history narrative
+\bport(ed|ing)\b	i	soft	history	history narrative
+\bport of\b	i	soft	history	the gameplay word port (a manning slot) is not matched
+\bused to\b	i	soft	history	history narrative
+\bretail\b	i	soft	history	history narrative
+\bsource (tree|code)\b	i	soft	history	history narrative
+\bcommit\b	i	soft	history	history narrative
+\bdemo\b	i	soft	history	history narrative
+\blockstep\b	i	soft	scoped	allowed only in reference/12 and design-phase DEC entries
+immediate[- ]mode	i	soft	scoped	allowed for developer tooling UI only
+fixed[- ]function	i	soft	scoped	allowed for the output-merger and rasteriser stages only
+\bLinux\b		soft	scoped	allowed only for server or CI hosting
+\bmacOS\b		soft	scoped	allowed only for server or CI hosting
+\bMac OS\b		soft	scoped	allowed only for server or CI hosting
+\bTODO\b		soft	unfinished	unfinished text
+\bTBD\b		soft	unfinished	unfinished text
+\?\?\?		soft	unfinished	unfinished text
+\bDomination\b		soft	renamed-term	mode name; use Spawn Control
+\bAssault\b		soft	renamed-term	mode name; use Siege
+\bDOM\b|\bRR\b|\bTANK\b		soft	renamed-term	mode abbreviations; write the Species mode name
+\bRetribution\b		soft	renamed-term	use Comeback Bonus
+\bHandicap\b		soft	renamed-term	use Catch-up bonus
+\bOfficers?\b		soft	renamed-term	use Leader
+\bEngineers?\b		soft	renamed-term	use Builder
+\bHarvesters?\b		soft	renamed-term	use Collector
+\bArmour\b		soft	renamed-term	use Transport
+\bSquads?\b		soft	renamed-term	use Strike team
+\bStatues?\b		soft	renamed-term	use Relic
+\bSpirits?\b|\bSouls?\b		soft	renamed-term	use Essence orb
+\bMonster team\b		soft	renamed-term	use Rogue faction
+\bPlague\b		soft	renamed-term	use Sickness
+\bInfection\b		soft	renamed-term	use Swarm
+\bRage\b		soft	renamed-term	use Fury
+\bRandomi[sz]er\b		soft	renamed-term	use Allegiance Scrambler
+\bSlow Down\b|\bSpeed Up\b		soft	renamed-term	use Time Dilation / Time Rush
+\bnapalm\b		soft	renamed-term	use firebomb
+\bZombies?\b		soft	renamed-term	use Wisp
+\bPortal\b		soft	renamed-term	use Rift
+\bTentacles?\b|\bShaman\b|\bTripod\b|\bLander\b		soft	renamed-term	dropped creatures
+\bSpace Ship\b		soft	renamed-term	use Abductor
+\bSpawn Points?\b|\bSpawn Links?\b|\bPopulation Lock\b		soft	renamed-term	use Spawn Node / Relay / Population Limiter
+\bSolar Panels?\b|\bRadar Dish(?:es)?\b|\bLaser Fences?\b		soft	renamed-term	use Solar Array / Beam Dish / Barrier Emitter
+\bFuel Station\b|\bFuel Generator\b|\bRestriction Zone\b		soft	renamed-term	use fuel depot / fuel pump / exclusion zone
+\bTask Manager\b		soft	renamed-term	use Power slots (allowed only for the Windows tool)
+\bIncubator\b		soft	renamed-term	dropped building
+\bExplorer\b		soft	renamed-term	achievement name; use Tourist (allowed for the Windows file manager)
+\bWarp Gate\b|\bRelay Dish\b|\bEnergy Collector\b		soft	renamed-term	placeholder names replaced by the collision screen
