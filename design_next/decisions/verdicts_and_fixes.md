@@ -4,7 +4,127 @@
 
 This file is the canonical register for the scope and behaviour decisions of the reference library. It holds the headline verdicts on the reference core loop, simulation timing and hook-only features; the simulation-integrity rules; the scope verdict for each reference subsystem; the verdicts on individual mechanics, including the keep-list; one decision for every item of the fix-list; and the design-critical uncertainties and gameplay-fidelity risks that need confirmation. Each entry states the behaviour the reference documents specify now. A **Resolved** entry states the corrected rule that the documents apply; an **Open** entry states the faithful reference behaviour as the default, with a recommendation; a **Dropped** entry records content the library does not specify. The networking model, numeric model, simulation threading, tick rate, sessions and services, lobby protocol, persistence and terrain runtime model are design-phase topics recorded under `decisions/deferred/`; engine-technology choices are ADRs under `adr/`. Other decision files cite the entries here instead of repeating them.
 
-<!-- INDEX -->
+## Index
+
+| ID | Title | Status | Affects |
+|---|---|---|---|
+| [DEC-001](#dec-001-reference-core-loop-crowd-and-territory-economy) | Reference core loop: crowd-and-territory economy | Open | R-VIS, R-ECON, R-MODE |
+| [DEC-002](#dec-002-integer-tick-timers-and-the-11-tick-mode-second) | Integer tick timers and the 11-tick mode second | Resolved | R-SIM, R-MODE, R-ECON, R-BLDG, R-CRATE, R-UNIT |
+| [DEC-003](#dec-003-mode-second-length-after-playtest) | Mode-second length after playtest | Open | R-SIM, R-MODE, R-ECON |
+| [DEC-004](#dec-004-reference-tuning-values-adopted-as-the-species-baseline) | Reference tuning values adopted as the Species baseline | Resolved | R-VIS, R-MODE, R-UNIT, R-BLDG, R-CRATE, R-ECON, R-CTRL, R-BOT, R-MAP, R-META, R-AUD, R-TUT, R-SIM |
+| [DEC-005](#dec-005-the-reference-library-is-the-specification-of-record) | The reference library is the specification of record | Resolved | R-VIS, R-MODE, R-UNIT, R-BLDG, R-CRATE, R-ECON, R-CTRL, R-BOT, R-MAP, R-META, R-AUD, R-TUT, R-SIM |
+| [DEC-006](#dec-006-reference-quirks-are-kept-as-explicit-named-rules) | Reference quirks are kept as explicit, named rules | Resolved | R-VIS, R-MODE, R-UNIT, R-BLDG, R-CRATE, R-ECON, R-CTRL, R-BOT, R-MAP, R-META, R-AUD, R-TUT, R-SIM |
+| [DEC-007](#dec-007-presentation-never-writes-simulation-state-rules-emit-presentation-events) | Presentation never writes simulation state; rules emit presentation events | Resolved | R-SIM, R-MODE, R-AUD, R-META, RND, UI |
+| [DEC-008](#dec-008-player-intent-reaches-the-simulation-only-as-commands) | Player intent reaches the simulation only as commands | Resolved | R-SIM, R-CTRL, R-UNIT, INP, CAM |
+| [DEC-009](#dec-009-simulation-time-comes-only-from-the-tick-counter) | Simulation time comes only from the tick counter | Resolved | R-SIM, R-MODE, R-BLDG |
+| [DEC-010](#dec-010-process-global-settings-never-feed-the-simulation) | Process-global settings never feed the simulation | Resolved | R-SIM, R-UNIT, R-META |
+| [DEC-011](#dec-011-per-match-state-is-owned-and-reset-at-every-match-start) | Per-match state is owned and reset at every match start | Resolved | R-SIM, R-MODE, R-BLDG, R-UNIT, R-CRATE |
+| [DEC-012](#dec-012-collision-volumes-are-map-and-asset-data) | Collision volumes are map and asset data | Resolved | R-BLDG, R-SIM, AST, DAT |
+| [DEC-013](#dec-013-random-stream-discipline-per-match-seed-and-a-separate-presentation-generator) | Random-stream discipline: per-match seed and a separate presentation generator | Resolved | R-SIM, R-CRATE, VFX, AEN |
+| [DEC-014](#dec-014-bounded-algorithms-with-a-deterministic-fallback) | Bounded algorithms with a deterministic fallback | Resolved | R-CRATE, R-UNIT, R-BOT, R-MODE, R-SIM |
+| [DEC-015](#dec-015-content-is-validated-at-build-time-and-no-load-path-is-fatal) | Content is validated at build time, and no load path is fatal | Resolved | DAT, AST, BLD, R-MAP |
+| [DEC-016](#dec-016-tie-breaks-are-explicit-ordered-rules) | Tie-breaks are explicit ordered rules | Resolved | R-SIM, R-MODE, R-BOT |
+| [DEC-017](#dec-017-match-rules-and-modes-one-rules-skeleton-typed-rulesets) | Match rules and modes: one rules skeleton, typed rulesets | Resolved | R-MODE, R-MAP |
+| [DEC-018](#dec-018-population-flow-keep-the-model-and-its-numbers) | Population flow: keep the model and its numbers | Resolved | R-ECON, R-BLDG, R-UNIT |
+| [DEC-019](#dec-019-units-and-actors-keep-the-roster-adapt-the-data-representation) | Units and actors: keep the roster, adapt the data representation | Resolved | R-UNIT, DAT |
+| [DEC-020](#dec-020-structures-and-world-objects-keep-the-function-apply-the-corrections) | Structures and world objects: keep the function, apply the corrections | Resolved | R-BLDG |
+| [DEC-021](#dec-021-supply-crates-powers-and-weapons-keep-the-outcome-set-bound-the-selection) | Supply crates, powers and weapons: keep the outcome set, bound the selection | Resolved | R-CRATE |
+| [DEC-022](#dec-022-bots-keep-the-design-apply-the-corrections) | Bots: keep the design, apply the corrections | Resolved | R-BOT |
+| [DEC-023](#dec-023-controls-and-commands-keep-the-command-model-and-control-scheme) | Controls and commands: keep the command model and control scheme | Resolved | R-CTRL, R-SIM, INP |
+| [DEC-024](#dec-024-camera-keep-the-free-camera-clamp-it-and-use-one-presentation-clock) | Camera: keep the free camera, clamp it and use one presentation clock | Resolved | R-CTRL, CAM |
+| [DEC-025](#dec-025-maps-and-level-design-keep-the-capability-set-and-the-generator-look) | Maps and level design: keep the capability set and the generator look | Resolved | R-MAP, R-BLDG, TER |
+| [DEC-026](#dec-026-front-end-and-match-flow-keep-the-flow-redesign-the-stubs) | Front end and match flow: keep the flow, redesign the stubs | Resolved | R-META, UI |
+| [DEC-027](#dec-027-audio-design-keep-the-binding-model-replace-priorities-and-the-mix) | Audio design: keep the binding model, replace priorities and the mix | Resolved | R-AUD, AEN |
+| [DEC-028](#dec-028-simulation-model-keep-the-object-model-replace-weak-mechanisms) | Simulation model: keep the object model, replace weak mechanisms | Resolved | R-SIM |
+| [DEC-029](#dec-029-visual-language-is-kept) | Visual language is kept | Resolved | RND, VFX, R-VIS |
+| [DEC-030](#dec-030-worker-autonomy-and-armament) | Worker autonomy and armament | Resolved | R-UNIT |
+| [DEC-031](#dec-031-leader-signposts-and-formations) | Leader signposts and formations | Resolved | R-UNIT, R-CTRL |
+| [DEC-032](#dec-032-selection-circle-and-crowd-order-interval) | Selection circle and crowd-order interval | Resolved | R-CTRL |
+| [DEC-033](#dec-033-six-power-slots-and-a-grant-is-lost-when-they-are-full) | Six Power slots, and a grant is lost when they are full | Resolved | R-CRATE, R-CTRL |
+| [DEC-034](#dec-034-co-op-alliances) | Co-op alliances | Resolved | R-MODE, R-ECON |
+| [DEC-035](#dec-035-a-leaving-player-is-replaced-by-a-bot) | A leaving player is replaced by a bot | Resolved | R-MODE, R-META, R-BOT |
+| [DEC-036](#dec-036-ready-up-barrier-countdown-and-grace-period) | Ready-up barrier, countdown and grace period | Resolved | R-MODE, R-META |
+| [DEC-037](#dec-037-onboarding-helpers) | Onboarding helpers | Resolved | R-TUT, R-META |
+| [DEC-038](#dec-038-pause-and-the-speed-ramp) | Pause and the speed ramp | Resolved | R-SIM, R-META |
+| [DEC-039](#dec-039-speed-crates-are-tick-scheduling) | Speed crates are tick scheduling | Resolved | R-CRATE, R-SIM |
+| [DEC-040](#dec-040-inverted-ink-on-paper-style) | Inverted ink-on-paper style | Open | RND |
+| [DEC-041](#dec-041-development-and-diagnostics-tooling) | Development and diagnostics tooling | Resolved | DBG, PLT |
+| [DEC-042](#dec-042-volumes-are-authored-in-decibels) | Volumes are authored in decibels | Resolved | AEN, R-AUD |
+| [DEC-043](#dec-043-wall-destructibility) | Wall destructibility | Open | R-BLDG, R-MODE |
+| [DEC-044](#dec-044-commonly-expected-options) | Commonly expected options | Open | R-META, UI, RND, AEN |
+| [DEC-045](#dec-045-map-editor) | Map editor | Open | R-MAP, DAT |
+| [DEC-046](#dec-046-replays) | Replays | Open | R-SIM, R-META, DBG |
+| [DEC-047](#dec-047-achievements-statistics-and-leaderboards) | Achievements, statistics and leaderboards | Open | R-META, R-MODE |
+| [DEC-048](#dec-048-post-match-results-screen) | Post-match results screen | Open | R-META, R-MODE |
+| [DEC-049](#dec-049-music) | Music | Open | R-AUD, AEN |
+| [DEC-050](#dec-050-front-end-features-designed-new) | Front-end features designed new | Open | R-META, R-CTRL, UI |
+| [DEC-051](#dec-051-tutorials-and-presentation-timelines) | Tutorials and presentation timelines | Open | R-TUT, CAM |
+| [DEC-052](#dec-052-single-player-campaign-and-narrator) | Single-player campaign and narrator | Dropped | R-VIS |
+| [DEC-053](#dec-053-script-interpreter-and-cut-scene-scripts) | Script interpreter and cut-scene scripts | Dropped | R-TUT |
+| [DEC-054](#dec-054-loader-mini-programs-intro-start-sequence-and-attract-mode) | Loader mini-programs, intro start sequence and attract mode | Dropped | R-META |
+| [DEC-055](#dec-055-gesture-input-and-the-icon-power-bar) | Gesture input and the icon power bar | Dropped | R-CTRL |
+| [DEC-056](#dec-056-alternative-control-scheme) | Alternative control scheme | Dropped | R-CTRL |
+| [DEC-057](#dec-057-rift-horror-outcome-and-inactive-crate-rewards) | Rift Horror outcome and inactive crate rewards | Dropped | R-CRATE |
+| [DEC-058](#dec-058-vehicle-duel-mode) | Vehicle Duel mode | Dropped | R-MODE |
+| [DEC-059](#dec-059-alternative-renderer-effects) | Alternative-renderer effects | Dropped | RND |
+| [DEC-060](#dec-060-benchmark-recorder-upload-and-in-game-video-capture) | Benchmark recorder, upload and in-game video capture | Dropped | DBG |
+| [DEC-061](#dec-061-user-profiles-and-mods) | User profiles and mods | Dropped | R-META |
+| [DEC-062](#dec-062-actor-kinds-that-no-match-creates) | Actor kinds that no match creates | Dropped | R-UNIT |
+| [DEC-063](#dec-063-reference-map-shapes-and-map-identities) | Reference map shapes and map identities | Dropped | R-MAP, TER |
+| [DEC-064](#dec-064-one-fixed-recount-period) | One fixed recount period | Resolved | R-BLDG, R-MODE |
+| [DEC-065](#dec-065-transit-gates-advance-once-per-tick-and-map-values-override-lobby-defaults) | Transit Gates advance once per tick, and map values override lobby defaults | Resolved | R-ECON, R-MODE, R-MAP |
+| [DEC-066](#dec-066-multi-round-siege) | Multi-round Siege | Open | R-MODE |
+| [DEC-067](#dec-067-map-defaults-are-applied-once-by-the-host) | Map defaults are applied once, by the host | Resolved | R-META, R-MODE |
+| [DEC-068](#dec-068-the-flag-chain-time-up-draw-uses-valid-team-indices) | The Flag Chain time-up draw uses valid team indices | Resolved | R-MODE |
+| [DEC-069](#dec-069-the-co-op-game-over-line-shows-the-declared-result) | The co-op game-over line shows the declared result | Resolved | R-MODE, R-META |
+| [DEC-070](#dec-070-the-spawn-control-co-op-winner-check-covers-every-slot) | The Spawn Control co-op winner check covers every slot | Resolved | R-MODE |
+| [DEC-071](#dec-071-flag-chain-base-under-attack-announcement-interval) | Flag Chain base-under-attack announcement interval | Open | R-MODE, R-AUD |
+| [DEC-072](#dec-072-the-final-countdown-sound-plays-at-time-up) | The final countdown sound plays at time-up | Resolved | R-MODE, R-AUD |
+| [DEC-073](#dec-073-typed-match-options-with-explicit-per-mode-defaults) | Typed match options with explicit per-mode defaults | Resolved | R-MODE, R-CRATE, DAT |
+| [DEC-074](#dec-074-rank-under-ties) | Rank under ties | Resolved | R-MODE |
+| [DEC-075](#dec-075-the-core-device-result-is-fixed-at-detonation) | The Core Device result is fixed at detonation | Resolved | R-MODE, R-BLDG |
+| [DEC-076](#dec-076-launch-vessel-flight-is-invulnerable-and-terminal) | Launch Vessel Flight is invulnerable and terminal | Resolved | R-MODE, R-BLDG |
+| [DEC-077](#dec-077-the-bot-mode-option-accepts-only-defined-values) | The bot-mode option accepts only defined values | Resolved | R-BOT, R-META |
+| [DEC-078](#dec-078-no-team-colour-under-attack-status-and-the-neutral-home-post) | No-team colour, under-attack status and the neutral Home post | Resolved | R-MODE, R-BLDG, RND |
+| [DEC-079](#dec-079-per-team-population-cap) | Per-team population cap | Open | R-ECON, R-MODE, R-MAP |
+| [DEC-080](#dec-080-collector-collection-of-any-teams-essence-orbs) | Collector collection of any team's Essence orbs | Open | R-UNIT, R-ECON |
+| [DEC-081](#dec-081-catch-up-bonus-curve) | Catch-up bonus curve | Open | R-ECON, R-MODE |
+| [DEC-082](#dec-082-rogue-and-visitor-factions-never-win-and-never-block-elimination) | Rogue and Visitor factions never win and never block elimination | Resolved | R-MODE |
+| [DEC-083](#dec-083-clickable-power-bar-and-wide-power-ids) | Clickable power bar and wide power ids | Resolved | R-CTRL, R-SIM, UI |
+| [DEC-084](#dec-084-hive-essence-orbs-and-hive-ants) | Hive Essence orbs and Hive ants | Open | R-ECON, R-UNIT, R-BLDG |
+| [DEC-085](#dec-085-builder-essence-orb-collection-without-a-destination) | Builder Essence-orb collection without a destination | Open | R-UNIT, R-ECON |
+| [DEC-086](#dec-086-separate-demote-and-scrap-actions-for-leaders) | Separate demote and scrap actions for Leaders | Resolved | R-CTRL, R-UNIT |
+| [DEC-087](#dec-087-bot-corrections) | Bot corrections | Resolved | R-BOT |
+| [DEC-088](#dec-088-structure-corrections) | Structure corrections | Resolved | R-BLDG |
+| [DEC-089](#dec-089-smoke-column-obstacle) | Smoke-column obstacle | Open | R-BLDG, R-SIM, R-MAP |
+| [DEC-090](#dec-090-floating-point-actor-stats-and-the-abductor-speed) | Floating-point actor stats and the Abductor speed | Resolved | R-UNIT, DAT |
+| [DEC-091](#dec-091-dormant-crawler-egg-lifetime) | Dormant Crawler egg lifetime | Open | R-UNIT |
+| [DEC-092](#dec-092-per-tick-rules-scale-with-game-speed) | Per-tick rules scale with game speed | Resolved | R-CRATE, R-UNIT, R-BLDG, R-SIM |
+| [DEC-093](#dec-093-explosion-damage-falloff) | Explosion damage falloff | Resolved | R-CRATE, R-SIM |
+| [DEC-094](#dec-094-exact-or-approximate-actor-grid-queries) | Exact or approximate actor-grid queries | Open | R-SIM, R-UNIT, R-BOT, R-MODE |
+| [DEC-095](#dec-095-obstacle-grid-and-route-upkeep-route-previews-kept-separate) | Obstacle grid and route upkeep; route previews kept separate | Resolved | R-SIM, R-CTRL |
+| [DEC-096](#dec-096-input-corrections) | Input corrections | Resolved | INP, R-CTRL, CAM |
+| [DEC-097](#dec-097-audio-corrections) | Audio corrections | Resolved | R-AUD, AEN |
+| [DEC-098](#dec-098-texture-cache-keyed-by-asset-and-variant) | Texture cache keyed by asset and variant | Resolved | AST, RND |
+| [DEC-099](#dec-099-localisation-fallback-and-language-completeness) | Localisation fallback and language completeness | Resolved | R-META, UI |
+| [DEC-100](#dec-100-one-defaults-table-for-preferences) | One defaults table for preferences | Resolved | PLT, DAT |
+| [DEC-101](#dec-101-seasonal-theme) | Seasonal theme | Open | VFX, R-META, R-SIM |
+| [DEC-102](#dec-102-ui-framework-corrections-by-construction) | UI framework corrections by construction | Resolved | UI |
+| [DEC-103](#dec-103-tutorials-are-step-graphs-with-simulation-sequenced-effects) | Tutorials are step graphs with simulation-sequenced effects | Resolved | R-TUT, R-SIM |
+| [DEC-104](#dec-104-formation-volley-rhythm-in-integer-arithmetic) | Formation volley rhythm in integer arithmetic | Resolved | R-UNIT |
+| [DEC-105](#dec-105-worker-grenade-team-and-the-hive-and-spitter-plant-attack-target) | Worker grenade team and the Hive and Spitter Plant attack target | Resolved | R-UNIT, R-BLDG |
+| [DEC-106](#dec-106-performance-envelope-at-the-population-cap) | Performance envelope at the population cap | Open | R-SIM, R-ECON, DBG, RND, VFX |
+| [DEC-107](#dec-107-hostile-supply-crate-outcomes-ownership-and-filtering) | Hostile Supply crate outcomes: ownership and filtering | Open | R-CRATE, R-UNIT |
+| [DEC-108](#dec-108-launch-vessel-survival-under-attack) | Launch Vessel survival under attack | Open | R-BLDG, R-MODE |
+| [DEC-109](#dec-109-crowd-sound-audibility-radius) | Crowd-sound audibility radius | Open | R-AUD, AEN |
+| [DEC-110](#dec-110-second-tutorial-start-condition) | Second tutorial start condition | Open | R-TUT |
+| [DEC-111](#dec-111-values-derived-from-flat-terrain-calculation) | Values derived from flat-terrain calculation | Open | R-CRATE, R-UNIT, R-BLDG |
+| [DEC-112](#dec-112-bot-strength-calibration) | Bot strength calibration | Open | R-BOT |
+| [DEC-113](#dec-113-abductor-wander-target-area) | Abductor wander-target area | Open | R-UNIT |
+| [DEC-114](#dec-114-position-of-score-weighted-crate-drops) | Position of score-weighted crate drops | Open | R-CRATE |
+| [DEC-115](#dec-115-fixed-match-research-levels) | Fixed match research levels | Open | R-UNIT, R-BLDG, R-META |
+| [DEC-116](#dec-116-supply-crates-during-the-grace-period) | Supply crates during the grace period | Open | R-CRATE, R-MODE |
+| [DEC-117](#dec-117-confirmed-reference-facts) | Confirmed reference facts | Resolved | R-UNIT, R-BLDG, R-ECON, R-SIM |
 
 ## 1 Headline verdicts
 
@@ -19,7 +139,7 @@ This file is the canonical register for the scope and behaviour decisions of the
 ### DEC-002 Integer tick timers and the 11-tick mode second
 - Status: Resolved
 - Affects: reference/12_simulation_model/01_tick_timing_and_main_loop.md (R-SIM), reference/01_skirmish_rules_and_modes/README.md (R-MODE), reference/05_population_flow.md (R-ECON), reference/03_buildings_and_world_objects/README.md (R-BLDG), reference/04_supply_crates_powers_and_weapons/README.md (R-CRATE), reference/02_units/README.md (R-UNIT)
-- Specified behaviour: Every rule timer, cooldown, lifetime and probability in the simulation is an integer number of ticks, or a per-second rate converted to ticks when the data loads; no simulation timer is a floating-point countdown. The **mode second** is an explicit named constant of 11 ticks (1.1 s at the reference tick rate of 10 ticks per second). The match clock, elimination countdowns, Relic timers, reinforcement waves and rank checks advance once per mode second. The reference tick counts are: one mode second 11; grace period 30; victory timers 101, 151 and 51 (written as 10, 15 and 5 mode seconds); Comeback Bonus interval 450; the 10-second production pause 101; burst request interval 2; rocket turret reload 15; Convert Turret reload 6; mortar turret reload 40; Spawn Node activation 300; Essence orb birth 61; Relay transit 10h + 1 ticks for h hops (11 for the first hop, 10 for each further hop). Seconds appear only as a derived display value next to the tick count.
+- Specified behaviour: Every rule timer, cooldown, lifetime and probability in the simulation is an integer number of ticks, or a per-second rate converted to ticks when the data loads; no simulation timer is a floating-point countdown. The **mode second** is an explicit named constant of 11 ticks (1.1 s at the reference tick rate of 10 ticks per second). The match clock, elimination countdowns, Relic timers, reinforcement waves and rank checks advance once per mode second. The reference tick counts, with each nominal duration, are: mode second (1 s) 11; grace period (3.0 s) 30; victory timers (10, 15 and 5 s) 101, 151 and 51; Comeback Bonus interval (45 s) 450; production pause (10.0 s) 101; burst request interval (0.2 s) 2; rocket turret reload (1.5 s) 15; Convert Turret reload (0.5 s) 6; mortar turret reload (4.0 s) 40; Spawn Node activation (30.0 s) 300; Essence orb birth 61; Relay transit 10h + 1 for h hops (11 for the first hop, 10 for each further hop). Seconds appear only as a derived display value next to the tick count.
 - Options: A — integer tick counts with the mode second as an explicit 11-tick constant; B — real-time countdowns in seconds; C — integer ticks with a 10-tick second from the start.
 - Recommendation: A. It keeps every tuned value of the reference valid for the first playable, removes floating-point accumulation from rule timing, and makes each timer testable: a table-driven test checks the tick count of every timer, and a static check rejects floating-point timer fields in simulation code. Re-tuning to a 10-tick second is a separate, later decision (DEC-003).
 
@@ -91,7 +211,7 @@ This file is the canonical register for the scope and behaviour decisions of the
 
 ### DEC-012 Collision volumes are map and asset data
 - Status: Resolved
-- Affects: reference/03_buildings_and_world_objects/defences_and_props.md (R-BLDG), reference/12_simulation_model/05_space_routing_and_physics.md (R-SIM), architecture/components/asset_pipeline_and_resources.md (AST), architecture/components/data_schemas/README.md (DAT)
+- Affects: reference/03_buildings_and_world_objects/defences_and_props.md (R-BLDG), reference/12_simulation_model/05_space_routing_and_physics.md (R-SIM), architecture/components/asset_pipeline_and_resources.md (AST), architecture/components/data_schemas.md (DAT)
 - Specified behaviour: Every collision and hit volume that the simulation uses, tree hit spheres included, comes from map or asset data produced by the content build. No simulation volume is derived from render geometry, and no load-time generation of simulation data draws from the presentation generator. Hit-test geometry is a separate collision asset that the content build validates.
 - Options: A — collision volumes as baked, validated data; B — the reference behaviour, in which tree hit spheres are generated from render geometry at load and draw from the shared, non-thread-safe presentation generator.
 - Recommendation: A. The reference path makes simulation data depend on render code and on the order of presentation draws at load. Baked data is identical everywhere and can be tested.
@@ -112,7 +232,7 @@ This file is the canonical register for the scope and behaviour decisions of the
 
 ### DEC-015 Content is validated at build time, and no load path is fatal
 - Status: Resolved
-- Affects: architecture/components/data_schemas/README.md (DAT), architecture/components/asset_pipeline_and_resources.md (AST), architecture/components/build_tooling_and_distribution.md (BLD), reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP)
+- Affects: architecture/components/data_schemas.md (DAT), architecture/components/asset_pipeline_and_resources.md (AST), architecture/components/build_tooling_and_distribution.md (BLD), reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP)
 - Specified behaviour: The content build validates every data file against its schema and every asset reference against the asset set. A missing mandatory field, an unterminated block, a stray blank line or a missing asset is a build error with a diagnostic. At run time a loader never passes a missing token on as a value and never hangs on malformed text, and a missing asset is reported as a diagnostic with a fallback, never a fatal assertion. Loaders are fuzz-tested.
 - Options: A — schema validation at build time and fault-tolerant loaders; B — the reference behaviour, in which a missing mandatory token crashes the map loader, a blank line breaks the loading of the sound-event table, an unterminated bracket hangs the string-table parser and a missing texture fails a fatal assertion.
 - Recommendation: A. These are crash defects, and validation at build time catches broken maps and data before release.
@@ -129,7 +249,7 @@ This file is the canonical register for the scope and behaviour decisions of the
 ### DEC-017 Match rules and modes: one rules skeleton, typed rulesets
 - Status: Resolved
 - Affects: reference/01_skirmish_rules_and_modes/README.md (R-MODE), reference/01_skirmish_rules_and_modes/spawn_control.md (R-MODE), reference/01_skirmish_rules_and_modes/zone_control.md (R-MODE), reference/01_skirmish_rules_and_modes/relic_run.md (R-MODE), reference/01_skirmish_rules_and_modes/siege.md (R-MODE), reference/01_skirmish_rules_and_modes/launch_race.md (R-MODE), reference/01_skirmish_rules_and_modes/flag_chain.md (R-MODE), reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP)
-- Specified behaviour: Six modes vary only the territory unit and the score on one shared skeleton: the world updates every tick, the mode rules evaluate once per mode second, and a declared winner starts the end-of-match sequence. The territory units are Spawn Nodes (Spawn Control), Control Zones (Zone Control), carried Relics (Relic Run), the Core Device and its Command Consoles (Siege), the Launch Vessel and its fuel chain (Launch Race) and chains of Flag posts (Flag Chain). Each mode is a typed ruleset with a score function, an elimination predicate, a win predicate, a time-up decider, a sudden-death policy, a typed option schema and a HUD formatter. The option set has 39 option definitions, plus the lobby settings and the per-map overrides for reinforcements, Transports, turrets, instant capture, Beam Dish rules, the Visitor faction, the airstrike threshold, excluded crate outcomes and population caps. The rule corrections DEC-064 to DEC-078 and DEC-082 apply.
+- Specified behaviour: Six modes vary only the territory unit and the score on one shared skeleton: the world updates every tick, the mode rules evaluate once per mode second, and a declared winner starts the end-of-match sequence. The territory units are Spawn Nodes (Spawn Control), Control Zones (Zone Control), carried Relics (Relic Run), the Core Device and its Command Consoles (Siege), the Launch Vessel and its fuel chain (Launch Race) and chains of Flag posts (Flag Chain). Each mode is a typed ruleset with a score function, an elimination predicate, a win predicate, a time-up decider, a sudden-death policy, a typed option schema and a HUD formatter. The option set has 39 option definitions, plus the lobby settings and the per-map overrides for reinforcements, Transports, turrets, instant capture, Beam Dish rules, the Visitor faction, the airstrike threshold, excluded crate outcomes and population caps. The rule decisions DEC-064 to DEC-078 and DEC-082 apply.
 - Options: A — keep every rule and number, implemented as typed rulesets; B — redesign the modes.
 - Recommendation: A. The skeleton is the right abstraction and every rule is specified; the corrections remove accidents without changing the intended rules. Balance re-tuning follows the mode-second decision (DEC-003) and the reinforcement correction (DEC-065).
 
@@ -142,7 +262,7 @@ This file is the canonical register for the scope and behaviour decisions of the
 
 ### DEC-019 Units and actors: keep the roster, adapt the data representation
 - Status: Resolved
-- Affects: reference/02_units/README.md (R-UNIT), reference/02_units/worker.md (R-UNIT), reference/02_units/leader_and_formations.md (R-UNIT), reference/02_units/strike_team.md (R-UNIT), reference/02_units/transport.md (R-UNIT), reference/02_units/collector.md (R-UNIT), reference/02_units/builder.md (R-UNIT), reference/02_units/creatures_and_hazards.md (R-UNIT), architecture/components/data_schemas/README.md (DAT)
+- Affects: reference/02_units/README.md (R-UNIT), reference/02_units/worker.md (R-UNIT), reference/02_units/leader_and_formations.md (R-UNIT), reference/02_units/strike_team.md (R-UNIT), reference/02_units/transport.md (R-UNIT), reference/02_units/collector.md (R-UNIT), reference/02_units/builder.md (R-UNIT), reference/02_units/creatures_and_hazards.md (R-UNIT), architecture/components/data_schemas.md (DAT)
 - Specified behaviour: The roster and its behaviour are kept: the autonomous Worker with 25 states and a staggered task search every 1–2 s; the Leader; the Strike team; the Transport; the Collector; the Builder; the airstrike and Missile Barrage weapons; the crate-spawned creatures and hazards (Crawler, spider, centipede, ant, Brood Drifter, Reaper Serpent, Seed Pod, Crawler egg, meteor); and the Abductor with its Visitor-faction drop. Every Worker is armed, because the match research level of Workers is fixed at 4. Actor stats are floating-point values (DEC-090), and every per-frame or per-tick rule is a per-second rate scheduled in ticks (DEC-092). Actor kinds are typed schema entries, not row positions in a stat table. Actor kinds that no match creates are not specified (DEC-062).
 - Options: A — keep the roster and behaviour, with typed floating-point data; B — keep the reference data representation as well.
 - Recommendation: A. The roster and behaviour make the crowd feel; the representation changes only remove truncation and positional binding. The Worker task search is the largest simulation cost at 2,000 units, so its budget is measured early (DEC-106).
@@ -150,9 +270,9 @@ This file is the canonical register for the scope and behaviour decisions of the
 ### DEC-020 Structures and world objects: keep the function, apply the corrections
 - Status: Resolved
 - Affects: reference/03_buildings_and_world_objects/README.md (R-BLDG), reference/03_buildings_and_world_objects/economy_and_spawn_objects.md (R-BLDG), reference/03_buildings_and_world_objects/mode_objects.md (R-BLDG), reference/03_buildings_and_world_objects/defences_and_props.md (R-BLDG)
-- Specified behaviour: The function, capture rules, ports and links of the 34 structure kinds that matches use are kept. The reference structure-kind enumeration has 75 values; kinds that only the campaign uses are not specified (DEC-052). A map's team column is a map position, remapped to the match team at load (DEC-025). Energy from Solar Arrays carried through grid pylons is the only active switch for Barrier Emitters. Walls are destroyed only by a Breach Charge or by their defender's scuttle (DEC-043). The structure corrections DEC-088, DEC-089 and DEC-105 apply, including binding port occupancy to the (structure, port) pair.
+- Specified behaviour: The function, capture rules, ports and links of the 34 structure kinds that matches use are kept. The reference structure-kind enumeration has 75 values; kinds that only the campaign uses are not specified (DEC-052). A map's team column is a map position, remapped to the match team at load (DEC-025). Energy from Solar Arrays carried through grid pylons is the only active switch for Barrier Emitters. Walls are destroyed only by a Breach Charge or by their defender's scuttle (DEC-043). The structure decisions DEC-088, DEC-089 and DEC-105 apply, including binding port occupancy to the (structure, port) pair.
 - Options: A — keep the function and rules and apply the corrections; B — keep the defects for parity.
-- Recommendation: A. Several defects silently shape play, the invisible smoke-column obstacle among them; listing each correction keeps its effect on play visible.
+- Recommendation: A. Several defects silently shape play, the invisible smoke-column obstacle among them (decided separately in DEC-089); listing each correction keeps its effect on play visible.
 
 ### DEC-021 Supply crates, powers and weapons: keep the outcome set, bound the selection
 - Status: Resolved
@@ -164,7 +284,7 @@ This file is the canonical register for the scope and behaviour decisions of the
 ### DEC-022 Bots: keep the design, apply the corrections
 - Status: Resolved
 - Affects: reference/07_bots.md (R-BOT)
-- Specified behaviour: Bots keep the node-graph design: bot navigation nodes linked within 600 wu, each owned by head count, with per-team priority fields; a dispatcher in which only friendly nodes release troops; Leader conveyors and formations; one handler per power; and one strategy per mode. Difficulty is tempo and randomness only: decision periods of 200, 101 and 11 ticks and randomness of 100 %, 50 % and 0 % for the easy, standard and hard bot. Bots have perfect information and no other advantage. The Rogue and Visitor factions always have a bot controller, and it drives their Power slots. Bots run inside the simulation. The bot corrections DEC-014 and DEC-087 apply. Rebuilding the navigation graph after Supply crate, turret and Beam Dish events MAY be incremental if the resulting graph is identical.
+- Specified behaviour: Bots keep the node-graph design: bot navigation nodes linked within 600 wu, each owned by head count, with per-team priority fields; a dispatcher in which only friendly nodes release troops; Leader conveyors and formations; one handler per power; and one strategy per mode. Difficulty is tempo and randomness only: decision periods of 200, 101 and 11 ticks and randomness of 100 %, 50 % and 0 % for the easy, standard and hard bot. Bots have perfect information and no other advantage. The Rogue and Visitor factions always have a bot controller, and it drives their Power slots. Bots run inside the simulation. The bot corrections DEC-014 and DEC-087 apply. Rebuilding the navigation graph after Supply crate, turret and Beam Dish events may be incremental if the resulting graph is identical.
 - Options: A — keep the design with the corrections; B — a new bot architecture.
 - Recommendation: A. The design is cheap, deterministic and readable, and matches the crowd model. Per-bot difficulty settings and fair-sensing tiers for the world game, where bots play under fog of war, are design-phase work.
 
@@ -331,7 +451,7 @@ This file is the canonical register for the scope and behaviour decisions of the
 
 ### DEC-045 Map editor
 - Status: Open
-- Affects: reference/08_maps_and_level_design/map_editor_hooks.md (R-MAP), reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP), architecture/components/data_schemas/README.md (DAT)
+- Affects: reference/08_maps_and_level_design/map_editor_hooks.md (R-MAP), reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP), architecture/components/data_schemas.md (DAT)
 - Specified behaviour: The reference has no reachable map editor. The library records its hooks only: what a map can express and an editor edits (terrain tiles, flatten areas, guide grids, lights, structure placement and links, routes, camera views and their animations, instant units and per-map options), the editor's entry and exit flow, and custom-map handling. Map data is a versioned, schema-validated map asset with a separately readable header.
 - Options: A — a new editor with undo, lossless round-trip, selection by stable id, link tools and in-editor playtest of the real simulation, with the per-mode map validation rules (Relic Run, Flag Chain, Siege, Launch Race) built in; B — no editor: maps are authored with external tools and validated by the content build.
 - Recommendation: A, after the first playable. A new editor avoids the reference editor's defects by construction. The per-mode validation rules are needed under either option, or broken maps reach players.
@@ -540,7 +660,7 @@ This file is the canonical register for the scope and behaviour decisions of the
 
 ### DEC-073 Typed match options with explicit per-mode defaults
 - Status: Resolved
-- Affects: reference/01_skirmish_rules_and_modes/README.md (R-MODE), reference/04_supply_crates_powers_and_weapons/crates_and_powers.md (R-CRATE), architecture/components/data_schemas/README.md (DAT)
+- Affects: reference/01_skirmish_rules_and_modes/README.md (R-MODE), reference/04_supply_crates_powers_and_weapons/crates_and_powers.md (R-CRATE), architecture/components/data_schemas.md (DAT)
 - Specified behaviour: Every match option is typed and has an explicit default for each mode; an option that a mode does not set takes that typed default. The Comeback Bonus is on by default in every mode where it applies: an eliminated team receives a comeback power every 450 ticks (45 s) and holds at most two.
 - Options: A — typed options with explicit defaults; B — the reference behaviour, in which an absent option reads as −1, a Boolean test treats −1 as true, and the Comeback Bonus is therefore on in every mode.
 - Recommendation: A. The mechanism is corrected and the Comeback Bonus default is kept explicitly per mode, so play does not change where the bonus applies.
@@ -665,7 +785,7 @@ This file is the canonical register for the scope and behaviour decisions of the
 
 ### DEC-090 Floating-point actor stats and the Abductor speed
 - Status: Resolved
-- Affects: reference/02_units/README.md (R-UNIT), reference/02_units/creatures_and_hazards.md (R-UNIT), architecture/components/data_schemas/README.md (DAT)
+- Affects: reference/02_units/README.md (R-UNIT), reference/02_units/creatures_and_hazards.md (R-UNIT), architecture/components/data_schemas.md (DAT)
 - Specified behaviour: Actor stats are floating-point values, and speed multipliers (×2, ×1.5, ×0.75, ÷2) apply exactly, without truncation. The Abductor's speed is an explicit tuning value whose default is its effective reference speed of 244.
 - Options: A — floating-point stats and an explicit Abductor speed; B — the reference behaviour, in which stats are 8-bit values, so boosted speeds truncate and the Abductor's listed speed of 500 wraps to 244.
 - Recommendation: A. Boosted units become fractionally faster than in the reference, and the Abductor keeps its effective speed until a playtest re-tunes it.
@@ -737,7 +857,7 @@ This file is the canonical register for the scope and behaviour decisions of the
 
 ### DEC-100 One defaults table for preferences
 - Status: Resolved
-- Affects: architecture/components/platform_layer.md (PLT), architecture/components/data_schemas/README.md (DAT)
+- Affects: architecture/components/platform_layer.md (PLT), architecture/components/data_schemas.md (DAT)
 - Specified behaviour: Preference defaults come from one table, in code or in a schema, that is available before any pack file is mounted, so installed and development builds use the same defaults.
 - Options: A — one defaults table; B — the reference behaviour, in which the default-preferences file is read before the main pack is mounted, so packaged installs fall back to code defaults.
 - Recommendation: A.
@@ -815,7 +935,7 @@ This file is the canonical register for the scope and behaviour decisions of the
 ### DEC-110 Second tutorial start condition
 - Status: Open
 - Affects: reference/11_tutorial_and_help.md (R-TUT)
-- Specified behaviour: The lessons of the second tutorial begin only when idle player Workers wander within port range of its Command Console, 224.6 wu from the player's third Spawn Node, and the bot captures a designated Spawn Node first, so the lessons may not appear in order.
+- Specified behaviour: The lessons of the second tutorial begin only when idle player Workers wander within port range of its Command Console, 224.6 wu from a designated player Spawn Node, and the bot captures a designated Spawn Node first, so the lessons may not appear in order.
 - Options: A — reproduce the condition; B — the tutorial step graph sets up these states explicitly (DEC-103).
 - Recommendation: B.
 - Decide by: design phase

@@ -36,7 +36,7 @@ The problem is which shader language and compiler Species uses, when shaders are
 Chosen option: **1, HLSL 2021, offline DXC, fixed material set**, because it is the only option that keeps every shader variant known, reproducible and validated before it reaches a player, at no run-time cost.
 
 - **Compiler.** DXC **v1.9.2609**, pinned, invoked by the asset pipeline. Every compile passes `-HV 2021` explicitly, targets a `*_6_6` profile, and treats warnings as errors. `-enable-16bit-types` is passed only for optional fast paths behind a capability check (ADR-0002).
-- **Output.** The client loads DXIL blobs only. Debug information and reflection data go to PDB files that each build keeps for PIX; shipped blobs carry neither. `dxcompiler.dll` is never shipped.
+- **Output.** The client loads DXIL blobs only. Debug information and reflection data go to PDB files that each build keeps for PIX; distributed blobs carry neither. `dxcompiler.dll` is never distributed.
 - **Language hygiene.** Shaders also compile under `-HV 202x`: no effects syntax, no `interface`, no `uniform`. CI compiles every shader in both modes.
 - **Shared layouts.** Constant-buffer and root-constant layouts are declared once in a header that both C++ and HLSL include, so the CPU and GPU views of every structure cannot drift.
 - **Material shader set.** The world uses exactly these material shaders:
@@ -64,7 +64,7 @@ Chosen option: **1, HLSL 2021, offline DXC, fixed material set**, because it is 
 
 - CI compiles every shader in both `-HV 2021` and `-HV 202x` modes and fails on any warning.
 - A build check fails when a compiled permutation is not referenced by the pipeline state catalogue, or a catalogue entry names a permutation that does not exist.
-- A build check fails when a shipped blob contains debug or reflection parts, or when `dxcompiler.dll` appears in the install directory.
+- A build check fails when a distributed blob contains debug or reflection parts, or when `dxcompiler.dll` appears in the install directory.
 - Golden-image tests of the renderer component cover each material shader, including over-bright lighting (light colour 2.0) and the fog ramp.
 
 ## Pros and Cons of the Options

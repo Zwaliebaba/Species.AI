@@ -16,7 +16,7 @@ Species needs one way of thinking about synchronisation in the frame graph, the 
 
 ## Decision Drivers
 
-- One synchronisation vocabulary in the frame graph, independent of the API used to execute it.
+- One synchronisation vocabulary in the frame graph, independent of the API that executes it.
 - Precise barriers (sync, access and layout separate) where the driver supports them.
 - No increase of the minimum capability of ADR-0002 for a feature whose reach is unknown.
 - Correctness verified by the debug layer and GPU-based validation in CI on both paths.

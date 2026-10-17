@@ -85,6 +85,6 @@ Proposed option: **1**. **Default while Proposed:** the team builds and tests ag
 
 ## More Information
 
-- Technology baseline items 4.2 and 4.3 (see [the index](README.md#technology-baseline)); sources checked 2026-10-17: https://learn.microsoft.com/windows/win32/direct3d12/hardware-feature-levels · https://raw.githubusercontent.com/microsoft/DirectX-Specs/master/d3d/HLSL_SM_6_6_DynamicResources.md · https://learn.microsoft.com/windows/win32/api/d3d12/ns-d3d12-d3d12_feature_data_shader_model · https://devblogs.microsoft.com/directx/shader-model-6-9-retail-and-more/.
+- Technology baseline items 4.2 and 4.3 (see [the index](README.md#technology-baseline)); sources checked 2026-10-17: https://learn.microsoft.com/windows/win32/direct3d12/hardware-feature-levels · https://raw.githubusercontent.com/microsoft/DirectX-Specs/master/d3d/HLSL_SM_6_6_DynamicResources.md · https://learn.microsoft.com/windows/win32/api/d3d12/ns-d3d12-d3d12_feature_data_shader_model.
 - The hardware reach of feature level 12_2, and of 12_0-only GPUs that pass the checks, is not verified. Revisit this ADR when hardware data is available.
 - Related: ADR-0003 (shader profiles), ADR-0006 (bindless binding model), ADR-0009 (crowd culling with `ExecuteIndirect`), ADR-0010 (GPU particles).

@@ -26,8 +26,8 @@ The problem is which Direct3D 12 runtime the client is built against and how tha
 
 ## Considered Options
 
-1. Direct3D 12 through the **Agility SDK**, with `D3D12Core.dll` shipped beside the executable.
-2. Direct3D 12 through the **runtime that the operating system provides**, with no shipped runtime.
+1. Direct3D 12 through the **Agility SDK**, with `D3D12Core.dll` installed beside the executable.
+2. Direct3D 12 through the **runtime that the operating system provides**, with no runtime in the install directory.
 3. Direct3D 11.
 4. Vulkan.
 
@@ -36,9 +36,9 @@ The problem is which Direct3D 12 runtime the client is built against and how tha
 Chosen option: **1, Direct3D 12 through the Agility SDK**, because it is the only option that gives every supported OS build the same, current Direct3D 12 runtime while staying inside the Direct3D 12 constraint of the vision brief.
 
 - The client ships **Agility SDK 1.619.6** (NuGet `Microsoft.Direct3D.D3D12`, D3D12SDKVersion **619**). `species.exe` exports `D3D12SDKVersion = 619` and `D3D12SDKPath = ".\\D3D12\\"`, and the install directory carries `D3D12\D3D12Core.dll`. Agility SDK headers are included before Windows SDK headers.
-- No preview Agility SDK is ever shipped, and `D3D12SDKLayers.dll` is never shipped. The debug layer and GPU-based validation run in development and in a CI test configuration only.
+- No preview Agility SDK is ever distributed, and `D3D12SDKLayers.dll` is never distributed. The debug layer and GPU-based validation run in development and in a CI test configuration only.
 - The SDK version is pinned in exactly one place (the package version), and the exported constant is generated from it.
-- The renderer is an explicit Direct3D 12 renderer: it owns all GPU state, builds each frame from a frame graph (ADR-0004), draws only through catalogued pipeline state objects (ADR-0005), binds resources through one bindless root signature (ADR-0006), and expresses synchronisation through the barrier model of ADR-0007. Resource upload, residency and device-removal recovery follow ADR-0008.
+- The renderer is an explicit Direct3D 12 renderer: it owns all GPU state, builds each frame from a frame graph (ADR-0004), draws only through catalogued pipeline state objects (ADR-0005), binds resources through one bindless root signature (ADR-0006), and expresses synchronisation through the barrier model of ADR-0007. Resource upload, residency and device-removal handling follow ADR-0008.
 - The renderer is a client-only module. The dedicated server target does not link `d3d12.lib`, `dxgi.lib` or any renderer code.
 
 ### Consequences
@@ -49,7 +49,7 @@ Chosen option: **1, Direct3D 12 through the Agility SDK**, because it is the onl
 - Good, because the renderer's absence from the server is enforced by the build graph, not by convention.
 - Bad, because the install directory carries an extra runtime DLL, and every Agility SDK upgrade is a deliberate change with its own test pass.
 - Bad, because the explicit API puts resource lifetime, synchronisation and memory management on the engine, which ADR-0004, ADR-0007 and ADR-0008 have to cover.
-- Neutral, because if the OS carries a newer `D3D12Core.dll`, the OS copy loads instead; the renderer must therefore treat capabilities as queried facts, never as assumptions tied to the shipped version.
+- Neutral, because if the OS carries a newer `D3D12Core.dll`, the OS copy loads instead; the renderer must therefore treat capabilities as queried facts, never as assumptions tied to the bundled version.
 
 ### Confirmation
 
@@ -65,12 +65,12 @@ Chosen option: **1, Direct3D 12 through the Agility SDK**, because it is the onl
 - Good, because the runtime version is chosen by Species, not by the player's OS servicing state.
 - Good, because the newest released features (Shader Model 6.9, revised view-creation APIs, current Enhanced-Barrier fixes) are available to every supported build.
 - Good, because every OS allowed by the baseline (Windows 10 1909 or later, Windows Server 2022 or later) supports the Agility SDK.
-- Bad, because `D3D12CreateDevice` fails if the exported version does not match the shipped runtime, so packaging errors surface as start-up failures (mitigated by the build check).
+- Bad, because `D3D12CreateDevice` fails if the exported version does not match the bundled runtime, so packaging errors surface as start-up failures (mitigated by the build check).
 - Bad, because whether the Agility SDK passes MSIX certification is not verified (it matters only if the MSIX store path is chosen).
 
 ### 2. Direct3D 12 through the OS runtime only
 
-- Good, because nothing extra is shipped.
+- Good, because nothing extra is installed.
 - Bad, because the available feature set varies with each player's OS servicing state, so the engine would need more fallback paths.
 - Bad, because debug-layer and runtime fixes arrive only with OS updates.
 
