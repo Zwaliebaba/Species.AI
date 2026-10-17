@@ -158,13 +158,16 @@ def _ngrams(words, lines):
 
 
 class Denylist:
-  """A hashed phrase denylist with a cache of the phrases already hashed."""
+  """A hashed phrase denylist. Phrases of one or two words recur across files, so their result is cached; longer
+  phrases are hashed once per file (the cache stays small)."""
 
   def __init__(self, hashes):
     self.hashes = hashes
     self.cache = {}
 
   def listed(self, phrase):
+    if phrase.count(' ') > 1:
+      return digest(phrase) in self.hashes
     hit = self.cache.get(phrase)
     if hit is None:
       hit = self.cache[phrase] = digest(phrase) in self.hashes
@@ -172,12 +175,10 @@ class Denylist:
 
   def scan(self, text):
     """Hits as (line, phrase), one per phrase and line, in line order."""
-    seen, out = set(), []
-    for ln, phrase in text_phrases(text):
-      if (ln, phrase) not in seen and self.listed(phrase):
-        seen.add((ln, phrase))
-        out.append((ln, phrase))
-    return sorted(out)
+    found = {p for p in {phrase for _, phrase in text_phrases(text)} if self.listed(p)}
+    if not found:
+      return []
+    return sorted({(ln, phrase) for ln, phrase in text_phrases(text) if phrase in found})
 
 
 def scan_strings(text, hashes):
