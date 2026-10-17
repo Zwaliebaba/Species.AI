@@ -611,3 +611,95 @@ Metrics: exactly the six sample columns plus the header. **Scoring: none** — n
 
 Keep the idea (opt-in per-second telemetry: frame time, net in/out, latency, entity count, plus a hardware summary) but: query hardware in-process (DXGI adapter description, `GetSystemInfo`, `GlobalMemoryStatusEx`) instead of shelling out; record frame-time percentiles rather than an fps integer; upload over HTTPS with per-build tokens and explicit consent; and add a real deterministic benchmark scene (a recorded command stream replayed headless and rendered, §14).
 
+## 9 Profiler
+
+### 9.1 Mechanism [C] `contrib/systemiv/lib/profiler.h`, `contrib/systemiv/lib/profiler.cpp:Profiler`, `ProfiledElement`
+
+- Global `Profiler *g_profiler = NULL`. `Profiler::Start()` creates it if absent; `Profiler::Stop()` deletes it. The only callers are `ProfileWindow::ProfileWindow` / `~ProfileWindow` (and a final `Profiler::Stop()` in `code/main.cpp:Finalise`) — profiling runs **only while the "Profiler" window exists**.
+- `START_PROFILE(name)` / `END_PROFILE(name)` expand to `if (g_profiler) g_profiler->StartProfile/EndProfile(name)`; they compile to nothing only under `NO_PROFILER` (never defined) → the instrumentation is in the shipped exe at the cost of one pointer test per site.
+- Data model: a tree of `ProfiledElement` rooted at "Root" (always expanded). Each element: `m_currentTotalTime`, `m_currentNumCalls` (accumulating this second), `m_lastTotalTime`, `m_lastNumCalls` (previous second), `m_historyTotalTime`, `m_historyNumSeconds`, `m_historyNumCalls` (since last reset), `m_shortest` (init `DBL_MAX`), `m_longest` (init `DBL_MIN`), `m_callStartTime`, `m_isExpanded` (default false), `m_wasExpanded`, `m_name` (strdup), `m_children` (`SortingHashTable<ProfiledElement*>`, keyed by name, alphabetical walk), `m_parent`.
+- `StartProfile(name)`: find or create the child `name` of the current element; `AppReleaseAssert` that Root is still expanded; **only if the current element is expanded** start timing (`m_callStartTime = GetHighResTime()`, preceded by `glFinish()` when `m_doGlFinish` and inside a render section); descend. `EndProfile`: if the parent is expanded, optional `glFinish()`, then `End()` (calls + 1, add duration, update longest/shortest); ascend. Nesting is purely by call order; the name passed to `EndProfile` is only checked by debug asserts. Consequence: collapsed subtrees cost a hash lookup per call but are not timed; the tree must be expanded by clicking to measure deeper levels.
+- `RenderStarted()` / `RenderEnded()` bracket `Renderer::Render` (`code/renderer.cpp`) so that "Toggle glFinish" attributes GPU time to the enclosing section.
+- `Profiler::Advance()` — called once per frame from the location, editor and global-world loops (`code/main.cpp`) and the start sequence (`code/startsequence.cpp`), **not** from `MainMenuLoop`: when wall time passes `m_endOfSecond`, `m_lengthOfLastSecond = now − (m_endOfSecond − 1)`, `m_endOfSecond = now + 1`, and every element rolls current → last and adds last to history (`m_historyNumSeconds += 1`); the last frame time in ms is pushed to the front of `m_frameTimes` (kept to 200 entries).
+- `ResetHistory()` clears history, longest and shortest recursively. `GetMaxChildTime()` = largest child history total ÷ the first child's history seconds. `ExpandAll()` and `LookupElement(name)` exist. `PROFILE_HISTORY_LENGTH` (10) is unused.
+- Threading: no locking. On PC a `START_PROFILE` from a worker thread (for example the sound callback sections or loading-thread code) would corrupt the current-element pointer; Mac builds guard with `SINGLE_THREADED_PROFILER` [C]/[I].
+- Leak: neither destructor frees children or names (each Start/Stop cycle leaks the tree) [C].
+
+### 9.2 Output — the "Profiler" window [C] `code/interface/profilewindow.cpp:ProfileWindow`
+
+- Opened by `DebugKeyBindings::ProfileButton()`: 570 × 600 at (ScreenW − 590, 30). `Create()` registers "Toggle glFinish" (10, 18), "Avg" (330, 18) and "Reset History" (190, 18), and **turns `m_doGlFinish` on** by default; "Yes"/"No" is drawn at (130, 28).
+- Header "calls x avrg = total" right-aligned at x + 330. `RenderElementProfile` walks children alphabetically, skipping elements whose history average is 0; each row `"%*s%-*s:%5d x%4.1 = %4.0"` with indent icon '+'/'−' (expandable) or ' ', name padded to `24 − indent`, last-second calls, per-call ms and total ms — the two float conversions lack their `f` letter, so per-call and total print as undefined text (bug). Row brightness `105 + 150 × time / largest` (clamped 105–255). A bar starting at x + 340, length `√(ms) × 10` px, height 11, colour (150,150,250,brightness): outline when expanded, filled when collapsed. Clicking a row (`ControlEclipseLMousePressed` inside the row's 12-px band) toggles its expansion. The window grows by 12 px per row past its height.
+- The "Avg" button cycles its caption Min → Avg → Max → Min and the code computes the matching column value, but it is never printed (unused variable) [C].
+- Frame-time graph in the bottom 100 px: guide lines at 200 ms ("200ms per frame (5 fps)"), 100 ms ("(10 fps)") and 50 ms ("(20 fps)"); one red vertical line per frame for the last 200 frames, height `0.5 × (ms / 100) × 100` px (200 ms = full height), newest at the right.
+- No file output, no capture, no network or remote view [C].
+
+### 9.3 Overhead
+
+| Situation | Cost per instrumented site | Evidence |
+|---|---|---|
+| Window closed (always in FULL) | one global pointer test | [C] macro |
+| Window open, element under a collapsed parent | `SortingHashTable::GetData(name)` string-hash lookup on Start, pointer walk on End | [C] `Profiler::StartProfile` |
+| Window open, element timed | lookup + two `GetHighResTime()` (QueryPerformanceCounter) | [C] |
+| "Toggle glFinish" on (default when opened) | a full GPU pipeline drain (`glFinish`) at every Start and End inside `Renderer::Render` — frame rate collapses, numbers become per-section GPU+CPU time | [C] |
+| Window drawing | the "render profile" section itself, one text line per visible element | [C] |
+
+### 9.4 Other profilers
+
+`SoundSystem` owns two private `Profiler` instances (event triggers, per-event PCM-fill cost measured inside the sound callback) and the software mixer a third (allocated only under `PROFILER_ENABLED`); their window is Sound Profile ([27 §13.1](27_audio_engine.md#131-always-compiled-profiling-bfull)). A memory line "Available Memory: %4u MB Physical, %4u MB Virtual. Sample Cache = %d MB (%d%% in use)" is written to the debug log every **60 s** in every build (`code/main.cpp:PrintAvailableMemory`, `AdvanceAvailableMemoryCheck`).
+
+### 9.5 Every instrumented section
+
+The developers' own instrumentation is the best available map of what they considered expensive. 186 `START_PROFILE` sites in compiled files [C] (generated by `_work/scripts/S_32_profile_sections.py`, run with `python3 -I` over the manifest's compiled set; `<expr>` = a run-time name, e.g. one node per building or entity type). Nesting at run time follows call order: `Client Main Loop` (the whole network-advance step, which runs `Location::Advance`) and `Render` are the two big roots inside a match.
+
+| File | Function → section names |
+|---|---|
+| `code/camera.cpp` | `Camera::Advance`: "Advance Camera" |
+| `code/clouds.cpp` | `Clouds::Render`: "RenderSky", "RenderBlobby", "RenderFlat" |
+| `code/deform.cpp` | `DeformEffect::Stop`: "Deform Pre-render", "Deform Apply" |
+| `code/explosion.cpp` | `ExplosionManager::Advance`: "Advance Explosions"; `ExplosionManager::Render`: "Render Explosions" |
+| `code/gamecursor.cpp` | `GameCursor::Render`: "Render GameCursor" |
+| `code/global_internet.cpp` | `GlobalInternet::Render`: "Internet" |
+| `code/global_world.cpp` | `SphereWorld::RenderSpirits`: "Spirits"; `SphereWorld::RenderWorldShape`: "Shape"; `SphereWorld::RenderHeaven`: "Heaven"; `SphereWorld::RenderIslands`: "Islands"; `GlobalWorld::Render`: "Render Global World" |
+| `code/helpsystem.cpp` | `HelpSystem::Render`: "Render Helpsys" |
+| `code/interface/profilewindow.cpp` | `ProfileWindow::Render`: "render profile" |
+| `code/landscape_renderer.cpp` | `LandscapeRenderer::Render`: "Render Landscape Main", "Render Landscape Overlay" |
+| `code/lib/bitmap.cpp` | `BitmapRGBA::ApplyBlurFilter`: "ApplyBlur" |
+| `code/location.cpp` | `Location::AdvanceWeapons`: "Advance Lasers", "Advance Effects"; `Location::AdvanceBuildings`: "Advance Buildings", ‹Building::GetTypeName( building-›m_type )›; `Location::AdvanceSpirits`: "Advance Spirits"; `Location::AdvanceClouds`: "Advance Clouds"; `Location::RenderSpirits`: "Render Spirits"; `Location::Render`: "Render Routing System", "RenderCurrentMessage"; `Location::RenderBuildings`: "Render Buildings", ‹Building::GetTypeName( building-›m_type )›; `Location::RenderBuildingAlphas`: "Render Building Alphas", ‹Building::GetTypeName( building-›m_type )›, "Depth Sort"; `Location::RenderClouds`: "Render Clouds"; `Location::RenderWeapons`: "Render Weapons" |
+| `code/main.cpp` | `LocationGameLoop`: "Client Main Loop" |
+| `code/markersystem.cpp` | `MarkerSystem::Render`: "RenderMarkerSystem" |
+| `code/multiwinia.cpp` | `Multiwinia::Render`: "Multiawinia::Render" |
+| `code/multiwiniahelp.cpp` | `MultiwiniaHelp::Render`: "Render MultiwiniaHelp" |
+| `code/network/server.cpp` | `Server::Advance`: "Advance Server", "UpdateClients", "Authentication", "SEND", "Advertise" |
+| `code/particle_system.cpp` | `ParticleSystem::Advance`: "Advance Particles"; `ParticleSystem::Render`: "Render Particles" |
+| `code/renderer.cpp` | `Renderer::Render`: "Render"; `Renderer::RenderFrame`: "Render Clear", "GL Flip"; `Renderer::PreRenderPixelEffect`: "Pixel Pre-render", "blend old", "Draw pixelated", "Gen new texture"; `Renderer::ApplyPixelEffect`: "Pixel Apply", "pass 1", "pass 2", "pass 3", "pass 4"; `Renderer::MarkUsedCells`: "MarkUsedCells" |
+| `code/sepulveda.cpp` | `Sepulveda::RenderHighlights`: "Highlights"; `Sepulveda::Render`: "Render Sepulveda" |
+| `code/sound/sound_filter.cpp` | `DspResLowPass::Process`: "DspResLowPass"; `DspGargle::Process`: "DspGargle"; `DspEcho::Process`: "DspEcho" |
+| `code/sound/sound_instance.cpp` | `SoundInstance::StartPlaying`: "StartPlaying", "OpenStream", "Set Parameters", "Set freq/vol/pos", "Setup DSP Effects" |
+| `code/sound/sound_library_3d_dsound.cpp` | `SoundLibrary3dDirectSound::PopulateBuffer`: "LockBuf", "FillBuf", "UnlockBuf"; `SoundLibrary3dDirectSound::AdvanceChannel`: "GetPlayCursor", "PopulateBuf"; `SoundLibrary3dDirectSound::Advance`: "Commit" |
+| `code/sound/soundsystem.cpp` | `SoundSystem::Advance`: "Advance SoundSystem", "Shutdown Music", "Propagate Blueprints", "Allocate Sorted Array", "Perceived Volumes", "Sort Samples", "Recalculate Priorities", "Find best Channel", "Stop Old Sound", "Start New Sound", "Reset Channel", "Advance All Channels", "Shutdown Sound", "UpdateListener", "SoundLibrary3d Advance" |
+| `code/taskmanager_interface_gestures.cpp` | `TaskManagerInterfaceGestures::Render`: "Render Taskman"; `TaskManagerInterfaceGestures::RenderGestures`: "Render Gestures", "Create Bitmap", "ConvertToTexture", "Clear", "Draw lines", "Draw texture" |
+| `code/taskmanager_interface_icons.cpp` | `TaskManagerInterfaceIcons::Render`: "Render Taskman"; `TaskManagerInterfaceIcons::RenderGestures`: "Render Gestures", "Create Bitmap", "ConvertToTexture", "Clear", "Draw lines", "Draw texture" |
+| `code/taskmanager_interface_multiwinia.cpp` | `TaskManagerInterfaceMultiwinia::Render`: "Render Taskman" |
+| `code/team.cpp` | `Team::Advance`: "Advance Unit Entities", "Advance Units", "Advance Others", ‹entityName›; `Team::Render`: "Render Units", ‹Entity::GetTypeName( unit-›m_troopType )›, "Render Others", "Render Virii", "Render Darwinians", "Render Sync Errors"; `Team::RenderOthers`: ‹Entity::GetTypeName( entity-›m_type )› |
+| `code/unit.cpp` | `Unit::AdvanceEntities`: ‹Entity::GetTypeName( s-›m_type )› |
+| `code/user_input.cpp` | `UserInput::Advance`: "Advance UserInput"; `UserInput::Render`: "Render UserInput" |
+| `code/water.cpp` | `Water::UpdateDynamicWater`: "LookupTables", "VertexHeights", "VertexBuffer"; `Water::Render`: "Render Water"; `Water::Advance`: "Advance Water" |
+| `code/water_reflection.cpp` | `WaterReflectionEffect::PreRenderWaterReflection`: "Water Pre-render", "Render Clear" |
+| `code/worldobject/airstrike.cpp` | `SpaceInvader::Advance`: "Update Pos" |
+| `code/worldobject/building.cpp` | `Building::PushFromBuilding`: "PushFromBuilding"; `Building::RenderPorts`: "RenderPorts" |
+| `code/worldobject/centipede.cpp` | `Centipede::SearchForSpirits`: "SearchSpirits" |
+| `code/worldobject/darwinian.cpp` | `Darwinian::SearchForNewTask`: "SearchingForTask"; `Darwinian::AdvanceCombat`: "AdvanceCombat", "ThrowGrenade"; `Darwinian::AdvanceWorshipSpirit`: "AdvanceWorship"; `Darwinian::SearchForRandomPosition`: "SearchRandomPos"; `Darwinian::SearchForCrates`: "SearchCrate"; `Darwinian::SearchForFlags`: "SearchFlags"; `Darwinian::SearchForArmour`: "SearchArmour"; `Darwinian::SearchForOfficers`: "SearchOfficers"; `Darwinian::SearchForShamans`: "SearchShaman"; `Darwinian::SearchForSpirits`: "SearchSpirits"; `Darwinian::SearchForThreats`: "SearchThreats", "FindThreatObjects", "Trees", "AntsNests", "AITargets", "GetEnemies"; `Darwinian::SearchForPorts`: "SearchPorts"; `Darwinian::SearchForCarryableBuilding`: "SearchCarryable"; `Darwinian::AdvanceToTargetPosition`: "AdvanceToTargetPos"; `Darwinian::PushFromObstructions`: "PushFromWater", "PushFromBuildings" |
+| `code/worldobject/feedingtube.cpp` | `FeedingTube::RenderSignal`: "Signal" |
+| `code/worldobject/flag.cpp` | `Flag::Render`: "RenderFlag" |
+| `code/worldobject/radardish.cpp` | `RadarDish::RenderSignal`: "Signal" |
+| `code/worldobject/spawnpoint.cpp` | `SpawnPoint::Advance`: "Evaluate", "SpawnDarwinians" |
+| `code/worldobject/spider.cpp` | `Spider::SearchForSpirits`: "SearchSpirits" |
+| `code/worldobject/spirit.cpp` | `Spirit::PushFromBuildings`: "PushFromBuildings" |
+| `code/worldobject/spiritstore.cpp` | `SpiritStore::Render`: "Spirit Store" |
+| `code/worldobject/triffid.cpp` | `Triffid::Advance`: "CheckTrigger" |
+| `code/worldobject/tripod.cpp` | `Tripod::FindEntityToAttack`: "FindEntityToA"; `Tripod::ChooseDestination`: "ChooseDest"; `Tripod::DoNavigation`: "DoNav"; `Tripod::AdvanceWalk`: "AdvanceWalk"; `Tripod::AdvancePreAttack`: "AdvancePreAttack"; `Tripod::AdvanceAttack`: "AdvanceAttack" |
+| `code/worldobject/trunkport.cpp` | `TrunkPort::Render`: "RenderDestination"; `TrunkPort::RenderAlphas`: "Advance Heightmap", "Render Heightmap" |
+| `code/worldobject/virii.cpp` | `Virii::RecordHistoryPosition`: "RecordHistory"; `Virii::AdvanceToTargetPos`: "AdvanceToTargetPos"; `Virii::AdvanceIdle`: "AdvanceIdle"; `Virii::AdvanceAttacking`: "AdvanceAttacking"; `Virii::AdvanceToSpirit`: "AdvanceToSpirit"; `Virii::AdvanceToEgg`: "AdvanceToEgg"; `Virii::SearchForEnemies`: "SearchForEnemies"; `Virii::SearchForSpirits`: "SearchForSpirits"; `Virii::SearchForEggs`: "SearchForEggs"; `Virii::SearchForIdleDirection`: "SearchForIdleDir" |
+
+Tags: sections in `code/deform.cpp` and `code/water_reflection.cpp` exist only in [B:D3D]; `code/global_world.cpp`, `code/global_internet.cpp`, `code/sepulveda.cpp`, `code/helpsystem.cpp`, `code/taskmanager_interface_gestures.cpp`, `code/taskmanager_interface_icons.cpp`, `Darwinian::AdvanceWorshipSpirit`, `code/worldobject/spiritstore.cpp`, `code/worldobject/tripod.cpp` are [B:LEGACY] or unreachable in Multiwinia; the pixel-effect sections never run in Multiwinia ([24](24_rendering.md)); the three `code/water.cpp:Water::UpdateDynamicWater` sections use the GL-only wrapper `START_PROFILE_NO_DIRECT3D`.
+
