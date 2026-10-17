@@ -4,7 +4,7 @@ Scope: `contrib/eclipse/{eclipse,eclwindow,eclbutton}.{h,cpp}`; `code/interface/
 
 Supporting files read outside scope (to resolve reachability/semantics, not re-specified here): `code/main.cpp` (editor loops), `code/user_input.cpp` (Eclipse pump + debug hot-keys), `code/lib/input/inputdriver_win32.cpp` (WM_CHAR routing), `data/input/input_preferences.txt` (bindings), `code/network/networkvalue.{h,cpp}` (value binding), `code/lib/text_renderer.{h,cpp}` (font blend modes), `code/lib/language_table.{h,cpp}` (`LookupPhrase` fallback), `contrib/systemiv/lib/unicode/unicode_string.cpp` (`Truncate`), `contrib/systemiv/lib/tosser/llist.cpp` (`GetData` null on bad index), `code/interface/multiwiniaoptions_window.cpp` (editor "Other Options" window, P17b file), `code/UI/MultiwiniaEditorButton.h`, `code/UI/GameMenuWindow.cpp` (editor button gating), `code/interface/mainmenus.{h,cpp}` (`GameOptionsWindow`, `MultiwiniaButton`), `code/game_menu.cpp` (layout helpers), `code/level_file.h`, `code/landscape.cpp`, `code/location.cpp:Location::GetBuilding`, `code/global_world.cpp:GlobalWorld::Advance`, `targets/vs2005/Darwinia.vcproj`, `contrib/eclipse/eclipse.vcproj`.
 
-Generated table: `OUT/_work/drafts/P17a_ui_framework_editor_ui_strings.csv` (221 rows: every `LANGUAGEPHRASE` key with English text, every literal `UnicodeString("…")` caption, every `CreateValueControl` name key in scope) produced by `OUT/_work/scripts/P17a_ui_strings.py`.
+Generated table: `OUT/_work/drafts/P17a_ui_framework_editor_ui_strings.csv` (221 rows: 82 `LANGUAGEPHRASE` keys with English text, 59 literal `UnicodeString("<text>")` captions, 80 `CreateValueControl` name keys) produced by `OUT/_work/scripts/P17a_ui_strings.py`.
 
 ---
 
@@ -27,7 +27,7 @@ flowchart TB
     WID["InputField, InputScroller, ColourWidget, ScrollBar*, CheckBox, DropDownMenu*, MessageDialog, FileDialog"]
   end
   subgraph Screens
-    GM["Multiwinia front-end (GameMenuWindow, GameOptionsWindow… P17b/P18)"]
+    GM["Multiwinia front-end: GameMenuWindow, GameOptionsWindow pages (P17b/P18)"]
     ED["Map editor windows [B:EDITOR]"]
     DBG["Debug/cheat/network windows"]
   end
@@ -567,7 +567,7 @@ There are **no keyboard bindings for `MenuUp/Down/Activate`** in the PC file —
 | Drop-down captions | closed caption translated if the option word is a key; open list shows raw words | [C] §4.6 |
 | Placeholders | `UnicodeString::ReplaceStringFlag('F', text)` replaces `*F` (e.g. "Map *F has been successfully created") | [C] `code/interface/multiwinia_window.cpp:CreateMapButton::MouseUp` |
 | Implicit narrowing | `UnicodeString → const char*` conversion operator (non-ANSI → '?') lets translated strings be passed where `char*` keys/words are expected (e.g. `menu->AddOption(LANGUAGEPHRASE("buildingname_gunturret"), …)`, `CreateValueControl(LANGUAGEPHRASE("editor_threshold"), …)`) — lossy for non-Latin languages | [C] `contrib/systemiv/lib/unicode/unicode_string.h` |
-| Untranslated debug UI | Cheat window, debug menu, network window, camera-anim window, gesture/grabber windows use literal English | [C]; matches `docs/detailed schedule.txt` "Translation System… Missed out" list |
+| Untranslated debug UI | Cheat window, debug menu, network window, camera-anim window, gesture/grabber windows use literal English | [C]; matches `docs/detailed schedule.txt` "Translation System / Missed out" list |
 | Printf safety | `InputField` rejects '%' so user text can be passed to printf-style `DrawText2D` | [C] `InputField::Keypress` |
 
 Font substitution for CJK languages: §3.4.
@@ -932,7 +932,7 @@ In editor mode `Location::GetBuilding(id)` resolves against `levelFile->GetBuild
 ### E2.5 Editor rendering [C] `LocationEditor::Render` (called after `Location::Render` from `code/renderer.cpp` when `m_editing`)
 
 Order:
-1. Object lighting on; every level-file building `Render(0.0)`; lighting off. In ModeBuilding additionally every building `RenderAlphas(0.0)` and `RenderLink()` (link lines); selected buildings of several types draw their own gizmos (AI target link range sphere, objective spheres, turret target, triffid egg arc, spawn-point search radius…) [C] `code/worldobject/*.cpp` `LOCATION_EDITOR` blocks (P06/P07).
+1. Object lighting on; every level-file building `Render(0.0)`; lighting off. In ModeBuilding additionally every building `RenderAlphas(0.0)` and `RenderLink()` (link lines); when the selected building (ModeBuilding) is one of the following it draws an extra gizmo inside its own `#ifdef LOCATION_EDITOR` block [C]: AITarget — sphere of radius `AITARGET_LINKRANGE`, colour (255,100,100) (`code/worldobject/ai.cpp`); AIObjective — always a radius-50 sphere while editing (red; blue for defence objectives), plus a radius-60 red sphere when selected (`aiobjective.cpp`; the radius-50 sphere also shows in game when pref `RenderAIInfo` ≠ 0); EruptionMarker, JumpPad, RestrictionZone, SmokeMarker — radius-30 sphere while editing plus a larger selection sphere (EruptionMarker: 35) (`eruptionmarker.cpp`, `jumppad.cpp`, `restrictionzone.cpp`, `smokemarker.cpp`); GunTurret (mortar type) — 20-segment red circle of `m_targetRadius` around `pos + m_targetPos` at terrain + 10, plus a force indicator when `m_targetForce > 0` (`gunturret.cpp:GunTurret::RenderAlphas`); SpawnPoint — sphere of `m_searchRadius` (`spawnpoint.cpp`); Triffid — simulated egg trajectory and trigger location (`triffid.cpp`). Exact gizmo geometry: P06/P07.
 2. Camera mounts: `camera.shp` at each mount oriented by (front, up), skipped when the camera is within **20.0** units.
 3. Instant units (`RenderUnit`): 3D label `"%d %s(s)"` (count, entity type name) at terrain + 15, size 15; a dot grid `maxX = ⌊√n⌋`, `maxZ = n / maxX`, pitch **10**, centred, each dot a camera-facing quad half-size 5 at terrain + 2, team colour with alpha 200 (additive, no depth write, no cull); in ModeInstantUnit a 30-segment spread circle of radius `m_spread` at terrain + 10 (min y 2), alpha 100, line width 2.
 4. Mode overlays:
@@ -1308,7 +1308,7 @@ Darwinia campaign-world editor: `editor_editlocations` (GlobalWorld `m_editorMod
 | Profiler | `Profiler` | always (`ProfileWindow`, P14) | DebugMenu, CheatWindow buttons | none live (F10 commented) | [B:DEBUG] via cheat window |
 | Grabber (AVI capture) | `Grabber` | `AVI_GENERATOR` (TARGET_DEBUG) | `DebugKeyBindings::GrabberButton` — **no caller** | none | [B:DEBUG], unreachable |
 | Gesture editor | `Gesture Editor` | `GESTURE_EDITOR && USE_SEPULVEDA_HELP_TUTORIAL` | — | — | [B:DEAD] |
-| Sound editor / stats / profile / Pokey | `SOUND_EDITOR_WINDOW_NAME` etc. | `SOUND_EDITOR` (TARGET_DEBUG) | CheatWindow (editor, stats); DebugMenu (if modsEnabled — never) | none live (F7/F8/F9/F11 commented) | [B:DEBUG] (P16 specifies the windows) |
+| Sound editor / stats / profile / Pokey | `"Sound Editor"`, `"Sound Stats"`, `"Sound Profile"`, `"Pokey Playground"` | `SOUND_EDITOR` (TARGET_DEBUG) | CheatWindow (editor, stats); DebugMenu (if modsEnabled — never) | none live (F7/F8/F9/F11 commented) | [B:DEBUG] (P16 specifies the windows) |
 | Editor toggle | — | `LOCATION_EDITOR` | DebugMenu (if modsEnabled) | F9 `ToggleEditor` (commented out) | [B:EDITOR], unreachable |
 
 [C] `code/user_input.cpp:UserInput::Advance`, `UserInput::AdvanceMenus`; `code/interface/debugmenu.cpp`; `data/input/input_preferences.txt`; `code/lib/universal_include.h` (macro table in `build_matrix.md`).
@@ -1332,7 +1332,7 @@ Note: `ToggleEditor` and `ToggleNetworkStats` are both bound to F9 — harmless 
 | `PokeyButton()` | open `PokeyWindow("Pokey Playground")` 400×480 at (10,40) | `SOUND_EDITOR` |
 | `SoundStatsButton()` / `SoundProfileButton()` / `SoundEditorButton()` | toggle the respective sound windows (editor 500×550 at (50,25)) | `SOUND_EDITOR` |
 | `ReallyQuitButton()` | open `ReallyQuitWindow` if not open | — (no caller in Win32 build) |
-| `ToggleFullscreenButton()` | `SetWindowed(!windowed, true, …)` | — (only caller `code/lib/input_sdl.cpp`, not built on Win32) |
+| `ToggleFullscreenButton()` | `SetWindowed(!g_windowManager->Windowed(), true, switchingToWindowed)` | — (only caller `code/lib/input_sdl.cpp`, not built on Win32) |
 
 ## [→ 32_debug_test_and_performance] D3. DebugMenu "Tools Menu" (`dialog_toolsmenu`) [compiled, unreachable]
 
@@ -1492,7 +1492,7 @@ Training tool for the Darwinia mouse-gesture recogniser: a 4:3 drawing box (`Dra
 | Doc | Says | Code | Ref |
 |---|---|---|---|
 | `docs/changes.txt` "Editor changes" | moving a land tile moves its buildings; option "in the land tiles menu" | behaviour confirmed (`MoveBuildingsInTile`), but the toggle is in the Landscape window, not the per-tile window | `LocationEditor::AdvanceModeLandTile`, `LandscapeEditWindow::Create` |
-| `docs/detailed schedule.txt` "Translation System… Missed out: … Network Window, Grabber Window, Gesture Window, Debug Menu, Cheat Window, Camera Anim Window" | these windows are untranslated | consistent: they use literal English captions | §D3–D7, §E4.10 |
+| `docs/detailed schedule.txt` "Translation System" → "Missed out:" Sound Stats Window, Sound Parameter Window, Sound Editor Window, Sound Profile Window, Profile Window, Pokey Window, Network Window, Input Logger, Grabber Window, Gesture Window, Debug Menu, Cheat Window, Camera Anim Window | these windows are untranslated | consistent: they use literal English captions | §D3–D7, §E4.10 |
 | `docs/donelist.txt` "made it possible to add new gestures from editor" | gesture editor exists | present but compiled out (`USE_SEPULVEDA_HELP_TUTORIAL`) | §D7 |
 | `docs/new building docs.txt` (FenceSwitch "Linking from the editor occurs in the following order: first set of fences, second set") | link order matters | editor link tool calls `Building::SetBuildingLink(id)` per click; ordering semantics live in the building (P07) | `AdvanceModeBuilding` |
 | DebugMenu captions "(F2)…(F9)" | hot-keys | no such bindings; F-keys are task-manager keys in `data/input/input_preferences.txt` | §D3 |
@@ -1507,11 +1507,11 @@ Training tool for the Darwinia mouse-gesture recogniser: a 4:3 drawing box (`Dra
 | "Darwinian(s)", "Spawn Green/Red/Yellow/Blue/Virus/Future", "Spawn Virii", "Spawn Spirits", "Futurewinian" | name/text | `cheat_window.cpp`, `multiwiniaoptions_window.cpp` | "unit", "Spawn Team 1–4", "Spawn Hostile", "Spawn Souls", "alt-faction" |
 | "Show Dr S Face" / `Clouds::ShowDrSFace` (Dr Sepulveda) | character/text | `cheat_window.cpp` | drop |
 | Darwinia campaign location names "generator", "mine", "receiver", "pattern_buffer"; buttons "Enable Generator and Mine", "Enable Receiver and Buffer", "Open All Locations" | name/text | `cheat_window.cpp` | drop (no campaign) |
-| Building names exposed in editor (GunTurret, RocketTurret, GrenadeTurret, FlameTurret, Subversion Turret, TrunkPort, LaserFence, Triffid, AntHill, SafeArea, Incubator, CloneLab, EscapeRocket, BlueprintRelay/Console, RadarDish, PulseBomb, JumpPad, ChessBase, MultiwiniaZone, DynamicHub/Node, FenceSwitch, …) via `Building::GetTypeName` / `buildingname_*` | name | `buildings_window.cpp` | generic type ids (see 03 register) |
+| Every building type name exposed by the editor building list and per-type windows (`Building::GetTypeName` for all non-blocked types, plus `buildingname_gunturret/rocketturret/grenadeturret/flameturret/subversionturret`) — enumerated in the 03 IP register | name | `code/interface/buildings_window.cpp` | generic type ids (see 03 register) |
 | Entity type names in editor lists (`Entity::GetTypeName`) | name | `instant_unit_window.cpp`, `buildings_window.cpp` | generic ids (see 02 register) |
 | Crate reward names (`Crate::GetName`, `cratename_*`) | name/text | `cheat_window.cpp`, `invalidcrates_window.cpp`, `multiwiniaoptions_window.cpp` | see 04 register |
-| Editor UI strings (`editor_*`, `dialog_*`, `multiwinia_editor_*`, `taskmanager_mapeditor`) — full list with English text in `drafts/P17a_ui_framework_editor_ui_strings.csv` (221 rows) | text | `data/language/english.txt` + scope files | rewrite all UI copy; keep only generic verbs (Save, Cancel, OK) |
-| Literal debug captions ("Kill All Enemies", "Allow Arbitrary Placement", "Give all research", "Clear Resources", "Spawn Ports", "GoodCrate", "Profile (F6)", "Dbg Cam (F2)", "Pokey Playground", "CameStart", "Create New Anim", "Record Demo", …) | text | `cheat_window.cpp`, `debugmenu.cpp`, `camera_anim_window.cpp`, `gesture_window.cpp` | rewrite |
+| Editor UI strings (`editor_*`, `dialog_*`, `multiwinia_editor_*`, `taskmanager_mapeditor`) — full list with English text in `drafts/P17a_ui_framework_editor_ui_strings.csv` (82 phrase keys + 80 value-control keys) | text | `data/language/english.txt` + scope files | rewrite all UI copy; keep only generic verbs (Save, Cancel, OK) |
+| All 59 literal (untranslated) English captions in scope — e.g. "Kill All Enemies", "Allow Arbitrary Placement", "Give all research", "Clear Resources", "Spawn Ports", "GoodCrate", "Profile (F6)", "Dbg Cam (F2)", "CameStart", "Create New Anim", "Record Demo"; complete list = rows with kind `literal` in `drafts/P17a_ui_framework_editor_ui_strings.csv` | text | `cheat_window.cpp`, `debugmenu.cpp`, `camera_anim_window.cpp`, `gesture_window.cpp`, `grabber_window.cpp`, `darwinia_window.cpp`, `input_field.cpp`, `multiwinia_window.cpp` | rewrite |
 | "Pokey Playground" (sound toy name) | name | `debugmenu.cpp` | "Synth sandbox" |
 | Magic camera mount name "CamPosBefore" | name | `code/level_file.h:MAGIC_MOUNT_NAME_START_POS` | `__start_pose` |
 | Default names "NewLevel", "mp_blank.txt", "mp_newmap.txt", "blah<n>", "CamAnim<n>", "map_<name>.txt"/"mission_<name>.txt", "mp_*" filter | text | `globalworldeditor_window.cpp`, `multiwinia_window.cpp`, `camera_*_window.cpp` | neutral defaults |
@@ -1519,7 +1519,7 @@ Training tool for the Darwinia mouse-gesture recogniser: a 4:3 drawing box (`Dra
 | Fonts "speccy", "editor", "square" (`data/textures/*font*`) | art | `code/app.cpp` | licensed/open fonts |
 | UI palette (red glass panel + steel-blue highlight, §5) | art direction | `darwinia_window.cpp` | new palette (keep structure) |
 | Sound events "MenuSelect", "MenuCancel" (`TypeMultiwiniaInterface`) | audio | `multiwinia_window.cpp`, `mainmenus.h` | `ui.select`, `ui.back` |
-| URLs `http://www.multiwinia.co.uk/` etc. (seen in `mainmenus.cpp`, P17b) | brand | `code/interface/mainmenus.cpp` | drop |
+| URLs `http://www.multiwinia.co.uk/` (and `http://www.savedarwinia.com` under `EGAMESBUILD`) in `MainMenuWindow` (P17b) | brand | `code/interface/mainmenus.cpp` | drop |
 
 ## Appendix — dead/legacy code
 

@@ -456,7 +456,7 @@ Common to all modes:
 **Per mode second** [C]:
 1. If `m_timeRemaining > 0` → `--`. `BackupScores()`. If `ScoreMode == 0` → `ZeroScores()`.
 2. For each used team `t`:
-   - Special team: skipped entirely if it has ≤ 1 entity (`NumEntities(255) <= 1`, they always own one AI entity) or owns 0 spawn points.
+   - Special team: skipped entirely if it has ≤ 1 entity (`NumEntities(255) <= 1`, they always own one AI entity) or owns 0 spawn points. Otherwise it counts as an opponent in `totalTeams` and in the leader/draw comparison, and it is exempt from the elimination countdown — so while Evilinians/Futurewinians hold spawn points, "last team standing" cannot trigger [C/I].
    - `totalTeams++`; if `m_eliminated[t]` → `numEliminated++`, skip.
    - `notEliminated = t`; `score += SpawnPoint::s_numSpawnPoints[t+1]` (spawn points currently owned).
    - If `GetNetworkTime() > m_startTime + 30.0` (30 game seconds of protection): if non-special and owns 0 spawn points → when `m_eliminationTimer[t] == 30` show "You will be eliminated in 30 seconds!" (local) / "*T will be eliminated in 30 seconds!"; `--m_eliminationTimer[t]`; at `<= 0` → `EliminateTeam(t)` + `Team::Eliminate()` (kills all units/entities, stops tasks, neutralises its trunk ports [C] `code/team.cpp:Team::Eliminate`). Otherwise reset `m_eliminationTimer[t] = 30`.
@@ -619,7 +619,7 @@ No draw, no elimination, no sudden death; retribution never fires (IsEliminated 
 
 Compiled only under `INCLUDEGAMEMODE_TANKBATTLE` (TARGET_DEBUG). Per mode second: `score = NumTanks − m_tankDeaths[t]`; if a live team has no `Entity::TypeTank` in `m_specials` → `m_tankDeaths++`; when ≥ NumTanks → `EliminateTeam`; else "*T loses a Tank!" and a new `GlobalResearch::TypeTank` task targeted at the team's InstantUnit tank position from the level; last team standing wins. No time limit [C] `code/multiwinia.cpp:AdvanceTankBattle`.
 
-### 4.9 AI differences per mode (pointers only; P08 owns `code/worldobject/ai.cpp`)
+### 4.8 AI differences per mode (pointers only; P08 owns `code/worldobject/ai.cpp`)
 
 | Mode | Mode-specific AI entry points [C] `code/worldobject/ai.cpp` | Rules-side hooks in this partition |
 |---|---|---|
@@ -630,7 +630,7 @@ Compiled only under `INCLUDEGAMEMODE_TANKBATTLE` (TARGET_DEBUG). Per mode second
 | Blitzkrieg | `RunGunTurretBlitzkrieg` (L~2005), Blitzkrieg ranges in `AI::Advance` (L~383–389); no officers | `MultiwiniaZone::GetBlitzkriegPriority` writes `AITarget::m_priority[team]` (Standard/Hard AI only) |
 | All | difficulty `m_aiType` Easy/Standard/Hard (L~56–126, 531–535, 2037 turret limit 1 on Easy, 3058) ; `code/worldobject/armour.cpp` AI timers (Easy 20/10 s, Standard 10/5 s) | `RemoveTeams` spawns an `Entity::TypeAI` for a leaving human |
 
-### 4.8 Retribution (Domination, KOTH, CTS, Blitzkrieg; technically runs in all modes) — `AdvanceRetribution` [C]
+### 4.9 Retribution (Domination, KOTH, CTS, Blitzkrieg; technically runs in all modes) — `AdvanceRetribution` [C]
 
 Per tick for each used, non-special team:
 - If `IsEliminated(t)` (mode-specific, §3.4): `m_eliminationBonusTimer[t] -= SERVER_ADVANCE_PERIOD`; when ≤ 0 → reset to 45 and, if `TaskManager::CapacityUsed() < Capacity()`, choose a reward uniformly from the list {Airstrike} (basic crates only) or {Airstrike, Airstrike, Meteor, Forest, DarkForest, Eggs} (P(Airstrike)=1/3, others 1/6 each) with `syncrand()`, `Crate::CaptureCrate(reward, t)` (P08), `NotifyRecentTaskSource(2)`; otherwise local message "Retribution : Two powerups max".
@@ -703,10 +703,42 @@ classDiagram
     FuelBuilding <|-- FuelPipe
     FuelBuilding <|-- FuelStation
     FuelBuilding <|-- EscapeRocket
-    class FuelBuilding{ +int m_fuelLink; +double m_currentLevel; ShapeMarker* m_fuelMarker; static Shape* s_fuelPipe; ProvideFuel(level); GetLinkedBuilding(); GetFuelPosition() }
-    class FuelGenerator{ +double m_surges; Shape* m_pump; ShapeMarker* m_pumpTip; double m_pumpMovement; double m_previousPumpPos; ProvideSurge() }
-    class FuelStation{ ShapeMarker* m_entrance; AITarget* m_aiTarget; IsLoading(); BoardRocket(id); GetEntrance() }
-    class EscapeRocket{ +int m_state; +double m_fuel; +int m_pipeCount; +int m_passengers; +double m_countdown; +double m_damage; +float m_fuelBeforeExplosion; +int m_spawnBuildingId; +bool m_spawnCompleted; +double m_refuelRate }
+    class FuelBuilding{
+        +int m_fuelLink
+        +double m_currentLevel
+        ShapeMarker* m_fuelMarker
+        static Shape* s_fuelPipe
+        ProvideFuel(level)
+        GetLinkedBuilding()
+        GetFuelPosition()
+    }
+    class FuelGenerator{
+        +double m_surges
+        Shape* m_pump
+        ShapeMarker* m_pumpTip
+        double m_pumpMovement
+        double m_previousPumpPos
+        ProvideSurge()
+    }
+    class FuelStation{
+        ShapeMarker* m_entrance
+        AITarget* m_aiTarget
+        IsLoading()
+        BoardRocket(id)
+        GetEntrance()
+    }
+    class EscapeRocket{
+        +int m_state
+        +double m_fuel
+        +int m_pipeCount
+        +int m_passengers
+        +double m_countdown
+        +double m_damage
+        +float m_fuelBeforeExplosion
+        +int m_spawnBuildingId
+        +bool m_spawnCompleted
+        +double m_refuelRate
+    }
 ```
 
 **Fuel flow.** Power (surges) arrives at a FuelGenerator from a `PylonEnd` whose power link is that generator (`PylonEnd::TriggerSurge` → `FuelGenerator::ProvideSurge`) [C] `code/worldobject/generator.cpp:PylonEnd::TriggerSurge`. On Rocket Riot maps the chain is SolarPanel → PowerSplitter → Pylon… → PylonEnd → FuelGenerator → FuelPipe(s) → FuelStation → EscapeRocket (each FuelStation's `fuelLink` is the rocket id; 3 stations per team) [C] `data/levels/mp_rocketriot_2P_4.txt`. Solar panel capture and surge generation are P06/P07.
@@ -1065,7 +1097,7 @@ Note: between 95% and 100% fuel the rocket is already Loading but the caption st
 12. AI-mode network range check accepts 3 [C].
 13. Rocket in `StateFlight` can still be damaged into `StateExploding` by non-Darwinian damage (attract-attackers stops at Flight) — then it would "refuel" mid-air [I].
 14. Pulse bomb capture check continues after detonation → possible second `RecordDefenseTime` [I].
-15. `IsEliminated` for KOTH/CTS (no spawn points & < 50 Darwinians) never removes a team; it only enables retribution and loses CTS ties [C].
+15. `IsEliminated` for KOTH/CTS (no spawn points & < 50 Darwinians) never removes a team; it only enables retribution (§4.9) and loses CTS ties [C].
 
 ## [U] Unknowns
 

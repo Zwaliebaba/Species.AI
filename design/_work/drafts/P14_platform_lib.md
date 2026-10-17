@@ -679,3 +679,326 @@ Status column: *live* = used for the Multiwinia PC build/release; *variant* = no
 | 172 | `tools/unused_samples.sh` | audit script | Compares SOUNDNAME/SAMPLE entries in data/sounds.txt against files in data/sounds | dev audit (Darwinia layout) |
 | 173 | `tools/upx.exe` | binary | UPX executable packer (`--best`) used by some packaging scripts | live (optional) |
 | 174 | `tools/vista_exclusions.txt` | list | Darwinia Vista exclusions (build_vista.bat) | legacy |
+
+---
+
+## [→ 20_architecture] 20.T Threading primitives and thread map
+
+### 20.T.1 Primitive classes [C] `code/lib/runnable.h`, `code/lib/runnable.cpp`, `code/lib/work_queue.h`, `code/lib/work_queue.cpp`
+
+```mermaid
+classDiagram
+  class Runnable { <<abstract>> +Run() const }
+  class NoOp { +Run() const : no-op }
+  class Function { -void(*m_func)() +Run() const }
+  class Method~T~ { -void(T::*m_func)() -T* m_this +Run() const }
+  class Method1~T,A1~ { -void(T::*m_func)(A1) -T* m_this -A1 m_arg +Run() const }
+  Runnable <|-- NoOp
+  Runnable <|-- Function
+  Runnable <|-- Method
+  Runnable <|-- Method1
+  class Job { <<abstract>> -NetEvent m_event +Process() +Wait() #Run() }
+  class RunnableJob { -Runnable* m_r #Run() }
+  Job <|-- RunnableJob
+  class DelayedJob { -Runnable* m_runnable -int m_counter +ReadyToRun() bool +Run() }
+  class WorkQueue { -NetMutex m_lock -NetEvent m_event,m_quit,m_finished,m_doneJob -LList~Runnable*~ m_queue +Add(func) +Add(method,this) +Wait() +Empty() bool }
+  WorkQueue o-- Runnable
+  DelayedJob o-- Runnable
+```
+
+| Primitive | Exact semantics |
+|---|---|
+| `NetMutex` (Win32) | `CRITICAL_SECTION` (recursive), `TryLock` = `TryEnterCriticalSection`; `m_locked` flag is informational only. `NetLockMutex` = RAII scope lock [C] `contrib/systemiv/lib/netlib/net_mutex_win32.cpp` |
+| `NetEvent` (Win32) | **auto-reset**, initially non-signalled (`CreateEvent(NULL,false,false,NULL)`); `Signal` = `SetEvent` (multiple signals coalesce); `Wait(ms)`: negative → `INFINITE`; returns true iff signalled [C] same file |
+| `NetStartThread(fn,arg)` | `CreateThread(NULL,0,fn,arg,0,&id)` — fire-and-forget, handle not kept/closed [C] `contrib/systemiv/lib/netlib/net_thread_win32.cpp` |
+| `WorkQueue::WorkQueue()` | starts **one dedicated worker thread** (`RunThread`), which first calls `StandardiseCPUPrecision()` (x87 precision is per-thread) then `Run()` [C] |
+| `WorkQueue::Add(f)` / `Add(&T::m, this)` | under `m_lock`, appends `new Function` / `new Method<T>` at the tail and signals `m_event` [C] |
+| `WorkQueue::Run()` | loop: while queue empty → wait `m_event` (infinite), then if `m_quit.Wait(0)` → signal `m_finished` and return; take item 0 under lock; **run it outside the lock**; remove item 0 under lock; delete it; signal `m_doneJob`. FIFO, strictly serial, one item at a time [C] |
+| `WorkQueue::Empty()` | `m_queue.Size()==0` under lock. The running item stays in the queue until it finishes, so "empty" means "idle" [C] |
+| `WorkQueue::Wait()` | `while(!Empty()) m_doneJob.Wait(-1)` — blocks until the queue is idle [C] |
+| `WorkQueue::~WorkQueue()` | signal `m_quit` and `m_event`, wait `m_finished` (worker drains remaining items first, because it only checks quit when the queue is empty) [C] |
+| `Job::Process()` / `Wait()` | `Run()` then signal its event / block on it — a one-shot synchronous hand-off between threads [C] |
+| `DelayedJob` | `ReadyToRun()` decrements `m_counter` and returns false while it was > 0; true when 0; destructor deletes the runnable [C] |
+
+Hazards recorded for the new design:
+* `NetStartThread` casts a `void(WorkQueue*)` cdecl function to a `DWORD WINAPI(LPVOID)` thread routine (calling-convention mismatch, works only because the routine never returns normally except at shutdown) [C] `code/lib/work_queue.cpp` (`(NetThreadFunc) &WorkQueue::RunThread`); [I] consequence.
+* `LList` read accessors mutate a cached cursor (`mutable m_previous`), so even concurrent *reads* of the same list are unsafe [C] `contrib/systemiv/lib/tosser/llist.cpp:GetItem`; the queue is only touched under `m_lock`.
+* SystemIV path helpers return a shared static buffer (`s_filePathBuffer`) — not re-entrant [C] `contrib/systemiv/lib/filesys/filesys_utils.cpp:GetDirectoryPart/GetFilenamePart/RemoveExtension`.
+
+### 20.T.2 Threads that exist in the baseline build
+
+| Thread | Created by | Runs | Affinity mask | Evidence |
+|---|---|---|---|---|
+| **Main thread** | process | input, simulation, rendering, network pump, sound `Advance`, executes queued GL `Job`s while the loading screen renders | `0x02|0x08|0x20|0x80` (CPUs 1,3,5,7) set in `App::App` | [C] `code/app.cpp:App::App` (SetThreadAffinityMask) |
+| Loading-screen worker (`g_loadingScreen->m_workQueue`) | `LoadingScreen::LoadingScreen` | `SetWorkingThreadProcessor`, `App::Initialise` (archives, language, subsystem construction, metaserver init), `DoEnterLocation` (level loading), `GameMenuWindow::PreloadThumbnails`; on Mac also `App::LoadSounds` | `0x01|0x04|0x10|0x40` (CPUs 0,2,4,6) | [C] `code/loading_screen.cpp`, `code/app.cpp` L241, `code/main.cpp` L1367, `code/UI/GameMenuWindow.cpp` L4341 |
+| Sounds loader (`App::m_soundsWorkQueue`) | `App::App` | `SetWorkingThreadProcessor`, `App::LoadSounds` (parses `sounds.dat`, `sounds2.dat`) — serial because unrar is not thread-safe | 0x55 | [C] `code/app.cpp` L191, L250–L251, L502 |
+| Sound preloader (`SoundSystem::m_PreloadQueue`) | `SoundSystem` ctor | `SoundSystem::BackgroundSoundLoad` | inherits | [C] `code/sound/soundsystem.cpp` L388–L389 (P16) |
+| Client listener (`ClientToServer::m_listenThread`) | `ClientToServer::OpenConnections` | `ListenThread` (UDP receive) | inherits | [C] `code/network/clienttoserver.cpp` L199–L201 (P15) |
+| Server listener | `Server::Initialise` | `ListenThread` via `NetStartThread` | inherits | [C] `code/network/server.cpp` L194 (P15) |
+| D3D mip-map worker | `opengl_directx` init | `MipMapTask::GenerateMipmaps` | 0x55 | [C] `code/lib/opengl_directx.cpp` L296–L299, L1338 [B:D3D] |
+| Metaserver / authentication threads | SystemIV metaserver | P15 | – | P15 |
+
+Cross-thread GL rule [C] `code/lib/resource.cpp:DeleteTextureAsync/CreateDisplayListAsync`, `code/landscape_renderer.cpp`, `code/loading_screen.cpp:QueueJob/TryDequeueJob/RunJobs`: any GL/D3D call needed by a worker (texture upload/delete, display-list build, VBO bind) is wrapped as a stack-allocated `Job` (`RunnableJob(Method<…>)` or a custom `Job` subclass), pushed with `LoadingScreen::QueueJob` (mutex-protected `LList<Job*>`), and the worker blocks on `Job::Wait()`; the main thread pops and `Process()`es jobs while rendering the loading screen (one job per frame plus as many as fit before the 1/60 s frame deadline) and via `LoadingScreen::RunJobs()` from the main loop [C] `code/loading_screen.cpp` (frame loop), `code/main.cpp` L496. Callers on the main thread run the operation directly (`NetGetCurrentThreadId() == g_app->m_mainThreadId`).
+
+Deferred deletion: when the language changes, the old `LangTable` is kept for 5 main-loop iterations via `DelayedJob(Method<App>(&App::DeleteOldLangTable), 5)` so other threads/frames holding references finish first; `App::HandleDelayedJobs()` (called once per main-loop iteration) only looks at the head job, under `TryLock` [C] `code/app.cpp:SetLanguage/HandleDelayedJobs`, `code/main.cpp` L282.
+
+Network/loader interlock: while the loading screen renders, network keep-alive and server advance run only if `g_app->m_networkMutex.TryLock()` succeeds [C] `code/loading_screen.cpp` (frame loop).
+
+### 20.T.3 Design guidance
+Replace with a job system that has (a) a main/render thread affinity tag for GPU work instead of the GL-job hand-off, (b) per-thread FP environment initialisation (or, better, deterministic simulation that does not rely on x87 control words), (c) no thread affinity hard-coding (the masks assume ≤8 logical CPUs and SMT layouts of 2008).
+
+---
+
+## [→ 29_data_formats_reference] 29.T Text-file tokeniser (`TextReader` family) — rules used by every text format
+
+Classes [C] `contrib/systemiv/lib/filesys/text_stream_readers.{h,cpp}`, `contrib/systemiv/lib/unicode/unicode_text_stream_reader.{h,cpp}`:
+
+| Class | Source | Encoding | Created when |
+|---|---|---|---|
+| `TextFileReader` | disk (`fopen "r"`, text mode: CRLF→LF) | 8-bit | loose file without UTF-16 BOM |
+| `TextDataReader` | memory (archive entry) | 8-bit | archive entry without BOM |
+| `UnicodeTextFileReader` | disk (`"rb"`) | UTF-16 LE/BE by BOM | loose file with BOM `FF FE` / `FE FF` |
+| `UnicodeTextDataReader` | memory | UTF-16 LE/BE by BOM | archive entry with BOM |
+
+Selection is done by the caller: `code/lib/resource.cpp:Resource::GetTextReader` (and `PrefsManager::Load`) first constructs the Unicode reader and falls back to the 8-bit reader when `IsUnicode()` is false [C].
+
+### 29.T.1 Line acquisition
+
+* 8-bit file reader: `fgets` into a buffer that starts at 128 chars and doubles until the line (up to and including `\n`) fits; lines longer than 65536 chars → fatal `AppReleaseAssert` "Text file contains line with more than 65536 characters". `ReadLine()` returns **false only when nothing could be read** (so the final line is processed even without a trailing newline) [C] `TextFileReader::ReadLine`, `TextReader::DoubleMaxLineLen`.
+* 8-bit memory reader: scans to the next `\n`; if none, takes the rest and sets EOF; **returns false for the last line when the data does not end with `\n`** — callers that loop `while (reader->ReadLine())` drop that line. Files packed in archives must therefore end with a newline, whereas the same file loose on disk is parsed fully [C] `TextDataReader::ReadLine`; [I] consequence (all parsers use the `while(ReadLine())` idiom, e.g. `code/lib/language_table.cpp:ParseLanguageFile`).
+* UTF-16 readers: same contracts on 16-bit units (BE: `(b0<<8)|b1`, LE: `(b1<<8)|b0`); the memory reader also returns false on the last line. The wide line is converted to a parallel narrow `char` line where every code unit > 255 becomes `'?'` and ≤ 255 is truncated to its low byte (Latin-1 preserved), index-aligned with the wide line [C] `contrib/systemiv/lib/unicode/unicode_string.cpp:CopyUnicodeToCharArray`.
+
+### 29.T.2 Line cleaning (`CleanLine`), applied once per line, in this order
+
+1. **Decryption** (only if the file is encrypted, §29.T.4).
+2. **Comment removal**: scanning left to right, the first `#` that is not itself `<`/`>` terminates the line (replaced by NUL). There is **no quoting or escaping** — `#` can never appear in a value. Three or more consecutive `<`/`>` characters (merge-conflict marker) trigger `AppDebugAssert` (no effect in release).
+3. The **first** `\n` and the **first** `\r` (searching from the start, stopping at the first NUL) are replaced by NUL.
+[C] `TextReader::CleanLine`, `UnicodeTextReader::CleanLine`.
+
+Edge case [C, derived]: because step 3 stops at the comment NUL, in `abc#comment\n` the `\n` survives after the NUL; `GetNextToken` treats the string terminator as a separator and moves *past* it (§29.T.3), so a comment glued to the last token (no separator before `#`) is returned as further tokens. Always put whitespace before `#`.
+
+For `UnicodeTextFileReader` the narrow copy is made *before* cleaning (`CopyUnicodeToCharArray` precedes `CleanLine`), so 8-bit tokenisation (`GetNextToken`) of a loose UTF-16 file sees the raw, uncommented line, while `GetRestOfUnicodeLine`/`TokenAvailable` use the cleaned wide line; `UnicodeTextDataReader` cleans first [C] `UnicodeTextFileReader::ReadLine` vs `UnicodeTextDataReader::ReadLine`.
+
+### 29.T.3 Tokenisation
+
+Separator set (default, never changed by any Multiwinia parser — no call to `SetSeperatorChars` exists in `code/`) [C grep]:
+* 8-bit: `" \t\n\r:,"` (space, tab, LF, CR, colon, comma);
+* UTF-16 readers: `L" \f\t\n\r:,"` (adds form feed) for `TokenAvailable`/`GetNextUnicodeToken`/`GetRestOfUnicodeLine`; but `GetNextToken` (narrow) still uses the 8-bit set.
+
+```
+line        := { sep } [ token { sep { sep } token } ] { sep }
+sep         := " " | "\t" | "\n" | "\r" | ":" | ","            (8-bit)   ; + "\f" (UTF-16 wide calls)
+token       := char { char }      char := any non-separator, non-NUL character
+```
+
+| Call | Behaviour |
+|---|---|
+| `TokenAvailable()` | true iff a non-separator char exists at or after the cursor |
+| `GetNextToken()` | returns NULL if cursor at NUL; skips separators; returns NULL if none left; otherwise scans to the next separator **or the NUL terminator** (strchr matches NUL), writes NUL there and advances the cursor *one past it*. Consecutive separators collapse; empty tokens are impossible; `a::b` → `a`,`b` |
+| `GetRestOfLine()` / `GetRestOfUnicodeLine()` | skips separators at the cursor, returns the remainder **verbatim** (internal separators, trailing spaces kept); NULL / empty string when at end |
+| `GetNextUnicodeToken()` (UTF-16 readers) | same algorithm on the wide line, returns a `UnicodeString` copy |
+
+Consequences: colon and comma are interchangeable with whitespace in every format (`x: 1, 2` ≡ `x 1 2`); values cannot contain spaces unless the consumer reads rest-of-line; numeric parsing is done by the consumer (`atoi`, `iv_atof` → float-rounded, §22.4).
+
+`UnicodeTextReader::SetSeperatorChars` copies the new characters over the start of the wide separator array without terminating it (old trailing separators stay active) [C] — unused by Multiwinia.
+
+### 29.T.4 Encrypted text files ("redshirt2")
+
+Writer [C] `contrib/systemiv/lib/filesys/text_file_writer.cpp:TextFileWriter` (8-bit) and `code/unicode/unicode_text_file_writer.cpp:UnicodeTextFileWriter` (UTF-16):
+
+```
+file        := "redshirt2" encrypted_text          ; marker written once, no newline after it
+offsets[16] := 31 7 9 1 11 2 5 5 3 17 40 12 35 22 27 2
+state       := idx = 0 (persists across lines and printf calls)
+encrypt(c)  := if c > 32 (signed char / wchar):  idx = (idx+1) mod 16;  e = c + offsets[idx];  if e >= 128: e -= 95;  emit e
+               else emit c unchanged (space, control chars; and bytes >= 128 in the 8-bit writer, which are negative)
+```
+Reader [C] `TextReader::CleanLine`: on the **first line**, if it starts (case-insensitively, `strnicmp`) with `redshirt2`, the file is marked encrypted and the 9 characters are removed; each later character `c > 32` is decrypted with `idx = (idx+1) mod 16; j = c − offsets[idx]; if j < 33: j += 95`. The mapping is a bijection on printable ASCII 33…127. Decryption happens before comment stripping, so `#` inside encrypted text is a real comment only after decryption.
+UTF-16 reader bug: it tests `StrOffsetCmp(L"redshirt2", 9, true)`, i.e. compares characters 9…17 of the first line, so encrypted UTF-16 files are not recognised [C] `UnicodeTextReader::CleanLine`. No Multiwinia call site writes encrypted files (`Resource::GetTextFileWriter(_, _encrypt)` exists; prefs use `encrypt=false`) [C] `code/lib/preferences.cpp:Save`.
+
+### 29.T.5 UTF-16 text writer
+`UnicodeTextFileWriter` opens `"w"`, switches the CRT stream to `_O_U16TEXT` and writes BOM U+FEFF; output is UTF-16LE with `\n` translated to CRLF by the CRT; `printf(UnicodeString)` uses the string as a **format string** (a `%` in a value corrupts output) [C] `code/unicode/unicode_text_file_writer.cpp`. Mac writes UTF-16LE explicitly via CoreFoundation [B:DEAD].
+
+---
+
+## [→ 29_data_formats_reference] 29.P Preferences file (`preferences.txt`)
+
+Owner: `code/lib/preferences.cpp:PrefsManager` (`g_prefsManager`), constructed in `code/app.cpp:App::App` with `App::GetPreferencesPath()` [C].
+
+### 29.P.1 Grammar (as parsed by `PrefsItem::PrefsItem(UnicodeString line)` after `TextReader` cleaning)
+
+```
+file      := { line }
+line      := blank | item | other
+blank     := a line with no alphanumeric character before the first '#'  (kept verbatim as template text)
+item      := { non_alnum } key value_sep value
+key       := alnum { alnum }                      ; iswalnum — letters/digits only; '_' or '.' END the key
+value_sep := ' ' { ' ' | '\t' | '=' }             ; the char right after the key is consumed unconditionally,
+                                                  ; then any whitespace or '=' is skipped
+value     := rest of line (after TextReader comment stripping; trailing spaces kept)
+```
+Value typing [C] `PrefsItem::PrefsItem`:
+
+| Condition on `value` | Type | Stored as |
+|---|---|---|
+| first char is `-` or a digit, and contains 0 `.` | `TypeInt` | `wtoi` = `std::wistringstream >> int` (leading integer; `"1024x768"` → 1024; unparsable → 0) |
+| first char `-`/digit and exactly 1 `.` | `TypeFloat` | `wtof` (`wistringstream >> float`) |
+| first char `-`/digit and ≥ 2 `.` | `TypeString` | e.g. `127.0.0.1` |
+| anything else (incl. empty) | `TypeString` | `UnicodeString(value)` |
+
+Lookup is **strictly typed**: `GetInt` on a float- or string-typed item returns the caller's default; `GetFloat` on an int item (e.g. `DarwinianScaleFactor = 2`) returns the default; `GetString` returns the narrow (`'?'`-substituted) copy [C] `PrefsManager::GetInt/GetFloat/GetString/GetUnicodeString`. Keys are case-sensitive (`std::map<UnicodeString>` ordered by `wcscmp`) [C].
+
+### 29.P.2 Load / defaults / overrides [C] `PrefsManager::PrefsManager`, `Load`, `CreateDefaultValues`, `AddLine`
+
+1. `Load()`: clears; opens the file as UTF-16 (`UnicodeTextFileReader`) else 8-bit; if not openable → `CreateDefaultValues()`.
+2. Otherwise every line's `GetRestOfUnicodeLine()` is passed to `AddLine`. **Corruption check:** on the first line, every character before the first space or `=` must be in `L'A'…L'z'`; otherwise the whole file is discarded, defaults recreated and immediately saved.
+3. `AddLine(line)`: if not blank, all `\r`/`\n` are stripped, a `PrefsItem` is parsed; a **duplicate key is ignored** (first occurrence wins, debug message "Duplicate preference item %s. Ignoring") unless the static `s_overwrite` flag is set, in which case the new value replaces the old; the line text is appended to the template list `m_fileText` (also for blanks).
+4. `CreateDefaultValues()` adds, in order (PC values):
+   `ServerAddress = 127.0.0.1`, `BypassNetwork = 0`, `ServerPort = 4000`, blank, `TextLanguage = unknown`, `TextSpeed = 15`, `HelpEnabled = 1`, blank, `SoundLibrary = dsound`, `SoundMixFreq = 22050` (Mac 44100), `SoundMasterVolume = 255`, `SoundChannels = 32` (slow Mac 16), `SoundHW3D = 0`, `SoundSwapStereo = 0`, `SoundMemoryUsage = 1`, `SoundBufferSize = 512`, `SoundDSP = 0`, blank, `RenderLandscapeDetail = 1`, `RenderWaterDetail = 1`, `RenderBuildingDetail = 1`, `RenderEntityDetail = 1`, `RenderCloudDetail = 1`, `RenderPixelShader = 1`, blank, `DarwinianScaleFactor = 2.00`, `ControlMouseButtons = 3` (Mac 1), `ControlMethod = 1`, `MultiwiniaControlMethod = 1`, (Linux/Mac: `RenderLandscapeMode = 2`, `ManuallyScaleTextures = 0`), then non-demo: `BootLoader = firsttime`, `UserProfile = AccessAllAreas`, `ScreenOverscan = 0`, `RenderSpecialLighting = 0`, `Difficulty = 1` (`OTHER_DIFFICULTY`). (`DEMOBUILD` variants set `StartMap`, `UserProfile = DemoUser`, `RenderSpecialLighting` [B:DEAD].)
+   Then, with `s_overwrite = true`, each line of resource `default_preferences.txt` (via `g_app->m_resource`) is added, overriding the hard-coded values — but see §31.5.3: in a packaged install this file is in `main.dat`, which is not yet loaded, so it is not found [I].
+5. After loading: `SetInt("MultiwiniaControlMethod", 1)` is forced ("Hack by Chris to disable old-style control"); the constructor adds `ControlMethod = 1` if `GetInt("ControlMethod")` returns −1 [C].
+6. Defaults for keys absent from an existing file are **the caller's default argument** at each `Get*` site — there is no merge with the hard-coded list once a file exists. Inventory of keys and call-site defaults: `_work/drafts/P14_platform_lib_pref_keys.csv` (≈75 distinct keys, 100 key/macro spellings; regex-based, multi-line calls may be missed [I]).
+7. `App::SetPreferenceOverrides()` (P01) runs immediately after construction [C] `code/app.cpp:App::App`.
+
+### 29.P.3 Save [C] `PrefsManager::Save/SaveItem`
+* Writer: `UnicodeTextFileWriter(m_filename, encrypt=false, assertOnFail=false)` → UTF-16LE with BOM, CRLF; silently returns if the file cannot be opened.
+* Template pass: for each stored line in original order: blank → written verbatim (note: blank lines read from a file were stored as empty strings and are written as nothing, so blank lines collapse after the first save; hard-coded `"\n"` blanks survive); item line → the key is re-extracted (first alnum run up to the first non-alnum before `=`) and the current item is written once as `key = value` (`%ls = %d`, `%ls = %.2f`, `%ls = %ls`, each + `\n`); a line whose key is directly followed by `=` (no space) has no detectable key end and is re-emitted verbatim **without newline**, and the item is then written again at the end (duplication bug); a non-blank line without `=` makes the key scan run past the end of the string (crash risk).
+* Then every item not yet written is appended in `std::map` order (`wcscmp`).
+* Floats are written with **2 decimals** (`%.2f`) — precision loss on round trip.
+* Values are passed through `vswprintf` as part of the format string, so `%` in a string value is interpreted.
+
+Recommendation: replace with a strictly-typed key/value store (TOML/JSON), explicit schema with defaults in one table, atomic save.
+
+---
+
+## [→ 29_data_formats_reference] 29.L Language files and caption markup (`LANGUAGEPHRASE`)
+
+### 29.L.1 File format [C] `code/lib/language_table.cpp:LangTable::ParseLanguageFile`
+```
+file   := { line }                        ; UTF-16 LE/BE with BOM, or 8-bit (english.txt is ASCII)
+line   := key rest | comment-or-blank      ; '#' comments and separators per §29.T
+key    := first token (no space, ':' or ',')
+rest   := GetRestOfLine (leading separators removed — a value cannot start with ':' or ',')
+```
+* Each `\` immediately followed by `n` is replaced by **space + newline** (`"a\nb"` → `"a \nb"`); other backslashes stay.
+* A trailing `\n` and, at length−2, a `\r` or `\f` are removed (indexes computed from the string length; an empty value reads index −1/−2 — every key must have a non-empty value; in an 8-bit file a key with no value makes `GetRestOfLine` return NULL and the `UnicodeString(const char*)` constructor dereferences it [I: crash]).
+* **Duplicate keys: the later definition replaces the earlier** (opposite of preferences) [C].
+* Raw store: `BTree<LangPhrase*>` keyed case-insensitively (`stricmp`).
+* Overlay: after `language/<lang>.txt`, `App::SetLanguage` parses `strings_<lang>.txt` or else `strings_default.txt` into the same table (overrides) [C] `code/app.cpp:SetLanguage`.
+
+### 29.L.2 Input-mode variants and final tables [C] `RebuildTables`, `RebuildTable`, `wrong_suffix`, `chomp_mode_suffix`, `specific_key_exists`
+
+Two final tables (`HashTable<UnicodeString*>`, case-insensitive) are built: keyboard (`INPUT_MODE_KEYBOARD`, suffix `_kbd`) and gamepad (`INPUT_MODE_GAMEPAD`, suffix `_xin`). For each raw key not starting with `part_`:
+
+| Raw key form | Entry added to table for mode M |
+|---|---|
+| `foo` and no `foo_<M>` exists | `foo` → caption(`foo`, M) |
+| `foo` and `foo_<M>` exists | skipped (the specific one wins) |
+| `foo_<M>` | `foo` → caption(`foo_<M>`, M) |
+| `foo_<other>` and neither `foo` nor `foo_<M>` exists | `foo` → empty string (feature hidden in mode M) |
+| `foo_<other>` otherwise | skipped |
+| `part_*` | never in final tables; only usable as `[part_x]` references |
+
+Tables are (re)built lazily on first lookup and explicitly after `SetLanguage` [C].
+
+### 29.L.3 Caption markup (expanded at table-build time) [C] `buildCaption`, `consumeMarker`, `consumeIfMarker`, `consumeKeyMarker`, `consumeOtherMarker`, `buildPhrase`, `markerLength`
+Output limit `SEPULVEDA_MAX_PHRASE_LENGTH = 1024` wide chars (truncated); key names ≤ `MAX_READ_KEY_LENGTH = 64`, final key buffer `MAX_FINAL_KEY_LENGTH = 96`.
+
+```
+text      := { char | marker }
+marker    := "[IFMODE " "KEYBOARD]"         ; case-insensitive. If mode != keyboard: stop writing until matching [ELSE]/[ENDIF]
+           | "[ELSE]" | "[ENDIF]"            ; nesting tracked by ifdepth / writingStopDepth
+           | "[KEY" control_name "]"         ; replaced by the noun of the input currently bound to control_name
+                                             ; (g_inputManager->getControlID + getBoundInputDescription); if unresolved,
+                                             ; falls through to phrase reference "KEY<name>"
+           | "[" [" "] phrase_key "]"        ; phrase reference: key lower-cased, looked up raw (key_<mode> first, then key),
+                                             ; expanded recursively with a fresh parser state; a leading space in the marker
+                                             ; emits one space before the expansion (always, even if empty)
+```
+Rules: `[IFMODE X]` for any X other than `KEYBOARD` while writing still increments `ifdepth` but is then consumed as a phrase reference `ifmode x`; unknown phrase references vanish silently; `[]` is consumed. **An unterminated `[`** makes `markerLength` return 0, `consumeOtherMarker` add −1 to the input offset, and the loop re-read the same `[` forever (hang during `RebuildTables`) [I: derived from code arithmetic]. There is no escape for a literal `[`.
+
+### 29.L.4 Lookup API and fallback [C] `LookupPhrase`, `RawLookupPhrase`, `DoesPhraseExist`, `code/lib/language_table.h`
+* `LANGUAGEPHRASE(k)` ≡ `g_app->m_langTable->LookupPhrase(k)`; `ISLANGUAGEPHRASE(k)`/`ISLANGUAGEPHRASE_ANY(k)` ≡ `DoesPhraseExist(k)`; `RAWLANGUAGEPHRASE(k)` ≡ `RawLookupPhrase(k)`.
+* `LookupPhrase`: current table by `g_inputManager->getInputMode()`; NULL key or no table → `"ERROR (null)"`; **missing key → the key text itself** is returned (no fallback to English at phrase level; language-level fallback only at load, §31.11).
+* `RawLookupPhrase(k, mode)`: `k_<mode>` then `k`, else `"ERROR (k)"`.
+* The returned reference for misses points into a shared `m_notFound` member (overwritten by the next miss — not thread-safe).
+* Narrow access (`(const char*)UnicodeString`) maps non-Latin-1 chars to `?`.
+
+### 29.L.5 Word wrapping [C] `WordWrapText(UnicodeString…)` / `WordWrapText(const char*…)`
+Line width in characters = `int(lineWidth / fontWidth)`. Explicit `\n` always break. Over-long lines break at the last space within the width (or exactly at the width if that char is a space), else at the last CJK character (U+3000–U+D7FF, `LastHanCharacter`), else either `_forceWrap` (hyphenate: `width−1` chars + `"-"`) or leave the line unbroken.
+
+### 29.L.6 Unicode string type [C] `contrib/systemiv/lib/unicode/unicode_string.{h,cpp}`
+`UnicodeString` owns a `wchar_t` buffer plus a parallel narrow copy (`?` for > 255); `m_linelength` = buffer size incl. NUL; `Length()` = buffer size − 1 (not `wcslen`); comparisons `wcscmp`; case ops `_wcsupr/_wcslwr` (locale-dependent); `ReplaceStringFlag(flag, s)` replaces every `*<flag>` with `s` (substitution syntax used in UI strings); `LastHanCharacter`; `Trim()` advances the buffer pointer past leading spaces (heap-corruption bug on later `delete[]` if leading spaces existed); `swprintf` via `wvsprintfW` (no float support, 1024-char limit on Win32 [I: API limit]).
+
+---
+
+## [→ 29_data_formats_reference] 29.D `Directory` binary format (network letters, metaserver data)
+
+`contrib/systemiv/lib/tosser/directory.{h,cpp}` with `contrib/systemiv/lib/network_stream*.cpp` [C]. Used for every client/server letter and metaserver message (P15).
+
+```
+directory    := '<' name:dynstring  numData:packedint  { dirdata }×numData  numSubdirs:packedint  { directory }×numSubdirs  '>'
+dirdata      := name:dynstring  type:u8  payload
+payload      := type 1 INT:    i32 (LE)
+              | type 2 FLOAT:  f32 (LE, raw IEEE bits)
+              | type 3 CHAR:   u8
+              | type 4 STRING: dynstring
+              | type 5 BOOL:   u8 (0/1)
+              | type 6 VOID:   len:i32 (LE, raw) bytes×len
+              | type 7 FIXED:  (only under USE_FIXED; not compiled)
+              | type 8 INTS:   count:packedint  i32×count
+              | type 9 ULLONG: u64 (LE)
+              | type 10 UNICODE: count:packedint  u16×count (UTF-16LE code units; -1 = NULL)
+dynstring    := len:packedint  bytes×len           ; len = -1 → NULL string; len > 10240 (DIRECTORY_MAXSTRINGLENGTH) or < -1 → replaced by "[SAFESTRING]"
+packedint    := u8 v (0..254) | 0xFF i32(LE)        ; values < 0 or >= 255 use the 5-byte form
+```
+* Writer emits only used `DArray` slots, in slot order (indices are not preserved: "Indexes are not important and can be forgotten") [C] `Directory::Write`.
+* Reader limits: `numData` must be 0…1024 (`DIRECTORY_MAXDIRSIZE`), otherwise fail; **the subdirectory count is not validated** (the check re-tests `numData`); VOID length is unbounded; INTS count asserts (`AppAssert`, fatal) if `count×4 ≥ 10240` — all three are remote-input robustness bugs [C] `Directory::Read`, `ReadVoidData`, `ReadNumbersData`.
+* Getters return safe values on missing/mistyped data: INT −1, FLOAT −1.0, CHAR `'?'`, STRING `"[SAFESTRING]"`, UNICODE `L"[SAFESTRING"` (sic, missing `]`), BOOL false, ULLONG `0xFFFFFFFFFFFFFFFF`, VOID → `"[SAFESTRING]"` pointer; `HasData(name, type)` [C].
+* `CreateData(name, …)` replaces existing data of that name; DArray/LList helpers serialise as sub-directories `tID`, `Size`, `[i N]` (`[Used]`, `[Data]`); `GetDataLList(LList<int>)` reads the literal key `"indexName"` (bug → all −1) [C].
+* Name lookup is linear `strcmp` (case-sensitive); sub-directory paths use `/`.
+* `Directory::Write(int&)` returns a heap buffer (`ostrstream`) with a trailing NUL not counted in `length`.
+
+---
+
+## [→ 29_data_formats_reference] 29.B Binary readers, CRCs, hashes, keys
+
+### 29.B.1 BinaryReader conventions [C] `contrib/systemiv/lib/filesys/binary_stream_readers.cpp`
+All multi-byte reads are **little-endian** (`ReadS16 = b1|b2<<8`, `ReadS32 = b1|b2<<8|b3<<16|b4<<24`). EOF semantics differ by backend:
+
+| Operation | `BinaryFileReader` (disk) | `BinaryDataReader` (archive) |
+|---|---|---|
+| `ReadU8/ReadS8` at end | returns `(char)EOF` = 0xFF, sets `m_eof` | same |
+| `ReadS16/ReadS32` short | returns partial composite, sets `m_eof` | returns 0, sets `m_eof` (no partial read) |
+| `ReadBytes(n)` | `fread`; `m_eof` only if fewer than n bytes | sets `m_eof` when the **last byte of the data** is consumed even if all n bytes were read; returns 0 immediately if already EOF |
+| `Seek(SEEK_END, off)` | `fseek` | `offset = size − off` |
+| `GetSize()` | Tell/Seek/Tell | same |
+| `GetFileType()` | extension after last `.` | same |
+
+Parsers that test `m_eof` after a successful final `ReadBytes` behave differently for loose and archived files [I].
+
+### 29.B.2 `FileCRC` (map identity) [C] `contrib/systemiv/lib/math/filecrc.cpp`, `contrib/unrar/crc.cpp:CRC`
+```
+buffer = read bytes until m_eof: each iteration stores ReadU8() then index++, stopping after index > 100000
+       => n+1 bytes for an n-byte file with n <= 100000 (the extra 0xFF comes from the EOF read);
+          the first 100001 bytes of the file when n > 100000
+          (in both cases index 100000 may be written one past the 100000-byte static buffer s_buffer)
+crc    = CRC32 reflected, polynomial 0xEDB88320, initial value 0, NO final inversion, over buffer[0..count)
+result = (int) crc ; formatted as 0x%08x in mapcrc.h
+```
+Equivalently `crc = ~zlib_crc32(~0 … )`-style relations do **not** hold; reimplement with init 0/no xorout. Identical for disk and archive readers (both append one 0xFF) [C].
+
+### 29.B.3 `HashData` / authentication key hash [C] `contrib/systemiv/lib/math/hash.cpp`, `contrib/systemiv/lib/metaserver/authentication.cpp`
+* `HashData(data, token, out)`: SHA-1 (unrar `hash_*`) of the ASCII string `"<data>-<token>"` (≤ 511 chars); output `"hsh"` + the five 32-bit words each printed with `%04x` (**at least** 4 hex digits, so 23–43 chars total, variable length).
+* `HashData(data, out)`: SHA-1 of `data` (strlen), same output format. `HashDataVoid`: raw 5-word digest.
+* Authentication keys: 31 visible characters (`AUTHENTICATION_KEYLEN 32` incl. NUL), format observed `XXXXXX-XXXXXX-XXXXXX-XXXXXX-XXX` (the open-source `Authentication_GenerateKey` always returns the fixed demo key `DEMOTP-AXYVLW-SGIZLU-DNLXPK-OJS`); keys starting with `hsh` are hashed keys (`Authentication_IsHashKey`), sent instead of the raw key using the server-supplied hash token; `Authentication_SetKey` trims trailing characters that are not `[A-Za-z-]`; `Authentication_LoadKey` reads one whitespace-delimited word (`fscanf %s`) or yields `"authkey not found"` [C]. Full validation protocol: P15.
+
+### 29.B.4 `keygen` (Darwinia-era registration; compiled, never called) [C] `code/keygen.cpp` [B:LEGACY]
+Inputs: a *system info* text (184–500 bytes) whose lines must start, in order, with `SysInfoGenVersion` (value at offset 18 must parse as 2), `CpuVendor:`, `CpuModel:`, `Num Processors:`, `Country:`, `Language:`, `Num sound devices:`, `Primary sound device:`, `Graphics Card:`, `Operating System:`, `Computer Name:`; and a *user info* text (28–200 bytes) with lines `Username:` then `Email:`. `GenerateKey(data,len)`: treat the buffer as `len/4` little-endian u32 words; `rv = 28477717`; for `i = 0…1709`: `rv ^= word[(rv + i) mod (len/4)]`; password = `printf("%08x%08x", userKey, sysKey)` (16 hex chars). Error strings are returned in place of the password on validation failure. No caller in `code/` (only `#include "keygen.h"` in `code/app.cpp`); `targets/linux/Makefile.keygen-1` built it as a server tool [C].
+
+### 29.B.5 Other small formats owned here
+* **User info file** (`GetUserInfoData`): line 1 `Username <value>`, line 2 `Email <value>` (§31.14) [B:LEGACY].
+* **MultiwiniaSupport.ini**: INI, sections `[RegistryToAdd]`, `[FilesToAdd]`, entries `FileNNN=<filename>,<description>,<type>` (§31.13.2).
+* **Exclusion/inclusion lists**: §31.6.
+* **mapcrc.h**: §31.9.
+* **testbedconfig.txt**: commands `SetProgression RANDOM`, `SetTestBedName <name>`, `AddSequenceItem <gameIndex> <seed>` (parser owned by P20/X1a) [C file].

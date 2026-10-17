@@ -437,15 +437,15 @@ Pure relay node: shape `spawnlink.shp` (no ports), no behaviour beyond SpawnBuil
 stateDiagram-v2
     [*] --> Neutral : team 255 in level file
     [*] --> Activating : team set in level file (InitialiseTeam then forces Active)
-    Neutral --> Activating : evaluation finds owner T (>=3 ports, no enemies)\nactivationTimer = 30
-    Activating --> Active : activationTimer <= 0\n(instant if only spawn point of T,\nor instantspawnpointcapture)
-    Activating --> Neutral : evaluation fails (contested / <3)\nactivationTimer = 30
+    Neutral --> Activating : evaluation finds owner T (>=3 ports, no enemies); activationTimer = 30
+    Activating --> Active : activationTimer <= 0; (instant if only spawn point of T,; or instantspawnpointcapture)
+    Activating --> Neutral : evaluation fails (contested / <3); activationTimer = 30
     Active --> Neutral : evaluation fails
-    Active --> Activating : evaluation finds different owner U\nactivationTimer = 30
+    Active --> Activating : evaluation finds different owner U; activationTimer = 30
     state Active {
         [*] --> Burst
-        Burst --> Burst : every 0.2 s request 1 spirit\n(counter < N)
-        Burst --> Pause : counter reaches N = int(20*H)\ntimer = 10 + syncfrand(5)
+        Burst --> Burst : every 0.2 s request 1 spirit; (counter < N)
+        Burst --> Pause : counter reaches N = int(20*H); timer = 10 + syncfrand(5)
         Pause --> Burst : timer <= 0
         Burst --> Locked : PopulationLocked()
         Pause --> Locked : PopulationLocked()
@@ -606,7 +606,7 @@ Entities enter teleports themselves: `Entity::EnterTeleports(requiredId)` scans 
 |---|---|---|
 | Function | one-way long-range transporter: entities walking into its door are carried along its beam to the **receiver** dish it is aimed at, and exit from the receiver's door | [C] |
 | Shape | per-instance copy of `radardish.shp` (so colours can be changed per team); fragments `Dish` (pitch) and `UpperMount` (yaw); markers `MarkerFocus` (beam origin), `MarkerTeleportEntrance`; 2 lights; no ports | [C] ctor; data/shapes |
-| Ownership | no own capture logic. In MP it is set by a linked **ControlStation** (port-based capture, other partition) via `b->SetTeamId(winner)`; MP dishes are placed neutral (team 255). On team change in MP the dish's shape copy is recoloured to the team colour (white when neutral) | [C] `RadarDish::Advance`; `code/worldobject/controlstation.cpp:ControlStation::RecalculateOwnership`; data |
+| Ownership | no own capture logic. In MP it is set by a linked **ControlStation** (port-based capture, other partition) via `b->SetTeamId(winner)`; MP dishes are placed neutral (team 255) except two team-0 dishes in `mp_assault_2p_3` (auto-connected, with `forceradarteammatch`). On team change in MP the dish's shape copy is recoloured to the team colour (white when neutral) | [C] `RadarDish::Advance`; `code/worldobject/controlstation.cpp:ControlStation::RecalculateOwnership`; data |
 | Aiming | `Aim(worldPos)`: if the dish has a *valid-link list* and `m_forceConnection` is set, the request is ignored unless the ray from the focus toward `worldPos` hits (ray–sphere on centre/radius) one of the listed dishes with terrain visibility. Otherwise stores `m_target`, clears both alignment flags, plays `BeginRotation`. Aim requests come from the network command for the owning team only (team must equal the dish's team) and from the AI; the human can only select their own dish, and not at all with level option `noradarcontrol` | [C] `RadarDish::Aim`; `code/network/clienttoserver.cpp` (aim command handler ≈L2685); `code/location_input.cpp`; `code/worldobject/ai.cpp` (`noradarcontrol` check) |
 | Rotation | Yaw first: rotation axis = currentFront × targetFront (horizontal); `axis.y /= 4`; while `|axis.y| > π/3000`, `UpperMount.angVel.y = sign·sqrt(|axis.y|)`; then pitch: target direction y clamped to [−0.2, +0.3], `Dish.angVel = Dish.transform.r × (worldMat.u · targetFront)` until `|angVel| < 0.001`. Both integrated with dt. Sounds `BeginRotation`/`EndRotation` | [C] `RadarDish::Advance` |
 | Connection test (every tick, once a target exists) | among all other RadarDishes: the ray from this focus along the focus front must hit the other's bounding sphere, the other's dish front must face back (`dot < 0`), focus-to-focus terrain visibility (`Location::IsVisible`), nearest such dish wins, and it must pass `ValidReceiverDish` | [C] `RadarDish::Advance` |
@@ -804,11 +804,11 @@ Rendering uses **unsynced** `rand()`/`frand()` for fire particles (cosmetic only
 ```mermaid
 stateDiagram-v2
     [*] --> PortalExpand : created by The Beast crate
-    PortalExpand --> Thrash : radius >= 100 (10 s)\nspawn 6x12 tentacles
+    PortalExpand --> Thrash : radius >= 100 (10 s); spawn 6x12 tentacles
     Thrash --> Explode : 45 s
     Explode --> CoolDown : 10 s, then Bang(200, 255)
     CoolDown --> [*] : 1 s, m_destroyed, burn patch
-    note right of PortalExpand : every tick in all states:\nDarwinians within radius set on fire
+    note right of PortalExpand : every tick in all states:; Darwinians within radius set on fire
 ```
 
 ## [→ 03_buildings_and_world_objects] Legacy Darwinia buildings in this partition (ConstructionYard, DisplayScreen, spirit-receiver network, SpiritStore)

@@ -55,3 +55,7 @@
 - Relay lockstep: server sequences a 10 Hz command stream; host is also a client; no dedicated server. 40 C→S command types (+4 defined never sent); 11 S→C letter types (+2 UPDATE variants); 10 disconnect reasons; ~60 data-field codes; 14 game options; 13 metaserver/matchmaker messages; 9 threads; 4 sequence diagrams. [U]=5.
 - Per-frame sync byte in FULL comes only from the synced RNG stream (not world state); detected desync freezes the game permanently.
 - Uncertain: metaserver/matchmaker server side absent from tree; messages >1500 bytes dropped on receive and resent forever (stall) [I]; late join/rejoin replays full history from frame 0 [I]; server never checks sender owns the team its commands target. Key-check algorithm stubbed out in this source release.
+
+## P18_ui_gamemenu — done
+- 38 page slots: 18 live, 10 compiled-but-unreachable (Achievements, QuickMatch, Help…), 10 gap slots; live + legacy Mermaid flowcharts; per-page button tables; 74 widget classes (47 live); 6 game types × 34 parameter rows + TankBattle; 10 error triggers; 15 contradictions. [U]=8.
+- Uncertain: server-side rejection of non-host option changes (UI only hides controls — P15 says server never checks team ownership); map PlayTime overwritten by default TimeLimit on host lobby entry; authkey vs authkey.dev at startup; "show passworded games" filter checks key "dy" which collides with GAMETIME → filters nothing.

@@ -134,7 +134,7 @@ Base virtuals: `parseInputSpecification` (pure), `getInput` (pure), `Advance` (p
 #### 1.6.4 Idle — driver 3 [C] `code/lib/input/inputdriver_idle.cpp`
 
 Grammar `idle atleast <N>` | `idle reaches <N>` | `idle no longer` (N positive integer seconds, parsed with `istringstream >> int`).
-- State: `m_idleTime` (s), `m_oldIdleTime`, `m_lastChecked`. `Advance`: `old = idle; if manager.isIdle() idle += now - lastChecked else idle = 0; lastChecked = now` (wall clock `GetHighResTime`). Because Idle's own `isIdle()` is the default `true` and the manager's idle flag is computed *during* the driver loop, Idle reads the **previous frame's** combined flag [I] (driver 3 advances before W32/XInput).
+- State: `m_idleTime` (s), `m_oldIdleTime`, `m_lastChecked`. `Advance`: `old = idle; if manager.isIdle() idle += now - lastChecked else idle = 0; lastChecked = now` (wall clock `GetHighResTime`). Because Idle's own `isIdle()` is the default `true` and the manager's idle flag is computed *during* the driver loop, Idle reads the **previous frame's** combined flag (`m_idle` is only assigned after the driver loop) [C] `code/lib/input/input.cpp:InputManager::Advance`.
 - Evaluate: `atleast N`: `int(idle) >= N` (1D, x = int idle seconds); `reaches N`: `old < N < idle` (one-frame edge); `no longer`: `idle == 0` (BOOL — true on every non-idle frame, not only on the transition).
 - `getControlID` scans a 3-entry table without terminator → an unknown word reads past the array (UB) [C].
 - Shipped use: `StopAttractMode = idle no longer`; `StartAttractMode = idle reaches 60` is commented out. Attract mode itself is `ATTRACTMODE_ENABLED`-gated → these bindings are [B:LEGACY].

@@ -1309,7 +1309,7 @@ Ranges: `syncfrand(x)` ∈ [0,x), `syncsfrand(x)` ∈ [−x/2, x/2), `syncrand()
 - Byte stats: `m_stats` are `unsigned char`; speed multipliers (`×2`, `×1.5`, `×0.75`, `/2`) truncate; out-of-range blueprint values (350, 500) are UB.
 - Entity-grid neighbour order = cell x-major → z → team 0..5 → slot order (free-list reuse); "nearest" selections use strict `<` so the first-found wins ties ⇒ order matters and is history-dependent but deterministic.
 - `WorldObjectId::s_nextUniqueId` is global and also consumed by effects (BoxKite, Zombie, OfficerOrders, MultiwiniaOfficerOrders every 2 s, OfficerOrderTrail every 0.2 s per active order effect); unique ids feed gameplay (`uid % 20` worship range, `uid % 10` fence clearance, abduction blend, render variation) ⇒ every peer must create exactly the same effects in the same order.
-- Advance slicing: units/others/spirits are advanced in `NUM_SLICES_PER_FRAME` slices (P01); per-tick constants above assume one `Advance` per entity per server tick.
+- Advance slicing: `NUM_SLICES_PER_FRAME = 10` (`code/globals.h`); each 0.1 s server tick is processed as 10 slices and every sliced container (`SliceDArray`/`FastDArray` via `GetNextSliceBounds`) advances one tenth of its slots per slice, so every entity/spirit is advanced exactly once per server tick (P01 owns the scheduler, `Location::Advance`) [C]. Entities in earlier slices therefore see later-slice entities' previous-tick state — ordering is by slot index.
 
 ## Constants table (P03 scope)
 | Constant | Value | Kind | Ref |
@@ -1422,7 +1422,6 @@ Ranges: `syncfrand(x)` ∈ [0,x), `syncsfrand(x)` ∈ [−x/2, x/2), `syncrand()
 | U5 | Crate capture rule (how `StateOpeningCrate` Darwinians contribute; team rules) | `code/worldobject/crate.cpp` (P08) |
 | U6 | Exact port-capture contribution of `Building::OperatePort` per tick | `code/worldobject/building.cpp`, `spawnpoint.cpp` (P06) |
 | U7 | Whether `GAMEOPTION_GAME_RESEARCH_LEVEL` can override the fixed MP research table (order of `SetGameResearch` vs `Location::Init`) | P15/P01 sequencing of lobby options vs location init |
-| U8 | `NUM_SLICES_PER_FRAME` value and therefore exact per-entity advance cadence | `code/globals.h` / P01 |
 
 ## Docs-vs-code discrepancies
 | Doc | Claim | Code |

@@ -72,6 +72,7 @@ extra = [
  ('contrib/eclipse/eclwindow.cpp','skimmed','RegisterButton/GetButton ordering only',[12]),
  ('code/renderer.cpp','skimmed','P12-owned; menu transition entry points only',[12]),
  ('data/language/english.txt','skimmed','phrase-id existence checks via script P18_phrases.py',[8,'I']),
+ ('code/lib/language_table.cpp','skimmed','LookupPhrase missing-key fallback only',[4,8]),
  ('docs/multiwinia-changes.txt','skimmed','docs-vs-code check',['X']),
  ('docs/multiwiniachanges-beta.txt','skimmed','docs-vs-code check',['X']),
 ]
