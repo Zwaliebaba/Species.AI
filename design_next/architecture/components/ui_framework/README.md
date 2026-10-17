@@ -29,7 +29,7 @@ Tool-style windows (the development windows of the [diagnostics](../diagnostics_
 
 **UI-003** (MUST NOT) The UI framework draws nothing directly to the GPU and owns no GPU resource of its own except the glyph-cache atlas pages: widgets emit quads, gradients, lines and glyph runs into the batched UI stream ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §4.6; ADR-0031), which the renderer records in its UI passes.
 
-**UI-004** (MUST NOT) The UI framework does not own the window, the swap chain, the binding system or the string-table file format. The platform layer owns the application window and reports size, DPI and focus changes (ADR-0075); the renderer owns presentation and the screen transition ([frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-095); the input component owns devices, bindings and the input mode (ADR-0029, [input.md](../input.md)); the data schemas own the string-table schema and its markup syntax ([data_schemas.md](../data_schemas.md)).
+**UI-004** (MUST NOT) The UI framework does not own the window, the swap chain, the binding system or the string-table file format. The platform layer owns the application window and reports size, DPI and focus changes (ADR-0075); the renderer owns presentation and the screen transition ([frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-095); the input component owns devices, bindings and the input mode (ADR-0029, [input.md](../input.md)); the data schemas own the string-table schema and its markup syntax ([data schemas](../data_schemas/README.md)).
 
 **UI-005** (MUST) The UI core is one service with an explicit owner and lifetime, never reached through a process-wide global. Its owner is the client's composition root, which the design phase defines (DEC-221); until then the UI core lives for the process, from start-up to shutdown, and is passed by reference to the systems that open windows. Panels are owned by the UI core; widgets are owned by their panel; a scroll bar's helper object is owned by the window that created it.
 
@@ -86,17 +86,17 @@ Diagram 1-A — the three layers of the UI framework, the platform calls that dr
 
 ```mermaid
 sequenceDiagram
-  participant Loop as Main loop
+  participant ML as Main loop
   participant Pump as UI input pump
   participant Core as UiCore
   participant Panels as Panels and widgets
   participant Pass as UI windows pass
-  Loop->>Pump: advance (update phase)
+  ML->>Pump: advance (update phase)
   Pump->>Core: pointer position and ordered pointer events
   Core->>Core: pointer state machine (capture, focus, z-order)
   Core->>Panels: update every panel, front-most first
-  Pump-->>Loop: withhold a primary press made over a panel
-  Loop->>Pass: record the frame
+  Pump-->>ML: withhold a primary press made over a panel
+  ML->>Pass: record the frame
   Pass->>Core: draw
   Core->>Panels: draw every panel, back-most first
   Panels-->>Pass: quads, gradients, lines and glyph runs in painter's order
@@ -110,11 +110,11 @@ Diagram 2-A — one frame of the UI: input is handled in the update phase, and d
 
 **UI-013** (MUST) Widget state that must survive a relayout lives in the view-model of the page or window that owns the widget, not in the widget (ADR-0030): a value-bound widget holds a binding to its view-model field ([core_and_widgets.md](core_and_widgets.md) §4.23), so a resize, a DPI change, a scale-setting change or a language change never loses a value, a scroll position or a focus position.
 
-The type, ownership and lifetime of every UI object are listed in [core_and_widgets.md](core_and_widgets.md) §3 and [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §3. Page layouts, palettes, text styles and string tables are content records in the schemas of [data_schemas.md](../data_schemas.md) (ADR-0061).
+The type, ownership and lifetime of every UI object are listed in [core_and_widgets.md](core_and_widgets.md) §3 and [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §3. Page layouts, palettes, text styles and string tables are content records in the schemas of [data schemas](../data_schemas/README.md) (ADR-0061).
 
 ## 4 Behaviour and algorithms
 
-**UI-014** (MUST) The framework avoids by construction every window-core quirk and every framework defect that the decision register lists (DEC-102). The corrected rules are stated where each behaviour is specified: pointer capture and click on the pressed widget ([core_and_widgets.md](core_and_widgets.md) UI-031), repeats on explicit timers (UI-071, UI-077), relayout without state loss (UI-024), the maximise path (UI-041), Escape and Back that never apply a change (UI-064; [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-216), literal display of message text (UI-090, UI-226), storage with no fixed capacity (UI-088, UI-127), disabled widgets that never act (UI-055, UI-106) and removal by identity (UI-025). The defects as must-not acceptance tests are in [pages_and_screen_recipes.md](pages_and_screen_recipes.md).
+**UI-014** (MUST) The framework avoids by construction every window-core quirk and every framework defect that the decision register lists (DEC-102). The corrected rules are stated where each behaviour is specified: pointer capture and click on the pressed widget ([core_and_widgets.md](core_and_widgets.md) UI-031), repeats on explicit timers (UI-071, UI-077), relayout without state loss (UI-024), the maximise path (UI-041), Escape and Back that never apply a change (UI-064; [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-217), literal display of message text (UI-090, UI-227), storage with no fixed capacity (UI-088, UI-127), disabled widgets that never act (UI-055, UI-106) and removal by identity (UI-025). The defects as must-not acceptance tests are in [pages_and_screen_recipes.md](pages_and_screen_recipes.md).
 
 **UI-015** (MUST) The look of the UI keeps the reference token structure and blend modes: windows and buttons on an accent panel with a light-to-dark highlight gradient; front-end pages of glowing fill boxes with positive (green) and focus (red) captions over the animated backdrop; normal text additive, and outlines and shadows in the darkening ink mode ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §4.7 to §4.9; [visual_language.md](../renderer/visual_language.md) RND-403, RND-416, RND-425).
 

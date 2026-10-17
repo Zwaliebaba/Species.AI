@@ -79,6 +79,24 @@ Particles have no spin, no fade-in and no type-specific fade-out: the fade of VF
 
 **VFX-206** (MUST) Each frame the runtime writes the frame's emission requests into an upload buffer (ADR-0008); an emit pass allocates their slots from the free list, and a request that finds no slot under the caps of §4.4 is dropped. No simulation code can read particle state: the pool offers only emission, simulation, drawing, emptying and a development read-back of its counts.
 
+```mermaid
+flowchart LR
+  EV["Effect event or presentation emitter step"] --> LOD["Burst count scaled by camera distance"]
+  LOD --> CAP{"Pool capacity, type cap and class fill limit"}
+  CAP -->|"no slot"| DROP["Dropped and counted"]
+  CAP -->|"slot"| SUB["Sub-step: move, friction, gravity"]
+  SUB --> TER{"Terrain rule below the terrain"}
+  TER -->|"die on contact"| DEAD["Removed"]
+  TER -->|"bounce"| BNC["Clamped to the terrain, normal velocity reversed"]
+  BNC --> SUB
+  TER -->|"none, or above the terrain"| AGE{"Age reached life"}
+  AGE -->|"yes"| DEAD
+  AGE -->|"no"| DRAW["Pass 15: smoke or glow batch, fading over the last quarter of life"]
+  DRAW --> SUB
+```
+
+Caption: the life of one particle in the GPU pool, from its emission request to its removal.
+
 ### 4.2 Particle types
 
 **VFX-207** (MUST) The particle types are exactly those of table 4.2-A, in this order. Life is in seconds of scaled presentation time (the tick equivalent at the reference rate is life ÷ `ref.sim.tick_period`); the half-extent at the type size is size ÷ `vfx.particle.size_divisor`; gravity is in wu/s², positive falling; friction is per second (VFX-210); colours are RGB of 255. "Glow" is the additive batch and "smoke" the darkening batch (VFX-217).
@@ -139,7 +157,7 @@ With h = T this reproduces the reference trajectories exactly at game speed 1: f
 
 ### 4.4 Caps, priorities and level of detail
 
-**VFX-212** (MUST) The pool holds at most `vfx.particle.pool_capacity` (65 536) live particles, and each type at most `vfx.particle.type_cap` (16 384) unless its effect definition sets a lower cap. The types fall into the priority classes of table 4.2-A: 0 command feedback, 1 combat and hazards, 2 trails and engines, 3 ambient. A particle of class *c* is allocated only while the pool's live count is below its capacity × the class's fill limit `vfx.particle.class_fill_limits` (1.0, 0.95, 0.9, 0.8), so that, as the pool fills, ambient particles are dropped first and command feedback last (ADR-0010). A dropped emission is not retried.
+**VFX-212** (MUST) The pool holds at most `vfx.particle.pool_capacity` (65 536) live particles, and each type at most `vfx.particle.type_cap` (16 384) unless its effect definition sets a lower cap; both are fixed capacities allocated at load (DEC-228). The types fall into the priority classes of table 4.2-A: 0 command feedback, 1 combat and hazards, 2 trails and engines, 3 ambient. A particle of class *c* is allocated only while the pool's live count is below its capacity × the class's fill limit `vfx.particle.class_fill_limits` (1.0, 0.95, 0.9, 0.8), so that, as the pool fills, ambient particles are dropped first and command feedback last (ADR-0010). A dropped emission is not retried.
 
 **VFX-213** (MUST) Emission is scaled down with camera distance d from the emission point: a burst of n particles emits n × clamp((`vfx.particle.lod.cutoff_distance` (8000 wu) − d) ÷ (`vfx.particle.lod.cutoff_distance` − `vfx.particle.lod.full_distance` (4000 wu)), 0, 1) particles, the fractional part kept by a presentation draw, so nothing is emitted beyond the cut-off distance. An effect definition may set its own distances for a type. Particles of the presentation emitters of §4.8 are not scaled.
 
@@ -177,7 +195,7 @@ Table 4.7-A Effect kinds.
 
 | Kind | Raised by | Effect | Values owned by |
 |---|---|---|---|
-| `Explosion` | every explosion of range r and damage D (R-CRATE-406 step 1, R-UNIT-195) | cores: n = ⌊r × D × `ref.weapon.explosion.particle_factor`⌋, plus ⌊U[0, n)⌋ more, explosion cores at position + (0, `ref.weapon.explosion.core_lift` × r, 0), size `vfx.emit.explosion.core_size` (120 + U[0, 120)), velocity `vfx.emit.explosion.core_velocity` (± 15, 10 + U[0, 10), ± 15); debris: m = clamp(r × D × 0.01, `ref.weapon.explosion.debris_min`, `ref.weapon.explosion.debris_max`) explosion-debris particles at position + (0, `vfx.emit.explosion.debris_lift` (0.2) × r, 0), particle i at the angle i × 2π ÷ m with velocity normalise((cos, `vfx.emit.explosion.debris_rise` (2 + U[0, 2)), sin)) × `vfx.emit.explosion.debris_speed` (20 + U[0, 30)), size `vfx.emit.explosion.debris_size` (20 + U[0, 20)) | reference/04 and this document |
+| `Explosion` | every explosion of range r and damage D (R-CRATE-406 step 1, R-UNIT-195) | cores: n = ⌊r × D × `ref.weapon.explosion.particle_factor`⌋, plus ⌊U[0, n)⌋ more, explosion cores at position + (0, `ref.weapon.explosion.core_lift` × r, 0), size `vfx.emit.explosion.core_size` (120 + U[0, 120)), velocity `vfx.emit.explosion.core_velocity` (± 15, 10 + U[0, 10), ± 15); debris: m = ⌊clamp(r × D × `ref.weapon.explosion.particle_factor`, `ref.weapon.explosion.debris_min`, `ref.weapon.explosion.debris_max`)⌋ explosion-debris particles at position + (0, `vfx.emit.explosion.debris_lift` (0.2) × r, 0), particle i at the angle i × 2π ÷ m with velocity normalise((cos, `vfx.emit.explosion.debris_rise` (2 + U[0, 2)), sin)) × `vfx.emit.explosion.debris_speed` (20 + U[0, 30)), size `vfx.emit.explosion.debris_size` (20 + U[0, 20)) | reference/04 and this document |
 | `RocketBurst` | a spiralling rocket's explosion (R-CRATE-432) | explosion cores as the `Explosion` core rule, all in one colour of the team colour table drawn per burst | this document |
 | `StructureDestroyed` | R-BLDG-037 | ⌊i ÷ `ref.bldg.structure.destroy_particle_divisor`⌋ explosion cores of size `ref.bldg.structure.destroy_particle_size`, velocity per axis `ref.bldg.structure.destroy_particle_speed`; the shatters of §4.10 | reference/03 |
 | `LaserHitStructure` | a laser bolt meeting a structure (R-CRATE-441 step 6) | `vfx.emit.laser_hit.count` (1) rocket trail | this document |
@@ -202,7 +220,7 @@ Table 4.7-A Effect kinds.
 | `LeaderFormUp` | `FormUp` for the local team (R-UNIT-172) | two muzzle flashes of size `ref.unit.leader.preview_flash_size` in the team colour at each formation slot | reference/02 |
 | `OrderMarkerStep` | each tick of an order marker (R-UNIT-185) | one muzzle flash of size `vfx.emit.order_marker.size` (30) in the team colour | this document |
 | `WorkerBurning` | each tick of a Burning Worker (R-UNIT-079) | k = `FxRng::NextUint` mod `vfx.emit.burning.count_mod` (8) particles: those with index below `vfx.emit.burning.fire_share` (5) Worker fire, the rest missile trails, at position + up × U[0, `vfx.emit.burning.lift` (5)), size `vfx.emit.burning.size` (20 + U[0, 30)), velocity v × `vfx.emit.burning.velocity_factor` (0.3) + up × `vfx.emit.burning.rise` (3 + U[0, 3)) | this document |
-| `WorkerSpeedBoost` | each tick of a Worker with Speed Boost (R-UNIT-123) | as `WorkerBurning`, with Speed Boost trails for the low indices, at ground level and with velocity v × 0.3 only | this document |
+| `WorkerSpeedBoost` | each tick of a Worker with Speed Boost (R-UNIT-123) | as `WorkerBurning`, with Speed Boost trails for the low indices, at ground level and with velocity v × `vfx.emit.burning.velocity_factor` only | this document |
 | `WorkerSick` | each tick of a sick Worker (R-UNIT-130) | with probability `vfx.emit.sick.chance` (0.5) one Sickness particle of size `vfx.emit.sick.size` (20 + U[0, 20)) in `vfx.emit.sick.colour` (140, 200, 5, 150) | this document |
 | `PowerReachedWorker` | a Shield, Speed Boost, Convert or Fury Power reaching a Worker (R-CRATE-167, R-UNIT-149) | `vfx.emit.power_reached.count` (20) Worker-fire particles in the team colour | this document |
 | `WorkerOpeningCrate` | each tick of a Worker opening a Supply crate in range (R-UNIT-078) | one blue spark in the team colour | this document |
@@ -211,7 +229,7 @@ Table 4.7-A Effect kinds.
 | `Bite` | an ant's or a Crawler's bite (R-UNIT-564, R-UNIT-532) | `vfx.emit.bite.count` (3) muzzle flashes | this document |
 | `TransportExhaust` | each tick of a Transport (R-UNIT-409) | 1 + trunc(speed ÷ `ref.unit.transport.exhaust_speed_step`) missile trails of size `vfx.emit.transport_exhaust.size` (50 + U[0, 49)) | reference/02 and this document |
 | `CollectorEngine` | each tick of each Collector engine socket (R-UNIT-443) | `ref.unit.collector.exhaust_fire_count` missile fire of size `ref.unit.collector.exhaust_fire_size` in `ref.unit.collector.exhaust_colour`, and one missile trail | reference/02 |
-| `AbductorEngine` | each tick of each Abductor engine socket (R-UNIT-710) | `ref.unit.abductor.engine_sparks` blue spark of size `ref.unit.abductor.engine_spark_size_min` to `_max` in (150, 150, 255), and `ref.unit.abductor.engine_fire_particles` missile fire of size `ref.unit.abductor.engine_fire_size` in (50, 50, 250) | reference/02 |
+| `AbductorEngine` | each tick of each Abductor engine socket (R-UNIT-710) | `ref.unit.abductor.engine_sparks` blue spark of size `ref.unit.abductor.engine_spark_size_min` to `ref.unit.abductor.engine_spark_size_max` in `vfx.emit.abductor.spark_colour` (150, 150, 255), and `ref.unit.abductor.engine_fire_particles` missile fire of size `ref.unit.abductor.engine_fire_size` in `vfx.emit.abductor.fire_colour` (50, 50, 250) | reference/02 and this document |
 | `MeteorFire` | each tick of a meteor (R-UNIT-735) | `ref.hazard.meteor_shower.fire_particles` fire of size `ref.hazard.meteor_shower.fire_size` ± `ref.hazard.meteor_shower.fire_size_spread` ÷ 2 | reference/02 |
 | `OrbBroken` | an Essence orb breaking ([explainers_sprites_and_procedural_animation.md](explainers_sprites_and_procedural_animation.md) VFX-124) | the control-flash burst of VFX-124 | this document |
 | `TreeBurning` | each tick of a burning tree (R-BLDG-629) | the fire particles of R-BLDG-629 | reference/03 |
@@ -221,7 +239,7 @@ Table 4.7-A Effect kinds.
 | `VolcanoEruption` | each tick of an eruption (R-BLDG-471) | the volcano particles of R-BLDG-471 | reference/03 |
 | `FuelPumpStroke` | a fuel pump's arm stroke (R-BLDG-199) | one Worker-fire particle at the `arm_tip` socket | reference/03 |
 | `FuelDepotBoarding` | a boarding at a fuel depot (R-BLDG-203) | the control flashes of R-BLDG-203 | reference/03 |
-| `VesselBooster` | each tick of a Launch Vessel in PreLaunch, Countdown or Flight (R-BLDG-338) | `ref.bldg.launch_vessel.booster_particles` particles of size 500 at the `thruster` socket + `vfx.emit.booster.offset` (± 10, 10, ± 10) with velocity `vfx.emit.booster.velocity` (± 25, −U[0, 150), ± 25): 11 missile fire, then 4 missile trails with their x and z velocity × `vfx.emit.booster.trail_spread` (0.75) | reference/03 and this document |
+| `VesselBooster` | each tick of a Launch Vessel in PreLaunch, Countdown or Flight (R-BLDG-338) | `ref.bldg.launch_vessel.booster_particles` particles of size `vfx.emit.booster.size` (500) at the `thruster` socket + `vfx.emit.booster.offset` (± 10, 10, ± 10) with velocity `vfx.emit.booster.velocity` (± 25, −U[0, 150), ± 25): split `vfx.emit.booster.split` (11 missile fire, then 4 missile trails), the missile trails with their x and z velocity × `vfx.emit.booster.trail_spread` (0.75) | reference/03 and this document |
 | `VesselWrecked` | each tick of a Wrecked Launch Vessel (R-BLDG-323) | at each window socket `window_01` to `window_03`: one fire particle while it holds fuel and one missile trail of size `vfx.emit.wreck.size` (150 + U[0, 150)); and a shatter of `vfx.emit.wreck.shatter` (0.01) of its mesh | this document |
 | `CameraShake` | each tick while a Launch Vessel's ignition shake lasts (R-BLDG-332, R-BLDG-338) | a shake request of the vessel's shake ÷ `vfx.emit.vessel_shake_divisor` (5), at every participant whatever its camera position; the vessel's shake starts at `ref.bldg.launch_vessel.camera_shake` (5) and falls by `vfx.emit.vessel_shake_decay` (0.1) per tick, to 0 after 50 ticks | reference/03 and this document |
 | `Shatter` | every shatter source of table 4.10-A | the shatter of §4.10 | §4.10 |
@@ -305,7 +323,7 @@ A node therefore releases at most 502 shards: those of source indices 0 to 500 a
 
 **VFX-229** (MUST) Pass 14 draws each explosion as one instanced draw of its shards with `shard_lit` (VFX-014), the object lighting and the depth test and write on. A shard's corner is rotation × corner + position and its normal rotation × facet normal, with rotation its tumbler's; its colour is its facet colour at alpha 1 − age, with age = (`vfx.shatter.lifetime` + now − death time) ÷ `vfx.shatter.lifetime`, so it fades linearly over its life. The edge mask gives every shard white edge lines: with *m* the smallest barycentric coordinate of the fragment and *e* = 1 − smoothstep(0, `vfx.shatter.edge_width` (1 ÷ 64), *m*), widened with screen-space derivatives so that the lines do not alias (ADR-0003, ADR-0015), the fragment colour is lerp(lit facet colour, white, *e*) with the shard's alpha; the lines are unlit. No edge texture is sampled at run time (ADR-0010); the edge pattern `fx.shard_edges` is the art reference against which the edge mask is checked (T15).
 
-**VFX-230** (MUST) The live explosions hold at most `vfx.shatter.max_explosions` (1024) explosions and `vfx.shatter.max_shards` (131 072) shards; a new explosion that does not fit retires the oldest live explosions until it fits.
+**VFX-230** (MUST) The live explosions hold at most `vfx.shatter.max_explosions` (1024) explosions and `vfx.shatter.max_shards` (131 072) shards, fixed capacities allocated at load (DEC-228); a new explosion that does not fit retires the oldest live explosions until it fits.
 
 **VFX-231** (MUST) The shatter sources of a match are exactly those of table 4.10-A; each raises a `Shatter` effect event with its mesh, its transform, its fraction and its team palette index.
 
@@ -556,6 +574,10 @@ The design-phase inputs of this component are listed in the [folder README](READ
 | `vfx.emit.abducted.colour` | 150, 150, 255, 155 | RGBA | | VFX-219 | |
 | `vfx.emit.bite.count` | 3 | particles | | VFX-219 | |
 | `vfx.emit.transport_exhaust.size` | 50 + U[0, 49) | particle size | | VFX-219 | |
+| `vfx.emit.abductor.spark_colour` | 150, 150, 255 | RGB | Abductor engine sparks | VFX-219 | |
+| `vfx.emit.abductor.fire_colour` | 50, 50, 250 | RGB | Abductor engine fire | VFX-219 | |
+| `vfx.emit.booster.size` | 500 | particle size | Launch Vessel booster | VFX-219 | |
+| `vfx.emit.booster.split` | 11, 4 | particles | missile fire, then missile trails | VFX-219 | |
 | `vfx.emit.booster.offset` | ± 10, 10, ± 10 | wu | from the `thruster` socket | VFX-219 | |
 | `vfx.emit.booster.velocity` | ± 25, −U[0, 150), ± 25 | wu/s | | VFX-219 | |
 | `vfx.emit.booster.trail_spread` | 0.75 | × x and z velocity | missile trails only | VFX-219 | |

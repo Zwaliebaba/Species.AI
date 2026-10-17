@@ -59,7 +59,7 @@ Trail histories are simulation state that this component reads: the Crawler trai
 
 ### 3.2 Explainer animation data
 
-**VFX-103** (MUST) An explainer animation (`ExplainerAnimation`, asset `anim.explainer`) has the data model of [front_end_presentation.md](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-226: a canvas, a loop start and end, a playback time, and objects in draw order, each with its keys in authored order and the key fields and defaults of `ref.meta.explainer.key_defaults`. The player maps it one to one onto a UI timeline: one track per object and property, with the transform properties (x, y, scale) eased by the curve of VFX-012, the angle and the alpha linear (the alpha truncated to an integer), and the picture (`help.explainer_picture`), the colour role and the horizontal flip held from the earlier key. Its schema is the explainer schema of [data_schemas.md](../data_schemas.md); the reference positional text format is not used.
+**VFX-103** (MUST) An explainer animation (`ExplainerAnimation`, asset `anim.explainer`) has the data model of [front_end_presentation.md](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-226: a canvas, a loop start and end, a playback time, and objects in draw order, each with its keys in authored order and the key fields and defaults of `ref.meta.explainer.key_defaults`. The player maps it one to one onto a UI timeline: one track per object and property, with the transform properties (x, y, scale) eased by the curve of VFX-012, the angle and the alpha linear (the alpha truncated to an integer), and the picture (`help.explainer_picture`), the colour role and the horizontal flip held from the earlier key. Its schema is the explainer schema of [data schemas](../data_schemas/README.md); the reference positional text format is not used.
 
 
 ## 4 Behaviour and algorithms
@@ -125,7 +125,7 @@ Caption: the explainer panel exists at most once per match and shows while the p
 
 | Layer | Condition | Texture | Colour and blend | Geometry |
 |---|---|---|---|---|
-| ground shadow | *hd* > 0, alive, not InAbductionBeam, within `ref.unit.worker.shadow_range` (2000 wu) | current card | black at alpha `ref.unit.worker.shadow_alpha` (150) × *hd*, × `ref.unit.worker.shadow_rogue_factor` (0.3) for the Rogue faction, at most 255; `worker_ground_shadow`, no depth write (RND-221) | a flat quad `vfx.worker.shadow_lift` (0.3 wu) above the terrain, spanning the card's right vector and world +z by 2 × s |
+| ground shadow | *hd* > 0, alive, not InAbductionBeam, within `ref.unit.worker.shadow_range` (2000 wu) | current card | black at alpha `ref.unit.worker.shadow_alpha` (150) × *hd*, × `ref.unit.worker.shadow_rogue_factor` (0.3) for the Rogue faction, at most 255; `worker_ground_shadow`, no depth write (RND-221, RND-241, RND-315) | a flat quad `vfx.worker.shadow_lift` (0.3 wu) above the terrain, spanning the card's right vector and world +z by 2 × s |
 | body | every Worker except the Rogue and Visitor factions, alive or airborne | current card | the colour of RND-317; `worker_card` | the card |
 | Visitor body | Visitor faction | `sprite.visitor.front` | (0.5, 0.5, 0.5) (`vfx.worker.visitor_grey`) × the health factor of R-UNIT-146 | the card at s × `vfx.worker.visitor_scale` (1.3) |
 | Visitor glow | Visitor faction | `fx.glow_round` | the saturated team colour (§4.5), alpha \|sin(`vfx.worker.glow_pulse_slow` × t)\| × `vfx.worker.visitor_glow_alpha` (0.3) | camera billboard of half-extent 2 × s |

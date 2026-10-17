@@ -219,7 +219,7 @@ Panels without the focus still show hover, because drawing uses `PointerInWidget
 **UI-034** (MUST) **Held** (the primary button held after a press): while the pressed panel exists,
 
 1. when a widget holds the capture, it receives `OnHeld(pointerInside)` every update, where pointerInside is whether the pointer is inside it; a widget that repeats an action while held uses explicit timers (UI-071, UI-077), never the update count;
-2. when the press began on the panel background, the resize test runs on the pointer position of the previous update: within `ui.core.resize_band` (4 px, exclusive) of the bottom edge the new height = pointer y − panel y, and within the same band of the right edge the new width = pointer x − panel x; when either applies and the panel is resizable, the new width is at least `ui.core.min_resize_width` (60 px), the new height at least `ui.core.min_resize_height` (40 px), and `SetPanelSize` applies them (UI-024);
+2. when the press began on the panel background, the resize test runs on the pointer position of the previous update: less than `ui.core.resize_band` (4 px) above or below the bottom edge, the new height = pointer y − panel y, and less than the same distance either side of the right edge, the new width = pointer x − panel x; when either applies and the panel is resizable, the new width is at least `ui.core.min_resize_width` (60 px), the new height at least `ui.core.min_resize_height` (40 px), and `SetPanelSize` applies them (UI-024);
 3. otherwise, when the panel is movable, `SetPanelPosition(pointer − grab offset)`, with no clamping while dragging. A drag continues while the pointer passes over widgets: the panel background holds the capture (DEC-102).
 
 **UI-035** (MUST) **Release** (a primary up edge): the pressed panel becomes none. When a widget holds the capture, it receives `OnClick()` when the pointer is inside it and `OnCancel()` otherwise, and the capture ends. When the press began on a panel background, the panel receives `OnBackgroundPointer(false)` and the popup closes (UI-040). When the press began outside every panel, the popup closes.
@@ -292,13 +292,13 @@ The consequences for widgets are:
 
 Every window of the framework derives from the standard window (`UiWindow`), and every widget from the standard button (`UiButton`); the scroll-bar track (UI-074) derives from the button base directly.
 
-**UI-046** (MUST) Creating a standard window registers a close box (`UiCloseButton`, UI-060) at `ui.window.close_box` ((w − 12, 2), 10 × 10 px) in its iconised look. The close box is placed from the window's final width, after the window has its size, so it is never outside the window. Windows that do not call the base creation have no close box: the message dialog (UI-088), the options screens (UI-099), the front-end screen, the chat entry window (UI-091) and the open drop-down lists (UI-084, UI-118).
+**UI-046** (MUST) Creating a standard window registers a close box (`UiCloseButton`, UI-060) at `ui.chrome.close_box` ((w − 12, 2), 10 × 10 px) in its iconised look. The close box is placed from the window's final width, after the window has its size, so it is never outside the window. Windows that do not call the base creation have no close box: the message dialog (UI-088), the options screens (UI-099), the front-end screen, the chat entry window (UI-091) and the open drop-down lists (UI-084, UI-118).
 
-**UI-047** (MUST) A standard window's `Remove()` removes every widget, empties the navigation order, sets the cursor to 0 and ends any text edit. Its client rectangle is x from `ui.window.client_inset` (2 px) to w − 2 px and y from *m*(`ui.window.title_height` (15 px)) + 1 to h − 2 px.
+**UI-047** (MUST) A standard window's `Remove()` removes every widget, empties the navigation order, sets the cursor to 0 and ends any text edit. Its client rectangle is x from `ui.chrome.client_inset` (2 px) to w − 2 px and y from *m*(`ui.chrome.title_height` (15 px)) + 1 to h − 2 px.
 
 **UI-048** (MUST) **Large-menu scaling.** When the large-menus setting is on (`ref.meta.settings.large_menus.default`, off; [reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-449), a standard window's lengths scale with the screen height: scale = `ui.layout.large_menu_factor` (0.96) × H ÷ `ui.layout.large_menu_height` (460), *m*(v) = ⌊v × scale⌋, and `SetMenuSize(w, h)` sets the size to (w × scale, h × scale). With the setting off, *m*(v) = v and the scale is 1. The scale is 1.2522 at H = 600, 1.6028 at H = 768 and 2.2539 at H = 1080. The options screens and the front-end screen are sized to exactly W × H and are never scaled by this rule, so a full-screen page never extends past the screen (DEC-102). The UI-scale setting and the DPI scale apply on top ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-170).
 
-**UI-049** (MUST) A standard window's title is its title string id, upper-cased with the case mapping of the current language ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-232). The title drawn is the window's own title (DEC-102).
+**UI-049** (MUST) A standard window's title is its title string id, upper-cased with the case mapping of the current language ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-233). The title drawn is the window's own title (DEC-102).
 
 ### 4.11 Navigation in standard windows
 
@@ -354,18 +354,18 @@ The scroll hook asks the cursor's own widget, and the search for the next active
 
 | Step | Primitive | Look |
 |---|---|---|
-| 1 body | one quad over the whole rectangle with the accent panel strip `ui.panel_accent`, linear filtering, wrapping in both axes, u from 0 to `ui.window.body_repeat` (8) across the width and v from 0 to 1 down the height | `ui.palette.window_body_tint` (1, 1, 1, 0.96), alpha blend |
-| 2 title bar | a quad from y to y + *m*(`ui.window.title_height`), with a vertical gradient | `ui.palette.accent_light` at the top to `ui.palette.accent_dark` at the bottom |
-| 3 border | four lines of `ui.window.border_width` (2 px) on the edges of the rectangle | `ui.palette.accent_light` |
-| 4 outer frame | a 1 px line loop from (x − 2, y − 2) to (x + w + 1, y + h + 1), that is `ui.window.frame_offset` (2 px) outside the rectangle | `ui.palette.frame_outer` |
-| 5 title text | the window title (UI-049) in the caption role, ink mode, centred at x + w ÷ 2, draw point y + `ui.window.title_baseline` (9 px), or y + size ÷ 2 with large menus, at size *m*(`ui.window.title_size` (12)), drawn twice | `ui.palette.text_ink` |
+| 1 body | one quad over the whole rectangle with the accent panel strip `ui.panel_accent`, linear filtering, wrapping in both axes, u from 0 to `ui.chrome.body_repeat` (8) across the width and v from 0 to 1 down the height | `ui.palette.window_body_tint` (1, 1, 1, 0.96), alpha blend |
+| 2 title bar | a quad from y to y + *m*(`ui.chrome.title_height`), with a vertical gradient | `ui.palette.accent_light` at the top to `ui.palette.accent_dark` at the bottom |
+| 3 border | four lines of `ui.chrome.border_width` (2 px) on the edges of the rectangle | `ui.palette.accent_light` |
+| 4 outer frame | a 1 px line loop from (x − 2, y − 2) to (x + w + 1, y + h + 1), that is `ui.chrome.frame_offset` (2 px) outside the rectangle | `ui.palette.frame_outer` |
+| 5 title text | the window title (UI-049) in the caption role, ink mode, centred at x + w ÷ 2, draw point y + `ui.chrome.title_baseline` (9 px), or y + size ÷ 2 with large menus, at size *m*(`ui.chrome.title_size` (12)), drawn twice | `ui.palette.text_ink` |
 | 6 widgets | the UI core's widget draw (UI-043) | — |
 
 ### 4.13 The standard button
 
 **UI-055** (MUST) A standard button has a font size of `ui.button.font_size` (11), is not centred and not disabled when created. When created with an automatic size, its width is the caption's character count × `ui.button.auto_char_width` (7 px) + `ui.button.auto_padding` (9 px) and its height `ui.button.auto_height` (15 px); a caption left empty takes the text of the button's string id. A **disabled** button never acts: activation, clicks and value changes do nothing while it is disabled, and it draws in its disabled colours (DEC-102). A host action that is not permitted is a disabled button (DEC-243).
 
-**UI-056** (MUST) **Highlight model.** Each update the button decides its highlight: when its window's navigation moved in this update, hover-highlight mode ends. When the pointer is inside the button and the input mode is keyboard and mouse ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-204), the first such update makes the button the window's cursor (`SetCursor`) and sets highlighted-this-frame and hover-highlight mode; when the pointer leaves, highlighted-this-frame is cleared. The button draws highlighted when it is in hover-highlight mode and the UI core's highlighted flag (UI-043) is set, or when it is its window's cursor entry. Pointer hover and the navigation cursor therefore share one visual state. Every standard button lives in a standard window.
+**UI-056** (MUST) **Highlight model.** Each update the button decides its highlight: when its window's navigation moved in this update, hover-highlight mode ends. When the pointer is inside the button and the input mode is keyboard and mouse ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-205), the first such update makes the button the window's cursor (`SetCursor`) and sets highlighted-this-frame and hover-highlight mode; when the pointer leaves, highlighted-this-frame is cleared. The button draws highlighted when it is in hover-highlight mode and the UI core's highlighted flag (UI-043) is set, or when it is its window's cursor entry. Pointer hover and the navigation cursor therefore share one visual state. Every standard button lives in a standard window.
 
 **UI-057** (MUST) The standard button draws in one of three states:
 
@@ -391,12 +391,12 @@ The scroll hook asks the cursor's own widget, and the search for the next active
 
 1. x defaults to `ui.value_control.x` (10 px) and w to the window width − 2 × x; the field is *m*(`ui.value_control.height` (15 px)) high;
 2. the label is the text of the label's string id;
-3. a text field spans w; a numeric field spans w − `ui.value_control.numeric_reserve` (37 px) and gets two increment glyphs (§4.17): a decrease glyph "<" with step −step at (field x + field width + `ui.value_control.glyph_gap_decrease` (5 px), y) and an increase glyph ">" with step +step at (field x + field width + `ui.value_control.glyph_gap_increase` (22 px), y), each `ui.value_control.glyph_size` (15 px) square;
+3. a text-type field spans w; a numeric field spans w − `ui.value_control.numeric_reserve` (37 px) and gets two increment glyphs (§4.17): a decrease glyph "<" with step −step at (field x + field width + `ui.value_control.glyph_gap_decrease` (5 px), y) and an increase glyph ">" with step +step at (field x + field width + `ui.value_control.glyph_gap_increase` (22 px), y), each `ui.value_control.glyph_size` (15 px) square;
 4. `onChange` is invoked on every refresh of the field's value (UI-069).
 
 `RemoveValueControl(field)` removes the field and both glyphs. A bool binding is a bool field: it is stepped and clamped as a bool, never as a byte (DEC-102).
 
-**UI-063** (MUST) `AddColourControl(label, rgba, y, onChange, x, w)` creates a colour swatch widget bound to a colour, `ui.value_control.colour_reserve` (13 px) narrower than w (which defaults to the window width − x, with x defaulting to `ui.value_control.x`) and `ui.value_control.height` high. It serves tool windows; the colour-editing window that a swatch opens belongs to a map editor, which the design phase designs (DEC-045).
+**UI-063** (MUST) `AddColourControl(label, rgba, y, onChange, x, w)` creates a colour swatch widget bound to a colour, `ui.value_control.colour_reserve` (13 px) narrower than w (which defaults to the window width − x, with x defaulting to `ui.value_control.x`) and `ui.value_control.height` (15 px) high, a height that large menus do not scale for this widget. It serves tool windows; the colour-editing window that a swatch opens belongs to a map editor, which the design phase designs (DEC-045).
 
 ### 4.16 Text field
 
@@ -422,21 +422,21 @@ Diagram 4-B — the text field's editing states.
 
 **UI-065** (MUST) A text field holds a display buffer, a value type (none, byte, bool, integer, float, double or text), a binding and a refresh callback. A field binds exactly once: a second binding is a development-build error and is ignored. Its binding is either a local adaptor that the field owns or a shared binding that it does not own (§4.23). Numeric bindings have the default bounds `ui.field.default_bounds` (0 to 10 000) unless the caller gives others. Values convert to text as integers for byte, bool and integer types and with `ui.field.float_decimals` (2) decimal places for float and double types; text parses as a decimal number.
 
-**UI-066** (MUST) While the field is its window's text-edit target, each character (UI-038) does the following, in this order of tests:
+**UI-066** (MUST) Each character that reaches a text field (UI-038) does the following, in this order of tests; "a text-type field" is a field whose value type is text:
 
 | Input | Effect |
 |---|---|
 | any character while the window has no text-edit target | ignored |
-| Backspace | deletes the character before the caret, when there is one; a text field writes the value through and refreshes |
+| Backspace | deletes the character before the caret, when there is one; a text-type field writes the value through and refreshes |
 | Enter | applies the edit (UI-064) |
 | Escape | cancels the edit (UI-064) |
-| a digit 0 to 9 | inserted at the caret; a text field writes through and refreshes |
-| an upper-case letter A to Z in a text field | inserted lower-cased unless Shift is held, so letters typed with Caps Lock alone become lower case |
+| a digit 0 to 9 | inserted at the caret; a text-type field writes through and refreshes |
+| an upper-case letter A to Z in a text-type field | inserted lower-cased unless Shift is held, so letters typed with Caps Lock alone become lower case |
 | any other character, with Ctrl not held | inserted at the caret; this is how punctuation, lower-case letters and every non-Latin character arrive |
 | any other character with Ctrl held | not inserted; Ctrl combinations are editing commands (UI-067) |
-| after any insertion into a text field | the value is written through and the field refreshes |
+| after any insertion into a text-type field | the value is written through and the field refreshes |
 
-A percent sign is an ordinary character: no text path of the UI reads formatting directives ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-226; DEC-102). A text field's value therefore changes, and its callback runs, on every keystroke.
+A percent sign is an ordinary character: no text path of the UI reads formatting directives ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-227; DEC-102). A text-type field's value therefore changes, and its callback runs, on every keystroke.
 
 **UI-067** (MUST) A text field being edited supports a caret that the caret commands move (left, right, start and end), deletion forward, selection of all text, and the clipboard (copy, cut and paste), with UTF-16 only at the Win32 boundary and UTF-8 inside; an input method's composition string is shown inline at the caret until it is committed or cancelled (ADR-0032, ADR-0028; [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §4.15).
 
@@ -514,11 +514,11 @@ A percent sign is an ordinary character: no text path of the UI reads formatting
 
 ### 4.21 Message dialog
 
-**UI-088** (MUST) A message dialog (`UiMessageDialog`) shows a message of any number of lines, split at line breaks; it holds no fixed-size line store (DEC-102). Its width is the measured width of the longest line in the body role at `ui.dialog.measure_size` (13) + `ui.dialog.width_padding` (10 px), at least `ui.dialog.min_width` (100 px); its height is `ui.dialog.base_height` (65 px) + lines × `ui.dialog.line_height` (12 px), at least `ui.dialog.min_height` (85 px); the size goes through `SetMenuSize`, and the dialog is centred on the screen. It does not call the base creation, so it has no close box.
+**UI-088** (MUST) A message dialog (`UiMessageDialog`) shows a message of any number of lines, split at line breaks; it holds no fixed-size line store (DEC-102). Its width is the measured width of the longest line in the body role at `ui.message_dialog.measure_size` (13) + `ui.message_dialog.width_padding` (10 px), at least `ui.message_dialog.min_width` (100 px); its height is `ui.message_dialog.base_height` (65 px) + lines × `ui.message_dialog.line_height` (12 px), at least `ui.message_dialog.min_height` (85 px); the size goes through `SetMenuSize`, and the dialog is centred on the screen. It does not call the base creation, so it has no close box.
 
-**UI-089** (MUST) The dialog has one close button captioned `ui.dialog.close`, *m*(`ui.dialog.button_size` (40 × 18 px)), centred horizontally at y = h − *m*(`ui.dialog.button_offset` (30 px)), with font size *m*(`ui.dialog.button_font` (11)); clicking it removes the dialog. The close button is the dialog's navigation entry and its back action, so a gamepad dismisses it with activate or close (DEC-102), and the dialog is a modal layer that owns the focus and Back until it is dismissed (ADR-0032).
+**UI-089** (MUST) The dialog has one close button captioned `ui.dialog.close`, *m*(`ui.message_dialog.button_size` (40 × 18 px)), centred horizontally at y = h − *m*(`ui.message_dialog.button_offset` (30 px)), with font size *m*(`ui.message_dialog.button_font` (11)); clicking it removes the dialog. The close button is the dialog's navigation entry and its back action, so a gamepad dismisses it with activate or close (DEC-102), and the dialog is a modal layer that owns the focus and Back until it is dismissed (ADR-0032).
 
-**UI-090** (MUST) The dialog draws the standard chrome and then each line i in the body role at the draw point (x + `ui.dialog.text_inset` (10 px), y + *m*(`ui.dialog.text_top` (32 px)) + i × *m*(`ui.dialog.line_height`)), size *m*(`ui.text.default_size`). The message text is drawn literally: a percent sign or brace in it is shown as written (DEC-102). Its callers pass a string id with named arguments, for example the screen-mode failure `ui.dialog.screen_mode_failed` ([reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-423); where a caller places the dialog is that caller's rule.
+**UI-090** (MUST) The dialog draws the standard chrome and then each line i in the body role at the draw point (x + `ui.message_dialog.text_inset` (10 px), y + *m*(`ui.message_dialog.text_top` (32 px)) + i × *m*(`ui.message_dialog.line_height`)), size *m*(`ui.text.default_size`). The message text is drawn literally: a percent sign or brace in it is shown as written (DEC-102). Its callers pass a string id with named arguments, for example the screen-mode failure `ui.dialog.screen_mode_failed` ([reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-423); where a caller places the dialog is that caller's rule.
 
 ### 4.22 Chat entry
 
@@ -560,9 +560,9 @@ The options screen (`OptionsScreen`) is the full-screen page style of the help, 
 
 **UI-099** (MUST) An options screen holds: draw the right box (false), draw one whole-width box (false), the dialog message (empty), dialog shown (false) and dialog success (false). It is created at exactly W × H at (0, 0), neither movable nor resizable (UI-048). Its base creation builds nothing and adds no close box; each screen calls it and then builds its own content.
 
-**UI-100** (MUST) Each update: when its navigation order is not empty and no dialog is shown, the screen runs the standard navigation (UI-051); otherwise, when the dialog is shown and `action.menu.dismiss` fires ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-202), it hides the dialog, clears the message and unlocks its navigation.
+**UI-100** (MUST) Each update: when its navigation order is not empty and no dialog is shown, the screen runs the standard navigation (UI-051); otherwise, when the dialog is shown and `action.menu.dismiss` fires ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-203), it hides the dialog, clears the message and unlocks its navigation.
 
-**UI-101** (MUST) `ShowDialog(message, success)` stores the message, shows the dialog, locks the screen's navigation and stores whether it reports a success. The dialog draws a fill box (UI-115) of `ui.options_screen.dialog_size` (W ÷ 3 × H ÷ 3) centred on the screen; its header `ui.dialog.success` when it reports a success, or `ui.dialog.error` otherwise, in the title role at the medium size, at y = the box top + the small font size; and its message in the small font, wrapped to the box width by the text layout (UI-200), each line the small font high at a pitch of `ui.options_screen.dialog_line_pitch` (1.1) × the small font.
+**UI-101** (MUST) `ShowDialog(message, success)` stores the message, shows the dialog, locks the screen's navigation and stores whether it reports a success. The dialog draws a fill box (UI-115) of `ui.options_screen.dialog_size` (W ÷ 3 × H ÷ 3) centred on the screen; its header `ui.dialog.success` when it reports a success, or `ui.dialog.error` otherwise, in the title role at the medium size, at y = the box top + the small font size; and its message in the small font, wrapped to the box width by the text layout (UI-201), each line the small font high at a pitch of `ui.options_screen.dialog_line_pitch` (1.1) × the small font.
 
 **UI-102** (MUST) An options screen draws only while it has the focus (UI-037), in this order:
 
@@ -630,7 +630,7 @@ The options screen (`OptionsScreen`) is the full-screen page style of the help, 
 
 **UI-122** (MUST) In its second style, which only text types use, a page text field draws a box of `ui.palette.fe_text_box` with a white outline, its text centred in it, and a caret `ui.page_field.style2_caret_width` (3 px) wide after the centred text.
 
-**UI-123** (MUST) A click starts editing a page text field only when its type is text. On Enter the field sets its window's skip-next-update flag (UI-050) before the base handling (UI-066), so where Enter also activates the cursor (UI-203), one key press does not do both. The field plays the roll-over cue (UI-110).
+**UI-123** (MUST) A click starts editing a page text field only when its type is text. On Enter the field sets its window's skip-next-update flag (UI-050) before the base handling (UI-066), so where Enter also activates the cursor (UI-204), one key press does not do both. The field plays the roll-over cue (UI-110).
 
 **UI-124** (MUST) A page increment glyph (`PageIncrementGlyph`) draws its "<" or ">" at its position in the title role, in the outline pass and then in `ui.palette.fe_caption`, or `ui.palette.fe_caption_focus` while highlighted or the cursor, and repeats as UI-071 states.
 
@@ -658,7 +658,7 @@ All work is on the main thread (README §2).
 | a scroll list with no rows | the thumb fills the track | none | UI-076 |
 | a drop-down bound before its options exist | it shows its label until it is selected again | none | UI-083 |
 | a text value at its maximum length | further characters are not inserted | none | UI-068 |
-| a widget's caption string id missing in the current language | the base-language text is shown (DEC-099) | logged once per id | [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-218 |
+| a widget's caption string id missing in the current language | the base-language text is shown (DEC-099) | logged once per id | [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-219 |
 | a widget without an accessible-name string id | the content build rejects the layout | build error naming the layout and the widget | README UI-012 |
 | a second binding of one widget | ignored | development-build error | UI-065, UI-080 |
 
@@ -712,8 +712,8 @@ The UI core counts, per frame, panels, widgets, clicks and cancelled presses for
 **Design-phase inputs.**
 
 1. **Tooltips.** The UI core times tooltips (UI-045), but the framework shows none; whether Species has tooltips, and their look and content, is front-end design.
-2. **Editor pages in the front-end style (hook).** The reference map editor builds three pages in the options-screen style: its hub page (`MapEditorHubPage`), a new-map page and a map file picker (`MapFilePicker`). Each is a full-screen options screen (UI-099) with a page title at the standard title place (R-META-201), page buttons stacked one button step apart in the medium font and added to the navigation order, and a screen close button as its back action at the standard Back place. The new-map page takes the map file name through a menu control (UI-103) and reports success or failure through the in-page dialog (UI-101) with the file name inserted as an argument. The file picker follows the file-list model of a tool-window file dialog on an options screen: a fixed number of rows in the title role, a selected-row fill, a scroll bar at the left box's right edge, and OK and Back buttons in the navigation order; its file rows are not in the navigation order, so a gamepad cannot pick a file. It lists the maps in the mounted packs, and the files of the map folder when the packs hold none; choosing a file writes the name into the hub page. Whether Species builds a map editor, and its UI, is DEC-045.
-3. **Keyboard navigation bindings.** The reference binds the menu actions to the gamepad only; the keyboard defaults of [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-203 are the Species baseline that ADR-0032 requires, for the design phase to confirm.
+2. **Editor pages in the front-end style (hook).** The reference map editor builds three pages in the options-screen style: its hub page (`MapEditorHubPage`), a new-map page and a map file picker (`MapFilePicker`). Each is a full-screen options screen (UI-099) with a page title at the standard title place (R-META-201), page buttons stacked one button step apart in the medium font and added to the navigation order, and a screen close button as its back action at the standard Back place. The new-map page takes the map file name through a menu control (UI-103) and reports success or failure through the in-page dialog (UI-101) with the file name inserted as an argument. The file picker follows the file-list model of a tool-window file dialog on an options screen: a fixed number of rows in the title role, a selected-row fill (RGBA 191, 191, 255, 127; the tool-window file list uses 0.3, 0.3, 1.0, 0.5 as fractions), a scroll bar at the left box's right edge, and OK and Back buttons in the navigation order; its file rows are not in the navigation order, so a gamepad cannot pick a file. It lists the maps in the mounted packs, and the files of the map folder when the packs hold none; choosing a file writes the name into the hub page. Whether Species builds a map editor, and its UI, is DEC-045.
+3. **Keyboard navigation bindings.** The reference binds the menu actions to the gamepad only; the keyboard defaults of [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-204 are the Species baseline that ADR-0032 requires, for the design phase to confirm.
 4. **Text-entry details for chat and names in the world game**: profanity filtering, length limits beyond the bindings' maximums, and whether chat is rate-limited, which depend on the networking and moderation decisions (DEC-200).
 
 ## 9 Tuning table
@@ -726,17 +726,17 @@ All values are presentation values. Lengths are pixels at a DPI scale of 1 and a
 |---|---|---|---|---|---|
 | `ui.core.auto_grow_margin` | 10 | px | below the lowest widget | UI-025 | — |
 | `ui.core.tooltip_delay` | 1.0 | s | hover time on one widget of the focused panel | UI-032, UI-045 | DEC-102 |
-| `ui.core.resize_band` | 4 | px | exclusive band around the bottom and right edges | UI-034 | — |
+| `ui.core.resize_band` | 4 | px | strictly less than this distance from the bottom or right edge, on either side | UI-034 | — |
 | `ui.core.min_resize_width` | 60 | px | | UI-034 | — |
 | `ui.core.min_resize_height` | 40 | px | | UI-034 | — |
-| `ui.window.close_box` | (w − 12, 2), 10 × 10 | px | position from the window's final width | UI-046 | DEC-102 |
-| `ui.window.client_inset` | 2 | px | left, right and bottom; the top is below the title bar | UI-047 | — |
-| `ui.window.title_height` | 15 | px, *m* | title bar | UI-047, UI-054 | — |
-| `ui.window.body_repeat` | 8 | repeats of the strip across the width | v spans the height once | UI-054 | — |
-| `ui.window.border_width` | 2 | px | | UI-054 | — |
-| `ui.window.frame_offset` | 2 | px outside the rectangle | 1 px outer frame | UI-054 | — |
-| `ui.window.title_baseline` | 9 | px below the top | draw point; y + size ÷ 2 with large menus | UI-054 | — |
-| `ui.window.title_size` | 12 | px, *m* | drawn twice in ink mode | UI-054 | — |
+| `ui.chrome.close_box` | (w − 12, 2), 10 × 10 | px | position from the window's final width | UI-046 | DEC-102 |
+| `ui.chrome.client_inset` | 2 | px | left, right and bottom; the top is below the title bar | UI-047 | — |
+| `ui.chrome.title_height` | 15 | px, *m* | title bar | UI-047, UI-054 | — |
+| `ui.chrome.body_repeat` | 8 | repeats of the strip across the width | v spans the height once | UI-054 | — |
+| `ui.chrome.border_width` | 2 | px | | UI-054 | — |
+| `ui.chrome.frame_offset` | 2 | px outside the rectangle | 1 px outer frame | UI-054 | — |
+| `ui.chrome.title_baseline` | 9 | px below the top | draw point; y + size ÷ 2 with large menus | UI-054 | — |
+| `ui.chrome.title_size` | 12 | px, *m* | drawn twice in ink mode | UI-054 | — |
 | `ui.button.font_size` | 11 | px | not scaled by large menus | UI-055, UI-058 | — |
 | `ui.button.auto_char_width` | 7 | px per character | automatic widget width | UI-055, UI-059 | — |
 | `ui.button.auto_padding` | 9 | px | automatic widget width | UI-055, UI-059 | — |
@@ -774,17 +774,17 @@ All values are presentation values. Lengths are pixels at a DPI scale of 1 and a
 | `ui.dropdown.column_threshold` | 0.8 | × H | a column holds at most this height | UI-085 | — |
 | `ui.dropdown.option_margin` | 2 | px | on each side of an option | UI-085 | — |
 | `ui.dropdown.arrow` | (w − 12, 5), (w − 3, 5), (w − 7, 9) | px | white triangle | UI-087 | — |
-| `ui.dialog.measure_size` | 13 | px | font size for the width | UI-088 | — |
-| `ui.dialog.width_padding` | 10 | px | | UI-088 | — |
-| `ui.dialog.min_width` | 100 | px | | UI-088 | — |
-| `ui.dialog.base_height` | 65 | px | | UI-088 | — |
-| `ui.dialog.line_height` | 12 | px, *m* in drawing | per message line | UI-088, UI-090 | — |
-| `ui.dialog.min_height` | 85 | px | | UI-088 | — |
-| `ui.dialog.button_size` | 40 × 18 | px, *m* | close button | UI-089 | — |
-| `ui.dialog.button_offset` | 30 | px, *m* | above the bottom edge | UI-089 | — |
-| `ui.dialog.button_font` | 11 | px, *m* | | UI-089 | — |
-| `ui.dialog.text_inset` | 10 | px | draw point x | UI-090 | — |
-| `ui.dialog.text_top` | 32 | px, *m* | first line draw point | UI-090 | — |
+| `ui.message_dialog.measure_size` | 13 | px | font size for the width | UI-088 | — |
+| `ui.message_dialog.width_padding` | 10 | px | | UI-088 | — |
+| `ui.message_dialog.min_width` | 100 | px | | UI-088 | — |
+| `ui.message_dialog.base_height` | 65 | px | | UI-088 | — |
+| `ui.message_dialog.line_height` | 12 | px, *m* in drawing | per message line | UI-088, UI-090 | — |
+| `ui.message_dialog.min_height` | 85 | px | | UI-088 | — |
+| `ui.message_dialog.button_size` | 40 × 18 | px, *m* | close button | UI-089 | — |
+| `ui.message_dialog.button_offset` | 30 | px, *m* | above the bottom edge | UI-089 | — |
+| `ui.message_dialog.button_font` | 11 | px, *m* | | UI-089 | — |
+| `ui.message_dialog.text_inset` | 10 | px | draw point x | UI-090 | — |
+| `ui.message_dialog.text_top` | 32 | px, *m* | first line draw point | UI-090 | — |
 | `ui.options_screen.dialog_size` | W ÷ 3 × H ÷ 3 | px | centred | UI-101 | — |
 | `ui.options_screen.dialog_line_pitch` | 1.1 | × the small font | | UI-101 | — |
 | `ui.options_screen.title_y` | 0.2 | × the title bar height | title draw point | UI-102 | — |
