@@ -274,7 +274,7 @@ Darwinian	player concept; engine (class)	Entity type 12, the population unit of 
 Officer	player concept; engine (class)	Entity type 13, a promoted Darwinian that never fights: a GOTO signpost redirecting idle Darwinians within 100 wu, or the leader of a formation.	02:5;06:5	yes → Leader
 OfficerFormation	engine (class)	Formation slot record `{entity unique id, timer}` in an officer's formation array: created with 5.0 s, the member adds dt each tick it registers and the officer subtracts dt, so a member that stops registering drops out when its banked time runs out; the slot index is the member's formation position.	02:5.6	no
 OfficerOrders	engine (class)	[B:LEGACY] single-player order visualiser effect that travels to the order point.	02:5.8	no
-MultiwiniaOfficerOrders	engine (class)	Multiplayer order visualiser effect that follows the route to an officer's order point, leaving `OfficerOrderTrail` arrows.	02:5.8	yes → Order marker
+MultiwiniaOfficerOrders	engine (class)	Multiplayer order visualiser effect that follows the route to an officer's order point, leaving `OfficerOrderTrail` arrows.	02:5.8	yes → `OrderMarker`
 OfficerOrderTrail	engine (class)	Arrow decal effect left on the ground by `MultiwiniaOfficerOrders`.	02:5.8	no
 Spirit	player concept; engine (class)	The soul a dying entity leaves (not an `Entity`; stored by value in `Location::m_spirits`): rises 6 s, floats 30–50 s in multiplayer (collectable), then ascends for 90 s and vanishes.	02:6;05:5	yes → Essence orb
 InsertionSquad (squad)	engine (class)	`Unit` container of 3 `Squadie`s created by the Squad task: walks single file behind a point man, fires at the cursor when selected, 60 s life.	02:7;06:6.3	yes → Strike team
@@ -376,7 +376,7 @@ ChessBase / ChessPiece	engine (class)	Prototype "chess" mode base and carryable 
 FeedingTube	engine (class)	[B:LEGACY] purely visual link between two focus markers.	03:12.19	no
 DynamicBase / DynamicHub / DynamicNode	engine (class)	[B:LEGACY] generic scored objective network (hub with linked nodes).	03:12.20	no
 GodDish	engine (class)	[B:LEGACY] script-driven temple dish that spawns Spam.	03:12.23	no
-Spam	engine (class)	[B:LEGACY] Darwinia "Spam" building emitting SpamInfection; the live Infection outcome reuses only `SpamInfection`.	03:12.24	yes → Swarm (source)
+Spam	engine (class)	[B:LEGACY] Darwinia "Spam" building emitting SpamInfection; the live Infection outcome reuses only `SpamInfection`.	03:12.24	yes → drop (legacy building; the Infection effect is Swarm)
 Library / ResearchItem	engine (class)	[B:LEGACY] Darwinia research collection buildings.	03:12.25	no
 MineBuilding / Mine / MineCart / Refinery / TrackLink / TrackJunction / TrackStart / TrackEnd	engine (class)	[B:LEGACY] Darwinia mine-cart conveyor system.	03:12.27	no
 SafeArea	engine (class)	[B:LEGACY] objective circle counting friendly entities.	03:12.35	no
@@ -571,7 +571,7 @@ Location editor	engine (class)	[B:EDITOR] in-game map editor (`LocationEditor`, 
 .bmp (BMP)	data format; abbreviation	Windows bitmap, the only image format the game loads (`TEXTURE_EXTENSION` = "bmp"): every texture, sprite, icon, thumbnail, help image and colour ramp (506 files), decoded to RGBA8 with optional colour keying.	29:8.3;25:3	yes → new art
 .ogg	data format	Ogg Vorbis audio samples in `data/sounds/` and `data/mwsounds/` (1332 files, 898 live).	29:7.6;25:5	yes → new audio
 .psp / .grd	data format	Authoring leftovers (a Paint Shop Pro banner template and a Photoshop gradient); never read.	29:8.11;29:8.12	no
-HLSL shader files	data format	`data/shaders/*` (14 files: fixed-function emulation, deform, water mesh waves, `globals.h`), compiled at run time by the [B:D3D] path.	29:9.1;24:6	yes → re-author
+HLSL shader files	data format	`data/shaders/*` (14 files: fixed-function emulation, deform, water mesh waves, `globals.h`), compiled at run time by the [B:D3D] path.	29:9.1;24:6	yes → re-author in HLSL SM6 from 24
 Level file	data format	`data/levels/*.txt` text map definition in `<Name>_StartDefinition` blocks: `Landscape`, `LandscapeTiles`, `LandFlattenAreas`, `Lights`, `Buildings`, `Routes`, `CameraMounts`, `CameraAnimations`, `InstantUnits`, `MultiwiniaOptions`, `RunningPrograms`, `PrimaryObjectives`, `Difficulty`, `LeaderboardStats`. `mp_` files are Multiwinia maps; `map_` and `mission_` files are Darwinia.	29:4.1;08:2	yes → new maps
 MultiwiniaOptions (block)	data format	The level-file block of mode settings: `GameTypes`, `PopulationCap`, `DefenderPopulationCap`, `NumPlayers`, `PlayTime`, `Difficulty`, `Effects`, `LevelOptions`, `InvalidCrates`, `AttackingTeams`, co-op keys, `OfficialLevel`.	08:5.1	yes → `MatchOptions`
 LevelOptions	data format	The 15 level option words inside `MultiwiniaOptions` (`nohandicap`, `instantspawnpointcapture`, `trunkportreinforcements`, `trunkportarmour`, `nogunturrets` and the others).	08:5.2	no
@@ -608,7 +608,7 @@ Introversion Software	IP name	The developer and publisher: company folder, store
 Evilinians	IP name	Player-facing name of the monster team (`multiwinia_team_virus`).	01:2.5	yes → Rogue faction
 Futurewinians	IP name	Player-facing name of team 5 (`multiwinia_team_future`) and its sprite.	02:23	yes → Visitor faction
 Dr Sepulveda	IP name	Darwinia's mentor character (portraits, dialogue, help); dead code in Multiwinia apart from leftover phrase ids.	30:6	yes → Advisor (drop)
-Darwin Research Associates	IP name	In-fiction corporation logo (`icons/darwin_research_associates.bmp`) of the [B:LEGACY] logo splash.	30:5.2;24:4.25	yes → product logo placeholder
+Darwin Research Associates	IP name	In-fiction corporation logo (`icons/darwin_research_associates.bmp`) of the [B:LEGACY] logo splash.	30:5.2;24:4.25	yes → omit (product logo placeholder if needed)
 Pecan / Hummingbird	IP name	Internal codenames used as constant values in the input binding files (`value Pecan`, `value Hummingbird`).	06:11.6.8	yes → `AlwaysTrue`, `FeatureFlagX`
 Speccy / editor / square (fonts)	IP name	The three bitmap fonts of the game, including CJK and Hangul pages.	25:2.15;28:8.2	yes → licensed open fonts
 Achievement names	IP name	Dominator, Hoarder, Hail To The King, Unclad Skies, Aggravated Assault, Master Player, Master Of Multiwinia, Explorer, Carnage, Blitz Master, Wrong Game, Genocide (`code/app.h`).	09:7.1;01:IP items	yes → see §3
@@ -621,3 +621,8 @@ Triffid (name)	IP name	Third-party literary name used for the egg-launching plan
 Distributor and partner names	IP name	Ambrosia Software (`AMBR` key prefix), Buka (`origin` tag), eGames and Cinemaware, Steam app id 1520, Xbox Live Arcade, Logitech: third-party names in keys, splash art and packaging.	31:14.1;22:12.5	yes → omit
 GAMEOPTION_*	engine	Ids of lobby options outside the per-mode blueprint that travel as network game options (for example `GAMEOPTION_BASICCRATES`).	22:5.3;09:4.3	no
 Letter	engine	A network message between client and server (a `Directory`); server letters are sequenced, client letters carry requests and `ALIVE` input.	22:5	no
+# ---- Part C vocabulary (40, 41) ----
+Keep / Adapt / Replace / Drop (verdicts)	engine	The four carry-forward verdicts of 40: reproduce the design as specified; keep the concept but change listed parts; keep the role with a different design or technology; do not build ("Drop (redesign)" when the feature must be designed from scratch). Code is never carried forward.	40:1.1	no
+INTERNAL_STUDY (licence posture)	engine	The licence posture of this set: source and data may be studied and quoted in short marked excerpts (≤ 15 lines), but nothing that is Introversion IP may ship in the new game.	40:6;41:	no
+TARGET_FOR_NEW_GAME	engine	The target platform of the new game: Windows, C++23, DirectX 12, multiplayer.	40:3	no
+D<nnn> / IP<nn> (register ids)	abbreviation	Entry identifiers of 41's registers: docs-vs-code discrepancy rows (D…) and IP replacement categories (IP01–IP50).	41:	no
