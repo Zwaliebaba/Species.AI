@@ -6,7 +6,7 @@ Manifest entries: 6189; live source files: 776; data files: 2332
 
 Distinct manifest files cited: 3762; directories cited: 78
 
-Evidence tags in documents: {'[C]': 6245, '[I]': 763, '[U]': 172}
+Evidence tags in documents: {'[C]': 6299, '[I]': 769, '[U]': 179}
 
 World-object classes found in code/worldobject/*.h: 159
 
@@ -16,14 +16,7 @@ World-object classes found in code/worldobject/*.h: 159
 
 ### (b) data files never cited — 0
 
-### (c) data formats without a grammar — 7
-- format without grammar: authkey
-- format without grammar: mwm
-- format without grammar: profile-save
-- format without grammar: runtime-files
-- format without grammar: support-ini
-- format without grammar: sync-dump
-- format without grammar: testbedconfig
+### (c) data formats without a grammar — 0
 
 ### (d) world-object classes without behaviour spec / diagram entry — 0
 

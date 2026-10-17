@@ -1125,7 +1125,7 @@ Capability status: **legacy in Multiwinia** [C] `code/worldobject/entity.cpp:Ent
 | `player<N>` | mount name | start view of start position N: once the local team exists the game cuts to `player<GetTeamPosition(myTeam)>` [C] `code/main.cpp` |
 | `start` | mount name | target set after load; if absent the camera stays at `(maxX, 1000, maxX)` looking `(−1, −0.7, −1)` |
 | `CamPosBefore` | reserved | pose before an animation started; may be referenced by animations without being defined |
-| Camera animation | `name` line, then `Move|Cut <mount> <duration>` lines until `End` | transition 0 Move / 1 Cut; the mount must be defined earlier or be `CamPosBefore`; duration 0 ≤ d < 60 s; violations are fatal `AppReleaseAssert`s. Played only by scripts [B:LEGACY] |
+| Camera animation | `name` line, then `Move <mount> <duration>` or `Cut <mount> <duration>` lines until `End` | transition 0 Move / 1 Cut; the mount must be defined earlier or be `CamPosBefore`; duration 0 ≤ d < 60 s; violations are fatal `AppReleaseAssert`s. Played only by scripts [B:LEGACY] |
 
 Shipped data [C]: `player0` 51 files, `player1` 51, `player2` 31, `player3` 13, `start` 7; every `CameraAnimations` block in `data/levels/**` is empty. Missing mounts: `mp_assault_3p_3`, `mp_tankbattle_3P`, `mp_tankbattle_4P` have none (the camera stays at its post-load target); `mp_blitzkrieg_2p_1` and `mp_skirmish_2p_4` define a spurious `player2` on 2-player maps.
 
@@ -1543,7 +1543,7 @@ Picking [C]:
 | `DoesRayHitInstantUnit` | ray–sphere, centre (x, terrain height, z), radius `√count × INSTANT_UNIT_SIZE_FACTOR` (6.0) | list index of the first hit |
 | `DoesRayHitCameraMount` | ray–sphere, radius = bounding radius of `data/shapes/camera.shp` around the mount | list index |
 | `IsPosInLandTile(pos)` | `posX < x < posX + size` and the same for z (strict) | index of the **smallest** containing tile |
-| `IsPosInFlattenArea(pos)` | `|x − cx| < size` and `|z − cz| < size` (`size` is a half-extent) | index of the first |
+| `IsPosInFlattenArea(pos)` | `abs(x − cx) < size` and `abs(z − cz) < size` (`size` is a half-extent) | index of the first |
 
 Per-mode behaviour [C] `LocationEditor::AdvanceMode*`:
 

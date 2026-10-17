@@ -710,7 +710,7 @@ mount_row = NAME posX posY posZ frontX frontY frontZ upX upY upZ EOL ;    (* 10 
 
 | Col | Field | Type | Units | Default | Range | Semantics | Parser ref |
 |---|---|---|---|---|---|---|---|
-| 1 | `m_name` | WORD, `strncpy` 63 chars into `char[64]` | – | – | keep ≤ 62 characters (a 63+ character name is not NUL-terminated by `strncpy`) | mount name, looked up case-insensitively (`LevelFile::GetCameraMount`) | `ParseCameraMounts` |
+| 1 | `m_name` | WORD, `strncpy` 63 chars into `char[64]` | – | – | keep ≤ 62 characters: `strncpy(m_name, word, 63)` does not terminate a 63+ character name; whether `m_name[63]` is zero depends on `new CameraMount()` value-initialising the POD [I: C++03 value-initialisation; MSVC 2005 behaviour not verified] (Resolved in part: X1a stated the name is unterminated; the class has no constructor, so this is compiler-dependent) | mount name, looked up case-insensitively (`LevelFile::GetCameraMount`) | `ParseCameraMounts` |
 | 2–4 | `m_pos` | F32 ×3 | wu | – | – | camera position | same |
 | 5–7 | `m_front` | F32 ×3 | direction | – | non-zero | normalised after reading | same |
 | 8–10 | `m_up` | F32 ×3 | direction | – | non-zero | normalised after reading | same |
@@ -721,7 +721,7 @@ Names consumed by code [C]: `player<N>` (N = the local team's position index) is
 
 ```ebnf
 cam_anims = 'CameraAnimations_StartDefinition' EOL , { blank | animation } , 'CameraAnimations_EndDefinition' EOL ;
-animation = ANIMNAME EOL , { blank | node } , 'End' EOL ;          (* ANIMNAME strncpy 63 into char[64] *)
+animation = ANIMNAME EOL , { blank | node } , 'End' EOL ;          (* ANIMNAME strncpy 63 into char[64]; same termination caveat as mounts *)
 node      = ( 'Move' | 'Cut' ) MOUNTNAME DURATION EOL ;            (* all MISSING => CRASH *)
 ```
 
@@ -2567,3 +2567,460 @@ sounds/click.ogg
 ```
 
 **Discrepancies.** All list entries resolve to existing files only when compared case-insensitively (e.g. `mp_koth_2p_1.txt` vs on-disk `mp_koth_2P_1.txt`); on a case-sensitive file system 30 entries would fail [C scripted, 31]. `Marketing/LogitechG15/landrotate.bmp` in the exclusion lists matches nothing [C].
+
+---
+
+## 11 Runtime-written, network and tool files
+
+<a id="fmt-runtime-files"></a>
+### 11.1 Index of runtime-written files
+
+**Purpose.** Every file the running game (or its support tool) writes or reads outside `data/`. `<P>` = profile directory (`%LOCALAPPDATA%\Introversion\Multiwinia\` on Win2000+, the working directory with `--NoProfile` or `TARGET_DEBUG`) [C] `code/app.cpp:App::GetProfileDirectory` ([31 §5](31_platform_build_and_tools.md)); `./` = working directory.
+
+| File | Writer → reader | Format | Tag |
+|---|---|---|---|
+| `<P>preferences.txt` | `PrefsManager::Save` → `PrefsManager::Load` | [fmt-preferences](#fmt-preferences) (UTF-16LE) | [B:FULL] |
+| `<P>user_input_preferences.txt` | keybindings window → `InputManager::parseInputPrefs` | [fmt-input-bindings](#fmt-input-bindings) | [B:FULL] |
+| `<P>authkey.dev`, `<P>authkey` | `Authentication_SaveKey` → `Authentication_LoadKey` | [fmt-authkey](#fmt-authkey) | [B:FULL] |
+| `<P>syncerror-<date>-client<c>-team<t>.txt`, `<P>syncdiff-…txt` | `Location::DumpWorldToSyncLog`, `DumpSyncDiffs` | [fmt-sync-dump](#fmt-sync-dump) | [B:FULL] |
+| `<P>debug.txt` | `AppDebugOut` (`DUMP_DEBUG_LOG`) | [fmt-debug-log](#fmt-debug-log) | [B:FULL] |
+| `<P>blackbox.txt` | `AppGenerateBlackBox` | [fmt-blackbox](#fmt-blackbox) | [B:FULL] |
+| `<P>ERRORLOG.TXT`, `<P>CRASH.DMP` | `RecordExceptionInfo` | [fmt-crash-report](#fmt-crash-report) | [B:FULL] |
+| `<P>screenshots/screenshot<N>.png` | `PosterMaker::SavePoster` | [fmt-png-output](#fmt-png-output) | [B:FULL] |
+| `<P>users/<profile>/game.txt`, `<P>users/<profile>/mission_*.txt` | `GlobalWorld::SaveGame`, `LevelFile::SaveMissionFile` → `LoadGame`, `ParseMissionFile` | [fmt-profile-save](#fmt-profile-save) | [B:LEGACY] |
+| `<P>maps/<name>.mwm` (+ `<P>maps/<name>.txt` from `LevelFile::Save`) | editor → `MapFile`, `LevelFile::ParseMWMFile` | [fmt-mwm](#fmt-mwm) | [B:EDITOR] |
+| `./serverHistory.dat` | `Server::SaveHistory` (pref `RecordDemo` = 1) → `Server::LoadHistory("ServerHistory.dat")` (pref = 2) | [fmt-server-history](#fmt-server-history) | [B:FULL], debug feature |
+| `./origin` (read only), `./version` | packaging ↔ `App::Initialise`, `--write-version` | [fmt-origin-version](#fmt-origin-version) | [B:FULL] |
+| `./language_errors.txt` | `LangTable::TestAgainstEnglish` (pref `TextLanguageTest` = 1) | [fmt-language-errors](#fmt-language-errors) | [B:FULL], QA |
+| `<P>inputprefs_debug.txt` | `parseInputPrefs` diagnostics | free text, one message per rejected line | Mac / [B:DEBUG] |
+| `<P>dxdiag_info.txt`, `<P>multiwinia.zip` | `MultiwiniaSupport.exe` | `dxdiag /t` text; zip bundle ([fmt-support-ini](#fmt-support-ini)) | support tool |
+| `sounderrors.txt`, `data/sounds.txt` (save) | `SoundSystem::LoadtimeVerify` (call commented out), `SaveBlueprints` (sound editor) | [fmt-sounds-txt](#fmt-sounds-txt) writer | [B:DEAD] / [B:DEBUG] |
+| `data/gestures.txt` (save) | `Gesture::SaveTrainingData` | [fmt-gestures](#fmt-gestures) | [B:DEBUG] |
+| `<P>dxdiag.txt`, `<P>benchmarks/game <key> <time>.txt` | `Benchmark` | free text | [B:DEAD] (`BENCHMARK_AND_FTP`) |
+| `TestBedLog.txt`, `test_log.txt`, `gltrace.txt`, memory-leak report | test bed / test harness / D3D GL trace / `ParseMemoryLeakFile` | free text | [B:DEAD] (respective macros) or debug tools ([32](32_debug_test_and_performance.md)) |
+| `<P>users\<profile>.dsg` | Vista rich saved-game header + PNG thumbnail | binary | [B:DEAD] (`TARGET_OS_VISTA`) |
+| `achievements.txt` | `ACHIEVEMENT_RECORD_FILENAME` defined; `AchievementTracker::Save`/`Load` are empty | – | never written [C] `code/achievement_tracker.cpp` |
+
+**Verification.** Index assembled from X1a §13.1 and [31 §5.3](31_platform_build_and_tools.md); writer functions spot-checked for this document (`ClientToServer::GetSyncFileName`, `Server::SaveHistory`, `Authentication_SaveKey`/`LoadKey`, `PosterMaker::SavePoster`, `AchievementTracker::Load`).
+
+**Minimal valid example.** See each linked section.
+
+**Discrepancies.** Installers' `[UninstallDelete]` and `MultiwiniaSupport.ini` assume user files under the install directory; they are written to `<P>` on Win2000+ [C] ([31 §5](31_platform_build_and_tools.md)).
+
+<a id="fmt-profile-save"></a>
+### 11.2 Campaign save files [B:LEGACY]
+
+**Purpose / files.** Darwinia campaign progress: `<P>users/<profile>/game.txt` and `<P>users/<profile>/mission_*.txt` [C] `code/global_world.cpp:GlobalWorld::SaveGame`, `code/level_file.cpp:LevelFile::SaveMissionFile`, `contrib/systemiv/lib/filesys/text_file_writer.cpp:TextFileWriter`; read back first by `GlobalWorld::LoadGame` and `LevelFile::ParseMissionFile`.
+
+**Encoding.** 8-bit text; "redshirt2"-obfuscated in release builds, plain under `TARGET_DEBUG` ([fmt-redshirt](#fmt-redshirt)); `fopen("w")` text mode → CRLF.
+
+**Grammar / fields.** Exactly [fmt-game-txt](#fmt-game-txt) and the mission blocks of [fmt-level-file](#fmt-level-file) (`Difficulty`, `CameraMounts`, `CameraAnimations`, `Buildings`, `InstantUnits`, `Routes`, `PrimaryObjectives`, `RunningPrograms`, `LeaderboardStats`), after de-obfuscation.
+
+| Rule | Value | Ref |
+|---|---|---|
+| when written | not for profile names `none`, `AccessAllAreas`, `AttractMode`, not for non-full versions, and only in single-player modes | `code/app.cpp:App::SaveProfile` |
+| header | `redshirt2` with no newline, then the first line | `TextFileWriter::TextFileWriter` |
+| encoded bytes | 33…127 shifted by the running key, ≤ 32 and ≥ 128 unchanged | `TextFileWriter::printf` |
+
+**Verification.** Writer constructor and `printf` re-read for this document; readers per [fmt-redshirt](#fmt-redshirt). No sample in the tree.
+
+**Minimal valid example.** The [fmt-redshirt](#fmt-redshirt) worked example: a mission save whose first content line is `Kills 7` begins with the bytes `redshirt2Rrmwu <` CR LF.
+
+**Discrepancies.** `ResetProfileButton` deletes `users/<name>/` relative to the working directory while saves live under `<P>` — the wrong folder (legacy only) [C] ([09](09_meta_systems.md)).
+
+<a id="fmt-authkey"></a>
+### 11.3 Authentication key files
+
+**Purpose.** The product key sent to the metaserver [C] `contrib/systemiv/lib/metaserver/authentication.cpp:Authentication_SaveKey`, `Authentication_LoadKey`, `Authentication_SetKey`, `Authentication_SimpleKeyCheck`, `Authentication_IsDemoKey`, `Authentication_IsAmbrosiaKey`, `Authentication_IsHashKey`; `code/app.cpp:App::InitMetaServer`. Validation protocol: [22](22_determinism_and_networking.md).
+
+**Files.** Read: `<P>authkey.dev` only (`App::InitMetaServer`). Written: `<P>authkey.dev` by `code/UI/GameMenuWindow.cpp:GameMenuWindow::PasteFromClipboard` and `code/UI/PlayDemoAuthkeyButton.h`; `<P>authkey` by `code/UI/AuthInputField.h` (every keystroke) [C].
+
+**Encoding.** ASCII; written with `fopen("wt")` + `fprintf("%s\n")`.
+
+```ebnf
+authkey_file = KEY , LF ;
+KEY          = GROUP6 '-' GROUP6 '-' GROUP6 '-' GROUP6 '-' GROUP3      (* 31 characters = AUTHENTICATION_KEYLEN 32 - 1 *)
+             | 'hsh' , HEXWORDS ;                                      (* hashed key, accepted without local check *)
+GROUP6       = 6 * UPPER ;  GROUP3 = 3 * UPPER ;
+HEXWORDS     = 5 * ( 4*hexdigit ) ;     (* SHA-1 words printed %04x: at least 4 digits each -> 23..43 characters total *)
+```
+
+| Field | Type | Default | Range | Semantics | Parser ref |
+|---|---|---|---|---|---|
+| key | first whitespace-delimited word (`fscanf("%s")`, no length limit, buffer `char[256]` in `App::InitMetaServer`) | `authkey not found` when the file is missing | 31 chars, or `hsh…` | trailing characters not in `A–Z`, `a–z`, `-` are trimmed; passes the local check if it is a hash key or exactly 31 characters; prefixes `DEMO` (demo key) and `AMBR` (Ambrosia distribution) recognised | `Authentication_LoadKey`, `Authentication_SetKey`, `Authentication_SimpleKeyCheck` |
+| hash form | `HashData(key, token)` | – | – | SHA-1 of `"<key>-<token>"` (≤ 511 chars), output `hsh` + five words `%04x`; sent instead of the raw key using the server's hash token | `contrib/systemiv/lib/math/hash.cpp:HashData` |
+
+**Verification.** `Authentication_SaveKey`, `Authentication_LoadKey`, `Authentication_SetKey` and the save call sites re-read for this document [C].
+
+**Minimal valid example**
+
+```text
+ABCDEF-GHIJKL-MNOPQR-STUVWX-YZA
+```
+
+**Discrepancies.** A hand-typed key is saved to `<P>authkey` but only `<P>authkey.dev` is read at start-up, so it is not re-read on the next launch [C] (Resolved: P14 and the meta contradiction note described the two writers; both are right, see [31 §5.3](31_platform_build_and_tools.md)). `Authentication_GenerateKey` is a stub returning a fixed demo key (not reproduced) [C]. `MultiwiniaSupport.ini` collects `authkey`, not `authkey.dev` [C].
+
+<a id="fmt-sync-dump"></a>
+### 11.4 Desync dump files
+
+**Purpose.** Forensic output when the server reports this client out of sync, or when the I-frame comparison finds differences [C] `code/network/clienttoserver.cpp:ClientToServer::GetSyncFileName`, `ClientToServer::ProcessServerLetters` (`NET_DARWINIA_SYNCERROR` branch), `code/location.cpp:Location::DumpWorldToSyncLog`, `code/network/iframe.cpp:DumpSyncDiffs`, `code/network/syncdiff.cpp:SyncDiff::Print`, `contrib/systemiv/lib/debug_utils.cpp:HashDouble`. Sync design: [22](22_determinism_and_networking.md).
+
+**Files.** `<P><prefix>-%Y-%m-%d--%H-%M-%S-client<clientId>-team<myTeamId>.txt`; the time is the **server start time** (`m_serverStartTime`, local time); prefix `syncerror` (first out-of-sync report only) or `syncdiff` (I-frame diff path) [C] `GetSyncFileName`.
+
+**Encoding.** ASCII; `syncerror` opened in append mode (`fopen "a"`), `syncdiff` truncating.
+
+```ebnf
+syncerror_file = [ 'SyncRandSeed ' UINT ' (as signed int: ' INT ')' LF , { randlog_line LF } ]   (* TRACK_SYNC_RAND only *)
+                 LF LF 'Begin Final Object Positions' LF , { state_line LF } ;
+state_line     = ENT | OFFICER | DARWINIAN | WOBJ | BUILDING | TREE | CRATE | BOXKITE ;
+ENT            = 'ENT Type[' TYPENAME '] Id[' INT '] pos[' H ',' H ',' H '], vel[' H '] front[' H ']' ;
+WOBJ           = 'WOBJ Type[' INT '] Id[' INT '] pos[' H ',' H ',' H '], vel[' H ']' ;
+BUILDING       = 'BUILDING Type[' TYPENAME '] Id[' INT '] pos[' H ',' H ',' H '], vel[' H '] front[' H '] centre[' H '], radius[' H ']' ;
+TREE           = 'TREE Id[' INT '] pos[' H ',' H ',' H '], vel[' H '] front[' H '] centre[' H '] radius[' H '] height[' H '] hitcheckCentre[' H '] hitcheckRadius[' H ']' ;
+OFFICER        = 'ENT OFFICER Id[' INT '] state[' INT '] pos[' H ',' H ',' H '] vel[' H '] front[' H '] waypoint[' H ']' ;
+DARWINIAN      = 'DARWINIAN Id[' INT '] state[' INT '] pos[' H ',' H ',' H '] vel[' H '] front[' H '] waypoint[' H ',' H ',' H '] boxId[' INT ']' ;
+CRATE          = 'CRATE Id[' INT '] pos[' H ',' H ',' H '], vel[' H '] radius[' H ']' ;
+BOXKITE        = 'BOXKITE Id[' INT '] state[' INT '] pos[' H '], vel[' H ']' ;
+H              = 16 * hexdigit ;      (* IEEE-754 bits of a double, LEAST significant nibble FIRST, lower case *)
+syncdiff_line  = 'syncdiff: id: (team: ' T ', unit: ' U ', index: ' I ', uniqueId: ' Q ') (' x ', ' y ', ' z ')  - ' NAME ' - ' DESCRIPTION LF ;
+```
+
+| Field | Type | Semantics | Parser ref |
+|---|---|---|---|
+| order of state lines | – | for each used team: every entity of every unit, then every "other" entity; then every effect except snow; then every building | `Location::DumpWorldToSyncLog` |
+| `H` of a vector quantity summarised by one value | hex | hash of the **sum of its components** (`vel[x+y+z]`, `front[x+y+z]`) | `Entity::LogState`, `WorldObject::LogState` |
+| syncdiff positions | default `ostream` doubles | – | `SyncDiff::Print` |
+
+**Verification.** `GetSyncFileName`, `HashDouble`, the opening of `DumpWorldToSyncLog` re-read for this document; line grammars from X1a's reading of every `LogState` [C].
+
+**Minimal valid example** (the double 1.0 = 0x3FF0000000000000 is written least-significant nibble first as `0000000000000ff3`)
+
+```text
+
+
+Begin Final Object Positions
+CRATE Id[12] pos[0000000000000ff3,0000000000000000,0000000000000ff3], vel[0000000000000000] radius[0000000000000ff3]
+```
+
+**Discrepancies.** None found; the files are diagnostics with no reader.
+
+<a id="fmt-mwm"></a>
+### 11.5 `.mwm` custom map container [B:EDITOR]
+
+**Purpose.** A user map with embedded textures [C] `code/mapfile.cpp:MapFile::MapFile`, `MapFile::Save`, `SaveTextures`, `SaveTexture`, `LoadTextures`, `LoadTexture`, `GetTextReader`, `IsSaveRequired`; `code/mapfile.h`; `code/level_file.cpp:LevelFile::ParseMWMFile`.
+
+**Files.** `<P>maps/<name>.mwm` (directory from `App::GetMapDirectory`); only editor builds create or list them (`GameMenu::CreateMapList` under `LOCATION_EDITOR`), but `Location::LoadLevel` would load one in any build if a non-`.txt` map name were requested [C].
+
+**Byte layout**
+
+```ebnf
+mwm_file         = uncompressed_len:i32 , zlib_stream ;   (* i32 via WriteNetworkValue (little-endian) *)
+zlib_stream      = compress2(level 9) of the fmt-directory serialisation of a Directory named "NewMap" ;
+newmap_directory = field 'MapData' : VOID                 (* the map text exactly as LevelFile::Save writes it, fmt-level-file *)
+                 , { texture_fields } ;
+texture_fields   = field TEXNAME 'Filename' : STRING , field TEXNAME : VOID
+                 , field 'TextureHeight' n : INT , field 'TextureWidth' n : INT ;
+TEXNAME          = 'MapLandscapeTexture' | 'MapWavesTexture' | 'MapWaterTexture' | 'MapThumbnail' ;
+```
+
+| Field | Type | Units | Default | Range | Semantics | Parser ref |
+|---|---|---|---|---|---|---|
+| `uncompressed_len` | i32 | bytes | – | ≥ 0 | buffer size for `uncompress` | `MapFile::MapFile` |
+| `MapData` | VOID | bytes | – | – | map text, parsed with a `TextDataReader` (unterminated last line dropped, §3.1) | `MapFile::GetTextReader` |
+| `<Tex>Filename` | STRING | – | – | `terrain/<file>` or the thumbnail path | name under which the pixels are registered (`Resource::AddBitmap`) | `SaveTexture`, `LoadTexture` |
+| `<Tex>` | VOID | RGBA8 pixels | – | width × height × 4 bytes, bottom row first | texture data | same |
+| `TextureHeight<n>`, `TextureWidth<n>` | INT | pixels | −1 if absent (then the texture is skipped) | – | n = 1-based index in the order present (landscape, waves, water, thumbnail) | same |
+
+A texture is embedded only when it is not already an archived resource (`IsSaveRequired`), and the thumbnail only when not `default.bmp` [C].
+
+**Verification.** `MapFile::MapFile`, `Save`, `SaveTexture`, `SaveTextures`, `LoadTextures`, `LoadTexture` re-read for this document; field names from `code/mapfile.h` (`MAPFILE_MAPDATA`, `MAPFILE_LANDSCAPETEX`, `MAPFILE_WAVESTEX`, `MAPFILE_WATERTEX`, `MAPFILE_TEXTUREWIDTH`, `MAPFILE_TEXTUREHEIGHT`, `MAPFILE_THUMBNAIL`). No shipped sample.
+
+**Minimal valid example.** `uncompressed_len` = length of the serialised node `NewMap` that holds a single VOID field `MapData` containing the text of the §4.1.19 map, followed by its zlib stream; no texture fields (all three colour files are archived resources).
+
+**Discrepancies / hazards** [C]: `Save` allocates the compression buffer with the *uncompressed* size and ignores `compress2`'s result (incompressible data would fail silently); `MapFile::MapFile` reads `file length` bytes after already consuming the 4-byte length (the last 4 bytes of the buffer are uninitialised; zlib stops at the stream end); the stored length is trusted for the `uncompress` buffer.
+
+<a id="fmt-server-history"></a>
+### 11.6 `serverHistory.dat` — server message recording
+
+**Purpose.** Records the server's sequenced letter history for replay [C] `code/network/server.cpp:Server::SaveHistory`, `Server::LoadHistory`; triggers `code/app.cpp:App::ShutdownCurrentGame`, `code/main.cpp` (`RecordDemo` checks).
+
+**Files.** `./serverHistory.dat` (written at game shutdown when pref `RecordDemo` == 1); `./ServerHistory.dat` (read after a location loads when `RecordDemo` == 2) — the same file on case-insensitive file systems.
+
+**Byte layout**
+
+```ebnf
+history_file = count:i32 , count * directory ;     (* i32 raw, host byte order; directory = fmt-directory *)
+```
+
+| Field | Type | Semantics | Parser ref |
+|---|---|---|---|
+| `count` | i32 (raw `ostream::write`) | number of history letters | `Server::SaveHistory` |
+| letters | `Directory::Write(ostream)` each | the server-to-client letters in sequence order | same; `Server::LoadHistory` |
+
+**Verification.** `Server::SaveHistory` and the `RecordDemo` call sites re-read for this document [C]. No version header; replay requires byte-identical code and data [I].
+
+**Minimal valid example.** `00 00 00 00` — an empty history (count 0).
+
+**Discrepancies.** On load `m_sequenceId` is set to `lastSeq + 1` and the comparison `seqId > m_sequenceId` skips the update when equal (quirk, [22](22_determinism_and_networking.md)) [I].
+
+<a id="fmt-team-controls"></a>
+### 11.7 Packed team controls (`ALIVE_DATA` payload)
+
+**Purpose.** The per-0.1 s player-input record every client sends inside its ALIVE letter (VOID field `dg`) [C] `code/team.cpp:TeamControls::Pack`, `TeamControls::Unpack`, `TeamControls::GetFlags`, `TeamControls::SetFlags`; sender `code/main.cpp:SendTeamControlsToNetwork`; consumer `Location::UpdateTeam` ([22](22_determinism_and_networking.md)).
+
+**Encoding.** Binary, `WriteNetworkValue` (little-endian), written into a 256-byte `ostrstream`.
+
+| Offset | Field | Type | Present when | Semantics |
+|---|---|---|---|---|
+| 0 | flags | u16 | always | 0x0001 unitMove, 0x0002 directUnitMove, 0x0004 primaryFireTarget, 0x0008 secondaryFireTarget, 0x0010 targetDirected, 0x0020 secondaryFireDirected, 0x0040 cameraEntityTracking, 0x0080 unitSecondaryMode, 0x0100 endSetTarget, 0x0200 consoleController, 0x0400 leftButtonPressed |
+| 2 | `m_directUnitMoveDx`, `m_directUnitMoveDy` | i16, i16 | flag 0x0002 | direct-control movement |
+| +0 | `m_directUnitTargetDx`, `m_directUnitTargetDy` | i16, i16 | flag 0x0010 or 0x0020 | direct-control aim |
+| +0 | `m_mousePos` | 3 × f64 (Vector3) | always | world-space mouse position |
+
+Total 26, 30 or 34 bytes.
+
+**Verification.** `GetFlags`, `SetFlags`, `Pack`, `Unpack` and the `TeamControls` declaration (`code/team.h`) re-read for this document [C].
+
+**Minimal valid example.** Flags 0x0001 (unit move), mouse at (100, 0, 200): `01 00` + `00 00 00 00 00 00 59 40` + `00 00 00 00 00 00 00 00` + `00 00 00 00 00 00 69 40` (26 bytes).
+
+**Discrepancies.** The header comment refers to `NetworkUpdate::GetByteStream`, which no longer exists [C].
+
+<a id="fmt-blackbox"></a>
+### 11.8 `blackbox.txt` — release-assert report
+
+**Purpose / files.** `<P>blackbox.txt`, written by `contrib/systemiv/lib/debug_utils.cpp:AppGenerateBlackBox` on release asserts and `AppReleaseExit` ([31 §6.5](31_platform_build_and_tools.md)).
+
+```ebnf
+blackbox = '=========================' LF '=   BLACK BOX REPORT    =' LF '=========================' LF LF
+           APP_NAME ' ' APP_VERSION ' built ' BUILD_DATE LF
+           'Date ' HOUR ':' MINUTE ', ' DAY '/' MONTH '/' YEAR LF LF
+           [ "ERROR : '" MESSAGE "'" LF ]
+           LF '=========================' LF '=      STACKTRACE       =' LF '=========================' LF LF
+           { 'retAddress = ' POINTER LF } ;      (* EBP-chain walk; stops on misaligned, non-increasing or unreadable frames *)
+```
+
+| Field | Type | Semantics |
+|---|---|---|
+| `APP_NAME`, `APP_VERSION`, `BUILD_DATE` | text | `code/lib/universal_include.h` macros and `__DATE__` |
+| `MESSAGE` | text | the formatted assert message |
+| `POINTER` | `%p` | return addresses; symbolised offline by `tools/trace.pl` + a linker map |
+
+**Verification.** From X1a and [31 §6.5](31_platform_build_and_tools.md) readings of `AppGenerateBlackBox` [C].
+
+**Minimal valid example**
+
+```text
+=========================
+=   BLACK BOX REPORT    =
+=========================
+
+Game 1.0 built Jan  1 2008
+Date 12:30, 1/2/2008
+
+ERROR : 'Couldn't open stats.txt'
+
+=========================
+=      STACKTRACE       =
+=========================
+
+retAddress = 0040A1B2
+```
+
+**Discrepancies.** Release builds use `/O2` (frame-pointer omission), so the EBP chain is usually truncated [I] ([31 §6.5](31_platform_build_and_tools.md)).
+
+<a id="fmt-crash-report"></a>
+### 11.9 `ERRORLOG.TXT` and `CRASH.DMP` — SEH crash report
+
+**Purpose / files.** `<P>ERRORLOG.TXT` (text) and `<P>CRASH.DMP` (Windows minidump, `MiniDumpWriteDump(…, MiniDumpWithIndirectlyReferencedMemory, …)`), written by `code/lib/exception_handler.cpp:RecordExceptionInfo` from the `__except` around `RunTheGame` in `code/main.cpp:AppMain`; both are collected by the support tool ([fmt-support-ini](#fmt-support-ini)). Full description: [31 §6.2–§6.3](31_platform_build_and_tools.md).
+
+| Part of `ERRORLOG.TXT` (order) | Content |
+|---|---|
+| header | `"<exe> caused <description> (0x%08x) in module <module> at %04x:%08x"`, `"Exception handler called in AppMain."` |
+| system information | crash reference code (low 32 bits of the current FILETIME, hex), local time, exe path, Windows user name, OS name and `major.minor.build`, processor count/type, memory load %, physical/page/virtual totals and free (MB, rounded up) |
+| access violation detail | `"Read from"` / `"Write to location %08x"` |
+| registers | EDI ESI EAX EBX ECX EDX EIP EBP SegCs EFlags ESP SegSs |
+| code bytes | `NumCodeBytes` = 16 bytes at EIP (`??` if unreadable) |
+| stack dump | from ESP to the TIB stack top, ≤ `MaxStackDump` = 3072 DWORDs, 4 per row with ASCII |
+| module list | every image found by `VirtualQuery`: path, base/size, checksum, timestamp, file size/time, version resource |
+| trailer | `===== [end of ERRORLOG.TXT] =====` |
+
+Exception descriptions: 24 codes ([31 §6.3](31_platform_build_and_tools.md)). The file is opened `CREATE_ALWAYS`, so each crash overwrites the previous log [C].
+
+**Verification.** From [31 §6.2](31_platform_build_and_tools.md) (P14 reading of `RecordExceptionInfo`) [C]; not re-read for this document.
+
+**Minimal valid example.** Not applicable (machine-generated diagnostic; the minidump is Microsoft's format).
+
+**Discrepancies.** Worker threads have no SEH wrapper — a fault there produces no `ERRORLOG.TXT` [C] ([31 §6.2](31_platform_build_and_tools.md)).
+
+<a id="fmt-debug-log"></a>
+### 11.10 `debug.txt` — debug log
+
+**Purpose / files.** `<P>debug.txt`: every `AppDebugOut` message (`DUMP_DEBUG_LOG` is defined in FULL), truncated at start-up, then opened, appended and closed on every call under a mutex [C] `contrib/systemiv/lib/debug_utils.cpp:AppDebugOutRedirect`, `code/main.cpp:Initialise` ([31 §5.3](31_platform_build_and_tools.md)).
+
+```ebnf
+debug_log = { MESSAGE } ;     (* free text exactly as formatted by each AppDebugOut call; most messages end with LF *)
+```
+
+| Field | Type | Semantics |
+|---|---|---|
+| message | printf-formatted text | e.g. `Loading archive: main.dat`, `Failed to find text resource: data/<name>`, `Duplicate preference item %s. Ignoring` |
+
+**Verification.** Message texts quoted elsewhere in this document were confirmed in their parsers [C].
+
+**Minimal valid example**
+
+```text
+Loading archive: init.dat
+File init.dat, 16 files (0.120000 seconds)
+```
+
+**Discrepancies.** Opening and closing the file per message is slow but safe across threads [C].
+
+<a id="fmt-origin-version"></a>
+### 11.11 `origin` and `version` files
+
+**Purpose / files.** `./origin` (optional, read only): distributor tag; `./version`: written by the `--write-version` command-line switch [C] `code/app.cpp:App::Initialise`, `code/main.cpp:AppMain`.
+
+```ebnf
+origin_file  = TAG [ EOL ] , { ignored_line } ;    (* first line via TextFileReader + GetRestOfLine *)
+version_file = DARWINIA_VERSION ;                  (* bare string, no newline *)
+```
+
+| Field | Type | Default | Semantics | Parser ref |
+|---|---|---|---|---|
+| `TAG` | REST (comments/CR stripped, trailing blanks kept) | `unknown` | `App::m_originVersion`, sent to the metaserver (e.g. `buka`) | `App::Initialise` |
+| `DARWINIA_VERSION` | text | `dev` in this tree | build version string used by packaging scripts; the program returns immediately after writing | `AppMain` |
+
+**Verification.** From X1a's reading of both call sites [C].
+
+**Minimal valid example** (`origin`)
+
+```text
+retail-eu
+```
+
+**Discrepancies.** `DARWINIA_VERSION "dev"` suggests this tree is a development configuration rather than the exact retail binary [I] ([31 §5.3](31_platform_build_and_tools.md)).
+
+<a id="fmt-language-errors"></a>
+### 11.12 `language_errors.txt` — translation QA report
+
+**Purpose / files.** `./language_errors.txt`, truncated at each language load when pref `TextLanguageTest` = 1 [C] `code/lib/language_table.cpp:LangTable::TestAgainstEnglish`. (A second writer in `code/sepulveda.cpp` appends under `USE_SEPULVEDA_HELP_TUTORIAL` [B:DEAD].)
+
+```ebnf
+lang_errors = { error_line LF } ;
+error_line  = "ERROR : Failed to find translation for string ID '" ID "'"
+            | "ERROR : String ID appears not to be translated : '" ID "'"          (* text identical to English *)
+            | "ERROR : Found new string ID not present in original English : '" ID "'" ;
+```
+
+| Field | Type | Semantics |
+|---|---|---|
+| `ID` | phrase id | the offending key ([fmt-language](#fmt-language)) |
+
+**Verification.** From X1a's reading of `TestAgainstEnglish` [C].
+
+**Minimal valid example**
+
+```text
+ERROR : Failed to find translation for string ID 'menu_play'
+```
+
+**Discrepancies.** None found.
+
+<a id="fmt-user-info"></a>
+### 11.13 Registration system/user info texts [B:LEGACY]
+
+**Purpose.** Inputs of the Darwinia-era key generator, compiled into the exe but never called [C] `code/keygen.cpp:GenerateKey`, `code/lib/user_info.cpp:GetUserInfoData`; `targets/linux/Makefile.keygen-1` built it as a server tool.
+
+```ebnf
+sys_info  = 'SysInfoGenVersion' ... LF 'CpuVendor:' ... LF 'CpuModel:' ... LF 'Num Processors:' ... LF 'Country:' ... LF
+            'Language:' ... LF 'Num sound devices:' ... LF 'Primary sound device:' ... LF 'Graphics Card:' ... LF
+            'Operating System:' ... LF 'Computer Name:' ... LF ;          (* 184..500 bytes; value at offset 18 must parse as 2 *)
+user_info = 'Username:' VALUE LF 'Email:' VALUE LF ;                      (* 28..200 bytes *)
+```
+
+| Field | Type | Range | Semantics | Parser ref |
+|---|---|---|---|---|
+| system info text | ASCII lines in fixed order | 184…500 bytes | hashed: buffer as `len/4` LE u32 words, `rv = 28477717`; for `i = 0…1709`: `rv ^= word[(rv + i) mod (len/4)]` | `code/keygen.cpp` |
+| user info text | 2 lines | 28…200 bytes | hashed the same way | same |
+| password | `printf("%08x%08x", userKey, sysKey)` | 16 hex chars | result; on validation failure an error string ("system info file too short", "Username missing", …) is returned instead | same |
+
+**Verification.** Length limits, line keys, constants 28477717 / 1710 and the `%08x` output re-checked by grep for this document [C].
+
+**Minimal valid example** (`user_info`)
+
+```text
+Username: sample
+Email: sample@example.invalid
+```
+
+**Discrepancies.** No caller in `code/` (only `#include "keygen.h"` in `code/app.cpp`) [C].
+
+<a id="fmt-support-ini"></a>
+### 11.14 `MultiwiniaSupport.ini` — crash-report file list
+
+**Purpose.** Tells the separate crash-report tool (built from `contrib/XCrashReport`, shipped as `MultiwiniaSupport.exe`) which files and registry keys to bundle [C] `contrib/XCrashReport/Dlg.cpp:CDlg::GetFileDetails`, `contrib/XCrashReport/IniDefines.h`; packaging `tools/build_multiwinia_crashreporter.bat`. Tool behaviour: [31 §6.4](31_platform_build_and_tools.md).
+
+**Files.** Root `MultiwiniaSupport.ini`. **Encoding.** ASCII, CRLF; parsed with Win32 `GetPrivateProfileString` (not `TextReader`).
+
+```ebnf
+ini     = { comment | section | entry } ;            (* Win32 INI rules: ';' comment lines, [Section], Key=Value *)
+section = '[FilesToAdd]' | '[RegistryToAdd]' ;
+entry   = 'File' NNN '=' PATH ',' DESCRIPTION ',' FILETYPE      (* NNN = 001..999, consecutive *)
+        | 'Registry' NNN '=' REGPATH ',' DESCRIPTION ;
+```
+
+| Field | Type | Default | Range | Semantics | Parser ref |
+|---|---|---|---|---|---|
+| `NNN` | 3-digit number | – | from 001, consecutive | reading **stops at the first missing number** | `CDlg::GetFileDetails` |
+| `PATH` | text without `,` | – | – | a path lacking both `\` and `:` is relative to the profile directory given to the tool, else to the tool's directory; non-existent files skipped | same |
+| `DESCRIPTION`, `FILETYPE` | text without `,` | – | – | shown in the tool; fields split with `_tcstok` on `,`, CR, LF; a missing field aborts the list | same |
+| (no accepted file entry) | – | built-in `ERRORLOG.TXT`, `CRASH.DMP` | – | defaults | same |
+| `REGPATH` | registry path | – | – | exported as `RegistryNNN.txt` | same |
+
+**Verification.** From X1a's reading of `Dlg.cpp` [C]; shipped entries: `CRASH.DMP`, `ERRORLOG.TXT`, `DXDIAG.TXT`, `DXDIAG_INFO.TXT`, `BLACKBOX.TXT`, `PREFERENCES.TXT`, `userprefs.txt`, `authkey`, `debug.txt`; `[RegistryToAdd]` empty [C] file.
+
+**Minimal valid example**
+
+```text
+[FilesToAdd]
+File001=ERRORLOG.TXT,Error log,Text Document
+File002=preferences.txt,Settings,Text Document
+```
+
+**Discrepancies** [C]: the game writes `user_input_preferences.txt`, not `userprefs.txt`; the auth key is read from `authkey.dev` (`authkey` is only one of two save names); `DXDIAG*.TXT` are produced only by the benchmark code (`BENCHMARK_AND_FTP`, off) or by the tool itself (`dxdiag_info.txt`); the `[FilesToAdd]` INI is located in the module directory only, the `[RegistryToAdd]` INI in the profile directory when one is given (inconsistent).
+
+<a id="fmt-testbedconfig"></a>
+### 11.15 `testbedconfig.txt` — automated test-bed sequence [B:DEAD]
+
+**Purpose / parser.** `code/UI/GameMenuWindow.cpp:GameMenuWindow::ReadTestBedConfig`, compiled only under `TESTBED_ENABLED` (never defined); opened with a plain `TextFileReader("testbedconfig.txt")` relative to the working directory [C].
+
+**Files.** Root `testbedconfig.txt` (14 lines, 4 commands, no final newline — processed anyway by `TextFileReader`, §3.1). **Encoding.** ASCII.
+
+```ebnf
+testbed_file = { blank | command } ;
+command      = 'SetProgression' ( 'LINEAR' | 'RANDOM' | 'SEQUENCE' )        (* (cs) *)
+             | 'SetRandSeed' INT                                             (* sscanf %d *)
+             | 'SetTestBedName' WORD                                         (* sscanf %s into char[256], no limit *)
+             | 'AddSequenceItem' GAMEINDEX RANDSEED                          (* both INT *)
+             | 'SequenceIDToTerminateOn' INT
+             | other ;                                                       (* ignored *)
+```
+
+| Field | Type | Default | Range | Semantics | Parser ref |
+|---|---|---|---|---|---|
+| command words | WORD (cs, `strcmp`) | – | as listed | a missing argument skips the command (`continue`) | `ReadTestBedConfig` |
+| `GAMEINDEX` | INT | – | index into `g_vGameEntries` | concatenation, over game types 0…5 (type 6 skipped), of every map in that type's lobby list (`BuildGameEntries`) | same |
+| `SetTestBedName` | WORD | – | ≤ 255 | also sets `App::m_testbedServerName` | same |
+
+**Verification.** From X1a's reading [C]; shipped file: `SetProgression RANDOM`, `SetTestBedName TESTBED_GodOfCode`, `AddSequenceItem 0 10`, `AddSequenceItem 10 20` [C] file, `X1a_text_survey.py` (NO-FINAL-LF).
+
+**Minimal valid example**
+
+```text
+SetProgression LINEAR
+SetRandSeed 77
+AddSequenceItem 3 1234
+```
+
+**Discrepancies.** `BuildGameEntries` stores `maps.GetData(i)->m_mapId` (game-type index `i`) instead of `GetData(x)` [C].
