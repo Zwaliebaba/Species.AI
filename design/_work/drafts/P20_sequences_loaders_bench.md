@@ -399,3 +399,108 @@ A 1990s "cracktro": starfield, bouncing two-part logo, sine-wave scroller and a 
 - **Scroller**: text `bootloader_amiga` (wraps modulo length), `g_editorFont` in a 1024×768 ortho; speed 450 px/s; pitch 32 px; glyph height 55 with a 63-px shadow glyph in (32,64,64) behind; 34 glyphs per screen; glyph x from the sub-pixel scroll offset; `phase = 0.01x + scrollPhase` (`scrollPhase += 10·dt`); `y = 40 + 20·sin(phase)`; colour `c = 100·sin(4·phase) + 101` → RGB `(255−c, 255−c, c+20)`.
 - Fade to black over 15 s starting at 72 s (`alpha = (now − (start+72))/15`); ends at 89 s. Music `LoaderAmiga`.
 
+## [→ 09_meta_systems] 4. Credits roll (`CreditsLoader`) — [B:LEGACY]
+
+**Reachability.** Darwinia-campaign only: script op `RunCredits` (`code/script.cpp:Script::RunCommand_RunCredits`; no shipped script uses it [C grep `data/scripts`]) and the Darwinia ending camera `Camera::AdvanceSphereWorldOutroMode` once its running time exceeds 70 s (entered via script op `GameOver` in `data/scripts/gameover.txt`) — after the credits the camera returns to `ModeSphereWorld` at pos (0,0,100) [C] `code/camera.cpp`. **Multiwinia's own credits** are a static scrolling text page in the front-end menu (`GameMenuWindow::SetupCreditsPage`, `ReadCredits` concatenating `multiwinia_credits_<n>` phrases and the beta-tester list) — owned by P18 [C] `code/UI/GameMenuWindow.cpp`.
+
+### 4.1 Concept
+On a black 800-wide virtual canvas, little creature sprites walk on from the screen edges, pick up words or single letters and carry them into place to spell each credits page; when a page is complete they carry the pieces off again (or re-use identical pieces for the next page). Credit text itself is IP and is **not** reproduced here — only its structure (keys, layout).
+
+### 4.2 Objects [C] `code/loaders/credits_loader.h`
+- `CreditsItem`: `m_string` (UnicodeString — one word or one character), `m_pos`, `m_targetPos` (centre), `m_size` (font size), `m_used` (true while assigned to the page being built).
+- `CreditsDarwinian` (carrier): `m_pos`, `m_targetPos`, `m_itemId`, `m_state ∈ {StateWalkingToItem, StateCarryingItem, StateLeaving}`.
+- Global `g_creditsLoader` (set in ctor; carriers reach the item list through it).
+
+### 4.3 Page construction `CreateNextScene()` (called whenever **no carriers remain**)
+1. `DeleteUnusedStrings`: delete every item with `!m_used` that is off-screen.
+2. Emit the page (table below) through:
+   - `GenerateWordsCentre(x, y, size, text)` → split at spaces, one item per word, laid out left→right starting at `x − width(text)/2` (word advance = width(word + 1 char)); a 256-wchar copy buffer limits text length.
+   - `GenerateCharsCentre(x, y, size, text)` → one item per non-space character, advance = width(1 char) per character (spaces advance too).
+   - Each emission goes through `AddString(x, y, size, s)`: re-use the first existing item with an identical string (case-sensitive `StrCmp(_, true)`) that is `!m_used` — it keeps its current position; else create one at `GenerateOffscreenPosition(1000 + AppRandom()%200)`. Then `m_used = true`, `targetPos = (x + width(s)/2, y)`. A carrier is created for each emitted item: starting at the item's position if the item is off-screen, else at `GenerateOffscreenPosition(200 + AppRandom()%100)`; state `WalkingToItem`.
+3. `RemoveUnusedStrings`: every item still `!m_used` gets `targetPos = GenerateOffscreenPosition(150)` and a fresh carrier starting at `GenerateOffscreenPosition(40 + AppRandom()%50)` → carried away.
+4. `++m_sceneIndex`.
+
+`GenerateOffscreenPosition(d)`: pick an edge with `AppRandom()%4`: 0 → (−d, rand%600); 1 → (rand%800, −d); 2 → (800+d, rand%600); 3 → (rand%800, 600+d). `IsOffscreen(p)`: x < 0, y < 0, x > 800 or y > 600 (fixed 800×600 bounds even on wide screens [C]).
+
+### 4.4 Page layout (keys `bootloader_credits_<n>`; "W" = per-word, "C" = per-character; all centred at x = 400)
+| Scene | Items (mode y size key) |
+|---|---|
+| 0 | W 150 30 `_1`; C 250 40 `_2`; C 300 40 `_3` |
+| 1 | W 150 30 `_4`; C 200 50 `_5`; C 300 40 `_6`; C 350 40 `_7`; C 400 40 `_8`; C 450 40 `_9` |
+| 2 | W 150 30 `_41`; C 200 40 `_42`; C 250 40 `_43`; C 300 40 `_44` |
+| 3 | W 150 30 `_10`; C 250 40 `_11`; C 300 40 `_12` |
+| 4 | W 150 30 `_13`; C 250 50 `_14`; [`OBERONBUILD` only: W 400 30 `_15`] |
+| 5 | W 150 30 `_16`; C 200 40 `_17`; C 270 40 `_18`; W 400 30 `_19`; C 450 40 `_20` |
+| 6 | W 150 30 `_21`; C 250 50 `_22`; W 300 30 `_23`; C 400 50 `_24`; W 450 30 `_25` |
+| 7 | W 150 30 `_26`; C 200 40 `_27`; C 250 40 `_28`; W 400 30 `_29`; C 450 40 `_30` |
+| 8 | W 150 30 `_31`; C 250 40 `_32` |
+| 9 | [`EGAMESBUILD`: `GenerateEGamesList`] else W 150 30 `_33`; C 200 40 `_34`; W 350 30 `_35`; C 400 40 `_36` |
+| 10 | W 50 30 `_37`; then beta-tester list |
+| 11 | C 200 60 `_38`; W 300 20 `_39`; W 330 20 `_40` |
+| 12 | (empty page — everything is carried off) |
+| 13 | finished → `Run` exits |
+
+Pattern [I from layout]: per-word size-30 lines are role headings, per-character size-40/50 lines are names. 44 `bootloader_credits_*` keys exist in `english.txt` [C].
+
+- **Beta-tester page** (`GenerateBetaTesterList`): read `data/betatesters.txt` (38 non-empty lines [C]); each line with `strlen > 1` is a name. Two columns at x = 200 and 600; `y0 = 75`; `perCol = int(N/2) − 1`; `gap = (800·ScreenH/ScreenW − 115)/perCol`; `textSize = gap·2/3`; for i: `y += gap`, `GenerateWordsCentre(x, y, textSize, name_i)`; when `i == perCol` → `x += 400`, `y = 75`. (N ≤ 3 → division by zero [C].) Names are real people → IP/personal data, never reuse.
+- [B:DEAD] `GenerateEGamesList` (`EGAMESBUILD`): `egames.txt` lines "`<size> <text>`", y from 30, `y += 1.3·size` per line, `+20` for blank lines (file absent from `data/` [C]).
+
+### 4.5 Carrier state machine [C] `CreditsDarwinian::Advance`, `AdvanceToTargetPos`
+
+```mermaid
+stateDiagram-v2
+    [*] --> WalkingToItem
+    WalkingToItem --> Leaving: item deleted (target = offscreen 30)
+    WalkingToItem --> CarryingItem: reached item.pos + (0, size/2)
+    CarryingItem --> Leaving: item deleted (offscreen 30)
+    CarryingItem --> [*]: reached item.targetPos + (0,size/2) AND carrier off-screen (removal trip)
+    CarryingItem --> Leaving: reached target on-screen (target = offscreen 100); item.m_used=false
+    Leaving --> [*]: reached target
+```
+While carrying, `item.pos = carrier.pos − (0, size/2)` (item rides just above the carrier). On delivery `item.m_used = false` (so it is available for re-use or removal by the next page).
+
+`AdvanceToTargetPos(dt)` — speed **150 px/s**, two-phase "horizontal then vertical" walk: `v = target − pos` with `v.y *= 0.3`; if `|v| > 10` move `150·dt` along `v̂`, return false; else move `150·dt·|v|/10` along `v̂` and return false if `|v| > 2`. Then the same with `v.x *= 0.3` for the vertical phase; arrived when that distance ≤ 2.
+
+### 4.6 Rendering and timing [C] `CreditsLoader::Render`, `FlipBuffers(alpha)`, `Run`
+- Carriers: `sprites/darwinian.bmp` 30×30 centred, colour (100,255,100). Items: `g_gameFont.DrawText2DCentre(pos, size)` twice — outline pass colour (1,1,1,0), fill pass (1,1,1,1). (A faint "ghost at target" draw is commented out.)
+- `FlipBuffers(alpha)`: poll/advance input, `glFinish`, `Flip`, clear **depth only**, then a full-canvas black quad with `alpha = min((t − start)/7, 1)` → frames smear during the first 7 s and become fully cleared afterwards [I: relies on blending enabled and the back buffer being preserved].
+- `Run`: start music `Credits`; `SetupFor2D(800)`; loop until skip/quit or `CreateNextScene()` returns true (after scene 12 completes); stops `"Music Cutscene3"` at the end — a name mismatch with the started `Credits` event (both use the same sample), so the credits music is not explicitly stopped [C] (it is non-looping).
+- Total length is emergent (carrier walking time); no fixed timings.
+
+## [→ 09_meta_systems] 5. Attract mode (`AttractMode`) — [B:DEAD] (feature gate `ATTRACTMODE_ENABLED` defined nowhere)
+
+### 5.1 Trigger conditions [C] `code/attract.cpp:AttractMode::Advance`, `data/input/input_preferences.txt` L280–287
+- Would be advanced once per frame in the global-world loop (`code/main.cpp`, `#ifdef ATTRACTMODE_ENABLED`, unconditional `Advance`) and, while running, in the location loop (only `if (m_running)` → there it can only stop) [C].
+- Start: `controlEvent(ControlStartAttractMode)` when not running. Both shipped bindings are **commented out**: `#StartAttractMode = key f1 down` and `#StartAttractMode = idle reaches 60` (i.e. 60 s of no input — the intended trigger; code comment "change to a timer for user idleness"). So even with the gate on, attract mode could not start with shipped prefs [C].
+- Stop: `controlEvent(ControlStopAttractMode)` — bindings `idle no longer` (any input), `key space down`, `key enter down`, `key esc down`, `XInput start down`, `XInput b down` — **or** the attract script has finished (`!Script::IsRunningScript()`).
+
+### 5.2 What it plays
+`StartAttractMode()`:
+1. Remember the current profile name; `App::SaveProfile(true, true)`; `App::SetProfileName("AttractMode")` (this name is special-cased: not written to prefs `UserProfile` [C] `code/app.cpp:App::SetProfileName`; `LoadProfile` loads `game_unlockall.txt` with every trunk port online and every location available [C] `App::LoadProfile`; `SaveProfile` refuses to save [C] `App::SaveProfile`).
+2. `TaskManagerInterface::m_lockTaskManager = true` (player cannot use the task manager).
+3. If `LoadProfile()` succeeds → `Script::RunScript("attractmode.txt")`, `m_running = true`.
+4. Remove all Eclipse windows.
+
+`data/scripts/attractmode.txt` [C] (Darwinia campaign levels — IP names):
+| Step | Commands |
+|---|---|
+| Setup | `SetMission mine mission_mine_attract.txt`; `SetMission pattern_buffer mission_pattern_buffer_attract.txt`; `SetMission biosphere mission_biosphere_attract.txt` |
+| Location 1 | `EnterLocation mine`; `CamMove attract1 10`, `WaitCam`, `CamMove attract2 10`, `WaitCam`, `CamMove attract3 10`, `WaitCam`, `CamMove attract4 10`, `WaitCam`, `CamMove attract5 10`, `Wait 7`; `ExitLocation` |
+| Location 2 | `EnterLocation pattern_buffer`; `CamMove attract1 20`, `WaitCam`, `attract2..attract6` at 10 s each with `WaitCam` between (last followed by `Wait 7`); `ExitLocation` |
+| Location 3 | `EnterLocation biosphere`; `attract1..attract6` at 10 s each with `WaitCam`, final `Wait 7`; `ExitLocation` |
+| End | `CamReset`, `CamReset`, `ExitLocation` |
+
+(`CamMove <mount> <seconds>` flies the camera to a named camera mount defined in the map; mounts `attract1..6` live in the three `mission_*_attract.txt` files — grammar owned by P19/X agents.) Approximate run time: 5×10+7 + 20+5×10+7 + 6×10+7 ≈ 201 s plus level-load time [I].
+
+`EndAttractMode()`: `Script::m_waitForCamera = false`; `RunScript("endattract.txt")` (2 lines: `CamReset`, `ExitLocation`); restore the saved profile name and `LoadProfile()`; unlock the task manager; `m_running = false`, profile name buffer := `"none"`.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Running: ControlStartAttractMode (unbound) / save profile, profile=AttractMode, lock TM, run attractmode.txt
+    Running --> Idle: ControlStopAttractMode (any input) OR script finished / run endattract.txt, restore profile, unlock TM
+```
+
+### 5.3 Notes for the new game
+Attract mode = "idle → cinematic fly-through of scripted camera mounts over live levels with an unlocked throw-away profile; any input returns to the menu". Worth re-implementing for kiosk/demo builds; the original never shipped it.
+

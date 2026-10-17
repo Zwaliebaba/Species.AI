@@ -271,7 +271,7 @@ P14_platform_lib,"[→ 31_platform_build_and_tools] 31.1 Build system: solution,
 P14_platform_lib,[→ 31_platform_build_and_tools] 31.2 Platform abstraction map,31,2177
 P14_platform_lib,[→ 31_platform_build_and_tools] 31.3 Timing — `hi_res_time`,31,2310
 P14_platform_lib,"[→ 31_platform_build_and_tools] 31.4 File locations (user data, logs, crash files)",31,3961
-P14_platform_lib,[→ 31_platform_build_and_tools] 31.5 Data archives (`.dat`) and resource lookup,31,4963
+P14_platform_lib,[→ 31_platform_build_and_tools] 31.5 Data archives (`.dat`) and resource lookup,31,5383
 P14_platform_lib,[→ 31_platform_build_and_tools] 31.6 Data build pipeline (`tools/build_multiwinia_data.bat`),31,5685
 P14_platform_lib,[→ 31_platform_build_and_tools] 31.7 Packaging scripts (build → `build\`),31,2221
 P14_platform_lib,[→ 31_platform_build_and_tools] 31.8 Installers,31,3436
@@ -286,21 +286,21 @@ P14_platform_lib,[→ 31_platform_build_and_tools] 31.16 `targets/` inventory (o
 P14_platform_lib,"[→ 31_platform_build_and_tools] 31.17 `tools/` inventory (one row per file, 174 rows)",31,28632
 P14_platform_lib,[→ 20_architecture] 20.T Threading primitives and thread map,20,7398
 P14_platform_lib,[→ 29_data_formats_reference] 29.T Text-file tokeniser (`TextReader` family) — rules used by every text format,29,7393
-P14_platform_lib,[→ 29_data_formats_reference] 29.P Preferences file (`preferences.txt`),29,6041
+P14_platform_lib,[→ 29_data_formats_reference] 29.P Preferences file (`preferences.txt`),29,6329
 P14_platform_lib,[→ 29_data_formats_reference] 29.L Language files and caption markup (`LANGUAGEPHRASE`),29,5905
 P14_platform_lib,"[→ 29_data_formats_reference] 29.D `Directory` binary format (network letters, metaserver data)",29,2429
 P14_platform_lib,"[→ 29_data_formats_reference] 29.B Binary readers, CRCs, hashes, keys",29,4417
-P14_platform_lib,"[→ 22_determinism_and_networking] 22.R Random numbers, float discipline and hashing helpers",22,6237
+P14_platform_lib,"[→ 22_determinism_and_networking] 22.R Random numbers, float discipline and hashing helpers",22,6833
 P14_platform_lib,[→ 32_debug_test_and_performance] 32.P Profiler,32,2312
 P14_platform_lib,"[→ 32_debug_test_and_performance] 32.D Debug output, asserts, black box, leak tracking",32,3781
 P14_platform_lib,[→ 21_simulation_and_entity_model] 21.C Core containers and their ordering semantics,21,5195
-P14_platform_lib,[→ 31_platform_build_and_tools] 31.18 `docs/` inventory (supporting evidence only; skimmed),31,7610
+P14_platform_lib,[→ 31_platform_build_and_tools] 31.18 `docs/` inventory (supporting evidence only; skimmed),31,7676
 P14_platform_lib,Constants table (this partition),meta:constants,4225
-P14_platform_lib,Cross-partition notes,meta:cross,2779
+P14_platform_lib,Cross-partition notes,meta:cross,3207
 P14_platform_lib,Contradictions / open questions,meta:contradictions,1465
 P14_platform_lib,[U] Unknowns,meta:unknowns,1118
 P14_platform_lib,Docs-vs-code discrepancies,meta:discrepancies,2532
-P14_platform_lib,IP register,meta:ip,2770
+P14_platform_lib,IP register,meta:ip,2807
 P14_platform_lib,Appendix — dead/legacy code (brief),meta:appendix,1426
 P15_network,[→ 22_determinism_and_networking] 1. Network model at a glance,22,5803
 P15_network,[→ 22_determinism_and_networking] 2. Timing model,22,4646
@@ -436,4 +436,8 @@ P19_help_tutorial_script,Docs-vs-code discrepancies,meta:discrepancies,1083
 P19_help_tutorial_script,IP register,meta:ip,3003
 P19_help_tutorial_script,Appendix — dead/legacy code,meta:appendix,1607
 P20_sequences_loaders_bench,[→ 09_meta_systems] 0. Build reality and reachability of every P20 feature,09,5731
-X1a_text_formats,[→ 29_data_formats_reference] 1. Shared line reader and tokeniser (`TextReader` family),29,9342
+P20_sequences_loaders_bench,[→ 09_meta_systems] 1. Loading screen (`LoadingScreen`) [B:FULL],09,9978
+P20_sequences_loaders_bench,"[→ 09_meta_systems] 2. Animated game-mode panels (`AnimatedPanel`, `AnimatedPanelRenderer`) [B:FULL]",09,8592
+P20_sequences_loaders_bench,"[→ 09_meta_systems] 3. Boot-loader framework (`Loader`, `RunBootloader`) — [B:LEGACY] base / [B:DEAD] dispatcher",09,24298
+P20_sequences_loaders_bench,[→ 09_meta_systems] 4. Credits roll (`CreditsLoader`) — [B:LEGACY],09,7204
+X1a_text_formats,[→ 29_data_formats_reference] 1. Shared line reader and tokeniser (`TextReader` family),29,9656

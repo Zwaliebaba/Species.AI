@@ -263,7 +263,7 @@
 | Beta tester handles/e-mails | personal data | `docs/betatesters.txt` | never reproduce |
 | Developer names in credits/comments (Mac port credits, "Hack by Chris", Bruce Dawson/Hans Dietrich headers) | name | targets/macosx rtfs, code comments | omit |
 | Third-party code: MT19937 (BSD-style notice), XCrashReport/ExceptionHandler (public domain/Dawson), GetWinVer/MiniVersion (Dietrich, public domain), auto_vector (Reliable Software), unrar (RARLAB licence), NSIS samples, Loki Setup | third-party | files listed | use standard libraries (`std::mt19937`, `minidumpwriter`, `std::vector<std::unique_ptr>`) |
-| Map ID names (`MAPID_MP_KOTH_2P_1` etc.) | name (level names) | `code/mapcrc.h`, inclusion lists | new map names |
+| Map ID names (all 87 `MAPID_*` in `code/mapcrc.h`, e.g. `MAPID_MP_KOTH_2P_1`) | name (level names) | `code/mapcrc.h`, inclusion lists | new map names |
 
 <!-- from P15_network -->
 ## IP register
