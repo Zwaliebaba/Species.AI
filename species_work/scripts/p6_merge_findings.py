@@ -18,6 +18,7 @@ WORK = os.path.join(REPO, 'species_work')
 NEXT = os.path.join(REPO, 'design_next')
 CELL = re.compile(r'(?<!\\)\|')
 SEV = {'high': 0, 'medium': 1, 'low': 2}
+PATH = re.compile(r'(?:\.github/|[A-Za-z0-9_.-]+/)[A-Za-z0-9_./-]*|[A-Za-z0-9_-]+\.(?:md|csv)')
 
 
 def cells(line):
@@ -25,9 +26,10 @@ def cells(line):
     return parts[1:-1] if line.strip().startswith('|') else parts
 
 
-def area(path):
-    p = path.replace('\\', '/').strip('`').split('#')[0].strip()
-    p = re.sub(r'^(?:\./)?design_next/', '', p)
+def area(cell):
+    m = PATH.search(cell.replace('\\', '/'))
+    p = m.group(0) if m else cell.strip('`').strip()
+    p = re.sub(r'^(?:\./)?design_next/', '', p).rstrip('/')
     if p.startswith(('AGENTS.md', 'CLAUDE.md', 'vision/', 'prompts/', 'Tools/', '.github/')):
         return 'root', p
     if os.path.exists(os.path.join(NEXT, p)):
@@ -56,7 +58,7 @@ for name in sorted(os.listdir(os.path.join(WORK, 'review'))):
             continue
         if in_table and len(c) >= 6:
             sev = c[1].strip('*').lower()
-            a, p = area(re.split(r',\s*|;\s*|<br>', c[2])[0])  # the first named file owns the row
+            a, p = area(c[2])  # the first named path owns the row
             rows.append({'id': f'{rid}-{c[0]}', 'sev': sev, 'area': a, 'file': p, 'where': c[3],
                          'finding': c[4], 'fix': ' | '.join(c[5:])})
         elif in_table and not line.strip().startswith('|'):
