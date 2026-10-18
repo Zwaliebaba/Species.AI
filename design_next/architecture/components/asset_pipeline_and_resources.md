@@ -8,9 +8,18 @@ Notation: a **key** is the canonical name of a pack entry (§3.1); an **asset id
 
 ## 1 Responsibilities and boundaries
 
-**AST-001** (MUST) The asset pipeline owns these build-time parts of the content build (ADR-059), which the content build tool runs, a development tool in the tools solution under `Tools/` that never ships and never links into the executable (AGENTS.md §2): reading the asset manifest and the import record of every source (§3.2 to §3.11); the texture, mesh, collision and audio cookers (§4.2 to §4.6); derived variants (§4.3); placeholders (§4.7); the asset validators (§4.8); the pack writer (§4.9); and the entry hashes and the content manifest (§4.10).
+**AST-001** (MUST) The asset pipeline owns these build-time parts of the content build (ADR-059), which the content build tool runs, a tool project of the one solution under `Tools/` that never ships and never links into the executable (AGENTS.md §2): reading the asset manifest and the import record of every source (§3.2 to §3.11); the texture, mesh, collision and audio cookers (§4.2 to §4.6); derived variants (§4.3); placeholders (§4.7); the asset validators (§4.8); the pack writer (§4.9); and the entry hashes and the content manifest (§4.10).
 
-**AST-002** (MUST) It owns these run-time parts: the mount set and the pack reader (§4.11); the asynchronous content reader (§4.13); the asset cache (`AssetCache`), which holds textures and meshes keyed by asset id and processing variant (§4.12, DEC-098); the resident sound banks held by the sample cache (`SampleCache`, ADR-025); and the registry of run-time textures built from RGBA8 images (`ImageRgba8`, §4.15).
+**AST-002** (MUST) It owns these run-time parts: the mount set and the pack reader (§4.11); the asynchronous content reader (§4.13); the asset cache (`AssetCache`), which holds textures and meshes keyed by asset id and processing variant (§4.12, DEC-098); the resident sound banks held by the sample cache (`SampleCache`, ADR-025); and the registry of run-time textures built from RGBA8 images (`ImageRgba8`, §4.15). The asset cache creates, uploads and releases every GPU resource through the renderer's GPU resource factory ([renderer](renderer/README.md) RND-009, ADR-078) and has a two-phase life: it is created once the packs are mounted (platform start-up step 11, [platform layer](platform_layer.md) PLT-038) and runs CPU work only; `AttachGpu` attaches it to the factory once the renderer has created the device (step 13), and from then on it creates and uploads GPU resources; `DetachGpu` releases them all at shutdown, before the renderer is destroyed.
+
+**AST-127** (MUST) The run-time parts form two libraries, so that the server links none of the client's resource code:
+
+| Library | Holds | Linked by |
+|---|---|---|
+| content library | the pack file and its reader, the mount set and the asset index, the asynchronous content reader, content hashing and the simulation content identity, and the loads of data records, maps, collision assets and simulation data records (§4.10, §4.11, §4.13) | the client, the dedicated server and the tool projects |
+| client resource library | the asset cache with its textures, meshes and run-time textures, the sample cache, and the load groups (§4.12, §4.14, §4.15) | the client only; it builds on the content library and the renderer's GPU resource factory |
+
+The dedicated server therefore creates no GPU resource, sound bank or glyph page (AST-007, ADR-056); the projects that carry the two libraries are named with the rest of the solution's layout ([build tooling and distribution](build_tooling_and_distribution.md)).
 
 **AST-003** (MUST NOT) No processing choice is made where an asset is requested. A requester names an asset id and, optionally, a variant that the asset's import record declares; it never passes processing flags, and no request changes what another requester receives (ADR-018, DEC-098).
 
@@ -28,9 +37,9 @@ Table 1-A Boundaries.
 |---|---|---|
 | [data schemas](data_schemas/README.md) (`DAT`) | the record schemas, the authoring parser, the import-record schemas, the map schema | cooked binary records with their schema id and version |
 | [build tooling and distribution](build_tooling_and_distribution.md) (`BLD`) | edition manifests, the solution's projects and its Debug and Release configurations (ADR-054, ADR-056), the CI jobs that run the content build | the packs, the mount manifest, the content manifest and the validation report |
-| [renderer](renderer/README.md) (`RND`) | the device, the copy queue and its fences (ADR-008); the tint function, the cut-out thresholds and the look constants that the cookers apply | cooked textures and meshes by (asset id, variant); texture views |
+| [renderer](renderer/README.md) (`RND`) | the GPU resource factory, through which the asset cache creates, uploads and releases its resources on the renderer's device and copy queue (RND-009, ADR-008, ADR-078); the tint function, the cut-out thresholds and the look constants that the cookers apply | cooked textures and meshes by (asset id, variant); texture views and their heap indices |
 | [audio engine](audio_engine/README.md) (`AEN`) | the streaming threshold, the samples per block of the streams and the memory budget of each bank (ADR-025); the bank loads that `LoadBank` requests (AEN-244) | resident sound banks and MS-ADPCM sound-stream entries |
-| [UI framework](ui_framework/README.md) (`UI`) | the glyph cache (ADR-034) | font files and string tables |
+| [UI framework](ui_framework/README.md) (`UI`) | nothing | font files and string tables |
 | [terrain](terrain/README.md) (`TER`) | the shore mask and the other run-time images it produces | run-time texture registrations |
 | [platform layer](platform_layer.md) (`PLT`) | the install directory, file mapping and the user-data folders (ADR-071) | none |
 | simulation ([reference/12](../../reference/12_simulation_model/05_space_routing_and_physics.md)) | none | data records, maps, collision assets and simulation socket records |
@@ -53,7 +62,7 @@ flowchart LR
     CACHE -- no --> RES["resolve the key in the mount set"]
     RES --> READ["asynchronous chunk reads"]
     READ --> VER["verify the entry hash where required"]
-    VER --> CRE["create the resource; copy-queue upload"]
+    VER --> CRE["create the resource through the GPU resource factory; copy-queue upload"]
     CRE --> FEN["upload fence complete: resident"]
     FEN --> HND
   end
@@ -71,11 +80,11 @@ namespace Engine
 {
 
 // ---- identity -------------------------------------------------------------------------
-struct AssetId   // dotted, lower case, a row of the asset manifest
+struct AssetId // dotted, lower case, a row of the asset manifest
 {
   std::string value;
 };
-struct VariantId   // empty: the asset's default processing
+struct VariantId // empty: the asset's default processing
 {
   std::string value;
 };
@@ -85,21 +94,44 @@ struct AssetKey
   VariantId variant;
   auto operator<=>(const AssetKey& _other) const = default;
 };
-using ContentKey = std::string;                   // canonical pack key (§3.1)
+using ContentKey = std::string; // canonical pack key (§3.1)
 using Sha256Digest = std::array<std::byte, 32>;
-struct AssetError;       // asset id, key, error kind and message (§6)
-struct MountOptions;     // configuration, optional loose-content directory (Debug builds only)
-struct MountOverride;    // key, overridden pack, overriding pack
-struct RuntimeTextureId  // never collides with a manifest asset id
+struct AssetError;      // asset id, key, error kind and message (§6)
+struct MountOptions;    // configuration, optional loose-content directory (Debug builds only)
+struct MountOverride;   // key, overridden pack, overriding pack
+struct RuntimeTextureId // never collides with a manifest asset id
 {
   std::uint32_t value;
 };
-class ImageProducer;     // produces the pixels of a run-time texture on demand (§4.15)
 
-enum class ContentType : std::uint8_t
+// Produces the pixels of a run-time texture on demand (§4.15); it lives until its owner unregisters it.
+class ImageProducer
 {
-  Texture, CpuTable, Mesh, Collision, SimRecord, Record, Map, MapIndex, StringTable, Font, ResidentSound, SoundStream,
-  ExplainerScript, AssetIndex
+public:
+  virtual ~ImageProducer() = default;
+  [[nodiscard]] virtual std::uint32_t Width() const = 0;
+  [[nodiscard]] virtual std::uint32_t Height() const = 0;
+  [[nodiscard]] virtual DXGI_FORMAT Format() const = 0; // R8G8B8A8_UNORM_SRGB or R8_UNORM (AST-062)
+  [[nodiscard]] virtual SamplerId Sampler() const = 0;  // SamplerId::LinearClamp unless the producer names another
+  virtual void WritePixels(std::span<std::byte> _pixels, std::uint32_t _rowPitchBytes) const = 0; // top row first
+};
+
+enum class ContentType : std::uint8_t // its order is the content-type byte of a pack entry (table 3.12-C)
+{
+  Texture,
+  CpuTable,
+  Mesh,
+  Collision,
+  SimRecord,
+  Record,
+  Map,
+  MapIndex,
+  StringTable,
+  Font,
+  ResidentSound,
+  SoundStream,
+  ExplainerScript,
+  AssetIndex
 };
 
 // ---- import records (§3.3, §3.7, §3.10), read by the cookers in the content build tool ------------
@@ -108,9 +140,10 @@ enum class ContentType : std::uint8_t
 // generated from import.texture, import.mesh and import.audio: data_schemas/import_and_build_records.md §2
 
 // ---- packs and mounting (ADR-058) ------------------------------------------------------
-enum class PackCodec : std::uint8_t
+enum class PackCodec : std::uint8_t // the codec byte of a chunk record (table 3.12-B)
 {
-  Stored, XpressHuffman   // further values reserved (AST-055)
+  Stored,
+  XpressHuffman // further values reserved (AST-055)
 };
 struct EntryRef
 {
@@ -135,30 +168,32 @@ struct PackEntry
 class PackFile
 {
 public:
-  static std::expected<PackFile, AssetError> Open(const std::filesystem::path& _path);   // maps and checks the TOC
+  static std::expected<PackFile, AssetError> Open(const std::filesystem::path& _path); // maps and checks the TOC
   std::optional<std::uint32_t> Find(std::string_view _canonicalKey) const;
   std::span<const PackEntry> Entries() const;
 };
 
-struct MountManifest;   // ordered pack list with kinds and patch targets (§3.13)
+struct MountManifest; // ordered pack list with kinds and patch targets (§3.13)
 class MountSet
 {
 public:
   static std::expected<MountSet, AssetError> Mount(const MountManifest& _manifest, const MountOptions& _options);
-  std::optional<EntryRef> Resolve(std::string_view _requestedKey) const;   // canonicalises, then exact look-up
-  std::vector<ContentKey> List(std::string_view _prefix) const;           // sorted, one per effective key
-  std::span<const ContentKey> MembersOf(const AssetId& _asset) const;     // member keys in member order
+  std::optional<EntryRef> Resolve(std::string_view _requestedKey) const; // canonicalises, then exact look-up
+  std::vector<ContentKey> List(std::string_view _prefix) const;          // sorted, one per effective key
+  std::span<const ContentKey> MembersOf(const AssetId& _asset) const;    // member keys in member order
   bool Contains(const AssetId& _asset) const;
-  std::span<const MountOverride> Overrides() const;                       // every override, logged at mount
-  Sha256Digest SimulationIdentity() const;                                // §4.10
+  std::span<const MountOverride> Overrides() const; // every override, logged at mount
+  Sha256Digest SimulationIdentity() const;          // §4.10
 };
 
 // ---- asynchronous reads ----------------------------------------------------------------
 enum class ReadPriority : std::uint8_t
 {
-  Immediate, Normal, Background
+  Immediate,
+  Normal,
+  Background
 };
-class ContentReader   // one interface; memory-mapped or streamed back-ends
+class ContentReader // one interface; memory-mapped or streamed back-ends
 {
 public:
   std::future<std::expected<std::vector<std::byte>, AssetError>> ReadEntry(EntryRef _entry, ReadPriority _priority);
@@ -167,7 +202,12 @@ public:
 // ---- the asset cache -------------------------------------------------------------------
 enum class LoadState : std::uint8_t
 {
-  Queued, Reading, Creating, Uploading, Resident, Failed
+  Queued,
+  Reading,
+  Creating,
+  Uploading,
+  Resident,
+  Failed
 };
 struct TextureSize
 {
@@ -178,23 +218,31 @@ struct TextureSize
   std::uint32_t levels;
 };
 
-class LoadGroup;       // a residency scope: start-up, front end, match (§4.12)
-class TextureHandle;   // reference counted
-class MeshHandle;      // reference counted; exposes the cooked MeshAsset
+class LoadGroup;     // a residency scope: start-up, front end, match (§4.12)
+class TextureHandle; // reference counted
+class MeshHandle;    // reference counted; exposes the cooked MeshAsset and its GPU buffers
 
 class AssetCache
 {
 public:
+  // Phase 1, after the packs are mounted (platform start-up step 11): CPU work only (AST-116).
+  AssetCache(const MountSet& _mounts, ContentReader& _reader);
+  // Phase 2, once the renderer has created the device (step 13): GPU resources from here on (RND-009, ADR-078).
+  void AttachGpu(GpuResourceFactory& _resources);
+  void DetachGpu(); // at shutdown, before the renderer is destroyed: releases every GPU resource
+
   LoadGroup& BeginGroup(std::string_view _name);
   TextureHandle RequestTexture(LoadGroup& _group, const AssetKey& _key, ReadPriority _priority = ReadPriority::Normal);
-  MeshHandle RequestMesh(LoadGroup& _group, const AssetId& _asset, std::uint32_t _member,
-                         ReadPriority _priority = ReadPriority::Normal);
+  MeshHandle RequestMesh(LoadGroup& _group, const AssetId& _asset, std::uint32_t _member, ReadPriority _priority = ReadPriority::Normal);
   LoadState State(const TextureHandle& _handle) const;
-  TextureSize Size(const TextureHandle& _handle) const;   // valid once Resident
-  RuntimeTextureId Register(ImageProducer& _producer);    // run-time textures (§4.15)
-  void EndGroup(LoadGroup& _group);                       // releases the group's references
-  void OnDeviceRebuilt();                                 // recreate resident GPU resources (ADR-008)
-  void Pump();                                            // once per frame: completions and events
+  TextureSize Size(const TextureHandle& _handle) const;        // valid once Resident
+  std::uint32_t HeapIndex(const TextureHandle& _handle) const; // the default resource at index 0 until Resident (ADR-006)
+  RuntimeTextureId Register(ImageProducer& _producer);         // run-time textures (§4.15)
+  void Refresh(RuntimeTextureId _texture);                     // the producer's pixels changed: upload them again
+  void Unregister(RuntimeTextureId _texture);                  // releases the texture; the id becomes invalid
+  void EndGroup(LoadGroup& _group);                            // releases the group's references
+  void OnDeviceRebuilt();                                      // fill every resident GPU resource again (AST-119)
+  void Pump();                                                 // once per frame: completions and events
 };
 
 } // namespace Engine
@@ -218,7 +266,7 @@ Completion is always signalled by an event or a completed future, never inferred
 
 ### 2.3 Threading contract
 
-**AST-010** (MUST) `MountSet`, `PackFile` and the asset index are immutable once mounting has finished, so any number of threads may resolve keys and read entries at once without locks. The asset cache is safe for concurrent requests from any thread at all times, by contract and not by timing (DEC-224). Reads, decompression, hashing and resource creation run on the asset system's I/O thread and worker jobs; no loader ever blocks on the presentation thread, and GPU uploads go through the copy queue (ADR-008). How these jobs map to threads follows the Species threading model, which the design phase decides (see DEC-224); until then the baseline is one I/O thread plus worker jobs of the engine job queue (`JobQueue`).
+**AST-010** (MUST) `MountSet`, `PackFile` and the asset index are immutable once mounting has finished, so any number of threads may resolve keys and read entries at once without locks. The asset cache is safe for concurrent requests from any thread at all times, by contract and not by timing (DEC-224). Reads, decompression, hashing and resource creation run on the asset system's I/O thread and worker jobs; resources are created and their uploads scheduled through the GPU resource factory, which these threads may call and which submits the uploads on the renderer's copy queue (RND-009, ADR-008, ADR-078); no loader ever blocks on the presentation thread. How these jobs map to threads follows the Species threading model, which the design phase decides (see DEC-224); until then the baseline is one I/O thread plus worker jobs of the engine job queue (`JobQueue`).
 
 **AST-011** (MUST) The asset pipeline never reads or writes simulation state and is never called from inside a simulation step; a level load that draws from the simulation generator does so in the simulation's own load steps, whose draw order the asset system's scheduling never changes (DEC-224, DEC-226).
 
@@ -279,13 +327,13 @@ Table 3.2-A Cookers by manifest category.
 
 ### 3.3 Texture import record
 
-**AST-019** (MUST) A texture import record has the fields of table 3.3-A, with the closed value sets given there (ADR-018). An unknown kind, alpha mode, sampler, derivation or variant is a build error.
+**AST-019** (MUST) A texture import record has the fields of [data schemas](data_schemas/import_and_build_records.md) table 3.1-A, with the meanings and closed value sets of table 3.3-A (ADR-018). An unknown kind, alpha mode, sampler, derivation or variant is a build error.
 
 Table 3.3-A Texture import-record fields.
 
 | Field | Values | Default |
 |---|---|---|
-| kind | `colour`, `ui`, `normal`, `mask`, `exact_data`, `cpu_table`: the kinds `Color`, `Ui`, `Normal`, `Mask`, `ExactData` and `CpuTable` of `TextureKind` | from `target_format` (table 3.3-B) |
+| kind | `color`, `ui`, `normal`, `mask`, `exact_data`, `cpu_table`: the kinds `Color`, `Ui`, `Normal`, `Mask`, `ExactData` and `CpuTable` of `TextureKind` | from `target_format` (table 3.3-B) |
 | colour space | `srgb` (colour art), `linear` (masks, ramps used as data, exact data) | from `colour_space` |
 | alpha mode | `opaque`, `straight`, `premultiplied`, `additive` (colour is added, alpha is ignored, black contributes nothing), `cutout` with a threshold | from `alpha_mode` (table 3.3-C) |
 | cut-out threshold | an alpha value; a texel is kept when its alpha is greater | required with `cutout`: the threshold of the pipeline-state entry that draws the art ([frame graph and passes](renderer/frame_graph_and_passes.md) RND-060) |
@@ -359,10 +407,10 @@ Table 3.5-A Derivations (the pseudocode is in §4.3).
 | `BlurredShadow` | blur scale `rnd.shadow.icon_blur_radius` (10), normaliser `rnd.look.blur_normaliser` (0.0526), kernel `ast.derive.blur_kernel`, vertical gain `ast.derive.blur_vertical_gain` | a `Mask` texture of the parent's size, alpha mode `opaque`, drawn as a darkening layer under its parent ([view, lighting and fog](renderer/view_lighting_and_fog.md) RND-243, [visual language](renderer/visual_language.md) RND-422) |
 | `StackedCopies` | column width `rnd.crawler.trail_column_width` (32 px), column height `rnd.crawler.trail_column_height` (512 px), shrink `rnd.crawler.trail_copy_shrink` (1 px per two copies) | a column of shrinking copies of the parent, of the parent's kind, alpha mode and mip policy ([entity and overlay renderers](renderer/entity_and_overlay_renderers.md) RND-320) |
 | `Grayscale` | none | the parent with each colour replaced by the mean of its red, green and blue values |
-| `ToColor` | a colour *C* and a threshold *t* | the parent with every texel whose RGB mean is below *t* replaced by *C* × (255 − mean) ÷ 255 |
-| `ReplaceColor` | an old colour *O* and a new colour *N* | the parent with every texel whose RGB distance from *O* is below `ast.derive.replace_colour_distance` (10) replaced by *N*, alpha kept |
+| `ToColor` | a colour *C* and a threshold *t*: the keys `color` and `threshold` of [data schemas](data_schemas/import_and_build_records.md) table 3.1-B | the parent with every texel whose RGB mean is below *t* replaced by *C* × (255 − mean) ÷ 255 |
+| `ReplaceColor` | an old colour *O* and a new colour *N*: the keys `old_color` and `new_color` of data schemas table 3.1-B | the parent with every texel whose RGB distance from *O* is below `ast.derive.replace_colour_distance` (10) replaced by *N*, alpha kept |
 
-**AST-029** (MUST) The look requires these derived variants: a `BlurredShadow` of every cursor of [cursor and markers](../../reference/06_controls_camera_and_commands/cursor_and_markers.md) table 2.1-A that is shadowed (R-CTRL-350), which are `cursor.enter.shadow`, `cursor.highlight.shadow`, `cursor.move_target.shadow`, `cursor.place.shadow`, `cursor.select.shadow`, `cursor.unavailable.shadow` and `cursor.world.shadow`, and of `marker.crate_landing` and `marker.barrage_target`, which are `marker.crate_landing.shadow` and `marker.barrage_target.shadow` (RND-243, RND-366, RND-422); and the `StackedCopies` Crawler trail `sprite.crawler.segment.trail` of `sprite.crawler.segment` (RND-320). An artist MAY instead author a shadow as greyscale art, as its own manifest row with the darkening profile (RND-422).
+**AST-029** (MUST) The look requires these derived variants: a `BlurredShadow` of every cursor of [cursor and markers](../../reference/06_controls_camera_and_commands/cursor_and_markers.md) table 2.1-A that is shadowed (R-CTRL-350), which are `cursor.highlight.shadow`, `cursor.place.shadow`, `cursor.unavailable.shadow` and `cursor.world.shadow`, and of `marker.crate_landing` and `marker.barrage_target`, which are `marker.crate_landing.shadow` and `marker.barrage_target.shadow` (RND-243, RND-366, RND-422); and the `StackedCopies` Crawler trail `sprite.crawler.segment.trail` of `sprite.crawler.segment` (RND-320). An artist MAY instead author a shadow as greyscale art, as its own manifest row with the darkening profile (RND-422).
 
 **AST-030** (MUST) The baseline has no team-tinted derived variant: every team colour is applied in the shader from the instance's palette index (ADR-020). A team-tinted variant is allowed only for art that a shader cannot tint, declared in its import record. The cloth flags' team, no-team and selected looks are tint values of their draws over the tint mask of AST-022, not recoloured variants, so a flag texture has one cache entry per declared variant and none per team (DEC-098; [animation and VFX](animation_and_vfx/explainers_sprites_and_procedural_animation.md) VFX-141).
 
@@ -397,7 +445,7 @@ Table 3.6-A Texture usage conventions.
 1. **vertex weight**: the application-specific glTF vertex attribute `_SPECIES_TINT`, a `SCALAR` accessor of `FLOAT`, or of normalised `UNSIGNED_BYTE` or `UNSIGNED_SHORT`, with values from 0 (keep the facet colour) to 1 (full team tint);
 2. **material flag**: the member `species_team_tint` with the value `true` in the `extras` object of a glTF material, which marks every triangle of the primitives that use the material with weight 1.
 
-The cooker bakes one tint weight per triangle (§4.4) and never infers a tint weight from colour values. The content tools MAY offer an authoring helper that proposes `_SPECIES_TINT` values for art made in the key-colour style (facets whose red channel exceeds twice each of the other two, [world renderers](renderer/world_renderers.md) RND-162) and writes them into the source as explicit weights, which the artist reviews.
+The cooker bakes one tint weight per triangle (§4.4) and never infers a tint weight from colour values. The content tools MAY offer an authoring helper that proposes `_SPECIES_TINT` values for art made in the key-colour style (facets whose red channel exceeds twice each of the other two) and writes them into the source as explicit weights, which the artist reviews; the renderer makes no colour test at run time ([world renderers](renderer/world_renderers.md) RND-162).
 
 **AST-035** (MUST) Every mesh that the renderer tints (the team-tinted meshes of RND-162) declares a tint marking and carries a weight above 0 on at least one triangle; a mesh whose record declares no tint marking carries neither the attribute nor the flag. A violation of either rule is a build error naming the asset (ADR-020).
 
@@ -515,13 +563,59 @@ Shaders are not content: the solution build compiles them into the executable as
 - a **chunk record** holds the chunk's file offset, which is a multiple of `ast.pack.chunk_alignment_kib` (64 KiB); its stored size; its uncompressed size, at most `ast.pack.chunk_max_kib` (256 KiB); and its codec id;
 - an **entry record** holds the canonical key; the content type (`ContentType`); for data records, the schema id and version; the uncompressed size; the first chunk and the byte offset in it; the simulation-relevant flag; the placeholder flag (§4.7); and the SHA-256 of the uncompressed entry.
 
-A zero-byte entry is a valid entry with no chunk.
+A zero-byte entry is a valid entry with no chunk: its first chunk index is 0xFFFFFFFF and its offset 0.
+
+**AST-128** (MUST) A pack has this byte layout. Every integer is unsigned and little-endian, every offset counts bytes from the start of the file unless a table says otherwise, and text is UTF-8 with no terminator, after its length. The header of table 3.12-A lies at offset 0; the first chunk starts at the first multiple of `ast.pack.chunk_alignment_kib` after it; the TOC follows the last chunk at a multiple of 8 bytes and holds, in this order, the chunk records of table 3.12-B, the entry-offset table (one 4-byte offset per entry, from the start of the TOC, in key order, which a look-up searches by bisection) and the entry records of table 3.12-C, each at a multiple of 4 bytes, with zero padding. The TOC hash covers the TOC as stored. `ContentType` and `PackCodec` are stored as the position of the value in its enumeration, so new values are only ever appended, and a reader rejects a value it does not know (AST-055).
+
+Table 3.12-A Pack header, 128 bytes.
+
+| Offset | Size | Field |
+|---|---|---|
+| 0 | 8 | magic value: the bytes 53 50 43 50 41 43 4B 00 (`SPCPACK` and a zero byte) |
+| 8 | 2 | format version, `ast.pack.format_version` (1) |
+| 10 | 2 | flags; every bit is 0 in format version 1 |
+| 12 | 4 | chunk count |
+| 16 | 4 | entry count |
+| 20 | 4 | reserved, 0 |
+| 24 | 8 | TOC offset |
+| 32 | 8 | TOC size |
+| 40 | 32 | SHA-256 of the TOC |
+| 72 | 56 | reserved, 0 |
+
+Table 3.12-B Chunk record, 24 bytes.
+
+| Offset | Size | Field |
+|---|---|---|
+| 0 | 8 | file offset of the chunk, a multiple of `ast.pack.chunk_alignment_kib` |
+| 8 | 4 | stored size |
+| 12 | 4 | uncompressed size, at most `ast.pack.chunk_max_kib` |
+| 16 | 1 | codec: 0 stored, 1 XPRESS with Huffman encoding (`PackCodec`) |
+| 17 | 7 | reserved, 0 |
+
+Table 3.12-C Entry record, 57 + *k* + *s* bytes, with *k* the key length and *s* the schema-id length; offsets from the start of the record.
+
+| Offset | Size | Field |
+|---|---|---|
+| 0 | 2 | key length *k*, at most `ast.pack.max_key_bytes` (255) |
+| 2 | *k* | canonical key (AST-014) |
+| 2 + *k* | 1 | content type (`ContentType`) |
+| 3 + *k* | 1 | flags: bit 0 simulation-relevant, bit 1 placeholder; the other bits 0 |
+| 4 + *k* | 1 | schema-id length *s*; 0 for an entry that is not a data record |
+| 5 + *k* | *s* | schema id |
+| 5 + *k* + *s* | 2 | schema major version; 0 when *s* is 0 |
+| 7 + *k* + *s* | 2 | schema minor version |
+| 9 + *k* + *s* | 8 | uncompressed size |
+| 17 + *k* + *s* | 4 | first chunk index |
+| 21 + *k* + *s* | 4 | byte offset in the first chunk |
+| 25 + *k* + *s* | 32 | SHA-256 of the uncompressed entry |
 
 **AST-055** (MUST) The codec enumeration (`PackCodec`) is, in this order: stored, and XPRESS with Huffman encoding of the in-box Windows Compression API (`COMPRESS_ALGORITHM_XPRESS_HUFF`, ADR-058); no third-party codec is used (AGENTS.md R14). Its further values are reserved, so that another codec of that API (MSZIP or LZMS) or one that the GPU decompresses can be added without a format change; a reader that meets an unknown codec id rejects the chunk with a diagnostic naming the pack and the chunk.
 
 ### 3.13 The mount manifest and the pack set
 
 **AST-056** (MUST) The **mount manifest** is an ordered list of packs. Each item has a pack id, a kind (`base` or `update`), whether the pack is required or optional, and, for an update pack, the base packs whose entries it may override. The content build writes one mount manifest per edition beside the packs, in the install directory's pack folder (ADR-071).
+
+**AST-129** (MUST) The mount manifest and the content manifest (§3.14) are cooked records in the record format of [data schemas](data_schemas/README.md) DAT-014, with the schema ids `assets.mount_manifest` and `assets.content_manifest` of the record-type registry (table 1-A), stored as the files `mount_manifest.bin` and `content_manifest.bin` beside the packs. No Species program parses either from text at run time (ADR-061); the start-up reads the mount manifest before it mounts any pack (AST-101), and the content manifest's SHA-256 is taken over the bytes of `content_manifest.bin` as stored.
 
 **AST-057** (MUST) The baseline pack set, in mount order, is that of table 3.13-A. No content is needed before the settings store starts, because the settings defaults are compiled into the build (DEC-100).
 
@@ -660,7 +754,7 @@ for each mesh node n, for each primitive p of n:
         if p is faceted:
             require e(i0) = e(i1) = e(i2)                                     # else error: asset, node, triangle
             facet colour f := e(i0)
-            facet normal m := normalise(cross(P(i1) - P(i0), P(i2) - P(i0)))
+            facet normal m := Normalize(cross(P(i1) - P(i0), P(i2) - P(i0)))
         f.rgb := Quantize8(f.rgb * rnd.mesh.colour_attenuation)               # alpha unchanged
         tint weight t := per AST-034: the corners' _SPECIES_TINT values, which must be equal after
                          quantisation to 8 bits; 1 for a flagged material; 0 for no marking
@@ -816,7 +910,7 @@ flowchart TD
 
 ### 4.13 Asynchronous loading
 
-**AST-116** (MUST) Each cache entry follows the load state machine of figure 3: requests queue by priority (`Immediate` before `Normal` before `Background`, first in first out within a priority); the I/O thread keeps at most `ast.load.max_reads_in_flight` (32) chunk reads in flight; decompression, hash checks and resource creation run as worker jobs; static GPU data is written into staging buffers of at most `ast.load.staging_budget_mib` (64 MiB) in total and copied into place on the copy queue; and an entry becomes `Resident`, visible to the renderer, only after its upload fence has completed (ADR-008). `AssetCache::Pump()` spends at most `ast.load.main_thread_budget_ms` (1.0 ms) of the presentation thread per frame on completions and events.
+**AST-116** (MUST) Each cache entry follows the load state machine of figure 3: requests queue by priority (`Immediate` before `Normal` before `Background`, first in first out within a priority); the I/O thread keeps at most `ast.load.max_reads_in_flight` (32) chunk reads in flight; decompression, hash checks and resource creation run as worker jobs; each GPU resource is created through the GPU resource factory, and its static data is handed to the factory's `ScheduleUpload`, with at most `ast.load.staging_budget_mib` (64 MiB) of the cache's uploads in flight at once, an upload that the factory refuses for lack of staging memory being repeated on a later frame (RND-009); and an entry becomes `Resident`, visible to the renderer, only after the fence value that `ScheduleUpload` returned has completed (ADR-008). Before `AttachGpu`, an entry that needs a GPU resource stops in `Creating` after its CPU stages and keeps its bytes until the cache is attached; CPU-only entries become `Resident` as before. `AssetCache::Pump()` spends at most `ast.load.main_thread_budget_ms` (1.0 ms) of the presentation thread per frame on completions and events.
 
 ```mermaid
 stateDiagram-v2
@@ -862,7 +956,7 @@ sequenceDiagram
 
 ### 4.14 Device removal, settings changes and development reload
 
-**AST-119** (MUST) When the renderer rebuilds the device (ADR-008, [renderer](renderer/README.md) RND-034), the asset cache recreates every resident texture and mesh resource from its pack entry and every run-time texture from its producer, at `Immediate` priority and with load-group progress for the loading indicator. CPU data (the mount table, the asset indexes, the node hierarchies and socket tables, the sound banks) is untouched, and nothing is held twice in memory only for this purpose.
+**AST-119** (MUST) When the renderer rebuilds the device (ADR-008, [renderer](renderer/README.md) RND-034), the GPU resource factory recreates every resource of the cache without its data, under the same id and heap index (RND-035), and on `DeviceRebuilt` the asset cache (`OnDeviceRebuilt`) fills every resident texture and mesh resource again from its pack entry and every run-time texture from its producer, at `Immediate` priority and with load-group progress for the loading indicator; an upload refused during the rebuild is repeated after `DeviceRebuilt`. CPU data (the mount table, the asset indexes, the node hierarchies and socket tables, the sound banks) is untouched, and nothing is held twice in memory only for this purpose.
 
 **AST-120** (MUST NOT) A change of settings (window size, render size, sample count, HDR output, detail levels) never flushes or reloads the asset cache; the renderer's reconfiguration keeps every asset resource (RND-030).
 
@@ -870,7 +964,7 @@ sequenceDiagram
 
 ### 4.15 Run-time textures
 
-**AST-122** (MUST) `AssetCache::Register` takes an `ImageProducer` that states the run-time texture's size, format and sampler (AST-062) and supplies its pixels as an RGBA8 image or a single-channel image; the cache creates the resource and uploads the pixels through the copy queue. A producer that changes its pixels triggers a new upload; the previous resource is destroyed once the frames in flight that may use it have completed. The id stays valid until the producer unregisters it.
+**AST-122** (MUST) `AssetCache::Register` takes an `ImageProducer` that states the run-time texture's size, format and sampler (AST-062) and writes its pixels, row by row from the top, as RGBA8 or single-channel texels; the cache creates the resource through the GPU resource factory and schedules the upload of the pixels (RND-009). A producer whose pixels change calls `Refresh`, which schedules a new upload into a new resource; the previous resource is released, and destroyed once the frames in flight that may use it have completed. The id stays valid until the producer calls `Unregister`, which releases the texture; the producer must outlive its registration.
 
 **AST-123** (MUST) The producer owns the content of its run-time textures and their reproducibility; the asset cache adds no processing. The shore mask is specified by the terrain component (TER-007, [terrain](terrain/README.md)).
 
@@ -889,6 +983,9 @@ Table 5-A Baseline budgets.
 | chunk reads in flight | `ast.load.max_reads_in_flight` (32) | AST-116 |
 | mounting the baseline pack set, TOC checks included | `ast.mount.budget_ms` (200 ms) | AST-101 |
 | SHA-256 of the simulation-relevant entries of a map load | measured and reported per map by the load performance test (ADR-060) | AST-107 |
+| entering a skirmish match, from the start of the match load to its first match frame | `ast.load.match_entry_budget_s` (10 s), provisional | AST-130 |
+
+**AST-130** (SHOULD) A skirmish match is entered within `ast.load.match_entry_budget_s` (10 s), from the start of its match load to its first match frame, on the largest supported map: the terrain generation within its share `ter.perf.generation_budget_ms` ([terrain](terrain/README.md) TER-242), the pack reads, the GPU uploads and the match bank of the audio engine ([audio engine](audio_engine/README.md) AEN-102) included. The budget is provisional until DEC-226 sets the load targets; the load performance test T31 measures it, and until DEC-971 pins the reference test machine it reports the time and does not fail.
 
 ## 6 Failure modes, diagnostics and telemetry
 
@@ -948,6 +1045,8 @@ Table 5-A Baseline budgets.
 | T28 fonts | build fixture | a language with a character that no bundled font covers fails, and so does a font set without U+20AC | AST-088 |
 | T29 generated outputs | build | every listed map has a generated 4:3 thumbnail, and the map index lists every listed map id in order | AST-086, AST-087 |
 | T30 budgets | performance | the budgets of table 5-A hold on the reference test machine | AST-125 |
+| T31 match entry | performance | entering a skirmish match on the largest supported map, measured from the start of the match load to the first match frame, with the terrain generation, pack reads, uploads and match bank timed separately, against `ast.load.match_entry_budget_s` and the terrain share of TER-242 | AST-130 |
+| T32 two-phase cache | unit | with the in-memory GPU resource factory: entries requested before `AttachGpu` stop after their CPU stages and become resident after it; a refused upload is repeated on a later frame; `DetachGpu` releases every resource; `Unregister` invalidates a run-time texture id and `Refresh` uploads a new resource | AST-002, AST-116, AST-122 |
 
 ## 8 Open decisions
 
@@ -966,8 +1065,8 @@ Table 5-A Baseline budgets.
 | DEC-317 | Open | one recording set, or one per language (AST-050) |
 | DEC-329 | Open | assets of objects that only rules create; the default counts them as referenced (AST-090) |
 | DEC-330 | Open | socket kinds without a confirmed consumer; the default keeps them in the schemas (AST-041) |
-| DEC-332 | Dropped | what other editions and packaged archives of the reference contained is not specified; Species defines its own pack set (AST-057) |
-| DEC-340 | Dropped | the reference's archive and production tools are not specified; Species defines its pack format and content build (AST-053, AST-065) |
+| DEC-332 | Dropped | Species defines its own packs and pack set (ADR-058, AST-057) |
+| DEC-340 | Dropped | Species defines its own packs, pack format and content build (ADR-058, AST-053, AST-065) |
 | DEC-461 | Resolved | each turret type's sockets come from its own barrel mesh (AST-042) |
 | DEC-563 | Resolved | thumbnails and the map index are build outputs; no unreferenced asset is packaged (AST-086, AST-087, AST-090) |
 | DEC-801 | Resolved | duplicate keys and ids are build errors; declared maximum lengths (AST-014, AST-049, AST-092) |
@@ -981,7 +1080,7 @@ Table 5-A Baseline budgets.
 4. **Custom maps.** The custom-map container, its embedded images, its identity, listing and transfer (AST-063, DEC-204).
 5. **Voice.** One recording set for every language, or one per language (DEC-317).
 6. **Test editions.** Which placeholder rows a playtest edition may contain (AST-085).
-7. **Load targets.** Load-time targets for skirmish entry and for a region hand-over on the minimum specification (DEC-226).
+7. **Load targets.** The load-time targets for skirmish entry, which replace the provisional budget of AST-130, and for a region hand-over on the minimum specification (DEC-226).
 
 ## 9 Tuning table
 
@@ -1012,5 +1111,6 @@ Table 5-A Baseline budgets.
 | `ast.load.staging_budget_mib` | 64 | MiB | staging memory of uploads in flight | AST-116, AST-125 | |
 | `ast.load.main_thread_budget_ms` | 1.0 | ms per frame | presentation-thread time in `AssetCache::Pump()` | AST-116, AST-125 | |
 | `ast.mount.budget_ms` | 200 | ms | mounting the baseline pack set | AST-125 | |
+| `ast.load.match_entry_budget_s` | 10 | s of real time | provisional: from the start of a skirmish match load to its first match frame, on the largest supported map | AST-130 | DEC-226, DEC-971 |
 
 Values that the rules above use and other documents own: `rnd.mesh.colour_attenuation`, `rnd.mesh.max_nodes`, `rnd.mesh.max_sockets` ([world renderers](renderer/world_renderers.md)); `rnd.shadow.icon_blur_radius` ([view, lighting and fog](renderer/view_lighting_and_fog.md)); `rnd.look.blur_normaliser` ([visual language](renderer/visual_language.md)); `rnd.crawler.trail_column_width`, `rnd.crawler.trail_column_height`, `rnd.crawler.trail_copy_shrink` ([entity and overlay renderers](renderer/entity_and_overlay_renderers.md)); the cut-out thresholds `rnd.pso.*_cutout` ([frame graph and passes](renderer/frame_graph_and_passes.md)); `ref.map.thumbnail.aspect` ([maps: rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md)); the streaming threshold `aen.residency.stream_threshold`, the samples per block `aen.stream.samples_per_block` and the bank budgets `aen.memory.interface_bank_budget`, `aen.memory.match_bank_budget` and `aen.memory.stream_budget` of the [audio engine](audio_engine/README.md).

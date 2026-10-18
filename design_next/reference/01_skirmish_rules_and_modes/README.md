@@ -276,7 +276,7 @@ Texts 2 and 3 blink on the presentation clock: alpha `ref.match.grace_overlay.bl
 **R-MODE-057** (MUST) Declaring a result `DeclareResult(t)`, with t a team 0 to 5 or the draw value, runs on every call, repeated calls with the same t included:
 
 1. if a local team exists, add its kill total to the achievement statistics (a hook; repeated calls add it again; DEC-047);
-2. issue the score report, the six scores and t, which every participant ignores (R-SIM-451; no statistics service consumes it).
+2. emit the score report, a presentation event that carries the six scores and t and that nothing consumes ([reference/09](../09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-497, DEC-047); it is not a player command, because advancing the simulation issues none ([reference/12](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-454).
 
 Only when t differs from the declared result so far:
 
@@ -473,7 +473,7 @@ Declaring "none" runs steps 1 and 2 only.
 | basic crates only | advanced-options switch `match.options.basic_crates` | off | restricts the Supply crate outcomes and the Comeback pool ([reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md), R-ECON-115) |
 | password | advanced-options text field `match.options.password`; host only, multiplayer only, at most `ref.match.option.password_max_length` (16) characters | empty | the join gate ([reference/09](../09_front_end_and_match_flow/screen_flow_and_match_setup.md)) |
 | single-round Siege | none: no page offers it | on | multi-round Siege cannot be selected (DEC-066) |
-| research levels | none | — | overwritten at every match start: every level 3, then Strike team 1; laser, grenade, rocket and airstrike 2; Worker 4 (DEC-115) |
+| research levels | not part of the match setup | — | fixed at every match start: every level 3, then Strike team 1; laser, grenade, rocket and airstrike 2; Worker 4 (DEC-115) |
 
 **R-MODE-083** (MUST) The two tutorials run Zone Control on their own maps ([reference/11](../11_tutorial_and_help.md)). At setup each uses the Zone Control defaults, its tutorial map, Easy bots and requested colour 0; the second tutorial also sets the slot colours 0, 1 and 2; start positions and bot colours equal the slot ids. The first tutorial drops no Supply crates, and the second drops none before its bots are released. At the second tutorial's end step basic crates only is switched on, crate placement becomes random, the bot difficulty becomes Standard and the bots are released. Every rule that a tutorial changes is listed in the overrides of reference/11 table 2.8-A (R-TUT-080).
 
@@ -715,7 +715,7 @@ String ids cited from other documents: `team.colour.*` and `match.player_left` (
 
 1. **Map play time and the default time limit.** Choosing a map requests the map's play time, and entering the lobby resets the options to their defaults. The host applies the map's defaults once, authoritatively, and lobby entry keeps a time limit set from the play time, so the map's play time always survives (R-MODE-079, R-MODE-080, DEC-067). The lobby's map row shows the play time as "0:" followed by the minutes in two digits, so 10 minutes reads 0:10 (R-MAP-021; see DEC-868 item 3). On the reference maps the play time is 10 to 15 minutes in Spawn Control and 5 to 10 in Zone Control; Relic Run, Launch Race and Flag Chain maps set none; Siege maps set 15 or 20, which only the lobby shows, because Siege has no time-limit option and its clock is the Core Device countdown ([reference/08](../08_maps_and_level_design/rules_and_conventions.md) R-MAP-184, R-MAP-167).
 2. **Three timers on post-grace tick 0.** The rules timer, the wave timer and the rank timer all complete their first mode second on post-grace tick 0, so the first mode step, wave 1 and the first ranking all fall on that tick (R-MODE-003). The first ranking only stores ranks (R-MODE-047).
-3. **A repeated result declaration.** A second `DeclareResult` with the declared result adds the local kill total to the statistics hook again and issues another score report, but changes nothing else (R-MODE-057).
+3. **A repeated result declaration.** A second `DeclareResult` with the declared result adds the local kill total to the statistics hook again and emits another score report, but changes nothing else (R-MODE-057).
 4. **Sudden-death returns.** A team wiped by sudden death keeps its Spawn Nodes and may produce Workers again before the tie breaks; in Spawn Control it is not flagged eliminated, so it still counts as a team (R-MODE-050, DEC-300).
 5. **Comeback on a map without Spawn Nodes.** In Zone Control and Relic Run a team counts as eliminated only on a map that has Spawn Nodes, so on a map without any the Comeback Bonus never grants. All Spawn Node counts start at 0 in every match, so a count left from an earlier match can never make the test pass (R-MODE-049, DEC-011).
 6. **Ties in the rank announcement.** With scores 10, 10, 5, 5 the ranks are 1, 1, 3, 3; both leaders hear the tied-first announcement and both trailing teams the tied-third one (R-MODE-047, DEC-074).

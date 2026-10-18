@@ -168,7 +168,7 @@ Table 2.5-A Searches per state, in priority order.
 | ToPort, OpeningCrate, Fighting, ToCarryable | threats |
 | Manning, BoardingVessel, Burning, Carrying, InTransport, CarriedByAnt, AttackingStructure, Drowning, CaughtInVortex, InAbductionBeam, ClaimingFlag | none |
 
-**R-UNIT-088** (MUST) **Victory celebration.** After a task search that leaves the Worker Idle, a Worker of team slot 0 that is on the ground draws `NextUnit(ref.unit.worker.victory_chance)`; if the draw is below 1, its y is above `ref.unit.worker.victory_min_height` (10 wu) and every primary objective of the map is complete, it hops: vertical velocity += `ref.unit.worker.victory_hop_base` + `NextUnit(ref.unit.worker.victory_hop_spread)` (15 + [0, 15) wu/s), and it raises `worker.victory_jump`. A map with no primary objectives receives one objective that never completes, so the celebration never starts on it; every reference map's objectives never complete, so it never starts in a reference match, while each Idle Worker of team slot 0 still makes the draw at every retarget (DEC-331).
+**R-UNIT-088** (MUST) **Victory celebration.** After a task search that leaves the Worker Idle, a Worker of team slot 0 that is on the ground draws `NextUnit(ref.unit.worker.victory_chance)`; the draw is made at every such retarget and is part of the simulation stream. No rule of a match acts on the draw, so no Worker hops and `worker.victory_jump` is never raised in a match (DEC-331); a map defines no objective whose completion could start a celebration ([reference/08](../08_maps_and_level_design/rules_and_conventions.md) R-MAP-033). The hop is kept as a hook with no trigger: with a draw below 1 and its y above `ref.unit.worker.victory_min_height` (10 wu), the Worker adds `ref.unit.worker.victory_hop_base` + `NextUnit(ref.unit.worker.victory_hop_spread)` (15 + [0, 15) wu/s) to its vertical velocity and raises `worker.victory_jump`.
 
 **R-UNIT-089** (MUST) While the player-orders flag is set and the Worker is not Idle, the task search tries only the threat search, whatever the state.
 
@@ -794,7 +794,7 @@ Diagram 3-D Sickness on a Worker (R-UNIT-127 to R-UNIT-130).
 - **Rogue faction Workers never burn** (R-UNIT-121).
 - **Fire kill over-count.** A Worker that keeps receiving flame damage after its fire damage reached 100 adds a kill to the attacker each time (R-UNIT-119).
 - **Selection survives manning.** A Worker selected while walking keeps its flag when it starts manning a port, so a crowd order can pull it off the port (R-UNIT-138, DEC-308).
-- **Victory celebration.** The draw of R-UNIT-088 is made by team slot 0 Workers in every match, although the hop never happens on a reference map.
+- **Victory celebration.** The draw of R-UNIT-088 is made by team slot 0 Workers in every match, although no Worker ever hops in a match.
 - **Speed caps.** Speed Boost and Fury stack multiplicatively until their cap ratios: Speed Boost after Fury from 30 wu/s gives 60 (ratio 1.5 < 3.5) and then 120 (ratio 3 < 3.5); Fury after two Speed Boosts (80 wu/s, ratio 4) does nothing; when either link ends the speed returns to 20 wu/s, cancelling the other's multiplier as well (R-UNIT-123, R-UNIT-125).
 - **Sickness slow-down.** The Sickness factors multiply the current speed stat, and immunity restores the stat-table speed, which also cancels any running Speed Boost or Fury multiplier (R-UNIT-127, R-UNIT-130).
 - **Drowning is instant.** A Worker below sea level dies on the next tick, wherever it fell (R-UNIT-065 step 7, R-UNIT-080).
@@ -856,7 +856,7 @@ Diagram 3-D Sickness on a Worker (R-UNIT-127 to R-UNIT-130).
 
 **AC-UNIT-W22 — Pulse wave conversion** (R-UNIT-133). Given a Siege match whose map names a Visitor team position, and an enemy Worker inside that team's pulse wave, then the Worker is replaced by a Worker of the wave's team and no Essence orb is released; for a wave of another team, then the Worker is pushed away at 20 wu/s and dies with an Essence orb.
 
-**AC-UNIT-W23 — Victory celebration draw** (R-UNIT-088). Given a reference map and an Idle Worker of team slot 0 on the ground, when its task search runs, then one `NextUnit(5)` draw is made and no hop happens; for a Worker of team slot 1, then no draw is made.
+**AC-UNIT-W23 — Victory celebration draw** (R-UNIT-088). Given any map and an Idle Worker of team slot 0 on the ground, when its task search runs, then one `NextUnit(5)` draw is made and no hop happens; for a Worker of team slot 1, then no draw is made.
 
 **AC-UNIT-W24 — Worker push vectors** (R-UNIT-112, R-UNIT-114). Given a candidate in water whose samples at 40, 45 and 50 wu are water and whose sample at 55 wu is land, then the candidate moves to the 55 wu sample, and with no land sample it stays where it is; given a candidate 20 wu from a structure centre that it overlaps, then it moves away in 4 wu steps until a 2 wu sphere no longer hits the structure.
 

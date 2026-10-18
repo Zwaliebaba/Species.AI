@@ -2,7 +2,7 @@
 
 > Status: Engine baseline · Prefix: RND · ADRs: [ADR-002](../../../ADR/ADR-002-minimum-gpu-capability.md) · [ADR-005](../../../ADR/ADR-005-pipeline-state-catalogue.md) · [ADR-009](../../../ADR/ADR-009-instanced-crowds-sprite-cards-and-shadows.md) · [ADR-010](../../../ADR/ADR-010-gpu-particles-and-shatter-debris.md) · [ADR-011](../../../ADR/ADR-011-world-surface-rendering.md) · [ADR-012](../../../ADR/ADR-012-swap-chain-presentation-and-frame-pacing.md) · [ADR-014](../../../ADR/ADR-014-hdr-output.md) · [ADR-015](../../../ADR/ADR-015-scene-anti-aliasing.md) · [ADR-017](../../../ADR/ADR-017-texture-container-and-block-compression.md) · [ADR-034](../../../ADR/ADR-034-text-rendering-and-glyph-cache.md) · [ADR-064](../../../ADR/ADR-064-accessibility-baseline-xag.md) · [ADR-066](../../../ADR/ADR-066-telemetry-with-consent.md) · [ADR-068](../../../ADR/ADR-068-profiling-and-gpu-timing.md) · [ADR-075](../../../ADR/ADR-075-application-window-and-dpi-awareness.md) · Related: [Renderer](README.md) · [Frame graph and passes](frame_graph_and_passes.md) · [World renderers](world_renderers.md) · [Entity and overlay renderers](entity_and_overlay_renderers.md) · [Visual language](visual_language.md) · [Platform layer](../platform_layer.md) · [Data schemas](../data_schemas/README.md) · [Diagnostics, test and performance](../diagnostics_test_and_performance/README.md)
 
-This document specifies every graphics setting of the renderer (its default, its values and what it changes), the quality presets, how a change of settings is applied, and the renderer's performance budgets: the reference caps and costs, and the budget structure of the Species engine baseline.
+This document specifies every graphics setting of the renderer (its default, its values and what it changes), the quality presets, how a change of settings is applied, and the renderer's performance budgets: its caps and costs, and the provisional pass-group budgets of the Species engine baseline.
 
 ## 1 Responsibilities and boundaries
 
@@ -18,12 +18,13 @@ The interface below is a C++23 declaration sketch, not an implementation.
 namespace Engine
 {
 
-enum class DetailLevel : std::uint8_t
+enum class DetailLevel : std::uint8_t // a lower number is more detail (RND-444)
 {
+  None = 0, // sea detail only: the flat layer without a wave mesh; accepted and never offered (RND-442)
   High = 1,
   Medium = 2,
   Low = 3
-}; // lower is higher quality
+};
 enum class AntiAliasing : std::uint8_t
 {
   Off,
@@ -52,15 +53,15 @@ struct RenderSettings // defaults: §9 keys rnd.option.*
   bool hdr = false;
   std::optional<float> hdrHighlightLimit; // nits; none: the display's maximum
   float brightness = 1.0f;                // final-pass constant; 1 = unchanged
-  std::uint8_t seaDetail = 1;
-  std::uint8_t skyDetail = 1;
-  std::uint8_t structureDetail = 1;
-  std::uint8_t entityDetail = 1;
-  std::uint8_t treeDetail = 1;
+  DetailLevel seaDetail = DetailLevel::High;
+  DetailLevel skyDetail = DetailLevel::High;
+  DetailLevel decorationDetail = DetailLevel::High; // the structure-detail setting, read by the game's structure renderers (RND-445)
+  DetailLevel entityDetail = DetailLevel::High;
+  std::uint8_t treeDetail = 1; // 1 or more: the exponent of the leaf-alpha boost (RND-191), not a DetailLevel
   bool specialLighting = false;
   std::uint32_t posterResolution = 1;
   bool invertedStyle = false;
-  float workerScaleFactor = 2.0f;
+  float crowdCardDistanceScale = 2.0f; // the growth of crowd cards with camera distance; the game maps it (RND-442)
 };
 
 [[nodiscard]] QualityPreset PresetOf(const RenderSettings& _settings); // RND-450
@@ -85,30 +86,32 @@ void ApplyPreset(RenderSettings& _settings, QualityPreset _preset);    // RND-45
 |---|---|---|---|---|---|
 | render size | `rnd.option.render_size.default` (absent: the desktop resolution of the window's monitor on first run, then written back; DAT-008) | the offered render sizes (RND-026), snapped to the closest (RND-022) | screen options: resolution | the scene-target size and aspect, and every screen-scaled overlay | RND-021, RND-025, RND-028 |
 | window mode | `rnd.option.window_mode.default` (borderless full screen) | windowed, borderless full screen | screen options: windowed | the window style; the display mode is never changed | ADR-012, ADR-075, RND-029 |
-| present mode | `rnd.option.present_mode.default` (vertical sync) | vertical sync, uncapped | none; the reference's vertical-sync preference has no effect (R-SIM-575) | the present interval and tearing | ADR-012 |
+| present mode | `rnd.option.present_mode.default` (vertical sync) | vertical sync, uncapped | none | the present interval and tearing | ADR-012 |
 | frame-rate cap | `rnd.option.frame_rate_cap.default` (none) | none, or a rate in frames per second | none | an engine-timed cap before each frame | ADR-012 |
 | low latency | `rnd.option.low_latency.default` (off) | on, off | none | the maximum frame latency, 1 instead of 2 | ADR-012 |
 | anti-aliasing | `rnd.option.anti_aliasing.default` (4x, falling back to 2x, then Off, where a sample count is not supported) | Off, 2x, 4x | none | the scene sample count and alpha-to-coverage; Off is the reference edge look | ADR-015, RND-062, RND-433 |
 | HDR output | `rnd.option.hdr.default` (off) | on, off; offered only where the output supports it | none | the scene and swap-chain formats and the final-pass conversion | ADR-014 |
 | HDR highlight limit | `rnd.option.hdr_highlight_limit.default` (the display's maximum) | a luminance up to the display's maximum, capped by the photosensitivity rule | none | the tone-mapping ceiling | ADR-014, ADR-064 |
 | brightness | `rnd.option.brightness.default` (1, unchanged) | a final-pass multiplier | none | the final pass; the system gamma ramp is never changed | ADR-012, RND-246 |
-| sea detail | `rnd.option.sea_detail.default` (1) | 1, 2, 3; the value 0 is accepted and never offered | graphics options: water detail | the coastline wave mesh: a cell of detail × max(*X*, *Z*) ÷ 100 ([terrain](../terrain/edges_normals_colours_and_sea.md#414-sea-derivations) TER-200), so 200, 100 or about 67 cells across the twice-size sea plane; 0 draws the flat layer only | RND-144 |
-| sky detail | `rnd.option.sky_detail.default` (1) | 1, 2, 3 | graphics options: sky detail | blobby cloud layers 3, 2, 1; flat layers 2, 1, 1; flat-layer alpha 0.3, 0.3, 0.5 | RND-153 |
-| structure detail | `rnd.option.structure_detail.default` (1) | 1, 2, 3 | graphics options: building detail | the decorative counts and layers of RND-445 | RND-163, RND-445 |
-| entity detail | `rnd.option.entity_detail.default` (1) | 1, 2, 3 | graphics options: entity detail | the Worker high-detail distance and the Crawler detail levels of RND-446 | RND-446 |
-| tree detail | `rnd.option.tree_detail.default` (1) | 1 or more | none | the leaf alpha × `rnd.tree.leaf_alpha_boost` to the power of the level, above level 1, at generation | RND-191 |
+| sea detail (`seaDetail`) | `rnd.option.sea_detail.default` (1) | 1, 2, 3; the value 0 (`DetailLevel::None`) is accepted and never offered | graphics options: water detail | the coastline wave mesh: a cell of detail × max(*X*, *Z*) ÷ 100 ([terrain](../terrain/edges_normals_colours_and_sea.md#414-sea-derivations) TER-200), so 200, 100 or about 67 cells across the twice-size sea plane; 0 draws the flat layer only | RND-144 |
+| sky detail (`skyDetail`) | `rnd.option.sky_detail.default` (1) | 1, 2, 3 | graphics options: sky detail | blobby cloud layers 3, 2, 1; flat layers 2, 1, 1; flat-layer alpha 0.3, 0.3, 0.5 | RND-153 |
+| structure detail (`decorationDetail`) | `rnd.option.structure_detail.default` (1) | 1, 2, 3 | graphics options: building detail | the decorative counts and layers of RND-445 | RND-163, RND-445 |
+| entity detail (`entityDetail`) | `rnd.option.entity_detail.default` (1) | 1, 2, 3 | graphics options: entity detail | the Worker high-detail distance and the Crawler detail levels of RND-446 | RND-446 |
+| tree detail (`treeDetail`) | `rnd.option.tree_detail.default` (1) | 1 or more | none | the leaf alpha × `ref.bldg.tree.leaf_alpha_boost` to the power of the level, above level 1, at generation | RND-191 |
 | special lighting | `rnd.option.special_lighting.default` (off) | on, off | none; a debug command toggles it in Debug builds ([developer_tools.md](../diagnostics_test_and_performance/developer_tools.md#46-debug-commands-and-the-debug-command-window)) | the warm single light on every structure of pass 6 | RND-229 |
 | poster resolution | `rnd.option.poster_resolution.default` (1) | *N* ≥ 1 | none | screenshots as *N* × *N* tiles | RND-110 |
 | inverted style | `rnd.option.inverted_style.default` (off) | on, off | none | the ink-on-paper look | RND-434 (see DEC-040) |
-| Worker distance scale factor | `rnd.option.worker_scale_factor.default` (2.0) | 0 or more | none | the growth of Worker cards with camera distance; the Leader banner growth (R-UNIT-191) and the Control Zone drawing ([mode_objects.md](../../../reference/03_buildings_and_world_objects/mode_objects.md)) read it too | RND-314, RND-412 |
+| Worker distance scale factor (`crowdCardDistanceScale`) | `rnd.option.worker_scale_factor.default` (2.0) | 0 or more | none | the growth of crowd cards with camera distance; the game's renderers map it onto the Worker cards, the Leader banner growth (R-UNIT-191) and the Control Zone drawing ([mode_objects.md](../../../reference/03_buildings_and_world_objects/mode_objects.md)) | RND-314, RND-412 |
 
-**RND-443** (MUST NOT) The renderer has no setting for: the display refresh rate, colour depth, depth-buffer depth or overscan, which have no meaning when the display mode is never changed and depth is `D32_FLOAT` (ADR-012, RND-055); a terrain detail level, which in the reference has no effect, so the terrain is always drawn at full resolution (RND-138); a pixelation, deform or water-reflection effect (see DEC-059); a terrain storage mode or a power-of-two texture rescale; or a fog preference, which in the reference has no effect. The bot priority overlay is a development setting of Debug builds ([developer_tools.md](../diagnostics_test_and_performance/developer_tools.md#47-development-drawing)), and the stored seasonal preference has no effect on the seasonal theme (see DEC-101).
+The member names are engine vocabulary (`AGENTS.md` R9): `decorationDetail` holds the structure-detail setting and `crowdCardDistanceScale` the Worker distance scale factor, and the `Species` renderers that read them give them their game meaning. The setting keys and tuning keys keep their names (`render.structure_detail`, `render.worker_scale_factor`), because they are data names.
+
+**RND-443** (MUST NOT) The renderer has no setting beyond those of RND-442 (see DEC-059). The display mode is never changed and depth is always `D32_FLOAT` (ADR-012, RND-055); the terrain is always drawn at full resolution (RND-138); fog always follows RND-222. The bot priority overlay is a development setting of Debug builds ([developer_tools.md](../diagnostics_test_and_performance/developer_tools.md#47-development-drawing)), and no renderer setting controls the seasonal theme (see DEC-101).
 
 ### 3.2 Detail levels
 
-**RND-444** (MUST) Every detail setting counts down in quality: 1 is the highest detail, 2 medium and 3 the lowest. Each defaults to 1.
+**RND-444** (MUST) Every detail setting counts down in quality: 1 is the highest detail, 2 medium and 3 the lowest (`DetailLevel`). Each defaults to 1. The tree-detail setting is a level count of 1 or more instead (RND-191).
 
-**RND-445** (MUST) The structure-detail setting changes exactly these elements; whether Species keeps these branches or defines its own quality levels with the same intent is decided by the design phase (see DEC-327):
+**RND-445** (MUST) The structure-detail setting (`RenderSettings::decorationDetail`), which the game's structure renderers read, changes exactly these elements; whether Species keeps these branches or defines its own quality levels with the same intent is decided by the design phase (see DEC-327):
 
 | Element | Detail 1 | Detail 2 | Detail 3 | Specified in |
 |---|---|---|---|---|
@@ -158,30 +161,29 @@ Caption: no settings change rebuilds terrain, sea or tree geometry, and none tou
 
 ### 4.3 The reference options pages
 
-**RND-452** (MUST) The reference graphics options page shows exactly four choices, sea detail, sky detail, structure detail and entity detail, each with the values high, medium and low, plus apply and back actions; the screen options page shows the render size, the window mode, the refresh rate, the colour bits and the depth bits ([options_localisation_and_hooks.md](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-414 to R-META-420), and of these the Species engine has settings for the render size and the window mode only (RND-443). The reference has no anti-aliasing, anisotropic-filtering, gamma or brightness, vertical-sync, resolution-scale, texture-quality, shadow-quality or frame-rate-cap setting. The Species engine provides anti-aliasing, brightness, the present mode, the frame-rate cap and the render size (RND-442), and no anisotropic-filtering, texture-quality or shadow-quality setting. The Species options pages expose at least the reference settings; whether they also expose the engine settings of RND-442 (present mode, frame-rate cap, low latency, anti-aliasing, HDR, brightness) and further commonly expected options is decided by the design phase (see DEC-044).
+**RND-452** (MUST) The reference graphics options page shows exactly four choices, sea detail, sky detail, structure detail and entity detail, each with the values high, medium and low, plus apply and back actions; the screen options page shows the render size and the window mode ([options_localisation_and_hooks.md](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-414). Besides these, the Species engine provides the present mode, the frame-rate cap, low latency, anti-aliasing, HDR output and brightness (RND-442). The Species options pages expose at least the settings of the reference pages; whether they also expose the engine settings of RND-442 and further commonly expected options is decided by the design phase (see DEC-044).
 
 ### 4.4 Reference caps and costs
 
-**RND-453** (MUST) The reference encodes no frame-time and no draw-call budget. Its caps and costs, and their Species counterparts, are:
+**RND-453** (MUST) The renderer's caps and costs are those of the table below; the frame budgets are RND-454 (see DEC-225, DEC-106).
 
-| Item | Reference | Species |
-|---|---|---|
-| frame pacing | one rendered frame per loop iteration, never capped; vertical sync as the display driver sets it (R-SIM-575) | the present modes and the frame-rate cap of ADR-012 |
-| slow frames | below `ref.sim.frame.low_fps_audio_threshold` (15 fps) the audio engine advances twice per frame (R-SIM-581) | the audio engine's own pacing (DEC-225 item 10) |
-| frame-delta clamp | `ref.sim.frame.delta_clamp` (0.25 s); the fade advances at most `rnd.fade.max_step` per frame (RND-085) | kept (R-SIM-573) |
-| minimum render period | `rnd.budget.min_render_period` (1.0 s): presentation renders at least once per period | kept, in every state including catch-up (DEC-225) |
-| terrain | one triangle strip, one draw per pass, two passes, no level of detail, about two triangles per height-field cell above water | chunked, culled and drawn in one pass at full resolution (RND-138, ADR-011) |
-| particles and shatter debris | the particle and fragment limits of [README.md](../animation_and_vfx/README.md) | hard pool caps with level of detail (ADR-010) |
-| meshes | at most 100 nodes and 100 sockets per mesh (RND-156) | kept as the minimum the cooked format supports |
-| texture size | the device maximum, textures only scaled down | the content build rejects a texture larger than `rnd.budget.max_texture_dimension` (16 384 px, the feature-level 12_1 limit of ADR-002) |
-| fonts | about `rnd.budget.reference_font_atlases` (138) font atlas textures loaded at start-up | the glyph cache of ADR-034 |
-| quality settings | the four detail settings are the only quality settings that change at run time | the settings of RND-442 |
-| profiling | profiling brackets per pass and per structure kind | a marker and GPU timestamps per pass (ADR-068, RND-041) |
-| measured frame cost | not known: no frame time, draw count, particle count or per-system cost is recorded for the reference population | measured on the first prototype (see DEC-106) |
+| Item | Species rule |
+|---|---|
+| frame pacing | the present modes and the frame-rate cap of ADR-012 |
+| frame-delta clamp | `ref.sim.frame.delta_clamp` (0.25 s, R-SIM-573); the fade advances at most `rnd.fade.max_step` per frame (RND-085) |
+| minimum render period | presentation renders at least once per `rnd.budget.min_render_period` (1.0 s), in every state including catch-up (DEC-225) |
+| terrain | chunked, culled and drawn in one pass at full resolution (RND-138, ADR-011) |
+| particles and shatter debris | hard pool caps with level of detail (ADR-010; [particles](../animation_and_vfx/particles_shatter_and_screen_effects.md) VFX-212, VFX-230) |
+| meshes | at least 100 nodes and 100 sockets per mesh, the minimum the cooked format supports (RND-156) |
+| texture size | the content build rejects a texture larger than `rnd.budget.max_texture_dimension` (16 384 px, the feature-level 12_1 limit of ADR-002) |
+| fonts | the glyph cache of ADR-034 |
+| quality settings | the settings of RND-442 |
+| profiling | a marker and GPU timestamps per pass (ADR-068, RND-041) |
+| frame cost | the provisional pass-group budgets of RND-454, confirmed or changed by the prototype measurement (see DEC-106) |
 
 ### 4.5 Species budgets
 
-**RND-454** (MUST) The renderer's client target is `rnd.budget.target_frame_rate` (60 frames per second, 16.7 ms per frame) on minimum-specification hardware, measured on the pinned reference test machine (see DEC-971), in a local Spawn Control match with the design population of 2,000 units (see DEC-228 item 6, DEC-106). The frame's CPU and GPU time at that population MUST fit the target; the per-pass-group budgets (world passes 3 to 6 and 8; actor passes 7a to 7d; effect passes 10a to 11, 14 and 15; overlay passes 16 to 34) are set from the prototype measurement of DEC-106 and recorded in this document, and the development overlay of Debug builds shows each pass's GPU time against its group's budget (RND-041, ADR-068).
+**RND-454** (MUST) The renderer's client target is `rnd.budget.target_frame_rate` (60 frames per second, 16.7 ms per frame) on minimum-specification hardware, measured on the pinned reference test machine (see DEC-971), in a local Spawn Control match with the design population of 2,000 units (see DEC-228 item 6, DEC-106). The frame's CPU and GPU time at that population MUST fit the target. The GPU time of each pass group has a provisional budget, which the prototype measurement of DEC-106 confirms or changes: the world passes 3 to 6 and 8, `rnd.budget.world_ms` (3.0 ms); the actor passes 7a to 7d, `rnd.budget.actors_ms` (4.0 ms); the effect passes 10a to 11, 14 and 15 with their compute work, `rnd.budget.effects_ms` (3.0 ms); the overlay and UI passes 12, 13 and 16 to 34, `rnd.budget.overlays_ms` (2.0 ms). Together they take 12.0 ms and leave 4.7 ms of the frame for the frame constants, the clears, the resolve, the final pass, the present and frame-to-frame variation. The development overlay of Debug builds shows each pass's GPU time against its group's budget (RND-041, ADR-068).
 
 **RND-455** (MUST) The number of draw and dispatch calls per frame is bounded by the pass table and the instance types, never by the population: crowds cost a fixed number of calls per instance type and pass (ADR-009, DEC-228 item 5), structures and trees are instanced per mesh, terrain chunks are drawn with one instanced or indirect draw (RND-138), and particles with one draw per particle batch (ADR-010).
 
@@ -213,7 +215,7 @@ Caption: no settings change rebuilds terrain, sea or tree geometry, and none tou
 | T4 apply | integration | changing every setting during a match keeps the per-tick state hash unchanged; render size, window mode, sample count and HDR reconfigure; the others take effect on the next frame without a geometry rebuild | RND-441, RND-447 to RND-449 |
 | T5 presets | unit | each preset sets the four detail settings, changes nothing else, and is recognised back by `PresetOf`; a mixed combination is custom | RND-450 |
 | T6 validation | unit | out-of-range values, an unsupported sample count and an unavailable HDR output give the documented fallbacks | RND-451 |
-| T7 frame budget | performance | the design-population Spawn Control match reaches the target frame rate on the minimum-specification machine; the stress map runs and reports percentiles | RND-454, RND-456 |
+| T7 frame budget | performance | the design-population Spawn Control match reaches the target frame rate on the minimum-specification machine, and each pass group's GPU time stays within its provisional budget (a miss is reported, and fails the test once DEC-106 and DEC-971 are decided); the stress map runs and reports percentiles | RND-454, RND-456 |
 | T8 call bound | performance | the number of draw and dispatch calls per frame is the same at 500 and at 4,000 units on the same map and camera path | RND-455 |
 | T9 texture limit | build check | a texture above the dimension limit fails the content build | RND-453 |
 
@@ -227,7 +229,7 @@ Caption: no settings change rebuilds terrain, sea or tree geometry, and none tou
 | DEC-059 | Dropped | no pixelation, deform or reflection settings (RND-443) |
 | DEC-100 | Resolved | one defaults table (RND-440) |
 | DEC-101 | Open | the seasonal theme, which no renderer setting controls (RND-443) |
-| DEC-106 | Open | the frame budgets, set from the prototype measurement (RND-453, RND-454) |
+| DEC-106 | Open | the frame budgets: provisional until the prototype measurement (RND-453, RND-454) |
 | DEC-225 | Open | frame pacing and catch-up (RND-453) |
 | DEC-228 | Open | the design and stress populations and the client target (RND-454 to RND-456) |
 | DEC-327 | Open | the structure-detail branches (RND-445) |
@@ -236,7 +238,7 @@ Caption: no settings change rebuilds terrain, sea or tree geometry, and none tou
 **Design-phase inputs.**
 
 1. **Minimum specification.** The minimum-specification machine on which the target of RND-454 is measured, beyond the GPU capability of ADR-002.
-2. **Budgets.** The per-pass-group millisecond budgets, set from the prototype measurement (DEC-106), and the budgets for the integrated-server case, where the server tick and the client frame share one machine (DEC-228 item 6).
+2. **Budgets.** The per-pass-group millisecond budgets, confirmed or changed by the prototype measurement (DEC-106), and the budgets for the integrated-server case, where the server tick and the client frame share one machine (DEC-228 item 6).
 3. **Options pages.** Which settings the Species options pages show, whether presets cover the engine settings (anti-aliasing, HDR) as well as the detail settings, and whether the inverted style becomes an accessibility option (DEC-044, DEC-040).
 4. **World scale.** Detail and level-of-detail settings for a world larger than an arena map: terrain and sea levels of detail, crowd impostors and culling distances (DEC-247).
 
@@ -270,5 +272,8 @@ Caption: no settings change rebuilds terrain, sea or tree geometry, and none tou
 | `rnd.detail.launch_vessel_exhaust_loops` | 3, 2, 1 | loops | clamp(4 − detail, 1, 3) | RND-445 | DEC-327 |
 | `rnd.budget.min_render_period` | 1.0 | s of real time | longest gap between rendered frames | RND-453 | DEC-225 |
 | `rnd.budget.max_texture_dimension` | 16384 | px | feature level 12_1 | RND-453 | |
-| `rnd.budget.reference_font_atlases` | 138 | textures | reference figure, start-up | RND-453 | |
 | `rnd.budget.target_frame_rate` | 60 | frames per s | 16.7 ms; design population 2,000 units | RND-454 | DEC-228 |
+| `rnd.budget.world_ms` | 3.0 | ms of GPU time per frame | provisional: passes 3 to 6 and 8 | RND-454 | DEC-106 |
+| `rnd.budget.actors_ms` | 4.0 | ms of GPU time per frame | provisional: passes 7a to 7d | RND-454 | DEC-106 |
+| `rnd.budget.effects_ms` | 3.0 | ms of GPU time per frame | provisional: passes 10a to 11, 14 and 15 with their compute work | RND-454 | DEC-106 |
+| `rnd.budget.overlays_ms` | 2.0 | ms of GPU time per frame | provisional: passes 12, 13 and 16 to 34 | RND-454 | DEC-106 |

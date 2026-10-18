@@ -58,7 +58,7 @@ Table 2.1-A Lifetime classes.
 
 **R-SIM-011** (MUST) When the load has finished, the participant executes the ticks buffered during the load under the catch-up rule of [01](01_tick_timing_and_main_loop.md) before the match runs at normal pace.
 
-**R-SIM-012** (MUST) The match opens frozen, at game speed `ref.sim.speed.stopped`. Each player marks their team ready with the Ready command (06). When every human team and every spectator team is ready, the match rules run the grace countdown of `ref.match.grace_period` ([skirmish rules](../01_skirmish_rules_and_modes/README.md)) in their slice of every tick, although the match is still frozen; when the countdown ends, the match rules request game speed `ref.sim.speed.normal`, which takes effect at the next tick, and the match runs. The countdown and the speed request are specified in [01](01_tick_timing_and_main_loop.md) R-SIM-552.
+**R-SIM-012** (MUST) The match opens frozen, at game speed `ref.sim.speed.stopped`; while it is frozen for its start, the Supply crate drop rule still runs in its slice of every command frame ([reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) R-CRATE-102, DEC-116). Each player marks their team ready with the Ready command (06). When every human team and every spectator team is ready, the match rules run the grace countdown of `ref.match.grace_period` ([skirmish rules](../01_skirmish_rules_and_modes/README.md)) in their slice of every tick, although the match is still frozen; when the countdown ends, the match rules request game speed `ref.sim.speed.normal`, which takes effect at the next tick, and the match runs. The countdown and the speed request are specified in [01](01_tick_timing_and_main_loop.md) R-SIM-552.
 
 **R-SIM-013** (MUST) A match reaches its end state by the rules of its mode ([skirmish rules](../01_skirmish_rules_and_modes/README.md)). The match rules then bring game speed to `ref.sim.speed.stopped` and lock the tick clock, so that no later speed request changes it ([01](01_tick_timing_and_main_loop.md) R-SIM-555), and the match loop fades out and runs teardown (§2.6).
 
@@ -358,6 +358,7 @@ The tick period `ref.sim.tick_period`, the slice of the match-rules update `ref.
 - DEC-243 — lobby authority and the match-setup state.
 - DEC-046 — replays.
 - DEC-066 — multi-round Siege.
+- DEC-116 — Supply crates during the grace period: the drop rule runs while the match is frozen for its start (R-SIM-012).
 - DEC-250 — persisted data inventory and client-local storage.
 - DEC-251 — world-state persistence, schema migration and rollback.
 - Resolved and applied here: DEC-004, DEC-010, DEC-011, DEC-013, DEC-028, DEC-087, DEC-103, DEC-118, DEC-261, DEC-652.

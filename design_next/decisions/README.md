@@ -1,21 +1,28 @@
 # Decision register
 
-> Generated at gate G2 by the coordinator. Do not edit by hand: entries live in the files listed below.
+> Status: Decision register · Related: [conventions](../CONVENTIONS.md) §3 and §7, [deferred decisions](deferred/README.md), [vision brief](../../vision/species-vision-brief.md)
 
-Every decision uses the format in [CONVENTIONS](../CONVENTIONS.md) §7. **Open** decisions state the behaviour the documents specify now (the reference default), so implementation never blocks on them. **Resolved** decisions state the fixed rule. **Dropped** entries record out-of-scope items. Decisions marked "Decide by: design phase" are answered by the Species design phase.
+Entries live in the files listed below; add a decision to the file of its area, in the format of [CONVENTIONS](../CONVENTIONS.md) §7, and add its row to the index of that file and to the index below. **Open** decisions state the behaviour the documents specify now (the reference default), so implementation never blocks on them. **Resolved** decisions state the fixed rule. **Dropped** entries record out-of-scope items and what Species does instead. Decisions marked "Decide by: design phase" are answered by the Species design phase.
 
-Totals: **301** decisions: 148 Open, 126 Resolved, 27 Dropped.
+Totals: **302** decisions: 148 Open, 126 Resolved, 28 Dropped.
+
+## Numbering
+
+- A DEC id is stable: it is never renumbered or reused, and a decision that no longer applies becomes Dropped and keeps its id, so that every citation stays valid.
+- A new decision of the reference library takes the next free id of the register file that owns its topic, within that file's block in the table below.
+- The block DEC-900 to DEC-949 is reserved: no register file numbers into it.
+- The Species design phase numbers its decisions with four-digit ids, starting at 1000 (CONVENTIONS §3).
 
 ## Register files
 
-| File | Scope | Id range | Entries |
+| File | Scope | Block | Entries |
 |---|---|---|---|
-| [verdicts_and_fixes.md](verdicts_and_fixes.md) | Verdicts, keep-list and fix-list | DEC-001–119 | 119 |
-| [verdicts_and_fixes_2.md](verdicts_and_fixes_2.md) | Verdicts (continued) and owner decisions | DEC-120–199 | 5 |
+| [verdicts_and_fixes.md](verdicts_and_fixes.md) | Headline verdicts, simulation-integrity rules, subsystem scope verdicts, rules kept as the reference states them, reference defects that Species fixes, design-critical uncertainties | DEC-001–119 | 119 |
+| [verdicts_and_fixes_2.md](verdicts_and_fixes_2.md) | Verdicts and owner decisions (continued) | DEC-120–199 | 5 |
 | [deferred/networking.md](deferred/networking.md) | Deferred: networking | DEC-200–219 | 9 |
 | [deferred/process_tick_and_roadmap.md](deferred/process_tick_and_roadmap.md) | Deferred: process, tick rate and roadmap | DEC-220–239 | 10 |
 | [deferred/numerics_lobby_terrain_services.md](deferred/numerics_lobby_terrain_services.md) | Deferred: numerics, lobby, terrain runtime, services, persistence | DEC-240–259 | 12 |
-| [simulation_gap_rules.md](simulation_gap_rules.md) | Gap rules: simulation | DEC-260–299 | 7 |
+| [simulation_gap_rules.md](simulation_gap_rules.md) | Gap rules: simulation | DEC-260–299 | 8 |
 | [open_questions.md](open_questions.md) | Open questions | DEC-300–449 | 43 |
 | [units_buildings_crates_economy.md](units_buildings_crates_economy.md) | Units, buildings, crates and population | DEC-450–549 | 17 |
 | [controls_bots_maps_meta_audio.md](controls_bots_maps_meta_audio.md) | Controls, bots, maps, front end and audio | DEC-550–649 | 21 |
@@ -23,6 +30,7 @@ Totals: **301** decisions: 148 Open, 126 Resolved, 27 Dropped.
 | [vfx_audio_ui.md](vfx_audio_ui.md) | Animation and VFX, audio engine, UI | DEC-750–799 | 3 |
 | [data_sequences_platform_debug.md](data_sequences_platform_debug.md) | Data, sequences, platform and diagnostics | DEC-800–849 | 5 |
 | [gameplay_gap_rules.md](gameplay_gap_rules.md) | Gap rules: gameplay | DEC-850–899 | 22 |
+| — | Reserved: no register file numbers into this block | DEC-900–949 | 0 |
 | [engine_gap_rules.md](engine_gap_rules.md) | Gap rules: engine | DEC-950–999 | 23 |
 
 ## Index
@@ -54,7 +62,7 @@ Totals: **301** decisions: 148 Open, 126 Resolved, 27 Dropped.
 | DEC-023 | [Controls and commands: keep the command model and control scheme](verdicts_and_fixes.md#dec-023-controls-and-commands-keep-the-command-model-and-control-scheme) | Resolved | verdicts_and_fixes.md |
 | DEC-024 | [Camera: keep the free camera, clamp it and use one presentation clock](verdicts_and_fixes.md#dec-024-camera-keep-the-free-camera-clamp-it-and-use-one-presentation-clock) | Resolved | verdicts_and_fixes.md |
 | DEC-025 | [Maps and level design: keep the capability set and the generator look](verdicts_and_fixes.md#dec-025-maps-and-level-design-keep-the-capability-set-and-the-generator-look) | Resolved | verdicts_and_fixes.md |
-| DEC-026 | [Front end and match flow: keep the flow, redesign the stubs](verdicts_and_fixes.md#dec-026-front-end-and-match-flow-keep-the-flow-redesign-the-stubs) | Resolved | verdicts_and_fixes.md |
+| DEC-026 | [Front end and match flow: keep the flow and its page catalogue](verdicts_and_fixes.md#dec-026-front-end-and-match-flow-keep-the-flow-and-its-page-catalogue) | Resolved | verdicts_and_fixes.md |
 | DEC-027 | [Audio design: keep the binding model, replace priorities and the mix](verdicts_and_fixes.md#dec-027-audio-design-keep-the-binding-model-replace-priorities-and-the-mix) | Resolved | verdicts_and_fixes.md |
 | DEC-028 | [Simulation model: keep the object model, replace weak mechanisms](verdicts_and_fixes.md#dec-028-simulation-model-keep-the-object-model-replace-weak-mechanisms) | Resolved | verdicts_and_fixes.md |
 | DEC-029 | [Visual language is kept](verdicts_and_fixes.md#dec-029-visual-language-is-kept) | Resolved | verdicts_and_fixes.md |
@@ -87,7 +95,7 @@ Totals: **301** decisions: 148 Open, 126 Resolved, 27 Dropped.
 | DEC-056 | [Alternative control scheme](verdicts_and_fixes.md#dec-056-alternative-control-scheme) | Dropped | verdicts_and_fixes.md |
 | DEC-057 | [Rift Horror outcome and inactive crate rewards](verdicts_and_fixes.md#dec-057-rift-horror-outcome-and-inactive-crate-rewards) | Dropped | verdicts_and_fixes.md |
 | DEC-058 | [Vehicle Duel mode](verdicts_and_fixes.md#dec-058-vehicle-duel-mode) | Dropped | verdicts_and_fixes.md |
-| DEC-059 | [Alternative-renderer effects](verdicts_and_fixes.md#dec-059-alternative-renderer-effects) | Dropped | verdicts_and_fixes.md |
+| DEC-059 | [Pixelation, deform and reflection effects](verdicts_and_fixes.md#dec-059-pixelation-deform-and-reflection-effects) | Dropped | verdicts_and_fixes.md |
 | DEC-060 | [Benchmark recorder, upload and in-game video capture](verdicts_and_fixes.md#dec-060-benchmark-recorder-upload-and-in-game-video-capture) | Dropped | verdicts_and_fixes.md |
 | DEC-061 | [User profiles and mods](verdicts_and_fixes.md#dec-061-user-profiles-and-mods) | Dropped | verdicts_and_fixes.md |
 | DEC-062 | [Actor kinds that no match creates](verdicts_and_fixes.md#dec-062-actor-kinds-that-no-match-creates) | Dropped | verdicts_and_fixes.md |
@@ -144,8 +152,8 @@ Totals: **301** decisions: 148 Open, 126 Resolved, 27 Dropped.
 | DEC-113 | [Abductor wander-target area](verdicts_and_fixes.md#dec-113-abductor-wander-target-area) | Open | verdicts_and_fixes.md |
 | DEC-114 | [Position of score-weighted crate drops](verdicts_and_fixes.md#dec-114-position-of-score-weighted-crate-drops) | Open | verdicts_and_fixes.md |
 | DEC-115 | [Fixed match research levels](verdicts_and_fixes.md#dec-115-fixed-match-research-levels) | Open | verdicts_and_fixes.md |
-| DEC-116 | [Supply crates during the grace period](verdicts_and_fixes.md#dec-116-supply-crates-during-the-grace-period) | Resolved | verdicts_and_fixes.md |
-| DEC-117 | [Confirmed reference facts](verdicts_and_fixes.md#dec-117-confirmed-reference-facts) | Resolved | verdicts_and_fixes.md |
+| DEC-116 | [Supply crates during the grace period](verdicts_and_fixes.md#dec-116-supply-crates-during-the-grace-period) | Open | verdicts_and_fixes.md |
+| DEC-117 | [Reference rules: Strike team grenades, silent Solar Array changes, structure advance and team unit lists](verdicts_and_fixes.md#dec-117-reference-rules-strike-team-grenades-silent-solar-array-changes-structure-advance-and-team-unit-lists) | Resolved | verdicts_and_fixes.md |
 | DEC-118 | [The seasonal state is decided once per match](verdicts_and_fixes.md#dec-118-the-seasonal-state-is-decided-once-per-match) | Resolved | verdicts_and_fixes.md |
 | DEC-119 | [Simulation code never issues player commands](verdicts_and_fixes.md#dec-119-simulation-code-never-issues-player-commands) | Resolved | verdicts_and_fixes.md |
 | DEC-120 | [Map values: absent, zero and unlimited are distinct](verdicts_and_fixes_2.md#dec-120-map-values-absent-zero-and-unlimited-are-distinct) | Resolved | verdicts_and_fixes_2.md |
@@ -191,6 +199,7 @@ Totals: **301** decisions: 148 Open, 126 Resolved, 27 Dropped.
 | DEC-264 | [What runs while game speed is 0](simulation_gap_rules.md#dec-264-what-runs-while-game-speed-is-0) | Open | simulation_gap_rules.md |
 | DEC-265 | [Real duration of the speed-crate holds](simulation_gap_rules.md#dec-265-real-duration-of-the-speed-crate-holds) | Open | simulation_gap_rules.md |
 | DEC-266 | [Decorative objects in the simulated pools](simulation_gap_rules.md#dec-266-decorative-objects-in-the-simulated-pools) | Open | simulation_gap_rules.md |
+| DEC-267 | [Barrier Emitter line in the obstacle grid](simulation_gap_rules.md#dec-267-barrier-emitter-line-in-the-obstacle-grid) | Open | simulation_gap_rules.md |
 | DEC-300 | [Return of teams wiped out in sudden death](open_questions.md#dec-300-return-of-teams-wiped-out-in-sudden-death) | Open | open_questions.md |
 | DEC-301 | [Solar Array knock-out in Siege](open_questions.md#dec-301-solar-array-knock-out-in-siege) | Open | open_questions.md |
 | DEC-302 | [Transport unload order over sea](open_questions.md#dec-302-transport-unload-order-over-sea) | Open | open_questions.md |
@@ -222,21 +231,21 @@ Totals: **301** decisions: 148 Open, 126 Resolved, 27 Dropped.
 | DEC-328 | [Saturated team colours on effect bubbles](open_questions.md#dec-328-saturated-team-colours-on-effect-bubbles) | Open | open_questions.md |
 | DEC-329 | [Assets of objects spawned only at run time](open_questions.md#dec-329-assets-of-objects-spawned-only-at-run-time) | Open | open_questions.md |
 | DEC-330 | [Mesh sockets referenced only by data](open_questions.md#dec-330-mesh-sockets-referenced-only-by-data) | Open | open_questions.md |
-| DEC-331 | [Confirmed facts: the convert tag and the victory celebration](open_questions.md#dec-331-confirmed-facts-the-convert-tag-and-the-victory-celebration) | Resolved | open_questions.md |
-| DEC-332 | [Other editions, packaged archives and evidence questions](open_questions.md#dec-332-other-editions-packaged-archives-and-evidence-questions) | Dropped | open_questions.md |
-| DEC-333 | [Trial-edition gating and credential files](open_questions.md#dec-333-trial-edition-gating-and-credential-files) | Dropped | open_questions.md |
+| DEC-331 | [Reference rules: the convert tag and the victory celebration](open_questions.md#dec-331-reference-rules-the-convert-tag-and-the-victory-celebration) | Resolved | open_questions.md |
+| DEC-332 | [Content that no reference match uses](open_questions.md#dec-332-content-that-no-reference-match-uses) | Dropped | open_questions.md |
+| DEC-333 | [Entitlement and edition gating](open_questions.md#dec-333-entitlement-and-edition-gating) | Dropped | open_questions.md |
 | DEC-334 | [Development, test and benchmark maps](open_questions.md#dec-334-development-test-and-benchmark-maps) | Dropped | open_questions.md |
 | DEC-335 | [Online-service listing fields](open_questions.md#dec-335-online-service-listing-fields) | Dropped | open_questions.md |
-| DEC-336 | [Second graphics back end](open_questions.md#dec-336-second-graphics-back-end) | Dropped | open_questions.md |
+| DEC-336 | [Other renderers](open_questions.md#dec-336-other-renderers) | Dropped | open_questions.md |
 | DEC-337 | [Graphics-driver, cursor and glyph-atlas behaviour](open_questions.md#dec-337-graphics-driver-cursor-and-glyph-atlas-behaviour) | Dropped | open_questions.md |
 | DEC-338 | [Input-stack implementation details](open_questions.md#dec-338-input-stack-implementation-details) | Dropped | open_questions.md |
-| DEC-339 | [Audio driver, software mixer and effect-processing details](open_questions.md#dec-339-audio-driver-software-mixer-and-effect-processing-details) | Dropped | open_questions.md |
+| DEC-339 | [Audio device details](open_questions.md#dec-339-audio-device-details) | Dropped | open_questions.md |
 | DEC-340 | [Data formats, archives and production tools](open_questions.md#dec-340-data-formats-archives-and-production-tools) | Dropped | open_questions.md |
-| DEC-341 | [Runtime-library, compiler and debug-build details](open_questions.md#dec-341-runtime-library-compiler-and-debug-build-details) | Dropped | open_questions.md |
-| DEC-342 | [Provenance of reference art and audio](open_questions.md#dec-342-provenance-of-reference-art-and-audio) | Dropped | open_questions.md |
+| DEC-341 | [Toolchain and debug-build details](open_questions.md#dec-341-toolchain-and-debug-build-details) | Dropped | open_questions.md |
+| DEC-342 | [Reference art and audio](open_questions.md#dec-342-reference-art-and-audio) | Dropped | open_questions.md |
 | DEC-450 | [Start positions and the colours of bot and unused slots](units_buildings_crates_economy.md#dec-450-start-positions-and-the-colours-of-bot-and-unused-slots) | Open | units_buildings_crates_economy.md |
 | DEC-451 | [Co-op friendship of slots outside the two alliances](units_buildings_crates_economy.md#dec-451-co-op-friendship-of-slots-outside-the-two-alliances) | Open | units_buildings_crates_economy.md |
-| DEC-452 | [Comeback Bonus power pool and the map's excluded outcomes](units_buildings_crates_economy.md#dec-452-comeback-bonus-power-pool-and-the-maps-excluded-outcomes) | Open | units_buildings_crates_economy.md |
+| DEC-452 | [Comeback Bonus power pool and the map's excluded outcomes](units_buildings_crates_economy.md#dec-452-comeback-bonus-power-pool-and-the-maps-excluded-outcomes) | Resolved | units_buildings_crates_economy.md |
 | DEC-453 | [Population-cap enforcement points and uncapped sources](units_buildings_crates_economy.md#dec-453-population-cap-enforcement-points-and-uncapped-sources) | Open | units_buildings_crates_economy.md |
 | DEC-454 | [Population Limiter as a fallback cap](units_buildings_crates_economy.md#dec-454-population-limiter-as-a-fallback-cap) | Open | units_buildings_crates_economy.md |
 | DEC-455 | [Same-tick advance of objects created or handed over during a tick](units_buildings_crates_economy.md#dec-455-same-tick-advance-of-objects-created-or-handed-over-during-a-tick) | Open | units_buildings_crates_economy.md |
@@ -304,7 +313,7 @@ Totals: **301** decisions: 148 Open, 126 Resolved, 27 Dropped.
 | DEC-866 | [Population-cap values of a map](gameplay_gap_rules.md#dec-866-population-cap-values-of-a-map) | Open | gameplay_gap_rules.md |
 | DEC-867 | [Closed player slots](gameplay_gap_rules.md#dec-867-closed-player-slots) | Open | gameplay_gap_rules.md |
 | DEC-868 | [Front-end reference quirks](gameplay_gap_rules.md#dec-868-front-end-reference-quirks) | Open | gameplay_gap_rules.md |
-| DEC-869 | [Reference sound options without a Species counterpart](gameplay_gap_rules.md#dec-869-reference-sound-options-without-a-species-counterpart) | Open | gameplay_gap_rules.md |
+| DEC-869 | [Reference sound options without a Species counterpart](gameplay_gap_rules.md#dec-869-reference-sound-options-without-a-species-counterpart) | Dropped | gameplay_gap_rules.md |
 | DEC-870 | [Tutorial director details](gameplay_gap_rules.md#dec-870-tutorial-director-details) | Open | gameplay_gap_rules.md |
 | DEC-871 | [Essence orb break operation](gameplay_gap_rules.md#dec-871-essence-orb-break-operation) | Dropped | gameplay_gap_rules.md |
 | DEC-950 | [Keyboard operation of the menus](engine_gap_rules.md#dec-950-keyboard-operation-of-the-menus) | Resolved | engine_gap_rules.md |
@@ -316,10 +325,10 @@ Totals: **301** decisions: 148 Open, 126 Resolved, 27 Dropped.
 | DEC-956 | [Pick-ray pixel convention](engine_gap_rules.md#dec-956-pick-ray-pixel-convention) | Open | engine_gap_rules.md |
 | DEC-957 | [Every draw sets its complete pipeline state](engine_gap_rules.md#dec-957-every-draw-sets-its-complete-pipeline-state) | Resolved | engine_gap_rules.md |
 | DEC-958 | [Renderer reference looks kept as defaults](engine_gap_rules.md#dec-958-renderer-reference-looks-kept-as-defaults) | Open | engine_gap_rules.md |
-| DEC-959 | [Renderer values the reference does not record](engine_gap_rules.md#dec-959-renderer-values-the-reference-does-not-record) | Open | engine_gap_rules.md |
+| DEC-959 | [Renderer defaults for the burn layer, pulse clocks, egg shadow, route spots and countdown screens](engine_gap_rules.md#dec-959-renderer-defaults-for-the-burn-layer-pulse-clocks-egg-shadow-route-spots-and-countdown-screens) | Open | engine_gap_rules.md |
 | DEC-960 | [Effects advance in fixed steps](engine_gap_rules.md#dec-960-effects-advance-in-fixed-steps) | Resolved | engine_gap_rules.md |
 | DEC-961 | [Explainer panels lay out again on every screen change](engine_gap_rules.md#dec-961-explainer-panels-lay-out-again-on-every-screen-change) | Resolved | engine_gap_rules.md |
-| DEC-962 | [Effect values the reference does not record](engine_gap_rules.md#dec-962-effect-values-the-reference-does-not-record) | Open | engine_gap_rules.md |
+| DEC-962 | [Species effect defaults for emitters, shard edges and the eaten-orb display](engine_gap_rules.md#dec-962-species-effect-defaults-for-emitters-shard-edges-and-the-eaten-orb-display) | Open | engine_gap_rules.md |
 | DEC-963 | [Animation and VFX reference looks kept as defaults](engine_gap_rules.md#dec-963-animation-and-vfx-reference-looks-kept-as-defaults) | Open | engine_gap_rules.md |
 | DEC-964 | [Accessibility limits for camera shake and flashes](engine_gap_rules.md#dec-964-accessibility-limits-for-camera-shake-and-flashes) | Open | engine_gap_rules.md |
 | DEC-965 | [Audio engine reference behaviours kept as defaults](engine_gap_rules.md#dec-965-audio-engine-reference-behaviours-kept-as-defaults) | Open | engine_gap_rules.md |

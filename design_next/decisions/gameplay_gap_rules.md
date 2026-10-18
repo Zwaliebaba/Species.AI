@@ -27,7 +27,7 @@ This file records the gameplay rules that the reference documents had to choose 
 | [DEC-866](#dec-866-population-cap-values-of-a-map) | Population-cap values of a map | Open | R-MAP |
 | [DEC-867](#dec-867-closed-player-slots) | Closed player slots | Open | R-META, R-MAP |
 | [DEC-868](#dec-868-front-end-reference-quirks) | Front-end reference quirks | Open | R-META, R-MAP |
-| [DEC-869](#dec-869-reference-sound-options-without-a-species-counterpart) | Reference sound options without a Species counterpart | Open | R-META |
+| [DEC-869](#dec-869-reference-sound-options-without-a-species-counterpart) | Reference sound options without a Species counterpart | Dropped | R-META |
 | [DEC-870](#dec-870-tutorial-director-details) | Tutorial director details | Open | R-TUT |
 | [DEC-871](#dec-871-essence-orb-break-operation) | Essence orb break operation | Dropped | R-UNIT, VFX |
 
@@ -58,7 +58,7 @@ This file records the gameplay rules that the reference documents had to choose 
 ### DEC-852 Game-speed divisors in Worker rules
 - Status: Open
 - Affects: reference/02_units/README.md (R-UNIT-007), reference/02_units/worker.md (R-UNIT-079, R-UNIT-082, R-UNIT-103)
-- Specified behaviour: Three Worker rules keep the reference formulas that read the game speed s of the tick clock: the fire roll outside a formation, `NextUint` mod ⌊a ÷ s⌋ with a = 10, or 7 with a Shield, or 3 for a Visitor faction Worker (R-UNIT-103); the burning roll, `NextUnit(10)` < 2.0 ÷ s (R-UNIT-079); and the carry lift radius, 20 wu × s × the speed ratio (R-UNIT-082). Game speed is tick scheduling (DEC-039), so every tick is a normal tick and a game second always holds 10 ticks. Keeping the division by s therefore makes a Worker's attack attempts per game second proportional to s and its burning damage per game second proportional to 1 ÷ s: at speed 2 a Worker makes about 2 attempts and loses about 2 health per game second, against 1 attempt and 4 health at speed 1. No division is evaluated at s = 0 (DEC-653).
+- Specified behaviour: Three Worker rules keep the reference formulas that read the game speed s of the tick clock: the fire roll outside a formation, `NextUint` mod ⌊a ÷ s⌋ with a = 10, or 7 with a Shield, or 3 for a Visitor faction Worker (R-UNIT-103); the burning roll, `NextUnit(10)` < 2.0 ÷ s (R-UNIT-079); and the carry lift radius, 20 wu × s × the speed ratio (R-UNIT-082). Game speed is tick scheduling (DEC-039), so every tick is a normal tick and a game second always holds 1 ÷ `ref.sim.tick_period` (10) ticks. Keeping the division by s therefore makes a Worker's attack attempts per game second proportional to s and its burning damage per game second proportional to 1 ÷ s: at speed 2 a Worker makes about 2 attempts and loses about 2 health per game second, against 1 attempt and 4 health at speed 1. No division is evaluated at s = 0 (DEC-653).
 - Options: A — keep the formulas; B — drop the division by s, so that every speed gives about 1 attempt and 4 health per game second and a lift radius of 20 wu; C — rescale each formula to reproduce the reference rates at every speed: about 1 attempt per game second, and 4 ÷ s² health per game second.
 - Recommendation: B. Every other rule sees the same tick arithmetic at every speed (DEC-039, DEC-092); B keeps the reference attack rate, and with A a Time Rush makes Workers fight harder and burn more slowly. Choose C only if the reference burning rate under Time Dilation and Time Rush is wanted exactly.
 - Decide by: design phase
@@ -123,7 +123,7 @@ This file records the gameplay rules that the reference documents had to choose 
   2. the Abductor's wander search: 2000 attempts (`ref.unit.abductor.wander_attempts`), then the cell fallback (R-UNIT-706);
   3. every placement loop of a bot Power handler: 100 drawn points (`ref.bot.power.placement_attempts`); with no valid point the handler places nothing in that cycle and the Power stays Waiting (R-BOT-105, R-BOT-117).
 
-  The caps of items 1 and 2 are sized from the lowest acceptance rates that DEC-014 states, 6.3 % of landing draws and 0.76 % of wander draws, so that a search falls back less than once in a million searches; the cap of item 3 equals the cap of the reference's own random link selection.
+  The caps of items 1 and 2 are sized for acceptance rates as low as 6.3 % of landing draws and 0.76 % of wander draws, so that such a search falls back less than once in a million searches; the cap of item 3 equals the attempt cap of the bots' random link selection.
 - Options: A — these caps and fallbacks; B — larger caps.
 - Recommendation: Resolved: the caps apply DEC-014. They leave the outcome distribution of every valid map unchanged for practical purposes and bound the work of each search.
 
@@ -146,7 +146,7 @@ This file records the gameplay rules that the reference documents had to choose 
 - Specified behaviour: Where the reference gives a duration without the arithmetic of its countdown, the documents fix these tick counts (DEC-002; the countdown conversion of the numeric model is DEC-241 item 3):
   1. **Supply crate opening.** Progress is an integer number of units, one per counted Worker per tick and at most 50 per tick, and a crate opens on the first tick on which its progress exceeds 2500 units: after ⌊2500 ÷ min(n, 50)⌋ + 1 ticks of an unbroken majority of n Workers, which is 51 ticks at 50 or more. For 4 and 20 Workers this gives 626 and 126 ticks, one tick later than a floating-point accumulation of the same rate (R-CRATE-115).
   2. **Neutral crate life.** A Supply crate on the ground with no owner expires after 600 ticks, its nominal 60 s, the count of a 60 s countdown kept in double precision (R-CRATE-119). A single-precision countdown of 60 s gives 601 ticks, the reference count of a Strike team's life (R-UNIT-338).
-  3. **Shockwave ring.** A ring of size s seconds is active for A = ⌈10 × s⌉ − 1 ticks (R-CRATE-470). For a size that is a whole number of tenths, such as the 1.0 s ring of a Transport's death explosion, this gives 9 ticks where a double countdown gives 10.
+  3. **Shockwave ring.** A ring of size s seconds is active for A = ⌈s ÷ `ref.sim.tick_period`⌉ − 1 ticks (R-CRATE-470). For a size that is a whole number of tenths, such as the 1.0 s ring of a Transport's death explosion, this gives 9 ticks where a double countdown gives 10.
   4. **Turret hosing.** A turret keeps running its fire step at its last aim point for 10 ticks after the last tick with a target (R-BLDG-415).
   5. **Multi-round Siege.** The fade-out starts at 10 ticks of victory delay left, and the next-round countdown shows below 110 ticks of delay left (R-MODE-362, R-MODE-372); a single-round Siege reaches neither (DEC-066).
 - Options: A — the tick counts as stated; B — derive each count again from a replay of the countdown arithmetic of DEC-241 item 3.
@@ -265,12 +265,11 @@ This file records the gameplay rules that the reference documents had to choose 
 - Decide by: design phase
 
 ### DEC-869 Reference sound options without a Species counterpart
-- Status: Open
+- Status: Dropped
 - Affects: reference/09_front_end_and_match_flow/options_localisation_and_hooks.md (R-META-429, R-META-430, R-META-431)
-- Specified behaviour: The sound options page keeps three reference options whose subject the Species audio engine fixes: the audio output list, which offers exactly one choice, the platform back end (R-META-430, ADR-022); the mixing rate, with the choices 11 025, 22 050 and 44 100 Hz, while the engine runs at one fixed rate (R-META-431, ADR-025); and the number of sound voices, while the engine has a fixed budget of 64 real voices (R-META-429, DEC-570).
-- Options: A — keep the three options as the reference offers them; B — drop them from the Species sound page, which then holds the volume sliders of DEC-570 and the swap of left and right.
-- Recommendation: B. An option whose choices the engine ignores, or that offers a single choice, misleads the player; DEC-100 already records that the mixing rate has no Species equivalent.
-- Decide by: design phase
+- Specified behaviour: Not specified. The Species sound options page offers the master and bus volumes and the swap of left and right. The output device, the mixing rate and the voice count are fixed by the audio engine (ADR-022, ADR-025, DEC-570), so no page offers them (R-META-429).
+- Options: none.
+- Recommendation: Dropped: no Species setting changes the audio device, its mixing rate or its voice count (DEC-100).
 
 ## 8 Tutorial
 
@@ -291,6 +290,6 @@ This file records the gameplay rules that the reference documents had to choose 
 ### DEC-871 Essence orb break operation
 - Status: Dropped
 - Affects: reference/02_units/essence_orbs.md (R-UNIT-308), architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md (VFX-124)
-- Specified behaviour: Not specified. An Essence orb has a broken marker, which Collectors and Builders test and whose presentation is defined (R-UNIT-308, VFX-124), but no rule of a match sets it; the break operation that would set it is outside the reference.
+- Specified behaviour: Not specified. No rule of a match breaks an Essence orb, so an orb carries no broken marker and no Collector or Builder search tests one (R-UNIT-308, removed).
 - Options: none.
 - Recommendation: Dropped: no match breaks an orb, so the marker stays clear in every match.

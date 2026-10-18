@@ -46,7 +46,7 @@ It also specifies how the reference advances a match in time:
 
 **R-SIM-511** (MUST) Each update slice *s* runs, in this order:
 
-1. the world step of slice *s* (`MatchWorld`), and then the particle-pool step of slice *s* (`ParticlePool`); both are skipped while the world is held (§2.6);
+1. the world step of slice *s* (`MatchWorld`), and then the particle-pool step of slice *s* (`ParticlePool`); both are skipped while the world is held (§2.6), except that the Supply crate drop rule of the world step still runs while the world is held for the start of the match (R-SIM-550);
 2. in slice `ref.sim.slice.match_rules` (slice 8, counting from 0) only: the match-rules update (`MatchRules`). It runs also while the world is held, which is how the grace countdown and the end of the start hold run at game speed 0.
 
 **R-SIM-512** (MUST) The world step of a slice runs five sub-steps in this fixed serial order: 0 teams (each team's actors, actor groups and Power slots), 1 weapons (laser bolts and effects), 2 structures, 3 Essence orbs, 4 sky. The sub-steps never run concurrently, and their observable order is this serial order (DEC-224). The order inside each sub-step is [04](04_containers_and_update_order.md).
@@ -165,15 +165,15 @@ Every request comes from simulation code or from a sequenced command, so it happ
 
 **R-SIM-548** (MUST) Game speed is **tick scheduling** (DEC-039). Every world tick has the length `ref.sim.tick_period` and the same arithmetic at every speed; game speed sets how many world ticks run per unit of real time, so that over any interval of real time the number of world ticks run equals the integral of *s* over the interval divided by `ref.sim.tick_period`, with any fraction carried to the next interval and never dropped. Within a command frame's interval *s* is the speed that the frame's tick-clock update has set (R-SIM-541 step 2). Every per-tick probability, growth and rate, including the hold countdown of R-SIM-541 step 4, therefore scales with game speed (DEC-092).
 
-**R-SIM-549** (MUST) Under tick scheduling, command frames (R-SIM-510), the speed blend (step 2 of R-SIM-541) and the match-rules update while the world is held (R-SIM-511) keep the real-time cadence of one per `ref.sim.tick_period` of real time, so that the speed ramps of R-SIM-554 and R-SIM-555 keep their real-time lengths and a held match can resume; match time and the hold countdown (steps 3 and 4 of R-SIM-541) count the world ticks (R-SIM-548). The world ticks are scheduled within that cadence; the exact scheduling and rounding rule is decided with DEC-225 (see DEC-264).
+**R-SIM-549** (MUST) Under tick scheduling, command frames (R-SIM-510), the speed blend (step 2 of R-SIM-541), the match-rules update while the world is held (R-SIM-511) and the Supply crate drop rule while it is held for the start (R-CRATE-102) keep the real-time cadence of one per `ref.sim.tick_period` of real time, so that the speed ramps of R-SIM-554 and R-SIM-555 keep their real-time lengths and a held match can resume; match time and the hold countdown (steps 3 and 4 of R-SIM-541) count the world ticks (R-SIM-548). The world ticks are scheduled within that cadence; the exact scheduling and rounding rule is decided with DEC-225 (see DEC-264).
 
 ### 2.6 The held world, the start hold, pause and the end of a match
 
 **R-SIM-550** (MUST) The world is **held** while a match exists and the tick clock reports paused (R-SIM-544). While the world is held:
 
-- the world step and the particle-pool step do not run, and match time does not advance;
+- the world step and the particle-pool step do not run, and match time does not advance, so every rule of the world step waits for the first world tick (DEC-039, DEC-092), the drop rule of the third item excepted;
 - the extrapolation time is 0 (R-SIM-560), and the presentation frame time is frozen (R-SIM-570);
-- command frames are still taken, the tick clock still blends the speed, and the match-rules update still runs in slice `ref.sim.slice.match_rules`.
+- command frames are still taken, the tick clock still blends the speed, and the match-rules update still runs in slice `ref.sim.slice.match_rules`; while the world is held for the start of the match, from match start to its first world tick (R-SIM-551, R-SIM-552), the Supply crate drop rule also runs, in slice `ref.sim.slice.supply_crates` ([reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) R-CRATE-102, DEC-116).
 
 Whether the world is held depends on game speed alone, never on local or transport state ([07](07_randomness_and_integrity.md)).
 
@@ -512,6 +512,7 @@ Keys cited here and defined elsewhere: `ref.mode.mode_second` in [reference/01](
 
 - DEC-003 — length of the mode second after playtest (default: 11 ticks).
 - DEC-051 — tutorials and presentation timelines (default: where presentation timelines are adopted, a running timeline advances just before the camera step of R-SIM-581).
+- DEC-116 — Supply crates during the grace period (default: the drop rule runs while the world is held for the start of the match, R-SIM-550).
 - DEC-200 — replication and authority model (default: none specified; the reference tick source is a host-side command sequencer).
 - DEC-203 — input timing, coalescing and latency (default: the reference send period and pacing of R-SIM-531 and R-SIM-584).
 - DEC-220 — process roles and the headless server (default: the tick source in the host's client process).
@@ -520,7 +521,7 @@ Keys cited here and defined elsewhere: `ref.mode.mode_second` in [reference/01](
 - DEC-225 — frame loop, simulation pacing and catch-up, and the scheduling rule of R-SIM-549 (default: R-SIM-520 to R-SIM-535).
 - DEC-227 — simulation tick rate (default: `ref.sim.tick_period`, 10 ticks per second).
 - DEC-240 — simulation numeric model (default: the reference arithmetic of the tick clock).
-- DEC-264 — what runs while game speed is 0 (default: the real-time cadence of R-SIM-549 for command frames, the speed blend and the held-world rules update).
+- DEC-264 — what runs while game speed is 0 (default: the real-time cadence of R-SIM-549 for command frames, the speed blend, the held-world rules update and, during the start hold, the Supply crate drop rule).
 - DEC-265 — real duration of the speed-crate holds (default: the hold counts world ticks, R-SIM-541 step 4 and R-SIM-557).
 - DEC-455 — same-tick advance of objects created during a tick (default: R-SIM-516).
 

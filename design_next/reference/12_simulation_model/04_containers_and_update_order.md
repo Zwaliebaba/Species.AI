@@ -133,7 +133,7 @@ Table 2.2-A Simulation containers.
 6. **sky**: in slice `ref.sim.slice.sky` only, the sky offset advances; it is cosmetic and makes no draw;
 7. in slice `ref.sim.slice.map_effects` only, the map-effect spawners in this order: snow, when the map has the snow effect; dust storm, when the map has it; lightning, when the map has it; then snow again when the seasonal theme is active (§2.8);
 8. in slice `ref.sim.grid_cache.evict_slice` only, the actor grid cache evicts its expired entries ([05](05_space_routing_and_physics.md));
-9. in slice `ref.sim.slice.supply_crates` only, the Supply crate drops ([crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md)); then the Spawn Surge timer and the Frenzy timer each count down by one tick while above 0.
+9. in slice `ref.sim.slice.supply_crates` only, the Supply crate drops ([crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md)); then the Spawn Surge timer and the Frenzy timer each count down by one tick while above 0. While the world is held for the start of the match, the drop rule of this step runs alone, once per command frame, and the timers do not count ([01](01_tick_timing_and_main_loop.md) R-SIM-550; DEC-116).
 
 **R-SIM-219** (MUST) Steps 2 to 6 of R-SIM-218 run serially, in that order, never concurrently: they share the simulation generator, the actor grid, the structure pool, the object serial counter and the query results. A Species implementation that runs simulation work in parallel reproduces this observable order or replaces it explicitly; the threading model is DEC-224, and the tick rate that this order runs at is DEC-227.
 
@@ -438,5 +438,6 @@ The slice keys `ref.sim.slice.power_slots`, `ref.sim.slice.sky`, `ref.sim.slice.
 - DEC-227 — simulation tick rate.
 - DEC-223 — world, region and match state ownership.
 - DEC-304 — Spawn Surge request count.
+- DEC-116 — Supply crates during the grace period: the drop rule runs while the world is held for the start (R-SIM-218 step 9).
 - DEC-651 — lifetime of simulation routes.
 - Resolved and applied here: DEC-002, DEC-004, DEC-006, DEC-007, DEC-008, DEC-013, DEC-014, DEC-016, DEC-028, DEC-087, DEC-095, DEC-103, DEC-117, DEC-118, DEC-260, DEC-650, DEC-652, DEC-653.

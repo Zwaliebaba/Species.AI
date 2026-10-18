@@ -98,9 +98,13 @@ public:
   void PopScissor();
 };
 
+class GpuResourceFactory; // the renderer's (renderer/README.md §2, ADR-078)
+
 class GlyphRenderer // ADR-034
 {
 public:
+  explicit GlyphRenderer(GpuResourceFactory& _factory); // creates the atlas pages through the factory (UI-198)
+  void OnDeviceRebuilt();                               // clears the glyph map; glyphs are rasterised again on first use
   float MeasureWidth(std::u8string_view _text, const TextStyle& _style) const; // UI-200
   void Draw(DrawContext& _out, PointF _drawPoint, std::u8string_view _text, const TextStyle& _style, TextAlign _align);
   void SetLanguage(LanguageTag _language);                  // UI-234
@@ -136,7 +140,7 @@ public:
 | font-role map | per language and role: the face and its fallback chain | content; replaced on a language switch | data schemas; assets `font.ui.*` |
 | string table | per language (BCP 47 tag): id → plain text, keyboard-and-mouse variant, gamepad variant, after markup expansion | content; one generation per load, kept while viewed (UI-239) | data_schemas; assets `strings.*` |
 | UI scale state | DPI scale, UI scale, text scale | the UI core; process | settings (DEC-100) |
-| glyph cache | atlas pages and the glyph map | the glyph renderer; process; rebuilt after device removal | ADR-034 |
+| glyph cache | atlas pages and the glyph map | the glyph renderer; process; the pages are `Engine::GpuResourceFactory` textures, rebuilt after a device rebuild | ADR-034, ADR-078 |
 
 ## 4 Behaviour and algorithms
 
@@ -341,7 +345,7 @@ There are no bitmap font atlases ([reference/09](../../../reference/09_front_end
 
 **UI-197** (MUST) **Horizontal scale.** Glyphs are drawn narrower or wider than their height by a per-language horizontal scale. In every language written in Latin or Cyrillic, every character is drawn at `ui.text.horizontal_scale_latin` (0.6). In Japanese and Korean, characters at or above `ui.text.cjk_first_code_point` (U+3000) are drawn at `ui.text.horizontal_scale_cjk` (1.0), and characters below it keep 0.6, so Latin characters stay condensed inside CJK text ([reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-475). The scale is a horizontal transform of the glyph run, applied when the run is laid out and when it is rasterised, so advances and glyph shapes agree (ADR-034). A glyph's advance is the font's shaped advance at size s × the horizontal scale × the role's spacing factor.
 
-**UI-198** (MUST) The glyph cache follows ADR-034: text is laid out and shaped by DirectWrite; each glyph not yet cached is rasterised in grayscale at its final pixel size into an `R8_UNORM` atlas page through the upload ring; the cache key is the font face, the glyph index, the final pixel size, the horizontal scale and the sub-pixel x offset quantised to 1 ÷ `ui.glyph.subpixel_steps` (4) of a pixel. Atlas pages are `ui.glyph.page_size` (1024 × 1024 px) and at most `ui.glyph.page_count` (8) exist; when the cache is full, the least recently used page is cleared and reused. The common characters of the current language are rasterised during loading (R-META-479). Atlas pages are never block-compressed, and are rebuilt rather than restored after device removal (ADR-017, ADR-008).
+**UI-198** (MUST) The glyph cache follows ADR-034: text is laid out and shaped by DirectWrite; each glyph not yet cached is rasterised in grayscale at its final pixel size and written into an `R8_UNORM` atlas page through the upload ring, by the UI pass that imports the page by name in the frame graph (ADR-078); the cache key is the font face, the glyph index, the final pixel size, the horizontal scale and the sub-pixel x offset quantised to 1 ÷ `ui.glyph.subpixel_steps` (4) of a pixel. Atlas pages are `ui.glyph.page_size` (1024 × 1024 px) and at most `ui.glyph.page_count` (8) exist; when the cache is full, the least recently used page is cleared and reused. The common characters of the current language are rasterised during loading (R-META-479). The atlas pages are textures that the glyph cache creates once, when the UI framework starts, through the renderer's `Engine::GpuResourceFactory` ([renderer](../renderer/README.md) §2, ADR-078), and releases through it at shutdown. Atlas pages are never block-compressed. After a device rebuild the factory re-creates the pages empty at the same heap index, and on `DeviceRebuilt` the cache clears its glyph map and rasterises every glyph again on first use, so the pages are rebuilt rather than restored (ADR-078, ADR-017, ADR-008).
 
 **UI-199** (MUST) The faces cover at least: U+0020 to U+00FF (Latin-1), U+0410 to U+044F (Cyrillic) and U+20A0 to U+20AF (currency signs) in all three Latin faces; U+3000 to U+30FF (CJK punctuation and kana) and U+4E00 to U+9EFF (CJK ideographs) in `font.ui.primary_ja`; U+AC00 to U+D7FF (Hangul syllables) in `font.ui.primary_ko` ([asset manifest](../../../assets/asset_manifest.csv)). Every edition carries the currency signs. A content-build check walks every string table of every offered language and fails when a character is not covered by that language's font chain (ADR-034). System fonts are appended to the chain only for player-entered text.
 
@@ -504,7 +508,7 @@ Diagram 4-B — the runtime language switch and the hand-over between string-tab
 | a cycle of embedded string ids, or an over-long text, marker or id | the content build fails | build error with file, line and field | UI-224, UI-225 |
 | a cell whose text overflows with no overflow rule | drawn clipped to its cell | the layout validator lists the cell for each overflowing language | UI-171 |
 | the glyph cache is full | the least recently used page is cleared and reused | counter in the development overlay | UI-198 |
-| device removal | the atlas pages are rebuilt on first use | logged | UI-198 |
+| device removal | the factory re-creates the atlas pages; their glyphs are rasterised again on first use | logged | UI-198 |
 | a palette text token below its contrast minimum | the content build warns for the default palette and fails for the high-contrast palette | build message naming the token | UI-186 |
 | the busiest screen exceeds a budget | nothing changes at run time | the performance test fails | UI-240 |
 
@@ -559,8 +563,8 @@ The UI counts draws, vertices, batches and glyphs rasterised per frame for the d
 3. Whether the new faces are monospaced: the reference glyphs are fixed-advance cells of width size × horizontal scale × spacing factor, and a face with uniform advances reproduces that look; the art brief asks for fixed-width numerals where the HUD counts.
 4. The keyboard defaults of UI-204, and whether Esc should also close front-end pages inside a match's menus.
 5. Whether right-to-left languages are offered; the text stack supports them (UI-202), but the page grid and the widgets are laid out left to right.
-6. Chinese, which the reference code anticipates for the title face but for which no table exists (UI-234).
-7. Cyrillic glyph design: in the reference all three faces carry one and the same Cyrillic glyph set, that of the stylised face, so Cyrillic text looks alike in every role; whether the Species faces share one Cyrillic design is an art-direction choice ([GameAssets](../../../assets/GameAssets.md) §17).
+6. Whether Species adds Chinese is a design-phase language choice; no Chinese string table exists today (UI-234).
+7. Cyrillic glyph design: coverage is [GameAssets](../../../assets/GameAssets.md) §17 (U+0410 to U+044F in all three faces); whether the three faces share one Cyrillic design is an art-direction choice.
 8. The centring of centred and right-aligned 3-D text (UI-194 item 3), which multiplies the CJK and Latin terms instead of adding them, so single-script 3-D labels are drawn left-aligned; whether Species keeps it depends on which world labels it draws (DEC-952).
 
 ## 9 Tuning table

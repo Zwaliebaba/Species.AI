@@ -12,7 +12,13 @@ This document holds the ordered pass table: the single source of truth for the o
 
 **RND-052** (MUST) Every state that a pass uses is a complete, immutable pipeline state. No state leaks from one pass or draw to the next; where an owner document specifies a visible effect that depends on the state an earlier draw left behind, that effect is stated as an explicit state of the later draw.
 
+**RND-053** (MUST) The game layer builds the pass table of every frame type at start-up and registers its record functions: the passes that draw game objects, overlays or the match HUD (passes 6, 7a to 7d, 8, 10a, 10b, 11, 12, 13, 14, 15, 16, 20, 23 and 28, and the loading view's figures of RND-118) take record functions of `Species` code, and the engine passes (the frame constants, camera, clear, sky, terrain, sea, depth copy, final, fade, text-overlay and transition passes) take the engine's own. The engine's frame graph compiles and validates whatever table it is given (ADR-004, §6) and never names a game concept (`AGENTS.md` R9).
+
+**RND-054** (MUST) A record function receives the pass context and the frame's snapshot interface, which is null outside a match. A game-layer recorder reaches the game's snapshot through one adapter of the game layer, which converts `const SceneSnapshot&` to `const PresentationSnapshot&` with `static_cast` and draws nothing when the pointer is null; the cast is always valid because the game layer is the only producer of the snapshot that `FrameInputs::snapshot` carries (RND-018). No engine code reads or casts the snapshot.
+
 ## 2 Interfaces
+
+The interface below is a C++23 declaration sketch, not an implementation. The pass context is the seam between the engine renderer and every recorder, engine or game; game-layer recorders reach the instanced batches through it (`CrowdRenderer` and `MeshRenderer`, [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) §2 and [world_renderers.md](world_renderers.md) §2).
 
 ```cpp
 namespace Engine
@@ -45,9 +51,25 @@ enum class SortRule : std::uint8_t
   BackToFront
 };
 
+struct CatalogKey // a pipeline-state catalogue entry, resolved from its data name ("terrain_inverted") at start-up (ADR-005)
+{
+  std::uint16_t index = 0;
+};
+struct ShaderPermutationId // one compiled permutation of one shader (shaders.md RND-261, RND-263)
+{
+  std::uint16_t shader = 0;      // the shader's row of RND-263
+  std::uint16_t permutation = 0; // 0: the default permutation
+};
+struct RenderTargetFormats
+{
+  DXGI_FORMAT color = DXGI_FORMAT_R8G8B8A8_UNORM; // DXGI_FORMAT_R16G16B16A16_FLOAT for HDR output (RND-063)
+  DXGI_FORMAT depth = DXGI_FORMAT_D32_FLOAT;      // DXGI_FORMAT_UNKNOWN for a pass without depth
+  std::uint32_t sampleCount = 1;                  // ADR-015
+};
+
 struct DepthBiasVariant // RND-219 to RND-221
 {
-  float referenceFactor = 1.0f;
+  float factor = 1.0f; // the bias factor k; 1.0 = no bias
 };
 
 struct PipelineDescriptor // one catalogue entry, ADR-005
@@ -61,6 +83,50 @@ struct PipelineDescriptor // one catalogue entry, ADR-005
   RenderTargetFormats targets;          // SDR or HDR scene format, sample count
 };
 
+struct ResourceAccess // one use of a frame-graph resource by a pass, in the terms of ADR-007
+{
+  std::string_view resource;                                    // its data name in RND-063, "scene_colour"
+  D3D12_BARRIER_SYNC sync = D3D12_BARRIER_SYNC_NONE;            // the synchronisation scope of the use
+  D3D12_BARRIER_ACCESS access = D3D12_BARRIER_ACCESS_NO_ACCESS; // the access of the use
+  D3D12_BARRIER_LAYOUT layout = D3D12_BARRIER_LAYOUT_UNDEFINED; // textures only; a buffer has no layout
+};
+
+struct SettingGate // when a pass runs (RND-050)
+{
+  std::span<const FrameKind> frameKinds;                      // empty: in every frame kind
+  bool (*enabled)(const RenderSettings& _settings) = nullptr; // null: always
+  bool debugBuildsOnly = false;                               // pass 24
+};
+
+struct UploadAllocation // a slice of the frame's upload ring, valid for one frame in flight (ADR-008)
+{
+  std::span<std::byte> bytes;
+  std::uint32_t heapIndex = 0; // a buffer view of the slice in the transient region of the heap (ADR-006)
+};
+
+// What a record function may do inside its pass: set state, write constants and draw. It never issues a barrier,
+// creates a pipeline state or reads the back buffer (RND-051).
+class PassContext
+{
+public:
+  void SetPipeline(CatalogKey _entry);
+  void SetDrawConstants(const DrawConstants& _constants);       // root constants (RND-015, ADR-006)
+  void SetPassConstants(std::span<const std::byte> _constants); // the per-pass constant-buffer view (ADR-006)
+  [[nodiscard]] UploadAllocation Allocate(std::uint32_t _bytes, std::uint32_t _strideBytes);
+  [[nodiscard]] std::uint32_t ResourceIndex(std::string_view _resource) const; // a resource this pass declares
+  void SetGeometry(GpuResourceId _vertices, GpuResourceId _indices);           // static buffers of the factory
+  void Draw(std::uint32_t _vertexCount, std::uint32_t _instanceCount);
+  void DrawIndexed(std::uint32_t _indexCount, std::uint32_t _instanceCount, std::uint32_t _firstIndex);
+  void DrawIndirect(GpuResourceId _arguments, std::uint32_t _maxCount, GpuResourceId _count);
+  void Dispatch(std::uint32_t _groupsX, std::uint32_t _groupsY, std::uint32_t _groupsZ);
+  void SetScissor(const ScissorRect& _rect);
+  [[nodiscard]] const FrameView& View() const;     // view_lighting_and_fog.md §2
+  [[nodiscard]] const FrameInputs& Inputs() const; // README §2
+};
+
+// A pass's recorder: the pass context and the frame's snapshot interface, null outside a match (RND-054).
+using RecordFunction = std::function<void(PassContext& _pass, const SceneSnapshot* _scene)>;
+
 struct PassTableEntry
 {
   std::string_view id; // a data name, "pass_04_terrain", in table order
@@ -69,7 +135,23 @@ struct PassTableEntry
   std::span<const ResourceAccess> writes;
   SortRule sort = SortRule::Unsorted;
   SettingGate enabledBy; // always, or a setting or frame kind
-  RecordFunction record; // the sub-renderer that records the pass
+  RecordFunction record; // the sub-renderer that records the pass (RND-053)
+};
+
+enum class FrameGraphError : std::uint8_t // RND-050, §6
+{
+  UnknownCatalogKey,
+  UnknownResource,
+  ReadBeforeWrite,
+  WrittenNeverRead,
+  MissingRecordFunction
+};
+
+class CompiledFrameGraph // the fixed pass list of one render configuration (RND-120)
+{
+public:
+  void Import(std::string_view _name, GpuResourceId _resource); // a factory resource that passes write (RND-063)
+  void Execute(const FrameInputs& _inputs);                     // records every enabled pass in table order and submits on the direct queue
 };
 
 class FrameGraph
@@ -85,24 +167,21 @@ public:
 
 ### 3.1 The default pipeline state
 
-**RND-055** (MUST) Every catalogue entry starts from this default state and lists only its differences (ADR-005):
+**RND-055** (MUST) Every catalogue entry is a complete pipeline state (ADR-005) built from this default and the differences that its pass lists in the pass table:
 
 | Group | Default |
 |---|---|
-| rasteriser | solid fill; back faces culled; a triangle whose vertices appear counter-clockwise on the render target is front-facing (`FrontCounterClockwise = TRUE`, the winding of the reference meshes and of glTF); depth clip on; no depth bias |
+| rasteriser | solid fill; back faces culled; a triangle whose vertices appear counter-clockwise on the render target is front-facing (`FrontCounterClockwise = TRUE`, the winding of ADR-016 and of glTF); depth clip on; no depth bias |
 | depth | `D32_FLOAT`, reversed Z, test on with `GREATER_EQUAL` (the reversed-Z form of less-or-equal), write on (ADR-016) |
 | stencil | off; no stencil format is created, because no pass uses one |
 | blend | off; when a pass enables blending with the default factors, they are source alpha and one minus source alpha (the `Alpha` blend state) |
 | alpha cut-out | off; when a material enables it, a pixel is kept only if its alpha is greater than `rnd.pso.default_cutout` (0.01) |
-| fog | the per-frame fog parameters are always set (RND-222); fog is off unless the pass enables it |
-| lighting | the two directional lights are always set in the per-frame constants (RND-226); lighting is off unless the pass uses a lit material |
-| texture | none bound; a bound texture is sampled with linear clamp-to-edge filtering through all its mip levels and is multiplied by the vertex colour |
-| shading | flat: every triangle has one facet colour and one facet normal (ADR-020); lit shaders use unit-length normals, except for the centipede segments, whose scaled normals RND-326 keeps (see DEC-958 item 3) |
-| lines and points | no line or point smoothing; lines and points are drawn as quads (ADR-009) |
 | topology | triangle lists; a quad is two triangles with the index pattern 0, 1, 2, 0, 2, 3 |
 | scissor | the full render target |
 
-**RND-056** (MUST) A pass with depth testing off never writes depth, whatever its write setting, so every reference state "test off, write on" maps to `DepthState::None`.
+Fog and light values are shader constants, not pipeline state: the per-frame constants always carry the fog parameters (RND-222) and the two directional lights (RND-226), and each shader applies them as its pass states. Every triangle has one facet colour and one facet normal (ADR-020), lines and points are drawn as quads (ADR-009), and the texture combination of each material is that of its shader ([shaders.md](shaders.md) RND-264 to RND-275).
+
+**RND-056** (MUST) A pass with depth testing off never writes depth: its depth state in the pass table is `DepthState::None` (RND-059, RND-070).
 
 **RND-057** (MUST) The per-frame constants (lights, fog parameters, matrices) are written once at the start of every frame, before any pass records (pass 0 of §4.3).
 
@@ -144,9 +223,9 @@ Every blend result is clamped to [0, 1] per channel as it is written to the SDR 
 | `port_pad` | `MeshLit`, `FOG` | `Opaque` | `Test` | `None` | level | pass 8, structure port pads |
 | `glow_additive_fog` | `UnlitTextured`, `FOG` | `Additive` | `Test` | `None` | level | pass 8: structure lights, port stars, spawn-network glows and beams, trees, Barrier Emitter burn layer |
 | `glow_additive_fog_nodepth` | `UnlitTextured`, `FOG` | `Additive` | `None` | `None` | level | pass 8: burning-tree flames |
-| `alpha_fog` | `UnlitTextured`, `FOG` | `Alpha` | `Test` | `None` | level | pass 8: blighted and burning trees, the countdown screens (RND-176) |
-| `dual_alpha_fog` | `UnlitDualTexture`, `FOG`, `COMBINE` = `REPLACE_THEN_MODULATE` | `Alpha` | `Test` | `None` | level | pass 8: Barrier Emitter curtain |
-| `dual_additive_clip_fog` | `UnlitDualTexture`, `FOG`, `COMBINE` = `MODULATE`, `CLIP_PLANES` = 2 | `Additive` | `Test` | `None` | level | pass 8: Beam Dish beam tubes |
+| `alpha_fog` | `UnlitTextured`, `FOG` | `Alpha` | `Test` | `None` | level | pass 8: blight, corrupted and burning trees, the countdown screens (RND-176) |
+| `dual_alpha_fog` | `UnlitDualTexture`, `FOG`, `COMBINE` = `TEXTURE_COLOR` | `Alpha` | `Test` | `None` | level | pass 8: Barrier Emitter curtain |
+| `dual_additive_clip_fog` | `UnlitDualTexture`, `FOG`, `COMBINE` = `PRODUCT`, `CLIP_PLANES` = 2 | `Additive` | `Test` | `None` | level | pass 8: Beam Dish beam tubes |
 | `line_additive_fog` | `ScreenLine`, `FOG` | `Additive` | `Test` | `None` | level | pass 8: Barrier Emitter top edge, power lines |
 | `fade` | `FullscreenFade` | `Alpha` | `None` | `None` | off | pass 27 |
 | `transition` | `ScreenTransition` | `Alpha` | `None` | `None` | off | pass 34 |
@@ -168,6 +247,7 @@ Every blend result is clamped to [0, 1] per channel as it is written to the SDR 
 | `scene_depth_single` | single-sample `R32_FLOAT` copy of `scene_depth` (the nearest sample); render size | the depth copy after pass 15 | pass 20 |
 | `terrain_heights` | single-channel float; one texel per height sample | terrain load | particles (ADR-010), shadow projection (ADR-009) |
 | `back_buffer` | the swap-chain format (ADR-012) | the present copy | present |
+| imported resources | resources of the GPU resource factory (README RND-009) that passes write within a frame, registered by name with `CompiledFrameGraph::Import`: the particle pool and its lists, the particle parameter buffer and the shard buffers ([particles_shatter_and_screen_effects.md](../animation_and_vfx/particles_shatter_and_screen_effects.md) VFX-205, VFX-228) and the glyph pages ([ui_framework/README.md](../ui_framework/README.md), ADR-034) | their compute and copy passes | their draw passes |
 
 ## 4 Behaviour and algorithms
 
@@ -183,13 +263,13 @@ Every blend result is clamped to [0, 1] per channel as it is written to the SDR 
 
 | Frame type | When | What is drawn between the clear and the overlay passes |
 |---|---|---|
-| match frame | a match world exists, the map editor is not open and the front end is not showing | passes 3 to 15 of §4.3 |
-| main-menu frame | the front end is showing and its first screen has been created | the main-menu branch (RND-077), then passes 16 to 34 |
-| loading-view frame | while a load runs (start-up, match load, preview loads) | its own sequence (RND-118), not `RenderFrame` |
+| match frame (`FrameKind::Match`) | a match world exists, the map editor is not open and the front end is not showing | passes 3 to 15 of §4.3 |
+| main-menu frame (`FrameKind::MainMenu`) | the front end is showing and its first screen has been created | the main-menu branch (RND-077), then passes 16 to 34 |
+| loading-view frame (`FrameKind::Loading`) | while a load runs (start-up, match load, preview loads) | its own sequence (RND-118), not `RenderFrame` |
 | poster tile | a screenshot with a poster resolution above 1 | a match or main-menu frame per tile, with the tile's sub-projection (RND-111) |
-| map-editor frame | the map editor is open | the match frame plus the editor's overlays ([reference/08_maps_and_level_design/map_editor_hooks.md](../../../reference/08_maps_and_level_design/map_editor_hooks.md)); hooks only |
+| map-editor frame (`FrameKind::Editor`) | the map editor is open | the match frame plus the editor's overlays ([reference/08_maps_and_level_design/map_editor_hooks.md](../../../reference/08_maps_and_level_design/map_editor_hooks.md)); hooks only |
 
-**RND-068** (MUST NOT) No other frame type exists: no screen-space pixelation pre-pass, no campaign world view and no start-up intro sequence (see DEC-059, DEC-052).
+**RND-068** (MUST) The frame types of RND-067 are the only frame types (see DEC-059, DEC-052).
 
 ### 4.3 The ordered pass table of a match frame
 
@@ -232,9 +312,9 @@ Every blend result is clamped to [0, 1] per channel as it is written to the SDR 
 | 33 | paused banner | the paused banner (RND-090) | this document | text styles · `None` · `None` | off | unlit | — |
 | 34 | screen transition and present | the captured-frame slide (RND-096), then the present | this document | `transition`: `Alpha` · `None` · `None` | off | unlit | — |
 
-The pass numbers keep gaps where the reference frame has a pass that draws nothing or that the reference library does not specify (RND-071). Passes 16 to 34 draw into `final_image` at the client area's native resolution, after the resolve of `scene_colour` and the final pass (RND-063).
+Pass numbers are stable ids; unused numbers stay unassigned. Passes 16 to 34 draw into `final_image` at the client area's native resolution, after the resolve of `scene_colour` and the final pass (RND-063).
 
-**RND-071** (MUST NOT) The match frame has no pass for: a debug face picture in the sky; synchronisation-error markers; an empty particle pass; a summon-wheel interface; an empty camera-debug pass; the control-hint system, which draws nothing in a match; a start-up intro sequence; a studio logo overlay of the campaign. None of them draws anything in a match (see DEC-059, DEC-052).
+**RND-071** (MUST) Only the passes of the pass table draw; nothing else is drawn in the sky or over the frame (see DEC-059, DEC-052).
 
 **RND-072** (MUST) Passes 3 to 15 are the only passes that write `scene_depth`, and they draw into `scene_colour` at the render size, in table order; the match message of pass 13 is therefore overdrawn by the debris and particles of passes 14 and 15. Passes 16 to 34 never use the hardware depth test, except that the 3-D parts of the world markers in pass 16 (the ground highlights of order markers and the local team's Leader banners, RND-358) and the world cursor's 3-D rings, ghost models and formation dots in pass 20 compare their depth in the pixel shader with `scene_depth_single` at the corresponding scene position and are discarded where they lie behind the scene (RND-309), which keeps their reference order after the UI windows.
 
@@ -256,7 +336,7 @@ The pass numbers keep gaps where the reference frame has a pass that draws nothi
 
 **RND-079** (MUST) Every match, including matches against bots and the tutorials, takes the match path: the match frame of RND-067 is drawn, and the Essence orbs take their match sizes and alphas ([README.md](../animation_and_vfx/README.md)). Launch Race matches force the special lighting for structures (RND-229).
 
-**RND-080** (MUST NOT) No match draws the control-hint system's hints, a start-up sequence, a studio logo of the campaign, a campaign world view, a pixelation effect, a deform effect or a water reflection (see DEC-059, DEC-336, DEC-052).
+**RND-080** (MUST) A match draws the match frame of RND-067 with exactly the passes of RND-070 (see DEC-059, DEC-336, DEC-052).
 
 ### 4.6 Render-time extrapolation
 
@@ -288,7 +368,7 @@ Caption: the fade states; `IsFadeComplete()` is true in `Idle`, where the rate i
 
 **RND-090** (MUST) Pass 33 draws the paused banner only when the match is paused by the pause command (see DEC-038), no UI window is open and the interface is shown. The banner is the text `ui.match.paused`, centred at (render width ÷ 2, `rnd.pause.banner_y` (0.4) × render height), at a font size of `rnd.pause.banner_size` (80) px, drawn first in the outline style (white with alpha 0 under the ink text blend, which darkens) and then in white in the normal text style ([ui_framework/layout_rendering_input_and_localisation.md](../ui_framework/layout_rendering_input_and_localisation.md)).
 
-**RND-091** (MUST) The new text `ui.match.paused` reads "Match paused".
+**RND-091** (MUST) The banner's text is the string `ui.match.paused` of the string table, in the player's language.
 
 **RND-095** (MUST) The screen transition follows the state diagram below. `InitializeTransition(duration, direction)` stores the duration and the direction (+1 or −1) and enters `Waiting`; the next frame's first pass copies the previous frame's `final_image` into `captured_frame` before anything overwrites it, so the transition always shows the last presented frame (see DEC-316). `StartTransition()` records the real clock as the start time and enters `InProgress`. The front end passes the duration of its page changes ([ui_framework/pages_and_screen_recipes.md](../ui_framework/pages_and_screen_recipes.md)).
 
@@ -328,7 +408,7 @@ Both draws use the `transition` entry.
 
 ### 4.9 The loading-view frame
 
-**RND-118** (MUST) Each loading-view frame (`LoadingView`), once the spinner art `sprite.worker.front` is resident, runs: clear `final_image` to black; if this is not the start-up load, no match is loading, the front end is showing and the fade is complete, draw the main-menu sky (RND-077) and the UI windows (pass 19) behind; then, in a 2-D block with the `Alpha` blend and no culling, the studio splash `uitex.studio_splash` during the start-up load and the spinning Worker, as [reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md](../../../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) specifies; then present. The reference loading view has no progress display; whether Species loads report progress is decided by the design phase (see DEC-226).
+**RND-118** (MUST) Each loading-view frame of the loading view (`LoadingView`, `FrameKind::Loading`), once the spinner art `sprite.worker.front` is resident, runs: clear `final_image` to black; if this is not the start-up load, no match is loading, the front end is showing and the fade is complete, draw the main-menu sky (RND-077) and the UI windows (pass 19) behind; then, in a 2-D block with the `Alpha` blend and no culling, the studio splash `uitex.studio_splash` during the start-up load and the spinning Worker, as [reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md](../../../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) specifies; then present. The reference loading view has no progress display; whether Species loads report progress is decided by the design phase (see DEC-226).
 
 **RND-119** (MUST) Loading-view frames are paced by `ref.sim.frame.loading_frame_period` of [reference/12](../../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) (R-SIM-570). Uploads made during a load go through the copy queue and never through the loading-view frame (ADR-008).
 
@@ -371,8 +451,10 @@ Caption: the order of one frame; the main-menu branch replaces the match world, 
 
 | Failure | Behaviour | Requirement |
 |---|---|---|
-| a pass names a catalogue key that does not exist | a build error | RND-061, ADR-005 |
-| a resource is read before it is written, or written and never read | frame-graph compilation fails with a diagnostic naming the pass | RND-050, ADR-004 |
+| a pass names a catalogue key that does not exist | a build error; at run time `FrameGraphError::UnknownCatalogKey` | RND-061, ADR-005 |
+| a pass names a resource that is neither declared (RND-063) nor imported | frame-graph compilation fails with `FrameGraphError::UnknownResource`, naming the pass | RND-063, ADR-004 |
+| a resource is read before it is written, or written and never read | frame-graph compilation fails with `ReadBeforeWrite` or `WrittenNeverRead`, naming the pass | RND-050, ADR-004 |
+| a pass table entry without a record function | frame-graph compilation fails with `MissingRecordFunction`, naming the pass | RND-053 |
 | a screenshot read-back cannot be mapped or encoded | the file is not written; a log entry; the frame continues | RND-112 |
 | `StartTransition()` is called in `Finished` | ignored; a warning in Debug builds | RND-095 |
 
@@ -380,10 +462,12 @@ Every pass carries its marker and timestamps in both configurations (ADR-068); a
 
 ## 7 Acceptance tests
 
+The golden-image tests compare with the default tolerance and on the pinned reference configuration of the test harness ([diagnostics, test and performance](../diagnostics_test_and_performance/README.md) §4.8), unless a test states its own tolerance.
+
 | Test | Kind | Checks | Requirements |
 |---|---|---|---|
 | T1 table and catalogue | build check | every pass key exists in the catalogue and every catalogue entry is used by a pass | RND-050, RND-061, RND-062 |
-| T2 pass order | capture | a PIX capture of a test match frame shows one marker per pass in table order, with the passes of RND-071 absent | RND-065, RND-070, RND-071 |
+| T2 pass order | capture | a PIX capture of a test match frame shows one marker per pass of the pass table, in table order, and no other pass marker | RND-065, RND-070, RND-071 |
 | T3 default state | unit | the generated catalogue's default descriptor equals the table of RND-055; a front-facing test triangle with counter-clockwise vertices on the render target is drawn and its reverse is culled | RND-055, RND-056 |
 | T4 blend mapping | golden-image | each blend state draws a reference patch; a stack of darkening layers in two orders gives the same image; additive layers saturate at 1 | RND-058 |
 | T5 cut-out | golden-image | cards with alpha ramps keep exactly the pixels above 0.01, 0.02 and 0.04 in the three cut-out variants | RND-060 |
@@ -393,6 +477,7 @@ Every pass carries its marker and timestamps in both configurations (ADR-068); a
 | T9 poster | golden-image | a 2 × 2 poster equals four renders of the tile sub-projections placed bottom-up, with opaque alpha | RND-110 to RND-114 |
 | T10 paused banner | golden-image | the banner appears only with the pause command active, the interface shown and no window open | RND-090 |
 | T11 debug-layer run | integration | in a Debug build on a GPU test agent (ADR-070), a full match frame and a main-menu frame render with the debug layer and GPU-based validation and produce no message | RND-051, RND-120 |
+| T12 snapshot seam | unit | a pass table built by a test game layer compiles; its recorders receive the frame's snapshot interface and null outside a match; the adapter of RND-054 draws nothing on null; an entry without a record function fails with `MissingRecordFunction` | RND-053, RND-054 |
 
 ## 8 Open decisions
 

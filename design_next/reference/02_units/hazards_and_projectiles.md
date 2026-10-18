@@ -166,7 +166,7 @@ A meteor is one rock of a meteor shower. It falls in a straight line from high a
 
 **R-UNIT-732** (MUST) A meteor flies in a straight line from its start to its target at its speed stat `ref.unit.meteor.speed` (350 wu/s, R-UNIT-013), each step capped at the remaining distance, so its flight time is distance ÷ 350 (about 5.7 s for a 2 km diagonal). It has radius `ref.hazard.meteor_shower.radius` (20 wu), health `ref.unit.meteor.health`, no world clamp, and nothing targets it.
 
-**R-UNIT-733** (MUST) The first time a meteor comes within `ref.sim.speed.meteor_trigger_distance` (200 wu) of its target, it requests the game speed `ref.sim.speed.meteor_target` (0.4) at the blend rate `ref.sim.speed.meteor_rate` (0.1) with the hold `ref.sim.speed.meteor_hold` (40 ticks) ([reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-556). Each meteor requests once; a later request replaces an earlier one (DEC-039).
+**R-UNIT-733** (MUST) The first time a meteor comes within `ref.sim.speed.meteor_trigger_distance` (200 wu) of its target, it requests the game speed `ref.sim.speed.meteor_target` (0.4) at the blend rate `ref.sim.speed.meteor_rate` (0.1) with the hold `ref.sim.speed.meteor_hold` (40 world ticks) ([reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-556). Each meteor requests once; a later request replaces an earlier one (DEC-039).
 
 **R-UNIT-734** (MUST) A meteor impacts when it is within `ref.hazard.meteor_shower.impact_distance` (10 wu) of its target or below the terrain height, so terrain between its start and its target stops it early. It then raises `meteor.land`, explodes with the explosion primitive (R-SIM-388) at its position with range `ref.hazard.meteor_shower.explosion_range` (50 wu), damage `ref.hazard.meteor_shower.explosion_damage` (100) and its owner's team, and is removed at once. The explosion is not filtered by team: every actor of every team takes the full 100 within 75 wu, falling linearly to 0 at 100 wu, the owner's own units included, and structures within 150 wu take 100 × (1 − d ÷ 150) (DEC-107); kills of other teams count for the owner (R-UNIT-032).
 
@@ -443,7 +443,7 @@ These follow from the keys above, on flat terrain where stated, and are not tuni
 - **AC-HAZ-14** (R-UNIT-726) Given a barrage explosion, then actors 70 wu away take 100 and actors 87.5 wu away take 50, of every team, and every actor it kills adds to the launching team's kill counter, its own included.
 - **AC-HAZ-15** (R-UNIT-723) Given a barrage missile brought to 0 health in flight, then it releases one Essence orb and still explodes at its target.
 - **AC-HAZ-16** (R-UNIT-731, R-UNIT-732) Given 1,000 meteors, then every start height lies in [1500, 2000) wu, every target within ±210 wu of the chosen point, and each flight lasts its straight-line distance ÷ 350 wu/s, rounded up to whole ticks.
-- **AC-HAZ-17** (R-UNIT-733) Given a meteor shower of 6 meteors, then 6 speed requests of (0.4, 0.1, 40 ticks) are made, one per meteor, each on the first tick its meteor is within 200 wu of its target.
+- **AC-HAZ-17** (R-UNIT-733) Given a meteor shower of 6 meteors, then 6 speed requests of (0.4, 0.1, 40 world ticks) are made, one per meteor, each on the first tick its meteor is within 200 wu of its target.
 - **AC-HAZ-18** (R-UNIT-734) Given a meteor whose straight path crosses a hill, then it explodes where it first goes below the terrain; given the owner's Workers 50 wu from an impact, then they take 100.
 
 ## 7 Dependencies

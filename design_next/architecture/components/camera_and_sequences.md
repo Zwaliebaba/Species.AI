@@ -9,9 +9,9 @@ This component is the runtime of each participant's match camera (`MatchCamera`)
 - Distances are in world units (`wu`), in the right-handed, +Y-up world frame of ADR-016; world up is (0, 1, 0).
 - Camera time is in seconds of the camera clock (CAM-030), a presentation clock. No camera duration is a simulation duration, and no simulation rule reads camera time (DEC-009).
 - Fields of view are vertical and in degrees; every other angle is in radians.
-- dt is the camera step of the current advance (CAM-030); lerp(a, b, k) = a + (b − a) × k; normalise(v) = v ÷ |v|; vector products are right-handed.
+- dt is the camera step of the current advance (CAM-030); lerp(a, b, k) = a + (b − a) × k; Normalize(v) = v ÷ |v|; vector products are right-handed.
 - `ease` is the quadratic ease-in and ease-out curve of [animation and VFX](animation_and_vfx/README.md) VFX-012: ease(f) = 2f² for f < 0.5 and 1 − 2(1 − f)² for 0.5 ≤ f ≤ 1.
-- The **level up vector** of a front vector f is normalise((f × world up) × f): the up vector that keeps the view free of roll.
+- The **level up vector** of a front vector f is Normalize((f × world up) × f): the up vector that keeps the view free of roll.
 
 ## 1 Responsibilities and boundaries
 
@@ -35,7 +35,7 @@ This component is the runtime of each participant's match camera (`MatchCamera`)
 
 **CAM-005** (MUST NOT) The component neither owns nor changes: the projection, the near and far planes, the field-of-view clamp, the view tests, fog and lighting ([view, lighting and fog](renderer/view_lighting_and_fog.md) RND-208 to RND-236); the shake intensity, its decay and its random draws ([particles, shatter and screen effects](animation_and_vfx/particles_shatter_and_screen_effects.md) VFX-232); the map's camera-view and camera-animation records and their limits ([map rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md) R-MAP-125 to R-MAP-128, [data schemas](data_schemas/README.md)); the action bindings and the pointer ([input](input/README.md)); the UI windows and their text ([UI framework](ui_framework/README.md)).
 
-**CAM-006** (MUST NOT) The component has no mode, operation or service for: the spherical-world orbit, the world-map focus orbit (which includes the front-end focus mode that R-META-007 names), the scripted world-map orbit, the intro and outro flights, the first-person mode, the entity-follow mode, the replay camera, the debug-advancer grace frames after a mode request, or recording and restoring a camera pose outside a camera animation (DEC-024); a script interpreter (DEC-053); a narrator, and the "best structure in view" query whose only reader is the narrator's help (DEC-052); the intro start sequence (DEC-054); or a reflected camera pose for water reflections (DEC-059).
+**CAM-006** (MUST) The camera modes, operations and services are exactly those of §2 and §4 (DEC-024). The component holds no script interpreter (DEC-053), no narrator (DEC-052), no intro start sequence (DEC-054) and no reflected camera pose (DEC-059). Cameras of a world game, beyond these modes, are a design-phase input (§8.3).
 
 Table 1-A Neighbours and contracts.
 
@@ -113,6 +113,18 @@ enum class TimelineOp : std::uint8_t // the closed set of table 3.3-A, in its or
   PermitAbort
 };
 
+struct StatementArgs // the arguments of one statement of table 3.3-A; an argument that the statement has not stays at its default
+{
+  std::string name;        // a view, animation, condition, role-tag, string, overlay-effect or sound-event id
+  std::string layout;      // Caption: the layout id
+  float seconds = 0.0f;    // Wait, CameraMove, CameraApproach; Caption: display time; Fade in: delay
+  float distance = 0.0f;   // wu; CameraApproach: distance; CameraFocus: signed range
+  float height = 0.0f;     // wu; CameraApproach, CameraFocus
+  float degrees = 0.0f;    // CameraFov
+  float revealRate = 0.0f; // Caption: characters per second
+  bool flag = false;       // CameraFov: immediate; Caption: cursor; Fade: in; Overlay, PermitAbort: on
+};
+
 struct TimelineStatement
 {
   TimelineOp op;
@@ -188,6 +200,15 @@ public:
   [[nodiscard]] Engine::Mat4 ViewProjectionFor(const Engine::CameraPose& _pose, const Engine::FrameView& _view) const;
 
   [[nodiscard]] const CameraState& State() const; // read-only: overlays and tests
+};
+
+struct TimelineFrameInputs // the inputs of one timeline advance (CAM-103)
+{
+  double realNow;                       // platform clock, seconds (ADR-074); the camera clock of the waits (CAM-104)
+  const PresentationSnapshot* snapshot; // role tags and conditions (CAM-104, CAM-109); null without a match world
+  const Engine::InputRouter* input;     // action.sequence.skip (CAM-105, CAM-106)
+  bool fadeComplete;                    // the renderer's fade has completed (CAM-111)
+  Engine::CommandWriter* audio;         // Sound statements and the stops of an abort (CAM-113)
 };
 
 class TimelinePlayer
@@ -336,7 +357,7 @@ Table 3.3-A Timeline statements. The order is the order of `TimelineOp`; it carr
 
 **CAM-031** (MUST) The camera clock advances only when the camera advances. While the window has no focus, or while the camera is not advanced (the front end), neither the clock nor any camera timer moves, and a scripted move, a camera animation or a timeline resumes where it stood. The first step after such a gap is the clamped frame step, never the length of the gap.
 
-**CAM-032** (MUST) `Advance` runs once per rendered frame, only while the application window has focus and, in gamepad mode, while the gamepad is connected (R-CTRL-453): in the match loop at step 11.9 of R-SIM-581, and in the map-editor loop at its camera step (R-MAP-309). The camera is not advanced in the front end (R-CTRL-453): there the backdrop of R-META-210 sets the camera's view directly in every frame, and replaces whatever pose an advance would produce. While a match camera mode advances, the camera turns pointer confinement on (`InputRouter::ConfinePointer`, INP-159), and off otherwise (R-CTRL-456); the cursor lock of R-CTRL-464 moves the pointer with `InputRouter::WarpPointer`, which produces no motion delta (INP-158).
+**CAM-032** (MUST) `Advance` runs once per rendered frame, only while the application window has focus and, in gamepad mode, while the gamepad is connected (R-CTRL-453): in the match loop at step 11.8 of R-SIM-581, and in the map-editor loop at its camera step (R-MAP-309). The camera is not advanced in the front end (R-CTRL-453): there the backdrop of R-META-210 sets the camera's view directly in every frame, and replaces whatever pose an advance would produce. While a match camera mode advances, the camera turns pointer confinement on (`InputRouter::ConfinePointer`, INP-159), and off otherwise (R-CTRL-456); the cursor lock of R-CTRL-464 moves the pointer with `InputRouter::WarpPointer`, which produces no motion delta (INP-158).
 
 **CAM-033** (MUST) Each advance runs the steps of R-CTRL-456 in that order. Within them:
 
@@ -347,7 +368,7 @@ Table 3.3-A Timeline statements. The order is the order of `TimelineOp`; it carr
 5. step 5, the shake, is applied to the frame output only (CAM-012);
 6. step 6 re-orthonormalises front and up (CAM-034), and step 7 recomputes the pointer ground point ([actions and bindings](../../reference/06_controls_camera_and_commands/actions_and_bindings.md) R-CTRL-058).
 
-**CAM-034** (MUST) Re-orthonormalisation: front := normalise(front); right := normalise(front × up); up := right × front. When front × up has zero length, the up vector becomes the level up vector of the front; when the front is also parallel to world up, the previous frame's up vector, re-orthogonalised against the front, is kept.
+**CAM-034** (MUST) Re-orthonormalisation: front := Normalize(front); right := Normalize(front × up); up := right × front. When front × up has zero length, the up vector becomes the level up vector of the front; when the front is also parallel to world up, the previous frame's up vector, re-orthogonalised against the front, is kept.
 
 **CAM-035** (MUST) `EnterMode` sets the mode at once and runs the new mode's entry actions (R-CTRL-470, R-CTRL-482, R-CTRL-490, R-CTRL-491, CAM-045, CAM-056). The new mode's advancer runs first in step 4 of the next advance after the request; a mode entered by the animation advance in step 1 therefore advances in step 4 of the same frame, and a mode entered by a mode advancer in step 4 advances from the next frame (R-CTRL-456).
 
@@ -398,7 +419,7 @@ Caption: Diagram 4.2-A, the camera modes; the transitions among the player modes
 
 **CAM-040** (MUST) The camera target is a target point (wu), a target front and a target up. `SetTargetView(name)` resolves the name: `previous_view` resolves to the pose saved by the most recent play request (CAM-065), once one has been made; any other name resolves to the first camera view of the match's map, in record order, whose name equals it without regard to case. When the name resolves, the target becomes that pose and the call returns true. Otherwise the target is unchanged and the call returns false; nothing else happens, in particular no error and no mode change.
 
-**CAM-041** (MUST) `SetTargetPose(position, front)` sets the target point to the position, the target front to normalise(front) and the target up to the level up vector of that front. `SetTargetPose(pose)` sets all three from the pose. The fallback pose of match entry uses the first form (CAM-060).
+**CAM-041** (MUST) `SetTargetPose(position, front)` sets the target point to the position, the target front to Normalize(front) and the target up to the level up vector of that front. `SetTargetPose(pose)` sets all three from the pose. The fallback pose of match entry uses the first form (CAM-060).
 
 **CAM-042** (MUST) `Cut()` makes the pose the target at once: position := target point, front := target front, up := target up and height := the target point's y; front and up are then re-orthonormalised (CAM-034). A cut changes neither the mode nor the field of view.
 
@@ -413,19 +434,19 @@ Caption: Diagram 4.2-A, the camera modes; the transitions among the player modes
 
 **CAM-047** (MUST) The move therefore lands exactly on its target and never overshoots (DEC-024): every intermediate position lies on the segment from the start position to the target point, and its distance from the start never decreases. With D = |target point − start position|, the speed along the segment rises linearly from 0 to 2 × D ÷ T at f = 0.5 and falls linearly to 0 at f = 1, which is the triangular speed profile of the reference move. A move of duration 0 lands at its first advance.
 
-**CAM-048** (MUST) Each orientation is the unit quaternion of the orthonormal frame that CAM-034 builds from its front and up. With q0 the start quaternion and q1 the target quaternion, q1 is negated when q0 · q1 < 0, so the shorter rotation is taken. When q0 · q1 > `cam.move.nlerp_threshold` (0.9995), the result is normalise(q0 × (1 − a) + q1 × a); otherwise it is (sin((1 − a) × θ) × q0 + sin(a × θ) × q1) ÷ sin θ, with cos θ = q0 · q1. The roll is interpolated with the rest of the orientation, so the camera lands with the target's up vector.
+**CAM-048** (MUST) Each orientation is the unit quaternion of the orthonormal frame that CAM-034 builds from its front and up. With q0 the start quaternion and q1 the target quaternion, q1 is negated when q0 · q1 < 0, so the shorter rotation is taken. When q0 · q1 > `cam.move.nlerp_threshold` (0.9995), the result is Normalize(q0 × (1 − a) + q1 × a); otherwise it is (sin((1 − a) × θ) × q0 + sin(a × θ) × q1) ÷ sin θ, with cos θ = q0 · q1. The roll is interpolated with the rest of the orientation, so the camera lands with the target's up vector.
 
-**CAM-049** (MUST) During a scripted move the zoom component runs at rate 1 of `ref.ctrl.camera.zoom_rates` (R-CTRL-460), so a change of the target field of view made during the move eases with a time constant of 10 s (DEC-024). The move itself does not change the field of view.
+**CAM-049** (MUST) During a scripted move the zoom component runs at the rate `ref.ctrl.camera.zoom_rates.scripted` (1) (R-CTRL-460), so a change of the target field of view made during the move eases with a time constant of 10 s (DEC-024). The move itself does not change the field of view.
 
-**CAM-050** (MUST NOT) The move does not follow the reference move law, which DEC-024 replaces. In the reference law the progress is measured on a clock other than the frame step and is floored at `cam.move.reference_progress_floor` (0.2); the position integrates the triangular speed profile frame by frame from that floored progress and is never snapped, so the camera travels `cam.move.reference_overshoot` (1.04 to 1.08 times) the start-to-target distance along the straight line and stops past the target; the front blends from the start front to a midpoint front, which is the start front rotated about start front × target front by half the length of that product (half the sine of the angle between the fronts, an approximation of half the angle), and from there to the target front, each blend normalised and driven by ease; the up vector is forced to world up in every frame; and at the end only the front is set to the target front, so a move of duration 0 snaps only the orientation.
+**CAM-050** (MUST) A scripted move follows CAM-046 to CAM-049 and no other move law (DEC-024).
 
 ### 4.5 Approach
 
 **CAM-053** (MUST) `SetTargetAround(focus, d, h)` targets a pose at distance d from the focus on the camera's current bearing, h above the focus and looking at it:
 
-1. dir := normalise(position − focus), the three-dimensional direction from the focus to the camera;
+1. dir := Normalize(position − focus), the three-dimensional direction from the focus to the camera;
 2. target point := focus + dir × d, and then its y := the focus's y + h;
-3. target front := normalise(focus − target point);
+3. target front := Normalize(focus − target point);
 4. target up := the level up vector of the target front.
 
 The horizontal distance from the focus is therefore d × the horizontal length of dir, which is less than d when the camera is above or below the focus.
@@ -444,8 +465,8 @@ The horizontal distance from the focus is therefore d × the horizontal length o
 4. m := min(1, τ ÷ `cam.focus.ramp_time`);
 5. while τ < `cam.focus.lift_time` (2 s): goal y := max(goal y, min(goal y + `cam.focus.lift_factor` (0.75) × |position − goal| × (`cam.focus.lift_time` − τ), `cam.focus.lift_ceiling` (y = 1000 wu))), a lift that starts high and settles over the first 2 s without ever lowering the goal;
 6. position := lerp(position, goal, `cam.focus.position_rate` (0.5) × m × dt);
-7. wanted := normalise(c − position); when r < 0, its x and z components are negated, so the camera looks away from the structure;
-8. front := normalise(lerp(front, wanted, `cam.focus.front_rate` (1) × m × dt)), and up := the level up vector of the new front;
+7. wanted := Normalize(c − position); when r < 0, its x and z components are negated, so the camera looks away from the structure;
+8. front := Normalize(lerp(front, wanted, `cam.focus.front_rate` (1) × m × dt)), and up := the level up vector of the new front;
 9. position y := max(position y, the terrain height under the camera + `cam.focus.min_clearance` (10 wu)).
 
 **CAM-058** (MUST) The structure focus never ends on its own. It lasts until another mode is entered: by a timeline statement, a release, a node of a camera animation or a request of the player rules (CAM-037). While it lasts, the zoom component eases the field of view towards `cam.focus.fov` at the rate of the static and scripted-move modes (table 4.2-A). The structure focus and the approach of CAM-053 and CAM-054 are timeline-only operations, which no match path reaches, and the live player-camera modes of R-CTRL-457 are unchanged (DEC-024; see DEC-803).
@@ -507,7 +528,7 @@ At most one node ends per advance.
 
 **CAM-070** (MUST) A node's timer restarts at the advance in which the previous node ended, so each node lasts its duration plus at most one camera step, and the excess is not carried into the next node. A move node's move and its timer start together on the same clock, and a move still under way when its node ends lands at that moment (CAM-067 step 1), so every move node ends exactly on its view (DEC-024, DEC-803).
 
-**CAM-071** (MUST) No match path plays a camera animation, and no reference map holds one (R-MAP-127): the capability exists in this component and in the map format with no content that uses it, which is the default of DEC-803. Its callers are a presentation timeline (table 3.3-A row 9, DEC-051) and the map editor's preview and stop operations (R-MAP-371). Under option B of DEC-803, the playback of this section and the animation records are removed together; under option C, a match-start camera sweep plays before the cut of CAM-061.
+**CAM-071** (MUST) No match path plays a camera animation, and no reference map holds one (R-MAP-127): the capability exists in this component and in the map format with no content that uses it, which is the default of DEC-803. Its caller is a presentation timeline (table 3.3-A row 9, DEC-051). Under option B of DEC-803, the playback of this section and the animation records are removed together; under option C, a match-start camera sweep plays before the cut of CAM-061.
 
 ```mermaid
 stateDiagram-v2
@@ -536,13 +557,13 @@ PlayCameraAnimation(name):
 
 BeginNode(step):
     SetTargetView(step.view)                            # the target is unchanged when it does not resolve
-    if step.transition = Move: StartMove(step.durationSeconds)
+    if step.transition = Move: StartMove(step.duration)
     else: EnterMode(Static)
 
 AnimationAdvance():                                     # step 1 of every camera advance
     if current is none: return
     step := current.steps[index]
-    if clock - nodeStart <= step.durationSeconds: return
+    if clock - nodeStart <= step.duration: return
     if step.transition = Cut: Cut()
     else if mode = ScriptedMove and the move is this node's: Land()
     index := index + 1
@@ -571,7 +592,7 @@ Caption: Listing 4.8-B, camera-animation playback (CAM-065 to CAM-068).
 
 ### 4.10 Picking and projection
 
-**CAM-090** (MUST) `PickRayAt(p, view)` returns the ray from the camera through the pointer position p, in pixels of the 2-D overlay space with its origin at the top-left corner and y growing downwards (RND-215), for the frame view of the last rendered frame (RND-218, ADR-016). With W × H the render size, the pointer maps to the normalised device point x = 2 × pₓ ÷ W − 1 and y = 1 − 2 × (p_y + `cam.pick.row_offset`) ÷ H, so the ray passes through the lower-left corner of the pointer's pixel, as in the reference (see DEC-956). The ray's origin is that point unprojected at the near plane (reversed-Z depth 1), and its direction is normalise(the point unprojected at the far plane (depth 0) − the origin), both through the inverse of the frame view's view-projection matrix.
+**CAM-090** (MUST) `PickRayAt(p, view)` returns the ray from the camera through the pointer position p, in pixels of the 2-D overlay space with its origin at the top-left corner and y growing downwards (RND-215), for the frame view of the last rendered frame (RND-218, ADR-016). With W × H the render size, the pointer maps to the normalised device point x = 2 × pₓ ÷ W − 1 and y = 1 − 2 × (p_y + `cam.pick.row_offset`) ÷ H, so the ray passes through the lower-left corner of the pointer's pixel, as in the reference (see DEC-956). The ray's origin is that point unprojected at the near plane (reversed-Z depth 1), and its direction is Normalize(the point unprojected at the far plane (depth 0) − the origin), both through the inverse of the frame view's view-projection matrix.
 
 **CAM-091** (MUST) The ray uses the frame view that the renderer last built. When the camera supplied a degenerate front or up vector, the renderer kept the previous valid view ([view, lighting and fog](renderer/view_lighting_and_fog.md) §6, RND-213), and the ray uses that view.
 
@@ -591,7 +612,7 @@ Caption: Listing 4.8-B, camera-animation playback (CAM-065 to CAM-068).
 
 **CAM-102** (MUST) A timeline is data: an ordered list of the typed statements of table 3.3-A, written in the authoring syntax of ADR-062 against the schema of ADR-061. The content build validates every timeline as a whole before it ships (ADR-059, DEC-015): an unknown statement, a missing or mistyped argument, a negative duration, and a reference to a camera view, camera animation, role tag, string id, overlay effect, sound event or condition that the maps and data using the timeline do not hold are build errors that name the file and the line. A runtime loader never parses authoring text and never meets an invalid timeline.
 
-**CAM-103** (MUST) A running timeline advances once per rendered frame, before the camera advance (between steps 11.8 and 11.9 of R-SIM-581), so the camera statements of a frame take effect in that frame's camera advance (CAM-035). In each advance it executes statements in order, from its current statement, until it reaches a wait whose condition does not yet hold, or its end: every statement that does not block runs in the same frame, so the statements between two waits take one frame however many there are.
+**CAM-103** (MUST) A running timeline advances once per rendered frame, before the camera advance (between steps 11.7 and 11.8 of R-SIM-581), so the camera statements of a frame take effect in that frame's camera advance (CAM-035). In each advance it executes statements in order, from its current statement, until it reaches a wait whose condition does not yet hold, or its end: every statement that does not block runs in the same frame, so the statements between two waits take one frame however many there are.
 
 **CAM-104** (MUST) The waits hold as follows, and a wait whose condition already holds when it is reached does not block:
 
@@ -624,13 +645,11 @@ Caption: Listing 4.8-B, camera-animation playback (CAM-065 to CAM-068).
 
 ### 4.13 Tuning table
 
-This component cites these keys of other documents and defines none of them: `ref.ctrl.camera.zoom_rates` and the other `ref.ctrl.camera.*` keys ([camera rules](../../reference/06_controls_camera_and_commands/camera.md)); `ref.sim.frame.delta_clamp` ([tick timing](../../reference/12_simulation_model/01_tick_timing_and_main_loop.md)); `ref.sim.match_entry.camera_border`, `ref.sim.match_entry.fallback_camera_height` and `ref.sim.match_entry.fallback_camera_direction` ([match lifecycle](../../reference/12_simulation_model/02_match_lifecycle_and_state_reset.md)); `ref.map.camera.view_name_max_chars` and `ref.map.camera.animation_duration_max_s` ([map rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md)); `rnd.view.near_plane`, `rnd.view.far_plane`, `rnd.view.fov_min` and `rnd.view.fov_max` ([view, lighting and fog](renderer/view_lighting_and_fog.md)); `rnd.fade.rate` ([frame graph and passes](renderer/frame_graph_and_passes.md)).
+This component cites these keys of other documents and defines none of them: `ref.ctrl.camera.zoom_rates.scripted` and the other `ref.ctrl.camera.*` keys ([camera rules](../../reference/06_controls_camera_and_commands/camera.md)); `ref.sim.frame.delta_clamp` ([tick timing](../../reference/12_simulation_model/01_tick_timing_and_main_loop.md)); `ref.sim.match_entry.camera_border`, `ref.sim.match_entry.fallback_camera_height` and `ref.sim.match_entry.fallback_camera_direction` ([match lifecycle](../../reference/12_simulation_model/02_match_lifecycle_and_state_reset.md)); `ref.map.camera.view_name_max_chars` and `ref.map.camera.animation_duration_max_s` ([map rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md)); `rnd.view.near_plane`, `rnd.view.far_plane`, `rnd.view.fov_min` and `rnd.view.fov_max` ([view, lighting and fog](renderer/view_lighting_and_fog.md)); `rnd.fade.rate` ([frame graph and passes](renderer/frame_graph_and_passes.md)).
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
 | `cam.move.nlerp_threshold` | 0.9995 | quaternion dot product | above it, the orientation blend is a normalised linear blend | CAM-048 | DEC-024 |
-| `cam.move.reference_progress_floor` | 0.2 | fraction of the duration | the reference move law only; Species does not use it | CAM-050 | DEC-024 |
-| `cam.move.reference_overshoot` | 1.04 to 1.08 | × the start-to-target distance | the reference move law only, for durations of 0.5 to 30 s at 20 to 144 frames per second; 1.08 is the limit | CAM-050 | DEC-024 |
 | `cam.focus.fov` | 60 | degrees | target field of view on entering the structure focus | CAM-056, CAM-058 | — |
 | `cam.focus.orbit_rate` | −0.15 | rad/s | turn of the track vector about the world y axis | CAM-057 | — |
 | `cam.focus.radius_wave` | amplitude 0.3; angular frequency 0.3 rad/s | — | radius = \|r\| × (1 + 0.3 × sin(0.3 × t)), t the camera clock | CAM-057 | — |
@@ -701,8 +720,8 @@ Table 7-A Acceptance tests.
 | T9 busy | unit | `IsBusy` is true while an animation plays and during a scripted move outside an animation, and false after the landing | CAM-069 |
 | T10 node timing | unit | with a step of 0.3 s clamped to 0.25 s, a node ends at the first advance whose elapsed time exceeds its duration; at most one node ends per advance; each node of duration 0 takes exactly one advance | CAM-030, CAM-067, CAM-070 |
 | T11 match start | integration | on a map with `default_view` and a start view for position 2, the team at position 2 sees a cut to `default_view` at entry, free movement, a cut to its start view in the first frame with its team, and the same cut after a multi-round reset; on a map without views the pose stays at (world size x, 1,000, world size x) | CAM-060, CAM-061 |
-| T12 structure focus | golden vector | a recorded 10 s focus at 60 frames per second reproduces a vector set of positions and fronts; the goal never rises above y = 1,000 wu through the lift; the position stays at least 10 wu above the terrain; a negative range looks away from the structure | CAM-056, CAM-057 |
-| T13 approach | unit | a camera at (0, 300, 400) approaching a focus at the origin with d = 100 and h = 50 targets the point (0, 50, 80) with the front normalise(0, −50, −80) | CAM-053 |
+| T12 structure focus | golden vector | a 10 s focus at 60 frames per second, from a fixed start pose, structure and terrain, gives per frame the position within 0.001 wu and the front within 0.0001 per component of the vector set that the test generates once from the steps of CAM-057 in double precision and commits beside the test; the goal never rises above y = 1,000 wu through the lift; the position stays at least 10 wu above the terrain; a negative range looks away from the structure | CAM-056, CAM-057 |
+| T13 approach | unit | a camera at (0, 300, 400) approaching a focus at the origin with d = 100 and h = 50 targets the point (0, 50, 80) with the front Normalize(0, −50, −80) | CAM-053 |
 | T14 developer fly | unit | with a world size x of 3,000 wu the speed is 100 wu/s, 1,000 wu/s with the fast action and 10 wu/s with the slow action; 100 px of pointer movement with the rotate action turns the camera by 0.5 rad; the editor's target field of view is 60° | CAM-081 to CAM-083 |
 | T15 pick ray | unit | for a recorded frame view, `PickRayAt` passes through the world points that `ProjectToScreen` maps to (pₓ, p_y + 1); its origin lies on the near plane and its direction has unit length | CAM-090, CAM-092 |
 | T16 shake offset | unit | after a frame with shake the stored pose is unchanged, and the frame output differs from it by exactly the yaw and roll of the frame's offset | CAM-012 |
@@ -748,7 +767,7 @@ Table 8.1-A Decisions and records that apply.
 The map editor is designed fresh by the design phase (DEC-045). These are its hooks on this component, recorded and not designed:
 
 1. the camera-view panel: create appends a camera view from the current camera pose; go to targets a view's pose and cuts to it (`SetTargetPose`, `Cut`); update overwrites a view's pose with the current pose (R-MAP-370);
-2. the camera-animation panels, which exist in editor builds and are never opened: create, delete and select animations; arm the adding of nodes; append a node by selecting a camera view or by the previous-view operation; delete the first node that names a view; and preview and stop, which call `PlayCameraAnimation` and `StopCameraAnimation` (R-MAP-371, R-MAP-373);
+2. camera-animation authoring: the reference editor offers none (R-MAP-371, R-MAP-373);
 3. the pick ray of the editor's viewport operations (R-MAP-321, CAM-093);
 4. the developer fly camera of the editor session (R-MAP-309, CAM-080 to CAM-083).
 

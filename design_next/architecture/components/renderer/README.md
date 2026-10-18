@@ -1,6 +1,6 @@
 # Renderer
 
-> Status: Engine baseline · Prefix: RND · ADRs: [ADR-001](../../../ADR/ADR-001-direct3d-12-renderer-on-the-agility-sdk.md) · [ADR-002](../../../ADR/ADR-002-minimum-gpu-capability.md) · [ADR-003](../../../ADR/ADR-003-shader-language-compiler-and-material-shaders.md) · [ADR-004](../../../ADR/ADR-004-frame-graph-from-the-ordered-pass-table.md) · [ADR-005](../../../ADR/ADR-005-pipeline-state-catalogue.md) · [ADR-006](../../../ADR/ADR-006-root-signature-and-bindless-resource-access.md) · [ADR-007](../../../ADR/ADR-007-barrier-model.md) · [ADR-008](../../../ADR/ADR-008-gpu-memory-uploads-and-device-removal.md) · [ADR-009](../../../ADR/ADR-009-instanced-crowds-sprite-cards-and-shadows.md) · [ADR-010](../../../ADR/ADR-010-gpu-particles-and-shatter-debris.md) · [ADR-011](../../../ADR/ADR-011-world-surface-rendering.md) · [ADR-012](../../../ADR/ADR-012-swap-chain-presentation-and-frame-pacing.md) · [ADR-013](../../../ADR/ADR-013-working-colour-space-and-blending.md) · [ADR-014](../../../ADR/ADR-014-hdr-output.md) · [ADR-015](../../../ADR/ADR-015-scene-anti-aliasing.md) · [ADR-016](../../../ADR/ADR-016-view-projection-and-depth-conventions.md) · [ADR-018](../../../ADR/ADR-018-texture-import-manifest.md) · [ADR-020](../../../ADR/ADR-020-flat-shading-and-team-tint.md) · [ADR-068](../../../ADR/ADR-068-profiling-and-gpu-timing.md) · [ADR-075](../../../ADR/ADR-075-application-window-and-dpi-awareness.md) · [ADR-076](../../../ADR/ADR-076-screenshot-encoding.md)
+> Status: Engine baseline · Prefix: RND · ADRs: [ADR-001](../../../ADR/ADR-001-direct3d-12-renderer-on-the-agility-sdk.md) · [ADR-002](../../../ADR/ADR-002-minimum-gpu-capability.md) · [ADR-003](../../../ADR/ADR-003-shader-language-compiler-and-material-shaders.md) · [ADR-004](../../../ADR/ADR-004-frame-graph-from-the-ordered-pass-table.md) · [ADR-005](../../../ADR/ADR-005-pipeline-state-catalogue.md) · [ADR-006](../../../ADR/ADR-006-root-signature-and-bindless-resource-access.md) · [ADR-007](../../../ADR/ADR-007-barrier-model.md) · [ADR-008](../../../ADR/ADR-008-gpu-memory-uploads-and-device-removal.md) · [ADR-009](../../../ADR/ADR-009-instanced-crowds-sprite-cards-and-shadows.md) · [ADR-010](../../../ADR/ADR-010-gpu-particles-and-shatter-debris.md) · [ADR-011](../../../ADR/ADR-011-world-surface-rendering.md) · [ADR-012](../../../ADR/ADR-012-swap-chain-presentation-and-frame-pacing.md) · [ADR-013](../../../ADR/ADR-013-working-colour-space-and-blending.md) · [ADR-014](../../../ADR/ADR-014-hdr-output.md) · [ADR-015](../../../ADR/ADR-015-scene-anti-aliasing.md) · [ADR-016](../../../ADR/ADR-016-view-projection-and-depth-conventions.md) · [ADR-018](../../../ADR/ADR-018-texture-import-manifest.md) · [ADR-020](../../../ADR/ADR-020-flat-shading-and-team-tint.md) · [ADR-068](../../../ADR/ADR-068-profiling-and-gpu-timing.md) · [ADR-075](../../../ADR/ADR-075-application-window-and-dpi-awareness.md) · [ADR-076](../../../ADR/ADR-076-screenshot-encoding.md) · [ADR-078](../../../ADR/ADR-078-gpu-resource-factory.md)
 
 This folder specifies the Species renderer: the Direct3D 12 component that turns the presentation state of a match, the front end and the loading view into frames. It states the reference look and behaviour (pass order, blend and depth states, fog, lighting, sort orders, shadow decals) precisely, in the terms of the engine ADRs listed above.
 
@@ -8,7 +8,7 @@ This folder specifies the Species renderer: the Direct3D 12 component that turns
 
 | File | Holds | Requirement IDs |
 |---|---|---|
-| [README.md](README.md) (this file) | responsibilities and boundaries, interfaces, the renderer object and its data model, initialisation, resolution and aspect handling, the Direct3D 12 mapping per component | RND-001 to RND-045 |
+| [README.md](README.md) (this file) | responsibilities and boundaries, interfaces and the GPU resource factory, the renderer object and its data model, the presentation snapshot, initialisation, resolution and aspect handling, device removal, the Direct3D 12 realisation per component | RND-001 to RND-045 |
 | [frame_graph_and_passes.md](frame_graph_and_passes.md) | the default pipeline state, the pipeline-state catalogue, the frame types, the ordered pass table of a match frame and its branches, render-time extrapolation, fades, the pause banner, the screen transition, the loading-view frame, screenshots and poster renders | RND-050 to RND-120 |
 | [world_renderers.md](world_renderers.md) | terrain, sea, sky and clouds, meshes and team tint, structures (solid and alpha passes, depth sort, lights and ports), trees, Barrier Emitters | RND-130 to RND-205 |
 | [view_lighting_and_fog.md](view_lighting_and_fog.md) | projection and view, the depth-bias variants, frustum tests, screen projection, fog, the two-light lighting model, decal shadows, screen-space effects | RND-208 to RND-250 |
@@ -37,9 +37,9 @@ Caption: the renderer reads presentation inputs only, builds every frame through
 
 ## 1 Responsibilities and boundaries
 
-**RND-001** (MUST) The renderer owns the Direct3D 12 device, the swap chain, the two global root signatures, the pipeline-state catalogue, the frame graph and every GPU resource of the client, on the Agility SDK runtime of ADR-001 and the minimum capability of ADR-002. Every frame is assembled by the frame graph from the ordered pass table of [frame_graph_and_passes.md](frame_graph_and_passes.md) (ADR-004), and every draw names exactly one pipeline-state catalogue entry (ADR-005).
+**RND-001** (MUST) The renderer owns the Direct3D 12 device, the swap chain, the direct and copy queues, the descriptor heaps, the two global root signatures, the pipeline-state catalogue, the frame graph and the GPU resource factory (`GpuResourceFactory`, RND-009, ADR-078) through which every client GPU resource is created, on the Agility SDK runtime of ADR-001 and the minimum capability of ADR-002. Every frame is assembled by the frame graph from the ordered pass table of [frame_graph_and_passes.md](frame_graph_and_passes.md) (ADR-004), and every draw names exactly one pipeline-state catalogue entry (ADR-005).
 
-**RND-002** (MUST) The renderer MUST NOT write simulation state. It reads an immutable presentation snapshot of the simulation and the extrapolation time of `reference/12_simulation_model/01_tick_timing_and_main_loop.md` (R-SIM-560 to R-SIM-564), and never stores an extrapolated value back (see DEC-007). How the snapshot is produced, and whether Species extrapolates or interpolates between two snapshots, is decided by the design phase (see DEC-222, R-SIM-565); until then the renderer extrapolates as R-SIM-562 specifies.
+**RND-002** (MUST) The renderer MUST NOT write simulation state. It reads an immutable presentation snapshot of the simulation (RND-018) and the extrapolation time of `reference/12_simulation_model/01_tick_timing_and_main_loop.md` (R-SIM-560 to R-SIM-564), and never stores an extrapolated value back (see DEC-007). How the snapshot is produced, and whether Species extrapolates or interpolates between two snapshots, is decided by the design phase (see DEC-222, R-SIM-565); until then the renderer extrapolates as R-SIM-562 specifies.
 
 **RND-003** (MUST) The renderer MUST NOT compute any value that feeds simulation state. GPU work serves presentation only (see DEC-654): rendering, particles, shatter debris and animation.
 
@@ -53,15 +53,24 @@ Caption: the renderer reads presentation inputs only, builds every frame through
 
 | Neighbour | What the renderer receives | What the renderer never does |
 |---|---|---|
-| simulation (`reference/12_simulation_model/`) | the presentation snapshot, the extrapolation time, the last processed update slice, the number of the last command frame taken | write any field; draw from the simulation generator |
+| simulation (`reference/12_simulation_model/`) | the presentation snapshot (RND-018), the extrapolation time, the last update slice that the current tick has run, the number of the last command frame taken | write any field; draw from the simulation generator |
 | terrain component ([terrain/README.md](../terrain/README.md)) | the height field, the outside height, the cell size, the per-triangle colour-ramp look-up, the sea shore mask, the depth map, the flat-water tile mask, the coastline wave formulae | generate or modify terrain |
-| camera component ([camera_and_sequences.md](../camera_and_sequences.md)) | position, front and up vectors and the vertical field of view of the frame | move the camera |
-| animation and VFX ([README.md](../animation_and_vfx/README.md)) | the particle pool, shatter debris, camera-shake offsets and full-screen flash requests (ADR-010, ADR-036) | emit particles on its own from simulation state |
-| UI framework ([ui_framework/README.md](../ui_framework/README.md)) | batched UI and glyph draws for the UI pass (ADR-031, ADR-034) | lay out widgets |
-| asset pipeline ([asset_pipeline_and_resources.md](../asset_pipeline_and_resources.md)) | cooked meshes and textures, each texture keyed by (asset id, processing variant) (see DEC-098) | change another requester's texture processing |
+| camera component ([camera_and_sequences.md](../camera_and_sequences.md)) | position, front and up vectors and the vertical field of view of the frame, from its `CameraFrameOutput` (§2) | move the camera |
+| animation and VFX ([README.md](../animation_and_vfx/README.md)) | the particle pool, shatter debris, camera-shake offsets and full-screen flash requests (ADR-010, ADR-036), in buffers it creates through the GPU resource factory (RND-009) | emit particles on its own from simulation state |
+| UI framework ([ui_framework/README.md](../ui_framework/README.md)) | batched UI and glyph draws for the UI pass (ADR-031, ADR-034), on glyph pages it creates through the GPU resource factory (RND-009) | lay out widgets |
+| asset pipeline ([asset_pipeline_and_resources.md](../asset_pipeline_and_resources.md)) | cooked meshes and textures, each texture keyed by (asset id, processing variant) (see DEC-098), which the asset cache creates and uploads through the GPU resource factory once it is attached to it (RND-009) | change another requester's texture processing |
 | platform layer ([platform_layer.md](../platform_layer.md)) | the window, its client-area size, resize, DPI and focus events, and the platform clock (ADR-074, ADR-075) | create or style the window |
 
 **RND-008** (MUST) The renderer is a client-only module: the dedicated-server project links no renderer code and no Direct3D library (ADR-001, ADR-056).
+
+**RND-009** (MUST) Every GPU resource that a component outside the renderer holds is created, filled, released and rebuilt through the GPU resource factory (`GpuResourceFactory`, §2, ADR-078): the asset cache's textures, meshes and run-time textures ([asset pipeline](../asset_pipeline_and_resources.md) AST-002), the UI framework's glyph pages (ADR-034), the particle pool, particle parameter buffer and shard buffers of the VFX runtime ([animation and VFX](../animation_and_vfx/README.md) VFX-003), and the terrain, sea and tree buffers of the world renderers (RND-017). The renderer's own resources (the swap chain, the frame-graph targets, the upload ring and the pipeline states) are not factory resources. The factory follows these rules:
+
+1. **Creation.** A texture is created from the size, level count and format of its cooked DDS header (ADR-017) or of a run-time texture, a buffer from its size, element stride and whether compute work writes it; each resource gets a default-heap allocation and a shader-visible descriptor in the persistent region of the heap (ADR-006, ADR-008), whose heap index belongs to it for its whole life, device rebuilds included.
+2. **Uploads.** `ScheduleUpload` copies the caller's bytes into the factory's staging memory, at most `rnd.resources.staging_budget_mib` (96 MiB) in flight, on the calling thread, and returns the copy-queue fence value of the batch that will carry them; an upload that does not fit is refused at once with `StagingFull` and repeated by its caller on a later frame. The frame thread submits the queued copies to the copy queue once per frame, at the start of the frame, and signals the copy fence; a resource is drawn only after its fence value has completed (ADR-008), and the queues hand it over at that fence in the common layout or state (ADR-007).
+3. **Same-frame writes.** A resource whose content changes within a frame, a glyph page that receives new glyphs or a buffer that compute work writes, is written by a frame-graph pass that imports it by name (RND-063), so that the compiled graph derives its barriers (ADR-004).
+4. **Release.** `Release` may be called from any thread; the resource and its descriptor slot are freed only after every frame in flight that may use it has completed (ADR-012) and after its last queued upload has completed.
+5. **Threading and lifetime.** Every call is safe from any thread and never waits for the frame thread; the factory records each thread's copies into that thread's own copy command list, and only the frame thread submits to the copy queue. `FrameRenderer::Create` creates the factory after the device and before the swap chain, and it is destroyed with the renderer, after every client has released its resources: the asset cache detaches from it (`AssetCache::DetachGpu`) before the renderer is destroyed, and every other client is destroyed before the renderer.
+6. **Device rebuild.** RND-035.
 
 ## 2 Interfaces
 
@@ -75,8 +84,8 @@ enum class FrameKind : std::uint8_t
 {
   Match,
   MainMenu,
-  LoadingView,
-  MapEditor
+  Loading, // the loading-view frame of RND-118
+  Editor   // the match frame with the map editor's overlays (RND-078)
 };
 enum class PosterState : std::uint8_t
 {
@@ -94,6 +103,22 @@ enum class PresentMode : std::uint8_t
   VerticalSync,
   Uncapped
 };
+enum class StartupError : std::uint8_t // RND-020, RND-023
+{
+  NoCapableAdapter,       // no adapter passes the checks of ADR-002: ui.error.gpu_unsupported
+  DeviceCreationFailed,   // the chosen adapter could not create the device
+  SwapChainFailed,        // no attempt of the fallback chain created the swap chain: ui.error.display_mode
+  PipelineCreationFailed, // a catalogue entry could not be created (ADR-005)
+  FrameGraphInvalid       // the pass table failed validation (ADR-004)
+};
+
+struct ColorRgba // a presentation colour with straight alpha; channels from 0 to 1 unless a rule allows more
+{
+  float r = 0.0f;
+  float g = 0.0f;
+  float b = 0.0f;
+  float a = 1.0f;
+};
 
 struct RenderConfig // a change triggers Reconfigure (RND-030)
 {
@@ -109,16 +134,16 @@ struct RenderConfig // a change triggers Reconfigure (RND-030)
   bool invertedStyle = false; // DEC-040, options_and_budgets.md
 };
 
-struct ViewParams // supplied by MatchCamera each frame
+struct ViewParams // filled each frame from the camera component's CameraFrameOutput (camera_and_sequences.md §2.1)
 {
-  Vec3 position;
-  Vec3 front;
-  Vec3 up;
-  float fovYDegrees = 0.0f; // value owned by the camera component
+  Vec3 position;            // CameraFrameOutput::pose.position
+  Vec3 front;               // CameraFrameOutput::pose.front
+  Vec3 up;                  // CameraFrameOutput::pose.up
+  float fovYDegrees = 0.0f; // CameraFrameOutput::fovYDegrees, clamped by the renderer (RND-212)
 };
 
-// The snapshot interface: the engine's read-only handle to the presentation snapshot that the game publishes (DEC-222).
-// The game's snapshot type implements it, and only the game's pass recorders read its contents (AGENTS.md R9).
+// The snapshot interface: the engine's read-only handle to the presentation snapshot that the game publishes (RND-018).
+// The game's snapshot type implements it, and only the game's pass recorders read its contents (RND-054, AGENTS.md R9).
 class SceneSnapshot
 {
 public:
@@ -128,25 +153,85 @@ public:
 struct FrameInputs
 {
   FrameKind kind = FrameKind::Match;
-  const SceneSnapshot* snapshot = nullptr; // DEC-222; null outside a match
-  double extrapolationTime = 0.0;          // R-SIM-560, seconds of game time
-  std::int32_t lastProcessedSlice = -1;    // R-SIM-511; -1 = none this tick
-  std::uint32_t lastCommandFrame = 0;      // R-SIM-531
-  double realNow = 0.0;                    // real clock, R-SIM-570
-  double presentationFrameTime = 0.0;      // R-SIM-570
-  double smoothPresentationTime = 0.0;     // R-SIM-570
+  const SceneSnapshot* snapshot = nullptr;   // RND-018; null outside a match
+  double extrapolationTime = 0.0;            // R-SIM-560, seconds of game time
+  std::int32_t extrapolationSliceIndex = -1; // R-SIM-511: the last update slice the current tick has run; -1 = none
+  std::uint32_t presentationSequence = 0;    // R-SIM-531: the number of the last command frame taken (RND-167)
+  double realNow = 0.0;                      // real clock, R-SIM-570
+  double presentationFrameTime = 0.0;        // R-SIM-570
+  double smoothPresentationTime = 0.0;       // R-SIM-570
   ViewParams view;
   bool interfaceVisible = true;
   bool anyUiWindowOpen = false;
   bool matchPaused = false; // the sequenced pause of DEC-038
 };
 
+// ---- the GPU resources of the client (RND-009, ADR-078) ----
+struct GpuResourceId // a slot of the factory's table and its generation; unchanged by a device rebuild
+{
+  std::uint32_t slot = 0;
+  std::uint32_t generation = 0;
+  auto operator<=>(const GpuResourceId& _other) const = default;
+};
+
+enum class GpuResourceError : std::uint8_t
+{
+  InvalidDescription,
+  OutOfVideoMemory,
+  StagingFull,      // the upload is refused at once; the caller repeats it on a later frame
+  DeviceRebuilding, // refused while the device is rebuilt; the caller repeats it after DeviceRebuilt
+  UnknownResource
+};
+
+struct GpuTextureDesc // from a cooked DDS header (ADR-017) or a run-time texture (AST-062)
+{
+  std::uint32_t width = 0;
+  std::uint32_t height = 0;
+  std::uint32_t levels = 1;
+  DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN;
+  std::string debugName; // the asset id or the owner's name, for the allocation record (ADR-008) and PIX
+};
+
+struct GpuBufferDesc
+{
+  std::uint64_t sizeBytes = 0;
+  std::uint32_t strideBytes = 0; // structured buffers; 0 for vertex, index and raw data
+  bool gpuWritable = false;      // written by compute work in the frame graph (RND-063)
+  std::string debugName;
+};
+
+struct GpuSubresourceData // one level of a texture, or the whole of a buffer
+{
+  std::span<const std::byte> bytes;
+  std::uint32_t rowPitchBytes = 0; // textures only
+};
+
+// Every call is safe from any thread and never waits for the frame thread; the copy queue belongs to the renderer.
+class GpuResourceFactory
+{
+public:
+  virtual ~GpuResourceFactory() = default;
+
+  [[nodiscard]] virtual std::expected<GpuResourceId, GpuResourceError> CreateTexture(const GpuTextureDesc& _desc) = 0;
+  [[nodiscard]] virtual std::expected<GpuResourceId, GpuResourceError> CreateBuffer(const GpuBufferDesc& _desc) = 0;
+
+  // Copies the bytes into staging memory now and queues the copy; returns the copy-queue fence value after which the
+  // resource holds them (RND-009).
+  [[nodiscard]] virtual std::expected<std::uint64_t, GpuResourceError>
+  ScheduleUpload(GpuResourceId _resource, std::span<const GpuSubresourceData> _subresources) = 0;
+  [[nodiscard]] virtual bool IsUploadComplete(std::uint64_t _fenceValue) const = 0;
+
+  [[nodiscard]] virtual std::uint32_t HeapIndex(GpuResourceId _resource) const = 0; // ADR-006; stable across a rebuild
+  virtual void Release(GpuResourceId _resource) = 0;                                // destroyed after the frames in flight that may use it
+};
+
 class FrameRenderer
 {
 public:
-  static std::expected<std::unique_ptr<FrameRenderer>, StartupError> Create(AppWindow& _window, const RenderConfig& _config,
-                                                                            AssetCache& _assets);
+  static std::expected<std::unique_ptr<FrameRenderer>, StartupError> Create(AppWindow& _window, const RenderConfig& _config);
 
+  [[nodiscard]] GpuResourceFactory& Resources();       // RND-009; lives as long as the renderer
+  void SetPalette(std::span<const ColorRgba> _colors); // RND-016; once per match, one entry per colour id
   void Reconfigure(const RenderConfig& _config);       // resize, render size, MSAA, HDR
   void ApplySettings(const RenderSettings& _settings); // options_and_budgets.md RND-447
   void RenderFrame(const FrameInputs& _inputs);        // record, execute, present
@@ -168,11 +253,11 @@ public:
 } // namespace Engine
 ```
 
-**Events.** The renderer consumes the platform layer's resize, DPI, focus and output-change events (ADR-075) and raises one event of its own, `DeviceRebuilt`, after a device-removal rebuild (ADR-008), so that dependants can re-register GPU-side data.
+**Events.** The renderer consumes the platform layer's resize, DPI, focus and output-change events (ADR-075) and raises one event of its own, `DeviceRebuilt`, after a device-removal rebuild (ADR-008), once the GPU resource factory has recreated every live resource without its data (RND-035), so that each owner fills its resources again.
 
-**Data contracts.** The presentation snapshot (`PresentationSnapshot`) is defined with the simulation–presentation boundary of DEC-222. It is game code in `Species` and implements the engine's snapshot interface `SceneSnapshot`: the frame renderer hands it on without reading it, and the renderers of game objects, game code too, read it. The renderer needs from it, per drawn object: position, velocity, orientation (front and up), the angular velocity and velocity of every animated mesh node, team, kind and the kind-specific state named in the sub-renderer sections; per sliced pool: which slots the current tick has already advanced (R-SIM-562).
+**Data contracts.** The presentation snapshot (`PresentationSnapshot`) is the baseline contract of RND-018 and RND-019. It is game code in `Species` and implements the engine's snapshot interface `SceneSnapshot`: the frame renderer hands it on without reading it, and the renderers of game objects, game code too, read it. The camera component's `CameraFrameOutput` fills `ViewParams` each frame: position, front and up from its pose and the vertical field of view as it is; the renderer clamps the field of view (RND-212) and does not read the camera velocity.
 
-**Threading contract.** Every public call is made from the frame thread. Within `RenderFrame`, passes or groups of adjacent passes may record their own command lists in parallel (ADR-004); which threads record them follows the threading model of the design phase (see DEC-224). No loader thread ever blocks on the frame thread: uploads go through the copy queue (ADR-008).
+**Threading contract.** Every public call of `FrameRenderer` is made from the frame thread. Within `RenderFrame`, passes or groups of adjacent passes may record their own command lists in parallel (ADR-004); which threads record them follows the threading model of the design phase (see DEC-224). The GPU resource factory may be called from any thread, and no loader thread ever blocks on the frame thread: uploads go through the factory to the copy queue, which only the frame thread submits to (RND-009, ADR-008).
 
 ## 3 Data model
 
@@ -208,7 +293,7 @@ public:
 
 **RND-015** (MUST) Per-draw data travels in root constants (ADR-006): a world transform (`Mat3x4`), a tint colour, a team palette index (ADR-020) and the heap indices of the draw's instance buffer, textures and material parameters. Instanced draws keep per-instance transforms, colours and palette indices in a structured buffer and pass only its index (ADR-009).
 
-**RND-016** (MUST) The team palette is one constant buffer with one entry per colour id of the colour table of `reference/12_simulation_model/06_teams_and_player_commands.md` (R-SIM-415, keys `ref.sim.team_colour.*`), written once per match: ids 0 to `ref.sim.team.player_colour_count` − 1 are the player colours (green, red, yellow, blue, orange, purple, cyan and pink, in that order), id `ref.sim.team.rogue_colour_id` is the Rogue faction and id `ref.sim.team.visitor_colour_id` the Visitor faction.
+**RND-016** (MUST) The team palette is one constant buffer with one entry per colour id of the colour table of `reference/12_simulation_model/06_teams_and_player_commands.md` (R-SIM-415, keys `ref.sim.team_colour.*`), written once per match by `FrameRenderer::SetPalette`, whose colours the game layer passes in colour-id order; the engine holds them as palette entries and never knows which team an entry belongs to (`AGENTS.md` R9). The ids 0 to `ref.sim.team.player_colour_count` − 1 are the player colours (green, red, yellow, blue, orange, purple, cyan and pink, in that order), id `ref.sim.team.rogue_colour_id` is the Rogue faction and id `ref.sim.team.visitor_colour_id` the Visitor faction.
 
 ### 3.4 GPU resources and their lifetimes
 
@@ -216,25 +301,72 @@ public:
 
 | Resource | Lifetime | Created from |
 |---|---|---|
-| static mesh, terrain-chunk and wave-mesh buffers | the match (terrain, sea) or the asset's residency (meshes) | the asset system and the terrain component, uploaded through the copy queue (ADR-008) |
-| tree geometry buffers | the match | generated at map load from each tree's parameters (RND-180) |
-| textures | the asset's residency | the asset cache, one entry per (asset id, processing variant) (see DEC-098) |
+| static mesh buffers | the asset's residency | the asset cache through the GPU resource factory (RND-009), uploaded on the copy queue (ADR-008) |
+| terrain-chunk and wave-mesh buffers | the match | the terrain and sea renderers from the terrain component's field, through the GPU resource factory (RND-009, RND-132, RND-144) |
+| tree geometry buffers | the match | generated at map load from each tree's parameters (RND-180), through the GPU resource factory (RND-009) |
+| textures and run-time textures | the asset's residency; a run-time texture until its producer unregisters it | the asset cache through the GPU resource factory, one entry per (asset id, processing variant) (see DEC-098, AST-122) |
+| glyph pages | the UI framework's glyph cache (ADR-034) | the UI framework through the GPU resource factory; new glyphs are copied in by a frame-graph pass (RND-009 item 3) |
+| particle pool, particle parameter buffer, shard buffers | the client process (VFX-015) | the VFX runtime through the GPU resource factory; written by its compute passes (RND-063) |
 | per-frame constants, instance buffers, dynamic vertex data | one frame in flight | the upload ring (ADR-008) |
 | scene colour and depth targets | the render configuration | the frame graph (ADR-004), sized by the render size and sample count (ADR-015) |
 | captured-frame target | from the screen-transition capture to the end of the transition | a copy of the final image (RND-095) |
 | screenshot read-back buffer | one frame in flight | the frame graph's read-back pass (RND-112) |
 
+### 3.5 The presentation snapshot
+
+**RND-018** (MUST) The presentation snapshot (`PresentationSnapshot`) is the baseline contract between the simulation and every presentation reader, the default under option A of DEC-222 until the design phase decides the boundary. The game layer produces one snapshot per rendered frame, from simulation state alone, after the update slices that the frame runs (R-SIM-531) and before the frame is rendered, and does not change it afterwards. The frame renderer and the renderers of game objects, the VFX runtime ([animation and VFX](../animation_and_vfx/README.md) §2), the match camera ([camera](../camera_and_sequences.md) CAM-004) and the audio bridge ([audio engine](../audio_engine/README.md) AEN-041) read the snapshot of the frame and keep no reference into it beyond that frame. The game layer owns the storage: the baseline keeps one snapshot and reuses it once the frame that read it has finished recording and the audio update of the frame has read it; a threading model that builds the next snapshot while a frame reads the current one keeps two (DEC-224); interpolation between two ticks keeps the snapshots of the last two ticks (DEC-222, R-SIM-565).
+
+**RND-019** (MUST) The snapshot holds the records of table 3.5-A, and each reader reads only the fields that its documents name.
+
+Table 3.5-A The records of the presentation snapshot.
+
+| Record | Fields | Read by |
+|---|---|---|
+| match setup (`MatchSetupView`), fixed at match start | the colour id of each team slot (RND-016, R-SIM-415), the local team, the friend relation of the slots to the local team (R-SIM-412), the seasonal state (DEC-118), the world extent (TER-151) | the renderer, the VFX runtime (the explainer colours of VFX-109), the camera, the audio bridge |
+| frame | the tick number, the extrapolation time (R-SIM-560), the last update slice that the current tick has run (R-SIM-511), the number of the last command frame taken (R-SIM-531), the game speed, and the world-held, paused and game-over flags | the renderer (`FrameInputs`), the VFX runtime, the camera |
+| drawn object | its handle (`SimObjectId`), kind, team colour id, position, velocity, front and up, angular velocity about y, health fraction, state and the flags that select overlays and emitters; for an animated mesh, the velocity and angular velocity of each animated node (RND-159); the kind-specific fields of [world_renderers.md](world_renderers.md), [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) §2 and [animation and VFX](../animation_and_vfx/README.md) §2 | the renderers of game objects, the VFX runtime, the camera (structure focus) |
+| sliced pool | the slots that the current tick has already advanced (R-SIM-562) | the renderers of game objects (RND-082) |
+| history | the Crawler trail samples (R-UNIT-535), the Reaper Serpent's tail positions (R-UNIT-594), the centipede links and samples (R-UNIT-549, R-UNIT-551) | the VFX runtime |
+| route and world marker | per route its points and end point; per world marker its target, kind, icon, owner, persistence and progress fraction ([entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) §2) | the route-line and world-marker renderers |
+| emitter | per tracked emitter its position, velocity, height above the terrain, age and the counts of teams and of actors near it (AEN-041) | the audio bridge |
+
+```cpp
+namespace Species
+{
+
+struct MatchSetupView // the per-match part of the snapshot, fixed at match start (table 3.5-A)
+{
+  std::array<std::uint8_t, MAX_TEAMS> teamColorIds{}; // colour id of each team slot (R-SIM-415); 0xFF = an unused slot
+  std::uint8_t localTeam = 0;                         // the local participant's team slot
+  std::uint32_t friendMask = 0;                       // bit i: slot i is a friend of the local team (R-SIM-412)
+  bool seasonalState = false;                         // DEC-118
+  float worldSizeX = 0.0f;                            // the world extent of the terrain field (TER-151)
+  float worldSizeZ = 0.0f;
+};
+
+// The game's snapshot: the only type behind FrameInputs::snapshot (RND-018, RND-054). Its accessors return the records
+// of table 3.5-A as read-only spans and views that stay valid until the frame that reads them has finished.
+class PresentationSnapshot final : public Engine::SceneSnapshot
+{
+public:
+  [[nodiscard]] const MatchSetupView& Setup() const;
+  [[nodiscard]] std::uint32_t Tick() const;
+};
+
+} // namespace Species
+```
+
 ## 4 Behaviour and algorithms
 
 ### 4.1 Initialisation
 
-**RND-020** (MUST) Start-up runs in this order: the capability checks and device creation of ADR-002 (an adapter that fails a check is skipped; if none passes, the client shows a localised message `ui.error.gpu_unsupported` naming the missing capability and the adapter, logs it and exits without a swap chain); the swap chain of ADR-012 at the window's client-area size; the two root signatures (ADR-006); every pipeline-state catalogue entry, from the pipeline library where it is valid (ADR-005); the frame-graph compilation (ADR-004); then the first frame.
+**RND-020** (MUST) Start-up runs in this order: the capability checks and device creation of ADR-002 (an adapter that fails a check is skipped; if none passes, `Create` returns `StartupError::NoCapableAdapter`, and the client shows a localised message `ui.error.gpu_unsupported` naming the missing capability and the adapter, logs it and exits without a swap chain); the GPU resource factory (RND-009); the swap chain of ADR-012 at the window's client-area size; the two root signatures (ADR-006); every pipeline-state catalogue entry, from the pipeline library where it is valid (ADR-005); the frame-graph compilation (ADR-004); then the first frame.
 
 **RND-021** (MUST) The display preferences ([options_and_budgets.md](options_and_budgets.md), [platform_layer.md](../platform_layer.md)) are read before the swap chain is created. When the stored render size is absent (the first run; DAT-008), the renderer uses the current desktop resolution of the window's monitor and writes it back to the preferences.
 
 **RND-022** (MUST) A preferred render size snaps to the closest entry of the offered render-size list (RND-026): an exact match if one exists, otherwise the entry with the smallest |Δw| + |Δh|.
 
-**RND-023** (MUST) If the window or swap chain cannot be created with the preferred settings, the platform layer's fallback chain applies ([platform_layer.md](../platform_layer.md)): first the preferred settings, then the desktop resolution, then a windowed client area of `rnd.init.fallback_window_size` (800 × 600), and if that fails too, a fatal error with the message `ui.error.display_mode`. After any fallback, the settings actually used are written back to the preferences and the present-mode preference is written back as `Uncapped` (vertical sync off). A failed first attempt shows the non-fatal message `ui.error.resolution_rejected` and continues with the next attempt.
+**RND-023** (MUST) The window is borderless at the desktop size of its monitor or windowed at the requested client size, and no display mode is ever set (RND-025, ADR-075). When the window or the swap chain cannot be created at the preferred size, the platform layer's fallback chain applies ([platform_layer.md](../platform_layer.md) PLT-112): the desktop size of the window's monitor, then a windowed client area of `rnd.init.fallback_window_size` (800 × 600). A rejected first attempt shows the non-fatal notice `ui.error.resolution_rejected` and start-up continues with the next attempt; when every attempt fails, start-up ends with `ui.error.display_mode` (`StartupError::SwapChainFailed`); and the size actually used is written back to the preferences.
 
 ### 4.2 Resolution and aspect handling
 
@@ -266,13 +398,15 @@ public:
 
 ### 4.4 Device removal
 
-**RND-034** (MUST) Device removal or reset, however detected, starts the rebuild of ADR-008: the removal reason and the DRED breadcrumb and page-fault data go to the log and the crash-report attachments; every device object is released; a new device (with the checks of RND-020), swap chain, root signatures and catalogue are created; static GPU resources are reloaded from the asset system and regenerated from the terrain data and the tree parameters behind a loading indicator; presentation resumes. The simulation keeps running throughout. A second removal during the rebuild, or a failed recreation, ends the client with a report.
+**RND-034** (MUST) Device removal or reset, however detected, starts the rebuild of ADR-008: the removal reason and the DRED breadcrumb and page-fault data go to the log and the crash-report attachments; every device object is released; a new device (with the checks of RND-020), the GPU resource factory's resources (RND-035), swap chain, root signatures and catalogue are created; static GPU resources are reloaded from the asset system and regenerated from the terrain data and the tree parameters behind a loading indicator; presentation resumes. The simulation keeps running throughout. A second removal during the rebuild, or a failed recreation, ends the client with a report.
+
+**RND-035** (MUST) In the rebuild, the GPU resource factory releases every device object it holds, then recreates every live resource from its stored description on the new device, under the same id and at the same heap index, holding no data; the renderer then raises `DeviceRebuilt`, and each owner fills its resources again from its own source: the asset cache from its pack entries and its run-time texture producers (AST-119), the glyph cache by rasterising again (ADR-034), the VFX runtime by starting its pool and shard buffers empty (VFX-015), and the world renderers from the terrain field and the tree parameters (RND-132, RND-144, RND-180). The factory keeps no copy of any resource's contents (ADR-008). A factory call made while the rebuild runs never waits: it returns `GpuResourceError::DeviceRebuilding`, and its caller repeats it after `DeviceRebuilt`.
 
 ## 5 Concurrency and performance budget
 
 **RND-040** (MUST) Per-frame CPU work outside the frame thread's recording is bounded by the frame graph's precompiled pass list (ADR-004); the terrain costs only chunk culling (ADR-011), and crowds cost a fixed number of calls per type and pass (ADR-009). No pipeline state is created during a frame (ADR-005).
 
-**RND-041** (MUST) The renderer's GPU and CPU budgets, the quality presets and the reference performance figures are in [options_and_budgets.md](options_and_budgets.md). Every frame-graph pass carries one CPU and GPU marker (`ENGINE_PROFILE_SCOPE` and `ENGINE_PROFILE_GPU_SCOPE`) and one pair of GPU timestamps, in Debug and Release builds (ADR-068), and the development overlay of Debug builds shows per-pass GPU times against those budgets.
+**RND-041** (MUST) The renderer's GPU and CPU budgets, its caps and the quality presets are in [options_and_budgets.md](options_and_budgets.md). Every frame-graph pass carries one CPU and GPU marker (`ENGINE_PROFILE_SCOPE` and `ENGINE_PROFILE_GPU_SCOPE`) and one pair of GPU timestamps, in Debug and Release builds (ADR-068), and the development overlay of Debug builds shows per-pass GPU times against those budgets.
 
 **RND-042** (MUST) Loading and streaming follow the asset pipeline component: static uploads go through the copy queue, an asset becomes visible only after its upload fence has completed (ADR-008), and how Species loads and streams world content is decided by the design phase (see DEC-226).
 
@@ -280,8 +414,10 @@ public:
 
 | Failure | Behaviour | Requirement |
 |---|---|---|
-| no adapter passes the capability checks | localised message naming the missing capability and the adapter; log; exit | RND-020 |
-| the window or swap chain cannot be created | the fallback chain, then a fatal error | RND-023 |
+| no adapter passes the capability checks | `StartupError::NoCapableAdapter`; localised message naming the missing capability and the adapter; log; exit | RND-020 |
+| the window or swap chain cannot be created | the fallback chain, then a fatal error (`StartupError::SwapChainFailed`) | RND-023 |
+| the factory's staging memory is full | the upload is refused with `StagingFull`; the caller repeats it on a later frame; nothing waits | RND-009 |
+| a factory call during a device rebuild | refused with `DeviceRebuilding`; the caller repeats it after `DeviceRebuilt` | RND-035 |
 | device removed or reset | the rebuild of ADR-008; log and crash-report attachments | RND-034 |
 | a pipeline state is created outside start-up, loading or reconfiguration | an error in Debug builds, a log entry in Release builds | ADR-005 |
 | the frame graph fails validation | the renderer stops with a diagnostic naming the pass | ADR-004 |
@@ -292,6 +428,8 @@ Diagnostics: PIX markers and GPU timestamps per pass, in both configurations (AD
 
 ## 7 Acceptance tests
 
+The golden-image tests of this folder compare with the default tolerance and on the pinned reference configuration of the test harness ([diagnostics, test and performance](../diagnostics_test_and_performance/README.md) §4.8), unless a test states its own tolerance.
+
 | Test | Kind | Checks | Requirements |
 |---|---|---|---|
 | T1 boundary | build check | the simulation library cannot include a renderer header; the renderer has only const access to the snapshot; the dedicated-server link map has no Direct3D symbol | RND-002, RND-003, RND-008 |
@@ -299,11 +437,12 @@ Diagnostics: PIX markers and GPU timestamps per pass, in both configurations (AD
 | T3 capability probe | unit | recorded capability results (all pass, each single failure, unknown Shader Model) give the expected adapter choice and message | RND-020 |
 | T4 first run | unit | with no stored render size, the desktop resolution is used and written back | RND-021 |
 | T5 closest size | property | for random preferred sizes, the chosen entry minimises |Δw| + |Δh| and an exact match always wins | RND-022, RND-026 |
-| T6 fallback chain | unit | forced failures of each attempt give the next attempt, the write-back and the present mode `Uncapped` | RND-023 |
+| T6 fallback chain | unit | forced failures of each attempt give the next attempt and the write-back of the size in use; no display mode is set | RND-023 |
 | T7 reconfigure | integration | resize, render-size, sample-count and HDR changes during a match keep the device and the terrain buffers, and raise no validation message | RND-030, RND-031 |
 | T8 aspect | golden-image | the same scene at 4:3, 16:9 and 21:9 keeps the vertical field of view and HUD positions in HUD units | RND-027, RND-028 |
 | T9 lights | unit | a map with one light gives a black second light; the seasonal state replaces both colours; a default light has colour 1.3 and direction (0, 0, 1) | RND-012, RND-013 |
-| T10 device removal | integration | forced device removal during a match resumes presentation with the match still running and a DRED report in the log | RND-034 |
+| T10 device removal | integration | forced device removal during a match resumes presentation with the match still running and a DRED report in the log; every factory resource keeps its id and heap index, its owner fills it again, and a golden image taken after the rebuild equals the one taken before it | RND-034, RND-035 |
+| T11 resource factory | unit | with the in-memory factory of ADR-078: uploads from several threads return increasing fence values; a full staging budget refuses an upload at once; a release frees the descriptor slot only after the frames in flight; a call during a rebuild is refused with `DeviceRebuilding` | RND-009, RND-035 |
 
 ## 8 Open decisions
 
@@ -315,9 +454,9 @@ Diagnostics: PIX markers and GPU timestamps per pass, in both configurations (AD
 | DEC-012 | Resolved | collision volumes are baked data (RND-004) |
 | DEC-013 | Resolved | presentation randomness (RND-005) |
 | DEC-052 | Dropped | campaign content: its frame types, logo overlays and structures are not specified |
-| DEC-059 | Dropped | the pixel effect, the deform effect, the water reflection and an emulation layer are not specified |
+| DEC-059 | Dropped | the pixel effect, the deform effect and the water reflection are not specified |
 | DEC-098 | Resolved | the texture cache is keyed by asset and variant (RND-007, RND-017) |
-| DEC-222 | Open | how the snapshot is produced; extrapolation or interpolation (RND-002) |
+| DEC-222 | Open | how the snapshot is produced, with the baseline contract of RND-018 and RND-019 as the default of option A; extrapolation or interpolation (RND-002) |
 | DEC-224 | Open | which threads record passes (§2 threading contract) |
 | DEC-226 | Open | loading and streaming of world content (RND-042) |
 | DEC-247 | Open | terrain scale and level of detail ([world_renderers.md](world_renderers.md) RND-138) |
@@ -330,11 +469,11 @@ Diagnostics: PIX markers and GPU timestamps per pass, in both configurations (AD
 | DEC-654 | Resolved | gameplay is CPU-only (RND-003) |
 | DEC-967 | Resolved | option changes rebuild presentation data only and never regenerate the height field (RND-031) |
 
-**RND-045** (MUST NOT) The renderer specifies no alternative graphics back end, no screen-space pixelation or deform effect, no planar water reflection and no driver-specific workaround (see DEC-059, DEC-336, DEC-337).
+**RND-045** (MUST) The renderer draws exactly the frame types and passes of [frame_graph_and_passes.md](frame_graph_and_passes.md) (RND-067, RND-070) on Direct3D 12 through the Agility SDK (ADR-001), with one code path for every adapter that passes the checks of RND-020 (see DEC-059, DEC-336, DEC-337).
 
-### 8.2 Direct3D 12 mapping per component
+### 8.2 Direct3D 12 realisation per component
 
-| Component | Species mapping | Decided in | Specified in |
+| Component | Species realisation | Decided in | Specified in |
 |---|---|---|---|
 | renderer core | an explicit renderer: per-frame upload ring, batched and instanced draws, one catalogue entry per blend, depth and cull combination of the pass table | ADR-001, ADR-004, ADR-005 | [frame_graph_and_passes.md](frame_graph_and_passes.md) |
 | state contract | immutable pipeline states derived from the default state plus per-pass differences; one root signature with per-frame constants (view, projection, fog, two lights) and per-draw root constants (world transform, tint) | ADR-005, ADR-006 | [frame_graph_and_passes.md](frame_graph_and_passes.md) §3 |
@@ -354,13 +493,14 @@ Diagnostics: PIX markers and GPU timestamps per pass, in both configurations (AD
 | screen effects | full-screen passes that read a declared frame-graph copy of an earlier image | ADR-004 | [frame_graph_and_passes.md](frame_graph_and_passes.md) §4.7 |
 | shadows | decal blobs and flattened sprite shadows as instanced, depth-biased darkening quads | ADR-009 | [view_lighting_and_fog.md](view_lighting_and_fog.md) §4.6 |
 | screenshots | a read-back pass that copies the final image into a read-back buffer, encoded off the frame thread | ADR-004, ADR-076 | [frame_graph_and_passes.md](frame_graph_and_passes.md) §4.8 |
-| device loss | full device recreation | ADR-008 | RND-034 |
+| client GPU resources | one factory that creates, fills, releases and rebuilds every resource another component holds | ADR-078 | RND-009, RND-035 |
+| device removal | full device recreation | ADR-008 | RND-034 |
 
 ### 8.3 Design-phase inputs
 
 The Species design phase must answer these questions for the renderer:
 
-1. **Snapshot and smoothing.** What the presentation snapshot holds, and whether the renderer extrapolates from one snapshot (the reference) or interpolates between two with a one-tick display delay (DEC-222, R-SIM-565, DEC-227).
+1. **Snapshot and smoothing.** Whether the baseline snapshot of RND-018 and RND-019 becomes the simulation–presentation boundary and the replication format, and whether the renderer extrapolates from one snapshot (the reference) or interpolates between two with a one-tick display delay (DEC-222, R-SIM-565, DEC-227).
 2. **Threading.** Which threads record the frame's command lists, and how presentation receives snapshots and effect events from the simulation thread or the network (DEC-224).
 3. **World scale.** How the terrain, the sea and the sky scale beyond an arena map: chunk streaming, levels of detail for the strategic zoom, camera-relative coordinates beyond a few tens of thousands of wu, and a far plane and fog distance for a world that is larger than `rnd.view.far_plane` (DEC-247, DEC-226, ADR-011).
 4. **Lighting.** Whether maps keep per-map lights or select named presets, and whether lights keep the one-frame lag (DEC-562, DEC-325).
@@ -375,6 +515,7 @@ The Species design phase must answer these questions for the renderer:
 | `rnd.light.default_front` | 0, 0, 1 | unit vector | direction of a light built without data | RND-012 | |
 | `rnd.light.seasonal_colour` | 1.3, 1.2, 1.2 | RGB multiplier | replaces every light colour while the seasonal state is active | RND-013 | DEC-101, DEC-118 |
 | `rnd.init.fallback_window_size` | 800 × 600 | px | windowed fallback client area | RND-023 | |
+| `rnd.resources.staging_budget_mib` | 96 | MiB | staging memory of the GPU resource factory's queued uploads, shared by every client; the asset cache's own share is `ast.load.staging_budget_mib` | RND-009 | DEC-106 |
 | `rnd.init.min_render_width` | 640 | px | smallest offered render width | RND-026 | |
 | `rnd.init.min_render_height` | 480 | px | smallest offered render height | RND-026 | |
 | `rnd.hud.message.reference_width` | 1280 | px | match messages scale by render width ÷ this | RND-028 | |

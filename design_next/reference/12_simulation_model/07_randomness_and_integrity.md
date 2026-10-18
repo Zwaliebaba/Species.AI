@@ -74,7 +74,6 @@ A 3-vector built from draws takes its x draw first, then y, then z.
 | Worker abduction spark | one `NextUnit(1)` compared with 0.5 per abducted tick |
 | volcano vent | one integer draw per idle tick and one `NextUnit(4)` |
 | Barrier Emitter sparks | one `NextUnit(4)` per spark |
-| Essence orb break particles | fifteen `NextUnit(5)` once |
 | thrown-weapon trail, airstrike target marker smoke, rocket smoke, Transport exhaust | per particle |
 
 **R-SIM-623** (MUST) Every rejection loop and search in the simulation has a capped number of attempts and a deterministic fallback (DEC-014). These loops consume a data-dependent number of draws, identical for identical inputs. They are: the Supply crate capture when no valid outcome exists; the starting-Powers choice; the Missile Barrage sea search; the Abductor land search; the bot target-area loops; the Brood spawn-type choice; the target-structure retries; the valid-point loops of the Strike team, Transport, Collector and Builder outcomes; the turret spacing of the Flag Chain turret placement; the Launch Race drop-off point search; the colour loop for unused slots at match-world initialisation; the bot colour choice when every bot colour is taken; and the land searches of lightning strikes and dust vortices.
@@ -125,7 +124,6 @@ Table 1 — Draws per object family (simulation draws unless marked presentation
 | Leader: bot re-order | `NextUnit(20)`, `NextUnit(2π)` | each bot re-order | [reference/07](../07_bots/README.md) |
 | Essence orb: spawn | `NextUnit(10)`, three `NextUnit(2)` | spawn | reference/02 |
 | Essence orb: step | three `NextSigned(1)` every tick; `NextUnit(0.5)` while being born; `NextUnit(10)` at the high point of its birth; `NextSigned(60)` from birth to floating; `NextUnit(2)` at death | every orb, every tick | reference/02 |
-| Essence orb: break | fifteen `NextUnit(5)` | once — presentation | reference/02 |
 | actor-group formation offsets | 100 `NextUnit(1)` | match initialisation (R-SIM-627) | [03](03_entity_model_and_identity.md) |
 | ant: leg shape | `NextUint` modulo 3 | every tick per ant — presentation | [reference/02 creatures](../02_units/creatures.md) |
 | ant: moving to a target | `NextSigned(0.2)` heading jitter | every tick | [reference/02 creatures](../02_units/creatures.md) |

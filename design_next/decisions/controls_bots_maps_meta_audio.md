@@ -59,14 +59,14 @@ This file holds the decisions on controls and powers, bots, maps and level data,
 
 ### DEC-553 Default bindings that rely on lenient parsing
 - Status: Resolved
-- Affects: architecture/components/input.md (INP), reference/06_controls_camera_and_commands/ (R-CTRL)
+- Affects: architecture/components/input/ (INP), reference/06_controls_camera_and_commands/ (R-CTRL)
 - Specified behaviour: The default binding set states each binding with its effective meaning, and the binding parser rejects a condition word it does not know (DEC-096). Three default bindings are press bindings on the gamepad triggers, which fire once when the trigger goes down: the left and right bindings of the leaderboard page (a hook page, DEC-047) and the secondary fire-at-target binding on the left trigger. The default set leaves out the lines that bind nothing: lines for a device that no input driver accepts (on the deselect, cycle-right and toggle-ready controls), a line that assigns a glyph to a control that does not exist, and a line that declares an input type with no assignment. The gesture bindings, among them one bound through a misspelt condition word and the power-cancel key chord, are not specified (DEC-055). The UI pointer-down and UI pointer-held bindings are aliases: the show-cursor control combined with the gamepad's primary face button going down, and held, respectively.
 - Options: A — state the effective bindings explicitly and reject unknown words; B — the reference behaviour, in which an unknown condition word (an auto-repeat word on a trigger, a misspelling, or a Boolean word on a one-axis control) reads as a press, and four default bindings work only because of it.
 - Recommendation: A. The bindings a player uses stay exactly as they are, and a mistyped binding becomes a load error with a diagnostic instead of a silent press binding.
 
 ### DEC-554 Input devices, key names and binding drivers
 - Status: Resolved
-- Affects: architecture/components/input.md (INP), reference/06_controls_camera_and_commands/ (R-CTRL)
+- Affects: architecture/components/input/ (INP), reference/06_controls_camera_and_commands/ (R-CTRL)
 - Specified behaviour: These input corrections apply in addition to those of DEC-096:
   1. analogue trigger values are read over their full range without overflow, so a binding may use trigger magnitude; no default binding does;
   2. one table maps every key code to one canonical key name, and parsing, display and saving all use it; the numeric-pad minus key and the meta key resolve to their own key codes;
@@ -148,7 +148,7 @@ This file holds the decisions on controls and powers, bots, maps and level data,
 
 ### DEC-563 Map thumbnails and the map index are content-build outputs
 - Status: Resolved
-- Affects: reference/08_maps_and_level_design/README.md (R-MAP), reference/09_front_end_and_match_flow/options_localisation_and_hooks.md (R-META), architecture/components/asset_pipeline_and_resources.md (AST), architecture/components/build_tooling_and_distribution.md (BLD)
+- Affects: reference/08_maps_and_level_design/README.md (R-MAP), reference/09_front_end_and_match_flow/options_localisation_and_hooks.md (R-META), reference/00_reference_overview.md (R-VIS-041), architecture/components/asset_pipeline_and_resources.md (AST), architecture/components/build_tooling_and_distribution.md (BLD)
 - Specified behaviour: The content build renders each map's thumbnail with the engine, from a top-down view of the map at an aspect ratio of 4:3. It also generates the map index, the list of map ids that the Completionist achievement hook counts (DEC-047), and packages it with the maps it lists. Packaged data holds no asset that nothing references.
 - Options: A — build outputs; B — the reference behaviour, in which thumbnails are 400 × 300 images made outside the engine, the content build leaves the map index out of the packaged data, so the Completionist achievement has no list of maps to count, and the packaged data holds assets that nothing references.
 - Recommendation: A. A generated thumbnail always matches the map it shows, and a generated index cannot drift from the maps it lists.
@@ -158,21 +158,21 @@ This file holds the decisions on controls and powers, bots, maps and level data,
 ### DEC-564 Laser fire is audible, and selection sounds stay local
 - Status: Resolved
 - Affects: reference/10_audio_design/ (R-AUD), reference/06_controls_camera_and_commands/ (R-CTRL)
-- Specified behaviour: The laser-bolt events are bound: a laser bolt is heard when it is fired, when it hits a structure and when it kills. When the interface sounds for selecting and deselecting a power are bound, they play only for the local player's own selections, never for another team's. The other silent moments of the reference are decided elsewhere: the match-end stings (DEC-049), the Supply crate capture and decay tones and the Strike team grenade throw (DEC-097), the final countdown sound (DEC-072), and the Supply crate expiry and the remaining silent events (DEC-565).
+- Specified behaviour: The laser-bolt events are bound: a laser bolt is heard when it is fired, when it hits a structure and when it kills. When the interface sounds for selecting and deselecting a power are bound, they play only for the local player's own selections, never for another team's. The other silent moments of the reference are decided elsewhere: the match-end stings (DEC-097, R-AUD-307), the Supply crate capture and decay tones and the Strike team grenade throw (DEC-097), the final countdown sound (DEC-072), and the Supply crate expiry and the remaining silent events (DEC-565).
 - Options: A — bind the laser-bolt events, with the selection sounds scoped to the local player; B — the reference behaviour, in which the laser-bolt events fire with no binding and are silent, and the selection sounds fire for every team's selections, silent only because they have no binding.
-- Recommendation: A. Laser fire is the Workers' main attack (DEC-030) and should never be silent. The reference sound set holds unbound recordings for laser charging, structure hits, actor hits, ground hits and ricochets, so these moments are meant to be heard; Species authors new sounds for them. A selection sound that plays for another team's selection would tell the player nothing about their own actions.
+- Recommendation: A. Laser fire is the Workers' main attack (DEC-030) and should never be silent. Species adds the laser-bolt fire, structure-hit and kill groups; their variant counts are in GameAssets §13.36. A selection sound that plays for another team's selection would tell the player nothing about their own actions.
 
 ### DEC-565 Sounds for the other silent gameplay events
 - Status: Open
 - Affects: reference/10_audio_design/ (R-AUD)
-- Specified behaviour: These gameplay events fire with no binding and are silent: a Supply crate expiring unopened; a turret acquiring a target, and a rocket turret firing; an actor electrocuted by a Barrier Emitter; a Relic being lifted and carried, whose carry sound is stopped when the Relic is dropped; Workers boarding and leaving a Transport; a Leader changing its order mode (follow and none); the creature cues of a spider landing a pounce, a centipede growing, panicking and sighting an enemy, a Reaper Serpent panicking and a Spitter Plant launching a Seed Pod; a Transit Gate coming online; selecting a Transport, a Builder or a Collector; selecting a power, and the player's waypoint order; a Builder delivering an Essence orb; a Collector, a Bomber, a barrage missile or a meteor losing health or being destroyed; and leaving the match. The reference sound set holds unbound recordings of carrying and straining, of Leader acknowledgements and of marching, attention and formation calls.
+- Specified behaviour: These gameplay events fire with no binding and are silent: a Supply crate expiring unopened; a turret acquiring a target, and a rocket turret firing; an actor electrocuted by a Barrier Emitter; a Relic being lifted and carried, whose carry sound is stopped when the Relic is dropped; Workers boarding and leaving a Transport; a Leader changing its order mode (follow and none); the creature cues of a spider landing a pounce, a centipede growing, panicking and sighting an enemy, a Reaper Serpent panicking and a Spitter Plant launching a Seed Pod; a Transit Gate coming online; selecting a Transport, a Builder or a Collector; selecting a power, and the player's waypoint order; a Builder delivering an Essence orb; a Collector, a Bomber, a barrage missile or a meteor losing health or being destroyed; leaving the match; the 100 % capture-progress tone `supply_crate.capture_progress_100`; and a sting of their own for the rocket turret, flame turret and Firebomb Run outcomes, which play the gun-turret and airstrike stings instead, and for the Builder, Time Dilation and Time Rush outcomes, which play no sting (R-AUD-139, R-AUD-411).
 - Options: A — keep these events silent; B — author and bind a sound for every one of them; C — bind a reviewed subset first, ranked by how much the player needs to hear the event to act on it, and extend it as the mix budget allows.
 - Recommendation: C, growing to B within the voice budgets of DEC-570. Bind first the events a player acts on: a Supply crate expiring unopened, a turret acquiring a target, a Barrier Emitter electrocution, a Relic lifted and carried, Workers boarding and leaving a Transport, Leader order changes, unit and power selection, the waypoint order and a Transit Gate coming online; then the creature cues and the damage sounds. The authored event list is reviewed event by event, so that no event stays silent by accident (DEC-027).
 - Decide by: design phase
 
 ### DEC-566 Listener position and distance limits
 - Status: Open
-- Affects: reference/10_audio_design/ (R-AUD), architecture/components/audio_engine.md (AEN)
+- Affects: reference/10_audio_design/ (R-AUD), architecture/components/audio_engine/ (AEN)
 - Specified behaviour: The listener is the camera: panning and distance attenuation both use the camera position. Attenuation follows the inverse-distance law (minimum distance ÷ distance) with no maximum distance. There is no Doppler effect and no occlusion. Voice limits come from priority classes and virtualisation (DEC-027), and the audibility of crowd sounds from DEC-109.
 - Options: A — the reference listener and law; B — pan from the camera position, but attenuate from a focus point on the ground under the camera, blended with the camera position by zoom, so that a high camera still hears the battle it looks at; keep the inverse-distance law and add a per-event maximum distance and culling radius; no Doppler effect and no occlusion, with an optional low-pass filter by distance.
 - Recommendation: B, tuned together with DEC-109 by a listening test at several camera heights. The inverse-distance law keeps the authoring model, and the focus point keeps the battle audible at strategic zoom, a view that the strategic zoom level of the world game makes common (vision O9).
@@ -180,29 +180,29 @@ This file holds the decisions on controls and powers, bots, maps and level data,
 
 ### DEC-567 Dry mix or applied effects
 - Status: Open
-- Affects: reference/10_audio_design/ (R-AUD), architecture/components/audio_engine.md (AEN)
-- Specified behaviour: No audio effect runs, so the reference is heard dry. Sound definitions name effects in 22 places, but no effect is attached unless the preference file is edited by hand, and the long releases authored for echo tails play out as silence while they keep a voice busy. Where Species uses effects, they are applied per bus (DEC-027), and switching them off leaves no effect processing on any voice or bus (DEC-752). A DSP parameter that an effect binding omits takes its declared default, the schema default of every effect parameter (AEN-071, DAT-012); the reference reads an omitted parameter as 0.0, which lies outside the declared range of 21 of the 63 parameters. The choice is audible only once effects are enabled.
+- Affects: reference/10_audio_design/ (R-AUD), architecture/components/audio_engine/ (AEN)
+- Specified behaviour: No audio effect runs in a match, so the mix is heard dry, and the long releases authored for echo tails play out as silence while they keep a voice busy. Where Species uses effects, they are applied per bus (DEC-027), and switching them off leaves no effect processing on any voice or bus (DEC-752). A DSP parameter that an effect binding omits takes its declared default, the schema default of every effect parameter (AEN-071, DAT-012), never 0. The choice is audible only once effects are enabled.
 - Options: A — dry: the effect slots of the buses stay empty; B — a reverb send and a limiter on the master bus; C — option B plus per-event effects where a sound is designed for one.
 - Recommendation: B, adopted only after a listening test confirms that it keeps the character of the dry reference mix (vision pillar 5). The master limiter is safe in every case, because it only prevents clipping in dense fights. Sounds are authored for the chosen effect model, so no release tail is authored for an effect that does not run.
 - Decide by: design phase
 
 ### DEC-568 Sample-group choice and linked parameters
 - Status: Resolved
-- Affects: reference/10_audio_design/ (R-AUD), architecture/components/audio_engine.md (AEN)
+- Affects: reference/10_audio_design/ (R-AUD), architecture/components/audio_engine/ (AEN)
 - Specified behaviour: A sample group chooses its sample at random with authored weights and never plays the same sample twice in a row; pitch variation adds further variety. Linked parameters keep the four reference links (velocity, height above ground, camera distance and vertical position) and add four more: the age of the emitting object, the number of teams nearby, the game time remaining and the unit count.
 - Options: A — the adapted rules; B — the reference behaviour, in which a group's random choice can repeat the previous sample and only the four reference links exist.
 - Recommendation: A. No immediate repeat removes the most audible artefact of random choice, weights let a designer favour the best takes, and the new links let the mix follow the state of the match.
 
 ### DEC-569 Game-speed pitch bend
 - Status: Resolved
-- Affects: reference/10_audio_design/ (R-AUD), architecture/components/audio_engine.md (AEN)
+- Affects: reference/10_audio_design/ (R-AUD), architecture/components/audio_engine/ (AEN)
 - Specified behaviour: Game speed bends the pitch of world sounds by the square root of the game speed, smoothed over time rather than per call (DEC-097), as an effect of the world buses. UI sounds and announcer stings are not bent. The pitch drop at match end is kept as a deliberate effect: as the game speed falls, the world sounds fall to 0.1× pitch, and a listening test confirms its character (DEC-320). The smoothed game-speed value starts every match at normal speed and is discarded at match end (DEC-751).
 - Options: A — the adapted rule; B — the reference behaviour, in which the bend comes from a smoother that advances once per call, so its speed depends on the number of playing voices (DEC-097), and the bend is not limited to world sounds.
 - Recommendation: A. A speed change is a world event (Time Dilation, Time Rush and the slow-motion phase of the meteor shower, DEC-039), so it belongs on the world buses, while UI feedback and stings stay readable at every speed.
 
 ### DEC-570 Buses, priority classes and voice budgets
 - Status: Resolved
-- Affects: reference/10_audio_design/ (R-AUD), reference/09_front_end_and_match_flow/options_localisation_and_hooks.md (R-META), architecture/components/audio_engine.md (AEN)
+- Affects: reference/10_audio_design/ (R-AUD), reference/09_front_end_and_match_flow/options_localisation_and_hooks.md (R-META), architecture/components/audio_engine/ (AEN)
 - Specified behaviour: The mix has six buses under the master bus, each with its own volume slider for the player (DEC-044), sharing 64 real voices:
 
   | Bus | Contents | Default level | Real voices | Priority class |

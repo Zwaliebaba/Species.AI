@@ -27,7 +27,7 @@ Notation used throughout:
 
 **INP-002** (MUST) Game code never reads a device. It asks the input router (`InputRouter`) whether an action fired in the current frame and may receive the action's value: its kind, its axis values and the device that produced it. Every answer comes from the state that the router built at the start of the frame; asking is free of side effects (DEC-554).
 
-**INP-003** (MUST) The match actions are exactly the action ids of [actions and bindings](../../../reference/06_controls_camera_and_commands/actions_and_bindings.md) table 2.1-A (R-CTRL-030). This component binds them (table 3.6-A). The UI navigation actions, their meanings and their context rules are those that the UI framework defines ([layout, rendering, input and localisation](../ui_framework/layout_rendering_input_and_localisation.md) UI-203, UI-204; R-CTRL-035); their bindings are owned here: table 3.6-B is the one binding table of every `action.menu.*` action, which the UI framework cites (INP-077). This component defines no menu action of its own, except the five leaderboard hook-page actions that no UI requirement lists. The developer actions of the development binding layer exist in Debug builds only (INP-094). Action ids are the stable names that bindings, rebinding and saved settings use (ADR-029).
+**INP-003** (MUST) The match actions are exactly the action ids of [actions and bindings](../../../reference/06_controls_camera_and_commands/actions_and_bindings.md) table 2.1-A (R-CTRL-030). This component binds them (table 3.6-A). The UI navigation actions, their meanings and their context rules are those that the UI framework defines ([layout, rendering, input and localisation](../ui_framework/layout_rendering_input_and_localisation.md) UI-203, UI-204; R-CTRL-035); their bindings are owned here: table 3.6-B is the one binding table of every `action.menu.*` action, which the UI framework cites (INP-077). This component defines no menu action of its own. The developer actions of the development binding layer exist in Debug builds only (INP-094). Action ids are the stable names that bindings, rebinding and saved settings use (ADR-029).
 
 **INP-004** (MUST) Player commands originate only in the input layer. The match input pump (`MatchInputPump`) and the sampler of the team command state (`TeamCommandState`) turn actions into members of `PlayerCommand` and into fields of the team command state, by the rules of [actions and bindings](../../../reference/06_controls_camera_and_commands/actions_and_bindings.md) (DEC-023); the router itself produces actions, never commands. Simulation code links no input interface, never queries an action, never reads the pointer, a device, the input mode or the camera, and never issues a player command (DEC-008, DEC-119, R-CTRL-003, R-CTRL-004). One click therefore yields one command on the sender and one effect on every participant.
 
@@ -39,7 +39,7 @@ Notation used throughout:
 
 **INP-008** (MUST) The neighbours of this component own: the window, its focus, its close request and the system cursor's visibility over the client area ([platform layer](../platform_layer.md), ADR-075); widget focus, page navigation, UI repeat timers and input-mode captions ([UI framework](../ui_framework/README.md), ADR-032); the meaning, context and command of every match action (reference/06); the file format of the binding sets ([data schemas](../data_schemas/README.md), ADR-061, ADR-062); and the settings store (`SettingsStore`) that holds the user layer (DEC-250).
 
-**INP-009** (MUST) The default binding set binds only the actions of tables 3.6-A and 3.6-B, that is the actions of reference/06 table 2.1-A, those of UI-203 and the leaderboard hook-page actions. It holds the one match control scheme (`ControlScheme`, R-CTRL-002): no alternative scheme (DEC-056), no gesture input and no icon Power bar (DEC-055), no loader mini-programs or attract mode (DEC-054), and no developer key other than `action.debug.network_stats`. The developer keys of DBG-020 are the development binding layer of table 3.11-A, which only Debug builds read (INP-094); this rule holds for the default set in every build.
+**INP-009** (MUST) The default binding set binds only the actions of tables 3.6-A and 3.6-B, that is the actions of reference/06 table 2.1-A and those of UI-203. It holds the one match control scheme (`ControlScheme`, R-CTRL-002): no alternative scheme (DEC-056), no gesture input and no icon Power bar (DEC-055), and no developer key other than `action.debug.network_stats`. The developer keys of DBG-020 are the development binding layer of table 3.11-A, which only Debug builds read (INP-094); this rule holds for the default set in every build.
 
 **INP-010** (MUST) Every device class is remapped through the same binding graph, and the graph offers a latch node for hold-or-toggle options (§4.8), so remapping and toggle options are done once for every device (ADR-064).
 
@@ -104,6 +104,9 @@ enum class MouseControl : std::uint8_t // table 3.2-B
   Wheel
 };
 enum class PadControl : std::uint8_t; // table 3.2-C
+
+class InputEventQueue; // the ordered event queue of one frame (INP-115, diagram 3.10-A)
+// AppWindow is the platform layer's (platform_layer.md §2); LogCategory is the diagnostics component's (its README §2.1).
 
 struct InputEvent // INP-115
 {
@@ -176,21 +179,21 @@ public:
   std::optional<BindingNode> CaptureFirstActiveInput(LocalPlayerId _player, DeviceClassMask _classes, bool _instant) const;
   std::optional<BindingDescription> Describe(ActionId _action) const;
   std::optional<AssetId> Glyph(ActionId _action) const;
-  void ClearBindings();                    // keeps glyph overrides
-  void DumpBindings(LogSink& _sink) const; // diagnostics (INP-242)
+  void ClearBindings();      // keeps glyph overrides
+  void DumpBindings() const; // to the log, category LogCategory::Input (INP-242, ADR-067)
 
-  // Notifications, raised inside AdvanceFrame.
-  Signal<LocalPlayerId, InputMode> onModeChanged;
-  Signal<std::string_view> onLayoutChanged;
+  // Change notices, called inside AdvanceFrame in registration order (INP-150, INP-166).
+  void AddModeListener(std::function<void(LocalPlayerId, InputMode)> _listener);
+  void AddLayoutListener(std::function<void(std::string_view)> _listener);
 };
 
 class DeviceBackEnd // INP-105
 {
 public:
   virtual ~DeviceBackEnd() = default;
-  virtual bool Initialize(PlatformServices& _platform) = 0;
-  virtual void Collect(EventSink& _sink) = 0;    // every event since the last call, in order
-  virtual void ReleaseAll(EventSink& _sink) = 0; // release events for everything held (INP-111)
+  virtual bool Initialize(AppWindow& _window) = 0;      // the keyboard and mouse back-end registers as its input sink (INP-108)
+  virtual void Collect(InputEventQueue& _queue) = 0;    // appends every event since the last call, in order
+  virtual void ReleaseAll(InputEventQueue& _queue) = 0; // appends release events for everything held (INP-111)
   virtual void Shutdown() = 0;
 };
 
@@ -213,11 +216,12 @@ public:
 | `Glyph(action)` | the action's glyph override, if the binding set gives one (§3.7) |
 | `IsIdle()`, `IdleSeconds()`, `Mode(player)` | §4.11 |
 | `ClearBindings()` | removes every binding of every action; glyph overrides stay |
-| `DumpBindings(sink)` | writes every action with its bindings in canonical form and the count of bindings (§6.4) |
+| `DumpBindings()` | writes every action with its bindings in canonical form and the count of bindings to the log (§6.4) |
+| `AddModeListener(listener)`, `AddLayoutListener(listener)` | registers a function that `AdvanceFrame` calls on each change of a player's input mode (INP-150) or of the active keyboard layout (INP-166), in registration order |
 
 ### 2.3 Events and data contracts
 
-**INP-021** (MUST) The router's inputs are: the device events of the back-ends (§4.2, §4.3); the frame gates, which the UI framework and the platform layer supply before `AdvanceFrame`; the values of the settings that setting nodes and the keyboard-layout setting name (§4.8, §4.13); and the layout-change and focus-change notices of the keyboard and mouse back-end.
+**INP-021** (MUST) The router's inputs are: the device events of the back-ends (§4.2, §4.3); the frame gates, which the UI framework and the platform layer supply before `AdvanceFrame`; the values of the settings that setting nodes and the keyboard-layout setting name (§4.8, §4.13); the edition's runtime feature flags, which value nodes name (INP-143); and the layout-change and focus-change notices of the keyboard and mouse back-end.
 
 **INP-022** (MUST) The router's outputs are: action results and values (by query); the pointer state; the input mode of each local player and its change notice; the idle state; the active keyboard layout and its change notice; the assignment and connection state of each local player's gamepad; and text events, which it forwards unchanged to the UI framework's text service (INP-006).
 
@@ -291,8 +295,8 @@ No match rule of reference/06 uses the three axis helpers; the stateful hold-or-
 | `alias` | an action id | `Boolean` | true when that action fires; an alias chain that leads back to its own action is rejected (DEC-554) |
 | `latch` | an `on` operand and an `off` operand, both `Boolean` and neither a `latch` | `Boolean` | §4.8 |
 | `idle` | `at_least` N, `reaches` N or `no_longer`; N a whole number of seconds of at least 1 | `Axis1` for `at_least` (x = the idle time), otherwise `Boolean` | §4.8 |
-| `setting` | a setting name and an optional negation | `Boolean` | the setting must exist in the settings store or its defaults when the binding loads; it can be negated once |
-| `value` | `AlwaysTrue` or `FeatureFlagX` | `Boolean` | `AlwaysTrue` is always true; `FeatureFlagX` is true while the feature flag `FeatureFlagX` is above 0 |
+| `setting` | a setting key (`<group>.<setting>`, [data schemas](../data_schemas/config_input_and_strings.md) table 3.1-A) and an optional negation | `Boolean` | the setting must exist in the settings store or its defaults when the binding loads; it can be negated once |
+| `value` | `always_true`, or `feature` with the name of an on/off runtime feature flag of [build tooling](../build_tooling_and_distribution.md) table 3.2-B | `Boolean` | `always_true` is always true; `feature` is true while the edition sets that flag `on` (INP-143); a flag that table 3.2-B does not list, or one whose values are not `on` and `off`, is rejected when the binding loads |
 
 **INP-061** (MUST) An action accepts a binding by the action's kind:
 
@@ -329,8 +333,8 @@ A `Boolean` binding on an `Axis1` or `Axis2` action is rejected when it loads (�
 | `alias(action.ui.show_cursor)` | `{"alias": "action.ui.show_cursor"}` |
 | `latch(on: x, off: y)` | `{"latch": {"on": x, "off": y}}` |
 | `idle:at_least:60`, `idle:reaches:60`, `idle:no_longer` | `{"idle": "at_least", "seconds": 60}`, `{"idle": "reaches", "seconds": 60}`, `{"idle": "no_longer"}` |
-| `setting:Name`, `setting:not:Name` | `{"setting": "Name"}`, `{"setting": "Name", "negate": true}` |
-| `value:AlwaysTrue`, `value:FeatureFlagX` | `{"value": "AlwaysTrue"}`, `{"value": "FeatureFlagX"}` |
+| `setting:interface.tips`, `setting:not:interface.tips` | `{"setting": "interface.tips"}`, `{"setting": "interface.tips", "negate": true}` |
+| `value:always_true`, `value:feature:tutorial` | `{"value": "always_true"}`, `{"value": "feature", "flag": "tutorial"}` |
 
 **INP-072** (MUST) The canonical writer writes the properties in the order of the table, the canonical control names, and the sensitivity only when it differs from the default. Writing a binding and parsing it back yields the same binding (ADR-029, DEC-800).
 
@@ -370,9 +374,9 @@ classDiagram
   }
   class DeviceBackEnd {
     <<interface>>
-    +Initialize(platform) bool
-    +Collect(sink)
-    +ReleaseAll(sink)
+    +Initialize(window) bool
+    +Collect(queue)
+    +ReleaseAll(queue)
     +Shutdown()
   }
   class GamepadBackEnd
@@ -498,10 +502,11 @@ Table 6.1-A Load diagnostic classes.
 | `KindNotAccepted` | the binding's kind is not accepted by the action's kind (INP-061) |
 | `AliasCycle` | an alias chain leads back to an action already on the chain |
 | `UnknownSetting` | a setting node names a setting that does not exist, or negates twice |
+| `UnknownFlag` | a value node's `feature` names a flag that [build tooling](../build_tooling_and_distribution.md) table 3.2-B does not list, or one whose values are not `on` and `off` (INP-143) |
 | `UnknownGlyph` | a glyph override names an asset id that is not in the asset manifest |
 | `DuplicateEntry` | a warning: a replacing layer sets one action twice (INP-163) |
 
-**INP-221** (MUST) The default set states every binding with its effective meaning, so no default binding depends on lenient parsing (DEC-553): the trigger press bindings and the aliases of INP-079 are explicit. These inputs of the reference default set bind nothing and are not part of it: bindings for a three-dimensional mouse device on `action.select.clear`, `action.power.next` and `action.match.ready` (two); a glyph entry for an action that does not exist; and an entry that declares a value kind without an assignment. The gesture bindings, among them one with a misspelt condition word and a two-key chord, are not specified (DEC-055). Authored as entries, each of these cases fails the content build with its class of table 6.1-A (T6, T31).
+**INP-221** (MUST) The default set states every binding with its effective meaning, so no default binding depends on lenient parsing (DEC-553): the trigger press binding and the aliases of INP-079 are explicit. The default set is exactly the entries of tables 3.6-A and 3.6-B. An entry for a device that no back-end serves, a glyph entry for an action outside the action id table and an entry that declares a value kind without an assignment fail the content build with their class of table 6.1-A (T6, T31).
 
 **INP-222** (MUST) The content build checks every glyph override and every glyph of table 3.7-A against the asset manifest (ADR-059), so the input layer never asks for a texture that does not exist.
 
@@ -548,15 +553,14 @@ Table 6.3-A Fixed rules of the input layer.
 | 19 | one repeat timer shared by gamepads and bindings and changed by queries | INP-133 | DEC-554 | T10 |
 | 20 | every gamepad driving the one local player | INP-145 to INP-148 | DEC-554 | T17 |
 | 21 | a power bar that ignores the pointer | R-CTRL-226 | DEC-083 | — |
-| 22 | an unbounded move-marker list | R-CTRL-104 | DEC-096 | — |
-| 23 | a crowd order for an emptied group creating a non-finite route | R-SIM-455 | DEC-555 | — |
-| 24 | one click with nothing selected issuing two selections | R-CTRL-048 | DEC-096, DEC-119 | T21 |
-| 25 | a debug camera advancer running after a mode change | R-CTRL-456 | DEC-024 | — |
-| 26 | an unclamped camera | camera | DEC-024, DEC-096 | — |
-| 27 | a layout change ignored at run time; restoring defaults without the layout layer | INP-166, INP-167 | DEC-554 | T15 |
-| 28 | interface sounds for every team's selection | R-CTRL-154 | DEC-564 | — |
-| 29 | control help computed but never shown | hook only | DEC-050 | — |
-| 30 | an input-layer texture that does not exist | INP-222 | DEC-015 | T14 |
+| 22 | a crowd order for an emptied group creating a non-finite route | R-SIM-455 | DEC-555 | — |
+| 23 | one click with nothing selected issuing two selections | R-CTRL-048 | DEC-096, DEC-119 | T21 |
+| 24 | a debug camera advancer running after a mode change | R-CTRL-456 | DEC-024 | — |
+| 25 | an unclamped camera | camera | DEC-024, DEC-096 | — |
+| 26 | a layout change ignored at run time; restoring defaults without the layout layer | INP-166, INP-167 | DEC-554 | T15 |
+| 27 | interface sounds for every team's selection | R-CTRL-154 | DEC-564 | — |
+| 28 | control help computed but never shown | hook only | DEC-050 | — |
+| 29 | an input-layer texture that does not exist | INP-222 | DEC-015 | T14 |
 
 ### 6.4 Diagnostics and telemetry
 
@@ -603,7 +607,7 @@ Tests run under the test framework of ADR-069 with recorded or synthetic events 
 | T25 suppression | unit | a suppressed action and an alias of it are false for the rest of the frame and fire again in the next | INP-093 |
 | T26 repeat pass | unit | an Escape press is true in the first pass and false in the repeat pass; an event that arrives between the passes is seen in the repeat pass only | INP-102 |
 | T27 no GameInput | integration | with GameInput unavailable the client starts, gamepad bindings load, the mode stays keyboard and mouse, and one error is logged | INP-107 |
-| T28 capture and describe | unit | capture returns `key:f10:down`, `key:num_minus:down` and `key:control:held` as asked; their descriptions use string ids; a chord's noun joins the parts with a hyphen; changing `action.power.panel_show` sets `action.power.panel_hide` | INP-176 to INP-179 |
+| T28 capture and describe | unit | capture returns `key:f10:down`, `key:num_minus:down` and `key:control:held` as asked; their descriptions use string ids; a chord's noun joins the parts with a hyphen | INP-176 to INP-179 |
 | T29 performance | performance | `AdvanceFrame` within `inp.budget.advance_typical_ms` and `inp.budget.advance_full_ms` on the minimum CPU; no heap allocation in a frame | INP-200, INP-201 |
 | T30 text entry | integration | text entered with a CJK input method reaches the focused text field; no action fires from composition | INP-006, INP-112 |
 | T31 reference cases | unit | the cases of INP-221, authored as entries, fail the content build with their classes | INP-221 |
@@ -618,7 +622,7 @@ Tests run under the test framework of ADR-069 with recorded or synthetic events 
 | DEC-203 | Open | input timing, coalescing and latency: the router keeps timestamps and every transition (INP-202) |
 | DEC-250 | Open | the user layer in the client-local settings store and its versioning (INP-023, INP-070, INP-171) |
 | DEC-050 | Open | the rebinding page and the control-help panel are hooks (INP-167, §4.15) |
-| DEC-047 | Open | the leaderboard page served by three actions of table 3.6-B (INP-077) |
+| DEC-047 | Open | the leaderboard page, a hook with no bound action (INP-077) |
 | DEC-202 | Open | command validation and authority (table 6.3-A row 11) |
 | DEC-046 | Open | replays record commands, not device events (INP-243) |
 | DEC-008, DEC-023, DEC-119 | Resolved | input produces actions, the input layer produces commands, and simulation code never issues or reads input (INP-004) |
@@ -642,7 +646,7 @@ Tests run under the test framework of ADR-069 with recorded or synthetic events 
 
 1. **Local players.** How many local players a Species client has, and how a player chooses or changes a gamepad; the baseline has one local player and assigns by first press (INP-145, INP-146).
 2. **Command timing** (DEC-203): the delay buffer, whether commands carry input timestamps, and the coalescing of continuous control on a server-run world.
-3. **Keyboard navigation of the front end** (ADR-064, XAG 112): whether the baseline keyboard bindings of the menu actions (INP-077) are enough for keyboard-only play, and which keys the leaderboard actions get.
+3. **Keyboard navigation of the front end** (ADR-064, XAG 112): whether the baseline keyboard bindings of the menu actions (INP-077) are enough for keyboard-only play.
 4. **Rebinding** (DEC-050, ADR-064, XAG 107): a reachable rebinding page for every device, conflicts between actions that share an input (INP-181), hold-or-toggle options through latches, and whether the gamepad response (dead zones, curve, sensitivity, inversion) becomes a player option (DEC-044, R-META-458).
 5. **Stored bindings** (DEC-250): the user layer's schema version, migration and whether bindings follow the player across devices.
 6. **Devices** (ADR-028): extra mouse buttons, other game controllers through GameInput, and whether keyboard and mouse move onto GameInput as well.

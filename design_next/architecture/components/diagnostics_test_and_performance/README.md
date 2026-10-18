@@ -228,15 +228,18 @@ class SoakHost
 {
 public:
   virtual ~SoakHost() = default;
-  virtual void StartSession(std::string_view _sessionName) = 0; // DBG-163 step 2
-  // DBG-163 steps 4 to 9; returns the seed the match runs with.
-  [[nodiscard]] virtual std::uint64_t StartEntry(const SoakEntry& _entry) = 0;
-  virtual void AdvanceTick() = 0;                      // one tick of the session or the match
-  [[nodiscard]] virtual bool MatchRunning() const = 0; // false after game over (DBG-165)
-  [[nodiscard]] virtual std::uint64_t CurrentTick() const = 0;
-  [[nodiscard]] virtual std::uint64_t StateHash() const = 0;      // DBG-144, after the last tick
-  [[nodiscard]] virtual std::uint32_t LivePopulation() const = 0; // sampled every tick for the peak of DBG-166
-  virtual void EndEntry() = 0;                                    // leaves the match and removes its teams (step 11)
+  virtual void StartSession(std::string_view _sessionName) = 0;          // DBG-163 steps 2 and 3
+  virtual void RequestEntry(const SoakEntry& _entry) = 0;                // step 4: the entry's mode, then its map
+  [[nodiscard]] virtual bool MapConfirmed() const = 0;                   // step 5
+  virtual void Spectate() = 0;                                           // step 7: the host's participant becomes a spectator
+  [[nodiscard]] virtual std::uint32_t ConnectedParticipants() const = 0; // step 8; 1 in a single-process pass
+  [[nodiscard]] virtual std::uint64_t StartMatch() = 0;                  // step 9; returns the seed the match runs with
+  virtual void AdvanceTick() = 0;                                        // one tick of the session or the match
+  [[nodiscard]] virtual bool MatchRunning() const = 0;                   // false after game over (DBG-165)
+  [[nodiscard]] virtual std::uint64_t CurrentTick() const = 0;           // step 5 and the termination tick (DBG-165)
+  [[nodiscard]] virtual std::uint64_t StateHash() const = 0;             // DBG-144, after the last tick
+  [[nodiscard]] virtual std::uint32_t LivePopulation() const = 0;        // sampled every tick for the peak of DBG-166
+  virtual void EndEntry() = 0;                                           // step 11: leaves the match, clears the host's teams
 };
 // SoakMatchRow, SoakPassSummary: generated from test.soak_report: data_schemas/test_and_telemetry_records.md §2
 // The result of one pass (DBG-025): the rows of the match table and the pass summary, both also written to the report folder.

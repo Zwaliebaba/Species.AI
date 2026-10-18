@@ -37,23 +37,24 @@ enum class QuadAnchor : std::uint8_t
   BottomCenter
 };
 
-struct QuadInstance // shared header layout (shaders.md RND-262), §3.1
+// In the shared header FrameConstants.h, with its type names (shaders.md RND-262), §3.1.
+struct QuadInstance
 {
-  Vec3 position;  // center or anchor; first end point for Segment
-  Vec3 endPoint;  // Segment only
-  Vec3 axisRight; // WorldOriented only
-  Vec3 axisUp;
-  float halfWidth = 0;
-  float halfHeight = 0;
-  float blendStart = 0; // WorldOriented: billboard blend; length 0 = never
-  float blendLength = 0;
-  float rotation = 0; // radians about the view axis (CameraFacing)
-  ColorRgba color;
-  ColorRgba endColor;             // used by Segment only
-  std::uint32_t textureIndex = 0; // descriptor-heap index (ADR-006)
-  std::uint32_t uvRect = 0;       // index into the UV-rectangle table (atlas cells, mirrored maps)
-  OrientationMode mode = OrientationMode::CameraFacing;
-  QuadAnchor anchor = QuadAnchor::Center;
+  Float3 position;  // center or anchor; first end point for Segment
+  Float3 endPoint;  // Segment only
+  Float3 axisRight; // WorldOriented only
+  Float3 axisUp;
+  float halfWidth;
+  float halfHeight;
+  float blendStart; // WorldOriented: billboard blend; length 0 = never
+  float blendLength;
+  float rotation;      // radians about the view axis (CameraFacing)
+  Uint32 color;        // RGBA8, red in the lowest byte
+  Uint32 endColor;     // RGBA8; used by Segment only
+  Uint32 textureIndex; // descriptor-heap index (ADR-006)
+  Uint32 uvRect;       // index into the UV-rectangle table (atlas cells, mirrored maps)
+  Uint32 mode;         // an OrientationMode
+  Uint32 anchor;       // a QuadAnchor
 };
 
 struct InstanceType // one per drawn kind and catalogue entry, registered at start-up
@@ -151,13 +152,13 @@ public:
 
 ```text
 CameraFacing:   right = R rotated by rotation about the view axis; up = U rotated likewise
-UprightCard:    up = (0, 1, 0); right = normalise(up × (camera position − position))
+UprightCard:    up = (0, 1, 0); right = Normalize(up × (camera position − position))
 WorldOriented:  right = axisRight; up = axisUp
                 if blendLength > 0 and d > blendStart:          # d = |position − camera position|
                     f = min((d − blendStart) ÷ blendLength, 1)
                     right = lerp(right, R, f); up = lerp(up, U, f)  # linear, not renormalised
 Segment:        mid = (position + endPoint) ÷ 2
-                side = normalise((mid − camera position) × (mid − endPoint)) × halfWidth
+                side = Normalize((mid − camera position) × (mid − endPoint)) × halfWidth
                 corners = position − side, position + side, endPoint + side, endPoint − side
                 color at position = color; color at endPoint = endColor
 ```
@@ -324,15 +325,15 @@ A higher level draws fewer samples, and level 4 draws no glow strip.
 | Abductor (7b) | `mesh.creature.abductor_hull`, special lighting | while Abducting or Dropping: its beam rings `fx.abductor_beam_ring` (R-UNIT-710) | `actor_mesh_lit`, `actor_beam_alpha` |
 | bot controller (7b) | nothing in a match; the map editor draws its hook ([map_editor_hooks.md](../../../reference/08_maps_and_level_design/map_editor_hooks.md)) | — | — |
 
-The Builder draws no beam in a match: none of its match states (R-UNIT-453) draws one. The Leader and the meteor are drawn with interpolated shading in the reference look; on meshes whose facets carry one normal and one colour at every corner (ADR-020) that gives the image of flat shading, so the Species renderer draws them flat like every mesh.
+The Builder draws no beam in a match: none of its match states (R-UNIT-453) draws one. The Leader and the meteor are flat-shaded like every mesh (ADR-020).
 
 **RND-325** (MUST) A blob shadow of half-size *s* under a caster at *p* is one quad of `fx.glow_round` whose four corners lie at (*p.x* ± *s*, *y*, *p.z* ± *s*), each at *y* = max(terrain height at the corner + `rnd.shadow.blob.lift` (0.9 wu), `rnd.shadow.blob.min_height` (1.0 wu)), in the colour of [reference/02_units/README.md](../../../reference/02_units/README.md) R-UNIT-050, with the `blob_shadow` entry (RND-242). The shadow is skipped when all four corner heights are above *p.y*.
 
-**RND-326** (MUST) A centipede segment is lit with its mesh transform's uniform scale *σ* left in its normals: in the diffuse term of RND-233 its facet normal *n* is replaced by *n* ÷ *σ*, so a larger segment is lit darker and a smaller one brighter before the clamp (see DEC-958 item 3). Every other scaled actor mesh is lit with unit facet normals (RND-055).
+**RND-326** (MUST) A centipede segment is lit with its mesh transform's uniform scale *σ* left in its normals: in the diffuse term of RND-233 its facet normal *n* is replaced by *n* ÷ *σ*, so a larger segment is lit darker and a smaller one brighter before the clamp (see DEC-958 item 3). Every other scaled actor mesh is lit with unit facet normals (RND-233).
 
 **RND-327** (MUST) An Essence orb whose team is the Rogue faction slot, which no producer creates (R-UNIT-305), would be drawn in `rnd.crowd.rogue_orb_colour` (100, 100, 100, alpha 0) in the first batch of pass 11, which darkens; every other orb is drawn in its team colour, or white with no team, with the sizes, alphas and timing of [essence_orbs.md](../../../reference/02_units/essence_orbs.md) R-UNIT-330 to R-UNIT-332 and the pass-11 drawing of [README.md](../animation_and_vfx/README.md).
 
-**RND-328** (MUST NOT) Passes 7a and 7b draw no actor kind that no match creates (see DEC-062): no Rift tentacle, no Vehicle Duel vehicle, no Summoner, no Tri-walker, and no campaign infantry, drop ship or lander. The Leader draws no shield of carried orbs, which no match shows.
+**RND-328** (MUST) Passes 7a and 7b draw exactly the actor kinds of RND-323 and RND-324, the actors that a match creates (see DEC-062).
 
 ### 4.5 Billboards and render utilities
 
@@ -383,7 +384,7 @@ The order of this table carries no meaning. The spawn-network transit beams, the
 
 **RND-338** (MUST) Pass 10b draws every laser bolt of the match world as one instanced draw with the `laser_bolt` entry: additive, no culling, no depth write and the `bias_laser` variant (RND-219). Each bolt is drawn as `rnd.laser.layers` (5) identical `Segment` instances, so its additive brightness is five times one layer's before the clamp of RND-058.
 
-**RND-339** (MUST) A bolt's segment (R-CRATE-445) runs from its drawn position *p* (RND-081) to *p* + normalise(velocity) × `ref.weapon.laser.billboard_length` (10 wu), with the half-width `rnd.laser.half_width` (0.8 wu) perpendicular to the camera ray (RND-306), in the team colour of the bolt's source team, or `rnd.laser.rogue_colour` (255, 255, 255) for the Rogue faction. A Convert bolt multiplies the half-width by `ref.weapon.laser.convert_width_factor` (2) and samples `fx.convert_beam`; every other bolt samples `fx.beam_short`. Both textures are read through a view of mip level 0 only, with linear clamp-to-edge filtering, *u* along the bolt and *v* across it.
+**RND-339** (MUST) A bolt's segment (R-CRATE-445) runs from its drawn position *p* (RND-081) to *p* + Normalize(velocity) × `ref.weapon.laser.billboard_length` (10 wu), with the half-width `rnd.laser.half_width` (0.8 wu) perpendicular to the camera ray (RND-306), in the team colour of the bolt's source team, or `rnd.laser.rogue_colour` (255, 255, 255) for the Rogue faction. A Convert bolt multiplies the half-width by `ref.weapon.laser.convert_width_factor` (2) and samples `fx.convert_beam`; every other bolt samples `fx.beam_short`. Both textures are read through a view of mip level 0 only, with linear clamp-to-edge filtering, *u* along the bolt and *v* across it.
 
 **RND-340** (MUST) A laser bolt that passes within √`ref.weapon.laser.shake_range_sq` (about 14 wu) of the camera requests a camera shake of `ref.weapon.laser.shake` (0.5) through the VFX screen effects (R-CRATE-445, RND-246), unless the match is over or paused; the request is presentation-only and local, and the renderer issues it while it writes the bolt's instances, never from the simulation.
 
@@ -432,7 +433,7 @@ Caption: the fade record of one drawn route; a held route keeps its fade value a
 
 **RND-366** (MUST) Every cursor of table 2.1-A of R-CTRL-350 is a 2-D quad placed and rotated as R-CTRL-352 states; none is drawn as a 3-D object. A shadowed cursor first draws its shadow, the blurred variant of its art produced offline by the cooker (`cursor.world.shadow`, `cursor.highlight.shadow`, `cursor.select.shadow`, `cursor.move_target.shadow`, `cursor.place.shadow`, `cursor.enter.shadow`, `cursor.unavailable.shadow`) with the blur of `ref.ctrl.cursor.shadow_blur` (RND-243, ADR-018), over the same quad in colour (1, 1, 1, alpha 0) with `overlay_ink`, which with alpha 0 darkens the destination by the shadow texel (RND-058); then its art in its colour with `overlay_additive`, or with `overlay_alpha` for the crosshair. The icon near the pointer (R-CTRL-366) and the entering effect (R-CTRL-371) use the marker layers and entries of RND-357.
 
-**RND-367** (MUST) Cursor sizes are physical pixels at every render size: the standard pointer is 35 px (`ref.ctrl.cursor.set`) whatever the resolution. Under per-monitor DPI scaling, a cursor's art is chosen at the source size closest to its final pixel size (ADR-033), and the size itself is not scaled by the render size.
+**RND-367** (MUST) Cursor sizes are physical pixels at every render size: the standard pointer is 35 px (`ref.ctrl.cursor.set.world_size`) whatever the resolution. Under per-monitor DPI scaling, a cursor's art is chosen at the source size closest to its final pixel size (ADR-033), and the size itself is not scaled by the render size.
 
 **RND-368** (MUST) The rings and the glow cylinder of the highlight effect are generated each frame as vertex-colour strips from the rule of R-CTRL-363, draped on the terrain heights of `terrain_heights` (RND-063), and drawn with the `bias_cursor` variant factor `ref.ctrl.cursor.depth_bias` applied in the shader (RND-309).
 
@@ -482,6 +483,8 @@ Caption: the fade record of one drawn route; a held route keeps its fade value a
 Diagnostics: in Debug builds, a development view lists, per instance type, the written and compacted instance counts and the GPU time of its draws; a development toggle draws every actor's cull sphere with the development sphere (RND-330).
 
 ## 7 Acceptance tests
+
+The golden-image tests compare with the default tolerance and on the pinned reference configuration of the test harness ([diagnostics, test and performance](../diagnostics_test_and_performance/README.md) §4.8), unless a test states its own tolerance.
 
 | Test | Kind | Checks | Requirements |
 |---|---|---|---|

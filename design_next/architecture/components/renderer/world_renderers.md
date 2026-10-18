@@ -21,24 +21,26 @@ namespace Engine
 class TerrainRenderer
 {
 public:
-  void Build(const TerrainField& _field, const TerrainColorRamp& _ramp); // RND-132 to RND-134
-  void RecordTerrainPass(PassContext& _pass) const;                      // pass 4
+  // RND-132 to RND-134; the chunk buffers are created through the factory (RND-009).
+  void Build(GpuResourceFactory& _resources, const TerrainField& _field, const TerrainColorRamp& _ramp);
+  void RecordTerrainPass(PassContext& _pass) const; // pass 4
 };
 
 class SeaRenderer
 {
 public:
-  void Build(const TerrainField& _field, const SeaMasks& _masks, const SeaLook& _look); // RND-140 to RND-144
-  void RecordWaveUpdate(PassContext& _pass, double _smoothPresentationTime) const;      // RND-145
-  void RecordFlatLayer(PassContext& _pass) const;                                       // pass 5a
-  void RecordWaves(PassContext& _pass) const;                                           // pass 5b
+  // RND-140 to RND-144; the flat-layer and wave-mesh buffers are created through the factory (RND-009).
+  void Build(GpuResourceFactory& _resources, const TerrainField& _field, const SeaMasks& _masks, const SeaLook& _look);
+  void RecordWaveUpdate(PassContext& _pass, double _smoothPresentationTime) const; // RND-145
+  void RecordFlatLayer(PassContext& _pass) const;                                  // pass 5a
+  void RecordWaves(PassContext& _pass) const;                                      // pass 5b
 };
 
 class SkyRenderer
 {
 public:
-  void AdvanceTick(double _gameTimeStep);                                                 // RND-152, slice ref.sim.slice.sky
-  void Record(PassContext& _pass, double _skyExtrapolationTime, SkyDetail _detail) const; // pass 3
+  void AdvanceTick(double _gameTimeStep);                                                   // RND-152, slice ref.sim.slice.sky
+  void Record(PassContext& _pass, double _skyExtrapolationTime, DetailLevel _detail) const; // pass 3
 };
 
 struct TreeGeometry // RND-180 to RND-184, unit space, trunk (0,0,0)-(0,1,0)
@@ -86,11 +88,11 @@ public:
 
 ### 4.1 Terrain
 
-**RND-132** (MUST) The terrain mesh is built from the height field *h*(*x*, *z*) of [terrain](../terrain/README.md) (TER-012) with *N*ₓ sample columns, *N*_z sample rows and cell size *cs*; a sample read at a column or row index outside the grid returns the outside height. For every row *z* from 0 to *N*_z − 1 and column *x* from 0 to *N*ₓ − 1 there is a vertex pair *v1* = (*x*·*cs*, *h*(*x*, *z*), *z*·*cs*) and *v2* = (*x*·*cs*, *h*(*x*, *z* + 1), (*z* + 1)·*cs*); the last row's *v2* therefore lies at the outside height. A pair is **needed** when any of *h*(*x* − 1, *z*), *h*(*x* − 1, *z* + 1), *h*(*x*, *z*), *h*(*x*, *z* + 1), *h*(*x* + 1, *z*), *h*(*x* + 1, *z* + 1) is above 0. Taking the pairs in row-major order (columns within a row, then the next row), every two consecutive pairs *P* = (*p1*, *p2*) and *Q* = (*q1*, *q2*) that are both needed form the two triangles (*p1*, *p2*, *q1*) and (*q1*, *p2*, *q2*); within a row, where *P* is at column *x* and *Q* at column *x* + 1, both are counter-clockwise seen from above and their shared diagonal runs from (*x*, *z* + 1) to (*x* + 1, *z*). A pair that is not needed ends the run, so no triangle touches it. When *P* is the last pair of a row and *Q* the first pair of the next row, the two triangles span the map from one edge to the other; every reference map has sea along its whole border, so this never happens on the reference maps.
+**RND-132** (MUST) The terrain mesh is built from the height field *h*(*x*, *z*) of [terrain](../terrain/README.md) (TER-012) with *N*ₓ sample columns, *N*_z sample rows and cell size *cs*; a sample read at a column or row index outside the grid returns the outside height. For every row *z* from 0 to *N*_z − 1 and column *x* from 0 to *N*ₓ − 1 there is a vertex pair *v1* = (*x*·*cs*, *h*(*x*, *z*), *z*·*cs*) and *v2* = (*x*·*cs*, *h*(*x*, *z* + 1), (*z* + 1)·*cs*); the last row's *v2* therefore lies at the outside height. A pair is **needed** when any of *h*(*x* − 1, *z*), *h*(*x* − 1, *z* + 1), *h*(*x*, *z*), *h*(*x*, *z* + 1), *h*(*x* + 1, *z*), *h*(*x* + 1, *z* + 1) is above 0. Taking the pairs in row-major order (columns within a row, then the next row), every two consecutive pairs *P* = (*p1*, *p2*) and *Q* = (*q1*, *q2*) that are both needed form the two triangles (*p1*, *p2*, *q1*) and (*q1*, *p2*, *q2*); within a row, where *P* is at column *x* and *Q* at column *x* + 1, both are counter-clockwise seen from above and their shared diagonal runs from (*x*, *z* + 1) to (*x* + 1, *z*). A pair that is not needed ends the run, so no triangle touches it. When *P* is the last pair of a row and *Q* the first pair of the next row, the two triangles span the map from one edge to the other; a map has sea along its whole border ([rules and conventions](../../../reference/08_maps_and_level_design/rules_and_conventions.md) R-MAP-085), so on such a map this never happens.
 
 **RND-133** (MUST) Before facet normals and colours are computed, every vertex whose height is below `rnd.terrain.sink_threshold` (0.3) is moved to the height `rnd.terrain.sink_height` (−10), so that the coast is a crisp cliff into the sea and never meets the sea surface at the same depth.
 
-**RND-134** (MUST) Each triangle has one facet normal and one facet colour (ADR-020). The facet normal of (*p1*, *p2*, *q1*) is normalise((*q1* − *p2*) × (*p1* − *p2*)); the facet normal of (*q1*, *p2*, *q2*) is normalise((*q2* − *p2*) × (*q1* − *p2*)). The facet colour is the colour-ramp look-up of [terrain](../terrain/edges_normals_colours_and_sea.md#412-colour-ramp-look-up) TER-181 for that triangle (slope from the facet normal, height from the triangle's centre, with its colour variation), read from the map's ramp `terrain.ramp`. The centre is the mean of the triangle's corners in strip order, as TER-181 gives it: *p1*, *p2* and *q1* for the first triangle and *p2*, *q1* and *q2* for the second, while the facet normal keeps the vertex order (*q1*, *p2*, *q2*) above; while the match's seasonal state is active the ramp is file 6 of `terrain.ramp`, the seasonal ramp (see DEC-118). In the inverted style every facet colour has alpha 0 (see DEC-040).
+**RND-134** (MUST) Each triangle has one facet normal and one facet colour (ADR-020). The facet normal of (*p1*, *p2*, *q1*) is Normalize((*q1* − *p2*) × (*p1* − *p2*)); the facet normal of (*q1*, *p2*, *q2*) is Normalize((*q2* − *p2*) × (*q1* − *p2*)). The facet colour is the colour-ramp look-up of [terrain](../terrain/edges_normals_colours_and_sea.md#412-colour-ramp-look-up) TER-181 for that triangle (slope from the facet normal, height from the triangle's centre, with its colour variation), read from the map's ramp `terrain.ramp`. The centre is the mean of the triangle's corners in strip order, as TER-181 gives it: *p1*, *p2* and *q1* for the first triangle and *p2*, *q1* and *q2* for the second, while the facet normal keeps the vertex order (*q1*, *p2*, *q2*) above; while the match's seasonal state is active the ramp is file 6 of `terrain.ramp`, the seasonal ramp (see DEC-118). In the inverted style every facet colour has alpha 0 (see DEC-040).
 
 **RND-135** (MUST) The wire-grid overlay is drawn in the same pass as the surface (ADR-011). Its pattern is the stylised grid texture `fx.terrain_grid` (a 2 × 2 block of sub-cells, three of them with a diagonal), mapped once onto each height-field cell with grid coordinates (*u*, *v*) = (world *x* ÷ *cs*, world *z* ÷ *cs*), sampled with the linear-wrap sampler through all mip levels, so its lines do not follow the triangle edges (see DEC-326). The barycentric edge term of ADR-011 is the terrain shader's alternative permutation for DEC-326 option B ([shaders.md](shaders.md) RND-266).
 
@@ -108,13 +110,13 @@ public:
 
 **RND-141** (MUST) The flat layer is one quad per set flag of the flat-water tile mask, each tile covering its block of the plane at the height `rnd.sea.flat_height`; tiles whose depth samples are all open sea are not drawn.
 
-**RND-142** (MUST) The flat layer combines two textures with the `modulate` combine mode ([shaders.md](shaders.md) RND-268) and a vertex colour of white (alpha 0 in the inverted style): texture 0 is the map's sea tile `terrain.sea_tile` (file 2 while the seasonal state is active), sampled with the linear-wrap sampler through all mip levels, with `rnd.sea.tile_repeats` (30) repeats across the plane on both axes, scrolled on both axes by *s* ÷ `rnd.sea.tile_scroll_period` (30 s), where *s* is the smooth presentation time (R-SIM-570); texture 1 is the shore mask, sampled with the linear clamp-to-edge sampler through all mip levels, with coordinates running from 0 to 1 across the plane and *v* = 0 at the edge *z* = 1.5·*Z*, in the orientation in which the terrain component lays out the mask.
+**RND-142** (MUST) The flat layer combines two textures with the `product` combine mode ([shaders.md](shaders.md) RND-268) and a vertex colour of white (alpha 0 in the inverted style): texture 0 is the map's sea tile `terrain.sea_tile` (file 2 while the seasonal state is active), sampled with the linear-wrap sampler through all mip levels, with `rnd.sea.tile_repeats` (30) repeats across the plane on both axes, scrolled on both axes by *s* ÷ `rnd.sea.tile_scroll_period` (30 s), where *s* is the smooth presentation time (R-SIM-570); texture 1 is the shore mask, sampled with the linear clamp-to-edge sampler through all mip levels, with coordinates running from 0 to 1 across the plane and *v* = 0 at the edge *z* = 1.5·*Z*, in the orientation in which the terrain component lays out the mask.
 
 **RND-143** (MUST) Pass 5a draws the flat layer with the `sea_flat` entry (`Opaque`, `Test`, `None`), unlit, with level fog; in the inverted style with `sea_flat_inverted` (`Darkening`).
 
 **RND-144** (MUST) Match-world initialisation builds one coastline wave mesh for each of the sea-detail levels 1, 2 and 3, from the vertex pairs that [terrain](../terrain/edges_normals_colours_and_sea.md#414-sea-derivations) selects for that level (TER-201), in their build order, with the triangles of RND-132 between consecutive needed pairs. The sea-detail setting selects which of the meshes is drawn, so a change of the setting rebuilds nothing ([options_and_budgets.md](options_and_budgets.md) RND-448, RND-031). The colour table is row `rnd.sea.wave_table_row` (1) of the map's shore-wave gradient `terrain.shore_wave_gradient`, counted from the bottom row as viewed (TER-041) (file 4 while the seasonal state is active): one colour per pixel column of the gradient, each with alpha 1 (alpha 0 in the inverted style). With the sea detail at 0, no wave mesh is drawn and only the flat layer is.
 
-**RND-145** (MUST) Once per rendered frame, never from the simulation, a compute pass at the start of pass 5b evaluates the wave heights and colours of every wave-mesh vertex with the coastline-wave formulae of [terrain](../terrain/edges_normals_colours_and_sea.md#414-sea-derivations) (TER-204, TER-205) at the smooth presentation time (R-SIM-570), into the wave vertex buffer of the current frame in flight (ADR-011). The colour of each vertex pair depends on the heights of its predecessor pair in build order, which are 0 before the first pair of the mesh; each pair evaluates its predecessor's heights from the same formulae, so pairs are independent of one another, and every duplicated join vertex takes the height of the vertex it duplicates. Each wave triangle takes as its facet colour the colour of its last vertex in build order: *q1* for (*p1*, *p2*, *q1*) and *q2* for (*q1*, *p2*, *q2*). The smooth presentation time is the Species reading of the smooth game-timer clock that the reference reads on this render path; the presentation clock provides it as the scaled presentation time ([animation_and_vfx/README.md](../animation_and_vfx/README.md) VFX-009).
+**RND-145** (MUST) Once per rendered frame, never from the simulation, a compute pass at the start of pass 5b evaluates the wave heights and colours of every wave-mesh vertex with the coastline-wave formulae of [terrain](../terrain/edges_normals_colours_and_sea.md#414-sea-derivations) (TER-204, TER-205) at the smooth presentation time (R-SIM-570), into the wave vertex buffer of the current frame in flight (ADR-011). The colour of each vertex pair depends on the heights of its predecessor pair in build order, which are 0 before the first pair of the mesh; each pair evaluates its predecessor's heights from the same formulae, so pairs are independent of one another, and every duplicated join vertex takes the height of the vertex it duplicates. Each wave triangle takes as its facet colour the colour of its last vertex in build order: *q1* for (*p1*, *p2*, *q1*) and *q2* for (*q1*, *p2*, *q2*). The smooth presentation time is the presentation clock's scaled presentation time (ADR-036, [animation_and_vfx/README.md](../animation_and_vfx/README.md) VFX-009).
 
 **RND-146** (MUST) Pass 5b draws the wave mesh with the `sea_waves` entry (`Additive`, `TestWrite`, `Back`), unlit, with level fog. The visible result: near islands the shore-masked flat layer glows, and above it the additive waves brighten towards the coast and with wave height.
 
@@ -126,7 +128,7 @@ public:
 
 **RND-150** (MUST) The sky is one instanced draw with the `sky` entry (`Additive`, `None`, `Back`): the sky grid, then the blobby cloud layers, then the flat cloud layers, each layer with its own texture view, sampler, colour, texture-coordinate transform and fog range. Every layer faces downwards, so it is visible only from below and culled from above. The sky fog colour is always black, also in the inverted style. The sky is drawn in pass 3 of a match frame, as the main-menu sky (RND-077) and behind the loading view (RND-118).
 
-**RND-151** (MUST) The sky grid is a set of straight line quads at the height `rnd.sky.grid_height` (1200), spaced `rnd.sky.grid_spacing` (80 wu) apart over *x* and *z* from `rnd.sky.grid_min` (−4000) to `rnd.sky.grid_max` (6000), each `rnd.sky.grid_line_half_width` (8 wu) wide on either side of its centre line, in both directions: 125 lines along *x* and 125 along *z*. Each line carries `fx.beam_short` once, *u* along its length and *v* across its width, sampled with the linear clamp-to-edge sampler through all mip levels, in the colour `rnd.sky.grid_colour` (0.5, 0.5, 1.0, alpha 0.3), with black linear fog from `rnd.sky.grid_fog_start` (2000) to `rnd.sky.grid_fog_end` (4000).
+**RND-151** (MUST) The sky grid is a set of straight line quads at the height `rnd.sky.grid_height` (1200), spaced `rnd.sky.grid_spacing` (80 wu) apart over *x* and *z* from `rnd.sky.grid_min` (−4000) up to, but not including, `rnd.sky.grid_max` (6000), each `rnd.sky.grid_line_half_width` (8 wu) wide on either side of its centre line, in both directions: the lines lie at −4000 + 80 × *k* wu for *k* = 0 to 124, so there are 125 lines along *x* and 125 along *z*, the last at 5920 wu and none at 6000 wu. Each line carries `fx.beam_short` once, *u* along its length and *v* across its width, sampled with the linear clamp-to-edge sampler through all mip levels, in the colour `rnd.sky.grid_colour` (0.5, 0.5, 1.0, alpha 0.3), with black linear fog from `rnd.sky.grid_fog_start` (2000) to `rnd.sky.grid_fog_end` (4000).
 
 **RND-152** (MUST) The sky has a cloud offset *O* (starting at 0) and a velocity *V* (starting at `rnd.sky.initial_velocity` (0.04, 0, 0)). Once per tick, in update slice `ref.sim.slice.sky` (R-SIM-513), the sky update sets *V* to `rnd.sky.velocity` (0.03, 0, −0.01) and adds *V* × the per-tick game-time step (`ref.sim.tick_period` × *s*, R-SIM-570) to *O*; the update is cosmetic and makes no random draw. The draw offset is *o* = *O* + *V* × the sky extrapolation time of RND-083. The front end's menu sky is never updated: its draw offset is (0.04, 0, 0) × (−real clock), so its clouds drift with real time.
 
@@ -148,7 +150,7 @@ public:
 
 **RND-156** (MUST) The cooked mesh format and the renderer support at least `rnd.mesh.max_nodes` (100) nodes and `rnd.mesh.max_sockets` (100) sockets per mesh.
 
-For budgeting, the reference mesh set has 139 meshes with up to 20 nodes per mesh (440 in total), a hierarchy depth of up to 6, up to 38 sockets per mesh (425 in total), and 150 820 triangles in total, with up to 24 366 and a mean of 1085 per mesh; two of its meshes carry sockets only.
+Mesh budgets are per asset ([GameAssets](../../../assets/GameAssets.md) §11, the triangle budget of each row's `spec`) and per frame ([options_and_budgets.md](options_and_budgets.md) RND-454).
 
 **RND-157** (MUST) A cooked mesh (`MeshAsset`, ADR-019) is a hierarchy of mesh nodes (`MeshNode`) under an implicit root node with the identity transform and no geometry. Each node has a rest transform relative to its parent, a draw range, per-triangle facet colours and facet normals, an axis-aligned bounding box, its vertical extent (lowest and highest *y*), and a bounding sphere whose centre is the box centre and whose radius is the largest distance from that centre to any of the node's vertices. Each socket (`MeshSocket`, ADR-021) names its parent node and keeps the chain of nodes from the root to that parent.
 
@@ -160,7 +162,7 @@ For budgeting, the reference mesh set has 139 meshes with up to 20 nodes per mes
 
 **RND-161** (MUST) One cooked mesh serves every team: instances carry a team palette index (RND-016), and the material shader tints by the facet's tint weight *w* (ADR-020). Each mesh has a tint scale *f*, a value of its import record that the shader reads from the per-draw material parameters: `rnd.tint.factor` (0.7) unless the mesh's owner names another, as the Transport hull does with `ref.unit.transport.hull_tint` (0.1, [transport.md](../../../reference/02_units/transport.md) R-UNIT-408) and the Collector body with `ref.unit.collector.tint_scale` (0.7, [collector.md](../../../reference/02_units/collector.md) R-UNIT-443). With the team colour *T* and the facet colour *c* (both in 0 to 1), the tinted colour is *T* × (*c.r* + *c.g* + *c.b*) ÷ (*T.r* + *T.g* + *T.b*) × *f*, which keeps the facet's brightness; on a mesh marked convert-all it is *T* × *f*. The drawn colour is *c* + *w* × (tinted − *c*), clamped to [0, 1]. Instances of no team are never tinted. Only the root node and its direct children are tinted; deeper nodes keep their facet colours.
 
-**RND-162** (MUST) These meshes follow special tint rules: on the Worker figure `mesh.unit.worker_figure`, the colour of palette entry 0 is multiplied by `rnd.tint.worker_figure_entry0_factor` (0.5) before tinting; the Leader figure `mesh.unit.leader_figure` is convert-all; the Transport hull `mesh.unit.transport_hull` is convert-all with every facet at tint weight 1 and the tint scale `ref.unit.transport.hull_tint`, so every facet takes the team colour (its co-op shade where the team has one, R-SIM-421) × 0.1; the Collector body `mesh.unit.collector_body` is convert-all with every facet at tint weight 1 and the tint scale `ref.unit.collector.tint_scale`; turret heads `mesh.structure.turret_head` tint with the team colour and co-op shade; the Beam Dish `mesh.structure.beam_dish` re-tints when its team changes. The team-tinted meshes are those of centipede segments `mesh.creature.centipede_segment`, ants `mesh.creature.ant_body`, the Leader, the Reaper Serpent, turrets, the Beam Dish, the Transport and every actor that draws a team mesh ([entity_and_overlay_renderers.md](entity_and_overlay_renderers.md)). Team regions are marked explicitly, by the tint attribute `_SPECIES_TINT` or the material flag `species_team_tint` ([asset_pipeline_and_resources.md](../asset_pipeline_and_resources.md) AST-034, ADR-020); art made in the key-colour style reaches the mesh cooker only as explicit weights written by the authoring helper, which the artist reviews. The look is that of RND-406.
+**RND-162** (MUST) These meshes follow special tint rules: on the Worker figure `mesh.unit.worker_figure`, the colour of palette entry 0 is multiplied by `rnd.tint.worker_figure_entry0_factor` (0.5) before tinting; the Leader figure `mesh.unit.leader_figure` is convert-all; the Transport hull `mesh.unit.transport_hull` is convert-all with every facet at tint weight 1 and the tint scale `ref.unit.transport.hull_tint`, so every facet takes the team colour (its co-op shade where the team has one, R-SIM-421) × 0.1; the Collector body `mesh.unit.collector_body` is convert-all with every facet at tint weight 1 and the tint scale `ref.unit.collector.tint_scale`; turret heads `mesh.structure.turret_head` tint with the team colour and co-op shade; the Beam Dish `mesh.structure.beam_dish` re-tints when its team changes. The team-tinted meshes are those of centipede segments `mesh.creature.centipede_segment`, ants `mesh.creature.ant_body`, the Leader, the Reaper Serpent, turrets, the Beam Dish, the Transport and every actor that draws a team mesh ([entity_and_overlay_renderers.md](entity_and_overlay_renderers.md)). Team parts carry explicit tint weights, the tint attribute `_SPECIES_TINT` or the material flag `species_team_tint` ([asset_pipeline_and_resources.md](../asset_pipeline_and_resources.md) AST-034, ADR-020); no colour test exists at run time. The look is that of RND-406.
 
 Mesh queries used by the simulation are not renderer functions (RND-004). For the collision assets that serve them, the reference query contract is:
 
@@ -196,11 +198,11 @@ Mesh queries used by the simulation are not renderer functions (RND-004). For th
 
 **RND-170** (MUST) A turret draws its mount `mesh.structure.turret_mount` (sockets only) and its team-tinted head `mesh.structure.turret_head` on the mount's sockets in pass 6, and its lights and ports in pass 8; it draws its ports as RND-168 states, except that the status star of port i (1 to 4) sits at the mount's socket `status_0i` instead of the pad's status socket ([reference/03_buildings_and_world_objects/README.md](../../../reference/03_buildings_and_world_objects/README.md) R-BLDG-046; see DEC-860). Its barrel smoke is particles, and its ejected shell casings (`ShellCasing`) and rounds (`TurretRound`) are effects ([README.md](../animation_and_vfx/README.md), [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md)).
 
-**RND-171** (MUST) A Beam Dish draws its tinted dish mesh `mesh.structure.beam_dish` in pass 6. In pass 8 it draws, along each active link, four nested beam tubes of radii `rnd.structure.dish.tube_radii` (10, 9, 8 and 4 wu) with alphas `rnd.structure.dish.tube_alphas` (0.4, 0.2, 0.2 and 0.5), textured with `fx.barrier_field` × `fx.dish_signal` in the `modulate` combine mode, clipped against the two planes of the linked dishes through two clip distances, with the `dual_additive_clip_fog` entry; while the dish is hovered or selected, it draws preview beams to every valid link target.
+**RND-171** (MUST) A Beam Dish draws its tinted dish mesh `mesh.structure.beam_dish` in pass 6. In pass 8 it draws, along each active link, four nested beam tubes of radii `rnd.structure.dish.tube_radii` (10, 9, 8 and 4 wu) with alphas `rnd.structure.dish.tube_alphas` (0.4, 0.2, 0.2 and 0.5), textured with `fx.barrier_field` × `fx.dish_signal` in the `product` combine mode, clipped against the two planes of the linked dishes through two clip distances, with the `dual_additive_clip_fog` entry; while the dish is hovered or selected, it draws preview beams to every valid link target.
 
 **RND-172** (MUST) The energy-grid structures ([reference/03_buildings_and_world_objects/mode_objects.md](../../../reference/03_buildings_and_world_objects/mode_objects.md)) draw: a power-line beam with `fx.beam_short` between the power-line sockets of linked structures; each energy surge as a star of size `ref.bldg.grid.surge_sprite_size_wu` (20 wu) with `fx.starburst` in the surge's team colour, followed by a trail of `ref.bldg.grid.trail_sprites` (3) sprites, except that surges of the Rogue and Visitor factions draw no trail ([economy_and_spawn_objects.md](../../../reference/03_buildings_and_world_objects/economy_and_spawn_objects.md) R-BLDG-173); at a Solar Array, status lights in the occupied and empty colours of RND-168 and, while it is owned and occupied, `rnd.structure.grid.solar_glow_count` (4) glow quads of `rnd.structure.grid.solar_glow_size` (60 × 40 wu) with `fx.glow_round` in the team colour, with brightness `rnd.structure.grid.solar_glow_base` (0.5) + `rnd.structure.grid.solar_glow_pulse` (0.5) × |sin *g*|, where *g* is the presentation frame time in seconds (R-SIM-570; see DEC-959 item 2). A grid terminal draws nothing. All of these use `glow_additive_fog`, the power lines `line_additive_fog`.
 
-**RND-173** (MUST) A jump pad draws in pass 8 an animated arrow strip with `marker.jump_pad`, `rnd.structure.jump_pad.arrow_length` (80 wu) long and `rnd.structure.jump_pad.arrow_half_width` (20 wu) wide on either side, with brightness `rnd.structure.jump_pad.base_brightness` (0.3) + `rnd.structure.jump_pad.pulse_brightness` (0.7) × |sin *g*|, with *g* the presentation frame time (see DEC-959 item 2), using `glow_additive_fog`.
+**RND-173** (MUST) A jump pad draws in pass 8 the animated arrow strip of [defences and props](../../../reference/03_buildings_and_world_objects/defences_and_props.md) R-BLDG-475 with `marker.jump_pad`, `ref.bldg.jump_pad.arrow_length` (80 wu) long and `ref.bldg.jump_pad.arrow_half_width` (20 wu) wide on either side, with brightness `ref.bldg.jump_pad.brightness_base` (0.3) + `ref.bldg.jump_pad.brightness_pulse` (0.7) × |sin *g*|, with *g* the presentation frame time (see DEC-959 item 2), using `glow_additive_fog`.
 
 **RND-174** (MUST) These structures draw only their solid parts or nothing:
 
@@ -226,7 +228,7 @@ Mesh queries used by the simulation are not renderer functions (RND-004). For th
 
 **RND-181** (MUST) The tree generator's state is a 32-bit integer that wraps modulo 2³². `Next()` sets state = state × `rnd.tree.generator.multiplier` (214013) + `rnd.tree.generator.increment` (2531011) and returns (state ÷ 2^`rnd.tree.generator.shift` (16)) AND `rnd.tree.generator.mask` (0x7FFF); `NextScaled(r)` returns *r* × `Next()` ÷ `rnd.tree.generator.mask` (32767). Seeding sets the state to the seed.
 
-**RND-182** (MUST) A branch segment is generated by this procedure, with the width factor `rnd.tree.width_factor` (0.1), the child offset `rnd.tree.child_offset_min` (0.3) + `NextScaled`(`rnd.tree.child_offset_range` (0.6)) and the child length factor `rnd.tree.child_length` (0.4):
+**RND-182** (MUST) A branch segment is generated by this procedure, with the width factor `ref.bldg.tree.branch_width` (0.1, [trees and crate structures](../../../reference/03_buildings_and_world_objects/trees_and_crate_structures.md) R-BLDG-605), the child offset `rnd.tree.child_offset_min` (0.3) + `NextScaled`(`rnd.tree.child_offset_range` (0.6)) and the child length factor `ref.bldg.tree.child_reach` (0.4, R-BLDG-605):
 
 ```text
 Branch(from, to, n, pass):
@@ -255,19 +257,19 @@ Branch(from, to, n, pass):
 
 **RND-184** (MUST) A tree of depth *N* has 4^*k* segments at level *k*, 4^(*N*−1) leaf segments and (4^(*N*−1) − 1) ÷ 3 branch segments, each with two quads; for *N* = 6 that is 1024 leaf and 341 branch segments.
 
-**RND-185** (MUST) A tree is drawn in pass 8 only, sorted at its sort centre: its position + its crown centre × its height (the crown centre ignores the tree's rotation). The transform is the tree's front, up and position × a uniform scale of its drawn height. The branch quads are drawn in the branch colour, then, unless the seasonal state is active or the tree is blighted, the leaf quads in the leaf colour, both with `fx.tree_canopy` (white with its mask as alpha, tinted by the draw colour) through the linear clamp-to-edge sampler with all mip levels, using `glow_additive_fog` unless a rule below names `alpha_fog`.
+**RND-185** (MUST) A tree is drawn in pass 8 only, sorted at its sort centre: its position + its crown centre × its height (the crown centre ignores the tree's rotation). The transform is the tree's front, up and position × a uniform scale of its drawn height. The branch quads are drawn in the branch colour, then, unless the seasonal state is active or the tree is a blight tree, the leaf quads in the leaf colour, both with `fx.tree_canopy` (white with its mask as alpha, tinted by the draw colour) through the linear clamp-to-edge sampler with all mip levels, using `glow_additive_fog` unless a rule below names `alpha_fog`.
 
-**RND-186** (MUST) The drawn height is the tree's height × (1 + sin((real clock + object serial × `rnd.tree.sway.serial_phase` (2)) × `rnd.tree.sway.rate` (2)) × `rnd.tree.sway.amplitude` (0.003)), a breathing scale; a blighted tree uses the amplitude `rnd.tree.sway.blighted_amplitude` (0.01). The object serial is the tree's simulated-object serial (`SimObjectId`).
+**RND-186** (MUST) The drawn height is the tree's height × (1 + sin((real clock + object serial × `rnd.tree.sway.serial_phase` (2)) × `rnd.tree.sway.rate` (2)) × `ref.bldg.tree.sway_amplitude` (0.003)), a breathing scale (R-BLDG-626); a blight tree uses the amplitude `ref.bldg.tree.blight_sway_amplitude` (0.01). The object serial is the tree's simulated-object serial (`SimObjectId`).
 
-**RND-187** (MUST) A tree of an Essence Grove (a tree whose Essence-orb drop rate is above 0) pulses its leaf colour's blue channel: *B* = *B* × *f* + 255 × (1 − *f*) with *f* = |sin(real clock + object serial × `rnd.tree.essence_pulse.serial_phase` (10))|.
+**RND-187** (MUST) An essence tree (a tree whose Essence-orb drop rate is above 0, R-BLDG-627 item 1) pulses its leaf colour's blue channel: *B* = *B* × *f* + 255 × (1 − *f*) with *f* = |sin(real clock + object serial × `rnd.tree.essence_pulse.serial_phase` (10))|.
 
-**RND-188** (MUST) A blighted tree (one of a Blight Grove) draws its branches in `rnd.tree.blighted.branch_colour` (0, 0, 0, alpha 200 of 255), no leaves, with the `alpha_fog` entry: a dark silhouette.
+**RND-188** (MUST) A blight tree (R-BLDG-622 to R-BLDG-624: a tree of a Blight Grove, a tree that its map record or its creator marks blight, or a corrupted tree whose blight countdown has ended) draws its branches in `rnd.tree.blighted.branch_colour` (0, 0, 0, alpha 200 of 255), no leaves, with the `alpha_fog` entry: a dark silhouette.
 
-**RND-189** (MUST) A tree that is turning blighted (its blight timer is at or below 0 and it is not yet blighted) is drawn twice, with *k* = (`rnd.tree.blighting.span` (10) + blight timer + *t*) ÷ `rnd.tree.blighting.span`: first with its branch colour's RGB and alpha multiplied by *k* and its leaf alpha multiplied by (1 − *k*); then as a black silhouette with branch alpha `rnd.tree.blighted.silhouette_alpha` (200) × *k* of 255.
+**RND-189** (MUST) A corrupted tree that is not yet a blight tree (R-BLDG-622; its blight timer is at or below 0) is drawn twice, with *k* = (`rnd.tree.blighting.span` (10) + blight timer + *t*) ÷ `rnd.tree.blighting.span`: first with its branch colour's RGB and alpha multiplied by *k* and its leaf alpha multiplied by (1 − *k*); then as a black silhouette with branch alpha `rnd.tree.blighted.silhouette_alpha` (200) × *k* of 255.
 
-**RND-190** (MUST) A burning tree (burn level *b* above 0) uses `alpha_fog`: its branch RGB is scaled towards black by min(*b* × `rnd.tree.burning.darken_gain` (10), 1) with alpha 1; its leaves are black with alpha × (1 − *b*). It also draws `rnd.tree.burning.flame_count` (4) camera-facing `fx.starburst` billboards with `glow_additive_fog_nodepth`, in `rnd.tree.burning.flame_colour` (0.8, 0.2, 0.1) with alpha `rnd.tree.burning.flame_alpha` (0.5) × drawn height ÷ height, flame *i* (0 to 3) centred at the position + (sin(*ω* *g* + *i*) × *i* × `rnd.tree.burning.flame_spread` (1.7), `rnd.tree.burning.flame_height` (0.8) × drawn height + cos(*ω* *g* + *i*), cos(*ω* *g* + *i*) × *i* × 1.7), with *g* the presentation frame time and *ω* = `rnd.tree.burning.flame_phase_rate` (2 rad per s), each of half-size max(`rnd.tree.burning.flame_size_gain` (2) × drawn height, `rnd.tree.burning.flame_min_size` (5 wu)). Each tick it emits ⌊drawn height ÷ `rnd.tree.burning.particle_height_step` (12)⌋ ÷ the structure-detail level fire particles through effect events ([README.md](../animation_and_vfx/README.md), ADR-036). A regrowing tree (burn level below 0) hides its leaves while |*b*| > `rnd.tree.regrow.hide_threshold` (0.5) and otherwise multiplies their alpha by (1 − `rnd.tree.regrow.fade_gain` (2) × |*b*|).
+**RND-190** (MUST) A burning tree (burn level *b* above 0) uses `alpha_fog`: its branch RGB is scaled towards black by min(*b* × `rnd.tree.burning.darken_gain` (10), 1) with alpha 1; its leaves are black with alpha × (1 − *b*). It also draws `rnd.tree.burning.flame_count` (4) camera-facing `fx.starburst` billboards with `glow_additive_fog_nodepth`, in `rnd.tree.burning.flame_colour` (0.8, 0.2, 0.1) with alpha `rnd.tree.burning.flame_alpha` (0.5) × drawn height ÷ height, flame *i* (0 to 3) centred at the position + (sin(*ω* *g* + *i*) × *i* × `rnd.tree.burning.flame_spread` (1.7), `rnd.tree.burning.flame_height` (0.8) × drawn height + cos(*ω* *g* + *i*), cos(*ω* *g* + *i*) × *i* × 1.7), with *g* the presentation frame time and *ω* = `rnd.tree.burning.flame_phase_rate` (2 rad per s), each of half-size max(`rnd.tree.burning.flame_size_gain` (2) × drawn height, `ref.bldg.tree.burn_flare_min_size` (5 wu, R-BLDG-627)). Each tick it emits ⌊drawn height ÷ `rnd.tree.burning.particle_height_step` (12)⌋ ÷ the structure-detail level fire particles through effect events ([README.md](../animation_and_vfx/README.md), ADR-036). A regrowing tree (burn level below 0) hides its leaves while |*b*| > `rnd.tree.regrow.hide_threshold` (0.5) and otherwise multiplies their alpha by (1 − `rnd.tree.regrow.fade_gain` (2) × |*b*|).
 
-**RND-191** (MUST) While the seasonal state is active, branches are drawn in `rnd.tree.seasonal_branch_colour` (180, 100, 50 of 255) and no leaves are drawn (see DEC-118). The tree-detail setting (no user interface, default 1; [options_and_budgets.md](options_and_budgets.md)) multiplies the leaf alpha by `rnd.tree.leaf_alpha_boost` (1.3) to the power of the detail level, capped at 255, at generation, when the level is above 1; it changes no geometry.
+**RND-191** (MUST) While the seasonal state is active, branches are drawn in `rnd.tree.seasonal_branch_colour` (180, 100, 50 of 255) and no leaves are drawn (see DEC-118). The tree-detail setting (no user interface, default 1; [options_and_budgets.md](options_and_budgets.md)) multiplies the leaf alpha by `ref.bldg.tree.leaf_alpha_boost` (1.3, R-BLDG-628) to the power of the detail level, capped at 255, at generation, when the level is above 1; it changes no geometry.
 
 ### 4.7 Barrier Emitters
 
@@ -279,7 +281,7 @@ Branch(from, to, n, pass):
 
 **RND-198** (MUST) The predicted status is the emitter's status moved towards its target by `rnd.barrier.status_rate` (0.3) × *t* (1 in the map editor). With *h* and *h*′ the full heights of this post and the linked post × their predicted statuses, the curtain quad has the corners: bottom-left = this post − (0, *h* × `rnd.barrier.skirt_fraction` (1/3), 0), top-left = this post + (0, *h*, 0), top-right = linked post + (0, *h*′, 0), bottom-right = linked post − (0, *h*′ × 1/3, 0); the skirt reaches a third of the height below the ground.
 
-**RND-199** (MUST) While the structure-detail setting is below 3, the curtain is drawn with the `dual_alpha_fog` entry in the `replace_then_modulate` combine mode ([shaders.md](shaders.md) RND-268): texture 0 is `fx.barrier_field` with coordinates *s* from *s₀* to *s₀* + *dx* and *t* from 0 to *dz*, where *dx* = the distance between the posts ÷ (`rnd.barrier.repeat_factor` (2) × the full height), *dz* = the status and *s₀* = the presentation frame time ÷ `rnd.barrier.scroll_period` (15 s); texture 1 is `fx.barrier_field_wide` with *s* from 0 to 1 and *t* from *t₀* to *t₀* + *th*; both use the linear-wrap sampler with all mip levels. A solar-linked emitter uses *t₀* = the presentation frame time ÷ `rnd.barrier.solar_scroll_period` (1.5 s), *th* = `rnd.barrier.solar_repeat` (7), *s₀* = 0 and `fx.barrier_field` also as texture 1; any other emitter uses *t₀* = 0 and *th* = 1 (see DEC-959 item 1). The scroll reads the presentation frame time, the clock of render-time animation (see DEC-959 item 2).
+**RND-199** (MUST) While the structure-detail setting is below 3, the curtain is drawn with the `dual_alpha_fog` entry in the `texture_color` combine mode ([shaders.md](shaders.md) RND-268): texture 0 is `fx.barrier_field` with coordinates *s* from *s₀* to *s₀* + *dx* and *t* from 0 to *dz*, where *dx* = the distance between the posts ÷ (`rnd.barrier.repeat_factor` (2) × the full height), *dz* = the status and *s₀* = the presentation frame time ÷ `rnd.barrier.scroll_period` (15 s); texture 1 is `fx.barrier_field_wide` with *s* from 0 to 1 and *t* from *t₀* to *t₀* + *th*; both use the linear-wrap sampler with all mip levels. A solar-linked emitter uses *t₀* = the presentation frame time ÷ `rnd.barrier.solar_scroll_period` (1.5 s), *th* = `rnd.barrier.solar_repeat` (7), *s₀* = 0 and `fx.barrier_field` also as texture 1; any other emitter uses *t₀* = 0 and *th* = 1 (see DEC-959 item 1). The scroll reads the presentation frame time, the clock of render-time animation (see DEC-959 item 2).
 
 **RND-200** (MUST) At every structure-detail level, the curtain is then drawn once more with `fx.barrier_field_wide` (*s* from 0 to 1, *t* from *t₀* to *t₀* + *th*) in the curtain colour with the `glow_additive_fog` entry, the burn layer.
 
@@ -302,6 +304,8 @@ Branch(from, to, n, pass):
 
 ## 7 Acceptance tests
 
+The golden-image tests compare with the default tolerance and on the pinned reference configuration of the test harness ([diagnostics, test and performance](../diagnostics_test_and_performance/README.md) §4.8), unless a test states its own tolerance.
+
 | Test | Kind | Checks | Requirements |
 |---|---|---|---|
 | T1 terrain mesh | unit | a small height field gives exactly the needed pairs, triangles, diagonals and sunk vertices of RND-132 and RND-133, including the spanning triangles of a field with land at its border | RND-132, RND-133 |
@@ -315,8 +319,8 @@ Branch(from, to, n, pass):
 | T9 tint | golden-image | a reference mesh for every palette entry, with convert-all, Transport and Worker-figure rules; deeper nodes keep their colours | RND-161, RND-162 |
 | T10 sort | unit | sorted structures draw farthest first; equal distances keep pool order | RND-164, RND-166 |
 | T11 ownership lights | unit | for command frames 0 to 19 the lights of teams 0 to 4 are on in pairs of frames and team 5 never | RND-167 |
-| T12 tree geometry | unit | for recorded seeds and parameters the quad lists and crown values equal the reference vectors; *N* = 6 gives 1024 and 341 segments | RND-181 to RND-184 |
-| T13 tree states | golden-image | normal, Essence Grove, blighted, turning, burning, regrowing and seasonal trees | RND-185 to RND-191 |
+| T12 tree geometry | unit | for recorded seeds and parameters, the quad lists and crown values equal those that a conformance implementation, written from RND-181 to RND-184 alone and kept with the test suite, generates for the same inputs; *N* = 6 gives 1024 and 341 segments | RND-181 to RND-184 |
+| T13 tree states | golden-image | normal, essence, blight, corrupted, burning, regrowing and seasonal trees | RND-185 to RND-191 |
 | T14 Barrier Emitter | golden-image | curtains at detail 1 and 3, solar-linked and not, during status changes | RND-196 to RND-201 |
 
 ## 8 Open decisions
@@ -337,6 +341,8 @@ Branch(from, to, n, pass):
 
 ## 9 Tuning table
 
+The jump-pad and tree values that [defences and props](../../../reference/03_buildings_and_world_objects/defences_and_props.md) and [trees and crate structures](../../../reference/03_buildings_and_world_objects/trees_and_crate_structures.md) own (`ref.bldg.jump_pad.*`, `ref.bldg.tree.*`) are cited by their keys in RND-173, RND-182, RND-186, RND-190 and RND-191 and not repeated here.
+
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
 | `rnd.terrain.sink_threshold` | 0.3 | wu | vertices below this are sunk | RND-133 | |
@@ -354,7 +360,7 @@ Branch(from, to, n, pass):
 | `rnd.sky.grid_height` | 1200 | wu | sky grid, blobby 1, flat 1 | RND-151, RND-153 | |
 | `rnd.sky.grid_spacing` | 80 | wu | | RND-151 | |
 | `rnd.sky.grid_min` | −4000 | wu | | RND-151 | |
-| `rnd.sky.grid_max` | 6000 | wu | 125 lines per axis | RND-151 | |
+| `rnd.sky.grid_max` | 6000 | wu | exclusive: no line lies at it; 125 lines per axis | RND-151 | |
 | `rnd.sky.grid_line_half_width` | 8 | wu | | RND-151 | |
 | `rnd.sky.grid_colour` | 0.5, 0.5, 1.0, 0.3 | RGBA | | RND-151 | |
 | `rnd.sky.grid_fog_start` | 2000 | wu, view depth | black fog | RND-151 | |
@@ -390,10 +396,6 @@ Branch(from, to, n, pass):
 | `rnd.structure.grid.solar_glow_size` | 60 × 40 | wu | | RND-172 | |
 | `rnd.structure.grid.solar_glow_base` | 0.5 | brightness | | RND-172 | |
 | `rnd.structure.grid.solar_glow_pulse` | 0.5 | brightness × \|sin *g*\| | | RND-172 | |
-| `rnd.structure.jump_pad.arrow_length` | 80 | wu | | RND-173 | |
-| `rnd.structure.jump_pad.arrow_half_width` | 20 | wu | | RND-173 | |
-| `rnd.structure.jump_pad.base_brightness` | 0.3 | × | | RND-173 | |
-| `rnd.structure.jump_pad.pulse_brightness` | 0.7 | × | | RND-173 | |
 | `rnd.structure.relic.shatter_fraction` | 0.5 | fraction | when a Relic appears | RND-174 | |
 | `rnd.structure.wall.shatter_parameter` | 3.0 | shatter parameter | when a wall is destroyed | RND-174 | |
 | `rnd.structure.scenery.placeholder_radius` | 40 | wu | scenery without a mesh | RND-174 | |
@@ -401,14 +403,10 @@ Branch(from, to, n, pass):
 | `rnd.tree.generator.increment` | 2531011 | | | RND-181 | |
 | `rnd.tree.generator.shift` | 16 | bits | | RND-181 | |
 | `rnd.tree.generator.mask` | 0x7FFF | | 32767 | RND-181 | |
-| `rnd.tree.width_factor` | 0.1 | × segment length | × bud size for leaf segments | RND-182 | |
 | `rnd.tree.child_offset_min` | 0.3 | fraction of the parent segment | | RND-182 | |
 | `rnd.tree.child_offset_range` | 0.6 | fraction | uniform draw added to the minimum | RND-182 | |
-| `rnd.tree.child_length` | 0.4 | × parent length | before the push-out factor | RND-182 | |
 | `rnd.tree.sway.serial_phase` | 2 | s per serial | | RND-186 | |
 | `rnd.tree.sway.rate` | 2 | rad per s | | RND-186 | |
-| `rnd.tree.sway.amplitude` | 0.003 | × height | | RND-186 | |
-| `rnd.tree.sway.blighted_amplitude` | 0.01 | × height | | RND-186 | |
 | `rnd.tree.essence_pulse.serial_phase` | 10 | s per serial | | RND-187 | |
 | `rnd.tree.blighted.branch_colour` | 0, 0, 0, 200 | of 255 | | RND-188 | |
 | `rnd.tree.blighting.span` | 10 | blight-timer units | | RND-189 | |
@@ -421,12 +419,10 @@ Branch(from, to, n, pass):
 | `rnd.tree.burning.flame_height` | 0.8 | × drawn height | | RND-190 | |
 | `rnd.tree.burning.flame_phase_rate` | 2 | rad per s of presentation frame time | | RND-190 | |
 | `rnd.tree.burning.flame_size_gain` | 2 | × drawn height | half-size | RND-190 | |
-| `rnd.tree.burning.flame_min_size` | 5 | wu | half-size floor | RND-190 | |
 | `rnd.tree.burning.particle_height_step` | 12 | wu per particle | per tick, ÷ structure detail | RND-190 | |
 | `rnd.tree.regrow.hide_threshold` | 0.5 | burn level | | RND-190 | |
 | `rnd.tree.regrow.fade_gain` | 2 | × \|burn level\| | leaf alpha × (1 − 2\|*b*\|) | RND-190 | |
 | `rnd.tree.seasonal_branch_colour` | 180, 100, 50 | of 255 | | RND-191 | DEC-118 |
-| `rnd.tree.leaf_alpha_boost` | 1.3 | × per detail level | above level 1, capped at 255 | RND-191 | |
 | `rnd.barrier.neutral_colour` | 100, 100, 100, 150 | of 255 | no team | RND-197 | |
 | `rnd.barrier.solar_dark` | 20, 20, 20 | of 255 | | RND-197 | |
 | `rnd.barrier.solar_team_factor` | 0.9 | × team colour | | RND-197 | |

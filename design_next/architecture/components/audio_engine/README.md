@@ -48,7 +48,7 @@ Layer 2 is the one device layer: XAudio2 2.9 with X3DAudio (ADR-022, ADR-027).
 
 **AEN-007** (MUST) The dedicated server and every headless build link no part of the audio engine (ADR-022). A headless participant raises the same presentation events and plays nothing.
 
-**AEN-008** (MUST) The audio design is the authority for every design rule this component implements: the event set, layer data and defaults, audiences, sharing, envelopes and loops as heard, links, groups, the 14 effect kinds and their behaviour, the distance and panning laws, the buses, their levels and priority classes, and the music hooks ([audio design](../../../reference/10_audio_design/README.md) R-AUD-006). This component cites the design's requirements and `ref.aud.*` keys and never redefines them; it owns the arithmetic, the scheduling and every engine value of its tuning table (§4.21).
+**AEN-008** (MUST) The audio design is the authority for every design rule this component implements: the event set, layer data and defaults, audiences, sharing, envelopes and loops as heard, links, groups, the effect kinds and their behaviour, the distance and panning laws, the buses, their levels and priority classes, and the music hooks ([audio design](../../../reference/10_audio_design/README.md) R-AUD-006). This component cites the design's requirements and `ref.aud.*` keys and never redefines them; it owns the arithmetic, the scheduling and every engine value of its tuning table (§4.21).
 
 ## 2 Interfaces
 
@@ -60,76 +60,148 @@ Everything in the sketch is engine code in namespace `Engine` (`AGENTS.md` R9). 
 namespace Engine
 {
 
-using Seconds = double;   // audio time (platform clock, ADR-074)
-using Decibels = float;
+using AudioSeconds = double; // audio time in s: the audio clock, which reads the platform clock (ADR-074)
 
 // Data tokens of the audio design in brackets; order kept where noted.
 enum class SoundPosition : std::uint8_t
 {
-  Screen2d, WorldFixed, Attached   // [2d, fix, att]
+  Screen2D,   // [2d]
+  WorldFixed, // [fix]
+  Attached    // [att]
 };
 enum class SoundSharing : std::uint8_t
 {
-  PerTrigger, SharedRandom, SharedNearest   // [poly, share-rnd, share-near]
+  PerTrigger,   // [poly]
+  SharedRandom, // [share-rnd]
+  SharedNearest // [share-near]
 };
 enum class SoundLoop : std::uint8_t
 {
-  Once, Loop, NoteLoop   // [once, loop, note]
+  Once,    // [once]
+  Loop,    // [loop]
+  NoteLoop // [note]
 };
 enum class SoundAudience : std::uint8_t
 {
-  All, OwnGroup, OtherGroup, NoGroup   // [all, own, enemy, none]
+  All,        // [all]
+  OwnGroup,   // [own]
+  OtherGroup, // [enemy]
+  NoGroup     // [none]
 };
 // SoundParamKind, SoundParamUpdate, SoundLink, SoundParam, EffectBinding, SoundLayerDef, SoundEventDef, SoundSourceDef:
 // generated from sound.sources: data_schemas/entity_audio_geometry_and_panel_schemas.md §2
-enum class EnvelopeStage : std::uint8_t
+enum class EnvelopeStage : std::uint8_t // no decay stage
 {
-  Attack, Hold, Release   // no decay stage
+  Attack,
+  Hold,
+  Release
 };
 enum class VoiceState : std::uint8_t
 {
-  Pending, Virtual, Real, Retired
+  Pending,
+  Virtual,
+  Real,
+  Retired
 };
 // DspFilterKind (its order carries meaning, R-AUD-080), DspParamDesc, DspFilterDef:
 // generated from sound.effect_kinds: data_schemas/entity_audio_geometry_and_panel_schemas.md §2
 // Order is the priority-class order, highest first (DEC-570); Music is outside the ranking.
 enum class AudioBus : std::uint8_t
 {
-  Ui, Announcer, Voice, World, Ambience, Music
+  Ui,
+  Announcer,
+  Voice,
+  World,
+  Ambience,
+  Music
 };
+inline constexpr std::size_t AUDIO_BUS_COUNT = 6;
 enum class StopMatch : std::uint8_t
 {
-  ExactEvent, SourcePrefix, Everything
+  ExactEvent,
+  SourcePrefix,
+  Everything
 };
 enum class MatchPhase : std::uint8_t
 {
-  NoMatch, Countdown, Running, Ended   // Countdown: the match's grace period (R-AUD-303)
+  NoMatch,
+  Countdown, // the match's grace period (R-AUD-303)
+  Running,
+  Ended
 };
 
-struct EmitterId   // the simulation's object handle as the engine names an emitter; EmitterId{} = no emitter
+struct EmitterId // the simulation's object handle as the engine names an emitter; EmitterId{} = no emitter
 {
   std::uint64_t value = 0;
 };
-struct AudienceGroup   // the group that an audience compares; presentation code passes the team
+struct AudienceGroup // the group that an audience compares; presentation code passes the team
 {
   std::uint8_t value = 0;
 };
+struct SourceId // a sound source, resolved to its index in the cooked sound data (AEN-064)
+{
+  std::uint16_t value = 0;
+};
+struct EventId // a full event id <source>.<event>, resolved to its index in the cooked sound data (AEN-064)
+{
+  std::uint32_t value = 0;
+};
+struct BankId // a bank of AEN-074, by its index in the cooked sound data
+{
+  std::uint8_t value = 0;
+};
+struct RequestId // chosen by the caller of a query and returned in its AudioResult
+{
+  std::uint32_t value = 0;
+};
+struct OperationSetId // the XAudio2 operation set of one update, passed to IXAudio2::CommitChanges (AEN-123)
+{
+  std::uint32_t value = 0;
+};
 
-struct SoundVoiceId   // generation 0 = invalid
+struct SoundVoiceId // generation 0 = invalid
 {
   std::uint32_t slot = 0;
   std::uint32_t generation = 0;
 };
 
-struct TriggerCommand   // AEN-130
+struct AudioSettings // the settings of AEN-076, read when the engine is created
 {
-  SourceId source;                      // the full id is <source>.<event>
+  std::uint8_t masterVolumeStep;                            // 0 to ref.meta.options.sound.volume_max
+  std::array<std::uint8_t, AUDIO_BUS_COUNT> busVolumeSteps; // in AudioBus order
+  bool swapStereo;
+  bool effectsEnabled;
+};
+
+// The cooked sound data that AEN-100 step 1 loads: the SoundSourceDef records and the SoundGroupDef sample groups (§3.1).
+struct SoundDataSet;
+// The cooked bus graph: the player buses of AEN-220 and the effect buses of AEN-223 with their DSP filter chains.
+// VoiceBackend::Build turns it into the AudioBusGraph, the submix voices of §4.16.
+struct BusGraphDef;
+class SampleCache;     // residency: banks, group reference counts and stream heads (§4.17)
+class SourceVoiceSlot; // one pooled IXAudio2SourceVoice with its callback object (AEN-142)
+
+struct VoiceFormat // the format of a voice pool (AEN-142); every format is at aen.format.sample_rate
+{
+  std::uint8_t channels;         // 1 or 2
+  bool msAdpcm;                  // false: 16-bit PCM
+  std::uint16_t samplesPerBlock; // MS-ADPCM only (aen.stream.samples_per_block)
+};
+struct SendLevel // one send of a source voice to an effect bus (AEN-224)
+{
+  std::uint16_t effectBus; // the effect bus's index in the BusGraphDef
+  float amplitude;
+};
+
+struct TriggerCommand // AEN-130
+{
+  SourceId source; // the full id is <source>.<event>
   EventId event;
-  EmitterId emitter;                    // EmitterId{} = no emitter
-  std::optional<AudienceGroup> group;   // nullopt = no team (R-AUD-025)
-  Vec3 position;                        // world frame, wu
-  Vec3 velocity;                        // wu/s
-  Seconds issueTime;                    // audio clock at issue (AEN-024)
+  EmitterId emitter;                  // EmitterId{} = no emitter
+  std::optional<AudienceGroup> group; // nullopt = no team (R-AUD-025)
+  Vec3 position;                      // world frame, wu
+  Vec3 velocity;                      // wu/s
+  AudioSeconds issueTime;             // audio clock at issue (AEN-024)
 };
 
 struct StopCommand
@@ -138,10 +210,10 @@ struct StopCommand
   StopMatch match;
   SourceId source;
   EventId event;
-  Seconds issueTime;
+  AudioSeconds issueTime;
 };
 
-struct EmitterUpdate   // AEN-041
+struct EmitterUpdate // AEN-041
 {
   EmitterId emitter;
   bool present;
@@ -170,28 +242,39 @@ struct MatchState
   float timeRemaining;
 };
 
-class CommandWriter   // one per producing thread; every call writes one command
+class CommandWriter // one per producing thread; every call writes one command
 {
 public:
-  bool Trigger(const TriggerCommand& _command);   // false: the queue is full; the command is dropped and counted
+  bool Trigger(const TriggerCommand& _command); // false: the queue is full; the command is dropped and counted
   bool Stop(const StopCommand& _command);
   bool UpdateEmitters(std::span<const EmitterUpdate> _updates);
   bool SetListener(const ListenerUpdate& _listener);
   bool SetMatchState(const MatchState& _state);
-  bool BeginMatch(AudienceGroup _localGroup);   // per-match state starts (AEN-197)
-  bool EndMatch();                              // per-match state discarded
-  bool SetLoadingView(bool _shown);             // AEN-111
-  bool SetMasterVolume(std::uint8_t _step);     // 0 to ref.meta.options.sound.volume_max
+  bool BeginMatch(AudienceGroup _localGroup); // per-match state starts (AEN-197)
+  bool EndMatch();                            // per-match state discarded
+  bool SetLoadingView(bool _shown);           // AEN-111
+  bool SetMasterVolume(std::uint8_t _step);   // 0 to ref.meta.options.sound.volume_max
   bool SetBusVolume(AudioBus _bus, std::uint8_t _step);
   bool SetSwapStereo(bool _on);
-  bool SetEffectsEnabled(bool _on);             // AEN-221
+  bool SetEffectsEnabled(bool _on); // AEN-221
   bool LoadBank(BankId _bank);
   bool ReleaseBank(BankId _bank);
-  bool QueryCount(RequestId _request, EmitterId _emitter, EventId _event);   // EmitterId{} = any emitter
+  bool QueryCount(RequestId _request, EmitterId _emitter, EventId _event); // EmitterId{} = any emitter
   bool QueryPlaying(RequestId _request, EmitterId _emitter);
   bool Pause();
   bool Resume();
-  bool RestartDevice();                         // AEN-259
+  bool RestartDevice(); // AEN-259
+};
+
+enum class ResultKind : std::uint8_t // AEN-023
+{
+  Count,       // the answer to QueryCount: request, count
+  Playing,     // the answer to QueryPlaying: request, playing
+  DeviceReady, // the readiness points of AEN-104
+  InterfaceReady,
+  MatchReady,
+  EmitterTracked, // the tracked-emitter set of AEN-041 gains the emitter
+  EmitterUntracked
 };
 
 struct AudioResult
@@ -200,35 +283,35 @@ struct AudioResult
   RequestId request;
   std::uint32_t count;
   bool playing;
-  SoundVoiceId voice;
+  EmitterId emitter;
 };
 
 class AudioEngine
 {
 public:
   static std::unique_ptr<AudioEngine> Create(const AudioSettings& _settings, const SoundDataSet& _data, SampleCache& _cache);
-  CommandWriter& Producer();                                          // the calling thread's queue (ADR-026)
-  void DrainResults(std::function<void(const AudioResult&)> _sink);   // game thread, once per frame
-  ~AudioEngine();                                                     // AEN-106 teardown order
+  CommandWriter& Producer();                                        // the calling thread's queue (ADR-026)
+  void DrainResults(std::function<void(const AudioResult&)> _sink); // game thread, once per frame
+  ~AudioEngine();                                                   // AEN-106 teardown order
 };
 
-// Layer 2; the only code that includes XAudio2 or X3DAudio headers (ADR-026). Op names an XAudio2 operation set.
+// Layer 2; the only code that includes XAudio2 or X3DAudio headers (ADR-026).
 class VoiceBackend
 {
 public:
-  bool Build(const BusGraphDef& _graph);                    // mastering voice on the default device and format, buses
+  bool Build(const BusGraphDef& _graph); // mastering voice on the default device and format, buses
   void Teardown();
-  SourceVoiceSlot* Acquire(const VoiceFormat& _format);     // pooled per format: PCM, and MS-ADPCM for streams (AEN-142)
-  void Release(SourceVoiceSlot* _voice);                    // resets every per-voice setting (DEC-752)
-  void SetVolume(SourceVoiceSlot& _voice, float _amplitude, Op _set);
-  void SetFrequencyRatio(SourceVoiceSlot& _voice, float _ratio, Op _set);
-  void SetOutputMatrix(SourceVoiceSlot& _voice, std::span<const float> _matrix, Op _set);
-  void SetFilter(SourceVoiceSlot& _voice, const XAUDIO2_FILTER_PARAMETERS& _filter, Op _set);
-  void SetSends(SourceVoiceSlot& _voice, std::span<const SendLevel> _sends, Op _set);
+  SourceVoiceSlot* Acquire(const VoiceFormat& _format); // pooled per format: PCM, and MS-ADPCM for streams (AEN-142)
+  void Release(SourceVoiceSlot* _voice);                // resets every per-voice setting (DEC-752)
+  void SetVolume(SourceVoiceSlot& _voice, float _amplitude, OperationSetId _set);
+  void SetFrequencyRatio(SourceVoiceSlot& _voice, float _ratio, OperationSetId _set);
+  void SetOutputMatrix(SourceVoiceSlot& _voice, std::span<const float> _matrix, OperationSetId _set);
+  void SetFilter(SourceVoiceSlot& _voice, const XAUDIO2_FILTER_PARAMETERS& _filter, OperationSetId _set);
+  void SetSends(SourceVoiceSlot& _voice, std::span<const SendLevel> _sends, OperationSetId _set);
   void Submit(SourceVoiceSlot& _voice, const XAUDIO2_BUFFER& _buffer);
-  void Start(SourceVoiceSlot& _voice, Op _set);
-  void Stop(SourceVoiceSlot& _voice, Op _set);
-  void ApplyOperationSet(Op _set);                          // IXAudio2::CommitChanges
+  void Start(SourceVoiceSlot& _voice, OperationSetId _set);
+  void Stop(SourceVoiceSlot& _voice, OperationSetId _set);
+  void ApplyOperationSet(OperationSetId _set); // IXAudio2::CommitChanges
 };
 
 } // namespace Engine
@@ -303,7 +386,7 @@ The real-voice budget, the caps and the music voice pair are §4.6 and §8.2; th
 | `SoundEventDef` | 5 | one event: its full id `<source>.<event>` and its layers | as above |
 | `SoundLayerDef` | 5 | one layer: the fields of [event model](../../../reference/10_audio_design/event_model_and_sound_data.md) R-AUD-049 plus the engine fields of AEN-062 | as above |
 | `SoundGroupDef` | 5 | a sample group: its asset id, its members, their weights, resident or streamed | as above |
-| `DspFilterDef` | 1 | one of the 14 effect kinds: its parameter descriptors (§3.4) | compiled into the engine from the effect-kind table `sound.effect_kinds`, with no pack entry (DAT-273); process lifetime |
+| `DspFilterDef` | 1 | one of the nine DSP filter kinds: its parameter descriptors (§3.4) | compiled into the engine from the effect-kind table `sound.effect_kinds`, with no pack entry (DAT-273); process lifetime |
 | `SoundParam` | 4 | the definition of one modulatable value: kind, link, update mode, ranges, smoothing (R-AUD-051 to R-AUD-054) | part of a layer or an effect binding |
 | `SoundVoice` | 4 | one instance (§3.3) | the engine's instance table of `aen.instances.capacity` slots; from trigger to retirement |
 | `SoundVoiceId` | 4 | a weak handle {slot, generation}; two handles are equal when both fields are; generation 0 is invalid; each new instance takes the next generation of its slot, starting at 1 | value type |
@@ -312,7 +395,7 @@ The real-voice budget, the caps and the music voice pair are §4.6 and §8.2; th
 | `AudioStream` | 3 | the read position and buffer ring of one real streamed instance; XAudio2 decodes its MS-ADPCM buffers | `SampleCache`; while its instance is real |
 | `VoiceBackend` | 2 | the XAudio2 engine, mastering voice, voice pools and bus graph | the engine; process lifetime, rebuilt on device loss |
 | `SourceVoiceSlot` | 2 | one pooled `IXAudio2SourceVoice` with its callback object | its pool |
-| `AudioBusGraph` | 2 | the submix voices of §4.16 | `VoiceBackend` |
+| `AudioBusGraph` | 2 | the submix voices of §4.16, which `VoiceBackend::Build` creates from the cooked bus graph `BusGraphDef` | `VoiceBackend`; rebuilt with it |
 | `CommandWriter`, `AudioResult` | — | the queues of §2.2 | the engine; process lifetime |
 
 **AEN-061** (MUST) The engine holds no simulation object pointer. Emitters are named only by `EmitterId`, the engine form of the simulation's object handle (`SimObjectId`) that presentation code passes (`AGENTS.md` R9), and their state is the latest `EmitterUpdate` the engine has received (AEN-041).
@@ -400,7 +483,7 @@ Sections 4.5 to 4.13 are in [instances_voices_and_envelopes.md](instances_voices
 
 **AEN-100** (MUST) The engine is created after the settings store ([options](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-402, R-META-478) and initialises in this order:
 
-1. take the 14 effect-kind definitions compiled into the engine (DAT-273), then load the cooked sound data: the sound sources with their events, layers and groups; a source kind that has no definitions receives an empty definition, so every source index resolves;
+1. take the nine DSP filter-kind definitions compiled into the engine (AEN-070, DAT-273), then load the cooked sound data: the sound sources with their events, layers and groups; a source kind that has no definitions receives an empty definition, so every source index resolves;
 2. build the voice back-end: the XAudio2 engine, the mastering voice on the default device with the default format, the bus graph (§4.16) and the voice pools (AEN-142); if this fails, the engine runs on the silent device (AEN-321);
 3. start the update thread (AEN-120) and the stream task (AEN-302);
 4. request the interface bank (AEN-074) from the asset system, asynchronously;

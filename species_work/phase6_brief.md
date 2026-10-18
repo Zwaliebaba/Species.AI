@@ -5,7 +5,7 @@ You are one fixer of the Species reference-library conversion run. Eight reviewe
 ## 1 Read first
 
 1. `prompts/species-design-conversion.md` §0 (purpose, fidelity), §4 (common rules; rule 11 No publishing), §6 (writing standard: what a clean document never contains; the templates).
-2. `AGENTS.md` and `CLAUDE.md`; the owner decisions O1–O29 in `vision/species-vision-brief.md` §3 (O29 is new: see ruling 1).
+2. `AGENTS.md` and `CLAUDE.md`; the owner decisions O1–O30 in `vision/species-vision-brief.md` §3 (O30: tool dependencies come from NuGet only; O29 is new: see ruling 1).
 3. `design_next/CONVENTIONS.md` (ids, units, naming, allowed terms) and the README of every document you edit.
 4. Your packet, then each finding's row in its review file when the packet row is not enough (the review files give the reviewer's evidence).
 

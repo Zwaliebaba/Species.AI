@@ -246,13 +246,13 @@ Table 3.1-A — the page catalogue. "Entered by" and "Back" are the page-stack o
 | `Error` | error page, R-META-058, R-META-059 | Push by the error rule (R-META-058) | UnwindTo the stored back page, by default `Title` | left only | — | — |
 | `Credits` | credits page, R-META-060 | Push from `Title` | Pop | left only | — | — |
 | `QuickMatch` | hook: no page leads to it (R-META-028; DEC-249, DEC-050) | never | — | — | — | — |
-| `Achievements` | hook: R-META-491, R-META-492 (DEC-047) | never | UnwindTo `Title` | left only | the row loader, which never completes (R-META-491) | discards the rows |
-| `LeaderboardSelect` | hook: R-META-499 (DEC-047) | never | Pop | — | — | — |
-| `Leaderboard` | hook: R-META-498, R-META-500 to R-META-502 (DEC-047); its board and view selectors and its period toggle take `action.menu.cycle_up`, `action.menu.cycle_down`, `action.menu.select_previous`, `action.menu.select_next` and `action.menu.toggle_period` ([input](../input/controls_and_default_bindings.md) table 3.6-B, DEC-553) | never | Pop | — | — | — |
+| `Achievements` | hook: R-META-491 (DEC-047) | never | UnwindTo `Title` | left only | — | — |
+| `LeaderboardSelect` | hook: R-META-498 (DEC-047) | never | Pop | — | — | — |
+| `Leaderboard` | hook: R-META-498 (DEC-047) | never | Pop | — | — | — |
 
 **UI-321** (MUST) The hook pages `QuickMatch`, `Achievements`, `LeaderboardSelect` and `Leaderboard` are in the catalogue so that the design phase can design them on their entry points (DEC-047, DEC-050, DEC-249), but no widget, page hook or controller requests them: the page host refuses a request for a hook page (UI-364). The 15 reachable ids are the 15 specified pages of R-META-003 (`ref.meta.front_end.specified_pages`). The key-rebinding page, which no player can reach (R-META-410, DEC-050), belongs to the settings branch: it is an options screen (recipe B) and has no page id.
 
-**UI-322** (MUST) The catalogue has no page for: the campaign and its prologue; a trial-edition single-player page, a trial upsell page or a credential page (DEC-333, DEC-248); an update notice (DEC-249); a page-based help menu or help page, because help is the help-and-options windows (R-META-061, [reference/11](../../../reference/11_tutorial_and_help.md)); a research page; a debug single-player page; and pages of removed online platforms, downloadable-content pages and pages of other product editions. Of the reference's `ref.meta.front_end.live_pages` (18) live pages, the three outside the library are the credential page, the trial upsell page and the update notice (R-META-003).
+**UI-322** (MUST) The pages are exactly the page ids of table 3.1-A; no other page exists. Help is not a page: it is the help-and-options windows (R-META-061, [reference/11](../../../reference/11_tutorial_and_help.md)).
 
 **UI-323** (MUST) A page record (UI-313) gives, besides its widgets: the fill boxes that the screen draws behind the page (`FillBoxes`: the left box only, the left and the right box, or one box of the title bar's width, R-META-208), whose default is the left box only; the initial focus (UI-385); and whether the page has a back handler (table 3.1-A).
 
@@ -315,7 +315,7 @@ Table 3.3-A — the front-end widget kinds. "Base" is the base type of [core_and
 
 The match-setup Back buttons of single player, the host and a joining player, the name-applying Back of `PlayerOptions` and the filter-saving Back of `BrowserFilters` are Back buttons ([core_and_widgets.md](core_and_widgets.md)) whose back handler is the page's (table 3.1-A). The password page's connect button is a page button whose action is R-META-053's. The map metadata that map rows show is the map catalogue's ([reference/08](../../../reference/08_maps_and_level_design/rules_and_conventions.md) R-MAP-011).
 
-**UI-341** (MUST) The library specifies no widget for: a credential field, credential status, a key-paste button or a trial key (DEC-248, DEC-333); a trial upsell or a store link (DEC-333); an update notice, an update runner or a website link (DEC-249); a message of the day (DEC-249, R-META-024); an "any map" or "any mode" row; a quick-match button (R-META-028); a spectator request (R-META-091); an add-bot button (R-META-045); a campaign or prologue launcher; a master-volume slider on a page (the sound options own it, R-META-433); or an achievement row beyond the hook of R-META-492. The map-editor entry of an editor build is a page button of the title page that opens the map editor hub page (`MapEditorHubPage`; [reference/08](../../../reference/08_maps_and_level_design/map_editor_hooks.md) R-MAP-301, R-MAP-305), and is absent from every player build.
+**UI-341** (MUST) The pages hold only the widgets of UI-340: the front-end widget family of [core_and_widgets.md](core_and_widgets.md) and the kinds of table 3.3-A. No other page widget exists. The map-editor entry of an editor build is a page button of the title page that opens the map editor hub page (`MapEditorHubPage`; [reference/08](../../../reference/08_maps_and_level_design/map_editor_hooks.md) R-MAP-301, R-MAP-305), and is absent from every player build.
 
 **UI-342** (MUST) Every field of every widget kind has a defined default when the widget is built from a layout entry that does not set it; no widget field is ever left without a value (DT-27).
 
@@ -389,7 +389,6 @@ Caption: Diagram 4-A — the page state machine of the front-end screen (UI-350 
 |---|---|
 | `SessionBrowser` | stops the session-discovery listener unless `to` is `Connecting`, and discards the session rows (DEC-245) |
 | `Connecting` | stops the session-discovery listener |
-| `Achievements` | discards the achievement rows (R-META-492) |
 
 No other page has one. A page that starts a service, a timer or a listener stops it in its leave hook (UI-450 step 3).
 
@@ -505,7 +504,7 @@ The front-end screen's navigation is the standard window's ([core_and_widgets.md
 
 **UI-391** (MUST) **Page transition.** A page button's base press, and every Back button and back handler, initialise the renderer's screen transition with the duration `ref.meta.nav.transition_time` (1.0 s) and the button's direction: `Forward` by default, `Backward` for Back buttons, back handlers, colour picker rows and buttons whose layout entry sets the backwards direction (R-META-016, R-META-017, UI-419). The page host starts the transition after it applies the page change (UI-360 step 7); a window opened from a page button starts it when it is created (UI-443 step 6). The transition always shows the last presented frame (DEC-316; RND-095), and its curve and drawing are RND-096, with the curve value c = `rnd.transition.curve_gain` × f. As a derived reading of RND-096, the captured page is entirely off the screen once c reaches 1, a little over a quarter of the way through the transition; with `Forward` it shrinks and leaves to the left, with `Backward` it grows and leaves to the right.
 
-**UI-392** (MUST) A page draws its overlays through its `DrawOverlay`, after its fill boxes and before its widgets (UI-337): the blinking captions of `SessionBrowser` while its list is empty (R-META-209) and the loading caption of the `Achievements` hook page (R-META-491), each with the blink of `ref.meta.blink.on_alpha`, `ref.meta.blink.on_time` and `ref.meta.blink.off_alpha`.
+**UI-392** (MUST) A page draws its overlays through its `DrawOverlay`, after its fill boxes and before its widgets (UI-337): the blinking captions of `SessionBrowser` while its list is empty (R-META-209), with the blink of `ref.meta.blink.on_alpha`, `ref.meta.blink.on_time` and `ref.meta.blink.off_alpha`.
 
 **UI-393** (MUST) Every animation of the pages runs on the presentation clock in real seconds (ADR-036) and is independent of the frame rate. The page animations, each specified where the table says, are:
 
@@ -514,7 +513,6 @@ The front-end screen's navigation is the standard window's ([core_and_widgets.md
 | the page-button entrance cascade and its flash | [core_and_widgets.md](core_and_widgets.md), the page button |
 | the map-row slide-in and its flash | R-META-039 (`ref.meta.map_select.slide_delay`, `ref.meta.map_select.slide_distance`) |
 | the slot-row flash when a slot's kind changes | R-META-079 (`ref.meta.slot.flash_time`) |
-| the achievement-row slide-in (hook page) | R-META-492 (`ref.meta.achievement.row_slide_speed`) |
 | the connecting dots | R-META-055 (`ref.meta.connect.dot_period`, `ref.meta.connect.max_dots`) |
 | the blinking captions | R-META-209 |
 | the caret blink of text fields and of the chat field | [core_and_widgets.md](core_and_widgets.md) §4.16; R-META-100 (`ref.meta.chat.caret_period`) |
@@ -569,8 +567,6 @@ Caption: Diagram 4-D — the scrolling text cycle (UI-404, UI-405); content that
 2. **Map thumbnail** (`MapThumbnail`): the thumbnail of the focused map row's map or, when no map row has the focus, of the chosen map (R-META-037, R-META-042, R-META-044; the thumbnails of [reference/08](../../../reference/08_maps_and_level_design/rules_and_conventions.md) R-MAP-022).
 3. **Help picture** (`HelpPicture`): the picture of the help page shown ([reference/11](../../../reference/11_tutorial_and_help.md)).
 
-No picture widget draws a trial-edition overlay (DEC-333).
-
 ### 4.8 The colour and side picker
 
 **UI-415** (MUST) `PlayerOptions` holds one colour picker row (`ColorPickerRow`) per colour id 0 to 7, in id order, or in Siege one row per side: random (no colour), attackers (`ref.sim.team.siege_attacker_colour_id`) and defenders (`ref.sim.team.siege_defender_colour_id`) (R-META-051). A row is identified by its colour id or by "none".
@@ -609,10 +605,15 @@ The random row is never taken.
 
 ### 4.10 Recipe A: a tool window
 
-A tool window is the pattern of the development windows ([diagnostics, test and performance](../diagnostics_test_and_performance/README.md)) and of the windows of a map editor, if the design phase builds one (DEC-045). The sketch below shows the shape of one; its names are examples.
+A tool window is the pattern of the development windows ([diagnostics, test and performance](../diagnostics_test_and_performance/README.md)) and of the windows of a map editor, if the design phase builds one (DEC-045). The sketch below shows the shape of one; its names are examples. It is engine code in namespace `Engine`, as the development windows of the diagnostics component are; a tool window that names a game concept, such as a map-editor window, is the same code in namespace `Species`, with the `Engine::` names of the recipe qualified (`AGENTS.md` R9).
 
 ```cpp
-// Recipe A sketch: a development tool window. The names are examples.
+// Recipe A sketch: a development tool window of the engine. The names are examples.
+namespace Engine
+{
+
+inline constexpr float EXAMPLE_WIDTH_PIXELS = 320.0f;
+
 struct ExampleToolModel // the window's state; widgets only bind to it
 {
   float strength = 1.0f;
@@ -634,6 +635,9 @@ public:
   void OnClose() override; // teardown side effects
 
 private:
+  void Apply();
+  void RefreshPreview();
+
   ExampleToolModel& m_model;
 };
 
@@ -642,6 +646,8 @@ void OpenExampleTool(UiCore& _ui, ExampleToolModel& _model, PanelId _parent)
 {
   OpenToolOnce<ExampleToolWindow>(_ui, ToolPlacement{.width = EXAMPLE_WIDTH_PIXELS, .parent = _parent}, _model);
 }
+
+} // namespace Engine
 ```
 
 **UI-430** (MUST) A tool window (`ToolWindow`) is a standard window that the opener creates and registers ([core_and_widgets.md](core_and_widgets.md) UI-022). It follows these rules:
@@ -662,7 +668,7 @@ A tool window draws the standard window chrome ([core_and_widgets.md](core_and_w
 
 **UI-440** (MUST) The help-and-options window, the help selection, general help and mode help windows, the settings screen and its screen, graphics, sound and other options pages, the in-match menu, the leave confirmation and the gamepad-disconnected dialog are full-screen options screens (`OptionsScreen`, [core_and_widgets.md](core_and_widgets.md) UI-099 to UI-104): full-screen, fixed and not resizable, laid out in the left box, with their Back button as their back action, so `action.menu.close` invokes it ([core_and_widgets.md](core_and_widgets.md) UI-051; R-META-014, R-META-061, R-META-063, R-META-064, R-META-410, R-META-411).
 
-**UI-441** (MUST) Every setting that an options screen edits is a typed entry of the preferences schema ([data schemas](../data_schemas/README.md)), with its key, type, default from the one defaults table (DEC-100), range and **apply scope**: immediate, a renderer reconfiguration, or a restart. The settings store (`SettingsStore`, [platform_layer.md](../platform_layer.md)) notifies the readers of a setting when it changes, so an applied setting reaches every reader at once; a reader that keeps a copy of a setting refreshes it on the notification, and no reader polls the store per frame for a change.
+**UI-441** (MUST) Every setting that an options screen edits is a typed entry of the preferences schema ([data schemas](../data_schemas/README.md)), with its key, type, default from the one defaults table (DEC-100), range and **apply scope**: immediate or a renderer reconfiguration. The settings store (`SettingsStore`, [platform_layer.md](../platform_layer.md)) notifies the readers of a setting when it changes, so an applied setting reaches every reader at once; a reader that keeps a copy of a setting refreshes it on the notification, and no reader polls the store per frame for a change.
 
 **UI-442** (MUST) An options page follows R-META-412: it copies its settings into its view-model when it opens; its controls edit only the copies; its apply button is inactive, and drawn greyed, while every copy that the page compares equals the stored value, decided in the update, never while drawing; the apply action writes the copies, saves the settings file, applies each changed setting by its apply scope and re-reads the copies; Back closes the page and discards the copies, and never applies a change (ADR-032).
 
@@ -716,7 +722,7 @@ A tool window draws the standard window chrome ([core_and_widgets.md](core_and_w
 
 **UI-461** (MUST) A HUD panel's pointer-reachable elements are **screen zones** (R-CTRL-223). A panel produces its zones in its advance from its view-model, never while drawing (DEC-102, ADR-032); the set produced in one frame is the set that hit testing and navigation use from the next frame, so a zone takes effect one frame after it appears, as R-CTRL-223 states.
 
-**UI-462** (MUST) The Power slots panel (`PowerSlotsPanel`) is built by this recipe with the content of R-CTRL-220 to R-CTRL-239. Its power bar is clickable and shows one slot per unit of the team's capacity, the occupied slots first and then the empty slots drawn with `icon.hud.slot_empty` (DEC-083; R-CTRL-226, R-CTRL-230); it generates one "select Power" zone per bar slot in navigation group 2 (R-CTRL-225), and the bar stays selectable by the slot keys and the gamepad (DEC-083). The zone of each Power is its position in the slot order of R-CTRL-230, the reference order; when DEC-556 adopts stable slot positions, each Power keeps the zone of the slot it was granted in and each number key selects the same zone until the Power ends. The cycling hint shows `glyph.key.tab` in keyboard and pointer mode and `glyph.pad.shoulder_left` in gamepad mode (R-CTRL-234); Power icons draw over the darkening halo `icon.hud.icon_halo` (R-CTRL-238); the discard button `icon.hud.slot_discard` belongs to the overlay screen that a match never shows (R-CTRL-231).
+**UI-462** (MUST) The Power slots panel (`PowerSlotsPanel`) is built by this recipe with the content of R-CTRL-220 to R-CTRL-239. Its power bar is clickable and shows one slot per unit of the team's capacity, the occupied slots first and then the empty slots drawn with `icon.hud.slot_empty` (DEC-083; R-CTRL-226, R-CTRL-230); it generates one "select Power" zone per bar slot in navigation group 2 (R-CTRL-225), and the bar stays selectable by the slot keys and the gamepad (DEC-083). The zone of each Power is its position in the slot order of R-CTRL-230, the reference order; when DEC-556 adopts stable slot positions, each Power keeps the zone of the slot it was granted in and each number key selects the same zone until the Power ends. The cycling hint shows `glyph.key.tab` in keyboard and pointer mode and `glyph.pad.shoulder_left` in gamepad mode (R-CTRL-234); Power icons draw over the darkening halo `icon.hud.icon_halo` (R-CTRL-238).
 
 **UI-463** (MUST) The Launch Race status panel is a HUD panel without zones, with the frame `icon.hud.launch_panel` and the damage overlay `icon.hud.launch_panel_damaged` and the content of [options_localisation_and_hooks.md](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-505 to R-META-510.
 
@@ -836,7 +842,7 @@ Every Species UI build passes these must-not tests (DEC-102). Each states a beha
 | DT-24 | indent a list option by its screen position | move an open page drop-down list by 100 px: its option captions move by exactly 100 px | [core_and_widgets.md](core_and_widgets.md), page drop-down list |
 | DT-25 | leave an open list partly off the screen or give it a close box | open a drop-down near the bottom-right corner: its list lies on the screen and has no close box | [core_and_widgets.md](core_and_widgets.md) UI-084, UI-085 |
 | DT-26 | read message text as a format string | show the message "100% complete": it is drawn exactly so | [core_and_widgets.md](core_and_widgets.md) UI-089 |
-| DT-27 | leave a widget field without a value | build every widget kind from a layout entry that sets only its kind and id: every field has its default, under the memory sanitiser | UI-342, UI-426 |
+| DT-27 | leave a widget field without a value | build every widget kind from a layout entry that sets only its kind and id, in storage that the test first fills with a non-zero byte pattern: every field equals its declared default | UI-342, UI-426 |
 | DT-28 | let one missing-string result overwrite another | look up two different missing string ids and keep both results: each shows its own base-language text, also when the look-ups run on two threads | [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-219; DEC-099 |
 | DT-29 | toggle an inactive or disabled check box | press an inactive and a disabled page check box: neither changes | [core_and_widgets.md](core_and_widgets.md) UI-080 |
 | DT-30 | read a page table by an unvalidated page id | request a page id outside the enumeration: the request is refused before any table is read | UI-364 |
@@ -862,13 +868,12 @@ Every Species UI build passes these must-not tests (DEC-102). Each states a beha
 | DEC-044 | Open | which commonly expected settings the options screens add (UI-444) |
 | DEC-050 | Open | the front-end features designed new and their recipes (UI-321, UI-452, UI-466) |
 | DEC-047, DEC-048, DEC-249 | Open | the achievement and leaderboard hook pages, a results screen, quick match (UI-321) |
-| DEC-244, DEC-248 | Open | the password page and admission; no credential page (UI-322, UI-341) |
+| DEC-244, DEC-248 | Open | the password page and admission (table 3.1-A, `Password`) |
 | DEC-226 | Open | background loading of thumbnails and pictures (UI-314, UI-470) |
 | DEC-106 | Open | the page-level millisecond budgets (UI-473) |
 | DEC-952 | Open | the scrolling-text content height with the unraised top margin (UI-401, UI-404) |
 | DEC-221, DEC-222 | Open | the owner of the front-end controller and the read-only match view (UI-301, UI-332) |
 | DEC-045 | Open | a map editor, whose windows follow recipe A (UI-430, UI-431) |
-| DEC-333 | Dropped | trial-edition gating: no trial page, upsell or overlay (UI-322, UI-341, UI-411) |
 
 ADR-030 is Accepted; ADR-034 is Proposed, and the default it names is the baseline of this document.
 
@@ -913,8 +918,7 @@ All times are real seconds of the presentation clock.
 |---|---|
 | `ref.meta.layout.*` (the page grid, fonts, buttons, title and Back places) | [front_end_presentation.md](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-200, R-META-201 |
 | `ref.meta.blink.on_alpha`, `ref.meta.blink.on_time`, `ref.meta.blink.off_alpha` | [front_end_presentation.md](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-209 |
-| `ref.meta.front_end.live_pages`, `ref.meta.front_end.specified_pages`, `ref.meta.nav.transition_time`, `ref.meta.credits.heading_scale`, `ref.meta.colour_row.*`, `ref.meta.slot.no_colour_grey`, `ref.meta.slot.flash_time`, `ref.meta.map_select.*`, `ref.meta.connect.dot_period`, `ref.meta.connect.max_dots`, `ref.meta.chat.max_length`, `ref.meta.chat.caret_period`, `ref.meta.option_controls.control_height`, `ref.meta.player.name_max_length` | [screen_flow_and_match_setup.md](../../../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) §4.1 |
-| `ref.meta.achievement.row_slide_speed` | [options_localisation_and_hooks.md](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-492 |
+| `ref.meta.front_end.specified_pages`, `ref.meta.nav.transition_time`, `ref.meta.credits.heading_scale`, `ref.meta.colour_row.*`, `ref.meta.slot.no_colour_grey`, `ref.meta.slot.flash_time`, `ref.meta.map_select.*`, `ref.meta.connect.dot_period`, `ref.meta.connect.max_dots`, `ref.meta.chat.max_length`, `ref.meta.chat.caret_period`, `ref.meta.option_controls.control_height`, `ref.meta.player.name_max_length` | [screen_flow_and_match_setup.md](../../../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) §4.1 |
 | `ref.match.option.password_max_length`, `ref.match.colour.siege_3p_defender_limit`, `ref.match.colour.siege_3p_attacker_limit`, `ref.match.colour.siege_side_divisor` | [reference/01](../../../reference/01_skirmish_rules_and_modes/README.md) |
 | `ref.sim.team.siege_attacker_colour_id`, `ref.sim.team.siege_defender_colour_id` | [reference/12](../../../reference/12_simulation_model/06_teams_and_player_commands.md) |
 | `rnd.transition.curve_gain` | [frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-096 |

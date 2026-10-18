@@ -180,7 +180,7 @@ A press and a release within one frame therefore fire once, by step 1.
 
 **INP-142** (MUST) `setting` is true when the integer value of the named setting is above 0, and `setting:not` when it is not; the router reads the values of the named settings once per frame (INP-101 step 8). A setting that neither the settings store nor its defaults table holds when the binding loads is a load error (§6.1); the content build checks the setting nodes of every binding set against the keys of `settings.defaults` (DAT-195), and a doubled negation is rejected. No default binding uses it (R-META-455).
 
-**INP-143** (MUST) `value:AlwaysTrue` is always true; `value:FeatureFlagX` is true while the feature flag `FeatureFlagX`, a setting, is above 0. Both are `Boolean`. No default binding uses them.
+**INP-143** (MUST) `value:always_true` is always true; `value:feature:<flag>` is true while the edition sets the runtime feature flag `<flag>` `on`, an on/off flag of [build tooling](../build_tooling_and_distribution.md) table 3.2-B. The router reads the flags from the edition's flag record when it loads the bindings; they never change while the process runs (BLD-016, ADR-056), so the node's result is fixed for the session. Both are `Boolean`. No default binding uses them.
 
 ### 4.9 Evaluating a query
 
@@ -238,7 +238,7 @@ Caption: Diagram 4.10-A, a local player's gamepad slot: assignment by the first 
 
 ### 4.11 Input mode and idle
 
-**INP-150** (MUST) Each local player has an input mode, the class of its last active device: `KeyboardMouse` or `Gamepad` (ADR-029, R-CTRL-011). In `AdvanceFrame`, the mode becomes `Gamepad` when the player's assigned gamepad was active in the frame, otherwise `KeyboardMouse` when the keyboard or the mouse was active (player 0 only), and otherwise stays as it was; when both were active in one frame, `Gamepad` wins. The initial mode is `KeyboardMouse`. A change raises `onModeChanged`.
+**INP-150** (MUST) Each local player has an input mode, the class of its last active device: `KeyboardMouse` or `Gamepad` (ADR-029, R-CTRL-011). In `AdvanceFrame`, the mode becomes `Gamepad` when the player's assigned gamepad was active in the frame, otherwise `KeyboardMouse` when the keyboard or the mouse was active (player 0 only), and otherwise stays as it was; when both were active in one frame, `Gamepad` wins. The initial mode is `KeyboardMouse`. A change calls the mode listeners (`AddModeListener`).
 
 **INP-151** (MUST) A device is active in a frame when: for the keyboard, a key is held or had an event; for the mouse, a button is held or had an event, or the pointer, the raw movement or the wheel moved; for a gamepad, a button is held or had an event, a stick is outside its dead zone or a trigger is above its threshold.
 

@@ -91,7 +91,7 @@ Table 2.1-A Actor kinds.
 
 ### 2.4 Research levels in a match
 
-**R-UNIT-008** (MUST) Match start sets the research levels of every team after any research setting of the match setup has been applied, so the match setup's research settings have no effect in a match. Every research level is set to `ref.sim.init.power_level_default` (3); then the Strike team level to `ref.sim.init.power_level.strike_team` (1); the laser, grenade, rocket and airstrike levels to `ref.sim.init.power_level.laser`, `ref.sim.init.power_level.grenade`, `ref.sim.init.power_level.rocket` and `ref.sim.init.power_level.airstrike` (2 each); and the Worker level to `ref.sim.init.power_level.worker` (4). These keys belong to [reference/12](../12_simulation_model/02_match_lifecycle_and_state_reset.md). The fixed levels are the reference default of DEC-115, and the match-setup side is specified in [reference/09](../09_front_end_and_match_flow/README.md).
+**R-UNIT-008** (MUST) Match start sets the research levels of every team; the match setup carries no research levels. Every research level is set to `ref.sim.init.power_level_default` (3); then the Strike team level to `ref.sim.init.power_level.strike_team` (1); the laser, grenade, rocket and airstrike levels to `ref.sim.init.power_level.laser`, `ref.sim.init.power_level.grenade`, `ref.sim.init.power_level.rocket` and `ref.sim.init.power_level.airstrike` (2 each); and the Worker level to `ref.sim.init.power_level.worker` (4). These keys belong to [reference/12](../12_simulation_model/02_match_lifecycle_and_state_reset.md). The fixed levels are the reference default of DEC-115, and the settings that the match setup does carry are [reference/09](../09_front_end_and_match_flow/screen_flow_and_match_setup.md) R-META-069.
 
 **R-UNIT-009** (MUST) The fixed research levels have these consequences for units. Each value is owned by the document named.
 
@@ -691,7 +691,7 @@ This index is informative and defines no tuning key. It lists the named constant
 
 **AC-UNIT-11 — Slope factor** (R-UNIT-042). Given a Worker at height 10 whose next position is at height 13, then its slope factor is 0.3 (1 − 3 ÷ 3 = 0, clamped); at a next height of 7 it is 2.0; a centipede going down by 5 wu keeps factor 1.0.
 
-**AC-UNIT-12 — Research levels** (R-UNIT-008). Given a match setup that sets every research level to 0, when the match starts, then the Worker level is 4, the Strike team level 1, the laser, grenade, rocket and airstrike levels 2 and every other level 3.
+**AC-UNIT-12 — Research levels** (R-UNIT-008). Given any match setup, when the match starts, then the Worker level is 4, the Strike team level 1, the laser, grenade, rocket and airstrike levels 2 and every other level 3.
 
 **AC-UNIT-13 — Trooper rate** (R-UNIT-014). Given a spawned Trooper, then its reload timer is 0 after the spawn step and stays 0 after each shot, while its Strike team reads a rate of 0.5 s.
 
@@ -724,7 +724,7 @@ The ring grows by 4 wu per tick, so a stationary target at distance d is hit onc
 |---|---|---|
 | DEC-094 | Exact or approximate actor-grid queries | the cached and approximate queries ([worker.md](worker.md)) |
 | DEC-111 | Values derived from flat-terrain calculation | the derived laser range of about 90 wu (R-UNIT-052) |
-| DEC-115 | Fixed match research levels | the fixed levels override the match setup (R-UNIT-008) |
+| DEC-115 | Fixed match research levels | every match starts with the fixed levels (R-UNIT-008) |
 | DEC-241 | Numeric semantics that reference rules depend on | integer health changes, truncated toward zero (R-UNIT-026) |
 | DEC-311 | Bot controller as a target | the Worker threat search does not exclude it (R-UNIT-056) |
 | DEC-313 | Dead airborne actors | corpses sink and still count (R-UNIT-036) |

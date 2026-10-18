@@ -2,7 +2,7 @@
 
 > Status: Engine baseline decisions · Range: DEC-950 to DEC-999 · Related: [decisions index](README.md), [simulation, terrain, rendering and assets](simulation_terrain_render_assets.md), [animation and VFX, audio engine and UI](vfx_audio_ui.md), [data, sequences, platform and diagnostics](data_sequences_platform_debug.md), [conventions](../CONVENTIONS.md)
 
-This file records the engine-baseline rules of the engine components that no other register entry holds: rules that a component fixes where the reference is undefined, frame-rate dependent or defective; values that the reference does not record; and reference behaviours that a component keeps as its default but that need a decision of their own. Related rules of one component or mechanic are grouped into one entry with numbered items. Each entry states the rule the documents specify now. A **Resolved** entry states an engine-baseline rule that the component fixes; an **Open** entry states the current default, which is the reference behaviour wherever the reference defines one, with a recommendation.
+This file records the engine-baseline rules of the engine components that no other register entry holds: rules that a component fixes where the reference is undefined, frame-rate dependent or defective; Species default values for details that the reference leaves open; and reference behaviours that a component keeps as its default but that need a decision of their own. Related rules of one component or mechanic are grouped into one entry with numbered items. Each entry states the rule the documents specify now. A **Resolved** entry states an engine-baseline rule that the component fixes; an **Open** entry states the current default, which is the reference behaviour wherever the reference defines one, with a recommendation.
 
 ## Index
 
@@ -17,10 +17,10 @@ This file records the engine-baseline rules of the engine components that no oth
 | [DEC-956](#dec-956-pick-ray-pixel-convention) | Pick-ray pixel convention | Open | CAM |
 | [DEC-957](#dec-957-every-draw-sets-its-complete-pipeline-state) | Every draw sets its complete pipeline state | Resolved | RND |
 | [DEC-958](#dec-958-renderer-reference-looks-kept-as-defaults) | Renderer reference looks kept as defaults | Open | RND |
-| [DEC-959](#dec-959-renderer-values-the-reference-does-not-record) | Renderer values the reference does not record | Open | RND |
+| [DEC-959](#dec-959-renderer-defaults-for-the-burn-layer-pulse-clocks-egg-shadow-route-spots-and-countdown-screens) | Renderer defaults for the burn layer, pulse clocks, egg shadow, route spots and countdown screens | Open | RND |
 | [DEC-960](#dec-960-effects-advance-in-fixed-steps) | Effects advance in fixed steps | Resolved | VFX, R-CTRL, R-BLDG |
 | [DEC-961](#dec-961-explainer-panels-lay-out-again-on-every-screen-change) | Explainer panels lay out again on every screen change | Resolved | VFX, R-META |
-| [DEC-962](#dec-962-effect-values-the-reference-does-not-record) | Effect values the reference does not record | Open | VFX |
+| [DEC-962](#dec-962-species-effect-defaults-for-emitters-shard-edges-and-the-eaten-orb-display) | Species effect defaults for emitters, shard edges and the eaten-orb display | Open | VFX |
 | [DEC-963](#dec-963-animation-and-vfx-reference-looks-kept-as-defaults) | Animation and VFX reference looks kept as defaults | Open | VFX, R-UNIT |
 | [DEC-964](#dec-964-accessibility-limits-for-camera-shake-and-flashes) | Accessibility limits for camera shake and flashes | Open | VFX, RND |
 | [DEC-965](#dec-965-audio-engine-reference-behaviours-kept-as-defaults) | Audio engine reference behaviours kept as defaults | Open | AEN |
@@ -36,14 +36,14 @@ This file records the engine-baseline rules of the engine components that no oth
 
 ### DEC-950 Keyboard operation of the menus
 - Status: Resolved
-- Affects: architecture/components/ui_framework/layout_rendering_input_and_localisation.md (UI-203, UI-204), architecture/components/input.md (INP-077, table 3.6-B), reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md (R-META-014); ADR-032, ADR-064
+- Affects: architecture/components/ui_framework/layout_rendering_input_and_localisation.md (UI-203, UI-204), architecture/components/input/ (INP-077, table 3.6-B), reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md (R-META-014); ADR-032, ADR-064
 - Specified behaviour: Every screen is usable with the keyboard alone. The keyboard defaults of the menu actions are the arrow keys, with repeat, for `action.menu.up`, `action.menu.down`, `action.menu.left` and `action.menu.right`; Enter for `action.menu.activate`; and Esc for `action.menu.close` outside a match. In a match Esc stays `action.match.menu`, which closes every window at once (R-META-014). The gamepad bindings and the pointer are unchanged. The UI framework defines the actions and their context rules (UI-203, UI-204), and the input component states the defaults in its binding table (INP-077, table 3.6-B).
 - Options: A — as stated; B — the reference behaviour: the default control scheme binds the menu actions to the gamepad only, and keyboard players navigate with the pointer; the arrow keys and Enter exist only in an alternative control set that is never selected.
 - Recommendation: A. ADR-032 requires keyboard-only operation of every screen, and the accessibility baseline of ADR-064 lists it. The keys come from the reference's own alternative control set, so they add no new convention, and no mouse or gamepad binding changes.
 
 ### DEC-951 Repeat and increment timing of the UI and of input
 - Status: Resolved
-- Affects: architecture/components/ui_framework/core_and_widgets.md (UI-072, UI-077), architecture/components/ui_framework/layout_rendering_input_and_localisation.md (UI-216), architecture/components/input.md (INP-133); DEC-102, ADR-029, ADR-074
+- Affects: architecture/components/ui_framework/core_and_widgets.md (UI-072, UI-077), architecture/components/ui_framework/layout_rendering_input_and_localisation.md (UI-216), architecture/components/input/ (INP-133); DEC-102, ADR-029, ADR-074
 - Specified behaviour:
   1. **Clock.** Every repeat timer of the UI and of input bindings runs on real time read from the platform clock (ADR-074), never on the presentation clock, which game speed scales and which stops while the world is held. Menus therefore repeat at the same rate while a match is paused and at every game speed.
   2. **Due times.** A repeat's next due time moves on by the repeat period from the previous due time, never from the frame in which the repeat fired, so the number of repeats over a hold does not depend on the frame rate, and a press and release within one frame still fire once (INP-133, ADR-029).
@@ -68,7 +68,7 @@ This file records the engine-baseline rules of the engine components that no oth
 
 ### DEC-953 Input back-end rules
 - Status: Resolved
-- Affects: architecture/components/input.md (INP-111, INP-133, INP-145 to INP-149, table 3.2-A, table 3.6-A), reference/06_controls_camera_and_commands/actions_and_bindings.md (R-CTRL-033, R-CTRL-047); DEC-554, ADR-028, ADR-029
+- Affects: architecture/components/input/ (INP-111, INP-133, INP-145 to INP-149, table 3.2-A, table 3.6-A), reference/06_controls_camera_and_commands/actions_and_bindings.md (R-CTRL-033, R-CTRL-047); DEC-554, ADR-028, ADR-029
 - Specified behaviour:
   1. **Gamepad assignment by the first press.** An unassigned, connected gamepad is claimed by its first button press for the lowest-numbered local player that has no assigned gamepad or whose assigned gamepad is disconnected, and the claiming press counts as that player's input in the same frame; stick or trigger movement alone never claims a gamepad. An assignment survives a disconnection, a reconnection of the same device resumes it, and a press on another unassigned gamepad while the assigned one is disconnected transfers the assignment. A player's connection actions follow its own assigned gamepad only (INP-145 to INP-149). This is the assignment rule of DEC-554 item 5; the number of local players is a design-phase input, and the reference has one.
   2. **No device input while unfocused.** When the window loses focus, both back-ends release every held control; while the window has no focus they deliver no presses and no analogue samples away from rest, and connection notices still apply. A control held when focus returns produces no press until it is released and pressed again (INP-111, ADR-028).
@@ -78,7 +78,7 @@ This file records the engine-baseline rules of the engine components that no oth
 
 ### DEC-954 Input reference behaviours kept as defaults
 - Status: Open
-- Affects: architecture/components/input.md (INP-082, INP-157, table 3.6-A)
+- Affects: architecture/components/input/ (INP-082, INP-157, table 3.6-A)
 - Specified behaviour: The input component keeps two reference behaviours as its defaults:
   1. **Aiming-stick pointer speed.** The aiming stick moves the pointer by its stick-unit value in every frame, so the stick's pointer speed in pixels per second is proportional to the frame rate (INP-157).
   2. **Camera height glyphs.** `action.camera.raise` shows the left-stick glyph and `action.camera.lower` the right-stick glyph, although both actions are bound to the triggers on the gamepad (INP-082).
@@ -105,7 +105,7 @@ This file records the engine-baseline rules of the engine components that no oth
 - Affects: architecture/components/camera_and_sequences.md (CAM-090)
 - Specified behaviour: The pick ray passes through the lower-left corner of the pointer's pixel: the pointer's row is offset by `cam.pick.row_offset` (1 px) before it is mapped to normalised device coordinates, so the ray lies one pixel below the pixel's top edge (CAM-090).
 - Options: A — keep the reference offset; B — the pixel centre, an offset of 0.5 px in both axes.
-- Recommendation: B. The offset is a by-product of a flip between window coordinate conventions and has no play value. The pixel centre is the convention of the Species overlay space (RND-215), so a pick then matches what the pointer is drawn over.
+- Recommendation: B. Species overlay coordinates are pixels with a top-left origin and *y* growing downwards (RND-215), so the one-pixel row offset has no play value, and a pick through the pixel centre matches what the pointer is drawn over.
 - Decide by: design phase
 
 ## 3 Renderer
@@ -128,10 +128,10 @@ This file records the engine-baseline rules of the engine components that no oth
 - Recommendation: B for items 1 and 2, which are defects without play value; item 3 after a visual comparison, because the shading of segments by size is part of how the reference centipede reads.
 - Decide by: design phase
 
-### DEC-959 Renderer values the reference does not record
+### DEC-959 Renderer defaults for the burn layer, pulse clocks, egg shadow, route spots and countdown screens
 - Status: Open
 - Affects: architecture/components/renderer/world_renderers.md (RND-172, RND-173, RND-176, RND-199, RND-200), architecture/components/renderer/entity_and_overlay_renderers.md (RND-324, RND-353)
-- Specified behaviour: The renderer states these defaults where the reference records no value:
+- Specified behaviour: The renderer states these Species defaults:
   1. **Barrier Emitter burn layer.** An emitter that is not solar-linked draws its burn layer with *t₀* = 0 and *th* = 1, one repeat without scrolling (RND-199, RND-200); the reference gives the range only for solar-linked emitters.
   2. **Clock of three cosmetic animations.** The Barrier Emitter scroll (the presentation frame time ÷ `rnd.barrier.scroll_period`), the jump-pad pulse and the Solar Array glow pulse read the presentation frame time (R-SIM-570), the clock of render-time animation (RND-172, RND-173, RND-199); the reference names no clock for the two pulses.
   3. **Crawler egg shadow.** A Crawler egg's blob shadow has the half-size `ref.unit.crawler_egg.card_size` ÷ 2, 4 wu (RND-324).
@@ -157,10 +157,10 @@ This file records the engine-baseline rules of the engine components that no oth
 - Options: A — as stated; B — the reference behaviour: the place and size are computed once, when the panel is created, so a panel open across a resize keeps the old layout.
 - Recommendation: A. ADR-033 lays every widget out again on these changes, and a panel computed once is drawn in the wrong place after a resize.
 
-### DEC-962 Effect values the reference does not record
+### DEC-962 Species effect defaults for emitters, shard edges and the eaten-orb display
 - Status: Open
 - Affects: architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md (VFX-219, table 4.7-A; VFX-229), architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md (VFX-122), architecture/components/animation_and_vfx/README.md (VFX-025)
-- Specified behaviour: The animation and VFX component states these defaults where the reference records no value:
+- Specified behaviour: The animation and VFX component states these Species defaults:
   1. **Emitters** (table 4.7-A): `vfx.emit.control.count` (1) control flash when a Worker is taken into or released from crowd control; the demotion burst reuses the promotion burst; one blue spark per tick of a Worker opening a Supply crate; the fireball-launch flame sizes of `vfx.emit.fireball.*`; `vfx.emit.round_hit.terrain_count` (1) trail when a turret round meets the terrain; the spiralling rocket's burst uses the explosion-core rule in one team colour drawn per burst; an order marker emits once per tick.
   2. **Shard edges:** the edge line width `vfx.shatter.edge_width`, 1/64 in barycentric units (VFX-229).
   3. **Eaten-orb display:** the orbit offset `vfx.serpent.eaten_offset`, ±10 wu on each axis (VFX-122).
@@ -173,10 +173,10 @@ This file records the engine-baseline rules of the engine components that no oth
 - Affects: architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md (VFX-126, VFX-139), architecture/components/animation_and_vfx/README.md (VFX-025), reference/02_units/README.md (R-UNIT-051)
 - Specified behaviour: The animation and VFX component keeps these reference looks as its defaults:
   1. **Large and selected flags.** For a cloth flag larger than `ref.bldg.cloth_flag.damped_size_wu`, or highlighted or selected, the fixed factor `ref.bldg.cloth_flag.damped_factor` (0.7) replaces the per-column relaxation factor instead of scaling it, so such a flag looks stiffer (VFX-139).
-  2. **Damage-flicker cadence.** An object's damage-flicker flag is evaluated once per `vfx.flicker.step`, one `ref.sim.tick_period` (0.1 s) of scaled presentation time (VFX-126); reference/02 R-UNIT-051 describes the flicker as decided in each render frame.
+  2. **Damage-flicker cadence.** An object's damage-flicker flag is evaluated once per `vfx.flicker.step`, one `ref.sim.tick_period` (0.1 s) of scaled presentation time, never in every render frame (VFX-126, R-UNIT-051).
   The tail velocity that every Brood Drifter shares (VFX-138) is DEC-856 item 4, the frame-quantised explainer loop is DEC-750, and the saturated bubble colours are DEC-328.
 - Options: A — keep each look; B — correct each: scale the per-column factor instead of replacing it; evaluate the flicker at every effect step of DEC-960.
-- Recommendation: A for both, which are part of the reference look. The two documents of item 2 state the cadence of the reference differently; the one that is wrong is corrected, and the decision is then between the two cadences.
+- Recommendation: A for both, which are part of the reference look. For item 2 the choice is between one evaluation per tick period, the default, and one per effect step of DEC-960 (`vfx.emit.step_rate`, 60 per second), which makes the flicker faster and finer.
 - Decide by: design phase
 
 ### DEC-964 Accessibility limits for camera shake and flashes
@@ -191,7 +191,7 @@ This file records the engine-baseline rules of the engine components that no oth
 
 ### DEC-965 Audio engine reference behaviours kept as defaults
 - Status: Open
-- Affects: architecture/components/audio_engine.md (AEN-133, AEN-138, AEN-140, AEN-178)
+- Affects: architecture/components/audio_engine/ (AEN-133, AEN-138, AEN-140, AEN-178)
 - Specified behaviour: The audio engine keeps these reference behaviours as its defaults:
   1. **Next-note timing.** When a `note` instance is released not finally and its loop delay is not below ε, its next note is created at the first wrap of the releasing note's member at or after the re-trigger time + the loop delay, not exactly when the delay ends (AEN-178).
   2. **Audibility during an attack.** An instance that has ever been real ranks by its current envelope level, so a sound in a slow attack ranks low and can be stolen (AEN-140).
@@ -205,7 +205,7 @@ This file records the engine-baseline rules of the engine components that no oth
 
 ### DEC-966 Terrain query edge cases
 - Status: Open
-- Affects: architecture/components/terrain.md (TER-017, TER-076)
+- Affects: architecture/components/terrain/ (TER-017, TER-076)
 - Specified behaviour: The terrain component states these defaults where the reference result is not established:
   1. **Axis-parallel rays.** The grid walk of a ray whose x or z component is zero visits only the column or the row it lies in (TER-017).
   2. **Highest sample of a non-square grid.** `Highest()` bounds both of its loops by the row count (TER-076). This is exact on a square grid, and every tile and every reference terrain is square; on a grid with more columns than rows the scan ignores the last columns, and with fewer columns it reads the outside value. Whether a map may be non-square at all is DEC-865 item 4; under its option B the case never arises.
@@ -215,7 +215,7 @@ This file records the engine-baseline rules of the engine components that no oth
 
 ### DEC-967 Reproducible terrain colours and no regeneration of the height field
 - Status: Resolved
-- Affects: architecture/components/terrain.md (TER-185, TER-186, TER-187, TER-221), architecture/components/renderer/world_renderers.md (RND-031); DEC-013, DEC-246
+- Affects: architecture/components/terrain/ (TER-185, TER-186, TER-187, TER-221), architecture/components/renderer/world_renderers.md (RND-031); DEC-013, DEC-246
 - Specified behaviour:
   1. **Colour chains.** The colour pass of one renderer build owns its own presentation generator instance, never shared with another consumer or thread, seeded with `ref.sim.match.presentation_seed` at the start of every build. Each triangle draws a value, re-seeds the instance from its centre and that value and draws its jitter, so the colours form a chain in build order; the shore noise of each sea-detail level draws from its own copy of the instance taken at the end of the colour pass. Every build of the same field, after device removal included, therefore gives the same colours and shore noise, with the reference distributions (TER-185, TER-186). A stateless function of position and seed may replace the chains if the design phase so decides (TER-187, DEC-246 item 11).
   2. **No regeneration.** The height field is never regenerated during a match and never under a different numeric environment; applying graphics or other options rebuilds presentation data only (TER-221, RND-031).
@@ -224,12 +224,12 @@ This file records the engine-baseline rules of the engine components that no oth
 
 ### DEC-968 Content-build validation of terrain, map and record data
 - Status: Resolved
-- Affects: architecture/components/terrain.md (TER-072, TER-112, TER-124, TER-250), architecture/components/data_schemas/map_structure_records.md (DAT-150, DAT-159, tables 3.1-A and 3.2-A), reference/03_buildings_and_world_objects/trees_and_crate_structures.md (R-BLDG-633, R-BLDG-645); DEC-014, DEC-015, DEC-241, DEC-247, reference/03_buildings_and_world_objects/defences_and_props.md (R-BLDG-433)
+- Affects: architecture/components/terrain/ (TER-072, TER-112, TER-124, TER-250), architecture/components/data_schemas/map_structure_records.md (DAT-150, DAT-159, tables 3.1-A and 3.2-A), reference/03_buildings_and_world_objects/trees_and_crate_structures.md (R-BLDG-633, R-BLDG-645); DEC-014, DEC-015, DEC-241, DEC-247, reference/03_buildings_and_world_objects/defences_and_props.md (R-BLDG-433)
 - Specified behaviour: The content build (ADR-059) applies these rules, each with a diagnostic naming the map and the record (DEC-015):
   1. **Terrain records** (TER-250). It rejects a cell size that is not finite and above 0; a world size below 1 wu; a grid of more than `ter.grid.max_samples_per_side` (32 768) columns or rows, the size up to which the index semantics of TER-072 hold (reference grids have at most 334 samples per side, DEC-247); a decimal field that is not finite; a whole-number field outside the 32-bit signed range; a tile smaller than 2 cell sizes, a generation method other than 0, 1 or 2, and a guide grid whose cell count is not (2^*p* − 1)² (TER-112); a tile whose start index is −1 or below while its footprint overlaps the grid (TER-124); a flatten type outside 0 to 4; a ramp that is not 64 × 64; and a ramp, gradient or sea-tile file number that the asset manifest does not hold. It warns about a tile with *k* < *p* and a tile whose footprint lies wholly outside the grid.
   2. **Barrier Emitter rings.** A ring of Barrier Emitters whose every emitter starts in `relay_only` mode is a build error, because a forwarded request would circle the ring without end; every other loop of a chain is valid data (DAT-150, DEC-014).
   3. **Hive contents.** A Hive's ants-inside value outside [0, `ref.bldg.hive.map_ants_max`] is a build error in an authored map (DAT-159). The reference rule, which replaces such a value by 0 when the map loads, stays the rule for any record that does not pass the content build (R-BLDG-633).
-  4. **Spitter Plant reload.** A Spitter Plant's reload satisfies ⌊reload ÷ 10⌋ ≥ 1, so the first-deadline draw of R-BLDG-645 has at least one value (map_structure_records.md table 3.2-A).
+  4. **Spitter Plant reload.** A Spitter Plant's reload satisfies ⌊reload × `ref.sim.tick_period`⌋ ≥ 1, so the first-deadline draw of R-BLDG-645 has at least one value (map_structure_records.md table 3.2-A).
   5. **Zero facing.** A structure facing of zero length is valid data and is normalised by the degenerate-vector rule of DEC-241 item 6 (map_structure_records.md table 3.1-A).
 - Options: A — as stated; B — the reference behaviour: each of these inputs is accepted, and its result is undefined or silent: the index semantics fail above 32 768 samples per side, the tile results of TER-112 and TER-124 are undefined, a relay-only ring forwards a request without end, an out-of-range ants value is replaced by 0 at run time, and a reload below 10 ticks leaves the first-deadline draw without a range.
 - Recommendation: A. None of these inputs occurs in the reference content, so validation changes no reference behaviour, and each turns an undefined or endless result into a diagnostic with a location.
@@ -246,7 +246,7 @@ This file records the engine-baseline rules of the engine components that no oth
 
 ### DEC-970 System summary and crash-context records
 - Status: Resolved
-- Affects: architecture/components/platform_layer.md (PLT-035, PLT-093, PLT-119, PLT-125), architecture/components/diagnostics_test_and_performance.md (DBG-047); ADR-065, ADR-066
+- Affects: architecture/components/platform_layer.md (PLT-035, PLT-093, PLT-119, PLT-125), architecture/components/diagnostics_test_and_performance/ (DBG-047); ADR-065, ADR-066
 - Specified behaviour:
   1. **Never fatal.** A system-summary query that fails leaves its field marked unknown and is written to the log; it never stops the program (PLT-093).
   2. **No personal data.** The system summary and the crash-context record never hold the Windows user name, chat text, passwords or account tokens, and every path in them is written relative to the install directory or the user-data root, with the root shown as a placeholder (PLT-035, PLT-125). The black box follows the same rule (DBG-047), and memory that may hold personal data is excluded from crash dumps (PLT-119, ADR-065).
@@ -255,15 +255,15 @@ This file records the engine-baseline rules of the engine components that no oth
 
 ### DEC-971 Reference test machine and minimum-specification hardware
 - Status: Open
-- Affects: architecture/components/diagnostics_test_and_performance.md (DBG-205, DBG-208, DBG-209, `dbg.machine.developer_class`), architecture/components/renderer/options_and_budgets.md (RND-454), architecture/components/asset_pipeline_and_resources.md (AST-125), architecture/components/build_tooling_and_distribution.md (BLD table 5-A); DEC-106, DEC-228, ADR-002, ADR-050
-- Specified behaviour: Every performance budget of the component specifications refers to one pinned and recorded reference test machine: a processor, a memory size, a graphics adapter, a driver version, a display mode and an OS build at the minimum of ADR-050 and ADR-002, run as a pinned CI configuration whose hardware is recorded with each result; a change of the machine re-baselines every recorded result (DBG-209). The renderer's client target is measured on minimum-specification hardware (RND-454), and the developer machine class of the build budgets is the reference test machine with a local solid-state disk (`dbg.machine.developer_class`). The exact hardware is not named. The reference defines no test machine and records no measured frame time (DEC-228).
-- Options: A — as stated: a pinned CI configuration at the ADR minimum, named once the first prototype is measured; B — a named minimum-specification hardware configuration chosen now and bought for the purpose; C — budgets per hardware tier (minimum and recommended), with a machine for each tier.
-- Recommendation: A until the first measurement of the prototype (DEC-106, DEC-229), then B for the minimum tier. Budgets without a named machine cannot fail, but a machine chosen before any measurement fixes the population cap by guesswork.
+- Affects: architecture/components/diagnostics_test_and_performance/ (DBG-205, DBG-208, DBG-209, `dbg.machine.developer_class`), architecture/components/renderer/options_and_budgets.md (RND-454), architecture/components/asset_pipeline_and_resources.md (AST-125), architecture/components/build_tooling_and_distribution.md (BLD table 5-A), architecture/components/audio_engine/ (AEN-303), architecture/components/input/ (INP-200), architecture/components/ui_framework/ (UI-240), architecture/components/camera_and_sequences.md (CAM-120), architecture/components/data_schemas/ (DAT-050), architecture/components/terrain/ (T26); DEC-106, DEC-228, ADR-002, ADR-050
+- Specified behaviour: Every performance budget of the component specifications refers to one pinned and recorded reference test machine (DBG-209). No machine is named today. The first machine that meets the minima of ADR-050 and ADR-002 and runs the performance job is pinned and recorded: its processor, memory size, graphics adapter, driver version, display mode and OS build are recorded with each result, and a change of the machine re-baselines every recorded result. Until a machine is pinned, every performance test runs and reports its result with the build identity and the hardware of the machine that ran it, and does not fail (DBG-208, DBG-209). A budget stated on the minimum CPU, on minimum-specification hardware or on the minimum-specification machine is stated on the reference test machine. The renderer's client target is measured on that machine (RND-454), and the developer machine class of the build budgets is the reference test machine with a local solid-state disk (`dbg.machine.developer_class`). The reference defines no test machine and records no measured frame time (DEC-228).
+- Options: A — as stated: the interim rule, then the pinned machine; B — a named minimum-specification hardware configuration chosen now and bought for the purpose; C — budgets per hardware tier (minimum and recommended), with a machine for each tier.
+- Recommendation: A until the first measurement of the prototype (DEC-106, DEC-229), then B for the minimum tier. A budget cannot fail without a pinned machine, so the tests only report until one is pinned; a machine chosen before any measurement fixes the population cap by guesswork.
 - Decide by: design phase
 
 ### DEC-972 What the cheats-used marker suppresses
 - Status: Open
-- Affects: architecture/components/diagnostics_test_and_performance.md (DBG-118), reference/09_front_end_and_match_flow/options_localisation_and_hooks.md (R-META: achievement, leaderboard and statistics hooks); DEC-041, DEC-047
+- Affects: architecture/components/diagnostics_test_and_performance/ (DBG-118), reference/09_front_end_and_match_flow/options_localisation_and_hooks.md (R-META: achievement, leaderboard and statistics hooks); DEC-041, DEC-047
 - Specified behaviour: The first accepted debug command of a session sets its cheats-used marker, which the lobby and the match results show (`ui.match.cheats_used`) and the match statistics carry (DBG-118). Nothing is suppressed: the achievement, leaderboard and statistics hooks run as in any other session.
 - Options: A — as stated: show and record the marker only; B — also suppress achievement awards, leaderboard submissions and statistics for a session with the marker; C — suppress achievement awards and leaderboard submissions, and keep the statistics with the marker.
 - Recommendation: C. Achievements and leaderboards compare players, so results reached with debug commands must not enter them, while statistics with the marker still serve testing. The hooks are designed with DEC-047.

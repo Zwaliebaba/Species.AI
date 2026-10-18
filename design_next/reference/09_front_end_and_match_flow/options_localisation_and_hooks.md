@@ -351,7 +351,7 @@ The language that loads is stored in the language setting. When none loads, star
 
 | Statistic | Scope | Used by |
 |---|---|---|
-| each team's score | match | the in-match scoreboard and the game-over list ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-068); also sent in the score report at every result declaration, which every participant ignores ([reference/12](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-451) |
+| each team's score | match | the in-match scoreboard and the game-over list ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-068); also carried by the score report of every result declaration, a presentation event that nothing consumes ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-057) |
 | each team's kill total | match | the Massacre check; added to the session kill total |
 | the session kill total | session | the Annihilator check only |
 | the maps played and won | session | the Tourist and Completionist checks only |

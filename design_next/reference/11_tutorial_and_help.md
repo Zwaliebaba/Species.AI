@@ -35,7 +35,7 @@ All text of this document is new, functional text keyed by Species string ids (D
 
 **R-TUT-012** (MUST) The hint overlay draws in the 2-D overlay pass after the world markers and before the world-cursor pass (R-CTRL-355). It draws nothing while there is no match world, while the interface is hidden (row A9 of R-CTRL-040), after game over, while the Siege victory delay runs ([Siege](01_skirmish_rules_and_modes/siege.md)), or while the local team does not exist. The widths of its lines are those its drawing rules state, each with its key or value: the border of an instruction tab, `ref.tut.tab.border` (2 px, R-TUT-074), and the outline of the camera-controls picture, 1 px (R-TUT-021); the renderer's hint-overlay pass cites them.
 
-**R-TUT-013** (MUST) The hint overlay draws only the outputs of table 2.2-A. The events that mode and object rules report to it (a Control Zone event, R-MODE-254 step 3; a Supply crate opened, R-CRATE-146; a Launch Vessel fuel notification, R-BLDG-329) feed the objective cards. The objective cards are hooks only (DEC-050) and draw nothing in a match, so they need no picture.
+**R-TUT-013** (MUST) The hint overlay draws only the outputs of table 2.2-A. The events that mode and object rules report to it (a Control Zone event, R-MODE-254 step 3; a Launch Vessel fuel notification, R-BLDG-329) feed the objective cards. The objective cards are hooks only (DEC-050) and draw nothing in a match, so they need no picture.
 
 Table 2.2-A Outputs of the hint overlay.
 

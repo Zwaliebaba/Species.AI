@@ -23,7 +23,7 @@ Read this whole file, `AGENTS.md` (how code is written and built; it binds the e
 | `TOOLS` | `$REPO/Tools/DesignCheck/` (gates); `$REPO/Tools/DesignModels/` (quantitative design models: it already holds `TerrainGenerator.py`; this run adds its own models and keeps them) |
 | `OUTBOX` | a directory outside the repository that the owner can open (your session's scratchpad or outputs directory) |
 | `BRANCH` | the branch this session was given. Commit and push only there. |
-| Owner decisions | O1–O29 in `VISION` §3, plus every answer the owner gives during this run (recorded as O30, O31, … in `DESIGN/decisions/owner_decisions.md`). Agents may recommend changing an owner decision, but **only the owner changes one**, at an owner gate. |
+| Owner decisions | O1–O30 in `VISION` §3, plus every answer the owner gives during this run (recorded as O31, O32, … in `DESIGN/decisions/owner_decisions.md`). Agents may recommend changing an owner decision, but **only the owner changes one**, at an owner gate. |
 | Language | British English (en-GB) |
 | Max parallel agents | 6 per wave, unless the owner raises it |
 | Challenge rounds | at most 2 per area. Round 2 runs only if a Critical or High finding is still open after revision. |
@@ -276,7 +276,7 @@ Run the full check after every wave; the area's proposer fixes failures in its o
 
 ### 8.1 Phases
 
-**Phase 0 — Setup.** Check the precondition. Create `WORK/` (`RUN_LOG.md`, `areas/`, `reports/`, `scripts/`). Extend `Tools/DesignCheck/CheckDesign.py` with the design-phase checks (§7) and `Tools/DesignModels/README.md` with each model as it is added. Register the prefixes (§6). Create `owner_decisions.md` with O1–O29 copied from `VISION` §3. Commit.
+**Phase 0 — Setup.** Check the precondition. Create `WORK/` (`RUN_LOG.md`, `areas/`, `reports/`, `scripts/`). Extend `Tools/DesignCheck/CheckDesign.py` with the design-phase checks (§7) and `Tools/DesignModels/README.md` with each model as it is added. Register the prefixes (§6). Create `owner_decisions.md` with O1–O30 copied from `VISION` §3. Commit.
 
 **Phase 1 — Wave A.**
 1. Run A0 through the loop.

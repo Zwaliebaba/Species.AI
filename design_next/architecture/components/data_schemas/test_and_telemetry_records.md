@@ -103,7 +103,7 @@ Table 3.1-A Fields of a soak configuration.
 | test maps | `test_maps` | list of objects of table 3.1-C | defaulted: none | the test maps that the pass adds to the entries of the edition (DBG-148, DBG-162) |
 | session name | `session_name` | text, at most `dat.id.max_chars` characters | absence-meaningful: the setting `debug.soak_session_name` keeps its value | replaces that setting for the pass (DBG-162; [config_input_and_strings.md](config_input_and_strings.md) table 3.1-A) |
 | termination tick | `termination_tick` | ticks, at least 1 | absence-meaningful: no termination tick, so a match ends only by game over or a divergence | the tick at which every match of the pass ends (DBG-162, DBG-165 item 3) |
-| clients | `clients` | count, at least 1 | defaulted: the smallest number that, with the host, reaches `dbg.soak.min_participants` | the client participants the runner starts (DBG-160, DBG-163) |
+| clients | `clients` | count, 0 or more | defaulted: 0, the single-process pass of DBG-160 | the client participants the runner starts (DBG-160, DBG-163); a pass with clients exists only once the networking model exists (DEC-200) and then needs at least the number that, with the host, reaches `dbg.soak.min_participants` |
 | rendering | `rendering` | boolean | defaulted: false | true starts the clients rendered; soak participants otherwise start with rendering and sound off (DBG-167) |
 
 Table 3.1-B Fields of a sequence item.
@@ -243,7 +243,7 @@ Caption: Figure 4-A, from the soak configuration to the soak report (DAT-372 to 
 
 | Test | Kind | Checks | Requirements |
 |---|---|---|---|
-| T70 configuration fixtures | unit | a linear, a random and a sequence configuration validate against the `soak` edition; one failing fixture each for a missing `progression_seed`, an empty `sequence`, a pair listed twice, a pair outside the edition and a termination tick of 0; a forced seed of 0 validates | DAT-372 to DAT-374 |
+| T70 configuration fixtures | unit | a linear, a random and a sequence configuration validate against the `soak` edition; one failing fixture each for a missing `progression_seed`, an empty `sequence`, a pair listed twice, a pair outside the edition and a termination tick of 0; a forced seed of 0 validates; a configuration without `clients` validates as a single-process pass | DAT-372 to DAT-374 |
 | T71 match table form | unit | a table with a diverged and an undiverged match has the header of table 3.2-A, empty first-divergence and first previous-entry cells and no −1; a map id holding a comma is quoted and reads back unchanged | DAT-376, DAT-377 |
 | T72 crash-safe rows | integration | killing the runner after the second match leaves two complete rows; the new process appends the third without a second header; a reader given a truncated last line and a blank line reads the complete rows | DAT-383 |
 | T73 pass summary | unit | a pass with one hash mismatch and one client crash writes `failed_entries` and `crashes` as table 3.2-B states; saving the summary twice gives the same bytes | DAT-378 |
@@ -256,6 +256,7 @@ Caption: Figure 4-A, from the soak configuration to the soak report (DAT-372 to 
 
 | Reference | Status | Where it applies |
 |---|---|---|
+| DEC-200 | Open | soak passes with client participants (table 3.1-A, `clients`) |
 | DEC-206 | Open | the divergence whose first tick the match table records (table 3.2-A) |
 | DEC-250 | Open | whether the telemetry queue is kept across runs (DAT-385) |
 | DEC-801 | Resolved | unique configuration ids (table 3.1-A) |

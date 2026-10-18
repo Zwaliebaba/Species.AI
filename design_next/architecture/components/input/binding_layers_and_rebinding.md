@@ -49,9 +49,8 @@ Table 4.13-B Layout layers (primary bindings).
 | `action.camera.raise` | `key:q:held` | `key:a:held` |
 | `action.camera.lower` | `key:e:held` | `key:e:held` |
 | `action.camera.zoom` | `key:y:held` | `key:w:held` |
-| `action.camera.zoom_out` | `key:c:held` | `key:c:held` |
 
-**INP-166** (MUST) When the operating system reports a keyboard-layout change at run time, the router determines the active layout again; when it changed, the router runs `Rebuild` and raises `onLayoutChanged` (DEC-554). The help system shows the camera-help variant of the active layout ([Tutorial and help](../../../reference/11_tutorial_and_help.md)).
+**INP-166** (MUST) When the operating system reports a keyboard-layout change at run time, the router determines the active layout again; when it changed, the router runs `Rebuild` and calls its layout listeners (`AddLayoutListener`, DEC-554). The help system shows the camera-help variant of the active layout ([Tutorial and help](../../../reference/11_tutorial_and_help.md)).
 
 **INP-167** (MUST) Restoring the default bindings rebuilds them from the default set, the development layer in Debug builds and the active layout layer, without the user layer (DEC-554). Whether the user layer's entries are then removed from the settings store is decided by the rebinding hook's apply step (DEC-050).
 
@@ -91,7 +90,7 @@ Caption: Diagram 4.13-A, building the action bindings from their layers, and reb
 
 **INP-178** (MUST) `Describe(action)` gives a noun and a verb, both string ids, for the first binding of the action that has a description: for a device leaf, the control's display text and the condition's display text (`ui.input.condition.<condition>`); for `all`, the description of its operand of the highest kind (analogue before `Boolean`, the first among equals); for `chord`, the parts' nouns joined with a hyphen, with the verb of `down`; for `not`, the operand's description with the verb preceded by `ui.input.not`. `alias`, `latch`, `idle`, `setting` and `value` have no description. The rebinding page shows the noun.
 
-**INP-179** (MUST) The rebinding page offers these actions, each with its primary binding: `action.camera.pan_left`, `action.camera.pan_right`, `action.camera.pan_forward`, `action.camera.pan_back`, `action.camera.raise`, `action.camera.lower`, `action.camera.zoom`, `action.select.clear`, `action.view.chat_log`, `action.power.panel_show` and `action.power.cancel`. Changing `action.power.panel_show` also sets the primary binding of `action.power.panel_hide` to the `up` condition of the same control.
+**INP-179** (MUST) The rebinding page offers these actions, each with its primary binding: `action.camera.pan_left`, `action.camera.pan_right`, `action.camera.pan_forward`, `action.camera.pan_back`, `action.camera.raise`, `action.camera.lower`, `action.camera.zoom`, `action.select.clear`, `action.view.chat_log` and `action.power.cancel`.
 
 ### 4.17 Binding graph
 

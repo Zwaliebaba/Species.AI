@@ -17,7 +17,7 @@ Battles are real-time crowd battles: hundreds of small autonomous figures, leade
 4. **Delegation you can trust.** The deputy follows standing orders that the player understands and can predict.
 5. **The reference look and feel.** The visual and audio language of the reference library stays as it is.
 
-## 3 Decisions taken (owner, 2026-10-17; O12–O20 taken while the reference library was built, O21–O28 when the code standards (`AGENTS.md`) were adopted, O29 at the review of the library)
+## 3 Decisions taken (owner, 2026-10-17; O12–O20 taken while the reference library was built, O21–O28 when the code standards (`AGENTS.md`) were adopted, O29 and O30 at the review of the library)
 
 | # | Topic | Decision | Consequence the design must carry |
 |---|---|---|---|
@@ -50,6 +50,7 @@ Battles are real-time crowd battles: hundreds of small autonomous figures, leade
 | O27 | CI additions | `build.yml` gains a guarded NuGet restore step and a guarded design-check job (`Tools/DesignCheck/CheckDesign.py Design`). Fuzz projects and an `ENGINE_DEVELOPMENT` macro rule are **not** added to `AGENTS.md`. | `Tools/DesignCheck/` holds the checker and the pinned `package.json` the job uses. |
 | O28 | Generated schema code | The schema code generator's output is **committed source**: a developer runs it when a schema changes, it writes `AGENTS.md`-style `.h` files into the owning project folder, and CI regenerates them and fails on any difference. | No game or engine project needs a tool project to build (ADR-062, `AGENTS.md` §2). |
 | O29 | Tool projects in the one solution | The C++ development tools are **projects of the one solution** at the repository root, under `Tools/<Project>/` in a `Tools` solution folder, instead of a separate solution: they build with the same `$(SolutionDir)` paths and may reference the engine projects they share code with (the schema and record code, the cookers). No game or engine project references a tool project or a tool-only package. Owner, 2026-10-18. | CI builds the tools on every run; R14 is checked per project by `Build/CheckProjectFiles.py`; AGENTS.md §2 and R14, ADR-054 (amendment) and the build tooling component follow. |
+| O30 | Tool dependencies come from NuGet | A tool project's third-party dependency is **restored by NuGet** for that project only; nothing is downloaded by the build from another source and no third-party binary is committed. Owner, 2026-10-18. | A tool with no NuGet package is not a dependency: the Khronos glTF Validator is not used by the content build, which validates the glTF it imports itself (ADR-019 amendment); `AGENTS.md` §2 stands as written. |
 
 ## 4 What carries over from the reference library
 

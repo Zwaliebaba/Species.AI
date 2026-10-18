@@ -115,7 +115,7 @@ When the chosen target differs from the previous one, the turret raises `turret.
 
 **R-BLDG-412** (MUST) When a search of a turret with a team finds no target, the turret sweeps idly. Its first idle aim point is drawn once, at its initialisation (DEC-652; reference/12 R-SIM-626): an angle U[0, 2π), a distance `ref.bldg.turret.sweep_distance_base` + U[0, `ref.bldg.turret.sweep_distance_spread`) (200 to 400 wu) and a height U[0, `ref.bldg.turret.sweep_height_first`) (0 to 100 wu), drawn in this order. Every later search without a target rotates the current aim direction about the vertical by U[−`ref.bldg.turret.sweep_turn` ÷ 2, `ref.bldg.turret.sweep_turn` ÷ 2) (±π/4) and moves the aim height by U[−`ref.bldg.turret.sweep_height_change` ÷ 2, `ref.bldg.turret.sweep_height_change` ÷ 2) (±25 wu).
 
-**R-BLDG-413** (MUST) The line-of-sight test from a turret at p to a target at t samples the line from the turret towards the target (DEC-088): with d = |t − p| and n = ⌊d ÷ `ref.bldg.turret.los_step`⌋ (30 wu), the sample points are p + (t − p) × k ÷ n for k = 0 to n, or p and t when n = 0. For every structure other than the turret itself that is registered in the obstacle-grid cell of any sample point, the structure's ray test along the unit direction from p to t with length d is evaluated (R-BLDG-041); a hit blocks the line of sight. Walls, Barrier Emitters, trees, scenery meshes, smoke columns and other turrets therefore block a turret's shots.
+**R-BLDG-413** (MUST) The line-of-sight test from a turret at p to a target at t samples the line from the turret towards the target (DEC-088): with d = |t − p| and n = ⌊d ÷ `ref.bldg.turret.los_step`⌋ (30 wu), the sample points are p + (t − p) × k ÷ n for k = 0 to n, or p and t when n = 0. For every structure other than the turret itself that is registered in the obstacle-grid cell of any sample point, the structure's ray test along the unit direction from p to t with length d is evaluated (R-BLDG-041); a hit blocks the line of sight. Walls, Barrier Emitters, trees, scenery meshes, smoke columns and other turrets therefore block a turret's shots. A linked Barrier Emitter's line is registered in a band of cells about three wide, so the sample points find it in more cells than the line crosses ([reference/12](../12_simulation_model/05_space_routing_and_physics.md) R-SIM-322; see DEC-267).
 
 #### 2.2.4 Aiming and the automatic fire decision
 
@@ -349,7 +349,7 @@ Table 2.10-A Presentation events and their sample groups.
 | `turret.target_sighted` | a search finds a new target (R-BLDG-411) | silent |
 | `turret.fire_gun` | a turret round or a gun-turret Convert bolt (R-BLDG-420, R-BLDG-421) | `sfx.unit.trooper.fire_laser` |
 | `turret.fire_rocket` | a rocket | silent |
-| `turret.fire_grenade` | a mortar grenade | none: never raised in a match, because no reference map places a mortar turret and no power creates one ([10 Audio design](../10_audio_design/event_catalogue.md) R-AUD-136) |
+| `turret.fire_grenade` | a mortar grenade | none: never raised in a match, because no reference map places a mortar turret and no power creates one ([10 Audio design](../10_audio_design/event_catalogue.md) R-AUD-145) |
 | `turret.fire_flame` | a fireball | `sfx.building.turret.fire_flame` |
 | `turret.kill_tick` | a credited kill (R-BLDG-427) | `sfx.ui.match_ui.countdown_tick` |
 | `barrier_emitter.spawn` | initialisation; starts the presence loop | `sfx.building.barrier_emitter.presence_loop` |
@@ -750,6 +750,7 @@ Each default is the behaviour that §2 specifies.
 - DEC-094 — approximate actor-grid counts, used by the flame turret's guard (R-BLDG-417).
 - DEC-115 — fixed match research levels and the Convert laser life (R-BLDG-420).
 - DEC-222 — the simulation and presentation boundary; the cosmetic draws of this document are presentation draws (R-BLDG-402).
+- DEC-267 — the cells a Barrier Emitter line occupies in the obstacle grid, which the turret line of sight samples (R-BLDG-413).
 - DEC-311 — bot controller as a target; turret searches skip it (R-BLDG-411).
 - DEC-327 — structure render-detail variants (R-BLDG-446).
 - DEC-462 — turret facing from map data (R-BLDG-407).

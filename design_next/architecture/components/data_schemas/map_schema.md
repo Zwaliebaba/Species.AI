@@ -2,7 +2,7 @@
 
 > Status: Engine baseline · Prefix: DAT · ADRs: [ADR-061](../../../ADR/ADR-061-data-schemas-and-versioning.md) · [ADR-062](../../../ADR/ADR-062-authoring-syntax-and-schema-language.md) · [ADR-059](../../../ADR/ADR-059-content-build-and-validators.md) · [ADR-060](../../../ADR/ADR-060-content-identity-by-hash.md) · [ADR-058](../../../ADR/ADR-058-pack-files-and-mount-policy.md) · [ADR-063](../../../ADR/ADR-063-localisation.md) · [ADR-071](../../../ADR/ADR-071-install-layout-runtime-files-and-user-data.md) · Folder: [data schemas](README.md) · Related: [maps: rules and conventions](../../../reference/08_maps_and_level_design/rules_and_conventions.md) · [map editor hooks](../../../reference/08_maps_and_level_design/map_editor_hooks.md) · [skirmish rules and modes](../../../reference/01_skirmish_rules_and_modes/README.md) · [terrain](../terrain/README.md) · [camera and sequences](../camera_and_sequences.md) · [structure records](map_structure_records.md)
 
-This document specifies the schema of the map definition (`MapDefinition`, schema id `maps.definition`): its blocks, its map header with the match options of the map, the map options and map effects, the terrain records, the map lights, the start-position records, the camera views and camera animations, the starting forces, the routes and the primary objectives. It also specifies the generated map index (`maps.index`), the match-option schema of the modes (`mode.options`), and two hooks: the custom-map container and the map ids that the achievement hooks count. The structure records of a map are [map_structure_records.md](map_structure_records.md). The meaning of every field is the owning document's: [maps: rules and conventions](../../../reference/08_maps_and_level_design/rules_and_conventions.md) for the map, [reference/01](../../../reference/01_skirmish_rules_and_modes/README.md) for the match options of the modes, and [terrain](../terrain/README.md) for the terrain records.
+This document specifies the schema of the map definition (`MapDefinition`, schema id `maps.definition`): its blocks, its map header with the match options of the map, the map options and map effects, the terrain records, the map lights, the start-position records, the camera views and camera animations, the starting forces and the routes. It also specifies the generated map index (`maps.index`), the match-option schema of the modes (`mode.options`), and two hooks: the custom-map container and the map ids that the achievement hooks count. The structure records of a map are [map_structure_records.md](map_structure_records.md). The meaning of every field is the owning document's: [maps: rules and conventions](../../../reference/08_maps_and_level_design/rules_and_conventions.md) for the map, [reference/01](../../../reference/01_skirmish_rules_and_modes/README.md) for the match options of the modes, and [terrain](../terrain/README.md) for the terrain records.
 
 ## 1 Responsibilities and boundaries
 
@@ -223,7 +223,6 @@ Table 3.1-A Blocks of a map definition, in schema order.
 | camera animations | `camera_animations` | defaulted: none | an ordered list of camera animations | table 3.7-B |
 | starting forces | `starting_forces` | defaulted: none | an ordered list of starting-forces records | table 3.8-A |
 | routes | `routes` | defaulted: none | routes keyed by route id | table 3.9-A |
-| primary objectives | `primary_objectives` | defaulted: none | a list of objective conditions | DAT-095 |
 | baked collision data | `tree_crowns` | derived | the crown centre and radius of every map-placed tree (AST-047) | DAT-096 |
 
 **DAT-075** (MUST) A map definition has no block for campaign content: a record of running powers, a created-at-difficulty record, a statistics record and every other block not in table 3.1-A is an unknown field and a build error (R-MAP-032, DEC-052).
@@ -412,7 +411,8 @@ Table 3.8-A Fields of a starting-forces record.
 | route point | `route_point` | count | absence-meaningful: none | — |
 | run as a power | `run_as_power` | boolean | defaulted: false | R-MAP-132 item 1 |
 
-### 3.9 Routes and primary objectives
+### 3.9 Routes
+<a id="39-routes-and-primary-objectives"></a>
 
 **DAT-093** (MUST) Each route holds an id from 0 to `ref.map.route.id_limit` − 1 (0 to 9,999) and an ordered list of route points (R-MAP-120). A route point is an object with exactly one of the fields of table 3.9-A; an object with none, with two, or with an unknown field is a build error, so no point is ever created at a default position from an unknown type. A route point cooks to the simulation's `RoutePoint` ([reference/12](../../../reference/12_simulation_model/05_space_routing_and_physics.md) R-SIM-333): the field `position` to `RoutePointKind::Position`, `ground` to `RoutePointKind::GroundPosition` and `structure` to `RoutePointKind::Structure`.
 
@@ -426,7 +426,7 @@ Table 3.9-A Route points.
 
 **DAT-094** (MUST) Two routes with one id in a map are a build error (README DAT-025). A map route is data that no match rule follows (R-MAP-121); the record type exists so that a map tool keeps the routes it loads (DEC-800).
 
-**DAT-095** (MUST) The field `primary_objectives` holds a list of objective conditions, each the enumerator `never`, the condition that never becomes true (R-MAP-033). Every other objective condition belongs to campaign content and is a build error (DEC-052). An empty or absent list is valid; the loader then adds one `never` condition, as R-MAP-033 states.
+**DAT-095** (removed: a map defines no objective, R-MAP-033; a `primary_objectives` block is an unknown block and a build error, DAT-075)
 
 ### 3.10 Derived data
 
@@ -550,7 +550,6 @@ Caption: Figure 4.1-A, the validation of one map (DAT-103, DAT-104; DEC-561).
 | a camera view name reserved or repeated, a step to an unknown view, a duration out of range | build error | DAT-089, DAT-091 |
 | a starting-forces kind that is not allowed, an unknown state | build error | DAT-092 |
 | an unknown route-point kind, a route id out of range or repeated | build error | DAT-093, DAT-094 |
-| an objective condition other than `never` | build error | DAT-095 |
 | a per-mode rule that fails | build error naming the mode and the rule | DAT-103 |
 | a map that cannot be loaded at run time | diagnostic; the match does not start | DAT-106 |
 
@@ -560,7 +559,7 @@ The content build's report lists, for every map, its id, its modes, its player c
 
 | Test | Kind | Checks | Requirements |
 |---|---|---|---|
-| T20 map fixtures | unit | one failing fixture for each row of the table of §6 | DAT-072 to DAT-095, DAT-103 |
+| T20 map fixtures | unit | one failing fixture for each row of the table of §6 | DAT-072 to DAT-094, DAT-103 |
 | T21 forms | property | for each limit and option field: absent, 0, a number and `"unlimited"` (where allowed) survive cook, load and a canonical save and reload unchanged | DAT-078, DAT-079, DAT-109 |
 | T22 header only | integration | a map whose terrain section is corrupted still lists in the catalogue, and fails only at match entry | DAT-074, DAT-106 |
 | T23 derived sets | unit | start positions with sides and groups give the header's attacking positions and group lists in ascending order; a file that also states them fails | DAT-088 |

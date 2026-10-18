@@ -6,9 +6,9 @@ This document lists the HLSL shaders of the renderer, derived from the ordered p
 
 ## 1 Responsibilities and boundaries
 
-**RND-260** (MUST) The renderer uses exactly the shaders of §4.1. Each is written in HLSL 2021 and compiled at build time by an `FXCompile` item of the renderer project, with the `dxc` of the pinned Windows SDK (ADR-003, ADR-051), to a `*_6_6` profile with `-HV 2021` and warnings as errors, with the same settings in Debug and Release; every source also compiles under `-HV 202x`. The bytecode reaches the GPU only from the byte arrays that the build compiles into the executable: no shader file is installed or loaded from disk, and no shader is compiled at run time (`AGENTS.md` §2, ADR-003). Shaders reach resources only through the directly indexed descriptor heaps of ADR-006, wrapping any index that can differ within a wave in `NonUniformResourceIndex`.
+**RND-260** (MUST) The renderer uses exactly the shaders of §4.1. Each is written in HLSL 2021 and compiled at build time by an `FXCompile` item of the renderer project, with the `dxc` of the pinned Windows SDK (ADR-003, ADR-051), to a `*_6_6` profile with `-HV 2021`, row-major matrix packing (`-Zpr`) and warnings as errors, with the same settings in Debug and Release; every source also compiles under `-HV 202x`, which a check step of the build confirms (T1). The bytecode reaches the GPU only from the byte arrays that the build compiles into the executable: no shader file is installed or loaded from disk, and no shader is compiled at run time (`AGENTS.md` §2, ADR-003). Shaders reach resources only through the directly indexed descriptor heaps of ADR-006, wrapping any index that can differ within a wave in `NonUniformResourceIndex`.
 
-**RND-261** (MUST) Each shader declares its permutation axes in the list below; a permutation that is not declared does not exist, and every compiled permutation is used by at least one catalogue entry (ADR-003, ADR-005). The sources live in the renderer project's `Shader/` folder (`AGENTS.md` §2), one file per shader, stage and permutation, with the stages `VS`, `PS` and `CS`:
+**RND-261** (MUST) Each shader declares its permutation axes in the list below; a permutation that is not declared does not exist, and every compiled permutation is used by at least one catalogue entry (ADR-003, ADR-005). The sources live in the `Shader/` folder of the project that owns them (`AGENTS.md` §2): the renderer project for every shader of RND-263 except the four compute shaders of the animation and VFX runtime, which live with that runtime; one file per shader, stage and permutation, with the stages `VS`, `PS` and `CS`:
 
 - the default permutation, every axis at its first listed value, is `<Shader><Stage>.hlsl` (`SkyVS.hlsl`, `SeaWavesUpdateCS.hlsl`);
 - any other permutation is `<Shader><Permutation><Stage>.hlsl`, where `<Permutation>` joins, in the order the axes are listed, one part for each axis that is not at its first value: the axis name for an on-off axis (`FOG` on gives `Fog`, so `MeshLitFogPS.hlsl`), the axis name and the number for a numeric axis (`SAMPLES` = 4 gives `Samples4`), and the value for a named axis (`GRID_SOURCE` = `BARYCENTRIC` gives `Barycentric`, so `TerrainInvertedBarycentricPS.hlsl`), each in PascalCase;
@@ -19,46 +19,81 @@ Each `.hlsl` compiles to the generated header `CompiledShader/<Shader><Permutati
 
 ## 2 Interfaces
 
-**RND-262** (MUST) One shared header, a `.h` in the renderer project's folder that C++ includes and the shaders include, declares every constant and structured-buffer layout (ADR-003): the per-frame constants of README RND-014 (`FrameConstants`), the per-draw root constants of RND-015 (`DrawConstants`), the instance records (`MeshInstance`, `QuadInstance`, `SkyLayerInstance`, `WaveVertexPair`), the material parameters (`LitMaterial`: specular colour, shininess; `CombineParams`: the combine mode) and the fixed sampler indices of the closed sampler set of ADR-018: `SAMPLER_LINEAR_CLAMP` = 0, `SAMPLER_LINEAR_WRAP` = 1, `SAMPLER_POINT_CLAMP` = 2 and `SAMPLER_POINT_MAGNIFY_CLAMP` = 3 (point filtering under magnification, linear filtering under minification and between mip levels, clamp-to-edge). `QuadInstance` has the fields of [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) §2, in this order: the position, the end point, the right and up axes, the half-width and half-height, the billboard blend start and length of `WorldOriented` (RND-306), the rotation, the colour and the end colour (the per-end colours of `Segment`, RND-319), the texture index, the UV-rectangle index, the orientation mode and the anchor.
+**RND-262** (MUST) One shared header of the renderer project, `FrameConstants.h`, named for its primary type (`AGENTS.md` R7), which C++ includes and the shaders include, declares every constant and structured-buffer layout of the renderer (ADR-003), in `namespace Engine`: the per-frame constants of README RND-014 (`FrameConstants`), the per-draw root constants of RND-015 (`DrawConstants`), the instance records (`MeshInstance`, `QuadInstance`, `SkyLayerInstance`, `WaveVertexPair`), the material parameters (`LitMaterial`: specular colour, shininess; `CombineParams`: the combine mode) and the fixed sampler indices of the closed sampler set of ADR-018: `SAMPLER_LINEAR_CLAMP` = 0, `SAMPLER_LINEAR_WRAP` = 1, `SAMPLER_POINT_CLAMP` = 2 and `SAMPLER_POINT_MAGNIFY_CLAMP` = 3 (point filtering under magnification, linear filtering under minification and between mip levels, clamp-to-edge). `QuadInstance` has the fields of [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) §2, in this order: the position, the end point, the right and up axes, the half-width and half-height, the billboard blend start and length of `WorldOriented` (RND-306), the rotation, the colour and the end colour (the per-end colours of `Segment`, RND-319), the texture index, the UV-rectangle index, the orientation mode and the anchor.
 
-```hlsl
-// Shared layout sketch (HLSL side); the C++ side includes the same declarations.
-static const uint SAMPLER_LINEAR_CLAMP = 0;
-static const uint SAMPLER_LINEAR_WRAP = 1;
-static const uint SAMPLER_POINT_CLAMP = 2;
-static const uint SAMPLER_POINT_MAGNIFY_CLAMP = 3;
+The header is written in the common subset of C++ and HLSL. Its type names are those of the sketch below: under HLSL (`__HLSL_VERSION` defined) they are the HLSL types, and under C++ the DirectXMath and standard types of the same size and layout. A record holds only these types: a colour is a `Uint32` holding 8-bit red, green, blue and alpha with red in the lowest byte (the byte order of `R8G8B8A8_UNORM`), and an enumerator is stored as its `Uint32` value. Matrices are packed row-major by `-Zpr` (RND-260), so the header needs no packing keyword. The GPU records of the animation and VFX runtime ([particles_shatter_and_screen_effects.md](../animation_and_vfx/particles_shatter_and_screen_effects.md) §2) are declared the same way in that runtime's shared header, `ParticleSlot.h`, which includes `FrameConstants.h` for these type names.
 
-struct FrameConstants
+```cpp
+// FrameConstants.h: the shared layout header of the renderer project, included by C++ and by every shader (RND-262).
+#pragma once
+
+#ifndef __HLSL_VERSION
+#   include <DirectXMath.h>
+
+#   include <cstdint>
+#endif
+
+namespace Engine
 {
-  row_major float4x4 view, projection, viewProjection;
-  float3 cameraPosition;
+
+#ifdef __HLSL_VERSION
+typedef float2 Float2;
+typedef float3 Float3;
+typedef float4 Float4;
+typedef float3x3 Float3x3;
+typedef float3x4 Float3x4;
+typedef float4x4 Float4x4;
+typedef uint Uint32;
+#else
+using Float2 = DirectX::XMFLOAT2;
+using Float3 = DirectX::XMFLOAT3;
+using Float4 = DirectX::XMFLOAT4;
+using Float3x3 = DirectX::XMFLOAT3X3;
+using Float3x4 = DirectX::XMFLOAT3X4;
+using Float4x4 = DirectX::XMFLOAT4X4;
+using Uint32 = std::uint32_t;
+#endif
+
+static const Uint32 SAMPLER_LINEAR_CLAMP = 0;
+static const Uint32 SAMPLER_LINEAR_WRAP = 1;
+static const Uint32 SAMPLER_POINT_CLAMP = 2;
+static const Uint32 SAMPLER_POINT_MAGNIFY_CLAMP = 3;
+
+struct FrameConstants // matrices are row-major (-Zpr, RND-260)
+{
+  Float4x4 view;
+  Float4x4 projection;
+  Float4x4 viewProjection;
+  Float3 cameraPosition;
   float fogStart;
-  float3 cameraFront;
+  Float3 cameraFront;
   float fogEnd;
-  float3 fogColor;
+  Float3 fogColor;
   float extrapolationTime;
-  float3 light0Towards;
+  Float3 light0Towards;
   float realClock;
-  float3 light0Color;
+  Float3 light0Color;
   float presentationFrameTime;
-  float3 light1Towards;
+  Float3 light1Towards;
   float smoothPresentationTime;
-  float3 light1Color;
+  Float3 light1Color;
   float padding0;
-  float2 renderSize;
-  float2 padding1;
+  Float2 renderSize;
+  Float2 padding1;
 };
 
 struct DrawConstants // root constants
 {
-  row_major float3x4 world;
-  float4 tint;
-  uint paletteIndex;
-  uint instanceBufferIndex;
-  uint textureIndex0;
-  uint textureIndex1;
-  uint materialIndex;
+  Float3x4 world;
+  Float4 tint;
+  Uint32 paletteIndex;
+  Uint32 instanceBufferIndex;
+  Uint32 textureIndex0;
+  Uint32 textureIndex1;
+  Uint32 materialIndex;
 };
+
+} // namespace Engine
 ```
 
 ## 3 Data model
@@ -87,7 +122,7 @@ struct DrawConstants // root constants
 | `SeaWaves` | VS, PS | none | `sea_waves` | 5b |
 | `MeshLit` | VS, PS | `FOG` (off, on; PS); `EDGE_MASK` (off, on; VS, PS) | `mesh_lit_fog`, `port_pad`, the lit-mesh entries of [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md), the shatter-debris entry of [README.md](../animation_and_vfx/README.md) | 6, 7a, 7b, 8, 14 |
 | `UnlitTextured` | VS, PS | `FOG` (off, on; PS); `CUTOUT` (off, on; PS); `ALPHA_ONE` (off, on; PS) | `glow_additive_fog`, `glow_additive_fog_nodepth`, `alpha_fog` and the textured sprite entries of the owner documents | 7a to 7d, 8, 10a, 11, 15, 16, 20, 23 |
-| `UnlitDualTexture` | VS, PS | `COMBINE` (`MODULATE`, `REPLACE_THEN_MODULATE`: the combine modes `modulate` and `replace_then_modulate` of RND-268; PS); `CLIP_PLANES` (0, 2; VS); `FOG` (off, on; PS) | `dual_alpha_fog`, `dual_additive_clip_fog` | 8 |
+| `UnlitDualTexture` | VS, PS | `COMBINE` (`PRODUCT`, `TEXTURE_COLOR`: the combine modes `product` and `texture_color` of RND-268; PS); `CLIP_PLANES` (0, 2; VS); `FOG` (off, on; PS) | `dual_alpha_fog`, `dual_additive_clip_fog` | 8 |
 | `UnlitVertexColor` | VS, PS | `FOG` (off, on; PS) | the untextured quad entries of the owner documents; the map-editor sea fill | 7b, 8, 10a, 23, map editor |
 | `ScreenLine` | VS, PS | `FOG` (off, on; PS) | `line_additive_fog` and the line entries of the owner documents | 8, 12, 20 |
 | `DepthCopy` | CS | `SAMPLES` (1, 2, 4; CS) | — (compute) | after 15 |
@@ -96,10 +131,14 @@ struct DrawConstants // root constants
 | `ScreenTransition` | VS, PS | `EDGE_STRIP` (off, on; VS, PS) | `transition` | 34 |
 | `InstanceCull` | CS | none | — (compute) | before the draws of 7a to 7d, 10a, 10b and 11 ([entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) RND-310) |
 | `WorldOverlay` | VS, PS | `SOURCE` (`VERTEX_COLOR`, `TEXTURED`, `MESH`; VS, PS) | `cursor_ring`, `cursor_area`, `cursor_dots`, `cursor_ghost` ([entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) RND-310) and the overlay entries of the owner documents | 16, 20 |
+| `ParticleEmit` | CS | none | — (compute) | before 14 and 15: allocates the frame's emissions ([particles](../animation_and_vfx/particles_shatter_and_screen_effects.md) VFX-206) |
+| `ParticleSimulate` | CS | none | — (compute) | before 14 and 15: one dispatch per sub-step (VFX-209, VFX-210) |
+| `ParticleCompact` | CS | none | — (compute) | before 15: the live list and the indirect arguments of the two batches (VFX-205, VFX-217) |
+| `ShardUpdate` | CS | none | — (compute) | before 14: tumblers and shards (VFX-228) |
 
-The files follow RND-261: for example `Sky.hlsli`, `SkyVS.hlsl` and `SkyPS.hlsl`; `TerrainVS.hlsl`, `TerrainPS.hlsl` and `TerrainInvertedPS.hlsl` for the `terrain` and `terrain_inverted` entries, and `TerrainBarycentricPS.hlsl` and `TerrainInvertedBarycentricPS.hlsl` only where the catalogue uses option B of DEC-326; `MeshLitFogPS.hlsl` for `mesh_lit_fog`; `DepthCopySamples2CS.hlsl` and `DepthCopySamples4CS.hlsl` for the multisampled targets.
+The files follow RND-261: for example `Sky.hlsli`, `SkyVS.hlsl` and `SkyPS.hlsl`; `TerrainVS.hlsl`, `TerrainPS.hlsl` and `TerrainInvertedPS.hlsl` for the `terrain` and `terrain_inverted` entries, and `TerrainBarycentricPS.hlsl` and `TerrainInvertedBarycentricPS.hlsl` only where the catalogue uses option B of DEC-326; `MeshLitFogPS.hlsl` for `mesh_lit_fog`; `DepthCopySamples2CS.hlsl` and `DepthCopySamples4CS.hlsl` for the multisampled targets; `UnlitDualTextureTextureColorFogPS.hlsl` for `dual_alpha_fog`; and `ParticleEmitCS.hlsl`, `ParticleSimulateCS.hlsl`, `ParticleCompactCS.hlsl` and `ShardUpdateCS.hlsl`, with their byte arrays `g_ParticleEmitCS`, `g_ParticleSimulateCS`, `g_ParticleCompactCS` and `g_ShardUpdateCS`, in the `Shader/` folder of the animation and VFX runtime.
 
-The remaining shaders of the frame belong to their owner documents and follow the same rules: the sprite-card and billboard drawing on `UnlitTextured` and `UnlitVertexColor` with the `QuadInstance` stream ([entity_and_overlay_renderers.md](entity_and_overlay_renderers.md), ADR-009); the particle emit, simulate, compact and draw shaders and the shard update and draw shaders ([README.md](../animation_and_vfx/README.md), ADR-010); the UI batch and glyph shaders ([ui_framework/README.md](../ui_framework/README.md), ADR-031, ADR-034).
+The sprite cards and billboards draw on `UnlitTextured` and `UnlitVertexColor` with the `QuadInstance` stream ([entity_and_overlay_renderers.md](entity_and_overlay_renderers.md), ADR-009); the particle batches draw on `UnlitTextured` and the shards on `MeshLit` with `EDGE_MASK`, from the buffers that the four compute shaders above write ([README.md](../animation_and_vfx/README.md) VFX-014, ADR-010). The UI batch and glyph shaders belong to the UI framework ([ui_framework/README.md](../ui_framework/README.md), ADR-031, ADR-034) and follow the same rules.
 
 **RND-264** (MUST) The material shaders of ADR-003 map onto this list as follows: unlit vertex colour is `UnlitVertexColor`; one texture modulated by the vertex colour is `UnlitTextured`; two textures with an explicit combine mode is `UnlitDualTexture` (and `SeaFlat`); lit by two directional lights with no ambient term is `MeshLit`; lit with one texture and the wire-grid term is the `Terrain` shader's grid term, and the shatter-debris edge mask is `MeshLit` with `EDGE_MASK` on.
 
@@ -115,14 +154,14 @@ The remaining shaders of the frame belong to their owner documents and follow th
 
 `GRID_SOURCE` = `GRID_TEXTURE` is the default (see DEC-326); `BARYCENTRIC` is the alternative of DEC-326 option B and ADR-011.
 
-**RND-267** (MUST) `SeaFlat`: the vertex shader derives both coordinate sets from the world position over the sea plane (RND-142): texture 0 with `rnd.sea.tile_repeats` repeats plus the scroll, texture 1 from 0 to 1 across the plane; the pixel shader applies the `modulate` combine mode (RND-268) with a white vertex colour (alpha 0 under `INVERTED`) and level fog.
+**RND-267** (MUST) `SeaFlat`: the vertex shader derives both coordinate sets from the world position over the sea plane (RND-142): texture 0 with `rnd.sea.tile_repeats` repeats plus the scroll, texture 1 from 0 to 1 across the plane; the pixel shader applies the `product` combine mode (RND-268) with a white vertex colour (alpha 0 under `INVERTED`) and level fog.
 
-**RND-268** (MUST) The two-texture combine modes are a closed list:
+**RND-268** (MUST) The two-texture combine modes are a closed list, each named for what it computes:
 
 | Mode | Colour | Alpha | Used by |
 |---|---|---|---|
-| `modulate` | vertex colour × texture 0 × texture 1 | vertex alpha × texture-0 alpha × texture-1 alpha | the flat sea layer, the Beam Dish beam tubes |
-| `replace_then_modulate` | texture 0 × texture 1 (the vertex colour does not affect the colour) | vertex alpha × texture-0 alpha × texture-1 alpha | the Barrier Emitter curtain at structure detail below 3 |
+| `product` | vertex colour × texture 0 × texture 1 | vertex alpha × texture-0 alpha × texture-1 alpha | the flat sea layer, the Beam Dish beam tubes |
+| `texture_color` | texture 0 × texture 1: the colour of the textures alone, which the vertex colour does not affect | vertex alpha × texture-0 alpha × texture-1 alpha | the Barrier Emitter curtain at structure detail below 3 |
 
 **RND-269** (MUST) `SeaWavesUpdate` runs one thread per wave-mesh vertex pair: it evaluates the pair's heights and its predecessor's heights from the wave formulae of [terrain](../terrain/edges_normals_colours_and_sea.md#414-sea-derivations) (TER-204, TER-205) at the smooth presentation time, looks up both vertex colours in the colour-table buffer, and writes the positions and the per-triangle facet colours of RND-145 into the current frame's wave buffer. `SeaWaves` draws that buffer unlit with level fog.
 
@@ -158,11 +197,13 @@ PDB files of every shader build are kept for PIX source-level debugging and are 
 
 ## 7 Acceptance tests
 
+The golden-image tests compare with the default tolerance and on the pinned reference configuration of the test harness ([diagnostics, test and performance](../diagnostics_test_and_performance/README.md) §4.8), unless a test states its own tolerance, as T4 does.
+
 | Test | Kind | Checks | Requirements |
 |---|---|---|---|
-| T1 compile | build | every shader compiles through `FXCompile` in both language modes with no warning, to `*_6_6` profiles, with identical settings in Debug and Release | RND-260 |
+| T1 compile | build | every shader compiles through `FXCompile` with `-HV 2021` and no warning, to `*_6_6` profiles, with identical settings in Debug and Release; a check step of the build, the script `Build/CheckShaders.py`, compiles every `.hlsl` once more with the same `dxc` and `-HV 202x` to a discarded output and fails on any error or warning | RND-260 |
 | T2 permutations | build | the compiled permutation set equals the set the catalogue references, and every source and byte-array name follows RND-261 | RND-261 |
-| T3 shared layouts | build | sizes and offsets of every shared structure match in C++ and HLSL | RND-262 |
+| T3 shared layouts | build | the same script writes the assembly listing of each shader (`dxc -Fc`), reads from its buffer definitions the offset and size of every member of every constant buffer and structured buffer that uses a shared record, and compares them with the `offsetof` and `sizeof` values that the renderer's test project writes from the C++ declarations; any difference fails the build | RND-262 |
 | T4 terrain equivalence | golden-image | the single-pass terrain equals a reference two-pass rendering (opaque surface, then additive grid at equal depth) within one code value, in both styles | RND-266 |
 | T5 combine modes | golden-image | both combine modes with known textures and vertex colours | RND-268 |
 | T6 tint | unit | the tint function for known colours, weights, flags and a black palette colour | RND-271 |

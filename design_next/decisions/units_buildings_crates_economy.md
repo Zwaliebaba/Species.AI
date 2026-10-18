@@ -2,7 +2,7 @@
 
 > Status: Reference decisions · Range: DEC-450 to DEC-549 · Related: [decisions index](README.md), [verdicts and fixes](verdicts_and_fixes.md), [conventions](../CONVENTIONS.md)
 
-This file records the decisions on teams and alliances, match options, population flow, structures and Supply crates that the canonical register does not already hold. It covers the quirks, defects and ambiguous rules of these areas that need an explicit decision of their own: how start positions, slot colours and co-op friendship are assigned; which sources respect the population cap; how objects created during a tick are advanced; and a set of structure and crate corrections. The general decisions for these areas stay in `verdicts_and_fixes.md` and are not repeated here: the tick timers and the mode second (DEC-002, DEC-003), per-match state (DEC-011), bounded algorithms (DEC-014), tie-breaks (DEC-016), the subsystem verdicts (DEC-017 to DEC-021), the Power slots (DEC-033), and the fix-list and uncertainty entries DEC-064 to DEC-117. Each entry states the behaviour the reference documents specify now. A **Resolved** entry states the corrected rule that the documents apply; an **Open** entry states the faithful reference behaviour as the default, with a recommendation; a **Dropped** entry records content the library does not specify.
+This file records the decisions on teams and alliances, match options, population flow, structures and Supply crates that the canonical register does not already hold. It covers the quirks, defects and ambiguous rules of these areas that need an explicit decision of their own: how start positions, slot colours and co-op friendship are assigned; which sources respect the population cap; how objects created during a tick are advanced; and a set of structure and crate corrections. The general decisions for these areas stay in `verdicts_and_fixes.md` and are not repeated here: the tick timers and the mode second (DEC-002, DEC-003), per-match state (DEC-011), bounded algorithms (DEC-014), tie-breaks (DEC-016), the subsystem verdicts (DEC-017 to DEC-021), the Power slots (DEC-033), and the defect fixes and uncertainty entries DEC-064 to DEC-117. Each entry states the behaviour the reference documents specify now. A **Resolved** entry states the corrected rule that the documents apply; an **Open** entry states the faithful reference behaviour as the default, with a recommendation; a **Dropped** entry records content the library does not specify.
 
 ## Index
 
@@ -10,7 +10,7 @@ This file records the decisions on teams and alliances, match options, populatio
 |---|---|---|---|
 | [DEC-450](#dec-450-start-positions-and-the-colours-of-bot-and-unused-slots) | Start positions and the colours of bot and unused slots | Open | R-MODE, R-META, R-SIM |
 | [DEC-451](#dec-451-co-op-friendship-of-slots-outside-the-two-alliances) | Co-op friendship of slots outside the two alliances | Open | R-MODE, R-SIM |
-| [DEC-452](#dec-452-comeback-bonus-power-pool-and-the-maps-excluded-outcomes) | Comeback Bonus power pool and the map's excluded outcomes | Open | R-CRATE, R-MODE |
+| [DEC-452](#dec-452-comeback-bonus-power-pool-and-the-maps-excluded-outcomes) | Comeback Bonus power pool and the map's excluded outcomes | Resolved | R-CRATE, R-ECON, R-MODE |
 | [DEC-453](#dec-453-population-cap-enforcement-points-and-uncapped-sources) | Population-cap enforcement points and uncapped sources | Open | R-ECON, R-CRATE, R-BLDG, R-UNIT |
 | [DEC-454](#dec-454-population-limiter-as-a-fallback-cap) | Population Limiter as a fallback cap | Open | R-BLDG, R-ECON, R-MAP |
 | [DEC-455](#dec-455-same-tick-advance-of-objects-created-or-handed-over-during-a-tick) | Same-tick advance of objects created or handed over during a tick | Open | R-SIM, R-ECON, R-CRATE, R-BLDG |
@@ -45,12 +45,12 @@ This file records the decisions on teams and alliances, match options, populatio
 - Decide by: design phase
 
 ### DEC-452 Comeback Bonus power pool and the map's excluded outcomes
-- Status: Open
-- Affects: reference/04_supply_crates_powers_and_weapons/crates_and_powers.md (R-CRATE), reference/01_skirmish_rules_and_modes/README.md (R-MODE)
-- Specified behaviour: An eliminated team's comeback power is drawn uniformly from a pool that lists the airstrike twice and the meteor shower, Essence Grove, Blight Grove and Brood once each, so the airstrike has probability 2/6 and each of the others 1/6. When the match allows basic crates only, the pool is the airstrike alone. The grant applies none of the validity rules that a Supply crate outcome passes, and it ignores the map's list of excluded outcomes. A grant needs a free Power slot; an eliminated team has two (DEC-033). When both are occupied, no power is granted and the owning player sees the notice `ui.power_slots.comeback_full`. The grant interval and the per-mode default of the Comeback Bonus are DEC-073.
-- Options: A — the reference behaviour; B — the comeback draw is made over the pool members that are valid on the map and not excluded by it, keeping their relative weights, and no power is granted when none remains.
-- Recommendation: B. A map designer who excludes an outcome expects it never to appear, whatever grants it; this matches the recommendation for hostile outcomes in DEC-107. On a map that excludes none of the five powers, B changes nothing.
-- Decide by: design phase
+- Status: Resolved
+- Owner decision: O18 (2026-10-17): every outcome respects the map's exclusion list (DEC-107).
+- Affects: reference/04_supply_crates_powers_and_weapons/crates_and_powers.md (R-CRATE), reference/04_supply_crates_powers_and_weapons/README.md (R-CRATE-030), reference/05_population_flow.md (R-ECON-115), reference/01_skirmish_rules_and_modes/README.md (R-MODE), glossary/a_to_l.md (excluded outcomes)
+- Specified behaviour: An eliminated team's comeback power is drawn from a pool that lists the airstrike twice and the meteor shower, Essence Grove, Blight Grove and Brood once each. The draw is made over the pool members that the map does not exclude, uniformly over their entries, so on a map that excludes none of them the airstrike has probability 2/6 and each of the others 1/6; when the map excludes every member, no power is granted. When the match allows basic crates only, the pool is the airstrike alone, so a map that excludes the airstrike grants no comeback power in such a match. Apart from the exclusion list, the grant applies none of the validity rules that a Supply crate outcome passes. A grant needs a free Power slot; an eliminated team has two (DEC-033). When both are occupied, no power is granted and the owning player sees the notice `ui.power_slots.comeback_full`. The grant interval and the per-mode default of the Comeback Bonus are DEC-073.
+- Options: A — the reference behaviour, in which the grant ignores the map's excluded outcomes; B — the comeback draw is made over the pool members that the map does not exclude, keeping their relative weights, and no power is granted when none remains.
+- Recommendation: Resolved: B, under owner decision O18. A map designer who excludes an outcome expects it never to appear, whatever grants it, which is the rule that DEC-107 applies to every Supply crate outcome. On a map that excludes none of the five powers, B changes nothing.
 
 ## 2 Population flow
 
@@ -158,6 +158,6 @@ This file records the decisions on teams and alliances, match options, populatio
 ### DEC-466 Defects in structures and fields that no match uses
 - Status: Dropped
 - Affects: reference/03_buildings_and_world_objects/README.md (R-BLDG)
-- Specified behaviour: Not specified. The structures concerned are outside the reference (DEC-052), and the fields concerned carry no behaviour. They are: a board-game prototype structure that reads options that do not exist, so it places no pieces, and that writes its data with a malformed format; null dereferences and divisions by zero in three campaign-only structures (a power-station link, a mine-track terminus and a scoring hub); orientation changes made while rendering, and unsynchronised random draws in the constructors, of two campaign-only structures; a Control Zone field for a bot target that nothing assigns; and a bot objective's reference to a wall that nothing reads.
+- Specified behaviour: Not specified. A Control Zone field for a bot target that nothing assigns and a bot objective's reference to a wall that nothing reads carry no behaviour.
 - Options: none.
-- Recommendation: Dropped: no match places these structures, and the two fields have no effect. The Species structure set defines its own fields.
+- Recommendation: Dropped: campaign-only structures are not specified (DEC-052), and the two fields have no effect; the Species structure set defines its own fields.

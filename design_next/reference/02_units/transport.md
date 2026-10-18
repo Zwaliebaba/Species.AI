@@ -106,7 +106,7 @@ Its velocity is then (new position − old position) ÷ `ref.sim.tick_period`.
 
 **R-UNIT-393** (MUST) **Order lockout.** The order lockout grows by 1 each tick. A Transport loads or unloads only while its lockout is at least `ref.unit.transport.orders_lockout_ticks` (11 ticks, more than 1.0 s), so a deploy order pauses loading and unloading for 11 ticks, while an arrival (R-UNIT-389) permits them at once.
 
-**R-UNIT-394** (MUST) **Direct orders.** The `NextMode` and `PreviousMode` commands give a selected Transport a direct order, which toggles its loading (R-UNIT-390) only when more than `ref.sim.state.transport_cycle_debounce` (3 ticks) have passed since that same Transport's previous direct-order toggle; the debounce belongs to each Transport for one match (DEC-011, [match lifecycle and state reset](../12_simulation_model/02_match_lifecycle_and_state_reset.md) R-SIM-021). No reference input issues these commands ([teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-452).
+**R-UNIT-394** (MUST) **Direct orders.** The `NextMode` and `PreviousMode` commands give a selected Transport a direct order, which toggles its loading (R-UNIT-390) only when more than `ref.sim.state.transport_cycle_debounce` (3 ticks) have passed since that same Transport's previous direct-order toggle; the debounce belongs to each Transport for one match (DEC-011, [match lifecycle and state reset](../12_simulation_model/02_match_lifecycle_and_state_reset.md) R-SIM-021). No input of a match issues these commands ([teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-452).
 
 ### 2.7 Passengers
 

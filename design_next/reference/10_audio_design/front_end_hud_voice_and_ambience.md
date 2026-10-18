@@ -105,7 +105,7 @@ Between the battles the player hears an endless, slowly changing pad under the m
 
 **R-AUD-318** (MUST) **Carry chant.** While carrying a Relic or another carryable structure, a lifting Worker repeats its chant with the period `ref.unit.worker.lift_sound_base` + ⌊(1 − lifters ÷ maximum lifters) × `ref.unit.worker.lift_sound_spread`⌋ ticks (15 to 34 ticks): `worker.lift_relic` at the start of each period and `worker.ordered_by_player` at its half, so fewer lifters chant more slowly ([02 Worker](../02_units/worker.md) R-UNIT-082).
 
-**R-AUD-319** (MUST) **Victory celebration.** Idle Workers celebrate with `worker.victory_jump` only when every primary objective of the map is complete. A map with no primary objectives receives one objective that never completes, so the celebration never starts on it (DEC-331). No map of the reference skirmish completes its primary objectives ([08 rules and conventions](../08_maps_and_level_design/rules_and_conventions.md) R-MAP-033), so `worker.victory_jump` never plays in a match.
+**R-AUD-319** (MUST) **Victory celebration.** `worker.victory_jump` is the sound of the Worker's celebration hop, a hook that no rule of a match triggers ([02 Worker](../02_units/worker.md) R-UNIT-088). A map defines no objective ([08 rules and conventions](../08_maps_and_level_design/rules_and_conventions.md) R-MAP-033), so `worker.victory_jump` never plays in a match (DEC-331).
 
 ### 2.6 Ambience beds
 
@@ -184,7 +184,7 @@ Keys cited here and defined elsewhere: `ref.match.grace_period`, `ref.match.opti
 - **AC-FEV-07** (R-AUD-318) Given a Relic with 50 maximum lifters carried by 50 Workers, then each lifter's chant period is 15 ticks; with 25 lifters 25 ticks; with 1 lifter 34 ticks.
 - **AC-FEV-08** (R-AUD-323) Given the camera at altitudes 100, 484 and 900 wu, then the `amb.match_bed` layer is at −2.1, −25.8 and −49.5 dB and the white-noise layer at about −32.8, −25.1 and −16.7 dB.
 - **AC-FEV-09** (R-AUD-322, R-AUD-324) Given the front end left, then the lobby pads fade over 10.84 s and 10.26 s and the heartbeat stops at the next audio update; given a match left, then the match pads release over 10.00 s and 10.45 s and the white noise stops at once.
-- **AC-FEV-10** (R-AUD-319) Given a map with no primary objectives, then no Worker plays `worker.victory_jump` during a match.
+- **AC-FEV-10** (R-AUD-319) Given any map, then no Worker plays `worker.victory_jump` during a match.
 
 ## 7 Dependencies
 

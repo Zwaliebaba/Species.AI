@@ -84,15 +84,11 @@ namespace Engine
 {
 
 // ---- generated from sound.effect_kinds: table 3.5-A, compiled into the audio engine (DAT-273) ----
-// The DSP filter kinds; the order of R-AUD-077 carries meaning: a chain runs its own-algorithm kinds in this order (R-AUD-080).
+// The Species DSP filter kinds (AEN-070), in the relative order of R-AUD-077, which carries meaning: a chain runs its own-algorithm
+// kinds in this order (R-AUD-080).
 enum class DspFilterKind : std::uint8_t
 {
-  Chorus,
-  Compressor,
-  Distortion,
   StereoEcho,
-  Flanger,
-  StandardGargle,
   RoomReverb,
   ParametricEqualizer,
   StudioReverb,
@@ -288,24 +284,19 @@ Table 3.4-A Forms of a modulatable value.
 
 **DAT-272** (MUST) The cooker writes each binding's parameters in its kind's parameter order of table 3.5-A, the positions by which the audio engine reads them (R-AUD-050, AEN-070); the authoring file still names every parameter, so its order in the file carries no meaning (README DAT-027). An integer parameter is cooked as a decimal and truncated toward zero by the engine when evaluated (AEN-070).
 
-Table 3.5-A DSP filter kinds, the effect kinds of R-AUD-077, and their parameter keys, in the order of R-AUD-077; each key is the parameter's name in snake_case, spelt in American English (README DAT-054), and the ranges and declared defaults are AEN-070's for kinds 0 to 8 and R-AUD-077's for kinds 9 to 13 ("i" marks an integer parameter).
+Table 3.5-A DSP filter kinds, the nine Species kinds of AEN-070, and their parameter keys, in the relative order of R-AUD-077; each key is the parameter's name in snake_case, spelt in American English (README DAT-054), and the ranges and declared defaults are AEN-070's for the standard kinds 0 to 3 and R-AUD-077's for the own-algorithm kinds 4 to 8 ("i" marks an integer parameter).
 
 | # | Kind | Parameters, in order |
 |---|---|---|
-| 0 | `chorus` | `wet_dry_mix`, `depth`, `feedback`, `frequency`, `waveform` (i), `delay`, `phase` (i) |
-| 1 | `compressor` | `gain`, `attack`, `release`, `threshold`, `ratio`, `pre_delay` |
-| 2 | `distortion` | `gain`, `edge`, `post_eq_center`, `post_eq_bandwidth`, `pre_low_pass_cutoff` |
-| 3 | `stereo_echo` | `wet_dry_mix`, `feedback`, `left_delay`, `right_delay`, `pan_delay` (i) |
-| 4 | `flanger` | `wet_dry_mix`, `depth`, `feedback`, `frequency`, `waveform` (i), `delay`, `phase` (i) |
-| 5 | `standard_gargle` | `rate` (i), `wave_shape` (i) |
-| 6 | `room_reverb` | `room` (i), `room_high_frequency` (i), `room_roll_off_factor`, `decay_time`, `decay_high_frequency_ratio`, `reflections` (i), `reflections_delay`, `reverb` (i), `reverb_delay`, `diffusion`, `density`, `high_frequency_reference`, `quality` (i) |
-| 7 | `parametric_equalizer` | `center`, `bandwidth`, `gain` |
-| 8 | `studio_reverb` | `input_gain`, `reverb_mix`, `reverb_time`, `high_frequency_time_ratio` |
-| 9 | `resonant_low_pass` | `cutoff_control`, `resonance_control`, `gain` |
-| 10 | `bit_crusher` | `bits` |
-| 11 | `gargle` | `wet_dry_mix`, `rate`, `wave_shape` (i) |
-| 12 | `echo` | `wet_dry_mix`, `delay`, `attenuation` |
-| 13 | `simple_reverb` | `wet_dry_mix` |
+| 0 | `stereo_echo` | `wet_dry_mix`, `feedback`, `left_delay`, `right_delay`, `pan_delay` (i) |
+| 1 | `room_reverb` | `room` (i), `room_high_frequency` (i), `room_roll_off_factor`, `decay_time`, `decay_high_frequency_ratio`, `reflections` (i), `reflections_delay`, `reverb` (i), `reverb_delay`, `diffusion`, `density`, `high_frequency_reference`, `quality` (i) |
+| 2 | `parametric_equalizer` | `center`, `bandwidth`, `gain` |
+| 3 | `studio_reverb` | `input_gain`, `reverb_mix`, `reverb_time`, `high_frequency_time_ratio` |
+| 4 | `resonant_low_pass` | `cutoff_control`, `resonance_control`, `gain` |
+| 5 | `bit_crusher` | `bits` |
+| 6 | `gargle` | `wet_dry_mix`, `rate`, `wave_shape` (i) |
+| 7 | `echo` | `wet_dry_mix`, `delay`, `attenuation` |
+| 8 | `simple_reverb` | `wet_dry_mix` |
 
 **DAT-273** (MUST) The table of DSP filter kinds (`sound.effect_kinds`, `DspFilterDef`) holds, for each kind in the order of table 3.5-A, each parameter's name, minimum, maximum, declared default, integer flag and schema default (AEN-070). It is a schema-defined record that the code generator compiles into the audio engine and that the content build's validator reads, so the engine and the validator share one definition (AEN-060, ADR-061). The kind order is the processing order of a chain's own-algorithm effects (R-AUD-080); a kind is identified by its name, never by its position in a file, so a table of another length or order cannot re-bind the kinds.
 
@@ -434,7 +425,7 @@ Caption: Figure 4.1-A, the sound data from its authoring file to the audio engin
 | T54 effect bindings | unit | every effect binding of R-AUD-082 cooks with its parameters in kind order; an omitted parameter takes its declared default; an out-of-range value fails | DAT-270 to DAT-274 |
 | T55 effect table | unit | the compiled table and the validator's table are the same generated object; 14 kinds and 63 parameters | DAT-273 |
 | T56 weights | unit | a group of 4 members with weights 1, 1, 2, 4 cooks those weights; a list of 3 fails | DAT-275 |
-| T57 sockets by kind | unit | every socket of every manifest mesh is reachable by kind and index; a lint rule rejects socket look-ups by name text in code | DAT-277 |
+| T57 sockets by kind | unit | every socket of every manifest mesh is reachable by kind and index; `Build\CheckProjectFiles.py` (build tooling table 4.1-B row 14) rejects socket look-ups by name text in code | DAT-277 |
 | T58 ramp rows | unit | a ramp whose bottom row as viewed is red reads red at height index 0 (highest terrain) through the conversion of DAT-281 | DAT-281 |
 | T59 explainers | unit | each of the six explainer animations is found by its mode; a second animation for one mode fails; a key after the loop end is accepted | DAT-284, DAT-285 |
 
@@ -456,7 +447,7 @@ Caption: Figure 4.1-A, the sound data from its authoring file to the audio engin
 | DEC-118 | Resolved | seasonal ramps (DAT-282) |
 | ADR-019, ADR-020, ADR-021 | Accepted | the cooked mesh, facets and tint, sockets (DAT-276, DAT-277) |
 | ADR-024, ADR-025 | Accepted, Proposed | effects on buses; resident and streamed groups |
-| ADR-076 | Proposed | screenshot encoding (DAT-283) |
+| ADR-076 | Accepted | screenshot encoding (DAT-283) |
 
 ### 8.2 Design-phase inputs
 
