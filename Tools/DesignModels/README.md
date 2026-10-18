@@ -59,6 +59,38 @@ present stewards declare, B5; the evening window of present play, B6), each mark
 counter-based SplitMix64 hash of the seed and its keys. `check` prints one line per figure (140 at present) and exits
 with status 1 when any differs; it runs in about 5 seconds. Python 3 with the standard library only; no input files.
 
+## A2ServerBudget.py
+
+The server-budget model of area A2, written from `Design/architecture/04_solution_strategy.md` and the records
+ADR-079 to ADR-088 of `Design/ADR/`. From per-figure CPU cost budgets (ADR-080), the replication encoding (ADR-086),
+the persistence constraints (chapter §4.3.1) and area A1's world figures, which it reads from `A1WorldDensity.py` in
+this folder by its path (settlements and regions per capacity, stewards present and settlements watched at the
+evening peak, the battles in progress of the planning and the stress case, the placeholder plateau population), it
+computes at 16 and at 200 stewards: server CPU per settlement (full and abstract fidelity), per battle, per region and
+per world, with the sensitivity to costs at 2 and 4 times the budgets; bandwidth per client by view (home, battle,
+valley war, strategic) at 10 and at 20 ticks per second, upstream, the integrated host's upload and hosted egress;
+storage of a world over its lifetime and its growth per world week, checkpoint writes and server memory; the battle
+sizes of PIL-021 against each stage's budget; the two forms of a battle replay; command-to-display latency; and the
+share of the evening peak at the world's battle cap for candidate caps.
+
+```
+python3 -I Tools/DesignModels/A2ServerBudget.py              # check: every figure and table the chapter states
+python3 -I Tools/DesignModels/A2ServerBudget.py report       # every section below
+python3 -I Tools/DesignModels/A2ServerBudget.py cpu          # CPU per settlement, battle, region and world
+python3 -I Tools/DesignModels/A2ServerBudget.py bandwidth    # per client by view, upload, egress
+python3 -I Tools/DesignModels/A2ServerBudget.py storage      # storage, growth, checkpoints, memory, replays
+python3 -I Tools/DesignModels/A2ServerBudget.py latency      # command-to-display latency at 10 and 20 Hz
+python3 -I Tools/DesignModels/A2ServerBudget.py caps         # the world battle cap: share of the peak at the cap
+python3 -I Tools/DesignModels/A2ServerBudget.py tables       # the chapter's tables (python: STATED_TABLES)
+```
+
+Inputs are class `Params`, each field naming the record or document it comes from; values that later areas set are
+marked "placeholder" with that area (the abstract step's and the AI's costs, B2, B7 and D7; expedition sizes, B4;
+away-report entries, replay share and dormant records, B6 and C2). The CPU costs are budgets the implementation must
+meet, not measurements. `check` prints one line per figure (37 figures and 10 tables at present) and exits with status
+1 when any differs; it runs in under a second. Python 3 with the standard library only; no input files besides A1's
+model.
+
 ## Adding a model
 
 The design phase adds its quantitative models here: economy and pacing curves, population and spawn models,

@@ -18,5 +18,5 @@ What Species does with every reference requirement, section by section, with exc
 | [09_front_end_and_match_flow](09_front_end_and_match_flow_ledger.md) | C2 | 45 | 239 | 0 | 0 | 0 | 0 | 239 |
 | [10_audio_design](10_audio_design_ledger.md) | C4 | 41 | 165 | 0 | 0 | 0 | 0 | 165 |
 | [11_tutorial_and_help](11_tutorial_and_help_ledger.md) | C5 | 11 | 74 | 0 | 0 | 0 | 0 | 74 |
-| [12_simulation_model](12_simulation_model_ledger.md) | D2 | 87 | 424 | 0 | 0 | 0 | 0 | 424 |
-| **Total** | | **657** | **2969** | **7** | **130** | **160** | **0** | **2672** |
+| [12_simulation_model](12_simulation_model_ledger.md) | D2 | 87 | 424 | 92 | 26 | 0 | 26 | 280 |
+| **Total** | | **657** | **2969** | **99** | **156** | **160** | **26** | **2528** |

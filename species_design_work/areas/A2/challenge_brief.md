@@ -49,3 +49,14 @@ Paste this section into every subagent brief.
 11. **Report.** Write `WORK/reports/<ID>.md` with: the files written; counts of requirements, tuning keys and diagrams; adoption verdicts; DEC and ADR changes; cross-area requests; and the names you proposed. Your final reply to the coordinator is at most 200 words.
 
 Your final reply is at most 200 words: the weakest point in one sentence, the finding counts by severity, and the number of "make it better" items.
+
+## Coordinator additions for A2
+
+A2 is "model required": run `Tools/DesignModels/A2ServerBudget.py` (all modes, and `check`), read its code, and vary the inputs that matter (cost per body, figures per battle, the stress case of A1 at 200 stewards with 28 battles, a 4× cost factor, clients with crowds in view, packet loss). Report what breaks, with numbers; extend the model or write your own check if it is optimistic.
+
+Test at least these, besides the seed challenges:
+1. **Build and platform rules.** A Windows and Linux dedicated server with a portable C++23 core: can it be built under `AGENTS.md` as it stands (§3: MSBuild solution, toolset v145, `/std:c++latest`, x64 Windows only, no CMake; §2 and R14: no third-party dependency in the executable)? What toolchain, build system and libraries would a Linux build need (for example the crypto of A2's own encrypted UDP transport, which on Windows can come from the in-box CNG/Schannel)? Every gap is an owner decision for gate B, not something A2 may assume.
+2. **Determinism.** Does strict binary64 with own maths functions hold across MSVC on Windows and another compiler on Linux? What does `/arch:AVX2` with FMA contraction do to bit-identical results (R16)? Verify A2's claim about MSVC's default contraction under `/fp:precise` against Microsoft Learn (the Microsoft Learn tools are available) and cite the page.
+3. **Tick rate.** A2 keeps 10 Hz where the register's DEC-227 recommended 20 to 30: check the latency figures (187 ms on the host, 267 ms remote) against the controls and crowd combat the reference specifies, and against command responsiveness at both world paces.
+4. **R14.** The storefront identity plus a listing and relay "needs an R14 exception": say exactly which package or SDK, what it buys and what the alternative without it costs.
+5. **Persistence.** "Own record store": its migration, backup and rollback across patches (seed challenge 11), and its crash safety on a host's PC.
