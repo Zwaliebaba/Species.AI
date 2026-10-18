@@ -55,7 +55,7 @@ Caption: the runtime reads the simulation's snapshot and events and feeds the re
 | Neighbour | What this component receives | What it provides | What it never does |
 |---|---|---|---|
 | simulation ([reference/12](../../../reference/12_simulation_model/README.md)) | the presentation snapshot and the effect events of each tick, in tick order (ADR-036) | nothing | write a simulation field; draw from the simulation generator; feed a value back |
-| renderer ([renderer/README.md](../renderer/README.md)) | the frame's pass contexts, the catalogue, the `terrain_heights` resource (RND-063), the per-frame constants | the particle pool and its indirect arguments, the shard buffers, instance data for passes 7b, 7d, 10a, 11, 14 and 15, camera-shake offsets and flash requests | create pipeline states during a frame; issue barriers (RND-051) |
+| renderer ([renderer/README.md](../renderer/README.md)) | the frame's pass contexts, the catalogue, the `terrain_heights` resource (RND-063), the per-frame constants, and the GPU resource factory, through which this component creates its particle pool, particle parameter buffer and shard buffers and nothing else (RND-009, ADR-078) | the particle pool and its indirect arguments, the shard buffers, instance data for passes 7b, 7d, 10a, 11, 14 and 15, camera-shake offsets and flash requests | create pipeline states during a frame; issue barriers (RND-051) |
 | camera ([camera_and_sequences.md](../camera_and_sequences.md)) | the view of the frame | the shake rotation offset of the frame (VFX-232) | move the camera or store an offset in its state |
 | UI framework ([ui_framework/README.md](../ui_framework/README.md)) | the explainer panel widget and its draw batch (ADR-030, ADR-031) | the explainer timeline player (VFX-104) | lay out widgets |
 | audio engine ([audio_engine/README.md](../audio_engine/README.md)) | nothing | presentation events that this component raises (the spider footstep, the thrown-weapon fuse blink) | start a voice directly |
@@ -68,21 +68,21 @@ Caption: the runtime reads the simulation's snapshot and events and feeds the re
 
 **VFX-005** (MUST) Effects are cosmetic. Nothing that this component computes feeds the simulation; it never writes simulation state, never draws from the simulation generator (`SimRng`) and never reads local state from inside a simulation step (DEC-007, DEC-013, R-SIM-655). Every gameplay value is computed by the simulation on the CPU; GPU work here serves presentation only (DEC-654). No gameplay information is carried only by an effect, because presentation may drop or simplify any effect (ADR-036).
 
-**VFX-006** (MUST) Each way in which visual code can touch the simulation is closed by the rule in this table; the conformance tests of §7 check every row.
+**VFX-006** (MUST) Wherever visual code meets the simulation, the rule in this table holds; the conformance tests of §7 check every row.
 
-| # | Case | Species rule |
+| # | Where visual code meets the simulation | Species rule |
 |---|---|---|
-| 1 | a tree's crown hit volume produced as a by-product of building its render geometry, valid only at one detail level | the hit volume is baked collision data of the content build; render geometry never feeds the simulation (DEC-012, R-SIM-651) |
-| 2 | a walking body whose motion depends on foot states timed by the real clock | no simulation body depends on a procedural foot; the only legged creature is the spider, whose legs are presentation only (DEC-007, VFX-128) |
-| 3 | spider feet timed by the real clock, read by foot-fall sounds and the next lift decision | foot and leg state is presentation state of this component on the presentation clock (DEC-007, ADR-035) |
-| 4 | simulation draws spent on cosmetic particle arguments inside simulation code | the simulation emits an effect event, and this component makes every cosmetic draw from its own presentation generator (DEC-013, DEC-222 item 7, R-SIM-622) |
-| 5 | simulation draws spent by purely visual simulation objects (the volcano vent's idle roll, snowflakes, Wisps) | these draws are presentation draws (R-SIM-622); the objects' simulated state never depends on them, while the objects themselves stay in the simulated effect pool (DEC-266) |
-| 6 | presentation draws made inside simulation code for particle counts and velocities | every such draw is made by this component from an effect event, never inside a tick (R-SIM-640) |
-| 7 | render paths that write fields of simulated objects (a Worker's colour timer, a Barrier Emitter link, the world cursor's structure kind, the Reaper Serpent's eaten-orb list) | every such value is presentation state keyed by the object's handle (R-SIM-636, R-SIM-656, RND-301) |
-| 8 | the damage-flicker flag stored in a simulated object | the flag is presentation state of this component (VFX-126) and is never part of a simulation state hash (R-SIM-636) |
-| 9 | presentation side effects started from simulation code or render code (the Launch Vessel's camera shake, the thrown weapon's fuse-blink sound) | they are effect events or presentation events, consumed in tick order (ADR-036, DEC-007) |
-| 10 | a seasonal theme switched on from each participant's own date, with seasonal effects that consume simulation draws | the seasonal state is match state fixed in the match setup, and its effects use presentation draws (DEC-118, R-SIM-726) |
-| 11 | particle creation that does nothing while the match is paused, after its arguments (simulation draws included) have been evaluated | effect events carry no cosmetic draw, and no tick runs while the world is held, so pausing changes no simulation draw (R-SIM-622) |
+| 1 | tree crown hit volumes | the hit volume is baked collision data of the content build; render geometry never feeds the simulation (DEC-012, R-SIM-651) |
+| 2 | legged bodies | no simulation body depends on a procedural foot; the only legged creature is the spider, whose legs are presentation only (DEC-007, VFX-128) |
+| 3 | spider feet, their foot-fall sounds and their lift decisions | foot and leg state is presentation state of this component on the presentation clock (DEC-007, ADR-035) |
+| 4 | the random arguments of cosmetic particles | the simulation emits an effect event, and this component makes every cosmetic draw from its own presentation generator (DEC-013, DEC-222 item 7, R-SIM-622) |
+| 5 | the cosmetic motion of decorative simulated objects (the volcano vent's idle roll, snowflakes, Wisps) | these draws are presentation draws (R-SIM-622); the objects' simulated state never depends on them, while the objects themselves stay in the simulated effect pool (DEC-266) |
+| 6 | particle counts and velocities | every such draw is made by this component from an effect event, never inside a tick (R-SIM-640) |
+| 7 | per-object drawing state (a Worker's colour timer, a Barrier Emitter link, the world cursor's structure kind, the Reaper Serpent's eaten-orb list) | every such value is presentation state keyed by the object's handle (R-SIM-636, R-SIM-656, RND-301) |
+| 8 | the damage flicker | the flag is presentation state of this component (VFX-126) and is never part of a simulation state hash (R-SIM-636) |
+| 9 | presentation side effects of simulation events (the Launch Vessel's camera shake, the thrown weapon's fuse-blink sound) | they are effect events or presentation events, consumed in tick order (ADR-036, DEC-007) |
+| 10 | the seasonal theme | the seasonal state is match state fixed in the match setup, and its effects use presentation draws (DEC-118, R-SIM-726) |
+| 11 | effects while the match is paused | effect events carry no cosmetic draw, and no tick runs while the world is held, so pausing changes no simulation draw (R-SIM-622) |
 
 ### 1.4 Effect and animation inventory
 
@@ -127,7 +127,7 @@ Caption: the runtime reads the simulation's snapshot and events and feeds the re
 | 35 | full-screen flashes | shockwaves, the pulse wave | Q §4.11 |
 | 36 | fades, the paused banner and the screen transition | UI | RND-085 to RND-098 |
 
-**VFX-008** (MUST NOT) The component provides no screen-space distortion, no pixelation ghosting, no gesture trail or gesture symbol display, no tutorial gesture playback, no Leader shield of orbiting orbs, no three-legged walker and no sound-chip envelope sequencer (DEC-059, DEC-336, DEC-062). The audio filter chain that a reference effects file configures belongs to the [audio engine](../audio_engine/README.md).
+**VFX-008** (MUST NOT) The component provides no screen-space distortion, no pixelation ghosting, no gesture trail or gesture symbol display, no tutorial gesture playback, no Leader shield of orbiting orbs and no three-legged walker (DEC-059, DEC-336, DEC-062).
 
 
 ## 2 Interfaces
