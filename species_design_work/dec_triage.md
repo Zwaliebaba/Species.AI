@@ -26,7 +26,7 @@
 
 | DEC | Title | Decide by | Area | Also affects | Assigned by | Register file |
 |---|---|---|---|---|---|---|
-| DEC-001 | Reference core loop: crowd-and-territory economy | design phase | A0 | B1, B9 | Affects | decisions/verdicts_and_fixes.md |
+| DEC-001 | Reference core loop: crowd-and-territory economy | Resolved (A0, 2026-10-18) | A0 | B1, B9 | Affects | decisions/verdicts_and_fixes.md |
 | DEC-045 | Map editor | design phase | A1 | D4 | Affects | decisions/verdicts_and_fixes.md |
 | DEC-315 | Level-design patterns of the reference maps | design phase | A1 | B9 | Affects | decisions/open_questions.md |
 | DEC-324 | Terrain generator parameter semantics and biases | design phase | A1 |  | Affects | decisions/open_questions.md |

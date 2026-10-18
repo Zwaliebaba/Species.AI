@@ -2,6 +2,9 @@
 
 > Proposer: A0-P · Round 1 · Date: 2026-10-18 · Answers `challenge_1.md` (23 findings, 6 "make it better" items) · Documents changed: `Design/gdd/00_vision_pillars_and_core_loops.md`, `Design/gdd/adoption_ledger/00_reference_overview_ledger.md`
 
+**Finalise (2026-10-18):** owner gate A decided O31 to O37. O32 replaced the proposed name of the peoples with **Cladan** (plural: the Cladans; identifier `Cladan`, string-id prefix `cladan.`); every use of the earlier proposed word in this file is history, and the design uses Cladan only.
+
+
 **Totals.** Findings: 22 Accepted (5 with one part changed or left out, each stated), 0 Rejected, 1 Escalated (A0-F01, Critical). Make it better: 6 Accepted (3 in part). Open Critical or High: A0-F01, until the owner answers Q5 at gate A; the design is written for the recommended option and works for every option (the two paces of PIL-100 hold under all three).
 
 I checked the challenger's model (`species_design_work/scripts/A0C_SessionPacing.py`, run with `python3 -I`): its inputs are the draft's tuning values, and its arithmetic holds. Its numbers are quoted below where a resolution uses them.

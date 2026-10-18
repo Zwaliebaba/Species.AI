@@ -6,13 +6,13 @@ The Species game design, written by the design phase (`prompts/species-design-ph
 
 | Document | Prefix | Area | Wave | Status |
 |---|---|---|---|---|
-| `00_vision_pillars_and_core_loops.md` | `PIL` | A0 | A | not started |
+| [00_vision_pillars_and_core_loops.md](00_vision_pillars_and_core_loops.md) | `PIL` | A0 | A | Final |
 | `01_world_and_regions.md` | `WLD` | A1 | A | not started |
 | `02_settlements_and_population.md` | `SET` | B1 | B | not started |
 | `03_resources_and_economy.md` | `RES` | B2 | B | not started |
 | `04_building_and_construction.md` | `CON` | B3 | B | not started |
 | `05_units_combat_and_battles.md` | `CMB` | B4 | B | not started |
-| `06_races_relations_and_conflict.md` | `REL` | B5 | B | not started |
+| `06_cladans_relations_and_conflict.md` | `REL` | B5 | B | not started |
 | `07_deputy_standing_orders_and_afk_play.md` | `DEP` | B6 | B | not started |
 | `08_ai_settlements.md` | `AIS` | B7 | B | not started |
 | `09_progression_hooks.md` | `PRG` | B8 | B | not started |

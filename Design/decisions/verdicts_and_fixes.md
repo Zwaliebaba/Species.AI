@@ -23,12 +23,12 @@ The generated [register index](README.md) lists every entry of this file with it
 ## 1 Headline verdicts
 
 ### DEC-001 Reference core loop: crowd-and-territory economy
-- Status: Open
+- Status: Resolved
 - Affects: reference/00_reference_overview.md (R-VIS), reference/05_population_flow.md (R-ECON), reference/01_skirmish_rules_and_modes/README.md (R-MODE)
 - Specified behaviour: The reference game has no build queue and no currency. A team's army is the population that its held Spawn Nodes produce: a Spawn Node is captured by a single team with at least 3 operators on its 5 ports and no enemy on any port, activates 300 ticks after an ownership change, and produces in bursts and pauses up to a per-team population cap. Workers fight and re-plan on their own; Leaders act as signposts and formation leaders; Supply crates open to outcomes that are 90 % beneficial and 10 % hostile and feed six Power slots; six modes share one rules skeleton; bots play on a node graph with perfect information and no other advantage. The reference library specifies this loop in full and keeps it as the rule set of the skirmish mode.
 - Options: A — the world game keeps the reference loop unchanged; B — the world game adds settlement building and a resource economy on top of essence-driven growth, while skirmish keeps the reference loop; C — the world game replaces the loop entirely.
 - Recommendation: B. The vision brief overrides "no build queue and no currency" for the persistent world, where settlements gather resources, build and grow, but keeps a skirmish mode that is the combat balance test bed (vision O8). Keeping the reference loop authoritative for skirmish preserves the tuned combat and population behaviour; the design phase decides how settlement growth uses Essence orbs and whether a resource layer exists.
-- Decide by: design phase
+- Resolution (2026-10-18, design phase, area A0): option B. Skirmish keeps the reference core loop as this entry specifies it, with no build queue and no currency (PIL-002, PIL-003). The world game adds settlements that gather resources, store them, build and maintain structures and grow, on top of essence-driven growth in which deaths yield Essence orbs and Essence becomes new Workers, so a resource layer exists (PIL-004, PIL-050 to PIL-058); B1 specifies growth through Essence, B2 the resources and B3 construction. The verdicts are in [the adoption ledger of reference/00](../gdd/adoption_ledger/00_reference_overview_ledger.md); the R-ECON and R-MODE verdicts follow in the ledgers of B1 and B9. Specified in [Vision, pillars and core loops](../gdd/00_vision_pillars_and_core_loops.md) §2.1.
 
 ### DEC-002 Integer tick timers and the 11-tick mode second
 - Status: Resolved

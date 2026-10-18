@@ -4,7 +4,7 @@
 
 Entries live in the files listed below; add a decision to the file of its area, in the format of [CONVENTIONS](../CONVENTIONS.md) §7, and add its row to the index of that file and to the index below. **Open** decisions state the behaviour the documents specify now (the reference default), so implementation never blocks on them. **Resolved** decisions state the fixed rule. **Dropped** entries record out-of-scope items and what Species does instead. Decisions marked "Decide by: design phase" are answered by the Species design phase.
 
-Totals: **302** decisions: 148 Open, 126 Resolved, 28 Dropped.
+Totals: **302** decisions: 147 Open, 127 Resolved, 28 Dropped.
 
 The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner_decisions.md](owner_decisions.md).
 
@@ -39,7 +39,7 @@ The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner
 
 | Id | Title | Status | File |
 |---|---|---|---|
-| DEC-001 | [Reference core loop: crowd-and-territory economy](verdicts_and_fixes.md#dec-001-reference-core-loop-crowd-and-territory-economy) | Open | verdicts_and_fixes.md |
+| DEC-001 | [Reference core loop: crowd-and-territory economy](verdicts_and_fixes.md#dec-001-reference-core-loop-crowd-and-territory-economy) | Resolved | verdicts_and_fixes.md |
 | DEC-002 | [Integer tick timers and the 11-tick mode second](verdicts_and_fixes.md#dec-002-integer-tick-timers-and-the-11-tick-mode-second) | Resolved | verdicts_and_fixes.md |
 | DEC-003 | [Mode-second length after playtest](verdicts_and_fixes.md#dec-003-mode-second-length-after-playtest) | Open | verdicts_and_fixes.md |
 | DEC-004 | [Reference tuning values adopted as the Species baseline](verdicts_and_fixes.md#dec-004-reference-tuning-values-adopted-as-the-species-baseline) | Resolved | verdicts_and_fixes.md |

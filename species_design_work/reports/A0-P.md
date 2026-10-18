@@ -1,6 +1,6 @@
-# Report A0-P: vision, pillars and core loops (proposal, revised after challenge round 1)
+# Report A0-P: vision, pillars and core loops (final)
 
-> Area A0, wave A · Proposer · Date: 2026-10-18 · Status of the GDD: Draft · Round 1 answered in `species_design_work/areas/A0/resolution_1.md`
+> Area A0, wave A · Proposer · Date: 2026-10-18 · Status of the GDD: Final · Round 1 answered in `species_design_work/areas/A0/resolution_1.md`
 
 ## Files written
 
@@ -39,15 +39,15 @@ adopt 1 (R-VIS-009) · adopt-skirmish 60 · adapt 51 · drop 0 · pending 0. Rou
 
 ## Owner questions for gate A (5, merged)
 
-Q1 add pillar 6 with claims (agree) · Q2 clade (agree) · Q3 attacks outside protection, an unprovoked attack costs double, attacks between stewards off by default in integrated worlds (agree) · Q4 never removed by battle, dormancy after 21 days (agree) · Q5 stage-1 always-on worlds: in the open client with presentation suspended (proposer) or as a background headless process (challenger), or none in stage 1 (**disagree**).
+Q1 add pillar 6 with claims (agree) · Q2 the owner chose Cladan (O32) · Q3 attacks outside protection, an unprovoked attack costs double, attacks between stewards off by default in integrated worlds (agree) · Q4 never removed by battle, dormancy after 21 days (agree) · Q5 stage-1 always-on worlds: in the open client with presentation suspended (proposer) or as a background headless process (challenger), or none in stage 1 (**disagree**).
 
 ## Cross-area requests
 
-In full in `proposal_notes.md` §7. Main ones: the coordinator registers the vocabulary after gate A, updates the ledger README row, considers a gate-computed owner verdict for restatements, and renames B5's file if "clade" is confirmed; B2 runs its models at both paces, including the joint leader model with B4, B5 and A1; B5 owns claims, end states and renown; B6 owns the levers of PIL-086, PIL-087's minimum loss and dormancy; D4 and D9 own the save record of PIL-133; D5 makes second accounts recognisable.
+In full in `proposal_notes.md` §7. Main ones: the coordinator registers the vocabulary after gate A, updates the ledger README row, considers a gate-computed owner verdict for restatements, and renames B5's file if "Cladan" is confirmed; B2 runs its models at both paces, including the joint leader model with B4, B5 and A1; B5 owns claims, end states and renown; B6 owns the levers of PIL-086, PIL-087's minimum loss and dormancy; D4 and D9 own the save record of PIL-133; D5 makes second accounts recognisable.
 
 ## Names proposed
 
-world, world game, skirmish, region, settlement site, world time, frozen, world pace (always-on, session), world lifetime, world host, integrated server, dedicated server, settlement, Wellspring, territory, core, founding, steward, AI settlement, strength, watched, dormant, expedition, clade, temperament, grievance, territory pressure, anger, relations, truce (reserved), tribute (reserved), claim, unprovoked attack, renown, attack, world event, battle, battlefield, battle result, protection rules, loss cap, respite, attack cost, defender's advantage, newcomer protection, deputy, standing order, away report, aide, presence, present, away, check-in, full fidelity, abstract fidelity, strategic view, settlement view. Round 1 identifier changes: `AttackDeclaration`, `Fidelity::Modeled`, string roots `aide` and `presence.check_in`.
+world, world game, skirmish, region, settlement site, world time, frozen, world pace (always-on, session), world lifetime, world host, integrated server, dedicated server, settlement, Wellspring, territory, core, founding, steward, AI settlement, strength, watched, dormant, expedition, Cladan, temperament, grievance, territory pressure, anger, relations, truce (reserved), tribute (reserved), claim, unprovoked attack, renown, attack, world event, battle, battlefield, battle result, protection rules, loss cap, respite, attack cost, defender's advantage, newcomer protection, deputy, standing order, away report, aide, presence, present, away, check-in, full fidelity, abstract fidelity, strategic view, settlement view. Round 1 identifier changes: `AttackDeclaration`, `Fidelity::Modeled`, string roots `aide` and `presence.check_in`.
 
 ## Gate result
 
@@ -56,3 +56,13 @@ world, world game, skirmish, region, settlement site, world time, frozen, world 
 ## What I verified and what I assumed
 
 Verified: the gates; the challenger's model (`species_design_work/scripts/A0C_SessionPacing.py`, inputs and arithmetic); that every cited requirement, DEC and owner decision exists; that the new terms collide with no registered identifier, string-id root, tuning-key root, setting group, schema family or asset stem. Assumed: the twelve assumptions of `proposal_notes.md` §3, and a session factor of 12 sized for a host who plays 2 hours a day. The trademark screen is from general knowledge, not a registry search; the product name is now on the registry-search list.
+
+## Finalise (after owner gate A, O31 to O37)
+
+- **Applied:** O31 to O37 cited where they decide a requirement; Cladan (O32) everywhere (term, `Cladan`, `cladan.`, `pil.world.cladan_count`, prose); status Final; the rationale linked from the status line. The GDD is 116.5 KB, so it was not split.
+- **Registered:** 57 terms in CONVENTIONS §8.15 (term, kind, identifier, string-id prefix) and in the glossary (26 in A–L, 31 in M–Z, alphabetical, each linking to its defining requirement); 14 string-id roots added to table 8-A; no collision with an existing §8 or glossary term.
+- **DEC-001:** Resolved in `decisions/verdicts_and_fixes.md` with a dated resolution note; index row and totals updated (147 Open, 127 Resolved, 28 Dropped).
+- **Rationale:** `Design/rationale/A0.md` and `Design/rationale/README.md`.
+- **Ledger:** status Final; `LedgerTotals.py` refreshed the README totals (reference/00: adopt 1, adopt-skirmish 60, adapt 51, drop 0, pending 0).
+- **Gates:** all 19 pass with `--design-phase`, Mermaid included.
+- **Left to the coordinator:** the GDD index row of `gdd/README.md` (it still says "not started"), the decision triage, and renaming B5's file and title to follow O32.

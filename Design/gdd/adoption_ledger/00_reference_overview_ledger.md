@@ -1,6 +1,6 @@
 # Adoption ledger: 00 reference overview
 
-> Status: Draft · Owner: area A0 · Reference: [00_reference_overview](../../reference/00_reference_overview.md) · Species design: [00 vision, pillars and core loops](../00_vision_pillars_and_core_loops.md) · Rules: `prompts/species-design-phase.md` §5.3
+> Status: Final · Owner: area A0 · Reference: [00_reference_overview](../../reference/00_reference_overview.md) · Species design: [00 vision, pillars and core loops](../00_vision_pillars_and_core_loops.md) · Rules: `prompts/species-design-phase.md` §5.3
 
 18 sections, 112 requirements. A section row covers every requirement under its heading; an exception row (scope: one `R-` id) overrides it. Verdicts: `adopt`, `adopt-skirmish`, `adapt` (names the Species requirements that replace it), `drop` (gives the reason).
 
@@ -14,7 +14,7 @@
 | `R-VIS-003` | adapt | PIL-010 | Worker autonomy and crowd steering become pillar 1, Living crowds, which binds the world game and skirmish alike and extends autonomy to gathering, carrying and building; the Leader and order rules stay with their owners (reference/02, reference/06) |
 | `R-VIS-005` | adapt | PIL-003 | Six modes on one skeleton: the skeleton binds the skirmish; the five modes other than Spawn Control wait until each is scheduled |
 | `R-VIS-007` | adapt | PIL-092 | The specification of record, the reference values as the starting baseline of every adopted and skirmish-adopted requirement (an adapted one starts from them only where its area says so), and quirks as explicit rules (O13; DEC-004, DEC-005, DEC-006) |
-| `R-VIS-008` | adapt | PIL-014, PIL-027 | The visual language becomes pillar 5, The reference style, a distinct game: the same language for the world game, skirmish and the strategic view, every asset new and reviewed for likeness (O9). The 8 team colours bind skirmish only (R-VIS-034); in the world game a clade's colour is its identity and battles use a friend-and-foe palette (B5, E2) |
+| `R-VIS-008` | adapt | PIL-014, PIL-027 | The visual language becomes pillar 5, The reference style, a distinct game: the same language for the world game, skirmish and the strategic view, every asset new and reviewed for likeness (O9). The 8 team colours bind skirmish only (R-VIS-034); in the world game a Cladan's colour is its identity and battles use a friend-and-foe palette (B5, E2) |
 | `R-VIS-009` | adopt | | The audio binding model serves the world game and skirmish as written (pillar 5; C4 owns reference/10) |
 | `00_reference_overview.md §2.2` | adapt | PIL-003 | Scope: the six match modes: 10 requirements (R-VIS-010 to R-VIS-019). The v1 skirmish offers one mode, Spawn Control (O8, O20; `pil.scope.skirmish_mode_count`); the other five modes stay specified in reference/01 as candidates that B9 and the roadmap may schedule, and until then their rules, options and complexity labels are not built; the match options are those of the modes offered. Exceptions below |
 | `R-VIS-011` | adopt-skirmish | | Spawn Control, the v1 skirmish mode, as written (restates reference/01; B9) |

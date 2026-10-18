@@ -57,7 +57,7 @@ Every normative statement is a requirement with a stable ID, written as `**<PREF
 | `RES` | Species: resources and economy | `gdd/03_resources_and_economy.md` |
 | `CON` | Species: building and construction | `gdd/04_building_and_construction.md` |
 | `CMB` | Species: units, combat and battles | `gdd/05_units_combat_and_battles.md` |
-| `REL` | Species: races, relations and conflict | `gdd/06_races_relations_and_conflict.md` |
+| `REL` | Species: Cladans, relations and conflict | `gdd/06_cladans_relations_and_conflict.md` |
 | `DEP` | Species: deputy, standing orders and AFK play | `gdd/07_deputy_standing_orders_and_afk_play.md` |
 | `AIS` | Species: AI settlements | `gdd/08_ai_settlements.md` |
 | `PRG` | Species: progression hooks | `gdd/09_progression_hooks.md` |
@@ -164,7 +164,7 @@ Table 8-A Kinds of dotted id and the roots each uses.
 | Kind | Form | Roots | Defined in |
 |---|---|---|---|
 | asset id | `<stem>.<name>` | the 18 asset stems above | `assets/asset_manifest.csv` |
-| string id | `<prefix>.<item>` | `achievement`, `bot`, `building`, `camera`, `crate`, `creature`, `faction`, `game`, `map`, `match`, `mode`, `power`, `team`, `tutorial`, `ui`, `unit` | the owning documents; the String-id prefix columns of §8.1 to §8.12; GameAssets §18.1 |
+| string id | `<prefix>.<item>` | `achievement`, `aide`, `battle`, `bot`, `building`, `camera`, `cladan`, `crate`, `creature`, `deputy`, `expedition`, `faction`, `game`, `map`, `match`, `mode`, `power`, `presence`, `protection`, `region`, `relation`, `report`, `settlement`, `skirmish`, `team`, `tutorial`, `ui`, `unit`, `view`, `world` | the owning documents; the String-id prefix columns of §8.1 to §8.12 and §8.15; GameAssets §18.1 |
 | tuning key | `ref.<prefix>.<parameter>`; `<component prefix>.<topic>.<parameter>` | `ref`; `ter`, `rnd`, `ast`, `vfx`, `aen`, `ui`, `inp`, `cam`, `dat`, `plt`, `bld`, `dbg` | the tuning tables (§4) |
 | setting key | `<group>.<setting>` | `audio`, `binding`, `browser`, `camera` (only `camera.automatic`), `debug`, `input`, `interface`, `network`, `player`, `render`, `telemetry`, `window` | the settings table 3.1-A of the data schemas |
 | schema id | `<family>.<record>` | `actor`, `assets`, `camera`, `crate`, `edition`, `effects`, `geometry`, `import`, `input`, `interface`, `maps`, `mode`, `panels`, `settings`, `sound`, `telemetry`, `test`, `text` | the record-type registry, table 1-A of the data schemas |
@@ -678,6 +678,70 @@ These terms are ordinary words, or names that one owner defines in prose. They n
 | Platform layer (PLT) | composition root, crash-context record, fatal path, fixed-step source, manual source, platform clock, platform time, log sink, pre-UI message, run id, system summary, user-data root |
 | Build tooling and distribution (BLD) | build identity, channel tag, channel wrapper, configuration, edition, edition manifest, edition marked for release, localisation report, map-identity listing, permitted maps, product, reference feature set, release procedure, repair check, symbol store, tool project, translator pack |
 | Diagnostics, test and performance (DBG) | cheats-used marker, counter provider, debug command, design population, development drawing queue, development overlay, profile view, reference test machine, single-process pass, soak entry, soak host, stress population |
+
+### 8.15 World game
+
+The terms of the Species world game, which [the Species design](gdd/00_vision_pillars_and_core_loops.md) §2.12 defines (Table 3; PIL-090, PIL-091) and the owner confirmed at gate A (O37, with O32 for Cladan). The Kind column gives the kind of that table; the glossary defines each term. The world game reuses some reference terms with a changed use (a settlement's player is its steward, never its owner; the server's runner is the world host, never an operator; the protection period is a respite, never a shield; a world's span is its lifetime, never a season; construction is done by Workers, never by builders; a people is a Cladan): table 4 of the Species design lists them.
+
+| Species term | Kind | Identifier | String-id prefix |
+|---|---|---|---|
+| abstract fidelity | simulation | `Fidelity::Modeled` | — |
+| AI settlement | world game | `SettlementControl::Ai`, beside `SettlementControl::Steward` | `settlement.ai` |
+| aide | delegation | `Aide` | `aide` |
+| anger | relations | `Anger` | `relation.anger` |
+| attack | world game | `AttackDeclaration` | `battle.attack` |
+| attack cost | protection | `AttackCost` | `protection.attack_cost` |
+| away | session | `StewardPresence::Away` | `presence.away` |
+| away report | delegation | `AwayReport` | `report.away` |
+| battle | battle | `Battle` | `battle` |
+| battle result | battle | `BattleResult` | `battle.result` |
+| battlefield | battle | `Battlefield` | `battle.field` |
+| check-in | session | — | `presence.check_in` |
+| Cladan | relations | `Cladan` | `cladan` |
+| claim | relations | `Claim` | `relation.claim` |
+| core | world game | `SettlementCore` | `settlement.core` |
+| dedicated server | server | `ServerMode::Dedicated` | — |
+| defender's advantage | protection | `DefenderAdvantage` | `protection.defender_advantage` |
+| deputy | delegation | `Deputy` | `deputy` |
+| dormant | world game | `SettlementState::Dormant` | `settlement.dormant` |
+| expedition | world game | `Expedition` | `expedition` |
+| founding | world game | — (a player command; C1 names it) | `settlement.founding` |
+| frozen | world game | `WorldState::Frozen` | `world.frozen` |
+| full fidelity | simulation | `Fidelity::Full` | — |
+| grievance | relations | `Grievance` | `relation.grievance` |
+| integrated server | server | `ServerMode::Integrated` | — |
+| loss cap | protection | `LossCap` | `protection.loss_cap` |
+| newcomer protection | protection | `NewcomerProtection` | `protection.newcomer` |
+| presence | session | `StewardPresence` (not `Presence`, the field presence of the data schemas) | `presence` |
+| present | session | `StewardPresence::Present` | `presence.present` |
+| protection rules | protection | — | `protection` |
+| region | world game | `Region` | `region` |
+| relations | relations | `Relation` | `relation` |
+| renown | relations | `Renown` | `world.renown` |
+| respite | protection | `Respite` | `protection.respite` |
+| settlement | world game | `Settlement` | `settlement` |
+| settlement site | world object | `SettlementSite` | `settlement.site` |
+| settlement view | view | `SettlementView` | `view.settlement` |
+| skirmish | form of play | `Skirmish` | `skirmish` |
+| standing order | delegation | `StandingOrder` | `deputy.order` |
+| steward | role | `Steward` | `settlement.steward` |
+| strategic view | view | `StrategicView` | `view.strategic` |
+| strength | world game | `SettlementStrength` | — |
+| temperament | relations | `Temperament` | `cladan.temperament` |
+| territory | world game | `Territory` | `settlement.territory` |
+| territory pressure | relations | `GrievanceCause::TerritoryPressure` | — |
+| tribute (reserved) | relations | `Tribute` | `relation.tribute` |
+| truce (reserved) | relations | `Truce` | `relation.truce` |
+| unprovoked attack | relations | — | `battle.unprovoked` |
+| watched | world game | — | — |
+| Wellspring | world object | `Wellspring` | `building.wellspring` |
+| world | world game | `World` (not `MatchWorld`, the world of a skirmish match) | `world` |
+| world event | battle | `WorldEvent` | `world.event` |
+| world game | form of play | — | — |
+| world host | role | — | `world.host` |
+| world lifetime | world game | — (a setting; A1 names its key) | `world.lifetime` |
+| world pace | world game | `WorldPace` (`WorldPace::AlwaysOn`, `WorldPace::Session`) | `world.pace` |
+| world time | world game | `WorldTime` | — |
 
 ## 9 Allowed terms
 

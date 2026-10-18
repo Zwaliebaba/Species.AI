@@ -1,18 +1,18 @@
 # Vision, pillars and core loops
 
-> Status: Draft · Prefix: PIL · Rationale: `../rationale/A0.md` · Related: [vision brief](../../vision/species-vision-brief.md) · [owner decisions](../decisions/owner_decisions.md) · [reference overview](../reference/00_reference_overview.md) · [adoption ledger 00](adoption_ledger/00_reference_overview_ledger.md) · [GDD index](README.md) · [conventions](../CONVENTIONS.md)
+> Status: Final · Prefix: PIL · Rationale: [A0](../rationale/A0.md) · Related: [vision brief](../../vision/species-vision-brief.md) · [owner decisions](../decisions/owner_decisions.md) · [reference overview](../reference/00_reference_overview.md) · [adoption ledger 00](adoption_ledger/00_reference_overview_ledger.md) · [GDD index](README.md) · [conventions](../CONVENTIONS.md)
 
 ## 1 Purpose and player experience
 
 ### 1.1 What this document decides
 
-This document is the root of the Species game design. It states what Species is, the pillars that every later design choice serves, the core loops at three timescales, the session patterns and the audience, and the vocabulary of the world game. It binds every later area; the owner confirms or changes its pillars, its loops and its vocabulary at owner gate A.
+This document is the root of the Species game design. It states what Species is, the pillars that every later design choice serves, the core loops at three timescales, the session patterns and the audience, and the vocabulary of the world game. It binds every later area; the owner confirmed its pillars (O36), its loops and its vocabulary (O37) at owner gate A, and decided its open choices there (O31 to O35).
 
 It specifies no mechanic in full. Each loop names the area that owns its mechanics (§8), and every number in it is a target that the owning area meets with its own rules and tuning keys (§4). Where this document says that an area decides something, the behaviour is that area's to specify, inside the limits stated here.
 
 ### 1.2 Species in one paragraph
 
-Species is a persistent, shared world of settlements on a server. Each settlement belongs to a clade and is run either by its steward, a player, or by AI. Its Workers act on their own: they gather, carry and build, they grow in number as Essence becomes new Workers, and they fight. The steward steers through Leaders, orders, priorities and standing orders, never figure by figure. Clades grow aggrieved for reasons a steward can see, and aggrieved clades attack. Battles are real-time crowd battles of hundreds of small glowing figures, and they always run as the full simulation. When a steward is away, the deputy runs the settlement on the steward's standing orders, the protection rules bound what the settlement can lose, and the steward comes back to a report of what happened. Beside the world, skirmish offers the reference crowd match on a small map, on the same server and netcode.
+Species is a persistent, shared world of settlements on a server. Each settlement belongs to a Cladan and is run either by its steward, a player, or by AI. Its Workers act on their own: they gather, carry and build, they grow in number as Essence becomes new Workers, and they fight. The steward steers through Leaders, orders, priorities and standing orders, never figure by figure. Cladans grow aggrieved for reasons a steward can see, and aggrieved Cladans attack. Battles are real-time crowd battles of hundreds of small glowing figures, and they always run as the full simulation. When a steward is away, the deputy runs the settlement on the steward's standing orders, the protection rules bound what the settlement can lose, and the steward comes back to a report of what happened. Beside the world, skirmish offers the reference crowd match on a small map, on the same server and netcode.
 
 ### 1.3 Player fantasy
 
@@ -22,7 +22,7 @@ Species is a persistent, shared world of settlements on a server. Each settlemen
 |---|---|---|
 | Minutes: a battle | The crowd general | Hundreds of Workers pour into a fight; the steward bends the flow with Leaders, formations and a few special units, and reads the battle from the shape and the glow of the crowd |
 | Hours: the settlement | The founder | A settlement grows from a Wellspring and a handful of Workers into a town with territory, stores, structures and defences, in steps the steward sees in every session |
-| Days and weeks: the world | The neighbour with a memory | Clades remember what was done to them; a steward earns peace or provokes war, and every war has a reason on record |
+| Days and weeks: the world | The neighbour with a memory | Cladans remember what was done to them; a steward earns peace or provokes war, and every war has a reason on record |
 
 *Table A — The player fantasy at the three timescales of the core loops (§2.5 to §2.7).*
 
@@ -54,7 +54,7 @@ A session-paced world runs only while its host plays, so in it the pattern "away
 
 ### 1.6 Comparables and their lessons
 
-Species borrows lessons from genres, never content. The rationale file names the titles behind each lesson.
+Species borrows lessons from genres, never content. [The rationale](../rationale/A0.md) names the titles behind each lesson.
 
 | Genre | Lesson | Where Species applies it |
 |---|---|---|
@@ -91,11 +91,11 @@ Species borrows lessons from genres, never content. The rationale file names the
 
 **PIL-006** (MUST) A player is the steward of at most `pil.scope.settlements_per_player` (1) settlement in a world (vision §1). A player may be a steward in several worlds, with one settlement in each.
 
-**PIL-007** (MUST) Every settlement belongs to exactly one clade for its whole life, and is either run by its steward or is an AI settlement, which has no steward. In v1 every clade has the same rules, and clades differ in looks, colour and temperament only (O7); the data model gives each clade a place for the modifiers that B8 defines later (O7, O11).
+**PIL-007** (MUST) Every settlement belongs to exactly one Cladan for its whole life, and is either run by its steward or is an AI settlement, which has no steward. In v1 every Cladan has the same rules, and Cladans differ in looks, colour and temperament only (O7); the data model gives each Cladan a place for the modifiers that B8 defines later (O7, O11).
 
 **PIL-008** (MUST) A world has no team slots; this is how the world game maps O14 onto settlements. A steward who leaves a world, or is away, keeps the settlement, and the deputy runs it, as a bot takes over a leaver's team in skirmish. A place for a further steward is a free settlement site (PIL-068), and AI settlements populate the world from its start. B6 and C2 specify what happens to a settlement whose steward does not return (PIL-078).
 
-**PIL-009** (MUST) The loops of this document work without the non-goals of v1 (vision §7): a web or mobile companion application, asymmetric clades, research and training content, official hosting, a client on a platform other than Windows, and modding support.
+**PIL-009** (MUST) The loops of this document work without the non-goals of v1 (vision §7): a web or mobile companion application, asymmetric Cladans, research and training content, official hosting, a client on a platform other than Windows, and modding support.
 
 **PIL-110** (MUST) Each stage delivers at least the smallest world game of Table 10, which meets the pillars and guards named there; E3 schedules the first world-game milestone after the skirmish first playable (O20), and tests it with 1 and 4 stewards without capping the 2 to 16 of O1.
 
@@ -109,27 +109,27 @@ Species borrows lessons from genres, never content. The rationale file names the
 
 ### 2.2 Pillars
 
-Species has six pillars. Pillars 1 to 5 are the vision's five, confirmed or revised with the case that Table 2 states; pillar 6 is new, and the owner confirms or rejects it at gate A.
+Species has six pillars. Pillars 1 to 5 are the vision's five, confirmed or revised with the case that Table 2 states; pillar 6 is new (O31); the owner confirmed all six at gate A (O36).
 
 **PIL-010** (MUST) **Pillar 1, Living crowds.** Workers act on their own, in battle and at home: they fight, gather, carry and build without an order per figure, and they re-plan as their surroundings change (B1 and B4 specify the task search, from reference/02's). The steward steers crowds through Leaders, crowd orders, settlement priorities and standing orders, never single Workers; direct control is kept for special units (C1, from reference/06's).
 
 **PIL-011** (MUST) **Pillar 2, A world that runs while you are away.** The server owns the world; the world runs whenever its server runs and freezes when it stops (O4). Being away is a normal way to play: the deputy runs the settlement on standing orders, the protection rules bound what the settlement can lose (O2), and a steward who returns reads first what happened.
 
-**PIL-012** (MUST) **Pillar 3, Conflict with a cause.** Clades and stewards come into conflict for reasons a steward can see: territory pressure, competition for resources, claims and past attacks. Every grievance shows its cause, its weight and how it fades; AI attacks are motivated by grievances or claims and never random; every attack has a cost and leaves a record, and an attack with no cause on record is named unprovoked and costs more (PIL-063); and a conflict can be settled (PIL-122; O2; B5). World events are hazards, not conflict, and follow PIL-049.
+**PIL-012** (MUST) **Pillar 3, Conflict with a cause.** Cladans and stewards come into conflict for reasons a steward can see: territory pressure, competition for resources, claims and past attacks. Every grievance shows its cause, its weight and how it fades; AI attacks are motivated by grievances or claims and never random; every attack has a cost and leaves a record, and an attack with no cause on record is named unprovoked and costs more (PIL-063); and a conflict can be settled (PIL-122; O2; B5). World events are hazards, not conflict, and follow PIL-049.
 
 **PIL-013** (MUST) **Pillar 4, Delegation you can trust.** The deputy follows standing orders that its steward understands and can predict, acts only within them and only on what the settlement can see, and reports every action with the standing order that permitted it (B6, B7).
 
-**PIL-014** (MUST) **Pillar 5, The reference style, a distinct game.** Species keeps the visual and audio language of the reference library: flat-shaded low-poly facets with additive glow on a black background, the darkening layer and black fog, crowds of small figures drawn as camera-facing sprite cards that scale with distance ([renderer visual language](../architecture/components/renderer/visual_language.md)), and sound that game events drive through the audio binding model (R-VIS-009). Every asset is newly authored, with Species' own silhouettes, textures, interface layout and logo, and nothing is traced, recoloured or edited from the reference game's art, audio or text (O9; vision §5). The strategic view is drawn in the same language. The two sides of every battle are distinguishable to every viewer at every zoom: in the strategic view a clade's colour is its identity, and in a battle the sides use a friend-and-foe palette, so that two settlements of one clade can fight readably; in skirmish a team's colour is one of the team colours of R-VIS-034. B5 and E2 set the clade colours, `pil.world.clade_count` (6) clades as a first guess, and the battle palette.
+**PIL-014** (MUST) **Pillar 5, The reference style, a distinct game.** Species keeps the visual and audio language of the reference library: flat-shaded low-poly facets with additive glow on a black background, the darkening layer and black fog, crowds of small figures drawn as camera-facing sprite cards that scale with distance ([renderer visual language](../architecture/components/renderer/visual_language.md)), and sound that game events drive through the audio binding model (R-VIS-009). Every asset is newly authored, with Species' own silhouettes, textures, interface layout and logo, and nothing is traced, recoloured or edited from the reference game's art, audio or text (O9; vision §5). The strategic view is drawn in the same language. The two sides of every battle are distinguishable to every viewer at every zoom: in the strategic view a Cladan's colour is its identity, and in a battle the sides use a friend-and-foe palette, so that two settlements of one Cladan can fight readably; in skirmish a team's colour is one of the team colours of R-VIS-034. B5 and E2 set the Cladan colours, `pil.world.cladan_count` (6) Cladans as a first guess, and the battle palette.
 
-**PIL-015** (MUST) **Pillar 6, Always a way back** (new; the owner confirms it at gate A). A world stays open to everyone in it: no settlement becomes unassailable, a steward who joins late finds a place and a path to matter, and a lost battle is a setback, never the end of a settlement.
+**PIL-015** (MUST) **Pillar 6, Always a way back** (new; O31). A world stays open to everyone in it: no settlement becomes unassailable, a steward who joins late finds a place and a path to matter, and a lost battle is a setback, never the end of a settlement.
 
-**PIL-016** (MUST) A design choice that falls under a "rules out" entry of Table 1 is rejected, or escalated to the owner with the pillar it breaks. The rationale of every later area names, for each of its significant choices, the pillar that the choice serves.
+**PIL-016** (MUST) A design choice that falls under a "rules out" entry of Table 1 is rejected, or escalated to the owner with the pillar it breaks. The rationale of every later area names, for each of its significant choices, the pillar that the choice serves (O36).
 
 | Pillar | Rules in | Rules out | A design it rejects |
 |---|---|---|---|
 | 1 Living crowds | A task search for every Worker that covers fighting, gathering, carrying and building; crowd-scale verbs (gather and send, Leaders, formations); settlement priorities among gathering, construction and guard duty; crowds of hundreds in view; direct control of special units only | Assigning a job, a tool, a place or a target to one Worker; production queues in which the steward orders Workers one at a time (Workers come from essence-driven growth); screens of needs, equipment or inventory per figure | *A farm that waits for the steward to pick which three Workers tend it*; *a barracks that trains Workers one click at a time* |
 | 2 A world that runs while you are away | Server authority; the deputy; the loss cap, respite, attack cost, defender's advantage and newcomer protection (O2); the away report; check-ins of minutes; world time as server uptime (O4) | Catch-up simulation after downtime (O4); a loss while away that the loss cap does not bound; play that requires presence at set times, such as a daily log-in window or an event that rewards only those online at a fixed hour; absence that pays better than presence (PIL-023) | *Settlements that lose a share of their stores for every hour their steward is offline*; *a nightly world event at a fixed hour that is worth a week of growth* |
-| 3 Conflict with a cause | Grievances with a cause, a weight and a fading; anger thresholds set by temperament; claims that a battle or a settlement can resolve; a warning before every attack; an attack cost, doubled for an unprovoked attack; at least one way to ease anger that is not an attack; the grievance entry of every battle result | Aggression by a clade from a random draw or a hidden timer; an AI attack on a settlement against which the attacker's clade holds no grievance or claim; anger the steward cannot inspect; attacks that cost the attacker nothing; conflicts that no outcome can settle; grievances that Workers create by their own task choices | *Each night the AI picks a random settlement and raids it*; *an AI that always targets the weakest settlement in reach, whatever the history* |
+| 3 Conflict with a cause | Grievances with a cause, a weight and a fading; anger thresholds set by temperament; claims that a battle or a settlement can resolve; a warning before every attack; an attack cost, doubled for an unprovoked attack; at least one way to ease anger that is not an attack; the grievance entry of every battle result | Aggression by a Cladan from a random draw or a hidden timer; an AI attack on a settlement against which the attacker's Cladan holds no grievance or claim; anger the steward cannot inspect; attacks that cost the attacker nothing; conflicts that no outcome can settle; grievances that Workers create by their own task choices | *Each night the AI picks a random settlement and raids it*; *an AI that always targets the weakest settlement in reach, whatever the history* |
 | 4 Delegation you can trust | A small order language of priorities, limits and response rules (B6); safe default orders (PIL-079); hard limits; a complete audit trail in the away report; one AI for AI settlements and the deputy, under fog of war (B7; PIL-084) | A deputy that chooses its own goals; strategic actions without an explicit order (declaring attacks, changing relations, demolishing, spending past a limit); a deputy that sees what its settlement cannot; a deputy that plays better than an attentive steward (PIL-023) | *A governor AI that attacks a weak neighbour overnight because its scoring rated the raid profitable* |
 | 5 The reference style, a distinct game | The renderer's visual language; the audio binding model (R-VIS-009); new art and audio; a strategic view in the same style; crowds readable at a distance; colour as the main identity cue | Traced, recoloured or edited reference art, audio or text (vision §5); the reference silhouettes, interface layout or logo; a second art style for the strategic view, such as a painted map, photoreal terrain or textured physically based materials | *A strategic map drawn as painted parchment with textured castles*; *Workers drawn as recoloured copies of the reference figures* |
 | 6 Always a way back | Upkeep and diminishing returns that grow with size (B2); the defender's advantage (O2); respites; a Wellspring that no battle takes (PIL-080); free settlement sites for late joiners (PIL-068); newcomer protection; the world lifetime as a host setting, as one lever among several (PIL-067) | Unbounded compounding growth; removal of a steward from a world by another settlement; capturing or absorbing a settlement; first sites so much richer than later ones that the first week decides the world; a world that ends for everyone because one settlement leads | *Capturing a settlement's Wellspring absorbs its Workers and territory and ends its steward's game*; *yields that compound by a percentage every hour with no upkeep* |
@@ -140,7 +140,7 @@ Species has six pillars. Pillars 1 to 5 are the vision's five, confirmed or revi
 |---|---|---|---|
 | 1 | Living crowds | Living crowds: autonomy extended from battles to settlement work; priorities and standing orders named as steering verbs | The world game adds gathering and construction. Without the extension, construction would drift into jobs assigned to single Workers, which the pillar exists to prevent |
 | 2 | A world that keeps running | A world that runs while you are away | Read literally, the vision's name contradicts O4: a world freezes while its server is down, and in the integrated stage it runs only while the host's client runs. The new name states the promise exactly, and adds the return, the away report, which the vision's pitch implies |
-| 3 | Conflict with a cause | Confirmed; binds stewards as well as clades; adds legibility, claims that conflicts can settle, at least one way to ease anger, and the cost of attacking | The vision's seed challenge 9 asks for a relations model that players can read and influence, and O2 asks for a cost to attacking; both belong to the pillar, not only to B5. A pillar that bound only the AI would let a steward's attack be the random aggression it forbids |
+| 3 | Conflict with a cause | Confirmed; binds stewards as well as Cladans; adds legibility, claims that conflicts can settle, at least one way to ease anger, and the cost of attacking | The vision's seed challenge 9 asks for a relations model that players can read and influence, and O2 asks for a cost to attacking; both belong to the pillar, not only to B5. A pillar that bound only the AI would let a steward's attack be the random aggression it forbids |
 | 4 | Delegation you can trust | Confirmed; adds the audit trail and the information rule | Trust needs a record of what the deputy did and why (vision seed challenge 8) and a deputy that knows no more than its steward (vision §5) |
 | 5 | The reference look and feel | The reference style, a distinct game | "Stays as it is" could be read as copying the reference look, which O9 and vision §5 forbid. The new wording states both halves of O9: the same visual and audio language, and every asset new (vision seed challenge 11) |
 | 6 | (none) | Always a way back | Runaway leaders, late joiners and ruinous losses (vision seed challenges 1 and 2) are the most common ways persistent strategy worlds fail, and none of the five vision pillars rules on them. Without a pillar, B2, B5 and B6 would trade them away one rule at a time |
@@ -161,7 +161,7 @@ Each pillar has a guard: a measurable check that tells whether the design still 
 
 **PIL-024** (MUST) Guard of pillar 3: in playtest, at least `pil.guard.attack_cause_share` (80 %) of the stewards whose settlement was attacked name the cause of the attack correctly from what Species showed them.
 
-**PIL-025** (MUST) Rule of pillar 3: an AI settlement attacks a settlement only while its clade holds a grievance against that settlement or a claim on its territory (PIL-120). Every attack, by an AI settlement or by a steward, warns its target at least `pil.conflict.warning_minutes` (10 minutes of world time) before the attacking expedition reaches the target's territory; while the steward is away, the warning goes to the deputy and into the away report (B5, B6).
+**PIL-025** (MUST) Rule of pillar 3: an AI settlement attacks a settlement only while its Cladan holds a grievance against that settlement or a claim on its territory (PIL-120). Every attack, by an AI settlement or by a steward, warns its target at least `pil.conflict.warning_minutes` (10 minutes of world time) before the attacking expedition reaches the target's territory; while the steward is away, the warning goes to the deputy and into the away report (B5, B6).
 
 **PIL-026** (MUST) Guard of pillar 4: in playtest, stewards predict the deputy's action correctly in at least `pil.guard.deputy_prediction_share` (80 %) of the scripted situations that B6 defines, and `pil.guard.deputy_report_share` (100 %) of the deputy's actions appear in the away report, each with the standing order that permitted it.
 
@@ -223,15 +223,15 @@ Each pillar has a guard: a measurable check that tells whether the design still 
 
 ### 2.7 Days and weeks: the world loop
 
-**PIL-060** (MUST) The world loop is the life of a world over days and weeks of world time. Settlements expand their territory and come into contact, compete for sites and resources, accumulate grievances, attack and defend, and the balance of strength between them shifts.
+**PIL-060** (MUST) The world loop is the life of a world over days and weeks of world time. Settlements expand their territory and come into contact, compete for sites and resources, accumulate grievances, attack and defend, and the balance of strength between them shifts. The loops of this document are confirmed (O37).
 
-**PIL-061** (MUST) The actors of the world loop are every settlement, steward-run or AI; the clades, which hold grievances; the world host, who sets the world's settings and its lifetime; and the stewards who join late.
+**PIL-061** (MUST) The actors of the world loop are every settlement, steward-run or AI; the Cladans, which hold grievances; the world host, who sets the world's settings and its lifetime; and the stewards who join late.
 
 **PIL-062** (MUST) The world verbs are: found a settlement at a free settlement site; expand the territory; make or withdraw a claim (PIL-120); send expeditions to attack or to reinforce; ease a grievance by a way that is not an attack (PIL-064); and set standing orders before leaving. C1 specifies the verbs; B5 specifies attacks and the easing of grievances.
 
-**PIL-063** (MUST) A steward may send an attack against any settlement that is not under protection (owner question Q3 at gate A). Every attack pays its attack cost when it is declared, and the defender's clade records a grievance against the attacker (O2; B5, B6). An attack with no cause on record (no grievance of the attacker's clade against the target and no claim on the target's territory) is an unprovoked attack: it costs `pil.conflict.unprovoked_cost_factor` (2) times the attack cost, it records a heavier grievance whose weight B5 sets, and the target's away report and the world's record name it as unprovoked. Attacks between stewards are a world setting, off by default in an integrated world and on by default on a dedicated server, and the join page shows it (PIL-130).
+**PIL-063** (MUST) A steward may send an attack against any settlement that is not under protection (O33). Every attack pays its attack cost when it is declared, and the defender's Cladan records a grievance against the attacker (O2; B5, B6). An attack with no cause on record (no grievance of the attacker's Cladan against the target and no claim on the target's territory) is an unprovoked attack: it costs `pil.conflict.unprovoked_cost_factor` (2) times the attack cost, it records a heavier grievance whose weight B5 sets, and the target's away report and the world's record name it as unprovoked. Attacks between stewards are a world setting, off by default in an integrated world and on by default on a dedicated server, and the join page shows it (PIL-130).
 
-**PIL-064** (MUST) Every grievance shows its cause, its weight and how it fades. Anger, the sum of the grievances that a clade holds against a settlement, is visible to that settlement's steward, and B5 gives every steward at least one way to ease a grievance that is not an attack.
+**PIL-064** (MUST) Every grievance shows its cause, its weight and how it fades. Anger, the sum of the grievances that a Cladan holds against a settlement, is visible to that settlement's steward, and B5 gives every steward at least one way to ease a grievance that is not an attack.
 
 **PIL-065** (MUST) The world loop has three negative feedbacks against runaway growth that hold without any end of the world: upkeep and diminishing returns that grow with size (B2), the defender's advantage (O2), and claims that can reverse an early expansion (PIL-121). In a world in steady state at the always-on pace, from week 2 of world time on, a typical settlement takes part in `pil.world.battles_per_week` (2 to 10) battles per week of world time: below the band the world is static, and above it the world is at permanent war (B5).
 
@@ -243,7 +243,7 @@ Each pillar has a guard: a measurable check that tells whether the design still 
 
 **PIL-069** (MUST) No settlement captures, absorbs or removes another settlement (PIL-080); a world in which one settlement leads goes on until its lifetime ends.
 
-**PIL-120** (MUST) Territory pressure and competition for resources between two settlements create a claim: a named contested area, either a resource site or a border area of territory outside a settlement's core, that one settlement holds and the other claims (A1, B5).
+**PIL-120** (MUST) Territory pressure and competition for resources between two settlements create a claim: a named contested area, either a resource site or a border area of territory outside a settlement's core, that one settlement holds and the other claims (O31; A1, B5).
 
 **PIL-121** (MUST) A battle that the claimant wins moves the claimed area to the claimant, within the loser's loss cap; a truce or tribute, if B5 defines them, or the claimant's withdrawal of the claim settles it without a battle. A settlement's core, the territory around its Wellspring that A1 and B1 size, is never claimable (PIL-080), and claimed and held areas pay upkeep (B2), so that claiming every border costs more than it yields.
 
@@ -271,9 +271,9 @@ Each pillar has a guard: a measurable check that tells whether the design still 
 
 **PIL-076** (MUST) While a world is frozen nothing in it changes: no world time passes, and no timer of the world game advances, respites, loss-cap windows and the fading of grievances included. When the server runs again, the world continues from the state in which it stopped, with no catch-up simulation (O4).
 
-**PIL-077** (MUST) In the integrated stage a world runs only while its world host's client runs it (O4, O10). A session-paced world runs while its host plays. A host may keep an always-on world running while not playing: the client stays open with its presentation suspended (no rendering and no audio, with an icon that shows the world is running), and closing the client freezes the world (owner question Q5 at gate A). A steward who plays in another steward's integrated world plays while that world runs and sees it frozen otherwise (C2, D1).
+**PIL-077** (MUST) In the integrated stage a world runs only while its world host's client runs it (O4, O10). A session-paced world runs while its host plays. A host may keep an always-on world running while not playing: the client stays open with its presentation suspended (no rendering and no audio, with an icon that shows the world is running), and closing the client freezes the world (O35). A steward who plays in another steward's integrated world plays while that world runs and sees it frozen otherwise (C2, D1).
 
-**PIL-078** (MUST) After an absence of `pil.session.long_absence_days` (7 days) a settlement stays in the world under the deputy and the protection rules, with any further protection for a long absence that B6 sets. After `pil.session.dormancy_days` (21 days) of world time without presence it becomes dormant: it leaves the map with its stores and structures kept, its site and territory become free, and its deputy stops. A steward who returns places it again at a free settlement site, under a respite (owner question Q4 at gate A; B6, C2).
+**PIL-078** (MUST) After an absence of `pil.session.long_absence_days` (7 days) a settlement stays in the world under the deputy and the protection rules, with any further protection for a long absence that B6 sets. After `pil.session.dormancy_days` (21 days) of world time without presence it becomes dormant: it leaves the map with its stores and structures kept, its site and territory become free, and its deputy stops. A steward who returns places it again at a free settlement site, under a respite (O34; B1, B6, C2).
 
 **PIL-079** (MUST) A steward who sets no standing order has the default orders: defend the settlement, keep gathering, finish the queued construction, and never attack. B6 specifies the default set in full.
 
@@ -283,7 +283,7 @@ Each pillar has a guard: a measurable check that tells whether the design still 
 
 ### 2.9 Safety floor and fair information
 
-**PIL-080** (MUST) No battle removes a settlement from the world. A settlement's Wellspring can be neither destroyed nor captured, and a settlement that loses a battle keeps at least the floor of Workers, stores and structures that B6's loss cap sets; dormancy (PIL-078) is the only way a settlement leaves the map, and it keeps the settlement (owner question Q4 at gate A).
+**PIL-080** (MUST) No battle removes a settlement from the world. A settlement's Wellspring can be neither destroyed nor captured, and a settlement that loses a battle keeps at least the floor of Workers, stores and structures that B6's loss cap sets; dormancy (PIL-078) is the only way a settlement leaves the map, and it keeps the settlement (O34).
 
 **PIL-081** (MUST) A steward leaves a world only by their own choice or by the world host's moderation (D5); no action of another settlement removes a steward from a world.
 
@@ -303,7 +303,7 @@ Each pillar has a guard: a measurable check that tells whether the design still 
 
 ### 2.10 World pace
 
-**PIL-100** (MUST) A world runs at one of two world paces. The **always-on pace** is for a world whose server keeps running whether or not anyone plays: a dedicated server, or an integrated world that its host keeps running (PIL-077). The **session pace** is for an integrated world that runs only while its host plays. World time is server uptime at both paces, and nothing is caught up (O4).
+**PIL-100** (MUST) A world runs at one of two world paces. The **always-on pace** is for a world whose server keeps running whether or not anyone plays: a dedicated server, or an integrated world that its host keeps running (PIL-077). The **session pace** is for an integrated world that runs only while its host plays. World time is server uptime at both paces, and nothing is caught up (O4, O35).
 
 **PIL-101** (MUST) At the session pace, the timers of the economy, of relations and of protection (growth, gathering, construction, upkeep, the fading of grievances, claims, respites, loss-cap windows, newcomer protection and dormancy) advance `pil.pace.session_factor` (12) times faster per hour of world time than at the always-on pace. Battles, travel and the movement of Workers run at the tick rate at both paces. B2, B5 and B6 apply the factor to their timers; A1 sizes travel so that a session-paced world still meets PIL-025.
 
@@ -327,17 +327,17 @@ In an integrated world the world host is also a steward who competes, with contr
 
 ### 2.12 Vocabulary and the reference baseline
 
-**PIL-090** (MUST) Every Species document uses the terms of Table 3 with the meanings given there, and the identifiers and string-id prefixes of its columns. The mechanics of each term belong to the areas that its Mechanics column names. CONVENTIONS §8 and the glossary register the terms once owner gate A has confirmed them.
+**PIL-090** (MUST) Every Species document uses the terms of Table 3 with the meanings given there, and the identifiers and string-id prefixes of its columns. The mechanics of each term belong to the areas that its Mechanics column names. The owner confirmed the vocabulary at gate A (O37), and CONVENTIONS §8.15 and the glossary register the terms.
 
-**PIL-091** (MUST) Where a reference term would mislead in the world game, Species documents use the Species term that Table 4 gives: a settlement's player is its steward, never its owner; the person who runs a world's server is the world host, never an operator; the protection period after an attack is a respite, never a shield; a world's span is its lifetime, never a season; construction is done by Workers, never by builders; and a people of Species is a clade (owner question Q2 at gate A).
+**PIL-091** (MUST) Where a reference term would mislead in the world game, Species documents use the Species term that Table 4 gives: a settlement's player is its steward, never its owner; the person who runs a world's server is the world host, never an operator; the protection period after an attack is a respite, never a shield; a world's span is its lifetime, never a season; construction is done by Workers, never by builders; and a people of Species is a Cladan, never a race (O32).
 
 **PIL-092** (MUST) The reference library is the specification of record for every reference requirement that Species keeps (DEC-005). The reference values are the starting baseline of every requirement that the ledger adopts or adopts for skirmish (O13, DEC-004); an adapted requirement starts from them only where its area says so, under Species keys; and a reference behaviour that looks accidental stays an explicit rule with a named key (DEC-006).
 
-Table 3 gives each new term one meaning. Identifiers follow `AGENTS.md` §1 in the `Species` namespace (CONVENTIONS §8); a dash means no type of its own, or one that the owning area names. String-id prefixes are dotted data names (CONVENTIONS §8); the new roots are `aide`, `battle`, `clade`, `deputy`, `expedition`, `presence`, `protection`, `region`, `relation`, `report`, `settlement`, `skirmish`, `view` and `world`, none of which is an asset stem, a tuning-key root, a setting group or a schema family. The trademark screen checks each term against well-known game titles and game trademarks as general knowledge; a registry search in the target markets is still required before a commercial release, and it covers the product name too: a creature-evolution simulation released on PC in 2018 carries the word Species in its title.
+Table 3 gives each new term one meaning. Identifiers follow `AGENTS.md` §1 in the `Species` namespace (CONVENTIONS §8); a dash means no type of its own, or one that the owning area names. String-id prefixes are dotted data names (CONVENTIONS §8); the new roots are `aide`, `battle`, `cladan`, `deputy`, `expedition`, `presence`, `protection`, `region`, `relation`, `report`, `settlement`, `skirmish`, `view` and `world`, none of which is an asset stem, a tuning-key root, a setting group or a schema family. The trademark screen checks each term against well-known game titles and game trademarks as general knowledge; a registry search in the target markets is still required before a commercial release, and it covers the product name too: a creature-evolution simulation released on PC in 2018 carries the word Species in its title.
 
 | Species term | Kind | Meaning | Identifier | String-id prefix | Mechanics | Trademark screen |
 |---|---|---|---|---|---|---|
-| world | world game | One persistent, shared game on one server: its terrain, regions, settlement sites, settlements, clades and world time. The spatial sense of "world" in the reference (world units, world cursor, world markers) keeps its meaning | `World` (not `MatchWorld`, the world of a skirmish match) | `world` | A1 (shape), A2 (simulation) | generic |
+| world | world game | One persistent, shared game on one server: its terrain, regions, settlement sites, settlements, Cladans and world time. The spatial sense of "world" in the reference (world units, world cursor, world markers) keeps its meaning | `World` (not `MatchWorld`, the world of a skirmish match) | `world` | A1 (shape), A2 (simulation) | generic |
 | world game | form of play | The persistent-world form of play (PIL-001) | — | — | A0 | generic |
 | skirmish | form of play | The short match on a small map, separate from every world, that runs the reference match rules (O8; PIL-002) | `Skirmish` | `skirmish` | B9 | generic |
 | region | world game | A fixed part of a world's area: the unit of the world's simulation partitioning (vision §5) and of the strategic view; it holds settlement sites | `Region` | `region` | A1, A2 | generic |
@@ -349,7 +349,7 @@ Table 3 gives each new term one meaning. Identifiers follow `AGENTS.md` §1 in t
 | world host | role | The person or community that runs a world's server: the player whose client runs an integrated world, or the administrator of a dedicated server | — | `world.host` | D1, D5 | generic |
 | integrated server | server | A world's server running inside the world host's game client, behind the same transport interface as a dedicated server (O10) | `ServerMode::Integrated` | — | A2, D1 | generic |
 | dedicated server | server | A world's server running as its own headless process (O5, O10); a community server is a dedicated server that a community runs | `ServerMode::Dedicated` | — | A2, D1 | generic |
-| settlement | world game | A community of Workers and Leaders of one clade, with its Wellspring, structures, stores and territory, run by its steward or by AI | `Settlement` | `settlement` | B1 | generic word; a well-known game series is titled after the people who settle, so no title or label of Species uses that form |
+| settlement | world game | A community of Workers and Leaders of one Cladan, with its Wellspring, structures, stores and territory, run by its steward or by AI | `Settlement` | `settlement` | B1 | generic word; a well-known game series is titled after the people who settle, so no title or label of Species uses that form |
 | Wellspring | world object | The structure at a settlement's founding point that turns Essence into new Workers; no battle destroys or captures it (PIL-080). B1 decides whether it is built on the Spawn Node | `Wellspring` | `building.wellspring` | B1, B3, B6 | generic noun; no game title known |
 | territory | world game | The area that a settlement holds around its Wellspring, where its Workers gather and its defences stand | `Territory` | `settlement.territory` | A1, B1 | generic |
 | core | world game | The territory around a settlement's Wellspring that no claim can take (PIL-121) | `SettlementCore` | `settlement.core` | A1, B1 | generic |
@@ -360,16 +360,16 @@ Table 3 gives each new term one meaning. Identifiers follow `AGENTS.md` §1 in t
 | watched | world game | A settlement is watched while any client's settlement view covers part of its territory; the strategic view never makes it watched (PIL-057) | — | — | B2, D2 | generic |
 | dormant | world game | The state of a settlement whose steward has not been present for 21 days: it is off the map, with its stores and structures kept (PIL-078) | `SettlementState::Dormant` | `settlement.dormant` | B6, C2 | generic |
 | expedition | world game | A group of a settlement's Workers and Leaders, with any special units, sent beyond its territory to attack, to reinforce or to gather; it travels through the world and fights as a crowd | `Expedition` | `expedition` | B4, B5, C1 | generic noun; a game series puts the plural at the head of its titles, so no title of Species uses the word |
-| clade | relations | A people of Species, which the vision brief calls a race: its settlements share its looks, its colour and its temperament, and every clade has the same rules in v1 (O7) | `Clade` | `clade` | B5 | a word of biology; no game title known |
-| temperament | relations | The AI personality of a clade: how fast it angers, how it weighs each cause, and how it answers anger | `Temperament` | `clade.temperament` | B5, B7 | generic |
-| grievance | relations | One recorded cause of anger that a clade holds against a settlement: its cause (territory pressure, competition for resources, an attack, or a further cause that B5 lists), its weight and how it fades | `Grievance` | `relation.grievance` | B5 | generic |
+| Cladan | relations | A people of Species (plural: the Cladans), which the vision brief calls a race (O32): its settlements share its looks, its colour and its temperament, and every Cladan has the same rules in v1 (O7) | `Cladan` | `cladan` | B5 | a coined word; no game title known |
+| temperament | relations | The AI personality of a Cladan: how fast it angers, how it weighs each cause, and how it answers anger | `Temperament` | `cladan.temperament` | B5, B7 | generic |
+| grievance | relations | One recorded cause of anger that a Cladan holds against a settlement: its cause (territory pressure, competition for resources, an attack, or a further cause that B5 lists), its weight and how it fades | `Grievance` | `relation.grievance` | B5 | generic |
 | territory pressure | relations | The cause of grievance that arises when the territories of two settlements meet, or when they compete for the same resources | `GrievanceCause::TerritoryPressure` | — | B5, A1 | generic |
-| anger | relations | The sum of the grievances that a clade holds against one settlement; above the threshold that the clade's temperament sets, the clade's AI settlements may attack that settlement | `Anger` | `relation.anger` | B5 | generic |
-| relations | relations | The standing between a clade and a settlement, derived from grievances, in the states that B5 defines | `Relation` | `relation` | B5 | generic |
+| anger | relations | The sum of the grievances that a Cladan holds against one settlement; above the threshold that the Cladan's temperament sets, the Cladan's AI settlements may attack that settlement | `Anger` | `relation.anger` | B5 | generic |
+| relations | relations | The standing between a Cladan and a settlement, derived from grievances, in the states that B5 defines | `Relation` | `relation` | B5 | generic |
 | truce (reserved) | relations | An agreement that suspends attacks between two parties for a time; B5 decides whether it exists | `Truce` | `relation.truce` | B5 | generic |
-| tribute (reserved) | relations | Stores paid to a clade to ease a grievance; B5 decides whether it exists | `Tribute` | `relation.tribute` | B5 | generic |
+| tribute (reserved) | relations | Stores paid to a Cladan to ease a grievance; B5 decides whether it exists | `Tribute` | `relation.tribute` | B5 | generic |
 | claim | relations | A contested area, a resource site or a border area outside a settlement's core, that one settlement holds and another claims; a battle won by the claimant moves it (PIL-120, PIL-121) | `Claim` | `relation.claim` | B5, A1 | generic |
-| unprovoked attack | relations | An attack with no grievance of the attacker's clade against the target and no claim on record; it costs more and is named (PIL-063) | — | `battle.unprovoked` | B5 | generic |
+| unprovoked attack | relations | An attack with no grievance of the attacker's Cladan against the target and no claim on record; it costs more and is named (PIL-063) | — | `battle.unprovoked` | B5 | generic |
 | renown | relations | The standing a settlement earns by defences held, grievances eased, claims settled and structures raised, never by stores taken (PIL-125) | `Renown` | `world.renown` | B5, C2 | generic |
 | attack | world game | Sending an expedition to fight at another settlement, from its declaration to its battle result; prose says attack, and the code names the declared world attack | `AttackDeclaration` | `battle.attack` | B5, B4 | generic |
 | world event | battle | A hazard that the world brings into a territory, such as hostile creatures of the Rogue faction; it is not an attack (PIL-049) | `WorldEvent` | `world.event` | B4 | generic |
@@ -409,7 +409,7 @@ Table 3 gives each new term one meaning. Identifiers follow `AGENTS.md` §1 in t
 | Shield | The Supply crate outcome that protects a crowd for 300 ticks | Keeps its meaning; the protection period after an attack is a respite |
 | seasonal theme | The optional seasonal look of a match | Keeps its meaning; a world's span is its lifetime |
 | Bot | A computer opponent in a match | Skirmish only; in the world game the AI runs AI settlements, the deputy and the aide |
-| team, team slot, match | The sides and the frame of a reference match | Skirmish only; the world game has settlements, clades and world time (PIL-008) |
+| team, team slot, match | The sides and the frame of a reference match | Skirmish only; the world game has settlements, Cladans and world time (PIL-008) |
 | alliance | Two teams sharing a colour family in co-op | Skirmish; B5 decides whether settlements can ally in the world game |
 | population cap | A team's limit on bodies in a match | Skirmish; B1 names the limit of a settlement |
 | Rogue faction | The hostile bot faction of a match | In the world game, the owner of the creatures of world events; it holds no grievance and never wins (PIL-049) |
@@ -457,7 +457,7 @@ flowchart TB
 |---|---|---|---|---|---|---|
 | Battle (minutes) | The Workers, Leaders, special units and structures of each side; the steward, deputy or AI that commands each side | The skirmish verbs plus the world verbs (PIL-032): gather and send, promote and direct Leaders, select and drive special units, place powers, withdraw | Bodies sent in; deaths into Essence orbs; damage to structures; stores, Workers and Essence moved within the loser's loss cap (PIL-045) | The battle result: losses and gains into the settlement loop, grievance and respite into the world loop (PIL-046) | Bounded: a defender keeps its settlement and loses no more than the loss cap; an attacker loses its dead and the attack cost (PIL-048) | B4, C1, B6 |
 | Settlement (hours) | The settlement's Workers, Leaders, structures and Wellspring; its steward, its deputy or its AI | Set priorities; place and queue construction; promote and direct Leaders; send expeditions; set standing orders (PIL-052) | Resources from territory to stores; stores into construction and upkeep; Essence into new Workers up to the population limit | Growth raises gathering and limits; upkeep, diminishing returns and territory pressure push back (PIL-053) | Decline, a lost battle, over-extension, each shown with its cause before it becomes a loss (PIL-054) | B1, B2, B3, C1 |
-| World (days and weeks) | Every settlement; the clades; the world host; late joiners | Found; expand; make or withdraw claims; send expeditions to attack or reinforce; ease grievances; set standing orders (PIL-062) | Territory and claims; grievances with cause, weight and fading; respites; renown; world time | Contact creates claims and grievances, which bring attacks; a won claim moves its area and a settled cause fades faster (PIL-121, PIL-122); upkeep, diminishing returns and the defender's advantage stop runaways (PIL-065); renown is the standing a steward aims at (PIL-125) | A static world, permanent war, endless conflicts, a runaway leader, a world with no room for newcomers or full of abandoned settlements; the guards of PIL-028, PIL-029, PIL-065 and PIL-123 and dormancy (PIL-078) answer each | A1, B2, B5, B6 |
+| World (days and weeks) | Every settlement; the Cladans; the world host; late joiners | Found; expand; make or withdraw claims; send expeditions to attack or reinforce; ease grievances; set standing orders (PIL-062) | Territory and claims; grievances with cause, weight and fading; respites; renown; world time | Contact creates claims and grievances, which bring attacks; a won claim moves its area and a settled cause fades faster (PIL-121, PIL-122); upkeep, diminishing returns and the defender's advantage stop runaways (PIL-065); renown is the standing a steward aims at (PIL-125) | A static world, permanent war, endless conflicts, a runaway leader, a world with no room for newcomers or full of abandoned settlements; the guards of PIL-028, PIL-029, PIL-065 and PIL-123 and dormancy (PIL-078) answer each | A1, B2, B5, B6 |
 
 *Table 5 — The three loops: their actors, verbs, flows, feedback and failure states.*
 
@@ -521,7 +521,7 @@ flowchart TB
     CONT["Contact: territories meet,<br/>resources are contested"]
     CLAI["Claims on contested areas<br/>outside every core"]
     GRIE["Grievances recorded:<br/>cause, weight, fading"]
-    ANGR{"Anger above the<br/>clade's threshold?"}
+    ANGR{"Anger above the<br/>Cladan's threshold?"}
     SETL["Settling without battle: truce,<br/>tribute or a withdrawn claim"]
     DECL["Attack declared:<br/>attack cost paid, the target warned"]
     BATL["Battle: the battle loop"]
@@ -648,7 +648,7 @@ These values are experience targets in world time at the always-on pace, not sim
 | `pil.settlement.plateau_days` | 14 | days of world time | provisional | PIL-055 | — | B2's economy model at the typical pattern |
 | `pil.world.battles_per_week` | 2–10 | battles per settlement per week of world time, from week 2 | provisional | PIL-065 | — | B5's relations model at 16 and 200 stewards |
 | `pil.world.free_sites_min` | 2 | free settlement sites in a world | provisional | PIL-068 | — | A1's world-density model |
-| `pil.world.clade_count` | 6 | clades in a world | provisional | PIL-014 | — | B5 and E2: colour families that read as distinct on black |
+| `pil.world.cladan_count` | 6 | Cladans in a world | provisional | PIL-014 | — | B5 and E2: colour families that read as distinct on black |
 | `pil.conflict.warning_minutes` | 10 | minutes of world time before arrival | provisional | PIL-025 | — | B5 and B6, against A1's travel times |
 | `pil.conflict.unprovoked_cost_factor` | 2 | times the attack cost | provisional | PIL-063 | — | B5's relations model and playtest |
 | `pil.conflict.event_warning_minutes` | 5 | minutes of world time before a world event arrives | provisional | PIL-049 | — | B4 and B6 with A1's travel times |
@@ -684,11 +684,11 @@ These values are experience targets in world time at the always-on pace, not sim
 | A dedicated server stops in the middle of a battle | The battle freezes with the world and continues when the server runs again; no timer advances meanwhile | PIL-076 | A2, D1, D4 |
 | Exploit: an expedition approaches a settlement whose economy runs at abstract fidelity | The battle runs at full fidelity; the hand-over between fidelities neither creates nor destroys stores, Workers or Essence (O3) | PIL-040, PIL-057 | B2, D2 |
 | Exploit: a steward chooses, or forces on a rival, the fidelity that pays better | Watched is defined by settlement views only, and the two models' yields differ by at most 3 % | PIL-057 | B2, D2 |
-| Two settlements of one clade fight | The sides use a friend-and-foe palette in the battle, so they are distinguishable at every zoom | PIL-014 | B5, E2 |
+| Two settlements of one Cladan fight | The sides use a friend-and-foe palette in the battle, so they are distinguishable at every zoom | PIL-014 | B5, E2 |
 | The deputy meets a situation that no standing order covers | The deputy follows the default orders: defend, keep gathering, finish queued construction, never attack | PIL-079, PIL-083 | B6 |
 | A standing order would need the deputy to declare an attack | The deputy declares one only as a response that a standing order names explicitly | PIL-083 | B6 |
 | An AI settlement or the deputy could gain from information outside its settlement's view | It acts only on what its settlement can see; the server never gives it more | PIL-084 | B7, D9 |
-| A clade whose settlements are all steward-run holds a grievance | The grievance is recorded and shown; only AI settlements attack on anger, and stewards decide for their own settlements | PIL-025, PIL-064 | B5 |
+| A Cladan whose settlements are all steward-run holds a grievance | The grievance is recorded and shown; only AI settlements attack on anger, and stewards decide for their own settlements | PIL-025, PIL-064 | B5 |
 | Workers of two settlements gather in the same field | No grievance arises from the Workers' choices; only the settlements' expansion or claims create one | PIL-124 | B5 |
 | A solo steward closes the client of an integrated world | The world freezes; at the session pace nothing was due while the steward was gone, and an always-on world that its host keeps running continues instead | PIL-030, PIL-077, PIL-100 | C2, D1 |
 | A world with an unlimited lifetime | Upkeep, diminishing returns, the defender's advantage and claims keep the world open without a reset | PIL-065, PIL-067 | A1, B2 |
@@ -706,7 +706,7 @@ These values are experience targets in world time at the always-on pace, not sim
 | AC-01 | The v1 build | A player opens skirmish | It offers Spawn Control and no other mode, with the reference match rules | PIL-002, PIL-003 |
 | AC-02 | The main page of the front end | The player opens it | It leads to the world game, to skirmish, to the tutorials, to help and to the options | PIL-005 |
 | AC-03 | A steward with a settlement in a world | The steward tries to found a second settlement in that world | The server refuses the command | PIL-006 |
-| AC-04 | A world | Its settlements are listed | Each belongs to exactly one clade and is either steward-run or an AI settlement | PIL-007 |
+| AC-04 | A world | Its settlements are listed | Each belongs to exactly one Cladan and is either steward-run or an AI settlement | PIL-007 |
 | AC-05 | A present steward whose settlement has queued construction, and who moves the camera throughout so that they stay present | No order is given for 60 minutes of world time | The Workers keep gathering, the queue is finished, attacks are fought, and no Worker stands idle for want of an order addressed to it | PIL-010, PIL-020 |
 | AC-06 | The command set of the world game | Every command is listed | None addresses one Worker, except promotion to a Leader, scrapping a unit and the direct control of special units; demoting a Leader addresses a Leader | PIL-020, PIL-052 |
 | AC-07 | A battle in a region that no client watches | It runs | Server telemetry shows it at full fidelity for its whole length | PIL-040 |
@@ -716,9 +716,9 @@ These values are experience targets in world time at the always-on pace, not sim
 | AC-11 | B2's model at the always-on pace, with the default orders and an 8-hour queue | A steward at the typical pattern and one at the check-in pattern are simulated for a day | The typical steward grows at least 25 % more, and the check-in steward at least 70 % as much | PIL-023, PIL-102 |
 | AC-12 | A steward who becomes present after an absence | The client connects | The away report is the first view, and it lists every deputy action with the standing order that permitted it | PIL-026, PIL-073 |
 | AC-13 | A deputy whose standing orders name no attack response | A neighbouring settlement is left undefended | The deputy declares no attack | PIL-079, PIL-083 |
-| AC-14 | An AI clade that holds no grievance against a settlement and no claim on its territory | Its AI settlements choose targets | None of them attacks that settlement | PIL-025 |
+| AC-14 | A Cladan that holds no grievance against a settlement and no claim on its territory | Its AI settlements choose targets | None of them attacks that settlement | PIL-025 |
 | AC-15 | An attack by an AI settlement, and an attack by a steward | Each expedition sets out | The target's steward, or the deputy and the away report while the steward is away, is warned at least 10 minutes before the expedition reaches the target's territory | PIL-025 |
-| AC-16 | An attack declared by a steward with no grievance or claim against the target | It is declared | It pays twice the attack cost, records a grievance of the defender's clade against the attacker, and is named unprovoked in the target's away report | PIL-063 |
+| AC-16 | An attack declared by a steward with no grievance or claim against the target | It is declared | It pays twice the attack cost, records a grievance of the defender's Cladan against the attacker, and is named unprovoked in the target's away report | PIL-063 |
 | AC-17 | Any grievance | A steward inspects it | Its cause, its weight and how it fades are shown, and at least one way to ease it that is not an attack is offered | PIL-064 |
 | AC-18 | A world whose server stops for 3 hours | The server runs again | World time continues from the stop; no respite, loss-cap window or grievance has advanced; no catch-up runs; the freeze is in every away report | PIL-066, PIL-076, PIL-131 |
 | AC-19 | An integrated world with two stewards | The world host closes the client | The other steward sees the world frozen, and nothing changes until the host's client runs it again | PIL-077 |
@@ -747,7 +747,7 @@ These values are experience targets in world time at the always-on pace, not sim
 | AC-42 | A token attack that ends after 1 minute, and an attack withdrawn before its battle | Each ends | No respite starts | PIL-087 |
 | AC-43 | A steward who leaves a world and joins it again | They found a settlement | It has no newcomer protection and no catch-up | PIL-088 |
 | AC-44 | A world event | It sets out towards a territory | It is announced at least 5 minutes ahead, its losses count against the loss cap, and no respite follows it | PIL-049 |
-| AC-45 | A battle between two settlements of one clade | It is watched at every zoom | The two sides are distinguishable | PIL-014 |
+| AC-45 | A battle between two settlements of one Cladan | It is watched at every zoom | The two sides are distinguishable | PIL-014 |
 | AC-46 | B2's calibration of one settlement over a day under the same orders | It is run at both fidelities | The yields differ by at most 3 % | PIL-057 |
 | AC-47 | A claim on a resource site | The claimant wins its battle | The site moves within the loser's loss cap, the settlement's core does not, and the grievance fades 4 times faster | PIL-120, PIL-121, PIL-122 |
 | AC-48 | A settlement whose steward is not present for 21 days of world time | The 21st day ends | It is dormant and off the map with its stores and structures, its site is free, and a return places it at a free site | PIL-078 |
@@ -790,10 +790,10 @@ This document owns the adoption ledger of the reference overview, [00_reference_
 | B2 | Upkeep, diminishing returns (PIL-053, PIL-065, PIL-121); fidelities (PIL-057); strength (PIL-058); the session factor (PIL-101) | The models of PIL-022, PIL-023, PIL-028 (with B4, B5, A1), PIL-029 and PIL-057, at both paces |
 | B3 | Construction by Workers (PIL-091); the Wellspring structure; the queue of PIL-023 | Construction verbs (PIL-052) |
 | B4 | The battle loop (PIL-040 to PIL-049); the transfer bound; world events; expeditions | Triggers, end conditions, lengths and sizes (PIL-021, PIL-047); battle transfer for PIL-028 |
-| B5 | Clades, grievance, anger, relations; claims (PIL-120 to PIL-124); unprovoked attacks (PIL-063); renown (PIL-125); truce and tribute | Causes and easing of grievances; the models of PIL-065 and PIL-123; the clade count with E2 |
+| B5 | Cladans, grievance, anger, relations; claims (PIL-120 to PIL-124); unprovoked attacks (PIL-063); renown (PIL-125); truce and tribute | Causes and easing of grievances; the models of PIL-065 and PIL-123; the Cladan count with E2 |
 | B6 | Deputy, orders, away report, presence, protection (PIL-070 to PIL-088) | Idle threshold; loss cap and floor; respite and its minimum loss; the levers of PIL-086; newcomer protection; PIL-026's situations |
 | B7 | AI settlements, deputy AI, aide; fair information (PIL-084) | AI that meets PIL-025 and PIL-084 |
-| B8 | Per-clade modifiers later (PIL-007) | The modifier system |
+| B8 | Per-Cladan modifiers later (PIL-007) | The modifier system |
 | B9 | Skirmish scope and its clause rule (PIL-002, PIL-003) | The map set; DEC-123; confirmation of the rows adapted to PIL-003 |
 | C1 | Verbs (PIL-032, PIL-052, PIL-062); strategic and settlement views | World verbs; the deputy-order interface |
 | C2 | Main page, join page, check-in entry (PIL-005, PIL-130, PIL-141); frozen worlds (PIL-077, PIL-132); dormancy; renown | The world game's pages |
@@ -816,7 +816,7 @@ This document owns the adoption ledger of the reference overview, [00_reference_
 
 | DEC | Topic | Position in this document | Requirements |
 |---|---|---|---|
-| DEC-001 | The reference core loop beyond skirmish | Open. Proposed resolution: Resolved with option B, to be entered in the register at Finalise: skirmish keeps the reference loop as written, and the world game adds settlements that gather resources, build and grow on top of essence-driven growth | PIL-002, PIL-003, PIL-004 |
+| DEC-001 | The reference core loop beyond skirmish | Resolved (2026-10-18) with option B: skirmish keeps the reference loop as written, and the world game adds settlements that gather resources, build and grow on top of essence-driven growth | PIL-002, PIL-003, PIL-004 |
 | DEC-063 | Reference map shapes and identities | Dropped in the register; applied: every skirmish map is new | PIL-003 |
 | DEC-123 | The tutorial for the first playable | Open; B9 decides it | PIL-003 |
 | DEC-866 | The population-cap values of a map | Open; A1 decides it, with B9 for the skirmish maps | PIL-003 |
@@ -825,10 +825,4 @@ This document owns the adoption ledger of the reference overview, [00_reference_
 | DEC-047 | Achievements, statistics and leaderboards | Open; C2 decides it, and renown is one way to use it | PIL-125 |
 | DEC-240, DEC-241 | The numeric model and reproducibility | A2's; they decide whether a battle replay can be a command stream | PIL-140 |
 
-**Owner questions at gate A** (not decisions of the register; the coordinator records each answer as an owner decision):
-
-- **Q1** whether pillar 6 is added, with claims (PIL-015, PIL-120);
-- **Q2** whether a people of Species is called a clade or a race (PIL-091);
-- **Q3** whether a steward may attack any settlement outside protection, with the unprovoked surcharge, and with attacks between stewards off by default in integrated worlds (PIL-063);
-- **Q4** whether a settlement can ever be removed from a world: never by a battle, and by abandonment through dormancy (PIL-078, PIL-080);
-- **Q5** how a stage-1 world keeps running while its host is not playing: in the open client with its presentation suspended, or as a background headless process, or not at all in stage 1 (PIL-077, PIL-100; O4, O10).
+**Owner decisions taken at gate A** (2026-10-18; `decisions/owner_decisions.md`): O31 adds pillar 6 with claims (PIL-015, PIL-120); O32 names a people a Cladan (PIL-091); O33 sets attacks between stewards, the unprovoked surcharge and the integrated default (PIL-063); O34 rules that no battle removes a settlement and adds dormancy (PIL-078, PIL-080); O35 keeps O4 and O10 as written, with an always-on integrated world in the open client and the two world paces (PIL-077, PIL-100); O36 confirms the six pillars (PIL-010 to PIL-016); O37 confirms the loops and the vocabulary (PIL-060, PIL-090).

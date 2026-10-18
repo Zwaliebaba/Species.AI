@@ -2,6 +2,9 @@
 
 > Proposer: A0-P · Date: 2026-10-18 · Documents: `Design/gdd/00_vision_pillars_and_core_loops.md` (status Draft), `Design/gdd/adoption_ledger/00_reference_overview_ledger.md` · Prompt §3 step 1
 
+**Finalise (2026-10-18):** owner gate A decided O31 to O37. O32 replaced the proposed name of the peoples with **Cladan** (plural: the Cladans; identifier `Cladan`, string-id prefix `cladan.`); every use of the earlier proposed word in this file is history, and the design uses Cladan only.
+
+
 These notes are for the coordinator and, at Finalise, for the rationale file `Design/rationale/A0.md`. The challenger does not read them. **Round 1 revision (2026-10-18):** the answers to `challenge_1.md` are in `resolution_1.md`; this file is updated to match (owner questions §4, adoption §5, cross-area requests §7, gate result §8).
 
 ## 1 Options considered
