@@ -2,7 +2,7 @@
 
 > Proposer: A0-P · Date: 2026-10-18 · Documents: `Design/gdd/00_vision_pillars_and_core_loops.md` (status Draft), `Design/gdd/adoption_ledger/00_reference_overview_ledger.md` · Prompt §3 step 1
 
-These notes are for the coordinator and, at Finalise, for the rationale file `Design/rationale/A0.md`. The challenger does not read them.
+These notes are for the coordinator and, at Finalise, for the rationale file `Design/rationale/A0.md`. The challenger does not read them. **Round 1 revision (2026-10-18):** the answers to `challenge_1.md` are in `resolution_1.md`; this file is updated to match (owner questions §4, adoption §5, cross-area requests §7, gate result §8).
 
 ## 1 Options considered
 
@@ -33,11 +33,11 @@ These notes are for the coordinator and, at Finalise, for the rationale file `De
 |---|---|---|---|---|
 | R1 | Add pillar 6, Always a way back | The three most common failure modes of persistent strategy worlds (runaway leaders, late joiners, ruinous losses) get a pillar-level owner | One more constraint for every area; it rules out conquest by absorption | PIL-015, Q1 |
 | R2 | Give every pillar a measurable guard with a provisional target | Pillars become testable; models and playtests know what to measure | Instrumentation in B2's, B5's and B6's models and in playtests; consent for playtest telemetry (D10) | PIL-020 to PIL-029 |
-| R3 | A "keep the world running" mode of the integrated client: the host's client keeps its in-process server running with presentation suspended while the host is away from the game | Pillar 2 is delivered in Stage 1, before community servers exist; solo players get real absences | A low-power client mode for D1 and A2 (the server is headless already; the client must suspend rendering and audio and show the host that the world is running); power use on the host's computer | Recommended to D1 and A2; not written into the GDD |
+| R3 | A "keep the world running" mode of the integrated client: the host's client keeps its in-process server running with presentation suspended while the host is away from the game | Pillar 2 is delivered in Stage 1, before community servers exist; solo players get real absences | A low-power client mode for D1 and A2 (the server is headless already; the client must suspend rendering and audio and show the host that the world is running); power use on the host's computer | Round 1: written into PIL-077 as the recommended option of owner question Q5, beside the two world paces (PIL-100 to PIL-104) |
 | R4 | Call the shield period a respite | No collision with the Shield outcome | None | Table 3 |
 | R5 | Call the settlement's player the steward and the server's runner the world host | No collision with the product owner, the owning team or the port operator | None | Table 3, PIL-091 |
-| R6 | Presence never lowers protection (PIL-086) | Removes the exploit of staying away to keep the protection of an absence | B6 cannot give absent settlements more protection than present ones | PIL-086 |
-| R7 | A band for the deputy's yield (PIL-023) | The deputy is neither ruinous nor better than the steward | B2's model must simulate the deputy's yield | PIL-023 |
+| R6 | Presence never lowers protection (PIL-086) | Removes the exploit of staying away to keep the protection of an absence | B6 cannot give absent settlements more protection than present ones | Withdrawn in round 1 (A0-F04): it forbade the counter to attacks on the away; PIL-086 now prices the trade |
+| R7 | A band for the deputy's yield (PIL-023) | The deputy is neither ruinous nor better than the steward | B2's model must simulate the deputy's yield | Replaced in round 1 (A0-F03) by a guard on real session patterns: presence gain 25 %, check-in floor 70 % |
 | R8 | AI attacks only while a grievance is on record, with a warning of 10 minutes | Pillar 3 is enforceable; players can name a cause for every AI attack | AI is less opportunistic and may look passive; temperament (B5) must keep it lively | PIL-025 |
 | R9 | A source of Essence that needs no death in battle | Growth never forces war; away yield exists | B1 adds and tunes the source against the Essence that battles give | PIL-056 |
 | R10 | A weekly world digest for the days-and-weeks loop: the week's battles, grievances and shifts in strength, shown at check-in | The slowest loop becomes readable | A page for C3 and an event log on the server, which the away report needs anyway | Recommended to C3 and B5; not written into the GDD |
@@ -59,47 +59,57 @@ These notes are for the coordinator and, at Finalise, for the rationale file `De
 11. Species will be sold commercially, so the trademark screen matters.
 12. Clades are collective holders of grievance, as the vision's "when a race is angered it attacks its neighbours" says; B5 may refine the granularity.
 
-## 4 Owner questions (for gate A)
+## 4 Owner questions (for gate A), merged after round 1
 
-**Q1 — Add a sixth pillar, Always a way back?** (PIL-015)
-- **A (recommended): add it.** No settlement becomes unassailable, late joiners find a place, and a lost battle never ends a settlement. Trade-off: it rules out conquest by absorption and permanent knock-outs, which some players want; every later area carries one more constraint.
-- B: keep five pillars and write anti-snowball and late-joiner rules as ordinary requirements of B2, B5 and B6. Trade-off: a leaner pillar set, but local trade-offs can erode the rules one at a time.
-- C: keep five and rely on world-lifetime resets (A1) as the main lever. Trade-off: simplest; resets erase investment and weaken the persistent-world promise.
+Five questions, each the owner's: Q1 changes the pillar set, Q2 the vocabulary of the vision, Q3 and Q4 the stakes that O2's protection rules frame, and Q5 how O4 and O10 work in stage 1. Recommended option first; where the proposer and the challenger disagree, both views are given.
 
-**Q2 — What is a people of Species called?** (PIL-091, Table 3)
-- **A (recommended): clade.** A word of biology that suits the title Species, carries no real-world human meaning, and is a free identifier (`Clade`). Trade-off: an unfamiliar word that onboarding must teach in one line.
-- B: race, as the vision brief writes it. Trade-off: the familiar genre word; but with peoples that differ in looks and colour and grow angry at each other, it invites a real-world reading in reviews, and it shares a word with the mode Launch Race.
-- C: kin. Trade-off: short and warm; awkward in the singular ("a kin") and reads as family.
+**Q1 — Add a sixth pillar, Always a way back?** (PIL-015, PIL-120) Proposer and challenger agree.
+- **A (recommended): add it, with claims**, so that a conflict can still move something (an area outside a settlement's core). Trade-off: it rules out conquest by absorption and permanent knock-outs, which some players want.
+- B: keep five pillars and write the rules into B2, B5 and B6. Trade-off: a leaner pillar set; local trade-offs can erode the rules one at a time.
+- C: keep five and rely on world-lifetime resets. Trade-off: simplest; resets erase investment.
 
-**Q3 — May a steward attack any settlement?** (PIL-063)
-- **A (recommended): yes, any settlement not under protection.** Every attack pays its attack cost and records a grievance of the defender's clade against the attacker. Trade-off: the most emergent conflict between friends; the protection rules (B6) carry the griefing risk.
-- B: only a settlement against which the attacker's clade holds a grievance (a cause is required). Trade-off: every war has a cause on record, for stewards too (pillar 3); it restricts friends who simply want to fight, and adds a rule to learn.
-- C: no attacks between stewards in v1; stewards fight AI settlements and world events. Trade-off: removes griefing and the hardest balance problem; loses the conflict between players that the vision's seed challenges assume.
+**Q2 — What is a people of Species called?** (PIL-091) Agree.
+- **A (recommended): clade.** Suits the title, carries no real-world weight in "an angered people attacks its neighbours", and is free as a game term. Trade-off: onboarding must teach the word; B5's file name follows if confirmed.
+- B: race. Trade-off: familiar; heavier, and shares a word with Launch Race.
+- C: kin. Trade-off: plain; reads as family.
 
-**Q4 — Can a settlement ever be removed from a world?** (PIL-080)
-- **A (recommended): never by a battle.** The Wellspring cannot be destroyed or captured; a lost battle costs at most the loss cap's floor, then a respite follows. Trade-off: lower ultimate stakes; weak settlements persist, which respite and upkeep keep harmless.
-- B: only while its steward is present. Trade-off: full stakes when present; but staying away becomes the safe choice, the exploit that PIL-086 forbids, and play becomes stressful.
-- C: whenever it is not under protection; its steward then founds anew at a free site. Trade-off: classic conquest stakes; losers and late joiners churn, and the eight-hour sleeper can still wake to a refounding.
+**Q3 — May a steward attack any settlement?** (PIL-063) Agree; the recommendation is the challenger's (A0-F07, A0-M1).
+- **A (recommended): yes, outside protection; an unprovoked attack (no grievance or claim on record) costs twice the attack cost and is named; attacks between stewards are a world setting, off by default in integrated worlds and on by default on dedicated servers.** Trade-off: conflict between friends stays possible while stage-1 worlds default to co-op against the AI clades.
+- B: only with a cause on record. Trade-off: the cleanest pillar 3; steward play then depends on AI grievances.
+- C: no attacks between stewards in v1. Trade-off: no griefing; loses conflict between players.
+- D: any settlement, no surcharge, on everywhere (the first draft). Trade-off: simplest; a steward's attack can be random, and the integrated host's advantages are unbounded.
 
-## 5 Adoption (reference/00, ledger owned by A0)
+**Q4 — Can a settlement be removed from a world?** (PIL-078, PIL-080) Agree; the split is the challenger's (A0-F13).
+- **A (recommended): never by a battle; by abandonment, through dormancy after 21 days without presence**: the settlement leaves the map with its stores and structures and returns at a free site. Trade-off: no knock-outs and no ghost settlements; a returning steward may lose the old site.
+- B: never at all. Trade-off: no one loses a place; worlds fill with deputy-run settlements that block sites (24 beside 16 active after 3 months at the challenger's assumed churn).
+- C: by battle when unprotected. Trade-off: classic stakes; the eight-hour sleeper can wake to a refounding.
 
-Effective verdicts: adopt 2, adopt-skirmish 93, adapt 17, drop 0, pending 0 (112 requirements, 18 sections, 11 exception rows).
+**Q5 — How does a stage-1 world keep running while its host is not playing?** (A0-F01; PIL-077, PIL-100; O4, O10) **Disagree.**
+- **A (proposer's recommendation): O4 and O10 as written.** An always-on integrated world keeps running while the host's client stays open with its presentation suspended; closing the client freezes it; otherwise the world runs at the session pace. Trade-off: no owner decision changes; the host must leave the game running.
+- B (challenger's recommendation): the world keeps running after the game closes, as the headless server build in a background process on the host's machine. Trade-off: the most convenient and robust always-on stage-1 world; it amends O4's example and adds a local dedicated form to stage 1 beside the in-process one (O10).
+- C: the session pace only in stage 1; the away loop arrives with dedicated servers in stage 2. Trade-off: cheapest; stage 1 ships without absent play.
+- Both paces (PIL-100 to PIL-104) hold under every option; the GDD is written for A and changes only PIL-077 and PIL-100's wording under B.
+
+## 5 Adoption (reference/00, ledger owned by A0), after round 1
+
+Effective verdicts: adopt 1, adopt-skirmish 60, adapt 51, drop 0, pending 0 (112 requirements, 18 section rows, 24 exception rows).
 
 | Scope | Verdict | Species requirements | Reason |
 |---|---|---|---|
-| §2.1 (R-VIS-001 to R-VIS-009) | adopt-skirmish | PIL-002, PIL-004 | The reference loop is the skirmish loop; the world replaces it (DEC-001 B) |
-| R-VIS-003 | adapt | PIL-010 | Crowd autonomy becomes pillar 1 for both forms, extended to gathering and building |
-| R-VIS-007 | adopt | — | Reference values and quirks rules apply to every adopted requirement (O13) |
-| R-VIS-008 | adapt | PIL-014, PIL-027 | The look becomes pillar 5; 8 team colours bind skirmish only, the world's colour is the clade's |
-| R-VIS-009 | adopt | — | The audio binding model serves both forms as written |
-| §2.2 (R-VIS-010 to R-VIS-019) | adapt | PIL-003 | One skirmish mode in v1 (O8, O20) |
-| R-VIS-011, R-VIS-017 | adopt-skirmish | — | Spawn Control and the match-clock minute as written |
-| §2.3 (R-VIS-020 to R-VIS-027) | adapt | PIL-003 | The 49 reference maps do not carry; B9 sets the map set; every map new (DEC-063) |
-| R-VIS-022, R-VIS-026, R-VIS-027 | adopt-skirmish | — | Map shape, unlisted development maps, start-position remapping as written |
-| §2.4 to §2.17 | adopt-skirmish | — | Restatements of the owning documents; the world uses the owners' verdicts |
-| §2.18 (R-VIS-170 to R-VIS-181) | adopt-skirmish | — | The skirmish match flow |
+| §2.1 | adopt-skirmish | PIL-002, PIL-004 | The reference loop is the skirmish loop; the world replaces it (DEC-001 B) |
+| R-VIS-003, R-VIS-090 | adapt | PIL-010 | Crowd autonomy becomes pillar 1 for both forms |
+| R-VIS-005, R-VIS-034, R-VIS-054, R-VIS-066, R-VIS-067, R-VIS-081, R-VIS-142, R-VIS-173, §2.15 | adapt | PIL-003 (R-VIS-034 also PIL-014; R-VIS-142 also PIL-084) | Six-mode content: Spawn Control clauses bind, other modes wait for scheduling (A0-F15) |
+| R-VIS-007 | adapt | PIL-092 | The baseline rule narrowed to adopted requirements (A0-F19) |
+| R-VIS-008 | adapt | PIL-014, PIL-027 | Pillar 5; friend-and-foe palette in battles |
+| R-VIS-009 | adopt | — | The audio binding model, as written |
+| §2.2, §2.3 | adapt | PIL-003 | One skirmish mode; B9's map set |
+| R-VIS-011, R-VIS-017, R-VIS-022, R-VIS-026, R-VIS-027 | adopt-skirmish | — | As written |
+| R-VIS-050 | adapt | PIL-085 | One tick for both forms; no game-speed change in the world |
+| §2.8 (except R-VIS-072), §2.13 | adapt | PIL-010, PIL-032, PIL-040 | World battles use the same crowd rules and verbs (A0-F14) |
+| §2.17 (except R-VIS-162, R-VIS-163) | adapt | PIL-032, PIL-085 | The same verbs in world battles (A0-F14) |
+| §2.4 to §2.7, §2.9 to §2.12, §2.14, §2.16, §2.18 (other ids) | adopt-skirmish | — | Restatements binding the skirmish summary; the world takes the owners' verdicts |
 | R-VIS-170 | adapt | PIL-005 | The main page also leads to the world game |
-| R-VIS-174 | adapt | PIL-003 | The reference tutorials are on Zone Control maps; B9 (DEC-123) and C5 decide |
+| R-VIS-174 | adapt | PIL-003 | Tutorials: B9 (DEC-123) and C5 |
 
 No dropped requirement, so no adopted requirement cites a dropped one.
 
@@ -107,33 +117,33 @@ No dropped requirement, so no adopted requirement cites a dropped one.
 
 **Proposed resolution: Resolved, option B, 2026-10-18.** The skirmish keeps the reference core loop as reference/00 states it, with no build queue and no currency (PIL-002, PIL-003; ledger: §2.1, §2.6 to §2.18 adopt-skirmish). The world game adds settlements that gather resources, store them, build and maintain structures and grow, on top of essence-driven growth in which deaths yield Essence orbs and Essence becomes new Workers (PIL-004, PIL-050 to PIL-056); a resource layer exists. B1 specifies growth through Essence (including a source that needs no death, PIL-056), B2 the resource layer, B3 construction; their ledgers of reference/05 and reference/03 carry the R-ECON and R-BLDG verdicts. Not escalated: it changes no pillar, owner decision or stage plan, and the register's own recommendation is B. The register entry is edited at Finalise, not now.
 
-## 7 Cross-area requests
+## 7 Cross-area requests (after round 1)
 
 | To | Request |
 |---|---|
-| Coordinator | Register the Table 3 terms in CONVENTIONS §8 and the glossary after gate A, with the new string-id roots in table 8-A (`battle`, `clade`, `deputy`, `expedition`, `presence`, `protection`, `region`, `relation`, `report`, `settlement`, `skirmish`, `view`, `world`); update the ledger README row of reference/00 (adopt 2, adopt-skirmish 93, adapt 17, drop 0, pending 0); resolve the gate 15 conflict (§8 below) |
-| A1 | Free settlement sites (PIL-068); the default world lifetime (PIL-067); never "season" for a world's span; travel times that make the 10-minute warning of PIL-025 possible |
-| A2 | The battle budget against `pil.battle.bodies_floor` at gate B; the tick rate for both forms (the R-VIS §2.6 row follows A2's reference/12 verdicts) |
-| B1 | A source of Essence that needs no death (PIL-056); whether the Wellspring is built on the Spawn Node; the name of the settlement's population limit; reference/05 verdicts consistent with the R-VIS §2.7 and §2.9 rows |
-| B2 | The models of PIL-022, PIL-023, PIL-028 and PIL-029 and the growth curve of PIL-055; the strength measure |
-| B4 | Battle lengths (PIL-047), the battle size (PIL-021), the triggers (PIL-041), withdrawal (PIL-048), how an expedition is simulated while it travels |
-| B5 | The causes of grievance and at least one easing that is not an attack (PIL-064); temperament; the relations model for PIL-065; truce and tribute (reserved terms); Q3 |
-| B6 | The idle threshold; the loss cap and its floor; the respite, including whether attacking ends the attacker's own respite; newcomer protection; the default orders (PIL-079); PIL-086; the scripted situations of PIL-026; the long absence (PIL-078) |
-| B7 | AI that meets PIL-025 and PIL-084 |
-| B9 | R-MODE verdicts consistent with R-VIS-011 and R-VIS-017 (adopt-skirmish) and the §2.2 adapt row; DEC-123 |
-| C1 | The world verbs (PIL-052, PIL-062); scrapping as a single-unit command (PIL-020); verb parity with skirmish (PIL-032) |
-| C2 | The main page (PIL-005, R-VIS-170 adapt); the frozen integrated world (PIL-077); the long absence (PIL-078); a row change here if DEC-047 or DEC-048 changes a hook |
-| C3 | The away report readable in 2 minutes (PIL-073); warnings; failure causes; R10, the weekly world digest |
-| C4 | A row change here if DEC-049 adds music to skirmish |
-| C5 | The tutorials (R-VIS-174 adapt) |
-| D1 | R3, the keep-running mode of the integrated client |
-| D9 | What a steward sees of a world host's action on the settlement |
+| Coordinator | Register the Table 3 terms in CONVENTIONS §8 and the glossary after gate A, with the new string-id roots (`aide`, `battle`, `clade`, `deputy`, `expedition`, `presence`, `protection`, `region`, `relation`, `report`, `settlement`, `skirmish`, `view`, `world`); update the ledger README row of reference/00 (adopt 1, adopt-skirmish 60, adapt 51, drop 0, pending 0); consider a ledger convention, computed by the gate, that a restating id takes its owner's verdict (A0-F14); if the owner confirms "clade", rename `gdd/06_races_relations_and_conflict.md` and B5's title (A0-F22); note that gdd/00 is 116.6 KB of the 120 KB limit, so a later growth splits it into a folder |
+| A1 | Free sites (PIL-068); the core's size and claims on areas outside it (PIL-120, PIL-121); travel times that meet PIL-025 and PIL-049 at both paces; the default lifetime (PIL-067); never "season" |
+| A2 | The battle budgets against 400 and 200 figures (PIL-021); one tick for both forms (PIL-085); reproducibility for replays (PIL-140) |
+| B1 | A peaceful Essence source (PIL-056); the Wellspring and the core; who collects Essence within the transfer bound (PIL-045) |
+| B2 | The models of PIL-022, PIL-023, PIL-028 (joint with B4, B5, A1), PIL-029 and PIL-057, at both paces (PIL-103); strength's weights (PIL-058); upkeep on claimed areas (PIL-121) |
+| B4 | Battle lengths and sizes (PIL-021, PIL-047); the transfer bound (PIL-045); world events and the Rogue faction (PIL-049); no game-speed outcome in a world (PIL-085) |
+| B5 | Claims and end states (PIL-120 to PIL-124); the unprovoked surcharge and heavier grievance (PIL-063); renown (PIL-125); the clade count with E2 (PIL-014); the relations models of PIL-065 and PIL-123 |
+| B6 | The levers and model of PIL-086; the minimum loss of PIL-087; dormancy (PIL-078); the idle threshold; the default orders; newcomer protection once per person (PIL-088) |
+| B7 | AI that meets PIL-025 (grievance or claim) and PIL-084 |
+| B9 | Confirm the R-VIS rows adapted to PIL-003 and the clause rule; DEC-123 |
+| C1 | World verbs including claims (PIL-062); single-unit commands (PIL-020); verb parity (PIL-032) |
+| C2 | The join page (PIL-130); the check-in entry (PIL-141); closing an integrated world (PIL-132); dormancy and return (PIL-078); renown and the epilogue (PIL-125); a row change if DEC-047 or DEC-048 changes a hook |
+| C3 | The away report with freezes (PIL-131, PIL-132), warnings, claims and replays (PIL-140); the weekly digest (R10) |
+| C4, C5 | A row change if DEC-049 adds music; the tutorials (R-VIS-174) |
+| D1 | Keeping an integrated world running (PIL-077, Q5) |
+| D4, D9 | The save record (PIL-133); dormant settlements in storage (PIL-078); replay storage (PIL-140); the trust model of community servers |
+| D5 | Identity that makes a person and a second account recognisable (PIL-088) |
 | D10 | Consent for the playtest telemetry of the guards |
-| E2 | The number of clade colours; provenance records for PIL-027 |
+| E2 | The likeness review at each art milestone (PIL-027); clade colours and the friend-and-foe palette (PIL-014) |
 
-## 8 Gate result and the one conflict
+## 8 Gate result
 
-All gates pass with `--design-phase`, with and without `--skip-mermaid`, except **gate 15**, which fails with one message: the GDD names `../rationale/A0.md`, which is not a file yet. The brief asks for the path in backticks because the rationale is written at Finalise, and creating it now is outside the files assigned to A0. The coordinator can create `Design/rationale/README.md` and a stub `A0.md`, or make gate 15 report rather than fail for a document whose status is Draft.
+After round 1: every gate passes with `--design-phase`, with and without `--skip-mermaid` (gate 4: 274 blocks, 0 failed). Gate 15 now reports, rather than fails, the rationale file that is written at Finalise. Gates 12 and 13 report the other areas' pending rows and design-phase decisions, as expected; the A0 ledger has no pending row.
 
 ## 9 Comparables behind the lessons of Table D (titles for the rationale file)
 
