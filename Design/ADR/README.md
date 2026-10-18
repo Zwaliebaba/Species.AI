@@ -79,6 +79,16 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-076](ADR-076-screenshot-encoding.md) | Screenshot encoding: the in-box Windows Imaging Component PNG encoder; video capture by external tools | Accepted | 2026-10-17 |
 | [ADR-077](ADR-077-client-http-stack.md) | Client HTTP stack: the in-box WinHTTP, HTTPS only, with operating-system certificate validation and the system proxy | Proposed | 2026-10-17 |
 | [ADR-078](ADR-078-gpu-resource-factory.md) | GPU resource factory: one creation seam for every client GPU resource | Proposed | 2026-10-18 |
+| [ADR-079](ADR-079-simulation-tick-rate.md) | Simulation tick rate: 10 ticks per second for the world and for skirmish, run as whole ticks on the server (DEC-227; design phase, A2) | Proposed | 2026-10-18 |
+| [ADR-080](ADR-080-per-tick-budgets-and-population-caps.md) | Per-tick budgets and population caps: per-figure cost budgets, reserved region bodies, per-side battle caps, a tick wall budget and named hosts (DEC-228; A2) | Proposed | 2026-10-18 |
+| [ADR-081](ADR-081-numeric-model-and-determinism-scope.md) | Simulation numeric model: strict binary64 with deterministic maths functions, a stated determinism scope and a canonical state hash (DEC-240, DEC-241, DEC-206; A2) | Proposed | 2026-10-18 |
+| [ADR-082](ADR-082-counter-based-simulation-random-draws.md) | Simulation random draws: counter-based values of a secret key, keyed by purpose, subject, tick and ordinal (DEC-242; A2) | Proposed | 2026-10-18 |
+| [ADR-083](ADR-083-server-process-ownership-and-threading.md) | Server process architecture: one headless server library, composition roots and lifetimes, state owners, region jobs, a deadline-paced tick loop and consistent cuts (DEC-221, DEC-223 to DEC-226; A2) | Proposed | 2026-10-18 |
+| [ADR-084](ADR-084-client-boundary-through-the-transport.md) | The client sees the world only through the transport: a replica, presentation events, interpolation and the prediction of one directly controlled unit (DEC-222; A2) | Proposed | 2026-10-18 |
+| [ADR-085](ADR-085-region-partitioned-world-simulation.md) | Region-partitioned world simulation: regions that step the same tick, messages between ticks, battles anchored in one region (WLD-282; A2) | Proposed | 2026-10-18 |
+| [ADR-086](ADR-086-replication-and-interest-management.md) | Replication: server-authoritative state replication with interest tiers, self-decodable datagrams, per-client caps and snapshot joins (DEC-200, DEC-201, DEC-205; A2) | Proposed | 2026-10-18 |
+| [ADR-087](ADR-087-command-path-validation-and-timing.md) | Commands: one validated path for every source, execution at the next tick in a keyed sender order, immediate control states, coalescing and rate limits (DEC-202, DEC-203; A2) | Proposed | 2026-10-18 |
+| [ADR-088](ADR-088-transport-messages-identity-and-diagnostics.md) | Transport: one interface with an in-process and a datagram implementation secured by the operating system's DTLS, schema-defined messages, player identity keys, build and content identity, and network diagnostics (DEC-204, DEC-207, DEC-208; A2) | Proposed | 2026-10-18 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

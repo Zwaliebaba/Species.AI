@@ -3,6 +3,7 @@
 
 Usage:
   python3 Tools/DesignCheck/CheckDesign.py <design root> [--write-index] [--report <file>] [--skip-mermaid]
+                                           [--design-phase] [--final]
 
 Everything the gates need beyond the design root sits beside this file: TechPatterns.tsv (technology, provenance and
 soft-flag patterns in plain text), IpDenylist.sha256 and OriginalStrings.sha256 (hashed denylists of the names and
@@ -27,8 +28,25 @@ Gates:
   10 files of 120 KB or less (assets/*.csv and assets/GameAssets.md exempt); every folder has a README.md; reference and
      component documents carry their template headings
   11 --write-index writes REQUIREMENTS_INDEX.md and requirements_index/ at the root
-Prints the per-gate table; --report also writes it, with every failure, as Markdown. Exit status 1 when any gate
-fails, 2 on a usage error.
+With --design-phase (prompts/species-design-phase.md §7), also:
+  12 adoption ledger (gdd/adoption_ledger/): every R- id of reference/ has exactly one effective verdict, the most
+     specific row winning (R- id, then the deepest § heading, then the file); scopes match, verdicts are known, adapt
+     rows name defined Species requirements, drop rows give a reason; pending rows and adopted requirements that cite a
+     dropped id with no replacement are reported
+  13 Open decisions with "Decide by: design phase" are counted and reported
+  14 GDD files carry the GDD template headings and a status line naming "Rationale:"; new components carry
+     "## 9 Scale path"
+  15 GDD files and new components name a rationale file under rationale/ that exists; every Critical or High row of a
+     rationale's findings table has a resolution
+  16 every O-number cited (outside code, big-O forms aside) has an entry in decisions/owner_decisions.md
+  17 every tuning row of a GDD file or new component has status final or provisional; provisional rows a playtest note
+  18 the rationale of every model-required area has "## Model results" naming an existing Tools/DesignModels/ script;
+     a model-required area without a rationale is reported
+  19 the hard rows of TechPatterns.tsv and the hashed IP denylist over the whole repository (the design root's parent),
+     outside .git/, node_modules/ and Tools/DesignCheck/package-lock.json, less the lines ScanAllow.tsv allows
+--final makes every reported finding a failure (and a missing ledger); it implies --design-phase.
+Prints the per-gate table; --report also writes it, with every failure and every reported finding, as Markdown. Exit
+status 1 when any gate fails, 2 on a usage error.
 """
 import argparse
 import bisect
@@ -64,7 +82,25 @@ CMP_HEADINGS = ['Responsibilities and boundaries', 'Interfaces', 'Data model', '
                 'Acceptance tests', 'Open decisions']
 GATE_NAMES = {1: 'Hard-fail patterns', 2: 'Soft-flag patterns', 3: 'Links and anchors', 4: 'Mermaid',
               5: 'Requirement ids', 6: 'DEC and ADR references', 7: 'Asset closure', 8: 'Tuning keys',
-              9: 'Truncation words', 10: 'Sizes, READMEs, templates', 11: 'Requirements index'}
+              9: 'Truncation words', 10: 'Sizes, READMEs, templates', 11: 'Requirements index',
+              12: 'Adoption ledger', 13: 'Design-phase decisions', 14: 'GDD and component templates',
+              15: 'Rationale files', 16: 'Owner decisions', 17: 'Tuning status', 18: 'Models', 19: 'Repository scan'}
+BASE_GATES = 11                # gates 12 and up run only with --design-phase
+
+# ---- design phase (prompts/species-design-phase.md §5.3, §5.4, §6 and §7)
+SCAN_ALLOW = os.path.join(HERE, 'ScanAllow.tsv')
+SCAN_EXCLUDE = ('Tools/DesignCheck/package-lock.json',)   # random base64 digests; relative to the repository root
+VERDICTS = ('adopt', 'adopt-skirmish', 'adapt', 'drop', 'pending')
+GDD_HEADINGS = [(1, 'Purpose and player experience'), (2, 'Rules'), (3, 'States and flows'), (4, 'Tuning table'),
+                (5, 'Edge cases, exploits and interactions'), (6, 'Acceptance criteria'),
+                (7, 'Adoption from the reference'), (8, 'Dependencies'), (9, 'Open decisions')]
+SCALE_PATH_HEADING = (9, 'Scale path')
+# The 12 engine components of architecture/components/README.md as the reference library left it: a file or folder
+# directly under architecture/components/. Every other component there is new and carries §9 Scale path.
+BASELINE_COMPONENTS = ('renderer', 'terrain', 'asset_pipeline_and_resources.md', 'animation_and_vfx', 'audio_engine',
+                       'ui_framework', 'input', 'camera_and_sequences.md', 'data_schemas', 'platform_layer.md',
+                       'build_tooling_and_distribution.md', 'diagnostics_test_and_performance')
+MODEL_AREAS = ('A1', 'A2', 'B2', 'B4', 'B5', 'B6')   # "model required" in §5.2
 
 TRUNC = re.compile(r'\betc\b\.?|\band so on\b|\band others\b|\bvarious\b|\bsimilar to the above\b|…', re.I)
 FENCE = re.compile(r'^[ \t]*(```|~~~)')
@@ -341,17 +377,146 @@ def anchors_of(text):
   return out
 
 
+TABLE_SEP = re.compile(r'^\|\s*:?-{3,}')
+HEADING = re.compile(r'^(#{1,6})\s+(.*?)\s*#*\s*$')
+HEADING_NUMBER = re.compile(r'^(\d+(?:\.\d+)*)\.?(?=\s|$)')
+REF_DEF = re.compile(r'\*\*(R-[A-Z]+-\d{3})\*\*')
+REF_CITE = re.compile(r'(?<![\w-])R-[A-Z]+-\d{3}(?!\d)')
+ANY_ID = re.compile(r'(?<![\w-])((?:R-)?[A-Z]{2,6})-(\d{3})(?!\d)')
+
+
+def md_tables(text):
+  """Yield (header, rows) for every Markdown table outside fenced code: header is the list of lower-case header cells,
+  rows a list of (line number, cells) after the separator row."""
+  lines = text.split('\n')
+  inside, i = False, 0
+  while i < len(lines):
+    line = lines[i]
+    if FENCE.match(line):
+      inside = not inside
+    elif not inside and line.startswith('|') and i + 1 < len(lines) and TABLE_SEP.match(lines[i + 1]):
+      head = [c.lower() for c in cells_of(line)]
+      rows, j = [], i + 2
+      while j < len(lines) and lines[j].startswith('|'):
+        rows.append((j + 1, cells_of(lines[j])))
+        j += 1
+      yield head, rows
+      i = j
+      continue
+    i += 1
+
+
+def plain(cell):
+  """A table cell without code ticks, emphasis marks and surrounding space."""
+  return re.sub(r'[`*]', '', cell).strip()
+
+
+def is_blank(cell):
+  return plain(cell) in ('', '-', '–', '—')
+
+
+def id_key(rid):
+  prefix, _, n = rid.rpartition('-')
+  return prefix, int(n)
+
+
+def id_list(rids, limit=6):
+  rids = sorted(rids, key=id_key)
+  return ', '.join(rids[:limit]) + (f' and {len(rids) - limit} more' if len(rids) > limit else '')
+
+
+def named_ids(cell):
+  """The requirement ids a table cell names (DEC and ADR ids are not requirement ids)."""
+  return [f'{p}-{n}' for p, n in ANY_ID.findall(cell) if p not in ('DEC', 'ADR')]
+
+
+def reference_requirements(texts):
+  """The R- ids defined in the reference documents: the population of the adoption ledger (gate 12).
+
+  texts maps each path relative to the design root to its text; the files under reference/ are read. Returns
+  (ids, numbers): ids maps every R- id defined there (**R-XXX-NNN**, outside code) to (file, section), where file is
+  relative to reference/ and section is the number of the nearest numbered heading that encloses the definition
+  ("2.5" for "### 2.5 Title"), or None; numbers maps every reference file to the set of its heading numbers. A ledger
+  skeleton generator that imports this function covers exactly the sections the gate resolves."""
+  ids, numbers = {}, {}
+  for f in sorted(texts):
+    if not f.startswith('reference/'):
+      continue
+    rel = f[len('reference/'):]
+    numbers[rel] = set()
+    stack = []      # (heading level, heading number or None) of the headings that enclose the current line
+    for _, line in prose_lines(texts[f]):
+      m = HEADING.match(line)
+      if m:
+        level = len(m.group(1))
+        n = HEADING_NUMBER.match(m.group(2))
+        while stack and stack[-1][0] >= level:
+          stack.pop()
+        stack.append((level, n.group(1) if n else None))
+        if n:
+          numbers[rel].add(n.group(1))
+        continue
+      for rid in REF_DEF.findall(line):
+        if rid not in ids:
+          ids[rid] = (rel, next((s for _, s in reversed(stack) if s), None))
+  return ids, numbers
+
+
+def load_scan_allow(path):
+  """ScanAllow.tsv: TAB-separated, header row, columns path (relative to the repository root, with / separators),
+  sha256 (of the exact line text without its line terminator, UTF-8) and reason. Returns ({(path, digest): row
+  number}, [problems]); a missing file is an empty allow-list."""
+  allow, problems = {}, []
+  if not os.path.exists(path):
+    return allow, problems
+  with open(path, encoding='utf-8', newline='') as fh:
+    reader = csv.DictReader(fh, delimiter='\t')
+    if [c.strip() for c in (reader.fieldnames or [])][:3] != ['path', 'sha256', 'reason']:
+      return allow, ['ScanAllow.tsv: the header row must be path, sha256, reason (TAB-separated)']
+    for n, row in enumerate(reader, 2):
+      p, d, reason = ((row.get(k) or '').strip() for k in ('path', 'sha256', 'reason'))
+      if not re.fullmatch(r'[0-9a-f]{64}', d):
+        problems.append(f'ScanAllow.tsv:{n} sha256 must be 64 lower-case hex digits (a digest, never the line)')
+      elif not p or p.startswith('/') or '\\' in p:
+        problems.append(f'ScanAllow.tsv:{n} path must be relative to the repository root, with / separators')
+      elif not reason:
+        problems.append(f'ScanAllow.tsv:{n} {p}: the reason is empty')
+      elif (p, d) in allow:
+        problems.append(f'ScanAllow.tsv:{n} {p}: the same digest is listed on row {allow[(p, d)]}')
+      else:
+        allow[(p, d)] = n
+  return allow, problems
+
+
+def line_digest(line):
+  """SHA-256 of a line's exact text without its line terminator (LF or CRLF), UTF-8."""
+  return hashlib.sha256(line[:-1].encode('utf-8') if line.endswith('\r') else line.encode('utf-8')).hexdigest()
+
+
+def iter_repo_files(repo, skip_dir=None):
+  """Every file under the repository root, outside .git/, every node_modules/ and skip_dir."""
+  for top, dirs, files in os.walk(repo):
+    dirs[:] = sorted(d for d in dirs if d not in ('.git', 'node_modules') and os.path.join(top, d) != skip_dir)
+    for f in sorted(files):
+      yield os.path.join(top, f)
+
+
 # ------------------------------------------------------------------------------------------------ the gates
 
 class Check:
-  def __init__(self, root, skip_mermaid=False, write_index=False):
+  def __init__(self, root, skip_mermaid=False, write_index=False, design_phase=False, final=False):
     self.root = os.path.abspath(root)
     self.parent = os.path.dirname(self.root)
     self.skip_mermaid = skip_mermaid
     self.write_index = write_index
+    self.design_phase = design_phase or final
+    self.final = final
     self.results = {}    # gate -> failure strings
+    self.notes = {}      # gate -> reported findings (design phase; failures with --final)
     self.info = {}       # gate -> summary
     self.skipped = set()
+    self.pattern_rows = None
+    self.hard_hits = None   # gate 1 hits, reused by gate 19 for the design root
     paths = sorted(glob.glob(os.path.join(self.root, '**', '*.md'), recursive=True))
     self.text = {}
     for p in paths:
@@ -365,6 +530,16 @@ class Check:
   def fail(self, gate, message):
     self.results.setdefault(gate, []).append(message)
 
+  def report(self, gate, message):
+    """A finding the design phase reports while it works; with --final it fails the gate."""
+    if self.final:
+      self.fail(gate, message)
+    else:
+      self.notes.setdefault(gate, []).append(message)
+
+  def gates(self):
+    return range(1, max(GATE_NAMES) + 1) if self.design_phase else range(1, BASE_GATES + 1)
+
   def run(self):
     try:
       rows = load_pattern_rows(TECH_PATTERNS)
@@ -372,6 +547,7 @@ class Check:
       rows = None
       self.fail(1, f'cannot load TechPatterns.tsv: {e}')
       self.fail(2, f'cannot load TechPatterns.tsv: {e}')
+    self.pattern_rows = rows
     self.gate_hard(rows)
     self.gate_soft(rows)
     self.gate_links()
@@ -383,6 +559,15 @@ class Check:
     self.gate_truncation()
     self.gate_files()
     self.gate_index()
+    if self.design_phase:
+      self.gate_ledger()
+      self.gate_open_decisions()
+      self.gate_species_templates()
+      self.gate_rationale()
+      self.gate_owner_decisions()
+      self.gate_tuning_status()
+      self.gate_models()
+      self.gate_repo_scan()
 
   # ---------------------------------------------------------------- gate 1
   def gate_hard(self, rows):
@@ -395,6 +580,7 @@ class Check:
       self.info[1] = 'not run'
       return
     hits = scan_tree(self.root, [r for r in rows if r.gate == 'hard'], denylist=denylist)
+    self.hard_hits = hits
     for f, ln, cls, m in hits:
       self.fail(1, f'{f}:{ln} [{cls}] {m}')
     self.info[1] = f'{len(hits)} hard-fail hits'
@@ -795,6 +981,419 @@ class Check:
     big = max(os.path.getsize(os.path.join(idx_dir, n)) for _, n, *_ in pages) // 1024 if pages else 0
     self.info[11] = f'REQUIREMENTS_INDEX.md and {len(pages)} index pages written (largest {big} KB)'
 
+  # ---------------------------------------------------------------- design phase: shared helpers
+  def gdd_files(self):
+    """The GDD documents: every file under gdd/ except README.md files and the adoption ledger."""
+    return sorted(f for f in self.text if f.startswith('gdd/') and not f.startswith('gdd/adoption_ledger/')
+                  and os.path.basename(f) != 'README.md')
+
+  def is_new_component(self, f):
+    """A file of a component under architecture/components/ that is not one of the baseline components."""
+    parts = f.split('/')
+    return (len(parts) > 2 and parts[:2] == ['architecture', 'components'] and f != 'architecture/components/README.md'
+            and parts[2] not in BASELINE_COMPONENTS)
+
+  def new_component_files(self):
+    """The template-bearing files of new components (README.md files excluded, as gate 10 excludes them)."""
+    return sorted(f for f in self.text if self.is_new_component(f) and os.path.basename(f) != 'README.md')
+
+  def header_lines(self, f):
+    """The blockquote lines at the top of a document, before its first ## heading: the status line."""
+    out = []
+    for line in self.text[f].split('\n'):
+      if line.startswith('## '):
+        break
+      if line.startswith('>'):
+        out.append(line)
+    return out
+
+  def numbered_headings(self, f):
+    """(number, title) of every ## heading of the form "## <n> <title>", outside code."""
+    return [(m.group(1), m.group(2)) for _, ln in prose_lines(self.text[f])
+            for m in [re.match(r'^##\s+(\d+)\.?\s+(.+?)\s*$', ln)] if m]
+
+  def rationale_target(self, f):
+    """The rationale file a document's status line names (relative to the design root), '' when the target is not a
+    file under rationale/, 'missing:<path>' when it is a path under rationale/ that does not exist yet, or None when
+    the status line names no rationale."""
+    m = re.search(r'Rationale:\s*(?:\[[^\]]*\]\(([^)\s]+)\)|`?([^\s`·|)]+)`?)', ' '.join(self.header_lines(f)))
+    if not m:
+      return None
+    target = (m.group(1) or m.group(2)).split('#')[0]
+    dest = os.path.normpath(os.path.join(os.path.dirname(os.path.join(self.root, f)), target))
+    if not dest.startswith(os.path.join(self.root, 'rationale') + os.sep):
+      return ''
+    if not os.path.isfile(dest):
+      return 'missing:' + self.rel(dest)
+    return self.rel(dest)
+
+  def doc_status(self, f):
+    """The first word after "Status:" in a document's status line, lower case ('' when there is none)."""
+    m = re.search(r'Status:\s*([A-Za-z]+)', ' '.join(self.header_lines(f)))
+    return m.group(1).lower() if m else ''
+
+  # ---------------------------------------------------------------- gate 12
+  def gate_ledger(self):
+    ids, numbers = reference_requirements(self.text)
+    by_file = defaultdict(list)
+    for rid, (f, _) in ids.items():
+      by_file[f].append(rid)
+    where = f'{len(ids)} R- ids ({len(set(ids.values()))} sections, {len(by_file)} reference files)'
+    if not os.path.isdir(os.path.join(self.root, 'gdd', 'adoption_ledger')):
+      if self.final:
+        self.fail(12, 'gdd/adoption_ledger/ does not exist, so no R- id has a verdict')
+      self.info[12] = f'no gdd/adoption_ledger/ yet; {where} to cover'
+      return
+    rows = []   # dicts: file, line, scope, verdict, species, note
+    ledger_files = sorted(f for f in self.text if f.startswith('gdd/adoption_ledger/')
+                          and os.path.basename(f) != 'README.md')
+    for f in ledger_files:
+      n_tables = 0
+      for head, body in md_tables(self.text[f]):
+        if not head or head[0] != 'scope' or 'verdict' not in head:
+          continue
+        n_tables += 1
+        vi = head.index('verdict')
+        si = next((i for i, h in enumerate(head) if h.startswith('species')), None)
+        ni = next((i for i, h in enumerate(head) if h.startswith('note')), None)
+        for ln, cells in body:
+          def cell(i, cells=cells):
+            return cells[i] if i is not None and i < len(cells) else ''
+          rows.append({'file': f, 'line': ln, 'scope': plain(cells[0]), 'verdict': plain(cell(vi)).lower(),
+                       'species': cell(si), 'note': cell(ni)})
+      if not n_tables:
+        self.fail(12, f'{f}: no ledger table (Scope | Verdict | Species requirements | Note)')
+    cover = defaultdict(list)   # R- id -> [(specificity, row index)]
+    for k, r in enumerate(rows):
+      loc, scope = f'{r["file"]}:{r["line"]}', r['scope']
+      m = re.fullmatch(r'(R-[A-Z]+-\d{3})|([\w./-]+\.md)(?:\s*§\s*(\d+(?:\.\d+)*))?', scope)
+      covered = []
+      if not m:
+        self.fail(12, f'{loc} scope "{scope}" is not a reference file, a file and a § heading number, or an R- id')
+      elif m.group(1):
+        covered, rank = ([m.group(1)] if m.group(1) in ids else []), 99
+      elif m.group(2) not in numbers:
+        self.fail(12, f'{loc} scope "{scope}" matches nothing: there is no reference/{m.group(2)}')
+        m = None
+      elif m.group(3) is None:
+        covered, rank = by_file[m.group(2)], 0
+      elif m.group(3) not in numbers[m.group(2)]:
+        self.fail(12, f'{loc} scope "{scope}" matches nothing: reference/{m.group(2)} has no heading {m.group(3)}')
+        m = None
+      else:
+        sec = m.group(3)
+        covered = [rid for rid in by_file[m.group(2)]
+                   if ids[rid][1] and (ids[rid][1] == sec or ids[rid][1].startswith(sec + '.'))]
+        rank = sec.count('.') + 1
+      if m and not covered:
+        self.fail(12, f'{loc} scope "{scope}" matches no R- id defined in reference/')
+      for rid in covered:
+        cover[rid].append((rank, k))
+      r['covered'] = 0
+      v = r['verdict']
+      if v not in VERDICTS:
+        self.fail(12, f'{loc} "{scope}": unknown verdict "{v}" (one of {", ".join(VERDICTS)})')
+      elif v == 'adapt':
+        named = named_ids(r['species'])
+        if not named:
+          self.fail(12, f'{loc} "{scope}": an adapt row names no Species requirement')
+        for rid in named:
+          if rid not in self.defs:
+            self.fail(12, f'{loc} "{scope}": adapt names {rid}, which is not defined')
+      elif v == 'drop' and is_blank(r['note']):
+        self.fail(12, f'{loc} "{scope}": a drop row gives no reason in its note')
+    effective, conflicts = {}, defaultdict(list)
+    for rid, cands in cover.items():
+      best = max(rank for rank, _ in cands)
+      top = tuple(sorted(k for rank, k in cands if rank == best))
+      if len(top) > 1:
+        conflicts[top].append(rid)
+      else:
+        effective[rid] = rows[top[0]]
+        rows[top[0]]['covered'] += 1
+    for top, rids in conflicts.items():
+      self.fail(12, f'{id_list(rids)}: {len(top)} rows of the same specificity give a verdict: '
+                    + ', '.join(f'{rows[k]["file"]}:{rows[k]["line"]} "{rows[k]["scope"]}"' for k in top))
+    unresolved = defaultdict(list)
+    for rid in ids:
+      if rid not in cover:
+        unresolved[ids[rid]].append(rid)
+    for (f, sec), rids in sorted(unresolved.items(), key=lambda x: (x[0][0], x[0][1] or '')):
+      self.fail(12, f'reference/{f}' + (f' §{sec}' if sec else '') + f': {len(rids)} R- ids have no verdict: '
+                    + id_list(rids))
+    n_pending = 0
+    for r in rows:
+      if r['verdict'] == 'pending':
+        n_pending += 1
+        self.report(12, f'{r["file"]}:{r["line"]} "{r["scope"]}" is pending ({r["covered"]} R- ids)')
+    n_dropped = 0
+    for rid in sorted(effective, key=id_key):
+      r = effective[rid]
+      if r['verdict'] not in ('adopt', 'adopt-skirmish'):
+        continue
+      for c in sorted(set(REF_CITE.findall(self.req_blocks.get(rid, ''))) - {rid}, key=id_key):
+        d = effective.get(c)
+        if d is not None and d['verdict'] == 'drop' and not any(x in self.defs for x in named_ids(d['species'])):
+          n_dropped += 1
+          self.report(12, f'{rid} ({r["verdict"]}) cites {c}, which {d["file"]}:{d["line"]} drops without naming a '
+                          'replacement')
+    counts = Counter(r['verdict'] for r in effective.values())
+    self.ledger_verdicts = {rid: r['verdict'] for rid, r in effective.items()}
+    self.info[12] = (f'{where}, {len(rows)} rows in {len(ledger_files)} files: '
+                     + ', '.join(f'{v} {counts[v]}' for v in VERDICTS)
+                     + f', no verdict {len(ids) - sum(counts[v] for v in VERDICTS)}; '
+                     f'{n_pending} pending rows and {n_dropped} citations of dropped ids '
+                     + ('failed' if self.final else 'reported'))
+
+  # ---------------------------------------------------------------- gate 13
+  def gate_open_decisions(self):
+    by_when, n_open = Counter(), 0
+    for f, t in sorted(self.text.items()):
+      if not f.startswith('decisions/') or os.path.basename(f) == 'README.md':
+        continue
+      lines = t.split('\n')
+      for i, line in enumerate(lines):
+        m = re.match(r'^#{2,4} (DEC-\d{3,4})\s+(.*?)\s*$', line)
+        if not m:
+          continue
+        st, when = '', None
+        for nxt in lines[i + 1:]:
+          if re.match(r'^#{1,4}\s', nxt):
+            break
+          s = re.match(r'^- \*{0,2}Status\*{0,2}:\*{0,2}\s*([A-Za-z]+)', nxt)
+          if s and not st:
+            st = s.group(1)
+          d = re.match(r'^- \*{0,2}Decide by\*{0,2}:\*{0,2}\s*(.*?)\s*$', nxt)
+          if d and when is None:
+            when = d.group(1)
+        if st != 'Open':
+          continue
+        n_open += 1
+        if (when or '').lower().startswith('design phase'):
+          by_when['design phase'] += 1
+          self.report(13, f'{f}: {m.group(1)} {m.group(2)} is Open with Decide by: {when}')
+        else:
+          by_when[when.split()[0].rstrip(',;.') if when else 'no Decide by'] += 1
+    rest = ', '.join(f'{k} {n}' for k, n in sorted(by_when.items(), key=lambda x: (-x[1], x[0]))
+                     if k != 'design phase')
+    self.info[13] = (f'{n_open} Open DECs, {by_when["design phase"]} with Decide by: design phase '
+                     + ('(failed)' if self.final else '(reported)')
+                     + (f'; {rest}' if rest else ''))
+
+  # ---------------------------------------------------------------- gate 14
+  def gate_species_templates(self):
+    gdd, comps = self.gdd_files(), self.new_component_files()
+    for f in gdd:
+      have = self.numbered_headings(f)
+      for n, h in GDD_HEADINGS:
+        if not any(num == str(n) and title.lower().startswith(h.lower()) for num, title in have):
+          self.fail(14, f'{f}: GDD template heading "## {n} {h}" missing')
+      head = self.header_lines(f)
+      if not any(re.match(r'^>\s*Status:', ln) for ln in head):
+        self.fail(14, f'{f}: no "> Status:" line')
+      elif 'Rationale:' not in ' '.join(head):
+        self.fail(14, f'{f}: the status line names no "Rationale:"')
+    n, h = SCALE_PATH_HEADING
+    for f in comps:
+      if not any(num == str(n) and title.lower().startswith(h.lower()) for num, title in self.numbered_headings(f)):
+        self.fail(14, f'{f}: new component without "## {n} {h}"')
+    if not gdd and not comps:
+      self.info[14] = ('nothing to check yet: ' + ('no GDD files' if os.path.isdir(os.path.join(self.root, 'gdd'))
+                                                   else 'no gdd/ folder') + ', no new components')
+    else:
+      self.info[14] = f'{len(gdd)} GDD files, {len(comps)} new component files checked'
+
+  # ---------------------------------------------------------------- gate 15
+  def gate_rationale(self):
+    docs = self.gdd_files() + self.new_component_files()
+    for f in docs:
+      target = self.rationale_target(f)
+      if target is None:
+        self.fail(15, f'{f}: names no rationale file (status line "Rationale: ../rationale/<area>.md")')
+      elif not target:
+        self.fail(15, f'{f}: the rationale it names is not a file under rationale/')
+      elif target.startswith('missing:'):
+        msg = f'{f}: the rationale it names, {target[8:]}, does not exist yet'
+        if self.doc_status(f) == 'final':
+          self.fail(15, msg)
+        else:
+          self.report(15, msg + ' (written when the area is finalised)')
+    rationales = sorted(f for f in self.text if f.startswith('rationale/') and os.path.basename(f) != 'README.md')
+    n_severe = 0
+    for f in rationales:
+      for head, body in md_tables(self.text[f]):
+        if 'severity' not in head:
+          continue
+        ri = next((i for i, h in enumerate(head) if h.startswith('resolution')), None)
+        if ri is None:
+          continue
+        si = head.index('severity')
+        for ln, cells in body:
+          sev = plain(cells[si]).lower() if si < len(cells) else ''
+          if sev not in ('critical', 'high'):
+            continue
+          n_severe += 1
+          if ri >= len(cells) or is_blank(cells[ri]):
+            self.fail(15, f'{f}:{ln} {plain(cells[0])} ({sev}) has no resolution')
+    if not docs and not rationales:
+      self.info[15] = 'nothing to check yet: no GDD files, no new components, no rationale files'
+    else:
+      self.info[15] = (f'{len(docs)} GDD and new component files name a rationale; {len(rationales)} rationale files, '
+                       f'{n_severe} Critical or High findings')
+
+  # ---------------------------------------------------------------- gate 16
+  def gate_owner_decisions(self):
+    path = 'decisions/owner_decisions.md'
+    entries = set()
+    for _, line in prose_lines(self.text.get(path, '')):
+      m = re.match(r'^#{2,4}\s+O(\d{1,3})\b', line)
+      if m:
+        entries.add(int(m.group(1)))
+      elif line.startswith('|'):
+        m = re.fullmatch(r'O(\d{1,3})', plain(cells_of(line)[0]))
+        if m:
+          entries.add(int(m.group(1)))
+    cited = defaultdict(list)   # number -> [file:line]
+    for f, t in self.text.items():
+      for ln, line in prose_lines(t):
+        line = re.sub(r'\bO\([^)]*\)', ' ', strip_code_spans(line))     # big-O forms: O(1), O(n log n)
+
+        def expand(m, f=f, ln=ln):
+          a, b = int(m.group(1)), int(m.group(2))
+          for n in (range(a, b + 1) if a <= b <= a + 200 else (a, b)):
+            cited[n].append(f'{f}:{ln}')
+          return ' '
+        line = re.sub(r'\bO(\d{1,3})\s*(?:–|—|-|to)\s*O(\d{1,3})\b', expand, line)
+        for n in re.findall(r'\bO(\d{1,3})\b', line):
+          cited[int(n)].append(f'{f}:{ln}')
+    if path not in self.text:
+      if cited:
+        self.fail(16, f'{path} does not exist, and {len(cited)} owner decisions are cited (first at '
+                      f'{cited[min(cited)][0]})')
+      self.info[16] = f'no {path}; {sum(len(w) for w in cited.values())} citations'
+      return
+    missing = sorted(n for n in cited if n not in entries)
+    for n in missing:
+      w = cited[n]
+      self.fail(16, f'O{n} is cited at {w[0]}' + (f' and {len(w) - 1} more places' if len(w) > 1 else '')
+                    + f', and {path} has no entry for it')
+    self.info[16] = (f'{len(entries)} owner decisions in {path}; {sum(len(w) for w in cited.values())} citations of '
+                     f'{len(cited)} of them, {len(missing)} with no entry')
+
+  # ---------------------------------------------------------------- gate 17
+  def gate_tuning_status(self):
+    files = sorted(f for f in self.text if f.startswith('gdd/') or self.is_new_component(f))
+    n_rows, by_status = 0, Counter()
+    for f in files:
+      for head, body in md_tables(self.text[f]):
+        if head[:2] != ['key', 'value']:
+          continue
+        si = next((i for i, h in enumerate(head) if h.startswith('status')), None)
+        pi = next((i for i, h in enumerate(head) if 'playtest' in h), None)
+        if si is None:
+          self.fail(17, (f'{f}:{body[0][0] - 2}' if body else f) + ' tuning table without a status column')
+          continue
+        for ln, cells in body:
+          n_rows += 1
+          key = plain(cells[0])
+          st = plain(cells[si]).lower() if si < len(cells) else ''
+          if st not in ('final', 'provisional'):
+            self.fail(17, f'{f}:{ln} {key}: status "{st}" is neither final nor provisional')
+            continue
+          by_status[st] += 1
+          if st == 'provisional' and (pi is None or pi >= len(cells) or is_blank(cells[pi])):
+            self.fail(17, f'{f}:{ln} {key}: a provisional value without a playtest note')
+    if not n_rows and not self.results.get(17):
+      self.info[17] = 'nothing to check yet: no tuning tables in GDD files or new components'
+    else:
+      self.info[17] = (f'{n_rows} tuning rows in Species documents: {by_status["final"]} final, '
+                       f'{by_status["provisional"]} provisional')
+
+  # ---------------------------------------------------------------- gate 18
+  def gate_models(self):
+    models = os.path.join(self.parent, 'Tools', 'DesignModels')
+    by_area = defaultdict(list)
+    for f in self.text:
+      if f.startswith('rationale/') and f.count('/') == 1:
+        m = re.match(r'([A-Za-z]\d{1,2})(?:[_.-]|$)', os.path.basename(f)[:-3] if f.endswith('.md') else '')
+        if m:
+          by_area[m.group(1).upper()].append(f)
+    n_ok = 0
+    for area in MODEL_AREAS:
+      if not by_area.get(area):
+        self.report(18, f'model-required area {area} has no rationale file yet')
+        continue
+      for f in sorted(by_area[area]):
+        sec = re.search(r'^##\s+(?:\d+\.?\s+)?Model results\b.*?$(.*?)(?=^## |\Z)', self.text[f], re.M | re.S)
+        if not sec:
+          self.fail(18, f'{f}: model-required area {area} has no "## Model results" section')
+          continue
+        scripts = sorted(set(re.findall(r'Tools/DesignModels/([A-Za-z0-9_]+\.py)\b', sec.group(1))))
+        if not scripts:
+          self.fail(18, f'{f}: "## Model results" names no script Tools/DesignModels/<Model>.py')
+        missing = [s for s in scripts if not os.path.isfile(os.path.join(models, s))]
+        for s in missing:
+          self.fail(18, f'{f}: "## Model results" names Tools/DesignModels/{s}, which does not exist')
+        if scripts and not missing:
+          n_ok += 1
+    have = [a for a in MODEL_AREAS if by_area.get(a)]
+    self.info[18] = (f'{len(have)} of {len(MODEL_AREAS)} model-required areas ({", ".join(MODEL_AREAS)}) have a '
+                     f'rationale, {n_ok} rationale files name an existing model'
+                     + ('; nothing to check yet' if not have else ''))
+
+  # ---------------------------------------------------------------- gate 19
+  def gate_repo_scan(self):
+    allow, problems = load_scan_allow(SCAN_ALLOW)
+    for p in problems:
+      self.fail(19, p)
+    try:
+      denylist = Denylist(load_hashes(IP_DENYLIST))
+    except OSError as e:
+      self.fail(19, f'cannot load IpDenylist.sha256: {e}')
+      denylist = None
+    if self.pattern_rows is None or denylist is None or self.hard_hits is None:
+      self.fail(19, 'not run: gate 1 did not run')
+      self.info[19] = 'not run'
+      return
+    base = os.path.basename(self.root)
+    hard = [r for r in self.pattern_rows if r.gate == 'hard']
+    hits = [(f'{base}/{f}', ln, cls, m) for f, ln, cls, m in self.hard_hits if 'node_modules' not in f.split('/')]
+    n_root, n_files = len(hits), 0
+    for path in iter_repo_files(self.parent, skip_dir=self.root):
+      rel = os.path.relpath(path, self.parent).replace(os.sep, '/')
+      if rel in SCAN_EXCLUDE:
+        continue
+      text = read_text(path)
+      if text is None:
+        continue
+      n_files += 1
+      newlines = [m.start() for m in re.finditer('\n', text)]
+      low = text.lower()
+
+      def line_of(pos, newlines=newlines):
+        return bisect.bisect_right(newlines, pos) + 1
+
+      for row in hard:
+        hits += [(rel, ln, row.cls, m) for ln, m in row.scan(text, low, line_of)]
+      hits += [(rel, ln, 'ip-denylist', phrase) for ln, phrase in denylist.scan(text)]
+    lines_of, used, n_allowed = {}, set(), 0
+    for rel, ln, cls, m in hits:
+      if rel not in lines_of:
+        lines_of[rel] = (read_text(os.path.join(self.parent, rel)) or '').split('\n')
+      lines = lines_of[rel]
+      key = (rel, line_digest(lines[ln - 1]) if ln <= len(lines) else '')
+      if key in allow:
+        used.add(key)
+        n_allowed += 1
+      else:
+        self.fail(19, f'{rel}:{ln} [{cls}] {m}')
+    for key, n in sorted(allow.items(), key=lambda x: x[1]):
+      if key not in used:
+        self.fail(19, f'ScanAllow.tsv:{n} {key[0]}: allows no hit (the line is gone or no longer matches); remove '
+                      'the row')
+    self.info[19] = (f'{len(hits)} hard-fail hits ({n_root} in {base}/, from gate 1), {n_allowed} allowed by '
+                     f'ScanAllow.tsv, {len(hits) - n_allowed} not allowed; {n_files} files outside {base}/ scanned')
+
   # ---------------------------------------------------------------- report
   def status(self, gate):
     if self.results.get(gate):
@@ -803,7 +1402,7 @@ class Check:
 
   def table(self):
     rows = []
-    for g in range(1, 12):
+    for g in self.gates():
       rows.append((g, GATE_NAMES[g], self.status(g), len(self.results.get(g, [])), self.info.get(g, '')))
     return rows
 
@@ -812,9 +1411,13 @@ class Check:
            '| Gate | Result | Failures | Summary |', '|---|---|---|---|']
     for g, name, st, n, summary in self.table():
       rep.append(f'| {g} {name} | {st} | {n} | {summary} |')
-    for g in range(1, 12):
+    for g in self.gates():
       if self.results.get(g):
         rep += ['', f'## Gate {g} {GATE_NAMES[g]}', ''] + [f'- {x}' for x in self.results[g]]
+    for g in self.gates():
+      if self.notes.get(g):
+        rep += ['', f'## Gate {g} {GATE_NAMES[g]}: reported (failures with --final)', '']
+        rep += [f'- {x}' for x in self.notes[g]]
     return '\n'.join(rep) + '\n'
 
   def failed(self):
@@ -827,11 +1430,17 @@ def main(argv=None):
   ap.add_argument('--write-index', action='store_true', help='write REQUIREMENTS_INDEX.md and requirements_index/')
   ap.add_argument('--report', help='also write the gate table and every failure to this Markdown file')
   ap.add_argument('--skip-mermaid', action='store_true', help='skip gate 4 (it fails when Mermaid is not installed)')
+  ap.add_argument('--design-phase', action='store_true',
+                  help='also run the design-phase gates 12 to 19 (prompts/species-design-phase.md §7)')
+  ap.add_argument('--final', action='store_true',
+                  help='end of the design phase: what the design-phase gates report becomes a failure (implies '
+                       '--design-phase)')
   args = ap.parse_args(argv)
   if not os.path.isdir(args.root):
     print(f'CheckDesign: {args.root} is not a directory', file=sys.stderr)
     return 2
-  check = Check(args.root, skip_mermaid=args.skip_mermaid, write_index=args.write_index)
+  check = Check(args.root, skip_mermaid=args.skip_mermaid, write_index=args.write_index,
+                design_phase=args.design_phase, final=args.final)
   check.run()
   if args.report:
     with open(args.report, 'w', encoding='utf-8', newline='\n') as fh:

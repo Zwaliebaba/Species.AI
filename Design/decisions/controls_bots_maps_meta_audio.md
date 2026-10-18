@@ -21,7 +21,7 @@ This file holds the decisions on controls and powers, bots, maps and level data,
 | [DEC-559](#dec-559-bot-module-structure) | Bot module structure | Open | R-BOT |
 | [DEC-560](#dec-560-start-positions-are-typed-map-records) | Start positions are typed map records | Resolved | R-MAP, DAT, CAM, R-MODE |
 | [DEC-561](#dec-561-per-mode-map-validation) | Per-mode map validation | Resolved | R-MAP, R-BLDG, DAT, BLD |
-| [DEC-562](#dec-562-map-lighting-and-weather-presets) | Map lighting and weather presets | Open | R-MAP, RND, VFX, DAT |
+| [DEC-562](#dec-562-map-lighting-and-weather-presets) | Map lighting and weather presets | Resolved | R-MAP, RND, VFX, DAT |
 | [DEC-563](#dec-563-map-thumbnails-and-the-map-index-are-content-build-outputs) | Map thumbnails and the map index are content-build outputs | Resolved | R-MAP, R-META, AST, BLD |
 | [DEC-564](#dec-564-laser-fire-is-audible-and-selection-sounds-stay-local) | Laser fire is audible, and selection sounds stay local | Resolved | R-AUD, R-CTRL |
 | [DEC-565](#dec-565-sounds-for-the-other-silent-gameplay-events) | Sounds for the other silent gameplay events | Open | R-AUD |
@@ -139,12 +139,12 @@ This file holds the decisions on controls and powers, bots, maps and level data,
 - Recommendation: A. These are the per-mode conventions of the reference maps; checking them stops a broken map from reaching players under either editor option of DEC-045. Schema validation of content in general is DEC-015.
 
 ### DEC-562 Map lighting and weather presets
-- Status: Open
+- Status: Resolved
 - Affects: reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP), architecture/components/renderer/view_lighting_and_fog.md (RND), architecture/components/animation_and_vfx/ (VFX), architecture/components/data_schemas/ (DAT)
 - Specified behaviour: Each map lists its lights with raw colour multipliers; every reference map uses exactly two directional lights, and a map may override the key light. A map switches its weather effects one by one: snow, lightning strikes, dust vortices and Essence-orb rain.
 - Options: A — the reference per-map values; B — named presets: a lighting preset (two directional lights and an optional key-light override) and a weather preset, each a named set of the same parameters, which a map selects and may override value by value.
 - Recommendation: B. Presets keep the two-light look consistent across newly authored maps (DEC-063) and make the visual language easy to hold (vision O9). Weather that affects play, lightning strikes and dust vortices, stays an explicit setting of the map rather than a side effect of a look preset.
-- Decide by: design phase
+- Resolution (2026-10-18, design phase, area A1): option B. Lighting comes from named presets of two directional lights in the key-and-fill pattern, and weather from named weather presets; a skirmish map selects presets by name and may override any value, a map without a preset name takes the first of the catalogue, and an effect that changes play stays an explicit flag of the map (WLD-183, WLD-267). In a world, a biome selects its presets and weather is presentation only: lightning strikes and dust vortices never act in a world in v1 (WLD-184). Specified in [terrain, time and views](../gdd/01_world_and_regions/terrain_time_and_views.md) §2.2 and [skirmish maps and map tools](../gdd/01_world_and_regions/skirmish_maps_and_map_tools.md) §2.
 
 ### DEC-563 Map thumbnails and the map index are content-build outputs
 - Status: Resolved

@@ -24,7 +24,7 @@ This file records the open questions of the reference library: behaviours whose 
 | [DEC-312](#dec-312-bot-decisions-and-node-recounts-within-a-tick) | Bot decisions and node recounts within a tick | Open | R-BOT, R-SIM |
 | [DEC-313](#dec-313-dead-airborne-actors) | Dead airborne actors | Open | R-SIM, R-UNIT |
 | [DEC-314](#dec-314-map-list-order-under-ties) | Map list order under ties | Open | R-META, R-MAP |
-| [DEC-315](#dec-315-level-design-patterns-of-the-reference-maps) | Level-design patterns of the reference maps | Open | R-MAP, R-MODE |
+| [DEC-315](#dec-315-level-design-patterns-of-the-reference-maps) | Level-design patterns of the reference maps | Resolved | R-MAP, R-MODE |
 | [DEC-316](#dec-316-front-end-text-blend-and-page-transition) | Front-end text blend and page transition | Open | UI, RND |
 | [DEC-317](#dec-317-voice-set-language) | Voice set language | Open | R-AUD, R-META |
 | [DEC-318](#dec-318-sound-triggers-tied-to-the-frame-rate) | Sound triggers tied to the frame rate | Open | R-AUD, AEN |
@@ -33,7 +33,7 @@ This file records the open questions of the reference library: behaviours whose 
 | [DEC-321](#dec-321-attached-sounds-when-their-emitter-is-removed) | Attached sounds when their emitter is removed | Open | R-AUD, AEN |
 | [DEC-322](#dec-322-start-value-of-smoothed-sound-parameters) | Start value of smoothed sound parameters | Open | R-AUD, AEN |
 | [DEC-323](#dec-323-loop-keep-alive-polling) | Loop keep-alive polling | Resolved | R-AUD, AEN, R-MODE |
-| [DEC-324](#dec-324-terrain-generator-parameter-semantics-and-biases) | Terrain generator parameter semantics and biases | Open | TER, R-MAP |
+| [DEC-324](#dec-324-terrain-generator-parameter-semantics-and-biases) | Terrain generator parameter semantics and biases | Resolved | TER, R-MAP |
 | [DEC-325](#dec-325-light-direction-and-the-camera-transform) | Light direction and the camera transform | Open | RND |
 | [DEC-326](#dec-326-terrain-grid-overlay) | Terrain grid overlay | Open | RND, TER |
 | [DEC-327](#dec-327-structure-render-detail-variants) | Structure render-detail variants | Open | RND, R-BLDG |
@@ -184,12 +184,12 @@ This file records the open questions of the reference library: behaviours whose 
 - Decide by: design phase
 
 ### DEC-315 Level-design patterns of the reference maps
-- Status: Open
+- Status: Resolved
 - Affects: reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP), reference/01_skirmish_rules_and_modes/zone_control.md (R-MODE), reference/01_skirmish_rules_and_modes/relic_run.md (R-MODE)
 - Specified behaviour: Reference maps use these patterns, whose design intent is not recorded: concentric Control Zones in Zone Control; duplicate Relic Spawn Zones in Relic Run; Zone Control maps whose Control Zones start owned by a team; key and fill pairs of map lights; and twin terrains, where two maps are built on one terrain. The map schema and the rules accept each of them.
 - Options: A — every pattern is a supported level-design tool: the map schema and the per-mode validation rules accept each, and reference/08 documents it for map authors; B — validation rejects the patterns whose effect is unclear: concentric Control Zones, pre-owned Control Zones and duplicate Relic Spawn Zones.
 - Recommendation: A. Confirm each pattern's effect on play when the first Species maps that use it are playtested.
-- Decide by: design phase
+- Resolution (2026-10-18, design phase, area A1): option A. Every level-design pattern of the reference maps (concentric Control Zones, duplicate Relic Spawn Zones, Control Zones owned at load, key and fill lights, twin terrains) is a tool that the map schema and the per-mode validation accept; B9's playtests confirm the effect on play of each pattern that a Species skirmish map uses (WLD-269). Specified in [skirmish maps and map tools](../gdd/01_world_and_regions/skirmish_maps_and_map_tools.md) §2.
 
 ### DEC-316 Front-end text blend and page transition
 - Status: Open
@@ -259,12 +259,12 @@ This file records the open questions of the reference library: behaviours whose 
 ## 8 Terrain, rendering, effects and assets
 
 ### DEC-324 Terrain generator parameter semantics and biases
-- Status: Open
+- Status: Resolved
 - Affects: architecture/components/terrain/ (TER), reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP), reference/08_maps_and_level_design/map_editor_hooks.md (R-MAP)
 - Specified behaviour: The terrain generator's arithmetic is kept (DEC-025). Two of its properties are inferred from the formulas, not from recorded intent: the roughness parameter acts as an exponent, larger values giving smoother terrain, and the gain modifiers approximately normalise amplitude across the generator's shape parameters. Two are arithmetic facts whose deliberate use is unknown: generation method 2 never chooses two of its directions and almost never chooses two others, and the smooth flatten type divides a sum of five terms by six.
 - Options: A — keep the arithmetic exactly, biases included; B — keep A, and also offer unbiased variants of generation method 2 and of the smooth flatten type in the map editor; C — replace the biased forms with unbiased ones.
 - Recommendation: B. The biased forms keep the reference look for terrains that are meant to match it, and new maps can use the unbiased variants.
-- Decide by: design phase
+- Resolution (2026-10-18, design phase, area A1): option B, extended. The generator keeps methods 0 to 2 and flatten types 0 to 4 exactly, biases included, so the conformance vectors hold, and adds three variants for skirmish maps and the world generator: generation method 3, method 2 with a uniform choice of parent; flatten type 5, the smooth type divided by five; and flatten type 6, a feathered level square that blends to the existing height across its threshold band (WLD-268). The world generator uses method 3, type 5 and type 6 for site cores, valley centres and crossing bridges (WLD-162); the parameter semantics are stated for authors as TER-106 states them. D8 amends the terrain component for the three variants. Specified in [skirmish maps and map tools](../gdd/01_world_and_regions/skirmish_maps_and_map_tools.md) §2 and [terrain, time and views](../gdd/01_world_and_regions/terrain_time_and_views.md) §2.1.
 
 ### DEC-325 Light direction and the camera transform
 - Status: Open

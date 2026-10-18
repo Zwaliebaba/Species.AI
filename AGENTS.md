@@ -164,7 +164,7 @@ The concrete layout — the solution, the projects and the edges between them �
 
 **Filters are functional.** A `.filters` file groups a project by what the code *does* — `Rendering`, `Audio`, `Input`, `Shader` — never by what kind of file it is. The Visual Studio defaults `Source Files`, `Header Files` and `Resource Files` are deleted when a project is created and never come back, and a `.h` sits in the same filter as its `.cpp`.
 
-**There are no vendored SDKs and no package manager beyond NuGet restore.** The game's projects depend on the Windows SDK, the MSVC standard library and the three Microsoft packages R14 allows, which NuGet restores into `packages/` at build time; restored packages are build output and are never committed. See R14.
+**There are no vendored SDKs and no package manager beyond NuGet restore.** The game's projects depend on the Windows SDK, the MSVC standard library and the four Microsoft packages R14 allows, which NuGet restores into `packages/` at build time; restored packages are build output and are never committed. See R14.
 
 **Development tools are projects of the one solution, under `Tools/`.** C++ development tools that never ship — the content build tool and its importers — are projects in `Tools/<Project>/`, in a `Tools` solution folder of the one solution at the repository root, so they build with the same `$(SolutionDir)` paths as everything else and may reference the engine projects they share code with. They follow every rule in this file except R14: a tool project may use pinned third-party code (for example a BC7 texture encoder), each dependency recorded in an ADR with its licence and restored by NuGet for that project only. The edge runs one way: no game or engine project references a tool project or a tool-only package, and nothing from a tool project links into the executable. `Build/CheckProjectFiles.py` checks both.
 
@@ -237,13 +237,14 @@ python Build\RunClangTidy.py          # needs a Developer PowerShell (INCLUDE mu
 
 **R12 — Graphics is Direct3D 12**, through the DirectX Agility SDK (R14). COM lifetimes are RAII from the first line — a raw `AddRef`/`Release` pair in new code is a defect, not a style. How the renderer is shaped — passes, render targets, resolution, scaling, window style, multisampling, text — is decided in the baseline ADRs (`Design/ADR/`, ADR-001 to ADR-016) and specified in `Design/architecture/components/renderer/`; a change to it is a new or amended ADR (§6).
 
-**R14 — No third-party dependencies and no package manager, except three Microsoft packages.** The executable is built from the Windows SDK, the MSVC standard library and this allow-list, and nothing else:
+**R14 — No third-party dependencies and no package manager, except four Microsoft packages.** The executable is built from the Windows SDK, the MSVC standard library and this allow-list, and nothing else:
 
 | Package (NuGet) | What it provides | Why it is allowed |
 |---|---|---|
 | `Microsoft.Direct3D.D3D12` (DirectX Agility SDK) | the current Direct3D 12 runtime (`D3D12Core.dll`, installed beside the executable) and its headers | one, current Direct3D 12 runtime on every supported Windows build (ADR-001) |
 | `Microsoft.GameInput` | the GameInput header, library and the `GameInputRedist.msi` the installer runs | the supported controller API and its updated runtime (ADR-028) |
 | `WinPixEventRuntime` | `pix3.h` and `WinPixEventRuntime.dll` | PIX markers and captures (ADR-068) |
+| `Microsoft.Native.Quic.MsQuic.Schannel` (MsQuic) | the MsQuic API header and `msquic.dll`, installed beside the executable, on the operating system's Schannel TLS 1.3; MIT, its licence notice shipped with it | the client–server transport: reliable streams, unreliable datagrams and TLS 1.3, with no protocol of Species' own (owner decision O44, ADR-088) |
 
 The pinned versions are in the technology baseline of `Design/ADR/README.md`. If you believe anything else is unavoidable, propose it in your report with what it buys and what it costs — do not add it. This is a closed list, not a high bar; adding to it is an owner decision recorded as an ADR.
 

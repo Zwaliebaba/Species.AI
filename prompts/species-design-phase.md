@@ -126,7 +126,7 @@ Design/
 │   ├── 03_resources_and_economy.md
 │   ├── 04_building_and_construction.md
 │   ├── 05_units_combat_and_battles.md
-│   ├── 06_races_relations_and_conflict.md
+│   ├── 06_cladans_relations_and_conflict.md
 │   ├── 07_deputy_standing_orders_and_afk_play.md
 │   ├── 08_ai_settlements.md
 │   ├── 09_progression_hooks.md
@@ -180,7 +180,7 @@ Tools/DesignModels/                   quantitative models with a README (kept fo
 | B2 | B | `gdd/03` | Resource types, gathering, storage, upkeep and sinks; exchange between settlements (if any); the **abstract economy model** for settlements nobody is watching (O3), with its accuracy target and its calibration against the full simulation; anti-snowball rules | B1 | economy flows: growth curves, snowballing, AFK yield versus active yield, the abstract-versus-full gap |
 | B3 | B | `gdd/04` | Building and construction: what can be built, builders, queues, placement, upkeep, damage and repair; adapts the reference buildings and defences | B1, B2 | — |
 | B4 | B | `gdd/05` | Units, combat and battles: adopts the reference crowd combat, units, creatures, weapons and powers; the battle lifecycle in the world (trigger, battlefield bounds, attacker and defender, reinforcements, end conditions, retreat); battles always fully simulated (O3); supply crates as world events or dropped | B1, B3 | battle cost: bodies, duration and CPU per battle; concurrent battles per server |
-| B5 | B | `gdd/06` | Races and relations: symmetric races (O7); the anger and grievance model and its legibility; declaring and costing attacks; truce, tribute or alliance (if any); AI personalities | A0, B2 | relations dynamics: does the world settle into permanent war, or into permanent peace? |
+| B5 | B | `gdd/06` | Cladans and relations: symmetric Cladans (O7, O32); the anger and grievance model and its legibility; declaring and costing attacks; truce, tribute or alliance (if any); AI personalities | A0, B2 | relations dynamics: does the world settle into permanent war, or into permanent peace? |
 | B6 | B | `gdd/07` | AFK play: the deputy and its standing-order language (priorities, limits, retaliation rules, what it must never do); the report of "what happened while you were away"; **protection rules** (O2): loss caps, shields, attack cost, defender's advantage, new-player protection; check-in in the client with an API-ready server (O6) | B2, B4, B5 | protection balance: attacker incentive versus AFK loss, at different online ratios and time zones |
 | B7 | B | `gdd/08` | AI settlements: one AI with three roles (AI races, the deputy, an assistant for the present player); adapts the reference bot; **fog of war for AI** (the same information rules as players); difficulty and personalities; per-AI budget | B5, B6 | — |
 | B8 | B | `gdd/09` | Progression hooks (O11): the stat and modifier system, unit specialisation, and placeholders for research and training; per-race modifiers later (O7) | B1, B4 | — |
@@ -210,7 +210,7 @@ Waves B and D overlap: D areas start once their dependencies are Final, and the 
 
 The ledger says, for every reference requirement, what Species does with it. It works **section by section**: one row covers every requirement under a heading of a reference document, and an exception row covers a single requirement that differs from its section. A per-requirement ledger of nearly 3,000 rows would be rubber-stamped, and it would also exceed the size limit.
 
-**Files.** `DESIGN/gdd/adoption_ledger/README.md` holds the totals per verdict and per document. There is one file per reference document (`00_reference_overview.md` … `12_simulation_model.md`), each a table:
+**Files.** `DESIGN/gdd/adoption_ledger/README.md` holds the totals per verdict and per document. There is one file per reference document (`00_reference_overview_ledger.md` … `12_simulation_model_ledger.md`), each a table:
 
 | Scope | Verdict | Species requirements | Note |
 |---|---|---|---|

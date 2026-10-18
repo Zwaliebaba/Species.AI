@@ -2,7 +2,7 @@
 
 > Status: Reference · Glossary · Related: [Conventions](../CONVENTIONS.md), [Decision index](../decisions/README.md), [ADR index](../ADR/README.md)
 
-The glossary defines the Species terms that the reference library uses: player concepts, engine terms, data terms and abbreviations. It names only Species terms, and it holds no term for content that the library does not specify. Each definition is short; the linked owning document holds the full specification, with its requirements, tuning keys, states and edge cases.
+The glossary defines the Species terms that the reference library uses, and the terms of the Species world game that [Vision, pillars and core loops](../gdd/00_vision_pillars_and_core_loops.md) and [World and regions](../gdd/01_world_and_regions/README.md) define (CONVENTIONS §8.15): player concepts, engine terms, data terms and abbreviations. It names only Species terms, and it holds no term for content that the library does not specify. Each definition is short; the linked owning document holds the full specification, with its requirements, tuning keys, states and edge cases.
 
 ## Files
 
