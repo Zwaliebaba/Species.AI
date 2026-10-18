@@ -49,3 +49,18 @@ Write a second table (`# | orig_file:line | classification | library location | 
 ## R4 — Consistency
 
 **Read `design_next/` without ORIG** and cross-check: names across documents (CONVENTIONS §8 against every use, including C++ identifiers in the sketches and the `Engine`/`Species` layer of each); tuning values used in more than one document (a value cited under a key must equal the key's table value); tick-rate and timer statements (10 ticks per second; durations in ticks, seconds only derived); cap formulas (population cap, Transport cap; DEC-079, DEC-120); the mode list and per-mode options; asset ids cited against `assets/asset_manifest.csv` (role and format consistent with the citing rule); ADR statuses cited against the ADR files; the owner decisions O1–O28 against the documents that implement them; and conformance of every C++ sketch with `AGENTS.md` §1 (naming, R2 affixes, R9 layer, R11 American spelling in identifiers) and §2 (shader file names). Start from these known leads (RES-2 report §6, X-AST-2b report): types declared twice (`EffectKind`, `ParamKind` against `SoundParamKind`, `InputMode`, `CameraTransition`, `RoutePointKind` `GroundPosition` against `Ground`, the texture enumerations and import records of the asset pipeline and the data schemas, `SourceLocation`); game-named fields in engine aggregates (`RenderSettings::workerScaleFactor`, `structureDetail`, `SoakEntry::botTeams`); three sketches not in the `.clang-format` layout (`audio_engine/README.md`, `asset_pipeline_and_resources.md`, `particles_shatter_and_screen_effects.md`); the string ids `ui.dialog.sound_settings_failed` and `match.kill_milestone`, cited by no document.
+
+---
+
+## Split of R2, R3 and R4 (coordinator, 2026-10-18)
+
+The library is 7.8 MB without the generated `requirements_index/`, too much for one reviewer to read in depth. R2, R3 and R4 are each split in two; each half writes its own review file (`R2a.md`, `R2b.md`, and so on), follows its section above and reads only its scope (other files only to resolve a reference). `requirements_index/` is generated and out of every scope.
+
+| ID | Scope |
+|---|---|
+| R2a | `design_next/reference/`, `glossary/`, `CONVENTIONS.md`, `README.md`, `REQUIREMENTS_INDEX.md` |
+| R2b | `design_next/architecture/`, `ADR/`, `decisions/`, `assets/`; `AGENTS.md`, `CLAUDE.md`, `vision/`, `prompts/species-design-phase.md`, `Tools/DesignCheck/README.md`, `Tools/DesignModels/README.md` |
+| R3a | every reference document (`design_next/reference/`), with the glossary and CONVENTIONS as the definitions it may rely on |
+| R3b | every engine component (`design_next/architecture/components/`), with `ADR/` and `AGENTS.md` |
+| R4a | names and code: CONVENTIONS §8 against every use, the `Engine`/`Species` layer of each identifier, duplicate declarations, game-named engine fields, C++ sketch conformance with `AGENTS.md` §1 and §2 and the `.clang-format` layout, and the RES-2 §6 leads |
+| R4b | numbers and references: tuning values cited in more than one document, tick-rate and timer statements, the cap formulas (DEC-079, DEC-120), the mode list and per-mode options, asset ids against the manifest (including the two uncited string ids), ADR statuses as cited, and O1–O28 against the documents that implement them |
