@@ -4,11 +4,11 @@ date: 2026-10-18
 decision-makers: Species technology lead (owner gate B); proposed by design-phase area A2
 ---
 
-# Per-tick budgets and population caps: per-figure cost budgets, a region step budget, hard caps and named host specifications
+# Per-tick budgets and population caps: per-figure cost budgets, reserved region bodies, per-side battle caps, a tick wall budget and named hosts
 
 ## Context and Problem Statement
 
-The reference has no per-tick CPU budget and no engine population limit (DEC-228); its design population is 2,000 units per map and its stress population 4,000 (DBG-204), with a client guidance of 4.2 ms per tick at the design population on the reference test machine (DBG-205, DEC-971). Species runs a server that simulates every battle in full whether anyone watches it (O3), a world of up to 16 stewards on the host's own machine in stage 1 (O10, O40) and up to 200 on hosted servers in stage 3 (O1, O5). Area A1 hands over the load: 26 settlements in 8 regions at 16 stewards and 256 in 77 at 200; up to 16 and 177 settlements watched at the evening peak; 4 battles in progress at 16 (6 at the session pace) and 16 at 200 in the planning case, and up to 8 (12) and 28 in the stress case (WLD-280, WLD-284); and it asks for the region body budget (WLD-281) and the battle caps (WLD-285). Pillar 1 needs battles of 400 figures and is at risk below 200 (PIL-021).
+The reference has no per-tick CPU budget and no engine population limit (DEC-228); its design population is 2,000 units per map and its stress population 4,000 (DBG-204), with a client guidance of 4.2 ms per tick at the design population on the reference test machine (DBG-205, DEC-971), which DBG-205 lets the design phase read as the cost of a whole tick or as the share of one frame. Species runs a server that simulates every battle in full whether anyone watches it (O3), a world of up to 16 stewards on the host's own machine in stage 1 (O10, O40) and up to 200 on hosted servers in stage 3 (O1, O5). Area A1 hands over the load: 26 settlements in 8 regions at 16 stewards and 256 in 77 at 200; up to 16 and 177 settlements watched at the evening peak; 4 battles in progress at 16 (6 at the session pace) and 16 at 200 in the planning case, and up to 8 (12) and 28 in the stress case (WLD-280, WLD-284); and it asks for the region body budget (WLD-281) and the battle caps (WLD-285). Pillar 1 needs battles of 400 figures and is at risk below 200 (PIL-021); pillar 6 rules out an unassailable settlement (O31, PIL-015).
 
 What does a tick cost, what limits keep it within budget, and on what hardware?
 
@@ -16,54 +16,67 @@ What does a tick cost, what limits keep it within budget, and on what hardware?
 
 * A budget that can fail a test: per system, on a named machine, at a named population (DBG-205).
 * The integrated host runs the server beside its own client at 60 frames per second (RND-454, DEC-228 item 6).
-* Community hosts are small machines (O5); hosted worlds of 200 must not need a rewrite (O1).
-* Pillar 1's battle sizes (PIL-021) and pillar 6's waiting attacks (WLD-285).
-* Caps that never make an outcome depend on host hardware (DEC-228 option C rejected).
+* A margin that survives the measurement of costs that are only targets today.
+* Caps that neither a rival nor a defender can turn into a weapon (O2, O31).
+* Battles are the last thing to shrink (PIL-021).
 
 ## Considered Options
 
 * A — a client-derived budget: at most 25 % of a 16.7 ms frame per tick at 2,000 units on minimum specification, with the server budget per region derived from it
 * B — a server-first budget: fixed milliseconds per region step on a stated host, with the client budget derived from it
-* A and B together, with hard engine caps and per-figure cost budgets
+* A and B together, with hard engine caps, per-figure cost budgets and a tick wall budget on named hosts
 * C — no hard budget; population limited dynamically by measured cost
 
 ## Decision Outcome
 
-Proposed option: "A and B together, with hard engine caps and per-figure cost budgets". **Default while Proposed:** the decision below; its figures come from `Tools/DesignModels/A2ServerBudget.py`, which computes them from the cost budgets and A1's load, and are computed, not measured.
+Proposed option: "A and B together, with hard engine caps, per-figure cost budgets and a tick wall budget on named hosts". **Default while Proposed:** the decision below; its figures come from `Tools/DesignModels/A2ServerBudget.py` and are computed, not measured.
 
-1. **Reference core.** Every CPU budget is stated in time on one core of the reference test machine (DEC-971). A vCPU of a rented host counts as 0.6 reference cores until measured.
-2. **Cost budgets per object per tick**, which the implementation meets and the simulation-core milestone measures:
+1. **Reference core.** Every CPU budget is stated in time on one core of the reference test machine (DEC-971). A vCPU of a rented host counts as 0.6 reference cores until measured, and every host figure is also given at 0.4 and 1.0.
+2. **Cost budgets per object per tick**, which the implementation meets and the simulation-core milestone measures first:
 
    | Object | Budget, µs per tick | Basis |
    |---|---|---|
-   | figure in a battle (search, combat movement, laser bolts, Essence orbs) | 2.1 | the DBG-205 guidance: 4.2 ms per tick at 2,000 units |
+   | figure in a battle (search, combat movement, laser bolts, Essence orbs) | 2.1 | DBG-205 read as the cost of a whole tick: 4.2 ms per tick at 2,000 units. Read as one frame's share of a tick of six frames, it is 12.6 µs, 6 times more; the model shows that multiple |
    | Worker or Leader at settlement work (gathering, carrying, construction, guard duty) | 1.2 | the same search stagger without combat |
    | figure of an expedition outside a battle | 0.4 | route and formation following only |
+   | a body's stamp of its settlement's seen layer (D9) | 0.5 per update | every tick in a battle, every 5 ticks otherwise |
+   | a keyed simulation draw (ADR-082) | 0.03 | SipHash-2-4 over 40 bytes; 3 per battle figure, 0.1 per Worker at work, 3 per Essence orb, per tick |
    | settlement at abstract fidelity | 5 | one abstract step of 50 µs every 10 ticks (ADR-079) |
-   | AI settlement or deputy | 20 | one 1 ms decision pass every 50 ticks |
+   | AI settlement or deputy | 20 | one 1 ms decision pass every 50 ticks; the model shows 100 and 200 |
    | command of one side of a battle | 30 | |
-   | region fixed cost (grids, messages, the seen-layer summary of WLD-243) | 30 | |
+   | a figure materialised when its settlement turns full fidelity | 2 | at most once per settlement in 60 s (ADR-085 item 6) |
+   | region fixed cost (grids, messages) | 30 | |
 
-3. **Region step budget.** One region's step takes at most 10 ms on one reference core. The **region body budget** is 4,000 bodies, the stress population of DBG-204, at which a region whose every body fights costs 8.43 ms. The settlements of a region take at most 75 % of it (WLD-281): 3,000 bodies, so the population limit that B1 sets at the plateau is at most 750 Workers and Leaders per settlement for four settlements per region; A1's placeholder of 600 takes 60 %.
-4. **Battle size.** A battle has at most 1,000 figures of both sides together, 2.5 times the typical 400 of PIL-021; B4's reinforcement rules keep a battle inside it, and an expedition that would take a battle above it waits at the battlefield's edge. A battle of 400 costs 0.91 ms per tick, one of 1,000 2.18 ms, one of the floor's 200 0.48 ms.
-5. **Battle caps** (WLD-285): at most 2 battles in progress per region, and at most max(8, ⌈0.1 × the settlements at full occupancy⌉) per world: 8 at 16 stewards and 26 at 200. A1 recommended a world minimum of 4; at 8 the model's share of the evening peak at the cap falls from 4 % to 0 % in the planning case and from 23 % to 3 % in the stress case at the always-on pace, and from 11 % to 0 % and from 37 % to 8 % at the session pace, for 3.6 ms more per tick.
-6. **Tick wall budget.** The whole of a tick (every region step in parallel, the world owner's step, replication and persistence) finishes within 50 % of the tick period, 50 ms, on the host's hardware; ADR-083 states what happens on an overrun.
-7. **Integrated server budget.** The integrated server uses at most 1 reference core averaged over 10 s, on its tick thread and at most 2 worker threads, on the reference test machine, so the client keeps RND-454's 60 frames per second. The model's worst case for 16 stewards, every steward present with every settlement watched and 8 battles, is 0.28 reference cores.
-8. **Host specifications** for gate B: a community server of 16 stewards (stage 2) runs on 2 vCPU (1.2 reference cores), 1 GB of memory for the server and 10 Mbit/s of upload; a hosted world of 200 (stage 3) runs on 8 vCPU (4.8 reference cores), 2 GB and 50 Mbit/s. At the cost budgets the model's stress cases take 0.28 reference cores at 16 stewards (24 % of the community host) and 1.67 at 200 (35 % of the stage-3 host).
-9. **Caps are hard and never drop a body.** A region at its body budget refuses growth (Essence waits at the Wellspring until bodies fall below it); a settlement at its population limit grows no further (B1); a battle at its size waits reinforcements at the edge; an attack beyond a battle cap waits at its gate (WLD-285); a client over its bandwidth cap is sent fewer full-rate figures (ADR-086). No cap removes, teleports or kills a figure, and every cap is a tuning value of the component that enforces it (D2, D3).
-10. **Stress populations.** A region stress test runs 4,000 bodies in one region (four settlements at the population limit and two battles of 500 attackers); the world stress tests are A1's stress cases on the hosts of item 8 (26 battles in progress at 200, 8 at 16) and the integrated case of item 7; the client keeps the 4,000-unit stress map of DBG-204 and RND-456.
+3. **Reserved region bodies.** A settlement's population limit L, which B1 sets, is at most 600 Workers and Leaders. Each of a region's four sites reserves L inside the region's body budget, so a settlement's growth is bounded only by its own limit, never by visitors. Figures of settlements of other regions (visitors) use only the rest, two battles' visiting sides: the region body budget is 4L + 2S = 3,600 bodies at L = S = 600, of which the settlements take 67 % (WLD-281's 75 % holds). An expedition that would take a region's visitors above 2S waits at the region border on its own side, inside its own region. The **region step budget** is 12.5 ms on one reference core; the bound of a region under the caps (two battles at the side cap at two of its settlements, the other two settlements at work) is 8.05 ms, a headroom of 1.55 times, so a measured cost 25 % above the budgets still fits (10.06 ms). The bound allows L up to 700 at that tolerance; 600 keeps the margin.
+4. **Battle size per side.** At most S = 600 figures of one side are inside a battlefield (every figure of the side within the bounds; B4 specifies the counting), so a battle has at most 1,200 figures. With S equal to L, a settlement at its population limit can always be met by an equal force; the defender's advantage is B6's balance, never a cap. A figure that would exceed its side's cap waits at the battlefield's edge, inside its own region's visitor share. A battle of 400 costs 1.15 ms per tick, one of 1,200 3.32 ms, one of the floor's 200 0.60 ms.
+5. **Battle caps** (WLD-285): at most 2 battles in progress per region, and at most max(8, ⌈0.1 × the settlements at full occupancy⌉) per world: 8 at 16 stewards and 26 at 200. A1 recommended a world minimum of 4; at 8 the share of the evening peak at the cap falls from 4 % to 0 % in the planning case and from 23 % to 3 % in the stress case at the always-on pace, and from 11 % to 0 % and from 37 % to 8 % at the session pace, for up to 4.6 ms more per tick.
+6. **Tick wall budget.** The whole of a tick (every region step as a single-threaded job, scheduled longest first over the host's worker threads; the world owner's step after them; replication jobs; the copy of a consistent cut, ADR-083 item 9) finishes within 50 ms, half the tick period, on the host's hardware; 100 ms is the deadline beyond which owed ticks accumulate (ADR-083 item 7).
+7. **Integrated server budget.** The integrated server uses at most 1 reference core averaged over 10 s, on its tick thread and at most 2 worker threads, on the reference test machine, so the client keeps RND-454's 60 frames per second. Its worst case for 16 stewards (every steward present, every settlement watched, 8 battles) takes 0.32 reference cores and 12.0 ms of wall time per tick.
+8. **Hosts, by a margin rule.** A recommended host holds its stage's stress case within the wall budget at twice the cost budgets and within the deadline at four times:
+
+   | Host | Wall ms at the budgets | Multiple at the 50 ms budget | At the deadline | At 0.4 reference cores per vCPU |
+   |---|---|---|---|---|
+   | stage 3, 200 stewards: 16 vCPU, 4 GB, 50 Mbit/s up (recommended) | 22.7 | 2.22 | 4.46 | 1.48 |
+   | stage 3: 8 vCPU (not recommended) | 49.2 | 1.02 | 2.04 | 0.68 |
+   | stage 2, 16 stewards all present: 4 vCPU, 1 GB, 10 Mbit/s up (recommended) | 20.1 | 2.51 | 5.05 | 1.67 |
+   | stage 2: 2 vCPU (the minimum) | 28.7 | 1.75 | 3.52 | 1.17 |
+   | integrated: the reference test machine, tick thread and 2 workers | 12.0 | 4.20 | 8.42 | — |
+
+9. **Caps are hard and never drop a body.** A settlement at its population limit grows no further (B1); visitors beyond the visitor share wait in their own region; a side at its cap waits at the battlefield's edge; an attack beyond a battle cap waits at its gate (WLD-285); a client over its bandwidth cap is sent fewer full-rate figures (ADR-086). No cap removes, teleports or kills a figure, and every cap is a tuning value of the component that enforces it (D2, D3).
+10. **Stress populations.** A region stress test runs the region bound (two battles of 1,200 at two of its settlements, two settlements of 600 at work); the world stress tests are A1's stress cases on the hosts of item 8 (26 battles in progress at 200, 8 at 16) and the integrated case of item 7; the client keeps the 4,000-unit stress map of DBG-204 and RND-456.
 
 ### Consequences
 
-* Good, because every budget can fail a test on a named machine, and every cap has a number before content is tuned to it.
-* Good, because the margins are wide at the cost budgets: a world of 200 at its stress case takes 1.67 reference cores, so stage 3 can start with one server process per world (ADR-085), and pillar 1 is safe: 27 battles of 400 fit within a quarter of the integrated budget, and 132 within a quarter of the stage-3 host.
-* Bad, because the cost budgets are targets, not measurements: at 4 times the budgets the integrated worst case takes 1.13 reference cores, above item 7, and a world of 200 takes 6.69, above item 8's host. The milestone measurement decides whether the caps fall.
-* Bad, because a region at its body budget makes Essence wait, which B1 must show to the steward as a cause (PIL-054).
-* Neutral, because full-fidelity settlements dominate the cost (78 % of the stress case at 200), so the budget responds most to B1's population limit and to how many settlements are watched (WLD-244).
+* Good, because every budget can fail a test on a named machine, every cap has a number before content is tuned to it, and every recommended host has a stated margin.
+* Good, because neither a rival's waiting bodies nor a defender's size can use a cap as a weapon: growth is reserved, and the battle cap is per side.
+* Good, because pillar 1 is safe: 21 battles of 400 fit within a quarter of the integrated budget, and 209 within a quarter of the 16-vCPU host.
+* Bad, because the cost budgets are targets, not measurements: at 4 times the budgets the integrated worst case takes 1.28 reference cores, above item 7, and a world of 200 needs 89.8 ms of wall time on 16 vCPU; at 6 times (the per-frame reading of DBG-205) the region step holds only settlements of 150.
+* Bad, because the stage-3 host is 16 vCPU, twice the first estimate, which the margin rule requires.
+* Neutral, because full-fidelity settlements dominate the cost (77 % of the stress case at 200), so the budget responds most to B1's population limit and to how many settlements are watched (WLD-244).
 
 ### Confirmation
 
-**Confirmed when:** the simulation-core milestone (DEC-229) measures, on the reference test machine, a synthetic battle of 2,000 figures and a region of 4,000 bodies, and every measured cost is within 25 % of its budget in item 2; and the first world-game milestone (PIL-110) runs the integrated stress case of item 7 within its budget. A cost above its budget by more than 25 % lowers the region body budget and the battle size by the ratio of budget to measurement, in a reviewed change, before any content is tuned to them; the tick rate is never lowered to absorb it.
+**Confirmed when:** the first task of the simulation-core milestone (DEC-229), before any content is tuned to these values, measures on the reference test machine a synthetic battle of 2,000 figures and a region at its bound, and every measured cost is within 25 % of its budget in item 2; and the first world-game milestone (PIL-110) runs the integrated stress case of item 7 within its budget. A measured cost above that tolerance is answered by these levers, in this order: (1) split the region step's read-only hot phases into parallel jobs (ADR-083 item 6); (2) a larger host by item 8's margin rule; (3) the full-fidelity settlement cost: B1's population limit by the model's sensitivity table (at 2 times the budgets, 450 with the side cap equal to it), and the overload lever of ADR-085 item 9 if the owner approves it; (4) the battle side cap last, never below 200 per side (a battle of 400, PIL-021's typical) without an owner decision. The tick rate is never lowered to absorb a cost.
 
 ## Pros and Cons of the Options
 
@@ -77,10 +90,10 @@ Proposed option: "A and B together, with hard engine caps and per-figure cost bu
 * Good, because it sets per-region limits that do not change with world size.
 * Bad, because alone it can starve the integrated host's client.
 
-### A and B together, with caps and cost budgets
+### A and B together, with caps, cost budgets and a wall budget
 
-* Good, because each side has a budget that can fail, and the caps are hard.
-* Bad, because two budgets must be measured and kept.
+* Good, because each side has a budget that can fail, the caps are hard, and the hosts are sized by the tick's wall time rather than by its average.
+* Bad, because two budgets, a wall model and a margin rule must be measured and kept.
 
 ### C — no hard budget
 
@@ -88,6 +101,7 @@ Proposed option: "A and B together, with hard engine caps and per-figure cost bu
 
 ## More Information
 
-* Resolves DEC-228 when the owner confirms it at gate B; the region body budget answers WLD-281 and the battle caps WLD-285. The owner questions of gate B carry items 3, 4, 5 and 8.
-* The model's figures (`A2ServerBudget.py cpu`, `caps`): per tick, a settlement of 600 at full fidelity 0.72 ms; at abstract fidelity with its AI 0.025 ms; the busiest region (four settlements at full fidelity and two battles) 4.73 ms; a world of 16 at its planning case 13.0 ms and with every steward present 28.3 ms; a world of 200 at its planning case 113.1 ms and at its stress case 167.3 ms.
+* Resolves DEC-228 when the owner confirms it at gate B; the region body budget answers WLD-281 and the battle caps WLD-285. Gate B is asked to confirm items 3, 4, 5 and 8 as provisional values with ranges (population limit 450 to 700, side cap 200 to 600) that the first measurement fixes.
+* The model's figures (`A2ServerBudget.py cpu`, `wall`, `caps`): per tick, a settlement of 600 at full fidelity 0.80 ms; at abstract fidelity with its AI 0.025 ms; the busiest region (four settlements at full fidelity and two battles of 400) 5.53 ms; a world of 16 at its planning case 14.7 ms and with every steward present 32.0 ms; a world of 200 at its planning case 125.2 ms and at its stress case 185.5 ms.
 * Related: [ADR-079](ADR-079-simulation-tick-rate.md), [ADR-083](ADR-083-server-process-ownership-and-threading.md), [ADR-085](ADR-085-region-partitioned-world-simulation.md), [ADR-086](ADR-086-replication-and-interest-management.md).
+* **Amendment 2026-10-18 (challenge round 1).** The tick's wall time and the margin rule replace the average-core sizing (A2-F01): the stage-3 host is 16 vCPU and the stage-2 host 4 vCPU; the seen layer, keyed draws and fidelity switches are counted (A2-F07); the region body budget reserves each site's population limit and the battle cap is per side (A2-F06), which lowers the body budget from 4,000 to 3,600 and the most a settlement may hold from 750 to 600; the remedy order puts battles last (A2-F02).
