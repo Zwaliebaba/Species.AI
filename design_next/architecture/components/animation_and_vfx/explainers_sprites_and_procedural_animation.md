@@ -12,7 +12,7 @@ This document specifies the explainer player, the conventions of sprite cards an
 
 ## 2 Interfaces
 
-The interface below is a C++23 declaration sketch, not an implementation. The foot states and the leg tuning of the procedural legs are engine code in namespace `Engine`. The animator reads the game's presentation snapshot and draws game objects (actors, Crawler strips, cloth flags), so it is game-layer presentation code in `Species`, built on the engine's clocks, instance writer and pass context (`AGENTS.md` R9).
+The interface below is a C++23 declaration sketch, not an implementation. The foot states and the leg tuning of the procedural legs are engine code in namespace `Engine`. The animator reads the game's presentation snapshot and draws game objects (actors, Crawler strips, cloth flags), so it is game-layer presentation code in `Species`, built on the engine's clocks, the renderer's instanced batches (`CrowdRenderer`, `MeshRenderer`) and the pass context (`AGENTS.md` R9).
 
 ```cpp
 namespace Engine
@@ -41,9 +41,10 @@ namespace Species
 class ProceduralAnimator
 {
 public:
-  void Update(const PresentationSnapshot& _snap, const Engine::PresentationTime& _now);                // flicker, legs, cloth
-  void WriteActorInstances(std::string_view _passId, Engine::InstanceWriter& _out) const;              // 7a, 7b, 7d bodies and overlays
-  void WriteCrawlerStrips(Engine::InstanceWriter& _out) const;                                         // pass 7c (RND-319)
+  void Update(const PresentationSnapshot& _snap, const Engine::PresentationTime& _now); // flicker, legs, cloth
+  // 7a, 7b and 7d bodies and overlays, into the renderer's instanced batches (ADR-009)
+  void WriteActorInstances(std::string_view _passId, Engine::CrowdRenderer& _crowds, Engine::MeshRenderer& _meshes) const;
+  void WriteCrawlerStrips(Engine::CrowdRenderer& _crowds) const;                                       // pass 7c (RND-319)
   void RecordClothFlags(std::string_view _passId, Engine::PassContext& _context) const;                // 7b, 8, 16
   [[nodiscard]] std::optional<float> PickClothFlag(const Engine::Ray& _ray, SimObjectId _owner) const; // local picking
   [[nodiscard]] bool Flickering(SimObjectId _object) const;
@@ -77,7 +78,7 @@ Trail histories are simulation state that this component reads: the Crawler trai
 
 ### 3.2 Explainer animation data
 
-**VFX-103** (MUST) An explainer animation (`ExplainerAnimation`, asset `anim.explainer`) has the data model of [front_end_presentation.md](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-226: a canvas, a loop start and end, a playback time, and objects in draw order, each with its keys in authored order and the key fields and defaults of `ref.meta.explainer.key_defaults`. The player maps it one to one onto a UI timeline: one track per object and property, with the transform properties (x, y, scale) eased by the curve of VFX-012, the angle and the alpha linear (the alpha truncated to an integer), and the picture (`help.explainer_picture`), the colour role and the horizontal flip held from the earlier key. Its schema is the explainer schema of [data schemas](../data_schemas/README.md); the reference positional text format is not used.
+**VFX-103** (MUST) An explainer animation (`ExplainerAnimation`, asset `anim.explainer`) has the data model of [front_end_presentation.md](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-226: a canvas, a loop start and end, a playback time, and objects in draw order, each with its keys in authored order and the key fields of R-META-226 with their defaults, the `ref.meta.explainer.key_default.<field>` keys. The player maps it one to one onto a UI timeline: one track per object and property, with the transform properties (x, y, scale) eased by the curve of VFX-012, the angle and the alpha linear (the alpha truncated to an integer), and the picture (`help.explainer_picture`), the colour role and the horizontal flip held from the earlier key. Its schema is the explainer schema `panels.explainer` of [data schemas](../data_schemas/README.md) (GameAssets §12).
 
 
 ## 4 Behaviour and algorithms
@@ -105,7 +106,7 @@ Caption: the explainer panel exists at most once per match and shows while the p
 
 **VFX-107** (MUST) The playback clock runs on the real clock and ignores pause and game speed (R-META-229). On the first draw the playback time is 0, not the loop start, and the timer is set to now; on every draw the playback time grows by now − timer and the timer becomes now; when the playback time exceeds the loop end it is set to the loop start and the excess is discarded. The timer is refreshed only by a draw, so after a hidden span the first draw adds the whole span and the playback restarts at the loop start. These are the rules of the Open DEC-750; its default is the reference behaviour stated here.
 
-**VFX-108** (MUST) The panel's place and size are those of R-META-224. The reference computes them once, when the panel is created; the Species panel is a widget of the UI framework and is laid out again whenever the screen size, the DPI or the text scale changes (DEC-961, ADR-033).
+**VFX-108** (MUST) The panel's place and size are those of R-META-224. The reference lays the panel out again by these formulas whenever the screen mode changes; the Species panel is a widget of the UI framework and is also laid out again when the DPI or the text scale changes (DEC-961, ADR-033).
 
 **VFX-109** (MUST) The panel draws its background, frame, objects, title and caption by R-META-230 to R-META-233, through the batched UI renderer (ADR-031) with standard alpha blending: each object is one textured quad of its picture, rotated about its centre by its angle, mirrored when its flip is on, inside the panel's clip rectangle. Colour roles are resolved at draw time against the local player's team colour (R-META-227, ADR-035).
 
@@ -117,7 +118,7 @@ Caption: the explainer panel exists at most once per match and shows while the p
 
 **VFX-112** (MUST) No sprite is animated frame by frame from a sheet. Every sprite is one image whose quad is transformed procedurally; the "frames" of a figure are state textures chosen by a condition, such as the hurt variants of `sprite.worker.hurt` (§4.3).
 
-**VFX-113** (MUST) Sprites carry authored alpha by the alpha modes of ADR-018; additive sprites rely on a black background, so black adds nothing.
+**VFX-113** (MUST) Sprites carry authored alpha by the alpha modes of ADR-018. Additive sprites carry their intensity on black; under the additive blend black adds nothing ([GameAssets](../../../assets/GameAssets.md) §2.4).
 
 **VFX-114** (MUST) A billboard is a `CameraFacing` quad (RND-306). A square billboard of half-extent s has half-width and half-height s; a diamond billboard, whose corners lie at p ± U × s and p ± R × s on the camera up and right vectors, is the square billboard of half-size s ÷ √2 rotated by π ÷ 4 about the view axis. The bottom-anchored, horizontally mirrored billboard is that of RND-329.
 
@@ -135,8 +136,8 @@ Caption: the explainer panel exists at most once per match and shows while the p
 | *hd* > 0, closer than the far distance, airborne and neither Drowning nor InAbductionBeam | the foot point is raised by `vfx.worker.airborne_lift` (3 wu) |
 | Manning, OpeningCrate, or watching an Essence orb (R-BLDG-203) | the up vector is turned about the front by sin(T) × `ref.unit.worker.sway_angle` (0.3 rad) |
 | airborne, not Drowning, not of the Visitor faction | the up vector is turned about the front by T × (unit id mod 10) × `ref.unit.worker.tumble_rate` (0.1) rad, positive for an even unit id and negative for an odd one |
-| Carrying | right = normalise(carryable position − card position) × up, and up is tilted about right by `vfx.worker.carry_lean` (0.3 rad) towards the load |
-| CarriedByAnt | up = −normalise(velocity), right = the previous up, and the card is raised by `vfx.worker.ant_carry_lift` (4 wu) |
+| Carrying | right = Normalize(carryable position − card position) × up, and up is tilted about right by `vfx.worker.carry_lean` (0.3 rad) towards the load |
+| CarriedByAnt | up = −Normalize(velocity), right = the previous up, and the card is raised by `vfx.worker.ant_carry_lift` (4 wu) |
 | beyond `ref.unit.worker.card_face_start` (300 wu) | in the card-to-billboard blend the camera right vector enters with a positive sign when the Worker's front · the camera front < 0 and with a negative sign otherwise, so the card never shows mirrored |
 
 **VFX-118** (MUST) A Worker draws these layers in this order. "Current card" is the texture of RND-316; s is the card size of RND-314; t is the unscaled presentation time; every glow is additive with no depth test unless stated.
@@ -194,7 +195,7 @@ The Rogue faction's colour is near black, so its additive figures are drawn inst
 
 **VFX-123** (MUST) A Wisp's two cards (R-UNIT-597) are drawn along the Wisp's own right and up axes, not facing the camera.
 
-**VFX-124** (MUST) An Essence orb whose broken marker is set (R-UNIT-308) hides its inner quad, sinks its outer quad at its break rate in wu per second and fades it by `vfx.orb.broken_fade` (10 of 255) per second; breaking an orb shows `vfx.orb.break_particles` (5) control-flash particles in its team colour, each with the velocity (`FxRng::NextUnit(5)`, `FxRng::NextUnit(5)`, `FxRng::NextUnit(5)`). No rule of a match breaks an orb (R-UNIT-308, DEC-871), so neither occurs in a match.
+**VFX-124** (removed: no rule of a match breaks an Essence orb, so no orb is drawn broken; DEC-871)
 
 **VFX-125** (MUST) The thrown weapon's tumble and fuse-blink flash (R-CRATE-414), the barrage missile's warhead, launcher and ground marker ([hazards_and_projectiles.md](../../../reference/02_units/hazards_and_projectiles.md), RND-324), the dust object (R-CRATE-505) and the snowflake (R-CRATE-501) are drawn as their owners state; the fuse blink's sound is a presentation event of the blink, never a sound started by drawing (DEC-007).
 
@@ -241,7 +242,7 @@ arc(f) = vfx.leg.arc_rise * f * lift          for f < vfx.leg.arc_knee_low
 
 The lift profile is a trapezoid that rises with slope `vfx.leg.arc_rise` (3) up to `vfx.leg.arc_knee_low` (0.33), holds the lift and falls from `vfx.leg.arc_knee_high` (0.67); at its knees it reaches 0.99 × the lift. The swing is re-evaluated every frame, so feet move smoothly between decision steps.
 
-**VFX-130** (MUST) The knee is placed by a two-bone solve that keeps both segment lengths (ADR-035). With thigh length a, shin length b, L = |hip − foot| clamped to [|a − b|, a + b], the bend axis k = normalise(HorizontalNormalize(hip − body centre) × world up), the axis of the reference knee rule (R-UNIT-584), and α = acos(clamp((b² + L² − a²) ÷ (2 × b × L), −1, 1)), the knee is foot + rotate(normalise(hip − foot) × b, k, −α), which bends the knee outward and upward as the reference does. When the foot lies beyond a + b from the hip, the leg is drawn straight from the hip towards the foot with its full length a + b, and the foot's planned position is unchanged. The reference rule, in which the shin keeps its length and the thigh stretches to reach the hip, is not reproduced (ADR-035).
+**VFX-130** (MUST) The knee is placed by a two-bone solve that keeps both segment lengths (ADR-035). With thigh length a, shin length b, L = |hip − foot| clamped to [|a − b|, a + b], the bend axis k = Normalize(HorizontalNormalize(hip − body centre) × world up), the axis of the reference knee rule (R-UNIT-584), and α = acos(clamp((b² + L² − a²) ÷ (2 × b × L), −1, 1)), the knee is foot + rotate(Normalize(hip − foot) × b, k, −α), which bends the knee outward and upward as the reference does. When the foot lies beyond a + b from the hip, the leg is drawn straight from the hip towards the foot with its full length a + b, and the foot's planned position is unchanged. The reference rule, in which the shin keeps its length and the thigh stretches to reach the hip, is not reproduced (ADR-035).
 
 **VFX-131** (MUST) While the spider is not pouncing, the gait's decision step runs once per `ref.sim.tick_period` (0.1 s) of scaled presentation time, the cadence of the reference tick:
 
@@ -253,7 +254,7 @@ The lift profile is a trapezoid that rises with slope `vfx.leg.arc_rise` (3) up 
 
 **VFX-133** (MUST) When the spider starts a pounce (R-UNIT-574), every leg becomes Pouncing with body-to-foot = body − foot, last ground = foot, target = foot + (pounce target − body), and the pounce start time is the scaled presentation time. While it pounces, the decision step does not run and each leg takes the pounce pose of R-UNIT-585 with f = `ref.unit.spider.pounce_pose_rate` (2) × (scaled time − pounce start), so the feet tuck in and extend again over 0.5 s. When the spider lands (R-UNIT-575), every foot becomes OnGround where it is, and the desires of the next steps pull the feet back to their homes.
 
-**VFX-134** (MUST) The spider's body is drawn at its extrapolated position with up = the terrain normal, right = up × front and front = right × up, with the damage flicker of VFX-127. Its legs are drawn after the body with the same extrapolation: the hip from the extrapolated body; the foot at its position when OnGround, at the swing re-evaluated for the frame's time when Swinging, and at its position + the body's extrapolated movement when Pouncing; the knee by VFX-130. The shin `mesh.creature.spider_shin` is drawn with front = up × world up, up = normalise(knee − foot) and position foot; the thigh `mesh.creature.spider_thigh` with up = normalise(hip − knee) and position knee; both with the object lighting (RND-324).
+**VFX-134** (MUST) The spider's body is drawn at its extrapolated position with up = the terrain normal, right = up × front and front = right × up, with the damage flicker of VFX-127. Its legs are drawn after the body with the same extrapolation: the hip from the extrapolated body; the foot at its position when OnGround, at the swing re-evaluated for the frame's time when Swinging, and at its position + the body's extrapolated movement when Pouncing; the knee by VFX-130. The shin `mesh.creature.spider_shin` is drawn with front = up × world up, up = Normalize(knee − foot) and position foot; the thigh `mesh.creature.spider_thigh` with up = Normalize(hip − knee) and position knee; both with the object lighting (RND-324).
 
 ```mermaid
 stateDiagram-v2
@@ -271,7 +272,7 @@ Caption: the states of one procedural foot; the transitions run in presentation 
 
 **VFX-135** (MUST) A centipede segment's position follows its leader in the simulation (R-UNIT-551). It is drawn only while it is alive and linked into its chain, at its extrapolated position snapped to the terrain height, with up = the terrain normal, right = up × front and front = right × up, all three axes scaled by the segment's size, as `mesh.creature.centipede_head_segment` for a head and `mesh.creature.centipede_segment` otherwise, with the scaled normals of RND-326. A dying segment shatters at its size and unlinks (R-UNIT-557), so the chain visibly splits.
 
-**VFX-136** (MUST) A Reaper Serpent is drawn one tick behind: with the extrapolation time t′ = t − `ref.sim.tick_period`. Its head is drawn at its position extrapolated by t′ with its front and up orthonormalised. For each pair of tail samples h[i − 1] and h[i] (R-UNIT-594), newest first, with i ≥ 1, the tail segment i is drawn at h[i − 1] + (h[i − 1] − h[i]) ÷ `ref.sim.tick_period` × t′ with front = normalise(h[i − 1] − h[i]), right = front × world up and up = right × front, at the scale of R-UNIT-594, with renormalised normals (RND-324). Every registered hit shatters every tail segment with fraction 1.0 (R-UNIT-593).
+**VFX-136** (MUST) A Reaper Serpent is drawn one tick behind: with the extrapolation time t′ = t − `ref.sim.tick_period`. Its head is drawn at its position extrapolated by t′ with its front and up orthonormalised. For each pair of tail samples h[i − 1] and h[i] (R-UNIT-594), newest first, with i ≥ 1, the tail segment i is drawn at h[i − 1] + (h[i − 1] − h[i]) ÷ `ref.sim.tick_period` × t′ with front = Normalize(h[i − 1] − h[i]), right = front × world up and up = right × front, at the scale of R-UNIT-594, with renormalised normals (RND-324). Every registered hit shatters every tail segment with fraction 1.0 (R-UNIT-593).
 
 **VFX-137** (MUST) Each Crawler of a Crawler group or of a team's Crawler crowd pass is drawn as a worm strip and a glow strip (R-UNIT-539, RND-319 to RND-322), built every frame from its trail samples:
 
@@ -329,7 +330,7 @@ for x in 0..5, z in 0..5:
     if x > 0: the link from vertex[x - 1][z] is shortened to at most size / 2
 ```
 
-with `vfx.cloth.wobble_phases` (1.5, 1.1, 1.3) and `vfx.cloth.lift_gain` (3). A flag larger than 40 wu, such as a Flag post's, therefore relaxes with the fixed factor 0.7 and looks stiffer. In the reference a flag keeps relaxing while the game speed is 0, with a step of `vfx.cloth.still_step` (0.1 s) per frame; the Species clock stops instead (ADR-036).
+with `vfx.cloth.wobble_phases` (1.5, 1.1, 1.3) and `vfx.cloth.lift_gain` (3). A flag larger than 40 wu, such as a Flag post's, therefore relaxes with the fixed factor 0.7 and looks stiffer.
 
 **VFX-140** (MUST) Each frame the flag's bounding sphere is recomputed: its centre is the mean of the 36 vertices and its radius the largest distance from the centre to a vertex. The local picking ray test of a Leader's or Transport's flag uses it as a pre-test before testing two triangles per cell (R-BLDG-273); picking is presentation and input, never simulation (DEC-008).
 
@@ -410,7 +411,7 @@ Diagnostics: the development overlay can draw each spider's foot homes, targets 
 | DEC-328 | Open | saturated bubble colours (VFX-121) |
 | DEC-750 | Open | the explainer loop and visibility rules (VFX-107) |
 | DEC-856 | Open | one tail velocity shared by every Brood Drifter (VFX-138) |
-| DEC-871 | Dropped | no match breaks an Essence orb (VFX-124) |
+| DEC-871 | Dropped | no match breaks an Essence orb, so no orb is drawn broken (VFX-124, removed; R-UNIT-308) |
 | DEC-955 | Resolved | a cloth flag holds its shape while the world is held (VFX-139) |
 | DEC-960 | Resolved | per-frame blend factors and emission run in fixed steps (VFX-138, VFX-139, VFX-143) |
 | DEC-961 | Resolved | the explainer panel is laid out again on every screen change (VFX-108) |
@@ -460,8 +461,6 @@ The design-phase inputs of this component are listed in the [folder README](READ
 | `vfx.serpent.eaten_inner_alpha` | 200 | × a, of 255 | | VFX-122 | |
 | `vfx.serpent.eaten_outer_size` | 12 | × a ÷ d^¼ | outer diamond half-extent | VFX-122 | |
 | `vfx.serpent.eaten_outer_alpha` | 100 | × a, of 255 | | VFX-122 | |
-| `vfx.orb.broken_fade` | 10 | alpha of 255 per s | broken orb shell | VFX-124 | |
-| `vfx.orb.break_particles` | 5 | particles | control flashes on a break | VFX-124 | |
 | `vfx.flicker.step` | 0.1 | s of scaled presentation time | one `ref.sim.tick_period` | VFX-126 | DEC-007, DEC-963 |
 | `vfx.flicker.structure_sine_weight` | 1.2 | — | Spitter Plant and Hive | VFX-126 | |
 | `vfx.flicker.spitter_damage_divisor` | 50 | damage | | VFX-126 | |
@@ -488,7 +487,6 @@ The design-phase inputs of this component are listed in the [folder README](READ
 | `vfx.brood.panic_sway` | 5 | wu | panic sway on each axis | VFX-138 | |
 | `vfx.brood.tail_half_width` | 2 | wu | × (1 − j ÷ 3) | VFX-138 | |
 | `vfx.brood.tail_width_wobble` | 0.3 | wu | × sin(t + i + j) | VFX-138 | |
-| `vfx.cloth.still_step` | 0.1 | s per frame | reference relaxation step while the game speed is 0; not used by the Species clock | VFX-139 | |
 | `vfx.cloth.wobble_phases` | 1.5, 1.1, 1.3 | rad per column | x, y and z wobble phases | VFX-139 | |
 | `vfx.cloth.lift_gain` | 3 | × | vertical wobble amplitude | VFX-139 | |
 | `vfx.cloth.team_tint` | 0.5 | × team colour | the team area of the tint mask | VFX-141 | DEC-098 |

@@ -1,6 +1,6 @@
 # Animation and VFX
 
-> Status: Engine baseline · Prefix: VFX · ADRs: [ADR-035](../../../ADR/ADR-035-procedural-animation-runtime.md) · [ADR-036](../../../ADR/ADR-036-effect-events-and-presentation-clock.md) · [ADR-010](../../../ADR/ADR-010-gpu-particles-and-shatter-debris.md) · [ADR-003](../../../ADR/ADR-003-shader-language-compiler-and-material-shaders.md) · [ADR-005](../../../ADR/ADR-005-pipeline-state-catalogue.md) · [ADR-008](../../../ADR/ADR-008-gpu-memory-uploads-and-device-removal.md) · [ADR-009](../../../ADR/ADR-009-instanced-crowds-sprite-cards-and-shadows.md) · [ADR-016](../../../ADR/ADR-016-view-projection-and-depth-conventions.md) · [ADR-019](../../../ADR/ADR-019-mesh-source-format-and-cooked-meshes.md) · [ADR-030](../../../ADR/ADR-030-ui-framework-build-or-buy.md) · [ADR-059](../../../ADR/ADR-059-content-build-and-validators.md) · [ADR-061](../../../ADR/ADR-061-data-schemas-and-versioning.md) · [ADR-064](../../../ADR/ADR-064-accessibility-baseline-xag.md) · [ADR-066](../../../ADR/ADR-066-telemetry-with-consent.md) · [ADR-068](../../../ADR/ADR-068-profiling-and-gpu-timing.md) · [ADR-069](../../../ADR/ADR-069-test-framework.md) · [ADR-074](../../../ADR/ADR-074-platform-clock-with-injectable-time.md) · Related: [Renderer](../renderer/README.md) · [Frame graph and passes](../renderer/frame_graph_and_passes.md) · [Entity and overlay renderers](../renderer/entity_and_overlay_renderers.md) · [Randomness and integrity](../../../reference/12_simulation_model/07_randomness_and_integrity.md)
+> Status: Engine baseline · Prefix: VFX · ADRs: [ADR-035](../../../ADR/ADR-035-procedural-animation-runtime.md) · [ADR-036](../../../ADR/ADR-036-effect-events-and-presentation-clock.md) · [ADR-010](../../../ADR/ADR-010-gpu-particles-and-shatter-debris.md) · [ADR-003](../../../ADR/ADR-003-shader-language-compiler-and-material-shaders.md) · [ADR-005](../../../ADR/ADR-005-pipeline-state-catalogue.md) · [ADR-008](../../../ADR/ADR-008-gpu-memory-uploads-and-device-removal.md) · [ADR-009](../../../ADR/ADR-009-instanced-crowds-sprite-cards-and-shadows.md) · [ADR-016](../../../ADR/ADR-016-view-projection-and-depth-conventions.md) · [ADR-019](../../../ADR/ADR-019-mesh-source-format-and-cooked-meshes.md) · [ADR-030](../../../ADR/ADR-030-ui-framework-build-or-buy.md) · [ADR-059](../../../ADR/ADR-059-content-build-and-validators.md) · [ADR-061](../../../ADR/ADR-061-data-schemas-and-versioning.md) · [ADR-064](../../../ADR/ADR-064-accessibility-baseline-xag.md) · [ADR-066](../../../ADR/ADR-066-telemetry-with-consent.md) · [ADR-068](../../../ADR/ADR-068-profiling-and-gpu-timing.md) · [ADR-069](../../../ADR/ADR-069-test-framework.md) · [ADR-074](../../../ADR/ADR-074-platform-clock-with-injectable-time.md) · [ADR-078](../../../ADR/ADR-078-gpu-resource-factory.md) · Related: [Renderer](../renderer/README.md) · [Frame graph and passes](../renderer/frame_graph_and_passes.md) · [Entity and overlay renderers](../renderer/entity_and_overlay_renderers.md) · [Randomness and integrity](../../../reference/12_simulation_model/07_randomness_and_integrity.md)
 
 This folder specifies the Species presentation runtime for everything that moves on screen without being simulation motion: the presentation clock; the effect events that the simulation emits and the effect definitions that turn them into visuals; the GPU particle pool; the shatter effects that break meshes into tumbling shards; procedural animation (procedural legs, segment chains, trails, tails and cloth flags); the animation recipes of sprite cards, billboards and overlays; the damage flicker; camera shake and full-screen flashes; and the player of the explainer animations. The renderer draws the results in the passes named here; these documents state what is spawned, when, how it moves and how it fades.
 
@@ -132,7 +132,7 @@ Caption: the runtime reads the simulation's snapshot and events and feeds the re
 
 ## 2 Interfaces
 
-The interface below is a C++23 declaration sketch, not an implementation. The clocks, the particle pool with its particle-type ids, the shatter effects and the screen effects are engine code in namespace `Engine`. The effect kinds and effect events, the particle kinds, the explainer player and the runtime that turns the game's snapshot and events into engine calls name game concepts (the simulation's objects and events, the team palette, the mode explainers), so they are game-layer presentation code in `Species`, built on those engine types (`AGENTS.md` R9). `TimeSource` is the platform layer's (ADR-074), `AssetId` the asset pipeline's, `PassContext` and `FrameView` the renderer's, `PresentationSnapshot` the game's presentation snapshot (DEC-222, [renderer/README.md](../renderer/README.md) §2), `DrawContext` the UI framework's handle to the batched UI stream, and `ExplainerAnimation` and `LoadError` the data schemas'; a pass is named by its id in the renderer's pass table (RND-070). `InstanceWriter`, `MatchSetupView` and `TeamPalette` are placeholders for the renderer's instance writer, the simulation's match-setup view and the team palette of RND-016 until their owners declare them.
+The interface below is a C++23 declaration sketch, not an implementation. The clocks, the particle pool with its particle-type ids, the shatter effects and the screen effects are engine code in namespace `Engine`. The effect kinds and effect events, the particle kinds, the explainer player and the runtime that turns the game's snapshot and events into engine calls name game concepts (the simulation's objects and events, the team palette, the mode explainers), so they are game-layer presentation code in `Species`, built on those engine types (`AGENTS.md` R9). `TimeSource` is the platform layer's (ADR-074), `AssetId` the asset pipeline's, `PassContext`, `FrameView`, `ColorRgba`, `GpuResourceFactory` and the instanced batches `CrowdRenderer` and `MeshRenderer` the renderer's, `PresentationSnapshot` and its match-setup record `MatchSetupView` the game's presentation snapshot ([renderer/README.md](../renderer/README.md) §3.5, RND-018, RND-019), `DrawContext` the UI framework's handle to the batched UI stream, and `ExplainerAnimation` and `LoadError` the data schemas'; a pass is named by its id in the renderer's pass table (RND-070).
 
 ```cpp
 namespace Engine
@@ -191,20 +191,24 @@ struct ParticleEmission
 class ParticlePool // ADR-010
 {
 public:
+  explicit ParticlePool(GpuResourceFactory& _resources);  // the slot, list and parameter buffers (VFX-205)
   void Emit(std::span<const ParticleEmission> _requests); // into the frame's upload buffer
   void RecordSimulate(PassContext& _compute, const PresentationTime& _now);
   void RecordDraw(PassContext& _pass15) const; // darkening batch, then additive
   void Empty();                                // match teardown (R-SIM-005)
+  void OnDeviceRebuilt();                      // the buffers start empty again (VFX-015)
   [[nodiscard]] PoolCounts Counts() const;     // Debug read-back
 };
 
 class ShatterEffects // ADR-010
 {
 public:
+  explicit ShatterEffects(GpuResourceFactory& _resources); // the shard and tumbler buffers (VFX-230)
   void Shatter(const ShatterPayload& _request, FxRng& _rng, const PresentationTime& _now);
   void RecordUpdate(PassContext& _compute, const PresentationTime& _now);
   void RecordDraw(PassContext& _pass14) const;
   void Reset();
+  void OnDeviceRebuilt(); // no explosion survives a rebuild (VFX-015)
 };
 
 class ScreenEffects // ADR-036, ADR-064
@@ -266,17 +270,23 @@ enum class ParticleKind : std::uint8_t
   Volcano
 };
 
+struct ExplainerTeamColors // the colours that the friendly and enemy roles resolve to (R-META-227, VFX-109)
+{
+  Engine::ColorRgba friendly; // the local team's colour
+  Engine::ColorRgba enemy;    // the first team slot that is not a friend of the local team; white when none
+};
+
 class ExplainerPlayer // the explainer timeline, hosted by the UI framework
 {
 public:
   static std::expected<ExplainerPlayer, Engine::LoadError> Load(const ExplainerAnimation& _data);
-  void Draw(Engine::DrawContext& _batch, const ExplainerLayout& _layout, double _realNow, const TeamPalette& _roles);
+  void Draw(Engine::DrawContext& _batch, const ExplainerLayout& _layout, double _realNow, const ExplainerTeamColors& _roles);
 };
 
 class VfxRuntime // turns the game's snapshot and effect events into calls of the engine runtime above
 {
 public:
-  void OnMatchStart(const MatchSetupView& _setup); // seasonal state, team palette
+  void OnMatchStart(const MatchSetupView& _setup); // seasonal state, team colour ids (RND-019)
   void ConsumeTick(std::uint32_t _tick, std::span<const EffectEvent> _events);
   void Update(const PresentationSnapshot& _snap, const Engine::FrameView& _view);
   void RecordPass(std::string_view _passId, Engine::PassContext& _context); // pass-table ids of 7b, 7d, 8, 10a, 11, 14, 15, 16
@@ -288,9 +298,9 @@ public:
 
 **Events.** The component consumes the effect events of every tick ([particles](particles_shatter_and_screen_effects.md) table 4.7-A) and the route-highlight request of the renderer (RND-350), which it serves through the particle pool. It raises these presentation events for the audio engine: the spider footstep at every foot plant (R-UNIT-578) and the thrown weapon's fuse blink once per second of its age (R-CRATE-414). It raises no event that the simulation reads.
 
-**Data contracts.** Per drawn actor the presentation snapshot holds the fields of [renderer/README.md](../renderer/README.md) §2 and, for this component: the angular velocity about y, the unit id and slot index, the team colour id, the health fraction, the state and the flags that select overlays and emitters (Burning, sick, Shield, Speed Boost, Fury, Convert link, controlled, airborne, captured by an ant, inside a Transport), the Crawler trail samples (R-UNIT-535), the Reaper Serpent's tail history (R-UNIT-594) and the centipede links (R-UNIT-549). Per match it holds the seasonal state (DEC-118), the game speed, the world-held flag and the game-over flag. Effect definitions and explainer animations are records of the schemas of [data schemas](../data_schemas/README.md) (ADR-061), validated by the content build (ADR-059).
+**Data contracts.** The presentation snapshot is the baseline contract of [renderer/README.md](../renderer/README.md) RND-018 and RND-019. Per drawn actor it holds the fields of its table 3.5-A and, for this component: the angular velocity about y, the unit id and slot index, the team colour id, the health fraction, the state and the flags that select overlays and emitters (Burning, sick, Shield, Speed Boost, Fury, Convert link, controlled, airborne, captured by an ant, inside a Transport), the Crawler trail samples (R-UNIT-535), the Reaper Serpent's tail history (R-UNIT-594) and the centipede links (R-UNIT-549). Per match it holds the seasonal state (DEC-118), the game speed, the world-held flag and the game-over flag. Effect definitions and explainer animations are records of the schemas of [data schemas](../data_schemas/README.md) (ADR-061), validated by the content build (ADR-059).
 
-**Threading contract.** `ConsumeTick` and `Update` run on the frame thread, `ConsumeTick` for each newly taken tick in tick order and before the frame's `Update` (ADR-036). GPU work is recorded into the passes and compute work of the frame graph and never issues barriers (RND-051). Every presentation generator instance belongs to one thread (R-SIM-608). In Debug builds a changed effect definition is reloaded between frames, never during one.
+**Threading contract.** `ConsumeTick` and `Update` run on the frame thread, `ConsumeTick` for each newly taken tick in tick order and before the frame's `Update` (ADR-036). GPU work is recorded into the passes and compute work of the frame graph and never issues barriers (RND-051); the buffers it writes are factory resources imported into the frame graph by name (RND-063). The particle pool and the shatter effects create their buffers through the GPU resource factory when they are constructed, and on `DeviceRebuilt` they start empty again (VFX-015). Every presentation generator instance belongs to one thread (R-SIM-608). In Debug builds a changed effect definition is reloaded between frames, never during one.
 
 
 ## 3 Data model
@@ -350,9 +360,9 @@ The particle entries sample `fx.particle_dot` through its `point` view, whose po
 | Object | Lifetime |
 |---|---|
 | `VfxRuntime`, the presentation clock, the presentation generators | the client process |
-| particle pool | the process; emptied at match teardown, holding content of the current match only (R-SIM-005) |
-| shatter effects | the process; reset at match teardown (R-SIM-005) |
-| effect definitions, particle parameter buffer | from content load to unload; replaced between frames on a reload in Debug builds |
+| particle pool | the process; emptied at match teardown, holding content of the current match only (R-SIM-005); its buffers are created through the GPU resource factory (RND-009) and, after a device rebuild, start empty (RND-035) |
+| shatter effects | the process; reset at match teardown (R-SIM-005); their buffers are created through the factory and, after a device rebuild, hold no explosion |
+| effect definitions, particle parameter buffer | from content load to unload; replaced between frames on a reload in Debug builds; the buffer is a factory resource, filled again after a device rebuild |
 | procedural state | table of VFX-102 |
 | explainer player | from the explainer panel's creation to match teardown (R-META-222) |
 | screen-effect state (shake scalar, active flash) | the match; cleared at match start and end |
@@ -426,7 +436,7 @@ Caption: the one-way path from a simulation rule to its effect; no arrow returns
 
 **VFX-022** (MUST) The runtime runs on the frame thread. Its GPU work (particle emit, simulate and compact; shard and tumbler updates; draws) is recorded into the compiled frame graph in the passes of §1.1 and runs on the direct queue; its CPU cost per frame is proportional to the number of effect events and presentation emitter steps, never to the number of live particles or shards, and the number of its dispatches and draws per frame is fixed (RND-455).
 
-**VFX-023** (MUST) The GPU and CPU time of passes 10a to 15 and of this component's compute work belong to the effect pass group of the renderer's budget (RND-454). The reference records no particle count, frame time or per-system cost (DEC-106); the budget, the particle and shard caps and the level-of-detail distances are set from the prototype measurement of the design population and confirmed at the stress population of DEC-228 item 2, where the caps must hold and the frame must stay within budget on the minimum-specification GPU (ADR-010).
+**VFX-023** (MUST) The GPU time of passes 10a, 10b, 11, 14 and 15 and of this component's compute work is the effect pass group of the renderer's budget, provisionally `rnd.budget.effects_ms` (3.0 ms per frame, RND-454). That budget, the particle and shard caps and the level-of-detail distances (VFX-212, VFX-213, VFX-230) are confirmed or changed by the prototype measurement of the design population (DEC-106), and at the stress population of DEC-228 item 2 the caps must hold and the frame must stay within budget on the minimum-specification GPU (ADR-010).
 
 **VFX-024** (MUST) The reference limits and their Species counterparts are:
 
@@ -453,7 +463,7 @@ The quality settings that change effects are the entity, structure and tree deta
 | the particle pool, a type cap or a class fill limit is reached | the emission is dropped and counted per type; the game is unaffected | VFX-212 |
 | the shard caps are reached | the oldest explosions are retired early | VFX-230 |
 | a frame advances more than the particle sub-step limit | the clock is clamped (VFX-016) and the sub-steps are capped; motion slows for that frame | VFX-209 |
-| device removal | the pool and the shard buffers are re-created empty with the device (ADR-008); effects in flight are lost; the match is unaffected | VFX-015 |
+| device removal | the GPU resource factory re-creates the pool and the shard buffers with the device, and they start empty (ADR-008, RND-035); effects in flight are lost; the match is unaffected | VFX-015 |
 | VFX code includes the simulation generator's interface, or takes write access to simulation state | a build failure | VFX-005, VFX-011 |
 | an effect pass exceeds its budget | no behaviour change; the development overlay marks the pass group; telemetry records the frame time | VFX-023 |
 
@@ -468,7 +478,7 @@ Diagnostics: every compute dispatch and pass of this component carries a PIX mar
 | T3 integrity cases | golden-hash | each of the 11 cases of VFX-006, forced on (for example 10 000 extra cosmetic particles, a seasonal client with a different local date, a pause during heavy effects), leaves the per-tick state hashes unchanged | VFX-006 |
 | T4 replay | property | a recorded match played twice produces the same emission sequence, shard set and shake offsets for every event, seeded from its identity | VFX-011, VFX-019 |
 | T5 clock | unit | with the manual time source: the scaled reading follows the game speed; both presentation readings stop while the world is held; a 1 s stall advances them by 0.25 s; the real reading never stops | VFX-009, VFX-010, VFX-016 |
-| T6 frame-rate independence | property | the same recorded match rendered at 30, 60 and 144 frames per second gives, at matching presentation times and within a tolerance, the same particle positions, leg, trail and cloth poses, shake offsets, flash alphas and per-step emitter counts | VFX-018, VFX-209, VFX-232 |
+| T6 frame-rate independence | property | the same recorded match rendered at 30, 60 and 144 frames per second gives, at the presentation times the three runs share (every 1/6 s) and up to 10 s into the match, the same per-step emitter counts exactly, particle positions and leg, trail and cloth poses within 0.01 wu, flash alphas within 1/255 and shake offsets within 10⁻⁴ rad. The fixed steps of VFX-018 and VFX-209 run the same sequence of steps at every frame rate, so only the binary32 rounding of each frame's draw remainder separates the runs, and these tolerances bound it | VFX-018, VFX-209, VFX-232 |
 | T7 drop safety | integration | emitting far beyond every cap never exceeds a cap, drops ambient particles before command feedback, and leaves the per-tick state hashes unchanged | VFX-020, VFX-212 |
 | T8 definitions | build check | the reference definition set validates; a definition with an unknown type, socket or parameter and an event kind without a definition fail the build | VFX-013 |
 | T9 catalogue | build check | every entry of VFX-014 exists in the pipeline-state catalogue and is used by its pass | VFX-014 |

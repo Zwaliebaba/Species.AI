@@ -12,45 +12,60 @@ This document specifies the particle pool and its particle types, their integrat
 
 ## 2 Interfaces
 
-The GPU records below are a declaration sketch in the shared C++ and HLSL header style of [renderer/shaders.md](../renderer/shaders.md), not an implementation; the CPU interfaces are those of [README.md](README.md) §2.
+The GPU records below are a declaration sketch of this runtime's shared C++ and HLSL header, in the form and with the type names of [renderer/shaders.md](../renderer/shaders.md) RND-262, not an implementation; the CPU interfaces are those of [README.md](README.md) §2.
 
 ```cpp
+// ParticleSlot.h: the shared layout header of the animation and VFX runtime; FrameConstants.h gives the type names.
+#pragma once
+
+#include "FrameConstants.h"
+
 namespace Engine
 {
 
-struct ParticleSlot   // one slot of the pool's structured buffer
+struct ParticleSlot // one slot of the pool's structured buffer
 {
-  float3 position;
-  float birth;   // birth on the scaled presentation clock
-  float3 velocity;
+  Float3 position;
+  float birth; // birth on the scaled presentation clock
+  Float3 velocity;
   float size;
-  uint color;    // RGBA8
-  uint kind;     // the particle type (ParticleTypeId)
+  Uint32 color; // RGBA8, red in the lowest byte
+  Uint32 kind;  // the particle type (ParticleTypeId)
 };
 
-struct ParticleType   // one entry per particle type, from the effect definitions
+struct ParticleType // one entry per particle type, from the effect definitions
 {
-  float life, typeSize, gravity, friction;
-  uint color1, color2;   // RGBA8
-  uint blend, terrainRule, priorityClass, cap;
-  float lodFull, lodCutoff;
+  float life;
+  float typeSize;
+  float gravity;
+  float friction;
+  Uint32 color1; // RGBA8
+  Uint32 color2;
+  Uint32 blend;       // a ParticleBlend
+  Uint32 terrainRule; // a TerrainRule
+  Uint32 priorityClass;
+  Uint32 cap;
+  float lodFull;
+  float lodCutoff;
 };
 
-struct Shard   // one released triangle (VFX-204)
+struct Shard // one released triangle (VFX-204)
 {
-  float3 center;
+  Float3 center;
   float deathTime;
-  float3 velocity;
-  uint tumbler;
-  float3 corner0, corner1, corner2;
-  float3 normal;
-  uint color;    // tinted facet colour, RGBA8
+  Float3 velocity;
+  Uint32 tumbler;
+  Float3 corner0;
+  Float3 corner1;
+  Float3 corner2;
+  Float3 normal;
+  Uint32 color; // tinted facet colour, RGBA8
 };
 
 struct Tumbler
 {
-  float3x3 rotation;
-  float3 angularVelocity;
+  Float3x3 rotation;
+  Float3 angularVelocity;
 };
 
 } // namespace Engine
@@ -58,7 +73,7 @@ struct Tumbler
 
 **Events.** This document consumes the effect events of table 4.7-A and the route-highlight request of RND-350. Its screen effects receive the shake requests of VFX-233 and give the camera the frame's rotation offset.
 
-**Threading contract.** The CPU side runs on the frame thread; the emit, simulate, compact and shard-update dispatches run in the frame graph before passes 14 and 15 on the direct queue.
+**Threading contract.** The CPU side runs on the frame thread; the emit, simulate, compact and shard-update dispatches, by the compute shaders `ParticleEmit`, `ParticleSimulate`, `ParticleCompact` and `ShardUpdate` of [renderer/shaders.md](../renderer/shaders.md) RND-263, run in the frame graph before passes 14 and 15 on the direct queue, writing buffers that the frame graph imports (RND-063).
 
 ## 3 Data model
 
@@ -88,7 +103,7 @@ Particles have no spin, no fade-in and no type-specific fade-out: the fade of VF
 
 ### 4.1 The particle pool
 
-**VFX-205** (MUST) One particle pool (`ParticlePool`) exists per client process. It is created at start-up and emptied at match teardown, so it holds particles of the current match only (R-SIM-005). It is simulated on the GPU (ADR-010): every live particle sits in one structured buffer with a free list and a live list managed by compute work, and every particle's type parameters come from one parameter buffer built from the effect definitions ([README.md](README.md) VFX-013).
+**VFX-205** (MUST) One particle pool (`ParticlePool`) exists per client process. It is created at start-up and emptied at match teardown, so it holds particles of the current match only (R-SIM-005). It is simulated on the GPU (ADR-010): every live particle sits in one structured buffer with a free list and a live list managed by compute work, and every particle's type parameters come from one parameter buffer built from the effect definitions ([README.md](README.md) VFX-013). The pool creates these buffers through the renderer's GPU resource factory and no other way ([renderer/README.md](../renderer/README.md) RND-009, ADR-078), and its compute passes write them as resources that the frame graph imports (RND-063).
 
 **VFX-206** (MUST) Each frame the runtime writes the frame's emission requests into an upload buffer (ADR-008); an emit pass allocates their slots from the free list, and a request that finds no slot under the caps of §4.4 is dropped. No simulation code can read particle state: the pool offers only emission, simulation, drawing, emptying and a development read-back of its counts.
 
@@ -174,7 +189,7 @@ With h = T this reproduces the reference trajectories exactly at game speed 1: f
 
 **VFX-213** (MUST) Emission is scaled down with camera distance d from the emission point: a burst of n particles emits n × clamp((`vfx.particle.lod.cutoff_distance` (8000 wu) − d) ÷ (`vfx.particle.lod.cutoff_distance` − `vfx.particle.lod.full_distance` (4000 wu)), 0, 1) particles, the fractional part kept by a presentation draw, so nothing is emitted beyond the cut-off distance. An effect definition may set its own distances for a type. Particles of the presentation emitters of §4.8 are not scaled.
 
-**VFX-214** (MUST) The reference pool starts at `vfx.budget.reference_particle_start` (1500) slots, grows by `vfx.budget.reference_particle_growth` (200) and has no maximum, no per-type cap and no distance culling at emission; the only reference particle level of detail is the burning-tree count ÷ structure detail (R-BLDG-629). The Species caps and distances of VFX-212 and VFX-213 are engine-baseline values, confirmed or changed by the prototype measurement of DEC-106.
+**VFX-214** (MUST) The pool has the fixed capacities of VFX-212, allocated at load (ADR-010); besides the emission level of detail of VFX-213, the burning-tree count is divided by the structure-detail level (R-BLDG-629). The caps and distances of VFX-212 and VFX-213 are engine-baseline values, confirmed or changed by the prototype measurement of DEC-106.
 
 ### 4.5 Drawing
 
@@ -208,7 +223,7 @@ Table 4.7-A Effect kinds.
 
 | Kind | Raised by | Effect | Values owned by |
 |---|---|---|---|
-| `Explosion` | every explosion of range r and damage D (R-CRATE-406 step 1, R-UNIT-195) | cores: n = ⌊r × D × `ref.weapon.explosion.particle_factor`⌋, plus ⌊U[0, n)⌋ more, explosion cores at position + (0, `ref.weapon.explosion.core_lift` × r, 0), size `vfx.emit.explosion.core_size` (120 + U[0, 120)), velocity `vfx.emit.explosion.core_velocity` (± 15, 10 + U[0, 10), ± 15); debris: m = ⌊clamp(r × D × `ref.weapon.explosion.particle_factor`, `ref.weapon.explosion.debris_min`, `ref.weapon.explosion.debris_max`)⌋ explosion-debris particles at position + (0, `vfx.emit.explosion.debris_lift` (0.2) × r, 0), particle i at the angle i × 2π ÷ m with velocity normalise((cos, `vfx.emit.explosion.debris_rise` (2 + U[0, 2)), sin)) × `vfx.emit.explosion.debris_speed` (20 + U[0, 30)), size `vfx.emit.explosion.debris_size` (20 + U[0, 20)) | reference/04 and this document |
+| `Explosion` | every explosion of range r and damage D (R-CRATE-406 step 1, R-UNIT-195) | cores: n = ⌊r × D × `ref.weapon.explosion.particle_factor`⌋, plus ⌊U[0, n)⌋ more, explosion cores at position + (0, `ref.weapon.explosion.core_lift` × r, 0), size `vfx.emit.explosion.core_size` (120 + U[0, 120)), velocity `vfx.emit.explosion.core_velocity` (± 15, 10 + U[0, 10), ± 15); debris: m = ⌊clamp(r × D × `ref.weapon.explosion.particle_factor`, `ref.weapon.explosion.debris_min`, `ref.weapon.explosion.debris_max`)⌋ explosion-debris particles at position + (0, `vfx.emit.explosion.debris_lift` (0.2) × r, 0), particle i at the angle i × 2π ÷ m with velocity Normalize((cos, `vfx.emit.explosion.debris_rise` (2 + U[0, 2)), sin)) × `vfx.emit.explosion.debris_speed` (20 + U[0, 30)), size `vfx.emit.explosion.debris_size` (20 + U[0, 20)) | reference/04 and this document |
 | `RocketBurst` | a spiralling rocket's explosion (R-CRATE-432) | explosion cores as the `Explosion` core rule, all in one colour of the team colour table drawn per burst | this document |
 | `StructureDestroyed` | R-BLDG-037 | ⌊i ÷ `ref.bldg.structure.destroy_particle_divisor`⌋ explosion cores of size `ref.bldg.structure.destroy_particle_size`, velocity per axis `ref.bldg.structure.destroy_particle_speed`; the shatters of §4.10 | reference/03 |
 | `LaserHitStructure` | a laser bolt meeting a structure (R-CRATE-441 step 6) | `vfx.emit.laser_hit.count` (1) spark | this document |
