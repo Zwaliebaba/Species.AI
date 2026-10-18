@@ -209,3 +209,4 @@
 
 ## Phase 6 — Fix
 
+- Owner decision **O29** (2026-10-18, asked twice after a reported mis-click, answered "One solution" both times): the C++ development tools are projects of the one solution, under `Tools/<Project>/` in a `Tools` solution folder, superseding the separate tools solution of O26 (R3b-1: `$(SolutionDir)` resolves to `Tools\` in a second solution). Applied by the coordinator to AGENTS.md §2 and R14 (the edge runs one way; `Build/CheckProjectFiles.py` checks that no game or engine project references a tool project or a tool-only package), the vision brief (O26 note, O28 consequence, O29 row), CLAUDE.md, the design-phase prompt (O1–O29; the design phase records from O30) and the README generator. ADR-054 (amendment), ADR-017, ADR-019, ADR-056, ADR-059, ADR-062, the ADR README, BLD, DAT, AST and CONVENTIONS go to the Phase 6 fixers.

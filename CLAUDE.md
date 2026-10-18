@@ -6,7 +6,7 @@
 
 ## Where things are
 
-- **What to build:** `vision/species-vision-brief.md` (the pitch and the owner's decisions O1–O28), then the Species game design once the design phase has written it, then the reference library in `Design/`.
+- **What to build:** `vision/species-vision-brief.md` (the pitch and the owner's decisions O1–O29), then the Species game design once the design phase has written it, then the reference library in `Design/`.
 - **The reference library** (`Design/`): `README.md` (reading guide), `CONVENTIONS.md` (ids, units, naming, allowed terms), `REQUIREMENTS_INDEX.md`, `reference/` (reference mechanics), `architecture/components/` (the engine baseline), `ADR/` (architecture decision records, `ADR-NNN-<slug>.md`), `decisions/` (decision register, `DEC-NNN`; an Open entry states the behaviour to build until it is decided), `assets/GameAssets.md` (every asset to create).
 - **The next run:** `prompts/species-design-phase.md` turns the library and the vision into the Species game design.
 
