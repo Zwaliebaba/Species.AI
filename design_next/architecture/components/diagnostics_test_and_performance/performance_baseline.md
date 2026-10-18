@@ -28,13 +28,12 @@ This document specifies no behaviour of its own: the performance tests that repo
 
 | Quantity | Reference value | Key |
 |---|---|---|
-| simulation tick | 10 per second | `ref.sim.tick_period` |
+| simulation tick | one per `ref.sim.tick_period` (0.1 s), so 1 ÷ `ref.sim.tick_period` per second | `ref.sim.tick_period` |
 | team control state send period | one tick period | `ref.sim.frame.control_send_period` |
 | update slices per tick | 10, so a render frame runs part of a tick | `ref.sim.update_slices` |
 | slices per render frame | ⌊0.3 × pending slices⌋ clamped to 0–20, plus the rest of a tick in progress; 1 to 3 pending slices advance nothing | `ref.sim.pacing.gain`, `ref.sim.pacing.max_slices_per_frame` |
 | catch-up | more than 20 frames behind: 20 slices per iteration until caught up or 0.3 s of real time is spent in the frame | `ref.sim.pacing.catch_up_threshold`, `ref.sim.pacing.catch_up_slices`, `ref.sim.pacing.catch_up_budget` |
 | presentation frame delta | at most 0.25 s | `ref.sim.frame.delta_clamp` |
-| slow frames | below 15 frames per second the audio logic advances a second time after rendering | `ref.sim.frame.low_fps_audio_threshold` |
 | deferred work | one deferred job per loop iteration | `ref.sim.frame.deferred_jobs_per_iteration` |
 | memory report | every 60 s to the log | `ref.sim.frame.memory_log_interval` |
 | frame-time range inspected | 50, 100 and 200 ms per frame | `dbg.profile.view.graph_marks_ms` |
@@ -47,15 +46,14 @@ The cost of one tick must fit, spread over its 10 slices, into the render frames
 
 | Figure | Reference value |
 |---|---|
-| bodies per map | a population cap per map ([map rules and conventions](../../../reference/08_maps_and_level_design/rules_and_conventions.md)): of the 49 standard maps, 1 has 1,400, 9 have 1,500, 2 have 1,600, 15 have 1,800 and 20 have 2,000; the 2 four-player co-op maps with fixed groups are uncapped |
+| bodies per map | the population cap of each map ([map rules and conventions](../../../reference/08_maps_and_level_design/rules_and_conventions.md)) |
 | bodies per team | the map cap ÷ the player count: 350 to 1,000 bodies; Transit Gate waves, Supply crates and Collectors can take a team over its cap ([population flow](../../../reference/05_population_flow.md)) |
 | engine population limit | none: only the map and mode options limit the population; the live simulated-object count is kept for display |
-| Essence orbs | one per death, none for the Rogue faction; each is collectable for `ref.econ.orb.floating_ticks` (30 to 50 s) and then ascends for `ref.econ.orb.ascent_ticks` (90 s), so thousands exist after a large battle |
+| Essence orbs | one per death, none for the Rogue faction; each is collectable for `ref.econ.orb.floating_ticks` (301 to 500 ticks, 30.1 to 50 s) and then ascends for `ref.econ.orb.ascent_ticks` (901 ticks, 90.1 s), so thousands exist after a large battle |
 | laser bolts | every Worker shot is a simulated object; with a 3 s reload, 2,000 Workers in combat create up to about 670 laser bolts per second |
 | Worker task searches | every Worker searches every `ref.unit.worker.retarget_ticks` (11 to 20 ticks), staggered: about 1,000 to 2,000 full searches per second at 2,000 Workers ([Worker](../../../reference/02_units/worker.md)) |
 | simulated objects at peak | about 2,000 to 6,000: units, Essence orbs, laser bolts, effects and structures |
 | network traffic | commands only; independent of the population (DEC-201) |
-| minimum hardware | a 2.0 GHz processor, 512 MB of memory, 120 MB of disk and an entry-level graphics card of its time (the GeForce 6200 or Radeon 9600 class) |
 
 **DBG-203** (MUST) The reference hotspots, which the Species budgets and the performance scenes cover; "marker" means the system has its own marker in §3.4:
 

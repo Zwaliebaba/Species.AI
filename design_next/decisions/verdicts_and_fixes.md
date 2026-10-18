@@ -1,6 +1,6 @@
 # Decision register: verdicts and fixes
 
-> Status: Reference decisions · Range: DEC-001 to DEC-199 · Related: [decisions index](README.md), [conventions](../CONVENTIONS.md)
+> Status: Reference decisions · Range: DEC-001 to DEC-119 · Related: [decisions index](README.md), [conventions](../CONVENTIONS.md)
 
 This file is the canonical register for the scope and behaviour decisions of the reference library. It holds the headline verdicts on the reference core loop, simulation timing and hook-only features; the simulation-integrity rules; the scope verdict for each reference subsystem; the verdicts on individual mechanics, including the keep-list; one decision for every item of the fix-list; and the design-critical uncertainties and gameplay-fidelity risks that need confirmation. Each entry states the behaviour the reference documents specify now. A **Resolved** entry states the corrected rule that the documents apply; an **Open** entry states the faithful reference behaviour as the default, with a recommendation; a **Dropped** entry records content the library does not specify. The networking model, numeric model, simulation threading, tick rate, sessions and services, lobby protocol, persistence and terrain runtime model are design-phase topics recorded under `decisions/deferred/`; engine-technology choices are ADRs under `ADR/`. Other decision files cite the entries here instead of repeating them.
 
