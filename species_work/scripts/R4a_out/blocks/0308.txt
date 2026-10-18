@@ -1,9 +1,0 @@
-stateDiagram-v2
-  [*] --> NoTile
-  NoTile --> Selected: select inside a tile, tile panel opens, tool move, release swallowed
-  Selected --> Dragging: select on the selected tile, grab offset recorded
-  Dragging --> Dragging: drag, pending origin follows the pointer in whole numbers
-  Dragging --> Selected: drop, the tile and the enclosed structure records move, regenerate
-  Selected --> NoTile: select elsewhere, tile panel and guide-grid painter close
-  Selected --> NoTile: tile panel closed
-  Dragging --> NoTile: tile panel closed

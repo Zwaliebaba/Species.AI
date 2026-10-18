@@ -1,3 +1,0 @@
-rows 687; 90 §3 rows covered 151/151; 90 §2 IP rows covered 161/161
-by rule: {'rename': 516, 'generic-keep': 20, 'drop': 151}
-species identifiers equal to an original identifier: 0

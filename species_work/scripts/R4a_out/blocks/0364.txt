@@ -1,5 +1,0 @@
-stateDiagram-v2
-    [*] --> Free : pool grows by its step, new slots handed out in ascending order
-    Free --> Used : taken from the head of the free list
-    Used --> Used : advanced once per tick in its slice
-    Used --> Free : removal pushes the slot onto the head of the free list

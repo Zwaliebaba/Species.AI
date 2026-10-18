@@ -1,7 +1,0 @@
-stateDiagram-v2
-    [*] --> Falling : spawned 1500 to 2000 wu up
-    Falling --> Falling : straight line toward the target at 350 wu/s
-    Falling --> SlowMotionRequested : first time within 200 wu of the target
-    SlowMotionRequested --> SlowMotionRequested : keeps falling
-    Falling --> [*] : within 10 wu of the target or below the terrain, land sound, explosion, removed
-    SlowMotionRequested --> [*] : within 10 wu of the target or below the terrain, land sound, explosion, removed

@@ -1,8 +1,0 @@
-flowchart TD
-    A[Worker in FollowingLeader or Fighting in a formation] --> B[SlotPositionFor: existing slot, or first empty index with timer 51 ticks]
-    B --> C[RefreshSlot: slot timer + 1 tick]
-    D[Leader formation upkeep each tick] --> E[every slot timer - 1 tick, empty a slot at or below 0]
-    E --> F{sum over runs of empty slots of run length - 1, above half the array size?}
-    F -- yes --> G[empty every slot, members re-join next tick]
-    F -- no --> H[keep slots]
-    B --> I[slot position: row size by array size, ranks 6 wu apart, first rank 12 wu ahead]

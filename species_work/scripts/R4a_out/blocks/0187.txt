@@ -1,7 +1,0 @@
-stateDiagram-v2
-    [*] --> OnGround
-    OnGround --> Swinging : lifted by the gait, emergency above 12 wu or best above 5 wu
-    Swinging --> OnGround : swing done, foot planted at its target, footstep sound
-    OnGround --> Pouncing : the spider pounces
-    Swinging --> Pouncing : the spider pounces
-    Pouncing --> OnGround : the spider lands

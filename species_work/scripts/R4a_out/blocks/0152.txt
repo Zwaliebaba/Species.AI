@@ -1,6 +1,0 @@
-flowchart TD
-    A["Mode second: team t in play"] --> B{"t's Home post owned by another team A?"}
-    B -- no --> S["Status score"]
-    B -- yes --> C{"Chain of fully captured Flag posts of A back to A's Home post?"}
-    C -- no --> S
-    C -- yes --> D["Eliminate and wipe t; score := survival time; A's eliminations + 1"]

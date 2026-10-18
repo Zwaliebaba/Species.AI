@@ -1,9 +1,0 @@
-flowchart TD
-  A["A rule needs a random value"] --> B{"Can the value change simulation state or an outcome?"}
-  B -- "yes" --> C["Draw from the simulation generator, as its own statement, in update order"]
-  B -- "no" --> D["Draw from this thread's presentation generator"]
-  C --> E{"Inside a search or a rejection loop?"}
-  E -- "yes" --> F["Cap the attempts and give a deterministic fallback"]
-  E -- "no" --> G["Done"]
-  F --> G
-  D --> G

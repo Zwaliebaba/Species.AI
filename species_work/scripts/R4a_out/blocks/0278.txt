@@ -1,7 +1,0 @@
-flowchart TD
-    G["grant a Power"] --> F{"slots in use reach the capacity?"}
-    F -- yes --> L["the Power is lost; the full message for the local player"]
-    F -- no --> I["next id; insert before the first Waiting Power, or append"]
-    I --> S["start: Waiting, life set by kind"]
-    S --> E["grant event to the pop-up; full message if now full"]
-    E --> T["each tick: ordering pass, Power advances, power-level advance"]

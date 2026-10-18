@@ -1,8 +1,0 @@
-flowchart TD
-    S["Speed step"] --> D1{"d > 100 wu?"}
-    D1 -- yes --> H1{"heading error < 1 rad?"}
-    H1 -- yes --> U["speed + 1 wu/s, at most 60"]
-    H1 -- no --> N["unchanged"]
-    D1 -- no --> D2{"d > 10 wu?"}
-    D2 -- yes --> B["speed := 0.95 × speed + 0.05 × 0.2 × d"]
-    D2 -- no --> R["speed − 0.5 wu/s"]

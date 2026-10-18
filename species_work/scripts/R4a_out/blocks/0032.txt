@@ -1,9 +1,0 @@
-flowchart TD
-  S["Simulation: effect events of each new tick, in tick order"] --> E["1 Effect events to emission requests, shatter requests and screen requests"]
-  E --> C["2 Presentation clock step: scaled, unscaled, real"]
-  C --> P["3 Presentation emitters: fixed-rate emission steps"]
-  P --> A["4 Procedural state: flicker, legs, cloth, trails, eaten orbs"]
-  A --> G["5 Particle pool: upload, emit, simulate sub-steps, compact"]
-  G --> D["6 Shatter explosions: tumblers and shards"]
-  D --> X["7 Screen effects: shake offset, flash alpha"]
-  X --> R["8 Draws in passes 7b, 7d, 8, 10a, 11, 14, 15, 16"]

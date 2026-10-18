@@ -1,7 +1,0 @@
-stateDiagram-v2
-    [*] --> Silent : start-up and loading views
-    Silent --> LobbyBed : first front-end update after the sound set loads
-    LobbyBed --> Releasing : front-end loop exits
-    Releasing --> MatchBed : match loop starts, match_enter
-    MatchBed --> MatchReleasing : match loop exits, match_exit
-    MatchReleasing --> LobbyBed : front end built again

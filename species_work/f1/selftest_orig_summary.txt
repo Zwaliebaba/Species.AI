@@ -1,4 +1,0 @@
-hits: 145932 {'brand': 36019, 'identifier': 36096, 'legacy-tech': 5433, 'map-name': 595, 'provenance': 67553, 'string-key': 236}
-exit=1
-hits: 10970 {'history': 4491, 'orig-string': 717, 'renamed-term': 5187, 'scoped': 553, 'unfinished': 22}
-exit=1

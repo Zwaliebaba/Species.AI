@@ -1,9 +1,0 @@
-sequenceDiagram
-    participant P as Player
-    participant L as Leader
-    participant W as Idle Worker
-    P->>L: OrderUnit far from the Leader
-    L->>L: AssignOrders: order Waypoint, new route, order marker every 20 ticks
-    W->>W: task search finds the Leader within 100 wu
-    W->>W: copies the order position, route and structure
-    W->>W: OnWaypointOrder along the route

@@ -1,1 +1,0 @@
-reference/05_population_flow.md:882 ref.mode.spawn_control.elimination_mode_seconds cell [33.0] table [30 | mode seconds]

@@ -1,7 +1,0 @@
-stateDiagram-v2
-    [*] --> Falling: the drop timer fires and the map holds fewer Supply crates than its limit
-    Falling --> OnGround: after about 330 to 380 ticks under a visible ground marker
-    OnGround --> Opened: the owner, the team with the most Workers within 35 wu, takes the opening progress above 2500 units, in at least 51 ticks
-    OnGround --> Expired: 600 ticks on the ground with no owner
-    Opened --> [*]: 90 percent a beneficial outcome for the opener, 10 percent a hostile outcome for the Rogue faction
-    Expired --> [*]: no effect

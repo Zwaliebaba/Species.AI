@@ -1,7 +1,0 @@
-stateDiagram-v2
-    [*] --> Waiting : match world ready, countdown 30
-    Waiting --> Counting : every counted team ready, countdown-tick sound
-    Counting --> Waiting : a counted team not ready, countdown back to 30
-    Counting --> Counting : minus 1 per tick, a countdown-tick sound per displayed number
-    Counting --> Over : countdown reaches 0, countdown-zero sound, normal speed requested
-    Over --> [*]

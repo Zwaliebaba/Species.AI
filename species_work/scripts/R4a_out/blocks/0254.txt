@@ -1,9 +1,0 @@
-maxCrates := floor(world size x / ref.crate.drop.map_width_per_crate)      # 500 wu; the x size only
-if liveCrates >= maxCrates: return                                           # the countdown is frozen at the cap
-D := crate drop period in seconds; if D = 0: return                          # no Supply crates
-if countdown is unset: countdown := Interval(D)                              # the first interval
-countdown -= 1                                                               # one tick
-if countdown <= 0:
-    countdown := Interval(D)
-    TryDrop()                                                                # R-CRATE-105; may place nothing
-Interval(D) := ceil(10 * D * (ref.crate.drop.interval_factor_max - SimRng::NextUnit(ref.crate.drop.interval_factor_spread)))   # ticks

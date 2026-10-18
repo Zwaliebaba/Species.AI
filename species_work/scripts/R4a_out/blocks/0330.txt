@@ -1,9 +1,0 @@
-flowchart TD
-    A["Tutorials page: tutorial 1 or 2 pressed"] --> B["single-player, quick-start and tutorial flags set, tutorial type stored, navigation locked"]
-    B --> C["next frames: the title-page update starts the private local session"]
-    C --> D["session exists: tutorial set-up of R-MODE-083, tutorial marked as starting, screen fades out"]
-    D --> E{"Local team slot arrived and audio engine ready?"}
-    E -- "no" --> E
-    E -- "yes" --> F["send the name and colour; request player count - 1 bot teams; StartMatch; quick-start flag cleared"]
-    F --> G["loading view, tutorial match"]
-    G --> H["leave action: front end rebuilt at the tutorials page"]

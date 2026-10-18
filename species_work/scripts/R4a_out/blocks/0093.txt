@@ -1,9 +1,0 @@
-flowchart TD
-  K["Clear to black; the level fog colour is black"] --> SKY["Sky grid and clouds: additive, fogged to black"]
-  SKY --> TER["Terrain facets: opaque, lit, fogged; wire grid added"]
-  TER --> SEA["Flat sea: opaque; coastline waves: additive"]
-  SEA --> SOL["Structure and actor meshes: opaque flat facets"]
-  SOL --> CARDS["Blob shadows: darkening; Worker cards: cut-out"]
-  CARDS --> GLOW["Lights, ports, trees, effects, laser bolts, Essence orbs: additive"]
-  GLOW --> PART["Particles: darkening smoke, then additive glow"]
-  PART --> OVER["Markers, cursor and HUD: additive icons over darkened or alpha shadows"]

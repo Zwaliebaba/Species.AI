@@ -1,6 +1,0 @@
-stateDiagram-v2
-    [*] --> High : smoothed rate starts at 60
-    High --> Low : smoothed rate below 20
-    Low --> High : smoothed rate 60 or more
-    High --> High : not at the front end, no change
-    Low --> Low : not at the front end, no change

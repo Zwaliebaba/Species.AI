@@ -1,6 +1,0 @@
-stateDiagram-v2
-    [*] --> NoOwner
-    NoOwner --> OwnedByTeam : recount, one team has the strictly highest count
-    OwnedByTeam --> OwnedByTeam : recount, a team with a strictly higher count takes over at once
-    OwnedByTeam --> NoOwner : recount, no counted Worker in the zone
-    NoOwner --> NoOwner : recount, nobody inside

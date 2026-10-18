@@ -1,9 +1,0 @@
-stateDiagram-v2
-    [*] --> Protected : post-grace tick 0
-    Protected --> Safe : first counted mode second, tick 308, the team owns a Spawn Node
-    Protected --> Warned : first counted mode second, no Spawn Node, warning emitted, countdown 29
-    Safe --> Warned : a mode second without a Spawn Node, warning emitted, countdown 29
-    Warned --> Warned : another mode second without a Spawn Node, countdown minus 1
-    Warned --> Safe : the team owns a Spawn Node, countdown back to 30
-    Warned --> Eliminated : countdown reaches 0, eliminated and wiped
-    Eliminated --> [*]

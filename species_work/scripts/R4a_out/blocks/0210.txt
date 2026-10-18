@@ -1,9 +1,0 @@
-stateDiagram-v2
-    [*] --> Idle
-    Idle --> Loading : toggle loading while empty, or arrival with action Loading
-    Idle --> Unloading : toggle loading with passengers, or arrival with action Unloading
-    Loading --> Unloading : toggle loading
-    Unloading --> Loading : toggle loading
-    Loading --> Idle : full, move order, or deploy order
-    Unloading --> Idle : empty, a Worker boards by a crowd order, or over sea
-    Idle --> [*] : health 0, explosion, passengers thrown out on fire

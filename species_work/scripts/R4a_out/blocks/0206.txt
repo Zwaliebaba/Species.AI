@@ -1,5 +1,0 @@
-TargetAt(_d):
-    if _d <= 0 or the Strike team has a teleport target: return waypoint
-    path := [lead position, trail[0], trail[1], ..., trail[last]]      # newest trail point first
-    walk along path from its start, summing segment lengths
-    return the point at path distance _d; if the path is shorter than _d, return trail[last]

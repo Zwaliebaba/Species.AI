@@ -1,8 +1,0 @@
-inRange    := distance(A, B) <= ref.bot.link.range           or  A.manualLink == B
-checkCliff := A.checkCliffs and B.checkCliffs
-if A.manualLink == B: checkCliff := false
-emitter    := none
-if inRange and ( IsPathClear(A, B, _evaluateCliffs = checkCliff, _permitSteepDownhill = false), recording emitter
-                 or (A.beamDishFlag and B.beamDishFlag)
-                 or A.seaFlag or B.seaFlag ):
-    append link record { B, emitter } to A.links

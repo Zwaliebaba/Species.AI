@@ -1,9 +1,0 @@
-stateDiagram-v2
-    [*] --> Connecting : row chosen or password given
-    Connecting --> Connecting : attempts counted, dots cycle every 0.5 s
-    Connecting --> Handshaking : participant id assigned
-    Handshaking --> Connected : caught up, team requests allowed
-    Connected --> MatchSetupPage : mode known
-    Connecting --> Disconnected : removed or back
-    Handshaking --> Disconnected : removed or back
-    Disconnected --> [*]

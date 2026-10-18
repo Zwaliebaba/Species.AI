@@ -1,8 +1,0 @@
-stateDiagram-v2
-    [*] --> Normal
-    [*] --> Blight : blight flag from the map or the Blight Grove outcome
-    Normal --> Corrupted : a fully grown blight tree within reach picks it, essence drop rate 0
-    Corrupted --> CorruptedBlight : 101 ticks later, corruption timer 51 ticks
-    CorruptedBlight --> Normal : burn-out cleanses both marks
-    Blight --> Blight : burn-out does not cleanse it
-    note right of CorruptedBlight : a blight tree corrupts one tree per check, every 100 to 150 ticks while fully grown

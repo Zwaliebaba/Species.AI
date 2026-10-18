@@ -1,8 +1,0 @@
-f = 1 - r / R0
-speed = ref.unit.barrage_missile.speed * (ref.hazard.missile_barrage.min_speed_fraction + (1 - ref.hazard.missile_barrage.min_speed_fraction) * f^2)   # 50 to 100 wu/s
-height_factor = |L - T| / ref.hazard.missile_barrage.loft_divisor                                                                                       # 3
-n = max(ref.hazard.missile_barrage.loft_min, ref.hazard.missile_barrage.loft_factor * p.y / height_factor)                                              # 2, 5
-axis = normalise(normalise(T - L) x up)                   # right-handed cross product
-front = rotate(normalise(T - p), axis, pi / n)            # right-hand rule
-front = rotate(front, axis, -f * pi / n)
-p += front * speed * dt

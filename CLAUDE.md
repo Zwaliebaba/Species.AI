@@ -10,10 +10,11 @@
 - **The reference library** (`Design/`): `README.md` (reading guide), `CONVENTIONS.md` (ids, units, naming, allowed terms), `REQUIREMENTS_INDEX.md`, `reference/` (reference mechanics), `architecture/components/` (the engine baseline), `ADR/` (architecture decision records, `ADR-NNN-<slug>.md`), `decisions/` (decision register, `DEC-NNN`; an Open entry states the behaviour to build until it is decided), `assets/GameAssets.md` (every asset to create).
 - **The next run:** `prompts/species-design-phase.md` turns the library and the vision into the Species game design.
 
-## Current status (2026-10-17)
+## Current status (2026-10-18)
 
 - There is no code yet: no solution, no projects, no source.
-- The reference library is still being built by the conversion run (Phase 5, review; every automated gate passes). Until its cutover it lives in `design_next/`, beside the source corpus `design/` and the working folder `species_work/`; read `design_next/` wherever `AGENTS.md` or this file says `Design/`. The cutover renames it to `Design/` and removes the other two.
+- The reference library is complete and lives in `Design/`; every design gate passes on it. It is a reference, not yet the Species game design.
+- The next step is the design phase: run `prompts/species-design-phase.md`.
 
 ## Rules that are easy to miss
 

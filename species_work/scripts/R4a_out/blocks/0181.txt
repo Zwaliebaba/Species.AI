@@ -1,8 +1,0 @@
-stateDiagram-v2
-    [*] --> Dormant
-    Dormant --> Fertilised : fertilised with an orb, orb InEgg, timer 0
-    Fertilised --> Dormant : held orb no longer valid, timer 0
-    Fertilised --> [*] : timer reaches 151 ticks, orb removed, 4 Crawlers below 250, egg removed
-    Dormant --> Dead : health below 0, or at sea level or below
-    Fertilised --> Dead : health below 0
-    Dead --> [*] : held orb back to Floating, corpse fade

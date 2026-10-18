@@ -1,9 +1,0 @@
-stateDiagram-v2
-    [*] --> Boot : application start
-    Boot --> MenuCreated : loading view done, fade complete, menu created
-    MenuCreated --> PageShown : first update, requested page set up, lobby bed starts
-    PageShown --> PageShown : page change, window opened or closed
-    PageShown --> Destroyed : match-start command, front-end loop exits, lobby bed stops
-    Destroyed --> InMatch : loading view, match
-    InMatch --> MenuCreated : leave action, fresh screen at the title or tutorials page
-    PageShown --> [*] : quit

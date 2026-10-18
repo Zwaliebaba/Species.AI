@@ -1,5 +1,0 @@
-flowchart LR
-    W["Waypoint"] --- L["Lead Trooper, index 0"]
-    L -->|"10 wu along the path"| T1["Trooper index 1"]
-    T1 -->|"10 wu along the path"| T2["Trooper index 2"]
-    L -.->|"path: lead, trail[0], trail[1], ..."| P["Trail points, newest first"]

@@ -1,9 +1,0 @@
-stateDiagram-v2
-    [*] --> Idle : spawned at height 5000 over land
-    Idle --> Abducting : reached its first target, tractor beam starts
-    Abducting --> Abducting : arrived or no target, new target, abducts every tick
-    Abducting --> Waiting : abduction timer over and arrived
-    Waiting --> Dropping : 51 ticks
-    Dropping --> Dropping : one Visitor faction Worker per tick while abductees remain, at most 100
-    Dropping --> Leaving : no abductee left and the last drop landed, tractor beam stops
-    Leaving --> [*] : height at least 1900

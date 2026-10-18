@@ -1,4 +1,0 @@
-for i := 0 .. tableX - 1:  x := i * wc       # measured from the plane origin (-X/2, -Z/2)
-    waveX[i] := A * (1.2 * sin32(0.01 * x + 0.65 * t) + 0.9 * sin32(0.03 * x + 1.5 * t))
-for i := 0 .. tableZ - 1:  z := i * wc
-    waveZ[i] := A * (0.9 * sin32(0.02 * z + 0.75 * t) + 0.65 * sin32(0.03 * z + 1.85 * t))

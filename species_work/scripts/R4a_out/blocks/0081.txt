@@ -1,6 +1,0 @@
-flowchart LR
-  S["Presentation snapshot: actors, effects, laser bolts"] --> W["CPU: write QuadInstance and MeshInstance records per type into the upload ring"]
-  W --> C["InstanceCull: frustum, cull radius and distance limit per type; compaction"]
-  C --> A["Indirect arguments per type"]
-  A --> D["ExecuteIndirect per type and pass: 7a, 7b, 7c, 7d, 10a, 10b"]
-  D --> T["scene_colour and scene_depth"]

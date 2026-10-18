@@ -1,3 +1,0 @@
-stateDiagram-v2
-    Idle --> Erupting : presentation draw modulo 1000 is 0, duration 30 to 70 ticks
-    Erupting --> Idle : the duration has run out

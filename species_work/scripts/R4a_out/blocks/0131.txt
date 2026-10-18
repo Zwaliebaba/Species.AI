@@ -1,1 +1,0 @@
-pop(team) = (number of the team's ungrouped actors) − (number of the team's Crawlers)

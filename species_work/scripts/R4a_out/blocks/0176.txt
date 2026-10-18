@@ -1,6 +1,0 @@
-fraction = (40 - d) / 40 * (1 + SimRng::NextUnit(ref.unit.spider.squash_spread))       # 0.3
-if d < ref.unit.spider.crush_radius:                                                   # 20 wu
-    unresistable health change of -(ref.unit.spider.crush_damage * fraction)            # 100
-push = front with y := ref.unit.spider.push_lift * |front|                               # 5
-push length := min(ref.unit.spider.push_factor * fraction, ref.unit.spider.push_cap)    # 30, 20
-the enemy is pushed by push and becomes airborne

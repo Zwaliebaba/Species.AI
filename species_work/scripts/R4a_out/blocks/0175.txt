@@ -1,1 +1,0 @@
-v = normalise((u.x, ref.unit.spider.pounce_lift, u.z)) * ref.unit.spider.pounce_speed_factor * sqrt(D)    # lift 0.5, factor 24

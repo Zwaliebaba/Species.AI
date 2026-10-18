@@ -1,4 +1,0 @@
-flowchart LR
-    B["Builder at tick n"] --> H1["history entry 1: position at n − 1, orb 0"]
-    H1 --> H2["history entry 2: position at n − 2, orb 1"]
-    H2 --> H3["history entry 3: position at n − 3, orb 2"]

@@ -1,8 +1,0 @@
-stateDiagram-v2
-  [*] --> Display
-  Display --> Editing: click - the window makes this field its text-edit target
-  Editing --> Editing: a character, a digit, an editing command or Backspace
-  Editing --> Display: Enter - parse and apply the value, then refresh
-  Editing --> Display: Escape - discard the typed text, nothing applied
-  Editing --> Display: the window is removed - nothing applied
-  Editing --> Display: another text field of the window is clicked - nothing applied

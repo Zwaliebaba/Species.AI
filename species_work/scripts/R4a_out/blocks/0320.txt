@@ -1,8 +1,0 @@
-stateDiagram-v2
-    [*] --> Unchanged : open the page and read the copies
-    Unchanged --> Changed : a compared copy differs from the store
-    Changed --> Unchanged : the copies are edited back to the stored values
-    Changed --> Applying : apply
-    Applying --> Unchanged : write, save, apply the effects, re-read the copies
-    Unchanged --> [*] : Back
-    Changed --> [*] : Back discards the copies

@@ -1,5 +1,0 @@
-stateDiagram-v2
-    [*] --> Created : bot team initialised, or a player leaves during the match
-    Created --> Active : placed inside the map, two phase draws, registered
-    Active --> Active : per-tick step, main cycle when its countdown ends
-    Active --> [*] : match world torn down

@@ -1,6 +1,0 @@
-desired = normalise(target - p) * speed
-if |target - p| < ref.unit.brood_drifter.slow_radius:        # 50 wu
-    desired *= |target - p| / ref.unit.brood_drifter.slow_radius
-v = v * (1 - dt * ref.unit.brood_drifter.steer_blend) + desired * dt * ref.unit.brood_drifter.steer_blend   # 0.5
-v = rotate(v, axis = right, angle = sin(ref.unit.brood_drifter.wobble_rate * t) * dt * ref.unit.brood_drifter.wobble_amplitude)   # 3, 1.5
-p += v * dt

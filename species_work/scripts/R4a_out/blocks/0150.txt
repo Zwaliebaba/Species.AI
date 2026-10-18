@@ -1,9 +1,0 @@
-ChainRouteExists(_z, _a, _visited):                   # Flag post z, team A, the Flag posts visited
-    if _z in _visited:                                return false
-    if Owner(_z) != _a:                               return false
-    if Progress(_z) < 100 and Trend(_z) < 0:          return false   # a Flag post being recaptured breaks the chain
-    _visited := _visited + {_z}
-    if _z is the Home post of _a:                     return true
-    for each Flag post n linked to _z, in link order:
-        if ChainRouteExists(n, _a, _visited):         return true
-    return false

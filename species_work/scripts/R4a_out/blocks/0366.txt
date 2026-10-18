@@ -1,7 +1,0 @@
-(cx, cz) := cell of the structure's centre position
-range := ceil(structure radius / cellSize)
-for x from max(cx - range, 0) to min(cx + range, cellCount), both bounds inclusive:
-    for z from max(cz - range, 0) to min(cz + range, cellCount), both bounds inclusive:
-        centre := centre of cell (x, z), with y = terrain height at that point
-        if structure.SphereHits(centre, cellSize * ref.sim.obstacle_grid.cell_test_fraction):
-            append the structure's handle to cell (x, z)       # no duplicate check

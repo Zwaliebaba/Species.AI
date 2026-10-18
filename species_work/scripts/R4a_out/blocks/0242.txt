@@ -1,7 +1,0 @@
-stateDiagram-v2
-    [*] --> NoTeam
-    NoTeam --> Owned : a team exceeds the threshold, the controlled structure takes its team
-    Owned --> Owned : another team exceeds the threshold with strictly more, both reassigned
-    Owned --> NoTeam : no team above the threshold, the controlled structure keeps its team
-    NoTeam --> Linked : linked to the Core Device, mesh switch, threshold 1 of 3 ports
-    Owned --> Linked : linked to the Core Device

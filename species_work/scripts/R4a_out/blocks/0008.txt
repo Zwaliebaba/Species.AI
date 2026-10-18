@@ -1,9 +1,0 @@
-flowchart TD
-  REQ["request: asset id or key"] --> CAN["canonicalise: A-Z to a-z, backslash to slash"]
-  CAN --> LOOSE{"Debug build with a loose-content directory mounted?"}
-  LOOSE -- "yes, and the key is there" --> LE["loose entry; replacement logged; identity reported as modified"]
-  LOOSE -- "no, or not there" --> UPD{"held by an update pack that names its base pack?"}
-  UPD -- yes --> UE["entry of the latest such update pack"]
-  UPD -- no --> BASE{"held by a base pack?"}
-  BASE -- yes --> BE["base-pack entry"]
-  BASE -- no --> MISS["not found: diagnostic and fallback (AST-115)"]

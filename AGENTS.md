@@ -6,7 +6,7 @@ This repository is a greenfield C++23 game and a hobby project with one develope
 
 **There is no code yet.** This repository holds this file, the root configuration files, `.gitignore`, `.github/` and the design material — no solution, no projects, no source. Nothing below is a target to migrate towards; it describes the code as it must be written from the first line. There is no legacy here and nothing is grandfathered, so a whole-tree run of any code checker comes back clean — trivially today, and by conformance from then on.
 
-**What the tree holds today (2026-10-17):**
+**What the tree holds today (2026-10-18):**
 
 | Path | What it is |
 |---|---|
@@ -15,8 +15,6 @@ This repository is a greenfield C++23 game and a hobby project with one develope
 | `Design/` | The **Species reference library**: `reference/` (the reference mechanics of a skirmish match, engine-agnostic), `architecture/components/` (the engine baseline, one specification per component), `ADR/` (the baseline architecture decision records), `decisions/` (the decision register, `DEC-NNN`), `assets/` (every asset to create, `GameAssets.md`), `glossary/`, `CONVENTIONS.md` and `REQUIREMENTS_INDEX.md`. It is a reference for the design phase, not yet the Species game design. |
 | `prompts/species-design-phase.md` | The run that turns the reference library and the vision into the Species game design. |
 | `Tools/DesignCheck/`, `Tools/DesignModels/` | The design gate checker (run on every change under `Design/`) and the design phase's quantitative models. They never ship and never link (R14). |
-
-While the conversion run that builds the library is in progress, the library is assembled in `design_next/`, next to its source corpus `design/` and the run's working folder `species_work/`; the cutover replaces `design/` with `Design/` and removes the other two. Until then, read `design_next/` wherever this file says `Design/`.
 
 **Where these rules come from.** They are carried over from two sibling repositories: `Outpost.Warzone`, where the formatter and linter settings were measured against roughly 223,000 lines, and `Nomad-Commander`. That lineage is why `.clang-format` and `.clang-tidy` are what they are, and it is why code can move between the trees without a rename or a reflow pass. **What did not come across is the other trees' design, their decisions or their plan.** A decision taken there binds nothing here.
 

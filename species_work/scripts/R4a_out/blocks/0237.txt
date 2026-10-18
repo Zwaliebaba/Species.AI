@@ -1,9 +1,0 @@
-winner ← no team
-for t in 0 .. 5:                                  # slot order (DEC-016)
-    if count[t] > n and (winner = no team or count[t] > count[winner]):
-        winner ← t
-if winner = no team:
-    team assignment of the console ← no team      # the controlled structure keeps its team
-else:
-    team assignment of the console ← winner
-    team assignment of the controlled structure ← winner

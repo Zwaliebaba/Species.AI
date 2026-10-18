@@ -1,8 +1,0 @@
-flowchart LR
-    M["Source Node<br/>creates transit orbs"] -->|"first edge: 11 advances"| L1["Relay"]
-    L1 -->|"10 advances"| SA["Spawn Node A"]
-    L1 -->|"10 advances"| L2["Relay"]
-    L2 -->|"10 advances"| SB["Spawn Node B"]
-    SA -.->|"request addressed to A"| M
-    SB -.->|"request addressed to B"| M
-    SB -->|"door socket"| W(("Worker"))

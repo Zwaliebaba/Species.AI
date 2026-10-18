@@ -1,4 +1,0 @@
-while total allocated bytes > B:              // counts whole buffers, decoded or not
-    victim := the unlocked sample with the oldest last-use time strictly older than now
-    if no victim: stop                         // locked samples are never evicted
-    delete victim

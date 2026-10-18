@@ -1,5 +1,0 @@
-flowchart LR
-    T["Recount countdown reaches 0"] --> P["Recalculate priorities from the previous counts"]
-    P --> R["Countdown := 20 ticks"]
-    R --> C["Recount all actors in range: friend, enemy and idle counts, nearest node of each Worker"]
-    C --> O["Owner := strictly highest friend count, lowest slot on a tie, none if empty"]

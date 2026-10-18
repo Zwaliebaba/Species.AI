@@ -1,5 +1,0 @@
-target ← intake count × current level × ref.bldg.launch_vessel.refuel_gain        # 0.4
-rate   ← ref.bldg.launch_vessel.refuel_keep × rate                               # 0.99
-         + (1 − ref.bldg.launch_vessel.refuel_keep) × target                     # 0.01
-fuel   ← min(fuel + rate × dt, ref.bldg.launch_vessel.max_fuel)                # 100
-intake count ← 0

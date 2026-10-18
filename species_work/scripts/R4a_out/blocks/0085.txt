@@ -1,7 +1,0 @@
-stateDiagram-v2
-    [*] --> Idle
-    Idle --> FadingOut: StartFadeOut, rate plus 1 per second
-    Idle --> Delayed: StartFadeIn with a delay, amount 1
-    Delayed --> FadingIn: delay used up, rate minus 1 per second
-    FadingOut --> Idle: amount reaches 1, rate 0, screen black
-    FadingIn --> Idle: amount reaches 0, rate 0, screen clear

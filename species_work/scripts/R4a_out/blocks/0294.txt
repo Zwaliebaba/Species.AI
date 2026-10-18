@@ -1,9 +1,0 @@
-flowchart TD
-    A["Well-defended node A"] --> B{"Own Spawn Node within 200 wu whose nearest node is A?"}
-    B -->|"yes, waypoint Leader within 200 wu"| SKIP["Skip A"]
-    B -->|"yes, no waypoint Leader"| CV["Conveyor: promote an idle Worker, order it to the destination, post it in front of the Spawn Node"]
-    B -->|no| T["Target selection"]
-    CV -.-> T
-    T -->|none| SKIP
-    T -->|destination| S["Send chance: 1.5 x enemies there / idle here, from 0.6 to 1, 1.1 for Siege attackers and corridors"]
-    S --> G["For each own actor within 150 wu: garrison test, one draw per Worker, send idle Workers whose nearest node is A"]

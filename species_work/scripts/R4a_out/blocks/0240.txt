@@ -1,9 +1,0 @@
-stateDiagram-v2
-    [*] --> NoTeam
-    NoTeam --> Resting : recount, a team has at least the minimum lifters within 50 wu
-    Resting --> Lifted : lifters at least the minimum, lift and carry events, goal reset
-    Lifted --> Resting : lifters below the minimum, drop event
-    Lifted --> Lifted : more than 66 percent of the lifters vote for a new goal
-    Resting --> NoTeam : recount finds no qualifying team
-    Lifted --> NoTeam : recount finds no qualifying team
-    Resting --> Resting : a team that is not a friend now leads, team change, goal reset

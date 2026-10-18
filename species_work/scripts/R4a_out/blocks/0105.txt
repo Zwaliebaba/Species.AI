@@ -1,6 +1,0 @@
-L     := ter.generator.noise.length_scale * h / n          # 256.0 * h, then / n
-R     := pow32(L * ter.generator.noise.length_multiplier, fd)    # L * 10.0
-noise := (0.5 - Next() / 32767) * R                        # Signed(R), TER-080
-noise := noise * comp
-noise := noise * (ter.generator.noise.envelope_floor + pow32(abs32(b), ls) * ter.generator.noise.envelope_gain)
-                                                           # 0.1 + pow32(|b|, ls) * 0.15

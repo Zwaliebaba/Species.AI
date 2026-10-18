@@ -1,7 +1,0 @@
-stateDiagram-v2
-  [*] --> NoGamepad
-  NoGamepad --> Assigned: a button of an unassigned gamepad goes down / claim, connection down
-  Assigned --> Disconnected: the assigned gamepad disconnects / connection up
-  Disconnected --> Assigned: the same gamepad reconnects / connection down
-  Disconnected --> Assigned: a button of another unassigned gamepad goes down / transfer, connection down
-  Assigned --> Assigned: input of any other gamepad / ignored

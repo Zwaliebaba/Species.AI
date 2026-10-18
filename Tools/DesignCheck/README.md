@@ -18,7 +18,7 @@ gates and prints one line per gate:
 
 ```
 gate  1 Hard-fail patterns           PASS     0  0 hard-fail hits
-gate  2 Soft-flag patterns           PASS     0  40 soft hits, 40 allowed by CONVENTIONS §9, 0 not allowed
+gate  2 Soft-flag patterns           PASS     0  39 soft hits, 39 allowed by CONVENTIONS §9, 0 not allowed
 ...
 ```
 

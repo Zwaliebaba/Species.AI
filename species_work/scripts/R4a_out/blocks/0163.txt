@@ -1,9 +1,0 @@
-FireAtPoint(_target):
-    if reload > 0: return                                         # no shot
-    aim := _target + (NextSigned(ref.unit.attack.aim_jitter), 0, NextSigned(ref.unit.attack.aim_jitter))
-                                                                   # each component in (-7.5, 7.5)
-    from := position + (0, ref.unit.attack.muzzle_height, 0)
-    fire a laser bolt from `from` with velocity (aim - from) scaled to ref.unit.attack.laser_speed, for the actor's team
-    reload := rate                                                 # in ticks
-    justFired := true
-    emit presentation event <kind>.attack

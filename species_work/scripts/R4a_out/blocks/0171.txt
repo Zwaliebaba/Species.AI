@@ -1,8 +1,0 @@
-flowchart TD
-    A["Harvesting, holding orbs"] --> B{"live grenade resting on the ground within 25 wu?"}
-    B -- yes --> C["capture: freeze fuse, remove from physics"]
-    C --> D["drawn up the funnel at angle t + 50 i"]
-    D --> E{"within 2 wu of the Collector?"}
-    E -- yes --> F["Collector vulnerable; grenade fuse expires, released; health − 999"]
-    F --> G["orbs restart in Birth, flung out at up to 150 wu/s; grenades released"]
-    G --> H["grenade explodes on the next tick; Collector removed"]

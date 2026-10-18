@@ -1,6 +1,0 @@
-stateDiagram-v2
-    [*] --> Live : map record, created once at initialisation step 7, team remapped, initialised
-    [*] --> Live : rule creates it during the match, new serial, initialised, obstacle grid updated
-    Live --> Live : advance requests no removal
-    Live --> Removed : destroyed flag set, or the kind's own removal rule
-    Removed --> [*] : removed from the pool, obstacle grid updated, bot navigation links recomputed for a bot navigation node or a wall

@@ -1,5 +1,0 @@
-flowchart TD
-    A["Mode second with time remaining at or below 0"] --> B{"Top score tied and sudden death on?"}
-    B -- no --> C["Declare the leader; Crowned hook"]
-    B -- yes --> D["Time remaining := 60 mode seconds; wipe the teams below the top"]
-    D --> E["60 mode seconds later"] --> A
