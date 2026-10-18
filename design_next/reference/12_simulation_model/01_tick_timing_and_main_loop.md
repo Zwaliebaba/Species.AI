@@ -400,7 +400,7 @@ Alongside, the team command state is sent once per 0.1 s, the audio engine runs 
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
-| `ref.sim.tick_period` | 0.1 | s of real time per tick | **the reference tick rate: 10 ticks per second.** The reference schedule adds the period rounded to single precision, 0.100000001490116 s per tick | R-SIM-500, R-SIM-520 | DEC-227 |
+| `ref.sim.tick_period` | 0.1 | s of real time per tick | **the reference tick rate: 10 ticks per second**; the constant `TICK_PERIOD_SECONDS` | R-SIM-500, R-SIM-520 | DEC-227 |
 | `ref.sim.update_slices` | 10 | slices per tick | the constant `UPDATE_SLICES_PER_TICK` | R-SIM-510, R-SIM-514 | DEC-224, DEC-227 |
 | `ref.sim.slice.power_slots` | 1 | slice index (from 0) | | R-SIM-513 | |
 | `ref.sim.slice.map_effects` | 3 | slice index | snow, dust storm and lightning spawners | R-SIM-513 | |
@@ -418,23 +418,22 @@ Alongside, the team command state is sent once per 0.1 s, the audio engine runs 
 | `ref.sim.speed.pause_threshold` | 0.01 | game speed | paused while the speed is below | R-SIM-544 | |
 | `ref.sim.speed.snap_threshold` | 0.01 | game speed difference | snap while the difference is below | R-SIM-541 | |
 | `ref.sim.speed.grace_end_rate` | 1.0 | blend rate | immediate | R-SIM-552 | |
-| `ref.sim.speed.pause_rate` | 0.2 | blend rate | 21 ticks to snap | R-SIM-554 | DEC-038 |
-| `ref.sim.speed.game_over_rate` | 0.2 | blend rate | 21 ticks to snap | R-SIM-555 | |
+| `ref.sim.speed.pause_rate` | 0.2 | blend rate | 21 command frames to snap | R-SIM-554 | DEC-038 |
+| `ref.sim.speed.game_over_rate` | 0.2 | blend rate | 21 command frames to snap | R-SIM-555 | |
 | `ref.sim.speed.time_dilation_min` | 0.2 | game speed | target = min + unit draw × spread | R-SIM-545 | DEC-039 |
 | `ref.sim.speed.time_dilation_spread` | 0.2 | game speed | target range 0.2 to 0.4 | R-SIM-545 | DEC-039 |
 | `ref.sim.speed.time_rush_min` | 1.3 | game speed | | R-SIM-545 | DEC-039 |
 | `ref.sim.speed.time_rush_spread` | 0.7 | game speed | target range 1.3 to 2.0 | R-SIM-545 | DEC-039 |
 | `ref.sim.speed.crate_rate` | 0.05 | blend rate | Time Dilation and Time Rush | R-SIM-545 | DEC-039 |
-| `ref.sim.speed.crate_hold` | 150 | ticks | 15 s; counts from the tick the target is reached | R-SIM-545, R-SIM-557 | DEC-039, DEC-092 |
+| `ref.sim.speed.crate_hold` | 151 | world ticks | 15 s; counted from the first world tick after the target is reached, that tick included (R-SIM-541 step 4) | R-SIM-545, R-SIM-557 | DEC-002, DEC-039, DEC-092, DEC-265 |
 | `ref.sim.speed.meteor_target` | 0.4 | game speed | | R-SIM-545 | |
 | `ref.sim.speed.meteor_rate` | 0.1 | blend rate | | R-SIM-545 | |
-| `ref.sim.speed.meteor_hold` | 40 | ticks | 4 s | R-SIM-545 | DEC-092 |
+| `ref.sim.speed.meteor_hold` | 40 | world ticks | 4 s; counted like `ref.sim.speed.crate_hold` | R-SIM-545, R-SIM-557 | DEC-092 |
 | `ref.sim.speed.meteor_trigger_distance` | 200 | wu | distance from a meteor to its target | R-SIM-556 | |
 | `ref.sim.render.extrapolation_cap` | 1.0 | s of real time | ten tick periods | R-SIM-560 | DEC-222 |
 | `ref.sim.frame.delta_clamp` | 0.25 | s of real time | presentation frame delta cap | R-SIM-570, R-SIM-573 | |
 | `ref.sim.frame.control_send_period` | 0.1 | s of real time | one tick period; no burst catch-up | R-SIM-581, R-SIM-584 | DEC-203 |
 | `ref.sim.frame.audio_update_period` | 0.05 | s of real time | 20 audio logic updates per second | R-SIM-570 | |
-| `ref.sim.frame.low_fps_audio_threshold` | 15 | frames per second | an extra audio advance below this rate | R-SIM-581 | |
 | `ref.sim.frame.fps_window` | 1.0 | s of real time | | R-SIM-576 | |
 | `ref.sim.frame.fps_initial` | 60 | frames per second | until the first window completes | R-SIM-576 | |
 | `ref.sim.frame.loading_frame_period` | 1/60 | s of real time | loading views only | R-SIM-570 | |

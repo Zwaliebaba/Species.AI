@@ -87,13 +87,13 @@ Between the battles the player hears an endless, slowly changing pad under the m
 | Worker retreat | `sfx.unit.worker.flee_bark`, `sfx.unit.worker.flee_bark_b` | `worker.flee_bark` (two layers) |
 | Worker pain | `sfx.unit.worker.hurt`; the laser-hit bark `sfx.weapon.laser_bolt.hit_bark` | `worker.hurt`, `leader.hurt`; `laser_bolt.hurt_actor` |
 | Worker death | `sfx.unit.worker.die`, `sfx.unit.worker.die_b`; the burning screams `sfx.unit.worker.burning` | `worker.die` (two layers), `leader.die`; `worker.burning` |
-| Worker effort and joy | `sfx.unit.worker.lift_relic`; `sfx.unit.worker.victory_jump` | `worker.lift_relic`; `worker.victory_jump` |
+| Worker effort and joy | `sfx.unit.worker.lift_relic`; `sfx.unit.worker.victory_jump` | `worker.lift_relic`; `worker.victory_jump`, not reached in a match (R-AUD-319) |
 | Leader voice | `sfx.unit.leader.spawn`; `sfx.unit.leader.order_waypoint` | `leader.spawn`, `leader.selected`, `worker.ordered` and the owner acknowledgements of `leader.order_waypoint` and `leader.order_formation`; the order loops |
 | Trooper voice | `sfx.unit.trooper.presence_loop`, `sfx.unit.trooper.hurt`, `sfx.unit.trooper.die` | `trooper.spawn` (one shared-random chatter loop), `trooper.hurt`, `trooper.die` |
 | blight-tree speech | `sfx.building.tree.ambient_blight` | `tree.ambient_blight` (the Blight Grove outcome) |
 | announcer stings | the 25 outcome-sting groups of [event catalogue](event_catalogue.md) table 2.6-B; `sfx.crate.supply_crate.capture_begin`, `sfx.crate.supply_crate.capture_begin_c`, `sfx.crate.supply_crate.capture_lost`; `sfx.building.control_zone.relic_scored`, `sfx.building.relic.owner_changed`; `sfx.building.control_zone.owner_changed`, `sfx.building.control_zone.owner_changed_b`; `sfx.building.spawn_node.activate`, `sfx.building.spawn_node.deactivate` | the 25 outcome stings; the crate, Relic, Control Zone and Spawn Node events |
 
-**R-AUD-314** (MUST) The reference sound set holds voice takes that no event plays, for moments whose events fire silently: 12 Leader acknowledgements, 9 affirmatives, 4 attention calls, 2 formation calls and 5 marching calls (the Leader order changes, DEC-565), 17 strain grunts (lifting and carrying a Relic, DEC-565), 2 game-over, 1 victory and 1 defeat announcements (the match end, R-AUD-307), 1 announcement of a crate opened by another team and 25 alternative outcome-sting takes. They size the voice work of [music hooks and brief](music_hooks_and_sound_design_brief.md) R-AUD-411.
+**R-AUD-314** (MUST) These voiced moments stay silent until DEC-565 binds them: the Leader order changes `leader.order_follow` and `leader.order_none`, and the lifting and carrying of a Relic, `relic.lift` and `relic.carry` ([event catalogue](event_catalogue.md) R-AUD-141). If DEC-565 binds them, they need voice lines, which size the voice work of [music hooks and brief](music_hooks_and_sound_design_brief.md) R-AUD-411: about 12 Leader acknowledgements, 9 affirmatives, 4 attention calls, 2 formation calls and 5 marching calls for the Leader order changes, and about 17 strain grunts for lifting and carrying a Relic; the 25 outcome stings take a second take each (R-AUD-412).
 
 ### 2.5 Voice behaviour
 
@@ -105,7 +105,7 @@ Between the battles the player hears an endless, slowly changing pad under the m
 
 **R-AUD-318** (MUST) **Carry chant.** While carrying a Relic or another carryable structure, a lifting Worker repeats its chant with the period `ref.unit.worker.lift_sound_base` + ⌊(1 − lifters ÷ maximum lifters) × `ref.unit.worker.lift_sound_spread`⌋ ticks (15 to 34 ticks): `worker.lift_relic` at the start of each period and `worker.ordered_by_player` at its half, so fewer lifters chant more slowly ([02 Worker](../02_units/worker.md) R-UNIT-082).
 
-**R-AUD-319** (MUST) **Victory celebration.** Idle Workers celebrate with `worker.victory_jump` only when every primary objective of the map is complete. A map with no primary objectives receives one objective that never completes, so the celebration never starts on it (DEC-331).
+**R-AUD-319** (MUST) **Victory celebration.** Idle Workers celebrate with `worker.victory_jump` only when every primary objective of the map is complete. A map with no primary objectives receives one objective that never completes, so the celebration never starts on it (DEC-331). No map of the reference skirmish completes its primary objectives ([08 rules and conventions](../08_maps_and_level_design/rules_and_conventions.md) R-MAP-033), so `worker.victory_jump` never plays in a match.
 
 ### 2.6 Ambience beds
 
@@ -196,9 +196,11 @@ Keys cited here and defined elsewhere: `ref.match.grace_period`, `ref.match.opti
 
 Each default is the behaviour that §2 specifies.
 
+- DEC-003 — the length of a mode second, which spaces the match-clock ticks (R-AUD-305).
+- DEC-049 — music: the victory and defeat stings bound to the match end (R-AUD-307).
 - DEC-071 — the Flag Chain base-under-attack announcement interval; the announcement raises no sound (R-AUD-311).
 - DEC-317 — voice set language (R-AUD-312).
 - DEC-318 — sound triggers tied to the frame rate: the match-clock ticks (R-AUD-305).
 - DEC-319 — ambience during loading views (R-AUD-325).
 - DEC-320 — match-end pitch drop (R-AUD-308).
-- DEC-565 — sounds for the other silent gameplay events: the silent interface events (R-AUD-302).
+- DEC-565 — sounds for the other silent gameplay events: the silent interface events and the silent voiced moments (R-AUD-302, R-AUD-314).

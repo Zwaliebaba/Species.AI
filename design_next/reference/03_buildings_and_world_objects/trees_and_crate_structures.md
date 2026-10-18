@@ -203,7 +203,7 @@ A search that finds nothing creates no objective. A new objective is to receive 
 
 **R-BLDG-636** (MUST) An unlocked Hive with ants inside and at least one objective releases one ant every `ref.bldg.hive.release_interval_ticks` (2 ticks, 0.2 s): it chooses an objective by U{0..count − 1}; spawns an ant of its own team into its ant group, created on first use, at the Hive with spawn spread `ref.bldg.hive.release_spread` (10 wu); gives it the ScoutArea order with the waypoint objective position + an offset of length U[0, `ref.bldg.hive.waypoint_scatter`) (30 wu) at angle U[0, 2π), pushed clear of obstacles; and lowers its ants inside by 1 and the objective's count by 1, removing the objective at 0.
 
-**R-BLDG-637** (MUST) A returning ant adds 1 to the Hive's ants inside, a carried orb adds 1 to its orbs inside, and a carried Worker is killed at the Hive so that its orb is released there ([02 Creatures](../02_units/creatures.md) R-UNIT-566). While orbs are inside, the Hive turns one orb into `ref.econ.hive.ants_per_orb` (6) ants every `ref.econ.hive.conversion_ticks` (10 or 11 ticks, reference/05 R-ECON-084).
+**R-BLDG-637** (MUST) A returning ant adds 1 to the Hive's ants inside, a carried orb adds 1 to its orbs inside, and a carried Worker is killed at the Hive so that its orb is released there ([02 Creatures](../02_units/creatures.md) R-UNIT-566). While orbs are inside, the Hive turns one orb into `ref.econ.hive.ants_per_orb` (6) ants every `ref.econ.hive.conversion_ticks` (10 ticks: one second of match time by the deadline rule of R-BLDG-403, reference/05 R-ECON-084).
 
 **R-BLDG-638** (MUST) When a Hive's ants inside stay at or below 0 for `ref.bldg.hive.empty_ticks` (30) consecutive ticks, its ants inside become `ref.bldg.hive.refill_ants` (10) and it damages itself by −`ref.bldg.hive.refill_damage` (10). The count is per tick and scales with game speed (DEC-092).
 
@@ -609,7 +609,7 @@ All criteria run headless at game speed 1 with a fixed seed, unless they test pr
 
 **AC-TC-11 Hive release** (R-BLDG-635, R-BLDG-636). Given a Hive with 75 ants and enemy Workers within 400 wu, then it never holds more than 6 objectives, its first ant leaves 50 ticks after creation, and further ants leave one every 2 ticks while it is unlocked and has objectives.
 
-**AC-TC-12 Hive economy** (R-BLDG-637, R-BLDG-638). Given a Hive with 3 orbs inside, then it gains 18 ants over 3 conversions of 10 or 11 ticks each; given a Hive with 0 ants for 30 ticks, then it holds 10 ants and has lost 10 health.
+**AC-TC-12 Hive economy** (R-BLDG-637, R-BLDG-638). Given a Hive with 3 orbs inside, then it gains 18 ants over 3 conversions of 10 ticks each; given a Hive with 0 ants for 30 ticks, then it holds 10 ants and has lost 10 health.
 
 **AC-TC-13 Hive damage** (R-BLDG-639, R-BLDG-640). Given a Hive at 100 health, when it takes −2.5, then its health is 97; when it falls from 61 to 59, then it shatters 41 % of its mesh and raises `hive.damaged` twice; at 0 health it is removed and no Essence orb appears; given a burning tree next to a Hive with 0 ants, then the Hive releases no ant and its count stays 0.
 

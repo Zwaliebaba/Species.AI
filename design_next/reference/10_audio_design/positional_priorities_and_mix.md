@@ -188,7 +188,7 @@ Diagram 3-B: the Species buses (R-AUD-221); the pitch bend acts on the voice and
 | `ref.aud.mix.master_step_db` | 0.32 | dB per step | 255 steps; step 0 = −81.6 dB | R-AUD-225 | — |
 | `ref.aud.mix.floor_db` | −100 | dB | | R-AUD-225 | — |
 
-Keys cited here and defined elsewhere: `ref.meta.options.sound.volume_max` in [09 options](../09_front_end_and_match_flow/options_localisation_and_hooks.md); `ref.ctrl.select.sound_interval` and `ref.ctrl.cursor.highlight_sound_interval` in [06](../06_controls_camera_and_commands/README.md); `ref.unit.worker.horn_odds`, `ref.unit.worker.horn_cooldown` and `ref.unit.worker.burning_sound_odds` in [02 Worker](../02_units/worker.md). The real-voice budget, the per-bus and per-event caps, the steal margin and the time constant of the pitch-bend smoothing are audio engine tuning values with the starting values of DEC-570 and DEC-751 ([audio engine](../../architecture/components/audio_engine/README.md)).
+Keys cited here and defined elsewhere: `ref.meta.options.sound.volume_max` in [09 options](../09_front_end_and_match_flow/options_localisation_and_hooks.md); `ref.ctrl.select.sound_interval` and `ref.ctrl.cursor.highlight_sound_interval` in [06](../06_controls_camera_and_commands/README.md); `ref.unit.worker.horn_odds`, `ref.unit.worker.horn_cooldown` and `ref.unit.worker.burning_sound_odds` in [02 Worker](../02_units/worker.md); `aen.pitch_bend.time_constant`, the time constant of the pitch-bend smoothing with the starting value of DEC-751, in the [audio engine](../../architecture/components/audio_engine/README.md). The real-voice budget, the per-bus and per-event caps and the steal margin are audio engine tuning values with the starting values of DEC-570.
 
 ## 5 Edge cases and interactions
 

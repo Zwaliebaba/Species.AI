@@ -189,10 +189,17 @@ This file cites `ref.sim.frame.delta_clamp` ([Tick timing](../12_simulation_mode
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
-| `ref.ctrl.camera.initial_pose` | field of view 60°; height 50 wu; position (1000, 500, 1000); front normalise(0, −0.5, −1); bounds ±10⁶ wu on both horizontal axes | pose | until match entry sets the pose and the bounds | R-CTRL-452 | — |
+| `ref.ctrl.camera.initial_pose.fov` | 60 | degrees | vertical field of view of the initial pose, until match entry sets the pose | R-CTRL-452 | — |
+| `ref.ctrl.camera.initial_pose.height` | 50 | wu | | R-CTRL-452 | — |
+| `ref.ctrl.camera.initial_pose.position` | 1000, 500, 1000 | wu (x, y, z) | | R-CTRL-452 | — |
+| `ref.ctrl.camera.initial_pose.front` | 0, −0.5, −1 | direction, normalised | | R-CTRL-452 | — |
+| `ref.ctrl.camera.initial_pose.bounds` | 1,000,000 | wu | ± on both horizontal axes, until match entry sets the bounds | R-CTRL-452 | — |
 | `ref.ctrl.camera.fov_base` | 60 | degrees | vertical; the free-movement target | R-CTRL-460, R-CTRL-470 | DEC-024 |
 | `ref.ctrl.camera.zoom_divisor` | 4 | — | 60° becomes 15° while zooming | R-CTRL-460 | DEC-024 |
-| `ref.ctrl.camera.zoom_rates` | normal 30; zooming 100; static and scripted move 1; k = dt × rate × 0.1 | per second | time constants 1/3 s, 0.1 s, 10 s | R-CTRL-460 | DEC-024 |
+| `ref.ctrl.camera.zoom_rates.normal` | 30 | rate | time constant 1/3 s | R-CTRL-460 | DEC-024 |
+| `ref.ctrl.camera.zoom_rates.zooming` | 100 | rate | while `action.camera.zoom` is held; time constant 0.1 s | R-CTRL-460 | DEC-024 |
+| `ref.ctrl.camera.zoom_rates.scripted` | 1 | rate | static and scripted-move modes and the structure focus; time constant 10 s | R-CTRL-460 | DEC-024 |
+| `ref.ctrl.camera.zoom_rates.blend_factor` | 0.1 | per second per unit of rate | k = dt × rate × 0.1 | R-CTRL-460 | DEC-024 |
 | `ref.ctrl.camera.turret_fov` | 50 | degrees | set every frame in turret aim | R-CTRL-460, R-CTRL-491 | — |
 | `ref.ctrl.camera.height_key_rate` | 7 | wheel notches per second | raise and lower actions | R-CTRL-461 | — |
 | `ref.ctrl.camera.height_scale` | 2 | × √(wu) per notch | height change = delta × 2 × √\|height − land\| | R-CTRL-461 | — |
@@ -206,7 +213,9 @@ This file cites `ref.sim.frame.delta_clamp` ([Tick timing](../12_simulation_mode
 | `ref.ctrl.camera.fast_pan_factor` | 4 | × | 1,000 wu/s | R-CTRL-471 | DEC-024 |
 | `ref.ctrl.camera.stick_gain` | 10 | wu/s per stick unit | full deflection about 393 wu/s; no fast-pan factor | R-CTRL-471 | — |
 | `ref.ctrl.camera.speed_hint_hold` | 4 | s of real time | forward pan held alone | R-CTRL-471 | — |
-| `ref.ctrl.camera.cliff_probe` | 100 wu, 40 samples 2.5 wu apart; slow band 30 to 100 wu, s = max(0, (d − 30) ÷ 70) | probe | | R-CTRL-471 | — |
+| `ref.ctrl.camera.cliff_probe.length` | 100 | wu | along the horizontal direction to the target | R-CTRL-471 | — |
+| `ref.ctrl.camera.cliff_probe.samples` | 40 | samples | evenly spaced, 2.5 wu apart | R-CTRL-471 | — |
+| `ref.ctrl.camera.cliff_probe.slow_start` | 30 | wu | the slow band runs from 30 wu to the probe length; s = max(0, (d − 30) ÷ 70) | R-CTRL-471 | — |
 | `ref.ctrl.camera.ground_samples` | ±10 | wu | the target and four points around it | R-CTRL-471 | — |
 | `ref.ctrl.camera.position_smoothing` | 4 | per second | free-movement position | R-CTRL-471 | — |
 | `ref.ctrl.camera.mouse_look_rate` | \|front × wanted\| × min(1, √dt) | radians per frame | | R-CTRL-471 | — |
@@ -215,7 +224,9 @@ This file cites `ref.sim.frame.delta_clamp` ([Tick timing](../12_simulation_mode
 | `ref.ctrl.camera.track_zoom_rate` | 10 | wu/s | d-pad up and down | R-CTRL-484 | DEC-096 |
 | `ref.ctrl.camera.track_distance_range` | [50, 500] | wu | | R-CTRL-484 | DEC-096 |
 | `ref.ctrl.camera.track_smoothing` | 4 | per second | × 3 while resetting; k clamped to 1 | R-CTRL-484 | — |
-| `ref.ctrl.camera.move_behind` | minimum squared move 10 wu²; towards-camera cosine 0.5; history 10 samples | constants | | R-CTRL-485 | — |
+| `ref.ctrl.camera.move_behind.min_move_sq` | 10 | wu² | minimum squared move of the lead Trooper | R-CTRL-485 | — |
+| `ref.ctrl.camera.move_behind.towards_cosine` | 0.5 | cosine | moving towards the camera within ±60° | R-CTRL-485 | — |
+| `ref.ctrl.camera.move_behind.history_samples` | 10 | samples | averaged direction of travel | R-CTRL-485 | — |
 | `ref.ctrl.camera.reset_done` | 5 | wu per axis | signed comparison | R-CTRL-485 | — |
 | `ref.ctrl.camera.rotate_factor` | min(1, 2 × dt + \|e\| ÷ 10) | factor | e = normalised screen offset | R-CTRL-486 | — |
 | `ref.ctrl.camera.control_vector_threshold` | 0.98 | cosine | | R-CTRL-487 | — |
