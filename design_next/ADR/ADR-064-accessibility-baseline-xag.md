@@ -33,7 +33,7 @@ Engine features provided from the start:
 
 * **Text scale** setting that feeds the glyph cache and UI layout (XAG 101); minimum default text size of 9 px at 1080p and 19 px at 4K for icons and glyph text. For a client height *H* in pixels, the minimum is 9 px × *H* ÷ 1080 up to 1080, linear from 9 px at 1080 to 19 px at 2160, and 19 px × *H* ÷ 2160 above 2160.
 * **Contrast:** gameplay-relevant text at 4.5:1 or more, inactive elements at 3:1, and a high-contrast mode at 7:1 (XAG 102). UI palettes are data, so the high-contrast palette is a content variant.
-* **Identity beyond colour:** team and race identity always has a second channel, shape or pattern, as well as colour (XAG 103).
+* **Identity beyond colour:** team and faction identity always has a second channel, shape or pattern, as well as colour (XAG 103).
 * **Input:** full remapping, hold-or-toggle options for held actions, and remapping done once in the input abstraction for every device (XAG 107).
 * **UI navigation and focus:** every screen is fully usable with keyboard alone and with gamepad alone through the UI focus graph (XAG 112, 113).
 * **Photosensitivity:** a build-time and capture-time check of glow and flash effects against the XAG 118 flash criterion (a 10 % change in luminance counts as a flash), and a setting that reduces flash intensity.

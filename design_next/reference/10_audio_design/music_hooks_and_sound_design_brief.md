@@ -9,7 +9,6 @@ The reference game plays **no music** in any session. Its audio engine neverthel
 ## 2 Rules
 
 ### 2.1 Music hooks
-<a id="21-music-hooks-kh-music"></a>
 
 **R-AUD-400** (MUST) **No music.** The reference plays no music at the front end, in the lobby or in a match, and has no menu music and no victory or defeat cue apart from the stings of R-AUD-307: no rule of a skirmish session raises a music event, and the sound data names music events that no rule raises. What the player hears instead is the lobby bed at the front end and the altitude-driven match bed in a match ([front end, HUD, voice and ambience](front_end_hud_voice_and_ambience.md) R-AUD-320, R-AUD-323). Music is a missing feature to design, recorded here as hooks only (DEC-049).
 

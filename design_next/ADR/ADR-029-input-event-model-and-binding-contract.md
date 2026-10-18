@@ -76,5 +76,5 @@ Chosen option: **1, ordered input events, event-by-event evaluation, one name ta
 ## More Information
 
 - Related: ADR-028 (device back-ends), ADR-032 (UI input in the update phase), ADR-064 (accessibility: remapping and hold or toggle options).
-- The input component (`architecture/components/input.md`) specifies the binding grammar, the name table and the tuning values; the controls reference (`reference/06_controls_camera_and_commands/`) specifies the control scheme and the commands.
+- The input component (`architecture/components/input/README.md`) specifies the binding grammar, the name table and the tuning values; the controls reference (`reference/06_controls_camera_and_commands/`) specifies the control scheme and the commands.
 - **Amendment 2026-10-17.** Repeat and idle timings are real time on the platform clock, as the input component specifies (input component §1 terms, `inp.repeat.initial_delay`, `inp.repeat.period`, R-CTRL-006); menu navigation therefore repeats while a match is paused. The consequence of the radial dead zone for diagonal stick panning is recorded for playtesting (`ref.ctrl.camera.stick_gain`).

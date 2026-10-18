@@ -8,7 +8,7 @@ Scope: Units, creatures, hazards, projectiles. Back to the [requirements index](
 |---|---|---|
 | R-UNIT-001 | The actor kinds of a reference match are exactly those of table 2.1-A. | [README.md](../reference/02_units/README.md#21-actor-kinds-in-scope) |
 | R-UNIT-002 | A map definition may place actors through its instant units only of the kinds marked "allowed" in table 2.1-A. | [README.md](../reference/02_units/README.md#21-actor-kinds-in-scope) |
-| R-UNIT-003 | Every actor kind has a display name keyed by the string id `<string-id prefix>.name` of its ledger entry, for example `unit.worker.name`, | [README.md](../reference/02_units/README.md#21-actor-kinds-in-scope) |
+| R-UNIT-003 | Every actor kind has a display name keyed by the string id `<string-id prefix>.name` of its row in CONVENTIONS §8.2 or §8.3, for example | [README.md](../reference/02_units/README.md#21-actor-kinds-in-scope) |
 | R-UNIT-004 | These simulated objects and helper records serve the units of this folder. | [README.md](../reference/02_units/README.md#22-simulated-objects-and-helper-records-that-are-not-actor-kinds) |
 | R-UNIT-005 | Every unit timer, cooldown, lifetime and per-tick probability is an integer number of ticks or a per-tick value, never a floating-point | [README.md](../reference/02_units/README.md#23-ticks-timers-and-game-speed) |
 | R-UNIT-006 | Game speed is tick scheduling: | [README.md](../reference/02_units/README.md#23-ticks-timers-and-game-speed) |
@@ -20,7 +20,7 @@ Scope: Units, creatures, hazards, projectiles. Back to the [requirements index](
 | R-UNIT-012 | An actor's health never exceeds `ref.unit.health_max` (255): | [README.md](../reference/02_units/README.md#25-stats) |
 | R-UNIT-013 | The Abductor's speed stat is `ref.unit.abductor.speed` (244), its effective reference speed (DEC-090). | [README.md](../reference/02_units/README.md#25-stats) |
 | R-UNIT-014 | A Trooper's own reload timer uses the per-actor rate `ref.unit.trooper.actor_rate` (0), so the reload gate never delays a single Trooper's | [README.md](../reference/02_units/README.md#25-stats) |
-| R-UNIT-015 | Setting an actor's kind draws its initial reload timer uniformly from 0, rate) from the simulation generator, once per spawn (DEC-652; | [README.md](../reference/02_units/README.md#25-stats) |
+| R-UNIT-015 | Setting an actor's kind draws its initial reload timer from the simulation generator, once per spawn (DEC-652; | [README.md](../reference/02_units/README.md#25-stats) |
 | R-UNIT-016 | Actor speeds are the stat-table values at difficulty level 0. | [README.md](../reference/02_units/README.md#25-stats) |
 | R-UNIT-017 | A stat that table 4.1 marks "unused" is read by no rule of that kind. | [README.md](../reference/02_units/README.md#25-stats) |
 | R-UNIT-018 | Every actor is created by the spawn step of the match world, with the arguments position, team, actor group or none, kind, count, velocity, | [README.md](../reference/02_units/README.md#26-spawning-ownership-and-containers) |
@@ -210,7 +210,7 @@ Scope: Units, creatures, hazards, projectiles. Back to the [requirements index](
 | R-UNIT-305 | An orb's team is the team slot that the producer passes, and may be any slot from 0 to 5 except the Rogue faction slot. | [essence_orbs.md](../reference/02_units/essence_orbs.md#23-creation) |
 | R-UNIT-306 | An Essence orb holds: | [essence_orbs.md](../reference/02_units/essence_orbs.md#24-state-data) |
 | R-UNIT-307 | The start step of an orb sets its state to Birth and its timer to `ref.econ.orb.birth_ticks` (61 ticks, nominal 6.0 s); | [essence_orbs.md](../reference/02_units/essence_orbs.md#24-state-data) |
-| R-UNIT-308 | An Essence orb carries a broken marker, unset at creation. | [essence_orbs.md](../reference/02_units/essence_orbs.md#24-state-data) |
+| R-UNIT-308 | (removed: no rule of a match breaks an Essence orb, so an orb carries no broken marker and no search tests one; | [essence_orbs.md](../reference/02_units/essence_orbs.md#24-state-data) |
 | R-UNIT-309 | An orb answers the question "which Crawler eggs are near me" from its nearby-egg list. | [essence_orbs.md](../reference/02_units/essence_orbs.md#24-state-data) |
 | R-UNIT-310 | The states of an Essence orb form the enumeration `EssenceOrbState` with the members Birth, Floating, Attached, InEgg, Ascent, Harvested | [essence_orbs.md](../reference/02_units/essence_orbs.md#25-states-and-timers) |
 | R-UNIT-311 | Birth. Each tick the orb's vertical hover becomes max(hover.y, U[0, `ref.unit.essence_orb.birth_hover_max`)) (0.5 wu/s), so it rises slowly. | [essence_orbs.md](../reference/02_units/essence_orbs.md#25-states-and-timers) |

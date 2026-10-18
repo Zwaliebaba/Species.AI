@@ -77,5 +77,5 @@ Chosen option: **1, a bus graph with per-bus effects, sends and a master limiter
 
 - Technology baseline item 7 (see [the index](README.md#technology-baseline)); source checked 2026-10-17: https://learn.microsoft.com/windows/win32/xaudio2/xaudio2-audio-graph.
 - Related: ADR-022 (audio engine), ADR-023 (bus caps and audibility), ADR-025 (streaming), ADR-027 (per-voice filtering).
-- The audio design (`reference/10_audio_design/`) defines the filter algorithms and their parameters; the audio engine component (`architecture/components/audio_engine.md`) defines the bus graph and the Species XAPO effects.
+- The audio design (`reference/10_audio_design/`) defines the filter algorithms and their parameters; the audio engine component (`architecture/components/audio_engine/README.md`) defines the bus graph and the Species XAPO effects.
 - **Amendment 2026-10-17.** The baseline graph has the six player buses of DEC-570 under the pre-master bus (AEN-220, R-AUD-221), with content-built effect buses (AEN-223, AEN-224); the room-reverb kind uses the XAudio2 reverb with I3DL2 conversion (AEN-070).

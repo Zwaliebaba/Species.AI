@@ -9,7 +9,7 @@ Scope: Skirmish match rules and modes. Back to the [requirements index](../REQUI
 | R-MODE-001 | Every timer of the match rules is an integer number of ticks, read from the tick counter only; | [README.md](../reference/01_skirmish_rules_and_modes/README.md#21-time-base) |
 | R-MODE-002 | The mode second is the named constant `ref.mode.mode_second` = 11 ticks (1.1 s at the reference tick rate). | [README.md](../reference/01_skirmish_rules_and_modes/README.md#21-time-base) |
 | R-MODE-003 | The match rules keep three mode-second timers: | [README.md](../reference/01_skirmish_rules_and_modes/README.md#21-time-base) |
-| R-MODE-004 | A rule that the reference states as a fixed number of seconds counted down by one tick's duration per tick is an explicit tick count, with | [README.md](../reference/01_skirmish_rules_and_modes/README.md#21-time-base) |
+| R-MODE-004 | The fixed durations of the match rules are explicit tick counts, each with its own key in the document that owns the rule; | [README.md](../reference/01_skirmish_rules_and_modes/README.md#21-time-base) |
 | R-MODE-005 | A recount that a mode object performs "every 1 second" runs every `ref.mode.recount.one_second` (11 ticks), and one written "every 2 | [README.md](../reference/01_skirmish_rules_and_modes/README.md#21-time-base) |
 | R-MODE-006 | While the world is held (reference/12 R-SIM-550) no world object advances and match time does not advance, but the match-rules update still | [README.md](../reference/01_skirmish_rules_and_modes/README.md#21-time-base) |
 | R-MODE-007 | Every match has the six team slots of reference/12 (`ref.sim.max_teams`, the constant `MAX_TEAMS`; | [README.md](../reference/01_skirmish_rules_and_modes/README.md#22-teams-factions-and-start-positions) |
@@ -29,7 +29,7 @@ Scope: Skirmish match rules and modes. Back to the [requirements index](../REQUI
 | R-MODE-021 | `PlaceSoloMember(t, g)`: | [README.md](../reference/01_skirmish_rules_and_modes/README.md#24-co-op-alliances) |
 | R-MODE-022 | `PairAllianceMembers(t, g)` with fixed groups: | [README.md](../reference/01_skirmish_rules_and_modes/README.md#24-co-op-alliances) |
 | R-MODE-023 | `PairAllianceMembers(t)` without map groups pairs t, in slot order: | [README.md](../reference/01_skirmish_rules_and_modes/README.md#24-co-op-alliances) |
-| R-MODE-024 | Two fallback steps of alliance assignment never apply, because their test for an existing partner also matches the candidate slot itself: | [README.md](../reference/01_skirmish_rules_and_modes/README.md#24-co-op-alliances) |
+| R-MODE-024 | With fixed groups, an uncoloured slot is never paired with a coloured slot; | [README.md](../reference/01_skirmish_rules_and_modes/README.md#24-co-op-alliances) |
 | R-MODE-025 | Each alliance group has a group colour id. | [README.md](../reference/01_skirmish_rules_and_modes/README.md#24-co-op-alliances) |
 | R-MODE-026 | In Siege the lobby colour is the side: | [README.md](../reference/01_skirmish_rules_and_modes/README.md#25-siege-sides) |
 | R-MODE-027 | At load Siege assigns sides and positions in place of R-MODE-011 and R-MODE-020 (R-SIM-419). | [README.md](../reference/01_skirmish_rules_and_modes/README.md#25-siege-sides) |
@@ -177,7 +177,7 @@ Scope: Skirmish match rules and modes. Back to the [requirements index](../REQUI
 | R-MODE-409 | The reinforcement-wave step runs once every tick, outside the per-second step (README R-MODE-037 step 7; | [launch_race.md](../reference/01_skirmish_rules_and_modes/launch_race.md#22-the-mode-step) |
 | R-MODE-410 | The score, which orders the scoreboard and the rank announcements, is ⌊fuel⌋ + passengers + ⌊height above the ground⌋, with fuel 0 to 100 | [launch_race.md](../reference/01_skirmish_rules_and_modes/launch_race.md#22-the-mode-step) |
 | R-MODE-411 | The first vessel above the win height wins. | [launch_race.md](../reference/01_skirmish_rules_and_modes/launch_race.md#23-result) |
-| R-MODE-412 | From the moment boarding completes, a launch takes about 1 tick of Ignition, 101 ticks of PreLaunch, 200 ticks of Countdown, 176 to 248 | [launch_race.md](../reference/01_skirmish_rules_and_modes/launch_race.md#23-result) |
+| R-MODE-412 | The length of a launch is not a value of its own and no rule keeps a launch timer: | [launch_race.md](../reference/01_skirmish_rules_and_modes/launch_race.md#23-result) |
 | R-MODE-413 | Transit Gates are the only source of Workers: | [launch_race.md](../reference/01_skirmish_rules_and_modes/launch_race.md#23-result) |
 | R-MODE-414 | The population cap per team is the map's cap ÷ the number of open slots, fixed for the match (DEC-079), 450 to 900 on the reference maps, | [launch_race.md](../reference/01_skirmish_rules_and_modes/launch_race.md#23-result) |
 | R-MODE-415 | In Launch Race the Transport outcome is invalid, because Transports come from the gates; | [launch_race.md](../reference/01_skirmish_rules_and_modes/launch_race.md#23-result) |
@@ -204,7 +204,7 @@ Scope: Skirmish match rules and modes. Back to the [requirements index](../REQUI
 | R-MODE-466 | The last player team in play wins; | [flag_chain.md](../reference/01_skirmish_rules_and_modes/flag_chain.md#23-result) |
 | R-MODE-467 | The default turret frequency of 2 gives turret waves 1, 3 and 5 onward, with a turret cap of 2. | [flag_chain.md](../reference/01_skirmish_rules_and_modes/flag_chain.md#23-result) |
 | R-MODE-468 | The population cap per team is the map's cap ÷ the number of open slots, fixed for the match (DEC-079), 350 to 1,000 on the reference maps. | [flag_chain.md](../reference/01_skirmish_rules_and_modes/flag_chain.md#23-result) |
-| R-MODE-469 | The Transport outcome is invalid on a map with a Transport cap; | [flag_chain.md](../reference/01_skirmish_rules_and_modes/flag_chain.md#23-result) |
+| R-MODE-469 | The Transport outcome is invalid on a map with a numeric Transport cap of 1 or more (R-CRATE-125, DEC-120); | [flag_chain.md](../reference/01_skirmish_rules_and_modes/flag_chain.md#23-result) |
 | R-MODE-470 | Bots use Siege-style diffusion seeded by the Flag post pins, assault Flag posts with Transports, rush with turrets and form no Leader | [flag_chain.md](../reference/01_skirmish_rules_and_modes/flag_chain.md#23-result) |
 | R-MODE-471 | Each scoreboard row shows its team's status text with no number: | [flag_chain.md](../reference/01_skirmish_rules_and_modes/flag_chain.md#24-hud-and-end-of-match) |
 | R-MODE-472 | The Flag Sweep hook's time test always passes, so the event accompanies every win of the local team; | [flag_chain.md](../reference/01_skirmish_rules_and_modes/flag_chain.md#24-hud-and-end-of-match) |

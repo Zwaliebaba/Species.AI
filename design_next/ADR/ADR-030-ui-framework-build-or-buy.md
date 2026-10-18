@@ -84,4 +84,4 @@ Chosen option: **1, an own retained UI framework**, decided by the owner's `AGEN
 - Related: ADR-028 (text input), ADR-031 (batched UI rendering), ADR-032 (focus graph and page stack), ADR-033 (layout, scaling and DPI), ADR-034 (text rendering), ADR-061 (data schemas), ADR-063 (localisation), ADR-064 (accessibility), ADR-068 (profiling overlay).
 - The UI framework component (`architecture/components/ui_framework/`) specifies the widget set, the page patterns and the screen recipes.
 - **Amendment 2026-10-17 (AGENTS.md, O21).** Status Accepted, decided by the owner's `AGENTS.md`: R14 excludes third-party UI middleware, so the own retained framework `UiCore` is the decision, no longer a default.
-* Amendment 2026-10-17 (AGENTS.md R14, coordinator ruling): the debug panels use no third-party immediate-mode library; an own minimal immediate-mode layer on the batched UI renderer draws them, in Debug builds only.
+* Amendment 2026-10-17 (O21, `AGENTS.md` R14): the debug panels use no third-party immediate-mode library; an own minimal immediate-mode layer on the batched UI renderer draws them, in Debug builds only.

@@ -36,8 +36,8 @@ Chosen option: "The committed workflow as the baseline, with further jobs added 
   * locate the solution: exactly one `.slnx` or `.sln` at the repository root, or none while the tree is empty; two fail the job;
   * check the build shape and the project registries with `Build\CheckProjectFiles.py`, guarded on the script;
   * restore the allow-listed NuGet packages ([ADR-055](ADR-055-dependencies-three-nuget-packages.md)) with `/t:Restore /p:RestorePackagesConfig=true` before the build, guarded on the solution and on a `packages.config` anywhere in the tree;
-  * check the generated schema code with `Build\CheckGeneratedSchemas.py`, which regenerates it and fails on any difference ([ADR-062](ADR-062-authoring-syntax-and-schema-language.md)), guarded on the script;
-  * build `Debug|x64` through the solution with MSBuild warnings as errors, passing the workflow's run number as the build number of the build identity (`/p:EngineBuildNumber=${{ github.run_number }}`, [ADR-057](ADR-057-version-identity.md)), guarded on the solution;
+  * check the generated schema code with `Build\CheckGeneratedSchemas.py`, which builds the generator through the solution, regenerates the code into a temporary tree and fails on any difference ([ADR-062](ADR-062-authoring-syntax-and-schema-language.md)), guarded on the script;
+  * build `Debug|x64` through the solution, every project and the tool projects among them ([ADR-054](ADR-054-build-system-msbuild-solution.md)), with MSBuild warnings as errors, passing the workflow's run number as the build number of the build identity (`/p:EngineBuildNumber=${{ github.run_number }}`, [ADR-057](ADR-057-version-identity.md)), guarded on the solution;
   * run the test suites: one suite per `*Tests.vcxproj`, each of which must have produced its DLL, run by `vstest.console.exe` with a `.trx` log ([ADR-069](ADR-069-test-framework.md)), guarded on the solution;
   * run clang-tidy over the tree with `Build\RunClangTidy.py`, guarded on the script; clang-tidy is pinned (22.1.8, installed from pip) so that a runner-image change cannot turn the build red;
   * upload the build log and the test results.
@@ -46,7 +46,7 @@ Chosen option: "The committed workflow as the baseline, with further jobs added 
 * **Release is not built in CI.** Before a release, whoever ships builds `Release|x64` and runs the release checks of the other records (mitigation flags, symbols, version resource, no development or loose-file code, install contents).
 * **Further jobs** are added by amendment of this record and of the workflow, each guarded on the file it needs, in this order of need:
   * the content build of every edition with all validators ([ADR-059](ADR-059-content-build-and-validators.md));
-  * a scheduled job for the headless bot soak (the server plays matches between bots on every mode and map at maximum speed and reports crashes, assertion failures, simulation update-time percentiles and peak population per match), fuzzing ([ADR-069](ADR-069-test-framework.md)), the reproducibility check of the content build, and performance tests against component budgets;
+  * a scheduled job for the headless bot soak (the server plays matches between bots on every mode and map at maximum speed and reports crashes, assertion failures, simulation update-time percentiles and peak population per match), the reproducibility check of the content build, and performance tests against component budgets;
   * on an agent with a GPU, golden-image tests and a client run with the Direct3D 12 debug layer and GPU-based validation.
 * **Artefacts:** build logs and test results now; soak reports, performance results and crash dumps from test machines ([ADR-065](ADR-065-crash-reporting.md)) with the jobs that produce them.
 * **Replays:** if the design phase gives Species reproducible match replays, recorded matches become regression tests that compare end-of-match state hashes, in a job added the same way.
@@ -56,7 +56,7 @@ Chosen option: "The committed workflow as the baseline, with further jobs added 
 * Good, because the workflow is honest about an empty tree: every gate starts blocking the moment its input exists, with no edit to the workflow.
 * Good, because the clang-tidy and clang-format pins stop a runner-image change from failing unchanged code.
 * Bad, because Release is never compiled in CI; a defect that appears only under optimisation is found by whoever builds Release.
-* Bad, because the soak, fuzzing, golden-image and performance checks do not exist until their jobs are added, and the GPU checks need an agent the hosted runners do not provide.
+* Bad, because the soak, golden-image and performance checks do not exist until their jobs are added, coverage-guided fuzzing needs an owner decision first ([ADR-069](ADR-069-test-framework.md)), and the GPU checks need an agent the hosted runners do not provide.
 
 ### Confirmation
 
@@ -85,7 +85,8 @@ Chosen option: "The committed workflow as the baseline, with further jobs added 
 * Rules: `AGENTS.md` §6 (what CI runs, guards, CI does not build Release) and §3 (build and test commands).
 * Source: `.github/workflows/build.yml` (the committed workflow; the clang-tidy and clang-format pins and their reasons are in it).
 * Components: diagnostics, test and performance (`DBG`), build tooling and distribution (`BLD`).
-* **Amendment 2026-10-17.** Job presets carry the product suffix of ADR-054 (`<os>-<compiler>-<flavour>-<product>`, BLD-006); the build tooling component lists the jobs and their workflow presets.
+* **Amendment 2026-10-17.** Job presets carry the product suffix of ADR-054 (`<os>-<compiler>-<configuration>-<product>`, the configuration Debug or Release, BLD-006); the build tooling component lists the jobs and their workflow presets.
 * **Amendment 2026-10-17 (AGENTS.md, O21).** CI is the committed `build.yml`: a Windows job (build shape check, `Debug|x64` build, test suites, clang-tidy) and a Linux job (pinned clang-format); Release is not built in CI; the design checks, content build, nightly soak, fuzzing, GPU and performance jobs are added by amendment, guarded the same way. The preset-based jobs of the earlier amendment above, the analysis builds and the `import std` build are removed.
 * **Amendment 2026-10-17 (`build.yml`, O27).** The committed workflow already holds the NuGet restore step (guarded on the solution and on a `packages.config`) and the design-checks job (guarded on `Tools/DesignCheck/CheckDesign.py` and `Design/README.md`), so neither is a future amendment any more: the decision lists the restore step in the Windows job and the design job beside the formatting job, and the list of further jobs starts with the content build.
 * **Amendment 2026-10-17 (`build.yml`, O28).** The committed workflow also checks the generated schema code before the build (`Build\CheckGeneratedSchemas.py`, guarded on the script; ADR-062), and its build passes the run number as `EngineBuildNumber` (ADR-057; build tooling table 2.1-B); a local build leaves it at 0.
+* **Amendment 2026-10-18 (owner decision O29, O27).** The tool projects are projects of the one solution, so the Windows job's build compiles them on every run and no separate tools job is added; the generated-code check builds the generator through the solution. The fuzz harnesses run in the test step as test methods of the `<Project>Tests` projects ([ADR-069](ADR-069-test-framework.md)), and the scheduled fuzzing job is removed from the further jobs, because a coverage-guided fuzzing project needs an owner decision first.

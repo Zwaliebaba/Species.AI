@@ -15,7 +15,7 @@ Scope: Terrain. Back to the [requirements index](../REQUIREMENTS_INDEX.md).
 | TER-007 | The colour-ramp look-up, the shore mask, the depth map, the flat-water tile mask, the wave-mesh vertices and the coastline waves are | [README.md](../architecture/components/terrain/README.md#1-responsibilities-and-boundaries) |
 | TER-008 | The terrain component does not draw from the simulation generator (`SimRng`) or from any presentation generator that another consumer | [README.md](../architecture/components/terrain/README.md#1-responsibilities-and-boundaries) |
 | TER-009 | The baseline runtime model is the reference's: | [README.md](../architecture/components/terrain/README.md#1-responsibilities-and-boundaries) |
-| TER-010 | `TerrainField::Generate` is a pure function of its definition. | [README.md](../architecture/components/terrain/README.md#21-interface-sketch) |
+| TER-010 | `TerrainField::Generate` is a pure function of its terrain records: | [README.md](../architecture/components/terrain/README.md#21-interface-sketch) |
 | TER-011 | `Height(x, z)` is the bilinear sample of the height grid (TER-073), with the edge semantics of TER-153. | [README.md](../architecture/components/terrain/README.md#22-queries-used-by-gameplay) |
 | TER-012 | `HeightAt(i, j)` is the raw sample at column *i* and row *j*; | [README.md](../architecture/components/terrain/README.md#22-queries-used-by-gameplay) |
 | TER-013 | `Normal(x, z)` is the bilinear blend of the four corner normals of the simulation normal grid (TER-170), with the edge semantics of TER-153; | [README.md](../architecture/components/terrain/README.md#22-queries-used-by-gameplay) |

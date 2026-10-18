@@ -2,7 +2,7 @@
 
 > Status: Engine baseline · Prefix: AEN · ADRs: [ADR-022](../../../ADR/ADR-022-audio-engine-on-xaudio2.md) · [ADR-023](../../../ADR/ADR-023-virtual-voices-and-voice-stealing.md) · [ADR-026](../../../ADR/ADR-026-audio-command-queue-and-callbacks.md) · Related: [Audio engine](README.md) · [Spatialisation, mixing and streaming](spatialisation_mixing_and_streaming.md) · [event model and sound data](../../../reference/10_audio_design/event_model_and_sound_data.md) · [positional, priorities and mix](../../../reference/10_audio_design/positional_priorities_and_mix.md)
 
-This document specifies how a command becomes an instance and how instances live: the trigger and stop paths, the ranking onto the real-voice budget with virtual voices and stealing, the reference allocation, the instance states, the envelope, the play position and loops, the start and advance of an instance, the modulatable values and the game-speed pitch bend. The notation and the units are those of the [folder README](README.md), and section numbers are those of the whole component.
+This document specifies how a command becomes an instance and how instances live: the trigger and stop paths, the ranking onto the real-voice budget with virtual voices and stealing, the emitter selection, the instance states, the envelope, the play position and loops, the start and advance of an instance, the modulatable values and the game-speed pitch bend. The notation and the units are those of the [folder README](README.md), and section numbers are those of the whole component.
 
 ## 1 Responsibilities and boundaries
 
@@ -20,23 +20,23 @@ The types, the layer data, the instance state, the effect kinds and the stream f
 
 ### 4.5 From a command to an instance
 
-**AEN-130** (MUST) A `Trigger` looks up its source and event (R-AUD-022). An event with no definition, or a source with none, does nothing (R-AUD-027). For every layer whose audience accepts the event on the local participant (R-AUD-024, R-AUD-025), evaluated once at the trigger with the local team of the latest match state, the engine creates one instance copied from the layer (AEN-067) with the trigger's position and velocity, records the trigger's emitter in its emitter set at once (R-AUD-038, DEC-323), and evaluates its six values once each (AEN-188). Outside a match, or with no local team, the own and enemy audiences never pass. An event of the `music` source raised with an object or none goes to the music channel instead (§8.2).
+**AEN-130** (MUST) A `Trigger` looks up its source and event (R-AUD-022). An event with no definition, or a source with none, does nothing (R-AUD-027). For every layer whose audience accepts the event on the local participant (R-AUD-024, R-AUD-025), evaluated once at the trigger with the local team of the latest match state, the engine creates one instance copied from the layer (AEN-067) with the trigger's position and velocity, records the trigger's emitter in its emitter set at once (R-AUD-038, DEC-323), and evaluates its six values once each (AEN-188). Outside a match, or with no local team, the own and enemy audiences never pass. With no object, the instance starts at the world origin with no emitter, and its layer's position kind applies: a `2d` layer plays at the listener, a `fix` layer at the origin, and an `att` layer is removed at the first update (R-AUD-021, R-AUD-209). An event of the `music` source raised with an object or none goes to the music channel instead (§8.2).
 
-**AEN-131** (MUST) A layer whose sharing is shared-random or shared-nearest merges into the live instance of the same full event id with the same kind of sharing, if one exists: the trigger's emitter is appended to that instance's emitter set and the new instance is discarded (R-AUD-029). The reference merges into any live shared instance of the same full event id.
+**AEN-131** (MUST) A layer whose sharing is shared-random or shared-nearest merges into the live shared instance of the same full event id, if one exists: the trigger's emitter is appended to that instance's emitter set and the new instance is discarded (R-AUD-029).
 
-**AEN-132** (MUST) A new instance takes a free slot of the instance table and the next generation of that slot, the state `Pending` and the start time of AEN-024. In the reference the number of waiting instances is unbounded; in Species it is bounded by the table (AEN-300).
+**AEN-132** (MUST) A new instance takes a free slot of the instance table and the next generation of that slot, the state `Pending` and the start time of AEN-024. The table bounds the number of live instances (AEN-300).
 
 **AEN-133** (MUST) A note re-trigger (AEN-178) creates a duplicate: a new instance copied from the live instance (its current values, position, velocity and emitter set), with the same layer as its definition, created by the same path as a trigger. A duplicate of a shared note layer therefore merges into the note it was copied from and plays no next note (DEC-965 item 3).
 
-**AEN-134** (MUST) A `Stop` selects instances by recorded emitter and by event as [event model](../../../reference/10_audio_design/event_model_and_sound_data.md) R-AUD-036 specifies: a started instance (virtual or real) is released with a final release (AEN-169); a pending instance is retired at once. A stop that names no emitter acts only on instances raised with no emitter, and a stop reaches the music channel only when it names the `music` source (R-AUD-403). In the reference model a stop matches the emitter that an update has resolved, which two-dimensional and world-fixed instances never have, and an event name that contains the given text.
+**AEN-134** (MUST) A `Stop` selects instances by recorded emitter and by event as [event model](../../../reference/10_audio_design/event_model_and_sound_data.md) R-AUD-036 specifies: a started instance (virtual or real) is released with a final release (AEN-169); a pending instance is retired at once. A stop that names no emitter acts only on instances raised with no emitter, and a stop reaches the music channel only when it names the `music` source (R-AUD-403). A stop matches the emitter recorded at the trigger, for every position kind (DEC-323).
 
 **AEN-135** (MUST) Retiring an instance stops its voice, if it has one, and returns the voice to its pool with every per-voice setting reset (AEN-046), releases its stream, removes it from every count and frees its slot.
 
-**AEN-136** (MUST) `QueryCount` answers the number of live instances (states `Pending`, `Virtual` and `Real`) of the full event id whose emitter set holds the emitter, or of any emitter when the emitter is invalid; `QueryPlaying` answers whether any live instance's emitter set holds the emitter. Both are defined in every state of every slot and never fail (DEC-752, R-AUD-037), and a query is answered after the triggers and stops issued before it, so a query made right after a trigger finds its instances (DEC-323). In the reference model the count of playing instances fails as soon as it meets an empty voice when an emitter is given, and the count of all instances misses instances whose emitter an update has not yet resolved.
+**AEN-136** (MUST) `QueryCount` answers the number of live instances (states `Pending`, `Virtual` and `Real`) of the full event id whose emitter set holds the emitter, or of any emitter when the emitter is invalid; `QueryPlaying` answers whether any live instance's emitter set holds the emitter. Both are defined in every state of every slot and never fail (DEC-752, R-AUD-037), and a query is answered after the triggers and stops issued before it, so a query made right after a trigger finds its instances (DEC-323).
 
-**AEN-137** (MUST) The engine keeps these statistics per update: live instances, real instances, virtual instances, and real instances per bus. The reference keeps the live count, the occupied voice count and their difference.
+**AEN-137** (MUST) The engine keeps these statistics per update: live instances, real instances, virtual instances, and real instances per bus.
 
-**AEN-138** (MUST) `Pause` stops the XAudio2 engine and freezes the advance of every instance; `Resume` restarts both, and every timer resumes where it stopped. The reference never pauses audio: during a paused match every sound keeps playing and the interface keeps raising its sounds, so no match pause issues `Pause` by default (DEC-965 item 4; §8.3).
+**AEN-138** (MUST) `Pause` stops the XAudio2 engine and freezes the advance of every instance; `Resume` restarts both, and every timer resumes where it stopped. No match pause issues `Pause` by default: during a paused match every sound keeps playing and the interface keeps raising its sounds (DEC-965 item 4; §8.3).
 
 ### 4.6 Ranking, virtual voices and stealing
 
@@ -72,19 +72,15 @@ The victim becomes virtual and its voice fades to silence over `aen.voice.steal_
 
 **AEN-150** (MUST) **Worked example (Species).** The world bus is at its cap of 32 real instances; the three lowest score −30, −28 and −26 dB, and every instance has held its state longer than the hold time. In one update three instances start on the world bus: an explosion one-shot scoring −8 dB, a second copy of a gunfire one-shot whose audibility is −11.5 dB and which scores −14 dB after one copy decay, and a virtual ambient loop scoring −40 dB. In this update the explosion takes the −30 dB instance's place (margin 22 dB), the gunfire copy takes the −28 dB instance's place (margin 14 dB), and the loop stays virtual (−40 dB is below −26 + 3 dB). Both victims become virtual: a victim one-shot past its patience is retired at the next update, and a victim loop keeps advancing in time.
 
-### 4.7 The reference allocation and emitter selection
+<a id="47-the-reference-allocation-and-emitter-selection"></a>
 
-**AEN-156** (MUST) **Reference model.** The reference allocation is [positional, priorities and mix](../../../reference/10_audio_design/positional_priorities_and_mix.md) R-AUD-219, with these engine details:
+### 4.7 Emitter selection
 
-1. audibility is on the ten-step scale times the distance factor: two-dimensional instances rank at the top of the scale; a positioned instance ranks by its envelope output while it plays, so a long release ranks lower as it fades (R-AUD-074), and by its level from the trigger while it waits;
-2. priority is audibility × `ref.aud.rank.copy_decay`^k over the full event id;
-3. the candidate is the best-ranked waiting instance with a priority above 0, so an instance whose level evaluates to the bottom of the scale never starts, and a one-shot then expires;
-4. the candidate takes the first free voice, else that of the strictly lowest-priority occupant (lowest index on a tie), with no comparison of priorities; a one-shot occupant is destroyed, a looping one waits and later restarts from its beginning or with a new member; a failed start (no sample) destroys the candidate;
-5. a one-shot's patience counter starts at `ref.aud.layer.one_shot_patience_updates`, is decremented at every update in which the one-shot is not playing, before that update's start attempt, and retires it when it falls below 0: the one-shot has the start attempts of three updates and is discarded at the fourth, 0.15 to 0.20 s after its trigger.
+**AEN-156** (removed: a second voice allocator; AEN-140 to AEN-147 are the allocation, [positional, priorities and mix](../../../reference/10_audio_design/positional_priorities_and_mix.md) R-AUD-217, R-AUD-218, DEC-570)
 
-**AEN-157** (MUST) **Emitter selection** (both models). Gone emitters are removed from an instance's emitter set first: an emitter is gone when an emitter update marks it not present, or when a frame's emitter updates, sent after the engine published it as tracked (AEN-041), omit it; until its first update an emitter keeps its trigger's position and velocity. The emitter is chosen again when the selected one is gone, at every update for shared-nearest, and right after every start and restart for shared-random: per-trigger takes the first emitter of its set; shared-random takes member `FxRng::NextUint` mod n; shared-nearest takes the emitter with the smallest squared distance to the camera among those within `ref.aud.crowd.nearest_radius` (R-AUD-213, DEC-109). An attached instance left with no selectable emitter has lost its emitter (AEN-185).
+**AEN-157** (MUST) **Emitter selection.** Gone emitters are removed from an instance's emitter set first: an emitter is gone when an emitter update marks it not present, or when a frame's emitter updates, sent after the engine published it as tracked (AEN-041), omit it; until its first update an emitter keeps its trigger's position and velocity. The emitter is chosen again when the selected one is gone, at every update for shared-nearest, and right after every start and restart for shared-random: per-trigger takes the first emitter of its set; shared-random takes member `FxRng::NextUint` mod n; shared-nearest takes the emitter with the smallest squared distance to the camera among those within `ref.aud.crowd.nearest_radius` (R-AUD-213, DEC-109). An attached instance left with no selectable emitter has lost its emitter (AEN-185).
 
-**AEN-158** (MUST) **Worked example (reference model).** All 31 effect voices are busy, their occupants' priorities range from 0.40 to 9.0 on the reference scale, and three instances wait: an explosion one-shot (audibility 6.0), a second copy of a gunfire one-shot (audibility 4.0, a louder copy playing, so priority 3.0) and an ambient loop evicted at the previous update (0.30). Update 1: the explosion is the candidate and takes the voice of the 0.40 occupant, a one-shot, which is destroyed. Update 2: the gunfire copy (3.0) takes the voice of the lowest occupant, a loop ranked 0.45, which waits. Update 3: that loop (0.45) outranks the ambient loop and takes the voice of the lowest occupant, a one-shot ranked 0.50, which is destroyed although it ranked above the loop. Update 4: the ambient loop (0.30) takes the lowest occupant's voice. Had the gunfire copy lost three updates in a row, it would have been discarded at the fourth.
+**AEN-158** (removed: a worked example of a second voice allocator; AEN-150 is the worked example)
 
 ### 4.8 Instance states
 
@@ -118,9 +114,9 @@ stateDiagram-v2
 
 Diagram 4-C: the envelope stages (AEN-166 to AEN-169). A note loop spawns its next note at release (AEN-178).
 
-**AEN-163** (MUST) In the reference model the states are derived from the envelope stage and the voice index: an instance plays while a voice holds its handle, so being evicted silently makes it a waiting instance; a stop disables its effects and clears its voice.
+**AEN-163** (removed: a second state model; AEN-162 is the state model)
 
-**AEN-164** (MUST) The reference envelope has a decay stage that no instance ever enters; Species has none (R-AUD-057).
+**AEN-164** (MUST) The envelope has no decay stage (R-AUD-057).
 
 ### 4.9 Envelope arithmetic
 
@@ -134,7 +130,7 @@ Diagram 4-C: the envelope stages (AEN-166 to AEN-169). A note loop spawns its ne
 
 The level is clamped to [F, 0] dB. Envelope ramps are linear in dB (R-AUD-224); a finished instance's voice stops from the floor level F.
 
-**AEN-167** (MUST) The timer starts at the instance's start time, so the time an instance waits for a voice eats into its attack, as the time spent waiting does in the reference model, where the timer starts at the trigger (R-AUD-056).
+**AEN-167** (MUST) The timer starts at the instance's start time, its issue time plus `aen.update.schedule_latency` (AEN-024, DEC-570), so the attack is timed from the raised event plus that latency, and the time an instance waits for a voice eats into its attack (R-AUD-056).
 
 **AEN-168** (MUST) The level target, attack, sustain and release are re-evaluated by their update modes (AEN-188), so random and linked values move the envelope while it runs.
 
@@ -146,27 +142,27 @@ The level is clamped to [F, 0] dB. Envelope ramps are linear in dB (R-AUD-224); 
 
 **AEN-174** (MUST) A real resident voice is fed buffers that point into its bank at the play position, and silences are fed from one shared silent buffer of `aen.voice.silence_buffer` frames, repeated as needed; a real streamed voice is fed from its stream (AEN-252). The next segment is decided and submitted when the play position comes within `aen.voice.loop_lookahead` of the end of the current one, so consecutive segments play without a gap.
 
-**AEN-175** (MUST) **`once`.** When the play position reaches the end of the sample, the instance is released, not finally (R-AUD-058). It then has no signal left, so it leaves its real voice at once and stays live, virtual, until its release has finished. In the reference model the release starts one device buffer after the sample end, so that the buffered audio plays out, and starts early when the sample ends exactly at a buffer boundary; Species has no device buffers, so the release starts at the sample's last frame.
+**AEN-175** (MUST) **`once`.** When the play position reaches the end of the sample, the instance is released, not finally (R-AUD-058). It then has no signal left, so it leaves its real voice at once and stays live, virtual, until its release has finished. The release starts at the sample's last frame.
 
 **AEN-176** (MUST) **`loop`.** At the end of the sample the loop delay is evaluated (AEN-188). With a delay below ε, the next member (AEN-180) follows without a gap; otherwise a silence of the delay follows, then the next member (R-AUD-059).
 
 **AEN-177** (MUST) **`note`.** A note repeats its own member, rewound, without a gap for as long as it lives; members are drawn only for new notes.
 
-**AEN-178** (MUST) **Next note.** When a `note` instance is released not finally: with a loop delay below ε, its duplicate (AEN-133) is created at once; otherwise a re-trigger time T is recorded, and the duplicate is created at the first wrap of the releasing note's member at or after that time + the loop delay, because the reference checks the delay only when the member wraps (DEC-965 item 1). The releasing note stays live, silent once its release has ended, until its next note has been created, so notes cross-fade (R-AUD-060).
+**AEN-178** (MUST) **Next note.** When a `note` instance is released not finally: with a loop delay below ε, its duplicate (AEN-133) is created at once; otherwise a re-trigger time T is recorded, and the duplicate is created at the first wrap of the releasing note's member at or after that time + the loop delay (DEC-965 item 1). The releasing note stays live, silent once its release has ended, until its next note has been created, so notes cross-fade (R-AUD-060).
 
-**AEN-179** (MUST) The reference model takes these end-of-sample decisions while it fills device buffers ahead of playback, up to one buffer early. A zero-length member is a content-build error, because a zero-length looping member with no loop delay never ends its loop.
+**AEN-179** (MUST) The end-of-sample decisions of AEN-175 to AEN-178 are taken at the update in which the play position reaches the end of the member, and their next segment is submitted ahead by AEN-174. A zero-length member is a content-build error, because a zero-length looping member with no loop delay never ends its loop ([asset pipeline and resources](../asset_pipeline_and_resources.md) AST-079).
 
-**AEN-180** (MUST) **Opening a member.** At every start, loop restart and new note, the instance's restart flag is set and its group chooses a member (R-AUD-064): a one-member group repeats its member; otherwise members are weighted, the previous member is excluded, and with W the sum of the eligible weights the engine draws u = `FxRng::NextUnit`(W) and takes the first eligible member whose cumulative weight is at least u (R-AUD-063, DEC-568). The reference draws uniformly with `NextUint` mod n and may repeat the previous member.
+**AEN-180** (MUST) **Opening a member.** At every start, loop restart and new note, the instance's restart flag is set and its group chooses a member (R-AUD-064): a one-member group repeats its member; otherwise members are weighted, the previous member is excluded, and with W the sum of the eligible weights the engine draws u = `FxRng::NextUnit`(W) and takes the first eligible member whose cumulative weight is at least u (R-AUD-063, DEC-568).
 
 ### 4.11 Start, advance and position
 
-**AEN-182** (MUST) When an instance becomes real, the engine takes a voice of its format from the pool (AEN-046), sets its output matrix, filter, send levels, frequency ratio and volume, submits its buffers from the play position and starts it in the update's operation set with the offset of AEN-148. In the reference model a start refuses a layer with no sample, opens the member, sets head-relative positioning for two-dimensional instances and world positioning otherwise, the minimum distance, the frequency, the volume and the position, and enables the instance's effects.
+**AEN-182** (MUST) When an instance becomes real, the engine takes a voice of its format from the pool (AEN-046), sets its output matrix, filter, send levels, frequency ratio and volume, submits its buffers from the play position and starts it in the update's operation set with the offset of AEN-148. A layer whose group or member is missing is silent (R-AUD-046), so it never takes a voice.
 
 **AEN-183** (MUST) At every update a started instance: advances its envelope, and is retired when it has finished (AEN-166); evaluates its values (AEN-188) and sets its frequency ratio (AEN-196); updates its position (AEN-184); and clears its restart flag at the end of the update.
 
 **AEN-184** (MUST) Positions follow the position kind (R-AUD-207): `2d` has no position and sits at the listener; `fix` keeps the position and velocity of its trigger; `att` takes its selected emitter's position and velocity from the latest emitter update at every update, a structure's attached instance its centre position.
 
-**AEN-185** (MUST) **Emitter loss.** An attached instance whose emitter set has no selectable emitter at an update stops at once, without its release, and is retired (R-AUD-209). This is the default of DEC-321; under its option B the instance instead becomes world-fixed at its last position with velocity 0, and a looping instance is released finally. In the reference model this graceful path runs only when the emitter disappears between the cull and the advance of the same update.
+**AEN-185** (MUST) **Emitter loss.** An attached instance whose emitter set has no selectable emitter at an update stops at once, without its release, and is retired (R-AUD-209). This is the default of DEC-321; under its option B the instance instead becomes world-fixed at its last position with velocity 0, and a looping instance is released finally.
 
 **AEN-186** (MUST) A world-fixed instance keeps its recorded emitter for stops and counts (DEC-323), which never moves it.
 
@@ -184,7 +180,7 @@ The level is clamped to [F, 0] dB. Envelope ramps are linear in dB (R-AUD-224); 
 
 A per-note value is evaluated only while the restart flag is set: at the trigger, at the start and at the first update after each start or restart (R-AUD-053).
 
-**AEN-189** (MUST) A fixed value's target is its value; a random value's target is lo + `FxRng::NextUnit`(hi − lo), which can equal hi; a linked value's target is the piecewise map of [event model](../../../reference/10_audio_design/event_model_and_sound_data.md) R-AUD-051 of its link's input (R-AUD-052), read from the latest emitter update and listener: `height` = the height above the terrain, `pos_x`, `altitude` and `pos_z` the position's coordinates, `speed` = \|velocity\|, `camera_distance` = \|camera − position\|, `object_age`, `teams_nearby` and `unit_count` from the emitter update, `time_remaining` from the match state; a two-dimensional instance reads the camera's position, velocity and height above the terrain.
+**AEN-189** (MUST) A fixed value's target is its value; a random value's target is lo + `FxRng::NextUnit`(hi − lo), which can equal hi; a linked value's target is the piecewise map of [event model](../../../reference/10_audio_design/event_model_and_sound_data.md) R-AUD-051 of its link's input (R-AUD-052), read from the latest emitter update and listener: `height` = the height above the terrain, `pos_x`, `altitude` and `pos_z` the position's coordinates, `speed` = \|velocity\|, `camera_distance` = \|camera − position\|, `object_age`, `groups_nearby` and `objects_nearby` from the emitter update, `time_remaining` from the match state; a two-dimensional instance reads the camera's position, velocity and height above the terrain.
 
 **AEN-190** (MUST) **Smoothing.** With a = √s for smoothing s, one step sets out := target × (1 − ρ) + out × ρ. The trigger, start and per-note evaluations, and the first update evaluation after the start, take one step with ρ = a; every later update evaluation takes ρ = a^(Δt ÷ `ref.sim.frame.audio_update_period`), Δt being the audio time since the previous update evaluation (R-AUD-054, ADR-026). A value with s = 0 is its target.
 
@@ -192,11 +188,11 @@ A per-note value is evaluated only while the restart flag is set: at the trigger
 
 ### 4.13 Pitch and the game-speed bend
 
-**AEN-196** (MUST) A real voice's frequency ratio is pitch × bend, where every sample is at `aen.format.sample_rate` and XAudio2 converts to the device rate. A ratio above `aen.voice.max_frequency_ratio` (3 × 48 kHz in the reference's terms) is not applied: the previous ratio stays and the event is counted; a ratio below `aen.voice.min_frequency_ratio` is raised to it.
+**AEN-196** (MUST) A real voice's frequency ratio is pitch × bend, where every sample is at `aen.format.sample_rate` and XAudio2 converts to the device rate. A ratio above `aen.voice.max_frequency_ratio` is not applied: the previous ratio stays and the event is counted; a ratio below `aen.voice.min_frequency_ratio` is raised to it.
 
 **AEN-197** (MUST) **Bend** (DEC-569, DEC-751, R-AUD-211; the match-end drop is DEC-320's default). The bend is 1 for two-dimensional instances, for every bus other than voice and world, and whenever the match phase is not `Running`. Otherwise it is √max(g, `ref.aud.pitch_bend.speed_floor`), where g is the smoothed game speed: `BeginMatch` sets g := `ref.sim.speed.normal`; it stays there through the grace period; while the phase is `Running` or `Ended` it follows the game speed G of the match state as g := G + (g − G) × e^(−Δt ÷ `aen.pitch_bend.time_constant`) at every update; `EndMatch` discards it. The smoothing never depends on how many sounds play, and no match inherits the state of the one before.
 
-**AEN-198** (MUST) In the reference model the bend applies in any match after its grace period to every instance that is not two-dimensional (music is two-dimensional), and its smoothed speed is one process-wide value that moves a fixed fraction towards the game speed at every pitch evaluation of a playing positioned instance and at every start, never reset between matches (DEC-751 option B).
+**AEN-198** (removed: a second bend model; AEN-197 is the bend, DEC-569, DEC-751)
 
 **AEN-199** (MUST) Pitch values outside the design range are content-build errors; the engine never rejects a ratio silently other than by AEN-196.
 

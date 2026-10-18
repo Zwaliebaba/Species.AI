@@ -343,7 +343,7 @@ class PlatformLogSink
 public:
   virtual ~PlatformLogSink() = default;
   virtual void Write(PlatformLogLevel _level, std::string_view _message) noexcept = 0; // any thread; never blocks on I/O
-  virtual void RecordFatal(std::string_view _reason) noexcept = 0; // DBG-073 steps 1 and 2; FailFast follows
+  virtual void RecordFatal(std::string_view _reason) noexcept = 0;                     // DBG-073 steps 1 and 2; FailFast follows
 };
 void SetPlatformLogSink(PlatformLogSink* _sink); // start-up step 7; nullptr at shutdown
 
@@ -669,7 +669,7 @@ The term *rest* × 1 000 000 000 stays below *frequency* × 10⁹, which fits a 
 
 **PLT-055** (MUST) The simulation never reads the platform clock, the calendar or any per-participant time: simulation time is the tick count alone (DEC-009, R-SIM-660, PLT-002). The scheduling of ticks reads the platform clock; how ticks are scheduled, and whether the client frame and the server tick are decoupled, are DEC-225.
 
-**PLT-056** (MUST) The platform layer gives the frame loop explicit pacing tools and no implicit pacing: client frames are paced by the swap chain's present interval and the optional frame-rate cap of ADR-012, which waits through `WaitUntil`. The reference game loops have no frame cap and leave the swap interval to the display driver ([tick timing and main loop](../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-575); only its loading views wait for their frame period. How the Species frame loop and the server tick loop are structured is DEC-225.
+**PLT-056** (MUST) The platform layer gives the frame loop explicit pacing tools and no implicit pacing: client frames are paced by the swap chain's present interval and the optional frame-rate cap of ADR-012, which waits through `WaitUntil` ([tick timing and main loop](../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-575), and the loading views wait for their frame period (PLT-052). How the Species frame loop and the server tick loop are structured is DEC-225.
 
 ### 4.3 Application window
 
@@ -748,28 +748,28 @@ Diagram 4-B: window states (PLT-058, PLT-061, PLT-063). Focus is independent of 
 
 ### 4.4 Displays
 
-**PLT-070** (MUST) The platform layer enumerates the monitors (`EnumDisplayMonitors`) and, for each monitor, its display modes (`EnumDisplaySettingsExW` with indices from 0 until the call fails, with the mode structure's size field set before every call). It keeps a mode only when it has at least `ref.meta.options.screen.min_colour_bits` (15) bits per pixel, a width of at least `rnd.init.min_render_width` (640) and a height of at least `rnd.init.min_render_height` (480). It merges modes of equal width and height, whatever their bit depth, into one mode size, and gives each mode size the distinct refresh rates of the modes merged into it. Mode sizes keep the order in which the display reports them and are not sorted; the bit depth is not kept per mode size.
+**PLT-070** (MUST) The platform layer enumerates the monitors (`EnumDisplayMonitors`) and matches each to its DXGI output, the output whose description names the same monitor, among the outputs of every adapter, without creating a device. A monitor's mode sizes come from its output's display modes in the swap-chain format of ADR-012 (`IDXGIOutput1::GetDisplayModeList1` with `DXGI_FORMAT_R8G8B8A8_UNORM`, progressive modes only). The platform layer keeps a mode only when it is at least `rnd.init.min_render_width` (640) wide and `rnd.init.min_render_height` (480) high, and merges the modes of equal width and height, whatever their refresh rates, into one mode size. Mode sizes keep the order in which the output reports them and are not sorted.
 
-**PLT-071** (MUST) A monitor's desktop mode is its current mode (`ENUM_CURRENT_SETTINGS`): width, height, bits per pixel and refresh rate. It gives the first-run render size ([renderer](renderer/README.md) RND-021) and the size of a borderless full-screen window. The display mode is never changed (ADR-075), so nothing ever restores it.
+**PLT-071** (MUST) A monitor's desktop mode is its current mode (`EnumDisplaySettingsExW` with `ENUM_CURRENT_SETTINGS`): its width, its height and its refresh rate in whole hertz. It gives the first-run render size ([renderer](renderer/README.md) RND-021) and the size of a borderless full-screen window. The display mode is never changed (ADR-075), so nothing ever restores it.
 
 **PLT-072** (MUST) When the display configuration changes, the platform layer enumerates the monitors again, refreshes the system summary's display group and raises `DisplayConfigurationChanged`; the renderer then recomputes its offered render sizes (RND-026). A window whose monitor no longer exists moves to the primary monitor in its current mode.
 
-**PLT-073** (MUST) The monitor records feed the renderer's offered render sizes and first-run size (RND-021, RND-026), the size and refresh lists of the reference screen-options page (R-META-415, R-META-416) and the system summary.
+**PLT-073** (MUST) The monitor records feed the renderer's offered render sizes and first-run size (RND-021, RND-026), the size list of the screen-options page (R-META-415) and the system summary.
 
 ### 4.5 Presentation policy
 
-**PLT-074** (MUST) The platform layer applies no presentation policy of its own: the swap chain, the present modes, vertical sync, the frame-rate cap, multisampling and brightness are the renderer's under ADR-012. Table 4.5-A states the reference behaviour and the Species rule for each.
+**PLT-074** (MUST) The platform layer applies no presentation policy of its own: the swap chain, the present modes, vertical sync, the frame-rate cap, multisampling and brightness are the renderer's under ADR-012. Table 4.5-A states the Species rule for each.
 
 Table 4.5-A: presentation features.
 
-| Feature | Reference | Species |
-|---|---|---|
-| vertical sync | never set by the game: the display driver's setting applies (R-SIM-575) | a present-mode setting, vertical sync or uncapped ([renderer options](renderer/options_and_budgets.md) RND-442, ADR-012) |
-| multisampling | none | no multisampled back buffer; anti-aliasing in the scene targets (ADR-012, ADR-015) |
-| gamma | the system gamma ramp is never changed | a brightness setting applied in the final pass; the system gamma ramp is never changed (ADR-012) |
-| frame cap | none in the game loops; loading views wait for `ref.sim.frame.loading_frame_period` | an optional engine frame-rate cap through `WaitUntil` (PLT-052, ADR-012) |
-| exclusive full screen and display-mode changes | used for full screen | none: borderless full screen and render-size scaling (ADR-075) |
-| options | the options pages expose none of vertical sync, multisampling or gamma | which options Species exposes is DEC-044 |
+| Feature | Species rule |
+|---|---|
+| vertical sync | a present-mode setting, vertical sync or uncapped ([renderer options](renderer/options_and_budgets.md) RND-442, ADR-012) |
+| multisampling | no multisampled back buffer; anti-aliasing in the scene targets (ADR-012, ADR-015) |
+| gamma | a brightness setting applied in the final pass; the system gamma ramp is never changed (ADR-012) |
+| frame cap | an optional engine frame-rate cap through `WaitUntil` (PLT-052, ADR-012); the loading views wait for `ref.sim.frame.loading_frame_period` |
+| full screen | borderless full screen with render-size scaling; the display mode is never changed (ADR-075) |
+| options | which of these the options pages expose is DEC-044 |
 
 ### 4.6 Language detection at start-up
 
@@ -835,7 +835,7 @@ Diagram 4-C: language choice at start-up (PLT-076).
 
 **PLT-089** (MUST) `ReplaceFileAtomically(path, bytes)` writes the bytes to a new temporary file in the same folder, flushes it to the device, and then replaces the target with it in one step (`ReplaceFileW`, or a write-through move when the target does not exist yet). If any step fails, the target keeps its previous content, the temporary file is deleted and the error is returned; the caller reports it (DEC-800 item 3). Every writer of settings, custom maps and development outputs uses it.
 
-**PLT-090** (MUST) `ReadWholeFile` reads a file into memory and `MapReadOnly` maps one read-only, for the asset pipeline's packs ([asset pipeline](asset_pipeline_and_resources.md)); both are safe for concurrent use on distinct files. No file is opened and closed once per line of output (DEC-224).
+**PLT-090** (MUST) `ReadWholeFile` reads a file into memory and `MapReadOnly` maps one read-only, for the asset pipeline's packs ([asset pipeline](asset_pipeline_and_resources.md)); both are safe for concurrent use on distinct files. A `MappedFile` is a move-only view of the whole file: `Bytes` gives its contents and `SizeBytes` its length, the view stays valid until the `MappedFile` is destroyed, which unmaps it and closes the file, and a moved-from `MappedFile` holds an empty view. An empty file gives an empty view. No file is opened and closed once per line of output (DEC-224).
 
 **PLT-091** (MUST) The platform layer offers no case-insensitive file look-up. Windows file names are case-insensitive, and content is addressed by pack keys, not by file paths (ADR-058); the content build rejects keys that differ only in case (ADR-059).
 
@@ -865,15 +865,13 @@ Diagram 4-C: language choice at start-up (PLT-076).
 
 ### 4.13 Clipboard and web addresses
 
-**PLT-101** (MUST) `ClipboardText` returns the clipboard's Unicode text converted to UTF-8, or nothing when the clipboard holds no text; `SetClipboardText` replaces it. Both run on the main thread for the text fields of the UI framework (ADR-032), whose fields set the length limits. No credential is ever pasted into a key file (DEC-333).
+**PLT-101** (MUST) `ClipboardText` returns the clipboard's Unicode text converted to UTF-8, or nothing when the clipboard holds no text; `SetClipboardText` replaces it. Both run on the main thread for the text fields of the UI framework (ADR-032), whose fields set the length limits.
 
 **PLT-102** (MUST) `OpenWebAddress` opens an `https` address in the default browser through the shell and refuses every other scheme. It never changes the window mode; the focus loss that follows is an ordinary one (PLT-064).
 
 ### 4.14 Audio-endpoint notices
 
 **PLT-103** (MUST) Before the audio engine is created, the platform layer registers for audio-endpoint notifications with the system's endpoint enumerator. It turns each notification into an `AudioEndpointChange`: the default output device changed, a device was added, a device was removed, or a device's state changed. It delivers each change to the audio engine's listener on the main thread (PLT-011), and the audio engine rebuilds its graph on the default device when the default changes or a device arrives ([audio engine](audio_engine/README.md) AEN-259). The registration is removed after the audio engine is destroyed.
-
-<a id="415-build-identity-products-and-flavours"></a>
 
 ### 4.15 Build identity, products and configurations
 
@@ -887,7 +885,7 @@ Diagram 4-C: language choice at start-up (PLT-076).
 
 ### 4.16 Tuning table
 
-Platform times are seconds of real time or platform time, never simulation durations. The `plt.display.reference.*` keys record the reference's display-creation values, which [options, localisation and hooks](../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-423 and R-META-424 cite; the Species engine has no colour-depth, refresh-rate, depth-buffer or vertical-sync-request setting (RND-443). Values owned by other documents are cited by their keys in the requirements that use them.
+Platform times are seconds of real time or platform time, never simulation durations. Values owned by other documents are cited by their keys in the requirements that use them.
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
@@ -897,19 +895,6 @@ Platform times are seconds of real time or platform time, never simulation durat
 | `plt.lifecycle.exit_code.normal` | 0 | exit code | after a quit, and after `--write-build-identity` | PLT-044, PLT-023 | — |
 | `plt.lifecycle.exit_code.fatal` | −1 | exit code | after `FatalExit` | PLT-044 | — |
 | `plt.sysinfo.memory_unit` | 1 048 576 | bytes | one mebibyte; memory amounts are rounded up to whole units | PLT-035 | — |
-| `plt.display.reference.reader_windowed` | off | switch | reference reader default: full screen | PLT-029, PLT-113 | DEC-100 |
-| `plt.display.reference.reader_colour_bits` | 32 | bits per pixel | reference reader default | PLT-029, PLT-113 | DEC-100 |
-| `plt.display.reference.reader_refresh` | 75 | Hz | reference reader default | PLT-029, PLT-113 | DEC-100 |
-| `plt.display.reference.reader_depth_bits` | 24 | bits | reference reader default | PLT-029, PLT-113 | — |
-| `plt.display.reference.reader_vsync_request` | on | switch | reference reader default; the request has no effect (R-META-456) | PLT-029, PLT-113 | DEC-100 |
-| `plt.display.reference.overscan` | 0 | pixels | always written, never read | PLT-029 | — |
-| `plt.display.reference.desktop_attempt_depth_bits` | 24 | bits | reference attempt 2, at the desktop's size | PLT-113 | — |
-| `plt.display.reference.fallback_vsync_request` | off | switch | reference attempts 2 to 4, and the stored request after any fallback | PLT-113 | — |
-| `plt.display.reference.window_attempt_colour_bits` | 16 | bits per pixel | reference attempts 3 and 4 | PLT-113 | — |
-| `plt.display.reference.window_attempt_depth_bits` | 16 | bits | reference attempt 3 | PLT-113 | — |
-| `plt.display.reference.window_attempt_refresh` | 60 | Hz | reference attempts 3 and 4 | PLT-113 | — |
-| `plt.display.reference.last_attempt_depth_bits` | 24 | bits | reference attempt 4 | PLT-113 | — |
-| `plt.display.reference.failure_message_position` | 100, 100 | px from the top-left corner | where the reference shows its creation-failure message | PLT-113 | — |
 
 ## 5 Concurrency and performance budget
 
@@ -917,7 +902,7 @@ Platform times are seconds of real time or platform time, never simulation durat
 
 **PLT-109** (MUST) `PumpMessages` does work proportional to the number of pending messages and never blocks. Resize, DPI and mode handling inside it only record state and raise events; the renderer's resize work runs in the renderer's own frame step.
 
-**PLT-110** (MUST) The platform layer's main-thread work outside the frame is limited to: start-up (PLT-038); the settings saves of R-META-406, which are rare and synchronous; monitor enumeration after a display configuration change; and pre-UI messages. Screenshot encoding and HTTPS requests run on the platform's own threads (PLT-014), and no platform service waits for the GPU.
+**PLT-110** (MUST) The platform layer's main-thread work outside the frame is limited to: start-up (PLT-038); the settings saves of R-META-406, which are rare: the values are copied on the main thread and written by the file writer (PLT-081); monitor enumeration after a display configuration change; and pre-UI messages. Screenshot encoding and HTTPS requests run on the platform's own threads (PLT-014), and no platform service waits for the GPU.
 
 **PLT-111** (MUST) The platform layer has no frame budget of its own in the baseline: its main-thread cost is measured by the profiling markers of ADR-068 inside the frame budget, and the per-frame and per-tick budgets are DEC-228.
 
@@ -925,13 +910,13 @@ Platform times are seconds of real time or platform time, never simulation durat
 
 ### 6.1 Window and display creation fallback chain
 
-**PLT-112** (MUST) When the window or the swap chain cannot be created with the preferred settings, start-up tries these attempts in order, each with a new window and a new swap chain only where the previous attempt left none ([renderer](renderer/README.md) RND-023):
+**PLT-112** (MUST) When the window or the swap chain cannot take the preferred settings, at start-up or when the screen options apply a new render size or window mode ([options, localisation and hooks](../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-423), the client tries these attempts in order ([renderer](renderer/README.md) RND-023). At start-up an attempt creates a new window and a new swap chain only where the previous attempt left none; an apply makes every attempt in place on the existing window and swap chain (PLT-114).
 
-1. the preferred settings: the stored render size (the desktop size of the window's monitor when it is 0 × 0, `rnd.option.render_size.default`, RND-021), snapped to the closest offered render size (RND-022), the stored window mode and the stored monitor;
+1. the preferred settings: at start-up the stored render size (the desktop size of the window's monitor when it is 0 × 0, `rnd.option.render_size.default`, RND-021), snapped to the closest offered render size (RND-022), the stored window mode and the stored monitor; for an apply, the requested render size and window mode;
 2. the desktop size of the window's monitor, in the stored window mode;
 3. windowed, with a client area of `rnd.init.fallback_window_size` (800 × 600).
 
-A failed first attempt queues the non-fatal notice `ui.error.resolution_rejected`, which the UI shows once it exists. When every attempt fails, start-up ends through `FatalExit` with `ui.error.display_mode`. After any successful attempt the settings in effect are written back; after a fallback the present-mode setting is written back as `Uncapped` (RND-023); then the store is saved (R-META-424).
+A failed first attempt queues the non-fatal notice `ui.error.resolution_rejected`, which the UI shows once it exists. When every attempt fails, the client ends through `FatalExit` with `ui.error.display_mode`. After any successful attempt the settings in effect are written back; after a fallback the present-mode setting is written back as `Uncapped` (RND-023); then the store is saved (R-META-424).
 
 ```mermaid
 flowchart TD
@@ -949,32 +934,23 @@ flowchart TD
   A3 -- fails --> X["FatalExit: ui.error.display_mode"]
 ```
 
-Diagram 6-A: window and swap-chain creation fallback chain (PLT-112).
+Diagram 6-A: window and swap-chain creation fallback chain at start-up (PLT-112); a screen-options apply enters it at attempt 1 with the requested values.
 
-**PLT-113** (MUST) The reference chain, which [options, localisation and hooks](../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-423 and R-META-424 describe, reads its screen settings with the reader defaults of table 3.4-A and tries the attempts of table 6.1-A. A failed first attempt shows `ui.dialog.screen_mode_failed` with the requested size at `plt.display.reference.failure_message_position` (100, 100), once the user interface exists. The second attempt keeps the stored choice of window or full screen. After a successful attempt the store holds the values in effect, including an overscan of `plt.display.reference.overscan`, and is saved; after any fallback the stored vertical-sync request is `plt.display.reference.fallback_vsync_request` (off). When the last attempt fails, start-up stops with a fatal error.
+**PLT-113** (removed: the client has one creation chain, PLT-112)
 
-Table 6.1-A: reference creation attempts.
-
-| Attempt | Size | Window | Colour bits | Depth bits | Refresh | Vertical-sync request |
-|---|---|---|---|---|---|---|
-| 1 | the stored size, snapped to the closest offered mode | stored, `plt.display.reference.reader_windowed` when missing | stored, `plt.display.reference.reader_colour_bits` when missing | stored, `plt.display.reference.reader_depth_bits` when missing | stored, `plt.display.reference.reader_refresh` when missing | stored, `plt.display.reference.reader_vsync_request` when missing |
-| 2 | the desktop's size | stored | the desktop's | `plt.display.reference.desktop_attempt_depth_bits` (24) | the desktop's | `plt.display.reference.fallback_vsync_request` (off) |
-| 3 | `rnd.init.fallback_window_size` (800 × 600) | windowed | `plt.display.reference.window_attempt_colour_bits` (16) | `plt.display.reference.window_attempt_depth_bits` (16) | `plt.display.reference.window_attempt_refresh` (60 Hz) | off |
-| 4 | as attempt 3 | windowed | 16 | `plt.display.reference.last_attempt_depth_bits` (24) | 60 Hz | off |
-
-**PLT-114** (MUST) In Species, the window and the renderer are created once per process; applying the screen options changes the window mode and the render size in place (PLT-061; [renderer](renderer/README.md) RND-030) and never runs the fallback chain again, and no temporary window exists between two modes.
+**PLT-114** (MUST) The window and the renderer's device are created once per process. Applying the screen options changes the window mode and the render size in place (PLT-061; [renderer](renderer/README.md) RND-030) and creates no new window and no new device; when the in-place change cannot take the requested values, the attempts of PLT-112 continue in place. No temporary window exists between two modes.
 
 ### 6.2 Settings and first-run defaults
 
-**PLT-115** (MUST) First-run defaults never depend on the order in which packs are mounted (DEC-100, PLT-080). In the reference, the settings store is created right after the boot pack is mounted; on a first run, or when the file's first key looks damaged, it adds the defaults from code and then overlays a defaults file, but that file lives in a pack that is mounted later, so a packaged install takes its first-run defaults from code alone while a development tree reads the loose file; the renderer then saves the store at once, and the defaults file is never read again. DEC-100 replaces this with one compiled-in defaults table, and DEC-800 replaces the whole-file discard with the per-entry rule of PLT-079.
+**PLT-115** (MUST) First-run defaults never depend on the order in which packs are mounted or on the layout of the install: they come from the one compiled-in defaults table (DEC-100, PLT-080), and an invalid entry takes its own default without discarding the rest of the file (DEC-800, PLT-079).
 
 **PLT-116** (MUST) A settings failure never stops the client: invalid entries and repeated keys follow PLT-079, a missing file is a first run (PLT-080), a failed save keeps the previous file (PLT-081), and an unavailable user-data root keeps the settings in memory (PLT-018).
 
 ### 6.3 Crash handling
 
-**PLT-117** (MUST NOT) The client installs no top-level unhandled-exception filter that handles fatal exceptions: an unhandled exception on any thread, the main thread and every worker alike, reaches Windows Error Reporting (ADR-065). The reference covers only its main thread with its own handler; Species covers every thread through the operating system.
+**PLT-117** (MUST NOT) The client installs no top-level unhandled-exception filter that handles fatal exceptions: an unhandled exception on any thread, the main thread and every worker alike, reaches Windows Error Reporting (ADR-065).
 
-**PLT-118** (MUST) The terminate handler (`std::set_terminate`), the C runtime's invalid-parameter handler and its pure-call handler each enter the fatal path with their reason: the black box and a flushed fatal log record ([diagnostics](diagnostics_test_and_performance/README.md) DBG-073 steps 1 and 2), then PLT-127, which ends the process with a fail-fast exception that Windows Error Reporting captures (ADR-065).
+**PLT-118** (MUST) The terminate handler (`std::set_terminate`), the C runtime's invalid-parameter handler and its pure-call handler each enter the fatal path with their reason: the black box and a flushed fatal log record, through the log sink's `RecordFatal` (PLT-133; [diagnostics](diagnostics_test_and_performance/README.md) DBG-073 steps 1 and 2), then PLT-127, which ends the process with a fail-fast exception that Windows Error Reporting captures (ADR-065).
 
 **PLT-119** (MUST) At start-up (PLT-038 step 9) the platform layer registers with Windows Error Reporting: the current log file and the settings file (`WerRegisterFile`); the black box of the diagnostics component and the crash-context record of PLT-037 (`WerRegisterMemoryBlock`) (ADR-065). Owners of memory that may hold personal data, such as chat text and account tokens, register it as excluded through `CrashContext::ExcludeMemoryBlock` (`WerRegisterExcludedMemoryBlock`). The renderer registers the device-removal data that it writes to `crashes\` ([renderer](renderer/README.md) RND-034, ADR-008). The registrations are removed at shutdown (PLT-043).
 
@@ -990,24 +966,25 @@ Table 6.1-A: reference creation attempts.
 
 Table 6.3-A: crash report contents.
 
-| Reference report part | Species source |
+| Item | Source |
 |---|---|
 | program, exception description and code, faulting module and address | the exception record and module list of the dump |
-| a crash reference code from the current time | the run id in the crash-context record (PLT-036) and the report id of Windows Error Reporting |
-| local date and time | the report time; the process start in UTC in the crash-context record |
-| program path and Windows user name | the program path from the module list; the user name is never recorded (PLT-125) |
+| a reference that matches the report to a log | the run id in the crash-context record (PLT-036) and the report id of Windows Error Reporting |
+| date and time | the report time; the process start in UTC in the crash-context record |
+| program path | the module list; the Windows user name is never recorded (PLT-125) |
 | operating-system name and version | the crash-context record and the dump's system information |
 | processor count and type | the crash-context record |
 | memory load, and physical, page-file and virtual totals and free amounts | the crash-context record, in units of `plt.sysinfo.memory_unit` |
 | the read or write and the address of an access violation | the exception record of the dump |
 | registers | the context of every thread in the dump |
 | code bytes at the instruction pointer | the binary of that build in the symbol store |
-| stack memory from the stack pointer to the stack top | the full stack of every thread, through the dump's thread data |
+| the full stack of every thread | the dump's thread data |
 | module list with path, base, size, checksum, timestamp, file size and time, and version resource | the module list of the dump; every Species binary carries an accurate version resource (ADR-057) |
-| a dump with indirectly referenced memory | the dump itself (ADR-065) |
-| a system report from an external diagnostic program | not collected: no external program runs (PLT-092) |
-| the report of a failed fatal check | the black box ([diagnostics](diagnostics_test_and_performance/README.md) DBG-047, DBG-048), whose check message is truncated to `dbg.blackbox.check_message_max_chars` (DBG-047 item 7) |
-| — | in addition: thread names (PLT-083), the current log and settings files, the black-box ring of the diagnostics component, device-removal data (ADR-008) |
+| memory, with indirectly referenced memory and without excluded blocks | the dump itself (ADR-065, PLT-119) |
+| thread names | PLT-083 |
+| the current log file and the settings file | the registered files (PLT-119) |
+| the record of a failed check | the black box ([diagnostics](diagnostics_test_and_performance/README.md) DBG-047, DBG-048), with its ring of recent markers and checks, whose check message is truncated to `dbg.blackbox.check_message_max_chars` (DBG-047 item 7) |
+| device-removal data | the renderer's registered file (ADR-008, RND-034) |
 
 **PLT-125** (MUST NOT) The crash-context record and the system summary never contain the Windows user name, chat text, passwords or account tokens, and the black box follows the same rule (DBG-047); memory that may hold them is excluded from dumps (PLT-119, ADR-065; see DEC-970).
 
@@ -1068,6 +1045,8 @@ Table 6.4-A: failures.
 
 **PLT-130** (MUST) The platform layer provides the logger with the `logs\` folder, the run id for the file name and, in Debug builds, the debugger output (ADR-067). The logger's file rotation is ADR-067's.
 
+**PLT-133** (MUST) The platform layer depends on no other engine component. It writes its records (PLT-129, PLT-039) and enters the first steps of the fatal path (PLT-118) only through the log sink (`PlatformLogSink`), an interface that it declares and that the [diagnostics](diagnostics_test_and_performance/README.md) component implements with its logger and black box (DBG-001 item 1). The diagnostics component builds on the platform layer, its threads, files and clock, and the platform layer never calls it by name. The composition root sets the sink with `SetPlatformLogSink` at start-up step 7 and clears it at shutdown (PLT-038, PLT-043). Before the sink is set, the platform layer keeps its records in memory in their order and hands them to the sink when it is set; in Debug builds it also writes them to the debugger output. While no sink is set, a fatal handler goes straight to `FailFast` (PLT-127). The sink's `Write` is safe on any thread and never blocks on I/O (DBG-027).
+
 **PLT-131** (MUST) Telemetry's hardware summary is taken from the system summary and is sent only with the player's consent, through the HTTPS client (ADR-066). Crash data never travels through telemetry; it uses its own operating-system-consented path (PLT-120).
 
 ## 7 Acceptance tests
@@ -1081,17 +1060,16 @@ Tests run under the test framework of ADR-069; clock tests use the manual time s
 | T3 fixed step | unit | `--fixed-step` without a rate: 100 frame boundaries advance exactly 4 s; `WaitUntil` returns at once; `debug.command_history` 1 selects the source after the settings load | PLT-048, PLT-049, PLT-050, PLT-052 |
 | T4 source replacement | unit | a replaced source continues from the last reading | PLT-051 |
 | T5 calendar independence | integration | changing the time zone and the calendar time during a run changes no timing decision | PLT-053, PLT-055 |
-| T6 clock lint | static | a direct clock call outside the platform layer, or a platform-clock include in the simulation library, fails the build | PLT-002, PLT-003, PLT-055 |
+| T6 source rules | static | each rule of PLT-003 fails its fixture under `Build\CheckProjectFiles.py`: a direct clock call outside the platform layer, a platform-clock include in the simulation library, a window creation, a known-folder look-up, a Windows Error Reporting registration and a thread created other than through `PlatformThread`; the same calls inside the platform layer's project pass | PLT-002, PLT-003, PLT-055 |
 | T7 DPI | integration | moving between a 100 % and a 200 % monitor gives the suggested rectangle, the new scale and no device re-creation | PLT-060, PLT-007 |
 | T8 mode switching | integration | 50 toggles log no device re-creation or reload; a temporary change keeps the stored mode, a permanent one saves it | PLT-061, PLT-058, PLT-114 |
 | T9 resize coalescing | unit | 50 size messages in one pump give one `Resized` with the last size, none while minimised | PLT-062, PLT-063 |
 | T10 focus and keys | integration | Alt held through Alt+Tab is released; Alt or F10 alone opens no window menu; Alt+F4 raises `action.app.quit` and the window stays | PLT-064, PLT-065, PLT-009, PLT-008 |
 | T11 pointer | integration | a warp gives no movement event; confinement is suspended without focus; a release outside the window arrives | PLT-068 |
 | T12 keyboard layout | integration | a layout switch raises one notice with the BCP 47 tag; the creation tag matches the active layout | PLT-010, PLT-069 |
-| T13 display enumeration | unit | a synthetic mode list is filtered, merged by size with its refresh rates, and kept in reported order, and reaches the renderer's render-size list | PLT-070, PLT-071, PLT-073 |
+| T13 display enumeration | unit | a synthetic output mode list is filtered at 640 × 480, merged by size and kept in reported order, and reaches the renderer's render-size list; the desktop mode gives width, height and refresh rate | PLT-070, PLT-071, PLT-073 |
 | T14 display change | integration | removing the window's monitor moves the window to the primary monitor | PLT-072 |
-| T15 fallback chain | unit | forced failures give each attempt, the notice, the write-back with `Uncapped`, and the fatal exit | PLT-112 |
-| T16 reference chain values | unit | the reference attempts and reader defaults equal tables 6.1-A and 3.4-A | PLT-113, PLT-029 |
+| T15 fallback chain | unit | forced failures at start-up and in a screen-options apply give each attempt, the notice, the write-back with `Uncapped`, and the fatal exit; an apply creates no new window and no new device | PLT-112, PLT-114 |
 | T17 first run | integration | packaged and development layouts start with identical settings from the compiled-in table | PLT-080, PLT-115 |
 | T18 settings file | unit | an invalid entry takes its default; a repeated key keeps its first value; comments survive a save; a save interrupted after the temporary write leaves the old file | PLT-079, PLT-081, PLT-089, PLT-116 |
 | T19 install and user data | integration | a read-only install run as a standard user writes nothing outside the user-data folders and Pictures; `--user-data` moves every user file, the crash registrations included, and is refused inside the install directory | PLT-015, PLT-016, PLT-017, PLT-025 |
@@ -1107,9 +1085,12 @@ Tests run under the test framework of ADR-069; clock tests use the manual time s
 | T29 HTTPS | unit and integration | an `http` address is refused; a redirect is returned as the result and not followed; a timeout gives `Timeout`; self-signed, expired, wrong-name and revoked certificates, and one whose revocation check cannot complete, each give `CertificateRejected`; a configured system proxy is used; no request carries a cookie or a credential that the caller did not supply, against a server that challenges with NTLM and Negotiate; the binary holds no embedded key | PLT-099, PLT-100 |
 | T30 audio endpoints | integration | a default-device change reaches the audio engine on the main thread and playback continues (AEN-259) | PLT-103, PLT-011 |
 | T31 two clients | integration | concurrent saves never leave a partial file; each client has its own log | PLT-041, PLT-089 |
-| T32 lifecycle order | integration | an instrumented run records the steps of start-up and shutdown in order; quits from the front end, loading and a match, and an end of session, run one teardown | PLT-038, PLT-043, PLT-042, PLT-044, PLT-045 |
+| T32 lifecycle order | integration | an instrumented run of the composition root records the steps of start-up and shutdown in order, the asset cache attached to the GPU resource factory only after the device exists; quits from the front end, loading and a match, and an end of session, run one teardown | PLT-038, PLT-043, PLT-042, PLT-044, PLT-045 |
 | T33 message pump | integration | input during a loading view arrives in the next frame; a 10 s load keeps the window responsive | PLT-067 |
 | T34 identity and channel tag | integration | a content hash that differs from `build_identity.json` logs the modified-installation warning; a valid, a missing and an invalid tag give the tag, `unknown` and `unknown` | PLT-104, PLT-105, PLT-106 |
+| T35 Windows header | static | a source file outside the platform layer's project that includes `<windows.h>`, and a header or project file that defines `NOMINMAX` or another macro of the family, each fail `Build\CheckProjectFiles.py`; `WindowsHeaders.h` passes | PLT-132 |
+| T36 log sink | unit | with a recording sink: the records of start-up steps 1 to 6 arrive in order when the sink is set; a terminate-handler failure calls `RecordFatal` and then fails fast; with no sink set it fails fast directly; the platform library links no diagnostics code | PLT-133, PLT-118 |
+| T37 mapped file | unit | a mapped pack gives its bytes and size; a moved-from view is empty; destroying the view unmaps the file, so it can be replaced; an empty file maps to an empty view | PLT-090 |
 
 ## 8 Open decisions
 
@@ -1124,7 +1105,7 @@ Tests run under the test framework of ADR-069; clock tests use the manual time s
 | DEC-800 | Resolved | lossless, typed and atomic settings writing (PLT-033, PLT-079, PLT-081, PLT-089) |
 | DEC-200, DEC-207 | Open | no replication model or transport in the baseline (PLT-100) |
 | DEC-220 | Open | process roles and the headless server's platform subset (PLT-005) |
-| DEC-221 | Open | the composition root and application state machine behind the lifecycle hooks (PLT-038, PLT-042, PLT-043, PLT-045, PLT-086) |
+| DEC-221 | Open | the composition root, the client project's entry code until decided, which runs the start-up and shutdown sequences, and the application state machine behind the lifecycle hooks (PLT-038, PLT-042, PLT-043, PLT-045, PLT-086) |
 | DEC-224 | Open | the threading model on top of the platform threads (PLT-084, PLT-083, PLT-085, PLT-087, PLT-090) |
 | DEC-225 | Open | the frame loop, pacing and catch-up (PLT-067, PLT-056, PLT-055) |
 | DEC-226 | Open | explicit completion of asynchronous work (PLT-085) |
@@ -1133,9 +1114,7 @@ Tests run under the test framework of ADR-069; clock tests use the manual time s
 | DEC-248, DEC-249 | Open | identity tokens in the credential store; service endpoints as configuration (PLT-020, PLT-100, PLT-099) |
 | DEC-250, DEC-251 | Open | settings-file versioning and the persistence of worlds and replays (PLT-031, PLT-019) |
 | DEC-044, DEC-046, DEC-206 | Open | the options set; replays; divergence dumps (PLT-074, PLT-017) |
-| DEC-333 | Dropped | trial gating and credential files (PLT-020, PLT-101) |
-| DEC-341 | Dropped | the runtime-library, compiler and debug-build details of the reference; Species defines its own checks and crash handling (PLT-126, PLT-117) |
-| DEC-060, DEC-061 | Dropped | benchmark upload and in-game video capture; profiles and mods (table 3.2-A) |
+| DEC-061 | Dropped | no string overlays for mods (PLT-078) |
 | ADR-050, ADR-074, ADR-075, ADR-071 | Accepted | client platform, clock, window, install layout and user data |
 | ADR-065, ADR-076, ADR-028, ADR-077 | Proposed | crash reporting; screenshot encoding; input back-ends; the HTTPS client on WinHTTP (defaults applied as stated) |
 | ADR-012, ADR-033, ADR-051, ADR-056, ADR-057, ADR-063, ADR-066, ADR-067, ADR-008 | Accepted | presentation, UI scaling, the toolchain, products and configurations, build identity, localisation, telemetry, logging, device removal |

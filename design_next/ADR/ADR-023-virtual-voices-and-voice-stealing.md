@@ -74,5 +74,5 @@ Chosen option: **1, virtual voices with ranked, margin-protected stealing**, bec
 ## More Information
 
 - Related: ADR-022 (audio engine), ADR-024 (bus gains), ADR-025 (formats and voice pools), ADR-026 (update and command timing), ADR-027 (distance attenuation).
-- The audio engine component (`architecture/components/audio_engine.md`) owns the budget, the caps, the steal margin and the ranking arithmetic as tuning values; the audio design (`reference/10_audio_design/`) owns the authored priorities, copy decays and patience windows per event, with their defaults.
+- The audio engine component (`architecture/components/audio_engine/README.md`) owns the budget, the caps, the steal margin and the ranking arithmetic as tuning values; the audio design (`reference/10_audio_design/`) owns the authored priorities, copy decays and patience windows per event, with their defaults.
 - **Amendment 2026-10-17.** The copy decay and the patience window are design values per event with defaults owned by the audio design (`ref.aud.rank.copy_decay`, `ref.aud.layer.one_shot_patience_updates`); the engine defines no copy-decay key of its own (AEN-063).

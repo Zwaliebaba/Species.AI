@@ -28,7 +28,7 @@ Section numbers are those of the whole component: a section cited as §4.8 is in
 
 **DBG-001** (MUST) The diagnostics component owns:
 
-1. the logging system: its API, categories, levels, pipeline, sinks and drop policy (§4.1);
+1. the logging system: its API, categories, levels, pipeline, sinks and drop policy (§4.1). The component builds on the platform layer, its threads, files and clock, and never the reverse: the logger and the black box implement the platform's log sink (`PlatformLogSink`, [platform layer](../platform_layer.md) PLT-133), through which the platform layer writes its records in the `Platform` category and enters the first two steps of the fatal path (DBG-073);
 2. the check levels and the configurations that compile them in, the black box, and the fatal path up to the platform layer's last step (§4.2);
 3. the profiling layer: the marker macros, the collection of GPU timestamps, the profile tree and its view (§4.3), and the marker catalogue (§3.4);
 4. the development overlay, its pages and the counter-provider contract through which other components publish counters into it (§2.3, §4.4);
@@ -77,26 +77,13 @@ This component composes those parts into one developer view and one test harness
 | test hooks and the per-tick test-build checks | yes | no |
 | opt-in telemetry | yes | yes |
 
-**DBG-005** (MUST) The reference player build contains these diagnostics, reached as stated; this is the reference that the Species facilities replace:
-
-| Facility | Present in the reference player build | How it is reached | Species counterpart |
-|---|---|---|---|
-| network statistics window | yes | a key opens it in menus, the lobby and a match (DBG-020) | Debug builds (DBG-105) |
-| debug log | yes | always written to the profile folder, truncated at start-up | the logging system, in both configurations (§4.1) |
-| release assertions and the assertion record | yes | any failed release assertion or container bounds check | release checks and the black box (§4.2) |
-| crash log and minidump | yes | any unhandled exception on the main thread | crash capture on every thread ([platform layer](../platform_layer.md), ADR-065) |
-| world-state dump on divergence | yes | the first divergence notice | design phase (DEC-206) |
-| development drawing | compiled in; only the bot overlay is drawn | a hidden setting (§3.2) | Debug builds (§4.7) |
-| profile tree | compiled in; not reachable | — | the profile view (§4.3) |
-| frame-rate and entity-count overlay | compiled in; forced off | — | the development overlay (§4.4) |
-| hidden development settings | yes | the settings file | Debug builds (§3.2) |
-| debug-command window | compiled in; empty | — | Debug builds (§4.6) |
+**DBG-005** (removed: the Species facilities and the configurations that contain them are DBG-004 and DBG-006)
 
 **DBG-006** (MUST) The Species debug and test baseline is:
 
 1. **Debug commands.** Every developer cheat that changes simulation state is a sequenced debug command, which the authority accepts only in a session created with cheats enabled and every participant applies on the same tick; such a session carries a session-wide cheats-used marker (§4.6, DEC-041, DEC-202).
 2. **Replay as the regression tool.** When the design phase gives Species reproducible replays (DEC-046), every match records its seed and command stream into a local ring buffer, the headless runner replays it at maximum speed, the end-of-match state hash must match, and a recorded match serves as the repeatable performance scene of ADR-066 (§8.2).
-3. **Headless soak test.** Bot teams play complete matches on every mode and map in a scheduled CI job, with no user interface driven (§4.9, DEC-804, ADR-070).
+3. **Headless soak test.** Bot teams play complete matches on every mode and map in a scheduled CI job, in one headless server process with no client participant and no user interface driven; client participants join once the networking model exists (§4.9, DEC-804, DEC-200, ADR-070).
 4. **Profiling.** Scoped CPU markers that PIX and ETW traces show, GPU timestamps per pass, and an in-game overlay with a frame-time graph and per-system budgets; every marker is safe to use from any thread (§4.3, ADR-068).
 5. **Development console and overlays,** reachable in Debug builds: frame time, entity counts per type, network statistics with correct units, per-client lag in ticks and gaps in the incoming frame queue, bot overlays, and actor-grid and obstacle-grid visualisers (§4.4 to §4.7).
 6. **Logging and crash reporting.** An asynchronous, buffered, categorised log; crash capture on every thread and through the terminate path; dumps with every thread; a symbol store for every distributed build; no stack walk that depends on frame pointers; no credentials in a binary or a report (§4.1, §4.2, ADR-065, ADR-067).
@@ -235,16 +222,39 @@ struct SoakEntry
   std::uint8_t automatedParticipants; // filled with bot teams by the game layer (DBG-161)
   std::optional<std::uint64_t> seed;  // the forced seed of a sequence item; empty: the authority's own seed
 };
+// The session and match operations of a soak pass (DBG-160), implemented by the game's headless server,
+// which maps each call to its own session, match setup and bot teams (AGENTS.md R9). Called from the runner's thread only.
+class SoakHost
+{
+public:
+  virtual ~SoakHost() = default;
+  virtual void StartSession(std::string_view _sessionName) = 0; // DBG-163 step 2
+  // DBG-163 steps 4 to 9; returns the seed the match runs with.
+  [[nodiscard]] virtual std::uint64_t StartEntry(const SoakEntry& _entry) = 0;
+  virtual void AdvanceTick() = 0;                      // one tick of the session or the match
+  [[nodiscard]] virtual bool MatchRunning() const = 0; // false after game over (DBG-165)
+  [[nodiscard]] virtual std::uint64_t CurrentTick() const = 0;
+  [[nodiscard]] virtual std::uint64_t StateHash() const = 0;      // DBG-144, after the last tick
+  [[nodiscard]] virtual std::uint32_t LivePopulation() const = 0; // sampled every tick for the peak of DBG-166
+  virtual void EndEntry() = 0;                                    // leaves the match and removes its teams (step 11)
+};
+// SoakMatchRow, SoakPassSummary: generated from test.soak_report: data_schemas/test_and_telemetry_records.md §2
+// The result of one pass (DBG-025): the rows of the match table and the pass summary, both also written to the report folder.
+struct SoakReport
+{
+  std::vector<SoakMatchRow> matches;
+  SoakPassSummary summary;
+};
 // Owns all soak state.
 class SoakRunner
 {
 public:
-  explicit SoakRunner(const SoakConfigurationRecord& _config);
-  SoakReport Run();
+  SoakRunner(const SoakConfigurationRecord& _config, SoakHost& _host);
+  SoakReport Run(const std::filesystem::path& _reportFolder); // the caller names the folder (DAT-375)
 };
 
 // Telemetry (ADR-066)
-struct TelemetrySessionRecord;                               // the data set of DBG-181
+// TelemetrySessionRecord: generated from telemetry.session: data_schemas/test_and_telemetry_records.md §2
 void SubmitTelemetry(const TelemetrySessionRecord& _record); // queued; sent only with consent
 
 } // namespace Engine
@@ -276,7 +286,7 @@ struct DebugCommand
 } // namespace Species
 ```
 
-Caption: Listing 2.1-A, the diagnostics interface (declarations only). `ProfileNodeId`, `DevDrawItem`, `DevDrawItemId` and `SoakReport` are opaque handles and records of this component. The debug commands are declared in `Species`, the game layer, because their kinds name game concepts; everything else is in `Engine`.
+Caption: Listing 2.1-A, the diagnostics interface (declarations only). `ProfileNodeId`, `DevDrawItem` and `DevDrawItemId` are opaque handles and records of this component. `SoakHost` is the engine interface through which the soak runner drives the game's headless server without naming a game concept. The debug commands are declared in `Species`, the game layer, because their kinds name game concepts; everything else is in `Engine`.
 
 ### 2.2 Debug entry points and development bindings
 
@@ -295,7 +305,7 @@ Caption: Listing 2.1-A, the diagnostics interface (declarations only). `ProfileN
 
 **DBG-021** (MUST) The screenshot action (`action.view.screenshot`) is a player action of [reference/06](../../../reference/06_controls_camera_and_commands/actions_and_bindings.md) row A10 and the renderer, not a debug action.
 
-**DBG-022** (MUST NOT) No binding exists for: a second editor toggle on the network statistics key; a gamepad binding of the debug-command window; a debug quit action; a key that resets the campaign world camera; or a key that multiplies campaign production rates. The reference holds these only as inert or campaign-only bindings.
+**DBG-022** (MUST NOT) No debug binding exists other than those of DBG-020: the network statistics key has no second toggle, the debug-command window has no gamepad binding, and there is no debug quit action.
 
 ### 2.3 Events and data contracts
 
@@ -317,9 +327,9 @@ Caption: Listing 2.1-A, the diagnostics interface (declarations only). `ProfileN
 
 **DBG-024** (MUST) **Debug commands** travel as player commands of the command catalogue ([teams and player commands](../../../reference/12_simulation_model/06_teams_and_player_commands.md)) with the payload of `DebugCommand`: the sender's team, the command kind, the target team slot, the target point and the forced outcome. Who may send one and how it is validated is DBG-118 and DEC-202.
 
-**DBG-025** (MUST) **Soak artefacts.** Each soak pass produces one soak report: one row per match (DBG-166) plus the pass totals, the crash dumps of the pass ([platform layer](../platform_layer.md)), the assertion failures, the simulation update-time percentiles and the peak population per match. The report is a CI artefact (ADR-070).
+**DBG-025** (MUST) **Soak artefacts.** Each soak pass produces one soak report (`SoakReport`): one row per match (DBG-166) plus the pass totals, the crash dumps of the pass ([platform layer](../platform_layer.md)), the assertion failures, the simulation update-time percentiles and the peak population per match. Its rows and summary are the generated records of the schema `test.soak_report` ([test and telemetry records](../data_schemas/test_and_telemetry_records.md) DAT-375 to DAT-378), written to the report folder that the caller of `SoakRunner::Run` names and returned from it. The report is a CI artefact (ADR-070).
 
-**DBG-026** (MUST) **Telemetry record.** One `TelemetrySessionRecord` per session holds exactly the data set of DBG-181; a schema check rejects any field outside it (ADR-066).
+**DBG-026** (MUST) **Telemetry record.** One `TelemetrySessionRecord` per session, the generated record of the schema `telemetry.session` ([test and telemetry records](../data_schemas/test_and_telemetry_records.md) DAT-379), holds exactly the data set of DBG-181; `SubmitTelemetry` takes it, and the schema check of DAT-380 rejects any field outside it (ADR-066).
 
 ### 2.4 Threading contract
 
@@ -331,7 +341,7 @@ Caption: Listing 2.1-A, the diagnostics interface (declarations only). `ProfileN
 
 **DBG-030** (MUST) Debug commands enter the simulation only through the command path, at a tick boundary, like every other command (R-SIM-670); no diagnostic code runs inside a tick except the markers and the per-tick test-build checks, which run after the tick's last step and read only.
 
-**DBG-031** (MUST) The soak runner, the headless simulation tests and the telemetry sender each run on threads they own and stop and join before their owner is destroyed (DEC-224).
+**DBG-031** (MUST) The soak runner, the headless simulation tests and the telemetry sender each run on threads they own and stop and join before their owner is destroyed (DEC-224). The soak runner calls its `SoakHost` from its own thread only and never concurrently; the host runs each tick within that call, so the runner never reads simulation state while a tick runs.
 
 ## 3 Data model
 
@@ -341,7 +351,7 @@ Caption: Listing 2.1-A, the diagnostics interface (declarations only). `ProfileN
 
 | Object | Owner | Lifetime |
 |---|---|---|
-| logger, its per-thread buffers and its sinks | the composition root of each program (client, server, content build tool) | process; the logging thread starts first and stops last |
+| logger, its per-thread buffers and its sinks | the composition root of each program (client, server, content build tool) | process: created after the platform services it uses (start-up step 7 of PLT-038), set as the platform's log sink (PLT-133), and destroyed after every other component and before those platform services (PLT-043) |
 | black box | the composition root; its memory block is registered by the platform layer | process |
 | profile trees, frame-time history | the profiling service | process; history reset on request (DBG-084) |
 | counter providers | the component that registers them | the component; unregistered before it is destroyed |
@@ -365,7 +375,7 @@ Caption: Listing 2.1-A, the diagnostics interface (declarations only). `ProfileN
 | poster resolution | 1 | screenshots as N × N tiles | RND-110, RND-442 |
 | `debug.soak_session_name` | empty | the session name a soak host advertises and soak clients look for; a soak configuration's name replaces it | DBG-162 |
 
-**DBG-042** (MUST) The reference's terrain storage-mode setting has no Species meaning (RND-443), and its campaign test-harness switch is not specified (DEC-052). The reference start-up switches with a diagnostic role belong to the platform layer: writing the build identity to a file and exiting (PLT-023, ADR-057), and moving every log and user file out of the profile folder (PLT-025).
+**DBG-042** (MUST) The start-up options with a diagnostic role belong to the platform layer: writing the build identity to a file and exiting (PLT-023, ADR-057), and moving every log and user file to another user-data root (PLT-025). No development setting selects a terrain storage mode (RND-443).
 
 ### 3.6 Diagnostic outputs
 
@@ -409,7 +419,7 @@ Keys cited here and defined elsewhere: `ref.sim.tick_period`, `ref.sim.frame.fps
 
 ### 5.1 Diagnostics and concurrency
 
-**DBG-200** (MUST) Diagnostics stay outside the simulation budget (DEC-228 item 9): logging is asynchronous and buffered (DEC-224 item 12), markers cost a timer read and a per-thread stack operation, and the per-tick checks exist in test builds only. Diagnostic threads take no fixed processor affinity (DEC-224 item 5); the reference pins its main thread, which runs the simulation, rendering and every network send, to the odd-numbered processors 1, 3, 5 and 7, and loads levels on one worker thread.
+**DBG-200** (MUST) Diagnostics stay outside the simulation budget (DEC-228 item 9): logging is asynchronous and buffered (DEC-224 item 12), markers cost a timer read and a per-thread stack operation, and the per-tick checks exist in test builds only. Diagnostic threads take no fixed processor affinity (DEC-224 item 5).
 
 Sections 5.2 to 5.5 are in [performance baseline](performance_baseline.md).
 
@@ -457,6 +467,7 @@ The tests of each topic are in its file: T1 to T6, T8, T9, T12 and T13 in [loggi
 | DEC-046 | Open | replay: the command-history hook only (§8.2) |
 | DEC-060 | Dropped | no benchmark recorder, no upload of it and no in-game video capture; consented telemetry (§4.10) and external capture tools replace them |
 | DEC-106 | Open | the reference caps; measured on the first prototype (DBG-205) |
+| DEC-200 | Open | the soak runs in one headless server process with no client participant until the networking model exists (DBG-160, DBG-164) |
 | DEC-201 | Open | no network budget stated (DBG-202) |
 | DEC-202 | Open | debug commands accepted only in cheat-enabled sessions from the host's participant (DBG-118) |
 | DEC-972 | Open | the cheats-used marker is shown and recorded, and nothing is suppressed (DBG-118) |
@@ -470,12 +481,11 @@ The tests of each topic are in its file: T1 to T6, T8, T9, T12 and T13 in [loggi
 | DEC-240, DEC-242 | Open | golden hashes agree across the CI agents of one build; the generator is opaque to the harness (DBG-146, DBG-147) |
 | DEC-250, DEC-251 | Open | round-trip tests once persistence is defined (DBG-149) |
 | DEC-334 | Dropped | the reference's sandbox, benchmark and stress maps are not reproduced (DBG-148) |
-| DEC-341 | Dropped | the reference runtime library's assertion and debug-build details are not specified (DBG-073) |
 | DEC-650, DEC-653 | Resolved | the per-tick grid and finiteness checks (DBG-143) |
 | DEC-802 | Open | soak and stress maps are test maps (DBG-148) |
 | DEC-804 | Resolved | the soak rules (DBG-161) |
 | DEC-970 | Resolved | the black box holds no Windows user name and writes paths relative to placeholders (DBG-047) |
-| DEC-971 | Open | one pinned reference test machine at the ADR minimum, its hardware not yet named (DBG-209) |
+| DEC-971 | Open | the reference test machine is the first machine that meets the minima of ADR-050 and ADR-002 and runs the performance job, pinned and recorded; until then performance tests report and do not fail (DBG-209) |
 | ADR-054, ADR-056 | Accepted | Debug and Release only; development facilities in Debug only (DBG-004) |
 | ADR-068, ADR-069, ADR-070 | Accepted | markers in both configurations; the Microsoft C++ Unit Test Framework; the committed CI workflow, with the soak, fuzzing, GPU and performance jobs added by amendment (§4.3, §4.8, §4.9, DBG-208) |
 
@@ -485,7 +495,7 @@ Section 8.2 is in [test harness, soak test and telemetry](test_harness_soak_and_
 
 1. **Tick budget and stress population** (DEC-227, DEC-228): the per-tick CPU budget, per system and per region, its client and server forms, and the design and stress populations of DBG-204.
 2. **Performance envelope** (DEC-106): the measured cost at the population cap on the prototype, and whether the reference caps stand.
-3. **Reference test machine and server specification** (DBG-209): the client minimum-specification hardware and the named community-host specification.
+3. **Reference test machine and server specification** (DBG-209, DEC-971): whether the machine pinned by the interim rule of DBG-209 stays the reference, the named client minimum-specification hardware, and the named community-host specification.
 4. **Replays** (DEC-046): a formal replay file with build identity, content hashes, seed, team layout, command stream and periodic snapshots; the replay corpus as regression tests in a CI job added by amendment of ADR-070; its storage (DEC-250).
 5. **Divergence detection** (DEC-206) and **determinism scope** (DEC-240): whether the state hash of DBG-144 also runs in released builds, and which builds must agree bit for bit.
 6. **Network diagnostics** (DEC-208, DEC-201): the Species metric set, a view for many participants, the link simulator, and whether community operators receive the metrics as live telemetry.

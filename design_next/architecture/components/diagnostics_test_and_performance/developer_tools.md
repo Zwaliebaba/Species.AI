@@ -47,7 +47,7 @@ The development drawing queue and the debug-command declarations are those of Li
 
 ### 4.4 Development overlay
 
-**DBG-095** (MUST) The **frame-rate line** of the overlay is drawn in pass 29 (RND-076) in the body text role ([layout](../ui_framework/layout_rendering_input_and_localisation.md) §4), right-aligned at (W − `dbg.overlay.frame_rate_right` (10), H − `dbg.overlay.frame_rate_bottom` (40)), and only while the interface is shown. While a match world exists it shows the frame rate and the number of live simulated objects (`ui.dev.overlay.frame_rate_entities`); elsewhere it shows the frame rate alone (`ui.dev.overlay.frame_rate`). The frame rate is the renderer's counter of frames completed in the last `ref.sim.frame.fps_window` (RND-011, R-SIM-576). Its visibility is the renderer's frame-rate overlay flag of RND-011, off by default and absent from Release builds; in the reference player build the line exists but is forced off and nothing can show it.
+**DBG-095** (MUST) The **frame-rate line** of the overlay is drawn in pass 29 (RND-076) in the body text role ([layout](../ui_framework/layout_rendering_input_and_localisation.md) §4), right-aligned at (W − `dbg.overlay.frame_rate_right` (10), H − `dbg.overlay.frame_rate_bottom` (40)), and only while the interface is shown. While a match world exists it shows the frame rate and the number of live simulated objects (`ui.dev.overlay.frame_rate_entities`); elsewhere it shows the frame rate alone (`ui.dev.overlay.frame_rate`). The frame rate is the renderer's counter of frames completed in the last `ref.sim.frame.fps_window` (RND-011, R-SIM-576). Its visibility is the renderer's frame-rate overlay flag of RND-011, off by default and absent from Release builds.
 
 **DBG-096** (MUST) The **frame page** shows, besides the frame-rate line: the frame-time graph of DBG-089; the percentiles `dbg.telemetry.percentiles` (50th, 95th and 99th) of the frame-time history; the CPU share of each root profile node, as its last-period time × 100 ÷ the length of the last period, in percent; and the live entity counts per actor kind and per structure kind, with the counts of Essence orbs, laser bolts, effects and particles.
 
@@ -55,7 +55,7 @@ The development drawing queue and the debug-command declarations are those of Li
 
 **DBG-098** (MUST) The overlay shows one page at a time; `action.debug.overlay` shows and hides it, and the page list of DBG-023 is stepped with the menu actions while the overlay holds the focus. The overlay and every page of it exist in Debug builds only (DBG-004).
 
-**DBG-099** (MUST) The **world layers** of the overlay are drawn with the development drawing primitives of §4.7, each switched on separately in Debug builds: the bot overlay (DBG-135); hit volumes of structures, trees and actors; route nodes and routes; the actor grid, the obstacle grid and the actor-grid cache, each as cell outlines with their counts; the spider foot homes, targets and states, the cloth-flag bounding spheres and the Crawler trail samples ([animation and VFX](../animation_and_vfx/explainers_sprites_and_procedural_animation.md) §6); Transport waypoint and attack-target arrows; airstrike approach and exit arrows; and Hive health and occupancy text. The reference has drawing functions for each of these that no player-build path calls.
+**DBG-099** (MUST) The **world layers** of the overlay are drawn with the development drawing primitives of §4.7, each switched on separately in Debug builds: the bot overlay (DBG-135); hit volumes of structures, trees and actors; route nodes and routes; the actor grid, the obstacle grid and the actor-grid cache, each as cell outlines with their counts; the spider foot homes, targets and states, the cloth-flag bounding spheres and the Crawler trail samples ([animation and VFX](../animation_and_vfx/explainers_sprites_and_procedural_animation.md) §6); Transport waypoint and attack-target arrows; airstrike approach and exit arrows; and Hive health and occupancy text.
 
 **DBG-100** (MUST) The development overlay and the developer tools of this document also host the developer tools of other components, each in Debug builds only (DBG-004): the developer fly mode of the camera (CAM-080 to CAM-084), driven by the development bindings of DBG-020; the camera overlay (CAM-125) on the camera page; the page host's current page, stack, waiting state, pending request and last refused request (UI-482) on the ui page; the input counters (INP-241) on the input page; and the binding dump of the input router (INP-242) as a local command of the debug-command window (DBG-117 row 23).
 
@@ -77,7 +77,7 @@ The divergence column shows the diverged text in red while the participant has a
 
 **DBG-109** (MUST) **Participant block** (whenever the process is connected to a host): when at least one frame has been processed, a caption (text size `dbg.netstats.queue_caption_size`, 13) at the window bottom − `dbg.netstats.queue_caption_rise` (50 px) states that the ideal queue holds 0 or 1 frames with no gaps; below it a label with the last processed frame number at the bottom − `dbg.netstats.queue_label_rise` (25 px), and a strip starting at the bottom − `dbg.netstats.strip_rise` (30 px) of `dbg.netstats.strip_boxes` (10) boxes for the frames last + 1 to last + 10, each (window width − `dbg.netstats.strip_side_space` (120 px)) ÷ 10 = 48 px wide less a `dbg.netstats.strip_gap` (20 %) gap and `dbg.netstats.strip_box_height` (20 px) high, with the background `dbg.netstats.strip_background_rgb` (20, 20, 50), filled `dbg.netstats.strip_fill_rgb` (0, 255, 0) when that frame is in the participant's incoming queue, and outlined `dbg.netstats.strip_outline_rgba` (255, 255, 255, 100). A participant that is not the host also shows the last host frame it knows, the host frame it estimates, and its estimated latency in seconds with one decimal, centred, at text size `dbg.netstats.latency_text_size` (15). A right column at x + `dbg.netstats.right_column_x` (250 px) from the top shows the last valid frame received from the host and the participant's send and receive rates.
 
-**DBG-110** (MUST) Every rate is in bytes per second averaged over windows of `dbg.netstats.rate_window_ms` (5000 ms): when more than one window has passed since the window start, the rate becomes the bytes counted ÷ the time since the window start and the count restarts. The window shows rates in KiB/s with one decimal and states whether protocol headers are counted (DEC-208 item 3). The reference updates a rate only when traffic is counted and prints every rate and the latency through a format that yields unreadable numbers; the Species window updates each rate every window and prints it correctly, and measures the round trip directly once the transport provides it (DEC-208 item 2).
+**DBG-110** (MUST) Every rate is in bytes per second averaged over windows of `dbg.netstats.rate_window_ms` (5000 ms): when more than one window has passed since the window start, the rate becomes the bytes counted ÷ the time since the window start and the count restarts. The window shows rates in KiB/s with one decimal and states whether protocol headers are counted (DEC-208 item 3). Each rate is updated at the end of every window, whether or not traffic was counted in it, and the round trip is measured directly once the transport provides it (DEC-208 item 2).
 
 ### 4.6 Debug commands and the debug-command window
 
@@ -107,26 +107,26 @@ The divergence column shows the diverged text in red while the participant has a
 
 **DBG-119** (MUST) Local commands (rows 14 to 23) and the special-lighting actions of DBG-020 never travel as commands and never touch simulation state.
 
-**DBG-120** (MUST NOT) The window has no campaign command (enabling campaign world buildings or opening campaign locations, DEC-052), no command that grants research, because match start fixes the research levels and such a command has no effect in a match (DEC-041, DEC-115), no narrator portrait command, and no sound-editor or sound-statistics window, whose content the audio page of the overlay shows (AEN-323).
+**DBG-120** (MUST NOT) The window offers only the commands of DBG-117. It opens no sound-editor or sound-statistics window: their content is on the audio page of the overlay (AEN-323).
 
 **DBG-121** (MUST) In the reference every cheat changes the local copy of the simulation directly and sends nothing; a cheat that changes simulation state is therefore a divergence in any session with two or more participants, and a session with one human participant and bot teams, which has nobody to compare with, never reports one. Species removes that behaviour: DBG-221 lists the classification.
 
 ### 4.7 Development drawing
 
-**DBG-130** (MUST) The development drawing primitives are drawn in pass 24 (RND-076), in Debug builds only, unlit:
+**DBG-130** (MUST) The development drawing primitives are drawn in pass 24 (RND-076), in Debug builds only, unlit. Lines are drawn as a line list, one pixel wide; a line of a primitive whose width is above 1 px is drawn as a screen-facing quad of that width in pixels:
 
 | Primitive | Drawing |
 |---|---|
 | 2-D square | a square in its own orthographic projection, depth test off |
-| cube | the edges as line loops, `dbg.draw.cube_line_width` (2 px) wide |
+| cube | the twelve edges, each `dbg.draw.cube_line_width` (2 px) wide |
 | sphere rings | three orthogonal circles of `dbg.draw.ring_segments` (20) segments |
 | sphere | the development sphere of RND-330 (80 triangles), as lines or filled |
 | vertical cylinder | `dbg.draw.cylinder_edges` (16) side edges |
-| arrow | a line whose width is the given width ÷ the distance to the camera × the arrow length, plus two head lines of `dbg.draw.arrow_head_fraction` (20 %) of its length |
+| arrow | a line whose width in pixels is the given width ÷ the distance to the camera × the arrow length, plus two head lines of `dbg.draw.arrow_head_fraction` (20 %) of its length |
 | point marker | an arrow from the point + `dbg.draw.point_marker_offset` (20, 20, 20) wu to the point, and its label as 3-D text of size `dbg.draw.point_marker_text_size` (3) |
 | matrix | written to the log, at most `dbg.draw.matrix_log_limit` (10) times per process |
 
-**DBG-131** (MUST) The persistent drawing queue holds 2-D squares, point markers, spheres and arrows, starting with room for `dbg.draw.queue_initial` (100) items and growing as needed. Each item has a label of at most `dbg.draw.label_max` (63) characters; look-up and removal match a case-insensitive label prefix. Each item has a life in frames: 0 keeps it until it is removed; otherwise each drawing decrements it, and an item whose life is 1 is removed after it is drawn. The queue is drawn every frame and emptied at every match start and end; no engine path fills it except a developer's own code, so it is normally empty. Every item stores its label; in the reference the sphere and arrow items store none, so a prefix search can match a stale item.
+**DBG-131** (MUST) The persistent drawing queue holds 2-D squares, point markers, spheres and arrows, starting with room for `dbg.draw.queue_initial` (100) items and growing as needed. Each item has a label of at most `dbg.draw.label_max` (63) characters; look-up and removal match a case-insensitive label prefix. Each item has a life in frames: 0 keeps it until it is removed; otherwise each drawing decrements it, and an item whose life is 1 is removed after it is drawn. The queue is drawn every frame and emptied at every match start and end; no engine path fills it except a developer's own code, so it is normally empty. Every item stores its label, so a prefix search matches only the items in the queue.
 
 **DBG-132** (MUST NOT) Divergence markers (an arrow down to each object that differs between two states, with its name and a description as 3-D text) are not specified here; how a divergence is shown is DEC-206. The red divergence banner and the lost-connection banner are player-facing presentation hooks of the networking model (RND-076, DEC-200).
 
@@ -150,13 +150,11 @@ The shown overlay page has the presentation-thread budget of DBG-206 ([performan
 | spawn Crawlers | yes | divergence | sequenced (row 9) |
 | spawn Essence orbs | yes, and 20 simulation draws on one participant only | divergence, also visible in a generator-position check | sequenced (row 10) |
 | allow arbitrary placement | the local copy of the team's verify-targeting flag; the target command, executed everywhere, repeats the test | divergence at the first placement that is otherwise invalid | sequenced session rule (row 11) |
-| campaign world cheats (three) | campaign world state only, never read by match rules | none | not specified (DBG-120) |
 | grant all research | no change in a match | none | not specified (DBG-120) |
 | reset render resources | GPU resources only; trees rebuild from the same seed | none | local (row 16) |
 | spawn at structure ports | yes | divergence | sequenced (row 12) |
 | spawn a Supply crate | yes: a new structure; the structure-id counter advances | divergence | sequenced (row 13) |
 | profile view, sound editor, sound statistics, network statistics | no; audio is outside the simulation | none | local, or the audio overlay page (rows 14, 15) |
-| narrator portrait in the sky | no: sky drawing only, on a real-time timer | none | not specified (DBG-120) |
 
 The failures of the developer tools are rows of the failure table of DBG-220 ([README](README.md) §6).
 

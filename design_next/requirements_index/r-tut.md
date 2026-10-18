@@ -51,7 +51,7 @@ Scope: Tutorial and help. Back to the [requirements index](../REQUIREMENTS_INDEX
 | R-TUT-071 | Size and text. A tab is w = `ref.tut.tab.width` (280 px) × (1 + `ref.tut.tab.pulse` (0.02) × sin(8 t)) wide, with t the real clock in | [11_tutorial_and_help.md](../reference/11_tutorial_and_help.md#27-drawing-an-instruction-tab) |
 | R-TUT-072 | Geometry. With the line counts of the wrapped title and body, the box height h is title height × title lines + body height × body lines + | [11_tutorial_and_help.md](../reference/11_tutorial_and_help.md#27-drawing-an-instruction-tab) |
 | R-TUT-073 | Clamping and the arrow. | [11_tutorial_and_help.md](../reference/11_tutorial_and_help.md#27-drawing-an-instruction-tab) |
-| R-TUT-074 | Colours. With the base alpha `ref.tut.tab.alpha` (0.9): | [11_tutorial_and_help.md](../reference/11_tutorial_and_help.md#27-drawing-an-instruction-tab) |
+| R-TUT-074 | Colours. The box is filled black at alpha 0.72; | [11_tutorial_and_help.md](../reference/11_tutorial_and_help.md#27-drawing-an-instruction-tab) |
 | R-TUT-075 | A tab shows its title string `tutorial.tab.<name>.title` and its body string `tutorial.tab.<name>.body` (table 2.11-A), the body in its | [11_tutorial_and_help.md](../reference/11_tutorial_and_help.md#27-drawing-an-instruction-tab) |
 | R-TUT-080 | While a tutorial runs, the overrides of table 2.8-A apply. | [11_tutorial_and_help.md](../reference/11_tutorial_and_help.md#28-gameplay-overrides-while-a-tutorial-runs) |
 | R-TUT-081 | In the second tutorial, while the bots-may-spawn gate is clear, the match rules set the time remaining to | [11_tutorial_and_help.md](../reference/11_tutorial_and_help.md#28-gameplay-overrides-while-a-tutorial-runs) |

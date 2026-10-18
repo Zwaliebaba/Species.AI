@@ -18,13 +18,13 @@ The logging, check, black-box and profiling declarations are those of Listing 2.
 
 **DBG-043** (MUST) A log record holds: the platform-clock time (ADR-074) and the UTC calendar time used only for display; the thread name; the category; the level; and the message, formatted from a compile-time format string with arguments. Categories are the fixed set of Listing 2.1-A: the nine of ADR-067 plus `Diagnostics` (this component) and `Test` (the test harness and the soak runner). Levels are ordered trace < debug < info < warning < error < fatal.
 
-**DBG-044** (MUST) A log file starts with a header that holds the full build identity (ADR-057), the OS build, the adapter description, the channel tag (BLD-021) and the date and time of the start of the run (ADR-067). This replaces the reference header line of product name, version and build date.
+**DBG-044** (MUST) A log file starts with a header that holds the full build identity (ADR-057), the OS build, the adapter description, the channel tag (BLD-021) and the date and time of the start of the run (ADR-067).
 
 ### 3.4 Profile marker catalogue
 
-**DBG-045** (MUST) Every engine subsystem update, every frame-graph pass (RND-041) and every content-loading stage carries a marker (ADR-068). The catalogue below is the Species marker set for the systems that the reference instruments; a row's "per kind" marker is one marker per actor kind or structure kind, named by the kind's identifier. Markers nest by call order on their thread.
+**DBG-045** (MUST) Every engine subsystem update, every frame-graph pass (RND-041) and every content-loading stage carries a marker (ADR-068). The catalogue below covers every Species engine subsystem, frame-graph pass and loading stage (ADR-068); a row's "per kind" marker is one marker per actor kind or structure kind, named by the kind's identifier. Markers nest by call order on their thread.
 
-| Area | Species markers (the reference section each replaces is implied by the name) |
+| Area | Species markers |
 |---|---|
 | frame and loop | `frame.match_loop` (the whole simulation advance of a frame, around the world step); `render.frame`; `render.clear`; `render.present` |
 | camera and input | `camera.advance`; `input.advance`; `render.match_input` |
@@ -38,9 +38,9 @@ The logging, check, black-box and profiling declarations are those of Listing 2.
 | effects | `effects.particles.advance`; `effects.particles.render`; `effects.shatter.advance`; `effects.shatter.render` |
 | world rendering | `render.structures` and `render.structures.transparent`, each with one marker per structure kind; `render.structures.transparent_sort`; `render.structure_ports`; `render.essence_orbs`; `render.weapons`; `render.actor_groups` with one marker per actor kind; `render.ungrouped_actors` with one marker per actor kind; `render.crawlers`; `render.workers`; `render.cloth_flags`; `render.beam_dish.beam`; `render.transit_gate.destination`; `render.transit_gate.surface_advance`; `render.transit_gate.surface`; `render.routes` |
 | overlays and UI | `render.world_cursor`; `render.world_markers`; `render.centre_message`; `render.mode_hud`; `render.hint_overlay`; `render.power_slots_panel`; `devtools.profile_view.render` |
-| audio | `audio.update` and one marker per update step of AEN-123, `audio.decode`, `audio.bank_load` (AEN-322); the reference's instance-start sections map onto `audio.instance.start`, `audio.instance.open_stream`, `audio.instance.set_parameters`, `audio.instance.set_frequency_volume_position` and `audio.instance.setup_effects`, and its effect sections onto `audio.effect.resonant_low_pass`, `audio.effect.gargle` and `audio.effect.echo` |
+| audio | `audio.update`, with one marker per update step of AEN-123, named by the step; `audio.stream`, the stream task; `audio.bank_load`, one per bank load (AEN-322) |
 
-**DBG-046** (MUST NOT) The catalogue has no marker for campaign-only systems (DEC-052), for the pixelation, deform and reflection effects (DEC-059), for the gesture and icon Power interfaces (DEC-055), or for the reference's device-buffer locking in audio output, which the Species audio engine does not have (ADR-022). The reference instruments 186 call sites in its compiled code; the rows above keep every one whose system Species specifies.
+**DBG-046** (MUST NOT) The catalogue has no marker for campaign-only systems (DEC-052), for the pixelation, deform and reflection effects (DEC-059) or for the gesture and icon Power interfaces (DEC-055), which Species does not specify.
 
 ### 3.5 Black-box contents
 
@@ -56,7 +56,7 @@ The logging, check, black-box and profiling declarations are those of Listing 2.
 
 It never holds chat text, account tokens, the names of other players or the Windows user name, and every path in it is written relative to the install directory or the user-data root, with the root shown as a placeholder (ADR-065, ADR-067; see DEC-970). It does not hold the channel tag, which reaches the log header only (BLD-021, BLD-120).
 
-**DBG-048** (MUST) The reference's assertion record is a text report with a banner, the product name, version and build date, the date as hour and minute and as day, month and year, the error message, and a stack trace of return addresses that a frame-pointer walk collects and an offline script resolves through a linker map; the walk stops at a misaligned, non-increasing or unreadable frame and is short or wrong in optimised builds. Species keeps the content (identity, time, message, stack) and takes the stack from the dump, symbolised through the symbol store of every distributed build ([build tooling and distribution](../build_tooling_and_distribution.md), ADR-065); no Species code walks frame pointers.
+**DBG-048** (MUST) A failed check is recorded with the build identity, the time, the message and the stack. The black-box record (DBG-047 item 7) holds the first three, and the stack is taken from the dump, symbolised through the symbol store of every distributed build ([build tooling and distribution](../build_tooling_and_distribution.md), ADR-065); no Species code walks frame pointers.
 
 ## 4 Behaviour and algorithms
 
@@ -74,20 +74,20 @@ It never holds chat text, account tokens, the names of other players or the Wind
 
 **DBG-065** (MUST) The log records at least the content that the reference debug log carries, as categorised records: the start-up header (DBG-044); content mounting with entry counts and durations, and every missing resource ([asset pipeline and resources](../asset_pipeline_and_resources.md) AST-126); every settings entry that fails to parse or is out of range (DEC-800); network connection, divergence and disconnection events (DEC-206); audio readiness, bank loads and device changes (AEN-324); key-binding parse outcomes ([input](../input/README.md)); and a memory report every `ref.sim.frame.memory_log_interval` (60 s, [tick timing](../../../reference/12_simulation_model/01_tick_timing_and_main_loop.md)) giving the available physical memory, the process's committed memory and working set, and the audio engine's memory summary (AEN-324).
 
-**DBG-066** (MUST NOT) No record holds chat text, account tokens, passwords, or an identifier of another player other than a session-local number (ADR-067). No diagnostic is formatted while its level is disabled: a disabled record costs the level test only. In the reference a state line is formatted before and after every body and structure update even where the log discards it (DEC-206).
+**DBG-066** (MUST NOT) No record holds chat text, account tokens, passwords, or an identifier of another player other than a session-local number (ADR-067). No diagnostic is formatted while its level is disabled: a disabled record costs the level test only.
 
 ### 4.2 Checks, the black box and the fatal path
 
-**DBG-070** (MUST) Species has these check levels; the reference level each replaces is named in the second column:
+**DBG-070** (MUST) Species has these check levels:
 
-| Species level | Reference counterpart | Configurations | On failure |
-|---|---|---|---|
-| development check `ENGINE_ASSERT(c)` | debug assertion, with no effect outside debug builds | Debug | breaks into an attached debugger (PLT-121); otherwise logs an error record with the condition, file and line, notes it in the black box and continues, and the test harness turns it into a test failure (DBG-072) |
-| release check `ENGINE_CHECK(c, message)` | release assertion with a formatted message | Debug and Release | the fatal path of DBG-073 |
-| plain release check (no message) | assertion that reports the condition text, file and line | Debug and Release | as a release check; the message is the condition text, file and line |
-| container bounds check `ENGINE_CHECK_INDEX(i, n)` | the assertion with arguments that every container bounds check uses | Debug and Release | as a release check: an out-of-range container access is a fatal, reported error in every build |
-| abort | release assertion that is always false, with a message | Debug and Release | as a release check |
-| fatal exit `FatalExit(string id, arguments)` | logged exit with a message dialog and the assertion record | Debug and Release | DBG-074 |
+| Level | Configurations | On failure |
+|---|---|---|
+| development check `ENGINE_ASSERT(c)` | Debug | breaks into an attached debugger (PLT-121); otherwise logs an error record with the condition, file and line, notes it in the black box and continues, and the test harness turns it into a test failure (DBG-072) |
+| release check `ENGINE_CHECK(c, message)` | Debug and Release | the fatal path of DBG-073 |
+| plain release check (no message) | Debug and Release | as a release check; the message is the condition text, file and line |
+| container bounds check `ENGINE_CHECK_INDEX(i, n)` | Debug and Release | as a release check: an out-of-range container access is a fatal, reported error in every build |
+| abort, a release check that always fails, with a message | Debug and Release | as a release check |
+| fatal exit `FatalExit(string id, arguments)` | Debug and Release | DBG-074 |
 
 **DBG-071** (MUST) Content errors never reach a check: the content build rejects them (DEC-015, ADR-059), and a load path reports and recovers. A check states a program invariant; a failed check is a defect.
 
@@ -99,7 +99,7 @@ It never holds chat text, account tokens, the names of other players or the Wind
 2. write the full message as a fatal log record and flush the log synchronously (ADR-067), so the registered log file holds it;
 3. hand over to the platform layer's `FailFast` (PLT-127), which breaks into an attached debugger, or shows `ui.error.internal` with the run id when a window exists, and ends the process with a fail-fast exception, which Windows Error Reporting captures with the registered files and the black box (ADR-065).
 
-In the reference a failed release assertion shows its own message in a fatal-error message box, writes the assertion record and ends through the runtime's terminate path; whether its crash handler also runs is a property of its runtime library (DEC-341).
+The handlers of PLT-118 reach steps 1 and 2 through the platform's log sink (`PlatformLogSink::RecordFatal`, PLT-133), which this component implements.
 
 **DBG-074** (MUST) `FatalExit(string id, arguments)` serves failures of the environment, which are not defects (PLT-044): it writes the string id and arguments to the black box and as a fatal log record, flushes the log, and hands over to the platform layer's `EndWithMessage`, which shows the message and ends the process with `plt.lifecycle.exit_code.fatal` (PLT-044); no dump is written.
 
@@ -109,9 +109,9 @@ In the reference a failed release assertion shows its own message in a fatal-err
 
 **DBG-080** (MUST) The profiling layer is ADR-068's: `ENGINE_PROFILE_SCOPE` and its GPU counterpart `ENGINE_PROFILE_GPU_SCOPE` emit PIX events through WinPixEventRuntime in Debug and Release builds alike, and no other code calls the PIX runtime; a GPU scope also writes a timestamp query pair, resolved into a readback buffer and read `dbg.profile.gpu_readback_latency` (2) or more frames later, so the CPU never waits for the GPU to measure it. System-wide problems are captured as ETW traces with the TraceLogging provider of DBG-064.
 
-**DBG-081** (MUST) The same markers feed the profile tree. Each thread's tree is rooted at a root node. Entering a marker finds or creates the child of the current node with the marker's name and starts its timer; leaving it adds one call and the elapsed time to the node, updates the node's shortest and longest call, and makes the parent current again. Nesting follows call order only; a leave whose name differs from the current node's fails a development check (`ENGINE_ASSERT`). The trees exist in every Debug build, where the profile view and the overlay read them, and in Release builds the markers feed PIX only (DBG-004); the reference creates its tree only while its profile window is open. Every node is timed whether or not the view shows it; the reference times a node only while its parent is expanded in the view, so a collapsed subtree costs a look-up per call and shows no time.
+**DBG-081** (MUST) The same markers feed the profile tree. Each thread's tree is rooted at a root node. Entering a marker finds or creates the child of the current node with the marker's name and starts its timer; leaving it adds one call and the elapsed time to the node, updates the node's shortest and longest call, and makes the parent current again. Nesting follows call order only; a leave whose name differs from the current node's fails a development check (`ENGINE_ASSERT`). The trees exist in every Debug build, whether or not the profile view is open, and the profile view and the overlay read them; in Release builds the markers feed PIX only (DBG-004). Every node is timed whether or not the view shows it, so a collapsed subtree still shows its time.
 
-**DBG-082** (MUST) Once every `dbg.profile.rollup_period_ms` (1000 ms) of the platform clock, checked once per frame, the profiling service rolls every node over: the current period's calls and time become the last period's, the last period's are added to the history (one more history period), and the current period restarts; the length of the period just ended is recorded as now − (end of period − `dbg.profile.rollup_period_ms`), and the next period ends `dbg.profile.rollup_period_ms` after now. The roll-over runs in every frame loop, the front-end loop included; the reference rolls over only in its match loops.
+**DBG-082** (MUST) Once every `dbg.profile.rollup_period_ms` (1000 ms) of the platform clock, checked once per frame, the profiling service rolls every node over: the current period's calls and time become the last period's, the last period's are added to the history (one more history period), and the current period restarts; the length of the period just ended is recorded as now − (end of period − `dbg.profile.rollup_period_ms`), and the next period ends `dbg.profile.rollup_period_ms` after now. The roll-over runs in every frame loop, the front-end loop included.
 
 **DBG-083** (MUST) Each node keeps the fields of `ProfileNodeStats`: calls and time of the current and last periods, time, periods and calls since the last history reset, and the shortest and longest call since that reset. The shortest call starts at the largest representable value and the longest at 0.
 
@@ -121,13 +121,13 @@ In the reference a failed release assertion shows its own message in a fatal-err
 
 **DBG-086** (MUST) The **profile view** is a tool window of `dbg.profile.view.width` × `dbg.profile.view.height` (570 × 600 px) at (W − `dbg.profile.view.offset_x`, `dbg.profile.view.y`) = (W − 590, 30). It has two buttons on the row at y = `dbg.profile.view.button_y` (18): reset history at x = `dbg.profile.view.reset_x` (190), which calls `ResetHistory`, and the statistic choice at x = `dbg.profile.view.statistic_x` (330), whose caption cycles minimum → average → maximum → minimum. A column header (`ui.dev.profile.header`) is right-aligned at x + `dbg.profile.view.statistic_x`.
 
-**DBG-087** (MUST) The view lists the children of each expanded node in name order, depth first from the root, which is always expanded, and skips a node whose history average (history time ÷ history periods) is 0. Each row shows: an indent of one step per depth; a marker that reads "+" for a collapsed node with children, "−" for an expanded one and a blank for a leaf; the name padded to `dbg.profile.view.name_width` (24) characters minus the indent; the last period's calls; the time per call in ms with one decimal; the last period's total time in ms with no decimals; the chosen statistic (shortest call, history average per period or longest call) in ms with one decimal; and, for a node of a frame-graph pass, its GPU time from the timestamps. The reference computes the chosen statistic but never shows it, and prints its two decimal columns as unreadable text; the Species view shows all of them.
+**DBG-087** (MUST) The view lists the children of each expanded node in name order, depth first from the root, which is always expanded, and skips a node whose history average (history time ÷ history periods) is 0. Each row shows: an indent of one step per depth; a marker that reads "+" for a collapsed node with children, "−" for an expanded one and a blank for a leaf; the name padded to `dbg.profile.view.name_width` (24) characters minus the indent; the last period's calls; the time per call in ms with one decimal; the last period's total time in ms with no decimals; the chosen statistic (shortest call, history average per period or longest call) in ms with one decimal; and, for a node of a frame-graph pass, its GPU time from the timestamps.
 
 **DBG-088** (MUST) Each row is `dbg.profile.view.row_height` (12 px) high. Its brightness is `dbg.profile.view.brightness_min` + `dbg.profile.view.brightness_range` × time ÷ largest time among the rows, clamped to [`dbg.profile.view.brightness_min`, `dbg.profile.view.brightness_min` + `dbg.profile.view.brightness_range`] = [105, 255]. A bar starts at x + `dbg.profile.view.bar_x` (340), is √(time in ms) × `dbg.profile.view.bar_scale` (10) px long and `dbg.profile.view.bar_height` (11 px) high, in `dbg.profile.view.bar_rgb` (150, 150, 250) with the row's brightness as alpha, drawn as an outline when the node is expanded and filled when it is collapsed. A primary press inside a row's band toggles that node's expansion. The window grows by one row height for every row past its height.
 
 **DBG-089** (MUST) The bottom `dbg.profile.view.graph_height` (100 px) of the view hold the frame-time graph: guide lines at the frame times of `dbg.profile.view.graph_marks_ms` (200, 100 and 50 ms, that is 5, 10 and 20 frames per second), each labelled with its time and rate; one red vertical line per frame of the frame-time history, newest at the right, of height `dbg.profile.view.graph_height` × frame time ÷ `dbg.profile.view.graph_full_ms` (200 ms), that is 0.5 px per ms, so a 200 ms frame fills the graph.
 
-**DBG-090** (MUST) Subsystem profilers belong to their subsystems: the audio engine brackets its update, update steps, decode task and bank loads, and counts the cost of triggers per entry kind and of decoding per event (AEN-322); the profile view and the audio page show them.
+**DBG-090** (MUST) Subsystem profilers belong to their subsystems: the audio engine brackets its update, update steps, stream task and bank loads, and counts the cost of triggers per entry kind and of stream reads per event (AEN-322); the profile view and the audio page show them.
 
 ## 5 Concurrency and performance budget
 
@@ -154,7 +154,7 @@ The failures of logging, checks and profiling are rows of the failure table of D
 
 ## 8 Open decisions
 
-DEC-341 (Dropped) applies to the fatal path (DBG-073). The decisions and design-phase inputs of the whole component are in the [README](README.md) §8.
+The decisions and design-phase inputs of the whole component are in the [README](README.md) §8.
 
 ## 9 Tuning table
 
