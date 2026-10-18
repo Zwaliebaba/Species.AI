@@ -14,3 +14,4 @@ R2b-12	fixed	coordinator
 R2b-13	fixed	coordinator
 R2b-14	fixed	coordinator
 R4b-88	fixed	coordinator
+R2a-18	fixed	coordinator; phrase added to IpDenylist.sha256; multi-word patterns accept hyphens

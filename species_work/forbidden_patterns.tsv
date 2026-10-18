@@ -11,7 +11,7 @@ introversion	i	brand	studio name, folders, hosts, bundle ids
 \bDWs\b		brand	unit abbreviation in the frame overlay
 <GAME_TITLE>|\bGAME_TITLE\b		brand	placeholder resolved to Species
 sepulveda	i	brand	mentor character
-\bDr\.? S\b		brand	mentor character short form
+\bDr\.?[- ]S\b		brand	mentor character short form
 protologic	i	brand	story material
 evilinian	i	brand	faction nickname
 futurewinian	i	brand	faction nickname
@@ -21,37 +21,37 @@ squadd?ie	i	brand	unit name (Squadie, squaddie_*, InsertionSquadie)
 virii	i	brand	creature name in every form
 triffid	i	brand	third-party literary creature name
 \bwyndham\b	i	brand	author of the literary creature
-soul ?destroyer	i	brand	creature name
-spore ?generator	i	brand	creature name
-space ?invader	i	brand	third-party trade mark echo
-smell of napalm	i	brand	film quote
+soul[- ]?destroyer	i	brand	creature name
+spore[- ]?generator	i	brand	creature name
+space[- ]?invader	i	brand	third-party trade mark echo
+smell[- ]of[- ]napalm	i	brand	film quote
 \bpokey\b	i	brand	third-party sound chip name
 speccy	i	brand	font and loader homage names
-\bzx ?spectrum\b	i	brand	third-party computer homage
+\bzx[- ]?spectrum\b	i	brand	third-party computer homage
 dmacrew	i	brand	demo-scene homage art
-\bThe Beast\b		brand	debug creature name
+\bThe[- ]Beast\b		brand	debug creature name
 \bEclipse\b		brand	UI framework name (capitalised proper noun)
 \bEclipse[A-Z_]\w*		brand	UI framework identifiers (EclipseLMouseDown and the rest)
 \beclipse(?:\.(?:cpp|h)\b|/)	i	brand	UI framework source files and folder
 \bEcl(?:Window|Button)\b		brand	UI framework base classes
-\bsystem ?iv\b	i	brand	library brand (SystemIV, systemiv)
+\bsystem[- ]?iv\b	i	brand	library brand (SystemIV, systemiv)
 \bUplink\b		brand	studio title (capitalised)
 \bdefcon\b	i	brand	studio title and service identifiers
 subversion	i	brand	studio title and the original outcome and turret name
-prison ?architect	i	brand	studio title
-scanner ?sombre	i	brand	studio title
+prison[- ]?architect	i	brand	studio title
+scanner[- ]?sombre	i	brand	studio title
 \bPecan\b		brand	codename
 \bHummingbird\b		brand	codename
 AccessAllAreas|AttractMode|unlockall	i	brand	developer profiles
 godofcode	i	brand	test-bed codename
-puritycontrol|purity_control|\bPurity Control\b	i	brand	kill-switch data set
-\bTestbed (?:Server|Client)\b		brand	test-bed captions
+puritycontrol|purity_control|\bPurity[- ]Control\b	i	brand	kill-switch data set
+\bTestbed[- ](?:Server|Client)\b		brand	test-bed captions
 \bOpen/CPU\b|\(CPU\)|\(LEFT\)|\(DEMO\)		brand	team-type texts
 trueskill	i	brand	Microsoft trade mark
 \bxbla\b	i	brand	Xbox Live Arcade abbreviation
-xbox ?live ?arcade	i	brand	distribution brand
-xbox ?360	i	brand	console brand naming
-\b360 control help\b	i	brand	console help page
+xbox[- ]?live[- ]?arcade	i	brand	distribution brand
+xbox[- ]?360	i	brand	console brand naming
+\b360[- ]control[- ]help\b	i	brand	console help page
 ControlXBoxMenuCycle	i	brand	console-named controls
 _xbox\b	i	brand	console phrase suffix
 \bAmbrosia\b		brand	distributor
@@ -60,12 +60,12 @@ _xbox\b	i	brand	console phrase suffix
 \beGames\b		brand	distributor
 cinemaware	i	brand	distributor
 msn_oberon|\bOberon\b		brand	portal partner
-\bLogitech G15\b|\bG15\b		brand	hardware partner
+\bLogitech[- ]G15\b|\bG15\b		brand	hardware partner
 \bambx\b	i	brand	hardware partner
-`Sparkle`|\bSparkle(?= update|\.framework| framework| updater|\)|,? sleep)|\+ Sparkle\b		brand	Mac updater framework (identifier and update-check contexts only)
+`Sparkle`|\bSparkle(?=[- ]update|\.framework|[- ]framework|[- ]updater|\)|,?[- ]sleep)|\+[- ]Sparkle\b		brand	Mac updater framework (identifier and update-check contexts only)
 carrybillboard	i	brand	magazine billboard meshes
 \bprices_(?:ambrosia|steam)\b|\bprices\.bmp\b	i	brand	store art
-\bapp ?id 1520\b	i	brand	store product id
+\bapp[- ]?id[- ]1520\b	i	brand	store product id
 80\.175\.29\.66		brand	route-probe address
 0B9432AF	i	brand	crash-report module id
 F58175C7-E99C-4151-800D-7BB5E89E4960	i	brand	Game Explorer GUID
@@ -74,44 +74,44 @@ redshirt	i	brand	text cipher marker
 \bmultiwinia\.co\.uk\b|\bsavedarwinia\b	i	brand	product hosts
 \bLeander\b|\bChris\b|\bGary\b		brand	developer names from code comments
 betatesters?	i	brand	beta-tester lists
-survival of the flattest	i	brand	product subtitle
-\bRUN PROGRAM\b|\bSYNTAX ERROR\b|\bPROGRAM TERMINATED\b|\bOBJECTIVES COMPLETED\b|\bACQUIRED\b|\bUPGRADED\b		brand	task-manager fiction strings
-powerup limit reached|two powerups max	i	brand	power-up limit messages
-\bCrate Drop!		brand	crate announcement text
+survival[- ]of[- ]the[- ]flattest	i	brand	product subtitle
+\bRUN[- ]PROGRAM\b|\bSYNTAX[- ]ERROR\b|\bPROGRAM[- ]TERMINATED\b|\bOBJECTIVES[- ]COMPLETED\b|\bACQUIRED\b|\bUPGRADED\b		brand	task-manager fiction strings
+powerup[- ]limit[- ]reached|two[- ]powerups[- ]max	i	brand	power-up limit messages
+\bCrate[- ]Drop!		brand	crate announcement text
 Gq/s		brand	output unit of a campaign building
-hail to the king	i	brand	achievement name
-unclad skies	i	brand	achievement name
-aggravated assault	i	brand	achievement name
-\bBlitz ?Master\b	i	brand	achievement name
-\bWrong Game\b		brand	achievement name and message
-\bDominator\b|\bHoarder\b|\bGenocide\b|\bCarnage\b|\bMaster Player\b		brand	achievement names (capitalised)
-king of the hill|KingOfTheHill	i	brand	mode name
-capture ?the ?statue	i	brand	mode name
-rocket ?riot	i	brand	mode name
-tank ?battle	i	brand	debug mode name
+hail[- ]to[- ]the[- ]king	i	brand	achievement name
+unclad[- ]skies	i	brand	achievement name
+aggravated[- ]assault	i	brand	achievement name
+\bBlitz[- ]?Master\b	i	brand	achievement name
+\bWrong[- ]Game\b		brand	achievement name and message
+\bDominator\b|\bHoarder\b|\bGenocide\b|\bCarnage\b|\bMaster[- ]Player\b		brand	achievement names (capitalised)
+king[- ]of[- ]the[- ]hill|KingOfTheHill	i	brand	mode name
+capture[- ]?the[- ]?statue	i	brand	mode name
+rocket[- ]?riot	i	brand	mode name
+tank[- ]?battle	i	brand	debug mode name
 b(?:litz|litk|itz)kr(?:ie|ei)g	i	brand	mode name and its misspelt code forms (Blitzkreig, Blitkrieg, Bitzkreig)
 \bKOTH\b|\bCTS\b|\bASLT\b|\bBLITZ\b		brand	mode abbreviations
-\bAssault ?Mode\b|\bAssaultMode\b		brand	mode key token
-hot ?feet	i	brand	crate outcome name
-mega ?rage	i	brand	crate outcome name
-spawn ?mania	i	brand	crate outcome name
-crate ?mania	i	brand	crate outcome name
-magical ?forest	i	brand	crate outcome name
-\bDark ?Forest\b		brand	crate outcome name
-napalm ?strike	i	brand	crate outcome name
-personal ?shield	i	brand	crate outcome name
-nuke ?barrage	i	brand	crate outcome name
-\bAnts? ?Nest\b|\bAntNest\b		brand	crate outcome name
-insertion ?squad	i	brand	unit name
+\bAssault[- ]?Mode\b|\bAssaultMode\b		brand	mode key token
+hot[- ]?feet	i	brand	crate outcome name
+mega[- ]?rage	i	brand	crate outcome name
+spawn[- ]?mania	i	brand	crate outcome name
+crate[- ]?mania	i	brand	crate outcome name
+magical[- ]?forest	i	brand	crate outcome name
+\bDark[- ]?Forest\b		brand	crate outcome name
+napalm[- ]?strike	i	brand	crate outcome name
+personal[- ]?shield	i	brand	crate outcome name
+nuke[- ]?barrage	i	brand	crate outcome name
+\bAnts?[- ]?Nest\b|\bAntNest\b		brand	crate outcome name
+insertion[- ]?squad	i	brand	unit name
 \bLaserTroop		brand	unit name
-trunk ?port	i	brand	building name
-pulse ?bomb	i	brand	building name
+trunk[- ]?port	i	brand	building name
+pulse[- ]?bomb	i	brand	building name
 \bWMD\b		brand	building nickname
-control ?station	i	brand	building name
-escape ?rocket	i	brand	building name
-wall ?buster	i	brand	building name
-battle ?cannon	i	brand	turret barrel name
-pattern ?buffer	i	brand	campaign building and location
+control[- ]?station	i	brand	building name
+escape[- ]?rocket	i	brand	building name
+wall[- ]?buster	i	brand	building name
+battle[- ]?cannon	i	brand	turret barrel name
+pattern[- ]?buffer	i	brand	campaign building and location
 \bTaskManager\w*|taskmanager_		brand	power container identifiers
 CrateRew(?:ar|ra)d\w*		brand	crate outcome identifiers and sample groups (incl. misspelt CrateRewrad)
 \bmp_[a-z0-9]+\w*	i	brand	level file names mp_*
@@ -132,8 +132,8 @@ redvirus_|\bkoh_zone	i	brand	sample groups
 autopatch	i	brand	updater binary
 \bShapeExporter\b		brand	mesh exporter tool
 xcrashreport	i	brand	crash-report sample code
-\bncftp\w*|\bpscp\b|\bUPX\b|Loki Setup|aoTuV|RARLAB	i	brand	third-party tools
-Bruce Dawson|Hans Dietrich|Jonathan de Halleux	i	brand	third-party code authors
+\bncftp\w*|\bpscp\b|\bUPX\b|Loki[- ]Setup|aoTuV|RARLAB	i	brand	third-party tools
+Bruce[- ]Dawson|Hans[- ]Dietrich|Jonathan[- ]de[- ]Halleux	i	brand	third-party code authors
 \bGetWinVer\b|\bMiniVersion\b		brand	third-party code
 \blandscape_(?:beach|containment|dark|default|desert|earth|field|firetop|icecaps(?:_peaked)?|jailbreak|launchpad|marble2?|mine2?|ridges|shrine|silver|stronghold|trippy|volcanic(?:plain)?)\b	i	brand	terrain colour ramp names
 \bwaves_(?:containmentfield|default|desert|dull|earth|generator|icecaps|launchpad|yellow)\b	i	brand	wave table names
@@ -149,11 +149,11 @@ Bruce Dawson|Hans Dietrich|Jonathan de Halleux	i	brand	third-party code authors
 \[(C|I|U)\]		provenance	evidence tag
 \[B:[A-Z]+\]		provenance	build tag
 \bB:(?:FULL|LEGACY|DEAD|D3D|DEMO|DEBUG|EDITOR)\b		provenance	build tag without brackets
-Verbatim excerpt		provenance	closing-section and excerpt names
-Source map		provenance	closing-section name
+Verbatim[- ]excerpt		provenance	closing-section and excerpt names
+Source[- ]map		provenance	closing-section name
 Docs-vs-code		provenance	closing-section name
 (?<!\w)_work/		provenance	recovery work folder; not inside run-folder names such as species_work/ (G1 fix)
-[Cc]overage matrix		provenance	recovery coverage matrix
+[Cc]overage[- ]matrix		provenance	recovery coverage matrix
 \.(bmp|shp|mwm|dat|vcproj)\b	i	provenance	original file extension used as a file reference
 \bf909630\b		provenance	recovered commit id
 \b\d\d-U\d+\b		provenance	recovery unknown ids (NN-U<n>)
@@ -168,31 +168,31 @@ OpenGL		legacy-tech	legacy graphics API
 \bwgl[A-Z]\w+		legacy-tech	legacy window-system calls
 \bWGL\b		legacy-tech	legacy window-system binding
 \bARB_\w+		legacy-tech	legacy graphics extensions
-Direct3D ?9		legacy-tech	legacy graphics API version
+Direct3D[- ]?9		legacy-tech	legacy graphics API version
 \bD3D9\b		legacy-tech	legacy graphics API version
 \bD3DX(?!12)		legacy-tech	legacy helper library; d3dx12.h is allowed
-DirectX ?9		legacy-tech	legacy runtime version
-DirectX SDK		legacy-tech	legacy SDK
+DirectX[- ]?9		legacy-tech	legacy runtime version
+DirectX[- ]SDK		legacy-tech	legacy SDK
 DirectSound		legacy-tech	legacy audio API
 \bDSound\w*		legacy-tech	legacy audio API effect names
 waveOut		legacy-tech	legacy audio API
-XInput ?1\.3		legacy-tech	legacy input runtime
+XInput[- ]?1\.3		legacy-tech	legacy input runtime
 xinput1_3	i	legacy-tech	legacy input runtime
 \bx87\b		legacy-tech	legacy floating-point unit
 _control87		legacy-tech	legacy floating-point control
-Visual Studio 200[58]		legacy-tech	legacy toolchain
-\bVS ?200[58]\b	i	legacy-tech	legacy toolchain
-MSVC ?200[58]		legacy-tech	legacy toolchain
+Visual[- ]Studio[- ]200[58]		legacy-tech	legacy toolchain
+\bVS[- ]?200[58]\b	i	legacy-tech	legacy toolchain
+MSVC[- ]?200[58]		legacy-tech	legacy toolchain
 \bvsprops\b	i	legacy-tech	legacy toolchain property sheets
 \bMBCS\b		legacy-tech	legacy character set
 \bRAR\b		legacy-tech	legacy archive format
 unrar	i	legacy-tech	legacy archive library
-Inno Setup		legacy-tech	legacy installer
+Inno[- ]Setup		legacy-tech	legacy installer
 \bNSIS\b		legacy-tech	legacy installer
 GnuWin32		legacy-tech	legacy tool set
 OpenMP		legacy-tech	legacy threading
-display lists?	i	legacy-tech	legacy graphics API feature
-lost device	i	legacy-tech	legacy graphics API failure mode
+display[- ]lists?	i	legacy-tech	legacy graphics API feature
+lost[- ]device	i	legacy-tech	legacy graphics API failure mode
 metaserver	i	legacy-tech	legacy online service
 authkey	i	legacy-tech	legacy licence keys
 \bSDL\b		legacy-tech	legacy platform library

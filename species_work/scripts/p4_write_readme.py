@@ -60,8 +60,8 @@ n_keys = m.group(1) if m else '?'
 m = re.search(r'(\d[\d,]*) asset ids \((\d[\d,]*) manifest rows\)', GATE)
 n_assets = f'{m.group(1)} ids, {m.group(2)} files' if m else '?'
 dec_text = '\n'.join(t for p, t in text.items() if '/decisions/' in p.replace(os.sep, '/') and not p.endswith('README.md'))
-decs = re.findall(r'^#{2,4} DEC-(\d{3})\s', dec_text, re.M)
-statuses = re.findall(r'^#{2,4} DEC-\d{3}\s.*\n(?:.*\n){0,7}?- \*{0,2}Status\*{0,2}:\*{0,2}\s*([A-Za-z]+)', dec_text, re.M)
+decs = re.findall(r'^#{2,4} DEC-(\d{3,4})\s', dec_text, re.M)
+statuses = re.findall(r'^#{2,4} DEC-\d{3,4}\s.*\n(?:.*\n){0,7}?- \*{0,2}Status\*{0,2}:\*{0,2}\s*([A-Za-z]+)', dec_text, re.M)
 adrs = glob.glob(os.path.join(ROOT, 'ADR', 'ADR-[0-9][0-9][0-9]-*.md'))
 adr_status = []
 for p in adrs:

@@ -42,7 +42,7 @@ honours `PLAYWRIGHT_BROWSERS_PATH`.
 | 3 Links and anchors | every relative link resolves and its anchor exists (GitHub heading slugs and `<a id>`); a link leaves the design root only for the `vision/` and `prompts/` folders beside it |
 | 4 Mermaid | every `mermaid` block parses with `mermaid.parse()` of the pinned build, in headless Chromium (`MermaidCheck.js`) |
 | 5 Requirement ids | every id has a prefix registered in `CONVENTIONS.md` §3.1, is defined exactly once (`**PREFIX-NNN**`), and every cited id exists |
-| 6 DEC and ADR references | every cited `DEC-NNN` exists in `decisions/` and every `ADR-NNN` in `ADR/`; every Open DEC is cited inside at least one requirement |
+| 6 DEC and ADR references | every cited `DEC-NNN` or `DEC-NNNN` (the design phase numbers from DEC-1000) exists in `decisions/` and every `ADR-NNN` in `ADR/`; every Open DEC is cited inside at least one requirement |
 | 7 Asset closure | every asset id cited in `reference/` or `architecture/components/` exists in `assets/asset_manifest.csv`, every manifest row names a consumer, and asset stems share no prefix with tuning keys or string ids |
 | 8 Tuning keys | every key of a tuning table (`key \| value \| ...`) is defined once and is cited by a requirement |
 | 9 Truncation words | none of the words that stand in for a list, outside code |
@@ -57,7 +57,7 @@ prefix or allowed term needs no change here.
 | File | What it is |
 |---|---|
 | `CheckDesign.py` | the gates |
-| `TechPatterns.tsv` | provenance, superseded-technology and soft-flag patterns, in plain text |
+| `TechPatterns.tsv` | provenance, superseded-technology and soft-flag patterns, in plain text; a gap between words is written `[- ]` so that a hyphenated spelling matches too |
 | `IpDenylist.sha256` | SHA-256 digests of names and short phrases (gate 1) |
 | `OriginalStrings.sha256` | SHA-256 digests of interface strings (gate 2) |
 | `BuildDenylist.py` | hashes a plain-text list into the two digest files |

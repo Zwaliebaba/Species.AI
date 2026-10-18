@@ -568,7 +568,7 @@ class Check:
         continue
       lines = t.split('\n')
       for i, line in enumerate(lines):
-        m = re.match(r'^#{2,4} DEC-(\d{3})\s', line)
+        m = re.match(r'^#{2,4} DEC-(\d{3,4})\s', line)
         if m:
           st = ''
           for nxt in lines[i + 1:i + 8]:
@@ -580,14 +580,14 @@ class Check:
     adr_files = glob.glob(os.path.join(self.root, 'ADR', 'ADR-[0-9][0-9][0-9]-*.md'))
     adrs = {int(os.path.basename(p)[4:7]) for p in adr_files}
     for f, t in self.text.items():
-      t2 = re.sub(r'(DEC|ADR)-\d{3}\s*(?:to|–|-|…)\s*(?:DEC-|ADR-)?\d{3}', ' ', t)
-      for m in sorted(set(re.findall(r'DEC-(\d{3})\b', t2))):
+      t2 = re.sub(r'(DEC|ADR)-\d{3,4}\s*(?:to|–|-|…)\s*(?:DEC-|ADR-)?\d{3,4}', ' ', t)
+      for m in sorted(set(re.findall(r'DEC-(\d{3,4})\b', t2))):
         if int(m) not in status:
           self.fail(6, f'{f}: cites DEC-{m}, which does not exist')
       for m in sorted(set(re.findall(r'ADR-(\d{3})\b', t2))):
         if int(m) not in adrs:
           self.fail(6, f'{f}: cites ADR-{m}, which does not exist')
-    cited = {int(x) for x in re.findall(r'DEC-(\d{3})\b', self.req_text)}
+    cited = {int(x) for x in re.findall(r'DEC-(\d{3,4})\b', self.req_text)}
     open_decs = sorted(n for n, s in status.items() if s == 'Open')
     uncited = [n for n in open_decs if n not in cited]
     for n in uncited:

@@ -280,7 +280,7 @@ for f, t in TEXT.items():
         continue
     lines = t.split('\n')
     for i, line in enumerate(lines):
-        m = re.match(r'^#{2,4} DEC-(\d{3})\s', line)
+        m = re.match(r'^#{2,4} DEC-(\d{3,4})\s', line)
         if m:
             st = ''
             for nxt in lines[i + 1:i + 8]:
@@ -291,15 +291,15 @@ for f, t in TEXT.items():
             dec_status[int(m.group(1))] = st
 adr_ids = {int(os.path.basename(p)[4:7]) for p in glob.glob(os.path.join(ROOT, 'ADR', 'ADR-[0-9][0-9][0-9]-*.md'))}
 for f, t in TEXT.items():
-    t2 = re.sub(r'(DEC|ADR)-\d{3}\s*(?:to|–|-|…)\s*(?:DEC-|ADR-)?\d{3}', ' ', t)
-    for m in sorted(set(re.findall(r'DEC-(\d{3})\b', t2))):
+    t2 = re.sub(r'(DEC|ADR)-\d{3,4}\s*(?:to|–|-|…)\s*(?:DEC-|ADR-)?\d{3,4}', ' ', t)
+    for m in sorted(set(re.findall(r'DEC-(\d{3,4})\b', t2))):
         if int(m) not in dec_status:
             fail(6, f'{f}: cites DEC-{m}, which does not exist')
     for m in sorted(set(re.findall(r'ADR-(\d{3})\b', t2))):
         if int(m) not in adr_ids:
             fail(6, f'{f}: cites ADR-{m}, which does not exist')
 req_text = '\n'.join(req_blocks.values())
-cited_in_req = {int(x) for x in re.findall(r'DEC-(\d{3})\b', req_text)}
+cited_in_req = {int(x) for x in re.findall(r'DEC-(\d{3,4})\b', req_text)}
 open_decs = sorted(n for n, s in dec_status.items() if s == 'Open')
 for n in open_decs:
     if n not in cited_in_req:

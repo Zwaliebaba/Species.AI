@@ -4,7 +4,7 @@
 
 ## 1 Purpose and player experience
 
-Zone Control is a king-of-the-hill mode. The map has Control Zones, drawn as coloured rings on the ground; the team with the most Workers standing inside a zone owns it at once, with no capture progress. Owning zones, or crowding them, scores every mode second, and the highest score when time runs out wins. Nobody is ever eliminated. The two tutorials teach the game on Zone Control maps.
+Zone Control is a zone-holding mode. The map has Control Zones, drawn as coloured rings on the ground; the team with the most Workers standing inside a zone owns it at once, with no capture progress. Owning zones, or crowding them, scores every mode second, and the highest score when time runs out wins. Nobody is ever eliminated. The two tutorials teach the game on Zone Control maps.
 
 ## 2 Rules
 
