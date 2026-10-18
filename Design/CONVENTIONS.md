@@ -79,6 +79,7 @@ Every normative statement is a requirement with a stable ID, written as `**<PREF
 | `LWD` | Species component: large world | `architecture/components/large_world.md` |
 | `SEC` | Species component: security | `architecture/components/security.md` |
 | `TEL` | Species component: telemetry and privacy | `architecture/components/telemetry_and_privacy.md` |
+| `MVP` | Species implementation: the solo MVP scope | `implementation/mvp_scope.md` |
 
 Decisions use `DEC-NNN` (index: `decisions/README.md`), and architecture decisions use `ADR-NNN` (`ADR/ADR-NNN-<slug>.md`, AGENTS.md §6). Both are stable in the same way as requirement ids: never renumbered, never reused, and a decision that no longer applies becomes Dropped and keeps its id.
 
@@ -89,7 +90,7 @@ Decisions use `DEC-NNN` (index: `decisions/README.md`), and architecture decisio
 
 Every reference document has a **Tuning table** with the columns `key | value | unit | range or notes | requirement | DEC`. Keys are stable and dotted, for example `ref.unit.worker.move_speed`. Every number a rule uses appears exactly once in some tuning table; rules refer to the key and may repeat the value for readability.
 
-The Species design documents (the prefixes from `PIL` on) use the lower-case prefix of their document as the key root (`wld.region.size_max`, `dep.order.limit`, `srv.tick.budget_ms`) and add two columns to the tuning table: `status` (`final` or `provisional`) and a playtest note, required for a provisional value. A reference requirement that the Species design adopts keeps its `ref.` keys; one it adapts moves its numbers to Species keys (`gdd/adoption_ledger/`).
+The Species design documents (the prefixes from `PIL` on) use the lower-case prefix of their document as the key root (`wld.region.size_max`, `dep.order.limit`, `srv.tick.budget_ms`, and `mvp.` for the MVP scope) and add two columns to the tuning table: `status` (`final` or `provisional`) and a playtest note, required for a provisional value. A reference requirement that the Species design adopts keeps its `ref.` keys; one it adapts moves its numbers to Species keys (`gdd/adoption_ledger/`).
 
 ## 5 Units
 

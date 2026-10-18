@@ -6,15 +6,16 @@
 
 ## Where things are
 
-- **What to build:** `vision/species-vision-brief.md` (the pitch and the owner's decisions O1–O30), then the Species game design once the design phase has written it, then the reference library in `Design/`.
+- **What to build next:** `Design/implementation/mvp_scope.md`, the solo MVP of the world game (owner decisions O50 to O55). It cites the requirements it implements and says where it narrows or defers them.
+- **The design:** `vision/species-vision-brief.md` (the pitch; owner decisions O1–O30), `Design/decisions/owner_decisions.md` (every owner decision, O1 onwards), `Design/gdd/` (the Species game design: pillars and core loops, world and regions), `Design/architecture/04_solution_strategy.md` with ADR-079 to ADR-088 (Draft), then the reference library.
 - **The reference library** (`Design/`): `README.md` (reading guide), `CONVENTIONS.md` (ids, units, naming, allowed terms), `REQUIREMENTS_INDEX.md`, `reference/` (reference mechanics), `architecture/components/` (the engine baseline), `ADR/` (architecture decision records, `ADR-NNN-<slug>.md`), `decisions/` (decision register, `DEC-NNN`; an Open entry states the behaviour to build until it is decided), `assets/GameAssets.md` (every asset to create).
-- **The next run:** `prompts/species-design-phase.md` turns the library and the vision into the Species game design.
+- **The paused design run:** `prompts/species-design-phase.md` and its working files in `species_design_work/` (`RUN_LOG.md`, area briefs, challenges).
 
 ## Current status (2026-10-18)
 
 - There is no code yet: no solution, no projects, no source.
-- The reference library is complete and lives in `Design/`; every design gate passes on it. It is a reference, not yet the Species game design.
-- The next step is the design phase: run `prompts/species-design-phase.md`.
+- The design phase ran wave A and is paused (O51): A0 (pillars, loops, vocabulary) and A1 (world and regions) are Final; A2 (solution strategy, ADR-079 to ADR-088) is Draft, with owner gate B (O41 to O49) recorded but not yet applied to its documents. Waves B to E are not run.
+- The next step is the MVP: start at milestone M0 of `Design/implementation/mvp_scope.md`.
 
 ## Rules that are easy to miss
 
