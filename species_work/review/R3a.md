@@ -95,8 +95,8 @@ The documents with the most gaps are `10_audio_design/music_hooks_and_sound_desi
 | 62 | Low | reference/10_audio_design/front_end_hud_voice_and_ambience.md | R-AUD-314 | A MUST that counts reference voice takes that no event plays ("12 Leader acknowledgements, 9 …"). Species authors every sound new (R-AUD-003), so the requirement has nothing to adopt. | Recast it as information in §1 or §5, or state the Species rule it implies (which events stay silent). |
 | 63 | Low | reference/10_audio_design/music_hooks_and_sound_design_brief.md | R-AUD-412 | A MUST that counts reference files ("about 900 files for its 182 bound events…"): information about reference content with no behaviour to adopt. | Recast it as a variety target with keys (variants per event), or move it to the asset brief. |
 | 64 | Low | reference/12_simulation_model/07_randomness_and_integrity.md | R-SIM-661 | The MUST first describes the defective reference behaviour (a local free-look state diverges one participant) and then the rule. Adopting the id adopts the narrative. | Keep the rule (the sender converts to world space; direct control reads only the sender's state) and move the divergence description to DEC-008 or §5. |
-| 65 | Low | reference/12_simulation_model/07_randomness_and_integrity.md | R-SIM-730 | Same as row 65: the process-wide counter and the function-level static of the reference are described inside the MUST. | Move the description to DEC-011 and keep the rule. |
-| 66 | Low | reference/01_skirmish_rules_and_modes/README.md | §8 Open decisions | §2 cites the Open DEC-066 (multi-round Siege, R-MODE-004 keys, diagram 3-A), but §8 does not list it. | Add DEC-066 to §8. |
+| 65 | Low | reference/12_simulation_model/07_randomness_and_integrity.md | R-SIM-730 | Same as row 64: the process-wide counter and the function-level static of the reference are described inside the MUST. | Move the description to DEC-011 and keep the rule. |
+| 66 | Low | reference/01_skirmish_rules_and_modes/README.md | §8 Open decisions | The tables of §2.18 (the match state record, row "single-round Siege") and §2.19 (the match options, row "single-round Siege") cite the Open DEC-066, but §8 does not list it. | Add DEC-066 to §8. |
 | 67 | Low | reference/02_units/essence_orbs.md | §8 Open decisions | §2 cites the Open DEC-084, not listed in §8. | Add DEC-084 to §8. |
 | 68 | Low | reference/02_units/worker.md | §8 Open decisions | §2 cites the Open DEC-111, not listed in §8. | Add DEC-111 to §8. |
 | 69 | Low | reference/03_buildings_and_world_objects/README.md | §8 Open decisions | §2 cites the Open DEC-860, not listed in §8. | Add DEC-860 to §8. |
@@ -112,7 +112,6 @@ The documents with the most gaps are `10_audio_design/music_hooks_and_sound_desi
 | 79 | Low | reference/12_simulation_model/01_tick_timing_and_main_loop.md | §8 Open decisions | §2 cites the Open DEC-051, not listed in §8. | Add DEC-051 to §8. |
 | 80 | Low | reference/12_simulation_model/06_teams_and_player_commands.md | §8 Open decisions | §2 cites the Open DEC-205, DEC-206 and DEC-207, not listed in §8. | Add DEC-205, DEC-206 and DEC-207 to §8. |
 | 81 | Low | reference/12_simulation_model/07_randomness_and_integrity.md | §8 Open decisions | §2 cites the Open DEC-114, DEC-220 and DEC-225, not listed in §8. | Add DEC-114, DEC-220 and DEC-225 to §8. |
-
 
 ## Structural scans (whole folder)
 
