@@ -210,7 +210,7 @@ Waves B and D overlap: D areas start once their dependencies are Final, and the 
 
 The ledger says, for every reference requirement, what Species does with it. It works **section by section**: one row covers every requirement under a heading of a reference document, and an exception row covers a single requirement that differs from its section. A per-requirement ledger of nearly 3,000 rows would be rubber-stamped, and it would also exceed the size limit.
 
-**Files.** `DESIGN/gdd/adoption_ledger/README.md` holds the totals per verdict and per document. There is one file per reference document (`00_reference_overview.md` … `12_simulation_model.md`), each a table:
+**Files.** `DESIGN/gdd/adoption_ledger/README.md` holds the totals per verdict and per document. There is one file per reference document (`00_reference_overview_ledger.md` … `12_simulation_model_ledger.md`), each a table:
 
 | Scope | Verdict | Species requirements | Note |
 |---|---|---|---|

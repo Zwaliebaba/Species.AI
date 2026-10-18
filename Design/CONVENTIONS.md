@@ -51,6 +51,34 @@ Every normative statement is a requirement with a stable ID, written as `**<PREF
 | `PLT` | Platform layer | `architecture/components/platform_layer.md` |
 | `BLD` | Build tooling and distribution | `architecture/components/build_tooling_and_distribution.md` |
 | `DBG` | Diagnostics, test and performance | `architecture/components/diagnostics_test_and_performance/` |
+| `PIL` | Species: vision, pillars and core loops | `gdd/00_vision_pillars_and_core_loops.md` |
+| `WLD` | Species: world and regions | `gdd/01_world_and_regions.md` |
+| `SET` | Species: settlements and population | `gdd/02_settlements_and_population.md` |
+| `RES` | Species: resources and economy | `gdd/03_resources_and_economy.md` |
+| `CON` | Species: building and construction | `gdd/04_building_and_construction.md` |
+| `CMB` | Species: units, combat and battles | `gdd/05_units_combat_and_battles.md` |
+| `REL` | Species: races, relations and conflict | `gdd/06_races_relations_and_conflict.md` |
+| `DEP` | Species: deputy, standing orders and AFK play | `gdd/07_deputy_standing_orders_and_afk_play.md` |
+| `AIS` | Species: AI settlements | `gdd/08_ai_settlements.md` |
+| `PRG` | Species: progression hooks | `gdd/09_progression_hooks.md` |
+| `SKM` | Species: skirmish | `gdd/10_skirmish.md` |
+| `CTL` | Species: controls, camera and commands | `gdd/11_controls_camera_and_commands.md` |
+| `FE` | Species: front end and onboarding | `gdd/12_front_end_and_onboarding.md` |
+| `HUD` | Species: HUD and information | `gdd/13_hud_and_information.md` |
+| `SND` | Species: audio design | `gdd/14_audio_design.md` |
+| `HLP` | Species: tutorial and help | `gdd/15_tutorial_and_help.md` |
+| `QG` | Species architecture: quality goals | `architecture/01_introduction_and_goals.md` |
+| `QS` | Species architecture: quality scenarios | `architecture/10_quality_requirements.md` |
+| `SRV` | Species component: server and hosting | `architecture/components/server_and_hosting.md` |
+| `WSIM` | Species component: world simulation | `architecture/components/world_simulation.md` |
+| `REP` | Species component: replication | `architecture/components/replication.md` |
+| `PER` | Species component: persistence | `architecture/components/persistence.md` |
+| `IDN` | Species component: identity and services | `architecture/components/identity_and_services.md` |
+| `API` | Species component: server API | `architecture/components/server_api.md` |
+| `AIR` | Species component: AI runtime | `architecture/components/ai_runtime.md` |
+| `LWD` | Species component: large world | `architecture/components/large_world.md` |
+| `SEC` | Species component: security | `architecture/components/security.md` |
+| `TEL` | Species component: telemetry and privacy | `architecture/components/telemetry_and_privacy.md` |
 
 Decisions use `DEC-NNN` (index: `decisions/README.md`), and architecture decisions use `ADR-NNN` (`ADR/ADR-NNN-<slug>.md`, AGENTS.md §6). Both are stable in the same way as requirement ids: never renumbered, never reused, and a decision that no longer applies becomes Dropped and keeps its id.
 
@@ -60,6 +88,8 @@ Decisions use `DEC-NNN` (index: `decisions/README.md`), and architecture decisio
 ## 4 Tuning tables
 
 Every reference document has a **Tuning table** with the columns `key | value | unit | range or notes | requirement | DEC`. Keys are stable and dotted, for example `ref.unit.worker.move_speed`. Every number a rule uses appears exactly once in some tuning table; rules refer to the key and may repeat the value for readability.
+
+The Species design documents (the prefixes from `PIL` on) use the lower-case prefix of their document as the key root (`wld.region.size_max`, `dep.order.limit`, `srv.tick.budget_ms`) and add two columns to the tuning table: `status` (`final` or `provisional`) and a playtest note, required for a provisional value. A reference requirement that the Species design adopts keeps its `ref.` keys; one it adapts moves its numbers to Species keys (`gdd/adoption_ledger/`).
 
 ## 5 Units
 

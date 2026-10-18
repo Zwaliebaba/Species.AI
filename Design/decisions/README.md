@@ -6,6 +6,8 @@ Entries live in the files listed below; add a decision to the file of its area, 
 
 Totals: **302** decisions: 148 Open, 126 Resolved, 28 Dropped.
 
+The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner_decisions.md](owner_decisions.md).
+
 ## Numbering
 
 - A DEC id is stable: it is never renumbered or reused, and a decision that no longer applies becomes Dropped and keeps its id, so that every citation stays valid.
