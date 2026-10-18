@@ -133,7 +133,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 ## 7 Cursors and markers
 
-**47 rows, 35 asset ids**: nine cursors, thirteen markers (off-screen compass, its empty variant and its shadow, team disc and its shadow, Supply crate and Relic markers, crate landing and barrage target ground markers, flag pointer, jump-pad arrow, order trail, route arrow), four Leader banners and four Flag Chain flag states with a tint mask each, and nine blurred shadows that the cooker derives.
+**41 rows, 29 asset ids**: six cursors, thirteen markers (off-screen compass, its empty variant and its shadow, team disc and its shadow, Supply crate and Relic markers, crate landing and barrage target ground markers, flag pointer, jump-pad arrow, order trail, route arrow), four Leader banners and four Flag Chain flag states with a tint mask each, and six blurred shadows that the cooker derives.
 
 - Cursors are 128x128 (the pointer 64x64), white art; the cooker derives the blurred darkening shadow of every cursor of the set except the turret-aim crosshair, offline. Each cursor state must be distinguishable by shape alone.
 - The route arrow marks the direction along route lines (RND-353); the empty compass is the compass ring without its arrow, which on-screen markers draw (RND-357).

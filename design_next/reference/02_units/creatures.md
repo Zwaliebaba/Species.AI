@@ -975,4 +975,4 @@ These follow from the keys above and are given for tests and balance; they are n
 - DEC-565 — silent creature cues (default: the cues these documents call silent stay silent).
 - DEC-855 — creature and hazard rule quirks (default: the Crawler bite, spider avoidance and Reaper Serpent fallback as stated, R-UNIT-520, R-UNIT-532, R-UNIT-576).
 - DEC-856 — creature presentation quirks (default: white eggs, every tail segment shatters, one shared tail velocity, R-UNIT-528, R-UNIT-547, R-UNIT-593).
-- DEC-959 — renderer values the reference does not record (default: the Crawler egg shadow half-size of 4 wu, R-UNIT-528).
+- DEC-959 — renderer defaults (default: the Crawler egg shadow half-size of 4 wu, R-UNIT-528).

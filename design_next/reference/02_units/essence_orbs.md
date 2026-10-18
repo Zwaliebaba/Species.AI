@@ -85,7 +85,7 @@ An orb therefore leaves Birth only on a tick on which it is no more than 10 wu a
 
 **R-UNIT-317** (MUST) **Collected.** A Collected orb has no timer and no wobble; each tick its velocity becomes its holder's velocity, so it rides with the Collector. If the holder no longer exists, the orb returns to Floating, with the timer value it had when it was harvested. A Collector removes a Collected orb when it delivers it ([collector.md](collector.md)).
 
-**R-UNIT-318** (MUST) An orb that nothing takes lives `ref.econ.orb.birth_ticks` + `ref.econ.orb.floating_ticks` + `ref.econ.orb.ascent_ticks` = 61 + (301 to 500) + 901 = 1263 to 1462 ticks (nominal 126 to 146 s), of which it is collectable by a Collector for the 301 to 500 ticks of Floating ([population flow](../05_population_flow.md) R-ECON-069). The Birth time is longer by every tick on which the orb is more than 10 wu above its ground height.
+**R-UNIT-318** (MUST) An orb that nothing takes lives `ref.econ.orb.birth_ticks` + `ref.econ.orb.floating_ticks` + `ref.econ.orb.ascent_ticks` = 61 + (301 to 500) + 901 = 1263 to 1462 ticks (nominal 126 to 146 s), of which it is collectable by a Collector for the 301 to 500 ticks of Floating (restates [population flow](../05_population_flow.md) R-ECON-069). The Birth time is longer by every tick on which the orb is more than 10 wu above its ground height.
 
 ### 2.6 Per-tick motion
 

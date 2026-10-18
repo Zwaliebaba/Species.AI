@@ -271,7 +271,7 @@ The base attack's aim jitter and muzzle height are reference/02's (R-UNIT-052).
 
 ### 2.18 Snowflake
 
-**R-CRATE-500** (MUST) A **snowflake** (`SnowFlake`) is created by the snow spawner of a map with the snow effect, or of any map while the seasonal theme is active ([reference/12](../12_simulation_model/04_containers_and_update_order.md) R-SIM-234), with no team, and has **no gameplay effect**; its draws are presentation draws (DEC-118, R-SIM-238). Its spawn step draws its position offset `FxRng::NextUnit`(`ref.weapon.snow.offset_range` (10)) and two axis rates `FxRng::NextUnit`(`ref.weapon.snow.rate_max` (2)).
+**R-CRATE-500** (MUST) A **snowflake** (`Snowflake`) is created by the snow spawner of a map with the snow effect, or of any map while the seasonal theme is active ([reference/12](../12_simulation_model/04_containers_and_update_order.md) R-SIM-234), with no team, and has **no gameplay effect**; its draws are presentation draws (DEC-118, R-SIM-238). Its spawn step draws its position offset `FxRng::NextUnit`(`ref.weapon.snow.offset_range` (10)) and two axis rates `FxRng::NextUnit`(`ref.weapon.snow.rate_max` (2)).
 
 **R-CRATE-501** (MUST) Each tick its velocity is multiplied by `ref.weapon.snow.damping` (0.9); its offset grows by dt; each axis rate takes a random walk of `FxRng::NextSigned`(`ref.weapon.snow.rate_walk` (1)), clamped to [0, 2]; it hovers horizontally by sin(offset) × rate on each axis and falls at (`ref.weapon.snow.fall_base` (20) + `FxRng::NextUnit`(`ref.weapon.snow.fall_spread` (20))) × clamp(height above ground ÷ `ref.weapon.snow.fall_height_scale` (100), 0.2, 1) wu/s; its position is clamped to the map. It is removed when it is `ref.weapon.snow.remove_depth` (10 wu) or more below the terrain. It is drawn as a white `fx.starburst` sprite of `ref.weapon.snow.sprite_size` (20 wu).
 
@@ -325,7 +325,7 @@ classDiagram
   SimObject <|-- CorePulseWave
   SimObject <|-- SwarmStreak
   SimObject <|-- LightningStrike
-  SimObject <|-- SnowFlake
+  SimObject <|-- Snowflake
   SimObject <|-- DustVortex
   Structure <|-- SupplyCrate
 ```

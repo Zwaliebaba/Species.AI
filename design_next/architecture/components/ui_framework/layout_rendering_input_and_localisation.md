@@ -494,7 +494,7 @@ Diagram 4-B — the runtime language switch and the hand-over between string-tab
 
 ## 5 Concurrency and performance budget
 
-**UI-240** (MUST) The busiest screen, the match setup page at 1920 × 1080 with the chat, a full slot list and an open page list, stays within: `ui.budget.draws` (32) draw calls in the UI pass; `ui.budget.vertices` (65 536) UI vertices; and `ui.budget.cpu_ms` (1.0 ms) of main-thread time for the UI's update and stream build together, on the minimum-specification CPU, in steady state, with every glyph already cached (ADR-031).
+**UI-240** (MUST) The busiest screen, the match setup page at 1920 × 1080 with the chat, a full slot list and an open page list, stays within: `ui.budget.draws` (32) draw calls in the UI pass; `ui.budget.vertices` (65 536) UI vertices; and `ui.budget.cpu_ms` (1.0 ms) of main-thread time for the UI's update and stream build together, on the reference test machine (DBG-209), in steady state, with every glyph already cached (ADR-031).
 
 **UI-241** (MUST) Rasterising new glyphs is the one UI cost that varies with content; the common characters of the current language are rasterised during loading (UI-198) so that it does not occur in steady state. String tables are read-only after hand-over and are loaded on the loader thread (§2).
 
@@ -611,7 +611,7 @@ The palette tokens of UI-187 and UI-188 are the `ui.palette.*` rows; their value
 | `ui.lang.previous_table_frames` | 5 | frames | minimum life of the previous table after a switch | UI-239 | DEC-099 |
 | `ui.budget.draws` | 32 | draw calls | UI pass, busiest screen; Species baseline | UI-240 | — |
 | `ui.budget.vertices` | 65 536 | vertices | busiest screen; Species baseline | UI-240 | — |
-| `ui.budget.cpu_ms` | 1.0 | ms per frame | update and stream build, minimum-specification CPU; Species baseline | UI-240 | — |
+| `ui.budget.cpu_ms` | 1.0 | ms per frame | update and stream build, reference test machine (DBG-209); Species baseline | UI-240 | — |
 | `ui.palette.window_body_tint` | 1, 1, 1, 0.96 | RGBA, 0 to 1 | × `uitex.panel_accent`; window body | UI-187, UI-054 | — |
 | `ui.palette.accent_light` | 199, 214, 220, 255 | RGBA8 | title-bar top, window border, button highlight top, check-box highlight | UI-187, UI-054, UI-057, UI-081 | — |
 | `ui.palette.accent_dark` | 112, 141, 168, 255 | RGBA8 | title-bar bottom, highlight bottom | UI-187, UI-054, UI-057 | — |

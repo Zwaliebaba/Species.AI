@@ -62,7 +62,7 @@ Each ring is a quad strip in the plane perpendicular to the ground normal at the
 
 ### 2.5 The icon near the pointer
 
-**R-CTRL-366** (MUST) The icon near the pointer is not drawn after game over. Its anchor is the pointer + `ref.ctrl.cursor.icon_offset` along n = normalise(0.85, 1), down and to the right; its size is the screen height ÷ `ref.ctrl.cursor.icon_divisor`; it is drawn with the world markers' shadow, team-colour disc and icon layers (R-CTRL-386). The first case that applies is drawn:
+**R-CTRL-366** (MUST) The icon near the pointer is not drawn after game over. Its anchor is the pointer + `ref.ctrl.cursor.icon_offset` along n = Normalize(0.85, 1), down and to the right; its size is the screen height ÷ `ref.ctrl.cursor.icon_divisor`; it is drawn with the world markers' shadow, team-colour disc and icon layers (R-CTRL-386). The first case that applies is drawn:
 
 | Priority | Context | Drawn |
 |---|---|---|
@@ -217,7 +217,7 @@ This file cites `ref.ctrl.promote_radius` ([actions and bindings](actions_and_bi
 | `ref.ctrl.cursor.ring_widths.outline` | 0.075 | × radius | rings 2 and 3 | R-CTRL-363 | — |
 | `ref.ctrl.cursor.glow_height_divisor` | 300 | wu | height r × max(1, distance ÷ 300) | R-CTRL-363 | — |
 | `ref.ctrl.cursor.drape_distance` | 75 | wu | drape factor min(1, 75 ÷ distance), used above 0.1 | R-CTRL-363 | — |
-| `ref.ctrl.cursor.icon_offset` | 5 | pixels | along normalise(0.85, 1) | R-CTRL-366 | — |
+| `ref.ctrl.cursor.icon_offset` | 5 | pixels | along Normalize(0.85, 1) | R-CTRL-366 | — |
 | `ref.ctrl.cursor.icon_divisor` | 24 | — | icon size = screen height ÷ 24 | R-CTRL-366 | — |
 | `ref.ctrl.cursor.blink_period` | 0.4 | s of real time | | R-CTRL-366 | — |
 | `ref.ctrl.cursor.blink_on` | 0.25 | s | visible part of each period | R-CTRL-366 | — |

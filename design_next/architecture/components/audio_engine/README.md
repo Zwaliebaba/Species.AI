@@ -252,7 +252,7 @@ public:
   bool SetMatchState(const MatchState& _state);
   bool BeginMatch(AudienceGroup _localGroup); // per-match state starts (AEN-197)
   bool EndMatch();                            // per-match state discarded
-  bool SetLoadingView(bool _shown);           // AEN-111
+  bool SetLoadingShown(bool _shown);          // AEN-111
   bool SetMasterVolume(std::uint8_t _step);   // 0 to ref.meta.options.sound.volume_max
   bool SetBusVolume(AudioBus _bus, std::uint8_t _step);
   bool SetSwapStereo(bool _on);
@@ -339,7 +339,7 @@ public:
 | `SetListener` | the listener (camera) | AEN-209 |
 | `SetMatchState` | match phase, local team, game speed, time remaining | AEN-196, AEN-197 |
 | `BeginMatch`, `EndMatch` | the per-match audio state | AEN-197 |
-| `SetLoadingView` | the loading-view gate | AEN-111 |
+| `SetLoadingShown` | the loading-view gate | AEN-111 |
 | `SetMasterVolume`, `SetBusVolume` | player volumes | AEN-215 |
 | `SetSwapStereo` | swap left and right | AEN-205 |
 | `SetEffectsEnabled` | the effects switch | AEN-221 |
@@ -352,7 +352,7 @@ public:
 
 **AEN-040** (MUST) The simulation emits sound cues as typed presentation events at the tick where the rule fires (DEC-007, DEC-222 item 5). Presentation code (the audio bridge, outside this component) turns each cue into a `Trigger` or `Stop` command. The engine depends only on receiving commands in issue order; whether cues arrive in-process or from a server is decided with the threading and networking models (DEC-222, DEC-224). Under the default of DEC-318 the fuse-blink and match-clock sounds are raised by drawing code, so they arrive only while drawn; the engine treats them like any trigger. Interface code raises, as `Trigger` commands, the interface events of the match UI sound source that pages, widgets and HUD panels raise ([pages and screen recipes](../ui_framework/pages_and_screen_recipes.md) UI-315; R-AUD-300); no page, widget or panel plays a sound directly.
 
-**AEN-041** (MUST) Once per frame, presentation sends one `EmitterUpdate` for each emitter that the engine lists as tracked, read from the newest immutable snapshot: the position (a structure's centre position for a structure), the velocity, the height above the terrain at the position, the age, and the counts of teams and of actors near the position used by the `groups_nearby` and `objects_nearby` links (`EmitterUpdate::groupsNearby`, `EmitterUpdate::objectsNearby`). The engine publishes its tracked-emitter set in the result queue whenever it changes: every emitter of an attached or shared instance, and every emitter whose instance has a linked value that reads emitter data.
+**AEN-041** (MUST) Once per frame, presentation sends one `EmitterUpdate` for each emitter that the engine lists as tracked, read from the frame's presentation snapshot ([renderer](../renderer/README.md) RND-018, RND-019): the position (a structure's centre position for a structure), the velocity, the height above the terrain at the position, the age, and the counts of teams and of actors near the position used by the `groups_nearby` and `objects_nearby` links (`EmitterUpdate::groupsNearby`, `EmitterUpdate::objectsNearby`). The engine publishes its tracked-emitter set in the result queue whenever it changes: every emitter of an attached or shared instance, and every emitter whose instance has a linked value that reads emitter data.
 
 **AEN-042** (MUST) Once per frame, presentation sends the listener (the camera's position, front, up and velocity, and the terrain height under the camera for the `height` link of two-dimensional instances) and the match state (phase, local team, game speed, match time remaining). The audio engine itself queries nothing.
 
@@ -489,7 +489,7 @@ Sections 4.5 to 4.13 are in [instances_voices_and_envelopes.md](instances_voices
 4. request the interface bank (AEN-074) from the asset system, asynchronously;
 5. report each readiness point in the result queue (AEN-104).
 
-**AEN-102** (MUST) A match load requests the match bank. The match loop starts only after the match bank and its stream heads are resident, so no match trigger is dropped for residency once the match runs; the wait is part of the load and is reported as load progress (DEC-226).
+**AEN-102** (MUST) A match load requests the match bank. The match loop starts only after the match bank and its stream heads are resident, so no match trigger is dropped for residency once the match runs; the wait is part of the load and is reported as load progress (DEC-226). The wait counts towards the match-entry budget `ast.load.match_entry_budget_s` ([asset pipeline](../asset_pipeline_and_resources.md) AST-130).
 
 **AEN-103** (MUST) The content build validates the sound data (DEC-015, DEC-801, ADR-059): group members are named by asset id; a priority field is ignored (R-AUD-049); an unknown effect kind, an unknown source, event or field, a duplicate key or group, a malformed block and a stray blank line inside a block are build errors with their location (R-AUD-068); effect parameters are cooked in their kind's order, and a binding with more parameters than its kind is a build error (AEN-071).
 
@@ -501,7 +501,7 @@ Sections 4.5 to 4.13 are in [instances_voices_and_envelopes.md](instances_voices
 
 **AEN-110** (MUST) A trigger returns at once and is **dropped, not queued**, when the gate of AEN-111 closes on it. The lobby bed therefore starts on the first front-end update after the interface bank, with the bed's stream head, is resident ([front end, HUD, voice and ambience](../../../reference/10_audio_design/front_end_hud_voice_and_ambience.md) R-AUD-321).
 
-**AEN-111** (MUST) A trigger is dropped, counted by reason, and never deferred, when: the bank or stream head of a group of its layers is not resident (AEN-104); the loading-view gate is set (`SetLoadingView(true)`), which drops every trigger (R-AUD-048, R-AUD-325, DEC-319); or the instance table is full (AEN-300). Stops, queries and every other command pass the gate.
+**AEN-111** (MUST) A trigger is dropped, counted by reason, and never deferred, when: the bank or stream head of a group of its layers is not resident (AEN-104); the loading-view gate is set (`SetLoadingShown(true)`), which drops every trigger (R-AUD-048, R-AUD-325, DEC-319); or the instance table is full (AEN-300). Stops, queries and every other command pass the gate.
 
 **AEN-112** (MUST) A trigger from any thread is accepted through that thread's queue (AEN-020; ADR-026, DEC-224 item 12).
 
@@ -641,7 +641,7 @@ Every value is an engine value of this component; the reference values are the s
 | `aen.settings.volume_default` | 255 | steps | master and every bus | AEN-076 | DEC-100 |
 | `aen.settings.swap_stereo_default` | off | — | | AEN-076 | DEC-100 |
 | `aen.settings.effects_default` | off | — | | AEN-076, AEN-221 | DEC-567 |
-| `aen.perf.update_cpu_budget` | 0.5 | ms per update | on the minimum CPU at full instance capacity | AEN-303 | — |
+| `aen.perf.update_cpu_budget` | 0.5 | ms per update | on the reference test machine (DBG-209) at full instance capacity | AEN-303 | — |
 
 ## 5 Concurrency and performance budget
 
@@ -651,7 +651,7 @@ Every value is an engine value of this component; the reference values are the s
 
 **AEN-302** (MUST) The stream task is a recurring task that the engine owns, woken by buffer-free notices and by seek requests; it reads the next MS-ADPCM buffers of each stream from the packs through the content reader and refills them in the order of the notices, and it never decodes, because XAudio2 decodes ADPCM itself (ADR-025). Which worker runs it follows the threading model (DEC-224, ADR-025).
 
-**AEN-303** (MUST) An update costs O(n log n) in its n live instances (the ranking sort) plus O(r) in its r real voices, and stays within `aen.perf.update_cpu_budget` on the minimum CPU with the table full (test T27).
+**AEN-303** (MUST) An update costs O(n log n) in its n live instances (the ranking sort) plus O(r) in its r real voices, and stays within `aen.perf.update_cpu_budget` on the reference test machine (DBG-209) with the table full (test T27).
 
 **AEN-304** (MUST) Memory stays within the budgets of AEN-243: the resident groups of the interface bank within `aen.memory.interface_bank_budget`, those of the match bank within `aen.memory.match_bank_budget`, and every stream ring and stream head together within `aen.memory.stream_budget`. The content build measures every bank of the authored sound set, as cooked, against its budget at every build and fails on an excess (AEN-243, T25); the run-time memory per bank and for streams is shown by the development overlay (AEN-323) and checked by T27. The starting budgets are sized from the durations of the asset manifest: the resident groups hold about 1 888 s of audio in 868 files, about 173 MiB of 16-bit mono at 48 kHz, of which the interface bank takes about 2 MiB; the 34 members of the laser-bolt, grenade-throw and game-over groups, whose durations the manifest does not yet give, add at most about 3.4 MiB; authoring the two-dimensional stings in stereo would add about 14 MiB. The streams need `aen.stream.max_streams` rings of `aen.stream.blocks_per_stream` MS-ADPCM buffers, under 1 MiB, plus the heads.
 
@@ -711,7 +711,7 @@ Every value is an engine value of this component; the reference values are the s
 | T24 voice reset | unit | a voice reused after an instance with sends and a filter starts with neutral settings | AEN-046, AEN-135 |
 | T25 residency | content build | the manifest's banks fit their budgets; a bank above budget, a positioned stereo member, a source not at 48 kHz, a zero-length member and a streamed loop point off a block boundary are build errors; a trigger before its bank is resident is dropped and counted | AEN-072 to AEN-074, AEN-111, AEN-243 |
 | T26 streaming | capture | every streamed member plays with seeks and loops with no gap, its loop points on block boundaries and its seeks on the block start at or before the position; no stream read runs on a game thread during a full match | AEN-252 to AEN-257 |
-| T27 performance | performance | an update with 1 024 live instances and 64 real voices stays within `aen.perf.update_cpu_budget` on the minimum CPU; memory stays within the budgets | AEN-303, AEN-304 |
+| T27 performance | performance | an update with 1 024 live instances and 64 real voices stays within `aen.perf.update_cpu_budget` on the reference test machine (DBG-209); memory stays within the budgets | AEN-303, AEN-304 |
 | T28 device change | integration | switching and unplugging the default device, running and paused, continues every sound from its position | AEN-259, AEN-261 |
 | T29 silent device | unit | with no device, a session of triggers keeps the live count bounded and answers every query | AEN-321 |
 | T30 effect defaults | unit | a binding that omits a parameter takes its declared default; a binding with too many parameters or an out-of-range value is a build error | AEN-071 |

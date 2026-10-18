@@ -373,7 +373,7 @@ A landed actor therefore rests `ref.sim.physics.land_threshold` + `ref.sim.physi
 
 **R-SIM-373** (MUST) The airborne step applies to these kinds while they are airborne: ant, Worker, Crawler egg, Trooper, Leader, and every actor that a jump pad launches.
 
-**R-SIM-374** (MUST) An explosion knocks an actor back by adding normalise((dir.x, k, dir.z)) × f to its velocity and making it airborne, where dir is the explosion-to-actor vector of the explosion model ([../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md)), k is the explosion damage while the actor is on the ground and −1 while it is airborne, and f is the actor's damage factor (R-SIM-388). Troopers and Leaders are not made airborne.
+**R-SIM-374** (MUST) An explosion knocks an actor back by adding Normalize((dir.x, k, dir.z)) × f to its velocity and making it airborne, where dir is the explosion-to-actor vector of the explosion model ([../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md)), k is the explosion damage while the actor is on the ground and −1 while it is airborne, and f is the actor's damage factor (R-SIM-388). Troopers and Leaders are not made airborne.
 
 ### 2.15 Water
 

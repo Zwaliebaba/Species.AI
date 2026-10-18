@@ -893,6 +893,110 @@ Platform times are seconds of real time or platform time, never simulation durat
 | `plt.lifecycle.exit_code.normal` | 0 | exit code | after a quit, and after `--write-build-identity` | PLT-044, PLT-023 | — |
 | `plt.lifecycle.exit_code.fatal` | −1 | exit code | after `FatalExit` | PLT-044 | — |
 | `plt.sysinfo.memory_unit` | 1 048 576 | bytes | one mebibyte; memory amounts are rounded up to whole units | PLT-035 | — |
+| `plt.math.degenerate_length_squared` | 10⁻¹⁰ | wu² | a 3-vector with a squared length at or below it normalises to (0, 0, 1) | PLT-137 | DEC-241 |
+| `plt.math.set_length_epsilon` | 10⁻⁶ | wu | a vector whose length is within it of 0 has only its x component set | PLT-137 | DEC-241 |
+| `plt.math.equality_tolerance` | 10⁻⁶ | per component | absolute tolerance of tolerance equality | PLT-137 | DEC-241 |
+
+### 4.17 Maths library
+
+**PLT-134** (MUST) The platform layer's project also holds the engine maths library: the vector, transform, ray and 2-D grid types that every component and every tool project uses, each in a header named for it (`AGENTS.md` R7). It is plain C++ with no operating-system call, so it is not a service of table 1-A, PLT-003 does not apply to it, and the headless server and the tool projects use it unchanged (PLT-005, BLD-043).
+
+```cpp
+// The engine maths library (PLT-134): each type in a header named for it; declarations only.
+#include <array>
+#include <cstdint>
+#include <optional>
+#include <vector>
+
+namespace Engine
+{
+
+struct Vec2
+{
+  double x;
+  double y;
+};
+
+struct Vec3
+{
+  double x;
+  double y;
+  double z;
+};
+
+struct Mat3x4 // affine transform from local to world space (PLT-136)
+{
+  Vec3 axisX;       // image of the local x axis
+  Vec3 axisY;       // image of the local y axis
+  Vec3 axisZ;       // image of the local z axis
+  Vec3 translation; // image of the local origin
+};
+
+struct Mat4 // views and projections; the layout of DirectX::XMFLOAT4X4 (PLT-135)
+{
+  std::array<float, 16> elements; // row-major
+};
+
+struct Ray
+{
+  Vec3 origin;
+  Vec3 direction; // any non-zero length
+};
+
+struct RayTriangleHit
+{
+  double t; // the ray parameter; may be negative (PLT-138)
+  double u;
+  double v;
+};
+
+[[nodiscard]] Vec2 Normalize(const Vec2& _v) noexcept;                   // PLT-137 item 1
+[[nodiscard]] Vec3 Normalize(const Vec3& _v) noexcept;                   // PLT-137 item 1
+[[nodiscard]] Vec3 NormalizeHorizontal(const Vec3& _v) noexcept;         // PLT-137 item 6
+[[nodiscard]] Vec3 WithLength(const Vec3& _v, double _length) noexcept;  // PLT-137 item 2
+[[nodiscard]] Vec3 operator/(const Vec3& _v, double _divisor) noexcept;  // PLT-137 item 3
+[[nodiscard]] bool NearlyEqual(const Vec3& _a, const Vec3& _b) noexcept; // PLT-137 item 5
+[[nodiscard]] Vec3 TransformPoint(const Mat3x4& _transform, const Vec3& _point) noexcept;
+[[nodiscard]] Vec3 TransformDirection(const Mat3x4& _transform, const Vec3& _direction) noexcept;
+[[nodiscard]] Mat3x4 operator*(const Mat3x4& _first, const Mat3x4& _second) noexcept; // _first applies first
+[[nodiscard]] std::optional<Mat3x4> Inverse(const Mat3x4& _transform) noexcept;       // PLT-138
+[[nodiscard]] std::optional<RayTriangleHit> IntersectTriangle(const Ray& _ray, const Vec3& _a, const Vec3& _b, const Vec3& _c,
+                                                              double _range) noexcept; // PLT-138
+
+template <typename T> class Grid2D // TER-039: columns x rows elements and an outside value, indexed by TER-072
+{
+public:
+  Grid2D(std::int32_t _columns, std::int32_t _rows, const T& _outside);
+
+  [[nodiscard]] std::int32_t Columns() const noexcept;
+  [[nodiscard]] std::int32_t Rows() const noexcept;
+  [[nodiscard]] T At(std::int32_t _column, std::int32_t _row) const;  // the outside value outside the grid
+  void Set(std::int32_t _column, std::int32_t _row, const T& _value); // does nothing outside the grid
+
+private:
+  std::int32_t m_columns = 0;
+  std::int32_t m_rows = 0;
+  T m_outside{};
+  std::vector<T> m_elements;
+};
+
+} // namespace Engine
+```
+
+**PLT-135** (MUST) The types are those of the sketch above. Vectors, transforms and rays hold binary64 components, the precision of the simulation's decimals (DEC-241). `Mat4`, which the renderer and the camera use for views and projections, holds binary32 elements, row-major, in the layout of `DirectX::XMFLOAT4X4`, so the renderer loads it into DirectXMath without a conversion (ADR-016). No type of the library appears in a header shared by C++ and HLSL: a shared header uses the `Float` types of [renderer](renderer/shaders.md) RND-262, and presentation code converts a binary64 value into them by rounding each component once to the nearest binary32 value when it writes GPU data.
+
+**PLT-136** (MUST) **Conventions.** Points and directions are row vectors (ADR-016). A `Mat3x4` maps a point (*x*, *y*, *z*) of local space to world space as *x* × `axisX` + *y* × `axisY` + *z* × `axisZ` + `translation`, and a direction without the translation. The product *A* × *B* of two transforms applies *A* first and then *B*. `Mat4` follows the row-vector convention of DirectXMath, with the right-handed, reversed-Z projection of ADR-016. The library has this one convention (DEC-241 item 9).
+
+**PLT-137** (MUST) **Numeric baseline.** Until DEC-241 is decided, the library has these semantics, on which reference rules depend (DEC-241 items 1, 6, 7 and 8):
+
+1. normalising a `Vec3` whose squared length is at or below `plt.math.degenerate_length_squared` (10⁻¹⁰) gives (0, 0, 1), and normalising a `Vec2` whose squared length is 0 gives (0, 1);
+2. setting the length of a vector whose length is within `plt.math.set_length_epsilon` (10⁻⁶) of 0 sets its x component to the requested length and leaves the other components as they are, so the push of [space, routing and physics](../../reference/12_simulation_model/05_space_routing_and_physics.md) R-SIM-382 keeps a non-zero direction;
+3. a vector divided by a scalar *s* is multiplied by 1 ÷ *s*: one division, then one multiplication per component;
+4. converting a value to an integer truncates toward zero;
+5. tolerance equality compares each component with the absolute tolerance `plt.math.equality_tolerance` (10⁻⁶); it is never used for ordering, sorting, hashing or set membership, because it is not transitive;
+6. no operation gives a non-finite component for finite input: normalising the horizontal part of a vertical vector gives (0, 0, 1), as item 1 does, and the finiteness check rejects NaN and both infinities.
+
+**PLT-138** (MUST) **Geometric queries.** `IntersectTriangle` returns the ray parameter *t* and the barycentric coordinates *u* and *v* of a hit inside the triangle; it reports no hit when the ray is parallel to the triangle's plane or misses the triangle, rejects a hit whose (*t*, *u*, *v*) vector is longer than the caller's range, and does not require *t* ≥ 0, the semantics on which terrain picking relies ([terrain](terrain/README.md) TER-017, DEC-241 item 10). `Inverse` of a singular transform, the distance between parallel rays and the intersection of a segment with a parallel ray give no result, never a non-finite value (DEC-241 items 6 and 10). A `Grid2D<T>` is the 2-D grid of [terrain](terrain/README.md) TER-039, read and written by the index rules of TER-072.
 
 ## 5 Concurrency and performance budget
 
@@ -914,7 +1018,7 @@ Platform times are seconds of real time or platform time, never simulation durat
 2. the desktop size of the window's monitor, in the stored window mode;
 3. windowed, with a client area of `rnd.init.fallback_window_size` (800 × 600).
 
-A failed first attempt queues the non-fatal notice `ui.error.resolution_rejected`, which the UI shows once it exists. When every attempt fails, the client ends through `FatalExit` with `ui.error.display_mode`. After any successful attempt the settings in effect are written back; after a fallback the present-mode setting is written back as `Uncapped` (RND-023); then the store is saved (R-META-424).
+A failed first attempt queues the non-fatal notice `ui.error.resolution_rejected`, which the UI shows once it exists. When every attempt fails, the client ends through `FatalExit` with `ui.error.display_mode`. After any successful attempt the size and the window mode in effect are written back and the store is saved (RND-023, R-META-424); a fallback never changes the present-mode setting.
 
 ```mermaid
 flowchart TD
@@ -923,12 +1027,12 @@ flowchart TD
   Z -- no --> S["Snap to the closest offered render size (RND-022)"]
   D --> A1["Attempt 1: preferred settings"]
   S --> A1
-  A1 -- created --> W["Write back the settings in effect; save the store"]
+  A1 -- created --> W["Write back the size and window mode in effect; save the store"]
   A1 -- fails --> N["Queue the notice ui.error.resolution_rejected"]
   N --> A2["Attempt 2: the monitor's desktop size, stored window mode"]
-  A2 -- created --> F["Write back the settings in effect, present mode Uncapped; save the store"]
+  A2 -- created --> W
   A2 -- fails --> A3["Attempt 3: windowed, client area rnd.init.fallback_window_size"]
-  A3 -- created --> F
+  A3 -- created --> W
   A3 -- fails --> X["FatalExit: ui.error.display_mode"]
 ```
 
@@ -1065,7 +1169,7 @@ Tests run under the test framework of ADR-069; clock tests use the manual time s
 | T12 keyboard layout | integration | a layout switch raises one notice with the BCP 47 tag; the creation tag matches the active layout | PLT-010, PLT-069 |
 | T13 display enumeration | unit | a synthetic output mode list is filtered at 640 × 480, merged by size and kept in reported order, and reaches the renderer's render-size list; the desktop mode gives width, height and refresh rate | PLT-070, PLT-071, PLT-073 |
 | T14 display change | integration | removing the window's monitor moves the window to the primary monitor | PLT-072 |
-| T15 fallback chain | unit | forced failures at start-up and in a screen-options apply give each attempt, the notice, the write-back with `Uncapped`, and the fatal exit; an apply creates no new window and no new device | PLT-112, PLT-114 |
+| T15 fallback chain | unit | forced failures at start-up and in a screen-options apply give each attempt, the notice, the write-back of the size and window mode in effect with the present-mode setting unchanged, and the fatal exit; an apply creates no new window and no new device | PLT-112, PLT-114 |
 | T17 first run | integration | packaged and development layouts start with identical settings from the compiled-in table | PLT-080, PLT-115 |
 | T18 settings file | unit | an invalid entry takes its default; a repeated key keeps its first value; comments survive a save; a save interrupted after the temporary write leaves the old file | PLT-079, PLT-081, PLT-089, PLT-116 |
 | T19 install and user data | integration | a read-only install run as a standard user writes nothing outside the user-data folders and Pictures; `--user-data` moves every user file, the crash registrations included, and is refused inside the install directory | PLT-015, PLT-016, PLT-017, PLT-025 |
@@ -1087,6 +1191,7 @@ Tests run under the test framework of ADR-069; clock tests use the manual time s
 | T35 Windows header | static | a source file outside the platform layer's project that includes `<windows.h>`, and a header or project file that defines `NOMINMAX` or another macro of the family, each fail `Build\CheckProjectFiles.py`; `WindowsHeaders.h` passes | PLT-132 |
 | T36 log sink | unit | with a recording sink: the records of start-up steps 1 to 6 arrive in order when the sink is set; a terminate-handler failure calls `RecordFatal` and then fails fast; with no sink set it fails fast directly; the platform library links no diagnostics code | PLT-133, PLT-118 |
 | T37 mapped file | unit | a mapped pack gives its bytes and size; a moved-from view is empty; destroying the view unmaps the file, so it can be replaced; an empty file maps to an empty view | PLT-090 |
+| T38 maths baseline | unit | the degenerate results of PLT-137 items 1, 2 and 6; division by the reciprocal; truncation toward zero; tolerance equality at the tolerance; a transform product that applies its left operand first; a singular inverse with no result; a ray–triangle hit behind the ray start, and a hit beyond the range rejected | PLT-136, PLT-137, PLT-138 |
 
 ## 8 Open decisions
 
@@ -1107,6 +1212,7 @@ Tests run under the test framework of ADR-069; clock tests use the manual time s
 | DEC-226 | Open | explicit completion of asynchronous work (PLT-085) |
 | DEC-228 | Open | frame and tick budgets (PLT-111) |
 | DEC-240 | Open | the floating-point environment that the simulation requires (PLT-087) |
+| DEC-241 | Open | the numeric semantics of the maths library; the reference semantics are the baseline (PLT-137, PLT-138) |
 | DEC-248, DEC-249 | Open | identity tokens in the credential store; service endpoints as configuration (PLT-020, PLT-100, PLT-099) |
 | DEC-250, DEC-251 | Open | settings-file versioning and the persistence of worlds and replays (PLT-031, PLT-019) |
 | DEC-044, DEC-046, DEC-206 | Open | the options set; replays; divergence dumps (PLT-074, PLT-017) |

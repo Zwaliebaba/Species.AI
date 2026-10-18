@@ -11,7 +11,6 @@ Scope: Platform layer. Back to the [requirements index](../REQUIREMENTS_INDEX.md
 | PLT-003 | No other component calls an operating-system service of table 1-A directly. | [platform_layer.md](../architecture/components/platform_layer.md#1-responsibilities-and-boundaries) |
 | PLT-004 | The platform layer does not own: | [platform_layer.md](../architecture/components/platform_layer.md#1-responsibilities-and-boundaries) |
 | PLT-005 | The headless server (the server project, ADR-056) is a Windows build with the toolset of the client (ADR-051) and uses only the portable | [platform_layer.md](../architecture/components/platform_layer.md#1-responsibilities-and-boundaries) |
-| PLT-006 | (removed: the Species client platform is ADR-050, and each platform service is specified in the section that table 1-A names) | [platform_layer.md](../architecture/components/platform_layer.md#1-responsibilities-and-boundaries) |
 | PLT-007 | The window raises the events of the `WindowEvent` set on the main thread, inside `PumpMessages`, in the order of the messages that cause | [platform_layer.md](../architecture/components/platform_layer.md#22-events-and-data-contracts) |
 | PLT-008 | Every keyboard, system-key, pointer, button, wheel, raw-mouse, character and input-method message reaches the keyboard and mouse back-end | [platform_layer.md](../architecture/components/platform_layer.md#22-events-and-data-contracts) |
 | PLT-009 | A close request of the window, which Alt+F4 also produces, raises `action.app.quit` through the input router (INP-076; | [platform_layer.md](../architecture/components/platform_layer.md#22-events-and-data-contracts) |
@@ -118,7 +117,6 @@ Scope: Platform layer. Back to the [requirements index](../REQUIREMENTS_INDEX.md
 | PLT-110 | The platform layer's main-thread work outside the frame is limited to: | [platform_layer.md](../architecture/components/platform_layer.md#5-concurrency-and-performance-budget) |
 | PLT-111 | The platform layer has no frame budget of its own in the baseline: | [platform_layer.md](../architecture/components/platform_layer.md#5-concurrency-and-performance-budget) |
 | PLT-112 | When the window or the swap chain cannot take the preferred settings, at start-up or when the screen options apply a new render size or | [platform_layer.md](../architecture/components/platform_layer.md#61-window-and-display-creation-fallback-chain) |
-| PLT-113 | (removed: the client has one creation chain, PLT-112) | [platform_layer.md](../architecture/components/platform_layer.md#61-window-and-display-creation-fallback-chain) |
 | PLT-114 | The window and the renderer's device are created once per process. | [platform_layer.md](../architecture/components/platform_layer.md#61-window-and-display-creation-fallback-chain) |
 | PLT-115 | First-run defaults never depend on the order in which packs are mounted or on the layout of the install: | [platform_layer.md](../architecture/components/platform_layer.md#62-settings-and-first-run-defaults) |
 | PLT-116 | A settings failure never stops the client: | [platform_layer.md](../architecture/components/platform_layer.md#62-settings-and-first-run-defaults) |
@@ -139,3 +137,8 @@ Scope: Platform layer. Back to the [requirements index](../REQUIREMENTS_INDEX.md
 | PLT-131 | Telemetry's hardware summary is taken from the system summary and is sent only with the player's consent, through the HTTPS client | [platform_layer.md](../architecture/components/platform_layer.md#65-diagnostics-and-telemetry) |
 | PLT-132 | The platform layer's project owns the one header that includes `<windows.h>`, `WindowsHeaders.h` (`AGENTS.md` §4): | [platform_layer.md](../architecture/components/platform_layer.md#1-responsibilities-and-boundaries) |
 | PLT-133 | The platform layer depends on no other engine component. | [platform_layer.md](../architecture/components/platform_layer.md#65-diagnostics-and-telemetry) |
+| PLT-134 | The platform layer's project also holds the engine maths library: | [platform_layer.md](../architecture/components/platform_layer.md#417-maths-library) |
+| PLT-135 | The types are those of the sketch above. | [platform_layer.md](../architecture/components/platform_layer.md#417-maths-library) |
+| PLT-136 | Conventions. Points and directions are row vectors (ADR-016). | [platform_layer.md](../architecture/components/platform_layer.md#417-maths-library) |
+| PLT-137 | Numeric baseline. Until DEC-241 is decided, the library has these semantics, on which reference rules depend (DEC-241 items 1, 6, 7 and 8): | [platform_layer.md](../architecture/components/platform_layer.md#417-maths-library) |
+| PLT-138 | Geometric queries. `IntersectTriangle` returns the ray parameter *t* and the barycentric coordinates *u* and *v* of a hit inside the | [platform_layer.md](../architecture/components/platform_layer.md#417-maths-library) |

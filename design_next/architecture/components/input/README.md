@@ -466,13 +466,13 @@ Input timings are seconds of real time and never simulation durations (R-CTRL-00
 | `inp.binding.sensitivity` | 100 | % | default; whole numbers from 1 to 200 | INP-060, INP-130 | — |
 | `inp.mouse.wheel_units_per_notch` | 120 | fine wheel units | the platform's notch | INP-110 | — |
 | `inp.budget.typical_events` | 64 | events per frame | the typical-load case | INP-200 | — |
-| `inp.budget.advance_typical_ms` | 0.2 | ms | `AdvanceFrame` at the typical load, minimum CPU | INP-200 | — |
+| `inp.budget.advance_typical_ms` | 0.2 | ms | `AdvanceFrame` at the typical load, reference test machine (DBG-209) | INP-200 | — |
 | `inp.budget.advance_full_ms` | 1.0 | ms | `AdvanceFrame` with a full queue, and one `Rebuild` | INP-200 | — |
 | `inp.budget.memory_kib` | 256 | KiB | router state, binding nodes, state tables and the queue | INP-201 | — |
 
 ## 5 Concurrency and performance budget
 
-**INP-200** (MUST) On the minimum CPU, `AdvanceFrame` takes at most `inp.budget.advance_typical_ms` with up to `inp.budget.typical_events` events and at most `inp.budget.advance_full_ms` with a full queue; one `Rebuild` of the default set and every other layer also fits in `inp.budget.advance_full_ms`, so a layout change during a match costs one frame. A query takes time proportional to the nodes of the action's bindings and of the actions they alias, and never allocates.
+**INP-200** (MUST) On the reference test machine (DBG-209), `AdvanceFrame` takes at most `inp.budget.advance_typical_ms` with up to `inp.budget.typical_events` events and at most `inp.budget.advance_full_ms` with a full queue; one `Rebuild` of the default set and every other layer also fits in `inp.budget.advance_full_ms`, so a layout change during a match costs one frame. A query takes time proportional to the nodes of the action's bindings and of the actions they alias, and never allocates.
 
 **INP-201** (MUST) The router allocates its queue at `inp.queue.capacity` and its state tables in `Rebuild`, and performs no heap allocation in `AdvanceFrame` or in a query. Its whole state stays within `inp.budget.memory_kib`.
 
@@ -608,7 +608,7 @@ Tests run under the test framework of ADR-069 with recorded or synthetic events 
 | T26 repeat pass | unit | an Escape press is true in the first pass and false in the repeat pass; an event that arrives between the passes is seen in the repeat pass only | INP-102 |
 | T27 no GameInput | integration | with GameInput unavailable the client starts, gamepad bindings load, the mode stays keyboard and mouse, and one error is logged | INP-107 |
 | T28 capture and describe | unit | capture returns `key:f10:down`, `key:num_minus:down` and `key:control:held` as asked; their descriptions use string ids; a chord's noun joins the parts with a hyphen | INP-176 to INP-179 |
-| T29 performance | performance | `AdvanceFrame` within `inp.budget.advance_typical_ms` and `inp.budget.advance_full_ms` on the minimum CPU; no heap allocation in a frame | INP-200, INP-201 |
+| T29 performance | performance | `AdvanceFrame` within `inp.budget.advance_typical_ms` and `inp.budget.advance_full_ms` on the reference test machine (DBG-209); no heap allocation in a frame | INP-200, INP-201 |
 | T30 text entry | integration | text entered with a CJK input method reaches the focused text field; no action fires from composition | INP-006, INP-112 |
 | T31 reference cases | unit | the cases of INP-221, authored as entries, fail the content build with their classes | INP-221 |
 | T32 development layer | unit | in a Debug build the cooked development layer equals table 3.11-A and is appended after the default set; `key:f10:down` fires `action.debug.profile_view`; `key:l` fires `action.view.chat_log` and `action.debug.special_lighting_on`; in a Release build the layer is not read, and user-layer entries for `action.debug.overlay` and `action.sequence.skip` are skipped as `UnknownAction` | INP-094 to INP-097, INP-162 |

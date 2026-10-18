@@ -159,11 +159,11 @@ Caption: no settings change rebuilds terrain, sea or tree geometry, and none tou
 
 **RND-451** (MUST) A stored setting outside its range is replaced by its default and logged; a stored render size that the monitor does not offer snaps to the closest offered size (RND-022); an anti-aliasing setting that the GPU does not support falls back as RND-442 states; HDR output that the output no longer supports falls back to SDR (ADR-014).
 
-### 4.3 The reference options pages
+### 4.3 The options pages
 
 **RND-452** (MUST) The reference graphics options page shows exactly four choices, sea detail, sky detail, structure detail and entity detail, each with the values high, medium and low, plus apply and back actions; the screen options page shows the render size and the window mode ([options_localisation_and_hooks.md](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-414). Besides these, the Species engine provides the present mode, the frame-rate cap, low latency, anti-aliasing, HDR output and brightness (RND-442). The Species options pages expose at least the settings of the reference pages; whether they also expose the engine settings of RND-442 and further commonly expected options is decided by the design phase (see DEC-044).
 
-### 4.4 Reference caps and costs
+### 4.4 Caps and costs
 
 **RND-453** (MUST) The renderer's caps and costs are those of the table below; the frame budgets are RND-454 (see DEC-225, DEC-106).
 

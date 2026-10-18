@@ -18,7 +18,7 @@ This folder lists what the reference mechanics need as Species content: every sp
 | VFX textures | 19 | 19 | 13 | 6 | 0 |
 | UI panels and title | 13 | 20 | 12 | 8 | 0 |
 | HUD, supply-crate and power icons | 28 | 30 | 15 | 15 | 0 |
-| Cursors and markers | 35 | 47 | 36 | 11 | 0 |
+| Cursors and markers | 29 | 41 | 30 | 11 | 0 |
 | Input glyphs | 19 | 19 | 1 | 18 | 0 |
 | Terrain ramps, water and waves | 3 | 26 | 3 | 21 | 2 |
 | Meshes | 77 | 104 | 27 | 71 | 6 |
@@ -30,9 +30,9 @@ This folder lists what the reference mechanics need as Species content: every sp
 | Fonts | 5 | 5 | 1 | 4 | 0 |
 | String table | 10 | 10 | 2 | 8 | 0 |
 | Maps and thumbnails | 12 | 98 | 4 | 94 | 0 |
-| **Total** | **438** | **1397** | **650** | **728** | **19** |
+| **Total** | **432** | **1391** | **644** | **728** | **19** |
 
-The first-playable set is one skirmish mode, Spawn Control for 2 players, with the core Supply-crate pool ([GameAssets.md §2.5](GameAssets.md#25-priorities-and-the-first-playable-assumption)). 808 reference files and 281 reference text entries need no Species counterpart ([GameAssets.md §20](GameAssets.md#20-not-to-be-created)).
+The first-playable set is one skirmish mode, Spawn Control for 2 players, with the core Supply-crate pool ([GameAssets.md §2.5](GameAssets.md#25-priorities-and-the-first-playable-assumption)). 811 reference files and 281 reference text entries need no Species counterpart ([GameAssets.md §20](GameAssets.md#20-not-to-be-created)).
 
 ## Technical constraints per category
 

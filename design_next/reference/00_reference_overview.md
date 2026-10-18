@@ -411,7 +411,7 @@ The Spawn Node economy behind these rules is §2.7 and §2.9: territory is mainl
 
 **R-VIS-172** (MUST) For online and local-network play, the host picks a mode and a map and opens a lobby that other players join; the host's match starts automatically once every human in the lobby is ready. How sessions are found and joined, and who validates lobby changes, are design-phase topics (DEC-243, DEC-245).
 
-**R-VIS-173** (MUST) In the lobby the host sets the mode parameters (time limit, Catch-up bonus, Supply crate drop rate and placement mode, Comeback Bonus, sudden death, starting powers and the mode-specific values), the basic-crates option, co-op, a password and the bot difficulty. Every player sets a name and a colour, or in Siege a side.
+**R-VIS-173** (MUST) In the lobby the host sets the mode parameters (time limit, Catch-up bonus, crate drop period and crate placement, Comeback Bonus, sudden death, starting powers and the mode-specific values), the basic-crates option, co-op, a password and the bot difficulty. Every player sets a name and a colour, or in Siege a side.
 
 **R-VIS-174** (MUST) Two tutorials, directed by help tabs, run on two fixed Zone Control maps, one for 2 players and one for 3 players, against an easy bot. No Supply crates drop until the last step of the second tutorial, which switches on basic Supply crates with random placement and the standard bot (DEC-051, DEC-110, DEC-123).
 

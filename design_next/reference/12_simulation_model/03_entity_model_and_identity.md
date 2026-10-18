@@ -242,7 +242,7 @@ classDiagram
     SimObject <|-- OrderTrailMark
     SimObject <|-- EssenceOrb
     SimObject <|-- Wisp
-    SimObject <|-- SnowFlake
+    SimObject <|-- Snowflake
     SimObject <|-- DustVortex
     SimObject <|-- LightningStrike
     ActorGroup <|-- StrikeTeam
@@ -370,7 +370,7 @@ Table 2.2-G gives every type, its base, its family and the document that specifi
 | 86 | `OrderTrailMark` | `SimObject` | effect | [Leader and formations](../02_units/leader_and_formations.md) |
 | 87 | `EssenceOrb` | `SimObject` | effect (own pool) | [Essence orbs](../02_units/essence_orbs.md) |
 | 88 | `Wisp` | `SimObject` | effect | [creatures](../02_units/creatures.md) |
-| 89 | `SnowFlake` | `SimObject` | effect | [04](04_containers_and_update_order.md) §2.8; [weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
+| 89 | `Snowflake` | `SimObject` | effect | [04](04_containers_and_update_order.md) §2.8; [weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
 | 90 | `DustVortex` | `SimObject` | effect | [04](04_containers_and_update_order.md) §2.8; [weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
 | 91 | `LightningStrike` | `SimObject` | effect | [04](04_containers_and_update_order.md) §2.8; [weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
 | 92 | `MapLight` | — | helper (map data) | [maps and level design](../08_maps_and_level_design/rules_and_conventions.md) |
@@ -469,7 +469,7 @@ Table 2.3-B Effect kinds.
 | order marker | `OrderMarker` | a Leader's order |
 | order trail mark | `OrderTrailMark` | an order marker, periodically |
 | Wisp | `Wisp` | a Blight Grove tree; a Reaper Serpent kill ([creatures](../02_units/creatures.md)) |
-| snowflake | `SnowFlake` | the snow spawner ([04](04_containers_and_update_order.md) §2.8) |
+| snowflake | `Snowflake` | the snow spawner ([04](04_containers_and_update_order.md) §2.8) |
 | dust object | `DustVortex` | the dust-storm spawner ([04](04_containers_and_update_order.md) §2.8) |
 | lightning strike | `LightningStrike` | the lightning spawner ([04](04_containers_and_update_order.md) §2.8) |
 
@@ -485,7 +485,7 @@ Table 2.3-B Effect kinds.
 
 **R-SIM-129** (MUST) An actor group advances its members in every slice ([04](04_containers_and_update_order.md) §2.4). Its own advance runs once per tick, in slice 0: it recomputes the group's centre, velocity and radius from the positions and radii that its members reported in their advances of the previous tick, advances the group along its map route if it has one, and requests the group's removal when no member slot is in use; the team then removes and destroys the group. Members, formation offsets and the actor-group subtypes are [06](06_teams_and_player_commands.md).
 
-#### 2.3.6 Render hooks
+#### 2.3.6 Drawing
 
 **R-SIM-130** (MUST) Presentation draws each family from the presentation snapshot (DEC-222) through the renderer's game-object renderers of table 2.3-C; no simulated object has a render hook, and no renderer writes simulation state (DEC-007). Each object is extrapolated by the extrapolation time of [01](01_tick_timing_and_main_loop.md) R-SIM-560, with the extra tick period of R-SIM-562 for a slot that its pool has not yet advanced in the current tick.
 

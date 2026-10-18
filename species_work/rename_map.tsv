@@ -589,7 +589,7 @@ RestrictionZone	identifier	exclusion zone	ExclusionZone		rename
 Rocket	identifier	rocket	RocketProjectile		rename	
 Shockwave	identifier	shockwave ring	ShockwaveRing		rename	
 SmokeMarker	identifier	smoke column	SmokeColumn		rename	ambient emitter
-Snow	identifier	snowflake	SnowFlake		rename	ambient map effect
+Snow	identifier	snowflake	Snowflake		rename	ambient map effect
 SolarPanel	identifier	Solar Array	SolarArray		rename	confirmed by owner at G1 (2026-10-17)
 SoulDestroyer	identifier	Reaper Serpent	ReaperSerpent		rename	
 SpawnBuilding	identifier	spawn-network structure	SpawnStructure		rename	

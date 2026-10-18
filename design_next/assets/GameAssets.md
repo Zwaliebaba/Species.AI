@@ -191,7 +191,7 @@ An edition that its edition manifest marks for release contains no placeholder: 
 | [VFX textures](#5-vfx-textures) | 19 | 19 | 13 | 6 | 0 | 18 |
 | [UI panels and title](#6-ui-panels-and-title) | 13 | 20 | 12 | 8 | 0 | 14 |
 | [HUD, supply-crate and power icons](#7-hud-supply-crate-and-power-icons) | 28 | 30 | 15 | 15 | 0 | 30 |
-| [Cursors and markers](#8-cursors-and-markers) | 35 | 47 | 36 | 11 | 0 | 28 |
+| [Cursors and markers](#8-cursors-and-markers) | 29 | 41 | 30 | 11 | 0 | 25 |
 | [Input glyphs](#9-input-glyphs) | 19 | 19 | 1 | 18 | 0 | 13 |
 | [Terrain ramps, water and waves](#10-terrain-ramps-water-and-waves) | 3 | 26 | 3 | 21 | 2 | 26 |
 | [Meshes](#11-meshes) | 77 | 104 | 27 | 71 | 6 | 71 |
@@ -203,9 +203,9 @@ An edition that its edition manifest marks for release contains no placeholder: 
 | [Fonts](#17-fonts) | 5 | 5 | 1 | 4 | 0 | 138 |
 | [String table](#18-string-table) | 10 | 10 | 2 | 8 | 0 | 0 |
 | [Maps and thumbnails](#19-maps-and-thumbnails) | 12 | 98 | 4 | 94 | 0 | 98 |
-| **Total** | **438** | **1397** | **650** | **728** | **19** | **1439** |
+| **Total** | **432** | **1391** | **644** | **728** | **19** | **1436** |
 
-"Reference files replaced" counts the in-scope reference files whose role each category takes over; one Species file may replace several (138 bitmap font pages become 5 font files). Music, string tables, some help pictures and every row with no reference counterpart (the application icon, the new glyphs, markers and the Abductor beam ring, the tint masks, the collision assets, the derived variants, the Trooper grenade throw and the six outcome stings that wait for DEC-565) have no one-to-one counterpart. "Files" counts manifest rows: the 10 derived-variant rows have no authored file, because the cooker produces them from their parents.
+"Reference files replaced" counts the in-scope reference files whose role each category takes over; one Species file may replace several (138 bitmap font pages become 5 font files). Music, string tables, some help pictures and every row with no reference counterpart (the application icon, the new glyphs, markers and the Abductor beam ring, the tint masks, the collision assets, the derived variants, the Trooper grenade throw and the six outcome stings that wait for DEC-565) have no one-to-one counterpart. "Files" counts manifest rows: the 7 derived-variant rows have no authored file, because the cooker produces them from their parents.
 
 ## 4 Unit sprites
 
@@ -325,10 +325,7 @@ World and menu cursors, off-screen and ground markers, Leader banners and Flag C
 |---|---|---|---|---|---|---|---|
 | `content/textures/icons/cursors/cursor_world.png` | `cursor.world` | Default world cursor | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256); its blurred darkening shadow is the derived variant `cursor.world.shadow`, produced offline by the cooker | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/cursors/cursor_highlight.png` | `cursor.highlight` | Cursor over a selectable unit; also the power-slot screen-zone highlight | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
-| `content/textures/icons/cursors/cursor_select.png` | `cursor.select` | Selection cursor; also the power-slot screen-zone highlight | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
-| `content/textures/icons/cursors/cursor_move_target.png` | `cursor.move_target` | Move-here cursor | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/cursors/cursor_place.png` | `cursor.place` | Placement cursor for powers that place a structure; also the entering marker drawn at the entrance of a Transport or a Beam Dish (R-CTRL-371) | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
-| `content/textures/icons/cursors/cursor_enter.png` | `cursor.enter` | Enter cursor over a Transport or a gate | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/cursors/cursor_unavailable.png` | `cursor.unavailable` | Unavailable cursor; also the kick-player button and invalid power targets | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/cursors/cursor_turret_aim.png` | `cursor.turret_aim` | Turret aiming cursor | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/cursors/cursor_pointer.png` | `cursor.pointer` | Pointer-arrow image of the scroll-bar arrows and the selection arrows; the world cursor `cursor.world` draws the pointer itself (UI-465) | PNG RGBA8 (white art) → BC7 sRGB, mips | 64x64 px display size; author at 2x (128x128) | single | skirmish-first-playable | generated glyph |
@@ -364,10 +361,7 @@ World and menu cursors, off-screen and ground markers, Leader banners and Flag C
 | `content/textures/icons/cursors/cursor_world@shadow` | `cursor.world.shadow` | Blurred darkening shadow of `cursor.world`, a derived variant produced offline by the cooker (`BlurredShadow`, AST-029, RND-243) | derived from `cursor.world` → BC4, mips | 128x128 px display size; author at 2x (256x256), the size of its parent; separable five-tap blur (2, 4, 7, 4, 2) scaled by `rnd.shadow.icon_blur_radius` (RND-422) | single | skirmish-first-playable | derived by the cooker |
 | `content/textures/icons/cursors/cursor_place@shadow` | `cursor.place.shadow` | Blurred darkening shadow of `cursor.place`, a derived variant produced offline by the cooker (`BlurredShadow`, AST-029, RND-243) | derived from `cursor.place` → BC4, mips | 128x128 px display size; author at 2x (256x256), the size of its parent; separable five-tap blur (2, 4, 7, 4, 2) scaled by `rnd.shadow.icon_blur_radius` (RND-422) | single | skirmish-first-playable | derived by the cooker |
 | `content/textures/icons/cursors/cursor_unavailable@shadow` | `cursor.unavailable.shadow` | Blurred darkening shadow of `cursor.unavailable`, a derived variant produced offline by the cooker (`BlurredShadow`, AST-029, RND-243) | derived from `cursor.unavailable` → BC4, mips | 128x128 px display size; author at 2x (256x256), the size of its parent; separable five-tap blur (2, 4, 7, 4, 2) scaled by `rnd.shadow.icon_blur_radius` (RND-422) | single | skirmish-first-playable | derived by the cooker |
-| `content/textures/icons/cursors/cursor_move_target@shadow` | `cursor.move_target.shadow` | Blurred darkening shadow of `cursor.move_target`, a derived variant produced offline by the cooker (`BlurredShadow`, AST-029, RND-243) | derived from `cursor.move_target` → BC4, mips | 128x128 px display size; author at 2x (256x256), the size of its parent; separable five-tap blur (2, 4, 7, 4, 2) scaled by `rnd.shadow.icon_blur_radius` (RND-422) | single | skirmish-first-playable | derived by the cooker |
 | `content/textures/icons/cursors/cursor_highlight@shadow` | `cursor.highlight.shadow` | Blurred darkening shadow of `cursor.highlight`, a derived variant produced offline by the cooker (`BlurredShadow`, AST-029, RND-243) | derived from `cursor.highlight` → BC4, mips | 128x128 px display size; author at 2x (256x256), the size of its parent; separable five-tap blur (2, 4, 7, 4, 2) scaled by `rnd.shadow.icon_blur_radius` (RND-422) | single | skirmish-first-playable | derived by the cooker |
-| `content/textures/icons/cursors/cursor_select@shadow` | `cursor.select.shadow` | Blurred darkening shadow of `cursor.select`, a derived variant produced offline by the cooker (`BlurredShadow`, AST-029, RND-243) | derived from `cursor.select` → BC4, mips | 128x128 px display size; author at 2x (256x256), the size of its parent; separable five-tap blur (2, 4, 7, 4, 2) scaled by `rnd.shadow.icon_blur_radius` (RND-422) | single | skirmish-first-playable | derived by the cooker |
-| `content/textures/icons/cursors/cursor_enter@shadow` | `cursor.enter.shadow` | Blurred darkening shadow of `cursor.enter`, a derived variant produced offline by the cooker (`BlurredShadow`, AST-029, RND-243) | derived from `cursor.enter` → BC4, mips | 128x128 px display size; author at 2x (256x256), the size of its parent; separable five-tap blur (2, 4, 7, 4, 2) scaled by `rnd.shadow.icon_blur_radius` (RND-422) | single | skirmish-first-playable | derived by the cooker |
 | `content/textures/icons/markers/marker_crate_landing@shadow` | `marker.crate_landing.shadow` | Blurred darkening shadow of `marker.crate_landing`, a derived variant produced offline by the cooker (`BlurredShadow`, AST-029, RND-243) | derived from `marker.crate_landing` → BC4, mips | 128x128 px, the size of its parent; separable five-tap blur (2, 4, 7, 4, 2) scaled by `rnd.shadow.icon_blur_radius` (RND-422) | single | skirmish-first-playable | derived by the cooker |
 | `content/textures/icons/markers/marker_barrage_target@shadow` | `marker.barrage_target.shadow` | Blurred darkening shadow of `marker.barrage_target`, a derived variant produced offline by the cooker (`BlurredShadow`, AST-029, RND-243) | derived from `marker.barrage_target` → BC4, mips | 128x128 px, the size of its parent; separable five-tap blur (2, 4, 7, 4, 2) scaled by `rnd.shadow.icon_blur_radius` (RND-422) | single | launch | derived by the cooker |
 
@@ -1160,7 +1154,7 @@ String ids added for the assets, with the documents that cite them:
 | `ui.input.key.<name>`, `ui.input.mouse.<name>`, `ui.input.pad.<name>`, `ui.input.condition.<condition>`, `ui.input.not` | display names of the 113 keys, 6 mouse controls, 25 gamepad controls and 9 binding conditions, and the negation word | [input/controls_and_default_bindings](../architecture/components/input/controls_and_default_bindings.md) and 1 more |
 | `bot.label`, `match.team_left`, `match.player_left`, `ui.lobby.player_joined`, `ui.team.invalid_name`, `faction.rogue.name`, `faction.visitor.name` | team, player and faction names and messages | [12_simulation_model/06_teams_and_player_commands](../reference/12_simulation_model/06_teams_and_player_commands.md) and 3 more |
 | `team.colour.green`, `team.colour.red`, `team.colour.yellow`, `team.colour.blue`, `team.colour.orange`, `team.colour.purple`, `team.colour.cyan`, `team.colour.pink` | the eight team colour names | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 2 more |
-| `match.kill_milestone` | the kill-milestone message of the local team, with the milestone value as its parameter (the kill-milestone event of R-SIM-221) | registered in [CONVENTIONS §8.6](../CONVENTIONS.md#86-match-rules); no rule shows it yet |
+| `match.kill_milestone` | the kill-milestone message of the local team, with the milestone value as its parameter (the kill-milestone event of R-SIM-221) | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) |
 | `crate.strike_team.tooltip`, `crate.collector.tooltip`, `crate.builder.tooltip`, `crate.transport.tooltip`, `crate.airstrike.tooltip`, `crate.missile_barrage.tooltip`, `crate.shield.tooltip`, `crate.convert.tooltip`, `crate.speed_boost.tooltip`, `crate.turret_gun.tooltip`, `crate.swarm.tooltip`, `crate.essence_grove.tooltip`, `crate.hive.tooltip`, `crate.brood.tooltip`, `crate.meteor_shower.tooltip`, `crate.blight_grove.tooltip`, `crate.fury.tooltip`, `crate.turret_rocket.tooltip`, `crate.turret_flame.tooltip`, `crate.firebomb_run.tooltip` | the Power help text of each of the 20 outcomes that can be delivered as a Power, shown while the Power is Waiting (R-CRATE-011, R-CTRL-236) | [04_supply_crates_powers_and_weapons/README](../reference/04_supply_crates_powers_and_weapons/README.md) |
 | `ui.dev.command.dump_bindings` | the caption of the development command that writes the bindings to the log | [diagnostics_test_and_performance/developer_tools](../architecture/components/diagnostics_test_and_performance/developer_tools.md) |
 
@@ -1205,8 +1199,8 @@ These reference files and text entries need no Species counterpart. Counts only;
 | debug only | 10 |  |  |  | 43 | 53 |
 | dropped feature (campaign or dropped unit, structure or mode) |  | 42 |  |  |  | 42 |
 | unused (never listed: superseded map files) |  |  |  | 30 |  | 30 |
+| drawn by no rule (among them the objective-card pictures, DEC-050) | 24 |  |  |  |  | 24 |
 | editor only (map editor match options) |  |  |  |  | 23 | 23 |
-| drawn by no rule (among them the objective-card pictures, DEC-050) | 21 |  |  |  |  | 21 |
 | unused (named only in dead code or data) | 14 | 2 |  |  | 3 | 19 |
 | second graphics back end of the reference (not built) | 17 |  |  |  |  | 17 |
 | dropped feature (gesture input) | 9 |  |  |  | 2 | 11 |
@@ -1225,7 +1219,7 @@ These reference files and text entries need no Species counterpart. Counts only;
 | dropped feature (dropped mode and unit) | 1 |  |  |  |  | 1 |
 | unreachable fallback | 1 |  |  |  |  | 1 |
 | editor only |  | 1 |  |  |  | 1 |
-| **Total** | **136** | **201** | **404** | **67** | **281** | **1089** |
+| **Total** | **139** | **201** | **404** | **67** | **281** | **1092** |
 
 Bitmap font pages are not in this table: their role passes to the font files of §17.
 
