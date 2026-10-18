@@ -50,8 +50,6 @@ The types, the layer data, the instance state, the effect kinds and the stream f
 
 **AEN-216** (MUST) **Ducking.** When an instance on the announcer bus starts, the world bus is ducked by `ref.aud.bus.announcer.duck_world_db` until `ref.aud.bus.announcer.duck_time` after the latest such start; ducks do not add up. The duck enters and leaves over `aen.mix.duck_ramp`.
 
-**AEN-217** (removed: a second gain model; AEN-214 and AEN-215 are the gain stages, R-AUD-225)
-
 ### 4.16 Buses, routing and effects
 
 **AEN-220** (MUST) **Bus graph** (ADR-024, DEC-570). The graph is: the mastering voice; under it the **pre-master** submix, which applies the pre-master gain and the built-in `FXMasteringLimiter` (release `aen.mix.limiter.release`, loudness `aen.mix.limiter.loudness`), set so that a signal below full scale passes unchanged; under it the six player buses of R-AUD-221, UI, announcer and stings, voice, world, ambience and music, each a submix; under the player buses the effect buses of AEN-223, each feeding the player bus of the sounds routed to it. Every submix has the mastering voice's channel count and sample rate, and processing stages order effect buses before player buses before the pre-master. Every source voice outputs to its event's bus (R-AUD-222) and, through sends, to effect buses.
@@ -67,8 +65,6 @@ The types, the layer data, the instance state, the effect kinds and the stream f
 **AEN-225** (MUST) Every Species XAPO processes 32-bit float at its bus's actual sample rate, with its own state per channel, and computes every time constant and coefficient from that rate (ADR-024). Full scale ±1.0 corresponds to `aen.fx.full_scale` on the 16-bit scale on which the effect constants of R-AUD-079 and of this section are stated. `StereoEchoFx` applies the left delay to the left and centre channels and the right delay to the right channels.
 
 **AEN-226** (MUST) At every update each effect bus's parameters are evaluated (AEN-188) and set within the update's operation set; integer parameters are truncated toward zero (AEN-070).
-
-**AEN-227** (removed: a second effect-processing model; AEN-224 and AEN-226 are the effect processing, R-AUD-080)
 
 **AEN-228** (MUST) Because a bus effect's tail is produced by the effect, a voice's release envelope does not shape it, so the long releases that let an echo tail ring (R-AUD-074) hold a voice without shaping the tail. Sounds are authored for the effect model that DEC-567 chooses.
 
@@ -87,10 +83,6 @@ The own-algorithm effects (R-AUD-079) compute, per sample x on the 16-bit scale 
 **AEN-235** (MUST) Each standard kind realised by a Species XAPO (AEN-070: `StereoEchoFx` and `StudioReverbFx`) implements its parameter set of AEN-070.
 
 ### 4.17 Sample residency
-
-**AEN-240** (removed: an evicting sample cache, which the engine does not have; AEN-243 is the residency, ADR-025)
-
-**AEN-241** (removed: the eviction of that cache; nothing is evicted within a bank's scope, AEN-243)
 
 **AEN-243** (MUST) **Residency** (ADR-025). Resident groups are cooked to PCM and held in banks (AEN-074); a resident member is never decoded at play time and starts without delay. Streamed groups are read from the packs buffer by buffer and decoded by XAudio2 as they play (§4.18); no streamed member is ever held whole in memory. Nothing is evicted while its bank's scope lasts; a bank is released with its scope. Each bank has a hard budget, and a bank whose resident groups exceed it is a content-build error: `aen.memory.interface_bank_budget` for the interface bank and `aen.memory.match_bank_budget` for the match bank, with `aen.memory.stream_budget` for every stream buffer and stream head together.
 

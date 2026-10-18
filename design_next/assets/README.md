@@ -1,6 +1,6 @@
 # Assets
 
-> Status: Asset overview, pass 2b · Related: [GameAssets.md](GameAssets.md) · [asset_manifest.csv](asset_manifest.csv) · [art_and_audio_briefs.md](art_and_audio_briefs.md)
+> Status: Asset overview · Related: [GameAssets.md](GameAssets.md) · [asset_manifest.csv](asset_manifest.csv) · [art_and_audio_briefs.md](art_and_audio_briefs.md)
 
 This folder lists what the reference mechanics need as Species content: every sprite, texture, mesh, sound, font, string table and map, newly authored to the technical role its reference counterpart plays. Nothing is traced, re-coloured or edited from the reference game's art, audio or text.
 
@@ -17,22 +17,22 @@ This folder lists what the reference mechanics need as Species content: every sp
 | Unit sprites | 13 | 16 | 6 | 9 | 1 |
 | VFX textures | 19 | 19 | 13 | 6 | 0 |
 | UI panels and title | 13 | 20 | 12 | 8 | 0 |
-| HUD, supply-crate and power icons | 32 | 34 | 17 | 15 | 2 |
+| HUD, supply-crate and power icons | 28 | 30 | 15 | 15 | 0 |
 | Cursors and markers | 35 | 47 | 36 | 11 | 0 |
 | Input glyphs | 19 | 19 | 1 | 18 | 0 |
 | Terrain ramps, water and waves | 3 | 26 | 3 | 21 | 2 |
 | Meshes | 77 | 104 | 27 | 71 | 6 |
-| Help images and explainer animations | 22 | 75 | 1 | 58 | 16 |
-| Audio by source and event | 171 | 895 | 502 | 393 | 0 |
+| Help images and explainer animations | 6 | 59 | 1 | 58 | 0 |
+| Audio by source and event | 177 | 901 | 502 | 393 | 6 |
 | UI sounds | 13 | 16 | 16 | 0 | 0 |
 | Ambience | 4 | 21 | 11 | 10 | 0 |
-| Music | 4 | 6 | 0 | 6 | 0 |
+| Music | 4 | 6 | 0 | 2 | 4 |
 | Fonts | 5 | 5 | 1 | 4 | 0 |
 | String table | 10 | 10 | 2 | 8 | 0 |
 | Maps and thumbnails | 12 | 98 | 4 | 94 | 0 |
-| **Total** | **452** | **1411** | **652** | **732** | **27** |
+| **Total** | **438** | **1397** | **650** | **728** | **19** |
 
-The first-playable set is one skirmish mode, Spawn Control for 2 players, with the core Supply-crate pool ([GameAssets.md §2.5](GameAssets.md#25-priorities-and-the-first-playable-assumption)). 788 reference files and 281 reference text entries need no Species counterpart ([GameAssets.md §20](GameAssets.md#20-not-to-be-created)).
+The first-playable set is one skirmish mode, Spawn Control for 2 players, with the core Supply-crate pool ([GameAssets.md §2.5](GameAssets.md#25-priorities-and-the-first-playable-assumption)). 808 reference files and 281 reference text entries need no Species counterpart ([GameAssets.md §20](GameAssets.md#20-not-to-be-created)).
 
 ## Technical constraints per category
 
@@ -45,8 +45,8 @@ The first-playable set is one skirmish mode, Spawn Control for 2 players, with t
 | Cursors and markers | Straight-alpha art, drawn additively or alpha-blended as the pass states (RND-393); blurred darkening shadows are derived variants that the cooker produces offline; compass and disc shadows are tinted alpha masks; banners and flags carry the team area as grey levels with a companion tint mask (AST-022) |
 | Input glyphs | Platform-neutral shapes and labels; no console trade dress; shadow glyphs are darkening layers |
 | Terrain ramps, water and waves | Ramps 64x64 (x slope, y height) and wave gradients 400x10 are CPU tables, never uploaded; sea tiles 128x128 seamless, wrap repeat |
-| Meshes | Flat-shaded, per-face colour, no normals in source; team regions marked by explicit tint weights on the root and its direct children (ADR-020); a collision asset for every collidable mesh (AST-044); named sockets kept exactly; triangle budgets of the reference as upper limits; eight interchangeable Relics |
-| Help images and explainer animations | No baked text; hint pictures 200x200, help pages 150x150, mode cards 300x200 (display sizes); explainer pictures with full mip chains; explainer canvases 800-1000 x 250 with fixed loop lengths |
+| Meshes | Flat-shaded, per-face colour, no normals in source; team regions marked by explicit tint weights on the root and its direct children (ADR-020); a collision asset for every collidable mesh (AST-044); named sockets kept exactly; triangle budgets as upper limits in fixed budget classes; eight interchangeable Relics |
+| Help images and explainer animations | No baked text; the camera-controls hint 304x128, help pages 150x150, mode cards 300x200 (display sizes); explainer pictures with full mip chains; explainer canvases 800-1000 x 250 with fixed loop lengths |
 | Audio by source and event | Mono, 48 kHz; variant counts kept per group; loops seamless; behaviour in the sound-event data, not in the files; voice barks are new voice sets |
 | UI sounds | 2-D, short one-shots; mono or stereo |
 | Ambience | 2-D layered loops; a group streams, as MS-ADPCM decoded by XAudio2, when its longest member is over 20 s (AEN-072, ADR-025) |

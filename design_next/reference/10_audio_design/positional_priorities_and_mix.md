@@ -86,8 +86,6 @@ The roll-off is 1, and the design data sets no maximum distance (DEC-566). The s
 
 **R-AUD-218** (MUST) **Voice taking.** A waiting instance takes the voice of the lowest-ranked playing instance only when it outranks it by the steal margin of DEC-570; an instance that does not win a voice is kept virtual, not dropped, and a virtual loop keeps advancing its play position so that it resumes in time. Any number of instances may start in one update, and each trigger carries its time, so start latency is not quantised to the audio update (DEC-570, ADR-023).
 
-**R-AUD-219** (removed: a second voice allocator; R-AUD-217, R-AUD-218 and DEC-570 are the allocation)
-
 **R-AUD-220** (MUST) **Per-event limiting.** The data limits an event by its copy ranking (R-AUD-216), by shared voices (R-AUD-029) and by its number of layers; the reference data has no per-event cap, no maximum instance count and no cool-down. Species adds per-event caps in the audio engine (DEC-570) and per-event cool-downs as event data, which replace the fixed rate limits of game code; the reference values of those limits are owned by the documents of the rules that raise the events:
 
 | Event | Limit | Key |

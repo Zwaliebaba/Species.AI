@@ -46,7 +46,7 @@ Chosen option: "SHA-256 over cooked entries, combined in a content manifest".
 
 * A test reformats an authoring file (whitespace and line endings only), rebuilds, and expects an unchanged entry hash.
 * A test changes one statistic and expects a changed entry hash and a changed simulation content identity.
-* A lint step rejects source files that embed map content hashes.
+* `Build\CheckProjectFiles.py` rejects source files that embed map content hashes ([build tooling](../architecture/components/build_tooling_and_distribution.md) table 4.1-B row 14, BLD-076).
 
 ## Pros and Cons of the Options
 
@@ -70,3 +70,4 @@ Chosen option: "SHA-256 over cooked entries, combined in a content manifest".
 * Related: [ADR-057](ADR-057-version-identity.md) (the build identity includes the content manifest hash).
 * Components: asset pipeline and resources (`AST`), data schemas (`DAT`).
 * The terrain runtime model, the networking model and persistence are design-phase decisions; this ADR stays valid for any of their outcomes because it hashes whatever the cooked map contains.
+* **Amendment 2026-10-18.** The check against embedded map hashes is a rule of the project-file checker `Build\CheckProjectFiles.py` (build tooling table 4.1-B row 14), not a separate lint step.

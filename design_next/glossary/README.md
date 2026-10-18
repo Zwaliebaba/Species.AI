@@ -36,4 +36,4 @@ Every entry is one table row with four columns.
 - **Numbers.** A number in a definition is the reference value, repeated for readability. The tuning table of the owning document is the authority for every value; the glossary has no requirement IDs and no tuning table of its own.
 - **Cross-references.** The Species terms used inside a definition are glossary terms too; look them up in either file. `DEC-NNN` refers to an entry of the [decision register](../decisions/README.md), and `ADR-NNN` to an [architecture decision record](../ADR/README.md).
 - **Identifiers.** The type names, enumerators and string-id prefixes that belong to each term are listed in [CONVENTIONS.md §8](../CONVENTIONS.md#8-naming); the glossary does not repeat them.
-- **Player-facing text.** The messages that the glossary lists, such as Cancelled and Improved, are Species text kept under Species string ids.
+- **Player-facing text.** The messages that the glossary lists, such as Cancelled and Not available, are Species text kept under Species string ids.

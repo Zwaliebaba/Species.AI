@@ -1,6 +1,6 @@
 # Species game assets
 
-> Status: Asset list, pass 2b (consumers named by requirement id) · Related: [assets README](README.md) · [asset_manifest.csv](asset_manifest.csv) · [art_and_audio_briefs.md](art_and_audio_briefs.md) · [CONVENTIONS](../CONVENTIONS.md)
+> Status: Asset list (consumers named by requirement id) · Related: [assets README](README.md) · [asset_manifest.csv](asset_manifest.csv) · [art_and_audio_briefs.md](art_and_audio_briefs.md) · [CONVENTIONS](../CONVENTIONS.md)
 
 ## Contents
 
@@ -100,7 +100,7 @@ Asset ids are dotted and lower case. Numbered variants share one id; documents c
 | `glyph.` | input glyphs | `glyph.pad.face_south` |
 | `terrain.` | ramps, sea tiles, wave gradients | `terrain.ramp` |
 | `mesh.<group>.` | meshes; the group `collision` holds the collision assets, `dev` the editor meshes | `mesh.structure.spawn_node`, `mesh.collision.spawn_node` |
-| `help.`, `anim.explainer` | help pictures and explainer scripts | `help.hint.supply_crates` |
+| `help.`, `anim.explainer` | help pictures and explainer scripts | `help.hint.camera_controls` |
 | `sfx.<kind>.<source>.<event>` | sound-effect sample groups; kind is `unit`, `creature`, `weapon`, `building` or `crate` | `sfx.unit.worker.attack` |
 | `sfx.crate.outcome.` | Supply-crate outcome stings | `sfx.crate.outcome.shield` |
 | `sfx.ui.` | UI sounds | `sfx.ui.match_ui.menu_select` |
@@ -145,7 +145,7 @@ The artist delivers the source file under `content/`; the content build generate
 
 Each row has one priority: `skirmish-first-playable`, `launch` or `post-launch`.
 
-**First-playable assumption** (vision O8: one skirmish mode first). The first playable is **Spawn Control** for 2 players on the map slots `map_spawn_control_2p_01` and `map_spawn_control_2p_02`, with bots, and with Supply crates drawing from a core outcome pool: Reinforcements, Strike team (with its grenade and rocket weapons), Transport, airstrike, gun turret, Shield, Speed Boost and Fury. It needs:
+**First-playable assumption** (vision O8: one skirmish mode first). The first playable is **Spawn Control** for 2 players on the map slots `map_spawn_control_2p_01` and `map_spawn_control_2p_02`, with bots, and with Supply crates drawing from a core outcome pool: Reinforcements, Strike team (with its grenade weapon), Transport, airstrike, gun turret, Shield, Speed Boost and Fury (DEC-229: the two first-playable maps exclude every other outcome). It needs:
 
 - units: Worker (all cards), Leader with its banners, Trooper, Transport, Bomber, Essence orbs;
 - structures: Spawn Node, Relay, Transit Gate, gun turret (mount, head, gun barrel), Barrier Emitter, wall, tree, jump pad, Supply crate, the port pad, and the collision assets of the collidable ones;
@@ -153,7 +153,7 @@ Each row has one priority: `skirmish-first-playable`, `launch` or `post-launch`.
 - world: sky clouds, terrain ramp 01, sea tile 01, shore-wave gradient 01, the VFX of those units;
 - audio: every sample group of those sources and weapons, with the laser-bolt fire, structure-hit and kill groups and the grenade throw, the match interface sounds with the game-over announcement, and the match ambience bed.
 
-Everything else that a match reaches is `launch`. `post-launch` holds the seasonal theme, alternative mesh bodies with their collision assets, the objective-card hint pictures (hook art, DEC-050), the map editor's camera-view marker and its bot navigation node, the land colour ramp and the shore-wave gradient that no match map names (R-MAP-086), and the two research-level icons that no rule of a match draws (R-CRATE-014). The design phase may move rows between priorities; the placeholder rule keeps the game building and running whatever is missing.
+Everything else that a match reaches is `launch`. `post-launch` holds the seasonal theme, alternative mesh bodies with their collision assets, the map editor's camera-view marker and its bot navigation node, the land colour ramp and the shore-wave gradient that no match map names (R-MAP-086), the front-end theme and the in-match music beds, which are authored only if DEC-049 selects option A (R-AUD-407), and the six Supply-crate outcome stings that play only if DEC-565 binds them (R-AUD-139). The objective cards have no picture assets: they draw nothing in a match (DEC-050). The design phase may move rows between priorities; the placeholder rule keeps the game building and running whatever is missing.
 
 ### 2.6 Placeholders
 
@@ -190,22 +190,22 @@ An edition that its edition manifest marks for release contains no placeholder: 
 | [Unit sprites](#4-unit-sprites) | 13 | 16 | 6 | 9 | 1 | 15 |
 | [VFX textures](#5-vfx-textures) | 19 | 19 | 13 | 6 | 0 | 18 |
 | [UI panels and title](#6-ui-panels-and-title) | 13 | 20 | 12 | 8 | 0 | 14 |
-| [HUD, supply-crate and power icons](#7-hud-supply-crate-and-power-icons) | 32 | 34 | 17 | 15 | 2 | 34 |
+| [HUD, supply-crate and power icons](#7-hud-supply-crate-and-power-icons) | 28 | 30 | 15 | 15 | 0 | 30 |
 | [Cursors and markers](#8-cursors-and-markers) | 35 | 47 | 36 | 11 | 0 | 28 |
 | [Input glyphs](#9-input-glyphs) | 19 | 19 | 1 | 18 | 0 | 13 |
 | [Terrain ramps, water and waves](#10-terrain-ramps-water-and-waves) | 3 | 26 | 3 | 21 | 2 | 26 |
 | [Meshes](#11-meshes) | 77 | 104 | 27 | 71 | 6 | 71 |
-| [Help images and explainer animations](#12-help-images-and-explainer-animations) | 22 | 75 | 1 | 58 | 16 | 76 |
-| [Audio by source and event](#13-audio-by-source-and-event) | 171 | 895 | 502 | 393 | 0 | 891 |
+| [Help images and explainer animations](#12-help-images-and-explainer-animations) | 6 | 59 | 1 | 58 | 0 | 60 |
+| [Audio by source and event](#13-audio-by-source-and-event) | 177 | 901 | 502 | 393 | 6 | 891 |
 | [UI sounds](#14-ui-sounds) | 13 | 16 | 16 | 0 | 0 | 16 |
 | [Ambience](#15-ambience) | 4 | 21 | 11 | 10 | 0 | 21 |
-| [Music](#16-music) | 4 | 6 | 0 | 6 | 0 | 0 |
+| [Music](#16-music) | 4 | 6 | 0 | 2 | 4 | 0 |
 | [Fonts](#17-fonts) | 5 | 5 | 1 | 4 | 0 | 138 |
 | [String table](#18-string-table) | 10 | 10 | 2 | 8 | 0 | 0 |
 | [Maps and thumbnails](#19-maps-and-thumbnails) | 12 | 98 | 4 | 94 | 0 | 98 |
-| **Total** | **452** | **1411** | **652** | **732** | **27** | **1459** |
+| **Total** | **438** | **1397** | **650** | **728** | **19** | **1439** |
 
-"Reference files replaced" counts the in-scope reference files whose role each category takes over; one Species file may replace several (138 bitmap font pages become 5 font files). Music, string tables, some help pictures and every row added in pass 2a without a reference take (the application icon, the new glyphs, markers and the Abductor beam ring, the tint masks, the collision assets, the derived variants and the Trooper grenade throw) have no one-to-one counterpart. "Files" counts manifest rows: the 10 derived-variant rows have no authored file, because the cooker produces them from their parents.
+"Reference files replaced" counts the in-scope reference files whose role each category takes over; one Species file may replace several (138 bitmap font pages become 5 font files). Music, string tables, some help pictures and every row with no reference counterpart (the application icon, the new glyphs, markers and the Abductor beam ring, the tint masks, the collision assets, the derived variants, the Trooper grenade throw and the six outcome stings that wait for DEC-565) have no one-to-one counterpart. "Files" counts manifest rows: the 10 derived-variant rows have no authored file, because the cooker produces them from their parents.
 
 ## 4 Unit sprites
 
@@ -269,9 +269,9 @@ Front-end and window art. The palette is new; it keeps the token roles of the re
 | `content/textures/ui/ui_logo_emblem.png` | `uitex.logo_emblem` | Logo emblem on the main menu, drop-down menus and the options screen | PNG RGBA8 → BC7 sRGB, no mips | 278x194 px display size; author at 2x (556x388); wrap repeat where tiled | single | launch | generated panel |
 | `content/textures/ui/ui_icon_locked.png` | `uitex.icon_locked` | Lock icon on password-protected match entries | PNG RGBA8 → BC7 sRGB, no mips | 20x20 px display size; author at 2x (40x40) | single | launch | generated panel |
 | `content/textures/ui/ui_icon_check.png` | `uitex.icon_check` | Check-box tick | PNG RGBA8 → BC7 sRGB, no mips | 50x50 px display size; author at 2x (100x100) | single | skirmish-first-playable | generated panel |
-| `content/textures/ui/ui_difficulty_basic.png` | `uitex.difficulty_badge` | Map difficulty badge (basic, intermediate, advanced) on mode and map buttons | PNG RGBA8 → BC7 sRGB, no mips | 64x32 px display size; author at 2x (128x64) | 1 of 3 | launch | generated panel |
-| `content/textures/ui/ui_difficulty_intermediate.png` | `uitex.difficulty_badge` | ″ | PNG RGBA8 → BC7 sRGB, no mips | 64x32 px display size; author at 2x (128x64) | 2 of 3 | launch | generated panel |
-| `content/textures/ui/ui_difficulty_advanced.png` | `uitex.difficulty_badge` | ″ | PNG RGBA8 → BC7 sRGB, no mips | 64x32 px display size; author at 2x (128x64) | 3 of 3 | launch | generated panel |
+| `content/textures/ui/ui_complexity_simple.png` | `uitex.difficulty_badge` | Mode complexity badge (simple, medium, hard) on the mode buttons | PNG RGBA8 → BC7 sRGB, no mips | 64x32 px display size; author at 2x (128x64) | 1 of 3 | launch | generated panel |
+| `content/textures/ui/ui_complexity_medium.png` | `uitex.difficulty_badge` | ″ | PNG RGBA8 → BC7 sRGB, no mips | 64x32 px display size; author at 2x (128x64) | 2 of 3 | launch | generated panel |
+| `content/textures/ui/ui_complexity_hard.png` | `uitex.difficulty_badge` | ″ | PNG RGBA8 → BC7 sRGB, no mips | 64x32 px display size; author at 2x (128x64) | 3 of 3 | launch | generated panel |
 | `content/textures/ui/ui_backdrop_wheel.png` | `uitex.backdrop_wheel` | Large decorative wheel behind the front-end backdrop figure (new presentation) | PNG RGB8 → BC7 sRGB, no mips | 426x406 px display size; author at 2x (852x812) | single | launch | generated panel |
 | `content/textures/ui/ui_app_icon_01.png` | `uitex.app_icon` | Application icon: the executable's icon resource, also the window icon (PLT-057); one member per icon size | PNG RGBA8 per size → icon resource in the executable | 16x16 px, icon size 1 of 6 (member order 16, 24, 32, 48, 64, 256 px); drawn for its own size | 1 of 6 | skirmish-first-playable | generated glyph |
 | `content/textures/ui/ui_app_icon_02.png` | `uitex.app_icon` | ″ | PNG RGBA8 per size → icon resource in the executable | 24x24 px, icon size 2 of 6 (member order 16, 24, 32, 48, 64, 256 px); drawn for its own size | 2 of 6 | skirmish-first-playable | generated glyph |
@@ -290,8 +290,6 @@ Power and Supply-crate outcome icons and the power-slot panel read-outs. Icons a
 | `content/textures/icons/power/power_leader.png` | `icon.power.leader` | Leader icon: selected-unit cursor badge and the promotion power | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/power/power_strike_team.png` | `icon.power.strike_team` | Strike team power | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/power/power_grenade.png` | `icon.power.grenade` | Strike team grenade weapon | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
-| `content/textures/icons/power/power_rocket.png` | `icon.power.rocket` | Strike team rocket weapon | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
-| `content/textures/icons/power/power_laser.png` | `icon.power.laser` | Research-level icon of the laser level; drawn by no rule of a match (R-CRATE-014, DEC-115) | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | post-launch | generated glyph |
 | `content/textures/icons/power/power_airstrike.png` | `icon.power.airstrike` | airstrike outcome and power | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/power/power_transport.png` | `icon.power.transport` | Transport outcome and power | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/power/power_builder.png` | `icon.power.builder` | Builder outcome and power; also drawn over the Builder | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | launch | generated glyph |
@@ -311,9 +309,7 @@ Power and Supply-crate outcome icons and the power-slot panel read-outs. Icons a
 | `content/textures/icons/power/power_fury.png` | `icon.power.fury` | Fury outcome | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/power/power_allegiance_scrambler.png` | `icon.power.allegiance_scrambler` | Allegiance Scrambler outcome (shown on the crate) | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | launch | generated glyph |
 | `content/textures/icons/power/power_spitter_plants.png` | `icon.power.spitter_plants` | Spitter Plants outcome (shown on the crate) | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | launch | generated glyph |
-| `content/textures/icons/power/power_slots_upgrade.png` | `icon.power.slots_upgrade` | Research-level icon of the Power-slots level; drawn by no rule of a match (R-CRATE-014, DEC-115) | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | post-launch | generated glyph |
 | `content/textures/icons/hud/hud_slot_empty.png` | `icon.hud.slot_empty` | Empty power slot | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
-| `content/textures/icons/hud/hud_slot_discard.png` | `icon.hud.slot_discard` | Discard-power button on a power slot | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/hud/hud_icon_halo.png` | `icon.hud.icon_halo` | Darkening halo behind HUD icons | PNG grey (darkening) → BC4, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated gradient |
 | `content/textures/icons/hud/hud_transport_boarding.png` | `icon.hud.transport_state` | Transport state read-out on its power slot: boarding, travelling, unloading | PNG RGBA8 (white art) → BC7 sRGB, mips | 64x64 px display size; author at 2x (128x128) | 1 of 3 | skirmish-first-playable | generated glyph |
 | `content/textures/icons/hud/hud_transport_travelling.png` | `icon.hud.transport_state` | ″ | PNG RGBA8 (white art) → BC7 sRGB, mips | 64x64 px display size; author at 2x (128x128) | 2 of 3 | skirmish-first-playable | generated glyph |
@@ -413,83 +409,83 @@ Ramps and wave gradients are CPU look-up tables, not GPU textures: the terrain b
 
 ## 11 Meshes
 
-Flat-shaded low-poly meshes with per-face colours. Parts that take the team colour carry explicit tint weights on the root node and its direct children: the `_SPECIES_TINT` vertex attribute or the `species_team_tint` material flag (AST-034, ADR-020). The renderer tints them in the shader and nothing is recoloured at load; an authoring helper may propose weights for art made in the "mostly red" key-colour style (red more than twice green and twice blue), which the artist reviews. Code fetches sockets by name, so every socket of a row must exist with exactly that name, as an empty node in the `.glb`. Budgets are the triangle counts of the reference meshes and are upper limits. Formats: `.glb` (glTF 2.0 binary) → cooked Species mesh, colours attenuated once at cook (RND-160); placeholder: primitive mesh with sockets. Indexed sockets are numbered from 01 without gaps (AST-038).
+Flat-shaded low-poly meshes with per-face colours. Parts that take the team colour carry explicit tint weights on the root node and its direct children: the `_SPECIES_TINT` vertex attribute or the `species_team_tint` material flag (AST-034, ADR-020). The renderer tints them in the shader and nothing is recoloured at load; an authoring helper may propose weights for art made in the "mostly red" key-colour style (red more than twice green and twice blue), which the artist reviews. Code fetches sockets by name, so every socket of a row must exist with exactly that name, as an empty node in the `.glb`. Triangle budgets are upper limits, each one of the budget classes 100, 300, 1000, 3000, 10000 and 25000 triangles. Formats: `.glb` (glTF 2.0 binary) → cooked Species mesh, colours attenuated once at cook (RND-160); placeholder: primitive mesh with sockets. Indexed sockets are numbered from 01 without gaps (AST-038).
 
-**Socket vocabulary.** `port_NN` manning slot where a Worker stands to operate a structure; `light_NN` lamp or flare; `status_NN` status light per port; `muzzle_NN` barrel end where shots start; `casing_eject_NN` where spent casings leave; `barrel_mount` where a barrel attaches; `kill_counter` kill read-out; `carry` carry point; `leg_NN` leg root; `segment_end` end of a leg part; `engine_NN` engine glow; `essence_link` end point of an essence link; `tail_NN` tail attachment; `gate_exit_NN` destination point of a gate; `gate_surface` gate surface centre; `gate_entrance` where units enter; `door` exit for spawned units; `fuel_point` fuel connection; `glow_NN` panel glow; `grab_NN` lift points; `egg_spawn` and `egg_lay` egg release points; `entrance` boarding point; `flag` flag pole tip; `grid_link` energy-grid connection; `beam_focus` beam origin; `window_NN` lit window; `thruster` engine exhaust; `field_anchor_NN` field end points; `eye_NN` eye glints; `launch_point` pod launch point; `stem` stem attachment; `arm_tip` pump-arm tip; `dish_direction` dish aiming point. Numbers keep their reference base: leg sockets count from 00, the others from 01.
+**Socket vocabulary.** `port_NN` manning slot where a Worker stands to operate a structure; `light_NN` lamp or flare; `status_NN` status light per port; `muzzle_NN` barrel end where shots start; `casing_eject_NN` where spent casings leave; `barrel_mount` where a barrel attaches; `kill_counter` kill read-out; `carry` carry point; `leg_NN` leg root; `segment_end` end of a leg part; `engine_NN` engine glow; `essence_link` end point of an essence link; `tail_NN` tail attachment; `gate_exit_NN` destination point of a gate; `gate_surface` gate surface centre; `gate_entrance` where units enter; `door` exit for spawned units; `fuel_point` fuel connection; `glow_NN` panel glow; `grab_NN` lift points; `egg_spawn` and `egg_lay` egg release points; `entrance` boarding point; `flag` flag pole tip; `grid_link` energy-grid connection; `beam_focus` beam origin; `window_NN` lit window; `thruster` engine exhaust; `field_anchor_NN` field end points; `eye_NN` eye glints; `launch_point` pod launch point; `stem` stem attachment; `arm_tip` pump-arm tip; `dish_direction` dish aiming point. Indexed sockets count from 01 without gaps, legs included. A kind that a mesh carries exactly once may be written without an index, as its consumer rule names it: the Trooper's `muzzle` and `casing_eject` (R-UNIT-342), the Reaper Serpent head's `tail` (R-UNIT-594) and the port pad's `status` (R-BLDG-017).
 
 | Species file | Asset id | Role | Spec (budget, nodes, sockets) | Variants | Priority |
 |---|---|---|---|---|---|
-| `content/meshes/units/worker_figure.glb` | `mesh.unit.worker_figure` | Worker 3-D figure (team-tinted mesh with a flag socket) | <= 76 triangles budget; 1 node, depth 1; sockets: flag | single | launch |
-| `content/meshes/units/leader_figure.glb` | `mesh.unit.leader_figure` | Leader figure carrying its banner | <= 76 triangles budget; 1 node, depth 1; sockets: flag | single | skirmish-first-playable |
-| `content/meshes/units/trooper_figure.glb` | `mesh.unit.trooper_figure` | Trooper figure | <= 1036 triangles budget; 2 nodes, depth 1; sockets: casing_eject, eye_01, eye_02, muzzle | single | skirmish-first-playable |
-| `content/meshes/units/builder_body.glb` | `mesh.unit.builder_body` | Builder body | <= 72 triangles budget; 1 node, depth 1; sockets: none | single | launch |
-| `content/meshes/units/transport_hull.glb` | `mesh.unit.transport_hull` | Transport hull | <= 96 triangles budget; 3 nodes, depth 2; sockets: entrance, flag | single | skirmish-first-playable |
-| `content/meshes/units/collector_body.glb` | `mesh.unit.collector_body` | Collector body | <= 2064 triangles budget; 1 node, depth 1; sockets: engine_01, engine_02, engine_03, engine_04 | single | launch |
-| `content/meshes/units/bomber_body.glb` | `mesh.unit.bomber_body` | Bomber flying the airstrike | <= 92 triangles budget; 1 node, depth 1; sockets: none | single | skirmish-first-playable |
-| `content/meshes/projectiles/thrown_weapon.glb` | `mesh.projectile.thrown_weapon` | Thrown weapon: grenade, the Bomber's bombs and rockets | <= 286 triangles budget; 1 node, depth 1; sockets: none | single | skirmish-first-playable |
-| `content/meshes/projectiles/turret_round.glb` | `mesh.projectile.turret_round` | Turret round | <= 8 triangles budget; 1 node, depth 1; sockets: none | single | skirmish-first-playable |
-| `content/meshes/projectiles/shell_casing.glb` | `mesh.projectile.shell_casing` | Ejected shell casing | <= 140 triangles budget; 1 node, depth 1; sockets: none | single | skirmish-first-playable |
-| `content/meshes/projectiles/meteor_rock.glb` | `mesh.projectile.meteor_rock` | Meteor of the meteor shower | <= 180 triangles budget; 1 node, depth 1; sockets: none | single | launch |
-| `content/meshes/creatures/ant_body_01.glb` | `mesh.creature.ant_body` | ant body, three variants chosen per ant | <= 56 triangles budget; 1 node, depth 1; sockets: carry | 1 of 3 | launch |
-| `content/meshes/creatures/ant_body_02.glb` | `mesh.creature.ant_body` | ″ | <= 56 triangles budget; 1 node, depth 1; sockets: carry | 2 of 3 | launch |
-| `content/meshes/creatures/ant_body_03.glb` | `mesh.creature.ant_body` | ″ | <= 56 triangles budget; 1 node, depth 1; sockets: carry | 3 of 3 | launch |
-| `content/meshes/creatures/centipede_segment.glb` | `mesh.creature.centipede_segment` | centipede body segment | <= 40 triangles budget; 2 nodes, depth 1; sockets: none | single | launch |
-| `content/meshes/creatures/centipede_head_segment.glb` | `mesh.creature.centipede_head_segment` | centipede head segment | <= 56 triangles budget; 4 nodes, depth 1; sockets: none | single | launch |
-| `content/meshes/creatures/spider_body.glb` | `mesh.creature.spider_body` | spider body with eight leg sockets | <= 132 triangles budget; 1 node, depth 1; sockets: egg_lay, leg_01, leg_02, leg_03, leg_04, leg_05, leg_06, leg_07, leg_08 | single | launch |
-| `content/meshes/creatures/spider_thigh.glb` | `mesh.creature.spider_thigh` | spider upper leg part (procedural leg) | <= 84 triangles budget; 1 node, depth 1; sockets: segment_end | single | launch |
-| `content/meshes/creatures/spider_shin.glb` | `mesh.creature.spider_shin` | spider lower leg part (procedural leg) | <= 66 triangles budget; 1 node, depth 1; sockets: segment_end | single | launch |
-| `content/meshes/creatures/reaper_serpent_head.glb` | `mesh.creature.reaper_serpent_head` | Reaper Serpent head | <= 38 triangles budget; 1 node, depth 1; sockets: tail | single | launch |
-| `content/meshes/creatures/reaper_serpent_tail.glb` | `mesh.creature.reaper_serpent_tail` | Reaper Serpent tail segment | <= 42 triangles budget; 2 nodes, depth 1; sockets: none | single | launch |
-| `content/meshes/creatures/brood_drifter_body.glb` | `mesh.creature.brood_drifter_body` | Brood Drifter body | <= 55 triangles budget; 1 node, depth 1; sockets: egg_spawn, tail_01, tail_02, tail_03, tail_04 | single | launch |
-| `content/meshes/creatures/abductor_hull.glb` | `mesh.creature.abductor_hull` | Abductor hull (also placed by maps as scenery) | <= 9028 triangles budget; 2 nodes, depth 1; sockets: engine_01, engine_02, engine_03, engine_04 | single | launch |
-| `content/meshes/creatures/seed_pod.glb` | `mesh.creature.seed_pod` | Seed Pod (also the Spitter Plant's pod) | <= 130 triangles budget; 1 node, depth 1; sockets: none | single | launch |
-| `content/meshes/structures/spitter_plant_head.glb` | `mesh.structure.spitter_plant_head` | Spitter Plant head | <= 336 triangles budget; 1 node, depth 1; sockets: launch_point, stem | single | launch |
-| `content/meshes/structures/hive_mound.glb` | `mesh.structure.hive_mound` | Hive mound (also the placement-cursor preview) | <= 396 triangles budget; 2 nodes, depth 1; sockets: none | single | launch |
-| `content/meshes/structures/spawn_node.glb` | `mesh.structure.spawn_node` | Spawn Node (the match variant) | <= 196 triangles budget; 1 node, depth 1; sockets: door, essence_link, light_01, light_02, light_03, port_01, port_02, port_03, port_04, port_05 | single | skirmish-first-playable |
-| `content/meshes/structures/spawn_node_alt.glb` | `mesh.structure.spawn_node_alt` | Spawn Node alternative body (second constructor branch) | <= 152 triangles budget; 1 node, depth 1; sockets: door, essence_link, light_01, light_02, light_03, port_01, port_02, port_03, port_04, port_05 | single | post-launch |
-| `content/meshes/structures/source_node.glb` | `mesh.structure.source_node` | Source Node | <= 180 triangles budget; 1 node, depth 1; sockets: essence_link | single | launch |
-| `content/meshes/structures/relay_mast.glb` | `mesh.structure.relay_mast` | Relay | <= 152 triangles budget; 2 nodes, depth 1; sockets: essence_link | single | skirmish-first-playable |
-| `content/meshes/structures/transit_gate.glb` | `mesh.structure.transit_gate` | Transit Gate (the match variant) | <= 192 triangles budget; 1 node, depth 1; sockets: gate_exit_01, gate_exit_02, gate_surface | single | skirmish-first-playable |
-| `content/meshes/structures/transit_gate_alt.glb` | `mesh.structure.transit_gate_alt` | Transit Gate alternative body (second constructor branch) | <= 292 triangles budget; 6 nodes, depth 1; sockets: gate_exit_01, gate_exit_02, gate_surface, light_01, light_02 | single | post-launch |
-| `content/meshes/structures/command_console.glb` | `mesh.structure.command_console` | Command Console | <= 308 triangles budget; 1 node, depth 1; sockets: port_01, port_02, port_03, port_04, port_05 | single | launch |
-| `content/meshes/structures/command_console_linked.glb` | `mesh.structure.command_console_linked` | Command Console linked to a Core Device (with dish-direction socket) | <= 628 triangles budget; 2 nodes, depth 1; sockets: dish_direction, port_01, port_02, port_03 | single | launch |
-| `content/meshes/structures/core_device.glb` | `mesh.structure.core_device` | Core Device | <= 1340 triangles budget; 1 node, depth 1; sockets: none | single | launch |
-| `content/meshes/structures/breach_charge.glb` | `mesh.structure.breach_charge` | Breach Charge | <= 286 triangles budget; 1 node, depth 1; sockets: none | single | launch |
-| `content/meshes/structures/launch_vessel.glb` | `mesh.structure.launch_vessel` | Launch Vessel | <= 4992 triangles budget; 1 node, depth 1; sockets: fuel_point, thruster, window_01, window_02, window_03 | single | launch |
-| `content/meshes/structures/fuel_pump_housing.glb` | `mesh.structure.fuel_pump_housing` | fuel pump housing | <= 252 triangles budget; 1 node, depth 1; sockets: fuel_point | single | launch |
-| `content/meshes/structures/fuel_pump_arm.glb` | `mesh.structure.fuel_pump_arm` | fuel pump moving arm | <= 126 triangles budget; 1 node, depth 1; sockets: arm_tip | single | launch |
-| `content/meshes/structures/fuel_line_foot.glb` | `mesh.structure.fuel_line_foot` | fuel line foot | <= 96 triangles budget; 2 nodes, depth 1; sockets: fuel_point | single | launch |
-| `content/meshes/structures/fuel_line_span.glb` | `mesh.structure.fuel_line_span` | fuel line span between feet | <= 72 triangles budget; 1 node, depth 1; sockets: none | single | launch |
-| `content/meshes/structures/fuel_depot.glb` | `mesh.structure.fuel_depot` | fuel depot | <= 344 triangles budget; 4 nodes, depth 1; sockets: entrance, fuel_point | single | launch |
-| `content/meshes/structures/solar_array.glb` | `mesh.structure.solar_array` | Solar Array | <= 648 triangles budget; 5 nodes, depth 1; sockets: glow_01, glow_02, glow_03, glow_04, grid_link, port_01, port_02, port_03, port_04, port_05, status_01, status_02, status_03, status_04, status_05 | single | launch |
-| `content/meshes/structures/grid_pylon.glb` | `mesh.structure.grid_pylon` | grid pylon (also the grid terminal and the grid splitter) | <= 96 triangles budget; 3 nodes, depth 1; sockets: grid_link, light_01 | single | launch |
-| `content/meshes/structures/beam_dish.glb` | `mesh.structure.beam_dish` | Beam Dish with a rotating dish node | <= 248 triangles budget; 6 nodes, depth 3; sockets: beam_focus (on node dish), gate_entrance (on node door), light_01 (on node upper_mount), light_02 (on node column) | single | launch |
-| `content/meshes/structures/barrier_emitter.glb` | `mesh.structure.barrier_emitter` | Barrier Emitter post | <= 54 triangles budget; 2 nodes, depth 1; sockets: field_anchor_01, field_anchor_02, light_01 | single | skirmish-first-playable |
+| `content/meshes/units/worker_figure.glb` | `mesh.unit.worker_figure` | Worker 3-D figure (team-tinted mesh with a flag socket) | <= 100 triangles budget; 1 node, depth 1; sockets: flag | single | launch |
+| `content/meshes/units/leader_figure.glb` | `mesh.unit.leader_figure` | Leader figure carrying its banner | <= 100 triangles budget; 1 node, depth 1; sockets: flag | single | skirmish-first-playable |
+| `content/meshes/units/trooper_figure.glb` | `mesh.unit.trooper_figure` | Trooper figure | <= 3000 triangles budget; 2 nodes, depth 1; sockets: casing_eject, eye_01, eye_02, muzzle | single | skirmish-first-playable |
+| `content/meshes/units/builder_body.glb` | `mesh.unit.builder_body` | Builder body | <= 100 triangles budget; 1 node, depth 1; sockets: none | single | launch |
+| `content/meshes/units/transport_hull.glb` | `mesh.unit.transport_hull` | Transport hull | <= 100 triangles budget; 3 nodes, depth 2; sockets: entrance, flag | single | skirmish-first-playable |
+| `content/meshes/units/collector_body.glb` | `mesh.unit.collector_body` | Collector body | <= 3000 triangles budget; 1 node, depth 1; sockets: engine_01, engine_02, engine_03, engine_04 | single | launch |
+| `content/meshes/units/bomber_body.glb` | `mesh.unit.bomber_body` | Bomber flying the airstrike | <= 100 triangles budget; 1 node, depth 1; sockets: none | single | skirmish-first-playable |
+| `content/meshes/projectiles/thrown_weapon.glb` | `mesh.projectile.thrown_weapon` | Thrown weapon: grenade, the Bomber's bombs and rockets | <= 300 triangles budget; 1 node, depth 1; sockets: none | single | skirmish-first-playable |
+| `content/meshes/projectiles/turret_round.glb` | `mesh.projectile.turret_round` | Turret round | <= 100 triangles budget; 1 node, depth 1; sockets: none | single | skirmish-first-playable |
+| `content/meshes/projectiles/shell_casing.glb` | `mesh.projectile.shell_casing` | Ejected shell casing | <= 300 triangles budget; 1 node, depth 1; sockets: none | single | skirmish-first-playable |
+| `content/meshes/projectiles/meteor_rock.glb` | `mesh.projectile.meteor_rock` | Meteor of the meteor shower | <= 300 triangles budget; 1 node, depth 1; sockets: none | single | launch |
+| `content/meshes/creatures/ant_body_01.glb` | `mesh.creature.ant_body` | ant body, three variants chosen per ant | <= 100 triangles budget; 1 node, depth 1; sockets: carry | 1 of 3 | launch |
+| `content/meshes/creatures/ant_body_02.glb` | `mesh.creature.ant_body` | ″ | <= 100 triangles budget; 1 node, depth 1; sockets: carry | 2 of 3 | launch |
+| `content/meshes/creatures/ant_body_03.glb` | `mesh.creature.ant_body` | ″ | <= 100 triangles budget; 1 node, depth 1; sockets: carry | 3 of 3 | launch |
+| `content/meshes/creatures/centipede_segment.glb` | `mesh.creature.centipede_segment` | centipede body segment | <= 100 triangles budget; 2 nodes, depth 1; sockets: none | single | launch |
+| `content/meshes/creatures/centipede_head_segment.glb` | `mesh.creature.centipede_head_segment` | centipede head segment | <= 100 triangles budget; 4 nodes, depth 1; sockets: none | single | launch |
+| `content/meshes/creatures/spider_body.glb` | `mesh.creature.spider_body` | spider body with eight leg sockets | <= 300 triangles budget; 1 node, depth 1; sockets: egg_lay, leg_01, leg_02, leg_03, leg_04, leg_05, leg_06, leg_07, leg_08 | single | launch |
+| `content/meshes/creatures/spider_thigh.glb` | `mesh.creature.spider_thigh` | spider upper leg part (procedural leg) | <= 100 triangles budget; 1 node, depth 1; sockets: segment_end | single | launch |
+| `content/meshes/creatures/spider_shin.glb` | `mesh.creature.spider_shin` | spider lower leg part (procedural leg) | <= 100 triangles budget; 1 node, depth 1; sockets: segment_end | single | launch |
+| `content/meshes/creatures/reaper_serpent_head.glb` | `mesh.creature.reaper_serpent_head` | Reaper Serpent head | <= 100 triangles budget; 1 node, depth 1; sockets: tail | single | launch |
+| `content/meshes/creatures/reaper_serpent_tail.glb` | `mesh.creature.reaper_serpent_tail` | Reaper Serpent tail segment | <= 100 triangles budget; 2 nodes, depth 1; sockets: none | single | launch |
+| `content/meshes/creatures/brood_drifter_body.glb` | `mesh.creature.brood_drifter_body` | Brood Drifter body | <= 100 triangles budget; 1 node, depth 1; sockets: egg_spawn, tail_01, tail_02, tail_03, tail_04 | single | launch |
+| `content/meshes/creatures/abductor_hull.glb` | `mesh.creature.abductor_hull` | Abductor hull (also placed by maps as scenery) | <= 10000 triangles budget; 2 nodes, depth 1; sockets: engine_01, engine_02, engine_03, engine_04 | single | launch |
+| `content/meshes/creatures/seed_pod.glb` | `mesh.creature.seed_pod` | Seed Pod (also the Spitter Plant's pod) | <= 300 triangles budget; 1 node, depth 1; sockets: none | single | launch |
+| `content/meshes/structures/spitter_plant_head.glb` | `mesh.structure.spitter_plant_head` | Spitter Plant head | <= 1000 triangles budget; 1 node, depth 1; sockets: launch_point, stem | single | launch |
+| `content/meshes/structures/hive_mound.glb` | `mesh.structure.hive_mound` | Hive mound (also the placement-cursor preview) | <= 1000 triangles budget; 2 nodes, depth 1; sockets: none | single | launch |
+| `content/meshes/structures/spawn_node.glb` | `mesh.structure.spawn_node` | Spawn Node (the match variant) | <= 300 triangles budget; 1 node, depth 1; sockets: door, essence_link, light_01, light_02, light_03, port_01, port_02, port_03, port_04, port_05 | single | skirmish-first-playable |
+| `content/meshes/structures/spawn_node_alt.glb` | `mesh.structure.spawn_node_alt` | Spawn Node alternative body (second constructor branch) | <= 300 triangles budget; 1 node, depth 1; sockets: door, essence_link, light_01, light_02, light_03, port_01, port_02, port_03, port_04, port_05 | single | post-launch |
+| `content/meshes/structures/source_node.glb` | `mesh.structure.source_node` | Source Node | <= 300 triangles budget; 1 node, depth 1; sockets: essence_link | single | launch |
+| `content/meshes/structures/relay_mast.glb` | `mesh.structure.relay_mast` | Relay | <= 300 triangles budget; 2 nodes, depth 1; sockets: essence_link | single | skirmish-first-playable |
+| `content/meshes/structures/transit_gate.glb` | `mesh.structure.transit_gate` | Transit Gate (the match variant) | <= 300 triangles budget; 1 node, depth 1; sockets: gate_exit_01, gate_exit_02, gate_surface | single | skirmish-first-playable |
+| `content/meshes/structures/transit_gate_alt.glb` | `mesh.structure.transit_gate_alt` | Transit Gate alternative body (second constructor branch) | <= 300 triangles budget; 6 nodes, depth 1; sockets: gate_exit_01, gate_exit_02, gate_surface, light_01, light_02 | single | post-launch |
+| `content/meshes/structures/command_console.glb` | `mesh.structure.command_console` | Command Console | <= 1000 triangles budget; 1 node, depth 1; sockets: port_01, port_02, port_03, port_04, port_05 | single | launch |
+| `content/meshes/structures/command_console_linked.glb` | `mesh.structure.command_console_linked` | Command Console linked to a Core Device (with dish-direction socket) | <= 1000 triangles budget; 2 nodes, depth 1; sockets: dish_direction, port_01, port_02, port_03 | single | launch |
+| `content/meshes/structures/core_device.glb` | `mesh.structure.core_device` | Core Device | <= 3000 triangles budget; 1 node, depth 1; sockets: none | single | launch |
+| `content/meshes/structures/breach_charge.glb` | `mesh.structure.breach_charge` | Breach Charge | <= 300 triangles budget; 1 node, depth 1; sockets: none | single | launch |
+| `content/meshes/structures/launch_vessel.glb` | `mesh.structure.launch_vessel` | Launch Vessel | <= 10000 triangles budget; 1 node, depth 1; sockets: fuel_point, thruster, window_01, window_02, window_03 | single | launch |
+| `content/meshes/structures/fuel_pump_housing.glb` | `mesh.structure.fuel_pump_housing` | fuel pump housing | <= 300 triangles budget; 1 node, depth 1; sockets: fuel_point | single | launch |
+| `content/meshes/structures/fuel_pump_arm.glb` | `mesh.structure.fuel_pump_arm` | fuel pump moving arm | <= 300 triangles budget; 1 node, depth 1; sockets: arm_tip | single | launch |
+| `content/meshes/structures/fuel_line_foot.glb` | `mesh.structure.fuel_line_foot` | fuel line foot | <= 100 triangles budget; 2 nodes, depth 1; sockets: fuel_point | single | launch |
+| `content/meshes/structures/fuel_line_span.glb` | `mesh.structure.fuel_line_span` | fuel line span between feet | <= 100 triangles budget; 1 node, depth 1; sockets: none | single | launch |
+| `content/meshes/structures/fuel_depot.glb` | `mesh.structure.fuel_depot` | fuel depot | <= 1000 triangles budget; 4 nodes, depth 1; sockets: entrance, fuel_point | single | launch |
+| `content/meshes/structures/solar_array.glb` | `mesh.structure.solar_array` | Solar Array | <= 1000 triangles budget; 5 nodes, depth 1; sockets: glow_01, glow_02, glow_03, glow_04, grid_link, port_01, port_02, port_03, port_04, port_05, status_01, status_02, status_03, status_04, status_05 | single | launch |
+| `content/meshes/structures/grid_pylon.glb` | `mesh.structure.grid_pylon` | grid pylon (also the grid terminal and the grid splitter) | <= 100 triangles budget; 3 nodes, depth 1; sockets: grid_link, light_01 | single | launch |
+| `content/meshes/structures/beam_dish.glb` | `mesh.structure.beam_dish` | Beam Dish with a rotating dish node | <= 300 triangles budget; 6 nodes, depth 3; sockets: beam_focus (on node dish), gate_entrance (on node door), light_01 (on node upper_mount), light_02 (on node column) | single | launch |
+| `content/meshes/structures/barrier_emitter.glb` | `mesh.structure.barrier_emitter` | Barrier Emitter post | <= 100 triangles budget; 2 nodes, depth 1; sockets: field_anchor_01, field_anchor_02, light_01 | single | skirmish-first-playable |
 | `content/meshes/structures/turret_mount.glb` | `mesh.structure.turret_mount` | turret mount: socket carrier only (manning ports and status lights), no geometry | no triangles budget; 0 nodes, depth 0; sockets: port_01, port_02, port_03, port_04, status_01, status_02, status_03, status_04 | single | skirmish-first-playable |
-| `content/meshes/structures/turret_head.glb` | `mesh.structure.turret_head` | turret head (also the placement-cursor preview) | <= 114 triangles budget; 2 nodes, depth 1; sockets: barrel_mount, kill_counter | single | skirmish-first-playable |
-| `content/meshes/structures/turret_barrel_gun.glb` | `mesh.structure.turret_barrel` | turret barrel set per turret type, in member order: gun barrel (gun and mortar turrets), rocket barrel (rocket turret), flame barrel (flame turret), cannon barrel (Convert Turret) | <= 752 triangles budget; 20 nodes, depth 1; sockets: casing_eject_01, casing_eject_02, casing_eject_03, casing_eject_04, muzzle_01, muzzle_02, muzzle_03, muzzle_04 | 1 of 4 | skirmish-first-playable |
-| `content/meshes/structures/turret_barrel_rocket.glb` | `mesh.structure.turret_barrel` | ″ | <= 1528 triangles budget; 8 nodes, depth 1; sockets: muzzle_01, muzzle_02, muzzle_03, muzzle_04 | 2 of 4 | launch |
-| `content/meshes/structures/turret_barrel_flame.glb` | `mesh.structure.turret_barrel` | ″ | <= 1344 triangles budget; 20 nodes, depth 1; sockets: muzzle_01, muzzle_02, muzzle_03, muzzle_04 | 3 of 4 | launch |
-| `content/meshes/structures/turret_barrel_cannon.glb` | `mesh.structure.turret_barrel` | ″ | <= 80 triangles budget; 4 nodes, depth 1; sockets: muzzle_01, muzzle_02, muzzle_03, muzzle_04 | 4 of 4 | launch |
-| `content/meshes/structures/wall_section.glb` | `mesh.structure.wall_section` | wall section | <= 332 triangles budget; 3 nodes, depth 1; sockets: none | single | skirmish-first-playable |
-| `content/meshes/structures/supply_crate.glb` | `mesh.structure.supply_crate` | Supply crate body | <= 784 triangles budget; 1 node, depth 1; sockets: grab_01, grab_02 | single | skirmish-first-playable |
-| `content/meshes/structures/bot_nav_node.glb` | `mesh.structure.bot_nav_node` | bot navigation node marker, drawn and picked in the map editor only | <= 84 triangles budget; 2 nodes, depth 1; sockets: light_01 | single | post-launch |
-| `content/meshes/structures/structure_default.glb` | `mesh.structure.structure_default` | Port pad: the pad mesh drawn under every port, whose `status` socket places the port's status star (R-BLDG-017, RND-168); also the fallback body drawn when a structure's mesh is missing (RND-163) | <= 264 triangles budget; 3 nodes, depth 1; sockets: status | single | skirmish-first-playable |
-| `content/meshes/relics/relic_01.glb` | `mesh.relic.variant` | Relic, eight interchangeable variants | <= 4244 triangles budget; 3 nodes, depth 1; sockets: none | 1 of 8 | launch |
-| `content/meshes/relics/relic_02.glb` | `mesh.relic.variant` | ″ | <= 9768 triangles budget; 6 nodes, depth 1; sockets: none | 2 of 8 | launch |
-| `content/meshes/relics/relic_03.glb` | `mesh.relic.variant` | ″ | <= 24366 triangles budget; 5 nodes, depth 1; sockets: none | 3 of 8 | launch |
-| `content/meshes/relics/relic_04.glb` | `mesh.relic.variant` | ″ | <= 3872 triangles budget; 2 nodes, depth 1; sockets: none | 4 of 8 | launch |
-| `content/meshes/relics/relic_05.glb` | `mesh.relic.variant` | ″ | <= 3252 triangles budget; 2 nodes, depth 1; sockets: none | 5 of 8 | launch |
-| `content/meshes/relics/relic_06.glb` | `mesh.relic.variant` | ″ | <= 4740 triangles budget; 5 nodes, depth 1; sockets: none | 6 of 8 | launch |
-| `content/meshes/relics/relic_07.glb` | `mesh.relic.variant` | ″ | <= 2136 triangles budget; 7 nodes, depth 1; sockets: none | 7 of 8 | launch |
-| `content/meshes/relics/relic_08.glb` | `mesh.relic.variant` | ″ | <= 3816 triangles budget; 4 nodes, depth 1; sockets: none | 8 of 8 | launch |
-| `content/meshes/scenery/scenery_prop_01.glb` | `mesh.scenery.prop` | map scenery mesh, seven pieces placed by maps | <= 36 triangles budget; 3 nodes, depth 1; sockets: none | 1 of 7 | launch |
-| `content/meshes/scenery/scenery_prop_02.glb` | `mesh.scenery.prop` | ″ | <= 1912 triangles budget; 19 nodes, depth 1; sockets: none | 2 of 7 | launch |
-| `content/meshes/scenery/scenery_prop_03.glb` | `mesh.scenery.prop` | ″ | <= 540 triangles budget; 1 node, depth 1; sockets: none | 3 of 7 | launch |
-| `content/meshes/scenery/scenery_prop_04.glb` | `mesh.scenery.prop` | ″ | <= 1036 triangles budget; 2 nodes, depth 1; sockets: none | 4 of 7 | launch |
-| `content/meshes/scenery/scenery_prop_05.glb` | `mesh.scenery.prop` | ″ | <= 128 triangles budget; 1 node, depth 1; sockets: none | 5 of 7 | launch |
-| `content/meshes/scenery/scenery_prop_06.glb` | `mesh.scenery.prop` | ″ | <= 236 triangles budget; 2 nodes, depth 1; sockets: none | 6 of 7 | launch |
-| `content/meshes/scenery/scenery_prop_07.glb` | `mesh.scenery.prop` | ″ | <= 128 triangles budget; 1 node, depth 1; sockets: none | 7 of 7 | launch |
+| `content/meshes/structures/turret_head.glb` | `mesh.structure.turret_head` | turret head (also the placement-cursor preview) | <= 300 triangles budget; 2 nodes, depth 1; sockets: barrel_mount, kill_counter | single | skirmish-first-playable |
+| `content/meshes/structures/turret_barrel_gun.glb` | `mesh.structure.turret_barrel` | turret barrel set per turret type, in member order: gun barrel (gun and mortar turrets), rocket barrel (rocket turret), flame barrel (flame turret), cannon barrel (Convert Turret) | <= 1000 triangles budget; 20 nodes, depth 1; sockets: casing_eject_01, casing_eject_02, casing_eject_03, casing_eject_04, muzzle_01, muzzle_02, muzzle_03, muzzle_04 | 1 of 4 | skirmish-first-playable |
+| `content/meshes/structures/turret_barrel_rocket.glb` | `mesh.structure.turret_barrel` | ″ | <= 3000 triangles budget; 8 nodes, depth 1; sockets: muzzle_01, muzzle_02, muzzle_03, muzzle_04 | 2 of 4 | launch |
+| `content/meshes/structures/turret_barrel_flame.glb` | `mesh.structure.turret_barrel` | ″ | <= 3000 triangles budget; 20 nodes, depth 1; sockets: muzzle_01, muzzle_02, muzzle_03, muzzle_04 | 3 of 4 | launch |
+| `content/meshes/structures/turret_barrel_cannon.glb` | `mesh.structure.turret_barrel` | ″ | <= 100 triangles budget; 4 nodes, depth 1; sockets: muzzle_01, muzzle_02, muzzle_03, muzzle_04 | 4 of 4 | launch |
+| `content/meshes/structures/wall_section.glb` | `mesh.structure.wall_section` | wall section | <= 1000 triangles budget; 3 nodes, depth 1; sockets: none | single | skirmish-first-playable |
+| `content/meshes/structures/supply_crate.glb` | `mesh.structure.supply_crate` | Supply crate body | <= 1000 triangles budget; 1 node, depth 1; sockets: grab_01, grab_02 | single | skirmish-first-playable |
+| `content/meshes/structures/bot_nav_node.glb` | `mesh.structure.bot_nav_node` | bot navigation node marker, drawn and picked in the map editor only | <= 100 triangles budget; 2 nodes, depth 1; sockets: light_01 | single | post-launch |
+| `content/meshes/structures/structure_default.glb` | `mesh.structure.structure_default` | Port pad: the pad mesh drawn under every port, whose `status` socket places the port's status star (R-BLDG-017, RND-168); also the fallback body drawn when a structure's mesh is missing (RND-163) | <= 300 triangles budget; 3 nodes, depth 1; sockets: status | single | skirmish-first-playable |
+| `content/meshes/relics/relic_01.glb` | `mesh.relic.variant` | Relic, eight interchangeable variants | <= 10000 triangles budget; 3 nodes, depth 1; sockets: none | 1 of 8 | launch |
+| `content/meshes/relics/relic_02.glb` | `mesh.relic.variant` | ″ | <= 10000 triangles budget; 6 nodes, depth 1; sockets: none | 2 of 8 | launch |
+| `content/meshes/relics/relic_03.glb` | `mesh.relic.variant` | ″ | <= 25000 triangles budget; 5 nodes, depth 1; sockets: none | 3 of 8 | launch |
+| `content/meshes/relics/relic_04.glb` | `mesh.relic.variant` | ″ | <= 10000 triangles budget; 2 nodes, depth 1; sockets: none | 4 of 8 | launch |
+| `content/meshes/relics/relic_05.glb` | `mesh.relic.variant` | ″ | <= 10000 triangles budget; 2 nodes, depth 1; sockets: none | 5 of 8 | launch |
+| `content/meshes/relics/relic_06.glb` | `mesh.relic.variant` | ″ | <= 10000 triangles budget; 5 nodes, depth 1; sockets: none | 6 of 8 | launch |
+| `content/meshes/relics/relic_07.glb` | `mesh.relic.variant` | ″ | <= 3000 triangles budget; 7 nodes, depth 1; sockets: none | 7 of 8 | launch |
+| `content/meshes/relics/relic_08.glb` | `mesh.relic.variant` | ″ | <= 10000 triangles budget; 4 nodes, depth 1; sockets: none | 8 of 8 | launch |
+| `content/meshes/scenery/scenery_prop_01.glb` | `mesh.scenery.prop` | map scenery mesh, seven pieces placed by maps | <= 100 triangles budget; 3 nodes, depth 1; sockets: none | 1 of 7 | launch |
+| `content/meshes/scenery/scenery_prop_02.glb` | `mesh.scenery.prop` | ″ | <= 3000 triangles budget; 19 nodes, depth 1; sockets: none | 2 of 7 | launch |
+| `content/meshes/scenery/scenery_prop_03.glb` | `mesh.scenery.prop` | ″ | <= 1000 triangles budget; 1 node, depth 1; sockets: none | 3 of 7 | launch |
+| `content/meshes/scenery/scenery_prop_04.glb` | `mesh.scenery.prop` | ″ | <= 3000 triangles budget; 2 nodes, depth 1; sockets: none | 4 of 7 | launch |
+| `content/meshes/scenery/scenery_prop_05.glb` | `mesh.scenery.prop` | ″ | <= 300 triangles budget; 1 node, depth 1; sockets: none | 5 of 7 | launch |
+| `content/meshes/scenery/scenery_prop_06.glb` | `mesh.scenery.prop` | ″ | <= 300 triangles budget; 2 nodes, depth 1; sockets: none | 6 of 7 | launch |
+| `content/meshes/scenery/scenery_prop_07.glb` | `mesh.scenery.prop` | ″ | <= 300 triangles budget; 1 node, depth 1; sockets: none | 7 of 7 | launch |
 | `content/meshes/dev/camera_view.glb` | `mesh.dev.camera_view` | Camera-view marker that the map editor draws at each camera view and uses for picking (R-MAP-322, R-MAP-380); editor builds only | small camera-frustum marker; 1 node; no sockets; few triangles | single | post-launch |
 
 ### 11.1 Collision assets
@@ -498,61 +494,45 @@ Every collidable mesh, that is every mesh that a structure's sphere, mesh or ray
 
 | Species file | Asset id | Role | Spec | Variants | Priority |
 |---|---|---|---|---|---|
-| `content/meshes/collision/spawn_node_collision.glb` | `mesh.collision.spawn_node` | Collision asset of `mesh.structure.spawn_node`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 196 triangles budget | single | skirmish-first-playable |
-| `content/meshes/collision/spawn_node_alt_collision.glb` | `mesh.collision.spawn_node_alt` | Collision asset of `mesh.structure.spawn_node_alt`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 152 triangles budget | single | post-launch |
-| `content/meshes/collision/source_node_collision.glb` | `mesh.collision.source_node` | Collision asset of `mesh.structure.source_node`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 180 triangles budget | single | launch |
-| `content/meshes/collision/relay_mast_collision.glb` | `mesh.collision.relay_mast` | Collision asset of `mesh.structure.relay_mast`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 152 triangles budget | single | skirmish-first-playable |
-| `content/meshes/collision/transit_gate_collision.glb` | `mesh.collision.transit_gate` | Collision asset of `mesh.structure.transit_gate`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 192 triangles budget | single | skirmish-first-playable |
-| `content/meshes/collision/transit_gate_alt_collision.glb` | `mesh.collision.transit_gate_alt` | Collision asset of `mesh.structure.transit_gate_alt`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 292 triangles budget | single | post-launch |
-| `content/meshes/collision/command_console_collision.glb` | `mesh.collision.command_console` | Collision asset of `mesh.structure.command_console`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 308 triangles budget | single | launch |
-| `content/meshes/collision/command_console_linked_collision.glb` | `mesh.collision.command_console_linked` | Collision asset of `mesh.structure.command_console_linked`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 628 triangles budget | single | launch |
-| `content/meshes/collision/core_device_collision.glb` | `mesh.collision.core_device` | Collision asset of `mesh.structure.core_device`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 1340 triangles budget | single | launch |
-| `content/meshes/collision/fuel_pump_housing_collision.glb` | `mesh.collision.fuel_pump_housing` | Collision asset of `mesh.structure.fuel_pump_housing`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 252 triangles budget | single | launch |
-| `content/meshes/collision/fuel_line_foot_collision.glb` | `mesh.collision.fuel_line_foot` | Collision asset of `mesh.structure.fuel_line_foot`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 96 triangles budget | single | launch |
-| `content/meshes/collision/fuel_depot_collision.glb` | `mesh.collision.fuel_depot` | Collision asset of `mesh.structure.fuel_depot`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 344 triangles budget | single | launch |
-| `content/meshes/collision/solar_array_collision.glb` | `mesh.collision.solar_array` | Collision asset of `mesh.structure.solar_array`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 648 triangles budget | single | launch |
-| `content/meshes/collision/grid_pylon_collision.glb` | `mesh.collision.grid_pylon` | Collision asset of `mesh.structure.grid_pylon`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 96 triangles budget | single | launch |
-| `content/meshes/collision/beam_dish_collision.glb` | `mesh.collision.beam_dish` | Collision asset of `mesh.structure.beam_dish`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 248 triangles budget | single | launch |
-| `content/meshes/collision/barrier_emitter_collision.glb` | `mesh.collision.barrier_emitter` | Collision asset of `mesh.structure.barrier_emitter`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 54 triangles budget | single | skirmish-first-playable |
-| `content/meshes/collision/turret_head_collision.glb` | `mesh.collision.turret_head` | Collision asset of `mesh.structure.turret_head`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 114 triangles budget | single | skirmish-first-playable |
-| `content/meshes/collision/turret_barrel_gun_collision.glb` | `mesh.collision.turret_barrel` | Collision asset of `mesh.structure.turret_barrel`, one per member in its order: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 752 triangles budget | 1 of 4 | skirmish-first-playable |
-| `content/meshes/collision/turret_barrel_rocket_collision.glb` | `mesh.collision.turret_barrel` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 1528 triangles budget | 2 of 4 | skirmish-first-playable |
-| `content/meshes/collision/turret_barrel_flame_collision.glb` | `mesh.collision.turret_barrel` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 1344 triangles budget | 3 of 4 | skirmish-first-playable |
-| `content/meshes/collision/turret_barrel_cannon_collision.glb` | `mesh.collision.turret_barrel` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 80 triangles budget | 4 of 4 | skirmish-first-playable |
-| `content/meshes/collision/wall_section_collision.glb` | `mesh.collision.wall_section` | Collision asset of `mesh.structure.wall_section`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 332 triangles budget | single | skirmish-first-playable |
-| `content/meshes/collision/hive_mound_collision.glb` | `mesh.collision.hive_mound` | Collision asset of `mesh.structure.hive_mound`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 396 triangles budget | single | launch |
-| `content/meshes/collision/spitter_plant_head_collision.glb` | `mesh.collision.spitter_plant_head` | Collision asset of `mesh.structure.spitter_plant_head`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 336 triangles budget | single | launch |
-| `content/meshes/collision/scenery_prop_01_collision.glb` | `mesh.collision.scenery_prop` | Collision asset of `mesh.scenery.prop`, one per member in its order: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 36 triangles budget | 1 of 7 | launch |
-| `content/meshes/collision/scenery_prop_02_collision.glb` | `mesh.collision.scenery_prop` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 1912 triangles budget | 2 of 7 | launch |
-| `content/meshes/collision/scenery_prop_03_collision.glb` | `mesh.collision.scenery_prop` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 540 triangles budget | 3 of 7 | launch |
-| `content/meshes/collision/scenery_prop_04_collision.glb` | `mesh.collision.scenery_prop` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 1036 triangles budget | 4 of 7 | launch |
-| `content/meshes/collision/scenery_prop_05_collision.glb` | `mesh.collision.scenery_prop` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 128 triangles budget | 5 of 7 | launch |
-| `content/meshes/collision/scenery_prop_06_collision.glb` | `mesh.collision.scenery_prop` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 236 triangles budget | 6 of 7 | launch |
-| `content/meshes/collision/scenery_prop_07_collision.glb` | `mesh.collision.scenery_prop` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 128 triangles budget | 7 of 7 | launch |
-| `content/meshes/collision/abductor_hull_collision.glb` | `mesh.collision.abductor_hull` | Collision asset of `mesh.creature.abductor_hull` where a map places it as a scenery mesh: the hit geometry that the sphere, mesh and ray tests read (R-BLDG-041, R-BLDG-042, R-BLDG-459, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 9028 triangles budget | single | launch |
+| `content/meshes/collision/spawn_node_collision.glb` | `mesh.collision.spawn_node` | Collision asset of `mesh.structure.spawn_node`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 300 triangles budget | single | skirmish-first-playable |
+| `content/meshes/collision/spawn_node_alt_collision.glb` | `mesh.collision.spawn_node_alt` | Collision asset of `mesh.structure.spawn_node_alt`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 300 triangles budget | single | post-launch |
+| `content/meshes/collision/source_node_collision.glb` | `mesh.collision.source_node` | Collision asset of `mesh.structure.source_node`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 300 triangles budget | single | launch |
+| `content/meshes/collision/relay_mast_collision.glb` | `mesh.collision.relay_mast` | Collision asset of `mesh.structure.relay_mast`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 300 triangles budget | single | skirmish-first-playable |
+| `content/meshes/collision/transit_gate_collision.glb` | `mesh.collision.transit_gate` | Collision asset of `mesh.structure.transit_gate`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 300 triangles budget | single | skirmish-first-playable |
+| `content/meshes/collision/transit_gate_alt_collision.glb` | `mesh.collision.transit_gate_alt` | Collision asset of `mesh.structure.transit_gate_alt`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 300 triangles budget | single | post-launch |
+| `content/meshes/collision/command_console_collision.glb` | `mesh.collision.command_console` | Collision asset of `mesh.structure.command_console`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 1000 triangles budget | single | launch |
+| `content/meshes/collision/command_console_linked_collision.glb` | `mesh.collision.command_console_linked` | Collision asset of `mesh.structure.command_console_linked`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 1000 triangles budget | single | launch |
+| `content/meshes/collision/core_device_collision.glb` | `mesh.collision.core_device` | Collision asset of `mesh.structure.core_device`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 3000 triangles budget | single | launch |
+| `content/meshes/collision/fuel_pump_housing_collision.glb` | `mesh.collision.fuel_pump_housing` | Collision asset of `mesh.structure.fuel_pump_housing`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 300 triangles budget | single | launch |
+| `content/meshes/collision/fuel_line_foot_collision.glb` | `mesh.collision.fuel_line_foot` | Collision asset of `mesh.structure.fuel_line_foot`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 100 triangles budget | single | launch |
+| `content/meshes/collision/fuel_depot_collision.glb` | `mesh.collision.fuel_depot` | Collision asset of `mesh.structure.fuel_depot`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 1000 triangles budget | single | launch |
+| `content/meshes/collision/solar_array_collision.glb` | `mesh.collision.solar_array` | Collision asset of `mesh.structure.solar_array`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 1000 triangles budget | single | launch |
+| `content/meshes/collision/grid_pylon_collision.glb` | `mesh.collision.grid_pylon` | Collision asset of `mesh.structure.grid_pylon`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 100 triangles budget | single | launch |
+| `content/meshes/collision/beam_dish_collision.glb` | `mesh.collision.beam_dish` | Collision asset of `mesh.structure.beam_dish`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 300 triangles budget | single | launch |
+| `content/meshes/collision/barrier_emitter_collision.glb` | `mesh.collision.barrier_emitter` | Collision asset of `mesh.structure.barrier_emitter`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 100 triangles budget | single | skirmish-first-playable |
+| `content/meshes/collision/turret_head_collision.glb` | `mesh.collision.turret_head` | Collision asset of `mesh.structure.turret_head`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 300 triangles budget | single | skirmish-first-playable |
+| `content/meshes/collision/turret_barrel_gun_collision.glb` | `mesh.collision.turret_barrel` | Collision asset of `mesh.structure.turret_barrel`, one per member in its order: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 1000 triangles budget | 1 of 4 | skirmish-first-playable |
+| `content/meshes/collision/turret_barrel_rocket_collision.glb` | `mesh.collision.turret_barrel` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 3000 triangles budget | 2 of 4 | skirmish-first-playable |
+| `content/meshes/collision/turret_barrel_flame_collision.glb` | `mesh.collision.turret_barrel` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 3000 triangles budget | 3 of 4 | skirmish-first-playable |
+| `content/meshes/collision/turret_barrel_cannon_collision.glb` | `mesh.collision.turret_barrel` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 100 triangles budget | 4 of 4 | skirmish-first-playable |
+| `content/meshes/collision/wall_section_collision.glb` | `mesh.collision.wall_section` | Collision asset of `mesh.structure.wall_section`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 1000 triangles budget | single | skirmish-first-playable |
+| `content/meshes/collision/hive_mound_collision.glb` | `mesh.collision.hive_mound` | Collision asset of `mesh.structure.hive_mound`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 1000 triangles budget | single | launch |
+| `content/meshes/collision/spitter_plant_head_collision.glb` | `mesh.collision.spitter_plant_head` | Collision asset of `mesh.structure.spitter_plant_head`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 1000 triangles budget | single | launch |
+| `content/meshes/collision/scenery_prop_01_collision.glb` | `mesh.collision.scenery_prop` | Collision asset of `mesh.scenery.prop`, one per member in its order: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 100 triangles budget | 1 of 7 | launch |
+| `content/meshes/collision/scenery_prop_02_collision.glb` | `mesh.collision.scenery_prop` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 3000 triangles budget | 2 of 7 | launch |
+| `content/meshes/collision/scenery_prop_03_collision.glb` | `mesh.collision.scenery_prop` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 1000 triangles budget | 3 of 7 | launch |
+| `content/meshes/collision/scenery_prop_04_collision.glb` | `mesh.collision.scenery_prop` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 3000 triangles budget | 4 of 7 | launch |
+| `content/meshes/collision/scenery_prop_05_collision.glb` | `mesh.collision.scenery_prop` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 300 triangles budget | 5 of 7 | launch |
+| `content/meshes/collision/scenery_prop_06_collision.glb` | `mesh.collision.scenery_prop` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 300 triangles budget | 6 of 7 | launch |
+| `content/meshes/collision/scenery_prop_07_collision.glb` | `mesh.collision.scenery_prop` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 300 triangles budget | 7 of 7 | launch |
+| `content/meshes/collision/abductor_hull_collision.glb` | `mesh.collision.abductor_hull` | Collision asset of `mesh.creature.abductor_hull` where a map places it as a scenery mesh: the hit geometry that the sphere, mesh and ray tests read (R-BLDG-041, R-BLDG-042, R-BLDG-459, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 10000 triangles budget | single | launch |
 
 ## 12 Help images and explainer animations
 
-Help pictures carry no baked text: labels come from the string table, so one picture serves every language. Explainer animations are one script per mode that moves pictures on a canvas for a fixed loop; the scripts are re-authored in the Species explainer format and reference their pictures by asset id. Choreography (what moves when) is new; canvas size and loop length follow the reference. The explainer panel samples its pictures linearly with mip-maps (R-META-231), so they carry full mip chains. The objective-card hint pictures are hook art: no rule of a reference match draws them (DEC-050, R-TUT-013).
+Help pictures carry no baked text: labels come from the string table, so one picture serves every language. Explainer animations are one script per mode that moves pictures on a canvas for a fixed loop; the scripts are re-authored in the Species explainer format and reference their pictures by asset id. Choreography (what moves when) is new; canvas size and loop length follow the reference. The explainer panel samples its pictures linearly with mip-maps (R-META-231), so they carry full mip chains. The objective cards have no picture assets: they draw nothing in a match, and their pictures are created only if the design phase adopts objective cards (DEC-050, R-TUT-013).
 
 | Species file | Asset id | Role | Formats (source → runtime) | Spec | Variants | Priority | Placeholder |
 |---|---|---|---|---|---|---|---|
-| `content/textures/help/hint_start_here.png` | `help.hint.start_here` | Hint: where the player starts (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
-| `content/textures/help/hint_spawn_nodes.png` | `help.hint.spawn_nodes` | Hint: capturing Spawn Nodes (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
-| `content/textures/help/hint_reinforcements.png` | `help.hint.reinforcements` | Hint: reinforcements (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
-| `content/textures/help/hint_supply_crates.png` | `help.hint.supply_crates` | Hint: Supply crates (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
-| `content/textures/help/hint_zone_control.png` | `help.hint.zone_control` | Hint: holding Control Zones (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
-| `content/textures/help/hint_relic_run_capture.png` | `help.hint.relic_run_capture` | Hint: bringing a Relic home (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
-| `content/textures/help/hint_relic_run_lift.png` | `help.hint.relic_run_lift` | Hint: lifting a Relic (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
-| `content/textures/help/hint_siege_core_device.png` | `help.hint.siege_core_device` | Hint: the Core Device (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
-| `content/textures/help/hint_siege_attack.png` | `help.hint.siege_attack` | Hint: attacking in Siege (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
-| `content/textures/help/hint_siege_defend.png` | `help.hint.siege_defend` | Hint: defending in Siege (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
-| `content/textures/help/hint_siege_spawn_nodes.png` | `help.hint.siege_spawn_nodes` | Hint: Spawn Nodes in Siege (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
-| `content/textures/help/hint_siege_breach_charge.png` | `help.hint.siege_breach_charge` | Hint: the Breach Charge (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
-| `content/textures/help/hint_launch_race_01.png` | `help.hint.launch_race_01` | Hint: fuelling a Launch Vessel (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
-| `content/textures/help/hint_launch_race_02.png` | `help.hint.launch_race_02` | Hint: launching (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
-| `content/textures/help/hint_flag_chain_01.png` | `help.hint.flag_chain_01` | Hint: the flag chain (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
-| `content/textures/help/hint_flag_chain_02.png` | `help.hint.flag_chain_02` | Hint: attacking a flag (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
 | `content/textures/help/hint_camera_controls.png` | `help.hint.camera_controls` | Hint: camera controls, shown during the grace period; text labels come from the string table | PNG RGBA8 → BC7 sRGB, no mips | 304x128 px display size; author at 2x (608x256) | single | launch | diagram card |
 | `content/textures/help/mode_card_spawn_control.png` | `help.mode_card` | Mode card on the mode-select buttons, one per mode | PNG RGB8 → BC7 sRGB, no mips | 300x200 px display size; author at 2x (600x400); Spawn Control | 1 of 6 | skirmish-first-playable | diagram card |
 | `content/textures/help/mode_card_zone_control.png` | `help.mode_card` | ″ | PNG RGB8 → BC7 sRGB, no mips | 300x200 px display size; author at 2x (600x400); Zone Control | 2 of 6 | launch | diagram card |
@@ -615,7 +595,7 @@ Help pictures carry no baked text: labels come from the string table, so one pic
 
 ## 13 Audio by source and event
 
-Sound effects are sample groups named by **source and event**: a group holds the variants one event picks from, and its file count matches the reference group, so the mix keeps the same variety. Behaviour (volume, pitch spread, distance, looping, priority) lives in the sound-event data of [10](../reference/10_audio_design/README.md), not in the files. Where one reference group serves several events, the Species group is named after its main binding and the other bindings are listed; two files are shared by two groups and listed once. Formats: WAV 48 kHz 24-bit → 16-bit PCM resident, or an MS-ADPCM stream, decoded by XAudio2, for every member of a group whose longest member is over 20 s (`aen.residency.stream_threshold`, AEN-072, ADR-025); the resident groups hold about 173 MiB (AEN-304). Placeholder: synthesised tone (voice lines: text-to-speech line).
+Sound effects are sample groups named by **source and event**: a group holds the variants one event picks from, and its file count matches the reference group, so the mix keeps the same variety. Behaviour (volume, pitch spread, distance, looping, priority) lives in the sound-event data of [10](../reference/10_audio_design/README.md), not in the files. Where one reference group serves several events, the Species group is named after its main binding and the other bindings are listed; two files are shared by two groups and listed once. Formats: WAV 48 kHz 24-bit → 16-bit PCM resident, or an MS-ADPCM stream, decoded by XAudio2, for every member of a group whose longest member is over 20 s (`aen.residency.stream_threshold`, AEN-072, ADR-025); the resident groups fit the bank budgets of AEN-243, which the content build measures on the authored, cooked set at every build (AEN-304, ADR-025). A spec's target duration, rounded to a tenth of a second, is a timing target, not a limit. Placeholder: synthesised tone (voice lines: text-to-speech line).
 
 182 (source, event) bindings of the reference fire in a match and play these groups. Of the events that fire with no bound sound in the reference, four gain new groups here by Resolved decisions (the laser-bolt fire, structure-hit and kill groups of DEC-564 and the Trooper grenade throw of DEC-097), the game-over announcement is a UI sound (§14), and the victory and defeat events play the music stings of §16; every other one stays silent and needs no file ([event catalogue](../reference/10_audio_design/event_catalogue.md) R-AUD-141 to R-AUD-143).
 
@@ -623,372 +603,380 @@ Sound effects are sample groups named by **source and event**: a group holds the
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/builder/builder_presence_loop.wav` | `sfx.unit.builder.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 0.78 s | 1 variant | launch |
-| `content/audio/sfx/builder/builder_hurt_{01..09}.wav` (9 files) | `sfx.unit.builder.hurt` | takes damage | — | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 1.36-2.72 s | 9 variants | launch |
-| `content/audio/sfx/builder/builder_die_{01..05}.wav` (5 files) | `sfx.unit.builder.die` | dies | — | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 2.35-3.48 s | 5 variants | launch |
+| `content/audio/sfx/builder/builder_presence_loop.wav` | `sfx.unit.builder.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 0.8 s | 1 variant | launch |
+| `content/audio/sfx/builder/builder_hurt_{01..09}.wav` (9 files) | `sfx.unit.builder.hurt` | takes damage | — | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 1.3-2.8 s | 9 variants | launch |
+| `content/audio/sfx/builder/builder_die_{01..05}.wav` (5 files) | `sfx.unit.builder.die` | dies | — | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 2.3-3.5 s | 5 variants | launch |
 
 ### 13.2 Crawler (47 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/crawler/crawler_attack_{01..08}.wav` (8 files) | `sfx.creature.crawler.attack` | attacks | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.39-0.71 s | 8 variants | launch |
-| `content/audio/sfx/crawler/crawler_hurt_{01..03}.wav` (3 files) | `sfx.creature.crawler.hurt` | takes damage | — | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 0.29-0.72 s | 3 variants | launch |
-| `content/audio/sfx/crawler/crawler_turn_{01..29}.wav` (29 files) | `sfx.creature.crawler.turn` | changes direction | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.06-0.10 s | 29 variants | launch |
-| `content/audio/sfx/crawler/crawler_die_{01..07}.wav` (7 files) | `sfx.creature.crawler.die` | dies | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.24-0.80 s | 7 variants | launch |
+| `content/audio/sfx/crawler/crawler_attack_{01..08}.wav` (8 files) | `sfx.creature.crawler.attack` | attacks | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.3-0.8 s | 8 variants | launch |
+| `content/audio/sfx/crawler/crawler_hurt_{01..03}.wav` (3 files) | `sfx.creature.crawler.hurt` | takes damage | — | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 0.2-0.8 s | 3 variants | launch |
+| `content/audio/sfx/crawler/crawler_turn_{01..29}.wav` (29 files) | `sfx.creature.crawler.turn` | changes direction | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.1 s | 29 variants | launch |
+| `content/audio/sfx/crawler/crawler_die_{01..07}.wav` (7 files) | `sfx.creature.crawler.die` | dies | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.2-0.8 s | 7 variants | launch |
 
 ### 13.3 Trooper (52 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/trooper/trooper_presence_loop_{01..20}.wav` (20 files) | `sfx.unit.trooper.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 0.30-0.95 s | 20 variants | skirmish-first-playable |
-| `content/audio/sfx/trooper/trooper_hurt_{01..04}.wav` (4 files) | `sfx.unit.trooper.hurt` | takes damage | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.31-0.83 s | 4 variants | skirmish-first-playable |
-| `content/audio/sfx/trooper/trooper_weapon_ready.wav` | `sfx.unit.trooper.weapon_ready` | weapon is ready again | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.52 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/trooper/trooper_fire_laser_{01..06}.wav` (6 files) | `sfx.unit.trooper.fire_laser` | fires its laser | `turret.fire_gun` | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.93-1.04 s | 6 variants | skirmish-first-playable |
-| `content/audio/sfx/trooper/trooper_die_{01..05}.wav` (5 files) | `sfx.unit.trooper.die` | dies | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 1.85-2.36 s | 5 variants | skirmish-first-playable |
-| `content/audio/sfx/trooper/trooper_enter_gate_{01..06}.wav` (6 files) | `sfx.unit.trooper.enter_gate` | enters a gate | `leader.enter_gate` | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 0.63-0.68 s | 6 variants | skirmish-first-playable |
-| `content/audio/sfx/trooper/trooper_exit_gate_{01..06}.wav` (6 files) | `sfx.unit.trooper.exit_gate` | leaves a gate | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.63-0.68 s | 6 variants | skirmish-first-playable |
-| `content/audio/sfx/trooper/trooper_throw_grenade_{01..04}.wav` (4 files) | `sfx.unit.trooper.throw_grenade` | the Trooper throws the Strike team grenade (DEC-097) | — | mono, 48 kHz; positional, follows the source; one-shot; about 0.5-1.0 s; variant count proposed (the reference set holds no take for this moment) | 4 variants | skirmish-first-playable |
+| `content/audio/sfx/trooper/trooper_presence_loop_{01..20}.wav` (20 files) | `sfx.unit.trooper.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 0.3-1.0 s | 20 variants | skirmish-first-playable |
+| `content/audio/sfx/trooper/trooper_hurt_{01..04}.wav` (4 files) | `sfx.unit.trooper.hurt` | takes damage | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.3-0.9 s | 4 variants | skirmish-first-playable |
+| `content/audio/sfx/trooper/trooper_weapon_ready.wav` | `sfx.unit.trooper.weapon_ready` | weapon is ready again | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.5 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/trooper/trooper_fire_laser_{01..06}.wav` (6 files) | `sfx.unit.trooper.fire_laser` | fires its laser | `turret.fire_gun` | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.9-1.1 s | 6 variants | skirmish-first-playable |
+| `content/audio/sfx/trooper/trooper_die_{01..05}.wav` (5 files) | `sfx.unit.trooper.die` | dies | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 1.8-2.4 s | 5 variants | skirmish-first-playable |
+| `content/audio/sfx/trooper/trooper_enter_gate_{01..06}.wav` (6 files) | `sfx.unit.trooper.enter_gate` | enters a gate | `leader.enter_gate` | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 0.6-0.7 s | 6 variants | skirmish-first-playable |
+| `content/audio/sfx/trooper/trooper_exit_gate_{01..06}.wav` (6 files) | `sfx.unit.trooper.exit_gate` | leaves a gate | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.6-0.7 s | 6 variants | skirmish-first-playable |
+| `content/audio/sfx/trooper/trooper_throw_grenade_{01..04}.wav` (4 files) | `sfx.unit.trooper.throw_grenade` | the Trooper throws the Strike team grenade (DEC-097) | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.5-1.0 s; variant count proposed (DEC-097) | 4 variants | skirmish-first-playable |
 
 ### 13.4 Brood Drifter (15 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/brood_drifter/brood_drifter_presence_loop_{01..03}.wav` (3 files) | `sfx.creature.brood_drifter.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 4.68-5.63 s | 3 variants | launch |
-| `content/audio/sfx/brood_drifter/brood_drifter_hurt_{01..06}.wav` (6 files) | `sfx.creature.brood_drifter.hurt` | takes damage | `spitter_plant.damaged` | mono, 48 kHz; positional, follows the source; one-shot; reference duration 2.36-4.70 s | 6 variants | launch |
-| `content/audio/sfx/brood_drifter/brood_drifter_die_{01..06}.wav` (6 files) | `sfx.creature.brood_drifter.die` | dies | — | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 2.50-5.12 s | 6 variants | launch |
+| `content/audio/sfx/brood_drifter/brood_drifter_presence_loop_{01..03}.wav` (3 files) | `sfx.creature.brood_drifter.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 4.6-5.7 s | 3 variants | launch |
+| `content/audio/sfx/brood_drifter/brood_drifter_hurt_{01..06}.wav` (6 files) | `sfx.creature.brood_drifter.hurt` | takes damage | `spitter_plant.damaged` | mono, 48 kHz; positional, follows the source; one-shot; target duration about 2.3-4.7 s | 6 variants | launch |
+| `content/audio/sfx/brood_drifter/brood_drifter_die_{01..06}.wav` (6 files) | `sfx.creature.brood_drifter.die` | dies | — | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 2.5-5.2 s | 6 variants | launch |
 
 ### 13.5 spider (53 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/spider/spider_lay_egg_{01..10}.wav` (10 files) | `sfx.creature.spider.lay_egg` | lays an egg | `brood_drifter.lay_egg` | mono, 48 kHz; positional, follows the source; one-shot; reference duration 1.20-2.64 s | 10 variants | launch |
-| `content/audio/sfx/spider/spider_presence_loop_{01..17}.wav` (17 files) | `sfx.creature.spider.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 0.51-2.25 s | 17 variants | launch |
-| `content/audio/sfx/spider/spider_die_{01..05}.wav` (5 files) | `sfx.creature.spider.die` | dies | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 2.81-3.16 s | 5 variants + 2 shared | launch |
-| `content/audio/sfx/spider/spider_leap_{01..06}.wav` (6 files) | `sfx.creature.spider.pounce` | pounces | `spider.attack` | mono, 48 kHz; positional, follows the source; one-shot; reference duration 3.42-4.39 s | 6 variants | launch |
-| `content/audio/sfx/spider/spider_hurt_{01..02}.wav` (2 files) | `sfx.creature.spider.hurt` | takes damage | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 2.81-3.15 s | 2 variants | launch |
-| `content/audio/sfx/spider/spider_footstep_{01..13}.wav` (13 files) | `sfx.creature.spider.footstep` | footstep | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.11-0.36 s | 13 variants | launch |
+| `content/audio/sfx/spider/spider_lay_egg_{01..10}.wav` (10 files) | `sfx.creature.spider.lay_egg` | lays an egg | `brood_drifter.lay_egg` | mono, 48 kHz; positional, follows the source; one-shot; target duration about 1.2-2.7 s | 10 variants | launch |
+| `content/audio/sfx/spider/spider_presence_loop_{01..17}.wav` (17 files) | `sfx.creature.spider.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 0.5-2.3 s | 17 variants | launch |
+| `content/audio/sfx/spider/spider_die_{01..05}.wav` (5 files) | `sfx.creature.spider.die` | dies | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 2.8-3.2 s | 5 variants + 2 shared | launch |
+| `content/audio/sfx/spider/spider_leap_{01..06}.wav` (6 files) | `sfx.creature.spider.pounce` | pounces | `spider.attack` | mono, 48 kHz; positional, follows the source; one-shot; target duration about 3.4-4.4 s | 6 variants | launch |
+| `content/audio/sfx/spider/spider_hurt_{01..02}.wav` (2 files) | `sfx.creature.spider.hurt` | takes damage | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 2.8-3.2 s | 2 variants | launch |
+| `content/audio/sfx/spider/spider_footstep_{01..13}.wav` (13 files) | `sfx.creature.spider.footstep` | footstep | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.1-0.4 s | 13 variants | launch |
 
 ### 13.6 centipede (21 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/centipede/centipede_bite_{01..08}.wav` (8 files) | `sfx.creature.centipede.attack` | attacks | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.59-1.37 s | 8 variants | launch |
-| `content/audio/sfx/centipede/centipede_presence_loop_{01..04}.wav` (4 files) | `sfx.creature.centipede.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 2.90-4.27 s | 4 variants | launch |
-| `content/audio/sfx/centipede/centipede_die_{01..04}.wav` (4 files) | `sfx.creature.centipede.die` | dies | `launch_vessel.explode (layer 2)` | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 4.27-5.41 s | 4 variants | launch |
-| `content/audio/sfx/centipede/centipede_hurt_{01..05}.wav` (5 files) | `sfx.creature.centipede.hurt` | takes damage | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.95-1.66 s | 5 variants | launch |
+| `content/audio/sfx/centipede/centipede_bite_{01..08}.wav` (8 files) | `sfx.creature.centipede.attack` | attacks | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.5-1.4 s | 8 variants | launch |
+| `content/audio/sfx/centipede/centipede_presence_loop_{01..04}.wav` (4 files) | `sfx.creature.centipede.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 2.9-4.3 s | 4 variants | launch |
+| `content/audio/sfx/centipede/centipede_die_{01..04}.wav` (4 files) | `sfx.creature.centipede.die` | dies | `launch_vessel.explode (layer 2)` | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 4.2-5.5 s | 4 variants | launch |
+| `content/audio/sfx/centipede/centipede_hurt_{01..05}.wav` (5 files) | `sfx.creature.centipede.hurt` | takes damage | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.9-1.7 s | 5 variants | launch |
 
 ### 13.7 Bomber (2 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/bomber/bomber_drop_bomb.wav` | `sfx.unit.bomber.drop_bomb` | drops a bomb | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 4.00 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/bomber/bomber_presence_loop.wav` | `sfx.unit.bomber.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 3.88 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/bomber/bomber_drop_bomb.wav` | `sfx.unit.bomber.drop_bomb` | drops a bomb | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 4.0 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/bomber/bomber_presence_loop.wav` | `sfx.unit.bomber.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 3.9 s | 1 variant | skirmish-first-playable |
 
 ### 13.8 Worker (194 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/worker/worker_die_{01..08}.wav` (8 files) | `sfx.unit.worker.die` | dies | `leader.die` | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 0.48-1.23 s | 8 variants | skirmish-first-playable |
-| `content/audio/sfx/worker/worker_die_b_{01..12}.wav` (12 files) | `sfx.unit.worker.die_b` | dies (additional layer) | — | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 0.26-1.12 s | 12 variants | skirmish-first-playable |
-| `content/audio/sfx/worker/worker_hurt_{01..18}.wav` (18 files) | `sfx.unit.worker.hurt` | takes damage | `leader.hurt` | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.21-0.83 s | 18 variants | skirmish-first-playable |
-| `content/audio/sfx/worker/worker_spawn_{01..15}.wav` (15 files) | `sfx.unit.worker.spawn` | appears | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.08-0.48 s | 15 variants | skirmish-first-playable |
-| `content/audio/sfx/worker/worker_flee_bark_{01..10}.wav` (10 files) | `sfx.unit.worker.flee_bark` | flees from a threat (voice) | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.41-1.02 s | 10 variants | skirmish-first-playable |
-| `content/audio/sfx/worker/worker_flee_bark_b_{01..26}.wav` (26 files) | `sfx.unit.worker.flee_bark_b` | flees from a threat (voice) (additional layer) | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.30-1.68 s | 26 variants | skirmish-first-playable |
-| `content/audio/sfx/worker/worker_attack_{01..24}.wav` (24 files) | `sfx.unit.worker.attack` | attacks | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.50-1.00 s | 24 variants | skirmish-first-playable |
-| `content/audio/sfx/worker/worker_attack_b_{01..05}.wav` (5 files) | `sfx.unit.worker.attack_b` | attacks (additional layer) | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.73-1.40 s | 5 variants | skirmish-first-playable |
-| `content/audio/sfx/worker/worker_victory_jump_{01..09}.wav` (9 files) | `sfx.unit.worker.victory_jump` | jumps in victory | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 2.45-3.11 s | 9 variants | skirmish-first-playable |
-| `content/audio/sfx/worker/worker_burning_{01..13}.wav` (13 files) | `sfx.unit.worker.burning` | burns | — | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 0.25-4.06 s; members 07 to 13 are silent samples, part of the group's design (R-AUD-066) | 13 variants | skirmish-first-playable |
-| `content/audio/sfx/worker/worker_selected_{01..10}.wav` (10 files) | `sfx.unit.worker.selected` | is selected (voice) | `worker.ordered_by_player` | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.15-0.36 s | 10 variants | skirmish-first-playable |
-| `content/audio/sfx/worker/worker_lift_relic_{01..04}.wav` (4 files) | `sfx.unit.worker.lift_relic` | lifts a Relic | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 3.01-3.01 s | 4 variants | skirmish-first-playable |
-| `content/audio/sfx/worker/worker_attack_bark_{01..37}.wav` (37 files) | `sfx.unit.worker.attack_bark` | charges a threat (voice) | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.40-1.42 s | 37 variants | skirmish-first-playable |
-| `content/audio/sfx/worker/worker_attack_horn_{01..03}.wav` (3 files) | `sfx.unit.worker.attack_horn` | sounds the attack | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 3.07-4.37 s | 3 variants | skirmish-first-playable |
+| `content/audio/sfx/worker/worker_die_{01..08}.wav` (8 files) | `sfx.unit.worker.die` | dies | `leader.die` | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 0.4-1.3 s | 8 variants | skirmish-first-playable |
+| `content/audio/sfx/worker/worker_die_b_{01..12}.wav` (12 files) | `sfx.unit.worker.die_b` | dies (additional layer) | — | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 0.2-1.2 s | 12 variants | skirmish-first-playable |
+| `content/audio/sfx/worker/worker_hurt_{01..18}.wav` (18 files) | `sfx.unit.worker.hurt` | takes damage | `leader.hurt` | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.2-0.9 s | 18 variants | skirmish-first-playable |
+| `content/audio/sfx/worker/worker_spawn_{01..15}.wav` (15 files) | `sfx.unit.worker.spawn` | appears | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.1-0.5 s | 15 variants | skirmish-first-playable |
+| `content/audio/sfx/worker/worker_flee_bark_{01..10}.wav` (10 files) | `sfx.unit.worker.flee_bark` | flees from a threat (voice) | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.4-1.1 s | 10 variants | skirmish-first-playable |
+| `content/audio/sfx/worker/worker_flee_bark_b_{01..26}.wav` (26 files) | `sfx.unit.worker.flee_bark_b` | flees from a threat (voice) (additional layer) | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.3-1.7 s | 26 variants | skirmish-first-playable |
+| `content/audio/sfx/worker/worker_attack_{01..24}.wav` (24 files) | `sfx.unit.worker.attack` | attacks | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.5-1.0 s | 24 variants | skirmish-first-playable |
+| `content/audio/sfx/worker/worker_attack_b_{01..05}.wav` (5 files) | `sfx.unit.worker.attack_b` | attacks (additional layer) | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.7-1.4 s | 5 variants | skirmish-first-playable |
+| `content/audio/sfx/worker/worker_victory_jump_{01..09}.wav` (9 files) | `sfx.unit.worker.victory_jump` | jumps in victory | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 2.4-3.2 s | 9 variants | skirmish-first-playable |
+| `content/audio/sfx/worker/worker_burning_{01..13}.wav` (13 files) | `sfx.unit.worker.burning` | burns | — | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 0.2-4.1 s; members 07 to 13 are silent samples, part of the group's design (R-AUD-066) | 13 variants | skirmish-first-playable |
+| `content/audio/sfx/worker/worker_selected_{01..10}.wav` (10 files) | `sfx.unit.worker.selected` | is selected (voice) | `worker.ordered_by_player` | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.1-0.4 s | 10 variants | skirmish-first-playable |
+| `content/audio/sfx/worker/worker_lift_relic_{01..04}.wav` (4 files) | `sfx.unit.worker.lift_relic` | lifts a Relic | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 3.0 s | 4 variants | skirmish-first-playable |
+| `content/audio/sfx/worker/worker_attack_bark_{01..37}.wav` (37 files) | `sfx.unit.worker.attack_bark` | charges a threat (voice) | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.4-1.5 s | 37 variants | skirmish-first-playable |
+| `content/audio/sfx/worker/worker_attack_horn_{01..03}.wav` (3 files) | `sfx.unit.worker.attack_horn` | sounds the attack | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 3.0-4.4 s | 3 variants | skirmish-first-playable |
 
 ### 13.9 Leader (23 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/leader/leader_spawn_{01..06}.wav` (6 files) | `sfx.unit.leader.spawn` | appears | `worker.ordered`, `leader.order_waypoint (layer 2)`, `leader.selected`, `leader.order_formation (layer 2)` | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.27-0.53 s | 6 variants | skirmish-first-playable |
-| `content/audio/sfx/leader/leader_order_waypoint_{01..17}.wav` (17 files) | `sfx.unit.leader.order_waypoint` | is given a waypoint order | `leader.order_formation` | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 3.00-3.00 s | 17 variants | skirmish-first-playable |
+| `content/audio/sfx/leader/leader_spawn_{01..06}.wav` (6 files) | `sfx.unit.leader.spawn` | appears | `worker.ordered`, `leader.order_waypoint (layer 2)`, `leader.selected`, `leader.order_formation (layer 2)` | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.2-0.6 s | 6 variants | skirmish-first-playable |
+| `content/audio/sfx/leader/leader_order_waypoint_{01..17}.wav` (17 files) | `sfx.unit.leader.order_waypoint` | is given a waypoint order | `leader.order_formation` | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 3.0 s | 17 variants | skirmish-first-playable |
 
 ### 13.10 ant (27 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/ant/ant_bite_{01..06}.wav` (6 files) | `sfx.creature.ant.attack` | attacks | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.09-0.17 s | 6 variants | launch |
-| `content/audio/sfx/ant/ant_presence_loop_{01..08}.wav` (8 files) | `sfx.creature.ant.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 0.08-0.13 s | 8 variants | launch |
-| `content/audio/sfx/ant/ant_hurt_{01..07}.wav` (7 files) | `sfx.creature.ant.hurt` | takes damage | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.17-0.34 s | 7 variants | launch |
-| `content/audio/sfx/ant/ant_die_{01..06}.wav` (6 files) | `sfx.creature.ant.die` | dies | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.45-0.80 s | 6 variants | launch |
+| `content/audio/sfx/ant/ant_bite_{01..06}.wav` (6 files) | `sfx.creature.ant.attack` | attacks | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.1-0.2 s | 6 variants | launch |
+| `content/audio/sfx/ant/ant_presence_loop_{01..08}.wav` (8 files) | `sfx.creature.ant.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 0.1-0.2 s | 8 variants | launch |
+| `content/audio/sfx/ant/ant_hurt_{01..07}.wav` (7 files) | `sfx.creature.ant.hurt` | takes damage | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.1-0.4 s | 7 variants | launch |
+| `content/audio/sfx/ant/ant_die_{01..06}.wav` (6 files) | `sfx.creature.ant.die` | dies | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.4-0.8 s | 6 variants | launch |
 
 ### 13.11 Transport (30 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/transport/transport_presence_loop.wav` | `sfx.unit.transport.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 17.75 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/transport/transport_spawn_{01..06}.wav` (6 files) | `sfx.unit.transport.spawn` | appears | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 3.01-3.29 s | 6 variants | skirmish-first-playable |
-| `content/audio/sfx/transport/transport_hurt_{01..10}.wav` (10 files) | `sfx.unit.transport.hurt` | takes damage | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 3.11-5.33 s | 10 variants | skirmish-first-playable |
-| `content/audio/sfx/transport/transport_die_{01..09}.wav` (9 files) | `sfx.unit.transport.die` | dies | — | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 3.54-5.33 s | 9 variants | skirmish-first-playable |
-| `content/audio/sfx/transport/transport_ordered_{01..04}.wav` (4 files) | `sfx.unit.transport.ordered` | receives an order | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 4.54-4.88 s | 4 variants | skirmish-first-playable |
+| `content/audio/sfx/transport/transport_presence_loop.wav` | `sfx.unit.transport.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 17.8 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/transport/transport_spawn_{01..06}.wav` (6 files) | `sfx.unit.transport.spawn` | appears | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 3.0-3.3 s | 6 variants | skirmish-first-playable |
+| `content/audio/sfx/transport/transport_hurt_{01..10}.wav` (10 files) | `sfx.unit.transport.hurt` | takes damage | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 3.1-5.4 s | 10 variants | skirmish-first-playable |
+| `content/audio/sfx/transport/transport_die_{01..09}.wav` (9 files) | `sfx.unit.transport.die` | dies | — | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 3.5-5.4 s | 9 variants | skirmish-first-playable |
+| `content/audio/sfx/transport/transport_ordered_{01..04}.wav` (4 files) | `sfx.unit.transport.ordered` | receives an order | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 4.5-4.9 s | 4 variants | skirmish-first-playable |
 
 ### 13.12 Reaper Serpent (47 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/reaper_serpent/reaper_serpent_presence_loop_{01..11}.wav` (11 files) | `sfx.creature.reaper_serpent.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 0.81-2.01 s | 11 variants | launch |
-| `content/audio/sfx/reaper_serpent/reaper_serpent_hurt_{01..10}.wav` (10 files) | `sfx.creature.reaper_serpent.hurt` | takes damage | `reaper_serpent.spawn (layer 2)` | mono, 48 kHz; positional, follows the source; one-shot; reference duration 1.61-3.35 s | 10 variants | launch |
-| `content/audio/sfx/reaper_serpent/reaper_serpent_die_{01..10}.wav` (10 files) | `sfx.creature.reaper_serpent.die` | dies | `seed_pod.die` | mono, 48 kHz; positional, follows the source; one-shot; reference duration 2.29-3.42 s | 10 variants | launch |
-| `content/audio/sfx/reaper_serpent/reaper_serpent_attack_{01..07}.wav` (7 files) | `sfx.creature.reaper_serpent.attack` | attacks | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 1.44-2.11 s | 7 variants | launch |
-| `content/audio/sfx/reaper_serpent/reaper_serpent_enemy_sighted_{01..09}.wav` (9 files) | `sfx.creature.reaper_serpent.enemy_sighted` | sights an enemy | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 1.23-3.04 s | 9 variants | launch |
+| `content/audio/sfx/reaper_serpent/reaper_serpent_presence_loop_{01..11}.wav` (11 files) | `sfx.creature.reaper_serpent.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 0.8-2.1 s | 11 variants | launch |
+| `content/audio/sfx/reaper_serpent/reaper_serpent_hurt_{01..10}.wav` (10 files) | `sfx.creature.reaper_serpent.hurt` | takes damage | `reaper_serpent.spawn (layer 2)` | mono, 48 kHz; positional, follows the source; one-shot; target duration about 1.6-3.4 s | 10 variants | launch |
+| `content/audio/sfx/reaper_serpent/reaper_serpent_die_{01..10}.wav` (10 files) | `sfx.creature.reaper_serpent.die` | dies | `seed_pod.die` | mono, 48 kHz; positional, follows the source; one-shot; target duration about 2.2-3.5 s | 10 variants | launch |
+| `content/audio/sfx/reaper_serpent/reaper_serpent_attack_{01..07}.wav` (7 files) | `sfx.creature.reaper_serpent.attack` | attacks | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 1.4-2.2 s | 7 variants | launch |
+| `content/audio/sfx/reaper_serpent/reaper_serpent_enemy_sighted_{01..09}.wav` (9 files) | `sfx.creature.reaper_serpent.enemy_sighted` | sights an enemy | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 1.2-3.1 s | 9 variants | launch |
 
 ### 13.13 Seed Pod (20 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/seed_pod/seed_pod_spawn_{01..05}.wav` (5 files) | `sfx.creature.seed_pod.spawn` | appears | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.99-1.54 s | 5 variants | launch |
-| `content/audio/sfx/seed_pod/seed_pod_bounce_{01..05}.wav` (5 files) | `sfx.creature.seed_pod.bounce` | bounces | — | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 1.25-1.28 s | 5 variants | launch |
-| `content/audio/sfx/seed_pod/seed_pod_burst_open_{01..10}.wav` (10 files) | `sfx.creature.seed_pod.burst_open` | bursts open | — | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 2.01-2.58 s | 10 variants | launch |
+| `content/audio/sfx/seed_pod/seed_pod_spawn_{01..05}.wav` (5 files) | `sfx.creature.seed_pod.spawn` | appears | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.9-1.6 s | 5 variants | launch |
+| `content/audio/sfx/seed_pod/seed_pod_bounce_{01..05}.wav` (5 files) | `sfx.creature.seed_pod.bounce` | bounces | — | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 1.2-1.3 s | 5 variants | launch |
+| `content/audio/sfx/seed_pod/seed_pod_burst_open_{01..10}.wav` (10 files) | `sfx.creature.seed_pod.burst_open` | bursts open | — | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 2.0-2.6 s | 10 variants | launch |
 
 ### 13.14 Abductor (12 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/abductor/abductor_presence_loop_b.wav` | `sfx.creature.abductor.presence_loop_b` | loop while it exists (additional layer) | `collector.spawn` | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 1.39 s | 1 variant | launch |
-| `content/audio/sfx/abductor/abductor_presence_loop_c.wav` | `sfx.creature.abductor.presence_loop_c` | loop while it exists (additional layer) | `collector.spawn (layer 2)` | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 6.63 s | 1 variant | launch |
-| `content/audio/sfx/abductor/abductor_presence_loop_{01..09}.wav` (9 files) | `sfx.creature.abductor.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 15.14-23.43 s | 9 variants | launch |
-| `content/audio/sfx/abductor/abductor_tractor_beam.wav` | `sfx.creature.abductor.tractor_beam` | tractor beam loop | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 3.99 s | 1 variant | launch |
+| `content/audio/sfx/abductor/abductor_presence_loop_b.wav` | `sfx.creature.abductor.presence_loop_b` | loop while it exists (additional layer) | `collector.spawn` | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 1.4 s | 1 variant | launch |
+| `content/audio/sfx/abductor/abductor_presence_loop_c.wav` | `sfx.creature.abductor.presence_loop_c` | loop while it exists (additional layer) | `collector.spawn (layer 2)` | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 6.6 s | 1 variant | launch |
+| `content/audio/sfx/abductor/abductor_presence_loop_{01..09}.wav` (9 files) | `sfx.creature.abductor.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 15.1-23.5 s | 9 variants | launch |
+| `content/audio/sfx/abductor/abductor_tractor_beam.wav` | `sfx.creature.abductor.tractor_beam` | tractor beam loop | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 4.0 s | 1 variant | launch |
 
 ### 13.15 Collector (7 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/collector/collector_presence_loop.wav` | `sfx.unit.collector.presence_loop` | loop while it exists | `meteor.spawn (layer 2)`, `abductor.spawn (layer 4)` | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 1.40 s | 1 variant | launch |
-| `content/audio/sfx/collector/collector_drop_essence_{01..06}.wav` (6 files) | `sfx.unit.collector.drop_essence` | drops Essence orbs | — | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 1.12-1.59 s | 6 variants | launch |
+| `content/audio/sfx/collector/collector_presence_loop.wav` | `sfx.unit.collector.presence_loop` | loop while it exists | `meteor.spawn (layer 2)`, `abductor.spawn (layer 4)` | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 1.4 s | 1 variant | launch |
+| `content/audio/sfx/collector/collector_drop_essence_{01..06}.wav` (6 files) | `sfx.unit.collector.drop_essence` | drops Essence orbs | — | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 1.1-1.6 s | 6 variants | launch |
 
 ### 13.16 Missile Barrage missile (3 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/barrage_missile/barrage_missile_presence_loop.wav` | `sfx.weapon.barrage_missile.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 3.23 s | 1 variant | launch |
-| `content/audio/sfx/barrage_missile/barrage_missile_explode.wav` | `sfx.weapon.barrage_missile.explode` | explodes | — | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 7.25 s | 1 variant | launch |
-| `content/audio/sfx/barrage_missile/barrage_missile_explode_b.wav` | `sfx.weapon.barrage_missile.explode_b` | explodes (additional layer) | — | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 10.08 s | 1 variant | launch |
+| `content/audio/sfx/barrage_missile/barrage_missile_presence_loop.wav` | `sfx.weapon.barrage_missile.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 3.2 s | 1 variant | launch |
+| `content/audio/sfx/barrage_missile/barrage_missile_explode.wav` | `sfx.weapon.barrage_missile.explode` | explodes | — | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 7.3 s | 1 variant | launch |
+| `content/audio/sfx/barrage_missile/barrage_missile_explode_b.wav` | `sfx.weapon.barrage_missile.explode_b` | explodes (additional layer) | — | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 10.1 s | 1 variant | launch |
 
 ### 13.17 meteor (3 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/meteor/meteor_land.wav` | `sfx.weapon.meteor.land` | lands | — | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 7.25 s | 1 variant | launch |
-| `content/audio/sfx/meteor/meteor_land_b.wav` | `sfx.weapon.meteor.land_b` | lands (additional layer) | — | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 5.79 s | 1 variant | launch |
-| `content/audio/sfx/meteor/meteor_presence_loop.wav` | `sfx.weapon.meteor.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 3.22 s | 1 variant | launch |
+| `content/audio/sfx/meteor/meteor_land.wav` | `sfx.weapon.meteor.land` | lands | — | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 7.3 s | 1 variant | launch |
+| `content/audio/sfx/meteor/meteor_land_b.wav` | `sfx.weapon.meteor.land_b` | lands (additional layer) | — | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 5.8 s | 1 variant | launch |
+| `content/audio/sfx/meteor/meteor_presence_loop.wav` | `sfx.weapon.meteor.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 3.2 s | 1 variant | launch |
 
 ### 13.18 Beam Dish (11 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/beam_dish/beam_dish_rotate_start.wav` | `sfx.building.beam_dish.rotate_start` | starts turning | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 1.50 s | 1 variant | launch |
-| `content/audio/sfx/beam_dish/beam_dish_rotate_start_b.wav` | `sfx.building.beam_dish.rotate_start_b` | starts turning (additional layer) | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 0.68 s | 1 variant | launch |
-| `content/audio/sfx/beam_dish/beam_dish_rotate_stop.wav` | `sfx.building.beam_dish.rotate_stop` | stops turning | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 3.22 s | 1 variant | launch |
-| `content/audio/sfx/beam_dish/beam_dish_link_up_{01..04}.wav` (4 files) | `sfx.building.beam_dish.link_up` | link established | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 0.66-1.75 s | 4 variants | launch |
-| `content/audio/sfx/beam_dish/beam_dish_link_lost_{01..04}.wav` (4 files) | `sfx.building.beam_dish.link_lost` | link lost | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 1.17-1.79 s | 4 variants | launch |
+| `content/audio/sfx/beam_dish/beam_dish_rotate_start.wav` | `sfx.building.beam_dish.rotate_start` | starts turning | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 1.5 s | 1 variant | launch |
+| `content/audio/sfx/beam_dish/beam_dish_rotate_start_b.wav` | `sfx.building.beam_dish.rotate_start_b` | starts turning (additional layer) | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 0.7 s | 1 variant | launch |
+| `content/audio/sfx/beam_dish/beam_dish_rotate_stop.wav` | `sfx.building.beam_dish.rotate_stop` | stops turning | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 3.2 s | 1 variant | launch |
+| `content/audio/sfx/beam_dish/beam_dish_link_up_{01..04}.wav` (4 files) | `sfx.building.beam_dish.link_up` | link established | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 0.6-1.8 s | 4 variants | launch |
+| `content/audio/sfx/beam_dish/beam_dish_link_lost_{01..04}.wav` (4 files) | `sfx.building.beam_dish.link_lost` | link lost | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 1.1-1.8 s | 4 variants | launch |
 
 ### 13.19 Barrier Emitter (23 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/barrier_emitter/barrier_emitter_presence_loop.wav` | `sfx.building.barrier_emitter.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 0.02 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/barrier_emitter/barrier_emitter_spark_{01..06}.wav` (6 files) | `sfx.building.barrier_emitter.spark` | sparks | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.88-1.96 s | 6 variants | skirmish-first-playable |
-| `content/audio/sfx/barrier_emitter/barrier_emitter_damaged_{01..16}.wav` (16 files) | `sfx.building.barrier_emitter.damaged` | is damaged | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.79-2.46 s | 16 variants | skirmish-first-playable |
+| `content/audio/sfx/barrier_emitter/barrier_emitter_presence_loop.wav` | `sfx.building.barrier_emitter.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 0.1 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/barrier_emitter/barrier_emitter_spark_{01..06}.wav` (6 files) | `sfx.building.barrier_emitter.spark` | sparks | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.8-2.0 s | 6 variants | skirmish-first-playable |
+| `content/audio/sfx/barrier_emitter/barrier_emitter_damaged_{01..16}.wav` (16 files) | `sfx.building.barrier_emitter.damaged` | is damaged | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.7-2.5 s | 16 variants | skirmish-first-playable |
 
 ### 13.20 turret (16 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/turret/turret_spawn_{01..06}.wav` (6 files) | `sfx.building.turret.spawn` | appears | — | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 5.13-6.83 s | 6 variants | skirmish-first-playable |
-| `content/audio/sfx/turret/turret_fire_flame_{01..10}.wav` (10 files) | `sfx.building.turret.fire_flame` | fires flame | — | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 0.47-0.99 s | 10 variants | skirmish-first-playable |
+| `content/audio/sfx/turret/turret_spawn_{01..06}.wav` (6 files) | `sfx.building.turret.spawn` | appears | — | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 5.1-6.9 s | 6 variants | skirmish-first-playable |
+| `content/audio/sfx/turret/turret_fire_flame_{01..10}.wav` (10 files) | `sfx.building.turret.fire_flame` | fires flame | — | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 0.4-1.0 s | 10 variants | skirmish-first-playable |
 
 ### 13.21 tree (41 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/tree/tree_ambient_normal_{01..08}.wav` (8 files) | `sfx.building.tree.ambient_normal` | ambient loop | `tree.ambient_essence` | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 8.00-8.00 s | 8 variants | skirmish-first-playable |
-| `content/audio/sfx/tree/tree_burning_{01..15}.wav` (15 files) | `sfx.building.tree.burning` | burns | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 0.44-13.12 s | 15 variants | skirmish-first-playable |
-| `content/audio/sfx/tree/tree_spawn.wav` | `sfx.building.tree.spawn` | appears | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 12.05 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/tree/tree_ambient_blight_{01..17}.wav` (17 files) | `sfx.building.tree.ambient_blight` | Blight Grove ambient loop | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 2.17-6.69 s | 17 variants | skirmish-first-playable |
+| `content/audio/sfx/tree/tree_ambient_normal_{01..08}.wav` (8 files) | `sfx.building.tree.ambient_normal` | ambient loop | `tree.ambient_essence` | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 8.0 s | 8 variants | skirmish-first-playable |
+| `content/audio/sfx/tree/tree_burning_{01..15}.wav` (15 files) | `sfx.building.tree.burning` | burns | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 0.4-13.2 s | 15 variants | skirmish-first-playable |
+| `content/audio/sfx/tree/tree_spawn.wav` | `sfx.building.tree.spawn` | appears | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 12.1 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/tree/tree_ambient_blight_{01..17}.wav` (17 files) | `sfx.building.tree.ambient_blight` | Blight Grove ambient loop | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 2.1-6.7 s | 17 variants | skirmish-first-playable |
 
 ### 13.22 grid pylon (22 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/grid_pylon/grid_pylon_surge_{01..22}.wav` (22 files) | `sfx.building.grid_pylon.surge` | energy surge passes | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.28-0.57 s | 22 variants | launch |
+| `content/audio/sfx/grid_pylon/grid_pylon_surge_{01..22}.wav` (22 files) | `sfx.building.grid_pylon.surge` | energy surge passes | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.2-0.6 s | 22 variants | launch |
 
 ### 13.23 Solar Array (6 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/solar_array/solar_array_surge_{01..05}.wav` (5 files) | `sfx.building.solar_array.surge` | energy surge passes | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.17-1.38 s | 5 variants | launch |
-| `content/audio/sfx/solar_array/solar_array_charging.wav` | `sfx.building.solar_array.charging` | charging loop | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 3.71 s | 1 variant | launch |
+| `content/audio/sfx/solar_array/solar_array_surge_{01..05}.wav` (5 files) | `sfx.building.solar_array.surge` | energy surge passes | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.1-1.4 s | 5 variants | launch |
+| `content/audio/sfx/solar_array/solar_array_charging.wav` | `sfx.building.solar_array.charging` | charging loop | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 3.7 s | 1 variant | launch |
 
 ### 13.24 Hive (10 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/hive/hive_damaged_{01..10}.wav` (10 files) | `sfx.building.hive.damaged` | is damaged | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 2.77-4.48 s | 10 variants | launch |
+| `content/audio/sfx/hive/hive_damaged_{01..10}.wav` (10 files) | `sfx.building.hive.damaged` | is damaged | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 2.7-4.5 s | 10 variants | launch |
 
 ### 13.25 grenade (17 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/grenade/grenade_explode_{01..05}.wav` (5 files) | `sfx.weapon.grenade.explode` | explodes | `hive.explode` | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 3.70-4.08 s | 5 variants | skirmish-first-playable |
-| `content/audio/sfx/grenade/grenade_spawn_{01..05}.wav` (5 files) | `sfx.weapon.grenade.spawn` | appears | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 3.25-3.25 s | 5 variants | skirmish-first-playable |
-| `content/audio/sfx/grenade/grenade_fuse_blink.wav` | `sfx.weapon.grenade.fuse_blink` | fuse blink | `airstrike_bomb.fuse_blink` | mono, 48 kHz; positional, follows the source; one-shot; reference duration 1.00 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/grenade/grenade_bounce_{01..06}.wav` (6 files) | `sfx.weapon.grenade.bounce` | bounces | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.37-0.73 s | 6 variants | skirmish-first-playable |
+| `content/audio/sfx/grenade/grenade_explode_{01..05}.wav` (5 files) | `sfx.weapon.grenade.explode` | explodes | `hive.explode` | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 3.7-4.1 s | 5 variants | skirmish-first-playable |
+| `content/audio/sfx/grenade/grenade_spawn_{01..05}.wav` (5 files) | `sfx.weapon.grenade.spawn` | appears | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 3.3 s | 5 variants | skirmish-first-playable |
+| `content/audio/sfx/grenade/grenade_fuse_blink.wav` | `sfx.weapon.grenade.fuse_blink` | fuse blink | `airstrike_bomb.fuse_blink` | mono, 48 kHz; positional, follows the source; one-shot; target duration about 1.0 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/grenade/grenade_bounce_{01..06}.wav` (6 files) | `sfx.weapon.grenade.bounce` | bounces | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.3-0.8 s | 6 variants | skirmish-first-playable |
 
 ### 13.26 Spitter Plant (3 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/spitter_plant/spitter_plant_burning_{01..03}.wav` (3 files) | `sfx.building.spitter_plant.burning` | burns | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 17.89-17.99 s | 3 variants | launch |
+| `content/audio/sfx/spitter_plant/spitter_plant_burning_{01..03}.wav` (3 files) | `sfx.building.spitter_plant.burning` | burns | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 17.8-18.0 s | 3 variants | launch |
 
 ### 13.27 Spawn Node (2 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/spawn_node/spawn_node_activate.wav` | `sfx.building.spawn_node.activate` | activates | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 9.39 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/spawn_node/spawn_node_deactivate.wav` | `sfx.building.spawn_node.deactivate` | deactivates | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 7.88 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/spawn_node/spawn_node_activate.wav` | `sfx.building.spawn_node.activate` | activates | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 9.4 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/spawn_node/spawn_node_deactivate.wav` | `sfx.building.spawn_node.deactivate` | deactivates | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 7.9 s | 1 variant | skirmish-first-playable |
 
 ### 13.28 fuel pump (10 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/fuel_pump/fuel_pump_pump_up.wav` | `sfx.building.fuel_pump.pump_up` | pump stroke up | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 5.59 s | 1 variant | launch |
-| `content/audio/sfx/fuel_pump/fuel_pump_pump_up_b_{01..05}.wav` (5 files) | `sfx.building.fuel_pump.pump_up_b` | pump stroke up (additional layer) | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 2.19-5.08 s | 5 variants | launch |
-| `content/audio/sfx/fuel_pump/fuel_pump_pump_down.wav` | `sfx.building.fuel_pump.pump_down` | pump stroke down | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 2.89 s | 1 variant | launch |
-| `content/audio/sfx/fuel_pump/fuel_pump_pump_down_b_{01..03}.wav` (3 files) | `sfx.building.fuel_pump.pump_down_b` | pump stroke down (additional layer) | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 2.04-2.97 s | 3 variants | launch |
+| `content/audio/sfx/fuel_pump/fuel_pump_pump_up.wav` | `sfx.building.fuel_pump.pump_up` | pump stroke up | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 5.6 s | 1 variant | launch |
+| `content/audio/sfx/fuel_pump/fuel_pump_pump_up_b_{01..05}.wav` (5 files) | `sfx.building.fuel_pump.pump_up_b` | pump stroke up (additional layer) | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 2.1-5.1 s | 5 variants | launch |
+| `content/audio/sfx/fuel_pump/fuel_pump_pump_down.wav` | `sfx.building.fuel_pump.pump_down` | pump stroke down | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 2.9 s | 1 variant | launch |
+| `content/audio/sfx/fuel_pump/fuel_pump_pump_down_b_{01..03}.wav` (3 files) | `sfx.building.fuel_pump.pump_down_b` | pump stroke down (additional layer) | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 2.0-3.0 s | 3 variants | launch |
 
 ### 13.29 fuel line (1 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/fuel_line/fuel_line_flow.wav` | `sfx.building.fuel_line.flow` | fuel flow loop | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 4.23 s | 1 variant | launch |
+| `content/audio/sfx/fuel_line/fuel_line_flow.wav` | `sfx.building.fuel_line.flow` | fuel flow loop | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 4.2 s | 1 variant | launch |
 
 ### 13.30 fuel depot (5 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/fuel_depot/fuel_depot_load_passenger_{01..05}.wav` (5 files) | `sfx.building.fuel_depot.load_passenger` | loads a passenger | — | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 0.55-0.83 s | 5 variants | launch |
+| `content/audio/sfx/fuel_depot/fuel_depot_load_passenger_{01..05}.wav` (5 files) | `sfx.building.fuel_depot.load_passenger` | loads a passenger | — | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 0.5-0.9 s | 5 variants | launch |
 
 ### 13.31 Launch Vessel (25 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/launch_vessel/launch_vessel_fuelled_{01..05}.wav` (5 files) | `sfx.building.launch_vessel.fuelled` | fuelled loop | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 3.13-3.60 s | 5 variants | launch |
-| `content/audio/sfx/launch_vessel/launch_vessel_fuelled_b.wav` | `sfx.building.launch_vessel.fuelled_b` | fuelled loop (additional layer) | `match_ui.lobby_bed (layer 2)` | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 1.44 s | 1 variant | launch |
-| `content/audio/sfx/launch_vessel/launch_vessel_malfunction.wav` | `sfx.building.launch_vessel.malfunction` | malfunction loop | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 1.22 s | 1 variant | launch |
-| `content/audio/sfx/launch_vessel/launch_vessel_explode.wav` | `sfx.building.launch_vessel.explode` | explodes | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 5.25 s | 1 variant | launch |
-| `content/audio/sfx/launch_vessel/launch_vessel_damaged_{01..02}.wav` (2 files) | `sfx.building.launch_vessel.damaged` | is damaged | — | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 3.78-3.93 s | 2 variants | launch |
-| `content/audio/sfx/launch_vessel/launch_vessel_engine_burn.wav` | `sfx.building.launch_vessel.engine_burn` | engine burn | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 3.27 s | 1 variant | launch |
-| `content/audio/sfx/launch_vessel/launch_vessel_engine_burn_b.wav` | `sfx.building.launch_vessel.engine_burn_b` | engine burn (additional layer) | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.61 s | 1 variant | launch |
-| `content/audio/sfx/launch_vessel/launch_vessel_hungry_{01..07}.wav` (7 files) | `sfx.building.launch_vessel.hungry` | needs fuel loop | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 4.50-7.21 s | 7 variants | launch |
-| `content/audio/sfx/launch_vessel/launch_vessel_flight_{01..06}.wav` (6 files) | `sfx.building.launch_vessel.flight` | launch flight loop | `core_device.spawn` | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 5.80-6.25 s | 6 variants | launch |
+| `content/audio/sfx/launch_vessel/launch_vessel_fuelled_{01..05}.wav` (5 files) | `sfx.building.launch_vessel.fuelled` | fuelled loop | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 3.1-3.6 s | 5 variants | launch |
+| `content/audio/sfx/launch_vessel/launch_vessel_fuelled_b.wav` | `sfx.building.launch_vessel.fuelled_b` | fuelled loop (additional layer) | `match_ui.lobby_bed (layer 2)` | mono, 48 kHz; positional, following the source, as the fuelled layer; 2-D as a layer of the lobby bed; seamless loop; target duration about 1.4 s | 1 variant | launch |
+| `content/audio/sfx/launch_vessel/launch_vessel_malfunction.wav` | `sfx.building.launch_vessel.malfunction` | malfunction loop | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 1.2 s | 1 variant | launch |
+| `content/audio/sfx/launch_vessel/launch_vessel_explode.wav` | `sfx.building.launch_vessel.explode` | explodes | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 5.3 s | 1 variant | launch |
+| `content/audio/sfx/launch_vessel/launch_vessel_damaged_{01..02}.wav` (2 files) | `sfx.building.launch_vessel.damaged` | is damaged | — | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 3.7-4.0 s | 2 variants | launch |
+| `content/audio/sfx/launch_vessel/launch_vessel_engine_burn.wav` | `sfx.building.launch_vessel.engine_burn` | engine burn | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 3.3 s | 1 variant | launch |
+| `content/audio/sfx/launch_vessel/launch_vessel_engine_burn_b.wav` | `sfx.building.launch_vessel.engine_burn_b` | engine burn (additional layer) | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.6 s | 1 variant | launch |
+| `content/audio/sfx/launch_vessel/launch_vessel_hungry_{01..07}.wav` (7 files) | `sfx.building.launch_vessel.hungry` | needs fuel loop | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 4.5-7.3 s | 7 variants | launch |
+| `content/audio/sfx/launch_vessel/launch_vessel_flight_{01..06}.wav` (6 files) | `sfx.building.launch_vessel.flight` | launch flight loop | `core_device.spawn` | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 5.8-6.3 s | 6 variants | launch |
 
 ### 13.32 Control Zone (6 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/control_zone/control_zone_relic_scored.wav` | `sfx.building.control_zone.relic_scored` | a Relic is scored | `relic.owner_changed` | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 1.16 s | 1 variant | launch |
-| `content/audio/sfx/control_zone/control_zone_relic_scored_b.wav` | `sfx.building.control_zone.relic_scored_b` | a Relic is scored (additional layer) | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 4.55 s | 1 variant | launch |
-| `content/audio/sfx/control_zone/control_zone_relic_scored_c.wav` | `sfx.building.control_zone.relic_scored_c` | a Relic is scored (additional layer) | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 2.98 s | 1 variant | launch |
-| `content/audio/sfx/control_zone/control_zone_owner_changed.wav` | `sfx.building.control_zone.owner_changed` | changes owner | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 1.95 s | 1 variant | launch |
-| `content/audio/sfx/control_zone/control_zone_owner_changed_b.wav` | `sfx.building.control_zone.owner_changed_b` | changes owner (additional layer) | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 2.79 s | 1 variant | launch |
-| `content/audio/sfx/control_zone/control_zone_presence_loop.wav` | `sfx.building.control_zone.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 5.35 s | 1 variant | launch |
+| `content/audio/sfx/control_zone/control_zone_relic_scored.wav` | `sfx.building.control_zone.relic_scored` | a Relic is scored | `relic.owner_changed` | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 1.2 s | 1 variant | launch |
+| `content/audio/sfx/control_zone/control_zone_relic_scored_b.wav` | `sfx.building.control_zone.relic_scored_b` | a Relic is scored (additional layer) | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 4.6 s | 1 variant | launch |
+| `content/audio/sfx/control_zone/control_zone_relic_scored_c.wav` | `sfx.building.control_zone.relic_scored_c` | a Relic is scored (additional layer) | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 3.0 s | 1 variant | launch |
+| `content/audio/sfx/control_zone/control_zone_owner_changed.wav` | `sfx.building.control_zone.owner_changed` | changes owner | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 2.0 s | 1 variant | launch |
+| `content/audio/sfx/control_zone/control_zone_owner_changed_b.wav` | `sfx.building.control_zone.owner_changed_b` | changes owner (additional layer) | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 2.8 s | 1 variant | launch |
+| `content/audio/sfx/control_zone/control_zone_presence_loop.wav` | `sfx.building.control_zone.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 5.4 s | 1 variant | launch |
 
 ### 13.33 Command Console (4 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/command_console/command_console_presence_loop_{01..04}.wav` (4 files) | `sfx.building.command_console.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 7.15-7.89 s | 4 variants | launch |
+| `content/audio/sfx/command_console/command_console_presence_loop_{01..04}.wav` (4 files) | `sfx.building.command_console.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 7.1-7.9 s | 4 variants | launch |
 
 ### 13.34 Supply crate (18 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/supply_crate/supply_crate_land.wav` | `sfx.crate.supply_crate.land` | lands | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 4.03 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/supply_crate/supply_crate_capture_begin.wav` | `sfx.crate.supply_crate.capture_begin` | capture starts | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 4.57 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/supply_crate/supply_crate_capture_begin_b.wav` | `sfx.crate.supply_crate.capture_begin_b` | capture starts (additional layer) | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 7.99 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/supply_crate/supply_crate_capture_begin_c.wav` | `sfx.crate.supply_crate.capture_begin_c` | capture starts (additional layer) | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 5.30 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/supply_crate/supply_crate_capture_lost.wav` | `sfx.crate.supply_crate.capture_lost` | capture lost | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 2.52 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/supply_crate/supply_crate_capture_progress_00.wav` | `sfx.crate.supply_crate.capture_progress_00` | capture under way, 0-20 % | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 16.48 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/supply_crate/supply_crate_capture_progress_20.wav` | `sfx.crate.supply_crate.capture_progress_20` | capture under way, 20-40 % | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 11.94 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/supply_crate/supply_crate_capture_progress_40.wav` | `sfx.crate.supply_crate.capture_progress_40` | capture under way, 40-60 % | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 15.41 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/supply_crate/supply_crate_capture_progress_60.wav` | `sfx.crate.supply_crate.capture_progress_60` | capture under way, 60-80 % | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 12.36 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/supply_crate/supply_crate_capture_progress_80.wav` | `sfx.crate.supply_crate.capture_progress_80` | capture under way, 80-100 % | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 14.77 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/supply_crate/supply_crate_captured.wav` | `sfx.crate.supply_crate.captured` | is captured | — | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 3.56 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/supply_crate/supply_crate_falling_{01..07}.wav` (7 files) | `sfx.crate.supply_crate.falling` | falls from the sky | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 12.47-13.26 s | 7 variants | skirmish-first-playable |
+| `content/audio/sfx/supply_crate/supply_crate_land.wav` | `sfx.crate.supply_crate.land` | lands | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 4.0 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/supply_crate/supply_crate_capture_begin.wav` | `sfx.crate.supply_crate.capture_begin` | capture starts | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 4.6 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/supply_crate/supply_crate_capture_begin_b.wav` | `sfx.crate.supply_crate.capture_begin_b` | capture starts (additional layer) | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 8.0 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/supply_crate/supply_crate_capture_begin_c.wav` | `sfx.crate.supply_crate.capture_begin_c` | capture starts (additional layer) | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 5.3 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/supply_crate/supply_crate_capture_lost.wav` | `sfx.crate.supply_crate.capture_lost` | capture lost | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 2.5 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/supply_crate/supply_crate_capture_progress_00.wav` | `sfx.crate.supply_crate.capture_progress_00` | capture under way, 0-20 % | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 16.5 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/supply_crate/supply_crate_capture_progress_20.wav` | `sfx.crate.supply_crate.capture_progress_20` | capture under way, 20-40 % | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 11.9 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/supply_crate/supply_crate_capture_progress_40.wav` | `sfx.crate.supply_crate.capture_progress_40` | capture under way, 40-60 % | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 15.4 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/supply_crate/supply_crate_capture_progress_60.wav` | `sfx.crate.supply_crate.capture_progress_60` | capture under way, 60-80 % | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 12.4 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/supply_crate/supply_crate_capture_progress_80.wav` | `sfx.crate.supply_crate.capture_progress_80` | capture under way, 80-100 % | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 14.8 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/supply_crate/supply_crate_captured.wav` | `sfx.crate.supply_crate.captured` | is captured | — | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 3.6 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/supply_crate/supply_crate_falling_{01..07}.wav` (7 files) | `sfx.crate.supply_crate.falling` | falls from the sky | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 12.4-13.3 s | 7 variants | skirmish-first-playable |
 
 ### 13.35 Relic (3 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/relic/relic_owner_changed.wav` | `sfx.building.relic.owner_changed` | changes owner | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 2.81 s | 1 variant | launch |
-| `content/audio/sfx/relic/relic_drop.wav` | `sfx.building.relic.drop` | is dropped | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 5.91 s | 1 variant | launch |
-| `content/audio/sfx/relic/relic_spawn.wav` | `sfx.building.relic.spawn` | appears | — | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 1.28 s | 1 variant | launch |
+| `content/audio/sfx/relic/relic_owner_changed.wav` | `sfx.building.relic.owner_changed` | changes owner | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 2.8 s | 1 variant | launch |
+| `content/audio/sfx/relic/relic_drop.wav` | `sfx.building.relic.drop` | is dropped | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 5.9 s | 1 variant | launch |
+| `content/audio/sfx/relic/relic_spawn.wav` | `sfx.building.relic.spawn` | appears | — | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 1.3 s | 1 variant | launch |
 
 ### 13.36 laser bolt (64 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/laser_bolt/laser_bolt_hit_bark_{01..36}.wav` (36 files) | `sfx.weapon.laser_bolt.hit_bark` | a unit is hit by a laser bolt (voice of the hit unit) | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.20-0.80 s | 36 variants | skirmish-first-playable |
-| `content/audio/sfx/laser_bolt/laser_bolt_spawn_{01..10}.wav` (10 files) | `sfx.weapon.laser_bolt.spawn` | every laser bolt fired (DEC-564) | — | mono, 48 kHz; positional; one-shot; reference duration 0.23-0.67 s; variant count and durations sized from the unbound reference takes for this moment (R-AUD-142) | 10 variants | skirmish-first-playable |
-| `content/audio/sfx/laser_bolt/laser_bolt_hit_structure_{01..10}.wav` (10 files) | `sfx.weapon.laser_bolt.hit_structure` | a bolt hits a structure (DEC-564) | — | mono, 48 kHz; positional; one-shot; reference duration 0.39-1.10 s; variant count and durations sized from the unbound reference takes for this moment (R-AUD-142) | 10 variants | skirmish-first-playable |
-| `content/audio/sfx/laser_bolt/laser_bolt_kill_{01..08}.wav` (8 files) | `sfx.weapon.laser_bolt.kill` | a laser bolt or a turret round kills an actor (DEC-564) | — | mono, 48 kHz; positional; one-shot; reference duration 0.22-0.75 s; variant count and durations sized from the unbound reference takes for this moment (R-AUD-142) | 8 variants | skirmish-first-playable |
+| `content/audio/sfx/laser_bolt/laser_bolt_hit_bark_{01..36}.wav` (36 files) | `sfx.weapon.laser_bolt.hit_bark` | a unit is hit by a laser bolt (voice of the hit unit) | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.2-0.8 s | 36 variants | skirmish-first-playable |
+| `content/audio/sfx/laser_bolt/laser_bolt_spawn_{01..10}.wav` (10 files) | `sfx.weapon.laser_bolt.spawn` | every laser bolt fired (DEC-564) | — | mono, 48 kHz; positional; one-shot; target duration about 0.2-0.7 s; variant count proposed (DEC-564) | 10 variants | skirmish-first-playable |
+| `content/audio/sfx/laser_bolt/laser_bolt_hit_structure_{01..10}.wav` (10 files) | `sfx.weapon.laser_bolt.hit_structure` | a bolt hits a structure (DEC-564) | — | mono, 48 kHz; positional; one-shot; target duration about 0.3-1.1 s; variant count proposed (DEC-564) | 10 variants | skirmish-first-playable |
+| `content/audio/sfx/laser_bolt/laser_bolt_kill_{01..08}.wav` (8 files) | `sfx.weapon.laser_bolt.kill` | a laser bolt or a turret round kills an actor (DEC-564) | — | mono, 48 kHz; positional; one-shot; target duration about 0.2-0.8 s; variant count proposed (DEC-564) | 8 variants | skirmish-first-playable |
 
 ### 13.37 rocket (6 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/rocket/rocket_explode_{01..04}.wav` (4 files) | `sfx.weapon.rocket.explode` | explodes | — | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 4.33-5.69 s | 4 variants | skirmish-first-playable |
-| `content/audio/sfx/rocket/rocket_presence_loop.wav` | `sfx.weapon.rocket.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; reference duration 0.46 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/rocket/rocket_spawn.wav` | `sfx.weapon.rocket.spawn` | appears | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.83 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/rocket/rocket_explode_{01..04}.wav` (4 files) | `sfx.weapon.rocket.explode` | explodes | — | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 4.3-5.7 s | 4 variants | skirmish-first-playable |
+| `content/audio/sfx/rocket/rocket_presence_loop.wav` | `sfx.weapon.rocket.presence_loop` | loop while it exists | — | mono, 48 kHz; positional, follows the source; seamless loop; target duration about 0.5 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/rocket/rocket_spawn.wav` | `sfx.weapon.rocket.spawn` | appears | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 0.8 s | 1 variant | skirmish-first-playable |
 
 ### 13.38 airstrike bomb (5 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/airstrike_bomb/airstrike_bomb_explode_{01..05}.wav` (5 files) | `sfx.weapon.airstrike_bomb.explode` | explodes | — | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 5.88-6.01 s | 5 variants | skirmish-first-playable |
+| `content/audio/sfx/airstrike_bomb/airstrike_bomb_explode_{01..05}.wav` (5 files) | `sfx.weapon.airstrike_bomb.explode` | explodes | — | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 5.8-6.1 s | 5 variants | skirmish-first-playable |
 
 ### 13.39 Essence orb (1 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/essence_orb/essence_orb_collected.wav` | `sfx.unit.essence_orb.collected` | is collected | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 1.97 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/essence_orb/essence_orb_collected.wav` | `sfx.unit.essence_orb.collected` | is collected | — | mono, 48 kHz; positional, follows the source; one-shot; target duration about 2.0 s | 1 variant | skirmish-first-playable |
 
-### 13.40 Supply-crate outcome stings (25 files)
+### 13.40 Supply-crate outcome stings (31 files)
+
+The 25 stings that a match raises are bound now; the gun-turret sting also plays for the rocket turret and flame turret outcomes, and the airstrike sting for the Firebomb Run. The last six rows are stings of their own for the rocket turret, flame turret, Firebomb Run, Builder, Time Dilation and Time Rush outcomes, which play only if DEC-565 binds them (R-AUD-139).
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/sfx/crate_outcome/outcome_strike_team.wav` | `sfx.crate.outcome.strike_team` | Supply crate yields strike team | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 2.03 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/crate_outcome/outcome_collector.wav` | `sfx.crate.outcome.collector` | Supply crate yields collector | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 5.95 s | 1 variant | launch |
-| `content/audio/sfx/crate_outcome/outcome_transport.wav` | `sfx.crate.outcome.transport` | Supply crate yields transport | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 3.51 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/crate_outcome/outcome_reinforcements.wav` | `sfx.crate.outcome.reinforcements` | Supply crate yields reinforcements | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 6.62 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/crate_outcome/outcome_hive.wav` | `sfx.crate.outcome.hive` | Supply crate yields hive | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 5.21 s | 1 variant | launch |
-| `content/audio/sfx/crate_outcome/outcome_brood.wav` | `sfx.crate.outcome.brood` | Supply crate yields brood | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 3.06 s | 1 variant | launch |
-| `content/audio/sfx/crate_outcome/outcome_airstrike.wav` | `sfx.crate.outcome.airstrike` | Supply crate yields airstrike | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 4.83 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/crate_outcome/outcome_essence_grove.wav` | `sfx.crate.outcome.essence_grove` | Supply crate yields essence grove | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 4.00 s | 1 variant | launch |
-| `content/audio/sfx/crate_outcome/outcome_blight_grove.wav` | `sfx.crate.outcome.blight_grove` | Supply crate yields blight grove | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 5.22 s | 1 variant | launch |
-| `content/audio/sfx/crate_outcome/outcome_supply_storm.wav` | `sfx.crate.outcome.supply_storm` | Supply crate yields supply storm | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 4.16 s | 1 variant | launch |
-| `content/audio/sfx/crate_outcome/outcome_gun_turret.wav` | `sfx.crate.outcome.gun_turret` | Supply crate yields gun turret | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 5.02 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/crate_outcome/outcome_meteor_shower.wav` | `sfx.crate.outcome.meteor_shower` | Supply crate yields meteor shower | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 4.58 s | 1 variant | launch |
-| `content/audio/sfx/crate_outcome/outcome_speed_boost.wav` | `sfx.crate.outcome.speed_boost` | Supply crate yields speed boost | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 2.91 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/crate_outcome/outcome_missile_barrage.wav` | `sfx.crate.outcome.missile_barrage` | Supply crate yields missile barrage | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 8.12 s | 1 variant | launch |
-| `content/audio/sfx/crate_outcome/outcome_sickness.wav` | `sfx.crate.outcome.sickness` | Supply crate yields sickness | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 6.88 s | 1 variant | launch |
-| `content/audio/sfx/crate_outcome/outcome_allegiance_scrambler.wav` | `sfx.crate.outcome.allegiance_scrambler` | Supply crate yields allegiance scrambler | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 3.24 s | 1 variant | launch |
-| `content/audio/sfx/crate_outcome/outcome_shield.wav` | `sfx.crate.outcome.shield` | Supply crate yields shield | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 3.09 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/crate_outcome/outcome_convert.wav` | `sfx.crate.outcome.convert` | Supply crate yields convert | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 8.19 s | 1 variant | launch |
-| `content/audio/sfx/crate_outcome/outcome_spawn_surge.wav` | `sfx.crate.outcome.spawn_surge` | Supply crate yields spawn surge | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 8.08 s | 1 variant | launch |
-| `content/audio/sfx/crate_outcome/outcome_frenzy.wav` | `sfx.crate.outcome.frenzy` | Supply crate yields frenzy | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 5.73 s | 1 variant | launch |
-| `content/audio/sfx/crate_outcome/outcome_rocket_troops.wav` | `sfx.crate.outcome.rocket_troops` | Supply crate yields rocket troops | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 3.63 s | 1 variant | launch |
-| `content/audio/sfx/crate_outcome/outcome_swarm.wav` | `sfx.crate.outcome.swarm` | Supply crate yields swarm | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 4.00 s | 1 variant | launch |
-| `content/audio/sfx/crate_outcome/outcome_fury.wav` | `sfx.crate.outcome.fury` | Supply crate yields fury | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 4.31 s | 1 variant | skirmish-first-playable |
-| `content/audio/sfx/crate_outcome/outcome_spitter_plants.wav` | `sfx.crate.outcome.spitter_plants` | Supply crate yields spitter plants | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 3.27 s | 1 variant | launch |
-| `content/audio/sfx/crate_outcome/outcome_abductor.wav` | `sfx.crate.outcome.abductor` | Supply crate yields abductor | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 6.28 s | 1 variant | launch |
+| `content/audio/sfx/crate_outcome/outcome_strike_team.wav` | `sfx.crate.outcome.strike_team` | Supply crate yields Strike team | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 2.0 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/crate_outcome/outcome_collector.wav` | `sfx.crate.outcome.collector` | Supply crate yields Collector | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 6.0 s | 1 variant | launch |
+| `content/audio/sfx/crate_outcome/outcome_transport.wav` | `sfx.crate.outcome.transport` | Supply crate yields Transport | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 3.5 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/crate_outcome/outcome_reinforcements.wav` | `sfx.crate.outcome.reinforcements` | Supply crate yields Reinforcements | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 6.6 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/crate_outcome/outcome_hive.wav` | `sfx.crate.outcome.hive` | Supply crate yields Hive | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 5.2 s | 1 variant | launch |
+| `content/audio/sfx/crate_outcome/outcome_brood.wav` | `sfx.crate.outcome.brood` | Supply crate yields Brood | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 3.1 s | 1 variant | launch |
+| `content/audio/sfx/crate_outcome/outcome_airstrike.wav` | `sfx.crate.outcome.airstrike` | Supply crate yields airstrike; the Firebomb Run outcome plays it too until DEC-565 binds a sting of its own (R-AUD-139) | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 4.8 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/crate_outcome/outcome_essence_grove.wav` | `sfx.crate.outcome.essence_grove` | Supply crate yields Essence Grove | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 4.0 s | 1 variant | launch |
+| `content/audio/sfx/crate_outcome/outcome_blight_grove.wav` | `sfx.crate.outcome.blight_grove` | Supply crate yields Blight Grove | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 5.2 s | 1 variant | launch |
+| `content/audio/sfx/crate_outcome/outcome_supply_storm.wav` | `sfx.crate.outcome.supply_storm` | Supply crate yields Supply Storm | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 4.2 s | 1 variant | launch |
+| `content/audio/sfx/crate_outcome/outcome_gun_turret.wav` | `sfx.crate.outcome.gun_turret` | Supply crate yields gun turret; the rocket turret and flame turret outcomes play it too until DEC-565 binds a sting of their own (R-AUD-139) | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 5.0 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/crate_outcome/outcome_meteor_shower.wav` | `sfx.crate.outcome.meteor_shower` | Supply crate yields meteor shower | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 4.6 s | 1 variant | launch |
+| `content/audio/sfx/crate_outcome/outcome_speed_boost.wav` | `sfx.crate.outcome.speed_boost` | Supply crate yields Speed Boost | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 2.9 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/crate_outcome/outcome_missile_barrage.wav` | `sfx.crate.outcome.missile_barrage` | Supply crate yields Missile Barrage | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 8.1 s | 1 variant | launch |
+| `content/audio/sfx/crate_outcome/outcome_sickness.wav` | `sfx.crate.outcome.sickness` | Supply crate yields Sickness | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 6.9 s | 1 variant | launch |
+| `content/audio/sfx/crate_outcome/outcome_allegiance_scrambler.wav` | `sfx.crate.outcome.allegiance_scrambler` | Supply crate yields Allegiance Scrambler | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 3.2 s | 1 variant | launch |
+| `content/audio/sfx/crate_outcome/outcome_shield.wav` | `sfx.crate.outcome.shield` | Supply crate yields Shield | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 3.1 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/crate_outcome/outcome_convert.wav` | `sfx.crate.outcome.convert` | Supply crate yields Convert | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 8.2 s | 1 variant | launch |
+| `content/audio/sfx/crate_outcome/outcome_spawn_surge.wav` | `sfx.crate.outcome.spawn_surge` | Supply crate yields Spawn Surge | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 8.1 s | 1 variant | launch |
+| `content/audio/sfx/crate_outcome/outcome_frenzy.wav` | `sfx.crate.outcome.frenzy` | Supply crate yields Frenzy | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 5.7 s | 1 variant | launch |
+| `content/audio/sfx/crate_outcome/outcome_rocket_troops.wav` | `sfx.crate.outcome.rocket_troops` | Supply crate yields Rocket Troops | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 3.6 s | 1 variant | launch |
+| `content/audio/sfx/crate_outcome/outcome_swarm.wav` | `sfx.crate.outcome.swarm` | Supply crate yields Swarm | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 4.0 s | 1 variant | launch |
+| `content/audio/sfx/crate_outcome/outcome_fury.wav` | `sfx.crate.outcome.fury` | Supply crate yields Fury | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 4.3 s | 1 variant | skirmish-first-playable |
+| `content/audio/sfx/crate_outcome/outcome_spitter_plants.wav` | `sfx.crate.outcome.spitter_plants` | Supply crate yields Spitter Plants | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 3.3 s | 1 variant | launch |
+| `content/audio/sfx/crate_outcome/outcome_abductor.wav` | `sfx.crate.outcome.abductor` | Supply crate yields Abductor | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 6.3 s | 1 variant | launch |
+| `content/audio/sfx/crate_outcome/outcome_rocket_turret.wav` | `sfx.crate.outcome.rocket_turret` | Supply crate yields rocket turret; bound only if DEC-565 binds it (R-AUD-139) | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 2.0-8.2 s; variant count proposed (DEC-565) | 1 variant | post-launch |
+| `content/audio/sfx/crate_outcome/outcome_flame_turret.wav` | `sfx.crate.outcome.flame_turret` | Supply crate yields flame turret; bound only if DEC-565 binds it (R-AUD-139) | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 2.0-8.2 s; variant count proposed (DEC-565) | 1 variant | post-launch |
+| `content/audio/sfx/crate_outcome/outcome_firebomb_run.wav` | `sfx.crate.outcome.firebomb_run` | Supply crate yields Firebomb Run; bound only if DEC-565 binds it (R-AUD-139) | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 2.0-8.2 s; variant count proposed (DEC-565) | 1 variant | post-launch |
+| `content/audio/sfx/crate_outcome/outcome_builder.wav` | `sfx.crate.outcome.builder` | Supply crate yields Builder; bound only if DEC-565 binds it (R-AUD-139) | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 2.0-8.2 s; variant count proposed (DEC-565) | 1 variant | post-launch |
+| `content/audio/sfx/crate_outcome/outcome_time_dilation.wav` | `sfx.crate.outcome.time_dilation` | Supply crate yields Time Dilation; bound only if DEC-565 binds it (R-AUD-139) | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 2.0-8.2 s; variant count proposed (DEC-565) | 1 variant | post-launch |
+| `content/audio/sfx/crate_outcome/outcome_time_rush.wav` | `sfx.crate.outcome.time_rush` | Supply crate yields Time Rush; bound only if DEC-565 binds it (R-AUD-139) | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 2.0-8.2 s; variant count proposed (DEC-565) | 1 variant | post-launch |
 
 ## 14 UI sounds
 
@@ -996,19 +984,19 @@ Interface sounds: menus, selection, countdown, chat, the power-slot panel and th
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/ui/ui_countdown_tick.wav` | `sfx.ui.match_ui.countdown_tick` | countdown tick | `turret.kill_tick`, `match_ui.countdown_zero` | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 0.09 s | 1 variant | skirmish-first-playable |
-| `content/audio/ui/ui_power_input_begin.wav` | `sfx.ui.power_input.begin` | power input starts | `match_ui.selection_circle` | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 3.54 s | 1 variant | skirmish-first-playable |
-| `content/audio/ui/ui_power_input_confirm.wav` | `sfx.ui.power_input.confirm` | power input succeeds | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 2.21 s | 1 variant | skirmish-first-playable |
-| `content/audio/ui/ui_power_slot_discard.wav` | `sfx.ui.power_slots.discard` | a power is discarded | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 2.51 s | 1 variant | skirmish-first-playable |
-| `content/audio/ui/ui_power_slot_icon_hover_{01..02}.wav` (2 files) | `sfx.ui.power_slots.icon_hover` | pointer over an icon | `match_ui.menu_hover` | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 0.05-0.06 s | 2 variants | skirmish-first-playable |
-| `content/audio/ui/ui_selection_circle.wav` | `sfx.ui.match_ui.selection_circle` | selection circle drawn | — | mono or stereo, 48 kHz; 2-D (not positional); seamless loop; reference duration 5.96 s | 1 variant | skirmish-first-playable |
-| `content/audio/ui/ui_menu_select.wav` | `sfx.ui.match_ui.menu_select` | menu item chosen | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 1.86 s | 1 variant | skirmish-first-playable |
-| `content/audio/ui/ui_menu_back.wav` | `sfx.ui.match_ui.menu_back` | menu back | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 2.17 s | 1 variant | skirmish-first-playable |
-| `content/audio/ui/ui_unit_highlight_{01..02}.wav` (2 files) | `sfx.ui.match_ui.unit_highlight` | unit highlighted | — | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 0.02 s | 2 variants | skirmish-first-playable |
-| `content/audio/ui/ui_unit_select.wav` | `sfx.ui.match_ui.unit_select` | unit selected | `match_ui.toggle_state` | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 0.11 s | 1 variant | skirmish-first-playable |
-| `content/audio/ui/ui_error.wav` | `sfx.ui.match_ui.error` | invalid action | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 0.84 s | 1 variant | skirmish-first-playable |
-| `content/audio/ui/ui_chat_message.wav` | `sfx.ui.match_ui.chat_message` | chat message arrives | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 0.22 s | 1 variant | skirmish-first-playable |
-| `content/audio/ui/ui_game_over_{01..02}.wav` (2 files) | `sfx.ui.match_ui.game_over` | a result is declared: the game-over announcement (DEC-097, R-AUD-307) | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; announcer bus; reference duration 4.37-4.39 s; variant count and durations sized from the unbound reference takes for this moment (R-AUD-142) | 2 variants | skirmish-first-playable |
+| `content/audio/ui/ui_countdown_tick.wav` | `sfx.ui.match_ui.countdown_tick` | countdown tick | `turret.kill_tick`, `match_ui.countdown_zero` | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 0.1 s | 1 variant | skirmish-first-playable |
+| `content/audio/ui/ui_power_input_begin.wav` | `sfx.ui.power_input.begin` | power input starts | `match_ui.selection_circle` | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 3.5 s | 1 variant | skirmish-first-playable |
+| `content/audio/ui/ui_power_input_confirm.wav` | `sfx.ui.power_input.confirm` | power input succeeds | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 2.2 s | 1 variant | skirmish-first-playable |
+| `content/audio/ui/ui_power_slot_discard.wav` | `sfx.ui.power_slots.discard` | a power is discarded | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 2.5 s | 1 variant | skirmish-first-playable |
+| `content/audio/ui/ui_power_slot_icon_hover_{01..02}.wav` (2 files) | `sfx.ui.power_slots.icon_hover` | pointer over an icon | `match_ui.menu_hover` | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 0.1 s | 2 variants | skirmish-first-playable |
+| `content/audio/ui/ui_selection_circle.wav` | `sfx.ui.match_ui.selection_circle` | selection circle drawn | — | mono or stereo, 48 kHz; 2-D (not positional); seamless loop; target duration about 6.0 s | 1 variant | skirmish-first-playable |
+| `content/audio/ui/ui_menu_select.wav` | `sfx.ui.match_ui.menu_select` | menu item chosen | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 1.9 s | 1 variant | skirmish-first-playable |
+| `content/audio/ui/ui_menu_back.wav` | `sfx.ui.match_ui.menu_back` | menu back | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 2.2 s | 1 variant | skirmish-first-playable |
+| `content/audio/ui/ui_unit_highlight_{01..02}.wav` (2 files) | `sfx.ui.match_ui.unit_highlight` | unit highlighted | — | mono, 48 kHz; positional, fixed where it started; one-shot; target duration about 0.1 s | 2 variants | skirmish-first-playable |
+| `content/audio/ui/ui_unit_select.wav` | `sfx.ui.match_ui.unit_select` | unit selected | `match_ui.toggle_state` | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 0.1 s | 1 variant | skirmish-first-playable |
+| `content/audio/ui/ui_error.wav` | `sfx.ui.match_ui.error` | invalid action | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 0.8 s | 1 variant | skirmish-first-playable |
+| `content/audio/ui/ui_chat_message.wav` | `sfx.ui.match_ui.chat_message` | chat message arrives | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; target duration about 0.2 s | 1 variant | skirmish-first-playable |
+| `content/audio/ui/ui_game_over_{01..02}.wav` (2 files) | `sfx.ui.match_ui.game_over` | a result is declared: the game-over announcement (DEC-097, R-AUD-307) | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; announcer bus; target duration about 4.3-4.4 s; variant count proposed (DEC-097) | 2 variants | skirmish-first-playable |
 
 ## 15 Ambience
 
@@ -1016,21 +1004,21 @@ Ambience beds: 2-D loops under the match and under the lobby. Each bed has layer
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
-| `content/audio/ambience/amb_match_bed_{01..03}.wav` (3 files) | `amb.match_bed` | match bed | `match_ui.lobby_bed` | mono or stereo, 48 kHz; 2-D (not positional); seamless loop; reference duration 22.11-53.87 s | 3 variants | skirmish-first-playable |
-| `content/audio/ambience/amb_match_bed_b.wav` | `amb.match_bed_b` | match bed (additional layer) | — | mono or stereo, 48 kHz; 2-D (not positional); seamless loop; reference duration 28.98 s | 1 variant | skirmish-first-playable |
-| `content/audio/ambience/amb_match_bed_c_{01..07}.wav` (7 files) | `amb.match_bed_c` | match bed (additional layer) | — | mono or stereo, 48 kHz; 2-D (not positional); seamless loop; reference duration 15.31-39.56 s | 7 variants | skirmish-first-playable |
-| `content/audio/ambience/amb_lobby_bed_{01..10}.wav` (10 files) | `amb.lobby_bed` | lobby ambience bed | — | mono or stereo, 48 kHz; 2-D (not positional); seamless loop; reference duration 19.42-36.02 s | 10 variants | launch |
+| `content/audio/ambience/amb_match_bed_{01..03}.wav` (3 files) | `amb.match_bed` | match bed | `match_ui.lobby_bed` | mono or stereo, 48 kHz; 2-D (not positional); seamless loop; target duration about 22.1-53.9 s | 3 variants | skirmish-first-playable |
+| `content/audio/ambience/amb_match_bed_b.wav` | `amb.match_bed_b` | match bed (additional layer) | — | mono or stereo, 48 kHz; 2-D (not positional); seamless loop; target duration about 29.0 s | 1 variant | skirmish-first-playable |
+| `content/audio/ambience/amb_match_bed_c_{01..07}.wav` (7 files) | `amb.match_bed_c` | match bed (additional layer) | — | mono or stereo, 48 kHz; 2-D (not positional); seamless loop; target duration about 15.3-39.6 s | 7 variants | skirmish-first-playable |
+| `content/audio/ambience/amb_lobby_bed_{01..10}.wav` (10 files) | `amb.lobby_bed` | lobby ambience bed | — | mono or stereo, 48 kHz; 2-D (not positional); seamless loop; target duration about 19.4-36.1 s | 10 variants | launch |
 
 ## 16 Music
 
-The reference plays no music in a match: its music events are never triggered. Species commissions new music. This is a brief entry: the slots below are the proposed minimum, and the design phase sets the final list, its triggers and the music bus. The style follows the look: sparse, electronic, cool timbres that leave room for the crowd and the glow; no pastiche of any existing score.
+No rule raises a music event, so no music plays at the front end, in the lobby or in a match (DEC-049). Species commissions new music. The victory and defeat stings are bound to the match end now (R-AUD-307, DEC-097). The front-end theme and the in-match beds are the proposed minimum of option A of DEC-049 and are authored only if DEC-049 selects it, so their rows are `post-launch`; the design phase then sets the final list, its triggers and the music bus (R-AUD-407). The style follows the look: sparse, electronic, cool timbres that leave room for the crowd and the glow; no pastiche of any existing score.
 
 | File | Asset id | Role | Spec | Priority | Placeholder |
 |---|---|---|---|---|---|
-| `content/audio/music/front_end_theme.wav` | `music.front_end.theme` | Front-end theme, loops under the menus and the lobby | stereo, 48 kHz; seamless loop; 2-4 min | launch | silence |
-| `content/audio/music/match_bed_01.wav` | `music.match.bed` | In-match music bed, low intensity, sits under the crowd and the glow | stereo, 48 kHz; seamless loop; 3-5 min; mixed below the effects bus | launch | silence |
-| `content/audio/music/match_bed_02.wav` | `music.match.bed` | In-match music bed, low intensity, sits under the crowd and the glow | stereo, 48 kHz; seamless loop; 3-5 min | launch | silence |
-| `content/audio/music/match_bed_03.wav` | `music.match.bed` | In-match music bed, low intensity, sits under the crowd and the glow | stereo, 48 kHz; seamless loop; 3-5 min | launch | silence |
+| `content/audio/music/front_end_theme.wav` | `music.front_end.theme` | Front-end theme, loops under the menus and the lobby; only if DEC-049 selects option A | stereo, 48 kHz; seamless loop; 2-4 min | post-launch | silence |
+| `content/audio/music/match_bed_01.wav` | `music.match.bed` | In-match music bed, low intensity, sits under the crowd and the glow; only if DEC-049 selects option A | stereo, 48 kHz; seamless loop; 3-5 min; mixed below the effects bus | post-launch | silence |
+| `content/audio/music/match_bed_02.wav` | `music.match.bed` | In-match music bed, low intensity, sits under the crowd and the glow | stereo, 48 kHz; seamless loop; 3-5 min | post-launch | silence |
+| `content/audio/music/match_bed_03.wav` | `music.match.bed` | In-match music bed, low intensity, sits under the crowd and the glow | stereo, 48 kHz; seamless loop; 3-5 min | post-launch | silence |
 | `content/audio/music/sting_victory.wav` | `music.match.sting_victory` | Victory sting at the end of a match | stereo, 48 kHz; one-shot; 5-10 s | launch | silence |
 | `content/audio/music/sting_defeat.wav` | `music.match.sting_defeat` | Defeat sting at the end of a match | stereo, 48 kHz; one-shot; 5-10 s | launch | silence |
 
@@ -1050,7 +1038,7 @@ Each Latin face needs a regular weight at least; a bold weight is optional. Hint
 
 ## 18 String table
 
-All player-facing text is new, written in plain functional English and keyed by Species string ids (`ui.lobby.ready`, `mode.flag_chain.objective`). No reference text is copied. The first table sizes the work from the reference text categories; §18.1 lists the string ids that the documents cite.
+All player-facing text is new, written in plain functional English and keyed by Species string ids (`ui.lobby.ready`, `mode.flag_chain.objective`). No reference text is copied. The first table sizes the work from the reference text categories, without the six display-option and six sound-option entries of settings that Species does not offer (R-META-414, R-META-429); §18.1 lists the string ids that the documents cite.
 
 | Category | String-id prefix | Reference entries |
 |---|---|---:|
@@ -1062,15 +1050,15 @@ All player-facing text is new, written in plain functional English and keyed by 
 | leaderboard and statistics pages | `ui.leaderboard.*` | 26 |
 | graphics options | `ui.options.*` | 14 |
 | input options | `ui.options.*` | 7 |
-| general options | `ui.options.*` | 11 |
-| display options | `ui.options.*` | 13 |
+| general options | `ui.options.*` | 5 |
+| display options | `ui.options.*` | 7 |
 | chat | `ui.chat.*` | 1 |
 | controller-disconnected dialog | `ui.dialog.*` | 1 |
 | file dialog | `ui.dialog.*` | 3 |
 | message dialog | `ui.dialog.*` | 1 |
 | window chrome | `ui.window.*` | 8 |
 | text and number fields | `ui.input.*` | 5 |
-| **Total** | | **221** |
+| **Total** | | **209** |
 
 | File | Asset id | Language | Priority | Placeholder |
 |---|---|---|---|---|
@@ -1089,14 +1077,14 @@ The language set is the reference set of nine; the design phase confirms it. Jap
 
 ### 18.1 String ids cited by the documents
 
-The reference documents and engine components cite 601 string ids and id patterns (such as `ui.input.key.<name>`). Each needs new en-GB text in `strings.en_gb` and a translation in every other table, except the development captions `ui.dev.*`, which live only in `strings.dev_en_gb`. The owning document defines each id and its meaning; this table sizes the writing by family (counted mechanically from the documents).
+The reference documents and engine components cite 590 string ids and id patterns (such as `ui.input.key.<name>`). Each needs new en-GB text in `strings.en_gb` and a translation in every other table, except the development captions `ui.dev.*`, which live only in `strings.dev_en_gb`. The owning document defines each id and its meaning; this table sizes the writing by family (counted mechanically from the documents).
 
 | Family | Ids | Main owner |
 |---|---:|---|
 | `achievement.*` | 25 | [09_front_end_and_match_flow/options_localisation_and_hooks](../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) |
 | `bot.*` | 1 | [12_simulation_model/06_teams_and_player_commands](../reference/12_simulation_model/06_teams_and_player_commands.md) |
 | `building.*` | 15 | [03_buildings_and_world_objects/defences_and_props](../reference/03_buildings_and_world_objects/defences_and_props.md) and 4 more |
-| `crate.*` | 57 | [04_supply_crates_powers_and_weapons/README](../reference/04_supply_crates_powers_and_weapons/README.md) and 6 more |
+| `crate.*` | 59 | [04_supply_crates_powers_and_weapons/README](../reference/04_supply_crates_powers_and_weapons/README.md) and 4 more |
 | `creature.*` | 2 | [02_units/README](../reference/02_units/README.md) |
 | `faction.*` | 2 | [12_simulation_model/06_teams_and_player_commands](../reference/12_simulation_model/06_teams_and_player_commands.md) |
 | `map.*` | 3 | [08_maps_and_level_design/rules_and_conventions](../reference/08_maps_and_level_design/rules_and_conventions.md) |
@@ -1109,7 +1097,7 @@ The reference documents and engine components cite 601 string ids and id pattern
 | `match.options.*` | 25 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 5 more |
 | `match.rank.*` | 9 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 1 more |
 | `match.sudden_death.*` | 1 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 3 more |
-| `mode.*` | 2 | [asset_pipeline_and_resources](../architecture/components/asset_pipeline_and_resources.md) and 3 more |
+| `mode.*` | 3 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) and 4 more |
 | `mode.complexity.*` | 3 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 2 more |
 | `mode.flag_chain.*` | 9 | [01_skirmish_rules_and_modes/flag_chain](../reference/01_skirmish_rules_and_modes/flag_chain.md) and 2 more |
 | `mode.launch_race.*` | 12 | [01_skirmish_rules_and_modes/launch_race](../reference/01_skirmish_rules_and_modes/launch_race.md) and 3 more |
@@ -1117,6 +1105,7 @@ The reference documents and engine components cite 601 string ids and id pattern
 | `mode.siege.*` | 13 | [01_skirmish_rules_and_modes/siege](../reference/01_skirmish_rules_and_modes/siege.md) and 2 more |
 | `mode.spawn_control.*` | 10 | [01_skirmish_rules_and_modes/spawn_control](../reference/01_skirmish_rules_and_modes/spawn_control.md) and 1 more |
 | `mode.zone_control.*` | 6 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 1 more |
+| `power.*` | 2 | [06_controls_camera_and_commands/selection_and_power_slots](../reference/06_controls_camera_and_commands/selection_and_power_slots.md) |
 | `team.*` | 8 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 2 more |
 | `tutorial.tab.*` | 60 | [11_tutorial_and_help](../reference/11_tutorial_and_help.md) |
 | `ui.*` | 1 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
@@ -1129,7 +1118,7 @@ The reference documents and engine components cite 601 string ids and id pattern
 | `ui.connecting.*` | 11 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
 | `ui.credits.*` | 4 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
 | `ui.dev.*` | 23 | [diagnostics_test_and_performance/developer_tools](../architecture/components/diagnostics_test_and_performance/developer_tools.md) and 1 more |
-| `ui.dialog.*` | 6 | [ui_framework/core_and_widgets](../architecture/components/ui_framework/core_and_widgets.md) and 4 more |
+| `ui.dialog.*` | 5 | [ui_framework/core_and_widgets](../architecture/components/ui_framework/core_and_widgets.md) and 4 more |
 | `ui.error.*` | 18 | [platform_layer](../architecture/components/platform_layer.md) and 6 more |
 | `ui.help.*` | 52 | [11_tutorial_and_help](../reference/11_tutorial_and_help.md) and 2 more |
 | `ui.help_and_options.*` | 3 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
@@ -1139,25 +1128,25 @@ The reference documents and engine components cite 601 string ids and id pattern
 | `ui.language.*` | 9 | [09_front_end_and_match_flow/options_localisation_and_hooks](../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) |
 | `ui.leaderboard.*` | 14 | [09_front_end_and_match_flow/options_localisation_and_hooks](../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) |
 | `ui.loading.*` | 1 | [09_front_end_and_match_flow/front_end_presentation](../reference/09_front_end_and_match_flow/front_end_presentation.md) |
-| `ui.lobby.*` | 17 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) and 4 more |
+| `ui.lobby.*` | 17 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) and 3 more |
 | `ui.main.*` | 7 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
 | `ui.map_editor.*` | 16 | [08_maps_and_level_design/map_editor_hooks](../reference/08_maps_and_level_design/map_editor_hooks.md) |
 | `ui.map_select.*` | 5 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
-| `ui.match.*` | 4 | [diagnostics_test_and_performance/developer_tools](../architecture/components/diagnostics_test_and_performance/developer_tools.md) and 6 more |
+| `ui.match.*` | 3 | [diagnostics_test_and_performance/developer_tools](../architecture/components/diagnostics_test_and_performance/developer_tools.md) and 5 more |
 | `ui.match_menu.*` | 4 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) and 1 more |
 | `ui.mode_select.*` | 1 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
-| `ui.options.*` | 42 | [09_front_end_and_match_flow/options_localisation_and_hooks](../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) |
+| `ui.options.*` | 30 | [09_front_end_and_match_flow/options_localisation_and_hooks](../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) |
 | `ui.player.*` | 1 | [data_schemas/config_input_and_strings](../architecture/components/data_schemas/config_input_and_strings.md) and 2 more |
 | `ui.player_options.*` | 5 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
-| `ui.power_slots.*` | 12 | [06_controls_camera_and_commands/selection_and_power_slots](../reference/06_controls_camera_and_commands/selection_and_power_slots.md) and 6 more |
+| `ui.power_slots.*` | 10 | [06_controls_camera_and_commands/selection_and_power_slots](../reference/06_controls_camera_and_commands/selection_and_power_slots.md) and 6 more |
 | `ui.repair.*` | 2 | [build_tooling_and_distribution](../architecture/components/build_tooling_and_distribution.md) and 1 more |
 | `ui.settings.*` | 1 | [data_schemas/config_input_and_strings](../architecture/components/data_schemas/config_input_and_strings.md) and 2 more |
 | `ui.team.*` | 1 | [12_simulation_model/06_teams_and_player_commands](../reference/12_simulation_model/06_teams_and_player_commands.md) |
 | `ui.title.*` | 2 | [ui_framework/core_and_widgets](../architecture/components/ui_framework/core_and_widgets.md) and 3 more |
 | `ui.tutorials.*` | 3 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) and 1 more |
-| `unit.*` | 10 | [02_units/builder](../reference/02_units/builder.md) and 4 more |
+| `unit.*` | 10 | [02_units/builder](../reference/02_units/builder.md) and 3 more |
 
-String ids named by the asset passes, with the documents that cite them:
+String ids added for the assets, with the documents that cite them:
 
 | String ids | Text | Main owner |
 |---|---|---|
@@ -1168,11 +1157,10 @@ String ids named by the asset passes, with the documents that cite them:
 | `ui.match.cheats_used` | the marker shown and recorded when development commands changed a match | [diagnostics_test_and_performance/developer_tools](../architecture/components/diagnostics_test_and_performance/developer_tools.md) and 2 more |
 | `ui.match.paused` | the match-paused message | [renderer/frame_graph_and_passes](../architecture/components/renderer/frame_graph_and_passes.md) |
 | `ui.dialog.close`, `ui.dialog.error`, `ui.dialog.success` | message-dialog captions and button | [ui_framework/core_and_widgets](../architecture/components/ui_framework/core_and_widgets.md) |
-| `ui.dialog.sound_settings_failed` | the sound-settings failure that the audio engine shows through the message dialog | not yet cited |
 | `ui.input.key.<name>`, `ui.input.mouse.<name>`, `ui.input.pad.<name>`, `ui.input.condition.<condition>`, `ui.input.not` | display names of the 113 keys, 6 mouse controls, 25 gamepad controls and 9 binding conditions, and the negation word | [input/controls_and_default_bindings](../architecture/components/input/controls_and_default_bindings.md) and 1 more |
 | `bot.label`, `match.team_left`, `match.player_left`, `ui.lobby.player_joined`, `ui.team.invalid_name`, `faction.rogue.name`, `faction.visitor.name` | team, player and faction names and messages | [12_simulation_model/06_teams_and_player_commands](../reference/12_simulation_model/06_teams_and_player_commands.md) and 3 more |
 | `team.colour.green`, `team.colour.red`, `team.colour.yellow`, `team.colour.blue`, `team.colour.orange`, `team.colour.purple`, `team.colour.cyan`, `team.colour.pink` | the eight team colour names | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 2 more |
-| `match.kill_milestone` | the kill-milestone message (proposed id; the owning match-rules document assigns it) | not yet cited |
+| `match.kill_milestone` | the kill-milestone message of the local team, with the milestone value as its parameter (the kill-milestone event of R-SIM-221) | registered in [CONVENTIONS §8.6](../CONVENTIONS.md#86-match-rules); no rule shows it yet |
 | `crate.strike_team.tooltip`, `crate.collector.tooltip`, `crate.builder.tooltip`, `crate.transport.tooltip`, `crate.airstrike.tooltip`, `crate.missile_barrage.tooltip`, `crate.shield.tooltip`, `crate.convert.tooltip`, `crate.speed_boost.tooltip`, `crate.turret_gun.tooltip`, `crate.swarm.tooltip`, `crate.essence_grove.tooltip`, `crate.hive.tooltip`, `crate.brood.tooltip`, `crate.meteor_shower.tooltip`, `crate.blight_grove.tooltip`, `crate.fury.tooltip`, `crate.turret_rocket.tooltip`, `crate.turret_flame.tooltip`, `crate.firebomb_run.tooltip` | the Power help text of each of the 20 outcomes that can be delivered as a Power, shown while the Power is Waiting (R-CRATE-011, R-CTRL-236) | [04_supply_crates_powers_and_weapons/README](../reference/04_supply_crates_powers_and_weapons/README.md) |
 | `ui.dev.command.dump_bindings` | the caption of the development command that writes the bindings to the log | [diagnostics_test_and_performance/developer_tools](../architecture/components/diagnostics_test_and_performance/developer_tools.md) |
 
@@ -1218,27 +1206,26 @@ These reference files and text entries need no Species counterpart. Counts only;
 | dropped feature (campaign or dropped unit, structure or mode) |  | 42 |  |  |  | 42 |
 | unused (never listed: superseded map files) |  |  |  | 30 |  | 30 |
 | editor only (map editor match options) |  |  |  |  | 23 | 23 |
+| drawn by no rule (among them the objective-card pictures, DEC-050) | 21 |  |  |  |  | 21 |
 | unused (named only in dead code or data) | 14 | 2 |  |  | 3 | 19 |
-| previous graphics back-end only | 17 |  |  |  |  | 17 |
+| second graphics back end of the reference (not built) | 17 |  |  |  |  | 17 |
 | dropped feature (gesture input) | 9 |  |  |  | 2 | 11 |
 | music and loader tracks never triggered and never packed |  |  | 11 |  |  | 11 |
 | cut or test map | 1 |  |  | 8 |  | 9 |
 | dropped feature (user profiles) |  |  |  |  | 9 | 9 |
-| trial-version and store prompts |  |  |  |  | 8 | 8 |
+| edition and store features (not built) | 1 |  |  |  | 8 | 9 |
 | dropped feature (mods) |  |  |  |  | 8 | 8 |
 | dropped feature (dropped mode) | 1 |  |  |  | 2 | 3 |
 | deferred to the design phase (networking options) |  |  |  |  | 3 | 3 |
 | dropped feature (dropped unit) | 2 |  |  |  |  | 2 |
 | dropped feature (user profiles, mods) |  |  |  |  | 2 | 2 |
 | dropped feature (dropped crate outcome and its structure) | 1 |  |  |  |  | 1 |
-| store and branding art | 1 |  |  |  |  | 1 |
-| drawn by no rule | 1 |  |  |  |  | 1 |
 | dropped feature (dropped weapon) | 1 |  |  |  |  | 1 |
 | dropped feature (disabled crate outcome) | 1 |  |  |  |  | 1 |
 | dropped feature (dropped mode and unit) | 1 |  |  |  |  | 1 |
 | unreachable fallback | 1 |  |  |  |  | 1 |
 | editor only |  | 1 |  |  |  | 1 |
-| **Total** | **116** | **201** | **404** | **67** | **281** | **1069** |
+| **Total** | **136** | **201** | **404** | **67** | **281** | **1089** |
 
 Bitmap font pages are not in this table: their role passes to the font files of §17.
 

@@ -335,7 +335,7 @@ The obstacle grid registers a linked emitter along its whole line, as reference/
 
 **R-BLDG-474** (MUST) Each tick a jump pad's launch timer counts down; at 0 it restarts at `ref.bldg.jump_pad.launch_interval_ticks` (3 ticks, a 0.3 s countdown) and the pad launches. The launch vector is the pad's front rotated about the axis front × up by the angle, which raises it by the angle above the horizontal, scaled to the length force. Every Worker of every team within `ref.bldg.jump_pad.radius` (40 wu) of the pad (`InRange`, reference/12 R-SIM-311) that is on the ground and not inside a Transport gets: velocity = the launch vector, airborne, the Idle state, no waypoint and no orders. It then flies by the airborne step (reference/12 R-SIM-373).
 
-**R-BLDG-475** (MUST) A jump pad's sphere and mesh tests never hit, and its ray test is against a sphere of radius `ref.sim.structure.default_radius` (13 wu; README table 2.12-A). It is drawn as an animated arrow strip of `marker.jump_pad`, `ref.bldg.jump_pad.arrow_length` (80 wu) long and ±`ref.bldg.jump_pad.arrow_half_width` (20 wu) wide along its launch direction, with brightness `ref.bldg.jump_pad.brightness_base` + `ref.bldg.jump_pad.brightness_pulse` × |sin t| (0.3 + 0.7 × |sin t|) over the presentation time t.
+**R-BLDG-475** (MUST) A jump pad's sphere and mesh tests never hit, and its ray test is against a sphere of radius `ref.sim.structure.default_radius` (13 wu; README table 2.12-A). It is drawn as an animated arrow strip of `marker.jump_pad`, `ref.bldg.jump_pad.arrow_length` (80 wu) long and ±`ref.bldg.jump_pad.arrow_half_width` (20 wu) wide along its launch direction, with brightness `ref.bldg.jump_pad.brightness_base` + `ref.bldg.jump_pad.brightness_pulse` × |sin t| (0.3 + 0.7 × |sin t|) over the presentation frame time t (DEC-959 item 2).
 
 ### 2.10 Presentation events of these objects
 
@@ -757,5 +757,6 @@ Each default is the behaviour that §2 specifies.
 - DEC-551 — units that outlive their Power slot (R-BLDG-424).
 - DEC-565 — silent gameplay events: target sighted, rocket fired, electrocution (R-BLDG-429, R-BLDG-448).
 - DEC-859 — tick counts chosen for reference durations: the turret's hosing window (R-BLDG-415).
+- DEC-959 — the clock of the jump-pad pulse (R-BLDG-475).
 
 Resolved decisions applied in this document: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-012, DEC-013, DEC-014, DEC-015, DEC-020, DEC-021, DEC-079, DEC-087, DEC-088, DEC-092, DEC-095, DEC-331, DEC-461, DEC-652, DEC-653 and DEC-968 (a ring of relay-only Barrier Emitters is a build error). Dropped entries applied: DEC-052 (no threat reaction to the turret aim marker in a match) and DEC-466 (the wall's bot-objective field).

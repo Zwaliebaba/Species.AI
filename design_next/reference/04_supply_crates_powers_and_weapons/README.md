@@ -224,7 +224,7 @@ The Rogue-faction column applies when the Rogue faction is the team the effect b
 
 **R-CRATE-029** (MUST) A map definition may list **excluded outcomes**: a set of outcome identifiers of table 2.2-A. The map schema lists them by identifier, and the content build rejects an identifier that is not an outcome of the catalogue (DEC-015). A map with no list excludes nothing, and a map that excludes nothing stores no list. The map editor shows one switch per outcome, in catalogue order, with the outcome's display name ([reference/08](../08_maps_and_level_design/README.md)).
 
-**R-CRATE-030** (MUST) An excluded outcome is never drawn by the good pool, by the bad pool or by the starting-powers draw: every Supply crate outcome, the bad outcomes included, respects the list (DEC-107). The Comeback pool ignores the list; this is the reference default of DEC-452.
+**R-CRATE-030** (MUST) An excluded outcome is never drawn by the good pool, by the bad pool or by the starting-powers draw: every Supply crate outcome, the bad outcomes included, respects the list (DEC-107). The Comeback pool respects it too (DEC-452).
 
 **R-CRATE-031** (MUST) The match option **basic outcomes only** (`match.options.basic_crates`, default off, [reference/01](../01_skirmish_rules_and_modes/README.md)) has the effects of table 2.7-A. It is part of the match setup and is the same for every participant. It does not carry over: it is reset to off at the end of every match and when the lobby is left; the second tutorial switches it on at its end step, the same step that releases its bots ([reference/11](../11_tutorial_and_help.md) R-TUT-117).
 
@@ -424,7 +424,6 @@ The Power slots messages `ui.power_slots.ready`, `ui.power_slots.not_available`,
 - DEC-550 — Power cancellation in the tutorials (R-CRATE-021).
 - DEC-551 — Units that outlive their Power slot (R-CRATE-020, R-CRATE-022).
 - DEC-556 — Power slot order (R-CRATE-016).
-- DEC-452 — Comeback Bonus pool and the map's excluded outcomes (R-CRATE-030).
 - DEC-858 — Empty outcome lists: an empty draw grants nothing (R-CRATE-003).
 
-Resolved decisions applied here: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-011, DEC-013, DEC-014, DEC-015, DEC-021, DEC-033, DEC-039, DEC-092, DEC-107, DEC-652, DEC-653. Dropped: DEC-057, DEC-552.
+Resolved decisions applied here: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-011, DEC-013, DEC-014, DEC-015, DEC-021, DEC-033, DEC-039, DEC-092, DEC-107, DEC-452, DEC-652, DEC-653. Dropped: DEC-057, DEC-552.

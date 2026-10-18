@@ -77,8 +77,6 @@ This component composes those parts into one developer view and one test harness
 | test hooks and the per-tick test-build checks | yes | no |
 | opt-in telemetry | yes | yes |
 
-**DBG-005** (removed: the Species facilities and the configurations that contain them are DBG-004 and DBG-006)
-
 **DBG-006** (MUST) The Species debug and test baseline is:
 
 1. **Debug commands.** Every developer cheat that changes simulation state is a sequenced debug command, which the authority accepts only in a session created with cheats enabled and every participant applies on the same tick; such a session carries a session-wide cheats-used marker (§4.6, DEC-041, DEC-202).
@@ -490,7 +488,7 @@ The tests of each topic are in its file: T1 to T6, T8, T9, T12 and T13 in [loggi
 | DEC-970 | Resolved | the black box holds no Windows user name and writes paths relative to placeholders (DBG-047) |
 | DEC-971 | Open | the reference test machine is the first machine that meets the minima of ADR-050 and ADR-002 and runs the performance job, pinned and recorded; until then performance tests report and do not fail (DBG-209) |
 | ADR-054, ADR-056 | Accepted | Debug and Release only; development facilities in Debug only (DBG-004) |
-| ADR-068, ADR-069, ADR-070 | Accepted | markers in both configurations; the Microsoft C++ Unit Test Framework; the committed CI workflow, with the soak, fuzzing, GPU and performance jobs added by amendment (§4.3, §4.8, §4.9, DBG-208) |
+| ADR-068, ADR-069, ADR-070 | Accepted | markers in both configurations; the Microsoft C++ Unit Test Framework; the committed CI workflow, with the soak, GPU and performance jobs added by amendment; the fuzz harnesses run in the test step (ADR-069) (§4.3, §4.8, §4.9, DBG-208) |
 
 Section 8.2 is in [test harness, soak test and telemetry](test_harness_soak_and_telemetry.md).
 

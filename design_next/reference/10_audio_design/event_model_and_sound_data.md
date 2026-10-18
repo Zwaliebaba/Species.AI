@@ -279,7 +279,7 @@ The members of `sfx.creature.spider.die` include the two members of `sfx.creatur
 | 12 | echo | R-AUD-079 | wet/dry mix 0 to 100, 50; delay 1 to 3000 ms, 200; attenuation 0 to 100, 50 |
 | 13 | simple reverb | R-AUD-079 | wet/dry mix 0 to 100, 50, which the effect ignores |
 
-The parameter sets of the standard kinds 0 to 8, their ranges and declared defaults, and their processing are the [audio engine](../../architecture/components/audio_engine/README.md)'s (AEN-070, ADR-024); the effect bindings of R-AUD-082 name every parameter they set. The parameter names and their order for every kind are the sound-event schema's ([data schemas](../../architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md) table 3.5-A). The own-algorithm kinds 9 to 13 are defined by their parameters above and the algorithms of R-AUD-079.
+Species realises nine of these kinds: the stereo echo, room reverb, parametric equaliser and studio reverb, and the own-algorithm kinds 9 to 13. Their parameter sets, the ranges and declared defaults of the standard kinds, and their processing are the [audio engine](../../architecture/components/audio_engine/README.md)'s (AEN-070, ADR-024). The chorus, compressor, distortion, flanger and standard gargle are named by no effect binding of R-AUD-082 and are not kinds of the Species sound data (DEC-339). The effect bindings of R-AUD-082 name every parameter they set. The parameter names and their order for every Species kind are the sound-event schema's ([data schemas](../../architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md) table 3.5-A). The own-algorithm kinds 9 to 13 are defined by their parameters above and the algorithms of R-AUD-079.
 
 **R-AUD-078** (MUST) A parameter that an effect binding omits is 0.0 in the reference, not its declared default. The schema default of each effect parameter is chosen deliberately, 0.0 for parity or the declared value, and it is audible only once effects are enabled (DEC-567).
 
@@ -442,3 +442,5 @@ Each default is the behaviour that §2 specifies.
 - DEC-322 — start value of smoothed sound parameters (R-AUD-055).
 - DEC-567 — dry mix or applied effects (R-AUD-050, R-AUD-076, R-AUD-078).
 - DEC-317 — voice set language: whether Species voice lines are worded (R-AUD-047).
+
+Dropped: DEC-339 (audio device details; the nine Species DSP filter kinds, R-AUD-077).

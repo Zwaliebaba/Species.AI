@@ -35,8 +35,6 @@ The reference game plays **no music** in any session. Its audio engine neverthel
 | `music.match.sting_victory` | the victory sting at the end of a match, bound to `match_ui.victory` (R-AUD-307) | now |
 | `music.match.sting_defeat` | the defeat sting at the end of a match, bound to `match_ui.defeat` (R-AUD-307) | now |
 
-**R-AUD-408** (removed: the score brief of option A, which DEC-049 records)
-
 **R-AUD-414** (MUST) **Species music path.** When DEC-049 selects option A, music streams through a voice pair of the music bus that cross-fades with sample-accurate timing (ADR-024, ADR-025): a request for another track starts it while the playing track releases, so the two overlap. This replaces the one-track channel of R-AUD-402 and R-AUD-403.
 
 **R-AUD-415** (MUST) **Species attack timing.** When DEC-049 selects option A, a requested track's attack is timed from the moment the track starts, so it always fades in over its full attack. This replaces R-AUD-404.

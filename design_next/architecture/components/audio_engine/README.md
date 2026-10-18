@@ -16,7 +16,7 @@ This component turns the sound events that game code raises into samples at the 
 
 | File | Holds | Requirement IDs |
 |---|---|---|
-| [README.md](README.md) (this file) | responsibilities and boundaries, the interface sketch, the commands and the threading contract, the inputs, the voice back-end contract, the data model, the lifecycle, the trigger gate, the update schedule, the data flow, the tuning table, budgets, failure modes, the acceptance tests and the open decisions | AEN-001 to AEN-123, AEN-264, AEN-265, AEN-300 to AEN-325, AEN-360 to AEN-362 |
+| [README.md](README.md) (this file) | responsibilities and boundaries, the interface sketch, the commands and the threading contract, the inputs, the voice back-end contract, the data model, the lifecycle, the trigger gate, the update schedule, the data flow, the tuning table, budgets, failure modes, the acceptance tests and the open decisions | AEN-001 to AEN-123, AEN-264, AEN-300 to AEN-325, AEN-360, AEN-361 |
 | [instances_voices_and_envelopes.md](instances_voices_and_envelopes.md) | §4.5 to §4.13: from a command to an instance, ranking, virtual voices and stealing, emitter selection, instance states, envelope arithmetic, play position and loops, start and advance, modulatable values, pitch and the game-speed bend | AEN-130 to AEN-199 |
 | [spatialisation_mixing_and_streaming.md](spatialisation_mixing_and_streaming.md) | §4.14 to §4.19: spatialisation, the volume law and gain stages, buses, routing and effects, sample residency, streaming, device loss and restart | AEN-201 to AEN-261 |
 
@@ -429,7 +429,7 @@ The real-voice budget, the caps and the music voice pair are §4.6 and §8.2; th
 | # | Kind | Parameters (range, declared default) | Species realisation | Routing |
 |---|---|---|---|---|
 | 0 | stereo echo | wet/dry mix 0 to 100 %, 50; feedback 0 to 100 %, 50; left delay 1 to 2000 ms, 500; right delay 1 to 2000 ms, 500; pan delay 0 to 1, 0 (i) | built-in `FXEcho` when the left and right delays are equal and the pan delay is 0 (mix ÷ 100, feedback ÷ 100, delay); otherwise Species XAPO `StereoEchoFx` | send |
-| 1 | room reverb | room −10000 to 0 (hundredths of a dB), −1000 (i); room high-frequency −10000 to 0, −100 (i); room roll-off factor 0 to 10, 0; decay time 0.1 to 20 s, 1.49; decay high-frequency ratio 0.1 to 2, 0.83; reflections −10000 to 1000, −2602 (i); reflections delay 0 to 0.3 s, 0.01; reverb −10000 to 2000, 200 (i); reverb delay 0 to 0.1 s, 0.01; diffusion 0 to 100 %, 100; density 0 to 100 %, 100; high-frequency reference 20 to 20000 Hz, 5000; quality 0 to 3, 2 (i) | the XAudio2 reverb (`XAudio2CreateReverb`): the first 12 parameters, in order, are converted to its native parameters with `ReverbConvertI3DL2ToNative` at a wet/dry mix of 100; the quality parameter has no counterpart and is validated only | send, with direct and send levels of 1 |
+| 1 | room reverb | room −10000 to 0 (hundredths of a dB), −1000 (i); room high-frequency −10000 to 0, −100 (i); room roll-off factor 0 to 10, 0; decay time 0.1 to 20 s, 1.49; decay high-frequency ratio 0.1 to 2, 0.83; reflections −10000 to 1000, −2602 (i); reflections delay 0 to 0.3 s, 0.01; reverb −10000 to 2000, 200 (i); reverb delay 0 to 0.1 s, 0.01; diffusion 0 to 100 %, 100; density 0 to 100 %, 100; high-frequency reference 20 to 20000 Hz, 5000 | the XAudio2 reverb (`XAudio2CreateReverb`): the 12 parameters, in order, are converted to its native parameters with `ReverbConvertI3DL2ToNative` at a wet/dry mix of 100 | send, with direct and send levels of 1 |
 | 2 | parametric equaliser | centre 80 to 16000 Hz, 8000; bandwidth 1 to 36 semitones, 12; gain −15 to 15 dB, 0 | built-in `FXEQ`: band 0 at the centre, gain converted from dB to an amplitude ratio, bandwidth ÷ 12 octaves; bands 1 to 3 at unity gain | insert |
 | 3 | studio reverb | input gain −96 to 0 dB, 0; reverb mix −96 to 0 dB, 0; reverb time 0.01 to 3000 ms, 1000; high-frequency time ratio 0.01 to 0.99, 0.01 | Species XAPO `StudioReverbFx` | insert |
 | 4 | resonant low-pass | R-AUD-077 | Species XAPO `ResonantLowPassFx` (AEN-230) | insert |
@@ -440,7 +440,7 @@ The real-voice budget, the caps and the music voice pair are §4.6 and §8.2; th
 
 **AEN-071** (MUST) **Schema defaults.** The schema default of every effect parameter is its declared default (AEN-070 for the standard kinds, R-AUD-077 for the own-algorithm kinds), not 0.0. A binding that omits a parameter therefore takes the declared default, where the reference data takes 0.0 (R-AUD-050, R-AUD-078). The choice is deliberate (DEC-567, [data schemas](../data_schemas/README.md) DAT-012):
 
-1. 14 of the 36 effect parameters have a range that excludes 0.0 (the delays of both echoes, the decay time, both high-frequency ratios and the high-frequency reference of the reverbs, the reverb time, the centre and bandwidth of the equaliser, the cut-off and resonance controls, the gargle rate and the bit depth), so a 0.0 default would make an omission a range error, and two of them make a sound unusable: a bit depth of 0 quantises every sample to silence, and an echo delay of 0 has no delay line;
+1. 14 of the 35 effect parameters have a range that excludes 0.0 (the delays of both echoes, the decay time, both high-frequency ratios and the high-frequency reference of the reverbs, the reverb time, the centre and bandwidth of the equaliser, the cut-off and resonance controls, the gargle rate and the bit depth), so a 0.0 default would make an omission a range error, and two of them make a sound unusable: a bit depth of 0 quantises every sample to silence, and an echo delay of 0 has no delay line;
 2. every effect binding of the reference event set states all its parameters ([event model](../../../reference/10_audio_design/event_model_and_sound_data.md) R-AUD-082, the 15 effect bindings), so the choice changes nothing in the reference set;
 3. no reference sound data is imported (R-AUD-003), so parity with omitted parameters has no value;
 4. effects are off by default (DEC-567, R-AUD-076), so no default is audible until effects are enabled.
@@ -489,8 +489,6 @@ Sections 4.5 to 4.13 are in [instances_voices_and_envelopes.md](instances_voices
 4. request the interface bank (AEN-074) from the asset system, asynchronously;
 5. report each readiness point in the result queue (AEN-104).
 
-**AEN-101** (removed: a second start-up order; AEN-100 is the order and AEN-104 the readiness points)
-
 **AEN-102** (MUST) A match load requests the match bank. The match loop starts only after the match bank and its stream heads are resident, so no match trigger is dropped for residency once the match runs; the wait is part of the load and is reported as load progress (DEC-226).
 
 **AEN-103** (MUST) The content build validates the sound data (DEC-015, DEC-801, ADR-059): group members are named by asset id; a priority field is ignored (R-AUD-049); an unknown effect kind, an unknown source, event or field, a duplicate key or group, a malformed block and a stray blank line inside a block are build errors with their location (R-AUD-068); effect parameters are cooked in their kind's order, and a binding with more parameters than its kind is a build error (AEN-071).
@@ -509,8 +507,6 @@ Sections 4.5 to 4.13 are in [instances_voices_and_envelopes.md](instances_voices
 
 ### 4.3 Where the audio update runs
 
-**AEN-115** (removed: a frame-driven update; AEN-116 and AEN-120 are where and when the update runs)
-
 **AEN-116** (MUST) The update runs on the engine's own thread in every application state, at its own rate, whatever the frame rate; the application loops only send commands (AEN-043). The threading model that places this thread is DEC-224's.
 
 ### 4.4 Update schedule and step order
@@ -518,8 +514,6 @@ Sections 4.5 to 4.13 are in [instances_voices_and_envelopes.md](instances_voices
 **AEN-120** (MUST) The engine runs one update every `aen.update.period` of audio time, equal to one XAudio2 processing quantum, so the changes of one update take effect within one quantum. Each update reads the audio clock once (T) and uses T, or the elapsed time Δt since the previous update, for every timed quantity. An update that starts late runs once; there are no catch-up updates, and lateness changes only granularity.
 
 **AEN-121** (MUST) The update runs at its own period whatever the application does: while a match is paused, while the frame rate is low, with no device (AEN-321), and while the command-stream recording hook drives the presentation frame delta at its fixed capture rate, because the audio clock stays real (R-SIM-740). The update rate changes only the granularity of timed quantities, never their duration, because every timed quantity reads the audio clock (AEN-120).
-
-**AEN-122** (removed: a second update order; AEN-123 is the update)
 
 **AEN-123** (MUST) The update runs these steps in order:
 
@@ -573,8 +567,6 @@ Diagram 4-D: from a raised event to the device (AEN-020 to AEN-043, AEN-123, AEN
 
 **AEN-264** (MUST) **Start latency.** A trigger reaches the device `aen.update.schedule_latency` after its issue time plus at most one processing quantum and the device's own latency; a burst of triggers is decided in the update that drains it, so no trigger waits for a start quota (AEN-147).
 
-**AEN-265** (removed: a second start-latency model; AEN-264 is the start latency, R-AUD-218, DEC-570)
-
 ### 4.21 Tuning table
 
 Every value is an engine value of this component; the reference values are the starting values (DEC-004). Keys of other documents are cited, not repeated: `ref.aud.*` in the [audio design](../../../reference/10_audio_design/README.md) files, `ref.sim.frame.*` and `ref.sim.speed.normal` in [tick timing](../../../reference/12_simulation_model/01_tick_timing_and_main_loop.md), `ref.meta.options.sound.*` in [options](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md).
@@ -619,7 +611,7 @@ Every value is an engine value of this component; the reference values are the s
 | `aen.mix.duck_ramp` | 0.05 | s | | AEN-216 | DEC-570 |
 | `aen.mix.limiter.release` | 6 | — | `FXMasteringLimiter` range 1 to 20 | AEN-220 | DEC-567 |
 | `aen.mix.limiter.loudness` | 1 000 | — | range 1 to 1 800 | AEN-220 | DEC-567 |
-| `aen.dsp.max_params` | 13 | parameters | the largest kind | AEN-070 | — |
+| `aen.dsp.max_params` | 12 | parameters | the largest kind | AEN-070 | — |
 | `aen.fx.full_scale` | 32 768 | 16-bit units | float ±1.0 | AEN-225 | — |
 | `aen.fx.lowpass.cutoff_divisor` | 3 850 | — | f = e^(p0 ÷ 3850 + 4.7) | AEN-230 | — |
 | `aen.fx.lowpass.cutoff_offset` | 4.7 | — | | AEN-230 | — |
@@ -663,8 +655,6 @@ Every value is an engine value of this component; the reference values are the s
 
 **AEN-304** (MUST) Memory stays within the budgets of AEN-243: the resident groups of the interface bank within `aen.memory.interface_bank_budget`, those of the match bank within `aen.memory.match_bank_budget`, and every stream ring and stream head together within `aen.memory.stream_budget`. The content build measures every bank of the authored sound set, as cooked, against its budget at every build and fails on an excess (AEN-243, T25); the run-time memory per bank and for streams is shown by the development overlay (AEN-323) and checked by T27. The starting budgets are sized from the durations of the asset manifest: the resident groups hold about 1 888 s of audio in 868 files, about 173 MiB of 16-bit mono at 48 kHz, of which the interface bank takes about 2 MiB; the 34 members of the laser-bolt, grenade-throw and game-over groups, whose durations the manifest does not yet give, add at most about 3.4 MiB; authoring the two-dimensional stings in stereo would add about 14 MiB. The streams need `aen.stream.max_streams` rings of `aen.stream.blocks_per_stream` MS-ADPCM buffers, under 1 MiB, plus the heads.
 
-**AEN-305** (removed: a second threading model; AEN-020, AEN-025 and AEN-301 are the threading rules, ADR-026)
-
 ## 6 Failure modes, diagnostics and telemetry
 
 **AEN-320** (MUST) Failures and their handling; none stops the program (DEC-015):
@@ -696,8 +686,8 @@ Every value is an engine value of this component; the reference values are the s
 | Test | Kind | Checks | Requirements |
 |---|---|---|---|
 | T1 queue contract | unit | commands from three producers apply in issue-time order; a full queue drops the newest command, returns false and counts it; no producer call blocks | AEN-020 to AEN-022 |
-| T2 callbacks | static analysis | the callback translation units call no allocator, lock, logger or voice creation, and only the voice back-end includes XAudio2 or X3DAudio headers | AEN-025, AEN-003 |
-| T3 integrity | property | a recorded match replayed with audio on and off gives the same per-tick state hashes; audio code includes no simulation-generator or writable simulation header | AEN-003, AEN-004, AEN-005 |
+| T2 callbacks | checker fixture | the callback translation units call no allocator, lock, logger or voice creation, and only the voice back-end includes XAudio2 or X3DAudio headers (`Build\CheckProjectFiles.py`, build tooling table 4.1-B row 14) | AEN-025, AEN-003 |
+| T3 integrity | property | a recorded match replayed with audio on and off gives the same per-tick state hashes; audio code includes no simulation-generator or writable simulation header (build tooling table 4.1-B row 13) | AEN-003, AEN-004, AEN-005 |
 | T4 audience and merge | unit | own and enemy layers follow the local team (R-AUD-024); a no-team event creates only all and no-team layers; a second `worker.spawn` adds an emitter, not an instance | AEN-130, AEN-131 |
 | T5 emitter at trigger | unit | a query right after a trigger counts it, for every position kind; a stop in the same frame retires it unheard | AEN-134, AEN-136 |
 | T6 counts in every state | unit | counts are correct with pending, virtual, real and retired instances, with and without an emitter, and over empty slots | AEN-136 |
@@ -769,15 +759,11 @@ The audio ADRs, as amended, agree with this component; it applies them as follow
 - **ADR-026.** A command's issue time is the audio clock, a real-time reading of the platform clock, not the game-speed-scaled presentation clock.
 - **ADR-025.** The streaming threshold applies to a group's longest member, the banks are those of AEN-074, and their budgets are those of AEN-243. Streams are MS-ADPCM, encoded by the content build tool and decoded by XAudio2; seeks and loops work on whole blocks (AEN-072, AEN-252 to AEN-255).
 
-<a id="82-music-hook-kh-music"></a>
-
 ### 8.2 Music hook
 
 **AEN-360** (MUST) Until DEC-049 is decided, the engine provides the music channel of [music hooks and brief](../../../reference/10_audio_design/music_hooks_and_sound_design_brief.md) R-AUD-400 to R-AUD-405 as a hook: one playing and one pending music instance; a request for the member that is playing is ignored; any other request replaces the pending one, which is retired, and releases the playing track finally; at the first update after the playing track has finished, the pending one starts, with its attack timed from its request (R-AUD-404); each update advances the music instance fully (envelope, pitch, loops and ends by AEN-166 and AEN-175 to AEN-178); music never enters the ranking and is never positioned, bent or effected; a stop reaches it only when it names the `music` source (R-AUD-403).
 
 **AEN-361** (MUST) The music bus's `aen.voice.bus_cap.music` voices are reserved for the music channel, so that a music system can cross-fade two streams with sample-accurate timing in one operation set (ADR-024, R-AUD-414).
-
-**AEN-362** (removed: a second music channel; AEN-360 is the music channel, R-AUD-400)
 
 ### 8.3 Design-phase inputs
 

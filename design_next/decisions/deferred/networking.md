@@ -125,7 +125,7 @@ Not decided here, because the reference library keeps them as reference behaviou
   5. The identity is a checksum of the file bytes, so any edit (including a whitespace change, or a load-and-save round trip in the map editor) changes the id and silently breaks every list keyed by it: the map menus, the permitted-map lists and the tutorial's fixed maps. Content is identified by a hash of its canonical form, produced by the content build, and lists are keyed by a stable content name together with that hash.
   6. The identity is computed over whichever copy of a file wins at load (a loose file or the archive entry), so a loose file silently changes it. With no loose-file override in a shipping build (the pack-file rule of the engine ADRs), the manifest is authoritative.
   7. Simulation-relevant data derived at load time must be content or a deterministic function of content: the reference generates tree collision spheres at load from a shared presentation generator that is neither synchronised nor thread-safe, so the collision data can differ between processes.
-  8. Sizes: the largest reference arena file is 46 085 bytes, and the reference reads map files into a fixed 100 000-byte buffer without a bound check. Species custom maps and world-region data are far larger, so hashing and transfer (DEC-207) stream the data instead of buffering it whole.
+  8. Sizes: Species custom maps and world-region data can be far larger than a skirmish map, so hashing and transfer (DEC-207) stream the data instead of buffering it whole, and no reader assumes a bound on a map file's size that it does not check.
 
 ### DEC-205 Join, reconnect, leave and session continuity
 - Status: Open

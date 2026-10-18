@@ -321,7 +321,7 @@ FireAtPoint(_target):
                                                                    # each component in (-7.5, 7.5)
     from := position + (0, ref.unit.attack.muzzle_height, 0)
     fire a laser bolt from `from` with velocity (aim - from) scaled to ref.unit.attack.laser_speed, for the actor's team
-    reload := rate ÷ ref.sim.tick_period                           # the reload interval in ticks (R-UNIT-011)
+    reload := reload interval                                      # rate ÷ ref.sim.tick_period, rounded at load (R-UNIT-011)
     justFired := true
     emit presentation event <kind>.attack
 ```

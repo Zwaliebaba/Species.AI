@@ -97,7 +97,7 @@ Table 2.1-C Build commands, from the repository root.
 
 | Purpose | Command |
 |---|---|
-| restore the allow-listed packages | `msbuild <Solution>.slnx /t:Restore /p:RestorePackagesConfig=true /nologo` |
+| restore the packages of every project: the allow-list for game and engine projects, the recorded packages of the tool projects (BLD-037, BLD-043) | `msbuild <Solution>.slnx /t:Restore /p:RestorePackagesConfig=true /nologo` |
 | build everything | `msbuild <Solution>.slnx /p:Configuration=Debug /p:Platform=x64 /m /v:minimal /nologo` |
 | build one project | `msbuild <Solution>.slnx /t:<ProjectName> /p:Configuration=Debug /p:Platform=x64 /m /nologo` |
 | build Release | `msbuild <Solution>.slnx /p:Configuration=Release /p:Platform=x64 /m /v:minimal /nologo` |
@@ -307,8 +307,8 @@ Table 3.1-A Products.
 
 | Product | Project folder | Programs | Links | Never links | Content it mounts |
 |---|---|---|---|---|---|
-| client | a folder of its own at the repository root | `species.exe`, the game client, which can host the integrated server | the engine, the game, the server library, the renderer, audio, input, the UI framework, the platform crash path, the three packages of table 4.1-A | any tool project or tool-only package | the packs of one client edition |
-| server | a folder of its own at the repository root | `species_server.exe`, the headless dedicated server | the engine core, the game rules, the server library, the platform layer without a window | `d3d12`, `dxgi`, any renderer, audio, input, UI or text-rendering code, the GameInput and Agility SDK packages (ADR-001, ADR-056) | the packs of one server edition: data records, maps, collision assets and simulation data records only (AST-007) |
+| client | a folder of its own at the repository root | `species.exe`, the game client, which can host the integrated server | the engine, the game, the server library, the renderer, the client resource library of AST-127, audio, input, the UI framework, the platform crash path, the three packages of table 4.1-A | any tool project or tool-only package | the packs of one client edition |
+| server | a folder of its own at the repository root | `species_server.exe`, the headless dedicated server | the engine core, the content library of AST-127, the game rules, the server library, the platform layer without a window | `d3d12`, `dxgi`, any renderer, audio, input, UI or text-rendering code, the GameInput and Agility SDK packages (ADR-001, ADR-056) | the packs of one server edition: data records, maps, collision assets and simulation data records only (AST-007) |
 | content build tool | `Tools/<Project>/`, one per tool, in the `Tools` solution folder | `species_contentbuild.exe` and its importers; the schema code generator is a tool project of its own (ADR-062) | the engine projects it shares code with (the schema and record code of the data schemas, the cookers of the asset pipeline), a software or GPU renderer for thumbnails (AST-087), and its own pinned dependencies (BLD-043) | nothing beyond what its project declares (BLD-041) | none: it reads authoring sources |
 | test projects | a folder of its own beside the library's | one `<Project>Tests.dll` per library, its fuzz harnesses included (ADR-069) | the library under test and the Microsoft C++ Unit Test Framework that ships with Visual Studio | any product's entry point | its test data |
 

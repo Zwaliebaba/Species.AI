@@ -1,6 +1,6 @@
 # Species art and audio briefs
 
-> Status: Style guide and category briefs, pass 2b · Related: [GameAssets.md](GameAssets.md) · [assets README](README.md) · [asset_manifest.csv](asset_manifest.csv) · [vision brief](../../vision/species-vision-brief.md) (O9)
+> Status: Style guide and category briefs · Related: [GameAssets.md](GameAssets.md) · [assets README](README.md) · [asset_manifest.csv](asset_manifest.csv) · [vision brief](../../vision/species-vision-brief.md) (O9)
 
 ## Contents
 
@@ -125,7 +125,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 ## 6 HUD, supply-crate and power icons
 
-**34 files, 32 asset ids**: 26 power and outcome icons, the empty-slot and discard read-outs, the darkening halo behind icons, three Transport state read-outs and the two Launch Race status-panel layers.
+**30 files, 28 asset ids**: 23 power and outcome icons, the empty-slot read-out, the darkening halo behind icons, three Transport state read-outs and the two Launch Race status-panel layers.
 
 - Power icons are 128x128 white or grey art on transparent, tinted at draw and drawn over the darkening halo. The same icon appears on a Supply crate, in a power slot, beside the cursor and on off-screen markers, so it must read at 128 px and at 24 px.
 - One icon per power or outcome, each with a distinct silhouette; a shared frame or badge is allowed, but the icon inside must differ in shape, not only in colour.
@@ -160,7 +160,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 **104 files, 77 asset ids**: 71 render meshes in 53 asset ids (unit figures and bodies 7, projectiles 4, creatures 13, structures 32, eight Relics and seven scenery pieces), 32 collision assets in 23 asset ids, and the map editor's camera-view marker.
 
-- Flat-shaded low-poly, per-face colour in `COLOR_0`, no normals; metres, +Y up; budgets are the reference triangle counts as upper limits (the low-poly look usually needs far fewer).
+- Flat-shaded low-poly, per-face colour in `COLOR_0`, no normals; metres, +Y up; triangle budgets are upper limits in the classes 100, 300, 1000, 3000, 10000 and 25000 (the low-poly look usually needs far fewer).
 - Team parts carry explicit tint weights (the `_SPECIES_TINT` attribute or the `species_team_tint` material flag) on the root node and its direct children; see §2.5.
 - Indexed sockets are numbered from 01 without gaps (`port_01`, `leg_01` to `leg_08`).
 - Every collidable mesh has a collision asset: triangle-only geometry with no materials, authored as its own source at the render member's bounds. The hit tests read it, never the render mesh.
@@ -171,20 +171,20 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 ## 11 Help images and explainer animations
 
-**75 files, 22 asset ids**: 17 hint pictures, 6 mode cards, 5 general help pages, 16 per-mode help pages, 6 explainer scripts and 25 explainer pictures.
+**59 files, 6 asset ids**: the camera-controls hint picture, 6 mode cards, 5 general help pages, 16 per-mode help pages, 6 explainer scripts and 25 explainer pictures.
 
 - No baked text in any picture: captions come from the string table, so one picture serves nine languages.
-- Hint pictures 200x200, help pages 150x150, mode cards 300x200, the camera-controls hint 304x128 (display sizes; author at 2x).
-- The 16 objective-card hint pictures are hook art: no rule of a reference match draws them (DEC-050), so they are post-launch.
+- Help pages 150x150, mode cards 300x200, the camera-controls hint 304x128 (display sizes; author at 2x).
+- The objective cards have no pictures: they draw nothing in a match, and their art is created only if the design phase adopts objective cards (DEC-050).
 - Explainers are one looping script per mode (canvas 800-1000 x 250; loops of 12.0-30.0 s). The choreography is new: what moves, when and where is designed for Species. The scripts reference their pictures by asset id; the pictures are cut-outs with soft alpha and full mip chains.
 
 ## 12 Sound effects by source and event
 
-**895 files in 171 sample groups** from 39 sound sources (units, creatures, weapons, structures, the Supply crate), including the 25 Supply-crate outcome stings.
+**901 files in 177 sample groups** from 39 sound sources (units, creatures, weapons, structures, the Supply crate), including the 31 Supply-crate outcome stings, six of which play only if DEC-565 binds them.
 
-- Four groups give sound to moments the reference leaves silent, by Resolved decisions: the laser-bolt fire, structure-hit and kill groups (DEC-564) and the Trooper grenade throw (DEC-097). Their variant counts follow the reference set's unbound takes for those moments where it has them.
+- Four groups give sound to moments the reference leaves silent, by Resolved decisions: the laser-bolt fire, structure-hit and kill groups (DEC-564) and the Trooper grenade throw (DEC-097). Variant counts are proposed (DEC-564, DEC-097).
 - Each group keeps the reference variant count, so the mix keeps its variety: the Worker attack group has 24 variants, the laser-hit bark 36, the Worker charge bark 37.
-- Mono, 48 kHz, 24-bit sources. Loops are seamless (no click at the wrap); one-shots start on the transient. Reference durations in each row are targets for timing, not limits.
+- Mono, 48 kHz, 24-bit sources. Loops are seamless (no click at the wrap); one-shots start on the transient. The target durations in each row, rounded to a tenth of a second, are targets for timing, not limits.
 - The behaviour (volume, pitch spread, distance roll-off, looping, priority, which variant plays) lives in the sound-event data, not in the files. Files are recorded clean and full; the data shapes them.
 - **Crowd voice.** Worker, Leader and Trooper barks (selection, orders, fleeing, charging, being hit) are new voice sets for the small figures. Their character is the audio director's choice; whether they use words is an open question (words need one recording per language).
 - **Outcome stings** announce a Supply crate's result to every player; one per outcome, 2-8 s.
@@ -205,7 +205,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 ## 15 Music
 
-**6 files proposed, 4 asset ids**: a front-end theme, three in-match beds and victory and defeat stings. The reference plays no music in a match; Species commissions new music, and the design phase sets the final list and triggers.
+**6 files proposed, 4 asset ids**: a front-end theme, three in-match beds and victory and defeat stings. The victory and defeat stings are bound to the match end now (R-AUD-307); the theme and the beds are authored only if DEC-049 selects option A. Species commissions new music, and the design phase sets the final list and triggers.
 
 - Stereo, 48 kHz, streamed; beds loop seamlessly and mix below the effects.
 - Character: sparse, electronic, cool timbres that leave room for crowd sound and match the glow-on-black look; newly composed, no pastiche of any existing score.
@@ -220,7 +220,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 ## 17 Player-facing text
 
-**9 string tables** (en-GB first, then French, German, Italian, Spanish, Portuguese, Russian, Japanese, Korean), and a development string table (en-GB only, development editions only). About 221 reference text entries in scope size the work: mode messages, objectives and HUD lines (74), team and faction names (11), menus (35), help (11), leaderboard pages (26), options (45), dialogs, windows and fields (19).
+**9 string tables** (en-GB first, then French, German, Italian, Spanish, Portuguese, Russian, Japanese, Korean), and a development string table (en-GB only, development editions only). About 209 reference text entries in scope size the work: mode messages, objectives and HUD lines (74), team and faction names (11), menus (35), help (11), leaderboard pages (26), options (33), dialogs, windows and fields (19).
 
 - All text is new, in plain functional English, keyed by Species string ids; no reference line is copied or paraphrased closely.
 - Messages are short, read at a glance during a battle, and avoid jokes that need translation notes.

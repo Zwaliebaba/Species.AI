@@ -412,7 +412,6 @@ Table 3.8-A Fields of a starting-forces record.
 | run as a power | `run_as_power` | boolean | defaulted: false | R-MAP-132 item 1 |
 
 ### 3.9 Routes
-<a id="39-routes-and-primary-objectives"></a>
 
 **DAT-093** (MUST) Each route holds an id from 0 to `ref.map.route.id_limit` − 1 (0 to 9,999) and an ordered list of route points (R-MAP-120). A route point is an object with exactly one of the fields of table 3.9-A; an object with none, with two, or with an unknown field is a build error, so no point is ever created at a default position from an unknown type. A route point cooks to the simulation's `RoutePoint` ([reference/12](../../../reference/12_simulation_model/05_space_routing_and_physics.md) R-SIM-333): the field `position` to `RoutePointKind::Position`, `ground` to `RoutePointKind::GroundPosition` and `structure` to `RoutePointKind::Structure`.
 
@@ -425,8 +424,6 @@ Table 3.9-A Route points.
 | structure | `structure` | record reference to a structure id of the map |
 
 **DAT-094** (MUST) Two routes with one id in a map are a build error (README DAT-025). A map route is data that no match rule follows (R-MAP-121); the record type exists so that a map tool keeps the routes it loads (DEC-800).
-
-**DAT-095** (removed: a map defines no objective, R-MAP-033; a `primary_objectives` block is an unknown block and a build error, DAT-075)
 
 ### 3.10 Derived data
 
@@ -445,9 +442,9 @@ Table 3.12-A The option catalogue. Each option's type and unit come from [refere
 | Option | Key | Value type | Unit |
 |---|---|---|---|
 | score mode | `score_mode` | enumeration of the mode's score modes | — |
-| time limit | `time_limit` | integer, or the explicit value `"none"` (DEC-120) | minutes; `"none"` is no limit, offered where the mode's range starts with none (R-MODE-074), and is never written as 0 |
+| time limit | `time_limit` | integer, or the explicit value `"none"` (DEC-120) | minutes; `"none"` is no limit, offered where the mode's range starts with none (R-MODE-074), and is never written as 0; `"none"` is this option's own explicit value (R-MODE-074), not the limit form of DAT-008 |
 | Catch-up bonus | `catch_up_bonus` | integer | % |
-| crate drop period | `crate_drop_period` | integer, or the explicit value `"none"` (DEC-120) | s; `"none"` is no Supply crates (R-MODE-074), and is never written as 0 |
+| crate drop period | `crate_drop_period` | integer, or the explicit value `"none"` (DEC-120) | s; `"none"` is no Supply crates (R-MODE-074), and is never written as 0; `"none"` is this option's own explicit value (R-MODE-074), not the limit form of DAT-008 |
 | starting powers | `starting_powers` | count | powers |
 | Comeback Bonus | `comeback_bonus` | boolean | — |
 | sudden death | `sudden_death` | boolean | — |

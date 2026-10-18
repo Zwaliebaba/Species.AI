@@ -39,11 +39,11 @@ Chosen option: "One process-relative monotonic clock behind an injectable time-s
 
 * Good, because every timing-dependent behaviour can be tested deterministically with the manual source.
 * Good, because capture and replay runs produce the same frame times on any machine with the fixed-step source.
-* Bad, because every component must take time from the platform interface, which a lint rule has to enforce.
+* Bad, because every component must take time from the platform interface, which a rule of `Build\CheckProjectFiles.py` has to enforce.
 
 ### Confirmation
 
-* A lint rule rejects direct calls to `QueryPerformanceCounter`, `GetTickCount64`, `timeGetTime` and `std::chrono` clocks outside the platform layer.
+* `Build\CheckProjectFiles.py` rejects direct calls to `QueryPerformanceCounter`, `GetTickCount64`, `timeGetTime` and `std::chrono` clocks outside the platform layer ([build tooling](../architecture/components/build_tooling_and_distribution.md) table 4.1-B row 14, PLT-003).
 * A test runs the frame loop on the manual source and checks the exact sequence of tick-scheduling decisions.
 * A test changes the system time-zone and calendar time during a run and checks that no timing behaviour changes.
 
@@ -69,3 +69,4 @@ Chosen option: "One process-relative monotonic clock behind an injectable time-s
 * Tick rate, the per-tick budget and the threading model are design-phase decisions.
 * **Amendment 2026-10-17 (AGENTS.md, O21).** Development builds are Debug builds, the only configuration with the command-history feature ([ADR-056](ADR-056-products-configurations-and-feature-flags.md)).
 * **Amendment 2026-10-17.** The source can be replaced after the settings load in Debug builds, with continuity, as the platform layer specifies (PLT-049, PLT-051) for the command-history feature of the diagnostics component (DBG-241).
+* **Amendment 2026-10-18.** The rule against direct clock calls is a rule of the project-file checker `Build\CheckProjectFiles.py` (build tooling table 4.1-B row 14), not a separate lint step.

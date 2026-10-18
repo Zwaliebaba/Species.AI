@@ -160,7 +160,7 @@ struct SoundParam
 struct EffectBinding
 {
   DspFilterKind kind;
-  std::array<SoundParam, 13> params;
+  std::array<SoundParam, 12> params;
   std::uint8_t count;
 };
 // Table 3.3-B; its position, sharing, loop, audience and bus fields bind to the audio engine's enumerations (README DAT-054 item 4).
@@ -280,7 +280,7 @@ Table 3.4-A Forms of a modulatable value.
 
 **DAT-270** (MUST) An effect binding is an object with the field `kind`, a DSP filter kind (`DspFilterKind`) of table 3.5-A, and one field per parameter it sets, named as table 3.5-A names it, each a modulatable value (R-AUD-080). A parameter name that the kind does not have, a second binding of one kind on one layer and a value outside the parameter's range are build errors (R-AUD-080, AEN-071).
 
-**DAT-271** (MUST) A parameter that a binding omits takes its schema default, which is the parameter's declared default (AEN-070, R-AUD-077; AEN-071). The reference reads an omitted parameter as 0.0 (R-AUD-050, R-AUD-078); Species chooses the declared default deliberately, as DEC-567 requires the choice to be made, because 21 of the 63 parameters have ranges that exclude 0.0 and every reference binding states all its parameters (AEN-071).
+**DAT-271** (MUST) A parameter that a binding omits takes its schema default, which is the parameter's declared default (AEN-070, R-AUD-077; AEN-071). The reference reads an omitted parameter as 0.0 (R-AUD-050, R-AUD-078); Species chooses the declared default deliberately, as DEC-567 requires the choice to be made, because 14 of the 35 parameters have ranges that exclude 0.0 and every reference binding states all its parameters (AEN-071).
 
 **DAT-272** (MUST) The cooker writes each binding's parameters in its kind's parameter order of table 3.5-A, the positions by which the audio engine reads them (R-AUD-050, AEN-070); the authoring file still names every parameter, so its order in the file carries no meaning (README DAT-027). An integer parameter is cooked as a decimal and truncated toward zero by the engine when evaluated (AEN-070).
 
@@ -289,7 +289,7 @@ Table 3.5-A DSP filter kinds, the nine Species kinds of AEN-070, and their param
 | # | Kind | Parameters, in order |
 |---|---|---|
 | 0 | `stereo_echo` | `wet_dry_mix`, `feedback`, `left_delay`, `right_delay`, `pan_delay` (i) |
-| 1 | `room_reverb` | `room` (i), `room_high_frequency` (i), `room_roll_off_factor`, `decay_time`, `decay_high_frequency_ratio`, `reflections` (i), `reflections_delay`, `reverb` (i), `reverb_delay`, `diffusion`, `density`, `high_frequency_reference`, `quality` (i) |
+| 1 | `room_reverb` | `room` (i), `room_high_frequency` (i), `room_roll_off_factor`, `decay_time`, `decay_high_frequency_ratio`, `reflections` (i), `reflections_delay`, `reverb` (i), `reverb_delay`, `diffusion`, `density`, `high_frequency_reference` |
 | 2 | `parametric_equalizer` | `center`, `bandwidth`, `gain` |
 | 3 | `studio_reverb` | `input_gain`, `reverb_mix`, `reverb_time`, `high_frequency_time_ratio` |
 | 4 | `resonant_low_pass` | `cutoff_control`, `resonance_control`, `gain` |
@@ -423,7 +423,7 @@ Caption: Figure 4.1-A, the sound data from its authoring file to the audio engin
 | T52 layer defaults | unit | a layer with only a group cooks every field of table 3.3-B with its default key's value | DAT-265, DAT-286 |
 | T53 parameter forms | unit | the three forms of table 3.4-A parse; a random value with three bounds and a linked value with an unknown link fail | DAT-268 |
 | T54 effect bindings | unit | every effect binding of R-AUD-082 cooks with its parameters in kind order; an omitted parameter takes its declared default; an out-of-range value fails | DAT-270 to DAT-274 |
-| T55 effect table | unit | the compiled table and the validator's table are the same generated object; 14 kinds and 63 parameters | DAT-273 |
+| T55 effect table | unit | the compiled table and the validator's table are the same generated object; 9 kinds and 35 parameters | DAT-273 |
 | T56 weights | unit | a group of 4 members with weights 1, 1, 2, 4 cooks those weights; a list of 3 fails | DAT-275 |
 | T57 sockets by kind | unit | every socket of every manifest mesh is reachable by kind and index; `Build\CheckProjectFiles.py` (build tooling table 4.1-B row 14) rejects socket look-ups by name text in code | DAT-277 |
 | T58 ramp rows | unit | a ramp whose bottom row as viewed is red reads red at height index 0 (highest terrain) through the conversion of DAT-281 | DAT-281 |
@@ -443,7 +443,7 @@ Caption: Figure 4.1-A, the sound data from its authoring file to the audio engin
 | DEC-330 | Open | socket kinds without a confirmed consumer (DAT-277) |
 | DEC-012 | Resolved | collision from its own source (DAT-278) |
 | DEC-750 | Open | keys after the loop end (DAT-285) |
-| DEC-452 | Open | the Comeback pool's membership (DAT-264) |
+| DEC-452 | Resolved | the Comeback draw uses only the pool members that the map does not exclude (DAT-264) |
 | DEC-118 | Resolved | seasonal ramps (DAT-282) |
 | ADR-019, ADR-020, ADR-021 | Accepted | the cooked mesh, facets and tint, sockets (DAT-276, DAT-277) |
 | ADR-024, ADR-025 | Accepted, Proposed | effects on buses; resident and streamed groups |

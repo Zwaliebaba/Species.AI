@@ -72,15 +72,9 @@ The victim becomes virtual and its voice fades to silence over `aen.voice.steal_
 
 **AEN-150** (MUST) **Worked example (Species).** The world bus is at its cap of 32 real instances; the three lowest score −30, −28 and −26 dB, and every instance has held its state longer than the hold time. In one update three instances start on the world bus: an explosion one-shot scoring −8 dB, a second copy of a gunfire one-shot whose audibility is −11.5 dB and which scores −14 dB after one copy decay, and a virtual ambient loop scoring −40 dB. In this update the explosion takes the −30 dB instance's place (margin 22 dB), the gunfire copy takes the −28 dB instance's place (margin 14 dB), and the loop stays virtual (−40 dB is below −26 + 3 dB). Both victims become virtual: a victim one-shot past its patience is retired at the next update, and a victim loop keeps advancing in time.
 
-<a id="47-the-reference-allocation-and-emitter-selection"></a>
-
 ### 4.7 Emitter selection
 
-**AEN-156** (removed: a second voice allocator; AEN-140 to AEN-147 are the allocation, [positional, priorities and mix](../../../reference/10_audio_design/positional_priorities_and_mix.md) R-AUD-217, R-AUD-218, DEC-570)
-
 **AEN-157** (MUST) **Emitter selection.** Gone emitters are removed from an instance's emitter set first: an emitter is gone when an emitter update marks it not present, or when a frame's emitter updates, sent after the engine published it as tracked (AEN-041), omit it; until its first update an emitter keeps its trigger's position and velocity. The emitter is chosen again when the selected one is gone, at every update for shared-nearest, and right after every start and restart for shared-random: per-trigger takes the first emitter of its set; shared-random takes member `FxRng::NextUint` mod n; shared-nearest takes the emitter with the smallest squared distance to the camera among those within `ref.aud.crowd.nearest_radius` (R-AUD-213, DEC-109). An attached instance left with no selectable emitter has lost its emitter (AEN-185).
-
-**AEN-158** (removed: a worked example of a second voice allocator; AEN-150 is the worked example)
 
 ### 4.8 Instance states
 
@@ -113,8 +107,6 @@ stateDiagram-v2
 ```
 
 Diagram 4-C: the envelope stages (AEN-166 to AEN-169). A note loop spawns its next note at release (AEN-178).
-
-**AEN-163** (removed: a second state model; AEN-162 is the state model)
 
 **AEN-164** (MUST) The envelope has no decay stage (R-AUD-057).
 
@@ -191,8 +183,6 @@ A per-note value is evaluated only while the restart flag is set: at the trigger
 **AEN-196** (MUST) A real voice's frequency ratio is pitch × bend, where every sample is at `aen.format.sample_rate` and XAudio2 converts to the device rate. A ratio above `aen.voice.max_frequency_ratio` is not applied: the previous ratio stays and the event is counted; a ratio below `aen.voice.min_frequency_ratio` is raised to it.
 
 **AEN-197** (MUST) **Bend** (DEC-569, DEC-751, R-AUD-211; the match-end drop is DEC-320's default). The bend is 1 for two-dimensional instances, for every bus other than voice and world, and whenever the match phase is not `Running`. Otherwise it is √max(g, `ref.aud.pitch_bend.speed_floor`), where g is the smoothed game speed: `BeginMatch` sets g := `ref.sim.speed.normal`; it stays there through the grace period; while the phase is `Running` or `Ended` it follows the game speed G of the match state as g := G + (g − G) × e^(−Δt ÷ `aen.pitch_bend.time_constant`) at every update; `EndMatch` discards it. The smoothing never depends on how many sounds play, and no match inherits the state of the one before.
-
-**AEN-198** (removed: a second bend model; AEN-197 is the bend, DEC-569, DEC-751)
 
 **AEN-199** (MUST) Pitch values outside the design range are content-build errors; the engine never rejects a ratio silently other than by AEN-196.
 

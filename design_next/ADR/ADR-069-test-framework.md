@@ -50,7 +50,7 @@ Chosen option: "The Microsoft C++ Unit Test Framework, run by `vstest.console.ex
 
 * CI fails when a `<Project>Tests` project produced no DLL, and when `vstest.console.exe` reports a failure ([ADR-070](ADR-070-continuous-integration.md)).
 * `Build\CheckProjectFiles.py` checks that every library has a `<Project>Tests` project and that test projects use the `<Project>Tests` name and namespace.
-* A review or lint step checks that every test method carries an existing requirement id.
+* `Build\CheckProjectFiles.py` checks that every test method carries an existing requirement id ([build tooling](../architecture/components/build_tooling_and_distribution.md) table 4.1-B row 14, DBG-140).
 
 ## Pros and Cons of the Options
 
@@ -78,3 +78,4 @@ Chosen option: "The Microsoft C++ Unit Test Framework, run by `vstest.console.ex
 * **Amendment 2026-10-17.** Performance tests use repeatable scenes, in the wording of the diagnostics component (DBG-183, DBG-208).
 * **Amendment 2026-10-17 (AGENTS.md, O21).** The framework is the Microsoft C++ Unit Test Framework that ships with Visual Studio, run by `vstest.console.exe`, with one `<Project>Tests` project per library and a `SuiteSmoke` placeholder until the first real test; property, golden and fuzz tests use no third-party library. The third-party test framework, CTest and the test presets are removed. Status Accepted, decided by the owner's `AGENTS.md`.
 * **Amendment 2026-10-18 (O27).** The fuzz harnesses are test methods of the `<Project>Tests` projects, run over a committed seed corpus in the Debug test run; the `<Project>Fuzz` projects are removed, because O27 adds no fuzz project to `AGENTS.md`. The settings that a coverage-guided fuzzing project would need are recorded in the decision for that later owner decision.
+* **Amendment 2026-10-18.** The requirement-id check of every test method is a rule of the project-file checker `Build\CheckProjectFiles.py` (build tooling table 4.1-B row 14, DBG-140), not a review or lint step.

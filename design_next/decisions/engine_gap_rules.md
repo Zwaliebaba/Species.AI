@@ -97,7 +97,7 @@ This file records the engine-baseline rules of the engine components that no oth
   3. **Camera clock.** The camera clock advances by the real, clamped frame step, is never scaled by game speed and keeps advancing while the world is held, so the camera stays live during a pause (CAM-030). No camera or UI motion advances by a stale frame delta.
   4. **Cloth while held.** A cloth flag holds its shape while the world is held, because its step is the unscaled frame step (VFX-139).
   5. **Camera shake.** Shake is an additive rotation offset of the frame's view, computed from the shake value of the screen effects and never stored in the camera's pose, so it leaves no residue when it ends (VFX-232, CAM-012).
-- Options: A — as stated; B — the reference behaviour: while the world is held the presentation frame delta keeps its last value, so the camera and the UI keep moving at the pace of the last frame before the pause (R-SIM-571); a cloth flag keeps relaxing with a step of `vfx.cloth.still_step` (0.1 s) per frame; and shake turns the camera's stored front and up in every frame, so in the static and scripted modes it leaves a random-walk residue in the pose (R-CTRL-463).
+- Options: A — as stated; B — the reference behaviour: while the world is held the presentation frame delta keeps its last value, so the camera and the UI keep moving at the pace of the last frame before the pause (R-SIM-571); a cloth flag keeps relaxing with a fixed step of 0.1 s per frame; and shake turns the camera's stored front and up in every frame, so in the static and scripted modes it leaves a random-walk residue in the pose (R-CTRL-463).
 - Recommendation: A. DEC-024 asks for one presentation clock for camera motion and ADR-036 defines it. A stale frame delta makes the paused camera's speed depend on the last frame before the pause, and a shake that changes the stored pose can leave the camera off its view after a scripted move has landed, which DEC-024 forbids.
 
 ### DEC-956 Pick-ray pixel convention
@@ -154,8 +154,8 @@ This file records the engine-baseline rules of the engine components that no oth
 - Status: Resolved
 - Affects: architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md (VFX-108), reference/09_front_end_and_match_flow/front_end_presentation.md (R-META-224); ADR-033
 - Specified behaviour: An explainer panel's place and size are those of R-META-224. The panel is a widget of the UI framework and is laid out again whenever the screen size, the DPI or the text scale changes (VFX-108, ADR-033).
-- Options: A — as stated; B — the reference behaviour: the place and size are computed once, when the panel is created, so a panel open across a resize keeps the old layout.
-- Recommendation: A. ADR-033 lays every widget out again on these changes, and a panel computed once is drawn in the wrong place after a resize.
+- Options: A — as stated; B — the reference behaviour: the panel is laid out again by the R-META-224 formulas when the screen mode changes, and not when the DPI or the text scale changes.
+- Recommendation: A. ADR-033 lays every widget out again on these changes, and a panel laid out only on screen-mode changes keeps a stale size after a DPI or text-scale change.
 
 ### DEC-962 Species effect defaults for emitters, shard edges and the eaten-orb display
 - Status: Open

@@ -82,15 +82,7 @@ The reference page also offers a refresh rate, a colour depth and a depth-buffer
 
 **R-META-415** (MUST) The screen-size list holds the render sizes that the renderer offers ([renderer](../../architecture/components/renderer/README.md) RND-026): every distinct width × height that the window's monitor reports, at least `rnd.init.min_render_width` (640) wide and `rnd.init.min_render_height` (480) high and not larger than the monitor, in the order in which the monitor reports them, each captioned `ui.options.screen.size_value`. The size is stored as two settings, the width and the height, with the default `rnd.option.render_size.default` ([renderer options](../../architecture/components/renderer/options_and_budgets.md) RND-442). The page's copy is the entry of the stored size; the stored size is always in the list, because the renderer snaps it to an offered size at start-up (R-META-424).
 
-**R-META-416** (removed: the refresh-rate list of the reference page, a display-mode setting that Species does not have; R-META-414, RND-443)
-
 **R-META-417** (MUST) **Play in a window.** On, the game runs in a captioned window with minimise and maximise boxes, centred on the desktop; a window larger than the desktop cannot be created (R-META-423). Off, the game runs borderless full screen at the chosen size. The setting is the window mode, whose values are windowed and borderless full screen and whose default is borderless full screen (`rnd.option.window_mode.default`); the display mode is never changed (ADR-075).
-
-**R-META-418** (removed: the refresh-rate choice of the reference page; R-META-414, RND-443)
-
-**R-META-419** (removed: the colour-depth choice of the reference page; R-META-414, RND-443)
-
-**R-META-420** (removed: the depth-buffer choice of the reference page; R-META-414, RND-443)
 
 **R-META-421** (MUST) The screen options compare the width, the height and play in a window for R-META-412 item 2.
 
@@ -113,9 +105,6 @@ The reference page also offers a refresh rate, a colour depth and a depth-buffer
 **R-META-426** (MUST) The graphics options compare the four detail levels for R-META-412 item 2. The apply action writes them and saves the store.
 
 **R-META-427** (MUST) When a match is loaded, the graphics apply also generates the terrain and the sea again from the map definition (DEC-246, DEC-250); outside a match it only stores the settings. The sea detail is read when the sea is built, so a change takes effect at the next build, which this apply performs in a match; the sky, structure and unit detail are read on every frame. In the Species renderer no setting rebuilds terrain or sea geometry: every sea-detail mesh is built at match start, and every change takes effect on the next frame (RND-447 to RND-449).
-
-**R-META-428** (removed: graphics controls that no page shows; R-META-456)
-
 ### 2.5 Sound options
 
 **R-META-429** (MUST) The sound options page, titled `ui.options.sound.title`, shows from top to bottom: the master volume `ui.options.sound.master_volume` (slider), the bus volumes of R-META-434 (sliders), swap left and right `ui.options.sound.swap_stereo` (check box), then apply and Back. The settings, their defaults and their engine effects are the [audio engine](../../architecture/components/audio_engine/README.md)'s (the `aen.settings.*` keys, AEN-076); the mix that they change is [reference/10](../10_audio_design/README.md)'s.
@@ -137,8 +126,6 @@ The reference page also offers an audio output, a mixing rate and a number of so
 **R-META-436** (MUST) The sound options compare the copy of swap left and right with the stored setting for R-META-412 item 2.
 
 **R-META-437** (MUST) The sound options apply writes the swap setting, saves the store and re-reads the copy. Every playing sound continues where it is: applying the sound options never restarts or cuts a sound ([audio engine](../../architecture/components/audio_engine/README.md) AEN-259, AEN-261).
-
-**R-META-438** (removed: sound controls that no page shows; R-META-454, R-META-456)
 
 **R-META-439** (MUST) Every sound setting acts on the whole client, at the front end and in a match alike: the master and bus volumes act at once (R-META-433, R-META-434), and swap left and right at the next audio update after the apply action stores it (R-META-435).
 
@@ -341,8 +328,6 @@ The language that loads is stored in the language setting. When none loads, star
 
 **R-META-491** (MUST) There is no achievements page: the page catalogue has a slot for one, but no page leads to it and nothing fills it. What an achievements page shows is the design phase's (DEC-047); the captions `ui.achievements.title` and `ui.achievements.loading` of §4.3 are its starting text.
 
-**R-META-492** (removed: the rows of the achievements page, which no player can reach; R-META-491, DEC-047)
-
 **R-META-493** (MUST) The library specifies no achievement picture, notification, sound or unlock store; those, and the platform service that awards achievements, are the design phase's (DEC-047, DEC-248). The texts of §4.3 name each achievement and state its condition, for use by the design.
 
 ### 2.12 Statistics hooks
@@ -366,19 +351,6 @@ The language that loads is stored in the language setting. When none loads, star
 ### 2.13 Leaderboard hooks
 
 **R-META-498** (MUST) There is no leaderboard page: the page catalogue has slots for a leaderboard selection page and a board page, but no page leads to them, no leaderboard has a data source, and no session or directory record carries a ranking field. The board types, matches against bots, ranked matches by Skill rating and standard matches, and the per-mode boards, every match and then Spawn Control, Zone Control, Launch Race, Relic Run and Flag Chain, with no Siege board, are inputs to DEC-047; the leaderboard captions of §4.3 are their starting text.
-
-**R-META-499** (removed: the leaderboard selection page, which no player can reach; R-META-498, DEC-047)
-
-**R-META-500** (removed: the board selector of the board page, which no player can reach; R-META-498, DEC-047)
-
-**R-META-501** (removed: the view selector of the board page, which no player can reach; R-META-498, DEC-047)
-
-**R-META-502** (removed: the loading caption, row range and period toggle of the board page, which no player can reach; R-META-498, DEC-047)
-
-**R-META-503** (removed: the rank format of the board page, which no player can reach; R-META-498, DEC-047)
-
-**R-META-504** (removed: the score-column header of the board page, which no player can reach; R-META-498, DEC-047)
-
 ### 2.14 Launch Vessel status panel
 
 **R-META-505** (MUST) In Launch Race the HUD shows the Launch Vessel status panel for the local player's team ([launch_race.md](../01_skirmish_rules_and_modes/launch_race.md) R-MODE-418). It is created when first needed and drawn every frame. Its vessel is the lobby slot's Launch Vessel when that structure is a Launch Vessel owned by the team; otherwise, for a spectator or before the vessel is known, the panel draws nothing. The panel reads the vessel's state and writes nothing (DEC-007).
@@ -761,7 +733,7 @@ Every string id that this document defines, with its new en-GB text. Arguments a
 
 - DEC-044 — commonly expected options; the default is the reference option set plus the bus volumes (R-META-434, R-META-458).
 - DEC-046 — replays; the command-history hook only (R-META-408, R-META-457).
-- DEC-047 — achievements, statistics and leaderboards; hooks only (R-META-480 to R-META-504).
+- DEC-047 — achievements, statistics and leaderboards; hooks only (R-META-480 to R-META-498).
 - DEC-048 — a post-match results screen (R-META-495).
 - DEC-050 — rebinding and control help; hooks only (R-META-410, R-META-449, R-META-458).
 - DEC-040 — the inverted ink-on-paper style (R-META-453).
@@ -774,8 +746,7 @@ Every string id that this document defines, with its new en-GB text. Arguments a
 - DEC-250 — the persisted data inventory and the settings file format (R-META-400, R-META-409, R-META-490).
 - DEC-317 — the voice set language (R-META-476).
 - DEC-567 — the dry mix and the effects switch (R-META-454).
-- DEC-869 — the reference sound options without a Species counterpart (R-META-429 to R-META-432).
 - DEC-964 — the accessibility limits behind the reduced-flash and reduced-motion settings (R-META-511).
 - DEC-972 — what the cheats-used marker suppresses (R-META-496).
 
-Resolved and dropped decisions applied in this document: DEC-004, DEC-005, DEC-006, DEC-007, DEC-010, DEC-026, DEC-037, DEC-056, DEC-061, DEC-097 (R-META-454), DEC-099, DEC-100, DEC-102 (R-META-406), DEC-118, DEC-563, DEC-570, DEC-800, DEC-801.
+Resolved and dropped decisions applied in this document: DEC-004, DEC-005, DEC-006, DEC-007, DEC-010, DEC-026, DEC-037, DEC-056, DEC-061, DEC-097 (R-META-454), DEC-099, DEC-100, DEC-102 (R-META-406), DEC-118, DEC-563, DEC-570, DEC-800, DEC-801, DEC-869 (the reference sound options without a Species counterpart, R-META-429 to R-META-432).

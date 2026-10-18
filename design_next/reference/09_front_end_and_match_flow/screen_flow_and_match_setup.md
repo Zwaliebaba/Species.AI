@@ -399,8 +399,6 @@ Siege has no time limit, so a map's play time does not apply to it; its player o
 | open or closed slot | match setup page slot control (R-META-090) | open by default (DEC-079) | the host |
 | seasonal theme | no control (§2.25) | the host's date rule (DEC-101) | nobody |
 
-**R-META-070** (removed: research levels, which the match setup does not carry; the fixed match levels are reference/01 R-MODE-082, DEC-115)
-
 ### 2.18 Who can change what
 
 **R-META-071** (MUST) The user interface offers these controls:
@@ -1073,4 +1071,4 @@ Open decisions whose reference default this document specifies:
 
 Resolved decisions applied: DEC-004, DEC-005, DEC-006 (R-META-001); DEC-102 (R-META-080); DEC-950 (R-META-014); DEC-007 (R-META-002); DEC-026 (R-META-003, the shared match setup page); DEC-035 (a player who leaves a match is replaced by a bot; [reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-069, R-META-105); DEC-036 (the ready-up barrier, R-META-104); DEC-038 (the in-match menu does not pause; pause is a command, R-META-062); DEC-067 (R-META-041, R-META-043); DEC-069 (R-META-104); DEC-073 (R-META-067); DEC-077 (R-META-044); DEC-079 (R-META-088, R-META-090); DEC-099 (R-META-021); DEC-118 (R-META-102); DEC-120 (R-META-048).
 
-Dropped: DEC-054 (the start-up mini-programs, the intro sequence and the attract mode); DEC-333 (trial-edition gating and credential files); DEC-335 (online-service listing fields); DEC-061 (user profiles and mods).
+Dropped: DEC-054 (the start-up mini-programs, the intro sequence and the attract mode); DEC-333 (entitlement and edition gating); DEC-335 (online-service listing fields); DEC-061 (user profiles and mods).

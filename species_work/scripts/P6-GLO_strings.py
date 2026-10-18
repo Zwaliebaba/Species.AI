@@ -35,7 +35,10 @@ for t in texts.values():
         keys.add(m.group(1))
 rows = list(csv.DictReader(open(os.path.join(root, 'assets', 'asset_manifest.csv'), encoding='utf-8', newline='')))
 assets = {r['asset_id'] for r in rows}
-excl = {'camera.automatic', 'camera.timeline', 'camera.advance', 'mode.options', 'maps.definition'}
+conv = texts.get('CONVENTIONS.md', '')
+sec = conv[conv.index('the schema ids `maps.definition`'):]
+sec = sec[:sec.index('\n')]
+excl = set(re.findall(r'`([a-z_]+\.[a-z_.]+)`', sec)) | {'camera.automatic', 'camera.advance'}
 rx = re.compile(r'`((?:' + '|'.join(roots) + r')(?:\.[a-z0-9_<>]+)+)`')
 cites = defaultdict(Counter)
 for f, t in texts.items():
@@ -51,7 +54,7 @@ for f, t in texts.items():
 fam = defaultdict(set)
 for s in cites:
   parts = s.split('.')
-  if parts[0] in two_level and len(parts) >= 3:
+  if parts[0] in two_level and len(parts) >= 3 and not parts[1].startswith('<'):
     fam[parts[0] + '.' + parts[1] + '.*'].add(s)
   else:
     fam[parts[0] + '.*'].add(s)
@@ -62,7 +65,7 @@ for k in sorted(fam):
     files.update(cites[s])
   top = sorted(files.items(), key=lambda kv: (-kv[1], kv[0]))
   total += len(fam[k])
-  print(f'{k}\t{len(fam[k])}\t{top[0][0]}\t+{len(top) - 1}')
+  print(f'{k}\t{len(fam[k])}\t{top[0][0]}\t+{len(top) - 1}\t' + ','.join(sorted(files)))
   if k in show:
     for s in sorted(fam[k]):
       print('   ', s, dict(cites[s]))

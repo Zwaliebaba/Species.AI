@@ -47,8 +47,6 @@ Table 1-A: platform services.
 
 **PLT-005** (MUST) The headless server (the server project, ADR-056) is a Windows build with the toolset of the client (ADR-051) and uses only the portable platform services: the clock, threads and job queues, the floating-point environment, files and text conversion, the system summary without its display and audio parts, its own start-up options and the HTTPS client. It links no window, display, input-forwarding, clipboard, screenshot or audio-endpoint code. Windows Error Reporting covers its crashes; its process roles, its data locations and where its crash reports go are design-phase decisions (DEC-220, ADR-065, §8.2).
 
-**PLT-006** (removed: the Species client platform is ADR-050, and each platform service is specified in the section that table 1-A names)
-
 **PLT-132** (MUST) The platform layer's project owns the one header that includes `<windows.h>`, `WindowsHeaders.h` (`AGENTS.md` §4): it defines `NOMINMAX`, `WIN32_LEAN_AND_MEAN`, `NOMCX`, `NOSERVICE` and `NOHELP` and then includes `<windows.h>`. No project file and no other header defines any of these macros. Every source file of any project that needs a Windows declaration includes `WindowsHeaders.h` instead of `<windows.h>`, before any Direct3D 12, DXGI, XAudio2 or GameInput header, in the include order of `AGENTS.md` §4. The rules of `Build\CheckProjectFiles.py` ([build tooling](build_tooling_and_distribution.md) table 4.1-B) reject a direct include of `<windows.h>` and a definition of one of these macros anywhere else (T35).
 
 ## 2 Interfaces
@@ -935,8 +933,6 @@ flowchart TD
 ```
 
 Diagram 6-A: window and swap-chain creation fallback chain at start-up (PLT-112); a screen-options apply enters it at attempt 1 with the requested values.
-
-**PLT-113** (removed: the client has one creation chain, PLT-112)
 
 **PLT-114** (MUST) The window and the renderer's device are created once per process. Applying the screen options changes the window mode and the render size in place (PLT-061; [renderer](renderer/README.md) RND-030) and creates no new window and no new device; when the in-place change cannot take the requested values, the attempts of PLT-112 continue in place. No temporary window exists between two modes.
 

@@ -250,7 +250,7 @@ Texts 2 and 3 blink on the presentation clock: alpha `ref.match.grace_overlay.bl
 
 ### 2.13 Comeback Bonus
 
-**R-MODE-052** (MUST) When the Comeback Bonus option is on, the Comeback step runs on every post-grace tick (R-MODE-037 step 8). For every used slot that is not the Rogue or Visitor faction, it counts the slot's Comeback timer down while the team counts as eliminated (R-MODE-048) and holds it at the interval otherwise; on expiry it grants one power from the Comeback pool when the team has a free Power slot. The timers and the grant are [reference/05](../05_population_flow.md) R-ECON-112 to R-ECON-116 (`ref.econ.comeback.first_ticks`, `ref.econ.comeback.interval_ticks`), and the pool is `ref.power.comeback.pool` of [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (R-CRATE-136). An eliminated team has two Power slots (DEC-033). The grant ignores the map's excluded outcomes (DEC-452 is open on filtering the pool).
+**R-MODE-052** (MUST) When the Comeback Bonus option is on, the Comeback step runs on every post-grace tick (R-MODE-037 step 8). For every used slot that is not the Rogue or Visitor faction, it counts the slot's Comeback timer down while the team counts as eliminated (R-MODE-048) and holds it at the interval otherwise; on expiry it grants one power from the Comeback pool when the team has a free Power slot. The timers and the grant are [reference/05](../05_population_flow.md) R-ECON-112 to R-ECON-116 (`ref.econ.comeback.first_ticks`, `ref.econ.comeback.interval_ticks`), and the pool is `ref.power.comeback.pool` of [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (R-CRATE-136). An eliminated team has two Power slots (DEC-033). The grant draws only from the pool members that the map does not exclude (DEC-452).
 
 **R-MODE-053** (MUST) A Comeback grant marks the power's source as the Comeback Bonus for the Power slots panel. When the timer expires and both Power slots are occupied, no power is granted and the local team's player sees the notice `ui.power_slots.comeback_full`.
 
@@ -813,7 +813,6 @@ Open decisions whose default this file specifies:
 - DEC-300 — the return of teams wiped out in sudden death (R-MODE-050).
 - DEC-450 — start positions and the colours of bot and unused slots (R-MODE-011, R-MODE-016).
 - DEC-451 — co-op friendship of slots outside the two alliances (R-MODE-024, R-MODE-025).
-- DEC-452 — the Comeback Bonus pool and the map's excluded outcomes (R-MODE-052).
 - DEC-558 — the bot controller of the Rogue and Visitor factions (R-MODE-007).
 - DEC-114 — the position of score-weighted crate drops (R-MODE-075).
 - DEC-115 — the fixed match research levels (R-MODE-082).
@@ -824,4 +823,4 @@ Open decisions whose default this file specifies:
 - DEC-868 — front-end reference quirks, among them the play-time format (§5 item 1).
 - DEC-969 — co-op group lists in ascending position order (R-MODE-020).
 
-Resolved decisions applied in this file: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-008, DEC-009, DEC-011, DEC-014, DEC-015, DEC-016, DEC-017, DEC-033, DEC-034, DEC-035, DEC-036, DEC-064, DEC-065, DEC-067, DEC-069, DEC-072, DEC-073, DEC-074, DEC-077, DEC-078, DEC-079 (the cap from the open slots), DEC-082, DEC-097, DEC-107, DEC-119, DEC-120, DEC-124 (the proportional Catch-up curve, which supersedes DEC-081), DEC-465, DEC-560, DEC-561 and DEC-801. DEC-058 records why the debug-only mode and its option are absent. The Open decisions of the mode files are listed in each of them.
+Resolved decisions applied in this file: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-008, DEC-009, DEC-011, DEC-014, DEC-015, DEC-016, DEC-017, DEC-033, DEC-034, DEC-035, DEC-036, DEC-064, DEC-065, DEC-067, DEC-069, DEC-072, DEC-073, DEC-074, DEC-077, DEC-078, DEC-079 (the cap from the open slots), DEC-082, DEC-097, DEC-107, DEC-119, DEC-120, DEC-124 (the proportional Catch-up curve, which supersedes DEC-081), DEC-452 (the Comeback draw respects the map's exclusions), DEC-465, DEC-560, DEC-561 and DEC-801. DEC-058 records why the debug-only mode and its option are absent. The Open decisions of the mode files are listed in each of them.
