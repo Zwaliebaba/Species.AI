@@ -298,48 +298,13 @@ Table 2.8-B Terrain envelope of the reference maps. Each range bounds the values
 
 **R-MAP-110** (MUST) The records, maps and owner field of the structure records of the 49 match maps are table 2.11-A, and the per-mode counts are [reference/03](../03_buildings_and_world_objects/README.md) table 2.4-A.
 
-Table 2.11-A Owner field of the structure records of the reference map files.
-
-| Structure kind | Records | Files | Owner field: no team, then per start position |
-|---|---|---|---|
-| bot objective | 95 | 9 | no team 62; position 0: 18, 1: 8, 2: 4, 3: 3 |
-| bot objective marker | 340 | 16 | no team 155; position 0: 42, 1: 87, 2: 44, 3: 12 |
-| bot navigation node | 1,112 | 53 | no team 1,101; position 1: 11 |
-| Command Console | 36 | 10 | no team 33; position 0: 3 |
-| volcano vent | 1 | 1 | no team 1 |
-| Launch Vessel | 19 | 7 | position 0: 7, 1: 7, 2: 4, 3: 1 |
-| fuel pump | 57 | 7 | no team 36; position 0: 9, 1: 9, 2: 3 |
-| fuel line | 178 | 7 | no team 114; position 0: 25, 1: 25, 2: 14 |
-| fuel depot | 57 | 7 | position 0: 21, 1: 21, 2: 12, 3: 3 |
-| turret | 207 | 14 | no team 207 |
-| jump pad | 23 | 3 | no team 23 |
-| Barrier Emitter | 703 | 15 | no team 141; position 0: 288, 1: 154, 2: 77, 3: 43 |
-| Control Zone (also Relic Base, Relic Spawn Zone, Flag post, Home post) | 176 | 27 | no team 126; position 0: 18, 1: 18, 2: 10, 3: 4 |
-| grid splitter | 26 | 7 | no team 25; position 0: 1 |
-| Core Device | 9 | 9 | position 0: 5, 1: 3, 2: 1 |
-| grid pylon | 301 | 17 | no team 244; position 0: 21, 1: 21, 2: 12, 3: 3 |
-| grid terminal | 88 | 17 | no team 88 |
-| Beam Dish | 46 | 7 | no team 44; position 0: 2 |
-| exclusion zone | 35 | 14 | no team 35 |
-| smoke column | 6 | 1 | no team 6 |
-| Solar Array | 231 | 17 | no team 146; position 0: 52, 1: 21, 2: 3, 3: 9 |
-| Relay | 276 | 23 | no team 265; position 1: 11 |
-| Spawn Node | 286 | 34 | no team 124; position 0: 53, 1: 57, 2: 33, 3: 19 |
-| Source Node | 34 | 34 | no team 33; position 1: 1 |
-| Population Limiter | 87 | 22 | no team 87 |
-| scenery mesh | 193 | 19 | no team 193 |
-| tree | 755 | 45 | no team 704; position 1: 51 |
-| Transit Gate | 123 | 31 | no team 14; position 0: 33, 1: 46, 2: 23, 3: 7 |
-| wall | 356 | 11 | no team 356 |
-| Breach Charge | 3 | 1 | no team 3 |
-
-Table 2.11-C Owner field of the structure records of the 49 match maps. A split that the census does not record for the match maps alone reads "see table 2.11-A".
+Table 2.11-A Owner field of the structure records of the 49 match maps.
 
 | Structure kind | Records | Maps | Owner field: no team, then per start position |
 |---|---|---|---|
-| bot objective | 92 | 8 | see table 2.11-A |
-| bot objective marker | 330 | 15 | Launch Race maps (90 records): position 0: 32, 1: 32, 2: 22, 3: 4; Siege maps (240 records): see table 2.11-A |
-| bot navigation node | 1,029 | 49 | see table 2.11-A |
+| bot objective | 92 | 8 | not specified |
+| bot objective marker | 330 | 15 | Launch Race maps (90 records): position 0: 32, 1: 32, 2: 22, 3: 4; Siege maps (240 records): not specified |
+| bot navigation node | 1,029 | 49 | not specified |
 | Command Console | 33 | 9 | no team 30; position 0: 3 |
 | volcano vent | 1 | 1 | no team 1 |
 | Launch Vessel | 19 | 7 | position 0: 7, 1: 7, 2: 4, 3: 1 |
@@ -348,22 +313,22 @@ Table 2.11-C Owner field of the structure records of the 49 match maps. A split 
 | fuel depot | 57 | 7 | position 0: 21, 1: 21, 2: 12, 3: 3 |
 | turret | 200 | 13 | no team 200 |
 | jump pad | 23 | 3 | no team 23 |
-| Barrier Emitter | 677 | 14 | see table 2.11-A |
+| Barrier Emitter | 677 | 14 | not specified |
 | Control Zone (also Relic Base, Relic Spawn Zone, Flag post, Home post) | 152 | 25 | no team 105; position 0: 17, 1: 17, 2: 9, 3: 4 |
 | grid splitter | 26 | 7 | no team 25; position 0: 1 |
 | Core Device | 8 | 8 | position 0: 5, 1: 2, 2: 1 |
-| grid pylon | 296 | 16 | see table 2.11-A |
+| grid pylon | 296 | 16 | not specified |
 | grid terminal | 86 | 16 | no team 86 |
 | Beam Dish | 46 | 7 | no team 44; position 0: 2 |
 | exclusion zone | 35 | 14 | no team 35 |
 | smoke column | 6 | 1 | no team 6 |
-| Solar Array | 225 | 16 | see table 2.11-A |
-| Relay | 261 | 21 | see table 2.11-A |
+| Solar Array | 225 | 16 | not specified |
+| Relay | 261 | 21 | not specified |
 | Spawn Node | 258 | 32 | no team 120; position 0: 48, 1: 48, 2: 28, 3: 14 |
-| Source Node | 32 | 32 | see table 2.11-A |
+| Source Node | 32 | 32 | not specified |
 | Population Limiter | 86 | 21 | no team 86 |
 | scenery mesh | 193 | 19 | no team 193 |
-| tree | 661 | 39 | see table 2.11-A |
+| tree | 661 | 39 | not specified |
 | Transit Gate | 109 | 28 | no team 10; position 0: 27, 1: 43, 2: 22, 3: 7 |
 | wall | 323 | 9 | no team 323 |
 | Breach Charge | 3 | 1 | no team 3 |
@@ -372,20 +337,20 @@ Table 2.11-C Owner field of the structure records of the 49 match maps. A split 
 
 1. **Spawn economy.** Every map with Spawn Nodes has one Source Node and a tree of Relays (R-MAP-108). On the Spawn Control, Zone Control and Relic Run maps each start position owns 1 to 3 Spawn Nodes, and on most of them capturable Spawn Nodes with no team sit between the positions; the spawn networks of the Launch Race maps, and of all Flag Chain maps but one, have no team at start (§2.16 to §2.21).
 2. **Bot hints.** Bot navigation nodes (`BotNavNode`, marker mesh `mesh.structure.bot_nav_node`) are placed on every reference map. Each record holds a link to another node (none, or a node id), a priority modifier from −1 to 1 and a cliff-check flag. Siege maps chain bot objectives (`BotObjective`) by a next-objective link and place bot objective markers (`BotObjectiveMarker`), each with a scan range from 0 to 306.6 wu, an objective id, a Transport flag and a pickup-only flag; Launch Race maps also place bot objective markers. Their use by the bots is [reference/07](../07_bots/README.md).
-3. **Fortification kit.** Walls; Barrier Emitters in chains, each record naming the next emitter, with, over the reference map files, a scale from 0.25 to 3.0 and the mode Raised on 658 records, Lowered on 20, AlwaysRaised on 23 and RelayOnly on 2 (R-BLDG-435); turrets, every one with no team, of the gun type on 189 records and the flame type on 11 on the match maps (196 and 11 over the reference map files), with every target field 0; exclusion zones with a size from 300 to 1,118.8 wu and the Power-blocking flag (§2.23); jump pads with a force from 76.17 to 227.38 wu/s and an angle from 0.51 to 1.08 rad; Beam Dishes with their force-connection and auto-connect flags and their valid receivers, in the patterns of [reference/03 economy](../03_buildings_and_world_objects/economy_and_spawn_objects.md) R-BLDG-168.
+3. **Fortification kit.** Walls; Barrier Emitters in chains, each record naming the next emitter, with a scale within 0.25 to 3.0 and an initial mode of R-BLDG-435; turrets, every one with no team, of the gun type on 189 records and the flame type on 11, with every target field 0; exclusion zones with a size from 300 to 1,118.8 wu and the Power-blocking flag (§2.23); jump pads with a force from 76.17 to 227.38 wu/s and an angle from 0.51 to 1.08 rad; Beam Dishes with their force-connection and auto-connect flags and their valid receivers, in the patterns of [reference/03 economy](../03_buildings_and_world_objects/economy_and_spawn_objects.md) R-BLDG-168.
 4. **Energy grid and fuel chain.** Solar Arrays, grid pylons, grid terminals and grid splitters, each record naming its next link and a splitter a list of candidates, feed fuel pumps, fuel lines, fuel depots and Launch Vessels on the Launch Race maps; energy grids also appear on Siege, Flag Chain and Spawn Control maps ([reference/03](../03_buildings_and_world_objects/README.md) table 2.4-A).
-5. **Set dressing.** Trees, procedural, each record with its height (43.54 to 272.65 wu over the reference map files) and the tree fields of R-BLDG-601; scenery meshes with a scale from 0.83 to 6.1, of which the five most used pieces of `mesh.scenery.prop` account for 67, 56, 32, 27 and 8 records and one record places the Abductor hull `mesh.creature.abductor_hull`; one volcano vent on one Flag Chain map; six smoke columns and three Breach Charges, each on one Siege map.
+5. **Set dressing.** Trees, procedural, each record with its height (within 43.54 to 272.65 wu) and the tree fields of R-BLDG-601; scenery meshes with a scale from 0.83 to 6.1, of which the five most used pieces of `mesh.scenery.prop` account for 67, 56, 32, 27 and 8 records and one record places the Abductor hull `mesh.creature.abductor_hull`; one volcano vent on one Flag Chain map; six smoke columns and three Breach Charges, each on one Siege map.
 
-**R-MAP-200** (MUST) The bot structures of the reference maps are distributed as table 2.11-B, which is the census of record for them ([reference/07](../07_bots/README.md) R-BOT-027, R-BOT-128). The counts on the 49 match maps follow from the per-mode tables; the field distributions cover the 57 reference map files of table 2.11-A, whose development and test files add 83 navigation nodes, 3 bot objectives and 10 markers that name an objective to the match maps' counts. One Siege map sets the map option no Beam Dish aiming, which the bots obey as well ([reference/07](../07_bots/README.md) R-BOT-096), and the content build binds every defence marker that has a scan range to a structure (R-MAP-166, DEC-561).
+**R-MAP-200** (MUST) The bot structures of the reference maps are distributed as table 2.11-B, which is the census of record for them ([reference/07](../07_bots/README.md) R-BOT-027, R-BOT-128). The counts on the 49 match maps follow from the per-mode tables. One Siege map sets the map option no Beam Dish aiming, which the bots obey as well ([reference/07](../07_bots/README.md) R-BOT-096), and the content build binds every defence marker that has a scan range to a structure (R-MAP-166, DEC-561).
 
 Table 2.11-B Bot structures of the reference maps.
 
-| Record | On the 49 match maps | Over the 57 reference map files |
-|---|---|---|
-| bot navigation node | 1,029 in all; every map places some | 1,112 in 53 files; all three optional fields on 1,107 and the first two on 5; a manual link on 23; check-cliffs 0 on 165; priority modifier 0.00 on 1,083, 0.30 on 16, 0.20 on 5, 1.00 on 4, −0.50 on 2, 0.05 on 1 and −1.00 on 1 |
-| bot objective | 92, on the 8 Siege maps (table 2.19-A) | 95 in 9 files: 77 name a next objective and 18 are chain ends |
-| bot objective marker that names an objective (Siege) | 240, on the 8 Siege maps (table 2.19-A) | 250 in 9 files: no team 155, position 0: 10, 1: 55, 2: 22, 3: 8; scan range 0 on 94, 100 on 116 and 39.77 to 193.14 wu on the other 40; the Transport-objective flag set on 12; the pickup-only flag −1 on 7 and 1 on 1 |
-| bot objective marker that names no objective (Launch Race) | 90, on the 7 Launch Race maps (table 2.20-A): position 0: 32, 1: 32, 2: 22, 3: 4; scan range 100 to 306.6 wu | the same 90 |
+| Record | On the 49 match maps |
+|---|---|
+| bot navigation node | 1,029 in all; every map places some |
+| bot objective | 92, on the 8 Siege maps (table 2.19-A) |
+| bot objective marker that names an objective (Siege) | 240, on the 8 Siege maps (table 2.19-A) |
+| bot objective marker that names no objective (Launch Race) | 90, on the 7 Launch Race maps (table 2.20-A): position 0: 32, 1: 32, 2: 22, 3: 4; scan range 100 to 306.6 wu |
 
 **R-MAP-112** (MUST) The reference maps also use these level-design patterns, whose design intent is not recorded and which the map schema and the per-mode validation accept: concentric Control Zones in Zone Control (§2.17); duplicate Relic Spawn Zones in Relic Run (§2.18); Zone Control Control Zones that start owned by a position (§2.17); the key and fill pair of map lights (R-MAP-088); and twin terrains, two maps built on one terrain (§2.22). This is the reference default of DEC-315.
 
@@ -409,7 +374,7 @@ Table 2.11-B Bot structures of the reference maps.
 
 **R-MAP-127** (MUST) A camera animation record holds a name, of at most `ref.map.camera.view_name_max_chars` characters like a view name and looked up without regard to case, and a list of steps until its end; each step is a move or a cut to a named camera view, with a duration from 0 up to, but not including, `ref.map.camera.animation_duration_max_s` (60 s). The view of a step is a camera view of the map or `previous_view`. The content build rejects an animation that breaks these rules (DEC-015, DEC-803). Camera animations are played only by sequences ([camera and sequences](../../architecture/components/camera_and_sequences.md)); every camera-animation block of the reference map files is empty.
 
-**R-MAP-128** (MUST) On the reference maps every map defines `spawn_view_<n>` for each of its start positions, except one 3-player Siege map that defines no camera view at all, so its camera stays at the pose it reaches after load. Two 2-player maps also define a `spawn_view_2` that no position uses. On the 49 match maps `spawn_view_0` is defined in 48 maps, `spawn_view_1` in 48, `spawn_view_2` in 29, `spawn_view_3` in 12 and `default_view` in 5; over the 57 reference map files the counts are 51, 51, 31, 13 and 7.
+**R-MAP-128** (MUST) On the reference maps every map defines `spawn_view_<n>` for each of its start positions, except one 3-player Siege map that defines no camera view at all, so its camera stays at the pose it reaches after load. Two 2-player maps also define a `spawn_view_2` that no position uses. On the 49 match maps `spawn_view_0` is defined in 48 maps, `spawn_view_1` in 48, `spawn_view_2` in 29, `spawn_view_3` in 12 and `default_view` in 5.
 
 ### 2.14 Starting forces
 
@@ -471,7 +436,7 @@ Table 2.16-A Spawn Control maps.
 
 **R-MAP-157** (MUST) One 3-player Zone Control map gives three Control Zones of radius 150 wu the start positions 0, 1 and 2 as their team, so at load each becomes the team at that position (R-MAP-044) and those hills start owned; ownership then follows occupancy (DEC-315).
 
-**R-MAP-158** (MUST) The Zone Control maps vary the economy with these additions: one 3-player map adds 12 Beam Dishes, 6 Command Consoles that control them and one Transit Gate, all with no team; another 3-player map adds one Transit Gate with no team; one 4-player map adds 4 Transit Gates with no team; one 4-player map adds 8 Beam Dishes with no team. Two Zone Control maps host the two tutorials, `map_zone_control_2p_01` the first, with the map population cap `ref.tut.first.map_population_cap` (2,000), and `map_zone_control_3p_01` the second, with `ref.tut.second.map_population_cap` (1,800) ([reference/11](../11_tutorial_and_help.md); R-MAP-199; see DEC-123). Table 2.17-A gives the Zone Control maps per player count.
+**R-MAP-158** (MUST) The Zone Control maps vary the economy with these additions: one 3-player map adds 12 Beam Dishes, 6 Command Consoles that control them and one Transit Gate, all with no team; another 3-player map adds one Transit Gate with no team; one 4-player map adds 4 Transit Gates with no team; one 4-player map adds 8 Beam Dishes with no team. Two Zone Control maps host the two tutorials, `map_zone_control_2p_01` the first, with the map population cap `ref.tut.first.map_population_cap` (2,000), and `map_zone_control_3p_01` the second, with `ref.tut.second.map_population_cap` (1,800) ([reference/11](../11_tutorial_and_help.md); R-MAP-199). Table 2.17-A gives the Zone Control maps per player count.
 
 **R-MAP-199** (MUST) A structure record, a bot navigation node's included, may carry a **role tag**: a stable name by which the tutorial rules find the object without its structure id or team ([reference/11](../11_tutorial_and_help.md) R-TUT-052, DEC-103). The two tutorial maps tag the structures and nodes of [reference/11](../11_tutorial_and_help.md) tables 2.9-A and 2.10-A, and a tutorial map that lacks a role that its tutorial names is a build error (DEC-015). Outside a tutorial no rule reads a role tag.
 
@@ -782,7 +747,7 @@ Figure 3.4 How map records receive their teams at load (R-MAP-044, R-MAP-045, R-
 | `ref.map.terrain.guide_grid_levels` | 256 | levels | values 0 to 255, one unsigned byte per cell | R-MAP-081 | DEC-025 |
 | `ref.map.light.count` | 2 | lights | every reference map; the renderer uses the first two | R-MAP-088 | DEC-562 |
 | `ref.map.route.id_limit` | 10,000 | ids | route ids 0 to 9,999 | R-MAP-120 | — |
-| `ref.map.camera.view_name_max_chars` | 62 | characters | the longest name the reference reads back intact; its name field holds 63 ([map editor hooks](map_editor_hooks.md)) | R-MAP-125 | DEC-801 |
+| `ref.map.camera.view_name_max_chars` | 62 | characters | maximum camera-view name length; the schema enforces it (DEC-801) | R-MAP-125 | DEC-801 |
 | `ref.map.camera.animation_duration_max_s` | 60 | s of real time | exclusive upper bound of a step's duration; presentation | R-MAP-127 | DEC-015 |
 | `ref.map.starting_forces.spread_default` | 200 | wu | | R-MAP-130 | — |
 | `ref.map.zone_control.concentric_centre_wu` | 10 | wu | centre distance of concentric Control Zones | R-MAP-156 | DEC-315 |
@@ -889,7 +854,6 @@ Figure 3.4 How map records receive their teams at load (R-MAP-044, R-MAP-045, R-
 - DEC-462 — turret facing from map data (R-MAP-106).
 - DEC-562 — map lighting and weather presets (R-MAP-088).
 - DEC-802 — maps that match setup does not list (R-MAP-003, R-MAP-014, R-MAP-020).
-- DEC-123 — the tutorial for the first playable (R-MAP-158).
 - DEC-803 — camera animations without content (R-MAP-127).
 - DEC-865 — map data without a reference case (R-MAP-013, R-MAP-048, R-MAP-072, R-MAP-080, R-MAP-092, R-MAP-120, R-MAP-121, R-MAP-131, R-MAP-190).
 - DEC-866 — the population-cap values of a map (R-MAP-061, R-MAP-062).
@@ -897,4 +861,4 @@ Figure 3.4 How map records receive their teams at load (R-MAP-044, R-MAP-045, R-
 - DEC-868 — the play-time format (R-MAP-021).
 - DEC-969 — co-op group lists in ascending position order (R-MAP-042, table 2.6-A).
 
-Resolved decisions stated as rules here: DEC-004, DEC-005, DEC-006 (R-MAP-001); DEC-010 (R-MAP-023, R-MAP-041, R-MAP-105); DEC-015 (R-MAP-003, R-MAP-040, R-MAP-125, R-MAP-127, R-MAP-199); DEC-103 (R-MAP-199); DEC-017 (R-MAP-064); DEC-025 (R-MAP-002); DEC-065 (R-MAP-006, R-MAP-071); DEC-079 (R-MAP-046, R-MAP-062); DEC-120 (R-MAP-006, R-MAP-062); DEC-331 (R-MAP-033); DEC-456 (R-MAP-108); DEC-560 (R-MAP-042); DEC-561 (R-MAP-161, R-MAP-166, R-MAP-170, R-MAP-176); DEC-563 (R-MAP-015, R-MAP-022); DEC-652 (R-MAP-041); DEC-800 (R-MAP-075); DEC-801 (R-MAP-004, R-MAP-005, R-MAP-031). Dropped: DEC-052 and DEC-062 (campaign and debug content), DEC-063 (reference map shapes and identities, R-MAP-007), DEC-334 (development, test and benchmark maps, R-MAP-085).
+Resolved decisions stated as rules here: DEC-004, DEC-005, DEC-006 (R-MAP-001); DEC-010 (R-MAP-023, R-MAP-041, R-MAP-105); DEC-015 (R-MAP-003, R-MAP-040, R-MAP-125, R-MAP-127, R-MAP-199); DEC-103 (R-MAP-199); DEC-017 (R-MAP-064); DEC-025 (R-MAP-002); DEC-065 (R-MAP-006, R-MAP-071); DEC-079 (R-MAP-046, R-MAP-062); DEC-120 (R-MAP-006, R-MAP-062); DEC-456 (R-MAP-108); DEC-560 (R-MAP-042); DEC-561 (R-MAP-161, R-MAP-166, R-MAP-170, R-MAP-176); DEC-563 (R-MAP-015, R-MAP-022); DEC-652 (R-MAP-041); DEC-800 (R-MAP-075); DEC-801 (R-MAP-004, R-MAP-005, R-MAP-031). Dropped: DEC-052 and DEC-062 (campaign and debug content), DEC-063 (reference map shapes and identities, R-MAP-007), DEC-334 (development, test and benchmark maps, R-MAP-085).

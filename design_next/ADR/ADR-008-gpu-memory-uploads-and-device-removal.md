@@ -91,4 +91,4 @@ Chosen option: **1**, because it gives the fastest memory for static data, the c
 
 - Technology baseline items 4.1 and 11.1 (DRED in crash reports; see [the index](README.md#technology-baseline)).
 - Related: ADR-001 (explicit renderer), ADR-004 (frame graph and transient aliasing), ADR-005 (pipeline library), ADR-012 (frames in flight and swap-chain resize), ADR-034 (glyph cache).
-- The asset pipeline component (`architecture/components/asset_pipeline_and_resources.md`) specifies how packages are read and reloaded; the pack-file decisions are in the content-pipeline ADRs (0050–0099).
+- The asset pipeline component (`architecture/components/asset_pipeline_and_resources.md`) specifies how packages are read and reloaded; the pack-file decisions are in the content-pipeline ADRs ([ADR-058](ADR-058-pack-files-and-mount-policy.md) to [ADR-062](ADR-062-authoring-syntax-and-schema-language.md)).

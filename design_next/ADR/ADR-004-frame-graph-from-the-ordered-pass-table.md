@@ -31,7 +31,7 @@ The renderer keeps one **ordered pass table** as the single source of truth for 
 
 ## Decision Outcome
 
-Proposed option: **1, a static frame graph compiled from the pass table**. **Default while Proposed:** the team builds the renderer this way, because it derives synchronisation and lifetimes automatically while keeping the frame as predictable as hand-ordered code.
+Proposed option: **1, a static frame graph compiled from the pass table**. **Default while Proposed:** the team builds the renderer this way, because it derives synchronisation and lifetimes automatically while keeping the frame as predictable as hand-ordered code. **Confirmed when:** the frame of the first playable (O20) is compiled from the pass table and passes the tests of the Confirmation section, with the graph compiled only when the render configuration changes; a pass of that frame that the pass table cannot express, or derived barriers that a PIX capture shows costing GPU time that hand-ordered recording avoids, is a revision of this record before the frame is built further.
 
 - **Pass table as data.** Each entry names the pass, the pipeline-state catalogue keys it may use, the resources it reads and writes (with the access each needs), its sort rule (unsorted, front to back, or back to front), and the setting, if any, that enables it. The renderer component owns the table.
 - **Resources.** Every target and buffer the frame uses is declared by name with its format and size class (fixed, or relative to the back buffer). Transient resources whose lifetimes do not overlap share memory through placed resources in one heap per size class.

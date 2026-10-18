@@ -468,13 +468,13 @@ Every rule of this section is presentation: it reads simulation state and never 
 
 #### 2.15.28 Time Dilation
 
-**R-CRATE-226** (MUST) **Delivery:** immediate, global; it does nothing once the match is won, because the tick clock is then locked. The outcome requests the game speed `ref.sim.speed.time_dilation_min` (0.2) + `SimRng::NextUnit`(`ref.sim.speed.time_dilation_spread` (0.2)) at the blend rate `ref.sim.speed.crate_rate` (0.05) with the hold `ref.sim.speed.crate_hold` (150 ticks) ([reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-545, R-SIM-556). The speed approaches its target by 5 % of the gap per tick, snaps within 0.01, holds, and then returns to 1.0 at the same rate with no hold; a newer request (another speed outcome or a meteor) replaces it. The hold counts world ticks, so its real duration depends on the speed it holds: 37.5 s of real time at 0.4 × to 75 s at 0.2 × (see DEC-265).
+**R-CRATE-226** (MUST) **Delivery:** immediate, global; it does nothing once the match is won, because the tick clock is then locked. The outcome requests the game speed `ref.sim.speed.time_dilation_min` (0.2) + `SimRng::NextUnit`(`ref.sim.speed.time_dilation_spread` (0.2)) at the blend rate `ref.sim.speed.crate_rate` (0.05) with the hold `ref.sim.speed.crate_hold` (151 world ticks) ([reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-545, R-SIM-556). The speed approaches its target by 5 % of the gap per command frame, snaps within 0.01, holds, and then returns to 1.0 at the same rate with no hold; a newer request (another speed outcome or a meteor) replaces it. The hold counts world ticks, so its real duration depends on the speed it holds: 37.75 s of real time at 0.4 × to 75.5 s at 0.2 × (see DEC-265).
 
 **R-CRATE-227** (MUST) Under tick scheduling every game-time quantity slows with the speed, Supply crate drops, crate opening and the lightning roll included (DEC-039, DEC-092). The announcement shows; no sound and no map marker.
 
 #### 2.15.29 Time Rush
 
-**R-CRATE-228** (MUST) **Delivery:** immediate, global; it does nothing once the match is won. The outcome requests the game speed `ref.sim.speed.time_rush_min` (1.3) + `SimRng::NextUnit`(`ref.sim.speed.time_rush_spread` (0.7)), a target from 1.3 to 2.0, at the blend rate `ref.sim.speed.crate_rate` with the hold `ref.sim.speed.crate_hold`, by the same speed law as R-CRATE-226. Its hold of 150 world ticks lasts from 7.5 s of real time at 2.0 × to about 11.5 s at 1.3 × (see DEC-265).
+**R-CRATE-228** (MUST) **Delivery:** immediate, global; it does nothing once the match is won. The outcome requests the game speed `ref.sim.speed.time_rush_min` (1.3) + `SimRng::NextUnit`(`ref.sim.speed.time_rush_spread` (0.7)), a target from 1.3 to 2.0, at the blend rate `ref.sim.speed.crate_rate` with the hold `ref.sim.speed.crate_hold`, by the same speed law as R-CRATE-226. Its hold of 151 world ticks lasts from 7.55 s of real time at 2.0 × to about 11.6 s at 1.3 × (see DEC-265).
 
 **R-CRATE-229** (MUST) Every game-time quantity runs 1.3 to 2 times faster during the request (DEC-039, DEC-092). The announcement shows; no sound and no map marker. The real-time lengths of the speed ramps are those of [reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-557.
 
@@ -766,7 +766,7 @@ The README's string table holds the announcement texts of every outcome.
 | Abductor | invulnerable; once per match | keep Workers out of its 45 wu beam, or inside Transports |
 | Supply Storm | valid below 4 live crates | contest the extra crates |
 | Spawn Surge | 51 ticks, every team | own more active Spawn Nodes |
-| Time Dilation, Time Rush | 150-tick hold; no request after the match is won | — |
+| Time Dilation, Time Rush | 151-world-tick hold; no request after the match is won | — |
 | Rocket Troops | permanent, per team | fight beyond about 95 to 113 wu, where rockets fall short |
 
 ### 5.2 Further edge cases
@@ -812,7 +812,7 @@ The README's string table holds the announcement texts of every outcome.
 - **AC-C-14** (R-CRATE-164, R-CRATE-165) Given a team at its population cap that opens Reinforcements, then 50 to 99 Workers appear and the team exceeds its cap.
 - **AC-C-15** (R-CRATE-183, R-CRATE-184) Given a Swarm outcome opened by team 2, then 100 Rogue faction streaks exist and they target team 2's actors as well.
 - **AC-C-16** (R-CRATE-210, R-CRATE-211) Given a Spawn Surge, then the timer is above 0 for 51 ticks and every eligible Spawn Node of every team makes 50 or 51 extra requests.
-- **AC-C-17** (R-CRATE-226) Given Time Dilation with the draw 0.5, then the target speed is 0.3, the hold lasts 150 world ticks after the target is reached, and a meteor's request during the hold replaces it.
+- **AC-C-17** (R-CRATE-226) Given Time Dilation with the draw 0.5, then the target speed is 0.3, the hold lasts 151 world ticks after the target is reached, and a meteor's request during the hold replaces it.
 - **AC-C-18** (R-CRATE-231) Given a laser bolt fired through a Supply crate, then it hits nothing at the crate and the crate stays.
 - **AC-C-19** (R-CRATE-102, DEC-116) Given a match at the default period whose teams stay unready for 600 command frames, then the drop countdown expires and makes its drop attempt before the grace countdown starts, a Supply crate that the attempt places is still at its start height on the first world tick, and the countdown does not move while a pause holds the world.
 

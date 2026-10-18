@@ -4,7 +4,7 @@
 
 ## 1 Purpose and player experience
 
-The reference simulation is a deterministic function of three inputs: the match setup (map, team layout and match options), the seed of the simulation random stream, and the ordered stream of command frames. Every participant runs the whole simulation and obtains the same match. This document specifies what keeps it deterministic:
+The simulation is a deterministic function of three inputs: the match setup (map, team layout and match options), the seed of the simulation random stream, and the ordered stream of command frames. Every participant runs the whole simulation and obtains the same match. This document specifies what keeps it deterministic:
 
 - the random streams: the simulation generator, the presentation generators and the private terrain generators, with their seeding and lifetime;
 - the draw discipline, and what every object family draws and what each draw decides;
@@ -237,58 +237,58 @@ Table 3 — Presentation draws triggered by simulation rules.
 
 **R-SIM-655** (MUST) The simulation step changes only simulation state, and no render, UI, audio or camera code writes a field of a simulation object. Presentation reads immutable simulation state; messages, sounds, help notifications, achievement progress and kill totals that a rule produces are presentation events emitted at the tick where the rule fires (DEC-007). The mechanism that enforces this boundary in Species is DEC-222.
 
-**R-SIM-656** (MUST) Each render path of the reference that writes a field of a simulation object follows the fixed rule of Table 4.
+**R-SIM-656** (MUST) No render path writes a field of a simulation object. The values that drawing changes from frame to frame are presentation state keyed by the handle of their object (R-SIM-636), owned as Table 4 gives. The simulation fields that drawing reads (a tree's crown hit volume, a Barrier Emitter's link, a Beam Dish's range and receiver, a turret's facing, a shell casing's facing, a Solar Array's orientation and the kind of a team's selected structure) are written only by the simulation, and every renderer, the map editor's preview included, only reads them (DEC-222). A Barrier Emitter link that names no Barrier Emitter is rejected by the content build (DEC-015), and the simulation step treats a missing link as absent.
 
-Table 4 — Render paths that write simulation fields.
+Table 4 — Presentation state that drawing changes.
 
-| Writer | Field | Read by the simulation | Rule |
-|---|---|---|---|
-| tree render, rebuilding missing geometry | the crown hit volume; colours | yes: fire spread and obstacles | the volume is data (R-SIM-651); colours are presentation |
-| Barrier Emitter render, for emitters in view only | marks the emitter's link as absent when the linked handle is missing or names no Barrier Emitter | yes: the emitter's step branches on it | links are validated by the content build (DEC-015), and the simulation step itself treats a missing link as absent; on the reference maps no link dangles, and Barrier Emitters are never destroyed |
-| Beam Dish render | range and receiver, saved and restored around the drawing of its link | yes | rendering only reads them |
-| turret render in the map editor | the turret's facing, set to the structure's facing | yes: aim | the editor preview never writes simulation state ([reference/08](../08_maps_and_level_design/README.md)) |
-| Supply crate render and bubble render | orientation, bubble timer | no | presentation state (R-SIM-636) |
-| thrown-weapon render | tumble orientation per render frame, flash count and its flash sound | no | presentation state; the flash sound is a presentation event (DEC-318) |
-| shell-casing render | facing | yes: the casing's own step reads it | the casing's step owns its facing, and rendering never writes it (DEC-222) |
-| Transport, Worker, fuel pump, cloth flag and Control Zone renders; structure transparency sort; centre message; route display; Launch Race status panel | Transport smoothing, a Worker's colour timer and shadow structure, the pump movement, the cloth flag, the cloth flag that a Flag Chain Control Zone's render creates, the sort buffer, the message state, the route display fade and walkable flag, the panel state | no | presentation state |
-| Solar Array render | orientation from the terrain normal | yes: its shape-hit transform | set once by its initialisation, to the same value; rendering only reads it |
-| world-cursor crosshair | the structure kind of the local team's selected structure, which it assigns instead of comparing | yes: the kind | presentation compares and never assigns (DEC-222); in the reference it has no effect, because only Beam Dishes and turrets can be selected |
+| Field | Owner |
+|---|---|
+| a tree's colours | the structure renderer |
+| a Supply crate's orientation and bubble timer | the structure renderer |
+| a thrown weapon's tumble orientation and flash count, and its flash sound | the effect renderer; the flash sound is a presentation event (DEC-318) |
+| a Transport's smoothing; a Worker's colour cross-fade and shadow | the actor renderer ([entity and overlay renderers](../../architecture/components/renderer/entity_and_overlay_renderers.md) RND-301) |
+| a fuel pump's movement | the structure renderer |
+| the cloth flags, the flag of a Flag Chain Control Zone included | the cloth of the [animation and VFX](../../architecture/components/animation_and_vfx/README.md) component |
+| the structure transparency sort buffer | the structure renderer |
+| the centre message | the match HUD |
+| a route's display fade and the walkable flag of the route preview | the route-line renderer (RND-301) |
+| the Launch Race status panel | the match HUD |
 
 ### 2.9 Local-only state never enters the simulation
 
 **R-SIM-660** (MUST) The simulation never reads the local camera, local input devices, UI state, client preferences, the identity of the local team, the real clock or any other per-participant state. Every player interaction with the world is a command or a field of the continuous control state (DEC-008), simulation time comes only from the tick counter (DEC-009), and a setting that changes simulation results exists only as a match option (DEC-010).
 
-**R-SIM-661** (MUST) Strike team direct control reads only the sender's control state. In the reference it runs for every team's selected Strike team on every participant and also reads the **local** camera's free-look state: on any participant whose player holds the free-look control while that Strike team moves, the team receives an extra waypoint and an extra attack, and diverges on that participant only. The sending client converts the look-around state, the aim direction and the movement direction to world space before they enter its control state (DEC-008).
+**R-SIM-661** (MUST) Strike team direct control, which runs for every team's selected Strike team on every participant, reads only the sender's control state. The sending client converts the look-around state, the aim direction and the movement direction to world space before they enter its control state, and no participant's local camera or free-look state reaches the simulation (DEC-008).
 
 **R-SIM-662** (MUST) Client-local helpers never allocate from simulation containers: route previews of the match input pump use their own pool, so the route handles that the simulation gives to Workers are identical for every participant (DEC-095).
 
-**R-SIM-663** (MUST) The most-recent-Power id of a team's Power slots is simulation state, written only by the simulation. In the reference the Power slots panel clears it on the owning participant only, after a real-time delay, while the simulation reads it right after a successful Power use in the same tick (the turret and firebomb options of Supply crate outcomes, instant units and the bot's Leader); the panel's highlight timer is presentation state. In Species a bot acts on the Power it has just started, never on the most-recent Power id ([../07_bots/03_decision_loop_and_leaders.md](../07_bots/03_decision_loop_and_leaders.md) R-BOT-090, DEC-087).
+**R-SIM-663** (MUST) The most-recent-Power id of a team's Power slots is simulation state, written only by the simulation; the rules that read it right after a successful Power use in the same tick (the turret and firebomb options of Supply crate outcomes and instant units) read the value that use wrote. The Power slots panel's highlight timer is presentation state, and the panel never changes the id (DEC-007). A bot acts on the Power it has just started, never on the most-recent-Power id ([../07_bots/03_decision_loop_and_leaders.md](../07_bots/03_decision_loop_and_leaders.md) R-BOT-090, DEC-087).
 
-**R-SIM-664** (MUST) Every change that a player causes travels as a command. Cancelling a Power is a command, never a direct call from the UI, and local input never switches or changes a world object directly (DEC-008); the reference has such paths only in controls and structure types that a match never reaches.
+**R-SIM-664** (MUST) Every change that a player causes travels as a command. Cancelling a Power is a command, never a direct call from the UI, and local input never switches or changes a world object directly (DEC-008).
 
-**R-SIM-665** (MUST) Executing a command never issues a further player command: one Leader toggle yields one command and one selection change on every participant (DEC-119). In the reference, executing a Leader toggle makes every participant issue a selection command of its own.
+**R-SIM-665** (MUST) Executing a command never issues a further player command: one Leader toggle yields one command and one selection change on every participant (DEC-119).
 
-**R-SIM-666** (MUST) Presentation calls that the reference makes from simulation code, guarded by the identity of the local team, are presentation events (DEC-007): the cursor marker of a team move (gated in the reference by one flag shared by all teams), the selection arrows, sounds and turret-aim camera of a selection, the route highlight and cursor markers of a crowd order (the reference keeps an unbounded marker list), the marker of a promotion, Leader route highlights, Supply crate messages and help, the messages and achievement progress of Control Zones, Relics, Launch Vessels and barrage missiles, Power messages and camera requests, and the kill total, achievement flags and help notifications of the match rules. No flag of simulation code is shared between teams or survives between calls (DEC-223).
+**R-SIM-666** (MUST) Every presentation effect that a simulation rule causes for one team is a presentation event that names its team, and presentation decides which events the local participant shows; no simulation rule reads the identity of the local team (R-SIM-660, DEC-007). These events are: the cursor marker of a team move, the selection arrows, sounds and turret-aim camera of a selection, the route highlight and cursor markers of a crowd order, the marker of a promotion, Leader route highlights, Supply crate messages and help, the messages and achievement progress of Control Zones, Relics, Launch Vessels and barrage missiles, Power messages and camera requests, and the kill total, achievement flags and help notifications of the match rules. No flag of simulation code is shared between teams or survives between calls (DEC-223).
 
-**R-SIM-667** (MUST) Command execution reads only simulation state and match-setup state. In the reference, some command handlers branch on local state (the ready toggle and the seasonal-mode command check whether the participant is at the main menu; the team-name and chat commands post to UI windows; a waypoint order adds a marker only for friends of the local team; the co-op command reaches a front-end window without checking that it exists). In Species, a handler's presentation side effects are events, and no handler reaches a UI object.
+**R-SIM-667** (MUST) Command execution reads only simulation state and match-setup state. A handler's presentation side effects, such as the chat line of a team-name or a chat command and the marker of a waypoint order, are presentation events, and no handler reaches a UI object.
 
-**R-SIM-668** (MUST) The selection-circle centre and radius and the last-orders time that the match input pump writes into a team are presentation state of the local participant; only UI code reads them.
+**R-SIM-668** (MUST) The selection-circle centre and radius and the last-orders time that the match input pump keeps for a team are presentation state of the local participant, keyed by the team; only UI code reads them.
 
-**R-SIM-669** (MUST) The reference's other crossings follow the fixed rules already stated: the tutorial overlay that inserts Supply crates and changes options from the render loop on real-clock timers (R-SIM-727, DEC-103); a Leader's picking sphere (Table 2); the launch spectacle, whose Workers face a real-clock target and which is inactive in matches (DEC-009); the Siege complete-defence flag, which uses the tick counter (DEC-009); the process-wide difficulty level (R-SIM-725); the world-cursor crosshair (Table 4); the Control Zone counter and the Transport weapon-cycle debounce, which are match state (R-SIM-730); and the tree crown hit volumes (R-SIM-651).
+**R-SIM-669** (MUST) These further rules keep local state out of the simulation: every world-changing tutorial effect, such as inserting a Supply crate or changing an option, is a sequenced simulation event, never an action of the render loop or of a real-clock timer (R-SIM-727, DEC-103); a Leader's picking sphere is presentation (Table 2); the Siege complete-defence flag uses the tick counter (DEC-009); actor speeds are those of difficulty level 0 (R-SIM-725); the world cursor only reads the kind of the selected structure (R-SIM-656); the Control Zone counter and the Transport weapon-cycle debounce are match state (R-SIM-730); and tree crown hit volumes are collision data (R-SIM-651).
 
 ### 2.10 Layering rules
 
 **R-SIM-670** (MUST) Control enters the simulation only as sequenced commands. Local input produces the team command state, sent once per tick period, and command requests; the simulation applies both when their command frame executes ([01](01_tick_timing_and_main_loop.md), [06](06_teams_and_player_commands.md)). How Species carries commands and state between processes is the networking model (DEC-200).
 
-**R-SIM-671** (MUST) The simulation never reads the real clock for a rule; it uses match time and the per-tick step ([01](01_tick_timing_and_main_loop.md), DEC-009).
+**R-SIM-671** (MUST) The simulation never reads the real clock for a rule; it uses match time and the world tick ([01](01_tick_timing_and_main_loop.md), DEC-009).
 
-**R-SIM-672** (MUST) Presentation reads simulation state and never writes it. The reference presentation reads live simulation objects directly every frame, with no snapshot and no double buffer, and extrapolates positions ([01](01_tick_timing_and_main_loop.md) R-SIM-560 to R-SIM-564).
+**R-SIM-672** (MUST) Presentation reads simulation state and never writes it: it draws from the presentation snapshot (DEC-222) and extrapolates positions ([01](01_tick_timing_and_main_loop.md) R-SIM-560 to R-SIM-564).
 
-**R-SIM-673** (MUST) The simulation step can run with the transport, renderer, audio and UI replaced by stubs. In the reference the transport layer owns the simulation clock (it calls the world step, the particle-pool step, the match-rules update and the tick-clock update), so solo play needs an in-process loop-back sequencer; which process roles Species has and how the step is driven are DEC-220 and DEC-225.
+**R-SIM-673** (MUST) The simulation step can run with the transport, renderer, audio and UI replaced by stubs: it advances only by the command frames it is given, and solo play needs no transport. Which process roles Species has and how the step is driven are DEC-220 and DEC-225.
 
-**R-SIM-674** (MUST) The simulation triggers no sound and calls no HUD or UI code directly: it emits presentation events (DEC-007). In the reference the simulation triggers sounds synchronously from the world step, and the audio engine silently drops a trigger made from any thread but the main thread, during a loading view, or before the sound archives have loaded; the Species event contract states what is guaranteed and what may be dropped (DEC-222).
+**R-SIM-674** (MUST) The simulation triggers no sound and calls no HUD or UI code directly: it emits presentation events (DEC-007), and the event contract states which events are guaranteed and which may be dropped (DEC-222).
 
-**R-SIM-675** (MUST) Whether the world is held depends on game speed alone ([01](01_tick_timing_and_main_loop.md) R-SIM-550). In the reference, the tick-clock update and the extrapolation time read a pause predicate that also holds the world while this participant sees a diverged participant, or while its window has lost focus in content outside the reference library, so match time can stop on one participant only. The reaction to a detected divergence belongs to the networking model (DEC-206).
+**R-SIM-675** (MUST) Whether the world is held depends on game speed alone ([01](01_tick_timing_and_main_loop.md) R-SIM-550): neither a detected divergence nor a lost window focus holds the world or stops match time on one participant, and the extrapolation time follows the same rule. The reaction to a detected divergence belongs to the networking model (DEC-206).
 
 ### 2.11 Rules the object model states
 
@@ -308,7 +308,7 @@ Table 4 — Render paths that write simulation fields.
 
 **R-SIM-690** (MUST) Bots run inside the simulation, on every participant that simulates. Each bot team (`TeamKind::Bot`), and each of the Rogue and Visitor factions, which no participant owns, has a bot controller that the deterministic team initialisation creates at match start, or that the sequenced handling of a leaving participant creates ([06](06_teams_and_player_commands.md)). The bot controller advances in the teams sub-step of the world step. In its step it issues the catalogue commands of its own team, which execute at once and never enter a command batch or the network, and it applies its bot-only operations directly ([../07_bots/README.md](../07_bots/README.md) R-BOT-014, R-BOT-015; DEC-119, DEC-122); executing a bot action never issues a further command. Where Species runs its bots is part of the networking model (DEC-200).
 
-**R-SIM-691** (MUST) Bot inputs are simulation state only: structures, actors, the actor grid, match time, the match options and the map definition. Bot randomness comes only from the simulation generator, with ordered vector draws. The only calls in bot code that are not simulation are presentation: a real-clock timing of the bot's start-up for diagnostics, preference reads in render code, presentation draws for promotion particles, and local-team checks that guard messages and route highlights.
+**R-SIM-691** (MUST) Bot inputs are simulation state only: structures, actors, the actor grid, match time, the match options and the map definition. Bot randomness comes only from the simulation generator, with ordered vector draws. Bot code reaches presentation only through presentation events: the promotion particles and the messages and route highlights of a bot team are events like those of a player (R-SIM-666), and a diagnostic timing of a bot's start-up reads the real clock and never feeds a decision.
 
 **R-SIM-692** (MUST) Iteration order is part of the bot rules. "First found", "last wins" and strict-greater tie-breaks over structure-index order and over actor-grid result order (cell x, then cell z, then team, then actor serial; [05](05_space_routing_and_physics.md) R-SIM-310, DEC-260) decide bot targets, and because many bot loops draw once per candidate, the order also decides how many draws a decision consumes. Structure indices and the slot re-use policy are therefore identical for every participant ([04](04_containers_and_update_order.md), DEC-016).
 
@@ -328,23 +328,23 @@ Table 4 — Render paths that write simulation fields.
 
 **R-SIM-704** (MUST) Every float-to-integer truncation and every integer division that a rule depends on is stated explicitly by the document that owns the rule: the Launch Race score (fuel, plus passengers, plus height, each truncated), the Catch-up bonus and the population caps (DEC-241).
 
-**R-SIM-705** (MUST) Every simulation field has a defined value from the moment its object is created. In the reference two fields of the match rules, the Siege complete-defence flag and the time remaining, have no defined value until their first use (DEC-011, DEC-223).
+**R-SIM-705** (MUST) Every simulation field has a defined value from the moment its object is created; the match rules' Siege complete-defence flag and time remaining take their initial values at the match-rules reset of match start, before any rule first uses them (DEC-011, DEC-223).
 
 **R-SIM-706** (MUST) A spawn network is a tree, and an Essence orb is on one edge at a time (DEC-456); a link shared by two paths would advance the same orb twice in one tick.
 
 **R-SIM-707** (MUST) Actor stats are floating-point values, so no stat is truncated to a byte and no speed overflows (DEC-090).
 
-**R-SIM-708** (MUST) The areas of the reference that are most prone to divergence start the determinism test corpus: terrain heights and trees, Barrier Emitters, Relics, the dust vortex, and Leaders that direct Workers into Beam Dishes (DEC-206).
+**R-SIM-708** (MUST) The areas most prone to divergence start the determinism test corpus: terrain heights and trees, Barrier Emitters, Relics, the dust vortex, and Leaders that direct Workers into Beam Dishes (DEC-206).
 
-**R-SIM-709** (MUST) Audio never affects the simulation. With its own presentation generator (R-SIM-608), audio no longer perturbs any other generator consumer either.
+**R-SIM-709** (MUST) Audio never affects the simulation. With its own presentation generator (R-SIM-608), audio perturbs no other generator consumer either.
 
 **R-SIM-710** (MUST) Terrain generation is a pure function of the map definition's terrain data (R-SIM-609). Terrain content identity, and whether terrain heights are generated at load or baked, are DEC-246.
 
-**R-SIM-711** (MUST) The remaining tick-level determinism rules are those of [01](01_tick_timing_and_main_loop.md): the speed blend is a per-tick exponential approach (R-SIM-541, R-SIM-546), the match-rules update runs also while the world is held (R-SIM-511), render extrapolation never writes simulation state (R-SIM-564), and a tick is distinct from the game time it adds (R-SIM-547, R-SIM-548).
+**R-SIM-711** (MUST) The remaining tick-level determinism rules are those of [01](01_tick_timing_and_main_loop.md): the speed blend is an exponential approach evaluated once per command frame (R-SIM-541, R-SIM-546), the match-rules update runs also while the world is held (R-SIM-511), render extrapolation never writes simulation state (R-SIM-564), and game speed schedules world ticks of one fixed length (R-SIM-547, R-SIM-548).
 
 ### 2.14 Non-finite values
 
-**R-SIM-715** (MUST) No simulation step stores NaN or an infinity. Each site where the reference can produce one has an explicit guard that keeps the reference result wherever that result is defined (DEC-653):
+**R-SIM-715** (MUST) No simulation step stores NaN or an infinity. Each site that could produce one has an explicit guard that keeps the rule's result wherever that result is defined (DEC-653):
 
 1. a team's selected-Worker centre exists only while at least one Worker is selected; with none selected the team has no centre, and the UI elements that read it (the route preview, the selection arrows and the Power icon position) show nothing;
 2. a crowd order computes no route and no route start when no Worker is under control, and then does nothing (DEC-555);
@@ -368,30 +368,30 @@ Table 4 — Render paths that write simulation fields.
 
 ### 2.16 Settings, seasonal state and tutorials
 
-**R-SIM-725** (MUST) A setting that changes simulation results exists only as a match option inside the match setup, and Species has no process-wide difficulty level: actor speeds are those of difficulty level 0 (DEC-010). In the reference the simulation reads a process-wide difficulty level that scales the actor speed stat of every actor kind except the Bomber, the Brood Drifter's egg chance and egg timer, and the factor with which a map definition is read; every map load resets it to 0 before reading, no reference map pins a difficulty, and the options screen can change it only in the front end, so it is 0 in every match, and the instant-unit copies of centipedes that a higher factor would add never exist.
+**R-SIM-725** (MUST) A setting that changes simulation results exists only as a match option inside the match setup, and Species has no process-wide difficulty level: actor speeds are those of difficulty level 0 (DEC-010).
 
-**R-SIM-726** (MUST) The seasonal state is match state: it is decided once, in the match setup before match start, recorded with the setup and identical for every participant; no participant decides it from its own date or clock, nothing changes it during the match, and seasonal effects such as snow draw from the presentation generator (DEC-118). In the reference each participant switches the seasonal theme on from its own date check and relays the flag through the command stream into the simulation. Whether Species keeps a seasonal theme, and who chooses it, is DEC-101; until it is decided, the host's match setup applies the reference date rule ([reference/09](../09_front_end_and_match_flow/README.md)) once, from the host's local date.
+**R-SIM-726** (MUST) The seasonal state is match state: it is decided once, in the match setup before match start, recorded with the setup and identical for every participant; no participant decides it from its own date or clock, nothing changes it during the match, and seasonal effects such as snow draw from the presentation generator (DEC-118). Whether Species keeps a seasonal theme, and who chooses it, is DEC-101; until it is decided, the host's match setup applies the date rule of [screen flow and match setup](../09_front_end_and_match_flow/screen_flow_and_match_setup.md) R-META-102 once, from the host's local date.
 
 **R-SIM-727** (MUST) Tutorial steps form a graph keyed by object tags, tutorial state resets at every run, and every world-changing tutorial effect, such as inserting a Supply crate or changing an option, is a sequenced simulation event at a tick, never an action of the render loop or of a real-clock timer (DEC-103, [reference/11](../11_tutorial_and_help.md)).
 
 ### 2.17 Ownership, reset and threads
 
-**R-SIM-730** (MUST) No simulation state survives from one match into the next, and simulation code holds no mutable static state (DEC-011). The Control Zone counter is match state that starts at 0 in every match ([02](02_match_lifecycle_and_state_reset.md) R-SIM-019): Zone Control's per-second recount is the only rule that recomputes it ([reference/01 Zone Control](../01_skirmish_rules_and_modes/zone_control.md)); Flag Chain initialisation adds 1 to it for each Flag post ([reference/03](../03_buildings_and_world_objects/mode_objects.md) R-BLDG-256, R-BLDG-269); and its readers are the reinforcement choice of a turret wave, which gives the airstrike power in place of the gun turret to a team that holds at least (counter + 1) ÷ 2 of the zones ([reference/05](../05_population_flow.md) R-ECON-104), the Zone Control win test and a Zone Control score term. The Transport weapon-cycle debounce belongs to each Transport for one match ([02](02_match_lifecycle_and_state_reset.md) R-SIM-021). In the reference the counter is process-wide and only the start of a Zone Control match recomputes it, so participants with different session histories diverge, and the debounce is a function-level static, reached only through commands that an unmodified participant never sends; DEC-011 removes both. The complete list of per-match state and its reset points is [02](02_match_lifecycle_and_state_reset.md).
+**R-SIM-730** (MUST) No simulation state survives from one match into the next, and simulation code holds no mutable static state (DEC-011). The Control Zone counter is match state that starts at 0 in every match ([02](02_match_lifecycle_and_state_reset.md) R-SIM-019): Zone Control's per-second recount is the only rule that recomputes it ([reference/01 Zone Control](../01_skirmish_rules_and_modes/zone_control.md)); Flag Chain initialisation adds 1 to it for each Flag post ([reference/03](../03_buildings_and_world_objects/mode_objects.md) R-BLDG-256, R-BLDG-269); and its readers are the reinforcement choice of a turret wave, which gives the airstrike power in place of the gun turret to a team that holds at least (counter + 1) ÷ 2 of the zones ([reference/05](../05_population_flow.md) R-ECON-104), the Zone Control win test and a Zone Control score term. The Transport weapon-cycle debounce belongs to each Transport for one match ([02](02_match_lifecycle_and_state_reset.md) R-SIM-021). The complete list of per-match state and its reset points is [02](02_match_lifecycle_and_state_reset.md).
 
 **R-SIM-731** (MUST) Every mutable simulation value (handles and handle seeds, counters, timers, bot tables, generator state and caches) belongs to one owner, so that a match is created and destroyed as a whole, and every generator stream is seeded from its owner's data, never from a session join. Which Species object owns world, region and match state, and how that state is created, saved and destroyed, is DEC-223.
 
-**R-SIM-732** (MUST) In the reference, at most one thread runs simulation code at any moment: the main thread runs every tick, and the loader thread runs match-world initialisation while the main thread runs only the loading view. By R-SIM-601, the result of every tick is that of this serial execution whatever the thread count and scheduling; the Species threading model is DEC-224.
+**R-SIM-732** (MUST) The result of every tick and of match-world initialisation is that of a serial execution, one simulation step at a time and match-world initialisation before the first tick, whatever the thread count and scheduling (R-SIM-601); the threading model is DEC-224.
 
 ### 2.18 Hooks: command-stream replay
 
-**R-SIM-740** (MUST) The reference has a command-stream recording hook behind a hidden developer preference with two modes:
+**R-SIM-740** (MUST) A developer build has a command-stream recording hook with two modes:
 
 - **record**: when the match shuts down, the sequencer's command history is saved to a file that holds the number of frames and then every frame in sequence order;
 - **playback**: after a map has loaded, the host's sequencer loads such a file, replacing the history that the participant is consuming. The sequencer's next frame number becomes the last loaded frame's number + 1 only when that loaded number is greater than the current next number; when the two are equal the next number is left unchanged.
 
 Both modes also drive the presentation frame delta at the fixed capture rate `dbg.replay.capture_frame_rate` (25 presentation frames per second, [diagnostics, test and performance](../../architecture/components/diagnostics_test_and_performance/README.md) DBG-241), while the real clock and every real-time schedule stay real.
 
-**R-SIM-741** (MUST) The recording holds no seed, because the seed reaches each participant separately when it joins, and playback starts after the replaying session's own match start. The recording therefore reproduces a match only when the seed and the alignment happen to match; it is a developer tool, not a player-facing replay.
+**R-SIM-741** (MUST) The recording holds only the command history, not the match setup or its seed, and playback starts after the replaying session's own match start. The recording therefore reproduces a match only when the replaying session has the recorded seed and its frames align; it is a developer tool, not a player-facing replay (DEC-046).
 
 **R-SIM-742** (MUST) The library specifies only these hooks and the determinism that a replay relies on: the same match setup, seed and command frames give the same match (R-SIM-601, R-SIM-610, DEC-013). The Species replay feature is DEC-046; a replay needs the build identity, the content hashes, the seed and the team layout together with the command stream (DEC-206).
 
@@ -450,22 +450,19 @@ Figure 3 — Choosing the generator for a draw (R-SIM-620 to R-SIM-626).
 |---|---|---|---|---|---|
 | `ref.sim.rng.crate_tree_draws` | 8 | integer draws | made one statement at a time by the tree generation of a Supply crate outcome | R-SIM-621 | DEC-013 |
 | `ref.sim.rng.turret_sim_draws_per_barrel` | 3 | simulation draws | per examined manned barrel, every turret type; an unmanned barrel draws nothing | R-SIM-630 | DEC-013 |
-| `ref.sim.rng.turret_casing_draws_per_barrel` | 4 | presentation draws | shell ejection per examined manned barrel; simulation draws in the reference | R-SIM-622 | DEC-013, DEC-222 |
-| `ref.sim.integrity.tree_crown_radius_factor` | 0.8 | × the largest leaf distance from the crown centre | reference derivation of the baked crown radius | R-SIM-640, R-SIM-651 | DEC-012 |
+| `ref.sim.rng.turret_casing_draws_per_barrel` | 4 | presentation draws | shell ejection per examined manned barrel | R-SIM-622 | DEC-013, DEC-222 |
+| `ref.sim.integrity.tree_crown_radius_factor` | 0.8 | × the largest leaf distance from the crown centre | the crown radius, baked by the content build or computed at a tree's creation | R-SIM-651 | DEC-012 |
 
-Keys cited here and defined elsewhere: `ref.sim.match.presentation_seed` in [02](02_match_lifecycle_and_state_reset.md); `ref.sim.group.offset_table_size` in [06](06_teams_and_player_commands.md); `dbg.replay.capture_frame_rate` in [diagnostics, test and performance](../../architecture/components/diagnostics_test_and_performance/README.md); `ref.econ.essence_grove.team_slots` in [reference/05](../05_population_flow.md); `ref.sim.spawn.search_attempts`, `ref.sim.spawn.draws_per_attempt` and `ref.sim.spawn.edge_margin` in [05](05_space_routing_and_physics.md); `ref.sim.bot.controller_spawn_request` in [06](06_teams_and_player_commands.md); the tick and slice keys in [01](01_tick_timing_and_main_loop.md). The draw ranges of Table 1 and Table 3 are defined by the documents named in Table 1. Every value is a reference value adopted as the Species starting value (DEC-004).
+Keys cited here and defined elsewhere: `ref.sim.match.presentation_seed` in [02](02_match_lifecycle_and_state_reset.md); `ref.sim.group.offset_table_size` in [06](06_teams_and_player_commands.md); `dbg.replay.capture_frame_rate` in [diagnostics, test and performance](../../architecture/components/diagnostics_test_and_performance/README.md); `ref.econ.essence_grove.team_slots` in [reference/05](../05_population_flow.md); `ref.sim.spawn.search_attempts`, `ref.sim.spawn.draws_per_attempt` and `ref.sim.spawn.edge_margin` in [05](05_space_routing_and_physics.md); `ref.bldg.tree.radius_factor` in [trees and crate structures](../03_buildings_and_world_objects/trees_and_crate_structures.md); the tick and slice keys in [01](01_tick_timing_and_main_loop.md). The draw ranges of Table 1 and Table 3 are defined by the documents named in Table 1. Every value is a reference value adopted as the Species starting value (DEC-004).
 
 ## 5 Edge cases and interactions
 
 - **Forced Supply crate outcome.** A forced outcome skips the capture roll, so the stream is one draw shorter from that point (R-SIM-624).
-- **Wasted draws.** The structure-port search of a Worker draws one value that the nearest-structure loop then overrides, and a non-mortar turret draws the mortar target and force values it never uses; both draws are part of the reference stream (Table 1).
+- **Overridden draws.** A Worker's port search makes one draw that the nearest-structure loop then overrides; every turret type draws the mortar target and force values (Table 1).
 - **Team slot 0 only.** A Worker's victory dance makes its first draw only on team slot 0 (Table 1).
 - **Decorative objects.** Snowflakes, Wisps, muzzle flashes and shell casings live in the simulated effect pool and take simulation handles, so creating one shifts the serials of every later object ([03](03_entity_model_and_identity.md)), even after their draws move to a presentation generator (R-SIM-622).
 - **Bots after a failed Power use.** A bot acts on the Power it has just started; when the start fails it targets nothing, and it never reads the most-recent-Power id ([reference/07](../07_bots/03_decision_loop_and_leaders.md) R-BOT-090, R-SIM-663).
-- **Modified content.** A Barrier Emitter whose link names a missing object is rejected by the content build; if it reached the simulation, the step would treat the link as absent (Table 4).
-- **Unreachable crossings.** The launch spectacle and the process-wide difficulty level never act in a match; their fixed rules (R-SIM-669, R-SIM-725) keep them from ever becoming simulation inputs.
-- **Sounds off the main thread.** In the reference a sound trigger from another thread, during a loading view or before the sound archives have loaded is dropped silently; it never affects the simulation (R-SIM-674).
-- **Instrumented builds.** A draw-tracking build must agree with an untracked build value for value; in the reference it cannot, because its signed draw rounds differently (R-SIM-613).
+- **Modified content.** A Barrier Emitter whose link names a missing object is rejected by the content build; if it reached the simulation, the step would treat the link as absent (R-SIM-656).
 - **Several map effects.** Snow, dust storm and lightning on one map share one countdown timer (R-SIM-631).
 - **Seasonal mismatch.** Two participants with different local dates still play the same seasonal state, because it is part of the match setup (R-SIM-726).
 
@@ -479,15 +476,15 @@ Keys cited here and defined elsewhere: `ref.sim.match.presentation_seed` in [02]
 - **A6** (R-SIM-626, R-SIM-627) Given an editor or preview context, when any simulation object type is constructed outside a simulation step, then the simulation stream position is unchanged; and the formation offset table is complete before the first tick of every match.
 - **A7** (R-SIM-623) Given a map with no sea, no land above the search heights, or every bot colour taken, when the Missile Barrage, the Abductor, a lightning strike, a dust vortex and the bot colour choice run, then each terminates within its cap and takes its deterministic fallback.
 - **A8** (R-SIM-636, R-SIM-637) Given a running match, when every field classified as presentation in Table 2 is changed between ticks, then the simulation hash of every later tick is unchanged.
-- **A9** (R-SIM-655, R-SIM-656) Given each object kind of Table 4, when it is rendered for 100 frames between two ticks, then its simulation state before and after rendering is identical.
+- **A9** (R-SIM-655, R-SIM-656) Given each object kind that Table 4 or R-SIM-656 names, when it is rendered for 100 frames between two ticks, then its simulation state before and after rendering is identical.
 - **A10** (R-SIM-660, R-SIM-661, R-SIM-675) Given two participants that run the same command frames, one of them holding the free-look control, using different preferences, a different local team, a lost window focus and a real clock offset by one hour, when the match runs, then their per-tick hashes are identical.
 - **A11** (R-SIM-730) Given one process, when match A and then match B are played, and match B is played alone in a fresh process, then the per-tick hashes of B are identical in both runs.
-- **A12** (R-SIM-650, R-SIM-651) Given a map with trees, when it loads at every render detail level while another thread draws from a presentation generator, then every tree crown hit volume equals the baked collision data.
+- **A12** (R-SIM-650, R-SIM-651) Given a map with trees, when it loads at every render detail level, then every tree crown hit volume equals the baked collision data.
 - **A13** (R-SIM-715, R-SIM-716, R-SIM-717) Given the guarded sites of R-SIM-715, including a score-weighted Supply crate drop with every score 0, when they run, then no simulation field holds NaN or an infinity after any tick, and the zero-score drop uses equal weights.
 - **A14** (R-SIM-613) Given the draw-tracking build and the untracked build, when both run the same match, then every draw value is identical.
 - **A15** (R-SIM-665) Given a match with three participants, when one participant toggles a Leader, then exactly one command and one selection change result on every participant.
 - **A16** (R-SIM-726) Given two participants whose local dates differ, one inside and one outside the seasonal date window, when they play the same match, then both have the seasonal state of the match setup.
-- **A17** (R-SIM-740, R-SIM-741) Given a recorded command history and the reference playback hook, when it is played back in a session with a different seed, then the match diverges from the recording; with the recorded seed and aligned frames, the per-tick hashes match.
+- **A17** (R-SIM-740, R-SIM-741) Given a recorded command history and the playback hook, when it is played back in a session with a different seed, then the match diverges from the recording; with the recorded seed and aligned frames, the per-tick hashes match.
 - **A18** (R-SIM-690, R-SIM-691, R-SIM-692) Given a match with bot teams, when bot code is checked, then it reads no presentation state and draws only from the simulation generator, and two runs whose structures are created in the same order give identical bot decisions and draw counts.
 
 ## 7 Dependencies
@@ -500,10 +497,13 @@ Keys cited here and defined elsewhere: `ref.sim.match.presentation_seed` in [02]
 ## 8 Open decisions
 
 - DEC-046 — replays (default: the developer recording hook of R-SIM-740 only).
-- DEC-101 — whether Species keeps a seasonal theme and who chooses it (default: the host's match setup applies the reference date rule once).
+- DEC-101 — whether Species keeps a seasonal theme and who chooses it (default: the host's match setup applies the date rule of R-META-102 once).
+- DEC-114 — position of score-weighted Supply crate drops (default: R-SIM-716 and [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) R-CRATE-106).
 - DEC-122 — bot actions outside the player command catalogue (default: bot-only operations with an existence-and-team check, R-SIM-690).
 - DEC-200 — replication and authority model; where bots run.
 - DEC-206 — divergence detection and integrity checking (default: none specified).
+- DEC-220 — process roles and the headless server (default: the simulation step runs with its surroundings replaced by stubs, R-SIM-673).
+- DEC-225 — frame loop, simulation pacing and catch-up (default: the command frames drive the step, R-SIM-673 and [01](01_tick_timing_and_main_loop.md) R-SIM-520 to R-SIM-535).
 - DEC-222 — the mechanism that enforces the simulation–presentation boundary.
 - DEC-223 — ownership of world, region and match state.
 - DEC-224 — threading and job model (default: the serial execution of R-SIM-732).

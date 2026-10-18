@@ -28,7 +28,7 @@ What does the build produce for distribution, and how does each channel get its 
 
 ## Decision Outcome
 
-Chosen option: "Install directory plus a signed archive now; channel wrappers added when channels are chosen". This is the default the team proceeds with.
+Proposed option: "Install directory plus a signed archive now; channel wrappers added when channels are chosen". **Default while Proposed:** packaging produces the install directory and the signed archive. **Confirmed when:** the design phase has chosen the storefronts and the release-candidate archive passes its install test, before the first external build; each chosen channel's wrapper is then added by amendment, with its own tests.
 
 * **Release-candidate output:** for every release candidate, the release procedure (a `Release|x64` build by whoever ships, because CI builds `Debug|x64` only: `AGENTS.md` §6, [ADR-070](ADR-070-continuous-integration.md)) produces the install directory and a signed archive of it, with a small setup script that runs the two prerequisites of [ADR-071](ADR-071-install-layout-runtime-files-and-user-data.md). This serves internal, QA and closed-test distribution.
 * **Channel wrappers** are added per chosen channel, each generated from the same directory: a storefront depot definition; an MSIX package (Store-signed for the Microsoft Store, or publisher-signed with an `.appinstaller` feed for direct download); or a signed offline MSI/EXE installer for the Store's MSI/EXE path.

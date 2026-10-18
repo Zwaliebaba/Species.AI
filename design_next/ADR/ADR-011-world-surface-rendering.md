@@ -77,5 +77,5 @@ Chosen option: **1, chunked static terrain with a single-pass grid term**, becau
 ## More Information
 
 - Related: ADR-003 (grid term, edge mask and combine modes), ADR-008 (static buffers), ADR-009 (shadow projection), ADR-010 (particles on terrain).
-- The terrain component (`architecture/components/terrain.md`) and the renderer component (`architecture/components/renderer/`) specify the terrain algorithm, the chunk size, the wire-grid parameters and the water parameters.
+- The terrain component (`architecture/components/terrain/README.md`) and the renderer component (`architecture/components/renderer/`) specify the terrain algorithm, the chunk size, the wire-grid parameters and the water parameters.
 - **Amendment 2026-10-17.** The wire overlay is a grid term with two sources: the stylised grid texture is the default and the barycentric edge term is the alternative permutation, matching the renderer component (RND-135, RND-266) and DEC-326. The grid term has its own specular material (RND-233, RND-266). The terrain supplies one colour per facet (RND-134).

@@ -31,7 +31,7 @@ Which HTTP stack implements the platform layer's HTTPS client on Windows?
 
 ## Decision Outcome
 
-Proposed option: "The in-box WinHTTP (Windows HTTP Services)". **Default while Proposed:** the platform layer's HTTPS client is built on WinHTTP, because it is part of every supported Windows version, validates certificates through the operating system, can use the system proxy configuration, and adds no dependency to the client.
+Proposed option: "The in-box WinHTTP (Windows HTTP Services)". **Default while Proposed:** the platform layer's HTTPS client is built on WinHTTP, because it is part of every supported Windows version, validates certificates through the operating system, can use the system proxy configuration, and adds no dependency to the client. **Confirmed when:** the unit and integration tests of the Confirmation section pass on a CI agent, before telemetry is first switched on in a build that leaves the team; in the baseline the client serves only consented telemetry ([ADR-066](ADR-066-telemetry-with-consent.md)), which is off the path of the first playable (O20).
 
 * **Library:** the client links `winhttp.lib` from the Windows SDK pinned by [ADR-051](ADR-051-windows-toolchain-and-compiler-policy.md) and uses the in-box `winhttp.dll`. Nothing is installed with the game ([ADR-071](ADR-071-install-layout-runtime-files-and-user-data.md)).
 * **Scope:** WinHTTP is reached only through the platform layer's `HttpsClient`; no other component calls it. The interface carries a request (address, content type, body, timeout) and returns a status and a body, or one error of the platform layer's error set (not `https`, offline, timeout, certificate rejected, other).

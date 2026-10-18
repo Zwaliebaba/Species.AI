@@ -169,9 +169,9 @@ The reference sound data has no authored priority: a priority field, where prese
 | speed | the emitter's speed, wu/s | vehicle engines (the Transport's level and pitch), the spider's footstep level, the Bomber's engine pitch, creature loop delays, bounce levels |
 | camera_distance | the distance from the camera to the position | the meteor's far landing layer (level from silent to −0.5 dB over 100 to 320 wu), the echo wet/dry mix of two layers, the barrage missile's flight pitch |
 | object_age | the emitter's age | none in the reference set |
-| teams_nearby | the number of teams with actors near the position | none in the reference set |
+| groups_nearby | the number of teams with actors near the position | none in the reference set |
 | time_remaining | the match clock's time remaining | none in the reference set |
-| unit_count | the number of actors near the position | none in the reference set |
+| objects_nearby | the number of actors near the position | none in the reference set |
 
 **R-AUD-053** (MUST) Each modulatable value has an update mode: **continuous**, evaluated at every audio update, so a random value draws a new target at every update, filtered by its smoothing; or **per note**, evaluated when the instance is triggered, when it starts and after each loop restart or new note only, so a random value gives one value per note. A value whose mode the data omits is continuous. In the catalogue tables, `/note` marks a per-note value.
 

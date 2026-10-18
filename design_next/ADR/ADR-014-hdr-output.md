@@ -29,7 +29,7 @@ The problem is whether Species offers HDR output, in which format, how it is der
 
 ## Decision Outcome
 
-Proposed option: **1, optional scRGB FP16 HDR, off by default**. **Default while Proposed:** the team ships SDR as the default and builds the HDR path behind a player option, because scRGB is the composition space of the Windows desktop compositor and keeps the over-range glow without changing the SDR-defined look.
+Proposed option: **1, optional scRGB FP16 HDR, off by default**. **Default while Proposed:** the team ships SDR as the default and builds the HDR path behind a player option, because scRGB is the composition space of the Windows desktop compositor and keeps the over-range glow without changing the SDR-defined look. **Confirmed when:** the HDR path passes the unit, golden-image and manual QA checks of the Confirmation section, before the options pages are final; HDR is off by default and off the path of the first playable (O20), so until then the SDR path is the one every test covers.
 
 - **Availability.** The option is offered only when the window's output reports an HDR colour space in `IDXGIOutput6::GetDesc1` and the swap chain reports support for the scRGB colour space through `CheckColorSpaceSupport`. The renderer re-queries both when `IDXGIFactory1::IsCurrent` returns `FALSE` or the window moves to another output, and falls back to SDR when HDR is no longer available.
 - **Targets.** With HDR on, scene colour targets are `R16G16B16A16_FLOAT` holding encoded working values without per-layer clamping (ADR-013), and the swap chain is `R16G16B16A16_FLOAT` with `DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709` set through `SetColorSpace1`.

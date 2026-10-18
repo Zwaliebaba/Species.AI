@@ -28,7 +28,7 @@ How does the Species client capture and report crashes?
 
 ## Decision Outcome
 
-Chosen option: "Windows Error Reporting (WER) with registered context and the Windows Desktop Application Program". This is the default the team proceeds with.
+Proposed option: "Windows Error Reporting (WER) with registered context and the Windows Desktop Application Program". **Default while Proposed:** the platform layer builds the crash path this way. **Confirmed when:** the crash commands of the Confirmation section each produce a dump with the registered files and the black box, and the dump scan finds no seeded secret, before the first external build; the program's crash data needs the code signing of [ADR-073](ADR-073-code-signing.md).
 
 * **No crash swallowing:** the client installs no top-level unhandled-exception filter that handles fatal exceptions; unhandled exceptions on any thread reach WER. The `std::set_terminate` handler, the CRT invalid-parameter handler and the pure-call handler record a reason in the black box and then end the process with a fail-fast exception, so WER captures it.
 * **Registered context:** `WerRegisterFile` for the current log ([ADR-067](ADR-067-logging.md)) and the last settings file; `WerRegisterMemoryBlock` for a small black-box ring buffer (the last frame and update markers, the current map or world region, the build identity); `WerRegisterExcludedMemoryBlock` for memory that may hold personal data (chat text, account tokens).

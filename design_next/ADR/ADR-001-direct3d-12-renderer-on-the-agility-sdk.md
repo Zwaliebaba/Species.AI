@@ -65,7 +65,7 @@ Chosen option: **1, Direct3D 12 through the Agility SDK**, because it is the onl
 
 - Good, because the runtime version is chosen by Species, not by the player's OS servicing state.
 - Good, because the newest released features (Shader Model 6.9, revised view-creation APIs, current Enhanced-Barrier fixes) are available to every supported build.
-- Good, because every OS allowed by the baseline (Windows 10 1909 or later, Windows Server 2022 or later) supports the Agility SDK.
+- Good, because every OS that the client floor of [ADR-050](ADR-050-client-platform-and-minimum-os.md) allows (Windows 11 24H2 or later) supports the Agility SDK.
 - Bad, because `D3D12CreateDevice` fails if the exported version does not match the bundled runtime, so packaging errors surface as start-up failures (mitigated by the build check).
 - Bad, because whether the Agility SDK passes MSIX certification is not verified (it matters only if the MSIX store path is chosen).
 

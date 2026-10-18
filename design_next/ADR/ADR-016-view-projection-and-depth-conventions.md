@@ -28,7 +28,7 @@ The problem is which conventions the renderer, the camera, picking and the mesh 
 
 ## Decision Outcome
 
-Proposed option: **1, right-handed, +Y up, reversed-Z, Hor+**. **Default while Proposed:** the renderer, camera, picking and mesh cooker use these conventions, because they match the mesh source format and give the best depth precision for long views.
+Proposed option: **1, right-handed, +Y up, reversed-Z, Hor+**. **Default while Proposed:** the renderer, camera, picking and mesh cooker use these conventions, because they match the mesh source format and give the best depth precision for long views. **Confirmed when:** the unit, golden-image and layout tests of the Confirmation section pass and the first cooked mesh is drawn and picked under these conventions; it is checked before the first mesh is cooked, because a change after that touches the renderer, the camera, picking and the mesh cooker together.
 
 - **Axes.** World and view space are right-handed with +Y up; the camera looks along −Z in view space. Distances are in world units (`wu`). The mesh cooker converts source axes into world axes once, at cook time (ADR-019). If the simulation model's axes differ, the conversion happens once at the boundary between simulation state and presentation, never inside a sub-renderer.
 - **Projection and depth.** Perspective projection with **reversed Z**: the near plane maps to depth 1 and the far plane to depth 0. The depth buffer is `D32_FLOAT`, cleared to 0, and the default depth comparison is greater-or-equal (the catalogue default of ADR-005). The far plane stays finite, so culling and fog distances keep a defined end.

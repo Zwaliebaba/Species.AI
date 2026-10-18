@@ -29,7 +29,7 @@ The problem is which Windows APIs supply keyboard, mouse, text and gamepad input
 
 ## Decision Outcome
 
-Proposed option: **1, GameInput for game devices and window messages for mouse, keyboard and text**. **Default while Proposed:** the input back-ends are built this way, because text entry and IME need window messages anyway, mouse and keyboard through window messages are the best-understood path on Windows, and GameInput is Microsoft's current controller API.
+Proposed option: **1, GameInput for game devices and window messages for mouse, keyboard and text**. **Default while Proposed:** the input back-ends are built this way, because text entry and IME need window messages anyway, mouse and keyboard through window messages are the best-understood path on Windows, and GameInput is Microsoft's current controller API. **Confirmed when:** the input, hot-plug, IME and packaging tests of the Confirmation section pass with mouse, keyboard and a gamepad at the first playable (O20).
 
 - **Gamepads.** GameInput, built against a pinned `Microsoft.GameInput` package and a pinned API namespace: **3.5.283 with `GameInput::v3`**, moving to the 4.0 line after its first point release (4.0.300 was published on 2026-10-15). `GameInputCreate` is called during initialisation. Device connection and disconnection arrive through GameInput's device callback; each device keeps its GameInput device identity, which input events carry (ADR-029). The back-end reads every reading since the previous frame, in order, so no button transition between frames is lost.
 - **Redistribution.** The installer runs the `GameInputRedist.msi` from the same package version (or newer); the redistributable refuses to downgrade a newer installed runtime.

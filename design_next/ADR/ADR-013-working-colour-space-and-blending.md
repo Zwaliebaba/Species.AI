@@ -30,7 +30,7 @@ The problem is in which colour space the renderer computes and blends, what form
 
 ## Decision Outcome
 
-Proposed option: **1, a display-referred working space**. **Default while Proposed:** the renderer computes and blends sRGB-encoded values in clamping `UNORM` targets, because that is how the visual-language requirements define the look, and it reproduces the look with no retuning.
+Proposed option: **1, a display-referred working space**. **Default while Proposed:** the renderer computes and blends sRGB-encoded values in clamping `UNORM` targets, because that is how the visual-language requirements define the look, and it reproduces the look with no retuning. **Confirmed when:** the golden-image tests of the reference test scenes match the visual-language formulas at the first playable (O20); it is checked before the first golden image is approved, because every golden image and every cooked colour depends on it.
 
 - **Targets.** SDR scene colour targets are `R8G8B8A8_UNORM`. Every blend result clamps to [0, 1] per channel as it is written, so additive layers saturate and darkening layers multiply the clamped result, as the techniques require. The back buffer (ADR-012) is written with a `UNORM` (not `_SRGB`) view, because its contents are already encoded.
 - **Textures.** The cooker tags colour textures as sRGB-encoded (for example `BC7_UNORM_SRGB`, ADR-017) and data textures as linear. The loader creates sRGB-tagged textures with the typeless format of their family and gives shaders a `UNORM` view, so samples are the encoded values. Mip levels of sRGB-tagged textures are filtered with sRGB-aware filtering at cook time.

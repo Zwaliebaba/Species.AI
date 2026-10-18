@@ -31,7 +31,7 @@ The problem is how shaders reach their constants, buffers, textures and samplers
 
 ## Decision Outcome
 
-Proposed option: **1, one global bindless root signature**. **Default while Proposed:** the renderer is built on this binding model, because the minimum capability guarantees it and it makes per-draw cost independent of content size.
+Proposed option: **1, one global bindless root signature**. **Default while Proposed:** the renderer is built on this binding model, because the minimum capability guarantees it and it makes per-draw cost independent of content size. **Confirmed when:** the first material shader compiles against the shared C++ and HLSL header with the two global root signatures, and GPU-based validation runs a full match of the first playable (O20) without a descriptor error; it is checked when the first material shader is written, because a change after that touches every shader and every pipeline state.
 
 - **Root signature.** Version 1.1, one for graphics and one for compute, each with the flags `CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED` and `SAMPLER_HEAP_DIRECTLY_INDEXED`. Every pipeline state in the catalogue uses one of these two.
 - **Root parameters (graphics).**
@@ -54,7 +54,7 @@ Proposed option: **1, one global bindless root signature**. **Default while Prop
 
 ### Confirmation
 
-- GPU-based validation runs in the CI test configuration over a full match and fails on any descriptor error.
+- GPU-based validation runs in the Debug test run of the GPU job in CI ([ADR-070](ADR-070-continuous-integration.md)) over a full match and fails on any descriptor error.
 - Unit tests of the descriptor allocator check that a freed index is not reused before the last frame that could reference it has completed.
 - A build check compiles the shared header in both C++ and HLSL and compares structure sizes and member offsets.
 - A code check fails when a root signature other than the two global ones is created.

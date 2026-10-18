@@ -27,7 +27,7 @@ Which accessibility guideline does Species adopt, and which features does the en
 
 ## Decision Outcome
 
-Chosen option: "Xbox Accessibility Guidelines (XAG) 3.2 as the checklist". This is the default the team proceeds with. XAG 3.2 (published 2023-06-08) is the current version; Microsoft describes the guidelines as best practices, not a compliance checklist, and Species uses them as its design and test checklist.
+Proposed option: "Xbox Accessibility Guidelines (XAG) 3.2 as the checklist". **Default while Proposed:** the team proceeds with it, and the engine features below are built in from the start. **Confirmed when:** the per-guideline conformance table exists and the contrast, text-size and flash tests of the Confirmation section pass on the screens and combat scenes of the first playable (O20); the design phase's acceptance tests then record conformance per guideline. XAG 3.2 (published 2023-06-08) is the current version; Microsoft describes the guidelines as best practices, not a compliance checklist, and Species uses them as its design and test checklist.
 
 Engine features provided from the start:
 

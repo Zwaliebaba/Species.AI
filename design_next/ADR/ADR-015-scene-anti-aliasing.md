@@ -29,7 +29,7 @@ The problem is which anti-aliasing method the renderer uses for the 3-D scene, a
 
 ## Decision Outcome
 
-Proposed option: **1, MSAA with Off, 2x and 4x settings**. **Default while Proposed:** 4x MSAA where the GPU supports it for the scene target format, because MSAA smooths exactly the geometric edges that flat shading exposes, does not blur facets, and has no temporal artefacts.
+Proposed option: **1, MSAA with Off, 2x and 4x settings**. **Default while Proposed:** 4x MSAA where the GPU supports it for the scene target format, because MSAA smooths exactly the geometric edges that flat shading exposes, does not blur facets, and has no temporal artefacts. **Confirmed when:** the golden-image tests at Off and 4x pass and the measured scene GPU time at 4x on the minimum-capability GPU at 1080p fits the renderer budget, at the first playable (O20); a measurement over budget changes the default setting by a revision of this record, and edge artefacts that MSAA cannot remove in the visual test reopen option 3.
 
 - The scene colour target and the depth target are multisampled at the chosen sample count; support is checked with `D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS` for each scene format (SDR and HDR, ADR-014). If 4x is not supported, the default falls back to 2x, then Off.
 - Sprite cards and other alpha-cut-out materials use alpha-to-coverage when MSAA is on, so their edges are smoothed too; the pipeline-state catalogue (ADR-005) carries the sample count and the alpha-to-coverage flag in its keys.

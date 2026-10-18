@@ -25,7 +25,6 @@ The problem is how frames reach the display: the swap chain, the present modes, 
 
 1. A **flip-model swap chain** (`FLIP_DISCARD`), windowed and borderless full screen only, with a frame-latency waitable object, tearing support for variable refresh rate, and an engine-side frame-rate cap.
 2. A flip-model swap chain, presenting with **vertical sync always on** and no tearing support.
-3. A **bit-block-transfer swap chain** (`DXGI_SWAP_EFFECT_DISCARD`).
 
 ## Decision Outcome
 
@@ -73,13 +72,9 @@ Chosen option: **1, flip model with waitable latency, tearing support and an eng
 - Good, because it is the simplest correct presentation.
 - Bad, because variable-refresh-rate displays and uncapped play are not supported, and latency is higher.
 
-### 3. Bit-block-transfer swap chain
-
-- Good, because it allows a multisampled back buffer.
-- Bad, because Microsoft recommends against it: it costs an extra copy, more power and more latency, and gives no variable-refresh-rate support.
-
 ## More Information
 
 - Technology baseline item 4.6 (see [the index](README.md#technology-baseline)); sources checked 2026-10-17: https://learn.microsoft.com/windows/win32/direct3ddxgi/for-best-performance--use-dxgi-flip-model · https://learn.microsoft.com/windows/win32/direct3d12/swap-chains · https://learn.microsoft.com/windows/win32/direct3ddxgi/variable-refresh-rate-displays · https://learn.microsoft.com/windows/win32/api/dxgi/ne-dxgi-dxgi_swap_chain_flag.
 - Related: ADR-004 (frame graph recompilation), ADR-008 (frames in flight), ADR-013 (working colour space), ADR-014 (HDR output), ADR-015 (anti-aliasing), ADR-075 (application window and DPI awareness).
 - **Amendment 2026-10-17.** The native-resolution rule for the UI has one exception, the match message drawn inside the scene passes (RND-072). The renderer's setting defaults (vertical sync, brightness 1, the display's maximum as HDR highlight limit) are those of RND-442.
+- **Amendment 2026-10-18.** The considered options are the two flip-model swap chains only: Direct3D 12 supports no other swap effect, and no swap chain of it is multisampled, so anti-aliasing is resolved from the scene targets (ADR-015). Source, checked 2026-10-18: "The only supported swap effects are DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL and DXGI_SWAP_EFFECT_FLIP_DISCARD" (https://learn.microsoft.com/windows/win32/direct3d12/swap-chains).

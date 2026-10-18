@@ -32,7 +32,7 @@ The problem is which device feature level, Shader Model and capability checks th
 
 ## Decision Outcome
 
-Proposed option: **1**. **Default while Proposed:** the team builds and tests against feature level 12_1 with the three capability checks, because it is the lowest floor that gives the binding model and the crowd techniques everything they need, and it matches the technology baseline.
+Proposed option: **1**. **Default while Proposed:** the team builds and tests against feature level 12_1 with the three capability checks, because it is the lowest floor that gives the binding model and the crowd techniques everything they need, and it matches the technology baseline. **Confirmed when:** the capability probe passes its unit test and the golden-image tests pass on a GPU of QA's hardware matrix at exactly feature level 12_1, at the first playable (O20); hardware data that shows players blocked by the floor relaxes it to option 2 by a revision of this record instead.
 
 - The device is created at `D3D_FEATURE_LEVEL_12_1` on the adapter that `IDXGIFactory6::EnumAdapterByGpuPreference` returns first for `DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE`; an adapter that fails any check below is skipped in favour of the next one.
 - Start-up checks, all of which must pass:

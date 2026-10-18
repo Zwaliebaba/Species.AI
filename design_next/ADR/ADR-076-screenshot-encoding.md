@@ -1,7 +1,7 @@
 ---
-status: proposed
+status: accepted
 date: 2026-10-17
-decision-makers: Species technology lead
+decision-makers: Species technology lead; the encoder decided by the owner's AGENTS.md (O21, R14)
 ---
 
 # Screenshot encoding: the in-box Windows Imaging Component PNG encoder; video capture by external tools
@@ -27,7 +27,7 @@ Which encoder writes Species screenshots, and does the engine capture video?
 
 ## Decision Outcome
 
-Chosen option: "The Windows Imaging Component (WIC) PNG encoder". This is the default the team proceeds with; the choice of encoder is fixed by `AGENTS.md` R14, which excludes the third-party alternatives, and the record stays Proposed only for the video-capture part.
+Chosen option: "The Windows Imaging Component (WIC) PNG encoder". Accepted: the choice of encoder is fixed by `AGENTS.md` R14, which excludes the third-party alternatives (O21). Video is captured by external tools; an engine video recorder would be an amendment of this record.
 
 * **Format:** PNG, 8-bit sRGB RGBA for SDR frames; HDR frames are tone-mapped to SDR before encoding.
 * **Pipeline:** the renderer copies the frame or tile into a readback buffer, a worker thread maps it after its fence completes and encodes it with WIC, and the file is written as `species_<UTC date and time>.png` under `Pictures\Species\`.
@@ -73,3 +73,4 @@ Chosen option: "The Windows Imaging Component (WIC) PNG encoder". This is the de
 * Components: renderer (`RND`, readback), platform layer (`PLT`, encoding and file output).
 * **Amendment 2026-10-17 (AGENTS.md, O21).** WIC is the only PNG encoder `AGENTS.md` R14 leaves; libpng and single-header writers are excluded.
 * **Amendment 2026-10-17.** Posters are written with opaque alpha (RND-114); the file name gains a numeric suffix when a file of that name exists (PLT-097).
+* **Amendment 2026-10-18 (status).** Status Accepted: `AGENTS.md` R14 decides the encoder, and video capture by external tools is the decision in force; an engine video recorder would be a later amendment rather than an open part of this record.

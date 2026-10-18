@@ -28,7 +28,7 @@ How, where and with what does Species sign its binaries and packages?
 
 ## Decision Outcome
 
-Chosen option: "Azure Artifact Signing, with an OV certificate in a hardware-backed or cloud key store as the fallback". This is the default the team proceeds with; which branch applies depends on whether the publishing entity meets Artifact Signing's eligibility (supported regions and, for organisations, a verifiable tax history of three years or more).
+Proposed option: "Azure Artifact Signing, with an OV certificate in a hardware-backed or cloud key store as the fallback". **Default while Proposed:** the release procedure signs this way. **Confirmed when:** the publishing entity's eligibility for Artifact Signing is known and the signature check of the release procedure passes on a release candidate, before the first external build. Which branch applies depends on whether the publishing entity meets Artifact Signing's eligibility (supported regions and, for organisations, a verifiable tax history of three years or more).
 
 * **What is signed:** `species.exe`, the dedicated server's Windows executable, every first-party DLL and tool executable distributed with the game, and every installer or publisher-signed package.
 * **How:** `SignTool sign /fd SHA256 /tr <timestamp URL> /td SHA256 <certificate or signing-service options> <file>`, so every signature has an RFC 3161 timestamp.

@@ -22,6 +22,8 @@ namespace Species
 
 // Reference/03 table 2.4-A, without Relic and Supply crate in map records.
 enum class StructureKind : std::uint8_t;
+// The kind-specific fields of table 3.2-A: one alternative per structure kind, each the aggregate of its rows.
+struct KindFields;
 
 // The base fields, table 3.1-A.
 struct StructureRecord

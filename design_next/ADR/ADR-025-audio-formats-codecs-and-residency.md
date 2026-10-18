@@ -32,7 +32,7 @@ The problem is which formats sounds are authored in, which formats the runtime p
 
 ## Decision Outcome
 
-Proposed option: **1, resident 16-bit PCM and streamed MS-ADPCM**. **Default while Proposed:** the content build and the audio engine use these formats, because they give short sounds zero decode cost and long sounds a fourfold size reduction, decoded by XAudio2 with no codec in the executable.
+Proposed option: **1, resident 16-bit PCM and streamed MS-ADPCM**. **Default while Proposed:** the content build and the audio engine use these formats, because they give short sounds zero decode cost and long sounds a fourfold size reduction, decoded by XAudio2 with no codec in the executable. **Confirmed when:** the sounds of the first playable (O20) are cooked into these formats within their residency budgets and pass the residency, streaming, encoder and profiling tests of the Confirmation section; it is checked before the audio cooker writes its first bank, because the cooker and the stream format depend on it.
 
 - **Source format.** Uncompressed WAV at **48 kHz**, 24-bit integer or 32-bit float PCM; mono for every positional sound, stereo for music, UI and stereo ambience beds. The content build resamples nothing: a source at another rate is rejected.
 - **Residency by group.** The content build classifies each sample group as a whole: a group is **streamed** when its longest member is longer than the streaming threshold (an audio engine tuning value, in seconds), and every music group is streamed; every other group is **resident**.

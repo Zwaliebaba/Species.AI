@@ -284,11 +284,11 @@ Table 3.4-A Forms of a modulatable value.
 
 **DAT-270** (MUST) An effect binding is an object with the field `kind`, a DSP filter kind (`DspFilterKind`) of table 3.5-A, and one field per parameter it sets, named as table 3.5-A names it, each a modulatable value (R-AUD-080). A parameter name that the kind does not have, a second binding of one kind on one layer and a value outside the parameter's range are build errors (R-AUD-080, AEN-071).
 
-**DAT-271** (MUST) A parameter that a binding omits takes its schema default, which is the parameter's declared default of R-AUD-077 (AEN-071). The reference reads an omitted parameter as 0.0 (R-AUD-050, R-AUD-078); Species chooses the declared default deliberately, as DEC-567 requires the choice to be made, because 21 of the 63 parameters have ranges that exclude 0.0 and every reference binding states all its parameters (AEN-071).
+**DAT-271** (MUST) A parameter that a binding omits takes its schema default, which is the parameter's declared default (AEN-070, R-AUD-077; AEN-071). The reference reads an omitted parameter as 0.0 (R-AUD-050, R-AUD-078); Species chooses the declared default deliberately, as DEC-567 requires the choice to be made, because 21 of the 63 parameters have ranges that exclude 0.0 and every reference binding states all its parameters (AEN-071).
 
 **DAT-272** (MUST) The cooker writes each binding's parameters in its kind's parameter order of table 3.5-A, the positions by which the audio engine reads them (R-AUD-050, AEN-070); the authoring file still names every parameter, so its order in the file carries no meaning (README DAT-027). An integer parameter is cooked as a decimal and truncated toward zero by the engine when evaluated (AEN-070).
 
-Table 3.5-A DSP filter kinds, the effect kinds of R-AUD-077, and their parameter keys, in the order of R-AUD-077; each key is the parameter's name in snake_case, spelt in American English (README DAT-054), and the ranges and declared defaults are R-AUD-077's and the audio engine's (AEN-070) ("i" marks an integer parameter).
+Table 3.5-A DSP filter kinds, the effect kinds of R-AUD-077, and their parameter keys, in the order of R-AUD-077; each key is the parameter's name in snake_case, spelt in American English (README DAT-054), and the ranges and declared defaults are AEN-070's for kinds 0 to 8 and R-AUD-077's for kinds 9 to 13 ("i" marks an integer parameter).
 
 | # | Kind | Parameters, in order |
 |---|---|---|
@@ -359,7 +359,7 @@ Table 3.10-A Fields of an explainer animation.
 | loop | `loop` | object: `start`, `end`, presentation decimals in s | defaulted: `ref.meta.explainer.default_loop` | 0 ≤ start < end |
 | objects | `objects` | ordered list of objects; the list order is the draw order | required | each object holds `keys`, an ordered list of keys in authored order, which playback never sorts (R-META-226) |
 
-Table 3.10-B Fields of a key; their defaults are `ref.meta.explainer.key_defaults` (R-META-226).
+Table 3.10-B Fields of a key; their defaults are the `ref.meta.explainer.key_default.<field>` keys (R-META-226).
 
 | Field | Key | Type | Rules |
 |---|---|---|---|
@@ -372,7 +372,7 @@ Table 3.10-B Fields of a key; their defaults are `ref.meta.explainer.key_default
 | horizontal flip | `flip` | boolean | — |
 | alpha | `alpha` | integer | 0 to 255 |
 
-**DAT-285** (MUST) Every key field is independent, and a key that omits a field takes that field's default of `ref.meta.explainer.key_defaults`; a canvas or loop field set twice is a duplicate key (README DAT-022), so no "last line wins" rule exists. A key whose time lies after the loop end is valid and is never reached, as R-META-229 states; this is the reference default of DEC-750, whose option B would make the content build warn about such keys.
+**DAT-285** (MUST) Every key field is independent, and a key that omits a field takes that field's default, its `ref.meta.explainer.key_default.<field>` key; a canvas or loop field set twice is a duplicate key (README DAT-022), so no "last line wins" rule exists. A key whose time lies after the loop end is valid and is never reached, as R-META-229 states; this is the reference default of DEC-750, whose option B would make the content build warn about such keys.
 
 ## 4 Behaviour and algorithms
 
@@ -431,7 +431,7 @@ Caption: Figure 4.1-A, the sound data from its authoring file to the audio engin
 | T51 outcome catalogue | unit | 31 entries in canonical order; 7 basic; the airstrike's Comeback count is 2 | DAT-264 |
 | T52 layer defaults | unit | a layer with only a group cooks every field of table 3.3-B with its default key's value | DAT-265, DAT-286 |
 | T53 parameter forms | unit | the three forms of table 3.4-A parse; a random value with three bounds and a linked value with an unknown link fail | DAT-268 |
-| T54 effect bindings | unit | every binding FX-01 to FX-15 of R-AUD-082 cooks with its parameters in kind order; an omitted parameter takes its declared default; an out-of-range value fails | DAT-270 to DAT-274 |
+| T54 effect bindings | unit | every effect binding of R-AUD-082 cooks with its parameters in kind order; an omitted parameter takes its declared default; an out-of-range value fails | DAT-270 to DAT-274 |
 | T55 effect table | unit | the compiled table and the validator's table are the same generated object; 14 kinds and 63 parameters | DAT-273 |
 | T56 weights | unit | a group of 4 members with weights 1, 1, 2, 4 cooks those weights; a list of 3 fails | DAT-275 |
 | T57 sockets by kind | unit | every socket of every manifest mesh is reachable by kind and index; a lint rule rejects socket look-ups by name text in code | DAT-277 |
@@ -479,5 +479,5 @@ This document owns no tuning key.
 | [reference/12 tick timing](../../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) | `ref.sim.frame.audio_update_period`, `ref.sim.tick_period` |
 | [renderer](../renderer/README.md) | `rnd.mesh.colour_attenuation`, `rnd.mesh.max_nodes`, `rnd.mesh.max_sockets`, `rnd.sea.wave_table_row`, `rnd.option.poster_resolution.default` |
 | [terrain](../terrain/README.md) | `ter.colour.ramp_size` |
-| [front-end presentation](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) | `ref.meta.explainer.default_canvas`, `ref.meta.explainer.default_loop`, `ref.meta.explainer.key_defaults` |
+| [front-end presentation](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) | `ref.meta.explainer.default_canvas`, `ref.meta.explainer.default_loop`, and the `ref.meta.explainer.key_default.<field>` keys of R-META-226 |
 | [data schemas](README.md) | `dat.perf.records_ms` |

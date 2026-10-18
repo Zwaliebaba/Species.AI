@@ -30,7 +30,7 @@ Species needs one way of thinking about synchronisation in the frame graph, the 
 
 ## Decision Outcome
 
-Proposed option: **1, Enhanced-Barrier model with a resource-state fallback**. **Default while Proposed:** Enhanced Barriers are not a minimum requirement, and the frame graph runs on both paths, because their hardware reach is not verified and the translation keeps one model in the engine.
+Proposed option: **1, Enhanced-Barrier model with a resource-state fallback**. **Default while Proposed:** Enhanced Barriers are not a minimum requirement, and the frame graph runs on both paths, because their hardware reach is not verified and the translation keeps one model in the engine. **Confirmed when:** the reference frame of the first playable (O20) renders the golden image on both paths with the debug layer and GPU-based validation on, on the GPU agent and on a GPU of QA's matrix without Enhanced-Barrier support; hardware data that shows every supported GPU reporting Enhanced Barriers makes option 2 a revision of this record.
 
 - The frame graph describes every transition as a triple of synchronisation scope, access and (for textures) layout, before and after. Buffers have no layout.
 - At start-up the renderer reads `EnhancedBarriersSupported`. When it is `TRUE`, the executor emits `Barrier()` groups and creates textures with an initial layout. When it is `FALSE`, the executor translates each triple to resource states and emits `ResourceBarrier` calls; textures are created in the matching initial state.

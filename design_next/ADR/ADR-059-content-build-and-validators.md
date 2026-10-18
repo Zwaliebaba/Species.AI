@@ -28,7 +28,7 @@ How is Species content built, validated and selected per edition?
 
 ## Decision Outcome
 
-Chosen option: "A Species content build tool in C++23, sharing schema code with the engine". It is a command-line program, a project of the separate tools solution under `Tools/`, which the game's solution never references (the content build tool, `AGENTS.md` §2, [ADR-056](ADR-056-products-configurations-and-feature-flags.md)), run by developers and by CI once its job is added ([ADR-070](ADR-070-continuous-integration.md)). As a development tool it never ships and never links into the executable, so it may use pinned dependencies of its own (`AGENTS.md` R14, [ADR-055](ADR-055-dependencies-three-nuget-packages.md)); the schema code it shares with the engine is Species code, so the shared part uses none.
+Chosen option: "A Species content build tool in C++23, sharing schema code with the engine". It is a command-line program, the content build tool: a project of the one solution in `Tools/<Project>/`, in the `Tools` solution folder, which no game or engine project references (`AGENTS.md` §2, [ADR-054](ADR-054-build-system-msbuild-solution.md), [ADR-056](ADR-056-products-configurations-and-feature-flags.md)). CI builds it with the rest of the solution on every run, and runs it once the content build job is added ([ADR-070](ADR-070-continuous-integration.md)); developers run it locally. As a development tool it never ships and never links into the executable, so it may use pinned dependencies of its own (`AGENTS.md` R14, [ADR-055](ADR-055-dependencies-three-nuget-packages.md)); the schema code it shares with the engine is Species code, so the shared part uses none.
 
 ```mermaid
 flowchart LR
@@ -51,7 +51,7 @@ flowchart LR
   * keys that are not canonical or differ only in case;
   * unreferenced assets (an error for shipping editions, a warning otherwise);
   * per-mode map rules defined by the maps and level-design reference;
-  * a separate collision asset for every collidable mesh; duplicate node names, and a hit-test mesh whose position count differs from its vertex count, are errors, while a socket-only mesh with no node is accepted (DEC-012; one reference Relic mesh has 1,182 positions for 1,082 vertices, and the Brood Drifter mesh 43 for 42);
+  * a separate collision asset for every collidable mesh (DEC-012); duplicate node names, and a hit-test mesh whose position count differs from its vertex count, fail the build, while a socket-only mesh with no node is accepted;
   * keys listed twice and repeated fields, which common parsers of the authoring syntax accept silently (DEC-801);
   * string tables: missing keys per language, invalid message syntax, glyph coverage of the bundled fonts for every language an edition includes ([ADR-063](ADR-063-localisation.md));
   * texture, mesh and audio import settings (rules in the asset-pipeline ADRs).
@@ -95,4 +95,5 @@ flowchart LR
 * Related: [ADR-062](ADR-062-authoring-syntax-and-schema-language.md) (authoring syntax), [ADR-070](ADR-070-continuous-integration.md) (CI jobs).
 * Components: asset pipeline and resources (`AST`), build tooling and distribution (`BLD`), data schemas (`DAT`).
 * **Amendment 2026-10-17 (AGENTS.md, O21).** The content build tool is a project of the solution under `Tools/`, a development tool outside the allow-list rule of `AGENTS.md` R14; shaders are no longer content, because the solution build compiles them into the executable; the CI job for the content build is added by amendment of ADR-070.
-* **Amendment 2026-10-17 (AGENTS.md §2, O26).** The content build tool and its importers are projects of a separate tools solution under `Tools/`, not of the game's solution ([ADR-054](ADR-054-build-system-msbuild-solution.md)); that solution follows every rule of `AGENTS.md` except R14, and nothing from it links into the executable. This replaces "a project of the solution under `Tools/`" in the amendment above.
+* **Amendment 2026-10-17 (AGENTS.md §2, O26; superseded by the O29 amendment below).** The content build tool and its importers are projects of a second solution of their own under `Tools/`, not of the game's solution ([ADR-054](ADR-054-build-system-msbuild-solution.md)); that solution follows every rule of `AGENTS.md` except R14, and nothing from it links into the executable. This replaces "a project of the solution under `Tools/`" in the amendment above.
+* **Amendment 2026-10-18 (owner decision O29).** This supersedes the O26 amendment above: the content build tool and its importers are projects of the one solution, each in `Tools/<Project>/` in the `Tools` solution folder ([ADR-054](ADR-054-build-system-msbuild-solution.md)). They reference the engine projects whose schema, record and cooker code they share; no game or engine project references them, nothing from them links into the executable, and CI builds them on every run.
