@@ -11,7 +11,7 @@ Settlement life: inhabitants, needs, growth; adapts the population flow (deaths 
 ## What you write
 
 1. `Design/gdd/02_settlements_and_population.md`, prefix `SET`, status `Draft`, in the GDD template below. Write the rationale path in the status line as text in backticks (`../rationale/B1.md` from `gdd/`, `../../rationale/B1.md` from `architecture/components/`): the rationale is written at Finalise.
-2. The verdicts of the ledger files you own (prompt §5.3): `Design/gdd/adoption_ledger/05_population_flow_ledger.md` (owner; B2 sends the rows for the economy rules). Fill every `pending` row of your scope; add exception rows where one requirement differs from its section.
+2. The verdicts of the ledger files you own (prompt §5.3): `Design/gdd/adoption_ledger/05_population_flow_ledger.md` (owner; B2 sends the rows for the economy rules). Fill every `pending` row of your scope; add exception rows where one requirement differs from its section. Where another area owns the file, write your rows directly while that area is not running (the coordinator keeps one writer per file at a time); if it is running, send them to it as a cross-area request.
 3. A proposed resolution for each Open decision the triage gives you (prompt §5.4): DEC-084, DEC-453, DEC-851. Propose in your notes; the register is edited at Finalise.
 4. `species_design_work/areas/B1/proposal_notes.md` (prompt §3 step 1) and `species_design_work/reports/B1-P.md` (common rule 11).
 
@@ -21,11 +21,11 @@ Before you finish, run `python3 -I Tools/DesignCheck/CheckDesign.py Design --ski
 
 | DEC | Title | Decide by | Area | Also affects | Assigned by | Register file |
 |---|---|---|---|---|---|---|
-| DEC-084 | Hive Essence orbs and Hive ants | playtest | B1 | B4, B3 | Affects | decisions/verdicts_and_fixes.md |
+| DEC-084 | Hive Essence orbs and Hive ants | playtest | B1 | B4, B3 | Affects | decisions/verdicts_and_fixes_3.md |
 | DEC-453 | Population-cap enforcement points and uncapped sources | playtest | B1 | B4, B3 | Affects | decisions/units_buildings_crates_economy.md |
 | DEC-851 | Population-flow rule details | playtest | B1 |  | Affects | decisions/gameplay_gap_rules.md |
 
-## Template (prompt §6)
+## Template
 
 **GDD template**
 
