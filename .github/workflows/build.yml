@@ -270,6 +270,14 @@ jobs:
           npm ci --prefix Tools/DesignCheck
           npx --prefix Tools/DesignCheck playwright install --with-deps chromium
 
+      # The design-phase gates (12-19: adoption ledger, decisions, templates, rationale, owner
+      # decisions, tuning status, models, repository scan) run with --design-phase; --final, which
+      # also fails on pending ledger verdicts and undecided design-phase decisions, is the design
+      # phase's own closing check and is not run here.
+      - name: Self-test the design-phase checks
+        if: hashFiles('Tools/DesignCheck/SelfTestDesignPhase.py') != ''
+        run: python3 -I Tools/DesignCheck/SelfTestDesignPhase.py
+
       - name: Check the design
         if: hashFiles('Tools/DesignCheck/CheckDesign.py') != '' && hashFiles('Design/README.md') != ''
-        run: python3 Tools/DesignCheck/CheckDesign.py Design
+        run: python3 Tools/DesignCheck/CheckDesign.py Design --design-phase

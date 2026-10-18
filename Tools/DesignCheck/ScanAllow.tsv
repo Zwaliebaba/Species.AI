@@ -1,0 +1,4 @@
+path	sha256	reason
+.gitattributes	a655e1ad764ea1b7317c19c710bd63c919afdebae55e3d909d8f3d291edc8cba	stock Visual Studio template line; names nothing of the reference product
+.gitignore	0f0becd15e654fb9311a3aa4f626e4034e2d19f83694b169fab27eef833f1d15	stock Visual Studio template line; names nothing of the reference product
+.gitignore	7259796b1ffe33aec879d5f9ca4012291b7a760d1f2135dbce5d470a80af6e65	stock Visual Studio template line; names nothing of the reference product

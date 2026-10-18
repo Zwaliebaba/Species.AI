@@ -2,7 +2,7 @@
 
 > Status: Decision register (owner decisions) · Related: [decision register](README.md) · [vision brief](../../vision/species-vision-brief.md) §3
 
-Only the owner takes or changes these decisions, at an owner gate. O1–O30 are copied from the vision brief §3 (2026-10-17 and 2026-10-18); the decisions of the design phase follow from O31, each with its date, the question and the options offered. Agents may recommend a change to a decision; only the owner makes it.
+Only the owner takes or changes these decisions, at an owner gate. O1–O30 are copied from the vision brief §3 (2026-10-17 and 2026-10-18); the decisions taken during the design phase follow, numbered on from the last one, each with its date, the question and the options offered. Agents may recommend a change to a decision; only the owner makes it.
 
 | # | Topic | Decision | Consequence the design must carry |
 |---|---|---|---|
