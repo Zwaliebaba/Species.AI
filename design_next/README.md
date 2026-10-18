@@ -17,14 +17,14 @@ How the code is written and built (naming, the MSBuild solution, the dependency 
 
 ## Document map
 
-221 documents, 8646 KB in total. Sizes include every file of a folder.
+221 documents, 8650 KB in total. Sizes include every file of a folder.
 
 | Area | Files | Size |
 |---|---|---|
 | [Reference mechanics](reference/README.md) | 61 | 3202 KB |
-| [Engine components](architecture/components/README.md) | 42 | 2000 KB |
-| [Architecture decision records](ADR/README.md) | 66 | 530 KB |
-| [Decision register](decisions/README.md) | 16 | 599 KB |
+| [Engine components](architecture/components/README.md) | 42 | 2002 KB |
+| [Architecture decision records](ADR/README.md) | 66 | 531 KB |
+| [Decision register](decisions/README.md) | 16 | 598 KB |
 | [Assets](assets/README.md) | 4 | 934 KB |
 | [Glossary](glossary/README.md) | 3 | 200 KB |
 | [Requirements index pages](requirements_index/README.md) | 26 | 1093 KB |
@@ -43,7 +43,7 @@ How the code is written and built (naming, the MSBuild solution, the dependency 
 | [Bots](reference/07_bots/README.md) | 6 | 174 KB |
 | [Maps and level design](reference/08_maps_and_level_design/README.md) | 3 | 205 KB |
 | [Front end and match flow](reference/09_front_end_and_match_flow/README.md) | 4 | 263 KB |
-| [Audio design](reference/10_audio_design/README.md) | 6 | 204 KB |
+| [Audio design](reference/10_audio_design/README.md) | 6 | 205 KB |
 | [Tutorial and help](reference/11_tutorial_and_help.md) | 1 | 108 KB |
 | [Simulation model](reference/12_simulation_model/README.md) | 8 | 445 KB |
 
@@ -54,14 +54,14 @@ How the code is written and built (naming, the MSBuild solution, the dependency 
 | [Animation and VFX](architecture/components/animation_and_vfx/README.md) | 3 | 167 KB |
 | [Asset pipeline and resources](architecture/components/asset_pipeline_and_resources.md) | 1 | 119 KB |
 | [Audio engine](architecture/components/audio_engine/README.md) | 3 | 112 KB |
-| [Build tooling and distribution](architecture/components/build_tooling_and_distribution.md) | 1 | 119 KB |
+| [Build tooling and distribution](architecture/components/build_tooling_and_distribution.md) | 1 | 120 KB |
 | [Camera and sequences](architecture/components/camera_and_sequences.md) | 1 | 76 KB |
 | [Data schemas](architecture/components/data_schemas/README.md) | 7 | 268 KB |
-| [Diagnostics, test and performance](architecture/components/diagnostics_test_and_performance/README.md) | 5 | 142 KB |
+| [Diagnostics, test and performance](architecture/components/diagnostics_test_and_performance/README.md) | 5 | 143 KB |
 | [Input](architecture/components/input/README.md) | 4 | 126 KB |
 | [Platform layer](architecture/components/platform_layer.md) | 1 | 118 KB |
-| [Renderer](architecture/components/renderer/README.md) | 8 | 332 KB |
-| [Terrain](architecture/components/terrain/README.md) | 3 | 120 KB |
+| [Renderer](architecture/components/renderer/README.md) | 8 | 334 KB |
+| [Terrain](architecture/components/terrain/README.md) | 3 | 121 KB |
 | [UI framework](architecture/components/ui_framework/README.md) | 4 | 296 KB |
 
 ## Ids in brief
@@ -85,9 +85,9 @@ The design gates (`python3 Tools/DesignCheck/CheckDesign.py Design` from the rep
 |---|---|---|---|
 | 1 Hard-fail patterns | PASS | 0 | 0 hard-fail hits |
 | 2 Soft-flag patterns | PASS | 0 | 39 soft hits, 39 allowed by CONVENTIONS §9, 0 not allowed |
-| 3 Links and anchors | PASS | 0 | 13556 relative links checked |
+| 3 Links and anchors | PASS | 0 | 13568 relative links checked |
 | 4 Mermaid | PASS | 0 | blocks=266 failed=0 |
-| 5 Requirement ids | PASS | 0 | 4928 requirement ids defined, 29184 citations, 25 prefixes registered |
+| 5 Requirement ids | PASS | 0 | 4928 requirement ids defined, 29254 citations, 25 prefixes registered |
 | 6 DEC and ADR references | PASS | 0 | 302 DECs (148 Open, 148 of them cited by a requirement), 65 ADRs |
 | 7 Asset closure | PASS | 0 | 432 asset ids (1391 manifest rows), 2530 asset citations in reference and component documents |
 | 8 Tuning keys | PASS | 0 | 3680 tuning keys, 0 cited by no requirement |

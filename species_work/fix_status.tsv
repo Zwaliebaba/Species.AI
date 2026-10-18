@@ -336,7 +336,7 @@ R2b-188	fixed	P6-ENG1
 R2b-189	fixed	P6-ENG1
 R2b-190	fixed	P6-DAT
 R2b-191	fixed	P6-DAT
-R2b-192	request	P6-DAT
+R2b-192	fixed	settled by the receiving packet (V1/V2)
 R2b-193	fixed	P6-DAT
 R2b-194	fixed	P6-DAT
 R2b-195	fixed-differently	P6-DAT
@@ -501,7 +501,7 @@ R3b-5	fixed	P6-ADR
 R3b-6	fixed	P6-ADR
 R3b-7	fixed	P6-ADR
 R3b-8	fixed-differently	P6-ADR
-R3b-9	request	P6-ENG2
+R3b-9	fixed	settled by the receiving packet (V1/V2)
 R3b-10	fixed-differently	P6-ENG2
 R3b-11	fixed	P6-ADR
 R3b-12	fixed	P6-ADR
@@ -514,8 +514,8 @@ R3b-18	fixed	P6-RND
 R3b-19	fixed	P6-RND
 R3b-20	fixed	P6-RND
 R3b-21	fixed	P6-RND
-R3b-22	request	P6-GLO
-R3b-23	request	P6-RND
+R3b-22	fixed	settled by the receiving packet (V1/V2)
+R3b-23	fixed	settled by the receiving packet (V1/V2)
 R3b-24	fixed	P6-RND
 R3b-25	fixed	P6-RND
 R3b-26	fixed	P6-RND
@@ -573,7 +573,7 @@ R4a-12	fixed	P6-RND
 R4a-13	fixed	P6-ENG2
 R4a-14	fixed	P6-RND
 R4a-15	fixed	P6-RND
-R4a-16	request	P6-DAT
+R4a-16	fixed	settled by the receiving packet (V1/V2)
 R4a-17	fixed	P6-DAT
 R4a-18	fixed	P6-DAT
 R4a-19	fixed	P6-DAT
@@ -602,7 +602,7 @@ R4a-41	fixed	P6-GLO
 R4a-42	fixed	P6-GLO
 R4a-43	fixed-differently	P6-ENG1
 R4a-44	fixed	P6-GLO
-R4a-45	request	P6-RB
+R4a-45	fixed	settled by the receiving packet (V1/V2)
 R4a-46	fixed	P6-ENG1
 R4a-47	fixed	P6-DAT
 R4a-48	fixed-differently	P6-ENG1
@@ -695,7 +695,7 @@ R4b-66	fixed	P6-GLO
 R4b-67	fixed	P6-GLO
 R4b-68	fixed	P6-GLO
 R4b-69	fixed-differently	P6-GLO
-R4b-70	request	P6-GLO
+R4b-70	fixed	settled by the receiving packet (V1/V2)
 R4b-71	fixed	P6-DAT
 R4b-72	fixed	P6-DAT
 R4b-73	fixed	P6-DAT
@@ -714,3 +714,37 @@ R4b-85	fixed	P6-ADR
 R4b-86	fixed	P6-DEC
 R4b-87	fixed	P6-DEC
 R4b-88	fixed	coordinator
+V1-1	fixed	P6-X2
+V1-2	fixed	P6-X2
+V1-3	fixed	P6-X2
+V1-4	fixed	P6-X2
+V1-5	fixed	P6-X2
+V1-6	fixed	P6-X2
+V1-7	fixed	P6-X2
+V1-8	fixed	P6-X2
+V1-9	fixed	P6-X2
+V1-10	fixed	P6-X2
+V1-11	fixed	P6-X2
+V1-12	fixed	P6-X2
+V1-13	fixed	P6-X2
+V1-14	fixed	P6-X2
+V1-15	fixed	P6-X2
+V1-16	fixed	P6-X2
+V2-1	fixed	P6-X3
+V2-2	fixed	P6-X3
+V2-3	fixed	P6-X3
+V2-4	fixed	P6-X3
+V2-5	fixed	P6-X3
+V2-6	fixed	P6-X3
+V2-7	fixed	P6-X3
+V2-8	fixed	P6-X3
+V2-9	fixed	P6-X3
+V2-10	fixed	P6-X3
+V2-11	fixed	P6-X3
+V2-12	fixed	P6-X3
+V2-13	fixed	P6-X3
+V2-14	fixed	P6-X3
+V2-15	fixed	P6-X3
+V2-16	fixed	P6-X3
+V2-17	fixed	P6-X3
+V2-18	fixed	P6-X3
