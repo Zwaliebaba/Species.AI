@@ -420,9 +420,9 @@ The slice keys `ref.sim.slice.power_slots`, `ref.sim.slice.sky`, `ref.sim.slice.
 | AC-12 | a spawn into the unused Rogue faction slot | the spawn operation runs | the slot is initialised first and the actors join it | R-SIM-226 |
 | AC-13 | a map with snow and the seasonal theme active | slice `ref.sim.slice.map_effects` runs | the snow spawner runs twice in that tick | R-SIM-218, R-SIM-237 |
 | AC-14 | a new match on a snow map | the first map-effect slice runs | `ref.sim.weather.snow_burst` snowflakes are created, then one more, and the first-run flag is clear | R-SIM-233, R-SIM-234 |
-| AC-17 | a new match on a map with snow and a dust storm | the first map-effect slice runs | the snow spawner makes its burst and the dust-storm spawner makes none, because the snow spawner's count-down has cleared the first-run flag | R-SIM-233, R-SIM-234, R-SIM-235 |
 | AC-15 | the same match setup and commands run twice, once with the simulation steps in parallel jobs | both runs complete | their per-tick simulation state is identical | R-SIM-219 |
 | AC-16 | an eliminated team | the elimination runs | every actor of the team dies through the normal death path and its Transit Gates become neutral | R-SIM-231 |
+| AC-17 | a new match on a map with snow and a dust storm | the first map-effect slice runs | the snow spawner makes its burst and the dust-storm spawner makes none, because the snow spawner's count-down has cleared the first-run flag | R-SIM-233, R-SIM-234, R-SIM-235 |
 
 ## 7 Dependencies
 

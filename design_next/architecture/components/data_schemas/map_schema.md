@@ -477,9 +477,9 @@ Table 3.12-B Fields of one option of a mode's option list.
 
 ### 3.13 Hooks
 
-**DAT-101** (MUST) **Custom-map container.** The reference stores a custom map, one read from the player's own map folder, as one compressed container behind a stored length, holding the map definition and up to four images: the land colour ramp, the shore-wave gradient, the sea tile and the thumbnail, each optional, each as RGBA8 pixels row by row with its width, its height and the resource name under which it registers, numbered from 1 in that order counting only the images present (R-MAP-391, table 2.14-A). This document defines no Species format for it: the format, its identity, its listing and its transfer belong to the typed container family of DEC-207 and to DEC-204, whose defaults specify none. An image is embedded only when it is not an asset of a content set, and the thumbnail only when the map names one other than the default (R-MAP-392). Whatever format is chosen, its reader checks every length and every result, rejects a stream that does not end where its length says, never trusts a stored length for a buffer, reports a malformed file with a diagnostic and is fuzz-tested (R-MAP-393, DEC-015).
+**DAT-101** (MUST) **Custom-map container.** A custom map, one read from the player's own map folder, travels as one container that holds its map definition and the images it embeds (R-MAP-391). This document defines no Species format for it: the format, its identity, its listing and its transfer belong to the typed container family of DEC-207 and to DEC-204, whose defaults specify none. An image is embedded only when it is not an asset of a content set, and the thumbnail only when the map names one other than the default (R-MAP-392). Whatever format is chosen, its reader checks every length and every result, rejects a stream that does not end where its length says, never trusts a stored length for a buffer, reports a malformed file with a diagnostic and is fuzz-tested (R-MAP-393, DEC-015).
 
-**DAT-102** (MUST) **Map ids for achievements.** The reference maps each map file name to a small integer, used as a bit position in per-map won and visited bit sets. Species defines no such integer table: the achievement hooks count maps by their map ids through the map index (DAT-097; R-META-488, R-META-489), so a map's place in the index never decides what is recorded, and a map that the index does not list is never recorded. How achievement progress is stored is DEC-047's and DEC-250's.
+**DAT-102** (MUST) **Map ids for achievements.** The achievement hooks count maps by their map ids through the map index (DAT-097; R-META-488, R-META-489), so a map's place in the index never decides what is recorded, and a map that the index does not list is never recorded. How achievement progress is stored is DEC-047's and DEC-250's.
 
 ## 4 Behaviour and algorithms
 
@@ -525,7 +525,7 @@ Caption: Figure 4.1-A, the validation of one map (DAT-103, DAT-104; DEC-561).
 
 **DAT-106** (MUST) The map catalogue reads only the header section of each map (README DAT-038). Match entry reads the whole map; reading it creates no simulated object and makes no random draw (R-MAP-041). A map that fails to load is refused with a diagnostic, its match does not start, and the program goes on (R-MAP-040, DEC-015).
 
-**DAT-107** (MUST) One loader reads the header for the catalogue and the whole map for play, with the same keys and rules; the reference's two readers, which differ in case sensitivity and in where they stop, have no Species counterpart (DEC-045).
+**DAT-107** (MUST) One loader reads the header for the catalogue and the whole map for play, with the same keys and rules (DEC-045).
 
 **DAT-108** (MUST) A map is identified by its map id together with the hash of its cooked entry: the catalogue, the map index and every other list of maps key their entries by both (DEC-204, ADR-060). No code holds a compiled-in table of map hashes (ADR-060).
 
