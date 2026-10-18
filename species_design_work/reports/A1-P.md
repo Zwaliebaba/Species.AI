@@ -1,61 +1,67 @@
 # Report A1-P: world and regions
 
-> Area A1, wave A · Proposer · Date: 2026-10-18 · Status of the GDD: Draft (proposal, before challenge round 1)
+> Area A1, wave A · Proposer · Date: 2026-10-18 · Status of the GDD: Draft, revised after challenge round 1 (Step 3, Revise)
 
 ## Files written
 
 | File | What |
 |---|---|
-| `Design/gdd/01_world_and_regions.md` | The GDD, prefix `WLD`, in the nine-heading template, status Draft, rationale path `../rationale/A1.md` as text; 108.6 KB of the 120 KB limit (a large revision would split §2.13 and §2.14 into a second file of a folder) |
-| `Design/gdd/adoption_ledger/08_maps_and_level_design_ledger.md` | Every verdict of reference/08: 42 section rows and 25 exception rows, no `pending` row |
-| `Tools/DesignModels/A1WorldDensity.py` | The world-density model (standard library only, `python3 -I`; modes `check`, `report`, `sweep`, `ai`, `layout`); `check` reproduces 64 figures of the GDD with 0 differences |
-| `Tools/DesignModels/README.md` | The model's entry (added before "Adding a model") |
-| `species_design_work/areas/A1/proposal_notes.md` | Options, recommendations, assumptions, owner questions, adoption, the eight decisions, cross-area requests, model results, gate result |
+| `Design/gdd/01_world_and_regions/README.md` | The index of the split document: files, requirement ranges, acceptance-criterion ranges, the model |
+| `Design/gdd/01_world_and_regions/world_and_sites.md` | Extent, size and capacity, world constants, the smallest world per stage, regions, channels and crossings, sites, territory and border areas, resources, travel and the attack gate, native and stand-in AI settlements, founding and returns (WLD-001 to WLD-144); 74 KB |
+| `Design/gdd/01_world_and_regions/terrain_time_and_views.md` | The hybrid generator in two passes and its validation, biomes, lighting, weather, calendar, lifetime, the two views, the scale figures, the battle load and the caps (WLD-160 to WLD-246, WLD-280 to WLD-285); 65 KB |
+| `Design/gdd/01_world_and_regions/skirmish_maps_and_map_tools.md` | Skirmish map and map tool rules, the generator variants with the feathered flatten type, the ledger mirror, the eight decisions (WLD-260 to WLD-270); 22 KB |
+| `Design/gdd/01_world_and_regions.md` | Deleted: replaced by the folder (every requirement id kept, each defined once) |
+| `Design/gdd/adoption_ledger/08_maps_and_level_design_ledger.md` | Link to the folder; R-MAP-086 to `adapt` WLD-180; R-MAP-083, R-MAP-085 and R-MAP-335 notes for the feathered type; totals |
+| `Tools/DesignModels/A1WorldDensity.py` | Revised model: a clock (`lifetime`), seeds 1 to 10 for layout figures, five seeds per lifetime scenario, three battle cases with p99 and weekly maximum, caps, the watched union, bridges; `check` compares 140 figures and tables, 0 differences |
+| `Tools/DesignModels/README.md` | The model's entry, revised |
+| `species_design_work/scripts/A1P_RegionPrototype.py` | Two-region terrain prototype on the conformance generator (A1-F16) |
+| `species_design_work/areas/A1/resolution_1.md` | Answers to A1-F01 to A1-F22 and A1-M1 to A1-M8, retired keys, merged owner questions |
+| `species_design_work/areas/A1/proposal_notes.md` | Options, recommendations, assumptions, owner questions, adoption, decisions, cross-area requests, model results, revised |
 | `species_design_work/reports/A1-P.md` | This report |
 
-No other file was changed. No publishing, upload or Artifact tool was used.
+No other file was changed. No publishing, upload or Artifact tool was used. No git write command was run.
 
 ## Counts
 
-- **Requirements:** 89, `WLD-001` to `WLD-283` in groups (88 MUST, 1 SHOULD: WLD-008, capacity raises by extension from stage 2).
-- **Tuning keys:** 93 `wld.*` keys, 6 final and 87 provisional, each provisional row with a playtest note.
-- **Diagrams:** 6 Mermaid diagrams (the life of a world, world creation, a region and its links, site states, border-area states, the two views); all parse (gate 4: 280 blocks, 0 failed).
-- **Tables:** 13 numbered; **edge cases:** 35; **acceptance criteria:** 33.
+- **Requirements:** 99 (98 MUST, 1 SHOULD: WLD-008), every round-1 id kept; new: WLD-009, WLD-010, WLD-085, WLD-086, WLD-124 to WLD-127, WLD-284, WLD-285.
+- **Tuning keys:** 118 `wld.*` keys, 6 final and 112 provisional, each provisional row with a playtest note; 21 round-1 keys retired and not reused (listed in `resolution_1.md`).
+- **Diagrams:** 10 Mermaid diagrams (4, 4 and 2 per file); gate 4: 284 blocks, 0 failed.
+- **Edge cases:** 59; **acceptance criteria:** AC-01 to AC-46.
 
-## The design in brief
+## Resolution of round 1
 
-A world is one continent of square regions (5,120 wu) ringed by sea; each region is a valley of four sites (2 × 2, 2,080 wu apart) enclosed by a ridge that passes cross. Valley neighbours share a border area (the 720 wu lens of their largest territories), each pass corridor is a border area, and every valley centre holds a wilderness resource site. Size follows capacity: AI settlements 6 + 0.25 × capacity, filled to whole valleys, sites = capacity + AI + 2 (PIL-068 by construction). Terrain is **hybrid**: an authored world template and set pieces, a procedural layout from a seed, the reference generator for the terrain, validated with re-rolls, baked once into 1,024 wu chunks, never changed in play. The world calendar's day is 24 h ÷ the pace factor. Lifetime: unlimited for integrated worlds, 84 world days for dedicated ones (stage 2). The strategic view uses the renderer's visual language only, with a public layer and a seen layer.
+Accepted 28 (A1-F01 to A1-F22, A1-F13 in part; A1-M1, M3, M4, M5, M7 in part, M8), Rejected 1 (A1-M2), Escalated 1 (A1-M6, owner question 2). No Critical or High finding remains open.
 
 ## Model results
 
-At **16 stewards**: 7 regions, 28 sites, 10 AI, 25,600 wu extent; valley neighbour 2.0 min, pass neighbour 3.0, world diameter 23 min at 20 wu/s; first valley contact day 5.0; 2.5 territory contacts per settlement at full occupancy; battles in progress at the 99th percentile of the evening peak 1, 2, 2 at 2, 6, 10 battles a week, and 2, 3, 4 at the session pace. At **200 stewards**: 65 regions, 260 sites, 58 AI, 61,440 wu; diameter 66 min; 2.8 contacts; battles 3, 5, 8; 46.7 stewards present at the peak; 6.66 M land samples (53.2 MB binary64 heights). Bodies per full region 2,400 at a placeholder 600 per settlement. Random founding leaves 12 % of stewards with no contact at 200 and 25 % occupancy; the ranked founding of WLD-140 leaves none.
+At **16 stewards**: 8 regions, 32 sites, 10 native AI, margin 4; valley neighbour 2.0 min, world diameter 23 to 25 min (seeds 1 to 10); first contact day 5 at every site; a steward's contacts in a fresh world 2.4 to 3.0, 75 to 100 % with a steward neighbour at 25 % occupancy; day 180 of the slow friends' world: 2.40 settlements per region, 0 % below 2 contacts; battles in progress at the evening peak, planning case at 6 a week, 4 (6 at the session pace), range 1 to 8 (2 to 12), cap 4. At **200**: 77 regions, 308 sites, 56 native AI, margin 50; diameter 70 to 76 min; contacts 2.8 to 2.9; day 180: 167 stewards (strong demand, 22 of 532 refused) or 50 (weak demand, 2.02 per region), 1 % below 2; battles 16 in the planning case (6,400 figures), range 3 to 28, cap 26; watched union 116 to 118 typical, 174 to 177 at most.
 
 ## Adoption verdicts (reference/08, 185 requirements)
 
-adopt 7 · adopt-skirmish 70 · adapt 108 · drop 0 · pending 0. Skirmish map rules as written; A1's decisions adapt the rules they change (WLD-260 to WLD-270); the map editor hooks become the development editor's design input; the census and the five other modes are `adapt` to PIL-003 as in the reference/00 ledger. B9 confirms the skirmish rows.
+adopt 6 · adopt-skirmish 70 · adapt 109 · drop 0 · pending 0.
 
 ## DEC and ADR changes
 
-- Proposed Resolved (register edited at Finalise): **DEC-045** (no editor in player builds; text authoring first, a development editor after the first playable), **DEC-315** (option A, the default stands), **DEC-324** (option B: generation method 3 and flatten type 5 added), **DEC-562** (option B: named presets; world weather is presentation only), **DEC-802** (option B: visibility field), **DEC-865** (option B with item 5 as stated), **DEC-866** (item 1 A, item 2 B), **DEC-966** (item 1 A, item 2 B).
-- Recommended to D8: DEC-246 (B with D: baked region chunks by digest) and DEC-247 (B: one continuous field in region-aligned chunks).
+- Proposed Resolved (register edited at Finalise): DEC-045, DEC-315, DEC-324 (option B: method 3 and flatten types 5 and 6), DEC-562, DEC-802, DEC-865, DEC-866, DEC-966.
+- Recommended to D8: DEC-246 (B with D) and DEC-247 (B, inside the reserved extent).
 - No ADR written or changed; no new DEC.
 
 ## Owner questions (for gate B)
 
-Q1 world size per player count and the AI share (recommend as proposed); Q2 the default lifetime of a dedicated world (recommend 84 world days, unlimited for integrated); Q3 the stage-2 capacity of a community dedicated world (recommend 16).
+Q1 world size, native AI and stand-ins (recommend as proposed); Q2 lifetime defaults, 84 world days for dedicated and hosted, and no eras in v1 (the challenger recommends eras); Q3 stage-2 capacity 16; Q4 battle caps 2 per region and max(4, 10 %) per world with attacks waiting at the gate.
 
 ## Cross-area requests
 
-In full in `proposal_notes.md` §7. Main ones: A2 sizes the server from Table 9 and sets the region body budget (WLD-281) and pass battles (WLD-282); B1 meets the contact days (1,040 wu by day 5, 1,200 by day 9); B5 owns claims on the named areas and the attack hold (WLD-102); B6 decides the warning at the session pace and the newcomer protection that holds a late joiner's border areas; D4 registers `maps.world_template` and the visibility field; D8 amends the terrain component (method 3, flatten type 5, the columns × rows scan) and decides DEC-246 and DEC-247; E2 gives the six biomes their looks; B9 confirms the skirmish ledger rows.
+In full in `proposal_notes.md` §7. Main ones: the coordinator updates the GDD index row and CONVENTIONS §3.1 to the folder; A2 sizes for the planning case and sets the region budget and the caps; B1 meets the contact days for every founding; B4 confirms the 20 wu/s march speed and bounds crossing battles; B5 owns claims across own borders and the waiting attack; B6 confirms the 10-minute warning at both paces and replaces the lifetime scenarios; B7 runs stand-ins; D8 amends the terrain component (method 3, flatten types 5 and 6, the columns × rows scan) and decides DEC-246 and DEC-247.
 
 ## Names proposed
 
-resource site (`ResourceSite`; already used by PIL-120), border area (`BorderArea`; PIL-120), pass (`RegionPass`), home cell, biome (`Biome`), world template (`WorldTemplate`, schema `maps.world_template`), set piece (`SetPiece`), world day. Proposed string ids `region.name.<nnn>`; proposed string-id prefixes `region.resource`, `region.border_area`, `region.pass`, `region.biome`. Biome ids `temperate`, `highland`, `arid`, `marsh`, `ember`, `frost`. World states Creating and Ended beside A0's Running and Frozen.
+resource site (`ResourceSite`), border area (`BorderArea`), crossing (`RegionCrossing`, replaces round 1's pass), home cell, native AI settlement, stand-in AI settlement, biome (`Biome`), world template (`WorldTemplate`, schema `maps.world_template`), set piece (`SetPiece`), world day. String ids `region.name.<nnn>`; proposed prefixes `region.resource`, `region.border_area`, `region.crossing`, `region.biome`. Biome ids `temperate`, `highland`, `arid`, `marsh`, `ember`, `frost`.
 
 ## Gate result
 
-`python3 -I Tools/DesignCheck/CheckDesign.py Design --skip-mermaid --design-phase`: all 19 gates pass; without `--skip-mermaid`, gate 4 passes too. Gates 12, 13 and 15 report what is expected (other areas' pending rows, the design-phase decisions until Finalise, the rationale written at Finalise).
+`python3 -I Tools/DesignCheck/CheckDesign.py Design --skip-mermaid --design-phase`: all gates pass; without `--skip-mermaid` gate 4 passes too (284 blocks). Gates 12, 13 and 15 report what is expected.
 
 ## What I verified and what I assumed
 
-Verified: every cited requirement, DEC, ADR and owner decision exists (gates 5, 6, 16); every tuning key is in the table and cited (gate 8); the model's `check` matches every figure stated; the ledger covers all 185 ids with no pending row. Assumed: the twelve assumptions of `proposal_notes.md` §3, chiefly B4's expedition speed of 20 wu/s, B1's square-root territory growth and a plateau population of 600. Not verified: generation cost on real hardware (WLD-165 budgets are first guesses until the generator exists), and that the 2 × 2 site pattern reads well in the strategic view (a playtest note).
+Verified: every figure that the three files state is reproduced by `A1WorldDensity.py check` (0 differences); every requirement, DEC, ADR and owner decision cited exists (gates 5, 6, 16); every key is defined once and cited (gate 8); the prototype's structural checks pass in 100 seeds of 100. Assumed: the twelve assumptions of `proposal_notes.md` §3, chiefly the 20 wu/s march speed, square-root territory growth, a plateau population of 600, and the battle cases and lifetime scenarios as placeholders of B4, B5, B6 and C2. Not verified: generation time of the C++ generator on DEC-971's machine; checks 7 and 8 of WLD-163, which need B2's weights and the land route graph. The challenger's script reads the round-1 model's interface and does not run against the revised model; its ten checks are answered by the revised model's modes.

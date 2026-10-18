@@ -7,7 +7,7 @@ The Species game design, written by the design phase (`prompts/species-design-ph
 | Document | Prefix | Area | Wave | Status |
 |---|---|---|---|---|
 | [00_vision_pillars_and_core_loops.md](00_vision_pillars_and_core_loops.md) | `PIL` | A0 | A | Final |
-| `01_world_and_regions.md` | `WLD` | A1 | A | not started |
+| [01_world_and_regions/](01_world_and_regions/README.md) | `WLD` | A1 | A | Draft |
 | `02_settlements_and_population.md` | `SET` | B1 | B | not started |
 | `03_resources_and_economy.md` | `RES` | B2 | B | not started |
 | `04_building_and_construction.md` | `CON` | B3 | B | not started |

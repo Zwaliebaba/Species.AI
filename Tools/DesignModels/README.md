@@ -28,27 +28,36 @@ no input files.
 
 ## A1WorldDensity.py
 
-The world-density model of area A1, written from `Design/gdd/01_world_and_regions.md` (prefix WLD). For a world of a
-given steward capacity it computes the regions, settlement sites and AI settlements (WLD-003, WLD-004), generates a
-layout from a seed (regions as a compact blob, four sites per valley, passes, the travel network), and reports
-settlements per region, travel times between neighbours, across a region and across the world (WLD-100 to WLD-104),
-the contact rate (the world day on which territories meet, and the territory contacts of each settlement at 25, 50 and
-100 % steward occupancy, WLD-064, WLD-065), and the scale figures that area A2 sizes the server with (bodies per region,
-battles and expeditions in progress at the evening peak and at the session pace, watched settlements, terrain samples;
-WLD-280). Every figure is given for 16 and 200 stewards.
+The world-density model of area A1, written from `Design/gdd/01_world_and_regions/` (prefix WLD, three files). For a
+world of a given steward capacity it computes the regions, settlement sites, native AI settlements and site margin
+(WLD-003, WLD-004), generates a layout from a seed (regions as a compact blob at the centre of the reserved extent,
+four sites per island valley offset and rotated as a whole, crossings, the travel network), and reports settlements per
+region, travel times between neighbours, across a region and across the world over seeds 1 to 10 (WLD-100 to
+WLD-104), the contact rate (the world day on which territories meet, and the territory contacts of every settlement in
+a fresh world at 25, 50 and 100 % steward occupancy, WLD-064, WLD-065), the life of a world over a year of world days
+(arrivals, active lifetimes, 21 days on the map under the deputy, dormancy, returns, the return queue and the stand-in
+AI settlements, five seeds per scenario, WLD-124 to WLD-127), and the scale figures that area A2 sizes the server with
+(bodies per region, battles in progress at the evening peak and at the session pace in a base, a planning and a stress
+case with the 99th percentile and the weekly maximum, the battle caps, expeditions in progress, the union of watched
+settlements, terrain samples; WLD-280 to WLD-285). Every figure is given for 16 and 200 stewards.
 
 ```
-python3 -I Tools/DesignModels/A1WorldDensity.py            # check: every figure the document states, exact to its precision
-python3 -I Tools/DesignModels/A1WorldDensity.py report     # the full report at 1 to 200 stewards
-python3 -I Tools/DesignModels/A1WorldDensity.py sweep      # contact days and lens width over site spacing, radius and growth
-python3 -I Tools/DesignModels/A1WorldDensity.py ai         # AI placement rules and founding orders compared by contact degree
-python3 -I Tools/DesignModels/A1WorldDensity.py layout 16 1   # one generated layout (capacity, seed) as text
+python3 -I Tools/DesignModels/A1WorldDensity.py              # check: every figure and table stated
+python3 -I Tools/DesignModels/A1WorldDensity.py report       # world size, geometry, travel, contact and scale
+python3 -I Tools/DesignModels/A1WorldDensity.py lifetime     # a year of world days, keeper on and off, 5 seeds each
+python3 -I Tools/DesignModels/A1WorldDensity.py battles      # battles in progress: 3 cases, p99, weekly max
+python3 -I Tools/DesignModels/A1WorldDensity.py sweep        # contact days and lens over spacing and growth
+python3 -I Tools/DesignModels/A1WorldDensity.py founding     # founding rules compared
+python3 -I Tools/DesignModels/A1WorldDensity.py tables       # every table of figures (python: STATED_TABLES)
+python3 -I Tools/DesignModels/A1WorldDensity.py layout 16 1  # one generated layout (capacity, seed) as text
 ```
 
-Inputs are the WLD tuning values (class `Params`, each field naming its key) and placeholders for values that later
-areas set (the territory growth curve and plateau population, B1; the expedition speed, B4; the share of attacks that
-present stewards declare, B5; the evening window of present play, B6), each marked in the source. `check` prints one
-line per figure and exits with status 1 when any differs. Python 3 with the standard library only; no input files.
+Inputs are the WLD tuning values (class `Params`, each field naming its key), placeholders for values that later
+areas set (the territory growth curve and plateau population, B1; gathering trips, B2; the share of attacks that
+present stewards declare, B5; the evening window of present play, B6), each marked in the source, the battle cases
+(`BATTLE_CASES`) and the lifetime scenarios (class `Scenario`, placeholders of B6 and C2). Every random value is a
+counter-based SplitMix64 hash of the seed and its keys. `check` prints one line per figure (140 at present) and exits
+with status 1 when any differs; it runs in about 5 seconds. Python 3 with the standard library only; no input files.
 
 ## Adding a model
 
