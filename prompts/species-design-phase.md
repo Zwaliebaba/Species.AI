@@ -4,11 +4,13 @@ You are the **coordinator** of a multi-agent design run. You design **Species**,
 
 Every design area goes through a **propose → challenge → revise → decide** loop. A proposer designs; an independent challenger attacks the design, starting with its weakest point, and recommends how to make it better; the proposer revises; and the owner decides whatever the agents may not. The result is a complete Species design: a GDD, an arc42 architecture, ADRs, a decision register, an extended asset manifest and an implementation plan, ready for an implementing agent.
 
-**How to start.** Open a Claude Code session on `BRANCH` and say: *"Read `prompts/species-design-phase.md` and execute it as the coordinator."* Subagents are spawned with the Agent tool. The phases also map onto a Workflow script, if the owner opts into that.
+**How to start.** Open a Claude Code session on a branch off the latest `main` and say: *"Read `prompts/species-design-phase.md` and execute it as the coordinator."* Subagents are spawned with the Agent tool. The phases also map onto a Workflow script, if the owner opts into that.
 
 **Precondition.** The reference-library conversion has finished. `Design/README.md` describes the reference library, `Tools/DesignCheck/` exists and passes on `Design/`, and no recovery corpus is left in the tree. If any of these is not true, stop and tell the owner.
 
 Read this whole file, `AGENTS.md` (how code is written and built; it binds the engine design too), `vision/species-vision-brief.md`, `Design/README.md`, `Design/CONVENTIONS.md`, `Design/decisions/README.md` (the decision index) and `Design/ADR/README.md` before doing anything.
+
+**What the library holds** (2026-10-18; Phase 0 recounts it): 2,969 reference requirements (`R-`) in 657 sections of 61 reference files; 1,959 engine component requirements in 12 components; 302 decisions, of which 148 are Open (117 to be decided by the design phase, 30 at playtest, 1 at the prototype); 65 ADRs, 18 of them Proposed; 432 asset ids in 1,391 files. Those numbers set the shape of this run: the adoption ledger works section by section (§5.3), the Open decisions are triaged before the waves start (§5.4), and the Proposed ADRs are left to the evidence that confirms them (§5.5).
 
 ---
 
@@ -22,7 +24,7 @@ Read this whole file, `AGENTS.md` (how code is written and built; it binds the e
 | `WORK` | `$REPO/species_design_work/`, holding proposals, challenge files, reports, model scripts and logs. It is committed during the run and deleted at the end; the condensed rationale and the models move into the design and `Tools/`. |
 | `TOOLS` | `$REPO/Tools/DesignCheck/` (gates); `$REPO/Tools/DesignModels/` (quantitative design models: it already holds `TerrainGenerator.py`; this run adds its own models and keeps them) |
 | `OUTBOX` | a directory outside the repository that the owner can open (your session's scratchpad or outputs directory) |
-| `BRANCH` | the branch this session was given. Commit and push only there. |
+| `BRANCH` | the branch this session was given, cut from the latest `main` (`AGENTS.md` §6). Commit and push only there. |
 | Owner decisions | O1–O30 in `VISION` §3, plus every answer the owner gives during this run (recorded as O31, O32, … in `DESIGN/decisions/owner_decisions.md`). Agents may recommend changing an owner decision, but **only the owner changes one**, at an owner gate. |
 | Language | British English (en-GB) |
 | Max parallel agents | 6 per wave, unless the owner raises it |
@@ -37,12 +39,14 @@ Read this whole file, `AGENTS.md` (how code is written and built; it binds the e
 **Done means all of the following are true on `BRANCH`, and pushed:**
 
 1. Every file of §5 exists and is Final.
-2. Every reference requirement (`R-…`) has an adoption verdict in `DESIGN/gdd/adoption_ledger.md`.
-3. Every Critical and High challenge finding is resolved: accepted and changed, rejected with a rationale, or decided by the owner. Every area has a rationale file.
-4. Every "model required" area (§5.2) has its model in `Tools/DesignModels/`, and its results are summarised in the area's rationale.
-5. `Tools/DesignCheck/` passes on `DESIGN/`, including the design-phase checks of §7.
-6. The owner has passed gates A, B and C (§8), and every owner answer is recorded.
-7. The owner has received the final report (§8.4).
+2. Every reference requirement (`R-…`) has exactly one effective adoption verdict in `DESIGN/gdd/adoption_ledger/` (§5.3), and no verdict is `pending`.
+3. No Open decision says `Decide by: design phase`: each one is Resolved, Dropped, or re-dated to a named later point with its reason (§5.4).
+4. Every Proposed ADR is either left to its "Confirmed when" milestone, which the roadmap schedules, or superseded by a new ADR where the world game conflicts with it; the storefront choice that ADR-072 waits for is made (§5.5).
+5. Every Critical and High challenge finding is resolved: accepted and changed, rejected with a rationale, or decided by the owner. Every area has a rationale file.
+6. Every "model required" area (§5.2) has its model in `Tools/DesignModels/`, and its results are summarised in the area's rationale.
+7. `Tools/DesignCheck/` passes on `DESIGN/`, including the design-phase checks of §7.
+8. The owner has passed gates A, B and C (§8), and every owner answer is recorded.
+9. The owner has received the final report (§8.4).
 
 ---
 
@@ -53,21 +57,22 @@ Authority, from highest to lowest:
 1. **Owner decisions** (O1 and up).
 2. **The vision brief**: its pillars (revisable at gate A), its constraints and its challenge seed list.
 3. **The reference library** (`DESIGN/reference/`, `DESIGN/architecture/components/`, `DESIGN/assets/`): the authority for mechanics, behaviour, look and feel, and the engine baseline. Species adopts, adapts or drops each reference requirement by ID; it never re-derives one.
-4. **`AGENTS.md`** (how code is written and built: naming, layout, the MSBuild build, the dependency allow-list R14, ADR rules) **and the engine ADRs** (`DESIGN/ADR/`). The ADRs stand unless the world game creates a real conflict; then a new ADR supersedes the old one, and the owner is told at the next gate. A design that needs a change to `AGENTS.md` (for example a new dependency) asks the owner; it never works around it.
+4. **`AGENTS.md`** (how code is written and built: naming, layout, the MSBuild build, the dependency allow-list R14, ADR rules) **and the engine ADRs** (`DESIGN/ADR/`). The ADRs stand unless the world game creates a real conflict; then a new ADR supersedes the old one, and the owner is told at the next gate. A design that needs a change to `AGENTS.md` (for example a new dependency) asks the owner; it never works around it. Two owner decisions bind every build-related design: development tools are projects of the one solution (O29), and a tool project's dependencies come from NuGet only (O30).
 5. **General genre knowledge and public technical standards**, for challenge, comparables and current technology. Comparable titles may be named in rationale files as lessons ("persistent strategy games commonly protect new players with…"). Their content is never copied.
 
-**Clean room.** Agents read only `DESIGN/`, `VISION`, `Tools/`, `WORK/`, and public technical documentation. Nobody looks for, reads or recalls the reference game's original materials, source, art, text or community content. The reference library is the only route to the reference.
+**Clean room.** Agents read only `DESIGN/`, `VISION`, `AGENTS.md`, `CLAUDE.md`, `Tools/`, `WORK/`, and public technical documentation. Nobody looks for, reads or recalls the reference game's original materials, source, art, text or community content. The reference library is the only route to the reference.
 
 ---
 
 ## 3 The design loop (one per area)
 
-**Step 1 — Propose.** A proposer agent writes the area's documents with the templates of §6. Its inputs are `VISION`, `owner_decisions.md`, the final documents of upstream areas, the relevant reference documents (with their `R-` IDs) and the engine ADRs. Alongside the documents it writes `WORK/areas/<area>/proposal_notes.md`, containing:
+**Step 1 — Propose.** A proposer agent writes the area's documents with the templates of §6. Its inputs are `VISION`, `owner_decisions.md`, the final documents of upstream areas, the relevant reference documents (with their `R-` IDs), the engine ADRs, the ledger files it owns (§5.3) and its rows of the decision triage (§5.4). Alongside the documents it writes `WORK/areas/<area>/proposal_notes.md`, containing:
 - **Options considered** for every significant choice, with the choice made and why.
 - **Recommendations**: improvements beyond the vision that would make Species better, each with its cost.
 - **Assumptions**: everything it assumed that no input states.
 - **Owner questions**: choices that are the owner's to make, each with a recommended option.
-- **Adoption**: every reference requirement of its scope, marked adopt, adapt (with what changes) or drop (with why).
+- **Adoption**: the verdict for every section of the ledger files it owns (§5.3), and for each requirement that differs from its section's verdict; ledger rows for files it does not own go to their owner as cross-area requests.
+- **Decisions**: for every Open decision the triage gives the area (§5.4), the proposed resolution: Resolved (the decision, and the requirement ids that implement it), Dropped, or re-dated with its reason.
 
 **Step 2 — Challenge.** A challenger agent with a fresh context reads the area documents, `VISION`, the owner decisions and the upstream documents. It does **not** read the proposer's notes. It writes `WORK/areas/<area>/challenge_<n>.md`:
 - At the top, **the weakest point**: the single thing most likely to make this area fail, in one paragraph.
@@ -114,7 +119,7 @@ Design/
 ├── CONVENTIONS.md                     extended: new prefixes and vocabulary
 ├── gdd/
 │   ├── README.md
-│   ├── adoption_ledger.md             every R- requirement → adopt | adapt | drop | skirmish-only → Species requirement IDs
+│   ├── adoption_ledger/               README (totals) + one file per reference document: verdicts by section, with exceptions (§5.3)
 │   ├── 00_vision_pillars_and_core_loops.md
 │   ├── 01_world_and_regions.md
 │   ├── 02_settlements_and_population.md
@@ -132,7 +137,7 @@ Design/
 │   ├── 14_audio_design.md
 │   └── 15_tutorial_and_help.md
 ├── architecture/                      arc42 01–12 (new) + components/ (reference baseline + new)
-│   ├── 01_introduction_and_goals.md … 12_glossary.md   (12 absorbs Design/glossary/)
+│   ├── 01_introduction_and_goals.md … 12_glossary.md   (12 indexes Design/glossary/, which A0 extends; the glossary is not moved)
 │   └── components/
 │       ├── server_and_hosting.md        (new)
 │       ├── world_simulation.md          (new; adapts reference/12)
@@ -147,7 +152,7 @@ Design/
 │       └── (baseline components; their "Design-phase inputs" sections are answered by the owning area)
 ├── ADR/                               extended with the deferred topics (`ADR-NNN-<slug>.md`, AGENTS.md §6)
 ├── decisions/
-│   ├── README.md + register files     extended (new DECs in a new file, `species_design.md`, from DEC-1000; CONVENTIONS §3)
+│   ├── README.md + register files     extended: resolutions of the reference decisions in place (§5.4); new DECs in `species_design.md`, four-digit ids from one thousand (CONVENTIONS §3)
 │   └── owner_decisions.md             O1 and up
 ├── rationale/                         one file per area (§3 step 5)
 ├── assets/                            extended with world-game needs
@@ -168,7 +173,7 @@ Tools/DesignModels/                   quantitative models with a README (kept fo
 
 | Area | Wave | Output | Scope | Depends on | Model required |
 |---|---|---|---|---|---|
-| A0 | A | `gdd/00` | Pillars (confirm or revise); the core loops at three timescales: minutes (a battle), hours (settlement growth), days and weeks (the world, relations, world lifetime); the player fantasy; session patterns (active play, check-in, AFK); audience; comparables and their lessons; **the vocabulary of new concepts** (settlement, region, race, deputy, standing order, grievance, shield and the rest), screened against trademarks | `VISION`, `reference/00` | — |
+| A0 | A | `gdd/00` | Pillars (confirm or revise); the core loops at three timescales: minutes (a battle), hours (settlement growth), days and weeks (the world, relations, world lifetime); the player fantasy; session patterns (active play, check-in, AFK); audience; comparables and their lessons; **the vocabulary of new concepts** (settlement, region, race, deputy, standing order, grievance, shield and the rest), screened against trademarks and added to `Design/glossary/` and CONVENTIONS §8 | `VISION`, `reference/00` | — |
 | A1 | A | `gdd/01` | World size and shape; regions; settlement sites; terrain (procedural from the reference algorithm, authored, or hybrid); resource distribution; world time (O4 freeze); world lifetime and seasons (recommended: a server setting, with a default); the strategic zoom level and the settlement view in the reference visual language (O9) | A0 | world density: settlements per region, travel times, contact rate, at 16 and at 200 players |
 | A2 | A | `architecture/04` + ADRs | Server-authoritative simulation; region partitioning; integrated → dedicated with one codebase and an in-process transport (O10); tick rate or rates; the numeric model and how much determinism Species still needs (replays, tests, server reproducibility); persistence approach; interest management; the scale path from 16 to 200+ players (what must be true at 16 so 200 needs no rewrite) | A0, A1, `reference/12`, `DEC` deferred-design entries | server CPU per settlement and per battle; bandwidth per client with crowds in view; storage growth; at 16 and at 200 players |
 | B1 | B | `gdd/02` | Settlement life: inhabitants, needs, growth; adapts the population flow (deaths yield essence, essence drives growth); population limits per settlement | A0–A2 | — |
@@ -189,7 +194,7 @@ Tools/DesignModels/                   quantitative models with a README (kept fo
 | D2 | D | `components/world_simulation.md` | The world simulation runtime: regions, ticks, the job system, battles inside regions, switching between full and abstract fidelity without exploits; adapts `reference/12` | A2, B2, B4 | uses A2 and B2 models |
 | D3 | D | `components/replication.md` | Command and state replication; interpolation; crowd compression; interest management; join and reconnect; skirmish on the same path | A2, D2 | bandwidth per client (extends A2) |
 | D4 | D | `components/persistence.md` | Storage engine (for example embedded for community servers, a server database for hosted worlds), schema versioning and migrations across patches, snapshots, backups, rollback, the freeze semantics (O4) | A2 | storage growth (extends A2) |
-| D5 | D | `components/identity_and_services.md` | Accounts and platform login (gate B); identity across community servers; server listing; connectivity for integrated hosting; moderation; GDPR | A2, C2 | — |
+| D5 | D | `components/identity_and_services.md` | Accounts and platform login (gate B); the storefronts, which close the open choice of ADR-072; identity across community servers; server listing; connectivity for integrated hosting; moderation; GDPR | A2, C2 | — |
 | D6 | D | `components/server_api.md` | The authenticated settlement-status and deputy-order API (O6): versioning, rate limits, what a later companion app needs | B6, D5 | — |
 | D7 | D | `components/ai_runtime.md` | The AI architecture (utility, HTN, behaviour trees or a hybrid; decided with options); the knowledge model under fog of war; budgets; scheduling across many settlements | B7, D2 | AI CPU per settlement (extends A2) |
 | D8 | D | `components/large_world.md` | Coordinate precision far from the origin; terrain chunking and streaming; hierarchical pathfinding; strategic-zoom rendering hooks (with the renderer component) | A1, A2 | — |
@@ -197,11 +202,68 @@ Tools/DesignModels/                   quantitative models with a README (kept fo
 | D10 | D | `components/telemetry_and_privacy.md` | Consent, data minimisation, retention, deletion while a settlement persists, crash-report links, live-operations hooks | D5 | — |
 | E1 | E | `architecture/01`–`03`, `05`–`12` | arc42 spine: goals and quality goals; constraints (the engine baseline plus the new ones); C4 context; C4 containers and components; runtime sequences (a command's path, a battle starting, an AFK attack defended by the deputy, server freeze and resume, moving a world from integrated to dedicated); deployment (integrated, community dedicated, hosted); cross-cutting concepts; ADR index; quality scenarios and budgets from the models; risks; the glossary | all of A–D | — |
 | E2 | E | `assets/` (extends `assets/GameAssets.md` and the manifest) | The world-game asset needs: world terrain biomes, settlement buildings, strategic-map icons, deputy and relations UI, race variants (looks and colour), notification sounds; all newly authored in the reference style; priority by stage | A–C | — |
-| E3 | E | `implementation/`, root `AGENTS.md` (status, R18+), root `CLAUDE.md`, root `README.md` | The stage plan, roadmap and first playable (the skirmish on the in-process server); the agent handbook (traceability, Definition of Done, how to treat Open DECs and provisional tuning, how to propose design changes) | A–E2 | — |
+| E3 | E | `implementation/`, root `AGENTS.md` (status, R18+), root `CLAUDE.md`, root `README.md` | The stage plan, roadmap and first playable (the skirmish on the in-process server); the agent handbook (traceability, Definition of Done, how to treat Open DECs and provisional tuning, how to propose design changes); the roadmap schedules every Proposed ADR's "Confirmed when" milestone and every Open decision's later decide-by point | A–E2 | — |
 
-Waves B and D overlap: D areas start once their dependencies are Final, and the coordinator runs them alongside B and C within the parallel limit. A2's ADRs cover the topics the reference library deferred (`DESIGN/ADR/README.md` §"Deferred to the design phase") and close the deferred-design DEC entries.
+Waves B and D overlap: D areas start once their dependencies are Final, and the coordinator runs them alongside B and C within the parallel limit. A2's ADRs cover the topics the reference library deferred (`DESIGN/ADR/README.md` §"Deferred to the design phase") and close the deferred-design DEC entries (`DESIGN/decisions/deferred/`).
 
-### 5.3 Seed challenges
+### 5.3 Adoption ledger
+
+The ledger says, for every reference requirement, what Species does with it. It works **section by section**: one row covers every requirement under a heading of a reference document, and an exception row covers a single requirement that differs from its section. A per-requirement ledger of nearly 3,000 rows would be rubber-stamped, and it would also exceed the size limit.
+
+**Files.** `DESIGN/gdd/adoption_ledger/README.md` holds the totals per verdict and per document. There is one file per reference document (`00_reference_overview.md` … `12_simulation_model.md`), each a table:
+
+| Scope | Verdict | Species requirements | Note |
+|---|---|---|---|
+
+**Scope** is a whole reference file (`02_units/worker.md`), a section of one (`02_units/worker.md §2.5`, the heading and everything under it), or a single `R-` id. The most specific row wins, and every `R-` id ends up with exactly one effective verdict.
+
+**Verdicts:**
+- `adopt`: binds Species as written, in the world game and in skirmish. Code and tests cite the `R-` id, and its tuning keys stay as they are (O13). The Species requirements column may stay empty.
+- `adopt-skirmish`: binds the skirmish only, as written (B9). The world game does not use it.
+- `adapt`: replaced by the Species requirements named in the row (at least one, and each must exist). The note says what changes. The `R-` requirement no longer binds, and its numbers move to Species tuning keys.
+- `drop`: not in Species. The note gives the reason. A dropped requirement that a kept one depends on is a defect, unless the row names its replacement.
+
+**Ownership.** Each ledger file belongs to one area, and the other areas send it rows as cross-area requests:
+
+| Reference document | Owning area |
+|---|---|
+| `00_reference_overview.md` | A0 |
+| `01_skirmish_rules_and_modes/` | B9 |
+| `02_units/`, `04_supply_crates_powers_and_weapons/` | B4 |
+| `03_buildings_and_world_objects/` | B3 |
+| `05_population_flow.md` | B1 (B2 for the economy rules) |
+| `06_controls_camera_and_commands/` | C1 |
+| `07_bots/` | B7 |
+| `08_maps_and_level_design/` | A1 (B9 for the skirmish maps) |
+| `09_front_end_and_match_flow/` | C2 |
+| `10_audio_design/` | C4 |
+| `11_tutorial_and_help.md` | C5 |
+| `12_simulation_model/` | D2 (A2 for the tick, the numeric model and determinism) |
+
+The engine component requirements (`RND-`, `TER-` and the other component prefixes) are not in the ledger. They are the engine baseline and bind unless an ADR or a new component supersedes them (§2 item 4); their "Design-phase inputs" sections are answered by the owning area.
+
+### 5.4 Open decisions
+
+The library holds 148 Open decisions. Each states the behaviour to build until it is decided: 117 say `Decide by: design phase`, 30 `playtest` and 1 `prototype`. Many are small skirmish details whose default is right. The rule is that every one is triaged, and only the ones that matter take the loop's time.
+
+- **Triage (Phase 0).** The coordinator writes `WORK/dec_triage.md`: for every Open decision its id, title, decide-by, Affects line and owning area. The area is derived from the Affects line through the ledger ownership table of §5.3. Component decisions go to the area that answers that component's design-phase inputs. The deferred-design entries go to A2 and the D areas, through `DESIGN/ADR/README.md` §"Deferred to the design phase". The coordinator assigns the ambiguous ones by hand and logs each choice.
+- **In the area.** Every `design phase` decision of the area's triage ends one of three ways:
+  - **Resolved**: the decision, the requirement ids that implement it, and the date. "The specified default stands", with one sentence of why, is a valid resolution.
+  - **Dropped**: the topic does not exist in Species, with the reason.
+  - **Re-dated**: `playtest`, `prototype` or a named roadmap milestone, with the reason it cannot be decided now.
+- **Escalation.** A decision goes to an owner gate only if it changes a pillar, an owner decision or the stage plan, or if the proposer and the challenger disagree on it.
+- **Playtest and prototype decisions** stay Open. The agent handbook (E3) says how to build their defaults behind their tuning keys.
+- **Editing the register.** A reference decision keeps its id, title and specified behaviour, for traceability. Its status line changes, and a dated resolution note is appended. New decisions go in `decisions/species_design.md` with four-digit ids from one thousand upward (CONVENTIONS §3). Write a four-digit id only once the entry exists: gate 6 reads every `DEC-` id as a citation.
+
+### 5.5 Proposed ADRs
+
+18 ADRs are Proposed. Each names the default that holds while it is Proposed, and a "Confirmed when" line: the evidence and the milestone that turn it Accepted. 16 of them are confirmed by implementation evidence, mostly at the first playable (O20). The design phase does not re-decide them.
+
+- **Superseding.** The design phase supersedes a Proposed ADR only where the world game conflicts with it: a new ADR, with the owner told at the next gate.
+- **Choices it makes.** The design phase makes the choices that two ADRs wait for: the storefronts for ADR-072 (D5, gate B), and, if the owner knows it, the publishing entity for ADR-073's signing eligibility (gate B).
+- **The roadmap.** E3 turns every "Confirmed when" line into a roadmap task, at its milestone.
+
+### 5.6 Seed challenges
 
 Give every challenger the vision's §6 seed list and these, as starting points, never as limits:
 
@@ -225,9 +287,11 @@ Give every challenger the vision's §6 seed list and these, as starting points, 
 Use `DESIGN/CONVENTIONS.md`, extended as follows.
 
 **Prefixes** (the coordinator registers them in `CONVENTIONS.md` before wave A starts):
-- GDD: `VIS`, `WLD`, `SET`, `RES`, `CON`, `CMB`, `REL`, `DEP`, `AIS`, `PRG`, `SKM`, `CTL`, `FE`, `HUD`, `SND`, `HLP`.
+- GDD: `PIL`, `WLD`, `SET`, `RES`, `CON`, `CMB`, `REL`, `DEP`, `AIS`, `PRG`, `SKM`, `CTL`, `FE`, `HUD`, `SND`, `HLP`. (`PIL` for the pillars document, not `VIS`, which would read like the reference prefix `R-VIS`.)
 - Architecture: `QG`, `QS`, `SRV`, `WSIM`, `REP`, `PER`, `IDN`, `API`, `AIR`, `LWD`, `SEC`, `TEL`.
-The reference `R-` prefixes and the engine component prefixes already exist and stay as they are.
+The reference `R-` prefixes and the engine component prefixes already exist and stay as they are. Requirement numbers have three digits per prefix (`WLD-001` to `WLD-999`).
+
+**Tuning keys.** A Species key starts with its area prefix in lower case (`wld.region.size_max`, `dep.order.limit`); the coordinator registers each root in CONVENTIONS §4 with the prefix. An `adopt` or `adopt-skirmish` requirement keeps its `ref.` keys. An `adapt` requirement's numbers move to Species keys.
 
 **GDD template**
 
@@ -250,7 +314,7 @@ The reference `R-` prefixes and the engine component prefixes already exist and 
 
 **ADRs** follow MADR 4, as in the reference library, and are written as `DESIGN/ADR/ADR-NNN-<slug>.md`, continuing from the highest id (`AGENTS.md` §6).
 
-**Decision register** entries follow the reference library's format, with numbering continued. Owner decisions are recorded in `owner_decisions.md`.
+**Decision register** entries follow the reference library's format. Reference decisions are resolved in place, and new ones are numbered from one thousand upward in `species_design.md` (§5.4). Owner decisions are recorded in `owner_decisions.md`.
 
 **Rationale files** use these headings: Weakest point, Findings and resolutions, Alternatives rejected, Recommendations (adopted, rejected), Model results, Owner decisions taken.
 
@@ -260,13 +324,22 @@ The reference `R-` prefixes and the engine component prefixes already exist and 
 
 Extend `Tools/DesignCheck/CheckDesign.py` with a `--design-phase` option (coordinator, Phase 0), so these checks are added to the existing ones:
 
-1. Every `R-` requirement ID in `DESIGN/reference/` appears exactly once in `adoption_ledger.md`, and every adapt or adopt row names at least one Species requirement ID that exists.
-2. Every GDD and new component file has a rationale file, and the rationale lists every Critical and High finding of its area with a resolution.
-3. Every O-number cited exists in `owner_decisions.md`.
-4. Every tuning row has a `status`. Provisional rows have a playtest note.
-5. Every new component has a §9 Scale path.
-6. Every "model required" area has a script in `Tools/DesignModels/` and a "Model results" section in its rationale.
-7. The hashed denylist and the technology patterns: zero hard-fail hits across the repository (excluding `.git/`).
+1. **Ledger** (§5.3):
+   - Every `R-` id in `DESIGN/reference/` has exactly one effective verdict, and none is `pending` at the end.
+   - Every `adapt` row names at least one Species requirement id that exists.
+   - Every `drop` row has a reason.
+   - The check reports any dropped `R-` id that an adopted requirement cites, unless the row names its replacement.
+2. **Decisions** (§5.4): no Open decision says `Decide by: design phase` at the end. The check reports the remaining count after every wave.
+3. Every GDD file has the headings of the GDD template (§6). Every new component has the component template and a §9 Scale path.
+4. Every GDD and new component file has a rationale file, and the rationale lists every Critical and High finding of its area with a resolution.
+5. Every O-number cited exists in `owner_decisions.md`.
+6. Every tuning row of a Species document has a `status`. Provisional rows have a playtest note.
+7. Every "model required" area has a script in `Tools/DesignModels/` and a "Model results" section in its rationale.
+8. The hashed denylist and the technology patterns: zero hard-fail hits across the repository.
+   - **Excluded:** `.git/`; `**/node_modules/`; `Tools/DesignCheck/package-lock.json`, whose random base64 `integrity` hashes contain short affixes that equal hashed tokens.
+   - **Allow-list:** `Tools/DesignCheck/ScanAllow.tsv` holds, for each allowed line, the path, the SHA-256 of the exact line and the reason. A digest, not the text, so the allow-list never matches a pattern itself. It starts with the three stock Visual Studio template lines of `.gitignore` and `.gitattributes` that the file-extension and source-path patterns match; they name nothing of the reference product. If the owner deletes those lines, remove their rows.
+
+After every wave, regenerate the requirements index with `--write-index` (gate 11), so that the new prefixes have their index pages.
 
 Run the full check after every wave; the area's proposer fixes failures in its own files.
 
@@ -276,13 +349,21 @@ Run the full check after every wave; the area's proposer fixes failures in its o
 
 ### 8.1 Phases
 
-**Phase 0 — Setup.** Check the precondition. Create `WORK/` (`RUN_LOG.md`, `areas/`, `reports/`, `scripts/`). Extend `Tools/DesignCheck/CheckDesign.py` with the design-phase checks (§7) and `Tools/DesignModels/README.md` with each model as it is added. Register the prefixes (§6). Create `owner_decisions.md` with O1–O30 copied from `VISION` §3. Commit.
+**Phase 0 — Setup.**
+1. Check the precondition, and recount the library facts at the top of this file.
+2. Create `WORK/` (`RUN_LOG.md`, `areas/`, `reports/`, `scripts/`).
+3. Extend `Tools/DesignCheck/CheckDesign.py` with the design-phase checks (§7), with their self-tests, and create `Tools/DesignCheck/ScanAllow.tsv` (§7 item 8); extend `Tools/DesignModels/README.md` with each model as it is added.
+4. Register the prefixes and the tuning-key roots (§6).
+5. Generate the ledger skeleton with a script: `gdd/adoption_ledger/`, one row per reference section that holds requirements, verdict `pending`. Areas fill verdicts and add exception rows; coverage is then guaranteed by construction.
+6. Write the decision triage `WORK/dec_triage.md` (§5.4).
+7. Create `owner_decisions.md` with O1–O30 copied from `VISION` §3.
+8. Commit.
 
 **Phase 1 — Wave A.**
 1. Run A0 through the loop.
 2. Hold **owner gate A**, which is mandatory even if nothing is escalated. Ask the owner to confirm or change the pillars, the core loops and the new vocabulary, plus A0's escalations.
 3. Then run A1, and then A2, through the loop. A2 depends on A1's world-density model.
-4. Hold **owner gate B**, also mandatory, on: the scale budgets that come out of the models (maximum population per settlement, maximum battle size, world size per player count); the dedicated-server operating systems (recommendation: Windows and Linux, because most community hosts run Linux; the simulation core is then portable C++23); the online-services and identity backend; the persistence technology, if escalated; and A1 and A2's escalations.
+4. Hold **owner gate B**, also mandatory, on: the scale budgets that come out of the models (maximum population per settlement, maximum battle size, world size per player count); the dedicated-server operating systems (recommendation: Windows and Linux, because most community hosts run Linux; the simulation core is then portable C++23); the online-services and identity backend; the storefronts (ADR-072) and, if the owner knows it, the publishing entity (ADR-073); the persistence technology, if escalated; and A1 and A2's escalations.
 5. Commit, then push.
 
 **Phase 2 — Waves B and D.** Run the B areas and the D areas, each when its dependencies are Final, within the parallel limit. After each group of finished areas, hold a rolling owner gate for their escalations only. Commit after each group, and push at the end of the phase.
@@ -295,7 +376,7 @@ Run the full check after every wave; the area's proposer fixes failures in its o
 - **H1, the holistic challenger.** The weakest point of the whole design; cross-area exploits (for example deputy, protection and relations rules combined); alignment with the pillars; realism of the scope per stage for a small team; the three changes with the highest value for their cost.
 - **H2, implementability.** A cold read for M0–M2 by an agent with no other context.
 - **H3, consistency.** Names, numbers used in more than one place, IDs, owner decisions against the documents, and ADR statuses.
-- **H4, adoption coverage.** Every `R-` verdict, and whether a dropped requirement leaves a hole, for example something an adopted requirement depends on.
+- **H4, adoption coverage.** The ledger's verdicts section by section, spot-checking at least two requirements per section against their verdict; whether a dropped requirement leaves a hole, for example something an adopted requirement depends on; and whether every `design phase` decision was resolved on its merits rather than by default.
 Then merge the findings into `WORK/fix_list.md`, re-open the owning areas for targeted revisions (§3 steps 3–5), and re-run the gates.
 
 **Phase 6 — Owner gate C and close.**
@@ -317,7 +398,7 @@ Ask the owner **only** at gates A, B and C, at the rolling gates for agents' esc
 Write `OUTBOX/species_design_report.md`, and reply with:
 
 1. The design in one page: pillars, the core loops, and what each stage delivers.
-2. Every owner decision taken during the run.
+2. Every owner decision taken during the run, and the decision triage outcome (Resolved, Dropped, re-dated, by area).
 3. The top ten challenge findings across all areas and how each was resolved.
 4. The recommendations adopted and the notable ones rejected, with their reasons.
 5. The model results: the scale budgets at 16 and at 200+ players, the economy and protection balance, and battle cost.
