@@ -132,7 +132,7 @@ Table 3.2-A Kind-specific fields. "Ref" marks a record reference to a structure 
 | | pitch | `pitch` | simulation decimal, binary32-rounded | defaulted: `ref.bldg.spitter_plant.default_pitch` | — | R-BLDG-644 |
 | | force | `force` | simulation decimal, binary32-rounded | defaulted: `ref.bldg.spitter_plant.default_force` | — | R-BLDG-644 |
 | | variance | `variance` | simulation decimal, binary32-rounded | defaulted: `ref.bldg.spitter_plant.default_variance` | — | R-BLDG-644 |
-| | reload | `reload` | ticks | defaulted: `ref.bldg.spitter_plant.default_reload_ticks` | large enough that the first-deadline draw of R-BLDG-645 has at least one value, ⌊reload ÷ 10⌋ ≥ 1 (see DEC-968 item 4) | R-BLDG-644, R-BLDG-645 |
+| | reload | `reload` | ticks | defaulted: `ref.bldg.spitter_plant.default_reload_ticks` | large enough that the first-deadline draw of R-BLDG-645 has at least one value, ⌊reload × `ref.sim.tick_period`⌋ ≥ 1 (see DEC-968 item 4) | R-BLDG-644, R-BLDG-645 |
 | | trigger flag | `trigger` | boolean | defaulted: false | — | R-BLDG-644 |
 | | trigger offset | `trigger_x`, `trigger_z` | simulation decimals, binary32-rounded, wu | defaulted: 0 (R-BLDG-644) | — | R-BLDG-644 |
 | | trigger radius | `trigger_radius` | simulation decimal, binary32-rounded, wu | defaulted: `ref.bldg.spitter_plant.default_trigger_radius` | 0 or more | R-BLDG-644 |

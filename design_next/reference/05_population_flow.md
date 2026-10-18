@@ -76,7 +76,7 @@ For the player this reads as a tug of war over places. Workers wander onto the p
 
 **R-ECON-016** (MUST) A port is available to a team when it has no occupant and that team's reservation count for the port is below `ref.bldg.port.reservation_limit` (1). A Worker approaching a port adds 1 to its team's reservation count for that port every tick, up to `ref.bldg.port.reservation_cap` (50). Every tick the port evaluation sets every reservation count of an occupied port to 0 and reduces each reservation count of an unoccupied port by `ref.bldg.port.reservation_decay_per_tick` (4).
 
-**R-ECON-017** (MUST) On arrival the Worker enters the operating-port state and stays in it, without searching for threats, until it is no longer the port's occupant, the structure is removed, or the Worker dies. Selection and crowd orders reach an operating Worker as reference/06 specifies, with no special case (see DEC-308).
+**R-ECON-017** (MUST) On arrival the Worker enters Manning (the operating-port state) and stays in it, without searching for threats, until it is no longer the port's occupant, the structure is removed, or the Worker dies. Selection and crowd orders reach an operating Worker as reference/06 specifies, with no special case (see DEC-308).
 
 Holding a Spawn Node therefore ties up 3 to 5 Workers as operators. They count against the cap (R-ECON-048) and are the first to die when the node is attacked.
 
@@ -457,7 +457,7 @@ On the reference Siege maps the defenders start with large garrisons of starting
 
 **R-ECON-107** (MUST) Every bot team, the Rogue and Visitor factions included, receives one bot controller, placed as reference/07 R-BOT-008 specifies: at its team's start position for a player slot, and at the centre of the map for the Rogue and Visitor factions and for a slot with no start position, with no spawn-position search and no draw (see DEC-087, DEC-862). It is an ungrouped actor and counts against the cap, so a bot team reaches its cap one body earlier.
 
-**R-ECON-108** (MUST) For every Spawn Node and every Solar Array that a team owns at match start (by its map position), `ref.econ.start.operators_per_port` (1) Worker is spawned on each of its ports, directly in the operating-port state and facing its port, so 5 per structure. The ports and the ownership are then evaluated at once, and a Spawn Node's activation delay is set to 0: it produces immediately, with its first request when its first-request timer of 21 to 40 ticks expires.
+**R-ECON-108** (MUST) For every Spawn Node and every Solar Array that a team owns at match start (by its map position), `ref.econ.start.operators_per_port` (1) Worker is spawned on each of its ports, directly in Manning (the operating-port state) and facing its port, so 5 per structure. The ports and the ownership are then evaluated at once, and a Spawn Node's activation delay is set to 0: it produces immediately, with its first request when its first-request timer of 21 to 40 ticks expires.
 
 **R-ECON-109** (MUST) Each of the map's starting forces whose team field equals the team's map position is created either as actors, optionally inside an actor group, at the given position with its spread, route and waypoint (a waypoint at a Beam Dish snaps to the dish), or, when it is marked to run as a power, as a power of the matching kind (Transport, Strike team, Collector or Builder), targeted at the given position and with no time limit. Leaders and order-following details are in reference/02.
 
