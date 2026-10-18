@@ -1,16 +1,16 @@
 # Architecture decision records
 
-This folder holds the engine-technology decisions of the Species reference library, one file per decision, in the **MADR 4** format (`NNNN-<slug>.md`). Each record has YAML front matter (`status`, `date`, `decision-makers`) and the sections *Context and Problem Statement*, *Decision Drivers*, *Considered Options*, *Decision Outcome* (with *Consequences* and *Confirmation*), *Pros and Cons of the Options* and *More Information*.
+This folder holds the engine-technology decisions of the Species reference library, one file per decision, `ADR-NNN-<slug>.md` (three-digit ids; owner decision O22, `AGENTS.md` §6), in the **MADR 4** format. Each record has YAML front matter (`status`, `date`, `decision-makers`) and the sections *Context and Problem Statement*, *Decision Drivers*, *Considered Options*, *Decision Outcome* (with *Consequences* and *Confirmation*), *Pros and Cons of the Options* and *More Information*.
 
 - **Accepted** records state a decision the engine baseline is built on.
-- **Proposed** records state a choice that is still open. Each one names the **default** the team proceeds with until the decision is confirmed or changed.
-- A record flagged `owner-decision: blocking` in its front matter has no defensible default and waits for the owner. No record numbered 0001–0049 carries that flag.
+- **Proposed** records state a choice that is still open. Each one names the **default** the team proceeds with until the decision is confirmed or changed, and a **Confirmed when** line: the evidence and the milestone that turn it Accepted or replace it.
+- A record flagged `owner-decision: blocking` in its front matter has no defensible default and waits for the owner. No baseline record carries that flag.
 
 ADRs cover engine technology only. Game design lives in `reference/` and `decisions/`; the engine components in `architecture/components/` cite these records by number. The topics listed in [Deferred to the design phase](#deferred-to-the-design-phase) have no ADR: the Species design phase decides them (see [the vision brief](../../vision/species-vision-brief.md)).
 
 ## Index
 
-Numbers 0001–0049 cover the engine runtime (renderer, textures, meshes, audio, input, UI, animation and VFX). Numbers 0050–0099 cover the toolchain, the content pipeline and operations.
+The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, meshes, audio, input, UI, animation and VFX), and ADR-050 to ADR-077, the toolchain, the content pipeline and operations; ADR-037 to ADR-049 are unassigned and stay unused. A new record takes the next id after the highest existing one, whatever its topic (O22, `AGENTS.md` §6); the two baseline ranges are not a numbering policy.
 
 | Number | Title | Status | Date |
 |---|---|---|---|
@@ -53,7 +53,7 @@ Numbers 0001–0049 cover the engine runtime (renderer, textures, meshes, audio,
 | [ADR-050](ADR-050-client-platform-and-minimum-os.md) | Client platform: Windows 11 x64, minimum version 24H2 (build 26100) | Accepted | 2026-10-17 |
 | [ADR-051](ADR-051-windows-toolchain-and-compiler-policy.md) | Windows toolchain: Visual Studio 2026 toolset v145, the pinned Windows SDK and the AGENTS.md compiler settings | Accepted | 2026-10-17 |
 | [ADR-052](ADR-052-cpp23-language-standard.md) | Language standard: `/std:c++latest`, code written to C++23, with a portable subset as guidance for a later server | Accepted | 2026-10-17 |
-| [ADR-053](ADR-053-modules-and-import-std.md) | Modules: not used; `.h` and `.cpp` files only, no module interface units and no `import std` | Rejected | 2026-10-17 |
+| [ADR-053](ADR-053-modules-and-import-std.md) | Headers only: no modules and no `import std` | Accepted | 2026-10-17 |
 | [ADR-054](ADR-054-build-system-msbuild-solution.md) | Build system: one MSBuild solution (`.slnx`) of `.vcxproj` projects, with the x64 configurations Debug and Release only | Accepted | 2026-10-17 |
 | [ADR-055](ADR-055-dependencies-three-nuget-packages.md) | Third-party dependencies: none in the executable except three Microsoft NuGet packages, restored at build time | Accepted | 2026-10-17 |
 | [ADR-056](ADR-056-products-configurations-and-feature-flags.md) | Products, configurations and feature flags: one project per product, Debug and Release only, data-driven runtime flags | Accepted | 2026-10-17 |
@@ -79,11 +79,11 @@ Numbers 0001–0049 cover the engine runtime (renderer, textures, meshes, audio,
 | [ADR-076](ADR-076-screenshot-encoding.md) | Screenshot encoding: the in-box Windows Imaging Component PNG encoder; video capture by external tools | Proposed | 2026-10-17 |
 | [ADR-077](ADR-077-client-http-stack.md) | Client HTTP stack: the in-box WinHTTP, HTTPS only, with operating-system certificate validation and the system proxy | Proposed | 2026-10-17 |
 
-Records amended on 2026-10-17 to agree with the engine components carry an amendment note under *More Information*.
+A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 
 ## Technology baseline
 
-This is a condensed copy of the Species technology standards baseline, aligned with the repository's engineering rules in `AGENTS.md`, which win where they and an ADR disagree (owner decision O21). Every fact was checked on **2026-10-17** (UTC) against the source named; nothing is stated from memory. Re-check every version at each milestone, and before an ADR that depends on it changes status.
+This table is the Species technology baseline; the ADRs and `AGENTS.md` R14 cite it. `AGENTS.md` wins where it and an ADR disagree (owner decision O21). Every fact was checked on **2026-10-17** (UTC) against the source named; nothing is stated from memory. Re-check every version at each milestone, and before an ADR that depends on it changes status.
 
 Confidence: **high** means a primary source was read directly and the recommendation follows from it; **medium** means the fact is primary but the recommendation is a judgement, or one part of the fact came from a secondary or summarised source.
 
@@ -95,10 +95,10 @@ Confidence: **high** means a primary source was read directly and the recommenda
 | 1.2 | Windows 10 | Not supported (out of support since 2025-10-14; consumer ESU ended 2026-10-13) | high | [ADR-050](ADR-050-client-platform-and-minimum-os.md) |
 | 1.3 | CPU floor | **AVX2** (`/arch:AVX2`): Intel Haswell (2013), AMD Excavator (2015) or newer | high | [ADR-050](ADR-050-client-platform-and-minimum-os.md), [ADR-051](ADR-051-windows-toolchain-and-compiler-policy.md) |
 | 2.1 | Visual Studio and MSVC | Visual Studio 2026 (18.11 current); platform toolset **v145** in every project (MSVC Build Tools 14.50 and later; 14.51 default since May 2026, 14.52 expected November 2026); the minor version is printed by CI, not pinned | high | [ADR-051](ADR-051-windows-toolchain-and-compiler-policy.md) |
-| 2.2 | Language | **`/std:c++latest`** in every project, code written to C++23; no module interface units and no `import std` (`.h` and `.cpp` only) | high | [ADR-052](ADR-052-cpp23-language-standard.md), [ADR-053](ADR-053-modules-and-import-std.md) (Rejected) |
+| 2.2 | Language | **`/std:c++latest`** in every project, code written to C++23; no module interface units and no `import std` (`.h` and `.cpp` only) | high | [ADR-052](ADR-052-cpp23-language-standard.md), [ADR-053](ADR-053-modules-and-import-std.md) |
 | 2.3 | Compiler settings | `/permissive-`, `/W4` with warnings as errors, `/fp:precise`, `/arch:AVX2`, x64 only; identical in Debug and Release | high | [ADR-051](ADR-051-windows-toolchain-and-compiler-policy.md) |
 | 2.4 | Windows SDK | **10.0.26100.9457** (September 2026), the latest release of the 10.0.26100 series (Windows 11 24H2, 25H2 and 26H2); the 10.0.28000 series (26H1) is not needed; its `dxc` compiles the shaders | medium | [ADR-051](ADR-051-windows-toolchain-and-compiler-policy.md), [ADR-003](ADR-003-shader-language-compiler-and-material-shaders.md) |
-| 3.1 | Build | **MSBuild**: one `.slnx` solution (MSBuild 17.12 or later) of `.vcxproj` projects with functional filters; `Debug\|x64` and `Release\|x64` only, built through the solution | high | [ADR-054](ADR-054-build-system-msbuild-solution.md) |
+| 3.1 | Build | **MSBuild**: one `.slnx` solution (MSBuild 17.12 or later) at the repository root, of `.vcxproj` projects with functional filters, the development tools among them as projects under `Tools/<Project>/` in a `Tools` solution folder (O29); `Debug\|x64` and `Release\|x64` only, built through the solution | high | [ADR-054](ADR-054-build-system-msbuild-solution.md) |
 | 3.2 | Dependencies | **NuGet restore** from `packages.config` of three packages only: `Microsoft.Direct3D.D3D12` 1.619.6, `Microsoft.GameInput` 3.5.283, `WinPixEventRuntime` 1.0.240308001; nothing else in the executable | high | [ADR-055](ADR-055-dependencies-three-nuget-packages.md) |
 | 3.3 | Code checks | clang-tidy **22.1.8** (from pip) and clang-format **18** (Ubuntu package, 18.1.3), pinned in `.github/workflows/build.yml` | high | [ADR-070](ADR-070-continuous-integration.md) |
 | 3.4 | Tests | **Microsoft C++ Unit Test Framework** (ships with Visual Studio), run by `vstest.console.exe`; one `<Project>Tests` project per library | high | [ADR-069](ADR-069-test-framework.md) |
@@ -110,12 +110,12 @@ Confidence: **high** means a primary source was read directly and the recommenda
 | 4.6 | Swap chain, VRR, HDR | `FLIP_DISCARD`, waitable object, `ALLOW_TEARING` when supported, no exclusive full screen; HDR optional through scRGB FP16 | high | [ADR-012](ADR-012-swap-chain-presentation-and-frame-pacing.md), [ADR-014](ADR-014-hdr-output.md) |
 | 4.7 | Profiling | **PIX 2603.25**; **WinPixEventRuntime 1.0.240308001** (MIT), markers in Debug and Release, `WinPixEventRuntime.dll` beside the executable | high | [ADR-068](ADR-068-profiling-and-gpu-timing.md) |
 | 5.1 | DirectStorage | **Not adopted in v1**; package format chunked (at most 256 KiB, 64 KiB-aligned) so a back-end can be added later, which needs an owner decision on the allow-list | medium | [ADR-058](ADR-058-pack-files-and-mount-policy.md) |
-| 5.2 | Texture tools | **DirectXTex `may2026`** in the content build tool only (a development tool); texconv for inspection; BC7 cooked with the software codec | high | [ADR-017](ADR-017-texture-container-and-block-compression.md) |
+| 5.2 | Texture tools | **DirectXTex `may2026`** (NuGet `directxtex_desktop_win10` 2026.5.8.1, MIT) in the content build tool project only (a development tool); texconv for inspection; BC7 cooked with the software codec | high | [ADR-017](ADR-017-texture-container-and-block-compression.md) |
 | 5.3 | Block compression | BC7 sRGB colour, BC5 normals, BC4 single-channel; uncompressed for exact data and glyphs | high | [ADR-017](ADR-017-texture-container-and-block-compression.md) |
 | 5.4 | Pack compression | In-box **Windows Compression API**, XPRESS with Huffman encoding (`Cabinet.dll`, from Windows 8); no third-party compressor | medium | [ADR-058](ADR-058-pack-files-and-mount-policy.md) |
-| 6 | Input | **GameInput** for gamepads (pin 3.5.283 / `GameInput::v3` now, 4.0.x after its first point release) + redistributable in the installer; Win32 messages for mouse, keyboard, text and IME | medium | [ADR-028](ADR-028-input-device-back-ends.md) |
+| 6 | Input | **GameInput** for gamepads (pin 3.5.283 with `GameInput::v3`; a move to the 4.0 line is a later amendment) + redistributable in the installer; Win32 messages for mouse, keyboard, text and IME | medium | [ADR-028](ADR-028-input-device-back-ends.md) |
 | 7 | Audio API | **In-box XAudio 2.9 + X3DAudio**; no redistributable | high | [ADR-022](ADR-022-audio-engine-on-xaudio2.md) |
-| 8.1 | Mesh source format | **glTF 2.0** (`.glb`), no `NORMAL` for flat shading, `COLOR_0`; extensions `KHR_materials_unlit`, `KHR_materials_emissive_strength`, `KHR_mesh_quantization` only; validated by the Khronos glTF Validator **2.0.0-dev.3.10** (Apache-2.0), a tools-solution dependency | high | [ADR-019](ADR-019-mesh-source-format-and-cooked-meshes.md), [ADR-020](ADR-020-flat-shading-and-team-tint.md) |
+| 8.1 | Mesh source format | **glTF 2.0** (`.glb`), no `NORMAL` for flat shading, `COLOR_0`; extensions `KHR_materials_unlit`, `KHR_materials_emissive_strength`, `KHR_mesh_quantization` only; validated by the Khronos glTF Validator **2.0.0-dev.3.10** (Apache-2.0, its ready-built Windows program), a dependency of the content build tool project | high | [ADR-019](ADR-019-mesh-source-format-and-cooked-meshes.md), [ADR-020](ADR-020-flat-shading-and-team-tint.md) |
 | 8.2 | Texture container | **DDS with the DX10 header** for every cooked texture | high | [ADR-017](ADR-017-texture-container-and-block-compression.md) |
 | 8.3 | Audio formats | Sources 48 kHz 24-bit WAV; runtime 16-bit PCM 48 kHz resident, **MS-ADPCM** streamed, both decoded by XAudio 2.9; the content build encodes ADPCM; no third-party codec; no xWMA | medium | [ADR-025](ADR-025-audio-formats-codecs-and-residency.md) |
 | 9 | Glyph rasterisation | DirectWrite layout → custom renderer → `IDWriteFactory3::CreateGlyphRunAnalysis` (grayscale) → `CreateAlphaTexture` → `R8_UNORM` atlas | medium | [ADR-034](ADR-034-text-rendering-and-glyph-cache.md) |

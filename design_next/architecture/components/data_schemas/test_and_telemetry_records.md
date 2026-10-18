@@ -12,13 +12,14 @@ This document specifies the schemas of the three record types of the soak test a
 
 ## 2 Interfaces
 
-The interface below is a C++23 declaration sketch, not an implementation. The record types and their readers and writers are generated from the schemas (ADR-062).
+The interface below is a C++23 declaration sketch, not an implementation. The record types and their readers and writers are generated from the schemas (README DAT-054, ADR-062), and this section holds their only declaration: the [diagnostics](../diagnostics_test_and_performance/README.md) component, whose soak runner reads the configuration and whose telemetry forms the session record, cites it (DBG §2.1). The records name no game concept: a soak entry's bot teams are an automated-participant count that the game layer fills with bot teams (DBG-161), so they are generated into `Engine`.
 
 ```cpp
 namespace Engine
 {
 
-enum class SoakProgressionKind : std::uint8_t
+// ---- generated from test.soak_configuration: tables 3.1-A to 3.1-C ----
+enum class SoakProgression : std::uint8_t
 {
   Linear,
   Random,
@@ -34,12 +35,38 @@ enum class SoakParticipantRole : std::uint8_t
   Client
 };
 
-struct SoakSequenceItem;        // table 3.1-B; seed is std::optional, absence keeps the authority's seed
-struct SoakTestMap;             // table 3.1-C
-struct SoakConfigurationRecord; // table 3.1-A, the cooked record the soak runner reads
-struct SoakMatchRow;            // table 3.2-A; absent cells are std::optional
-struct SoakPassSummary;         // table 3.2-B
-struct TelemetrySession;        // table 3.3-A, exactly the data set of DBG-181
+// Maps and modes are held by their data ids (R-MODE-029), so the records name no game concept.
+struct SoakSequenceItem // table 3.1-B
+{
+  std::string map;                   // map id
+  std::string mode;                  // mode id
+  std::optional<std::uint64_t> seed; // absent: the authority's own seed
+};
+struct SoakTestMap // table 3.1-C
+{
+  std::string map;
+  std::string mode;
+  std::uint8_t automatedParticipants; // filled with bot teams by the game layer (DBG-161)
+};
+struct SoakConfigurationRecord // table 3.1-A, the cooked record the soak runner reads (DBG-160)
+{
+  std::string id;
+  SoakProgression progression;
+  std::optional<std::uint64_t> progressionSeed; // present exactly with SoakProgression::Random
+  std::vector<SoakSequenceItem> sequence;       // not empty exactly with SoakProgression::Sequence
+  std::vector<SoakTestMap> testMaps;
+  std::optional<std::string> sessionName;       // absent: debug.soak_session_name keeps its value
+  std::optional<std::uint64_t> terminationTick; // absent: no termination tick
+  std::uint8_t clients;
+  bool rendering;
+};
+
+// ---- generated from test.soak_report: tables 3.2-A and 3.2-B ----
+struct SoakMatchRow;    // table 3.2-A; absent cells are std::optional
+struct SoakPassSummary; // table 3.2-B
+
+// ---- generated from telemetry.session: table 3.3-A ----
+struct TelemetrySessionRecord; // exactly the data set of DBG-181
 
 // Owned by the SoakRunner (DBG-161).
 class SoakMatchTableWriter
@@ -49,8 +76,8 @@ public:
   std::expected<void, Diagnostic> AppendRow(const SoakMatchRow& _row); // one write, then flush (DAT-383)
 };
 
-std::expected<std::string, std::vector<Diagnostic>> WriteTelemetrySession(const TelemetrySession& _session); // DAT-380
-std::expected<TelemetrySession, std::vector<Diagnostic>> ReadQueuedTelemetrySession(std::string_view _text); // DAT-385
+std::expected<std::string, std::vector<Diagnostic>> WriteTelemetrySession(const TelemetrySessionRecord& _session); // DAT-380
+std::expected<TelemetrySessionRecord, std::vector<Diagnostic>> ReadQueuedTelemetrySession(std::string_view _text); // DAT-385
 
 } // namespace Engine
 ```
@@ -84,7 +111,7 @@ Table 3.1-B Fields of a sequence item.
 | Field | Key | Type | Presence and default | Rules |
 |---|---|---|---|---|
 | map | `map` | record reference to a map, by map id | required | with `mode`, names one entry of the pass (DAT-373) |
-| mode | `mode` | mode enumerator: `spawn_control`, `zone_control`, `relic_run`, `siege`, `launch_race`, `flag_chain` | required | the edition enables the mode (ADR-056) |
+| mode | `mode` | mode id: a stable id, one of the mode enumerator strings `spawn_control`, `zone_control`, `relic_run`, `siege`, `launch_race`, `flag_chain` (R-MODE-029) | required | the edition enables the mode (ADR-056); held as its data id, so the generated record names no game concept (README DAT-054) |
 | forced seed | `seed` | integer, 0 to 2^64 − 1 | absence-meaningful: the authority's own seed stays in place (DBG-162, DBG-163) | the seed the authority takes before the entry runs; 0 is an ordinary seed |
 
 Table 3.1-C Fields of a test-map item.
@@ -92,12 +119,12 @@ Table 3.1-C Fields of a test-map item.
 | Field | Key | Type | Presence and default | Rules |
 |---|---|---|---|---|
 | map | `map` | record reference to a map, by map id | required | a map selected by the test tag into every edition that selects this configuration (BLD-057) |
-| mode | `mode` | mode enumerator, as in table 3.1-B | required | the mode the entry runs, whether or not the map's mode list holds it (DAT-104 of [map_schema.md](map_schema.md)) |
-| bot teams | `bot_teams` | count, 1 to the map's player count | required | the bot teams of the entry (DBG-161) |
+| mode | `mode` | mode id, as in table 3.1-B | required | the mode the entry runs, whether or not the map's mode list holds it (DAT-104 of [map_schema.md](map_schema.md)) |
+| automated participants | `automated_participants` | count, 1 to the map's player count | required | the number of bot teams of the entry, which the game layer creates (DBG-161) |
 
 **DAT-373** (MUST) The content build checks a soak configuration against every edition that selects it, after README DAT-024: each sequence item's pair of map and mode must be an entry of the pass in that edition, that is, a mode the edition enables with a map that match setup lists for it, or a pair of `test_maps` (DBG-162); a pair listed twice in `sequence`, or twice in `test_maps`, is a build error, because a pass runs every entry exactly once (DEC-804 item 2); and every map named must be a map of that edition (BLD-053). Each failure is a build error that names the configuration, the edition, the item and the field.
 
-**DAT-374** (MUST) The configuration holds no marker value: a seed that the authority keeps is an absent `seed`, and a pass without a termination tick has no `termination_tick` (README DAT-011). The soak entry of DBG Listing 2.1-A holds the forced seed and the termination tick as optional values, so every seed, 0 included, can be forced, and a termination tick of 0 is out of range.
+**DAT-374** (MUST) The configuration holds no marker value: a seed that the authority keeps is an absent `seed`, and a pass without a termination tick has no `termination_tick` (README DAT-011). The generated record of §2 holds the forced seed of a sequence item and the termination tick as optional values, and so does the soak entry of DBG Listing 2.1-A, so every seed, 0 included, can be forced, and a termination tick of 0 is out of range.
 
 ### 3.2 The soak report
 
@@ -111,7 +138,7 @@ Table 3.2-A Columns of the soak match table, in order (DBG-166).
 |---|---|---|---|---|
 | UTC date and time | `utc_time` | time, UTC | required | the time the row is written (DBG-165) |
 | divergence count | `divergence_count` | count | required | the pass's divergences so far, this match included |
-| mode | `mode` | mode enumerator, as in table 3.1-B | required | — |
+| mode | `mode` | mode id, as in table 3.1-B | required | — |
 | map id | `map_id` | map id | required | — |
 | entry index | `entry_index` | count | required | the entry's position in the pass's entry list before ordering, counted from 0 (DBG-162) |
 | seed | `seed` | integer, 0 to 2^64 − 1 | required | the seed the match ran with, whether forced or the authority's own, so the match can be replayed (DBG-161); 0 is an ordinary value here |

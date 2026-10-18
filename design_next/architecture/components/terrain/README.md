@@ -44,59 +44,9 @@ Notation used throughout: *r32*(*x*) rounds a binary64 value to the nearest bina
 namespace Engine
 {
 
-// Stored values carry meaning (they are the values in the map definition); keep the order.
-enum class TileMethod : std::uint8_t
-{
-  Average = 0,
-  RandomPair = 1,
-  CopyOne = 2
-};
-enum class FlattenOp : std::uint8_t
-{
-  Absolute = 0,
-  Add = 1,
-  Subtract = 2,
-  Smooth = 3,
-  Subtract2 = 4
-};
-
-struct TerrainTile // TER-032; field order of R-MAP-081
-{
-  std::int32_t posX;
-  double posY;
-  std::int32_t posZ;
-  std::int32_t size;
-  double fractalDimension;
-  double heightScale;
-  double desiredHeight;
-  TileMethod method;
-  std::int32_t seed;
-  double lowlandSmoothing;
-  std::uint8_t guidePower;    // p; 0 = no guide grid
-  Grid2D<std::uint8_t> guide; // (2^p - 1) x (2^p - 1), TER-036
-};
-
-struct TerrainFlattenArea // TER-034
-{
-  Vec3 center; // center.y is the operand t
-  double halfSize;
-  FlattenOp op;
-  double threshold; // T
-};
-
-struct TerrainDefinition // TER-030; fields of R-MAP-080
-{
-  double cellSize;
-  std::int32_t worldSizeX;
-  std::int32_t worldSizeZ;
-  double outsideHeight;
-  float maxHeight;
-  std::uint16_t landRampFile; // file numbers, 1 = map default
-  std::uint16_t shoreWaveGradientFile;
-  std::uint16_t seaTileFile;
-  std::vector<TerrainTile> tiles;
-  std::vector<TerrainFlattenArea> flattenAreas;
-};
+// The terrain records that the generator reads (§3.1 to §3.4): TileMethod and FlattenOp (stored values that carry meaning),
+// TerrainDefinition, TerrainTile (fields in the order of R-MAP-081) and TerrainFlattenArea (its size is the half-width):
+// generated from maps.definition: data_schemas/map_schema.md §2
 
 template <typename T> class SurfaceGrid // TER-038, TER-070 to TER-076
 {
@@ -118,12 +68,14 @@ public:
 class TerrainField
 {
 public:
-  static TerrainField Generate(const TerrainDefinition& _definition); // TER-060
-  double Height(double _x, double _z) const;                          // TER-011
-  double HeightAt(std::int32_t _i, std::int32_t _j) const;            // TER-012
-  Vec3 Normal(double _x, double _z) const;                            // TER-013
-  Vec3 NormalAt(std::int32_t _i, std::int32_t _j) const;              // TER-013
-  double WorldSizeX() const;                                          // TER-014
+  // TER-060; the tiles and the flatten areas in their list order
+  static TerrainField Generate(const TerrainDefinition& _definition, std::span<const TerrainTile> _tiles,
+                               std::span<const TerrainFlattenArea> _flattenAreas);
+  double Height(double _x, double _z) const;               // TER-011
+  double HeightAt(std::int32_t _i, std::int32_t _j) const; // TER-012
+  Vec3 Normal(double _x, double _z) const;                 // TER-013
+  Vec3 NormalAt(std::int32_t _i, std::int32_t _j) const;   // TER-013
+  double WorldSizeX() const;                               // TER-014
   double WorldSizeZ() const;
   std::uint16_t Columns() const;
   std::uint16_t Rows() const;
@@ -165,7 +117,7 @@ ColorRgba FacetColor(const ImageRgba8& _ramp, float _facetNormalY, const Vec3& _
 } // namespace Engine
 ```
 
-**TER-010** (MUST) `TerrainField::Generate` is a pure function of its definition. It runs on one thread, uses no shared mutable state and returns a complete field; no reader sees a partly generated field. After it returns, the field is immutable: every query is `const`, allocates nothing, makes no random draw and is safe for concurrent readers on any thread. The simulation reads every height and normal through the current match world's field and never keeps a copy or a reference beyond the match world's lifetime (DEC-011).
+**TER-010** (MUST) `TerrainField::Generate` is a pure function of its terrain records: the definition, the tiles and the flatten areas. It runs on one thread, uses no shared mutable state and returns a complete field; no reader sees a partly generated field. After it returns, the field is immutable: every query is `const`, allocates nothing, makes no random draw and is safe for concurrent readers on any thread. The simulation reads every height and normal through the current match world's field and never keeps a copy or a reference beyond the match world's lifetime (DEC-011).
 
 ### 2.2 Queries used by gameplay
 

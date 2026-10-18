@@ -9,7 +9,7 @@ The reference simulation is a deterministic function of three inputs: the match 
 - the random streams: the simulation generator, the presentation generators and the private terrain generators, with their seeding and lifetime;
 - the draw discipline, and what every object family draws and what each draw decides;
 - the classification of every subsystem's state as simulation state or presentation state;
-- the **simulation-integrity rules**: presentation never writes simulation state, local-only state never reaches the simulation, no presentation generator feeds the simulation, and no simulation state survives between matches. Each place where the reference breaks one of these rules is listed with its fixed rule;
+- the **simulation-integrity rules**: presentation never writes simulation state, local-only state never reaches the simulation, no presentation generator feeds the simulation, and no simulation state survives between matches;
 - the integrity duties of the bots, and further per-subsystem rules;
 - the hooks for recording and replaying the command stream.
 
@@ -39,36 +39,33 @@ A 3-vector built from draws takes its x draw first, then y, then z.
 
 **R-SIM-606** (MUST) The generator algorithm, its seeding function and the stream structure are not part of the reference library; the default is one sequential stream, owned by the match world and seeded once per match (DEC-242). The draw order of the reference generator is not reproduced, and every distribution is (DEC-013).
 
-**R-SIM-607** (MUST) The **presentation generators** (`FxRng`) serve cosmetic effects, audio variation and every other presentation randomness. Their draw forms are `FxRng::NextUint` (a non-negative integer), `FxRng::NextUnit(r)` (uniform over [0, *r*], *r* included) and `FxRng::NextSigned(r)` (uniform over [−*r*/2, *r*/2], both ends included), and `FxRng::Seed` sets a state. In the reference:
-
-- one process-wide presentation generator is re-seeded with `ref.sim.match.presentation_seed` (1, [02](02_match_lifecycle_and_state_reset.md)) at every match-world initialisation, after the map definition is read and before the terrain is built; each tree geometry pass re-seeds it from the tree's seed, and the terrain colour pass re-seeds it at every vertex from the vertex coordinates and its own previous output; nothing else re-seeds it;
-- that generator is shared by audio, terrain colours, tree geometry and an online-service thread, and it is not safe for concurrent use;
-- a second, per-thread runtime generator, never seeded in a match, serves tree leaf particles, Sickness particles, the Allegiance Scrambler's particles and the hint overlay's choice of tab.
+**R-SIM-607** (MUST) The **presentation generators** (`FxRng`) serve cosmetic effects, audio variation and every other presentation randomness. Their draw forms are `FxRng::NextUint` (a non-negative integer), `FxRng::NextUnit(r)` (uniform over [0, *r*], *r* included) and `FxRng::NextSigned(r)` (uniform over [−*r*/2, *r*/2], both ends included), and `FxRng::Seed` sets a state. The presentation generator of the frame thread is re-seeded with `ref.sim.match.presentation_seed` (1, [02](02_match_lifecycle_and_state_reset.md)) at every match-world initialisation, after the map definition is read and before the terrain is built (step 2 of table 2.4-A of 02). Presentation content that must look the same in every run draws from a generator seeded from its own data: the terrain colour pass from its own instance ([terrain](../../architecture/components/terrain/edges_normals_colours_and_sea.md) TER-185), and a tree's geometry from the tree's seed ([trees and crate structures](../03_buildings_and_world_objects/trees_and_crate_structures.md) R-BLDG-604).
 
 **R-SIM-608** (MUST) Every presentation consumer draws from its own presentation generator instance, and no generator instance is shared between threads: one presentation generator per thread at least, with the audio engine owning its own instance (ADR-022). No presentation generator is reachable from simulation code (DEC-013, DEC-224, DEC-242).
 
 **R-SIM-609** (MUST) Each terrain tile owns a private generator, re-seeded from the tile's seed in the map definition at the start of every generation of that tile. Its output, the height field, is simulation static data, independent of call history and of every other consumer. The terrain algorithm and its generator are specified by the [terrain component](../../architecture/components/terrain/README.md); the terrain runtime model is DEC-246.
 
-**R-SIM-610** (MUST) The simulation generator is seeded once per match, at match start, and the seed is part of the recorded match setup. No simulation draw happens before match start (DEC-013). In the reference, the host derives a seed from host-local entropy for each session, sends it to each participant when it joins, and records it nowhere; every match runs in a fresh session, so no generator state carries from one match into the next.
+**R-SIM-610** (MUST) The simulation generator is seeded once per match, at match start, and the seed is part of the recorded match setup. No simulation draw happens before match start, and no generator state carries from one match into the next (DEC-013).
 
-**R-SIM-611** (MUST) No simulation draw happens in the lobby, and no UI, rendering, audio or input code draws from the simulation generator. The reference has no such draw: the lobby advances no match world, and none of the simulation generator's call sites is in UI, render, audio or input code.
+**R-SIM-611** (MUST) No simulation draw happens in the lobby, which advances no match world, and no UI, rendering, audio or input code draws from the simulation generator.
 
 **R-SIM-612** (MUST) The draws of match-world initialisation happen at one logical point for every participant: a participant that processes the command frame that starts a match takes no further frame until the initialisation has finished ([01](01_tick_timing_and_main_loop.md) R-SIM-533). Initialisation draws in the order of the steps of table 2.4-A of [02](02_match_lifecycle_and_state_reset.md) (R-SIM-016): the start positions of team slots 0 to 5 in order in step 3; the bot colours, the co-op pairing and the Siege sides in step 6; the map-placed structures in step 7; the bot controllers and the starting Powers of the teams in step 8; the colours of unused team slots in step 9, after team initialisation (a retry loop, bounded by DEC-014); and the actor-group offset table in step 11. Every participant loads with identical lobby-slot state (colour ids and slot kinds), and a loader that runs on another thread, or concurrently with other work, keeps this draw order (DEC-224).
 
-**R-SIM-613** (MUST) Instrumentation never changes a draw. A build that records each draw with its call site and a running count produces exactly the values of a build without it; in the reference the draw-tracking build computes the signed draw by a different formula and cannot play with an untracked build. The draw log keeps the most recent draws with their call sites, which is the tool for finding the first draw at which two runs differ (DEC-206).
+**R-SIM-613** (MUST) Instrumentation never changes a draw. A build that records each draw with its call site and a running count produces exactly the values of a build without it, every draw form included, and can play a match with it. The draw log keeps the most recent draws with their call sites, which is the tool for finding the first draw at which two runs differ (DEC-206).
 
 ### 2.3 Draw discipline
 
 **R-SIM-620** (MUST) Every gameplay decision draws from the simulation generator: Supply crate drops, captures, outcomes and effects, bot choices, spawn timers, damage rolls, conversions and scatter.
 
-**R-SIM-621** (MUST) Every expression that combines several draws has a defined draw order. Each draw is its own statement; no draw sits inside a constructor, an argument list or the condition of a variable-length loop (DEC-013, DEC-242). The reference fixes the order in three ways, whose distributions are kept: a vector draw takes x, then y, then z; the tree generation of a Supply crate outcome makes its `ref.sim.rng.crate_tree_draws` (8) integer draws one statement at a time; and the spawners draw the height on its own statement before the x and z coordinates.
+**R-SIM-621** (MUST) Every expression that combines several draws has a defined draw order. Each draw is its own statement; no draw sits inside a constructor, an argument list or the condition of a variable-length loop (DEC-013, DEC-242). Three orders are fixed: a vector draw takes x, then y, then z; the tree generation of a Supply crate outcome makes its `ref.sim.rng.crate_tree_draws` (8) integer draws one statement at a time; and the spawners draw the height on its own statement before the x and z coordinates.
 
-**R-SIM-622** (MUST) The number of simulation draws never depends on local or presentation state. Every cosmetic draw is a presentation draw (DEC-013); the reference makes the draws below from the simulation stream, and each one moves to a presentation generator (DEC-222):
+**R-SIM-622** (MUST) The number of simulation draws never depends on local or presentation state. Every cosmetic draw is a presentation draw (DEC-013, DEC-222): the cosmetic draws that simulation rules trigger are those below, and each comes from a presentation generator, never from the simulation stream:
 
-| Cosmetic draw | Reference draws |
+| Cosmetic draw | Presentation draws |
 |---|---|
 | ant leg shape | one integer draw, modulo 3, per ant per tick |
-| snowflake and Wisp wobble | three `NextSigned(1)` and one `NextUnit(20)` per object per tick |
+| snowflake wobble | three `NextSigned(1)` and one `NextUnit(20)` per object per tick |
+| Wisp wobble | three `NextSigned(1)` per Wisp per tick ([reference/02 creatures](../02_units/creatures.md) R-UNIT-596) |
 | meteor fire size | five `NextSigned(60)` per tick |
 | Spitter Plant burning-particle size | one `NextSigned(100 × size)` per burning tick |
 | turret shell casings | three `NextSigned(0.5)` and one `NextUnit(20)` per shot (`ref.sim.rng.turret_casing_draws_per_barrel`, 4) |
@@ -80,21 +77,21 @@ A 3-vector built from draws takes its x draw first, then y, then z.
 | Essence orb break particles | fifteen `NextUnit(5)` once |
 | thrown-weapon trail, airstrike target marker smoke, rocket smoke, Transport exhaust | per particle |
 
-**R-SIM-623** (MUST) Every rejection loop and search in the simulation has a capped number of attempts and a deterministic fallback (DEC-014). In the reference these loops are deterministic for identical inputs but consume a data-dependent number of draws, and several are unbounded: the Supply crate capture when no valid outcome exists; the starting-Powers choice; the Missile Barrage sea search; the Abductor land search; the bot target-area loops; the Brood spawn-type choice; the target-structure retries; the valid-point loops of the Strike team, Transport, Collector and Builder outcomes; the turret spacing of the Flag Chain turret placement; the Launch Race drop-off point search; the colour loop for unused slots at match-world initialisation; the bot colour choice, unbounded when every bot colour is taken; and the land searches of lightning strikes and dust vortices.
+**R-SIM-623** (MUST) Every rejection loop and search in the simulation has a capped number of attempts and a deterministic fallback (DEC-014). These loops consume a data-dependent number of draws, identical for identical inputs. They are: the Supply crate capture when no valid outcome exists; the starting-Powers choice; the Missile Barrage sea search; the Abductor land search; the bot target-area loops; the Brood spawn-type choice; the target-structure retries; the valid-point loops of the Strike team, Transport, Collector and Builder outcomes; the turret spacing of the Flag Chain turret placement; the Launch Race drop-off point search; the colour loop for unused slots at match-world initialisation; the bot colour choice when every bot colour is taken; and the land searches of lightning strikes and dust vortices.
 
 **R-SIM-624** (MUST) A draw whose occurrence depends on a condition is its own statement inside that condition, and the owning rule states the condition (DEC-652). For example, the Supply crate capture roll is drawn only when no outcome is forced, so a forced outcome shortens the stream.
 
-**R-SIM-625** (MUST) No presentation generator feeds simulation state. In the reference the one exception is the tree crown hit volume (R-SIM-650); every collision and hit volume that the simulation uses is map or asset data (DEC-012).
+**R-SIM-625** (MUST) No presentation generator feeds simulation state: every collision and hit volume that the simulation uses, the tree crown hit volume included (R-SIM-650), is map or asset data or is computed by the simulation (DEC-012).
 
-**R-SIM-626** (MUST) No simulation object draws from the simulation generator while it is being constructed. Every draw that initialises a new object happens once, in the explicit spawn or initialisation step that creates it (DEC-652). This covers: the evaluation timer and the spawn timer of a Spawn Node (2 draws); the timer of a Population Limiter (1); the initial values of a bot controller (2: the Beam Dish phase, then the main-cycle phase; [../07_bots/README.md](../07_bots/README.md) R-BOT-009); the random position search of a turret at initialisation (3); the initial values of Workers (2), Builders, snowflakes (4), Wisps (4), Spitter Plants, Seed Pods, Crawlers and bot objective markers; and the rate that an actor draws when its kind is set, which a Worker draws once per spawn. Reading a map definition creates no simulation object and draws nothing; each structure that the map places is created once, at match-world initialisation. In the reference, constructors draw, and a map-placed structure is constructed twice (a template, then the real object), so each map-placed bot objective marker draws twice at load, and a Worker and a bot controller each draw their rate twice per spawn.
+**R-SIM-626** (MUST) No simulation object draws from the simulation generator while it is being constructed. Every draw that initialises a new object happens once, in the explicit spawn or initialisation step that creates it (DEC-652). This covers: the evaluation timer and the spawn timer of a Spawn Node (2 draws); the timer of a Population Limiter (1); the initial values of a bot controller (2: the Beam Dish phase, then the main-cycle phase; [../07_bots/README.md](../07_bots/README.md) R-BOT-009); the random position search of a turret at initialisation (3); the initial values of Workers (2), Builders, snowflakes (4), Wisps (4), Spitter Plants, Seed Pods, Crawlers and bot objective markers; and the rate that an actor draws when its kind is set, which a Worker draws once per spawn. Reading a map definition creates no simulation object and draws nothing; each structure that the map places is created once, at match-world initialisation, so each map-placed bot objective marker draws once at load, and a Worker and a bot controller each draw their rate once per spawn.
 
-**R-SIM-627** (MUST) The actor-group formation offset table holds `ref.sim.group.offset_table_size` (100, [06](06_teams_and_player_commands.md)) values from `SimRng::NextUnit(1)`. It is cleared at every match start and end (DEC-011) and generated at a fixed step of match initialisation, never on its first use (DEC-652); the reference generates it on the first formation query after a map load.
+**R-SIM-627** (MUST) The actor-group formation offset table holds `ref.sim.group.offset_table_size` (100, [06](06_teams_and_player_commands.md)) values from `SimRng::NextUnit(1)`. It is cleared at every match start and end (DEC-011) and generated at a fixed step of match initialisation (step 11 of table 2.4-A of [02](02_match_lifecycle_and_state_reset.md)), never on its first use (DEC-652).
 
-**R-SIM-628** (MUST) A spawn-position search ([05](05_space_routing_and_physics.md)) draws `NextUnit(spread)` for the distance and `NextUnit(2π)` for the angle in each attempt (`ref.sim.spawn.draws_per_attempt`, 2), for up to `ref.sim.spawn.search_attempts` (10) attempts, so a search that finds no valid position consumes 20 draws before it falls back to the clamp of `ref.sim.spawn.edge_margin`. In Species a bot controller makes no spawn-position search and no draw for its placement: it stands at its team's start position, or at the map centre ([../07_bots/README.md](../07_bots/README.md) R-BOT-008). The reference spawn of every bot controller is such a search: it asks for the off-map point of `ref.sim.bot.controller_spawn_request` ([06](06_teams_and_player_commands.md)) and always consumes all 20 draws; DEC-087 replaces it.
+**R-SIM-628** (MUST) A spawn-position search ([05](05_space_routing_and_physics.md)) draws `NextUnit(spread)` for the distance and `NextUnit(2π)` for the angle in each attempt (`ref.sim.spawn.draws_per_attempt`, 2), for up to `ref.sim.spawn.search_attempts` (10) attempts, so a search that finds no valid position consumes 20 draws before it falls back to the clamp of `ref.sim.spawn.edge_margin`. A bot controller is placed by [../07_bots/README.md](../07_bots/README.md) R-BOT-008 and makes no spawn-position search and no draw (DEC-087).
 
 ### 2.4 What each object family draws
 
-**R-SIM-630** (MUST) The simulation draws of the reference are those of Table 1, made at the stated points; the draws marked "presentation" move to a presentation generator by R-SIM-622. The route graph, the actor grid, the obstacle grid, the base simulated object and the procedural legs make no draw. The ranges in Table 1 repeat, for readability, values that the owning documents define in their tuning tables; *r* stands for a radius or range given there.
+**R-SIM-630** (MUST) The draws of each object family are those of Table 1, made at the stated points; the draws marked "presentation" come from a presentation generator (R-SIM-622). The route graph, the actor grid, the obstacle grid, the base simulated object and the procedural legs make no draw. The ranges in Table 1 repeat, for readability, values that the owning documents define in their tuning tables; *r* stands for a radius or range given there.
 
 Table 1 — Draws per object family (simulation draws unless marked presentation).
 
@@ -134,12 +131,14 @@ Table 1 — Draws per object family (simulation draws unless marked presentation
 | ant: moving to a target | `NextSigned(0.2)` heading jitter | every tick | [reference/02 creatures](../02_units/creatures.md) |
 | meteor: fire size | five `NextSigned(60)` | every tick — presentation; its slow-motion request is simulation ([01](01_tick_timing_and_main_loop.md)) | [reference/02 hazards](../02_units/hazards_and_projectiles.md) |
 | Spitter Plant: burning particles | `NextSigned(100 × size)` | while burning — presentation | [reference/03](../03_buildings_and_world_objects/README.md) |
-| snowflake, Wisp: wobble | three `NextSigned(1)` and `NextUnit(20)` | every object, every tick — presentation | reference/02, [reference/08](../08_maps_and_level_design/README.md) |
+| snowflake: wobble | three `NextSigned(1)` and `NextUnit(20)` | every snowflake, every tick — presentation | [reference/08](../08_maps_and_level_design/README.md) |
+| Wisp: wobble | three `NextSigned(1)` | every Wisp, every tick — presentation | [reference/02 creatures](../02_units/creatures.md) R-UNIT-596 |
 | map-effect spawners (snow, dust storm, lightning) | unit draws and vector draws for spawn positions; the dust vortex and lightning strikes are gameplay, snow is decoration | slice 3 ([01](01_tick_timing_and_main_loop.md)) | reference/08 |
 | lightning strike | `NextUnit(1)` compared with 0.01: the strike roll, 1 % per tick, which sets fire | every tick | reference/02 |
 | Crawler: nearby egg | ⌊`NextUnit(n)`⌋ | each search | [reference/02 creatures](../02_units/creatures.md) |
-| tree: Essence orb drop | `NextUint` test, then `NextUnit(h)` for x, `NextUnit(2π)` for the yaw, then one uniform draw of a team slot from `ref.econ.essence_grove.team_slots` (0 to 3; the reference re-draws a slot from 0 to 5 until it is neither faction slot, which gives the same distribution, DEC-014); the drop timer `NextUnit(5)` | each drop | [reference/03 trees](../03_buildings_and_world_objects/trees_and_crate_structures.md) R-BLDG-616 |
+| tree: Essence orb drop | `NextUint` test, then `NextUnit(h)` for x, `NextUnit(2π)` for the yaw, then one uniform draw of a team slot from `ref.econ.essence_grove.team_slots` (0 to 3, DEC-014); the drop timer `NextUnit(5)` | each drop | [reference/03 trees](../03_buildings_and_world_objects/trees_and_crate_structures.md) R-BLDG-616 |
 | tree: offspring | `NextUnit(H)`, then `NextSigned(π/4)` or `NextUnit(2π)`, then `NextUnit(99999)` for the seed, then `NextSigned(0.2)` for the height | each offspring | reference/03 |
+| tree shape generator | its own 32-bit linear congruential generator, seeded with the tree's seed and re-seeded at the start of each of its three passes; one draw per random value of the branching | at the creation of a tree during a match (its crown volume, R-BLDG-603); the content build bakes it for every tree a map places | [reference/03](../03_buildings_and_world_objects/trees_and_crate_structures.md) R-BLDG-604 |
 | Blight Grove tree | `NextUnit(10)` every tick; its Wisp `NextSigned(1)` and `NextUnit(25)`; corruption `NextUnit(5)` | — | [reference/03 trees](../03_buildings_and_world_objects/trees_and_crate_structures.md) |
 | Barrier Emitter | `NextUnit(10)` at initialisation; `NextUnit(4)` per spark (presentation) | — | reference/03 |
 | volcano vent | `NextUint` every idle tick and `NextUnit(4)` | — presentation | [reference/03 defences and props](../03_buildings_and_world_objects/defences_and_props.md) |
@@ -161,11 +160,11 @@ Table 1 — Draws per object family (simulation draws unless marked presentation
 
 - **simulation state**: identical for every participant (R-SIM-601), changed only by a tick or by match-world initialisation;
 - **presentation state**: local to one participant, free to differ, and never read by simulation code;
-- **simulation-resident presentation state**: state that the reference stores in a simulation object although only presentation code writes and reads it.
+- **presentation state of a simulated object**: presentation state that belongs to one simulated object, team or route, which only presentation writes and reads; presentation holds it, keyed by the object's handle (R-SIM-636).
 
-**R-SIM-636** (MUST) Simulation objects hold no presentation fields. Every simulation-resident presentation field of Table 2 is presentation state in Species, held by presentation and keyed by the object's handle, and no simulation rule reads it (DEC-007).
+**R-SIM-636** (MUST) Simulation objects hold no presentation fields. Every field that Table 2 classes as "presentation, keyed by handle" is held by presentation and keyed by the handle of its object, team or route, and no simulation rule reads it (DEC-007).
 
-**R-SIM-637** (MUST) The subsystems of the reference are classified as in Table 2.
+**R-SIM-637** (MUST) The state of every major subsystem is classified as in Table 2.
 
 Table 2 — Classification of every major subsystem's state.
 
@@ -173,62 +172,60 @@ Table 2 — Classification of every major subsystem's state.
 |---|---|---|
 | actors (each team's actor groups and ungrouped actors): positions, velocities, facings, health, states, timers and orders | simulation | [03](03_entity_model_and_identity.md) |
 | structures, including ownership, capture, ports and spawn timers | simulation | |
-| laser bolts and effects: grenades, rockets, turret rounds, airstrike target markers and bombs, shockwave rings, fireballs, the Core Device pulse wave, Swarm streaks, Wisps, snowflakes, dust vortices, lightning strikes, muzzle flashes and shell casings | simulation | snowflakes, Wisps, muzzle flashes and shell casings are decorative, but they live in the simulated effect pool, take simulation handles and object serials, and, in the reference, draw from the simulation stream (R-SIM-622); their draws are presentation draws while the objects stay simulation objects (see DEC-266) |
+| laser bolts and effects: grenades, rockets, turret rounds, airstrike target markers and bombs, shockwave rings, fireballs, the Core Device pulse wave, Swarm streaks, Wisps, snowflakes, dust vortices, lightning strikes, muzzle flashes and shell casings | simulation | snowflakes, Wisps, muzzle flashes and shell casings are decorative, but they live in the simulated effect pool and take simulation handles and object serials; their draws are presentation draws (R-SIM-622), while the objects stay simulation objects (see DEC-266) |
 | Essence orbs | simulation | |
 | Supply crates: spawn, fall, capture and outcome | simulation | [reference/04](../04_supply_crates_powers_and_weapons/README.md) |
-| a Supply crate's orientation, centre position and bubble timer | simulation-resident presentation | the renderer rotates the orientation by the presentation frame delta; the simulation recomputes the centre position from that orientation, but only the renderer reads it; Supply crates take no sphere, shape or ray hits |
+| a Supply crate's orientation, centre position and bubble timer | presentation, keyed by handle | the renderer rotates the orientation by the presentation frame delta and derives the centre position from it; Supply crates take no sphere, shape or ray hits |
 | bot controllers, one per bot team | simulation | run on every participant (§2.12) |
-| Powers in the Power slots | simulation | the recent-Powers list, the most-recent-Power highlight timer and the per-source timer run on the real clock: simulation-resident presentation |
+| Powers in the Power slots | simulation | the recent-Powers list, the most-recent-Power highlight timer and the per-source timer run on the real clock and are presentation, keyed by the team |
 | tick clock: game speed, match time, speed requests | simulation | the tick-take time, the smooth presentation time and the extrapolation time are presentation ([01](01_tick_timing_and_main_loop.md)) |
 | match rules: scores, timers, eliminations, Relic, Launch Vessel and Control Zone state | simulation | messages, achievement progress and help notifications for the local team are presentation side effects (R-SIM-666) |
 | lobby and match options, team names and colours, ready flags | match setup | sequenced like commands ([06](06_teams_and_player_commands.md)) |
 | terrain height field, normals, obstacle grid, route-graph node tables | simulation static data | generated deterministically from the map definition; terrain tiles use private generators (R-SIM-609) |
 | actor grid and its query cache | simulation derived structures | query results, their order and the cache's staleness decide outcomes ([05](05_space_routing_and_physics.md)) |
 | route contents | simulation | |
-| route slot ids | participant-local in the reference | route previews never allocate from the simulation pool (R-SIM-662) |
+| route-preview slots | presentation | route previews have their own pool and never allocate from the simulation route pool (R-SIM-662) |
 | route display fade and walkable-preview flag | presentation | |
 | trees: fire, spread, Essence orb drops, corruption and offspring | simulation | |
-| a tree's crown hit volume | simulation | in the reference computed by the tree's render-geometry pass from a presentation generator (R-SIM-650); colours and sway are presentation |
+| a tree's crown hit volume | simulation | collision data (R-SIM-650, R-SIM-651); colours and sway are presentation |
 | sky offset | presentation | advanced inside the tick, in slice 3, without draws |
-| map-effect spawners: snow, dust storm, lightning, and an orb-rain effect that no reference map enables | simulation | the dust vortex and lightning strikes affect units; snow is decoration in the simulation stream |
+| map-effect spawners: snow, dust storm, lightning | simulation | the dust vortex and lightning strikes affect units; snowflakes are decorative effects whose draws are presentation draws (R-SIM-622) |
 | particles (`ParticlePool`) | presentation | advanced inside the slice loop but with presentation draws only; creating a particle returns nothing, and nothing reads particles |
 | shatter effects | presentation | real-clock lifetimes; advanced once per render frame |
-| audio | presentation | never writes simulation state; reads objects, positions, team ids, the local team, terrain height, game speed, the grace state and the camera; uses presentation draws and the real clock; team-matched sounds, camera-relative priorities and voice stealing differ per participant by design; simulation code queries sound state only to decide whether to start or restart a sound (the fuel line and the Launch Vessel) |
-| camera, match input pump, world cursor, Power slots panel, world markers, hint overlay, chat and HUD | presentation | the reference crossings are §2.9 |
+| audio | presentation | never writes simulation state; reads objects, positions, team ids, the local team, terrain height, game speed, the grace state and the camera; uses presentation draws and the real clock; team-matched sounds, camera-relative priorities and voice stealing differ per participant by design; no simulation rule reads sound state: the looping sounds of the fuel line and the Launch Vessel start and stop on the events of their own state (R-SIM-674) |
+| camera, match input pump, world cursor, Power slots panel, world markers, hint overlay, chat and HUD | presentation | their only paths into the simulation are the commands and the control state of §2.9 |
 | input drivers and camera motion | presentation | non-deterministic by design: drivers sample device state once per render frame; the camera integrates the presentation frame delta (at most 0.25 s) or its own real-clock deltas; camera shake uses presentation draws; no simulation draw happens in input or camera code. Input reaches the simulation only through the team command state, and camera-relative stick directions are converted to world-space vectors before they are sent |
 | sea renderer, terrain colours, lights, fog and screen effects | presentation | |
-| a spider's procedural legs and feet (`ProceduralLeg`, `ProceduralFoot`) | simulation-resident presentation | the foot swing is timed by the presentation frame time; only leg rendering, foot-fall sounds and the next leg-move time depend on it; the body height comes from the terrain, not from the feet (DEC-007) |
-| the render-damage flicker flag of actors, the Hive, the centipede and the Spitter Plant | simulation-resident presentation | set inside the step from a presentation draw and the presentation frame time |
-| a Reaper Serpent's trail of captured Essence orbs | simulation-resident presentation | real-clock birth times and a presentation-drawn slot |
+| a spider's procedural legs and feet (`ProceduralLeg`, `ProceduralFoot`) | presentation, keyed by handle | the foot swing is timed by the presentation frame time; only leg rendering, foot-fall sounds and the next leg-move time depend on it; the body height comes from the terrain, not from the feet (DEC-007) |
+| the render-damage flicker flag of actors, the Hive, the centipede and the Spitter Plant | presentation, keyed by handle | set from the damage the step deals, with a presentation draw and the presentation frame time |
+| a Reaper Serpent's trail of captured Essence orbs | presentation, keyed by handle | real-clock birth times and a presentation-drawn slot |
 | a Leader's picking sphere | presentation | scaled by the camera distance and a display-scale preference; used only by mouse picking |
 | achievements, statistics and profile | presentation | hooks only ([reference/09](../09_front_end_and_match_flow/README.md)) |
 
 ### 2.6 Presentation randomness inside simulation code
 
-**R-SIM-640** (MUST) Every presentation draw that the reference makes inside simulation code is presentation, and its value never reaches simulation state. Table 3 gives each site and its rule.
+**R-SIM-640** (MUST) A draw that a simulation rule triggers for a presentation purpose is a presentation draw, and its value never reaches simulation state. Table 3 gives each site and its rule.
 
-Table 3 — Presentation draws inside simulation code.
+Table 3 — Presentation draws triggered by simulation rules.
 
 | Site | What the draw drives | Rule |
 |---|---|---|
-| tree geometry passes | branch geometry and the crown hit volume (the centroid of the leaves, with a radius of `ref.sim.integrity.tree_crown_radius_factor` (0.8) × the largest leaf distance) | the crown hit volume is map or asset data (R-SIM-651); the geometry is presentation |
+| tree geometry | branch geometry | presentation; the crown hit volume is collision data (R-SIM-651) |
 | tree fire particles and leaf drop | particles | presentation |
-| render-damage flicker of actors, the Hive, the centipede and the Spitter Plant | a flag stored in the simulation object, never read by the simulation | presentation state (R-SIM-636) |
+| render-damage flicker of actors, the Hive, the centipede and the Spitter Plant | a flag that no simulation rule reads | presentation state, keyed by handle (R-SIM-636) |
 | a Worker on fire, under Speed Boost or with Sickness; opening a Supply crate; receiving a Shield, Speed Boost, Convert or Fury | particle counts and velocities; one draw gates the on-fire sound | presentation |
-| Worker threat search | a 1-in-200 draw chooses whether the threat horn sounds; the sound is rate-limited by one match-time stamp that every Worker shares | presentation; the shared stamp is presentation state, never a static of simulation code (DEC-223) |
+| Worker threat search | a 1-in-200 draw chooses whether the threat horn sounds; the sound is rate-limited by one match-time stamp that every Worker shares | presentation; the shared stamp is presentation state (DEC-223) |
 | blasts, promotion and demotion | core and debris particle counts and sizes; flash particles | presentation |
 | the extinguishing effect of a Supply crate outcome | 200 fire-spray particles from a rejection loop of presentation draws | presentation; the loop length is local |
 | laser bolts, turret rounds, fireballs, firebomb canisters, rocket explosion colours and cores, lightning strikes, meteor positions, Collector and Abductor engines, the Launch Vessel, the fuel pump, boarding at the fuel depot, volcano vents, smoke columns, Barrier Emitter sparks and Swarm streaks | particles | presentation |
 | Reaper Serpent captured-orb trail | sprite positions and slots | presentation state |
 | shatter effects and particles | debris and particles | presentation; nothing in the simulation reads them |
 | camera shake | the local camera | presentation |
-| centipede copies placed by a difficulty factor above 1 | positions of the copies, drawn from the presentation generator | never occurs: the difficulty level is 0 in every match, so no copy exists (R-SIM-725, DEC-010) |
-| Allegiance Scrambler particles | the particle colour, drawn in its render code, so the particle count follows the frame rate | presentation |
+| Allegiance Scrambler particles | the particle colour; the particle count follows the frame rate | presentation |
 | hint overlay | which help tab is shown | presentation |
 | audio | sample choice, emitter choice and randomised sound parameters | presentation, from the audio engine's own generator (R-SIM-608) |
 | terrain colours and the sea shore | colour variation and shore noise | presentation |
 | UI windows | window placement | presentation |
-| online-service registration | its retry timing | presentation, never through a shared generator (R-SIM-608) |
 
 ### 2.7 Tree crown hit volumes
 

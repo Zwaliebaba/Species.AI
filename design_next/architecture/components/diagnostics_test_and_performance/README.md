@@ -224,35 +224,22 @@ public:
   void Render(); // pass 24, once per frame
 };
 
-// Soak test (§4.9): maps and modes are named by their data ids, so the runner knows no game concept
-enum class SoakProgression : std::uint8_t
-{
-  Linear,
-  Random,
-  Sequence
-};
+// Soak test (§4.9): maps and modes are named by their data ids, so the runner knows no game concept.
+// SoakProgression, SoakSequenceItem, SoakTestMap, SoakConfigurationRecord:
+// generated from test.soak_configuration: data_schemas/test_and_telemetry_records.md §2
+// One entry of a pass, built by DBG-162 from the edition's pairs of mode and map and the record's test maps.
 struct SoakEntry
 {
-  std::string mapId;
-  std::string modeId;
-  std::uint8_t botTeams;
-  std::optional<std::uint64_t> forcedSeed; // empty: the authority's own seed
-};
-struct SoakConfig
-{
-  SoakProgression progression;
-  std::vector<SoakEntry> entries;
-  std::optional<std::uint64_t> progressionSeed;
-  std::optional<std::string> sessionName;
-  std::optional<std::uint64_t> terminationTick;
-  std::uint8_t clients;
-  bool rendering;
+  std::string map;                    // map id
+  std::string mode;                   // mode id
+  std::uint8_t automatedParticipants; // filled with bot teams by the game layer (DBG-161)
+  std::optional<std::uint64_t> seed;  // the forced seed of a sequence item; empty: the authority's own seed
 };
 // Owns all soak state.
 class SoakRunner
 {
 public:
-  explicit SoakRunner(SoakConfig _config);
+  explicit SoakRunner(const SoakConfigurationRecord& _config);
   SoakReport Run();
 };
 

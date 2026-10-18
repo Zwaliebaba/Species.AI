@@ -253,6 +253,7 @@ Keys cited here and defined elsewhere: `ref.bot.pin.value` ([02](02_priority_mod
 
 | Decision | Title | Default stated here |
 |---|---|---|
+| DEC-051 | Tutorials and presentation timelines | the reference tutorials as this file specifies them (R-BOT-150) |
 | DEC-094 | Exact or approximate actor-grid queries | marker ownership and the defender's engagement test use the cell-granular queries (R-BOT-134, R-BOT-136, R-BOT-135) |
 | DEC-112 | Bot strength calibration | Siege attack and Siege defence are calibrated explicitly after the DEC-087 corrections (R-BOT-127, R-BOT-135) |
 | DEC-550 | Power cancellation in the tutorials | no Power can be stopped in the first tutorial, or in the second before its bots may spawn (R-BOT-154) |

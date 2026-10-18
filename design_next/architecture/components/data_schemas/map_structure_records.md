@@ -97,6 +97,8 @@ Table 3.2-A Kind-specific fields. "Ref" marks a record reference to a structure 
 | Launch Vessel (`launch_vessel`) | fuel link | `fuel_link` | Ref: fuel line, fuel depot, Launch Vessel | absence-meaningful: none | unused for the vessel | R-BLDG-340 |
 | | starting fuel | `starting_fuel` | simulation decimal, binary32-rounded | defaulted: 0 (R-BLDG-340) | 0 to the fuel range of R-BLDG-320 | R-BLDG-340 |
 | | starting passengers | `starting_passengers` | count | defaulted: 0 (R-BLDG-340) | 0 to the passenger range of R-BLDG-320 | R-BLDG-340 |
+| | spawn structure | `spawn_structure` | Ref: any structure kind of table 3.2-A | absence-meaningful: none | read and unused: no match rule reads it, and the vessel's state of R-BLDG-320 holds no such field; validated as a link and written back by a map tool (DEC-800) | R-BLDG-340 |
+| | spawn completed | `spawn_completed` | boolean | defaulted: false | read and unused, as the spawn structure | R-BLDG-340 |
 | Command Console (`command_console`) | controlled structure | `controlled_structure` | Ref: any structure kind of table 3.2-A | absence-meaningful: none | the reference maps name Beam Dishes only (R-BLDG-298) | R-BLDG-304 |
 | Core Device (`core_device`) | countdown | `countdown` | simulation decimal, binary32-rounded, mode seconds | defaulted: 0 (R-BLDG-317) | 0 or more | R-BLDG-317 |
 | | linked consoles | `consoles` | ordered list of Ref: Command Console | defaulted: empty | distinct | R-BLDG-317 |

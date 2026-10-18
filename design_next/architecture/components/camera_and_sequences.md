@@ -60,36 +60,16 @@ The camera records, the frame output, the pick ray and the timeline records are 
 namespace Engine
 {
 
-enum class CameraTransition : std::uint8_t // authoring order only
-{
-  Move,
-  Cut
-};
+// The map's camera records (R-MAP-125, R-MAP-127): CameraTransition, CameraView (name, position, front, up),
+// CameraAnimationStep (transition, view, duration in s) and CameraAnimationDef (name, steps):
+// generated from maps.definition: data_schemas/map_schema.md §2
+// SourceLocation is the data schemas' (data_schemas/README.md §2).
 
 struct CameraPose // front and up are unit vectors
 {
   Vec3 position;
   Vec3 front;
   Vec3 up;
-};
-
-struct CameraView // a map's camera view record (R-MAP-125)
-{
-  std::string name;
-  CameraPose pose; // front and up normalised at load, not orthogonalised
-};
-
-struct CameraAnimationStep // one node of a camera animation (R-MAP-127)
-{
-  CameraTransition transition;
-  std::string view;      // a view of the map, or previous_view
-  float durationSeconds; // camera clock, [0, ref.map.camera.animation_duration_max_s)
-};
-
-struct CameraAnimationDef
-{
-  std::string name;
-  std::vector<CameraAnimationStep> steps; // may be empty; an empty animation never plays
 };
 
 struct MapCameraData // built once at match entry (CAM-014)
@@ -232,7 +212,7 @@ public:
 
 **CAM-013** (MUST) Camera requests that the player rules attach to simulation events reach the camera as presentation events of the participant's own team, consumed in tick order before the next advance (R-SIM-666, DEC-007): for example, the request to enter turret aim when the own team selects one of its turrets (R-SIM-405 step 6). A request about another participant's team never reaches this camera. Shake requests go to the screen effects of VFX-232, not to the camera.
 
-**CAM-014** (MUST) At match entry the camera receives `MapCameraData`, built once from the validated map definition: the camera views and the camera animations in record order, the camera view of each start-position record by start position (DEC-560, R-MAP-042), and the world size x of the terrain definition. The record schemas are those of [data schemas](data_schemas/README.md) (ADR-061), and the content build has already validated their names, references and durations (ADR-059, DEC-015, DEC-801). The camera never parses authoring text.
+**CAM-014** (MUST) At match entry the camera receives `MapCameraData`, built once from the validated map definition: `views` holds the map's `CameraView` records and `animations` its `CameraAnimationDef` records, both unchanged and in record order; `startViews` holds, for each start position, the index in `views` of the view that its start-position record's `cameraView` names, or none when the map has no view of that name (DEC-560, R-MAP-042, R-MAP-048); and `worldSizeX` is the terrain definition's `worldSizeX`. A view becomes a `CameraPose` of the same position, front and up only when the camera adopts it (CAM-034). The records and their schemas are those of [data schemas](data_schemas/map_schema.md) §2 (ADR-061), and the content build has already validated their names, references and durations (ADR-059, DEC-015, DEC-801). The camera never parses authoring text.
 
 **CAM-015** (MUST) In each frame the camera provides its control vector (R-CTRL-451, R-CTRL-487) and its looking-around and tracking state (R-CTRL-472) to the match input pump, which converts every camera-relative quantity to world space before it enters the team command state (R-SIM-440, DEC-008). The camera never writes the team command state.
 

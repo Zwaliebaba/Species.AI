@@ -1,14 +1,14 @@
 ---
-status: rejected
+status: accepted
 date: 2026-10-17
-decision-makers: Species technology lead; rejected under the owner's AGENTS.md (O21)
+decision-makers: Species technology lead; decided by the owner's AGENTS.md (O21)
 ---
 
-# Modules: not used; `.h` and `.cpp` files only, no module interface units and no `import std`
+# Headers only: no modules and no `import std`
 
 ## Context and Problem Statement
 
-C++23 standardises `import std` and `import std.compat`, and MSVC implements them; C++20 named modules and header units can shorten build times further. The repository's engineering rules limit source files to `.h` and `.cpp` (`AGENTS.md` R7), give every project one precompiled header (`pch.h`), and make include order load-bearing and hand-grouped, with the standard library included last (`AGENTS.md` §4). This record proposed `import std` behind a build option, with first-party code header-based.
+C++23 standardises `import std` and `import std.compat`, and MSVC implements them; C++20 named modules and header units can shorten build times further. The repository's engineering rules limit source files to `.h` and `.cpp` (`AGENTS.md` R7), give every project one precompiled header (`pch.h`), and make include order load-bearing and hand-grouped, with the standard library included last (`AGENTS.md` §4). One candidate keeps first-party code header-based and adds `import std` behind a build option.
 
 Does Species use C++ modules or `import std`?
 
@@ -27,7 +27,7 @@ Does Species use C++ modules or `import std`?
 
 ## Decision Outcome
 
-The proposed option, "`import std` behind a build option", is **rejected**, and so are named modules and header units. Species uses headers only: every translation unit includes the standard headers it needs, after `pch.h`, the Windows and SDK headers and the project headers (`AGENTS.md` §4). No module interface unit (`.ixx`) exists, because `AGENTS.md` R7 allows `.h` and `.cpp` files only, and no translation unit uses `import std`, because a build option for it would add a second way to reach the standard library and a project setting outside the alignment rules of [ADR-054](ADR-054-build-system-msbuild-solution.md). Using modules later needs a new ADR and a change to `AGENTS.md`.
+Chosen option: "Headers only". Accepted: the owner's `AGENTS.md` decides it (O21). The option "`import std` behind a build option" is rejected, and so are named modules and header units. Species uses headers only: every translation unit includes the standard headers it needs, after `pch.h`, the Windows and SDK headers and the project headers (`AGENTS.md` §4). No module interface unit (`.ixx`) exists, because `AGENTS.md` R7 allows `.h` and `.cpp` files only, and no translation unit uses `import std`, because a build option for it would add a second way to reach the standard library and a project setting outside the alignment rules of [ADR-054](ADR-054-build-system-msbuild-solution.md). Using modules later needs a new ADR and a change to `AGENTS.md`.
 
 ### Consequences
 
@@ -67,3 +67,4 @@ The proposed option, "`import std` behind a build option", is **rejected**, and 
 * Facts and sources: technology baseline item 2.2 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): the MSVC modules overview and `import std` tutorial.
 * Related: [ADR-052](ADR-052-cpp23-language-standard.md) (language mode).
 * **Amendment 2026-10-17 (AGENTS.md, O21).** Status Rejected: `AGENTS.md` R7 allows `.h` and `.cpp` files only and §4 fixes the standard library as hand-ordered includes, so no module interface unit exists and `import std` is not used. The build option and its CI job are removed.
+* **Amendment 2026-10-18 (status).** The decision in force is "Headers only", so the record's status is Accepted and its title names that decision; the rejected `import std` option and the other modular options stay as considered options. The rule itself is unchanged.

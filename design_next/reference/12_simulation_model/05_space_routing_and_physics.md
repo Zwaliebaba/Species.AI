@@ -189,7 +189,7 @@ The upper bounds are inclusive, so a structure whose bounding sphere reaches wit
 | Kind | Position |
 |---|---|
 | `RoutePointKind::Position` | the stored 3-D position |
-| `RoutePointKind::GroundPosition` | the stored position, unchanged (it is not snapped to the terrain) |
+| `RoutePointKind::GroundPosition` | the stored position, unchanged (it is not snapped to the terrain); only the ground points of a map's routes have this kind ([maps](../08_maps_and_level_design/rules_and_conventions.md) R-MAP-120, [map schema](../../architecture/components/data_schemas/map_schema.md) DAT-093), and no match follows a map's route (R-MAP-121) |
 | `RoutePointKind::Structure` | the entrance position of the named teleport structure (`TeleportStructure`, that is a Beam Dish); a structure point of any other kind is a defect, which a test-build assertion reports |
 
 **R-SIM-334** (MUST) A route (`RoutePath`) holds its handle, an ordered list of route points and a status (valid or failed). It supports: appending a position point; appending a structure point; reading point i; the index of the point nearest to a position, by 3-D squared distance; the index of the nearest edge to a position, by 2-D point-to-segment distance, which returns the index of the segment's first point; the route's walking distance, the sum of `WalkCost` (R-SIM-338) over its legs, where any negative leg makes the whole result that negative value; and the end point.

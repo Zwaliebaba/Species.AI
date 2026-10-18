@@ -98,13 +98,12 @@ Table 2.4-A Blocks of a map definition.
 | camera animations | named lists of moves and cuts between camera views | §2.13 |
 | starting forces | the map's starting-unit records | §2.14 |
 | routes | named lists of route points | §2.12 |
-| primary objectives | a list of objective conditions | R-MAP-033 |
 
 **R-MAP-031** (MUST) A block listed twice is a build error (DEC-801); in particular a map has one list of map lights and one list of structures. Every structure of a map is a static map structure, created once at match-world initialisation (R-MAP-047).
 
-**R-MAP-032** (MUST) The content build rejects a block or a record that only campaign content uses: the save-game records of running powers, a created-at-difficulty record and a statistics record have no place in a map definition (DEC-052, DEC-802).
+**R-MAP-032** (MUST) The content build rejects every block and record that table 2.4-A does not list (DEC-802).
 
-**R-MAP-033** (MUST) The primary objectives of a map are a list of objective conditions. On every reference map the list is empty or holds only the condition that never becomes true. When the list is empty, loading the map adds one condition that never becomes true, so every match world holds at least one objective that never completes. No map scripts a win condition: every mode decides its winner by its own rules ([reference/01](../01_skirmish_rules_and_modes/README.md)). The idle Workers' victory celebration starts only when every objective is complete, so it never starts in a match (DEC-331; [reference/02 worker.md](../02_units/worker.md)). The other objective conditions belong to campaign content and are not specified (DEC-052).
+**R-MAP-033** (MUST) A map defines no objective; every mode decides its winner by its own rules ([reference/01](../01_skirmish_rules_and_modes/README.md); DEC-052).
 
 **R-MAP-034** (MUST) Loading a map derives no secondary objective: no objective is created for a Transit Gate or for any other map structure.
 
@@ -234,26 +233,26 @@ Table 2.8-A Fields of the terrain definition.
 
 **R-MAP-084** (MUST) The generation algorithm of the tiles, the composition and the five flatten types, with their exact arithmetic and its biases, is [terrain](../../architecture/components/terrain/README.md) (DEC-025, DEC-324). Whether the terrain is generated at load from these records or baked by the content build is DEC-246, whose default is generation at load; the scale of terrain for a large world is DEC-247.
 
-**R-MAP-085** (MUST) The terrain of the reference map files lies within the envelope of table 2.8-B. The figures cover the 57 reference map files, which are the 49 match maps and 8 development and test maps (DEC-334); the match maps alone are the figures of DEC-247.
+**R-MAP-085** (MUST) The terrain of every reference match map lies within the envelope of table 2.8-B; the extent, grid and height figures of the match maps are those of DEC-247. Maps that declare no mode are not specified (DEC-334).
 
-Table 2.8-B Terrain envelope of the reference map files.
+Table 2.8-B Terrain envelope of the reference maps. Each range bounds the values that the reference match maps use.
 
 | Parameter | Range or values used | Notes |
 |---|---|---|
-| world size | 2,000 to 7,000 wu, square in every file, 28 distinct sizes | the most common are 3,000 wu (12 files) and 2,000 wu (8); on the 49 match maps, 3,000 wu on 11 and 2,000 wu on 5 |
-| cell size | 9.00 to 27.08 wu, 17 distinct values | grids of 137 × 137 to 334 × 334 samples; the finest cells are on small maps |
-| outside height | −30.00 to −6.93 wu, 8 distinct values | −10.00 wu in 40 files; every map has sea on at least 26.2 % of its cells, and every match map has sea along its whole border (DEC-247) |
-| maximum height | 0.00 in 40 files, 200.00 in 1, absent in 16 | the colour ramp only |
-| tiles per map | 1 to 25, 445 tiles in all | |
+| world size | 2,000 to 7,000 wu, square on every map | on the 49 match maps the most common are 3,000 wu (11 maps) and 2,000 wu (5) |
+| cell size | 9.00 to 27.08 wu | grids of 137 × 137 to 334 × 334 samples; the finest cells are on small maps |
+| outside height | −30.00 to −6.93 wu | every map has sea on at least 26.2 % of its cells, and every match map has sea along its whole border (DEC-247) |
+| maximum height | 0.00, 200.00 or absent | the colour ramp only |
+| tiles per map | 1 to 25 | |
 | tile size | 124 to 4,484 wu | |
 | tile position y | −25.93 to 83.90 wu | |
 | fractal dimension | 0.57 to 7.88 | |
 | height scale | 0.0 to 10.0 | |
 | desired height | 30 to 961 wu | |
-| generation method | 0 on 30 tiles, 1 on 356, 2 on 59 | all three methods are used |
+| generation method | 0, 1 or 2 | |
 | lowland smoothing factor | 0.0 to 3.0 | |
-| guide-grid power | 0 on 71 tiles, 1 on 26, 2 on 209, 3 on 30, 4 on 93, 5 on 16 | hand-painted guide grids on 374 of the 445 tiles |
-| flatten areas | 53 areas in 19 files, 0 to 6 per file | Absolute 17, Add 1, Subtract 5, Smooth 27, Subtract2 3; half-size 8.4 to 1,000 wu; centre y −26 to 886.2 wu; threshold −3.9 to 348.9 wu |
+| guide-grid power | 0 to 5 | a power above 0 is a hand-painted guide grid |
+| flatten areas | 0 to 6 per map | half-size 8.4 to 1,000 wu; centre y −26 to 886.2 wu; threshold −3.9 to 348.9 wu |
 
 **R-MAP-198** (MUST) Every reference match map has sea along its whole border, so no land reaches the map edge (table 2.8-B; DEC-247). The terrain mesh relies on this border: on a map with land at its edge, the triangles that join the last vertex pair of one sample row to the first pair of the next row would span the map from one edge to the other ([renderer](../../architecture/components/renderer/world_renderers.md) RND-132).
 
@@ -713,7 +712,7 @@ sequenceDiagram
     Main->>Job: start match entry and show the loading view
     Job->>World: create the match world
     World->>Map: read the map from a content set, else from the player's map folder
-    Map-->>World: validated definition, with a never-true objective added to an empty list
+    Map-->>World: validated definition
     World->>World: assign a start position to every slot below the player count
     World->>World: Siege sides and co-op groups by start position
     World->>World: map lights, terrain height field and sea
@@ -856,7 +855,7 @@ Figure 3.4 How map records receive their teams at load (R-MAP-044, R-MAP-045, R-
 
 - **AC-MAP-06** (R-MAP-062, R-MAP-195) Given a 4-player map with a population cap of 2,000, then with 4 open slots each team's cap is 500 and with one slot closed each of the 3 teams has 666 for the whole match; given a 3-player Siege map with a cap of 1,500, a defender cap of 250 and two attacking positions, then the defender's cap is 250 and each attacker's 625.
 - **AC-MAP-07** (R-MAP-044, R-MAP-045) Given a 2-player map with a structure record at position 1, a structure record at position 5 and a starting-forces record of 35 Workers at position 5, then the first structure belongs to the team at position 1, the second has no team, and 35 Visitor-faction Workers are created.
-- **AC-MAP-08** (R-MAP-033) Given a map with no primary objectives, when it loads, then the match world holds exactly one objective, which never completes, and idle Workers never start the victory celebration.
+- **AC-MAP-08** (R-MAP-032, R-MAP-033) Given a map definition that holds a block which table 2.4-A does not list, such as a list of objectives, then the content build rejects it; given any valid map, then the match ends only by the rules of its mode.
 - **AC-MAP-09** (R-MAP-004, R-MAP-061) Given a map that gives the population cap twice, then the content build fails and names both locations.
 - **AC-MAP-10** (R-MAP-161, R-MAP-166, R-MAP-170, R-MAP-176) Given a Relic Run map with one position lacking a Relic Base, a Siege map whose Core Device links two Command Consoles, a Launch Race map with two fuel depots for one position, and a Flag Chain map whose Flag post graph has two components, then the content build rejects each of them with a diagnostic.
 - **AC-MAP-11** (R-MAP-101, R-MAP-103) Given a map with a Relic record, or a Transit Gate record without the global flag, then the content build rejects it.

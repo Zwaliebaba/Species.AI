@@ -184,14 +184,14 @@ Outside co-op a team is a friend only of itself. In a co-op match the co-op grou
 
 1. The team's group comes from the map's lists of group positions. If that group is full, the team moves to the first free position of the other group, and any team that held that position is assigned again.
 2. A team alone in its group keeps its colour, or receives a random free colour from 0 to 3.
-3. Without predefined groups, a team is paired with a team that chose the same colour. The two further fallback steps, pairing with a team that has no colour and then with any unpaired team with the random free colour (simulation draw mod `ref.sim.team.player_colour_count`) div `ref.sim.team.coop_colour_divisor`, never apply, because their test for an existing partner also matches the candidate itself; a player slot that no earlier step pairs stays in co-op group 0 (R-SIM-413, DEC-451).
+3. Without predefined groups, a team is paired with a team that chose the same colour; a player slot that this step leaves unpaired stays in co-op group 0 (R-SIM-413, DEC-451).
 4. With a predefined group, the partner takes the group's other position and the shared colour id, and the two members take shade 1 and shade 2.
 
-Co-op setup applies the resulting colour inside the setup step on every participant. In the reference the local participant then also sends a `SetColor` command for its own team with the same colour, which re-applies the same value; the setup itself issues no command (DEC-119).
+Co-op setup applies the resulting colour inside the setup step on every participant, and the setup itself issues no command (DEC-119). After co-op setup the local participant's lobby sends a `SetColor` for its own team with the colour that setup applied; executing it changes nothing (R-SIM-451).
 
 **R-SIM-421** (MUST) The shade of a co-op group is chosen when it is first asked for: the first request for a group returns its member-1 shade and every later request its member-2 shade; a group without a colour returns `ref.sim.team_colour.no_group_shade` (white).
 
-**R-SIM-422** (MUST) On a map with fewer than four players, each unused slot draws a colour from 0 to 3 that no player slot holds, by the free-colour draw of R-SIM-420 step 3: colour = (simulation draw mod `ref.sim.team.player_colour_count`) div `ref.sim.team.coop_colour_divisor`, which gives 0 to 3, and only the colour changes, so that the effects that pick a random team colour, such as the Essence Grove and the Allegiance Scrambler, have a colour for every slot. A colour drawn for an unused slot is not reserved, so two unused slots can share a colour (DEC-450).
+**R-SIM-422** (MUST) On a map with fewer than four players, each unused slot draws a colour from 0 to 3 that no player slot holds, by the free-colour draw: colour = (simulation draw mod `ref.sim.team.player_colour_count`) div `ref.sim.team.coop_colour_divisor`, which gives 0 to 3, and only the colour changes, so that the effects that pick a random team colour, such as the Essence Grove and the Allegiance Scrambler, have a colour for every slot. A colour drawn for an unused slot is not reserved, so two unused slots can share a colour (DEC-450).
 
 **R-SIM-423** (MUST) Every colour, position and alliance draw of §2.6 is a simulation draw made during match-world initialisation in team-index order, so every participant must start the match with identical lobby-slot state ([07_randomness_and_integrity.md](07_randomness_and_integrity.md)).
 
@@ -236,7 +236,7 @@ The group offset of a member is its formation offset; it takes no account of obs
 
 **R-SIM-433** (MUST) A bot is a team slot of kind `TeamKind::Bot`, owned by the participant that requested it, which in practice is the host. Starting a match fills every empty open slot below the map's player count with a bot team, and a closed slot gets none (R-SIM-461): the host requests one bot team for every unused open slot below the player count through the session ([../09_front_end_and_match_flow/screen_flow_and_match_setup.md](../09_front_end_and_match_flow/screen_flow_and_match_setup.md)) and then issues `StartMatch` (R-SIM-460).
 
-**R-SIM-434** (MUST) The bot is not a participant. When a bot team is initialised in the match world, the simulation spawns one bot controller (`BotController`) for it, inside the map, at the position of [../07_bots/README.md](../07_bots/README.md) R-BOT-008: its team's start position, or the centre of the map for the Rogue and Visitor factions and for a slot with no start position; the placement makes no spawn search and no draw (DEC-087). `ref.sim.bot.controller_spawn_request` records only the reference request, the off-map point (−100, 0, −100), for which the spawn search of [05_space_routing_and_physics.md](05_space_routing_and_physics.md) makes all its draws (20) and falls back to (20, 0, 20) at the map's corner; it is not the Species placement. The Rogue and Visitor factions always receive a bot controller as well (DEC-558).
+**R-SIM-434** (MUST) The bot is not a participant. When a bot team is initialised in the match world, the simulation spawns one bot controller (`BotController`) for it, inside the map, at the position of [../07_bots/README.md](../07_bots/README.md) R-BOT-008: its team's start position, or the centre of the map for the Rogue and Visitor factions and for a slot with no start position; the placement makes no spawn search and no draw (DEC-087). The Rogue and Visitor factions always receive a bot controller as well (DEC-558).
 
 **R-SIM-435** (MUST) A bot controller is simulated identically on every participant as part of the simulation step, and it sends nothing over the network (DEC-200). A bot is an authorised command source of its own team (DEC-119): in its bot step it issues the actions that the player command catalogue expresses (targeting a Power, stopping a Power and aiming a Beam Dish) as catalogue commands, which execute at once through the command's operation, with the command's validation and no-op rules (DEC-202), and never enter the command batch of a tick ([../07_bots/README.md](../07_bots/README.md) R-BOT-014). Every other bot action is a bot-only operation of R-BOT-015, which applies the named simulation operation directly after checking that the object still exists and belongs to the bot's team (see DEC-122). It reads the full simulation state.
 
@@ -296,7 +296,7 @@ A participant's earlier `ControlState`, `Select` or `SetColor` of the same tick 
 
 **R-SIM-449** (MUST) The Species player command catalogue is the enumeration `PlayerCommand` with the members listed in R-SIM-450 to R-SIM-452; the order of the enumeration carries no meaning. Every command names its objects by generational handles (`SimObjectId`), never by container slot indices (DEC-028); Power ids are at least `ref.sim.command.power_id_min_bits` (16) bits wide (DEC-083); and no parameter carries an in-band sentinel value (DEC-202). A parameter written "none" is an explicit absent value.
 
-**R-SIM-450** (MUST) The match commands, with their parameters and their effect when executed on every participant:
+**R-SIM-450** (MUST) The match commands, with their parameters and their effect when executed on every participant. No command cycles a Strike team's weapon, so a Strike team always throws grenades (DEC-117).
 
 | Command | Parameters | Effect when executed | Coalescing | Issued by |
 |---|---|---|---|---|
@@ -327,21 +327,19 @@ A participant's earlier `ControlState`, `Select` or `SetColor` of the same tick 
 | `PlayerCommand::SetColor` | team, colour id | if the colour id is below `ref.sim.team.player_colour_count` (8), sets the team's colour | latest per participant per tick | the lobby, repeated while the colour differs from the confirmed one; not in co-op or Siege, except at the main menu (DEC-243 item 9) |
 | `PlayerCommand::SetAchievementMask` | team, mask | sets the lobby slot's achievement mask | — | periodically, once the participant holds a team (DEC-243 item 9) |
 | `PlayerCommand::SetSlotOpen` | team slot, open flag | before the match starts, opens or closes the slot under the rules of R-SIM-461 | — | the host's open-and-close control beside a slot row ([../09_front_end_and_match_flow/screen_flow_and_match_setup.md](../09_front_end_and_match_flow/screen_flow_and_match_setup.md) R-META-090); a match-setup change under DEC-243 |
-| `PlayerCommand::ReportScores` | the scores of the six slots, the winning team | none: every participant ignores it | — | the end of a match |
+| `PlayerCommand::ReportScores` | the scores of the six slots, the winning team | none: it carries the score report of the result declaration ([../01_skirmish_rules_and_modes/README.md](../01_skirmish_rules_and_modes/README.md) R-MODE-057), which changes no state and which no statistic consumes ([../09_front_end_and_match_flow/options_localisation_and_hooks.md](../09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-497, DEC-047) | — | the end of a match |
 | `PlayerCommand::SetMatchOption` | version, option, integer value | sets one integer option of the match setup under the version rule (DEC-243 item 5) | — | the lobby controls |
-| `PlayerCommand::SetMatchOptionElement` | version, option, index, integer value | sets one element of an option array, the mode parameters or the research levels | — | the lobby controls |
+| `PlayerCommand::SetMatchOptionElement` | version, option, index, integer value | sets one element of an option array or of the mode parameters | — | the lobby controls |
 | `PlayerCommand::SetMatchOptionText` | version, option, text | sets one text option; the map choice is one | — | the lobby controls |
 | `PlayerCommand::SetSeasonalTheme` | none | at the main menu, turns the seasonal theme on (DEC-118) | — | a participant for which the seasonal theme applies |
 
-**R-SIM-452** (MUST) These commands have handlers but no reference input issues them. Their effect is specified so that the catalogue is complete and validation covers them (DEC-202):
+**R-SIM-452** (MUST) No input of a match issues these commands. A participant that sends one anyway has it executed on every participant with this effect, so that every command a participant can send has a defined result (DEC-202):
 
 | Command | Parameters | Effect when executed |
 |---|---|---|
-| `PlayerCommand::SetMatchOptionArray` | version, option, count, integer values | replaces a whole option array, the mode parameters or the research levels |
-| `PlayerCommand::NextMode` | team | a selected Leader switches to its next mode, which has no effect in a match; a selected Transport takes direct orders |
-| `PlayerCommand::PreviousMode` | team | a selected Leader switches to its previous mode, which has no effect in a match; a selected Transport takes direct orders |
-
-Because no input issues `NextMode` or `PreviousMode`, weapon cycling is not available in a match, and a Strike team always throws grenades (DEC-117).
+| `PlayerCommand::SetMatchOptionArray` | version, option, count, integer values | replaces a whole option array or the mode parameters |
+| `PlayerCommand::NextMode` | team | a selected Transport takes a direct order ([../02_units/transport.md](../02_units/transport.md) R-UNIT-394); with any other selection the command does nothing |
+| `PlayerCommand::PreviousMode` | team | as `NextMode` |
 
 **R-SIM-453** (MUST) Every command handler defines its result when a target named by the command no longer exists, or no longer qualifies, at the tick of execution: the command then does nothing (DEC-202 item 7). This covers a structure that is not a Beam Dish or not the team's, an actor that is not of the required kind, a Power id that names no Power of the team, and a handle that no longer resolves.
 
@@ -480,7 +478,7 @@ The tick period `ref.sim.tick_period` and the update slice count `ref.sim.update
 | `ref.sim.team.bot_colour_count` | 4 | colours | colour ids 0 to 3, for bot teams, solo co-op teams and unused slots | R-SIM-416, R-SIM-420, R-SIM-422 | DEC-450 |
 | `ref.sim.team.siege_defender_colour_id` | 0 | colour id | green | R-SIM-419 | — |
 | `ref.sim.team.siege_attacker_colour_id` | 1 | colour id | red | R-SIM-419 | — |
-| `ref.sim.team.coop_colour_divisor` | 2 | — | random free colour (draw mod 8) div 2: the unused-slot colours, and a co-op fallback step that never applies | R-SIM-420, R-SIM-422 | DEC-450, DEC-451 |
+| `ref.sim.team.coop_colour_divisor` | 2 | — | the unused-slot colours: (draw mod 8) div 2 | R-SIM-422 | DEC-450 |
 | `ref.sim.team.formation_size_upgrade` | 90 | members | initial Leader formation cap of every team | R-SIM-399 | DEC-031 |
 | `ref.sim.team.rocket_upgrade` | 0 | level | initial Rocket Troops upgrade | R-SIM-399 | — |
 | `ref.sim.team.turret_select_delay` | 6 | ticks | nominal 0.5 s | R-SIM-405 | DEC-002 |
@@ -521,7 +519,6 @@ The tick period `ref.sim.tick_period` and the update slice count `ref.sim.update
 | `ref.sim.group.airstrike_spacing_x` | 24 | wu | | R-SIM-430 | — |
 | `ref.sim.group.airstrike_spacing_y` | 12 | wu | applied downwards | R-SIM-430 | — |
 | `ref.sim.group.airstrike_spacing_z` | 24 | wu | | R-SIM-430 | — |
-| `ref.sim.bot.controller_spawn_request` | −100, 0, −100 | wu | the reference spawn request; DEC-087 places the bot controller inside the map | R-SIM-434 | DEC-087 |
 | `ref.sim.command.control_state_period` | 1 | tick | 0.1 s | R-SIM-438 | DEC-203 |
 | `ref.sim.command.power_id_min_bits` | 16 | bits | minimum width | R-SIM-449 | DEC-083 |
 | `ref.sim.command.scrap_damage` | 999 | health | | R-SIM-450, R-SIM-456 | DEC-086 |
@@ -555,14 +552,14 @@ String ids that this document uses, with their new text:
 11. **A free bot colour always exists.** A bot team chooses among colours 0 to 3 not held by another team; at most three other player teams exist, so at least one such colour is free (R-SIM-416).
 12. **Start positions on first need.** A team's start position is drawn when the match first asks for it; match initialisation asks in slot order (R-SIM-417, DEC-450).
 13. **Rematch rotation.** Each rematch moves every team to the next start position (R-SIM-418).
-14. **The co-op colour command.** In co-op the local participant re-sends its own colour after setup; it re-applies the colour that setup already applied on every participant (R-SIM-420).
+14. **The co-op colour command.** After co-op setup the local participant's lobby sends a `SetColor` with the colour that setup applied; executing it re-applies the same value and changes nothing (R-SIM-420).
 15. **A departed player's slot.** The team stays reserved as a bot team and counts toward capacity, so a rejoin into a full match is refused (R-SIM-436, DEC-244).
 16. **The Leader toggle.** One click on a Leader yields exactly one command and one selection change on every participant, whatever the number of participants (R-SIM-454, DEC-119).
 17. **A group that reports nothing.** An actor group whose members reported no position in a tick keeps its centre and velocity; a group with no used member slot is removed (R-SIM-427).
 18. **Tiny formations.** A rectangle formation of 0 or 1 members uses a row length of 1 (R-SIM-430).
 19. **A second StartMatch.** Every `StartMatch` after the first in a session is discarded (R-SIM-446).
-20. **Scores at match end.** `ReportScores` has no effect (R-SIM-451).
-21. **Commands without an input.** `NextMode`, `PreviousMode` and `SetMatchOptionArray` are never issued by the reference input; their handlers still execute if a participant sends them (R-SIM-452, DEC-202).
+20. **Scores at match end.** `ReportScores` carries the score report of the result declaration and changes no state (R-SIM-451).
+21. **Commands without an input.** No input of a match issues `NextMode`, `PreviousMode` or `SetMatchOptionArray`; when a participant sends one anyway, every participant executes it with the effect of R-SIM-452 (DEC-202).
 22. **Pause with remote humans.** No participant can pause a match in which a remote human takes part (R-SIM-458).
 23. **The bot controller as an actor.** The bot controller is one of its team's ungrouped actors and stands in the actor grid; the nearest-enemy query never returns it ([05_space_routing_and_physics.md](05_space_routing_and_physics.md)), and whether other target searches exclude it is DEC-311.
 
@@ -644,6 +641,9 @@ String ids that this document uses, with their new text:
 | DEC-200 | Replication and authority model | every participant runs the simulation and executes the same batches (R-SIM-435, R-SIM-448) |
 | DEC-202 | Command validation and authority | no sender or phase check; each handler decides at execution (R-SIM-447, R-SIM-449, R-SIM-452, R-SIM-453) |
 | DEC-203 | Input timing, coalescing and latency | latest control state per participant per tick (R-SIM-443) |
+| DEC-205 | Join, reconnect, leave and session continuity | a player who leaves a match is replaced by a bot at once; no rejoin (R-SIM-436, R-SIM-448) |
+| DEC-206 | Divergence detection and integrity checking | no run-time divergence check; synchronisation reports are session messages outside the catalogue (R-SIM-448) |
+| DEC-207 | Transport, message format and robustness | no transport or message format specified; session and transport messages are outside the catalogue (R-SIM-448) |
 | DEC-243 | Lobby authority and the match-setup state | lobby changes as ordered commands with per-option versions (R-SIM-447, R-SIM-451) |
 | DEC-244 | Session join, admission, reconnection and spectators | a departed player's team stays a reserved bot team; bot requests capped by the player count (R-SIM-436, R-SIM-437) |
 | DEC-263 | Route and actor-group edge cases | a group attack with no candidate makes no draw (R-SIM-428) |
