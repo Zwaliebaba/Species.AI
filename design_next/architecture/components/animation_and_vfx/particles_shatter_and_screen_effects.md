@@ -259,7 +259,6 @@ Table 4.7-A Effect kinds.
 | `CollectorEngine` | each tick of each Collector engine socket (R-UNIT-443) | `ref.unit.collector.exhaust_fire_count` missile fire of size `ref.unit.collector.exhaust_fire_size` in `ref.unit.collector.exhaust_colour`, and one missile trail | reference/02 |
 | `AbductorEngine` | each tick of each Abductor engine socket (R-UNIT-710) | `ref.unit.abductor.engine_sparks` blue spark of size `ref.unit.abductor.engine_spark_size_min` to `ref.unit.abductor.engine_spark_size_max` in `vfx.emit.abductor.spark_colour` (150, 150, 255), and `ref.unit.abductor.engine_fire_particles` missile fire of size `ref.unit.abductor.engine_fire_size` in `vfx.emit.abductor.fire_colour` (50, 50, 250) | reference/02 and this document |
 | `MeteorFire` | each tick of a meteor (R-UNIT-735) | `ref.hazard.meteor_shower.fire_particles` fire of size `ref.hazard.meteor_shower.fire_size` ± `ref.hazard.meteor_shower.fire_size_spread` ÷ 2 | reference/02 |
-| `OrbBroken` | an Essence orb breaking ([explainers_sprites_and_procedural_animation.md](explainers_sprites_and_procedural_animation.md) VFX-124) | the control-flash burst of VFX-124 | this document |
 | `TreeBurning` | each tick of a burning tree (R-BLDG-629) | the fire particles of R-BLDG-629 | reference/03 |
 | `TreeLeaf` | a tree's leaf drop (R-BLDG-615) | one leaf in the tree's leaf colour | reference/03 |
 | `SpitterPlantBurning` | each tick of a burning Spitter Plant (R-BLDG-650) | `ref.bldg.spitter_plant.fire_particles` fire, and with chance `ref.bldg.spitter_plant.debris_chance` one explosion debris | reference/03 |
@@ -405,7 +404,7 @@ Table 4.10-A Shatter sources.
 
 ## 5 Concurrency and performance budget
 
-**VFX-237** (MUST) The per-frame GPU work of this document is a fixed set of dispatches and draws: one emit, one or more simulate sub-steps, one compact and one shard update dispatch, the two particle batches of pass 15 and one `ExecuteIndirect` call in pass 14 whose argument buffer holds one instanced draw per live explosion, so the number of calls never grows with the number of particles or explosions (RND-455, ADR-010). Its cost belongs to the effect pass group of RND-454 and is bounded by the caps of VFX-212 and VFX-230.
+**VFX-237** (MUST) The per-frame GPU work of this document is a fixed set of dispatches and draws: one emit dispatch (`ParticleEmitCS.hlsl`), one simulate dispatch per sub-step (`ParticleSimulateCS.hlsl`), one compact dispatch (`ParticleCompactCS.hlsl`) and one shard-update dispatch (`ShardUpdateCS.hlsl`), the shaders of [renderer/shaders.md](../renderer/shaders.md) RND-263, the two particle batches of pass 15 and one `ExecuteIndirect` call in pass 14 whose argument buffer holds one instanced draw per live explosion, so the number of calls never grows with the number of particles or explosions (RND-455, ADR-010). Its cost belongs to the effect pass group of RND-454 and is bounded by the caps of VFX-212 and VFX-230.
 
 ## 6 Failure modes, diagnostics and telemetry
 
@@ -425,7 +424,7 @@ Diagnostics: the counts of live and dropped particles per type and class, live e
 | Test | Kind | Checks | Requirements |
 |---|---|---|---|
 | T1 types | build check | the cooked reference definitions hold exactly the values of table 4.2-A | VFX-203, VFX-207 |
-| T2 integration | unit | with h = 0.1 s each type's trajectory equals the reference step formulas over 60 steps; with h = 1/60 s positions at the tick boundaries agree within a tolerance | VFX-209, VFX-210 |
+| T2 integration | unit | with h = 0.1 s each type's trajectory equals the reference step formulas over 60 steps; with h = 1/60 s, for initial speeds up to 300 wu/s and sizes from 0.5 to 2 times the type size, each position component at every tick boundary of the particle's life, up to 6 s, differs from the h = 0.1 s trajectory by at most (0.1 s − h) × (\|*v*₀\| + \|*g*′\| × *t*) + 0.01 wu, with *v*₀ that component of the initial velocity, *g*′ the size-scaled gravity and *t* the time since emission: the bound of the two step sizes on the speed the particle can reach | VFX-209, VFX-210 |
 | T3 terrain rules | unit | a bouncing particle keeps its tangential velocity and reverses 0.4 of its normal velocity; a die-on-contact particle is removed at contact | VFX-210 |
 | T4 debris puffs | property | explosion debris makes 5 puffs per second of scaled time on average at h = 1/60 s and at h = 0.1 s | VFX-210, VFX-211 |
 | T5 fade and quad | unit | alpha 90 until 75 % of life, then linear to 0 at death; the diamond's corners and texture coordinates | VFX-215, VFX-216 |
