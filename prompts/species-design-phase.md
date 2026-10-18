@@ -17,7 +17,7 @@ Read this whole file, `AGENTS.md` (how code is written and built; it binds the e
 | Parameter | Value |
 |---|---|
 | `REPO` | repository root |
-| `DESIGN` | `$REPO/design/`. The reference library stays in place, and this run adds the Species design beside it (§5). |
+| `DESIGN` | `$REPO/Design/`. The reference library stays in place, and this run adds the Species design beside it (§5). |
 | `VISION` | `$REPO/vision/species-vision-brief.md` |
 | `WORK` | `$REPO/species_design_work/`, holding proposals, challenge files, reports, model scripts and logs. It is committed during the run and deleted at the end; the condensed rationale and the models move into the design and `Tools/`. |
 | `TOOLS` | `$REPO/Tools/DesignCheck/` (gates); `$REPO/Tools/DesignModels/` (quantitative design models, created by this run and kept) |
@@ -276,7 +276,7 @@ Run the full check after every wave; the area's proposer fixes failures in its o
 
 ### 8.1 Phases
 
-**Phase 0 — Setup.** Check the precondition. Create `WORK/` (`RUN_LOG.md`, `areas/`, `reports/`, `scripts/`) and `Tools/DesignModels/` (`README.md`). Extend `check_design.py` (§7). Register the prefixes (§6). Create `owner_decisions.md` with O1–O20 copied from `VISION` §3. Commit.
+**Phase 0 — Setup.** Check the precondition. Create `WORK/` (`RUN_LOG.md`, `areas/`, `reports/`, `scripts/`) and `Tools/DesignModels/` (`README.md`). Extend `check_design.py` (§7). Register the prefixes (§6). Create `owner_decisions.md` with O1–O28 copied from `VISION` §3. Commit.
 
 **Phase 1 — Wave A.**
 1. Run A0 through the loop.

@@ -19,7 +19,7 @@ What was deliberately not flagged: the sanctioned "Reference behaviour" and "les
 | Internals | conversion-run internals in the clean library ("pass 2a/2b", gate G2, the coordinator, keep-list and fix-list, the ledger, evidence status, `.gitkeep`) | 1 | 15 | 13 | 29 |
 | World | campaign or world-game content in reference and engine documents | 0 | 1 | 8 | 9 |
 | Terms | a Species term spelled two ways | 0 | 1 | 5 | 6 |
-| Contradiction | a cleanliness edit left two documents disagreeing | 0 | 3 | 0 | 3 |
+| Contradiction | a reference trace that contradicts another statement of the library | 0 | 3 | 0 | 3 |
 | **Total** | | **18** | **93** | **156** | **267** |
 
 By area: root documents and the design-phase prompt 17, ADRs 32, decision register 67, renderer 25, terrain 14, asset pipeline 1, animation and VFX 6, audio engine 15, UI framework 6, input 4, camera 2, data schemas 9, platform layer 12, build tooling 6, diagnostics 32, assets 16, stray `.gitkeep` files 3.
