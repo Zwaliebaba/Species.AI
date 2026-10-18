@@ -4,7 +4,7 @@
 
 Entries live in the files listed below; add a decision to the file of its area, in the format of [CONVENTIONS](../CONVENTIONS.md) §7, and add its row to the index of that file and to the index below. **Open** decisions state the behaviour the documents specify now (the reference default), so implementation never blocks on them. **Resolved** decisions state the fixed rule. **Dropped** entries record out-of-scope items and what Species does instead. Decisions marked "Decide by: design phase" are answered by the Species design phase.
 
-Totals: **302** decisions: 147 Open, 127 Resolved, 28 Dropped.
+Totals: **302** decisions: 139 Open, 135 Resolved, 28 Dropped.
 
 The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner_decisions.md](owner_decisions.md).
 
@@ -19,7 +19,8 @@ The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner
 
 | File | Scope | Block | Entries |
 |---|---|---|---|
-| [verdicts_and_fixes.md](verdicts_and_fixes.md) | Headline verdicts, simulation-integrity rules, subsystem scope verdicts, rules kept as the reference states them, reference defects that Species fixes, design-critical uncertainties | DEC-001–119 | 119 |
+| [verdicts_and_fixes.md](verdicts_and_fixes.md) | Headline verdicts, simulation-integrity rules, subsystem scope verdicts, rules kept as the reference states them, reference defects that Species fixes, design-critical uncertainties | DEC-001–063 | 63 |
+| [verdicts_and_fixes_3.md](verdicts_and_fixes_3.md) | Reference defects that Species fixes, design-critical uncertainties, further integrity rules (continued) | DEC-064–119 | 56 |
 | [verdicts_and_fixes_2.md](verdicts_and_fixes_2.md) | Verdicts and owner decisions (continued) | DEC-120–199 | 5 |
 | [deferred/networking.md](deferred/networking.md) | Deferred: networking | DEC-200–219 | 9 |
 | [deferred/process_tick_and_roadmap.md](deferred/process_tick_and_roadmap.md) | Deferred: process, tick rate and roadmap | DEC-220–239 | 10 |
@@ -83,7 +84,7 @@ The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner
 | DEC-042 | [Volumes are authored in decibels](verdicts_and_fixes.md#dec-042-volumes-are-authored-in-decibels) | Resolved | verdicts_and_fixes.md |
 | DEC-043 | [Wall destructibility](verdicts_and_fixes.md#dec-043-wall-destructibility) | Open | verdicts_and_fixes.md |
 | DEC-044 | [Commonly expected options](verdicts_and_fixes.md#dec-044-commonly-expected-options) | Open | verdicts_and_fixes.md |
-| DEC-045 | [Map editor](verdicts_and_fixes.md#dec-045-map-editor) | Open | verdicts_and_fixes.md |
+| DEC-045 | [Map editor](verdicts_and_fixes.md#dec-045-map-editor) | Resolved | verdicts_and_fixes.md |
 | DEC-046 | [Replays](verdicts_and_fixes.md#dec-046-replays) | Open | verdicts_and_fixes.md |
 | DEC-047 | [Achievements, statistics and leaderboards](verdicts_and_fixes.md#dec-047-achievements-statistics-and-leaderboards) | Open | verdicts_and_fixes.md |
 | DEC-048 | [Post-match results screen](verdicts_and_fixes.md#dec-048-post-match-results-screen) | Open | verdicts_and_fixes.md |
@@ -102,62 +103,62 @@ The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner
 | DEC-061 | [User profiles and mods](verdicts_and_fixes.md#dec-061-user-profiles-and-mods) | Dropped | verdicts_and_fixes.md |
 | DEC-062 | [Actor kinds that no match creates](verdicts_and_fixes.md#dec-062-actor-kinds-that-no-match-creates) | Dropped | verdicts_and_fixes.md |
 | DEC-063 | [Reference map shapes and map identities](verdicts_and_fixes.md#dec-063-reference-map-shapes-and-map-identities) | Dropped | verdicts_and_fixes.md |
-| DEC-064 | [One fixed recount period](verdicts_and_fixes.md#dec-064-one-fixed-recount-period) | Resolved | verdicts_and_fixes.md |
-| DEC-065 | [Transit Gates advance once per tick, and map values override lobby defaults](verdicts_and_fixes.md#dec-065-transit-gates-advance-once-per-tick-and-map-values-override-lobby-defaults) | Resolved | verdicts_and_fixes.md |
-| DEC-066 | [Multi-round Siege](verdicts_and_fixes.md#dec-066-multi-round-siege) | Open | verdicts_and_fixes.md |
-| DEC-067 | [Map defaults are applied once, by the host](verdicts_and_fixes.md#dec-067-map-defaults-are-applied-once-by-the-host) | Resolved | verdicts_and_fixes.md |
-| DEC-068 | [The Flag Chain time-up draw uses valid team indices](verdicts_and_fixes.md#dec-068-the-flag-chain-time-up-draw-uses-valid-team-indices) | Resolved | verdicts_and_fixes.md |
-| DEC-069 | [The co-op game-over line shows the declared result](verdicts_and_fixes.md#dec-069-the-co-op-game-over-line-shows-the-declared-result) | Resolved | verdicts_and_fixes.md |
-| DEC-070 | [The Spawn Control co-op winner check covers every slot](verdicts_and_fixes.md#dec-070-the-spawn-control-co-op-winner-check-covers-every-slot) | Resolved | verdicts_and_fixes.md |
-| DEC-071 | [Flag Chain base-under-attack announcement interval](verdicts_and_fixes.md#dec-071-flag-chain-base-under-attack-announcement-interval) | Open | verdicts_and_fixes.md |
-| DEC-072 | [The final countdown sound plays at time-up](verdicts_and_fixes.md#dec-072-the-final-countdown-sound-plays-at-time-up) | Resolved | verdicts_and_fixes.md |
-| DEC-073 | [Typed match options with explicit per-mode defaults](verdicts_and_fixes.md#dec-073-typed-match-options-with-explicit-per-mode-defaults) | Resolved | verdicts_and_fixes.md |
-| DEC-074 | [Rank under ties](verdicts_and_fixes.md#dec-074-rank-under-ties) | Resolved | verdicts_and_fixes.md |
-| DEC-075 | [The Core Device result is fixed at detonation](verdicts_and_fixes.md#dec-075-the-core-device-result-is-fixed-at-detonation) | Resolved | verdicts_and_fixes.md |
-| DEC-076 | [Launch Vessel Flight is invulnerable and terminal](verdicts_and_fixes.md#dec-076-launch-vessel-flight-is-invulnerable-and-terminal) | Resolved | verdicts_and_fixes.md |
-| DEC-077 | [The bot-mode option accepts only defined values](verdicts_and_fixes.md#dec-077-the-bot-mode-option-accepts-only-defined-values) | Resolved | verdicts_and_fixes.md |
-| DEC-078 | [No-team colour, under-attack status and the neutral Home post](verdicts_and_fixes.md#dec-078-no-team-colour-under-attack-status-and-the-neutral-home-post) | Resolved | verdicts_and_fixes.md |
-| DEC-079 | [Per-team population cap](verdicts_and_fixes.md#dec-079-per-team-population-cap) | Resolved | verdicts_and_fixes.md |
-| DEC-080 | [Collector collection of any team's Essence orbs](verdicts_and_fixes.md#dec-080-collector-collection-of-any-teams-essence-orbs) | Resolved | verdicts_and_fixes.md |
-| DEC-081 | [Catch-up bonus curve](verdicts_and_fixes.md#dec-081-catch-up-bonus-curve) | Resolved | verdicts_and_fixes.md |
-| DEC-082 | [Rogue and Visitor factions never win and never block elimination](verdicts_and_fixes.md#dec-082-rogue-and-visitor-factions-never-win-and-never-block-elimination) | Resolved | verdicts_and_fixes.md |
-| DEC-083 | [Clickable power bar and wide power ids](verdicts_and_fixes.md#dec-083-clickable-power-bar-and-wide-power-ids) | Resolved | verdicts_and_fixes.md |
-| DEC-084 | [Hive Essence orbs and Hive ants](verdicts_and_fixes.md#dec-084-hive-essence-orbs-and-hive-ants) | Open | verdicts_and_fixes.md |
-| DEC-085 | [Builder Essence-orb delivery to friendly Spawn Nodes](verdicts_and_fixes.md#dec-085-builder-essence-orb-delivery-to-friendly-spawn-nodes) | Resolved | verdicts_and_fixes.md |
-| DEC-086 | [Separate demote and scrap actions for Leaders](verdicts_and_fixes.md#dec-086-separate-demote-and-scrap-actions-for-leaders) | Resolved | verdicts_and_fixes.md |
-| DEC-087 | [Bot corrections](verdicts_and_fixes.md#dec-087-bot-corrections) | Resolved | verdicts_and_fixes.md |
-| DEC-088 | [Structure corrections](verdicts_and_fixes.md#dec-088-structure-corrections) | Resolved | verdicts_and_fixes.md |
-| DEC-089 | [Smoke-column obstacle](verdicts_and_fixes.md#dec-089-smoke-column-obstacle) | Open | verdicts_and_fixes.md |
-| DEC-090 | [Floating-point actor stats and the Abductor speed](verdicts_and_fixes.md#dec-090-floating-point-actor-stats-and-the-abductor-speed) | Resolved | verdicts_and_fixes.md |
-| DEC-091 | [Dormant Crawler egg lifetime](verdicts_and_fixes.md#dec-091-dormant-crawler-egg-lifetime) | Open | verdicts_and_fixes.md |
-| DEC-092 | [Per-tick rules scale with game speed](verdicts_and_fixes.md#dec-092-per-tick-rules-scale-with-game-speed) | Resolved | verdicts_and_fixes.md |
-| DEC-093 | [Explosion damage falloff](verdicts_and_fixes.md#dec-093-explosion-damage-falloff) | Resolved | verdicts_and_fixes.md |
-| DEC-094 | [Exact or approximate actor-grid queries](verdicts_and_fixes.md#dec-094-exact-or-approximate-actor-grid-queries) | Open | verdicts_and_fixes.md |
-| DEC-095 | [Obstacle grid and route upkeep; route previews kept separate](verdicts_and_fixes.md#dec-095-obstacle-grid-and-route-upkeep-route-previews-kept-separate) | Resolved | verdicts_and_fixes.md |
-| DEC-096 | [Input corrections](verdicts_and_fixes.md#dec-096-input-corrections) | Resolved | verdicts_and_fixes.md |
-| DEC-097 | [Audio corrections](verdicts_and_fixes.md#dec-097-audio-corrections) | Resolved | verdicts_and_fixes.md |
-| DEC-098 | [Texture cache keyed by asset and variant](verdicts_and_fixes.md#dec-098-texture-cache-keyed-by-asset-and-variant) | Resolved | verdicts_and_fixes.md |
-| DEC-099 | [Localisation fallback and language completeness](verdicts_and_fixes.md#dec-099-localisation-fallback-and-language-completeness) | Resolved | verdicts_and_fixes.md |
-| DEC-100 | [One defaults table for preferences](verdicts_and_fixes.md#dec-100-one-defaults-table-for-preferences) | Resolved | verdicts_and_fixes.md |
-| DEC-101 | [Seasonal theme](verdicts_and_fixes.md#dec-101-seasonal-theme) | Open | verdicts_and_fixes.md |
-| DEC-102 | [UI framework corrections by construction](verdicts_and_fixes.md#dec-102-ui-framework-corrections-by-construction) | Resolved | verdicts_and_fixes.md |
-| DEC-103 | [Tutorials are step graphs with simulation-sequenced effects](verdicts_and_fixes.md#dec-103-tutorials-are-step-graphs-with-simulation-sequenced-effects) | Resolved | verdicts_and_fixes.md |
-| DEC-104 | [Formation volley rhythm in integer arithmetic](verdicts_and_fixes.md#dec-104-formation-volley-rhythm-in-integer-arithmetic) | Resolved | verdicts_and_fixes.md |
-| DEC-105 | [Worker grenade team and the Hive and Spitter Plant attack target](verdicts_and_fixes.md#dec-105-worker-grenade-team-and-the-hive-and-spitter-plant-attack-target) | Resolved | verdicts_and_fixes.md |
-| DEC-106 | [Performance envelope at the population cap](verdicts_and_fixes.md#dec-106-performance-envelope-at-the-population-cap) | Open | verdicts_and_fixes.md |
-| DEC-107 | [Hostile Supply crate outcomes: ownership and filtering](verdicts_and_fixes.md#dec-107-hostile-supply-crate-outcomes-ownership-and-filtering) | Resolved | verdicts_and_fixes.md |
-| DEC-108 | [Launch Vessel survival under attack](verdicts_and_fixes.md#dec-108-launch-vessel-survival-under-attack) | Open | verdicts_and_fixes.md |
-| DEC-109 | [Crowd-sound audibility radius](verdicts_and_fixes.md#dec-109-crowd-sound-audibility-radius) | Open | verdicts_and_fixes.md |
-| DEC-110 | [Second tutorial start condition](verdicts_and_fixes.md#dec-110-second-tutorial-start-condition) | Open | verdicts_and_fixes.md |
-| DEC-111 | [Values derived from flat-terrain calculation](verdicts_and_fixes.md#dec-111-values-derived-from-flat-terrain-calculation) | Open | verdicts_and_fixes.md |
-| DEC-112 | [Bot strength calibration](verdicts_and_fixes.md#dec-112-bot-strength-calibration) | Open | verdicts_and_fixes.md |
-| DEC-113 | [Abductor wander-target area](verdicts_and_fixes.md#dec-113-abductor-wander-target-area) | Open | verdicts_and_fixes.md |
-| DEC-114 | [Position of score-weighted crate drops](verdicts_and_fixes.md#dec-114-position-of-score-weighted-crate-drops) | Open | verdicts_and_fixes.md |
-| DEC-115 | [Fixed match research levels](verdicts_and_fixes.md#dec-115-fixed-match-research-levels) | Open | verdicts_and_fixes.md |
-| DEC-116 | [Supply crates during the grace period](verdicts_and_fixes.md#dec-116-supply-crates-during-the-grace-period) | Open | verdicts_and_fixes.md |
-| DEC-117 | [Reference rules: Strike team grenades, silent Solar Array changes, structure advance and team unit lists](verdicts_and_fixes.md#dec-117-reference-rules-strike-team-grenades-silent-solar-array-changes-structure-advance-and-team-unit-lists) | Resolved | verdicts_and_fixes.md |
-| DEC-118 | [The seasonal state is decided once per match](verdicts_and_fixes.md#dec-118-the-seasonal-state-is-decided-once-per-match) | Resolved | verdicts_and_fixes.md |
-| DEC-119 | [Simulation code never issues player commands](verdicts_and_fixes.md#dec-119-simulation-code-never-issues-player-commands) | Resolved | verdicts_and_fixes.md |
+| DEC-064 | [One fixed recount period](verdicts_and_fixes_3.md#dec-064-one-fixed-recount-period) | Resolved | verdicts_and_fixes_3.md |
+| DEC-065 | [Transit Gates advance once per tick, and map values override lobby defaults](verdicts_and_fixes_3.md#dec-065-transit-gates-advance-once-per-tick-and-map-values-override-lobby-defaults) | Resolved | verdicts_and_fixes_3.md |
+| DEC-066 | [Multi-round Siege](verdicts_and_fixes_3.md#dec-066-multi-round-siege) | Open | verdicts_and_fixes_3.md |
+| DEC-067 | [Map defaults are applied once, by the host](verdicts_and_fixes_3.md#dec-067-map-defaults-are-applied-once-by-the-host) | Resolved | verdicts_and_fixes_3.md |
+| DEC-068 | [The Flag Chain time-up draw uses valid team indices](verdicts_and_fixes_3.md#dec-068-the-flag-chain-time-up-draw-uses-valid-team-indices) | Resolved | verdicts_and_fixes_3.md |
+| DEC-069 | [The co-op game-over line shows the declared result](verdicts_and_fixes_3.md#dec-069-the-co-op-game-over-line-shows-the-declared-result) | Resolved | verdicts_and_fixes_3.md |
+| DEC-070 | [The Spawn Control co-op winner check covers every slot](verdicts_and_fixes_3.md#dec-070-the-spawn-control-co-op-winner-check-covers-every-slot) | Resolved | verdicts_and_fixes_3.md |
+| DEC-071 | [Flag Chain base-under-attack announcement interval](verdicts_and_fixes_3.md#dec-071-flag-chain-base-under-attack-announcement-interval) | Open | verdicts_and_fixes_3.md |
+| DEC-072 | [The final countdown sound plays at time-up](verdicts_and_fixes_3.md#dec-072-the-final-countdown-sound-plays-at-time-up) | Resolved | verdicts_and_fixes_3.md |
+| DEC-073 | [Typed match options with explicit per-mode defaults](verdicts_and_fixes_3.md#dec-073-typed-match-options-with-explicit-per-mode-defaults) | Resolved | verdicts_and_fixes_3.md |
+| DEC-074 | [Rank under ties](verdicts_and_fixes_3.md#dec-074-rank-under-ties) | Resolved | verdicts_and_fixes_3.md |
+| DEC-075 | [The Core Device result is fixed at detonation](verdicts_and_fixes_3.md#dec-075-the-core-device-result-is-fixed-at-detonation) | Resolved | verdicts_and_fixes_3.md |
+| DEC-076 | [Launch Vessel Flight is invulnerable and terminal](verdicts_and_fixes_3.md#dec-076-launch-vessel-flight-is-invulnerable-and-terminal) | Resolved | verdicts_and_fixes_3.md |
+| DEC-077 | [The bot-mode option accepts only defined values](verdicts_and_fixes_3.md#dec-077-the-bot-mode-option-accepts-only-defined-values) | Resolved | verdicts_and_fixes_3.md |
+| DEC-078 | [No-team colour, under-attack status and the neutral Home post](verdicts_and_fixes_3.md#dec-078-no-team-colour-under-attack-status-and-the-neutral-home-post) | Resolved | verdicts_and_fixes_3.md |
+| DEC-079 | [Per-team population cap](verdicts_and_fixes_3.md#dec-079-per-team-population-cap) | Resolved | verdicts_and_fixes_3.md |
+| DEC-080 | [Collector collection of any team's Essence orbs](verdicts_and_fixes_3.md#dec-080-collector-collection-of-any-teams-essence-orbs) | Resolved | verdicts_and_fixes_3.md |
+| DEC-081 | [Catch-up bonus curve](verdicts_and_fixes_3.md#dec-081-catch-up-bonus-curve) | Resolved | verdicts_and_fixes_3.md |
+| DEC-082 | [Rogue and Visitor factions never win and never block elimination](verdicts_and_fixes_3.md#dec-082-rogue-and-visitor-factions-never-win-and-never-block-elimination) | Resolved | verdicts_and_fixes_3.md |
+| DEC-083 | [Clickable power bar and wide power ids](verdicts_and_fixes_3.md#dec-083-clickable-power-bar-and-wide-power-ids) | Resolved | verdicts_and_fixes_3.md |
+| DEC-084 | [Hive Essence orbs and Hive ants](verdicts_and_fixes_3.md#dec-084-hive-essence-orbs-and-hive-ants) | Open | verdicts_and_fixes_3.md |
+| DEC-085 | [Builder Essence-orb delivery to friendly Spawn Nodes](verdicts_and_fixes_3.md#dec-085-builder-essence-orb-delivery-to-friendly-spawn-nodes) | Resolved | verdicts_and_fixes_3.md |
+| DEC-086 | [Separate demote and scrap actions for Leaders](verdicts_and_fixes_3.md#dec-086-separate-demote-and-scrap-actions-for-leaders) | Resolved | verdicts_and_fixes_3.md |
+| DEC-087 | [Bot corrections](verdicts_and_fixes_3.md#dec-087-bot-corrections) | Resolved | verdicts_and_fixes_3.md |
+| DEC-088 | [Structure corrections](verdicts_and_fixes_3.md#dec-088-structure-corrections) | Resolved | verdicts_and_fixes_3.md |
+| DEC-089 | [Smoke-column obstacle](verdicts_and_fixes_3.md#dec-089-smoke-column-obstacle) | Open | verdicts_and_fixes_3.md |
+| DEC-090 | [Floating-point actor stats and the Abductor speed](verdicts_and_fixes_3.md#dec-090-floating-point-actor-stats-and-the-abductor-speed) | Resolved | verdicts_and_fixes_3.md |
+| DEC-091 | [Dormant Crawler egg lifetime](verdicts_and_fixes_3.md#dec-091-dormant-crawler-egg-lifetime) | Open | verdicts_and_fixes_3.md |
+| DEC-092 | [Per-tick rules scale with game speed](verdicts_and_fixes_3.md#dec-092-per-tick-rules-scale-with-game-speed) | Resolved | verdicts_and_fixes_3.md |
+| DEC-093 | [Explosion damage falloff](verdicts_and_fixes_3.md#dec-093-explosion-damage-falloff) | Resolved | verdicts_and_fixes_3.md |
+| DEC-094 | [Exact or approximate actor-grid queries](verdicts_and_fixes_3.md#dec-094-exact-or-approximate-actor-grid-queries) | Open | verdicts_and_fixes_3.md |
+| DEC-095 | [Obstacle grid and route upkeep; route previews kept separate](verdicts_and_fixes_3.md#dec-095-obstacle-grid-and-route-upkeep-route-previews-kept-separate) | Resolved | verdicts_and_fixes_3.md |
+| DEC-096 | [Input corrections](verdicts_and_fixes_3.md#dec-096-input-corrections) | Resolved | verdicts_and_fixes_3.md |
+| DEC-097 | [Audio corrections](verdicts_and_fixes_3.md#dec-097-audio-corrections) | Resolved | verdicts_and_fixes_3.md |
+| DEC-098 | [Texture cache keyed by asset and variant](verdicts_and_fixes_3.md#dec-098-texture-cache-keyed-by-asset-and-variant) | Resolved | verdicts_and_fixes_3.md |
+| DEC-099 | [Localisation fallback and language completeness](verdicts_and_fixes_3.md#dec-099-localisation-fallback-and-language-completeness) | Resolved | verdicts_and_fixes_3.md |
+| DEC-100 | [One defaults table for preferences](verdicts_and_fixes_3.md#dec-100-one-defaults-table-for-preferences) | Resolved | verdicts_and_fixes_3.md |
+| DEC-101 | [Seasonal theme](verdicts_and_fixes_3.md#dec-101-seasonal-theme) | Open | verdicts_and_fixes_3.md |
+| DEC-102 | [UI framework corrections by construction](verdicts_and_fixes_3.md#dec-102-ui-framework-corrections-by-construction) | Resolved | verdicts_and_fixes_3.md |
+| DEC-103 | [Tutorials are step graphs with simulation-sequenced effects](verdicts_and_fixes_3.md#dec-103-tutorials-are-step-graphs-with-simulation-sequenced-effects) | Resolved | verdicts_and_fixes_3.md |
+| DEC-104 | [Formation volley rhythm in integer arithmetic](verdicts_and_fixes_3.md#dec-104-formation-volley-rhythm-in-integer-arithmetic) | Resolved | verdicts_and_fixes_3.md |
+| DEC-105 | [Worker grenade team and the Hive and Spitter Plant attack target](verdicts_and_fixes_3.md#dec-105-worker-grenade-team-and-the-hive-and-spitter-plant-attack-target) | Resolved | verdicts_and_fixes_3.md |
+| DEC-106 | [Performance envelope at the population cap](verdicts_and_fixes_3.md#dec-106-performance-envelope-at-the-population-cap) | Open | verdicts_and_fixes_3.md |
+| DEC-107 | [Hostile Supply crate outcomes: ownership and filtering](verdicts_and_fixes_3.md#dec-107-hostile-supply-crate-outcomes-ownership-and-filtering) | Resolved | verdicts_and_fixes_3.md |
+| DEC-108 | [Launch Vessel survival under attack](verdicts_and_fixes_3.md#dec-108-launch-vessel-survival-under-attack) | Open | verdicts_and_fixes_3.md |
+| DEC-109 | [Crowd-sound audibility radius](verdicts_and_fixes_3.md#dec-109-crowd-sound-audibility-radius) | Open | verdicts_and_fixes_3.md |
+| DEC-110 | [Second tutorial start condition](verdicts_and_fixes_3.md#dec-110-second-tutorial-start-condition) | Open | verdicts_and_fixes_3.md |
+| DEC-111 | [Values derived from flat-terrain calculation](verdicts_and_fixes_3.md#dec-111-values-derived-from-flat-terrain-calculation) | Open | verdicts_and_fixes_3.md |
+| DEC-112 | [Bot strength calibration](verdicts_and_fixes_3.md#dec-112-bot-strength-calibration) | Open | verdicts_and_fixes_3.md |
+| DEC-113 | [Abductor wander-target area](verdicts_and_fixes_3.md#dec-113-abductor-wander-target-area) | Open | verdicts_and_fixes_3.md |
+| DEC-114 | [Position of score-weighted crate drops](verdicts_and_fixes_3.md#dec-114-position-of-score-weighted-crate-drops) | Open | verdicts_and_fixes_3.md |
+| DEC-115 | [Fixed match research levels](verdicts_and_fixes_3.md#dec-115-fixed-match-research-levels) | Open | verdicts_and_fixes_3.md |
+| DEC-116 | [Supply crates during the grace period](verdicts_and_fixes_3.md#dec-116-supply-crates-during-the-grace-period) | Open | verdicts_and_fixes_3.md |
+| DEC-117 | [Reference rules: Strike team grenades, silent Solar Array changes, structure advance and team unit lists](verdicts_and_fixes_3.md#dec-117-reference-rules-strike-team-grenades-silent-solar-array-changes-structure-advance-and-team-unit-lists) | Resolved | verdicts_and_fixes_3.md |
+| DEC-118 | [The seasonal state is decided once per match](verdicts_and_fixes_3.md#dec-118-the-seasonal-state-is-decided-once-per-match) | Resolved | verdicts_and_fixes_3.md |
+| DEC-119 | [Simulation code never issues player commands](verdicts_and_fixes_3.md#dec-119-simulation-code-never-issues-player-commands) | Resolved | verdicts_and_fixes_3.md |
 | DEC-120 | [Map values: absent, zero and unlimited are distinct](verdicts_and_fixes_2.md#dec-120-map-values-absent-zero-and-unlimited-are-distinct) | Resolved | verdicts_and_fixes_2.md |
 | DEC-121 | [Ownership of Brood creatures](verdicts_and_fixes_2.md#dec-121-ownership-of-brood-creatures) | Open | verdicts_and_fixes_2.md |
 | DEC-122 | [Bot and deputy actions outside the player command catalogue](verdicts_and_fixes_2.md#dec-122-bot-and-deputy-actions-outside-the-player-command-catalogue) | Open | verdicts_and_fixes_2.md |
@@ -217,7 +218,7 @@ The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner
 | DEC-312 | [Bot decisions and node recounts within a tick](open_questions.md#dec-312-bot-decisions-and-node-recounts-within-a-tick) | Open | open_questions.md |
 | DEC-313 | [Dead airborne actors](open_questions.md#dec-313-dead-airborne-actors) | Open | open_questions.md |
 | DEC-314 | [Map list order under ties](open_questions.md#dec-314-map-list-order-under-ties) | Open | open_questions.md |
-| DEC-315 | [Level-design patterns of the reference maps](open_questions.md#dec-315-level-design-patterns-of-the-reference-maps) | Open | open_questions.md |
+| DEC-315 | [Level-design patterns of the reference maps](open_questions.md#dec-315-level-design-patterns-of-the-reference-maps) | Resolved | open_questions.md |
 | DEC-316 | [Front-end text blend and page transition](open_questions.md#dec-316-front-end-text-blend-and-page-transition) | Open | open_questions.md |
 | DEC-317 | [Voice set language](open_questions.md#dec-317-voice-set-language) | Open | open_questions.md |
 | DEC-318 | [Sound triggers tied to the frame rate](open_questions.md#dec-318-sound-triggers-tied-to-the-frame-rate) | Open | open_questions.md |
@@ -226,7 +227,7 @@ The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner
 | DEC-321 | [Attached sounds when their emitter is removed](open_questions.md#dec-321-attached-sounds-when-their-emitter-is-removed) | Open | open_questions.md |
 | DEC-322 | [Start value of smoothed sound parameters](open_questions.md#dec-322-start-value-of-smoothed-sound-parameters) | Open | open_questions.md |
 | DEC-323 | [Loop keep-alive polling](open_questions.md#dec-323-loop-keep-alive-polling) | Resolved | open_questions.md |
-| DEC-324 | [Terrain generator parameter semantics and biases](open_questions.md#dec-324-terrain-generator-parameter-semantics-and-biases) | Open | open_questions.md |
+| DEC-324 | [Terrain generator parameter semantics and biases](open_questions.md#dec-324-terrain-generator-parameter-semantics-and-biases) | Resolved | open_questions.md |
 | DEC-325 | [Light direction and the camera transform](open_questions.md#dec-325-light-direction-and-the-camera-transform) | Open | open_questions.md |
 | DEC-326 | [Terrain grid overlay](open_questions.md#dec-326-terrain-grid-overlay) | Open | open_questions.md |
 | DEC-327 | [Structure render-detail variants](open_questions.md#dec-327-structure-render-detail-variants) | Open | open_questions.md |
@@ -274,7 +275,7 @@ The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner
 | DEC-559 | [Bot module structure](controls_bots_maps_meta_audio.md#dec-559-bot-module-structure) | Open | controls_bots_maps_meta_audio.md |
 | DEC-560 | [Start positions are typed map records](controls_bots_maps_meta_audio.md#dec-560-start-positions-are-typed-map-records) | Resolved | controls_bots_maps_meta_audio.md |
 | DEC-561 | [Per-mode map validation](controls_bots_maps_meta_audio.md#dec-561-per-mode-map-validation) | Resolved | controls_bots_maps_meta_audio.md |
-| DEC-562 | [Map lighting and weather presets](controls_bots_maps_meta_audio.md#dec-562-map-lighting-and-weather-presets) | Open | controls_bots_maps_meta_audio.md |
+| DEC-562 | [Map lighting and weather presets](controls_bots_maps_meta_audio.md#dec-562-map-lighting-and-weather-presets) | Resolved | controls_bots_maps_meta_audio.md |
 | DEC-563 | [Map thumbnails and the map index are content-build outputs](controls_bots_maps_meta_audio.md#dec-563-map-thumbnails-and-the-map-index-are-content-build-outputs) | Resolved | controls_bots_maps_meta_audio.md |
 | DEC-564 | [Laser fire is audible, and selection sounds stay local](controls_bots_maps_meta_audio.md#dec-564-laser-fire-is-audible-and-selection-sounds-stay-local) | Resolved | controls_bots_maps_meta_audio.md |
 | DEC-565 | [Sounds for the other silent gameplay events](controls_bots_maps_meta_audio.md#dec-565-sounds-for-the-other-silent-gameplay-events) | Open | controls_bots_maps_meta_audio.md |
@@ -293,7 +294,7 @@ The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner
 | DEC-752 | [Audio queries and reused voices carry no stale state](vfx_audio_ui.md#dec-752-audio-queries-and-reused-voices-carry-no-stale-state) | Resolved | vfx_audio_ui.md |
 | DEC-800 | [Content and settings writers are lossless, typed and atomic](data_sequences_platform_debug.md#dec-800-content-and-settings-writers-are-lossless-typed-and-atomic) | Resolved | data_sequences_platform_debug.md |
 | DEC-801 | [Duplicate keys, repeated fields and over-long values are build errors](data_sequences_platform_debug.md#dec-801-duplicate-keys-repeated-fields-and-over-long-values-are-build-errors) | Resolved | data_sequences_platform_debug.md |
-| DEC-802 | [Maps that match setup does not list](data_sequences_platform_debug.md#dec-802-maps-that-match-setup-does-not-list) | Open | data_sequences_platform_debug.md |
+| DEC-802 | [Maps that match setup does not list](data_sequences_platform_debug.md#dec-802-maps-that-match-setup-does-not-list) | Resolved | data_sequences_platform_debug.md |
 | DEC-803 | [Camera animations without content](data_sequences_platform_debug.md#dec-803-camera-animations-without-content) | Open | data_sequences_platform_debug.md |
 | DEC-804 | [Soak-test sequence and timing rules](data_sequences_platform_debug.md#dec-804-soak-test-sequence-and-timing-rules) | Resolved | data_sequences_platform_debug.md |
 | DEC-850 | [Match-rule gap rules](gameplay_gap_rules.md#dec-850-match-rule-gap-rules) | Open | gameplay_gap_rules.md |
@@ -311,8 +312,8 @@ The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner
 | DEC-862 | [Bot rule details](gameplay_gap_rules.md#dec-862-bot-rule-details) | Open | gameplay_gap_rules.md |
 | DEC-863 | [Control details of the corrected command set](gameplay_gap_rules.md#dec-863-control-details-of-the-corrected-command-set) | Resolved | gameplay_gap_rules.md |
 | DEC-864 | [Pointer fallback and camera smoothing](gameplay_gap_rules.md#dec-864-pointer-fallback-and-camera-smoothing) | Open | gameplay_gap_rules.md |
-| DEC-865 | [Map data without a reference case](gameplay_gap_rules.md#dec-865-map-data-without-a-reference-case) | Open | gameplay_gap_rules.md |
-| DEC-866 | [Population-cap values of a map](gameplay_gap_rules.md#dec-866-population-cap-values-of-a-map) | Open | gameplay_gap_rules.md |
+| DEC-865 | [Map data without a reference case](gameplay_gap_rules.md#dec-865-map-data-without-a-reference-case) | Resolved | gameplay_gap_rules.md |
+| DEC-866 | [Population-cap values of a map](gameplay_gap_rules.md#dec-866-population-cap-values-of-a-map) | Resolved | gameplay_gap_rules.md |
 | DEC-867 | [Closed player slots](gameplay_gap_rules.md#dec-867-closed-player-slots) | Open | gameplay_gap_rules.md |
 | DEC-868 | [Front-end reference quirks](gameplay_gap_rules.md#dec-868-front-end-reference-quirks) | Open | gameplay_gap_rules.md |
 | DEC-869 | [Reference sound options without a Species counterpart](gameplay_gap_rules.md#dec-869-reference-sound-options-without-a-species-counterpart) | Dropped | gameplay_gap_rules.md |
@@ -334,7 +335,7 @@ The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner
 | DEC-963 | [Animation and VFX reference looks kept as defaults](engine_gap_rules.md#dec-963-animation-and-vfx-reference-looks-kept-as-defaults) | Open | engine_gap_rules.md |
 | DEC-964 | [Accessibility limits for camera shake and flashes](engine_gap_rules.md#dec-964-accessibility-limits-for-camera-shake-and-flashes) | Open | engine_gap_rules.md |
 | DEC-965 | [Audio engine reference behaviours kept as defaults](engine_gap_rules.md#dec-965-audio-engine-reference-behaviours-kept-as-defaults) | Open | engine_gap_rules.md |
-| DEC-966 | [Terrain query edge cases](engine_gap_rules.md#dec-966-terrain-query-edge-cases) | Open | engine_gap_rules.md |
+| DEC-966 | [Terrain query edge cases](engine_gap_rules.md#dec-966-terrain-query-edge-cases) | Resolved | engine_gap_rules.md |
 | DEC-967 | [Reproducible terrain colours and no regeneration of the height field](engine_gap_rules.md#dec-967-reproducible-terrain-colours-and-no-regeneration-of-the-height-field) | Resolved | engine_gap_rules.md |
 | DEC-968 | [Content-build validation of terrain, map and record data](engine_gap_rules.md#dec-968-content-build-validation-of-terrain-map-and-record-data) | Resolved | engine_gap_rules.md |
 | DEC-969 | [Co-op group lists in ascending position order](engine_gap_rules.md#dec-969-co-op-group-lists-in-ascending-position-order) | Open | engine_gap_rules.md |

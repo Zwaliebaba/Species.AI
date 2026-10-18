@@ -14,9 +14,9 @@ What Species does with every reference requirement, section by section, with exc
 | [05_population_flow](05_population_flow_ledger.md) | B1 | 30 | 125 | 0 | 0 | 0 | 0 | 125 |
 | [06_controls_camera_and_commands](06_controls_camera_and_commands_ledger.md) | C1 | 44 | 173 | 0 | 0 | 0 | 0 | 173 |
 | [07_bots](07_bots_ledger.md) | B7 | 39 | 155 | 0 | 0 | 0 | 0 | 155 |
-| [08_maps_and_level_design](08_maps_and_level_design_ledger.md) | A1 | 42 | 185 | 7 | 70 | 108 | 0 | 0 |
+| [08_maps_and_level_design](08_maps_and_level_design_ledger.md) | A1 | 42 | 185 | 6 | 70 | 109 | 0 | 0 |
 | [09_front_end_and_match_flow](09_front_end_and_match_flow_ledger.md) | C2 | 45 | 239 | 0 | 0 | 0 | 0 | 239 |
 | [10_audio_design](10_audio_design_ledger.md) | C4 | 41 | 165 | 0 | 0 | 0 | 0 | 165 |
 | [11_tutorial_and_help](11_tutorial_and_help_ledger.md) | C5 | 11 | 74 | 0 | 0 | 0 | 0 | 74 |
 | [12_simulation_model](12_simulation_model_ledger.md) | D2 | 87 | 424 | 0 | 0 | 0 | 0 | 424 |
-| **Total** | | **657** | **2969** | **8** | **130** | **159** | **0** | **2672** |
+| **Total** | | **657** | **2969** | **7** | **130** | **160** | **0** | **2672** |

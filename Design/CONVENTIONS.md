@@ -681,7 +681,7 @@ These terms are ordinary words, or names that one owner defines in prose. They n
 
 ### 8.15 World game
 
-The terms of the Species world game, which [the Species design](gdd/00_vision_pillars_and_core_loops.md) §2.12 defines (Table 3; PIL-090, PIL-091) and the owner confirmed at gate A (O37, with O32 for Cladan). The Kind column gives the kind of that table; the glossary defines each term. The world game reuses some reference terms with a changed use (a settlement's player is its steward, never its owner; the server's runner is the world host, never an operator; the protection period is a respite, never a shield; a world's span is its lifetime, never a season; construction is done by Workers, never by builders; a people is a Cladan): table 4 of the Species design lists them.
+The terms of the Species world game, which [the Species design](gdd/00_vision_pillars_and_core_loops.md) §2.12 defines (Table 3; PIL-090, PIL-091) and the owner confirmed at gate A (O37, with O32 for Cladan). The rows of area A1 (biome, border area, crossing, home cell, native AI settlement, region name, resource site, set piece, stand-in AI settlement, world day and world template) are defined in [world and regions](gdd/01_world_and_regions/README.md) and were registered when A1 was finalised. The Kind column gives the kind of that table; the glossary defines each term. The world game reuses some reference terms with a changed use (a settlement's player is its steward, never its owner; the server's runner is the world host, never an operator; the protection period is a respite, never a shield; a world's span is its lifetime, never a season; construction is done by Workers, never by builders; a people is a Cladan): table 4 of the Species design lists them.
 
 | Species term | Kind | Identifier | String-id prefix |
 |---|---|---|---|
@@ -696,10 +696,13 @@ The terms of the Species world game, which [the Species design](gdd/00_vision_pi
 | battle | battle | `Battle` | `battle` |
 | battle result | battle | `BattleResult` | `battle.result` |
 | battlefield | battle | `Battlefield` | `battle.field` |
+| biome | world game | `Biome` | `region.biome` |
+| border area | world game | `BorderArea` | `region.border_area` |
 | check-in | session | — | `presence.check_in` |
 | Cladan | relations | `Cladan` | `cladan` |
 | claim | relations | `Claim` | `relation.claim` |
 | core | world game | `SettlementCore` | `settlement.core` |
+| crossing | world object | `RegionCrossing` | `region.crossing` |
 | dedicated server | server | `ServerMode::Dedicated` | — |
 | defender's advantage | protection | `DefenderAdvantage` | `protection.defender_advantage` |
 | deputy | delegation | `Deputy` | `deputy` |
@@ -709,20 +712,26 @@ The terms of the Species world game, which [the Species design](gdd/00_vision_pi
 | frozen | world game | `WorldState::Frozen` | `world.frozen` |
 | full fidelity | simulation | `Fidelity::Full` | — |
 | grievance | relations | `Grievance` | `relation.grievance` |
+| home cell | world game | — | — |
 | integrated server | server | `ServerMode::Integrated` | — |
 | loss cap | protection | `LossCap` | `protection.loss_cap` |
+| native AI settlement | world game | `AiSettlementRole::Native`, beside `AiSettlementRole::StandIn` | `settlement.ai.native` |
 | newcomer protection | protection | `NewcomerProtection` | `protection.newcomer` |
 | presence | session | `StewardPresence` (not `Presence`, the field presence of the data schemas) | `presence` |
 | present | session | `StewardPresence::Present` | `presence.present` |
 | protection rules | protection | — | `protection` |
 | region | world game | `Region` | `region` |
+| region name | world game | — (string ids `region.name.<nnn>`) | `region.name` |
 | relations | relations | `Relation` | `relation` |
 | renown | relations | `Renown` | `world.renown` |
+| resource site | world object | `ResourceSite` | `region.resource` |
 | respite | protection | `Respite` | `protection.respite` |
+| set piece | world object | `SetPiece` | — |
 | settlement | world game | `Settlement` | `settlement` |
 | settlement site | world object | `SettlementSite` | `settlement.site` |
 | settlement view | view | `SettlementView` | `view.settlement` |
 | skirmish | form of play | `Skirmish` | `skirmish` |
+| stand-in AI settlement | world game | `AiSettlementRole::StandIn` | `settlement.ai.stand_in` |
 | standing order | delegation | `StandingOrder` | `deputy.order` |
 | steward | role | `Steward` | `settlement.steward` |
 | strategic view | view | `StrategicView` | `view.strategic` |
@@ -736,11 +745,13 @@ The terms of the Species world game, which [the Species design](gdd/00_vision_pi
 | watched | world game | — | — |
 | Wellspring | world object | `Wellspring` | `building.wellspring` |
 | world | world game | `World` (not `MatchWorld`, the world of a skirmish match) | `world` |
+| world day | world game | — (a unit of the world calendar) | `world.day` |
 | world event | battle | `WorldEvent` | `world.event` |
 | world game | form of play | — | — |
 | world host | role | — | `world.host` |
 | world lifetime | world game | — (a setting; A1 names its key) | `world.lifetime` |
 | world pace | world game | `WorldPace` (`WorldPace::AlwaysOn`, `WorldPace::Session`) | `world.pace` |
+| world template | world game | `WorldTemplate` (schema `maps.world_template`) | `world.template` |
 | world time | world game | `WorldTime` | — |
 
 ## 9 Allowed terms

@@ -1,6 +1,6 @@
 # World and regions
 
-> Status: Draft · Prefix: WLD · Area: A1 · Rationale: `../../rationale/A1.md` · Related: [GDD index](../README.md) · [adoption ledger 08](../adoption_ledger/08_maps_and_level_design_ledger.md) · [vision, pillars and core loops](../00_vision_pillars_and_core_loops.md)
+> Status: Final · Prefix: WLD · Area: A1 · Rationale: [A1](../../rationale/A1.md) · Related: [GDD index](../README.md) · [adoption ledger 08](../adoption_ledger/08_maps_and_level_design_ledger.md) · [vision, pillars and core loops](../00_vision_pillars_and_core_loops.md)
 
 The Species world game's world: its shape and size, its regions and settlement sites, its terrain, its time and lifetime, its two views and the scale figures it hands to the server. The design is one document in three files, which share the prefix `WLD`, one tuning namespace (`wld.*`) and one numbering of acceptance criteria; every requirement id is defined in exactly one file.
 

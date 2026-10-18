@@ -24,7 +24,7 @@ This file records the engine-baseline rules of the engine components that no oth
 | [DEC-963](#dec-963-animation-and-vfx-reference-looks-kept-as-defaults) | Animation and VFX reference looks kept as defaults | Open | VFX, R-UNIT |
 | [DEC-964](#dec-964-accessibility-limits-for-camera-shake-and-flashes) | Accessibility limits for camera shake and flashes | Open | VFX, RND |
 | [DEC-965](#dec-965-audio-engine-reference-behaviours-kept-as-defaults) | Audio engine reference behaviours kept as defaults | Open | AEN |
-| [DEC-966](#dec-966-terrain-query-edge-cases) | Terrain query edge cases | Open | TER |
+| [DEC-966](#dec-966-terrain-query-edge-cases) | Terrain query edge cases | Resolved | TER |
 | [DEC-967](#dec-967-reproducible-terrain-colours-and-no-regeneration-of-the-height-field) | Reproducible terrain colours and no regeneration of the height field | Resolved | TER, RND |
 | [DEC-968](#dec-968-content-build-validation-of-terrain-map-and-record-data) | Content-build validation of terrain, map and record data | Resolved | TER, DAT, R-BLDG |
 | [DEC-969](#dec-969-co-op-group-lists-in-ascending-position-order) | Co-op group lists in ascending position order | Open | DAT, R-MODE |
@@ -204,14 +204,14 @@ This file records the engine-baseline rules of the engine components that no oth
 ## 6 Terrain
 
 ### DEC-966 Terrain query edge cases
-- Status: Open
+- Status: Resolved
 - Affects: architecture/components/terrain/ (TER-017, TER-076)
 - Specified behaviour: The terrain component states these defaults where the reference result is not established:
   1. **Axis-parallel rays.** The grid walk of a ray whose x or z component is zero visits only the column or the row it lies in (TER-017).
   2. **Highest sample of a non-square grid.** `Highest()` bounds both of its loops by the row count (TER-076). This is exact on a square grid, and every tile and every reference terrain is square; on a grid with more columns than rows the scan ignores the last columns, and with fewer columns it reads the outside value. Whether a map may be non-square at all is DEC-865 item 4; under its option B the case never arises.
 - Options: A — the stated defaults; B — item 1 reproduces the reference's quadrant branch for a zero component once it is established, and item 2 scans columns × rows.
 - Recommendation: A for item 1, which visits exactly the cells that the ray crosses; B for item 2, which only a non-square Species terrain can reach (DEC-247) and whose reference scan gives a wrong highest sample there.
-- Decide by: design phase
+- Resolution (2026-10-18, design phase, area A1): option A for item 1 and option B for item 2. An axis-parallel ray visits only its column or row (TER-017 as stated), and the highest-sample scan bounds its inner loop by the column count and its outer loop by the row count, so it gives the highest sample of any grid, a world chunk's included (WLD-270). D8 amends TER-076. Specified in [skirmish maps and map tools](../gdd/01_world_and_regions/skirmish_maps_and_map_tools.md) §2.
 
 ### DEC-967 Reproducible terrain colours and no regeneration of the height field
 - Status: Resolved

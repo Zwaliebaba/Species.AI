@@ -23,8 +23,8 @@ This file records the gameplay rules that the reference documents had to choose 
 | [DEC-862](#dec-862-bot-rule-details) | Bot rule details | Open | R-BOT |
 | [DEC-863](#dec-863-control-details-of-the-corrected-command-set) | Control details of the corrected command set | Resolved | R-CTRL |
 | [DEC-864](#dec-864-pointer-fallback-and-camera-smoothing) | Pointer fallback and camera smoothing | Open | R-CTRL |
-| [DEC-865](#dec-865-map-data-without-a-reference-case) | Map data without a reference case | Open | R-MAP |
-| [DEC-866](#dec-866-population-cap-values-of-a-map) | Population-cap values of a map | Open | R-MAP |
+| [DEC-865](#dec-865-map-data-without-a-reference-case) | Map data without a reference case | Resolved | R-MAP |
+| [DEC-866](#dec-866-population-cap-values-of-a-map) | Population-cap values of a map | Resolved | R-MAP |
 | [DEC-867](#dec-867-closed-player-slots) | Closed player slots | Open | R-META, R-MAP |
 | [DEC-868](#dec-868-front-end-reference-quirks) | Front-end reference quirks | Open | R-META, R-MAP |
 | [DEC-869](#dec-869-reference-sound-options-without-a-species-counterpart) | Reference sound options without a Species counterpart | Dropped | R-META |
@@ -220,7 +220,7 @@ This file records the gameplay rules that the reference documents had to choose 
 ## 7 Maps and front end
 
 ### DEC-865 Map data without a reference case
-- Status: Open
+- Status: Resolved
 - Affects: reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP-013, R-MAP-048, R-MAP-072, R-MAP-080, R-MAP-092, R-MAP-120, R-MAP-121, R-MAP-131, R-MAP-190)
 - Specified behaviour: The map schema accepts these forms, which no reference map uses or whose effect the reference does not define:
   1. a mode named twice in a map's mode list adds the map to that mode's list twice (R-MAP-013);
@@ -231,17 +231,17 @@ This file records the gameplay rules that the reference documents had to choose 
   6. a Trooper starting-forces record whose in-group flag is off creates nothing (R-MAP-131).
 - Options: A — the forms as stated; B — the content build also rejects a repeated mode, the Essence-orb rain flag, a routes block, a map that is not square and a Trooper record outside a group; C — specify the missing behaviour: a spawner for Essence-orb rain, routes that starting forces follow, and rules that read each axis of a map that is not square.
 - Recommendation: B, with item 5 as stated. Every reference map already satisfies B, and data that has no effect is rejected before it reaches a match; C is a choice for the world game.
-- Decide by: design phase
+- Resolution (2026-10-18, design phase, area A1): option B, with item 5 as stated. The content build rejects, with a diagnostic, a mode named twice, the Essence-orb rain map effect, a block of routes, a map that is not square and a Trooper starting-forces record whose in-group flag is off; a reinforcement power option names an outcome whose delivery is a Power (WLD-265). The world game uses none of the six forms. Specified in [skirmish maps and map tools](../gdd/01_world_and_regions/skirmish_maps_and_map_tools.md) §2.
 
 ### DEC-866 Population-cap values of a map
-- Status: Open
+- Status: Resolved
 - Affects: reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP-061, R-MAP-062)
 - Specified behaviour: The value forms of DEC-120 apply to the population caps of a map, with two consequences:
   1. a Siege defender population cap is absent, 0 or a number, and has no unlimited form, because the attackers' share, map cap − defenders × defender cap, is undefined for an unlimited defender cap (R-MAP-061, R-MAP-062);
   2. a population cap of 0 is allowed and locks every Spawn Node and Transit Gate of every team from the first check (R-MAP-062).
 - Options: A — as stated; B — an unlimited defender cap leaves the defenders uncapped while the attackers share the map cap (item 1), and the schema rejects a population cap of 0 (item 2).
 - Recommendation: A for item 1; B for item 2, because a match in which no Spawn Node can ever produce is never intended.
-- Decide by: design phase
+- Resolution (2026-10-18, design phase, area A1): option A for item 1 and option B for item 2. The Siege defender population cap keeps the forms absent, 0 or a number, and the content build rejects a map population cap of 0; B9 sets the cap of each skirmish map, and the world game has no map population cap (WLD-266, WLD-281). Specified in [skirmish maps and map tools](../gdd/01_world_and_regions/skirmish_maps_and_map_tools.md) §2.
 
 ### DEC-867 Closed player slots
 - Status: Open

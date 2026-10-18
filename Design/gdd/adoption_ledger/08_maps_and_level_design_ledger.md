@@ -1,6 +1,6 @@
 # Adoption ledger: 08 maps and level design
 
-> Status: Draft · Owner: area A1 (B9 for the skirmish maps) · Reference: [08_maps_and_level_design](../../reference/08_maps_and_level_design/README.md) · Species design: [01 world and regions](../01_world_and_regions/README.md) · Rules: `prompts/species-design-phase.md` §5.3
+> Status: Final · Owner: area A1 (B9 for the skirmish maps) · Reference: [08_maps_and_level_design](../../reference/08_maps_and_level_design/README.md) · Species design: [01 world and regions](../01_world_and_regions/README.md) · Rules: `prompts/species-design-phase.md` §5.3
 
 42 sections, 185 requirements. A section row covers every requirement under its heading; an exception row (scope: one `R-` id) overrides it. Verdicts: `adopt`, `adopt-skirmish`, `adapt` (names the Species requirements that replace it), `drop` (gives the reason).
 

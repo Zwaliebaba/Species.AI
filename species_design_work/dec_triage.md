@@ -27,14 +27,14 @@
 | DEC | Title | Decide by | Area | Also affects | Assigned by | Register file |
 |---|---|---|---|---|---|---|
 | DEC-001 | Reference core loop: crowd-and-territory economy | Resolved (A0, 2026-10-18) | A0 | B1, B9 | Affects | decisions/verdicts_and_fixes.md |
-| DEC-045 | Map editor | design phase | A1 | D4 | Affects | decisions/verdicts_and_fixes.md |
-| DEC-315 | Level-design patterns of the reference maps | design phase | A1 | B9 | Affects | decisions/open_questions.md |
-| DEC-324 | Terrain generator parameter semantics and biases | design phase | A1 |  | Affects | decisions/open_questions.md |
-| DEC-562 | Map lighting and weather presets | design phase | A1 | D8, B4, D4 | Affects | decisions/controls_bots_maps_meta_audio.md |
-| DEC-802 | Maps that match setup does not list | design phase | A1 | C2, D4, D1, D10 | Affects | decisions/data_sequences_platform_debug.md |
-| DEC-865 | Map data without a reference case | design phase | A1 |  | Affects | decisions/gameplay_gap_rules.md |
-| DEC-866 | Population-cap values of a map | design phase | A1 |  | Affects | decisions/gameplay_gap_rules.md |
-| DEC-966 | Terrain query edge cases | design phase | A1 |  | Affects | decisions/engine_gap_rules.md |
+| DEC-045 | Map editor | Resolved (A1, 2026-10-18) | A1 | D4 | Affects | decisions/verdicts_and_fixes.md |
+| DEC-315 | Level-design patterns of the reference maps | Resolved (A1, 2026-10-18) | A1 | B9 | Affects | decisions/open_questions.md |
+| DEC-324 | Terrain generator parameter semantics and biases | Resolved (A1, 2026-10-18) | A1 |  | Affects | decisions/open_questions.md |
+| DEC-562 | Map lighting and weather presets | Resolved (A1, 2026-10-18) | A1 | D8, B4, D4 | Affects | decisions/controls_bots_maps_meta_audio.md |
+| DEC-802 | Maps that match setup does not list | Resolved (A1, 2026-10-18) | A1 | C2, D4, D1, D10 | Affects | decisions/data_sequences_platform_debug.md |
+| DEC-865 | Map data without a reference case | Resolved (A1, 2026-10-18) | A1 |  | Affects | decisions/gameplay_gap_rules.md |
+| DEC-866 | Population-cap values of a map | Resolved (A1, 2026-10-18) | A1 |  | Affects | decisions/gameplay_gap_rules.md |
+| DEC-966 | Terrain query edge cases | Resolved (A1, 2026-10-18) | A1 |  | Affects | decisions/engine_gap_rules.md |
 | DEC-200 | Replication and authority model | design phase | A2 | D2, B7, B9, D1, D10 | deferred topic: Networking model | decisions/deferred/networking.md |
 | DEC-201 | Replication bandwidth and population budget | design phase | A2 | B1, D2, D10 | deferred topic: Networking model | decisions/deferred/networking.md |
 | DEC-202 | Command validation and authority | design phase | A2 | D2, C1, C2, D10 | deferred topic: Networking model | decisions/deferred/networking.md |
@@ -55,23 +55,23 @@
 | DEC-240 | Simulation numeric model and determinism scope | design phase | A2 | D2, A1, D4, D1, D10 | deferred topic: Simulation numeric model | decisions/deferred/numerics_lobby_terrain_services.md |
 | DEC-241 | Numeric semantics that reference rules depend on | design phase | A2 | D2, B4, B3, D4, C2, D1 | deferred topic: Simulation numeric model | decisions/deferred/numerics_lobby_terrain_services.md |
 | DEC-242 | Simulation random generator algorithm and stream derivation | design phase | A2 | D2 | deferred topic: Simulation numeric model | decisions/deferred/numerics_lobby_terrain_services.md |
-| DEC-084 | Hive Essence orbs and Hive ants | playtest | B1 | B4, B3 | Affects | decisions/verdicts_and_fixes.md |
+| DEC-084 | Hive Essence orbs and Hive ants | playtest | B1 | B4, B3 | Affects | decisions/verdicts_and_fixes_3.md |
 | DEC-453 | Population-cap enforcement points and uncapped sources | playtest | B1 | B4, B3 | Affects | decisions/units_buildings_crates_economy.md |
 | DEC-851 | Population-flow rule details | playtest | B1 |  | Affects | decisions/gameplay_gap_rules.md |
 | DEC-043 | Wall destructibility | design phase | B3 | B9 | Affects | decisions/verdicts_and_fixes.md |
-| DEC-089 | Smoke-column obstacle | design phase | B3 | D2, A1 | Affects | decisions/verdicts_and_fixes.md |
-| DEC-108 | Launch Vessel survival under attack | playtest | B3 | B9 | Affects | decisions/verdicts_and_fixes.md |
+| DEC-089 | Smoke-column obstacle | design phase | B3 | D2, A1 | Affects | decisions/verdicts_and_fixes_3.md |
+| DEC-108 | Launch Vessel survival under attack | playtest | B3 | B9 | Affects | decisions/verdicts_and_fixes_3.md |
 | DEC-309 | Global flag on Source Nodes | design phase | B3 | A1, D4 | Affects | decisions/open_questions.md |
 | DEC-454 | Population Limiter as a fallback cap | design phase | B3 | B1, A1 | Affects | decisions/units_buildings_crates_economy.md |
 | DEC-462 | Turret facing from map data | design phase | B3 | A1, D4 | Affects | decisions/units_buildings_crates_economy.md |
 | DEC-860 | Structure rule details | design phase | B3 | D8 | Affects | decisions/gameplay_gap_rules.md |
-| DEC-091 | Dormant Crawler egg lifetime | playtest | B4 |  | Affects | decisions/verdicts_and_fixes.md |
-| DEC-101 | Seasonal theme | design phase | B4 | C2, D2 | Affects | decisions/verdicts_and_fixes.md |
-| DEC-111 | Values derived from flat-terrain calculation | playtest | B4 | B3 | Affects | decisions/verdicts_and_fixes.md |
-| DEC-113 | Abductor wander-target area | playtest | B4 |  | Affects | decisions/verdicts_and_fixes.md |
-| DEC-114 | Position of score-weighted crate drops | playtest | B4 |  | Affects | decisions/verdicts_and_fixes.md |
-| DEC-115 | Fixed match research levels | design phase | B4 | B3, C2 | Affects | decisions/verdicts_and_fixes.md |
-| DEC-116 | Supply crates during the grace period | playtest | B4 | B9, D2, A0 | Affects | decisions/verdicts_and_fixes.md |
+| DEC-091 | Dormant Crawler egg lifetime | playtest | B4 |  | Affects | decisions/verdicts_and_fixes_3.md |
+| DEC-101 | Seasonal theme | design phase | B4 | C2, D2 | Affects | decisions/verdicts_and_fixes_3.md |
+| DEC-111 | Values derived from flat-terrain calculation | playtest | B4 | B3 | Affects | decisions/verdicts_and_fixes_3.md |
+| DEC-113 | Abductor wander-target area | playtest | B4 |  | Affects | decisions/verdicts_and_fixes_3.md |
+| DEC-114 | Position of score-weighted crate drops | playtest | B4 |  | Affects | decisions/verdicts_and_fixes_3.md |
+| DEC-115 | Fixed match research levels | design phase | B4 | B3, C2 | Affects | decisions/verdicts_and_fixes_3.md |
+| DEC-116 | Supply crates during the grace period | playtest | B4 | B9, D2, A0 | Affects | decisions/verdicts_and_fixes_3.md |
 | DEC-121 | Ownership of Brood creatures | playtest | B4 |  | Affects | decisions/verdicts_and_fixes_2.md |
 | DEC-302 | Transport unload order over sea | playtest | B4 | C1 | Affects | decisions/open_questions.md |
 | DEC-303 | Missile Barrage arrival spread | playtest | B4 |  | Affects | decisions/open_questions.md |
@@ -91,7 +91,7 @@
 | DEC-962 | Species effect defaults for emitters, shard edges and the eaten-orb display | design phase | B4 |  | Affects | decisions/engine_gap_rules.md |
 | DEC-963 | Animation and VFX reference looks kept as defaults | design phase | B4 |  | Affects | decisions/engine_gap_rules.md |
 | DEC-964 | Accessibility limits for camera shake and flashes | design phase | B4 | D8 | Affects | decisions/engine_gap_rules.md |
-| DEC-112 | Bot strength calibration | playtest | B7 |  | Affects | decisions/verdicts_and_fixes.md |
+| DEC-112 | Bot strength calibration | playtest | B7 |  | Affects | decisions/verdicts_and_fixes_3.md |
 | DEC-122 | Bot and deputy actions outside the player command catalogue | design phase | B7 | D2, B4, B3 | Affects | decisions/verdicts_and_fixes_2.md |
 | DEC-311 | Bot controller as a target | design phase | B7 | B4, B3 | Affects | decisions/open_questions.md |
 | DEC-312 | Bot decisions and node recounts within a tick | design phase | B7 | D2 | Affects | decisions/open_questions.md |
@@ -100,8 +100,8 @@
 | DEC-559 | Bot module structure | design phase | B7 |  | Affects | decisions/controls_bots_maps_meta_audio.md |
 | DEC-861 | Bot rule quirks | playtest | B7 |  | Affects | decisions/gameplay_gap_rules.md |
 | DEC-862 | Bot rule details | playtest | B7 |  | Affects | decisions/gameplay_gap_rules.md |
-| DEC-066 | Multi-round Siege | design phase | B9 | D2 | Affects | decisions/verdicts_and_fixes.md |
-| DEC-071 | Flag Chain base-under-attack announcement interval | playtest | B9 | C4 | Affects | decisions/verdicts_and_fixes.md |
+| DEC-066 | Multi-round Siege | design phase | B9 | D2 | Affects | decisions/verdicts_and_fixes_3.md |
+| DEC-071 | Flag Chain base-under-attack announcement interval | playtest | B9 | C4 | Affects | decisions/verdicts_and_fixes_3.md |
 | DEC-123 | Tutorial for the first playable | design phase | B9 | A0 | Affects | decisions/verdicts_and_fixes_2.md |
 | DEC-300 | Return of teams wiped out in sudden death | playtest | B9 |  | Affects | decisions/open_questions.md |
 | DEC-301 | Solar Array knock-out in Siege | playtest | B9 | B3 | Affects | decisions/open_questions.md |
@@ -128,7 +128,7 @@
 | DEC-868 | Front-end reference quirks | design phase | C2 | A1 | Affects | decisions/gameplay_gap_rules.md |
 | DEC-952 | UI framework reference behaviours kept as defaults | design phase | C2 |  | Affects | decisions/engine_gap_rules.md |
 | DEC-049 | Music | design phase | C4 | A0 | Affects | decisions/verdicts_and_fixes.md |
-| DEC-109 | Crowd-sound audibility radius | playtest | C4 |  | Affects | decisions/verdicts_and_fixes.md |
+| DEC-109 | Crowd-sound audibility radius | playtest | C4 |  | Affects | decisions/verdicts_and_fixes_3.md |
 | DEC-317 | Voice set language | design phase | C4 | C2 | Affects | decisions/open_questions.md |
 | DEC-318 | Sound triggers tied to the frame rate | design phase | C4 |  | Affects | decisions/open_questions.md |
 | DEC-319 | Ambience during loading views | design phase | C4 | C2 | Affects | decisions/open_questions.md |
@@ -140,7 +140,7 @@
 | DEC-567 | Dry mix or applied effects | design phase | C4 |  | Affects | decisions/controls_bots_maps_meta_audio.md |
 | DEC-965 | Audio engine reference behaviours kept as defaults | design phase | C4 |  | Affects | decisions/engine_gap_rules.md |
 | DEC-051 | Tutorials and presentation timelines | design phase | C5 | C1 | Affects | decisions/verdicts_and_fixes.md |
-| DEC-110 | Second tutorial start condition | design phase | C5 |  | Affects | decisions/verdicts_and_fixes.md |
+| DEC-110 | Second tutorial start condition | design phase | C5 |  | Affects | decisions/verdicts_and_fixes_3.md |
 | DEC-550 | Power cancellation in the tutorials | design phase | C5 | B4, C1 | Affects | decisions/controls_bots_maps_meta_audio.md |
 | DEC-870 | Tutorial director details | design phase | C5 |  | Affects | decisions/gameplay_gap_rules.md |
 | DEC-220 | Process roles and the headless server build | design phase | D1 | D10, D2 | deferred topic: Hosting | decisions/deferred/process_tick_and_roadmap.md |
@@ -149,8 +149,8 @@
 | DEC-972 | What the cheats-used marker suppresses | design phase | D10 | C2 | Affects | decisions/engine_gap_rules.md |
 | DEC-003 | Mode-second length after playtest | playtest | D2 | B9, B1 | Affects | decisions/verdicts_and_fixes.md |
 | DEC-046 | Replays | design phase | D2 | C2, D10 | Affects | decisions/verdicts_and_fixes.md |
-| DEC-094 | Exact or approximate actor-grid queries | playtest | D2 | B4, B7, B9 | Affects | decisions/verdicts_and_fixes.md |
-| DEC-106 | Performance envelope at the population cap | prototype | D2 | B1, D10, D8, B4 | Affects | decisions/verdicts_and_fixes.md |
+| DEC-094 | Exact or approximate actor-grid queries | playtest | D2 | B4, B7, B9 | Affects | decisions/verdicts_and_fixes_3.md |
+| DEC-106 | Performance envelope at the population cap | prototype | D2 | B1, D10, D8, B4 | Affects | decisions/verdicts_and_fixes_3.md |
 | DEC-263 | Route and actor-group edge cases | design phase | D2 |  | Affects | decisions/simulation_gap_rules.md |
 | DEC-264 | What runs while game speed is 0 | design phase | D2 | B9 | Affects | decisions/simulation_gap_rules.md |
 | DEC-265 | Real duration of the speed-crate holds | playtest | D2 | B4 | Affects | decisions/simulation_gap_rules.md |

@@ -1,6 +1,6 @@
 # World and regions: the world, its sites and its settlements
 
-> Status: Draft · Prefix: WLD · Rationale: `../../rationale/A1.md` · Related: [index](README.md) · [terrain, time and views](terrain_time_and_views.md) · [skirmish maps and map tools](skirmish_maps_and_map_tools.md) · [vision, pillars and core loops](../00_vision_pillars_and_core_loops.md) · [owner decisions](../../decisions/owner_decisions.md) · [adoption ledger 08](../adoption_ledger/08_maps_and_level_design_ledger.md) · [conventions](../../CONVENTIONS.md)
+> Status: Final · Prefix: WLD · Rationale: [A1](../../rationale/A1.md) · Related: [index](README.md) · [terrain, time and views](terrain_time_and_views.md) · [skirmish maps and map tools](skirmish_maps_and_map_tools.md) · [vision, pillars and core loops](../00_vision_pillars_and_core_loops.md) · [owner decisions](../../decisions/owner_decisions.md) · [adoption ledger 08](../adoption_ledger/08_maps_and_level_design_ledger.md) · [conventions](../../CONVENTIONS.md)
 
 ## 1 Purpose and player experience
 
@@ -52,7 +52,7 @@ The world serves pillar 3 through geography: every conflict has a place on the m
 - **Units.** Distances are in world units (wu); one wu is about one metre (R-SIM-365). Simulation durations are in ticks of `ref.sim.tick_period`; this file writes travel in minutes of world time at a stated speed, and the area that owns a timer converts it to ticks under its own key.
 - **World days.** A duration of the economy, relations or protection is written in world days of the world calendar, which already contains the conversion of PIL-103: one world day is 24 hours of world time at the always-on pace and 2 hours at the session pace (WLD-200). Travel, battles and the movement of Workers run at the tick rate at both paces (PIL-101).
 - **Placeholders.** The model needs values that later areas set: the territory growth curve and the plateau population (B1), the share of attacks that present stewards declare (B5), the evening window of present play (B6), the demand and churn of a world over a year (B6, C2). Each is marked as a placeholder in the model, with the area that sets it; when that area sets the value, the model is run again and the figures follow.
-- **Terms.** The terms of CONVENTIONS §8.15 are used with their meanings. These files also use resource site and border area (PIL-120), and the terms that §8 proposes for registration: crossing, home cell, biome, world template, set piece, stand-in AI settlement, native AI settlement and world day.
+- **Terms.** The terms of CONVENTIONS §8.15 are used with their meanings, among them those that A1 registers there: resource site, border area, crossing, home cell, biome, world template, set piece, stand-in AI settlement, native AI settlement, world day and region name.
 
 ## 2 Rules
 
@@ -64,7 +64,7 @@ The world serves pillar 3 through geography: every conflict has a place on the m
 
 **WLD-003** (MUST) The land regions form a compact blob that the world generator grows on a square grid of *g* = ⌈√(`wld.world.blob_area_factor` (1.25) × *R*)⌉ cells per side, where *R* is the region count: the cells are ordered by their distance from the grid's centre plus a seeded jitter of up to `wld.world.blob_jitter` (0.35) cells, and the generator takes cells in that order, each one only if it shares a side with a cell already taken, until it has *R*. The blob is connected by construction; its shape depends only on the world seed and *R* ([terrain, time and views](terrain_time_and_views.md) WLD-161).
 
-**WLD-004** (MUST) A world of steward capacity *S* (WLD-005) has a site margin *M* = ⌊`wld.world.site_margin` (0.25) × *S* + 0.5⌋, a first count of native AI settlements *A*₀ = ⌊`wld.ai.base_count` (6) + `wld.ai.per_steward` (0.25) × *S* + 0.5⌋, *R* = max(`wld.world.min_regions` (3), ⌈(*S* + *A*₀ + `pil.world.free_sites_min` + *M*) ÷ `wld.region.sites` (4)⌉) regions and 4 × *R* settlement sites. The native AI count is then *A* = 4 × *R* − *S* − `pil.world.free_sites_min` − *M*, so the sites that rounding to whole regions adds go to native AI settlements. Rounding is half up, as written, on every server. Table 3 gives the figures.
+**WLD-004** (MUST) A world of steward capacity *S* (WLD-005) has a site margin *M* = ⌊`wld.world.site_margin` (0.25) × *S* + 0.5⌋, a first count of native AI settlements *A*₀ = ⌊`wld.ai.base_count` (6) + `wld.ai.per_steward` (0.25) × *S* + 0.5⌋ (O38), *R* = max(`wld.world.min_regions` (3), ⌈(*S* + *A*₀ + `pil.world.free_sites_min` + *M*) ÷ `wld.region.sites` (4)⌉) regions and 4 × *R* settlement sites. The native AI count is then *A* = 4 × *R* − *S* − `pil.world.free_sites_min` − *M*, so the sites that rounding to whole regions adds go to native AI settlements. Rounding is half up, as written, on every server. Table 3 gives the figures.
 
 | Capacity *S* | Native AI *A* | Margin *M* | Sites | Regions *R* | Land grid *g* | Land height samples at 16 wu |
 |---|---|---|---|---|---|---|
@@ -79,7 +79,7 @@ The world serves pillar 3 through geography: every conflict has a place on the m
 
 *Table 3 — World size by steward capacity (WLD-003, WLD-004; `A1WorldDensity.py tables`). The extent is 71,680 wu at every capacity (WLD-001).*
 
-**WLD-005** (MUST) The steward capacity of a world is the number of stewards whose settlements it can hold on its map at once. The world host sets it when the world is created: from 1 to `wld.world.capacity_max_integrated` (16) for an integrated world, from 1 to `wld.world.capacity_max_dedicated` (16) for a community dedicated server, and from 1 to `wld.world.capacity_max_hosted` (200) for a hosted world of stage 3 (O1, O5; PIL-110). Only stewards whose settlement is on the map take a place, among them those who are away and whose settlement the deputy runs until it becomes dormant (PIL-078, O34); a steward whose settlement is dormant holds no place, and AI settlements never take one.
+**WLD-005** (MUST) The steward capacity of a world is the number of stewards whose settlements it can hold on its map at once. The world host sets it when the world is created: from 1 to `wld.world.capacity_max_integrated` (16) for an integrated world, from 1 to `wld.world.capacity_max_dedicated` (16) for a community dedicated server (O40), and from 1 to `wld.world.capacity_max_hosted` (200) for a hosted world of stage 3 (O1, O5; PIL-110). Only stewards whose settlement is on the map take a place, among them those who are away and whose settlement the deputy runs until it becomes dormant (PIL-078, O34); a steward whose settlement is dormant holds no place, and AI settlements never take one.
 
 **WLD-006** (MUST) The world host chooses the settings of Table 4 when the world is created. The settings marked fixed never change for the life of the world; the others change only as their requirement allows, and every change is recorded with its world time and shown on the join page (PIL-130).
 
@@ -107,7 +107,7 @@ The world serves pillar 3 through geography: every conflict has a place on the m
 | Stage | World size and life | Terrain and look | Views and tools |
 |---|---|---|---|
 | 1 Integrated | Capacities 1 to 16; the native AI settlements, the margin and the stand-in keeper of WLD-124 to WLD-127; the founding choice with "found beside" (WLD-140); the return queue (WLD-143); the unlimited lifetime only; no capacity raise | 1 world template; 2 biomes and 2 lighting presets; no set pieces; the validation checks of WLD-163 for the sea channels, the crossings, the plateaus, dry sites and reachability; generation at world creation and the bake | The strategic view with its two layers and the settlement view (WLD-240 to WLD-246); text authoring of maps and templates with a Debug-build preview (WLD-260) |
-| 2 Community dedicated | Capacities 1 to 16; capacity raises by extension (WLD-008); limited lifetimes, the final notice and the archive (WLD-220 to WLD-224); group founding (WLD-141) | 3 world templates, 6 biomes and 6 lighting presets, 8 set pieces; every check of WLD-163 | The development map editor in Debug builds (WLD-260) |
+| 2 Community dedicated | Capacities 1 to 16 (O40); capacity raises by extension (WLD-008); limited lifetimes, the final notice and the archive (WLD-220 to WLD-224); group founding (WLD-141) | 3 world templates, 6 biomes and 6 lighting presets, 8 set pieces; every check of WLD-163 | The development map editor in Debug builds (WLD-260) |
 | 3 Hosted large worlds | Capacities up to 200 and the formulas up to 256 | The stage-2 templates and any hosted template | The strategic view's level of detail at 46,080 wu of camera height (WLD-240) |
 
 *Table 5 — The smallest world of each stage.*
@@ -205,7 +205,7 @@ The world serves pillar 3 through geography: every conflict has a place on the m
 
 ### 2.7 Native and stand-in AI settlements, and free sites
 
-**WLD-120** (MUST) A world starts with the native AI settlements of WLD-004. The world host may lower their number at creation to no fewer than `wld.ai.min_count` (2); the sites it frees join the margin. Native AI settlements populate the world from its start (PIL-008), and their count changes only by an extension (WLD-008): they never found another settlement, move, take a free site or become dormant.
+**WLD-120** (MUST) A world starts with the native AI settlements of WLD-004 (O38). The world host may lower their number at creation to no fewer than `wld.ai.min_count` (2); the sites it frees join the margin. Native AI settlements populate the world from its start (PIL-008), and their count changes only by an extension (WLD-008): they never found another settlement, move, take a free site or become dormant.
 
 **WLD-121** (MUST) The world generator places the native AI settlements at creation in rounds over the regions in the order of WLD-003 (the centre first): in the first round on local site 0 of each region, in the second on local site 3 (the site diagonal to it, so the two are not valley neighbours), in the third on local site 1 and in the fourth on local site 2, until the count is reached.
 
@@ -213,9 +213,9 @@ The world serves pillar 3 through geography: every conflict has a place on the m
 
 **WLD-123** (MUST) The free sites of a world are always at least its places for further stewards plus `pil.world.free_sites_min` (2), as PIL-068 requires: by WLD-004 the sites are the capacity, the native AI settlements, the margin and these 2, and stand-in AI settlements only ever stand on margin sites (WLD-125). A dormant settlement frees its site and its place together; a steward's founding or return takes a free site or a stand-in's site (WLD-140, WLD-143).
 
-**WLD-124** (MUST) A stand-in AI settlement is an AI settlement that stands on a margin site for a steward who is not there. While it is on the map it is an AI settlement in every rule (B7): it grows, gathers, holds its border areas and takes part in the world loop of its Cladan. It differs from a native AI settlement only in WLD-125 and WLD-126.
+**WLD-124** (MUST) A stand-in AI settlement (O38) is an AI settlement that stands on a margin site for a steward who is not there. While it is on the map it is an AI settlement in every rule (B7): it grows, gathers, holds its border areas and takes part in the world loop of its Cladan. It differs from a native AI settlement only in WLD-125 and WLD-126.
 
-**WLD-125** (MUST) The server's keeper places and removes stand-in AI settlements within three bounds: their number never exceeds the margin *M*, never takes a free site from the reserve of WLD-123, and never brings the settlements on the map above the capacity plus the native AI count, so the full-occupancy load of WLD-280 is never exceeded. At world creation it places stand-ins first in every valley that has no settlement, one each in region order, then a second in valleys with one settlement, diagonal to it. During play, when a steward's settlement has had fewer than `wld.density.contacts_min` (2) territory contacts for `wld.density.standin_delay_days` (3 world days), the keeper places a stand-in at a free site that is its valley neighbour, or else its crossing neighbour; when the bounds leave no room, a stand-in that has no steward's settlement among its neighbours steps back first, the one latest in the region order of WLD-003, and the keeper places its stand-in beside the steward instead. Every world from 1 to 256 stewards therefore has a settlement in every valley on world day 1.
+**WLD-125** (MUST) The server's keeper (O38) places and removes stand-in AI settlements within three bounds: their number never exceeds the margin *M*, never takes a free site from the reserve of WLD-123, and never brings the settlements on the map above the capacity plus the native AI count, so the full-occupancy load of WLD-280 is never exceeded. At world creation it places stand-ins first in every valley that has no settlement, one each in region order, then a second in valleys with one settlement, diagonal to it. During play, when a steward's settlement has had fewer than `wld.density.contacts_min` (2) territory contacts for `wld.density.standin_delay_days` (3 world days), the keeper places a stand-in at a free site that is its valley neighbour, or else its crossing neighbour; when the bounds leave no room, a stand-in that has no steward's settlement among its neighbours steps back first, the one latest in the region order of WLD-003, and the keeper places its stand-in beside the steward instead. Every world from 1 to 256 stewards therefore has a settlement in every valley on world day 1.
 
 **WLD-126** (MUST) A stand-in steps back, becoming dormant with its stores and structures (PIL-078, PIL-080), when a steward chooses its site to found or to return, and when the keeper's bounds fall below the number of stand-ins, in which case the stand-in with the fewest steward neighbours steps back first. A stand-in that is a side in a battle or the target of a declared attack does not step back, and its site is not offered, until the battle or the attack has ended. A dormant stand-in keeps its Cladan, stores and structures and is the first that the keeper places again, at any margin site, when it next needs one of that Cladan.
 
@@ -340,9 +340,9 @@ Values that this file cites and does not own keep their owners' keys: `pil.world
 | `wld.world.blob_area_factor` | 1.25 | × the region count: the cells of the square in which the blob grows | provisional | WLD-003 | — | Model: compactness of the generated continents over 100 seeds |
 | `wld.world.blob_jitter` | 0.35 | region cells: the largest seeded change of a cell's distance | provisional | WLD-003 | — | Strategic-view playtest: whether continents look varied without long spurs |
 | `wld.world.min_regions` | 3 | regions | provisional | WLD-004 | — | Solo playtest: whether three valleys give a solo steward enough neighbours and variety |
-| `wld.world.site_margin` | 0.25 | margin sites per unit of capacity, rounded half up | provisional | WLD-004, WLD-125 | — | The lifetime model: stewards below 2 contacts in thinly settled worlds; A2's load at full occupancy is unchanged |
+| `wld.world.site_margin` | 0.25 | margin sites per unit of capacity, rounded half up | final | WLD-004, WLD-125 | — | — |
 | `wld.world.capacity_max_integrated` | 16 | stewards | final | WLD-005 | — | — |
-| `wld.world.capacity_max_dedicated` | 16 | stewards | provisional | WLD-005 | — | A2's budgets at owner gate B; stage 2 load tests |
+| `wld.world.capacity_max_dedicated` | 16 | stewards | final | WLD-005 | — | — |
 | `wld.world.capacity_max_hosted` | 200 | stewards | provisional | WLD-005 | — | A2's budgets at owner gate B; stage 3 load tests |
 | `wld.world.capacity_limit` | 256 | stewards; the extent is reserved for it | provisional | WLD-001, WLD-007 | DEC-247 | D8: grid, chunk and coordinate limits |
 | `wld.region.side` | 5,120 | wu | provisional | WLD-020, WLD-104 | DEC-247 | A2's region budget; playtest of the valley's size at 16 stewards |
@@ -369,7 +369,7 @@ Values that this file cites and does not own keep their owners' keys: `pil.world
 | `wld.contact.valley_day` | 5 | world days after founding | provisional | WLD-064 | — | B1's growth model; playtest: the first week feels like growth, the second like contact |
 | `wld.contact.crossing_day` | 9 | world days after founding | provisional | WLD-064 | — | B1's growth model |
 | `wld.contact.degree_band` | 2.4–3.0 | a steward's mean territory contacts in a fresh world, at the default native AI count, over seeds 1 to 10 | provisional | WLD-065 | — | B5's relations model against the 2 to 10 battles a week of PIL-065 |
-| `wld.density.contacts_min` | 2 | territory contacts that the keeper keeps for every steward | provisional | WLD-065, WLD-125 | — | Lifetime model; B5's relations model |
+| `wld.density.contacts_min` | 2 | territory contacts that the keeper keeps for every steward | final | WLD-065, WLD-125 | — | — |
 | `wld.density.standin_delay_days` | 3 | world days below the minimum before a stand-in is placed | provisional | WLD-125 | — | Lifetime model: thrash between returns and stand-ins; playtest |
 | `wld.density.below_min_share_max` | 5 | % of stewards below the minimum, after the launch month | provisional | WLD-065 | — | Lifetime model over B6's and C2's churn figures |
 | `wld.resource.home_inner` | 3 | home resource sites per site at the inner radius | provisional | WLD-082 | — | B2's economy model |
@@ -392,8 +392,8 @@ Values that this file cites and does not own keep their owners' keys: `pil.world
 | `wld.travel.hop_minutes_max` | 6.5 | minutes at the march speed | provisional | WLD-101 | — | B4's speed; B5's reach of an attack |
 | `wld.travel.diameter_minutes_16` | 26 | minutes at the march speed | provisional | WLD-101 | — | B5's reach of an attack; playtest of a distant attack |
 | `wld.travel.diameter_minutes_200` | 80 | minutes at the march speed | provisional | WLD-101 | — | B5's reach of an attack; stage 3 playtest |
-| `wld.ai.base_count` | 6 | native AI settlements | provisional | WLD-004 | — | Solo and 4-steward playtests: enough neighbours |
-| `wld.ai.per_steward` | 0.25 | native AI settlements per unit of capacity | provisional | WLD-004 | — | A2's AI budget at 200; B5's relations model |
+| `wld.ai.base_count` | 6 | native AI settlements | final | WLD-004 | — | — |
+| `wld.ai.per_steward` | 0.25 | native AI settlements per unit of capacity | final | WLD-004 | — | — |
 | `wld.ai.min_count` | 2 | native AI settlements | provisional | WLD-006, WLD-120 | — | Playtest of a world with few AI settlements |
 | `wld.founding.steward_weight` | 6 | score per neighbour, valley or crossing, that is a steward's settlement | provisional | WLD-140 | — | Model: stewards with a steward neighbour; playtest of the founding page |
 | `wld.founding.valley_weight` | 2 | score per valley neighbour that is an AI settlement | provisional | WLD-140 | — | Model: stewards who found alone |
@@ -487,7 +487,7 @@ This file adapts no reference requirement of its own: the world game has no map 
 
 **Model.** `Tools/DesignModels/A1WorldDensity.py` (WLD-283).
 
-**Terms proposed for registration** (CONVENTIONS §8.15 and the glossary, at A1's Finalise): resource site (`ResourceSite`; already used by PIL-120), border area (`BorderArea`; already used by PIL-120), crossing (`RegionCrossing`), home cell, native AI settlement, stand-in AI settlement, biome (`Biome`), world template (`WorldTemplate`), set piece (`SetPiece`) and world day. Wilderness, coast and channel are used as ordinary words.
+**Terms registered** in CONVENTIONS §8.15 and the glossary: resource site (`ResourceSite`; first used by PIL-120), border area (`BorderArea`; first used by PIL-120), crossing (`RegionCrossing`), home cell, native AI settlement and stand-in AI settlement (`AiSettlementRole::Native`, `AiSettlementRole::StandIn`), biome (`Biome`), world template (`WorldTemplate`), set piece (`SetPiece`), world day and region name. Wilderness, coast and channel are used as ordinary words.
 
 ## 9 Open decisions
 
@@ -497,4 +497,4 @@ This file adapts no reference requirement of its own: the world game has no map 
 | DEC-228 | Per-tick CPU budget and population caps | A2's; the region body budget of WLD-281 | WLD-020 |
 | DEC-247 | Terrain scale and large-world terrain | D8's; A1 recommends one continuous field in region-aligned chunks inside the reserved extent | WLD-001, WLD-007 |
 
-The decisions that the triage gives A1 are in [skirmish maps and map tools](skirmish_maps_and_map_tools.md) §9. **Owner decisions applied.** O1 and O5 (capacities, WLD-005); O14 (no team slots in a world: sites and stand-ins, WLD-124); O31 (claims on border areas and central resource sites, WLD-086); O33 (the attack setting, Table 4); O34 (dormancy frees a site and its place, WLD-005, WLD-043).
+The decisions that the triage gives A1 are in [skirmish maps and map tools](skirmish_maps_and_map_tools.md) §9. **Owner decisions applied.** O1 and O5 (capacities, WLD-005); O14 (no team slots in a world: sites and stand-ins, WLD-124); O31 (claims on border areas and central resource sites, WLD-086); O33 (the attack setting, Table 4); O34 (dormancy frees a site and its place, WLD-005, WLD-043); O38 (the native AI count, the site margin, stand-in AI settlements and the keeper, WLD-004, WLD-120, WLD-124 to WLD-127); O40 (the stage-2 capacity of 16, WLD-005, WLD-010).

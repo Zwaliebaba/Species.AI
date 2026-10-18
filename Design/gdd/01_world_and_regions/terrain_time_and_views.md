@@ -1,6 +1,6 @@
 # World and regions: terrain, time and views
 
-> Status: Draft · Prefix: WLD · Rationale: `../../rationale/A1.md` · Related: [index](README.md) · [world and sites](world_and_sites.md) · [skirmish maps and map tools](skirmish_maps_and_map_tools.md) · [vision, pillars and core loops](../00_vision_pillars_and_core_loops.md) · [owner decisions](../../decisions/owner_decisions.md) · [terrain](../../architecture/components/terrain/README.md) · [conventions](../../CONVENTIONS.md)
+> Status: Final · Prefix: WLD · Rationale: [A1](../../rationale/A1.md) · Related: [index](README.md) · [world and sites](world_and_sites.md) · [skirmish maps and map tools](skirmish_maps_and_map_tools.md) · [vision, pillars and core loops](../00_vision_pillars_and_core_loops.md) · [owner decisions](../../decisions/owner_decisions.md) · [terrain](../../architecture/components/terrain/README.md) · [conventions](../../CONVENTIONS.md)
 
 ## 1 Purpose and player experience
 
@@ -36,7 +36,7 @@ Every figure of §2.6 comes from the world-density model `Tools/DesignModels/A1W
 
 - **Units.** Distances are in world units (wu); heights are above sea level (0 wu). Presentation times are in seconds of presentation time; durations of the world are in world days (WLD-200).
 - **Placeholders.** The scale figures need inputs that later areas set (WLD-280); each is named with its area, and the model is run again when it changes.
-- **Terms.** As in [world and sites](world_and_sites.md) §1.5; this file also uses the proposed terms biome, world template and set piece.
+- **Terms.** As in [world and sites](world_and_sites.md) §1.5; this file also uses the terms biome, world template and set piece of CONVENTIONS §8.15.
 
 ## 2 Rules
 
@@ -114,7 +114,7 @@ A region that fails a check is generated again with the next attempt number in t
 
 ### 2.4 World lifetime
 
-**WLD-220** (MUST) A world's lifetime is unlimited, or a whole number of world weeks from `wld.lifetime.min_days` (28) to `wld.lifetime.max_days` (364) world days in steps of `wld.lifetime.step_days` (7). The default is unlimited for an integrated world (`wld.lifetime.default_integrated`), `wld.lifetime.default_dedicated` (84 world days, 12 world weeks) for a community dedicated server and `wld.lifetime.default_hosted` (84 world days) for a hosted world of stage 3. Stage 1 builds the unlimited lifetime only (PIL-110, Table 10 of the vision document); limited lifetimes come with renown and the epilogue in stage 2 (PIL-125).
+**WLD-220** (MUST) A world's lifetime is unlimited, or a whole number of world weeks from `wld.lifetime.min_days` (28) to `wld.lifetime.max_days` (364) world days in steps of `wld.lifetime.step_days` (7). The default is unlimited for an integrated world (`wld.lifetime.default_integrated`), `wld.lifetime.default_dedicated` (84 world days, 12 world weeks) for a community dedicated server and `wld.lifetime.default_hosted` (84 world days) for a hosted world of stage 3 (O39). No era or other periodic reset of claims or border areas runs in a world in v1 (O39); B5 evaluates eras with renown for stage 2. Stage 1 builds the unlimited lifetime only (PIL-110, Table 10 of the vision document); limited lifetimes come with renown and the epilogue in stage 2 (PIL-125).
 
 **WLD-221** (MUST) The world host may lengthen a limited lifetime, or make it unlimited, at any time before its final notice period begins (WLD-222); a lifetime is never shortened, and an unlimited lifetime never becomes limited. Every change is recorded with its world time, shown on the join page (PIL-130) and reported to every steward.
 
@@ -302,8 +302,8 @@ Values that this file cites and does not own keep their owners' keys: `pil.pace.
 | `wld.calendar.day_hours` | 24 | hours of world time at the always-on pace | final | WLD-200, WLD-202 | — | — |
 | `wld.calendar.week_days` | 7 | world days | final | WLD-200 | — | — |
 | `wld.lifetime.default_integrated` | unlimited | — | final | WLD-220 | — | — |
-| `wld.lifetime.default_dedicated` | 84 | world days | provisional | WLD-220 | — | Stage 2 playtests: retention over a lifetime; owner gate B |
-| `wld.lifetime.default_hosted` | 84 | world days | provisional | WLD-220 | — | Stage 3 playtests; owner gate B |
+| `wld.lifetime.default_dedicated` | 84 | world days (O39) | provisional | WLD-220 | — | Stage 2 playtests: retention over a lifetime |
+| `wld.lifetime.default_hosted` | 84 | world days (O39) | provisional | WLD-220 | — | Stage 3 playtests: retention over a lifetime |
 | `wld.lifetime.min_days` | 28 | world days | provisional | WLD-220 | — | Stage 2 playtests |
 | `wld.lifetime.max_days` | 364 | world days | provisional | WLD-220 | — | Stage 2 playtests |
 | `wld.lifetime.step_days` | 7 | world days | final | WLD-220 | — | — |
@@ -320,9 +320,9 @@ Values that this file cites and does not own keep their owners' keys: `pil.pace.
 | `wld.scale.crossing_battle_reach` | 448 | wu into the neighbouring region | provisional | WLD-282 | — | Model: mouths 205 to 436 wu from the border; A2 and B4: battles across a region border |
 | `wld.scale.watched_max_per_present` | 6 | settlements watched per present steward outside battles, at most | provisional | WLD-244 | — | A2's CPU model of full fidelity; C1: the settlement view's highest camera |
 | `wld.scale.watched_per_present` | 3 | settlements watched per present steward outside battles, typically | provisional | WLD-244 | — | A2's CPU model of full fidelity; telemetry of camera positions in playtests |
-| `wld.scale.battles_per_region_max` | 2 | battles in progress in one region | provisional | WLD-285 | DEC-228 | A2's region budget at owner gate B; B5's playtest of a valley war |
-| `wld.scale.battles_per_settlement` | 0.1 | battles in progress per settlement at full occupancy, for the world cap | provisional | WLD-285 | DEC-228 | A2's budgets at owner gate B; the model's share of the peak at the cap |
-| `wld.scale.battles_per_world_min` | 4 | battles in progress, the smallest world cap | provisional | WLD-285 | DEC-228 | A2's integrated-server budget on the host's PC at owner gate B |
+| `wld.scale.battles_per_region_max` | 2 | battles in progress in one region | provisional | WLD-285 | DEC-228 | A2 sets the value at gate B |
+| `wld.scale.battles_per_settlement` | 0.1 | battles in progress per settlement at full occupancy, for the world cap | provisional | WLD-285 | DEC-228 | A2 sets the value at gate B |
+| `wld.scale.battles_per_world_min` | 4 | battles in progress, the smallest world cap | provisional | WLD-285 | DEC-228 | A2 sets the value at gate B |
 
 ## 5 Edge cases, exploits and interactions
 
@@ -429,6 +429,6 @@ This file adapts R-MAP-085 and R-MAP-086 and adopts R-MAP-198, as the ledger rec
 | DEC-101 | The seasonal theme | B4's; a world's seasonal state is world state if the theme is kept | WLD-185 |
 | DEC-971 | The reference test machine | D10's; the generation budgets are measured on it | WLD-165 |
 | DEC-228 | Per-tick CPU budget and population caps | A2's; the region body budget and the battle caps | WLD-281, WLD-285 |
-| DEC-562 | Map lighting and weather presets | A1's, proposed in [skirmish maps and map tools](skirmish_maps_and_map_tools.md) §9: option B | WLD-183, WLD-184 |
+| DEC-562 | Map lighting and weather presets | Resolved (2026-10-18, A1): option B, as [skirmish maps and map tools](skirmish_maps_and_map_tools.md) §9 records | WLD-183, WLD-184 |
 
-**Owner decisions applied.** O3 (battles at full fidelity, the strategic view never watching, WLD-243); O4 and O35 (world time, the calendar and freezes, WLD-200 to WLD-203); O9 (the strategic view in the reference style, WLD-245); O1 and O5 (the capacities whose load WLD-280 states).
+**Owner decisions applied.** O3 (battles at full fidelity, the strategic view never watching, WLD-243); O4 and O35 (world time, the calendar and freezes, WLD-200 to WLD-203); O9 (the strategic view in the reference style, WLD-245); O1 and O5 (the capacities whose load WLD-280 states); O39 (the lifetime defaults and no eras in v1, WLD-220).

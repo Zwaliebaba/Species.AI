@@ -65,3 +65,12 @@ resource site (`ResourceSite`), border area (`BorderArea`), crossing (`RegionCro
 ## What I verified and what I assumed
 
 Verified: every figure that the three files state is reproduced by `A1WorldDensity.py check` (0 differences); every requirement, DEC, ADR and owner decision cited exists (gates 5, 6, 16); every key is defined once and cited (gate 8); the prototype's structural checks pass in 100 seeds of 100. Assumed: the twelve assumptions of `proposal_notes.md` §3, chiefly the 20 wu/s march speed, square-root territory growth, a plateau population of 600, and the battle cases and lifetime scenarios as placeholders of B4, B5, B6 and C2. Not verified: generation time of the C++ generator on DEC-971's machine; checks 7 and 8 of WLD-163, which need B2's weights and the land route graph. The challenger's script reads the round-1 model's interface and does not run against the revised model; its ten checks are answered by the revised model's modes.
+
+## Finalise (Step 5)
+
+- O38, O39 and O40 applied and cited (WLD-004, WLD-005, WLD-010, WLD-120, WLD-124, WLD-125, WLD-220); the keys they fix are `final` (`wld.ai.base_count`, `wld.ai.per_steward`, `wld.world.site_margin`, `wld.density.contacts_min`, `wld.world.capacity_max_dedicated`); the battle-cap keys stay `provisional` with "A2 sets the value at gate B".
+- Every file of `Design/gdd/01_world_and_regions/` and the ledger 08 is `Final`, with the rationale as a link.
+- Terms registered in CONVENTIONS §8.15 and the glossary: biome, border area, crossing, home cell, native AI settlement, region name, resource site, set piece, stand-in AI settlement, world day, world template (no collisions found).
+- DEC-045, DEC-315, DEC-324, DEC-562, DEC-802, DEC-865, DEC-866, DEC-966 Resolved with dated notes; register totals 139 Open, 135 Resolved, 28 Dropped. `verdicts_and_fixes.md` is 122,782 bytes, 98 bytes under the limit.
+- `Design/rationale/A1.md` written and indexed; `LedgerTotals.py` run; all gates pass with Mermaid (284 blocks).
+- Left for the coordinator: the A1 row of `Design/gdd/README.md` still reads Draft.

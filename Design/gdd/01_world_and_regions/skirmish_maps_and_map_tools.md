@@ -1,6 +1,6 @@
 # World and regions: skirmish maps and map tools
 
-> Status: Draft · Prefix: WLD · Rationale: `../../rationale/A1.md` · Related: [index](README.md) · [world and sites](world_and_sites.md) · [terrain, time and views](terrain_time_and_views.md) · [adoption ledger 08](../adoption_ledger/08_maps_and_level_design_ledger.md) · [maps: rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md) · [map editor hooks](../../reference/08_maps_and_level_design/map_editor_hooks.md) · [terrain](../../architecture/components/terrain/README.md) · [conventions](../../CONVENTIONS.md)
+> Status: Final · Prefix: WLD · Rationale: [A1](../../rationale/A1.md) · Related: [index](README.md) · [world and sites](world_and_sites.md) · [terrain, time and views](terrain_time_and_views.md) · [adoption ledger 08](../adoption_ledger/08_maps_and_level_design_ledger.md) · [maps: rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md) · [map editor hooks](../../reference/08_maps_and_level_design/map_editor_hooks.md) · [terrain](../../architecture/components/terrain/README.md) · [conventions](../../CONVENTIONS.md)
 
 ## 1 Purpose and player experience
 
@@ -170,9 +170,9 @@ This file owns the ledger of reference/08, [08_maps_and_level_design_ledger.md](
 
 ## 9 Open decisions
 
-The eight decisions that the triage gives A1, with their proposed resolutions; the register is edited at A1's Finalise.
+The eight decisions that the triage gives A1, resolved in the decision register on 2026-10-18 with the requirements that implement them.
 
-| DEC | Topic | Proposed resolution | Requirements |
+| DEC | Topic | Resolution | Requirements |
 |---|---|---|---|
 | DEC-045 | The map editor | Resolved: no editor in player builds in v1; text authoring, content-build validation and a Debug-build preview first; a development editor in Debug builds after the skirmish first playable, built from the hooks with undo, stable ids, lossless writers, validation and a play test; a player editor waits for modding | WLD-260, WLD-261, WLD-262 |
 | DEC-315 | Level-design patterns of the reference maps | Resolved: option A, the specified default stands; every pattern is a tool, and B9's playtests confirm each one that a Species map uses | WLD-269 |

@@ -34,7 +34,7 @@ This file records the decisions on data schemas and content writers, camera sequ
 |---|---|---|---|
 | [DEC-800](#dec-800-content-and-settings-writers-are-lossless-typed-and-atomic) | Content and settings writers are lossless, typed and atomic | Resolved | DAT, R-MAP, PLT, BLD |
 | [DEC-801](#dec-801-duplicate-keys-repeated-fields-and-over-long-values-are-build-errors) | Duplicate keys, repeated fields and over-long values are build errors | Resolved | DAT, BLD, R-MAP, AEN, UI |
-| [DEC-802](#dec-802-maps-that-match-setup-does-not-list) | Maps that match setup does not list | Open | R-MAP, R-META, DAT, BLD, DBG |
+| [DEC-802](#dec-802-maps-that-match-setup-does-not-list) | Maps that match setup does not list | Resolved | R-MAP, R-META, DAT, BLD, DBG |
 | [DEC-803](#dec-803-camera-animations-without-content) | Camera animations without content | Open | CAM, R-MAP, R-TUT, DAT |
 | [DEC-804](#dec-804-soak-test-sequence-and-timing-rules) | Soak-test sequence and timing rules | Resolved | DBG, BLD |
 
@@ -67,12 +67,12 @@ This file records the decisions on data schemas and content writers, camera sequ
 ## 2 Maps and match setup
 
 ### DEC-802 Maps that match setup does not list
-- Status: Open
+- Status: Resolved
 - Affects: reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP), reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md (R-META), architecture/components/data_schemas/map_schema.md (DAT), architecture/components/build_tooling_and_distribution.md (BLD), architecture/components/diagnostics_test_and_performance/ (DBG)
 - Specified behaviour: A map's header lists the modes the map supports, and match setup offers a map only under the modes it lists. A map whose mode list is empty is still a valid, loadable map: it appears in no match-setup list and is reached only through test and tool paths. The reference uses such maps for stress, benchmark and sandbox play; those maps are not reproduced (DEC-063), and Species test maps are authored new (the stress map of DEC-228 is one). The other content that the reference loader tolerates without a message is a build error in Species: an unknown mode name, which the reference ignores; an unknown structure kind, or a structure or actor kind that no match creates (DEC-052, DEC-062), which the reference skips; surplus values, unknown fields and stray lines, which the reference ignores (ADR-059); and a repeated option, of which the reference keeps the last (DEC-801). A map header names the map's display name by a string id that must exist in the string tables (ADR-061, ADR-059), so no map shows a placeholder name.
 - Options: A — the reference: listing follows from the mode list alone, and an empty mode list hides a map; B — an explicit visibility field in the map header with the values listed and test: a listed map names at least one mode and passes the per-mode map rules for every mode it names (ADR-059), a test map may name none, and the edition manifests exclude test maps from player editions (ADR-056); C — no hidden maps: every map names at least one mode, and test maps live only in a test content set that is never packed for players.
 - Recommendation: B. An explicit field states the intent, so a listed map that loses its last mode by mistake fails the build instead of disappearing from match setup, while the test, stress and benchmark maps that the soak test (DEC-804) and the per-tick budget (DEC-228) need stay loadable in development builds.
-- Decide by: design phase
+- Resolution (2026-10-18, design phase, area A1): option B. A skirmish map header holds an explicit visibility field, `listed` or `test`: a listed map names at least one mode and passes the per-mode rules of every mode it names, a test map may name none and is reached only through test and tool paths, and the edition manifests leave test maps out of player editions; world templates and set pieces are listed by the world-creation page, not by match setup (WLD-264). Specified in [skirmish maps and map tools](../gdd/01_world_and_regions/skirmish_maps_and_map_tools.md) §2.
 
 ## 3 Camera sequences and tutorials
 

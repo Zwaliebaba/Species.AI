@@ -62,3 +62,15 @@ Paste this section into every subagent brief.
 9. **Security hygiene.** Write scripts under `WORK/scripts/` or `Tools/DesignModels/`, run them with `python3 -I`, and pass paths as arguments.
 10. **No publishing.** Never use the Artifact tool or any other publishing, sharing or upload tool (documents, slides, drives, GitHub writes). Work only on local files. If something was published by mistake, report its URL; never delete it yourself.
 11. **Report.** Write `WORK/reports/<ID>.md` with: the files written; counts of requirements, tuning keys and diagrams; adoption verdicts; DEC and ADR changes; cross-area requests; and the names you proposed. Your final reply to the coordinator is at most 200 words.
+
+## Inputs from A1 (Final) and what gate B decides
+
+A1 hands A2 these requests (`species_design_work/areas/A1/proposal_notes.md` §7 is the proposer's own list; the Final documents are the authority):
+- Size the server from Tables 5 and 6 of `Design/gdd/01_world_and_regions/terrain_time_and_views.md`: the planning case (4 battles in progress at 16 stewards, 6 at the session pace; 16 at 200, about 6,400 figures) and the stress case (up to 28 at 200) as the top.
+- Set the region body budget (WLD-281) and the battle caps (WLD-285; A1 recommends 2 per region and max(4, 10 % of settlements) per world). These are owner questions at gate B, with your values and the cost behind each.
+- Decide which region simulates a battle at a crossing (WLD-282).
+- Provide counter-based random draws keyed by seed, purpose, region, attempt and index (DEC-242).
+
+Owner gate B (prompt §8.1 Phase 1 step 4) asks the owner, with your recommendations: the scale budgets your model produces (maximum population per settlement, maximum battle size, world size per player count); the dedicated-server operating systems (recommendation: Windows and Linux; the simulation core is then portable C++23); the online-services and identity backend; the storefronts (ADR-072) and, if the owner knows it, the publishing entity (ADR-073); the persistence technology, if you escalate it; the battle caps; and your other escalations. Write each as an owner question in your notes: the recommended option first, the trade-off in one or two sentences, and the numbers from your model.
+
+Owner decisions that bind A2 above all: O1 (2–16, then 50–200+ without a rewrite), O3 (battles always fully simulated; abstract economy for unwatched settlements), O4 and O35 (freeze; the stage-1 world runs while the host's client is open), O5 (community dedicated first), O10 (integrated first, one codebase, in-process transport), O29 and O30 (tool projects; NuGet only), O40 (stage-2 capacity 16), and `AGENTS.md` (MSBuild, R14 allow-list, R16 floating-point and the deterministic-core rule).
