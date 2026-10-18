@@ -183,7 +183,7 @@ Caption: no settings change rebuilds terrain, sea or tree geometry, and none tou
 
 ### 4.5 Species budgets
 
-**RND-454** (MUST) The renderer's client target is `rnd.budget.target_frame_rate` (60 frames per second, 16.7 ms per frame) on minimum-specification hardware, measured on the pinned reference test machine (see DEC-971), in a local Spawn Control match with the design population of 2,000 units (see DEC-228 item 6, DEC-106). The frame's CPU and GPU time at that population MUST fit the target. The GPU time of each pass group has a provisional budget, which the prototype measurement of DEC-106 confirms or changes: the world passes 3 to 6 and 8, `rnd.budget.world_ms` (3.0 ms); the actor passes 7a to 7d, `rnd.budget.actors_ms` (4.0 ms); the effect passes 10a to 11, 14 and 15 with their compute work, `rnd.budget.effects_ms` (3.0 ms); the overlay and UI passes 12, 13 and 16 to 34, `rnd.budget.overlays_ms` (2.0 ms). Together they take 12.0 ms and leave 4.7 ms of the frame for the frame constants, the clears, the resolve, the final pass, the present and frame-to-frame variation. The development overlay of Debug builds shows each pass's GPU time against its group's budget (RND-041, ADR-068).
+**RND-454** (MUST) The renderer's client target is `rnd.budget.target_frame_rate` (60 frames per second, 16.7 ms per frame) on the reference test machine ([performance baseline](../diagnostics_test_and_performance/performance_baseline.md) DBG-209, see DEC-971), in a local Spawn Control match with the design population of 2,000 units (see DEC-228 item 6, DEC-106). The frame's CPU and GPU time at that population MUST fit the target. The GPU time of each pass group has a provisional budget, which the prototype measurement of DEC-106 confirms or changes: the world passes 3 to 6 and 8, `rnd.budget.world_ms` (3.0 ms); the actor passes 7a to 7d, `rnd.budget.actors_ms` (4.0 ms); the effect passes 10a to 11, 14 and 15 with their compute work, `rnd.budget.effects_ms` (3.0 ms); the overlay and UI passes 12, 13 and 16 to 34, `rnd.budget.overlays_ms` (2.0 ms). Together they take 12.0 ms and leave 4.7 ms of the frame for the frame constants, the clears, the resolve, the final pass, the present and frame-to-frame variation. The development overlay of Debug builds shows each pass's GPU time against its group's budget (RND-041, ADR-068).
 
 **RND-455** (MUST) The number of draw and dispatch calls per frame is bounded by the pass table and the instance types, never by the population: crowds cost a fixed number of calls per instance type and pass (ADR-009, DEC-228 item 5), structures and trees are instanced per mesh, terrain chunks are drawn with one instanced or indirect draw (RND-138), and particles with one draw per particle batch (ADR-010).
 
@@ -207,6 +207,8 @@ Caption: no settings change rebuilds terrain, sea or tree geometry, and none tou
 
 ## 7 Acceptance tests
 
+The golden-image tests compare with the default tolerance and on the pinned reference configuration of the test harness ([diagnostics, test and performance](../diagnostics_test_and_performance/README.md) §4.8), unless a test states its own tolerance.
+
 | Test | Kind | Checks | Requirements |
 |---|---|---|---|
 | T1 defaults | unit | a fresh settings store gives every default of §9, and the first run writes back the desktop resolution | RND-442, RND-444 |
@@ -215,7 +217,7 @@ Caption: no settings change rebuilds terrain, sea or tree geometry, and none tou
 | T4 apply | integration | changing every setting during a match keeps the per-tick state hash unchanged; render size, window mode, sample count and HDR reconfigure; the others take effect on the next frame without a geometry rebuild | RND-441, RND-447 to RND-449 |
 | T5 presets | unit | each preset sets the four detail settings, changes nothing else, and is recognised back by `PresetOf`; a mixed combination is custom | RND-450 |
 | T6 validation | unit | out-of-range values, an unsupported sample count and an unavailable HDR output give the documented fallbacks | RND-451 |
-| T7 frame budget | performance | the design-population Spawn Control match reaches the target frame rate on the minimum-specification machine, and each pass group's GPU time stays within its provisional budget (a miss is reported, and fails the test once DEC-106 and DEC-971 are decided); the stress map runs and reports percentiles | RND-454, RND-456 |
+| T7 frame budget | performance | the design-population Spawn Control match reaches the target frame rate on the reference test machine (DBG-209), and each pass group's GPU time stays within its provisional budget (a miss is reported, and fails the test once DEC-106 and DEC-971 are decided); the stress map runs and reports percentiles | RND-454, RND-456 |
 | T8 call bound | performance | the number of draw and dispatch calls per frame is the same at 500 and at 4,000 units on the same map and camera path | RND-455 |
 | T9 texture limit | build check | a texture above the dimension limit fails the content build | RND-453 |
 
@@ -237,7 +239,7 @@ Caption: no settings change rebuilds terrain, sea or tree geometry, and none tou
 
 **Design-phase inputs.**
 
-1. **Minimum specification.** The minimum-specification machine on which the target of RND-454 is measured, beyond the GPU capability of ADR-002.
+1. **Reference test machine.** The machine of DBG-209 on which the target of RND-454 is measured, beyond the GPU capability of ADR-002 (DEC-971).
 2. **Budgets.** The per-pass-group millisecond budgets, confirmed or changed by the prototype measurement (DEC-106), and the budgets for the integrated-server case, where the server tick and the client frame share one machine (DEC-228 item 6).
 3. **Options pages.** Which settings the Species options pages show, whether presets cover the engine settings (anti-aliasing, HDR) as well as the detail settings, and whether the inverted style becomes an accessibility option (DEC-044, DEC-040).
 4. **World scale.** Detail and level-of-detail settings for a world larger than an arena map: terrain and sea levels of detail, crowd impostors and culling distances (DEC-247).

@@ -13,7 +13,7 @@ Scope: Units, creatures, hazards, projectiles. Back to the [requirements index](
 | R-UNIT-005 | Every unit timer, cooldown, lifetime and per-tick probability is an integer number of ticks or a per-tick value, never a floating-point | [README.md](../reference/02_units/README.md#23-ticks-timers-and-game-speed) |
 | R-UNIT-006 | Game speed is tick scheduling: | [README.md](../reference/02_units/README.md#23-ticks-timers-and-game-speed) |
 | R-UNIT-007 | Two Worker rules read the game speed *s* of the tick clock directly: | [README.md](../reference/02_units/README.md#23-ticks-timers-and-game-speed) |
-| R-UNIT-008 | Match start sets the research levels of every team after any research setting of the match setup has been applied, so the match setup's | [README.md](../reference/02_units/README.md#24-research-levels-in-a-match) |
+| R-UNIT-008 | Match start sets the research levels of every team; | [README.md](../reference/02_units/README.md#24-research-levels-in-a-match) |
 | R-UNIT-009 | The fixed research levels have these consequences for units. | [README.md](../reference/02_units/README.md#24-research-levels-in-a-match) |
 | R-UNIT-010 | A Strike team always throws grenades as its secondary weapon in a match. | [README.md](../reference/02_units/README.md#24-research-levels-in-a-match) |
 | R-UNIT-011 | Each actor has three stats: | [README.md](../reference/02_units/README.md#25-stats) |

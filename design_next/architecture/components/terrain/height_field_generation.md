@@ -35,19 +35,19 @@ Table 4.2-A Rounded functions of the generator.
 | ceilLog2(*x*) | trunc(⌈log2r(*x*)⌉), an integer | the tile size and the pass count |
 | abs32(*b*) | \|*r32*(*b*)\|: the single-precision absolute value rounds its argument to binary32 first | the noise envelope |
 
-For the reference content, every power result that lies within one binary64 unit in the last place of a binary32 rounding midpoint is an exact square, which rounds the same on every platform only if *x*^2.0 returns the exact square; no exponential or logarithm result lies that close (DEC-246 item 5).
+A result that lies within one binary64 unit in the last place of a binary32 rounding midpoint rounds the same on every platform only if every maths library returns the same binary64 value for it; an exact square does when *x*^2.0 returns the exact square. This is the agreement condition of DEC-246 item 5.
 
 **TER-066** (MUST) Every decimal field of the terrain records is parsed to binary64 by one platform-independent, correctly rounded parser and then rounded once to binary32 (DEC-241 item 12); the maximum height stays binary32. The rounding is observable: a tile at position z = 985 on a terrain of cell size 15.76 has 985 ÷ 15.760000228881836 = 62.4999991, so its footprint starts at world row trunc(62.9999991) = 62, whereas the unrounded 15.76 gives 62.5 and row 63, shifting the footprint by one world cell (vector set A, §7.2). Whole-number fields are 32-bit signed integers; the content build rejects malformed and out-of-range tokens (DEC-015).
 
 **TER-067** (MUST) ceilLog2(*x*) equals the exact ⌈log₂ *x*⌉ for every integer 1 ≤ *x* < `ter.test.log2_check_limit` (70 000), exact powers of two included (test T3).
 
-**TER-068** (MUST) The private tile generator computes in unsigned 32-bit integers that wrap modulo 2³² (TER-080); its 15-bit output equals the reference's signed 32-bit computation, whose overflow wraps.
+**TER-068** (MUST) The private tile generator computes in unsigned 32-bit integers that wrap modulo 2³² (TER-080), which C++ defines for unsigned types; no signed integer takes part in the computation.
 
 **TER-070** (MUST) A grid's sample position is `PositionX`(*i*) = *i* × *c*ₓ + *x*₀ and `PositionZ`(*j*) = *j* × *c*_z + *z*₀, with the integer index converted to binary64.
 
 **TER-071** (MUST) The conversion of a binary64 coordinate fraction to a sampler index truncates toward zero, so a value in (−1, 0) gives index 0, never ⌊*v*⌋ = −1 (TER-121, TER-230).
 
-**TER-072** (MUST) An integer read `At`(*i*, *j*) whose column is outside [0, columns) or whose row is outside [0, rows) returns the grid's outside value, and `Set` with such an index does nothing. In the reference the indices are first reduced modulo 2^`ter.grid.index_bits` (2¹⁶) to unsigned 16-bit values; for every grid of at most `ter.grid.max_samples_per_side` (32 768) samples per side, which the content build enforces (TER-250), every index from −32 768 to 65 535 that lies outside the grid reads the outside value under both rules.
+**TER-072** (MUST) An integer read `At`(*i*, *j*) whose column is outside [0, columns) or whose row is outside [0, rows) returns the grid's outside value, and `Set` with such an index does nothing. The indices are first reduced modulo 2^`ter.grid.index_bits` (2¹⁶) to unsigned 16-bit values; for every grid of at most `ter.grid.max_samples_per_side` (32 768) samples per side, which the content build enforces (TER-250), every index from −32 768 to 65 535 that lies outside the grid reads the outside value with or without the reduction.
 
 **TER-073** (MUST) `Sample`(*x*, *z*), the bilinear read of a grid, is:
 
@@ -63,13 +63,13 @@ w21 := fx * (1 - fz)       ;  w22 := fx * fz
 result := ((v(i1, j1) * w11 + v(i1, j2) * w12) + v(i2, j1) * w21) + v(i2, j2) * w22
 ```
 
-The sum runs left to right. Evaluating v × (1 − fx) × (1 − fz) left to right instead rounds differently and changes the heights. For an index whose truncation is −1 or below the reference conversion is undefined; the reduction modulo 2¹⁶ states the result it has, the low 16 bits of the truncated integer. The edge consequences are TER-121 for tiles and TER-153 for the world grid.
+The sum runs left to right. Evaluating v × (1 − fx) × (1 − fz) left to right instead rounds differently and changes the heights. An index whose truncation is −1 or below converts by the reduction modulo 2¹⁶ of TER-072: the result is the low 16 bits of the truncated integer, a defined value for every finite input. The edge consequences are TER-121 for tiles and TER-153 for the world grid.
 
 **TER-074** (MUST) `IndexX`(*r*) = trunc((*r* − *x*₀) × *invX*) as a signed integer, so −0.5 gives 0; `IndexZ` likewise.
 
 **TER-075** (MUST) `Nearest`(*x*, *z*) = `At`(⌊*x* × *invX*⌋, ⌊*z* × *invZ*⌋); it ignores the grid's origin, so it serves only grids with origin (0, 0). The terrain does not use it.
 
-**TER-076** (MUST) `Highest`() starts with `At`(0, 0) and scans *z* from 0 to rows − 1 (outer) and *x* from 0 to rows − 1 (inner), the row count bounding both loops. On a square grid this is the highest sample of the grid. Tiles are always square, and so is every reference terrain; on a grid with more columns than rows the scan ignores the last columns, and with fewer columns it reads the outside value beyond the last column (see DEC-966 item 2).
+**TER-076** (MUST) `Highest`() starts with `At`(0, 0) and scans *z* from 0 to rows − 1 (outer) and *x* from 0 to rows − 1 (inner), the row count bounding both loops. On a square grid this is the highest sample of the grid. Tiles are always square; on a grid with more columns than rows the scan ignores the last columns, and with fewer columns it reads the outside value beyond the last column (see DEC-966 item 2).
 
 **TER-077** (MUST) `Normalize`(*v*) computes *l* = *v.x* × *v.x* + *v.y* × *v.y* + *v.z* × *v.z*, summed left to right. If *l* > `ter.math.normalise_min_length_sq` (10⁻¹⁰), it multiplies each component by *s* = 1 ÷ sqrt32(*l*); otherwise the result is `ter.math.normalise_fallback` (0, 0, 1) (DEC-241 item 6).
 
@@ -131,7 +131,7 @@ Table 4.4-A Pass plans (passes; first step; half-steps).
 | 7 (129) | 8; 128; 64, 32, 16, 8, 4, 2, 1 | 7; 64; 32, 16, 8, 4, 2, 1 | 6; 32; 16, 8, 4, 2, 1 | 5; 16; 8, 4, 2, 1 | 4; 8; 4, 2, 1 | 3; 4; 2, 1 |
 | 8 (257) | 9; 256; 128, 64, 32, 16, 8, 4, 2, 1 | 8; 128; 64, 32, 16, 8, 4, 2, 1 | 7; 64; 32, 16, 8, 4, 2, 1 | 6; 32; 16, 8, 4, 2, 1 | 5; 16; 8, 4, 2, 1 | 4; 8; 4, 2, 1 |
 
-The 445 tiles of the reference content use *n* = 9 (4 tiles), 17 (36), 33 (70), 65 (236), 129 (71) and 257 (28); their ratio (*n* − 1) ÷ *req* lies between 0.94 and 1.95, so a tile is sampled at roughly one to two tile samples per world cell.
+Because *n* − 1 = 2^*k* with *req* − 1 ≤ 2^*k* < 2 (*req* − 1), the ratio (*n* − 1) ÷ *req* lies from (*req* − 1) ÷ *req* up to below 2, so a tile is sampled at roughly one to two tile samples per world cell.
 
 ```mermaid
 flowchart TD
@@ -198,18 +198,18 @@ Representative magnitude, from vector set A (§7.2), tile 2 (*n* = 65, *fd* = 1.
 
 Table 4.7-A Tile edge cases.
 
-| Case | Result | In the reference content |
-|---|---|---|
-| *k* = *p*: the guide grid is as dense as the tile | *scale* = 1, every interior sample is a guide point; *iterations* = 1 with step 1, the pass that changes nothing: the tile is its guide grid inside a border at the outside height | 6 tiles |
-| *heightScale* = 0 | *comp* = 0, every noise is ±0: the tile is the pure method-0, method-1 or method-2 interpolation of its guide points and border | 4 tiles |
-| *heightScale* = 0, *p* = 0, position y > 0 | the tile is flat at outside height + position y; after the rescale it is a plateau at about the desired height over the whole footprint, a level-design technique | — |
-| *ls* = 0 | *E*(*b*) = 0.25 for every *b* (pow32(*x*, 0) = 1, pow32(0, 0) included); the ls modifier is 15.353 | 50 tiles |
-| *fd* = 0 | *R* = 1 in every pass, the final half-step-0 pass included (pow32(0, 0) = 1), so that pass adds noise of amplitude *comp* × *E* ÷ 2 to every sample with *x*, *z* < *n* − 1, **border row and column 0 included** | never (the smallest *fd* is 0.57) |
-| *req* = 2 (size from 2 to under 3 cell sizes) | *k* = 0, *n* = 2, one pass that changes nothing: a flat tile | never |
+| Case | Result |
+|---|---|
+| *k* = *p*: the guide grid is as dense as the tile | *scale* = 1, every interior sample is a guide point; *iterations* = 1 with step 1, the pass that changes nothing: the tile is its guide grid inside a border at the outside height |
+| *heightScale* = 0 | *comp* = 0, every noise is ±0: the tile is the pure method-0, method-1 or method-2 interpolation of its guide points and border |
+| *heightScale* = 0, *p* = 0, position y > 0 | the tile is flat at outside height + position y; after the rescale it is a plateau at about the desired height over the whole footprint, a level-design technique |
+| *ls* = 0 | *E*(*b*) = 0.25 for every *b* (pow32(*x*, 0) = 1, pow32(0, 0) included); the ls modifier is 15.353 |
+| *fd* = 0 | *R* = 1 in every pass, the final half-step-0 pass included (pow32(0, 0) = 1), so that pass adds noise of amplitude *comp* × *E* ÷ 2 to every sample with *x*, *z* < *n* − 1, **border row and column 0 included** |
+| *req* = 2 (size from 2 to under 3 cell sizes) | *k* = 0, *n* = 2, one pass that changes nothing: a flat tile |
 
-**TER-111** (MUST) Two guide-grid cases have defined results that are not equivalent to the absence of a guide grid. With *p* > 0 and an all-zero guide grid, the guide points are pinned at height 0, above the negative border, which raises the tile's interior before any noise (vector set A, tiles 0 and 1). With *k* < *p*, *scale* is 0, so every guide value is written to sample (0, 0) and the last one (*x* = *z* = *r* − 1) remains; *iterations* ≤ 0, so there is no displacement, and the tile is flat at the outside height except that corner. The second case never occurs in the reference content.
+**TER-111** (MUST) Two guide-grid cases have defined results that are not equivalent to the absence of a guide grid. With *p* > 0 and an all-zero guide grid, the guide points are pinned at height 0, above the negative border, which raises the tile's interior before any noise (vector set A, tiles 0 and 1). With *k* < *p*, *scale* is 0, so every guide value is written to sample (0, 0) and the last one (*x* = *z* = *r* − 1) remains; *iterations* ≤ 0, so there is no displacement, and the tile is flat at the outside height except that corner.
 
-**TER-112** (MUST) The content build rejects, with a diagnostic, a tile whose result the reference leaves undefined (DEC-015; see DEC-968 item 1): a size below 2 cell sizes (*req* ≤ 1, where ceilLog2(0) is −∞ and its integer conversion is undefined); a generation method other than 0, 1 or 2 (the base value is never set); and a guide grid whose cell count is not *r*². None of these occurs in the reference content.
+**TER-112** (MUST) The content build rejects, with a diagnostic, a tile whose result the generator does not define (DEC-015; see DEC-968 item 1): a size below 2 cell sizes (*req* ≤ 1, where ceilLog2(0) is −∞ and its integer conversion is undefined); a generation method other than 0, 1 or 2 (the base value is never set); and a guide grid whose cell count is not *r*².
 
 ### 4.8 Composition of tiles
 
@@ -242,12 +242,12 @@ The integers posX, posZ and size are converted to binary64 where they meet a bin
 
 Table 4.8-A Tile-sampler cases.
 
-| Case | Result | Reads in the 57 reference map files | Required |
-|---|---|---|---|
-| 0 ≤ *fx* < *n* − 1 | bilinear between tile columns ⌊*fx*⌋ and ⌊*fx*⌋ + 1 | almost every read | yes |
-| −1 < *fx* < 0: the first world sample lies slightly before the tile origin, because posXi rounds to the nearest sample | truncation gives *i*1 = 0, *i*2 = 1, and the weight *fx* + 1 on column 1: the value is mirrored into the tile (at *fx* = −0.3 the result is 0.3 × column 0 + 0.7 × column 1) | 22 771 reads | **yes**: a sampler based on ⌊*fx*⌋ = −1 that clamps or returns the outside value gives different heights, and the difference survives the maximum wherever the tile border lies above the existing terrain |
-| *fx* ≤ −1 | cannot occur for a tile with a non-negative origin: the first world sample lies at most half a world cell before the origin, and half a world cell is less than one tile cell, because cell size ÷ tile cell ≤ *n* ÷ *req* < 2 (*n* = 2^*k* + 1 with 2^*k* < 2 (*req* − 1)) | none | — |
-| *fx* ≥ *n* − 1: the far edge of the footprint, because the tile's last sample lies at size × (*n* − 1) ÷ *n*, short of the footprint edge | *i*1 or *i*2 reaches *n* and is reset to column 0 (TER-073); columns 0 and *n* − 1 both hold the border value outside height + position y, so the result equals clamping to the border for every position y | 15 334 reads | its value: clamping to the border is equivalent; returning the bare outside height off the tile is not |
+| Case | Result | Required |
+|---|---|---|
+| 0 ≤ *fx* < *n* − 1 | bilinear between tile columns ⌊*fx*⌋ and ⌊*fx*⌋ + 1 | yes |
+| −1 < *fx* < 0: the first world sample lies slightly before the tile origin, because posXi rounds to the nearest sample | truncation gives *i*1 = 0, *i*2 = 1, and the weight *fx* + 1 on column 1: the value is mirrored into the tile (at *fx* = −0.3 the result is 0.3 × column 0 + 0.7 × column 1) | **yes**: a sampler based on ⌊*fx*⌋ = −1 that clamps or returns the outside value gives different heights, and the difference survives the maximum wherever the tile border lies above the existing terrain |
+| *fx* ≤ −1 | cannot occur for a tile with a non-negative origin: the first world sample lies at most half a world cell before the origin, and half a world cell is less than one tile cell, because cell size ÷ tile cell ≤ *n* ÷ *req* < 2 (*n* = 2^*k* + 1 with 2^*k* < 2 (*req* − 1)) | — |
+| *fx* ≥ *n* − 1: the far edge of the footprint, because the tile's last sample lies at size × (*n* − 1) ÷ *n*, short of the footprint edge | *i*1 or *i*2 reaches *n* and is reset to column 0 (TER-073); columns 0 and *n* − 1 both hold the border value outside height + position y, so the result equals clamping to the border for every position y | its value: clamping to the border is equivalent; returning the bare outside height off the tile is not |
 
 **TER-122** (MUST) The merge remaps every tile linearly about the outside height, so that its highest sample becomes its desired height and a sample at the outside height stays there: *h*_world = outside + (*h*_tile − outside) × (desired − outside) ÷ (highest − outside + `ter.merge.range_epsilon`); the epsilon (0.001) only prevents a division by zero for a flat tile. Consequences:
 
@@ -261,7 +261,7 @@ Table 4.8-A Tile-sampler cases.
 - **No smoothing between tiles.** The seams between overlapping tiles are creases of the maximum.
 - **Footprint quantisation.** The footprint starts at the world sample nearest to (posX, posZ) and is trunc(size ÷ cell size) samples wide, so tile edges snap to the world grid, while the tile itself is sampled at its true, unsnapped position.
 
-**TER-124** (MUST) A tile may hang off the map edge: its writes to samples outside the grid are dropped. The conversion of posX ÷ cell size + 0.5 (and the same on z) to an index truncates toward zero and is defined for values above −1. A tile whose footprint lies wholly outside the grid has no effect and is skipped; the reference content holds two such tiles, parked far outside their maps with a negative position y. The content build rejects a tile whose index value is −1 or below while its footprint overlaps the grid (DEC-015; see DEC-968 item 1): the reference result is undefined there (the destination index wraps back onto the grid while the sampling coordinate does not, so the tile writes only its border value). No reference tile is in that situation; every on-map tile origin is at −1 wu or above.
+**TER-124** (MUST) A tile may hang off the map edge: its writes to samples outside the grid are dropped. The conversion of posX ÷ cell size + 0.5 (and the same on z) to an index truncates toward zero and is defined for values above −1. A tile whose footprint lies wholly outside the grid has no effect and is skipped. The content build rejects a tile whose index value is −1 or below while its footprint overlaps the grid (DEC-015; see DEC-968 item 1): there the destination index would wrap back onto the grid while the sampling coordinate does not, and the tile would write only its border value.
 
 ### 4.9 Flatten areas
 
@@ -297,17 +297,17 @@ ApplyFlattenArea(area):                       # t = centre y, T = threshold, s =
 
 Table 4.9-A Flatten operations.
 
-| Value | Operation | New value | Passes | Use in the reference content |
+| Value | Operation | New value | Passes | Effect |
 |---|---|---|---|---|
-| 0 | Absolute | *t* | 1 | levels pads to *t* from −26.0 to 68.2 wu |
-| 1 | Add | *t* + *cur* | 1 | raises an area by 24.1 wu |
-| 2 | Subtract | *cur* − *t* where *cur* > *T*, else *cur* | 1 | with *t* = 886.2 and *T* = 348.9, cuts a pit down to −537.05 wu, below the sea |
-| 3 | Smooth | where *cur* > *T*: *v* = *cur* × (*t* ÷ *cur*), about *t* after two roundings, then the four neighbours W (*i* − 1), E (*i* + 1), N (*j* + 1) and S (*j* − 1) added **one at a time, starting from the centre term** (never *v* + (the sum of the neighbours)), then ÷ 6.0; elsewhere *v* = *t*; finally min(*v*, *cur*) | 2 | softens and lowers hilltops; one area of half-width 1000 wu uses *t* = 62.0 and *T* = 11.7 |
-| 4 | Subtract2 | *cur* − *t* where *cur* < *T*, else *cur* | 1 | with *t* = 126.2 and *T* = 118.4, lowers everything below 118.4 wu by 126.2 wu |
+| 0 | Absolute | *t* | 1 | levels an area, such as a building pad, at *t* |
+| 1 | Add | *t* + *cur* | 1 | raises an area by *t* |
+| 2 | Subtract | *cur* − *t* where *cur* > *T*, else *cur* | 1 | cuts the samples above *T* down by *t*; with *t* > *T* a pit reaches below the sea |
+| 3 | Smooth | where *cur* > *T*: *v* = *cur* × (*t* ÷ *cur*), about *t* after two roundings, then the four neighbours W (*i* − 1), E (*i* + 1), N (*j* + 1) and S (*j* − 1) added **one at a time, starting from the centre term** (never *v* + (the sum of the neighbours)), then ÷ 6.0; elsewhere *v* = *t*; finally min(*v*, *cur*) | 2 | softens and lowers hilltops (TER-144) |
+| 4 | Subtract2 | *cur* − *t* where *cur* < *T*, else *cur* | 1 | lowers every sample below *T* by *t* |
 
 **TER-144** (MUST) The smooth operation keeps its arithmetic, biases included (DEC-324): it never raises terrain (min(*v*, *cur*)); samples at or below *T* are capped at *t*, so with *t* ≥ *T* they are unchanged; samples above *T* become (*t* + the sum of the four neighbours) ÷ 6, five terms over a divisor of six, so a plateau of height *H* much above *t* is pulled down to about (*t* + 4*H*) ÷ 6 per pass, about 0.44 *H* plus *t* terms after the two passes, as well as smoothed. Whether the map editor also offers a true blur and a separate lowering operation is DEC-324.
 
-**TER-145** (MUST) The order of the four additions matters: in the reference content, one smooth area makes 28 660 above-threshold evaluations in its two passes, and 3 635 of them give a different binary64 value when the neighbours are summed first (vector set C, §7.2).
+**TER-145** (MUST) The order of the four additions matters: the smooth area of vector set C (§7.2), over the generated terrain of set A, makes 2 888 above-threshold evaluations in its two passes, and 377 of them give a different binary64 value when the neighbours are summed first.
 
 ## 5 Concurrency and performance budget
 
@@ -403,28 +403,28 @@ Table 7.2-F Set B: the first five calls (first step 4, half-step 2).
 | 4 | Square(2, 10, 2) | 11478: A = *h*(0, 8) = −26.1299991607666 | 29358: −0.6432491962051347 | (2, 10) = −26.773248356971735 |
 | 5 | Diamond(2, 8, 2) | 26962: E = *h*(4, 8) = 0.0 | 24464: −0.009966779196249498 | (2, 8) = −0.009966779196249498 |
 
-**Vector set C** is one evaluation of the smooth operation: *t* = 62.0, *T* = 11.7, *cur* = 20.305899393655125 (above *T*), with the neighbours W = 6.921732493425324 and S = 2.4006731601979148, already rewritten earlier in the same pass, and E = 21.20888188060145 and N = 27.02387309504114, still at their merged heights.
+**Vector set C** is one smooth area applied to the generated terrain of set A: centre (1350, 45.0, 1350), half-width 300 wu and threshold 18.3 (18.299999237060547 after rounding), which visits columns and rows 67 to 104. Its two passes make 2 888 above-threshold evaluations, 377 of which differ when the neighbours are summed first (TER-145). Table 7.2-G is its first such evaluation in pass 1, at sample (68, 68): *cur* = 89.06810992480656 (above *T*), with the neighbours W = 62.64300369864562 and S = 62.691642555223666, already rewritten earlier in the same pass, and E = 91.00231727471159 and N = 90.58030110349861, still at their merged heights.
 
 Table 7.2-G Set C.
 
 | Quantity | Value |
 |---|---|
-| *v* = *cur* × (*t* ÷ *cur*) | 61.99999999999999 |
-| after + W, + E, + N, + S | 68.92173249342531, 90.13061437402676, 117.1544874690679, 119.55516062926581 |
-| ÷ 6.0, written because it is below *cur* | **19.925860104877636** |
-| the neighbours summed first (wrong) | 19.92586010487764 |
+| *v* = *cur* × (*t* ÷ *cur*) | 45.0 |
+| after + W, + E, + N, + S | 107.64300369864563, 198.64532097335723, 289.22562207685587, 351.91726463207954 |
+| ÷ 6.0, written because it is below *cur* | **58.65287743867992** |
+| the neighbours summed first (wrong) | 58.652877438679916 |
 
-**Vector set D** applies five flatten areas, in this order, to a terrain of world size 120 × 120 wu, cell size 12 wu and outside height −10 wu with no tiles (10 × 10 samples, all −10): (1) Absolute, centre (60, 5, 60), half-width 20; (2) Add, centre (60, 24.1, 60), half-width 8; (3) Subtract, centre (60, 4, 60), half-width 20, threshold 10; (4) Subtract2, centre (60, 3, 60), half-width 20, threshold 6; (5) Smooth, centre (60, 1, 60), half-width 20, threshold 0.5. The half-width 20 covers columns and rows 4 to 6 (world 48 to 72); the half-width 8 covers only sample (5, 5).
+**Vector set D** applies five flatten areas, in this order, to a terrain of world size 120 × 120 wu, cell size 12 wu and outside height −10 wu with no tiles (10 × 10 samples, all −10): (1) Absolute, centre (60, 5, 60), half-width 20; (2) Add, centre (60, 18.7, 60), half-width 8; (3) Subtract, centre (60, 4, 60), half-width 20, threshold 10; (4) Subtract2, centre (60, 3, 60), half-width 20, threshold 6; (5) Smooth, centre (60, 1, 60), half-width 20, threshold 0.5. The half-width 20 covers columns and rows 4 to 6 (world 48 to 72); the half-width 8 covers only sample (5, 5).
 
 Table 7.2-H Set D: samples (*i*, *j*) for *i*, *j* from 4 to 6 after each step; every other sample stays −10.
 
 | After | Row *j* = 4 | Row *j* = 5 | Row *j* = 6 |
 |---|---|---|---|
 | (1) Absolute | 5, 5, 5 | 5, 5, 5 | 5, 5, 5 |
-| (2) Add | 5, 5, 5 | 5, 29.100000381469727, 5 | 5, 5, 5 |
-| (3) Subtract | 5, 5, 5 | 5, 25.100000381469727, 5 | 5, 5, 5 |
-| (4) Subtract2 | 2, 2, 2 | 2, 25.100000381469727, 2 | 2, 2, 2 |
-| (5) Smooth | −2.5, −2.0833333333333335, −2.5 | −2.0833333333333335, −0.9722222222222223, −1.3333333333333333 | −2.5, −1.3333333333333333, −3.611111111111111 |
+| (2) Add | 5, 5, 5 | 5, 23.700000762939453, 5 | 5, 5, 5 |
+| (3) Subtract | 5, 5, 5 | 5, 19.700000762939453, 5 | 5, 5, 5 |
+| (4) Subtract2 | 2, 2, 2 | 2, 19.700000762939453, 2 | 2, 2, 2 |
+| (5) Smooth | −2.5, −2.1083333227369523, −2.5499999788072376 | −2.1083333227369523, −0.9888888818246349, −1.358333322736952 | −2.549999978807237, −1.358333322736952, −3.619444440912318 |
 
 The asymmetry of step (5) comes from the in-place order (TER-141): sample (4, 4) is (1 − 10 + 2 + 2 − 10) ÷ 6 = −2.5 in the first pass and is kept by the second, while sample (6, 6) reads its W and S neighbours after they were lowered.
 

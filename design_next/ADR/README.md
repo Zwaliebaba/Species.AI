@@ -10,7 +10,7 @@ ADRs cover engine technology only. Game design lives in `reference/` and `decisi
 
 ## Index
 
-The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, meshes, audio, input, UI, animation and VFX), and ADR-050 to ADR-077, the toolchain, the content pipeline and operations; ADR-037 to ADR-049 are unassigned and stay unused. A new record takes the next id after the highest existing one, whatever its topic (O22, `AGENTS.md` §6); the two baseline ranges are not a numbering policy.
+The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, meshes, audio, input, UI, animation and VFX), and ADR-050 to ADR-078, the toolchain, the content pipeline, operations and the GPU resource factory; ADR-037 to ADR-049 are unassigned and stay unused. A new record takes the next id after the highest existing one, whatever its topic (O22, `AGENTS.md` §6); the two baseline ranges are not a numbering policy.
 
 | Number | Title | Status | Date |
 |---|---|---|---|
@@ -78,6 +78,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-075](ADR-075-application-window-and-dpi-awareness.md) | Application window: a platform-owned Win32 window, per-monitor DPI awareness v2, windowed and borderless full-screen modes | Accepted | 2026-10-17 |
 | [ADR-076](ADR-076-screenshot-encoding.md) | Screenshot encoding: the in-box Windows Imaging Component PNG encoder; video capture by external tools | Accepted | 2026-10-17 |
 | [ADR-077](ADR-077-client-http-stack.md) | Client HTTP stack: the in-box WinHTTP, HTTPS only, with operating-system certificate validation and the system proxy | Proposed | 2026-10-17 |
+| [ADR-078](ADR-078-gpu-resource-factory.md) | GPU resource factory: one creation seam for every client GPU resource | Proposed | 2026-10-18 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

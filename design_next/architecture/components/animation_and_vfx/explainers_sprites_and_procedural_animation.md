@@ -378,6 +378,8 @@ Diagnostics: the development overlay can draw each spider's foot homes, targets 
 
 ## 7 Acceptance tests
 
+The golden-image tests compare with the default tolerance and on the pinned reference configuration of the test harness ([diagnostics, test and performance](../diagnostics_test_and_performance/README.md) §4.8), unless a test states its own tolerance.
+
 | Test | Kind | Checks | Requirements |
 |---|---|---|---|
 | T1 explainer sampling | unit | an object is hidden before its first key and holds after its last; x, y and scale follow the ease, angle and alpha are linear, the alpha truncated; ties take the first key; keys 0.005 s apart count as one | VFX-103, VFX-106 |

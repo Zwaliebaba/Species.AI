@@ -108,8 +108,8 @@ struct WaveMeshSource
   double cell;
   std::vector<std::array<WaveVertex, 2>> pairs; // build order
 };
-WaveMeshSource SelectWaveVertexPairs(const TerrainField& _field, const SeaMasks& _masks, int _seaDetail,
-                                     FxRng& _shoreNoise); // TER-201
+// TER-201; the value of _seaDetail (1 to 3, never DetailLevel::None) scales the wave cell
+WaveMeshSource SelectWaveVertexPairs(const TerrainField& _field, const SeaMasks& _masks, DetailLevel _seaDetail, FxRng& _shoreNoise);
 
 ColorRgba FacetColor(const ImageRgba8& _ramp, float _facetNormalY, const Vec3& _center, float _highest,
                      FxRng& _colorVariation); // TER-181
@@ -285,7 +285,7 @@ Caption: the terrain pipeline of one match-world initialisation; everything belo
 
 **TER-061** (MUST) Generation computes in IEEE-754 binary64 with rounding to nearest, ties to even: every expression is evaluated in the order written in this document, and every operation is rounded to binary64, with no fused multiply–add contraction, no reassociation, no extended-precision intermediate and no flush to zero. Where this document writes "binary32", the value is rounded to binary32 and widened again. This is the reference numeric model, the default of DEC-240; it reproduces the reference heights only when every participant's rounded transcendental results agree (TER-065, DEC-246 item 5).
 
-**TER-062** (MUST) Two evaluation orders are kept exactly: the weights-first bilinear sum (TER-073), whose rewriting changes practically every terrain, and the sequential additions of the smooth operation (TER-143), whose rewriting changes every terrain with a smooth area acting above its threshold, 11 of the 57 reference map files (DEC-246 item 6).
+**TER-062** (MUST) Two evaluation orders are kept exactly: the weights-first bilinear sum (TER-073), whose rewriting changes practically every terrain, and the sequential additions of the smooth operation (TER-143), whose rewriting changes every terrain with a smooth area acting above its threshold (DEC-246 item 6).
 
 The steps of the pipeline are specified in the other two files of this folder: [height-field generation](height_field_generation.md) §4.2 to §4.9 (numeric primitives, the private tile generator, tile generation, the generation methods, noise, tile edge cases, the composition of tiles, flatten areas), and [edges, normals, colours and sea](edges_normals_colours_and_sea.md) §4.10 to §4.16 (the world grid and its edges, simulation normals, the colour-ramp look-up and its generators, the sea derivations, the lifecycle, the conversions).
 
@@ -350,14 +350,15 @@ Every value is a reference value adopted as the Species engine baseline (DEC-004
 | `ter.sea.wave.brightness_scale` | 4.0 | — | | TER-205 | |
 | `ter.sea.wave.colour_mix` | 0.7, 0.3 | — | the other vertex's brightness weighs 0.7 | TER-205 | |
 | `ter.test.log2_check_limit` | 70 000 | — | ceilLog2 is exact below it | TER-067 | |
+| `ter.perf.generation_budget_ms` | 2000 | ms | provisional Species budget, not a reference value: generation's share of `ast.load.match_entry_budget_s` | TER-242 | DEC-226 |
 
 ## 5 Concurrency and performance budget
 
-**TER-240** (MUST) Generation is linear in the work of its passes: a tile of *n* × *n* samples makes Σ (3*c*² − 2*c*) square and diamond calls over its passes (TER-092), each with one or two draws and one envelope power, plus one amplitude power per call; the merge reads trunc(size ÷ cell size)² world samples per tile; the normals make three square roots per sample. Generating all the reference terrains makes about 39.7 million power calls, about 0.6 million per terrain on average (DEC-247 item 10); the largest tile, 257 × 257 samples with *p* = 2, makes 261 112 calls.
+**TER-240** (MUST) Generation is linear in the work of its passes: a tile of *n* × *n* samples makes Σ (3*c*² − 2*c*) square and diamond calls over its passes (TER-092), each with one or two draws and one envelope power, plus one amplitude power per call; the merge reads trunc(size ÷ cell size)² world samples per tile; the normals make three square roots per sample. A tile of 257 × 257 samples with *p* = 2 makes 261 112 calls (vector set A, tile 0), so the performance terrain of T26, 25 such tiles, makes 6 527 800 (DEC-247 item 10).
 
-**TER-241** (MUST) A height sample takes 8 bytes and a normal 24 bytes. The largest reference terrain, 334 × 334 samples, holds 0.89 MB of heights and 2.68 MB of normals (DEC-247 item 7). A tile grid exists only during its tile's generation and merge, at most 257 × 257 binary64 samples (0.53 MB) in the reference content. The sea masks take 64 KiB for the shore-mask image, 64 KiB for the depth map, which is released after the wave meshes are built (TER-195), and 1 024 flags for the flat-water tiles.
+**TER-241** (MUST) A height sample takes 8 bytes and a normal 24 bytes: the performance terrain of T26, 334 × 334 samples, holds 0.89 MB of heights and 2.68 MB of normals, and both grow with the sample count up to the content-build limit `ter.grid.max_samples_per_side` (DEC-247 item 7). A tile grid exists only during its tile's generation and merge: *n* × *n* binary64 samples, 0.53 MB for *n* = 257. The sea masks take 64 KiB for the shore-mask image, 64 KiB for the depth map, which is released after the wave meshes are built (TER-195), and 1 024 flags for the flat-water tiles.
 
-**TER-242** (MUST) Generation runs during match-world initialisation, outside every tick and frame budget: no tick runs and no command frame is taken until initialisation has finished (R-SIM-612). It never runs inside a simulation update slice or a rendered frame. The load budget and its progress reporting are DEC-226; the performance test T26 measures generation on the minimum CPU.
+**TER-242** (MUST) Generation runs during match-world initialisation, outside every tick and frame budget: no tick runs and no command frame is taken until initialisation has finished (R-SIM-612). It never runs inside a simulation update slice or a rendered frame. Its share of the match-entry load budget ([asset pipeline](../asset_pipeline_and_resources.md) AST-130) is `ter.perf.generation_budget_ms` (2000 ms), provisional until DEC-226 sets the load targets and their progress reporting; the performance test T26 measures generation on the reference test machine (DBG-209), and until DEC-971 pins that machine it reports the time and does not fail.
 
 **TER-243** (MUST) `Height`, `HeightAt`, `Normal`, `NormalAt` and `IsInside` take constant time; `CastRay` and `LineOfSight` take time proportional to the number of cells the ray crosses. Every query runs concurrently with every other query on any thread (TER-010).
 
@@ -380,7 +381,7 @@ Every value is a reference value adopted as the Species engine baseline (DEC-004
 | Test | Kind | Checks | Requirements |
 |---|---|---|---|
 | T1 tile generator | unit | after `Seed`(1), the first eight `Next`() results are those of TER-081; `Signed`(*R*) gives +*R*/2 for a draw of 0 | TER-080, TER-081 |
-| T2 decimal rounding | unit | the parser and *r32* give 15.76 → 15.760000228881836, −15.39 → −15.390000343322754, 1.2 → 1.2000000476837158, −26.13 → −26.1299991607666, 24.1 → 24.100000381469727 and 11.7 → 11.699999809265137 | TER-066 |
+| T2 decimal rounding | unit | the parser and *r32* give 15.76 → 15.760000228881836, −15.39 → −15.390000343322754, 1.2 → 1.2000000476837158, −26.13 → −26.1299991607666, 18.7 → 18.700000762939453 and 18.3 → 18.299999237060547 | TER-066 |
 | T3 ceilLog2 | property | ceilLog2(*x*) equals the exact ⌈log₂ *x*⌉ for every integer from 1 to 69 999 | TER-065, TER-067 |
 | T4 grid reads | unit | on a 4 × 3 grid with distinct values, `At` returns the outside value at columns −1, 4, 65 535 and −32 768 and at rows −1 and 3, and `Set` there changes nothing | TER-072 |
 | T5 bilinear sampler | unit | `Sample` on the same grid gives, for each row of table 4.10-B, the blend that row states, and its weights-first sum differs from a left-to-right product form on a recorded case | TER-073, TER-153 |
@@ -390,7 +391,7 @@ Every value is a reference value adopted as the Species engine baseline (DEC-004
 | T9 set A, method 1 trace | unit | the pins and first four calls of tile 0 equal table 7.2-D; the tile makes 261 112 calls and 1 044 457 events | TER-091, TER-100, TER-102 |
 | T10 set B, method 2 trace | unit | the first five calls equal table 7.2-F; the tile makes 952 calls and 3 817 events, and its highest sample and height factor equal table 7.2-E | TER-091, TER-100, TER-101 |
 | T11 set A result | unit | the world range and probe samples of table 7.2-B; 259 merge reads hit the case −1 < *fx* < 0 | TER-060, TER-120, TER-121, TER-122 |
-| T12 set C, smooth sample | unit | the running sums and result of table 7.2-G, and the different neighbours-first result | TER-142, TER-143, TER-145 |
+| T12 set C, smooth sample | unit | the running sums and result of table 7.2-G, the different neighbours-first result, and the counts of TER-145 over the whole area | TER-142, TER-143, TER-145 |
 | T13 set D, flatten operations | unit | the five operations applied in order to a flat field give the blocks of table 7.2-H, including the in-place order of the smooth passes | TER-140 to TER-144 |
 | T14 tile order | property | every permutation of the tiles of a random terrain without flatten areas gives the same digest | TER-123 |
 | T15 normals | property | on a plane *h* = *a* *x* + *b* *z* every interior normal is (−*a*, 1, −*b*) ÷ \|(−*a*, 1, −*b*)\| within 10⁻⁶ (for *a* = 0.5, *b* = 0.25: (−0.4364357865767628, 0.8728715731535256, −0.2182178932883814)); a flat field and an isolated spike give (0, 1, 0); off-grid `NormalAt` gives (0, 1, 0); `Normal` between unequal corners is shorter than 1 | TER-013, TER-170, TER-171 |
@@ -404,7 +405,7 @@ Every value is a reference value adopted as the Species engine baseline (DEC-004
 | T23 cross-build determinism | golden-hash | the digests of T22 are identical on at least two CPU generations of each of two x64 vendors and in the Debug and Release builds of every project that generates terrain (DEC-240 item 9) | TER-061, TER-065 |
 | T24 immutability | property | the field's digest is unchanged after every presentation option change, after device removal and after a match of concurrent queries; no option change regenerates or rebuilds anything | TER-010, TER-220, TER-221 |
 | T25 rays and line of sight | unit | a vertical ray hits the triangle of TER-017 under it; a ray starting outside the grid enters through the facing edge; a ray from outside with *direction.x* = 0 gives a finite entry; the line-of-sight margin applies at both ends | TER-016 to TER-019 |
-| T26 performance | performance | on the minimum CPU, generation of a synthetic terrain at the reference envelope's maximum (334 × 334 samples, 25 tiles of 257 × 257 tile samples, 6 flatten areas) and of the largest Species map is timed and recorded against the load budget (DEC-226); memory matches TER-241 | TER-240, TER-241, TER-242 |
+| T26 performance | performance | on the reference test machine (DBG-209), generation of the performance terrain, a synthetic terrain of 334 × 334 samples with 25 tiles of 257 × 257 tile samples (*p* = 2) and 6 flatten areas whose parameters the test suite records, and of the largest Species map is timed against `ter.perf.generation_budget_ms` (TER-242); until DEC-971 pins the machine the test reports the time and does not fail; memory matches TER-241 | TER-240, TER-241, TER-242 |
 
 The vector sets that tests T7 to T13 use are [§7.2](height_field_generation.md#72-vector-sets) of the height-field generation document.
 
@@ -430,6 +431,7 @@ The vector sets that tests T7 to T13 use are [§7.2](height_field_generation.md#
 | DEC-246 | Open | the terrain runtime model, terrain content identity, off-map heights and stateless cosmetics (TER-009, TER-061, TER-153, TER-187, TER-221, TER-252) |
 | DEC-247 | Open | terrain scale, large-world terrain and the grid-size limit (TER-009, TER-155, TER-240, TER-241) |
 | DEC-226 | Open | loading, streaming and the load budget (TER-222, TER-242) |
+| DEC-971 | Open | the reference test machine on which T26 is timed; until it is pinned, T26 reports and does not fail (TER-242) |
 | DEC-324 | Open | the parameter semantics, the method-2 bias and the smooth divisor; unbiased variants in the editor (TER-032, TER-101, TER-106, TER-144) |
 | DEC-326 | Open | the grid overlay's pattern relative to the triangle edges (TER-043) |
 | DEC-113 | Open | the off-map reads that make negative coordinates sea restrict the Abductor wander area (TER-153) |
@@ -450,7 +452,7 @@ The map editor is designed fresh by the design phase (DEC-045); [map editor hook
 
 - **Regeneration.** The editor regenerates the field with this generator and its reference arithmetic, biases included, whenever a terrain-panel, tile-panel or flatten-area control changes a value, a tile is added, cloned or deleted, a seed is randomised from the clock, the map is scaled or a guide-grid resolution is applied (R-MAP-325 to R-MAP-335; TER-060). The editor stores only the records; whether a map tool bakes the field is DEC-246.
 - **Guide-grid painting.** The painter edits the byte values of TER-036 (R-MAP-333, R-MAP-334).
-- **Writer precision.** The reference text writer (R-MAP-385 to R-MAP-387) writes the world size as whole numbers and the cell size, outside height and maximum height with 2 decimals; a tile's position x, position z, size, method, seed and guide power as whole numbers, its position y, fractal dimension, height scale and lowland smoothing factor with 2 decimals and its desired height with no decimals, followed by its guide grid when the power is above 0; and every flatten area with all six fields, the centre, size and threshold with 1 decimal. Because decimal fields are rounded to binary32 on reading (TER-066) and to decimals on writing, a load and save cycle changes every value that has more decimals than the writer keeps, and the terrain with it; values that already have at most those decimals survive. Species writers are lossless (DEC-800).
+- **Writer precision.** The reference editor's writer is lossy (R-MAP-387); every map tool writes by DEC-800 (R-MAP-388).
 
 ### 8.3 Design-phase inputs
 
@@ -458,7 +460,7 @@ The map editor is designed fresh by the design phase (DEC-045); [map editor hook
 2. **Content identity** (DEC-246, DEC-204, ADR-060): what the session handshake and the advertised session record compare: the digest of the baked grid (TER-252), of the terrain records, or of the whole map asset.
 3. **Numeric model** (DEC-240, DEC-241): binary64 with binary32-rounded transcendental results (the baseline), strict binary64 with an own maths library, or fixed point, and the precision of stored heights and normals.
 4. **Large world** (DEC-247, vision §6 item 6): a continuous world height field in chunks aligned with region boundaries; shared edge samples between chunks; how tiles and flatten areas that straddle chunk boundaries compose; grids beyond `ter.grid.max_samples_per_side` and the 16-bit index semantics of TER-072; coordinate precision far from the origin (binary64 or fixed point in the simulation, camera-relative binary32 in rendering); the memory per chunk and per region.
-5. **Streaming** (DEC-226): loading terrain ahead of a region hand-over without blocking any region's tick, and the load budget of T26.
+5. **Streaming** (DEC-226): loading terrain ahead of a region hand-over without blocking any region's tick, and the generation share `ter.perf.generation_budget_ms` of the match-entry budget (AST-130) that T26 times.
 6. **Strategic zoom** (DEC-247 item 12, vision O9): coarse levels of detail of the height field in the same flat-shaded style, together with the renderer's level-of-detail scheme (ADR-011, RND-138).
 7. **Off-map heights** (DEC-246 item 7): keep the reference edge semantics of TER-153, or clamp, or return the outside height; the Abductor wander area depends on it (DEC-113).
 8. **Cosmetic noise** (DEC-246 item 11): replace the colour and shore-noise chains by stateless functions of position (TER-187), which chunked or streamed colour builds need.

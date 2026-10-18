@@ -421,6 +421,8 @@ Diagnostics: the counts of live and dropped particles per type and class, live e
 
 ## 7 Acceptance tests
 
+The golden-image tests compare with the default tolerance and on the pinned reference configuration of the test harness ([diagnostics, test and performance](../diagnostics_test_and_performance/README.md) §4.8), unless a test states its own tolerance.
+
 | Test | Kind | Checks | Requirements |
 |---|---|---|---|
 | T1 types | build check | the cooked reference definitions hold exactly the values of table 4.2-A | VFX-203, VFX-207 |
@@ -450,7 +452,7 @@ Diagnostics: the counts of live and dropped particles per type and class, live e
 | DEC-106 | Open | the caps and level-of-detail distances are measured on the prototype (VFX-214) |
 | DEC-955 | Resolved | camera shake is an additive view offset, never stored in the pose (VFX-232) |
 | DEC-960 | Resolved | particle sub-steps and fixed-step presentation emitters (VFX-209, VFX-220) |
-| DEC-962 | Open | defaults for emitter values and the shard edge width that the reference does not record (VFX-219, VFX-229) |
+| DEC-962 | Open | Species defaults for emitter values and the shard edge width (VFX-219, VFX-229) |
 | DEC-964 | Open | reduced motion, reduced flashing and the flash-onset limit (VFX-232, VFX-235) |
 | DEC-228 | Open | fixed-capacity effect pools (VFX-212, VFX-230) |
 | DEC-461 | Resolved | turret casings from each turret's own sockets (VFX-219) |
@@ -480,8 +482,6 @@ The design-phase inputs of this component are listed in the [folder README](READ
 | `vfx.particle.class_fill_limits` | 1.0, 0.95, 0.9, 0.8 | × capacity | classes 0 to 3 | VFX-212 | DEC-106 |
 | `vfx.particle.lod.full_distance` | 4000 | wu | full emission within | VFX-213 | DEC-106 |
 | `vfx.particle.lod.cutoff_distance` | 8000 | wu | no emission beyond | VFX-213 | DEC-106 |
-| `vfx.budget.reference_particle_start` | 1500 | slots | reference pool start | VFX-214 | DEC-106 |
-| `vfx.budget.reference_particle_growth` | 200 | slots | reference growth step, no maximum | VFX-214 | DEC-106 |
 | `vfx.particle.alpha` | 90 | of 255 | until the fade | VFX-215 | |
 | `vfx.particle.fade_start` | 0.75 | × life | linear fade over the last quarter | VFX-215 | |
 | `vfx.particle.smoke_shade_divisor` | 100 | — | smoke colour = RGB × alpha ÷ 100 | VFX-217 | |

@@ -247,7 +247,7 @@ A development view of Debug builds toggles each element family of RND-416 off an
 | DEC-106 | Open | the crowd population the look must hold (RND-415) |
 | DEC-316 | Open | the ink text blend and the page transition (RND-425) |
 | DEC-328 | Open | saturated bubble colours (RND-408) |
-| DEC-342 | Dropped | provenance of reference art: every asset is new (RND-391) |
+| DEC-342 | Dropped | reference art and audio: every asset is new (RND-391) |
 | ADR-013 | Proposed | the display-referred working colour space (RND-392) |
 
 **Design-phase inputs.**

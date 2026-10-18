@@ -16,7 +16,7 @@ python3 Tools/DesignModels/TerrainGenerator.py            # check: every test va
 python3 Tools/DesignModels/TerrainGenerator.py traceA     # set A: terrain values, tile 2 events, derived values
 python3 Tools/DesignModels/TerrainGenerator.py traceM1    # set A, tile 0 (method 1): guide pins and first calls
 python3 Tools/DesignModels/TerrainGenerator.py traceB     # set B (method 2): first calls, highest sample
-python3 Tools/DesignModels/TerrainGenerator.py smooth     # set C: one smooth evaluation
+python3 Tools/DesignModels/TerrainGenerator.py smooth     # set C: one smooth evaluation (its inputs come from set A)
 python3 Tools/DesignModels/TerrainGenerator.py flatten    # set D: the five flatten areas in order
 python3 Tools/DesignModels/TerrainGenerator.py full       # traceA, then normals and bilinear reads
 python3 Tools/DesignModels/TerrainGenerator.py log2       # ceilLog2 for every integer from 1 to 69 999

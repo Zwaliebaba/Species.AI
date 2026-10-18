@@ -8,7 +8,7 @@ Notation: a **key** is the canonical name of a pack entry (§3.1); an **asset id
 
 ## 1 Responsibilities and boundaries
 
-**AST-001** (MUST) The asset pipeline owns these build-time parts of the content build (ADR-059), which the content build tool runs, a tool project of the one solution under `Tools/` that never ships and never links into the executable (AGENTS.md §2): reading the asset manifest and the import record of every source (§3.2 to §3.11); the texture, mesh, collision and audio cookers (§4.2 to §4.6); derived variants (§4.3); placeholders (§4.7); the asset validators (§4.8); the pack writer (§4.9); and the entry hashes and the content manifest (§4.10).
+**AST-001** (MUST) The asset pipeline owns these build-time parts of the content build (ADR-059), which the content build tool runs: a development tool, a tool project under `Tools/` that never ships and never links into the executable (AGENTS.md §2): reading the asset manifest and the import record of every source (§3.2 to §3.11); the texture, mesh, collision and audio cookers (§4.2 to §4.6); derived variants (§4.3); placeholders (§4.7); the asset validators (§4.8); the pack writer (§4.9); and the entry hashes and the content manifest (§4.10).
 
 **AST-002** (MUST) It owns these run-time parts: the mount set and the pack reader (§4.11); the asynchronous content reader (§4.13); the asset cache (`AssetCache`), which holds textures and meshes keyed by asset id and processing variant (§4.12, DEC-098); the resident sound banks held by the sample cache (`SampleCache`, ADR-025); and the registry of run-time textures built from RGBA8 images (`ImageRgba8`, §4.15). The asset cache creates, uploads and releases every GPU resource through the renderer's GPU resource factory ([renderer](renderer/README.md) RND-009, ADR-078), in two phases: created once the packs are mounted ([platform layer](platform_layer.md) PLT-038 step 11), it does CPU work only; `AttachGpu` attaches it to the factory once the device exists (step 13); `DetachGpu` releases every GPU resource at shutdown, before the renderer is destroyed.
 
@@ -743,7 +743,7 @@ With *s*₀ = 32 px this places 18 copies, of sides 32, 32, 31, 31, 30, 30, 29, 
 
 ### 4.4 Mesh cooking
 
-**AST-076** (MUST) The mesh cooker first validates each source against the glTF 2.0 specification (for example with the Khronos glTF validator), then against the rules of AST-034 to AST-042 and AST-045, then cooks it as follows (ADR-019, ADR-020, ADR-013, RND-157, RND-160):
+**AST-076** (MUST) The mesh cooker first validates each source against the glTF 2.0 specification with the importer's own checks of ADR-019 (no third-party validator, O30), then against the rules of AST-034 to AST-042 and AST-045, then cooks it as follows (ADR-019, ADR-020, ADR-013, RND-157, RND-160):
 
 ```
 convert every node transform and position to Species world axes and units (unit scale, ADR-016)
@@ -830,7 +830,7 @@ Table 4.7-A Placeholder generators.
 
 **AST-090** (MUST) The content build checks that **no unused file goes into a pack**: every file under the content root belongs to a manifest row (AST-013), and every asset that an edition selects is referenced from that edition's maps, records, scripts or engine asset table, directly or through other referenced assets. An unreferenced asset is an error for an edition marked for release and a warning for any other edition (ADR-059, DEC-563). Until DEC-329 is decided, an asset whose only consumer is an object that no map places but a rule may create during a match counts as referenced, through the record of that object.
 
-**AST-091** (MUST) The content build checks that **no undecodable format goes into a pack**: every source decodes with the decoder of its `source_format`, every glTF source passes the glTF validator, every audio source passes AST-079, and every cooked entry is read back by the runtime loader of its content type and compared with what the cooker wrote.
+**AST-091** (MUST) The content build checks that **no undecodable format goes into a pack**: every source decodes with the decoder of its `source_format`, every glTF source passes the importer's checks of ADR-019, every audio source passes AST-079, and every cooked entry is read back by the runtime loader of its content type and compared with what the cooker wrote.
 
 **AST-092** (MUST) The content build also rejects, each with a diagnostic naming the asset id, the member and the rule: an import record that disagrees with its row (AST-012); a texture that breaks AST-019 to AST-024 or AST-068; a material pairing that breaks AST-021; a mesh that breaks AST-034 to AST-045 or AST-076; a collidable mesh without a collision asset (AST-044); keys or ids that differ only in case or are not canonical (AST-015); a key listed twice in one authoring object and two records with the same stable id (DEC-801); an unknown id or flag in an edition manifest (ADR-056); and an edition marked for release that contains a placeholder (AST-085).
 
@@ -1082,7 +1082,7 @@ Golden-image tests use the default tolerance and reference configuration of the 
 4. **Custom maps.** The custom-map container, its embedded images, its identity, listing and transfer (AST-063, DEC-204).
 5. **Voice.** One recording set for every language, or one per language (DEC-317).
 6. **Test editions.** Which placeholder rows a playtest edition may contain (AST-085).
-7. **Load targets.** The load-time targets for skirmish entry, which replace the provisional budget of AST-130, and for a region hand-over on the minimum specification (DEC-226).
+7. **Load targets.** The load-time targets for skirmish entry, which replace the provisional budget of AST-130, and for a region hand-over, on the reference test machine (DBG-209, DEC-226).
 
 ## 9 Tuning table
 

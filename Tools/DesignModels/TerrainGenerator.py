@@ -422,12 +422,16 @@ def set_b():
   return Terrain(1000, 1000, 20.0, -26.13, 0.0, [tile_b()], [])
 
 
-SET_C = {'t': 62.0, 'threshold': 11.7, 'cur': 20.305899393655125,
-         'neighbours': (6.921732493425324, 21.20888188060145, 27.02387309504114, 2.4006731601979148)}
+# Set C is the smooth flatten area of table 7.2-G applied to the generated set A: centre (1350, 45, 1350), half-width
+# 300, threshold 18.3, the two in-place passes of TER-141. The sample is the first evaluation of pass 1, at (68, 68),
+# whose result depends on the order of the additions; set_c_trace() derives it from set A.
+SET_C_AREA = {'cx': 1350.0, 't': 45.0, 'cz': 1350.0, 'half': 300.0, 'threshold': 18.3}
+SET_C = {'t': 45.0, 'threshold': 18.3, 'cur': 89.06810992480656,
+         'neighbours': (62.64300369864562, 91.00231727471159, 90.58030110349861, 62.691642555223666)}
 
 SET_D_AREAS = [
   (60, 5, 60, 20, FLATTEN_ABSOLUTE),
-  (60, 24.1, 60, 8, FLATTEN_ADD),
+  (60, 18.7, 60, 8, FLATTEN_ADD),
   (60, 4, 60, 20, FLATTEN_SUBTRACT, 10),
   (60, 3, 60, 20, FLATTEN_SUBTRACT2, 6),
   (60, 1, 60, 20, FLATTEN_SMOOTH, 0.5),
@@ -441,6 +445,39 @@ def set_d():
 def block(terrain):
   """Samples (i, j) for i, j from 4 to 6, row by row (table 7.2-H)."""
   return [[terrain.world.get(i, j) for i in range(4, 7)] for j in range(4, 7)]
+
+
+def set_c_trace():
+  """Run the set C smooth area over the generated set A (table 7.2-G) and return its columns, rows, the count of
+  above-threshold evaluations, the count whose result changes when the neighbours are summed first, and the first
+  such evaluation of pass 1 that lies inside the area (its position, current value and neighbours W, E, N, S)."""
+  terrain = set_a()
+  terrain.generate()
+  w = terrain.world
+  a = SET_C_AREA
+  cx, t, cz, size, threshold = f32(a['cx']), f32(a['t']), f32(a['cz']), f32(a['half']), f32(a['threshold'])
+  x1, x2 = int((cx - size) * w.ix) + 1, int((cx + size) * w.ix) + 1
+  z1, z2 = int((cz - size) * w.ix) + 1, int((cz + size) * w.ix) + 1
+  above = differ = 0
+  first = None
+  for p in range(2):
+    for z in range(z1, z2):
+      for x in range(x1, x2):
+        cur = w.get(x, z)
+        nb = (w.get(x - 1, z), w.get(x + 1, z), w.get(x, z + 1), w.get(x, z - 1))
+        v = smooth_value(cur, t, threshold, nb)
+        if cur > threshold:
+          above += 1
+          v0 = cur * (t / cur)
+          alt = (v0 + (((nb[0] + nb[1]) + nb[2]) + nb[3])) / 6.0
+          alt = cur if alt > cur else alt
+          if alt != v:
+            differ += 1
+            inside = x - 1 >= x1 and z - 1 >= z1 and x + 1 < x2 and z + 1 < z2
+            if first is None and p == 0 and inside and v < cur:
+              first = ((x, z), cur, nb)
+        w.put(x, z, v)
+  return (x1, x2 - 1), (z1, z2 - 1), above, differ, first
 
 
 def smooth_trace(c):
@@ -499,20 +536,21 @@ EXPECTED_B_CALLS = [   # table 7.2-F
   ('square', 2, 10, 2, 11478, -26.1299991607666, 29358, -0.6432491962051347, -26.773248356971735),
   ('diamond', 2, 8, 2, 26962, 0.0, 24464, -0.009966779196249498, -0.009966779196249498),
 ]
-EXPECTED_C = {'v': 61.99999999999999, 'sums': [68.92173249342531, 90.13061437402676, 117.1544874690679,
-                                               119.55516062926581],
-              'result': 19.925860104877636, 'neighbours first': 19.92586010487764}
+EXPECTED_C = {'v': 45.0, 'sums': [107.64300369864563, 198.64532097335723, 289.22562207685587, 351.91726463207954],
+              'result': 58.65287743867992, 'neighbours first': 58.652877438679916}
+EXPECTED_C_AREA = {'columns': (67, 104), 'rows': (67, 104), 'above threshold': 2888, 'order-dependent': 377,
+                   'first sample': (68, 68)}
 EXPECTED_D = [   # table 7.2-H, after each area
   [[5, 5, 5], [5, 5, 5], [5, 5, 5]],
-  [[5, 5, 5], [5, 29.100000381469727, 5], [5, 5, 5]],
-  [[5, 5, 5], [5, 25.100000381469727, 5], [5, 5, 5]],
-  [[2, 2, 2], [2, 25.100000381469727, 2], [2, 2, 2]],
-  [[-2.5, -2.0833333333333335, -2.5], [-2.0833333333333335, -0.9722222222222223, -1.3333333333333333],
-   [-2.5, -1.3333333333333333, -3.611111111111111]],
+  [[5, 5, 5], [5, 23.700000762939453, 5], [5, 5, 5]],
+  [[5, 5, 5], [5, 19.700000762939453, 5], [5, 5, 5]],
+  [[2, 2, 2], [2, 19.700000762939453, 2], [2, 2, 2]],
+  [[-2.5, -2.1083333227369523, -2.5499999788072376], [-2.1083333227369523, -0.9888888818246349, -1.358333322736952],
+   [-2.549999978807237, -1.358333322736952, -3.619444440912318]],
 ]
 EXPECTED_T1 = [41, 18467, 6334, 26500, 19169, 15724, 11478, 29358]
 EXPECTED_T2 = [(15.76, 15.760000228881836), (-15.39, -15.390000343322754), (1.2, 1.2000000476837158),
-               (-26.13, -26.1299991607666), (24.1, 24.100000381469727), (11.7, 11.699999809265137)]
+               (-26.13, -26.1299991607666), (18.7, 18.700000762939453), (18.3, 18.299999237060547)]
 
 
 # ---------------------------------------------------------------- check
@@ -585,6 +623,11 @@ def check():
   first = (v0 + (((c['neighbours'][0] + c['neighbours'][1]) + c['neighbours'][2]) + c['neighbours'][3])) / 6.0
   test('T12 set C smooth sample (table 7.2-G)', {'v': v0, 'sums': sums, 'result': result, 'neighbours first': first},
        EXPECTED_C)
+  cols, rows, above, differ, sample = set_c_trace()
+  test('T12 set C area over set A (table 7.2-G)',
+       {'columns': cols, 'rows': rows, 'above threshold': above, 'order-dependent': differ, 'first sample': sample[0]},
+       EXPECTED_C_AREA)
+  test('T12 set C sample inputs come from set A', (sample[1], sample[2]), (SET_C['cur'], SET_C['neighbours']))
 
   terrain = set_d()
   rest_ok = True

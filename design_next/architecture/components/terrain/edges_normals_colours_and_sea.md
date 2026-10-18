@@ -44,15 +44,15 @@ Table 4.10-B Edge semantics of `Height` and `Normal`.
 | 0 ≤ *fx* < columns − 1 | bilinear inside the grid |
 | columns − 1 ≤ *fx* < columns, the last cell | a blend of column columns − 1 and **column 0** (*i*2 is reset to 0) |
 | columns ≤ *fx* < 65 536 | column 0 only (both indices are reset to 0) |
-| *fx* ≥ 65 536 | the column given by the low 16 bits of the truncated index, an aliasing that needs coordinates beyond 589 000 wu at the smallest reference cell size |
+| *fx* ≥ 65 536 | the column given by the low 16 bits of the truncated index, an aliasing that needs coordinates beyond 65 536 cell sizes from the origin |
 | −1 < *fx* < 0 | *i*1 = 0, *i*2 = 1, with the weight *fx* + 1 on column 1; the result is discontinuous at *x* = 0 and approaches column 1 as *x* approaches 0 from below |
 | *fx* ≤ −1 | column 0 only |
 
-Off-map reads therefore return the terrain profile of row 0 and column 0. In every reference terrain every border sample is at or below sea level, so these rules alter only depths under water (for example a border maximum of −9.418 wu against an outside height of −27.89 wu) and never create land at the edge; every negative coordinate reads as sea, which is what restricts the Abductor's wander area (DEC-113). This reference behaviour is the default of DEC-246, which lets Species define off-map heights explicitly (item 7).
+Off-map reads therefore return the terrain profile of row 0 and column 0. A map has sea along its whole border ([rules and conventions](../../../reference/08_maps_and_level_design/rules_and_conventions.md) R-MAP-085), so every border sample is at or below sea level, these rules alter only depths under water and never create land at the edge, and every negative coordinate reads as sea, which is what restricts the Abductor's wander area (DEC-113). This behaviour is the default of DEC-246, which lets Species define off-map heights explicitly (item 7).
 
 **TER-154** (MUST) The sea surface lies at `ref.sim.physics.sea_level` (TER-005) for every consumer: walkability rejects water at it ([reference/12](../../../reference/12_simulation_model/05_space_routing_and_physics.md) R-SIM-335), actors swim and drown at it (R-SIM-365, R-SIM-370), the renderer sinks every terrain vertex below `rnd.terrain.sink_threshold` to `rnd.terrain.sink_height` (RND-133), the shore mask counts a height above it as land (TER-196), and the wave mesh rests at it (TER-201).
 
-**TER-155** (MUST) Every reference terrain has sea along its whole border and on a large share of its samples, with the figures of [rules and conventions](../../../reference/08_maps_and_level_design/rules_and_conventions.md) R-MAP-085 and DEC-247 item 6, so every bounded search for a sea or land position terminates there (DEC-014).
+**TER-155** (MUST) A map has sea along its whole border and on a large share of its samples ([rules and conventions](../../../reference/08_maps_and_level_design/rules_and_conventions.md) R-MAP-085, DEC-247 item 6), so every bounded search for a sea or land position terminates there (DEC-014).
 
 ### 4.11 Simulation normals
 
@@ -90,7 +90,7 @@ Table 4.11-A Simulation normals and render normals.
 
 ### 4.12 Colour-ramp look-up
 
-**TER-180** (MUST) The colour look-up's height normaliser *highest* (binary32) is the maximum height when it is above 0, and otherwise `Highest`() of the height grid (TER-076). With a maximum height below the real peak, every height above the maximum height uses ramp row 0; in the reference content one map does this, with a maximum height of 200 wu against a peak of 238.0 wu.
+**TER-180** (MUST) The colour look-up's height normaliser *highest* (binary32) is the maximum height when it is above 0, and otherwise `Highest`() of the height grid (TER-076). With a maximum height below the real peak, every height above the maximum height uses ramp row 0.
 
 **TER-181** (MUST) `FacetColor` gives each terrain triangle of the renderer's mesh (RND-132), in the mesh's build order, one colour from the map's land colour ramp (TER-040), using the render vertex positions after the sink of RND-133 and the triangle's facet normal of RND-134:
 
@@ -120,7 +120,7 @@ The jitter is one draw, uniform over ±0.225 ÷ (max(hgt, 0) + 2). The sum insid
 
 ### 4.13 Colour-variation and shore-noise generators
 
-**TER-185** (MUST) The colour pass of one renderer build owns one presentation generator instance (`FxRng`), never shared with another consumer or thread and unreachable from simulation code (R-SIM-608, DEC-013). It uses the algorithm of TER-080, with `FxRng::NextUint` = `Next`() and `FxRng::NextSigned`(*R*) = `Signed`(*R*), and is seeded with `ref.sim.match.presentation_seed` (1, [match lifecycle](../../../reference/12_simulation_model/02_match_lifecycle_and_state_reset.md)) at the start of every build (see DEC-967 item 1). Each triangle draws *r*0, re-seeds the instance from its centre and *r*0, and draws its jitter (TER-181), so the colours form a chain in build order. Every build of the same field, after device removal included, therefore gives the same colours. The colours are presentation and need not equal the reference's bit for bit (R-SIM-601); their distribution is the reference's. In the reference one shared generator serves the colours, audio, tree geometry and a service thread, so concurrent draws can change the colours, and a mid-match regeneration redraws them without re-seeding; neither happens here (TER-221).
+**TER-185** (MUST) The colour pass of one renderer build owns one presentation generator instance (`FxRng`), never shared with another consumer or thread and unreachable from simulation code (R-SIM-608, DEC-013). It uses the algorithm of TER-080, with `FxRng::NextUint` = `Next`() and `FxRng::NextSigned`(*R*) = `Signed`(*R*), and is seeded with `ref.sim.match.presentation_seed` (1, [match lifecycle](../../../reference/12_simulation_model/02_match_lifecycle_and_state_reset.md)) at the start of every build (see DEC-967 item 1). Each triangle draws *r*0, re-seeds the instance from its centre and *r*0, and draws its jitter (TER-181), so the colours form a chain in build order. Every build of the same field, after device removal included, therefore gives the same colours. The colours are presentation and need not equal the reference's bit for bit (R-SIM-601); their distribution is the reference's. Every other presentation consumer, audio and tree geometry among them, draws from its own named stream (DEC-242), so no draw outside the colour pass changes the colours, and the field is never regenerated during a match (TER-221).
 
 **TER-186** (MUST) The shore noise of the wave mesh of each sea-detail level (TER-202) draws from its own copy of the colour instance, taken at the end of the colour pass, one draw per vertex in build order, as the reference's sea build continues the colour chain.
 
@@ -192,28 +192,28 @@ Table 4.15-A Terrain lifecycle.
 | an edit in the map editor | the editor regenerates the field from the edited records (§8.2) |
 | match-world teardown | the field, its grids, the sea masks and the wave meshes are released with the match world (DEC-011) |
 
-**TER-221** (MUST) The height field is never regenerated during a match, and never under a different numeric environment (DEC-246 item 8, DEC-240; see DEC-967 item 2). In the reference, applying graphics or other options in the middle of a match regenerates the field and the sea; the heights come out identical only because generation is a pure function and the numeric environment is unchanged, while the colours change because the colour chain is not re-seeded.
+**TER-221** (MUST) The height field is never regenerated during a match, and never under a different numeric environment (DEC-246 item 8, DEC-240; see DEC-967 item 2). An option change in the middle of a match regenerates and rebuilds nothing (table 4.15-A); a device removal rebuilds only the renderer's buffers from the unchanged field, and the re-seeded colour chain gives the same colours (TER-185, RND-034).
 
-**TER-222** (MUST) Generation may run on a loader or job thread. That thread runs with the numeric environment of TER-061, set and asserted there (DEC-224 item 4), and no reader sees the field before generation completes (TER-010). In the reference the whole map load runs on one loader thread while the main thread draws the loading view. How Species loads and streams world content is DEC-226.
+**TER-222** (MUST) Generation may run on a loader or job thread. That thread runs with the numeric environment of TER-061, set and asserted there (DEC-224 item 4), and no reader sees the field before generation completes (TER-010). How Species loads and streams world content is DEC-226.
 
 ### 4.16 Conversions the output depends on
 
-**TER-230** (MUST) Implementation-defined and undefined conversions shape the output; table 4.16-A states the Species rule for each.
+**TER-230** (MUST) Some conversions of the generator have no result that C++ defines, or one that the implementation chooses, and they shape the output; table 4.16-A states the Species rule for each.
 
 Table 4.16-A Conversions and their rules.
 
-| Construct | Where | In the reference content | Rule |
-|---|---|---|---|
-| binary64 to sampler index for −1 < *v* < 0: truncation gives 0 | tile sampler (TER-121) | yes, on 22 771 merge reads | reproduce exactly; never use ⌊*v*⌋ (TER-071) |
-| binary64 to index for *v* ≤ −1, undefined; the reference keeps the low 16 bits | tile sampler; the start index of a parked tile | the sampler: never; parked tiles: 2, without effect | skip a tile wholly outside the grid; reject a partly overlapping one (TER-124) |
-| a negative integer index reduced to unsigned 16 bits in `At` and `Set` | every grid | yes: neighbour reads at row and column 0, flatten areas at the edges | every index outside the grid is outside (TER-072) |
-| the far-edge reset of `Sample` to column or row 0 | the tile sampler and the world queries | the tile sampler: yes, equivalent to clamping (TER-121); the world: only under water (TER-153) | reproduce for tiles (or clamp, which is equivalent); for the world, the reference rule is the default of DEC-246 |
-| signed 32-bit overflow in the generator | the tile generator | yes, constantly | unsigned 32-bit arithmetic (TER-068) |
-| the integer conversion of ceilLog2(0) = −∞ | tiles smaller than 2 cell sizes | no | reject at build (TER-112) |
-| an unset base value for a method other than 0, 1 or 2 | `Square`, `Diamond` | no | reject at build (TER-112) |
-| a guide grid with too few cells | the guide-grid decoder | no | reject at build (TER-112) |
-| the single-precision absolute value of the base height | the noise envelope | yes, on every call | reproduce (TER-065) |
-| binary32 rounding of decimal fields | the parser | yes; it moves footprints (TER-066) | reproduce (TER-066) |
+| Construct | Where | Rule |
+|---|---|---|
+| binary64 to sampler index for −1 < *v* < 0: truncation gives 0 | tile sampler (TER-121) | reproduce exactly; never use ⌊*v*⌋ (TER-071) |
+| binary64 to index for *v* ≤ −1 | tile sampler; the start index of a tile placed off the map | skip a tile wholly outside the grid; reject a partly overlapping one (TER-124) |
+| a negative integer index reduced to unsigned 16 bits in `At` and `Set`, as at neighbour reads of row and column 0 and flatten areas at the edges | every grid | every index outside the grid is outside (TER-072) |
+| the far-edge reset of `Sample` to column or row 0 | the tile sampler and the world queries | reproduce for tiles (or clamp, which is equivalent, TER-121); for the world, the edge semantics of TER-153, the default of DEC-246 |
+| integer overflow in the tile generator's step | the tile generator | unsigned 32-bit arithmetic that wraps modulo 2³² (TER-068) |
+| the integer conversion of ceilLog2(0) = −∞ | tiles smaller than 2 cell sizes | reject at build (TER-112) |
+| an unset base value for a method other than 0, 1 or 2 | `Square`, `Diamond` | reject at build (TER-112) |
+| a guide grid with too few cells | the guide-grid decoder | reject at build (TER-112) |
+| the single-precision absolute value of the base height, on every call | the noise envelope | reproduce (TER-065) |
+| binary32 rounding of decimal fields, which moves footprints | the parser | reproduce (TER-066) |
 
 ## 5 Concurrency and performance budget
 

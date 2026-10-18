@@ -436,7 +436,7 @@ Caption: the one-way path from a simulation rule to its effect; no arrow returns
 
 **VFX-022** (MUST) The runtime runs on the frame thread. Its GPU work (particle emit, simulate and compact; shard and tumbler updates; draws) is recorded into the compiled frame graph in the passes of §1.1 and runs on the direct queue; its CPU cost per frame is proportional to the number of effect events and presentation emitter steps, never to the number of live particles or shards, and the number of its dispatches and draws per frame is fixed (RND-455).
 
-**VFX-023** (MUST) The GPU time of passes 10a, 10b, 11, 14 and 15 and of this component's compute work is the effect pass group of the renderer's budget, provisionally `rnd.budget.effects_ms` (3.0 ms per frame, RND-454). That budget, the particle and shard caps and the level-of-detail distances (VFX-212, VFX-213, VFX-230) are confirmed or changed by the prototype measurement of the design population (DEC-106), and at the stress population of DEC-228 item 2 the caps must hold and the frame must stay within budget on the minimum-specification GPU (ADR-010).
+**VFX-023** (MUST) The GPU time of passes 10a, 10b, 11, 14 and 15 and of this component's compute work is the effect pass group of the renderer's budget, provisionally `rnd.budget.effects_ms` (3.0 ms per frame, RND-454). That budget, the particle and shard caps and the level-of-detail distances (VFX-212, VFX-213, VFX-230) are confirmed or changed by the prototype measurement of the design population (DEC-106), and at the stress population of DEC-228 item 2 the caps must hold and the frame must stay within budget on the reference test machine (DBG-209, ADR-010).
 
 **VFX-024** (MUST) The reference limits and their Species counterparts are:
 
@@ -473,7 +473,7 @@ Diagnostics: every compute dispatch and pass of this component carries a PIX mar
 
 | Test | Kind | Checks | Requirements |
 |---|---|---|---|
-| T1 boundary | build check | no source of this component includes the simulation generator's interface or takes non-const access to the snapshot; the dedicated-server link map holds none of its symbols | VFX-004, VFX-005, VFX-011 |
+| T1 boundary | checker fixture | no source of this component includes the simulation generator's interface (`Build\CheckProjectFiles.py`, [build tooling](../build_tooling_and_distribution.md) table 4.1-B row 13) or takes non-const access to the snapshot; the dedicated-server link map holds none of its symbols (row 11, BLD-045) | VFX-004, VFX-005, VFX-011 |
 | T2 headless conformance | golden-hash | a match run with this component replaced by a stub that discards every event and the same match with the full client give identical per-tick state hashes | VFX-004, VFX-005, VFX-006 |
 | T3 integrity cases | golden-hash | each of the 11 cases of VFX-006, forced on (for example 10 000 extra cosmetic particles, a seasonal client with a different local date, a pause during heavy effects), leaves the per-tick state hashes unchanged | VFX-006 |
 | T4 replay | property | a recorded match played twice produces the same emission sequence, shard set and shake offsets for every event, seeded from its identity | VFX-011, VFX-019 |
@@ -507,7 +507,7 @@ The tests of the explainer player, the sprite recipes and the procedural animati
 | DEC-228 | Open | the stress population and the fixed-capacity effect pools (VFX-023) |
 | DEC-242 | Open | the simulation generator's algorithm; one presentation generator per thread (VFX-011) |
 | DEC-328 | Open | saturated team colours on the Shield and Visitor bubbles (VFX-121) |
-| DEC-336 | Dropped | a second graphics back end and its debris and deform look are not specified (VFX-008) |
+| DEC-336 | Dropped | other renderers are not specified; Species has one renderer (ADR-001) (VFX-008) |
 | DEC-461 | Resolved | turret casings come from each turret's own sockets and use presentation draws (VFX-219) |
 | DEC-562 | Open | per-map weather switches or named weather presets (VFX-224) |
 | DEC-654 | Resolved | GPU work serves presentation only (VFX-004, VFX-005) |
@@ -516,7 +516,7 @@ The tests of the explainer player, the sprite recipes and the procedural animati
 | DEC-955 | Resolved | the three clock readings, the camera clock and the additive shake offset (VFX-009, VFX-016, VFX-139, VFX-232) |
 | DEC-960 | Resolved | reference per-frame behaviour runs in fixed steps (VFX-018, VFX-139, VFX-209) |
 | DEC-961 | Resolved | the explainer panel is laid out again on every screen change (VFX-108) |
-| DEC-962 | Open | defaults for effect values that the reference does not record (VFX-122, VFX-219, VFX-229) |
+| DEC-962 | Open | Species defaults for effect values (VFX-122, VFX-219, VFX-229) |
 | DEC-963 | Open | the stiffer large and selected flags and the per-tick damage-flicker cadence (VFX-126, VFX-139) |
 | DEC-964 | Open | the accessibility limits for camera shake and flashes (VFX-232, VFX-235) |
 | ADR-010, ADR-035, ADR-036 | Accepted | the GPU particle pool and shard buffers, the procedural animation runtime, effect events and the presentation clock |

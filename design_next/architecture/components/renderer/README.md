@@ -432,7 +432,7 @@ The golden-image tests of this folder compare with the default tolerance and on 
 
 | Test | Kind | Checks | Requirements |
 |---|---|---|---|
-| T1 boundary | build check | the simulation library cannot include a renderer header; the renderer has only const access to the snapshot; the dedicated-server link map has no Direct3D symbol | RND-002, RND-003, RND-008 |
+| T1 boundary | checker fixture | a simulation-library source that includes a renderer header fails `Build\CheckProjectFiles.py` ([build tooling](../build_tooling_and_distribution.md) table 4.1-B row 13); the renderer has only const access to the snapshot; the dedicated-server link map has no Direct3D symbol, because the server project references and links none (row 11, BLD-045) | RND-002, RND-003, RND-008 |
 | T2 headless conformance | golden-hash | a match run headless and the same match run with the full renderer produce identical per-tick state hashes | RND-002 to RND-006 |
 | T3 capability probe | unit | recorded capability results (all pass, each single failure, unknown Shader Model) give the expected adapter choice and message | RND-020 |
 | T4 first run | unit | with no stored render size, the desktop resolution is used and written back | RND-021 |
@@ -463,7 +463,7 @@ The golden-image tests of this folder compare with the default tolerance and on 
 | DEC-325 | Open | the one-frame light lag ([view_lighting_and_fog.md](view_lighting_and_fog.md) RND-227) |
 | DEC-326 | Open | the terrain grid overlay ([world_renderers.md](world_renderers.md) RND-135) |
 | DEC-327 | Open | structure render-detail variants ([world_renderers.md](world_renderers.md) RND-163) |
-| DEC-336 | Dropped | a second graphics back end is not specified |
+| DEC-336 | Dropped | other renderers are not specified; Species has one renderer (ADR-001) |
 | DEC-337 | Dropped | driver-specific cursor, glyph-atlas and texture-filtering behaviour is not specified |
 | DEC-562 | Open | map lighting presets (RND-013) |
 | DEC-654 | Resolved | gameplay is CPU-only (RND-003) |
