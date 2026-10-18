@@ -10,7 +10,7 @@ ADRs cover engine technology only. Game design lives in `reference/` and `decisi
 
 ## Index
 
-The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, meshes, audio, input, UI, animation and VFX), and ADR-050 to ADR-078, the toolchain, the content pipeline, operations and the GPU resource factory; ADR-037 to ADR-049 are unassigned and stay unused. A new record takes the next id after the highest existing one, whatever its topic (O22, `AGENTS.md` §6); the two baseline ranges are not a numbering policy.
+The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, meshes, audio, input, UI, animation and VFX), and ADR-050 to ADR-077, the toolchain, the content pipeline and operations; ADR-078, the GPU resource factory, is the first record after the baseline. ADR-037 to ADR-049 are unassigned and stay unused. A new record takes the next id after the highest existing one, whatever its topic (O22, `AGENTS.md` §6); the two baseline ranges are not a numbering policy.
 
 | Number | Title | Status | Date |
 |---|---|---|---|

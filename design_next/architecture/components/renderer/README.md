@@ -245,7 +245,6 @@ public:
 
   // RND-216: x, y in pixels of the render target, z = clip-space w; nullopt when w <= 0.
   [[nodiscard]] std::optional<Vec3> ProjectToScreen(const Vec3& _world) const;
-  [[nodiscard]] Ray ScreenRay(float _x, float _y) const;                            // RND-218
   [[nodiscard]] ScissorRect ScissorFromWorld(const Vec3& _a, const Vec3& _b) const; // RND-217
   [[nodiscard]] std::uint32_t FramesPerSecond() const;                              // R-SIM-576
 };
@@ -291,7 +290,7 @@ public:
 
 **RND-014** (MUST) The per-frame constant buffer, bound once per command list through the root constant-buffer view of ADR-006 and declared once in the shared C++ and HLSL header (ADR-003), holds: the view, projection and view-projection matrices (row-major, ADR-016); the camera position and the camera front vector; the fog colour and the fog start and end of the frame (RND-222); the two directional lights, each a world-space direction and a colour (RND-226, RND-227); the real clock, the presentation frame time and the smooth presentation time of the frame; the extrapolation time; and the render-target size in pixels.
 
-**RND-015** (MUST) Per-draw data travels in root constants (ADR-006): a world transform (`Mat3x4`), a tint colour, a team palette index (ADR-020) and the heap indices of the draw's instance buffer, textures and material parameters. Instanced draws keep per-instance transforms, colours and palette indices in a structured buffer and pass only its index (ADR-009).
+**RND-015** (MUST) Per-draw data travels in root constants (ADR-006): a world transform (`Float3x4`, the transpose of the object's `Mat3x4`, [shaders.md](shaders.md) RND-262), a tint colour, a team palette index (ADR-020) and the heap indices of the draw's instance buffer, textures and material parameters. Instanced draws keep per-instance transforms (in the same layout), colours and palette indices in a structured buffer and pass only its index (ADR-009).
 
 **RND-016** (MUST) The team palette is one constant buffer with one entry per colour id of the colour table of `reference/12_simulation_model/06_teams_and_player_commands.md` (R-SIM-415, keys `ref.sim.team_colour.*`), written once per match by `FrameRenderer::SetPalette`, whose colours the game layer passes in colour-id order; the engine holds them as palette entries and never knows which team an entry belongs to (`AGENTS.md` R9). The ids 0 to `ref.sim.team.player_colour_count` − 1 are the player colours (green, red, yellow, blue, orange, purple, cyan and pink, in that order), id `ref.sim.team.rogue_colour_id` is the Rogue faction and id `ref.sim.team.visitor_colour_id` the Visitor faction.
 

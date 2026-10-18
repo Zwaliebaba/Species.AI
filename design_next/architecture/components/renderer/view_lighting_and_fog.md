@@ -40,9 +40,11 @@ struct LightRig
 {
   std::array<DirectionalLight, 2> lights; // a missing light is black
 };
+
+// In the shared header FrameConstants.h, with its type names (shaders.md RND-262).
 struct LitMaterial
 {
-  Vec3 specular; // diffuse and ambient follow the facet colour
+  Float3 specular; // diffuse and ambient follow the facet colour
   float shininess;
 };
 
@@ -82,7 +84,7 @@ struct LitMaterial
 
 **RND-217** (MUST) `ScissorFromWorld(a, b)` projects both points with `ProjectToScreen` and returns the scissor rectangle that spans them; drawing with it restores the full-target scissor afterwards.
 
-**RND-218** (MUST) Screen-to-world rays for the cursor, selection and the camera are built from the inverse of the frame's view-projection matrix with reversed-Z depth values, never from GPU state (ADR-016).
+**RND-218** (MUST) Screen-to-world rays for the cursor, selection and the camera are the camera's `PickRayAt` ([camera](../camera_and_sequences.md) CAM-090, CAM-093), built from the inverse of the frame's view-projection matrix with reversed-Z depth values, never from GPU state (ADR-016); the renderer has no ray helper of its own.
 
 ### 4.2 Depth-bias variants
 
@@ -196,7 +198,7 @@ The golden-image tests compare with the default tolerance and on the pinned refe
 | T1 projection | unit | near maps to depth 1 and far to 0; the vertical field of view is kept at 4:3, 16:9 and 21:9 | RND-210, RND-211 |
 | T2 clamp | unit | fields of view of 0.5° and 200° are clamped to 1° and 180° | RND-212 |
 | T3 poster tiles | unit | the union of the *N* × *N* tile frusta equals the poster frustum of RND-214, tile 0 bottom-left | RND-214 |
-| T4 projection helper | unit | known points map to known pixels; a point behind the camera returns no position | RND-216, RND-218 |
+| T4 projection helper | unit | known points map to known pixels; a point behind the camera returns no position | RND-216 |
 | T5 depth bias | golden-image | a decal and a laser bolt coplanar with terrain win the depth tie at 50, 500 and 5000 wu, and lose against geometry 1 wu in front of them | RND-219, RND-220 |
 | T6 fog ramp | golden-image | a flat terrain strip from 0 to 8000 wu reproduces the linear ramp to black between *e* ÷ 3 and *e* | RND-222, RND-223 |
 | T7 lighting | golden-image | a reference two-light rig, (0.07, 0.35, 0.93) with colour (1, 1, 1) and (−0.04, 0.43, 0.90) with colour (2.0, 1.0, 0.4); over-bright lights (colour 2.0), one-light maps, the special rig with specular highlights and the grid specular term | RND-226, RND-228 to RND-230, RND-233 |

@@ -10,9 +10,9 @@ Jump to: [**Numbers**](#numbers) · [**A**](#a) · [**B**](#b) · [**C**](#c) ·
 
 | Term | Kind | Definition | Owning document |
 |---|---|---|---|
-| 2-D grid | engine term | A two-dimensional array laid over the world's horizontal plane, holding one value per cell; height fields and spatial grids are built on it. | [Terrain](../architecture/components/terrain/README.md); [Space, routing and physics](../reference/12_simulation_model/05_space_routing_and_physics.md) |
-| 3-vector | engine term | A vector of three world coordinates (x, y, z), with y vertical; sea level is y = 0. | [Entity model and identity](../reference/12_simulation_model/03_entity_model_and_identity.md) |
-| 3x4 matrix | engine term | An affine transform made of three axis vectors and a translation, used for object and mesh-node transforms. | [Entity model and identity](../reference/12_simulation_model/03_entity_model_and_identity.md) |
+| 2-D grid | engine term | A plain two-dimensional array of columns × rows values with one outside value and no origin or cell size, a type of the engine maths library; the guide grid and the flat-water tile mask are 2-D grids. A grid placed over the world with an origin and cell sizes is a world surface grid. | [Platform layer](../architecture/components/platform_layer.md); [Terrain](../architecture/components/terrain/README.md) |
+| 3-vector | engine term | A vector of three world coordinates (x, y, z), with y vertical; sea level is y = 0. The engine maths library holds its components in binary64. | [Entity model and identity](../reference/12_simulation_model/03_entity_model_and_identity.md); [Platform layer](../architecture/components/platform_layer.md) |
+| 3x4 matrix | engine term | An affine transform from local to world space made of three axis vectors and a translation, a type of the engine maths library, used for object and mesh-node transforms; the GPU data of a draw holds its transpose. | [Platform layer](../architecture/components/platform_layer.md); [Entity model and identity](../reference/12_simulation_model/03_entity_model_and_identity.md) |
 
 ## A
 

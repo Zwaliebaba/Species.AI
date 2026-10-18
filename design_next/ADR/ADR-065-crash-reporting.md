@@ -45,7 +45,7 @@ Proposed option: "Windows Error Reporting (WER) with registered context and the 
 * Good, because WER covers every thread and hangs without first-party upload code or a collection service.
 * Good, because consent is handled by the operating system's diagnostic-data settings.
 * Bad, because Partner Center shows data only after an application is installed on at least 100 devices, and keeps failure hits for 30 days through its analytics API.
-* Bad, because a dedicated server for another operating system would need a second solution, decided with that server.
+* Bad, because a dedicated server for another operating system would need a crash path of its own, decided with that server in a later ADR.
 
 ### Confirmation
 
@@ -77,3 +77,4 @@ Proposed option: "Windows Error Reporting (WER) with registered context and the 
 * **Amendment 2026-10-17 (AGENTS.md, O21).** The dedicated server is a Windows build, so WER covers it too; a third-party crash SDK is excluded by `AGENTS.md` R14.
 * **Amendment 2026-10-17.** The crash path is the platform layer's (PLT-118 to PLT-125), as the build tooling (BLD-004) and diagnostics components state; the system summary and the crash context hold no Windows user name and write paths relative to placeholders (PLT-035, PLT-125).
 * **Amendment 2026-10-17 (`build.yml`, `AGENTS.md` §6).** CI builds `Debug|x64` only and uploads the build log and the test results only, so publishing symbols is a step of the release procedure of the build tooling (BLD-111, BLD-122): every Release build that it packages publishes its PE files and PDBs to the symbol store and to Partner Center, and CI builds join once the symbol job of an ADR-070 amendment exists (BLD table 4.9-B). The symbol check before a release is a release-procedure check, and the test-machine `LocalDumps` registry file comes with every build output (BLD-113).
+* **Amendment 2026-10-18.** The consequence for a dedicated server on another operating system names what it needs, a crash path of its own decided in a later ADR, so that it is not read as a second MSBuild solution (O29).

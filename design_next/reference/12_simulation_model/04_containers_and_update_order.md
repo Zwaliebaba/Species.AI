@@ -107,7 +107,7 @@ Table 2.2-A Simulation containers.
 
 **R-SIM-211** (MUST) Every outcome that the iteration order decides is an explicit rule over a stable key (DEC-016; see DEC-260). The stable key of iteration is the slot order that R-SIM-206 to R-SIM-209 produce, which every participant computes identically because every creation and removal happens inside the tick. The register of such outcomes is §2.9. Whether an object created or handed over during a tick advances in that same tick is DEC-455; its default is [01](01_tick_timing_and_main_loop.md) R-SIM-516.
 
-**R-SIM-212** (MUST) A 2-D grid of the simulation (`Grid2D`, `SurfaceGrid`) returns its one shared outside value for a read outside its range and ignores a write outside its range. Its nearest-cell look-up is the integer part of coordinate ÷ cell size without subtracting the grid origin, which is correct because every simulation grid has its origin at 0. Value reads between cells interpolate bilinearly ([05](05_space_routing_and_physics.md), [terrain](../../architecture/components/terrain/README.md)).
+**R-SIM-212** (MUST) A grid of the simulation (a 2-D grid `Grid2D` or a world surface grid `SurfaceGrid`) returns its one shared outside value for a read outside its range and ignores a write outside its range. Its nearest-cell look-up is the integer part of coordinate ÷ cell size without subtracting the grid origin, which is correct because every simulation grid has its origin at 0. Value reads between cells interpolate bilinearly ([05](05_space_routing_and_physics.md), [terrain](../../architecture/components/terrain/README.md)).
 
 ### 2.4 Slice partitioning
 

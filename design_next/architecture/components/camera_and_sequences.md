@@ -87,12 +87,6 @@ struct CameraFrameOutput // read by the renderer, the listener and the overlays
   Vec3 velocity;     // wu/s
 };
 
-struct PickRay // origin on the near plane; unit direction
-{
-  Vec3 origin;
-  Vec3 direction;
-};
-
 enum class TimelineOp : std::uint8_t // the closed set of table 3.3-A, in its order
 {
   Wait,
@@ -195,8 +189,8 @@ public:
   void StopCameraAnimation();
   [[nodiscard]] bool IsBusy() const; // an animation plays or a scripted move runs
 
-  // Picking and projection (§4.10)
-  [[nodiscard]] Engine::PickRay PickRayAt(Engine::Vec2 _pointerPixels, const Engine::FrameView& _view) const;
+  // Picking and projection (§4.10); a pick ray starts on the near plane and has a unit direction (CAM-090)
+  [[nodiscard]] Engine::Ray PickRayAt(Engine::Vec2 _pointerPixels, const Engine::FrameView& _view) const;
   [[nodiscard]] Engine::Mat4 ViewProjectionFor(const Engine::CameraPose& _pose, const Engine::FrameView& _view) const;
 
   [[nodiscard]] const CameraState& State() const; // read-only: overlays and tests

@@ -47,7 +47,7 @@ The cost of one tick must fit, spread over its 10 slices, into the render frames
 | Figure | Reference value |
 |---|---|
 | bodies per map | the population cap of each map ([map rules and conventions](../../../reference/08_maps_and_level_design/rules_and_conventions.md)) |
-| bodies per team | the map cap ÷ the player count: 350 to 1,000 bodies; Transit Gate waves, Supply crates and Collectors can take a team over its cap ([population flow](../../../reference/05_population_flow.md)) |
+| bodies per team | the map cap ÷ the open slots (R-ECON-052 rule 3, DEC-079): 350 to 1,000 bodies on the reference maps; in Siege, a defender cap of 200 to 350 and an attacker share of 550 to 1,725 (rule 2). Transit orbs in flight, Transit Gate waves and the sources that R-ECON-059 does not check, Supply crate outcomes, Builder deliveries and conversions among them, can take a team over its cap; a Collector delivery cannot (DEC-080, R-ECON-060) ([population flow](../../../reference/05_population_flow.md)) |
 | engine population limit | none: only the map and mode options limit the population; the live simulated-object count is kept for display |
 | Essence orbs | one per death, none for the Rogue faction; each is collectable for `ref.econ.orb.floating_ticks` (301 to 500 ticks, 30.1 to 50 s) and then ascends for `ref.econ.orb.ascent_ticks` (901 ticks, 90.1 s), so thousands exist after a large battle |
 | laser bolts | every Worker shot is a simulated object; with a 3 s reload, 2,000 Workers in combat create up to about 670 laser bolts per second |

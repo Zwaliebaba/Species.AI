@@ -473,7 +473,7 @@ Diagnostics: every compute dispatch and pass of this component carries a PIX mar
 
 | Test | Kind | Checks | Requirements |
 |---|---|---|---|
-| T1 boundary | checker fixture | no source of this component includes the simulation generator's interface (`Build\CheckProjectFiles.py`, [build tooling](../build_tooling_and_distribution.md) table 4.1-B row 13) or takes non-const access to the snapshot; the dedicated-server link map holds none of its symbols (row 11, BLD-045) | VFX-004, VFX-005, VFX-011 |
+| T1 boundary | checker fixture | no source of this component includes the simulation generator's interface (`Build\CheckProjectFiles.py`, [build tooling](../build_tooling_and_distribution.md) table 4.1-B rows 13 and 14) or takes non-const access to the snapshot; the dedicated-server link map holds none of its symbols (row 11, BLD-045) | VFX-004, VFX-005, VFX-011 |
 | T2 headless conformance | golden-hash | a match run with this component replaced by a stub that discards every event and the same match with the full client give identical per-tick state hashes | VFX-004, VFX-005, VFX-006 |
 | T3 integrity cases | golden-hash | each of the 11 cases of VFX-006, forced on (for example 10 000 extra cosmetic particles, a seasonal client with a different local date, a pause during heavy effects), leaves the per-tick state hashes unchanged | VFX-006 |
 | T4 replay | property | a recorded match played twice produces the same emission sequence, shard set and shake offsets for every event, seeded from its identity | VFX-011, VFX-019 |

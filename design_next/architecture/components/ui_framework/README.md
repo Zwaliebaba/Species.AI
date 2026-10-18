@@ -136,7 +136,7 @@ The type, ownership and lifetime of every UI object are listed in [core_and_widg
 
 | # | Kind | Test | Requirements |
 |---|---|---|---|
-| R1 | unit | A headless build of the simulation and a build with the UI linked produce the same per-tick state hashes for the same command stream; a UI source that includes a simulation write interface fails `Build\CheckProjectFiles.py` (build tooling table 4.1-B row 13). | UI-002 |
+| R1 | unit | A headless build of the simulation and a build with the UI linked produce the same per-tick state hashes for the same command stream; a UI source that includes a simulation write interface fails `Build\CheckProjectFiles.py` (build tooling table 4.1-B rows 13 and 14). | UI-002 |
 | R2 | unit | A press and a release delivered within one frame produce exactly one click on the widget under the pointer. | UI-006 |
 | R3 | unit | A primary press over a window is not seen by the match actions in the same frame; a press outside every window is. | UI-006 |
 | R4 | unit | Remove all windows during a match leaves no panel and places the pointer at the screen centre; at the front end the pointer does not move. | UI-010 |

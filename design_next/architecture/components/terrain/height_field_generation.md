@@ -10,7 +10,7 @@ The responsibilities and boundaries of the terrain component are [README](README
 
 ## 2 Interfaces
 
-The types and functions specified here are those of the interface sketch of [README](README.md) §2.1: `SurfaceGrid`, `Grid2D`, `TerrainTile`, `TerrainFlattenArea` and `TerrainField::Generate`. The private tile generator (§4.3) has no public interface.
+This document specifies `SurfaceGrid` and `TerrainField::Generate` of the interface sketch of [README](README.md) §2.1, and uses the maths library's `Grid2D` ([platform layer](../platform_layer.md) §4.17) and the generated records `TerrainTile` and `TerrainFlattenArea` ([data schemas](../data_schemas/map_schema.md) §2). The private tile generator (§4.3) has no public interface.
 
 ## 3 Data model
 

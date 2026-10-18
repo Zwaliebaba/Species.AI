@@ -47,6 +47,7 @@ namespace Engine
 // The terrain records that the generator reads (§3.1 to §3.4): TileMethod and FlattenOp (stored values that carry meaning),
 // TerrainDefinition, TerrainTile (fields in the order of R-MAP-081) and TerrainFlattenArea (its size is the half-width):
 // generated from maps.definition: data_schemas/map_schema.md §2
+// Vec3 and Grid2D are the maths library's (platform_layer.md §4.17).
 
 template <typename T> class SurfaceGrid // TER-038, TER-070 to TER-076
 {
