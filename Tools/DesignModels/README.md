@@ -26,6 +26,30 @@ python3 Tools/DesignModels/TerrainGenerator.py log2       # ceilLog2 for every i
 which gives the shortest text that parses back to the same binary64 value. Python 3 with the standard library only;
 no input files.
 
+## A1WorldDensity.py
+
+The world-density model of area A1, written from `Design/gdd/01_world_and_regions.md` (prefix WLD). For a world of a
+given steward capacity it computes the regions, settlement sites and AI settlements (WLD-003, WLD-004), generates a
+layout from a seed (regions as a compact blob, four sites per valley, passes, the travel network), and reports
+settlements per region, travel times between neighbours, across a region and across the world (WLD-100 to WLD-104),
+the contact rate (the world day on which territories meet, and the territory contacts of each settlement at 25, 50 and
+100 % steward occupancy, WLD-064, WLD-065), and the scale figures that area A2 sizes the server with (bodies per region,
+battles and expeditions in progress at the evening peak and at the session pace, watched settlements, terrain samples;
+WLD-280). Every figure is given for 16 and 200 stewards.
+
+```
+python3 -I Tools/DesignModels/A1WorldDensity.py            # check: every figure the document states, exact to its precision
+python3 -I Tools/DesignModels/A1WorldDensity.py report     # the full report at 1 to 200 stewards
+python3 -I Tools/DesignModels/A1WorldDensity.py sweep      # contact days and lens width over site spacing, radius and growth
+python3 -I Tools/DesignModels/A1WorldDensity.py ai         # AI placement rules and founding orders compared by contact degree
+python3 -I Tools/DesignModels/A1WorldDensity.py layout 16 1   # one generated layout (capacity, seed) as text
+```
+
+Inputs are the WLD tuning values (class `Params`, each field naming its key) and placeholders for values that later
+areas set (the territory growth curve and plateau population, B1; the expedition speed, B4; the share of attacks that
+present stewards declare, B5; the evening window of present play, B6), each marked in the source. `check` prints one
+line per figure and exits with status 1 when any differs. Python 3 with the standard library only; no input files.
+
 ## Adding a model
 
 The design phase adds its quantitative models here: economy and pacing curves, population and spawn models,
