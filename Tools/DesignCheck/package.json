@@ -1,0 +1,11 @@
+{
+  "name": "species-design-check",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pinned Mermaid build and headless Chromium driver for the design gate checker (CheckDesign.py, gate 4).",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "mermaid": "11.4.1",
+    "playwright": "1.56.1"
+  }
+}

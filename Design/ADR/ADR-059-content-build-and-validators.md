@@ -1,0 +1,99 @@
+---
+status: accepted
+date: 2026-10-17
+decision-makers: Species technology lead
+---
+
+# Content build: one declarative, incremental, validating content build tool
+
+## Context and Problem Statement
+
+Every Species asset is newly authored (vision brief §5) and turned into runtime form by a content build: data records, maps, meshes, textures, audio, string tables and fonts are cooked and written into pack files ([ADR-058](ADR-058-pack-files-and-mount-policy.md)). Shaders are not content: the solution build compiles them into the executable ([ADR-003](ADR-003-shader-language-compiler-and-material-shaders.md)). Each product edition ships a defined subset. Errors in content (a missing reference, a schema error, an untranslated string, a map that breaks its mode's rules) must be found at build time with a precise location, never at run time. The cooked output must be reproducible, because its hashes are the content identity ([ADR-060](ADR-060-content-identity-by-hash.md)).
+
+How is Species content built, validated and selected per edition?
+
+## Decision Drivers
+
+* Declarative selection of content per edition, without exclusion lists.
+* Validation of every reference and schema at build time, with file and line.
+* Incremental rebuilds driven by a dependency graph.
+* Bit-identical output for identical inputs.
+* The same parsing and validation code as the runtime loaders, so they cannot disagree.
+
+## Considered Options
+
+* A Species content build tool in C++23, sharing schema code with the engine
+* Scripts in a general-purpose scripting language around separate converters
+* Cooking on first load in the client
+
+## Decision Outcome
+
+Chosen option: "A Species content build tool in C++23, sharing schema code with the engine". It is a command-line program, the content build tool: a project of the one solution in `Tools/<Project>/`, in the `Tools` solution folder, which no game or engine project references (`AGENTS.md` §2, [ADR-054](ADR-054-build-system-msbuild-solution.md), [ADR-056](ADR-056-products-configurations-and-feature-flags.md)). CI builds it with the rest of the solution on every run, and runs it once the content build job is added ([ADR-070](ADR-070-continuous-integration.md)); developers run it locally. As a development tool it never ships and never links into the executable, so it may use pinned dependencies of its own (`AGENTS.md` R14, [ADR-055](ADR-055-dependencies-three-nuget-packages.md)); the schema code it shares with the engine is Species code, so the shared part uses none.
+
+```mermaid
+flowchart LR
+  SRC["content/ sources: data records, maps, glTF meshes, textures, audio, string tables, fonts"] --> VAL["validate against schemas and references"]
+  VAL --> COOK["cook per asset type"]
+  MAN["edition manifests"] --> SEL["select entries per edition"]
+  COOK --> SEL
+  SEL --> PACK["write pack files"]
+  PACK --> CM["content manifest with entry hashes"]
+  VAL --> REP["validation report"]
+```
+
+*Figure: content build flow from authoring sources to pack files and the content manifest.*
+
+* **Edition manifests** list what each edition ships, by asset id, folder or tag; nothing is selected by exclusion. Unknown ids or flags are errors.
+* **Dependency graph:** every output records its inputs, the tool version and its cook options; an output is rebuilt when any of their hashes changes.
+* **Validators** (each failure names the file, line and field):
+  * schema errors and unknown fields ([ADR-061](ADR-061-data-schemas-and-versioning.md));
+  * missing references and references to the wrong kind of record;
+  * keys that are not canonical or differ only in case;
+  * unreferenced assets (an error for shipping editions, a warning otherwise);
+  * per-mode map rules defined by the maps and level-design reference;
+  * a separate collision asset for every collidable mesh (DEC-012); duplicate node names, and a hit-test mesh whose position count differs from its vertex count, fail the build, while a socket-only mesh with no node is accepted;
+  * keys listed twice and repeated fields, which common parsers of the authoring syntax accept silently (DEC-801);
+  * string tables: missing keys per language, invalid message syntax, glyph coverage of the bundled fonts for every language an edition includes ([ADR-063](ADR-063-localisation.md));
+  * texture, mesh and audio import settings (rules in the asset-pipeline ADRs).
+* **Generated outputs:** map thumbnails rendered by the engine from a top-down view; the map index and other indexes the front end needs; the content manifest.
+* **Reproducibility:** entries are written in sorted key order, with no timestamps or host paths in any output.
+* **Enforcement:** CI runs the content build on every change once its guarded job is added ([ADR-070](ADR-070-continuous-integration.md)); a validation error fails the change.
+
+### Consequences
+
+* Good, because content errors are found at build time with exact locations, and runtime loaders never parse authoring text.
+* Good, because one implementation of each schema serves the tool, the editor and the runtime.
+* Good, because reproducible output makes content hashes meaningful.
+* Bad, because the tool is a first-party product that needs its own tests and maintenance.
+* Bad, because thumbnail generation needs a GPU-capable or software-rendering build agent.
+
+### Confirmation
+
+* A reproducibility job builds the same revision twice on different agents and compares every pack byte for byte.
+* Each validator has a failing fixture in the content build's test suite.
+* An incremental-build test changes one source file and checks that only its dependants are rebuilt.
+
+## Pros and Cons of the Options
+
+### Species content build tool in C++23
+
+* Good, because validation and runtime loading share code.
+* Neutral, because tool and engine release together.
+
+### Scripts around separate converters
+
+* Good, because scripts are quick to write.
+* Bad, because schema rules would be implemented twice, once in script and once in the engine, and drift.
+* Bad, because a dependency graph and reproducible output must still be built by hand.
+
+### Cooking on first load
+
+* Bad, because errors surface on players' machines, start-up becomes slow, and the content identity would depend on the client.
+
+## More Information
+
+* Related: [ADR-062](ADR-062-authoring-syntax-and-schema-language.md) (authoring syntax), [ADR-070](ADR-070-continuous-integration.md) (CI jobs).
+* Components: asset pipeline and resources (`AST`), build tooling and distribution (`BLD`), data schemas (`DAT`).
+* **Amendment 2026-10-17 (AGENTS.md, O21).** The content build tool is a project of the solution under `Tools/`, a development tool outside the allow-list rule of `AGENTS.md` R14; shaders are no longer content, because the solution build compiles them into the executable; the CI job for the content build is added by amendment of ADR-070.
+* **Amendment 2026-10-17 (AGENTS.md §2, O26; superseded by the O29 amendment below).** The content build tool and its importers are projects of a second solution of their own under `Tools/`, not of the game's solution ([ADR-054](ADR-054-build-system-msbuild-solution.md)); that solution follows every rule of `AGENTS.md` except R14, and nothing from it links into the executable. This replaces "a project of the solution under `Tools/`" in the amendment above.
+* **Amendment 2026-10-18 (owner decision O29).** This supersedes the O26 amendment above: the content build tool and its importers are projects of the one solution, each in `Tools/<Project>/` in the `Tools` solution folder ([ADR-054](ADR-054-build-system-msbuild-solution.md)). They reference the engine projects whose schema, record and cooker code they share; no game or engine project references them, nothing from them links into the executable, and CI builds them on every run.
