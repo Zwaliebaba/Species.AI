@@ -7,6 +7,7 @@ is `# | Severity | File | Where | Finding | Proposed fix`), normalises the file 
 design_next/ (or the repository root), and writes species_work/fix_list.md: one section per owning
 area, rows ordered by severity, then file and `Where`, each tagged with its reviewer and row (`R2a-14`),
 so findings on the same place sit next to each other and the fixer settles them at once.
+The Status column comes from species_work/fix_status.tsv (id, status, note), so a re-merge keeps it.
 """
 import collections
 import os
@@ -64,6 +65,14 @@ for name in sorted(os.listdir(os.path.join(WORK, 'review'))):
         elif in_table and not line.strip().startswith('|'):
             in_table = False
 
+status = {}
+sp = os.path.join(WORK, 'fix_status.tsv')
+if os.path.exists(sp):
+    for line in open(sp, encoding='utf-8').read().split('\n')[1:]:
+        if line.strip():
+            fid, st, *note = line.split('\t')
+            status[fid] = st + (f' ({note[0]})' if note and note[0] else '')
+
 groups = collections.OrderedDict()
 for r in sorted(rows, key=lambda r: (r['area'], SEV.get(r['sev'], 3), r['file'], r['where'])):
     groups.setdefault(r['area'], []).append(r)
@@ -79,6 +88,6 @@ for a, rs in groups.items():
 for a, rs in groups.items():
     out += ['', f'## {a}', '', '| Id | Severity | File | Where | Finding | Proposed fix | Status |', '|---|---|---|---|---|---|---|']
     for r in rs:
-        out.append(f'| {r["id"]} | {r["sev"].capitalize()} | {r["file"]} | {r["where"]} | {r["finding"]} | {r["fix"]} | open |')
+        out.append(f'| {r["id"]} | {r["sev"].capitalize()} | {r["file"]} | {r["where"]} | {r["finding"]} | {r["fix"]} | {status.get(r["id"], "open")} |')
 open(os.path.join(WORK, 'fix_list.md'), 'w', encoding='utf-8').write('\n'.join(out) + '\n')
 print(f'{len(rows)} findings, {len(groups)} areas: ' + ', '.join(f'{counts[s]} {s}' for s in ('high', 'medium', 'low')))

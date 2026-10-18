@@ -17,7 +17,7 @@ Battles are real-time crowd battles: hundreds of small autonomous figures, leade
 4. **Delegation you can trust.** The deputy follows standing orders that the player understands and can predict.
 5. **The reference look and feel.** The visual and audio language of the reference library stays as it is.
 
-## 3 Decisions taken (owner, 2026-10-17; O12–O13 added at the conversion gate G1, O14–O20 during the conversion Phase 3, O21–O28 when the code standards (`AGENTS.md`) were adopted)
+## 3 Decisions taken (owner, 2026-10-17; O12–O20 taken while the reference library was built, O21–O28 when the code standards (`AGENTS.md`) were adopted)
 
 | # | Topic | Decision | Consequence the design must carry |
 |---|---|---|---|
@@ -32,8 +32,8 @@ Battles are real-time crowd battles: hundreds of small autonomous figures, leade
 | O9 | Look and feel | The look and feel of the reference library **does not change**. | Keep the style: flat-shaded low-poly, additive glow on black, the darkening layer, crowds of small figures. All art is newly authored, with new character silhouettes, textures, UI layout and logo, so Species is not a copy. A strategic zoom level for the big world is designed in the same style. |
 | O10 | Server path | The server starts **integrated in the client** and moves to **dedicated servers** over time. | One server codebase. The integrated server runs in-process behind the same transport interface as a dedicated one, and the client never touches server state directly. |
 | O11 | Research and training | Designed **later**. | The stat and modifier system, and the unit-specialisation hooks, are designed now, so research and training plug in without rework. |
-| O12 | Vocabulary | Name collisions resolved at the reference-library gate G1 (2026-10-17): **Command Console, Convert Turret, Transit Gate, Essence Grove, energy grid, Beam Dish, Solar Array, Relic Spawn Zone**. | The Species vocabulary in `design/CONVENTIONS.md` §8 is authoritative. |
-| O13 | Reference tuning values | The reference tuning values **may be adopted as Species starting values** (G1, 2026-10-17). | A legal check is required before commercial release. The design phase retunes freely; adopted values need no "provisional" flag for reasons of origin. |
+| O12 | Vocabulary | Name collisions resolved while the reference library was built (2026-10-17): **Command Console, Convert Turret, Transit Gate, Essence Grove, energy grid, Beam Dish, Solar Array, Relic Spawn Zone**. | The Species vocabulary in `Design/CONVENTIONS.md` §8 is authoritative. |
+| O13 | Reference tuning values | The reference tuning values **may be adopted as Species starting values** (2026-10-17). | A legal check is required before commercial release. The design phase retunes freely; adopted values need no "provisional" flag for reasons of origin. |
 | O14 | Population cap and player slots | Every open slot is played: empty slots are filled with bots by default, leavers are taken over by bots, and the host may close slots; the per-team cap is the map cap ÷ open slots (DEC-079). | Skirmish lobbies need slot open/close and bot fill. For the world game, the design phase decides how this maps to settlements. |
 | O15 | Collector orbs | Collectors gather any team's Essence orbs; delivery respects the population cap (DEC-080). | — |
 | O16 | Catch-up bonus | Proportional catch-up curve, with Rogue and Visitor factions excluded (DEC-081). | — |
@@ -42,17 +42,17 @@ Battles are real-time crowd battles: hundreds of small autonomous figures, leade
 | O19 | Map values | Absent = lobby default, 0 = none, unlimited is explicit (DEC-120). | Typed map schema. |
 | O20 | First playable | Spawn Control, 2 players, core Supply crate pool. | Matches the GameAssets.md priorities. |
 | O21 | Build rules and dependencies | **`AGENTS.md` governs how code is written and built**: MSBuild solution (`.slnx`), toolset v145, `/std:c++latest`, Debug and Release only, x64 only, no CMake, no package manager beyond NuGet restore, and no third-party code except a **Microsoft allow-list: the DirectX Agility SDK, the GameInput redistributable and WinPixEventRuntime**. Shaders are compiled by `FXCompile` with the Windows SDK's compiler into byte arrays inside the executable. | The engine ADRs and components follow it: no vcpkg, no CMake presets, no build flavours beyond Debug and Release, no third-party libraries in the executable (compression, codecs, test framework, texture tools); the dedicated server is a Windows build until a later ADR decides another host. |
-| O22 | ADR home | Architecture decision records live in **`Design/ADR/` as `ADR-NNN-<slug>.md`** (three-digit ids, MADR 4 content). The design library becomes **`Design/`** at the cutover. | The baseline ADRs keep their numbers (ADR-050 becomes ADR-050); new ADRs continue from the highest id. |
+| O22 | ADR home | Architecture decision records live in **`Design/ADR/` as `ADR-NNN-<slug>.md`** (three-digit ids, MADR 4 content). The design library becomes **`Design/`** at the cutover. | The baseline ADRs (ADR-001 to ADR-077) keep their numbers; new ADRs continue from the highest id. |
 | O23 | Code naming in the design | The C++ sketches, type, file and macro names in the design follow the `AGENTS.md` naming rules now: PascalCase types, functions, namespaces and files, `_camelCase` parameters, `m_` members, `UPPER_CASE` constants, American spelling in identifiers, namespace `Engine` for engine code and `Species` for game code. Prose stays British English. | Every component sketch is rewritten; CONVENTIONS §8 follows `AGENTS.md`. |
 | O24 | AGENTS.md scope | `AGENTS.md` states the repository's current status and which document decides what. **R18 onwards stays reserved** for conformance rules that the Species design phase derives from the Species design. | The design phase proposes R18+ rules (candidates: presentation never writes simulation state; the determinism rules of the simulation core; tuning values in data, never in code). |
 | O25 | Shader files | `AGENTS.md` §2 gains the compute stage suffix `CS`; a permutation is its own file `<Shader><Permutation><Stage>.hlsl`; a shader's shared code lives in one `<Shader>.hlsli` in the same `Shader/` folder. | The renderer and VFX specifications name their shaders this way. |
 | O26 | Development-tool dependencies | C++ development tools (the content build tool and its importers) live under `Tools/` in a **separate solution**, which may use pinned third-party code (for example a BC7 texture encoder), each recorded in an ADR with its licence. The game's solution stays at the Windows SDK, the MSVC standard library and the three allow-listed packages. | ADR-017, ADR-055 and ADR-059 follow it. |
-| O27 | CI additions | `build.yml` gains a guarded NuGet restore step and a guarded design-check job (`Tools/DesignCheck/CheckDesign.py Design`). Fuzz projects and an `ENGINE_DEVELOPMENT` macro rule are **not** added to `AGENTS.md`. | X-TOOLS delivers `Tools/DesignCheck/` with the CLI and the pinned `package.json` the job uses. |
+| O27 | CI additions | `build.yml` gains a guarded NuGet restore step and a guarded design-check job (`Tools/DesignCheck/CheckDesign.py Design`). Fuzz projects and an `ENGINE_DEVELOPMENT` macro rule are **not** added to `AGENTS.md`. | `Tools/DesignCheck/` holds the checker and the pinned `package.json` the job uses. |
 | O28 | Generated schema code | The schema code generator's output is **committed source**: a developer runs it when a schema changes, it writes `AGENTS.md`-style `.h` files into the owning project folder, and CI regenerates them and fails on any difference. | The game's solution needs nothing from `Tools/` to build (ADR-062, `AGENTS.md` §2). |
 
 ## 4 What carries over from the reference library
 
-The reference library (`design/reference/` and `design/architecture/components/`, produced by the conversion run) is the authority for mechanics, behaviour and look and feel. The design phase **adopts, adapts or drops** each reference requirement by ID. Strong candidates:
+The reference library (`Design/reference/` and `Design/architecture/components/`) is the authority for mechanics, behaviour and look and feel. The design phase **adopts, adapts or drops** each reference requirement by ID. Strong candidates:
 
 - the crowd simulation: Workers, Leaders and formations, autonomous combat, creatures and hazards;
 - the population-flow idea: deaths yield Essence orbs, and essence drives growth, which here becomes settlement growth;
@@ -64,7 +64,7 @@ Match-only content (the six match modes, per-match population caps, arena maps, 
 
 ## 5 Constraints
 
-- Windows client; C++23; Direct3D 12; the technology baseline in the conversion run's ADRs.
+- Windows client; C++23; Direct3D 12; the technology baseline of the ADRs (`Design/ADR/README.md`).
 - The server is **authoritative**. Clients send commands and receive the state they are allowed to see. Lockstep is not the world netcode.
 - The server builds headless from day one. The same code runs in-process (integrated) and stand-alone (dedicated).
 - The world is partitioned into regions from day one, so regions can later move to separate server processes.
