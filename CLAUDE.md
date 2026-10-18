@@ -13,7 +13,7 @@
 ## Current status (2026-10-17)
 
 - There is no code yet: no solution, no projects, no source.
-- The reference library is still being built by the conversion run (Phase 4, integration). Until its cutover it lives in `design_next/`, beside the source corpus `design/` and the working folder `species_work/`; read `design_next/` wherever `AGENTS.md` or this file says `Design/`. The cutover renames it to `Design/` and removes the other two.
+- The reference library is still being built by the conversion run (Phase 5, review; every automated gate passes). Until its cutover it lives in `design_next/`, beside the source corpus `design/` and the working folder `species_work/`; read `design_next/` wherever `AGENTS.md` or this file says `Design/`. The cutover renames it to `Design/` and removes the other two.
 
 ## Rules that are easy to miss
 
