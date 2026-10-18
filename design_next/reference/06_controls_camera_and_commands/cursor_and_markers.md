@@ -12,7 +12,7 @@ Everything in this file is presentation: it reads the simulation state and its p
 
 ### 2.1 The cursor set
 
-**R-CTRL-350** (MUST) The world cursor (`WorldCursor`) owns the cursors of table 2.1-A. A cursor is a textured quad in screen space with an optional darkening shadow, made from its image blurred with `ref.ctrl.cursor.shadow_blur`. The shadow of each shadowed cursor is a derived asset of its image: `cursor.world.shadow`, `cursor.place.shadow`, `cursor.unavailable.shadow`, `cursor.move_target.shadow`, `cursor.highlight.shadow`, `cursor.select.shadow` and `cursor.enter.shadow` ([entity and overlay renderers](../../architecture/components/renderer/entity_and_overlay_renderers.md) RND-366). A cursor's defaults are: size 20, hotspot (0, 0) (a fraction of the size, (0, 0) the top-left corner and (1, 1) the bottom-right), not animated, shadowed, additive, white. The hotspots, sizes and colours of the set are those of `ref.ctrl.cursor.set`. Cursor sizes are physical pixels at every render size and every resolution (RND-367).
+**R-CTRL-350** (MUST) The world cursor (`WorldCursor`) owns the cursors of table 2.1-A. A cursor is a textured quad in screen space with an optional darkening shadow, made from its image blurred with `ref.ctrl.cursor.shadow_blur`. The shadow of each shadowed cursor is a derived asset of its image: `cursor.world.shadow`, `cursor.place.shadow`, `cursor.unavailable.shadow` and `cursor.highlight.shadow` ([entity and overlay renderers](../../architecture/components/renderer/entity_and_overlay_renderers.md) RND-366). A cursor's defaults are: size `ref.ctrl.cursor.set.default_size` (20), hotspot `ref.ctrl.cursor.set.default_hotspot` (0, 0) (a fraction of the size, (0, 0) the top-left corner and (1, 1) the bottom-right), not animated, shadowed, additive, white. The hotspots, sizes and colours of table 2.1-A are the `ref.ctrl.cursor.set.*` keys of §4. Cursor sizes are physical pixels at every render size and every resolution (RND-367).
 
 Table 2.1-A The cursor set.
 
@@ -21,11 +21,8 @@ Table 2.1-A The cursor set.
 | standard pointer | `cursor.world` | (0.055, 0.070) | 35 | no | white, additive, shadowed | yes: the default pointer |
 | placement | `cursor.place` | (0.5, 0.5) | 40, or as the caller sets | as the caller sets | white, additive | yes: the entering marker (R-CTRL-371) |
 | unavailable | `cursor.unavailable` | (0.5, 0.5) | 60 | no | red (255, 0, 0), additive | yes: an invalid entry; the same image is the red sprite for an invalid placement and for "no route" (R-CTRL-366) |
-| move here | `cursor.move_target` | (0.5, 0.5) | 30 | yes | (255, 255, 150), additive | no |
 | highlight | `cursor.highlight` | (0.5, 0.5) | 20, or as the caller sets | yes, switched off where it is used | white, additive | not as a cursor; the same image is the power-bar highlight ([selection and Power slots](selection_and_power_slots.md) R-CTRL-226, R-CTRL-231) |
 | turret aim | `cursor.turret_aim` | (0.5, 0.5) | as the caller sets | no | white, alpha-blended, no shadow | yes: the crosshair (R-CTRL-372) |
-| selection | `cursor.select` | (0.5, 0.5) | 20, or as the caller sets | no | the team colour, as the caller sets | no |
-| enter | `cursor.enter` | (0.5, 1.0) | 50 | yes | white, additive | no |
 
 **R-CTRL-351** (MUST) An animated cursor's size is size + |sin(`ref.ctrl.cursor.pulse_rate` × game time)| × size × `ref.ctrl.cursor.pulse_amount`, so it pulses between 1.0 and 1.6 times its size.
 
@@ -54,7 +51,7 @@ Table 2.1-A The cursor set.
 
 ### 2.4 The highlight effect
 
-**R-CTRL-363** (MUST) The highlight effect at a position with radius r and a colour is drawn with alpha blending, no depth writes and the depth-biased variant of factor `ref.ctrl.cursor.depth_bias` ([frame view](../../architecture/components/renderer/view_lighting_and_fog.md) RND-219), using n = max(`ref.ctrl.cursor.ring_min_steps`, 2 × r) steps and the widths of `ref.ctrl.cursor.ring_widths`:
+**R-CTRL-363** (MUST) The highlight effect at a position with radius r and a colour is drawn with alpha blending, no depth writes and the depth-biased variant of factor `ref.ctrl.cursor.depth_bias` ([frame view](../../architecture/components/renderer/view_lighting_and_fog.md) RND-219), using n = max(`ref.ctrl.cursor.ring_min_steps`, 2 × r) steps, the main width `ref.ctrl.cursor.ring_widths.main` (0.2) × r and the outline width `ref.ctrl.cursor.ring_widths.outline` (0.075) × r:
 
 1. ring 1, in the colour: from r − 0.2r to r;
 2. ring 2, black: from r − 0.2r − 0.075r to r − 0.2r;
@@ -72,9 +69,9 @@ Each ring is a quad strip in the plane perpendicular to the ground normal at the
 | 1 | the team has a current Power | its icon `icon.power.<kind>`; while it is Waiting, the icon blinks: it shows while real time mod `ref.ctrl.cursor.blink_period` < `ref.ctrl.cursor.blink_on` |
 | 1a | as 1, the Power is Waiting, and its target-area test fails at the pointer ground point ([selection and Power slots](selection_and_power_slots.md) R-CTRL-192) | also the red `cursor.unavailable` sprite at `ref.ctrl.cursor.unavailable_scale` × half the icon size, at the icon centre (the anchor + `ref.ctrl.cursor.icon_centre_offset` along n) |
 | 1b | as 1, and the Power is a Waiting turret or Hive Power | also a ghost model at the pointer ground point, `mesh.structure.turret_head` or `mesh.structure.hive_mound`, unrotated, blended as source + destination × source colour, with no depth writes |
-| 1c | as 1, and the Power is a Waiting Speed Boost, Shield, Convert, meteor shower, Fury or Missile Barrage Power | also a glowing area cylinder at the pointer ground point, by `ref.ctrl.cursor.area_cylinder`: 100 sides, attached to the ground, up = world up, in the team colour, its alpha halved while the blink is off; radius `ref.power.effect_range` and height 0.6 × that, except the meteor shower (radius × 4, height × 1) and the Missile Barrage (radius × 3, height × 1) |
+| 1c | as 1, and the Power is a Waiting Speed Boost, Shield, Convert, meteor shower, Fury or Missile Barrage Power | also a glowing area cylinder at the pointer ground point: `ref.ctrl.cursor.area_cylinder.sides` (100) sides, attached to the ground, up = world up, in the team colour, its alpha halved while the blink is off; radius `ref.power.effect_range` and height `ref.ctrl.cursor.area_cylinder.height_factor` (0.6) × that, except the meteor shower (radius × `ref.ctrl.cursor.area_cylinder.meteor_radius_factor` (4)) and the Missile Barrage (radius × `ref.ctrl.cursor.area_cylinder.barrage_radius_factor` (3)), whose height is `ref.ctrl.cursor.area_cylinder.wide_height_factor` (1) × `ref.power.effect_range` |
 | 2 | no current Power, and the selection is a Leader | `icon.power.leader` |
-| 3 | Workers selected | `icon.power.workers` and the selected count by `ref.ctrl.cursor.count_text`: text size 15, an outline pass, then white with alpha 0.9, at the icon centre + (2, 0.4 × size); when the route preview finds no walkable route, the red `cursor.unavailable` sprite replaces the count |
+| 3 | Workers selected | `icon.power.workers` and the selected count: text size `ref.ctrl.cursor.count_text.size` (15), an outline pass, then white with alpha `ref.ctrl.cursor.count_text.alpha` (0.9), at the icon centre + (`ref.ctrl.cursor.count_text.offset_x`, `ref.ctrl.cursor.count_text.offset_y` × size) = (2, 0.4 × size); when the route preview finds no walkable route, the red `cursor.unavailable` sprite replaces the count |
 
 ### 2.6 The selection circle
 
@@ -104,7 +101,7 @@ The crosshair only reads the selected structure's kind and never changes it (DEC
 
 ### 2.10 Selection arrows and move markers
 
-**R-CTRL-375** (MUST) Executing `Select` ([Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-405) and executing `SelectPower` ([selection and Power slots](selection_and_power_slots.md) R-CTRL-200) each emit a presentation event that boosts the selection arrows by `ref.ctrl.cursor.selection_boost`. A match draws neither the selection arrows (`cursor.pointer`) nor the move markers, so the boost and the move markers have no visible effect; the move-marker list is bounded (DEC-096).
+**R-CTRL-375** (removed: a match draws no selection arrows and no move markers)
 
 ### 2.11 World markers
 
@@ -121,7 +118,7 @@ The crosshair only reads the selected structure's kind and never changes it (DEC
 | Leader | every promotion of the local team | the Leader + `ref.ctrl.marker.lift` up | yes | until seen | for the local team | no | the Leader's banner (R-UNIT-191), with a ray-hit highlight, instead of an icon |
 | Transport order | every order to a Transport of a team that is a friend of the local team (R-SIM-450) | the Transport's waypoint, sorted `ref.ctrl.marker.order_sort_offset` behind | yes | until seen | for the local team, while nothing else is selected or this Transport is selected | for the local team, after the grace period | 0.7 × the Power icon and a ground highlight (R-CTRL-363) of size 10 + sin(5t); it becomes inactive when the waypoint changes or the Transport is within `ref.unit.transport.arrival_distance` of it; picked by a ground sphere of radius `ref.ctrl.marker.order_pick_radius` |
 
-The spins, fills and sizes of this table are the constants of `ref.ctrl.marker.type_constants`.
+The spins, fills and sizes of this table are the keys `ref.ctrl.marker.fixed_spin_s`, `ref.ctrl.marker.power_spin_s` and `ref.ctrl.marker.spin_exponent` (the spins), `ref.ctrl.marker.crate_neutral_grey`, `ref.ctrl.marker.crate_smoothing` and `ref.ctrl.marker.crate_rotation_factor` (the Supply crate marker), `ref.ctrl.marker.relic_lift_factor` and `ref.ctrl.marker.relic_alpha_factor` (the Relic marker), and `ref.ctrl.marker.order_icon_scale`, `ref.ctrl.marker.order_highlight_size` and `ref.ctrl.marker.order_highlight_pulse_rate` (the Transport order marker).
 
 **R-CTRL-382** (MUST) Each frame the world markers advance:
 
@@ -191,7 +188,18 @@ This file cites `ref.ctrl.promote_radius` ([actions and bindings](actions_and_bi
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
-| `ref.ctrl.cursor.set` | standard (0.055, 0.070), 35; placement (0.5, 0.5), 40; unavailable (0.5, 0.5), 60, red (255, 0, 0); move here (0.5, 0.5), 30, (255, 255, 150); highlight (0.5, 0.5), 20; turret aim (0.5, 0.5), caller size; selection (0.5, 0.5), 20; enter (0.5, 1.0), 50 | hotspot, pixels, colour | defaults: size 20, hotspot (0, 0) | R-CTRL-350 | — |
+| `ref.ctrl.cursor.set.default_size` | 20 | pixels | size of a cursor that sets none | R-CTRL-350 | — |
+| `ref.ctrl.cursor.set.default_hotspot` | 0, 0 | fraction of the size (x, y) | the top-left corner | R-CTRL-350 | — |
+| `ref.ctrl.cursor.set.world_hotspot` | 0.055, 0.070 | fraction of the size (x, y) | standard pointer `cursor.world` | R-CTRL-350 | — |
+| `ref.ctrl.cursor.set.world_size` | 35 | pixels | standard pointer | R-CTRL-350 | — |
+| `ref.ctrl.cursor.set.place_hotspot` | 0.5, 0.5 | fraction of the size (x, y) | placement cursor `cursor.place` | R-CTRL-350 | — |
+| `ref.ctrl.cursor.set.place_size` | 40 | pixels | unless the caller sets a size | R-CTRL-350 | — |
+| `ref.ctrl.cursor.set.unavailable_hotspot` | 0.5, 0.5 | fraction of the size (x, y) | unavailable cursor `cursor.unavailable` | R-CTRL-350 | — |
+| `ref.ctrl.cursor.set.unavailable_size` | 60 | pixels | | R-CTRL-350 | — |
+| `ref.ctrl.cursor.set.unavailable_colour` | 255, 0, 0 | RGB8 | red | R-CTRL-350 | — |
+| `ref.ctrl.cursor.set.highlight_hotspot` | 0.5, 0.5 | fraction of the size (x, y) | highlight `cursor.highlight` | R-CTRL-350 | — |
+| `ref.ctrl.cursor.set.highlight_size` | 20 | pixels | unless the caller sets a size | R-CTRL-350 | — |
+| `ref.ctrl.cursor.set.turret_aim_hotspot` | 0.5, 0.5 | fraction of the size (x, y) | crosshair `cursor.turret_aim`; its size is the caller's | R-CTRL-350 | — |
 | `ref.ctrl.cursor.shadow_blur` | 10 | blur radius | of the cursor image, for its shadow | R-CTRL-350 | — |
 | `ref.ctrl.cursor.pulse_rate` | 4 | rad per second of game time | | R-CTRL-351 | — |
 | `ref.ctrl.cursor.pulse_amount` | 0.6 | × size | | R-CTRL-351 | — |
@@ -205,7 +213,8 @@ This file cites `ref.ctrl.promote_radius` ([actions and bindings](actions_and_bi
 | `ref.ctrl.cursor.highlight_sound_interval` | 0.2 | s of real time | | R-CTRL-360 | — |
 | `ref.ctrl.cursor.depth_bias` | 1.03 | near-plane factor | depth-biased variant | R-CTRL-363, R-CTRL-374 | — |
 | `ref.ctrl.cursor.ring_min_steps` | 25 | steps | n = max(25, 2r) | R-CTRL-363 | — |
-| `ref.ctrl.cursor.ring_widths` | main 0.2 × r; outline 0.075 × r | × radius | | R-CTRL-363 | — |
+| `ref.ctrl.cursor.ring_widths.main` | 0.2 | × radius | ring 1 | R-CTRL-363 | — |
+| `ref.ctrl.cursor.ring_widths.outline` | 0.075 | × radius | rings 2 and 3 | R-CTRL-363 | — |
 | `ref.ctrl.cursor.glow_height_divisor` | 300 | wu | height r × max(1, distance ÷ 300) | R-CTRL-363 | — |
 | `ref.ctrl.cursor.drape_distance` | 75 | wu | drape factor min(1, 75 ÷ distance), used above 0.1 | R-CTRL-363 | — |
 | `ref.ctrl.cursor.icon_offset` | 5 | pixels | along normalise(0.85, 1) | R-CTRL-366 | — |
@@ -214,8 +223,15 @@ This file cites `ref.ctrl.promote_radius` ([actions and bindings](actions_and_bi
 | `ref.ctrl.cursor.blink_on` | 0.25 | s | visible part of each period | R-CTRL-366 | — |
 | `ref.ctrl.cursor.icon_centre_offset` | 50 | pixels | from the anchor along n | R-CTRL-366 | — |
 | `ref.ctrl.cursor.unavailable_scale` | 1.2 | × half the icon size | | R-CTRL-366 | — |
-| `ref.ctrl.cursor.count_text` | size 15; outline, then white alpha 0.9; offset (2, 0.4 × size) | layout | | R-CTRL-366 | — |
-| `ref.ctrl.cursor.area_cylinder` | 100 sides; radius `ref.power.effect_range`, height 0.6 × radius; meteor shower radius × 4, height × 1; Missile Barrage radius × 3, height × 1 | layout | | R-CTRL-366 | — |
+| `ref.ctrl.cursor.count_text.size` | 15 | text size | the selected-Worker count | R-CTRL-366 | — |
+| `ref.ctrl.cursor.count_text.alpha` | 0.9 | alpha | the white fill, after an outline pass | R-CTRL-366 | — |
+| `ref.ctrl.cursor.count_text.offset_x` | 2 | pixels | from the icon centre | R-CTRL-366 | — |
+| `ref.ctrl.cursor.count_text.offset_y` | 0.4 | × icon size | from the icon centre | R-CTRL-366 | — |
+| `ref.ctrl.cursor.area_cylinder.sides` | 100 | sides | | R-CTRL-366 | — |
+| `ref.ctrl.cursor.area_cylinder.height_factor` | 0.6 | × `ref.power.effect_range` | height; the radius is `ref.power.effect_range` | R-CTRL-366 | — |
+| `ref.ctrl.cursor.area_cylinder.meteor_radius_factor` | 4 | × `ref.power.effect_range` | meteor shower radius | R-CTRL-366 | — |
+| `ref.ctrl.cursor.area_cylinder.barrage_radius_factor` | 3 | × `ref.power.effect_range` | Missile Barrage radius | R-CTRL-366 | — |
+| `ref.ctrl.cursor.area_cylinder.wide_height_factor` | 1 | × `ref.power.effect_range` | height of the meteor shower and Missile Barrage cylinders | R-CTRL-366 | — |
 | `ref.ctrl.cursor.circle_particles` | 30 | particles per effect step | `vfx.emit.step_rate` (60) effect steps per second | R-CTRL-370 | DEC-960 |
 | `ref.ctrl.cursor.circle_spin` | 0.5 | rad per real second | | R-CTRL-370 | — |
 | `ref.ctrl.cursor.circle_lift` | 10 | wu | above the terrain | R-CTRL-370 | — |
@@ -224,20 +240,46 @@ This file cites `ref.ctrl.promote_radius` ([actions and bindings](actions_and_bi
 | `ref.ctrl.cursor.crosshair_structure_size` | 0.1 | × screen height | | R-CTRL-372 | — |
 | `ref.ctrl.cursor.crosshair_pad_divisor` | 25.6 | — | size = screen width ÷ 25.6 | R-CTRL-372 | — |
 | `ref.ctrl.cursor.preview_diamond` | 2 | wu | half-diagonal of each diamond | R-CTRL-374 | — |
-| `ref.ctrl.cursor.selection_boost` | 2.0 | factor | selection-arrow boost event | R-CTRL-375 | — |
 | `ref.ctrl.marker.fixed_lift` | 30 | wu | | R-CTRL-381 | — |
 | `ref.ctrl.marker.lift` | 20 | wu | Supply crate, Power and Leader markers | R-CTRL-381 | — |
 | `ref.ctrl.marker.order_sort_offset` | 50 | wu of sort key | | R-CTRL-381, R-CTRL-382 | — |
 | `ref.ctrl.marker.order_pick_radius` | 8 | wu | ground-sphere pick of an order marker | R-CTRL-381 | — |
-| `ref.ctrl.marker.type_constants` | fixed spin 2.5 s, += (2.5 − t)²; Power spin 5 s, += (5 − t)²; neutral crate grey 155; crate smoothing 0.95 and 0.05; crate rotation × −10π; Relic lift 4 × radius, alpha × 0.5; order icon 0.7; order highlight size 10 + sin(5t) | constants | | R-CTRL-381 | — |
+| `ref.ctrl.marker.fixed_spin_s` | 2.5 | s of real time | a fixed marker spins while t < 2.5 s, rotation += (2.5 − t)^exponent | R-CTRL-381 | — |
+| `ref.ctrl.marker.power_spin_s` | 5 | s of real time | a Power marker spins while t < 5 s, rotation += (5 − t)^exponent | R-CTRL-381 | — |
+| `ref.ctrl.marker.spin_exponent` | 2 | exponent | both spins | R-CTRL-381 | — |
+| `ref.ctrl.marker.crate_neutral_grey` | 155 | grey level (0 to 255) | the disc of a Supply crate marker with no capturing team | R-CTRL-381 | — |
+| `ref.ctrl.marker.crate_smoothing` | 0.95 | factor per frame | smoothed = 0.95 × smoothed + (1 − 0.95) × fraction | R-CTRL-381 | — |
+| `ref.ctrl.marker.crate_rotation_factor` | −10π | rad per unit of fraction | rotation = smoothed fraction × −10π | R-CTRL-381 | — |
+| `ref.ctrl.marker.relic_lift_factor` | 4 | × Relic radius | above the Relic | R-CTRL-381 | — |
+| `ref.ctrl.marker.relic_alpha_factor` | 0.5 | × alpha | the Relic marker's disc | R-CTRL-381 | — |
+| `ref.ctrl.marker.order_icon_scale` | 0.7 | × Power icon size | Transport order marker | R-CTRL-381 | — |
+| `ref.ctrl.marker.order_highlight_size` | 10 | wu | ground highlight of an order marker; size 10 + sin(rate × t) | R-CTRL-381 | — |
+| `ref.ctrl.marker.order_highlight_pulse_rate` | 5 | rad per second of real time | | R-CTRL-381 | — |
 | `ref.ctrl.marker.own_sort_offset` | 50 | wu of sort key | subtracted for the own team | R-CTRL-382 | — |
 | `ref.ctrl.marker.new_age` | 3 | s | newer markers sort by age | R-CTRL-382 | — |
 | `ref.ctrl.marker.smoothing` | 5 | per second | position smoothing | R-CTRL-382 | — |
 | `ref.ctrl.marker.edge_probe` | 100 | wu | | R-CTRL-383 | — |
 | `ref.ctrl.marker.edge_probe_ahead` | 1000 | wu | ahead of the camera | R-CTRL-383 | — |
 | `ref.ctrl.marker.edge_inset` | 50 | pixels | | R-CTRL-383 | — |
-| `ref.ctrl.marker.alpha_rules` | seen after 1 s; fade over 9 s after 6 s; floor max((distance − 350) ÷ 500, 1 − centre distance ÷ (0.5 × screen height)); non-persistent fade over 2 s after 6 s; own Powers and orders at least 0.75 | rules | | R-CTRL-384 | — |
-| `ref.ctrl.marker.size_rules` | icon screen height ÷ 20; shadow icon + 10; compass icon + screen height ÷ 30; flash × 1.3, alpha 0.2 and 1.0 every 0.2 s for 3 s; × (2 − distance ÷ 500) under 500 wu; hovered × 1.2, alpha 1; lift 5 × screen height ÷ distance pixels | rules | | R-CTRL-385 | — |
+| `ref.ctrl.marker.alpha.seen_after_s` | 1 | s of on-screen time | a marker counts as seen | R-CTRL-384 | — |
+| `ref.ctrl.marker.alpha.fade_start_s` | 6 | s of on-screen time | both fades start here | R-CTRL-384 | — |
+| `ref.ctrl.marker.alpha.fade_s` | 9 | s | the fade of a seen marker | R-CTRL-384 | — |
+| `ref.ctrl.marker.alpha.floor_distance` | 350 | wu | floor term (camera distance − 350) ÷ 500 | R-CTRL-384 | — |
+| `ref.ctrl.marker.alpha.floor_distance_range` | 500 | wu | | R-CTRL-384 | — |
+| `ref.ctrl.marker.alpha.floor_centre_fraction` | 0.5 | × screen height | floor term 1 − distance to the screen centre ÷ (0.5 × screen height) | R-CTRL-384 | — |
+| `ref.ctrl.marker.alpha.transient_fade_s` | 2 | s | the further fade of a marker that is not persistent | R-CTRL-384 | — |
+| `ref.ctrl.marker.alpha.own_min` | 0.75 | alpha | the local team's Power and order markers while visible | R-CTRL-384 | — |
+| `ref.ctrl.marker.size.icon_divisor` | 20 | divisor | icon = screen height ÷ 20 | R-CTRL-385 | — |
+| `ref.ctrl.marker.size.shadow_pad` | 10 | pixels | shadow = icon + 10 | R-CTRL-385 | — |
+| `ref.ctrl.marker.size.compass_divisor` | 30 | divisor | compass = icon + screen height ÷ 30 | R-CTRL-385 | — |
+| `ref.ctrl.marker.size.flash_scale` | 1.3 | × | while the marker flashes | R-CTRL-385 | — |
+| `ref.ctrl.marker.size.flash_alpha_low` | 0.2 | alpha | | R-CTRL-385 | — |
+| `ref.ctrl.marker.size.flash_alpha_high` | 1.0 | alpha | | R-CTRL-385 | — |
+| `ref.ctrl.marker.size.flash_period_s` | 0.2 | s of real time | the alpha alternates once per period | R-CTRL-385 | — |
+| `ref.ctrl.marker.size.flash_duration_s` | 3 | s of real time | | R-CTRL-385 | — |
+| `ref.ctrl.marker.size.near_distance` | 500 | wu | × (2 − camera distance ÷ 500) while the camera is closer | R-CTRL-385 | — |
+| `ref.ctrl.marker.size.hover_scale` | 1.2 | × | while hovered or selected, with alpha 1 | R-CTRL-385 | — |
+| `ref.ctrl.marker.size.lift_factor` | 5 | × screen height ÷ camera distance, in pixels | the raise of an on-screen icon | R-CTRL-385 | — |
 | `ref.ctrl.marker.shadow_alpha` | 0.9 | alpha | | R-CTRL-386 | — |
 
 ## 5 Edge cases and interactions
@@ -248,7 +290,6 @@ This file cites `ref.ctrl.promote_radius` ([actions and bindings](actions_and_bi
 4. **Gamepad tracking.** While the camera tracks a Strike team in gamepad mode, neither a crosshair nor the standard pointer is drawn (R-CTRL-372).
 5. **Crate markers for every team.** Every team can click a Supply crate marker, and it is shown off screen at all times (R-CTRL-381).
 6. **Turret Powers.** A targeted turret Power gets no Power marker (R-CTRL-381).
-7. **Selection arrows.** The boost event of a Power selection changes nothing visible in a match (R-CTRL-375).
 
 ## 6 Acceptance criteria
 
@@ -270,8 +311,8 @@ This file cites `ref.ctrl.promote_radius` ([actions and bindings](actions_and_bi
 
 - **Reference documents:** [actions and bindings](actions_and_bindings.md) (the object under the pointer); [selection and Power slots](selection_and_power_slots.md) (Powers, the target-area test, the extra information); [Leader and formations](../02_units/leader_and_formations.md) (formation slots, banners); [Transport](../02_units/transport.md); [Relic Run](../01_skirmish_rules_and_modes/relic_run.md); [Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) (R-SIM-405, R-SIM-450); [Tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) (extrapolation time).
 - **Engine components:** [renderer](../../architecture/components/renderer/README.md) (depth-biased variants, overlay drawing; the cursor and marker layers of [entity and overlay renderers](../../architecture/components/renderer/entity_and_overlay_renderers.md) RND-357, RND-366, RND-367); [animation and VFX](../../architecture/components/animation_and_vfx/README.md) (control-flash and muzzle-flash particles, the fixed effect step VFX-018).
-- **Assets:** `cursor.world`, `cursor.place`, `cursor.unavailable`, `cursor.move_target`, `cursor.highlight`, `cursor.turret_aim`, `cursor.select`, `cursor.enter`, `cursor.pointer`, `cursor.world.shadow`, `cursor.place.shadow`, `cursor.unavailable.shadow`, `cursor.move_target.shadow`, `cursor.highlight.shadow`, `cursor.select.shadow`, `cursor.enter.shadow`, `fx.particle_dot`, `marker.team_disc`, `marker.team_disc_shadow`, `marker.edge_compass`, `marker.edge_compass_shadow`, `marker.edge_compass_empty`, `marker.supply_crate`, `marker.relic`, `icon.power.leader`, `icon.power.workers`, `mesh.structure.turret_head`, `mesh.structure.hive_mound`; sound event `match_ui.unit_highlight`.
+- **Assets:** `cursor.world`, `cursor.place`, `cursor.unavailable`, `cursor.highlight`, `cursor.turret_aim`, `cursor.world.shadow`, `cursor.place.shadow`, `cursor.unavailable.shadow`, `cursor.highlight.shadow`, `fx.particle_dot`, `marker.team_disc`, `marker.team_disc_shadow`, `marker.edge_compass`, `marker.edge_compass_shadow`, `marker.edge_compass_empty`, `marker.supply_crate`, `marker.relic`, `icon.power.leader`, `icon.power.workers`, `mesh.structure.turret_head`, `mesh.structure.hive_mound`; sound event `match_ui.unit_highlight`.
 
 ## 8 Open decisions
 
-No Open decision concerns this file. Resolved decisions applied: DEC-007, DEC-096, DEC-960.
+No Open decision concerns this file. Resolved decisions applied: DEC-007, DEC-960.

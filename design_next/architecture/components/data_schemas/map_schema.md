@@ -16,7 +16,7 @@ This document specifies the schema of the map definition (`MapDefinition`, schem
 
 ## 2 Interfaces
 
-The interface below is a C++23 declaration sketch, not an implementation. The record types are generated from the schemas (ADR-062).
+The interface below is a C++23 declaration sketch, not an implementation. The record types and their enumerations are generated from the schemas (README DAT-054, ADR-062), and this section holds their only declaration: the [terrain](../terrain/README.md) component cites the terrain records (TER §2.1) and [camera and sequences](../camera_and_sequences.md) the camera records (CAM §2.1). The terrain and camera records name no game concept, so they are generated into `Engine`; the other records of a map are game records in `Species` (CONVENTIONS §8).
 
 ```cpp
 namespace Engine
@@ -33,6 +33,81 @@ struct Limit
     Unlimited
   } form;
   std::uint32_t value; // meaningful only for Form::Value
+};
+
+// ---- generated from maps.definition: the terrain records of tables 3.4-A to 3.4-C (TER-030 to TER-035) ----
+// The stored values carry meaning (TER-100, TER-035); keep the order.
+enum class TileMethod : std::uint8_t
+{
+  Average = 0,
+  RandomPair = 1,
+  CopyOne = 2
+};
+enum class FlattenOp : std::uint8_t
+{
+  Absolute = 0,
+  Add = 1,
+  Subtract = 2,
+  Smooth = 3,
+  Subtract2 = 4
+};
+struct TerrainDefinition // the block terrain, table 3.4-A
+{
+  std::int32_t worldSizeX; // wu
+  std::int32_t worldSizeZ;
+  double cellSize;             // wu per sample, binary32-rounded (README DAT-010)
+  double outsideHeight;        // wu, binary32-rounded
+  float maxHeight;             // wu, held as binary32
+  std::uint32_t landColorRamp; // asset members; 1 is the map default
+  std::uint32_t shoreWaveGradient;
+  std::uint32_t seaTile;
+};
+struct TerrainTile // the block terrain_tiles, table 3.4-B, in the generator's order of R-MAP-081
+{
+  std::int32_t positionX;
+  double positionY;
+  std::int32_t positionZ;
+  std::int32_t size;
+  double fractalDimension;
+  double heightScale;
+  double desiredHeight;
+  TileMethod generationMethod;
+  std::int32_t seed;
+  double lowlandSmoothing;
+  std::uint8_t guidePower;             // p; 0: no guide grid
+  std::vector<std::uint8_t> guideGrid; // (2^p - 1)^2 cells, z outer and x inner (TER-036)
+};
+struct TerrainFlattenArea // the block flatten_areas, table 3.4-C
+{
+  Vec3 center; // center.y is the operand of the flatten type (TER-034)
+  double size; // the half-width of the square
+  FlattenOp flattenType;
+  double threshold;
+};
+
+// ---- generated from maps.definition: the camera records of tables 3.7-A and 3.7-B (CAM-014, CAM-020) ----
+enum class CameraTransition : std::uint8_t // authoring order only
+{
+  Move,
+  Cut
+};
+struct CameraView // front and up normalised at cook time, not orthogonalised
+{
+  std::string name;
+  Vec3 position;
+  Vec3 front;
+  Vec3 up;
+};
+struct CameraAnimationStep
+{
+  CameraTransition transition;
+  std::string view; // a camera view of the map, or previous_view
+  double duration;  // s of the camera clock, [0, ref.map.camera.animation_duration_max_s)
+};
+struct CameraAnimationDef
+{
+  std::string name;
+  std::vector<CameraAnimationStep> steps; // may be empty; an empty animation never plays
 };
 
 } // namespace Engine
@@ -87,25 +162,14 @@ enum class CoopGroup : std::uint8_t
   One,
   Two
 };
-enum class CameraTransition : std::uint8_t
-{
-  Move,
-  Cut
-};
-enum class RoutePointKind : std::uint8_t
-{
-  Position,
-  Ground,
-  Structure
-};
 
 struct MatchOptions; // the map header, table 3.2-A
 struct StartPosition
 {
   std::uint8_t position;
   std::string cameraView;
-  SiegeSide side;
-  CoopGroup group;
+  SiegeSide siegeSide;
+  CoopGroup coopGroup;
 };
 // The front is normalised at cook time.
 struct MapLight
@@ -113,19 +177,8 @@ struct MapLight
   Engine::Vec3 front;
   Engine::Vec3 color;
 };
-struct CameraViewRecord
-{
-  std::string name;
-  Engine::Vec3 position;
-  Engine::Vec3 front;
-  Engine::Vec3 up;
-};
-struct CameraAnimationRecord
-{
-  std::string name;
-  std::vector<CameraAnimationStepRecord> steps;
-};
 struct StartingForcesRecord; // table 3.8-A
+// RoutePoint and RoutePointKind are the simulation's (R-SIM-333); table 3.9-A gives the cooking (DAT-093).
 struct RouteRecord
 {
   std::uint16_t id;

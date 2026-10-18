@@ -80,18 +80,8 @@ enum class SoundAudience : std::uint8_t
 {
   All, OwnGroup, OtherGroup, NoGroup   // [all, own, enemy, none]
 };
-enum class SoundParamKind : std::uint8_t
-{
-  Fixed, Random, Linked
-};
-enum class SoundParamUpdate : std::uint8_t
-{
-  Continuous, PerNote
-};
-enum class SoundLink : std::uint8_t
-{
-  None, Height, PosX, Altitude, PosZ, Speed, CameraDistance, ObjectAge, GroupsNearby, TimeRemaining, ObjectsNearby
-};
+// SoundParamKind, SoundParamUpdate, SoundLink, SoundParam, EffectBinding, SoundLayerDef, SoundEventDef, SoundSourceDef:
+// generated from sound.sources: data_schemas/entity_audio_geometry_and_panel_schemas.md §2
 enum class EnvelopeStage : std::uint8_t
 {
   Attack, Hold, Release   // no decay stage
@@ -100,12 +90,8 @@ enum class VoiceState : std::uint8_t
 {
   Pending, Virtual, Real, Retired
 };
-// Order carries meaning: own-algorithm kinds run in this order in a chain (R-AUD-077, R-AUD-080).
-enum class DspFilterKind : std::uint8_t
-{
-  Chorus, Compressor, Distortion, StereoEcho, Flanger, StandardGargle, RoomReverb, ParametricEq, StudioReverb,
-  ResonantLowPass, BitCrusher, Gargle, Echo, SimpleReverb
-};
+// DspFilterKind (its order carries meaning, R-AUD-080), DspParamDesc, DspFilterDef:
+// generated from sound.effect_kinds: data_schemas/entity_audio_geometry_and_panel_schemas.md §2
 // Order is the priority-class order, highest first (DEC-570); Music is outside the ranking.
 enum class AudioBus : std::uint8_t
 {

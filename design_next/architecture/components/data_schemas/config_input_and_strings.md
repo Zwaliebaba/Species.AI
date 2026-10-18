@@ -37,6 +37,9 @@ enum class ApplyScope : std::uint8_t
   None
 }; // UI-441; None: inert entry
 
+struct DefaultValue; // a value of the setting's type, or absent (table 3.1-A)
+class ValueMap;      // the settings store's current value of each key
+
 // One row of table 3.1-A.
 struct SettingSpec
 {
@@ -72,28 +75,20 @@ public:
 namespace Engine
 {
 
-enum class InputMode : std::uint8_t
-{
-  KeyboardMouse,
-  Gamepad
-};
+// InputMode and BindingDescription are the input component's (INP-150, INP-178).
+struct CookedStringTable; // the cooked text.string_table entry: two expanded texts per id, and the embed-only flags (DAT-217)
 
 // Content build: merge, validate, expand (DAT-217).
 class StringTableBuilder
 {
 public:
   std::vector<Diagnostic> Add(const JsonDocument& _source);
-  std::expected<CookedStringTable, std::vector<Diagnostic>> Build(const BindingDescriptions& _bindings) const;
+  // _describe gives the description of an action's bindings by its action id, as InputRouter::Describe does (INP-178).
+  std::expected<CookedStringTable, std::vector<Diagnostic>>
+  Build(const std::function<std::optional<BindingDescription>(std::string_view _actionId)>& _describe) const;
 };
 
-// Run time, read-only (UI-221).
-class StringTableView
-{
-public:
-  std::u8string_view Lookup(std::string_view _id, InputMode _mode) const noexcept;
-  bool Exists(std::string_view _id) const noexcept;
-  std::string_view Language() const noexcept; // BCP 47 tag
-};
+// At run time the UI framework's StringTable reads the cooked tables (UI-218 to UI-221); this folder declares no run-time view.
 
 } // namespace Engine
 ```
@@ -119,23 +114,14 @@ Table 3.1-A Settings (`settings.defaults`). Scope: "renderer" is a renderer reco
 | monitor | `window.monitor` | text, the monitor's device name | absent: the primary monitor | read when the window opens (PLT-059) | [platform layer](../platform_layer.md) PLT-028 |
 | windowed client rectangle | `window.client_rect` | list of exactly four integers in desktop coordinates, in the order left, top, right, bottom, with right above left and bottom above top | absent: the render size, centred on the monitor (PLT-059) | read when the window opens (PLT-059) | PLT-028 |
 | present mode, frame-rate cap, low latency, anti-aliasing, HDR, HDR highlight limit, brightness | `render.present_mode`, `render.frame_rate_cap`, `render.low_latency`, `render.anti_aliasing`, `render.hdr`, `render.hdr_highlight_limit`, `render.brightness` | the types and ranges of RND-440 | `rnd.option.present_mode.default`, `rnd.option.frame_rate_cap.default`, `rnd.option.low_latency.default`, `rnd.option.anti_aliasing.default`, `rnd.option.hdr.default`, `rnd.option.hdr_highlight_limit.default`, `rnd.option.brightness.default` | renderer | RND-440 |
-| refresh rate | `screen.refresh_rate` | integer, Hz | the renderer reader's value, which the platform layer keys; page copy `ref.meta.options.screen.refresh_default` | renderer | R-META-414 to R-META-420; platform layer |
-| colour bits | `screen.colour_bits` | integer, one of `ref.meta.options.screen.colour_choices` | the renderer reader's value, which the platform layer keys; page copy `ref.meta.options.screen.colour_default` | renderer | R-META-414 to R-META-420; platform layer |
-| depth bits | `screen.depth_bits` | integer, one of `ref.meta.options.screen.depth_choices` | `ref.meta.options.screen.depth_default` | renderer | R-META-414 to R-META-420 |
-| vertical-sync request, overscan | `screen.vsync_request`, `screen.overscan` | integer | none: inert | none | R-META-456 |
 | sea, sky, structure and unit detail | `render.sea_detail`, `render.sky_detail`, `render.structure_detail`, `render.entity_detail` | integer detail level | `rnd.option.sea_detail.default`, `rnd.option.sky_detail.default`, `rnd.option.structure_detail.default`, `rnd.option.entity_detail.default` | renderer | RND-440 |
 | terrain detail, pixel effect | `render.terrain_detail`, `render.pixel_effect` | integer | none: inert | none | R-META-456, RND-443 |
 | tree detail, special lighting, screenshot tile factor, inverted style, Worker distance scale factor | `render.tree_detail`, `render.special_lighting`, `render.poster_resolution`, `render.inverted_style`, `render.worker_scale_factor` | the types of RND-440: integer, boolean, integer tiles per side, boolean, decimal | `rnd.option.tree_detail.default`, `rnd.option.special_lighting.default`, `rnd.option.poster_resolution.default`, `rnd.option.inverted_style.default`, `rnd.option.worker_scale_factor.default` | renderer | RND-440, R-META-453 |
 | audio output | `audio.output` | text, the name of an audio back end | `aen.settings.output_default` | audio restart | [audio engine](../audio_engine/README.md) AEN-076 |
-| mixing rate | `audio.mix_rate` | integer, Hz, one of `ref.meta.options.sound.mix_rate_choices` | `aen.settings.mix_rate_reader_default`; page copy `ref.meta.options.sound.mix_rate_default` | audio restart | AEN-076, R-META-431 |
 | master volume | `audio.master_volume` | integer, 0 to `ref.meta.options.sound.volume_max` | `aen.settings.volume_default` | immediate, on release of the slider | AEN-076, R-META-433 |
 | bus volumes | `audio.bus_volume.ui`, `audio.bus_volume.announcer`, `audio.bus_volume.voice`, `audio.bus_volume.world`, `audio.bus_volume.ambience`, `audio.bus_volume.music` | integer, 0 to `ref.meta.options.sound.volume_max`; one per bus of R-AUD-221 | `aen.settings.volume_default`; the bus's mix level is `ref.aud.bus.<bus>.level`, not a setting | immediate, on release | AEN-076, R-META-434 |
-| voices | `audio.voices` | integer, one of `ref.meta.options.sound.voice_choices` | `aen.settings.voices_default`; page copy `ref.meta.options.sound.voices_page_default` | audio restart | AEN-076, R-META-436 |
 | swap left and right | `audio.swap_stereo` | boolean | `aen.settings.swap_stereo_default` | immediate | AEN-076 |
-| sample-memory level | `audio.sample_memory_level` | integer | `aen.settings.sample_memory_level_default`; read and ignored (AEN-077) | audio restart | AEN-076 |
 | effects switch | `audio.effects` | boolean | `aen.settings.effects_default` | audio restart | AEN-076, DEC-567 |
-| output buffer length | `audio.output_buffer` | integer | `aen.settings.output_buffer_first_run`; readers `aen.settings.output_buffer_reader_default`; no Species effect | audio restart | AEN-076 |
-| hardware positioning | `audio.hardware_positioning` | boolean | none: inert | none | AEN-076 |
 | in-match tips | `interface.tips` | boolean | `ref.meta.settings.tips.default` | immediate | R-META-441 |
 | use forwarded port | `network.port_forwarding` | boolean | `ref.meta.settings.port_forwarding.default` | immediate | R-META-443 |
 | hosting port, joining port | `network.host_port`, `network.join_port` | integer, `ref.meta.settings.port_min` to `ref.meta.settings.port_max`; `ref.meta.settings.port_any` asks for any free port (R-META-445) | `ref.meta.settings.host_port.default`, `ref.meta.settings.join_port.default` | immediate | R-META-443 to R-META-445 |
@@ -381,9 +367,9 @@ This document owns no tuning key.
 | owner | keys cited |
 |---|---|
 | [renderer options](../renderer/options_and_budgets.md) | `rnd.option.render_size.default`, `rnd.option.window_mode.default`, `rnd.option.present_mode.default`, `rnd.option.frame_rate_cap.default`, `rnd.option.low_latency.default`, `rnd.option.anti_aliasing.default`, `rnd.option.hdr.default`, `rnd.option.hdr_highlight_limit.default`, `rnd.option.brightness.default`, `rnd.option.sea_detail.default`, `rnd.option.sky_detail.default`, `rnd.option.structure_detail.default`, `rnd.option.entity_detail.default`, `rnd.option.tree_detail.default`, `rnd.option.special_lighting.default`, `rnd.option.poster_resolution.default`, `rnd.option.inverted_style.default`, `rnd.option.worker_scale_factor.default` |
-| [audio engine](../audio_engine/README.md) | `aen.settings.output_default`, `aen.settings.mix_rate_reader_default`, `aen.settings.volume_default`, `aen.settings.voices_default`, `aen.settings.swap_stereo_default`, `aen.settings.sample_memory_level_default`, `aen.settings.effects_default`, `aen.settings.output_buffer_first_run`, `aen.settings.output_buffer_reader_default` |
+| [audio engine](../audio_engine/README.md) | `aen.settings.output_default`, `aen.settings.volume_default`, `aen.settings.swap_stereo_default`, `aen.settings.effects_default` |
 | [diagnostics](../diagnostics_test_and_performance/README.md) | `dbg.setting.bot_overlay.default`, `dbg.setting.bot_overlay_team.default`, `dbg.setting.command_history.default`, `dbg.replay.capture_frame_rate` |
-| [reference/09 options](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) | `ref.meta.options.screen.windowed_default`, `ref.meta.options.screen.refresh_default`, `ref.meta.options.screen.colour_choices`, `ref.meta.options.screen.colour_default`, `ref.meta.options.screen.depth_choices`, `ref.meta.options.screen.depth_default`, `ref.meta.options.sound.mix_rate_choices`, `ref.meta.options.sound.mix_rate_default`, `ref.meta.options.sound.volume_max`, `ref.meta.options.sound.voice_choices`, `ref.meta.options.sound.voices_page_default`, `ref.meta.settings.tips.default`, `ref.meta.settings.port_forwarding.default`, `ref.meta.settings.port_min`, `ref.meta.settings.port_max`, `ref.meta.settings.port_any`, `ref.meta.settings.host_port.default`, `ref.meta.settings.join_port.default`, `ref.meta.settings.language.default`, `ref.meta.settings.control_help.default`, `ref.meta.settings.difficulty.default`, `ref.meta.settings.large_menus.default`, `ref.meta.settings.preferred_colour.default`, `ref.meta.settings.browser_filter.default`, `ref.meta.settings.manual_sessions`, `ref.meta.settings.mouse_buttons.default`, `ref.meta.settings.language_test.default`, `ref.meta.lang.base` |
+| [reference/09 options](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) | `ref.meta.options.screen.windowed_default`, `ref.meta.options.sound.volume_max`, `ref.meta.settings.tips.default`, `ref.meta.settings.port_forwarding.default`, `ref.meta.settings.port_min`, `ref.meta.settings.port_max`, `ref.meta.settings.port_any`, `ref.meta.settings.host_port.default`, `ref.meta.settings.join_port.default`, `ref.meta.settings.language.default`, `ref.meta.settings.control_help.default`, `ref.meta.settings.difficulty.default`, `ref.meta.settings.large_menus.default`, `ref.meta.settings.preferred_colour.default`, `ref.meta.settings.browser_filter.default`, `ref.meta.settings.manual_sessions`, `ref.meta.settings.mouse_buttons.default`, `ref.meta.settings.language_test.default`, `ref.meta.lang.base` |
 | [camera](../../../reference/06_controls_camera_and_commands/camera.md) | `ref.ctrl.camera.automatic_setting` |
 | [audio mix](../../../reference/10_audio_design/positional_priorities_and_mix.md) | `ref.aud.bus.ui.level` and the other bus levels of R-AUD-221 |
 | [UI layout and localisation](../ui_framework/layout_rendering_input_and_localisation.md) | `ui.lang.max_id_length`, `ui.lang.max_marker_length`, `ui.lang.max_expanded_length` |

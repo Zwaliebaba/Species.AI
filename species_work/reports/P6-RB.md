@@ -4,7 +4,8 @@
 
 - Findings: 53 (4 High, 6 Medium, 43 Low). **Fixed 50, fixed differently 2, rejected 0, request only 1.** Eleven of the fixed findings also need a matching change in a file I do not own; those changes are listed under Requests.
 - Files edited (all under `design_next/reference/`): `02_units/README.md`, `02_units/worker.md`, `02_units/transport.md`, `02_units/creatures.md`, `02_units/essence_orbs.md`, `02_units/collector.md`, `02_units/builder.md`, `02_units/hazards_and_projectiles.md`, `02_units/leader_and_formations.md`, `03_buildings_and_world_objects/README.md`, `03_buildings_and_world_objects/economy_and_spawn_objects.md`, `03_buildings_and_world_objects/mode_objects.md`, `03_buildings_and_world_objects/defences_and_props.md`, `03_buildings_and_world_objects/trees_and_crate_structures.md`. No helper script remains.
-- Gate: `python3 -I Tools/DesignCheck/CheckDesign.py design_next` passes every gate, Mermaid included (266 blocks, 0 failed). The run with `--skip-mermaid` also passes.
+- Two requests from P6-RA, relayed by the coordinator, are applied (see "Requests from other packets applied" below).
+- Gate: `python3 -I Tools/DesignCheck/CheckDesign.py design_next` passes every gate, Mermaid included (266 blocks, 0 failed). This was re-run after the P6-RA requests were applied. The run with `--skip-mermaid` also passes.
 - Fidelity check: R1a-3 was confirmed in ORIG at the cited line ±20 (the pickup-point scan). No other ORIG file was read.
 - Ids: no requirement id was renumbered or reused. R-UNIT-308 keeps its id with a "(removed: …)" text, because VFX-124 and DEC-871 still cite it. These tuning keys were deleted, and nothing outside the generated index cited them: `ref.unit.route.trigger_distance` (reference/12 owns the value as `ref.sim.route.trigger_distance`), `ref.unit.spider.foot_damage_radius`, `ref.unit.spider.foot_damage_strength`, `ref.unit.spider.normal_speed`, `ref.unit.spider.attack_speed`, `ref.unit.spider.attack_preamble`, `ref.unit.wisp.extra_draw_range`, `ref.bldg.turret.mortar.min_range`, `ref.bldg.turret.mortar.max_range`, `ref.bldg.launch_vessel.ignition_countdown` and `ref.bldg.launch_vessel.countdown_rate`. `ref.unit.worker.idle_timer` keeps its key and is now stated in ticks (600).
 - Changes beyond the packet rows, in my files, made under the coordinator rulings:
@@ -69,6 +70,13 @@
 | R3a-31 | fixed | R-BLDG-645: "U{0..⌊reload × `ref.sim.tick_period`⌋ − 1} ÷ `ref.sim.tick_period` ticks", and the content-build test uses the same form. The schema and DEC halves are requests 10 and 11. |
 | R4b-12 | fixed | `ref.bldg.tree.blight_delay_ticks`: "nominal 10 s". R-CRATE-206 is request 12. |
 
+## Requests from other packets applied
+
+| Request | File and place | Change |
+|---|---|---|
+| request from P6-RA (R3a-9) | `trees_and_crate_structures.md` R-BLDG-637 and AC-TC-12 | "`ref.econ.hive.conversion_ticks` (10 or 11 ticks, reference/05 R-ECON-084)" becomes "(10 ticks: one second of match time by the deadline rule of R-BLDG-403, reference/05 R-ECON-084)"; AC-TC-12 reads "3 conversions of 10 ticks each". |
+| request from P6-RA (R2a-106) | `economy_and_spawn_objects.md` R-BLDG-132 | The objective-card sentence (`help.hint.spawn_nodes`, R-TUT-013, DEC-050) is deleted. I also removed what referred only to it: `help.hint.spawn_nodes` from the §7 asset list, "the Spawn Node objective card" from the §7 reference/11 entry, and the §8 line "DEC-050 — … the objective card of Spawn Node capture (R-BLDG-132)". Gate 6 still counts every Open DEC as cited. The manifest row of `help.hint.spawn_nodes` still lists R-BLDG-132; P6-GLO removes that row in wave 2 (request 19). |
+
 ## Requests
 
 1. **P6-RA** — `reference/05_population_flow.md` R-ECON-072. Replace "the nearest Floating Essence orb that is not marked broken (the broken marker of reference/02 essence_orbs.md R-UNIT-308, unset at creation and set by no match rule), within" with "the nearest Floating Essence orb within" (R2a-40).
@@ -102,3 +110,4 @@
 16. **P6-GLO** — `glossary/m_to_z.md`, section S. Add "\| structure-detail level \| data term \| The level of the structure-detail setting (reference/09 R-META-425): 1 high, 2 medium, 3 low. A lower number is more detail, so a rule that applies below level 3 applies at high and medium detail. \| [Buildings and world objects](../reference/03_buildings_and_world_objects/README.md) §1.1 \|" (R3a-17).
 17. **P6-GLO** — `glossary/m_to_z.md`, row "Manning". Optionally add "Also called the operating-port state." to its definition (R3a-56).
 18. **P6-DEC** — `decisions/open_questions.md` DEC-330, Affects. Add "reference/03_buildings_and_world_objects/ (R-BLDG-044, R-BLDG-140, R-BLDG-642: the Transit Gate's `gate_exit_01` and `gate_exit_02` and the Spitter Plant's `stem`)". Reference/03 cites DEC-330 for these sockets (R2a-26).
+19. **P6-GLO** — `assets/asset_manifest.csv` and `assets/GameAssets.md`, the `help.hint.spawn_nodes` row. R-BLDG-132 no longer cites it (the P6-RA request above). Remove the row as part of the planned removal of the objective-card assets, or at least drop R-BLDG-132 from its requirement column.

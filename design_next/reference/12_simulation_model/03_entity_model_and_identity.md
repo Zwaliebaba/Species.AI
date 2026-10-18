@@ -9,7 +9,7 @@ This document specifies the object model of a match as Species types:
 - the three families of simulated objects (actors, structures and effects) and the actor group that holds actors;
 - the complete type hierarchy of every simulated-object kind, with the reference document that specifies each kind's behaviour;
 - the members of the core types that the rest of the reference library relies on;
-- the base contracts of each family: construction, initialisation, the per-tick advance, death and removal, freezing, ownership change, collision and the render hooks;
+- the base contracts of each family: construction, initialisation, the per-tick advance, death and removal, freezing, ownership change and collision, and the renderer that draws each family;
 - object identity: the handle, how every kind of object is identified and allocated, how a handle resolves to an object, and the rules for holding handles.
 
 Per-kind behaviour (state machines, stats, weapons) is in [units](../02_units/README.md), [buildings and world objects](../03_buildings_and_world_objects/README.md), [supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md) and [bots](../07_bots/README.md). Containers and the order in which objects advance are [04](04_containers_and_update_order.md); spatial queries, movement and collision are [05](05_space_routing_and_physics.md); teams and ownership are [06](06_teams_and_player_commands.md).
@@ -87,7 +87,6 @@ classDiagram
       -bool m_onGround
       -bool m_enabled
       +Advance() bool
-      +Render(double _predictionTime)
     }
     class Actor {
       -float m_stats
@@ -395,7 +394,7 @@ Table 2.3-A Simulated-object contract.
 |---|---|---|
 | construction | not on the ground, enabled, kind unset | the handle is invalid until the creator sets it; construction makes no simulation draw (DEC-652) |
 | `Advance()` | requests no removal | the per-tick step of effects, laser bolts, Essence orbs and structures; a result of "remove" asks the owning pool to remove the object (laser bolts and Essence orbs are freed in place in their by-value pools; every other object is also destroyed) |
-| `Render(_predictionTime)` | draws nothing | draws the object extrapolated by the prediction time ([01](01_tick_timing_and_main_loop.md)); never writes simulation state (DEC-007) |
+| drawing | — | a simulated object has no render hook: presentation draws it from the presentation snapshot (R-SIM-130), and nothing that draws it writes simulation state (DEC-007) |
 | bounce off the terrain | — | a helper of every simulated object; [05](05_space_routing_and_physics.md) specifies it |
 
 **R-SIM-107** (MUST) The position and the velocity of a simulated object are 3-vectors (`Vec3`) in world units and world units per second. Under the default numeric model they hold binary64 components (DEC-240); the numeric semantics that rules depend on are DEC-241. No simulation field ever holds NaN or an infinity (DEC-653).
@@ -488,18 +487,18 @@ Table 2.3-B Effect kinds.
 
 #### 2.3.6 Render hooks
 
-**R-SIM-130** (MUST) Each family is drawn by the presentation pass of table 2.3-C. Every pass reads simulation state and never writes it (DEC-007). Each object is extrapolated by the extrapolation time of [01](01_tick_timing_and_main_loop.md) R-SIM-560, with the extra tick period of R-SIM-562 for a slot that its pool has not yet advanced in the current tick.
+**R-SIM-130** (MUST) Presentation draws each family from the presentation snapshot (DEC-222) through the renderer's game-object renderers of table 2.3-C; no simulated object has a render hook, and no renderer writes simulation state (DEC-007). Each object is extrapolated by the extrapolation time of [01](01_tick_timing_and_main_loop.md) R-SIM-560, with the extra tick period of R-SIM-562 for a slot that its pool has not yet advanced in the current tick.
 
-Table 2.3-C Render hooks per family.
+Table 2.3-C Renderers per family.
 
-| Family | Pass | Notes |
+| Family | Renderer and pass | Notes |
 |---|---|---|
-| structures | the structure pass draws the opaque mesh of every structure in view; the structure alpha pass draws lights, ports and transparent parts | a structure can ask to be drawn in the far-to-near sorted alpha pass |
-| ungrouped actors | the per-actor pass of each team draws each actor through its own render hook | Workers and Crawlers among a team's ungrouped actors are drawn by two crowd passes of the team instead ([renderer](../../architecture/components/renderer/README.md)) |
-| group members | the group pass draws the members of every group in view | a Crawler group draws its members with its own pass |
-| effects and laser bolts | the weapons pass | — |
-| Essence orbs | the Essence-orb pass | Rogue faction orbs first, with subtractive blending; every other orb after them, with additive blending |
-| route trails | the route pass | its pulse and its fade run on the presentation clock (DEC-024) |
+| structures | the structure renderer (`StructureRenderer`, [world renderers](../../architecture/components/renderer/world_renderers.md)): the opaque mesh of every structure in view in the structure pass; lights, ports and transparent parts in the structure alpha pass | a structure can ask to be drawn in the far-to-near sorted alpha pass |
+| ungrouped actors | the actor renderer (`ActorRenderer`, [entity and overlay renderers](../../architecture/components/renderer/entity_and_overlay_renderers.md)): the other-actors pass of each team | Workers and Crawlers among a team's ungrouped actors are drawn by the Worker and Crawler passes of the actor renderer instead |
+| group members | the actor renderer: the actor-group pass draws the members of every group in view | a Crawler group is drawn by the Crawler pass |
+| effects and laser bolts | the effect renderer (`EffectRenderer`): the effects pass and the laser-bolt pass | — |
+| Essence orbs | the Essence-orb pass ([animation and VFX](../../architecture/components/animation_and_vfx/README.md)) | Rogue faction orbs first, with subtractive blending; every other orb after them, with additive blending |
+| route trails | the route-line renderer (`RouteLineRenderer`): the route pass | its pulse and its fade run on the presentation clock (DEC-024) |
 
 ### 2.4 Identity and handles
 

@@ -425,7 +425,7 @@ Alongside, the team command state is sent once per 0.1 s, the audio engine runs 
 | `ref.sim.speed.time_rush_min` | 1.3 | game speed | | R-SIM-545 | DEC-039 |
 | `ref.sim.speed.time_rush_spread` | 0.7 | game speed | target range 1.3 to 2.0 | R-SIM-545 | DEC-039 |
 | `ref.sim.speed.crate_rate` | 0.05 | blend rate | Time Dilation and Time Rush | R-SIM-545 | DEC-039 |
-| `ref.sim.speed.crate_hold` | 151 | world ticks | 15 s; counted from the first world tick after the target is reached, that tick included (R-SIM-541 step 4) | R-SIM-545, R-SIM-557 | DEC-002, DEC-039, DEC-092, DEC-265 |
+| `ref.sim.speed.crate_hold` | 151 | world ticks | 15 s as the integer count 151, like the other 15 s timers of DEC-002; the first world tick counted is the first after the target is reached (R-SIM-541 step 4) | R-SIM-545, R-SIM-557 | DEC-002, DEC-039, DEC-092, DEC-265 |
 | `ref.sim.speed.meteor_target` | 0.4 | game speed | | R-SIM-545 | |
 | `ref.sim.speed.meteor_rate` | 0.1 | blend rate | | R-SIM-545 | |
 | `ref.sim.speed.meteor_hold` | 40 | world ticks | 4 s; counted like `ref.sim.speed.crate_hold` | R-SIM-545, R-SIM-557 | DEC-092 |
@@ -453,11 +453,12 @@ Keys cited here and defined elsewhere: `ref.mode.mode_second` in [reference/01](
 - **Game over.** Once the match is won, the lock of R-SIM-555 ignores every later request; Time Dilation and Time Rush make none, and a pause command has no effect on the speed.
 - **Pause during the grace period or with a remote human.** No pause can be requested (R-SIM-553).
 - **Leaving a match during a hold.** The reset of R-SIM-551 clears the hold, the blend rate and the lock, so the next match starts at speed 0 with no request (DEC-011).
-- **Paused presentation.** While the world is held, the presentation frame delta keeps its last value (R-SIM-571), so camera and UI animation keep running at the pace of the last frame before the pause; the extrapolation time is 0, so objects are drawn exactly at their tick positions.
+- **Paused presentation.** While the world is held, camera and UI animation keep running at real pace on the real, clamped frame step (R-SIM-571, DEC-955); the extrapolation time is 0, so objects are drawn exactly at their tick positions.
 - **No frames arriving.** When command frames stop arriving, each object is drawn up to 1.0 s × speed ahead of its last tick and then stops (R-SIM-560, R-SIM-563).
 - **Objects created mid-tick.** Whether a new laser bolt or effect advances in the tick it is created in depends on its slot (R-SIM-516, DEC-455); a rocket and an airstrike target marker created in a later slot take one extra movement step before their match-time deadline.
 - **Multi-round matches.** A multi-round reset resets the tick clock like a match start (R-SIM-551), so every round begins held and runs its own grace period.
-- **Speed already at the target.** A request whose target lies within 0.01 of the current speed snaps on its first blend, and its hold starts counting in the same tick (R-SIM-541).
+- **Speed already at the target.** A request whose target lies within 0.01 of the current speed snaps on its first blend, and its hold starts counting with the world ticks of the same command frame (R-SIM-541).
+- **Holds at low speed.** A hold counts world ticks, so at a held speed *s* it ends within one world tick, that is 1 ÷ *s* command frames, of hold length ÷ *s* command frames after the target is reached; where in that window it ends depends on the fraction that tick scheduling carries (R-SIM-548, DEC-225).
 
 ## 6 Acceptance criteria
 
@@ -473,26 +474,28 @@ Keys cited here and defined elsewhere: `ref.mode.mode_second` in [reference/01](
 
 - **A4** (R-SIM-515, R-SIM-516) Given a tick in which a new effect is created in slice 4 in a slot after the last advanced slot, and another is created in a re-used earlier slot, when the tick ends, then the first has advanced once and the second has not advanced; every object that existed for the whole tick has advanced exactly once.
 - **A5** (R-SIM-531, R-SIM-532) Given pending slice counts, when the slice count per render frame is computed, then: *P* = 13 → 3; 10 → 3; 7 → 2; 5 → 1; 4 → 1; 3 → 0; 100 → 20 (capped); and a participant 21 frames behind runs 20 slices per iteration, repeated until 0.3 s of real time is spent or it is no longer more than 20 frames behind.
-- **A6** (R-SIM-541, R-SIM-545, R-SIM-554, R-SIM-555, R-SIM-557) Given the reference structure, one tick per 0.1 s of real time and the start speed shown, when each request runs, then:
+- **A6** (R-SIM-541, R-SIM-545, R-SIM-548, R-SIM-554, R-SIM-555, R-SIM-557) Given the tick clock, one command frame per `ref.sim.tick_period` of real time (R-SIM-549), the start speed shown, the request made in command frame 0, and the world ticks of each command frame counted as the whole part of the running speed integral of R-SIM-548 from no carried fraction, when each request runs, then the speed reaches its target, and returns to 1.0 after a hold, at the command frames shown, and the world ticks shown run from command frame 1 to that frame, both included:
 
-  | Request | Speed change | Rate | Hold | Target reached after | Back at 1.0 after | Game time elapsed |
+  | Request | Speed change | Rate | Hold | Target reached after | Back at 1.0 after | World ticks run |
   |---|---|---|---|---|---|---|
-  | grace end | 0 → 1.0 | 1.0 | none | 1 tick (0.1 s) | — | 0.000 game s over 0.1 s |
-  | pause | 1.0 → 0 | 0.2 | none | 21 ticks (2.1 s) | — | 0.495 game s over 2.1 s |
-  | resume | 0 → 1.0 | 0.2 | none | 21 ticks (2.1 s) | — | 1.605 game s over 2.1 s |
-  | match won | 1.0 → 0 | 0.2 | none | 21 ticks (2.1 s) | — | 0.495 game s over 2.1 s |
-  | Time Dilation, target 0.2 | 1.0 → 0.2 | 0.05 | 150 ticks | 86 ticks (8.6 s) | 322 ticks (32.2 s) | 13.320 game s over 32.2 s |
-  | Time Dilation, target 0.3 | 1.0 → 0.3 | 0.05 | 150 ticks | 83 ticks (8.3 s) | 316 ticks (31.6 s) | 15.290 game s over 31.6 s |
-  | Time Dilation, target 0.4 | 1.0 → 0.4 | 0.05 | 150 ticks | 80 ticks (8.0 s) | 310 ticks (31.0 s) | 17.200 game s over 31.0 s |
-  | Time Rush, target 1.3 | 1.0 → 1.3 | 0.05 | 150 ticks | 67 ticks (6.7 s) | 284 ticks (28.4 s) | 34.910 game s over 28.4 s |
-  | Time Rush, target 1.65 | 1.0 → 1.65 | 0.05 | 150 ticks | 82 ticks (8.2 s) | 314 ticks (31.4 s) | 46.480 game s over 31.4 s |
-  | Time Rush, target 2.0 | 1.0 → 2.0 | 0.05 | 150 ticks | 90 ticks (9.0 s) | 330 ticks (33.0 s) | 57.000 game s over 33.0 s |
-  | meteor | 1.0 → 0.4 | 0.1 | 40 ticks | 39 ticks (3.9 s) | 117 ticks (11.7 s) | 7.020 game s over 11.7 s |
+  | grace end | 0 → 1.0 | 1.0 | none | 1 command frame (0.1 s) | — | 1 (speed integral 1.00) |
+  | pause | 1.0 → 0 | 0.2 | none | 21 command frames (2.1 s) | — | 3 (speed integral 3.95) |
+  | resume | 0 → 1.0 | 0.2 | none | 21 command frames (2.1 s) | — | 17 (speed integral 17.05) |
+  | match won | 1.0 → 0 | 0.2 | none | 21 command frames (2.1 s) | — | 3 (speed integral 3.95) |
+  | Time Dilation, target 0.2 | 1.0 → 0.2 | 0.05 | 151 world ticks | 86 command frames (8.6 s) | 926 command frames (92.6 s) | 253 |
+  | Time Dilation, target 0.3 | 1.0 → 0.3 | 0.05 | 151 world ticks | 83 command frames (8.3 s) | 666 command frames (66.6 s) | 257 |
+  | Time Dilation, target 0.4 | 1.0 → 0.4 | 0.05 | 151 world ticks | 80 command frames (8.0 s) | 535 command frames (53.5 s) | 262 |
+  | Time Rush, target 1.3 | 1.0 → 1.3 | 0.05 | 151 world ticks | 67 command frames (6.7 s) | 249 command frames (24.9 s) | 303 |
+  | Time Rush, target 1.65 | 1.0 → 1.65 | 0.05 | 151 world ticks | 82 command frames (8.2 s) | 255 command frames (25.5 s) | 367 |
+  | Time Rush, target 2.0 | 1.0 → 2.0 | 0.05 | 151 world ticks | 90 command frames (9.0 s) | 255 command frames (25.5 s) | 419 |
+  | meteor | 1.0 → 0.4 | 0.1 | 40 world ticks | 39 command frames (3.9 s) | 176 command frames (17.6 s) | 93 |
+
+  The ramp counts are independent of the carried fraction; with another carried fraction a hold ends up to 1 ÷ the held speed command frames earlier or later, and the world ticks run change by at most one (R-SIM-548).
 
 - **A7** (R-SIM-542, R-SIM-543, R-SIM-555) Given a won match, when a Time Rush outcome, a meteor and a pause command occur afterwards, then the speed continues its ramp to 0 and none of them changes it.
 - **A8** (R-SIM-553) Given a match with a remote human, or within the grace period, or after it is won, when a participant requests a pause, then no pause command is issued; given a match against bots only after the grace period, it is issued and takes effect at the tick that executes it on every participant.
-- **A9** (R-SIM-550, R-SIM-552) Given a new match, when the ticks are traced, then the world step does not run until the grace countdown has ended, the match-rules update runs in slice 8 of every command frame meanwhile, and the first world tick follows the tick in which the grace countdown reaches 0.
-- **A10** (R-SIM-551) Given a match left during the hold of a Time Dilation, when the next match starts, then its tick clock has speed 0, no request, no hold and no lock, and its speed reaches 1.0 one tick after the grace period ends.
+- **A9** (R-SIM-550, R-SIM-552) Given a new match, when the ticks are traced, then the world step does not run until the grace countdown has ended, the match-rules update runs in slice 8 of every command frame meanwhile, and the first world tick runs in the command frame after the one in which the grace countdown reaches 0.
+- **A10** (R-SIM-551) Given a match left during the hold of a Time Dilation, when the next match starts, then its tick clock has speed 0, no request, no hold and no lock, and its speed reaches 1.0 one command frame after the grace period ends.
 - **A11** (R-SIM-548, R-SIM-549) Given game speed held at 0.3 for 10 s of real time, when the ticks are counted, then 30 ticks of the world have run, each of length 0.1 s; at speed 2.0, 200 ticks; the ramps of the pause command still take 2.1 s of real time.
 - **A12** (R-SIM-560, R-SIM-562, R-SIM-563, R-SIM-564) Given an actor with position *p* and velocity *v* at normal speed, when a frame renders 0.05 s after the tick-take, then the actor is drawn at *p* + 0.05 *v* if its slot has advanced this tick and at *p* + 0.15 *v* otherwise; while the world is held it is drawn at *p*; 2 s after the last tick-take it is drawn at *p* + 1.0 *v*; and the actor's simulation state is unchanged by rendering.
 - **A13** (R-SIM-581, R-SIM-583) Given an instrumented in-match frame, when its steps are logged, then they occur in the order of R-SIM-581, the control state is sent before the simulation slices, and camera, HUD and audio advance after them.
@@ -508,6 +511,7 @@ Keys cited here and defined elsewhere: `ref.mode.mode_second` in [reference/01](
 ## 8 Open decisions
 
 - DEC-003 — length of the mode second after playtest (default: 11 ticks).
+- DEC-051 — tutorials and presentation timelines (default: where presentation timelines are adopted, a running timeline advances just before the camera step of R-SIM-581).
 - DEC-200 — replication and authority model (default: none specified; the reference tick source is a host-side command sequencer).
 - DEC-203 — input timing, coalescing and latency (default: the reference send period and pacing of R-SIM-531 and R-SIM-584).
 - DEC-220 — process roles and the headless server (default: the tick source in the host's client process).
@@ -517,7 +521,7 @@ Keys cited here and defined elsewhere: `ref.mode.mode_second` in [reference/01](
 - DEC-227 — simulation tick rate (default: `ref.sim.tick_period`, 10 ticks per second).
 - DEC-240 — simulation numeric model (default: the reference arithmetic of the tick clock).
 - DEC-264 — what runs while game speed is 0 (default: the real-time cadence of R-SIM-549 for command frames, the speed blend and the held-world rules update).
-- DEC-265 — real duration of the speed-crate holds (default: the hold counts ticks of the world, R-SIM-557).
+- DEC-265 — real duration of the speed-crate holds (default: the hold counts world ticks, R-SIM-541 step 4 and R-SIM-557).
 - DEC-455 — same-tick advance of objects created during a tick (default: R-SIM-516).
 
 The register index is [decisions/README.md](../../decisions/README.md).

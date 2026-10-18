@@ -231,8 +231,13 @@ This file cites `ref.sim.frame.delta_clamp` ([Tick timing](../12_simulation_mode
 | `ref.ctrl.camera.rotate_factor` | min(1, 2 × dt + \|e\| ÷ 10) | factor | e = normalised screen offset | R-CTRL-486 | — |
 | `ref.ctrl.camera.control_vector_threshold` | 0.98 | cosine | | R-CTRL-487 | — |
 | `ref.ctrl.camera.aim_vector_easing` | 0.25 | of the remaining difference per frame | | R-CTRL-483 | — |
-| `ref.ctrl.camera.dish_aim` | height 80 wu; back-off 1.5 × h; smoothing 4 per second | constants | | R-CTRL-490 | — |
-| `ref.ctrl.camera.turret_aim` | height 20 wu; lift 20 wu; back-off 0.8 × h; smoothing 4 per second | constants | | R-CTRL-491 | — |
+| `ref.ctrl.camera.dish_aim.height` | 80 | wu | height set on entering Beam Dish aim | R-CTRL-490 | — |
+| `ref.ctrl.camera.dish_aim.back_off` | 1.5 | × height | horizontal back-off of the ideal position | R-CTRL-490 | — |
+| `ref.ctrl.camera.dish_aim.smoothing` | 4 | per second | k = 4 × dt | R-CTRL-490 | — |
+| `ref.ctrl.camera.turret_aim.height` | 20 | wu | height set on entering turret aim | R-CTRL-491 | — |
+| `ref.ctrl.camera.turret_aim.lift` | 20 | wu | ground := target + (0, 20, 0) − front × h | R-CTRL-491 | — |
+| `ref.ctrl.camera.turret_aim.back_off` | 0.8 | × height | horizontal back-off of the ideal position | R-CTRL-491 | — |
+| `ref.ctrl.camera.turret_aim.smoothing` | 4 | per second | k = 4 × dt | R-CTRL-491 | — |
 
 ## 5 Edge cases and interactions
 

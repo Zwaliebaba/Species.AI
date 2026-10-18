@@ -48,7 +48,7 @@ Table 2.1-A Lifetime classes.
 
 **R-SIM-006** (MUST) Before a match starts, the host's match setup fills every empty team slot below the map's player count with a bot team (`TeamKind::Bot`), one per missing player, and then issues the match-start command. The match setup is specified in [screen flow and match setup](../09_front_end_and_match_flow/screen_flow_and_match_setup.md); lobby authority and the match-setup state are DEC-243.
 
-**R-SIM-007** (MUST) A session acts on its first match-start command only. A further match-start command in the same session has no effect. A match-start command that names a map outside the permitted maps of the edition starts no match, and the refusal is logged with the map id ([build tooling and distribution](../../architecture/components/build_tooling_and_distribution.md) BLD-053); the reference edition permits every map it holds.
+**R-SIM-007** (MUST) A session acts on its first match-start command only. A further match-start command in the same session has no effect. A match-start command that names a map outside the permitted maps of the edition starts no match, and the refusal is logged with the map id ([build tooling and distribution](../../architecture/components/build_tooling_and_distribution.md) BLD-053); an edition whose `maps` field is `all` permits every map it holds.
 
 **R-SIM-008** (MUST) When a participant executes the match-start command, it enters the loading state, switches the application to match mode, resets the tick clock, which starts at game speed `ref.sim.speed.stopped` ([01](01_tick_timing_and_main_loop.md) R-SIM-551), and executes no further tick until the match world has loaded. Ticks that arrive during the load wait in arrival order (01).
 
@@ -149,7 +149,7 @@ Table 2.5-A State that outlives a single object.
 | Control Zone counter | 0 | match-world creation (R-SIM-019) | simulation |
 | Transport weapon-cycle debounce | none | per Transport, at its creation (R-SIM-021) | simulation |
 | tutorial gates *bots may act* and *bots may spawn* | clear | match-world creation; set only by tutorial events and never cleared during the match (R-SIM-032) | simulation |
-| tick-clock speed state | normal speed, no speed hold | match start (R-SIM-008, R-SIM-025) | simulation |
+| tick clock: game speed, match time, speed request, blend rate, hold and lock | game speed `ref.sim.speed.stopped`, match time 0, no request, no hold, no lock | match start and the multi-round reset (R-SIM-008, R-SIM-025; [01](01_tick_timing_and_main_loop.md) R-SIM-551) | simulation |
 | Strike team trail-point id counter (`TrailPoint`) | 0 | match-world creation | simulation |
 | presentation generator state | `ref.sim.match.presentation_seed` | initialisation step 2 | presentation |
 | simulation generator state | the match seed | match start (R-SIM-009) | simulation |
@@ -160,15 +160,13 @@ Table 2.5-A State that outlives a single object.
 | mesh caches of structures, centipedes and Reaper Serpents, one per team where team-tinted | loaded on first use | process lifetime | presentation |
 | neighbour-query result storage of the match world, actors, structures, the camera and the hint overlay | per call | each query (R-SIM-026) | scratch |
 | front-end highlight and drop-down state | — | front end | presentation |
-| a function-local "an order was moved" flag of the team-command update, shared by all teams | — | never | presentation: it gates only the local cursor marker |
 | the threat-horn time stamp of Workers and the grace-countdown sound state | — | never | audio and presentation only |
-| Leader mode-cycle state | — | never | none in a match: the cycle returns at once in matches |
 
 **R-SIM-019** (MUST) Every value that table 2.5-A classes as simulation is match state. It takes its initial value when the match world is created, belongs to the match world and is destroyed with it. Simulation code holds no other mutable state outside the match world: no mutable static, file-level or function-level variable in simulation code, a rule that static analysis enforces (DEC-011). The Control Zone counter that the zone-scoring pass reads, and that Flag Chain initialisation adds to, starts at 0 in every match (DEC-011).
 
 **R-SIM-020** (MUST) The per-team Spawn Node counts, one per team slot plus one for "no team", all start at 0 in every match, team slot 5 included (DEC-011). The count matters because a Spawn Node skips its activation delay when it is its team's only Spawn Node ([economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md)).
 
-**R-SIM-021** (MUST) The weapon-cycle debounce belongs to each Transport for one match (DEC-011): a weapon-cycle command on a selected Transport toggles its loading only when more than `ref.sim.state.transport_cycle_debounce` has passed since that Transport's previous toggle ([Transport](../02_units/transport.md)).
+**R-SIM-021** (MUST) The weapon-cycle debounce belongs to each Transport for one match (DEC-011): a weapon-cycle command on a selected Transport toggles its loading only when more than `ref.sim.state.transport_cycle_debounce` has passed since that Transport's previous toggle ([Transport](../02_units/transport.md)). No input of a match sends the weapon-cycle commands ([06](06_teams_and_player_commands.md) R-SIM-452); the debounce applies to such commands when a participant or a test harness sends them anyway.
 
 **R-SIM-022** (MUST) The teleport transit table, which records the actors in transit through teleport structures, is match state: it is empty when the match world is created and is destroyed with it, in addition to the pruning of entries whose actor no longer exists (DEC-011; DEC-223 item 2).
 
@@ -176,7 +174,7 @@ Table 2.5-A State that outlives a single object.
 
 **R-SIM-024** (MUST) The Source Node registry id is match state with the initial value "none" (DEC-011). Each Source Node writes its own structure id into it at the start of each of its advances. An Essence-orb request of a Spawn Node resolves the registry id by a structure look-up followed by a kind check, so an id that names no live Source Node resolves to "no Source Node". A Spawn Node's first production timer ([economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md)) always runs for more than one tick, and no Spawn Surge is active at match start, so the first request of a match comes after the first tick, in which every Source Node has advanced. The registry therefore names the map's Source Node whenever a request reads it, and on a map without a Source Node every request resolves to "no Source Node".
 
-**R-SIM-025** (MUST) The tick-clock speed state returns to normal speed at match start, and any Time Dilation or Time Rush speed hold ends, so game speed cannot carry an invalid value into the next match (DEC-011). The tick clock is [01](01_tick_timing_and_main_loop.md).
+**R-SIM-025** (MUST) The tick clock is reset at match start ([01](01_tick_timing_and_main_loop.md) R-SIM-551): game speed `ref.sim.speed.stopped`, match time 0, no speed request, no hold and no lock, so no speed state of an earlier match, a Time Dilation or Time Rush hold included, reaches the next match (DEC-011).
 
 **R-SIM-026** (MUST) Scratch storage that a query fills, such as a neighbour list, belongs to that call: it is never a shared static buffer and has no fixed limit (DEC-028).
 
@@ -315,10 +313,9 @@ The tick period `ref.sim.tick_period`, the slice of the match-rules update `ref.
 
 ## 5 Edge cases and interactions
 
-- **Source Node registry between matches.** The registry id is written at the start of every Source Node advance, and the first read of a match comes only after the first tick, because a Spawn Node's first production timer runs for more than one tick and a Spawn Surge cannot be active at match start. A value left over from an earlier match therefore never reaches a request on a map with a Source Node, and on a map without one it fails the kind check. With R-SIM-024 the value starts as "none" in any case, so no outcome depends on what the process played before.
-- **Spawn Node count of team slot 5.** The count of slot 5 (the Visitor faction slot) matters only when that team owns Spawn Nodes. When it does, a count left over from an earlier match would change whether its single Spawn Node skips the activation delay; R-SIM-020 resets it.
-- **Control Zone counter.** Zone Control's per-second loop recomputes the counter, while Flag Chain initialisation adds to it. A value left over from an earlier match would change the Transit Gate reward choice, the Zone Control win test and a score term ([skirmish rules](../01_skirmish_rules_and_modes/README.md)); R-SIM-019 starts it at 0.
-- **Transport weapon-cycle debounce.** No participant's input produces the weapon-cycle commands in a reference match, so the debounce never acts on reference input. With one value shared by every Transport, one team's toggle would block every other team's toggle for `ref.sim.state.transport_cycle_debounce`; R-SIM-021 makes it per Transport.
+- **Source Node registry.** The registry starts as "none" in every match, and the first request of a match comes after the first tick, so on a map with a Source Node every request finds it and on a map without one every request resolves to "no Source Node" (R-SIM-024).
+- **Spawn Node count of team slot 5.** Every Spawn Node count, that of slot 5 (the Visitor faction slot) included, starts at 0 in every match, so whether a team's single Spawn Node skips its activation delay depends only on the current match (R-SIM-020).
+- **Control Zone counter.** The counter starts at 0 in every match; Zone Control's per-second loop recomputes it and Flag Chain initialisation adds to it, and it feeds the Transit Gate reward choice, the Zone Control win test and a score term ([skirmish rules](../01_skirmish_rules_and_modes/README.md), R-SIM-019).
 - **Spawning into an unused faction slot.** Spawning actors for the Rogue faction slot or the Visitor faction slot while that slot is unused initialises the slot first ([04](04_containers_and_update_order.md) §2.5).
 - **The grace countdown while frozen.** The match rules advance in their slice although the match world does not advance at game speed 0, so the grace countdown and the end of the frozen start run while nothing else moves (01).
 - **Teardown after backing out of the lobby.** A session can end without a match; then no match world exists, and the steps that empty or destroy the match world have nothing to act on.
@@ -332,7 +329,7 @@ The tick period `ref.sim.tick_period`, the slice of the match-rules update `ref.
 | AC-2 | a match in which team slot 5 owned Spawn Nodes | the next match starts | every Spawn Node count, the "no team" entry and slot 5 included, is 0 before the first tick | R-SIM-020 |
 | AC-3 | a map without a Source Node, played after a map with one | a Spawn Node requests an Essence orb | the request resolves to "no Source Node" | R-SIM-024 |
 | AC-4 | a map with a Source Node | any Spawn Node makes its first request of the match | the request comes after the first tick, and the registry names that Source Node | R-SIM-024 |
-| AC-5 | a match that ends while a Time Dilation hold is active | the next match starts | the tick clock is at normal speed with no hold | R-SIM-025 |
+| AC-5 | a match that ends while a Time Dilation hold is active | the next match starts | the tick clock is at game speed 0 with no request, no hold and no lock | R-SIM-025 |
 | AC-6 | two Transports of different teams | each receives a weapon-cycle command in consecutive ticks | both toggle; a second command to the same Transport within `ref.sim.state.transport_cycle_debounce` does not toggle it | R-SIM-021 |
 | AC-7 | a recorded match setup and seed | match-world initialisation runs twice from the same setup | both runs make the same simulation draws in the same order, and no draw happens before match start | R-SIM-009, R-SIM-016, R-SIM-017 |
 | AC-8 | a map whose bot navigation nodes are separated by a wall or a Barrier Emitter | initialisation completes | no bot navigation link crosses the wall or the emitter | R-SIM-016 |
@@ -345,7 +342,7 @@ The tick period `ref.sim.tick_period`, the slice of the match-rules update `ref.
 | AC-15 | multi-round Siege enabled in a test build | a round ends | the rebuild runs at the next tick boundary on every participant, and the object serial counter keeps its value | R-SIM-029, R-SIM-030 |
 | AC-16 | a match in progress | the process is restarted | no match, lobby or session state is restored | R-SIM-031 |
 | AC-17 | a second tutorial whose bots-may-spawn gate was set, followed by a new match | the new match world is created | both tutorial gates are clear, and in a second tutorial the time remaining is held at `ref.tut.second.held_time_remaining` until the gate is set | R-SIM-032 |
-| AC-18 | an edition whose permitted maps exclude map M | a match-start command names M | no match starts and the refusal is logged with M's id | R-SIM-007 |
+| AC-18 | an edition whose `maps` field lists permitted maps that exclude map M | a match-start command names M | no match starts and the refusal is logged with M's id | R-SIM-007 |
 
 ## 7 Dependencies
 

@@ -184,7 +184,7 @@ struct SoundSourceDef
 } // namespace Engine
 ```
 
-**Data contracts.** The simulation reads `actor.stats`, `crate.outcomes`, `geometry.collision` and `geometry.sim_record` (simulation-relevant, README table 1-A). The audio engine reads `sound.sources`, `sound.groups` and the compiled effect-kind table (AEN-060). The renderer reads `geometry.mesh` (ADR-019). The terrain component and the sea renderer read the colour ramps as CPU tables (TER-040, TER-041). The explainer player reads `panels.explainer` (VFX-103).
+**Data contracts.** The simulation reads `actor.stats`, `crate.outcomes`, `geometry.collision` and `geometry.sim_record` (simulation-relevant, README table 1-A). The audio engine reads `sound.sources`, `sound.groups` and the compiled table of DSP filter kinds (AEN-060). The renderer reads `geometry.mesh` (ADR-019). The terrain component and the sea renderer read the colour ramps as CPU tables (TER-040, TER-041). The explainer player reads `panels.explainer` (VFX-103).
 
 **Threading contract.** All of these records are loaded on the loading thread and are read-only afterwards (README DAT-005).
 
@@ -253,7 +253,7 @@ Table 3.3-B Fields of a layer, in schema order: the fields of R-AUD-049 and the 
 | sustain | `sustain` | modulatable value, s | `ref.aud.layer.envelope_default` | at most `ref.aud.layer.sustain_max` |
 | release | `release` | modulatable value, s | `ref.aud.layer.envelope_default` | at most `ref.aud.layer.release_max` |
 | loop delay | `loop_delay` | modulatable value, s | `ref.aud.layer.envelope_default` | at most `ref.aud.layer.loop_delay_max` |
-| effects | `effects` | list of effect bindings (DAT-270) | none | at most one binding of each effect kind (R-AUD-080) |
+| effects | `effects` | list of effect bindings (DAT-270) | none | at most one binding of each DSP filter kind (R-AUD-080) |
 | copy decay | `copy_decay` | presentation decimal, × per louder copy | `ref.aud.rank.copy_decay` | AEN-062, AEN-063 |
 | patience window | `patience` | presentation decimal, s | `ref.aud.layer.one_shot_patience_updates` × `ref.sim.frame.audio_update_period` | AEN-062, AEN-146 |
 | real-voice cap | `voice_cap` | count | absence-meaningful: the bus default of AEN-143 | AEN-062 |
@@ -282,24 +282,24 @@ Table 3.4-A Forms of a modulatable value.
 
 ### 3.5 Effect bindings and the effect-kind table
 
-**DAT-270** (MUST) An effect binding is an object with the field `kind`, an effect kind of table 3.5-A, and one field per parameter it sets, named as table 3.5-A names it, each a modulatable value (R-AUD-080). A parameter name that the kind does not have, a second binding of one kind on one layer and a value outside the parameter's range are build errors (R-AUD-080, AEN-071).
+**DAT-270** (MUST) An effect binding is an object with the field `kind`, a DSP filter kind (`DspFilterKind`) of table 3.5-A, and one field per parameter it sets, named as table 3.5-A names it, each a modulatable value (R-AUD-080). A parameter name that the kind does not have, a second binding of one kind on one layer and a value outside the parameter's range are build errors (R-AUD-080, AEN-071).
 
 **DAT-271** (MUST) A parameter that a binding omits takes its schema default, which is the parameter's declared default of R-AUD-077 (AEN-071). The reference reads an omitted parameter as 0.0 (R-AUD-050, R-AUD-078); Species chooses the declared default deliberately, as DEC-567 requires the choice to be made, because 21 of the 63 parameters have ranges that exclude 0.0 and every reference binding states all its parameters (AEN-071).
 
 **DAT-272** (MUST) The cooker writes each binding's parameters in its kind's parameter order of table 3.5-A, the positions by which the audio engine reads them (R-AUD-050, AEN-070); the authoring file still names every parameter, so its order in the file carries no meaning (README DAT-027). An integer parameter is cooked as a decimal and truncated toward zero by the engine when evaluated (AEN-070).
 
-Table 3.5-A Effect kinds and parameter names, in the order of R-AUD-077; ranges and declared defaults are R-AUD-077's ("i" marks an integer parameter).
+Table 3.5-A DSP filter kinds, the effect kinds of R-AUD-077, and their parameter keys, in the order of R-AUD-077; each key is the parameter's name in snake_case, spelt in American English (README DAT-054), and the ranges and declared defaults are R-AUD-077's and the audio engine's (AEN-070) ("i" marks an integer parameter).
 
 | # | Kind | Parameters, in order |
 |---|---|---|
 | 0 | `chorus` | `wet_dry_mix`, `depth`, `feedback`, `frequency`, `waveform` (i), `delay`, `phase` (i) |
 | 1 | `compressor` | `gain`, `attack`, `release`, `threshold`, `ratio`, `pre_delay` |
-| 2 | `distortion` | `gain`, `edge`, `post_eq_centre`, `post_eq_bandwidth`, `pre_low_pass_cutoff` |
+| 2 | `distortion` | `gain`, `edge`, `post_eq_center`, `post_eq_bandwidth`, `pre_low_pass_cutoff` |
 | 3 | `stereo_echo` | `wet_dry_mix`, `feedback`, `left_delay`, `right_delay`, `pan_delay` (i) |
 | 4 | `flanger` | `wet_dry_mix`, `depth`, `feedback`, `frequency`, `waveform` (i), `delay`, `phase` (i) |
 | 5 | `standard_gargle` | `rate` (i), `wave_shape` (i) |
 | 6 | `room_reverb` | `room` (i), `room_high_frequency` (i), `room_roll_off_factor`, `decay_time`, `decay_high_frequency_ratio`, `reflections` (i), `reflections_delay`, `reverb` (i), `reverb_delay`, `diffusion`, `density`, `high_frequency_reference`, `quality` (i) |
-| 7 | `parametric_equaliser` | `centre`, `bandwidth`, `gain` |
+| 7 | `parametric_equalizer` | `center`, `bandwidth`, `gain` |
 | 8 | `studio_reverb` | `input_gain`, `reverb_mix`, `reverb_time`, `high_frequency_time_ratio` |
 | 9 | `resonant_low_pass` | `cutoff_control`, `resonance_control`, `gain` |
 | 10 | `bit_crusher` | `bits` |
@@ -307,7 +307,7 @@ Table 3.5-A Effect kinds and parameter names, in the order of R-AUD-077; ranges 
 | 12 | `echo` | `wet_dry_mix`, `delay`, `attenuation` |
 | 13 | `simple_reverb` | `wet_dry_mix` |
 
-**DAT-273** (MUST) The effect-kind table (`sound.effect_kinds`, `DspFilterDef`) holds, for each kind in the order of table 3.5-A, each parameter's name, minimum, maximum, declared default, integer flag and schema default (AEN-070). It is a schema-defined record that the code generator compiles into the audio engine and that the content build's validator reads, so the engine and the validator share one definition (AEN-060, ADR-061). The kind order is the processing order of a chain's own-algorithm effects (R-AUD-080); a kind is identified by its name, never by its position in a file, so a table of another length or order cannot re-bind the kinds.
+**DAT-273** (MUST) The table of DSP filter kinds (`sound.effect_kinds`, `DspFilterDef`) holds, for each kind in the order of table 3.5-A, each parameter's name, minimum, maximum, declared default, integer flag and schema default (AEN-070). It is a schema-defined record that the code generator compiles into the audio engine and that the content build's validator reads, so the engine and the validator share one definition (AEN-060, ADR-061). The kind order is the processing order of a chain's own-algorithm effects (R-AUD-080); a kind is identified by its name, never by its position in a file, so a table of another length or order cannot re-bind the kinds.
 
 **DAT-274** (MUST) The minimum and maximum of a parameter are enforced ranges: the validator rejects a fixed value, a random bound or a linked output bound outside them (AEN-071). The table holds no data type code: an integer parameter is marked by its flag, and a parameter of any other type does not exist.
 
@@ -378,7 +378,7 @@ Table 3.10-B Fields of a key; their defaults are `ref.meta.explainer.key_default
 
 ### 4.1 Sound data from authoring to the engine
 
-**DAT-286** (MUST) The content build resolves every source id, event id, group asset id, bus and effect kind of the sound data to an index when it cooks the record, so the engine never compares strings at run time (AEN-064). It cooks each layer with every field present: an omitted field takes its default of table 3.3-B, an omitted effect parameter its schema default (DAT-271).
+**DAT-286** (MUST) The content build resolves every source id, event id, group asset id, bus and DSP filter kind of the sound data to an index when it cooks the record, so the engine never compares strings at run time (AEN-064). It cooks each layer with every field present: an omitted field takes its default of table 3.3-B, an omitted effect parameter its schema default (DAT-271).
 
 **DAT-287** (MUST) A layer that names a group whose member file is missing is a build error; if such a layer reaches a development build through loose content, it plays nothing and raises a diagnostic, never a fatal stop (R-AUD-046, DEC-015).
 
@@ -455,7 +455,7 @@ Caption: Figure 4.1-A, the sound data from its authoring file to the audio engin
 | DEC-452 | Open | the Comeback pool's membership (DAT-264) |
 | DEC-118 | Resolved | seasonal ramps (DAT-282) |
 | ADR-019, ADR-020, ADR-021 | Accepted | the cooked mesh, facets and tint, sockets (DAT-276, DAT-277) |
-| ADR-024, ADR-025 | Accepted | effects on buses; resident and streamed groups |
+| ADR-024, ADR-025 | Accepted, Proposed | effects on buses; resident and streamed groups |
 | ADR-076 | Proposed | screenshot encoding (DAT-283) |
 
 ### 8.2 Design-phase inputs
