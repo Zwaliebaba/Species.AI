@@ -4,6 +4,8 @@
 
 This library is the **clean reference** that the Species design phase builds on. It is **not the Species game design.** It specifies, faithfully and in Species terms, the mechanics, numbers, states, look and feel of a reference crowd-battle skirmish (`reference/`), and the engine baseline that implements them on Windows and Direct3D 12 (`architecture/components/` and `ADR/`). The design phase, run with `prompts/species-design-phase.md`, adopts, adapts or drops each requirement by id to design Species: the persistent world of settlements described in the [vision brief](../vision/species-vision-brief.md), whose owner decisions O1–O30 bind every document here.
 
+**The Species design so far** sits beside the library. The design phase ran wave A and is paused (owner decision O51): the [game design](gdd/README.md) holds the pillars, core loops and vocabulary and the world and regions, the [solution strategy](architecture/04_solution_strategy.md) and ADR-079 onward hold the architecture, [owner decisions](decisions/owner_decisions.md) records every owner decision from O1, and [implementation](implementation/README.md) holds the MVP scope and its assets, which is what is built next (O50 to O55). The document map below counts the reference library only.
+
 How the code is written and built (naming, the MSBuild solution, the dependency allow-list, ADR rules) is decided by `AGENTS.md` at the repository root; where a baseline ADR and `AGENTS.md` disagree, `AGENTS.md` wins.
 
 ## Reading guide
