@@ -1,0 +1,10 @@
+flowchart TD
+    L["Tick N: the command frame of tick N"] --> C["Apply every command of tick N in sequence order"]
+    C --> T["Tick-clock update"]
+    T --> S["Slice loop, s = 0 to 9, possibly spread over several render frames"]
+    S --> A0["World step of slice s: teams 0 to 5, laser bolts and effects, structures, Essence orbs, sky in slice 3"]
+    A0 --> W["Slice 3: snow, dust-storm and lightning spawners; slice 7: grid-cache eviction; slice 8: Supply crates and crate timers"]
+    W --> P["Particle-pool step, presentation only"]
+    P --> M["Slice 8: match-rules update, also while the world is held"]
+    M --> S
+    S --> R["Render frames in between: draw position + velocity x extrapolation time"]

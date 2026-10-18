@@ -1,0 +1,206 @@
+namespace Engine
+{
+
+struct PanelId // UI-012
+{
+  std::uint32_t index = 0;
+  std::uint32_t generation = 0;
+};
+struct WidgetId
+{
+  std::uint32_t index = 0;
+  std::uint32_t generation = 0;
+};
+struct PointF
+{
+  float x = 0;
+  float y = 0;
+};
+struct SizeF
+{
+  float w = 0;
+  float h = 0;
+};
+struct RectF
+{
+  float x = 0;
+  float y = 0;
+  float w = 0;
+  float h = 0;
+};
+
+enum class PointerEventKind : std::uint8_t
+{
+  PrimaryDown,
+  PrimaryUp,
+  AltDown
+};
+struct PointerEvent
+{
+  PointerEventKind kind;
+  PointF position;
+};
+struct TextInput
+{
+  char32_t character;
+  bool shift = false;
+  bool ctrl = false;
+  bool alt = false;
+};
+enum class EditCommand : std::uint8_t // UI-067
+{
+  CaretLeft,
+  CaretRight,
+  CaretHome,
+  CaretEnd,
+  DeleteForward,
+  SelectAll,
+  Copy,
+  Cut,
+  Paste
+};
+using Callback = std::move_only_function<void()>;
+
+class UiWidget // every widget derives from this type
+{
+public:
+  virtual ~UiWidget() = default;
+  virtual void Draw(DrawContext& _out, PointF _origin, bool _highlighted, bool _pressed) const {}
+  virtual void OnPress() {}                       // primary down edge on this widget
+  virtual void OnHeld(bool _pointerInside) {}     // every update while this widget holds the capture
+  virtual void OnClick() {}                       // press and release on this widget (UI-031)
+  virtual void OnCancel() {}                      // the capture ended outside this widget
+  virtual void OnAltPress() {}                    // secondary down edge on this widget (UI-033)
+  virtual void OnText(const TextInput& _input) {} // only while this widget is the text-edit target
+  virtual void OnEdit(EditCommand _command) {}
+  RectF rect;       // panel-relative
+  StringId caption; // UI-012
+  StringId accessibleName;
+  bool inactive = false; // skipped by navigation, never acts
+};
+
+class UiPanel // every window derives from this type
+{
+public:
+  virtual ~UiPanel() = default;
+  virtual void Create() {}                                    // builds the widgets (UI-022 step 5)
+  virtual void Remove() {}                                    // removes the widgets
+  virtual void Update() {}                                    // once per frame (UI-042)
+  virtual void Draw(DrawContext& _out, bool _hasFocus) const; // widgets oldest first (UI-043)
+  virtual void OnText(const TextInput& _input);               // default: forward to the text-edit target (UI-038)
+  virtual void OnEdit(EditCommand _command);
+  virtual void OnBackgroundPointer(bool _down) {}             // a press or release on no widget
+  WidgetId RegisterWidget(std::unique_ptr<UiWidget> _widget); // UI-025
+  void RemoveWidget(WidgetId _widget);
+  WidgetId WidgetAt(PointF _panelRelative) const; // UI-028
+  void BeginTextEdit(WidgetId _widget);
+  void EndTextEdit();
+  WidgetId TextEditTarget() const;
+  RectF rect;
+  StringId title;
+  bool movable = true;
+  bool resizable = true;
+};
+
+class UiCore
+{
+public:
+  void Resize(SizeF _clientSize, float _dpiScale);                              // UI-009
+  PanelId RegisterPanel(std::unique_ptr<UiPanel> _panel, PanelId _parent = {}); // UI-022
+  void RemovePanel(PanelId _panel);                                             // UI-023
+  void BringToFront(PanelId _panel);
+  void SetPanelPosition(PanelId _panel, PointF _position);
+  void SetPanelSize(PanelId _panel, SizeF _size); // UI-024
+  PanelId PanelAt(PointF _point) const;           // UI-027
+  bool PointerInPanel(PanelId _panel) const;      // UI-029
+  bool PointerInWidget(PanelId _panel, WidgetId _widget) const;
+  void UpdatePointer(PointF _position, std::span<const PointerEvent> _events); // UI-030
+  void Update();                                                               // UI-042
+  void OnText(const TextInput& _input);                                        // UI-038
+  void OnEdit(EditCommand _command);
+  void Draw(DrawContext& _out) const;                     // UI-043
+  PanelId RegisterPopup(std::unique_ptr<UiPanel> _panel); // UI-040
+  void ClosePopup();
+  void Maximize(PanelId _panel); // UI-041
+  void Unmaximize();
+  PanelId Focus() const;
+  void SetFocus(PanelId _panel); // UI-036
+  WidgetId HoverWidget() const;
+  WidgetId CapturedWidget() const;
+  bool IsTextEditing() const;   // UI-039
+  bool WindowsOnScreen() const; // UI-010
+  void RemoveAllWindows(bool _matchRunning);
+  void SetTooltipHandler(std::move_only_function<void(PanelId, WidgetId)> _handler); // UI-045
+  void Shutdown();
+};
+
+class UiWindow : public UiPanel // the standard window (§4.10 to §4.15)
+{
+public:
+  float MenuSize(float _length) const; // UI-048
+  void SetMenuSize(SizeF _size);
+  RectF ClientRect() const;               // UI-047
+  void AddToNavigation(WidgetId _widget); // UI-050
+  void SetCursor(WidgetId _widget);
+  void SetBackAction(WidgetId _widget);
+  void SkipNextUpdate();
+  bool closeable = true;
+  bool locked = false;
+  WidgetId AddValueControl(StringId _label, UiValueBinding& _binding, float _y, double _step, double _low, double _high,
+                           Callback _onChange = {}, float _x = -1, float _w = -1); // UI-062
+  void RemoveValueControl(WidgetId _field);
+  WidgetId AddColorControl(StringId _label, ColorRgba& _rgba, float _y, Callback _onChange = {}, float _x = -1,
+                           float _w = -1); // UI-063
+};
+
+class UiButton : public UiWidget // the standard button (§4.13)
+{
+public:
+  virtual bool ConsumeScroll(int _direction) // UI-052
+  {
+    return false;
+  }
+  float fontSize = 11.0f; // ui.button.font_size
+  bool centered = false;
+  bool disabled = false;
+};
+
+// The widget set (§4.14 to §4.22) and the front-end family (§4.24 to §4.30).
+class UiBorderlessButton;
+class UiCloseButton;
+class UiInsetPanel;
+class UiTextField;
+class UiIncrementGlyph;
+class UiScrollBar;
+class UiCheckBox;
+class UiDropDown;
+class UiDropDownList;
+class UiDropDownOption;
+class UiMessageDialog;
+class UiChatEntry;
+class UiChatField;
+class OptionsScreen;
+class PageButton;
+class PageBackButton;
+class ScreenCloseButton;
+class PageTitle;
+class PageDropDown;
+class PageDropDownList;
+class PageDropDownOption;
+class PageTextField;
+class PageIncrementGlyph;
+class PageCheckBox;
+
+class UiValueBinding // §4.23
+{
+public:
+  virtual ~UiValueBinding() = default;
+  virtual ValueType Type() const = 0;
+  virtual std::u8string ToText() const = 0;            // UI-095
+  virtual bool FromText(std::u8string_view _text) = 0; // false: the text does not parse
+  virtual double Get() const = 0;                      // the confirmed value
+  virtual void Set(double _requested) = 0;             // local: assigns; shared: requests
+  virtual bool ClampsOnSet() const = 0;
+};
+
+} // namespace Engine

@@ -1,0 +1,17 @@
+sequenceDiagram
+  participant Dev as Content author
+  participant CB as Content build
+  participant Tr as Translator
+  Dev->>CB: base-language strings change
+  CB->>CB: validate, then write the localisation report per edition
+  Dev->>CB: export command for one language
+  CB-->>Tr: translator pack: table, expanded base texts, change report
+  Tr-->>Dev: translated file
+  Dev->>CB: import command with the translated file
+  CB->>CB: validate the whole file
+  alt every check passes
+    CB->>CB: canonical writer with atomic replacement, base texts recorded
+  else any error
+    CB-->>Dev: diagnostics, nothing written
+  end
+  CB->>CB: next build with an empty missing list offers the language

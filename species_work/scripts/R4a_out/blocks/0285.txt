@@ -1,0 +1,10 @@
+p := 0;  S := 0;  n := 0;  dishNeighbour := false
+for each N in usable(A, t), in link order:
+    if N.p[t] > 0:  S += N.p[t];  n += 1
+    if N.beamDishFlag:  dishNeighbour := true
+if n > 0:  p := S / (n + 1)
+if A.beamDishFlag and not dishNeighbour:  p += ref.bot.priority.dish_bonus     # the far side of the dish has no node yet
+p += A.priorityModifier
+if A.supplyCrateFlag and bot(t) exists and bot(t) has a current objective whose next objective is none:
+    p := 0                                                                      # on the final objective, ignore Supply crates
+# no upper or lower clamp

@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Calm
+    Calm --> Suspicious : stray action, v becomes -0.75
+    Suspicious --> Calm : v decays to 0 at 0.33 per second
+    Suspicious --> Showing : another stray action while v is below -0.25, v becomes 3
+    Calm --> Showing : immediate trigger, v becomes 3
+    Suspicious --> Showing : immediate trigger, v becomes 3
+    Showing --> Showing : trigger, v grows by 1 up to 3
+    Showing --> Calm : v runs down to 0

@@ -1,0 +1,13 @@
+flowchart TD
+    A["Evaluation, once per tick"] --> B["Hide every tab, except scores or win while current"]
+    B --> C["Step rules of the running tutorial"]
+    C --> E["Tutorial events, executed at a tick"]
+    C --> R{"A tab request"}
+    R -->|"the current tab"| S1["Show it at its new anchor, step timer becomes now"]
+    R -->|"another tab"| G{"Less than 5 ticks since the step timer?"}
+    G -->|yes| X["Refused, no tab shown"]
+    G -->|no| M{"Current is a movement tab, less than 100 ticks since the step timer?"}
+    M -->|yes| X
+    M -->|no| L{"Current is launch_airstrike, less than 200 ticks since the step timer?"}
+    L -->|yes| X
+    L -->|no| S2["Show it, it becomes current, step timer becomes now"]

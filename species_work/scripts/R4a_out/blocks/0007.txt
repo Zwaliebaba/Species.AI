@@ -1,0 +1,19 @@
+convert every node transform and position to Species world axes and units (unit scale, ADR-016)
+for each mesh node n, for each primitive p of n:
+    for each triangle (i0, i1, i2) of p:
+        corner colour k(i) := baseColorFactor(p.material) * COLOR_0[i]      # linear glTF values; COLOR_0 absent = 1
+        e(i) := Quantize8(SrgbEncode(k(i)))                                  # exact sRGB curve, per channel
+        if p is faceted:
+            require e(i0) = e(i1) = e(i2)                                     # else error: asset, node, triangle
+            facet colour f := e(i0)
+            facet normal m := normalise(cross(P(i1) - P(i0), P(i2) - P(i0)))
+        f.rgb := Quantize8(f.rgb * rnd.mesh.colour_attenuation)               # alpha unchanged
+        tint weight t := per AST-034: the corners' _SPECIES_TINT values, which must be equal after
+                         quantisation to 8 bits; 1 for a flagged material; 0 for no marking
+        emit three vertices, each with its position, f, m, t and the barycentric corner
+             (1, 0, 0), (0, 1, 0), (0, 0, 1)
+    record n's rest transform, draw range, axis-aligned bounding box, vertical extent (lowest and
+        highest y) and bounding sphere (centre: the box centre, which is also the node centre that the
+        shatter effects push shards away from, VFX-227; radius: the largest distance from it to any vertex of n)
+write the socket table: for each kind in table 3.8-A order, the sockets in index order, each with its
+    parent node, its transform relative to that node and its chain of nodes up to the root

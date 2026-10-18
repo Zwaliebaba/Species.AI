@@ -1,0 +1,15 @@
+flowchart TD
+    A["Start-up configuration read"] --> B["Create the settings store"]
+    B --> C{"Settings file opens?"}
+    C -- "no: first run" --> D["Take every default from the one defaults table"]
+    C -- "yes" --> E["Load the entries: typed by the schema; a bad entry is logged and takes its default; the first occurrence of a key wins"]
+    D --> F["Force the match control scheme"]
+    E --> F
+    F --> G["Create the window and the renderer from the screen settings"]
+    G --> H["Renderer stores the screen settings in effect and saves"]
+    H --> I["Create the audio engine from the sound settings"]
+    F --> J["Choose the language before the first text is drawn"]
+    I --> K["Front end"]
+    J --> K
+    K -- "options apply, name change, filters left, master volume released" --> L["Save: lossless and atomic"]
+    L --> K

@@ -1,0 +1,25 @@
+--- 
++++ 
+@@ -4 +4 @@
+-struct ParticleSlot   // one slot of the pool's structured buffer
++struct ParticleSlot // one slot of the pool's structured buffer
+@@ -7 +7 @@
+-  float birth;   // birth on the scaled presentation clock
++  float birth; // birth on the scaled presentation clock
+@@ -10,2 +10,2 @@
+-  uint color;    // RGBA8
+-  uint kind;     // the particle type (ParticleTypeId)
++  uint color; // RGBA8
++  uint kind;  // the particle type (ParticleTypeId)
+@@ -14 +14 @@
+-struct ParticleType   // one entry per particle type, from the effect definitions
++struct ParticleType // one entry per particle type, from the effect definitions
+@@ -17 +17 @@
+-  uint color1, color2;   // RGBA8
++  uint color1, color2; // RGBA8
+@@ -22 +22 @@
+-struct Shard   // one released triangle (VFX-204)
++struct Shard // one released triangle (VFX-204)
+@@ -30 +30 @@
+-  uint color;    // tinted facet colour, RGBA8
++  uint color; // tinted facet colour, RGBA8

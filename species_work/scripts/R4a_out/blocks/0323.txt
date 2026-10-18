@@ -1,0 +1,8 @@
+flowchart LR
+    A["A match rule meets a condition"] --> B["Achievement event, presentation only"]
+    B --> C{"Giant Slayer, Massacre or Annihilator?"}
+    C -- "no" --> D{"A bot team in any of the map's player slots?"}
+    D -- "yes" --> N["Nothing happens"]
+    D -- "no" --> E{"Already earned? Always no"}
+    C -- "yes" --> E
+    E -- "no" --> F["Award request does nothing: no record, no storage, no display"]

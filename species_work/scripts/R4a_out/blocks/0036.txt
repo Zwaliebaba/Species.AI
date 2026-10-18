@@ -1,0 +1,15 @@
+hip     = root socket under the frame (spider front, world up, spider position)   # ignores body pitch and roll
+home(H) = hip + HorizontalNormalize(hip - body) * TerrainNormal(body).y * (idealSlope * H)
+          then home.y -= H
+desire  = |foot - home(H)|
+Lift(H):
+    target   = home(H) + RotateY(body velocity, 0.5 * ref.unit.spider.leg.yaw_prediction * angularVelocity.y) * lookAhead
+    target.y = TerrainHeight(target)
+    state = Swinging; liftTime = t; lastGround = foot
+Swing (each frame while Swinging):
+    f = ease((t - liftTime) / swingDuration)          # VFX-012, completion value ref.unit.spider.leg.swing_done
+    if f > 1: foot = target; state = OnGround; raise the footstep event (R-UNIT-578)
+    else:     foot = lerp(lastGround, target, f) + (0, arc(f), 0)
+arc(f) = vfx.leg.arc_rise * f * lift          for f < vfx.leg.arc_knee_low
+       = vfx.leg.arc_rise * (1 - f) * lift    for f > vfx.leg.arc_knee_high
+       = lift                                 otherwise

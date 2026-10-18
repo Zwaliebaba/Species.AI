@@ -1,0 +1,6 @@
+elapsed = counter_now − c₀                               // 64-bit, never negative
+whole   = elapsed ÷ frequency                              // integer division
+rest    = elapsed mod frequency
+now_ns  = whole × 1 000 000 000 + (rest × 1 000 000 000) ÷ frequency
+now_ns  = max(now_ns, last_returned_ns)                    // atomic maximum: readings never decrease
+last_returned_ns = now_ns

@@ -1,0 +1,13 @@
+stateDiagram-v2
+  [*] --> Pending : screen created with the stack Title, or Title and Tutorials
+  Pending --> Entering : first update enters the top page
+  Entering --> Live : enter rule returns Built
+  Entering --> Waiting : enter rule returns Waiting
+  Entering --> Entering : enter rule returns Redirect, the target is entered instead
+  Waiting --> Entering : start of the next frame, no request pending, enter rule runs again
+  Waiting --> Leaving : start of the next frame, a request is pending
+  Live --> Live : page update runs, widgets and hooks may request a page change
+  Live --> Leaving : start of the next frame, a request is pending
+  Leaving --> Entering : leave hook ran, widgets removed, stack updated
+  Live --> [*] : the front-end controller destroys the screen
+  Waiting --> [*] : the front-end controller destroys the screen

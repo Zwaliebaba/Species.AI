@@ -1,0 +1,6 @@
+flowchart LR
+    Q1["Actor, structure or effect asks: who is near x, z?"] --> AG["Actor grid: one layer per team slot, 32 wu cells"]
+    Q2["Worker threat search"] --> AGC["Actor grid cache: per-team memo, half-range reuse, 10-tick age limit"]
+    AGC -->|miss| AG
+    Q3["Collision, walkability, teleport entry: which structures are here?"] --> OG["Obstacle grid: structure handles per 32 wu cell, plus one outside cell"]
+    OG --> PT["Precise test by the structure: sphere, shape or ray hit"]

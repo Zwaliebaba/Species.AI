@@ -1,0 +1,15 @@
+flowchart TD
+    MC["Main cycle, step 2"] --> V["For each Power not Running and with no start lock, in slot order"]
+    V --> K{"Kind"}
+    K -->|"Strike team, Transport, Collector, Builder"| U["Pick a friendly area, target its centre or jittered points, at most 100 draws"]
+    K -->|"airstrike, Missile Barrage, meteor shower"| H["Hostile turret, or the node with the most enemies, or the first losing enemy position"]
+    K -->|"Hive, Blight Grove, Brood"| R["A random hostile Spawn Node or node"]
+    K -->|"Essence Grove"| G["Midpoint of two own linked nodes, needs a Collector"]
+    K -->|"turret"| T["Siege attacker: cancel, Flag Chain: Home post rim, Launch Race: vessel ring, else frontier"]
+    K -->|"Worker Powers"| W["First outnumbered fight with more than 30 friends: every Worker Power at its Worker centroid"]
+    U --> TP["TargetPower, refused or no target: the Power waits for the next cycle"]
+    H --> TP
+    R --> TP
+    G --> TP
+    T --> TP
+    W --> TP

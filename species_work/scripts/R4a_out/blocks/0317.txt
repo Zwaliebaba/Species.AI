@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> Absent : match starts
+    Absent --> Shown : grace period, no tutorial, countdown at its full value, animation loaded
+    Absent --> Absent : animation cannot be loaded
+    Shown --> Shown : playback time grows on real time, and past the loop end it returns to the loop start
+    Shown --> Hidden : every counted team ready, countdown running
+    Hidden --> Shown : readiness withdrawn, countdown back to its full value
+    Hidden --> Destroyed : match teardown
+    Shown --> Destroyed : match teardown
+    Destroyed --> [*]

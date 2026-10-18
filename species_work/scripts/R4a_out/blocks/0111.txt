@@ -1,0 +1,8 @@
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> Idle: move without the primary button - hover and tooltip timer
+  Idle --> Pressed: primary down - focus, bring to front, capture the widget or the background
+  Pressed --> Held: primary still held at the next update
+  Held --> Held: held - the captured widget gets OnHeld, or the background drags or resizes the panel
+  Pressed --> Idle: primary up - OnClick if the pointer is inside the captured widget, else OnCancel
+  Held --> Idle: primary up - OnClick if the pointer is inside the captured widget, else OnCancel

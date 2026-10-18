@@ -1,0 +1,5 @@
+stateDiagram-v2
+    [*] --> Standing
+    Standing --> Standing : a damage amount above minus 300 is ignored
+    Standing --> Destroyed : a single damage of minus 300 or less, shatter effect
+    Destroyed --> [*] : removed at its next advance, obstacle grid, route edges and bot navigation links updated

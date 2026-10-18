@@ -1,0 +1,12 @@
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> EggLaying : retarget every 61 ticks, Floating orb within 200 with fewer than 3 nearby eggs
+    Idle --> EggLaying : random target and the 10 percent lay roll
+    Idle --> Idle : random target without the lay roll
+    EggLaying --> EggLaying : within 50 wu, one egg every 20 to 40 ticks
+    EggLaying --> EggLaying : arrived, orb found or random target with the lay roll
+    EggLaying --> Idle : arrived, random target without the lay roll
+    Idle --> Panic : registered hit
+    EggLaying --> Panic : registered hit
+    Panic --> Panic : target jittered by up to 50 wu each way per tick
+    Panic --> Idle : 101 ticks elapsed

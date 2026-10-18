@@ -1,0 +1,17 @@
+sequenceDiagram
+  participant Sim as Simulation tick
+  participant Q as Effect stream
+  participant V as VfxRuntime
+  participant P as ParticlePool
+  participant H as ShatterEffects
+  participant F as ScreenEffects
+  participant R as Renderer passes
+  Sim->>Q: effect events with kind, tick and identity
+  Q->>V: events of the tick, in tick order
+  V->>V: definition lookup, generator seeded from the identity
+  V->>P: emission requests
+  V->>H: shatter requests
+  V->>F: shake and flash requests
+  R->>P: pass 15 draws
+  R->>H: pass 14 draws
+  R->>F: shake offset to the view, pass 10a flash

@@ -1,0 +1,11 @@
+flowchart LR
+  SIM["Simulation snapshot and effect events"] --> FR["FrameRenderer"]
+  CAM["MatchCamera: view parameters"] --> FR
+  TER["Terrain component: heights, colours, shore mask, depth map"] --> FR
+  AST["AssetCache: textures and meshes by asset and variant"] --> FR
+  VFX["Animation and VFX: particles, shatter debris, flashes, shake"] --> FR
+  UI["UI framework: windows, text, HUD widgets"] --> FR
+  PLT["Platform layer: window, clock, resize events"] --> FR
+  FR --> FG["Frame graph compiled from the ordered pass table"]
+  FG --> GPU["Direct3D 12 direct queue and copy queue"]
+  GPU --> SC["Swap chain and present"]

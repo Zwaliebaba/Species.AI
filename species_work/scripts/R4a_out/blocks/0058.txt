@@ -1,0 +1,9 @@
+flowchart LR
+  A["sound.sources record"] --> B["schema: sources, events, layers, values"]
+  B --> C["events checked against the events game code raises"]
+  C --> D["groups resolved through the asset index; weights from sound.groups"]
+  D --> E["effect bindings: kinds, names, ranges; defaults filled; kind order"]
+  E --> F["cooked: indices, every field present"]
+  F --> G["audio engine: SoundSourceDef, SoundEventDef, SoundLayerDef"]
+  K["effect-kind table, compiled in"] --> E
+  K --> G

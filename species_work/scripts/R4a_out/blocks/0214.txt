@@ -1,0 +1,11 @@
+GiveWaypointOrder(_target, _route = none):
+    pendingOrder.position := _target; pendingOrder.set := true; pendingOrder.structure := none
+    if state == Carrying:
+        pass _target and _route to the carryable (a Breach Charge always takes a straight route); return   # state unchanged
+    if a Beam Dish stands within ref.unit.worker.beam_dish_order_radius (5 wu) of _target:
+        pendingOrder.structure := that Beam Dish; pendingOrder.position := its entrance
+        waypoint := its entrance                                         # no jitter
+    else:
+        waypoint := WorkerPush(_target + random point of a disc of radius ref.unit.worker.order_disc_radius, _kill = false)
+    route := _route; routeWaypoint := before the start
+    state := OnWaypointOrder

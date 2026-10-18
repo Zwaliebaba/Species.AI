@@ -1,0 +1,12 @@
+if p.y <= TerrainHeight(p.x, p.z) + ref.crate.fall.land_clearance:         # 20 wu
+    v := 0; onGround := true; stop the falling loop; emit the land sound
+    return
+t := match time in game seconds + crate serial * ref.crate.fall.sway_phase_step    # 20
+sway := ref.crate.fall.sway_amplitude * p.y / ref.crate.drop.start_height         # 300 wu at 1300 wu up
+target := (p.x + cos(t) * sway, TerrainHeight(p.x + cos(t) * sway, p.z), p.z)    # sway on x only
+target := PushFromObstacles(target)
+step := normalise(target - p) * ref.crate.fall.speed                             # 40 wu/s
+newP := PushFromObstacles(p + step)
+newP := p + ClampLength(newP - p, ref.crate.fall.speed * dt)                      # at most 4 wu per tick
+v := (newP - p) / dt                                                              # read only by presentation
+p := newP

@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> NoPanel
+    NoPanel --> Loaded: first advance of the grace period in a match, the explainer animation loads
+    NoPanel --> NoPanel: no explainer animation for the mode, or it fails to load
+    Loaded --> Visible: grace countdown held at its full value, no tutorial, interface shown
+    Visible --> Loaded: countdown starts, interface hidden, game over or another hiding condition
+    Loaded --> [*]: match teardown
+    Visible --> [*]: match teardown

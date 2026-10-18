@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> Resting : spawned at a Relic Spawn Zone, no team
+    Resting --> Carried : a team has at least 20 Workers within 50 wu
+    Carried --> Carried : recount, a non-friendly team with a strictly higher count takes over
+    Carried --> Resting : fewer than 20 Workers of the leading team
+    Carried --> Delivered : owned and within 30 wu of the owner's Relic Base at a check
+    Carried --> Destroyed : tilted or under water
+    Resting --> Destroyed : tilted or under water
+    Delivered --> [*] : 1 point; the spawn countdown can arm
+    Destroyed --> [*] : the spawn countdown can arm

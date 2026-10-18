@@ -1,0 +1,17 @@
+sequenceDiagram
+  participant P as Player
+  participant B as Page button
+  participant H as Page host
+  participant R as Renderer
+  Note over P,R: frame N, update phase
+  P->>B: click, press and release on the button
+  B->>B: raise match_ui.menu_select
+  B->>R: InitializeTransition with the transition time and the button's direction
+  B->>H: Request with the button's operation and target
+  Note over P,R: frame N + 1, update phase
+  H->>H: leave hook, remove the widgets, restack
+  H->>H: build the target's widgets, run its enter rule
+  H->>R: StartTransition, because the state is Waiting
+  Note over P,R: frame N + 1, recording
+  R->>R: first pass copies the last presented frame
+  R->>R: pass 34 slides the captured frame off over the new page

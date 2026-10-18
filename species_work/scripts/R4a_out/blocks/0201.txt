@@ -1,0 +1,9 @@
+FormationSlotPosition(_p, _i, _f, _arraySize):      # _arraySize counts gaps
+    rowSize := row size of table 2.6-A for _arraySize
+    column := _i mod rowSize
+    row := _i div rowSize
+    right := normalise(_f x up)
+    q := _p + _f * (ref.unit.leader.slot_spacing * row + ref.unit.leader.first_rank_offset)
+           + right * (ref.unit.leader.slot_spacing * column - ref.unit.leader.lateral_offset_factor * rowSize)
+    q.y := terrain height at q
+    return q

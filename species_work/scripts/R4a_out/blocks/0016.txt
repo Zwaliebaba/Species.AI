@@ -1,0 +1,14 @@
+flowchart TD
+  CH["change proposed"] --> WIN["Windows job: toolchain, solution, build shape, restore, Debug build, tests, clang-tidy"]
+  CH --> FMT["Linux job: clang-format"]
+  CH --> DES["Linux job: design checks"]
+  WIN -- "all pass" --> MERGE["merge"]
+  FMT -- "pass" --> MERGE
+  DES -- "pass" --> MERGE
+  WIN -- "any fails" --> FIX["change rejected with the failing step's log"]
+  FMT -- "fails" --> FIX
+  DES -- "fails" --> FIX
+  MERGE --> MORE["jobs added by amendment: tools solution, content build, reproducibility, soak, fuzzing, performance, GPU, symbols"]
+  MERGE --> REL{"release to be made?"}
+  REL -- "yes" --> RP["release procedure: Release build, release checks, package, sign, publish symbols, install test"]
+  RP --> PUB["release candidate available"]

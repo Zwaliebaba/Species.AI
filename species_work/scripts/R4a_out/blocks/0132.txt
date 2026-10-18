@@ -1,0 +1,31 @@
+flowchart LR
+    T["Territory: k held Spawn Nodes<br/>capture: 3 of 5 ports, no enemy on any port<br/>evaluated every 21-30 ticks, 300-tick activation"]
+    M["Source Node<br/>(transit orb source)"]
+    SP["Spawn Node door"]
+    TP["Owned Transit Gates<br/>(owner fixed by the map)"]
+    ST["Match start<br/>starting forces + 5 per owned Spawn Node or Solar Array"]
+    CR["Supply crates and creatures<br/>Reinforcements 50-99, Seed Pod Workers 10-19,<br/>Launch Vessel passengers, Visitor faction"]
+    D(("Workers<br/>ungrouped actors, counted against the cap"))
+    CAP{"Population cap<br/>map cap / open slots<br/>Siege: defender and attacker split"}
+    C["Combat and hazards"]
+    S(("Essence orbs<br/>Birth 61 ticks, Floating 301-500 ticks,<br/>Ascent 901 ticks, then removed"))
+    H["Collector (crate unit)<br/>capacity 100, range 75 wu"]
+    B["Builder (crate unit)<br/>capacity 25, range 200 wu"]
+    X["Other takers: Crawlers to eggs, ants to Hives,<br/>centipede, Reaper Serpent, Swarm streak"]
+
+    T -->|"k x 1.22 per s at H = 1, more under the Catch-up bonus<br/>bursts of floor(20 x H), one request every 2 ticks, pause 101-150 ticks"| M
+    M -->|"at most 10h + 1 ticks, lost if the node is neutral on arrival"| SP
+    SP -->|"1 Worker per transit orb"| D
+    TP -->|"Workers per gate per wave: Launch Race and Flag Chain 40,<br/>Siege 60-100, Zone Control and Relic Run 100; a wave every 660 ticks"| D
+    ST -->|"once, at match start"| D
+    CR -->|"event-driven"| D
+    CAP -.->|"freezes the production timer"| T
+    CAP -.->|"skips a whole gate batch"| TP
+    CAP -.->|"holds Collector delivery"| H
+    D -->|"deaths"| C
+    C -->|"1 Essence orb per standard death<br/>none for the Rogue faction, Transport, Builder,<br/>Collector, Trooper, Crawler egg, Bomber"| S
+    S -->|"Floating, any team, within 75 wu"| H
+    H -->|"1 orb per tick at a friendly Spawn Node<br/>only while the node may produce"| D
+    S -->|"Birth or Floating, any team"| B
+    B -->|"1 orb per tick at the nearest friendly Spawn Node<br/>no cap check, no activation check"| D
+    S -->|"Crawlers ferry to eggs, ants carry home,<br/>centipede eats, Reaper Serpent and Swarm streak delete"| X

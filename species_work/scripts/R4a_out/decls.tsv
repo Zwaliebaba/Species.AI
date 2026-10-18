@@ -1,0 +1,1160 @@
+name	kind	namespace	scope	block	file	line	detail
+Engine	namespace	(none)	file	4	architecture/components/asset_pipeline_and_resources.md	70	
+AssetId	struct	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	74	
+value	field	Engine	struct AssetId	4	architecture/components/asset_pipeline_and_resources.md	76	public
+VariantId	struct	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	78	
+value	field	Engine	struct VariantId	4	architecture/components/asset_pipeline_and_resources.md	80	public
+AssetKey	struct	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	82	
+asset	field	Engine	struct AssetKey	4	architecture/components/asset_pipeline_and_resources.md	84	public
+variant	field	Engine	struct AssetKey	4	architecture/components/asset_pipeline_and_resources.md	85	public
+ContentKey	using	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	88	std::string
+Sha256Digest	using	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	89	std::array<std::byte, 32>
+AssetError	forward	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	90	
+MountOptions	forward	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	91	
+MountOverride	forward	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	92	
+RuntimeTextureId	struct	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	93	
+value	field	Engine	struct RuntimeTextureId	4	architecture/components/asset_pipeline_and_resources.md	95	public
+ImageProducer	forward	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	97	
+ContentType	enum	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	99	Texture,CpuTable,Mesh,Collision,SimRecord,Record,Map,MapIndex,StringTable,Font,ResidentSound,SoundStream,ExplainerScript,AssetIndex
+TextureKind	enum	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	106	Color,Ui,Normal,Mask,ExactData,CpuTable
+ColorSpace	enum	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	110	Srgb,Linear
+AlphaMode	enum	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	114	Opaque,Straight,Premultiplied,Additive,Cutout
+MipPolicy	enum	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	118	Full,None
+SamplerId	enum	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	122	LinearClamp,LinearWrap,PointClamp,PointMagnifyClamp
+Derivation	enum	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	126	BlurredShadow,StackedCopies,Grayscale,ToColor,ReplaceColor
+TextureView	struct	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	131	
+id	field	Engine	struct TextureView	4	architecture/components/asset_pipeline_and_resources.md	133	public
+firstLevel	field	Engine	struct TextureView	4	architecture/components/asset_pipeline_and_resources.md	134	public
+levelCount	field	Engine	struct TextureView	4	architecture/components/asset_pipeline_and_resources.md	135	public
+sampler	field	Engine	struct TextureView	4	architecture/components/asset_pipeline_and_resources.md	136	public
+DerivedVariant	struct	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	138	
+id	field	Engine	struct DerivedVariant	4	architecture/components/asset_pipeline_and_resources.md	140	public
+op	field	Engine	struct DerivedVariant	4	architecture/components/asset_pipeline_and_resources.md	141	public
+parameters	field	Engine	struct DerivedVariant	4	architecture/components/asset_pipeline_and_resources.md	142	public
+TextureImportRecord	struct	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	145	
+asset	field	Engine	struct TextureImportRecord	4	architecture/components/asset_pipeline_and_resources.md	147	public
+member	field	Engine	struct TextureImportRecord	4	architecture/components/asset_pipeline_and_resources.md	148	public
+kind	field	Engine	struct TextureImportRecord	4	architecture/components/asset_pipeline_and_resources.md	149	public
+colorSpace	field	Engine	struct TextureImportRecord	4	architecture/components/asset_pipeline_and_resources.md	150	public
+alphaMode	field	Engine	struct TextureImportRecord	4	architecture/components/asset_pipeline_and_resources.md	151	public
+cutoutThreshold	field	Engine	struct TextureImportRecord	4	architecture/components/asset_pipeline_and_resources.md	152	public
+mips	field	Engine	struct TextureImportRecord	4	architecture/components/asset_pipeline_and_resources.md	153	public
+sampler	field	Engine	struct TextureImportRecord	4	architecture/components/asset_pipeline_and_resources.md	154	public
+pixelExact	field	Engine	struct TextureImportRecord	4	architecture/components/asset_pipeline_and_resources.md	155	public
+authoringScale	field	Engine	struct TextureImportRecord	4	architecture/components/asset_pipeline_and_resources.md	156	public
+tintMask	field	Engine	struct TextureImportRecord	4	architecture/components/asset_pipeline_and_resources.md	157	public
+derived	field	Engine	struct TextureImportRecord	4	architecture/components/asset_pipeline_and_resources.md	158	public
+views	field	Engine	struct TextureImportRecord	4	architecture/components/asset_pipeline_and_resources.md	159	public
+TintMarking	enum	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	162	None,VertexWeight,MaterialFlag
+MeshImportRecord	struct	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	167	
+asset	field	Engine	struct MeshImportRecord	4	architecture/components/asset_pipeline_and_resources.md	169	public
+member	field	Engine	struct MeshImportRecord	4	architecture/components/asset_pipeline_and_resources.md	170	public
+role	field	Engine	struct MeshImportRecord	4	architecture/components/asset_pipeline_and_resources.md	171	public
+assetClass	field	Engine	struct MeshImportRecord	4	architecture/components/asset_pipeline_and_resources.md	172	public
+unitScale	field	Engine	struct MeshImportRecord	4	architecture/components/asset_pipeline_and_resources.md	173	public
+tint	field	Engine	struct MeshImportRecord	4	architecture/components/asset_pipeline_and_resources.md	174	public
+tintScale	field	Engine	struct MeshImportRecord	4	architecture/components/asset_pipeline_and_resources.md	175	public
+smoothPrimitives	field	Engine	struct MeshImportRecord	4	architecture/components/asset_pipeline_and_resources.md	176	public
+collision	field	Engine	struct MeshImportRecord	4	architecture/components/asset_pipeline_and_resources.md	177	public
+AudioImportRecord	struct	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	180	
+asset	field	Engine	struct AudioImportRecord	4	architecture/components/asset_pipeline_and_resources.md	182	public
+member	field	Engine	struct AudioImportRecord	4	architecture/components/asset_pipeline_and_resources.md	183	public
+positional	field	Engine	struct AudioImportRecord	4	architecture/components/asset_pipeline_and_resources.md	184	public
+loopSamples	field	Engine	struct AudioImportRecord	4	architecture/components/asset_pipeline_and_resources.md	185	public
+PackCodec	enum	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	189	Stored,XpressHuffman
+EntryRef	struct	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	193	
+pack	field	Engine	struct EntryRef	4	architecture/components/asset_pipeline_and_resources.md	195	public
+entry	field	Engine	struct EntryRef	4	architecture/components/asset_pipeline_and_resources.md	196	public
+PackEntry	struct	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	198	
+key	field	Engine	struct PackEntry	4	architecture/components/asset_pipeline_and_resources.md	200	public
+type	field	Engine	struct PackEntry	4	architecture/components/asset_pipeline_and_resources.md	201	public
+schemaId	field	Engine	struct PackEntry	4	architecture/components/asset_pipeline_and_resources.md	202	public
+schemaVersion	field	Engine	struct PackEntry	4	architecture/components/asset_pipeline_and_resources.md	203	public
+size	field	Engine	struct PackEntry	4	architecture/components/asset_pipeline_and_resources.md	204	public
+firstChunk	field	Engine	struct PackEntry	4	architecture/components/asset_pipeline_and_resources.md	205	public
+chunkOffset	field	Engine	struct PackEntry	4	architecture/components/asset_pipeline_and_resources.md	206	public
+simulationRelevant	field	Engine	struct PackEntry	4	architecture/components/asset_pipeline_and_resources.md	207	public
+hash	field	Engine	struct PackEntry	4	architecture/components/asset_pipeline_and_resources.md	208	public
+PackFile	class	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	211	
+MountManifest	forward	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	219	
+MountSet	class	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	220	
+ReadPriority	enum	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	233	Immediate,Normal,Background
+ContentReader	class	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	237	
+LoadState	enum	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	244	Queued,Reading,Creating,Uploading,Resident,Failed
+TextureSize	struct	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	248	
+width	field	Engine	struct TextureSize	4	architecture/components/asset_pipeline_and_resources.md	250	public
+height	field	Engine	struct TextureSize	4	architecture/components/asset_pipeline_and_resources.md	251	public
+displayWidth	field	Engine	struct TextureSize	4	architecture/components/asset_pipeline_and_resources.md	252	public
+displayHeight	field	Engine	struct TextureSize	4	architecture/components/asset_pipeline_and_resources.md	253	public
+levels	field	Engine	struct TextureSize	4	architecture/components/asset_pipeline_and_resources.md	254	public
+LoadGroup	forward	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	257	
+TextureHandle	forward	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	258	
+MeshHandle	forward	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	259	
+AssetCache	class	Engine	namespace	4	architecture/components/asset_pipeline_and_resources.md	261	
+Engine	namespace	(none)	file	12	architecture/components/build_tooling_and_distribution.md	147	
+BuildProduct	enum	Engine	namespace	12	architecture/components/build_tooling_and_distribution.md	151	Client,Server,ContentBuildTool
+BuildConfiguration	enum	Engine	namespace	12	architecture/components/build_tooling_and_distribution.md	157	Debug,Release
+SemanticVersion	struct	Engine	namespace	12	architecture/components/build_tooling_and_distribution.md	163	
+major	field	Engine	struct SemanticVersion	12	architecture/components/build_tooling_and_distribution.md	165	public
+minor	field	Engine	struct SemanticVersion	12	architecture/components/build_tooling_and_distribution.md	166	public
+patch	field	Engine	struct SemanticVersion	12	architecture/components/build_tooling_and_distribution.md	167	public
+BuildIdentity	struct	Engine	namespace	12	architecture/components/build_tooling_and_distribution.md	171	
+version	field	Engine	struct BuildIdentity	12	architecture/components/build_tooling_and_distribution.md	173	public
+buildNumber	field	Engine	struct BuildIdentity	12	architecture/components/build_tooling_and_distribution.md	174	public
+sourceRevision	field	Engine	struct BuildIdentity	12	architecture/components/build_tooling_and_distribution.md	175	public
+modifiedTree	field	Engine	struct BuildIdentity	12	architecture/components/build_tooling_and_distribution.md	176	public
+contentManifestHash	field	Engine	struct BuildIdentity	12	architecture/components/build_tooling_and_distribution.md	177	public
+product	field	Engine	struct BuildIdentity	12	architecture/components/build_tooling_and_distribution.md	178	public
+configuration	field	Engine	struct BuildIdentity	12	architecture/components/build_tooling_and_distribution.md	179	public
+CurrentBuildIdentity	function	Engine	namespace	12	architecture/components/build_tooling_and_distribution.md	183	
+DisplayVersion	function	Engine	namespace	12	architecture/components/build_tooling_and_distribution.md	184	
+FullIdentityText	function	Engine	namespace	12	architecture/components/build_tooling_and_distribution.md	185	
+VersionResourceQuad	function	Engine	namespace	12	architecture/components/build_tooling_and_distribution.md	186	
+ChannelTag	function	Engine	namespace	12	architecture/components/build_tooling_and_distribution.md	187	
+EditionId	using	Engine	namespace	12	architecture/components/build_tooling_and_distribution.md	190	std::string
+ContentBuildError	forward	Engine	namespace	12	architecture/components/build_tooling_and_distribution.md	191	
+ContentBuildCommand	enum	Engine	namespace	12	architecture/components/build_tooling_and_distribution.md	194	Build,Validate,Loose,StringsExport,StringsImport
+ContentBuildStage	enum	Engine	namespace	12	architecture/components/build_tooling_and_distribution.md	204	ResolveEditions,ReadInputs,CheckSources,Cook,Derive,Placeholders,CookRecordsAndGenerate,CheckReferences,SelectEditions,Localization,MapIdentities,WritePacks,WriteManifestsAndReports
+RunOptions	struct	Engine	namespace	12	architecture/components/build_tooling_and_distribution.md	221	
+editions	field	Engine	struct RunOptions	12	architecture/components/build_tooling_and_distribution.md	223	public
+contentRoot	field	Engine	struct RunOptions	12	architecture/components/build_tooling_and_distribution.md	224	public
+outDir	field	Engine	struct RunOptions	12	architecture/components/build_tooling_and_distribution.md	225	public
+previousOutDir	field	Engine	struct RunOptions	12	architecture/components/build_tooling_and_distribution.md	226	public
+clean	field	Engine	struct RunOptions	12	architecture/components/build_tooling_and_distribution.md	227	public
+jobs	field	Engine	struct RunOptions	12	architecture/components/build_tooling_and_distribution.md	228	public
+MapIdentityEntry	struct	Engine	namespace	12	architecture/components/build_tooling_and_distribution.md	232	
+mapId	field	Engine	struct MapIdentityEntry	12	architecture/components/build_tooling_and_distribution.md	234	public
+hash	field	Engine	struct MapIdentityEntry	12	architecture/components/build_tooling_and_distribution.md	235	public
+modes	field	Engine	struct MapIdentityEntry	12	architecture/components/build_tooling_and_distribution.md	236	public
+players	field	Engine	struct MapIdentityEntry	12	architecture/components/build_tooling_and_distribution.md	237	public
+packId	field	Engine	struct MapIdentityEntry	12	architecture/components/build_tooling_and_distribution.md	238	public
+LanguageFindings	struct	Engine	namespace	12	architecture/components/build_tooling_and_distribution.md	242	
+tag	field	Engine	struct LanguageFindings	12	architecture/components/build_tooling_and_distribution.md	244	public
+missing	field	Engine	struct LanguageFindings	12	architecture/components/build_tooling_and_distribution.md	245	public
+untranslated	field	Engine	struct LanguageFindings	12	architecture/components/build_tooling_and_distribution.md	246	public
+unknown	field	Engine	struct LanguageFindings	12	architecture/components/build_tooling_and_distribution.md	247	public
+baseIds	field	Engine	struct LanguageFindings	12	architecture/components/build_tooling_and_distribution.md	248	public
+presentIds	field	Engine	struct LanguageFindings	12	architecture/components/build_tooling_and_distribution.md	249	public
+RunResult	struct	Engine	namespace	12	architecture/components/build_tooling_and_distribution.md	252	
+exitCode	field	Engine	struct RunResult	12	architecture/components/build_tooling_and_distribution.md	254	public
+diagnostics	field	Engine	struct RunResult	12	architecture/components/build_tooling_and_distribution.md	255	public
+mapIdentities	field	Engine	struct RunResult	12	architecture/components/build_tooling_and_distribution.md	256	public
+localization	field	Engine	struct RunResult	12	architecture/components/build_tooling_and_distribution.md	257	public
+ContentBuild	class	Engine	namespace	12	architecture/components/build_tooling_and_distribution.md	260	
+Engine	namespace	(none)	file	17	architecture/components/camera_and_sequences.md	60	
+CameraTransition	enum	Engine	namespace	17	architecture/components/camera_and_sequences.md	63	Move,Cut
+CameraPose	struct	Engine	namespace	17	architecture/components/camera_and_sequences.md	69	
+position	field	Engine	struct CameraPose	17	architecture/components/camera_and_sequences.md	71	public
+front	field	Engine	struct CameraPose	17	architecture/components/camera_and_sequences.md	72	public
+up	field	Engine	struct CameraPose	17	architecture/components/camera_and_sequences.md	73	public
+CameraView	struct	Engine	namespace	17	architecture/components/camera_and_sequences.md	76	
+name	field	Engine	struct CameraView	17	architecture/components/camera_and_sequences.md	78	public
+pose	field	Engine	struct CameraView	17	architecture/components/camera_and_sequences.md	79	public
+CameraAnimationStep	struct	Engine	namespace	17	architecture/components/camera_and_sequences.md	82	
+transition	field	Engine	struct CameraAnimationStep	17	architecture/components/camera_and_sequences.md	84	public
+view	field	Engine	struct CameraAnimationStep	17	architecture/components/camera_and_sequences.md	85	public
+durationSeconds	field	Engine	struct CameraAnimationStep	17	architecture/components/camera_and_sequences.md	86	public
+CameraAnimationDef	struct	Engine	namespace	17	architecture/components/camera_and_sequences.md	89	
+name	field	Engine	struct CameraAnimationDef	17	architecture/components/camera_and_sequences.md	91	public
+steps	field	Engine	struct CameraAnimationDef	17	architecture/components/camera_and_sequences.md	92	public
+MapCameraData	struct	Engine	namespace	17	architecture/components/camera_and_sequences.md	95	
+views	field	Engine	struct MapCameraData	17	architecture/components/camera_and_sequences.md	97	public
+animations	field	Engine	struct MapCameraData	17	architecture/components/camera_and_sequences.md	98	public
+startViews	field	Engine	struct MapCameraData	17	architecture/components/camera_and_sequences.md	99	public
+worldSizeX	field	Engine	struct MapCameraData	17	architecture/components/camera_and_sequences.md	100	public
+CameraFrameOutput	struct	Engine	namespace	17	architecture/components/camera_and_sequences.md	103	
+pose	field	Engine	struct CameraFrameOutput	17	architecture/components/camera_and_sequences.md	105	public
+fovYDegrees	field	Engine	struct CameraFrameOutput	17	architecture/components/camera_and_sequences.md	106	public
+velocity	field	Engine	struct CameraFrameOutput	17	architecture/components/camera_and_sequences.md	107	public
+PickRay	struct	Engine	namespace	17	architecture/components/camera_and_sequences.md	110	
+origin	field	Engine	struct PickRay	17	architecture/components/camera_and_sequences.md	112	public
+direction	field	Engine	struct PickRay	17	architecture/components/camera_and_sequences.md	113	public
+TimelineOp	enum	Engine	namespace	17	architecture/components/camera_and_sequences.md	116	Wait,WaitCamera,WaitFade,WaitCondition,CameraCut,CameraMove,CameraApproach,CameraFocus,CameraAnimation,CameraFov,CameraRelease,Caption,Fade,Overlay,Sound,PermitAbort
+TimelineStatement	struct	Engine	namespace	17	architecture/components/camera_and_sequences.md	136	
+op	field	Engine	struct TimelineStatement	17	architecture/components/camera_and_sequences.md	138	public
+args	field	Engine	struct TimelineStatement	17	architecture/components/camera_and_sequences.md	139	public
+where	field	Engine	struct TimelineStatement	17	architecture/components/camera_and_sequences.md	140	public
+PresentationTimeline	struct	Engine	namespace	17	architecture/components/camera_and_sequences.md	142	
+id	field	Engine	struct PresentationTimeline	17	architecture/components/camera_and_sequences.md	144	public
+statements	field	Engine	struct PresentationTimeline	17	architecture/components/camera_and_sequences.md	145	public
+Species	namespace	(none)	file	17	architecture/components/camera_and_sequences.md	150	
+CameraMode	enum	Species	namespace	17	architecture/components/camera_and_sequences.md	153	Static,ScriptedMove,FreeMovement,Tracking,BeamDishAim,TurretAim,StructureFocus,DeveloperFly
+CameraFrameInputs	struct	Species	namespace	17	architecture/components/camera_and_sequences.md	165	
+realNow	field	Species	struct CameraFrameInputs	17	architecture/components/camera_and_sequences.md	167	public
+snapshot	field	Species	struct CameraFrameInputs	17	architecture/components/camera_and_sequences.md	168	public
+extrapolationSeconds	field	Species	struct CameraFrameInputs	17	architecture/components/camera_and_sequences.md	169	public
+input	field	Species	struct CameraFrameInputs	17	architecture/components/camera_and_sequences.md	170	public
+uiWindowOpen	field	Species	struct CameraFrameInputs	17	architecture/components/camera_and_sequences.md	171	public
+editing	field	Species	struct CameraFrameInputs	17	architecture/components/camera_and_sequences.md	172	public
+terrain	field	Species	struct CameraFrameInputs	17	architecture/components/camera_and_sequences.md	173	public
+MatchCamera	class	Species	namespace	17	architecture/components/camera_and_sequences.md	176	
+TimelinePlayer	class	Species	namespace	17	architecture/components/camera_and_sequences.md	213	
+Engine	namespace	(none)	file	23	architecture/components/platform_layer.md	74	
+PlatformError	enum	Engine	namespace	23	architecture/components/platform_layer.md	77	Unsupported,AccessDenied,NotFound,Other
+Nanoseconds	using	Engine	namespace	23	architecture/components/platform_layer.md	86	std::chrono::duration<std::int64_t, std::nano>
+TimeSourceKind	enum	Engine	namespace	23	architecture/components/platform_layer.md	87	Real,FixedStep,Manual
+TimeSource	class	Engine	namespace	23	architecture/components/platform_layer.md	93	
+ManualTimeSource	class	Engine	namespace	23	architecture/components/platform_layer.md	101	: public TimeSource
+PlatformClock	class	Engine	namespace	23	architecture/components/platform_layer.md	107	
+NativeWindowHandle	using	Engine	namespace	23	architecture/components/platform_layer.md	121	struct HWND__*
+PointPx	struct	Engine	namespace	23	architecture/components/platform_layer.md	122	
+x	field	Engine	struct PointPx	23	architecture/components/platform_layer.md	124	public
+y	field	Engine	struct PointPx	23	architecture/components/platform_layer.md	125	public
+SizePx	struct	Engine	namespace	23	architecture/components/platform_layer.md	127	
+width	field	Engine	struct SizePx	23	architecture/components/platform_layer.md	129	public
+height	field	Engine	struct SizePx	23	architecture/components/platform_layer.md	130	public
+RectPx	struct	Engine	namespace	23	architecture/components/platform_layer.md	133	
+left	field	Engine	struct RectPx	23	architecture/components/platform_layer.md	135	public
+top	field	Engine	struct RectPx	23	architecture/components/platform_layer.md	136	public
+right	field	Engine	struct RectPx	23	architecture/components/platform_layer.md	137	public
+bottom	field	Engine	struct RectPx	23	architecture/components/platform_layer.md	138	public
+WindowMode	enum	Engine	namespace	23	architecture/components/platform_layer.md	140	Windowed,BorderlessFullScreen
+Permanence	enum	Engine	namespace	23	architecture/components/platform_layer.md	145	Permanent,Temporary
+DesktopMode	struct	Engine	namespace	23	architecture/components/platform_layer.md	150	
+width	field	Engine	struct DesktopMode	23	architecture/components/platform_layer.md	152	public
+height	field	Engine	struct DesktopMode	23	architecture/components/platform_layer.md	153	public
+bitsPerPixel	field	Engine	struct DesktopMode	23	architecture/components/platform_layer.md	154	public
+refreshHz	field	Engine	struct DesktopMode	23	architecture/components/platform_layer.md	155	public
+ModeSize	struct	Engine	namespace	23	architecture/components/platform_layer.md	157	
+width	field	Engine	struct ModeSize	23	architecture/components/platform_layer.md	159	public
+height	field	Engine	struct ModeSize	23	architecture/components/platform_layer.md	160	public
+refreshRatesHz	field	Engine	struct ModeSize	23	architecture/components/platform_layer.md	161	public
+MonitorInfo	struct	Engine	namespace	23	architecture/components/platform_layer.md	164	
+deviceName	field	Engine	struct MonitorInfo	23	architecture/components/platform_layer.md	166	public
+bounds	field	Engine	struct MonitorInfo	23	architecture/components/platform_layer.md	167	public
+workArea	field	Engine	struct MonitorInfo	23	architecture/components/platform_layer.md	168	public
+dpi	field	Engine	struct MonitorInfo	23	architecture/components/platform_layer.md	169	public
+dpiScale	field	Engine	struct MonitorInfo	23	architecture/components/platform_layer.md	170	public
+primary	field	Engine	struct MonitorInfo	23	architecture/components/platform_layer.md	171	public
+desktop	field	Engine	struct MonitorInfo	23	architecture/components/platform_layer.md	172	public
+modeSizes	field	Engine	struct MonitorInfo	23	architecture/components/platform_layer.md	173	public
+EnumerateMonitors	function	Engine	namespace	23	architecture/components/platform_layer.md	175	
+WindowPlacement	struct	Engine	namespace	23	architecture/components/platform_layer.md	177	
+mode	field	Engine	struct WindowPlacement	23	architecture/components/platform_layer.md	179	public
+monitorDeviceName	field	Engine	struct WindowPlacement	23	architecture/components/platform_layer.md	180	public
+windowedClientRect	field	Engine	struct WindowPlacement	23	architecture/components/platform_layer.md	181	public
+WindowMessage	struct	Engine	namespace	23	architecture/components/platform_layer.md	183	
+id	field	Engine	struct WindowMessage	23	architecture/components/platform_layer.md	185	public
+wParam	field	Engine	struct WindowMessage	23	architecture/components/platform_layer.md	186	public
+lParam	field	Engine	struct WindowMessage	23	architecture/components/platform_layer.md	187	public
+time	field	Engine	struct WindowMessage	23	architecture/components/platform_layer.md	188	public
+WindowInputSink	class	Engine	namespace	23	architecture/components/platform_layer.md	191	
+Resized	struct	Engine	namespace	23	architecture/components/platform_layer.md	197	
+client	field	Engine	struct Resized	23	architecture/components/platform_layer.md	199	public
+DpiChanged	struct	Engine	namespace	23	architecture/components/platform_layer.md	201	
+dpiScale	field	Engine	struct DpiChanged	23	architecture/components/platform_layer.md	203	public
+suggestedWindowRect	field	Engine	struct DpiChanged	23	architecture/components/platform_layer.md	204	public
+FocusChanged	struct	Engine	namespace	23	architecture/components/platform_layer.md	206	
+hasFocus	field	Engine	struct FocusChanged	23	architecture/components/platform_layer.md	208	public
+Minimized	struct	Engine	namespace	23	architecture/components/platform_layer.md	210	
+Restored	struct	Engine	namespace	23	architecture/components/platform_layer.md	213	
+ModeChanged	struct	Engine	namespace	23	architecture/components/platform_layer.md	216	
+mode	field	Engine	struct ModeChanged	23	architecture/components/platform_layer.md	218	public
+MonitorChanged	struct	Engine	namespace	23	architecture/components/platform_layer.md	220	
+deviceName	field	Engine	struct MonitorChanged	23	architecture/components/platform_layer.md	222	public
+DisplayConfigurationChanged	struct	Engine	namespace	23	architecture/components/platform_layer.md	224	
+KeyboardLayoutChanged	struct	Engine	namespace	23	architecture/components/platform_layer.md	227	
+languageTag	field	Engine	struct KeyboardLayoutChanged	23	architecture/components/platform_layer.md	229	public
+EndOfSession	struct	Engine	namespace	23	architecture/components/platform_layer.md	231	
+WindowEvent	using	Engine	namespace	23	architecture/components/platform_layer.md	234	std::variant<Resized, DpiChanged, FocusChanged, Minimized, Restored, ModeChanged
+AppWindow	class	Engine	namespace	23	architecture/components/platform_layer.md	237	
+UserFolder	enum	Engine	namespace	23	architecture/components/platform_layer.md	259	Root,Settings,Logs,Crashes,Maps,Diagnostics
+PlatformPaths	class	Engine	namespace	23	architecture/components/platform_layer.md	268	
+FileError	enum	Engine	namespace	23	architecture/components/platform_layer.md	276	NotFound,AccessDenied,DiskFull,Other
+MappedFile	forward	Engine	namespace	23	architecture/components/platform_layer.md	283	
+ReadWholeFile	function	Engine	namespace	23	architecture/components/platform_layer.md	284	
+MapReadOnly	function	Engine	namespace	23	architecture/components/platform_layer.md	285	
+ReplaceFileAtomically	function	Engine	namespace	23	architecture/components/platform_layer.md	286	
+ToUtf16	function	Engine	namespace	23	architecture/components/platform_layer.md	287	
+ToUtf8	function	Engine	namespace	23	architecture/components/platform_layer.md	288	
+SettingValue	using	Engine	namespace	23	architecture/components/platform_layer.md	290	std::variant<bool, std::int64_t, double, std::string>
+SettingsStore	class	Engine	namespace	23	architecture/components/platform_layer.md	291	
+StartupOptions	struct	Engine	namespace	23	architecture/components/platform_layer.md	304	
+writeBuildIdentity	field	Engine	struct StartupOptions	23	architecture/components/platform_layer.md	306	public
+userDataRoot	field	Engine	struct StartupOptions	23	architecture/components/platform_layer.md	307	public
+looseContentDirectory	field	Engine	struct StartupOptions	23	architecture/components/platform_layer.md	308	public
+fixedStepFramesPerSecond	field	Engine	struct StartupOptions	23	architecture/components/platform_layer.md	309	public
+verifyContent	field	Engine	struct StartupOptions	23	architecture/components/platform_layer.md	310	public
+ignoredArguments	field	Engine	struct StartupOptions	23	architecture/components/platform_layer.md	311	public
+ParseCommandLine	function	Engine	namespace	23	architecture/components/platform_layer.md	313	
+MessageSeverity	enum	Engine	namespace	23	architecture/components/platform_layer.md	314	Notice,Error,Fatal
+MessageArgument	struct	Engine	namespace	23	architecture/components/platform_layer.md	320	
+name	field	Engine	struct MessageArgument	23	architecture/components/platform_layer.md	322	public
+value	field	Engine	struct MessageArgument	23	architecture/components/platform_layer.md	323	public
+ShowPlatformMessage	function	Engine	namespace	23	architecture/components/platform_layer.md	325	
+LifecycleHooks	class	Engine	namespace	23	architecture/components/platform_layer.md	327	
+ExitAfterTeardown	function	Engine	namespace	23	architecture/components/platform_layer.md	335	
+EndWithMessage	function	Engine	namespace	23	architecture/components/platform_layer.md	336	
+FailFast	function	Engine	namespace	23	architecture/components/platform_layer.md	337	
+PlatformThread	class	Engine	namespace	23	architecture/components/platform_layer.md	341	
+JobQueue	class	Engine	namespace	23	architecture/components/platform_layer.md	349	
+IsDefaultFloatEnvironment	function	Engine	namespace	23	architecture/components/platform_layer.md	356	
+ApplyDefaultFloatEnvironment	function	Engine	namespace	23	architecture/components/platform_layer.md	357	
+CrashFileKind	enum	Engine	namespace	23	architecture/components/platform_layer.md	360	CurrentLog,Settings,DeviceRemovalData
+CrashContext	class	Engine	namespace	23	architecture/components/platform_layer.md	366	
+SystemSummary	forward	Engine	namespace	23	architecture/components/platform_layer.md	376	
+System	function	Engine	namespace	23	architecture/components/platform_layer.md	377	
+HttpsRequest	struct	Engine	namespace	23	architecture/components/platform_layer.md	378	
+url	field	Engine	struct HttpsRequest	23	architecture/components/platform_layer.md	380	public
+contentType	field	Engine	struct HttpsRequest	23	architecture/components/platform_layer.md	381	public
+body	field	Engine	struct HttpsRequest	23	architecture/components/platform_layer.md	382	public
+timeout	field	Engine	struct HttpsRequest	23	architecture/components/platform_layer.md	383	public
+HttpsResponse	struct	Engine	namespace	23	architecture/components/platform_layer.md	386	
+status	field	Engine	struct HttpsResponse	23	architecture/components/platform_layer.md	388	public
+body	field	Engine	struct HttpsResponse	23	architecture/components/platform_layer.md	389	public
+HttpsError	enum	Engine	namespace	23	architecture/components/platform_layer.md	391	NotHttps,Offline,Timeout,CertificateRejected,Other
+HttpsClient	class	Engine	namespace	23	architecture/components/platform_layer.md	399	
+ClipboardText	function	Engine	namespace	23	architecture/components/platform_layer.md	404	
+SetClipboardText	function	Engine	namespace	23	architecture/components/platform_layer.md	405	
+OpenWebAddress	function	Engine	namespace	23	architecture/components/platform_layer.md	406	
+AudioEndpointChange	enum	Engine	namespace	23	architecture/components/platform_layer.md	407	DefaultChanged,Added,Removed,StateChanged
+SetAudioEndpointListener	function	Engine	namespace	23	architecture/components/platform_layer.md	414	
+ScreenshotImage	struct	Engine	namespace	23	architecture/components/platform_layer.md	415	
+size	field	Engine	struct ScreenshotImage	23	architecture/components/platform_layer.md	417	public
+rgba8TopDown	field	Engine	struct ScreenshotImage	23	architecture/components/platform_layer.md	418	public
+rowPitch	field	Engine	struct ScreenshotImage	23	architecture/components/platform_layer.md	419	public
+ScreenshotWriter	class	Engine	namespace	23	architecture/components/platform_layer.md	422	
+Engine	namespace	(none)	file	31	architecture/components/animation_and_vfx/README.md	138	
+PresentationTime	struct	Engine	namespace	31	architecture/components/animation_and_vfx/README.md	141	
+scaled	field	Engine	struct PresentationTime	31	architecture/components/animation_and_vfx/README.md	143	public
+unscaled	field	Engine	struct PresentationTime	31	architecture/components/animation_and_vfx/README.md	144	public
+real	field	Engine	struct PresentationTime	31	architecture/components/animation_and_vfx/README.md	145	public
+PresentationClock	class	Engine	namespace	31	architecture/components/animation_and_vfx/README.md	148	
+ShatterPayload	struct	Engine	namespace	31	architecture/components/animation_and_vfx/README.md	158	
+mesh	field	Engine	struct ShatterPayload	31	architecture/components/animation_and_vfx/README.md	160	public
+transform	field	Engine	struct ShatterPayload	31	architecture/components/animation_and_vfx/README.md	161	public
+fraction	field	Engine	struct ShatterPayload	31	architecture/components/animation_and_vfx/README.md	162	public
+paletteIndex	field	Engine	struct ShatterPayload	31	architecture/components/animation_and_vfx/README.md	163	public
+ParticleTypeId	struct	Engine	namespace	31	architecture/components/animation_and_vfx/README.md	166	
+index	field	Engine	struct ParticleTypeId	31	architecture/components/animation_and_vfx/README.md	168	public
+ParticleBlend	enum	Engine	namespace	31	architecture/components/animation_and_vfx/README.md	170	Glow,Smoke
+TerrainRule	enum	Engine	namespace	31	architecture/components/animation_and_vfx/README.md	175	None,Bounce,DieOnContact
+ParticleEmission	struct	Engine	namespace	31	architecture/components/animation_and_vfx/README.md	182	
+kind	field	Engine	struct ParticleEmission	31	architecture/components/animation_and_vfx/README.md	184	public
+position	field	Engine	struct ParticleEmission	31	architecture/components/animation_and_vfx/README.md	185	public
+velocity	field	Engine	struct ParticleEmission	31	architecture/components/animation_and_vfx/README.md	186	public
+size	field	Engine	struct ParticleEmission	31	architecture/components/animation_and_vfx/README.md	187	public
+color	field	Engine	struct ParticleEmission	31	architecture/components/animation_and_vfx/README.md	188	public
+ParticlePool	class	Engine	namespace	31	architecture/components/animation_and_vfx/README.md	191	
+ShatterEffects	class	Engine	namespace	31	architecture/components/animation_and_vfx/README.md	201	
+ScreenEffects	class	Engine	namespace	31	architecture/components/animation_and_vfx/README.md	210	
+Species	namespace	(none)	file	31	architecture/components/animation_and_vfx/README.md	221	
+EffectKind	forward	Species	namespace	31	architecture/components/animation_and_vfx/README.md	224	
+EffectEventId	struct	Species	namespace	31	architecture/components/animation_and_vfx/README.md	226	
+tick	field	Species	struct EffectEventId	31	architecture/components/animation_and_vfx/README.md	228	public
+emitter	field	Species	struct EffectEventId	31	architecture/components/animation_and_vfx/README.md	229	public
+sequence	field	Species	struct EffectEventId	31	architecture/components/animation_and_vfx/README.md	230	public
+EffectEvent	struct	Species	namespace	31	architecture/components/animation_and_vfx/README.md	233	
+kind	field	Species	struct EffectEvent	31	architecture/components/animation_and_vfx/README.md	235	public
+id	field	Species	struct EffectEvent	31	architecture/components/animation_and_vfx/README.md	236	public
+subject	field	Species	struct EffectEvent	31	architecture/components/animation_and_vfx/README.md	237	public
+position	field	Species	struct EffectEvent	31	architecture/components/animation_and_vfx/README.md	238	public
+velocity	field	Species	struct EffectEvent	31	architecture/components/animation_and_vfx/README.md	239	public
+direction	field	Species	struct EffectEvent	31	architecture/components/animation_and_vfx/README.md	240	public
+colorId	field	Species	struct EffectEvent	31	architecture/components/animation_and_vfx/README.md	241	public
+a	field	Species	struct EffectEvent	31	architecture/components/animation_and_vfx/README.md	242	public
+b	field	Species	struct EffectEvent	31	architecture/components/animation_and_vfx/README.md	243	public
+shatter	field	Species	struct EffectEvent	31	architecture/components/animation_and_vfx/README.md	244	public
+ParticleKind	enum	Species	namespace	31	architecture/components/animation_and_vfx/README.md	248	RocketTrail,ExplosionCore,ExplosionDebris,MuzzleFlare,Fire,ControlFlash,Spark,BlueSpark,Casing,MissileTrail,MissileFire,WorkerFire,Leaf,Sickness,SpeedBoostTrail,FireballFlame,Volcano
+ExplainerPlayer	class	Species	namespace	31	architecture/components/animation_and_vfx/README.md	269	
+VfxRuntime	class	Species	namespace	31	architecture/components/animation_and_vfx/README.md	276	
+Engine	namespace	(none)	file	34	architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md	18	
+FootState	enum	Engine	namespace	34	architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md	21	OnGround,Swinging,Pouncing
+LegTuning	struct	Engine	namespace	34	architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md	28	
+lift	field	Engine	struct LegTuning	34	architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md	30	public
+idealSlope	field	Engine	struct LegTuning	34	architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md	31	public
+swingDuration	field	Engine	struct LegTuning	34	architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md	32	public
+lookAhead	field	Engine	struct LegTuning	34	architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md	33	public
+Species	namespace	(none)	file	34	architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md	38	
+ProceduralAnimator	class	Species	namespace	34	architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md	41	
+Engine	namespace	(none)	file	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	18	
+ParticleSlot	struct	Engine	namespace	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	21	
+position	field	Engine	struct ParticleSlot	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	23	public
+birth	field	Engine	struct ParticleSlot	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	24	public
+velocity	field	Engine	struct ParticleSlot	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	25	public
+size	field	Engine	struct ParticleSlot	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	26	public
+color	field	Engine	struct ParticleSlot	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	27	public
+kind	field	Engine	struct ParticleSlot	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	28	public
+ParticleType	struct	Engine	namespace	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	31	
+life	field	Engine	struct ParticleType	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	33	public
+typeSize	field	Engine	struct ParticleType	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	33	public
+gravity	field	Engine	struct ParticleType	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	33	public
+friction	field	Engine	struct ParticleType	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	33	public
+color1	field	Engine	struct ParticleType	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	34	public
+color2	field	Engine	struct ParticleType	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	34	public
+blend	field	Engine	struct ParticleType	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	35	public
+terrainRule	field	Engine	struct ParticleType	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	35	public
+priorityClass	field	Engine	struct ParticleType	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	35	public
+cap	field	Engine	struct ParticleType	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	35	public
+lodFull	field	Engine	struct ParticleType	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	36	public
+lodCutoff	field	Engine	struct ParticleType	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	36	public
+Shard	struct	Engine	namespace	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	39	
+center	field	Engine	struct Shard	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	41	public
+deathTime	field	Engine	struct Shard	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	42	public
+velocity	field	Engine	struct Shard	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	43	public
+tumbler	field	Engine	struct Shard	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	44	public
+corner0	field	Engine	struct Shard	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	45	public
+corner1	field	Engine	struct Shard	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	45	public
+corner2	field	Engine	struct Shard	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	45	public
+normal	field	Engine	struct Shard	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	46	public
+color	field	Engine	struct Shard	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	47	public
+Tumbler	struct	Engine	namespace	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	50	
+rotation	field	Engine	struct Tumbler	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	52	public
+angularVelocity	field	Engine	struct Tumbler	41	architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md	53	public
+Engine	namespace	(none)	file	45	architecture/components/audio_engine/README.md	60	
+Seconds	using	Engine	namespace	45	architecture/components/audio_engine/README.md	63	double
+Decibels	using	Engine	namespace	45	architecture/components/audio_engine/README.md	64	float
+SoundPosition	enum	Engine	namespace	45	architecture/components/audio_engine/README.md	67	Screen2d,WorldFixed,Attached
+SoundSharing	enum	Engine	namespace	45	architecture/components/audio_engine/README.md	71	PerTrigger,SharedRandom,SharedNearest
+SoundLoop	enum	Engine	namespace	45	architecture/components/audio_engine/README.md	75	Once,Loop,NoteLoop
+SoundAudience	enum	Engine	namespace	45	architecture/components/audio_engine/README.md	79	All,OwnGroup,OtherGroup,NoGroup
+SoundParamKind	enum	Engine	namespace	45	architecture/components/audio_engine/README.md	83	Fixed,Random,Linked
+SoundParamUpdate	enum	Engine	namespace	45	architecture/components/audio_engine/README.md	87	Continuous,PerNote
+SoundLink	enum	Engine	namespace	45	architecture/components/audio_engine/README.md	91	None,Height,PosX,Altitude,PosZ,Speed,CameraDistance,ObjectAge,GroupsNearby,TimeRemaining,ObjectsNearby
+EnvelopeStage	enum	Engine	namespace	45	architecture/components/audio_engine/README.md	95	Attack,Hold,Release
+VoiceState	enum	Engine	namespace	45	architecture/components/audio_engine/README.md	99	Pending,Virtual,Real,Retired
+DspFilterKind	enum	Engine	namespace	45	architecture/components/audio_engine/README.md	104	Chorus,Compressor,Distortion,StereoEcho,Flanger,StandardGargle,RoomReverb,ParametricEq,StudioReverb,ResonantLowPass,BitCrusher,Gargle,Echo,SimpleReverb
+AudioBus	enum	Engine	namespace	45	architecture/components/audio_engine/README.md	110	Ui,Announcer,Voice,World,Ambience,Music
+StopMatch	enum	Engine	namespace	45	architecture/components/audio_engine/README.md	114	ExactEvent,SourcePrefix,Everything
+MatchPhase	enum	Engine	namespace	45	architecture/components/audio_engine/README.md	118	NoMatch,Countdown,Running,Ended
+EmitterId	struct	Engine	namespace	45	architecture/components/audio_engine/README.md	123	
+value	field	Engine	struct EmitterId	45	architecture/components/audio_engine/README.md	125	public
+AudienceGroup	struct	Engine	namespace	45	architecture/components/audio_engine/README.md	127	
+value	field	Engine	struct AudienceGroup	45	architecture/components/audio_engine/README.md	129	public
+SoundVoiceId	struct	Engine	namespace	45	architecture/components/audio_engine/README.md	132	
+slot	field	Engine	struct SoundVoiceId	45	architecture/components/audio_engine/README.md	134	public
+generation	field	Engine	struct SoundVoiceId	45	architecture/components/audio_engine/README.md	135	public
+TriggerCommand	struct	Engine	namespace	45	architecture/components/audio_engine/README.md	138	
+source	field	Engine	struct TriggerCommand	45	architecture/components/audio_engine/README.md	140	public
+event	field	Engine	struct TriggerCommand	45	architecture/components/audio_engine/README.md	141	public
+emitter	field	Engine	struct TriggerCommand	45	architecture/components/audio_engine/README.md	142	public
+group	field	Engine	struct TriggerCommand	45	architecture/components/audio_engine/README.md	143	public
+position	field	Engine	struct TriggerCommand	45	architecture/components/audio_engine/README.md	144	public
+velocity	field	Engine	struct TriggerCommand	45	architecture/components/audio_engine/README.md	145	public
+issueTime	field	Engine	struct TriggerCommand	45	architecture/components/audio_engine/README.md	146	public
+StopCommand	struct	Engine	namespace	45	architecture/components/audio_engine/README.md	149	
+emitter	field	Engine	struct StopCommand	45	architecture/components/audio_engine/README.md	151	public
+match	field	Engine	struct StopCommand	45	architecture/components/audio_engine/README.md	152	public
+source	field	Engine	struct StopCommand	45	architecture/components/audio_engine/README.md	153	public
+event	field	Engine	struct StopCommand	45	architecture/components/audio_engine/README.md	154	public
+issueTime	field	Engine	struct StopCommand	45	architecture/components/audio_engine/README.md	155	public
+EmitterUpdate	struct	Engine	namespace	45	architecture/components/audio_engine/README.md	158	
+emitter	field	Engine	struct EmitterUpdate	45	architecture/components/audio_engine/README.md	160	public
+present	field	Engine	struct EmitterUpdate	45	architecture/components/audio_engine/README.md	161	public
+position	field	Engine	struct EmitterUpdate	45	architecture/components/audio_engine/README.md	162	public
+velocity	field	Engine	struct EmitterUpdate	45	architecture/components/audio_engine/README.md	163	public
+heightAboveTerrain	field	Engine	struct EmitterUpdate	45	architecture/components/audio_engine/README.md	164	public
+age	field	Engine	struct EmitterUpdate	45	architecture/components/audio_engine/README.md	165	public
+groupsNearby	field	Engine	struct EmitterUpdate	45	architecture/components/audio_engine/README.md	166	public
+objectsNearby	field	Engine	struct EmitterUpdate	45	architecture/components/audio_engine/README.md	167	public
+ListenerUpdate	struct	Engine	namespace	45	architecture/components/audio_engine/README.md	170	
+position	field	Engine	struct ListenerUpdate	45	architecture/components/audio_engine/README.md	172	public
+front	field	Engine	struct ListenerUpdate	45	architecture/components/audio_engine/README.md	173	public
+up	field	Engine	struct ListenerUpdate	45	architecture/components/audio_engine/README.md	174	public
+velocity	field	Engine	struct ListenerUpdate	45	architecture/components/audio_engine/README.md	175	public
+heightAboveTerrain	field	Engine	struct ListenerUpdate	45	architecture/components/audio_engine/README.md	176	public
+MatchState	struct	Engine	namespace	45	architecture/components/audio_engine/README.md	179	
+phase	field	Engine	struct MatchState	45	architecture/components/audio_engine/README.md	181	public
+localGroup	field	Engine	struct MatchState	45	architecture/components/audio_engine/README.md	182	public
+gameSpeed	field	Engine	struct MatchState	45	architecture/components/audio_engine/README.md	183	public
+timeRemaining	field	Engine	struct MatchState	45	architecture/components/audio_engine/README.md	184	public
+CommandWriter	class	Engine	namespace	45	architecture/components/audio_engine/README.md	187	
+AudioResult	struct	Engine	namespace	45	architecture/components/audio_engine/README.md	211	
+kind	field	Engine	struct AudioResult	45	architecture/components/audio_engine/README.md	213	public
+request	field	Engine	struct AudioResult	45	architecture/components/audio_engine/README.md	214	public
+count	field	Engine	struct AudioResult	45	architecture/components/audio_engine/README.md	215	public
+playing	field	Engine	struct AudioResult	45	architecture/components/audio_engine/README.md	216	public
+voice	field	Engine	struct AudioResult	45	architecture/components/audio_engine/README.md	217	public
+AudioEngine	class	Engine	namespace	45	architecture/components/audio_engine/README.md	220	
+VoiceBackend	class	Engine	namespace	45	architecture/components/audio_engine/README.md	230	
+Engine	namespace	(none)	file	52	architecture/components/data_schemas/README.md	85	
+FieldType	enum	Engine	namespace	52	architecture/components/data_schemas/README.md	89	Boolean,Integer,Count,Ticks,SimDecimal,PresentationDecimal,Text,StableId,StringId,AssetRef,AssetMember,RecordRef,Enum,EnumSet,Vec3Value,Direction,ColorRgba8,ColorMultiplier,Limit,List,Object
+SimPrecision	enum	Engine	namespace	52	architecture/components/data_schemas/README.md	113	Binary32Rounded,Binary64
+Presence	enum	Engine	namespace	52	architecture/components/data_schemas/README.md	118	Required,Defaulted,AbsenceMeaningful,Derived
+SchemaVersion	struct	Engine	namespace	52	architecture/components/data_schemas/README.md	127	
+major	field	Engine	struct SchemaVersion	52	architecture/components/data_schemas/README.md	129	public
+minor	field	Engine	struct SchemaVersion	52	architecture/components/data_schemas/README.md	130	public
+FieldSpec	struct	Engine	namespace	52	architecture/components/data_schemas/README.md	133	
+key	field	Engine	struct FieldSpec	52	architecture/components/data_schemas/README.md	135	public
+type	field	Engine	struct FieldSpec	52	architecture/components/data_schemas/README.md	136	public
+presence	field	Engine	struct FieldSpec	52	architecture/components/data_schemas/README.md	137	public
+unit	field	Engine	struct FieldSpec	52	architecture/components/data_schemas/README.md	138	public
+minimum	field	Engine	struct FieldSpec	52	architecture/components/data_schemas/README.md	139	public
+maximum	field	Engine	struct FieldSpec	52	architecture/components/data_schemas/README.md	140	public
+maxChars	field	Engine	struct FieldSpec	52	architecture/components/data_schemas/README.md	141	public
+precision	field	Engine	struct FieldSpec	52	architecture/components/data_schemas/README.md	142	public
+refKind	field	Engine	struct FieldSpec	52	architecture/components/data_schemas/README.md	143	public
+orderCarriesMeaning	field	Engine	struct FieldSpec	52	architecture/components/data_schemas/README.md	144	public
+defaultKey	field	Engine	struct FieldSpec	52	architecture/components/data_schemas/README.md	145	public
+RecordSchema	struct	Engine	namespace	52	architecture/components/data_schemas/README.md	148	
+id	field	Engine	struct RecordSchema	52	architecture/components/data_schemas/README.md	150	public
+version	field	Engine	struct RecordSchema	52	architecture/components/data_schemas/README.md	151	public
+fields	field	Engine	struct RecordSchema	52	architecture/components/data_schemas/README.md	152	public
+simulationRelevant	field	Engine	struct RecordSchema	52	architecture/components/data_schemas/README.md	153	public
+cookedAs	field	Engine	struct RecordSchema	52	architecture/components/data_schemas/README.md	154	public
+SchemaRegistry	class	Engine	namespace	52	architecture/components/data_schemas/README.md	158	
+SourceLocation	struct	Engine	namespace	52	architecture/components/data_schemas/README.md	167	
+file	field	Engine	struct SourceLocation	52	architecture/components/data_schemas/README.md	169	public
+line	field	Engine	struct SourceLocation	52	architecture/components/data_schemas/README.md	170	public
+column	field	Engine	struct SourceLocation	52	architecture/components/data_schemas/README.md	171	public
+fieldPath	field	Engine	struct SourceLocation	52	architecture/components/data_schemas/README.md	172	public
+Severity	enum	Engine	namespace	52	architecture/components/data_schemas/README.md	174	Error,Warning,Information
+Diagnostic	struct	Engine	namespace	52	architecture/components/data_schemas/README.md	180	
+diagnosticClass	field	Engine	struct Diagnostic	52	architecture/components/data_schemas/README.md	182	public
+severity	field	Engine	struct Diagnostic	52	architecture/components/data_schemas/README.md	183	public
+at	field	Engine	struct Diagnostic	52	architecture/components/data_schemas/README.md	184	public
+also	field	Engine	struct Diagnostic	52	architecture/components/data_schemas/README.md	185	public
+message	field	Engine	struct Diagnostic	52	architecture/components/data_schemas/README.md	186	public
+AuthoringParser	class	Engine	namespace	52	architecture/components/data_schemas/README.md	191	
+RecordValidator	class	Engine	namespace	52	architecture/components/data_schemas/README.md	197	
+RecordCooker	class	Engine	namespace	52	architecture/components/data_schemas/README.md	203	
+CanonicalWriter	class	Engine	namespace	52	architecture/components/data_schemas/README.md	209	
+SchemaMigration	class	Engine	namespace	52	architecture/components/data_schemas/README.md	216	
+RecordView	forward	Engine	namespace	52	architecture/components/data_schemas/README.md	224	
+LoadError	enum	Engine	namespace	52	architecture/components/data_schemas/README.md	225	WrongSchema,WrongVersion,HashMismatch,Truncated,Malformed
+RecordLoader	class	Engine	namespace	52	architecture/components/data_schemas/README.md	234	
+Engine	namespace	(none)	file	54	architecture/components/data_schemas/config_input_and_strings.md	20	
+SettingType	enum	Engine	namespace	54	architecture/components/data_schemas/config_input_and_strings.md	23	Boolean,Integer,Decimal,Text,Enum,BindingNode
+ApplyScope	enum	Engine	namespace	54	architecture/components/data_schemas/config_input_and_strings.md	32	Immediate,Renderer,AudioRestart,None
+SettingSpec	struct	Engine	namespace	54	architecture/components/data_schemas/config_input_and_strings.md	41	
+key	field	Engine	struct SettingSpec	54	architecture/components/data_schemas/config_input_and_strings.md	43	public
+type	field	Engine	struct SettingSpec	54	architecture/components/data_schemas/config_input_and_strings.md	44	public
+minimum	field	Engine	struct SettingSpec	54	architecture/components/data_schemas/config_input_and_strings.md	45	public
+maximum	field	Engine	struct SettingSpec	54	architecture/components/data_schemas/config_input_and_strings.md	46	public
+enumerators	field	Engine	struct SettingSpec	54	architecture/components/data_schemas/config_input_and_strings.md	47	public
+defaultValue	field	Engine	struct SettingSpec	54	architecture/components/data_schemas/config_input_and_strings.md	48	public
+scope	field	Engine	struct SettingSpec	54	architecture/components/data_schemas/config_input_and_strings.md	49	public
+inert	field	Engine	struct SettingSpec	54	architecture/components/data_schemas/config_input_and_strings.md	50	public
+SettingsDefaults	class	Engine	namespace	54	architecture/components/data_schemas/config_input_and_strings.md	54	
+SettingsFileContent	forward	Engine	namespace	54	architecture/components/data_schemas/config_input_and_strings.md	61	
+SettingsFile	class	Engine	namespace	54	architecture/components/data_schemas/config_input_and_strings.md	63	
+Engine	namespace	(none)	file	54	architecture/components/data_schemas/config_input_and_strings.md	72	
+InputMode	enum	Engine	namespace	54	architecture/components/data_schemas/config_input_and_strings.md	75	KeyboardMouse,Gamepad
+StringTableBuilder	class	Engine	namespace	54	architecture/components/data_schemas/config_input_and_strings.md	82	
+StringTableView	class	Engine	namespace	54	architecture/components/data_schemas/config_input_and_strings.md	90	
+Species	namespace	(none)	file	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	18	
+ActorStats	struct	Species	namespace	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	22	
+kind	field	Species	struct ActorStats	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	24	public
+health	field	Species	struct ActorStats	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	25	public
+speed	field	Species	struct ActorStats	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	26	public
+rate	field	Species	struct ActorStats	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	27	public
+actorRate	field	Species	struct ActorStats	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	28	public
+CrateOutcomeEntry	struct	Species	namespace	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	32	
+outcome	field	Species	struct CrateOutcomeEntry	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	34	public
+outcomeClass	field	Species	struct CrateOutcomeEntry	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	35	public
+good	field	Species	struct CrateOutcomeEntry	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	36	public
+bad	field	Species	struct CrateOutcomeEntry	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	37	public
+start	field	Species	struct CrateOutcomeEntry	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	38	public
+comebackWeight	field	Species	struct CrateOutcomeEntry	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	39	public
+delivery	field	Species	struct CrateOutcomeEntry	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	40	public
+ExplainerKey	forward	Species	namespace	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	44	
+ExplainerAnimation	struct	Species	namespace	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	45	
+mode	field	Species	struct ExplainerAnimation	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	47	public
+width	field	Species	struct ExplainerAnimation	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	48	public
+height	field	Species	struct ExplainerAnimation	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	49	public
+loopStart	field	Species	struct ExplainerAnimation	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	50	public
+loopEnd	field	Species	struct ExplainerAnimation	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	51	public
+objects	field	Species	struct ExplainerAnimation	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	52	public
+Engine	namespace	(none)	file	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	57	
+ParamKind	enum	Engine	namespace	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	60	Fixed,Random,Linked
+ParamUpdate	enum	Engine	namespace	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	66	Continuous,PerNote
+ParamLink	enum	Engine	namespace	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	72	None,Height,PosX,Altitude,PosZ,Speed,CameraDistance,ObjectAge,GroupsNearby,TimeRemaining,ObjectsNearby
+SoundParam	struct	Engine	namespace	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	87	
+kind	field	Engine	struct SoundParam	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	89	public
+value	field	Engine	struct SoundParam	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	90	public
+lo	field	Engine	struct SoundParam	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	91	public
+hi	field	Engine	struct SoundParam	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	92	public
+inLo	field	Engine	struct SoundParam	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	93	public
+inHi	field	Engine	struct SoundParam	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	94	public
+outLo	field	Engine	struct SoundParam	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	95	public
+outHi	field	Engine	struct SoundParam	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	96	public
+smoothing	field	Engine	struct SoundParam	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	97	public
+link	field	Engine	struct SoundParam	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	98	public
+update	field	Engine	struct SoundParam	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	99	public
+EffectKind	enum	Engine	namespace	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	102	Chorus,Compressor,Distortion,StereoEcho,Flanger,StandardGargle,RoomReverb,ParametricEqualizer,StudioReverb,ResonantLowPass,BitCrusher,Gargle,Echo,SimpleReverb
+EffectBinding	struct	Engine	namespace	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	120	
+kind	field	Engine	struct EffectBinding	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	122	public
+params	field	Engine	struct EffectBinding	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	123	public
+count	field	Engine	struct EffectBinding	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	124	public
+SoundLayerDef	forward	Engine	namespace	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	127	
+SoundEventDef	struct	Engine	namespace	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	128	
+fullId	field	Engine	struct SoundEventDef	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	130	public
+cooldownSeconds	field	Engine	struct SoundEventDef	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	131	public
+layers	field	Engine	struct SoundEventDef	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	132	public
+SoundSourceDef	struct	Engine	namespace	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	134	
+source	field	Engine	struct SoundSourceDef	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	136	public
+events	field	Engine	struct SoundSourceDef	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	137	public
+DspParamDesc	struct	Engine	namespace	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	139	
+name	field	Engine	struct DspParamDesc	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	141	public
+minimum	field	Engine	struct DspParamDesc	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	142	public
+maximum	field	Engine	struct DspParamDesc	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	143	public
+declaredDefault	field	Engine	struct DspParamDesc	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	144	public
+schemaDefault	field	Engine	struct DspParamDesc	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	145	public
+integer	field	Engine	struct DspParamDesc	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	146	public
+DspFilterDef	struct	Engine	namespace	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	149	
+kind	field	Engine	struct DspFilterDef	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	151	public
+params	field	Engine	struct DspFilterDef	57	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md	152	public
+Engine	namespace	(none)	file	59	architecture/components/data_schemas/import_and_build_records.md	18	
+TextureKind	enum	Engine	namespace	59	architecture/components/data_schemas/import_and_build_records.md	22	Color,Ui,Normal,Mask,ExactData,CpuTable
+ColorSpace	enum	Engine	namespace	59	architecture/components/data_schemas/import_and_build_records.md	31	Srgb,Linear
+AlphaMode	enum	Engine	namespace	59	architecture/components/data_schemas/import_and_build_records.md	36	Opaque,Straight,Premultiplied,Additive,Cutout
+MipPolicy	enum	Engine	namespace	59	architecture/components/data_schemas/import_and_build_records.md	44	Full,None
+SamplerKind	enum	Engine	namespace	59	architecture/components/data_schemas/import_and_build_records.md	50	LinearClamp,LinearWrap,PointClamp,PointMagnifyClamp
+TintMarking	enum	Engine	namespace	59	architecture/components/data_schemas/import_and_build_records.md	58	None,VertexWeight,MaterialFlag
+MeshRole	enum	Engine	namespace	59	architecture/components/data_schemas/import_and_build_records.md	64	Render,Collision
+TextureImportRecord	forward	Engine	namespace	59	architecture/components/data_schemas/import_and_build_records.md	70	
+MeshImportRecord	forward	Engine	namespace	59	architecture/components/data_schemas/import_and_build_records.md	71	
+AudioImportRecord	forward	Engine	namespace	59	architecture/components/data_schemas/import_and_build_records.md	72	
+EngineAssetTable	forward	Engine	namespace	59	architecture/components/data_schemas/import_and_build_records.md	73	
+EditionManifest	forward	Engine	namespace	59	architecture/components/data_schemas/import_and_build_records.md	74	
+ImportRecordReader	class	Engine	namespace	59	architecture/components/data_schemas/import_and_build_records.md	77	
+Engine	namespace	(none)	file	61	architecture/components/data_schemas/map_schema.md	22	
+Limit	struct	Engine	namespace	61	architecture/components/data_schemas/map_schema.md	26	
+Form	enum	Engine	struct	61	architecture/components/data_schemas/map_schema.md	28	Absent,None,Value,Unlimited
+value	field	Engine	struct Limit	61	architecture/components/data_schemas/map_schema.md	35	public
+Species	namespace	(none)	file	61	architecture/components/data_schemas/map_schema.md	40	
+MatchMode	forward	Species	namespace	61	architecture/components/data_schemas/map_schema.md	44	
+MapOption	enum	Species	namespace	61	architecture/components/data_schemas/map_schema.md	46	NoCatchUpBonus,InstantSpawnNodeCapture,GateReinforcementCount,GateTransportCap,NoGunTurrets,AttackerReinforcementCount,DefenderReinforcementCount,DefenderReinforcementPower,AttackerReinforcementPower,SameTeamBeamDishLinks,NoBeamDishAiming,AirstrikeThreshold,VisitorFactionPosition,AttackerReinforcementPowerOption,DefenderReinforcementPowerOption
+MapEffect	enum	Species	namespace	61	architecture/components/data_schemas/map_schema.md	65	Snow,Lightning,DustVortices,EssenceOrbRain,SpecialLightRig
+MapDifficulty	enum	Species	namespace	61	architecture/components/data_schemas/map_schema.md	73	Basic,Intermediate,Advanced
+SiegeSide	enum	Species	namespace	61	architecture/components/data_schemas/map_schema.md	79	Defending,Attacking
+CoopGroup	enum	Species	namespace	61	architecture/components/data_schemas/map_schema.md	84	None,One,Two
+CameraTransition	enum	Species	namespace	61	architecture/components/data_schemas/map_schema.md	90	Move,Cut
+RoutePointKind	enum	Species	namespace	61	architecture/components/data_schemas/map_schema.md	95	Position,Ground,Structure
+MatchOptions	forward	Species	namespace	61	architecture/components/data_schemas/map_schema.md	102	
+StartPosition	struct	Species	namespace	61	architecture/components/data_schemas/map_schema.md	103	
+position	field	Species	struct StartPosition	61	architecture/components/data_schemas/map_schema.md	105	public
+cameraView	field	Species	struct StartPosition	61	architecture/components/data_schemas/map_schema.md	106	public
+side	field	Species	struct StartPosition	61	architecture/components/data_schemas/map_schema.md	107	public
+group	field	Species	struct StartPosition	61	architecture/components/data_schemas/map_schema.md	108	public
+MapLight	struct	Species	namespace	61	architecture/components/data_schemas/map_schema.md	111	
+front	field	Species	struct MapLight	61	architecture/components/data_schemas/map_schema.md	113	public
+color	field	Species	struct MapLight	61	architecture/components/data_schemas/map_schema.md	114	public
+CameraViewRecord	struct	Species	namespace	61	architecture/components/data_schemas/map_schema.md	116	
+name	field	Species	struct CameraViewRecord	61	architecture/components/data_schemas/map_schema.md	118	public
+position	field	Species	struct CameraViewRecord	61	architecture/components/data_schemas/map_schema.md	119	public
+front	field	Species	struct CameraViewRecord	61	architecture/components/data_schemas/map_schema.md	120	public
+up	field	Species	struct CameraViewRecord	61	architecture/components/data_schemas/map_schema.md	121	public
+CameraAnimationRecord	struct	Species	namespace	61	architecture/components/data_schemas/map_schema.md	123	
+name	field	Species	struct CameraAnimationRecord	61	architecture/components/data_schemas/map_schema.md	125	public
+steps	field	Species	struct CameraAnimationRecord	61	architecture/components/data_schemas/map_schema.md	126	public
+StartingForcesRecord	forward	Species	namespace	61	architecture/components/data_schemas/map_schema.md	128	
+RouteRecord	struct	Species	namespace	61	architecture/components/data_schemas/map_schema.md	129	
+id	field	Species	struct RouteRecord	61	architecture/components/data_schemas/map_schema.md	131	public
+points	field	Species	struct RouteRecord	61	architecture/components/data_schemas/map_schema.md	132	public
+MapHeaderView	forward	Species	namespace	61	architecture/components/data_schemas/map_schema.md	135	
+MapDefinitionView	forward	Species	namespace	61	architecture/components/data_schemas/map_schema.md	136	
+MapLoader	class	Species	namespace	61	architecture/components/data_schemas/map_schema.md	138	
+Species	namespace	(none)	file	63	architecture/components/data_schemas/map_structure_records.md	20	
+StructureKind	forward	Species	namespace	63	architecture/components/data_schemas/map_structure_records.md	24	
+StructureRecord	struct	Species	namespace	63	architecture/components/data_schemas/map_structure_records.md	27	
+kind	field	Species	struct StructureRecord	63	architecture/components/data_schemas/map_structure_records.md	29	public
+id	field	Species	struct StructureRecord	63	architecture/components/data_schemas/map_structure_records.md	30	public
+x	field	Species	struct StructureRecord	63	architecture/components/data_schemas/map_structure_records.md	31	public
+z	field	Species	struct StructureRecord	63	architecture/components/data_schemas/map_structure_records.md	32	public
+team	field	Species	struct StructureRecord	63	architecture/components/data_schemas/map_structure_records.md	33	public
+facing	field	Species	struct StructureRecord	63	architecture/components/data_schemas/map_structure_records.md	34	public
+global	field	Species	struct StructureRecord	63	architecture/components/data_schemas/map_structure_records.md	35	public
+roleTag	field	Species	struct StructureRecord	63	architecture/components/data_schemas/map_structure_records.md	36	public
+fields	field	Species	struct StructureRecord	63	architecture/components/data_schemas/map_structure_records.md	37	public
+StructureLink	struct	Species	namespace	63	architecture/components/data_schemas/map_structure_records.md	41	
+target	field	Species	struct StructureLink	63	architecture/components/data_schemas/map_structure_records.md	43	public
+expected	field	Species	struct StructureLink	63	architecture/components/data_schemas/map_structure_records.md	44	public
+Engine	namespace	(none)	file	65	architecture/components/data_schemas/test_and_telemetry_records.md	18	
+SoakProgressionKind	enum	Engine	namespace	65	architecture/components/data_schemas/test_and_telemetry_records.md	21	Linear,Random,Sequence
+SoakEntryFailure	enum	Engine	namespace	65	architecture/components/data_schemas/test_and_telemetry_records.md	27	ContentHashMismatch
+SoakParticipantRole	enum	Engine	namespace	65	architecture/components/data_schemas/test_and_telemetry_records.md	31	Host,Client
+SoakSequenceItem	forward	Engine	namespace	65	architecture/components/data_schemas/test_and_telemetry_records.md	37	
+SoakTestMap	forward	Engine	namespace	65	architecture/components/data_schemas/test_and_telemetry_records.md	38	
+SoakConfigurationRecord	forward	Engine	namespace	65	architecture/components/data_schemas/test_and_telemetry_records.md	39	
+SoakMatchRow	forward	Engine	namespace	65	architecture/components/data_schemas/test_and_telemetry_records.md	40	
+SoakPassSummary	forward	Engine	namespace	65	architecture/components/data_schemas/test_and_telemetry_records.md	41	
+TelemetrySession	forward	Engine	namespace	65	architecture/components/data_schemas/test_and_telemetry_records.md	42	
+SoakMatchTableWriter	class	Engine	namespace	65	architecture/components/data_schemas/test_and_telemetry_records.md	45	
+WriteTelemetrySession	function	Engine	namespace	65	architecture/components/data_schemas/test_and_telemetry_records.md	52	
+ReadQueuedTelemetrySession	function	Engine	namespace	65	architecture/components/data_schemas/test_and_telemetry_records.md	53	
+Engine	namespace	(none)	file	67	architecture/components/diagnostics_test_and_performance/README.md	113	
+LogLevel	enum	Engine	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	117	Trace,Debug,Info,Warning,Error,Fatal
+LogCategory	enum	Engine	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	126	Platform,Render,Audio,Input,Ui,Content,Simulation,Network,Tools,Diagnostics,Test
+Log	function	Engine	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	140	
+LogHexDump	function	Engine	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	141	
+LogValueDump	function	Engine	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	142	
+SetCategoryLevel	function	Engine	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	143	
+LogStats	struct	Engine	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	144	
+written	field	Engine	struct LogStats	67	architecture/components/diagnostics_test_and_performance/README.md	146	public
+droppedTrace	field	Engine	struct LogStats	67	architecture/components/diagnostics_test_and_performance/README.md	147	public
+droppedDebug	field	Engine	struct LogStats	67	architecture/components/diagnostics_test_and_performance/README.md	148	public
+GetLogStats	function	Engine	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	150	
+FlushLogSynchronously	function	Engine	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	151	
+FatalExit	function	Engine	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	158	
+BlackBox	class	Engine	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	160	
+ProfileTree	class	Engine	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	187	
+RecentFrameTimesMs	function	Engine	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	197	
+CounterSink	class	Engine	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	200	
+CounterProvider	class	Engine	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	207	
+RegisterCounterProvider	function	Engine	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	214	
+UnregisterCounterProvider	function	Engine	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	215	
+DevDrawQueue	class	Engine	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	218	
+SoakProgression	enum	Engine	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	228	Linear,Random,Sequence
+SoakEntry	struct	Engine	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	234	
+mapId	field	Engine	struct SoakEntry	67	architecture/components/diagnostics_test_and_performance/README.md	236	public
+modeId	field	Engine	struct SoakEntry	67	architecture/components/diagnostics_test_and_performance/README.md	237	public
+botTeams	field	Engine	struct SoakEntry	67	architecture/components/diagnostics_test_and_performance/README.md	238	public
+forcedSeed	field	Engine	struct SoakEntry	67	architecture/components/diagnostics_test_and_performance/README.md	239	public
+SoakConfig	struct	Engine	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	241	
+progression	field	Engine	struct SoakConfig	67	architecture/components/diagnostics_test_and_performance/README.md	243	public
+entries	field	Engine	struct SoakConfig	67	architecture/components/diagnostics_test_and_performance/README.md	244	public
+progressionSeed	field	Engine	struct SoakConfig	67	architecture/components/diagnostics_test_and_performance/README.md	245	public
+sessionName	field	Engine	struct SoakConfig	67	architecture/components/diagnostics_test_and_performance/README.md	246	public
+terminationTick	field	Engine	struct SoakConfig	67	architecture/components/diagnostics_test_and_performance/README.md	247	public
+clients	field	Engine	struct SoakConfig	67	architecture/components/diagnostics_test_and_performance/README.md	248	public
+rendering	field	Engine	struct SoakConfig	67	architecture/components/diagnostics_test_and_performance/README.md	249	public
+SoakRunner	class	Engine	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	252	
+TelemetrySessionRecord	forward	Engine	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	260	
+SubmitTelemetry	function	Engine	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	261	
+Species	namespace	(none)	file	67	architecture/components/diagnostics_test_and_performance/README.md	265	
+DebugCommandKind	enum	Species	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	270	KillAllEnemies,SpawnWorkers,SpawnTransport,SpawnCrawlers,SpawnEssenceOrbs,AllowArbitraryPlacement,SpawnAtStructurePorts,SpawnSupplyCrate
+DebugCommand	struct	Species	namespace	67	architecture/components/diagnostics_test_and_performance/README.md	281	
+kind	field	Species	struct DebugCommand	67	architecture/components/diagnostics_test_and_performance/README.md	283	public
+teamSlot	field	Species	struct DebugCommand	67	architecture/components/diagnostics_test_and_performance/README.md	284	public
+point	field	Species	struct DebugCommand	67	architecture/components/diagnostics_test_and_performance/README.md	285	public
+forcedOutcome	field	Species	struct DebugCommand	67	architecture/components/diagnostics_test_and_performance/README.md	286	public
+ENGINE_ASSERT	macro	(pp)	file	67	architecture/components/diagnostics_test_and_performance/README.md	154	
+ENGINE_CHECK	macro	(pp)	file	67	architecture/components/diagnostics_test_and_performance/README.md	155	
+ENGINE_CHECK_INDEX	macro	(pp)	file	67	architecture/components/diagnostics_test_and_performance/README.md	156	
+ENGINE_PROFILE_SCOPE	macro	(pp)	file	67	architecture/components/diagnostics_test_and_performance/README.md	172	
+ENGINE_PROFILE_GPU_SCOPE	macro	(pp)	file	67	architecture/components/diagnostics_test_and_performance/README.md	173	
+Engine	namespace	(none)	file	70	architecture/components/input/README.md	51	
+DeviceClass	enum	Engine	namespace	70	architecture/components/input/README.md	54	KeyboardMouse,Gamepad
+InputMode	enum	Engine	namespace	70	architecture/components/input/README.md	59	KeyboardMouse,Gamepad
+ValueKind	enum	Engine	namespace	70	architecture/components/input/README.md	64	Boolean,Axis1,Axis2
+Condition	enum	Engine	namespace	70	architecture/components/input/README.md	70	Down,Up,Held,Repeat,Position,Move,Release,Zero,Read
+DeviceId	struct	Engine	namespace	70	architecture/components/input/README.md	83	
+value	field	Engine	struct DeviceId	70	architecture/components/input/README.md	85	public
+LocalPlayerId	struct	Engine	namespace	70	architecture/components/input/README.md	87	
+index	field	Engine	struct LocalPlayerId	70	architecture/components/input/README.md	89	public
+ActionId	struct	Engine	namespace	70	architecture/components/input/README.md	91	
+index	field	Engine	struct ActionId	70	architecture/components/input/README.md	93	public
+KeyCode	forward	Engine	namespace	70	architecture/components/input/README.md	96	
+MouseControl	enum	Engine	namespace	70	architecture/components/input/README.md	97	Primary,Secondary,Middle,Motion,RawMotion,Wheel
+PadControl	forward	Engine	namespace	70	architecture/components/input/README.md	106	
+InputEvent	struct	Engine	namespace	70	architecture/components/input/README.md	108	
+Kind	enum	Engine	struct	70	architecture/components/input/README.md	110	Press,Release,Axis,Connect,Disconnect
+kind	field	Engine	struct InputEvent	70	architecture/components/input/README.md	118	public
+osRepeat	field	Engine	struct InputEvent	70	architecture/components/input/README.md	119	public
+deviceClass	field	Engine	struct InputEvent	70	architecture/components/input/README.md	120	public
+device	field	Engine	struct InputEvent	70	architecture/components/input/README.md	121	public
+control	field	Engine	struct InputEvent	70	architecture/components/input/README.md	122	public
+timestampNanoseconds	field	Engine	struct InputEvent	70	architecture/components/input/README.md	123	public
+x	field	Engine	struct InputEvent	70	architecture/components/input/README.md	124	public
+y	field	Engine	struct InputEvent	70	architecture/components/input/README.md	125	public
+ActionValue	struct	Engine	namespace	70	architecture/components/input/README.md	128	
+kind	field	Engine	struct ActionValue	70	architecture/components/input/README.md	130	public
+x	field	Engine	struct ActionValue	70	architecture/components/input/README.md	131	public
+y	field	Engine	struct ActionValue	70	architecture/components/input/README.md	132	public
+device	field	Engine	struct ActionValue	70	architecture/components/input/README.md	133	public
+FrameGates	struct	Engine	namespace	70	architecture/components/input/README.md	136	
+uiWindowOpen	field	Engine	struct FrameGates	70	architecture/components/input/README.md	138	public
+textEntryOpen	field	Engine	struct FrameGates	70	architecture/components/input/README.md	139	public
+windowFocused	field	Engine	struct FrameGates	70	architecture/components/input/README.md	140	public
+PointerState	struct	Engine	namespace	70	architecture/components/input/README.md	143	
+positionPixels	field	Engine	struct PointerState	70	architecture/components/input/README.md	145	public
+wheelNotches	field	Engine	struct PointerState	70	architecture/components/input/README.md	146	public
+deltaPixels	field	Engine	struct PointerState	70	architecture/components/input/README.md	147	public
+wheelDeltaNotches	field	Engine	struct PointerState	70	architecture/components/input/README.md	148	public
+moved	field	Engine	struct PointerState	70	architecture/components/input/README.md	149	public
+InputRouter	class	Engine	namespace	70	architecture/components/input/README.md	152	
+onModeChanged	field	Engine	class InputRouter	70	architecture/components/input/README.md	183	public
+onLayoutChanged	field	Engine	class InputRouter	70	architecture/components/input/README.md	184	public
+DeviceBackEnd	class	Engine	namespace	70	architecture/components/input/README.md	187	
+Engine	namespace	(none)	file	78	architecture/components/renderer/README.md	71	
+FrameKind	enum	Engine	namespace	78	architecture/components/renderer/README.md	74	Match,MainMenu,LoadingView,MapEditor
+PosterState	enum	Engine	namespace	78	architecture/components/renderer/README.md	81	Inactive,Tiling
+TransitionState	enum	Engine	namespace	78	architecture/components/renderer/README.md	86	Finished,Waiting,InProgress
+PresentMode	enum	Engine	namespace	78	architecture/components/renderer/README.md	92	VerticalSync,Uncapped
+RenderConfig	struct	Engine	namespace	78	architecture/components/renderer/README.md	98	
+windowWidth	field	Engine	struct RenderConfig	78	architecture/components/renderer/README.md	100	public
+windowHeight	field	Engine	struct RenderConfig	78	architecture/components/renderer/README.md	101	public
+renderWidth	field	Engine	struct RenderConfig	78	architecture/components/renderer/README.md	102	public
+renderHeight	field	Engine	struct RenderConfig	78	architecture/components/renderer/README.md	103	public
+sampleCount	field	Engine	struct RenderConfig	78	architecture/components/renderer/README.md	104	public
+hdr	field	Engine	struct RenderConfig	78	architecture/components/renderer/README.md	105	public
+lowLatency	field	Engine	struct RenderConfig	78	architecture/components/renderer/README.md	106	public
+presentMode	field	Engine	struct RenderConfig	78	architecture/components/renderer/README.md	107	public
+frameRateCap	field	Engine	struct RenderConfig	78	architecture/components/renderer/README.md	108	public
+invertedStyle	field	Engine	struct RenderConfig	78	architecture/components/renderer/README.md	109	public
+ViewParams	struct	Engine	namespace	78	architecture/components/renderer/README.md	112	
+position	field	Engine	struct ViewParams	78	architecture/components/renderer/README.md	114	public
+front	field	Engine	struct ViewParams	78	architecture/components/renderer/README.md	115	public
+up	field	Engine	struct ViewParams	78	architecture/components/renderer/README.md	116	public
+fovYDegrees	field	Engine	struct ViewParams	78	architecture/components/renderer/README.md	117	public
+SceneSnapshot	class	Engine	namespace	78	architecture/components/renderer/README.md	122	
+FrameInputs	struct	Engine	namespace	78	architecture/components/renderer/README.md	128	
+kind	field	Engine	struct FrameInputs	78	architecture/components/renderer/README.md	130	public
+snapshot	field	Engine	struct FrameInputs	78	architecture/components/renderer/README.md	131	public
+extrapolationTime	field	Engine	struct FrameInputs	78	architecture/components/renderer/README.md	132	public
+lastProcessedSlice	field	Engine	struct FrameInputs	78	architecture/components/renderer/README.md	133	public
+lastCommandFrame	field	Engine	struct FrameInputs	78	architecture/components/renderer/README.md	134	public
+realNow	field	Engine	struct FrameInputs	78	architecture/components/renderer/README.md	135	public
+presentationFrameTime	field	Engine	struct FrameInputs	78	architecture/components/renderer/README.md	136	public
+smoothPresentationTime	field	Engine	struct FrameInputs	78	architecture/components/renderer/README.md	137	public
+view	field	Engine	struct FrameInputs	78	architecture/components/renderer/README.md	138	public
+interfaceVisible	field	Engine	struct FrameInputs	78	architecture/components/renderer/README.md	139	public
+anyUiWindowOpen	field	Engine	struct FrameInputs	78	architecture/components/renderer/README.md	140	public
+matchPaused	field	Engine	struct FrameInputs	78	architecture/components/renderer/README.md	141	public
+FrameRenderer	class	Engine	namespace	78	architecture/components/renderer/README.md	144	
+Engine	namespace	(none)	file	79	architecture/components/renderer/entity_and_overlay_renderers.md	24	
+OrientationMode	enum	Engine	namespace	79	architecture/components/renderer/entity_and_overlay_renderers.md	27	CameraFacing,UprightCard,WorldOriented,Segment
+QuadAnchor	enum	Engine	namespace	79	architecture/components/renderer/entity_and_overlay_renderers.md	34	Center,BottomCenter
+QuadInstance	struct	Engine	namespace	79	architecture/components/renderer/entity_and_overlay_renderers.md	40	
+position	field	Engine	struct QuadInstance	79	architecture/components/renderer/entity_and_overlay_renderers.md	42	public
+endPoint	field	Engine	struct QuadInstance	79	architecture/components/renderer/entity_and_overlay_renderers.md	43	public
+axisRight	field	Engine	struct QuadInstance	79	architecture/components/renderer/entity_and_overlay_renderers.md	44	public
+axisUp	field	Engine	struct QuadInstance	79	architecture/components/renderer/entity_and_overlay_renderers.md	45	public
+halfWidth	field	Engine	struct QuadInstance	79	architecture/components/renderer/entity_and_overlay_renderers.md	46	public
+halfHeight	field	Engine	struct QuadInstance	79	architecture/components/renderer/entity_and_overlay_renderers.md	47	public
+blendStart	field	Engine	struct QuadInstance	79	architecture/components/renderer/entity_and_overlay_renderers.md	48	public
+blendLength	field	Engine	struct QuadInstance	79	architecture/components/renderer/entity_and_overlay_renderers.md	49	public
+rotation	field	Engine	struct QuadInstance	79	architecture/components/renderer/entity_and_overlay_renderers.md	50	public
+color	field	Engine	struct QuadInstance	79	architecture/components/renderer/entity_and_overlay_renderers.md	51	public
+endColor	field	Engine	struct QuadInstance	79	architecture/components/renderer/entity_and_overlay_renderers.md	52	public
+textureIndex	field	Engine	struct QuadInstance	79	architecture/components/renderer/entity_and_overlay_renderers.md	53	public
+uvRect	field	Engine	struct QuadInstance	79	architecture/components/renderer/entity_and_overlay_renderers.md	54	public
+mode	field	Engine	struct QuadInstance	79	architecture/components/renderer/entity_and_overlay_renderers.md	55	public
+anchor	field	Engine	struct QuadInstance	79	architecture/components/renderer/entity_and_overlay_renderers.md	56	public
+InstanceType	struct	Engine	namespace	79	architecture/components/renderer/entity_and_overlay_renderers.md	59	
+entry	field	Engine	struct InstanceType	79	architecture/components/renderer/entity_and_overlay_renderers.md	61	public
+cullRadius	field	Engine	struct InstanceType	79	architecture/components/renderer/entity_and_overlay_renderers.md	62	public
+maxDistance	field	Engine	struct InstanceType	79	architecture/components/renderer/entity_and_overlay_renderers.md	63	public
+CrowdRenderer	class	Engine	namespace	79	architecture/components/renderer/entity_and_overlay_renderers.md	66	
+DevSphereMesh	struct	Engine	namespace	79	architecture/components/renderer/entity_and_overlay_renderers.md	75	
+vertices	field	Engine	struct DevSphereMesh	79	architecture/components/renderer/entity_and_overlay_renderers.md	77	public
+indices	field	Engine	struct DevSphereMesh	79	architecture/components/renderer/entity_and_overlay_renderers.md	78	public
+BuildDevSphere	function	Engine	namespace	79	architecture/components/renderer/entity_and_overlay_renderers.md	80	
+Species	namespace	(none)	file	79	architecture/components/renderer/entity_and_overlay_renderers.md	84	
+ActorRenderer	class	Species	namespace	79	architecture/components/renderer/entity_and_overlay_renderers.md	88	
+EffectRenderer	class	Species	namespace	79	architecture/components/renderer/entity_and_overlay_renderers.md	98	
+RouteLineRenderer	class	Species	namespace	79	architecture/components/renderer/entity_and_overlay_renderers.md	105	
+WorldMarkerRenderer	class	Species	namespace	79	architecture/components/renderer/entity_and_overlay_renderers.md	114	
+WorldCursorRenderer	class	Species	namespace	79	architecture/components/renderer/entity_and_overlay_renderers.md	119	
+PowerSlotsPanelRenderer	class	Species	namespace	79	architecture/components/renderer/entity_and_overlay_renderers.md	124	
+MatchHudRenderer	class	Species	namespace	79	architecture/components/renderer/entity_and_overlay_renderers.md	129	
+Engine	namespace	(none)	file	84	architecture/components/renderer/frame_graph_and_passes.md	18	
+BlendState	enum	Engine	namespace	84	architecture/components/renderer/frame_graph_and_passes.md	21	Opaque,Alpha,Premultiplied,Additive,Darkening,Ink,Ghost
+DepthState	enum	Engine	namespace	84	architecture/components/renderer/frame_graph_and_passes.md	31	TestWrite,Test,None
+CullState	enum	Engine	namespace	84	architecture/components/renderer/frame_graph_and_passes.md	37	Back,None
+SortRule	enum	Engine	namespace	84	architecture/components/renderer/frame_graph_and_passes.md	42	Unsorted,BackToFront
+DepthBiasVariant	struct	Engine	namespace	84	architecture/components/renderer/frame_graph_and_passes.md	48	
+referenceFactor	field	Engine	struct DepthBiasVariant	84	architecture/components/renderer/frame_graph_and_passes.md	50	public
+PipelineDescriptor	struct	Engine	namespace	84	architecture/components/renderer/frame_graph_and_passes.md	53	
+shader	field	Engine	struct PipelineDescriptor	84	architecture/components/renderer/frame_graph_and_passes.md	55	public
+blend	field	Engine	struct PipelineDescriptor	84	architecture/components/renderer/frame_graph_and_passes.md	56	public
+depth	field	Engine	struct PipelineDescriptor	84	architecture/components/renderer/frame_graph_and_passes.md	57	public
+cull	field	Engine	struct PipelineDescriptor	84	architecture/components/renderer/frame_graph_and_passes.md	58	public
+cutoutThreshold	field	Engine	struct PipelineDescriptor	84	architecture/components/renderer/frame_graph_and_passes.md	59	public
+bias	field	Engine	struct PipelineDescriptor	84	architecture/components/renderer/frame_graph_and_passes.md	60	public
+targets	field	Engine	struct PipelineDescriptor	84	architecture/components/renderer/frame_graph_and_passes.md	61	public
+PassTableEntry	struct	Engine	namespace	84	architecture/components/renderer/frame_graph_and_passes.md	64	
+id	field	Engine	struct PassTableEntry	84	architecture/components/renderer/frame_graph_and_passes.md	66	public
+catalogKeys	field	Engine	struct PassTableEntry	84	architecture/components/renderer/frame_graph_and_passes.md	67	public
+reads	field	Engine	struct PassTableEntry	84	architecture/components/renderer/frame_graph_and_passes.md	68	public
+writes	field	Engine	struct PassTableEntry	84	architecture/components/renderer/frame_graph_and_passes.md	69	public
+sort	field	Engine	struct PassTableEntry	84	architecture/components/renderer/frame_graph_and_passes.md	70	public
+enabledBy	field	Engine	struct PassTableEntry	84	architecture/components/renderer/frame_graph_and_passes.md	71	public
+record	field	Engine	struct PassTableEntry	84	architecture/components/renderer/frame_graph_and_passes.md	72	public
+FrameGraph	class	Engine	namespace	84	architecture/components/renderer/frame_graph_and_passes.md	75	
+Engine	namespace	(none)	file	88	architecture/components/renderer/options_and_budgets.md	18	
+DetailLevel	enum	Engine	namespace	88	architecture/components/renderer/options_and_budgets.md	21	High,Medium,Low
+AntiAliasing	enum	Engine	namespace	88	architecture/components/renderer/options_and_budgets.md	27	Off,Msaa2x,Msaa4x
+QualityPreset	enum	Engine	namespace	88	architecture/components/renderer/options_and_budgets.md	33	High,Medium,Low,Custom
+RenderSettings	struct	Engine	namespace	88	architecture/components/renderer/options_and_budgets.md	43	
+renderWidth	field	Engine	struct RenderSettings	88	architecture/components/renderer/options_and_budgets.md	45	public
+renderHeight	field	Engine	struct RenderSettings	88	architecture/components/renderer/options_and_budgets.md	46	public
+windowMode	field	Engine	struct RenderSettings	88	architecture/components/renderer/options_and_budgets.md	47	public
+presentMode	field	Engine	struct RenderSettings	88	architecture/components/renderer/options_and_budgets.md	48	public
+frameRateCap	field	Engine	struct RenderSettings	88	architecture/components/renderer/options_and_budgets.md	49	public
+lowLatency	field	Engine	struct RenderSettings	88	architecture/components/renderer/options_and_budgets.md	50	public
+antiAliasing	field	Engine	struct RenderSettings	88	architecture/components/renderer/options_and_budgets.md	51	public
+hdr	field	Engine	struct RenderSettings	88	architecture/components/renderer/options_and_budgets.md	52	public
+hdrHighlightLimit	field	Engine	struct RenderSettings	88	architecture/components/renderer/options_and_budgets.md	53	public
+brightness	field	Engine	struct RenderSettings	88	architecture/components/renderer/options_and_budgets.md	54	public
+seaDetail	field	Engine	struct RenderSettings	88	architecture/components/renderer/options_and_budgets.md	55	public
+skyDetail	field	Engine	struct RenderSettings	88	architecture/components/renderer/options_and_budgets.md	56	public
+structureDetail	field	Engine	struct RenderSettings	88	architecture/components/renderer/options_and_budgets.md	57	public
+entityDetail	field	Engine	struct RenderSettings	88	architecture/components/renderer/options_and_budgets.md	58	public
+treeDetail	field	Engine	struct RenderSettings	88	architecture/components/renderer/options_and_budgets.md	59	public
+specialLighting	field	Engine	struct RenderSettings	88	architecture/components/renderer/options_and_budgets.md	60	public
+posterResolution	field	Engine	struct RenderSettings	88	architecture/components/renderer/options_and_budgets.md	61	public
+invertedStyle	field	Engine	struct RenderSettings	88	architecture/components/renderer/options_and_budgets.md	62	public
+workerScaleFactor	field	Engine	struct RenderSettings	88	architecture/components/renderer/options_and_budgets.md	63	public
+PresetOf	function	Engine	namespace	88	architecture/components/renderer/options_and_budgets.md	66	
+ApplyPreset	function	Engine	namespace	88	architecture/components/renderer/options_and_budgets.md	67	
+Validated	function	Engine	namespace	88	architecture/components/renderer/options_and_budgets.md	68	
+SAMPLER_LINEAR_CLAMP	constant	(none)	file	90	architecture/components/renderer/shaders.md	26	
+SAMPLER_LINEAR_WRAP	constant	(none)	file	90	architecture/components/renderer/shaders.md	27	
+SAMPLER_POINT_CLAMP	constant	(none)	file	90	architecture/components/renderer/shaders.md	28	
+SAMPLER_POINT_MAGNIFY_CLAMP	constant	(none)	file	90	architecture/components/renderer/shaders.md	29	
+FrameConstants	struct	(none)	file	90	architecture/components/renderer/shaders.md	31	
+view	field	(none)	struct FrameConstants	90	architecture/components/renderer/shaders.md	33	public
+projection	field	(none)	struct FrameConstants	90	architecture/components/renderer/shaders.md	33	public
+viewProjection	field	(none)	struct FrameConstants	90	architecture/components/renderer/shaders.md	33	public
+cameraPosition	field	(none)	struct FrameConstants	90	architecture/components/renderer/shaders.md	34	public
+fogStart	field	(none)	struct FrameConstants	90	architecture/components/renderer/shaders.md	35	public
+cameraFront	field	(none)	struct FrameConstants	90	architecture/components/renderer/shaders.md	36	public
+fogEnd	field	(none)	struct FrameConstants	90	architecture/components/renderer/shaders.md	37	public
+fogColor	field	(none)	struct FrameConstants	90	architecture/components/renderer/shaders.md	38	public
+extrapolationTime	field	(none)	struct FrameConstants	90	architecture/components/renderer/shaders.md	39	public
+light0Towards	field	(none)	struct FrameConstants	90	architecture/components/renderer/shaders.md	40	public
+realClock	field	(none)	struct FrameConstants	90	architecture/components/renderer/shaders.md	41	public
+light0Color	field	(none)	struct FrameConstants	90	architecture/components/renderer/shaders.md	42	public
+presentationFrameTime	field	(none)	struct FrameConstants	90	architecture/components/renderer/shaders.md	43	public
+light1Towards	field	(none)	struct FrameConstants	90	architecture/components/renderer/shaders.md	44	public
+smoothPresentationTime	field	(none)	struct FrameConstants	90	architecture/components/renderer/shaders.md	45	public
+light1Color	field	(none)	struct FrameConstants	90	architecture/components/renderer/shaders.md	46	public
+padding0	field	(none)	struct FrameConstants	90	architecture/components/renderer/shaders.md	47	public
+renderSize	field	(none)	struct FrameConstants	90	architecture/components/renderer/shaders.md	48	public
+padding1	field	(none)	struct FrameConstants	90	architecture/components/renderer/shaders.md	49	public
+DrawConstants	struct	(none)	file	90	architecture/components/renderer/shaders.md	52	
+world	field	(none)	struct DrawConstants	90	architecture/components/renderer/shaders.md	54	public
+tint	field	(none)	struct DrawConstants	90	architecture/components/renderer/shaders.md	55	public
+paletteIndex	field	(none)	struct DrawConstants	90	architecture/components/renderer/shaders.md	56	public
+instanceBufferIndex	field	(none)	struct DrawConstants	90	architecture/components/renderer/shaders.md	57	public
+textureIndex0	field	(none)	struct DrawConstants	90	architecture/components/renderer/shaders.md	58	public
+textureIndex1	field	(none)	struct DrawConstants	90	architecture/components/renderer/shaders.md	59	public
+materialIndex	field	(none)	struct DrawConstants	90	architecture/components/renderer/shaders.md	60	public
+Engine	namespace	(none)	file	91	architecture/components/renderer/view_lighting_and_fog.md	16	
+FrameView	struct	Engine	namespace	91	architecture/components/renderer/view_lighting_and_fog.md	19	
+view	field	Engine	struct FrameView	91	architecture/components/renderer/view_lighting_and_fog.md	21	public
+projection	field	Engine	struct FrameView	91	architecture/components/renderer/view_lighting_and_fog.md	22	public
+viewProjection	field	Engine	struct FrameView	91	architecture/components/renderer/view_lighting_and_fog.md	23	public
+position	field	Engine	struct FrameView	91	architecture/components/renderer/view_lighting_and_fog.md	24	public
+front	field	Engine	struct FrameView	91	architecture/components/renderer/view_lighting_and_fog.md	25	public
+up	field	Engine	struct FrameView	91	architecture/components/renderer/view_lighting_and_fog.md	26	public
+fovYRadians	field	Engine	struct FrameView	91	architecture/components/renderer/view_lighting_and_fog.md	27	public
+nearPlane	field	Engine	struct FrameView	91	architecture/components/renderer/view_lighting_and_fog.md	28	public
+farPlane	field	Engine	struct FrameView	91	architecture/components/renderer/view_lighting_and_fog.md	29	public
+width	field	Engine	struct FrameView	91	architecture/components/renderer/view_lighting_and_fog.md	30	public
+height	field	Engine	struct FrameView	91	architecture/components/renderer/view_lighting_and_fog.md	31	public
+DirectionalLight	struct	Engine	namespace	91	architecture/components/renderer/view_lighting_and_fog.md	34	
+towardsLight	field	Engine	struct DirectionalLight	91	architecture/components/renderer/view_lighting_and_fog.md	36	public
+color	field	Engine	struct DirectionalLight	91	architecture/components/renderer/view_lighting_and_fog.md	37	public
+LightRig	struct	Engine	namespace	91	architecture/components/renderer/view_lighting_and_fog.md	39	
+lights	field	Engine	struct LightRig	91	architecture/components/renderer/view_lighting_and_fog.md	41	public
+LitMaterial	struct	Engine	namespace	91	architecture/components/renderer/view_lighting_and_fog.md	43	
+specular	field	Engine	struct LitMaterial	91	architecture/components/renderer/view_lighting_and_fog.md	45	public
+shininess	field	Engine	struct LitMaterial	91	architecture/components/renderer/view_lighting_and_fog.md	46	public
+PointInView	function	Engine	namespace	91	architecture/components/renderer/view_lighting_and_fog.md	49	
+SphereInView	function	Engine	namespace	91	architecture/components/renderer/view_lighting_and_fog.md	50	
+Species	namespace	(none)	file	92	architecture/components/renderer/visual_language.md	20	
+LookScene	enum	Species	namespace	92	architecture/components/renderer/visual_language.md	23	GlowStack,DarkeningStack,InkText,TeamPalette,FogRamp,OverBrightFacet,CrowdAtDistance,CardToBillboard,InvertedStyle,SeasonalTheme
+LookCheck	struct	Species	namespace	92	architecture/components/renderer/visual_language.md	37	
+scene	field	Species	struct LookCheck	92	architecture/components/renderer/visual_language.md	39	public
+config	field	Species	struct LookCheck	92	architecture/components/renderer/visual_language.md	40	public
+tolerance	field	Species	struct LookCheck	92	architecture/components/renderer/visual_language.md	41	public
+RenderLookScene	function	Species	namespace	92	architecture/components/renderer/visual_language.md	44	
+Engine	namespace	(none)	file	94	architecture/components/renderer/world_renderers.md	18	
+TerrainRenderer	class	Engine	namespace	94	architecture/components/renderer/world_renderers.md	21	
+SeaRenderer	class	Engine	namespace	94	architecture/components/renderer/world_renderers.md	28	
+SkyRenderer	class	Engine	namespace	94	architecture/components/renderer/world_renderers.md	37	
+TreeGeometry	struct	Engine	namespace	94	architecture/components/renderer/world_renderers.md	44	
+branchQuads	field	Engine	struct TreeGeometry	94	architecture/components/renderer/world_renderers.md	46	public
+leafQuads	field	Engine	struct TreeGeometry	94	architecture/components/renderer/world_renderers.md	47	public
+GenerateTreeGeometry	function	Engine	namespace	94	architecture/components/renderer/world_renderers.md	49	
+MeshRenderer	class	Engine	namespace	94	architecture/components/renderer/world_renderers.md	51	
+Species	namespace	(none)	file	94	architecture/components/renderer/world_renderers.md	60	
+StructureRenderer	class	Species	namespace	94	architecture/components/renderer/world_renderers.md	63	
+Engine	namespace	(none)	file	96	architecture/components/terrain/README.md	44	
+TileMethod	enum	Engine	namespace	96	architecture/components/terrain/README.md	48	Average,RandomPair,CopyOne
+FlattenOp	enum	Engine	namespace	96	architecture/components/terrain/README.md	54	Absolute,Add,Subtract,Smooth,Subtract2
+TerrainTile	struct	Engine	namespace	96	architecture/components/terrain/README.md	63	
+posX	field	Engine	struct TerrainTile	96	architecture/components/terrain/README.md	65	public
+posY	field	Engine	struct TerrainTile	96	architecture/components/terrain/README.md	66	public
+posZ	field	Engine	struct TerrainTile	96	architecture/components/terrain/README.md	67	public
+size	field	Engine	struct TerrainTile	96	architecture/components/terrain/README.md	68	public
+fractalDimension	field	Engine	struct TerrainTile	96	architecture/components/terrain/README.md	69	public
+heightScale	field	Engine	struct TerrainTile	96	architecture/components/terrain/README.md	70	public
+desiredHeight	field	Engine	struct TerrainTile	96	architecture/components/terrain/README.md	71	public
+method	field	Engine	struct TerrainTile	96	architecture/components/terrain/README.md	72	public
+seed	field	Engine	struct TerrainTile	96	architecture/components/terrain/README.md	73	public
+lowlandSmoothing	field	Engine	struct TerrainTile	96	architecture/components/terrain/README.md	74	public
+guidePower	field	Engine	struct TerrainTile	96	architecture/components/terrain/README.md	75	public
+guide	field	Engine	struct TerrainTile	96	architecture/components/terrain/README.md	76	public
+TerrainFlattenArea	struct	Engine	namespace	96	architecture/components/terrain/README.md	79	
+center	field	Engine	struct TerrainFlattenArea	96	architecture/components/terrain/README.md	81	public
+halfSize	field	Engine	struct TerrainFlattenArea	96	architecture/components/terrain/README.md	82	public
+op	field	Engine	struct TerrainFlattenArea	96	architecture/components/terrain/README.md	83	public
+threshold	field	Engine	struct TerrainFlattenArea	96	architecture/components/terrain/README.md	84	public
+TerrainDefinition	struct	Engine	namespace	96	architecture/components/terrain/README.md	87	
+cellSize	field	Engine	struct TerrainDefinition	96	architecture/components/terrain/README.md	89	public
+worldSizeX	field	Engine	struct TerrainDefinition	96	architecture/components/terrain/README.md	90	public
+worldSizeZ	field	Engine	struct TerrainDefinition	96	architecture/components/terrain/README.md	91	public
+outsideHeight	field	Engine	struct TerrainDefinition	96	architecture/components/terrain/README.md	92	public
+maxHeight	field	Engine	struct TerrainDefinition	96	architecture/components/terrain/README.md	93	public
+landRampFile	field	Engine	struct TerrainDefinition	96	architecture/components/terrain/README.md	94	public
+shoreWaveGradientFile	field	Engine	struct TerrainDefinition	96	architecture/components/terrain/README.md	95	public
+seaTileFile	field	Engine	struct TerrainDefinition	96	architecture/components/terrain/README.md	96	public
+tiles	field	Engine	struct TerrainDefinition	96	architecture/components/terrain/README.md	97	public
+flattenAreas	field	Engine	struct TerrainDefinition	96	architecture/components/terrain/README.md	98	public
+SurfaceGrid	class	Engine	namespace	96	architecture/components/terrain/README.md	101	
+TerrainField	class	Engine	namespace	96	architecture/components/terrain/README.md	118	
+SeaMasks	struct	Engine	namespace	96	architecture/components/terrain/README.md	140	
+shoreMask	field	Engine	struct SeaMasks	96	architecture/components/terrain/README.md	142	public
+depth	field	Engine	struct SeaMasks	96	architecture/components/terrain/README.md	143	public
+flatWaterTiles	field	Engine	struct SeaMasks	96	architecture/components/terrain/README.md	144	public
+BuildSeaMasks	function	Engine	namespace	96	architecture/components/terrain/README.md	146	
+WaveVertex	struct	Engine	namespace	96	architecture/components/terrain/README.md	148	
+position	field	Engine	struct WaveVertex	96	architecture/components/terrain/README.md	150	public
+depth	field	Engine	struct WaveVertex	96	architecture/components/terrain/README.md	151	public
+shoreNoise	field	Engine	struct WaveVertex	96	architecture/components/terrain/README.md	152	public
+WaveMeshSource	struct	Engine	namespace	96	architecture/components/terrain/README.md	154	
+cell	field	Engine	struct WaveMeshSource	96	architecture/components/terrain/README.md	156	public
+pairs	field	Engine	struct WaveMeshSource	96	architecture/components/terrain/README.md	157	public
+SelectWaveVertexPairs	function	Engine	namespace	96	architecture/components/terrain/README.md	159	
+FacetColor	function	Engine	namespace	96	architecture/components/terrain/README.md	162	
+Engine	namespace	(none)	file	110	architecture/components/ui_framework/core_and_widgets.md	20	
+PanelId	struct	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	23	
+index	field	Engine	struct PanelId	110	architecture/components/ui_framework/core_and_widgets.md	25	public
+generation	field	Engine	struct PanelId	110	architecture/components/ui_framework/core_and_widgets.md	26	public
+WidgetId	struct	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	28	
+index	field	Engine	struct WidgetId	110	architecture/components/ui_framework/core_and_widgets.md	30	public
+generation	field	Engine	struct WidgetId	110	architecture/components/ui_framework/core_and_widgets.md	31	public
+PointF	struct	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	33	
+x	field	Engine	struct PointF	110	architecture/components/ui_framework/core_and_widgets.md	35	public
+y	field	Engine	struct PointF	110	architecture/components/ui_framework/core_and_widgets.md	36	public
+SizeF	struct	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	38	
+w	field	Engine	struct SizeF	110	architecture/components/ui_framework/core_and_widgets.md	40	public
+h	field	Engine	struct SizeF	110	architecture/components/ui_framework/core_and_widgets.md	41	public
+RectF	struct	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	43	
+x	field	Engine	struct RectF	110	architecture/components/ui_framework/core_and_widgets.md	45	public
+y	field	Engine	struct RectF	110	architecture/components/ui_framework/core_and_widgets.md	46	public
+w	field	Engine	struct RectF	110	architecture/components/ui_framework/core_and_widgets.md	47	public
+h	field	Engine	struct RectF	110	architecture/components/ui_framework/core_and_widgets.md	48	public
+PointerEventKind	enum	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	51	PrimaryDown,PrimaryUp,AltDown
+PointerEvent	struct	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	57	
+kind	field	Engine	struct PointerEvent	110	architecture/components/ui_framework/core_and_widgets.md	59	public
+position	field	Engine	struct PointerEvent	110	architecture/components/ui_framework/core_and_widgets.md	60	public
+TextInput	struct	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	62	
+character	field	Engine	struct TextInput	110	architecture/components/ui_framework/core_and_widgets.md	64	public
+shift	field	Engine	struct TextInput	110	architecture/components/ui_framework/core_and_widgets.md	65	public
+ctrl	field	Engine	struct TextInput	110	architecture/components/ui_framework/core_and_widgets.md	66	public
+alt	field	Engine	struct TextInput	110	architecture/components/ui_framework/core_and_widgets.md	67	public
+EditCommand	enum	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	69	CaretLeft,CaretRight,CaretHome,CaretEnd,DeleteForward,SelectAll,Copy,Cut,Paste
+Callback	using	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	81	std::move_only_function<void()>
+UiWidget	class	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	83	
+rect	field	Engine	class UiWidget	110	architecture/components/ui_framework/core_and_widgets.md	95	public
+caption	field	Engine	class UiWidget	110	architecture/components/ui_framework/core_and_widgets.md	96	public
+accessibleName	field	Engine	class UiWidget	110	architecture/components/ui_framework/core_and_widgets.md	97	public
+inactive	field	Engine	class UiWidget	110	architecture/components/ui_framework/core_and_widgets.md	98	public
+UiPanel	class	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	101	
+rect	field	Engine	class UiPanel	110	architecture/components/ui_framework/core_and_widgets.md	118	public
+title	field	Engine	class UiPanel	110	architecture/components/ui_framework/core_and_widgets.md	119	public
+movable	field	Engine	class UiPanel	110	architecture/components/ui_framework/core_and_widgets.md	120	public
+resizable	field	Engine	class UiPanel	110	architecture/components/ui_framework/core_and_widgets.md	121	public
+UiCore	class	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	124	
+UiWindow	class	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	156	: public UiPanel
+closeable	field	Engine	class UiWindow	110	architecture/components/ui_framework/core_and_widgets.md	166	public
+locked	field	Engine	class UiWindow	110	architecture/components/ui_framework/core_and_widgets.md	167	public
+UiButton	class	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	175	: public UiWidget
+fontSize	field	Engine	class UiButton	110	architecture/components/ui_framework/core_and_widgets.md	182	public
+centered	field	Engine	class UiButton	110	architecture/components/ui_framework/core_and_widgets.md	183	public
+disabled	field	Engine	class UiButton	110	architecture/components/ui_framework/core_and_widgets.md	184	public
+UiBorderlessButton	forward	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	188	
+UiCloseButton	forward	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	189	
+UiInsetPanel	forward	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	190	
+UiTextField	forward	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	191	
+UiIncrementGlyph	forward	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	192	
+UiScrollBar	forward	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	193	
+UiCheckBox	forward	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	194	
+UiDropDown	forward	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	195	
+UiDropDownList	forward	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	196	
+UiDropDownOption	forward	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	197	
+UiMessageDialog	forward	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	198	
+UiChatEntry	forward	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	199	
+UiChatField	forward	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	200	
+OptionsScreen	forward	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	201	
+PageButton	forward	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	202	
+PageBackButton	forward	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	203	
+ScreenCloseButton	forward	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	204	
+PageTitle	forward	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	205	
+PageDropDown	forward	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	206	
+PageDropDownList	forward	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	207	
+PageDropDownOption	forward	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	208	
+PageTextField	forward	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	209	
+PageIncrementGlyph	forward	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	210	
+PageCheckBox	forward	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	211	
+UiValueBinding	class	Engine	namespace	110	architecture/components/ui_framework/core_and_widgets.md	213	
+Engine	namespace	(none)	file	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	18	
+PageGrid	struct	Engine	namespace	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	21	
+title	field	Engine	struct PageGrid	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	23	public
+left	field	Engine	struct PageGrid	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	24	public
+right	field	Engine	struct PageGrid	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	25	public
+fontLarge	field	Engine	struct PageGrid	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	26	public
+fontMedium	field	Engine	struct PageGrid	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	27	public
+fontSmall	field	Engine	struct PageGrid	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	28	public
+buttonWidth	field	Engine	struct PageGrid	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	29	public
+buttonHeight	field	Engine	struct PageGrid	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	30	public
+buttonGap	field	Engine	struct PageGrid	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	31	public
+wide	field	Engine	struct PageGrid	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	32	public
+ComputePageGrid	function	Engine	namespace	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	34	
+LargeMenuScale	function	Engine	namespace	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	35	
+UiScaleState	struct	Engine	namespace	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	37	
+dpiScale	field	Engine	struct UiScaleState	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	39	public
+uiScale	field	Engine	struct UiScaleState	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	40	public
+textScale	field	Engine	struct UiScaleState	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	41	public
+ToolWindowScale	function	Engine	namespace	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	43	
+FinalTextSize	function	Engine	namespace	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	44	
+UiBlend	enum	Engine	namespace	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	46	Alpha,Additive,Ink
+UiVertex	struct	Engine	namespace	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	52	
+x	field	Engine	struct UiVertex	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	54	public
+y	field	Engine	struct UiVertex	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	55	public
+u	field	Engine	struct UiVertex	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	56	public
+v	field	Engine	struct UiVertex	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	57	public
+rgba	field	Engine	struct UiVertex	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	58	public
+texture	field	Engine	struct UiVertex	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	59	public
+FontRole	enum	Engine	namespace	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	62	Caption,Body,Title
+TextPass	enum	Engine	namespace	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	68	Fill,Outline
+TextAlign	enum	Engine	namespace	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	73	Left,Center,Right
+TextStyle	struct	Engine	namespace	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	79	
+role	field	Engine	struct TextStyle	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	81	public
+size	field	Engine	struct TextStyle	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	82	public
+color	field	Engine	struct TextStyle	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	83	public
+blend	field	Engine	struct TextStyle	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	84	public
+pass	field	Engine	struct TextStyle	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	85	public
+DrawContext	class	Engine	namespace	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	88	
+GlyphRenderer	class	Engine	namespace	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	101	
+TextView	forward	Engine	namespace	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	112	
+StringTable	class	Engine	namespace	114	architecture/components/ui_framework/layout_rendering_input_and_localisation.md	113	
+Engine	namespace	(none)	file	117	architecture/components/ui_framework/pages_and_screen_recipes.md	51	
+NavOp	enum	Engine	namespace	117	architecture/components/ui_framework/pages_and_screen_recipes.md	54	Push,Pop,Replace,UnwindTo,Rebuild
+TransitionDirection	enum	Engine	namespace	117	architecture/components/ui_framework/pages_and_screen_recipes.md	62	Backward,None,Forward
+EnterOutcome	enum	Engine	namespace	117	architecture/components/ui_framework/pages_and_screen_recipes.md	69	Built,Waiting,Redirect
+FillBoxes	enum	Engine	namespace	117	architecture/components/ui_framework/pages_and_screen_recipes.md	76	LeftOnly,LeftAndRight,TitleWidth
+WidgetBuilder	forward	Engine	namespace	117	architecture/components/ui_framework/pages_and_screen_recipes.md	83	
+ToolWindow	class	Engine	namespace	117	architecture/components/ui_framework/pages_and_screen_recipes.md	86	: public UiWindow
+ToolPlacement	struct	Engine	namespace	117	architecture/components/ui_framework/pages_and_screen_recipes.md	92	
+width	field	Engine	struct ToolPlacement	117	architecture/components/ui_framework/pages_and_screen_recipes.md	94	public
+height	field	Engine	struct ToolPlacement	117	architecture/components/ui_framework/pages_and_screen_recipes.md	95	public
+OpenToolOnce	function	Engine	namespace	117	architecture/components/ui_framework/pages_and_screen_recipes.md	99	
+CloseTool	function	Engine	namespace	117	architecture/components/ui_framework/pages_and_screen_recipes.md	101	
+ToolString	function	Engine	namespace	117	architecture/components/ui_framework/pages_and_screen_recipes.md	102	
+Species	namespace	(none)	file	117	architecture/components/ui_framework/pages_and_screen_recipes.md	106	
+PageId	enum	Species	namespace	117	architecture/components/ui_framework/pages_and_screen_recipes.md	110	Title,Tutorials,HostOrJoin,ModeSelect,MapSelect,MatchSetup,AdvancedOptions,PlayerOptions,SessionBrowser,BrowserFilters,Password,Connecting,WaitForStart,Error,Credits,QuickMatch,Achievements,LeaderboardSelect,Leaderboard
+NavRequest	struct	Species	namespace	117	architecture/components/ui_framework/pages_and_screen_recipes.md	133	
+op	field	Species	struct NavRequest	117	architecture/components/ui_framework/pages_and_screen_recipes.md	135	public
+target	field	Species	struct NavRequest	117	architecture/components/ui_framework/pages_and_screen_recipes.md	136	public
+EnterResult	struct	Species	namespace	117	architecture/components/ui_framework/pages_and_screen_recipes.md	139	
+outcome	field	Species	struct EnterResult	117	architecture/components/ui_framework/pages_and_screen_recipes.md	141	public
+redirectTo	field	Species	struct EnterResult	117	architecture/components/ui_framework/pages_and_screen_recipes.md	142	public
+PageContext	forward	Species	namespace	117	architecture/components/ui_framework/pages_and_screen_recipes.md	145	
+FrontEndViewModel	forward	Species	namespace	117	architecture/components/ui_framework/pages_and_screen_recipes.md	146	
+HudContext	forward	Species	namespace	117	architecture/components/ui_framework/pages_and_screen_recipes.md	147	
+FrontEndPage	class	Species	namespace	117	architecture/components/ui_framework/pages_and_screen_recipes.md	149	
+PageHost	class	Species	namespace	117	architecture/components/ui_framework/pages_and_screen_recipes.md	161	
+FrontEndScreen	class	Species	namespace	117	architecture/components/ui_framework/pages_and_screen_recipes.md	173	: public Engine::UiWindow
+HudPanel	class	Species	namespace	117	architecture/components/ui_framework/pages_and_screen_recipes.md	183	
+ExampleToolModel	struct	(none)	file	122	architecture/components/ui_framework/pages_and_screen_recipes.md	616	
+strength	field	(none)	struct ExampleToolModel	122	architecture/components/ui_framework/pages_and_screen_recipes.md	618	public
+preview	field	(none)	struct ExampleToolModel	122	architecture/components/ui_framework/pages_and_screen_recipes.md	619	public
+ExampleToolWindow	class	(none)	file	122	architecture/components/ui_framework/pages_and_screen_recipes.md	622	: public ToolWindow
+m_model	field	(none)	class ExampleToolWindow	122	architecture/components/ui_framework/pages_and_screen_recipes.md	636	private
+OpenExampleTool	function	(none)	file	122	architecture/components/ui_framework/pages_and_screen_recipes.md	641	

@@ -1,0 +1,12 @@
+flowchart TD
+    O["Deploy order to P"] --> A{"P inside the map?"}
+    A -- no --> X["rejected"]
+    A -- yes --> B["lockout := 0"]
+    B --> C{"|P − Transport| > 50 wu?"}
+    C -- no --> X2["nothing more"]
+    C -- yes --> D["arrival point := P; waypoint := P; action := Unloading if carrying, else Loading; state := Idle"]
+    D --> E["fly straight to P"]
+    E --> F{"within 15 wu of P?"}
+    F -- yes --> G["state := action; lockout := 20; arrival point cleared"]
+    G --> H{"lockout ≥ 11?"}
+    H -- yes --> I["load or unload; at most 1 Worker leaves per tick; not over sea"]

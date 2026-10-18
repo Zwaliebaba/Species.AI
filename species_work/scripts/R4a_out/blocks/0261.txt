@@ -1,0 +1,8 @@
+v.y -= ref.sim.physics.thrown_gravity * dt
+p += v * dt
+if p.y < TerrainHeight(p) + ref.weapon.thrown.bounce_clearance:          # 1 wu
+    Bounce()                                                              # R-SIM-385, restitution 0.85
+    f *= ref.weapon.thrown.bounce_force_factor                            # 0.75
+    v *= f
+    p.y = max(p.y, TerrainHeight(p) + ref.weapon.thrown.bounce_clearance)
+    emit the bounce sound event

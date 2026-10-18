@@ -1,0 +1,9 @@
+flowchart LR
+  UI["UI bus"] --> M["master bus"]
+  AN["announcer and stings bus"] --> M
+  AN -. "ducks by 6 dB for 1 s" .-> W
+  VO["voice bus"] --> M
+  W["world bus"] --> M
+  AM["ambience bus"] --> M
+  MU["music bus"] --> M
+  M --> L["limiter"] --> O["output"]

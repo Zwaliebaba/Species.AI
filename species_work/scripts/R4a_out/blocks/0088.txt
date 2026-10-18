@@ -1,0 +1,56 @@
+namespace Engine
+{
+
+enum class DetailLevel : std::uint8_t
+{
+  High = 1,
+  Medium = 2,
+  Low = 3
+}; // lower is higher quality
+enum class AntiAliasing : std::uint8_t
+{
+  Off,
+  Msaa2x,
+  Msaa4x
+};
+enum class QualityPreset : std::uint8_t
+{
+  High,
+  Medium,
+  Low,
+  Custom
+};
+
+// WindowMode (Windowed, BorderlessFullScreen) is the platform layer's (platform_layer.md §2).
+
+struct RenderSettings // defaults: §9 keys rnd.option.*
+{
+  std::optional<std::uint32_t> renderWidth; // absent: the desktop resolution on first run (DAT-008)
+  std::optional<std::uint32_t> renderHeight;
+  WindowMode windowMode = WindowMode::BorderlessFullScreen;
+  PresentMode presentMode = PresentMode::VerticalSync;
+  std::optional<float> frameRateCap; // frames per second; none by default
+  bool lowLatency = false;
+  AntiAliasing antiAliasing = AntiAliasing::Msaa4x;
+  bool hdr = false;
+  std::optional<float> hdrHighlightLimit; // nits; none: the display's maximum
+  float brightness = 1.0f;                // final-pass constant; 1 = unchanged
+  std::uint8_t seaDetail = 1;
+  std::uint8_t skyDetail = 1;
+  std::uint8_t structureDetail = 1;
+  std::uint8_t entityDetail = 1;
+  std::uint8_t treeDetail = 1;
+  bool specialLighting = false;
+  std::uint32_t posterResolution = 1;
+  bool invertedStyle = false;
+  float workerScaleFactor = 2.0f;
+};
+
+[[nodiscard]] QualityPreset PresetOf(const RenderSettings& _settings); // RND-450
+void ApplyPreset(RenderSettings& _settings, QualityPreset _preset);    // RND-450
+[[nodiscard]] RenderSettings Validated(const RenderSettings& _stored); // RND-451
+
+// FrameRenderer::ApplySettings(const RenderSettings&) maps the settings onto RenderConfig
+// (README §2) and the per-frame detail state (RND-449).
+
+} // namespace Engine

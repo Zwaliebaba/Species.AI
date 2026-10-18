@@ -1,0 +1,9 @@
+cells := every cell overlapping the square [_x - _r, _x + _r] x [_z - _r, _z + _r], clamped to the grid
+result := empty list
+for cellX ascending, then cellZ ascending:
+    for team 0 .. MAX_TEAMS-1 with _teamMask[team]:
+        for each handle h of that cell and layer, in ascending actor serial (R-SIM-137; DEC-260):
+            skip h if h is already in result         # an actor with a hit shape sits in several cells
+            a := Resolve(h); skip h if it resolves to nothing
+            if (a.x - _x)^2 + (a.z - _z)^2 < _r^2: append h to result
+return result

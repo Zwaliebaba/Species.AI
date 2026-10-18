@@ -1,0 +1,12 @@
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> AttackingActor : retarget, enemy at 100 to 200 wu
+    Idle --> AttackingOrb : retarget, floating Essence orb at 100 to 200 wu
+    Idle --> Idle : retarget, random point
+    AttackingActor --> Idle : target dead, gone or a Collector
+    AttackingActor --> Idle : hit, convert 50 percent or kill, life plus 10 ticks
+    AttackingOrb --> Idle : orb gone or not floating
+    AttackingOrb --> Idle : hit, Crawler or spider, life plus 10 ticks
+    Idle --> [*] : life over
+    AttackingActor --> [*] : life over
+    AttackingOrb --> [*] : life over

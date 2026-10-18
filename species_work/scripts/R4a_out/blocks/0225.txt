@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant GT as grid terminal
+    participant E1 as Barrier Emitter 1
+    participant E2 as Barrier Emitter 2
+    participant E3 as Barrier Emitter 3
+    GT->>E1: friendly energy surge, energy mode, tick recorded
+    Note over E1: first delivery marks E1, E2 and E3 energy-linked
+    E1->>E1: raise request, Raising
+    E1->>E2: raise request at status 0.5, tick 17
+    E2->>E3: raise request at status 0.5, tick 34
+    Note over E1: no surge for more than 50 ticks
+    E1->>E1: lower request, Lowering
+    E1->>E2: lower request at status 0.5, tick 18 of lowering
+    E2->>E3: lower request, 18 ticks later

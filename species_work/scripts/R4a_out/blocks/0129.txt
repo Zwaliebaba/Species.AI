@@ -1,0 +1,14 @@
+result ← no team;   occupied ← false
+for t in 0 .. 5:                                   # ascending slot order
+    if count[t] > 0 and result = no team:
+        result ← t
+    else if result ≠ no team and count[t] ≥ need and count[t] > count[result]:
+        result ← t
+    if result ≠ no team and count[t] > 0:
+        occupied ← true
+    if result ≠ no team and count[result] < need:
+        result ← no team
+if occupied:
+    for t in 0 .. 5:
+        if count[t] > 0 and not friends(t, result):
+            result ← no team;  stop

@@ -1,0 +1,7 @@
+flowchart TD
+  R["a rule raises source.event"] --> B{"is it in tables 2.2 to 2.7?"}
+  B -->|"yes"| L["play its layers (R-AUD-020)"]
+  B -->|"no"| S{"is it in table R-AUD-141?"}
+  S -->|"bound by a Resolved decision"| L
+  S -->|"silent or DEC-565"| Q["silent, listed by the validator"]
+  S -->|"no"| E["not a match event: content-build report (R-AUD-005)"]

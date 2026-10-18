@@ -1,0 +1,4 @@
+IsFriend(_a, _b):
+    if _a is the no-team value or _b is the no-team value: return false
+    if the match is co-op: return coopGroup[_a] == coopGroup[_b]
+    return _a == _b

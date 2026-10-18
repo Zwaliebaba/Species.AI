@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> NoRecord
+    NoRecord --> Visible: intensity request a above 0, fade = a
+    Visible --> Visible: intensity request, fade = max(fade, a)
+    Visible --> Visible: each frame, fade minus frame delta times 0.25, drawn
+    Visible --> NoRecord: fade at or below 0
+    Visible --> Held: route end leaves the land rectangle
+    Held --> Visible: route end inside the land rectangle

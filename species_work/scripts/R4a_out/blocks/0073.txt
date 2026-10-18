@@ -1,0 +1,31 @@
+flowchart LR
+  subgraph BE["Device back-ends"]
+    KM["keyboard and mouse back-end: keys, buttons, pointer, raw movement, wheel"]
+    GP["gamepad back-end on GameInput: every reading of every gamepad"]
+  end
+  TXT["UI text service"]
+  KM --> Q["ordered event queue of the frame"]
+  GP --> Q
+  KM -. characters and composition .-> TXT
+  Q --> DS["device state: held, presses, releases, analogue values"]
+  PA["gamepad assignment per local player"] --> DS
+  subgraph IR["Input router"]
+    AB["action bindings: action id to an ordered list of bindings, glyph, suppression"]
+    QY["Query: the first satisfied binding wins"]
+  end
+  DS --> LEAF["device leaves"]
+  ST["state table: repeat timers, latches"] --> LEAF
+  AB --> QY
+  QY --> LEAF
+  QY --> ALL["all"]
+  QY --> CH["chord"]
+  QY --> NT["not"]
+  QY --> AL["alias"]
+  QY --> ENV["latch, idle, setting, value"]
+  ALL -- operands --> QY
+  CH -- parts --> LEAF
+  NT -- operand --> QY
+  AL -- target action --> QY
+  PT["pointer"] -->|"camera aim, aim stick, height wheel"| QY
+  CONS["match input pump, team command state, camera, UI input pump"] -->|query| QY
+  CONS --> PT

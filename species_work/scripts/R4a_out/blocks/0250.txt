@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> Waiting : deadline = now + 100 + whole seconds of the reload
+    Waiting --> Armed : trigger off, or enemies in the trigger circle at a check every 50 ticks
+    Armed --> Waiting : trigger circle empty at a check
+    Armed --> Launching : tick past the deadline and pods left
+    Launching --> Armed : Seed Pod launched, deadline = now + reload plus or minus 5 %
+    Launching --> Burning : the third pod, damage 100
+    Armed --> Burning : damage meter at 0 or below
+    Waiting --> Burning : damage meter at 0 or below
+    Burning --> Removed : size shrinks to 0.3, 117 ticks from size 1
+    Removed --> [*]

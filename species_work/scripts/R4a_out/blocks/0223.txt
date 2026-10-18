@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> Placed : a turret power places a turret with no team
+    Placed --> Ordinary : mode without the turret-cap option, the power ends at once
+    Placed --> Capped : mode with the turret-cap option, the power keeps running
+    Capped --> Capped : owned by the power's team, or no team
+    Capped --> Destroyed : owned by another team, damage of 1000
+    Capped --> Destroyed : the power ends while its team owns the turret
+    Capped --> Ordinary : the power ends while the turret has no team
+    Ordinary --> [*]
+    Destroyed --> [*]

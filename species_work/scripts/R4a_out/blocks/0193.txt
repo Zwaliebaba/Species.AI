@@ -1,0 +1,9 @@
+a = dt                                                    # a blend of 10 % per tick
+front = normalise(front * (1 - a) + normalise(T - waypoint) * a)
+desired = ref.unit.bomber.speed                           # 40 wu/s
+if (Approaching and |waypoint - attack| > ref.hazard.airstrike.approach_fast_distance) or \
+   (Leaving and |waypoint - attack| > ref.hazard.airstrike.leave_fast_distance):        # 600 wu, 100 wu
+    desired *= ref.hazard.airstrike.cruise_factor         # 400 wu/s
+speed = speed * (1 - a) + desired * a
+waypoint += front * speed * dt
+arrived = |T - waypoint| < ref.hazard.airstrike.arrival                                  # 10 wu

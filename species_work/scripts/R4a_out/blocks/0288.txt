@@ -1,0 +1,7 @@
+if I > 0:          s := clamp(ref.bot.dispatch.send_factor * D / I, ref.bot.dispatch.send_min, ref.bot.dispatch.send_max)   # 1.5, 0.6, 1.0
+else if D > 0:     s := ref.bot.dispatch.send_max                 # the limit of the ratio
+else:              s := 0                                          # nobody is sent (DEC-087, DEC-653)
+if the mode is Siege:
+    if the bot's team attacks:  s := ref.bot.dispatch.send_all     # 1.1: attackers send everyone
+    if any Transport of the team within ref.bot.dispatch.unload_wait_radius (100 wu) of A is Unloading:  s := 0
+if the destination is not important:  s := ref.bot.dispatch.send_all   # a corridor: send everyone

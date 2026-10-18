@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> Dormant : created, first release after 50 ticks
+    Dormant --> Active : its team is a bot team and the delay has run
+    Active --> Active : search an objective, release one ant per 2 ticks, turn orbs into ants
+    Active --> Locked : the population check holds it back
+    Locked --> Active : the check passes
+    Active --> Refill : no ant inside for 30 ticks, 10 ants and 10 damage
+    Refill --> Active
+    Active --> Dead : health 0 or below
+    Locked --> Dead : health 0 or below
+    Dead --> [*] : full shatter, orbs refused for the Rogue faction, removed

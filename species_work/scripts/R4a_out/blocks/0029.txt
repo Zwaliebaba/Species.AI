@@ -1,0 +1,13 @@
+flowchart TD
+  U["Unhandled exception on any thread"] --> WER["Windows Error Reporting"]
+  H["Terminate, invalid-parameter or pure-call handler"] --> R["Black box and flushed fatal log record (DBG-073)"]
+  C["Failed release check"] --> R
+  R --> DB{"Debugger attached?"}
+  DB -- yes --> BRK["Break into the debugger"]
+  DB -- no --> MSG["Pre-UI message ui.error.internal with the run id, when a window exists"]
+  MSG --> FF["Fail-fast exception"]
+  FF --> WER
+  NR["No message processed for plt.window.hang_threshold"] --> WER
+  WER --> REP["Report: dump of every thread, registered files, black box and crash-context record, without excluded memory"]
+  REP --> LD["On test machines: local dump in the crashes folder"]
+  REP --> COL["Collection under the player's Windows diagnostic-data settings"]

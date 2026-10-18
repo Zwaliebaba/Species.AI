@@ -1,0 +1,16 @@
+flowchart TD
+    S["Recount countdown of node A reaches 0"] --> T{"Second tutorial gate node?"}
+    T -->|yes| TU["Tutorial rule (05)"]
+    T -->|no| EZ
+    TU --> EZ{"Easy bots and not Siege?"}
+    EZ -->|yes| X["No recalculation: priorities stay as they are"]
+    EZ -->|no| M{"Mode"}
+    M -->|"Spawn Control, Zone Control"| STD["Standard formula"]
+    M -->|"Relic Run"| REL["Relic Run formula"]
+    M -->|"Siege, Flag Chain"| DIF["Diffusion formula"]
+    M -->|"Launch Race"| LR["Launch Race formula"]
+    STD --> L["For each team t not pinned at A: p[t]"]
+    REL --> L
+    DIF --> L
+    LR --> L
+    P["Pins: Flag posts, bot objective markers"] -.-> L

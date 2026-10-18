@@ -1,0 +1,11 @@
+stateDiagram-v2
+  [*] --> Lobby
+  Lobby --> Seeded: match start, seed taken from the recorded match setup
+  Seeded --> Initialising: match-world initialisation, draws in fixed order
+  Initialising --> Ticking: first command frame after the load
+  Ticking --> Ticking: the draws of each tick, in update order
+  Ticking --> Ended: match end
+  Ended --> [*]: the stream is discarded with the match
+  note right of Lobby
+    no simulation draw
+  end note

@@ -1,0 +1,10 @@
+flowchart LR
+  CFG["soak configuration, content/records/test/"] --> V["README DAT-024, then DAT-373 per edition"]
+  ED["edition manifests: development, soak"] --> V
+  V -- "any error" --> F["build error"]
+  V --> P["cooked Record in the edition's packs"]
+  P --> R["soak runner: entries, progression, matches (DBG-162 to DBG-166)"]
+  R --> T["match table: header, then one row per match, each flushed"]
+  R --> S["pass summary, written once, atomically"]
+  T --> CI["CI artefact (BLD-092)"]
+  S --> CI

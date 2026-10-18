@@ -1,0 +1,9 @@
+fx := (x - x0) * invX ;  fz := (z - z0) * invZ
+i1 := trunc(fx) mod 2^16 ;  i2 := (i1 + 1) mod 2^16        # TER-071; the reduction is TER-072's
+j1 := trunc(fz) mod 2^16 ;  j2 := (j1 + 1) mod 2^16
+fx := fx - floor(fx) ;  fz := fz - floor(fz)               # taken before the index reset
+if i1 >= columns: i1 := 0 ;  if i2 >= columns: i2 := 0      # the far-edge reset
+if j1 >= rows:    j1 := 0 ;  if j2 >= rows:    j2 := 0
+w11 := (1 - fx) * (1 - fz) ;  w12 := (1 - fx) * fz         # weights first, one product each
+w21 := fx * (1 - fz)       ;  w22 := fx * fz
+result := ((v(i1, j1) * w11 + v(i1, j2) * w12) + v(i2, j1) * w21) + v(i2, j2) * w22

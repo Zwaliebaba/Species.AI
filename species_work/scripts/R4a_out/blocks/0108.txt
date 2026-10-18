@@ -1,0 +1,26 @@
+flowchart TB
+  subgraph Platform["Platform, input and renderer"]
+    PW["Application window: text and IME messages"] --> TXT
+    UIP["UI input pump, once per frame"] --> UPD
+    RP["UI passes of the pass table"] --> DRW
+  end
+  subgraph Core["Layer 1: UI core"]
+    UPD["Pointer state machine and panel update"]
+    TXT["Text and key routing"]
+    DRW["Draw panels back-most first"]
+    PB["UiPanel"] --- BB["UiWidget"]
+  end
+  subgraph Window["Layer 2: UI window layer and widget set"]
+    W["UiWindow"] --> PB
+    B["UiButton"] --> BB
+    WS["Text field, increment glyphs, scroll bar, check box, drop-down, message dialog, chat entry"] --> B
+  end
+  subgraph FrontEnd["Layer 3: front-end layer"]
+    OS["OptionsScreen: help, settings and in-match menu screens"] --> W
+    FES["FrontEndScreen: the page state machine"] --> W
+    PF["Page buttons, titles, page drop-downs, page text fields, page check boxes"] --> WS
+  end
+  subgraph Tools["Tool windows on layer 2"]
+    DEV["Development windows"] --> W
+    EDT["Map editor windows, if built (DEC-045)"] --> W
+  end

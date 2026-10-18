@@ -1,0 +1,7 @@
+if scoreTime is set and now <= scoreTime + scoresLatch: scoreWindow := true
+if scoreWindow:
+    if now < scoreTime + scoresWindowLength:
+        Request(scores, centre_zone position + (0, scoresLift, 0), up 20)
+    else:
+        scoreTime := none; scoreWindow := false
+    end the evaluation

@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> Neutral : initialised, progress 0, Home posts set to no team
+    Neutral --> Capturing : unlocked and leader L present, capturing team L, progress rises
+    Capturing --> Neutral : nobody counted, progress falls 1 per recount to 0, capturing team none
+    Capturing --> Capturing : a different leader, progress falls, at 0 the capturing team switches
+    Capturing --> Owned : progress reaches 100, L owns it
+    Owned --> Locked : no linked Flag post owned by another team, progress 0 or 100
+    Locked --> Owned : a linked Flag post becomes owned by another team
+    Owned --> Contested : an enemy leads, progress falls
+    Contested --> Owned : the owner leads again, progress rises
+    Contested --> Neutral : progress reaches 0, no team, the enemy becomes the capturing team

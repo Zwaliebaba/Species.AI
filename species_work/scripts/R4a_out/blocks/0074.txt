@@ -1,0 +1,18 @@
+sequenceDiagram
+  participant PL as Platform layer
+  participant KM as Keyboard and mouse back-end
+  participant GP as Gamepad back-end on GameInput
+  participant IR as Input router
+  participant UI as UI framework
+  participant MIP as Match input pump and team command state
+  PL->>KM: window keyboard, pointer and wheel input, as it arrives
+  GP-->>GP: device notices into the mailbox
+  UI->>IR: frame gates of the previous frame
+  IR->>IR: clear suppression, release all on focus loss
+  IR->>KM: Collect
+  IR->>GP: Collect, every reading since the previous frame
+  IR->>IR: merge by timestamp, device notices, apply events to device state
+  IR->>IR: activity, input mode, idle, repeat timers, latches, settings, pointer
+  MIP->>IR: Query actions, read the pointer and the input mode
+  UI->>IR: Query and Suppress UI actions
+  UI->>IR: AdvanceRepeatPass, only on a second UI pass in the frame

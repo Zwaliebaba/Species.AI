@@ -1,0 +1,138 @@
+namespace Species
+{
+
+// Table 3.1-A.
+struct ActorStats
+{
+  ActorKind kind;
+  double health;
+  double speed;
+  double rate;
+  std::optional<double> actorRate;
+};
+
+// Table 3.2-A.
+struct CrateOutcomeEntry
+{
+  CrateOutcome outcome;
+  OutcomeClass outcomeClass;
+  bool good;
+  bool bad;
+  bool start;
+  std::uint8_t comebackWeight;
+  Delivery delivery;
+};
+
+// Table 3.7-B.
+struct ExplainerKey;
+struct ExplainerAnimation
+{
+  MatchMode mode;
+  std::uint32_t width;
+  std::uint32_t height;
+  double loopStart;
+  double loopEnd;
+  std::span<const std::span<const ExplainerKey>> objects;
+};
+
+} // namespace Species
+
+namespace Engine
+{
+
+enum class ParamKind : std::uint8_t
+{
+  Fixed,
+  Random,
+  Linked
+};
+enum class ParamUpdate : std::uint8_t
+{
+  Continuous,
+  PerNote
+};
+// R-AUD-052
+enum class ParamLink : std::uint8_t
+{
+  None,
+  Height,
+  PosX,
+  Altitude,
+  PosZ,
+  Speed,
+  CameraDistance,
+  ObjectAge,
+  GroupsNearby,
+  TimeRemaining,
+  ObjectsNearby
+};
+// One modulatable value (DAT-268).
+struct SoundParam
+{
+  ParamKind kind;
+  double value;
+  double lo;
+  double hi;
+  double inLo;
+  double inHi;
+  double outLo;
+  double outHi;
+  double smoothing;
+  ParamLink link;
+  ParamUpdate update;
+};
+// The order of R-AUD-077, which carries meaning.
+enum class EffectKind : std::uint8_t
+{
+  Chorus,
+  Compressor,
+  Distortion,
+  StereoEcho,
+  Flanger,
+  StandardGargle,
+  RoomReverb,
+  ParametricEqualizer,
+  StudioReverb,
+  ResonantLowPass,
+  BitCrusher,
+  Gargle,
+  Echo,
+  SimpleReverb
+};
+// Parameters in the kind's order.
+struct EffectBinding
+{
+  EffectKind kind;
+  std::array<SoundParam, 13> params;
+  std::uint8_t count;
+};
+// Table 3.3-B.
+struct SoundLayerDef;
+struct SoundEventDef
+{
+  std::string fullId;
+  std::optional<double> cooldownSeconds;
+  std::span<const SoundLayerDef> layers;
+};
+struct SoundSourceDef
+{
+  std::string source;
+  std::span<const SoundEventDef> events;
+};
+struct DspParamDesc
+{
+  std::string_view name;
+  double minimum;
+  double maximum;
+  double declaredDefault;
+  double schemaDefault;
+  bool integer;
+};
+// Generated, compiled in.
+struct DspFilterDef
+{
+  EffectKind kind;
+  std::span<const DspParamDesc> params;
+};
+
+} // namespace Engine

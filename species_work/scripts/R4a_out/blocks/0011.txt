@@ -1,0 +1,23 @@
+flowchart LR
+  subgraph Repo["Repository"]
+    SLN["game solution: engine, game, server and test projects"]
+    TSL["Tools: the tools solution"]
+    CNT["content: authoring sources and edition manifests"]
+    PIN["project files, packages.config, version file"]
+  end
+  PIN --> RES["NuGet restore of the three packages"]
+  RES --> CMP["build Debug or Release through the solution"]
+  SLN --> CMP
+  CMP --> TST["test suites through vstest.console.exe"]
+  TSL --> TOOL["content build tool"]
+  TOOL --> CB["content build per edition"]
+  CNT --> CB
+  CB --> PK["packs, mount manifest, content manifest, reports"]
+  CMP --> ID["build identity"]
+  PK --> ID
+  CMP --> INS["install directory from a Release build"]
+  PK --> INS
+  ID --> INS
+  INS --> SIG["sign PE files and packages"]
+  SIG --> ARC["signed archive and channel wrappers"]
+  CMP --> SYM["symbol store"]

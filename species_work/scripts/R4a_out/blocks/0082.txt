@@ -1,0 +1,15 @@
+D  = rnd.crowd.worker_detail_distance[clamp(E, 1, 3)]    # 99999.9, 1000 or 500 wu
+hd = clamp(1 − d² ÷ D², 0, 1)                            # the high-detail factor
+s  = ref.unit.worker.card_half_width
+     × (1 + ref.unit.worker.card_variation × ((slot index × unit id) mod 10))
+if k > 0 and d > ref.unit.worker.card_scale_start:
+    s = s × (1 + k × (d − ref.unit.worker.card_scale_start) ÷ ref.unit.worker.card_scale_divisor)
+if the Worker has Fury:
+    s = s × (1 + |sin g| × rnd.crowd.worker_fury_pulse)
+far = ref.unit.worker.card_face_start + ref.unit.worker.card_scale_divisor   # 1300 wu
+up = terrain normal under the Worker   if hd > 0 and d < far
+     (0, 1, 0)                         otherwise
+up = up tilted by the sway or tumble of R-UNIT-143
+right = Worker front × up
+quad: halfWidth = s, halfHeight = s, axisRight = right, axisUp = up,
+      blendStart = ref.unit.worker.card_face_start, blendLength = ref.unit.worker.card_scale_divisor

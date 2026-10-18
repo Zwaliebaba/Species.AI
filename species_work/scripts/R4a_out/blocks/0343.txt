@@ -1,0 +1,11 @@
+flowchart TD
+  I["every live instance, each audio update"] --> A{"position"}
+  A -->|"2d"| F["audibility: full level"]
+  A -->|"fix or att"| D["audibility: envelope level × g(d)"]
+  F --> R["rank by audibility, loudest first"]
+  D --> R
+  R --> K["× 0.75 per louder copy of the same event"]
+  K --> C["combine with the bus priority class"]
+  C --> B{"within the real-voice budget, bus cap and event cap?"}
+  B -->|"yes"| P["real voice, steal only with the margin"]
+  B -->|"no"| V["virtual: position advances, one-shot retired after its patience"]

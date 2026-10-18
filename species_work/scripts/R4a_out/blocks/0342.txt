@@ -1,0 +1,3 @@
+g(d) = 1           when d ≤ md
+     = md ÷ d      when d > md        (−6.02 dB per doubling of distance)
+heard level (dB) = envelope level (dB) + 20 × log10 g(d) + bus and master gains (dB)

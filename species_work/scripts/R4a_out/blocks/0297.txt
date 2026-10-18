@@ -1,0 +1,7 @@
+w := 0;  D := 0
+for i from 0 to 5:
+    if team i defends:
+        D += c[i]
+        if D >= ref.bot.marker.defence_quorum or (a structure is bound and its team defends):  w := i;  stop   # 15
+    if c[i] > ref.bot.marker.defence_majority * c[w]:  w := i                                                  # 2
+team := w

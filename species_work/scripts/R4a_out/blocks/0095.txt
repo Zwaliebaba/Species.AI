@@ -1,0 +1,20 @@
+Branch(from, to, n, pass):
+  if n == 0: return
+  n = n - 1
+  if n == 0:                                   # a leaf segment
+    if pass == RADIUS: crownRadius = max(crownRadius, |to - crownCenter|)
+    elif pass == LEAF: crownCenter += to; leafCount += 1
+  d = to - from
+  A = Normalize(d x to)                        # Normalize of a zero vector gives (0, 0, 1)
+  B = Normalize(A x d)
+  len = |d|
+  w = widthFactor * (budSize if n == 0 else 1.0)
+  if (n == 0 and pass == LEAF) or (n != 0 and pass == BRANCH):
+    emit quad (from - A*len*w, uv 0,0) (from + A*len*w, uv 0,1) (to + A*len*w, uv 1,1) (to - A*len*w, uv 1,0)
+    emit the same quad with B in place of A    # two crossed planes per segment
+  for i in 0 .. 3:                             # four children, also below leaf segments
+    dir = [A, -A, B, -B][i]
+    t = childOffsetMin + NextScaled(childOffsetRange)
+    childFrom = from + d * t
+    childTo = childFrom + dir * len * childLength * pushOut + d * (1 - t) * pushUp
+    Branch(childFrom, childTo, n, pass)

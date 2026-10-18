@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> Attack
+    Attack --> Hold : attack elapsed
+    Attack --> Release : release requested
+    Hold --> Release : sustain elapsed, stop, or one-shot sample end
+    Release --> Finished : release elapsed and no pending note
+    Finished --> [*]

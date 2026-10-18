@@ -1,0 +1,11 @@
+if horizontal distance to target > ref.unit.collector.arrival_distance:           # 5 wu
+    cap   := ref.unit.collector.speed × (ref.econ.collector.idle_speed_factor if Idle else 1)
+    speed := min(horizontal distance, cap)                                      # wu/s
+    a     := (ref.unit.collector.idle_turn_rate if Idle else ref.unit.collector.turn_rate) × ref.sim.tick_period
+    facing := facing × (1 − a) + dir × a                                        # a = 0.95, or 0.2 while Idle
+    vel   := ref.unit.collector.velocity_keep × vel + (1 − ref.unit.collector.velocity_keep) × facing × speed
+    pos   := pos + vel × ref.sim.tick_period
+    pos.y := hover height
+    facing := horizontal part of vel
+else:
+    pos.y := hover height                                                      # it did not move

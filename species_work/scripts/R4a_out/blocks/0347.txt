@@ -1,0 +1,14 @@
+flowchart TD
+  A["Render frame: participant step"] --> B{"Match loading?"}
+  B -- "yes" --> C["Keep the connection alive, run no slices"]
+  B -- "no" --> D["Record the real time at the start"]
+  D --> E{"More than 20 frames behind and holding a participant id?"}
+  E -- "yes" --> F["n = 20, catching up"]
+  E -- "no" --> G["n = clamp of floor 0.3 x pending, 0 to 20"]
+  F --> H["Connection upkeep, then run n slices"]
+  G --> H
+  H --> I{"Match-start frame processed?"}
+  I -- "yes" --> J["Stop until the load has finished"]
+  I -- "no" --> K{"Catching up and at most 0.3 s spent?"}
+  K -- "yes" --> E
+  K -- "no" --> L["Done for this render frame"]

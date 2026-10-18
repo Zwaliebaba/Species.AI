@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant P as Player or bot
+    participant W as Meteor shower Power
+    participant M as Meteors, 5 to 9
+    participant T as Tick clock
+    participant X as Explosion primitive
+    P->>W: target point
+    W->>M: spawn over the map 1500 to 2000 wu up, target the point plus or minus 210 wu
+    loop every tick
+        M->>M: move 350 wu/s toward the target, 5 cosmetic fire particles
+        M-->>T: first time within 200 wu, request speed 0.4 at rate 0.1, hold 40 ticks
+    end
+    M->>X: impact, explosion of range 50 and damage 100, land sound

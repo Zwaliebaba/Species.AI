@@ -1,0 +1,14 @@
+numSteps := trunc(|_to - _from| / ref.sim.walk.cost_step)          # 40 wu
+cost := 0; wet := 0; prev := _from
+for i := 1 .. numSteps:
+    p := _from + (_to - _from) * i / numSteps, with p.y := terrain height at p
+    if p.y <= seaLevel: wet += ref.sim.walk.cost_step
+    if wet >= ref.sim.walk.cost_wet_limit: return -1               # one wet sample
+    if _checkObstacles:
+        for each structure b in ObstacleGrid.StructuresAt(p):
+            if (b is a wall or b is an enabled Barrier Emitter) and b.SphereHits(p, ref.sim.walk.cost_obstacle_radius):
+                return -1
+    gradient := gradient from prev to p                            # rise over run between consecutive samples
+    cost += |p - prev| * (1 + max(0, ref.sim.walk.uphill_factor * gradient))   # uphill penalty only
+    prev := p
+return cost

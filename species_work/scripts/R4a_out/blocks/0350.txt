@@ -1,0 +1,16 @@
+stateDiagram-v2
+    [*] --> FrontEnd
+    FrontEnd --> Lobby : host or join a session
+    Lobby --> FrontEnd : back out, teardown
+    Lobby --> Loading : match-start command
+    Loading --> Frozen : load done, buffered ticks executed
+    Frozen --> GraceCountdown : every human and spectator team ready
+    GraceCountdown --> Running : countdown ends, speed 1 requested
+    Running --> Paused : pause command
+    Paused --> Running : unpause command
+    Running --> MatchOver : mode end condition
+    MatchOver --> FadeOut : speed 0 locked
+    FadeOut --> Teardown : fade-out complete
+    Teardown --> FrontEnd : session left
+    Running --> Teardown : player quits the match
+    FrontEnd --> [*] : quit

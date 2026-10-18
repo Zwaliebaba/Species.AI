@@ -1,0 +1,15 @@
+flowchart TD
+    A["Team advance, slice s, used team slot"] --> P{"s is the Power-slot slice?"}
+    P -- yes --> PS["Power slots advance; kill-milestone event"] --> G
+    P -- no --> G["Each used group slot ascending: member advance of slice s"]
+    G --> G0{"s is the group-advance slice?"}
+    G0 -- yes --> GA["Each used group slot ascending: group advance, remove empty groups"] --> L
+    G0 -- no --> L{"s is the selection-latch slice?"}
+    L -- yes --> LA["Latch selected-Worker count and centre, clear accumulators"] --> U
+    L -- no --> U["Ungrouped actors of slice s, ascending slot order"]
+    U --> U1["Remember position and handle, advance with no group, add a controlled Worker to the selection"]
+    U1 --> U2{"removal requested?"}
+    U2 -- yes --> UR["Grid removal by recorded footprint, free the slot, destroy"]
+    U2 -- no --> U3{"disabled itself?"}
+    U3 -- yes --> UD["Grid removal"]
+    U3 -- no --> UG["Grid update from the remembered position"]

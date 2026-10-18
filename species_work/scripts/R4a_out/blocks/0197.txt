@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant P as Player or bot
+    participant W as Airstrike Power
+    participant M as Airstrike target markers, 3 to 7
+    participant F as Airstrike flight with 2 Bombers
+    participant B as Bombs
+    P->>W: target point
+    W-->>W: the Power ends at once
+    W->>M: thrown from the point to the point plus or minus 50 wu
+    M->>M: bounce until force at most 0.1, smoke every tick
+    M->>F: after 20 ticks and at rest, one flight of 2 Bombers
+    F->>F: entry corner to 70 wu above the marker, 400 slowing to 40 wu/s
+    F->>B: each Bomber within 90 wu drops one bomb
+    B->>B: bomb or firebomb canister explodes near the marker
+    F->>M: Leaving, the marker removes itself
+    F->>F: past the exit corner and off the map, Bombers removed

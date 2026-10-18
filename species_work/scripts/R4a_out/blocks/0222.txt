@@ -1,0 +1,11 @@
+flowchart TD
+    A["Fire step"] --> B{"Fire timer above 0?"}
+    B -->|"yes"| Z["Nothing"]
+    B -->|"no"| C["Examine the barrel at the cursor; the cursor advances"]
+    C --> D{"Is the barrel's port occupied?"}
+    D -->|"no"| G
+    D -->|"yes"| E["Three simulation draws: dx, dz, df"]
+    E --> F["Fire the weapon of the type from this barrel's muzzle; casing ejection is presentation; fire timer = reload"]
+    F --> G{"Another barrel to examine in this step? Two per step, one for a rocket turret"}
+    G -->|"yes"| C
+    G -->|"no"| H["Done"]

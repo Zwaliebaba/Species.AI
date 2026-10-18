@@ -1,0 +1,13 @@
+flowchart TD
+    A["Bot controller, every tick"] --> R["Stray recall: k picks among live ungrouped actors"]
+    R --> R1{"Picked a Worker on the ground?"}
+    R1 -->|"more than 10 wall hits, not in a Transport"| R2["Idle, wall hits 0"]
+    R2 --> R3
+    R1 -->|yes| R3{"Idle and more than 70 wu from its nearest node?"}
+    R3 -->|yes| R4["Waypoint order to the node + polar offset"]
+    R --> T["Main-cycle countdown - 1, Beam Dish countdown - 1, at least 0"]
+    T --> S["Beam Dish aiming, special-unit policies, actor-group policies"]
+    S --> C{"Main-cycle countdown at 0?"}
+    C -->|no| Z["Done for this tick"]
+    C -->|yes| D["Countdown := main-cycle period"]
+    D --> M["Main cycle"]

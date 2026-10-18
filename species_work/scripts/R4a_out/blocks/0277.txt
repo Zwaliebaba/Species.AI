@@ -1,0 +1,12 @@
+stateDiagram-v2
+    [*] --> Idle: granted
+    Idle --> Waiting: started
+    Waiting --> Running: targeted, only with lock 0
+    Waiting --> Removed: a one-shot Power targeted, it ends itself
+    Running --> Waiting: Leader Power, every tick
+    Running --> Stopping: Strike team life reaches 0, stop runs
+    Running --> Removed: advance reports done, for an object gone, life out, no affected Worker or a turret lost
+    Stopping --> Removed: advance at the end of the tick
+    Waiting --> Removed: cancelled, stop runs
+    Running --> Removed: cancelled, stop runs
+    Removed --> [*]

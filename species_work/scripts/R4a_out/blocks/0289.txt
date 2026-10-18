@@ -1,0 +1,12 @@
+n := |from.links|;  if n == 0: return none
+i := NextUint mod n;  tries := 0
+loop:
+    tries += 1;  if tries > ref.bot.select.random_tries (100): return none
+    apply the tutorial filters ([05] R-BOT-151); they may re-roll i or return none
+    N := from.links[i].node
+    if from.beamDishFlag and N.beamDishFlag:  return from         # stay: the dish carries the Workers
+    if N.seaFlag:  i := NextUint mod n;  continue                  # DEC-087: a sea pick is drawn again
+    e := from.links[i].emitter
+    if e is none or no longer exists or e.team == the bot's team:  break
+    i := NextUint mod n                                            # any other team's emitter, switched on or off
+return N

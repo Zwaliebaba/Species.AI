@@ -1,0 +1,13 @@
+flowchart TD
+    G["Grant: outcome kind, option, source"] --> F{"Free Power slot?"}
+    F -- no --> L["Lost: ui.power_slots.full"]
+    F -- yes --> I["Insert before the first Waiting Power"]
+    I --> S["Start: life limit set"]
+    S --> W["Waiting"]
+    W --> T{"Target valid and no start lock?"}
+    T -- no --> W
+    T -- yes --> E["Effect runs at the point"]
+    E --> O{"One-shot?"}
+    O -- yes --> X["Stopping: slot freed"]
+    O -- no --> R["Running until life limit, unit gone or cancel"]
+    R --> X

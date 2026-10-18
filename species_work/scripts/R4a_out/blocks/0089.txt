@@ -1,0 +1,6 @@
+flowchart LR
+  A["Apply settings"] --> S["Save through the settings store"]
+  S --> Q{"Render size, window mode, sample count or HDR output changed?"}
+  Q -->|"yes"| R["Reconfigure: wait for the GPU, resize the swap chain, create the changed pipeline states, recompile the frame graph"]
+  Q -->|"no"| N["The next frame reads the new detail, style and lighting settings"]
+  R --> N

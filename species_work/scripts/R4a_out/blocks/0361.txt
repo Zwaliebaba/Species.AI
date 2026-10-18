@@ -1,0 +1,14 @@
+flowchart TD
+    H["handle: team, group, slot, serial"] --> G{"group field"}
+    G -- "structure pool" --> SB["find the structure with this serial"]
+    G -- "effect pool" --> EF["effect pool slot in use and serial equal?"]
+    G -- "Essence-orb pool" --> OR["orb pool slot in use and generation equal?"]
+    G -- "laser-bolt pool" --> LB["bolt pool slot in use and generation equal?"]
+    G -- "group slot or ungrouped" --> TM{"team below the team count and in use?"}
+    TM -- no --> N["none"]
+    TM -- yes --> AC["member slot or ungrouped slot in use and serial equal?"]
+    SB --> Z["object or none"]
+    EF --> Z
+    OR --> Z
+    LB --> Z
+    AC --> Z

@@ -1,0 +1,38 @@
+namespace Engine
+{
+
+enum class SoakProgressionKind : std::uint8_t
+{
+  Linear,
+  Random,
+  Sequence
+}; // DBG-162
+enum class SoakEntryFailure : std::uint8_t
+{
+  ContentHashMismatch
+}; // DBG-161
+enum class SoakParticipantRole : std::uint8_t
+{
+  Host,
+  Client
+};
+
+struct SoakSequenceItem;        // table 3.1-B; seed is std::optional, absence keeps the authority's seed
+struct SoakTestMap;             // table 3.1-C
+struct SoakConfigurationRecord; // table 3.1-A, the cooked record the soak runner reads
+struct SoakMatchRow;            // table 3.2-A; absent cells are std::optional
+struct SoakPassSummary;         // table 3.2-B
+struct TelemetrySession;        // table 3.3-A, exactly the data set of DBG-181
+
+// Owned by the SoakRunner (DBG-161).
+class SoakMatchTableWriter
+{
+public:
+  std::expected<void, Diagnostic> WriteHeader();                       // DAT-376
+  std::expected<void, Diagnostic> AppendRow(const SoakMatchRow& _row); // one write, then flush (DAT-383)
+};
+
+std::expected<std::string, std::vector<Diagnostic>> WriteTelemetrySession(const TelemetrySession& _session); // DAT-380
+std::expected<TelemetrySession, std::vector<Diagnostic>> ReadQueuedTelemetrySession(std::string_view _text); // DAT-385
+
+} // namespace Engine

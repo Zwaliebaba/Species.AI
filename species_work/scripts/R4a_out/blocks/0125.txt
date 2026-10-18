@@ -1,0 +1,17 @@
+stateDiagram-v2
+    [*] --> Neutral
+    Neutral --> Activating: ownership check finds one team with at least 3 operators and only friends on the ports
+    Activating --> Producing: after 300 ticks, or at once for a team's only Spawn Node or with instant capture
+    Activating --> Neutral: ownership check finds no single owning team
+    Producing --> Neutral: ownership check finds no single owning team
+    Activating --> Activating: ownership check finds a different single owning team
+    Producing --> Activating: ownership check finds a different single owning team
+    state Producing {
+        [*] --> Burst
+        Burst --> Pause: int(20 x H) requests issued, one every 2 ticks
+        Pause --> Burst: after 101 to 150 ticks
+    }
+    note right of Producing
+        No request is issued while the team is at its population cap.
+        Each request sends a transit orb from the Source Node along the Relays.
+    end note

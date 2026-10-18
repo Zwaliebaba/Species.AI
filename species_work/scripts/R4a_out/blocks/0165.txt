@@ -1,0 +1,13 @@
+flowchart TD
+    A[health change: amount, damage kind] --> B{kind-specific resistance, table 2.8-A}
+    B -- immune --> R0[return false or true per table]
+    B -- scaled or full --> C{already dead?}
+    C -- yes --> R1[return true]
+    C -- no --> D{amount below 0?}
+    D -- yes --> E[emit hurt event]
+    D -- no --> F
+    E --> F{health + amount at or below 0?}
+    F -- yes --> G[health := fade start, dead := true, emit die event, release one Essence orb unless the kind or the Rogue faction releases none]
+    F -- no --> H[health := min of health + amount and the health maximum]
+    G --> R2[return true]
+    H --> R2

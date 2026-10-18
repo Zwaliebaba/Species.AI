@@ -1,0 +1,18 @@
+flowchart TD
+  S1["1 Exit check"] --> S2["2 Player camera, once"]
+  S2 --> S3["3 Platform event pump"]
+  S3 --> S4["4 Toggle-interface control"]
+  S4 --> S5["5 Menu-escape control, UI input pump"]
+  S5 --> S6["6 Queued graphics work"]
+  S6 --> S7["7 Common conditions"]
+  S7 --> S8["8 Read the real clock"]
+  S8 --> S9["9 Host: poll the sequencer"]
+  S9 --> S10["10 Team command state accumulates input"]
+  S10 --> C1["11.1 Send the team command state every 0.1 s"]
+  C1 --> C2["11.2 Connection upkeep and simulation slices"]
+  C2 --> C3["11.3 Multi-round reset if requested"]
+  C3 --> C4["11.4 Timing update"]
+  C4 --> C5["11.5 to 11.14 UI, sea, audio buffers, camera, match input, Power slots panel, shatter effects, audio engine, overlays"]
+  C5 --> C6["11.15 Render with the extrapolation time"]
+  C6 --> C7["11.16 Extra audio advance below 15 fps"]
+  C7 --> S1

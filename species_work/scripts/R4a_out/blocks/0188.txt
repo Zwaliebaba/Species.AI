@@ -1,0 +1,12 @@
+stateDiagram-v2
+    [*] --> Wander
+    Wander --> Hunt : retarget, at least 50 wu up, enemy at 200 to 300
+    Hunt --> Hunt : steer to the target, attack every tick
+    Hunt --> Wander : target gone or beyond 300
+    Wander --> Wander : arrived within 40 wu or 51 ticks, new wander point
+    Wander --> Panic : registered hit that is not a laser bolt
+    Hunt --> Panic : registered hit that is not a laser bolt
+    Panic --> Wander : panic timer expired
+    Wander --> Dead : health 0
+    Hunt --> Dead : health 0
+    Dead --> [*] : corpse fade, 25 ticks on the ground or 50 in the air

@@ -1,0 +1,11 @@
+flowchart TD
+    E["Event: match start, node or wall removed, run-time node created, moved or removed, Beam Dish receiver linked"] --> B["For every live node A in structure order: build A's links"]
+    B --> B1["Clear links, set the sea flag"]
+    B1 --> B2{"For every other node B: within 600 wu or the manual link?"}
+    B2 -->|no| B2
+    B2 -->|yes| B3{"Walkable, or both Beam Dish nodes, or either a sea node?"}
+    B3 -->|yes| B4["Append link B with its crossed Barrier Emitter"]
+    B3 -->|no| B2
+    B1 --> Z["Tag a neutral Control Zone or Relic Spawn Zone containing A (Zone Control, Relic Run)"]
+    B4 --> C["Second pass: cull redundant links, nodes in structure order"]
+    C --> D["Graph ready for the next decisions"]

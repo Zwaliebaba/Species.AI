@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant Setup as Match setup
+    participant Main as Main loop
+    participant Job as Load job
+    participant World as Match world
+    participant Map as Map definition
+    Setup->>Main: match-start command with the map id
+    Main->>Job: start match entry and show the loading view
+    Job->>World: create the match world
+    World->>Map: read the map from a content set, else from the player's map folder
+    Map-->>World: validated definition, with a never-true objective added to an empty list
+    World->>World: assign a start position to every slot below the player count
+    World->>World: Siege sides and co-op groups by start position
+    World->>World: map lights, terrain height field and sea
+    World->>World: map structures in record order, each position replaced by its team
+    World->>World: actor grid, obstacle grid, bot navigation links, route graphs
+    World->>World: teams: bot controller, starting powers, port seeding, starting forces
+    Job-->>Main: load complete
+    Main->>Main: camera to default_view, then cut to the local position's spawn_view

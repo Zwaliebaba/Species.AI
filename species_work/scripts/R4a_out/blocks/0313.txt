@@ -1,0 +1,8 @@
+flowchart TD
+    A["Per-map value, read at use"] --> B{"Form in the map?"}
+    B -- absent --> C{"Does the mode have the lobby option?"}
+    C -- yes --> D["The lobby option value"]
+    C -- no --> E["The mode's typed default"]
+    B -- "0" --> F["None: 0 is a value"]
+    B -- number --> G["The map's number, over any lobby value"]
+    B -- unlimited --> H["No limit"]

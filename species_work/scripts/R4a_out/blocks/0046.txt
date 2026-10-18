@@ -1,0 +1,10 @@
+flowchart TD
+  A["update at audio time T"] --> Q["1 drain queues: state, listener, emitters, stops, triggers, queries"]
+  Q --> P["2 pitch-bend and ducking state"]
+  P --> M["3 music channel"]
+  M --> S["4 start pending instances due by T + period; resolve emitters; retire"]
+  S --> E["5 values, envelope, play position, distance gain, audibility"]
+  E --> R["6 rank by class and score; caps; steal with margin and hold"]
+  R --> V["7 real voices: volume, ratio, matrix, filter, sends, buffers"]
+  V --> O["8 one operation set for every voice change"]
+  O --> X["9 results and statistics"]

@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Playing : request, the attack timer starts at the request
+    Playing --> Playing : request for the same track, no change
+    Playing --> Releasing : request for another track, it becomes pending
+    Playing --> Releasing : stop naming the music source
+    Releasing --> Playing : old track finished, pending track starts with the attack left
+    Releasing --> Idle : old track finished, nothing pending
+    Playing --> Idle : one-shot track ends and releases

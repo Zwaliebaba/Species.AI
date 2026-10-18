@@ -1,0 +1,9 @@
+flowchart LR
+    O["Floating Essence orb"] -->|"Crawler carries it"| C["Crawler"]
+    BD["Brood Drifter"] -->|"lays near orbs and at random, 1 in 4 with a new orb"| E["Crawler egg"]
+    S["spider"] -->|"lays one egg 45 wu beyond an orb"| E
+    C -->|"fertilises a dormant egg"| E
+    E -->|"151 ticks: 4 Crawlers, below 250"| C
+    O -->|"eaten, 4 orbs per segment"| CE["centipede"]
+    O -->|"carried home"| A["ant and Hive"]
+    RS["Reaper Serpent"] -->|"removes the orb of each kill"| X["no orb"]

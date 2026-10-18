@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> GivingOrders: order is not None
+    Idle --> ToWaypoint: AssignWaypoint
+    GivingOrders --> ToWaypoint: AssignWaypoint or formation move
+    GivingOrders --> GivingOrders: faces its order target
+    ToWaypoint --> Idle: arrived within 10 wu, or 3 wu in formation mode

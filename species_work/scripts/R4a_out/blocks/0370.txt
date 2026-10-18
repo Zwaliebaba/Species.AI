@@ -1,0 +1,8 @@
+inWater += 1                                        # ticks in water
+if inWater > ref.sim.water.drown_after: actor health -= ref.sim.water.drown_damage
+if the actor belongs to an actor group:
+    steer v towards (group waypoint + rectangle formation offset of its index) at speed * ref.sim.water.steer_speed_factor
+set |v| := ref.sim.water.swim_speed                 # always, so steering sets only the direction
+p += v * dt
+p.y := -ref.sim.water.bob_amplitude * sin(ref.sim.water.bob_rate * t) - ref.sim.water.bob_depth   # t = inWater * dt, in seconds
+if terrain height at p > seaLevel: inWater := -1    # out of the water

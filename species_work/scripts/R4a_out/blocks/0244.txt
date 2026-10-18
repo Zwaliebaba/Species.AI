@@ -1,0 +1,14 @@
+stateDiagram-v2
+    [*] --> Fuelling
+    Fuelling --> Boarding : fuel at least 95
+    Boarding --> Ignition : fuel above 95 and 100 passengers
+    Ignition --> PreLaunch : next advance, countdown 10, camera shake 5
+    PreLaunch --> Countdown : 101 ticks, countdown 10
+    Countdown --> Flight : countdown exactly 0 at half rate, 200 ticks
+    Fuelling --> Wrecked : damage above 100
+    Boarding --> Wrecked : damage above 100
+    Ignition --> Wrecked : damage above 100
+    PreLaunch --> Wrecked : damage above 100
+    Countdown --> Wrecked : damage above 100
+    Wrecked --> Fuelling : damage reaches 0, passengers ejected, fuel burnt down to half
+    Flight --> [*] : above the win height, the match rules declare the winner

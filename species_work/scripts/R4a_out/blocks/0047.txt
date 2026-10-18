@@ -1,0 +1,16 @@
+flowchart LR
+  SIM["simulation: presentation events per tick"] --> BR["audio bridge: Trigger and Stop commands"]
+  UI["interface code"] --> BR
+  SNAP["immutable snapshot"] --> EU["emitter and listener updates"]
+  BR --> Q["per-thread command queues"]
+  EU --> Q
+  Q --> UPD["audio update thread at the control rate"]
+  DATA["cooked sound data: sources, events, layers, groups, effect kinds"] --> UPD
+  BANK["resident banks"] --> VB
+  UPD --> RANK["instances: values, envelopes, ranking, virtual or real"]
+  RANK --> VB["voice back-end: pooled source voices"]
+  STR["stream task: MS-ADPCM buffers from the packs, decoded by XAudio2"] --> VB
+  VB --> FXB["effect buses"] --> PB["player buses"]
+  VB --> PB
+  PB --> PM["pre-master: master gain and limiter"] --> MV["mastering voice: default device"]
+  UPD --> RES["result queue: queries, readiness, tracked emitters"]

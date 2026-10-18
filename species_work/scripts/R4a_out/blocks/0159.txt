@@ -1,0 +1,18 @@
+flowchart TD
+    A["Mode second"] --> B["Time remaining minus 1; back up scores; score mode 0 zeroes"]
+    B --> C["Each used slot: score, elimination countdown, leader tracking"]
+    C --> D{"Sudden death active?"}
+    D -- yes --> E{"Single leader?"}
+    E -- yes --> W["Declare the leader"]
+    E -- no --> G
+    D -- no --> F{"Time up?"}
+    F -- yes --> T{"Tied and sudden death on?"}
+    T -- yes --> S["Start sudden death, wipe the non-leaders"] --> X["Stop"]
+    T -- no --> W
+    F -- no --> G{"Co-op?"}
+    G -- yes --> H{"Only one alliance left?"}
+    H -- yes --> W
+    H -- no --> X
+    G -- no --> I{"Team count minus 1 equals eliminated count?"}
+    I -- yes --> W
+    I -- no --> X

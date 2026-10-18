@@ -1,0 +1,13 @@
+OnTrigger(_immediate, _moveText):
+    if v > 0:
+        v := min(v + extend, show)                     # already showing: extend it
+    else:
+        v := v - suspicionStep                         # count a stray action
+        if v < suspicionLimit or _immediate:
+            text := moveOrDeselect if _moveText else deselect
+            v := show
+each rendered frame, after the grace period, while the in-match tips setting is on:
+    if v > 0:
+        draw the hint with alpha min(1, v); v := v - dt
+    else if v < 0:
+        v := min(v + decay × dt, 0)                    # the suspicion fades back to 0

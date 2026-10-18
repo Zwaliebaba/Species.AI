@@ -1,0 +1,10 @@
+prevH1 := 0 ;  prevH2 := 0                    # before the first pair of the mesh
+for each pair (v1, v2) with depths d1, d2 and shore noises n1, n2:
+    ix := trunc((v1.x + X/2) / wc + ter.sea.wave.index_bias)      # + 0.1
+    iz := trunc((v1.z + Z/2) / wc + ter.sea.wave.index_bias)
+    v1.y := (waveX[ix] + waveZ[iz]) * d1
+    b1   := (prevH1 + prevH2 + v1.y) * B * (1 - d1) + n1 ;  prevH1 := v1.y
+    v2.y := (waveX[ix] + waveZ[iz + 1]) * d2
+    b2   := (prevH2 + prevH1 + v2.y) * B * (1 - d2) + n2 ;  prevH2 := v2.y
+    color(v1) := table[clamp(trunc(0.7 * b2 + 0.3 * b1), 0, colors - 1)]
+    color(v2) := table[clamp(trunc(0.7 * b1 + 0.3 * b2), 0, colors - 1)]

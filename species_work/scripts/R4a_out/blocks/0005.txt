@@ -1,0 +1,16 @@
+# pass 1: horizontal, from S into T
+T := image(W, H) cleared to (0, 0, 0, 0)
+for y in 0 .. H-1, for x in 0 .. W-1:
+    if S(x, y).r = 0 and S(x, y).g = 0 and S(x, y).b = 0: continue      # black texels add nothing
+    for k in -2 .. 2:
+        if 0 <= x + k < W:
+            for c in (r, g, b, a): T(x+k, y).c := min(255, T(x+k, y).c + round(S(x, y).c * w[k]))
+
+# pass 2: vertical, from T into D, with the vertical gain
+D := image(W, H) cleared to (0, 0, 0, 0)
+for y in 0 .. H-1, for x in 0 .. W-1:
+    if T(x, y).r = 0 and T(x, y).g = 0 and T(x, y).b = 0: continue
+    for k in -2 .. 2:
+        if 0 <= y + k < H:
+            for c in (r, g, b, a):
+                D(x, y+k).c := min(255, D(x, y+k).c + round(T(x, y).c * w[k] * ast.derive.blur_vertical_gain))

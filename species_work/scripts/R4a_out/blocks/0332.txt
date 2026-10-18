@@ -1,0 +1,9 @@
+flowchart TD
+    A["Back pressed on the match setup page"] --> B{"Single player?"}
+    B -- "yes" --> SP["Clear co-op and basic crates, colour requests to none, back to map select; the session stays up"]
+    B -- "no" --> C{"Joining player, ready, and the host heard from within 5.0 s?"}
+    C -- "yes" --> D["Leaving-while-ready flag; withdraw readiness"]
+    D --> E{"Some used slot and the local slot not ready?"}
+    E -- "no" --> E
+    E -- "yes" --> F["End the session; to the title page; clear chat and password"]
+    C -- "no" --> G["End the session at once; to the Back button's page with the menu-back cue; clear chat and password"]

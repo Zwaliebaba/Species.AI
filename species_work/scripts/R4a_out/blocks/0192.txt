@@ -1,0 +1,10 @@
+s = speed stat                                                       # 244
+if |target - p| > ref.unit.abductor.brake_distance:                  # 200 wu
+    speed = min(speed + ref.unit.abductor.acceleration * dt, ref.unit.abductor.speed_cap_factor * s)     # 100 wu/s per s, 2 x s
+else:
+    speed = max(speed - ref.unit.abductor.acceleration * dt, ref.unit.abductor.speed_floor_factor * s)   # 0.1 x s
+if state == Idle and p.y > ref.unit.abductor.descent_height:         # 1000 wu
+    speed = max((p.y - 1000) / ref.unit.abductor.descent_range * ref.unit.abductor.descent_speed, 2 * s)  # 5000, 8000
+heading = normalise(heading * (1 - ref.unit.abductor.heading_blend) + normalise(target - p) * ref.unit.abductor.heading_blend)   # 0.1
+v = heading * speed * dt
+p += v * dt

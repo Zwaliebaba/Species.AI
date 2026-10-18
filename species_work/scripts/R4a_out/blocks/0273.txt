@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant LOAD as Match entry
+    participant CAM as Match camera
+    participant ML as Match loop
+    LOAD->>CAM: set bounds and the fallback pose
+    LOAD->>CAM: cut to default_view, when the map has it
+    LOAD->>CAM: request free movement
+    ML->>CAM: first frame with a local team: cut to spawn_view_n
+    ML->>CAM: after a reset that rebuilds the match world: cut to spawn_view_n again

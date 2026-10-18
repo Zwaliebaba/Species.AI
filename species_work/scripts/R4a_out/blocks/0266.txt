@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant W as Weapon
+    participant X as Explode
+    participant A as Actors within 2r
+    participant S as Structures within 3r
+    participant R as Shockwave ring
+    W->>X: position, r, D, team, source
+    X->>A: damage D times f, f full to 1.5r then falling to 0 at 2r
+    A-->>X: knock-back when the change registered, kills counted
+    X->>R: ring of size r over 20 s
+    X->>S: damage D times 1 minus d over 3r
+    R->>A: band hits for its active ticks, 40 times strength, 2.5 percent ignite for Workers

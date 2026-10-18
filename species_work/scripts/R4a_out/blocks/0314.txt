@@ -1,0 +1,11 @@
+flowchart TD
+    A["Map record that names a start position p"] --> B{"Kind of record?"}
+    B -- structure --> C{"Is p below the player count?"}
+    C -- yes --> D["The team that holds p"]
+    C -- no --> E["No team, also for p = 4 or 5"]
+    B -- "starting forces" --> F{"Which team has start position p?"}
+    F -- "a player slot" --> G["That team"]
+    F -- "p = 4" --> H["The Rogue faction"]
+    F -- "p = 5" --> I["The Visitor faction"]
+    F -- "none" --> J["Nothing is created"]
+    K["Map record that names no team"] --> L["No team"]

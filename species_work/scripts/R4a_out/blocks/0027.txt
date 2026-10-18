@@ -1,0 +1,14 @@
+flowchart TD
+  A["Stored language setting"] --> T1{"Offered and loads?"}
+  T1 -- yes --> OK["Store it in the language setting"]
+  T1 -- no --> B["Next preferred user-interface language, with region, then without region, then without script"]
+  B --> T2{"Offered and loads?"}
+  T2 -- yes --> OK
+  T2 -- "no, more candidates" --> B
+  T2 -- "no, none left" --> C["Base language en-GB"]
+  C --> T3{"Offered and loads?"}
+  T3 -- yes --> OK
+  T3 -- no --> D["First offered language"]
+  D --> T4{"Loads?"}
+  T4 -- yes --> OK
+  T4 -- no --> X["Fatal exit: ui.error.language_missing, compiled-in text"]

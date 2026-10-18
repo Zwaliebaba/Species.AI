@@ -1,0 +1,16 @@
+classDiagram
+    SimObject *-- SimObjectId : handle
+    Actor ..> ActorStatTable : stats by kind
+    MatchWorld o-- MapLight : map lights
+    Structure *-- StructurePort : ports
+    SpawnStructure *-- SpawnEdge : edges
+    SpawnEdge *-- TransitOrb : orbs in transit
+    Leader *-- FormationSlot : formation
+    Leader *-- ClothFlag : flag
+    Transport *-- ClothFlag : flag and deploy flag
+    ControlZone o-- ClothFlag : Flag Chain flag
+    StrikeTeam *-- TrailPoint : position history
+    Crawler *-- CrawlerTrailSample : position history
+    SpiderCreature *-- SpiderGait : gait
+    SpiderCreature *-- ProceduralLeg : legs
+    ProceduralLeg *-- ProceduralFoot : foot

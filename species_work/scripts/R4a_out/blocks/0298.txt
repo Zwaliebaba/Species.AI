@@ -1,0 +1,15 @@
+if current objective is none:
+    mine   := the active objectives whose team is the bot's team, in structure order
+    allied := the active objectives of other teams that are friends of the bot's team
+    if mine is not empty:
+        if not A and |mine| > 1:              # a defender with several possible starts waits
+            current := the first objective in mine with a marker that has enemies of the team in its cells
+                       within ref.bot.siege.engage_radius (450 wu) (EnemiesInCells, R-SIM-313); else none
+        else:
+            current := mine[NextUint mod |mine|]
+        if current is not none:  every other objective in mine becomes inactive
+    else if allied is not empty:
+        current := allied[NextUint mod |allied|]
+if current is not none:
+    if current is inactive:  current := current's next objective      # none at a chain end: chosen again next cycle
+    if A:  run the Breach Charge policy (R-BLDG-294) for every Breach Charge of the team

@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> Flying : spawned with a velocity
+    Flying --> Bouncing : below ground plus 3, force times 0.65
+    Bouncing --> Flying : still moving
+    Flying --> Burst : burst timer elapsed
+    Bouncing --> Burst : burst timer elapsed
+    Flying --> Dead : health 0 from a hit that is not a laser bolt
+    Bouncing --> Dead : health 0
+    Burst --> [*] : shatter, release its kind, burst-open sound, removed
+    Dead --> [*] : Essence orb and shatter, removed next tick without a fade

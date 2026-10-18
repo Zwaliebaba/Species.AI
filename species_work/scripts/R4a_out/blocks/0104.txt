@@ -1,0 +1,12 @@
+flowchart TD
+  A["Size: req = trunc of size / cell size, k = ceilLog2 of req - 1, n = 2^k + 1"] --> B["Every sample = outside height"]
+  B --> C{"Guide power p above 0?"}
+  C -->|yes| D["Pin guide byte (x, z) at ((x+1) scale, (z+1) scale), z outer"]
+  C -->|no| E
+  D --> E["Compensated gain: height scale x fd modifier x ls modifier"]
+  E --> F["Seed the private tile generator with the tile seed"]
+  F --> G{"Passes left?"}
+  G -->|yes| H["For x outer, z inner: square centre, then low-z edge if z is not 0, then low-x edge if x is not 0"]
+  H --> I["Halve the step"]
+  I --> G
+  G -->|no| J["Add position y to every sample, border included"]

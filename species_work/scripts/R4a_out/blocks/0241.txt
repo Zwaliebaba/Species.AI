@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> NoTeam
+    NoTeam --> Carried : at least 10 Workers of one team within 50 wu
+    Carried --> NoTeam : recount finds no qualifying team
+    Carried --> Breached : touches a wall within 20 wu, every wall within 200 wu destroyed
+    Carried --> Scuttling : owner defends and at least 10 Workers carry it
+    Scuttling --> Carried : condition fails, scuttle timer back to 101 ticks
+    Scuttling --> Exploded : 101 ticks, explosion of range 50 and damage 500
+    Breached --> [*]
+    Exploded --> [*]

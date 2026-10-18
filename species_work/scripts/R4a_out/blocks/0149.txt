@@ -1,0 +1,11 @@
+flowchart TD
+    A["DeclareResult(t)"] --> B["Add the local team's kill total to the statistics hook"]
+    B --> C["Score report, ignored by every participant"]
+    C --> D{"t differs from the declared result?"}
+    D -- no --> X["Done"]
+    D -- yes --> E["Declared result := t, match over"]
+    E --> F["Request speed 0 at the game-over rate and lock the tick clock: 21 ticks to a halt"]
+    F --> G["Game-over sound, then victory or defeat sound"]
+    G --> H{"Local team is t?"}
+    H -- yes --> I["Won-on-map and Completionist hooks"] --> X
+    H -- no --> X

@@ -1,0 +1,17 @@
+flowchart TD
+    C["Siege main cycle"] --> I{"Objectives initialised?"}
+    I -->|no| E["Nothing"]
+    I -->|yes| H{"Current objective?"}
+    H -->|none| M{"Own active objectives?"}
+    M -->|"defender with several"| W["Choose the first with enemies within 450 wu of a marker, else wait"]
+    M -->|"otherwise"| R["Pick one at random"]
+    M -->|"none"| AL["Pick an ally's active objective at random"]
+    W --> D["Deactivate the team's other active objectives"]
+    R --> D
+    H -->|yes| N{"Still active?"}
+    D --> N
+    AL --> N
+    N -->|no| X["Move to its next objective, none at a chain end"]
+    N -->|yes| B{"Attacking?"}
+    X --> B
+    B -->|yes| BC["Route every Breach Charge of the team"]

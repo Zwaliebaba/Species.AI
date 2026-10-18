@@ -1,0 +1,7 @@
+stateDiagram-v2
+  [*] --> Holding : text set, timer started
+  Holding --> Scrolling : t reaches the hold time and the content is taller than the widget
+  Scrolling --> Scrolling : offset grows at the scroll speed
+  Scrolling --> Holding : offset exceeds the text height, timer restarts at the top
+  Holding --> Holding : the focus moves, timer restarts
+  Scrolling --> Holding : the focus moves, timer restarts

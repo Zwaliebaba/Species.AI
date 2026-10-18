@@ -1,0 +1,19 @@
+stateDiagram-v2
+    [*] --> NoTeam : created from the map, or placed by a turret power
+    NoTeam --> Owned : ownership evaluation every 11 ticks, every operator a friend of the candidate
+    Owned --> NoTeam : no operator, or an operator that is not a friend of the candidate
+    Owned --> Owned : another team takes the ports, the head is tinted again
+    state Owned {
+        [*] --> Sweeping
+        Sweeping --> Engaging : a search finds a target
+        Engaging --> Hosing : the target is lost or dies
+        Hosing --> Engaging : a search finds a target
+        Hosing --> Sweeping : 10 ticks after the last tick with a target
+        Sweeping --> PlayerControlled : the owner selects the turret
+        Engaging --> PlayerControlled : the owner selects the turret
+        Hosing --> PlayerControlled : the owner selects the turret
+        PlayerControlled --> Sweeping : deselected
+    }
+    Owned --> Destroyed : health 0 or below, a Visitor faction mismatch, or the turret-cap rule
+    NoTeam --> Destroyed : health 0 or below
+    Destroyed --> [*] : shattered, bot navigation node removed, structure removed

@@ -1,0 +1,207 @@
+namespace Engine
+{
+
+// ---- identity -------------------------------------------------------------------------
+struct AssetId   // dotted, lower case, a row of the asset manifest
+{
+  std::string value;
+};
+struct VariantId   // empty: the asset's default processing
+{
+  std::string value;
+};
+struct AssetKey
+{
+  AssetId asset;
+  VariantId variant;
+  auto operator<=>(const AssetKey& _other) const = default;
+};
+using ContentKey = std::string;                   // canonical pack key (§3.1)
+using Sha256Digest = std::array<std::byte, 32>;
+struct AssetError;       // asset id, key, error kind and message (§6)
+struct MountOptions;     // configuration, optional loose-content directory (Debug builds only)
+struct MountOverride;    // key, overridden pack, overriding pack
+struct RuntimeTextureId  // never collides with a manifest asset id
+{
+  std::uint32_t value;
+};
+class ImageProducer;     // produces the pixels of a run-time texture on demand (§4.15)
+
+enum class ContentType : std::uint8_t
+{
+  Texture, CpuTable, Mesh, Collision, SimRecord, Record, Map, MapIndex, StringTable, Font, ResidentSound, SoundStream,
+  ExplainerScript, AssetIndex
+};
+
+// ---- import records (schemas owned by data_schemas/, ADR-061) -------------------------
+enum class TextureKind : std::uint8_t
+{
+  Color, Ui, Normal, Mask, ExactData, CpuTable
+};
+enum class ColorSpace : std::uint8_t
+{
+  Srgb, Linear
+};
+enum class AlphaMode : std::uint8_t
+{
+  Opaque, Straight, Premultiplied, Additive, Cutout
+};
+enum class MipPolicy : std::uint8_t
+{
+  Full, None
+};
+enum class SamplerId : std::uint8_t   // fixed heap indices (ADR-006, ADR-018)
+{
+  LinearClamp, LinearWrap, PointClamp, PointMagnifyClamp
+};
+enum class Derivation : std::uint8_t
+{
+  BlurredShadow, StackedCopies, Grayscale, ToColor, ReplaceColor
+};
+
+struct TextureView
+{
+  VariantId id;
+  std::uint32_t firstLevel;
+  std::uint32_t levelCount;
+  SamplerId sampler;
+};
+struct DerivedVariant
+{
+  VariantId id;
+  Derivation op;
+  std::vector<float> parameters;
+};
+
+struct TextureImportRecord
+{
+  AssetId asset;
+  std::uint32_t member;                    // member index of a multi-file asset
+  TextureKind kind;
+  ColorSpace colorSpace;
+  AlphaMode alphaMode;
+  std::optional<float> cutoutThreshold;    // required with AlphaMode::Cutout
+  MipPolicy mips;
+  SamplerId sampler;
+  bool pixelExact;
+  std::uint32_t authoringScale;
+  std::optional<AssetId> tintMask;         // companion single-channel mask (ADR-020)
+  std::vector<DerivedVariant> derived;
+  std::vector<TextureView> views;
+};
+
+enum class TintMarking : std::uint8_t
+{
+  None, VertexWeight, MaterialFlag
+};
+// MeshRole (Render, Collision): declared by data_schemas/import_and_build_records.md §2
+struct MeshImportRecord
+{
+  AssetId asset;
+  std::uint32_t member;
+  MeshRole role;                               // a collision source is cooked into a Collision entry (AST-044)
+  std::string assetClass;                      // selects the socket schema (ADR-021)
+  float unitScale;                             // glTF metres to wu
+  TintMarking tint;
+  std::optional<float> tintScale;               // RND-161; absent: rnd.tint.factor
+  std::vector<std::string> smoothPrimitives;   // ADR-020 exceptions
+  std::optional<AssetId> collision;            // required for collidable meshes
+};
+
+struct AudioImportRecord
+{
+  AssetId asset;
+  std::uint32_t member;
+  bool positional;
+  std::optional<std::array<std::uint64_t, 2>> loopSamples;   // [start, end); on MS-ADPCM block boundaries
+};
+
+// ---- packs and mounting (ADR-058) ------------------------------------------------------
+enum class PackCodec : std::uint8_t
+{
+  Stored, XpressHuffman   // further values reserved (AST-055)
+};
+struct EntryRef
+{
+  std::uint32_t pack;
+  std::uint32_t entry;
+};
+struct PackEntry
+{
+  ContentKey key;
+  ContentType type;
+  std::uint32_t schemaId;
+  std::uint32_t schemaVersion;
+  std::uint64_t size;
+  std::uint32_t firstChunk;
+  std::uint32_t chunkOffset;
+  bool simulationRelevant;
+  Sha256Digest hash;
+};
+
+class PackFile
+{
+public:
+  static std::expected<PackFile, AssetError> Open(const std::filesystem::path& _path);   // maps and checks the TOC
+  std::optional<std::uint32_t> Find(std::string_view _canonicalKey) const;
+  std::span<const PackEntry> Entries() const;
+};
+
+struct MountManifest;   // ordered pack list with kinds and patch targets (§3.13)
+class MountSet
+{
+public:
+  static std::expected<MountSet, AssetError> Mount(const MountManifest& _manifest, const MountOptions& _options);
+  std::optional<EntryRef> Resolve(std::string_view _requestedKey) const;   // canonicalises, then exact look-up
+  std::vector<ContentKey> List(std::string_view _prefix) const;           // sorted, one per effective key
+  std::span<const ContentKey> MembersOf(const AssetId& _asset) const;     // member keys in member order
+  bool Contains(const AssetId& _asset) const;
+  std::span<const MountOverride> Overrides() const;                       // every override, logged at mount
+  Sha256Digest SimulationIdentity() const;                                // §4.10
+};
+
+// ---- asynchronous reads ----------------------------------------------------------------
+enum class ReadPriority : std::uint8_t
+{
+  Immediate, Normal, Background
+};
+class ContentReader   // one interface; memory-mapped or streamed back-ends
+{
+public:
+  std::future<std::expected<std::vector<std::byte>, AssetError>> ReadEntry(EntryRef _entry, ReadPriority _priority);
+};
+
+// ---- the asset cache -------------------------------------------------------------------
+enum class LoadState : std::uint8_t
+{
+  Queued, Reading, Creating, Uploading, Resident, Failed
+};
+struct TextureSize
+{
+  std::uint32_t width;
+  std::uint32_t height;
+  std::uint32_t displayWidth;
+  std::uint32_t displayHeight;
+  std::uint32_t levels;
+};
+
+class LoadGroup;       // a residency scope: start-up, front end, match (§4.12)
+class TextureHandle;   // reference counted
+class MeshHandle;      // reference counted; exposes the cooked MeshAsset
+
+class AssetCache
+{
+public:
+  LoadGroup& BeginGroup(std::string_view _name);
+  TextureHandle RequestTexture(LoadGroup& _group, const AssetKey& _key, ReadPriority _priority = ReadPriority::Normal);
+  MeshHandle RequestMesh(LoadGroup& _group, const AssetId& _asset, std::uint32_t _member,
+                         ReadPriority _priority = ReadPriority::Normal);
+  LoadState State(const TextureHandle& _handle) const;
+  TextureSize Size(const TextureHandle& _handle) const;   // valid once Resident
+  RuntimeTextureId Register(ImageProducer& _producer);    // run-time textures (§4.15)
+  void EndGroup(LoadGroup& _group);                       // releases the group's references
+  void OnDeviceRebuilt();                                 // recreate resident GPU resources (ADR-008)
+  void Pump();                                            // once per frame: completions and events
+};
+
+} // namespace Engine

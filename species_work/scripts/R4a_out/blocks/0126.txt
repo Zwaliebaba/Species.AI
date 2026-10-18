@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> Birth: a unit dies, outside the Rogue faction
+    Birth --> Floating: after 61 ticks
+    Floating --> Carried: a Collector within 75 wu collects it
+    Floating --> Ascent: after 301 to 500 ticks
+    Ascent --> [*]: after 901 ticks
+    Carried --> [*]: delivered at a friendly Spawn Node as a Worker of the node's owner, below its cap

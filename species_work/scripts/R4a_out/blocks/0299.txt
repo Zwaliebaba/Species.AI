@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Active : chain head at initialisation
+    [*] --> Inactive : named as some objective's next
+    Inactive --> Active : its predecessor completed or fell back
+    Active --> Completed : attack objective, every non-Transport marker held by a team that is in play and not defending
+    Active --> FellBack : defence objective, any marker held by a team that is in play and not defending
+    Active --> Inactive : a defending bot committed to another of its own start objectives
+    Completed --> [*] : next objective active, Transport markers offer pickup
+    FellBack --> [*] : next objective active

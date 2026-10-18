@@ -1,0 +1,13 @@
+{
+  "page": "credits",
+  "fill_boxes": "left_only",
+  "initial_focus": "back",
+  "widgets": [
+    { "id": "title", "kind": "page_title", "place": "standard_title",
+      "caption": "ui.credits.title", "navigation": false },
+    { "id": "text", "kind": "scrolling_text", "place": "ref.meta.credits.text_box",
+      "text": "credits_text", "role": "body", "font": "small", "navigation": false },
+    { "id": "back", "kind": "back_button", "place": "standard_back",
+      "caption": "ui.common.back", "back": { "op": "pop" }, "navigation": true }
+  ]
+}

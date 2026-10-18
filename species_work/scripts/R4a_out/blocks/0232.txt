@@ -1,0 +1,19 @@
+stateDiagram-v2
+    [*] --> Neutral : the map places it with no team
+    [*] --> Active : the map places it for a team, 5 operators seeded, activation 0
+    Neutral --> Activating : evaluation finds owner T, activation 300 ticks
+    Activating --> Active : activation reaches 0, at once if T holds only this node or the map sets instant capture
+    Activating --> Neutral : evaluation finds no owner, activation 300 ticks
+    Active --> Neutral : evaluation finds no owner, activation 300 ticks
+    Active --> Activating : evaluation finds another owner U, activation 300 ticks
+    Activating --> Activating : evaluation finds another owner U, activation 300 ticks
+    state Active {
+        [*] --> Burst
+        Burst --> Burst : one request every 2 ticks while the counter is below N
+        Burst --> Pause : counter reaches N = floor of 20 x H, pause 101 to 150 ticks
+        Pause --> Burst : pause timer reaches 0
+        Burst --> Locked : population locked
+        Pause --> Locked : population locked
+        Locked --> Burst : unlocked during a burst
+        Locked --> Pause : unlocked during a pause
+    }

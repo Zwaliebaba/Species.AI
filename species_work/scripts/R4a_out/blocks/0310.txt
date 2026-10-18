@@ -1,0 +1,8 @@
+OrderedInsert(list, id):
+    for i in 0 .. len(list) - 2:          # the last entry is never compared
+        c := Compare(list[i], id)
+        if c == 0: return                  # an exact duplicate of a compared entry is dropped
+        if c > 0:
+            insert id before list[i]
+            return
+    append id                              # also when id sorts before the last entry or equals it

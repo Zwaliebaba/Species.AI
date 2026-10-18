@@ -1,0 +1,13 @@
+for x in 0..5, z in 0..5:
+    k = Δ * ref.bldg.cloth_flag.relax_rate * (6 - x) / 6
+    if x == 0: k = 1
+    if size > ref.bldg.cloth_flag.damped_size_wu or the flag is highlighted or selected:
+        k = ref.bldg.cloth_flag.damped_factor                    # replaces k (DEC-963), converted by VFX-018
+    w = ref.bldg.cloth_flag.highlight_wobble if highlighted or selected, else 1
+    target = position + up * size / 2 + (z / 5) * up * size     if x == 0
+           = vertex[x - 1][z] + front * size / 5                otherwise
+    target += (w * cos(t + p1 * x) * x / 6,
+               vfx.cloth.lift_gain * w * sin(t + p2 * x) * x / 6,
+               w * cos(t + p3 * x) * x / 6)                      # (p1, p2, p3) = vfx.cloth.wobble_phases
+    vertex[x][z] = vertex[x][z] * (1 - k) + target * k
+    if x > 0: the link from vertex[x - 1][z] is shortened to at most size / 2

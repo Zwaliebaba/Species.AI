@@ -1,0 +1,22 @@
+flowchart LR
+    CAP["1 Capture Spawn Nodes<br/>at least 3 of 5 ports manned,<br/>no enemy on any port,<br/>300-tick activation"]
+    FLOW["2 Worker flow<br/>bursts through the spawn network,<br/>about 1.22 Workers per second per Spawn Node,<br/>up to the population cap"]
+    ORD["3 Leaders and orders<br/>selection circle, Waypoint beacons,<br/>formations, special units"]
+    FIGHT["4 Combat<br/>every Worker shoots and throws grenades;<br/>turrets, strikes, creatures"]
+    ORB["5 Essence orbs<br/>one per death, collectable for 301 to 500 ticks;<br/>Collectors and Builders recycle orbs of any team"]
+    CRATE["6 Supply crates<br/>a drop every 200 to 600 ticks,<br/>opened by the local Worker majority,<br/>90 percent beneficial, 10 percent hostile"]
+    OBJ["7 Objectives<br/>Spawn Nodes, Control Zones, Relics,<br/>Command Consoles, Launch Vessel fuel, Flag posts"]
+    TG["Transit Gate reinforcement waves<br/>every 60 mode seconds in some modes and maps"]
+    CAP --> FLOW
+    TG --> FLOW
+    FLOW --> ORD
+    ORD -->|"crowds move onto ports, Supply crates and objectives"| CAP
+    ORD --> FIGHT
+    ORD --> CRATE
+    ORD --> OBJ
+    FIGHT -->|"deaths"| ORB
+    ORB -->|"Collector delivery within the cap, Builder delivery"| FLOW
+    CRATE -->|"units, strikes and buffs into 6 Power slots"| ORD
+    CRATE -->|"hostile outcomes against everyone"| FIGHT
+    OBJ -->|"score, elimination, win"| RESULT(["Match result"])
+    FIGHT -->|"enemy ports emptied"| CAP

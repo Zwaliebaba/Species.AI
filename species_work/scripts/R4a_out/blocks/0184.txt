@@ -1,0 +1,13 @@
+stateDiagram-v2
+    [*] --> Roam
+    Roam --> Hunt : no target or arrived, enemy at 75 to 150 times size
+    Roam --> SeekOrb : no enemy, Floating orb at 75 to 150, at most 20 segments
+    Roam --> Roam : otherwise a 100 wu step, toward the spawn point with chance d over R
+    Hunt --> Hunt : target position refreshed every tick
+    Hunt --> Roam : enemy gone or reached
+    SeekOrb --> Roam : arrived
+    Roam --> Panic : panic timer above 0
+    Hunt --> Panic : panic timer above 0
+    SeekOrb --> Panic : panic timer above 0
+    Panic --> Panic : half the ticks, retreat point 50 wu away from the nearest enemy
+    Panic --> Roam : panic timer at 0

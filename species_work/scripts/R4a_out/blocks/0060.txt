@@ -1,0 +1,11 @@
+flowchart LR
+  ROW["asset manifest rows"] --> X["cross-check row and import record"]
+  IMP["import records beside the sources"] --> X
+  X --> C["cookers of the asset pipeline"]
+  ENG["engine asset table, generated from the code"] --> R["reference closure"]
+  MAPS["maps, records, scripts"] --> R
+  ED["edition manifests"] --> S["selection: positive, by asset, folder or tag"]
+  R --> S
+  S --> V["release checks: no placeholder, no unreferenced asset"]
+  V --> P["packs and the edition's feature-flag record"]
+  C --> P

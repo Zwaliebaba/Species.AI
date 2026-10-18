@@ -1,0 +1,8 @@
+flowchart LR
+  S["string sources of one language"] --> M["merge; duplicate ids are errors"]
+  M --> V["entry checks: text, kbm, pad, embed_only"]
+  V --> X["expand markers for keyboard and mouse, and for gamepad"]
+  X --> L["length checks"]
+  L --> C["coverage against en-GB; font coverage"]
+  C --> T["cooked string table, two expanded texts per id"]
+  B["cooked binding descriptions"] --> X

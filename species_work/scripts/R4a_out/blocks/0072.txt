@@ -1,0 +1,11 @@
+flowchart TD
+  ST["settings store loaded; control scheme set to the match scheme"] --> D["default binding set: append every entry"]
+  D --> DV["Debug builds only: development layer, append every entry"]
+  DV --> T{"active layout: setting, or the system layout looked up in table 4.13-A"}
+  T -- "tag with a layer" --> LL["layout layer: replace each entry's primary binding"]
+  T -- "no layer" --> U
+  LL --> U["user layer in the settings store: validate each entry, then replace its primary binding"]
+  U --> R["action bindings ready; repeat and latch state reset"]
+  CH["keyboard-layout change at run time"] --> T2{"active layout changed?"}
+  T2 -- yes --> D
+  RD["restore the defaults"] --> D2["default set, the development layer in Debug builds, then the active layout layer, without the user layer"]

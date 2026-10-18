@@ -1,0 +1,16 @@
+flowchart TD
+    A["Set up the match setup page"] --> B{"Mode set?"}
+    B -- "no" --> Z["Build nothing"]
+    B -- "yes" --> C{"Map known and a team slot or spectator flag held?"}
+    C -- "no" --> W["Waiting-for-team flag, mode remembered, empty page; set up again when the slot arrives"]
+    C -- "yes" --> D{"Entered from map select with a stale mode?"}
+    D -- "yes" --> MS["Build the map-select page again"]
+    D -- "no" --> E{"Entered from another page than map select, advanced options or player options?"}
+    E -- "yes" --> F["Record the mode; on the host choose the first map"]
+    E -- "no" --> G["At-match-setup flag set"]
+    F --> G
+    G --> H["Empty name after player options: default name"]
+    H --> I{"Entered from player options or advanced options?"}
+    I -- "yes" --> K["Build the widgets"]
+    I -- "no" --> J["Initialise the colour request; on the host, every option to its default, keeping the play-time limit"]
+    J --> K

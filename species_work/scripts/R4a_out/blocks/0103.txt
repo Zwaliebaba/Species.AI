@@ -1,0 +1,10 @@
+Seed(seed)                               # the tile's private generator, TER-080
+repeat iterations times:
+    for x := 0; x < n - 1; x += step:
+        for z := 0; z < n - 1; z += step:
+            h := step >> 1
+            mx := x + h ;  mz := z + h
+            Square(mx, mz, h)            # the centre of the cell
+            if z != 0: Diamond(mx, z, h) # the midpoint of the cell's low-z edge
+            if x != 0: Diamond(x, mz, h) # the midpoint of the cell's low-x edge
+    step := step >> 1

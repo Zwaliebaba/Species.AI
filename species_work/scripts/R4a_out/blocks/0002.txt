@@ -1,0 +1,8 @@
+flowchart LR
+  SRC["content/ sources: data records, maps, glTF meshes, textures, audio, string tables, fonts"] --> VAL["validate against schemas and references"]
+  VAL --> COOK["cook per asset type"]
+  MAN["edition manifests"] --> SEL["select entries per edition"]
+  COOK --> SEL
+  SEL --> PACK["write pack files"]
+  PACK --> CM["content manifest with entry hashes"]
+  VAL --> REP["validation report"]

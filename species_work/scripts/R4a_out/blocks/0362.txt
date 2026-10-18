@@ -1,0 +1,21 @@
+flowchart TD
+    C["Apply the tick's commands, update the tick clock"] --> S{"slice s = 0 to 9"}
+    S --> W1["Record s as the last processed slice"]
+    W1 --> T["Teams 0 to 5: team advance of slice s"]
+    T --> WP["Laser bolts of slice s, then effects of slice s"]
+    WP --> ST["Structures of slice s, then obstacle grid update if any was removed"]
+    ST --> OR["Essence orbs of slice s"]
+    OR --> SK{"s is the sky slice?"}
+    SK -- yes --> SKY["Sky offset"] --> ME
+    SK -- no --> ME{"s is the map-effect slice?"}
+    ME -- yes --> SP["Snow, dust storm, lightning, seasonal snow"] --> GC
+    ME -- no --> GC{"s is the grid-cache slice?"}
+    GC -- yes --> EV["Grid cache eviction"] --> CR
+    GC -- no --> CR{"s is the Supply crate slice?"}
+    CR -- yes --> CD["Supply crate drops, Spawn Surge and Frenzy timers"] --> PA
+    CR -- no --> PA["Particle-pool step"]
+    PA --> MR{"s is the match-rules slice?"}
+    MR -- yes --> RU["Match-rules update"] --> N
+    MR -- no --> N{"s below 9?"}
+    N -- yes --> S
+    N -- no --> E["Tick complete"]

@@ -1,0 +1,11 @@
+flowchart LR
+  SRC["content/maps/map id source"] --> VAL["validate: schema, links, per-mode rules"]
+  VAL --> COOK["cook the canonical map entry"]
+  COOK --> H["SHA-256 of the cooked bytes"]
+  H --> CM["content manifest: key, hash, simulation-relevant"]
+  H --> LST["map-identity listing per edition"]
+  LST --> CMP["compare with the previous build: added, removed, changed"]
+  CM --> CAT["map catalogue and match setup: map id with hash"]
+  CM --> SOAK["soak entries: map id checked against its hash"]
+  CM --> SIM["simulation content identity (AST-100)"]
+  CODE["code and data: map ids only, never hashes"] --> CAT

@@ -1,0 +1,7 @@
+flowchart TD
+    A["ToggleUnit for a Leader executes"] --> B{"Leader in formation or holding a waypoint order?"}
+    B -->|yes| C["Cancel the Leader's orders"]
+    B -->|no| D["Order the Leader to the point 1 wu in front of it, which enters formation"]
+    D --> E["Select the Leader inside the same step"]
+    C --> F["No further command is issued"]
+    E --> F

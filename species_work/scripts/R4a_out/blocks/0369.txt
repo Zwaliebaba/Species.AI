@@ -1,0 +1,10 @@
+v += (0, -ref.sim.physics.gravity, 0) * dt          # 15 wu/s^2
+p += v * dt
+PushFromObstacles(p)                                # result discarded (R-SIM-371)
+if not dead:
+    ground := terrain height at p + ref.sim.physics.land_threshold
+    if p.y <= ground:
+        onGround := true; v := 0; p.y := ground + ref.sim.physics.land_offset
+    if p.y <= seaLevel:
+        if inWater < 0: inWater := 0                # starts the in-water count (R-SIM-375)
+        v := 0

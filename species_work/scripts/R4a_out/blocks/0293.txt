@@ -1,0 +1,8 @@
+flowchart TD
+    M["Main cycle"] --> L["Formation Leaders (not in Launch Race, Siege, Flag Chain, tutorials, Visitor faction)"]
+    L --> P["Power handlers"]
+    P --> RL["Relic Run: un-stick carried Relics"]
+    RL --> LR["Launch Race: fill the Solar Array field list once"]
+    LR --> SG["Siege: objective logic, main-cycle countdown 30 unless hard"]
+    SG --> W["Well-defended list"]
+    W --> X["For each well-defended node: conveyor check, target selection, send chance, send idle Workers"]

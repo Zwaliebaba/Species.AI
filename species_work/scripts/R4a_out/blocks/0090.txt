@@ -1,0 +1,37 @@
+// Shared layout sketch (HLSL side); the C++ side includes the same declarations.
+static const uint SAMPLER_LINEAR_CLAMP = 0;
+static const uint SAMPLER_LINEAR_WRAP = 1;
+static const uint SAMPLER_POINT_CLAMP = 2;
+static const uint SAMPLER_POINT_MAGNIFY_CLAMP = 3;
+
+struct FrameConstants
+{
+  row_major float4x4 view, projection, viewProjection;
+  float3 cameraPosition;
+  float fogStart;
+  float3 cameraFront;
+  float fogEnd;
+  float3 fogColor;
+  float extrapolationTime;
+  float3 light0Towards;
+  float realClock;
+  float3 light0Color;
+  float presentationFrameTime;
+  float3 light1Towards;
+  float smoothPresentationTime;
+  float3 light1Color;
+  float padding0;
+  float2 renderSize;
+  float2 padding1;
+};
+
+struct DrawConstants // root constants
+{
+  row_major float3x4 world;
+  float4 tint;
+  uint paletteIndex;
+  uint instanceBufferIndex;
+  uint textureIndex0;
+  uint textureIndex1;
+  uint materialIndex;
+};

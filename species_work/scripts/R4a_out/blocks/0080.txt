@@ -1,0 +1,10 @@
+CameraFacing:   right = R rotated by rotation about the view axis; up = U rotated likewise
+UprightCard:    up = (0, 1, 0); right = normalise(up × (camera position − position))
+WorldOriented:  right = axisRight; up = axisUp
+                if blendLength > 0 and d > blendStart:          # d = |position − camera position|
+                    f = min((d − blendStart) ÷ blendLength, 1)
+                    right = lerp(right, R, f); up = lerp(up, U, f)  # linear, not renormalised
+Segment:        mid = (position + endPoint) ÷ 2
+                side = normalise((mid − camera position) × (mid − endPoint)) × halfWidth
+                corners = position − side, position + side, endPoint + side, endPoint − side
+                color at position = color; color at endPoint = endColor

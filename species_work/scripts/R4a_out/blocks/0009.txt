@@ -1,0 +1,13 @@
+stateDiagram-v2
+  [*] --> Queued : first request
+  Queued --> Reading : the I/O thread issues the chunk reads
+  Reading --> Creating : chunks read, decompressed and hash-checked
+  Reading --> Failed : read error or hash mismatch
+  Creating --> Uploading : GPU resource created, staging written
+  Creating --> Resident : CPU-only entry (record, CPU table, sound bank)
+  Creating --> Failed : the loader rejects the entry
+  Uploading --> Resident : upload fence completed
+  Queued --> [*] : last handle released (cancelled)
+  Reading --> [*] : last handle released (cancelled)
+  Resident --> [*] : no group or handle holds it, after its frames in flight
+  Failed --> [*] : diagnostic logged, fallback handed out

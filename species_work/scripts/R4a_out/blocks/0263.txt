@@ -1,0 +1,13 @@
+flowchart TD
+    A["Thrown weapon advance"] --> B{"Grenade collected?"}
+    B -- yes --> Z["Nothing"]
+    B -- no --> C["Fuse minus 1 tick"]
+    C --> D{"Fuse at or below 0, or impact for the mortar?"}
+    D -- yes --> E{"Firebomb canister?"}
+    E -- no --> F["Explode: range power over 2, damage power times 2"]
+    E -- yes --> G["Ignite Workers within 62.5 wu, 200 to trees and Spitter Plants within 100 wu"]
+    F --> R["Removed"]
+    G --> R
+    D -- no --> H{"Force above 0.1?"}
+    H -- no --> Z
+    H -- yes --> I["Gravity, move, bounce: force times 0.75"]

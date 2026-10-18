@@ -1,0 +1,7 @@
+### DEC-NNN <title>
+- Status: Open | Resolved | Dropped
+- Affects: <requirement ids and documents>
+- Specified behaviour: <the rule the documents state now; for an Open entry, the reference default>
+- Options: A — <option>; B — <option>
+- Recommendation: <option and a one-paragraph rationale>
+- Decide by: <milestone, "playtest" or "design phase">   (Open entries only)

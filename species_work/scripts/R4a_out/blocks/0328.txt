@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant H as Host
+    participant S as Host's front-end screen
+    participant M as Match setup
+    participant J as Joining players
+    H->>S: multiplayer, host
+    S->>M: start the hosted session, not listed until a map is chosen
+    H->>S: mode, then map
+    S->>M: mode and defaults, then map and its defaults, and the session is listed
+    J->>M: join, take open slots
+    H->>S: bot difficulty, advanced options, slot open or closed
+    H->>M: ready
+    J->>M: ready
+    S->>S: every human ready, the mode and map valid
+    S->>M: bot teams for the unused open slots, StartMatch
+    S->>S: wait-for-start page
+    M-->>S: match-start command executes, loading view

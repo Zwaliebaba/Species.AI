@@ -1,0 +1,112 @@
+namespace Engine
+{
+
+enum class OrientationMode : std::uint8_t // the quad orientation modes of ADR-009
+{
+  CameraFacing,  // corners along the camera right and up vectors
+  UprightCard,   // turns about the world vertical axis towards the camera
+  WorldOriented, // explicit right and up axes, optionally blended into a billboard with distance
+  Segment        // between two end points, widened perpendicular to the camera ray
+};
+enum class QuadAnchor : std::uint8_t
+{
+  Center,
+  BottomCenter
+};
+
+struct QuadInstance // shared header layout (shaders.md RND-262), §3.1
+{
+  Vec3 position;  // center or anchor; first end point for Segment
+  Vec3 endPoint;  // Segment only
+  Vec3 axisRight; // WorldOriented only
+  Vec3 axisUp;
+  float halfWidth = 0;
+  float halfHeight = 0;
+  float blendStart = 0; // WorldOriented: billboard blend; length 0 = never
+  float blendLength = 0;
+  float rotation = 0; // radians about the view axis (CameraFacing)
+  ColorRgba color;
+  ColorRgba endColor;             // used by Segment only
+  std::uint32_t textureIndex = 0; // descriptor-heap index (ADR-006)
+  std::uint32_t uvRect = 0;       // index into the UV-rectangle table (atlas cells, mirrored maps)
+  OrientationMode mode = OrientationMode::CameraFacing;
+  QuadAnchor anchor = QuadAnchor::Center;
+};
+
+struct InstanceType // one per drawn kind and catalogue entry, registered at start-up
+{
+  CatalogKey entry;                 // §3.3
+  float cullRadius = 0;             // sphere-test radius around each instance (RND-234)
+  std::optional<float> maxDistance; // per-type distance limit
+};
+
+class CrowdRenderer // ADR-009
+{
+public:
+  InstanceTypeId RegisterType(const InstanceType& _type);
+  std::span<QuadInstance> BeginInstances(InstanceTypeId _type, std::uint32_t _count); // upload ring
+  void RecordCull(PassContext& _pass) const;                                          // InstanceCull
+  void RecordDraws(PassContext& _pass, std::span<const InstanceTypeId> _types) const;
+};
+
+struct DevSphereMesh // RND-330
+{
+  std::array<Vec3, 42> vertices;
+  std::array<std::uint16_t, 240> indices;
+};
+DevSphereMesh BuildDevSphere();
+
+} // namespace Engine
+
+namespace Species
+{
+
+// Game-layer presentation code (AGENTS.md R9): each renderer reads game state and fills the engine's batches.
+class ActorRenderer
+{
+public:
+  void RecordGroups(Engine::PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const;   // 7a
+  void RecordOthers(Engine::PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const;   // 7b
+  void RecordCrawlers(Engine::PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const; // 7c
+  void RecordWorkers(Engine::PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const;  // 7d
+  void OnTeamChanged(SimObjectId _worker, std::uint8_t _previousColorId, double _realNow);                 // RND-317
+};
+
+class EffectRenderer
+{
+public:
+  void RecordEffects(Engine::PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const;    // 10a
+  void RecordLaserBolts(Engine::PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const; // 10b
+};
+
+class RouteLineRenderer
+{
+public:
+  void OnRouteHighlighted(RouteHandle _route, std::uint8_t _team);                        // RND-350
+  void OnRouteIntensity(RouteHandle _route, float _intensity);                            // RND-351
+  void Record(Engine::PassContext& _pass, const RoutePreview& _preview, double _realNow); // pass 12
+  [[nodiscard]] bool PreviewWalkable() const;                                             // read by the world cursor
+};
+
+class WorldMarkerRenderer // pass 16
+{
+public:
+  void Record(Engine::PassContext& _pass, const WorldMarkers& _markers);
+};
+class WorldCursorRenderer // pass 20
+{
+public:
+  void Record(Engine::PassContext& _pass, const WorldCursor& _cursor);
+};
+class PowerSlotsPanelRenderer // pass 23
+{
+public:
+  void Record(Engine::PassContext& _pass, const PowerSlotsPanel& _panel);
+};
+class MatchHudRenderer // pass 28
+{
+public:
+  void Record(Engine::PassContext& _pass, const MatchHudView& _hud);
+};
+
+} // namespace Species

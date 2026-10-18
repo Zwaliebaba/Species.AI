@@ -1,0 +1,12 @@
+flowchart TD
+    A["Attack(_position, _withGrenade)"] --> B["Candidates: alive, enabled Troopers; N = count"]
+    B --> C{"N > 0?"}
+    C -- no --> G
+    C -- yes --> D["accumulator += tick period ÷ (0.5 s ÷ N)"]
+    D --> E{"accumulator ≥ 1?"}
+    E -- yes --> F["accumulator −= 1; draw one candidate not yet chosen; it fires a single shot"]
+    F --> E
+    E -- no --> G{"_withGrenade?"}
+    G -- yes --> H["Nearest Trooper with expired cooldown throws a grenade; cooldown 40 ticks"]
+    G -- no --> I["done"]
+    H --> I

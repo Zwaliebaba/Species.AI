@@ -1,0 +1,4 @@
+stateDiagram-v2
+    [*] --> Approaching : spawned at the entry corner, 400 wu/s
+    Approaching --> Leaving : waypoint within 10 wu of the attack position
+    Leaving --> [*] : no Bomber left, all left the map or were shot down

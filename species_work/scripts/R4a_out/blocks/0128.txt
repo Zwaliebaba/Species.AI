@@ -1,0 +1,19 @@
+flowchart TD
+    BOOT(["Start: loading view, then the front end"]) --> MAIN["Main page"]
+    MAIN -- "single player" --> SEL["Mode select: six modes"]
+    MAIN -- "multiplayer" --> HJ["Host or join"]
+    MAIN -- "tutorials" --> TUT["First or second tutorial on a fixed Zone Control map,<br/>easy bot; standard bot after the last step of the second tutorial"]
+    MAIN -- "help, options" --> HO[["Help pages; screen, graphics, sound and other options"]]
+    HJ -- "host" --> SEL
+    HJ -- "join" --> JOIN["Join a hosted lobby"]
+    JOIN --> LOBBY
+    SEL --> MAP["Map select: maps of that mode,<br/>sorted by players and difficulty"]
+    MAP --> LOBBY["Lobby: names, colours or sides,<br/>bot difficulty, host-only advanced options, chat"]
+    LOBBY -- "single player: start, bots fill empty slots" --> LOAD["Loading view with progress"]
+    LOBBY -- "multiplayer: every human ready, the host's match starts" --> LOAD
+    TUT --> LOAD
+    LOAD --> GRACE["Grace period: readiness prompt,<br/>explainer animation of the mode"]
+    GRACE -- "all humans ready, 30-tick countdown" --> RUN["Running match:<br/>scoreboard, match clock, messages"]
+    RUN -- "winner or draw declared" --> OVER["Game-over overlay:<br/>winner, final scores, time frozen"]
+    RUN -- "in-game menu, leave, confirm" --> MAIN
+    OVER -- "in-game menu, leave" --> MAIN

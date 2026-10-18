@@ -1,0 +1,7 @@
+flowchart LR
+    S[spawn request] --> K[set kind: stats, reload draw]
+    K --> P[spawn-position search]
+    P --> V[velocity and front]
+    V --> H[handle, spawn point, roam range, route]
+    H --> B[spawn hook: meshes, centre, radius, kind-specific initial state]
+    B --> G[insert into the team's actor grid]

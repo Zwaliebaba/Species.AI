@@ -1,0 +1,5 @@
+flowchart TD
+    A["Round ends: defence time recorded, victory timer 151 ticks"] --> B{"Rounds played below player count minus 1?"}
+    B -- yes --> C["Fade out at 10 ticks left"] --> D["Timer run out, no pulse wave: round reset at a tick boundary"]
+    D --> E["Positions rotate; countdown := best defence time; grace period"] --> F["Next round"] --> A
+    B -- no --> G["Timer run out, no pulse wave: largest defence time wins"]

@@ -1,0 +1,147 @@
+namespace Engine
+{
+
+enum class DeviceClass : std::uint8_t
+{
+  KeyboardMouse,
+  Gamepad
+};
+enum class InputMode : std::uint8_t // INP-150
+{
+  KeyboardMouse,
+  Gamepad
+};
+enum class ValueKind : std::uint8_t // INP-050
+{
+  Boolean,
+  Axis1,
+  Axis2
+};
+enum class Condition : std::uint8_t // INP-051
+{
+  Down, // Boolean conditions
+  Up,
+  Held,
+  Repeat,
+  Position, // analogue conditions
+  Move,
+  Release,
+  Zero,
+  Read
+};
+
+struct DeviceId // stable identity from a back-end (INP-115)
+{
+  std::uint64_t value;
+};
+struct LocalPlayerId // player 0 owns the keyboard and the mouse (INP-145)
+{
+  std::uint8_t index;
+};
+struct ActionId // interned from the action id string when bindings load
+{
+  std::uint16_t index;
+};
+
+enum class KeyCode : std::uint16_t;    // table 3.2-A
+enum class MouseControl : std::uint8_t // table 3.2-B
+{
+  Primary,
+  Secondary,
+  Middle,
+  Motion,
+  RawMotion,
+  Wheel
+};
+enum class PadControl : std::uint8_t; // table 3.2-C
+
+struct InputEvent // INP-115
+{
+  enum class Kind : std::uint8_t
+  {
+    Press,
+    Release,
+    Axis,
+    Connect,
+    Disconnect
+  };
+  Kind kind;
+  bool osRepeat; // keyboard auto-repeat; never a new press (INP-053)
+  DeviceClass deviceClass;
+  DeviceId device;
+  std::uint16_t control;             // a KeyCode, MouseControl or PadControl value
+  std::int64_t timestampNanoseconds; // platform clock (ADR-074)
+  float x;                           // Axis: a sample (stick, trigger) or a delta (motion, wheel)
+  float y;
+};
+
+struct ActionValue // INP-090
+{
+  ValueKind kind = ValueKind::Boolean;
+  float x = 0.0f;
+  float y = 0.0f;
+  std::optional<DeviceId> device;
+};
+
+struct FrameGates // INP-156, supplied by the UI framework and the platform layer
+{
+  bool uiWindowOpen;  // as the UI left it at the end of the previous frame
+  bool textEntryOpen; // chat input or a focused text field
+  bool windowFocused;
+};
+
+struct PointerState // INP-155
+{
+  Vec2 positionPixels; // client-area pixels
+  float wheelNotches;  // accumulated wheel notches
+  Vec2 deltaPixels;    // this frame's movement
+  float wheelDeltaNotches;
+  bool moved; // deltaPixels is not zero
+};
+
+class InputRouter
+{
+public:
+  // Frame lifecycle (INP-101, INP-102). Main thread only.
+  void AdvanceFrame(const FrameGates& _gates);
+  void AdvanceRepeatPass();
+
+  // Queries: const and free of side effects (INP-002).
+  bool Query(LocalPlayerId _player, ActionId _action, ActionValue* _value = nullptr) const;
+  bool QueryBinding(LocalPlayerId _player, const BindingNode& _node, ActionValue* _value = nullptr) const;
+  void Suppress(ActionId _action); // false for the rest of the frame (INP-093)
+  InputMode Mode(LocalPlayerId _player) const;
+  bool IsIdle() const;
+  double IdleSeconds() const;
+  const PointerState& Pointer() const;
+  void WarpPointer(Vec2 _positionPixels); // moves the pointer without a motion delta (INP-158)
+  void ConfinePointer(bool _on);          // holds the system pointer inside the client area (INP-159)
+  std::optional<DeviceId> AssignedGamepad(LocalPlayerId _player) const;
+  bool AssignedGamepadConnected(LocalPlayerId _player) const;
+  std::string_view ActiveLayout() const; // keyboard-layout tag (INP-164)
+
+  // Binding sets (INP-162 to INP-179).
+  LoadReport Rebuild(const BindingSources& _sources); // default set, development layer (Debug), layout layer, user layer
+  std::expected<void, LoadDiagnostic> ReplacePrimaryBinding(ActionId _action, const BindingNode& _binding);
+  std::optional<BindingNode> CaptureFirstActiveInput(LocalPlayerId _player, DeviceClassMask _classes, bool _instant) const;
+  std::optional<BindingDescription> Describe(ActionId _action) const;
+  std::optional<AssetId> Glyph(ActionId _action) const;
+  void ClearBindings();                    // keeps glyph overrides
+  void DumpBindings(LogSink& _sink) const; // diagnostics (INP-242)
+
+  // Notifications, raised inside AdvanceFrame.
+  Signal<LocalPlayerId, InputMode> onModeChanged;
+  Signal<std::string_view> onLayoutChanged;
+};
+
+class DeviceBackEnd // INP-105
+{
+public:
+  virtual ~DeviceBackEnd() = default;
+  virtual bool Initialize(PlatformServices& _platform) = 0;
+  virtual void Collect(EventSink& _sink) = 0;    // every event since the last call, in order
+  virtual void ReleaseAll(EventSink& _sink) = 0; // release events for everything held (INP-111)
+  virtual void Shutdown() = 0;
+};
+
+} // namespace Engine

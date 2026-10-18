@@ -1,0 +1,18 @@
+stateDiagram-v2
+    [*] --> Birth : spawn on a death or by a producer
+    Birth --> Floating : timer at or below 0 and at most 10 wu above ground height
+    Birth --> Attached : attached by a Builder, an ant or a Crawler
+    Floating --> Ascent : floating timer expired
+    Floating --> Harvested : harvested by a Collector
+    Floating --> Attached : attached by a Builder, an ant or a Crawler
+    Floating --> InEgg : placed in a Crawler egg
+    Floating --> [*] : removed by a centipede or a Swarm streak
+    Harvested --> Collected : reached the Collector's collector point
+    Collected --> Floating : holder no longer exists
+    Collected --> [*] : delivered by the Collector
+    Attached --> Floating : dropped
+    Attached --> InEgg : placed in a Crawler egg by a Crawler
+    Attached --> [*] : delivered by a Builder, or stored by an ant
+    InEgg --> Floating : Crawler egg destroyed
+    InEgg --> [*] : Crawler egg hatches
+    Ascent --> [*] : ascent timer expired

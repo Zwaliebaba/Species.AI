@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> Holding : grace ends, Core Device countdown running
+    Holding --> Holding : Command Consoles change hands, countdown falls
+    Holding --> CoreDestroyed : every linked console held, none by a friend of the Core Device
+    Holding --> Detonated : countdown reaches 0, pulse wave released
+    CoreDestroyed --> VictoryDelay : defence time recorded, victory timer 101 ticks
+    Detonated --> VictoryDelay : defence time recorded, victory timer 101 ticks, result fixed
+    VictoryDelay --> AttackersWin : timer run out, no pulse wave, Core Device destroyed
+    VictoryDelay --> DefendersWin : timer run out, no pulse wave, Core Device intact
+    AttackersWin --> [*]
+    DefendersWin --> [*]

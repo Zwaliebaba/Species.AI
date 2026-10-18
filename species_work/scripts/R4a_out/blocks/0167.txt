@@ -1,0 +1,12 @@
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> ToEssenceOrb : search, nearest unbroken Birth or Floating orb within 200 wu and room left
+    Idle --> ToSpawnNode : search found no orb, carrying orbs, a friendly Spawn Node exists
+    Idle --> ToWaypoint : move order
+    ToWaypoint --> Idle : within 5 wu of the waypoint
+    ToEssenceOrb --> Idle : arrived, orb attached to the train
+    ToEssenceOrb --> ToWaypoint : orb gone, in Ascent or already Attached
+    ToSpawnNode --> ToWaypoint : last orb delivered
+    ToSpawnNode --> Idle : Spawn Node gone
+    Idle --> Dead : health change below 0
+    Dead --> [*] : removed on the next tick, train dropped

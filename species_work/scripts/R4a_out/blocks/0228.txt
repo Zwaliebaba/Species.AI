@@ -1,0 +1,7 @@
+flowchart TD
+    A["Jump pad advance"] --> B["Launch timer minus 1"]
+    B --> C{"Timer at 0?"}
+    C -->|"no"| Z["Done"]
+    C -->|"yes"| D["Timer = 3 ticks; launch vector = front raised by the angle, length force"]
+    D --> E["For each Worker within 40 wu, on the ground and not inside a Transport"]
+    E --> F["Velocity = launch vector, airborne, Idle, no waypoint, no orders"]

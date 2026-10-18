@@ -1,0 +1,13 @@
+(a, b, c) := the triangle's vertices: (p1, p2, q1) for the first triangle of a pair step,
+             (p2, q1, q2) for the second                           # RND-132 notation
+center := (a + b + c) * ter.colour.centre_factor          # binary64, summed a, b, c; 0.33333, not 1/3
+g      := binary32(facet normal y)                         # 1 = flat, 0 = vertical
+u      := binary32(pow32(1 - g, ter.colour.slope_exponent))       # 0.4
+hgt    := binary32(center.y)
+v      := binary32(1 - hgt / highest)
+r0     := colorVariation.NextUint()                        # TER-185
+colorVariation.Seed(uint32(trunc(center.x)) OR (uint32(trunc(center.z)) + r0))
+v      := binary32(v + colorVariation.NextSigned(ter.colour.jitter_numerator / (max(hgt, 0) + ter.colour.jitter_offset)))
+px     := clamp(trunc(u * ter.colour.ramp_size), 0, ter.colour.ramp_size - 1)
+py     := clamp(trunc(v * ter.colour.ramp_size), 0, ter.colour.ramp_size - 1)
+color  := ramp texel (px, py), py counted from the bottom row as viewed      # TER-040

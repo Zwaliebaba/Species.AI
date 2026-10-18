@@ -1,0 +1,170 @@
+--- 
++++ 
+@@ -4 +4 @@
+-using Seconds = double;   // audio time (platform clock, ADR-074)
++using Seconds = double; // audio time (platform clock, ADR-074)
+@@ -10 +10,3 @@
+-  Screen2d, WorldFixed, Attached   // [2d, fix, att]
++  Screen2d,
++  WorldFixed,
++  Attached // [2d, fix, att]
+@@ -14 +16,3 @@
+-  PerTrigger, SharedRandom, SharedNearest   // [poly, share-rnd, share-near]
++  PerTrigger,
++  SharedRandom,
++  SharedNearest // [poly, share-rnd, share-near]
+@@ -18 +22,3 @@
+-  Once, Loop, NoteLoop   // [once, loop, note]
++  Once,
++  Loop,
++  NoteLoop // [once, loop, note]
+@@ -22 +28,4 @@
+-  All, OwnGroup, OtherGroup, NoGroup   // [all, own, enemy, none]
++  All,
++  OwnGroup,
++  OtherGroup,
++  NoGroup // [all, own, enemy, none]
+@@ -26 +35,3 @@
+-  Fixed, Random, Linked
++  Fixed,
++  Random,
++  Linked
+@@ -30 +41,2 @@
+-  Continuous, PerNote
++  Continuous,
++  PerNote
+@@ -34 +46,11 @@
+-  None, Height, PosX, Altitude, PosZ, Speed, CameraDistance, ObjectAge, GroupsNearby, TimeRemaining, ObjectsNearby
++  None,
++  Height,
++  PosX,
++  Altitude,
++  PosZ,
++  Speed,
++  CameraDistance,
++  ObjectAge,
++  GroupsNearby,
++  TimeRemaining,
++  ObjectsNearby
+@@ -38 +60,3 @@
+-  Attack, Hold, Release   // no decay stage
++  Attack,
++  Hold,
++  Release // no decay stage
+@@ -42 +66,4 @@
+-  Pending, Virtual, Real, Retired
++  Pending,
++  Virtual,
++  Real,
++  Retired
+@@ -47,2 +74,14 @@
+-  Chorus, Compressor, Distortion, StereoEcho, Flanger, StandardGargle, RoomReverb, ParametricEq, StudioReverb,
+-  ResonantLowPass, BitCrusher, Gargle, Echo, SimpleReverb
++  Chorus,
++  Compressor,
++  Distortion,
++  StereoEcho,
++  Flanger,
++  StandardGargle,
++  RoomReverb,
++  ParametricEq,
++  StudioReverb,
++  ResonantLowPass,
++  BitCrusher,
++  Gargle,
++  Echo,
++  SimpleReverb
+@@ -53 +92,6 @@
+-  Ui, Announcer, Voice, World, Ambience, Music
++  Ui,
++  Announcer,
++  Voice,
++  World,
++  Ambience,
++  Music
+@@ -57 +101,3 @@
+-  ExactEvent, SourcePrefix, Everything
++  ExactEvent,
++  SourcePrefix,
++  Everything
+@@ -61,4 +107,7 @@
+-  NoMatch, Countdown, Running, Ended   // Countdown: the match's grace period (R-AUD-303)
+-};
+-
+-struct EmitterId   // the simulation's object handle as the engine names an emitter; EmitterId{} = no emitter
++  NoMatch,
++  Countdown,
++  Running,
++  Ended // Countdown: the match's grace period (R-AUD-303)
++};
++
++struct EmitterId // the simulation's object handle as the engine names an emitter; EmitterId{} = no emitter
+@@ -68 +117 @@
+-struct AudienceGroup   // the group that an audience compares; presentation code passes the team
++struct AudienceGroup // the group that an audience compares; presentation code passes the team
+@@ -73 +122 @@
+-struct SoundVoiceId   // generation 0 = invalid
++struct SoundVoiceId // generation 0 = invalid
+@@ -79,3 +128,3 @@
+-struct TriggerCommand   // AEN-130
+-{
+-  SourceId source;                      // the full id is <source>.<event>
++struct TriggerCommand // AEN-130
++{
++  SourceId source; // the full id is <source>.<event>
+@@ -83,5 +132,5 @@
+-  EmitterId emitter;                    // EmitterId{} = no emitter
+-  std::optional<AudienceGroup> group;   // nullopt = no team (R-AUD-025)
+-  Vec3 position;                        // world frame, wu
+-  Vec3 velocity;                        // wu/s
+-  Seconds issueTime;                    // audio clock at issue (AEN-024)
++  EmitterId emitter;                  // EmitterId{} = no emitter
++  std::optional<AudienceGroup> group; // nullopt = no team (R-AUD-025)
++  Vec3 position;                      // world frame, wu
++  Vec3 velocity;                      // wu/s
++  Seconds issueTime;                  // audio clock at issue (AEN-024)
+@@ -99 +148 @@
+-struct EmitterUpdate   // AEN-041
++struct EmitterUpdate // AEN-041
+@@ -128 +177 @@
+-class CommandWriter   // one per producing thread; every call writes one command
++class CommandWriter // one per producing thread; every call writes one command
+@@ -131 +180 @@
+-  bool Trigger(const TriggerCommand& _command);   // false: the queue is full; the command is dropped and counted
++  bool Trigger(const TriggerCommand& _command); // false: the queue is full; the command is dropped and counted
+@@ -136,4 +185,4 @@
+-  bool BeginMatch(AudienceGroup _localGroup);   // per-match state starts (AEN-197)
+-  bool EndMatch();                              // per-match state discarded
+-  bool SetLoadingView(bool _shown);             // AEN-111
+-  bool SetMasterVolume(std::uint8_t _step);     // 0 to ref.meta.options.sound.volume_max
++  bool BeginMatch(AudienceGroup _localGroup); // per-match state starts (AEN-197)
++  bool EndMatch();                            // per-match state discarded
++  bool SetLoadingView(bool _shown);           // AEN-111
++  bool SetMasterVolume(std::uint8_t _step);   // 0 to ref.meta.options.sound.volume_max
+@@ -142 +191 @@
+-  bool SetEffectsEnabled(bool _on);             // AEN-221
++  bool SetEffectsEnabled(bool _on); // AEN-221
+@@ -145 +194 @@
+-  bool QueryCount(RequestId _request, EmitterId _emitter, EventId _event);   // EmitterId{} = any emitter
++  bool QueryCount(RequestId _request, EmitterId _emitter, EventId _event); // EmitterId{} = any emitter
+@@ -149 +198 @@
+-  bool RestartDevice();                         // AEN-259
++  bool RestartDevice(); // AEN-259
+@@ -165,3 +214,3 @@
+-  CommandWriter& Producer();                                          // the calling thread's queue (ADR-026)
+-  void DrainResults(std::function<void(const AudioResult&)> _sink);   // game thread, once per frame
+-  ~AudioEngine();                                                     // AEN-106 teardown order
++  CommandWriter& Producer();                                        // the calling thread's queue (ADR-026)
++  void DrainResults(std::function<void(const AudioResult&)> _sink); // game thread, once per frame
++  ~AudioEngine();                                                   // AEN-106 teardown order
+@@ -174 +223 @@
+-  bool Build(const BusGraphDef& _graph);                    // mastering voice on the default device and format, buses
++  bool Build(const BusGraphDef& _graph); // mastering voice on the default device and format, buses
+@@ -176,2 +225,2 @@
+-  SourceVoiceSlot* Acquire(const VoiceFormat& _format);     // pooled per format: PCM, and MS-ADPCM for streams (AEN-142)
+-  void Release(SourceVoiceSlot* _voice);                    // resets every per-voice setting (DEC-752)
++  SourceVoiceSlot* Acquire(const VoiceFormat& _format); // pooled per format: PCM, and MS-ADPCM for streams (AEN-142)
++  void Release(SourceVoiceSlot* _voice);                // resets every per-voice setting (DEC-752)
+@@ -186 +235 @@
+-  void ApplyOperationSet(Op _set);                          // IXAudio2::CommitChanges
++  void ApplyOperationSet(Op _set); // IXAudio2::CommitChanges

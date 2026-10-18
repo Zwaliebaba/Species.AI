@@ -1,0 +1,6 @@
+stateDiagram-v2
+    [*] --> NotArmed
+    NotArmed --> Counting : S below Z, countdown armed, at least 10 mode seconds
+    Counting --> Counting : minus 1 per mode second
+    Counting --> NotArmed : at or below 0, a Relic spawns if a zone qualifies
+    NotArmed --> NotArmed : S equals Z

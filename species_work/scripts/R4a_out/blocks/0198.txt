@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> Surfacing : launcher at height -30 at a sea point
+    Surfacing --> Surfaced : launcher reaches height 30 after 60 ticks
+    Surfaced --> LaunchCountdown : 25 ticks, countdown max of 0 and X minus D over 100 seconds
+    LaunchCountdown --> InFlight : countdown reaches 0, missile at height 30
+    InFlight --> Exploded : within 5 wu of the target, explosion
+    Exploded --> [*] : 51 ticks, removed

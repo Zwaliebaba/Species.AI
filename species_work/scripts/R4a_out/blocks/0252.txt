@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> Idle : granted by a Supply crate, starting powers, the Comeback Bonus, a Transit Gate wave or a map
+    Idle --> Lost : every Power slot occupied
+    Lost --> [*]
+    Idle --> Waiting : started by its Power slots
+    Waiting --> Waiting : target refused, start lock above 0 or invalid point
+    Waiting --> Running : targeted at a valid point
+    Running --> Stopping : one-shot effect fired, or life limit 0, or unit gone, or cancel
+    Waiting --> Stopping : cancel, or a stop of all of the team's Powers
+    Stopping --> [*] : slot freed

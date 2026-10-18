@@ -1,0 +1,22 @@
+flowchart TD
+    A["BuildRoute _from, _to"] --> B["Route holds _from"]
+    B --> C["Find the start node and the target node, walkable candidates first"]
+    C --> D{"Both nodes found and _directRoute false?"}
+    D -->|no| G["Append _to"]
+    D -->|yes| E["Three-lane corridor test and straight walk cost"]
+    E --> F{"Straight segment walkable?"}
+    F -->|yes| G
+    F -->|no| H["Append the start node, then each next hop up to the target node"]
+    H --> I{"100 points reached?"}
+    I -->|yes| J["Reset the route to _from"]
+    I -->|no| G
+    J --> G
+    G --> K{"More than 2 points and rounding on?"}
+    K -->|yes| L["Smooth the corners"]
+    K -->|no| M["Merge points closer than 50 wu"]
+    L --> M
+    M --> N["Snap every y to the terrain"]
+    N --> O{"Direct-route override applies?"}
+    O -->|yes| P["Route becomes _from, _to"]
+    O -->|no| Q["Store under a new route handle"]
+    P --> Q

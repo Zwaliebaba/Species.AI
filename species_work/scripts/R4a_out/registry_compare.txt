@@ -1,0 +1,562 @@
+== Declared at namespace or file scope (type, function, constant, macro) but not registered ==
+ActorStats	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md:22(struct,Species)
+ApplyDefaultFloatEnvironment	architecture/components/platform_layer.md:357(function,Engine)
+ApplyScope	architecture/components/data_schemas/config_input_and_strings.md:32(enum,Engine)
+CameraAnimationRecord	architecture/components/data_schemas/map_schema.md:123(struct,Species)
+CameraViewRecord	architecture/components/data_schemas/map_schema.md:116(struct,Species)
+ChannelTag	architecture/components/build_tooling_and_distribution.md:187(function,Engine)
+ClipboardText	architecture/components/platform_layer.md:404(function,Engine)
+CoopGroup	architecture/components/data_schemas/map_schema.md:84(enum,Species)
+CrateOutcomeEntry	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md:32(struct,Species)
+CurrentBuildIdentity	architecture/components/build_tooling_and_distribution.md:183(function,Engine)
+Decibels	architecture/components/audio_engine/README.md:64(using,Engine)
+DisplayConfigurationChanged	architecture/components/platform_layer.md:224(struct,Engine)
+DisplayVersion	architecture/components/build_tooling_and_distribution.md:184(function,Engine)
+DpiChanged	architecture/components/platform_layer.md:201(struct,Engine)
+EditionManifest	architecture/components/data_schemas/import_and_build_records.md:74(forward,Engine)
+EndOfSession	architecture/components/platform_layer.md:231(struct,Engine)
+EngineAssetTable	architecture/components/data_schemas/import_and_build_records.md:73(forward,Engine)
+EnumerateMonitors	architecture/components/platform_layer.md:175(function,Engine)
+ExampleToolModel	architecture/components/ui_framework/pages_and_screen_recipes.md:616(struct,(none))
+ExampleToolWindow	architecture/components/ui_framework/pages_and_screen_recipes.md:622(class,(none))
+ExplainerKey	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md:44(forward,Species)
+FlushLogSynchronously	architecture/components/diagnostics_test_and_performance/README.md:151(function,Engine)
+FocusChanged	architecture/components/platform_layer.md:206(struct,Engine)
+FullIdentityText	architecture/components/build_tooling_and_distribution.md:185(function,Engine)
+GetLogStats	architecture/components/diagnostics_test_and_performance/README.md:150(function,Engine)
+IsDefaultFloatEnvironment	architecture/components/platform_layer.md:356(function,Engine)
+KeyboardLayoutChanged	architecture/components/platform_layer.md:227(struct,Engine)
+Limit	architecture/components/data_schemas/map_schema.md:26(struct,Engine)
+LoadError	architecture/components/data_schemas/README.md:225(enum,Engine)
+Log	architecture/components/diagnostics_test_and_performance/README.md:140(function,Engine)
+LogHexDump	architecture/components/diagnostics_test_and_performance/README.md:141(function,Engine)
+LogValueDump	architecture/components/diagnostics_test_and_performance/README.md:142(function,Engine)
+MapDifficulty	architecture/components/data_schemas/map_schema.md:73(enum,Species)
+MapReadOnly	architecture/components/platform_layer.md:285(function,Engine)
+Minimized	architecture/components/platform_layer.md:210(struct,Engine)
+ModeChanged	architecture/components/platform_layer.md:216(struct,Engine)
+MonitorChanged	architecture/components/platform_layer.md:220(struct,Engine)
+OpenExampleTool	architecture/components/ui_framework/pages_and_screen_recipes.md:641(function,(none))
+OpenWebAddress	architecture/components/platform_layer.md:406(function,Engine)
+ParamKind	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md:60(enum,Engine)
+ParamLink	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md:72(enum,Engine)
+ParamUpdate	architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md:66(enum,Engine)
+ParseCommandLine	architecture/components/platform_layer.md:313(function,Engine)
+ReadQueuedTelemetrySession	architecture/components/data_schemas/test_and_telemetry_records.md:53(function,Engine)
+ReadWholeFile	architecture/components/platform_layer.md:284(function,Engine)
+RecentFrameTimesMs	architecture/components/diagnostics_test_and_performance/README.md:197(function,Engine)
+RegisterCounterProvider	architecture/components/diagnostics_test_and_performance/README.md:214(function,Engine)
+ReplaceFileAtomically	architecture/components/platform_layer.md:286(function,Engine)
+Resized	architecture/components/platform_layer.md:197(struct,Engine)
+Restored	architecture/components/platform_layer.md:213(struct,Engine)
+RouteRecord	architecture/components/data_schemas/map_schema.md:129(struct,Species)
+SamplerKind	architecture/components/data_schemas/import_and_build_records.md:50(enum,Engine)
+SchemaVersion	architecture/components/data_schemas/README.md:127(struct,Engine)
+Seconds	architecture/components/audio_engine/README.md:63(using,Engine)
+SetAudioEndpointListener	architecture/components/platform_layer.md:414(function,Engine)
+SetCategoryLevel	architecture/components/diagnostics_test_and_performance/README.md:143(function,Engine)
+SetClipboardText	architecture/components/platform_layer.md:405(function,Engine)
+SettingType	architecture/components/data_schemas/config_input_and_strings.md:23(enum,Engine)
+SettingsFileContent	architecture/components/data_schemas/config_input_and_strings.md:61(forward,Engine)
+Severity	architecture/components/data_schemas/README.md:174(enum,Engine)
+SiegeSide	architecture/components/data_schemas/map_schema.md:79(enum,Species)
+StartPosition	architecture/components/data_schemas/map_schema.md:103(struct,Species)
+StartingForcesRecord	architecture/components/data_schemas/map_schema.md:128(forward,Species)
+SubmitTelemetry	architecture/components/diagnostics_test_and_performance/README.md:261(function,Engine)
+System	architecture/components/platform_layer.md:377(function,Engine)
+ToUtf16	architecture/components/platform_layer.md:287(function,Engine)
+ToUtf8	architecture/components/platform_layer.md:288(function,Engine)
+UiWindow	architecture/components/ui_framework/core_and_widgets.md:156(class,Engine)
+UnregisterCounterProvider	architecture/components/diagnostics_test_and_performance/README.md:215(function,Engine)
+VersionResourceQuad	architecture/components/build_tooling_and_distribution.md:186(function,Engine)
+WriteTelemetrySession	architecture/components/data_schemas/test_and_telemetry_records.md:52(function,Engine)
+
+== Nested types declared (not at namespace scope) ==
+Form	architecture/components/data_schemas/map_schema.md:28	enum in struct	reg=no
+Kind	architecture/components/input/README.md:110	enum in struct	reg=no
+
+== Namespace mismatch: registered layer vs declared namespace ==
+CameraTransition	registered ['Engine']	declared Species at architecture/components/data_schemas/map_schema.md:90
+DrawConstants	registered ['Engine']	declared (none) at architecture/components/renderer/shaders.md:52
+EffectKind	registered ['Species']	declared Engine at architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md:102
+FrameConstants	registered ['Engine']	declared (none) at architecture/components/renderer/shaders.md:31
+SAMPLER_LINEAR_CLAMP	registered ['Engine']	declared (none) at architecture/components/renderer/shaders.md:26
+SAMPLER_LINEAR_WRAP	registered ['Engine']	declared (none) at architecture/components/renderer/shaders.md:27
+SAMPLER_POINT_CLAMP	registered ['Engine']	declared (none) at architecture/components/renderer/shaders.md:28
+SAMPLER_POINT_MAGNIFY_CLAMP	registered ['Engine']	declared (none) at architecture/components/renderer/shaders.md:29
+
+== Enumerator mismatch: registered enumerators vs declared ==
+BuildProduct	reg(Build tooling and distribution (BLD))=['BuildProduct::Client', 'BuildProduct::Server', 'BuildProduct::ContentBuildTool']	decl architecture/components/build_tooling_and_distribution.md:151=['Client', 'Server', 'ContentBuildTool']
+RoutePointKind	reg(Simulation model (R-SIM))=['Position', 'GroundPosition', 'Structure']	decl architecture/components/data_schemas/map_schema.md:95=['Position', 'Ground', 'Structure']
+
+== Declared more than once (types at namespace scope) ==
+AlphaMode
+    architecture/components/asset_pipeline_and_resources.md | 114 | enum | Engine | Opaque,Straight,Premultiplied,Additive,Cutout
+    architecture/components/data_schemas/import_and_build_records.md | 36 | enum | Engine | Opaque,Straight,Premultiplied,Additive,Cutout
+CameraTransition
+    architecture/components/camera_and_sequences.md | 63 | enum | Engine | Move,Cut
+    architecture/components/data_schemas/map_schema.md | 90 | enum | Species | Move,Cut
+ColorSpace
+    architecture/components/asset_pipeline_and_resources.md | 110 | enum | Engine | Srgb,Linear
+    architecture/components/data_schemas/import_and_build_records.md | 31 | enum | Engine | Srgb,Linear
+InputMode
+    architecture/components/data_schemas/config_input_and_strings.md | 75 | enum | Engine | KeyboardMouse,Gamepad
+    architecture/components/input/README.md | 59 | enum | Engine | KeyboardMouse,Gamepad
+MipPolicy
+    architecture/components/asset_pipeline_and_resources.md | 118 | enum | Engine | Full,None
+    architecture/components/data_schemas/import_and_build_records.md | 44 | enum | Engine | Full,None
+TextureKind
+    architecture/components/asset_pipeline_and_resources.md | 106 | enum | Engine | Color,Ui,Normal,Mask,ExactData,CpuTable
+    architecture/components/data_schemas/import_and_build_records.md | 22 | enum | Engine | Color,Ui,Normal,Mask,ExactData,CpuTable
+TintMarking
+    architecture/components/asset_pipeline_and_resources.md | 162 | enum | Engine | None,VertexWeight,MaterialFlag
+    architecture/components/data_schemas/import_and_build_records.md | 58 | enum | Engine | None,VertexWeight,MaterialFlag
+
+== Registered type names (8.12) never declared in any sketch ==
+ALPHA_ONE	Renderer (RND)/Engine
+Abductor	Abductor/Species
+AbductorEngine	Animation and VFX (VFX)/Species
+Achievement	achievement/Species
+AchievementEvents	achievement events/Species
+ActionAxis	Input (INP)/Engine
+ActionBindings	action bindings/Engine
+ActionTrigger	Input (INP)/Engine
+Actor	actor/Species
+ActorGrid	actor grid/Species
+ActorGridCache	actor grid cache/Species
+ActorGroup	actor group/Species
+ActorHit	Animation and VFX (VFX)/Species
+ActorKind	actor kind/Species
+ActorStatTable	actor stat table/Species
+AimBeamDish	Simulation model (R-SIM)/Species
+AirstrikeFlight	airstrike flight/Species
+AirstrikeMarkerSmoke	Animation and VFX (VFX)/Species
+AirstrikeTargetMarker	airstrike target marker/Species
+AliasNode	Input (INP)/Engine
+AllNode	Input (INP)/Engine
+AllegianceScramblerEffect	Allegiance Scrambler effect/Species
+AlwaysTrue	always-on feature flag/Engine
+AntCreature	ant/Species
+Application	application/Species
+AssetFailed	Asset pipeline and resources (AST)/Engine
+AssetLoaded	Asset pipeline and resources (AST)/Engine
+AssetReloaded	Asset pipeline and resources (AST)/Engine
+AudioBusGraph	Audio engine (AEN)/Engine
+AudioStream	Audio engine (AEN)/Engine
+BankId	Audio engine (AEN)/Engine
+BarrageMissile	barrage missile/Species
+BarrierEmitter	Barrier Emitter/Species
+BarrierSpark	Animation and VFX (VFX)/Species
+BeamDish	Beam Dish/Species
+BindingDescription	Input (INP)/Engine
+BindingNode	Input (INP)/Engine
+BindingSources	Input (INP)/Engine
+BindingStateTable	Input (INP)/Engine
+BitCrusherFx	Audio engine (AEN)/Engine
+Bite	Animation and VFX (VFX)/Species
+BlueSpark	Animation and VFX (VFX)/Species
+Bomber	Bomber/Species
+Bot	Bot/Species
+BotController	bot controller/Species
+BotNavNode	bot navigation node/Species
+BotObjective	bot objective/Species
+BotObjectiveMarker	bot objective marker/Species
+Bounce	Simulation model (R-SIM)/Species
+BreachCharge	Breach Charge/Species
+BroodDrifter	Brood Drifter/Species
+BuildIdentity.h	Build tooling and distribution (BLD)/Engine
+Builder	Builder/Species
+CLIP_PLANES	Renderer (RND)/Engine
+COMBINE	Renderer (RND)/Engine
+CUTOUT	Renderer (RND)/Engine
+CameraShake	Animation and VFX (VFX)/Species
+CameraState	Camera and sequences (CAM)/Species
+CancelPower	Simulation model (R-SIM)/Species
+CarryableStructure	carryable structure/Species
+Casing	Animation and VFX (VFX)/Species
+CatalogKey	Renderer (RND)/Engine
+CatchUpBonus	Catch-up bonus/Species
+CentipedeCreature	centipede/Species
+Chat	Simulation model (R-SIM)/Species
+ChatLog	UI framework (UI)/Engine
+CheckFailed	Diagnostics, test and performance (DBG)/Engine
+ChordNode	Input (INP)/Engine
+ChorusFx	Audio engine (AEN)/Engine
+ClothFlag	cloth flag/Species
+Collector	Collector/Species
+CollectorEngine	Animation and VFX (VFX)/Species
+ColorPickerRow	UI framework (UI)/Species
+ColorRgba	RGBA colour/Engine
+CombineParams	Renderer (RND)/Engine
+ComebackBonus	Comeback Bonus/Species
+CommandConsole	Command Console/Species
+CompiledFrameGraph	Renderer (RND)/Engine
+CompressorFx	Audio engine (AEN)/Engine
+ConnectionStatus	UI framework (UI)/Engine
+ControlFlash	Animation and VFX (VFX)/Species
+ControlGained	Animation and VFX (VFX)/Species
+ControlHintOverlay	control-hint overlay/Species
+ControlLost	Animation and VFX (VFX)/Species
+ControlScheme	control scheme/Species
+ControlState	Simulation model (R-SIM)/Species
+ControlZone	Control Zone/Species
+CoreDevice	Core Device/Species
+CorePulseWave	Core Device pulse wave/Species
+CrashReporter	crash reporter/Engine
+CrateOutcome	supply-crate outcome/Species
+Crawler	Crawler/Species
+CrawlerEgg	Crawler egg/Species
+CrawlerGroup	Crawler group/Species
+CrawlerTrailSample	Crawler trail sample/Species
+CrowdOrder	Animation and VFX (VFX)/Species
+DemoteLeader	Simulation model (R-SIM)/Species
+DepthCopy	Renderer (RND)/Engine
+DevDrawItem	Diagnostics, test and performance (DBG)/Engine
+DevDrawItemId	Diagnostics, test and performance (DBG)/Engine
+DeviceClassMask	Input (INP)/Engine
+DeviceRebuilt	Renderer (RND)/Engine
+DeviceState	Input (INP)/Engine
+DistortionFx	Audio engine (AEN)/Engine
+DustVortex	dust object/Species
+EDGE_MASK	Renderer (RND)/Engine
+EDGE_STRIP	Renderer (RND)/Engine
+ENGINE_DEVELOPMENT	Build tooling and distribution (BLD)/Engine
+EchoFx	Audio engine (AEN)/Engine
+EnergyGrid	energy grid/Species
+EnergySurge	energy surge/Species
+EssenceOrb	Essence orb/Species
+ExclusionZone	exclusion zone/Species
+ExplainerLayout	Animation and VFX (VFX)/Species
+Explode	Simulation model (R-SIM)/Species
+Explosion	Animation and VFX (VFX)/Species
+ExplosionCore	Animation and VFX (VFX)/Species
+ExplosionDebris	Animation and VFX (VFX)/Species
+FOG	Renderer (RND)/Engine
+FeatureFlagX	feature flag/Engine
+Final	Renderer (RND)/Engine
+Fire	Animation and VFX (VFX)/Species
+FireballFlame	Animation and VFX (VFX)/Species
+FireballLaunched	Animation and VFX (VFX)/Species
+FireballProjectile	fireball/Species
+FirebombBurst	Animation and VFX (VFX)/Species
+FirebombCanister	firebomb canister/Species
+FlagChain	Flag Chain/Species
+FlagPost	Flag post/Species
+FlangerFx	Audio engine (AEN)/Engine
+FormationSlot	formation slot/Species
+FrameGraphError	Renderer (RND)/Engine
+FrontEndController	front-end controller/Species
+FuelDepot	fuel depot/Species
+FuelDepotBoarding	Animation and VFX (VFX)/Species
+FuelLine	fuel line/Species
+FuelPump	fuel pump/Species
+FuelPumpStroke	Animation and VFX (VFX)/Species
+FuelStructure	fuel-chain structure/Species
+FullscreenFade	Renderer (RND)/Engine
+FxRng	presentation generator/Engine
+GRID_SOURCE	Renderer (RND)/Engine
+GamepadBackEnd	Input (INP)/Engine
+GargleFx	Audio engine (AEN)/Engine
+GracePeriod	grace period/Species
+GrenadeProjectile	grenade/Species
+Grid2D	2-D grid/Engine
+GridPylon	grid pylon/Species
+GridSplitter	grid splitter/Species
+GridStructure	energy-grid structure/Species
+GridTerminal	grid terminal/Species
+GroupFormation	Simulation model (R-SIM)/Species
+HDR	Renderer (RND)/Engine
+HelpPicture	UI framework (UI)/Engine
+HintOverlay	hint overlay/Species
+Hive	Hive/Species
+HomePost	Home post/Species
+INVERTED	Renderer (RND)/Engine
+IdleNode	Input (INP)/Engine
+ImageRgba8	RGBA8 image/Engine
+InputEventQueue	Input (INP)/Engine
+InputPointer	Input (INP)/Engine
+InputSourceNode	input source node/Engine
+InstanceCull	Renderer (RND)/Engine
+InstanceTypeId	Renderer (RND)/Engine
+IsFriend	Simulation model (R-SIM)/Species
+IsPathClear	Simulation model (R-SIM)/Species
+JumpPadObject	jump pad/Species
+KeyboardMouseBackEnd	Input (INP)/Engine
+KickControl	UI framework (UI)/Engine
+LandRouteGraph	land route graph/Species
+LanguageTag	UI framework (UI)/Engine
+LaserBolt	laser bolt/Species
+LaserHitStructure	Animation and VFX (VFX)/Species
+LatchNode	Input (INP)/Engine
+LaunchRace	Launch Race/Species
+LaunchVessel	Launch Vessel/Species
+Leader	Leader/Species
+LeaderDemoted	Animation and VFX (VFX)/Species
+LeaderFormUp	Animation and VFX (VFX)/Species
+LeaderOrder	Animation and VFX (VFX)/Species
+LeaderPromoted	Animation and VFX (VFX)/Species
+Leaf	Animation and VFX (VFX)/Species
+LightningStrike	Animation and VFX (VFX)/Species; lightning strike/Species
+LoadDiagnostic	Input (INP)/Engine
+LoadGroupCompleted	Asset pipeline and resources (AST)/Engine
+LoadGroupProgress	Asset pipeline and resources (AST)/Engine
+LoadReport	Input (INP)/Engine
+LoadingView	loading view/Species
+LobbySlot	lobby slot/Species
+LobbySlotRow	UI framework (UI)/Species
+LookError	Renderer (RND)/Species
+MAX_TEAMS	team slots per match/Species
+MapDefinition	map definition/Species
+MapDescription	UI framework (UI)/Engine
+MapEditor	map editor/Species
+MapEditorHubPage	map editor hub page/Species
+MapEditorWindow	map editor window/Species
+MapFilePicker	map file picker/Species
+MapId	map id/Species
+MapListHeader	UI framework (UI)/Engine
+MapNameLabel	UI framework (UI)/Engine
+MapRow	UI framework (UI)/Engine
+MapThumbnail	UI framework (UI)/Engine
+Mat3x4	3x4 matrix/Engine
+Mat4	Renderer (RND)/Engine
+MatchHudView	Renderer (RND)/Species
+MatchInputPump	match input pump/Species
+MatchRules	match rules/Species
+MatchStatistics	match statistics/Species
+MatchTeam	team/Species
+MatchUi	match UI sound source/Species
+MatchWorld	match world/Species
+MeshAsset	mesh/Engine
+MeshInstance	Renderer (RND)/Engine
+MeshLit	Renderer (RND)/Engine
+MeshNode	mesh node/Engine
+MeshSocket	mesh socket/Engine
+MessageArguments	UI framework (UI)/Engine
+MeteorFire	Animation and VFX (VFX)/Species
+MeteorRock	meteor/Species
+MissileFire	Animation and VFX (VFX)/Species
+MissileTrail	Animation and VFX (VFX)/Species
+ModeDescription	UI framework (UI)/Species
+ModePicture	UI framework (UI)/Species
+ModeRow	UI framework (UI)/Species
+MuzzleFlare	Animation and VFX (VFX)/Species
+MuzzleFlashEffect	muzzle flash/Species
+NavigationRejected	UI framework (UI)/Species
+NextMode	Simulation model (R-SIM)/Species
+NotNode	Input (INP)/Engine
+ObstacleGrid	obstacle grid/Species
+OptionDetails	UI framework (UI)/Engine
+OrbBroken	Animation and VFX (VFX)/Species
+OrderMarker	order marker/Species
+OrderMarkerStep	Animation and VFX (VFX)/Species
+OrderTrailMark	order trail mark/Species
+OrderUnit	Simulation model (R-SIM)/Species
+OrderWorkers	Simulation model (R-SIM)/Species
+PRODUCT_NAME	product name/Engine
+PadAssignment	Input (INP)/Engine
+PadMenuCycleDown	pad menu cycle down/Engine
+PadMenuCycleUp	pad menu cycle up/Engine
+PageEntered	UI framework (UI)/Species
+PageLeft	UI framework (UI)/Species
+ParticleInstance	particle/Engine
+ParticleTypeParams	Animation and VFX (VFX)/Engine
+PassContext	Renderer (RND)/Engine
+Pause	Simulation model (R-SIM)/Species
+PlayerCommand	Simulation model (R-SIM)/Species; player command/Species
+PoolCounts	Animation and VFX (VFX)/Engine
+PopulationLimiter	Population Limiter/Species
+Power	Power/Species
+PowerLevels	power and research levels/Species
+PowerReachedWorker	Animation and VFX (VFX)/Species
+PowerSlot	Power slot/Species
+PowerSlots	Power slots/Species
+PowerSlotsPanel	power slots panel/Species
+PresentationSnapshot	Renderer (RND)/Species
+PreviousMode	Simulation model (R-SIM)/Species
+PrimaryButton	UI framework (UI)/Engine
+PriorityAxis	Input (INP)/Engine
+ProceduralFoot	procedural foot/Engine
+ProceduralLeg	procedural leg/Engine
+ProfileNodeId	Diagnostics, test and performance (DBG)/Engine
+ProfileNodeStats	Diagnostics, test and performance (DBG)/Engine
+PromoteWorker	Simulation model (R-SIM)/Species
+PushFromObstacles	Simulation model (R-SIM)/Species
+Ray	Renderer (RND)/Engine
+ReaperSerpent	Reaper Serpent/Species
+RecordFunction	Renderer (RND)/Engine
+Relay	Relay/Species
+Relic	Relic/Species
+RelicReceptacle	Relic Base/Species
+RelicRun	Relic Run/Species
+RelicSpawnZone	Relic Spawn Zone/Species
+RenderBackdrop	render backdrop/Engine
+RenderTargetFormats	Renderer (RND)/Engine
+ReportScores	Simulation model (R-SIM)/Species
+ResonantLowPassFx	Audio engine (AEN)/Engine
+ResourceAccess	Renderer (RND)/Engine
+RocketBurst	Animation and VFX (VFX)/Species
+RocketFlame	Animation and VFX (VFX)/Species
+RocketProjectile	rocket/Species
+RocketTrail	Animation and VFX (VFX)/Species
+RogueFaction	Rogue faction/Species
+RoundHitStructure	Animation and VFX (VFX)/Species
+RoundHitTerrain	Animation and VFX (VFX)/Species
+RouteGraph	route graph/Species
+RouteGraphNode	route graph node/Species
+RouteHandle	Renderer (RND)/Species
+RouteHop	Simulation model (R-SIM)/Species
+RoutePath	Simulation model (R-SIM)/Species
+RoutePoint	route point/Species
+RoutePreview	Renderer (RND)/Species
+SAMPLES	Renderer (RND)/Engine
+SOURCE	Renderer (RND)/Engine
+SampleBank	Audio engine (AEN)/Engine
+SampleCache	sample cache/Engine
+SceneryMesh	scenery mesh/Species
+ScissorRect	Renderer (RND)/Engine
+ScrapActor	Simulation model (R-SIM)/Species
+ScreenLine	Renderer (RND)/Engine
+ScreenTransition	Renderer (RND)/Engine
+ScrollingText	UI framework (UI)/Engine
+SeaFlat	Renderer (RND)/Engine
+SeaLook	Renderer (RND)/Engine
+SeaRouteGraph	sea route graph/Species
+SeaWaves	Renderer (RND)/Engine
+SeaWavesUpdate	Renderer (RND)/Engine
+SeedPod	Seed Pod/Species
+Select	Simulation model (R-SIM)/Species
+SelectPower	Simulation model (R-SIM)/Species
+SelectWorkers	Simulation model (R-SIM)/Species
+SessionListHeader	UI framework (UI)/Engine
+SessionRow	UI framework (UI)/Engine
+SetAchievementMask	Simulation model (R-SIM)/Species
+SetColor	Simulation model (R-SIM)/Species
+SetMatchOption	Simulation model (R-SIM)/Species
+SetMatchOptionArray	Simulation model (R-SIM)/Species
+SetMatchOptionElement	Simulation model (R-SIM)/Species
+SetMatchOptionText	Simulation model (R-SIM)/Species
+SetSeasonalTheme	Simulation model (R-SIM)/Species
+SetSlotOpen	Simulation model (R-SIM)/Species
+SetTeamName	Simulation model (R-SIM)/Species
+SettingGate	Renderer (RND)/Engine
+SettingNode	Input (INP)/Engine
+ShaderPermutationId	Renderer (RND)/Engine
+ShakeOffset	Animation and VFX (VFX)/Engine
+Shatter	Animation and VFX (VFX)/Species
+ShatterExplosion	Animation and VFX (VFX)/Engine
+ShellCasing	shell casing/Species
+ShockwaveRing	shockwave ring/Species
+Sickness	Animation and VFX (VFX)/Species
+Siege	Siege/Species
+SimObject	simulated object/Species
+SimObjectId	simulated-object handle/Species
+SimRng	simulation generator/Species
+SimpleReverbFx	Audio engine (AEN)/Engine
+SkillRating	Skill rating/Species
+Sky	Renderer (RND)/Engine
+SkyDetail	Renderer (RND)/Engine
+SkyLayerInstance	Renderer (RND)/Engine
+SlicedPool	sliced pool/Species
+SlotOpenControl	UI framework (UI)/Species
+SmokeColumn	Animation and VFX (VFX)/Species; smoke column/Species
+SnowFlake	snowflake/Species
+SoakReport	Diagnostics, test and performance (DBG)/Engine
+SolarArray	Solar Array/Species
+SoundGroupDef	Audio engine (AEN)/Engine
+SoundVoice	sound voice/Engine
+SourceNode	Source Node/Species
+SourceVoiceSlot	Audio engine (AEN)/Engine
+Spark	Animation and VFX (VFX)/Species
+SpawnControl	Spawn Control/Species
+SpawnEdge	spawn-network edge/Species
+SpawnNetwork	spawn network/Species
+SpawnNode	Spawn Node/Species
+SpawnStructure	spawn-network structure/Species
+SpeedBoostTrail	Animation and VFX (VFX)/Species
+SpiderCreature	spider/Species
+SpiderGait	spider gait/Species
+SpitterPlant	Spitter Plant/Species
+SpitterPlantBurning	Animation and VFX (VFX)/Species
+StandardGargleFx	Audio engine (AEN)/Engine
+StartMatch	Simulation model (R-SIM)/Species
+StartingForces	starting forces/Species
+StartupError	Renderer (RND)/Engine
+StatementArgs	Camera and sequences (CAM)/Engine
+StaticImage	UI framework (UI)/Engine
+StereoEchoFx	Audio engine (AEN)/Engine
+StickAxis	Input (INP)/Engine
+StrikeTeam	Strike team/Species
+StringId	UI framework (UI)/Engine
+StructureDestroyed	Animation and VFX (VFX)/Species
+StructurePort	structure port/Species
+StudioReverbFx	Audio engine (AEN)/Engine
+SupplyCrate	Supply crate/Species
+SwarmHit	Animation and VFX (VFX)/Species
+SwarmStreak	Swarm streak/Species
+TICK_PERIOD_SECONDS	tick period/Species
+TargetPower	Simulation model (R-SIM)/Species
+TeamCommandState	team command state/Species
+TeamId	Simulation model (R-SIM)/Species
+TeleportStructure	teleport/Species
+Terrain	Renderer (RND)/Engine
+TerrainColorRamp	Renderer (RND)/Engine
+TextLabel	UI framework (UI)/Engine
+ThrownWeapon	thrown weapon/Species
+ThrownWeaponKind	Simulation model (R-SIM)/Species
+ThrownWeaponTrail	Animation and VFX (VFX)/Species
+TickClock	tick clock/Species
+TimelineFrameInputs	Camera and sequences (CAM)/Species
+ToggleBarrierEmitter	Simulation model (R-SIM)/Species
+ToggleReady	Simulation model (R-SIM)/Species
+ToggleUnit	Simulation model (R-SIM)/Species
+TrailPoint	trail point/Species
+TransitGate	Transit Gate/Species
+TransitOrb	transit orb/Species
+Transport	Transport/Species
+TransportExhaust	Animation and VFX (VFX)/Species
+TreeBurning	Animation and VFX (VFX)/Species
+TreeLeaf	Animation and VFX (VFX)/Species
+TreeObject	tree/Species
+TreeParameters	Renderer (RND)/Engine
+TreeQuad	Renderer (RND)/Engine
+Trooper	Trooper/Species
+TrooperShot	Animation and VFX (VFX)/Species
+TryEnterTeleport	Simulation model (R-SIM)/Species
+Turret	turret/Species
+TurretCooling	Animation and VFX (VFX)/Species
+TurretRound	turret round/Species
+TurretShot	Animation and VFX (VFX)/Species
+UPDATE_SLICES_PER_TICK	update slices per tick/Species
+UiAltPointerDown	UI alt pointer down/Engine
+UiInputPump	UI input pump/Engine
+UiPointerDown	UI pointer down/Engine
+UiPointerHeld	UI pointer held/Engine
+UnlitDualTexture	Renderer (RND)/Engine
+UnlitTextured	Renderer (RND)/Engine
+UnlitVertexColor	Renderer (RND)/Engine
+ValueNode	Input (INP)/Engine
+ValueType	UI framework (UI)/Engine
+Vec2	Diagnostics, test and performance (DBG)/Engine
+Vec3	3-vector/Engine
+VesselBooster	Animation and VFX (VFX)/Species
+VesselWrecked	Animation and VFX (VFX)/Species
+VisitorFaction	Visitor faction/Species
+Volcano	Animation and VFX (VFX)/Species
+VolcanoEruption	Animation and VFX (VFX)/Species
+VolcanoVent	volcano vent/Species
+WalkCost	Simulation model (R-SIM)/Species
+WallObject	wall/Species
+WaveVertexPair	Renderer (RND)/Engine
+WaypointBeacon	Waypoint beacon/Species
+Wisp	Wisp/Species
+Worker	Worker/Species; hostile workers/Species
+WorkerAbducted	Animation and VFX (VFX)/Species
+WorkerBurning	Animation and VFX (VFX)/Species
+WorkerFire	Animation and VFX (VFX)/Species
+WorkerOpeningCrate	Animation and VFX (VFX)/Species
+WorkerSick	Animation and VFX (VFX)/Species
+WorkerSpeedBoost	Animation and VFX (VFX)/Species
+WorldCursor	world cursor/Species
+WorldMarkers	world markers/Species
+WorldOverlay	Renderer (RND)/Engine
+ZoneControl	Zone Control/Species

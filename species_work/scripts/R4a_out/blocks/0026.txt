@@ -1,0 +1,13 @@
+stateDiagram-v2
+  [*] --> Hidden: created at the stored placement
+  Hidden --> Windowed: shown, stored mode windowed
+  Hidden --> BorderlessFullScreen: shown, stored mode borderless
+  Windowed --> BorderlessFullScreen: SetMode
+  BorderlessFullScreen --> Windowed: SetMode
+  Windowed --> Minimised: minimise
+  BorderlessFullScreen --> Minimised: minimise
+  Minimised --> Windowed: restore, mode windowed
+  Minimised --> BorderlessFullScreen: restore, mode borderless
+  Windowed --> [*]: destroyed at shutdown
+  BorderlessFullScreen --> [*]: destroyed at shutdown
+  Minimised --> [*]: destroyed at shutdown

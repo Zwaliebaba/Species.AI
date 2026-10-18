@@ -1,0 +1,22 @@
+sequenceDiagram
+  participant MM as Main menu
+  participant HP as Map editor hub page
+  participant FP as Map file picker
+  participant NP as New-map page
+  participant ML as Main loop
+  participant ED as Map editor
+  MM->>HP: map-editor entry chosen
+  alt edit an existing map
+    HP->>FP: list the containers of the player map folder
+    FP->>HP: confirm or double activation sets the chosen map
+    HP->>ML: next update sets the requested map, no mission, the editing state and the custom-map world id, and closes every window
+  else create a new map
+    HP->>NP: new map
+    NP->>NP: create writes a default text map, or refuses an existing name
+  end
+  ML->>ML: the main-menu loop ends with the editing state set
+  ML->>ED: match entry without map-placed structures, free developer camera, editor loop
+  loop every rendered frame until menu back
+    ML->>ED: input, camera, editor advance, sound, map-editor frame
+  end
+  ML->>ML: close every window, re-register the custom map, destroy the editor and the match world, back to the main menu

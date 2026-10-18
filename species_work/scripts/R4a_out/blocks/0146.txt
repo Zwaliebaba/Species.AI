@@ -1,0 +1,18 @@
+stateDiagram-v2
+    [*] --> FrontEnd : application start or front end rebuilt, match rules reset
+    FrontEnd --> Lobby : host picks the mode and the map, options take their defaults
+    Lobby --> Lobby : option, colour, name and ready changes
+    Lobby --> Loading : every human ready or single-player start, empty slots filled with bots, match-start command
+    Loading --> Grace : match world initialised, world held, grace countdown 30
+    Grace --> Grace : a human or spectator not ready, countdown back to 30
+    Grace --> Grace : all ready, countdown minus 1 per tick
+    Grace --> Running : countdown reaches 0, normal speed requested
+    Running --> Running : mode step, reinforcement waves, Comeback Bonus, ranks
+    Running --> SuddenDeathPhase : time up, top score tied, sudden death on
+    SuddenDeathPhase --> SuddenDeathPhase : still tied; Zone Control adds 60 mode seconds
+    SuddenDeathPhase --> MatchOver : tie broken, result declared
+    Running --> SiegeRoundEnd : Core Device destroyed or detonated, defence time recorded
+    SiegeRoundEnd --> Loading : multi-round with rounds left, fade out, round reset
+    SiegeRoundEnd --> MatchOver : single round or last round, victory delay over, no pulse wave
+    Running --> MatchOver : result declared, a team or a draw
+    MatchOver --> FrontEnd : leave action of the in-game menu, teardown, reset

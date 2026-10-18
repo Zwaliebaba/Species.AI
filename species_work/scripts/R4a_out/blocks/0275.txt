@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Unseen: created from a presentation event
+    Unseen --> Seen: 1 s on screen
+    Seen --> Fading: more than 6 s on screen
+    Fading --> Removed: a fixed marker reaches 8 s on screen
+    Unseen --> Removed: its tracked object or Power ends
+    Seen --> Removed: its tracked object or Power ends
+    Fading --> Removed: its tracked object or Power ends
+    Removed --> [*]

@@ -1,0 +1,24 @@
+flowchart TD
+    T[retarget timer at or below 0] --> P{player-orders flag and not Idle?}
+    P -- yes --> TH[threat search only]
+    P -- no --> S[searches of table 2.5-A for the current state]
+    S --> TH2[threats]
+    TH2 -- none --> PO[ports]
+    PO -- none --> CA[carryable structures]
+    CA -- none --> CR[Supply crates, Idle only]
+    CR -- none --> TR[Transports, Idle only]
+    TR -- none --> FL[flags, Flag Chain and Idle only]
+    FL -- none --> LE[Leaders, Idle only]
+    LE -- none --> RP[random position, Idle only]
+    TH2 -- found --> D[done]
+    PO -- found --> D
+    CA -- found --> D
+    CR -- found --> D
+    TR -- found --> D
+    FL -- found --> D
+    LE -- found --> D
+    RP --> D
+    D --> V{now Idle?}
+    V -- yes --> VC[victory celebration test]
+    V -- no --> R
+    VC --> R[retarget timer := 11 to 20 ticks]

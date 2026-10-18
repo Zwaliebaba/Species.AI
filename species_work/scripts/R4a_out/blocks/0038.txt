@@ -1,0 +1,13 @@
+p = the Crawler's position at the slice-aware time of RND-082
+if detail == 1: p.y = TerrainHeight(p) + ref.unit.crawler.hover_height
+alphaWorm = ref.unit.crawler.worm_alpha; alphaGlow = ref.unit.crawler.glow_alpha; v = 0; carried = 0
+for each sample s of the drawn share of the history, newest first (R-UNIT-539):
+    if detail > 1 and s is not required: carried += s.distance; continue
+    len = s.distance + carried; carried = 0
+    worm segment from p to s.position: half-width ref.unit.crawler.worm_half_width along the previous
+        sample's width direction (built on the terrain normal only at detail 1); the trail column of
+        RND-320 across its width; v from v to v + len * vfx.crawler.worm_v_per_wu; colour alpha alphaWorm
+    if detail < 4: glow segment over the same span extended by s's glow step at both ends,
+        half-width ref.unit.crawler.glow_half_width, the whole of fx.glow_round; colour alpha alphaGlow
+    alphaWorm = max(0, alphaWorm - len); alphaGlow = max(0, alphaGlow - len)   # one alpha per wu
+    p = s.position; v += len * vfx.crawler.worm_v_per_wu

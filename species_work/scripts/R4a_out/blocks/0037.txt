@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> OnGround: first draw, lifted and planted at home
+    OnGround --> Swinging: decision step lifts the foot, desire above the move or emergency threshold
+    Swinging --> OnGround: eased swing passes 1, foot planted, footstep event
+    OnGround --> Pouncing: pounce starts
+    Swinging --> Pouncing: pounce starts
+    Pouncing --> OnGround: spider lands, foot stays where it is

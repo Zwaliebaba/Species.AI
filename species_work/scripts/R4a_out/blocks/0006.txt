@@ -1,0 +1,7 @@
+y := 0; i := 0
+loop:
+    side := s0 - floor(i / 2) * rnd.crawler.trail_copy_shrink
+    if y + side >= H: stop
+    copy the parent, scaled bilinearly to side x side, to the rectangle
+         x from floor(W / 2) - floor(side / 2), y from y, width side, height side
+    y := y + side; i := i + 1

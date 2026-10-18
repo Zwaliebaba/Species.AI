@@ -1,0 +1,21 @@
+sequenceDiagram
+  participant App as Start-up
+  participant Store as Settings store
+  participant File as Settings file
+  participant Def as Defaults table
+  App->>Store: create, before window, renderer and audio
+  Store->>Def: every entry with its default
+  Store->>File: read lines
+  alt the file cannot be opened
+    Store->>Store: keep the defaults (first run)
+  else the file is read
+    loop every line
+      Store->>Store: comment or blank: keep in place
+      Store->>Store: entry of a known key, first occurrence: parse by the schema type
+      Store->>Store: malformed or out of range: log, keep the default
+      Store->>Store: repeated key: log, ignore
+      Store->>Store: unknown key: keep text, log once
+    end
+  end
+  Store->>Store: force the match control scheme (R-META-405)
+  Note over Store: a save writes a new file beside the old one and replaces it in one step

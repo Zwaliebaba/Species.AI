@@ -1,0 +1,4 @@
+stateDiagram-v2
+    [*] --> Pulsing : created by the outcome, life 151 ticks, first pulse at once
+    Pulsing --> Pulsing : every 5 to 30 ticks, every Worker within 100 wu re-spawned for a random team
+    Pulsing --> [*] : life has run out

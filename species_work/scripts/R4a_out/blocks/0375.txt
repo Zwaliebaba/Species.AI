@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> NoRoute
+    NoRoute --> Following: route handle set, point index 0
+    Following --> Following: within 10 wu of a position point, next point
+    Following --> InTeleport: structure point, the actor enters the teleport
+    InTeleport --> Following: the teleport exit continues the route
+    Following --> NoRoute: past the last point, or the route no longer exists

@@ -1,0 +1,156 @@
+namespace Engine
+{
+
+// ---- logical field types (§3.1); the order carries no meaning -------------------
+enum class FieldType : std::uint8_t
+{
+  Boolean,
+  Integer,
+  Count,
+  Ticks,
+  SimDecimal,
+  PresentationDecimal,
+  Text,
+  StableId,
+  StringId,
+  AssetRef,
+  AssetMember,
+  RecordRef,
+  Enum,
+  EnumSet,
+  Vec3Value,
+  Direction,
+  ColorRgba8,
+  ColorMultiplier,
+  Limit,
+  List,
+  Object
+};
+enum class SimPrecision : std::uint8_t
+{
+  Binary32Rounded,
+  Binary64
+}; // DAT-010, DEC-241
+enum class Presence : std::uint8_t
+{
+  Required,
+  Defaulted,
+  AbsenceMeaningful,
+  Derived
+};
+
+// DAT-017
+struct SchemaVersion
+{
+  std::uint16_t major;
+  std::uint16_t minor;
+};
+
+struct FieldSpec
+{
+  std::string_view key; // lower-case snake_case (DAT-002)
+  FieldType type;
+  Presence presence;
+  std::string_view unit;         // "wu", "ticks", "s", "mode s", "dB", "" ...
+  std::optional<double> minimum; // inclusive unless the field says otherwise
+  std::optional<double> maximum;
+  std::uint32_t maxChars = 0;            // text and id fields (DAT-009)
+  std::optional<SimPrecision> precision; // SimDecimal only
+  std::string_view refKind;              // record type or asset category of a reference
+  bool orderCarriesMeaning = false;      // List and EnumSet (DAT-013)
+  std::string_view defaultKey;           // the owner's tuning key of the default, if any
+};
+
+struct RecordSchema
+{
+  std::string_view id; // the schema id of table 1-A, for example "maps.definition"
+  SchemaVersion version;
+  std::span<const FieldSpec> fields; // schema order = canonical write order (DAT-042)
+  bool simulationRelevant;
+  ContentType cookedAs; // the pack content type (ADR-058)
+};
+
+// Generated, compiled into every program.
+class SchemaRegistry
+{
+public:
+  static const SchemaRegistry& Instance() noexcept;
+  const RecordSchema* Find(std::string_view _schemaId) const noexcept;
+  std::span<const RecordSchema> All() const noexcept;
+};
+
+// ---- diagnostics (§6) ------------------------------------------------------------
+struct SourceLocation
+{
+  std::string file;
+  std::uint32_t line;
+  std::uint32_t column;
+  std::string fieldPath;
+};
+enum class Severity : std::uint8_t
+{
+  Error,
+  Warning,
+  Information
+};
+struct Diagnostic
+{
+  DiagnosticClass diagnosticClass; // table 6-A
+  Severity severity;
+  SourceLocation at;
+  std::optional<SourceLocation> also; // the other occurrence of a duplicate (DAT-025)
+  std::string message;                // literal text, never a format string (DEC-800)
+};
+
+// ---- content build tool (tools solution) ----------------------------------------
+// DAT-019 to DAT-023
+class AuthoringParser
+{
+public:
+  std::expected<JsonDocument, std::vector<Diagnostic>> Parse(std::span<const std::byte> _bytes, std::string_view _file) const;
+};
+// DAT-024 to DAT-032
+class RecordValidator
+{
+public:
+  std::vector<Diagnostic> Validate(const JsonDocument& _document, const RecordSchema& _schema, const ReferenceIndex& _references) const;
+};
+// DAT-033 to DAT-035
+class RecordCooker
+{
+public:
+  CookedRecord Cook(const JsonDocument& _validated, const RecordSchema& _schema) const;
+};
+// DAT-040 to DAT-044, DEC-800
+class CanonicalWriter
+{
+public:
+  std::string Write(const RecordValue& _value, const RecordSchema& _schema) const;
+  std::expected<void, Diagnostic> ReplaceFileAtomically(const std::filesystem::path& _target, std::string_view _content) const;
+};
+// DAT-045, DAT-046
+class SchemaMigration
+{
+public:
+  std::expected<RecordValue, std::vector<Diagnostic>> Migrate(const JsonDocument& _older, SchemaVersion _from,
+                                                              const RecordSchema& _to) const;
+};
+
+// ---- runtime (client, server and content build tool) ----------------------------
+template <class T> class RecordView; // read-only view of a cooked record (DAT-005)
+enum class LoadError : std::uint8_t
+{
+  WrongSchema,
+  WrongVersion,
+  HashMismatch,
+  Truncated,
+  Malformed
+};
+// DAT-036 to DAT-039
+class RecordLoader
+{
+public:
+  template <class T> std::expected<RecordView<T>, LoadError> Load(const PackEntry& _entry) const;
+};
+
+} // namespace Engine

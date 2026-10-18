@@ -1,0 +1,11 @@
+best := -1;  pick := none
+for each other Beam Dish r of any team, in structure order:
+    if dot(normalise(r.position - d.position), r.dishFront) < 0                 # r faces towards d
+       and visible(d.dishPosition, r.dishPosition)
+       and d accepts r as a valid receiver (R-BLDG-158)
+       and the tutorial filters of [05] R-BOT-153 pass:
+        pr := r's own navigation node's priority for the team, when r has a node,
+              else the priority of r's nearest node (R-BOT-052, evaluate-cliffs false, permit-steep-downhill true)
+        if pr > best:  best := pr;  pick := r
+if pick != none and d's receiver is not pick:
+    PlayerCommand::AimBeamDish(team, d, pick.dishPosition)

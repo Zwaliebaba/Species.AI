@@ -1,0 +1,19 @@
+stateDiagram-v2
+    direction LR
+    state "Grace period, camera-controls picture" as Grace
+    state "Second node, select_group at home_gather, then capture_node at second_node" as Second
+    state "Centre zone, select_group at home_gather, then move_to_zone" as Centre
+    state "Third node, select_group at second_gather, then capture_node at third_node" as Third
+    state "Leaders at home_gather and second_gather, promote or promote_advanced, then leader_to_zone" as Leaders
+    state "Far zone, capture_far_zone" as Far
+    state "Crate and airstrike, crate_falling, crate_open, select_airstrike, launch_airstrike" as Crate
+    state "Scores tab, up to 400 ticks" as Scores
+    [*] --> Grace
+    Grace --> Second : countdown ends
+    Second --> Centre : second_node owned or 10 heading there
+    Centre --> Third : 10 heading to centre_zone
+    Third --> Leaders : centre_zone owned or more than 5 inside, next node dealt with
+    Leaders --> Far : 3 nodes owned, Leaders with waypoints at 2 gather points
+    Far --> Crate : far zone taken or at most 10 idle at third_gather
+    Crate --> Scores : crate lesson done, far zone taken
+    Scores --> [*] : window over, the match runs to its result

@@ -1,0 +1,11 @@
+stateDiagram-v2
+    Lowered --> Raising : raise request
+    Raising --> Raised : status reaches 1, after 34 ticks
+    Raising --> Lowering : lower request
+    Raised --> Lowering : lower request, or energy timeout after more than 50 ticks
+    Lowering --> Lowered : status reaches 0, after 34 ticks
+    Lowering --> Raising : raise request, or a friendly energy surge
+    RelayOnly --> RelayOnly : raise and lower requests forwarded to the linked emitter
+    AlwaysRaised --> AlwaysRaised : ignores every request
+    note right of Raising : at status 0.5 a raise request goes to the linked emitter, once
+    note right of Lowering : at status 0.5 a lower request goes to the linked emitter, once

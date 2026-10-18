@@ -1,0 +1,7 @@
+Request(_tab, _anchor, _upOffset):
+    if _tab != current:
+        if now < stepTimer + minGap: refuse                              # minimum gap between different tabs
+        if current is a movement tab and now < stepTimer + breather: refuse
+        if current = launch_airstrike and now < stepTimer + airstrikeBreather: refuse
+    _tab.anchor := _anchor; _tab.upOffset := _upOffset; show _tab
+    current := _tab; stepTimer := now

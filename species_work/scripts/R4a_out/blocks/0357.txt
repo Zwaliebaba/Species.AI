@@ -1,0 +1,28 @@
+classDiagram
+    SimObject <|-- ThrownWeapon
+    ThrownWeapon <|-- GrenadeProjectile
+    ThrownWeapon <|-- AirstrikeTargetMarker
+    GrenadeProjectile <|-- FirebombCanister
+    SimObject <|-- RocketProjectile
+    SimObject <|-- FireballProjectile
+    SimObject <|-- TurretRound
+    SimObject <|-- ShellCasing
+    SimObject <|-- LaserBolt
+    SimObject <|-- MuzzleFlashEffect
+    SimObject <|-- ShockwaveRing
+    SimObject <|-- CorePulseWave
+    SimObject <|-- SwarmStreak
+    SimObject <|-- AllegianceScramblerEffect
+    SimObject <|-- OrderMarker
+    SimObject <|-- OrderTrailMark
+    SimObject <|-- EssenceOrb
+    SimObject <|-- Wisp
+    SimObject <|-- SnowFlake
+    SimObject <|-- DustVortex
+    SimObject <|-- LightningStrike
+    ActorGroup <|-- StrikeTeam
+    ActorGroup <|-- AirstrikeFlight
+    ActorGroup <|-- CrawlerGroup
+    StrikeTeam o-- Trooper : members
+    AirstrikeFlight o-- Bomber : members
+    CrawlerGroup o-- Crawler : members

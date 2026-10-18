@@ -1,0 +1,9 @@
+U := usable(A, t)
+if |U| > 0:  p := (sum over N in U of max(0, N.p[t])) / |U|       # else p keeps its previous value
+if friend(own(A), t):  p := p * ref.bot.priority.own_factor         # applied even when U is empty
+p += A.priorityModifier
+if A is important and own(A) is no team:  p := ref.bot.priority.grab                  # the node's owner, not the structure's
+if A.relic exists:
+    if relic.team != t or relic.lifters < relic.maxLifters or E > ref.bot.priority.relic_pressure:
+        p := ref.bot.priority.max                                                       # 1.0
+p := min(ref.bot.priority.max, p)

@@ -1,0 +1,20 @@
+Evaluate(object, t):
+    left  := the key with the greatest time <= t       # linear scan; on a tie the first key found
+    right := the key with the smallest time >= t       # linear scan; on a tie the first key found
+    if left is none:                     return not drawn   # also when only right exists:
+                                                            # an object is hidden before its first key
+    if right is none:                    return left
+    if left == right or |right.time - left.time| < key_merge_tolerance:
+                                         return left
+    lin  := (t - left.time) / (right.time - left.time)
+    ramp := Ease(left.time, right.time - left.time, t)
+    state := copy of left
+    state.x, state.y, state.scale := lerp(left, right, ramp)
+    state.angle, state.alpha      := lerp(left, right, lin)  # alpha truncated to an integer
+    return state
+
+Ease(start, duration, t):
+    f := (t - start) / duration
+    if f > 1:   return 1
+    if f < 0.5: return 2 * f * f
+    return 1 - 2 * (1 - f) * (1 - f)                        # quadratic ease in and out

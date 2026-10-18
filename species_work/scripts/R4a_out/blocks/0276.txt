@@ -1,0 +1,18 @@
+stateDiagram-v2
+    [*] --> Nothing
+    Nothing --> Circle: primary press on the ground, local only
+    Circle --> Circle: primary held, one SelectWorkers per tick adds Workers
+    Circle --> Group: primary released with at least one Worker selected
+    Circle --> Nothing: primary released with no Worker selected
+    Group --> Nothing: crowd order, its execution clears the selection and releases the group
+    Group --> Nothing: deselect, Select with none
+    Nothing --> StrikeTeam: pick an own Strike team
+    Nothing --> Unit: pick an own Leader, Transport, Builder or Collector, or promote a Worker
+    Nothing --> Structure: pick an own Beam Dish or turret
+    Nothing --> Placing: SelectPower of a Waiting Power
+    StrikeTeam --> Nothing: deselect, its Power ends, or the group is gone
+    Unit --> Nothing: deselect, demote, Leader waypoint order, Transport deploy, Builder or Collector move
+    Structure --> Nothing: deselect or cancel, or the turret is captured
+    Placing --> Nothing: place a one-shot Power
+    Placing --> StrikeTeam: place a Strike team
+    Placing --> Unit: place a Transport, Builder or Collector

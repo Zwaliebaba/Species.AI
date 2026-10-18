@@ -1,0 +1,9 @@
+if crate has a forced outcome:  GoodBranch(forced outcome)          # no draw (DEC-652)
+else if basic outcomes only:     GoodBranch(DrawGood())
+else:
+    u := SimRng::NextUnit(1)
+    if u < ref.crate.open.good_share: GoodBranch(DrawGood())          # 0.9
+    else:                             BadBranch(DrawBad())             # 0.1
+remove the crate; stop the progress sounds and the capture-begin loop; emit the captured sound
+destroy its bot navigation node and recalculate the bot navigation links
+if T is the local team: notify the objective-card hook (presentation, R-CRATE-146)

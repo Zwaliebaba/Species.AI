@@ -1,0 +1,6 @@
+stateDiagram-v2
+    [*] --> Finished
+    Finished --> Waiting: InitializeTransition, the next frame captures the last presented frame
+    Waiting --> InProgress: StartTransition, start time is the real clock
+    InProgress --> InProgress: f at most 1, draw the transition with f
+    InProgress --> Finished: f above 1

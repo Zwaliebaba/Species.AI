@@ -1,0 +1,24 @@
+Shatter(mesh, transform, fraction):
+    if fraction <= 0: return
+    ShatterNode(mesh.root, transform, fraction)
+
+ShatterNode(node, parentTransform, fraction):
+    if node has triangles: add ShatterExplosion(node, parentTransform, fraction)
+    for child in node.children: ShatterNode(child, node.transform * parentTransform, fraction)
+
+ShatterExplosion(node, T, fraction):
+    tumblers[0..4] = { rotation = identity,
+                       angular velocity = (NextSigned(4), NextSigned(4), NextSigned(4)) }
+    deathTime = unscaled now + vfx.shatter.lifetime
+    total = node.transform * T; nodeCenter = total * node.center
+    for j in 0 .. node.triangleCount - 1:
+        if fraction < 1 and NextUnit(1) > fraction: continue        # kept with probability fraction
+        v1, v2, v3 = the triangle's corners under total
+        if any two corners are equal: continue
+        if |v1 - v2| + |v2 - v3| + |v3 - v1| < vfx.shatter.min_perimeter: continue
+        c = (v1 + v2 + v3) * vfx.shatter.centre_factor
+        store the corners minus c, the facet normal and the tinted facet colour (ADR-020)
+        velocity = (c - nodeCenter) * vfx.shatter.initial_speed; velocity.y += vfx.shatter.rise
+        position = c; tumbler = NextUint() mod 5
+        keep the shard
+        if j > vfx.shatter.triangle_cap_index: stop

@@ -1,0 +1,14 @@
+flowchart LR
+    SP["Spitter Plant launch: every kind except 3 and 4 (reference/03)"] --> POD["Seed Pod"]
+    BR["Brood outcome: 2-4 pods, kinds 0, 1, 2, 5, 7"] --> POD
+    POD -->|"kind 5: 2-4 nested pods, kinds 0-8"| POD
+    POD -->|"kind 0"| CR["Crawlers 20-39, none at 250"]
+    POD -->|"kind 1"| CE["centipede of 5-14 segments"]
+    POD -->|"kind 2"| SPI["spider"]
+    POD -->|"kind 3"| ORB["Essence orbs 5-9"]
+    POD -->|"kind 4"| EGG["Crawler eggs 5-9"]
+    POD -->|"kind 6"| ANT["ants 20-29"]
+    POD -->|"kind 7"| BD["Brood Drifter"]
+    POD -->|"kind 8, allowed"| RS["Reaper Serpent, Rogue faction"]
+    POD -->|"kind 8, refused"| CR
+    POD -->|"kind 9"| WK["Workers 10-19"]

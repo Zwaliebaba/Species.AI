@@ -1,0 +1,10 @@
+flowchart LR
+    ACT["Action ids and bindings"] --> RES["Context resolution: object under the pointer, secondary-button resolver"]
+    RES --> SEL["Selection and Power slots commands"]
+    RES --> ORD["Orders to Workers, Leaders and Transports"]
+    ACT --> DIR["Team command state: direct control"]
+    SEL --> CAT["PlayerCommand catalogue"]
+    ORD --> CAT
+    DIR --> CAT
+    CAT --> SIMS["Simulation state"]
+    SIMS -.->|"read only"| PRES["Camera, world cursor, world markers, Power slots panel"]

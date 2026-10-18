@@ -1,0 +1,3 @@
+f ← ref.bldg.fuel.blend_per_tick                 # 0.02 (0.2 per second × the tick period)
+if L < C: f ← f × ref.bldg.fuel.fall_factor      # 3: a level falls faster than it rises
+C ← clamp(C × (1 − f) + L × f, 0, 1)

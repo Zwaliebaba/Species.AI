@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> Counting : initialised, the time remaining set to its countdown
+    Counting --> Counting : links its consoles each tick, one-minute message at 60 mode seconds
+    Counting --> Destroyed : every linked console owned by a team that is not a friend, attackers win
+    Counting --> Detonated : time remaining reaches 0, pulse wave of 200 wu, other teams' Transit Gates to no team
+    Detonated --> Detonated : the result is fixed, consoles no longer evaluated
+    Destroyed --> [*] : stays in the structure pool, inert

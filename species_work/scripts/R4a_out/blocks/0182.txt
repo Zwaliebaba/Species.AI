@@ -1,0 +1,12 @@
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> ToEgg : retarget, carrying an orb, own dormant grounded egg within 60
+    Idle --> Attacking : retarget, nearest live grounded enemy at 30 to 60
+    Idle --> ToOrb : retarget, Birth or Floating orb within 60 with nearby eggs
+    Idle --> Idle : retarget, new idle direction
+    Attacking --> Attacking : arrived, bite 20, search the next enemy at 30 to 60
+    Attacking --> Idle : enemy gone or dead
+    ToOrb --> ToEgg : arrived, orb attached
+    ToOrb --> Idle : orb gone, dying, Attached or InEgg
+    ToEgg --> Idle : arrived, egg fertilised
+    ToEgg --> Idle : no egg, egg gone or orb invalid, orb dropped

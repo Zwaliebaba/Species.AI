@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant P as Participant input layer
+    participant S as Command sequencer
+    participant W as Simulation on every participant
+    P->>S: discrete commands, at any time
+    P->>S: ControlState, once per tick
+    P->>S: Select and SetColor, at any time
+    Note over S: keeps only the latest ControlState, Select and SetColor of each participant
+    S->>W: one batch per tick, discrete commands in arrival order
+    S->>W: then for each participant in join order its ControlState, Select and SetColor
+    W->>W: execute the batch, then run the tick's update slices

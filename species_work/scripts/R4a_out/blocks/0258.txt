@@ -1,0 +1,14 @@
+flowchart TD
+    A["Opening completes, owner T"] --> B{"Forced outcome?"}
+    B -- yes --> G1["Good branch: the forced outcome, no draw"]
+    B -- no --> C{"Basic outcomes only?"}
+    C -- yes --> G2["Good branch: uniform over the valid basic outcomes"]
+    C -- no --> D{"NextUnit of 1 below 0.9?"}
+    D -- yes --> G3["Good branch: uniform over the valid good outcomes"]
+    D -- no --> E["Bad branch: uniform over the bad pool minus the excluded outcomes, Rogue faction, Abductor for the Visitor faction"]
+    G1 --> H{"Delivery"}
+    G2 --> H
+    G3 --> H
+    H -- Power --> I["Power slots of T, lost when all slots are full"]
+    H -- immediate --> J["Effect at the crate, or global"]
+    E --> K["Effect at the crate, hostile to every team"]

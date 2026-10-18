@@ -1,0 +1,5 @@
+flowchart LR
+    S1["Solar Array A (owner T)"] -->|"surge tagged T"| S2["Solar Array B"] --> SP["grid splitter"]
+    SP -->|"first grid pylon whose team equals T"| P1["grid pylon, team 0"] --> E1["grid terminal"] --> F1["fuel pump, team 0"]
+    SP --> P2["grid pylon, team 1"] --> E2["grid terminal"] --> F2["fuel pump, team 1"]
+    S3["Solar Array"] --> P3["grid pylon"] --> E3["grid terminal"] -->|"only if the surge team and the emitter team are friends"| BE["Barrier Emitter"]

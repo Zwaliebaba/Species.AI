@@ -1,0 +1,169 @@
+aen.fx.echo.buffer_seconds | 3 | s |  | AEN-233 | architecture/components/audio_engine/README.md
+aen.fx.reverb.history_seconds | 3 | s |  | AEN-234 | architecture/components/audio_engine/README.md
+aen.lifecycle.teardown_wait | 1 | s | per teardown wait | AEN-106 | architecture/components/audio_engine/README.md
+aen.mix.duck_ramp | 0.05 | s |  | AEN-216 | architecture/components/audio_engine/README.md
+aen.pitch_bend.time_constant | 0.17 | s | the reference constant with 30 world sounds | AEN-197 | architecture/components/audio_engine/README.md
+aen.residency.stream_threshold | 20 | s | longest member of a group | AEN-072 | architecture/components/audio_engine/README.md
+aen.update.period | 0.01 | s | 100 updates per second; one processing quantum | AEN-120, AEN-148 | architecture/components/audio_engine/README.md
+aen.update.schedule_latency | 0.03 | s | added to every issue time | AEN-024, AEN-264 | architecture/components/audio_engine/README.md
+aen.voice.loop_lookahead | 0.05 | s |  | AEN-174 | architecture/components/audio_engine/README.md
+aen.voice.state_hold | 0.25 | s | minimum time between state changes | AEN-145 | architecture/components/audio_engine/README.md
+aen.voice.steal_fade | 0.02 | s | fade-out of a victim; fade-in mid-sound | AEN-145, AEN-149 | architecture/components/audio_engine/README.md
+bld.perf.incremental_one_source_s | 10 | s | starting value; §5 | BLD-117 | architecture/components/build_tooling_and_distribution.md
+cam.developer.speed_divisor | 30 | s | speed = world size x ÷ 30 per second | CAM-081 | architecture/components/camera_and_sequences.md
+cam.focus.lift_time | 2 | s | the lift applies while τ < 2 s | CAM-057 | architecture/components/camera_and_sequences.md
+cam.focus.ramp_time | 1 | s | m = min(1, τ ÷ 1) | CAM-057 | architecture/components/camera_and_sequences.md
+cam.timeline.trigger_poll_s | 1 | s of the camera clock | camera triggers; one-shot | CAM-114 | architecture/components/camera_and_sequences.md
+dat.perf.full_build_s | 120 | s | starting value; clean validation and cooking of an edition | DAT-050 | architecture/components/data_schemas/README.md
+dat.perf.incremental_s | 5 | s | starting value; one changed record | DAT-050 | architecture/components/data_schemas/README.md
+inp.repeat.initial_delay | 0.3 | s of real time | from the press to the first repeat | INP-133 | architecture/components/input/README.md
+inp.repeat.period | 0.3 | s of real time | between later repeats | INP-133 | architecture/components/input/README.md
+plt.window.hang_threshold | 5 | s of real time | set by Windows, not by Species; a window that processes no message for this long while the | PLT-067 | architecture/components/platform_layer.md
+ref.aud.bus.announcer.duck_time | 1 | s of audio time |  | R-AUD-221 | reference/10_audio_design/positional_priorities_and_mix.md
+ref.aud.exit.release_start_limit | 2 | s of audio time | every match sound stops or starts its release within it | R-AUD-043 | reference/10_audio_design/event_model_and_sound_data.md
+ref.aud.layer.attack_max | 60 | s |  | R-AUD-049 | reference/10_audio_design/event_model_and_sound_data.md
+ref.aud.layer.envelope_default | 0 | s | attack, sustain, release and loop delay | R-AUD-049 | reference/10_audio_design/event_model_and_sound_data.md
+ref.aud.layer.loop_delay_max | 60 | s |  | R-AUD-049 | reference/10_audio_design/event_model_and_sound_data.md
+ref.aud.layer.release_max | 60 | s |  | R-AUD-049 | reference/10_audio_design/event_model_and_sound_data.md
+ref.aud.layer.sustain_max | 300 | s |  | R-AUD-049 | reference/10_audio_design/event_model_and_sound_data.md
+ref.bldg.barrier_emitter.energy_scroll_divisor | 1.5 | s | energy-linked | R-BLDG-446 | reference/03_buildings_and_world_objects/defences_and_props.md
+ref.bldg.barrier_emitter.scroll_divisor | 15 | s | scroll = t ÷ 15 | R-BLDG-446 | reference/03_buildings_and_world_objects/defences_and_props.md
+ref.bldg.carryable.ring_lead_s | 0.5 | s × velocity | carry position lead | R-BLDG-280 | reference/03_buildings_and_world_objects/mode_objects.md
+ref.bldg.spitter_plant.phase_per_serial | 10 | s | pose phase | R-BLDG-649 | reference/03_buildings_and_world_objects/trees_and_crate_structures.md
+ref.crate.drop.period_default_s | 40 | s | default of the crate drop period option in all six modes; the option range is reference/01 | R-CRATE-100, R-CRATE-104 | reference/04_supply_crates_powers_and_weapons/crates_and_powers.md
+ref.crate.fall.sway_phase_step | 20 | s of phase per serial | phase = match time + serial × 20 | R-CRATE-110 | reference/04_supply_crates_powers_and_weapons/crates_and_powers.md
+ref.ctrl.bar.ease_cap | 0.1 | s | f = min(frame delta, 0.1) × 10 | R-CTRL-230 | reference/06_controls_camera_and_commands/selection_and_power_slots.md
+ref.ctrl.bar.life_warning | 10 | s | 100 ticks; the life shows red at or below it | R-CTRL-232 | reference/06_controls_camera_and_commands/selection_and_power_slots.md
+ref.ctrl.camera.speed_hint_hold | 4 | s of real time | forward pan held alone | R-CTRL-471 | reference/06_controls_camera_and_commands/camera.md
+ref.ctrl.cursor.blink_on | 0.25 | s | visible part of each period | R-CTRL-366 | reference/06_controls_camera_and_commands/cursor_and_markers.md
+ref.ctrl.cursor.blink_period | 0.4 | s of real time |  | R-CTRL-366 | reference/06_controls_camera_and_commands/cursor_and_markers.md
+ref.ctrl.cursor.highlight_sound_interval | 0.2 | s of real time |  | R-CTRL-360 | reference/06_controls_camera_and_commands/cursor_and_markers.md
+ref.ctrl.marker.new_age | 3 | s | newer markers sort by age | R-CTRL-382 | reference/06_controls_camera_and_commands/cursor_and_markers.md
+ref.ctrl.power.message.cancelled_s | 3.0 | s of real time |  | R-CTRL-177, R-CTRL-210, R-CTRL-221 | reference/06_controls_camera_and_commands/selection_and_power_slots.md
+ref.ctrl.power.message.not_available_s | 2.5 | s of real time |  | R-CTRL-221 | reference/06_controls_camera_and_commands/selection_and_power_slots.md
+ref.ctrl.power.message.ready_s | 2.5 | s of real time | Ready message, also kept alive while placing | R-CTRL-188, R-CTRL-221 | reference/06_controls_camera_and_commands/selection_and_power_slots.md
+ref.ctrl.power.recent.minimise_s | 1.0 | s of real time | pop-up minimising phase | R-CTRL-238, R-CTRL-239 | reference/06_controls_camera_and_commands/selection_and_power_slots.md
+ref.ctrl.power.recent.show_s | 3.0 | s of real time | pop-up showing phase; most-recent mark | R-CTRL-238, R-CTRL-239 | reference/06_controls_camera_and_commands/selection_and_power_slots.md
+ref.ctrl.select.sound_interval | 0.5 | s of real time | at most one selection sound per interval | R-CTRL-154 | reference/06_controls_camera_and_commands/selection_and_power_slots.md
+ref.map.camera.animation_duration_max_s | 60 | s of real time | exclusive upper bound of a step's duration; presentation | R-MAP-127 | reference/08_maps_and_level_design/rules_and_conventions.md
+ref.map.editor.camera_animation.duration_range | 0.1 to 100 | s | step 0.5; presentation seconds (§5) | R-MAP-371 | reference/08_maps_and_level_design/map_editor_hooks.md
+ref.map.editor.camera_animation.node_default_duration_s | 1.0 | s | presentation seconds | R-MAP-371 | reference/08_maps_and_level_design/map_editor_hooks.md
+ref.match.grace_overlay.blink_on_time | 0.3 | s of real time per second | presentation clock | R-MODE-042 | reference/01_skirmish_rules_and_modes/README.md
+ref.match.hud.crate_timer_warning | 2 | s, from ticks | red below | R-MODE-067 | reference/01_skirmish_rules_and_modes/README.md
+ref.meta.achievement.flag_sweep_margin | 300 | s | added to the time remaining; stated as five minutes | R-META-484 | reference/09_front_end_and_match_flow/options_localisation_and_hooks.md
+ref.meta.blink.on_time | 0.5 | s of each second |  | R-META-209 | reference/09_front_end_and_match_flow/front_end_presentation.md
+ref.meta.chat.caret_period | 0.5 | s on, then 0.5 s off |  | R-META-100 | reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md
+ref.meta.connect.dot_period | 0.5 | s | one more dot per period, cycling 0 to 3 | R-META-055 | reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md
+ref.meta.explainer.default_loop | 0 to 30 | s |  | R-META-226 | reference/09_front_end_and_match_flow/front_end_presentation.md
+ref.meta.explainer.key_merge_tolerance | 0.01 | s | two keys closer than this act as one | R-META-228 | reference/09_front_end_and_match_flow/front_end_presentation.md
+ref.meta.front_end.fade_in | 0.25 | s | screen fade-in when the menu is created | R-META-007 | reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md
+ref.meta.launch_panel.attack_window | 10 | s of real time | since the damage last rose | R-META-509, R-META-510 | reference/09_front_end_and_match_flow/options_localisation_and_hooks.md
+ref.meta.leaderboard.fade_interval | 0.025 | s of real time | one step | R-META-500 | reference/09_front_end_and_match_flow/options_localisation_and_hooks.md
+ref.meta.loading.mark_fade_in | 1.0 | s |  | R-META-219 | reference/09_front_end_and_match_flow/front_end_presentation.md
+ref.meta.loading.mark_fade_out | 1.0 | s |  | R-META-219 | reference/09_front_end_and_match_flow/front_end_presentation.md
+ref.meta.loading.mark_start | 0 | s | the studio mark starts at once | R-META-219 | reference/09_front_end_and_match_flow/front_end_presentation.md
+ref.meta.map_select.slide_delay | 1.0 | s per screen height | a row appears after 1.0 s × its y ÷ H | R-META-039 | reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md
+ref.meta.nav.transition_time | 1.0 | s | one menu transition | R-META-016 | reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md
+ref.meta.option_controls.repeat_period | 0.1 | s | a held spinner glyph repeats | R-META-047 | reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md
+ref.meta.setup.leave_lag_threshold | 5.0 | s of real time since the host's last message | below it, a ready joining player leaves by withdrawing readiness first | R-META-092 | reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md
+ref.meta.slot.flash_time | 1.0 | s | white flash when the slot kind changes | R-META-079 | reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md
+ref.mode.launch_race.hud.alternation | 0.5 | s of real time | presentation clock | R-MODE-417 | reference/01_skirmish_rules_and_modes/launch_race.md
+ref.mode.siege.round_fade_in | 1.0 | s of real time | presentation | R-MODE-366 | reference/01_skirmish_rules_and_modes/siege.md
+ref.power.marker.lifetime_s | 8 | s of real time | presentation; accumulated on-screen time, tested once the local player has seen the marker | R-CRATE-028 | reference/04_supply_crates_powers_and_weapons/README.md
+ref.sim.frame.audio_update_period | 0.05 | s of real time | 20 audio logic updates per second | R-SIM-570 | reference/12_simulation_model/01_tick_timing_and_main_loop.md
+ref.sim.frame.control_send_period | 0.1 | s of real time | one tick period; no burst catch-up | R-SIM-581, R-SIM-584 | reference/12_simulation_model/01_tick_timing_and_main_loop.md
+ref.sim.frame.delta_clamp | 0.25 | s of real time | presentation frame delta cap | R-SIM-570, R-SIM-573 | reference/12_simulation_model/01_tick_timing_and_main_loop.md
+ref.sim.frame.fps_window | 1.0 | s of real time |  | R-SIM-576 | reference/12_simulation_model/01_tick_timing_and_main_loop.md
+ref.sim.frame.loading_frame_period | 1/60 | s of real time | loading views only | R-SIM-570 | reference/12_simulation_model/01_tick_timing_and_main_loop.md
+ref.sim.frame.match_fade_in | 0.6 | s of real time |  | R-SIM-580 | reference/12_simulation_model/01_tick_timing_and_main_loop.md
+ref.sim.frame.memory_log_interval | 60 | s of real time | diagnostic memory report | R-SIM-581 | reference/12_simulation_model/01_tick_timing_and_main_loop.md
+ref.sim.pacing.catch_up_budget | 0.3 | s of real time per render frame | three tick periods | R-SIM-532 | reference/12_simulation_model/01_tick_timing_and_main_loop.md
+ref.sim.render.extrapolation_cap | 1.0 | s of real time | ten tick periods | R-SIM-560 | reference/12_simulation_model/01_tick_timing_and_main_loop.md
+ref.sim.tick_period | 0.1 | s of real time per tick | **the reference tick rate: 10 ticks per second.** The reference schedule adds the period r | R-SIM-500, R-SIM-520 | reference/12_simulation_model/01_tick_timing_and_main_loop.md
+ref.sim.weather.first_run_threshold | −90 | s of game time (−900 ticks) |  | R-SIM-234, R-SIM-235 | reference/12_simulation_model/04_containers_and_update_order.md
+ref.sim.weather.shared_timer_initial | −99.9 | s of game time (−999 ticks) | a marker value; below `ref.sim.weather.first_run_threshold` means first run | R-SIM-202, R-SIM-234 | reference/12_simulation_model/04_containers_and_update_order.md
+ref.sim.world.chat_expiry | 60 | s of real time | chat message (presentation) | R-SIM-204 | reference/12_simulation_model/04_containers_and_update_order.md
+ref.sim.world.message_expiry | 3.0 | s of real time | centre-screen message (presentation) | R-SIM-202 | reference/12_simulation_model/04_containers_and_update_order.md
+ref.tut.camera_picture.flash | 0.3 of every 1 | s of real time | black alpha 0.6, grey (0.4, 0.4, 0.4) alpha 0.8 during the flash; outline 1 px white alpha | R-TUT-021 | reference/11_tutorial_and_help.md
+ref.tut.hint.deselect.extend_s | 1.0 | s of real time | added by a trigger while showing | R-TUT-024 | reference/11_tutorial_and_help.md
+ref.tut.hint.deselect.show_s | 3.0 | s of real time | display time; also the cap of an extension | R-TUT-024 | reference/11_tutorial_and_help.md
+ref.tut.hint.deselect.suspicion_limit | −1.0 | s | below it the hint shows; two strays within about 1.5 s | R-TUT-024 | reference/11_tutorial_and_help.md
+ref.tut.hint.deselect.suspicion_step | 0.75 | s | subtracted by a stray action | R-TUT-024 | reference/11_tutorial_and_help.md
+ref.tut.hint.fast_pan.show_s | 3.0 | s of real time | re-armed every frame while the condition holds | R-TUT-026 | reference/11_tutorial_and_help.md
+ref.unit.abductor.rate | 0 | s |  | R-UNIT-011 | reference/02_units/README.md
+ref.unit.ant.rate | 0 | s |  | R-UNIT-011 | reference/02_units/README.md
+ref.unit.barrage_missile.rate | 0 | s |  | R-UNIT-011 | reference/02_units/README.md
+ref.unit.bomber.rate | 1 | s |  | R-UNIT-011 | reference/02_units/README.md
+ref.unit.bot_controller.rate | 255 | s | unused | R-UNIT-017 | reference/02_units/README.md
+ref.unit.brood_drifter.rate | 10 | s | unused | R-UNIT-017 | reference/02_units/README.md
+ref.unit.builder.rate | 0 | s |  | R-UNIT-011 | reference/02_units/README.md
+ref.unit.centipede.rate | 1 | s |  | R-UNIT-011 | reference/02_units/README.md
+ref.unit.collector.rate | 0 | s |  | R-UNIT-011 | reference/02_units/README.md
+ref.unit.crawler.rate | 0 | s |  | R-UNIT-011 | reference/02_units/README.md
+ref.unit.crawler_egg.rate | 0 | s |  | R-UNIT-011 | reference/02_units/README.md
+ref.unit.leader.rate | 3 | s | unused: a Leader never shoots | R-UNIT-017 | reference/02_units/README.md
+ref.unit.meteor.rate | 0 | s |  | R-UNIT-011 | reference/02_units/README.md
+ref.unit.reaper_serpent.rate | 1 | s |  | R-UNIT-011 | reference/02_units/README.md
+ref.unit.seed_pod.rate | 1 | s | unused | R-UNIT-017 | reference/02_units/README.md
+ref.unit.spider.attack_preamble | 5 | s | read by no rule | R-UNIT-577 | reference/02_units/creatures.md
+ref.unit.spider.gait.0.lift_delay | 0.11 | s | presentation clock | R-UNIT-579 | reference/02_units/creatures.md
+ref.unit.spider.gait.0.swing | 0.4 | s | presentation clock | R-UNIT-579 | reference/02_units/creatures.md
+ref.unit.spider.gait.1.lift_delay | 0.06 | s | presentation clock | R-UNIT-579 | reference/02_units/creatures.md
+ref.unit.spider.gait.1.swing | 0.25 | s | presentation clock | R-UNIT-579 | reference/02_units/creatures.md
+ref.unit.spider.gait.2.lift_delay | 0.04 | s | presentation clock | R-UNIT-579 | reference/02_units/creatures.md
+ref.unit.spider.gait.2.swing | 0.25 | s | presentation clock | R-UNIT-579 | reference/02_units/creatures.md
+ref.unit.spider.leg.pounce_velocity_factor | 0.05 | s | presentation | R-UNIT-585 | reference/02_units/creatures.md
+ref.unit.spider.rate | 1 | s |  | R-UNIT-011 | reference/02_units/README.md
+ref.unit.transport.rate | 5 | s | unused | R-UNIT-017, R-UNIT-371 | reference/02_units/README.md
+ref.unit.trooper.actor_rate | 0 | s | the Trooper's own reload timer: a Trooper never reloads on its own | R-UNIT-014, R-UNIT-341 | reference/02_units/README.md
+ref.unit.trooper.rate | 0.5 | s | read by the Strike team's fire accumulator only | R-UNIT-014, R-UNIT-340, R-UNIT-352 | reference/02_units/README.md
+ref.unit.wisp.alpha_period | 10 | s | presentation | R-UNIT-597 | reference/02_units/creatures.md
+ref.unit.worker.convert_fade | 4 | s | presentation | R-UNIT-126 | reference/02_units/worker.md
+ref.unit.worker.idle_timer | 60 | s | 600 ticks; the spawn draw adds NextUnit(60) s; reset every tick | R-UNIT-060, R-UNIT-065 | reference/02_units/worker.md
+ref.unit.worker.rate | 3 | s | 30 ticks between shots | R-UNIT-011, R-UNIT-015 | reference/02_units/README.md
+ref.weapon.dust.phase_step | 20 | s of phase per serial |  | R-CRATE-505 | reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md
+ref.weapon.pulse_wave.flash_time | 0.3 | s of presentation time |  | R-CRATE-483 | reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md
+ref.weapon.shockwave.billboard_time | 1 | s of presentation time |  | R-CRATE-473 | reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md
+ref.weapon.shockwave.flash_time | 0.1 | s of presentation time |  | R-CRATE-473 | reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md
+ref.weapon.turret_round.life_by_level | 0.5, 0.5, 1.0, 1.5, 2.0 | s | Transport research level 0 to 4; not used in a match | R-CRATE-450 | reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md
+ref.weapon.turret_round.tracer_factor | 0.05 | s × velocity | presentation | R-CRATE-453 | reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md
+rnd.barrier.scroll_period | 15 | s of presentation frame time |  | RND-199 | architecture/components/renderer/world_renderers.md
+rnd.barrier.solar_scroll_period | 1.5 | s |  | RND-199 | architecture/components/renderer/world_renderers.md
+rnd.budget.min_render_period | 1.0 | s of real time | longest gap between rendered frames | RND-453 | architecture/components/renderer/options_and_budgets.md
+rnd.fade.max_step | 0.05 | s of real time | largest fade step per frame | RND-085 | architecture/components/renderer/frame_graph_and_passes.md
+rnd.hud.chat.line_fade | 5 | s of real time | fade at the end of the life | RND-075 | architecture/components/renderer/frame_graph_and_passes.md
+rnd.hud.chat.line_life | 60 | s of real time |  | RND-075 | architecture/components/renderer/frame_graph_and_passes.md
+rnd.hud.message.grow_window | 2 | s of real time | the growth phase at the end of a message | RND-074 | architecture/components/renderer/frame_graph_and_passes.md
+rnd.sea.tile_scroll_period | 30 | s of smooth presentation time | scroll = time ÷ 30 | RND-142 | architecture/components/renderer/world_renderers.md
+rnd.tree.essence_pulse.serial_phase | 10 | s per serial |  | RND-187 | architecture/components/renderer/world_renderers.md
+rnd.tree.sway.serial_phase | 2 | s per serial |  | RND-186 | architecture/components/renderer/world_renderers.md
+ui.core.tooltip_delay | 1.0 | s | hover time on one widget of the focused panel | UI-032, UI-045 | architecture/components/ui_framework/core_and_widgets.md
+ui.field.caret_blink_period | 1.0 | s | every caret of the framework blinks at this period | UI-070, UI-121 | architecture/components/ui_framework/core_and_widgets.md
+ui.page_button.flash_time | 5 | s per screen height, ÷ the navigable count | flash time | UI-107 | architecture/components/ui_framework/core_and_widgets.md
+ui.page_button.pop_time | 0.1 | s |  | UI-109 | architecture/components/ui_framework/core_and_widgets.md
+ui.page_button.slide_time | 0.6 | s per screen height | show time | UI-107 | architecture/components/ui_framework/core_and_widgets.md
+ui.scroll.arrow_repeat_period | 1/60 | s | no initial delay | UI-077 | architecture/components/ui_framework/core_and_widgets.md
+ui.scroll_text.hold_time | 1.5 | s | at the top before scrolling | UI-404 | architecture/components/ui_framework/pages_and_screen_recipes.md
+vfx.cloth.still_step | 0.1 | s per frame | reference relaxation step while the game speed is 0; not used by the Species clock | VFX-139 | architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md
+vfx.flicker.step | 0.1 | s of scaled presentation time | one `ref.sim.tick_period` | VFX-126 | architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md
+vfx.particle.blue_spark.life | 4.0 | s | 40 ticks | VFX-207 | architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md
+vfx.particle.casing.life | 2.0 | s | 20 ticks | VFX-207 | architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md
+vfx.particle.control_flash.life | 1.0 | s | 10 ticks | VFX-207 | architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md
+vfx.particle.default.life | 10.0 | s of scaled presentation time | default of an unset life | VFX-203 | architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md
+vfx.particle.explosion_core.life | 2.0 | s | 20 ticks | VFX-207 | architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md
+vfx.particle.explosion_debris.life | 6.0 | s | 60 ticks | VFX-207 | architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md
+vfx.particle.fire.life | 4.0 | s | 40 ticks | VFX-207 | architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md
+vfx.particle.fireball.life | 1.0 | s | 10 ticks | VFX-207 | architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md
+vfx.particle.leaf.life | 60.0 | s | 600 ticks | VFX-207 | architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md
+vfx.particle.missile_fire.life | 0.5 | s | 5 ticks | VFX-207 | architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md
+vfx.particle.missile_trail.life | 5.0 | s | 50 ticks | VFX-207 | architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md
+vfx.particle.muzzle_flash.life | 1.0 | s | 10 ticks | VFX-207 | architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md
+vfx.particle.rocket_trail.life | 2.0 | s | 20 ticks | VFX-207 | architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md
+vfx.particle.sickness.life | 2.0 | s | 20 ticks | VFX-207 | architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md
+vfx.particle.spark.life | 4.0 | s | 40 ticks | VFX-207 | architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md
+vfx.particle.speed_boost_trail.life | 1.0 | s | 10 ticks | VFX-207 | architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md
+vfx.particle.sub_step | 1/60 | s of scaled presentation time | particle integration step | VFX-209 | architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md
+vfx.particle.volcano.life | 12.0 | s | 120 ticks | VFX-207 | architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md
+vfx.particle.worker_fire.life | 1.0 | s | 10 ticks | VFX-207 | architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md
+vfx.screen.flash_window | 1 | s of real time |  | VFX-235 | architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md
+vfx.shatter.lifetime | 5.0 | s of unscaled presentation time |  | VFX-226 | architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md
