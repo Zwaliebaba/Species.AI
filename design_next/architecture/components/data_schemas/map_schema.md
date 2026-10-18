@@ -324,7 +324,7 @@ Table 3.4-B Fields of a terrain tile (`TerrainTile`), in the generator's order o
 | guide-grid power | `guide_power` | integer | 0 or more; 0 means no guide grid (TER-036) |
 | guide grid | `guide_grid` | list of integers, each 0 to 255 | present exactly when the power is above 0, with (2^p − 1)² cells in row-major order, z outer and x inner (TER-036); any other length is a build error (TER-250) |
 
-**DAT-083** (MUST) A guide-grid cell is one integer from 0 to 255, the absolute height in tile space that TER-036 reads. The reference authoring form of a cell, two letters each worth one of 16 values, is not reproduced: the integer is the cell's whole value, and no letter encoding exists in Species content.
+**DAT-083** (MUST) A guide-grid cell is one integer from 0 to 255, the absolute height in tile space that TER-036 reads.
 
 **DAT-084** (MUST) Each flatten area holds the fields of table 3.4-C (R-MAP-083, TER-034). The flatten type and the threshold are independent optional fields; the threshold is used by the types that TER-143 says use it, and ignored by the others.
 
@@ -369,7 +369,7 @@ Table 3.6-A Fields of a start-position record.
 
 **DAT-089** (MUST) Each camera view holds the fields of table 3.7-A (R-MAP-125). Camera views are presentation values.
 
-Table 3.7-A Fields of a camera view.
+Table 3.7-A Fields of a camera view (`CameraView`).
 
 | Field | Key | Type | Presence | Rules |
 |---|---|---|---|---|
@@ -382,7 +382,7 @@ Table 3.7-A Fields of a camera view.
 
 **DAT-091** (MUST) Each camera animation holds the fields of table 3.7-B (R-MAP-127). Under the default of DEC-803 the record type exists and no content needs it; an animation with no steps is valid and is never played (CAM-065).
 
-Table 3.7-B Fields of a camera animation and of its steps.
+Table 3.7-B Fields of a camera animation (`CameraAnimationDef`) and of its steps (`CameraAnimationStep`).
 
 | Field | Key | Type | Presence and default | Rules |
 |---|---|---|---|---|
@@ -414,7 +414,7 @@ Table 3.8-A Fields of a starting-forces record.
 
 ### 3.9 Routes and primary objectives
 
-**DAT-093** (MUST) Each route holds an id from 0 to `ref.map.route.id_limit` − 1 (0 to 9,999) and an ordered list of route points (R-MAP-120). A route point is an object with exactly one of the fields of table 3.9-A; an object with none, with two, or with an unknown field is a build error, so no point is ever created at a default position from an unknown type.
+**DAT-093** (MUST) Each route holds an id from 0 to `ref.map.route.id_limit` − 1 (0 to 9,999) and an ordered list of route points (R-MAP-120). A route point is an object with exactly one of the fields of table 3.9-A; an object with none, with two, or with an unknown field is a build error, so no point is ever created at a default position from an unknown type. A route point cooks to the simulation's `RoutePoint` ([reference/12](../../../reference/12_simulation_model/05_space_routing_and_physics.md) R-SIM-333): the field `position` to `RoutePointKind::Position`, `ground` to `RoutePointKind::GroundPosition` and `structure` to `RoutePointKind::Structure`.
 
 Table 3.9-A Route points.
 
@@ -445,9 +445,9 @@ Table 3.12-A The option catalogue. Each option's type and unit come from [refere
 | Option | Key | Value type | Unit |
 |---|---|---|---|
 | score mode | `score_mode` | enumeration of the mode's score modes | — |
-| time limit | `time_limit` | integer | minutes; 0 means no limit where the range admits 0 |
+| time limit | `time_limit` | integer, or the explicit value `"none"` (DEC-120) | minutes; `"none"` is no limit, offered where the mode's range starts with none (R-MODE-074), and is never written as 0 |
 | Catch-up bonus | `catch_up_bonus` | integer | % |
-| crate drop period | `crate_drop_period` | integer | s; 0 means no Supply crates |
+| crate drop period | `crate_drop_period` | integer, or the explicit value `"none"` (DEC-120) | s; `"none"` is no Supply crates (R-MODE-074), and is never written as 0 |
 | starting powers | `starting_powers` | count | powers |
 | Comeback Bonus | `comeback_bonus` | boolean | — |
 | sudden death | `sudden_death` | boolean | — |
@@ -464,14 +464,14 @@ Table 3.12-B Fields of one option of a mode's option list.
 |---|---|---|---|---|
 | option | `option` | enumeration of table 3.12-A | required | each option at most once per mode (DEC-801) |
 | control | `control` | enumeration `switch`, `list`, `spinner` | required | the control of R-MODE-074; replaces any numeric code for the control kind |
-| minimum, maximum | `minimum`, `maximum` | of the option's value type | required for `spinner` | the range of R-MODE-074 for this mode |
+| minimum, maximum | `minimum`, `maximum` | integers of the option's value type | required for `spinner` | the numeric range of R-MODE-074 for this mode; a range that starts with none states its lowest number here and its none label in `none_label` |
 | step | `step` | of the option's value type | required for `spinner` | the step of R-MODE-074; above 0 |
-| default | `default` | of the option's value type | required | this mode's default: the owner's key of R-MODE-074, for example `ref.mode.zone_control.option.time_limit` or `ref.econ.gate.turret_frequency` |
+| default | `default` | of the option's value type, `"none"` included where the mode's range starts with none | required | this mode's default: the owner's key of R-MODE-074, for example `ref.mode.zone_control.option.time_limit` or `ref.econ.gate.turret_frequency` |
 | items | `items` | ordered list of string ids | required for `list` | one label per value, in value order (R-MODE-074) |
 | label | `label` | string id | derived: `match.options.<option>` | — |
-| label of 0 | `zero_label` | string id | defaulted: none | for example `match.options.time_limit.none` and `match.options.crate_drop_period.none` (R-MODE-074) |
+| label of none | `none_label` | string id | absence-meaningful: absent, the mode's range of the option has no value none | present exactly when the spinner's lowest step is the explicit value `"none"` below `minimum`: `match.options.time_limit.none` and `match.options.crate_drop_period.none` (R-MODE-074, DEC-120) |
 
-**DAT-099** (MUST) The order of a mode's option list is its display order on the host's options page (R-MODE-073). A value outside the option's range, an option outside the mode's list and a list control without one label per value are build errors; at run time an option index outside the mode's list is rejected (R-MODE-081). The schema states no dependency between options: the rule that sudden death is forced off while the time limit is 0 is [reference/01](../../../reference/01_skirmish_rules_and_modes/README.md) R-MODE-074's, applied by match setup. The help text of a focused option is the string id of R-META-050, `ui.advanced_options.help.<option>.<mode>` when it exists, else `ui.advanced_options.help.<option>`, and the second form must exist for every option of every mode's list (README DAT-030).
+**DAT-099** (MUST) The order of a mode's option list is its display order on the host's options page (R-MODE-073). A value outside the option's range, an option outside the mode's list and a list control without one label per value are build errors; at run time an option index outside the mode's list is rejected (R-MODE-081). The schema states no dependency between options: the rule that sudden death is forced off while the time limit is none is [reference/01](../../../reference/01_skirmish_rules_and_modes/README.md) R-MODE-074's, applied by match setup. The help text of a focused option is the string id of R-META-050, `ui.advanced_options.help.<option>.<mode>` when it exists, else `ui.advanced_options.help.<option>`, and the second form must exist for every option of every mode's list (README DAT-030).
 
 **DAT-100** (MUST) The match-setup options outside the per-mode lists (bot difficulty, co-op, basic crates only, the password, single-round Siege, research levels; R-MODE-082) are match-setup state, not part of `mode.options`; who may change an option is the lobby authority model (DEC-243).
 
@@ -589,7 +589,7 @@ The content build's report lists, for every map, its id, its modes, its player c
 | DEC-065, DEC-073, DEC-079, DEC-456, DEC-457, DEC-800, DEC-801 | Resolved | map values over lobby values; typed option defaults; the explicit population cap; the spawn-network tree; typed links; the canonical writer; duplicates as errors |
 | DEC-047, DEC-250 | Open | how achievement progress is stored (DAT-102) |
 | DEC-243 | Open | who may change the match options (DAT-100) |
-| ADR-061, ADR-062, ADR-059, ADR-060 | Accepted, Proposed | the schema, its syntax, its validation and the map identity |
+| ADR-059, ADR-060, ADR-061, ADR-062 | Accepted, Accepted, Accepted, Proposed | the validation, the map identity, the schema and its syntax |
 
 ### 8.2 Design-phase inputs
 

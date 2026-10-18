@@ -476,7 +476,7 @@ This document owns no tuning key.
 | [event model and sound data](../../../reference/10_audio_design/event_model_and_sound_data.md) | `ref.aud.layer.min_distance_default`, `ref.aud.layer.min_distance_range`, `ref.aud.layer.level_default`, `ref.aud.layer.pitch_default`, `ref.aud.layer.pitch_range`, `ref.aud.layer.envelope_default`, `ref.aud.layer.attack_max`, `ref.aud.layer.sustain_max`, `ref.aud.layer.release_max`, `ref.aud.layer.loop_delay_max`, `ref.aud.param.smoothing_max`, `ref.aud.layer.one_shot_patience_updates` |
 | [audio mix](../../../reference/10_audio_design/positional_priorities_and_mix.md) | `ref.aud.rank.copy_decay` |
 | [audio engine](../audio_engine/README.md) | `aen.spatial.max_distance_default`, `aen.spatial.doppler_factor_default`, `aen.spatial.filter_factor_default`, `aen.spatial.reverb_factor_default` |
-| [reference/12 tick timing](../../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) | `ref.sim.frame.audio_update_period` |
+| [reference/12 tick timing](../../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) | `ref.sim.frame.audio_update_period`, `ref.sim.tick_period` |
 | [renderer](../renderer/README.md) | `rnd.mesh.colour_attenuation`, `rnd.mesh.max_nodes`, `rnd.mesh.max_sockets`, `rnd.sea.wave_table_row`, `rnd.option.poster_resolution.default` |
 | [terrain](../terrain/README.md) | `ter.colour.ramp_size` |
 | [front-end presentation](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) | `ref.meta.explainer.default_canvas`, `ref.meta.explainer.default_loop`, `ref.meta.explainer.key_defaults` |

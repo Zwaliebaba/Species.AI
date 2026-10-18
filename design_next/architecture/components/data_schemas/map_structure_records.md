@@ -266,6 +266,7 @@ This document owns no tuning key; the defaults and limits of its fields are the 
 | owner | keys cited |
 |---|---|
 | [reference/12 teams](../../../reference/12_simulation_model/06_teams_and_player_commands.md) | `ref.sim.team.visitor_slot` |
+| [reference/12 tick timing](../../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) | `ref.sim.tick_period` |
 | [reference/05](../../../reference/05_population_flow.md) | `ref.econ.population_limiter.search_radius_wu`, `ref.econ.population_limiter.max_population` |
 | [mode objects](../../../reference/03_buildings_and_world_objects/mode_objects.md) | `ref.bldg.control_zone.default_size_wu` |
 | [defences and props](../../../reference/03_buildings_and_world_objects/defences_and_props.md) | `ref.bldg.turret.default_mortar_value`, `ref.bldg.barrier_emitter.default_scale`, `ref.bldg.scenery_mesh.default_scale`, `ref.bldg.exclusion_zone.default_size`, `ref.bldg.jump_pad.default_value` |

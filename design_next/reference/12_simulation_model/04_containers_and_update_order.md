@@ -45,7 +45,7 @@ Table 2.1-A Match-world members.
 | sea route graph (`SeaRouteGraph`) | built at initialisation step 7 | sea routes of Transports ([05](05_space_routing_and_physics.md)) | simulation |
 | teams (`MatchTeam`) | all six created at initialisation step 8, unused slots included | [06](06_teams_and_player_commands.md) | simulation |
 | start position per team slot | "none" | the map start position, 0 to the player count − 1, of each team slot | simulation |
-| shared map-effect timer | `ref.sim.weather.shared_timer_initial` | the timer of the snow, dust-storm and lightning spawners; a value below `ref.sim.weather.first_run_threshold` marks their first run (§2.8) | simulation |
+| shared map-effect timer and the first-run flag | 0 ticks; the flag set | the countdown of the snow, dust-storm and lightning spawners, and the flag that marks their first run, cleared by the first count-down of the timer in the match (§2.8) | simulation |
 | Supply crate drop countdown | 0 | [crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) | simulation |
 | Spawn Surge timer; Frenzy timer | 0; 0 | crate-outcome timers, counted down in slice `ref.sim.slice.supply_crates` (R-SIM-218) | simulation |
 | Rogue faction allowed | true | while false, the look-ups of the Rogue faction team and of the Visitor faction team return "none" | simulation |
@@ -111,7 +111,7 @@ Table 2.2-A Simulation containers.
 
 ### 2.4 Slice partitioning
 
-**R-SIM-213** (MUST) A sliced pool computes the bounds of [01](01_tick_timing_and_main_loop.md) R-SIM-514 from its capacity at the moment each slice starts. A pool that grows during a tick computes the bounds of its later slices in that tick from its new capacity. Slices 0 to 8 each cover ⌊capacity ÷ `ref.sim.update_slices`⌋ + 1 slots; slice 9 runs from the slot after the last slot of slice 8 to capacity − 1, and is empty when that range is empty.
+**R-SIM-213** (MUST) A sliced pool computes the bounds of [01](01_tick_timing_and_main_loop.md) R-SIM-514 from its capacity at the moment each slice starts. A pool that grows during a tick computes the bounds of its later slices in that tick from its new capacity. Slices 0 to `ref.sim.update_slices` − 2 each cover ⌊capacity ÷ `ref.sim.update_slices`⌋ + 1 slots; the last slice, `ref.sim.update_slices` − 1, runs from the slot after the last slot of the slice before it to capacity − 1, and is empty when that range is empty.
 
 **R-SIM-214** (MUST) Every tick runs its slices in the order 0 to 9, without skipping or repeating a slice. Test builds check that every pool receives its slices in ascending order from 0 to 9, followed by 0 in the next tick, except for its first slice after it is created or emptied, which can be any slice.
 
@@ -218,11 +218,11 @@ Table 2.7-A Removal.
 
 ### 2.8 Map-effect spawners
 
-**R-SIM-233** (MUST) The map-effect spawners run in slice `ref.sim.slice.map_effects` in the order of R-SIM-218 step 7. Every object they create is an effect with the handle (no team, effect pool, slot, serial), and every period below is counted in ticks (DEC-002).
+**R-SIM-233** (MUST) The map-effect spawners run in slice `ref.sim.slice.map_effects` in the order of R-SIM-218 step 7. Every object they create is an effect with the handle (no team, effect pool, slot, serial), and every period below is counted in ticks (DEC-002). They share one countdown timer, which starts at 0 ticks, and one **first-run flag**, which is set when the match world is created and cleared by the first count-down of the shared timer in the match; only a spawner that runs while the flag is still set makes a first-run burst.
 
-**R-SIM-234** (MUST) The snow spawner: when the shared map-effect timer is below `ref.sim.weather.first_run_threshold`, it first creates `ref.sim.weather.snow_burst` snowflakes (`SnowFlake`) at random positions over the map, each at a random height between 0 and `ref.sim.weather.snow_burst_height_range`. It then counts the shared timer down by one tick; when the timer reaches 0 or below, it sets the timer to `ref.sim.weather.snow_period` and creates one snowflake at a random position over the map at height `ref.sim.weather.snow_height_base` plus a random amount up to `ref.sim.weather.snow_height_range`.
+**R-SIM-234** (MUST) The snow spawner: when the first-run flag is set, it first creates `ref.sim.weather.snow_burst` snowflakes (`SnowFlake`) at random positions over the map, each at a random height between 0 and `ref.sim.weather.snow_burst_height_range`. It then counts the shared timer down by one tick; when the timer reaches 0 or below, it sets the timer to `ref.sim.weather.snow_period` and creates one snowflake at a random position over the map at height `ref.sim.weather.snow_height_base` plus a random amount up to `ref.sim.weather.snow_height_range`.
 
-**R-SIM-235** (MUST) The dust-storm spawner: it counts the dust vortex timer down by one tick; when it reaches 0 or below, the timer is set to `ref.sim.weather.vortex_timer_base` plus a random amount up to `ref.sim.weather.vortex_timer_range`, and then, if a draw reduced modulo `ref.sim.weather.vortex_chance` is 0 and no vortex is active, a vortex starts at a random point over the map at a random height up to `ref.sim.weather.vortex_height_range`, re-drawn while the terrain at that point is at or below `ref.sim.weather.land_threshold` (a bounded search with a deterministic fallback, DEC-014); otherwise the vortex ends and the wind direction becomes the normalised difference of two random positions. On its first run (shared timer below `ref.sim.weather.first_run_threshold`) it creates `ref.sim.weather.dust_burst` dust objects (`DustVortex`), each at a random height up to `ref.sim.weather.dust_burst_height_range`, each growing its size by a random amount up to `ref.sim.weather.dust_size_range`. It then counts the shared timer down by one tick; when it reaches 0 or below, it creates `ref.sim.weather.dust_per_period` dust objects and sets the timer to `ref.sim.weather.dust_period`. While a vortex is active, every actor-grid neighbour within `ref.sim.weather.vortex_radius` of the vortex's ground point that is an on-ground Worker enters the in-vortex state and becomes airborne ([Worker](../02_units/worker.md)).
+**R-SIM-235** (MUST) The dust-storm spawner: it counts the dust vortex timer down by one tick; when it reaches 0 or below, the timer is set to `ref.sim.weather.vortex_timer_base` plus a random amount up to `ref.sim.weather.vortex_timer_range`, and then, if a draw reduced modulo `ref.sim.weather.vortex_chance` is 0 and no vortex is active, a vortex starts at a random point over the map at a random height up to `ref.sim.weather.vortex_height_range`, re-drawn while the terrain at that point is at or below `ref.sim.weather.land_threshold` (a bounded search with a deterministic fallback, DEC-014); otherwise the vortex ends and the wind direction becomes the normalised difference of two random positions. When the first-run flag is set, it creates `ref.sim.weather.dust_burst` dust objects (`DustVortex`), each at a random height up to `ref.sim.weather.dust_burst_height_range`, each growing its size by a random amount up to `ref.sim.weather.dust_size_range`. It then counts the shared timer down by one tick; when it reaches 0 or below, it creates `ref.sim.weather.dust_per_period` dust objects and sets the timer to `ref.sim.weather.dust_period`. While a vortex is active, every actor-grid neighbour within `ref.sim.weather.vortex_radius` of the vortex's ground point that is an on-ground Worker enters the in-vortex state and becomes airborne ([Worker](../02_units/worker.md)).
 
 **R-SIM-236** (MUST) The lightning spawner counts the shared timer down by one tick; when it reaches 0 or below, it sets the timer to a random value up to `ref.sim.weather.lightning_timer_range` and creates one lightning strike (`LightningStrike`) at height `ref.sim.weather.lightning_height` over a random land point, re-drawn while the terrain at the point is at or below `ref.sim.weather.land_threshold` (bounded, DEC-014).
 
@@ -244,14 +244,14 @@ Table 2.9-A Order-dependent outcomes.
 | single-round Siege winner | the first slot of the winning side | [Siege](../01_skirmish_rules_and_modes/siege.md) |
 | Relic Run co-op winner | the last slot of the winning group | [Relic Run](../01_skirmish_rules_and_modes/relic_run.md) |
 | Launch Vessel look-up | the last matching structure in structure order | [mode objects](../03_buildings_and_world_objects/mode_objects.md) R-BLDG-339 |
-| Relic spawn zone | the first Relic Spawn Zone, in structure order, at the greatest distance | [Relic Run](../01_skirmish_rules_and_modes/relic_run.md) |
+| Relic Spawn Zone | the first Relic Spawn Zone, in structure order, at the greatest distance | [Relic Run](../01_skirmish_rules_and_modes/relic_run.md) |
 | Population Limiter of a Spawn Node | the first Population Limiter in structure order | [economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md) R-BLDG-136 |
 | Beam Dish receiver | the nearest receiver by distance | [economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md) R-BLDG-157 |
 | Command Console ownership | the first qualifying team in slot order; it changes only to a team with strictly more operators | [mode objects](../03_buildings_and_world_objects/mode_objects.md) R-BLDG-301 |
 | bot structure choices | structures in structure order; the first found wins; comparisons are strict | [bots](../07_bots/README.md) |
 | area damage and its kill credit | actors in actor-grid result order | [05](05_space_routing_and_physics.md) R-SIM-389 |
 | nearest-actor selections | strict less-than comparisons, so the first actor found in result order wins a tie | [05](05_space_routing_and_physics.md) |
-| bot Leader orders after a refused promotion | the corrected ids of DEC-087 | [bots](../07_bots/README.md) |
+| bot Leader orders after a refused promotion | the bot targets only the promotion Power it has just started and re-orders only the Leader that this targeting created, by that Leader's handle; a targeting that promotes nobody re-orders no Leader (DEC-087) | [bots](../07_bots/03_decision_loop_and_leaders.md) R-BOT-090 |
 
 ### 2.10 Match-world query and service operations
 
@@ -361,8 +361,6 @@ Caption: Diagram 3-C, the life of a slot of a last-freed-first pool (R-SIM-207, 
 | `ref.sim.team.kill_milestones` | 500, 1000, 2000, 3000, 4000, 5000 | kills | one presentation event per tick at most | R-SIM-221 | DEC-007 |
 | `ref.sim.spawn.default_front` | (1, 0, 0) | unit vector | front of a non-Worker actor spawned with zero velocity | R-SIM-226 | — |
 | `ref.sim.spawn.orb_lift` | 1 | wu | an Essence orb starts this far above its given position | R-SIM-228 | — |
-| `ref.sim.weather.shared_timer_initial` | −99.9 | s of game time (−999 ticks) | a marker value; below `ref.sim.weather.first_run_threshold` means first run | R-SIM-202, R-SIM-234 | DEC-002 |
-| `ref.sim.weather.first_run_threshold` | −90 | s of game time (−900 ticks) | | R-SIM-234, R-SIM-235 | DEC-002 |
 | `ref.sim.weather.snow_burst` | 150 | snowflakes | first-run burst | R-SIM-234 | — |
 | `ref.sim.weather.snow_burst_height_range` | 1000 | wu | burst height drawn from 0 to this value | R-SIM-234 | DEC-118 |
 | `ref.sim.weather.snow_period` | 1 | tick | 0.1 s; one snowflake per period | R-SIM-234 | DEC-002 |
@@ -421,7 +419,8 @@ The slice keys `ref.sim.slice.power_slots`, `ref.sim.slice.sky`, `ref.sim.slice.
 | AC-11 | a Worker spawned with zero velocity and a Leader spawned with zero velocity | they are spawned | the Worker's front is horizontal and drawn from the simulation generator, the Leader's front is `ref.sim.spawn.default_front` | R-SIM-226 |
 | AC-12 | a spawn into the unused Rogue faction slot | the spawn operation runs | the slot is initialised first and the actors join it | R-SIM-226 |
 | AC-13 | a map with snow and the seasonal theme active | slice `ref.sim.slice.map_effects` runs | the snow spawner runs twice in that tick | R-SIM-218, R-SIM-237 |
-| AC-14 | a match whose shared timer starts at `ref.sim.weather.shared_timer_initial` on a snow map | the first map-effect slice runs | `ref.sim.weather.snow_burst` snowflakes are created, then one more | R-SIM-234 |
+| AC-14 | a new match on a snow map | the first map-effect slice runs | `ref.sim.weather.snow_burst` snowflakes are created, then one more, and the first-run flag is clear | R-SIM-233, R-SIM-234 |
+| AC-17 | a new match on a map with snow and a dust storm | the first map-effect slice runs | the snow spawner makes its burst and the dust-storm spawner makes none, because the snow spawner's count-down has cleared the first-run flag | R-SIM-233, R-SIM-234, R-SIM-235 |
 | AC-15 | the same match setup and commands run twice, once with the simulation steps in parallel jobs | both runs complete | their per-tick simulation state is identical | R-SIM-219 |
 | AC-16 | an eliminated team | the elimination runs | every actor of the team dies through the normal death path and its Transit Gates become neutral | R-SIM-231 |
 
@@ -433,7 +432,7 @@ The slice keys `ref.sim.slice.power_slots`, `ref.sim.slice.sky`, `ref.sim.slice.
 
 ## 8 Open decisions
 
-- DEC-455 — same-tick advance of objects created or handed over during a tick (DEC-306 is superseded by it).
+- DEC-455 — same-tick advance of objects created or handed over during a tick.
 - DEC-312 — bot decisions and node recounts within a tick.
 - DEC-224 — threading and job model.
 - DEC-227 — simulation tick rate.

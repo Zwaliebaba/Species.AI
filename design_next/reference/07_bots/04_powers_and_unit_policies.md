@@ -78,7 +78,7 @@ Table 2.1-A Power handlers.
 
 **R-BOT-119** (MUST) **Hive and Blight Grove.** The target is one of the hostile Spawn Nodes not owned by the Rogue faction at valid points, chosen by `NextUint` mod their number; the bot targets its position, and with none it waits. **Perfect information (PI-03).**
 
-**R-BOT-120** (MUST) **Brood.** The target is one of the hostile nodes not owned by the Rogue faction at valid points, chosen by `NextUint` mod their number; the point is the node + normalise(`NextSigned(1)`, 0, `NextSigned(1)`) × `ref.bot.power.brood_offset` (150 wu), at the terrain height. With none, the bot waits. **Perfect information (PI-02).**
+**R-BOT-120** (MUST) **Brood.** The target is one of the hostile nodes not owned by the Rogue faction at valid points, chosen by `NextUint` mod their number; the point is the node + Normalize(`NextSigned(1)`, 0, `NextSigned(1)`) × `ref.bot.power.brood_offset` (150 wu), at the terrain height. With none, the bot waits. **Perfect information (PI-02).**
 
 **R-BOT-121** (MUST) **Meteor shower.** The target is the first node in structure order that is hostile, not owned by the Rogue faction, at a valid point, and where, within R = `ref.bot.power.meteor_factor` (6) × `ref.power.effect_range` (70 wu) = 420 wu of it, the cell-granular friend count of the bot's team is below `ref.bot.power.meteor_friends` (30) and the cell-granular enemy count is above `ref.bot.power.meteor_enemies` (50) (`CountFriendsInCells`, `CountEnemiesInCells`, R-SIM-313, DEC-094). The bot targets its position; with none, it waits, which is common, so a meteor shower Power often holds its slot for long. **Perfect information (PI-04).**
 

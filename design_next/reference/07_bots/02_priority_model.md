@@ -71,12 +71,12 @@ The lifter counts are the Relic's own ([mode_objects.md](../03_buildings_and_wor
 **R-BOT-063** (MUST) The diffusion priority of A for t, with the usable test "no crossed emitter, or its team is a friend of t, or it is switched off":
 
 ```
-p := 0;  S := 0;  n := 0;  dishNeighbour := false
+p := 0;  S := 0;  n := 0;  dishNeighbor := false
 for each N in usable(A, t), in link order:
     if N.p[t] > 0:  S += N.p[t];  n += 1
-    if N.beamDishFlag:  dishNeighbour := true
+    if N.beamDishFlag:  dishNeighbor := true
 if n > 0:  p := S / (n + 1)
-if A.beamDishFlag and not dishNeighbour:  p += ref.bot.priority.dish_bonus     # the far side of the dish has no node yet
+if A.beamDishFlag and not dishNeighbor:  p += ref.bot.priority.dish_bonus     # the far side of the dish has no node yet
 p += A.priorityModifier
 if A.supplyCrateFlag and bot(t) exists and bot(t) has a current objective whose next objective is none:
     p := 0                                                                      # on the final objective, ignore Supply crates

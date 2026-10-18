@@ -111,7 +111,7 @@ if current is not none:
 
 ### 2.4 The Relic un-stick rule
 
-**R-BOT-140** (MUST) In step 3 of every main cycle of a bot in Relic Run, for every Relic whose team is the bot's team, in structure order, whose velocity is zero and whose collision test reports other carryable structures ([mode_objects.md](../03_buildings_and_world_objects/mode_objects.md)): with c the mean position of those colliding carryable structures, divided by their number (DEC-087), every Worker of the team within `ref.bot.relic.unstick_carrier_radius` (50 wu) of the Relic (`InRange`, the team's mask) that carries this Relic receives a waypoint order (R-UNIT-111) to the Relic's position + `ref.bot.relic.unstick_step` (20 wu) × normalise(Relic position − c), which a carrying Worker passes on to the Relic.
+**R-BOT-140** (MUST) In step 3 of every main cycle of a bot in Relic Run, for every Relic whose team is the bot's team, in structure order, whose velocity is zero and whose collision test reports other carryable structures ([mode_objects.md](../03_buildings_and_world_objects/mode_objects.md)): with c the sum of the positions of those colliding carryable structures divided by their number (their mean position; DEC-087), every Worker of the team within `ref.bot.relic.unstick_carrier_radius` (50 wu) of the Relic (`InRange`, the team's mask) that carries this Relic receives a waypoint order (R-UNIT-111) to the Relic's position + `ref.bot.relic.unstick_step` (20 wu) × Normalize(Relic position − c), which a carrying Worker passes on to the Relic.
 
 **R-BOT-141** (MUST) A bot never steers the delivery of a Relic: a carried Relic routes itself to the nearest Relic Base of its carrying team ([mode_objects.md](../03_buildings_and_world_objects/mode_objects.md)), and the bot only brings Workers to Relic nodes and frees stuck Relics.
 
@@ -146,7 +146,7 @@ Table 2.5-A Bot mechanisms per mode.
 
 ### 2.6 Tutorials
 
-**R-BOT-150** (MUST) Both tutorials are Zone Control matches on their own maps against easy bots, whose bot colours are their slot ids (R-MODE-016, R-MODE-083); the second tutorial's last step sets the bot difficulty to Standard ([reference/11](../11_tutorial_and_help.md)). The tutorial maps designate the structures that the rules of this section name by role tags ([Tutorial and help](../11_tutorial_and_help.md) tables 2.9-A and 2.10-A), and the tutorial step graph sets the second tutorial's two gates, **bots may act** and **bots may spawn**, as sequenced simulation events (DEC-103). Tutorials are designed anew for Species (DEC-051), and the first playable has no tutorial (see DEC-123); this section is the reference behaviour.
+**R-BOT-150** (MUST) Both tutorials are Zone Control matches on their own maps against easy bots, whose bot colours are their slot ids (R-MODE-016, R-MODE-083); the second tutorial's last step sets the bot difficulty to Standard ([reference/11](../11_tutorial_and_help.md)). The tutorial maps designate the structures that the rules of this section name by role tags ([Tutorial and help](../11_tutorial_and_help.md) tables 2.9-A and 2.10-A), and the tutorial step graph sets the second tutorial's two gates, **bots may act** and **bots may spawn**, as sequenced simulation events (DEC-103). This section specifies the reference tutorials; whether and how Species keeps them is DEC-051.
 
 **R-BOT-151** (MUST) **First tutorial, movement.** Target selection is always random (R-BOT-087). While the first tutorial's centre Control Zone, the role tag `centre_zone`, has no team and the bot's tutorial centre latch is clear, the random selection draws a new index whenever it picks a node inside that zone; the latch is set, for good, once the zone has an owner. It also draws a new index whenever it picks an important node that has an owner, the navigation node with the role tag `bot_excluded_node`, or a Supply crate node. Every new draw counts as a try (R-BOT-088).
 
@@ -239,7 +239,7 @@ Keys cited here and defined elsewhere: `ref.bot.pin.value` ([02](02_priority_mod
 
 **AC-BOT-39 — Transport objective list** (R-BOT-127). Given a Siege map whose objectives each have a Transport marker, then once every marker has registered, the list holds every such objective, in every structure order of objectives and markers.
 
-**AC-BOT-40 — Relic un-stick** (R-BOT-140). Given a bot's stopped Relic touching two other carryable structures at (100, 0, 0) and (0, 0, 100) relative to it, then its carriers within 50 wu receive orders to the Relic + 20 × normalise(−50, 0, −50).
+**AC-BOT-40 — Relic un-stick** (R-BOT-140). Given a bot's stopped Relic touching two other carryable structures at (100, 0, 0) and (0, 0, 100) relative to it, then its carriers within 50 wu receive orders to the Relic + 20 × Normalize(−50, 0, −50).
 
 **AC-BOT-41 — Tutorial gates** (R-BOT-152). Given the second tutorial before "bots may act", then no bot Worker receives a dispatch order; after it and before "bots may spawn", the slot 1 bot sends none and the slot 2 bot sends only to Beam Dish nodes.
 

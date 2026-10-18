@@ -53,7 +53,7 @@ Steps 1 to 5 run on every tick whatever the main-cycle countdown; only step 6 wa
 
 ### 2.3 Stray recall
 
-**R-BOT-076** (MUST) Each tick the bot draws k = max(`ref.bot.recall.min_picks`, ⌊`ref.bot.recall.share` × n⌋) picks, where n is the number of live ungrouped actors of its team (DEC-087: the rate follows the live count, not a container's capacity); with n = 0 it makes no pick. Each pick takes the ungrouped actor at index `NextUint` mod n, in slot order, and an actor may be picked twice in one tick. For a picked Worker that is on the ground:
+**R-BOT-076** (MUST) Each tick the bot draws k = max(`ref.bot.recall.min_picks`, ⌊`ref.bot.recall.share` × n⌋) picks, where n is the number of live ungrouped actors of its team (DEC-087); with n = 0 it makes no pick. Each pick takes the ungrouped actor at index `NextUint` mod n, in slot order, and an actor may be picked twice in one tick. For a picked Worker that is on the ground:
 
 1. if its wall-hit count ([worker.md](../02_units/worker.md) R-UNIT-114) is above `ref.bot.recall.wall_hits` (10) and it is not inside a Transport, it becomes Idle and its wall-hit count becomes 0;
 2. then, if it is idle and its nearest node by R-BOT-052 with evaluate-cliffs false and permit-steep-downhill true is farther than `ref.bot.recall.distance` (70 wu) from it, in every mode, it receives a waypoint order (R-UNIT-111) to that node + polar(r, θ) with r = `ref.bot.order.offset_base` + `NextUnit(ref.bot.order.offset_spread)` (20 + [0, 20) wu), or r = `ref.bot.recall.offset_base_flag_chain` + `NextUnit(ref.bot.order.offset_spread)` ([0, 20) wu) in Flag Chain, and θ = `NextUnit(2π)`.
@@ -166,7 +166,7 @@ The destination must be strictly better than the source, so a best-selecting arm
 
 **R-BOT-094** (MUST) A conveyor Leader holds a waypoint order, so Workers newly spawned by its Spawn Node that pass its signpost follow it to the order point ([worker.md](../02_units/worker.md)), and its Leader policy re-aims it every 101 ticks (R-UNIT-188 item 1). Conveyor Leaders are not gated by mode or tutorial: they appear in every mode wherever a bot team owns a Spawn Node with a well-defended nearest node.
 
-**R-BOT-095** (MUST) Because a promotion Power that promotes nobody ends in the same bot step (R-BOT-107), a bot never holds an unused promotion Power, a failed promotion never fills a Power slot, and a bot never targets another Power by mistake (DEC-087). No promotion waits for the team's selection (R-BOT-016).
+**R-BOT-095** (MUST) Because a promotion Power that promotes nobody ends in the same bot step (R-BOT-107), a bot never holds an unused promotion Power and a failed promotion never fills a Power slot. No promotion waits for the team's selection (R-BOT-016).
 
 ### 2.9 Beam Dish aiming
 
@@ -179,7 +179,7 @@ The destination must be strictly better than the source, so a best-selecting arm
 ```
 best := -1;  pick := none
 for each other Beam Dish r of any team, in structure order:
-    if dot(normalise(r.position - d.position), r.dishFront) < 0                 # r faces towards d
+    if dot(Normalize(r.position - d.position), r.dishFront) < 0                 # r faces towards d
        and visible(d.dishPosition, r.dishPosition)
        and d accepts r as a valid receiver (R-BLDG-158)
        and the tutorial filters of [05] R-BOT-153 pass:

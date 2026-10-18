@@ -56,6 +56,16 @@
 | R2a-107 | fixed-differently | `ref.tut.tab.width` note: "tab width before the pulse"; `ref.tut.camera_picture.width` note: "picture box width". R-TUT-074 and the alpha note now state values. I wrote 0.452 and 0.226 rather than the proposed 0.45 and 0.23 so that the stated alphas are exact to the 8-bit level (0.9 × 128 ÷ 255 = 0.4518 and 0.9 × 64 ÷ 255 = 0.2259). The fill is 0.72, and the border and title bar flash to `ref.tut.tab.alpha` (0.9). |
 | R3a-78 | fixed-differently | The fix of R2a-105 removed the only §2 citation of DEC-229 (in R-TUT-001), so 11 §2 no longer cites DEC-229 and §8 needs no row. |
 
+## Requests from other packets applied
+
+| Request | File and place | Change |
+|---|---|---|
+| P6-RB request 1 (R2a-40) | `reference/05_population_flow.md` R-ECON-072 | "the nearest Floating Essence orb that is not marked broken (the broken marker of reference/02 essence_orbs.md R-UNIT-308, unset at creation and set by no match rule), within" now reads "the nearest Floating Essence orb within". |
+| P6-RB request 2 (R2a-40) | `reference/05_population_flow.md` R-ECON-082 | "A Builder takes Essence orbs in Birth or Floating that are not marked broken (R-UNIT-308), of any team:" now reads "A Builder takes Essence orbs in Birth or Floating, of any team:". |
+| P6-RB request 3 (R3a-56) | `reference/05_population_flow.md` R-ECON-012, R-ECON-017, R-ECON-108 | Each "the operating-port state" now reads "Manning (the operating-port state)", in the three places named. |
+
+After these edits no file I own mentions the broken marker or R-UNIT-308. The gates (`--skip-mermaid`) pass; no diagram was touched.
+
 ## Requests
 
 1. **P6-RB — `reference/03_buildings_and_world_objects/trees_and_crate_structures.md`** (R3a-9: the Hive conversion is now 10 ticks).
