@@ -128,7 +128,7 @@ Table 2.1-A Spawn networks of the reference maps (one row per map).
 
 **R-BLDG-130** (MUST) A Spawn Node raises `spawn_node.activate` when an evaluation gives it an owner and `spawn_node.deactivate` when an evaluation leaves it with no team (R-ECON-021), bound to `sfx.building.spawn_node.activate` and `sfx.building.spawn_node.deactivate`, in addition to the base events (R-BLDG-049).
 
-**R-BLDG-131** (MUST) A Spawn Node draws its ports itself: a status star of `fx.starburst` per port, in the grey `ref.bldg.spawn_node.port_star_empty_rgb` (150, 150, 150) when the port is unoccupied and in the occupant's team colour when occupied. Above the structure it draws glow blobs of `fx.glow_cloudy`: `ref.bldg.spawn_node.glow_blobs_by_detail` (20, 10 and 3 at structure-detail levels 1, 2 and 3), with an opacity of (occupied ports ÷ 5) and a colour that goes from `ref.econ.spawn_node.glow_start_rgba` (100, 100, 100, 200) of reference/05 to the owner's team colour as the activation delay runs from 300 to 0 (R-ECON-025).
+**R-BLDG-131** (MUST) A Spawn Node draws its ports itself: a status star of `fx.starburst` per port, in the grey `ref.bldg.spawn_node.port_star_empty_rgb` (150, 150, 150) when the port is unoccupied and in the occupant's team colour when occupied. Above the structure it draws glow blobs of `fx.glow_cloudy`: `ref.bldg.spawn_node.glow_blobs_by_detail` (20, 10 and 3 at structure-detail levels 1, 2 and 3; the structure-detail setting of reference/09 R-META-425: 1 high, 2 medium, 3 low, [README](README.md) §1.1), with an opacity of (occupied ports ÷ 5) and a colour that goes from `ref.econ.spawn_node.glow_start_rgba` (100, 100, 100, 200) of reference/05 to the owner's team colour as the activation delay runs from 300 to 0 (R-ECON-025).
 
 **R-BLDG-132** (MUST) A Spawn Node's map record holds the base fields and its links (R-BLDG-108). The 49 reference match maps place 258 Spawn Nodes on 32 maps: 138 start owned by a map position (position 0: 48, position 1: 48, position 2: 28, position 3: 14) and 120 start with no team; none has its global flag set. A reference map that places Spawn Nodes places 1 to 15. Spawn Node capture has the objective-card picture `help.hint.spawn_nodes`, which feeds the objective-card hook only and is drawn by no rule in a match ([11 Tutorial and help](../11_tutorial_and_help.md) R-TUT-013, DEC-050).
 
@@ -181,13 +181,13 @@ Table 2.1-A Spawn networks of the reference maps (one row per map).
 
 **R-BLDG-151** (MUST) A Beam Dish (`BeamDish`) is a one-way long-range transporter: actors that walk into its door are carried along its beam to the receiving Beam Dish it is aimed at, and leave by the receiver's door. Its send period is `ref.bldg.beam_dish.send_period_ticks` (1 tick), so at most one actor enters a dish per tick (10 per second at game speed 1). It has no capacity limit.
 
-**R-BLDG-152** (MUST) A Beam Dish has no capture rule of its own. A Command Console whose controlled structure it is sets its team to the console's new owner ([mode objects](mode_objects.md) R-BLDG-301). On the reference maps every Beam Dish starts with no team, except two dishes of team position 0 on one Siege map, which connect automatically and use the "Beam Dish team match" map option.
+**R-BLDG-152** (MUST) A Beam Dish has no capture rule of its own. A Command Console whose controlled structure it is sets its team to the console's new owner ([mode objects](mode_objects.md) R-BLDG-301). On the reference maps every Beam Dish starts with no team, except two dishes of team position 0 on one Siege map, which connect automatically and use the same-team Beam Dish links map option.
 
 **R-BLDG-153** (MUST) A Beam Dish draws a per-instance copy of the mesh `mesh.structure.beam_dish`, recoloured to its team colour on every team change, and white while it has no team. The node `dish` pitches and the node `upper_mount` yaws; the `beam_focus` socket is the beam's origin and the `gate_entrance` socket its door. It has 2 light sockets and no ports.
 
 **R-BLDG-154** (MUST) Aiming a Beam Dish at a world position p works as follows. When the dish has a list of valid receivers and its force-connection flag is set, the aim is ignored unless the ray from its `beam_focus` towards p hits the bounding sphere of one of the listed dishes and that dish is visible over the terrain from the focus. Otherwise the dish stores p as its target, clears its yaw-aligned and pitch-aligned flags and raises `beam_dish.rotate_start`.
 
-**R-BLDG-155** (MUST) Aim requests come from the player command `PlayerCommand::AimBeamDish`, which aims only a structure that exists, is a Beam Dish and belongs to the commanding team ([12 teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-453), and from the bots ([07 Bots](../07_bots/README.md)). A player can select only a Beam Dish of the player's own team, and none at all when the map sets the "no Beam Dish control" option ([06 Controls, camera and commands](../06_controls_camera_and_commands/README.md); DEC-008).
+**R-BLDG-155** (MUST) Aim requests come from the player command `PlayerCommand::AimBeamDish`, which aims only a structure that exists, is a Beam Dish and belongs to the commanding team ([12 teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-453), and from the bots ([07 Bots](../07_bots/README.md)). A player can select only a Beam Dish of the player's own team, and none at all when the map sets the no Beam Dish aiming option ([06 Controls, camera and commands](../06_controls_camera_and_commands/README.md); DEC-008).
 
 **R-BLDG-156** (MUST) While a target is set and the dish is not aligned, it turns towards the target, yaw first and then pitch, integrating each angular velocity over the tick period:
 
@@ -204,11 +204,11 @@ dish.angularVelocity ← dish.right × (world up of the dish · targetFront)
 if |dish.angularVelocity| < ref.bldg.beam_dish.pitch_stop: pitch aligned  # 0.001
 ```
 
-When both are aligned it raises `beam_dish.rotate_stop`. The square root and the angle results follow the Species maths library at full precision, pinned by acceptance vectors (see DEC-241).
+When both are aligned it raises `beam_dish.rotate_stop`. The square root and the angle results are evaluated at full precision and pinned by acceptance vectors (see DEC-241).
 
 **R-BLDG-157** (MUST) Every tick once a target is set, the dish tests for a connection. Among all other Beam Dishes it takes those for which: the ray from its `beam_focus` along the focus front hits the other dish's bounding sphere; the other dish's focus front faces back (the dot product of the two fronts is negative); and the other dish's focus is visible over the terrain from its own focus. Of these it takes the nearest, comparing distances strictly in structure order so that the first of equal distances wins (DEC-016), and it accepts it only when the receiver validity test of R-BLDG-158 passes.
 
-**R-BLDG-158** (MUST) A Beam Dish is a valid receiver when: on the second tutorial's map, it is not the dish with the role tag `final_dish`, which is never valid ([11 Tutorial and help](../11_tutorial_and_help.md) tables 2.9-A and 2.10-A; DEC-103); with the map option "Beam Dish team match", its team equals the sending dish's team; and otherwise, when the sending dish's list of valid receivers is empty, any dish is valid, and when it is not empty, only the listed dishes are.
+**R-BLDG-158** (MUST) A Beam Dish is a valid receiver when: on the second tutorial's map, it is not the dish with the role tag `final_dish`, which is never valid ([11 Tutorial and help](../11_tutorial_and_help.md) tables 2.9-A and 2.10-A; DEC-103); with the same-team Beam Dish links map option, its team equals the sending dish's team; and otherwise, when the sending dish's list of valid receivers is empty, any dish is valid, and when it is not empty, only the listed dishes are.
 
 **R-BLDG-159** (MUST) A connected Beam Dish holds its receiver, its range (the distance from focus to focus) and a signal of 1; it is connected while it has a receiver and a signal above 0, and ready to send while it is connected and its ready countdown is 0. Gaining a receiver raises `beam_dish.link_up`; a connection test that no longer finds a valid receiver clears the receiver, sets the signal to 0 and raises `beam_dish.link_lost`.
 
@@ -228,7 +228,7 @@ When both are aligned it raises `beam_dish.rotate_stop`. The square root and the
 
 **R-BLDG-167** (MUST) A Beam Dish raises `beam_dish.rotate_start` (bound to `sfx.building.beam_dish.rotate_start` and its loop layer `sfx.building.beam_dish.rotate_start_b`), `beam_dish.rotate_stop` (`sfx.building.beam_dish.rotate_stop`), `beam_dish.link_up` (`sfx.building.beam_dish.link_up`) and `beam_dish.link_lost` (`sfx.building.beam_dish.link_lost`), in addition to the base events.
 
-**R-BLDG-168** (MUST) 7 reference maps place Beam Dishes: Siege 3 of 8 (with 4, 2 and 6 dishes), Spawn Control 2 of 9 (8 and 6) and Zone Control 2 of 9 (12 and 8), 46 records in all. The reference maps use two patterns: sending dishes with the force-connection flag set and 1 to 3 valid receivers, usually with the auto-connect flag set; and plain receivers with both flags clear and no valid receivers. One Siege map sets the "Beam Dish team match" and "no Beam Dish control" options and uses auto-connected dishes of team position 0.
+**R-BLDG-168** (MUST) 7 reference maps place Beam Dishes: Siege 3 of 8 (with 4, 2 and 6 dishes), Spawn Control 2 of 9 (8 and 6) and Zone Control 2 of 9 (12 and 8), 46 records in all. The reference maps use two patterns: sending dishes with the force-connection flag set and 1 to 3 valid receivers, usually with the auto-connect flag set; and plain receivers with both flags clear and no valid receivers. One Siege map sets the same-team Beam Dish links and no Beam Dish aiming options and uses auto-connected dishes of team position 0.
 
 ### 2.10 The energy grid
 
@@ -265,7 +265,7 @@ When both are aligned it raises `beam_dish.rotate_stop`. The square root and the
 
 **R-BLDG-181** (MUST) In Siege, a Solar Array that has a starting team, has a team now, has a team different from its starting team and still has ports loses all its ports at the start of its advance. The same tick's recount then gives it no team, while that tick's surge roll still uses the fraction f computed before the removal, and the array never produces again: the attackers knock the defenders' Solar Arrays out permanently (see DEC-301). A Solar Array that starts with no team has no starting team, so no capture knocks it out (DEC-464). Every reference Siege Solar Array names team position 0, 1 or 3, so it starts with no team only when no team holds that position.
 
-**R-BLDG-182** (MUST) At team initialisation each Solar Array that a team owns receives one Worker per port in the operating-port state, and its ownership is evaluated at once (R-BLDG-026; R-ECON-108).
+**R-BLDG-182** (MUST) At team initialisation each Solar Array that a team owns receives one Worker per port in Manning (the operating-port state), and its ownership is evaluated at once (R-BLDG-026; R-ECON-108).
 
 **R-BLDG-183** (MUST) A Solar Array draws its ports itself: green or red status lights at its status sockets for occupied and unoccupied ports (R-BLDG-046). While it is occupied and owned it draws `ref.bldg.solar_array.glow_count` (4) glow quads of `fx.glow_round`, `ref.bldg.solar_array.glow_quad_wu` (60 × 40 wu) each, at its glow sockets, in its team colour, with an alpha that pulses as `ref.bldg.solar_array.glow_pulse` (0.5 + 0.5 × |sin t|) over the presentation time t.
 
@@ -331,7 +331,7 @@ It runs once for each structure that feeds it in a tick, so a Launch Vessel fed 
 
 **R-BLDG-202** (MUST) A fuel depot (`FuelDepot`) is the boarding gate of a Launch Vessel and the last hop of its fuel. Its mesh is `mesh.structure.fuel_depot`, with the `entrance` and `fuel_point` sockets and the collision asset `mesh.collision.fuel_depot`. Its fuel link is its team's Launch Vessel.
 
-**R-BLDG-203** (MUST) Each tick, while its linked Launch Vessel is in the Boarding state ([mode objects](mode_objects.md) R-BLDG-321), a fuel depot keeps a bot navigation node at its position with a priority modifier of `ref.bldg.fuel_depot.bot_node_priority` (1.0) ([07 Bots](../07_bots/README.md)), and it picks **one** actor of its own team within `ref.bldg.fuel_depot.boarding_radius_wu` (300 wu), uniformly by a U{0..n − 1} draw over the n found. When that actor is a Worker in the idle state or in the state of watching an Essence orb, the Worker is ordered to board ([02 Worker](../02_units/worker.md)): it walks to the `entrance` socket, and on arrival the depot boards it into the Launch Vessel, which adds 1 to its passengers only while it is Boarding ([mode objects](mode_objects.md) R-BLDG-322). Each boarding emits 4 to 7 control-flash particles from the presentation generator (DEC-013) and raises `fuel_depot.load_passenger` (bound to `sfx.building.fuel_depot.load_passenger`). While the vessel is not Boarding, the depot removes its bot navigation node. The fuel-chain advance then passes the depot's level to the Launch Vessel.
+**R-BLDG-203** (MUST) Each tick, while its linked Launch Vessel is in the Boarding state ([mode objects](mode_objects.md) R-BLDG-321), a fuel depot keeps a bot navigation node at its position with a priority modifier of `ref.bldg.fuel_depot.bot_node_priority` (1.0) ([07 Bots](../07_bots/README.md)), and it picks **one** actor of its own team within `ref.bldg.fuel_depot.boarding_radius_wu` (300 wu), uniformly by a U{0..n − 1} draw over the n found. When that actor is a Worker in the Idle state ([02 Worker](../02_units/worker.md) table 2.4-A), the Worker is ordered to board: it walks to the `entrance` socket, and on arrival the depot boards it into the Launch Vessel, which adds 1 to its passengers only while it is Boarding ([mode objects](mode_objects.md) R-BLDG-322). Each boarding emits 4 to 7 control-flash particles from the presentation generator (DEC-013) and raises `fuel_depot.load_passenger` (bound to `sfx.building.fuel_depot.load_passenger`). While the vessel is not Boarding, the depot removes its bot navigation node. The fuel-chain advance then passes the depot's level to the Launch Vessel.
 
 **R-BLDG-204** (MUST) A fuel depot gives at most one boarding order per tick, so the 3 depots of a team give at most 30 boarding orders per second at game speed 1, fewer by the share of picks that are not idle Workers.
 
@@ -431,7 +431,7 @@ classDiagram
     FuelStructure <|-- FuelDepot
     FuelStructure <|-- LaunchVessel
     class FuelStructure {
-        -StructureId m_fuelLink
+        -SimObjectId m_fuelLink
         -double m_currentLevel
         -MeshSocket m_fuelPoint
         +FuelIntake(_level)
@@ -473,11 +473,11 @@ Every value is a reference tuning value that Species may adopt as its baseline (
 | `ref.bldg.spawn_network.orb_outer_size_wu` | 6 | wu | transit-orb diamond, outer | R-BLDG-113 | — |
 | `ref.bldg.spawn_network.orb_no_team_grey` | (120, 120, 120) | RGB8 | orb colour while its Spawn Node has no team | R-BLDG-113 | DEC-078 |
 | `ref.bldg.spawn_node.port_star_empty_rgb` | (150, 150, 150) | RGB8 | unoccupied port star | R-BLDG-131 | — |
-| `ref.bldg.spawn_node.glow_blobs_by_detail` | 20, 10, 3 | blobs | at structure-detail levels 1, 2, 3 | R-BLDG-131 | DEC-327 |
+| `ref.bldg.spawn_node.glow_blobs_by_detail` | 20, 10, 3 | blobs | at structure-detail levels 1 (high), 2 (medium), 3 (low) | R-BLDG-131 | DEC-327 |
 | `ref.bldg.population_limiter.editor_sphere_wu` | 30 | wu | map-editor drawing only | R-BLDG-137 | DEC-045 |
 | `ref.bldg.transit_gate.surface_grid_max` | 16 | cells per side | divided by the structure-detail level | R-BLDG-144 | — |
 | `ref.bldg.transit_gate.surface_alpha` | 0.7 | alpha | owner tint of the portal surface | R-BLDG-144 | — |
-| `ref.bldg.teleport.send_period_default_ticks` | 11 | ticks | 1.0 s; the base default, which the Beam Dish replaces | R-BLDG-146 | DEC-002 |
+| `ref.bldg.teleport.send_period_default_ticks` | 11 | ticks | nominal 1.0 s; the base default, which the Beam Dish replaces | R-BLDG-146 | DEC-002 |
 | `ref.bldg.teleport.exit_waypoint_wu` | 50 | wu | beyond the exit, for a group with no route | R-BLDG-149 | — |
 | `ref.bldg.teleport.exit_waypoint_jitter_wu` | U[−17.5, 17.5) | wu | one simulation draw | R-BLDG-149 | DEC-013 |
 | `ref.bldg.beam_dish.send_period_ticks` | 1 | ticks | 0.1 s; at most 10 actors per second | R-BLDG-151 | DEC-002 |
@@ -544,7 +544,7 @@ All criteria run headless at game speed 1 with a fixed seed; tick 0 is the first
 
 **AC-ECO-06 Beam loss** (R-BLDG-159, R-BLDG-162). Given 10 Workers in transit, when the receiver is turned so that it no longer faces back, the next connection test raises `beam_dish.link_lost` and all 10 Workers take −500 health and die.
 
-**AC-ECO-07 Receiver validity** (R-BLDG-154, R-BLDG-158). Given a dish with the force-connection flag and the valid list {12}, an aim at dish 13 is ignored; with the "Beam Dish team match" option, a dish of another team is never a receiver.
+**AC-ECO-07 Receiver validity** (R-BLDG-154, R-BLDG-158). Given a dish with the force-connection flag and the valid list {12}, an aim at dish 13 is ignored; with the same-team Beam Dish links option, a dish of another team is never a receiver.
 
 **AC-ECO-08 Surge rate** (R-BLDG-179). Given a Solar Array with all 5 ports manned by one team for 10⁶ ticks, the number of surges is 50,000 ± 700; with 1 port manned, 10,000 ± 310.
 
@@ -570,7 +570,7 @@ All criteria run headless at game speed 1 with a fixed seed; tick 0 is the first
 
 Each default is the behaviour that §2 specifies.
 
-- DEC-241 — numeric semantics; the Beam Dish yaw speed uses a rounded square root in the reference (R-BLDG-156).
+- DEC-241 — numeric semantics of the Beam Dish yaw speed (R-BLDG-156).
 - DEC-301 — the Solar Array knock-out in Siege (R-BLDG-181).
 - DEC-309 — the global flag on Source Nodes (R-BLDG-120).
 - DEC-453 — population-cap enforcement points: transit orbs already travelling are not checked on arrival, and a Transit Gate is checked once per wave (R-BLDG-123, R-BLDG-142).
@@ -580,6 +580,7 @@ Each default is the behaviour that §2 specifies.
 - DEC-551 — Strike teams registered again after a Beam Dish (R-BLDG-149).
 - DEC-860 — structure rule details: the teleport exit jitter is one draw across the exit direction (R-BLDG-149).
 - DEC-330 — mesh sockets that no rule reads: the Transit Gate's exit sockets (R-BLDG-140).
+- DEC-327 — structure render-detail variants: the spawn-network beams and the Spawn Node's glow blobs (R-BLDG-113, R-BLDG-131).
 - DEC-050 — front-end features that exist only as hooks: the objective card of Spawn Node capture (R-BLDG-132).
 
 Resolved decisions applied in this document: DEC-002, DEC-004, DEC-008, DEC-011, DEC-012, DEC-013, DEC-015, DEC-016, DEC-018, DEC-020, DEC-024, DEC-065, DEC-088, DEC-092, DEC-103, DEC-117, DEC-456, DEC-457, DEC-463, DEC-464, DEC-561 and DEC-652. DEC-306 is Dropped, superseded by DEC-455.

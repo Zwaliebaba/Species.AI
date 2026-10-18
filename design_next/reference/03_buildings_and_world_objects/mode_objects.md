@@ -172,7 +172,7 @@ Table 2.6-A Carryable structure state.
 
 **R-BLDG-292** (MUST) Every tick a Breach Charge tests the walls in its obstacle-grid cell: when the sphere test of a wall with the Breach Charge's position and a radius of `ref.bldg.breach_charge.trigger_radius_wu` (20 wu) hits, the Breach Charge shatters its whole mesh; breaks the walls, so that every wall within `ref.bldg.breach_charge.break_radius_wu` (200 wu) takes damage −`ref.bldg.breach_charge.break_damage` (1,000), a lethal hit beyond the wall's destruction threshold `ref.bldg.wall.destroy_threshold` (300) ([defences and props](defences_and_props.md) R-BLDG-454; DEC-043); runs an explosion of range `ref.bldg.breach_charge.breach_explosion_range_wu` (50 wu) and damage `ref.bldg.breach_charge.breach_explosion_damage` (150) at its position (R-SIM-388); destroys itself; and emits the announcement `building.breach_charge.breached` to every participant.
 
-**R-BLDG-293** (MUST) While a Breach Charge is owned by a team whose map position does not attack and at least 10 Workers carry it, its scuttle timer of `ref.bldg.breach_charge.scuttle_ticks` (101 ticks, 10 s) counts down by 1 per tick; whenever the condition fails, the timer is set back to 101. When it reaches 0 the Breach Charge destroys itself with an explosion of range 50 wu and damage `ref.bldg.breach_charge.scuttle_explosion_damage` (500), which also destroys every wall within 60 wu, where the hit reaches the wall's destruction threshold `ref.bldg.wall.destroy_threshold` (300) ([defences and props](defences_and_props.md) R-BLDG-454, R-BLDG-455). The defenders can thus scuttle the charge before it reaches their walls.
+**R-BLDG-293** (MUST) While a Breach Charge is owned by a team whose map position does not attack and at least 10 Workers carry it, its scuttle timer of `ref.bldg.breach_charge.scuttle_ticks` (101 ticks, nominal 10 s) counts down by 1 per tick; whenever the condition fails, the timer is set back to 101. When it reaches 0 the Breach Charge destroys itself with an explosion of range 50 wu and damage `ref.bldg.breach_charge.scuttle_explosion_damage` (500), which also destroys every wall within 60 wu, where the hit reaches the wall's destruction threshold `ref.bldg.wall.destroy_threshold` (300) ([defences and props](defences_and_props.md) R-BLDG-454, R-BLDG-455). The defenders can thus scuttle the charge before it reaches their walls.
 
 **R-BLDG-294** (MUST) A Breach Charge has no bot navigation node of its own. The Siege bot routes its own Breach Charges by a bot-only operation, which the player command catalogue does not express (see DEC-122): when a charge's goal is unset or reached, at most once every `ref.bldg.breach_charge.bot_route_retry_ticks` (11 ticks), it generates a route ([12 space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md)) to the nearest wall that lies within `ref.bldg.breach_charge.bot_wall_search_wu` (500 wu) of any marker of the bot's current bot objective ([07 Bots](../07_bots/README.md)).
 
@@ -257,7 +257,7 @@ Table 2.10-A Core Device state.
 
 **R-BLDG-319** (MUST) A Launch Vessel draws a per-instance copy of the mesh `mesh.structure.launch_vessel`, recoloured in a match to its team colour × `ref.bldg.launch_vessel.colour_factor` (0.3), with the `thruster`, `window_01` to `window_03` and `fuel_point` sockets. Its owner is fixed by its map record and never recomputed.
 
-**R-BLDG-320** (MUST) A Launch Vessel holds: its state (R-BLDG-321); its fuel, 0 to `ref.bldg.launch_vessel.max_fuel` (100); its intake count; its passengers, 0 to `ref.bldg.launch_vessel.launch_passengers` (100); its countdown; its damage; its refuel rate; its fuel before the explosion; its attack-warning flag; and its attacker timer.
+**R-BLDG-320** (MUST) A Launch Vessel holds: its state (R-BLDG-321); its fuel, 0 to `ref.bldg.launch_vessel.max_fuel` (100); its intake count; its passengers, 0 to `ref.bldg.launch_vessel.launch_passengers` (100); its countdown and its launch timer (R-BLDG-332 to R-BLDG-334); its damage; its refuel rate; its fuel before the explosion; its attack-warning flag; and its attacker timer.
 
 **R-BLDG-321** (MUST) The Launch Vessel states (`LaunchVesselState`) are, in this order, which carries meaning for the tests "before Wrecked": Fuelling, Boarding, Ignition, PreLaunch, Countdown, Wrecked and Flight. Their enumerators are `LaunchVesselState::Fueling`, `LaunchVesselState::Boarding`, `LaunchVesselState::Ignition`, `LaunchVesselState::PreLaunch`, `LaunchVesselState::Countdown`, `LaunchVesselState::Wrecked` and `LaunchVesselState::Flight`.
 
@@ -289,13 +289,13 @@ intake count ← 0
 
 With 3 depots at full pressure the steady rate is 1.2 fuel points per second, so fuel climbs from 0 to 95 in about 80 s plus about 10 s of smoothing lag.
 
-**R-BLDG-331** (MUST) In **Boarding** a Launch Vessel draws attackers and refuels. When its fuel is above 95 and it has at least 100 passengers, it enters Ignition with its countdown set to `ref.bldg.launch_vessel.ignition_countdown` (18), a value that the Ignition step replaces before any rule reads it, and emits, once per match, `mode.launch_race.preparing` to its owner and `building.launch_vessel.other_preparing` to every other participant. No rule returns a Boarding vessel to Fuelling: its fuel can fall below 95 only through Wrecked.
+**R-BLDG-331** (MUST) In **Boarding** a Launch Vessel draws attackers and refuels. When its fuel is above 95 and it has at least 100 passengers, it enters Ignition (R-BLDG-332) and emits, once per match, `mode.launch_race.preparing` to its owner and `building.launch_vessel.other_preparing` to every other participant. No rule returns a Boarding vessel to Fuelling: its fuel can fall below 95 only through Wrecked.
 
-**R-BLDG-332** (MUST) In **Ignition**, on its next advance, a Launch Vessel in a match sets its countdown to 0, enters PreLaunch at once with its countdown set to `ref.bldg.launch_vessel.display_countdown` (10) and starts a camera shake of `ref.bldg.launch_vessel.camera_shake` (5). Ignition therefore lasts exactly one tick.
+**R-BLDG-332** (MUST) In **Ignition**, on its next advance, a Launch Vessel in a match enters PreLaunch at once with its countdown set to `ref.bldg.launch_vessel.display_countdown` (10) and starts a camera shake of `ref.bldg.launch_vessel.camera_shake` (5). Ignition therefore lasts exactly one tick.
 
-**R-BLDG-333** (MUST) In **PreLaunch** a Launch Vessel draws attackers and counts down `ref.bldg.launch_vessel.prelaunch_ticks` (101 ticks, 10 s); then it enters Countdown with its countdown set to 10.
+**R-BLDG-333** (MUST) In **PreLaunch** a Launch Vessel draws attackers and counts down `ref.bldg.launch_vessel.prelaunch_ticks` (101 ticks, nominal 10 s); then it enters Countdown with its launch timer set to `ref.bldg.launch_vessel.countdown_ticks` (200 ticks) and its countdown at 10.
 
-**R-BLDG-334** (MUST) In **Countdown** a Launch Vessel draws attackers, and its countdown falls by `ref.bldg.launch_vessel.countdown_rate` (0.5) × dt per tick, kept at 0 or above; when it is exactly 0, after `ref.bldg.launch_vessel.countdown_ticks` (200 ticks, 20 s of game time for the displayed 10 to 0), the vessel enters Flight.
+**R-BLDG-334** (MUST) In **Countdown** a Launch Vessel draws attackers and counts its launch timer down by 1 per tick; when the timer reaches 0, after `ref.bldg.launch_vessel.countdown_ticks` (200 ticks, nominal 20 s), the vessel enters Flight. Its countdown, which the displays read (R-BLDG-205; [01 Launch Race](../01_skirmish_rules_and_modes/launch_race.md) R-MODE-417, R-MODE-418), is `ref.bldg.launch_vessel.display_countdown` (10) × the remaining ticks ÷ `ref.bldg.launch_vessel.countdown_ticks`, so the displayed 10 to 0 runs at half the rate of game seconds and reaches 0 on the tick the vessel enters Flight (DEC-002).
 
 **R-BLDG-335** (MUST) In **Flight** a Launch Vessel's thrust is max(2 × √(height − ground height), `ref.bldg.launch_vessel.min_thrust` (0.1)) wu/s, with the factor `ref.bldg.launch_vessel.thrust_factor` (2); its velocity is (0, thrust, 0) and its position grows by velocity × dt (drawn with velocity extrapolation); the square root follows the Species maths library (see DEC-241). Flight cannot be damaged and is terminal: it ends only in the launch result (DEC-076).
 
@@ -390,11 +390,11 @@ stateDiagram-v2
     NoTeam --> Owned : a team exceeds the threshold, the controlled structure takes its team
     Owned --> Owned : another team exceeds the threshold with strictly more, both reassigned
     Owned --> NoTeam : no team above the threshold, the controlled structure keeps its team
-    NoTeam --> Linked : linked to the Core Device, mesh switch, threshold 1 of 3 ports
-    Owned --> Linked : linked to the Core Device
+    NoTeam --> NoTeam : linked to the Core Device, mesh switch, threshold 1 of 3 ports
+    Owned --> Owned : linked to the Core Device, mesh switch, threshold 1 of 3 ports
 ```
 
-*Figure 4 — Command Console states (R-BLDG-299 to R-BLDG-301).*
+*Figure 4 — Command Console states (R-BLDG-299 to R-BLDG-301). Linking to the Core Device is a flag, not a state: it switches the mesh, the port count and the capture threshold, and the ownership recount continues in both states with the linked threshold of 1.*
 
 ```mermaid
 stateDiagram-v2
@@ -414,8 +414,8 @@ stateDiagram-v2
     Fuelling --> Boarding : fuel at least 95
     Boarding --> Ignition : fuel above 95 and 100 passengers
     Ignition --> PreLaunch : next advance, countdown 10, camera shake 5
-    PreLaunch --> Countdown : 101 ticks, countdown 10
-    Countdown --> Flight : countdown exactly 0 at half rate, 200 ticks
+    PreLaunch --> Countdown : 101 ticks, launch timer 200 ticks, countdown 10
+    Countdown --> Flight : launch timer 0 after 200 ticks, countdown 0
     Fuelling --> Wrecked : damage above 100
     Boarding --> Wrecked : damage above 100
     Ignition --> Wrecked : damage above 100
@@ -466,7 +466,7 @@ Every value is a reference tuning value that Species may adopt as its baseline (
 | `ref.bldg.relic.carry_radius_wu` | 33 | wu | also the structure radius | R-BLDG-283 | — |
 | `ref.bldg.relic.mesh_variants` | 8 | variants | U{0..7} simulation draw | R-BLDG-284 | DEC-012 |
 | `ref.bldg.relic.spawn_shatter_fraction` | 0.5 | of the mesh | not during the grace period | R-BLDG-284 | — |
-| `ref.bldg.relic.route_retry_ticks` | 11 | ticks | 1 s | R-BLDG-286 | DEC-002 |
+| `ref.bldg.relic.route_retry_ticks` | 11 | ticks | nominal 1.0 s | R-BLDG-286 | DEC-002 |
 | `ref.bldg.relic.bot_node_priority` | 1.0 | priority modifier | | R-BLDG-287 | — |
 | `ref.bldg.relic.bot_node_follow_factor` | 1.5 | × carry radius | 49.5 wu | R-BLDG-287 | — |
 | `ref.bldg.relic.tilt_limit` | 0.7 | up y | destroyed below | R-BLDG-288 | — |
@@ -481,9 +481,9 @@ Every value is a reference tuning value that Species may adopt as its baseline (
 | `ref.bldg.breach_charge.break_damage` | 1000 | damage | per wall | R-BLDG-292 | DEC-043 |
 | `ref.bldg.breach_charge.breach_explosion_range_wu` | 50 | wu | also the scuttle explosion range | R-BLDG-292, R-BLDG-293 | — |
 | `ref.bldg.breach_charge.breach_explosion_damage` | 150 | damage | | R-BLDG-292 | — |
-| `ref.bldg.breach_charge.scuttle_ticks` | 101 | ticks | 10 s | R-BLDG-293 | DEC-002 |
+| `ref.bldg.breach_charge.scuttle_ticks` | 101 | ticks | nominal 10 s | R-BLDG-293 | DEC-002 |
 | `ref.bldg.breach_charge.scuttle_explosion_damage` | 500 | damage | | R-BLDG-293 | DEC-043 |
-| `ref.bldg.breach_charge.bot_route_retry_ticks` | 11 | ticks | 1 s | R-BLDG-294 | DEC-002 |
+| `ref.bldg.breach_charge.bot_route_retry_ticks` | 11 | ticks | nominal 1.0 s | R-BLDG-294 | DEC-002 |
 | `ref.bldg.breach_charge.bot_wall_search_wu` | 500 | wu | from any marker of the bot objective | R-BLDG-294 | — |
 | `ref.bldg.command_console.port_count` | 5 | ports | unlinked | R-BLDG-299 | — |
 | `ref.bldg.command_console.linked_port_count` | 3 | ports | linked to the Core Device | R-BLDG-299 | DEC-458 |
@@ -514,12 +514,10 @@ Every value is a reference tuning value that Species may adopt as its baseline (
 | `ref.bldg.launch_vessel.full_fuel` | 95 | fuel | Boarding at or above; Ignition strictly above | R-BLDG-329, R-BLDG-331 | — |
 | `ref.bldg.launch_vessel.refuel_gain` | 0.4 | fuel per second per intake | target rate factor | R-BLDG-330 | — |
 | `ref.bldg.launch_vessel.refuel_keep` | 0.99 | per tick | rate smoothing; the target weight is 0.01 | R-BLDG-330 | — |
-| `ref.bldg.launch_vessel.ignition_countdown` | 18 | countdown | replaced by the Ignition step | R-BLDG-331 | — |
-| `ref.bldg.launch_vessel.display_countdown` | 10 | countdown | PreLaunch and Countdown start value | R-BLDG-332, R-BLDG-333 | — |
+| `ref.bldg.launch_vessel.display_countdown` | 10 | countdown | PreLaunch and Countdown start value; in Countdown the countdown is 10 × the remaining ticks ÷ 200 | R-BLDG-332, R-BLDG-333, R-BLDG-334 | — |
 | `ref.bldg.launch_vessel.camera_shake` | 5 | shake | presentation | R-BLDG-332 | DEC-007 |
-| `ref.bldg.launch_vessel.prelaunch_ticks` | 101 | ticks | 10 s | R-BLDG-333 | DEC-002 |
-| `ref.bldg.launch_vessel.countdown_rate` | 0.5 | × dt | half rate | R-BLDG-334 | — |
-| `ref.bldg.launch_vessel.countdown_ticks` | 200 | ticks | 20 s of game time | R-BLDG-334 | DEC-002 |
+| `ref.bldg.launch_vessel.prelaunch_ticks` | 101 | ticks | nominal 10 s | R-BLDG-333 | DEC-002 |
+| `ref.bldg.launch_vessel.countdown_ticks` | 200 | ticks | nominal 20 s; the launch timer, counted down by 1 per tick; the displayed countdown runs from 10 to 0 at half the rate of game seconds | R-BLDG-333, R-BLDG-334 | DEC-002 |
 | `ref.bldg.launch_vessel.thrust_factor` | 2 | × √height | | R-BLDG-335 | DEC-241 |
 | `ref.bldg.launch_vessel.min_thrust` | 0.1 | wu/s | | R-BLDG-335 | — |
 | `ref.bldg.launch_vessel.wreck_decay_per_tick` | 0.1 | damage per tick | on top of the general decay: 1.33 per second | R-BLDG-336 | DEC-092 |
@@ -598,6 +596,7 @@ Each default is the behaviour that §2 specifies.
 - DEC-111 — values derived on flat terrain, Launch Vessel survival included (R-BLDG-326).
 - DEC-241 — numeric semantics: the carried structure's heave and the Launch Vessel thrust (R-BLDG-275, R-BLDG-335).
 - DEC-315 — level-design patterns: concentric Control Zones and duplicate Relic Spawn Zones (R-BLDG-259, R-BLDG-261).
+- DEC-327 — structure render-detail variants: the Core Device's glow blobs and the Launch Vessel's glow sprites and exhaust (R-BLDG-316, R-BLDG-338).
 - DEC-565 — silent gameplay events: lifting and carrying a Relic (R-BLDG-285).
 - DEC-860 — structure rule details: the carryable ownership tie, the Launch Vessel damage floor and its attacker picks (R-BLDG-275, R-BLDG-324, R-BLDG-325).
 - DEC-122 — bot actions outside the player command catalogue: the Siege bot's Breach Charge routes (R-BLDG-294).

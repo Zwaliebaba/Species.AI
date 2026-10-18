@@ -48,7 +48,6 @@ Troopers, Transports, Collectors and Builders release no Essence orb when they d
 | state | Birth (R-UNIT-307) | one of the states of R-UNIT-310 |
 | owner | the producer's actor handle | the actor that released it; read by the owner search |
 | nearby eggs | empty, count 0, search tick none | up to `ref.econ.crawler.egg_cache_max` (8) handles of Crawler eggs (R-UNIT-309) |
-| broken | unset | the broken marker (R-UNIT-308) |
 | holder | none | the Collector that holds it in Harvested or Collected |
 | timer | `ref.econ.orb.birth_ticks` (61 ticks) | the state timer, counting down (R-UNIT-311 to R-UNIT-315) |
 | hover | (0, 0, 0) | the wobble velocity in wu/s (R-UNIT-320) |
@@ -59,7 +58,7 @@ Troopers, Transports, Collectors and Builders release no Essence orb when they d
 
 **R-UNIT-307** (MUST) The start step of an orb sets its state to Birth and its timer to `ref.econ.orb.birth_ticks` (61 ticks, nominal 6.0 s); it then makes four simulation draws, one statement each, in this order: the phase from `ref.unit.essence_orb.wobble_phase_range` (U[0, 10)), then the x, y and z axis rates from `ref.econ.orb.wobble_rate_range` (U[0, 2)). It records the terrain height under the orb as its ground height and turns the structure push on. These draws belong to the spawn step that creates the orb, never to a constructor (DEC-652, [randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md) R-SIM-626).
 
-**R-UNIT-308** (MUST) An Essence orb carries a broken marker, unset at creation. The Collector and the Builder skip an orb whose marker is set when they search ([collector.md](collector.md), [builder.md](builder.md)). No rule in a match sets the marker, so every orb is unbroken and the test never excludes one; the break operation that would set it is outside the reference (DEC-871, Dropped).
+**R-UNIT-308** (removed: no rule of a match breaks an Essence orb, so an orb carries no broken marker and no search tests one; DEC-871, Dropped)
 
 **R-UNIT-309** (MUST) An orb answers the question "which Crawler eggs are near me" from its nearby-egg list. When asked, it rebuilds the list if `ref.unit.essence_orb.egg_search_ticks` (30 ticks, nominal 3.0 s) have passed since its last rebuild, or if it has never built one: the list then holds up to `ref.econ.crawler.egg_cache_max` (8) dormant Crawler eggs that rest on the ground within `ref.econ.crawler.egg_cache_range_wu` (60 wu, measured horizontally) of the orb. Crawlers use the list to choose orbs ([README.md](README.md), [population flow](../05_population_flow.md) R-ECON-083).
 
@@ -299,7 +298,8 @@ Keys cited from other documents (their values are defined there):
 | DEC | Title | Default specified in §2 |
 |---|---|---|
 | DEC-080 | Collector collection of any team's Essence orbs | no taker tests an orb's team (R-UNIT-325) |
+| DEC-084 | Hive Essence orbs and Hive ants | the Rogue faction creates no orb (R-UNIT-303) |
 | DEC-305 | Essence Grove orbs of team slots not in play | such orbs behave like every other orb (R-UNIT-305) |
 | DEC-307 | Essence orbs held by a removed Collector | Collected orbs float again; Harvested orbs stay stranded (R-UNIT-316, R-UNIT-327) |
 | DEC-455 | Same-tick advance of objects created or handed over during a tick | slot-order same-tick advance (§5 item 9) |
-| DEC-871 | Essence orb break operation (Dropped) | no match breaks an orb, so the broken marker stays clear (R-UNIT-308) |
+| DEC-871 | Essence orb break operation (Dropped) | no match breaks an orb, so an orb carries no broken marker |

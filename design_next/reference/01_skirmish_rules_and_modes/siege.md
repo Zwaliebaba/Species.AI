@@ -38,7 +38,7 @@ Siege is one-sided. The defenders own the Core Device, a bomb whose countdown is
 
 When the Core Device detonates, the Siege result is fixed and Command Console capture is no longer evaluated (DEC-075).
 
-**R-MODE-360** (MUST) Recording a defence time t for team d: the best defence time becomes the smaller of itself and t (t itself when none); the round is finished; the victory timer is set to `ref.mode.siege.victory_delay_multi_ticks` (151 ticks, 15 s) in multi-round Siege or `ref.mode.siege.victory_delay_single_ticks` (101 ticks, 10 s) in a single round; and d's defence time record becomes t. Defence times are in mode seconds, and so is every "defended for" display.
+**R-MODE-360** (MUST) Recording a defence time t for team d: the best defence time becomes the smaller of itself and t (t itself when none); the round is finished; the victory timer is set to `ref.mode.siege.victory_delay_multi_ticks` (151 ticks, nominal 15 s) in multi-round Siege or `ref.mode.siege.victory_delay_single_ticks` (101 ticks, nominal 10 s) in a single round; and d's defence time record becomes t. Defence times are in mode seconds, and so is every "defended for" display.
 
 **R-MODE-361** (MUST) The victory timer decreases by 1 tick on every post-grace tick (README R-MODE-037 step 5).
 
@@ -61,9 +61,9 @@ When the Core Device detonates, the Siege result is fixed and Command Console ca
 
 **R-MODE-368** (MUST) Every Siege map enables Transit Gate waves by its gate reinforcement count (60 to 100 Workers per gate per wave on the reference maps), every 60 mode seconds from post-grace tick 0. Per-side counts are possible but unused; Transports come only where the map sets a Transport cap; there are no reinforcement turrets; one map gives each defending team an airstrike power per wave, and its defending gates then grant no Transport ([reference/05](../05_population_flow.md) R-ECON-099 to R-ECON-103).
 
-**R-MODE-369** (MUST) Each defending team has the map's defender cap (200 to 350 on the reference maps), and the attackers share (map cap − defenders × defender cap) ÷ attackers (550 to 1,725); a map with no defender cap uses map cap ÷ open slots for both sides (DEC-079).
+**R-MODE-369** (MUST) Each defending team has the map's defender cap (200 to 350 on the reference maps), and the attackers share (map cap − defenders × defender cap) ÷ attackers, by integer division (550 to 1,725; [reference/05](../05_population_flow.md) R-ECON-052 rule 2); with an unlimited map cap the attackers have no share and the Population Limiter fallback decides for them (R-ECON-052 rule 2); a map with no defender cap uses map cap ÷ open slots for both sides (DEC-079).
 
-**R-MODE-370** (MUST) In Siege the rocket turret and Abductor outcomes are invalid; the Collector, Builder and Spawn Surge outcomes are invalid on maps without Spawn Nodes, which is every reference Siege map; the Transport outcome is invalid on a map with a Transport cap; and the map's excluded outcomes never drop (DEC-107; [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md)).
+**R-MODE-370** (MUST) In Siege the rocket turret and Abductor outcomes are invalid; the Collector, Builder and Spawn Surge outcomes are invalid on maps without Spawn Nodes, which is every reference Siege map; the Transport outcome is invalid on a map with a numeric Transport cap of 1 or more (R-CRATE-125, DEC-120); and the map's excluded outcomes never drop (DEC-107; [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md)).
 
 **R-MODE-371** (MUST) Bots follow the objective chains with diffusion priorities; attacking bots dispatch every Worker once per main cycle, every `ref.bot.cycle.period_siege` (30 ticks) for Easy and Standard bots and every `ref.bot.cycle.period_hard` (11 ticks) at Hard ([reference/07](../07_bots/03_decision_loop_and_leaders.md) R-BOT-075, [mode strategies](../07_bots/05_mode_strategies_and_tutorials.md) R-BOT-146); bots form no Leader formations and route through Breach Charge gaps ([reference/07](../07_bots/README.md)).
 
@@ -71,7 +71,7 @@ When the Core Device detonates, the Siege result is fixed and Command Console ca
 
 **R-MODE-372** (MUST) The scoreboard is titled `mode.siege.hud.title` and ordered by defence-time record. A defender's line is `mode.siege.hud.defend`; an attacker's is `mode.siege.hud.attack`, or `mode.siege.hud.defended_for` with minutes:seconds once the slot has a defence time record. After a round end the round overlay shows, in multi-round Siege, `mode.siege.hud.round_defended` in the defenders' colour and, while the victory timer has less than `ref.mode.siege.next_round_display` (110 ticks, DEC-859 item 5) left, `mode.siege.hud.next_round` with the seconds left; in a single round with a winner, R-MODE-363's side line in co-op or `mode.siege.hud.team_wins` outside it. The Core Device shows rising glow and, in the last `ref.bldg.core_device.countdown_display_mode_seconds` (10 mode seconds), a countdown screen ([reference/03](../03_buildings_and_world_objects/mode_objects.md) R-BLDG-316); its presence loop uses `sfx.building.launch_vessel.flight` and its pulse wave `fx.beam_long`.
 
-**R-MODE-373** (MUST) At game over a single-round Siege shows only the title, with no winner line and no score list (README R-MODE-068). The hints `help.hint.siege_attack`, `help.hint.siege_defend`, `help.hint.siege_core_device`, `help.hint.siege_breach_charge` and `help.hint.siege_spawn_nodes` explain the mode.
+**R-MODE-373** (MUST) At game over a single-round Siege shows only the title, with no winner line and no score list (README R-MODE-068). The mode's objective cards are hooks only and draw nothing in a match ([reference/11](../11_tutorial_and_help.md) R-TUT-013, DEC-050).
 
 **R-MODE-374** (MUST) The Iron Defence hook fires only for a defending local team whose side owned every objective on every checked tick; no achievement is awarded (DEC-047).
 
@@ -110,8 +110,8 @@ The Core Device, Command Console, pulse wave and explosion values are owned by [
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
 | `ref.mode.siege.defence_check_delay` | 100 | ticks | 10.0 s after post-grace tick 0, strictly more | R-MODE-358 | DEC-009 |
-| `ref.mode.siege.victory_delay_single_ticks` | 101 | ticks | 10 s | R-MODE-360, R-MODE-367 | DEC-002, DEC-066 |
-| `ref.mode.siege.victory_delay_multi_ticks` | 151 | ticks | 15 s | R-MODE-360 | DEC-002, DEC-066 |
+| `ref.mode.siege.victory_delay_single_ticks` | 101 | ticks | nominal 10 s | R-MODE-360, R-MODE-367 | DEC-002, DEC-066 |
+| `ref.mode.siege.victory_delay_multi_ticks` | 151 | ticks | nominal 15 s | R-MODE-360 | DEC-002, DEC-066 |
 | `ref.mode.siege.fade_out_ticks` | 10 | ticks | multi-round: the fade-out starts at this much victory delay left | R-MODE-362 | DEC-066, DEC-859 |
 | `ref.mode.siege.next_round_display` | 110 | ticks | multi-round: the next-round countdown shows below this much delay left | R-MODE-372 | DEC-066, DEC-859 |
 | `ref.mode.siege.round_fade_in` | 1.0 | s of real time | presentation | R-MODE-366 | DEC-066 |
@@ -154,7 +154,7 @@ String ids that this file uses, with their new text:
 ## 7 Dependencies
 
 - **Reference documents:** [README](README.md); [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) (Core Device, Command Console, Breach Charge, Transit Gate); [03 Defences and props](../03_buildings_and_world_objects/defences_and_props.md) (walls, Barrier Emitters, turrets); [03 Economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md) (Solar Array knock-out); [04 Weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) (pulse wave); [05 Population flow](../05_population_flow.md); [07 Bots](../07_bots/README.md); [12 Match lifecycle](../12_simulation_model/02_match_lifecycle_and_state_reset.md).
-- **Assets:** `mapfile.siege`, `mesh.structure.core_device`, `mesh.structure.command_console`, `mesh.structure.command_console_linked`, `mesh.structure.breach_charge`, `sfx.building.command_console.presence_loop`, `sfx.building.launch_vessel.flight`, `fx.beam_long`, `help.hint.siege_attack`, `help.hint.siege_defend`, `help.hint.siege_core_device`, `help.hint.siege_breach_charge`, `help.hint.siege_spawn_nodes`.
+- **Assets:** `mapfile.siege`, `mesh.structure.core_device`, `mesh.structure.command_console`, `mesh.structure.command_console_linked`, `mesh.structure.breach_charge`, `sfx.building.command_console.presence_loop`, `sfx.building.launch_vessel.flight`, `fx.beam_long`.
 
 ## 8 Open decisions
 
@@ -164,5 +164,6 @@ String ids that this file uses, with their new text:
 - DEC-459 — a Core Device with no linked Command Console (R-MODE-359).
 - DEC-859 — the tick counts of the multi-round fade-out and next-round display (R-MODE-362, R-MODE-372).
 - DEC-047 — the Iron Defence hook (R-MODE-374).
+- DEC-050 — the objective cards, hooks only (R-MODE-373).
 
-Resolved decisions applied: DEC-002, DEC-009, DEC-016, DEC-034, DEC-075, DEC-079, DEC-107, DEC-124, DEC-261, DEC-458, DEC-464.
+Resolved decisions applied: DEC-002, DEC-009, DEC-016, DEC-034, DEC-075, DEC-079, DEC-107, DEC-120, DEC-124, DEC-261, DEC-458, DEC-464.

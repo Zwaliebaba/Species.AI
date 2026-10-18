@@ -54,7 +54,7 @@ Table 2.2-A The outcome catalogue. "Good", "Bad", "Start" and "Comeback" give me
 | 1 | Strike team (outcome) | `CrateOutcome::StrikeTeam` | basic | yes | — | yes | — | Power: Strike team |
 | 2 | Collector (outcome) | `CrateOutcome::Collector` | advanced | yes, while a Spawn Node exists | — | yes | — | Power: Collector |
 | 3 | Builder (outcome) | `CrateOutcome::Builder` | basic | yes, while a Spawn Node exists | — | yes | — | Power: Builder |
-| 4 | Transport (outcome) | `CrateOutcome::Transport` | basic | yes, except in Launch Race and on a map with a Transport cap | — | yes | — | Power: Transport |
+| 4 | Transport (outcome) | `CrateOutcome::Transport` | basic | yes, except in Launch Race and on a map with a numeric Transport cap of 1 or more | — | yes | — | Power: Transport |
 | 5 | airstrike | `CrateOutcome::Airstrike` | basic | yes | — | yes | yes, twice | Power: airstrike, standard bombs |
 | 6 | Missile Barrage | `CrateOutcome::MissileBarrage` | advanced | yes | — | yes | — | Power: Missile Barrage |
 | 7 | Reinforcements | `CrateOutcome::Reinforcements` | basic | yes | — | — | — | immediate, at the crate |
@@ -85,7 +85,7 @@ Table 2.2-A The outcome catalogue. "Good", "Bad", "Start" and "Comeback" give me
 
 **R-CRATE-008** (MUST) The basic outcomes are exactly the `ref.crate.outcome.basic_count` (7) outcomes Strike team, Builder, Transport, airstrike, Reinforcements, gun turret and Essence Grove. The other 24 outcomes are advanced; the Collector outcome is advanced although it delivers a unit.
 
-**R-CRATE-009** (MUST) The Rift Horror outcome and the inactive duel-vehicle and formation-size rewards are not part of the catalogue (DEC-057), and no Power kind without a targeting behaviour exists (DEC-552).
+**R-CRATE-009** (MUST) Outcomes that no reference match can yield are not part of the catalogue (DEC-057), and no Power kind without a targeting behaviour exists (DEC-552).
 
 **R-CRATE-010** (MUST) A **forced outcome** replaces the outcome draw of one Supply crate. Only a tutorial step forces an outcome ([reference/11](../11_tutorial_and_help.md)); its forced outcomes are the airstrike and the Transport. A forced outcome is always delivered as a good outcome to the opening team, by the delivery of table 2.2-A, also for an outcome outside the good pool. The Sickness outcome has no good delivery, and the content build rejects a tutorial step that forces it (DEC-015).
 
@@ -106,7 +106,7 @@ A good outcome is delivered to the opening team. A bad outcome is always immedia
 
 ### 2.4 Power slots
 
-**R-CRATE-014** (MUST) Each team has `ref.power.slots.capacity` (6) Power slots, and `ref.power.slots.capacity_eliminated` (2) while it counts as eliminated for the Comeback Bonus ([reference/05](../05_population_flow.md) R-ECON-113). In a match the capacity ignores every research level (DEC-033), so the research-level icons `icon.power.slots_upgrade` (the Power-slots level) and `icon.power.laser` (the laser level) are drawn by no rule of a match (DEC-115). Every Power in the Idle, Waiting or Running state occupies one slot, the bot-only promotion Power included (R-CRATE-036).
+**R-CRATE-014** (MUST) Each team has `ref.power.slots.capacity` (6) Power slots, and `ref.power.slots.capacity_eliminated` (2) while it counts as eliminated for the Comeback Bonus ([reference/05](../05_population_flow.md) R-ECON-113). The capacity is fixed for the whole match (DEC-033). Every Power in the Idle, Waiting or Running state occupies one slot, the bot-only promotion Power included (R-CRATE-036).
 
 **R-CRATE-015** (MUST) A Power granted while every slot is occupied is lost, and the owning player sees the no-overwrite message `ui.power_slots.full`. The same message is also shown when a grant fills the last free slot. A Comeback grant with no free slot is not made at all (R-CRATE-138).
 
@@ -292,7 +292,7 @@ Caption: Figure 3-2, from grant to slot release (R-CRATE-015 to R-CRATE-020).
 |---|---|---|---|---|---|
 | `ref.crate.outcome.count` | 31 | outcomes | the catalogue of table 2.2-A | R-CRATE-007 | DEC-021, DEC-057 |
 | `ref.crate.outcome.basic_count` | 7 | outcomes | Strike team, Builder, Transport, airstrike, Reinforcements, gun turret, Essence Grove | R-CRATE-008 | DEC-021 |
-| `ref.power.slots.capacity` | 6 | Power slots | per team; research has no effect in a match | R-CRATE-014 | DEC-033 |
+| `ref.power.slots.capacity` | 6 | Power slots | per team | R-CRATE-014 | DEC-033 |
 | `ref.power.slots.capacity_eliminated` | 2 | Power slots | while the team counts as eliminated for the Comeback Bonus | R-CRATE-014 | DEC-033 |
 | `ref.power.lifetime.buff_ticks` | 300 | ticks | 30 s; Shield, Speed Boost, Convert and Fury | R-CRATE-019 | DEC-002 |
 | `ref.power.stop.damage` | 1000 | health | the Transport's health change when its Power stops | R-CRATE-020 | DEC-551 |
@@ -367,7 +367,7 @@ New player-facing text of this folder. `{team}` is the team's name and `{turret}
 | `crate.turret_flame.tooltip` | Flame turret: place a turret. Man its ports with Workers to fire fireballs. |
 | `crate.firebomb_run.tooltip` | Firebomb Run: pick a target point. Bombers drop firebombs that set Workers and trees alight. |
 
-The Power slots messages `ui.power_slots.ready`, `ui.power_slots.not_available`, `ui.power_slots.cancelled`, `ui.power_slots.unlocked`, `ui.power_slots.improved`, `ui.power_slots.full` and `ui.power_slots.comeback_full` (CONVENTIONS §8.10) are shown by the Power slots panel ([reference/06](../06_controls_camera_and_commands/README.md)); this folder fires `ui.power_slots.full` (R-CRATE-015) and `ui.power_slots.comeback_full` (R-CRATE-138).
+The Power slots messages `ui.power_slots.ready`, `ui.power_slots.not_available`, `ui.power_slots.cancelled`, `ui.power_slots.full` and `ui.power_slots.comeback_full` (CONVENTIONS §8.10) are shown by the Power slots panel ([reference/06](../06_controls_camera_and_commands/README.md)); this folder fires `ui.power_slots.full` (R-CRATE-015) and `ui.power_slots.comeback_full` (R-CRATE-138).
 
 ### 4.3 Keys cited here and defined elsewhere
 
@@ -417,7 +417,7 @@ The Power slots messages `ui.power_slots.ready`, `ui.power_slots.not_available`,
 
 - **Reference documents:** [crates and powers](crates_and_powers.md); [weapons and projectiles](weapons_and_projectiles.md); [reference/01](../01_skirmish_rules_and_modes/README.md) (the basic-outcomes option, the turret-cap rule R-MODE-077, the HUD timers); [reference/02 units](../02_units/README.md), [strike_team.md](../02_units/strike_team.md), [transport.md](../02_units/transport.md), [collector.md](../02_units/collector.md), [builder.md](../02_units/builder.md), [worker.md](../02_units/worker.md) (the units and Worker links that Powers create); [hazards and projectiles](../02_units/hazards_and_projectiles.md); [defences and props](../03_buildings_and_world_objects/defences_and_props.md) (exclusion zones, turrets); [reference/05](../05_population_flow.md) (elimination for the Comeback Bonus, starting-power lock, map starting units as Powers); [reference/06](../06_controls_camera_and_commands/README.md) (the Power slots panel, markers, aiming and cancelling); [reference/07](../07_bots/README.md) (bot use of Powers); [reference/08](../08_maps_and_level_design/README.md) (the exclusion list in the map schema and editor); [reference/10](../10_audio_design/README.md) (outcome sounds); [reference/11](../11_tutorial_and_help.md) (forced outcomes); [reference/12](../12_simulation_model/README.md) (slices, draws, match state).
 - **Engine components:** [data schemas](../../architecture/components/data_schemas/README.md) (the map's excluded outcomes; the outcome catalogue, DAT-264); [UI framework](../../architecture/components/ui_framework/README.md) (the Power slots panel, ADR-032); [audio engine](../../architecture/components/audio_engine/README.md).
-- **Assets:** the outcome icons `icon.power.strike_team`, `icon.power.collector`, `icon.power.builder`, `icon.power.transport`, `icon.power.airstrike`, `icon.power.missile_barrage`, `icon.power.workers`, `icon.power.shield`, `icon.power.convert`, `icon.power.speed_boost`, `icon.power.gun_turret`, `icon.power.swarm`, `icon.power.essence_grove`, `icon.power.allegiance_scrambler`, `icon.power.hive`, `icon.power.sickness`, `icon.power.brood`, `icon.power.meteor_shower`, `icon.power.blight_grove`, `icon.power.fury`, `icon.power.spitter_plants`; the Power slots panel art `icon.hud.slot_empty`, `icon.hud.slot_discard`, `icon.hud.icon_halo`, `icon.hud.transport_state`, `icon.power.slots_upgrade`, `icon.power.leader`, `icon.power.grenade`, `icon.power.rocket`, `icon.power.laser`, `marker.team_disc`, `uitex.panel_accent`, `uitex.panel_neutral`, `glyph.key.tab`, `glyph.pad.shoulder_left`; the cursors `cursor.select`, `cursor.highlight`, `cursor.place`; the outcome sounds of table 2.6-A; the Power slots sounds `sfx.ui.power_input.begin`, `sfx.ui.power_input.confirm`, `sfx.ui.power_slots.discard`, `sfx.ui.power_slots.icon_hover`.
+- **Assets:** the outcome icons `icon.power.strike_team`, `icon.power.collector`, `icon.power.builder`, `icon.power.transport`, `icon.power.airstrike`, `icon.power.missile_barrage`, `icon.power.workers`, `icon.power.shield`, `icon.power.convert`, `icon.power.speed_boost`, `icon.power.gun_turret`, `icon.power.swarm`, `icon.power.essence_grove`, `icon.power.allegiance_scrambler`, `icon.power.hive`, `icon.power.sickness`, `icon.power.brood`, `icon.power.meteor_shower`, `icon.power.blight_grove`, `icon.power.fury`, `icon.power.spitter_plants`; the Power slots panel art `icon.hud.slot_empty`, `icon.hud.icon_halo`, `icon.hud.transport_state`, `icon.power.leader`, `marker.team_disc`, `uitex.panel_accent`, `uitex.panel_neutral`, `glyph.key.tab`, `glyph.pad.shoulder_left`; the cursors `cursor.highlight`, `cursor.place`; the outcome sounds of table 2.6-A; the Power slots sounds `sfx.ui.power_input.begin`, `sfx.ui.power_input.confirm`, `sfx.ui.power_slots.discard`, `sfx.ui.power_slots.icon_hover`.
 
 ## 8 Open decisions
 
@@ -426,6 +426,5 @@ The Power slots messages `ui.power_slots.ready`, `ui.power_slots.not_available`,
 - DEC-556 — Power slot order (R-CRATE-016).
 - DEC-452 — Comeback Bonus pool and the map's excluded outcomes (R-CRATE-030).
 - DEC-858 — Empty outcome lists: an empty draw grants nothing (R-CRATE-003).
-- DEC-115 — Fixed match research levels: no research-level icon is drawn in a match (R-CRATE-014).
 
 Resolved decisions applied here: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-011, DEC-013, DEC-014, DEC-015, DEC-021, DEC-033, DEC-039, DEC-092, DEC-107, DEC-652, DEC-653. Dropped: DEC-057, DEC-552.

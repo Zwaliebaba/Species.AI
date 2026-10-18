@@ -60,7 +60,7 @@ A Relic therefore appears ⌈countdown⌉ + 1 mode seconds after the countdown i
 
 ### 2.5 HUD and end of match
 
-**R-MODE-314** (MUST) The score line is the generic score line (README R-MODE-065) with the delta replaced by the number of Relics the team owns now, always shown. The game-over list shows name and score. The hints `help.hint.relic_run_lift` and `help.hint.relic_run_capture` explain lifting and delivering.
+**R-MODE-314** (MUST) The score line is the generic score line (README R-MODE-065) with the delta replaced by the number of Relics the team owns now, always shown. The game-over list shows name and score. The mode's objective cards are hooks only and draw nothing in a match ([reference/11](../11_tutorial_and_help.md) R-TUT-013, DEC-050).
 
 **R-MODE-315** (MUST) The Stockpiler hook fires only for a win at time-up by the local team over both thresholds; no achievement is awarded (DEC-047).
 
@@ -141,12 +141,13 @@ String ids that this file uses, with their new text:
 ## 7 Dependencies
 
 - **Reference documents:** [README](README.md); [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) (Relic, Relic Base, Relic Spawn Zone); [02 Worker](../02_units/worker.md) (lifting); [04 Supply crates](../04_supply_crates_powers_and_weapons/crates_and_powers.md); [07 Bots](../07_bots/README.md); [11 Tutorial and help](../11_tutorial_and_help.md).
-- **Assets:** `mapfile.relic_run`, `mesh.relic.variant`, `marker.relic`, `help.hint.relic_run_lift`, `help.hint.relic_run_capture`, `sfx.building.relic.spawn`, `sfx.building.relic.owner_changed`, `sfx.building.relic.drop`, `sfx.building.control_zone.relic_scored`, `sfx.building.control_zone.relic_scored_b`, `sfx.building.control_zone.relic_scored_c`, `sfx.unit.worker.lift_relic`.
+- **Assets:** `mapfile.relic_run`, `mesh.relic.variant`, `marker.relic`, `sfx.building.relic.spawn`, `sfx.building.relic.owner_changed`, `sfx.building.relic.drop`, `sfx.building.control_zone.relic_scored`, `sfx.building.control_zone.relic_scored_b`, `sfx.building.control_zone.relic_scored_c`, `sfx.unit.worker.lift_relic`.
 
 ## 8 Open decisions
 
 - DEC-315 — duplicate Relic Spawn Zones (R-MODE-313).
 - DEC-850 — exact division in the Relic spawn window (R-MODE-306).
 - DEC-047 — the Stockpiler hook (R-MODE-315).
+- DEC-050 — the objective cards, hooks only (R-MODE-314).
 
 Resolved decisions applied: DEC-002, DEC-016, DEC-064, DEC-079, DEC-082.

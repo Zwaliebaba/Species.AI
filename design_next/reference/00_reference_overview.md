@@ -44,7 +44,7 @@ The table lists the mechanics that give the reference its character, with the ro
 | Ready-up barrier | World frozen; a 30-tick countdown once every human is ready, restarted if anyone withdraws readiness | Every participant starts from the same state | [01](01_skirmish_rules_and_modes/README.md) |
 | Leaver replaced by a bot | A human who leaves during a match is replaced by a bot at once | No slot goes dead | [01](01_skirmish_rules_and_modes/README.md) |
 | Bots | Node graph, priority fields, a dispatcher in which only friendly nodes release troops, Leader conveyors, one handler per power, one strategy per mode; difficulty is tempo (200, 101 or 11 ticks) and randomness (100 %, 50 % or 0 %); perfect information and no other advantage | Fair-feeling opponents | [07](07_bots/README.md) |
-| Lobby option set and per-map overrides | 38 option definitions; map options for reinforcements, Transports, turrets, instant capture, Beam Dish rules, the Visitor faction, the airstrike threshold, excluded Supply crate outcomes and population caps | The tuning surface of every mode | [01](01_skirmish_rules_and_modes/README.md), [08](08_maps_and_level_design/rules_and_conventions.md) |
+| Lobby option set and per-map overrides | 38 option definitions in the six mode schemas; map options for reinforcements, Transports, turrets, instant capture, Beam Dish rules, the Visitor faction, the airstrike threshold, excluded Supply crate outcomes and population caps | The tuning surface of every mode | [01](01_skirmish_rules_and_modes/README.md), [08](08_maps_and_level_design/rules_and_conventions.md) |
 | Start positions remapped at load | A map's team column is a map position, remapped to the match teams at load; one map serves 2 to 4 players | Map reuse | [03](03_buildings_and_world_objects/README.md), [08](08_maps_and_level_design/rules_and_conventions.md) |
 | Free camera | Cursor-follow pan at 250 wu/s (1,000 wu/s with the speed modifier); zoom narrows the field of view from 60° to 15°; one camera view per player slot at match start | A readable view of the crowd | [06](06_controls_camera_and_commands/README.md) |
 | Visual language | Flat facets, additive glow on black, darkening layers, black fog, 8 team colours, sprite cards scaled with distance | A distinctive look at crowd scale | [renderer visual language](../architecture/components/renderer/visual_language.md) |
@@ -83,7 +83,7 @@ Every concept a player meets, in Species terms. The [glossary](../glossary/a_to_
 
 | Term | What it is for the player | Defined in |
 |---|---|---|
-| Strike team | 3 directly controlled Troopers with lasers and grenades that live 600 ticks | [02](02_units/strike_team.md) |
+| Strike team | 3 directly controlled Troopers with lasers and grenades that live 601 ticks (nominal 60 s) | [02](02_units/strike_team.md) |
 | Transport | A troop carrier that loads and unloads Workers | [02](02_units/transport.md) |
 | Collector | A flying collector that turns any team's Essence orbs into Workers of its own team, within that team's population cap (DEC-080) | [02](02_units/collector.md) |
 | Builder | A hovering Essence-orb collector that carries the orbs it collects to the nearest friendly Spawn Node, where each becomes a Worker (DEC-085) | [02](02_units/builder.md) |
@@ -123,7 +123,7 @@ The 31 outcomes fall into the nine families of Table 2 (§2.14).
 
 - Distances are in world units (`wu`). Simulation durations are in ticks; seconds are derived display values at normal game speed. The reference tick rate is defined in [reference/12](12_simulation_model/README.md).
 - The values in this overview restate the values of the owning documents and cite the owning document's tuning key; §4 lists the cited keys by owner and defines keys only for the figures that no other document defines. A difference between a value here and its owner's value is a defect of this overview.
-- Player-facing text is new text keyed by Species string ids; this overview names an id only where the ledger already defines it.
+- Player-facing text is new text keyed by Species string ids; this overview names only string ids that the owning documents define, with their text.
 
 ## 2 Rules
 
@@ -131,11 +131,11 @@ The 31 outcomes fall into the nine families of Table 2 (§2.14).
 
 **R-VIS-001** (MUST) The reference has no build queue and no currency. A team's army is the population of Workers that the Spawn Nodes it holds produce, plus the special units it receives as granted powers (R-VIS-092); territory creates the army and combat destroys it (see DEC-001).
 
-**R-VIS-002** (MUST) A Spawn Node is captured by a single team with at least `ref.econ.spawn_node.capture_min_operators` (3) operators on its `ref.econ.spawn_node.port_count` (5) ports and no enemy on any port, starts producing `ref.econ.spawn_node.activation_ticks` (300 ticks) after an ownership change, and produces in bursts and pauses up to the team's population cap, as R-VIS-060 to R-VIS-066 state (DEC-001, DEC-018).
+**R-VIS-002** (MUST) A Spawn Node is captured by a single team with at least `ref.econ.spawn_node.capture_min_operators` (3) operators on its `ref.econ.spawn_node.port_count` (5) ports and no enemy on any port, starts producing `ref.econ.spawn_node.activation_ticks` (300 ticks) after an ownership change, and produces in bursts and pauses up to the team's population cap, as R-VIS-060 to R-VIS-066 state (reference/05 R-ECON-012, R-ECON-019 to R-ECON-021, R-ECON-024, R-ECON-029; DEC-001, DEC-018).
 
 **R-VIS-003** (MUST) Workers fight and re-plan on their own. The player steers crowds, never single Workers, and promotes Workers to Leaders that act as Waypoint beacons and formation leaders (R-VIS-090, R-VIS-110 to R-VIS-112; DEC-030, DEC-031).
 
-**R-VIS-004** (MUST) Supply crates open to outcomes that are `ref.crate.open.good_share` (90 %) beneficial and 10 % hostile, and beneficial outcomes feed the `ref.power.slots.capacity` (6) Power slots of a team (R-VIS-077, R-VIS-078; DEC-021, DEC-033).
+**R-VIS-004** (MUST) Supply crates open to outcomes that are `ref.crate.open.good_share` (90 %) beneficial and 10 % hostile, and beneficial outcomes feed the `ref.power.slots.capacity` (6) Power slots of a team (R-VIS-077, R-VIS-078; reference/04 R-CRATE-014, R-CRATE-121, R-CRATE-128; DEC-021, DEC-033).
 
 **R-VIS-005** (MUST) The six match modes share one rules skeleton and differ only in their territory unit and their score (R-VIS-130, R-VIS-131; DEC-017).
 
@@ -143,7 +143,7 @@ The 31 outcomes fall into the nine families of Table 2 (§2.14).
 
 **R-VIS-007** (MUST) Every rule and value that a reference document states is the reference behaviour, and no requirement depends on a comparison with another edition or build of the reference (DEC-005). Every reference tuning value is kept as the starting tuning baseline (DEC-004). A reference behaviour that looks accidental and that no Resolved decision corrects is specified as an explicit rule with a named tuning key or constant (DEC-006).
 
-**R-VIS-008** (MUST) The look is flat-shaded facets with additive glow on a black background, darkening layers and black fog, `ref.sim.team.player_colour_count` (8) team colours, and small figures drawn as camera-facing sprite cards that scale with distance. All art is authored new (DEC-029).
+**R-VIS-008** (MUST) The look is flat-shaded facets with additive glow on a black background, darkening layers and black fog, `ref.sim.team.player_colour_count` (8) team colours, and small figures drawn as camera-facing sprite cards that scale with distance. All art is authored new (renderer visual language RND-390, RND-411, RND-412, RND-418, RND-421, RND-426, RND-429; reference/12 R-SIM-415; DEC-029).
 
 **R-VIS-009** (MUST) Game rules fire (source, event) pairs and data decides what plays: each pair resolves to layered sound blocks with friend and foe variants, sample groups, generative looping ambience and an ambience crossfade driven by camera altitude (DEC-027).
 
@@ -151,23 +151,23 @@ The 31 outcomes fall into the nine families of Table 2 (§2.14).
 
 **R-VIS-010** (MUST) The reference has exactly `ref.vis.scope.mode_count` (6) match modes, listed here in the reference enumeration order: Spawn Control, Zone Control, Relic Run, Siege, Launch Race and Flag Chain. A seventh, debug-only mode is not specified (DEC-058).
 
-**R-VIS-011** (MUST) **Spawn Control.** Teams own Spawn Nodes. A team that owns none for `ref.mode.spawn_control.elimination_mode_seconds` (30 mode seconds, 330 ticks) is eliminated. The match ends when one team is left standing, or on score at time-up. The time-limit option `ref.mode.spawn_control.option.time_limit` runs from 0 to 60 match-clock minutes with a default of 10, and 0 means no time limit. Play is free-for-all for 2 to 4 players, with 2v2 co-op on the maps that allow it. Complexity label: simple.
+**R-VIS-011** (MUST) **Spawn Control.** Teams own Spawn Nodes. A team that owns none for `ref.mode.spawn_control.elimination_mode_seconds` (30 mode seconds, 330 ticks) is eliminated. The match ends when one team is left standing, or on score at time-up. The time-limit option `ref.mode.spawn_control.option.time_limit` runs from 0 to 60 match-clock minutes with a default of 10, and 0 means no time limit. Play is free-for-all for 2 to 4 players, with 2v2 co-op on the maps that allow it. Complexity label: simple (reference/01 R-MODE-029, R-MODE-074, R-MODE-200, R-MODE-202, R-MODE-204, R-MODE-205, R-MODE-207).
 
-**R-VIS-012** (MUST) **Zone Control.** Teams hold Control Zones. The match ends on score at time-up and never by elimination. The time-limit option `ref.mode.zone_control.option.time_limit` runs from 1 to 60 match-clock minutes with a default of 5. Play is free-for-all for 2 to 4 players, with 2v2 co-op on the maps that allow it. Complexity label: simple.
+**R-VIS-012** (MUST) **Zone Control.** Teams hold Control Zones. The match ends on score at time-up and never by elimination. The time-limit option `ref.mode.zone_control.option.time_limit` runs from 1 to 60 match-clock minutes with a default of 5. Play is free-for-all for 2 to 4 players, with 2v2 co-op on the maps that allow it. Complexity label: simple (reference/01 R-MODE-029, R-MODE-074, R-MODE-250, R-MODE-253, R-MODE-257).
 
-**R-VIS-013** (MUST) **Relic Run.** Teams carry Relics into their own Relic Base, for `ref.mode.relic_run.points_per_delivery` (1 point) per delivery. The match ends on score at time-up. The time-limit option `ref.mode.relic_run.option.time_limit` runs from 1 to 60 match-clock minutes with a default of 10. Play is free-for-all for 2 to 4 players, with co-op on the map that allows it. Complexity label: medium.
+**R-VIS-013** (MUST) **Relic Run.** Teams carry Relics into their own Relic Base, for `ref.mode.relic_run.points_per_delivery` (1 point) per delivery. The match ends on score at time-up. The time-limit option `ref.mode.relic_run.option.time_limit` runs from 1 to 60 match-clock minutes with a default of 10. Play is free-for-all for 2 to 4 players, with co-op on the map that allows it. Complexity label: medium (reference/01 R-MODE-029, R-MODE-074, R-MODE-300, R-MODE-303, R-MODE-304, R-MODE-307, R-MODE-308).
 
 **R-VIS-014** (MUST) **Siege.** The attackers must capture every Command Console linked to the defenders' Core Device before it detonates. The match ends when the Core Device is destroyed, and the attackers win, or when it detonates, and the defenders win. Siege has no time-limit option: the Core Device's countdown, which the map sets to `ref.vis.mode.siege.core_device_timer` (900 or 1,200 mode seconds, about 990 or 1,320 s; [siege](01_skirmish_rules_and_modes/siege.md) R-MODE-351), is the longest a match can last. Play is 1v1, 1v2 or 2v2, and some maps force co-op. Complexity label: medium.
 
-**R-VIS-015** (MUST) **Launch Race.** Each team refuels its Launch Vessel through a fuel chain powered by Solar Arrays, loads `ref.bldg.launch_vessel.launch_passengers` (100) Workers and launches. The first Launch Vessel to climb above a height of `ref.mode.launch_race.win_height` (600 wu) wins. Launch Race has no time-limit option. Play is free-for-all for 2 to 4 players. Complexity label: hard.
+**R-VIS-015** (MUST) **Launch Race.** Each team refuels its Launch Vessel through a fuel chain powered by Solar Arrays, loads `ref.bldg.launch_vessel.launch_passengers` (100) Workers and launches. The first Launch Vessel to climb above a height of `ref.mode.launch_race.win_height` (600 wu) wins. Launch Race has no time-limit option. Play is free-for-all for 2 to 4 players. Complexity label: hard (reference/01 R-MODE-029, R-MODE-400, R-MODE-403, R-MODE-407, R-MODE-408, R-MODE-411; reference/03 R-BLDG-318).
 
-**R-VIS-016** (MUST) **Flag Chain.** A team eliminates an enemy by capturing a connected chain of Flag posts into that enemy's Home post. The match ends when one team is left standing, or at time-up on Flag posts held plus `ref.mode.flag_chain.elimination_points` (10) points per elimination. The time-limit option `ref.mode.flag_chain.option.time_limit` runs from 0 to 60 match-clock minutes with a default of 15, and 0 means no time limit. Play is free-for-all for 2 to 4 players. Complexity label: hard.
+**R-VIS-016** (MUST) **Flag Chain.** A team eliminates an enemy by capturing a connected chain of Flag posts into that enemy's Home post. The match ends when one team is left standing, or at time-up on Flag posts held plus `ref.mode.flag_chain.elimination_points` (10) points per elimination. The time-limit option `ref.mode.flag_chain.option.time_limit` runs from 0 to 60 match-clock minutes with a default of 15, and 0 means no time limit. Play is free-for-all for 2 to 4 players. Complexity label: hard (reference/01 R-MODE-029, R-MODE-074, R-MODE-450, R-MODE-458, R-MODE-461, R-MODE-463).
 
-**R-VIS-017** (MUST) A time-limit option counts minutes of the match clock, which advances once per mode second (R-VIS-051); a match-clock minute is therefore `ref.match.option.time_limit_unit` (60) mode seconds.
+**R-VIS-017** (MUST) A time-limit option counts minutes of the match clock, which advances once per mode second (R-VIS-051); a match-clock minute is therefore `ref.match.option.time_limit_unit` (60) mode seconds (reference/01 R-MODE-002, R-MODE-066, R-MODE-075).
 
 **R-VIS-018** (MUST) Match setup shows each mode's complexity label (simple, medium or hard) as R-VIS-011 to R-VIS-016 assign it, with the string ids `mode.complexity.simple`, `mode.complexity.medium` and `mode.complexity.hard` of reference/01 and reference/09.
 
-**R-VIS-019** (MUST) The match options comprise `ref.vis.scope.option_definitions` (38) option definitions, those of the six mode schemas ([01](01_skirmish_rules_and_modes/README.md) R-MODE-073), plus the lobby settings and the per-map overrides for reinforcements, Transports, turrets, instant capture, Beam Dish rules, the Visitor faction, the airstrike threshold, excluded Supply crate outcomes and population caps (DEC-017, DEC-073).
+**R-VIS-019** (MUST) The match options comprise `ref.vis.scope.option_definitions` (38) option definitions, those of the six mode schemas ([01](01_skirmish_rules_and_modes/README.md) R-MODE-073), plus the lobby settings and the per-map overrides for reinforcements, Transports, turrets, instant capture, Beam Dish rules, the Visitor faction, the airstrike threshold, excluded Supply crate outcomes and population caps (DEC-017, DEC-073). The reference defines one further option definition, the lives option of the debug-only mode, which is not specified (R-VIS-010, DEC-058).
 
 Table 1 summarises R-VIS-011 to R-VIS-016.
 
@@ -184,9 +184,9 @@ Table 1 summarises R-VIS-011 to R-VIS-016.
 
 ### 2.3 Scope: maps and player counts
 
-**R-VIS-020** (MUST) Match setup lists `ref.map.reference.map_count` (49) maps: `ref.map.reference.count.spawn_control` (9) for Spawn Control, `ref.map.reference.count.zone_control` (9) for Zone Control, `ref.map.reference.count.relic_run` (9) for Relic Run, `ref.map.reference.count.siege` (8) for Siege, `ref.map.reference.count.launch_race` (7) for Launch Race and `ref.map.reference.count.flag_chain` (7) for Flag Chain. Every map is authored new, and no reference map name, shape or layout is carried (DEC-063). Reference/08 owns the distribution of maps per mode and per player count.
+**R-VIS-020** (MUST) Match setup lists `ref.map.reference.map_count` (49) maps: `ref.map.reference.count.spawn_control` (9) for Spawn Control, `ref.map.reference.count.zone_control` (9) for Zone Control, `ref.map.reference.count.relic_run` (9) for Relic Run, `ref.map.reference.count.siege` (8) for Siege, `ref.map.reference.count.launch_race` (7) for Launch Race and `ref.map.reference.count.flag_chain` (7) for Flag Chain. Every map is authored new, and no reference map name, shape or layout is carried (reference/08 R-MAP-180; DEC-063). Reference/08 owns the distribution of maps per mode and per player count.
 
-**R-VIS-021** (MUST) By each map's declared player count, `ref.map.reference.count.players_2` (22) of the 49 maps are for 2 players, `ref.map.reference.count.players_3` (15) for 3 players and `ref.map.reference.count.players_4` (12) for 4 players.
+**R-VIS-021** (MUST) By each map's declared player count, `ref.map.reference.count.players_2` (22) of the 49 maps are for 2 players, `ref.map.reference.count.players_3` (15) for 3 players and `ref.map.reference.count.players_4` (12) for 4 players (reference/08 R-MAP-180).
 
 **R-VIS-022** (MUST) Every map is a square world of `ref.vis.scope.map_side` (2,000 to 7,000 wu) on a side.
 
@@ -202,7 +202,7 @@ Table 1 summarises R-VIS-011 to R-VIS-016.
 
 ### 2.4 Scope: who is in every match
 
-**R-VIS-030** (MUST) Every match has `ref.sim.max_teams` (6) team slots. Slots 0 to 3 are player slots, of which a map uses slots 0 to its declared player count minus 1. Slot `ref.sim.team.rogue_slot` (4) is the Rogue faction, which owns the hostile Supply crate outcomes and the creatures they bring. Slot `ref.sim.team.visitor_slot` (5) is the Visitor faction, which the Abductor outcome brings.
+**R-VIS-030** (MUST) Every match has `ref.sim.max_teams` (6) team slots. Slots 0 to 3 are player slots, of which a map uses slots 0 to its declared player count minus 1. Slot `ref.sim.team.rogue_slot` (4) is the Rogue faction, which owns the hostile Supply crate outcomes and the creatures they bring. Slot `ref.sim.team.visitor_slot` (5) is the Visitor faction, which the Abductor outcome brings (reference/12 R-SIM-392, R-SIM-393).
 
 **R-VIS-031** (MUST) The Rogue faction and the Visitor faction are created as bot teams in every match, and each has one bot controller (DEC-558).
 
@@ -210,7 +210,7 @@ Table 1 summarises R-VIS-011 to R-VIS-016.
 
 **R-VIS-033** (MUST) A human who leaves during a match is replaced immediately by a bot that takes over the team. No mode treats a leaving player as eliminated (DEC-035).
 
-**R-VIS-034** (MUST) Players choose among `ref.sim.team.player_colour_count` (8) team colours. In Siege the colour is the side: green for the defenders and red for the attackers.
+**R-VIS-034** (MUST) Players choose among `ref.sim.team.player_colour_count` (8) team colours. In Siege the colour is the side: green for the defenders and red for the attackers (reference/01 R-MODE-012, R-MODE-026; reference/12 R-SIM-415).
 
 ### 2.5 Scope: features present only as hooks
 
@@ -218,9 +218,9 @@ These features exist in the reference only as hooks. The owning documents record
 
 **R-VIS-040** (MUST) The reference has no reachable map editor and no front-end entry to one, and matches use only the listed maps. The map editor, its editor windows and custom-map handling exist only as hooks, which reference/08 records (DEC-045).
 
-**R-VIS-041** (MUST) The rules evaluate `ref.vis.scope.achievement_conditions` (12) achievement conditions, but no achievement is ever awarded, achievement progress is never stored and the achievements page cannot be reached. Two of the conditions depend on map-index data that is not part of the packaged data. The conditions are hooks, which reference/09 and reference/01 record (DEC-047, DEC-332).
+**R-VIS-041** (MUST) The rules evaluate `ref.vis.scope.achievement_conditions` (12) achievement conditions, but no achievement is ever awarded, achievement progress is never stored and the achievements page cannot be reached. Two of the conditions count maps through the map index, which the content build generates (reference/09 R-META-488; DEC-563). The conditions are hooks, which reference/09 and reference/01 record (DEC-047).
 
-**R-VIS-042** (MUST) No music plays in the reference. The audio engine has a complete music system and music event bindings, but no reachable trigger exists, the music tracks are not part of the packaged data, and a triggered track would fail an assertion. Reference/10 records these hooks (DEC-049).
+**R-VIS-042** (MUST) No music plays at the front end, in the lobby or in a match: the audio engine has a music channel and the sound data names music events, but no rule raises a music event. Reference/10 records these hooks (R-AUD-400; DEC-049).
 
 **R-VIS-043** (MUST) Leaderboards exist only as front-end pages, with no data source and no back end. Reference/09 records them (DEC-047).
 
@@ -228,63 +228,63 @@ These features exist in the reference only as hooks. The owning documents record
 
 ### 2.6 Core loop: clock and match start
 
-**R-VIS-050** (MUST) The simulation advances in ticks at the reference tick rate of 10 ticks per game second, a tick period of `ref.sim.tick_period` (0.1 s), which reference/12 defines. Game speed changes how many ticks run per real second and never the length of a tick (DEC-039). The per-second rates of this overview are derived at normal game speed.
+**R-VIS-050** (MUST) The simulation advances in ticks at the reference tick rate of 10 ticks per game second, a tick period of `ref.sim.tick_period` (0.1 s), which reference/12 defines. Game speed changes how many ticks run per real second and never the length of a tick (reference/12 R-SIM-500, R-SIM-502; DEC-039). The per-second rates of this overview are derived at normal game speed.
 
-**R-VIS-051** (MUST) A mode second is `ref.mode.mode_second` (11 ticks, 1.1 s). The mode rules evaluate score, elimination, time-up and sudden death once per mode second, and the match clock counts mode seconds, so it runs 10 % slower than game time (DEC-002, DEC-003).
+**R-VIS-051** (MUST) A mode second is `ref.mode.mode_second` (11 ticks, 1.1 s). The mode rules evaluate score, elimination, time-up and sudden death once per mode second, and the match clock counts mode seconds, so it runs 10 % slower than game time (reference/01 R-MODE-002, R-MODE-003; DEC-002, DEC-003).
 
-**R-VIS-052** (MUST) A match starts in its grace period. The world is held at its start state and the match clock is frozen until every human is ready; then a countdown of `ref.match.grace_period` (30 ticks, 3.0 s) runs, and it restarts if anyone withdraws readiness (DEC-036). No world tick runs during the grace period, so no Supply crate drops in it (DEC-116).
+**R-VIS-052** (MUST) A match starts in its grace period. The world is held at its start state and the match clock is frozen until every human is ready; then a countdown of `ref.match.grace_period` (30 ticks, 3.0 s) runs, and it restarts if anyone withdraws readiness (reference/01 R-MODE-039, R-MODE-040; DEC-036). The Supply crate drop rule has no grace-period gate: it also runs while the world is held, so a Supply crate can drop during the grace period; such a crate stays at its start height until the first world tick (reference/04 R-CRATE-102; DEC-116).
 
-**R-VIS-053** (MUST) At match start every Spawn Node and Solar Array that a team owns has one operating Worker of that team in each of its ports, `ref.econ.start.operators_per_port` (1) per port and so 5 per such structure, and the team also receives the starting forces that the map gives it.
+**R-VIS-053** (MUST) At match start every Spawn Node and Solar Array that a team owns has one operating Worker of that team in each of its ports, `ref.econ.start.operators_per_port` (1) per port and so 5 per such structure, and the team also receives the starting forces that the map gives it (reference/05 R-ECON-108, R-ECON-109).
 
 **R-VIS-054** (MUST) The core loop of Figure 1 is the same in all six modes; only the objectives at its end change (R-VIS-081, R-VIS-131).
 
 ### 2.7 Core loop: capture and production
 
-**R-VIS-060** (MUST) A Spawn Node belongs to a single team when at least `ref.econ.spawn_node.capture_min_operators` (3) of that team's operating Workers occupy its `ref.econ.spawn_node.port_count` (5) ports and every other occupant is a friend of that team. Ownership is re-evaluated every `ref.econ.spawn_node.evaluation_interval_ticks` (21–30 ticks, 2.1–3.0 s) (DEC-002, DEC-018).
+**R-VIS-060** (MUST) A Spawn Node belongs to a single team when at least `ref.econ.spawn_node.capture_min_operators` (3) of that team's operating Workers occupy its `ref.econ.spawn_node.port_count` (5) ports and every other occupant is a friend of that team. Ownership is re-evaluated every `ref.econ.spawn_node.evaluation_interval_ticks` (21–30 ticks, 2.1–3.0 s) (reference/05 R-ECON-012, R-ECON-018 to R-ECON-020; DEC-002, DEC-018).
 
-**R-VIS-061** (MUST) After an ownership change a Spawn Node waits `ref.econ.spawn_node.activation_ticks` (300 ticks, 30 s) before it produces. The delay is skipped when the new owner owns exactly one Spawn Node, and on maps that set the instant-capture option (DEC-002).
+**R-VIS-061** (MUST) After an ownership change a Spawn Node waits `ref.econ.spawn_node.activation_ticks` (300 ticks, 30 s) before it produces. The delay is skipped when the new owner owns exactly one Spawn Node, and on maps that set the instant-capture option (reference/05 R-ECON-021, R-ECON-023, R-ECON-024; DEC-002).
 
-**R-VIS-062** (MUST) Each owned, active Spawn Node whose team is below its population cap issues one production request every `ref.econ.spawn_node.request_interval_ticks` (2 ticks, 0.2 s) for int(`ref.econ.spawn_node.burst_base` × H) requests, which is 20 at H = 1 and at most 38 under the Catch-up bonus at its default option, and then pauses for `ref.econ.spawn_node.pause_ticks` (101–150 ticks) before the next burst (DEC-002, DEC-018).
+**R-VIS-062** (MUST) Each owned, active Spawn Node whose team is below its population cap issues one production request every `ref.econ.spawn_node.request_interval_ticks` (2 ticks, 0.2 s) for int(`ref.econ.spawn_node.burst_base` × H) requests, which is 20 at H = 1 and at most 38 under the Catch-up bonus at its default option, and then pauses for `ref.econ.spawn_node.pause_ticks` (101–150 ticks) before the next burst (reference/05 R-ECON-029, R-ECON-033; DEC-002, DEC-018).
 
 **R-VIS-063** (MUST) With these rules one active Spawn Node yields a mean of `ref.vis.spawn_node.mean_output` (about 1.22 Workers per second) at H = 1, rising towards `ref.vis.spawn_node.mean_output_catch_up` (about 1.90 Workers per second) as H approaches 1.9, so a team's income is linear in the number of Spawn Nodes it holds.
 
-**R-VIS-064** (MUST) The Catch-up bonus multiplier H of a team grows with its share deficit, the gap between its share of the Spawn Nodes that the teams in play hold and the even share: H = 1 + (the Catch-up bonus option ÷ 100) × the curve `ref.econ.catch_up.curve` (linear) of the deficit, so H is 1 at or above the even share and approaches `ref.econ.catch_up.max_multiplier` (1.9 at the default option value `ref.econ.catch_up.option_percent`, 90 %) as the team's share falls to 0. The Rogue and Visitor factions are excluded from the share, allies count as separate teams, and Spawn Nodes with no team take no part. H is always 1 on maps that disable the bonus and when the option is 0 or not set (DEC-073, DEC-124).
+**R-VIS-064** (MUST) The Catch-up bonus multiplier H of a team grows with its share deficit, the gap between its share of the Spawn Nodes that the teams in play hold and the even share: H = 1 + (the Catch-up bonus option ÷ 100) × the curve `ref.econ.catch_up.curve` (linear) of the deficit, so H is 1 at or above the even share and approaches `ref.econ.catch_up.max_multiplier` (1.9 at the default option value `ref.econ.catch_up.option_percent`, 90 %) as the team's share falls to 0. The Rogue and Visitor factions are excluded from the share, allies count as separate teams, and Spawn Nodes with no team take no part. H is always 1 on maps that disable the bonus and when the option is 0 or not set (reference/05 R-ECON-034, R-ECON-035, R-ECON-037; DEC-073, DEC-124).
 
-**R-VIS-065** (MUST) Each production request takes a transit orb from the invisible Source Node and routes it along the Relays of the spawn network to the requesting Spawn Node. A transit of h hops takes at most 10h + 1 ticks: `ref.econ.relay.first_hop_ticks` (11 ticks) for the first hop and `ref.econ.relay.later_hop_ticks` (10 ticks) for each further hop, so a new Worker appears at the door about one second per hop after its request. The new Worker belongs to whoever owns the Spawn Node when the orb arrives; an orb that arrives at a Spawn Node that has turned neutral is discarded (DEC-002, DEC-455).
+**R-VIS-065** (MUST) Each production request takes a transit orb from the invisible Source Node and routes it along the Relays of the spawn network to the requesting Spawn Node. A transit of h hops takes at most 10h + 1 ticks: `ref.econ.relay.first_hop_ticks` (11 ticks) for the first hop and `ref.econ.relay.later_hop_ticks` (10 ticks) for each further hop, so a new Worker appears at the door about one second per hop after its request. The new Worker belongs to whoever owns the Spawn Node when the orb arrives; an orb that arrives at a Spawn Node that has turned neutral is discarded (reference/05 R-ECON-039 to R-ECON-042; DEC-002, DEC-455).
 
 **R-VIS-066** (MUST) A team's population cap is the map population cap ÷ the number of open slots, by integer division, fixed for the match; in Siege the cap is split between the defenders and the attackers. The cap counts every body of the team that is not inside an actor group, the team's bot controller, Transports, Leaders, creature eggs and fading corpses included and Crawlers excepted. A team at its cap issues no production requests and receives no Collector deliveries (DEC-079, DEC-080, DEC-453).
 
-**R-VIS-067** (MUST) In Launch Race, Flag Chain and Siege, and on any map that sets the reinforcement option, each owned Transit Gate releases a reinforcement wave every `ref.econ.gate.interval_mode_seconds` (60 mode seconds, 660 ticks, 66 s). In Launch Race and Flag Chain a wave is `ref.econ.gate.count` (40) Workers per owned Transit Gate; a wave can also bring Transports, turrets or airstrikes. Transit Gates advance once per tick on every map (DEC-065).
+**R-VIS-067** (MUST) In Launch Race, Flag Chain and Siege, and on any map that sets the reinforcement option, each owned Transit Gate releases a reinforcement wave every `ref.econ.gate.interval_mode_seconds` (60 mode seconds, 660 ticks, 66 s). In Launch Race and Flag Chain a wave is `ref.econ.gate.count` (40) Workers per owned Transit Gate; a wave can also bring Transports, turrets or airstrikes. Transit Gates advance once per tick on every map (reference/05 R-ECON-088, R-ECON-090, R-ECON-099; DEC-065).
 
 ### 2.8 Core loop: orders and combat
 
-**R-VIS-068** (MUST) While the player holds the primary button on empty ground, a selection circle grows at `ref.ctrl.select.circle_growth` (100 wu per real second, a presentation rate) up to a radius of `ref.ctrl.select.circle_max_radius` (100 wu) (DEC-032).
+**R-VIS-068** (MUST) While the player holds the primary button on empty ground, a selection circle grows at `ref.ctrl.select.circle_growth` (100 wu per real second, a presentation rate) up to a radius of `ref.ctrl.select.circle_max_radius` (100 wu) (reference/06 R-CTRL-156; DEC-032).
 
-**R-VIS-069** (MUST) A team issues crowd orders at most once per `ref.ctrl.order.crowd_interval_ticks` (10 ticks, 1.0 s) (DEC-032).
+**R-VIS-069** (MUST) A team issues crowd orders at most once per `ref.ctrl.order.crowd_interval_ticks` (10 ticks, 1.0 s) (reference/06 R-CTRL-160; DEC-032).
 
-**R-VIS-070** (MUST) A Leader set as a Waypoint beacon redirects every idle Worker of its team that passes within `ref.unit.worker.leader_signpost_range` (100 wu). A Leader in formation gathers the Workers within `ref.unit.worker.leader_follow_range` (150 wu), up to `ref.sim.team.formation_size_upgrade` (90) members (DEC-031).
+**R-VIS-070** (MUST) A Leader set as a Waypoint beacon redirects every idle Worker of its team that passes within `ref.unit.worker.leader_signpost_range` (100 wu). A Leader in formation gathers the Workers within `ref.unit.worker.leader_follow_range` (150 wu), up to `ref.sim.team.formation_size_upgrade` (90) members (reference/02 R-UNIT-096; reference/12 R-SIM-399; DEC-031).
 
-**R-VIS-071** (MUST) A Worker has `ref.unit.worker.health` (50) health and moves at `ref.unit.worker.speed` (20 wu/s, 2 wu per tick). It fires a laser that deals `ref.weapon.laser.damage_base` plus a draw below `ref.weapon.laser.damage_spread` (20–39) damage at a range of about 90 wu, the product of `ref.unit.attack.laser_speed` (150 wu/s) and the match laser bolt life of `ref.weapon.laser.life_ticks` (6 ticks) (DEC-111), with a reload of `ref.unit.worker.rate` (3 s, 30 ticks), and it throws grenades (DEC-030).
+**R-VIS-071** (MUST) A Worker has `ref.unit.worker.health` (50) health and moves at `ref.unit.worker.speed` (20 wu/s, 2 wu per tick). It fires a laser that deals `ref.weapon.laser.damage_base` plus a draw below `ref.weapon.laser.damage_spread` (20–39) damage at a range of about 90 wu, the product of `ref.unit.attack.laser_speed` (150 wu/s) and the match laser bolt life of `ref.weapon.laser.life_ticks` (6 ticks) (DEC-111), with a reload of `ref.unit.worker.rate` (3 s, 30 ticks), and it throws grenades (reference/02 R-UNIT-011, R-UNIT-052; reference/04 R-CRATE-440, R-CRATE-443; DEC-030).
 
 **R-VIS-072** (MUST) Every Worker takes part in combat, shooting and throwing grenades, alongside turrets, strikes and creatures. Every death feeds the Essence-orb step of the loop, and a Spawn Node whose enemy operators have been killed returns to the capture step (Figure 1).
 
 ### 2.9 Core loop: Essence orbs
 
-**R-VIS-073** (MUST) Every death leaves one Essence orb, except a death in the Rogue faction (DEC-084). An Essence orb is born over `ref.econ.orb.birth_ticks` (61 ticks, about 6 s), floats and can be collected for `ref.econ.orb.floating_ticks` (301–500 ticks, 30–50 s), then ascends for `ref.econ.orb.ascent_ticks` (901 ticks, about 90 s) and is gone (DEC-002).
+**R-VIS-073** (MUST) Every death leaves one Essence orb, except a death in the Rogue faction (DEC-084). An Essence orb is born over `ref.econ.orb.birth_ticks` (61 ticks, about 6 s), floats and can be collected for `ref.econ.orb.floating_ticks` (301–500 ticks, 30–50 s), then ascends for `ref.econ.orb.ascent_ticks` (901 ticks, about 90 s) and is gone (reference/05 R-ECON-066, R-ECON-068, R-ECON-069; DEC-002).
 
-**R-VIS-074** (MUST) A Collector collects floating Essence orbs of any team within `ref.econ.collector.collection_range_wu` (75 wu), holds up to `ref.econ.collector.capacity` (100) of them, and delivers `ref.econ.collector.delivery_per_tick` (one per tick) at a friendly Spawn Node, each as a Worker of the node's owner, only on ticks on which that team is below its population cap and the node's activation delay is 0; on other ticks it waits with its orbs (DEC-080, DEC-453). A Builder delivers the orbs it collects at the nearest friendly Spawn Node in the same way, but with no cap or activation check (DEC-085).
+**R-VIS-074** (MUST) A Collector collects floating Essence orbs of any team within `ref.econ.collector.collection_range_wu` (75 wu), holds up to `ref.econ.collector.capacity` (100) of them, and delivers `ref.econ.collector.delivery_per_tick` (one per tick) at a friendly Spawn Node, each as a Worker of the node's owner, only on ticks on which that team is below its population cap and the node's activation delay is 0; on other ticks it waits with its orbs (DEC-080, DEC-453). A Builder delivers the orbs it collects at the nearest friendly Spawn Node in the same way, but with no cap or activation check (reference/05 R-ECON-072, R-ECON-074, R-ECON-082; DEC-085).
 
 ### 2.10 Core loop: Supply crates and powers
 
-**R-VIS-075** (MUST) Supply crates drop at intervals of U(0.5, 1.5] × the drop-rate option, set by `ref.crate.drop.interval_factor_max` and `ref.crate.drop.interval_factor_spread`; the option's default `ref.crate.drop.period_default_s` (40 s) gives 200 to 600 ticks. At most int(map width ÷ `ref.crate.drop.map_width_per_crate`) Supply crates, one per 500 wu of map width, are on the map at once (DEC-021).
+**R-VIS-075** (MUST) Supply crates drop at intervals of U(0.5, 1.5] × the drop-rate option, set by `ref.crate.drop.interval_factor_max` and `ref.crate.drop.interval_factor_spread`; the option's default `ref.crate.drop.period_default_s` (40 s) gives 200 to 600 ticks. At most int(map width ÷ `ref.crate.drop.map_width_per_crate`) Supply crates, one per 500 wu of map width, are on the map at once (reference/04 R-CRATE-100, R-CRATE-103, R-CRATE-104; DEC-021).
 
 **R-VIS-076** (MUST) A Supply crate on the ground counts, every tick, the Workers of each team within `ref.crate.open.scan_range` (35 wu) that are not dead and not inside a Transport; the majority team has the highest count, ties going to the lower team slot (DEC-016). While its owner is the majority team with n such Workers, each tick adds min(n, `ref.crate.open.max_progress_per_tick` (50)) units to its opening progress, and the Supply crate opens on the first tick on which the progress exceeds `ref.crate.open.full_progress` (2,500 units); with 50 or more Workers that is after 51 ticks (5.1 s) at the earliest. When another team takes the majority, the owner's progress drains first. A Supply crate's life of `ref.crate.lifetime.neutral_ticks` (600 ticks, 60 s) counts down only on ticks on which it is on the ground with no owner, and it is reset to 600 on every tick on which its owner holds the majority; a crate whose life and progress have run out expires with no effect (reference/04 R-CRATE-114 to R-CRATE-120; DEC-006, DEC-021).
 
-**R-VIS-077** (MUST) An opened Supply crate draws its outcome with `ref.crate.open.good_share` (90 %) probability uniformly from the valid beneficial outcomes, for the opening team, and with 10 % probability uniformly from the hostile outcomes, created for the Rogue faction. The draw is a bounded selection over an explicit candidate list (DEC-014, DEC-021).
+**R-VIS-077** (MUST) An opened Supply crate draws its outcome with `ref.crate.open.good_share` (90 %) probability uniformly from the valid beneficial outcomes, for the opening team, and with 10 % probability uniformly from the hostile outcomes, created for the Rogue faction. The draw is a bounded selection over an explicit candidate list (reference/04 R-CRATE-121, R-CRATE-128; DEC-014, DEC-021).
 
-**R-VIS-078** (MUST) Each team has `ref.power.slots.capacity` (6) Power slots, or `ref.power.slots.capacity_eliminated` (2) while it counts as eliminated. Every pending, placed or running power occupies one slot, and a power granted while every slot is full is lost (DEC-033).
+**R-VIS-078** (MUST) Each team has `ref.power.slots.capacity` (6) Power slots, or `ref.power.slots.capacity_eliminated` (2) while it counts as eliminated. Every pending, placed or running power occupies one slot, and a power granted while every slot is full is lost (reference/04 R-CRATE-014; DEC-033).
 
-**R-VIS-079** (MUST) While a team counts as eliminated and has a free Power slot, the Comeback Bonus grants it a random power every `ref.econ.comeback.interval_ticks` (450 ticks, 45 s). The Comeback Bonus is on by default (DEC-073).
+**R-VIS-079** (MUST) While a team counts as eliminated and has a free Power slot, the Comeback Bonus grants it a random power every `ref.econ.comeback.interval_ticks` (450 ticks, 45 s). The Comeback Bonus is on by default (reference/05 R-ECON-114; reference/01 R-MODE-055; DEC-073).
 
 ### 2.11 Core loop: objectives and match end
 
@@ -294,9 +294,9 @@ These features exist in the reference only as hooks. The owning documents record
 
 ### 2.12 Worker autonomy and granted powers
 
-**R-VIS-090** (MUST) Each Worker on the ground that is not burning runs its own prioritised task search every `ref.unit.worker.retarget_ticks` (11–20 ticks, 1.1–2.0 s), staggered across Workers: it mans a port, opens a Supply crate, carries a Relic, boards a Launch Vessel, follows a Leader, fights or flees. A crowd left alone therefore keeps doing useful local work (DEC-002, DEC-030).
+**R-VIS-090** (MUST) Each Worker on the ground that is not burning runs its own prioritised task search every `ref.unit.worker.retarget_ticks` (11–20 ticks, 1.1–2.0 s), staggered across Workers: it mans a port, opens a Supply crate, carries a Relic, boards a Launch Vessel, follows a Leader, fights or flees. A crowd left alone therefore keeps doing useful local work (reference/02 R-UNIT-065; DEC-002, DEC-030).
 
-**R-VIS-091** (MUST) Every Worker in a match is a soldier with a laser and grenades, because the match research level of Workers is fixed at `ref.sim.init.power_level.worker` (4) (DEC-115).
+**R-VIS-091** (MUST) Every Worker in a match is a soldier with a laser and grenades, because the match research level of Workers is fixed at `ref.sim.init.power_level.worker` (4) (reference/12 R-SIM-016; DEC-115).
 
 **R-VIS-092** (MUST) Special units and weapons reach a team only as granted powers: from Supply crates, reinforcement waves, the Comeback Bonus, starting powers and the map's starting forces. The player can select, place and cancel a granted power, but can never create one.
 
@@ -308,7 +308,7 @@ The Spawn Node economy behind these rules is §2.7 and §2.9: territory is mainl
 
 **R-VIS-111** (MUST) The secondary button on a single own Worker, while nothing is selected, promotes it to a Leader. A Leader never fights.
 
-**R-VIS-112** (MUST) The secondary button elsewhere sets the selected Leader as a Waypoint beacon: every idle Worker of the team that passes within `ref.unit.worker.leader_signpost_range` (100 wu) picks up the order and walks the route, which turns a Spawn Node's output into a conveyor. The secondary button on the Leader itself switches it into formation: a marching block of up to `ref.sim.team.formation_size_upgrade` (90) Workers, in rows of 6 to 15 by `ref.unit.leader.row_size_table`, that forms in front of it (DEC-031).
+**R-VIS-112** (MUST) The secondary button elsewhere sets the selected Leader as a Waypoint beacon: every idle Worker of the team that passes within `ref.unit.worker.leader_signpost_range` (100 wu) picks up the order and walks the route, which turns a Spawn Node's output into a conveyor. The secondary button on the Leader itself switches it into formation: a marching block of up to `ref.sim.team.formation_size_upgrade` (90) Workers, in rows of 6 to 15 by `ref.unit.leader.row_size_table`, that forms in front of it (reference/02 R-UNIT-096, R-UNIT-182; reference/12 R-SIM-399; DEC-031).
 
 **R-VIS-113** (MUST) Direct control exists only for the special units and structures: the Strike team, the Transport, the Collector, the Builder, turrets and the Beam Dish (DEC-008).
 
@@ -320,15 +320,15 @@ The Spawn Node economy behind these rules is §2.7 and §2.9: territory is mainl
 
 **R-VIS-121** (MUST) A Supply crate floats down for about `ref.vis.crate.fall_time` (330–380 ticks, 33–38 s) under a visible ground marker before it lands, so that every side can converge on it ([crates_and_powers.md](04_supply_crates_powers_and_weapons/crates_and_powers.md) R-CRATE-112).
 
-**R-VIS-122** (MUST) There are `ref.crate.outcome.count` (31) outcomes. On a map that excludes none, the beneficial pool holds `ref.vis.crate.beneficial_set` (26) outcomes, each drawn with a probability of about `ref.vis.crate.beneficial_type_chance` (3.462 %) per opening, and the hostile pool holds `ref.vis.crate.hostile_list` (7) outcomes, each drawn with a probability of about `ref.vis.crate.hostile_type_chance` (1.429 %). A debug-only outcome and the inactive rewards are not specified (DEC-057).
+**R-VIS-122** (MUST) There are `ref.crate.outcome.count` (31) outcomes. On a map that excludes none, the beneficial pool holds `ref.vis.crate.beneficial_set` (26) outcomes, each drawn with a probability of about `ref.vis.crate.beneficial_type_chance` (3.462 %) per opening, and the hostile pool holds `ref.vis.crate.hostile_list` (7) outcomes, each drawn with a probability of about `ref.vis.crate.hostile_type_chance` (1.429 %). A debug-only outcome and the inactive rewards are not specified (reference/04 R-CRATE-007, R-CRATE-128; DEC-057).
 
 **R-VIS-123** (MUST) A beneficial outcome either acts at once or becomes a targetable power in a Power slot, as the delivery column of Table 2 states for each outcome.
 
-**R-VIS-124** (MUST) A map can exclude outcomes, and every outcome, hostile ones included, respects the map's exclusions (DEC-107). The basic-crates option limits drops to the `ref.crate.outcome.basic_count` (7) basic outcomes and disables the hostile pool. Spawn Control and Zone Control can grant each team 0 to 3 starting powers by the option `ref.econ.start.powers` (default 0). Eliminated teams receive Comeback Bonus grants (R-VIS-079; DEC-021).
+**R-VIS-124** (MUST) A map can exclude outcomes, and every outcome, hostile ones included, respects the map's exclusions (DEC-107). The basic-crates option limits drops to the `ref.crate.outcome.basic_count` (7) basic outcomes and disables the hostile pool. Spawn Control and Zone Control can grant each team 0 to 3 starting powers by the option `ref.econ.start.powers` (default 0). Eliminated teams receive Comeback Bonus grants (R-VIS-079; reference/04 R-CRATE-008, R-CRATE-125; reference/05 R-ECON-110; DEC-021).
 
-**R-VIS-125** (MUST) The 31 outcomes form the nine families of Table 2, with the delivery and the pool stated there. The crowd buffs act for `ref.power.lifetime.buff_ticks` (300 ticks, 30 s) on Workers within `ref.power.effect_range` (70 wu); Reinforcements releases `ref.crate.reinforcements.count_base` plus a draw below `ref.crate.reinforcements.count_spread` (50 to 99) Workers at the Supply crate; a Missile Barrage carries `ref.hazard.missile_barrage.missile_count` (10) barrage missiles; and Rocket Troops makes every Worker of the opening team throw rockets instead of grenades for the rest of the match.
+**R-VIS-125** (MUST) The 31 outcomes form the nine families of Table 2, with the delivery and the pool stated there. The crowd buffs act for `ref.power.lifetime.buff_ticks` (300 ticks, 30 s) on Workers within `ref.power.effect_range` (70 wu); Reinforcements releases `ref.crate.reinforcements.count_base` plus a draw below `ref.crate.reinforcements.count_spread` (50 to 99) Workers at the Supply crate; a Missile Barrage carries `ref.hazard.missile_barrage.missile_count` (10) barrage missiles; and Rocket Troops makes every Worker of the opening team throw rockets instead of grenades for the rest of the match (reference/04 R-CRATE-019, R-CRATE-026, R-CRATE-164, R-CRATE-215; reference/02 R-UNIT-721).
 
-**R-VIS-126** (MUST) The Strike team outcome grants a Strike team of 3 directly controlled Troopers, `ref.unit.strike_team.size_base` (2) plus the Strike team power level of 1, with lasers and grenades, which lives `ref.unit.strike_team.life_ticks` (600 ticks, 60 s). A turret, whether placed by a turret outcome or standing on the map, is captured by occupying its `ref.bldg.turret.ports` (4) ports and is aimed and fired directly by its owner.
+**R-VIS-126** (MUST) The Strike team outcome grants a Strike team of 3 directly controlled Troopers, `ref.unit.strike_team.size_base` (2) plus the Strike team power level of 1, with lasers and grenades, which lives `ref.unit.strike_team.life_ticks` (601 ticks, nominal 60 s; reference/02 R-UNIT-336, R-UNIT-338). A turret, whether placed by a turret outcome or standing on the map, is captured by occupying its `ref.bldg.turret.ports` (4) ports and is aimed and fired directly by its owner (reference/03 R-BLDG-405).
 
 | Family | Members | Delivery | Pool |
 |---|---|---|---|
@@ -369,7 +369,7 @@ The Spawn Node economy behind these rules is §2.7 and §2.9: territory is mainl
 
 **R-VIS-142** (MUST) A bot thinks through a graph of bot navigation nodes that carry per-team priorities. A dispatcher walks idle Workers to the best linked node, and only friendly nodes release troops. The bot uses Leaders as Waypoint beacons and as formation leaders. The handlers of [reference/07](07_bots/04_powers_and_unit_policies.md) table 2.1-A place every Power kind that a bot team can hold (R-BOT-100, R-BOT-101). Per-mode logic covers the Siege objective chains, Launch Race logistics and Flag Chain zone pins (DEC-022).
 
-**R-VIS-143** (MUST) One difficulty applies to every bot team of a match (R-VIS-032). The easy bot re-thinks every `ref.bot.cycle.period_easy` (200 ticks, 20 s), with frozen priorities, and always selects its targets at random; the standard bot re-thinks every `ref.bot.cycle.period_standard` (101 ticks, 10 s) and selects at random with probability `ref.bot.select.standard_random_chance` (0.5); the hard bot re-thinks every `ref.bot.cycle.period_hard` (11 ticks, 1.1 s) and is always greedy (reference/07 R-BOT-087). Difficulty changes tempo and focus, never information (DEC-022).
+**R-VIS-143** (MUST) One difficulty applies to every bot team of a match (R-VIS-032). The easy bot re-thinks every `ref.bot.cycle.period_easy` (200 ticks, 20 s), with frozen priorities, and always selects its targets at random; the standard bot re-thinks every `ref.bot.cycle.period_standard` (101 ticks, 10.1 s) and selects at random with probability `ref.bot.select.standard_random_chance` (0.5); the hard bot re-thinks every `ref.bot.cycle.period_hard` (11 ticks, 1.1 s) and is always greedy (reference/07 R-BOT-087). Difficulty changes tempo and focus, never information (DEC-022).
 
 **R-VIS-144** (MUST) Bots have no resource, population, damage, speed or vision advantage. Their structural advantages are perfect information, an unlimited command rate, per-Worker targeting and a Transport self-destruct that human players cannot trigger (DEC-022).
 
@@ -377,11 +377,11 @@ The Spawn Node economy behind these rules is §2.7 and §2.9: territory is mainl
 
 **R-VIS-150** (MUST) The player acts through the thirteen verbs R-VIS-151 to R-VIS-163, with the default bindings stated there; reference/06 gives the full binding reference with Species action ids. Every verb except Look, chat and the in-game menu reaches the simulation as a player command or as continuous control state and takes effect at the next tick (DEC-008, DEC-023).
 
-**R-VIS-151** (MUST) **Look**: pan, raise and lower, aim, zoom and look around. Keyboard and mouse: W, A, S and D or the arrow keys pan, with Shift for four times the speed; Q and E or the mouse wheel raise and lower; mouse movement aims; Z or the middle button zooms while held; F2 looks around. Pad: left stick, triggers, right stick and right-stick click. The free camera pans at `ref.ctrl.camera.pan_speed` (250 wu/s), or `ref.ctrl.camera.fast_pan_factor` (4) times as fast, 1,000 wu/s, with Shift, and zooming divides the field of view of `ref.ctrl.camera.fov_base` (60°) by `ref.ctrl.camera.zoom_divisor` (4), to 15°, while held. Each map has a start camera view and one camera view per player slot, and at match start the camera cuts to the start view and then to the player's view. Look is local and never reaches the simulation, except that the look-around state also steers a directly controlled Strike team and is sent as world-space control state (DEC-008, DEC-024).
+**R-VIS-151** (MUST) **Look**: pan, raise and lower, aim, zoom and look around. Keyboard and mouse: W, A, S and D or the arrow keys pan, with Shift for four times the speed; Q and E or the mouse wheel raise and lower; mouse movement aims; Z or the middle button zooms while held; F2 looks around. Pad: left stick, triggers, right stick and right-stick click. The free camera pans at `ref.ctrl.camera.pan_speed` (250 wu/s), or `ref.ctrl.camera.fast_pan_factor` (4) times as fast, 1,000 wu/s, with Shift, and zooming divides the field of view of `ref.ctrl.camera.fov_base` (60°) by `ref.ctrl.camera.zoom_divisor` (4), to 15°, while held. Each map has a start camera view and one camera view per player slot, and at match start the camera cuts to the start view and then to the player's view. Look is local and never reaches the simulation, except that the look-around state also steers a directly controlled Strike team and is sent as world-space control state (reference/06 R-CTRL-460, R-CTRL-470, R-CTRL-471; DEC-008, DEC-024).
 
 **R-VIS-152** (MUST) **Gather** a crowd: hold the left mouse button on empty ground, or hold A on the pad. The selection circle grows (R-VIS-068), and the team's Workers inside it become the selection.
 
-**R-VIS-153** (MUST) **Send** a crowd: the right mouse button on a destination, with Ctrl for a straight route, or X on the pad. The selected Workers walk there; Workers sent onto a Transport within `ref.unit.worker.order_transport_radius` (30 wu) board it; and the selection is released.
+**R-VIS-153** (MUST) **Send** a crowd: the right mouse button on a destination, with Ctrl for a straight route, or X on the pad. The selected Workers walk there; Workers sent onto a Transport within `ref.unit.worker.order_transport_radius` (30 wu) board it; and the selection is released (reference/02 R-UNIT-140; reference/06 R-CTRL-160).
 
 **R-VIS-154** (MUST) **Promote** a Leader: the right mouse button on an own Worker while nothing is selected, or X on the pad. The Worker becomes a Leader, which is then selected.
 
@@ -405,7 +405,7 @@ The Spawn Node economy behind these rules is §2.7 and §2.9: territory is mainl
 
 ### 2.18 Match flow from the player's perspective
 
-**R-VIS-170** (MUST) The front end is a single full-screen menu window of `ref.meta.front_end.live_pages` (18) live pages over a persistent animated background, with the screen flow of Figure 5. The main page leads to single-player play, multiplayer play, the tutorials, and the help and options pages; the options are grouped into screen, graphics, sound and other options (DEC-026).
+**R-VIS-170** (MUST) The front end is a single full-screen menu window of `ref.meta.front_end.live_pages` (18) live pages over a persistent animated background, with the screen flow of Figure 5. The main page leads to single-player play, multiplayer play, the tutorials, and the help and options pages; the options are grouped into screen, graphics, sound and other options (reference/09 R-META-003; DEC-026).
 
 **R-VIS-171** (MUST) Against bots, the single-player entry leads through mode select and map select to the lobby, where the start action fills every empty slot with a bot team.
 
@@ -419,7 +419,7 @@ The Spawn Node economy behind these rules is §2.7 and §2.9: territory is mainl
 
 **R-VIS-176** (MUST) During the grace period the world is frozen. The player sees a prompt to signal readiness (`match.grace_period.prompt_keyboard`, `match.grace_period.prompt_pad`) and then, while waiting, a count of the humans who are ready out of all humans (`match.grace_period.waiting`, `match.grace_period.ready`, then the countdown `match.grace_period.countdown`), together with an explainer animation of the mode. The countdown of R-VIS-052 starts only when every human is ready and restarts if anyone withdraws readiness (DEC-036, DEC-037).
 
-**R-VIS-177** (MUST) A running match shows a scoreboard at the top left, the match clock at the top centre, counting mode seconds, the reinforcement-wave and Comeback Bonus counters, Supply crate timers, an announcement when the local team's rank changes (`match.rank.moved_1` to `match.rank.moved_4`, `match.rank.tied_1` to `match.rank.tied_3`), and the warning `match.one_minute_warning` when `ref.match.one_minute_warning` (60 mode seconds, one match-clock minute) of the time limit remains.
+**R-VIS-177** (MUST) A running match shows a scoreboard at the top left, the match clock at the top centre, counting mode seconds, the reinforcement-wave and Comeback Bonus counters, Supply crate timers, an announcement when the local team's rank changes (`match.rank.moved_1` to `match.rank.moved_4`, `match.rank.tied_1` to `match.rank.tied_3`), and the warning `match.one_minute_warning` when `ref.match.one_minute_warning` (60 mode seconds, one match-clock minute) of the time limit remains (reference/01 R-MODE-037, R-MODE-047, R-MODE-063, R-MODE-066, R-MODE-067).
 
 **R-VIS-178** (MUST) At the end of a match time freezes; the match-end sound plays, then the win or loss sound; and the game-over overlay (`match.game_over.title`) shows the winner (`match.game_over.winner`), or that the match is a draw (`match.game_over.draw`), with a final score list in every mode except Flag Chain and single-round Siege (DEC-066). There is no front-end results page (R-VIS-044; DEC-048).
 
@@ -558,8 +558,7 @@ The rules of §2 cite the tuning keys of the documents that own the mechanics, n
 |---|---|---|---|---|---|
 | `ref.vis.scope.mode_count` | 6 | modes | Spawn Control, Zone Control, Relic Run, Siege, Launch Race, Flag Chain | R-VIS-010 | DEC-017, DEC-058 |
 | `ref.vis.mode.siege.core_device_timer` | 900 or 1,200 | mode seconds | set by the map; about 990 or 1,320 s; the reference maps of R-MODE-351 and R-MAP-167 | R-VIS-014 | DEC-002 |
-| `ref.vis.scope.option_definitions` | 38 | match option definitions | the six mode schemas (R-MODE-073); plus the lobby settings and the per-map overrides | R-VIS-019 | DEC-017, DEC-073 |
-
+| `ref.vis.scope.option_definitions` | 38 | match option definitions | the six mode schemas (R-MODE-073); plus the lobby settings and the per-map overrides; the lives option of the debug-only mode is not carried (DEC-058) | R-VIS-019 | DEC-017, DEC-073 |
 | Owning document | Keys | Used by |
 |---|---|---|
 | [01 README](01_skirmish_rules_and_modes/README.md) | `ref.mode.spawn_control.option.time_limit`, `ref.mode.zone_control.option.time_limit`, `ref.mode.relic_run.option.time_limit`, `ref.mode.flag_chain.option.time_limit` | R-VIS-011 to R-VIS-013, R-VIS-016 |
@@ -669,7 +668,7 @@ The rules of §2 cite the tuning keys of the documents that own the mechanics, n
 | Time Dilation or Time Rush changes game speed | Ticks keep their length; only the number of ticks per real second changes | R-VIS-050 |
 | A human leaves during a match | A bot takes over the team at once; the team is not eliminated | R-VIS-033 |
 | A human withdraws readiness during the countdown | The 30-tick countdown restarts | R-VIS-052, R-VIS-176 |
-| Supply crates during the grace period | No world tick runs, so no Supply crate drops | R-VIS-052 |
+| Supply crates during the grace period | The drop rule runs while the world is held, so a Supply crate can drop; it stays at its start height until the first world tick | R-VIS-052 |
 | A remote human takes part | Pause is not available | R-VIS-163 |
 | A player presses cancel with a Leader selected | The Leader is not killed; demotion is a separate action | R-VIS-114, R-VIS-159 |
 | A Flag Chain or Siege match ends | The game-over overlay shows no final score list | R-VIS-178 |
@@ -748,7 +747,7 @@ The behaviour that §2 specifies is the reference default for each open decision
 | DEC | Topic | Requirements |
 |---|---|---|
 | DEC-001 | The reference core loop: whether it is kept, extended or replaced beyond skirmish | R-VIS-001, R-VIS-002 |
-| DEC-003 | Length of the mode second after playtest | R-VIS-051 |
+| DEC-003 | Length of the mode second | R-VIS-051 |
 | DEC-045 | Map editor | R-VIS-040 |
 | DEC-047 | Achievements, statistics and leaderboards | R-VIS-041, R-VIS-043 |
 | DEC-048 | Post-match results screen | R-VIS-044, R-VIS-178 |
@@ -760,7 +759,8 @@ The behaviour that §2 specifies is the reference default for each open decision
 | DEC-111 | Values derived on flat terrain: the laser range and the Supply crate fall time | R-VIS-071, R-VIS-121 |
 | DEC-114 | Position of score-weighted Supply crate drops | R-VIS-120 |
 | DEC-115 | Fixed match research levels | R-VIS-091 |
-| DEC-123 | Tutorial for the first playable | R-VIS-174 |
+| DEC-116 | Supply crates during the grace period | R-VIS-052 |
+| DEC-123 | The tutorial offering | R-VIS-174 |
 | DEC-227 | Simulation tick rate | R-VIS-050 |
 | DEC-243 | Lobby authority and the match-setup state | R-VIS-172 |
 | DEC-245 | Session discovery and the session browser | R-VIS-172 |
@@ -772,6 +772,6 @@ The behaviour that §2 specifies is the reference default for each open decision
 | DEC-455 | Same-tick advance and the exact spawn-network transit time | R-VIS-065 |
 | DEC-558 | Bot controller of the Rogue and Visitor factions | R-VIS-031 |
 
-**Resolved decisions applied in §2:** DEC-002 (integer tick timers and the 11-tick mode second), DEC-004 (reference tuning values as the baseline), DEC-005 (the reference library is the specification of record), DEC-006 (quirks kept as explicit rules), DEC-008 (player intent only as commands and control state), DEC-014 (bounded selection), DEC-016 (explicit tie-breaks), DEC-017 (one rules skeleton), DEC-018 (population flow), DEC-021 (Supply crates), DEC-022 (bots), DEC-023 (controls and commands), DEC-024 (camera), DEC-025 (maps), DEC-026 (front end and match flow), DEC-027 (audio binding model), DEC-029 (visual language), DEC-030 (Worker autonomy and armament), DEC-031 (Leader signposts and formations), DEC-032 (selection circle and crowd-order interval), DEC-033 (six Power slots), DEC-034 (co-op alliances), DEC-035 (leaver replaced by a bot), DEC-036 (ready-up barrier), DEC-037 (onboarding helpers), DEC-038 (pause and the speed ramp), DEC-039 (game speed as tick scheduling), DEC-065 (Transit Gates advance once per tick), DEC-073 (typed match options), DEC-079 (per-team population cap from the open slots, fixed for the match), DEC-080 (Collector delivery under the receiving team's cap and the Spawn Node's activation rules), DEC-082 (the Rogue and Visitor factions never win), DEC-083 (clickable power bar), DEC-085 (Builder delivery to friendly Spawn Nodes), DEC-086 (separate demote and scrap actions), DEC-107 (hostile outcomes: team-blind hazards; every outcome respects the map's exclusions), DEC-116 (no Supply crate drops while the world is held in the grace period), DEC-120 (absent, 0 and unlimited map values), DEC-124 (the proportional Catch-up curve, which supersedes DEC-081), DEC-560 (start positions as typed map records).
+**Resolved decisions applied in §2:** DEC-002 (integer tick timers and the 11-tick mode second), DEC-004 (reference tuning values as the baseline), DEC-005 (the reference library is the specification of record), DEC-006 (quirks kept as explicit rules), DEC-008 (player intent only as commands and control state), DEC-014 (bounded selection), DEC-016 (explicit tie-breaks), DEC-017 (one rules skeleton), DEC-018 (population flow), DEC-021 (Supply crates), DEC-022 (bots), DEC-023 (controls and commands), DEC-024 (camera), DEC-025 (maps), DEC-026 (front end and match flow), DEC-027 (audio binding model), DEC-029 (visual language), DEC-030 (Worker autonomy and armament), DEC-031 (Leader signposts and formations), DEC-032 (selection circle and crowd-order interval), DEC-033 (six Power slots), DEC-034 (co-op alliances), DEC-035 (leaver replaced by a bot), DEC-036 (ready-up barrier), DEC-037 (onboarding helpers), DEC-038 (pause and the speed ramp), DEC-039 (game speed as tick scheduling), DEC-065 (Transit Gates advance once per tick), DEC-073 (typed match options), DEC-079 (per-team population cap from the open slots, fixed for the match), DEC-080 (Collector delivery under the receiving team's cap and the Spawn Node's activation rules), DEC-082 (the Rogue and Visitor factions never win), DEC-083 (clickable power bar), DEC-085 (Builder delivery to friendly Spawn Nodes), DEC-086 (separate demote and scrap actions), DEC-107 (hostile outcomes: team-blind hazards; every outcome respects the map's exclusions), DEC-120 (absent, 0 and unlimited map values), DEC-124 (the proportional Catch-up curve, which supersedes DEC-081), DEC-560 (start positions as typed map records), DEC-563 (the map index as a content-build output).
 
-**Not specified (Dropped):** the single-player campaign and its narrator (DEC-052); the debug-only mode (DEC-058); the debug-only Supply crate outcome and the inactive rewards (DEC-057); development, test and benchmark maps (DEC-334); reference map shapes and identities (DEC-063); trial-edition gating and credential keys (DEC-333); and the contents of other editions and packaged archives of the reference (DEC-332).
+**Not specified (Dropped):** the single-player campaign and its narrator (DEC-052); the debug-only mode (DEC-058); the debug-only Supply crate outcome and the inactive rewards (DEC-057); development, test and benchmark maps (DEC-334); reference map shapes and identities (DEC-063); entitlement and edition gating (DEC-333); and content that no reference match uses (DEC-332).

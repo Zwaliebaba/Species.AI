@@ -6,7 +6,7 @@
 
 Creatures are the wildcards of a match. Supply crate outcomes release them, and none of them is under a player's direct control: a creature acts on its own rules from the moment it hatches. Together they are a second, hostile economy beside the Workers. Crawlers ferry Essence orbs into Crawler eggs and breed; Brood Drifters and spiders lay eggs near orbs; centipedes eat orbs and grow; Hive ants carry orbs and captured Workers home; and the Reaper Serpent destroys the Essence orb of everything it kills, so those Workers never return to anyone's economy.
 
-This document also holds the rules that every creature and hazard shares (§2.1). The event hazards (the Abductor, the airstrike with its Bombers, the Missile Barrage and the meteor shower) are specified in [hazards and projectiles](hazards_and_projectiles.md). The stats, resistances, death rules, slope factors and tint kind of every kind are in the [units README](README.md); this document gives their behaviour. The Summoner, the Tri-walker and the Rift Horror are not part of the reference (DEC-062).
+This document also holds the rules that every creature and hazard shares (§2.1). The event hazards (the Abductor, the airstrike with its Bombers, the Missile Barrage and the meteor shower) are specified in [hazards and projectiles](hazards_and_projectiles.md). The stats, resistances, death rules, slope factors and tint kind of every kind are in the [units README](README.md); this document gives their behaviour. Creature kinds that no match creates are not specified (DEC-062).
 
 Table 1-A Creatures.
 
@@ -63,11 +63,11 @@ A Seed Pod is a timed pod that tumbles, bounces and bursts into a group of creat
 
 **R-UNIT-511** (MUST) A Spitter Plant of the Spitter Plants outcome launches Seed Pods ([crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) gives the outcome, which only the bad branch of an opened Supply crate yields; [trees and crate structures](../03_buildings_and_world_objects/trees_and_crate_structures.md) gives the plant, its pod count and its choice of kind, which excludes kinds 3 and 4 of R-UNIT-519). Each launched pod has size 1 + `SimRng::NextSigned`(`ref.unit.seed_pod.launch_size_spread`) and velocity = launch socket forward × plant force × plant size × (1 + `SimRng::NextSigned`(`ref.unit.seed_pod.launch_speed_spread`)), and its burst timer is replaced by R-UNIT-515.
 
-**R-UNIT-512** (MUST) The Brood outcome, placed at a target point by a player or a bot, creates `ref.unit.seed_pod.group_count_min` + (`SimRng::NextUint` mod `ref.unit.seed_pod.group_count_spread`) Seed Pods (2 to 4), owned by the team that placed the power (see DEC-121). Each starts at the target + (0, `ref.unit.seed_pod.brood_start_height`, 0) with velocity normalise(`SimRng::NextSigned(1)`, `ref.unit.seed_pod.brood_lift`, `SimRng::NextSigned(1)`) × (`ref.unit.seed_pod.brood_speed_min` + `SimRng::NextUnit`(`ref.unit.seed_pod.brood_speed_spread`)), takes its kind by R-UNIT-513, and has its burst timer replaced by R-UNIT-515. The released creatures use the fixed roam ranges of R-UNIT-519, not a roam range of the outcome.
+**R-UNIT-512** (MUST) The Brood outcome, placed at a target point by a player or a bot, creates `ref.unit.seed_pod.group_count_min` + (`SimRng::NextUint` mod `ref.unit.seed_pod.group_count_spread`) Seed Pods (2 to 4), owned by the team that placed the power (see DEC-121). Each starts at the target + (0, `ref.unit.seed_pod.brood_start_height`, 0) with velocity Normalize(`SimRng::NextSigned(1)`, `ref.unit.seed_pod.brood_lift`, `SimRng::NextSigned(1)`) × (`ref.unit.seed_pod.brood_speed_min` + `SimRng::NextUnit`(`ref.unit.seed_pod.brood_speed_spread`)), takes its kind by R-UNIT-513, and has its burst timer replaced by R-UNIT-515. The released creatures use the fixed roam ranges of R-UNIT-519, not a roam range of the outcome.
 
-**R-UNIT-513** (MUST) The Brood kind is one `SimRng::NextUint` draw modulo 5 over the list (Crawlers, centipede, spider, Seed Pods, Brood Drifter), which are kinds 0, 1, 2, 5 and 7 of R-UNIT-519. This equals the reference distribution, which re-draws `NextUint` mod 10 until the kind is none of Essence orbs, Crawler eggs, Reaper Serpent, ants and Workers, and it needs no loop (DEC-014).
+**R-UNIT-513** (MUST) The Brood kind is one `SimRng::NextUint` draw modulo 5 over the list (Crawlers, centipede, spider, Seed Pods, Brood Drifter), which are kinds 0, 1, 2, 5 and 7 of R-UNIT-519. One draw over the five-entry list gives each kind the probability 1/5 and needs no loop (DEC-014).
 
-**R-UNIT-514** (MUST) A Seed Pod of kind 5 (nested pods) releases `ref.unit.seed_pod.group_count_min` + (`SimRng::NextUint` mod `ref.unit.seed_pod.group_count_spread`) Seed Pods at speed `ref.unit.seed_pod.nested_speed_min` + `SimRng::NextUnit`(`ref.unit.seed_pod.nested_speed_spread`). Each takes its kind by one `SimRng::NextUint` draw modulo 9 over kinds 0 to 8 (never Workers). When the Reaper Serpent is not allowed at that draw (R-UNIT-520), the kind is one `SimRng::NextUint` draw modulo 8 over kinds 0 to 7 instead, which equals the reference re-draw of the Reaper Serpent result (DEC-014). A nested pod keeps its default burst timer.
+**R-UNIT-514** (MUST) A Seed Pod of kind 5 (nested pods) releases `ref.unit.seed_pod.group_count_min` + (`SimRng::NextUint` mod `ref.unit.seed_pod.group_count_spread`) Seed Pods at speed `ref.unit.seed_pod.nested_speed_min` + `SimRng::NextUnit`(`ref.unit.seed_pod.nested_speed_spread`). Each takes its kind by one `SimRng::NextUint` draw modulo 9 over kinds 0 to 8 (never Workers). When the Reaper Serpent is not allowed at that draw (R-UNIT-520), the kind is one `SimRng::NextUint` draw modulo 8 over kinds 0 to 7 instead, so each remaining kind keeps an equal chance (DEC-014). A nested pod keeps its default burst timer.
 
 **R-UNIT-515** (MUST) The spawn step of every Seed Pod draws its default burst timer, `ref.unit.seed_pod.default_burst_base` + ⌈`SimRng::NextUnit`(`ref.unit.seed_pod.default_burst_spread`)⌉ ticks (200 to 300 ticks, 20 to 30 s). A Spitter Plant launch (R-UNIT-511) and the Brood outcome (R-UNIT-512) then replace it with `ref.unit.seed_pod.launch_burst_base` + ⌈`SimRng::NextUnit`(`ref.unit.seed_pod.launch_burst_spread`)⌉ ticks (40 to 80 ticks, 4 to 8 s).
 
@@ -84,7 +84,7 @@ if p.y < ground(p) + ref.unit.seed_pod.bounce_clearance:          # 3 wu
     v *= f
     p.y = max(p.y, ground(p) + ref.unit.seed_pod.bounce_clearance)
     if f > ref.unit.seed_pod.bounce_sound_force: raise seed_pod.bounce  # 0.1
-up = rotate(up, axis = normalise(up x v), angle = f^2 * ref.unit.seed_pod.tumble_rate * dt)   # tumble, 30
+up = rotate(up, axis = Normalize(up x v), angle = f^2 * ref.unit.seed_pod.tumble_rate * dt)   # tumble, 30
 if up.y < ref.unit.seed_pod.self_right_up and f < ref.unit.seed_pod.self_right_force:          # 0.3, 0.4
     up = (0, 1, 0)                                    # it rights itself
 ```
@@ -175,7 +175,7 @@ A Brood Drifter is a hovering creature with four tails. It drifts around its spa
 **R-UNIT-541** (MUST) A Brood Drifter flies with no terrain or structure collision. Each tick:
 
 ```
-desired = normalise(target - p) * speed
+desired = Normalize(target - p) * speed
 if |target - p| < ref.unit.brood_drifter.slow_radius:        # 50 wu
     desired *= |target - p| / ref.unit.brood_drifter.slow_radius
 v = v * (1 - dt * ref.unit.brood_drifter.steer_blend) + desired * dt * ref.unit.brood_drifter.steer_blend   # 0.5
@@ -216,7 +216,7 @@ v = (h[k] - h[k+1]) / dt
 
 and takes its leader's panic timer. It is drawn linked to its leader only when the leader is linked and it has at least 2 samples of its own. When its leader dies, it becomes a head.
 
-**R-UNIT-552** (MUST) A head moves at `ref.unit.centipede.speed` (80 wu/s) × its slope factor (R-UNIT-042), on the terrain. It turns its front toward its target with the blend front = normalise(front × (1 − b) + direction × b), b = dt × `ref.unit.centipede.head_turn` (3); a trailing segment that steers uses b = dt × `ref.unit.centipede.trail_turn` (1.5). It has arrived when it is within `ref.unit.centipede.arrival` (20 wu) of its target. A target below height 0, or a structure within `ref.unit.centipede.structure_lookahead` (150 wu) ahead along its front, counts as arrived and forces a new target, so a centipede refuses water and steers away from structures; it is otherwise never pushed by structures. A centipede gets no world clamp.
+**R-UNIT-552** (MUST) A head moves at `ref.unit.centipede.speed` (80 wu/s) × its slope factor (R-UNIT-042), on the terrain. It turns its front toward its target with the blend front = Normalize(front × (1 − b) + direction × b), b = dt × `ref.unit.centipede.head_turn` (3); a trailing segment that steers uses b = dt × `ref.unit.centipede.trail_turn` (1.5). It has arrived when it is within `ref.unit.centipede.arrival` (20 wu) of its target. A target below height 0, or a structure within `ref.unit.centipede.structure_lookahead` (150 wu) ahead along its front, counts as arrived and forces a new target, so a centipede refuses water and steers away from structures; it is otherwise never pushed by structures. A centipede gets no world clamp.
 
 **R-UNIT-553** (MUST) The head's states are Roam, Hunt, SeekOrb and Panic. Whenever it has no target or has arrived, outside Panic, it searches in this order:
 
@@ -303,7 +303,7 @@ A spider is a large walker on eight procedurally animated legs. It pounces on en
 **R-UNIT-574** (MUST) In Attack the spider turns to face its pounce target and walks toward it while it is farther than `ref.unit.spider.pounce_range` (150 wu). When it faces the target (R-UNIT-571) and is within 150 wu, it pounces: with u the horizontal unit direction to the pounce target and D the distance to it,
 
 ```
-v = normalise((u.x, ref.unit.spider.pounce_lift, u.z)) * ref.unit.spider.pounce_speed_factor * sqrt(D)    # lift 0.5, factor 24
+v = Normalize((u.x, ref.unit.spider.pounce_lift, u.z)) * ref.unit.spider.pounce_speed_factor * sqrt(D)    # lift 0.5, factor 24
 ```
 
 it raises `spider.attack` and `spider.pounce` and enters Pouncing.
@@ -323,7 +323,7 @@ Then the spider returns to Idle; `spider.pounce_land` is silent (DEC-565).
 
 **R-UNIT-576** (MUST) Each tick the spider looks for other spiders within `ref.unit.spider.avoid_radius` (22 wu) of p + v. The query returns n neighbours; for each of them that is a spider, the escape vector adds p minus the position of the neighbour at index `SimRng::NextUint` mod n, not of the spider found. When at least one spider was found, the spider retargets `ref.unit.spider.avoid_step` (40 wu) along the normalised escape vector (see DEC-855).
 
-**R-UNIT-577** (MUST) A spider is immune to laser bolts and ignores every health change of −1 or above (R-UNIT-027); a larger hit applies the base rule and shatters the fraction of its mesh that matches the health lost. Its death releases an Essence orb (R-UNIT-507) and raises `spider.die`. A spider never stomps with its feet and has no separate patrol or attack speed and no attack preamble: the constants `ref.unit.spider.foot_damage_radius` (20 wu), `ref.unit.spider.foot_damage_strength` (10), `ref.unit.spider.normal_speed` (300), `ref.unit.spider.attack_speed` (90) and `ref.unit.spider.attack_preamble` (5 s) are read by no rule.
+**R-UNIT-577** (MUST) A spider is immune to laser bolts and ignores every health change of −1 or above (R-UNIT-027); a larger hit applies the base rule and shatters the fraction of its mesh that matches the health lost. Its death releases an Essence orb (R-UNIT-507) and raises `spider.die`.
 
 **R-UNIT-578** (MUST) The spider's `ref.unit.spider.legs` (8) legs are procedural legs (§2.9) driven after the state rule of each tick, entirely in presentation on the presentation clock (DEC-007, ADR-035): foot state never changes the body, a draw or any simulation rule. While Pouncing, each leg takes its pounce pose with f = `ref.unit.spider.pounce_pose_rate` × the time since the pounce in seconds (2 ×). On the ground, the gait runs its foot selection `ref.unit.spider.max_lifts_per_tick` (2) times per tick ([animation and VFX](../../architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md) VFX-131): outside the lift lock-out, each run lifts at once every planted foot whose desire to move exceeds `ref.unit.spider.foot_emergency` (12 wu), and these emergency lifts are not the run's choice; then it lifts the planted foot with the highest desire above `ref.unit.spider.foot_move` (5 wu) and locks out further such lifts for the active gait set's delay between lifts. The active spider gait is the set of R-UNIT-579 whose ideal speed is nearest |v|, and each leg takes its lift, swing duration and look-ahead from it, and its ideal slope × `ref.unit.spider.gait_slope_factor` (2.5). Every foot plant raises `spider.footstep`.
 
@@ -361,7 +361,7 @@ arc = lift                    in between
 
 When f > 1 the foot is planted: its position becomes the target and its state OnGround.
 
-**R-UNIT-584** (MUST) The knee is found by rotating the vector from foot to root, scaled to the shin length, about the horizontal axis perpendicular to the line from body centre to root by θ = −acos(min(1, `ref.unit.spider.leg.knee_factor` × |root − foot| ÷ thigh length)) (factor 0.4). The shin is drawn from foot to knee and the thigh from knee to root. The Species engine solves the leg with segments of fixed length (ADR-035).
+**R-UNIT-584** (MUST) The knee is found by rotating the vector from foot to root, scaled to the shin length, about the horizontal axis perpendicular to the line from body centre to root by θ = −acos(min(1, `ref.unit.spider.leg.knee_factor` × |root − foot| ÷ thigh length)) (factor 0.4). The shin is drawn from foot to knee and the thigh from knee to root.
 
 **R-UNIT-585** (MUST) In the pounce pose with parameter f, foot = body − body-to-foot × (1 − f for f < 0.5, else f) + body velocity × f × `ref.unit.spider.leg.pounce_velocity_factor` (0.05), and its last ground position and target are set to that point.
 
@@ -393,7 +393,7 @@ A Wisp is a purely visual ghost. A Worker killed by a Reaper Serpent (R-UNIT-591
 
 **R-UNIT-595** (MUST) A Wisp is an effect. Its spawn step draws its position offset `SimRng::NextUnit`(`ref.unit.wisp.offset_spread`) (10) and three axis rates `SimRng::NextUnit`(`ref.unit.wisp.axis_rate_max`) (2) (DEC-652). It lives `ref.unit.wisp.life_ticks` (6000 ticks, nominal 600 s) and is then removed.
 
-**R-UNIT-596** (MUST) Each tick its velocity is multiplied by `ref.unit.wisp.damping` (0.9) and it wobbles like an Essence orb ([Essence orbs](essence_orbs.md)): each axis rate takes a cosmetic random walk of `FxRng::NextSigned`(`ref.unit.wisp.rate_walk`) (1) per tick, held within [0, `ref.unit.wisp.axis_rate_max`], and its hover is sin(position offset) × rate. Each tick the wobble also makes one further cosmetic draw `FxRng::NextUnit`(`ref.unit.wisp.extra_draw_range`) (20), which has no gameplay effect, so the Wisp makes four cosmetic draws per tick, as the snowflake does ([randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md)).
+**R-UNIT-596** (MUST) Each tick its velocity is multiplied by `ref.unit.wisp.damping` (0.9) and it wobbles like an Essence orb ([Essence orbs](essence_orbs.md)): each axis rate takes a cosmetic random walk of `FxRng::NextSigned`(`ref.unit.wisp.rate_walk`) (1) per tick, held within [0, `ref.unit.wisp.axis_rate_max`], and its hover is sin(position offset) × rate. Each tick the wobble makes three cosmetic draws, one per axis.
 
 **R-UNIT-597** (MUST) Presentation: an inner card of `ref.unit.wisp.inner_size` (5 wu) and an outer card of `ref.unit.wisp.outer_size` (10 wu) of `sprite.wisp.body`, colour `ref.unit.wisp.colour` (0.9, 0.9, 1.0), with alpha = clamp(1 − age ÷ `ref.unit.wisp.alpha_period` (10 s), `ref.unit.wisp.alpha_min` (0.1), `ref.unit.wisp.alpha_max` (0.7)) and outer alpha (0.7 − alpha) × `ref.unit.wisp.outer_alpha_factor` (0.1), both fading to 0 over its last `ref.unit.wisp.fade_ticks` (1000 ticks). It has no sound.
 
@@ -517,6 +517,7 @@ stateDiagram-v2
     [*] --> NoOrders
     NoOrders --> ReturnToBase : its Hive exists or a friendly Hive within 500
     NoOrders --> HiveLost : no Hive
+    [*] --> ScoutArea : released by a Hive toward an objective
     ScoutArea --> CollectWorker : arrived, target is a Worker
     ScoutArea --> AttackEnemy : arrived, target is another actor or a structure
     ScoutArea --> ReturnToBase : arrived, target gone
@@ -796,11 +797,6 @@ Every value is a reference value adopted as the Species starting value (DEC-004)
 | `ref.unit.spider.push_cap` | 20 | wu/s | | R-UNIT-575 | — |
 | `ref.unit.spider.avoid_radius` | 22 | wu | | R-UNIT-576 | — |
 | `ref.unit.spider.avoid_step` | 40 | wu | | R-UNIT-576 | — |
-| `ref.unit.spider.foot_damage_radius` | 20 | wu | read by no rule | R-UNIT-577 | — |
-| `ref.unit.spider.foot_damage_strength` | 10 | health | read by no rule | R-UNIT-577 | — |
-| `ref.unit.spider.normal_speed` | 300 | — | read by no rule | R-UNIT-577 | — |
-| `ref.unit.spider.attack_speed` | 90 | — | read by no rule | R-UNIT-577 | — |
-| `ref.unit.spider.attack_preamble` | 5 | s | read by no rule | R-UNIT-577 | — |
 | `ref.unit.spider.legs` | 8 | legs | | R-UNIT-578 | — |
 | `ref.unit.spider.pounce_pose_rate` | 2 | per s | presentation | R-UNIT-578 | DEC-007 |
 | `ref.unit.spider.max_lifts_per_tick` | 2 | foot-selection runs | per tick; emergency lifts do not count; presentation | R-UNIT-578 | DEC-007 |
@@ -884,7 +880,6 @@ Every value is a reference value adopted as the Species starting value (DEC-004)
 | `ref.unit.wisp.life_ticks` | 6000 | ticks | nominal 600 s | R-UNIT-595 | DEC-002 |
 | `ref.unit.wisp.damping` | 0.9 | × velocity per tick | | R-UNIT-596 | DEC-092 |
 | `ref.unit.wisp.rate_walk` | 1 | — | cosmetic `NextSigned(1)` per tick | R-UNIT-596 | DEC-013 |
-| `ref.unit.wisp.extra_draw_range` | 20 | — | fourth per-tick wobble draw, cosmetic `NextUnit(20)`; no gameplay effect | R-UNIT-596 | DEC-013 |
 | `ref.unit.wisp.inner_size` | 5 | wu | presentation | R-UNIT-597 | DEC-007 |
 | `ref.unit.wisp.outer_size` | 10 | wu | presentation | R-UNIT-597 | DEC-007 |
 | `ref.unit.wisp.colour` | 0.9, 0.9, 1.0 | RGB | presentation | R-UNIT-597 | DEC-007 |

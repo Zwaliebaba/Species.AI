@@ -51,7 +51,7 @@ Zone Control is a zone-holding mode. The map has Control Zones, drawn as coloure
 
 **R-MODE-260** (MUST) The score line is the generic score line of README R-MODE-065; its estimate is shown with score modes 0, 1 and 3. The game-over list shows name and score.
 
-**R-MODE-261** (MUST) A Control Zone is drawn as a ring whose segments are proportional to each team's share of the zone's total count, in team colours, the owner's segment animated and opaque and the others at reduced alpha, with the remainder grey, and a faint vertical glow column; the ring fades as the camera comes close. The values belong to [reference/03](../03_buildings_and_world_objects/mode_objects.md) R-BLDG-257: owner alpha `ref.bldg.control_zone.ring_owner_alpha` (255), others `ref.bldg.control_zone.ring_other_alpha` (100), a column `ref.bldg.control_zone.column_height_wu` (1,200 wu) tall, and a fade within `ref.bldg.control_zone.fade_distance_wu` (500 wu) of the camera to an alpha factor of `ref.bldg.control_zone.fade_min_alpha` (0.4). The ring uses `fx.beam_long`; the zone's ownership change plays `sfx.building.control_zone.owner_changed` and `sfx.building.control_zone.owner_changed_b`, and an occupied zone loops `sfx.building.control_zone.presence_loop`. The picture `help.hint.zone_control` belongs to the objective-card hook, which draws nothing in a match (R-TUT-013); the mode is explained by its help pages (R-TUT-043, `ref.tut.help_page.mode_pages`) and its explainer panel (R-TUT-020).
+**R-MODE-261** (MUST) A Control Zone is drawn as a ring whose segments are proportional to each team's share of the zone's total count, in team colours, the owner's segment animated and opaque and the others at reduced alpha, with the remainder grey, and a faint vertical glow column; the ring fades as the camera comes close. The values belong to [reference/03](../03_buildings_and_world_objects/mode_objects.md) R-BLDG-257: owner alpha `ref.bldg.control_zone.ring_owner_alpha` (255), others `ref.bldg.control_zone.ring_other_alpha` (100), a column `ref.bldg.control_zone.column_height_wu` (1,200 wu) tall, and a fade within `ref.bldg.control_zone.fade_distance_wu` (500 wu) of the camera to an alpha factor of `ref.bldg.control_zone.fade_min_alpha` (0.4). The ring uses `fx.beam_long`; the zone's ownership change plays `sfx.building.control_zone.owner_changed` and `sfx.building.control_zone.owner_changed_b`, and an occupied zone loops `sfx.building.control_zone.presence_loop`. The mode's objective card is a hook only and draws nothing in a match (R-TUT-013, DEC-050); the mode is explained by its help pages (R-TUT-043, `ref.tut.help_page.mode_pages`) and its explainer panel (R-TUT-020).
 
 **R-MODE-262** (MUST) The Crowned hook fires only for a win at time-up by the local team by more than the margin; no achievement is awarded (DEC-047).
 
@@ -117,7 +117,7 @@ This file uses the string ids of the README (`match.sudden_death.start`, `match.
 ## 7 Dependencies
 
 - **Reference documents:** [README](README.md); [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) (Control Zones); [05 Population flow](../05_population_flow.md); [07 Bots](../07_bots/README.md); [11 Tutorial and help](../11_tutorial_and_help.md); [12 Space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) (actor-grid counts).
-- **Assets:** `mapfile.zone_control`, `help.hint.zone_control`, `fx.beam_long`, `sfx.building.control_zone.owner_changed`, `sfx.building.control_zone.owner_changed_b`, `sfx.building.control_zone.presence_loop`.
+- **Assets:** `mapfile.zone_control`, `fx.beam_long`, `sfx.building.control_zone.owner_changed`, `sfx.building.control_zone.owner_changed_b`, `sfx.building.control_zone.presence_loop`.
 
 ## 8 Open decisions
 
@@ -125,6 +125,6 @@ This file uses the string ids of the README (`match.sudden_death.start`, `match.
 - DEC-315 — concentric and pre-owned Control Zones (R-MODE-256).
 - DEC-300 — the return of teams wiped out in sudden death (§5 item 6).
 - DEC-047 — the Crowned hook (R-MODE-262).
-- DEC-050 — the objective-card hook that the Control Zone event feeds (R-MODE-254).
+- DEC-050 — the objective-card hook that the Control Zone event feeds (R-MODE-254, R-MODE-261).
 
 Resolved decisions applied: DEC-011, DEC-016, DEC-064, DEC-079, DEC-082, DEC-120, DEC-124.

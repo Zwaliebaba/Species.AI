@@ -54,7 +54,7 @@ else:
     speed = max(speed - ref.unit.abductor.acceleration * dt, ref.unit.abductor.speed_floor_factor * s)   # 0.1 x s
 if state == Idle and p.y > ref.unit.abductor.descent_height:         # 1000 wu
     speed = max((p.y - 1000) / ref.unit.abductor.descent_range * ref.unit.abductor.descent_speed, 2 * s)  # 5000, 8000
-heading = normalise(heading * (1 - ref.unit.abductor.heading_blend) + normalise(target - p) * ref.unit.abductor.heading_blend)   # 0.1
+heading = Normalize(heading * (1 - ref.unit.abductor.heading_blend) + Normalize(target - p) * ref.unit.abductor.heading_blend)   # 0.1
 v = heading * speed * dt
 p += v * dt
 ```
@@ -89,13 +89,13 @@ A bot uses its airstrike Powers by the rules of [reference/07](../07_bots/README
 
 **R-UNIT-713** (MUST) A marker that is at least `ref.hazard.airstrike.marker_summon_delay` (20 ticks, nominal 2.0 s) old and at rest, with its force at most `ref.hazard.airstrike.marker_rest_force` (0.1), creates one airstrike flight of `ref.sim.init.power_level.airstrike` (2) Bombers of the marker's team at its position ([reference/12](../12_simulation_model/02_match_lifecycle_and_state_reset.md)). The flight holds the marker's handle and its firebomb flag. The marker removes itself once its flight is gone or Leaving; whether it advances in the tick it is created in is DEC-455.
 
-**R-UNIT-714** (MUST) A new flight sets its attack position to the marker's position with y = the ground height + `ref.hazard.airstrike.attack_height` (70 wu), and its speed to the Bomber speed `ref.unit.bomber.speed` × `ref.hazard.airstrike.cruise_factor` (40 × 10 = 400 wu/s). Its four candidate corners lie at height `ref.hazard.airstrike.corner_height` (500 wu), inset `ref.hazard.airstrike.corner_inset` (100 wu) from the map edges, in this order: (100, 500, 100), (100, 500, Z − 100), (X − 100, 500, Z − 100), (X − 100, 500, 100). Its **exit** is the corner nearest the attack position and its **entry** the second nearest; a tie goes to the earlier corner of that order (DEC-016). Its waypoint starts at the entry, its front is normalise(map centre at height 0 − entry), pointing down and inward, and its Bombers spawn at the entry.
+**R-UNIT-714** (MUST) A new flight sets its attack position to the marker's position with y = the ground height + `ref.hazard.airstrike.attack_height` (70 wu), and its speed to the Bomber speed `ref.unit.bomber.speed` × `ref.hazard.airstrike.cruise_factor` (40 × 10 = 400 wu/s). Its four candidate corners lie at height `ref.hazard.airstrike.corner_height` (500 wu), inset `ref.hazard.airstrike.corner_inset` (100 wu) from the map edges, in this order: (100, 500, 100), (100, 500, Z − 100), (X − 100, 500, Z − 100), (X − 100, 500, 100). Its **exit** is the corner nearest the attack position and its **entry** the second nearest; a tie goes to the earlier corner of that order (DEC-016). Its waypoint starts at the entry, its front is Normalize(map centre at height 0 − entry), pointing down and inward, and its Bombers spawn at the entry.
 
 **R-UNIT-715** (MUST) Each tick, while the marker's handle is valid, the flight re-reads the marker's position, which may still be rolling, and sets its attack position 70 wu above the ground there. It then moves toward its target T (the attack position while Approaching, the exit while Leaving):
 
 ```
 a = dt                                                    # a blend of 10 % per tick
-front = normalise(front * (1 - a) + normalise(T - waypoint) * a)
+front = Normalize(front * (1 - a) + Normalize(T - waypoint) * a)
 desired = ref.unit.bomber.speed                           # 40 wu/s
 if (Approaching and |waypoint - attack| > ref.hazard.airstrike.approach_fast_distance) or \
    (Leaving and |waypoint - attack| > ref.hazard.airstrike.leave_fast_distance):        # 600 wu, 100 wu
@@ -140,8 +140,8 @@ f = 1 - r / R0
 speed = ref.unit.barrage_missile.speed * (ref.hazard.missile_barrage.min_speed_fraction + (1 - ref.hazard.missile_barrage.min_speed_fraction) * f^2)   # 50 to 100 wu/s
 height_factor = |L - T| / ref.hazard.missile_barrage.loft_divisor                                                                                       # 3
 n = max(ref.hazard.missile_barrage.loft_min, ref.hazard.missile_barrage.loft_factor * p.y / height_factor)                                              # 2, 5
-axis = normalise(normalise(T - L) x up)                   # right-handed cross product
-front = rotate(normalise(T - p), axis, pi / n)            # right-hand rule
+axis = Normalize(Normalize(T - L) x up)                   # right-handed cross product
+front = rotate(Normalize(T - p), axis, pi / n)            # right-hand rule
 front = rotate(front, axis, -f * pi / n)
 p += front * speed * dt
 ```

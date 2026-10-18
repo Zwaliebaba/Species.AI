@@ -12,23 +12,37 @@ This document specifies the schemas of the actor stat table, the Supply-crate ou
 
 ## 2 Interfaces
 
-The interface below is a C++23 declaration sketch, not an implementation. The record types are generated from the schemas (ADR-062).
+The interface below is a C++23 declaration sketch, not an implementation. The record types and their enumerations are generated from the schemas (README DAT-054, ADR-062), and this section holds their only declaration; the audio engine cites the sound declarations ([audio engine](../audio_engine/README.md) §2.1). `ActorKind`, `CrateOutcome` and `MatchMode` are the game types of CONVENTIONS table 8.12-A.
 
 ```cpp
 namespace Species
 {
 
-// Table 3.1-A.
+// ---- generated from actor.stats: table 3.1-A ----
 struct ActorStats
 {
   ActorKind kind;
   double health;
   double speed;
   double rate;
-  std::optional<double> actorRate;
+  double actorRate; // defaulted: the record's rate
 };
 
-// Table 3.2-A.
+// ---- generated from crate.outcomes: table 3.2-A ----
+enum class OutcomeClass : std::uint8_t
+{
+  Basic,
+  Advanced
+};
+// The delivery as a good outcome (reference/04 table 2.2-A).
+enum class Delivery : std::uint8_t
+{
+  Power,
+  AtCrate,
+  Global,
+  OpeningTeam,
+  None
+};
 struct CrateOutcomeEntry
 {
   CrateOutcome outcome;
@@ -36,20 +50,32 @@ struct CrateOutcomeEntry
   bool good;
   bool bad;
   bool start;
-  std::uint8_t comebackWeight;
+  std::uint8_t comeback; // the number of listings in the Comeback pool
   Delivery delivery;
 };
 
-// Table 3.7-B.
-struct ExplainerKey;
+// ---- generated from panels.explainer: tables 3.10-A and 3.10-B ----
+struct ExplainerKey; // table 3.10-B
+struct ExplainerCanvas
+{
+  std::uint32_t width;
+  std::uint32_t height;
+};
+struct ExplainerLoop
+{
+  double start;
+  double end;
+};
+struct ExplainerObject
+{
+  std::span<const ExplainerKey> keys; // authored order (R-META-226)
+};
 struct ExplainerAnimation
 {
   MatchMode mode;
-  std::uint32_t width;
-  std::uint32_t height;
-  double loopStart;
-  double loopEnd;
-  std::span<const std::span<const ExplainerKey>> objects;
+  ExplainerCanvas canvas;
+  ExplainerLoop loop;
+  std::span<const ExplainerObject> objects; // draw order
 };
 
 } // namespace Species
@@ -57,49 +83,9 @@ struct ExplainerAnimation
 namespace Engine
 {
 
-enum class ParamKind : std::uint8_t
-{
-  Fixed,
-  Random,
-  Linked
-};
-enum class ParamUpdate : std::uint8_t
-{
-  Continuous,
-  PerNote
-};
-// R-AUD-052
-enum class ParamLink : std::uint8_t
-{
-  None,
-  Height,
-  PosX,
-  Altitude,
-  PosZ,
-  Speed,
-  CameraDistance,
-  ObjectAge,
-  GroupsNearby,
-  TimeRemaining,
-  ObjectsNearby
-};
-// One modulatable value (DAT-268).
-struct SoundParam
-{
-  ParamKind kind;
-  double value;
-  double lo;
-  double hi;
-  double inLo;
-  double inHi;
-  double outLo;
-  double outHi;
-  double smoothing;
-  ParamLink link;
-  ParamUpdate update;
-};
-// The order of R-AUD-077, which carries meaning.
-enum class EffectKind : std::uint8_t
+// ---- generated from sound.effect_kinds: table 3.5-A, compiled into the audio engine (DAT-273) ----
+// The DSP filter kinds; the order of R-AUD-077 carries meaning: a chain runs its own-algorithm kinds in this order (R-AUD-080).
+enum class DspFilterKind : std::uint8_t
 {
   Chorus,
   Compressor,
@@ -116,26 +102,6 @@ enum class EffectKind : std::uint8_t
   Echo,
   SimpleReverb
 };
-// Parameters in the kind's order.
-struct EffectBinding
-{
-  EffectKind kind;
-  std::array<SoundParam, 13> params;
-  std::uint8_t count;
-};
-// Table 3.3-B.
-struct SoundLayerDef;
-struct SoundEventDef
-{
-  std::string fullId;
-  std::optional<double> cooldownSeconds;
-  std::span<const SoundLayerDef> layers;
-};
-struct SoundSourceDef
-{
-  std::string source;
-  std::span<const SoundEventDef> events;
-};
 struct DspParamDesc
 {
   std::string_view name;
@@ -145,11 +111,74 @@ struct DspParamDesc
   double schemaDefault;
   bool integer;
 };
-// Generated, compiled in.
 struct DspFilterDef
 {
-  EffectKind kind;
+  DspFilterKind kind;
   std::span<const DspParamDesc> params;
+};
+
+// ---- generated from sound.sources: tables 3.3-A, 3.3-B and 3.4-A ----
+// The form of a modulatable value (table 3.4-A).
+enum class SoundParamKind : std::uint8_t
+{
+  Fixed,
+  Random,
+  Linked
+};
+enum class SoundParamUpdate : std::uint8_t
+{
+  Continuous,
+  PerNote
+};
+// The links of table 3.4-A, in its order (R-AUD-052).
+enum class SoundLink : std::uint8_t
+{
+  None,
+  Height,
+  PosX,
+  Altitude,
+  PosZ,
+  Speed,
+  CameraDistance,
+  ObjectAge,
+  GroupsNearby,
+  TimeRemaining,
+  ObjectsNearby
+};
+// One modulatable value, cooked from any of the three forms of table 3.4-A (DAT-268).
+struct SoundParam
+{
+  SoundParamKind kind;
+  double value;
+  double lo;
+  double hi;
+  double inLo;
+  double inHi;
+  double outLo;
+  double outHi;
+  double smoothing;
+  SoundLink link;
+  SoundParamUpdate update;
+};
+// One effect binding, its parameters cooked in its kind's order (DAT-272).
+struct EffectBinding
+{
+  DspFilterKind kind;
+  std::array<SoundParam, 13> params;
+  std::uint8_t count;
+};
+// Table 3.3-B; its position, sharing, loop, audience and bus fields bind to the audio engine's enumerations (README DAT-054 item 4).
+struct SoundLayerDef;
+struct SoundEventDef
+{
+  std::string event;              // the full id is <source>.<event> (R-AUD-028)
+  std::optional<double> cooldown; // s of real time
+  std::span<const SoundLayerDef> layers;
+};
+struct SoundSourceDef
+{
+  std::string source;
+  std::span<const SoundEventDef> events;
 };
 
 } // namespace Engine
@@ -186,7 +215,7 @@ Table 3.2-A Fields of an outcome entry.
 | Field | Key | Type | Presence | Rules |
 |---|---|---|---|---|
 | outcome | `outcome` | enumeration of the 31 `CrateOutcome` identifiers, in snake_case | required | one entry per outcome (DEC-801) |
-| class | `class` | enumeration `basic`, `advanced` | required | exactly `ref.crate.outcome.basic_count` basic outcomes (R-CRATE-008) |
+| class | `outcome_class` | enumeration `basic`, `advanced` | required | exactly `ref.crate.outcome.basic_count` basic outcomes (R-CRATE-008) |
 | good pool | `good` | boolean | required | R-CRATE-124 |
 | bad pool | `bad` | boolean | required | R-CRATE-126 |
 | starting-powers pool | `start` | boolean | required | R-ECON-110 |
@@ -207,7 +236,7 @@ Table 3.3-A Fields of a sound source and of an event.
 | cool-down | `cooldown` | presentation decimal, s of real time | absence-meaningful: none | the per-event cool-down that replaces a fixed rate limit of game code (R-AUD-220, DEC-570) |
 | layers | `layers` | ordered list of layers | required | at least one layer; each layer plays when its audience accepts the event (R-AUD-023) |
 
-Table 3.3-B Fields of a layer, in schema order: the fields of R-AUD-049 and the engine fields of AEN-062. A modulatable value is DAT-268's.
+Table 3.3-B Fields of a layer, in schema order: the fields of R-AUD-049 and the engine fields of AEN-062. A modulatable value is DAT-268's. The position, sharing, loop, audience and bus fields bind to the audio engine's `SoundPosition`, `SoundSharing`, `SoundLoop`, `SoundAudience` and `AudioBus`, which list these tokens (README DAT-054 item 4).
 
 | Field | Key | Type | Default | Range and rules |
 |---|---|---|---|---|
@@ -247,7 +276,7 @@ Table 3.4-A Forms of a modulatable value.
 |---|---|---|
 | fixed | a JSON number | the value |
 | random | `{"random": [lo, hi], "smoothing": s, "update": u}` | lo, hi; the smoothing and the update mode are optional |
-| linked | `{"linked": link, "input": [inLo, inHi], "output": [outLo, outHi], "smoothing": s, "update": u}` | the link is one of `none`, `height`, `pos_x`, `altitude`, `pos_z`, `speed`, `camera_distance`, `object_age`, `teams_nearby`, `time_remaining`, `unit_count` (R-AUD-052; DEC-568); the update mode is `continuous` or `per_note` |
+| linked | `{"linked": link, "input": [inLo, inHi], "output": [outLo, outHi], "smoothing": s, "update": u}` | the link is one of `none`, `height`, `pos_x`, `altitude`, `pos_z`, `speed`, `camera_distance`, `object_age`, `groups_nearby`, `time_remaining`, `objects_nearby` (`SoundLink`, R-AUD-052; DEC-568): `groups_nearby` reads the number of teams with actors near the position and `objects_nearby` the number of actors near it, which presentation code passes to the audio engine as audience groups and objects (AEN-041); the update mode is `continuous` or `per_note` |
 
 **DAT-269** (MUST) The values of a modulatable value are written exactly and cooked as binary64; no writer rounds them to a fixed number of decimals (DEC-800). A level is in decibels; no value uses the reference's ten-step volume scale (DEC-042).
 

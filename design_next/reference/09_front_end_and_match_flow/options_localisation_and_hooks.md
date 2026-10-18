@@ -6,11 +6,11 @@
 
 This document specifies what the player can set and what the client remembers between sessions, how the game speaks the player's language, and the hooks of the features that the design phase designs: achievements, statistics and leaderboards. It also specifies the one in-match status panel that belongs to no mode page, the Launch Vessel status panel of Launch Race.
 
-**Settings.** The player opens the settings from the help-and-options branch, at the front end or from the in-match menu ([screen_flow_and_match_setup.md](screen_flow_and_match_setup.md) §2.15, help-and-options branch). Four pages follow one pattern: the page edits copies of the stored values, an apply action stores and applies them, and the back action discards them. The screen options set the screen size, a window or full screen, and three full-screen display parameters; the graphics options set four detail levels; the sound options set the audio output, the mixing rate, the volume, the number of sounds and the stereo orientation; the other options switch the in-match tips, set the network ports and choose the text language. A handful of further settings are stored without any page: the player name, the preferred colour, the session-browser filters, renderer and input refinements, and development aids. The client keeps all of them in one settings store in the player's profile folder. No setting changes a match: everything that changes the simulation is a match option.
+**Settings.** The player opens the settings from the help-and-options branch, at the front end or from the in-match menu ([screen_flow_and_match_setup.md](screen_flow_and_match_setup.md) §2.15, help-and-options branch). Four pages follow one pattern: the page edits copies of the stored values, an apply action stores and applies them, and the back action discards them. The screen options set the screen size and a window or full screen; the graphics options set four detail levels; the sound options set the overall and bus volumes and the stereo orientation; the other options switch the in-match tips, set the network ports and choose the text language. A handful of further settings are stored without any page: the player name, the preferred colour, the session-browser filters, renderer and input refinements, and development aids. The client keeps all of them in one settings store in the player's profile folder. No setting changes a match: everything that changes the simulation is a match option.
 
 **Language.** Every word the player reads comes from a string table keyed by Species string ids. The reference set has nine languages. A language whose table lacks a string shows the base-language text for that string, and only complete languages are offered (DEC-099). Fonts are licensed families rasterised at run time into a glyph cache, with companion faces for Japanese and Korean.
 
-**Hooks.** The match rules evaluate 12 achievement conditions and keep a small set of statistics, but nothing is awarded, stored or ranked: the platform layer behind them is missing, the achievements page never finishes loading, and the leaderboard pages have no data source. This document records exactly what those hooks compute, where, and what the pages would show (DEC-047). The design phase designs the features.
+**Hooks.** The match rules evaluate 12 achievement conditions and keep a small set of statistics, but nothing is awarded, stored or ranked: no platform service stands behind them, and no page shows achievements or leaderboards. This document records exactly what those hooks compute and where (DEC-047). The design phase designs the features.
 
 **Loading.** The loading view itself is [front_end_presentation.md](front_end_presentation.md) §2.3; this document adds the parts of start-up that read the settings and the language (§2.10).
 
@@ -24,9 +24,9 @@ This document specifies what the player can set and what the client remembers be
 
 **R-META-402** (MUST) The store is created at start-up, after the start-up configuration has been read and before the window, the renderer and the audio engine are created, so each of them reads its settings from the store. Its defaults come from the one defaults table of DEC-100, which is available before any pack file is mounted, so packaged and development builds start with the same defaults.
 
-**R-META-403** (MUST) **First run.** When the settings file cannot be opened, the store takes every default from the defaults table (DEC-100): the defaults of §4.2 and the defaults that the owning documents state for their settings. It then applies the forced value of R-META-405, and the renderer's start-up writes the display settings and saves the store (R-META-424). Where the reference has two defaults for one setting, the table holds the one that §5 item 1 names.
+**R-META-403** (MUST) **First run.** When the settings file cannot be opened, the store takes every default from the defaults table (DEC-100): the defaults of §4.2 and the defaults that the owning documents state for their settings. It then applies the forced value of R-META-405, and the renderer's start-up writes the display settings and saves the store (R-META-424). Each setting has one default in that table, and every reader of the setting, the options pages included, uses it (§5 item 1).
 
-**R-META-404** (MUST) **Loading.** Each entry of the settings file has the type, range and default that the preferences schema declares; an entry that does not parse, or whose value is outside its type or range, is written to the log and takes its default, and every other entry keeps its stored value (DEC-800 item 5). When a key occurs more than once, the first occurrence is used and every later one is written to the log and ignored. Comment lines and blank lines are kept for the next save ([platform layer](../../architecture/components/platform_layer.md) PLT-079). The reference reader that DEC-800 replaces is described in §5 item 2.
+**R-META-404** (MUST) **Loading.** Each entry of the settings file has the type, range and default that the preferences schema declares; an entry that does not parse, or whose value is outside its type or range, is written to the log and takes its default, and every other entry keeps its stored value (DEC-800 item 5). When a key occurs more than once, the first occurrence is used and every later one is written to the log and ignored. Comment lines and blank lines are kept for the next save ([platform layer](../../architecture/components/platform_layer.md) PLT-079).
 
 **R-META-405** (MUST) After every load, the control-scheme setting (the control scheme, `ControlScheme`, captioned under `ui.options.control_scheme`) is set to the match control scheme, so the alternative scheme never applies (DEC-056). The binding files of the scheme are [reference/06](../06_controls_camera_and_commands/actions_and_bindings.md).
 
@@ -34,7 +34,7 @@ This document specifies what the player can set and what the client remembers be
 1. the apply action of any options page (§2.3 to §2.6);
 2. every change of the player name, from the name field or the chat rename command, and every creation of the front-end screen, which stores the player name it read ([screen_flow_and_match_setup.md](screen_flow_and_match_setup.md) R-META-008, R-META-052);
 3. the name apply action of the player options page;
-4. the renderer's start-up, after it has set the display mode (R-META-424);
+4. the renderer's start-up, after it has created the window and the swap chain (R-META-424);
 5. leaving the session-browser filter page, which stores the filters;
 6. the release of the master-volume slider (R-META-433);
 7. a press of a free colour row of the player options page outside Siege and co-op, which stores the preferred colour ([screen_flow_and_match_setup.md](screen_flow_and_match_setup.md) R-META-081; DEC-102).
@@ -76,55 +76,57 @@ Their look, focus and navigation are the [UI framework](../../architecture/compo
 
 ### 2.3 Screen options
 
-**R-META-414** (MUST) The screen options page, titled `ui.options.screen.title`, shows from top to bottom: the screen size `ui.options.screen.size` (full list), play in a window `ui.options.screen.windowed` (check box), the refresh rate `ui.options.screen.refresh` (cycle list), the colour bits `ui.options.screen.colour_bits` (cycle list), the depth bits `ui.options.screen.depth_bits` (cycle list), apply and Back.
+**R-META-414** (MUST) The screen options page, titled `ui.options.screen.title`, shows from top to bottom: the screen size `ui.options.screen.size` (full list), play in a window `ui.options.screen.windowed` (check box), apply and Back. Its two settings are the renderer's render size and window mode ([renderer options](../../architecture/components/renderer/options_and_budgets.md) RND-442, ADR-075).
 
-**R-META-415** (MUST) The screen-size list holds every distinct width × height that the display reports for a mode of at least `ref.meta.options.screen.min_colour_bits` (15) bits per pixel and at least `rnd.init.min_render_width` (640) wide and `rnd.init.min_render_height` (480) high ([renderer](../../architecture/components/renderer/README.md) RND-026), in the order in which the display reports them, each captioned `ui.options.screen.size_value`. The size is stored as two settings, the width and the height. The page's copy is the entry of the stored size; the stored size is always in the list, because the renderer snaps it to an offered size at start-up (R-META-424). In the Species engine these entries are the render sizes that the renderer offers, with the default `rnd.option.render_size.default` ([renderer options](../../architecture/components/renderer/options_and_budgets.md) RND-442).
+The reference page also offers a refresh rate, a colour depth and a depth-buffer precision, and the reference stores an overscan value; Species has none of them (RND-443, ADR-075).
 
-**R-META-416** (MUST) Choosing a size, the page's first selection included, rebuilds the refresh-rate choices from the rates that the display reports for that size, each captioned `ui.options.screen.refresh_value`, and selects the page's refresh copy among them. When the copy is not one of them, the control shows its label without a value and the copy keeps its value.
+**R-META-415** (MUST) The screen-size list holds the render sizes that the renderer offers ([renderer](../../architecture/components/renderer/README.md) RND-026): every distinct width × height that the window's monitor reports, at least `rnd.init.min_render_width` (640) wide and `rnd.init.min_render_height` (480) high and not larger than the monitor, in the order in which the monitor reports them, each captioned `ui.options.screen.size_value`. The size is stored as two settings, the width and the height, with the default `rnd.option.render_size.default` ([renderer options](../../architecture/components/renderer/options_and_budgets.md) RND-442). The page's copy is the entry of the stored size; the stored size is always in the list, because the renderer snaps it to an offered size at start-up (R-META-424).
 
-**R-META-417** (MUST) **Play in a window.** The page's copy defaults to `ref.meta.options.screen.windowed_default` (off) when the setting is missing. On, the game runs in a captioned window with minimise and maximise boxes, centred on the desktop; a window larger than the desktop cannot be created (R-META-423). Off, the game runs full screen at the chosen size. The Species window modes are windowed and borderless full screen, the display mode is never changed, and the default is borderless full screen (ADR-075, `rnd.option.window_mode.default`).
+**R-META-416** (removed: the refresh-rate list of the reference page, a display-mode setting that Species does not have; R-META-414, RND-443)
 
-**R-META-418** (MUST) **Refresh rate.** The cycle list offers the rates of the chosen size; the page's copy defaults to `ref.meta.options.screen.refresh_default` (60 Hz). It sets the display frequency of the full-screen mode. While play in a window is ticked, the control is inactive and drawn greyed with `ui.options.screen.fullscreen_only`. The Species engine has no refresh-rate setting (RND-443).
+**R-META-417** (MUST) **Play in a window.** On, the game runs in a captioned window with minimise and maximise boxes, centred on the desktop; a window larger than the desktop cannot be created (R-META-423). Off, the game runs borderless full screen at the chosen size. The setting is the window mode, whose values are windowed and borderless full screen and whose default is borderless full screen (`rnd.option.window_mode.default`); the display mode is never changed (ADR-075).
 
-**R-META-419** (MUST) **Colour bits.** The cycle list offers `ref.meta.options.screen.colour_choices` (16, 24 and 32 bits), each captioned `ui.options.screen.bits_value`; the page's copy defaults to `ref.meta.options.screen.colour_default` (16). It sets the bits per pixel of the full-screen mode and the colour bits of the back buffer, and is inactive and greyed while play in a window is ticked, as R-META-418. The Species engine has no equivalent (DEC-100, RND-443).
+**R-META-418** (removed: the refresh-rate choice of the reference page; R-META-414, RND-443)
 
-**R-META-420** (MUST) **Depth bits.** The cycle list offers `ref.meta.options.screen.depth_choices` (16 and 24 bits), captioned `ui.options.screen.bits_value`; the page's copy defaults to `ref.meta.options.screen.depth_default` (24). It sets the precision of the depth buffer, in both window modes. The Species depth buffer has one fixed format, so the engine has no equivalent (RND-443).
+**R-META-419** (removed: the colour-depth choice of the reference page; R-META-414, RND-443)
 
-**R-META-421** (MUST) The screen options compare the width, the height, the refresh rate, play in a window, the colour bits and the depth bits for R-META-412 item 2.
+**R-META-420** (removed: the depth-buffer choice of the reference page; R-META-414, RND-443)
+
+**R-META-421** (MUST) The screen options compare the width, the height and play in a window for R-META-412 item 2.
 
 **R-META-422** (MUST) The screen options apply runs, in this order:
-1. write the width and the height of the chosen size, the refresh rate, play in a window, the colour bits and the depth bits;
-2. create the window and the renderer again with the new values; a change from one full-screen mode to another always performs a real display-mode change, even when only the refresh rate differs;
+1. write the width and the height of the chosen size and the window mode;
+2. reconfigure the renderer with the new values, without creating the device again and without reloading content ([renderer options](../../architecture/components/renderer/options_and_budgets.md) RND-447, ADR-075);
 3. when the screen size changed, lay the user interface out for the new size and move every open window so that its centre keeps its proportional place: new centre = old centre × new size ÷ old size, on each axis;
 4. save the store and re-read the page's copies;
 5. close every window; at the front end, build the front-end screen again; in a match, open the match view again;
 6. open the settings screen and the screen options page again, so that the player is back on the screen options at the new size.
 
-The Species renderer applies a new size or window mode by reconfiguring itself, without creating the device again or reloading content ([renderer options](../../architecture/components/renderer/options_and_budgets.md) RND-447, ADR-075).
+**R-META-423** (MUST) When the window or the swap chain cannot be created with the requested values, at start-up or by the screen options apply, the fallback chain of the [platform layer](../../architecture/components/platform_layer.md) applies (PLT-112; [renderer](../../architecture/components/renderer/README.md) RND-023): the requested values, then the desktop size of the window's monitor in the stored window mode, then a window with a client area of `rnd.init.fallback_window_size` (800 × 600). A failed first attempt shows the notice `ui.error.resolution_rejected`; when every attempt fails, the client stops with the fatal message `ui.error.display_mode`. After a successful attempt the store holds the size and the window mode in effect and is saved.
 
-**R-META-423** (MUST) When the window or the renderer cannot be created with the requested values, the message `ui.dialog.screen_mode_failed` is shown with the requested size at `plt.display.reference.failure_message_position` (100, 100), and creation is retried with, in this order: the desktop's own size with `plt.display.reference.desktop_attempt_depth_bits` (24) depth bits and the vertical-sync request `plt.display.reference.fallback_vsync_request` (off); `rnd.init.fallback_window_size` (800 × 600) in a window with `plt.display.reference.window_attempt_colour_bits` (16) colour bits, `plt.display.reference.window_attempt_depth_bits` (16) depth bits and `plt.display.reference.window_attempt_refresh` (60 Hz); the same with `plt.display.reference.last_attempt_depth_bits` (24) depth bits. When the last attempt fails, start-up stops with a fatal error. The retry values and the message position are the [platform layer](../../architecture/components/platform_layer.md)'s (window creation, PLT-113); the Species chain, with its fatal message `ui.error.display_mode`, is [renderer](../../architecture/components/renderer/README.md) RND-023. After a successful creation the store holds the values in effect, the size, play in a window, the colour bits, the depth bits, the refresh rate, the vertical-sync request and an overscan value of `plt.display.reference.overscan` (0), and is saved.
-
-**R-META-424** (MUST) At start-up the renderer reads the screen settings, with its own defaults for missing ones, stated by the [platform layer](../../architecture/components/platform_layer.md) (PLT-029): play in a window `plt.display.reference.reader_windowed` (off, so full screen), `plt.display.reference.reader_colour_bits` (32) colour bits, `plt.display.reference.reader_refresh` (75 Hz), `plt.display.reference.reader_depth_bits` (24) depth bits and the vertical-sync request `plt.display.reference.reader_vsync_request` (on). A stored size of 0 × 0, which is the first-run state, takes the desktop's size, refresh rate and colour bits and writes them to the store. The size is then snapped to the closest mode that the display offers. After the mode is set, the renderer writes the screen settings back and saves the store (R-META-406 item 4); the overscan value is always written as `plt.display.reference.overscan` (0) and has no other effect. The Species render size follows the same first-run rule from `rnd.option.render_size.default` (0 × 0, the desktop size of the window's monitor) and the snapping of RND-022.
+**R-META-424** (MUST) At start-up the renderer reads the screen size and the window mode from the store. A stored size of 0 × 0, the first-run value of `rnd.option.render_size.default`, takes the desktop size of the window's monitor ([renderer](../../architecture/components/renderer/README.md) RND-021), and the size is then snapped to the closest offered render size (RND-022). After the window and the swap chain exist, the renderer writes the size and the window mode in effect back and saves the store (R-META-406 item 4).
 
 ### 2.4 Graphics options
 
 **R-META-425** (MUST) The graphics options page, titled `ui.options.graphics.title`, shows from top to bottom: sea detail `ui.options.graphics.sea`, sky detail `ui.options.graphics.sky`, structure detail `ui.options.graphics.structures` and unit detail `ui.options.graphics.units`, then apply and Back. Each is a cycle list of three choices: `ui.options.graphics.level_high` (detail level 1), `ui.options.graphics.level_medium` (2) and `ui.options.graphics.level_low` (3); a missing setting shows level 1. The four settings, their defaults (`rnd.option.sea_detail.default`, `rnd.option.sky_detail.default`, `rnd.option.structure_detail.default`, `rnd.option.entity_detail.default`, each 1) and their effects are the renderer's ([renderer options](../../architecture/components/renderer/options_and_budgets.md) RND-442 to RND-446).
 
-**R-META-426** (MUST) The graphics options compare six copies for R-META-412 item 2: the four detail levels and two hidden settings that the page reads and writes back unchanged, the terrain detail and the pixel effect, neither of which has any effect (R-META-456). The apply action writes all six and saves the store.
+**R-META-426** (MUST) The graphics options compare the four detail levels for R-META-412 item 2. The apply action writes them and saves the store.
 
 **R-META-427** (MUST) When a match is loaded, the graphics apply also generates the terrain and the sea again from the map definition (DEC-246, DEC-250); outside a match it only stores the settings. The sea detail is read when the sea is built, so a change takes effect at the next build, which this apply performs in a match; the sky, structure and unit detail are read on every frame. In the Species renderer no setting rebuilds terrain or sea geometry: every sea-detail mesh is built at match start, and every change takes effect on the next frame (RND-447 to RND-449).
 
-**R-META-428** (MUST) Two further graphics controls are disabled and never built, so no page shows them: a terrain detail of four levels and a pixel-effect check box. Their stored settings have no effect (R-META-456).
+**R-META-428** (removed: graphics controls that no page shows; R-META-456)
 
 ### 2.5 Sound options
 
-**R-META-429** (MUST) The sound options page, titled `ui.options.sound.title`, shows from top to bottom: the audio output `ui.options.sound.output` (full list), the mixing rate `ui.options.sound.mix_rate` (cycle list), the master volume `ui.options.sound.master_volume` (slider), the bus volumes of R-META-434 (sliders), the number of sound voices `ui.options.sound.voices` (cycle list), swap left and right `ui.options.sound.swap_stereo` (check box), then apply and Back. The settings, their defaults and their engine effects are the [audio engine](../../architecture/components/audio_engine/README.md)'s (the `aen.settings.*` keys, AEN-076); the mix that they change is [reference/10](../10_audio_design/README.md)'s. The audio output, the mixing rate and the voices are reference options whose subject the Species audio engine fixes (DEC-869).
+**R-META-429** (MUST) The sound options page, titled `ui.options.sound.title`, shows from top to bottom: the master volume `ui.options.sound.master_volume` (slider), the bus volumes of R-META-434 (sliders), swap left and right `ui.options.sound.swap_stereo` (check box), then apply and Back. The settings, their defaults and their engine effects are the [audio engine](../../architecture/components/audio_engine/README.md)'s (the `aen.settings.*` keys, AEN-076); the mix that they change is [reference/10](../10_audio_design/README.md)'s.
 
-**R-META-430** (MUST) **Audio output.** The list offers exactly one choice, the platform audio back end `ui.options.sound.output_platform` (ADR-022), and the apply action stores it. A stored value that names no back end, which only an edit of the settings file can produce, switches all audio output off: the audio engine then runs on its silent device. The first-run value is the platform back end, `aen.settings.output_default` (DEC-869).
+The reference page also offers an audio output, a mixing rate and a number of sound voices; the Species audio engine fixes all three, so the Species page has none of them (DEC-869, ADR-022, ADR-025, DEC-570).
 
-**R-META-431** (MUST) **Mixing rate.** The cycle list offers `ref.meta.options.sound.mix_rate_choices` (11 025, 22 050 and 44 100 Hz), each captioned `ui.options.sound.rate_value`; the page's copy and the first-run value are `ref.meta.options.sound.mix_rate_default` (22 050 Hz); when the setting is missing, the audio engine's own reader also uses 22 050 Hz (`aen.settings.mix_rate_reader_default`), and the reader of its secondary output path uses 44 100 Hz (`aen.settings.output_mix_rate_reader_default`). It sets the output mixing rate, and the apply action restarts the audio engine (R-META-437). The Species audio engine mixes at its fixed runtime rate (ADR-025), so the setting has no Species equivalent (DEC-100, DEC-869).
+**R-META-430** (removed: the audio-output choice of the reference page; R-META-429, DEC-869)
 
-**R-META-432** (MUST) **Sound voices.** The cycle list offers `ref.meta.options.sound.voice_choices` (8, 16, 32 and 64 voices), each captioned `ui.options.sound.voices_value`; the page's copy defaults to `ref.meta.options.sound.voices_page_default` (16) when the setting is missing, while the first-run value and the audio engine's default are `aen.settings.voices_default` (32). The count is the number of voices the engine mixes: the count − 1 voices for sound effects and one for music. The apply action restarts the audio engine. The Species mix shares a fixed budget of 64 real voices over its buses (DEC-570, DEC-869).
+**R-META-431** (removed: the mixing-rate choice of the reference page; R-META-429, DEC-869)
+
+**R-META-432** (removed: the voice-count choice of the reference page; R-META-429, DEC-869)
 
 **R-META-433** (MUST) **Master volume.** The slider sets a value from 0 to `ref.meta.options.sound.volume_max` (255), by default `aen.settings.volume_default` (255). Its track spans `ref.meta.options.sound.slider_track` (from 50 % to 95 % of the control's width), and the value is the pointer's fraction along the track × 255, truncated. Pressing or dragging on the track applies the value at once to every playing sound and to music; releasing writes it and saves the store (R-META-406 item 6). The slider works independently of the apply and Back actions, and Back does not undo it. The volume law, the attenuation per step `ref.aud.mix.master_step_db` (0.32 dB), is [reference/10](../10_audio_design/positional_priorities_and_mix.md)'s (R-AUD-225).
 
@@ -132,13 +134,13 @@ The Species renderer applies a new size or window mode by reconfiguring itself, 
 
 **R-META-435** (MUST) **Swap left and right.** The check box is off by default (`aen.settings.swap_stereo_default`). On, the left and right channels of every positioned sound are exchanged; the setting is read on every audio update, so it takes effect when the apply action stores it.
 
-**R-META-436** (MUST) The sound options compare, for R-META-412 item 2, the copies of the mixing rate, the voices, swap left and right and the audio output with the stored settings, reading each missing setting as the page's value: `ref.meta.options.sound.mix_rate_default`, `ref.meta.options.sound.voices_page_default`, off, and, for a missing or empty audio output, a match with either choice. So with the voices setting missing, the apply action shows as active (§5 item 1).
+**R-META-436** (MUST) The sound options compare the copy of swap left and right with the stored setting for R-META-412 item 2.
 
-**R-META-437** (MUST) The sound options apply writes the settings, restarts the audio engine, saves the store and re-reads the copies. A restart creates the engine's voices and devices again: playing sounds survive but lose their voices, so a looping sound starts again from the beginning of its sample, a one-shot sound expires a few audio updates later, and music keeps its read position; the exact rule is the [audio engine](../../architecture/components/audio_engine/README.md)'s reference model AEN-260. The Species apply restarts the device through `RestartDevice`, which continues every sound from its stored play position (AEN-259, AEN-261).
+**R-META-437** (MUST) The sound options apply writes the swap setting, saves the store and re-reads the copy. Every playing sound continues where it is: applying the sound options never restarts or cuts a sound ([audio engine](../../architecture/components/audio_engine/README.md) AEN-259, AEN-261).
 
-**R-META-438** (MUST) Three further sound controls are disabled and never built, so no page shows them: a sample-memory level, a hardware-positioning check box and a real-time effects check box. Their settings are R-META-454.
+**R-META-438** (removed: sound controls that no page shows; R-META-454, R-META-456)
 
-**R-META-439** (MUST) Every sound setting acts on the whole client, at the front end and in a match alike: the master and bus volumes act at once (R-META-433, R-META-434), swap left and right at the next audio update (R-META-435), and the audio output, the mixing rate and the voices when the apply action restarts the audio engine (R-META-437).
+**R-META-439** (MUST) Every sound setting acts on the whole client, at the front end and in a match alike: the master and bus volumes act at once (R-META-433, R-META-434), and swap left and right at the next audio update after the apply action stores it (R-META-435).
 
 ### 2.6 Other options
 
@@ -194,10 +196,7 @@ The Species renderer applies a new size or window mode by reconfiguring itself, 
 
 **R-META-453** (MUST) The renderer reads these settings, which no page shows; their defaults, values and effects are the renderer's ([renderer options](../../architecture/components/renderer/options_and_budgets.md) RND-442): the tree detail `rnd.option.tree_detail.default`; special lighting `rnd.option.special_lighting.default`, which Launch Race and a map's special-lighting effect switch on regardless; the screenshot tile factor `rnd.option.poster_resolution.default`; the inverted ink-on-paper style `rnd.option.inverted_style.default` (DEC-040); and the Worker distance scale factor `rnd.option.worker_scale_factor.default`.
 
-**R-META-454** (MUST) The audio engine reads these settings, which no page shows; their defaults and effects are the [audio engine](../../architecture/components/audio_engine/README.md)'s (AEN-076):
-1. the sample-memory level, default `aen.settings.sample_memory_level_default` (1), which is read and kept with no effect: every sample group always chooses among all its members ([reference/10](../10_audio_design/event_model_and_sound_data.md) R-AUD-064, R-AUD-065; DEC-097). In the reference model level 1 chooses among every sample of a group, level 2 among the first half and level 3 among the first quarter (AEN-077);
-2. the effects switch, off by default (`aen.settings.effects_default`), so no audio effect runs unless the settings file is edited (DEC-567);
-3. the output buffer length of the software output path, `aen.settings.output_buffer_first_run` (512) on first run and `aen.settings.output_buffer_reader_default` (2 000) at its readers, which has no Species equivalent (DEC-100).
+**R-META-454** (MUST) The audio engine reads one setting that no page shows, the effects switch, off by default (`aen.settings.effects_default`), so no audio effect runs unless the settings file is edited (DEC-567); its effect is the [audio engine](../../architecture/components/audio_engine/README.md)'s (AEN-076). Every sample group always chooses among all its members ([reference/10](../10_audio_design/event_model_and_sound_data.md) R-AUD-064, R-AUD-065; DEC-097).
 
 **R-META-455** (MUST) The input system reads these settings, which no page shows; their use is [input](../../architecture/components/input/README.md)'s and [reference/06](../06_controls_camera_and_commands/actions_and_bindings.md)'s:
 1. the keyboard layout, by default the operating system's keyboard layout looked up in the layout table; it selects the per-layout binding override;
@@ -205,7 +204,7 @@ The Species renderer applies a new size or window mode by reconfiguring itself, 
 3. the selection lock: when it is set and off, a new object cannot be selected while something is selected; when it is missing, which is the default, selection is not restricted;
 4. any setting named by a binding: a binding can test whether a named setting is above 0; no default binding does.
 
-**R-META-456** (MUST) These stored settings have no effect, and Species specifies none of them: the terrain detail (RND-443); the pixel effect (RND-443); the overscan value (R-META-424); the vertical-sync request, which the display driver overrides ([reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-575); a fog switch; the seasonal setting (R-META-449 item 5); control help (R-META-449 item 1); the difficulty (R-META-449 item 2); a control-method choice whose two choices bind the chat log to the same key; a network address, a server port and a network-bypass flag that nothing reads (DEC-250); the value of the start-up mini-programs (DEC-054); a text speed of a feature that the library does not specify; and the profile, profile-unlock and mod settings (DEC-061).
+**R-META-456** (MUST) Settings not listed in §2.3 to §2.8 are not specified (DEC-250).
 
 **R-META-457** (MUST) These development settings are hidden from players: the language test (R-META-473); the command-history record and replay, which runs the match at a fixed step (DEC-046; [reference/12](../12_simulation_model/07_randomness_and_integrity.md) R-SIM-740); and the bot-information overlay with its team choice ([diagnostics](../../architecture/components/diagnostics_test_and_performance/README.md)).
 
@@ -216,7 +215,7 @@ The Species renderer applies a new size or window mode by reconfiguring itself, 
 2. gamma or brightness;
 3. mouse inversion or an inverted vertical axis: inversion exists only in the binding syntax, and no default binding uses it;
 4. automatic zoom: the nearest setting is the automatic camera (R-META-449 item 3);
-5. a vertical-sync control: the stored request has no effect (R-META-456);
+5. a vertical-sync control: the present mode is a renderer setting that no reference page shows (RND-442);
 6. key rebinding: the rebinding page is unreachable (DEC-050);
 7. separate music, effects and voice volumes (DEC-570 adds the bus volumes);
 8. subtitles, a text size or colour-blind options: the only text-scale switch is large menus, which the full-screen pages ignore (R-META-449 item 4);
@@ -246,11 +245,11 @@ The Species renderer applies a new size or window mode by reconfiguring itself, 
 | Korean | `ko-KR` | `strings.ko_kr` | stub | 18.7 % | 6.6 % |
 | Portuguese | `pt-BR` | `strings.pt_br` | stub | 18.7 % | 6.6 % |
 
-The three stubs hold an early subset only: team-kind labels, menu titles, the session and sign-in texts of a console online service, sales prompts, leaderboard titles and some option labels. The region of Portuguese is to be confirmed.
+The three stubs hold an early subset of menu, lobby and option labels only.
 
 **R-META-462** (MUST) The coverage of R-META-461 describes the reference tables only. Every Species string table is written new, and the content build measures its coverage against the base language's string ids (ADR-063, ADR-059).
 
-**R-META-463** (MUST) A language is offered only when it is complete (DEC-099): a language whose table covers less than `ref.meta.lang.offer_coverage` (100 %) of the base language's string ids is not offered. The reference behaviour that DEC-099 replaces is §5 item 5.
+**R-META-463** (MUST) A language is offered only when it is complete (DEC-099): a language whose table covers less than `ref.meta.lang.offer_coverage` (100 %) of the base language's string ids is not offered.
 
 **R-META-464** (MUST) A string id that the current language's table lacks shows, per string, the text of the base language (DEC-099, ADR-063). No page ever shows a string id as text ([screen_flow_and_match_setup.md](screen_flow_and_match_setup.md) R-META-021), and the content build lists every id that falls back.
 
@@ -286,7 +285,7 @@ The language that loads is stored in the language setting. When none loads, star
 | Japanese kana and CJK ideographs | Japanese | `font.ui.primary_ja`, the companion of `font.ui.primary` |
 | Hangul syllables | Korean | `font.ui.primary_ko`, the companion of `font.ui.primary` |
 
-**R-META-475** (MUST) In Japanese and Korean every text role uses the primary face with its companion, because the primary face is the reference's only face with those scripts; Latin characters in that text keep their Latin width. The per-language horizontal scale that gives this is the [UI framework](../../architecture/components/ui_framework/layout_rendering_input_and_localisation.md)'s: `ui.text.horizontal_scale_latin` (0.6) for every character below `ui.text.cjk_first_code_point` (U+3000), and `ui.text.horizontal_scale_cjk` (1.0) in Japanese and Korean from that code point on (UI-197, ADR-034). The reference code also selects these faces for two Chinese variants, but no Chinese table exists, so Chinese is not in the language set.
+**R-META-475** (MUST) In Japanese and Korean every text role uses the primary face with its companion, because the primary face is the reference's only face with those scripts; Latin characters in that text keep their Latin width. The per-language horizontal scale that gives this is the [UI framework](../../architecture/components/ui_framework/layout_rendering_input_and_localisation.md)'s: `ui.text.horizontal_scale_latin` (0.6) for every character below `ui.text.cjk_first_code_point` (U+3000), and `ui.text.horizontal_scale_cjk` (1.0) in Japanese and Korean from that code point on (UI-197, ADR-034). The companion faces are selected for Japanese and Korean only; no Chinese string table exists, so no Chinese variant is offered (DEC-099).
 
 **R-META-476** (MUST) The language setting selects the text language only. Whether voice content is worded and localised is DEC-317.
 
@@ -334,15 +333,15 @@ The language that loads is stored in the language setting. When none loads, star
 
 **R-META-487** (MUST) The achievement events hold, for the session only: the set of maps played, the set of maps won, the session kill total and the Giant Slayer holder flag. The session kill total starts at `ref.meta.achievement.kill_total_start` (−1). Every result declaration adds the local team's kill total to it ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-057 step 1), so a repeated declaration adds it again, and then runs the Annihilator check.
 
-**R-META-488** (MUST) Maps are counted by their map ids through the map index, which the content build generates, listing the maps that count, and packages with those maps (DEC-563; [reference/08](../08_maps_and_level_design/rules_and_conventions.md) R-MAP-015). A map id listed twice is a content-build error (DEC-801 item 2). A map that the index does not list is never recorded. In the reference the index is absent from the packaged data, so no map is ever recorded; DEC-563 removes that gap.
+**R-META-488** (MUST) Maps are counted by their map ids through the map index, which the content build generates, listing the maps that count, and packages with those maps (DEC-563; [reference/08](../08_maps_and_level_design/rules_and_conventions.md) R-MAP-015). A map id listed twice is a content-build error (DEC-801 item 2). A map that the index does not list is never recorded.
 
 **R-META-489** (MUST) Playing or winning a map adds its map id to the played or won set; the count of distinct ids in the set is then compared with the number of maps in the map index, `ref.map.reference.map_count` (49) for the reference map set ([reference/08](../08_maps_and_level_design/rules_and_conventions.md) R-MAP-180). When the played count reaches it, the Tourist request is made; when the won count reaches it, the Completionist request.
 
 **R-META-490** (MUST) Achievement progress is never stored: loading it does nothing, saving it does nothing, and it is lost when the client exits (DEC-250).
 
-**R-META-491** (MUST) The achievements page has a page slot, but no page leads to it. If reached, it shows the title `ui.achievements.title`, a scroll bar and Back to the title page, and the caption `ui.achievements.loading`, blinking like the blinking captions of [front_end_presentation.md](front_end_presentation.md) R-META-209 (`ref.meta.blink.on_alpha`, `ref.meta.blink.on_time`, `ref.meta.blink.off_alpha`) for as long as the page is open, because the achievement events never report that they have loaded. Its rows are never created.
+**R-META-491** (MUST) There is no achievements page: the page catalogue has a slot for one, but no page leads to it and nothing fills it. What an achievements page shows is the design phase's (DEC-047); the captions `ui.achievements.title` and `ui.achievements.loading` of §4.3 are its starting text.
 
-**R-META-492** (MUST) An achievement row, if one were created, is one row per achievement, in the order of R-META-481. After the menu transition it slides down into place at `ref.meta.achievement.row_slide_speed` (750 px/s); the scroll bar moves the rows by `ref.meta.achievement.row_scroll_step` (4 px) per step, and the rows are clipped to the scroll bar's band. A row draws only its background, grey `ref.meta.achievement.row_grey` (0.4) at alpha `ref.meta.achievement.row_alpha` (0.5), with no picture and no text, and is inactive. Numbers on the page are shown with the thousands separators of the current language (ADR-063).
+**R-META-492** (removed: the rows of the achievements page, which no player can reach; R-META-491, DEC-047)
 
 **R-META-493** (MUST) The library specifies no achievement picture, notification, sound or unlock store; those, and the platform service that awards achievements, are the design phase's (DEC-047, DEC-248). The texts of §4.3 name each achievement and state its condition, for use by the design.
 
@@ -366,19 +365,19 @@ The language that loads is stored in the language setting. When none loads, star
 
 ### 2.13 Leaderboard hooks
 
-**R-META-498** (MUST) Leaderboards exist only as pages with no data source (DEC-047). The leaderboards entry appears only on a menu that no player can reach, where it is inactive; the leaderboard loader starts no search, scrolls nothing and fills no rows; and setting up either leaderboard page does nothing. No session or directory record carries a ranking field.
+**R-META-498** (MUST) There is no leaderboard page: the page catalogue has slots for a leaderboard selection page and a board page, but no page leads to them, no leaderboard has a data source, and no session or directory record carries a ranking field. The board types, matches against bots, ranked matches by Skill rating and standard matches, and the per-mode boards, every match and then Spawn Control, Zone Control, Launch Race, Relic Run and Flag Chain, with no Siege board, are inputs to DEC-047; the leaderboard captions of §4.3 are their starting text.
 
-**R-META-499** (MUST) The leaderboard selection page, if reached, shows the title `ui.leaderboard.title`, then three board types in this order, each opening the board page for its type: matches against bots `ui.leaderboard.type.bots`, ranked matches by Skill rating `ui.leaderboard.type.ranked`, and standard matches `ui.leaderboard.type.standard`; then Back. A board type for a campaign is not specified.
+**R-META-499** (removed: the leaderboard selection page, which no player can reach; R-META-498, DEC-047)
 
-**R-META-500** (MUST) The board page is full width. Its board selector is cycled with the pad menu cycle actions (`PadMenuCycleUp`, `PadMenuCycleDown`, on the shoulder buttons) through the boards: every match `ui.leaderboard.board.all`, then Spawn Control, Zone Control, Launch Race, Relic Run and Flag Chain, captioned with the mode names of [reference/01](../01_skirmish_rules_and_modes/README.md); there is no Siege board. A board change animates its caption: the alpha steps by `ref.meta.leaderboard.fade_step` (0.1) every `ref.meta.leaderboard.fade_interval` (0.025 s), down for the leaving caption and up for the arriving one, while an offset steps by `ref.meta.leaderboard.slide_step` (1 px) per step, and the caption is drawn displaced by offset³ × `ref.meta.leaderboard.slide_factor` (0.5).
+**R-META-500** (removed: the board selector of the board page, which no player can reach; R-META-498, DEC-047)
 
-**R-META-501** (MUST) The board page's view selector is cycled with the left and right triggers through friends `ui.leaderboard.view.friends`, own score `ui.leaderboard.view.own` and overall `ui.leaderboard.view.overall`.
+**R-META-501** (removed: the view selector of the board page, which no player can reach; R-META-498, DEC-047)
 
-**R-META-502** (MUST) The board page shows `ui.leaderboard.loading` while it would load; the row range `ui.leaderboard.rows`, with the first row, the last row and the total, which are always 0, 0 and 0; a period toggle on the north face button that switches between `ui.leaderboard.period.weekly` and `ui.leaderboard.period.all_time`; and Back.
+**R-META-502** (removed: the loading caption, row range and period toggle of the board page, which no player can reach; R-META-498, DEC-047)
 
-**R-META-503** (MUST) A rank is shown as an ordinal number of the current language, formatted by its ordinal rule (ADR-063). The reference forms English ordinals only, with the suffixes st, nd, rd and th, and th for 11 to 19.
+**R-META-503** (removed: the rank format of the board page, which no player can reach; R-META-498, DEC-047)
 
-**R-META-504** (MUST) The score column's header would show the Skill rating caption `ui.leaderboard.skill_rating` on a Skill-rating board and the points caption `ui.leaderboard.points` on every other board, but neither that header nor a Skill-rating board is ever created, so neither caption appears.
+**R-META-504** (removed: the score-column header of the board page, which no player can reach; R-META-498, DEC-047)
 
 ### 2.14 Launch Vessel status panel
 
@@ -451,27 +450,21 @@ stateDiagram-v2
 
 Caption: the apply action is active only in Changed; the master-volume slider acts outside this cycle.
 
-Diagram 3-C: the screen options apply and the creation fallback (R-META-422 to R-META-424).
+Diagram 3-C: the screen options apply (R-META-422, R-META-423).
 
 ```mermaid
 flowchart TD
-    A["Apply"] --> B["Write size, refresh rate, window, colour bits and depth bits"]
-    B --> C{"Window and renderer created with the new values?"}
+    A["Apply"] --> B["Write the size and the window mode"]
+    B --> C{"Renderer reconfigured with the new values?"}
     C -- "yes" --> P["Re-place open windows in proportion when the size changed"]
-    C -- "no" --> M["Show ui.dialog.screen_mode_failed"]
-    M --> R1{"Desktop size, 24 depth bits, no vertical-sync request?"}
-    R1 -- "yes" --> P
-    R1 -- "no" --> R2{"800 × 600 window, 16 colour bits, 16 depth bits, 60 Hz?"}
-    R2 -- "yes" --> P
-    R2 -- "no" --> R3{"The same with 24 depth bits?"}
-    R3 -- "yes" --> P
-    R3 -- "no" --> X["Fatal error"]
+    C -- "no" --> F["Platform fallback chain: desktop size, then an 800 × 600 window; a fatal error when both fail"]
+    F --> P
     P --> S["Store the values in effect and save"]
     S --> W["Close every window; rebuild the front end or the match view"]
     W --> O["Open the settings screen and the screen options again"]
 ```
 
-Caption: the same fallback runs at start-up, where the flow ends after the save.
+Caption: the fallback chain is the platform layer's and also runs at start-up, where the flow ends after the save.
 
 Diagram 3-D: choosing the language at start-up (R-META-465).
 
@@ -552,17 +545,6 @@ The values of this document are the reference values, adopted as the starting ba
 | `ref.meta.settings.mouse_buttons.default` | 3 | buttons | read when the team controls are sent | R-META-455 | — |
 | `ref.meta.settings.language.default` | unset | BCP 47 tag | first run; start-up chooses (R-META-465) | R-META-465 | DEC-099 |
 | `ref.meta.settings.language_test.default` | off | switch | development | R-META-473 | — |
-| `ref.meta.options.screen.min_colour_bits` | 15 | bits per pixel | at least, for a listed mode | R-META-415 | — |
-| `ref.meta.options.screen.windowed_default` | off | switch | page copy when missing | R-META-417 | DEC-100 |
-| `ref.meta.options.screen.refresh_default` | 60 | Hz | page copy when missing; the renderer's own default is the platform layer's | R-META-418 | DEC-100 |
-| `ref.meta.options.screen.colour_choices` | 16, 24, 32 | bits per pixel | in this order | R-META-419 | DEC-100 |
-| `ref.meta.options.screen.colour_default` | 16 | bits per pixel | page copy when missing; the renderer's own default is the platform layer's | R-META-419 | DEC-100 |
-| `ref.meta.options.screen.depth_choices` | 16, 24 | bits | in this order | R-META-420 | — |
-| `ref.meta.options.screen.depth_default` | 24 | bits | page copy when missing | R-META-420 | — |
-| `ref.meta.options.sound.mix_rate_choices` | 11 025, 22 050, 44 100 | Hz | in this order | R-META-431 | DEC-100 |
-| `ref.meta.options.sound.mix_rate_default` | 22 050 | Hz | page copy and first-run value | R-META-431, R-META-436 | DEC-100 |
-| `ref.meta.options.sound.voice_choices` | 8, 16, 32, 64 | voices | in this order; powers of 2 only | R-META-432 | DEC-570 |
-| `ref.meta.options.sound.voices_page_default` | 16 | voices | page copy when missing only | R-META-432, R-META-436 | DEC-100 |
 | `ref.meta.options.sound.volume_max` | 255 | steps | slider range 0 to this value | R-META-433 | DEC-570 |
 | `ref.meta.options.sound.slider_track` | 50 % to 95 % | of the control's width | the active part of the slider | R-META-433 | — |
 | `ref.meta.lang.base` | `en-GB` | BCP 47 tag | source language of every string | R-META-460, R-META-465 | DEC-099 |
@@ -574,14 +556,6 @@ The values of this document are the reference values, adopted as the starting ba
 | `ref.meta.achievement.flag_sweep_margin` | 300 | s | added to the time remaining; stated as five minutes | R-META-484 | DEC-047 |
 | `ref.meta.achievement.giant_slayer_bit` | bit 0 | achievement-mask bit | mask value 1 | R-META-485 | DEC-047 |
 | `ref.meta.achievement.kill_total_start` | −1 | Workers killed | session start value | R-META-487 | DEC-047 |
-| `ref.meta.achievement.row_slide_speed` | 750 | px/s | real time | R-META-492 | DEC-047 |
-| `ref.meta.achievement.row_scroll_step` | 4 | px per scroll-bar step | | R-META-492 | — |
-| `ref.meta.achievement.row_grey` | 0.4 | grey level | row background | R-META-492 | — |
-| `ref.meta.achievement.row_alpha` | 0.5 | alpha | row background | R-META-492 | — |
-| `ref.meta.leaderboard.fade_step` | 0.1 | alpha per step | | R-META-500 | DEC-047 |
-| `ref.meta.leaderboard.fade_interval` | 0.025 | s of real time | one step | R-META-500 | — |
-| `ref.meta.leaderboard.slide_step` | 1 | px per step | | R-META-500 | — |
-| `ref.meta.leaderboard.slide_factor` | 0.5 | × offset³ | drawn displacement | R-META-500 | — |
 | `ref.meta.launch_panel.margin` | 10 | px | from the right and top screen edges | R-META-506 | — |
 | `ref.meta.launch_panel.background_shade` | 0.2 | × team colour | | R-META-507 | — |
 | `ref.meta.launch_panel.background_alpha` | 200 | of 255 | | R-META-507 | — |
@@ -612,26 +586,18 @@ The values of this document are the reference values, adopted as the starting ba
 
 ### 4.2 Settings register
 
-Every setting that the reference stores and reads, and the two Species accessibility settings of R-META-511, with its setting key ([data schemas](../../architecture/components/data_schemas/config_input_and_strings.md) table 3.1-A), its page, its default and the document that owns the default. "Hidden" means that no page shows it; an inert entry is read and written back and has no effect.
+Every setting that the client stores and reads, the two Species accessibility settings of R-META-511 included, with its setting key ([data schemas](../../architecture/components/data_schemas/config_input_and_strings.md) table 3.1-A), its page, its default and the document that owns the default. "Hidden" means that no page shows it; an inert entry is read and written back and has no effect.
 
 | Setting | Setting key | Page | Default | Owner of the default |
 |---|---|---|---|---|
 | screen width and height | `render.render_width`, `render.render_height` | screen options | 0 × 0, the desktop size on first run (`rnd.option.render_size.default`) | [renderer options](../../architecture/components/renderer/options_and_budgets.md) |
-| play in a window | `render.window_mode` | screen options | off (`ref.meta.options.screen.windowed_default`); Species borderless full screen (`rnd.option.window_mode.default`) | this document; renderer options |
-| refresh rate | `screen.refresh_rate` | screen options | page 60 Hz (`ref.meta.options.screen.refresh_default`); renderer 75 Hz | this document; [platform layer](../../architecture/components/platform_layer.md) |
-| colour bits | `screen.colour_bits` | screen options | page 16 (`ref.meta.options.screen.colour_default`); renderer 32 | this document; platform layer |
-| depth bits | `screen.depth_bits` | screen options | 24 (`ref.meta.options.screen.depth_default`) | this document; platform layer |
-| vertical-sync request, overscan | `screen.vsync_request`, `screen.overscan` | hidden | inert entries (R-META-456) | platform layer |
+| play in a window | `render.window_mode` | screen options | off: borderless full screen (`rnd.option.window_mode.default`) | renderer options |
 | sea, sky, structure and unit detail | `render.sea_detail`, `render.sky_detail`, `render.structure_detail`, `render.entity_detail` | graphics options | 1 (`rnd.option.sea_detail.default`, `rnd.option.sky_detail.default`, `rnd.option.structure_detail.default`, `rnd.option.entity_detail.default`) | renderer options |
-| terrain detail, pixel effect | `render.terrain_detail`, `render.pixel_effect` | hidden | inert entries (R-META-456) | renderer options (RND-443) |
 | tree detail, special lighting, screenshot tile factor, inverted style, Worker distance scale factor | `render.tree_detail`, `render.special_lighting`, `render.poster_resolution`, `render.inverted_style`, `render.worker_scale_factor` | hidden | `rnd.option.tree_detail.default`, `rnd.option.special_lighting.default`, `rnd.option.poster_resolution.default`, `rnd.option.inverted_style.default`, `rnd.option.worker_scale_factor.default` | renderer options |
-| audio output | `audio.output` | sound options | the platform audio back end | [audio engine](../../architecture/components/audio_engine/README.md) |
-| mixing rate | `audio.mix_rate` | sound options | 22 050 Hz (`ref.meta.options.sound.mix_rate_default`) | this document; audio engine for its reader |
-| master volume | `audio.master_volume` | sound options | full volume, 255 of `ref.meta.options.sound.volume_max` | audio engine |
+| master volume | `audio.master_volume` | sound options | full volume, 255 of `ref.meta.options.sound.volume_max` | [audio engine](../../architecture/components/audio_engine/README.md) |
 | bus volumes | `audio.bus_volume.ui`, `audio.bus_volume.announcer`, `audio.bus_volume.voice`, `audio.bus_volume.world`, `audio.bus_volume.ambience`, `audio.bus_volume.music` | sound options | the bus levels of DEC-570 | [reference/10](../10_audio_design/README.md) |
-| sound voices | `audio.voices` | sound options | 32; page copy 16 (`ref.meta.options.sound.voices_page_default`) | audio engine; this document |
 | swap left and right | `audio.swap_stereo` | sound options | off | audio engine |
-| sample-memory level, effects switch, output buffer length | `audio.sample_memory_level`, `audio.effects`, `audio.output_buffer` | hidden | 1, an inert entry (DEC-097); off; no Species equivalent | audio engine |
+| effects switch | `audio.effects` | hidden | off (`aen.settings.effects_default`) | audio engine |
 | in-match tips | `interface.tips` | other options | on (`ref.meta.settings.tips.default`) | this document |
 | use forwarded port | `network.port_forwarding` | other options | off (`ref.meta.settings.port_forwarding.default`) | this document |
 | hosting port, joining port | `network.host_port`, `network.join_port` | other options | 4000, 4001 (`ref.meta.settings.host_port.default`, `ref.meta.settings.join_port.default`) | this document |
@@ -664,13 +630,6 @@ Every string id that this document defines, with its new en-GB text. Arguments a
 | `ui.options.screen.size` | Screen size |
 | `ui.options.screen.size_value` | {width} × {height} |
 | `ui.options.screen.windowed` | Play in a window |
-| `ui.options.screen.refresh` | Screen refresh |
-| `ui.options.screen.refresh_value` | {rate} Hz |
-| `ui.options.screen.colour_bits` | Colour bits |
-| `ui.options.screen.depth_bits` | Depth bits |
-| `ui.options.screen.bits_value` | {bits}-bit |
-| `ui.options.screen.fullscreen_only` | {label} (full screen only) |
-| `ui.dialog.screen_mode_failed` | The screen could not be set to {width} × {height}. Trying a safer setting. |
 | `ui.dialog.settings_save_failed` | Your settings could not be saved. The settings you had before are kept. |
 | `ui.options.graphics.title` | Visual detail |
 | `ui.options.graphics.sea` | Sea |
@@ -681,10 +640,6 @@ Every string id that this document defines, with its new en-GB text. Arguments a
 | `ui.options.graphics.level_medium` | Balanced |
 | `ui.options.graphics.level_low` | Fastest |
 | `ui.options.sound.title` | Audio |
-| `ui.options.sound.output` | Audio output |
-| `ui.options.sound.output_platform` | System audio |
-| `ui.options.sound.mix_rate` | Mixing rate |
-| `ui.options.sound.rate_value` | {rate} Hz |
 | `ui.options.sound.master_volume` | Overall volume |
 | `ui.options.sound.volume_ui` | Interface sounds |
 | `ui.options.sound.volume_announcer` | Announcements |
@@ -692,8 +647,6 @@ Every string id that this document defines, with its new en-GB text. Arguments a
 | `ui.options.sound.volume_world` | Battle sounds |
 | `ui.options.sound.volume_ambience` | Surroundings |
 | `ui.options.sound.volume_music` | Music |
-| `ui.options.sound.voices` | Sounds at once |
-| `ui.options.sound.voices_value` | {count} |
 | `ui.options.sound.swap_stereo` | Swap left and right speakers |
 | `ui.options.other.title` | General |
 | `ui.options.other.tips` | Show tips during matches |
@@ -755,21 +708,20 @@ Every string id that this document defines, with its new en-GB text. Arguments a
 
 ## 5 Edge cases and interactions
 
-1. **Disagreeing defaults.** Where two readers of one setting have different defaults, the defaults table of DEC-100 holds one value, the one the setting's runtime reader uses: the refresh rate 75 Hz (the page's copy 60 Hz); the colour bits 32 (the page's 16); the sea detail 1, written on first run, while the sea's own reader treats a missing setting as no dynamic sea, so a match draws a flat sea while the page shows the best level; the structure detail, the pixel effect and the tips compare, which have no default at one reader and 1 at another; the output buffer length 512 on first run against 2,000 at its readers (`aen.settings.output_buffer_first_run`, `aen.settings.output_buffer_reader_default`); the mixing rate 22 050 Hz on first run and at the audio engine's own reader against 44 100 Hz at the reader of its secondary output path (`aen.settings.mix_rate_reader_default`, `aen.settings.output_mix_rate_reader_default`); the voices 32 against the page's 16, so with the setting missing the apply action shows as active (R-META-436); and the vertical-sync request, on at the renderer and off in the defaults data. In the reference the defaults data file is read before the main pack is mounted, so a packaged install takes the code defaults only; DEC-100 removes the difference (R-META-402).
-2. **The reference settings reader** that DEC-800 replaces types each value by the shape of its text: a leading digit or minus sign with no point gives a whole number, with one point a decimal, with two or more points text, so a dotted address is text. Lookups are type-strict, so a decimal setting stored as a whole number reads back as the caller's default: a Worker distance scale factor written as 2 instead of 2.0 switches the scaling off, and a sea detail written as 1.0 reads as missing. A file whose first key holds a character outside the code points 65 to 122, from `A` to `z`, a digit for example, is discarded and written again with defaults. The writer rounds decimals to two places and does nothing when the file cannot be opened (R-META-404, R-META-407).
-3. **Duplicate keys.** The first occurrence of a key in the settings file wins; later ones are logged (R-META-404). This differs from the string tables, where a duplicate id is a content-build error (DEC-801).
-4. **The stored language always loads.** The stored language is always one that loaded at start-up (R-META-465), so the language list always contains the page's copy. A stored language that matched no entry would leave the copy with no entry, and the reference apply would then fail; the start-up rule prevents that state.
-5. **Offering a language.** In the reference the language list offers every language table present, whatever its coverage, and a string that the current table lacks shows its string id, so with a stub selected about nine tenths of the interface shows raw ids; DEC-099 replaces both rules (R-META-463, R-META-464). [ADR-063](../../ADR/ADR-063-localisation.md) builds each edition's offered list from the content build's coverage report and leaves which languages ship to DEC-099, which offers only complete languages (R-META-463).
-6. **Master volume and Back.** The master volume and the bus volumes take effect and are saved on release, so Back on the sound options does not undo them (R-META-433, R-META-434).
-7. **Port changes while not hosting.** Changing a port re-opens the client's listening port at once, even when no session is hosted (R-META-448 item 4).
-8. **Apply in a match.** In the reference both the graphics apply and the other options apply generate the terrain and the sea again from the map definition when a match is loaded; that changes no simulation state, because the simulation reads no setting (DEC-010, DEC-250 item 5; R-META-427). The screen options apply in a match returns to the match view with the settings screen open on top (R-META-422).
-9. **Audio restart.** The sound options apply restarts the audio engine: looping sounds start again from the beginning of their sample and one-shot sounds that were playing are cut short (R-META-437, AEN-260); the Species restart continues every sound (AEN-259).
-10. **Achievements and bots.** Nine of the 12 achievements cannot be requested in a match whose map player slots include a bot team; only Giant Slayer, Massacre and Annihilator can, and Giant Slayer needs another human team in any case (R-META-482, R-META-485).
-11. **Repeated result declarations.** Every result declaration adds the local team's kill total to the session total again, so a match declared twice counts its kills twice toward Annihilator (R-META-487).
-12. **Fuel between 95 % and 100 %.** A Launch Vessel boards from 95 % fuel ([launch_race.md](../01_skirmish_rules_and_modes/launch_race.md) R-MODE-403), but the panel's load caption needs 100 % fuel, so between 95 % and 100 % the panel still shows the fuel caption (R-META-509).
-13. **Spectators.** A spectator has no Launch Vessel of its own, so the status panel draws nothing for it (R-META-505).
-14. **Language switch in a match.** Applying a new language in a match rebuilds the windows and opens the match view again, and the match goes on (R-META-450, R-META-466).
-15. **Giant Slayer spreads.** Winning against a holder makes the winner a holder for the rest of the session, and its mask then carries the bit to every later match setup (R-META-485).
+1. **One default per setting.** Each setting has one default, in the defaults table of DEC-100, and every reader of the setting uses it, the options pages included: the sea detail, for example, is 1 for the sea and for the graphics options page alike. A page's copies therefore start equal to the stored values, and an options page opened on a first run shows its apply action inactive (R-META-402, R-META-403, R-META-412).
+2. **Duplicate keys.** The first occurrence of a key in the settings file wins; later ones are logged (R-META-404). This differs from the string tables, where a duplicate id is a content-build error (DEC-801).
+3. **The stored language always loads.** The stored language is always one that loaded at start-up (R-META-465), so the language list always contains the page's copy. A stored language that matched no entry would leave the copy with no entry, and the reference apply would then fail; the start-up rule prevents that state.
+4. **Offering a language.** Only complete languages are offered, and a string that the current table lacks shows its base-language text, so no page ever shows a raw string id (R-META-463, R-META-464). [ADR-063](../../ADR/ADR-063-localisation.md) builds each edition's offered list from the content build's coverage report and leaves which languages ship to DEC-099, which offers only complete languages (R-META-463).
+5. **Master volume and Back.** The master volume and the bus volumes take effect and are saved on release, so Back on the sound options does not undo them (R-META-433, R-META-434).
+6. **Port changes while not hosting.** Changing a port re-opens the client's listening port at once, even when no session is hosted (R-META-448 item 4).
+7. **Apply in a match.** In the reference both the graphics apply and the other options apply generate the terrain and the sea again from the map definition when a match is loaded; that changes no simulation state, because the simulation reads no setting (DEC-010, DEC-250 item 5; R-META-427). The screen options apply in a match returns to the match view with the settings screen open on top (R-META-422).
+8. **Sound options apply.** Applying the sound options in a match or at the front end never restarts or cuts a playing sound (R-META-437).
+9. **Achievements and bots.** Nine of the 12 achievements cannot be requested in a match whose map player slots include a bot team; only Giant Slayer, Massacre and Annihilator can, and Giant Slayer needs another human team in any case (R-META-482, R-META-485).
+10. **Repeated result declarations.** Every result declaration adds the local team's kill total to the session total again, so a match declared twice counts its kills twice toward Annihilator (R-META-487).
+11. **Fuel between 95 % and 100 %.** A Launch Vessel boards from 95 % fuel ([launch_race.md](../01_skirmish_rules_and_modes/launch_race.md) R-MODE-403), but the panel's load caption needs 100 % fuel, so between 95 % and 100 % the panel still shows the fuel caption (R-META-509).
+12. **Spectators.** A spectator has no Launch Vessel of its own, so the status panel draws nothing for it (R-META-505).
+13. **Language switch in a match.** Applying a new language in a match rebuilds the windows and opens the match view again, and the match goes on (R-META-450, R-META-466).
+14. **Giant Slayer spreads.** Winning against a holder makes the winner a holder for the rest of the session, and its mask then carries the bit to every later match setup (R-META-485).
 
 ## 6 Acceptance criteria
 
@@ -778,12 +730,12 @@ Every string id that this document defines, with its new en-GB text. Arguments a
 - **AC-03** (R-META-404) Given a settings file that holds the hosting port twice, 4100 and then 4200, when it loads, then the hosting port is 4100 and the log reports the second entry.
 - **AC-04** (R-META-405) Given a settings file that selects the alternative control scheme, when it loads, then the match control scheme is in effect.
 - **AC-05** (R-META-407) Given a save that cannot write the file, then the previous file is unchanged, the log reports the failure and `ui.dialog.settings_save_failed` is shown.
-- **AC-06** (R-META-412, R-META-421) Given the screen options opened with no change, then the apply action is inactive; when the depth bits are cycled once, then it becomes active; when they are cycled back, it is inactive again.
-- **AC-07** (R-META-418, R-META-419) Given play in a window ticked, then the refresh-rate and colour-bit controls are inactive and greyed, and the depth-bit control is active.
+- **AC-06** (R-META-412, R-META-421) Given the screen options opened with no change, then the apply action is inactive; when play in a window is toggled once, then it becomes active; when it is toggled back, it is inactive again.
+- **AC-07** (R-META-414, R-META-417) Given the screen options, then the page shows exactly the screen size, play in a window, apply and Back; given play in a window applied, then the game runs in a captioned window and the display mode is unchanged.
 - **AC-08** (R-META-422) Given a match in progress, when the screen options apply a new size, then the match view returns with the settings screen and the screen options page open, and every window's centre keeps its proportional place.
-- **AC-09** (R-META-423) Given that every window creation fails except 800 × 600 in a window with 16 colour bits, 16 depth bits and 60 Hz, then the game runs in that mode and the store holds those values.
+- **AC-09** (R-META-423) Given that every window creation fails except the 800 × 600 window, then `ui.error.resolution_rejected` is shown, the game runs in that window and the store holds that size and the windowed mode.
 - **AC-10** (R-META-433) Given the master-volume slider, when the pointer is pressed at 72.5 % of the control's width, then the volume is 127 at once; when it is released, the store is saved; when Back is chosen, the volume stays 127.
-- **AC-11** (R-META-436) Given a settings file without the voices setting, when the sound options open, then the apply action is active.
+- **AC-11** (R-META-436, R-META-437) Given the sound options opened with no change, then the apply action is inactive; when swap left and right is toggled and applied, then the setting is saved and every playing loop continues without restarting.
 - **AC-12** (R-META-444, R-META-445) Given the joining port set to a port that is already in use, when the client opens its listening port, then it listens on another free port; given the joining port 0, then no retry happens.
 - **AC-13** (R-META-463) Given a language whose table lacks one string id of the base language, then the language list does not offer it.
 - **AC-14** (R-META-464) Given a development build in which the current language lacks one string id, when a page uses that id, then the base-language text is shown and the content-build report lists the id.
@@ -796,7 +748,7 @@ Every string id that this document defines, with its new en-GB text. Arguments a
 - **AC-21** (R-META-506, R-META-507) Given a 1920 × 1080 screen in Launch Race, then the panel is 216 px wide and 324 px tall, its left edge at 1694 px and its top edge at 10 px.
 - **AC-22** (R-META-509) Given a vessel in Fuelling at 97.3 % fuel whose damage last rose 12 s ago, then the caption is `mode.launch_race.panel.fuel` showing 97.3; given its damage rose 4 s ago, then the caption is `mode.launch_race.panel.under_attack`.
 - **AC-23** (R-META-509) Given a vessel in Boarding at 100 % fuel with 3 passengers, then the caption is `mode.launch_race.panel.load`; with 5 passengers, there is no caption.
-- **AC-24** (R-META-500) Given a board change on the board page, then the leaving caption's alpha falls by 0.1 every 0.025 s of real time and the caption is drawn displaced by offset³ × 0.5.
+- **AC-24** (R-META-491, R-META-498) Given every page of the front end and of the in-match menus, then no control leads to an achievements page or a leaderboard page.
 
 ## 7 Dependencies
 
@@ -826,4 +778,4 @@ Every string id that this document defines, with its new en-GB text. Arguments a
 - DEC-964 — the accessibility limits behind the reduced-flash and reduced-motion settings (R-META-511).
 - DEC-972 — what the cheats-used marker suppresses (R-META-496).
 
-Resolved and dropped decisions applied in this document: DEC-004, DEC-005, DEC-006, DEC-007, DEC-010, DEC-026, DEC-037, DEC-054, DEC-056, DEC-061, DEC-097 (R-META-454), DEC-099, DEC-100, DEC-102 (R-META-406), DEC-118, DEC-563, DEC-570, DEC-800, DEC-801.
+Resolved and dropped decisions applied in this document: DEC-004, DEC-005, DEC-006, DEC-007, DEC-010, DEC-026, DEC-037, DEC-056, DEC-061, DEC-097 (R-META-454), DEC-099, DEC-100, DEC-102 (R-META-406), DEC-118, DEC-563, DEC-570, DEC-800, DEC-801.

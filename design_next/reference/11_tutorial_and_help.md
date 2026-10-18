@@ -19,7 +19,7 @@ All text of this document is new, functional text keyed by Species string ids (D
 
 ### 2.1 Content, text and values
 
-**R-TUT-001** (MUST) The help consists of exactly these parts: the help pages (§2.4), the contextual hints and the explainer panel of the hint overlay (§2.2, §2.3) and the two tutorials (§2.5 to §2.10). In a match no gamepad control prompts are drawn, and the contextual control-help panel and the in-match objective cards exist only as hooks (DEC-050); the control-help hook only records which controls the player has used, and its camera-moved condition reads the pointer's moved flag ([input](../architecture/components/input/devices_frames_and_queries.md) INP-160). No help part runs a script, a narrator or a cut-scene (DEC-053), and no tutorial step plays a camera animation: a tutorial's camera is the start-of-match camera of every match (R-CTRL-495 to R-CTRL-497, DEC-803). The first playable of Species is Spawn Control with two players (owner decision O20, DEC-229), and by default it has no tutorial: the two tutorials of this document run Zone Control on their own maps and follow at launch (see DEC-123).
+**R-TUT-001** (MUST) The help consists of exactly these parts: the help pages (§2.4), the contextual hints and the explainer panel of the hint overlay (§2.2, §2.3) and the two tutorials (§2.5 to §2.10). In a match no gamepad control prompts are drawn, and the contextual control-help panel and the in-match objective cards exist only as hooks (DEC-050); the control-help hook only records which controls the player has used, and its camera-moved condition reads the pointer's moved flag ([input](../architecture/components/input/devices_frames_and_queries.md) INP-160). No help part runs a script, a narrator or a cut-scene (DEC-053), and no tutorial step plays a camera animation: a tutorial's camera is the start-of-match camera of every match (R-CTRL-495 to R-CTRL-497, DEC-803).
 
 **R-TUT-002** (MUST) Every text that this document shows is new text, keyed by the string ids of §2.11, written in plain functional British English in the source string table `strings.en_gb` and translated in `strings.de_de`, `strings.es_es`, `strings.fr_fr`, `strings.it_it`, `strings.ja_jp`, `strings.ko_kr`, `strings.pt_br` and `strings.ru_ru` (ADR-063). Each string id is defined once per language; a second definition is a content-build error (DEC-801). The pictures that the hints and the explainer panels animate are new art; what a reference explainer animation depicts is a brief for that art, not a rule (DEC-037).
 
@@ -35,7 +35,7 @@ All text of this document is new, functional text keyed by Species string ids (D
 
 **R-TUT-012** (MUST) The hint overlay draws in the 2-D overlay pass after the world markers and before the world-cursor pass (R-CTRL-355). It draws nothing while there is no match world, while the interface is hidden (row A9 of R-CTRL-040), after game over, while the Siege victory delay runs ([Siege](01_skirmish_rules_and_modes/siege.md)), or while the local team does not exist. The widths of its lines are those its drawing rules state, each with its key or value: the border of an instruction tab, `ref.tut.tab.border` (2 px, R-TUT-074), and the outline of the camera-controls picture, 1 px (R-TUT-021); the renderer's hint-overlay pass cites them.
 
-**R-TUT-013** (MUST) The hint overlay draws only the outputs of table 2.2-A. The events that mode and object rules report to it (a Control Zone event, R-MODE-254 step 3; a Supply crate opened, R-CRATE-146; a Launch Vessel fuel notification, R-BLDG-329) feed the objective cards, which are hooks only (DEC-050) and draw nothing in a match. The objective-card pictures `help.hint.start_here`, `help.hint.spawn_nodes`, `help.hint.reinforcements`, `help.hint.supply_crates`, `help.hint.zone_control`, `help.hint.relic_run_capture`, `help.hint.relic_run_lift`, `help.hint.siege_core_device`, `help.hint.siege_attack`, `help.hint.siege_defend`, `help.hint.siege_spawn_nodes`, `help.hint.siege_breach_charge`, `help.hint.launch_race_01`, `help.hint.launch_race_02`, `help.hint.flag_chain_01` and `help.hint.flag_chain_02` are therefore drawn by no rule of the reference.
+**R-TUT-013** (MUST) The hint overlay draws only the outputs of table 2.2-A. The events that mode and object rules report to it (a Control Zone event, R-MODE-254 step 3; a Supply crate opened, R-CRATE-146; a Launch Vessel fuel notification, R-BLDG-329) feed the objective cards. The objective cards are hooks only (DEC-050) and draw nothing in a match, so they need no picture.
 
 Table 2.2-A Outputs of the hint overlay.
 
@@ -224,11 +224,11 @@ Table 2.6-A Director counts and tests.
 
 **R-TUT-071** (MUST) **Size and text.** A tab is w = `ref.tut.tab.width` (280 px) × (1 + `ref.tut.tab.pulse` (0.02) × sin(8 t)) wide, with t the real clock in seconds (R-SIM-570) and the angular rate `ref.tut.tab.pulse_rate` (8 rad/s), so its width pulses by ±2 %. The title text height is `ref.tut.tab.title_font` (0.12) × w in the title font, word-wrapped at 0.6 × the text height per character; the body text height is `ref.tut.tab.body_font` (0.06) × w in the body font, word-wrapped at 0.55 × the text height per character.
 
-**R-TUT-072** (MUST) **Geometry.** With the line counts of the wrapped title and body, the box height h is title height × title lines + body height × body lines + `ref.tut.tab.padding` (25 px). The half-width is w ÷ 2, the half-height is h ÷ 2, the arrow size is half-height ÷ 2, and the title bar is title height × title lines + 10 px high. The text is inset 13 px from the box edges (`ref.tut.tab.padding`).
+**R-TUT-072** (MUST) **Geometry.** With the line counts of the wrapped title and body, the box height h is title height × title lines + body height × body lines + `ref.tut.tab.padding` (25 px). The half-width is w ÷ 2, the half-height is h ÷ 2, the arrow size is half-height ÷ 2, and the title bar is title height × title lines + `ref.tut.tab.title_bar_extra` (10 px) high. The text is inset `ref.tut.tab.text_inset` (13 px) from the box edges.
 
 **R-TUT-073** (MUST) **Clamping and the arrow.** The arrow points from the box to the anchor. With (x, y) the anchor on screen: when x ≤ half-width + arrow size, the arrow points left; symmetrically, when x ≥ screen width − half-width − arrow size, it points right (the mirror of the left-edge test, DEC-870 item 2); when y ≤ 2 × half-height (`ref.tut.tab.top_clamp`), the arrow points up and only the title bar is drawn, without the body; when y ≥ screen height, the arrow points down. In the normal case the box centre is placed at y − `ref.tut.tab.box_lift` (1.5) × half-height, so the tip of the downward arrow touches the anchor.
 
-**R-TUT-074** (MUST) **Colours.** With the base alpha `ref.tut.tab.alpha` (0.9): the box is filled black at alpha 0.9 × 0.8 = 0.72; its border is 2 px (`ref.tut.tab.border`) in the local team's colour at alpha 0.9 × 128 ÷ 255 (about 0.45), raised to 0.9 × 255 ÷ 255 = 0.9 while sin(8 t) > 0, a flash with a period of 2π ÷ 8 (about 0.785 s); the arrow is a triangle in the border colour; the title bar is filled in the team colour at alpha 0.9 × 64 ÷ 255 (about 0.23), flashing to 0.9 with the border; the text is white, drawn as an outline pass and then a fill pass.
+**R-TUT-074** (MUST) **Colours.** The box is filled black at alpha 0.72; its border is 2 px (`ref.tut.tab.border`) in the local team's colour at alpha 0.452, raised to the flash alpha `ref.tut.tab.alpha` (0.9) while sin(8 t) > 0, a flash with a period of about 0.785 s (`ref.tut.tab.pulse_rate`); the arrow is a triangle in the border colour; the title bar is filled in the team colour at alpha 0.226, flashing to 0.9 with the border; the text is white, drawn as an outline pass and then a fill pass.
 
 **R-TUT-075** (MUST) A tab shows its title string `tutorial.tab.<name>.title` and its body string `tutorial.tab.<name>.body` (table 2.11-A), the body in its gamepad variant where the table marks one (R-TUT-003).
 
@@ -728,8 +728,9 @@ stateDiagram-v2
         CaptureConsole --> SelectFinalDish : final_console owned
         SelectFinalDish --> AimFinalDish : final_dish selected
         AimFinalDish --> WinTab : final_dish linked
+        WinTab --> [*] : more than 200 ticks of the win tab
     }
-    FinalStep --> [*] : win tab for 200 ticks, then bots spawn and crates drop
+    FinalStep --> [*] : bots spawn and crates drop
 ```
 
 Caption: Diagram 3-E, the usual path through the second tutorial. The phase tables of §2.10 are normative: a sub-state is entered again whenever its row matches again, and the fail-safe of phase F ends the formation lesson from any sub-state (R-TUT-112 to R-TUT-117).
@@ -750,17 +751,19 @@ Caption: Diagram 3-E, the usual path through the second tutorial. The phase tabl
 | `ref.tut.count.formation_anchor_ahead` | 30 | wu | formation anchor ahead of the Leader | R-TUT-068 | — |
 | `ref.tut.tab.up_offsets` | 20, 30, 40, 60, 80 | wu | per request of the step tables | R-TUT-064 | — |
 | `ref.tut.tab.screen_anchor` | (0.5, 0.85) | fraction of (width, height) | while the current tab is `select_airstrike` or `select_transport` | R-TUT-070 | — |
-| `ref.tut.tab.width` | 280 | px | 8 × 35 | R-TUT-071 | — |
+| `ref.tut.tab.width` | 280 | px | tab width before the pulse | R-TUT-071 | — |
 | `ref.tut.tab.pulse` | 0.02 | fraction | width × (1 + 0.02 sin(8 t)) | R-TUT-071 | — |
 | `ref.tut.tab.pulse_rate` | 8 | rad/s | real clock; also the border flash, period about 0.785 s | R-TUT-071, R-TUT-074 | — |
 | `ref.tut.tab.title_font` | 0.12 | × tab width | wrap at 0.6 × the text height per character | R-TUT-071 | — |
 | `ref.tut.tab.body_font` | 0.06 | × tab width | wrap at 0.55 × the text height per character | R-TUT-071 | — |
-| `ref.tut.tab.padding` | 25 | px | added to the box height; title bar + 10 px; text inset 13 px | R-TUT-072 | — |
+| `ref.tut.tab.padding` | 25 | px | added to the box height | R-TUT-072 | — |
+| `ref.tut.tab.title_bar_extra` | 10 | px | added to the title text height for the title bar | R-TUT-072 | — |
+| `ref.tut.tab.text_inset` | 13 | px | text inset from the box edges | R-TUT-072 | — |
 | `ref.tut.tab.top_clamp` | 2 | × half-height | anchor y at or above this: arrow up, title only | R-TUT-073 | — |
 | `ref.tut.tab.box_lift` | 1.5 | × half-height | box centre above the anchor | R-TUT-073 | — |
-| `ref.tut.tab.alpha` | 0.9 | alpha | base; fill × 0.8; border × 128/255, flashing × 255/255; title bar × 64/255 | R-TUT-074 | — |
+| `ref.tut.tab.alpha` | 0.9 | alpha | flash alpha of the border and the title bar; between flashes the border is at 0.452 and the title bar at 0.226; the box fill is 0.72 | R-TUT-074 | — |
 | `ref.tut.tab.border` | 2 | px | border width | R-TUT-074 | — |
-| `ref.tut.camera_picture.width` | 0.3 | × screen height | 0.2 × 1.5 | R-TUT-021 | — |
+| `ref.tut.camera_picture.width` | 0.3 | × screen height | picture box width | R-TUT-021 | — |
 | `ref.tut.camera_picture.aspect` | 128 ÷ 304 | height ÷ width | the picture's visible area | R-TUT-021 | — |
 | `ref.tut.camera_picture.top` | 0.70 | × screen height | top edge of the picture box | R-TUT-021 | — |
 | `ref.tut.camera_picture.flash` | 0.3 of every 1 | s of real time | black alpha 0.6, grey (0.4, 0.4, 0.4) alpha 0.8 during the flash; outline 1 px white alpha 0.2 | R-TUT-021 | — |
@@ -781,7 +784,7 @@ Caption: Diagram 3-E, the usual path through the second tutorial. The phase tabl
 | `ref.tut.help_page.picture_divisor` | 3.5 | divisor | picture side = left box height ÷ 3.5 | R-TUT-041 | — |
 | `ref.tut.help_page.mode_pages` | 1, 2, 3, 3, 4, 3 | pages | Spawn Control, Zone Control, Relic Run, Siege, Launch Race, Flag Chain; follows the strings that exist | R-TUT-043 | — |
 | `ref.tut.first.map_positions` | 2 | positions | first tutorial map | R-TUT-051 | — |
-| `ref.tut.first.map_population_cap` | 2,000 | Workers | map cap; per team ÷ open slots (R-MODE-258) | R-TUT-051 | DEC-079 |
+| `ref.tut.first.map_population_cap` | 2,000 | bodies | map cap; per team ÷ open slots (R-MODE-258) | R-TUT-051 | DEC-079 |
 | `ref.tut.first.zone_radius` | 150 | wu | both Control Zones of the first tutorial map | R-TUT-090 | — |
 | `ref.tut.first.scores_latch_ticks` | 100 | ticks | 10 s; the window latches within this time of the score time | R-TUT-093 | DEC-103 |
 | `ref.tut.first.scores_window_ticks` | 400 | ticks | 40 s; the scores tab is requested before this time after the score time | R-TUT-093 | DEC-103 |
@@ -795,7 +798,7 @@ Caption: Diagram 3-E, the usual path through the second tutorial. The phase tabl
 | `ref.tut.first.far_zone_idle` | 10 | Workers | rule D1: more than, at `third_gather` | R-TUT-097 | — |
 | `ref.tut.first.crate_offset` | (−100, +800, −200) | wu | (x, y, z) from `crate_point` | R-TUT-098 | DEC-103 |
 | `ref.tut.second.map_positions` | 3 | positions | second tutorial map | R-TUT-051 | — |
-| `ref.tut.second.map_population_cap` | 1,800 | Workers | map cap; no defender cap (DEC-120) | R-TUT-051 | DEC-079, DEC-120 |
+| `ref.tut.second.map_population_cap` | 1,800 | bodies | map cap; no defender cap (DEC-120) | R-TUT-051 | DEC-079, DEC-120 |
 | `ref.tut.second.zone_radius` | 160 | wu | `centre_zone` of the second tutorial map | R-TUT-110 | — |
 | `ref.tut.second.held_time_remaining` | 300 | mode seconds | 5 minutes; held while the bots may not spawn | R-TUT-081 | DEC-103 |
 | `ref.tut.second.dish_idle_radius` | 50 | wu | idle Workers at `target_dish` | R-TUT-113, R-TUT-114 | — |
@@ -887,7 +890,6 @@ Keys cited here and defined elsewhere: `ref.match.grace_period`, `ref.match.opti
 - **Assets:**
   - help pictures `help.general_page` (5 variants), `help.mode_page` (16 variants) and `help.hint.camera_controls`;
   - explainers `anim.explainer` (6, one per mode) with `help.explainer_picture` (25);
-  - objective-card pictures with no drawing rule (R-TUT-013): `help.hint.start_here`, `help.hint.spawn_nodes`, `help.hint.reinforcements`, `help.hint.supply_crates`, `help.hint.zone_control`, `help.hint.relic_run_capture`, `help.hint.relic_run_lift`, `help.hint.siege_core_device`, `help.hint.siege_attack`, `help.hint.siege_defend`, `help.hint.siege_spawn_nodes`, `help.hint.siege_breach_charge`, `help.hint.launch_race_01`, `help.hint.launch_race_02`, `help.hint.flag_chain_01`, `help.hint.flag_chain_02`;
   - string tables `strings.en_gb`, `strings.de_de`, `strings.es_es`, `strings.fr_fr`, `strings.it_it`, `strings.ja_jp`, `strings.ko_kr`, `strings.pt_br` and `strings.ru_ru`;
   - sound `match_ui.error` (R-TUT-025) and the tutorial maps `map_zone_control_2p_01` and `map_zone_control_3p_01`.
 
@@ -896,7 +898,6 @@ Keys cited here and defined elsewhere: `ref.match.grace_period`, `ref.match.opti
 | DEC | Title | Default in this document |
 |---|---|---|
 | DEC-051 | Tutorials and presentation timelines | the two tutorials of §2.5 to §2.10 (R-TUT-050) |
-| DEC-123 | Tutorial for the first playable | none: the first playable, Spawn Control with two players (owner decision O20), has no tutorial, and the two tutorials of this document follow at launch (R-TUT-001) |
 | DEC-870 | Tutorial director details | the fade of the deselect hint only, the mirrored right-edge clamp, the unset step timer and the once-per-tick evaluation (R-TUT-023, R-TUT-061, R-TUT-065, R-TUT-073) |
 | DEC-110 | Second tutorial start condition | the dish lessons wait for idle Workers to capture `first_console`, and the bot may or may not take `attack_node` first (R-TUT-118, R-TUT-119) |
 | DEC-550 | Power cancellation in the tutorials | no Power can be stopped in the blocked phases (table 2.8-A) |

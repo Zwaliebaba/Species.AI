@@ -140,7 +140,7 @@ FormationSlotPosition(_p, _i, _f, _arraySize):      # _arraySize counts gaps
     rowSize := row size of table 2.6-A for _arraySize
     column := _i mod rowSize
     row := _i div rowSize
-    right := normalise(_f x up)
+    right := Normalize(_f x up)
     q := _p + _f * (ref.unit.leader.slot_spacing * row + ref.unit.leader.first_rank_offset)
            + right * (ref.unit.leader.slot_spacing * column - ref.unit.leader.lateral_offset_factor * rowSize)
     q.y := terrain height at q
@@ -356,7 +356,7 @@ Diagram 3-D The signpost conveyor (R-UNIT-171, worker.md R-UNIT-096).
 
 **AC-UNIT-L02 — Demotion** (R-UNIT-154). Given a selected Leader, when `DemoteLeader` executes, then a Worker of its team appears at its position, the team has no selection, and on its next advance the Leader is removed without an Essence orb.
 
-**AC-UNIT-L03 — Formation slot positions** (R-UNIT-182). Given a Leader at (0, 0, 0) facing f = (0, 0, 1) on flat ground with a slot array of size 20, the row size is 6 and right = normalise(f × up) = (−1, 0, 0). Then index 0 lies at f × 12 + right × (0 − 18) = (18, 0, 12), index 5 at f × 12 + right × (30 − 18) = (−12, 0, 12), and index 6 at f × 18 + right × (−18) = (18, 0, 18).
+**AC-UNIT-L03 — Formation slot positions** (R-UNIT-182). Given a Leader at (0, 0, 0) facing f = (0, 0, 1) on flat ground with a slot array of size 20, the row size is 6 and right = Normalize(f × up) = (−1, 0, 0). Then index 0 lies at f × 12 + right × (0 − 18) = (18, 0, 12), index 5 at f × 12 + right × (30 − 18) = (−12, 0, 12), and index 6 at f × 18 + right × (−18) = (18, 0, 18).
 
 **AC-UNIT-L04 — Row sizes** (R-UNIT-182). The row size is 6 for array sizes 1 and 24, 9 for 25 and 47, 12 for 48 and 89, 15 for 90 and 199, and 25 for 200.
 

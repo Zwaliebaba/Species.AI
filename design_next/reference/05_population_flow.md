@@ -113,7 +113,7 @@ if occupied:
 
 **R-ECON-023** (MUST) Each tick, while a Spawn Node has an owner and its activation delay is above 0, these steps run in order: the delay decreases by 1 tick; the delay is set to 0 if the owner now holds exactly one Spawn Node, or if the map sets the instant-capture flag; the delay is kept at 0 or above. Production (§2.7) runs only while the delay is 0.
 
-**R-ECON-024** (MUST) Every ownership change, including a change to no team, sets the activation delay to 300 ticks (30.0 s), and the delay does not count down while the node has no team. A Spawn Node starts the match with a delay of 300 ticks, except that a node owned at match start has its delay set to 0 by team initialisation (R-ECON-108). Four reference Relic Run maps set the instant-capture flag; no other reference map does.
+**R-ECON-024** (MUST) Every ownership change, including a change to no team, sets the activation delay to `ref.econ.spawn_node.activation_ticks` (300 ticks, 30.0 s), and the delay does not count down while the node has no team. A Spawn Node starts the match with a delay of `ref.econ.spawn_node.activation_ticks` (300 ticks), except that a node owned at match start has its delay set to 0 by team initialisation (R-ECON-108). Four reference Relic Run maps set the instant-capture flag; no other reference map does.
 
 **R-ECON-025** (MUST) Presentation shows the activation progress on the node's glow indicators: their colour interpolates from the grey `ref.econ.spawn_node.glow_start_rgba` (100, 100, 100, 200) to the owner's team colour as (remaining delay / 300) goes from 1 to 0, and their opacity is (occupied ports / 5). Presentation only reads these values (DEC-007).
 
@@ -221,7 +221,7 @@ Actors inside an actor group are not counted. Transit orbs are not actors and ar
 **R-ECON-052** (MUST) A Spawn Node or a Transit Gate decides whether it is population-locked by the first of these rules that applies (see DEC-079):
 
 1. *Spawn Node only.* In the second tutorial, while the tutorial's bot may not yet produce: the node is locked if it has requested `ref.econ.tutorial.second_max_requests` (100) or more transit orbs (a count kept only in this tutorial), or if its owner is neither no team nor the tutorial player's team, or if the tutorial player's team has more than `ref.econ.tutorial.second_player_limit` (200) ungrouped actors; a node with no team never requests (R-ECON-029), so in effect the last test locks only a node that the tutorial player owns. If none of these holds, the decision continues with rule 2 (see DEC-103, DEC-110).
-2. *Siege with a defender cap.* In a Siege match whose map sets a defender cap: a structure with no team is not locked; a defending team is locked when pop ≥ defender cap; an attacking team is locked when pop ≥ (map cap − numDefenders × defender cap) ÷ numAttackers, where numAttackers is the number of open slots whose position attacks, and numDefenders = open slots − numAttackers.
+2. *Siege with a defender cap.* In a Siege match whose map sets a defender cap: a structure with no team is not locked; a defending team is locked when pop ≥ defender cap; an attacking team is locked when pop ≥ (map cap − numDefenders × defender cap) ÷ numAttackers, where numAttackers is the number of open slots whose position attacks, and numDefenders = open slots − numAttackers. When the map's population cap is unlimited, the attackers' share has no value: a defending team is still locked at the defender cap, and for an attacking team the decision continues with rule 4 (see DEC-079, DEC-120).
 3. *Map cap.* When the map's population cap is a number: a structure with no team is not locked; otherwise it is locked when pop ≥ map cap ÷ open slots.
 4. *Population Limiter fallback.* When the map's population cap is unlimited: the Population Limiter rule of §2.14 decides.
 5. Otherwise the structure is not locked.
@@ -284,7 +284,7 @@ Corpses, which count for 25 to 50 ticks after death, make the cap take effect sl
 
 **R-ECON-063** (MUST) A Population Limiter has a search radius (default `ref.econ.population_limiter.search_radius_wu`, 500 wu), a maximum population (default `ref.econ.population_limiter.max_population`, 100), its authored maximum, a count for each team slot 0 to 5, and a recount timer, first set to `ref.econ.population_limiter.first_recount_ticks` (1 to 100 ticks) in its initialisation step (see DEC-652). Its map record gives its position, team, facing, global flag, search radius and maximum population.
 
-**R-ECON-064** (MUST) While limiters are in effect, once per `ref.econ.population_limiter.overpopulation_period_ticks` (10 or 11 ticks: one second of match time, measured like the Hive conversion of R-ECON-084), the match computes overpopulation = (sum over all limiters of max(0, team-slot-0 count − authored maximum)) ÷ `ref.econ.population_limiter.overpopulation_divisor` (2), by integer division, and every limiter sets its current maximum to max(0, authored maximum − overpopulation). Only team slot 0 contributes (see DEC-454, DEC-851). These values are per-match state (DEC-011).
+**R-ECON-064** (MUST) While limiters are in effect, once per `ref.econ.population_limiter.overpopulation_period_ticks` (10 ticks: one second of match time, 1 ÷ `ref.sim.tick_period` ticks, by the deadline rule of reference/03 R-BLDG-403, as the Hive conversion of R-ECON-084), the match computes overpopulation = (sum over all limiters of max(0, team-slot-0 count − authored maximum)) ÷ `ref.econ.population_limiter.overpopulation_divisor` (2), by integer division, and every limiter sets its current maximum to max(0, authored maximum − overpopulation). Only team slot 0 contributes (see DEC-454, DEC-851). These values are per-match state (DEC-011).
 
 **R-ECON-065** (MUST) A limiter's recount cycle lasts `ref.econ.population_limiter.recount_cycle_ticks` (91 to 110 ticks). During a cycle each team slot k, from 5 down to 0, is recounted once, when the timer's remaining whole seconds first fall to k; a recount sets the slot's count to the actor-grid friend count of team k within the search radius (reference/12, DEC-094). When the timer expires a new cycle starts.
 
@@ -364,9 +364,9 @@ The Collector unit is specified in reference/02 (`collector.md`); these rules gi
 
 **R-ECON-082** (MUST) A Builder takes Essence orbs in Birth or Floating that are not marked broken (R-UNIT-308), of any team: while idle it searches every `ref.unit.builder.retarget_ticks` (11 ticks, reference/02 builder.md) for the nearest within `ref.econ.builder.search_range_wu` (200 wu), and it carries up to `ref.econ.builder.capacity` (25 orbs at research level 3; 0, 10, 15, 25 and 30 for levels 0 to 4). A Builder that carries orbs and takes no further orb, because it is full or finds none, flies to the nearest Spawn Node, by plain distance, whose owner is a friend of its team, and there delivers one orb per tick; each delivered orb becomes one Worker of the node's current owner, with no population-cap check and no activation check (reference/02 builder.md R-UNIT-454, R-UNIT-457; see DEC-085). Carried orbs are Attached and never expire; when a Builder dies, the orbs it still carries drop to Floating.
 
-**R-ECON-083** (MUST) A Crawler takes the nearest Essence orb in Birth or Floating, of any team, within `ref.unit.crawler.orb_search_range` (60 wu, measured in three dimensions), but only an orb whose list of nearby eggs is not empty; that list holds up to `ref.econ.crawler.egg_cache_max` (8) dormant, grounded Crawler eggs within `ref.econ.crawler.egg_cache_range_wu` (60 wu, measured horizontally) of the orb. The Crawler carries one orb (Attached) and delivers it to a dormant egg, which the orb fertilises (InEgg). After `ref.econ.crawler_egg.hatch_ticks` (151 ticks) the orb is removed and, if the egg's team has fewer than `ref.unit.crawler.team_limit` (250) Crawlers, `ref.econ.crawler_egg.crawlers_per_orb` (4) Crawlers of the egg's team are released.
+**R-ECON-083** (MUST) A Crawler takes the nearest Essence orb in Birth or Floating, of any team, within `ref.unit.crawler.orb_search_range` (60 wu, measured in three dimensions), but only an orb whose list of nearby eggs is not empty; that list holds up to `ref.econ.crawler.egg_cache_max` (8) dormant, grounded Crawler eggs within `ref.econ.crawler.egg_cache_range_wu` (60 wu, measured horizontally) of the orb. The Crawler carries one orb (Attached) and delivers it to a dormant egg, which the orb fertilises (InEgg). After `ref.unit.crawler_egg.hatch_ticks` (151 ticks) the orb is removed and, if the egg's team has fewer than `ref.unit.crawler.team_limit` (250) Crawlers, `ref.unit.crawler_egg.hatch_crawlers` (4) Crawlers of the egg's team are released (reference/02 R-UNIT-524).
 
-**R-ECON-084** (MUST) An ant takes the nearest Essence orb in Birth or Floating, of any team, within `ref.unit.ant.search_range` (10 wu, measured in three dimensions), and also carries captured Workers, back to its Hive. A Hive turns each stored orb into `ref.econ.hive.ants_per_orb` (6) ants, one orb per `ref.econ.hive.conversion_ticks` (10 or 11 ticks: one second of match time).
+**R-ECON-084** (MUST) An ant takes the nearest Essence orb in Birth or Floating, of any team, within `ref.unit.ant.search_range` (10 wu, measured in three dimensions), and also carries captured Workers, back to its Hive. A Hive turns each stored orb into `ref.econ.hive.ants_per_orb` (6) ants, one orb per `ref.econ.hive.conversion_ticks` (10 ticks: one second of match time, 1 ÷ `ref.sim.tick_period` ticks, by the deadline rule of reference/03 R-BLDG-403; DEC-002).
 
 **R-ECON-085** (MUST) A centipede eats Floating Essence orbs of any team within its eat range, with an eat chance of its size / `ref.unit.centipede.eat_chance_divisor` (2) (reference/02). It grows by one segment per `ref.unit.centipede.orbs_per_segment` (4) orbs eaten, up to its maximum size, and every eaten orb is destroyed.
 
@@ -381,7 +381,7 @@ The Collector unit is specified in reference/02 (`collector.md`); these rules gi
 | Essence orb → Worker at a Spawn Node, by a Collector | 1 : 1, for the node's current owner | 1 per tick per Collector at the node (10 per second at game speed 1), on ticks on which the node may produce (R-ECON-074) |
 | Essence orb → Worker at a Spawn Node, by a Builder | 1 : 1, for the node's current owner | 1 per tick per Builder at the node |
 | Essence orb → Crawlers, through a Crawler egg | 1 : 4, for the egg's team | 151 ticks per egg |
-| Essence orb → ants, at a Hive | 1 : 6 | 1 orb per 10 or 11 ticks per Hive |
+| Essence orb → ants, at a Hive | 1 : 6 | 1 orb per 10 ticks per Hive |
 | Essence orb → centipede growth | 4 : 1 segment | per eat roll |
 | transit orb → Worker at its Spawn Node | 1 : 1 | §2.7 and §2.9 |
 
@@ -512,7 +512,7 @@ On the reference maps each player position typically starts with 40 starting Wor
 
 **R-ECON-124** (MUST) These same-tick outcomes depend on structure order or container slot order and are specified by DEC-455: hand-offs in the spawn network (R-ECON-040); the order of Transit Gate waves against the cap (R-ECON-093); the Spawn Surge request count (R-ECON-046); and whether a Worker spawned during a tick into a later slot of its team's container advances in that same tick (see DEC-455).
 
-**R-ECON-125** (SHOULD) Production and reinforcement rates measured in headless bot-versus-bot matches agree with the derived throughput of §4.2 within statistical tolerance; this is the economy's check for the first headless gameplay milestone (see DEC-229).
+**R-ECON-125** (SHOULD) Production and reinforcement rates measured in headless bot-versus-bot matches agree with the derived throughput of §4.2 within statistical tolerance.
 
 ## 3 States and flows
 
@@ -618,7 +618,8 @@ flowchart TD
     S -->|"yes"| SN{"Structure has a team?"}
     SN -->|"no"| U["Not locked"]
     SN -->|"defender"| SD{"pop >= defender cap?"}
-    SN -->|"attacker"| SA{"pop >= (map cap - defenders x defender cap) / attackers?"}
+    SN -->|"attacker, numeric map cap"| SA{"pop >= (map cap - defenders x defender cap) / attackers?"}
+    SN -->|"attacker, unlimited map cap"| PL
     SD -->|"yes"| L
     SD -->|"no"| U
     SA -->|"yes"| L
@@ -670,7 +671,7 @@ Every value is a reference tuning value that Species may adopt as its baseline (
 | `ref.econ.population_limiter.max_population` | 100 | bodies | default | R-ECON-063 | DEC-454 |
 | `ref.econ.population_limiter.first_recount_ticks` | 1–100 | ticks | uniform; U[0, 10) s | R-ECON-063 | DEC-652 |
 | `ref.econ.population_limiter.recount_cycle_ticks` | 91–110 | ticks | uniform; 9.1–11.0 s | R-ECON-065 | DEC-002 |
-| `ref.econ.population_limiter.overpopulation_period_ticks` | 10–11 | ticks | one second of match time | R-ECON-064 | DEC-454 |
+| `ref.econ.population_limiter.overpopulation_period_ticks` | 10 | ticks | one second of match time: 1 ÷ `ref.sim.tick_period`, the deadline rule of reference/03 R-BLDG-403 | R-ECON-064 | DEC-002, DEC-454 |
 | `ref.econ.population_limiter.overpopulation_divisor` | 2 | — | halves the summed excess of team slot 0, by integer division | R-ECON-064 | DEC-454, DEC-851 |
 | `ref.econ.orb.birth_ticks` | 61 | ticks | 6.1 s; minimum Birth duration | R-ECON-066, R-ECON-068 | DEC-002 |
 | `ref.econ.orb.birth_max_height_wu` | 10 | wu | above the creation-time ground height; above it the pull-down draws U[0, 10) per tick | R-ECON-068, R-ECON-071 | — |
@@ -700,10 +701,8 @@ Every value is a reference tuning value that Species may adopt as its baseline (
 | `ref.econ.builder.capacity` | 25 | orbs | research level 3; levels 0–4: 0, 10, 15, 25, 30 | R-ECON-082 | DEC-085, DEC-115 |
 | `ref.econ.crawler.egg_cache_max` | 8 | eggs | dormant, grounded | R-ECON-083 | — |
 | `ref.econ.crawler.egg_cache_range_wu` | 60 | wu | horizontal | R-ECON-083 | — |
-| `ref.econ.crawler_egg.hatch_ticks` | 151 | ticks | 15.1 s | R-ECON-083 | DEC-002 |
-| `ref.econ.crawler_egg.crawlers_per_orb` | 4 | Crawlers | | R-ECON-083, R-ECON-087 | — |
 | `ref.econ.hive.ants_per_orb` | 6 | ants | | R-ECON-084, R-ECON-087 | DEC-084 |
-| `ref.econ.hive.conversion_ticks` | 10–11 | ticks | one second of match time per orb | R-ECON-084 | DEC-002 |
+| `ref.econ.hive.conversion_ticks` | 10 | ticks | one second of match time per orb: 1 ÷ `ref.sim.tick_period`, the deadline rule of reference/03 R-BLDG-403 | R-ECON-084 | DEC-002 |
 | `ref.econ.gate.interval_mode_seconds` | 60 | mode seconds | 660 ticks; option 10–300 in steps of 10 in Launch Race and Flag Chain; fixed elsewhere | R-ECON-090, R-ECON-099 | DEC-073 |
 | `ref.econ.gate.count` | 40 | Workers per gate per wave | option 1–100 in Launch Race and Flag Chain | R-ECON-099 | DEC-065 |
 | `ref.econ.gate.transport_cap` | 2 | Transport powers | option 1–10 in Launch Race and Flag Chain; a map cap of 0 grants no Transport, and unlimited is its own explicit value (DEC-120) | R-ECON-099 | DEC-065 |
@@ -735,11 +734,11 @@ Keys cited from other documents (their values are defined there):
 | [worker.md](02_units/worker.md) | `ref.unit.worker.retarget_ticks`, `ref.unit.worker.port_search_range` | R-ECON-014, R-ECON-015 |
 | [collector.md](02_units/collector.md), [builder.md](02_units/builder.md) | `ref.unit.collector.retarget_ticks`, `ref.unit.collector.bot_think_ticks`, `ref.unit.collector.speed`, `ref.unit.builder.retarget_ticks` | R-ECON-072, R-ECON-079, R-ECON-080, R-ECON-082 |
 | [essence_orbs.md](02_units/essence_orbs.md) | `ref.unit.essence_orb.birth_hover_max`, `ref.unit.essence_orb.ascent_rise_min`, `ref.unit.essence_orb.ascent_rise_range`, `ref.unit.essence_orb.wobble_phase_range` | R-ECON-068, R-ECON-071 |
-| [creatures.md](02_units/creatures.md) | `ref.unit.crawler.team_limit`, `ref.unit.crawler.orb_search_range`, `ref.unit.ant.search_range`, `ref.unit.centipede.eat_chance_divisor`, `ref.unit.centipede.orbs_per_segment`, `ref.unit.brood_drifter.prefertilise_one_in`, `ref.unit.reaper_serpent.alive_limit`, `ref.unit.seed_pod.workers_min`, `ref.unit.seed_pod.workers_spread`, `ref.unit.seed_pod.crawlers_min`, `ref.unit.seed_pod.crawlers_spread`, `ref.unit.seed_pod.ants_min`, `ref.unit.seed_pod.ants_spread`, `ref.unit.seed_pod.centipede_size_min`, `ref.unit.seed_pod.centipede_size_spread`, `ref.unit.seed_pod.orbs_min`, `ref.unit.seed_pod.orbs_spread`, `ref.unit.seed_pod.orb_speed_min`, `ref.unit.seed_pod.orb_speed_spread` | R-ECON-050, R-ECON-067, R-ECON-083 to R-ECON-085, R-ECON-117 |
+| [creatures.md](02_units/creatures.md) | `ref.unit.crawler.team_limit`, `ref.unit.crawler.orb_search_range`, `ref.unit.crawler_egg.hatch_ticks`, `ref.unit.crawler_egg.hatch_crawlers`, `ref.unit.ant.search_range`, `ref.unit.centipede.eat_chance_divisor`, `ref.unit.centipede.orbs_per_segment`, `ref.unit.brood_drifter.prefertilise_one_in`, `ref.unit.reaper_serpent.alive_limit`, `ref.unit.seed_pod.workers_min`, `ref.unit.seed_pod.workers_spread`, `ref.unit.seed_pod.crawlers_min`, `ref.unit.seed_pod.crawlers_spread`, `ref.unit.seed_pod.ants_min`, `ref.unit.seed_pod.ants_spread`, `ref.unit.seed_pod.centipede_size_min`, `ref.unit.seed_pod.centipede_size_spread`, `ref.unit.seed_pod.orbs_min`, `ref.unit.seed_pod.orbs_spread`, `ref.unit.seed_pod.orb_speed_min`, `ref.unit.seed_pod.orb_speed_spread` | R-ECON-050, R-ECON-067, R-ECON-083 to R-ECON-085, R-ECON-117 |
 | [hazards_and_projectiles.md](02_units/hazards_and_projectiles.md) | `ref.unit.abductor.drop_cap` | R-ECON-117 |
 | [trees_and_crate_structures.md](03_buildings_and_world_objects/trees_and_crate_structures.md) | `ref.bldg.hive.release_interval_ticks` | R-ECON-056 |
 | [crates_and_powers.md](04_supply_crates_powers_and_weapons/crates_and_powers.md) | `ref.crate.drop.period_default_s`, `ref.crate.drop.map_width_per_crate`, `ref.crate.reinforcements.count_base`, `ref.crate.reinforcements.count_spread`, `ref.crate.reinforcements.speed_min`, `ref.crate.reinforcements.speed_spread`, `ref.crate.spawn_surge.timer_ticks`, `ref.crate.essence_grove.drop_rate_base`, `ref.crate.essence_grove.drop_rate_spread`, `ref.power.comeback.pool`, `ref.power.comeback.pool_basic` | R-ECON-046, R-ECON-067, R-ECON-114, R-ECON-115, R-ECON-117, R-ECON-120 |
-| [12 tick timing](12_simulation_model/01_tick_timing_and_main_loop.md) | `ref.sim.tick_period`, `ref.sim.update_slices` | §1.1, R-ECON-005 |
+| [12 tick timing](12_simulation_model/01_tick_timing_and_main_loop.md) | `ref.sim.tick_period`, `ref.sim.update_slices` | §1.1, R-ECON-005, R-ECON-064, R-ECON-084 |
 | [12 containers](12_simulation_model/04_containers_and_update_order.md) | `ref.sim.spawn.orb_lift` | R-ECON-066 |
 | [12 space](12_simulation_model/05_space_routing_and_physics.md) | `ref.sim.actor_grid.cell_size` | R-ECON-013 |
 | [12 teams](12_simulation_model/06_teams_and_player_commands.md) | `ref.sim.max_teams`, `ref.sim.team.eliminate_damage_factor` | §1.1, R-ECON-010 |
@@ -835,7 +834,8 @@ pop(team) = ungrouped actors of the team (bot controller, Transports, Collectors
             creatures, eggs and corpses included) − Crawlers of the team
 Siege and defender cap set:
     defender locked ⇔ pop ≥ defenderCap
-    attacker locked ⇔ pop ≥ (mapCap − numDefenders × defenderCap) ÷ numAttackers
+    attacker locked ⇔ pop ≥ (mapCap − numDefenders × defenderCap) ÷ numAttackers   (map cap a number)
+    attacker, map cap unlimited: Population Limiter fallback, as below
 else if the map cap is a number:  locked ⇔ pop ≥ mapCap ÷ openSlots
 else (unlimited): Population Limiter fallback (none takes effect on the reference maps), else unlocked
 checked by: Spawn Node requests (each), Transit Gates (once per gate per wave), Hive sorties (each),
@@ -891,8 +891,8 @@ then the starting forces of the team's map position
 | Worker idle re-plan | 11–20 | 1.1–2.0 | `ref.unit.worker.retarget_ticks` |
 | corpse fade | 25 on the ground, 50 in the air | 2.5, 5.0 | R-ECON-011 |
 | Population Limiter recount cycle | 91–110 | 9.1–11.0 | `ref.econ.population_limiter.recount_cycle_ticks` |
-| Hive orb-to-ants conversion | 10–11 | about 1 | `ref.econ.hive.conversion_ticks` |
-| Crawler egg hatch | 151 | 15.1 | `ref.econ.crawler_egg.hatch_ticks` |
+| Hive orb-to-ants conversion | 10 | 1.0 | `ref.econ.hive.conversion_ticks` |
+| Crawler egg hatch | 151 | 15.1 | `ref.unit.crawler_egg.hatch_ticks` |
 | starting-power lock | 300 | 30.0 | `ref.econ.start.power_lock_ticks` |
 
 ## 5 Edge cases and interactions
@@ -917,7 +917,7 @@ then the starting forces of the team's map position
 | the Visitor faction | its Workers count for team slot 5; its Spawn Node count starts at 0 in every match (R-ECON-026) |
 | a map with a numeric Transport cap of 1 or more, and every Launch Race match | the Transport outcome is not valid (R-ECON-098) |
 | a Transport cap of 0 set by a map | under R-ECON-091 a map value of 0 is a value: the gates grant no Transport, and an unlimited cap is its own explicit value (R-ECON-093 step 3, DEC-120) |
-| a Siege map that sets a defender cap and an unlimited map cap | rule 2 of R-ECON-052 still applies; no reference map does this |
+| a Siege map that sets a defender cap and an unlimited map cap | rule 2 of R-ECON-052 locks a defending team at the defender cap, and the Population Limiter fallback (rule 4) decides for an attacking team; no reference map does this |
 
 ### 5.3 Value of territory
 
@@ -930,8 +930,8 @@ then the starting forces of the team's map position
 
 ### 5.4 Timing and ordering interactions
 
-- **Transit Gate advance.** The reinforcement routine runs once per tick on every map (R-ECON-088, DEC-065). A routine run twice per tick, the alternative that DEC-065 rejects, would make every countdown step take 5.5 ticks on average: waves 330 ticks apart with a first gap of 324, and 40 Workers per gate every 33.0 s (1.21 per second, about 72.7 per minute).
-- **Game speed.** Because game speed only schedules ticks (R-ECON-006), a timer of n ticks lasts n / (10 × speed) real seconds at every speed; Time Dilation and Time Rush (reference/04) change no tick count of this document.
+- **Transit Gate advance.** The reinforcement routine runs once per tick on every map (R-ECON-088, DEC-065).
+- **Game speed.** Because game speed only schedules ticks (R-ECON-006), a timer of n ticks lasts n × `ref.sim.tick_period` ÷ speed real seconds at every speed; Time Dilation and Time Rush (reference/04) change no tick count of this document.
 - **Same-tick order.** A Worker that a Spawn Node or a Transit Gate releases into a later slot of its team's container advances in the same tick; with several Transit Gates per team, each gate's cap check sees the Workers of the gates before it in structure order (R-ECON-124, DEC-455).
 - **Draw load.** The economy's simulation draws grow with the number of live Essence orbs (0 to 5 per orb per tick) and with every Worker spawned (R-ECON-122).
 
@@ -1019,7 +1019,7 @@ Given a per-team cap of 1000, then a node is unlocked at pop 999 and locked at p
 Each default is the behaviour that §2 specifies.
 
 - DEC-001 — reference core loop; whether the world game keeps it (R-ECON-001).
-- DEC-003 — mode-second length after playtest (R-ECON-003).
+- DEC-003 — mode-second length (R-ECON-003).
 - DEC-045 — map editor; the cap value controls are an editor hook (R-ECON-058).
 - DEC-084 — Hive Essence orbs and Hive ants outside the cap (R-ECON-007, R-ECON-056).
 - DEC-094 — exact or approximate actor-grid queries; port occupancy is exact (R-ECON-012, R-ECON-065).
@@ -1030,7 +1030,6 @@ Each default is the behaviour that §2 specifies.
 - DEC-121 — Brood creature ownership (R-ECON-051).
 - DEC-201 — replication bandwidth and population budget (R-ECON-057).
 - DEC-228 — per-tick CPU budget, population caps and stress populations (R-ECON-057).
-- DEC-229 — build order; the economy throughput check of the first headless milestone (R-ECON-125).
 - DEC-241 — numeric semantics, integer truncation included (R-ECON-123).
 - DEC-304 — Spawn Surge request count of 50 or 51 (R-ECON-046).
 - DEC-305 — Essence Grove orbs of team slots not in play (R-ECON-067).

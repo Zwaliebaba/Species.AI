@@ -23,10 +23,10 @@ This document specifies the Transport (`Transport`, an actor): acquisition, stat
 | Source | Rule |
 |---|---|
 | the Transport outcome | its Power, targeted at a ground position (`PlayerCommand::TargetPower`), creates one Transport there and selects it on its team inside the same simulation step ([crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md)) |
-| a Transit Gate reinforcement wave | the wave grants a Transport Power while the team holds fewer Transport Powers than `ref.econ.gate.transport_cap`, or the cap is 0, and targets it at the gate position + its front × `ref.econ.gate.transport_target_wu`, `ref.econ.gate.transport_target_height_wu` above the ground ([population flow](../05_population_flow.md) R-ECON-093 step 3) |
+| a Transit Gate reinforcement wave | the wave grants a Transport Power while the team holds fewer Transport Powers than `ref.econ.gate.transport_cap`, or the cap is unlimited; a cap of 0 grants none (DEC-120). It targets the Power at the gate position + its front × `ref.econ.gate.transport_target_wu`, `ref.econ.gate.transport_target_height_wu` above the ground ([population flow](../05_population_flow.md) R-ECON-093 step 3) |
 | a map's starting units marked to run as a Power | each becomes a Transport Power targeted at the unit's position, with no life limit on the Power ([population flow](../05_population_flow.md) R-ECON-109); the reference maps place 7 such Transports in total, all on four Siege maps |
 
-The Supply crate validity rule that excludes the Transport outcome in Launch Race and on maps with a Transit Gate Transport cap belongs to [crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md).
+The Supply crate validity rule that excludes the Transport outcome in Launch Race and on maps with a numeric Transit Gate Transport cap of 1 or more (R-CRATE-125) belongs to [crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md).
 
 **R-UNIT-370** (MUST) A Transport's Power ends when the Transport is dead or no longer exists. Stopping a Transport's Power, by its owner's cancel command or by a stop of all of the team's Powers, gives the Transport a health change of −`ref.power.stop.damage` (1000), which destroys it ([reference/04 README](../04_supply_crates_powers_and_weapons/README.md) R-CRATE-020). In a tutorial the Transport refuses the stop: the Power's slot is freed and the Transport stays in the world with no slot (see DEC-551).
 
@@ -155,7 +155,7 @@ An order always carries the straight-route flag (R-SIM-450). Which input gives t
 
 1. When the bot's Siege objectives include Transport objectives, an empty Transport whose current objective has no Transport marker becomes a mobile bomb: it drives to the nearest enemy gun turret or Spawn Node and self-destructs as in R-UNIT-404 item 1 within `ref.unit.transport.bot_bomb_distance` (20 wu).
 2. A stopped Transport with more than `ref.unit.transport.bot_carry_threshold` (20) passengers and nobody approaching unloads at the current objective's Transport marker, or else at a random valid objective marker: one that is not friendly for an attacker, any for a defender.
-3. An empty or Idle Transport looks for a pickup point: a bot objective marker that offers pickup, is marked as a Transport objective, lies more than `ref.unit.transport.bot_pickup_min_range` (225 wu) away and has more than `ref.unit.transport.bot_pickup_friends` (25) friends within `ref.unit.transport.bot_pickup_radius` (150 wu); or else its own Transit Gate's position + front × `ref.unit.transport.bot_gate_offset` (75 wu). The point is jittered by R-UNIT-403.
+3. An empty or Idle Transport looks for a pickup point by scanning the structures in structure order. The first bot objective marker that offers pickup, is marked as a Transport objective, lies more than `ref.unit.transport.bot_pickup_min_range` (225 wu) away and has more than `ref.unit.transport.bot_pickup_friends` (25) friends within `ref.unit.transport.bot_pickup_radius` (150 wu) gives the point and ends the scan. Until such a marker is found, each Transit Gate of the Transport's team that the scan passes sets the point to its position + front × `ref.unit.transport.bot_gate_offset` (75 wu), so without a qualifying marker the last such Transit Gate in structure order gives it (DEC-016). The point is jittered by R-UNIT-403.
 4. A Transport within 150 wu of its pickup point becomes Loading.
 5. A carrying Transport within `ref.unit.transport.bot_siege_unload_range` (75 wu) of its arrival point becomes Unloading.
 
@@ -205,9 +205,11 @@ stateDiagram-v2
     Loading --> Idle : full, move order, or deploy order
     Unloading --> Idle : empty, a Worker boards by a crowd order, or over sea
     Idle --> [*] : health 0, explosion, passengers thrown out on fire
+    Loading --> [*] : health 0, explosion, passengers thrown out on fire
+    Unloading --> [*] : health 0, explosion, passengers thrown out on fire
 ```
 
-*Figure 1 — Transport states (R-UNIT-386 to R-UNIT-392, R-UNIT-397, R-UNIT-399). A deploy order sets the state to Idle from any state and stores the arrival action (R-UNIT-388).*
+*Figure 1 — Transport states (R-UNIT-386 to R-UNIT-392, R-UNIT-397, R-UNIT-399). A deploy order sets the state to Idle from any state and stores the arrival action (R-UNIT-388). Destruction ends every state (R-UNIT-375).*
 
 ```mermaid
 flowchart TD

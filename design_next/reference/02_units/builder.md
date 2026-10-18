@@ -51,7 +51,7 @@ Actor stats are floating-point values (DEC-090).
 
 **R-UNIT-454** (MUST) **Idle.** An Idle Builder moves towards its waypoint at its Idle speed. Every `ref.unit.builder.retarget_ticks` (11 ticks) it searches, in this order:
 
-1. if it carries fewer orbs than its capacity, the nearest Essence orb in Birth or Floating that is not broken within `ref.econ.builder.search_range_wu` (200 wu), of any team ([essence_orbs.md](essence_orbs.md) R-UNIT-308, R-UNIT-325); if one is found, it becomes ToEssenceOrb;
+1. if it carries fewer orbs than its capacity, the nearest Essence orb in Birth or Floating within `ref.econ.builder.search_range_wu` (200 wu), of any team ([essence_orbs.md](essence_orbs.md) R-UNIT-325); if one is found, it becomes ToEssenceOrb;
 2. otherwise, if it carries orbs, the nearest Spawn Node, by plain distance, whose owner is a friend of the Builder's team; if one is found, it becomes ToSpawnNode with its delivery point at that node's position + the node's front × `ref.unit.builder.delivery_offset` (50 wu), pushed out of obstacles ([space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) R-SIM-383);
 3. otherwise it wanders: its waypoint becomes a point `ref.unit.builder.wander_distance` (30 wu) away in a uniformly drawn horizontal direction (one simulation draw).
 
@@ -104,7 +104,7 @@ The attached orb raises its own collected sound ([essence_orbs.md](essence_orbs.
 ```mermaid
 stateDiagram-v2
     [*] --> Idle
-    Idle --> ToEssenceOrb : search, nearest unbroken Birth or Floating orb within 200 wu and room left
+    Idle --> ToEssenceOrb : search, nearest Birth or Floating orb within 200 wu and room left
     Idle --> ToSpawnNode : search found no orb, carrying orbs, a friendly Spawn Node exists
     Idle --> ToWaypoint : move order
     ToWaypoint --> Idle : within 5 wu of the waypoint

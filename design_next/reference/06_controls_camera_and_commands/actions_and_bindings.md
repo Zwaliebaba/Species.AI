@@ -32,7 +32,6 @@ Table 2.1-A Default bindings of the match control scheme.
 | `action.camera.aim` | mouse movement, axis | — | A4 |
 | `action.camera.aim_stick` | — | right stick, axis | A4 |
 | `action.camera.zoom` | Z or middle button, held | right stick press, held | A5 |
-| `action.camera.zoom_out` | C, held | — | A11 |
 | `action.camera.look_around` | F2, held | right stick press, held | A6 |
 | `action.camera.track_closer` | — | d-pad up, held | A7 |
 | `action.camera.track_farther` | — | d-pad down, held | A7 |
@@ -52,8 +51,6 @@ Table 2.1-A Default bindings of the match control scheme.
 | `action.power.place` | primary button, down | south face button, down | T1 |
 | `action.power.cancel` | C, down | north face button, down | T3, T6 |
 | `action.power.end_current` | unbound | unbound | T7 |
-| `action.power.panel_show` | Tab, down | view button, down | T8 |
-| `action.power.panel_hide` | Tab, up | view button down, or east face button down | T8 |
 | `action.order.crowd` | secondary button, down | west face button, down | O1 |
 | `action.order.straight_route` | Ctrl, held | — | O1, O6 |
 | `action.order.promote` | secondary button, down | west face button, down | O2 to O5 |
@@ -68,7 +65,6 @@ Table 2.1-A Default bindings of the match control scheme.
 | `action.direct.aim_stick` | — | right stick, axis | D2 |
 | `action.direct.secondary_fire_directed` | unbound | unbound | D3 |
 | `action.direct.set_target` | secondary button, held | west face button, held | D4, D5 |
-| `action.direct.set_target_end` | secondary button, up | west face button, up | D1 |
 | `action.direct.move_direction_change` | the binding of the input component's control catalogue | the binding of the input component's control catalogue | [camera](camera.md) R-CTRL-487 |
 | `action.match.ready` | Space, down | south or east face button, down | M1 |
 | `action.match.chat` | Enter, down | — | M2 |
@@ -106,8 +102,6 @@ Table 2.1-A Default bindings of the match control scheme.
 | A8 | `action.view.chat_log` | no UI window open | shows the chat log; mouse-look is frozen, the match input pump issues no team action, and the team command state is sent with every flag cleared (R-CTRL-021) |
 | A9 | `action.view.hide_interface` | — | toggles the hidden-interface flag: the HUD, the world markers, the Power slots panel and the cursor effects are hidden |
 | A10 | `action.view.screenshot` | no UI window open | renders and saves a screenshot, tiled when the poster-resolution setting is above 1 ([renderer view](../../architecture/components/renderer/view_lighting_and_fog.md) RND-214, ADR-076) |
-| A11 | `action.camera.zoom_out` | — | no effect: no rule reads it, so the field of view never widens beyond its base value |
-
 **R-CTRL-041** (MUST) The selection actions are:
 
 | Row | Actions | Context and conditions | Effect | Command |
@@ -165,8 +159,6 @@ An order to a Transport always sets the straight-route flag (R-SIM-450); an orde
 | T5 | `action.order.demote` | a Leader is selected | demotes the Leader to a Worker; the handler clears the selection; the camera returns to free movement (DEC-086, R-UNIT-154) | `PlayerCommand::DemoteLeader` |
 | T6 | `action.power.cancel` or `action.select.clear` | an own turret is selected | releases the turret: the selection is cleared and the camera returns to free movement; the turret stays. R-CTRL-109 does the same when the turret changes owner | `PlayerCommand::Select` with none, none, none |
 | T7 | `action.power.end_current` | no UI window open; the team has a current Power | as T3; an action never changes a Power locally (DEC-008) | `PlayerCommand::CancelPower` |
-| T8 | `action.power.panel_show`, `action.power.panel_hide` | — | no effect in a match | none |
-
 **R-CTRL-045** (MUST) The cancel action never kills or demotes a Leader by itself: demotion is the separate action `action.order.demote`, and scrapping (T4) never applies to a Leader (DEC-086). Promoting, demoting and scrapping are the three separate commands of R-SIM-456 (DEC-863).
 
 **R-CTRL-046** (MUST) The direct-control actions set fields of the team command state (R-CTRL-101) and issue no discrete command:
@@ -285,7 +277,6 @@ Only steps 2 and 3 can both apply to one press, and step 2 wins (DEC-863). A pre
 | `secondaryFireDirected` | `action.direct.secondary_fire_directed` fires |
 | `cameraTracking` | the camera is in tracking mode, or the camera is looking around (R-CTRL-103) |
 | `specialOrders` | `action.order.special` fires (R-CTRL-051) |
-| `endSetTarget` | `action.direct.set_target_end` fires |
 | `gamepad` | the input mode is gamepad |
 | `primaryHeld` | `action.direct.move_hold` is held |
 | `pointerPosition` | the pointer ground point, replaced at send time by R-CTRL-059 |
@@ -307,8 +298,6 @@ The sender converts and scales both vectors before it sends them, so the simulat
 | Leader | while its order is PrepareWaypoint and its speed is below `ref.ctrl.leader.face_pointer_speed`, it faces the pointer position (R-UNIT-168) |
 | Transport | nothing: a Transport takes discrete orders only (R-CTRL-080) |
 | turret | the turret aims at the pointer position; any of the move flag, `primaryFire`, `directMove` or `primaryHeld` fires it ([defences and props](../03_buildings_and_world_objects/defences_and_props.md)) |
-
-For the local team, `endSetTarget` after a move registers a move marker at the pointer position; a match does not draw move markers, and the move-marker list is bounded (DEC-096).
 
 **R-CTRL-105** (MUST) A keyboard and mouse player moves a Strike team by holding `action.direct.move_hold` (the waypoint follows the pointer ground point in every update), fires lasers by holding `action.direct.fire`, and throws a grenade by pressing `action.direct.secondary_fire` while firing. The Troopers of the selected Strike team face the team's pointer position. A gamepad player moves and aims a Strike team only with the sticks while the camera tracks it; `moveTarget` is never set for it (R-CTRL-101).
 

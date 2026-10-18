@@ -49,11 +49,11 @@ A seventh, debug-only mode of the reference is not part of the catalogue (DEC-05
 
 **R-MODE-001** (MUST) Every timer of the match rules is an integer number of ticks, read from the tick counter only; no match rule reads the wall clock or a render-frame clock (DEC-002, DEC-009). Seconds are shown only as a value derived from ticks.
 
-**R-MODE-002** (MUST) The **mode second** is the named constant `ref.mode.mode_second` = 11 ticks (1.1 s at the reference tick rate). Every rule that the match rules state "per second" advances once per mode second: the mode step of every mode, the match clock and time limit, the elimination countdowns, the Relic spawn timer, the reinforcement-wave countdown ([reference/05](../05_population_flow.md)) and the rank check. The match clock therefore runs 10 % slower than game time. The constant is a deliberate, named rule (DEC-006). It stays at 11 ticks for the first playable, and an A/B playtest of 10 against 11 ticks runs before launch (DEC-003).
+**R-MODE-002** (MUST) The **mode second** is the named constant `ref.mode.mode_second` = 11 ticks (1.1 s at the reference tick rate). Every rule that the match rules state "per second" advances once per mode second: the mode step of every mode, the match clock and time limit, the elimination countdowns, the Relic spawn timer, the reinforcement-wave countdown ([reference/05](../05_population_flow.md)) and the rank check. The match clock therefore runs 10 % slower than game time. The constant is a deliberate, named rule (DEC-006). Its value is open in DEC-003.
 
 **R-MODE-003** (MUST) The match rules keep three mode-second timers: the **rules timer** of the mode step, the **wave timer** of the reinforcement waves and the **rank timer** of the rank announcements. Each counts ticks and completes a mode second when `ref.mode.mode_second` ticks have elapsed. All three start at 0 at match start, so the first mode second of each ends on post-grace tick 0, and the d-th on post-grace tick 11 × (d − 1).
 
-**R-MODE-004** (MUST) A rule that the reference states as a fixed number of seconds counted down by one tick's duration per tick is an explicit tick count, with its own key in the document that owns the rule: 3 s is `ref.match.grace_period` (30 ticks); 5 s is `ref.econ.comeback.first_ticks` (51 ticks, reference/05); 10 s and 15 s are the Siege victory delays `ref.mode.siege.victory_delay_single_ticks` (101 ticks) and `ref.mode.siege.victory_delay_multi_ticks` (151 ticks); 45 s is `ref.econ.comeback.interval_ticks` (450 ticks, reference/05). The Launch Vessel countdowns are specified in [reference/03 mode objects](../03_buildings_and_world_objects/mode_objects.md).
+**R-MODE-004** (MUST) The fixed durations of the match rules are explicit tick counts, each with its own key in the document that owns the rule; their seconds are derived display values only: the grace period `ref.match.grace_period` (30 ticks, 3.0 s); the first Comeback grant `ref.econ.comeback.first_ticks` (51 ticks, 5.1 s, reference/05); the Siege victory delays `ref.mode.siege.victory_delay_single_ticks` (101 ticks, nominal 10 s) and `ref.mode.siege.victory_delay_multi_ticks` (151 ticks, nominal 15 s); and the Comeback interval `ref.econ.comeback.interval_ticks` (450 ticks, 45.0 s, reference/05). The Launch Vessel countdowns are specified in [reference/03 mode objects](../03_buildings_and_world_objects/mode_objects.md).
 
 **R-MODE-005** (MUST) A recount that a mode object performs "every 1 second" runs every `ref.mode.recount.one_second` (11 ticks), and one written "every 2 seconds" runs every `ref.mode.recount.two_second` (21 ticks). This covers the Control Zone, Flag post and Relic ownership recounts and the Relic Base delivery check (DEC-064).
 
@@ -134,7 +134,7 @@ The resulting colours apply inside this step on every participant; alliance assi
 
 **R-MODE-023** (MUST) `PairAllianceMembers(t)` without map groups pairs t, in slot order: with a slot of the same colour, joining that slot's group, or group 1 if it has none and group 1 is empty, or group 2 otherwise; else with a slot that has no colour, which takes t's colour, or a random free colour from 0 to 3 when t has none (colour 0, without a draw, when it is free); else, when t has no colour, with a coloured slot that has no partner, whose colour t takes.
 
-**R-MODE-024** (MUST) Two fallback steps of alliance assignment never apply, because their test for an existing partner also matches the candidate slot itself: pairing an uncoloured t with a coloured slot in `PairAllianceMembers(t, g)`, and the final forced random pair of `PairAllianceMembers(t)`. A player slot that no earlier step pairs keeps co-op group 0 (DEC-451 is open on always placing every player slot in a group).
+**R-MODE-024** (MUST) With fixed groups, an uncoloured slot is never paired with a coloured slot; without map groups, no forced random pair is made. A player slot that no step of R-MODE-021 to R-MODE-023 pairs or places keeps co-op group 0 (DEC-451 is open on always placing every player slot in a group).
 
 **R-MODE-025** (MUST) Each alliance group has a group colour id. Its members are drawn in the member-1 and member-2 shades of that colour by their co-op group position (R-SIM-421). Friendship in co-op is membership of the same group, and outside co-op a team is a friend only of itself; group 0 makes the Rogue and Visitor factions friends of each other in a co-op match (R-SIM-412, R-SIM-413, DEC-451). Co-op scoring is per mode, and the population caps of an alliance are not pooled (DEC-079).
 
@@ -187,7 +187,7 @@ The complexity label is drawn with the badge `uitex.difficulty_badge` on the mod
 4. On post-grace tick 0, once: record the start tick; when the time remaining is none or at most 0, set the unlimited-time flag.
 5. If the Siege victory timer is above 0, decrease it by 1 tick.
 6. Run the mode step of the current mode (the mode files).
-7. Run the reinforcement-wave step when the mode runs waves (Launch Race, Flag Chain) or the map enables them by a map reinforcement count or a map Transport cap above 0. Transit Gates advance exactly once per tick on every map, so the wave step never runs twice in one tick (DEC-065; [reference/05](../05_population_flow.md) R-ECON-090).
+7. Run the reinforcement-wave step when the mode runs waves (Launch Race, Flag Chain) or the map enables them by a map reinforcement count above 0 or a map Transport cap of 1 or more, or unlimited ([reference/05](../05_population_flow.md) R-ECON-088). Transit Gates advance exactly once per tick on every map, so the wave step never runs twice in one tick (DEC-065; [reference/05](../05_population_flow.md) R-ECON-090).
 8. If the Comeback Bonus option is on, run the Comeback step (§2.13).
 9. One-minute warning: when 0 < time remaining ≤ `ref.match.one_minute_warning` (60 mode seconds) and the warning has not been given, emit the announcement `match.one_minute_warning` and mark it given.
 10. Rank announcements (§2.10), once per mode second of the rank timer, in every mode except Siege and Flag Chain.
@@ -212,7 +212,7 @@ The two sound events and their timing are [reference/10](../10_audio_design/fron
 
 **R-MODE-042** (MUST) The grace overlay is drawn at the top centre, in red, with a font height of `ref.match.grace_overlay.font_height` (4 % of the screen height). It shows, in this priority:
 
-1. while counting: `match.grace_period.countdown` with the number (remaining ticks ÷ 10) + 1, that is 3, 2 and 1, at `ref.match.grace_overlay.countdown_scale` (125 %) size and solid;
+1. while counting: `match.grace_period.countdown` with the number (remaining ticks ÷ ticks per second) + 1, where ticks per second = 1 ÷ `ref.sim.tick_period` (10), that is 3, 2 and 1, at `ref.match.grace_overlay.countdown_scale` (125 %) size and solid;
 2. else, when the local team is ready: `match.grace_period.waiting` with the number of ready counted teams and the number of counted teams;
 3. else: `match.grace_period.prompt_keyboard` or `match.grace_period.prompt_pad`, by the active input device.
 
@@ -220,7 +220,7 @@ Texts 2 and 3 blink on the presentation clock: alpha `ref.match.grace_overlay.bl
 
 **R-MODE-043** (MUST) During the grace period each scoreboard row of a bot team and of a ready human shows `match.grace_period.ready` in place of its score.
 
-**R-MODE-044** (MUST) A pause request is refused during the grace period, after game over, and whenever a remote human takes part (R-SIM-553). The Supply crate drop rule has no grace-period gate of its own, but no world tick runs during the grace period, so no Supply crate drops in it, and a paused match stops the drops in the same way ([reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) R-CRATE-102, DEC-116, DEC-036).
+**R-MODE-044** (MUST) A pause request is refused during the grace period, after game over, and whenever a remote human takes part (R-SIM-553). The Supply crate drop rule has no grace-period gate: it also runs while the world is held for the start of the match, so a Supply crate can drop during the grace period and stays at its start height until the first world tick, and a pause holds the drop countdown ([reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) R-CRATE-102, DEC-116, DEC-036).
 
 ### 2.10 Scores and rank announcements
 
@@ -390,7 +390,7 @@ Declaring "none" runs steps 1 and 2 only.
 
 ### 2.19 Match options
 
-**R-MODE-073** (MUST) Every match option is typed and has an explicit default for each mode; a mode that lacks an option uses the typed default of R-MODE-076 (DEC-073). The six mode schemas hold 38 options. Within a mode the options are listed in this display order:
+**R-MODE-073** (MUST) Every match option is typed and has an explicit default for each mode; a mode that lacks an option uses the typed default of R-MODE-076 (DEC-073). The six mode schemas hold 38 options; the reference's one further option definition, the lives option of the debug-only mode, is not specified (DEC-058). Within a mode the options are listed in this display order:
 
 | Mode | Options, in display order |
 |---|---|
@@ -475,7 +475,7 @@ Declaring "none" runs steps 1 and 2 only.
 | single-round Siege | none: no page offers it | on | multi-round Siege cannot be selected (DEC-066) |
 | research levels | none | — | overwritten at every match start: every level 3, then Strike team 1; laser, grenade, rocket and airstrike 2; Worker 4 (DEC-115) |
 
-**R-MODE-083** (MUST) The two tutorials run Zone Control on their own maps ([reference/11](../11_tutorial_and_help.md)). At setup each uses the Zone Control defaults, its tutorial map, Easy bots and requested colour 0; the second tutorial also sets the slot colours 0, 1 and 2; start positions and bot colours equal the slot ids. The first tutorial drops no Supply crates, and the second drops none before its bots are released. At the second tutorial's end step basic crates only is switched on, crate placement becomes random, the bot difficulty becomes Standard and the bots are released. Every rule that a tutorial changes is listed in the overrides of reference/11 table 2.8-A (R-TUT-080). The first playable of Species is Spawn Control with two players (owner decision O20), and by default it has no tutorial; the two reference tutorials follow at launch (see DEC-123).
+**R-MODE-083** (MUST) The two tutorials run Zone Control on their own maps ([reference/11](../11_tutorial_and_help.md)). At setup each uses the Zone Control defaults, its tutorial map, Easy bots and requested colour 0; the second tutorial also sets the slot colours 0, 1 and 2; start positions and bot colours equal the slot ids. The first tutorial drops no Supply crates, and the second drops none before its bots are released. At the second tutorial's end step basic crates only is switched on, crate placement becomes random, the bot difficulty becomes Standard and the bots are released. Every rule that a tutorial changes is listed in the overrides of reference/11 table 2.8-A (R-TUT-080).
 
 **R-MODE-084** (MUST) The map options that change mode rules are listed below, by the names of the map option catalogue; the catalogue, its identifiers and its grammar are [reference/08](../08_maps_and_level_design/rules_and_conventions.md) (R-MAP-070, table 2.7-A). Every per-map limit has three distinct forms: absent, which applies the lobby default; 0, which means none; and an explicit unlimited value, never encoded as 0 or a negative number (DEC-120). A map value overrides the lobby default (DEC-065, R-MAP-071). A field that a map gives twice fails the content build (DEC-801).
 
@@ -745,10 +745,10 @@ String ids cited from other documents: `team.colour.*` and `match.player_left` (
 | Catch-up bonus option | yes | yes | no | yes, no effect | no | no |
 | Starting powers option | yes | yes | no | no | no | no |
 | Crate placement option | yes | yes | yes | no: random | no: random | no: random |
-| Transit Gate waves | no | where the map enables them | where the map enables them | yes, from map options | yes, from mode options | yes, from mode options |
+| Transit Gate waves | where the map enables them (no reference map does, R-MODE-201) | where the map enables them | where the map enables them | yes, from map options | yes, from mode options | yes, from mode options |
 | Mode objects | the spawn network | Control Zones | Relic Bases, Relic Spawn Zones, Relics | Core Device, Command Consoles, Transit Gates, bot objectives, Breach Charge | Launch Vessels, fuel depots, fuel pumps, fuel lines, the energy grid, Transit Gates | Flag posts, Home posts, Transit Gates |
 | Population cap | cap ÷ open slots | cap ÷ open slots | cap ÷ open slots | defender cap; the attackers share the rest | cap ÷ open slots | cap ÷ open slots |
-| Mode Supply crate rules | — | — | — | no rocket turret, no Abductor; no Collector, Builder or Spawn Surge; no Transport with a map Transport cap | no Transport | no Transport with a map Transport cap |
+| Mode Supply crate rules | — | — | — | no rocket turret, no Abductor; no Collector, Builder or Spawn Surge; no Transport with a map Transport cap of 1 or more | no Transport | no Transport with a map Transport cap of 1 or more |
 | Bot priority model ([reference/07](../07_bots/README.md)) | standard | standard with the zone override | Relic | Siege diffusion and objectives | Launch Race with markers | Siege diffusion with Flag post pins |
 | Bot formation Leaders | yes | yes | yes | no | no | no |
 | Rank announcements | yes | yes | yes | no | yes | no |
@@ -799,11 +799,13 @@ The number of reference maps per mode and per player count is [reference/08](../
 Open decisions whose default this file specifies:
 
 - DEC-001 — the reference core loop for the world game (§1).
-- DEC-003 — the length of the mode second after playtest (R-MODE-002).
+- DEC-003 — the length of the mode second (R-MODE-002).
 - DEC-047 — achievements, statistics and leaderboards; the hooks only (R-MODE-037, R-MODE-057, R-MODE-059).
 - DEC-048 — a post-match results screen (R-MODE-035, R-MODE-058).
+- DEC-066 — multi-round Siege; a single round by default (R-MODE-071, R-MODE-082).
+- DEC-116 — Supply crates during the grace period: the drop rule also runs while the world is held (R-MODE-044).
 - DEC-121 — the owner of Brood creatures (R-MODE-008).
-- DEC-123 — the tutorial for the first playable; none by default (R-MODE-083).
+- DEC-123 — the tutorial offering (R-MODE-083).
 - DEC-200 — the replication and authority model (R-MODE-032).
 - DEC-205 — join, reconnect, leave and session continuity (R-MODE-069).
 - DEC-228 — per-tick budget and population caps (R-MODE-087).
@@ -822,4 +824,4 @@ Open decisions whose default this file specifies:
 - DEC-868 — front-end reference quirks, among them the play-time format (§5 item 1).
 - DEC-969 — co-op group lists in ascending position order (R-MODE-020).
 
-Resolved decisions applied in this file: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-008, DEC-009, DEC-011, DEC-014, DEC-015, DEC-016, DEC-017, DEC-033, DEC-034, DEC-035, DEC-036, DEC-064, DEC-065, DEC-067, DEC-069, DEC-072, DEC-073, DEC-074, DEC-077, DEC-078, DEC-079 (the cap from the open slots), DEC-082, DEC-097, DEC-107, DEC-116 (no Supply crate drops while the world is held), DEC-119, DEC-120, DEC-124 (the proportional Catch-up curve, which supersedes DEC-081), DEC-465, DEC-560, DEC-561 and DEC-801. DEC-003 carries the owner's decision to keep 11 ticks for the first playable. DEC-058 records why the debug-only mode is absent. The Open decisions of the mode files are listed in each of them.
+Resolved decisions applied in this file: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-008, DEC-009, DEC-011, DEC-014, DEC-015, DEC-016, DEC-017, DEC-033, DEC-034, DEC-035, DEC-036, DEC-064, DEC-065, DEC-067, DEC-069, DEC-072, DEC-073, DEC-074, DEC-077, DEC-078, DEC-079 (the cap from the open slots), DEC-082, DEC-097, DEC-107, DEC-119, DEC-120, DEC-124 (the proportional Catch-up curve, which supersedes DEC-081), DEC-465, DEC-560, DEC-561 and DEC-801. DEC-058 records why the debug-only mode and its option are absent. The Open decisions of the mode files are listed in each of them.

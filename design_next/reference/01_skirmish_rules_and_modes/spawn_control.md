@@ -12,7 +12,7 @@ Spawn Control is the territory mode in its plainest form. Teams capture and hold
 
 **R-MODE-200** (MUST) Spawn Control is free-for-all for 2 to 4 players. Co-op, 2 against 2, exists on maps that allow it, with fixed alliances where the map defines group positions (positions 0 and 2 against 1 and 3 on the one reference map that does) (README R-MODE-018 to R-MODE-025).
 
-**R-MODE-201** (MUST) The objective is the spawn network: Spawn Nodes, Relays, the Source Node and Population Limiters ([reference/03](../03_buildings_and_world_objects/economy_and_spawn_objects.md), [reference/05](../05_population_flow.md)); it uses `mesh.structure.spawn_node`. Maps may also place Beam Dishes, jump pads, gun turrets, Barrier Emitters and neutral Transit Gates; the gates stay inactive, because no Spawn Control map enables reinforcement waves. The mode needs no mode-specific object; it is the first playable mode of Species, with two players and the core Supply crate pool (owner decision O20), and the rest of the build order is DEC-229. Whether the first playable has a tutorial is DEC-123, whose default is none, because the two reference tutorials run Zone Control (README R-MODE-083).
+**R-MODE-201** (MUST) The objective is the spawn network: Spawn Nodes, Relays, the Source Node and Population Limiters ([reference/03](../03_buildings_and_world_objects/economy_and_spawn_objects.md), [reference/05](../05_population_flow.md)); it uses `mesh.structure.spawn_node`. Maps may also place Beam Dishes, jump pads, gun turrets, Barrier Emitters and neutral Transit Gates; the gates stay inactive, because no Spawn Control map enables reinforcement waves. The mode needs no mode-specific object.
 
 **R-MODE-202** (MUST) The options are score mode, time limit (none or 1 to 60 minutes, default `ref.mode.spawn_control.option.time_limit`, 10; none is the explicit no-limit value, never 0, DEC-120), Catch-up bonus, crate drop period, starting powers, Comeback Bonus, sudden death and crate placement (README R-MODE-074). The proportional Catch-up bonus applies (README R-MODE-051, DEC-124).
 
@@ -154,8 +154,6 @@ String ids that this file uses, with their new text:
 
 ## 8 Open decisions
 
-- DEC-229 — the build order after the Spawn Control first playable (R-MODE-201).
-- DEC-123 — the tutorial for the first playable (R-MODE-201).
 - DEC-300 — the return of teams wiped out in sudden death (§5 item 2).
 - DEC-047 — the Total Control hook (R-MODE-212).
 

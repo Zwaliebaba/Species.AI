@@ -30,7 +30,7 @@ It also specifies how the reference advances a match in time:
 
 **R-SIM-502** (MUST) A duration in seconds is a derived display value only: seconds = ticks × `ref.sim.tick_period` at game speed 1. A document that shows seconds shows the tick count beside them.
 
-**R-SIM-503** (MUST) The **mode second** is the named constant `ref.mode.mode_second`, 11 ticks (1.1 s at the reference tick rate), defined in the tuning table of [reference/01](../01_skirmish_rules_and_modes/README.md) (R-MODE-002). Every rule that the match rules state "per second" (the match clock, elimination countdowns, Relic timers, reinforcement waves and rank checks) advances once per mode second, so displayed mode seconds run 10 % slower than real seconds. The mode-second timers start at 0 at match start, so the first mode second ends on the first tick after the grace period. The rules that use the mode second are in reference/01. Its length is kept for the first playable and re-examined in playtest (DEC-002, DEC-003).
+**R-SIM-503** (MUST) The **mode second** is the named constant `ref.mode.mode_second`, 11 ticks (1.1 s at the reference tick rate), defined in the tuning table of [reference/01](../01_skirmish_rules_and_modes/README.md) (R-MODE-002). Every rule that the match rules state "per second" (the match clock, elimination countdowns, Relic timers, reinforcement waves and rank checks) advances once per mode second, so displayed mode seconds run 10 % slower than real seconds. The mode-second timers start at 0 at match start, so the first mode second ends on the first tick after the grace period. The rules that use the mode second are in reference/01. Its length is open (DEC-003); the default is 11 ticks (DEC-002).
 
 **R-SIM-504** (MUST) The reference tick counts in every tuning table are the starting values of Species (DEC-004). A reference behaviour that looks accidental is stated as an explicit rule with a named key, never left implicit (DEC-006). The reference library is the specification of record for these values (DEC-005).
 
@@ -38,7 +38,7 @@ It also specifies how the reference advances a match in time:
 
 ### 2.2 The tick and its update slices
 
-**R-SIM-510** (MUST) In the reference structure, one tick is one **command frame**: the batch of player commands that the tick source sequences for that tick (R-SIM-549 states how ticks and command frames relate under tick scheduling). Executing a tick performs, in this order:
+**R-SIM-510** (MUST) At game speed 1, one tick is one **command frame**: the batch of player commands that the tick source sequences for that tick (R-SIM-548 and R-SIM-549 state how world ticks and command frames relate at other speeds). Executing a tick performs, in this order:
 
 1. apply every command of the frame, in sequence order (the command catalogue and the batching rules are [06](06_teams_and_player_commands.md));
 2. the tick-clock update (§2.5);
@@ -66,7 +66,7 @@ Teams, weapons, structures and Essence orbs advance one slice share of their sli
 
 **R-SIM-514** (MUST) A **sliced pool** (`SlicedPool`) of capacity *N* (the number of slots allocated, not the number of live objects) gives slice *s* the slot range from *lower* to *upper*, inclusive, where *lower* = 0 for *s* = 0 and otherwise the slot after the last slot of slice *s* − 1, and *upper* = *N* − 1 for *s* = 9 and otherwise *lower* + ⌊*N* / 10⌋. Slices 0 to 8 therefore each cover ⌊*N* / 10⌋ + 1 slots, and slice 9 covers the remainder, which can be empty. A pool records the last slot it has advanced in the current tick.
 
-**R-SIM-515** (MUST) Every object that exists for the whole of a tick advances exactly once in that tick, with the per-tick step of R-SIM-541. In particular every structure advances exactly once per tick (DEC-117).
+**R-SIM-515** (MUST) Every object that exists for the whole of a world tick advances exactly once in that tick, with the same tick arithmetic at every game speed (R-SIM-548). In particular every structure advances exactly once per tick (DEC-117).
 
 **R-SIM-516** (MUST) An object created during a tick advances in that same tick exactly when its slot lies after the last slot its pool has already advanced in the tick; an object placed in an earlier, re-used slot first advances in the next tick. Freed slots are re-used last-freed-first, and new slots are appended in blocks ([04](04_containers_and_update_order.md)). Consequently an object with a countdown per advance (grenade, turret round, fireball, shockwave ring) can start its life one tick early, and an object timed by match time takes one extra movement step before an unchanged deadline: the rocket and the airstrike target marker are such objects. This is the reference default of DEC-455.
 
@@ -80,7 +80,7 @@ Teams, weapons, structures and Essence orbs advance one slice share of their sli
 
 **R-SIM-523** (MUST) The effective tick rate is therefore the lower of the reference tick rate and the host's loop rate: a host whose loop runs fewer than 10 iterations per second slows the match for every participant.
 
-**R-SIM-524** (MUST) The schedule does not depend on game speed or on pause. In the reference structure, game speed changes only the game time that each tick adds (R-SIM-541), and pause changes only whether the world step runs (R-SIM-550). The schedule keeps running through the lobby and through every loading view.
+**R-SIM-524** (MUST) The command-frame schedule does not depend on game speed or on pause; game speed sets how many world ticks run within it (R-SIM-548, R-SIM-549, DEC-039), and pause holds the world (R-SIM-550). The schedule keeps running through the lobby and through every loading view.
 
 **R-SIM-525** (MUST) Where the Species tick source runs, and how it is paced against real time and against a host's frame rate, are decided by DEC-220 and DEC-225; R-SIM-520 to R-SIM-524 describe the reference default.
 
@@ -88,7 +88,7 @@ Teams, weapons, structures and Essence orbs advance one slice share of their sli
 
 **R-SIM-530** (MUST) Each participant executes command frames strictly in sequence order, one tick at a time. It takes the next frame only when every slice of the previous tick has run; between ticks its current slice is "none".
 
-**R-SIM-531** (MUST) Once per render frame, a participant runs *n* update slices, taking a new command frame whenever its current slice is "none" and a frame is available. With *P* the pending slice count, 10 × (the number of the latest frame received − the number of the last frame taken), plus (10 − the current slice) while a tick is part-way through, the slice count is *n* = clamp(⌊`ref.sim.pacing.gain` × *P*⌋, 0, `ref.sim.pacing.max_slices_per_frame`), that is ⌊0.3 × *P*⌋ capped at 20.
+**R-SIM-531** (MUST) Once per render frame, a participant runs *n* update slices, taking a new command frame whenever its current slice is "none" and a frame is available. With *P* the pending slice count, `ref.sim.update_slices` × (the number of the latest frame received − the number of the last frame taken), plus (`ref.sim.update_slices` − the current slice) while a tick is part-way through, the slice count is *n* = clamp(⌊`ref.sim.pacing.gain` × *P*⌋, 0, `ref.sim.pacing.max_slices_per_frame`), that is ⌊0.3 × *P*⌋ capped at 20.
 
 **R-SIM-532** (MUST) A participant that holds a participant id and is more than `ref.sim.pacing.catch_up_threshold` (20) frames behind is **catching up**. While catching up it runs `ref.sim.pacing.catch_up_slices` (20) slices per iteration, and it repeats the iteration (connection upkeep, then the slices) inside the same render frame while it is still catching up and the real time spent in this render frame's iterations is at most `ref.sim.pacing.catch_up_budget` (0.3 s). The budget is checked after every iteration.
 
@@ -120,20 +120,23 @@ A frame that arrives between two render frames waits up to one more render frame
 | Field | Kind | Meaning |
 |---|---|---|
 | game speed *s* | simulation | 1 = normal speed, 0 = stopped |
-| match time | simulation | game seconds since match start (R-SIM-547) |
+| match time | simulation | the world ticks completed since match start × `ref.sim.tick_period`, in game seconds (R-SIM-547) |
 | requested speed | simulation | the target of the running speed request, or none |
-| blend rate | simulation | the share of the remaining difference that each tick removes (1 = immediate) |
-| hold length | simulation | how long the reached target is held before speed returns to normal, or none (hold forever) |
+| blend rate | simulation | the share of the remaining difference that each command frame removes (1 = immediate) |
+| hold length | simulation | the number of world ticks for which the reached target is held before speed returns to normal, an integer (R-SIM-541 step 4), or none (the target is held until the next request) |
 | lock | simulation | while set, speed requests are ignored |
 | tick-take time | presentation | the real time at which the current tick's command frame was taken (R-SIM-561) |
 | smooth-time accumulator and its last-call time | presentation | R-SIM-570 |
 
-**R-SIM-541** (MUST) The tick-clock update runs once per tick, after the frame's commands have been applied, in this order:
+**R-SIM-541** (MUST) The tick clock advances at two points. The **tick-clock update** runs once per command frame, after the frame's commands have been applied and before any world tick of the frame (R-SIM-510, R-SIM-549), in this order:
 
 1. record the tick-take time from the real clock;
-2. if the world is not held (R-SIM-550): match time += `ref.sim.tick_period` × *s*, using the speed from before this tick's blend;
-3. if a speed request is pending: *s* += (requested speed − *s*) × blend rate; then, if |*s* − requested speed| < `ref.sim.speed.snap_threshold` (0.01), *s* = requested speed and the request is cleared, keeping the blend rate;
-4. if no request is pending (including one that step 3 has just completed) and a hold length is set: hold length −= `ref.sim.tick_period`; when it reaches 0 or less, the hold is cleared and a request for speed `ref.sim.speed.normal` (1.0) is made at the blend rate of the request that has just ended.
+2. if a speed request is pending: *s* += (requested speed − *s*) × blend rate; then, if |*s* − requested speed| < `ref.sim.speed.snap_threshold` (0.01), *s* = requested speed and the request is cleared, keeping the blend rate.
+
+The world ticks of the command frame then run at the speed that step 2 has set (R-SIM-548); none runs while the world is held (R-SIM-550). At the end of every world tick, in this order:
+
+3. match time += `ref.sim.tick_period` (R-SIM-547);
+4. if no request is pending (including one that step 2 of this command frame has just completed) and a hold is set: the hold length, an integer number of world ticks loaded from its key, decreases by 1; when it reaches 0, the hold is cleared and a request for speed `ref.sim.speed.normal` (1.0) is made at the blend rate of the request that has just ended, which step 2 of the next command frame starts to blend. The first world tick that the hold counts is therefore the first one after the target is reached, in the same command frame when that frame runs one, and a hold of *n* lasts *n* world ticks.
 
 **R-SIM-542** (MUST) A speed request names a target speed, a blend rate and a hold length (or none). While the tick clock is locked, a request is ignored; otherwise it replaces any running request, all three fields together.
 
@@ -149,20 +152,20 @@ A frame that arrives between two render frames waits up to one more render frame
 | pause command, pausing | `ref.sim.speed.stopped` (0) | `ref.sim.speed.pause_rate` (0.2) | none | R-SIM-554 |
 | pause command, resuming | `ref.sim.speed.normal` (1.0) | `ref.sim.speed.pause_rate` (0.2) | none | R-SIM-554 |
 | match won (then lock) | `ref.sim.speed.stopped` (0) | `ref.sim.speed.game_over_rate` (0.2) | none | R-SIM-555 |
-| Time Dilation | `ref.sim.speed.time_dilation_min` + a simulation unit-fraction draw × `ref.sim.speed.time_dilation_spread`, that is 0.2 + [0, 0.2) | `ref.sim.speed.crate_rate` (0.05) | `ref.sim.speed.crate_hold` (150 ticks) | R-SIM-556 |
-| Time Rush | `ref.sim.speed.time_rush_min` + a simulation unit-fraction draw × `ref.sim.speed.time_rush_spread`, that is 1.3 + [0, 0.7) | `ref.sim.speed.crate_rate` (0.05) | `ref.sim.speed.crate_hold` (150 ticks) | R-SIM-556 |
-| meteor near its target | `ref.sim.speed.meteor_target` (0.4) | `ref.sim.speed.meteor_rate` (0.1) | `ref.sim.speed.meteor_hold` (40 ticks) | R-SIM-556 |
+| Time Dilation | `ref.sim.speed.time_dilation_min` + a simulation unit-fraction draw × `ref.sim.speed.time_dilation_spread`, that is 0.2 + [0, 0.2) | `ref.sim.speed.crate_rate` (0.05) | `ref.sim.speed.crate_hold` (151 world ticks) | R-SIM-556 |
+| Time Rush | `ref.sim.speed.time_rush_min` + a simulation unit-fraction draw × `ref.sim.speed.time_rush_spread`, that is 1.3 + [0, 0.7) | `ref.sim.speed.crate_rate` (0.05) | `ref.sim.speed.crate_hold` (151 world ticks) | R-SIM-556 |
+| meteor near its target | `ref.sim.speed.meteor_target` (0.4) | `ref.sim.speed.meteor_rate` (0.1) | `ref.sim.speed.meteor_hold` (40 world ticks) | R-SIM-556 |
 | hold expired | `ref.sim.speed.normal` (1.0) | the rate of the ended request | none | R-SIM-541 |
 
 Every request comes from simulation code or from a sequenced command, so it happens at the same tick for every participant.
 
-**R-SIM-546** (MUST) The tick clock's speed, blend and match time are evaluated in the numeric model that DEC-240 decides. The snap and pause thresholds of R-SIM-541 and R-SIM-544 are part of the rules whatever that representation is, and the blend is an exponential approach evaluated once per tick, never per render frame.
+**R-SIM-546** (MUST) The tick clock's speed, blend and match time are evaluated in the numeric model that DEC-240 decides. The snap and pause thresholds of R-SIM-541 and R-SIM-544 are part of the rules whatever that representation is, and the blend is an exponential approach evaluated once per command frame, never per render frame.
 
-**R-SIM-547** (MUST) Simulation time is the tick counter, and no simulation rule reads any other clock (DEC-009). Match time is the number of ticks the world has run since match start × `ref.sim.tick_period`. In the reference structure, where every tick adds `ref.sim.tick_period` × *s* (R-SIM-541 step 2), this is the same match time per unit of real time.
+**R-SIM-547** (MUST) Simulation time is the tick counter, and no simulation rule reads any other clock (DEC-009). Match time is the number of world ticks completed since match start × `ref.sim.tick_period` (R-SIM-541 step 3), so a world tick reads the match time of the ticks before it. Over any interval of real time, match time therefore advances by the integral of the game speed over the interval, to within one tick (R-SIM-548).
 
-**R-SIM-548** (MUST) Game speed is **tick scheduling** (DEC-039). Every tick has the length `ref.sim.tick_period` and the same arithmetic at every speed; game speed sets how many ticks run per unit of real time, so that over any interval of real time the number of ticks run equals the integral of *s* over the interval divided by `ref.sim.tick_period`, with any fraction carried to the next interval and never dropped. Every per-tick probability, growth and rate, including the hold countdown of R-SIM-541 step 4, therefore scales with game speed (DEC-092).
+**R-SIM-548** (MUST) Game speed is **tick scheduling** (DEC-039). Every world tick has the length `ref.sim.tick_period` and the same arithmetic at every speed; game speed sets how many world ticks run per unit of real time, so that over any interval of real time the number of world ticks run equals the integral of *s* over the interval divided by `ref.sim.tick_period`, with any fraction carried to the next interval and never dropped. Within a command frame's interval *s* is the speed that the frame's tick-clock update has set (R-SIM-541 step 2). Every per-tick probability, growth and rate, including the hold countdown of R-SIM-541 step 4, therefore scales with game speed (DEC-092).
 
-**R-SIM-549** (MUST) Under tick scheduling, command frames (R-SIM-510), the speed blend (step 3 of R-SIM-541) and the match-rules update while the world is held (R-SIM-511) keep the reference real-time cadence of one per `ref.sim.tick_period` of real time, so that the speed ramps of R-SIM-554 and R-SIM-555 keep their reference real-time lengths and a held match can resume; the hold countdown (step 4 of R-SIM-541) counts the ticks the world runs (R-SIM-548). The ticks of the world step are scheduled within that cadence; the exact scheduling and rounding rule is decided with DEC-225 (see DEC-264).
+**R-SIM-549** (MUST) Under tick scheduling, command frames (R-SIM-510), the speed blend (step 2 of R-SIM-541) and the match-rules update while the world is held (R-SIM-511) keep the real-time cadence of one per `ref.sim.tick_period` of real time, so that the speed ramps of R-SIM-554 and R-SIM-555 keep their real-time lengths and a held match can resume; match time and the hold countdown (steps 3 and 4 of R-SIM-541) count the world ticks (R-SIM-548). The world ticks are scheduled within that cadence; the exact scheduling and rounding rule is decided with DEC-225 (see DEC-264).
 
 ### 2.6 The held world, the start hold, pause and the end of a match
 
@@ -176,17 +179,17 @@ Whether the world is held depends on game speed alone, never on local or transpo
 
 **R-SIM-551** (MUST) The tick clock is reset at match start and at a multi-round reset of the match world ([02](02_match_lifecycle_and_state_reset.md)): game speed `ref.sim.speed.stopped` (0), match time 0, no speed request, blend rate none, no hold and no lock. Every field of the tick clock that a simulation rule reads is reset, the hold length included, so no hold of an earlier match can expire in the next one (DEC-011). Every match therefore starts with the world held.
 
-**R-SIM-552** (MUST) While every local-player, remote-player and spectator team is ready, the match-rules update counts the grace countdown down by one tick per command frame from `ref.match.grace_period` (30 ticks, defined in [reference/01](../01_skirmish_rules_and_modes/README.md); the ready-up barrier is DEC-036). When the countdown reaches 0, the match rules request (`ref.sim.speed.normal`, `ref.sim.speed.grace_end_rate`, no hold), so the speed is 1 at the next tick and the first world tick of the match runs then.
+**R-SIM-552** (MUST) While every local-player, remote-player and spectator team is ready, the match-rules update counts the grace countdown down by one tick per command frame from `ref.match.grace_period` (30 ticks, defined in [reference/01](../01_skirmish_rules_and_modes/README.md); the ready-up barrier is DEC-036). When the countdown reaches 0, the match rules request (`ref.sim.speed.normal`, `ref.sim.speed.grace_end_rate`, no hold), so the speed is 1 from the next command frame on, and the first world tick of the match runs in that frame.
 
 **R-SIM-553** (MUST) A participant can request a pause only when no team slot of the match is a remote human, outside the grace period, and before the match is over. The request is the sequenced pause command, and it takes effect at the tick that executes it, identically for every participant (DEC-038).
 
-**R-SIM-554** (MUST) Executing the pause command toggles the match's pause request and requests speed `ref.sim.speed.stopped` when it pauses or `ref.sim.speed.normal` when it resumes, at blend rate `ref.sim.speed.pause_rate`, with no hold. The speed after *n* ticks is 0.8^*n* while stopping and 1 − 0.8^*n* while resuming, and it snaps to the target after 21 ticks (2.1 s). During the stopping ramp 0.495 game seconds elapse, and during the resuming ramp 1.605, both counted over the same 21 ticks as in R-SIM-555. The pause request chooses only the target speed; whether the world is held is decided by the speed alone (R-SIM-550).
+**R-SIM-554** (MUST) Executing the pause command toggles the match's pause request and requests speed `ref.sim.speed.stopped` when it pauses or `ref.sim.speed.normal` when it resumes, at blend rate `ref.sim.speed.pause_rate`, with no hold. The speed after *n* command frames is 0.8^*n* while stopping and 1 − 0.8^*n* while resuming, and it snaps to the target after 21 command frames (2.1 s). Over these 21 frames the speed integral of R-SIM-548 is 3.95 world ticks for the stopping ramp and 17.05 for the resuming ramp (A6). The pause request chooses only the target speed; whether the world is held is decided by the speed alone (R-SIM-550).
 
-**R-SIM-555** (MUST) When the match is won, the match rules request (`ref.sim.speed.stopped`, `ref.sim.speed.game_over_rate`, no hold) and then lock the tick clock. The world slows to a halt over the 21 ticks (2.1 s) that follow the request, during which 0.495 game seconds elapse: Σ (*n* = 0 to 20) of `ref.sim.tick_period` × 0.8^*n*, which counts the first of these ticks at speed 1, because step 2 of R-SIM-541 adds match time with the speed from before that tick's blend. Every later request (Supply crates, meteors and pause) is ignored.
+**R-SIM-555** (MUST) When the match is won, the match rules request (`ref.sim.speed.stopped`, `ref.sim.speed.game_over_rate`, no hold) and then lock the tick clock. The world slows to a halt over the 21 command frames (2.1 s) that follow the request, during which the speed integral of R-SIM-548 is Σ (*n* = 1 to 20) of 0.8^*n* = 3.95 world ticks, about 0.4 game seconds. Every later request (Supply crates, meteors and pause) is ignored.
 
 **R-SIM-556** (MUST) Time Dilation and Time Rush ([reference/04](../04_supply_crates_powers_and_weapons/README.md)) and the meteor shower make the requests of R-SIM-545. A meteor makes its request when it comes within `ref.sim.speed.meteor_trigger_distance` (200 wu) of its target. Neither speed outcome makes a request once the match is over. A request replaces any running one (R-SIM-542), so a later request ends the hold of an earlier one.
 
-**R-SIM-557** (MUST) Under the reference structure (one tick per 0.1 s of real time), these requests take the real times of the vector table of acceptance criterion A6 (§6). Under tick scheduling (R-SIM-548, R-SIM-549) the ramps keep these real-time lengths, and the hold of a Time Dilation or Time Rush lasts `ref.sim.speed.crate_hold` ticks of the world, so its real duration depends on the speed that the outcome sets: from 37.5 s at 0.4× to 75 s at 0.2× for a Time Dilation, and from 7.5 s at 2.0× to about 11.5 s at 1.3× for a Time Rush (see DEC-265).
+**R-SIM-557** (MUST) These requests take the command-frame counts and real times of the vector table of acceptance criterion A6 (§6). The ramps keep their real-time lengths at every speed (R-SIM-549), and a hold lasts its number of world ticks (R-SIM-541 step 4), so its real duration is the hold length × `ref.sim.tick_period` ÷ the speed it holds: the `ref.sim.speed.crate_hold` (151) world ticks of a Time Dilation last from 37.75 s at 0.4× to 75.5 s at 0.2×, those of a Time Rush from 7.55 s at 2.0× to about 11.6 s at 1.3×, and the `ref.sim.speed.meteor_hold` (40) world ticks of a meteor last 10 s at 0.4× (see DEC-265).
 
 ### 2.7 Render-time extrapolation
 
@@ -204,31 +207,31 @@ Whether the world is held depends on game speed alone, never on local or transpo
 
 ### 2.8 Clocks
 
-**R-SIM-570** (MUST) The reference uses these clocks. Only match time and the per-tick game-time step are simulation clocks; every other clock is a presentation or scheduling clock and never feeds a simulation rule (DEC-009).
+**R-SIM-570** (MUST) These are the clocks. Only match time and the world tick are simulation clocks; every other clock is a presentation or scheduling clock and never feeds a simulation rule (DEC-009).
 
 | Clock | Definition | Advances | Used for |
 |---|---|---|---|
 | real clock | monotonic real time in seconds, relative to process start | continuously | the tick schedule, the control-state send schedule, UI timers, audio envelopes, the extrapolation time |
-| presentation frame time | the real clock, read once per frame at the frame's timing update; frozen while the world is held | once per frame | render-time animation |
-| presentation frame delta | real now − presentation frame time, clamped to at most `ref.sim.frame.delta_clamp` (0.25 s); not recomputed while the world is held (R-SIM-571) | once per frame | per-frame cosmetic animation: camera, UI, sea, the audio update accumulator |
-| match time | R-SIM-547 | per tick | every simulation timing |
-| per-tick game-time step | `ref.sim.tick_period` × *s* in the reference structure | changes with game speed | the length of one simulation step |
+| presentation frame time | the platform clock, read once per frame at the frame's timing update: the unscaled reading of the presentation clock, which stops while the world is held (DEC-955) | once per frame | render-time animation |
+| presentation frame delta | the real time since the previous frame's timing update, clamped to at most `ref.sim.frame.delta_clamp` (0.25 s); recomputed every frame, also while the world is held (R-SIM-571) | once per frame | per-frame cosmetic animation: camera, UI, sea |
+| match time | R-SIM-547 | per world tick | every simulation timing |
+| world tick | one step of `ref.sim.tick_period` of game time at every game speed (R-SIM-548) | as tick scheduling runs it | the length of one simulation step |
 | extrapolation time | R-SIM-560 | continuously | render extrapolation |
 | smooth presentation time | at each call, += (real now − real time of the last call) × *s*; a projection form returns the value for a later real time without changing state; not reset at match start | per call | smooth cosmetic motion |
-| audio update accumulator | += presentation frame delta at each audio-engine advance; the advance runs one audio logic update of `ref.sim.frame.audio_update_period` (0.05 s) when the accumulator holds at least that much | per audio-engine advance | audio logic at 20 updates per second |
+| audio clock | the audio engine's own clock, advanced on its own thread whatever the frame rate (AEN-006, AEN-116); the audio rules state their rates per `ref.sim.frame.audio_update_period` (0.05 s, 20 per second) of this clock | per audio-engine update (AEN-120) | audio logic |
 | loading-view frame | each loading frame lasts until its start + `ref.sim.frame.loading_frame_period` (1/60 s), sleeping the remainder | per loading frame | a 60 Hz cap during loads only |
 
-**R-SIM-571** (MUST) While the world is held, the presentation frame delta keeps its last value; it is not set to 0. Camera, UI and the audio update accumulator therefore keep advancing by the last frame delta every frame during a pause.
+**R-SIM-571** (MUST) While the world is held, the presentation frame delta keeps its real, clamped frame step, so camera and UI motion advance at real pace and no reading uses a stale frame delta (DEC-955).
 
 **R-SIM-572** (MUST) The smooth presentation time is neither safe for simulation use nor safe for concurrent use; only presentation code on the frame loop reads it.
 
-**R-SIM-573** (MUST) In Species, every clock reads the platform clock, which accepts injected time for capture and replay (ADR-074). Camera motion uses one presentation clock (DEC-024), visual effects use the presentation clock of ADR-036, and the frame delta clamp `ref.sim.frame.delta_clamp` is kept (ADR-012). R-SIM-571 states the reference behaviour of the frame delta while the world is held. In Species the presentation clock gives a scaled, an unscaled and a real reading of the platform clock; the camera clock advances by the real, clamped frame step and keeps advancing while the world is held, so no camera or UI motion advances by a stale frame delta (see DEC-955).
+**R-SIM-573** (MUST) Every clock reads the platform clock, which accepts injected time for capture and replay (ADR-074). Camera motion uses one presentation clock (DEC-024), visual effects use the presentation clock of ADR-036, and the frame delta clamp `ref.sim.frame.delta_clamp` applies (ADR-012). The presentation clock gives a scaled, an unscaled and a real reading of the platform clock, and the camera clock advances by the real, clamped frame step and keeps advancing while the world is held (DEC-955).
 
 ### 2.9 Render rate and the frame-rate counter
 
-**R-SIM-575** (MUST) The reference in-match loop renders exactly once per iteration and never sleeps, so its frame rate is limited only by presentation; vertical sync follows the display driver's setting, and the vertical-sync preference has no effect. In Species, presentation and frame pacing follow the swap chain's present interval (ADR-012).
+**R-SIM-575** (MUST) The in-match loop renders once per iteration; presentation and frame pacing follow the swap chain's present interval (ADR-012).
 
-**R-SIM-576** (MUST) The frames-per-second counter counts the frames completed in the last `ref.sim.frame.fps_window` (1 s); until the first window completes it reads `ref.sim.frame.fps_initial` (60). Its readers are the debug overlay, the low-frame-rate audio rule (R-SIM-581 step 11.16), the frame-rate caption of the graphics options, and the lobby's backdrop detail switch ([reference/09](../09_front_end_and_match_flow/README.md)).
+**R-SIM-576** (MUST) The frames-per-second counter counts the frames completed in the last `ref.sim.frame.fps_window` (1 s); until the first window completes it reads `ref.sim.frame.fps_initial` (60). Its readers are the debug overlay, the frame-rate caption of the graphics options, and the lobby's backdrop detail switch ([reference/09](../09_front_end_and_match_flow/README.md)).
 
 ### 2.10 The in-match frame
 
@@ -254,19 +257,17 @@ Whether the world is held depends on game speed alone, never on local or transpo
     5. UI input pump;
     6. if the input-device class has switched between keyboard and gamepad while the Power slots panel is hidden, rebuild the panel for the new class;
     7. sea renderer (`SeaRenderer`);
-    8. top up the audio output buffers (the reference mixes audio on this thread at this point); in Species the audio engine mixes on its own thread, so this step has no work ([audio engine](../../architecture/components/audio_engine/README.md) AEN-116);
-    9. camera (`MatchCamera`), only while the window has focus; where presentation timelines are adopted (DEC-051), a running timeline advances just before this step, after step 11.8 ([camera and sequences](../../architecture/components/camera_and_sequences.md) CAM-103);
-    10. match input pump (`MatchInputPump`);
-    11. Power slots panel (`PowerSlotsPanel`);
-    12. shatter effects (`ShatterEffects`);
-    13. audio engine (`AudioEngine`), once it is initialised; in Species this step only sends the frame's commands to the audio engine, which runs its update on its own thread: the listener and the match state, and one `EmitterUpdate` per tracked emitter that presentation builds from the newest snapshot, including the teams-nearby and unit-count inputs ([audio engine](../../architecture/components/audio_engine/README.md) AEN-041 to AEN-043, AEN-116); which side of the simulation and presentation boundary produces these records is DEC-222;
-    14. the control-hint overlay, world markers (`WorldMarkers`) and the hint overlay (`HintOverlay`);
-    15. render the frame (`FrameRenderer`) with the extrapolation time of R-SIM-560, ending with the present;
-    16. if the frames-per-second counter is below `ref.sim.frame.low_fps_audio_threshold` (15), advance the audio engine once more, because each advance runs at most one audio logic update and audio would otherwise fall behind below 20 frames per second. In Species the audio engine updates at its own rate whatever the frame rate, so this extra advance does not exist (AEN-116).
+    8. camera (`MatchCamera`), only while the window has focus; where presentation timelines are adopted (DEC-051), a running timeline advances just before this step, after step 11.7 ([camera and sequences](../../architecture/components/camera_and_sequences.md) CAM-103);
+    9. match input pump (`MatchInputPump`);
+    10. Power slots panel (`PowerSlotsPanel`);
+    11. shatter effects (`ShatterEffects`);
+    12. audio engine (`AudioEngine`), once it is initialised: this step sends the frame's commands to the audio engine, which runs its update on its own thread at its own rate whatever the frame rate: the listener and the match state, and one `EmitterUpdate` per tracked emitter that presentation builds from the newest snapshot, including the teams-nearby and unit-count inputs ([audio engine](../../architecture/components/audio_engine/README.md) AEN-041 to AEN-043, AEN-116); which side of the simulation and presentation boundary produces these records is DEC-222;
+    13. the control-hint overlay, world markers (`WorldMarkers`) and the hint overlay (`HintOverlay`);
+    14. render the frame (`FrameRenderer`) with the extrapolation time of R-SIM-560, ending with the present.
 
 **R-SIM-582** (MUST) After the loop, the match ambience stops, the match-exit ambience event is triggered and the match is shut down ([02](02_match_lifecycle_and_state_reset.md)).
 
-**R-SIM-583** (MUST) Because of this order, input sampled in steps 3 to 5 and 10 is sent in step 11.1, before the simulation step; camera, HUD and audio (steps 11.5 to 11.14) advance after the simulation step and always see its newest state; and rendering comes last, with an extrapolation time measured from the latest tick-take.
+**R-SIM-583** (MUST) Because of this order, input sampled in steps 3 to 5 and 10 is sent in step 11.1, before the simulation step; camera, HUD and audio (steps 11.5 to 11.13) advance after the simulation step and always see its newest state; and rendering comes last, with an extrapolation time measured from the latest tick-take.
 
 **R-SIM-584** (MUST) The continuous control state is therefore sampled and sent once per `ref.sim.frame.control_send_period`; how the tick source batches it, and which state applies when a tick receives none, are [06](06_teams_and_player_commands.md). Input timing, coalescing and latency in Species are DEC-203.
 
@@ -346,10 +347,9 @@ flowchart TD
   C1 --> C2["11.2 Connection upkeep and simulation slices"]
   C2 --> C3["11.3 Multi-round reset if requested"]
   C3 --> C4["11.4 Timing update"]
-  C4 --> C5["11.5 to 11.14 UI, sea, audio buffers, camera, match input, Power slots panel, shatter effects, audio engine, overlays"]
-  C5 --> C6["11.15 Render with the extrapolation time"]
-  C6 --> C7["11.16 Extra audio advance below 15 fps"]
-  C7 --> S1
+  C4 --> C5["11.5 to 11.13 UI, sea, camera, match input, Power slots panel, shatter effects, audio engine, overlays"]
+  C5 --> C6["11.14 Render with the extrapolation time"]
+  C6 --> S1
 ```
 
 Figure 4 — Order of one iteration of the in-match loop (R-SIM-581).
@@ -368,8 +368,8 @@ sequenceDiagram
   Q-->>P: command frame k
   M->>P: run n slices, n = floor of 0.3 x pending, at most 20
   P->>P: finish the slices left of tick k-1, take frame k, apply its commands
-  P->>T: tick-clock update: tick-take time, match time, speed blend
-  P->>X: slices 0 to n-1 with the step 0.1 s x speed
+  P->>T: tick-clock update: tick-take time, speed blend
+  P->>X: slices 0 to n-1 of the world tick, each tick 0.1 s of game time
   M->>R: render with t = (now - tick-take time) x speed
   Note over W: t = 0.017 s, next render frame
   M->>Q: poll: not due

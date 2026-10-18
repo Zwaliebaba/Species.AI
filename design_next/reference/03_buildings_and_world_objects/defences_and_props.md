@@ -48,7 +48,7 @@ Table 1-A The objects of both files.
 
 **R-BLDG-402** (MUST) The notation of the README applies: `U[a, b)` is a uniform real draw and `U{a..b}` a uniform integer draw, both from the simulation generator unless a rule names the presentation generator. Every draw is its own statement, made in the step that the rule names, and the draws of one step are made in the order in which the rule lists them (DEC-013, DEC-652). Cosmetic draws (particles, sparks, smoke, flicker, sound choice) come from the presentation generator and never reach simulation state (DEC-013, DEC-222; reference/12 R-SIM-622 and R-SIM-640). The simulation draws of these objects are listed in reference/12 R-SIM-630 Table 1.
 
-**R-BLDG-403** (MUST) "Match time" is the tick count since match start × `ref.sim.tick_period` (R-BLDG-004), in seconds; "presentation time" is the presentation clock of the renderer. A rule that compares match time with a deadline is written here in ticks: a deadline of T seconds is 10 × T ticks at `ref.sim.tick_period` (0.1 s), and a random duration base + U[0, s) seconds is drawn as base × 10 + ⌈U[0, s × 10)⌉ ticks, which keeps the reference distribution.
+**R-BLDG-403** (MUST) "Match time" is the tick count since match start × `ref.sim.tick_period` (R-BLDG-004), in seconds; "presentation time" is the presentation clock of the renderer. A rule that compares match time with a deadline is written here in ticks: a deadline of T seconds is T ÷ `ref.sim.tick_period` ticks (0.1 s per tick), and a random duration base + U[0, s) seconds is drawn as base ÷ `ref.sim.tick_period` + ⌈U[0, s ÷ `ref.sim.tick_period`)⌉ ticks, which keeps the reference distribution.
 
 **R-BLDG-404** (MUST) No step of these objects stores a non-finite value (DEC-653). Where the reference divides by a length or takes an arccosine, the rule states the guard: the turret aim cosine is clamped to [−1, 1] before its arccosine (DEC-653 item 8); a direction normalised from a zero vector is (0, 0, 1) (the tree generator's rule, [trees and crate structures](trees_and_crate_structures.md) R-BLDG-605); and a line-of-sight test over less than one step needs no division (R-BLDG-413).
 
@@ -66,11 +66,11 @@ Table 2.2-A Turret types.
 |---|---|---|---|---|---|---|---|
 | gun turret (`TurretType::Gun`) | `building.turret.gun.name` | gun barrel (`casing_eject_01` to `casing_eject_04`, `muzzle_01` to `muzzle_04`) | a turret round (R-BLDG-420), or a Convert laser bolt from a tagged operator (R-BLDG-421) | `ref.bldg.turret.gun.reload_ticks` (1 tick) | `ref.bldg.turret.gun.min_range` (50 wu) | `ref.bldg.turret.gun.max_range` (225 wu) | `ref.bldg.turret.barrels_per_fire_step` (2) |
 | rocket turret (`TurretType::Rocket`) | `building.turret.rocket.name` | rocket barrel | a rocket | `ref.bldg.turret.rocket.reload_ticks` (15 ticks) | `ref.bldg.turret.rocket.min_range` (100 wu) | `ref.bldg.turret.rocket.max_range` (200 wu) | `ref.bldg.turret.rocket.barrels_per_fire_step` (1) |
-| mortar turret (`TurretType::Mortar`) | `building.turret.mortar.name` | gun barrel | a grenade thrown into the mortar target area | `ref.bldg.turret.mortar.reload_ticks` (40 ticks) | area-targeted; `ref.bldg.turret.mortar.min_range` (100 wu) is unused by its targeting | area-targeted; `ref.bldg.turret.mortar.max_range` (300 wu) is unused by its targeting | `ref.bldg.turret.barrels_per_fire_step` (2) |
+| mortar turret (`TurretType::Mortar`) | `building.turret.mortar.name` | gun barrel | a grenade thrown into the mortar target area | `ref.bldg.turret.mortar.reload_ticks` (40 ticks) | none: area-targeted (R-BLDG-411) | none: area-targeted (R-BLDG-411) | `ref.bldg.turret.barrels_per_fire_step` (2) |
 | flame turret (`TurretType::Flame`) | `building.turret.flame.name` | flame barrel | a fireball | `ref.bldg.turret.flame.reload_ticks` (1 tick) | `ref.bldg.turret.flame.min_range` (10 wu) | `ref.bldg.turret.flame.max_range` (150 wu) | `ref.bldg.turret.barrels_per_fire_step` (2) |
 | Convert Turret (`TurretType::Convert`) | `building.turret.convert.name` | cannon barrel | a Convert laser bolt | `ref.bldg.turret.convert.reload_ticks` (6 ticks) | `ref.bldg.turret.convert.min_range` (10 wu) | `ref.bldg.turret.convert.max_range` (150 wu) | `ref.bldg.turret.barrels_per_fire_step` (2) |
 
-The reload tick counts are those of DEC-002 (rocket turret 1.5 s = 15 ticks, Convert Turret 0.5 s = 6 ticks, mortar turret 4.0 s = 40 ticks; gun and flame turrets 0.1 s = 1 tick). The gun turret's ranges are its base ranges of 100 wu and 300 wu scaled by 0.5 and 0.75 in matches.
+The reload tick counts are those of DEC-002 (rocket turret 1.5 s = 15 ticks, Convert Turret 0.5 s = 6 ticks, mortar turret 4.0 s = 40 ticks; gun and flame turrets 0.1 s = 1 tick).
 
 **R-BLDG-407** (MUST) A turret's map record holds the base fields (R-BLDG-050) and then, each optional with its default:
 
@@ -247,7 +247,7 @@ A full raise takes 34 ticks and passes the request on at its 17th tick; a full l
 **R-BLDG-441** (MUST) The hit tests of a Barrier Emitter override the defaults (README table 2.12-A):
 
 - **Lowered, or in the map editor:** every test is against the scaled post mesh only.
-- **Ray test otherwise:** when the emitter has a link and s > 0, the ray is tested against the two field triangles (p1, p2, p4) and (p4, p3, p1), with p1 = b − (0, h ÷ 3, 0), p2 = b + (0, h, 0), p3 = b′ − (0, h′ ÷ 3, 0) and p4 = b′ + (0, h′, 0) of R-BLDG-440, and the hit normal is normalise((p1 − p3) × (p1 − p2)); when the field is not hit, the ray is tested against the scaled post mesh.
+- **Ray test otherwise:** when the emitter has a link and s > 0, the ray is tested against the two field triangles (p1, p2, p4) and (p4, p3, p1), with p1 = b − (0, h ÷ 3, 0), p2 = b + (0, h, 0), p3 = b′ − (0, h′ ÷ 3, 0) and p4 = b′ + (0, h′, 0) of R-BLDG-440, and the hit normal is Normalize((p1 − p3) × (p1 − p2)); when the field is not hit, the ray is tested against the scaled post mesh.
 - **Sphere test otherwise:** the sphere (c, r) is approximated by two rays of length `ref.bldg.barrier_emitter.sphere_ray_factor` × r (2r) through c, one along +x and one along +z, each tested as above; then the post mesh.
 - **Mesh test:** the sphere test with the other mesh's root sphere.
 
@@ -261,7 +261,7 @@ The obstacle grid registers a linked emitter along its whole line, as reference/
 
 **R-BLDG-445** (MUST) The field is drawn in the translucent pass only while the mode is neither Lowered nor RelayOnly and the emitter has a link, double-sided, alpha-blended, without depth writes. Its colour is `ref.bldg.barrier_emitter.neutral_rgb` (100, 100, 100) for an emitter with no team; for an energy-linked emitter, a pulse from `ref.bldg.barrier_emitter.energy_dark_rgb` (20, 20, 20) to `ref.bldg.barrier_emitter.energy_team_weight` (0.9) × the team colour with weight |sin(`ref.bldg.barrier_emitter.energy_pulse_rate` × t)| (4 rad/s over the presentation time t); and the team colour otherwise; the alpha is always `ref.bldg.barrier_emitter.field_alpha` (150 of 255). The drawn status is the status extrapolated by `ref.bldg.barrier_emitter.raise_rate` per tick over the presentation's extrapolation time, upward while Raising and downward while Lowering, and each post's own field height is used at its end of the quad (R-BLDG-440).
 
-**R-BLDG-446** (MUST) While the structure-detail setting is below `ref.bldg.barrier_emitter.detail_layer_limit` (3), the field draws a base layer of `fx.barrier_field` combined with a multiplied layer of `fx.barrier_field_wide`, scrolling along the field by t ÷ `ref.bldg.barrier_emitter.scroll_divisor` (15), or by t ÷ `ref.bldg.barrier_emitter.energy_scroll_divisor` (1.5) with the texture repeated `ref.bldg.barrier_emitter.energy_tiling` (7) times for an energy-linked emitter. At every detail level it draws an additive layer of `fx.barrier_field_wide` and a smoothed line along the top edge, `ref.bldg.barrier_emitter.edge_width` (2.0) wide, or `ref.bldg.barrier_emitter.energy_edge_width` (0.5) for an energy-linked emitter. The visual change of each detail branch is decided with the renderer's quality levels (see DEC-327).
+**R-BLDG-446** (MUST) While the structure-detail setting is below `ref.bldg.barrier_emitter.detail_layer_limit` (3), that is at high or medium detail (the structure-detail setting of reference/09 R-META-425: 1 high, 2 medium, 3 low; [README](README.md) §1.1), the field draws a base layer of `fx.barrier_field` combined with a multiplied layer of `fx.barrier_field_wide`, scrolling along the field by t ÷ `ref.bldg.barrier_emitter.scroll_divisor` (15), or by t ÷ `ref.bldg.barrier_emitter.energy_scroll_divisor` (1.5) with the texture repeated `ref.bldg.barrier_emitter.energy_tiling` (7) times for an energy-linked emitter. At every detail level it draws an additive layer of `fx.barrier_field_wide` and a smoothed line along the top edge, `ref.bldg.barrier_emitter.edge_width` (2.0) wide, or `ref.bldg.barrier_emitter.energy_edge_width` (0.5) for an energy-linked emitter. The visual change of each detail branch is decided with the renderer's quality levels (see DEC-327).
 
 **R-BLDG-447** (MUST) A spark is presentation: it releases U{`ref.bldg.barrier_emitter.spark_count_min`..`ref.bldg.barrier_emitter.spark_count_max`} (5 to 10) spark particles of size U[25, 50) (`ref.bldg.barrier_emitter.spark_size_min`, `ref.bldg.barrier_emitter.spark_size_max`), flung perpendicular to the field at U[40, 60) wu/s (`ref.bldg.barrier_emitter.spark_speed_min`, `ref.bldg.barrier_emitter.spark_speed_max`) from a height U[0, `ref.bldg.barrier_emitter.spark_height` × scale) (50 wu × scale) above the post, all drawn from the presentation generator, and raises `barrier_emitter.spark`.
 
@@ -273,7 +273,7 @@ The obstacle grid registers a linked emitter along its whole line, as reference/
 
 **R-BLDG-450** (MUST) A wall's map record holds the base fields only. The bot-objective link field that reference map records carry has no effect and is not specified (DEC-466). A wall has scale 1.
 
-**R-BLDG-451** (MUST) A wall's collision volume is a rectangle `ref.bldg.wall.length` (100 wu) long along right = normalise(front × up) and `ref.bldg.wall.depth` (20 wu) deep along front, centred on its position, with a ray height of `ref.bldg.wall.height` × `ref.bldg.wall.ray_height_fraction` (75 wu × 0.5 = 37.5 wu) above its base. This footprint is larger than the drawn section, so actors stop short of the visible wall (§4.5).
+**R-BLDG-451** (MUST) A wall's collision volume is a rectangle `ref.bldg.wall.length` (100 wu) long along right = Normalize(front × up) and `ref.bldg.wall.depth` (20 wu) deep along front, centred on its position, with a ray height of `ref.bldg.wall.height` × `ref.bldg.wall.ray_height_fraction` (75 wu × 0.5 = 37.5 wu) above its base. This footprint is larger than the drawn section, so actors stop short of the visible wall (§4.5).
 
 **R-BLDG-452** (MUST) The hit tests of a wall override the defaults (README table 2.12-A):
 
@@ -293,7 +293,7 @@ The obstacle grid registers a linked emitter along its whole line, as reference/
 
 ### 2.5 Scenery mesh
 
-**R-BLDG-458** (MUST) A scenery mesh (`SceneryMesh`) places one scenery mesh as a solid, non-interactive obstacle: rocks, ruins and other landmarks. It has no team that any rule reads (every reference scenery mesh has no team), no ports, is never captured and is indestructible (R-BLDG-034). It has no lights, because its mesh is assigned after the structure's lights are collected (R-BLDG-016).
+**R-BLDG-458** (MUST) A scenery mesh (`SceneryMesh`) places one scenery mesh as a solid, non-interactive obstacle: rocks, ruins and other landmarks. It has no team that any rule reads (every reference scenery mesh has no team), no ports, is never captured and is indestructible (R-BLDG-034). A scenery mesh draws no lights (R-BLDG-045).
 
 **R-BLDG-459** (MUST) A scenery mesh's map record holds the base fields and then its scale (default `ref.bldg.scenery_mesh.default_scale`, 1.0) and its mesh, one of the pieces of `mesh.scenery.prop` or none (the default). The content build rejects a record that names a mesh that does not exist (DEC-015).
 
@@ -514,13 +514,11 @@ Every value is a reference tuning value that Species may adopt as its baseline (
 | `ref.bldg.turret.rocket.reload_ticks` | 15 | ticks | 1.5 s | R-BLDG-406, R-BLDG-418 | DEC-002 |
 | `ref.bldg.turret.mortar.reload_ticks` | 40 | ticks | 4.0 s | R-BLDG-406, R-BLDG-418 | DEC-002 |
 | `ref.bldg.turret.flame.reload_ticks` | 1 | ticks | 0.1 s | R-BLDG-406, R-BLDG-418 | DEC-002 |
-| `ref.bldg.turret.convert.reload_ticks` | 6 | ticks | 0.5 s countdown | R-BLDG-406, R-BLDG-418 | DEC-002 |
-| `ref.bldg.turret.gun.min_range` | 50 | wu | base 100 × 0.5 in matches | R-BLDG-406, R-BLDG-411 | — |
-| `ref.bldg.turret.gun.max_range` | 225 | wu | base 300 × 0.75 in matches | R-BLDG-406, R-BLDG-411 | — |
+| `ref.bldg.turret.convert.reload_ticks` | 6 | ticks | nominal 0.5 s | R-BLDG-406, R-BLDG-418 | DEC-002 |
+| `ref.bldg.turret.gun.min_range` | 50 | wu | — | R-BLDG-406, R-BLDG-411 | — |
+| `ref.bldg.turret.gun.max_range` | 225 | wu | — | R-BLDG-406, R-BLDG-411 | — |
 | `ref.bldg.turret.rocket.min_range` | 100 | wu | | R-BLDG-406, R-BLDG-411 | — |
 | `ref.bldg.turret.rocket.max_range` | 200 | wu | | R-BLDG-406, R-BLDG-411 | — |
-| `ref.bldg.turret.mortar.min_range` | 100 | wu | not used by the mortar's targeting | R-BLDG-406 | — |
-| `ref.bldg.turret.mortar.max_range` | 300 | wu | not used by the mortar's targeting | R-BLDG-406 | — |
 | `ref.bldg.turret.flame.min_range` | 10 | wu | | R-BLDG-406, R-BLDG-411 | — |
 | `ref.bldg.turret.flame.max_range` | 150 | wu | | R-BLDG-406, R-BLDG-411 | — |
 | `ref.bldg.turret.convert.min_range` | 10 | wu | | R-BLDG-406, R-BLDG-411 | — |
@@ -586,7 +584,7 @@ Every value is a reference tuning value that Species may adopt as its baseline (
 | `ref.bldg.barrier_emitter.energy_team_weight` | 0.9 | × team colour | pulse high end | R-BLDG-445 | — |
 | `ref.bldg.barrier_emitter.energy_pulse_rate` | 4 | rad/s | presentation time | R-BLDG-445 | — |
 | `ref.bldg.barrier_emitter.field_alpha` | 150 | of 255 | | R-BLDG-445 | — |
-| `ref.bldg.barrier_emitter.detail_layer_limit` | 3 | structure-detail level | textured layers below this level | R-BLDG-446 | DEC-327 |
+| `ref.bldg.barrier_emitter.detail_layer_limit` | 3 | structure-detail level | textured layers below this level: at levels 1 (high) and 2 (medium) | R-BLDG-446 | DEC-327 |
 | `ref.bldg.barrier_emitter.scroll_divisor` | 15 | s | scroll = t ÷ 15 | R-BLDG-446 | — |
 | `ref.bldg.barrier_emitter.energy_scroll_divisor` | 1.5 | s | energy-linked | R-BLDG-446 | — |
 | `ref.bldg.barrier_emitter.energy_tiling` | 7 | repeats | energy-linked | R-BLDG-446 | — |

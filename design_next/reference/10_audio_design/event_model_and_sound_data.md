@@ -25,7 +25,7 @@ Game code decides **when** something audible happens; sound data decides **what*
 |---|---|---|---|
 | actor event | the actor's kind, for example `worker` | the actor's position and velocity; the actor is the emitter | the actor's team |
 | structure event | the structure's kind, for example `spawn_node` | the structure's position; an attached instance then follows the structure's centre position; velocity 0; the structure is the emitter | the structure's team |
-| non-object event with an object or none | a non-object source (R-AUD-121), for example `grenade` | the object's position, with the object as the emitter; with no object, no position and no emitter (a two-dimensional instance) | the object's team; no team when no object is given |
+| non-object event with an object or none | a non-object source (R-AUD-121), for example `grenade` | the object's position, with the object as the emitter; with no object, the world origin (0, 0, 0) and no emitter, and the layer's position kind still applies: a `2d` layer plays at the listener, a `fix` layer at the origin, attenuated by its distance from the listener, and an `att` layer is removed at the first audio update, unheard, because it has no emitter (R-AUD-209) | the object's team; no team when no object is given |
 | non-object event at a position | a non-object source | the given position; no emitter | the given team |
 
 An event of the `music` source goes to the music hooks instead ([music hooks and brief](music_hooks_and_sound_design_brief.md) R-AUD-401).
@@ -61,7 +61,7 @@ Outside a match, and on a participant with no local team, the own and enemy audi
 
 **R-AUD-030** (MUST) **Supply crate capture progress.** While a crate's owner holds the majority, its progress bucket is b = ⌊`ref.aud.crate.progress_buckets` × progress ÷ `ref.crate.open.full_progress`⌋ ([04 crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) R-CRATE-117). On every change of b, the crate stops its previous progress tone and raises `supply_crate.capture_progress_NN` with NN = `ref.aud.crate.progress_step_percent` × b written with two digits: `_00`, `_20`, `_40`, `_60` and `_80` are bound note loops, and `_100`, raised when the crate opens, has no definition. `supply_crate.capture_progress_00` is raised together with `supply_crate.capture_begin` when a team takes the majority of an ownerless crate.
 
-**R-AUD-031** (MUST) **Supply crate drain.** While a crate's progress drains because its owner has lost the majority, every change of the bucket b stops the previous progress tone and raises the progress event of the new bucket by the same naming rule, so the progress tones play downwards as the bar empties (DEC-097). The reference builds a drain event name that matches no definition, so its drain is silent; Species corrects it.
+**R-AUD-031** (MUST) **Supply crate drain.** While a crate's progress drains because its owner has lost the majority, every change of the bucket b stops the previous progress tone and raises the progress event of the new bucket by the same naming rule, so the progress tones play downwards as the bar empties (DEC-097).
 
 **R-AUD-032** (MUST) **Launch Vessel loops.** A Launch Vessel selects one state loop each tick from its state, its fuel and its damage (`launch_vessel.refuelling`, `launch_vessel.hungry`, `launch_vessel.fuelled`, `launch_vessel.malfunction` or `launch_vessel.flight`) and the engine loop `launch_vessel.engine_burn`, as [03 mode objects](../03_buildings_and_world_objects/mode_objects.md) R-BLDG-337 specifies. Each loop is started by an explicit start event when it becomes the selected loop and stopped by an explicit stop when another loop is selected, so a loop never runs twice for one vessel (DEC-323).
 
@@ -104,13 +104,13 @@ Outside a match, and on a participant with no local team, the own and enemy audi
 
 **R-AUD-040** (MUST) A looping layer that no rule stops ends when its emitter leaves the match world (R-AUD-209): the presence loops of the Builder, Trooper, Brood Drifter, centipede, Bomber, spider, ant, Transport, Reaper Serpent (its spawn loop and its `reaper_serpent.enemy_sighted` loop), Collector, barrage missile, meteor and Abductor; the Barrier Emitter, Control Zone and Command Console presence loops; the three tree presence loops; and the Spitter Plant's `spitter_plant.burning`.
 
-**R-AUD-041** (MUST) The Core Device's world-fixed presence loop `core_device.spawn` is stopped when the Core Device is destroyed or removed and at match exit (DEC-097). The reference gives world-fixed instances no emitter and culls only attached ones, so its Core Device loop keeps playing at its position after the device is gone and after the match ends; Species corrects it by R-AUD-038.
+**R-AUD-041** (MUST) The Core Device's world-fixed presence loop `core_device.spawn` is stopped when the Core Device is destroyed or removed and at match exit, by its recorded emitter (R-AUD-038, DEC-097).
 
 **R-AUD-042** (MUST) When the Core Device links a Command Console at load, the console raises no second `command_console.spawn`, because it runs no second initialisation (DEC-458).
 
 **R-AUD-043** (MUST) **Match exit.** When the match loop exits, the match ambience stops (R-AUD-324) and every other instance raised during the match stops or begins its release within `ref.aud.exit.release_start_limit` (2 s) (DEC-097). Attached instances end when their emitters are torn down (R-AUD-209).
 
-**R-AUD-044** (MUST) With no audio device, the audio engine retires every instance as if its voice had ended, so waiting instances never accumulate over a session (DEC-097); the reference keeps them for the whole session. The behaviour without a device is otherwise the [audio engine](../../architecture/components/audio_engine/README.md)'s.
+**R-AUD-044** (MUST) With no audio device, the audio engine retires every instance as if its voice had ended, so waiting instances never accumulate over a session (DEC-097). The behaviour without a device is otherwise the [audio engine](../../architecture/components/audio_engine/README.md)'s.
 
 ### 2.5 From a sample group to sound
 
@@ -145,7 +145,7 @@ Outside a match, and on a participant with no local team, the own and enemy audi
 
 The reference sound data has no authored priority: a priority field, where present, is ignored. Besides these fields, a layer carries the engine fields of the [audio engine](../../architecture/components/audio_engine/README.md) AEN-062, each with an audio-design default: the copy decay (R-AUD-216), the patience window of a `once` layer (R-AUD-061), the per-event real-voice cap, the maximum distance, and the Doppler, distance-filter and distance-reverb factors. The per-event cool-down (R-AUD-220) belongs to the event, not to its layers. The schema of every layer field, these engine fields included, with its key and value domain, is table 3.3-B of [data schemas](../../architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md), and the event fields with the cool-down are its table 3.3-A.
 
-**R-AUD-050** (MUST) Effect parameters are matched to their effect's parameter list by position; a parameter that a layer's effect omits is 0.0, not its declared default, in the reference (DEC-567, R-AUD-078). Species authors every effect parameter by name, and the content build cooks each binding's parameters in its kind's parameter order of R-AUD-077, the positions by which the audio engine reads them, so the positional matching holds for the cooked data while the order in the authoring file carries no meaning ([data schemas](../../architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md) DAT-270 to DAT-272).
+**R-AUD-050** (MUST) Effect parameters are matched to their effect's parameter list by position; a parameter that a layer's effect omits is 0.0, not its declared default, in the reference (DEC-567, R-AUD-078). Species authors every effect parameter by name, and the content build cooks each binding's parameters in its kind's parameter order (table 3.5-A of the data schemas, R-AUD-077), the positions by which the audio engine reads them, so the positional matching holds for the cooked data while the order in the authoring file carries no meaning ([data schemas](../../architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md) DAT-270 to DAT-272).
 
 ### 2.7 Modulatable values
 
@@ -260,26 +260,26 @@ The members of `sfx.creature.spider.die` include the two members of `sfx.creatur
 
 **R-AUD-076** (MUST) No audio effect runs by default, so the reference is heard **dry**: the effects that the sound data names are not applied unless the effects setting is switched on, which no options page offers ([09 options](../09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-454). This is the default of DEC-567. Where Species applies effects, they run on buses, not on individual voices (DEC-027, ADR-024), and switching effects off leaves no effect processing on any voice or bus (DEC-752).
 
-**R-AUD-077** (MUST) The effect kinds are these fourteen, in this order; the order carries meaning, because it is the order in which a chain processes its own-algorithm effects (R-AUD-080). Ranges and declared defaults:
+**R-AUD-077** (MUST) The effect kinds are these fourteen, in this order; the order carries meaning, because it is the order in which a chain processes its own-algorithm effects (R-AUD-080):
 
-| # | Effect | Parameters (range, declared default; i = integer) |
-|---|---|---|
-| 0 | chorus | wet/dry mix 0 to 100, 50; depth 0 to 100, 10; feedback −99 to 99, 25; frequency 0 to 10, 1.1; waveform 0 to 1, 1 (i); delay 0 to 20, 16; phase 0 to 4, 3 (i) |
-| 1 | compressor | gain −60 to 60, 0; attack 0.01 to 500, 10; release 50 to 3000, 200; threshold −60 to 0, −20; ratio 1 to 100, 3; pre-delay 0 to 4, 4 |
-| 2 | distortion | gain −60 to 0, −18; edge 0 to 100, 15; post-equaliser centre 100 to 8000, 2400; post-equaliser bandwidth 100 to 8000, 2400; pre-low-pass cut-off 100 to 8000, 8000 |
-| 3 | stereo echo | wet/dry mix 0 to 100, 50; feedback 0 to 100, 50; left delay 1 to 2000, 500; right delay 1 to 2000, 500; pan delay 0 to 1, 0 (i) |
-| 4 | flanger | wet/dry mix 0 to 100, 50; depth 0 to 100, 100; feedback −99 to 99, −50; frequency 0 to 10, 0.25; waveform 0 to 1, 1 (i); delay 0 to 4, 2; phase 0 to 4, 2 (i) |
-| 5 | standard gargle | rate 1 to 100 Hz, 20 (i); wave shape 0 to 1, 0 (i) |
-| 6 | room reverb (I3DL2 parameter set) | room −10000 to 0, −1000 (i); room high-frequency −10000 to 0, −100 (i); room roll-off factor 0 to 10, 0; decay time 0.1 to 20, 1.49; decay high-frequency ratio 0.1 to 2, 0.83; reflections −10000 to 1000, −2602 (i); reflections delay 0 to 0.3, 0.01; reverb −10000 to 2000, 200 (i); reverb delay 0 to 0.1, 0.01; diffusion 0 to 100, 100; density 0 to 100, 100; high-frequency reference 20 to 20000, 5000; quality 0 to 3, 2 (i) |
-| 7 | parametric equaliser | centre 80 to 16000, 8000; bandwidth 1 to 36, 12; gain −15 to 15, 0 |
-| 8 | studio reverb | input gain −96 to 0, 0; reverb mix −96 to 0, 0; reverb time 0.01 to 3000, 1000; high-frequency time ratio 0.01 to 0.99, 0.01 |
-| 9 | resonant low-pass | cut-off control 100 to 20000, 2500; resonance control 0.1 to 20, 7; gain 0 to 10, 1 |
-| 10 | bit crusher | bits 1 to 16, 16 |
-| 11 | gargle | wet/dry mix 0 to 100, 50; rate 0.01 to 100 Hz, 20; wave shape 0 to 1, 0 (i) |
-| 12 | echo | wet/dry mix 0 to 100, 50; delay 1 to 3000 ms, 200; attenuation 0 to 100, 50 |
-| 13 | simple reverb | wet/dry mix 0 to 100, 50, which the effect ignores |
+| # | Effect | Function | Parameters (range, declared default; i = integer) |
+|---|---|---|---|
+| 0 | chorus | thickens a sound with delayed, pitch-modulated copies | standard kind |
+| 1 | compressor | narrows the dynamic range above a threshold | standard kind |
+| 2 | distortion | clips and filters the signal | standard kind |
+| 3 | stereo echo | repeats the sound with separate left and right delays and feedback | standard kind |
+| 4 | flanger | mixes in a copy whose short delay sweeps | standard kind |
+| 5 | standard gargle | modulates the amplitude at a whole-number rate | standard kind |
+| 6 | room reverb | adds the reflections and reverberation of a room | standard kind |
+| 7 | parametric equaliser | boosts or cuts one frequency band | standard kind |
+| 8 | studio reverb | adds a reverberation set by a mix and a decay time | standard kind |
+| 9 | resonant low-pass | R-AUD-079 | cut-off control 100 to 20000, 2500; resonance control 0.1 to 20, 7; gain 0 to 10, 1 |
+| 10 | bit crusher | R-AUD-079 | bits 1 to 16, 16 |
+| 11 | gargle | R-AUD-079 | wet/dry mix 0 to 100, 50; rate 0.01 to 100 Hz, 20; wave shape 0 to 1, 0 (i) |
+| 12 | echo | R-AUD-079 | wet/dry mix 0 to 100, 50; delay 1 to 3000 ms, 200; attenuation 0 to 100, 50 |
+| 13 | simple reverb | R-AUD-079 | wet/dry mix 0 to 100, 50, which the effect ignores |
 
-Kinds 0 to 8 are standard effects whose processing is defined by their parameter sets; kinds 9 to 13 are defined by the algorithms of R-AUD-079.
+The parameter sets of the standard kinds 0 to 8, their ranges and declared defaults, and their processing are the [audio engine](../../architecture/components/audio_engine/README.md)'s (AEN-070, ADR-024); the effect bindings of R-AUD-082 name every parameter they set. The parameter names and their order for every kind are the sound-event schema's ([data schemas](../../architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md) table 3.5-A). The own-algorithm kinds 9 to 13 are defined by their parameters above and the algorithms of R-AUD-079.
 
 **R-AUD-078** (MUST) A parameter that an effect binding omits is 0.0 in the reference, not its declared default. The schema default of each effect parameter is chosen deliberately, 0.0 for parity or the declared value, and it is audible only once effects are enabled (DEC-567).
 
@@ -299,25 +299,25 @@ Every effect computes its time constants and coefficients from the sample rate a
 
 **R-AUD-081** (MUST) In Species, an effect that the design attaches to a group of sounds is realised by routing those sounds to a bus whose chain has the effect, or by a send to such a bus ([audio engine](../../architecture/components/audio_engine/README.md), ADR-024); no voice carries its own effect chain.
 
-**R-AUD-082** (MUST) The event set names these 15 effects, one per layer; with effects enabled they would apply, and with the default of DEC-567 none runs:
+**R-AUD-082** (MUST) The event set names these 15 effects, one per layer, each referred to by its event and layer (for example "the echo of `crawler.hurt`"); with effects enabled they would apply, and with the default of DEC-567 none runs:
 
-| Id | Event (layer) | Effect | Parameters |
-|---|---|---|---|
-| FX-01 | `crawler.hurt` | echo | wet/dry mix 27.42; delay 200; attenuation 28.71 |
-| FX-02 | `crawler.die` | echo | wet/dry mix 50; delay 200; attenuation 50 |
-| FX-03 | `trooper.spawn` | echo | wet/dry mix linked to camera_distance 180 to 620 → 0 to 97.10; delay 200; attenuation 50 |
-| FX-04 | `trooper.hurt` | echo | wet/dry mix 50; delay 200; attenuation 50 |
-| FX-05 | `brood_drifter.die` | echo | wet/dry mix linked to camera_distance 140 to 620 → 0 to 93.55; delay 200; attenuation 50 |
-| FX-06 | `centipede.die` | echo | wet/dry mix 50; delay 281.55; attenuation 3.23 |
-| FX-07 | `spider.die` | stereo echo | wet/dry mix 50; feedback 50; left delay 207.35; right delay 194.45; pan delay 0 |
-| FX-08 | `worker.hurt` (layer 1) | echo | wet/dry mix 50; delay 200; attenuation 50 |
-| FX-09 | `worker.spawn` | echo | wet/dry mix 50; delay 200; attenuation 50 |
-| FX-10 | `transport.spawn` (layer 1) | gargle | wet/dry mix 100; rate linked to speed 0 to 14.4 → 2.59 to 10.01, smoothing 0.92; wave shape 0 |
-| FX-11 | `collector.drop_essence` | gargle | wet/dry mix 36.77 per note; rate 29.68; wave shape 0.99 |
-| FX-12 | `beam_dish.link_lost` | echo | wet/dry mix 50; delay 407.32; attenuation 64.84 |
-| FX-13 | `supply_crate.falling` | stereo echo | wet/dry mix 50; feedback 90.32; left delay 500; right delay 500; pan delay 0 |
-| FX-14 | `grenade.explode` | studio reverb | input gain −0.31; reverb mix −8.98; reverb time 3000; high-frequency time ratio 0.65 |
-| FX-15 | `ambience.match_enter` (layer 2) | echo | wet/dry mix 50; delay 523.41; attenuation 50 |
+| Event (layer) | Effect | Parameters |
+|---|---|---|
+| `crawler.hurt` | echo | wet/dry mix 27.42; delay 200; attenuation 28.71 |
+| `crawler.die` | echo | wet/dry mix 50; delay 200; attenuation 50 |
+| `trooper.spawn` | echo | wet/dry mix linked to camera_distance 180 to 620 → 0 to 97.10; delay 200; attenuation 50 |
+| `trooper.hurt` | echo | wet/dry mix 50; delay 200; attenuation 50 |
+| `brood_drifter.die` | echo | wet/dry mix linked to camera_distance 140 to 620 → 0 to 93.55; delay 200; attenuation 50 |
+| `centipede.die` | echo | wet/dry mix 50; delay 281.55; attenuation 3.23 |
+| `spider.die` | stereo echo | wet/dry mix 50; feedback 50; left delay 207.35; right delay 194.45; pan delay 0 |
+| `worker.hurt` (layer 1) | echo | wet/dry mix 50; delay 200; attenuation 50 |
+| `worker.spawn` | echo | wet/dry mix 50; delay 200; attenuation 50 |
+| `transport.spawn` (layer 1) | gargle | wet/dry mix 100; rate linked to speed 0 to 14.4 → 2.59 to 10.01, smoothing 0.92; wave shape 0 |
+| `collector.drop_essence` | gargle | wet/dry mix 36.77 per note; rate 29.68; wave shape 0.99 |
+| `beam_dish.link_lost` | echo | wet/dry mix 50; delay 407.32; attenuation 64.84 |
+| `supply_crate.falling` | stereo echo | wet/dry mix 50; feedback 90.32; left delay 500; right delay 500; pan delay 0 |
+| `grenade.explode` | studio reverb | input gain −0.31; reverb mix −8.98; reverb time 3000; high-frequency time ratio 0.65 |
+| `ambience.match_enter` (layer 2) | echo | wet/dry mix 50; delay 523.41; attenuation 50 |
 
 ## 3 States and flows
 
@@ -402,12 +402,12 @@ Keys cited here and defined elsewhere: `ref.crate.open.full_progress` in [04 cra
 ## 5 Edge cases and interactions
 
 - **Same-tick start and stop.** A loop that is started and stopped in the same tick (a Beam Dish aimed and aligned at once) is found by the stop, because its emitter is recorded at trigger time (R-AUD-038); it never plays.
-- **Neutral Flag posts.** A Flag post or Control Zone that becomes neutral plays its no-team sting only (R-AUD-025); in the reference it plays the captured and the lost sting together.
+- **Neutral Flag posts.** A Flag post or Control Zone that becomes neutral plays its no-team sting only, never the captured and the lost sting together (R-AUD-025, DEC-097).
 - **Double spider attack.** A spider's pounce raises `spider.attack` and `spider.pounce` together, both bound to `sfx.creature.spider.pounce` with different pitch ranges, so a pounce plays two takes of that group.
 - **Spawn layer of the Reaper Serpent.** `reaper_serpent.spawn` plays its body loop and, as a second layer, one take of its pain group.
 - **Layered body and voice.** `worker.die` plays a voice from `sfx.unit.worker.die` and a body hit from `sfx.unit.worker.die_b`; both are world-fixed, so the death is heard in full after the Worker is removed.
 - **Fuse blink while hidden.** A grenade that is off-screen is not drawn, so under the default of DEC-318 its fuse blink is not heard; a blink is raised for each whole second only while the weapon is drawn.
-- **Effects switched on.** With effects on, the authored echo tails of R-AUD-074 ring out audibly, and two layers change their echo mix with the camera distance (FX-03, FX-05).
+- **Effects switched on.** With effects on, the authored echo tails of R-AUD-074 ring out audibly, and two layers change their echo mix with the camera distance (the echoes of `trooper.spawn` and `brood_drifter.die`, R-AUD-082).
 - **Own-algorithm effects.** The own gargle adds a wet/dry mix and fractional rates to the standard gargle, and the own echo is a single-line echo rather than a stereo one; distortion and the parametric equaliser are costly for processing per sound, and a compressor per sound has no use, which is why the event set names none of them.
 - **Drain tones.** A crate whose majority flips back and forth plays progress tones up while held and down while draining (R-AUD-030, R-AUD-031); each change stops the previous tone, so at most one progress tone plays per crate.
 
@@ -423,8 +423,9 @@ Keys cited here and defined elsewhere: `ref.crate.open.full_progress` in [04 cra
 - **AC-EVM-08** (R-AUD-051, R-AUD-054) Given a linked level altitude 736 to 232 → −49.5 to −2.1 dB at altitudes 800, 484 and 200, then the targets are −49.5, −25.8 and −2.1 dB; given a smoothing of 0.6 and a target step from 0 to 1, then after 0.05 s the value is about 0.225 and after 0.10 s 0.4, at any audio update rate.
 - **AC-EVM-09** (R-AUD-063) Given a group of 4 equally weighted members and 10,000 starts, then no member plays twice in a row and each member's share is within 2 % of the others'.
 - **AC-EVM-10** (R-AUD-066) Given 13,000 `worker.burning` events, then about 6,000 play an audible member and the rest a silent one.
-- **AC-EVM-11** (R-AUD-076, R-AUD-082) Given the default settings, then no effect processes any voice or bus; given effects enabled, then FX-01 to FX-15 run on the buses that carry those layers.
+- **AC-EVM-11** (R-AUD-076, R-AUD-082) Given the default settings, then no effect processes any voice or bus; given effects enabled, then the 15 effect bindings of R-AUD-082 run on the buses that carry those layers.
 - **AC-EVM-12** (R-AUD-079) Given the resonant low-pass at cut-off controls 100, 2500 and 20000, then the cut-off frequencies are about 113 Hz, 211 Hz and 19.8 kHz, at a 44.1 kHz and a 48 kHz device alike.
+- **AC-EVM-13** (R-AUD-021) Given a non-object event raised with no object whose definition has a `2d`, a `fix` and an `att` layer, then the `2d` layer plays at the listener, the `fix` layer plays at the world origin with the distance gain of R-AUD-202, and the `att` layer is removed at the first audio update without being heard.
 
 ## 7 Dependencies
 
@@ -440,3 +441,4 @@ Each default is the behaviour that §2 specifies.
 - DEC-319 — ambience during loading views; the front-end sound set (R-AUD-048).
 - DEC-322 — start value of smoothed sound parameters (R-AUD-055).
 - DEC-567 — dry mix or applied effects (R-AUD-050, R-AUD-076, R-AUD-078).
+- DEC-317 — voice set language: whether Species voice lines are worded (R-AUD-047).

@@ -57,7 +57,7 @@ The rules of [defences and props](defences_and_props.md) §2.1 (R-BLDG-400 to R-
 | offspring budget | 0 for a map tree; the creator's value otherwise | the number of offspring it may still create |
 | offspring deadline | unset | the tick of its next offspring |
 | removable | false for a map tree; true for crate trees and their offspring | whether it is removed at the end of a burn |
-| corruption timer | `ref.bldg.tree.corruption_first_ticks` (51 ticks, 5.0 s) | R-BLDG-621, R-BLDG-622 |
+| corruption timer | `ref.bldg.tree.corruption_first_ticks` (51 ticks, nominal 5.0 s) | R-BLDG-621, R-BLDG-622 |
 | corrupted | false | R-BLDG-621 |
 | crown centre and crown radius | from collision data (R-BLDG-603) | the crown hit sphere at unit height |
 
@@ -65,7 +65,7 @@ The rules of [defences and props](defences_and_props.md) §2.1 (R-BLDG-400 to R-
 
 **R-BLDG-603** (MUST) A tree's geometry and its crown hit volume come from one deterministic generator that works in unit space, with the trunk from (0, 0, 0) to (0, 1, 0); the height is only a uniform scale applied at drawing and in the hit tests. The geometry is presentation. The crown centre and crown radius are collision data (DEC-012): for a tree that a map places they are baked by the content build, each centre stated explicitly; for a tree created during a match the simulation computes them once, at its creation, with the same generator and a generator state local to that tree, never a shared generator (reference/12 R-SIM-651). Every participant therefore holds the same crown volume for every tree.
 
-**R-BLDG-604** (MUST) The tree generator uses its own 32-bit linear congruential generator: seeding sets the state s to the tree's seed; each draw sets s = (s × `ref.bldg.tree.rng_multiplier` + `ref.bldg.tree.rng_increment`) mod 2³² (214013 and 2531011) and returns (s >> 16) & `ref.bldg.tree.rng_mask` (0x7FFF), a value from 0 to 32767; and `Frand(r)` = r × draw ÷ 32767, from 0 to r inclusive. The generator is re-seeded with the tree's seed at the start of every pass, so every pass reproduces the same branching.
+**R-BLDG-604** (MUST) The tree generator uses its own 32-bit linear congruential generator: seeding sets the state s to the tree's seed; each draw sets s = (s × `ref.bldg.tree.rng_multiplier` + `ref.bldg.tree.rng_increment`) mod 2³² (214013 and 2531011) and returns (s >> 16) & `ref.bldg.tree.rng_mask` (0x7FFF), a value from 0 to 32767; and `Frand(r)` = r × draw ÷ 32767, from 0 to r inclusive. The generator is re-seeded with the tree's seed at the start of every pass, so every pass reproduces the same branching. The constants are pinned so that a map's tree seeds reproduce its baked crown volumes (DEC-012); the design phase may replace the generator only together with a re-bake.
 
 **R-BLDG-605** (MUST) The generator runs three passes of this recursion over the same tree, written here in Species notation:
 
@@ -77,7 +77,7 @@ Branch(from, to, n, pass):
         if pass == RADIUS: crownR = max(crownR, |to - crownC|)
         if pass == LEAF:   crownC = crownC + to; leafCount = leafCount + 1
     d = to - from
-    A = normalise(d x to); B = normalise(A x d)    # normalise(v) = (0, 0, 1) when |v|^2 <= 1e-10
+    A = Normalize(d x to); B = Normalize(A x d)    # Normalize(v) = (0, 0, 1) when |v|^2 <= 1e-10
     len = |d|
     w = ref.bldg.tree.branch_width * (leaf_width if n == 0 else 1)      # 0.1
     if (n == 0 and pass == LEAF) or (n != 0 and pass == BRANCH):
@@ -132,7 +132,7 @@ With one burning neighbour adding 1 per tick against the decay of 0.1, a tree ig
 
 **R-BLDG-615** (MUST) Each tick a healthy tree with a leaf drop rate L above 0 drops a cosmetic leaf when a presentation-generator integer draw modulo (`ref.bldg.tree.leaf_drop_base` − L) (51 − L) is 0: one leaf particle in the leaf colour at position + (0, h, 0) + (U[−h ÷ 2, h ÷ 2], U[−v ÷ 2, v ÷ 2], U[−h ÷ 2, h ÷ 2]), with v = h × `ref.bldg.tree.leaf_spread_y_factor` (0.25), all drawn from the presentation generator, with h the actual height. Leaves never reach simulation state.
 
-**R-BLDG-616** (MUST) Each tick a healthy tree that is not blight and whose essence drop rate E is above 0 makes one simulation draw U{0..2³² − 1} and, when it is divisible by (`ref.econ.essence_grove.drop_base` − E) (51 − E, reference/05), drops one Essence orb: it draws a distance U[0, h) and a yaw U[0, 2π), in this order, and spawns the orb at position + the point (distance, h, 0) rotated about the vertical by the yaw, with zero velocity, for a team slot drawn uniformly from `ref.econ.essence_grove.team_slots` (0 to 3, reference/05) by one draw U{0..3} ([02 Essence orbs](../02_units/essence_orbs.md)). The reference re-draws a slot from 0 to 5 until it is neither the Rogue slot nor the Visitor slot, which gives the same distribution; one draw needs no loop (DEC-014). The slot may belong to no team in play (see DEC-305). The per-tick probability is 1 ÷ (51 − E), so a tree of rate 15 drops about 0.28 orbs per second at game speed 1; the probability is per tick and scales with game speed (DEC-092). A blight tree never drops orbs.
+**R-BLDG-616** (MUST) Each tick a healthy tree that is not blight and whose essence drop rate E is above 0 makes one simulation draw U{0..2³² − 1} and, when it is divisible by (`ref.econ.essence_grove.drop_base` − E) (51 − E, reference/05), drops one Essence orb: it draws a distance U[0, h) and a yaw U[0, 2π), in this order, and spawns the orb at position + the point (distance, h, 0) rotated about the vertical by the yaw, with zero velocity, for a team slot drawn uniformly from `ref.econ.essence_grove.team_slots` (0 to 3, reference/05) by one draw U{0..3} ([02 Essence orbs](../02_units/essence_orbs.md); DEC-014). The slot may belong to no team in play (see DEC-305). The per-tick probability is 1 ÷ (51 − E), so a tree of rate 15 drops about 0.28 orbs per second at game speed 1; the probability is per tick and scales with game speed (DEC-092). A blight tree never drops orbs.
 
 **R-BLDG-617** (MUST) Each tick a healthy tree whose offspring budget is above 0 and whose offspring deadline is unset sets the deadline to now + `ref.bldg.tree.offspring_delay_base_ticks` + ⌈U[0, `ref.bldg.tree.offspring_delay_spread_ticks`)⌉ ticks (50 to 100 ticks). When the tick count reaches the deadline, the tree lowers its budget by 1, unsets the deadline and creates one offspring (R-BLDG-618).
 
@@ -172,7 +172,7 @@ With one burning neighbour adding 1 per tick against the decay of 0.1, a tree ig
 3. **Corrupted, not yet blight:** the tree is drawn twice. With f the fraction of the blight countdown already run (0 at corruption, 1 at blight, extrapolated over the presentation's extrapolation time), the first drawing darkens the branch colour and alpha by f and multiplies the leaf alpha by 1 − f, and the second draws the blight silhouette with branch alpha `ref.bldg.tree.blight_branch_rgba` alpha × f.
 4. **Burning:** ordinary alpha blending; the branch colour is scaled towards black by min(phase × `ref.bldg.tree.burn_darken_factor`, 1) (10) at branch alpha 255; the leaves are black with alpha × (1 − phase). Over it, `ref.bldg.tree.burn_flare_count` (4) camera-facing `fx.starburst` quads i = 0 to 3 are drawn without depth test in colour `ref.bldg.tree.burn_flare_rgb` (0.8, 0.2, 0.1) with alpha `ref.bldg.tree.burn_flare_alpha` (0.5) × hA ÷ height, centred at position + (sin(2g + i) × i × `ref.bldg.tree.burn_flare_spread` (1.7), `ref.bldg.tree.burn_flare_height` (0.8) × hA + cos(2g + i), cos(2g + i) × i × 1.7), with g the match time, and half-size max(`ref.bldg.tree.burn_flare_size_factor` (2) × hA, `ref.bldg.tree.burn_flare_min_size` (5 wu)).
 5. **Regrowing:** the leaves are invisible while |phase| is above `ref.bldg.tree.regrow_leaf_threshold` (0.5), and have alpha × (1 − 2 × |phase|) after that.
-6. **Seasonal theme** (`SeasonalTheme`): the branches in `ref.bldg.tree.seasonal_branch_rgb` (180, 100, 50) and no leaves.
+6. **Seasonal theme**, while the seasonal state of [09 screen flow and match setup](../09_front_end_and_match_flow/screen_flow_and_match_setup.md) R-META-102 is on: the branches in `ref.bldg.tree.seasonal_branch_rgb` (180, 100, 50) and no leaves.
 
 **R-BLDG-628** (MUST) A tree-detail preference above 1, which the options screen does not expose (default 1), multiplies the leaf alpha by `ref.bldg.tree.leaf_alpha_boost`^detail (1.3^detail), capped at 255, when the geometry is built. It changes presentation only.
 
@@ -184,7 +184,7 @@ With one burning neighbour adding 1 per tick against the decay of 0.1, a tree ig
 
 **R-BLDG-631** (MUST) A Hive (`Hive`) is a Rogue faction nest, `mesh.structure.hive_mound` with the collision asset `mesh.collision.hive_mound`, that sends ants out to capture Workers, collect Essence orbs, attack enemies and scout, and turns the orbs that they bring home into more ants. Its ants are specified in [02 Creatures](../02_units/creatures.md) §2.7. It holds an integer health of `ref.bldg.hive.health` (100), its ants inside, its orbs inside, its objectives and its ant group. Its team is fixed; it is never captured.
 
-**R-BLDG-632** (MUST) The Hive outcome ([04 Crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md), which owns when it occurs and its validity limit) creates `ref.crate.hive.count` (2) Hives, always of the Rogue faction whoever triggered it (DEC-021, DEC-107); the outcome's values are keyed in reference/04 (R-CRATE-194). For each Hive, in this order: position = target point + (U[−100, 100), 0, U[−100, 100)) (`ref.crate.hive.scatter`, 200 wu); front = normalise(U[−0.5, 0.5), 0, U[−0.5, 0.5)); ants inside = `ref.crate.hive.ants_max` − U{0..`ref.crate.hive.ants_spread` − 1} (75 − U{0..24}, so 51 to 75). Each Hive is snapped to the terrain, created with a new serial and initialised (R-BLDG-030), and shatters its mesh once as a build-in effect (presentation). The outcome then spawns one ant at the target point to wake the Rogue faction ([02 Creatures](../02_units/creatures.md) R-UNIT-559), shows the map marker `icon.power.hive` and shows its message (reference/04).
+**R-BLDG-632** (MUST) The Hive outcome ([04 Crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md), which owns when it occurs and its validity limit) creates `ref.crate.hive.count` (2) Hives, always of the Rogue faction whoever triggered it (DEC-021, DEC-107); the outcome's values are keyed in reference/04 (R-CRATE-194). For each Hive, in this order: position = target point + (U[−100, 100), 0, U[−100, 100)) (`ref.crate.hive.scatter`, 200 wu); front = Normalize(U[−0.5, 0.5), 0, U[−0.5, 0.5)); ants inside = `ref.crate.hive.ants_max` − U{0..`ref.crate.hive.ants_spread` − 1} (75 − U{0..24}, so 51 to 75). Each Hive is snapped to the terrain, created with a new serial and initialised (R-BLDG-030), and shatters its mesh once as a build-in effect (presentation). The outcome then spawns one ant at the target point to wake the Rogue faction ([02 Creatures](../02_units/creatures.md) R-UNIT-559), shows the map marker `icon.power.hive` and shows its message (reference/04).
 
 **R-BLDG-633** (MUST) A Hive's map record holds the base fields and its ants inside, an integer; a value outside [0, `ref.bldg.hive.map_ants_max`] (10,000) becomes 0, and the default is 0. The content build rejects such a value in an authored map ([data schemas](../../architecture/components/data_schemas/map_structure_records.md) DAT-159; DEC-968), so the replacement applies only to records that bypass validation. A map may place a Hive; no reference map does.
 
@@ -235,7 +235,7 @@ A search that finds nothing creates no objective. A new objective is to receive 
 
 A map may place a Spitter Plant; no reference map does. Besides these fields a plant holds a damage meter of `ref.bldg.spitter_plant.damage_meter` (50) and a pod budget of `ref.bldg.spitter_plant.pod_budget` (3).
 
-**R-BLDG-645** (MUST) At initialisation a plant draws its first launch deadline, now + `ref.bldg.spitter_plant.first_delay_ticks` (100) + 10 × U{0..⌊reload ÷ 10⌋ − 1} ticks (10 s plus whole seconds below the reload), and its first trigger check after ⌈U[0, `ref.bldg.spitter_plant.trigger_check_ticks`)⌉ ticks (0 to 50 ticks) (DEC-652). The content build rejects a reload for which ⌊reload ÷ 10⌋ is below 1, so the first-deadline draw always has at least one value ([data schemas](../../architecture/components/data_schemas/map_structure_records.md) table 3.2-A; DEC-968).
+**R-BLDG-645** (MUST) At initialisation a plant draws its first launch deadline, now + `ref.bldg.spitter_plant.first_delay_ticks` (100) + U{0..⌊reload × `ref.sim.tick_period`⌋ − 1} ÷ `ref.sim.tick_period` ticks (10 s plus whole seconds below the reload), and its first trigger check after ⌈U[0, `ref.bldg.spitter_plant.trigger_check_ticks`)⌉ ticks (0 to 50 ticks) (DEC-652). The content build rejects a reload for which ⌊reload × `ref.sim.tick_period`⌋ is below 1, so the first-deadline draw always has at least one value ([data schemas](../../architecture/components/data_schemas/map_structure_records.md) table 3.2-A; DEC-968).
 
 **R-BLDG-646** (MUST) A plant is armed while its trigger is off or it is burning. Otherwise it checks every `ref.bldg.spitter_plant.trigger_check_ticks` (50 ticks) whether enemies are present in the trigger circle, by the cell-granular presence test `EnemiesInCells(position + trigger offset, trigger radius, team)` (reference/12 R-SIM-312); when it changes from unarmed to armed, its launch deadline is drawn again as R-BLDG-645 specifies.
 
@@ -385,7 +385,7 @@ Every value is a reference tuning value that Species may adopt as its baseline (
 | `ref.bldg.tree.default_push` | 1.0 | — | push out and push up; 0 to 5 | R-BLDG-601 | — |
 | `ref.bldg.tree.default_iterations` | 6 | levels | 1 to 10 | R-BLDG-601 | — |
 | `ref.bldg.tree.fire_damage_max` | 100 | damage | clamp of the ignition meter | R-BLDG-602, R-BLDG-609 | — |
-| `ref.bldg.tree.corruption_first_ticks` | 51 | ticks | 5.0 s countdown | R-BLDG-602, R-BLDG-622 | DEC-002 |
+| `ref.bldg.tree.corruption_first_ticks` | 51 | ticks | nominal 5.0 s countdown | R-BLDG-602, R-BLDG-622 | DEC-002 |
 | `ref.bldg.tree.rng_multiplier` | 214013 | — | generator multiplier | R-BLDG-604 | DEC-012 |
 | `ref.bldg.tree.rng_increment` | 2531011 | — | generator increment | R-BLDG-604 | DEC-012 |
 | `ref.bldg.tree.rng_mask` | 0x7FFF | — | 15-bit output | R-BLDG-604 | DEC-012 |
@@ -432,7 +432,7 @@ Every value is a reference tuning value that Species may adopt as its baseline (
 | `ref.bldg.tree.wisp_tilt` | 1 | rad | ±0.5 | R-BLDG-620 | — |
 | `ref.bldg.tree.corruption_check_base_ticks` | 100 | ticks | checks every 100 to 150 ticks | R-BLDG-621 | DEC-002 |
 | `ref.bldg.tree.corruption_check_spread_ticks` | 50 | ticks | | R-BLDG-621 | DEC-002 |
-| `ref.bldg.tree.blight_delay_ticks` | 101 | ticks | 10.0 s; from corruption to blight | R-BLDG-621, R-BLDG-622 | DEC-002 |
+| `ref.bldg.tree.blight_delay_ticks` | 101 | ticks | nominal 10 s; from corruption to blight | R-BLDG-621, R-BLDG-622 | DEC-002 |
 
 ### 4.3 Tree: presentation
 

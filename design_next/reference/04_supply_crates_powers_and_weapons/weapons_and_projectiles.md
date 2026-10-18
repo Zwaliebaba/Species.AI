@@ -182,7 +182,7 @@ The base attack's aim jitter and muzzle height are reference/02's (R-UNIT-052).
 
 ### 2.10 Turret round
 
-**R-CRATE-450** (MUST) A **turret round** (`TurretRound`) is fired by a gun turret ([defences and props](../03_buildings_and_world_objects/defences_and_props.md) R-BLDG-420) at `ref.bldg.turret.gun.round_speed` (500 wu/s). Its life follows the Transport research level, `ref.weapon.turret_round.life_by_level` (0.5, 0.5, 1.0, 1.5 and 2.0 s at levels 0 to 4), but in a match it is always `ref.weapon.turret_round.life_ticks` (6 ticks, 0.6 s). It is drawn as `mesh.projectile.turret_round`.
+**R-CRATE-450** (MUST) A **turret round** (`TurretRound`) is fired by a gun turret ([defences and props](../03_buildings_and_world_objects/defences_and_props.md) R-BLDG-420) at `ref.bldg.turret.gun.round_speed` (500 wu/s). Its life is `ref.weapon.turret_round.life_ticks` (6 ticks, 0.6 s). It is drawn as `mesh.projectile.turret_round`.
 
 **R-CRATE-451** (MUST) Each tick its life counts down by one tick and it moves by v × dt. Then:
 
@@ -218,7 +218,7 @@ The base attack's aim jitter and muzzle height are reference/02's (R-UNIT-052).
 
 ### 2.13 Shockwave ring
 
-**R-CRATE-470** (MUST) A **shockwave ring** (`ShockwaveRing`) of size s seconds is created by every explosion, with s = r ÷ `ref.weapon.shockwave.size_divisor` (20). It is active on ticks k = 1 to A after its creation, with A = ⌈10 × s⌉ − 1 (6 for a grenade, 12 for an airstrike bomb, 7 for a rocket, 24 for a meteor or a barrage missile; see DEC-859), and is removed on tick A + 1. On active tick k its radius is r_k = `ref.weapon.shockwave.start_radius` (35 wu) + `ref.weapon.shockwave.growth` (40 wu/s) × k × dt, so 39 wu on the first tick and 4 wu more on each, and its strength is f_k = 1 − k × dt ÷ s.
+**R-CRATE-470** (MUST) A **shockwave ring** (`ShockwaveRing`) of size s seconds is created by every explosion, with s = r ÷ `ref.weapon.shockwave.size_divisor` (20). It is active on ticks k = 1 to A after its creation, with A = ⌈s ÷ `ref.sim.tick_period`⌉ − 1 (6 for a grenade, 12 for an airstrike bomb, 7 for a rocket, 24 for a meteor or a barrage missile; see DEC-859), and is removed on tick A + 1. On active tick k its radius is r_k = `ref.weapon.shockwave.start_radius` (35 wu) + `ref.weapon.shockwave.growth` (40 wu/s) × k × dt, so 39 wu on the first tick and 4 wu more on each, and its strength is f_k = 1 − k × dt ÷ s.
 
 **R-CRATE-471** (MUST) On each active tick, the candidates are the actors of every team at a horizontal distance below r_k (actor-grid query); a candidate is hit when its 3-D distance d satisfies |d − r_k| < `ref.weapon.shockwave.band` (10 wu), effectively a band 10 wu wide just inside the ring for ground units. For a hit:
 
@@ -247,7 +247,7 @@ The base attack's aim jitter and muzzle height are reference/02's (R-UNIT-052).
 
 ### 2.16 Swarm streak
 
-**R-CRATE-485** (MUST) A **Swarm streak** (`SwarmStreak`) is created by the Swarm outcome ([crates and powers](crates_and_powers.md) R-CRATE-183) and belongs to the Rogue faction. Its states are Idle, AttackingActor and AttackingOrb (figure 3-3). Its life is `ref.weapon.swarm_streak.life_ticks` (101 ticks, 10 s), counted down after its state step, and grows by `ref.weapon.swarm_streak.hit_bonus_ticks` (10 ticks) with each successful hit or conversion; it is removed when its life runs out.
+**R-CRATE-485** (MUST) A **Swarm streak** (`SwarmStreak`) is created by the Swarm outcome ([crates and powers](crates_and_powers.md) R-CRATE-183) and belongs to the Rogue faction. Its states are Idle, AttackingActor and AttackingOrb (figure 3-3). Its life is `ref.weapon.swarm_streak.life_ticks` (101 ticks, nominal 10 s), counted down after its state step, and grows by `ref.weapon.swarm_streak.hit_bonus_ticks` (10 ticks) with each successful hit or conversion; it is removed when its life runs out.
 
 **R-CRATE-486** (MUST) Its retarget timer starts at ⌈`SimRng::NextUnit`(`ref.weapon.swarm_streak.first_retarget_spread` (10))⌉ ticks and then restarts at `ref.weapon.swarm_streak.retarget_ticks` (11 ticks, nominal 1.0 s). In a match the first expiry makes no search. On each later expiry in Idle, it draws `SimRng::NextUnit(2)`: below 1 it searches actors first and Essence orbs second, otherwise orbs first and actors second; with neither found it picks a random point, its position + (`SimRng::NextSigned`(`ref.weapon.swarm_streak.random_step` (200)), `SimRng::NextSigned`(200), `SimRng::NextSigned`(200)), not below the ground.
 
@@ -255,7 +255,7 @@ The base attack's aim jitter and muzzle height are reference/02's (R-UNIT-052).
 
 **R-CRATE-488** (MUST) Each tick it steers: v = v × (1 − dt ÷ 2) + normalise(target − p) × `ref.weapon.swarm_streak.homing_speed` (200) × dt ÷ 2, and p += v × dt. It arrives within `ref.weapon.swarm_streak.arrival` (20 wu) of its target.
 
-**R-CRATE-489** (MUST) In AttackingActor, a target that is dead, gone or a Collector is dropped and the streak returns to Idle. On arrival at a target of another team: when the Worker research level is above 2 (it is 4 in a match) and `SimRng::NextUnit(10)` < `ref.weapon.swarm_streak.convert_threshold` (5), with probability 50 %, a Worker of the Rogue faction is spawned at the target and the target is removed without an Essence orb, whatever its actor kind; otherwise the target takes an unresistable health change of −`ref.weapon.swarm_streak.kill_damage` (999). The hit shows `vfx.emit.swarm_hit.count` (5 to 9) fire particles, the `SwarmHit` effect of [particles, shatter and screen effects](../../architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md) table 4.7-A (presentation), adds the hit bonus to its life and returns it to Idle.
+**R-CRATE-489** (MUST) In AttackingActor, a target that is dead, gone or a Collector is dropped and the streak returns to Idle. On arrival at a target of another team: when `SimRng::NextUnit(10)` < `ref.weapon.swarm_streak.convert_threshold` (5), with probability 50 %, a Worker of the Rogue faction is spawned at the target and the target is removed without an Essence orb, whatever its actor kind; otherwise the target takes an unresistable health change of −`ref.weapon.swarm_streak.kill_damage` (999). The hit shows `vfx.emit.swarm_hit.count` (5 to 9) fire particles, the `SwarmHit` effect of [particles, shatter and screen effects](../../architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md) table 4.7-A (presentation), adds the hit bonus to its life and returns it to Idle.
 
 **R-CRATE-490** (MUST) In AttackingOrb, an orb that is gone or no longer Floating is dropped. On arrival the orb is removed and one Rogue faction creature is spawned with roam range `ref.weapon.swarm_streak.creature_roam_range` (200 wu): a spider when `SimRng::NextUnit(20)` < `ref.weapon.swarm_streak.spider_threshold` (1), with probability 5 %, and otherwise a Crawler, which is not spawned when the Rogue faction already has `ref.unit.crawler.team_limit` (250) Crawlers or more ([creatures](../02_units/creatures.md) R-UNIT-529, R-UNIT-570). The hit adds the hit bonus and returns it to Idle.
 
@@ -263,7 +263,7 @@ The base attack's aim jitter and muzzle height are reference/02's (R-UNIT-052).
 
 ### 2.17 Lightning strike
 
-**R-CRATE-495** (MUST) A **lightning strike** (`LightningStrike`) is created by the lightning spawner of a map with the lightning effect ([reference/12](../12_simulation_model/04_containers_and_update_order.md) R-SIM-236) with no team; it is not a Supply crate outcome. Each tick it rolls `SimRng::NextUnit(1)` < `ref.weapon.lightning.strike_chance` (0.01), 1 % per tick, which scales with game speed (DEC-092); it may strike again and again. Before its first strike it has no life limit; each strike sets its life to `ref.weapon.lightning.strike_life_ticks` (13 ticks, 1.2 s), and it is removed when that life has counted down to 0.
+**R-CRATE-495** (MUST) A **lightning strike** (`LightningStrike`) is created by the lightning spawner of a map with the lightning effect ([reference/12](../12_simulation_model/04_containers_and_update_order.md) R-SIM-236) with no team; it is not a Supply crate outcome. Each tick it rolls `SimRng::NextUnit(1)` < `ref.weapon.lightning.strike_chance` (0.01), 1 % per tick, which scales with game speed (DEC-092); it may strike again and again. Before its first strike it has no life limit; each strike sets its life to `ref.weapon.lightning.strike_life_ticks` (13 ticks, nominal 1.2 s), and it is removed when that life has counted down to 0.
 
 **R-CRATE-496** (MUST) Each strike sets on fire every Worker of any team within `ref.weapon.lightning.ignite_radius` (30 wu) horizontally of the cloud, by [worker.md](../02_units/worker.md) R-UNIT-121 (a Worker with a Shield or of the Rogue faction is refused), and deals structure damage of −`ref.weapon.lightning.tree_damage` (100) to every tree of the obstacle-grid cell under it.
 
@@ -474,8 +474,7 @@ Caption: Figure 3-5, an explosion and its shockwave ring (R-CRATE-406, R-CRATE-4
 | `ref.weapon.laser.convert_width_factor` | 2 | × width | presentation | R-CRATE-445 | — |
 | `ref.weapon.laser.shake_range_sq` | 200 | wu² | presentation | R-CRATE-445 | — |
 | `ref.weapon.laser.shake` | 0.5 | shake | presentation | R-CRATE-445 | — |
-| `ref.weapon.turret_round.life_by_level` | 0.5, 0.5, 1.0, 1.5, 2.0 | s | Transport research level 0 to 4; not used in a match | R-CRATE-450 | — |
-| `ref.weapon.turret_round.life_ticks` | 6 | ticks | 0.6 s, always in a match | R-CRATE-450, R-CRATE-451 | DEC-002 |
+| `ref.weapon.turret_round.life_ticks` | 6 | ticks | 0.6 s | R-CRATE-450, R-CRATE-451 | DEC-002 |
 | `ref.weapon.turret_round.damage` | 15 | health | every actor hit, piercing | R-CRATE-451 | — |
 | `ref.weapon.turret_round.push` | 20 | wu/s | push length | R-CRATE-451 | — |
 | `ref.weapon.turret_round.push_jitter` | 3 | wu/s | NextSigned(3) per axis | R-CRATE-451 | — |
@@ -534,7 +533,7 @@ Caption: Figure 3-5, an explosion and its shockwave ring (R-CRATE-406, R-CRATE-4
 | `ref.weapon.pulse_wave.outline_height` | 200 | wu | presentation | R-CRATE-483 | — |
 | `ref.weapon.pulse_wave.tube_height` | 400 | wu | presentation | R-CRATE-483 | — |
 | `ref.weapon.pulse_wave.sky_height` | 1000 | wu | presentation | R-CRATE-483 | — |
-| `ref.weapon.swarm_streak.life_ticks` | 101 | ticks | 10 s | R-CRATE-485 | DEC-002 |
+| `ref.weapon.swarm_streak.life_ticks` | 101 | ticks | nominal 10 s | R-CRATE-485 | DEC-002 |
 | `ref.weapon.swarm_streak.hit_bonus_ticks` | 10 | ticks | per hit or conversion | R-CRATE-485, R-CRATE-489, R-CRATE-490 | DEC-002 |
 | `ref.weapon.swarm_streak.first_retarget_spread` | 10 | ticks | | R-CRATE-486 | DEC-652 |
 | `ref.weapon.swarm_streak.retarget_ticks` | 11 | ticks | nominal 1.0 s | R-CRATE-486 | DEC-002 |
@@ -557,7 +556,7 @@ Caption: Figure 3-5, an explosion and its shockwave ring (R-CRATE-406, R-CRATE-4
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
 | `ref.weapon.lightning.strike_chance` | 0.01 | per tick | 1 % | R-CRATE-495 | DEC-092 |
-| `ref.weapon.lightning.strike_life_ticks` | 13 | ticks | 1.2 s | R-CRATE-495 | DEC-002 |
+| `ref.weapon.lightning.strike_life_ticks` | 13 | ticks | nominal 1.2 s; the count of a 1.2 s countdown (DEC-241 item 3) | R-CRATE-495 | DEC-002 |
 | `ref.weapon.lightning.ignite_radius` | 30 | wu | horizontal | R-CRATE-496 | — |
 | `ref.weapon.lightning.tree_damage` | 100 | structure health | | R-CRATE-496 | — |
 | `ref.weapon.lightning.glow_size` | 200 | wu | presentation | R-CRATE-497 | — |
@@ -582,6 +581,7 @@ Caption: Figure 3-5, an explosion and its shockwave ring (R-CRATE-406, R-CRATE-4
 
 | owner | keys |
 |---|---|
+| [reference/12 tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) | `ref.sim.tick_period` |
 | [reference/12 space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) | `ref.sim.physics.thrown_gravity`, `ref.sim.physics.restitution`, `ref.sim.explosion.actor_reach`, `ref.sim.explosion.actor_gain`, `ref.sim.explosion.structure_reach` |
 | [reference/12 match lifecycle](../12_simulation_model/02_match_lifecycle_and_state_reset.md) | `ref.sim.init.power_level.grenade`, `ref.sim.init.power_level.rocket`, `ref.sim.init.power_level.laser`, `ref.sim.init.power_level.airstrike` |
 | [reference/12 containers and update order](../12_simulation_model/04_containers_and_update_order.md) | `ref.sim.weather.vortex_radius` |
@@ -650,5 +650,6 @@ Caption: Figure 3-5, an explosion and its shockwave ring (R-CRATE-406, R-CRATE-4
 - DEC-115 — Fixed match research levels (R-CRATE-412, R-CRATE-431, R-CRATE-440).
 - DEC-303 — Missile Barrage arrival spread ([crates and powers](crates_and_powers.md) R-CRATE-163; the barrage missile itself is [hazards and projectiles](../02_units/hazards_and_projectiles.md)).
 - DEC-859 — Tick counts chosen for reference durations: the active ticks of a shockwave ring (R-CRATE-470).
+- DEC-241 — Numeric semantics that reference rules depend on: integer truncation of health changes and the countdown counts of the tick-denominated lives (R-CRATE-402, R-CRATE-495).
 
-Resolved decisions applied here: DEC-002, DEC-007, DEC-009, DEC-011, DEC-013, DEC-014, DEC-092, DEC-093, DEC-118, DEC-222 (cosmetic draws), DEC-241, DEC-461, DEC-564 (laser-bolt sounds), DEC-652, DEC-653, DEC-960 (effects in fixed steps).
+Resolved decisions applied here: DEC-002, DEC-007, DEC-009, DEC-011, DEC-013, DEC-014, DEC-092, DEC-093, DEC-118, DEC-222 (cosmetic draws), DEC-461, DEC-564 (laser-bolt sounds), DEC-652, DEC-653, DEC-960 (effects in fixed steps).

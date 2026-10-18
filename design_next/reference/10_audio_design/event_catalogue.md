@@ -23,7 +23,7 @@ This file is the Species sound-event set: every sound source, every event that g
 | 4 | `essence_orb` | `collected` |
 | 5 | `power_input` | `begin`, `confirm` |
 | 6 | `ambience` | `match_enter`, `match_exit` |
-| 7 | `music` | the music hooks ([music hooks and brief](music_hooks_and_sound_design_brief.md), KH-MUSIC) |
+| 7 | `music` | the music hooks ([music hooks and brief](music_hooks_and_sound_design_brief.md) R-AUD-400 to R-AUD-405) |
 | 8 | `power_slots` | `icon_hover`, `discard`, `select`, `selection_set`, `selection_cleared` |
 | 9 | `crate_outcome` | one event per Supply crate outcome (R-AUD-139) |
 | 10 | `match_ui` | `countdown_tick`, `countdown_zero`, `game_over`, `victory`, `defeat`, `selection_circle`, `unit_select`, `toggle_state`, `lobby_bed`, `menu_hover`, `menu_select`, `menu_back`, `error`, `chat_message`, `unit_highlight`, `order_given` |
@@ -106,9 +106,9 @@ Table 2.2-A Worker sound events.
 |---|---|---|---|---|---|---|---|---|
 | `worker.die` | death | `sfx.unit.worker.die` | fix · once | 100 | 0 |  | r 10 |  |
 | ″ layer 2 |  | `sfx.unit.worker.die_b` | fix · once | 100 | 0 |  |  |  |
-| `worker.hurt` | any health loss | `sfx.unit.worker.hurt` | att · once | 100 | −10 | 1.06 | r 10 | FX-08 echo |
+| `worker.hurt` | any health loss | `sfx.unit.worker.hurt` | att · once | 100 | −10 | 1.06 | r 10 | echo |
 | ″ layer 2 |  | `sfx.unit.worker.hurt` | att · once | 100 | −10 | 0.91 |  |  |
-| `worker.spawn` | a Worker appears (spawn hook) | `sfx.unit.worker.spawn` | att · once · share-near | 100 | −7.5 | rnd 0.58 to 1.59 s0.56 /note | r 1.16; ld rnd 0.87 to 4.84 /note | FX-09 echo |
+| `worker.spawn` | a Worker appears (spawn hook) | `sfx.unit.worker.spawn` | att · once · share-near | 100 | −7.5 | rnd 0.58 to 1.59 s0.56 /note | r 1.16; ld rnd 0.87 to 4.84 /note | echo |
 | `worker.ordered` | a Leader signpost hands it an order | `sfx.unit.leader.spawn` | att · once | 100 | −10 | rnd 1.51 to 1.85 /note |  |  |
 | `worker.flee_bark` | a scared reaction: a grenade or airstrike target marker nearby, a burning tree, or enemies | `sfx.unit.worker.flee_bark` | att · once | 100 | −5 /note | rnd 0.9 to 1.09 /note |  |  |
 | ″ layer 2 |  | `sfx.unit.worker.flee_bark_b` | att · once | 100 | −5 |  |  |  |
@@ -145,8 +145,8 @@ Table 2.2-C Trooper sound events.
 
 | Event | Raised when | Sample group | Playback | Min (wu) | Level (dB) | Pitch (×) | Envelope and loop (s) | Effect |
 |---|---|---|---|---|---|---|---|---|
-| `trooper.spawn` | a Trooper appears | `sfx.unit.trooper.presence_loop` | att · loop · share-rnd | 100 | −5 /note |  | r 5.23 /note; ld speed 6.8 to 0 → 0 to 2.9 /note | FX-03 echo |
-| `trooper.hurt` | any health loss | `sfx.unit.trooper.hurt` | att · once | 100 | −5 | 0.91 /note | r 4.06 /note | FX-04 echo |
+| `trooper.spawn` | a Trooper appears | `sfx.unit.trooper.presence_loop` | att · loop · share-rnd | 100 | −5 /note |  | r 5.23 /note; ld speed 6.8 to 0 → 0 to 2.9 /note | echo |
+| `trooper.hurt` | any health loss | `sfx.unit.trooper.hurt` | att · once | 100 | −5 | 0.91 /note | r 4.06 /note | echo |
 | `trooper.weapon_ready` | the secondary-weapon cooldown expires | `sfx.unit.trooper.weapon_ready` | att · once · share-rnd | 100 | −5 /note |  |  |  |
 | `trooper.fire_laser` | each laser shot | `sfx.unit.trooper.fire_laser` | att · once | 100 | −6.15 /note | rnd 0.9 to 1.05 /note |  |  |
 | `trooper.die` | death | `sfx.unit.trooper.die` | att · once | 100 | −5.15 | rnd 0.76 to 1.05 /note |  |  |
@@ -159,7 +159,7 @@ Table 2.2-D Transport sound events.
 
 | Event | Raised when | Sample group | Playback | Min (wu) | Level (dB) | Pitch (×) | Envelope and loop (s) | Effect |
 |---|---|---|---|---|---|---|---|---|
-| `transport.spawn` | a Transport appears | `sfx.unit.transport.presence_loop` | att · loop | 218.81 | speed 0 to 2.4 → −2.25 to 0 | speed 0 to 22.4 → 1.1 to 1.68 |  | FX-10 gargle |
+| `transport.spawn` | a Transport appears | `sfx.unit.transport.presence_loop` | att · loop | 218.81 | speed 0 to 2.4 → −2.25 to 0 | speed 0 to 22.4 → 1.1 to 1.68 |  | gargle |
 | ″ layer 2 |  | `sfx.unit.transport.spawn` | att · once | 100 | −3.25 |  |  |  |
 | `transport.hurt` | any health loss | `sfx.unit.transport.hurt` | att · once | 141.42 | 0 | rnd 0.88 to 1.05 /note |  |  |
 | `transport.die` | destruction | `sfx.unit.transport.die` | fix · once | 222.43 | 0 /note | rnd 0.89 to 1.09 /note |  |  |
@@ -172,7 +172,7 @@ Table 2.2-E Collector sound events.
 | `collector.spawn` | a Collector appears | `sfx.creature.abductor.presence_loop_b` | att · loop | 96.11 | −10 | height 0 to 984 → 0.32 to 2.47 |  |  |
 | ″ layer 2 |  | `sfx.creature.abductor.presence_loop_c` | att · loop | 89.81 | speed 3.6 to 1.6 → −9.7 to −5.5 |  |  |  |
 | ″ layer 3 |  | `sfx.unit.collector.presence_loop` | att · loop | 150.84 | −5 | 1.29 |  |  |
-| `collector.drop_essence` | each Essence orb delivered to a Spawn Node | `sfx.unit.collector.drop_essence` | fix · once | 150 | −5 | rnd 0.38 to 0.52 /note | r 15.1 | FX-11 gargle |
+| `collector.drop_essence` | each Essence orb delivered to a Spawn Node | `sfx.unit.collector.drop_essence` | fix · once | 150 | −5 | rnd 0.38 to 0.52 /note | r 15.1 | gargle |
 
 Table 2.2-F Builder sound events.
 
@@ -204,9 +204,9 @@ Table 2.3-A Crawler sound events.
 | Event | Raised when | Sample group | Playback | Min (wu) | Level (dB) | Pitch (×) | Envelope and loop (s) | Effect |
 |---|---|---|---|---|---|---|---|---|
 | `crawler.attack` | a bite on arrival at its target | `sfx.creature.crawler.attack` | att · once | 200 | −4.85 | rnd 0.91 to 1.12 /note |  |  |
-| `crawler.hurt` | any health loss | `sfx.creature.crawler.hurt` | fix · once | 200 | 0 | rnd 0.81 to 1.01 /note | r 2.71 | FX-01 echo |
+| `crawler.hurt` | any health loss | `sfx.creature.crawler.hurt` | fix · once | 200 | 0 | rnd 0.81 to 1.01 /note | r 2.71 | echo |
 | `crawler.turn` | an idle Crawler picks a new wander direction | `sfx.creature.crawler.turn` | att · once | 50 | −17.25 | rnd 1.7 to 2.17 /note |  |  |
-| `crawler.die` | death | `sfx.creature.crawler.die` | att · once | 175 | 0 | rnd 1.54 to 1.79 /note | r 10.06 /note | FX-02 echo |
+| `crawler.die` | death | `sfx.creature.crawler.die` | att · once | 175 | 0 | rnd 1.54 to 1.79 /note | r 10.06 /note | echo |
 
 Table 2.3-B Brood Drifter sound events.
 
@@ -214,7 +214,7 @@ Table 2.3-B Brood Drifter sound events.
 |---|---|---|---|---|---|---|---|---|
 | `brood_drifter.spawn` | a Brood Drifter appears | `sfx.creature.brood_drifter.presence_loop` | att · loop | 100 | −8.4 |  | ld height 4 to 164 → 0.19 to 5.81 |  |
 | `brood_drifter.hurt` | any health loss | `sfx.creature.brood_drifter.hurt` | att · once | 150 | 0 |  |  |  |
-| `brood_drifter.die` | death | `sfx.creature.brood_drifter.die` | fix · once | 150 | 0 /note | rnd 0.86 to 1.1 /note | r 10.45 | FX-05 echo |
+| `brood_drifter.die` | death | `sfx.creature.brood_drifter.die` | fix · once | 150 | 0 /note | rnd 0.86 to 1.1 /note | r 10.45 | echo |
 | `brood_drifter.lay_egg` | it lays a Crawler egg | `sfx.creature.spider.lay_egg` | att · once | 100 | −4.85 |  |  |  |
 
 Table 2.3-C centipede sound events.
@@ -223,7 +223,7 @@ Table 2.3-C centipede sound events.
 |---|---|---|---|---|---|---|---|---|
 | `centipede.attack` | a segment touches an enemy (per enemy per tick) | `sfx.creature.centipede.attack` | att · once | 100 | 0 | rnd 0.88 to 1.08 /note |  |  |
 | `centipede.spawn` | each segment appears, growth segments included | `sfx.creature.centipede.presence_loop` | att · note | 80.09 | −10 | rnd 0.95 to 1.05 /note |  |  |
-| `centipede.die` | a segment dies | `sfx.creature.centipede.die` | fix · once | 150 | 0 | 0.94 | r 10 | FX-06 echo |
+| `centipede.die` | a segment dies | `sfx.creature.centipede.die` | fix · once | 150 | 0 | 0.94 | r 10 | echo |
 | `centipede.hurt` | a segment loses health | `sfx.creature.centipede.hurt` | att · once | 100 | −4.85 | rnd 0.58 to 1.59 s0.56 /note | ld speed 11.2 to 0 → 0.58 to 4.84 /note |  |
 
 Table 2.3-D spider sound events.
@@ -231,7 +231,7 @@ Table 2.3-D spider sound events.
 | Event | Raised when | Sample group | Playback | Min (wu) | Level (dB) | Pitch (×) | Envelope and loop (s) | Effect |
 |---|---|---|---|---|---|---|---|---|
 | `spider.spawn` | a spider appears | `sfx.creature.spider.presence_loop` | att · loop | 100 | −5.35 | rnd 0.77 to 1.21 /note | ld speed 4.8 to 0 → 0 to 3.1 |  |
-| `spider.die` | death | `sfx.creature.spider.die` | att · once | 200 | 0 | speed 1.2 to 34.4 → 0.58 to 0.82 | r 16.65 | FX-07 stereo echo |
+| `spider.die` | death | `sfx.creature.spider.die` | att · once | 200 | 0 | speed 1.2 to 34.4 → 0.58 to 0.82 | r 16.65 | stereo echo |
 | `spider.attack` | it starts a pounce (with `spider.pounce`) | `sfx.creature.spider.pounce` | att · once | 100 | −4.85 | rnd 0.74 to 1.03 /note |  |  |
 | `spider.pounce` | it leaps | `sfx.creature.spider.pounce` | att · once | 100 | −4.85 | rnd 0.89 to 1.22 /note |  |  |
 | `spider.lay_egg` | it lays a Crawler egg | `sfx.creature.spider.lay_egg` | att · once | 100 | −4.85 |  |  |  |
@@ -279,7 +279,7 @@ Table 2.3-H Abductor sound events.
 
 ### 2.4 Weapons
 
-**R-AUD-131** (MUST) The weapon sources raise and bind the events of tables 2.4-A to 2.4-F. A laser bolt that wounds a Worker without killing it plays the hit bark at the victim, for the shooter's team; the other laser-bolt events are silent in the reference and bound in Species (R-AUD-142).
+**R-AUD-131** (MUST) The weapon sources raise and bind the events of tables 2.4-A to 2.4-F. A laser bolt that wounds a Worker without killing it plays the hit bark at the victim, for the shooter's team. The other laser-bolt events are bound by R-AUD-142.
 
 Table 2.4-A barrage missile sound events.
 
@@ -308,7 +308,7 @@ Table 2.4-D grenade sound events.
 
 | Event | Raised when | Sample group | Playback | Min (wu) | Level (dB) | Pitch (×) | Envelope and loop (s) | Effect |
 |---|---|---|---|---|---|---|---|---|
-| `grenade.explode` | detonation | `sfx.weapon.grenade.explode` | fix · once | 200 | 0 |  | r 10 | FX-14 studio reverb |
+| `grenade.explode` | detonation | `sfx.weapon.grenade.explode` | fix · once | 200 | 0 |  | r 10 | studio reverb |
 | `grenade.spawn` | a grenade or an airstrike target marker is thrown | `sfx.weapon.grenade.spawn` | att · once | 100 | −2.25 | rnd 0.74 to 1.54 s0.84 |  |  |
 | `grenade.fuse_blink` | once per whole second since the throw, as the fuse light blinks | `sfx.weapon.grenade.fuse_blink` | att · once | 100 | −10.5 |  |  |  |
 | `grenade.bounce` | a bounce off the terrain | `sfx.weapon.grenade.bounce` | att · once | 74.6 | speed 0 to 10 → −15.15 to −5 /note | rnd 0.96 to 1.56 s0.66 /note |  |  |
@@ -347,7 +347,7 @@ Table 2.5-B Beam Dish sound events.
 | ″ layer 2 |  | `sfx.building.beam_dish.rotate_start_b` | att · loop | 100 | −5.15 |  |  |  |
 | `beam_dish.rotate_stop` | the dish finishes turning; it stops `beam_dish.rotate_start` | `sfx.building.beam_dish.rotate_stop` | att · once | 100 | −5 |  |  |  |
 | `beam_dish.link_up` | the dish locks onto a receiving dish | `sfx.building.beam_dish.link_up` | att · loop | 50 | −9.2 |  |  |  |
-| `beam_dish.link_lost` | the link breaks; it stops `beam_dish.link_up` | `sfx.building.beam_dish.link_lost` | att · once | 150 | −5.3 |  | r 14.32 | FX-12 echo |
+| `beam_dish.link_lost` | the link breaks; it stops `beam_dish.link_up` | `sfx.building.beam_dish.link_lost` | att · once | 150 | −5.3 |  | r 14.32 | echo |
 
 Table 2.5-C Solar Array sound events.
 
@@ -428,7 +428,7 @@ Table 2.5-K Core Device sound events.
 |---|---|---|---|---|---|---|---|---|
 | `core_device.spawn` | initialisation; the presence loop | `sfx.building.launch_vessel.flight` | fix · loop | 100 | −3.4 | 0.5 |  |  |
 
-**R-AUD-136** (MUST) The `turret`, `barrier_emitter`, `tree`, `hive` and `spitter_plant` sources raise and bind the events of tables 2.5-L to 2.5-P ([03 defences and props](../03_buildings_and_world_objects/defences_and_props.md) R-BLDG-429, R-BLDG-448; [03 trees and crate structures](../03_buildings_and_world_objects/trees_and_crate_structures.md) R-BLDG-630, R-BLDG-655). A tree raises `tree.spawn` and exactly one presence loop, chosen at initialisation. `turret.fire_grenade` belongs to the mortar turret, which no match creates, so it is never raised.
+**R-AUD-136** (MUST) The `turret`, `barrier_emitter`, `tree`, `hive` and `spitter_plant` sources raise and bind the events of tables 2.5-L to 2.5-P ([03 defences and props](../03_buildings_and_world_objects/defences_and_props.md) R-BLDG-429, R-BLDG-448; [03 trees and crate structures](../03_buildings_and_world_objects/trees_and_crate_structures.md) R-BLDG-630, R-BLDG-655). A tree raises `tree.spawn` and exactly one presence loop, chosen at initialisation.
 
 Table 2.5-L turret sound events.
 
@@ -502,9 +502,9 @@ Table 2.6-A Supply crate sound events.
 | `supply_crate.capture_progress_60` | progress bucket 3 | `sfx.crate.supply_crate.capture_progress_60` | att · note | 200.03 | −2.4 |  | a 0.97; r 12.19 |  |
 | `supply_crate.capture_progress_80` | progress bucket 4 | `sfx.crate.supply_crate.capture_progress_80` | att · note | 218.95 | 0 |  | a 1.16; r 12.58 |  |
 | `supply_crate.captured` | the crate opens and its outcome runs | `sfx.crate.supply_crate.captured` | fix · once | 200 | 0 |  |  |  |
-| `supply_crate.falling` | a crate is created in the sky; stopped when it lands | `sfx.crate.supply_crate.falling` | att · note | 100 | −7.1 |  | a 4.26; s rnd 0.97 to 12.58 /note; r 4.65 | FX-13 stereo echo |
+| `supply_crate.falling` | a crate is created in the sky; stopped when it lands | `sfx.crate.supply_crate.falling` | att · note | 100 | −7.1 |  | a 4.26; s rnd 0.97 to 12.58 /note; r 4.65 | stereo echo |
 
-**R-AUD-139** (MUST) The `crate_outcome` source has one event per Supply crate outcome, `crate_outcome.<outcome>` with the outcome's id, raised when the outcome runs (R-AUD-035); table 2.6-B lists the 25 that a match raises. The gun turret, rocket turret and flame turret outcomes raise `crate_outcome.gun_turret`; the Firebomb Run raises `crate_outcome.airstrike`; the Builder, Time Dilation and Time Rush outcomes raise none. "Played for no team" marks an outcome that acts for no team.
+**R-AUD-139** (MUST) The `crate_outcome` source has one event per Supply crate outcome, `crate_outcome.<outcome>` with the outcome's id, raised when the outcome runs (R-AUD-035); table 2.6-B lists the 25 that a match raises. The gun turret, rocket turret and flame turret outcomes raise `crate_outcome.gun_turret`; the Firebomb Run raises `crate_outcome.airstrike`; the Builder, Time Dilation and Time Rush outcomes raise none. Whether these six outcomes raise a sting of their own, `crate_outcome.rocket_turret`, `crate_outcome.flame_turret`, `crate_outcome.firebomb_run`, `crate_outcome.builder`, `crate_outcome.time_dilation` and `crate_outcome.time_rush`, is DEC-565; until it decides, they behave as stated here. "Played for no team" marks an outcome that acts for no team.
 
 Table 2.6-B Supply crate outcome stings.
 
@@ -579,14 +579,14 @@ Table 2.7-D ambience sound events.
 | Event | Raised when | Sample group | Playback | Min (wu) | Level (dB) | Pitch (×) | Envelope and loop (s) | Effect |
 |---|---|---|---|---|---|---|---|---|
 | `ambience.match_enter` | every match start; stopped when the match loop exits | `amb.match_bed` | 2d · note | 100 | altitude 736 to 232 → −49.5 to −2.1 |  | a 10; s 10.84; r 10 |  |
-| ″ layer 2 |  | `amb.match_bed_b` | 2d · loop | 500 | altitude 0 to 992 → −34.85 to −14.85 |  |  | FX-15 echo |
+| ″ layer 2 |  | `amb.match_bed_b` | 2d · loop | 500 | altitude 0 to 992 → −34.85 to −14.85 |  |  | echo |
 | ″ layer 3 |  | `amb.match_bed_c` | 2d · note | 100 | altitude 0 to 988 → −49.7 to −20.15 | rnd 0.75 to 1.35 s0.66 /note | a 10.84; s rnd 1.94 to 16.45 /note; r 10.45 |  |
 
 ### 2.8 Events with no binding
 
-**R-AUD-141** (MUST) These events are raised by the rules of a match or of the front end with no binding in the reference, and are silent there. The last column gives the Species rule:
+**R-AUD-141** (MUST) These events are raised by the rules of a match or of the front end. The last column gives each event's binding: silent, silent until DEC-565 decides it, or bound by a Resolved decision:
 
-| Event | Raised when | Species |
+| Event | Raised when | Binding |
 |---|---|---|
 | `worker.enter_gate` | a successful teleport entry | silent |
 | `worker.exit_gate` | arrival at the far Beam Dish | silent |
@@ -672,7 +672,7 @@ Table 2.7-D ambience sound events.
 | `supply_crate.spawn` | initialisation | silent |
 | `supply_crate.owner_changed` | the owner changes | silent |
 | `supply_crate.damaged` | any damage | silent |
-| `supply_crate.capture_progress_100` | progress bucket 5, the crate opens | silent |
+| `supply_crate.capture_progress_100` | progress bucket 5, the crate opens | silent (DEC-565) |
 | `supply_crate.expired` | an unopened crate expires | silent (DEC-565) |
 | `match_ui.game_over` | a result is declared (R-AUD-307) | bound: the game-over announcement `sfx.ui.match_ui.game_over`, 2d, announcer bus (DEC-097) |
 | `match_ui.victory` | the declared winner is the local team | bound: `music.match.sting_victory`, 2d, announcer bus (DEC-097, DEC-049) |
@@ -683,15 +683,15 @@ Table 2.7-D ambience sound events.
 | `power_slots.selection_set` | a team's selection is set | silent (DEC-565) |
 | `ambience.match_exit` | after the match loop exits | silent (DEC-565) |
 
-**R-AUD-142** (MUST) The events marked "bound" in table R-AUD-141 are bound in Species by Resolved decisions: laser fire is audible, so `laser_bolt.spawn`, `laser_bolt.hit_structure` and `laser_bolt.kill` play the new laser-bolt groups `sfx.weapon.laser_bolt.spawn`, `sfx.weapon.laser_bolt.hit_structure` and `sfx.weapon.laser_bolt.kill` (DEC-564), moments for which the reference set holds unused recordings of laser charging, structure hits, actor hits, ground hits and ricochets; the Strike team grenade throw plays the new throw group `sfx.unit.trooper.throw_grenade` (DEC-097); and the match end plays the game-over announcement `sfx.ui.match_ui.game_over` and the victory or defeat sting (DEC-097, DEC-049; R-AUD-307). These five groups are new Species groups of the asset manifest, authored with no reference take as their template (R-AUD-003, R-AUD-413).
+**R-AUD-142** (MUST) The events marked "bound" in table R-AUD-141 are bound by Resolved decisions: laser fire is audible, so `laser_bolt.spawn`, `laser_bolt.hit_structure` and `laser_bolt.kill` play the new laser-bolt groups `sfx.weapon.laser_bolt.spawn`, `sfx.weapon.laser_bolt.hit_structure` and `sfx.weapon.laser_bolt.kill` (DEC-564); the Strike team grenade throw plays the new throw group `sfx.unit.trooper.throw_grenade` (DEC-097); and the match end plays the game-over announcement `sfx.ui.match_ui.game_over` and the victory or defeat sting (DEC-097, DEC-049; R-AUD-307). These five groups are new groups of the asset manifest (R-AUD-003, R-AUD-413).
 
-**R-AUD-143** (MUST) The events marked "silent (DEC-565)" stay silent until DEC-565 binds them; the reference sound set holds unused takes for some of them (R-AUD-314). The events marked "silent" stay silent with no open decision.
+**R-AUD-143** (MUST) The events marked "silent (DEC-565)" stay silent until DEC-565 binds them. The events marked "silent" stay silent with no open decision.
 
-**R-AUD-144** (MUST) A `supply_crate` drain raises the progress events of the falling buckets (R-AUD-031), which are bound; the reference's drain name, which matches nothing, does not exist in Species.
+**R-AUD-144** (MUST) A `supply_crate` drain raises the progress events of the falling buckets (R-AUD-031), which are bound.
 
 ### 2.9 Kinds with no sound definitions
 
-**R-AUD-145** (MUST) These kinds have no sound definitions, so every event that they raise is silent: the bot controller's actor; the Source Node, Relay, Population Limiter, grid terminal, grid splitter, wall, jump pad, exclusion zone, Breach Charge, smoke column, volcano vent and scenery mesh; and the bot navigation nodes, bot objectives and bot objective markers. Most of them are invisible logic objects; the visible ones, a jump-pad launch, a wall hit and the Siege Breach Charge, are silent by omission.
+**R-AUD-145** (MUST) These kinds have no sound definitions, so every event that they raise is silent: the bot controller's actor; the Source Node, Relay, Population Limiter, grid terminal, grid splitter, wall, jump pad, exclusion zone, Breach Charge, smoke column, volcano vent and scenery mesh; and the bot navigation nodes, bot objectives and bot objective markers. Most of them are invisible logic objects; the visible ones, a jump-pad launch, a wall hit and the Siege Breach Charge, are silent by omission. The mortar turret, a turret type that no reference map places and no power creates, binds no sound to its shot `turret.fire_grenade`, so the shot is silent ([03 defences and props](../03_buildings_and_world_objects/defences_and_props.md) R-BLDG-476).
 
 **R-AUD-146** (MUST) The kill-milestone presentation event, which a team advance fires when the team's kill total passes a value of `ref.sim.team.kill_milestones` ([12 containers and update order](../12_simulation_model/04_containers_and_update_order.md) R-SIM-221) and which the presentation shows only for the local team (DEC-007), raises no sound event: no sound source defines it, so it is silent. A sound for it would be a new event of the `match_ui` source, listed by the validator like every other event that game code raises (R-AUD-005).
 
@@ -743,6 +743,7 @@ This file defines no tuning keys: the values in its tables are the sound data of
 
 Each default is the behaviour that §2 specifies.
 
-- DEC-565 — sounds for the other silent gameplay events: every event marked "silent (DEC-565)" (R-AUD-141, R-AUD-143).
+- DEC-565 — sounds for the other silent gameplay events: every event marked "silent (DEC-565)" (R-AUD-141, R-AUD-143) and a sting of their own for six outcomes (R-AUD-139).
 - DEC-109 — crowd-sound audibility radius: `worker.spawn`, the reload layer of `worker.attack`, `launch_vessel.hungry` (R-AUD-126, R-AUD-133).
 - DEC-567 — dry mix or applied effects: the effect column (R-AUD-125).
+- DEC-049 — music: the victory and defeat stings bound to the match end (R-AUD-142).

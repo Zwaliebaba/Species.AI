@@ -79,13 +79,13 @@ The search is depth-first with backtracking, and the visited set bounds it by th
 
 **R-MODE-468** (MUST) The population cap per team is the map's cap ÷ the number of open slots, fixed for the match (DEC-079), 350 to 1,000 on the reference maps.
 
-**R-MODE-469** (MUST) The Transport outcome is invalid on a map with a Transport cap; the Collector, Builder and Spawn Surge outcomes are valid only where Spawn Nodes exist; the map's excluded outcomes never drop (DEC-107; [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md)).
+**R-MODE-469** (MUST) The Transport outcome is invalid on a map with a numeric Transport cap of 1 or more (R-CRATE-125, DEC-120); the Collector, Builder and Spawn Surge outcomes are valid only where Spawn Nodes exist; the map's excluded outcomes never drop (DEC-107; [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md)).
 
 **R-MODE-470** (MUST) Bots use Siege-style diffusion seeded by the Flag post pins, assault Flag posts with Transports, rush with turrets and form no Leader formations; idle Workers also look for nearby Flag posts ([reference/07](../07_bots/README.md), R-ECON-105).
 
 ### 2.4 HUD and end of match
 
-**R-MODE-471** (MUST) Each scoreboard row shows its team's status text with no number: `mode.flag_chain.status.eliminated`, `mode.flag_chain.status.enemy_occupied`, `mode.flag_chain.status.under_attack`, `mode.flag_chain.status.unoccupied`, `mode.flag_chain.status.under_threat` or `mode.flag_chain.status.safe`. The game-over list is not drawn (README R-MODE-068). A Flag post shows a cloth flag on a pole, lowered by (100 − progress) wu while partly owned, with the picture of R-MODE-455 tinted in the team colour, and a ring whose owned fraction is drawn in the owner's or capturer's colour and the rest grey ([reference/03](../03_buildings_and_world_objects/mode_objects.md)). The hints `help.hint.flag_chain_01` and `help.hint.flag_chain_02` explain the chain and the attack on a Flag post.
+**R-MODE-471** (MUST) Each scoreboard row shows its team's status text with no number: `mode.flag_chain.status.eliminated`, `mode.flag_chain.status.enemy_occupied`, `mode.flag_chain.status.under_attack`, `mode.flag_chain.status.unoccupied`, `mode.flag_chain.status.under_threat` or `mode.flag_chain.status.safe`. The game-over list is not drawn (README R-MODE-068). A Flag post shows a cloth flag on a pole, lowered by (100 − progress) wu while partly owned, with the picture of R-MODE-455 tinted in the team colour, and a ring whose owned fraction is drawn in the owner's or capturer's colour and the rest grey ([reference/03](../03_buildings_and_world_objects/mode_objects.md)). The mode's objective cards are hooks only and draw nothing in a match ([reference/11](../11_tutorial_and_help.md) R-TUT-013, DEC-050).
 
 **R-MODE-472** (MUST) The Flag Sweep hook's time test always passes, so the event accompanies every win of the local team; no achievement is awarded, and its condition is the design phase's (DEC-047).
 
@@ -160,12 +160,13 @@ String ids that this file uses, with their new text:
 ## 7 Dependencies
 
 - **Reference documents:** [README](README.md); [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) (Flag post, Home post, Transit Gate); [05 Population flow](../05_population_flow.md) (waves, the airstrike rule); [04 Supply crates](../04_supply_crates_powers_and_weapons/crates_and_powers.md); [07 Bots](../07_bots/README.md); [10 Audio design](../10_audio_design/README.md) (the announcement).
-- **Assets:** `mapfile.flag_chain`, `marker.flag_post_state`, `marker.flag_post_state_tint`, `help.hint.flag_chain_01`, `help.hint.flag_chain_02`.
+- **Assets:** `mapfile.flag_chain`, `marker.flag_post_state`, `marker.flag_post_state_tint`.
 
 ## 8 Open decisions
 
 - DEC-071 — the interval of the base-under-attack announcement (R-MODE-456).
 - DEC-850 — the under-attack status of a Home post (R-MODE-462).
 - DEC-047 — the Flag Sweep hook (R-MODE-472).
+- DEC-050 — the objective cards, hooks only (R-MODE-471).
 
 Resolved decisions applied: DEC-011, DEC-014, DEC-064, DEC-065, DEC-068, DEC-078, DEC-079, DEC-082, DEC-107, DEC-120, DEC-561.

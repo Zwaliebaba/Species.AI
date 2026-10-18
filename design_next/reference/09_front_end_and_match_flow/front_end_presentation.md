@@ -77,7 +77,7 @@ This document specifies how the front end of the reference game looks and how it
 
 **R-META-214** (MUST) The sound banks load on a second worker, queued once the start-up work has finished, so that two reads of the content archive never overlap (DEC-226 item 5). The audio device and the sound banks have their own ready points (DEC-226 item 6).
 
-**R-META-215** (MUST) A loader job that needs work which only the presentation thread may do, such as creating or releasing a texture, creating mesh buffers or setting up the terrain renderer's buffers, queues a graphics request and waits until the presentation thread has run it; a request made on the presentation thread runs at once. Requests queued while no loading view shows run once per frame in the match loop ([reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-581 step 6). This is the reference model; under DEC-226 item 4 Species GPU uploads go through the copy queue and no loader waits on the presentation thread.
+**R-META-215** (MUST) A loader job that needs work which only the presentation thread may do, such as creating or releasing a texture, creating mesh buffers or setting up the terrain renderer's buffers, queues a graphics request and waits until the presentation thread has run it; a request made on the presentation thread runs at once. Requests queued while no loading view shows run once per frame in the match loop ([reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-581 step 6).
 
 **R-META-216** (MUST) While the loading view shows, asset-cache look-ups are serialised and every game sound event is dropped ([reference/12](../12_simulation_model/02_match_lifecycle_and_state_reset.md) §2.1, the load lifetime; DEC-226 item 6).
 
@@ -118,25 +118,25 @@ When the loop ends it clears the showing flag and the start time.
 
 | Mode | Canvas and loop | Objects, keys | Pictures |
 |---|---|---|---|
-| Spawn Control | `ref.meta.explainer.spawn_control` (800 × 250, 0 to 15.01 s) | 28, 169 | soft glow, Worker figure, hurt Worker, laser beam, muzzle flash, Spawn Node |
-| Zone Control | `ref.meta.explainer.zone_control` (800 × 250, 0 to 15.66 s) | 17, 108 | soft glow, Worker figure, hurt Worker, laser beam, muzzle flash, +1 score pop-up, Spawn Node, Control Zone back layer, Control Zone front layer |
-| Relic Run | `ref.meta.explainer.relic_run` (924 × 250, 0 to 20.01 s) | 23, 111 | soft glow, Worker figure, hurt Worker, laser beam, muzzle flash, +1 score pop-up, Spawn Node, Relic, Control Zone back layer, Control Zone front layer |
-| Siege | `ref.meta.explainer.siege` (900 × 250, 0 to 12.02 s) | 14, 135 | soft glow, Worker figure, hurt Worker, muzzle flash, Transit Gate, turret barrel, turret base, Core Device |
-| Launch Race | `ref.meta.explainer.launch_race` (1000 × 250, 0 to 30.01 s) | 21, 173 | Transport, soft glow, Worker figure, fuel pump, fuel pump arm, island outline, laser beam, muzzle flash, Launch Vessel, Solar Array, Transit Gate, water band |
-| Flag Chain | `ref.meta.explainer.flag_chain` (900 × 250, 0 to 24.01 s) | 28, 180 | soft glow, Worker figure, hurt Worker, neutral flag, lowered flag, locked flag, raised flag, fuel pump arm, laser beam, muzzle flash, Transit Gate |
+| Spawn Control | `ref.meta.explainer.spawn_control.canvas_size` (800 × 250), `ref.meta.explainer.spawn_control.loop_span` (0 to 15.01 s) | 28, 169 | soft glow, Worker figure, hurt Worker, laser beam, muzzle flash, Spawn Node |
+| Zone Control | `ref.meta.explainer.zone_control.canvas_size` (800 × 250), `ref.meta.explainer.zone_control.loop_span` (0 to 15.66 s) | 17, 108 | soft glow, Worker figure, hurt Worker, laser beam, muzzle flash, +1 score pop-up, Spawn Node, Control Zone back layer, Control Zone front layer |
+| Relic Run | `ref.meta.explainer.relic_run.canvas_size` (924 × 250), `ref.meta.explainer.relic_run.loop_span` (0 to 20.01 s) | 23, 111 | soft glow, Worker figure, hurt Worker, laser beam, muzzle flash, +1 score pop-up, Spawn Node, Relic, Control Zone back layer, Control Zone front layer |
+| Siege | `ref.meta.explainer.siege.canvas_size` (900 × 250), `ref.meta.explainer.siege.loop_span` (0 to 12.02 s) | 14, 135 | soft glow, Worker figure, hurt Worker, muzzle flash, Transit Gate, turret barrel, turret base, Core Device |
+| Launch Race | `ref.meta.explainer.launch_race.canvas_size` (1000 × 250), `ref.meta.explainer.launch_race.loop_span` (0 to 30.01 s) | 21, 173 | Transport, soft glow, Worker figure, fuel pump, fuel pump arm, island outline, laser beam, muzzle flash, Launch Vessel, Solar Array, Transit Gate, water band |
+| Flag Chain | `ref.meta.explainer.flag_chain.canvas_size` (900 × 250), `ref.meta.explainer.flag_chain.loop_span` (0 to 24.01 s) | 28, 180 | soft glow, Worker figure, hurt Worker, neutral flag, lowered flag, locked flag, raised flag, fuel pump arm, laser beam, muzzle flash, Transit Gate |
 
 **R-META-226** (MUST) An explainer animation holds a canvas width and height, a loop start and a loop end, a playback time and its objects in draw order; each object holds its keys in the order authored, unsorted. An animation that sets none of them has the canvas `ref.meta.explainer.default_canvas` (600 × 300) and the loop `ref.meta.explainer.default_loop` (0 to 30 s), and its playback time starts at 0. A key holds:
 
-| Field | Unit | Default (`ref.meta.explainer.key_defaults`) | Between keys |
+| Field | Unit | Default | Between keys |
 |---|---|---|---|
-| time | s | 0 | the key's position on the timeline |
-| picture | a `help.explainer_picture` role | the Worker figure | held: the earlier key's value |
-| x, y | canvas units | 100, 100 | eased |
-| colour role | none, friendly, enemy, invisible | none | held |
-| scale | × the picture's pixel size | 0.3 | eased |
-| angle | degrees | 0 | linear |
-| horizontal flip | off, on | off | held |
-| alpha | 0 to 255 | 255 | linear, truncated to an integer |
+| time | s | `ref.meta.explainer.key_default.time` (0) | the key's position on the timeline |
+| picture | a `help.explainer_picture` role | `ref.meta.explainer.key_default.picture` (the Worker figure) | held: the earlier key's value |
+| x, y | canvas units | `ref.meta.explainer.key_default.position` (100, 100) | eased |
+| colour role | none, friendly, enemy, invisible | `ref.meta.explainer.key_default.colour_role` (none) | held |
+| scale | × the picture's pixel size | `ref.meta.explainer.key_default.scale` (0.3) | eased |
+| angle | degrees | `ref.meta.explainer.key_default.angle` (0) | linear |
+| horizontal flip | off, on | `ref.meta.explainer.key_default.flip` (off) | held |
+| alpha | 0 to 255 | `ref.meta.explainer.key_default.alpha` (255) | linear, truncated to an integer |
 
 **R-META-227** (MUST) The colour roles resolve when the frame is drawn (DEC-750, ADR-035): none is white (255, 255, 255); friendly is the local team's colour; enemy is the colour of the first team slot from 0 to 5 that is not unused and is not a friend of the local team ([reference/12](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-412), or white when there is none; invisible is (255, 255, 255, 0), and the key's alpha is ignored.
 
@@ -312,15 +312,28 @@ All values are presentation; real-time values are seconds of the presentation cl
 | `ref.meta.explainer.border` | 5 | px | | R-META-224 | — |
 | `ref.meta.explainer.title_band` | 25 | px | | R-META-224 | — |
 | `ref.meta.explainer.caption_band` | 15 | px | | R-META-224 | — |
-| `ref.meta.explainer.spawn_control` | 800 × 250; 0 to 15.01 s | canvas units; s | | R-META-225 | DEC-750 |
-| `ref.meta.explainer.zone_control` | 800 × 250; 0 to 15.66 s | canvas units; s | | R-META-225 | DEC-750 |
-| `ref.meta.explainer.relic_run` | 924 × 250; 0 to 20.01 s | canvas units; s | | R-META-225 | DEC-750 |
-| `ref.meta.explainer.siege` | 900 × 250; 0 to 12.02 s | canvas units; s | | R-META-225 | DEC-750 |
-| `ref.meta.explainer.launch_race` | 1000 × 250; 0 to 30.01 s | canvas units; s | | R-META-225 | DEC-750 |
-| `ref.meta.explainer.flag_chain` | 900 × 250; 0 to 24.01 s | canvas units; s | | R-META-225 | DEC-750 |
+| `ref.meta.explainer.spawn_control.canvas_size` | 800 × 250 | canvas units | width × height | R-META-225 | — |
+| `ref.meta.explainer.spawn_control.loop_span` | 0 to 15.01 | s of real time | loop start to loop end | R-META-225 | DEC-750 |
+| `ref.meta.explainer.zone_control.canvas_size` | 800 × 250 | canvas units | width × height | R-META-225 | — |
+| `ref.meta.explainer.zone_control.loop_span` | 0 to 15.66 | s of real time | loop start to loop end | R-META-225 | DEC-750 |
+| `ref.meta.explainer.relic_run.canvas_size` | 924 × 250 | canvas units | width × height | R-META-225 | — |
+| `ref.meta.explainer.relic_run.loop_span` | 0 to 20.01 | s of real time | loop start to loop end | R-META-225 | DEC-750 |
+| `ref.meta.explainer.siege.canvas_size` | 900 × 250 | canvas units | width × height | R-META-225 | — |
+| `ref.meta.explainer.siege.loop_span` | 0 to 12.02 | s of real time | loop start to loop end | R-META-225 | DEC-750 |
+| `ref.meta.explainer.launch_race.canvas_size` | 1000 × 250 | canvas units | width × height | R-META-225 | — |
+| `ref.meta.explainer.launch_race.loop_span` | 0 to 30.01 | s of real time | loop start to loop end | R-META-225 | DEC-750 |
+| `ref.meta.explainer.flag_chain.canvas_size` | 900 × 250 | canvas units | width × height | R-META-225 | — |
+| `ref.meta.explainer.flag_chain.loop_span` | 0 to 24.01 | s of real time | loop start to loop end | R-META-225 | DEC-750 |
 | `ref.meta.explainer.default_canvas` | 600 × 300 | canvas units | an animation that sets none | R-META-226 | — |
 | `ref.meta.explainer.default_loop` | 0 to 30 | s | | R-META-226 | DEC-750 |
-| `ref.meta.explainer.key_defaults` | time 0; Worker figure; x, y 100, 100; colour role none; scale 0.3; angle 0; flip off; alpha 255 | per field | | R-META-226 | — |
+| `ref.meta.explainer.key_default.time` | 0 | s | a key that omits its time | R-META-226 | — |
+| `ref.meta.explainer.key_default.picture` | the Worker figure | a `help.explainer_picture` role | | R-META-226 | — |
+| `ref.meta.explainer.key_default.position` | 100, 100 | canvas units | x, y | R-META-226 | — |
+| `ref.meta.explainer.key_default.colour_role` | none | colour role | | R-META-226 | — |
+| `ref.meta.explainer.key_default.scale` | 0.3 | × the picture's pixel size | | R-META-226 | — |
+| `ref.meta.explainer.key_default.angle` | 0 | degrees | | R-META-226 | — |
+| `ref.meta.explainer.key_default.flip` | off | switch | horizontal flip | R-META-226 | — |
+| `ref.meta.explainer.key_default.alpha` | 255 | 0 to 255 | | R-META-226 | — |
 | `ref.meta.explainer.key_merge_tolerance` | 0.01 | s | two keys closer than this act as one | R-META-228 | — |
 | `ref.meta.explainer.background_alpha` | 0.9 | alpha | black panel | R-META-230 | — |
 | `ref.meta.explainer.outer_line_alpha` | 0.45 | alpha | | R-META-230 | — |
@@ -395,7 +408,8 @@ String ids cited from other documents: `mode.<mode>.name` and `match.grace_perio
 Open decisions whose reference default this document specifies:
 
 - DEC-225 — frame loop and pacing: the loading frames capped at 60 per second, the session kept going during loads (R-META-217).
-- DEC-226 — loading, streaming and asynchronous work: the loader, the sound load, the graphics requests and the previews (R-META-211, R-META-214, R-META-215, R-META-216).
+- DEC-226 — loading, streaming and asynchronous work: the loader, the sound load, the graphics requests (item 4) and the previews (R-META-211, R-META-214, R-META-215, R-META-216).
+- DEC-245 — session discovery: the session browser's blinking captions (R-META-209).
 - DEC-750 — the explainer animation's loop and visibility rules (R-META-220, R-META-225, R-META-227, R-META-229).
 - DEC-047 — achievements: the visited-map event at the end of the countdown (R-META-234).
 - DEC-868 — the studio-mark fade-out from full opacity (R-META-219).

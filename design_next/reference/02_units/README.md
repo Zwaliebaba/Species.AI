@@ -33,7 +33,7 @@ Table 2.1-A Actor kinds.
 
 | Kind | Identifier | Document | How a match obtains it | Essence orb on death | Map instant unit |
 |---|---|---|---|---|---|
-| Worker | `Worker` | [worker.md](worker.md) | Spawn Node production; one Worker for each port on the Spawn Nodes and Solar Arrays that a team owns at match start, placed directly into the manning state; the map's instant units; Transit Gate reinforcement waves; Collector and Builder deliveries; the Reinforcements outcome; Seed Pods of the Worker kind; conversions (Convert laser bolts, the Visitor faction's Core Device pulse wave, the Swarm streak); Leader demotion; the Abductor's drop of Visitor faction Workers | yes | allowed |
+| Worker | `Worker` | [worker.md](worker.md) | Spawn Node production; one Worker for each port on the Spawn Nodes and Solar Arrays that a team owns at match start, placed directly into the Manning state; the map's instant units; Transit Gate reinforcement waves; Collector and Builder deliveries; the Reinforcements outcome; Seed Pods of the Worker kind; conversions (Convert laser bolts, the Visitor faction's Core Device pulse wave, the Swarm streak); Leader demotion; the Abductor's drop of Visitor faction Workers | yes | allowed |
 | Leader | `Leader` | [leader_and_formations.md](leader_and_formations.md) | promotion of a Worker by a player or a bot | yes | not allowed |
 | Trooper | `Trooper` | [strike_team.md](strike_team.md) | the Strike team outcome, which creates one Strike team of Troopers | **no** | allowed |
 | Transport | `Transport` | [transport.md](transport.md) | the Transport outcome; Transit Gate Transport reinforcements; the map's instant units, granted as a Power | **no** | allowed |
@@ -55,7 +55,7 @@ Table 2.1-A Actor kinds.
 
 **R-UNIT-002** (MUST) A map definition may place actors through its instant units only of the kinds marked "allowed" in table 2.1-A. A kind marked "not allowed" is never placed by a map but is still created at run time by the rules listed for it. An instant unit of a kind that a Power delivers (Transport, Builder) may be marked to arrive as a granted Power instead of as an actor. The reference maps place 269 Workers and 7 Transports, the Transports on four Siege maps and granted as Powers, and no instant unit of any other kind ([reference/08](../08_maps_and_level_design/README.md)).
 
-**R-UNIT-003** (MUST) Every actor kind has a display name keyed by the string id `<string-id prefix>.name` of its ledger entry, for example `unit.worker.name`, `unit.leader.name`, `creature.crawler.name` and `creature.seed_pod.name`. The display text is new Species text. A lookup with no entry shows the kind's identifier.
+**R-UNIT-003** (MUST) Every actor kind has a display name keyed by the string id `<string-id prefix>.name` of its row in [CONVENTIONS](../../CONVENTIONS.md) §8.2 or §8.3, for example `unit.worker.name`, `unit.leader.name`, `creature.crawler.name` and `creature.seed_pod.name`. The display text is new Species text. A lookup with no entry shows the kind's identifier.
 
 ### 2.2 Simulated objects and helper records that are not actor kinds
 
@@ -83,7 +83,7 @@ Table 2.1-A Actor kinds.
 
 ### 2.3 Ticks, timers and game speed
 
-**R-UNIT-005** (MUST) Every unit timer, cooldown, lifetime and per-tick probability is an integer number of ticks or a per-tick value, never a floating-point countdown (DEC-002). The tick period, dt = `ref.sim.tick_period` (0.1 s of game time), is defined in [reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md). A unit timer whose nominal length is given in seconds lasts the reference tick count that its owning tuning table states. That count follows the reference conversion of a countdown that loses 0.1 s per tick and ends at or below 0, so several nominal durations last one tick more than ten ticks per second; the conversion vectors are in AC-UNIT-02. In particular, every unit timer that the reference states as "every 1 s" (the Leader's bot timer, the Transport and Trooper retarget timers) fires every 11 ticks.
+**R-UNIT-005** (MUST) Every unit timer, cooldown, lifetime and per-tick probability is an integer number of ticks or a per-tick value, never a floating-point countdown (DEC-002). The tick period, dt = `ref.sim.tick_period` (0.1 s of game time), is defined in [reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md). A unit timer is the tick count of its owning tuning table; a nominal duration of n seconds lasts the tick count of AC-UNIT-02 (for example 1.0 s is 11 ticks and 5.0 s is 51 ticks), and every unit timer with a nominal period of 1 s (the Leader's bot timer, the Transport and Trooper retarget timers) fires every 11 ticks. The reload interval is the one unit timer that a rule derives from a stat in seconds (R-UNIT-011).
 
 **R-UNIT-006** (MUST) Game speed is tick scheduling: every tick has the same length and the same arithmetic at every game speed, and game speed changes only how many ticks run per unit of real time (DEC-039, [reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md)). Every per-tick constant of the units is therefore a per-second rate scheduled in ticks and scales with game speed like every other rule (DEC-092). The unit rules of this kind are: the Seed Pod's gravity, the spider's pounce gravity, the Transport's fall, the Leader's corpse sink, the centipede's and the Reaper Serpent's per-tick retreat rolls, the ant's per-tick bite, the Crawler's per-tick bite, the Abductor's integration and the sick Worker's per-tick stop roll. The lightning strike roll and the empty-Hive counter, which are not units, follow the same rule in their own documents.
 
@@ -113,7 +113,7 @@ Table 2.1-A Actor kinds.
 
 ### 2.5 Stats
 
-**R-UNIT-011** (MUST) Each actor has three stats: health, speed (wu/s of game time) and rate (seconds between shots, scheduled in ticks). Its kind sets them from the actor stat table (§4.1) when the actor is spawned ([reference/12](../12_simulation_model/03_entity_model_and_identity.md)). Stats are floating-point values, and every speed multiplier (×2, ×1.5, ×0.75, ÷2) applies exactly, without truncation (DEC-090). A unit document that changes a stat for a running actor, such as a Power's speed multiplier, states the multiplier and the condition, and restores the stat from the actor stat table when the effect ends.
+**R-UNIT-011** (MUST) Each actor has three stats: health, speed (wu/s of game time) and rate (seconds between shots). The rate is scheduled in ticks: when the data loads, it is converted to the actor's **reload interval** of rate ÷ `ref.sim.tick_period` ticks, rounded to the nearest tick (DEC-002), so the Worker's 3 s is 30 ticks and a rate of 0 is 0 ticks. Only the Worker and the Trooper fire through the reload gate (R-UNIT-052, R-UNIT-014); the reload interval of every other kind is read by no rule. Its kind sets the stats from the actor stat table (§4.1) when the actor is spawned ([reference/12](../12_simulation_model/03_entity_model_and_identity.md)). Stats are floating-point values, and every speed multiplier (×2, ×1.5, ×0.75, ÷2) applies exactly, without truncation (DEC-090). A unit document that changes a stat for a running actor, such as a Power's speed multiplier, states the multiplier and the condition, and restores the stat from the actor stat table when the effect ends.
 
 **R-UNIT-012** (MUST) An actor's health never exceeds `ref.unit.health_max` (255): every health change clamps the result to it.
 
@@ -121,7 +121,7 @@ Table 2.1-A Actor kinds.
 
 **R-UNIT-014** (MUST) A Trooper's own reload timer uses the per-actor rate `ref.unit.trooper.actor_rate` (0), so the reload gate never delays a single Trooper's shot. The Strike team's fire accumulator reads the Trooper's table rate `ref.unit.trooper.rate` (0.5) ([strike_team.md](strike_team.md)). Both values are kept, so the Strike team's rate of fire is the reference rate under floating-point stats (see DEC-853).
 
-**R-UNIT-015** (MUST) Setting an actor's kind draws its initial reload timer uniformly from [0, rate) from the simulation generator, once per spawn (DEC-652; [reference/12](../12_simulation_model/03_entity_model_and_identity.md)). The reload timer counts down by one tick per tick in the base actor advance and stops at 0; an actor may fire only while it is 0.
+**R-UNIT-015** (MUST) Setting an actor's kind draws its initial reload timer from the simulation generator, once per spawn (DEC-652; [reference/12](../12_simulation_model/03_entity_model_and_identity.md)): one draw u = `NextUnit(rate)`, in seconds, sets the timer to ⌈u ÷ `ref.sim.tick_period`⌉ ticks, so a Worker starts with 0 to 30 ticks and an actor whose rate is 0 starts with 0. The reload timer counts down by one tick per tick in the base actor advance and stops at 0; an actor may fire only while it is 0.
 
 **R-UNIT-016** (MUST) Actor speeds are the stat-table values at difficulty level 0. No process-global difficulty level exists, and no unit rule scales a stat by one (DEC-010). Every unit rule that reads a difficulty factor reads the value 0; the Brood Drifter's egg timing is such a rule ([creatures.md](creatures.md)).
 
@@ -149,7 +149,7 @@ Table 2.1-A Actor kinds.
 
 ### 2.7 Base actor advance per kind
 
-**R-UNIT-024** (MUST) The base actor advance of [reference/12](../12_simulation_model/03_entity_model_and_identity.md) (R-SIM-111) runs for each kind as table 2.7-A states. Following a route in the base advance sets the actor's waypoint to the current route waypoint, moves its spawn point there, steps to the next waypoint once the actor is within `ref.unit.route.trigger_distance` (10 wu) of a waypoint that is not a structure, and clears the route past its end; a waypoint that is a teleport structure is never passed, because the teleport creates the actor anew at its exit and the new actor continues. The Worker follows routes by its own rule ([worker.md](worker.md)).
+**R-UNIT-024** (MUST) The base actor advance of [reference/12](../12_simulation_model/03_entity_model_and_identity.md) (R-SIM-111) runs for each kind as table 2.7-A states. Following a route in the base advance sets the actor's waypoint to the current route waypoint, moves its spawn point there, steps to the next waypoint once the actor is within `ref.sim.route.trigger_distance` (10 wu, [reference/12](../12_simulation_model/05_space_routing_and_physics.md) R-SIM-354) of a waypoint that is not a structure, and clears the route past its end; a waypoint that is a teleport structure is never passed, because the teleport creates the actor anew at its exit and the new actor continues. The Worker follows routes by its own rule ([worker.md](worker.md)).
 
 Table 2.7-A Where each kind runs the base advance.
 
@@ -321,7 +321,7 @@ FireAtPoint(_target):
                                                                    # each component in (-7.5, 7.5)
     from := position + (0, ref.unit.attack.muzzle_height, 0)
     fire a laser bolt from `from` with velocity (aim - from) scaled to ref.unit.attack.laser_speed, for the actor's team
-    reload := rate                                                 # in ticks
+    reload := rate ÷ ref.sim.tick_period                           # the reload interval in ticks (R-UNIT-011)
     justFired := true
     emit presentation event <kind>.attack
 ```
@@ -449,13 +449,13 @@ Diagram 3-C The spawn step as it applies to units ([reference/12](../12_simulati
 
 ### 4.1 Actor stat table
 
-Speeds are at difficulty level 0 (DEC-010). Rates are the seconds between shots; a unit document converts a used rate to ticks.
+Speeds are at difficulty level 0 (DEC-010). Rates are the seconds between shots; R-UNIT-011 converts each rate to its reload interval in ticks.
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
 | `ref.unit.worker.health` | 50 | health | | R-UNIT-011 | DEC-019 |
 | `ref.unit.worker.speed` | 20 | wu/s | | R-UNIT-011 | DEC-019 |
-| `ref.unit.worker.rate` | 3 | s | 30 ticks between shots | R-UNIT-011, R-UNIT-015 | DEC-030 |
+| `ref.unit.worker.rate` | 3 | s | reload interval 30 ticks between shots (rate ÷ `ref.sim.tick_period`) | R-UNIT-011, R-UNIT-015, R-UNIT-052 | DEC-030 |
 | `ref.unit.leader.health` | 255 | health | | R-UNIT-011 | DEC-019 |
 | `ref.unit.leader.speed` | 30 | wu/s | | R-UNIT-011 | DEC-019 |
 | `ref.unit.leader.rate` | 3 | s | unused: a Leader never shoots | R-UNIT-017 | — |
@@ -474,7 +474,7 @@ Speeds are at difficulty level 0 (DEC-010). Rates are the seconds between shots;
 | `ref.unit.builder.rate` | 0 | s | | R-UNIT-011 | — |
 | `ref.unit.bomber.health` | 10 | health | | R-UNIT-011 | — |
 | `ref.unit.bomber.speed` | 40 | wu/s | its cruise speed is a multiple of this stat ([hazards_and_projectiles.md](hazards_and_projectiles.md)) | R-UNIT-011 | — |
-| `ref.unit.bomber.rate` | 1 | s | | R-UNIT-011 | — |
+| `ref.unit.bomber.rate` | 1 | s | unused: a Bomber drops one bomb and never reloads | R-UNIT-011, R-UNIT-017 | — |
 | `ref.unit.barrage_missile.health` | 255 | health | | R-UNIT-011 | — |
 | `ref.unit.barrage_missile.speed` | 100 | wu/s | its flight speed rises from half of this to this ([hazards_and_projectiles.md](hazards_and_projectiles.md)) | R-UNIT-011 | — |
 | `ref.unit.barrage_missile.rate` | 0 | s | | R-UNIT-011 | — |
@@ -520,7 +520,6 @@ Speeds are at difficulty level 0 (DEC-010). Rates are the seconds between shots;
 | `ref.unit.corpse.fade_start` | 100 | health | the health field of a new corpse | R-UNIT-026, R-UNIT-034 | DEC-002 |
 | `ref.unit.corpse.fade_ground_per_tick` | 4 | health per tick | 25 ticks (2.5 s) to removal | R-UNIT-034 | DEC-002 |
 | `ref.unit.corpse.fade_air_per_tick` | 2 | health per tick | 50 ticks (5.0 s) to removal | R-UNIT-034, R-UNIT-036 | DEC-313 |
-| `ref.unit.route.trigger_distance` | 10 | wu | base route following | R-UNIT-024 | — |
 | `ref.unit.attack.aim_jitter` | 15 | wu | `NextSigned(15)`: (−7.5, 7.5) on x and on z | R-UNIT-052 | DEC-030 |
 | `ref.unit.attack.muzzle_height` | 3 | wu | above the shooter's position | R-UNIT-052 | — |
 | `ref.unit.attack.laser_speed` | 150 | wu/s | about 90 wu of range at a 0.6 s bolt life | R-UNIT-052 | DEC-111 |
@@ -574,12 +573,9 @@ This index is informative and defines no tuning key. It lists the named constant
 | centipede: maximum size | 20 segments | [creatures.md](creatures.md) |
 | spider: legs | 8 | [creatures.md](creatures.md) |
 | spider: foot move threshold, emergency threshold | 5 wu, 12 wu | [creatures.md](creatures.md) |
-| spider: foot damage radius, foot damage strength | 20 wu, 10 | [creatures.md](creatures.md) |
 | spider: hover height, turn rate | 3 wu, 0.1 | [creatures.md](creatures.md) |
-| spider: normal speed, attack speed | 300, 90 | [creatures.md](creatures.md) |
 | spider: highest path height | 100 wu | [creatures.md](creatures.md) |
 | spider: attack search range | 100 wu to 250 wu | [creatures.md](creatures.md) |
-| spider: attack preamble | 5 s | [creatures.md](creatures.md) |
 | spider: Essence orb search range | 30 wu to 100 wu | [creatures.md](creatures.md) |
 | Reaper Serpent: search range | 200 wu to 300 wu | [creatures.md](creatures.md) |
 | Reaper Serpent: damage range | 25 wu | [creatures.md](creatures.md) |
@@ -660,7 +656,7 @@ This index is informative and defines no tuning key. It lists the named constant
 
 **AC-UNIT-01 — Stat table completeness** (R-UNIT-001, R-UNIT-011). Given the content build, when the actor stat schema is validated, then every kind of table 2.1-A has exactly one record with health, speed and rate, a kind without a record fails the build, and no record names a kind outside table 2.1-A.
 
-**AC-UNIT-02 — Timer conversion** (R-UNIT-005). A nominal duration counted down by 0.1 s per tick until it is at or below 0 lasts these tick counts, and each unit tuning table that states such a duration in seconds lists this count:
+**AC-UNIT-02 — Timer conversion** (R-UNIT-005). A unit timer of each nominal duration lasts this tick count, and each unit tuning table that shows such a duration in seconds lists this count:
 
 | Nominal duration (s) | Ticks |
 |---|---|
@@ -733,6 +729,7 @@ The ring grows by 4 wu per tick, so a stationary target at distance d is hit onc
 | DEC-311 | Bot controller as a target | the Worker threat search does not exclude it (R-UNIT-056) |
 | DEC-313 | Dead airborne actors | corpses sink and still count (R-UNIT-036) |
 | DEC-079 | Per-team population cap | the bot controller counts towards its team (R-UNIT-056) |
+| DEC-084 | Hive Essence orbs and Hive ants | the Rogue faction releases no Essence orb (R-UNIT-038) |
 | DEC-202 | Command validation and authority | handlers check the named actor (R-UNIT-055) |
 | DEC-852 | Game-speed divisors in Worker rules | the Worker rules keep their division by the game speed (R-UNIT-007) |
 | DEC-853 | Worker and Trooper rule details | a Trooper's own reload is 0 while the Strike team reads the table rate of 0.5 (R-UNIT-014) |
@@ -740,4 +737,4 @@ The ring grows by 4 wu per tick, so a stationary target at distance d is hit onc
 | DEC-963 | Animation and VFX reference looks kept as defaults | the damage flicker is evaluated once per tick period (R-UNIT-051) |
 | DEC-453 | Population-cap enforcement points and uncapped sources | the spawn step tests no cap (R-UNIT-021); a Collector delivery is capped, a Builder delivery is not (§5.3) |
 
-Resolved and Dropped decisions applied here: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-010, DEC-013, DEC-019, DEC-039, DEC-062, DEC-080, DEC-084, DEC-085, DEC-090, DEC-092, DEC-093, DEC-107, DEC-117, DEC-652, DEC-653.
+Resolved and Dropped decisions applied here: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-010, DEC-013, DEC-019, DEC-039, DEC-062, DEC-080, DEC-085, DEC-090, DEC-092, DEC-093, DEC-107, DEC-117, DEC-652, DEC-653.

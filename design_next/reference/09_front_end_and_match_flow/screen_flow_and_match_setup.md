@@ -185,7 +185,7 @@ The order of this table carries no meaning.
 
 ### 2.9 Map-select page
 
-**R-META-034** (MUST) Setting up the map-select page loads the thumbnails of the current mode's maps. The reference loads them on the loading view's loader, with the loading view's spinner drawn over the menu while they load ([front_end_presentation.md](front_end_presentation.md) R-META-219); in Species previews load in the background (DEC-226 item 9).
+**R-META-034** (MUST) Setting up the map-select page loads the thumbnails of the current mode's maps; while they load, the loading view's spinner is drawn over the menu ([front_end_presentation.md](front_end_presentation.md) R-META-219; see DEC-226 item 9).
 
 **R-META-035** (MUST) While a mode press is pending and the match setup's mode differs from the pressed mode, setting up the page builds an empty page, and the page is set up again every frame until the two match.
 
@@ -307,7 +307,7 @@ The match setup page is one page for single-player set-up, the host's lobby and 
 
 When the player chose a session in the browser, a details block follows at `ref.meta.connect.details_scale` (0.5) × the font, its rows `ref.meta.connect.details_row_step` (0.7) × the font apart and its values `ref.meta.connect.details_value_x` (200 px) right of the labels: `ui.connecting.host` with the session name (by default the host's player name, else `ui.settings.default_session_name`, R-META-451), `ui.connecting.address` with `ui.connecting.address_value` (the address and port actually contacted), `ui.connecting.mode` with the mode's name, `ui.connecting.map` with the map's name and `ui.connecting.players` with "n/max". All text is drawn twice, the outline first and then the fill.
 
-**R-META-056** (MUST) The connecting page goes to the match setup page once the state is connected and the match setup's mode is known; the match setup page may then wait for a team slot (R-META-043 step 2). The page has no timeout: it waits until the player presses Back or the participant is removed (DEC-205).
+**R-META-056** (MUST) The connecting page goes to the match setup page once the state is connected and the match setup's mode is known; the match setup page may then wait for a team slot (R-META-043 step 2). While the participant connects, the page has no timeout: it waits until the player presses Back or the participant is removed (DEC-205). Once the participant has received a message from the host, the host-silence rule of R-META-059 also ends the wait.
 
 **R-META-057** (MUST) The wait-for-start page is an empty page with the default left box. The host shows it from the moment it issues `StartMatch` until the match-start command executes, so that the automatic start (R-META-087) issues the command only once.
 
@@ -327,6 +327,7 @@ When the player chose a session in the browser, a details block follows at `ref.
 | the participant id arrives twice | `ui.error.connection` | title |
 | joined as a spectator where spectators are not allowed | `ui.error.session_full` | session browser |
 | the session removes the participant's own id | `ui.error.session_full` | title |
+| a joining participant that has received a message from the host receives none for `ref.meta.connect.host_silence_limit` (5.0 s of real time): it ends its session, on any page and in a match (DEC-205) | `ui.error.connection` | title |
 | any other removal reason | none: the front end goes straight to the title page | — |
 
 ### 2.14 Credits page
@@ -348,7 +349,7 @@ The content and the string ids of the help pages are [reference/11](../11_tutori
 
 ### 2.16 In-match menus and dialogs
 
-**R-META-062** (MUST) The menu action `action.match.menu` opens the in-match menu once the match's fade-in has finished and no tutorial script runs, when no UI window is open and the Power slots panel is hidden ([reference/06](../06_controls_camera_and_commands/actions_and_bindings.md) row M4, [reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-581 step 5). Opening it sets the camera's debug mode to automatic, a camera mode that [reference/06](../06_controls_camera_and_commands/camera.md) does not specify (DEC-024), and hides the interface. The menu does not pause the match, and a lost window focus does not hold the world either (R-SIM-581 step 7).
+**R-META-062** (MUST) The menu action `action.match.menu` opens the in-match menu once the match's fade-in has finished and no tutorial script runs, when no UI window is open and the Power slots panel is hidden ([reference/06](../06_controls_camera_and_commands/actions_and_bindings.md) row M4, [reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-581 step 5). Opening it hides the interface. The menu does not pause the match, and a lost window focus does not hold the world either (R-SIM-581 step 7).
 
 **R-META-063** (MUST) The in-match menu holds:
 
@@ -367,7 +368,7 @@ The content and the string ids of the help pages are [reference/11](../11_tutori
 
 ### 2.17 Match setup options
 
-**R-META-067** (MUST) The mode options are the typed per-mode schemas of [reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-073 to R-MODE-077, with explicit defaults per mode (DEC-073); that document owns their labels, ranges, steps, defaults and meanings. The reference match setup holds the options of the current mode as an array of `ref.meta.setup.mode_option_slots` (64) integer entries, indexed by the option's position in the mode's display order (DEC-243 item 10). The advanced options page shows them in that order (R-META-046). For readability, the values of R-MODE-074 are repeated here:
+**R-META-067** (MUST) The mode options are the typed per-mode schemas of [reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-073 to R-MODE-077, with explicit defaults per mode (DEC-073); that document owns their labels, ranges, steps, defaults and meanings. The advanced options page shows them in the mode's display order (R-META-046). For readability, the values of R-MODE-074 are repeated here:
 
 | Mode | Options in display order: control, range and step, default |
 |---|---|
@@ -397,9 +398,8 @@ Siege has no time limit, so a map's play time does not apply to it; its player o
 | colour or side | player options page | the eight colours, or random, attackers and defenders in Siege (§2.21) | each player |
 | open or closed slot | match setup page slot control (R-META-090) | open by default (DEC-079) | the host |
 | seasonal theme | no control (§2.25) | the host's date rule (DEC-101) | nobody |
-| research levels | no page | overwritten at every match start (DEC-115) | nobody |
 
-**R-META-070** (MUST) The match setup holds research levels, which no page offers. Match start overwrites them with the fixed match levels ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-082; DEC-115), so they have no effect.
+**R-META-070** (removed: research levels, which the match setup does not carry; the fixed match levels are reference/01 R-MODE-082, DEC-115)
 
 ### 2.18 Who can change what
 
@@ -440,7 +440,7 @@ Siege has no time limit, so a map's play time does not apply to it; its player o
 | error message, error back page | §2.13 | none, none |
 | session browser state | DEC-245 | — |
 
-**R-META-074** (MUST) The match setup that every participant shares holds what a match needs (DEC-243 item 10): the mode; the map, by map id; the mode options; the research levels; the bot difficulty; the co-op flag; the single-round Siege flag; the basic-crates-only flag; for each player slot, its owner, kind, name, colour, ready flag and whether it is open (DEC-079); the chat; the achievement masks ([options_localisation_and_hooks.md](options_localisation_and_hooks.md)); the seasonal state (DEC-118); the password; and the start. Choosing a mode sets every mode option to its default, and choosing a map sets the time limit (R-META-031, R-META-041).
+**R-META-074** (MUST) The match setup that every participant shares holds what a match needs (DEC-243 item 10): the mode; the map, by map id; the mode options; the bot difficulty; the co-op flag; the single-round Siege flag; the basic-crates-only flag; for each player slot, its owner, kind, name, colour, ready flag and whether it is open (DEC-079); the chat; the achievement masks ([options_localisation_and_hooks.md](options_localisation_and_hooks.md)); the seasonal state (DEC-118); the password; and the start. Choosing a mode sets every mode option to its default, and choosing a map sets the time limit (R-META-031, R-META-041).
 
 **R-META-075** (MUST) Under the reference default every option, and every element of the option arrays, carries a version number. A change carries the version that the sender's copy holds + 1, and a participant applies it only when that version is greater than the stored one, and then stores it (DEC-243 item 5). Whether Species keeps this model or an authority-owned snapshot is DEC-243.
 
@@ -503,7 +503,7 @@ A taken row is inactive and drawn with a grey swatch of `ref.meta.colour_row.tak
 
 ### 2.23 Leaving the match setup page
 
-**R-META-092** (MUST) The Back button of a joining player whose slot is ready, while its session is not lagging, with the last message from the host less than `ref.meta.setup.leave_lag_threshold` (5.0 s) ago, does not leave at once. It sets the leaving-while-ready flag and withdraws readiness (`ToggleReady`). Every frame the page then waits until some used slot and the local slot are not ready, and then ends the participant's session, clears the at-match-setup flag and the chosen map, goes to the title page, not to the Back button's page, and clears the chat log and the password.
+**R-META-092** (MUST) The Back button of a joining player whose slot is ready, while its session is not lagging, with the last message from the host less than `ref.meta.setup.leave_lag_threshold` (5.0 s) ago, does not leave at once. It sets the leaving-while-ready flag and withdraws readiness (`ToggleReady`). Every frame the page then waits until some used slot and the local slot are not ready, and then ends the participant's session, clears the at-match-setup flag and the chosen map, goes to the title page, not to the Back button's page, and clears the chat log and the password. When the host falls silent during the wait, the host-silence rule of R-META-059 ends it: the session ends and the error page shows `ui.error.connection` with the title page as its back page (DEC-205).
 
 **R-META-093** (MUST) Any other multiplayer Back ends the session at once: a joining player leaves it, and on the host the session ends for everyone. It then clears the at-match-setup flag and the chosen map, goes to its page with the menu-back cue and a backwards transition, and clears the chat log and the password.
 
@@ -759,7 +759,9 @@ flowchart TD
     B -- "no" --> C{"Joining player, ready, and the host heard from within 5.0 s?"}
     C -- "yes" --> D["Leaving-while-ready flag; withdraw readiness"]
     D --> E{"Some used slot and the local slot not ready?"}
-    E -- "no" --> E
+    E -- "no" --> H{"Host silent for 5.0 s?"}
+    H -- "no" --> E
+    H -- "yes" --> X["End the session; error page ui.error.connection, back to the title page"]
     E -- "yes" --> F["End the session; to the title page; clear chat and password"]
     C -- "no" --> G["End the session at once; to the Back button's page with the menu-back cue; clear chat and password"]
 ```
@@ -774,7 +776,8 @@ stateDiagram-v2
     Handshaking --> Connected : caught up, team requests allowed
     Connected --> MatchSetupPage : mode known
     Connecting --> Disconnected : removed or back
-    Handshaking --> Disconnected : removed or back
+    Handshaking --> Disconnected : removed, back, or host silent for 5.0 s
+    Connected --> Disconnected : host silent for 5.0 s
     Disconnected --> [*]
 ```
 
@@ -820,7 +823,6 @@ Every value is presentation unless the notes say otherwise; real-time values are
 | `ref.meta.setup.slot_control_x` | 1.05 | × the slot width, right of bx | kick and open-and-close controls | R-META-044 | DEC-079 |
 | `ref.meta.setup.slot_control_size` | 0.75 | × bh, square | | R-META-044 | — |
 | `ref.meta.setup.mode_card_height` | 0.3 | × bw | | R-META-044 | — |
-| `ref.meta.setup.mode_option_slots` | 64 | entries | the reference array of mode options | R-META-067 | DEC-243 |
 | `ref.meta.setup.max_spectators` | 0 | places | advertised spectator places | R-META-091 | DEC-244 |
 | `ref.meta.setup.leave_lag_threshold` | 5.0 | s of real time since the host's last message | below it, a ready joining player leaves by withdrawing readiness first | R-META-092 | DEC-205 |
 | `ref.meta.option_controls.control_height` | 0.65 | × bh | advanced options and player options pages | R-META-046, R-META-051 | — |
@@ -835,6 +837,7 @@ Every value is presentation unless the notes say otherwise; real-time values are
 | `ref.meta.connect.details_scale` | 0.5 | × the font | | R-META-055 | — |
 | `ref.meta.connect.details_row_step` | 0.7 | × the font | | R-META-055 | — |
 | `ref.meta.connect.details_value_x` | 200 | px | right of the labels | R-META-055 | — |
+| `ref.meta.connect.host_silence_limit` | 5.0 | s of real time since the host's last message | a joining participant that has heard from the host and then hears nothing for this long ends its session | R-META-059, R-META-056, R-META-092 | DEC-205 |
 | `ref.meta.error.message_y` | 0.5 × bh + 2 × bh | below lY | the error message | R-META-058 | — |
 | `ref.meta.credits.text_box` | (bx, lY + 1.8 × bh), bw by lH − 1.5 × bh − 1.3 × bh − bh − 2 × button gap | px | the scrolling credits | R-META-060 | — |
 | `ref.meta.credits.heading_scale` | 1.25 | × the small font | section headings | R-META-060 | — |
@@ -1001,7 +1004,7 @@ String ids cited from other documents: `mode.<mode>.name`, `mode.<mode>.objectiv
 5. **Slot 0.** A remote human in slot 0 has no kick control (R-META-089).
 6. **Leaving while ready.** A ready joining player who presses Back first withdraws readiness and then lands on the title page, not on the host-or-join page (R-META-092). With the host silent for 5.0 s or more, it leaves at once.
 7. **Unreported removals.** A removal reason without a message sends the player to the title page without an error page; DEC-244 item 11 asks that every failed join report a reason (R-META-059).
-8. **No connecting timeout.** The connecting page waits until Back or a removal (R-META-056).
+8. **No connecting timeout.** The connecting page waits until Back or a removal while the participant connects; once the host has answered, 5.0 s of host silence ends the session with `ui.error.connection` (R-META-056, R-META-059).
 9. **The chat rename.** "/name " and "/rename " are found anywhere in a line but the name is taken from a fixed index, and a line holding "//" is never a rename (R-META-101, DEC-868).
 10. **Sudden death and the time limit.** Setting the time limit to "no limit" forces sudden death off and disables it; leaving "no limit" forces it back on, whatever the host had chosen before (R-META-049).
 11. **Siege side rows.** The taken test never counts the local slot and is computed once per update, so a row drawn as free accepts the press: on a 3-player map a defender pressing the defender row again counts no other defender and keeps its side (R-META-080, DEC-102).
@@ -1036,6 +1039,7 @@ String ids cited from other documents: `mode.<mode>.name`, `mode.<mode>.objectiv
 - **AC-META-20** (R-META-102) Given the host's local date of 25 December, then the match setup records the seasonal theme as on for every participant; given 27 December, then off, whatever the joining players' dates.
 - **AC-META-21** (R-META-062, R-META-063) Given a running match with a remote human, when the menu action is pressed with no window open, then the in-match menu opens, the interface hides and the match is not paused; when leave is pressed, then the leave confirmation opens; after game over, leave leaves at once.
 - **AC-META-22** (R-META-002, R-META-074) Given any page, when the player changes any match setup setting, then the change reaches the match setup only as a match-setup command, and no front-end code writes simulation state.
+- **AC-META-23** (R-META-056, R-META-059, R-META-092) Given a ready joining player waiting to leave the match setup page, when the host sends nothing for 5.0 s, then the session ends and the error page shows `ui.error.connection` with Back to the title page; given a participant still connecting with no answer from the host, then the connecting page keeps waiting.
 
 ## 7 Dependencies
 
@@ -1049,9 +1053,8 @@ Open decisions whose reference default this document specifies:
 
 - DEC-048 — a post-match results screen; the hooks only (R-META-012, R-META-104, R-META-105).
 - DEC-101 — the seasonal theme; the host's date rule meanwhile (R-META-102).
-- DEC-115 — the fixed match research levels (R-META-070).
 - DEC-202 — command validation and authority (R-META-072).
-- DEC-205 — join, leave and session continuity: the connecting states and the leave threshold (R-META-055, R-META-056, R-META-092).
+- DEC-205 — join, leave and session continuity: the connecting states, the leave threshold and the host-silence limit (R-META-055, R-META-056, R-META-059, R-META-092).
 - DEC-221 — the application state machine; the screen flow is reference behaviour (R-META-005, R-META-065).
 - DEC-241 — integer option values with inclusive bounds (R-META-048).
 - DEC-243 — lobby authority, the match-setup state and the option versions (R-META-029, R-META-031, R-META-067, R-META-072, R-META-074, R-META-075, R-META-090).

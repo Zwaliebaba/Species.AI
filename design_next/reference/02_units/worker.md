@@ -18,7 +18,7 @@ The Worker's stats are in the actor stat table of [README.md](README.md) §4.1: 
 
 **R-UNIT-059** (MUST) A Worker spawned with zero velocity draws a random horizontal front: two simulation draws `NextSigned(1)`, first for x and then for z, give the vector (x, 0, z), which is normalised. The Workers spawned with zero velocity are those of the match-start port fill and of the Abductor's drop. Every other creator passes a velocity, so the Worker faces along it and makes no front draw: the Reinforcements outcome, which then clears the vertical component of the front; Seed Pods of the Worker kind; Spawn Node doors ([reference/05](../05_population_flow.md)); Transit Gate reinforcements; the passengers released from a Launch Vessel; and demotions and conversions, which pass the velocity of the actor they replace.
 
-**R-UNIT-060** (MUST) A Worker's spawn step makes its draws in this order, each once per spawn (DEC-652): the initial reload timer, uniform in [0, `ref.unit.worker.rate`) (README R-UNIT-015); the first grenade timer `ref.unit.worker.grenade_first_ticks`; the idle timer, `ref.unit.worker.idle_timer` + `NextUnit(60)` seconds; then the spawn-position search and the front draw of R-UNIT-059.
+**R-UNIT-060** (MUST) A Worker's spawn step makes its draws in this order, each once per spawn (DEC-652): the initial reload timer, from `NextUnit(ref.unit.worker.rate)` (README R-UNIT-015, 0 to 30 ticks); the first grenade timer `ref.unit.worker.grenade_first_ticks`; the idle timer, `ref.unit.worker.idle_timer` (600 ticks) + ⌊`NextUnit(60)` ÷ `ref.sim.tick_period`⌋ ticks; then the spawn-position search and the front draw of R-UNIT-059.
 
 **R-UNIT-061** (MUST) The Worker's spawn hook raises `worker.spawn`, sets the Worker on the ground, sets its waypoint to its position, sets its centre to `ref.unit.worker.centre_height` (2 wu) above its position and its radius to `ref.unit.worker.radius` (4 wu), and sets its **Visitor flag** when its team is the Visitor faction or the map option that names a Visitor team position names this team's position. A creator that wants an airborne Worker clears the on-ground flag after the spawn step ([reference/05](../05_population_flow.md) states which creators do). The Worker's distance scale factor is presentation state, read from the player's display setting, and no simulation rule reads it (DEC-010).
 
@@ -72,7 +72,7 @@ Table 2.2-A Worker state.
 1. If its destroyed flag or its promoted flag is set, request removal and stop; no Essence orb is released.
 2. Run the base actor advance (README R-UNIT-024): the corpse fade if it is dead, the reload countdown, the presentation flicker, the world clamp, and route following while it has a route.
 3. If it is alive, on the ground and not Burning:
-   1. count the retarget timer down by one tick; when it is at or below 0, run the task search (§2.5); if the Worker is then Idle, run the victory celebration test (R-UNIT-088); and set the retarget timer to `ref.unit.worker.retarget_ticks` (11 + ⌊10 × `NextUnit(1)`⌋, that is 11 to 20 ticks);
+   1. count the retarget timer down by one tick; when it is at or below 0, run the task search (§2.5); if the Worker is then Idle, run the victory celebration test (R-UNIT-088); and set the retarget timer to `ref.unit.worker.retarget_ticks` (11 + ⌊`NextUnit(1)` ÷ `ref.sim.tick_period`⌋, that is 11 to 20 ticks);
    2. set the idle timer to `ref.unit.worker.idle_timer`;
    3. run the per-tick behaviour of its state (§2.4) for every state except Drowning, CaughtInVortex and InAbductionBeam; a Burning Worker never reaches this step.
 4. In every case, airborne or dead included: in CaughtInVortex run the vortex step (R-UNIT-083); in InAbductionBeam run the abduction step (R-UNIT-084).
@@ -96,24 +96,26 @@ Table 2.4-A Worker behaviour states.
 | State | Entered by | Per-tick behaviour | Exits |
 |---|---|---|---|
 | Idle | the default; most failure paths | R-UNIT-068 | by the task search |
-| ToPort | the port search | R-UNIT-069 | Idle, Manning |
-| Manning | arrival at a port; the match-start port fill | R-UNIT-070 | Idle |
-| ToTransport | the Transport search; a crowd order onto a Transport | R-UNIT-071 | Idle, InTransport |
+| ToPort | the port search | R-UNIT-069 | Idle, Manning; and the targets of its searches in table 2.5-A (R-UNIT-087): Fighting, AttackingStructure |
+| Manning | arrival at a port; the match-start port fill | R-UNIT-070 | Idle; and Fighting or AttackingStructure by the threat search while the player-orders flag is set (R-UNIT-089) |
+| ToTransport | the Transport search; a crowd order onto a Transport | R-UNIT-071 | Idle, InTransport; and the targets of its searches in table 2.5-A (R-UNIT-087): Fighting, AttackingStructure, ToPort, ToCarryable |
 | InTransport | arrival at a Transport | R-UNIT-072 | Idle, Burning |
-| OnWaypointOrder | a waypoint order (R-UNIT-111); a Leader signpost or a pending order in the Leader search | R-UNIT-073 | Idle |
-| FollowingLeader | the Leader search, for a Leader in follow mode | R-UNIT-074 | Idle |
-| Fighting | a successful threat search; Sickness insanity | §2.8 | FollowingLeader when its Leader is still valid, otherwise Idle |
+| OnWaypointOrder | a waypoint order (R-UNIT-111); a Leader signpost or a pending order in the Leader search | R-UNIT-073 | Idle; and the targets of its searches in table 2.5-A (R-UNIT-087): Fighting, AttackingStructure, ToPort, ToCarryable |
+| FollowingLeader | the Leader search, for a Leader in follow mode | R-UNIT-074 | Idle; and the targets of its searches in table 2.5-A (R-UNIT-087): Fighting, AttackingStructure, ToPort, ToCarryable |
+| Fighting | a successful threat search; Sickness insanity | §2.8 | FollowingLeader when its Leader is still valid, otherwise Idle; and the targets of its searches in table 2.5-A (R-UNIT-087): AttackingStructure |
 | CarriedByAnt | an ant's capture ([creatures.md](creatures.md)) | R-UNIT-075 | Idle, death |
 | BoardingVessel | a fuel depot or a Launch Vessel calling it to board (Launch Race) | R-UNIT-076 | Idle, removal |
 | AttackingStructure | a Launch Vessel calling it to attack; the Hive and Spitter Plant check of the threat search | R-UNIT-077 | Idle |
 | Burning | being set on fire (R-UNIT-121) | R-UNIT-079 | death only |
 | Drowning | its y falling below sea level | R-UNIT-080 | death only |
-| ToCarryable | the carryable search | R-UNIT-081 | Idle, Carrying |
+| ToCarryable | the carryable search | R-UNIT-081 | Idle, Carrying; and the targets of its searches in table 2.5-A (R-UNIT-087): Fighting, AttackingStructure |
 | Carrying | its carryable structure becoming its team's | R-UNIT-082 | Idle |
-| OpeningCrate | the Supply crate search | R-UNIT-078 | Idle |
+| OpeningCrate | the Supply crate search | R-UNIT-078 | Idle; and the targets of its searches in table 2.5-A (R-UNIT-087): Fighting, AttackingStructure |
 | CaughtInVortex | a dust vortex ([reference/08](../08_maps_and_level_design/README.md)) | R-UNIT-083 | Idle |
 | InAbductionBeam | an Abductor's beam ([hazards_and_projectiles.md](hazards_and_projectiles.md)) | R-UNIT-084 | removal, Idle |
 | ClaimingFlag | the flag search (Flag Chain) | R-UNIT-085 | Idle |
+
+The threat search ends in Fighting or, by its Hive and Spitter Plant check, in AttackingStructure (R-UNIT-098). While the player-orders flag is set, the task search runs the threat search in every state other than Idle in which it runs (R-UNIT-089), so each of those states can also exit to Fighting or AttackingStructure.
 
 **R-UNIT-068** (MUST) **Idle.** The Worker walks towards its waypoint at the Idle speed (R-UNIT-063); the random-position search of R-UNIT-097 sets that waypoint. The Worker leaves Idle only through the task search.
 
@@ -234,7 +236,7 @@ Each waypoint passes through the obstacle push with kill set (R-UNIT-115) and is
 
 The divisions by *s* are never evaluated at *s* = 0 and carry an explicit guard (DEC-653).
 
-**R-UNIT-104** (MUST) **Grenades and rockets.** A Worker may throw while it carries grenades (R-UNIT-062), is not in a formation, has no Convert link, is not a Visitor faction Worker, and is not in the second tutorial before that tutorial's bot is released ([reference/11](../11_tutorial_and_help.md)). Each Fighting tick it counts its grenade timer down by one tick; when it is at or below 0 the timer is reset to `ref.unit.worker.grenade_interval_ticks` (121 + ⌊10 × `NextUnit(8)`⌋, that is 121 to 200 ticks) and the Worker decides:
+**R-UNIT-104** (MUST) **Grenades and rockets.** A Worker may throw while it carries grenades (R-UNIT-062), is not in a formation, has no Convert link, is not a Visitor faction Worker, and is not in the second tutorial before that tutorial's bot is released ([reference/11](../11_tutorial_and_help.md)). Each Fighting tick it counts its grenade timer down by one tick; when it is at or below 0 the timer is reset to `ref.unit.worker.grenade_interval_ticks` (121 + ⌊`NextUnit(8)` ÷ `ref.sim.tick_period`⌋, that is 121 to 200 ticks) and the Worker decides:
 
 1. an insane Worker always throws, whatever the range, terrain and target;
 2. otherwise the threat must be farther than `ref.unit.worker.grenade_min_distance` (75 wu), the terrain normals under the Worker and under the threat must both have a y component above `ref.unit.worker.grenade_normal_min` (0.7), and the Worker's height minus the threat's height must be above `ref.unit.worker.grenade_height_diff_min` (−50 wu);
@@ -257,13 +259,13 @@ MoveToWaypoint():
         velocity := (waypoint - position) / dt; position := waypoint; return false   # arrival reported next tick
     speed := current speed stat
     if state == Idle: speed *= ref.unit.worker.idle_speed_factor
-    dir := normalise(front * (1 - ref.unit.worker.turn_blend) + unit(waypoint - position) * ref.unit.worker.turn_blend)
+    dir := Normalize(front * (1 - ref.unit.worker.turn_blend) + Normalize(waypoint - position) * ref.unit.worker.turn_blend)
     speed *= slope factor (README table 2.11-A)
     if d < ref.unit.worker.arrival_slow_radius: speed *= d / ref.unit.worker.arrival_slow_radius
     newPos := WorkerPush(position + dir * speed * dt, _kill = true)
     clamp newPos - position to length speed * dt
     velocity := (newPos - position) / dt
-    front := normalise(newPos - position)
+    front := Normalize(newPos - position)
     position := newPos
     return false
 ```
@@ -347,7 +349,7 @@ A friendly or disabled emitter is passed through.
 
 **R-UNIT-126** (MUST) **Convert.** A Worker's Convert link, its convert tag, is set only by the Convert Power: placing the Power tags the placing team's own Workers within the Power's effect range; the Power lasts 30 s and ends early when no tagged Worker remains; and a Worker clears its tag once the Power has ended (DEC-331). A tagged Worker fires Convert laser bolts, which convert an enemy Worker they hit into a Worker of the shooter's team without an Essence orb ([reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md)), throws no grenades, and is drawn with the state overlay (R-UNIT-147). A converted Worker cross-fades from its previous team's colour over `ref.unit.worker.convert_fade` (4 s), which is presentation state.
 
-**R-UNIT-127** (MUST) **Sickness infection.** The Sickness outcome infects the Workers within its radius ([reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md)), and sick Workers spread it. Infecting a healthy Worker makes it sick: its Sickness timer becomes 1 + ⌊10 × `NextUnit(10)`⌋ ticks (`ref.unit.worker.sickness_first_ticks`, 1 to 100) and its speed stat is multiplied by `ref.unit.worker.sickness_speed_factor` (0.75). Infecting a sick or immune Worker changes nothing.
+**R-UNIT-127** (MUST) **Sickness infection.** The Sickness outcome infects the Workers within its radius ([reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md)), and sick Workers spread it. Infecting a healthy Worker makes it sick: its Sickness timer becomes 1 + ⌊`NextUnit(10)` ÷ `ref.sim.tick_period`⌋ ticks (`ref.unit.worker.sickness_first_ticks`, 1 to 100) and its speed stat is multiplied by `ref.unit.worker.sickness_speed_factor` (0.75). Infecting a sick or immune Worker changes nothing.
 
 **R-UNIT-128** (MUST) A sick Worker stops dead on a tick of its movement with a chance of 1 in `ref.unit.worker.sick_stop_odds` (20) (R-UNIT-105). Rockets that a sick Worker fires carry the spiral flight flag ([reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md)).
 
@@ -355,7 +357,7 @@ A friendly or disabled emitter is passed through.
 
 **R-UNIT-130** (MUST) **Sickness step.** Each tick a sick Worker counts its Sickness timer down by one tick; when it is at or below 0:
 
-1. the timer is reset to `ref.unit.worker.sickness_interval_ticks` (51 + ⌊10 × `NextUnit(5)`⌋, that is 51 to 100 ticks);
+1. the timer is reset to `ref.unit.worker.sickness_interval_ticks` (51 + ⌊`NextUnit(5)` ÷ `ref.sim.tick_period`⌋, that is 51 to 100 ticks);
 2. every live Worker of any team within `ref.unit.worker.sickness_spread_radius` (30 wu), in actor-grid result order, draws `NextUint` and is infected (R-UNIT-127) when the draw is divisible by 2;
 3. the Worker draws o = `NextUint` mod `ref.unit.worker.sickness_roll` (20) and applies table 2.11-A.
 
@@ -366,7 +368,7 @@ Table 2.11-A Sickness outcomes.
 | 0 | an explosion of range `ref.unit.worker.sickness_blast_range` (5 wu) and damage `ref.unit.worker.sickness_blast_damage` (25) for no team at its position, then a health change of −`ref.unit.worker.sickness_damage` (100) |
 | 1 | a health change of −`ref.unit.worker.sickness_damage` (100) |
 | 2 | its speed stat × `ref.unit.worker.sickness_slow_factor` (0.5) |
-| 3 | paralysed for `ref.unit.worker.paralysis_ticks` (51 + ⌊10 × `NextUnit(10)`⌋, that is 51 to 150 ticks) |
+| 3 | paralysed for `ref.unit.worker.paralysis_ticks` (51 + ⌊`NextUnit(10)` ÷ `ref.sim.tick_period`⌋, that is 51 to 150 ticks) |
 | 4 | insane, and it becomes Fighting |
 | 5, 6 | immune: its speed returns to the stat-table speed and it no longer spreads Sickness |
 | 7 to 19 | nothing |
@@ -468,7 +470,7 @@ Table 2.15-A Worker sound events.
 
 ### 2.16 Convert shots
 
-**R-UNIT-196** (MUST) A Convert shot fires a Convert laser bolt at a target point under the reload gate of the base attack (README R-UNIT-052): when the reload timer is 0, the aim point gains (`NextSigned(ref.unit.attack.aim_jitter)`, 0, `NextSigned(ref.unit.attack.aim_jitter)`), x before z; the bolt leaves from the Worker's position + (0, `ref.unit.worker.convert_muzzle_height`, 0) (2 wu up) with velocity towards the aim point scaled to `ref.unit.worker.convert_speed` (75 wu/s), for the Worker's team, and lives `ref.unit.worker.convert_life_factor` (2) × the laser bolt's lifetime, that is 1.2 s at laser level 2, so it reaches about 90 wu; the reload timer becomes the Worker's rate; and `worker.attack` is raised. The bolt converts an enemy Worker it hits instead of damaging it ([reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md); DEC-111 for the derived range).
+**R-UNIT-196** (MUST) A Convert shot fires a Convert laser bolt at a target point under the reload gate of the base attack (README R-UNIT-052): when the reload timer is 0, the aim point gains (`NextSigned(ref.unit.attack.aim_jitter)`, 0, `NextSigned(ref.unit.attack.aim_jitter)`), x before z; the bolt leaves from the Worker's position + (0, `ref.unit.worker.convert_muzzle_height`, 0) (2 wu up) with velocity towards the aim point scaled to `ref.unit.worker.convert_speed` (75 wu/s), for the Worker's team, and lives `ref.unit.worker.convert_life_factor` (2) × the laser bolt's lifetime, that is 1.2 s at laser level 2, so it reaches about 90 wu; the reload timer becomes the Worker's reload interval (30 ticks, README R-UNIT-011); and `worker.attack` is raised. The bolt converts an enemy Worker it hits instead of damaging it ([reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md); DEC-111 for the derived range).
 
 ## 3 States and flows
 
@@ -485,21 +487,32 @@ stateDiagram-v2
     Idle --> OnWaypointOrder: signpost Leader within 100 wu, pending order, waypoint order
     ToPort --> Manning: arrived
     ToPort --> Idle: port taken or structure gone
+    ToPort --> Fighting: threat search
     Manning --> Idle: displaced or structure gone
+    Manning --> Fighting: threat search with the player-orders flag
     ToTransport --> InTransport: arrived or within 20 wu
     ToTransport --> Idle: Transport gone, full, not loading or too far
+    ToTransport --> Fighting: threat search
+    ToTransport --> ToPort: port search
+    ToTransport --> ToCarryable: carryable search
     InTransport --> Idle: unloaded over land
     InTransport --> Burning: Transport destroyed
     OnWaypointOrder --> Idle: arrived or teleported
-    OnWaypointOrder --> Fighting: threat
+    OnWaypointOrder --> Fighting: threat search
+    OnWaypointOrder --> ToPort: port search
+    OnWaypointOrder --> ToCarryable: carryable search
     FollowingLeader --> Idle: Leader lost, not follow mode, formation full
-    FollowingLeader --> Fighting: threat
+    FollowingLeader --> Fighting: threat search
+    FollowingLeader --> ToPort: port search
+    FollowingLeader --> ToCarryable: carryable search
     Fighting --> FollowingLeader: threat gone and Leader valid
     Fighting --> Idle: threat gone
     ToCarryable --> Carrying: carryable now the team's
     ToCarryable --> Idle: carryable gone
+    ToCarryable --> Fighting: threat search
     Carrying --> Idle: carryable lost
     OpeningCrate --> Idle: crate gone
+    OpeningCrate --> Fighting: threat search
     ClaimingFlag --> Idle: flag the team's, locked or gone
     AttackingStructure --> Idle: grenade thrown or structure gone
     Idle --> AttackingStructure: Hive or Spitter Plant check, Launch Vessel
@@ -521,7 +534,7 @@ stateDiagram-v2
     Drowning --> [*]: dies, Essence orb
 ```
 
-Diagram 3-A Worker behaviour states. Calls from other rules can move a Worker from any state except InTransport into Burning, Drowning, CaughtInVortex, InAbductionBeam, BoardingVessel or AttackingStructure; those edges are drawn from Idle and Fighting for readability.
+Diagram 3-A Worker behaviour states. Calls from other rules can move a Worker from any state except InTransport into Burning, Drowning, CaughtInVortex, InAbductionBeam, BoardingVessel or AttackingStructure; those edges are drawn from Idle and Fighting for readability. The task search's edges to AttackingStructure (the Hive and Spitter Plant check of the threat search) and the threat search that the player-orders flag adds to the other states are not drawn (table 2.4-A, R-UNIT-089).
 
 ```mermaid
 flowchart TD
@@ -607,10 +620,10 @@ Diagram 3-D Sickness on a Worker (R-UNIT-127 to R-UNIT-130).
 | `ref.unit.worker.slope_divisor` | 3 | wu | | README R-UNIT-042 | — |
 | `ref.unit.worker.slope_min` | 0.3 | × speed | | README R-UNIT-042 | — |
 | `ref.unit.worker.slope_max` | 2.0 | × speed | | README R-UNIT-042 | — |
-| `ref.unit.worker.retarget_ticks` | 11–20 | ticks | 11 + ⌊10 × NextUnit(1)⌋; nominal 1–2 s | R-UNIT-065 | DEC-002, DEC-030 |
-| `ref.unit.worker.idle_timer` | 60 | s | 600 ticks; the spawn draw adds NextUnit(60) s; reset every tick | R-UNIT-060, R-UNIT-065 | — |
-| `ref.unit.worker.grenade_first_ticks` | 1–50 | ticks | 1 + ⌊10 × NextUnit(5)⌋; nominal U[0, 5) s | R-UNIT-060 | DEC-002 |
-| `ref.unit.worker.grenade_interval_ticks` | 121–200 | ticks | 121 + ⌊10 × NextUnit(8)⌋; nominal 12 + U[0, 8) s | R-UNIT-104 | DEC-002 |
+| `ref.unit.worker.retarget_ticks` | 11–20 | ticks | 11 + ⌊NextUnit(1) ÷ `ref.sim.tick_period`⌋; nominal 1–2 s | R-UNIT-065 | DEC-002, DEC-030 |
+| `ref.unit.worker.idle_timer` | 600 | ticks | nominal 60 s; the spawn draw adds ⌊NextUnit(60) ÷ `ref.sim.tick_period`⌋ ticks (0 to 599); reset every tick | R-UNIT-060, R-UNIT-065 | DEC-002 |
+| `ref.unit.worker.grenade_first_ticks` | 1–50 | ticks | 1 + ⌊NextUnit(5) ÷ `ref.sim.tick_period`⌋; nominal U[0, 5) s | R-UNIT-060 | DEC-002 |
+| `ref.unit.worker.grenade_interval_ticks` | 121–200 | ticks | 121 + ⌊NextUnit(8) ÷ `ref.sim.tick_period`⌋; nominal 12 + U[0, 8) s | R-UNIT-104 | DEC-002 |
 | `ref.unit.worker.grenade_min_distance` | 75 | wu | strict | R-UNIT-104 | — |
 | `ref.unit.worker.grenade_normal_min` | 0.7 | normal y | strict, under thrower and target | R-UNIT-104 | — |
 | `ref.unit.worker.grenade_height_diff_min` | −50 | wu | thrower height minus target height, strict | R-UNIT-104 | — |
@@ -730,17 +743,17 @@ Diagram 3-D Sickness on a Worker (R-UNIT-127 to R-UNIT-130).
 | `ref.unit.worker.fury_speed_factor` | 1.5 | × speed | | R-UNIT-125 | DEC-090 |
 | `ref.unit.worker.fury_cap_ratio` | 3 | × stat-table speed | applies below this ratio | R-UNIT-125 | DEC-090 |
 | `ref.unit.worker.convert_fade` | 4 | s | presentation | R-UNIT-126 | DEC-007 |
-| `ref.unit.worker.sickness_first_ticks` | 1–100 | ticks | 1 + ⌊10 × NextUnit(10)⌋ | R-UNIT-127 | DEC-002 |
+| `ref.unit.worker.sickness_first_ticks` | 1–100 | ticks | 1 + ⌊NextUnit(10) ÷ `ref.sim.tick_period`⌋; nominal U[0, 10) s | R-UNIT-127 | DEC-002 |
 | `ref.unit.worker.sickness_speed_factor` | 0.75 | × speed | on infection | R-UNIT-127 | DEC-090 |
 | `ref.unit.worker.sick_stop_odds` | 20 | — | 1 in 20 per movement tick | R-UNIT-105, R-UNIT-128 | DEC-092 |
-| `ref.unit.worker.sickness_interval_ticks` | 51–100 | ticks | 51 + ⌊10 × NextUnit(5)⌋; nominal 5 + U[0, 5) s | R-UNIT-130 | DEC-002 |
+| `ref.unit.worker.sickness_interval_ticks` | 51–100 | ticks | 51 + ⌊NextUnit(5) ÷ `ref.sim.tick_period`⌋; nominal 5 + U[0, 5) s | R-UNIT-130 | DEC-002 |
 | `ref.unit.worker.sickness_spread_radius` | 30 | wu | | R-UNIT-130 | — |
 | `ref.unit.worker.sickness_roll` | 20 | outcomes | | R-UNIT-130 | — |
 | `ref.unit.worker.sickness_blast_range` | 5 | wu | | R-UNIT-130 | DEC-093 |
 | `ref.unit.worker.sickness_blast_damage` | 25 | damage | | R-UNIT-130 | — |
 | `ref.unit.worker.sickness_damage` | 100 | health | | R-UNIT-130 | — |
 | `ref.unit.worker.sickness_slow_factor` | 0.5 | × speed | | R-UNIT-130 | DEC-090 |
-| `ref.unit.worker.paralysis_ticks` | 51–150 | ticks | 51 + ⌊10 × NextUnit(10)⌋; nominal 5 + U[0, 10) s | R-UNIT-130 | DEC-002 |
+| `ref.unit.worker.paralysis_ticks` | 51–150 | ticks | 51 + ⌊NextUnit(10) ÷ `ref.sim.tick_period`⌋; nominal 5 + U[0, 10) s | R-UNIT-130 | DEC-002 |
 | `ref.unit.worker.pulse_push_speed` | 20 | wu/s | | R-UNIT-133 | — |
 | `ref.unit.worker.pulse_damage` | 1000 | health | | R-UNIT-133 | — |
 | `ref.unit.worker.card_half_width` | 3.0 | wu | presentation | R-UNIT-142 | DEC-029 |
@@ -863,6 +876,7 @@ Diagram 3-D Sickness on a Worker (R-UNIT-127 to R-UNIT-130).
 | DEC-308 | Orders to Workers that operate a port | a selected Worker keeps its flag while manning (R-UNIT-138) |
 | DEC-101 | Seasonal theme | the hat on every third Worker while the theme is on (R-UNIT-148) |
 | DEC-109 | Crowd-sound audibility radius | nearest-emitter Worker creation and attack sounds (R-UNIT-151) |
+| DEC-111 | Values derived from flat-terrain calculation | the Convert laser bolt reaches about 90 wu (R-UNIT-196) |
 | DEC-241 | Numeric semantics that reference rules depend on | truncating health changes; integer volley rhythm (R-UNIT-103, R-UNIT-116) |
 | DEC-852 | Game-speed divisors in Worker rules | the burning roll, the fire roll and the lift radius keep their division by the game speed (R-UNIT-079, R-UNIT-082, R-UNIT-103) |
 | DEC-853 | Worker and Trooper rule details | one Worker on fire can count as several kills; the Hive and Spitter Plant check of the threat search (R-UNIT-098, R-UNIT-119) |

@@ -52,7 +52,7 @@ Actor stats are floating-point values (DEC-090).
 
 **R-UNIT-421** (MUST) **Idle.** An Idle Collector releases every grenade it holds (R-UNIT-435) and moves towards its waypoint at its Idle speed. Every `ref.unit.collector.retarget_ticks` (11 ticks) it searches, in this order:
 
-1. if it holds fewer orbs than its capacity, the nearest Floating Essence orb that is not broken within `ref.econ.collector.search_range_wu` (200 wu); an orb in Birth is never chosen, and the orb's team is never tested (DEC-080, [essence_orbs.md](essence_orbs.md) R-UNIT-308, R-UNIT-325). If one is found, the Collector clears its orb-cloud flag and becomes ToEssenceOrb;
+1. if it holds fewer orbs than its capacity, the nearest Floating Essence orb within `ref.econ.collector.search_range_wu` (200 wu); an orb in Birth is never chosen, and the orb's team is never tested (DEC-080, [essence_orbs.md](essence_orbs.md) R-UNIT-325). If one is found, the Collector clears its orb-cloud flag and becomes ToEssenceOrb;
 2. otherwise, if it holds orbs, the nearest Spawn Node whose owner is a friend of the Collector's team (its own team or a co-op ally, [teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-414). If one is found, the Collector becomes ToSpawnNode;
 3. otherwise it wanders: its waypoint becomes the point `ref.unit.collector.wander_distance` (30 wu) away in the horizontal direction of a draw from `ref.unit.collector.wander_angle_range` (U[−π, π) rad).
 
@@ -142,7 +142,7 @@ The hover height is max(terrain height, `ref.sim.physics.sea_level`) + `ref.econ
 ```mermaid
 stateDiagram-v2
     [*] --> Idle : spawned, waypoint at the spawn position
-    Idle --> ToEssenceOrb : search, nearest unbroken Floating orb within 200 wu and room left
+    Idle --> ToEssenceOrb : search, nearest Floating orb within 200 wu and room left
     Idle --> ToSpawnNode : search, holding orbs and a friendly Spawn Node exists
     Idle --> ToWaypoint : move order
     ToWaypoint --> Idle : within 5 wu of the waypoint

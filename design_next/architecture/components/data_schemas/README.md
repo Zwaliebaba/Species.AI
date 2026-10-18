@@ -8,7 +8,7 @@ This folder specifies the Species data schemas: how every kind of Species conten
 
 | File | Holds | Requirement IDs |
 |---|---|---|
-| [README.md](README.md) (this file) | responsibilities and boundaries, the record-type registry, the schema language, the logical field types and presence rules, the limit form, cooked records, versioning and migration, the authoring parser, validation, the canonical writer, loaders, diagnostics, the shared tests and the open decisions | DAT-001 to DAT-053 |
+| [README.md](README.md) (this file) | responsibilities and boundaries, the record-type registry, the schema language, the logical field types and presence rules, the limit form, cooked records, versioning and migration, the authoring parser, validation, the canonical writer, loaders, the generated declarations, diagnostics, the shared tests and the open decisions | DAT-001 to DAT-054 |
 | [map_schema.md](map_schema.md) | the map definition: the map header and its match options, the map options and map effects, the terrain records, the map lights, the start positions, the camera views and camera animations, the starting forces, the routes and the primary objectives; the map index; the mode catalogue and the match-option schema; the custom-map container and achievement hooks | DAT-070 to DAT-110 |
 | [map_structure_records.md](map_structure_records.md) | the structure records of a map: the base fields with the role tags, the fields of each of the 32 structure kinds that a map may place, the typed links and their validation | DAT-140 to DAT-162 |
 | [config_input_and_strings.md](config_input_and_strings.md) | the settings schema and the settings file, the binding sets and the keyboard-layout table, the string tables and their caption markup | DAT-190 to DAT-218 |
@@ -39,7 +39,7 @@ Caption: Figure 0-A, the path of a record from its authoring file to a loaded re
 
 **DAT-002** (MUST) The meaning of a field, its rule and its default value belong to the document that owns the mechanic. A schema of this folder gives the field its key, logical type, unit, presence rule and range, and cites the owner's tuning key for its default instead of defining a second one. A field key is the owner's field name written in lower-case snake_case and, because it generates a C++ field, spelt in American English (`AGENTS.md` R11, CONVENTIONS §8): the owner's "branch colour" is the key `branch_color`; where an owner gives no name, the key chosen here is listed in the field table and is used by every tool.
 
-**DAT-003** (MUST NOT) This component defines no network message format, no transport container and no format for state that a running game writes about a world or a match: saved worlds, replays, achievement progress and the synchronisation of settings are design-phase topics (DEC-207, DEC-250, DEC-251). The runtime-written files this folder specifies are the settings file of [config_input_and_strings.md](config_input_and_strings.md), whose versioning is DEC-250's, and the soak report and the telemetry session record of [test_and_telemetry_records.md](test_and_telemetry_records.md), which are diagnostic output, not match state. The custom-map container ([maps](../../../reference/08_maps_and_level_design/map_editor_hooks.md) R-MAP-391, table 2.14-A: the map definition with up to four embedded RGBA8 images, each with its width, its height and its resource name) is a member of the typed container family that DEC-207 names, and is recorded as a hook only ([map_schema.md](map_schema.md) DAT-101).
+**DAT-003** (MUST NOT) This component defines no network message format, no transport container and no format for state that a running game writes about a world or a match: saved worlds, replays, achievement progress and the synchronisation of settings are design-phase topics (DEC-207, DEC-250, DEC-251). The runtime-written files this folder specifies are the settings file of [config_input_and_strings.md](config_input_and_strings.md), whose versioning is DEC-250's, and the soak report and the telemetry session record of [test_and_telemetry_records.md](test_and_telemetry_records.md), which are diagnostic output, not match state. The custom-map container, a custom map with its embedded images ([maps](../../../reference/08_maps_and_level_design/map_editor_hooks.md) R-MAP-391), is a member of the typed container family that DEC-207 names, and is recorded as a hook only ([map_schema.md](map_schema.md) DAT-101).
 
 **DAT-004** (MUST NOT) No client and no server parses authoring text at run time. Loaders read cooked records only, check their header, version and hash, and never accept text (ADR-061). No reference data file, archive or tool output is imported into Species content (DEC-340).
 
@@ -71,7 +71,7 @@ Table 1-A Record-type registry. "Sim" marks the record types whose cooked entrie
 | `camera.timeline` | one presentation timeline | `content/records/timelines/` | `Record` | no | [camera and sequences](../camera_and_sequences.md) CAM-025, CAM-102 |
 | `interface.page_layout`, `interface.palette`, `interface.text_style`, `interface.font_roles` | page and options-screen layouts, palettes, text styles, the font-role map | `content/records/ui/` | `Record` | no | [UI framework](../ui_framework/layout_rendering_input_and_localisation.md) §3; [pages and screen recipes](../ui_framework/pages_and_screen_recipes.md) UI-313 |
 | `import.texture`, `import.mesh`, `import.audio` | the import record beside each source | beside the source, sharing its stem | none: build input | no | [import_and_build_records.md](import_and_build_records.md) |
-| `assets.engine_table` | the asset-id constants and enumeration-to-asset tables of the code | generated from the code by the content build | none: build input | no | [import_and_build_records.md](import_and_build_records.md) |
+| `assets.engine_table` | the asset-id constants and enumeration-to-asset tables of the code | generated from the code by the engine build ([import_and_build_records.md](import_and_build_records.md) DAT-357, [asset pipeline](../asset_pipeline_and_resources.md) AST-017); the content build reads it | none: build input | no | [import_and_build_records.md](import_and_build_records.md) |
 | `edition.manifest` | one edition: what it ships and its runtime feature flags | `content/records/editions/` | build input; the feature flags as a `Record` | the feature flags that change simulation behaviour | [import_and_build_records.md](import_and_build_records.md) |
 | `test.soak_configuration` | one soak configuration: progression, sequence, test maps, session name, termination tick | `content/records/test/`, selected only into the `development` and `soak` editions | `Record` | no | [test_and_telemetry_records.md](test_and_telemetry_records.md) |
 | `test.soak_report` | the report of one soak pass: the match table and the pass summary | written by the soak runner; a CI artefact | none: diagnostic output | no | [test_and_telemetry_records.md](test_and_telemetry_records.md) |
@@ -79,7 +79,17 @@ Table 1-A Record-type registry. "Sim" marks the record types whose cooked entrie
 
 ## 2 Interfaces
 
-The interface below is a C++23 declaration sketch, not an implementation (ADR-052). The schema registry, the record types and their loaders are generated from the schemas by the Species code generator of the content build tool, a development tool of the tools solution under `Tools/` (ADR-062, ADR-059); the generated files are never edited by hand. The generated C++ follows the naming of `AGENTS.md` §1: a record type is a PascalCase aggregate whose fields are the schema keys in camelCase, spelt in American English (the key `color_role` generates the field `colorRole`); a record type that names a game concept is generated into namespace `Species`, every other into `Engine`; schema ids, keys and enumerator strings are data names and keep their spelling. The generated files are committed source in the owning project folder, regenerated by a developer whenever a schema changes and checked in CI for drift (owner decision O28, ADR-062).
+The interface below is a C++23 declaration sketch, not an implementation (ADR-052). The schema registry, the record types and their loaders are generated from the schemas by the Species code generator of the content build tool, a tool project of the one solution under `Tools/` (owner decision O29; ADR-062, ADR-059); the generated files are never edited by hand. The generated files are committed source in the owning project folder, regenerated by a developer whenever a schema changes and checked in CI for drift (owner decision O28, ADR-062).
+
+**DAT-054** (MUST) **One declaration per type.** The code generator turns each schema into C++ declarations that follow `AGENTS.md` §1, and a generated declaration is the only declaration of its type:
+1. An object becomes a PascalCase aggregate (R8) whose fields are its keys converted from snake_case to camelCase, in schema order: the key `color_role` generates the field `colorRole`.
+2. A closed enumeration becomes an `enum class` whose enumerators are its strings converted from snake_case to PascalCase, in the schema's order: `point_magnify_clamp` generates `PointMagnifyClamp`.
+3. The conversion changes the case and drops the underscores, and nothing else. A key or an enumerator string that generates an identifier is therefore lower-case ASCII snake_case spelt in American English (CONVENTIONS §8, `AGENTS.md` R11), and the generator rejects one that holds a word R11 spells otherwise, such as `colour`, `centre`, `grey` or `equaliser`.
+4. An enumeration field may bind to an enumeration that a component declares, by naming it with `x-species-ref` (DAT-015): the position, sharing, loop, audience and bus fields of a sound layer bind to the audio engine's `SoundPosition`, `SoundSharing`, `SoundLoop`, `SoundAudience` and `AudioBus` ([audio engine](../audio_engine/README.md) §2.1). The generator then generates no enumeration; the component's declaration lists the data token of each enumerator that item 2 does not give, and the generated reader maps the tokens as listed.
+5. A type that names a game concept is generated into namespace `Species`, every other into `Engine` (R9, CONVENTIONS §8).
+6. The document that lists the fields of a record type (table 1-A, column "Fields") holds the sketch of the declarations generated from its schema. Every other document that uses one of them declares nothing of it and cites it with the comment `// generated from <schema id>: <document> §2`. A type that no schema carries is declared by its owner of CONVENTIONS §8.12, and a document of this folder that uses it cites that owner.
+
+Schema ids, keys and enumerator strings stay data names (CONVENTIONS §8): the generator derives identifiers from them and never renames them.
 
 ```cpp
 namespace Engine
@@ -151,7 +161,7 @@ struct RecordSchema
   SchemaVersion version;
   std::span<const FieldSpec> fields; // schema order = canonical write order (DAT-042)
   bool simulationRelevant;
-  ContentType cookedAs; // the pack content type (ADR-058)
+  ContentType cookedAs; // the asset pipeline's pack content type (ADR-058, AST §2.1)
 };
 
 // Generated, compiled into every program.
@@ -177,6 +187,31 @@ enum class Severity : std::uint8_t
   Warning,
   Information
 };
+// The classes of table 6-A, in its order.
+enum class DiagnosticClass : std::uint8_t
+{
+  Syntax,
+  Encoding,
+  Depth,
+  DuplicateKey,
+  DuplicateId,
+  UnknownField,
+  UnknownValue,
+  MissingField,
+  DerivedField,
+  WrongType,
+  OutOfRange,
+  TooLong,
+  ZeroDirection,
+  PositionalTable,
+  MissingAsset,
+  MissingRecord,
+  MissingString,
+  ReferenceCycle,
+  FamilyRule,
+  Version,
+  ContentWarning
+};
 struct Diagnostic
 {
   DiagnosticClass diagnosticClass; // table 6-A
@@ -186,7 +221,11 @@ struct Diagnostic
   std::string message;                // literal text, never a format string (DEC-800)
 };
 
-// ---- content build tool (tools solution) ----------------------------------------
+// ---- content build tool (a tool project, O29) -----------------------------------
+class JsonDocument;   // a parsed authoring file: every key and value with its file, line and column (DAT-020)
+class ReferenceIndex; // the record ids, asset ids and string ids of a content set (DAT-028 to DAT-030)
+class RecordValue;    // the validated values of one record, in schema order (DAT-041)
+struct CookedRecord;  // one cooked entry: the header of DAT-014 and its payload
 // DAT-019 to DAT-023
 class AuthoringParser
 {
@@ -210,7 +249,7 @@ class CanonicalWriter
 {
 public:
   std::string Write(const RecordValue& _value, const RecordSchema& _schema) const;
-  std::expected<void, Diagnostic> ReplaceFileAtomically(const std::filesystem::path& _target, std::string_view _content) const;
+  // The text is written with the platform layer's ReplaceFileAtomically (PLT-089), as DAT-043 requires.
 };
 // DAT-045, DAT-046
 class SchemaMigration
@@ -239,6 +278,8 @@ public:
 
 } // namespace Engine
 ```
+
+**Dependencies.** The code of this component builds on the asset pipeline's run-time vocabulary, `AssetId`, `VariantId`, `ContentType`, `PackEntry` and `Sha256Digest` ([asset pipeline](../asset_pipeline_and_resources.md) §2.1), and on the platform layer's file functions ([platform layer](../platform_layer.md) §2.1). The edge runs one way (`AGENTS.md` §2): the run-time interface of the asset pipeline, its mount set, pack reader, content reader and asset cache, names no declaration of this folder except generated record aggregates such as the cooked mesh `MeshAsset`, which depend on nothing of the parser, the validator, the registry or the loaders. The import records, their enumerations among them `MeshRole` and `SamplerId`, are generated from the `import.*` schemas and declared in [import_and_build_records.md](import_and_build_records.md) §2; the asset pipeline's cookers, which run in the content build tool, read them there.
 
 **Events.** The component raises no gameplay or presentation events. In Debug builds a changed record reloads through the asset cache's `AssetReloaded` notification ([asset pipeline](../asset_pipeline_and_resources.md) §2.2), and the reader of the record type decides whether it can take the new version while a match runs.
 
@@ -303,7 +344,7 @@ Table 3.1-A Logical field types.
 
 **DAT-014** (MUST) A cooked record entry starts with a header that holds: the schema id of table 1-A as a length-prefixed UTF-8 string; the schema version (major, minor); the payload length in bytes; and the number of records in the payload. Every multi-byte value of a cooked record is little-endian; the payload holds no pointer and no host-dependent value, only offsets relative to the payload, so the same bytes are valid on every platform that reads the packs (ADR-058, DEC-240 item 10). No cooked record carries a magic number of its own: the pack header carries the format identity (ADR-058).
 
-**DAT-015** (MUST) Each record type is defined by one JSON Schema document in the restricted subset of ADR-062 (object, array, string, integer, number, boolean, enumeration and reference), with the `$schema` keyword pinned to the draft `dat.schema.draft` (2020-12). Species annotations use the prefix `x-species-` and are, exactly: `x-species-type` (the logical type of table 3.1-A), `x-species-unit`, `x-species-precision` (`binary32-rounded` or `binary64`), `x-species-presence`, `x-species-ref` (the record type or asset category of a reference), `x-species-order` (`meaningful` or `none`), `x-species-max-chars`, `x-species-default-key` (the owner's tuning key) and `x-species-sim` (the simulation-relevant flag of the record type). The code generator rejects a schema that uses any other keyword or annotation (ADR-062).
+**DAT-015** (MUST) Each record type is defined by one JSON Schema document in the restricted subset of ADR-062 (object, array, string, integer, number, boolean, enumeration and reference), with the `$schema` keyword pinned to the draft `dat.schema.draft` (2020-12). Species annotations use the prefix `x-species-` and are, exactly: `x-species-type` (the logical type of table 3.1-A), `x-species-unit`, `x-species-precision` (`binary32-rounded` or `binary64`), `x-species-presence`, `x-species-ref` (the record type or asset category of a reference, or the declared enumeration that an enumeration field binds to, DAT-054 item 4), `x-species-order` (`meaningful` or `none`), `x-species-max-chars`, `x-species-default-key` (the owner's tuning key) and `x-species-sim` (the simulation-relevant flag of the record type). The code generator rejects a schema that uses any other keyword or annotation (ADR-062).
 
 **DAT-016** (MUST) Authoring files are UTF-8 JSON (ADR-062), one record or one keyed collection of records per file, in the folders of table 1-A. The top-level object of every authoring file starts with two fields: `schema`, the schema id of table 1-A, and `version`, the schema version as the text `"<major>.<minor>"`; a file without them, or whose schema id does not match its folder, is a build error. Every object of every record type may carry a `notes` field, a text of at most `dat.notes.max_chars` (2,000) characters that tools keep and the cooker drops; JSON has no comments, and no other field holds author commentary.
 
@@ -422,7 +463,7 @@ Caption: Figure 4-A, the states of a record from authoring to loading (DAT-019 t
 
 **DAT-049** (MUST) Validation and cooking are incremental: a record is rebuilt when its authoring file, its schema version or a record that it references changes (ADR-059). Changing one record of a family rebuilds that record and its dependants, never the whole content set.
 
-**DAT-050** (MUST) Loading a cooked record does no parsing: a loader validates the header and the counts and returns a view onto the entry's bytes. These budgets are starting values that the performance tests confirm on the reference test machine of the [diagnostics](../diagnostics_test_and_performance/README.md) component: reading the headers of `ref.map.reference.map_count` (49) maps for the map catalogue in at most `dat.perf.catalogue_ms` (20 ms); loading every non-map record type of an edition in at most `dat.perf.records_ms` (50 ms); and validating and cooking a full edition from a clean state in at most `dat.perf.full_build_s` (120 s), with incremental rebuilds of one record in at most `dat.perf.incremental_s` (5 s).
+**DAT-050** (MUST) Loading a cooked record does no parsing: a loader validates the header and the counts and returns a view onto the entry's bytes. These budgets are starting values that the performance tests confirm on the reference test machine of the [diagnostics](../diagnostics_test_and_performance/README.md) component: reading the headers of `dat.perf.catalogue_maps` (49) maps, one per map slot of the Species map set ([GameAssets §19](../../../assets/GameAssets.md#19-maps-and-thumbnails)), for the map catalogue in at most `dat.perf.catalogue_ms` (20 ms); loading every non-map record type of an edition in at most `dat.perf.records_ms` (50 ms); and validating and cooking a full edition from a clean state in at most `dat.perf.full_build_s` (120 s), with incremental rebuilds of one record in at most `dat.perf.incremental_s` (5 s).
 
 ## 6 Failure modes, diagnostics and telemetry
 
@@ -529,7 +570,8 @@ Table 6-A Diagnostic classes.
 | `dat.schema.initial_version` | 1.0 | major.minor | first version of every record type | DAT-017 | — |
 | `dat.parse.max_depth` | 64 | nesting levels | deeper input is an error | DAT-021 | DEC-801 |
 | `dat.writer.indent_spaces` | 2 | spaces per level | canonical output | DAT-042 | DEC-800 |
-| `dat.perf.catalogue_ms` | 20 | ms | starting value; all map headers of the reference map set | DAT-050 | — |
+| `dat.perf.catalogue_maps` | 49 | maps | the map headers that the catalogue budget covers: one per map slot of GameAssets §19 | DAT-050 | — |
+| `dat.perf.catalogue_ms` | 20 | ms | starting value; reading `dat.perf.catalogue_maps` map headers | DAT-050 | — |
 | `dat.perf.records_ms` | 50 | ms | starting value; every non-map record type of an edition | DAT-050 | — |
 | `dat.perf.full_build_s` | 120 | s | starting value; clean validation and cooking of an edition | DAT-050 | — |
 | `dat.perf.incremental_s` | 5 | s | starting value; one changed record | DAT-050 | — |
@@ -539,7 +581,7 @@ Table 6-A Diagnostic classes.
 | owner | keys cited |
 |---|---|
 | [reference/12 tick timing](../../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) | `ref.sim.tick_period` |
-| [maps: rules and conventions](../../../reference/08_maps_and_level_design/rules_and_conventions.md) | `ref.map.header.name_max_chars`, `ref.map.camera.view_name_max_chars`, `ref.map.reference.map_count` |
+| [maps: rules and conventions](../../../reference/08_maps_and_level_design/rules_and_conventions.md) | `ref.map.header.name_max_chars`, `ref.map.camera.view_name_max_chars` |
 | [reference/09 options](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) | `ref.meta.lang.base` |
 | [UI layout and localisation](../ui_framework/layout_rendering_input_and_localisation.md) | `ui.lang.max_id_length` |
 | [asset pipeline](../asset_pipeline_and_resources.md) | `ast.pack.max_key_bytes` |

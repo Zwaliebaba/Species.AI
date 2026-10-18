@@ -102,88 +102,10 @@ enum class ContentType : std::uint8_t
   ExplainerScript, AssetIndex
 };
 
-// ---- import records (schemas owned by data_schemas/, ADR-061) -------------------------
-enum class TextureKind : std::uint8_t
-{
-  Color, Ui, Normal, Mask, ExactData, CpuTable
-};
-enum class ColorSpace : std::uint8_t
-{
-  Srgb, Linear
-};
-enum class AlphaMode : std::uint8_t
-{
-  Opaque, Straight, Premultiplied, Additive, Cutout
-};
-enum class MipPolicy : std::uint8_t
-{
-  Full, None
-};
-enum class SamplerId : std::uint8_t   // fixed heap indices (ADR-006, ADR-018)
-{
-  LinearClamp, LinearWrap, PointClamp, PointMagnifyClamp
-};
-enum class Derivation : std::uint8_t
-{
-  BlurredShadow, StackedCopies, Grayscale, ToColor, ReplaceColor
-};
-
-struct TextureView
-{
-  VariantId id;
-  std::uint32_t firstLevel;
-  std::uint32_t levelCount;
-  SamplerId sampler;
-};
-struct DerivedVariant
-{
-  VariantId id;
-  Derivation op;
-  std::vector<float> parameters;
-};
-
-struct TextureImportRecord
-{
-  AssetId asset;
-  std::uint32_t member;                    // member index of a multi-file asset
-  TextureKind kind;
-  ColorSpace colorSpace;
-  AlphaMode alphaMode;
-  std::optional<float> cutoutThreshold;    // required with AlphaMode::Cutout
-  MipPolicy mips;
-  SamplerId sampler;
-  bool pixelExact;
-  std::uint32_t authoringScale;
-  std::optional<AssetId> tintMask;         // companion single-channel mask (ADR-020)
-  std::vector<DerivedVariant> derived;
-  std::vector<TextureView> views;
-};
-
-enum class TintMarking : std::uint8_t
-{
-  None, VertexWeight, MaterialFlag
-};
-// MeshRole (Render, Collision): declared by data_schemas/import_and_build_records.md §2
-struct MeshImportRecord
-{
-  AssetId asset;
-  std::uint32_t member;
-  MeshRole role;                               // a collision source is cooked into a Collision entry (AST-044)
-  std::string assetClass;                      // selects the socket schema (ADR-021)
-  float unitScale;                             // glTF metres to wu
-  TintMarking tint;
-  std::optional<float> tintScale;               // RND-161; absent: rnd.tint.factor
-  std::vector<std::string> smoothPrimitives;   // ADR-020 exceptions
-  std::optional<AssetId> collision;            // required for collidable meshes
-};
-
-struct AudioImportRecord
-{
-  AssetId asset;
-  std::uint32_t member;
-  bool positional;
-  std::optional<std::array<std::uint64_t, 2>> loopSamples;   // [start, end); on MS-ADPCM block boundaries
-};
+// ---- import records (§3.3, §3.7, §3.10), read by the cookers in the content build tool ------------
+// TextureKind, ColorSpace, AlphaMode, MipPolicy, SamplerId, Derivation, DerivationParameters, DerivedVariant,
+// TextureView, TextureImportRecord, MeshRole, TintMarking, SmoothPrimitive, MeshImportRecord, AudioImportRecord:
+// generated from import.texture, import.mesh and import.audio: data_schemas/import_and_build_records.md §2
 
 // ---- packs and mounting (ADR-058) ------------------------------------------------------
 enum class PackCodec : std::uint8_t
@@ -199,12 +121,14 @@ struct PackEntry
 {
   ContentKey key;
   ContentType type;
-  std::uint32_t schemaId;
-  std::uint32_t schemaVersion;
+  std::string schemaId;      // data records: the dotted schema id of data_schemas/README.md table 1-A; empty otherwise
+  std::uint16_t schemaMajor; // data records: the schema version (DAT-017); 0 otherwise
+  std::uint16_t schemaMinor;
   std::uint64_t size;
   std::uint32_t firstChunk;
   std::uint32_t chunkOffset;
   bool simulationRelevant;
+  bool placeholder; // AST-083
   Sha256Digest hash;
 };
 
