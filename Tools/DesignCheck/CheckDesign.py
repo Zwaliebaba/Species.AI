@@ -1014,15 +1014,23 @@ class Check:
 
   def rationale_target(self, f):
     """The rationale file a document's status line names (relative to the design root), '' when the target is not a
-    file under rationale/, or None when the status line names no rationale."""
+    file under rationale/, 'missing:<path>' when it is a path under rationale/ that does not exist yet, or None when
+    the status line names no rationale."""
     m = re.search(r'Rationale:\s*(?:\[[^\]]*\]\(([^)\s]+)\)|`?([^\s`·|)]+)`?)', ' '.join(self.header_lines(f)))
     if not m:
       return None
     target = (m.group(1) or m.group(2)).split('#')[0]
     dest = os.path.normpath(os.path.join(os.path.dirname(os.path.join(self.root, f)), target))
-    if not dest.startswith(os.path.join(self.root, 'rationale') + os.sep) or not os.path.isfile(dest):
+    if not dest.startswith(os.path.join(self.root, 'rationale') + os.sep):
       return ''
+    if not os.path.isfile(dest):
+      return 'missing:' + self.rel(dest)
     return self.rel(dest)
+
+  def doc_status(self, f):
+    """The first word after "Status:" in a document's status line, lower case ('' when there is none)."""
+    m = re.search(r'Status:\s*([A-Za-z]+)', ' '.join(self.header_lines(f)))
+    return m.group(1).lower() if m else ''
 
   # ---------------------------------------------------------------- gate 12
   def gate_ledger(self):
@@ -1204,6 +1212,12 @@ class Check:
         self.fail(15, f'{f}: names no rationale file (status line "Rationale: ../rationale/<area>.md")')
       elif not target:
         self.fail(15, f'{f}: the rationale it names is not a file under rationale/')
+      elif target.startswith('missing:'):
+        msg = f'{f}: the rationale it names, {target[8:]}, does not exist yet'
+        if self.doc_status(f) == 'final':
+          self.fail(15, msg)
+        else:
+          self.report(15, msg + ' (written when the area is finalised)')
     rationales = sorted(f for f in self.text if f.startswith('rationale/') and os.path.basename(f) != 'README.md')
     n_severe = 0
     for f in rationales:

@@ -6,7 +6,7 @@ What Species does with every reference requirement, section by section, with exc
 
 | Reference document | Owner | Sections | Requirements | adopt | adopt-skirmish | adapt | drop | pending |
 |---|---|---|---|---|---|---|---|---|
-| [00_reference_overview](00_reference_overview_ledger.md) | A0 | 18 | 112 | 0 | 0 | 0 | 0 | 112 |
+| [00_reference_overview](00_reference_overview_ledger.md) | A0 | 18 | 112 | 2 | 93 | 17 | 0 | 0 |
 | [01_skirmish_rules_and_modes](01_skirmish_rules_and_modes_ledger.md) | B9 | 46 | 202 | 0 | 0 | 0 | 0 | 202 |
 | [02_units](02_units_ledger.md) | B4 | 105 | 498 | 0 | 0 | 0 | 0 | 498 |
 | [03_buildings_and_world_objects](03_buildings_and_world_objects_ledger.md) | B3 | 75 | 385 | 0 | 0 | 0 | 0 | 385 |
@@ -19,4 +19,4 @@ What Species does with every reference requirement, section by section, with exc
 | [10_audio_design](10_audio_design_ledger.md) | C4 | 41 | 165 | 0 | 0 | 0 | 0 | 165 |
 | [11_tutorial_and_help](11_tutorial_and_help_ledger.md) | C5 | 11 | 74 | 0 | 0 | 0 | 0 | 74 |
 | [12_simulation_model](12_simulation_model_ledger.md) | D2 | 87 | 424 | 0 | 0 | 0 | 0 | 424 |
-| **Total** | | **657** | **2969** | 0 | 0 | 0 | 0 | **2969** |
+| **Total** | | **657** | **2969** | **2** | **93** | **17** | **0** | **2857** |

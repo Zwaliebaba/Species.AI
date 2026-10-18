@@ -451,6 +451,13 @@ def cases(t, cd):
            notes=[f'area {a} has no rationale' for a in cd.MODEL_AREAS if a != 'A1'],
            info='1 of 6 model-required areas')
 
+  final_missing = dict(GOOD_SPECIES)
+  final_missing['Design/gdd/01_world_and_regions.md'] = gdd(
+    'World and regions', status='> Status: Final · Prefix: WLD · Rationale: ../rationale/A9.md')
+  c = t.run(final_missing)
+  t.expect('a Final document must have the rationale it names', c, 15,
+           fails=['gdd/01_world_and_regions.md: the rationale it names, rationale/A9.md, does not exist yet'])
+
   # -------------------------------------------------- gates 14, 15 and 17: failures
   bad = {
     'Design/gdd/02_settlements_and_population.md': gdd('Settlements', status='> Status: Draft · Prefix: SET',
@@ -500,14 +507,13 @@ def cases(t, cd):
     'replication.md: new component without "## 9 Scale path"',
     'persistence/storage.md: new component without "## 9 Scale path"',
   ])
-  t.expect('missing or misplaced rationale and unresolved findings fail', c, 15, fails=[
+  t.expect('missing or misplaced rationale and unresolved findings fail; a Draft may name one not yet written', c, 15, fails=[
     'gdd/02_settlements_and_population.md: names no rationale file',
     'gdd/03_resources_and_economy.md: names no rationale file',
-    'replication.md: the rationale it names is not a file under rationale/',
     'persistence/storage.md: the rationale it names is not a file under rationale/',
     'rationale/B3.md:7 B3-F01 (high) has no resolution',
     'rationale/B3.md:8 B3-F02 (critical) has no resolution',
-  ])
+  ], notes=['replication.md: the rationale it names, rationale/D3.md, does not exist yet'])
   t.expect('bad status cells, missing playtest notes and a table without status fail', c, 17, fails=[
     'con.queue.length: a provisional value without a playtest note',
     'con.queue.slots: status "draft" is neither final nor provisional',

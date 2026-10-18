@@ -1,26 +1,41 @@
 # Adoption ledger: 00 reference overview
 
-> Status: Draft · Owner: area A0 · Reference: [00_reference_overview](../../reference/00_reference_overview.md) · Rules: `prompts/species-design-phase.md` §5.3
+> Status: Draft · Owner: area A0 · Reference: [00_reference_overview](../../reference/00_reference_overview.md) · Species design: [00 vision, pillars and core loops](../00_vision_pillars_and_core_loops.md) · Rules: `prompts/species-design-phase.md` §5.3
 
 18 sections, 112 requirements. A section row covers every requirement under its heading; an exception row (scope: one `R-` id) overrides it. Verdicts: `adopt`, `adopt-skirmish`, `adapt` (names the Species requirements that replace it), `drop` (gives the reason).
 
+**Effective verdicts:** adopt 2, adopt-skirmish 93, adapt 17, drop 0, pending 0.
+
+**How to read this file.** Almost every requirement of the reference overview restates a rule that another reference document owns (CONVENTIONS §3). Such a restatement binds the skirmish summary only (`adopt-skirmish`): what the world game does with the underlying rule is the verdict of the owning document's ledger, and code and tests cite the owner's id. The overview requirements that state a principle of the whole game are adopted or adapted into the pillars of [the Species design](../00_vision_pillars_and_core_loops.md). Where an owning area's verdict comes to differ from a row here, that area sends A0 the row change as a cross-area request.
+
 | Scope | Verdict | Species requirements | Note |
 |---|---|---|---|
-| `00_reference_overview.md §2.1` | pending | | The reference core loop and its baseline: 9 requirements (R-VIS-001 to R-VIS-009) |
-| `00_reference_overview.md §2.2` | pending | | Scope: the six match modes: 10 requirements (R-VIS-010 to R-VIS-019) |
-| `00_reference_overview.md §2.3` | pending | | Scope: maps and player counts: 8 requirements (R-VIS-020 to R-VIS-027) |
-| `00_reference_overview.md §2.4` | pending | | Scope: who is in every match: 5 requirements (R-VIS-030 to R-VIS-034) |
-| `00_reference_overview.md §2.5` | pending | | Scope: features present only as hooks: 5 requirements (R-VIS-040 to R-VIS-044) |
-| `00_reference_overview.md §2.6` | pending | | Core loop: clock and match start: 5 requirements (R-VIS-050 to R-VIS-054) |
-| `00_reference_overview.md §2.7` | pending | | Core loop: capture and production: 8 requirements (R-VIS-060 to R-VIS-067) |
-| `00_reference_overview.md §2.8` | pending | | Core loop: orders and combat: 5 requirements (R-VIS-068 to R-VIS-072) |
-| `00_reference_overview.md §2.9` | pending | | Core loop: Essence orbs: 2 requirements (R-VIS-073 to R-VIS-074) |
-| `00_reference_overview.md §2.10` | pending | | Core loop: Supply crates and powers: 5 requirements (R-VIS-075 to R-VIS-079) |
-| `00_reference_overview.md §2.11` | pending | | Core loop: objectives and match end: 2 requirements (R-VIS-080 to R-VIS-081) |
-| `00_reference_overview.md §2.12` | pending | | Worker autonomy and granted powers: 3 requirements (R-VIS-090 to R-VIS-092) |
-| `00_reference_overview.md §2.13` | pending | | Leaders, formations and direct control: 5 requirements (R-VIS-110 to R-VIS-114) |
-| `00_reference_overview.md §2.14` | pending | | Supply crates, the strategic wildcard: 7 requirements (R-VIS-120 to R-VIS-126) |
-| `00_reference_overview.md §2.15` | pending | | One rules skeleton, six objectives: 2 requirements (R-VIS-130 to R-VIS-131) |
-| `00_reference_overview.md §2.16` | pending | | Bots with perfect information and no other advantage: 5 requirements (R-VIS-140 to R-VIS-144) |
-| `00_reference_overview.md §2.17` | pending | | The player's verbs: 14 requirements (R-VIS-150 to R-VIS-163) |
-| `00_reference_overview.md §2.18` | pending | | Match flow from the player's perspective: 12 requirements (R-VIS-170 to R-VIS-181) |
+| `00_reference_overview.md §2.1` | adopt-skirmish | PIL-002, PIL-004 | The reference core loop and its baseline: 9 requirements (R-VIS-001 to R-VIS-009). The reference loop, with no build queue and no currency, is the skirmish loop as written; the world game replaces it with settlements that gather, build and grow on top of essence-driven growth (DEC-001, option B; PIL-004). Bots with perfect information bind skirmish only; the world's AI plays under fog of war (PIL-084). Exceptions below |
+| `R-VIS-003` | adapt | PIL-010 | Worker autonomy and crowd steering become pillar 1, Living crowds, which binds the world game and skirmish alike and extends autonomy to gathering, carrying and building; the Leader and order rules it cites stay with their owners (reference/02, reference/06) |
+| `R-VIS-007` | adopt | | The reference library is the specification of record, the reference values are the starting baseline and quirks stay explicit rules, for every reference requirement Species adopts, in the world game and in skirmish (O13; DEC-004, DEC-005, DEC-006) |
+| `R-VIS-008` | adapt | PIL-014, PIL-027 | The visual language becomes pillar 5, The reference style, a distinct game: the same language for the world game, skirmish and the strategic view, every asset new (O9). The 8 team colours bind skirmish only (R-VIS-034); in the world game the clade's colour is the identity cue, set by B5 and E2 |
+| `R-VIS-009` | adopt | | The audio binding model serves the world game and skirmish as written (pillar 5; C4 owns reference/10) |
+| `00_reference_overview.md §2.2` | adapt | PIL-003 | Scope: the six match modes: 10 requirements (R-VIS-010 to R-VIS-019). The v1 skirmish offers one mode, Spawn Control (O8, O20; `pil.scope.skirmish_mode_count`); the other five modes stay specified in reference/01 as candidates that B9 and the roadmap may schedule, and until then their rules, options and complexity labels are not built; the match options are those of the modes offered. Exceptions below |
+| `R-VIS-011` | adopt-skirmish | | Spawn Control, the v1 skirmish mode, as written (restates reference/01; B9) |
+| `R-VIS-017` | adopt-skirmish | | The match-clock minute of the time-limit option, as written (restates reference/01; B9) |
+| `00_reference_overview.md §2.3` | adapt | PIL-003 | Scope: maps and player counts: 8 requirements (R-VIS-020 to R-VIS-027). The counts describe the 49 reference maps, which Species does not carry: B9 sets the skirmish map set, its player counts and, with A1, its population caps (DEC-866); every map is authored new with no reference name, shape or layout (DEC-063). Exceptions below |
+| `R-VIS-022` | adopt-skirmish | | Square skirmish maps of 2,000 to 7,000 wu on a side, as written (restates reference/08; A1 and B9) |
+| `R-VIS-026` | adopt-skirmish | | Maps that declare no mode, and development, test and benchmark maps, are never listed (DEC-334; restates reference/08) |
+| `R-VIS-027` | adopt-skirmish | | A map's team column is a map position, remapped at load (DEC-025, DEC-560; restates reference/03 and reference/08) |
+| `00_reference_overview.md §2.4` | adopt-skirmish | | Scope: who is in every match: 5 requirements (R-VIS-030 to R-VIS-034). Team slots, the Rogue and Visitor factions, bot fill and leaver replacement bind skirmish (O14). A world has no team slots: the deputy runs a leaving or away steward's settlement, and free settlement sites are the places for further stewards (PIL-008) |
+| `00_reference_overview.md §2.5` | adopt-skirmish | | Scope: features present only as hooks: 5 requirements (R-VIS-040 to R-VIS-044). The skirmish keeps the reference hook state until the owning decisions change it: the map editor (DEC-045, A1), achievements and leaderboards (DEC-047, C2), the results screen (DEC-048, C2) and music (DEC-049, C4); each owning area sends A0 the row change when its decision changes a hook |
+| `00_reference_overview.md §2.6` | adopt-skirmish | | Core loop: clock and match start: 5 requirements (R-VIS-050 to R-VIS-054). Restates reference/12 and reference/01; the tick rate of both forms of play is A2's (DEC-227), and this row follows A2's verdict on the reference/12 rules it restates |
+| `00_reference_overview.md §2.7` | adopt-skirmish | | Core loop: capture and production: 8 requirements (R-VIS-060 to R-VIS-067). The Spawn Node economy binds skirmish; settlement growth in the world game adapts the population flow through B1's ledger of reference/05 (PIL-004) |
+| `00_reference_overview.md §2.8` | adopt-skirmish | | Core loop: orders and combat: 5 requirements (R-VIS-068 to R-VIS-072). Restatements of reference/02, reference/04 and reference/06; world battles take the owners' verdicts (B4, C1) and the skirmish verbs (PIL-032, PIL-040) |
+| `00_reference_overview.md §2.9` | adopt-skirmish | | Core loop: Essence orbs: 2 requirements (R-VIS-073 to R-VIS-074). The world game's Essence flow is B1's (PIL-004, PIL-045, PIL-056) |
+| `00_reference_overview.md §2.10` | adopt-skirmish | | Core loop: Supply crates and powers: 5 requirements (R-VIS-075 to R-VIS-079). Whether Supply crates become world events is B4's (reference/04 ledger) |
+| `00_reference_overview.md §2.11` | adopt-skirmish | | Core loop: objectives and match end: 2 requirements (R-VIS-080 to R-VIS-081). A world has no match end; its lifetime is A1's (PIL-067) |
+| `00_reference_overview.md §2.12` | adopt-skirmish | | Worker autonomy and granted powers: 3 requirements (R-VIS-090 to R-VIS-092). Restates reference/02 and reference/12; the world game's autonomy is pillar 1 (PIL-010), and how special units reach a settlement is B3's and B4's |
+| `00_reference_overview.md §2.13` | adopt-skirmish | | Leaders, formations and direct control: 5 requirements (R-VIS-110 to R-VIS-114). Restates reference/02 and reference/06; world battles use the owners' verdicts (B4, C1; PIL-032) |
+| `00_reference_overview.md §2.14` | adopt-skirmish | | Supply crates, the strategic wildcard: 7 requirements (R-VIS-120 to R-VIS-126). Restates reference/04 and reference/03 (B4, B3) |
+| `00_reference_overview.md §2.15` | adopt-skirmish | | One rules skeleton, six objectives: 2 requirements (R-VIS-130 to R-VIS-131). The skeleton binds the skirmish and keeps later modes possible (PIL-003) |
+| `00_reference_overview.md §2.16` | adopt-skirmish | | Bots with perfect information and no other advantage: 5 requirements (R-VIS-140 to R-VIS-144). Skirmish bots as written (B7); the world's AI settlements, deputy and aide play under fog of war (PIL-084) |
+| `00_reference_overview.md §2.17` | adopt-skirmish | | The player's verbs: 14 requirements (R-VIS-150 to R-VIS-163). The skirmish verbs as written; world battles use the same verbs as C1 adopts them, plus C1's world verbs (PIL-032); the world game has no pause (PIL-085) |
+| `00_reference_overview.md §2.18` | adopt-skirmish | | Match flow from the player's perspective: 12 requirements (R-VIS-170 to R-VIS-181). The skirmish match flow as written (C2). Exceptions below |
+| `R-VIS-170` | adapt | PIL-005 | The main page of the front end also leads to the world game, beside skirmish, the tutorials, help and the options; C2 specifies the pages |
+| `R-VIS-174` | adapt | PIL-003 | The reference tutorials run on two Zone Control maps; whether Species keeps them at launch, re-authors one on Spawn Control or replaces them is B9's decision for the first playable (DEC-123) and C5's for Species |
