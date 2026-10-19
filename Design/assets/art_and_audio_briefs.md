@@ -95,12 +95,13 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 ## 3 Unit sprites
 
-**16 rows, 13 asset ids.** Worker cards (front, four hurt poses, side view, a state overlay, a seasonal hat), the Visitor faction card, Crawler, Crawler egg and Wisp cards, and the three Missile Barrage cards.
+**17 rows, 14 asset ids.** Worker cards (front, four hurt poses, side view, a state overlay, the MVP's carried-load overlay, a seasonal hat), the Visitor faction card, Crawler, Crawler egg and Wisp cards, and the three Missile Barrage cards.
 
 - Canvas 128x128 for Worker and Visitor cards, 32x64 for the side view, 32x32 for small creatures and the hat, 64x64 for the overlay; full mip chains.
 - Worker cards: white or light-grey body, hard cut-out alpha (threshold 0.04), the same pivot and baseline on every card so that swapping poses never pops. Hurt poses 01-03 are interchangeable; 04 is the fixed hurt pose that the explainers also use.
 - The Visitor card is a distinct faction figure, drawn as a Worker card with a hard cut-out edge (threshold 0.04).
 - The Crawler trail is a derived variant: the cooker stacks 18 shrinking copies of the Crawler card into a 32x512 column (RND-320); nothing is authored for it.
+- The carried-load overlay (MVP-082) is drawn over the Worker card on the same pivot and baseline while a Worker carries a load of the gathered resource; it reads at 8-16 px as a load held by the figure, not as a second figure, and it stays white or light grey for the tint.
 - Crawler and Wisp cards are additive glows; hostile Crawlers draw the same card as a darkening layer, so the shape must read both ways.
 - The Missile Barrage launcher, its shadow and the missile are a new presentation of the barrage: a launcher appears, fires a volley, and marks its targets.
 
@@ -125,11 +126,12 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 ## 6 HUD, supply-crate and power icons
 
-**30 files, 28 asset ids**: 23 power and outcome icons, the empty-slot read-out, the darkening halo behind icons, three Transport state read-outs and the two Launch Race status-panel layers.
+**50 files, 46 asset ids**: 23 power and outcome icons, the empty-slot read-out, the darkening halo behind icons, three Transport state read-outs, the two Launch Race status-panel layers, and the MVP's HUD set of 17 read-out and command icons in 15 asset ids with three panels (a meter strip, a notification card and a battle-result card).
 
 - Power icons are 128x128 white or grey art on transparent, tinted at draw and drawn over the darkening halo. The same icon appears on a Supply crate, in a power slot, beside the cursor and on off-screen markers, so it must read at 128 px and at 24 px.
 - One icon per power or outcome, each with a distinct silhouette; a shared frame or badge is allowed, but the icon inside must differ in shape, not only in colour.
 - The Launch Race status panel is a frame (200x300, alpha) and a damage overlay (250x300); both hold live read-outs drawn by the HUD.
+- The MVP's HUD icons are 64x64 read-outs (authored at 2x), white art tinted at draw, one silhouette per concept: the resource, growth, the three priorities, the dwelling and the storehouse, contact, claim, attack, battle, tribute, withdraw, respite, renown, the run clock and the deputy. The claim and attack icons are also the icons of world markers, so they must read at 64 px and at 24 px. The meter strip, the notification card and the battle-result card are panel art in the new palette; the HUD layout they form is one of the features reviewed for likeness (PIL-027).
 
 ## 7 Cursors and markers
 
@@ -158,7 +160,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 ## 10 Meshes
 
-**104 files, 77 asset ids**: 71 render meshes in 53 asset ids (unit figures and bodies 7, projectiles 4, creatures 13, structures 32, eight Relics and seven scenery pieces), 32 collision assets in 23 asset ids, and the map editor's camera-view marker.
+**114 files, 85 asset ids**: 76 render meshes in 57 asset ids (unit figures and bodies 7, projectiles 4, creatures 13, structures 37, eight Relics and seven scenery pieces), 37 collision assets in 27 asset ids, and the map editor's camera-view marker.
 
 - Flat-shaded low-poly, per-face colour in `COLOR_0`, no normals; metres, +Y up; triangle budgets are upper limits in the classes 100, 300, 1000, 3000, 10000 and 25000 (the low-poly look usually needs far fewer).
 - Team parts carry explicit tint weights (the `_SPECIES_TINT` attribute or the `species_team_tint` material flag) on the root node and its direct children; see §2.5.
@@ -167,6 +169,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 - Sockets are empty named nodes; their names come from the socket vocabulary in [GameAssets.md §11](GameAssets.md#11-meshes) and must match exactly. Manning ports stand where a Worker operates the structure; muzzles sit at barrel ends; status lights pair with ports.
 - The Beam Dish keeps its node hierarchy (column, upper mount, rotating dish, door), because sockets hang on those nodes.
 - The eight Relics are interchangeable carried objects of similar size and weight class, each with a base node; they must look carryable by a crowd.
+- The MVP's structures (MVP-083) are new silhouettes: the Wellspring, the centre of a settlement, is its largest and brightest shape, with glow accents at its three lights; the dwelling shows lit windows; the storehouse a drop-off entrance; a resource site reads as a neutral deposit ringed by its ports, the central one as a site of three units. Each structure rises from the ground while it is built and goes dark while it is inactive, so its silhouette must read at every height of the rise and without its glow.
 - Scenery pieces are free-standing props that maps place for silhouette and cover; they keep the flat-shaded language and stay below their budgets.
 
 ## 11 Help images and explainer animations
@@ -180,10 +183,11 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 ## 12 Sound effects by source and event
 
-**901 files in 177 sample groups** from 39 sound sources (units, creatures, weapons, structures, the Supply crate), including the 31 Supply-crate outcome stings, six of which play only if DEC-565 binds them.
+**902 files in 178 sample groups** from 40 sound sources (units, creatures, weapons, structures, the Supply crate), including the 31 Supply-crate outcome stings, six of which play only if DEC-565 binds them.
 
 - Four groups give sound to moments the reference leaves silent, by Resolved decisions: the laser-bolt fire, structure-hit and kill groups (DEC-564) and the Trooper grenade throw (DEC-097). Variant counts are proposed (DEC-564, DEC-097).
 - Each group keeps the reference variant count, so the mix keeps its variety: the Worker attack group has 24 variants, the laser-hit bark 36, the Worker charge bark 37.
+- The MVP adds one group of its own, the structure-complete group (MVP-087): a short, bright, positional one-shot that plays with the completion flash whenever a settlement completes a structure.
 - Mono, 48 kHz, 24-bit sources. Loops are seamless (no click at the wrap); one-shots start on the transient. The target durations in each row, rounded to a tenth of a second, are targets for timing, not limits.
 - The behaviour (volume, pitch spread, distance roll-off, looping, priority, which variant plays) lives in the sound-event data, not in the files. Files are recorded clean and full; the data shapes them.
 - **Crowd voice.** Worker, Leader and Trooper barks (selection, orders, fleeing, charging, being hit) are new voice sets for the small figures. Their character is the audio director's choice; whether they use words is an open question (words need one recording per language).
@@ -192,7 +196,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 ## 13 UI sounds
 
-**16 files in 13 groups**: menu hover, select and back, unit select and highlight, state toggle, invalid action, countdown tick, chat message, selection circle, the power-slot panel sounds, and the game-over announcement (two takes, played before the victory or defeat sting).
+**18 files in 15 groups**: menu hover, select and back, unit select and highlight, state toggle, invalid action, countdown tick, chat message, selection circle, the power-slot panel sounds, the game-over announcement (two takes, played before the victory or defeat sting), and the MVP's battle start and battle end (MVP-087).
 
 - 2-D, short, dry; they sit above the world mix without masking it. Mono or stereo, 48 kHz.
 
@@ -214,7 +218,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 **5 font files**: the title face (Latin, Cyrillic, currency) with its Japanese and Korean companions, the caption face and the body face, one per font role of the UI framework (UI-195).
 
-- Licensed families (open licence or commercial) whose licence allows embedding in a game; rasterised at run time into a glyph cache.
+- Licensed families (open licence or commercial) whose licence allows embedding in a game; rasterised at run time into a glyph cache. A font is third-party content: the owner approves each family, the placeholder's fallback family included, before it lands, and its licence text travels with its files (`AGENTS.md` R14).
 - Legible at 9 px at 1080p, and with the darkening outline pass behind the glyphs; numerals clear and fixed-width where the HUD counts.
 - Coverage at least U+0020-00FF, U+0410-044F and U+20A0-20AF for the Latin faces, U+3000-30FF and U+4E00-9EFF for Japanese, U+AC00-D7FF for Korean.
 
