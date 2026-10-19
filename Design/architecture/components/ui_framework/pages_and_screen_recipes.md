@@ -41,6 +41,8 @@ The pointer capture, the repeat timers, the batched draw, the text service, the 
 
 **UI-305** (MUST) The front end is one full-screen front-end screen (`FrontEndScreen`) whose content is one page at a time: a single-window page flow with one match setup page shared by single-player set-up, the host's lobby and a joining player's lobby, and a ready-up step (DEC-026; R-META-003). The windows of R-META-004 open over it as separate layers (UI-336).
 
+> **Amendment 2026-10-18 (O55; MVP-103).** The MVP's front end is the one page of MVP-103: continue a world, start a new run (pace, seed and site), open the epilogue of an ended world, options for display and volume, and quit. The match setup page, the lobbies and the ready-up step are the skirmish's (O55) and come with it.
+
 **UI-306** (MUST) Every Species screen is built by one of the four recipes of §4.10 to §4.13: development and editor tools as tool windows (recipe A); help, settings and in-match menu screens as full-screen options screens (recipe B); front-end pages as pages of the front-end screen (recipe C); in-match overlays as HUD panels (recipe D). The debug-panel library that ADR-030 allows for development tools is never used for a player-facing screen.
 
 ## 2 Interfaces

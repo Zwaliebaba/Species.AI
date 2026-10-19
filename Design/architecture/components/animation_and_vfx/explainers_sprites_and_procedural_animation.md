@@ -165,6 +165,8 @@ A dead Worker's body is drawn in its colour × `ref.unit.worker.corpse_colour` (
 
 **VFX-119** (MUST) Whether the seasonal theme is active is match state, decided once in the match setup and identical for every participant (DEC-118, R-SIM-726); whether Species keeps it and who chooses it is the Open DEC-101, whose default is that the host's match setup applies the reference date window `ref.meta.seasonal.first_day` to `ref.meta.seasonal.last_day` of `ref.meta.seasonal.month` once. This component reads the state from the match setup and never from a local date. While it is active:
 
+> **Amendment 2026-10-18 (ADR-084; O55).** The state is server state that every client reads from its replica (ADR-084 item 3) and never computes. The MVP has no match setup and does not name the seasonal theme, so it builds none ([MVP scope](../../../implementation/mvp_scope.md) §1.3).
+
 | Effect | Specified in |
 |---|---|
 | seasonal hats on every Worker whose unit id is divisible by `ref.unit.worker.seasonal_hat_period` (3) | R-UNIT-148, VFX-118 |

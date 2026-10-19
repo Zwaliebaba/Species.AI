@@ -356,6 +356,8 @@ Table 3.2-B Runtime feature flags. The value in the "Reference edition" column i
 | `play_internet` | `on`, `off` | `on` | no | sessions over the internet are offered; same design-phase dependency |
 | `map_editor` | `on`, `off` | `off` | no | the map-editor entry exists in the edition; no player edition offers it (R-MAP-301, DEC-045) |
 
+> **Amendment 2026-10-18 (O55; MVP-001).** The six ids are skirmish modes; the world game is none of them and is offered whatever `modes` holds. An MVP edition, which has no skirmish, sets `modes` to the empty list.
+
 **BLD-018** (MUST) The baseline editions are those of table 3.2-D. The design phase adds or replaces editions; every edition follows §4.3.
 
 Table 3.2-D Baseline editions.

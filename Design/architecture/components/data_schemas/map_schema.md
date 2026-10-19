@@ -338,6 +338,8 @@ Table 3.4-C Fields of a terrain flatten area (`TerrainFlattenArea`).
 
 **DAT-085** (MUST) Under the default of DEC-246 the terrain records are the generator's inputs, and every participant generates the height field from them at load (TER-060). If the design phase chooses to bake the height field, the cooked map gains a derived height-grid section, written by the content build from these records, and the authoring form of table 3.4-A to table 3.4-C does not change.
 
+> **Amendment 2026-10-18 (WLD-160; MVP-011).** A world has no map definition: its terrain records are those that the world generator places from its template and seed (WLD-160), the server bakes the field into chunks (WLD-166), and in the MVP the client also generates it from the seed and compares a terrain hash (MVP-011). Generation from the records at load stays the skirmish map's.
+
 ### 3.5 Map lights
 
 **DAT-086** (MUST) Each map light holds the fields of table 3.5-A (R-MAP-087). Map lights are presentation values: the renderer uses the first two of the list (RND-013) and the simulation never reads one. A map has one list of lights, so no rule decides between two blocks of lights.
@@ -437,6 +439,8 @@ Table 3.9-A Route points.
 
 **DAT-098** (MUST) The record type `mode.options` holds, in one record, the option catalogue of table 3.12-A and, for each of the six modes of R-MODE-029, the ordered option list of table 3.12-B. The mode order is the enumeration order of `MatchMode` (R-MODE-029); a map, a match setup and a command name a mode by its enumerator, never by the position of a record in a file, so adding a mode renumbers nothing. The record is required in every edition whose `modes` flag offers a mode ([import_and_build_records.md](import_and_build_records.md) table 3.5-B); an edition without it fails the content build (ADR-059).
 
+> **Amendment 2026-10-18 (O55; MVP-001).** The six modes are skirmish modes; the world game is not a mode of R-MODE-029 and has no `mode.options` record. An MVP edition offers no skirmish mode (build tooling table 3.2-B amendment), so it needs none.
+
 Table 3.12-A The option catalogue. Each option's type and unit come from [reference/01](../../../reference/01_skirmish_rules_and_modes/README.md) R-MODE-074; its typed default, which a mode that lacks the option reads, is R-MODE-076's (DEC-073).
 
 | Option | Key | Value type | Unit |
@@ -470,7 +474,11 @@ Table 3.12-B Fields of one option of a mode's option list.
 
 **DAT-099** (MUST) The order of a mode's option list is its display order on the host's options page (R-MODE-073). A value outside the option's range, an option outside the mode's list and a list control without one label per value are build errors; at run time an option index outside the mode's list is rejected (R-MODE-081). The schema states no dependency between options: the rule that sudden death is forced off while the time limit is none is [reference/01](../../../reference/01_skirmish_rules_and_modes/README.md) R-MODE-074's, applied by match setup. The help text of a focused option is the string id of R-META-050, `ui.advanced_options.help.<option>.<mode>` when it exists, else `ui.advanced_options.help.<option>`, and the second form must exist for every option of every mode's list (README DAT-030).
 
+> **Amendment 2026-10-18 (O55; MVP-103).** This holds for skirmish only; the choices of a new run (pace, seed and site, MVP-103) are not mode options.
+
 **DAT-100** (MUST) The match-setup options outside the per-mode lists (bot difficulty, co-op, basic crates only, the password, single-round Siege; R-MODE-082) are match-setup state, not part of `mode.options`; who may change an option is the lobby authority model (DEC-243).
+
+> **Amendment 2026-10-18 (O55; MVP-005).** A world has no match setup ([skirmish maps and map tools](../../../gdd/01_world_and_regions/skirmish_maps_and_map_tools.md)): its seed, its pace and the steward's site (MVP-005, MVP-012, MVP-103) are world state that the server holds from the world's creation.
 
 ### 3.13 Hooks
 

@@ -72,6 +72,8 @@ struct LitMaterial
 
 **RND-211** (MUST) While a match world exists, the near and far planes are set at the start of every frame to `rnd.view.near_plane` (5 wu) and `rnd.view.far_plane` (15000 wu). Outside a match (the front end and the loading view) they are `rnd.view.menu_near_plane` (50 wu) and `rnd.view.menu_far_plane` (10000000 wu).
 
+> **Amendment 2026-10-18 (WLD-001; MVP-010).** In the world game the match planes apply while a world is drawn and the front-end planes outside it. The far plane of 15,000 wu holds for the MVP's one region of 5,120 wu: a camera above the region at the settlement view's highest height (5,000 wu, R-CTRL-461) is at most 8,800 wu from any point of it. The strategic view (WLD-240, up to 46,080 wu high) and worlds of more than one region need a far plane of their own, and so does the fog end of RND-222, which a world extent of 71,680 wu (WLD-001) would put at 72,680 wu; both are DEC-247's, with the camera-relative positions of WLD-246.
+
 **RND-212** (MUST) Before every projection set-up, the camera's vertical field of view is clamped to [`rnd.view.fov_min` (1°), `rnd.view.fov_max` (180°)]. The field-of-view values themselves (the free camera, its zoom, turret aiming and scripted views) are the camera component's; the main-menu value is RND-077.
 
 **RND-213** (MUST) The view matrix looks from the camera position towards position + front, with the camera's up vector.

@@ -41,6 +41,8 @@ Caption: the renderer reads presentation inputs only, builds every frame through
 
 **RND-002** (MUST) The renderer MUST NOT write simulation state. It reads an immutable presentation snapshot of the simulation (RND-018) and the extrapolation time of `reference/12_simulation_model/01_tick_timing_and_main_loop.md` (R-SIM-560 to R-SIM-564), and never stores an extrapolated value back (see DEC-007). How the snapshot is produced, and whether Species extrapolates or interpolates between two snapshots, is decided by the design phase (see DEC-222, R-SIM-565); until then the renderer extrapolates as R-SIM-562 specifies.
 
+> **Amendment 2026-10-18 (ADR-084; O55).** The renderer reads the presentation snapshot that the client session builds once per frame from its replica, the presentation events and the one predicted unit (ADR-084 items 3, 5 and 6), never simulation state, and it interpolates: every replicated object is drawn between its two latest received states, one tick period plus a jitter allowance behind the newest, and nothing is extrapolated (item 4, RND-081). The default of the last sentence no longer holds.
+
 **RND-003** (MUST) The renderer MUST NOT compute any value that feeds simulation state. GPU work serves presentation only (see DEC-654): rendering, particles, shatter debris and animation.
 
 **RND-004** (MUST) The renderer MUST NOT produce simulation data. Tree crown hit volumes and every other collision or hit volume are baked collision data from the content build (see DEC-012, R-SIM-651); the renderer's tree generator may be shared with the content build as code, but the renderer never writes a hit volume. Mesh hit tests are simulation queries on collision assets (R-SIM-123, R-SIM-327), never renderer calls.
@@ -315,6 +317,8 @@ public:
 
 **RND-018** (MUST) The presentation snapshot (`PresentationSnapshot`) is the baseline contract between the simulation and every presentation reader, the default under option A of DEC-222 until the design phase decides the boundary. The game layer produces one snapshot per rendered frame, from simulation state alone, after the update slices that the frame runs (R-SIM-531) and before the frame is rendered, and does not change it afterwards. The frame renderer and the renderers of game objects, the VFX runtime ([animation and VFX](../animation_and_vfx/README.md) §2), the match camera ([camera](../camera_and_sequences.md) CAM-004) and the audio bridge ([audio engine](../audio_engine/README.md) AEN-041) read the snapshot of the frame and keep no reference into it beyond that frame. The game layer owns the storage: the baseline keeps one snapshot and reuses it once the frame that read it has finished recording and the audio update of the frame has read it; a threading model that builds the next snapshot while a frame reads the current one keeps two (DEC-224); interpolation between two ticks keeps the snapshots of the last two ticks (DEC-222, R-SIM-565).
 
+> **Amendment 2026-10-18 (ADR-084; O55).** The client session builds the snapshot from its replica (the decoded state of its interest set for the two latest ticks received), the presentation events and the predicted unit (ADR-084 items 3 to 6), not from simulation state after update slices, which a client never runs; the replica's two ticks are the states that interpolation keeps. Where this names the match camera, the world game reads the camera of the settlement view (MVP-100).
+
 **RND-019** (MUST) The snapshot holds the records of table 3.5-A, and each reader reads only the fields that its documents name.
 
 Table 3.5-A The records of the presentation snapshot.
@@ -328,6 +332,8 @@ Table 3.5-A The records of the presentation snapshot.
 | history | the Crawler trail samples (R-UNIT-535), the Reaper Serpent's tail positions (R-UNIT-594), the centipede links and samples (R-UNIT-549, R-UNIT-551) | the VFX runtime |
 | route and world marker | per route its points and end point; per world marker its target, kind, icon, owner, persistence and progress fraction ([entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) §2) | the route-line and world-marker renderers |
 | emitter | per tracked emitter its position, velocity, height above the terrain, age and the counts of teams and of actors near it (AEN-041) | the audio bridge |
+
+> **Amendment 2026-10-18 (ADR-084; O55).** The frame record carries the two tick numbers of the interpolation pair and the interpolation fraction in place of the extrapolation time, the last update slice and the last command frame (ADR-084 item 4), and the sliced-pool record is not kept, because a replicated state is a whole tick. A world has no match setup ([skirmish maps and map tools](../../../gdd/01_world_and_regions/skirmish_maps_and_map_tools.md)), so in the world game the colours, the local settlement and the world extent of the setup record come from the replica.
 
 ```cpp
 namespace Species

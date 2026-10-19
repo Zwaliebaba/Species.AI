@@ -31,6 +31,8 @@ Notation used throughout:
 
 **INP-004** (MUST) Player commands originate only in the input layer. The match input pump (`MatchInputPump`) and the sampler of the team command state (`TeamCommandState`) turn actions into members of `PlayerCommand` and into fields of the team command state, by the rules of [actions and bindings](../../../reference/06_controls_camera_and_commands/actions_and_bindings.md) (DEC-023); the router itself produces actions, never commands. Simulation code links no input interface, never queries an action, never reads the pointer, a device, the input mode or the camera, and never issues a player command (DEC-008, DEC-119, R-CTRL-003, R-CTRL-004). One click therefore yields one command on the sender and one effect on every participant.
 
+> **Amendment 2026-10-18 (ADR-084; ADR-087).** A command leaves the client only as a message through the transport (ADR-084 item 1); the server checks it on arrival and on execution and executes it once, in the first tick after it arrives (ADR-087 items 1 to 4), and its effect reaches each client whose interest set holds it by replication (ADR-086). One click therefore yields one command and one effect, in the server's simulation; the team command state is the control state of ADR-087 item 5.
+
 **INP-005** (MUST NOT) The input component never writes simulation state, never reads it, and never changes a Power, a selection or a unit locally. Local feedback (sounds, previews, camera modes) is the consumers' business (R-CTRL-022, DEC-007).
 
 **INP-006** (MUST) Text entry does not pass through the binding graph. Text characters and input-method composition go to the focused text field through the UI framework's text service, with the modifier state of each character (ADR-028, ADR-032).

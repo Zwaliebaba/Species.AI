@@ -987,6 +987,8 @@ Table 5-A Baseline budgets.
 
 **AST-130** (SHOULD) A skirmish match is entered within `ast.load.match_entry_budget_s` (10 s), from the start of its match load to its first match frame, on the largest supported map: the terrain generation within its share `ter.perf.generation_budget_ms` ([terrain](terrain/README.md) TER-242), the pack reads, the GPU uploads and the match bank of the audio engine ([audio engine](audio_engine/README.md) AEN-102) included. The budget is provisional until DEC-226 sets the load targets; the load performance test T31 measures it, and until DEC-971 pins the reference test machine it reports the time and does not fail.
 
+> **Amendment 2026-10-18 (O55; MVP-011).** The MVP builds no skirmish (MVP-001); until it does, T31 reports the time to enter an MVP world, its terrain generation on the client included (MVP-011), and does not fail until DEC-226 sets the load targets.
+
 ## 6 Failure modes, diagnostics and telemetry
 
 | Failure | Detected | Behaviour | Requirement |

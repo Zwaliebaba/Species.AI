@@ -37,6 +37,8 @@ Table 4.2-A Rounded functions of the generator.
 
 A result that lies within one binary64 unit in the last place of a binary32 rounding midpoint rounds the same on every platform only if every maths library returns the same binary64 value for it; an exact square does when *x*^2.0 returns the exact square. This is the agreement condition of DEC-246 item 5.
 
+> **Amendment 2026-10-18 (ADR-081; MVP-011; MVP-093).** ADR-081 item 3 keeps this rounding over the deterministic functions of the engine maths library (PLT-134), never the CRT's, whose results can differ between computers. The MVP defers those functions (MVP-093), so until they exist the generator rounds the CRT's results, and the terrain hash of MVP-011 refuses a world on which a client and its server, on one computer in the MVP (MVP-071), disagree.
+
 **TER-066** (MUST) Every decimal field of the terrain records is parsed to binary64 by one platform-independent, correctly rounded parser and then rounded once to binary32 (DEC-241 item 12); the maximum height stays binary32. The rounding is observable: a tile at position z = 985 on a terrain of cell size 15.76 has 985 ÷ 15.760000228881836 = 62.4999991, so its footprint starts at world row trunc(62.9999991) = 62, whereas the unrounded 15.76 gives 62.5 and row 63, shifting the footprint by one world cell (vector set A, §7.2). Whole-number fields are 32-bit signed integers; the content build rejects malformed and out-of-range tokens (DEC-015).
 
 **TER-067** (MUST) ceilLog2(*x*) equals the exact ⌈log₂ *x*⌉ for every integer 1 ≤ *x* < `ter.test.log2_check_limit` (70 000), exact powers of two included (test T3).

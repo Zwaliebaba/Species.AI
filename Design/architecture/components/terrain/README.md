@@ -22,6 +22,8 @@ Notation used throughout: *r32*(*x*) rounds a binary64 value to the nearest bina
 
 **TER-002** (MUST) The terrain is one regular height field: a world surface grid (`SurfaceGrid`) with its origin at (0, 0) and square cells of the cell size on both axes. It is generated once per match-world initialisation, at step 5 of [reference/12](../../../reference/12_simulation_model/02_match_lifecycle_and_state_reset.md) table 2.4-A (R-SIM-016), from the terrain definition, the terrain tiles and the terrain flatten areas of the map definition ([rules and conventions](../../../reference/08_maps_and_level_design/rules_and_conventions.md) R-MAP-080 to R-MAP-083). Nothing writes it afterwards: no simulation rule, presentation code, option change or tool other than the map editor's regeneration (§8.2) changes a sample (DEC-007, DEC-010).
 
+> **Amendment 2026-10-18 (WLD-160; MVP-011; O55).** In a world the field is generated at world creation (WLD-160, WLD-165) from the tile and flatten records that the world generator places, and in the MVP by the client as well, from the world's seed (MVP-011); it is immutable for the life of the world, and the match world's lifetime of TER-010 reads as the world's.
+
 **TER-003** (MUST) A terrain is a list of tiles. Each tile is an independent square fractal height map, produced by midpoint displacement (square and diamond steps) with its own private generator (R-SIM-609) and optionally pinned by a coarse guide grid of 8-bit heights. Each tile's highest sample is linearly rescaled to the tile's desired height, and the tile is resampled onto the world grid with a per-sample maximum, so a later tile can only raise terrain (DEC-025).
 
 **TER-004** (MUST) Flatten areas, axis-aligned squares with five operations, are applied after all tiles; they are the only operation that can lower terrain. There is no smoothing pass between tiles: the only smoothing is the bilinear resampling of TER-121 and the smooth operation of TER-143.
@@ -35,6 +37,8 @@ Notation used throughout: *r32*(*x*) rounds a binary64 value to the nearest bina
 **TER-008** (MUST NOT) The terrain component does not draw from the simulation generator (`SimRng`) or from any presentation generator that another consumer shares (R-SIM-608); it does not read a clock, an option, the local team or any other local state; and it never writes simulation state other than its own height field and normal grid, which it writes only while generating them.
 
 **TER-009** (MUST) The baseline runtime model is the reference's: every participant generates the height field when the map loads, from the tile records of its map definition, as TER-060 specifies. Whether Species generates at load, bakes the height field in the content build, streams it for a large world or identifies it by a content hash is decided by the design phase (DEC-246, DEC-247; §8.3). No reference terrain is reproduced: Species maps are authored new, and the generator specification also defines the look of a new map tool (DEC-025, DEC-063).
+
+> **Amendment 2026-10-18 (WLD-160; WLD-166; MVP-011).** In the world game the server generates the terrain from the world's seed and bakes it into chunks (WLD-160, WLD-166), which A1 gives D8 to deliver by digest (DEC-246). The MVP keeps generation on both ends: the server and the client generate from the seed with this library and compare a terrain hash at connection, and a client whose hash differs refuses the world with a message (MVP-011). Generation at map load stays the skirmish's.
 
 ## 2 Interfaces
 
@@ -285,6 +289,8 @@ flowchart TD
 Caption: the terrain pipeline of one match-world initialisation; everything below "Simulation normal grid" on the presentation branch never feeds the simulation.
 
 **TER-061** (MUST) Generation computes in IEEE-754 binary64 with rounding to nearest, ties to even: every expression is evaluated in the order written in this document, and every operation is rounded to binary64, with no fused multiply–add contraction, no reassociation, no extended-precision intermediate and no flush to zero. Where this document writes "binary32", the value is rounded to binary32 and widened again. This is the reference numeric model, the default of DEC-240; it reproduces the reference heights only when every participant's rounded transcendental results agree (TER-065, DEC-246 item 5).
+
+> **Amendment 2026-10-18 (ADR-081).** ADR-081 keeps this model under strict binary64 (items 2 and 3); the agreement that matters is between the world's server and, in the MVP, the client that generates the same terrain (MVP-011), not between participants.
 
 **TER-062** (MUST) Two evaluation orders are kept exactly: the weights-first bilinear sum (TER-073), whose rewriting changes practically every terrain, and the sequential additions of the smooth operation (TER-143), whose rewriting changes every terrain with a smooth area acting above its threshold (DEC-246 item 6).
 

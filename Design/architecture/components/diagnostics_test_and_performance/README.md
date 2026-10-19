@@ -90,6 +90,8 @@ This component composes those parts into one developer view and one test harness
 
 Run-time state hashing for divergence detection is DEC-206; the per-tick state hash of the test harness (DBG-144) is a test tool.
 
+> **Amendment 2026-10-18 (ADR-087; ADR-081; O55).** Item 1: a debug command takes the one command path and the server executes it once (ADR-087 items 1 and 8; DBG-118 amendment); no participant applies it. Item 2: the world game's regression tool is a snapshot replayed with its commands on one build (ADR-081 Level 1, MVP-093, the command journal of ADR-088 item 7), since a battle replay is a state stream (ADR-086 item 6) and the MVP builds no replay. Item 3 is the soak of the DBG-160 amendment, and item 5's frame queue gives way to the metrics of the DBG-105 amendment. The run-time state hash is ADR-081 item 8's.
+
 ## 2 Interfaces
 
 ### 2.1 Interface sketch
@@ -327,6 +329,8 @@ Caption: Listing 2.1-A, the diagnostics interface (declarations only). `ProfileN
 | network | the networking model | the metric set of DEC-208 |
 
 **DBG-024** (MUST) **Debug commands** travel as player commands of the command catalogue ([teams and player commands](../../../reference/12_simulation_model/06_teams_and_player_commands.md)) with the payload of `DebugCommand`: the sender's team, the command kind, the target team slot, the target point and the forced outcome. Who may send one and how it is validated is DBG-118 and DEC-202.
+
+> **Amendment 2026-10-18 (ADR-087).** A debug command is a typed command message of the debug operator's source on the one command path (ADR-087 item 1), sent through the transport, checked on arrival and on execution (items 2 and 3) and recorded in the world record, which carries the cheats-used marker (item 8). In the world game its target names a settlement by stable id (ADR-083 item 5) where this names a team slot.
 
 **DBG-025** (MUST) **Soak artefacts.** Each soak pass produces one soak report (`SoakReport`): one row per match (DBG-166) plus the pass totals, the crash dumps of the pass ([platform layer](../platform_layer.md)), the assertion failures, the simulation update-time percentiles and the peak population per match. Its rows and summary are the generated records of the schema `test.soak_report` ([test and telemetry records](../data_schemas/test_and_telemetry_records.md) DAT-375 to DAT-378), written to the report folder that the caller of `SoakRunner::Run` names and returned from it. The report is a CI artefact (ADR-070).
 

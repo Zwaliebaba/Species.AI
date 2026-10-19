@@ -31,7 +31,11 @@ This component is the runtime of each participant's match camera (`MatchCamera`)
 
 **CAM-003** (MUST NOT) The camera never writes simulation state, and the simulation never reads the camera (DEC-008, R-SIM-655, R-SIM-660). The camera pose, mode, clock, the views in use and the timeline state are local to one participant: they are never sent, replicated, recorded in a replay or saved with match state, and two participants with different camera poses produce identical simulation states (AC-CTRL-CA-08). The look-around state reaches the simulation only as the `cameraTracking` field of the sender's team command state, which the match input pump fills and converts to world space before it is sent (R-SIM-440, R-SIM-661); no simulation rule reads a local camera.
 
+> **Amendment 2026-10-18 (ADR-086).** The client sends its camera's ground point and its view (settlement or strategic) to the server for interest management only: the server intersects the interest set with that view and orders its tiers by the distance to that point (ADR-086 items 1 and 2). Neither enters simulation state, and no simulation rule reads them.
+
 **CAM-004** (MUST) The camera reads simulation state only through the read-only presentation inputs of the simulation and presentation boundary (DEC-222): the presentation snapshot of the frame ([renderer](renderer/README.md) RND-018, RND-019), the extrapolation time of R-SIM-560, and the presentation events addressed to the participant's own team (R-SIM-666). How Species enforces that boundary is open (DEC-222); whatever the mechanism, the camera module includes no interface that writes simulation state, and the conformance test T18 runs the simulation with the camera and timelines replaced by stubs.
+
+> **Amendment 2026-10-18 (ADR-084).** The snapshot is the one that the client session builds from its replica (RND-018 amendment); the camera reads the interpolation fraction in place of the extrapolation time (ADR-084 item 4) and the presentation events that the server sends to its steward's client, filtered by that client's interest (item 5), and a camera that tracks the directly controlled unit uses its predicted position (item 6). The build enforces the boundary (item 2).
 
 **CAM-005** (MUST NOT) The component neither owns nor changes: the projection, the near and far planes, the field-of-view clamp, the view tests, fog and lighting ([view, lighting and fog](renderer/view_lighting_and_fog.md) RND-208 to RND-236); the shake intensity, its decay and its random draws ([particles, shatter and screen effects](animation_and_vfx/particles_shatter_and_screen_effects.md) VFX-232); the map's camera-view and camera-animation records and their limits ([map rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md) R-MAP-125 to R-MAP-128, [data schemas](data_schemas/README.md)); the action bindings and the pointer ([input](input/README.md)); the UI windows and their text ([UI framework](ui_framework/README.md)).
 
@@ -231,6 +235,8 @@ public:
 
 **CAM-015** (MUST) In each frame the camera provides its control vector (R-CTRL-451, R-CTRL-487) and its looking-around and tracking state (R-CTRL-472) to the match input pump, which converts every camera-relative quantity to world space before it enters the team command state (R-SIM-440, DEC-008). The camera never writes the team command state.
 
+> **Amendment 2026-10-18 (ADR-087; ADR-084).** The team command state is the client's control state, sent to the server through the transport at once when it changes and at least once per tick period, already in world space (ADR-087 item 5); the prediction of the directly controlled unit reads the same local control state (ADR-084 item 6).
+
 **CAM-016** (MUST) The camera emits no event to the simulation and no event that changes a game outcome. Its only outputs are the frame output (CAM-012), the values of CAM-015, the pointer requests of Table 1-A and development diagnostics (§6).
 
 ## 3 Data model
@@ -317,6 +323,8 @@ Table 3.2-A Camera state.
 | map camera data | the views, animations and start views of the match, and the name index | CAM-014, CAM-121 |
 
 **CAM-024** (MUST) The match camera lives as long as the process ([match lifecycle](../../reference/12_simulation_model/02_match_lifecycle_and_state_reset.md), the process row of its lifetime table). The map camera data and the scripted-move, animation, structure-focus and timeline state belong to one match: `EnterMatch` replaces them and `LeaveMatch` clears them, so none of them survives a match. The pose, the field of view and the mode persist until something sets them, and the camera clock is never reset.
+
+> **Amendment 2026-10-18 (ADR-083; O55).** In the world game the per-match state belongs to the client's session in a world (ADR-083 items 2 and 3): entering the world replaces it and leaving clears it, by the amendments of CAM-060 and CAM-063.
 
 ### 3.3 Presentation timelines
 
@@ -476,11 +484,17 @@ The horizontal distance from the focus is therefore d × the horizontal length o
 5. `Cut()`;
 6. outside the map editor, the camera enters free movement (R-SIM-014 step 9); in the map editor it enters the developer fly mode (R-MAP-309, CAM-080).
 
+> **Amendment 2026-10-18 (O55; WLD-244).** A world has no map definition, camera views or start positions ([skirmish maps and map tools](../../gdd/01_world_and_regions/skirmish_maps_and_map_tools.md)), so entering a world (the client's InWorld state, ADR-083 item 3) clears the state of step 1 with no map camera data, replaces the bounds of step 2 by WLD-244's rule that the camera's ground point stays inside the steward's areas, and sets the fallback pose of step 3 over the centre of the steward's site (MVP-012) instead of the map's corner; step 4 is skipped, and steps 5 and 6 run as written.
+
 **CAM-061** (MUST) `OnLocalTeamKnown(n)` runs in the first frame of the match loop in which the local team exists, and again after every reset that rebuilds the match world (R-CTRL-497). It targets the camera view of the start-position record of start position n, the team's start position (DEC-560, R-SIM-418), and cuts to it (CAM-042). The mode is not changed, so free movement continues from the new pose. When the record names no camera view that the map holds, nothing happens, and the camera keeps the default view or the fallback pose. Every match start therefore cuts to the default view and then to the player's own view (DEC-024).
+
+> **Amendment 2026-10-18 (O55).** A world has no start positions, so `OnLocalTeamKnown` is never called in a world; its first pose is that of the CAM-060 amendment.
 
 **CAM-062** (MUST) In the map editor the editor loop replaces the match loop (R-MAP-309), so `OnLocalTeamKnown` is never called and no start-view cut happens.
 
 **CAM-063** (MUST) `LeaveMatch` stops any camera animation, scripted move, structure focus and timeline and clears the map camera data. The front end then sets its own view (R-META-007, R-META-210); the camera is not advanced there (CAM-032).
+
+> **Amendment 2026-10-18 (ADR-083).** Leaving a world (the client's Leaving state, ADR-083 item 3) runs the same steps.
 
 ```mermaid
 sequenceDiagram
@@ -597,6 +611,8 @@ Caption: Listing 4.8-B, camera-animation playback (CAM-065 to CAM-068).
 ### 4.11 Precision and world scale
 
 **CAM-095** (MUST) The camera is specified for arena maps: its positions are world coordinates within the map's extent and the camera border, binary32 is precise enough for them (DEC-247 item 9), and every bound derives from the map's world size (CAM-060). A world larger than an arena (DEC-247) needs camera-relative coordinates for rendering once it extends beyond a few tens of thousands of wu (DEC-247 item 9, DEC-240) and a strategic zoom over a coarse terrain representation (DEC-247 item 12). The reference has neither, and both are design-phase inputs (§8.3).
+
+> **Amendment 2026-10-18 (WLD-001; WLD-246; ADR-081).** A world's coordinates lie in [0, 71,680] wu with its land at the centre (WLD-001), so even the MVP's one region lies 33,280 to 38,400 wu from the origin on both axes, beyond the arena extents assumed here. The renderer therefore transforms positions relative to the camera (WLD-246), and the camera supplies its position to that transform and to picking in binary64, as the simulation holds positions (ADR-081 item 1). Its bounds come from the steward's areas (CAM-060 amendment), and the strategic zoom waits for a world of more than one region (MVP scope §5.1).
 
 ### 4.12 Presentation timeline baseline
 

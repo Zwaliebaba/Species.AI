@@ -79,3 +79,4 @@ Proposed option: **1, optional scRGB FP16 HDR, off by default**. **Default while
 
 - Technology baseline item 4.6 (see [the index](README.md#technology-baseline)); sources checked 2026-10-17: https://learn.microsoft.com/windows/win32/direct3darticles/high-dynamic-range · https://learn.microsoft.com/windows/win32/api/dxgi1_5/nf-dxgi1_5-idxgiswapchain4-sethdrmetadata.
 - Related: ADR-005 (catalogue entries per target format), ADR-012 (swap chain), ADR-013 (working colour space), ADR-064 (accessibility, photosensitivity).
+- **Amendment 2026-10-18 (owner decision O55).** Since O55 the first playable of the "Confirmed when" line is the MVP's M3 build ([MVP scope](../implementation/mvp_scope.md) §3, §5.3), not the skirmish of O20, and the evidence is gathered on that build; HDR is off its path as well (MVP-100 names ADR-001 to ADR-013), so the SDR path stays the one every test covers until the options pages are final.
