@@ -503,10 +503,10 @@ The golden-image tests compare with the default tolerance and on the pinned refe
 | DEC-040 | Open | the inverted style and its clear colour (pass 2) |
 | DEC-052 | Dropped | campaign frame types and overlays are not specified (RND-068, RND-071, RND-080) |
 | DEC-059 | Dropped | the frame types and passes that are not specified (RND-068, RND-071, RND-080) |
-| DEC-200 | Open | network-state banners (RND-076) |
-| DEC-222 | Open | extrapolation or interpolation (RND-081) |
-| DEC-224 | Open | parallel pass recording (RND-120) |
-| DEC-226 | Open | load progress (RND-118) |
+| DEC-200 | Resolved (ADR-084) | network-state banners (RND-076) |
+| DEC-222 | Resolved (ADR-084) | extrapolation or interpolation (RND-081) |
+| DEC-224 | Resolved (ADR-083) | parallel pass recording (RND-120) |
+| DEC-226 | Resolved (ADR-083) | load progress (RND-118) |
 | DEC-316 | Open | the screen transition and the captured frame (RND-095) |
 | ADR-004, ADR-005, ADR-007 | Proposed, Accepted, Proposed | the frame graph, the catalogue and the barrier model this document feeds |
 

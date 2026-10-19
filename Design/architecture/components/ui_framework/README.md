@@ -149,8 +149,8 @@ The type, ownership and lifetime of every UI object are listed in [core_and_widg
 - **DEC-007** (Resolved): presentation never writes simulation state (UI-002).
 - **DEC-102** (Resolved): the framework corrections by construction (UI-014).
 - **DEC-099** (Resolved): per-id fallback to the base language (UI-018; [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §4.11).
-- **DEC-221** (Open): the composition root, service lifetimes and the application state machine; the UI core's owner and lifetime follow it (UI-005).
-- **DEC-222** (Open): the simulation and presentation boundary; how the UI's read-only view of the match is enforced and fed (UI-002).
+- **DEC-221** (Resolved, ADR-083): the composition root, service lifetimes and the application state machine; the UI core's owner and lifetime follow it (UI-005).
+- **DEC-222** (Resolved, ADR-084): the simulation and presentation boundary; how the UI's read-only view of the match is enforced and fed (UI-002).
 - **DEC-045** (Open): a map editor, whose windows would be tool windows of the UI window layer (UI-001).
 - ADR-030 is Accepted (an own retained framework); ADR-034 is Proposed, and the default it names is the baseline of this folder.
 

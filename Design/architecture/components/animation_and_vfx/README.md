@@ -504,10 +504,10 @@ The tests of the explainer player, the sprite recipes and the procedural animati
 | DEC-101 | Open | whether Species keeps the seasonal theme and who chooses it (VFX-119) |
 | DEC-106 | Open | the performance envelope: effect caps, budgets and level of detail are set by measurement (VFX-023) |
 | DEC-118 | Resolved | the seasonal state is match state (VFX-006 row 10, VFX-119) |
-| DEC-222 | Open | how the snapshot and the effect events reach presentation (VFX-003) |
+| DEC-222 | Resolved (ADR-084) | how the snapshot and the effect events reach presentation (VFX-003) |
 | DEC-266 | Open | snowflakes, Wisps, muzzle flashes and shell casings stay in the simulated effect pool (VFX-006 row 5) |
-| DEC-228 | Open | the stress population and the fixed-capacity effect pools (VFX-023) |
-| DEC-242 | Open | the simulation generator's algorithm; one presentation generator per thread (VFX-011) |
+| DEC-228 | Resolved (ADR-080) | the stress population and the fixed-capacity effect pools (VFX-023) |
+| DEC-242 | Resolved (ADR-082) | the simulation generator's algorithm; one presentation generator per thread (VFX-011) |
 | DEC-328 | Open | saturated team colours on the Shield and Visitor bubbles (VFX-121) |
 | DEC-336 | Dropped | other renderers are not specified; Species has one renderer (ADR-001) (VFX-008) |
 | DEC-461 | Resolved | turret casings come from each turret's own sockets and use presentation draws (VFX-219) |

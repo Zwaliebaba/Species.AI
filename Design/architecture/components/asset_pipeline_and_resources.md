@@ -1062,9 +1062,9 @@ Golden-image tests use the default tolerance and reference configuration of the 
 | DEC-098 | Resolved | the cache keyed by asset id and variant (AST-003, AST-028, AST-031, AST-109) |
 | DEC-099 | Resolved | a language is offered only when complete (AST-088) |
 | DEC-100 | Resolved | settings defaults compiled into the build, so no pack is needed first (AST-057) |
-| DEC-204 | Open | how content identities are exchanged and what a mismatch does (AST-086, AST-100); custom-map identity (AST-063) |
-| DEC-224 | Open | the threads that run the asset jobs (AST-010, AST-011, AST-118) |
-| DEC-226 | Open | loading and streaming of world content (AST-009, AST-108, AST-112, AST-117, AST-118) |
+| DEC-204 | Resolved (ADR-088) | how content identities are exchanged and what a mismatch does (AST-086, AST-100); custom-map identity (AST-063) |
+| DEC-224 | Resolved (ADR-083) | the threads that run the asset jobs (AST-010, AST-011, AST-118) |
+| DEC-226 | Resolved (ADR-083) | loading and streaming of world content (AST-009, AST-108, AST-112, AST-117, AST-118) |
 | DEC-246 | Open | which terrain inputs a cooked map holds, and so what its hash covers (AST-099, table 3.11-A) |
 | DEC-317 | Open | one recording set, or one per language (AST-050) |
 | DEC-329 | Open | assets of objects that only rules create; the default counts them as referenced (AST-090) |

@@ -256,8 +256,8 @@ Caption: Figure 4-A, from the soak configuration to the soak report (DAT-372 to 
 
 | Reference | Status | Where it applies |
 |---|---|---|
-| DEC-200 | Open | soak passes with client participants (table 3.1-A, `clients`) |
-| DEC-206 | Open | the divergence whose first tick the match table records (table 3.2-A) |
+| DEC-200 | Resolved (ADR-084) | soak passes with client participants (table 3.1-A, `clients`) |
+| DEC-206 | Resolved (ADR-081) | the divergence whose first tick the match table records (table 3.2-A) |
 | DEC-250 | Open | whether the telemetry queue is kept across runs (DAT-385) |
 | DEC-801 | Resolved | unique configuration ids (table 3.1-A) |
 | DEC-802 | Open | test maps and configurations outside player editions (DAT-372) |

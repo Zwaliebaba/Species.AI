@@ -789,7 +789,7 @@ The UI core counts, per frame, panels, widgets, clicks and cancelled presses for
 ## 8 Open decisions
 
 - **DEC-102** (Resolved): the corrections by construction stated in UI-024, UI-031, UI-034, UI-041, UI-042, UI-046, UI-048, UI-049, UI-051, UI-055, UI-059, UI-062, UI-064, UI-068, UI-071, UI-072, UI-075, UI-076, UI-077, UI-080, UI-083, UI-084, UI-085, UI-088, UI-089, UI-090, UI-106, UI-110, UI-111, UI-119 and UI-120.
-- **DEC-007** (Resolved) and **DEC-222** (Open): the UI never writes simulation state; a match-option binding only requests (UI-096; README UI-002).
+- **DEC-007** (Resolved) and **DEC-222** (Resolved, ADR-084): the UI never writes simulation state; a match-option binding only requests (UI-096; README UI-002).
 - **DEC-243** (Open): lobby authority; which participant confirms a match-option request (UI-097), and the host action that is disabled while hosting is not permitted (UI-055).
 - **DEC-244** (Open): the session password (UI-096).
 - **DEC-316** (Open): the transition that the page widgets start (UI-106).

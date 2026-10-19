@@ -548,7 +548,7 @@ The UI counts draws, vertices, batches and glyphs rasterised per frame for the d
 - **DEC-337** (Dropped): the code-point range that one glyph-atlas page of the reference claims; Species has no glyph atlases of that kind and uses its glyph cache (UI-198).
 - **DEC-801** (Resolved): duplicate string ids and over-long values are build errors (UI-222, UI-225).
 - **DEC-102** (Resolved): no state leaks between widgets, literal text, stable look-ups, Back that never applies (UI-183, UI-217, UI-221, UI-227).
-- **DEC-221** (Open): the hand-over of resources by reference-counted generations rather than frame counts (UI-239).
+- **DEC-221** (Resolved, ADR-083): the hand-over of resources by reference-counted generations rather than frame counts (UI-239).
 - **DEC-245** (Open): the session browser, whose row geometry UI-164 item 5 gives.
 - **DEC-050** (Open): a rebinding screen, which the binding argument of UI-224 follows when bindings change.
 - **DEC-950** (Resolved): the keyboard defaults of the menu actions, bound in the input component's table 3.6-B (UI-204).

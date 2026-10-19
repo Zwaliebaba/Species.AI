@@ -437,7 +437,7 @@ Caption: Figure 4.1-A, the sound data from its authoring file to the audio engin
 |---|---|---|
 | DEC-019 | Resolved | actor kinds as typed entries (DAT-262) |
 | DEC-090 | Resolved | floating-point stats (DAT-263) |
-| DEC-241 | Open | stat width and range rejected in validation (DAT-263) |
+| DEC-241 | Resolved (ADR-081) | stat width and range rejected in validation (DAT-263) |
 | DEC-567 | Open | omitted effect parameters take their declared default (DAT-271) |
 | DEC-568, DEC-570, DEC-042 | Resolved | weighted groups and new links; buses and per-event data; decibel levels (DAT-268, DAT-269, DAT-275) |
 | DEC-330 | Open | socket kinds without a confirmed consumer (DAT-277) |

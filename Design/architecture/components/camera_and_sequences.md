@@ -755,7 +755,7 @@ Table 8.1-A Decisions and records that apply.
 | DEC-024 | Resolved | one presentation clock; moves that land exactly with spherical orientation interpolation; the modes not specified; the timeline-only structure focus and approach and the developer fly mode (CAM-002, CAM-006, CAM-030, CAM-046 to CAM-050, CAM-058, CAM-061, CAM-080) |
 | DEC-051 | Open | the presentation-timeline baseline; the default is no timeline in a match (CAM-100 to CAM-115) |
 | DEC-096 | Resolved | the horizontal clamp and the floating-point tracking distance (CAM-002, CAM-060) |
-| DEC-222 | Open | the camera reads only presentation inputs; how the boundary is enforced (CAM-004, T18) |
+| DEC-222 | Resolved (ADR-084) | the camera reads only presentation inputs; how the boundary is enforced (CAM-004, T18) |
 | DEC-247 | Open | arena-scale camera coordinates; the strategic zoom (CAM-095) |
 | DEC-310 | Open | the stale orbit centre when tracking a Leader or a Transport is the default (CAM-038) |
 | DEC-560 | Resolved | start views come from typed start-position records (CAM-014, CAM-021, CAM-061) |
@@ -763,7 +763,8 @@ Table 8.1-A Decisions and records that apply.
 | DEC-955 | Resolved | the camera clock while the world is held; the shake as a non-stored view offset (CAM-012, CAM-030) |
 | DEC-956 | Open | the pick-ray pixel convention; the default is the reference's lower-left corner (CAM-090) |
 | DEC-007, DEC-009, DEC-015, DEC-103, DEC-800, DEC-801 | Resolved | presentation events, presentation time, content validation, sequenced tutorial effects, lossless writers, duplicate and over-long values |
-| DEC-045, DEC-240 | Open | the map editor (§8.2); the numeric model behind camera-relative coordinates (CAM-095) |
+| DEC-045 | Open | the map editor (§8.2) |
+| DEC-240 | Resolved (ADR-081) | the numeric model behind camera-relative coordinates (CAM-095) |
 | DEC-052, DEC-053, DEC-054, DEC-059 | Dropped | no narrator, script interpreter, intro start sequence or reflected camera pose (CAM-006) |
 | ADR-016 | Proposed | axes, reversed Z, the Hor+ field of view and one picking helper (CAM-090 to CAM-093) |
 | ADR-036 | Accepted | the shake as an additive view offset (CAM-012) |

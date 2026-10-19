@@ -720,7 +720,7 @@ Every value is an engine value of this component; the reference values are the s
 
 ### 8.1 Decisions and architecture records
 
-Open: DEC-044, DEC-049, DEC-109, DEC-221, DEC-222, DEC-224, DEC-226, DEC-318, DEC-320, DEC-321, DEC-322, DEC-566, DEC-567, DEC-965; DEC-339 is Dropped; the others are Resolved.
+Open: DEC-044, DEC-049, DEC-109, DEC-318, DEC-320, DEC-321, DEC-322, DEC-566, DEC-567, DEC-965; DEC-339 is Dropped; the others are Resolved.
 
 | Decision | Where | Default specified |
 |---|---|---|

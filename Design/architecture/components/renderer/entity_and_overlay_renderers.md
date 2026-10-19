@@ -526,8 +526,8 @@ The golden-image tests compare with the default tolerance and on the pinned refe
 | DEC-055 | Dropped | no gesture trail or icon power bar (RND-380) |
 | DEC-062 | Dropped | actor kinds that no match creates are not drawn (RND-328) |
 | DEC-095 | Resolved | the route preview store (RND-354) |
-| DEC-222 | Open | presentation records instead of render-side writes (RND-301) |
-| DEC-224 | Open | parallel instance writing (RND-387) |
+| DEC-222 | Resolved (ADR-084) | presentation records instead of render-side writes (RND-301) |
+| DEC-224 | Resolved (ADR-083) | parallel instance writing (RND-387) |
 | DEC-337 | Dropped | driver and pointer properties (RND-369) |
 | DEC-463 | Resolved | every tracked surge is drawn; one limit (RND-302) |
 | DEC-651 | Open | how the route fade gets its points (RND-352) |

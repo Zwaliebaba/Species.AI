@@ -478,7 +478,7 @@ Input timings are seconds of real time and never simulation durations (R-CTRL-00
 
 **INP-201** (MUST) The router allocates its queue at `inp.queue.capacity` and its state tables in `Rebuild`, and performs no heap allocation in `AdvanceFrame` or in a query. Its whole state stays within `inp.budget.memory_kib`.
 
-**INP-202** (MUST) An event that a back-end receives before `AdvanceFrame` starts is visible to the queries of that frame, so the router adds no frame of latency; gamepad readings are read inside `AdvanceFrame`. Event timestamps are kept, so a later command model can stamp commands with the time of the input that caused them. The delay between a command and its execution, and the coalescing of continuous control, are the Open DEC-203; the router keeps every one-shot transition, and the team command state combines one-shot flags between sends (R-CTRL-021, R-SIM-441).
+**INP-202** (MUST) An event that a back-end receives before `AdvanceFrame` starts is visible to the queries of that frame, so the router adds no frame of latency; gamepad readings are read inside `AdvanceFrame`. Event timestamps are kept, so a later command model can stamp commands with the time of the input that caused them. The delay between a command and its execution, and the coalescing of continuous control, are DEC-203, resolved by ADR-087; the router keeps every one-shot transition, and the team command state combines one-shot flags between sends (R-CTRL-021, R-SIM-441).
 
 **INP-203** (MUST) The threading contract of §2.4 holds: one main-thread owner, an immutable frame state between advances, and a single-producer mailbox for GameInput's device notices. No file or network I/O runs inside `AdvanceFrame`; the settings store and the binding sets are read in `Rebuild`, which runs at start-up, on a layout change and on a binding change.
 
@@ -621,11 +621,11 @@ Tests run under the test framework of ADR-069 with recorded or synthetic events 
 
 | Reference | Status | Where it applies |
 |---|---|---|
-| DEC-203 | Open | input timing, coalescing and latency: the router keeps timestamps and every transition (INP-202) |
+| DEC-203 | Resolved (ADR-087) | input timing, coalescing and latency: the router keeps timestamps and every transition (INP-202) |
 | DEC-250 | Open | the user layer in the client-local settings store and its versioning (INP-023, INP-070, INP-171) |
 | DEC-050 | Open | the rebinding page and the control-help panel are hooks (INP-167, §4.15) |
 | DEC-047 | Open | the leaderboard page, a hook with no bound action (INP-077) |
-| DEC-202 | Open | command validation and authority (table 6.3-A row 11) |
+| DEC-202 | Resolved (ADR-087) | command validation and authority (table 6.3-A row 11) |
 | DEC-046 | Open | replays record commands, not device events (INP-243) |
 | DEC-008, DEC-023, DEC-119 | Resolved | input produces actions, the input layer produces commands, and simulation code never issues or reads input (INP-004) |
 | DEC-096, DEC-553, DEC-554 | Resolved | the input corrections, stated as the rules of table 6.3-A |

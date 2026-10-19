@@ -454,7 +454,7 @@ The golden-image tests compare with the default tolerance and on the pinned refe
 | DEC-960 | Resolved | particle sub-steps and fixed-step presentation emitters (VFX-209, VFX-220) |
 | DEC-962 | Open | Species defaults for emitter values and the shard edge width (VFX-219, VFX-229) |
 | DEC-964 | Open | reduced motion, reduced flashing and the flash-onset limit (VFX-232, VFX-235) |
-| DEC-228 | Open | fixed-capacity effect pools (VFX-212, VFX-230) |
+| DEC-228 | Resolved (ADR-080) | fixed-capacity effect pools (VFX-212, VFX-230) |
 | DEC-461 | Resolved | turret casings from each turret's own sockets (VFX-219) |
 | DEC-562 | Open | per-map weather switches or presets (VFX-224) |
 | DEC-059 | Dropped | no screen-space distortion or pixelation (VFX-236) |

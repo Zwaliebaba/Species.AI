@@ -432,17 +432,17 @@ The vector sets that tests T7 to T13 use are [§7.2](height_field_generation.md#
 |---|---|---|
 | DEC-025 | Resolved | the generator look is kept: per-tile diamond-square with guide grids, max-composition and five flatten types (TER-003, TER-009) |
 | DEC-063 | Dropped | no reference terrain, map shape or map identity is reproduced; vectors use anonymous parameter sets (TER-009, §7.2) |
-| DEC-240 | Open | the numeric model of generation and its scope of bit-exactness (TER-061, TER-065, TER-221) |
-| DEC-241 | Open | rounding, parsing, normalisation, tolerances and degenerate geometric queries (TER-017, TER-065, TER-066, TER-077, TER-197) |
-| DEC-242 | Open | the simulation generator's algorithm; the private tile generator is fixed by TER-080 |
+| DEC-240 | Resolved (ADR-081) | the numeric model of generation and its scope of bit-exactness (TER-061, TER-065, TER-221) |
+| DEC-241 | Resolved (ADR-081) | rounding, parsing, normalisation, tolerances and degenerate geometric queries (TER-017, TER-065, TER-066, TER-077, TER-197) |
+| DEC-242 | Resolved (ADR-082) | the simulation generator's algorithm; the private tile generator is fixed by TER-080 |
 | DEC-246 | Open | the terrain runtime model, terrain content identity, off-map heights and stateless cosmetics (TER-009, TER-061, TER-153, TER-187, TER-221, TER-252) |
 | DEC-247 | Open | terrain scale, large-world terrain and the grid-size limit (TER-009, TER-155, TER-240, TER-241) |
-| DEC-226 | Open | loading, streaming and the load budget (TER-222, TER-242) |
+| DEC-226 | Resolved (ADR-083) | loading, streaming and the load budget (TER-222, TER-242) |
 | DEC-971 | Open | the reference test machine on which T26 is timed; until it is pinned, T26 reports and does not fail (TER-242) |
 | DEC-324 | Open | the parameter semantics, the method-2 bias and the smooth divisor; unbiased variants in the editor (TER-032, TER-101, TER-106, TER-144) |
 | DEC-326 | Open | the grid overlay's pattern relative to the triangle edges (TER-043) |
 | DEC-113 | Open | the off-map reads that make negative coordinates sea restrict the Abductor wander area (TER-153) |
-| DEC-224 | Open | the numeric environment of the thread that generates (TER-222) |
+| DEC-224 | Resolved (ADR-083) | the numeric environment of the thread that generates (TER-222) |
 | DEC-040 | Open | the inverted style's alpha (TER-041, TER-181) |
 | DEC-045 | Open | the map editor (§8.2) |
 | DEC-966 | Open | the grid walk of a ray with a zero horizontal component and the highest-sample scan of a non-square grid (TER-017, TER-076) |

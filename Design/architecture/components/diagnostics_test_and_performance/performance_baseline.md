@@ -115,7 +115,7 @@ Once the reference test machine is pinned, a result above its budget fails the p
 
 ## 8 Open decisions
 
-DEC-106, DEC-227, DEC-228, DEC-229 and DEC-971 (Open) apply to this document; their defaults are listed in the [README](README.md) §8.1, with the design-phase inputs of the whole component.
+DEC-106, DEC-229 and DEC-971 (Open) and DEC-227 and DEC-228 (Resolved, ADR-079 and ADR-080) apply to this document; their defaults are listed in the [README](README.md) §8.1, with the design-phase inputs of the whole component.
 
 ## 9 Tuning table
 

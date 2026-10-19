@@ -532,11 +532,11 @@ Table 6-A Diagnostic classes.
 | DEC-073 | Resolved | typed defaults per record type (DAT-012) |
 | DEC-100 | Resolved | one defaults table, compiled in (DAT-012) |
 | DEC-120 | Resolved | absent, 0, a number and unlimited are distinct (DAT-008, DAT-041) |
-| DEC-204 | Open | content identity by hash; lists keyed by id and hash (DAT-047) |
-| DEC-207 | Open | no network message format, transport container or custom-map container format here (DAT-003, DAT-101) |
-| DEC-223 | Open | loaded records are immutable and shared by every state owner (DAT-005) |
-| DEC-240 | Open | the numeric model: simulation decimals keep their declared precision until it is decided (DAT-010) |
-| DEC-241 | Open | the reference parsing and rounding semantics as the default (DAT-010, DAT-023) |
+| DEC-204 | Resolved (ADR-088) | content identity by hash; lists keyed by id and hash (DAT-047) |
+| DEC-207 | Resolved (ADR-088) | no network message format, transport container or custom-map container format here (DAT-003, DAT-101) |
+| DEC-223 | Resolved (ADR-085) | loaded records are immutable and shared by every state owner (DAT-005) |
+| DEC-240 | Resolved (ADR-081) | the numeric model: simulation decimals keep their declared precision until it is decided (DAT-010) |
+| DEC-241 | Resolved (ADR-081) | the reference parsing and rounding semantics as the default (DAT-010, DAT-023) |
 | DEC-250 | Open | the settings file's versioning and migration (DAT-003, DAT-046) |
 | DEC-251 | Open | world-state persistence is not a schema of this folder (DAT-003, DAT-046) |
 | DEC-340 | Dropped | no reference data format, archive or tool output is imported (DAT-004) |

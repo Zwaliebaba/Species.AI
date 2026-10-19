@@ -182,7 +182,7 @@ The failures of the developer tools are rows of the failure table of DBG-220 ([R
 
 ## 8 Open decisions
 
-DEC-041 (Resolved), DEC-202 (Open), DEC-208 (Open) and DEC-972 (Open) apply to this document; their defaults are listed in the [README](README.md) §8.1, with the decisions and design-phase inputs of the whole component.
+DEC-041 (Resolved), DEC-202 (Resolved, ADR-087), DEC-208 (Resolved, ADR-081) and DEC-972 (Open) apply to this document; their defaults are listed in the [README](README.md) §8.1, with the decisions and design-phase inputs of the whole component.
 
 ## 9 Tuning table
 

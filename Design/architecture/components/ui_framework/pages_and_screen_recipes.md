@@ -871,10 +871,10 @@ Every Species UI build passes these must-not tests (DEC-102). Each states a beha
 | DEC-050 | Open | the front-end features designed new and their recipes (UI-321, UI-452, UI-466) |
 | DEC-047, DEC-048, DEC-249 | Open | the achievement and leaderboard hook pages, a results screen, quick match (UI-321) |
 | DEC-244, DEC-248 | Open | the password page and admission (table 3.1-A, `Password`) |
-| DEC-226 | Open | background loading of thumbnails and pictures (UI-314, UI-470) |
+| DEC-226 | Resolved (ADR-083) | background loading of thumbnails and pictures (UI-314, UI-470) |
 | DEC-106 | Open | the page-level millisecond budgets (UI-473) |
 | DEC-952 | Open | the scrolling-text content height with the unraised top margin (UI-401, UI-404) |
-| DEC-221, DEC-222 | Open | the owner of the front-end controller and the read-only match view (UI-301, UI-332) |
+| DEC-221, DEC-222 | Resolved (ADR-083, ADR-084) | the owner of the front-end controller and the read-only match view (UI-301, UI-332) |
 | DEC-045 | Open | a map editor, whose windows follow recipe A (UI-430, UI-431) |
 
 ADR-030 is Accepted; ADR-034 is Proposed, and the default it names is the baseline of this document.

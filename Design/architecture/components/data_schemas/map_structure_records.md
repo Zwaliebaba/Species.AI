@@ -254,7 +254,7 @@ Every diagnostic names the map, the record's id and kind, its list index, the fi
 | DEC-457 | Resolved | typed links (DAT-147) |
 | DEC-561 | Resolved | the per-mode structure rules (DAT-151) |
 | DEC-012 | Resolved | baked tree crowns (DAT-158) |
-| DEC-241 | Open | the precision of each simulation decimal (DAT-155) |
+| DEC-241 | Resolved (ADR-081) | the precision of each simulation decimal (DAT-155) |
 | DEC-052, DEC-466, DEC-802 | Dropped, Dropped, Open | campaign kinds and fields have no schema; unknown kinds are errors (DAT-141, DAT-152) |
 
 ### 8.2 Design-phase inputs

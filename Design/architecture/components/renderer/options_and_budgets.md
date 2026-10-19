@@ -232,8 +232,8 @@ The golden-image tests compare with the default tolerance and on the pinned refe
 | DEC-100 | Resolved | one defaults table (RND-440) |
 | DEC-101 | Open | the seasonal theme, which no renderer setting controls (RND-443) |
 | DEC-106 | Open | the frame budgets: provisional until the prototype measurement (RND-453, RND-454) |
-| DEC-225 | Open | frame pacing and catch-up (RND-453) |
-| DEC-228 | Open | the design and stress populations and the client target (RND-454 to RND-456) |
+| DEC-225 | Resolved (ADR-083) | frame pacing and catch-up (RND-453) |
+| DEC-228 | Resolved (ADR-080) | the design and stress populations and the client target (RND-454 to RND-456) |
 | DEC-327 | Open | the structure-detail branches (RND-445) |
 | DEC-971 | Open | the reference test machine and the minimum-specification hardware of the client target (RND-454) |
 

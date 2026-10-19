@@ -461,9 +461,9 @@ The golden-image tests of this folder compare with the default tolerance and on 
 | DEC-052 | Dropped | campaign content: its frame types, logo overlays and structures are not specified |
 | DEC-059 | Dropped | the pixel effect, the deform effect and the water reflection are not specified |
 | DEC-098 | Resolved | the texture cache is keyed by asset and variant (RND-007, RND-017) |
-| DEC-222 | Open | how the snapshot is produced, with the baseline contract of RND-018 and RND-019 as the default of option A; extrapolation or interpolation (RND-002) |
-| DEC-224 | Open | which threads record passes (§2 threading contract) |
-| DEC-226 | Open | loading and streaming of world content (RND-042) |
+| DEC-222 | Resolved (ADR-084) | how the snapshot is produced, with the baseline contract of RND-018 and RND-019 as the default of option A; extrapolation or interpolation (RND-002) |
+| DEC-224 | Resolved (ADR-083) | which threads record passes (§2 threading contract) |
+| DEC-226 | Resolved (ADR-083) | loading and streaming of world content (RND-042) |
 | DEC-247 | Open | terrain scale and level of detail ([world_renderers.md](world_renderers.md) RND-138) |
 | DEC-325 | Open | the one-frame light lag ([view_lighting_and_fog.md](view_lighting_and_fog.md) RND-227) |
 | DEC-326 | Open | the terrain grid overlay ([world_renderers.md](world_renderers.md) RND-135) |

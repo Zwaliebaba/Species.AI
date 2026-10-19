@@ -983,11 +983,11 @@ Each test carries the requirement id it verifies (ADR-069).
 | Reference | Status | Where it applies |
 |---|---|---|
 | DEC-015 | Resolved | build-time validation and loads that are never fatal; the content build is the gate (BLD-068, BLD-065) |
-| DEC-204 | Open | content and version identity: the build produces them; their exchange and comparison are the design phase's (BLD-051, BLD-062, BLD-073, BLD-077) |
+| DEC-204 | Resolved (ADR-088) | content and version identity: the build produces them; their exchange and comparison are the design phase's (BLD-051, BLD-062, BLD-073, BLD-077) |
 | DEC-220 | Open | process roles and the headless server build; both programs are built now (BLD-005, BLD-048) |
-| DEC-222 | Open | whether the simulation library's include allow-list enforces the boundary (BLD-041) |
+| DEC-222 | Resolved (ADR-084) | whether the simulation library's include allow-list enforces the boundary (BLD-041) |
 | DEC-229 | Open | the build order; CI runs from the first change under every option (BLD-094) |
-| DEC-240, DEC-241 | Open | the numeric model and whether the simulation core is deterministic under `/fp:precise` and `/arch:AVX2` (BLD-040) |
+| DEC-240, DEC-241 | Resolved (ADR-081) | the numeric model and whether the simulation core is deterministic under `/fp:precise` and `/arch:AVX2` (BLD-040) |
 | DEC-248 | Open | entitlement and the trial product; no in-game map or mode lists gate access (BLD-053) |
 | DEC-802 | Open | whether player editions may hold maps with an empty mode list (BLD-057) |
 | DEC-971 | Open | the developer machine class of table 5-A is the reference test machine with a local solid-state disk, its hardware not yet named (BLD-117) |
@@ -998,7 +998,7 @@ Each test carries the requirement id it verifies (ADR-069).
 | DEC-804 | Resolved | the soak sequence names maps by map id and checks their hashes (table 4.6-A, table 4.9-B) |
 | DEC-332, DEC-340 | Dropped | Species defines its own editions (ADR-056, §3.2), packs (ADR-058), content build (§4.5), packages (§4.10) and crash path (§4.12) |
 | DEC-041, DEC-099 | Resolved | development tooling only in Debug builds (table 3.1-B); only complete languages are offered (BLD-081) |
-| DEC-045, DEC-047, DEC-228, DEC-243 to DEC-245, DEC-249, DEC-317, DEC-329 | Open | the map editor (§4.8); the map index (table 4.6-A); stress maps (BLD-057); sessions (table 3.2-B); online services (BLD-021); voice per language (§8 item 10); assets that only rules create (BLD-069) |
+| DEC-045, DEC-047, DEC-243 to DEC-245, DEC-249, DEC-317, DEC-329 | Open | the map editor (§4.8); the map index (table 4.6-A); sessions (table 3.2-B); online services (BLD-021); voice per language (§8 item 10); assets that only rules create (BLD-069) |
 | ADR-051 to ADR-057, ADR-059, ADR-060, ADR-069 to ADR-071 | Accepted | the toolchain, language, headers only with no modules (BLD-034), the MSBuild solution with its tool projects, packages, products and configurations, identity, content build, content identity, tests, CI and install layout this component implements |
 | ADR-001, ADR-003, ADR-017, ADR-019, ADR-050, ADR-058, ADR-061, ADR-063, ADR-066, ADR-067, ADR-068 | Accepted | the Agility SDK, the embedded shaders, the tools' texture encoder and glTF validation, the OS floor, packs, schemas, localisation, telemetry, logging and profiling, which this component builds, packages or checks |
 | ADR-062, ADR-065, ADR-072, ADR-073 | Proposed | the authoring syntax, crash reporting, channels and signing: the defaults this component follows until each is confirmed |

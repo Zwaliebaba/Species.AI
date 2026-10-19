@@ -1206,18 +1206,19 @@ Tests run under the test framework of ADR-069; clock tests use the manual time s
 | DEC-099 | Resolved | the language choice and per-key fallback (PLT-076, PLT-078) |
 | DEC-100 | Resolved | one compiled-in defaults table, available before any pack is mounted (PLT-030, PLT-080, PLT-115) |
 | DEC-800 | Resolved | lossless, typed and atomic settings writing (PLT-033, PLT-079, PLT-081, PLT-089) |
-| DEC-200, DEC-207 | Open | no replication model or transport in the baseline (PLT-100) |
+| DEC-200, DEC-207 | Resolved (ADR-084, ADR-088) | no replication model or transport in the baseline (PLT-100) |
 | DEC-220 | Open | process roles and the headless server's platform subset (PLT-005) |
-| DEC-221 | Open | the composition root, the client project's entry code until decided, which runs the start-up and shutdown sequences, and the application state machine behind the lifecycle hooks (PLT-038, PLT-042, PLT-043, PLT-045, PLT-086) |
-| DEC-224 | Open | the threading model on top of the platform threads (PLT-084, PLT-083, PLT-085, PLT-087, PLT-090) |
-| DEC-225 | Open | the frame loop, pacing and catch-up (PLT-067, PLT-056, PLT-055) |
-| DEC-226 | Open | explicit completion of asynchronous work (PLT-085) |
-| DEC-228 | Open | frame and tick budgets (PLT-111) |
-| DEC-240 | Open | the floating-point environment that the simulation requires (PLT-087) |
-| DEC-241 | Open | the numeric semantics of the maths library; the reference semantics are the baseline (PLT-137, PLT-138) |
+| DEC-221 | Resolved (ADR-083) | the composition root, the client project's entry code until decided, which runs the start-up and shutdown sequences, and the application state machine behind the lifecycle hooks (PLT-038, PLT-042, PLT-043, PLT-045, PLT-086) |
+| DEC-224 | Resolved (ADR-083) | the threading model on top of the platform threads (PLT-084, PLT-083, PLT-085, PLT-087, PLT-090) |
+| DEC-225 | Resolved (ADR-083) | the frame loop, pacing and catch-up (PLT-067, PLT-056, PLT-055) |
+| DEC-226 | Resolved (ADR-083) | explicit completion of asynchronous work (PLT-085) |
+| DEC-228 | Resolved (ADR-080) | frame and tick budgets (PLT-111) |
+| DEC-240 | Resolved (ADR-081) | the floating-point environment that the simulation requires (PLT-087) |
+| DEC-241 | Resolved (ADR-081) | the numeric semantics of the maths library; the reference semantics are the baseline (PLT-137, PLT-138) |
 | DEC-248, DEC-249 | Open | identity tokens in the credential store; service endpoints as configuration (PLT-020, PLT-100, PLT-099) |
 | DEC-250, DEC-251 | Open | settings-file versioning and the persistence of worlds and replays (PLT-031, PLT-019) |
-| DEC-044, DEC-046, DEC-206 | Open | the options set; replays; divergence dumps (PLT-074, PLT-017) |
+| DEC-044, DEC-046 | Open | the options set; replays (PLT-074, PLT-017) |
+| DEC-206 | Resolved (ADR-081) | divergence dumps (PLT-074, PLT-017) |
 | DEC-061 | Dropped | no string overlays for mods (PLT-078) |
 | ADR-050, ADR-074, ADR-075, ADR-071 | Accepted | client platform, clock, window, install layout and user data |
 | ADR-065, ADR-028, ADR-077 | Proposed | crash reporting; input back-ends; the HTTPS client on WinHTTP (defaults applied as stated) |

@@ -472,18 +472,18 @@ The tests of each topic are in its file: T1 to T6, T8, T9, T12 and T13 in [loggi
 | DEC-046 | Open | replay: the command-history hook only (§8.2) |
 | DEC-060 | Dropped | no benchmark recorder, no upload of it and no in-game video capture; consented telemetry (§4.10) and external capture tools replace them |
 | DEC-106 | Open | the reference caps; measured on the first prototype (DBG-205) |
-| DEC-200 | Open | the soak runs in one headless server process with no client participant until the networking model exists (DBG-160, DBG-164) |
-| DEC-201 | Open | no network budget stated (DBG-202) |
-| DEC-202 | Open | debug commands accepted only in cheat-enabled sessions from the host's participant (DBG-118) |
+| DEC-200 | Resolved (ADR-084) | the soak runs in one headless server process with no client participant until the networking model exists (DBG-160, DBG-164) |
+| DEC-201 | Resolved (ADR-086) | no network budget stated (DBG-202) |
+| DEC-202 | Resolved (ADR-087) | debug commands accepted only in cheat-enabled sessions from the host's participant (DBG-118) |
 | DEC-972 | Open | the cheats-used marker is shown and recorded, and nothing is suppressed (DBG-118) |
-| DEC-206 | Open | no run-time divergence check; the test-harness hash only (DBG-144) |
-| DEC-208 | Open | the reference metric set in the network statistics window (DBG-105) |
+| DEC-206 | Resolved (ADR-081) | no run-time divergence check; the test-harness hash only (DBG-144) |
+| DEC-208 | Resolved (ADR-081) | the reference metric set in the network statistics window (DBG-105) |
 | DEC-220 | Open | the headless server program runs the tests and the soak (DBG-142, DBG-160) |
-| DEC-224 | Open | diagnostics on their own threads, no fixed affinity (DBG-031, DBG-200) |
-| DEC-225 | Open | the reference pacing figures (DBG-201) |
-| DEC-227, DEC-228 | Open | tick budget guidance and stress populations as design-phase inputs (DBG-204, DBG-205) |
+| DEC-224 | Resolved (ADR-083) | diagnostics on their own threads, no fixed affinity (DBG-031, DBG-200) |
+| DEC-225 | Resolved (ADR-083) | the reference pacing figures (DBG-201) |
+| DEC-227, DEC-228 | Resolved (ADR-079, ADR-080) | tick budget guidance and stress populations as design-phase inputs (DBG-204, DBG-205) |
 | DEC-229 | Open | tick cost measured at the first simulation-core milestone (DBG-205) |
-| DEC-240, DEC-242 | Open | golden hashes agree across the CI agents of one build; the generator is opaque to the harness (DBG-146, DBG-147) |
+| DEC-240, DEC-242 | Resolved (ADR-081, ADR-082) | golden hashes agree across the CI agents of one build; the generator is opaque to the harness (DBG-146, DBG-147) |
 | DEC-250, DEC-251 | Open | round-trip tests once persistence is defined (DBG-149) |
 | DEC-334 | Dropped | the reference's sandbox, benchmark and stress maps are not reproduced (DBG-148) |
 | DEC-650, DEC-653 | Resolved | the per-tick grid and finiteness checks (DBG-143) |

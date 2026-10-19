@@ -581,8 +581,8 @@ The content build's report lists, for every map, its id, its modes, its player c
 |---|---|---|
 | DEC-045 | Open | one loader for the header and the map; the header readable alone (DAT-107, DAT-074) |
 | DEC-120 | Resolved | the forms of every per-map value (DAT-077, DAT-078, DAT-079) |
-| DEC-204 | Open | maps identified by map id and content hash (DAT-108) |
-| DEC-207 | Open | the custom-map container belongs to the typed container family; no format here (DAT-101) |
+| DEC-204 | Resolved (ADR-088) | maps identified by map id and content hash (DAT-108) |
+| DEC-207 | Resolved (ADR-088) | the custom-map container belongs to the typed container family; no format here (DAT-101) |
 | DEC-246 | Open | terrain records as generator inputs; a baked height grid would be a derived section (DAT-085) |
 | DEC-560 | Resolved | typed start-position records (DAT-087, DAT-088) |
 | DEC-561 | Resolved | per-mode map validation (DAT-103) |
