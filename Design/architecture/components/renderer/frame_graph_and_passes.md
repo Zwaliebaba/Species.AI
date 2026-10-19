@@ -171,7 +171,7 @@ public:
 
 | Group | Default |
 |---|---|
-| rasteriser | solid fill; back faces culled; a triangle whose vertices appear counter-clockwise on the render target is front-facing (`FrontCounterClockwise = TRUE`, the winding of ADR-016 and of glTF); depth clip on; no depth bias |
+| rasteriser | solid fill; back faces culled; a triangle whose vertices appear counter-clockwise on the render target is front-facing (`FrontCounterClockwise = TRUE`, the winding of ADR-016 and of the CMO sources); depth clip on; no depth bias |
 | depth | `D32_FLOAT`, reversed Z, test on with `GREATER_EQUAL` (the reversed-Z form of less-or-equal), write on (ADR-016) |
 | stencil | off; no stencil format is created, because no pass uses one |
 | blend | off; when a pass enables blending with the default factors, they are source alpha and one minus source alpha (the `Alpha` blend state) |

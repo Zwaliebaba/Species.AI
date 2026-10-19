@@ -107,14 +107,13 @@ enum class MeshRole : std::uint8_t
   Render,
   Collision
 };
-// AST-034.
+// AST-034; MaterialFlag is the material named `team` (O64).
 enum class TintMarking : std::uint8_t
 {
   None,
-  VertexWeight,
   MaterialFlag
 };
-// A primitive declared smooth-shaded, an exception of ADR-020 (AST-036).
+// A submesh declared smooth-shaded, an exception of ADR-020 (AST-036).
 struct SmoothPrimitive
 {
   std::string node;
@@ -126,7 +125,7 @@ struct MeshImportRecord
   std::uint32_t member;
   MeshRole role;                         // a collision source is cooked into a Collision entry (AST-044)
   std::optional<std::string> assetClass; // present exactly with MeshRole::Render; selects the socket schema (ADR-021)
-  double unitScale;                      // wu per glTF metre
+  double unitScale;                      // wu per source unit
   TintMarking tintMarking;
   double tintScale; // RND-161; defaulted: rnd.tint.factor
   std::vector<SmoothPrimitive> smoothPrimitives;
@@ -210,10 +209,10 @@ Table 3.2-A Fields of a mesh import record.
 | member | `member` | asset member | required | must equal the source's member number in its row |
 | role | `role` | enumeration `render`, `collision` | defaulted: `render` | a collision source is cooked into `geometry.collision` (AST-044) |
 | asset class | `asset_class` | stable id | required for `render` | selects the socket schema of the row's `spec` (AST-040) |
-| unit scale | `unit_scale` | presentation decimal, wu per glTF metre | required | above 0; applied once at cook time (ADR-016) |
-| tint marking | `tint_marking` | enumeration `none`, `vertex_weight`, `material_flag` | defaulted: `none` | AST-034, AST-035 |
+| unit scale | `unit_scale` | presentation decimal, wu per source unit | required | above 0; applied once at cook time (ADR-016) |
+| tint marking | `tint_marking` | enumeration `none`, `material_flag` (the material named `team`, O64) | defaulted: `none` | AST-034, AST-035 |
 | tint scale | `tint_scale` | presentation decimal, × | defaulted: `rnd.tint.factor` (RND-161) | 0 or more; the Transport hull's record holds `ref.unit.transport.hull_tint` and the Collector body's `ref.unit.collector.tint_scale` (RND-161, AST-033) |
-| smooth primitives | `smooth_primitives` | list of objects: `node` (the glTF node name), `primitive` (count) | defaulted: none | each names a primitive that carries normals (AST-036) |
+| smooth primitives | `smooth_primitives` | list of objects: `node` (the node's bone name), `primitive` (the submesh's number in the CMO mesh) | defaulted: none | each names a primitive that carries normals (AST-036) |
 | collision asset | `collision` | asset reference to a collision asset | required for a collidable render mesh, absent otherwise | AST-044; DEC-012 |
 
 ### 3.3 The audio import record

@@ -1,6 +1,6 @@
 # MVP assets
 
-> Status: Draft · Related: [MVP scope](mvp_scope.md) (MVP-080 to MVP-087, MVP-102, MVP-103) · [GameAssets.md](../assets/GameAssets.md) · [asset manifest](../assets/asset_manifest.csv) · [art and audio briefs](../assets/art_and_audio_briefs.md) · [owner decisions](../decisions/owner_decisions.md) (O52, O55, O56, O61 to O63)
+> Status: Draft · Related: [MVP scope](mvp_scope.md) (MVP-080 to MVP-087, MVP-102, MVP-103) · [GameAssets.md](../assets/GameAssets.md) · [asset manifest](../assets/asset_manifest.csv) · [art and audio briefs](../assets/art_and_audio_briefs.md) · [owner decisions](../decisions/owner_decisions.md) (O52, O55, O56, O61 to O64)
 
 ## 1 Purpose
 
@@ -16,14 +16,12 @@ The generators are development tools under `Tools/`, projects of the one solutio
 
 | Method | Tool | What it makes | The owner's part | Ids | Files |
 |---|---|---|---|---:|---:|
-| made by the owner | the owner's own tools, exported as DDS in each row's runtime format (O61) | the glows, beams, flares, the wire grid, the cloud tile, the front-end highlight beam, the icon halo and the marker masks; the terrain ramp, the shore-wave gradient and the sea tile | made them; four settled against their rows (§6) | 17 | 17 |
-| panel generator | texture generator under `Tools/` | panel strips, the front-end fill, the meter strip and the notification and battle-result cards, in the new palette (RND-403) | chooses the palette; approves the HUD layout | 6 | 6 |
-| mesh kit | parametric low-poly mesh kit under `Tools/`, writing glTF 2.0 (ADR-019) | figures, structures and projectiles from recipes of boxes, cylinders, cones and prisms, with named sockets (ADR-021) and tint weights (ADR-020); each collision asset from its own simpler recipe at its render member's bounds, never from the render triangles (AST-044) | designs each silhouette's recipe | 18 | 20 |
-| icon tool, from the banner | the icon rasteriser under `Tools/` | the four banner tint masks, from the team-area layer of the banners' vector sources (AST-022) | nothing beyond the banners | 1 | 4 |
-| derived by the cooker | the content build | the blurred cursor shadows (`BlurredShadow`, RND-422) | nothing | 4 | 4 |
+| made by the owner | the owner's own tools, exported as DDS in each row's runtime format and as CMO meshes (O61, O64) | the glows, beams, flares, the wire grid, the cloud tile, the front-end highlight beam, the icon halo and the marker masks; the terrain ramp, the shore-wave gradient and the sea tile; the Worker cards, the Leader banners and their tint masks, the Leader figure and the grenade; the world, highlight and unavailable cursors with their shadows, the compass rings, the order trail, the route arrow and the flag pointer; the Workers and Leader icons and the two panel strips | made them; the rows follow the files (§6) | 39 | 48 |
+| panel generator | texture generator under `Tools/` | the front-end fill, the meter strip and the notification and battle-result cards, in the new palette (RND-403) | chooses the palette; approves the HUD layout | 4 | 4 |
+| mesh kit | parametric low-poly mesh kit under `Tools/`, writing CMO (O64, ADR-019) | structures and projectiles from recipes of boxes, cylinders, cones and prisms, with named sockets (ADR-021) and tint weights (ADR-020); each collision asset from its own simpler recipe at its render member's bounds, never from the render triangles (AST-044) | designs each silhouette's recipe | 16 | 18 |
 | synthesised | sound synthesiser under `Tools/`, rendering patches to 48 kHz WAV | laser shots, the orb, the war horn, the structure-complete sound, battle start and end | designs each patch; approves the set | 6 | 17 |
-| hand-drawn card | an image editor | the Worker cards and the carried-load overlay, cut-out art at their exact sizes | draws them | 4 | 7 |
-| hand-drawn vector art | a vector editor; the icon rasteriser renders the vectors at 2x | cursors, markers, Leader banners, icons and the check-box tick | draws them | 30 | 35 |
+| hand-drawn card | an image editor | the carried-load overlay, cut-out art at its exact size | draws it | 1 | 1 |
+| hand-drawn icon art | the owner's tools, exported as DDS in each row's runtime format (O64) | the placement cursor and its shadow, the pointer arrow, the turret icon, the check-box tick and the HUD icons | draws them | 20 | 22 |
 | recorded | a microphone | the Worker death group: eight short voices of a small crowd figure | records them | 1 | 8 |
 | written by hand | a text editor | the en-GB string table | writes it | 1 | 1 |
 | the owner's bitmap font sheet | the owner's image tool for the sheet; the glyph table generated from the sheet's grid; the font packer under `Tools/` writes the atlas page and the cooked glyph table | the game face GameFont and the development face EditorFont: one 16 px glyph sheet and a glyph table each (O62, O63) | drew both sheets; reviews the generated tables (§6) | 2 | 4 |
@@ -52,14 +50,14 @@ MVP-082 and MVP-040: Worker cards drawn as instanced crowds and animated procedu
 
 | Asset id | What it is | Format and budget | New or existing | First needed | Produced by |
 |---|---|---|---|---|---|
-| `sprite.worker.front` | Worker card, front view: the crowd figure | 128x128 px, BC7 sRGB, cut-out at 0.04 | existing | M1 | hand-drawn card |
-| `sprite.worker.side` | Worker card seen edge-on | 32x64 px, BC7 sRGB, cut-out at 0.04 | existing | M1 | hand-drawn card |
-| `sprite.worker.hurt` | Worker hurt and falling poses | 4 files of 128x128 px, cut-out at 0.04 | existing | M1 | hand-drawn card |
+| `sprite.worker.front` | Worker card, front view: the crowd figure | 128x128 px, BC7 sRGB, cut-out at 0.04 | existing | M1 | made by the owner (§6) |
+| `sprite.worker.side` | Worker card seen edge-on | 32x64 px, BC7 sRGB, cut-out at 0.04 | existing | M1 | made by the owner (§6) |
+| `sprite.worker.hurt` | Worker hurt and falling poses | 4 files of 128x128 px, cut-out at 0.04 | existing | M1 | made by the owner (§6) |
 | `sprite.worker.carry_load` | Carried-load overlay on a Worker's card | 64x64 px, BC7 sRGB, cut-out at 0.04 | new | M2 | hand-drawn card |
-| `mesh.unit.leader_figure` | Leader figure carrying its banner | <= 100 triangles; socket `flag` | existing | M1 | mesh kit |
-| `marker.leader_banner` | Leader banner per order state: idle, follow, formation, gather | 4 files of 64x64 px cloth, team area as grey levels | existing | M1 | hand-drawn vector art |
-| `marker.leader_banner_tint` | Tint masks of the four banner states | 4 files of 64x64 px, BC4 | existing | M1 | icon tool, from the banner |
-| `mesh.projectile.thrown_weapon` | Grenade that Workers throw in battle | <= 300 triangles | existing | M1 | mesh kit |
+| `mesh.unit.leader_figure` | Leader figure carrying its banner | 98 triangles, budget 100, CMO; socket `flag` | existing | M1 | made by the owner (§6) |
+| `marker.leader_banner` | Leader banner per order state: idle, follow, formation, gather | 4 files of 64x64 px cloth, BC7 sRGB, team area as grey levels | existing | M1 | made by the owner (§6) |
+| `marker.leader_banner_tint` | Tint masks of the four banner states | 4 files of 64x64 px, BC4 | existing | M1 | made by the owner (§6) |
+| `mesh.projectile.thrown_weapon` | Grenade that Workers throw in battle | 140 triangles, budget 300, CMO | existing | M1 | made by the owner (§6) |
 
 *Table 3 — The MVP's unit assets.*
 
@@ -110,33 +108,33 @@ MVP-102 and MVP-103: the HUD's panels are bodies of the two panel strips (UI-460
 
 | Asset id | What it is | Format and budget | New or existing | First needed | Produced by |
 |---|---|---|---|---|---|
-| `uitex.panel_accent` | Accent panel strip: window and HUD panel bodies | 64x510 px display, authored at 2x | existing | M1 | panel generator |
-| `uitex.panel_neutral` | Neutral panel strip: HUD panel bodies | 64x512 px display, authored at 2x | existing | M1 | panel generator |
+| `uitex.panel_accent` | Accent panel strip: window and HUD panel bodies | 64x510 px display, authored at 2x, one level | existing | M1 | made by the owner (§6) |
+| `uitex.panel_neutral` | Neutral panel strip: HUD panel bodies | 64x512 px display, authored at 2x, one level | existing | M1 | made by the owner (§6) |
 | `icon.hud.meter` | Meter strip of every HUD meter | 256x16 px display, authored at 2x | new | M2 | panel generator |
 | `icon.hud.notification_card` | Frame behind each notification line | 320x48 px display, authored at 2x | new | M2 | panel generator |
 | `icon.hud.result_card` | Frame of the battle result | 400x300 px display, authored at 2x | new | M3 | panel generator |
 | `uitex.fill_blur` | Blurred fill of the front-end boxes | 64x512 px display, authored at 2x | existing | M2 | panel generator |
 | `uitex.menu_highlight` | Highlight beam behind the focused front-end item | 256x64 px display, BC4 | existing | M2 | made by the owner (§6) |
-| `uitex.icon_check` | Check-box tick of the display and volume options | 50x50 px display, authored at 2x | existing | M2 | hand-drawn vector art |
+| `uitex.icon_check` | Check-box tick of the display and volume options | 50x50 px display, authored at 2x | existing | M2 | hand-drawn icon art |
 | `icon.hud.icon_halo` | Darkening halo behind HUD icons | 128x128 px display, BC4 darkening | existing | M2 | made by the owner (§6) |
-| `icon.power.workers` | Workers icon: the Worker count and the selected-Workers cursor badge | 128x128 px display, white art | existing | M1 | hand-drawn vector art |
-| `icon.power.leader` | Leader icon: promoting a Worker and the selected-Leader badge | 128x128 px display, white art | existing | M1 | hand-drawn vector art |
-| `icon.power.gun_turret` | Turret on the construction bar and in the queue | 128x128 px display, white art | existing | M2 | hand-drawn vector art |
-| `icon.hud.resource` | Gathered resource: stores, capacity and costs | 64x64 px display, white art | new | M2 | hand-drawn vector art |
-| `icon.hud.growth` | Growth, and its cause when it stops | 64x64 px display, white art | new | M2 | hand-drawn vector art |
-| `icon.hud.priority` | The three priorities: gathering, construction, guard duty | 3 files of 64x64 px display, white art | new | M2 | hand-drawn vector art |
-| `icon.hud.dwelling` | Dwelling on the construction bar and queue | 64x64 px display, white art | new | M2 | hand-drawn vector art |
-| `icon.hud.storehouse` | Storehouse on the construction bar and queue | 64x64 px display, white art | new | M2 | hand-drawn vector art |
-| `icon.hud.contact` | Contact and the territory-pressure cause | 64x64 px display, white art | new | M3 | hand-drawn vector art |
-| `icon.hud.claim` | Claims: command, notification, cause, world marker | 64x64 px display, white art | new | M3 | hand-drawn vector art |
-| `icon.hud.attack` | Attacks: command, warning, cause, world marker | 64x64 px display, white art | new | M3 | hand-drawn vector art |
-| `icon.hud.battle` | Battle start, end and result | 64x64 px display, white art | new | M3 | hand-drawn vector art |
-| `icon.hud.tribute` | Tribute and eased grievances | 64x64 px display, white art | new | M3 | hand-drawn vector art |
-| `icon.hud.withdraw` | Withdrawing an expedition or a claim | 64x64 px display, white art | new | M3 | hand-drawn vector art |
-| `icon.hud.respite` | A settlement under a respite | 64x64 px display, white art | new | M3 | hand-drawn vector art |
-| `icon.hud.renown` | Renown standing and epilogue | 64x64 px display, white art | new | M3 | hand-drawn vector art |
-| `icon.hud.run_clock` | Time left in the run | 64x64 px display, white art | new | M3 | hand-drawn vector art |
-| `icon.hud.deputy` | Deputy actions in the away report | 64x64 px display, white art | new | M4 | hand-drawn vector art |
+| `icon.power.workers` | Workers icon: the Worker count and the selected-Workers cursor badge | 128x128 px, BC4 mask at the display size | existing | M1 | made by the owner (§6) |
+| `icon.power.leader` | Leader icon: promoting a Worker and the selected-Leader badge | 128x128 px, BC4 mask at the display size | existing | M1 | made by the owner (§6) |
+| `icon.power.gun_turret` | Turret on the construction bar and in the queue | 128x128 px display, white art | existing | M2 | hand-drawn icon art |
+| `icon.hud.resource` | Gathered resource: stores, capacity and costs | 64x64 px display, white art | new | M2 | hand-drawn icon art |
+| `icon.hud.growth` | Growth, and its cause when it stops | 64x64 px display, white art | new | M2 | hand-drawn icon art |
+| `icon.hud.priority` | The three priorities: gathering, construction, guard duty | 3 files of 64x64 px display, white art | new | M2 | hand-drawn icon art |
+| `icon.hud.dwelling` | Dwelling on the construction bar and queue | 64x64 px display, white art | new | M2 | hand-drawn icon art |
+| `icon.hud.storehouse` | Storehouse on the construction bar and queue | 64x64 px display, white art | new | M2 | hand-drawn icon art |
+| `icon.hud.contact` | Contact and the territory-pressure cause | 64x64 px display, white art | new | M3 | hand-drawn icon art |
+| `icon.hud.claim` | Claims: command, notification, cause, world marker | 64x64 px display, white art | new | M3 | hand-drawn icon art |
+| `icon.hud.attack` | Attacks: command, warning, cause, world marker | 64x64 px display, white art | new | M3 | hand-drawn icon art |
+| `icon.hud.battle` | Battle start, end and result | 64x64 px display, white art | new | M3 | hand-drawn icon art |
+| `icon.hud.tribute` | Tribute and eased grievances | 64x64 px display, white art | new | M3 | hand-drawn icon art |
+| `icon.hud.withdraw` | Withdrawing an expedition or a claim | 64x64 px display, white art | new | M3 | hand-drawn icon art |
+| `icon.hud.respite` | A settlement under a respite | 64x64 px display, white art | new | M3 | hand-drawn icon art |
+| `icon.hud.renown` | Renown standing and epilogue | 64x64 px display, white art | new | M3 | hand-drawn icon art |
+| `icon.hud.run_clock` | Time left in the run | 64x64 px display, white art | new | M3 | hand-drawn icon art |
+| `icon.hud.deputy` | Deputy actions in the away report | 64x64 px display, white art | new | M4 | hand-drawn icon art |
 | `font.ui.primary` | Game face GameFont: every text that a player sees, in the Title, Body and Caption roles (O62); its Japanese and Korean companions are not needed | 2 files: the 16 px glyph sheet and its glyph table; one R8_UNORM page, drawn at whole-number scales; U+0020-007E, U+00BF-00FF | existing | M1 | the owner's bitmap font sheet (§6) |
 | `font.dev.editor` | Development face EditorFont: the development overlay and windows, in Debug builds only (O62) | 2 files: the 16 px glyph sheet and its glyph table; one R8_UNORM page; U+0020-007E, U+00BF-00FF | new | M1 | the owner's bitmap font sheet (§6) |
 | `strings.en_gb` | English (United Kingdom) string table: HUD, notifications, reports and the front end | UTF-8 JSON, ICU MessageFormat | existing | M1 | written by hand |
@@ -149,23 +147,23 @@ MVP-101: selection, Leader orders and formations, placing a structure, and the w
 
 | Asset id | What it is | Format and budget | New or existing | First needed | Produced by |
 |---|---|---|---|---|---|
-| `cursor.world` | Default world cursor | 128x128 px display, white art | existing | M1 | hand-drawn vector art |
-| `cursor.highlight` | Cursor over a selectable Leader; also the focus highlight of HUD zones | 128x128 px display, white art | existing | M1 | hand-drawn vector art |
-| `cursor.unavailable` | Unavailable: no route, an invalid placement or target | 128x128 px display, white art | existing | M1 | hand-drawn vector art |
-| `cursor.place` | Placement cursor for structures | 128x128 px display, white art | existing | M2 | hand-drawn vector art |
-| `cursor.pointer` | Pointer arrows of HUD lists and scroll bars | 64x64 px display, white art | existing | M2 | hand-drawn vector art |
-| `cursor.world.shadow` | Blurred shadow of the world cursor | derived, BC4 darkening | existing | M1 | derived by the cooker |
-| `cursor.highlight.shadow` | Blurred shadow of the highlight cursor | derived, BC4 darkening | existing | M1 | derived by the cooker |
-| `cursor.unavailable.shadow` | Blurred shadow of the unavailable cursor | derived, BC4 darkening | existing | M1 | derived by the cooker |
-| `cursor.place.shadow` | Blurred shadow of the placement cursor | derived, BC4 darkening | existing | M2 | derived by the cooker |
-| `marker.edge_compass` | Off-screen compass of world markers: Leaders from M1, attacks and claims from M3 | 256x256 px, white art | existing | M1 | hand-drawn vector art |
-| `marker.edge_compass_empty` | Compass ring of an on-screen world marker | 256x256 px, white art | existing | M1 | hand-drawn vector art |
+| `cursor.world` | Default world cursor | 128x128 px, BC4 mask at the display size | existing | M1 | made by the owner (§6) |
+| `cursor.highlight` | Cursor over a selectable Leader; also the focus highlight of HUD zones | 128x128 px, BC4 mask at the display size | existing | M1 | made by the owner (§6) |
+| `cursor.unavailable` | Unavailable: no route, an invalid placement or target | 128x128 px, BC4 mask at the display size | existing | M1 | made by the owner (§6) |
+| `cursor.place` | Placement cursor for structures | 128x128 px, BC4 mask at the display size | existing | M2 | hand-drawn icon art |
+| `cursor.pointer` | Pointer arrows of HUD lists and scroll bars | 64x64 px display, white art | existing | M2 | hand-drawn icon art |
+| `cursor.world.shadow` | Darkening shadow of the world cursor | 128x128 px, BC4 darkening, authored | existing | M1 | made by the owner (§6) |
+| `cursor.highlight.shadow` | Darkening shadow of the highlight cursor | 128x128 px, BC4 darkening, authored | existing | M1 | made by the owner (§6) |
+| `cursor.unavailable.shadow` | Darkening shadow of the unavailable cursor | 128x128 px, BC4 darkening, authored | existing | M1 | made by the owner (§6) |
+| `cursor.place.shadow` | Darkening shadow of the placement cursor | 128x128 px, BC4 darkening, authored | existing | M2 | hand-drawn icon art |
+| `marker.edge_compass` | Off-screen compass of world markers: Leaders from M1, attacks and claims from M3 | 256x256 px, BC4 mask at the display size | existing | M1 | made by the owner (§6) |
+| `marker.edge_compass_empty` | Compass ring of an on-screen world marker | 256x256 px, BC4 mask at the display size | existing | M1 | made by the owner (§6) |
 | `marker.edge_compass_shadow` | Shadow of the compass | 256x256 px, BC4 mask | existing | M1 | made by the owner (§6) |
 | `marker.team_disc` | Colour disc under world markers | 128x128 px, BC4 mask | existing | M1 | made by the owner (§6) |
 | `marker.team_disc_shadow` | Shadow of the colour disc | 128x128 px, BC4 mask | existing | M1 | made by the owner (§6) |
-| `marker.order_trail` | Order trail mark of a Leader's waypoint order | 64x64 px | existing | M1 | hand-drawn vector art |
-| `marker.route_arrow` | Arrow heads along route lines | 32x32 px, white art | existing | M1 | hand-drawn vector art |
-| `marker.flag_pointer` | Pointer on a Leader's waypoint banner | 64x64 px | existing | M1 | hand-drawn vector art |
+| `marker.order_trail` | Order trail mark of a Leader's waypoint order | 64x64 px, BC4 mask | existing | M1 | made by the owner (§6) |
+| `marker.route_arrow` | Arrow heads along route lines | 32x32 px, BC4 mask | existing | M1 | made by the owner (§6) |
+| `marker.flag_pointer` | Pointer on a Leader's waypoint banner | 64x64 px, BC4 mask | existing | M1 | made by the owner (§6) |
 
 *Table 7 — The MVP's cursors and markers.*
 
@@ -190,36 +188,36 @@ MVP-087, from M3: one sample group per sound, the smallest that suits it. The wa
 | Category | Asset ids | Files | New files | Existing files | M1 | M2 | M3 | M4 | Generated | Hand-made | Made by the owner |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | Terrain | 5 | 5 | 0 | 5 | 5 | 0 | 0 | 0 | 0 | 0 | 5 |
-| Units | 8 | 17 | 1 | 16 | 16 | 1 | 0 | 0 | 6 | 11 | 0 |
+| Units | 8 | 17 | 1 | 16 | 16 | 1 | 0 | 0 | 0 | 1 | 16 |
 | Structures and world objects | 16 | 18 | 10 | 8 | 0 | 18 | 0 | 0 | 18 | 0 | 0 |
 | Effects | 7 | 7 | 0 | 7 | 6 | 1 | 0 | 0 | 0 | 0 | 7 |
-| UI and text | 30 | 34 | 22 | 12 | 9 | 14 | 10 | 1 | 8 | 22 | 4 |
-| Cursors and markers | 17 | 17 | 0 | 17 | 14 | 3 | 0 | 0 | 4 | 10 | 3 |
+| UI and text | 30 | 34 | 22 | 12 | 9 | 14 | 10 | 1 | 6 | 20 | 8 |
+| Cursors and markers | 17 | 17 | 0 | 17 | 14 | 3 | 0 | 0 | 0 | 3 | 14 |
 | Audio | 7 | 25 | 3 | 22 | 0 | 0 | 25 | 0 | 17 | 8 | 0 |
-| **Total** | **90** | **123** | **36** | **87** | **50** | **37** | **35** | **1** | **53** | **51** | **19** |
+| **Total** | **90** | **123** | **36** | **87** | **50** | **37** | **35** | **1** | **41** | **32** | **50** |
 
 *Table 9 — The MVP's assets by category, by the milestone that first needs them, and by how they are made; every count is of files except the asset ids. "Made by the owner" counts the files in `GameData/` (§6); "Hand-made" counts those the owner has still to make.*
 
 | Milestone | Asset ids | Files | New files | Generated files | Hand-made files | Made by the owner |
 |---|---:|---:|---:|---:|---:|---:|
-| M1 | 39 | 50 | 2 | 13 | 21 | 16 |
-| M2 | 33 | 37 | 20 | 22 | 12 | 3 |
+| M1 | 39 | 50 | 2 | 2 | 1 | 47 |
+| M2 | 33 | 37 | 20 | 21 | 13 | 3 |
 | M3 | 17 | 35 | 13 | 18 | 17 | 0 |
 | M4 | 1 | 1 | 1 | 0 | 1 | 0 |
 
 *Table 10 — The MVP's assets by milestone.*
 
-**What the owner makes by hand** (51 files still to make; the 19 already made are in §6):
+**What the owner makes by hand** (32 files still to make; the 50 already made are in §6):
 
-- **Worker cards** (7 files): the front and side cards and the four hurt poses for M1, the carried-load overlay for M2. Their silhouette is the first feature of the likeness review.
-- **Vector art** (35 files): five cursors, five marker images, the four Leader banner states, the Workers, Leader and turret icons and the check-box tick, and the 17 new HUD icon files (15 asset ids): 14 files for M1, 11 for M2, the nine relations and run icons for M3 and the deputy icon for M4.
+- **The carried-load overlay** (1 file) for M2; the Worker's front and side cards and its four hurt poses are made (§6), and their silhouette is the first feature of the likeness review.
+- **Icon art** (22 files): the placement cursor and its shadow, the pointer arrow, the turret icon, the check-box tick and the 17 new HUD icon files (15 asset ids): 12 files for M2, the nine relations and run icons for M3 and the deputy icon for M4; the M1 cursors, markers, banners and icons are made (§6).
 - **The Worker death group** (8 files) for M3, recorded; a synthesised set may stand in for it.
 - **The faces' missing marks**, optional: the eight punctuation marks, £ and ° drawn into free cells of GameFont (0x7F to 0x9F are empty) and mapped in its glyph table; until then the en-GB strings use ASCII punctuation ([GameAssets.md §17](../assets/GameAssets.md#17-fonts)).
 - **The en-GB string table**, grown at each milestone; the names of the resource (Crystal), the dwelling and the storehouse are confirmed (O57).
 
 **What the owner approves:**
 
-- **The generated glyph tables** of the two faces (§6), and **the recipes of the generated assets**: the panel palette, the mesh-kit silhouettes of the Leader, the Wellspring, the dwelling, the storehouse, the resource sites and the turret, and the synthesiser patches.
+- **The generated glyph tables** of the two faces (§6), and **the recipes of the generated assets**: the panel palette, the mesh-kit silhouettes of the Wellspring, the dwelling, the storehouse, the resource sites and the turret, and the synthesiser patches.
 - **The likeness review** of PIL-027, by the owner or counsel outside the clean room: the Worker and Leader silhouettes and the game face at the end of M1, the structure silhouettes and the HUD layout at the end of M2, and the HUD's additions at the end of M3, each result recorded in the manifest.
 - **Each asset before it replaces its placeholder**, as the art lead signs off a new Species design ([art and audio briefs](../assets/art_and_audio_briefs.md) §2.8).
 - **Each third-party package that a tool project uses**, recorded in an ADR with its licence (`AGENTS.md` §2).
@@ -237,34 +235,65 @@ The new rows rest on these readings of the MVP scope; each is a row's spec and c
 
 ## 6 Files the owner has made
 
-The owner added these files to `GameData/`, the content root, on 2026-10-19 (O61). Until the design phase fixes the form of the authorship record (PIL-027), this table is the record of these files: each was **made by the owner, newly for Species**, by the owner's statement of 2026-10-19 (O9 holds). The two fonts and `Particle.dds` were drawn in paint.net, the glyph shapes from scratch; at most the file names and the grid layout came from elsewhere, and the game face's file was renamed `GameFont.dds`, its pixels unchanged, because its first name is on the clean-room denylist. The tool of the 17 textures is not recorded yet, and the owner adds it here. The checks compare each file's DDS header with its manifest row; a file that meets its row is packed as authored, and a file that differs is refused by the content build until it is exported again or its row is amended (ADR-017 amendment of O61).
+The owner added these files to `GameData/`, the content root, on 2026-10-19 (O61), and the same day moved the textures into a folder per kind, added the Worker cards, the cursors, markers, banners, icons and panel strips and the first two meshes, and removed `Particle.dds` (O64). Until the design phase fixes the form of the authorship record (PIL-027), this table is the record of these files: each was **made by the owner, newly for Species**, by the owner's statement of 2026-10-19 (O9 holds). The two fonts were drawn in paint.net, the glyph shapes from scratch; at most the file names and the grid layout came from elsewhere, and the game face's file was renamed `GameFont.dds`, its pixels unchanged, because its first name is on the clean-room denylist. The tools of the 46 textures and of the two CMO meshes are not recorded yet, and the owner adds them here. The checks compare each texture's DDS header with its manifest row and read each mesh's CMO structure; a file that meets its row is packed as authored or cooked, and a file that differs is refused by the content build until it is exported again or its row is amended (ADR-017 amendments of O61 and O64).
 
 | File | Asset id | Made by | Against its row |
 |---|---|---|---|
-| `GameData/Textures/beam_long.dds` | `fx.beam_long` | the owner, 2026-10-19 | meets its row: format, size and full mip chain; packed as authored |
-| `GameData/Textures/beam_short.dds` | `fx.beam_short` | the owner, 2026-10-19 | meets its row: format, size and full mip chain; packed as authored |
-| `GameData/Textures/edge_compass_shadow.dds` | `marker.edge_compass_shadow` | the owner, 2026-10-19 | meets its row: format, size and full mip chain; packed as authored |
-| `GameData/Textures/glow_cloudy.dds` | `fx.glow_cloudy` | the owner, 2026-10-19 | meets its row: format, size and full mip chain; packed as authored |
-| `GameData/Textures/glow_round.dds` | `fx.glow_round` | the owner, 2026-10-19 | meets its row: format, size and full mip chain; packed as authored |
-| `GameData/Textures/muzzle_flash.dds` | `fx.muzzle_flash` | the owner, 2026-10-19 | meets its row: format, size and full mip chain; packed as authored |
-| `GameData/Textures/particle_dot.dds` | `fx.particle_dot` | the owner, 2026-10-19 | meets its row: format, size and full mip chain; packed as authored |
-| `GameData/Textures/sky_cloud.dds` | `fx.sky_cloud` | the owner, 2026-10-19 | meets its row: format, size and full mip chain; packed as authored |
-| `GameData/Textures/starburst.dds` | `fx.starburst` | the owner, 2026-10-19 | meets its row: format, size and full mip chain; packed as authored |
-| `GameData/Textures/team_disc.dds` | `marker.team_disc` | the owner, 2026-10-19 | meets its row: format, size and full mip chain; packed as authored |
-| `GameData/Textures/team_disc_shadow.dds` | `marker.team_disc_shadow` | the owner, 2026-10-19 | meets its row: format, size and full mip chain; packed as authored |
-| `GameData/Textures/terrain_grid.dds` | `fx.terrain_grid` | the owner, 2026-10-19 | meets its row: format, size and full mip chain; packed as authored |
-| `GameData/Textures/sea_tile_01.dds` | `terrain.sea_tile` | the owner, 2026-10-19 | meets its row: format, size and full mip chain; packed as authored (BC7 sRGB) |
-| `GameData/Textures/icon_halo.dds` | `icon.hud.icon_halo` | the owner, 2026-10-19 | meets its row as amended on 2026-10-19: 128x128 px, one level, drawn at the display size; packed as authored |
-| `GameData/Textures/menu_highlight.dds` | `uitex.menu_highlight` | the owner, 2026-10-19 | meets its row as amended on 2026-10-19: 256x64 px, one level, drawn at the display size; packed as authored |
-| `GameData/Textures/ramp_01.dds` | `terrain.ramp` | the owner, 2026-10-19; its header's format set to `R8G8B8A8_UNORM_SRGB` on 2026-10-19, no pixel changed | meets its row: format, size and one level; packed as authored |
-| `GameData/Textures/shore_wave_gradient_01.dds` | `terrain.shore_wave_gradient` | the owner, 2026-10-19; its header's format set to `R8G8B8A8_UNORM_SRGB` on 2026-10-19, no pixel changed | meets its row: format, size and one level; packed as authored |
-| `GameData/Fonts/GameFont.dds` | `font.ui.primary` | the owner, 2026-10-19 | meets its row: 256x224 px, 16 px cells, coverage in the alpha channel |
+| `GameData/Textures/Cursor/Highlight.dds` | `cursor.highlight` | the owner, 2026-10-19 | meets its row as amended by O64: BC4_UNORM, 128x128 px, one level; packed as authored |
+| `GameData/Textures/Cursor/HighlightShadow.dds` | `cursor.highlight.shadow` | the owner, 2026-10-19 | meets its row as amended by O64: BC4_UNORM, 128x128 px, one level; packed as authored |
+| `GameData/Textures/Cursor/Unavailable.dds` | `cursor.unavailable` | the owner, 2026-10-19 | meets its row as amended by O64: BC4_UNORM, 128x128 px, one level; packed as authored |
+| `GameData/Textures/Cursor/UnavailableShadow.dds` | `cursor.unavailable.shadow` | the owner, 2026-10-19 | meets its row as amended by O64: BC4_UNORM, 128x128 px, one level; packed as authored |
+| `GameData/Textures/Cursor/World.dds` | `cursor.world` | the owner, 2026-10-19 | meets its row as amended by O64: BC4_UNORM, 128x128 px, one level; packed as authored |
+| `GameData/Textures/Cursor/WorldShadow.dds` | `cursor.world.shadow` | the owner, 2026-10-19 | meets its row as amended by O64: BC4_UNORM, 128x128 px, one level; packed as authored |
+| `GameData/Textures/Fx/BeamLong.dds` | `fx.beam_long` | the owner, 2026-10-19 | meets its row: BC4_UNORM, 128x32 px, full mip chain; packed as authored |
+| `GameData/Textures/Fx/BeamShort.dds` | `fx.beam_short` | the owner, 2026-10-19 | meets its row: BC4_UNORM, 128x32 px, full mip chain; packed as authored |
+| `GameData/Textures/Fx/GlowCloudy.dds` | `fx.glow_cloudy` | the owner, 2026-10-19 | meets its row: BC4_UNORM, 128x128 px, full mip chain; packed as authored |
+| `GameData/Textures/Fx/GlowRound.dds` | `fx.glow_round` | the owner, 2026-10-19 | meets its row: BC4_UNORM, 128x128 px, full mip chain; packed as authored |
+| `GameData/Textures/Fx/MuzzleFlash.dds` | `fx.muzzle_flash` | the owner, 2026-10-19 | meets its row: BC4_UNORM, 64x64 px, full mip chain; packed as authored |
+| `GameData/Textures/Fx/ParticleDot.dds` | `fx.particle_dot` | the owner, 2026-10-19 | meets its row: BC4_UNORM, 16x16 px, full mip chain; packed as authored |
+| `GameData/Textures/Fx/SkyCloud.dds` | `fx.sky_cloud` | the owner, 2026-10-19 | meets its row: BC4_UNORM, 16x16 px, full mip chain; packed as authored |
+| `GameData/Textures/Fx/Starburst.dds` | `fx.starburst` | the owner, 2026-10-19 | meets its row: BC4_UNORM, 128x128 px, full mip chain; packed as authored |
+| `GameData/Textures/Fx/TerrainGrid.dds` | `fx.terrain_grid` | the owner, 2026-10-19 | meets its row: BC4_UNORM, 128x128 px, full mip chain; packed as authored |
+| `GameData/Textures/Icon/Hud/IconHalo.dds` | `icon.hud.icon_halo` | the owner, 2026-10-19 | meets its row: BC4_UNORM, 128x128 px, one level; packed as authored |
+| `GameData/Textures/Icon/Power/Leader.dds` | `icon.power.leader` | the owner, 2026-10-19 | meets its row as amended by O64: BC4_UNORM, 128x128 px, one level; packed as authored |
+| `GameData/Textures/Icon/Power/Workers.dds` | `icon.power.workers` | the owner, 2026-10-19 | meets its row as amended by O64: BC4_UNORM, 128x128 px, one level; packed as authored |
+| `GameData/Textures/Marker/EdgeCompass.dds` | `marker.edge_compass` | the owner, 2026-10-19 | meets its row as amended by O64: BC4_UNORM, 256x256 px, one level; packed as authored |
+| `GameData/Textures/Marker/EdgeCompassEmpty.dds` | `marker.edge_compass_empty` | the owner, 2026-10-19 | meets its row as amended by O64: BC4_UNORM, 256x256 px, one level; packed as authored |
+| `GameData/Textures/Marker/EdgeCompassShadow.dds` | `marker.edge_compass_shadow` | the owner, 2026-10-19 | meets its row: BC4_UNORM, 256x256 px, full mip chain; packed as authored |
+| `GameData/Textures/Marker/FlagPointer.dds` | `marker.flag_pointer` | the owner, 2026-10-19 | meets its row as amended by O64: BC4_UNORM, 64x64 px, full mip chain; packed as authored |
+| `GameData/Textures/Marker/LeaderBannerFollow.dds` | `marker.leader_banner` | the owner, 2026-10-19 | meets its row: BC7_UNORM_SRGB, 64x64 px, full mip chain; packed as authored |
+| `GameData/Textures/Marker/LeaderBannerFormation.dds` | `marker.leader_banner` | the owner, 2026-10-19 | meets its row: BC7_UNORM_SRGB, 64x64 px, full mip chain; packed as authored |
+| `GameData/Textures/Marker/LeaderBannerGather.dds` | `marker.leader_banner` | the owner, 2026-10-19 | meets its row: BC7_UNORM_SRGB, 64x64 px, full mip chain; packed as authored |
+| `GameData/Textures/Marker/LeaderBannerIdle.dds` | `marker.leader_banner` | the owner, 2026-10-19 | meets its row: BC7_UNORM_SRGB, 64x64 px, full mip chain; packed as authored |
+| `GameData/Textures/Marker/LeaderBannerTintFollow.dds` | `marker.leader_banner_tint` | the owner, 2026-10-19 | meets its row: BC4_UNORM, 64x64 px, full mip chain; packed as authored |
+| `GameData/Textures/Marker/LeaderBannerTintFormation.dds` | `marker.leader_banner_tint` | the owner, 2026-10-19 | meets its row: BC4_UNORM, 64x64 px, full mip chain; packed as authored |
+| `GameData/Textures/Marker/LeaderBannerTintGather.dds` | `marker.leader_banner_tint` | the owner, 2026-10-19 | meets its row: BC4_UNORM, 64x64 px, full mip chain; packed as authored |
+| `GameData/Textures/Marker/LeaderBannerTintIdle.dds` | `marker.leader_banner_tint` | the owner, 2026-10-19 | meets its row: BC4_UNORM, 64x64 px, full mip chain; packed as authored |
+| `GameData/Textures/Marker/OrderTrail.dds` | `marker.order_trail` | the owner, 2026-10-19 | meets its row as amended by O64: BC4_UNORM, 64x64 px, full mip chain; packed as authored |
+| `GameData/Textures/Marker/RouteArrow.dds` | `marker.route_arrow` | the owner, 2026-10-19 | meets its row as amended by O64: BC4_UNORM, 32x32 px, full mip chain; packed as authored |
+| `GameData/Textures/Marker/TeamDisc.dds` | `marker.team_disc` | the owner, 2026-10-19 | meets its row: BC4_UNORM, 128x128 px, full mip chain; packed as authored |
+| `GameData/Textures/Marker/TeamDiscShadow.dds` | `marker.team_disc_shadow` | the owner, 2026-10-19 | meets its row: BC4_UNORM, 128x128 px, full mip chain; packed as authored |
+| `GameData/Textures/Sprite/WorkerFront.dds` | `sprite.worker.front` | the owner, 2026-10-19 | meets its row: BC7_UNORM_SRGB, 128x128 px, full mip chain; packed as authored |
+| `GameData/Textures/Sprite/WorkerHurt01.dds` | `sprite.worker.hurt` | the owner, 2026-10-19 | meets its row: BC7_UNORM_SRGB, 128x128 px, full mip chain; packed as authored |
+| `GameData/Textures/Sprite/WorkerHurt02.dds` | `sprite.worker.hurt` | the owner, 2026-10-19 | meets its row: BC7_UNORM_SRGB, 128x128 px, full mip chain; packed as authored |
+| `GameData/Textures/Sprite/WorkerHurt03.dds` | `sprite.worker.hurt` | the owner, 2026-10-19 | meets its row: BC7_UNORM_SRGB, 128x128 px, full mip chain; packed as authored |
+| `GameData/Textures/Sprite/WorkerHurt04.dds` | `sprite.worker.hurt` | the owner, 2026-10-19 | meets its row: BC7_UNORM_SRGB, 128x128 px, full mip chain; packed as authored |
+| `GameData/Textures/Sprite/WorkerSide.dds` | `sprite.worker.side` | the owner, 2026-10-19 | meets its row: BC7_UNORM_SRGB, 32x64 px, full mip chain; packed as authored |
+| `GameData/Textures/Terrain/Ramp01.dds` | `terrain.ramp` | the owner, 2026-10-19; its header's format set to `R8G8B8A8_UNORM_SRGB` again on 2026-10-19, no pixel changed (O61, O64) | meets its row: R8G8B8A8_UNORM_SRGB, 64x64 px, one level; packed as authored |
+| `GameData/Textures/Terrain/SeaTile01.dds` | `terrain.sea_tile` | the owner, 2026-10-19 | meets its row: BC7_UNORM_SRGB, 128x128 px, full mip chain; packed as authored |
+| `GameData/Textures/Terrain/ShoreWaveGradient01.dds` | `terrain.shore_wave_gradient` | the owner, 2026-10-19; its header's format set to `R8G8B8A8_UNORM_SRGB` again on 2026-10-19, no pixel changed (O61, O64) | meets its row: R8G8B8A8_UNORM_SRGB, 400x10 px, one level; packed as authored |
+| `GameData/Textures/Uitex/MenuHighlight.dds` | `uitex.menu_highlight` | the owner, 2026-10-19 | meets its row: BC4_UNORM, 256x64 px, one level; packed as authored |
+| `GameData/Textures/Uitex/PanelAccent.dds` | `uitex.panel_accent` | the owner, 2026-10-19 | meets its row as amended by O64: BC7_UNORM_SRGB, 128x1020 px, one level; packed as authored |
+| `GameData/Textures/Uitex/PanelNeutral.dds` | `uitex.panel_neutral` | the owner, 2026-10-19 | meets its row as amended by O64: BC7_UNORM_SRGB, 128x1024 px, one level; packed as authored |
+| `GameData/Meshes/LeaderFigure.cmo` | `mesh.unit.leader_figure` | the owner, 2026-10-19 | meets its row: CMO, 98 triangles of a 100-triangle budget, three vertex colours, no texture; two bones, the root `leader_figure` and `socket_flag`; one material, `team`; cooked by the mesh cooker (M2) |
+| `GameData/Meshes/ThrownWeapon.cmo` | `mesh.projectile.thrown_weapon` | the owner, 2026-10-19 | meets its row: CMO, 140 triangles of a 300-triangle budget, three vertex colours, no texture; no skeleton; one material, `facet`; cooked by the mesh cooker (M2) |
 | `GameData/Fonts/EditorFont.dds` | `font.dev.editor` | the owner, 2026-10-19 | meets its row: 256x224 px, 16 px cells, coverage in the alpha channel |
-| `GameData/Fonts/GameFontGlyphs.json` | `font.ui.primary` | generated on 2026-10-19 from the sheet's grid: cell n holds U+0020 + n, each glyph the whole 16 px cell; the owner reviews it | 161 code points: U+0020-007E, U+00A0 (blank), U+00BF-00FF |
 | `GameData/Fonts/EditorFontGlyphs.json` | `font.dev.editor` | generated in the same way; U+00BF taken from cell 0xA8, and cells 0x80 to 0xBF otherwise unmapped | 161 code points: U+0020-007E, U+00A0 (blank), U+00BF-00FF |
+| `GameData/Fonts/GameFont.dds` | `font.ui.primary` | the owner, 2026-10-19 | meets its row: 256x224 px, 16 px cells, coverage in the alpha channel |
+| `GameData/Fonts/GameFontGlyphs.json` | `font.ui.primary` | generated on 2026-10-19 from the sheet's grid: cell n holds U+0020 + n, each glyph the whole 16 px cell; the owner reviews it | 161 code points: U+0020-007E, U+00A0 (blank), U+00BF-00FF |
 
 *Table 11 — The files in `GameData/` that have a role, with their authorship and their check against the manifest.*
 
-`GameData/Textures/Particle.dds` (16x16 px, 32-bit, one level) is the owner's too; it has no role yet and is a parked file ([GameAssets.md §2.7](../assets/GameAssets.md#27-parked-files)).
+**Four files first differed from their rows**, and the owner settled them on 2026-10-19 (O61). `IconHalo.dds` and `MenuHighlight.dds` were drawn at the display size with one level, where the rows asked for art at 2x with a full mip chain: the rows are amended to the files, so the UI scales the halo and the highlight beam with linear filtering and no mips at UI scales other than 1, which softens them above 1; both are soft gradients, and the owner accepts it. `Ramp01.dds` and `ShoreWaveGradient01.dds` named `R8G8B8A8_UNORM` where the rows ask for `R8G8B8A8_UNORM_SRGB`: both tables are read on the CPU, so the format only says how their bytes are read, and it was set to the sRGB format, one byte of each header, with no pixel changed.
 
-**Four files first differed from their rows**, and the owner settled them on 2026-10-19. `icon_halo.dds` and `menu_highlight.dds` were drawn at the display size with one level, where the rows asked for art at 2x with a full mip chain: the rows are amended to the files, so the UI scales the halo and the highlight beam with linear filtering and no mips at UI scales other than 1, which softens them above 1; both are soft gradients, and the owner accepts it. `ramp_01.dds` and `shore_wave_gradient_01.dds` named `R8G8B8A8_UNORM` where the rows ask for `R8G8B8A8_UNORM_SRGB`: both tables are read on the CPU, so the format only says how their bytes are read, and it was set to the sRGB format, one byte of each header, with no pixel changed.
+**Nineteen files of the second upload differed from their rows**, and the owner settled them on 2026-10-19 by O64, amending the rows to the files. The world, highlight and unavailable cursors, the Workers and Leader icons and the two compass rings are single-channel BC4 masks at the display size with one level, and the flag pointer, the order trail and the route arrow BC4 masks with their mip chains, where the rows asked for BC7 sRGB white art at 2x: each is now a mask that the draw tints, so these images carry no colour of their own, and the UI scales the one-level ones with linear filtering, which softens them above 1. The three cursor shadows are authored darkening art, where the rows derived them from the cursors (RND-422 allows authored shadows), and the placement cursor and its shadow, still to make, take the same form. The two panel strips have one level where their rows asked for a mip chain: the HUD draws them at half their authored size, so a strip may shimmer slightly when it is minified; the first M1 run shows whether it does. The new copies of `Terrain/Ramp01.dds` and `Terrain/ShoreWaveGradient01.dds` had lost the sRGB format set under O61, and it was set again, one byte of each header, with no pixel changed. The two meshes are CMO files where the rows asked for glTF 2.0: O64 makes CMO the mesh source format (ADR-019 amendment); both fit their triangle budgets, and the Leader figure carries its `flag` socket as the bone `socket_flag` and its team regions in the material `team`.
