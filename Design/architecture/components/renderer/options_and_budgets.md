@@ -181,6 +181,8 @@ Caption: no settings change rebuilds terrain, sea or tree geometry, and none tou
 | profiling | a marker and GPU timestamps per pass (ADR-068, RND-041) |
 | frame cost | the provisional pass-group budgets of RND-454, confirmed or changed by the prototype measurement (see DEC-106) |
 
+> **Amendment 2026-10-19 (ADR-034; O56).** The fonts row reads: the glyph atlas pages of the two bitmap faces, loaded from the pack.
+
 ### 4.5 Species budgets
 
 **RND-454** (MUST) The renderer's client target is `rnd.budget.target_frame_rate` (60 frames per second, 16.7 ms per frame) on the reference test machine ([performance baseline](../diagnostics_test_and_performance/performance_baseline.md) DBG-209, see DEC-971), in a local Spawn Control match with the design population of 2,000 units (see DEC-228 item 6, DEC-106). The frame's CPU and GPU time at that population MUST fit the target. The GPU time of each pass group has a provisional budget, which the prototype measurement of DEC-106 confirms or changes: the world passes 3 to 6 and 8, `rnd.budget.world_ms` (3.0 ms); the actor passes 7a to 7d, `rnd.budget.actors_ms` (4.0 ms); the effect passes 10a to 11, 14 and 15 with their compute work, `rnd.budget.effects_ms` (3.0 ms); the overlay and UI passes 12, 13 and 16 to 34, `rnd.budget.overlays_ms` (2.0 ms). Together they take 12.0 ms and leave 4.7 ms of the frame for the frame constants, the clears, the resolve, the final pass, the present and frame-to-frame variation. The development overlay of Debug builds shows each pass's GPU time against its group's budget (RND-041, ADR-068).

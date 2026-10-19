@@ -59,7 +59,7 @@ All assets live under the content root `content/`. The content build rejects any
 | `content/audio/ui/` | interface sounds |
 | `content/audio/ambience/` | ambience beds |
 | `content/audio/music/` | music (new) |
-| `content/fonts/` | licensed font files |
+| `content/fonts/` | the glyph sheets and glyph tables of the faces drawn for Species (O56), and the font files of the Japanese and Korean companions for the DirectWrite upgrade of ADR-034 |
 | `content/strings/` | string tables, one per language, and the development string table (development editions only) |
 | `content/maps/` | map definitions, one per map slot |
 | `content/thumbnails/` | map thumbnails, one per map |
@@ -84,6 +84,7 @@ The `content/records/<family>/` folders hold the authored JSON data records of t
 - String tables are named by their BCP 47 language tag in lower case with `_` for `-` (`en_gb.json`); the tag itself is stored in the file.
 - Maps follow `map_<mode>_<players>p_<nn>`; a thumbnail adds `_thumb`.
 - A **collision asset** (AST-044) is named after its render member with the suffix `_collision`, in `content/meshes/collision/`; a **tint mask** (AST-022) is named after its parent member with the suffix `_tint`.
+- A drawn face (§17) has two **glyph sheets**, whose stems end in `_1x` and `_2x`, the size each is drawn at, and a **glyph table** with the face's stem (`ui_compact_1x.png`, `ui_compact_2x.png`, `ui_compact.json`); the suffixes name a drawn size, not a numbered variant.
 - A **derived variant** (AST-028) has no authored file: the cooker produces it offline from its parent's source. Its row names its cooked entry, `<parent file without extension>@<variant id>` (`content/textures/icons/cursors/cursor_world@shadow`).
 
 ### 2.3 Asset ids
@@ -136,7 +137,8 @@ The artist delivers the source file under `content/`; the content build generate
 | collision mesh | glTF 2.0 binary `.glb`: triangle primitives, no materials, metres, +Y up; authored as its own source | cooked `Collision` entry, simulation-relevant (DAT-278) | n/a | n/a |
 | sound effect | WAV, 48 kHz, 24-bit PCM, mono (2-D sounds may be stereo) | 16-bit PCM, 48 kHz, resident | n/a | n/a |
 | long audio and music | WAV, 48 kHz, 24-bit PCM, stereo for music | MS-ADPCM stream at 48 kHz, decoded by XAudio2, with no codec in the executable (ADR-025, AST-080): every member of a group whose longest member is over 20 s (`aen.residency.stream_threshold`), and every music group (AEN-072) | n/a | n/a |
-| font | OpenType font licensed for embedding | font file in the pack; glyphs rasterised at run time into R8_UNORM cache pages | n/a | coverage |
+| drawn face | two glyph sheets, PNG 8-bit greyscale coverage (white = full coverage) drawn at 1x and at 2x on the sheet grid, and a UTF-8 JSON glyph table (ADR-062) | R8_UNORM coverage atlas pages, one per drawn size, never block-compressed, and the cooked glyph table, written by the font packer under `Tools/` (ADR-034 as amended by O56) | n/a | coverage |
+| font (DirectWrite upgrade) | OpenType font licensed for embedding | font file in the pack; glyphs rasterised at run time into R8_UNORM cache pages | n/a | coverage |
 | string table | UTF-8 JSON: string id to ICU MessageFormat text | cooked string table | n/a | n/a |
 | map | map definition from the map tool (text, Species map schema) | cooked map definition | n/a | n/a |
 | explainer script | JSON key-frame script that animates pictures by asset id | cooked explainer script | n/a | n/a |
@@ -159,6 +161,8 @@ Everything else that a match reaches is `launch`. `post-launch` holds the season
 
 **Amendment 2026-10-19 (owner decision O55).** The world MVP replaces the skirmish first playable of O20 as the first playable of Species, and skirmish follows the MVP. `skirmish-first-playable` therefore means the first skirmish build after the MVP, and the assumption above describes what that build needs. Of its rows, the 85 files that the MVP needs as well now carry `mvp`, which comes first, and the others keep `skirmish-first-playable`; three `launch` rows that the MVP needs (the long beam strip and the caption and body faces) carry `mvp` too. The MVP's new rows (the Wellspring, the dwelling, the storehouse and the resource sites with their collision assets, the Worker's carried-load overlay, the HUD icons and panels of MVP-102 and the three new sample groups of MVP-087) are `mvp` rows of their own; the dwelling and the storehouse keep their working names in their ids, whatever names the owner confirms for the player (MVP scope §7).
 
+**Amendment 2026-10-19 (owner decision O56).** The caption face `font.ui.stylised` returns to `launch`: it is an optional later third face, and until it exists the Caption role uses the body face. The title and body faces are drawn bitmap faces of three files each (§17), so the MVP needs 91 files of the rows that the list already had: 87 from the skirmish first playable, the title face's three files among them, and 4 from `launch`, the long beam strip and the body face's three files. The primary font of the first-playable assumption is the drawn title face, which covers Latin only; Cyrillic waits for the DirectWrite upgrade of ADR-034.
+
 ### 2.6 Placeholders
 
 The content build generates a stand-in for every manifest row that has no authored file yet, at the same runtime path, so the game always builds and runs. Authored files replace stand-ins one by one.
@@ -178,7 +182,8 @@ The content build generates a stand-in for every manifest row that has no author
 | synthesised tone | sine or noise burst of the stated duration, looping where the row says loop |
 | text-to-speech line | synthetic voice line of the stated duration |
 | silence | silent file of the stated length, looping where the row says loop |
-| fallback font | an open-licence font with the same script coverage |
+| generated block font | a block-letter face that a tool draws from a glyph table written in the tool's own source, newly authored for Species: both glyph sheets at the face's design size and its glyph table, with the face's coverage, so a missing face never blocks a build |
+| fallback font | an open-licence font with the same script coverage (the companion font files of the DirectWrite upgrade only) |
 | pseudo-localised text | text generated from each string id, padded to test layout |
 | generated test map | flat map with the objects the mode needs for its player count |
 | full-weight mask | tint mask of weight 1 over the opaque area of its parent art |
@@ -204,12 +209,12 @@ An edition that its edition manifest marks for release contains no placeholder: 
 | [UI sounds](#14-ui-sounds) | 15 | 18 | 2 | 16 | 0 | 0 | 16 |
 | [Ambience](#15-ambience) | 4 | 21 | 0 | 11 | 10 | 0 | 21 |
 | [Music](#16-music) | 4 | 6 | 0 | 0 | 2 | 4 | 0 |
-| [Fonts](#17-fonts) | 5 | 5 | 3 | 0 | 2 | 0 | 138 |
+| [Fonts](#17-fonts) | 5 | 11 | 6 | 0 | 5 | 0 | 138 |
 | [String table](#18-string-table) | 10 | 10 | 1 | 1 | 8 | 0 | 0 |
 | [Maps and thumbnails](#19-maps-and-thumbnails) | 12 | 98 | 0 | 4 | 94 | 0 | 98 |
-| **Total** | **462** | **1425** | **122** | **559** | **725** | **19** | **1436** |
+| **Total** | **462** | **1431** | **125** | **559** | **728** | **19** | **1436** |
 
-"Reference files replaced" counts the in-scope reference files whose role each category takes over; one Species file may replace several (138 bitmap font pages become 5 font files). The `mvp` column counts the files that the MVP needs (§2.5): 88 rows that the list already had (85 of them from the skirmish first playable, 3 from `launch`) and the MVP's 34 new rows. Music, string tables, some help pictures and every row with no reference counterpart (the application icon, the MVP's new rows, the new glyphs, markers and the Abductor beam ring, the tint masks, the collision assets, the derived variants, the Trooper grenade throw and the six outcome stings that wait for DEC-565) have no one-to-one counterpart. "Files" counts manifest rows: the 7 derived-variant rows have no authored file, because the cooker produces them from their parents.
+"Reference files replaced" counts the in-scope reference files whose role each category takes over; one Species file may replace several (138 bitmap font pages become the glyph sheets and glyph tables of three drawn faces and two companion font files, 11 files). The `mvp` column counts the files that the MVP needs (§2.5): 91 files of rows that the list already had (87 of them from the skirmish first playable, 4 from `launch`; amendments of O55 and O56) and the MVP's 34 new rows. Music, string tables, some help pictures and every row with no reference counterpart (the application icon, the MVP's new rows, the new glyphs, markers and the Abductor beam ring, the tint masks, the collision assets, the derived variants, the Trooper grenade throw and the six outcome stings that wait for DEC-565) have no one-to-one counterpart. "Files" counts manifest rows: the 7 derived-variant rows have no authored file, because the cooker produces them from their parents.
 
 ## 4 Unit sprites
 
@@ -1063,19 +1068,23 @@ No rule raises a music event, so no music plays at the front end, in the lobby o
 
 ## 17 Fonts
 
-Fonts are licensed families (open licence or commercial, licensed for embedding), delivered as font files and rasterised at run time into a glyph cache; there are no bitmap font atlases. The reference uses three text faces; the primary face also carries Japanese and Korean, which Species splits into companion files. The glyph renderer assigns faces to text roles ([ui_framework](../architecture/components/ui_framework/layout_rendering_input_and_localisation.md)). Coverage is the minimum; a family with wider coverage is welcome. Placeholder: fallback font.
+Species draws its text from **bitmap faces that the owner draws for Species** (O56): a title face and a body face, in the condensed style of the Species look ([ui_framework](../architecture/components/ui_framework/layout_rendering_input_and_localisation.md) UI-197), newly authored like every other asset (§1). No licensed typeface is needed, and the reference game's fonts are not used (O9). Each face is two **glyph sheets**, drawn at 1x and at 2x, and a **glyph table**; the font packer under `Tools/` turns them into `R8_UNORM` atlas pages and a cooked glyph table, and the UI draws each text from the page nearest its final size ([ADR-034](../ADR/ADR-034-text-rendering-and-glyph-cache.md) as amended by O56; [ui_framework](../architecture/components/ui_framework/layout_rendering_input_and_localisation.md) UI-198). The three font roles map onto two faces: Title uses `font.ui.primary`; Body and Caption use `font.ui.compact`; `font.ui.stylised` is an optional later third face for the Caption role. The Japanese and Korean companions are font files for the DirectWrite upgrade of ADR-034, which also brings Cyrillic and the currency signs. Placeholder: a generated block font for the drawn faces, the fallback font for the companions (§2.6).
 
-| File | Asset id | Role | Coverage | Priority |
+| Files | Asset id | Role | Coverage | Priority |
 |---|---|---|---|---|
-| `content/fonts/ui_primary.otf` | `font.ui.primary` | Title face (`FontRole::Title`: front-end captions and titles, UI-195), Latin and Cyrillic scripts, with its Japanese and Korean companions | U+0020-00FF, U+0410-044F, U+20A0-20AF | mvp |
-| `content/fonts/ui_primary_ja.otf` | `font.ui.primary_ja` | Japanese companion of the primary face (kana and CJK ideographs) | U+3000-30FF, U+4E00-9EFF | launch |
-| `content/fonts/ui_primary_ko.otf` | `font.ui.primary_ko` | Korean companion of the primary face (Hangul syllables) | U+AC00-D7FF | launch |
-| `content/fonts/ui_stylised.otf` | `font.ui.stylised` | Caption face (`FontRole::Caption`: tool-window titles, the session-browser header, player names in rows, overlays, UI-195) | U+0020-00FF, U+0410-044F, U+20A0-20AF | mvp |
-| `content/fonts/ui_compact.otf` | `font.ui.compact` | Body face (`FontRole::Body`: button captions, field values, list rows, the chat, scrolling text, message dialogs, UI-195) | U+0020-00FF, U+0410-044F, U+20A0-20AF | mvp |
+| `content/fonts/ui_primary_1x.png`, `content/fonts/ui_primary_2x.png`, `content/fonts/ui_primary.json` | `font.ui.primary` | Title face (`FontRole::Title`: front-end captions and titles, UI-195), drawn at a 24 px em and at 48 px | U+0020-007E, U+00A0-00FF, U+2013, U+2014, U+2018, U+2019, U+201C, U+201D, U+2022, U+2026 | mvp |
+| `content/fonts/ui_compact_1x.png`, `content/fonts/ui_compact_2x.png`, `content/fonts/ui_compact.json` | `font.ui.compact` | Body face (`FontRole::Body`: button captions, field values, list rows, the chat, scrolling text, message dialogs, UI-195), and the Caption role's face until `font.ui.stylised` exists; drawn at a 12 px em and at 24 px | U+0020-007E, U+00A0-00FF, U+2013, U+2014, U+2018, U+2019, U+201C, U+201D, U+2022, U+2026 | mvp |
+| `content/fonts/ui_stylised_1x.png`, `content/fonts/ui_stylised_2x.png`, `content/fonts/ui_stylised.json` | `font.ui.stylised` | Caption face (`FontRole::Caption`: tool-window titles, the session-browser header, player names in rows, overlays, UI-195), an optional later third face; drawn at a 12 px em and at 24 px | U+0020-007E, U+00A0-00FF, U+2013, U+2014, U+2018, U+2019, U+201C, U+201D, U+2022, U+2026 | launch |
+| `content/fonts/ui_primary_ja.otf` | `font.ui.primary_ja` | Japanese companion of the primary face (kana and CJK ideographs), for the DirectWrite upgrade | U+3000-30FF, U+4E00-9EFF | launch |
+| `content/fonts/ui_primary_ko.otf` | `font.ui.primary_ko` | Korean companion of the primary face (Hangul syllables), for the DirectWrite upgrade | U+AC00-D7FF | launch |
 
-**A font is third-party content under a licence.** Each family, and the open-licence family that the fallback-font placeholder uses, needs the owner's approval before its files land under `content/fonts/`, and its licence text travels with the font files (`AGENTS.md` R14). The MVP needs the three Latin faces (`mvp`); the Japanese and Korean companions wait for those languages.
+**The glyph sheet.** A face is drawn on a fixed grid of cells one em square, 16 cells to a row, in code-point order unless the glyph table says otherwise: its 199 glyphs fill 13 rows. The 1x sheet is drawn at the design size and the 2x sheet at twice it, each by hand; the 2x sheet is never scaled from the 1x sheet. A sheet is an 8-bit greyscale PNG of coverage, white for full coverage, on black. The glyph table, UTF-8 JSON validated by its schema (ADR-062), holds the design size and, per glyph, the code point, its cell, the advance, the bearing and the baseline in 1x pixels, and may add a kerning-pair table. The design sizes are defaults that the owner may change before drawing: 24 px for the title face, about the page grid's small font at 1080p (23.76 px), and 12 px for the body and caption faces, `ui.text.default_size`.
 
-Each Latin face needs a regular weight at least; a bold weight is optional. Hinting and outlines must stay legible at the smallest HUD size (9 px at 1080p) and in the darkening text-outline pass.
+**The coverage** is the MVP's: U+0020 to U+007E, U+00A0 to U+00FF, and the general punctuation that the en-GB strings use (U+2013, U+2014, U+2018, U+2019, U+201C, U+201D, U+2022, U+2026). A content-build check walks the en-GB string table against the glyph tables and fails on a missing glyph ([ui_framework](../architecture/components/ui_framework/layout_rendering_input_and_localisation.md) UI-199). Cyrillic and the currency block wait for the DirectWrite upgrade.
+
+**No licence is needed for the drawn faces**: they are Species' own content (O56), and the likeness review covers them as it covers other drawn art (PIL-027). The Japanese and Korean companions, when the upgrade brings them, and the open-licence family of the fallback-font placeholder are third-party content under a licence: each needs the owner's approval before its files land under `content/fonts/`, and its licence text travels with the font files (`AGENTS.md` R14). The MVP needs the title and body faces (`mvp`); the caption face is optional (`launch`), and the companions wait for those languages and the upgrade.
+
+Each face stays legible at its smallest size, 9 px at 1080p, drawn from the 1x page scaled down (ADR-064), and with the darkening outline pass behind its glyphs; numerals are clear, and fixed-width where the HUD counts.
 
 ## 18 String table
 
@@ -1114,7 +1123,7 @@ All player-facing text is new, written in plain functional English and keyed by 
 | `content/strings/ko_kr.json` | `strings.ko_kr` | Korean (`ko-KR`) | launch | pseudo-localised text |
 | `content/strings/dev_en_gb.json` | `strings.dev_en_gb` | English (United Kingdom), development captions `ui.dev.*` only; in development editions only, never in a player edition | skirmish-first-playable | pseudo-localised text |
 
-The language set is the reference set of nine; the design phase confirms it. Japanese and Korean need the companion fonts of §17.
+The language set is the reference set of nine; the design phase confirms it. Japanese and Korean need the companion fonts of §17, and every language beyond what the drawn faces cover, Russian among them, needs the DirectWrite upgrade of ADR-034 (O56).
 
 ### 18.1 String ids cited by the documents
 
@@ -1268,5 +1277,5 @@ These reference files and text entries need no Species counterpart. Counts only;
 | editor only |  | 1 |  |  |  | 1 |
 | **Total** | **139** | **201** | **404** | **67** | **281** | **1092** |
 
-Bitmap font pages are not in this table: their role passes to the font files of §17.
+Bitmap font pages are not in this table: their role passes to the faces of §17, which are drawn new for Species (O56).
 

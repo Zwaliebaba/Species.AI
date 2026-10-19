@@ -538,6 +538,8 @@ A percent sign is an ordinary character: no text path of the UI reads formatting
 3. the value text in the body role at size *m*(`ui.text.default_size` (12)), right-aligned: its draw point is x + w − *m*(measured width + `ui.field.box_padding` (7 px)) + `ui.field.value_offset` (2 px), y + `ui.field.value_baseline` (10 px), with the width measured by the text layout (ADR-034);
 4. while editing, the caret: a 1 px vertical line at the text's draw x + the measured advance of the text before the caret + `ui.field.value_offset`, from y + `ui.field.caret_margin` (2 px) to y + h − 2 px, visible while the fractional part of the time ÷ `ui.field.caret_blink_period` (1.0 s) is below `ui.field.caret_duty` (0.5).
 
+> **Amendment 2026-10-19 (ADR-034; O56).** By default the measured width of item 3 and the advance before the caret of item 4 come from the glyph tables of the drawn faces, not from a text layout ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-200).
+
 ### 4.17 Increment glyphs
 
 **UI-071** (MUST) An increment glyph (`UiIncrementGlyph`) steps its text field's value by its step while it is held:

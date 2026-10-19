@@ -100,16 +100,16 @@ public:
 
 class GpuResourceFactory; // the renderer's (renderer/README.md §2, ADR-078)
 
-class GlyphRenderer // ADR-034
+class GlyphRenderer // ADR-034 as amended 2026-10-19 (O56): the authored glyph atlases of the drawn faces
 {
 public:
-  explicit GlyphRenderer(GpuResourceFactory& _factory); // creates the atlas pages through the factory (UI-198)
-  void OnDeviceRebuilt();                               // clears the glyph map; glyphs are rasterised again on first use
-  float MeasureWidth(std::u8string_view _text, const TextStyle& _style) const; // UI-200
+  explicit GlyphRenderer(GpuResourceFactory& _factory); // creates the 1x and 2x pages of every face through the factory and fills them from the cooked fonts (UI-198)
+  void OnDeviceRebuilt();                               // fills the re-created pages again from the cooked fonts; nothing is rasterised
+  float MeasureWidth(std::u8string_view _text, const TextStyle& _style) const; // UI-200: glyph-table advances, the same on either page
   void Draw(DrawContext& _out, PointF _drawPoint, std::u8string_view _text, const TextStyle& _style, TextAlign _align);
-  void SetLanguage(LanguageTag _language);                  // UI-234
-  void Prerasterize(std::span<const char32_t> _characters); // UI-198
+  void SetLanguage(LanguageTag _language); // UI-234
 };
+std::uint32_t ChoosePageScale(float _finalSizePixels, float _designSizePixels); // 1 or 2 (UI-198 amendment)
 
 // InputMode is the input component's (INP-150); the UI reads it from InputRouter::Mode (UI-205).
 
@@ -126,6 +126,8 @@ public:
 } // namespace Engine
 ```
 
+> **Amendment 2026-10-19 (ADR-034; O56).** The `GlyphRenderer` sketch states the default of authored atlases. The DirectWrite upgrade adds back `Prerasterize(std::span<const char32_t> _characters)` for its cache (UI-198, R-META-479) and the per-language fallback chains of UI-234.
+
 **Events consumed.** Resize and DPI change (platform layer, ADR-075); UI-scale and text-scale setting changes; input-mode change and binding change (input router, ADR-029); language change (the other options apply, R-META-448). Each marks the open panels for relayout (UI-172).
 
 **Threading contract.** Layout, drawing and look-ups run on the main thread. A string table is loaded on the loader thread and handed to the main thread through a completion signal (DEC-221 item 4); once handed over it is read-only.
@@ -141,6 +143,8 @@ public:
 | string table | per language (BCP 47 tag): id → plain text, keyboard-and-mouse variant, gamepad variant, after markup expansion | content; one generation per load, kept while viewed (UI-239) | data_schemas; assets `strings.*` |
 | UI scale state | DPI scale, UI scale, text scale | the UI core; process | settings (DEC-100) |
 | glyph cache | atlas pages and the glyph map | the glyph renderer; process; the pages are `Engine::GpuResourceFactory` textures, rebuilt after a device rebuild | ADR-034, ADR-078 |
+
+> **Amendment 2026-10-19 (ADR-034; O56).** By default the font-role map names one drawn face per role, with no fallback chain (UI-234 amendment), and the glyph cache is the resident authored pages of the drawn faces with their cooked glyph tables, filled from the cooked fonts at start-up and again after a device rebuild (UI-198 amendment). A glyph table is a content record in the authoring syntax of ADR-062, validated by its schema (ADR-061).
 
 ## 4 Behaviour and algorithms
 
@@ -211,6 +215,8 @@ The development windows and the message dialog use this layout; no options scree
 **UI-170** (MUST) A tool-window length v in pixels becomes *m*(v) × the DPI scale × the UI scale. A front-end length is its fraction of W or H × the UI scale about its anchor; at a UI scale of 1 the page grid of UI-163 is unchanged. HUD lengths are the renderer's (RND-377).
 
 **UI-171** (MUST) The final text size is the layout size × the text scale (× the UI scale where the element scales), clamped below by the accessibility minimum for the client height H: `ui.access.min_text_1080p` (9 px) × H ÷ 1080 for H ≤ 1080; linear between 9 px at 1080 and `ui.access.min_text_2160p` (19 px) at 2160; 19 px × H ÷ 2160 above (ADR-064). The glyph cache rasterises at the final size (UI-198), so text is never scaled as a bitmap. When a string or a scaled element does not fit its cell, the cell's overflow rule applies (wrap, shrink to the minimum, or scroll); the shrink-to-fit of page titles ([core_and_widgets.md](core_and_widgets.md) UI-113) is the shrink rule. A cell without a rule is reported by the layout validator for every language that overflows it (ADR-033).
+
+> **Amendment 2026-10-19 (ADR-034; O56).** By default the final size chooses the page that draws the text (UI-198 amendment), and text is scaled from the drawn 1x or 2x page with linear filtering: that scaling, and the softness it brings between the two drawn sizes, are accepted (O56), and at the two drawn sizes the text is exact. The final size, its minimum clamp and the overflow rules are unchanged.
 
 ### 4.4 Relayout
 
@@ -329,6 +335,8 @@ The backdrop's corner glow is `ref.meta.backdrop.glow_colour` of [reference/09](
 
 World-space text uses the same glyph quads and blend states as UI text, in the world passes that the renderer assigns (ADR-031).
 
+> **Amendment 2026-10-19 (ADR-034; O56).** By default world-space text draws from the same authored pages as UI text, from the page that the pixel size it covers chooses (UI-198 amendment).
+
 ### 4.9 Font roles, glyph cache and script coverage
 
 **UI-195** (MUST) Text has three font roles (ADR-034), each drawn from a licensed font in the packs ([GameAssets](../../../assets/GameAssets.md) §17):
@@ -341,19 +349,33 @@ World-space text uses the same glyph quads and blend states as UI text, in the w
 
 There are no bitmap font atlases ([reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-474).
 
+> **Amendment 2026-10-19 (ADR-034; O56).** The three roles map onto the two faces that the owner draws for Species: the title role uses `font.ui.primary`, and the body and caption roles use `font.ui.compact`. `font.ui.stylised` is an optional later third face for the caption role, with the priority `launch`; until it exists the caption role uses `font.ui.compact`. The Japanese and Korean companions belong to the DirectWrite upgrade (UI-234 amendment). The faces are newly drawn bitmap faces, not licensed fonts ([GameAssets](../../../assets/GameAssets.md) §17), and Species draws them from authored atlases of its own (UI-198 amendment), so the sentence above on bitmap font atlases no longer holds; no reference atlas page is made.
+
 **UI-196** (MUST) Each role has a horizontal spacing factor that multiplies every glyph advance: caption `ui.font.spacing_caption` (1.0), body `ui.font.spacing_body` (0.91) and title `ui.font.spacing_title` (1.03).
 
 **UI-197** (MUST) **Horizontal scale.** Glyphs are drawn narrower or wider than their height by a per-language horizontal scale. In every language written in Latin or Cyrillic, every character is drawn at `ui.text.horizontal_scale_latin` (0.6). In Japanese and Korean, characters at or above `ui.text.cjk_first_code_point` (U+3000) are drawn at `ui.text.horizontal_scale_cjk` (1.0), and characters below it keep 0.6, so Latin characters stay condensed inside CJK text ([reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-475). The scale is a horizontal transform of the glyph run, applied when the run is laid out and when it is rasterised, so advances and glyph shapes agree (ADR-034). A glyph's advance is the font's shaped advance at size s × the horizontal scale × the role's spacing factor.
 
+> **Amendment 2026-10-19 (ADR-034; O56).** The drawn faces carry the condensation in their glyphs, so for en-GB with these faces the horizontal scale is 1.0: `ui.text.horizontal_scale_latin` holds 1.0 (§9.1), because 0.6 on top of the drawn condensation would condense the text twice. The key stays in data for the DirectWrite upgrade, where an outline face that is not drawn condensed takes the reference value 0.6 again; the CJK scale and the split at U+3000 apply with the upgrade's Japanese and Korean faces only. With the authored atlases the scale multiplies the glyph quads' widths and the advances. A glyph's advance is the glyph table's advance × s ÷ the face's design size × the horizontal scale × the role's spacing factor (UI-200 amendment).
+
 **UI-198** (MUST) The glyph cache follows ADR-034: text is laid out and shaped by DirectWrite; each glyph not yet cached is rasterised in grayscale at its final pixel size and written into an `R8_UNORM` atlas page through the upload ring, by the UI pass that imports the page by name in the frame graph (ADR-078); the cache key is the font face, the glyph index, the final pixel size, the horizontal scale and the sub-pixel x offset quantised to 1 ÷ `ui.glyph.subpixel_steps` (4) of a pixel. Atlas pages are `ui.glyph.page_size` (1024 × 1024 px) and at most `ui.glyph.page_count` (8) exist; when the cache is full, the least recently used page is cleared and reused. The common characters of the current language are rasterised during loading (R-META-479). The atlas pages are textures that the glyph cache creates once, when the UI framework starts, through the renderer's `Engine::GpuResourceFactory` ([renderer](../renderer/README.md) §2, ADR-078), and releases through it at shutdown. Atlas pages are never block-compressed. After a device rebuild the factory re-creates the pages empty at the same heap index, and on `DeviceRebuilt` the cache clears its glyph map and rasterises every glyph again on first use, so the pages are rebuilt rather than restored (ADR-078, ADR-017, ADR-008).
+
+> **Amendment 2026-10-19 (ADR-034; O56).** By default the glyph cache is the set of **authored atlas pages** of the drawn faces, and the text above specifies the DirectWrite upgrade. Each face has two `R8_UNORM` coverage pages, its 1x page and its 2x page, never block-compressed and each at most `ui.glyph.page_size` (1024 × 1024 px); the font packer under `Tools/` writes them from the face's glyph sheets, with an empty border of at least one texel around every glyph so that linear filtering never reads a neighbour, together with the cooked glyph table: the face's design size and, per glyph, its code point, its rectangle on each page, and its advance, bearing and baseline in 1x pixels, with the optional kerning pairs. A face whose glyphs do not fit one page fails the content build. The glyph renderer creates the pages of every face of the font-role map once, when the UI framework starts, through the `Engine::GpuResourceFactory` (ADR-078), at most `ui.glyph.page_count` (8) pages, and fills them from the cooked fonts through the upload ring; they stay resident until shutdown, so nothing is rasterised, evicted or reused at run time, and the cache key, the least-recently-used reuse and `ui.glyph.subpixel_steps` apply to the upgrade only. **Page choice:** text of final size s (UI-171) in a face of design size d is drawn from the 1x page when s ≤ 1.5 × d and from the 2x page otherwise, with linear filtering, at the scale s ÷ d or s ÷ (2 × d); each glyph quad's top-left corner is snapped to a whole pixel, so at s = d and s = 2 × d every texel maps to one pixel. After a device rebuild the factory re-creates the pages empty at the same heap index and, on `DeviceRebuilt`, the renderer fills them again from the cooked fonts (ADR-078, ADR-008).
 
 **UI-199** (MUST) The faces cover at least: U+0020 to U+00FF (Latin-1), U+0410 to U+044F (Cyrillic) and U+20A0 to U+20AF (currency signs) in all three Latin faces; U+3000 to U+30FF (CJK punctuation and kana) and U+4E00 to U+9EFF (CJK ideographs) in `font.ui.primary_ja`; U+AC00 to U+D7FF (Hangul syllables) in `font.ui.primary_ko` ([asset manifest](../../../assets/asset_manifest.csv)). Every edition carries the currency signs. A content-build check walks every string table of every offered language and fails when a character is not covered by that language's font chain (ADR-034). System fonts are appended to the chain only for player-entered text.
 
+> **Amendment 2026-10-19 (ADR-034; O56).** For the MVP each drawn face covers U+0020 to U+007E, U+00A0 to U+00FF and the general punctuation that the en-GB strings use: U+2013, U+2014, U+2018, U+2019, U+201C, U+201D, U+2022 and U+2026, 199 glyphs in all. Cyrillic, the currency block, the companion faces' ranges and the system-font fallback move to the DirectWrite upgrade, and so does the rule that every edition carries the currency signs. The content-build coverage check walks the en-GB string table, every string and its upper-cased form (UI-233), against the glyph tables of the faces that its font roles use, and fails on a missing glyph, naming the table, the id and the code point. A character that reaches the glyph renderer without a glyph, which only text from outside the string tables can hold (a named argument, UI-227, or a typed value), is drawn as the face's glyph of U+003F and logged once per code point.
+
 **UI-200** (MUST) Text widths are measured by the text layout, with the spacing factor and the horizontal scale applied (ADR-034). Geometric rules that the reference states as a character count × a per-character width, such as the automatic widget size ([core_and_widgets.md](core_and_widgets.md) UI-055), stay geometric rules; wherever text must fit, align or place a caret, the measured width is used.
+
+> **Amendment 2026-10-19 (ADR-034; O56).** By default widths are measured from the glyph table: the width of a text of size s is the sum, over its characters, of the advance in 1x pixels × s ÷ the face's design size × the role's spacing factor (UI-196) × the horizontal scale (UI-197), plus the kerning value of each adjacent pair that the table lists, scaled the same way. The measure does not depend on the page that draws the text (UI-198 amendment); fitting, alignment and the caret use it as they use the layout's measure.
 
 **UI-201** (MUST) Text wraps to its cell's width by the line breaking of the text layout: lines break at spaces and between CJK characters in `ui.text.cjk_break_range` (U+3000 to U+D7FF), as in the reference, and at every other break opportunity of the script.
 
+> **Amendment 2026-10-19 (ADR-034; O56).** By default the glyph renderer breaks lines itself, with the measured widths of the UI-200 amendment: at spaces (U+0020, never at U+00A0) and at the line breaks in the text, and inside a word only where the word alone is wider than the line, after the last character that fits. Breaks between CJK characters and at the other break opportunities of a script return with the DirectWrite upgrade.
+
 **UI-202** (MUST) Text is shaped and kerned, bidirectional runs are ordered, and characters outside the Basic Multilingual Plane render like any other (ADR-034). Text is UTF-8 inside the engine and UTF-16 only at the DirectWrite and Win32 boundaries (ADR-063); no text is ever narrowed to an 8-bit form, so no character is replaced on its way to a widget.
+
+> **Amendment 2026-10-19 (ADR-034; O56).** By default text is not shaped: each character is one glyph of the drawn face, kerned only by the optional pair table and laid out left to right. Bidirectional ordering, complex-script fallback and characters outside the Basic Multilingual Plane return with the DirectWrite upgrade; the MVP's text needs none of them (en-GB only, MVP scope §5.1). Text stays UTF-8 inside the engine and is decoded to code points for the glyph look-up; UTF-16 appears only at the Win32 boundary.
 
 ### 4.10 Keyboard, gamepad and pointer navigation
 
@@ -420,6 +442,8 @@ There are no bitmap font atlases ([reference/09](../../../reference/09_front_end
 
 **UI-224** (MUST) A caption may contain: a passage that appears in one input mode only, with an alternative passage for the other; a **binding argument**, replaced by the key or button currently bound to an action, shown as the key's name or inline as its glyph (`glyph.pad.*`, `glyph.key.tab`), as a DirectWrite inline object (ADR-034); and another string by its id, expanded recursively. The markup is expanded when the table is built and again whenever the bindings change; a cycle of embedded ids is a build error. The syntax is the [data schemas](../data_schemas/README.md)' (R-META-468).
 
+> **Amendment 2026-10-19 (ADR-034; O56).** By default the inline glyph of a binding argument is a textured quad of its glyph asset, sized to the text's size and placed in the glyph run at its own advance, which the measured width includes (UI-200 amendment); a DirectWrite inline object is the upgrade's form. A key's name shown as text is drawn from the face like any other text.
+
 **UI-225** (MUST) An expanded text holds at most `ui.lang.max_expanded_length` (1 024 characters), a markup marker at most `ui.lang.max_marker_length` (64 characters) and a string id at most `ui.lang.max_id_length` (96 characters); the content build rejects a longer value and names its file, line and field (DEC-801 item 5).
 
 **UI-226** (MUST) Widgets hold string ids, never copies of text. A change of the input mode re-resolves every bound caption at the next update, so every caption with variants switches with no page code involved (UI-172).
@@ -444,11 +468,17 @@ There are no bitmap font atlases ([reference/09](../../../reference/09_front_end
 
 **UI-234** (MUST) In Japanese and Korean every font role uses `font.ui.primary` with its companion, `font.ui.primary_ja` or `font.ui.primary_ko` (R-META-475), and the horizontal scale of UI-197; in every other language each role uses its own face (UI-195). Each role's face and fallback chain per language are built with the DirectWrite font fallback builder (ADR-034). Switching between a Japanese or Korean language and another language switches the role faces back. No Chinese table exists, so Chinese is not in the language set (R-META-475).
 
+> **Amendment 2026-10-19 (ADR-034; O56).** By default no language uses a fallback chain: each role uses its one drawn face of the UI-195 amendment, and the font-role map is the same in every language that the drawn faces cover. The Japanese and Korean faces, their fallback chains and the DirectWrite font fallback builder belong to the DirectWrite upgrade, which this rule specifies; a language that the drawn faces cannot cover is not offered before the upgrade (ADR-034, the amendment's trigger).
+
 **UI-235** (MUST) Every edition carries the fonts of every language it offers; there is no per-edition packaging of glyph images.
+
+> **Amendment 2026-10-19 (ADR-034; O56).** With the authored atlases the fonts are glyph images: every edition carries the same cooked pages and glyph tables of the drawn faces, and nothing of them is packaged per edition.
 
 ### 4.15 Non-Latin text entry
 
 **UI-236** (MUST) A text field accepts every character the platform delivers, so precomposed non-Latin characters are inserted as typed. Input-method composition is shown inline at the caret, and committed text arrives as characters (ADR-028, ADR-032; [core_and_widgets.md](core_and_widgets.md) UI-067).
+
+> **Amendment 2026-10-19 (ADR-034; O56).** A text field still stores every character it accepts as typed, but by default the drawn faces show only the characters of their glyph tables, and any other character is drawn as the missing glyph of the UI-199 amendment; an input-method composition is shown the same way. Player-entered text in other scripts, and the system-font fallback for it, wait for the DirectWrite upgrade, whose trigger includes the first build that shows player-entered text (ADR-034).
 
 **UI-237** (MUST) Caret movement, selection and the clipboard work in every text field (UI-067); the clipboard exchanges Unicode text at the Win32 boundary (ADR-063).
 
@@ -498,6 +528,8 @@ Diagram 4-B — the runtime language switch and the hand-over between string-tab
 
 **UI-241** (MUST) Rasterising new glyphs is the one UI cost that varies with content; the common characters of the current language are rasterised during loading (UI-198) so that it does not occur in steady state. String tables are read-only after hand-over and are loaded on the loader thread (§2).
 
+> **Amendment 2026-10-19 (ADR-034; O56).** By default no glyph is rasterised at run time: the pages of the drawn faces are filled when the UI framework starts (UI-198 amendment), so no UI cost varies with the characters shown, and UI-240 is met with every glyph resident. The cost, and this rule, return with the DirectWrite upgrade.
+
 ## 6 Failure modes, diagnostics and telemetry
 
 | Condition | Behaviour | Diagnostics | Requirement |
@@ -511,6 +543,8 @@ Diagram 4-B — the runtime language switch and the hand-over between string-tab
 | device removal | the factory re-creates the atlas pages; their glyphs are rasterised again on first use | logged | UI-198 |
 | a palette text token below its contrast minimum | the content build warns for the default palette and fails for the high-contrast palette | build message naming the token | UI-186 |
 | the busiest screen exceeds a budget | nothing changes at run time | the performance test fails | UI-240 |
+
+> **Amendment 2026-10-19 (ADR-034; O56).** With the authored atlases: a character that the glyph tables of the en-GB roles do not cover fails the content build (UI-199 amendment), and at run time a character without a glyph is drawn as the face's glyph of U+003F and logged once per code point; the cache is never full, because the pages are resident; after device removal the factory re-creates the pages and the renderer fills them from the cooked fonts, with nothing rasterised (UI-198 amendment); and the count of glyphs rasterised per frame is 0.
 
 The UI counts draws, vertices, batches and glyphs rasterised per frame for the development overlay ([diagnostics, test and performance](../diagnostics_test_and_performance/README.md)); these counts are part of the opt-in performance telemetry set only if that set names them (ADR-066).
 
@@ -540,12 +574,16 @@ The UI counts draws, vertices, batches and glyphs rasterised per frame for the d
 | L20 | performance | The busiest screen of UI-240 at 1920 × 1080 stays within the draw, vertex and CPU budgets over 600 frames. | UI-240 |
 | L21 | unit | Every text token of the high-contrast palette reaches 7:1 against its background; the default palette's gameplay text reaches 4.5:1. | UI-186 |
 | L22 | golden-image | The same reference strings in each offered language, including a right-to-left sample and a character outside the Basic Multilingual Plane in a text field, match their golden images. | UI-197, UI-198, UI-202 |
+| L23 | unit | Page choice for a face of design size 12 px: final sizes of 9, 12 and 18 px draw the 1x page at the scales 0.75, 1 and 1.5; 18.5, 24 and 36 px draw the 2x page at the scales 0.771, 1 and 1.5; at 12 and 24 px every glyph quad covers its glyph rectangle in whole pixels, one texel to one pixel; a string measured at 18.5 px is 18.5 ÷ 18 times as wide as at 18 px. | UI-171, UI-198, UI-200 |
+| L24 | golden-image | The en-GB strings of the MVP's front-end page and HUD (MVP-102, MVP-103), drawn on those screens in both drawn faces, from both pages and at the minimum text size, outlined and then filled, match their golden images; the coverage check passes for the en-GB table and fails for a test table that holds U+0410. | UI-190, UI-192, UI-198, UI-199 |
+
+> **Amendment 2026-10-19 (ADR-034; O56).** With the authored atlases, L10 uses a test glyph table whose advances are all one design size and the en-GB horizontal scale of 1.0: "AB" at 20 px in the body role is 2 × 20 × 1.0 × 0.91 px wide, and its ja-JP half belongs to the DirectWrite upgrade. L11 checks the en-GB table against the glyph tables: it fails for U+0E01 and for U+20AC and passes for U+2026. L22 is the upgrade's test; L23 and L24 confirm the default (ADR-034).
 
 ## 8 Open decisions
 
 - **DEC-099** (Resolved): per-id fallback to the base language and offering only complete languages; the previous table's lifetime after a switch (UI-219, UI-239).
 - **DEC-316** (Open): the look of ink text over the highlight gradient and the fill boxes, and the page transition (UI-191).
-- **DEC-337** (Dropped): the code-point range that one glyph-atlas page of the reference claims; Species has no glyph atlases of that kind and uses its glyph cache (UI-198).
+- **DEC-337** (Dropped): the code-point range that one glyph-atlas page of the reference claims; Species has no glyph atlases of that kind and uses its glyph cache (UI-198); since O56 its pages are the authored atlases of the UI-198 amendment, one per face and drawn size, whatever code points they hold.
 - **DEC-801** (Resolved): duplicate string ids and over-long values are build errors (UI-222, UI-225).
 - **DEC-102** (Resolved): no state leaks between widgets, literal text, stable look-ups, Back that never applies (UI-183, UI-217, UI-221, UI-227).
 - **DEC-221** (Resolved, ADR-083): the hand-over of resources by reference-counted generations rather than frame counts (UI-239).
@@ -554,17 +592,17 @@ The UI counts draws, vertices, batches and glyphs rasterised per frame for the d
 - **DEC-950** (Resolved): the keyboard defaults of the menu actions, bound in the input component's table 3.6-B (UI-204).
 - **DEC-951** (Resolved): the menu repeat on real time (UI-216).
 - **DEC-952** (Open): reference text-drawing behaviours kept as defaults (UI-194 items 2 and 3).
-- ADR-034 is Proposed; its default is the text stack of §4.9.
+- ADR-034 is Proposed. Since its amendment of 2026-10-19 (O56) its default is the authored-atlas text stack that the dated notes of §4.9 state, and the requirement text of §4.9 specifies the DirectWrite upgrade.
 
 **Design-phase inputs.**
 
 1. The ranges of the UI-scale and text-scale settings, and whether the UI scale applies to the HUD space (ADR-033, ADR-064).
 2. The Species palette and its high-contrast variant, token by token (UI-186); whether dim captions and inactive states need new values to meet 3:1.
-3. Whether the new faces are monospaced: the reference glyphs are fixed-advance cells of width size × horizontal scale × spacing factor, and a face with uniform advances reproduces that look; the art brief asks for fixed-width numerals where the HUD counts.
+3. Whether the new faces are monospaced: the reference glyphs are fixed-advance cells of width size × horizontal scale × spacing factor, and a face with uniform advances reproduces that look; the art brief asks for fixed-width numerals where the HUD counts. Since O56 the owner settles it while drawing the faces, and the glyph table records each advance.
 4. The keyboard defaults of UI-204, and whether Esc should also close front-end pages inside a match's menus.
-5. Whether right-to-left languages are offered; the text stack supports them (UI-202), but the page grid and the widgets are laid out left to right.
+5. Whether right-to-left languages are offered; the text stack of the DirectWrite upgrade supports them (UI-202 and its amendment), but the page grid and the widgets are laid out left to right.
 6. Whether Species adds Chinese is a design-phase language choice; no Chinese string table exists today (UI-234).
-7. Cyrillic glyph design: coverage is [GameAssets](../../../assets/GameAssets.md) §17 (U+0410 to U+044F in all three faces); whether the three faces share one Cyrillic design is an art-direction choice.
+7. Cyrillic glyph design: coverage is [GameAssets](../../../assets/GameAssets.md) §17 (U+0410 to U+044F in all three faces); whether the three faces share one Cyrillic design is an art-direction choice. Since O56 Cyrillic belongs to the DirectWrite upgrade (UI-199 amendment).
 8. The centring of centred and right-aligned 3-D text (UI-194 item 3), which multiplies the CJK and Latin terms instead of adding them, so single-script 3-D labels are drawn left-aligned; whether Species keeps it depends on which world labels it draws (DEC-952).
 
 ## 9 Tuning table
@@ -598,13 +636,13 @@ The palette tokens of UI-187 and UI-188 are the `ui.palette.*` rows; their value
 | `ui.font.spacing_caption` | 1.0 | × advance | caption role | UI-196 | — |
 | `ui.font.spacing_body` | 0.91 | × advance | body role | UI-196 | — |
 | `ui.font.spacing_title` | 1.03 | × advance | title role | UI-196 | — |
-| `ui.text.horizontal_scale_latin` | 0.6 | glyph width ÷ height | Latin and Cyrillic languages; characters below U+3000 in every language | UI-197 | — |
+| `ui.text.horizontal_scale_latin` | 1.0 | glyph width ÷ height | Latin and Cyrillic languages; characters below U+3000 in every language; 1.0 with the drawn condensed faces of O56, the reference value 0.6 for an outline face that is not drawn condensed under the DirectWrite upgrade (UI-197 amendment) | UI-197 | — |
 | `ui.text.horizontal_scale_cjk` | 1.0 | glyph width ÷ height | Japanese and Korean, characters from U+3000 | UI-197 | — |
 | `ui.text.cjk_first_code_point` | U+3000 | code point | | UI-197 | — |
 | `ui.text.cjk_break_range` | U+3000 to U+D7FF | code points | a line may break after these | UI-201 | — |
-| `ui.glyph.subpixel_steps` | 4 | per pixel | sub-pixel x-offset quantisation | UI-198 | — |
-| `ui.glyph.page_size` | 1024 × 1024 | px, `R8_UNORM` | Species baseline | UI-198 | — |
-| `ui.glyph.page_count` | 8 | pages | least recently used page reused | UI-198 | — |
+| `ui.glyph.subpixel_steps` | 4 | per pixel | sub-pixel x-offset quantisation; DirectWrite upgrade only, the authored atlases snap glyphs to whole pixels (UI-198 amendment) | UI-198 | — |
+| `ui.glyph.page_size` | 1024 × 1024 | px, `R8_UNORM` | Species baseline; with the authored atlases the largest page that the font packer writes (UI-198 amendment) | UI-198 | — |
+| `ui.glyph.page_count` | 8 | pages | least recently used page reused; with the authored atlases the most pages resident, none reused (UI-198 amendment) | UI-198 | — |
 | `ui.lang.max_expanded_length` | 1 024 | characters | after markup expansion | UI-225 | DEC-801 |
 | `ui.lang.max_marker_length` | 64 | characters | one markup marker | UI-225 | DEC-801 |
 | `ui.lang.max_id_length` | 96 | characters | one string id | UI-225 | DEC-801 |

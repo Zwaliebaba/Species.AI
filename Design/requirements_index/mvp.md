@@ -69,8 +69,8 @@ Scope: Species implementation: the solo MVP scope. Back to the [requirements ind
 | MVP-080 | The MVP looks good from M1 on: | [mvp_scope.md](../implementation/mvp_scope.md#29-look-o52) |
 | MVP-081 | The terrain is the generated valley with its facet colours from one biome's ramp (`terrain.ramp`), its wire grid (`fx.terrain_grid`), the | [mvp_scope.md](../implementation/mvp_scope.md#29-look-o52) |
 | MVP-082 | Workers are camera-facing sprite cards drawn as instanced crowds (ADR-009; | [mvp_scope.md](../implementation/mvp_scope.md#29-look-o52) |
-| MVP-083 | The Wellspring, the dwelling, the storehouse and the turret (`mesh.structure.turret_mount`, `mesh.structure.turret_head`, | [mvp_scope.md](../implementation/mvp_scope.md#29-look-o52) |
-| MVP-084 | A settlement's territory is drawn as a glowing line on the terrain in its Cladan's colour, border areas and claims are marked on it, and | [mvp_scope.md](../implementation/mvp_scope.md#29-look-o52) |
+| MVP-083 | The Wellspring (`mesh.structure.wellspring`), the dwelling (`mesh.structure.dwelling`), the storehouse (`mesh.structure.storehouse`) and | [mvp_scope.md](../implementation/mvp_scope.md#29-look-o52) |
+| MVP-084 | A settlement's territory is drawn as a glowing line on the terrain in its Cladan's colour (`fx.beam_long`), border areas and claims are | [mvp_scope.md](../implementation/mvp_scope.md#29-look-o52) |
 | MVP-085 | The client draws at `mvp.client.fps_target` (60 frames per second) at 1,920 × 1,080 with up to `mvp.client.figures_max` (1,500) figures on | [mvp_scope.md](../implementation/mvp_scope.md#29-look-o52) |
 | MVP-086 | The MVP's meshes and textures are produced by development tools under `Tools/` (procedural shape kits and texture generators, or a digital | [mvp_scope.md](../implementation/mvp_scope.md#29-look-o52) |
 | MVP-087 | From M3 the MVP SHOULD play a first sound set through the audio engine (ADR-022 to ADR-027): | [mvp_scope.md](../implementation/mvp_scope.md#29-look-o52) |

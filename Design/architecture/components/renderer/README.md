@@ -501,6 +501,8 @@ The golden-image tests of this folder compare with the default tolerance and on 
 | client GPU resources | one factory that creates, fills, releases and rebuilds every resource another component holds | ADR-078 | RND-009, RND-035 |
 | device removal | full device recreation | ADR-008 | RND-034 |
 
+> **Amendment 2026-10-19 (ADR-034; O56).** Text is drawn from two hand-drawn bitmap faces cooked into atlas pages, loaded from the pack rather than rasterised; shaping and the glyph cache of licensed fonts are the recorded upgrade. The glyph pages row above follows: pages are loaded, not filled at run time.
+
 ### 8.3 Design-phase inputs
 
 The Species design phase must answer these questions for the renderer:

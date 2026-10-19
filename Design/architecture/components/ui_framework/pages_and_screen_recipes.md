@@ -537,6 +537,8 @@ The front-end screen's navigation is the standard window's ([core_and_widgets.md
 
 The text is word-wrapped at the wrap width with the widths that the glyph cache measures (ADR-034); the line breaks of the text are kept.
 
+> **Amendment 2026-10-19 (ADR-034; O56).** By default the widths are those that the glyph tables of the drawn faces give, and the lines break by the rule of the UI-201 amendment ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-200, UI-201).
+
 **UI-402** (MUST) The wrapped lines are cached and wrapped again only when the text, the wrap width, the font size or the language changes. The mode description, the map description and the option details set their text from the view-model in every update; an unchanged text keeps its wrapping.
 
 **UI-403** (MUST) A line whose text starts with "-" is a heading: it is drawn without the dash at `ref.meta.credits.heading_scale` (1.25) × s.
@@ -877,7 +879,7 @@ Every Species UI build passes these must-not tests (DEC-102). Each states a beha
 | DEC-221, DEC-222 | Resolved (ADR-083, ADR-084) | the owner of the front-end controller and the read-only match view (UI-301, UI-332) |
 | DEC-045 | Open | a map editor, whose windows follow recipe A (UI-430, UI-431) |
 
-ADR-030 is Accepted; ADR-034 is Proposed, and the default it names is the baseline of this document.
+ADR-030 is Accepted; ADR-034 is Proposed, and the default it names is the baseline of this document: since the amendment of 2026-10-19 (O56), the authored glyph atlases of the two drawn faces, which the dated notes of [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §4.9 state, with DirectWrite as the recorded upgrade.
 
 **Design-phase inputs.**
 

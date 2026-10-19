@@ -2,7 +2,7 @@
 
 > Status: Engine baseline · Prefix: UI · ADRs: [ADR-030](../../../ADR/ADR-030-ui-framework-build-or-buy.md), [ADR-031](../../../ADR/ADR-031-batched-ui-rendering.md), [ADR-032](../../../ADR/ADR-032-ui-focus-graph-page-stack-and-input.md), [ADR-033](../../../ADR/ADR-033-ui-layout-scaling-and-dpi.md), [ADR-034](../../../ADR/ADR-034-text-rendering-and-glyph-cache.md), [ADR-063](../../../ADR/ADR-063-localisation.md), [ADR-064](../../../ADR/ADR-064-accessibility-baseline-xag.md), [ADR-028](../../../ADR/ADR-028-input-device-back-ends.md), [ADR-029](../../../ADR/ADR-029-input-event-model-and-binding-contract.md), [ADR-075](../../../ADR/ADR-075-application-window-and-dpi-awareness.md)
 
-This folder specifies the Species UI framework: a retained, batched UI with typed widget handles, an explicit focus graph for gamepad and keyboard navigation, screen-fraction layout with DPI and UI scale, and text drawn from a glyph cache over licensed fonts. It is the engine baseline that every menu, dialog, options screen, lobby and HUD window of the reference library is built on.
+This folder specifies the Species UI framework: a retained, batched UI with typed widget handles, an explicit focus graph for gamepad and keyboard navigation, screen-fraction layout with DPI and UI scale, and text drawn from authored glyph atlases of two bitmap faces drawn for Species (ADR-034 as amended 2026-10-19, O56), with DirectWrite and a glyph cache as the recorded upgrade. It is the engine baseline that every menu, dialog, options screen, lobby and HUD window of the reference library is built on.
 
 ## Documents of this folder
 
@@ -152,7 +152,7 @@ The type, ownership and lifetime of every UI object are listed in [core_and_widg
 - **DEC-221** (Resolved, ADR-083): the composition root, service lifetimes and the application state machine; the UI core's owner and lifetime follow it (UI-005).
 - **DEC-222** (Resolved, ADR-084): the simulation and presentation boundary; how the UI's read-only view of the match is enforced and fed (UI-002).
 - **DEC-045** (Open): a map editor, whose windows would be tool windows of the UI window layer (UI-001).
-- ADR-030 is Accepted (an own retained framework); ADR-034 is Proposed, and the default it names is the baseline of this folder.
+- ADR-030 is Accepted (an own retained framework); ADR-034 is Proposed, and the default it names is the baseline of this folder: since the amendment of 2026-10-19 (O56), the authored glyph atlases of the two drawn faces, which the dated notes of [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §4.9 state, with DirectWrite as the recorded upgrade.
 
 **Design-phase inputs.**
 

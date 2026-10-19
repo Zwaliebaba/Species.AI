@@ -1,18 +1,18 @@
 # MVP assets
 
-> Status: Draft · Related: [MVP scope](mvp_scope.md) (MVP-080 to MVP-087, MVP-102, MVP-103) · [GameAssets.md](../assets/GameAssets.md) · [asset manifest](../assets/asset_manifest.csv) · [art and audio briefs](../assets/art_and_audio_briefs.md) · [owner decisions](../decisions/owner_decisions.md) (O52, O55)
+> Status: Draft · Related: [MVP scope](mvp_scope.md) (MVP-080 to MVP-087, MVP-102, MVP-103) · [GameAssets.md](../assets/GameAssets.md) · [asset manifest](../assets/asset_manifest.csv) · [art and audio briefs](../assets/art_and_audio_briefs.md) · [owner decisions](../decisions/owner_decisions.md) (O52, O55, O56)
 
 ## 1 Purpose
 
-This page is the owner's working list of the assets that the MVP's milestones M1 to M4 need (O55), at the minimum that still meets the look of O52: generated low-poly terrain, a few structures, and Workers that are seen walking, carrying and fighting, with no placeholder dots outside the development views (MVP-080). It holds **91 asset ids in 122 files**: 88 files that the asset list already had for the skirmish first playable or for launch, and 34 new files in 30 asset ids. Each is a manifest row with the priority `mvp`, which comes before `skirmish-first-playable` ([GameAssets.md §2.5](../assets/GameAssets.md#25-priorities-and-the-first-playable-assumption)). The manifest stays the record of every file's format, spec, sockets and consumers; this page adds the milestone that first needs each asset and how it is made. M0 needs no asset: from the first content build, the content build generates a stand-in for every row that has no authored file ([GameAssets.md §2.6](../assets/GameAssets.md#26-placeholders)), and a milestone's exit needs the authored files of the assets it first needs.
+This page is the owner's working list of the assets that the MVP's milestones M1 to M4 need (O55), at the minimum that still meets the look of O52: generated low-poly terrain, a few structures, and Workers that are seen walking, carrying and fighting, with no placeholder dots outside the development views (MVP-080). It holds **90 asset ids in 125 files**: 91 files of asset ids that the asset list already had for the skirmish first playable or for launch, and 34 new files in 30 asset ids. Each is a manifest row with the priority `mvp`, which comes before `skirmish-first-playable` ([GameAssets.md §2.5](../assets/GameAssets.md#25-priorities-and-the-first-playable-assumption)). The manifest stays the record of every file's format, spec, sockets and consumers; this page adds the milestone that first needs each asset and how it is made. M0 needs no asset: from the first content build, the content build generates a stand-in for every row that has no authored file ([GameAssets.md §2.6](../assets/GameAssets.md#26-placeholders)), and a milestone's exit needs the authored files of the assets it first needs.
 
-**Every asset is newly authored** (O9). Each file is made from scratch for its role in the Species style of the [art and audio briefs](../assets/art_and_audio_briefs.md#2-style-guide-the-look-and-feel-to-keep): nothing is traced, re-coloured, resampled or edited from the reference game's art, audio or text, and no reference file is a starting point, a model, an input to a generator or a placeholder. A generator's recipe (its falloff curves, colour stops, mesh shapes and synthesiser patches) is written for Species. **Each asset carries its authorship record** (PIL-027): who made it, by hand or with which tool and recipe, and when, kept beside the asset's import record (ADR-018, ADR-019) until the design phase fixes the record's form. At each art milestone, people allowed to see the reference game (the owner or counsel, outside the clean room) review the features that must differ, and the result is recorded in the asset manifest (PIL-027). Fonts are the one kind that is not made: they are licensed third-party families, which the owner approves (§4).
+**Every asset is newly authored** (O9). Each file is made from scratch for its role in the Species style of the [art and audio briefs](../assets/art_and_audio_briefs.md#2-style-guide-the-look-and-feel-to-keep): nothing is traced, re-coloured, resampled or edited from the reference game's art, audio or text, and no reference file is a starting point, a model, an input to a generator or a placeholder. A generator's recipe (its falloff curves, colour stops, mesh shapes and synthesiser patches) is written for Species. **Each asset carries its authorship record** (PIL-027): who made it, by hand or with which tool and recipe, and when, kept beside the asset's import record (ADR-018, ADR-019) until the design phase fixes the record's form. At each art milestone, people allowed to see the reference game (the owner or counsel, outside the clean room) review the features that must differ, and the result is recorded in the asset manifest (PIL-027). Fonts are made like the rest: the owner draws two new bitmap faces for Species (O56), so no licence is needed for them.
 
 How to read the tables of §3: one row per asset id; **First needed** is the milestone whose build first draws or plays the asset (MVP scope §3); **Produced by** is one of the methods of §2.
 
 ## 2 How the assets are made
 
-The generators are development tools under `Tools/`, projects of the one solution that never ship (MVP-086, `AGENTS.md` §2). They write their output in the source formats of the content root, which the content build cooks into the formats the runtime loads (ADR-017, ADR-019), so the runtime path is the one that later content takes. A tool may use pinned third-party code restored by NuGet (O29, O30), for example the texture compressor of ADR-017, each package recorded in an ADR with its licence; nothing of it reaches the executable (R14). The tools' project names are set when the projects are created.
+The generators are development tools under `Tools/`, projects of the one solution that never ship (MVP-086, `AGENTS.md` §2). They write their output in the source formats of the content root, which the content build cooks into the formats the runtime loads (ADR-017, ADR-019), so the runtime path is the one that later content takes. A tool may use pinned third-party code restored by NuGet (O29, O30), for example the texture compressor of ADR-017, each package recorded in an ADR with its licence; nothing of it reaches the executable (R14). The font packer, which turns the drawn glyph sheets into atlas pages, and the tool that draws the block-font placeholder are tools of the same kind (ADR-034 as amended by O56). The tools' project names are set when the projects are created.
 
 | Method | Tool | What it makes | The owner's part | Ids | Files |
 |---|---|---|---|---:|---:|
@@ -28,7 +28,7 @@ The generators are development tools under `Tools/`, projects of the one solutio
 | hand-drawn vector art | a vector editor; the icon rasteriser renders the vectors at 2x | cursors, markers, Leader banners, icons and the check-box tick | draws them | 30 | 35 |
 | recorded | a microphone | the Worker death group: eight short voices of a small crowd figure | records them | 1 | 8 |
 | written by hand | a text editor | the en-GB string table | writes it | 1 | 1 |
-| licensed font (owner approves) | none: third-party families | the body, caption and title faces | chooses the families and approves their licences | 3 | 3 |
+| hand-drawn bitmap font sheet | an image editor for the glyph sheets and a text editor for the glyph table; the font packer under `Tools/` writes the atlas pages and the cooked glyph table | the body and title faces: two glyph sheets (1x and 2x) and a glyph table per face, in the condensed style (O56) | draws each glyph at the design size on the sheet grid, at 1x and at 2x, and writes the glyph table | 2 | 6 |
 
 *Table 1 — The production methods of the MVP's assets.*
 
@@ -108,7 +108,7 @@ MVP-082 to MVP-084: laser bolts, muzzle flashes, deaths, Essence orbs, port star
 
 ### 3.5 UI and text
 
-MVP-102 and MVP-103: the HUD's panels are bodies of the two panel strips (UI-460) with three new frames, its read-outs and commands carry 64x64 icons, and the front end is one page of fill boxes, a highlight beam and check boxes. The three Latin faces serve the three font roles (UI-195); the Japanese and Korean companions wait for those languages, and the string table is en-GB only (MVP scope §5.1).
+MVP-102 and MVP-103: the HUD's panels are bodies of the two panel strips (UI-460) with three new frames, its read-outs and commands carry 64x64 icons, and the front end is one page of fill boxes, a highlight beam and check boxes. The two drawn faces serve the three font roles (UI-195; ADR-034 as amended by O56): the title face the Title role, the body face the Body and Caption roles. The caption face `font.ui.stylised` is an optional later face (`launch`), the Japanese and Korean companions belong to the DirectWrite upgrade, and the string table is en-GB only (MVP scope §5.1).
 
 | Asset id | What it is | Format and budget | New or existing | First needed | Produced by |
 |---|---|---|---|---|---|
@@ -139,9 +139,8 @@ MVP-102 and MVP-103: the HUD's panels are bodies of the two panel strips (UI-460
 | `icon.hud.renown` | Renown standing and epilogue | 64x64 px display, white art | new | M3 | hand-drawn vector art |
 | `icon.hud.run_clock` | Time left in the run | 64x64 px display, white art | new | M3 | hand-drawn vector art |
 | `icon.hud.deputy` | Deputy actions in the away report | 64x64 px display, white art | new | M4 | hand-drawn vector art |
-| `font.ui.compact` | Body face: HUD read-outs, list rows, buttons, notifications | OpenType licensed for embedding; Latin-1, Cyrillic, currency | existing | M1 | licensed font (owner approves) |
-| `font.ui.stylised` | Caption face: panel titles and overlays | OpenType licensed for embedding; Latin-1, Cyrillic, currency | existing | M2 | licensed font (owner approves) |
-| `font.ui.primary` | Title face: front-end and epilogue titles (its Japanese and Korean companions are not needed) | OpenType licensed for embedding; Latin-1, Cyrillic, currency | existing | M2 | licensed font (owner approves) |
+| `font.ui.compact` | Body face: HUD read-outs, list rows, buttons, notifications, and the Caption role's panel titles and overlays | 3 files: glyph sheets at a 12 px and a 24 px em, and the glyph table; R8_UNORM pages; U+0020-007E, U+00A0-00FF and eight punctuation marks | existing | M1 | hand-drawn bitmap font sheet |
+| `font.ui.primary` | Title face: front-end and epilogue titles (its Japanese and Korean companions are not needed) | 3 files: glyph sheets at a 24 px and a 48 px em, and the glyph table; R8_UNORM pages; U+0020-007E, U+00A0-00FF and eight punctuation marks | existing | M2 | hand-drawn bitmap font sheet |
 | `strings.en_gb` | English (United Kingdom) string table: HUD, notifications, reports and the front end | UTF-8 JSON, ICU MessageFormat | existing | M1 | written by hand |
 
 *Table 6 — The MVP's UI and text assets.*
@@ -190,40 +189,40 @@ MVP-087, from M3: one sample group per sound, the smallest that suits it. The wa
 
 ## 4 Summary
 
-| Category | Asset ids | Files | New files | Existing files | M1 | M2 | M3 | M4 | Generated | Hand-made | Licensed |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Terrain | 5 | 5 | 0 | 5 | 5 | 0 | 0 | 0 | 5 | 0 | 0 |
-| Units | 8 | 17 | 1 | 16 | 16 | 1 | 0 | 0 | 6 | 11 | 0 |
-| Structures and world objects | 16 | 18 | 10 | 8 | 0 | 18 | 0 | 0 | 18 | 0 | 0 |
-| Effects | 7 | 7 | 0 | 7 | 6 | 1 | 0 | 0 | 7 | 0 | 0 |
-| UI and text | 31 | 33 | 20 | 13 | 6 | 16 | 10 | 1 | 8 | 22 | 3 |
-| Cursors and markers | 17 | 17 | 0 | 17 | 14 | 3 | 0 | 0 | 7 | 10 | 0 |
-| Audio | 7 | 25 | 3 | 22 | 0 | 0 | 25 | 0 | 17 | 8 | 0 |
-| **Total** | **91** | **122** | **34** | **88** | **47** | **39** | **35** | **1** | **68** | **51** | **3** |
+| Category | Asset ids | Files | New files | Existing files | M1 | M2 | M3 | M4 | Generated | Hand-made |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Terrain | 5 | 5 | 0 | 5 | 5 | 0 | 0 | 0 | 5 | 0 |
+| Units | 8 | 17 | 1 | 16 | 16 | 1 | 0 | 0 | 6 | 11 |
+| Structures and world objects | 16 | 18 | 10 | 8 | 0 | 18 | 0 | 0 | 18 | 0 |
+| Effects | 7 | 7 | 0 | 7 | 6 | 1 | 0 | 0 | 7 | 0 |
+| UI and text | 30 | 36 | 20 | 16 | 8 | 17 | 10 | 1 | 8 | 28 |
+| Cursors and markers | 17 | 17 | 0 | 17 | 14 | 3 | 0 | 0 | 7 | 10 |
+| Audio | 7 | 25 | 3 | 22 | 0 | 0 | 25 | 0 | 17 | 8 |
+| **Total** | **90** | **125** | **34** | **91** | **49** | **40** | **35** | **1** | **68** | **57** |
 
 *Table 9 — The MVP's assets by category, by the milestone that first needs them, and by how they are made; every count is of files except the asset ids.*
 
-| Milestone | Asset ids | Files | New files | Generated files | Hand-made files | Licensed files |
-|---|---:|---:|---:|---:|---:|---:|
-| M1 | 38 | 47 | 0 | 25 | 21 | 1 |
-| M2 | 35 | 39 | 20 | 25 | 12 | 2 |
-| M3 | 17 | 35 | 13 | 18 | 17 | 0 |
-| M4 | 1 | 1 | 1 | 0 | 1 | 0 |
+| Milestone | Asset ids | Files | New files | Generated files | Hand-made files |
+|---|---:|---:|---:|---:|---:|
+| M1 | 38 | 49 | 0 | 25 | 24 |
+| M2 | 34 | 40 | 20 | 25 | 15 |
+| M3 | 17 | 35 | 13 | 18 | 17 |
+| M4 | 1 | 1 | 1 | 0 | 1 |
 
 *Table 10 — The MVP's assets by milestone.*
 
-**What the owner makes by hand** (51 files):
+**What the owner makes by hand** (57 files):
 
 - **Worker cards** (7 files): the front and side cards and the four hurt poses for M1, the carried-load overlay for M2. Their silhouette is the first feature of the likeness review.
 - **Vector art** (35 files): five cursors, five marker images, the four Leader banner states, the Workers, Leader and turret icons and the check-box tick, and the 17 new HUD icon files (15 asset ids): 14 files for M1, 11 for M2, the nine relations and run icons for M3 and the deputy icon for M4.
 - **The Worker death group** (8 files) for M3, recorded; a synthesised set may stand in for it.
+- **The two faces** (6 files), drawn as bitmaps in the condensed style (O56): the body face for M1 and the title face for M2, each a 1x glyph sheet, a 2x glyph sheet and its glyph table. Every glyph of the MVP coverage (199 per face) is drawn at the design size on the sheet grid, at 1x and again at 2x, and the font packer writes the atlas pages and the cooked table; until a face lands, the generated block font stands in for it ([GameAssets.md §17](../assets/GameAssets.md#17-fonts)).
 - **The en-GB string table**, grown at each milestone; the names of the one resource, the dwelling and the storehouse are confirmed before M2's HUD text is written (MVP scope §7), and the asset ids keep their working names whatever the confirmed names are.
 
 **What the owner approves:**
 
-- **The three fonts** (`font.ui.compact` for M1, `font.ui.stylised` and `font.ui.primary` for M2) are third-party content under a licence: each family needs the owner's approval before its files land, and its licence text travels with them (`AGENTS.md` R14). The open-licence family that the fallback-font placeholder uses is licensed content too and needs the same approval ([GameAssets.md §17](../assets/GameAssets.md#17-fonts)).
 - **The recipes of the generated assets**: the biome's colour stops, the sea tile, the panel palette, the mesh-kit silhouettes of the Leader, the Wellspring, the dwelling, the storehouse, the resource sites and the turret, and the synthesiser patches.
-- **The likeness review** of PIL-027, by the owner or counsel outside the clean room: the Worker and Leader silhouettes at the end of M1, the structure silhouettes and the HUD layout at the end of M2, and the HUD's additions at the end of M3, each result recorded in the manifest.
+- **The likeness review** of PIL-027, by the owner or counsel outside the clean room: the Worker and Leader silhouettes and the body face at the end of M1, the structure silhouettes, the HUD layout and the title face at the end of M2, and the HUD's additions at the end of M3, each result recorded in the manifest.
 - **Each asset before it replaces its placeholder**, as the art lead signs off a new Species design ([art and audio briefs](../assets/art_and_audio_briefs.md) §2.8).
 - **Each third-party package that a tool project uses**, recorded in an ADR with its licence (`AGENTS.md` §2).
 
@@ -235,4 +234,5 @@ The new rows rest on these readings of the MVP scope; each is a row's spec and c
 - **Sockets.** The Wellspring carries the Spawn Node's sockets (`door`, `essence_link`, three lights, five ports; R-BLDG-124) and an `entrance` for drop-off; the storehouse's drop-off point is its `entrance`. A resource site carries `mvp.resource.ports_per_unit` (4) ports per unit, so a change of that value changes the two resource-site meshes.
 - **Orb glow.** MVP-082 names `fx.glow_cloudy` for the Essence orbs, while the reference draws them with `fx.glow_round` (RND-418); both are `mvp`, and `fx.glow_cloudy` also gives the Wellspring its glow.
 - **Territory line.** The long beam strip `fx.beam_long` draws the territory line of MVP-084.
+- **Design sizes of the faces.** The body face is drawn at a 12 px em (`ui.text.default_size`) and the title face at 24 px (about the page grid's small font at 1080p); the UI draws each text from the 1x or the 2x page nearest its final size and scales it between them (ADR-034 as amended by O56). The owner may choose other sizes before drawing; the sheets, their counts and the M1 and M2 needs stay the same.
 - **Left out.** The title wordmark (the front end sets its title in the title face), the application icon, the turret-aim cursor, the Worker 3-D figure, every reference sound beyond the four groups of §3.7, ambience and the development string table keep their priorities.
