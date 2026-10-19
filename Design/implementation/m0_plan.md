@@ -82,7 +82,6 @@ T3, T5 and T8 have no dependency on T4 and can run beside it; everything else fo
 
 M1 starts on generated placeholders for whatever is missing, so nothing here blocks M0. The owner's 17 textures and two fonts are in `GameData/` already ([MVP assets](mvp_assets.md) §6). Its look exit criterion, a battle that is fun to watch, needs the owner's other hand-made assets of [MVP assets](mvp_assets.md) §4, drawn while M0 is built:
 - the Worker cards: front, side and the four hurt poses;
-- the 14 vector files that M1 uses: cursors, markers, the Leader banner states and the first icons;
-- the four textures that differ from their rows, exported again or their rows amended ([MVP assets](mvp_assets.md) §6).
+- the 14 vector files that M1 uses: cursors, markers, the Leader banner states and the first icons.
 
 The reference test machine is pinned at the start of M1 (O58).
