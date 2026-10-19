@@ -244,7 +244,7 @@ python Build\RunClangTidy.py          # needs a Developer PowerShell (INCLUDE mu
 | `Microsoft.Direct3D.D3D12` (DirectX Agility SDK) | the current Direct3D 12 runtime (`D3D12Core.dll`, installed beside the executable) and its headers | one, current Direct3D 12 runtime on every supported Windows build (ADR-001) |
 | `Microsoft.GameInput` | the GameInput header, library and the `GameInputRedist.msi` the installer runs | the supported controller API and its updated runtime (ADR-028) |
 | `WinPixEventRuntime` | `pix3.h` and `WinPixEventRuntime.dll` | PIX markers and captures (ADR-068) |
-| `Microsoft.Native.Quic.MsQuic.Schannel` (MsQuic) | the MsQuic API header and `msquic.dll`, installed beside the executable, on the operating system's Schannel TLS 1.3; MIT, its licence notice shipped with it | the client–server transport: reliable streams, unreliable datagrams and TLS 1.3, with no protocol of Species' own (owner decision O44, ADR-088) |
+| `Microsoft.Native.Quic.MsQuic.Schannel` (MsQuic) | the MsQuic API header and `msquic.dll`, installed beside the executable, on the operating system's Schannel TLS 1.3; MIT, its licence notice shipped with it | the client–server transport: reliable streams, unreliable datagrams and TLS 1.3, with no protocol of Species' own (owner decision O44; the package ADR-089, the transport ADR-088) |
 
 The pinned versions are in the technology baseline of `Design/ADR/README.md`. If you believe anything else is unavoidable, propose it in your report with what it buys and what it costs — do not add it. This is a closed list, not a high bar; adding to it is an owner decision recorded as an ADR.
 
