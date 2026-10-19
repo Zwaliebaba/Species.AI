@@ -25,7 +25,7 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 - **MVP requirements** (`MVP-nnn`) are what is built. Each cites the requirements it implements as written (`PIL`, `WLD`, `R-`, engine component ids and ADRs), the ones it narrows (and how), or the unwritten area it stands in for.
 - **What is not named here is not built.** §5 lists the notable omissions and every Final requirement that the MVP narrows or defers.
 - **Pace.** The MVP world runs at the session pace until M4 and at the always-on pace from M4 (O54). The tuning values of §4 are stated at the session pace, because Playtest 1 tunes them first; the pace column of §4 says how each one converts at the always-on pace. This is the one place where this document departs from the statement rule of PIL-103, and it changes no rule.
-- **Vocabulary.** The terms of [CONVENTIONS](../CONVENTIONS.md) §8.15 apply. Two structures of the MVP have working names, the dwelling and the storehouse, and the one gathered resource is measured in resource units (ru); §7 lists them as names to confirm.
+- **Vocabulary.** The terms of [CONVENTIONS](../CONVENTIONS.md) §8.15 apply. The MVP's one gathered resource is Crystal, counted in resource units (ru), and its two new structures are the dwelling and the storehouse (O57).
 
 ## 2 Rules
 
@@ -77,7 +77,7 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 ### 2.4 Gathering, stores, construction and upkeep (stands in for B2 and B3)
 
-**MVP-030** (MUST) The MVP has one resource kind, held in the settlement's stores in resource units (ru) as integer thousandths, so that every amount is exact (R16). Each resource unit of WLD-085 is one resource site's yield; a home or border resource site of one unit has `mvp.resource.ports_per_unit` (4) gathering ports, and the central resource site of three units has three times as many.
+**MVP-030** (MUST) The MVP has one resource kind, Crystal (O57), held in the settlement's stores in resource units (ru) as integer thousandths, so that every amount is exact (R16). Each resource unit of WLD-085 is one resource site's yield; a home or border resource site of one unit has `mvp.resource.ports_per_unit` (4) gathering ports, and the central resource site of three units has three times as many.
 
 **MVP-031** (MUST) Gathering is a Worker task of its own task search (R-UNIT-087 to R-UNIT-097, extended): a Worker whose settlement priority is gathering looks for a free gathering port at a resource site inside its territory, or at the central resource site while its settlement holds it, within `ref.unit.worker.port_search_range`; it walks there, mans the port for `mvp.gather.port_ticks` (100 ticks), picks up a load of `mvp.gather.load_ru` (1 ru), carries it visibly to the nearest drop-off point (its Wellspring or a storehouse) and returns. A full store refuses the load and the Worker waits at the drop-off point.
 
@@ -195,7 +195,7 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-084** (MUST) A settlement's territory is drawn as a glowing line on the terrain in its Cladan's colour (`fx.beam_long`), border areas and claims are marked on it, and the area outside the steward's areas lies under black fog with the public layer drawn on it (WLD-244).
 
-**MVP-085** (MUST) The client draws at `mvp.client.fps_target` (60 frames per second) at 1,920 × 1,080 with up to `mvp.client.figures_max` (1,500) figures on screen on the renderer's reference hardware, and draws the replica one tick behind with interpolation (ADR-084).
+**MVP-085** (MUST) The client draws at `mvp.client.fps_target` (60 frames per second) at 1,920 × 1,080 with up to `mvp.client.figures_max` (1,500) figures on screen on the reference test machine (DBG-209), which is the owner's PC, pinned at M1 (O58), and draws the replica one tick behind with interpolation (ADR-084).
 
 **MVP-086** (MUST) The MVP's meshes and textures are produced by development tools under `Tools/` (procedural shape kits and texture generators, or a digital content creation tool with an exporter) and written in the cooked formats the runtime loads (ADR-017, ADR-019), so that the runtime path is the one later content takes. The tools may use pinned third-party code restored by NuGet (O29, O30); nothing of them ships (R14).
 
@@ -240,7 +240,7 @@ The MVP builds only one region and one steward, but it keeps the seams that are 
 | Milestone | Builds | Exit criteria |
 |---|---|---|
 | **M0 Foundations** | The `.slnx` solution with the engine library, the simulation library, the client, the headless server and their test projects (AGENTS.md §2, §3); `Build/CheckFormat.py`, `Build/CheckProjectFiles.py` and `Build/RunClangTidy.py` (AGENTS.md §6); a window with a D3D12 device and swap chain clearing to black; the server loop at 10 ticks per second behind the in-process transport; a snapshot of an empty world written and read | Debug and Release build; CI green with the three checkers gating; the client shows the server's tick count through the transport; the unit tests pass (MVP-090, MVP-091, MVP-092) |
-| **M1 Battle sandbox** | The valley terrain generated and drawn (MVP-011, MVP-081); Workers and Leaders with movement, the threat search, combat, death and orbs (MVP-040); two crowds of 200 under the steward's and a simple AI's command; the camera and the battle verbs; the first look pass (MVP-080, MVP-082) | A battle of 400 figures runs at 10 ticks per second and the client at 60 frames per second (MVP-085); the per-figure costs are measured and ADR-080's budgets confirmed or corrected (O43's first task); the steward finds a battle fun to watch and to steer, recorded in the session log (§6.3) |
+| **M1 Battle sandbox** | The valley terrain generated and drawn (MVP-011, MVP-081); Workers and Leaders with movement, the threat search, combat, death and orbs (MVP-040); two crowds of 200 under the steward's and a simple AI's command; the camera and the battle verbs; the first look pass (MVP-080, MVP-082) | A battle of 400 figures runs at 10 ticks per second and the client at 60 frames per second (MVP-085); the reference test machine is pinned and recorded (O58), and the per-figure costs are measured on it and ADR-080's budgets confirmed or corrected (O43's first task); the steward finds a battle fun to watch and to steer, recorded in the session log (§6.3) |
 | **M2 Settlement** | The Wellspring, Essence drift and growth (MVP-020 to MVP-027); gathering, stores, the three structures, construction, upkeep and the priorities (MVP-030 to MVP-038); the HUD for the settlement; snapshot saving and continuing (MVP-075); the structure and resource-site look (MVP-083, MVP-084) | One settlement with no neighbours grows from 20 Workers to its plateau with a growth step at least every `pil.settlement.growth_step_minutes` (20 minutes) of play in its first 5 hours, and plateaus after 4 to 6 hours of play; the steward finds it nice to watch for 10 minutes |
 | **M3 Neighbours and the run** | Three AI settlements on the same rules under the seen layer (MVP-056 to MVP-058); contact, grievances, claims, attacks with the warning, battles at settlements and claimed areas, the loss cap and respite (MVP-041 to MVP-055); the relations panel; renown, the run, the epilogue and the statistics (MVP-060 to MVP-064); the first sound set (MVP-087) | Playtest 1 (§6.1) is run and recorded; the Proposed ADRs whose "Confirmed when" names the first playable are confirmed or amended on this milestone's build (§5.3) |
 | **M4 Away play** | The always-on pace, the headless server process and the MsQuic connection (MVP-071), presence, the deputy and the away report (MVP-072 to MVP-074), freeze records; the ADR that records the MsQuic package and the amendments of ADR-088 and PLT-100 that it needs (§5.3) | Playtest 2 (§6.2) is run and recorded |
@@ -410,19 +410,16 @@ The steward plays one always-on run of 8 world days (8 real days, with the compu
 
 ### 6.3 Session log
 
-After every session of a playtest the steward writes three lines in the playtest log of the build: what was fun, what was dull or frustrating, and what was confusing, with the world time. The log, the server's statistics and the epilogues are the evidence that the paused design areas resume from (O51), starting with B1, B2, B5 and B6.
+After every session of a playtest the steward writes three lines in the playtest log: what was fun, what was dull or frustrating, and what was confusing, with the world time and the build's identity (ADR-057). The log lives in `playtests/` at the repository root, outside `Design/`, one Markdown file per playtest (`Playtest1.md`, `Playtest2.md`), with the milestone records beside it; M0 creates the folder with a README that states this format. The log, the server's statistics and the epilogues are the evidence that the paused design areas resume from (O51), starting with B1, B2, B5 and B6.
 
 ## 7 Open items
 
 | Item | Decided by |
 |---|---|
-| Names of the one resource kind, the dwelling and the storehouse, screened as A0 screened the world-game terms, then registered in CONVENTIONS §8.15 | The owner, before M2's HUD text is written |
-| The renderer's reference hardware for MVP-085 | M1, from the renderer's budgets |
 | Whether the AI settlements need a difficulty setting beyond their temperaments (R-BOT-022 to R-BOT-024) | Playtest 1 |
 | Whether the MVP needs the strategic view's second layer to follow battles between AI settlements | Playtest 1 |
-| Where the playtest log and milestone records live in the code tree | M0 |
 
-*Table 7 — Open items of the MVP scope.*
+*Table 7 — Open items of the MVP scope. Decided on 2026-10-19: the names of the resource and the structures (O57), the reference test machine (O58), and where the playtest log lives (§6.3).*
 
 ## 8 Dependencies
 

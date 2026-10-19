@@ -438,7 +438,7 @@ The vector sets that tests T7 to T13 use are [§7.2](height_field_generation.md#
 | DEC-246 | Open | the terrain runtime model, terrain content identity, off-map heights and stateless cosmetics (TER-009, TER-061, TER-153, TER-187, TER-221, TER-252) |
 | DEC-247 | Open | terrain scale, large-world terrain and the grid-size limit (TER-009, TER-155, TER-240, TER-241) |
 | DEC-226 | Resolved (ADR-083) | loading, streaming and the load budget (TER-222, TER-242) |
-| DEC-971 | Open | the reference test machine on which T26 is timed; until it is pinned, T26 reports and does not fail (TER-242) |
+| DEC-971 | Resolved (O58) | the reference test machine on which T26 is timed; until it is pinned, T26 reports and does not fail (TER-242) |
 | DEC-324 | Open | the parameter semantics, the method-2 bias and the smooth divisor; unbiased variants in the editor (TER-032, TER-101, TER-106, TER-144) |
 | DEC-326 | Open | the grid overlay's pattern relative to the triangle edges (TER-043) |
 | DEC-113 | Open | the off-map reads that make negative coordinates sea restrict the Abductor wander area (TER-153) |

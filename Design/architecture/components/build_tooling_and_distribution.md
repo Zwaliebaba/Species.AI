@@ -990,7 +990,7 @@ Each test carries the requirement id it verifies (ADR-069).
 | DEC-240, DEC-241 | Resolved (ADR-081) | the numeric model and whether the simulation core is deterministic under `/fp:precise` and `/arch:AVX2` (BLD-040) |
 | DEC-248 | Open | entitlement and the trial product; no in-game map or mode lists gate access (BLD-053) |
 | DEC-802 | Open | whether player editions may hold maps with an empty mode list (BLD-057) |
-| DEC-971 | Open | the developer machine class of table 5-A is the reference test machine with a local solid-state disk, its hardware not yet named (BLD-117) |
+| DEC-971 | Resolved (O58) | the developer machine class of table 5-A is the reference test machine with a local solid-state disk, its hardware not yet named (BLD-117) |
 | DEC-561 | Resolved | per-mode map validation in the content build and in map tools (BLD-068, BLD-087) |
 | DEC-563 | Resolved | thumbnails and the map index are build outputs; no unreferenced asset is packaged (BLD-056, BLD-068) |
 | DEC-800 | Resolved | lossless, canonical and atomic writers: map tools and the translation import (BLD-088, BLD-084, BLD-072) |

@@ -704,10 +704,12 @@ The terms of the Species world game, which [the Species design](gdd/00_vision_pi
 | claim | relations | `Claim` | `relation.claim` |
 | core | world game | `SettlementCore` | `settlement.core` |
 | crossing | world object | `RegionCrossing` | `region.crossing` |
+| Crystal | world game | `ResourceKind::Crystal` | `resource.crystal` |
 | dedicated server | server | `ServerMode::Dedicated` | — |
 | defender's advantage | protection | `DefenderAdvantage` | `protection.defender_advantage` |
 | deputy | delegation | `Deputy` | `deputy` |
 | dormant | world game | `SettlementState::Dormant` | `settlement.dormant` |
+| dwelling | world object | `Dwelling` | `building.dwelling` |
 | expedition | world game | `Expedition` | `expedition` |
 | founding | world game | — (a player command; C1 names it) | `settlement.founding` |
 | frozen | world game | `WorldState::Frozen` | `world.frozen` |
@@ -735,6 +737,7 @@ The terms of the Species world game, which [the Species design](gdd/00_vision_pi
 | stand-in AI settlement | world game | `AiSettlementRole::StandIn` | `settlement.ai.stand_in` |
 | standing order | delegation | `StandingOrder` | `deputy.order` |
 | steward | role | `Steward` | `settlement.steward` |
+| storehouse | world object | `Storehouse` | `building.storehouse` |
 | strategic view | view | `StrategicView` | `view.strategic` |
 | strength | world game | `SettlementStrength` | — |
 | temperament | relations | `Temperament` | `cladan.temperament` |

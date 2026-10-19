@@ -1076,7 +1076,7 @@ Golden-image tests use the default tolerance and reference configuration of the 
 | DEC-461 | Resolved | each turret type's sockets come from its own barrel mesh (AST-042) |
 | DEC-563 | Resolved | thumbnails and the map index are build outputs; no unreferenced asset is packaged (AST-086, AST-087, AST-090) |
 | DEC-801 | Resolved | duplicate keys and ids are build errors; declared maximum lengths (AST-014, AST-049, AST-092) |
-| DEC-971 | Open | the reference test machine of the budgets (AST-125) |
+| DEC-971 | Resolved (O58) | the reference test machine of the budgets (AST-125) |
 | ADR-017, ADR-018, ADR-019, ADR-020, ADR-021, ADR-025, ADR-058, ADR-059, ADR-060, ADR-061 | Accepted (ADR-025 Proposed) | the decisions this component implements |
 
 **Design-phase inputs.**

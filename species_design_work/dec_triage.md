@@ -145,7 +145,7 @@
 | DEC-870 | Tutorial director details | design phase | C5 |  | Affects | decisions/gameplay_gap_rules.md |
 | DEC-220 | Process roles and the headless server build | design phase | D1 | D10, D2 | deferred topic: Hosting | decisions/deferred/process_tick_and_roadmap.md |
 | DEC-229 | Build order, milestones and work breakdown | design phase | D10 | D1 | Affects | decisions/deferred/process_tick_and_roadmap.md |
-| DEC-971 | Reference test machine and minimum-specification hardware | design phase | D10 | D8, E2, D1, C4, C1, C2, D4, A1 | Affects | decisions/engine_gap_rules.md |
+| DEC-971 | Reference test machine and minimum-specification hardware | Resolved (owner, O58, 2026-10-19) | D10 | D8, E2, D1, C4, C1, C2, D4, A1 | Affects | decisions/engine_gap_rules.md |
 | DEC-972 | What the cheats-used marker suppresses | design phase | D10 | C2 | Affects | decisions/engine_gap_rules.md |
 | DEC-003 | Mode-second length after playtest | playtest | D2 | B9, B1 | Affects | decisions/verdicts_and_fixes.md |
 | DEC-046 | Replays | design phase | D2 | C2, D10 | Affects | decisions/verdicts_and_fixes.md |

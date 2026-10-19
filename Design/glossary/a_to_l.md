@@ -176,6 +176,7 @@ Jump to: [**Numbers**](#numbers) · [**A**](#a) · [**B**](#b) · [**C**](#c) ·
 | crossing | player concept | A land bridge over the sea channel between two neighbouring regions, linking one settlement site of each; the only land route from one region to another. | [World and sites §2.2, WLD-024](../gdd/01_world_and_regions/world_and_sites.md#22-regions) |
 | crowd order | player concept | A move order given to the selected Workers: they walk to the point as a loose group, optionally by the direct route. | [Selection and Power slots](../reference/06_controls_camera_and_commands/selection_and_power_slots.md) |
 | Crowned | player concept | Achievement: the local team wins Zone Control at time-up with a score above 1.5 × the second-highest score. | [Options, localisation and hooks](../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) |
+| Crystal | player concept | The one resource of the MVP that Workers gather at resource sites and carry to their settlement's stores, counted in resource units (O57, MVP-030). | [MVP scope](../implementation/mvp_scope.md) |
 | CSV | abbreviation | Comma-separated values, the format of the asset manifest. | [Assets](../assets/README.md) |
 | cycling anchor | engine term | The Power from which the cycle actions step to the next or previous Power slot: the current Power, or else the previous Power. Clearing the selection clears it locally until the team next selects a Power (DEC-007). | [Selection and Power slots](../reference/06_controls_camera_and_commands/selection_and_power_slots.md) |
 
@@ -211,6 +212,7 @@ Jump to: [**Numbers**](#numbers) · [**A**](#a) · [**B**](#b) · [**C**](#c) ·
 | dust object | engine term | One moving particle of the dust-wind map effect, created by the dust-storm spawner with no team: it steers with the wind and, while a vortex exists, circles the vortex at its own height. | [Weapons and projectiles](../reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
 | dust vortex | engine term | The vortex that the dust-storm spawner of the dust-wind map effect holds: the dust objects circle it, and every Worker on the ground within 50 wu of its ground point is caught, spirals up until the vortex clears, then falls. | [Weapons and projectiles](../reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
 | dust wind | player concept | The map effect that runs the dust-storm spawner, with its dust objects and its vortex; one reference map sets it (see DEC-562). | [Map rules and conventions](../reference/08_maps_and_level_design/rules_and_conventions.md); [Weapons and projectiles](../reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
+| dwelling | player concept | A structure that raises its settlement's population limit (O57, MVP-034). | [MVP scope](../implementation/mvp_scope.md) |
 
 ## E
 

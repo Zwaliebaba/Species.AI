@@ -72,8 +72,8 @@ MVP-034 and MVP-083: the Wellspring, the dwelling, the storehouse and the turret
 | Asset id | What it is | Format and budget | New or existing | First needed | Produced by |
 |---|---|---|---|---|---|
 | `mesh.structure.wellspring` | Wellspring: the settlement's centre, drop-off point and source of new Workers | <= 1000 triangles; 11 sockets | new | M2 | mesh kit |
-| `mesh.structure.dwelling` | Dwelling (working name): lit windows, construction ports | <= 300 triangles; 10 sockets | new | M2 | mesh kit |
-| `mesh.structure.storehouse` | Storehouse (working name): drop-off entrance, construction ports | <= 300 triangles; 7 sockets | new | M2 | mesh kit |
+| `mesh.structure.dwelling` | Dwelling: lit windows, construction ports | <= 300 triangles; 10 sockets | new | M2 | mesh kit |
+| `mesh.structure.storehouse` | Storehouse: drop-off entrance, construction ports | <= 300 triangles; 7 sockets | new | M2 | mesh kit |
 | `mesh.structure.resource_site` | Resource sites: one-unit site and the three-unit central site | <= 300 and <= 1000 triangles; 4 and 12 ports | new | M2 | mesh kit |
 | `mesh.structure.turret_mount` | Turret mount: carrier of the four manning ports and status lights | no geometry; 8 sockets | existing | M2 | mesh kit |
 | `mesh.structure.turret_head` | Turret head, also the placement preview | <= 300 triangles; 2 sockets | existing | M2 | mesh kit |
@@ -217,7 +217,7 @@ MVP-087, from M3: one sample group per sound, the smallest that suits it. The wa
 - **Vector art** (35 files): five cursors, five marker images, the four Leader banner states, the Workers, Leader and turret icons and the check-box tick, and the 17 new HUD icon files (15 asset ids): 14 files for M1, 11 for M2, the nine relations and run icons for M3 and the deputy icon for M4.
 - **The Worker death group** (8 files) for M3, recorded; a synthesised set may stand in for it.
 - **The two faces** (6 files), drawn as bitmaps in the condensed style (O56): the body face for M1 and the title face for M2, each a 1x glyph sheet, a 2x glyph sheet and its glyph table. Every glyph of the MVP coverage (199 per face) is drawn at the design size on the sheet grid, at 1x and again at 2x, and the font packer writes the atlas pages and the cooked table; until a face lands, the generated block font stands in for it ([GameAssets.md §17](../assets/GameAssets.md#17-fonts)).
-- **The en-GB string table**, grown at each milestone; the names of the one resource, the dwelling and the storehouse are confirmed before M2's HUD text is written (MVP scope §7), and the asset ids keep their working names whatever the confirmed names are.
+- **The en-GB string table**, grown at each milestone; the names of the resource (Crystal), the dwelling and the storehouse are confirmed (O57).
 
 **What the owner approves:**
 

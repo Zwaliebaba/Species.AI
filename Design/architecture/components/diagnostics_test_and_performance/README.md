@@ -490,7 +490,7 @@ The tests of each topic are in its file: T1 to T6, T8, T9, T12 and T13 in [loggi
 | DEC-802 | Open | soak and stress maps are test maps (DBG-148) |
 | DEC-804 | Resolved | the soak rules (DBG-161) |
 | DEC-970 | Resolved | the black box holds no Windows user name and writes paths relative to placeholders (DBG-047) |
-| DEC-971 | Open | the reference test machine is the first machine that meets the minima of ADR-050 and ADR-002 and runs the performance job, pinned and recorded; until then performance tests report and do not fail (DBG-209) |
+| DEC-971 | Resolved (O58) | the reference test machine is the first machine that meets the minima of ADR-050 and ADR-002 and runs the performance job, pinned and recorded; until then performance tests report and do not fail (DBG-209) |
 | ADR-054, ADR-056 | Accepted | Debug and Release only; development facilities in Debug only (DBG-004) |
 | ADR-068, ADR-069, ADR-070 | Accepted | markers in both configurations; the Microsoft C++ Unit Test Framework; the committed CI workflow, with the soak, GPU and performance jobs added by amendment; the fuzz harnesses run in the test step (ADR-069) (§4.3, §4.8, §4.9, DBG-208) |
 

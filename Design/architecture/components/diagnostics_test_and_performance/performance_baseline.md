@@ -102,6 +102,8 @@ The cost of one tick must fit, spread over its 10 slices, into the render frames
 
 **DBG-209** (MUST) The reference test machine is one pinned and recorded configuration: a processor, memory size, graphics adapter, driver version, display mode and OS build that meet the minima of ADR-050 and ADR-002. Every performance budget of the component specifications refers to it, the data budgets `dat.perf.*` of the data schemas among them; a budget stated on the minimum CPU, on minimum-specification hardware or on the minimum-specification machine is stated on this machine. A change of the machine re-baselines every recorded result. Its named hardware is a design-phase input (DEC-228 items 6 and 7, DEC-971). Until the design phase names it, this interim rule applies (DEC-971): the first machine that meets the minima of ADR-050 and ADR-002 and runs the performance job is pinned and recorded as the reference test machine; until that machine is pinned, every performance test runs, reports its result with the build identity and the hardware of the agent that ran it, and does not fail. The reference developer machine, on which the build budgets of build tooling table 5-A are measured, is `dbg.machine.developer_class`: the reference test machine's processor and memory with a local solid-state disk.
 
+> **Amendment 2026-10-19 (O58; DEC-971).** The reference test machine is the owner's PC, pinned and recorded at the MVP's milestone M1 when the performance job first runs (MVP-085); a minimum-specification tier is decided before the first external build.
+
 ## 6 Failure modes, diagnostics and telemetry
 
 Once the reference test machine is pinned, a result above its budget fails the performance job; until then it is reported and does not fail (DBG-208, DBG-209). A result never changes run-time behaviour.
@@ -115,7 +117,7 @@ Once the reference test machine is pinned, a result above its budget fails the p
 
 ## 8 Open decisions
 
-DEC-106, DEC-229 and DEC-971 (Open) and DEC-227 and DEC-228 (Resolved, ADR-079 and ADR-080) apply to this document; their defaults are listed in the [README](README.md) §8.1, with the design-phase inputs of the whole component.
+DEC-106 and DEC-229 (Open), DEC-227 and DEC-228 (Resolved, ADR-079 and ADR-080) and DEC-971 (Resolved, O58) apply to this document; their defaults are listed in the [README](README.md) §8.1, with the design-phase inputs of the whole component.
 
 ## 9 Tuning table
 

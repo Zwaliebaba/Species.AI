@@ -237,7 +237,7 @@ The golden-image tests compare with the default tolerance and on the pinned refe
 | DEC-225 | Resolved (ADR-083) | frame pacing and catch-up (RND-453) |
 | DEC-228 | Resolved (ADR-080) | the design and stress populations and the client target (RND-454 to RND-456) |
 | DEC-327 | Open | the structure-detail branches (RND-445) |
-| DEC-971 | Open | the reference test machine and the minimum-specification hardware of the client target (RND-454) |
+| DEC-971 | Resolved (O58) | the reference test machine and the minimum-specification hardware of the client target (RND-454) |
 
 **Design-phase inputs.**
 
