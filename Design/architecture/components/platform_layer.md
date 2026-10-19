@@ -56,7 +56,7 @@ Table 1-A: platform services.
 The sketch is a C++23 declaration outline, not an implementation. Every type is in namespace `Engine`; strings are UTF-8 and converted to UTF-16 only inside the platform layer (ADR-063).
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 enum class PlatformError : std::uint8_t
@@ -437,7 +437,7 @@ public:
   [[nodiscard]] std::future<std::expected<std::filesystem::path, FileError>> FinishPoster();
 };
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 ### 2.2 Events and data contracts
@@ -464,7 +464,7 @@ public:
 
 ### 3.1 Install directory and user-data folders
 
-**PLT-015** (MUST) The install directory is the directory of the running executable, resolved from the executable's own module path, never from the working directory. It holds `species.exe`, the first-party libraries, `D3D12\`, `packs\` and the licence notices (ADR-071). Content opens relative to it, so the working directory has no effect on the client. Nothing is written to the install directory or to the registry at run time, and the client runs as a standard user (ADR-071).
+**PLT-015** (MUST) The install directory is the directory of the running executable, resolved from the executable's own module path, never from the working directory. It holds `Species.exe`, the first-party libraries, `D3D12\`, `packs\` and the licence notices (ADR-071). Content opens relative to it, so the working directory has no effect on the client. Nothing is written to the install directory or to the registry at run time, and the client runs as a standard user (ADR-071).
 
 **PLT-016** (MUST) The user-data root is `%LOCALAPPDATA%\<Studio>\Species\`: the Local AppData known folder, from `SHGetKnownFolderPath` with `FOLDERID_LocalAppData`, then the folder `<Studio>`, the publisher name compiled into the build, then the folder `Species`, the product name `PRODUCT_NAME` (ADR-071). Each level is created when it is missing. Debug and Release builds use the same root; only the start-up option `--user-data` replaces it (PLT-025). No configuration and no option writes user files to the working directory or beside the executable.
 
@@ -910,7 +910,7 @@ Platform times are seconds of real time or platform time, never simulation durat
 #include <optional>
 #include <vector>
 
-namespace Engine
+namespace Neuron
 {
 
 struct Vec2
@@ -982,7 +982,7 @@ private:
   std::vector<T> m_elements;
 };
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 **PLT-135** (MUST) The types are those of the sketch above. Vectors, transforms and rays hold binary64 components, the precision of the simulation's decimals (DEC-241). `Mat4`, which the renderer and the camera use for views and projections, holds binary32 elements, row-major, in the layout of `DirectX::XMFLOAT4X4`, so the renderer loads it into DirectXMath without a conversion (ADR-016). No type of the library appears in a header shared by C++ and HLSL: a shared header uses the `Float` types of [renderer](renderer/shaders.md) RND-262, and presentation code converts a binary64 value into them by rounding each component once to the nearest binary32 value when it writes GPU data; a `Mat3x4` is written transposed, as the `Float3x4` of RND-262.

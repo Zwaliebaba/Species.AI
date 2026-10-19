@@ -15,7 +15,7 @@ This document specifies every graphics setting of the renderer (its default, its
 The interface below is a C++23 declaration sketch, not an implementation.
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 enum class DetailLevel : std::uint8_t // a lower number is more detail (RND-444)
@@ -71,7 +71,7 @@ void ApplyPreset(RenderSettings& _settings, QualityPreset _preset);    // RND-45
 // FrameRenderer::ApplySettings(const RenderSettings&) maps the settings onto RenderConfig
 // (README §2) and the per-frame detail state (RND-449).
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 **Data contract.** The renderer reads the player's accessibility settings that bound the look (the flash-reduction and motion settings of ADR-064 and ADR-036, RND-248) from the settings store; it does not own them.

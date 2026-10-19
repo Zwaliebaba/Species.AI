@@ -15,7 +15,7 @@ This document specifies the schemas of the records that the content build reads 
 The interface below is a C++23 declaration sketch, not an implementation. The record types and their enumerations are generated from the schemas (README DAT-054, ADR-062), and this section holds their only declaration: the [asset pipeline](../asset_pipeline_and_resources.md), whose cookers read them in the content build tool, cites it. `AssetId` and `VariantId` are the asset pipeline's (AST §2.1); `ColorRgba` is the RGBA colour of the engine types.
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 // ---- generated from import.texture: table 3.1-A, with the meanings of AST table 3.3-A ----
@@ -155,7 +155,7 @@ public:
   std::expected<AudioImportRecord, std::vector<Diagnostic>> ReadAudio(const JsonDocument& _document) const;
 };
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 **Data contracts.** The cookers of the [asset pipeline](../asset_pipeline_and_resources.md) read the import records (AST-018); the content build's selection and validation steps read the engine asset table and the edition manifests (AST-017, AST-089, AST-090, BLD-049). The runtime reads none of these records, except the feature flags of an edition, which the content build writes into the packs as a record (BLD-016).

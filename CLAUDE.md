@@ -15,7 +15,7 @@
 
 - There is no code yet: no solution, no projects, no source.
 - The design phase ran wave A and is paused (O51): A0 (pillars, loops, vocabulary) and A1 (world and regions) are Final; A2 (solution strategy, ADR-079 to ADR-088, and ADR-089 for MsQuic) is Final, with owner gate B (O41 to O49) applied; its ADRs stay Proposed until the MVP milestones confirm them. Waves B to E are not run.
-- The next step is the MVP: start at milestone M0 of `Design/implementation/mvp_scope.md`.
+- The next step is the MVP's milestone M0: `Design/implementation/m0_plan.md`, task T1 first, in the project layout of ADR-090 (O60). Code is written here and compiled by CI; the owner runs it on their PC (m0_plan §2).
 
 ## Rules that are easy to miss
 

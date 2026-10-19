@@ -19,7 +19,7 @@ This document specifies three schema families of configuration and text: the set
 The interface below is a C++23 declaration sketch, not an implementation.
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 enum class SettingType : std::uint8_t
@@ -71,9 +71,9 @@ public:
   static std::u8string Write(const SettingsFileContent& _loaded, const ValueMap& _current); // DAT-201
 };
 
-} // namespace Engine
+} // namespace Neuron
 
-namespace Engine
+namespace Neuron
 {
 
 // InputMode and BindingDescription are the input component's (INP-150, INP-178).
@@ -91,7 +91,7 @@ public:
 
 // At run time the UI framework's StringTable reads the cooked tables (UI-218 to UI-221); this folder declares no run-time view.
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 **Data contracts.** The settings store reads the settings file with `SettingsFile::Read` and the defaults with `SettingsDefaults`, and writes the file with `SettingsFile::Write` through the canonical writer's atomic replacement (README DAT-043). The input router reads the cooked binding sets and the keyboard-layout table (INP-162 to INP-164) and the user layer from the settings store (INP-070). The UI framework reads the cooked string tables (UI-218).

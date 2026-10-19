@@ -20,7 +20,7 @@ The GPU records below are a declaration sketch of this runtime's shared C++ and 
 
 #include "FrameConstants.h"
 
-namespace Engine
+namespace Neuron
 {
 
 struct ParticleSlot // one slot of the pool's structured buffer
@@ -68,7 +68,7 @@ struct Tumbler
   Float3 angularVelocity;
 };
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 **Events.** This document consumes the effect events of table 4.7-A and the route-highlight request of RND-350. Its screen effects receive the shake requests of VFX-233 and give the camera the frame's rotation offset.

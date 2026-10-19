@@ -137,7 +137,7 @@ Caption: the runtime reads the simulation's snapshot and events and feeds the re
 The interface below is a C++23 declaration sketch, not an implementation. The clocks, the particle pool with its particle-type ids, the shatter effects and the screen effects are engine code in namespace `Engine`. The effect kinds and effect events, the particle kinds, the explainer player and the runtime that turns the game's snapshot and events into engine calls name game concepts (the simulation's objects and events, the team palette, the mode explainers), so they are game-layer presentation code in `Species`, built on those engine types (`AGENTS.md` R9). `TimeSource` is the platform layer's (ADR-074), `AssetId` the asset pipeline's, `PassContext`, `FrameView`, `ColorRgba`, `GpuResourceFactory` and the instanced batches `CrowdRenderer` and `MeshRenderer` the renderer's, `PresentationSnapshot` and its match-setup record `MatchSetupView` the game's presentation snapshot ([renderer/README.md](../renderer/README.md) §3.5, RND-018, RND-019), `DrawContext` the UI framework's handle to the batched UI stream, and `ExplainerAnimation` and `LoadError` the data schemas'; a pass is named by its id in the renderer's pass table (RND-070).
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 struct PresentationTime // §3.1
@@ -222,7 +222,7 @@ public:
   void RecordFlash(PassContext& _pass10a) const;
 };
 
-} // namespace Engine
+} // namespace Neuron
 
 namespace Species
 {
@@ -241,16 +241,16 @@ struct EffectEvent
   EffectKind kind;
   EffectEventId id;
   SimObjectId subject; // the object the effect follows or comes from
-  Engine::Vec3 position;
-  Engine::Vec3 velocity;
-  Engine::Vec3 direction;
+  Neuron::Vec3 position;
+  Neuron::Vec3 velocity;
+  Neuron::Vec3 direction;
   std::uint8_t colorId = 0xFF; // team colour id (RND-016); 0xFF = none
   float a = 0.0f;              // kind-specific scalars of particles table 4.7-A
   float b = 0.0f;
-  std::optional<Engine::ShatterPayload> shatter; // EffectKind::Shatter (particles §4.10)
+  std::optional<Neuron::ShatterPayload> shatter; // EffectKind::Shatter (particles §4.10)
 };
 
-// Particles table 4.2-A, in this order; each kind names one row of the pool's particle-type table (Engine::ParticleTypeId).
+// Particles table 4.2-A, in this order; each kind names one row of the pool's particle-type table (Neuron::ParticleTypeId).
 enum class ParticleKind : std::uint8_t
 {
   RocketTrail,
@@ -274,15 +274,15 @@ enum class ParticleKind : std::uint8_t
 
 struct ExplainerTeamColors // the colours that the friendly and enemy roles resolve to (R-META-227, VFX-109)
 {
-  Engine::ColorRgba friendly; // the local team's colour
-  Engine::ColorRgba enemy;    // the first team slot that is not a friend of the local team; white when none
+  Neuron::ColorRgba friendly; // the local team's colour
+  Neuron::ColorRgba enemy;    // the first team slot that is not a friend of the local team; white when none
 };
 
 class ExplainerPlayer // the explainer timeline, hosted by the UI framework
 {
 public:
-  static std::expected<ExplainerPlayer, Engine::LoadError> Load(const ExplainerAnimation& _data);
-  void Draw(Engine::DrawContext& _batch, const ExplainerLayout& _layout, double _realNow, const ExplainerTeamColors& _roles);
+  static std::expected<ExplainerPlayer, Neuron::LoadError> Load(const ExplainerAnimation& _data);
+  void Draw(Neuron::DrawContext& _batch, const ExplainerLayout& _layout, double _realNow, const ExplainerTeamColors& _roles);
 };
 
 class VfxRuntime // turns the game's snapshot and effect events into calls of the engine runtime above
@@ -290,8 +290,8 @@ class VfxRuntime // turns the game's snapshot and effect events into calls of th
 public:
   void OnMatchStart(const MatchSetupView& _setup); // seasonal state, team colour ids (RND-019)
   void ConsumeTick(std::uint32_t _tick, std::span<const EffectEvent> _events);
-  void Update(const PresentationSnapshot& _snap, const Engine::FrameView& _view);
-  void RecordPass(std::string_view _passId, Engine::PassContext& _context); // pass-table ids of 7b, 7d, 8, 10a, 11, 14, 15, 16
+  void Update(const PresentationSnapshot& _snap, const Neuron::FrameView& _view);
+  void RecordPass(std::string_view _passId, Neuron::PassContext& _context); // pass-table ids of 7b, 7d, 8, 10a, 11, 14, 15, 16
   void OnMatchEnd();
 };
 

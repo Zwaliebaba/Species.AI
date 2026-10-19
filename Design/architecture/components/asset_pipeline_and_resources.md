@@ -76,7 +76,7 @@ flowchart LR
 ### 2.1 Interface sketch
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 // ---- identity -------------------------------------------------------------------------
@@ -245,7 +245,7 @@ public:
   void Pump();                                                 // once per frame: completions and events
 };
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 **AST-008** (MUST) The interface is the one above in substance: requests take an asset id and an optional declared variant; every handle is reference counted; every result that can fail is a `std::expected` or carries `LoadState::Failed` with an `AssetError` that names the asset id, the key and the reason.

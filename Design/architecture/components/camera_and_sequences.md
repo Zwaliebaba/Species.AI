@@ -61,7 +61,7 @@ Table 1-A Neighbours and contracts.
 The camera records, the frame output, the pick ray and the timeline records are engine code in namespace `Engine`. The match camera, its modes and frame inputs and the timeline player know game concepts by name (the Beam Dish and turret aim modes, the structure focus, the local team, the presentation snapshot), so they are game-layer code in `Species`, built on those engine types (`AGENTS.md` R9).
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 // The map's camera records (R-MAP-125, R-MAP-127): CameraTransition, CameraView (name, position, front, up),
@@ -135,7 +135,7 @@ struct PresentationTimeline
   std::vector<TimelineStatement> statements;
 };
 
-} // namespace Engine
+} // namespace Neuron
 
 namespace Species
 {
@@ -157,29 +157,29 @@ struct CameraFrameInputs
   double realNow;                       // platform clock, seconds (ADR-074)
   const PresentationSnapshot* snapshot; // DEC-222; null without a match world
   float extrapolationSeconds;           // R-SIM-560
-  const Engine::InputRouter* input;     // actions, pointer, input mode
+  const Neuron::InputRouter* input;     // actions, pointer, input mode
   bool uiWindowOpen;
   bool editing;                        // the map-editor loop runs
-  const Engine::TerrainField* terrain; // height queries; null without terrain
+  const Neuron::TerrainField* terrain; // height queries; null without terrain
 };
 
 class MatchCamera
 {
 public:
   // Lifecycle (§4.7)
-  void EnterMatch(const Engine::MapCameraData& _map, bool _editing);
+  void EnterMatch(const Neuron::MapCameraData& _map, bool _editing);
   void OnLocalTeamKnown(std::uint8_t _startPosition);
   void LeaveMatch();
 
   // Per frame (§4.1): frame thread, once per rendered frame while the window has focus
   void Advance(const CameraFrameInputs& _in);
-  [[nodiscard]] Engine::CameraFrameOutput FrameOutput(const Engine::ShakeOffset& _shake) const;
+  [[nodiscard]] Neuron::CameraFrameOutput FrameOutput(const Neuron::ShakeOffset& _shake) const;
 
   // Targets and scripted operations (§4.3 to §4.6)
   bool SetTargetView(std::string_view _name);                                    // without regard to case; previous_view
-  void SetTargetPose(const Engine::Vec3& _position, const Engine::Vec3& _front); // up: the level up vector
-  void SetTargetPose(const Engine::CameraPose& _pose);
-  void SetTargetAround(const Engine::Vec3& _focus, float _distance, float _height);
+  void SetTargetPose(const Neuron::Vec3& _position, const Neuron::Vec3& _front); // up: the level up vector
+  void SetTargetPose(const Neuron::CameraPose& _pose);
+  void SetTargetAround(const Neuron::Vec3& _focus, float _distance, float _height);
   void Cut();
   void StartMove(float _durationSeconds);
   void FocusStructure(SimObjectId _structure, float _range, float _height);
@@ -194,8 +194,8 @@ public:
   [[nodiscard]] bool IsBusy() const; // an animation plays or a scripted move runs
 
   // Picking and projection (§4.10); a pick ray starts on the near plane and has a unit direction (CAM-090)
-  [[nodiscard]] Engine::Ray PickRayAt(Engine::Vec2 _pointerPixels, const Engine::FrameView& _view) const;
-  [[nodiscard]] Engine::Mat4 ViewProjectionFor(const Engine::CameraPose& _pose, const Engine::FrameView& _view) const;
+  [[nodiscard]] Neuron::Ray PickRayAt(Neuron::Vec2 _pointerPixels, const Neuron::FrameView& _view) const;
+  [[nodiscard]] Neuron::Mat4 ViewProjectionFor(const Neuron::CameraPose& _pose, const Neuron::FrameView& _view) const;
 
   [[nodiscard]] const CameraState& State() const; // read-only: overlays and tests
 };
@@ -204,15 +204,15 @@ struct TimelineFrameInputs // the inputs of one timeline advance (CAM-103)
 {
   double realNow;                       // platform clock, seconds (ADR-074); the camera clock of the waits (CAM-104)
   const PresentationSnapshot* snapshot; // role tags and conditions (CAM-104, CAM-109); null without a match world
-  const Engine::InputRouter* input;     // action.sequence.skip (CAM-105, CAM-106)
+  const Neuron::InputRouter* input;     // action.sequence.skip (CAM-105, CAM-106)
   bool fadeComplete;                    // the renderer's fade has completed (CAM-111)
-  Engine::CommandWriter* audio;         // Sound statements and the stops of an abort (CAM-113)
+  Neuron::CommandWriter* audio;         // Sound statements and the stops of an abort (CAM-113)
 };
 
 class TimelinePlayer
 {
 public:
-  void Start(const Engine::PresentationTimeline& _timeline);          // CAM-108
+  void Start(const Neuron::PresentationTimeline& _timeline);          // CAM-108
   void Advance(const TimelineFrameInputs& _in, MatchCamera& _camera); // before the camera (CAM-103)
   void Abort();                                                       // CAM-106
   [[nodiscard]] bool IsRunning() const;

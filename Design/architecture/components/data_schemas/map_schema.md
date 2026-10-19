@@ -19,7 +19,7 @@ This document specifies the schema of the map definition (`MapDefinition`, schem
 The interface below is a C++23 declaration sketch, not an implementation. The record types and their enumerations are generated from the schemas (README DAT-054, ADR-062), and this section holds their only declaration: the [terrain](../terrain/README.md) component cites the terrain records (TER §2.1) and [camera and sequences](../camera_and_sequences.md) the camera records (CAM §2.1). The terrain and camera records name no game concept, so they are generated into `Engine`; the other records of a map are game records in `Species` (CONVENTIONS §8).
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 // README DAT-008, DEC-120.
@@ -110,7 +110,7 @@ struct CameraAnimationDef
   std::vector<CameraAnimationStep> steps; // may be empty; an empty animation never plays
 };
 
-} // namespace Engine
+} // namespace Neuron
 
 namespace Species
 {
@@ -174,8 +174,8 @@ struct StartPosition
 // The front is normalised at cook time.
 struct MapLight
 {
-  Engine::Vec3 front;
-  Engine::Vec3 color;
+  Neuron::Vec3 front;
+  Neuron::Vec3 color;
 };
 struct StartingForcesRecord; // table 3.8-A
 // RoutePoint and RoutePointKind are the simulation's (R-SIM-333); table 3.9-A gives the cooking (DAT-093).
@@ -191,8 +191,8 @@ class MapDefinitionView; // every block of table 3.1-A
 class MapLoader
 {
 public:
-  std::expected<MapHeaderView, Engine::LoadError> ReadHeader(const Engine::PackEntry& _entry) const; // the catalogue
-  std::expected<MapDefinitionView, Engine::LoadError> Load(const Engine::PackEntry& _entry) const;   // match entry
+  std::expected<MapHeaderView, Neuron::LoadError> ReadHeader(const Neuron::PackEntry& _entry) const; // the catalogue
+  std::expected<MapDefinitionView, Neuron::LoadError> Load(const Neuron::PackEntry& _entry) const;   // match entry
 };
 
 } // namespace Species

@@ -17,7 +17,7 @@ This document specifies the lower two layers of the UI framework and the widget 
 C++23 interface sketch (declarations only). Every type lives in namespace `Engine`; `StringId` is a Species string id, `ColorRgba` the RGBA colour of the engine types, and `DrawContext` the handle to the batched UI stream ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §2).
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 struct PanelId // UI-012
@@ -222,7 +222,7 @@ public:
   virtual bool ClampsOnSet() const = 0;
 };
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 **Events.** The UI core raises a tooltip request (panel, widget) every update while the tooltip delay has passed (UI-045), and a cleared tooltip (no panel, no widget) when hover ends. Widgets raise their own callbacks (a value refresh, a click). Front-end widgets request the screen transition from the renderer through `InitializeTransition(duration, direction)` ([frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-095) and trigger sound events of the match UI source ([reference/09](../../../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) R-META-018).

@@ -79,7 +79,7 @@ Caption: the renderer reads presentation inputs only, builds every frame through
 The interface below is a C++23 declaration sketch, not an implementation. Everything in it is engine code in namespace `Engine`. The renderers of game objects, which read the game's presentation snapshot, are game-layer presentation code in `Species` ([world_renderers.md](world_renderers.md) §2, [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) §2; `AGENTS.md` R9).
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 enum class FrameKind : std::uint8_t
@@ -251,7 +251,7 @@ public:
   [[nodiscard]] std::uint32_t FramesPerSecond() const;                              // R-SIM-576
 };
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 **Events.** The renderer consumes the platform layer's resize, DPI, focus and output-change events (ADR-075) and raises one event of its own, `DeviceRebuilt`, after a device-removal rebuild (ADR-008), once the GPU resource factory has recreated every live resource without its data (RND-035), so that each owner fills its resources again.
@@ -351,7 +351,7 @@ struct MatchSetupView // the per-match part of the snapshot, fixed at match star
 
 // The game's snapshot: the only type behind FrameInputs::snapshot (RND-018, RND-054). Its accessors return the records
 // of table 3.5-A as read-only spans and views that stay valid until the frame that reads them has finished.
-class PresentationSnapshot final : public Engine::SceneSnapshot
+class PresentationSnapshot final : public Neuron::SceneSnapshot
 {
 public:
   [[nodiscard]] const MatchSetupView& Setup() const;

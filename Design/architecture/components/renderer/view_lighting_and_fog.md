@@ -13,7 +13,7 @@ This document specifies how the renderer turns the camera's view parameters into
 ## 2 Interfaces
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 struct FrameView // built in pass 1
@@ -51,7 +51,7 @@ struct LitMaterial
 [[nodiscard]] bool PointInView(const FrameView& _view, const Vec3& _point);                  // RND-234
 [[nodiscard]] bool SphereInView(const FrameView& _view, const Vec3& _center, float _radius); // RND-234
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 ## 3 Data model

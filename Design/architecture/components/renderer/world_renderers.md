@@ -15,7 +15,7 @@ This document specifies the renderers of the static world: the terrain (`Terrain
 The interface below is a C++23 declaration sketch, not an implementation. The terrain, sea and sky renderers, the tree generator and the mesh batch (`MeshRenderer`) are engine code in namespace `Engine`. The structure renderer reads the game's presentation snapshot and knows game concepts by name, so it is game-layer presentation code in `Species`, built on the mesh batch (`AGENTS.md` R9).
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 class TerrainRenderer
@@ -57,16 +57,16 @@ public:
   void RecordDraws(PassContext& _pass, std::span<const CatalogKey> _entries) const;
 };
 
-} // namespace Engine
+} // namespace Neuron
 
 namespace Species
 {
 
-class StructureRenderer // game-layer presentation code (AGENTS.md R9), built on Engine::MeshRenderer
+class StructureRenderer // game-layer presentation code (AGENTS.md R9), built on Neuron::MeshRenderer
 {
 public:
-  void RecordSolid(Engine::PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const; // pass 6
-  void RecordAlpha(Engine::PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const; // pass 8
+  void RecordSolid(Neuron::PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const; // pass 6
+  void RecordAlpha(Neuron::PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const; // pass 8
 };
 
 } // namespace Species

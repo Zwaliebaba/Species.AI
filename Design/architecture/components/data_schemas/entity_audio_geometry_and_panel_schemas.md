@@ -80,7 +80,7 @@ struct ExplainerAnimation
 
 } // namespace Species
 
-namespace Engine
+namespace Neuron
 {
 
 // ---- generated from sound.effect_kinds: table 3.5-A, compiled into the audio engine (DAT-273) ----
@@ -177,7 +177,7 @@ struct SoundSourceDef
   std::span<const SoundEventDef> events;
 };
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 **Data contracts.** The simulation reads `actor.stats`, `crate.outcomes`, `geometry.collision` and `geometry.sim_record` (simulation-relevant, README table 1-A). The audio engine reads `sound.sources`, `sound.groups` and the compiled table of DSP filter kinds (AEN-060). The renderer reads `geometry.mesh` (ADR-019). The terrain component and the sea renderer read the colour ramps as CPU tables (TER-040, TER-041). The explainer player reads `panels.explainer` (VFX-103).

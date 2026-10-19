@@ -59,7 +59,7 @@ Table 4.10-B Repair-check texts. The texts are new English text in the base lang
 
 ### 4.11 Code signing
 
-**BLD-106** (MUST) These files are signed: `species.exe`, `species_server.exe`, every first-party DLL, every tool executable that is distributed, every installer file of the release-candidate archive, and every publisher-signed package (ADR-073). The Microsoft Store signs its MSIX packages itself.
+**BLD-106** (MUST) These files are signed: `Species.exe`, `SpeciesServer.exe`, every first-party DLL, every tool executable that is distributed, every installer file of the release-candidate archive, and every publisher-signed package (ADR-073). The Microsoft Store signs its MSIX packages itself.
 
 **BLD-107** (MUST) Every signature uses SHA-256 with an RFC 3161 timestamp (`SignTool sign /fd SHA256 /tr <timestamp URL> /td SHA256`) and is made in the release procedure, on Release builds only (ADR-073); Debug builds and local builds are unsigned or self-signed. The signing service is Azure Artifact Signing when the publishing entity is eligible, and otherwise an OV certificate held in a hardware-backed or cloud key store. Signing keys never reach a developer machine's disk or the repository: the signing service or the key store holds them, the signing step is the only path to them, and a repository scan rejects certificate and key files (ADR-073).
 
@@ -75,7 +75,7 @@ Table 4.10-B Repair-check texts. The texts are new English text in the base lang
 
 **BLD-112** (MUST) Every executable carries the version resource of BLD-059, by which the Windows Desktop Application Program groups executables (ADR-057), and is signed (§4.11), which that program requires (ADR-073).
 
-**BLD-113** (MUST) The build provides, with every build output, a registry file that enables Windows Error Reporting local dumps for `species.exe` and `species_server.exe` on test machines: custom dumps (`DumpType` `bld.crash.local_dump_type`) with data segments and thread data, at most `bld.crash.local_dump_count` dumps per program (`DumpCount`), written to the default user-data `crashes\` folder of ADR-071 (`DumpFolder`). A `--user-data` root (PLT-024, PLT-025) does not move it: dumps always go to the default user-data `crashes\` folder that the registry file names. Applying the file needs administrator rights, and it is never part of a player package. Dumps from test machines are artefacts of the jobs that run them (ADR-070).
+**BLD-113** (MUST) The build provides, with every build output, a registry file that enables Windows Error Reporting local dumps for `Species.exe` and `SpeciesServer.exe` on test machines: custom dumps (`DumpType` `bld.crash.local_dump_type`) with data segments and thread data, at most `bld.crash.local_dump_count` dumps per program (`DumpCount`), written to the default user-data `crashes\` folder of ADR-071 (`DumpFolder`). A `--user-data` root (PLT-024, PLT-025) does not move it: dumps always go to the default user-data `crashes\` folder that the registry file names. Applying the file needs administrator rights, and it is never part of a player package. Dumps from test machines are artefacts of the jobs that run them (ADR-070).
 
 **BLD-114** (MUST NOT) No player package contains a dump-writing helper, a support tool or a crash uploader. The client uploads nothing itself, and crash collection follows the player's Windows diagnostic-data settings (ADR-065). Any later uploader, for example for a dedicated server, is opt-in, uses HTTPS only and carries no credential in its binary or its report (ADR-065).
 

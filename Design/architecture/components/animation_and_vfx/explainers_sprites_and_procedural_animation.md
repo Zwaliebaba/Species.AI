@@ -15,7 +15,7 @@ This document specifies the explainer player, the conventions of sprite cards an
 The interface below is a C++23 declaration sketch, not an implementation. The foot states and the leg tuning of the procedural legs are engine code in namespace `Engine`. The animator reads the game's presentation snapshot and draws game objects (actors, Crawler strips, cloth flags), so it is game-layer presentation code in `Species`, built on the engine's clocks, the renderer's instanced batches (`CrowdRenderer`, `MeshRenderer`) and the pass context (`AGENTS.md` R9).
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 enum class FootState : std::uint8_t
@@ -33,7 +33,7 @@ struct LegTuning // from the active gait of the creature (SpiderGait)
   float lookAhead;
 };
 
-} // namespace Engine
+} // namespace Neuron
 
 namespace Species
 {
@@ -41,12 +41,12 @@ namespace Species
 class ProceduralAnimator
 {
 public:
-  void Update(const PresentationSnapshot& _snap, const Engine::PresentationTime& _now); // flicker, legs, cloth
+  void Update(const PresentationSnapshot& _snap, const Neuron::PresentationTime& _now); // flicker, legs, cloth
   // 7a, 7b and 7d bodies and overlays, into the renderer's instanced batches (ADR-009)
-  void WriteActorInstances(std::string_view _passId, Engine::CrowdRenderer& _crowds, Engine::MeshRenderer& _meshes) const;
-  void WriteCrawlerStrips(Engine::CrowdRenderer& _crowds) const;                                       // pass 7c (RND-319)
-  void RecordClothFlags(std::string_view _passId, Engine::PassContext& _context) const;                // 7b, 8, 16
-  [[nodiscard]] std::optional<float> PickClothFlag(const Engine::Ray& _ray, SimObjectId _owner) const; // local picking
+  void WriteActorInstances(std::string_view _passId, Neuron::CrowdRenderer& _crowds, Neuron::MeshRenderer& _meshes) const;
+  void WriteCrawlerStrips(Neuron::CrowdRenderer& _crowds) const;                                       // pass 7c (RND-319)
+  void RecordClothFlags(std::string_view _passId, Neuron::PassContext& _context) const;                // 7b, 8, 16
+  [[nodiscard]] std::optional<float> PickClothFlag(const Neuron::Ray& _ray, SimObjectId _owner) const; // local picking
   [[nodiscard]] bool Flickering(SimObjectId _object) const;
 };
 

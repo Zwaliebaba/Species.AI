@@ -45,7 +45,7 @@ Notation used throughout: *r32*(*x*) rounds a binary64 value to the nearest bina
 ### 2.1 Interface sketch
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 // The terrain records that the generator reads (§3.1 to §3.4): TileMethod and FlattenOp (stored values that carry meaning),
@@ -119,7 +119,7 @@ WaveMeshSource SelectWaveVertexPairs(const TerrainField& _field, const SeaMasks&
 ColorRgba FacetColor(const ImageRgba8& _ramp, float _facetNormalY, const Vec3& _center, float _highest,
                      FxRng& _colorVariation); // TER-181
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 **TER-010** (MUST) `TerrainField::Generate` is a pure function of its terrain records: the definition, the tiles and the flatten areas. It runs on one thread, uses no shared mutable state and returns a complete field; no reader sees a partly generated field. After it returns, the field is immutable: every query is `const`, allocates nothing, makes no random draw and is safe for concurrent readers on any thread. The simulation reads every height and normal through the current match world's field and never keeps a copy or a reference beyond the match world's lifetime (DEC-011).

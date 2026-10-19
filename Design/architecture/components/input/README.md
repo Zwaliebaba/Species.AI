@@ -50,7 +50,7 @@ Notation used throughout:
 ### 2.1 Interface sketch
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 enum class DeviceClass : std::uint8_t
@@ -199,7 +199,7 @@ public:
   virtual void Shutdown() = 0;
 };
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 ### 2.2 Router operations

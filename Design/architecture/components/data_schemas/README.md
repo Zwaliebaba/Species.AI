@@ -95,7 +95,7 @@ The interface below is a C++23 declaration sketch, not an implementation (ADR-05
 Schema ids, keys and enumerator strings stay data names (CONVENTIONS §8): the generator derives identifiers from them and never renames them.
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 // ---- logical field types (§3.1); the order carries no meaning -------------------
@@ -279,7 +279,7 @@ public:
   template <class T> std::expected<RecordView<T>, LoadError> Load(const PackEntry& _entry) const;
 };
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 **Dependencies.** The code of this component builds on the asset pipeline's run-time vocabulary, `AssetId`, `VariantId`, `ContentType`, `PackEntry` and `Sha256Digest` ([asset pipeline](../asset_pipeline_and_resources.md) §2.1), and on the platform layer's file functions ([platform layer](../platform_layer.md) §2.1). The edge runs one way (`AGENTS.md` §2): the run-time interface of the asset pipeline, its mount set, pack reader, content reader and asset cache, names no declaration of this folder except generated records and their enumerations, such as the cooked mesh `MeshAsset` and the sampler set `SamplerId`, which depend on nothing of the parser, the validator, the registry or the loaders. The import records, their enumerations among them `MeshRole` and `SamplerId`, are generated from the `import.*` schemas and declared in [import_and_build_records.md](import_and_build_records.md) §2; the asset pipeline's cookers, which run in the content build tool, read them there.

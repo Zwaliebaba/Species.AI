@@ -15,7 +15,7 @@ This document specifies the schemas of the three record types of the soak test a
 The interface below is a C++23 declaration sketch, not an implementation. The record types and their readers and writers are generated from the schemas (README DAT-054, ADR-062), and this section holds their only declaration: the [diagnostics](../diagnostics_test_and_performance/README.md) component, whose soak runner reads the configuration and whose telemetry forms the session record, cites it (DBG §2.1). The records name no game concept: a soak entry's bot teams are an automated-participant count that the game layer fills with bot teams (DBG-161), so they are generated into `Engine`.
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 // ---- generated from test.soak_configuration: tables 3.1-A to 3.1-C ----
@@ -79,7 +79,7 @@ public:
 std::expected<std::string, std::vector<Diagnostic>> WriteTelemetrySession(const TelemetrySessionRecord& _session); // DAT-380
 std::expected<TelemetrySessionRecord, std::vector<Diagnostic>> ReadQueuedTelemetrySession(std::string_view _text); // DAT-385
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 **Data contracts.** The soak runner of the [diagnostics](../diagnostics_test_and_performance/README.md) component reads the cooked soak configuration and writes the soak report; CI publishes the report as an artefact (BLD-092, ADR-070). The diagnostics component forms the telemetry session record and hands it to the platform layer's HTTPS client (DBG-182, PLT-099). No simulation rule reads any of these records.

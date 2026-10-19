@@ -21,7 +21,7 @@ This document holds the ordered pass table: the single source of truth for the o
 The interface below is a C++23 declaration sketch, not an implementation. The pass context is the seam between the engine renderer and every recorder, engine or game; game-layer recorders reach the instanced batches through it (`CrowdRenderer` and `MeshRenderer`, [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) §2 and [world_renderers.md](world_renderers.md) §2).
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 enum class BlendState : std::uint8_t
@@ -160,7 +160,7 @@ public:
   static std::expected<CompiledFrameGraph, FrameGraphError> Compile(std::span<const PassTableEntry> _table, const RenderConfig& _config);
 };
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 ## 3 Data model

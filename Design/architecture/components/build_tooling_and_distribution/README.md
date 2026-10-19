@@ -6,7 +6,7 @@ This component specifies how Species is built, checked and delivered. It covers 
 
 Notation used throughout:
 
-- A **product** is one of the programs of ADR-056, each built from one project: the **client** (`species.exe`, which can also host the integrated server), the **server** (`species_server.exe`, the headless dedicated server) and the **content build tool** (`species_contentbuild.exe`), a development tool. A **tool project** is a project of a development tool, in `Tools/<Project>/` and in the `Tools` solution folder (`AGENTS.md` §2, ADR-054). Every product, every library, the test projects `<Project>Tests` (ADR-069) and every tool project are projects of the one solution.
+- A **product** is one of the programs of ADR-056, each built from one project: the **client** (`Species.exe`, which can also host the integrated server), the **server** (`SpeciesServer.exe`, the headless dedicated server) and the **content build tool** (`SpeciesContentBuild.exe`), a development tool. A **tool project** is a project of a development tool, in `Tools/<Project>/` and in the `Tools` solution folder (`AGENTS.md` §2, ADR-054). Every product, every library, the test projects `<Project>Tests` (ADR-069) and every tool project are projects of the one solution.
 - A **configuration** is `Debug|x64` or `Release|x64`, the only two (ADR-054). **Debug builds** compile the development facilities in; **Release builds** are what players and testers run (ADR-056).
 - An **edition** is one selection of content with its runtime feature flags, described by one **edition manifest** (ADR-056, ADR-059). An edition **marked for release** is one whose manifest sets the release flag (§3.2).
 - A **channel** is a distribution channel, and a **channel wrapper** is the package that one channel delivers (ADR-072).
@@ -115,7 +115,7 @@ Table 2.1-C Build commands, from the repository root.
 
 ### 2.2 The content build command line
 
-**BLD-008** (MUST) The content build is one command-line program, `species_contentbuild.exe`, built by the content build tool's project under `Tools/` (ADR-059, `AGENTS.md` §2). It takes the commands of table 2.2-A, each with the options of table 2.2-B. Every path is a separate argument, and a path that contains spaces is valid.
+**BLD-008** (MUST) The content build is one command-line program, `SpeciesContentBuild.exe`, built by the content build tool's project under `Tools/` (ADR-059, `AGENTS.md` §2). It takes the commands of table 2.2-A, each with the options of table 2.2-B. Every path is a separate argument, and a path that contains spaces is valid.
 
 Table 2.2-A Commands of the content build.
 
@@ -155,7 +155,7 @@ Table 2.2-C Exit codes of the content build.
 The sketch is a C++23 declaration outline, not an implementation (ADR-052). Every type is in namespace `Engine`. Diagnostics are those of the data schemas (`Diagnostic`, DAT-051); packs and hashes are those of the asset pipeline (`Sha256Digest`).
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 // The products of table 3.1-A (ADR-056) and the two configurations (ADR-054).
@@ -276,7 +276,7 @@ public:
   std::vector<Diagnostic> ValidateMapFile(const std::filesystem::path& _authoringFile) const;
 };
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 **BLD-010** (MUST) The interfaces are those above in substance. Every operation that can fail returns `std::expected` or a list of diagnostics, never a partial result without an error. `ContentBuild::ValidateMapFile` runs exactly the validators that the `validate` command runs on a map definition, so a map tool and the content build accept and reject the same maps (§4.8).
@@ -317,10 +317,12 @@ Table 3.1-A Products.
 
 | Product | Project folder | Programs | Links | Never links | Content it mounts |
 |---|---|---|---|---|---|
-| client | a folder of its own at the repository root | `species.exe`, the game client, which can host the integrated server | the engine, the game, the server library, the renderer, the client resource library of AST-127, audio, input, the UI framework, the platform crash path, the four packages of table 4.1-A | any tool project or tool-only package | the packs of one client edition |
-| server | a folder of its own at the repository root | `species_server.exe`, the headless dedicated server | the engine core, the content library of AST-127, the game rules, the server library, the platform layer without a window | `d3d12`, `dxgi`, any renderer, audio, input, UI or text-rendering code, the GameInput and Agility SDK packages (ADR-001, ADR-056) | the packs of one server edition: data records, maps, collision assets and simulation data records only (AST-007) |
-| content build tool | `Tools/<Project>/`, one per tool, in the `Tools` solution folder | `species_contentbuild.exe` and its importers; the schema code generator is a tool project of its own (ADR-062) | the engine projects it shares code with (the schema and record code of the data schemas, the cookers of the asset pipeline), a software or GPU renderer for thumbnails (AST-087), and its own pinned dependencies (BLD-043) | nothing beyond what its project declares (BLD-041) | none: it reads authoring sources |
+| client | a folder of its own at the repository root | `Species.exe`, the game client, which can host the integrated server | the engine, the game, the server library, the renderer, the client resource library of AST-127, audio, input, the UI framework, the platform crash path, the four packages of table 4.1-A | any tool project or tool-only package | the packs of one client edition |
+| server | a folder of its own at the repository root | `SpeciesServer.exe`, the headless dedicated server | the engine core, the content library of AST-127, the game rules, the server library, the platform layer without a window | `d3d12`, `dxgi`, any renderer, audio, input, UI or text-rendering code, the GameInput and Agility SDK packages (ADR-001, ADR-056) | the packs of one server edition: data records, maps, collision assets and simulation data records only (AST-007) |
+| content build tool | `Tools/<Project>/`, one per tool, in the `Tools` solution folder | `SpeciesContentBuild.exe` and its importers; the schema code generator is a tool project of its own (ADR-062) | the engine projects it shares code with (the schema and record code of the data schemas, the cookers of the asset pipeline), a software or GPU renderer for thumbnails (AST-087), and its own pinned dependencies (BLD-043) | nothing beyond what its project declares (BLD-041) | none: it reads authoring sources |
 | test projects | a folder of its own beside the library's | one `<Project>Tests.dll` per library, its fuzz harnesses included (ADR-069) | the library under test and the Microsoft C++ Unit Test Framework that ships with Visual Studio | any product's entry point | its test data |
+
+> **Amendment 2026-10-19 (owner decision O60, ADR-090).** The client is the program `Species` (`Species.exe`), the server the program `SpeciesServer` (`SpeciesServer.exe`), each a thin entry point over the static libraries of ADR-090 table 1: the client links GameClient, NeuronClient, GameShared and NeuronCore, and GameLogic with NeuronServer for the integrated server through `IntegratedServer.h` only; the server links GameLogic, NeuronServer, GameShared and NeuronCore. The content build tool is `SpeciesContentBuild.exe` in `Tools/ContentBuild/`.
 
 **BLD-014** (MUST) The compile-time switches are those of table 3.1-B. One engine header derives the development switch `ENGINE_DEVELOPMENT` from `NDEBUG`: 1 in Debug, where `NDEBUG` is not defined, and 0 in Release; every switch of the table except optimisation follows from it (ADR-056). No project, property or source file sets `ENGINE_DEVELOPMENT` or any other switch by hand, and `Build\CheckProjectFiles.py` fails a project that defines it. The switches exist only for code that must not be present in a binary.
 
@@ -415,7 +417,7 @@ Table 3.5-A Install-directory contents.
 
 | Path | Content | From | Present |
 |---|---|---|---|
-| `species.exe` | the client, with its shaders compiled in (BLD-121) | the client project, Release configuration, for every channel package | always |
+| `Species.exe` | the client, with its shaders compiled in (BLD-121) | the client project, Release configuration, for every channel package | always |
 | first-party DLLs | the client's own libraries, if any | the client project | as built |
 | `WinPixEventRuntime.dll` | the PIX event runtime, because the markers stay in Release (ADR-068) | the pinned `WinPixEventRuntime` package (BLD-038) | always |
 | `msquic.dll` | the QUIC transport of the client and the headless server, beside both executables (ADR-089) | the pinned MsQuic package (BLD-038) | always |
@@ -498,7 +500,7 @@ Table 4.1-B Rules of the project-file checker.
 
 **BLD-041** (MUST) Each project lists the projects it references, and the build uses only declared references. A project includes the headers of another project only through `$(SolutionDir)<Project>` on its include path, `$(SolutionDir)Tools\<Project>` for a tool project, and never lists its own folder there (`AGENTS.md` §3). Edges run one way: engine projects never reference game projects, two libraries at one level share what is below them and never reference each other, the simulation and server libraries never reference the renderer, audio, input or UI projects, a tool project may reference the engine projects it shares code with, and no game or engine project references a tool project (`AGENTS.md` §2, ADR-054, ADR-056). `Build\CheckProjectFiles.py` can also check a project's includes against an allow-list; whether the simulation library uses one to enforce the simulation and presentation boundary is DEC-222 (item 3).
 
-**BLD-042** (MUST) The Agility SDK is pinned once, as the package version `bld.pin.agility_sdk`. The constants that `species.exe` exports, `D3D12SDKVersion` = `bld.pin.d3d12_sdk_version` and `D3D12SDKPath` = `bld.pin.d3d12_sdk_path`, are taken from that package, and packaging copies its `D3D12Core.dll`, and nothing else of it, into `D3D12\`. The client project's build copies `D3D12Core.dll` and `D3D12SDKLayers.dll` from the restored package into `x64\<Configuration>\D3D12\`, so that a client run from the build output finds the runtime and, in Debug, the debug layer. A build check fails when the exported version differs from the minor version of the packaged `D3D12Core.dll`. No preview SDK and no `D3D12SDKLayers.dll` is packaged; the debug layer runs in Debug builds, on developer machines and in the GPU validation job (ADR-001, ADR-068, ADR-071). The server exports neither constant.
+**BLD-042** (MUST) The Agility SDK is pinned once, as the package version `bld.pin.agility_sdk`. The constants that `Species.exe` exports, `D3D12SDKVersion` = `bld.pin.d3d12_sdk_version` and `D3D12SDKPath` = `bld.pin.d3d12_sdk_path`, are taken from that package, and packaging copies its `D3D12Core.dll`, and nothing else of it, into `D3D12\`. The client project's build copies `D3D12Core.dll` and `D3D12SDKLayers.dll` from the restored package into `x64\<Configuration>\D3D12\`, so that a client run from the build output finds the runtime and, in Debug, the debug layer. A build check fails when the exported version differs from the minor version of the packaged `D3D12Core.dll`. No preview SDK and no `D3D12SDKLayers.dll` is packaged; the debug layer runs in Debug builds, on developer machines and in the GPU validation job (ADR-001, ADR-068, ADR-071). The server exports neither constant.
 
 **BLD-043** (MUST) A tool project may use pinned third-party code that the executable may not, each dependency recorded with its licence in an ADR and restored by NuGet for that project only; nothing is downloaded from another source and no third-party binary is committed (`AGENTS.md` §2, R14, ADR-055, O30). The content build tool's texture encoder is DirectXTex at the release of technology baseline item 5.2, the NuGet package `directxtex_desktop_win10` (ADR-017), which never links into the executable; its glTF importer validates the sources itself (ADR-019). The content build tool needs no shader compiler, because the solution build compiles every shader (BLD-121). Authors export meshes as glTF 2.0 from their own content-creation tools (ADR-019), and Species ships no exporter plug-in. The code that the tool and the engine share, the geometry and maths code, the schema and record code and the cookers, is in engine projects with their own `<Project>Tests` projects, which the tool projects reference through the same `$(SolutionDir)` paths (ADR-054, ADR-069).
 
@@ -588,7 +590,7 @@ Table 4.9-B CI jobs that amendments of ADR-070 add.
 
 | Job | Runs | Guarded on | Requirements |
 |---|---|---|---|
-| content build | `species_contentbuild build --all-editions`, incremental from the kept graph, with every validator; it publishes the reports | the content build tool and `content/` | §4.5, BLD-055 |
+| content build | `SpeciesContentBuild build --all-editions`, incremental from the kept graph, with every validator; it publishes the reports | the content build tool and `content/` | §4.5, BLD-055 |
 | reproducibility (scheduled) | two clean content builds of one revision on different agents, compared byte for byte | the content build job | BLD-067 |
 | soak (scheduled) | the headless bot soak of the diagnostics component: the server with the `soak` edition on every mode and map at maximum speed | the server project and the `soak` edition | DBG-160, DEC-804, DEC-220 item 3 |
 | performance (scheduled) | the performance tests in Release builds against the component budgets, and the budgets of §5 | the performance test projects | BLD-117, DBG-208 |
@@ -634,7 +636,7 @@ Every value that a rule of this document owns. The pins restate the technology b
 | `bld.pin.msbuild_min` | 17.12 | MSBuild version | the first version that builds `.slnx` (ADR-054) | BLD-035 | — |
 | `bld.pin.agility_sdk` | 1.619.6 | `Microsoft.Direct3D.D3D12` package version | no preview SDK (ADR-001) | BLD-038, BLD-042 | — |
 | `bld.pin.d3d12_sdk_version` | 619 | exported `D3D12SDKVersion` | taken from `bld.pin.agility_sdk` | BLD-042 | — |
-| `bld.pin.d3d12_sdk_path` | `.\D3D12\` | exported `D3D12SDKPath` | relative to `species.exe` | BLD-042 | — |
+| `bld.pin.d3d12_sdk_path` | `.\D3D12\` | exported `D3D12SDKPath` | relative to `Species.exe` | BLD-042 | — |
 | `bld.pin.gameinput` | 3.5.283 | `Microsoft.GameInput` package version | technology baseline item 6 (ADR-028) | BLD-038, BLD-099 | — |
 | `bld.pin.pix_event_runtime` | 1.0.240308001 | `WinPixEventRuntime` package version | markers and the DLL in Debug and Release (ADR-068) | BLD-038 | — |
 | `bld.pin.msquic` | 2.6.3 | `Microsoft.Native.Quic.MsQuic.Schannel` package version | the Schannel build; the newest release that nuget.org does not mark deprecated, re-checked before the MVP's M4 (ADR-089) | BLD-038 | — |

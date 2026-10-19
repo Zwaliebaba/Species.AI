@@ -50,7 +50,7 @@ The pointer capture, the repeat timers, the batched draw, the text service, the 
 C++23 interface sketch (declarations only). The navigation enumerations, the widget builder and the tool-window recipe are engine code in namespace `Engine`. The page ids of the front-end screen name game concepts (the modes, the tutorials, the match setup, the achievements), and the HUD panels read the match's presentation state, so the page ids, the page framework that is typed by them, the front-end screen and the HUD panel recipe are game-layer code in `Species`, built on the engine's UI types (`AGENTS.md` R9). `UiCore`, `UiWindow`, `UiWidget`, `PanelId`, `WidgetId`, `PointF`, `RectF`, `StringId` and `DrawContext` are those of [core_and_widgets.md](core_and_widgets.md) §2.
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 enum class NavOp : std::uint8_t // UI-331
@@ -103,7 +103,7 @@ PanelId OpenToolOnce(UiCore& _ui, const ToolPlacement& _placement, Args&&... _ar
 template <class Tool> bool CloseTool(UiCore& _ui);
 [[nodiscard]] StringId ToolString(std::string_view _item); // the tool's string id ui.debug.<tool>.<item>
 
-} // namespace Engine
+} // namespace Neuron
 
 namespace Species
 {
@@ -134,13 +134,13 @@ enum class PageId : std::uint8_t
 
 struct NavRequest // UI-350
 {
-  Engine::NavOp op = Engine::NavOp::Push;
+  Neuron::NavOp op = Neuron::NavOp::Push;
   PageId target = PageId::Title; // ignored by Pop and Rebuild
 };
 
 struct EnterResult
 {
-  Engine::EnterOutcome outcome = Engine::EnterOutcome::Built;
+  Neuron::EnterOutcome outcome = Neuron::EnterOutcome::Built;
   PageId redirectTo = PageId::Title;
 };
 
@@ -157,7 +157,7 @@ public:
   virtual void OnUpdate(PageContext& _context) {}                                           // UI-352
   virtual void OnLeave(PageContext& _context, PageId _to) {}                                // UI-361
   [[nodiscard]] virtual std::optional<NavRequest> OnBack(PageContext& _context);            // default: Pop (UI-383)
-  virtual void DrawOverlay(const PageContext& _context, Engine::DrawContext& _out) const {} // UI-392
+  virtual void DrawOverlay(const PageContext& _context, Neuron::DrawContext& _out) const {} // UI-392
 };
 
 class PageHost // owned by the front-end screen (UI-330)
@@ -172,13 +172,13 @@ public:
   [[nodiscard]] bool NavigationLocked() const noexcept;
 };
 
-class FrontEndScreen final : public Engine::UiWindow // the one full-screen window of the front end
+class FrontEndScreen final : public Neuron::UiWindow // the one full-screen window of the front end
 {
 public:
   [[nodiscard]] PageHost& Pages() noexcept;
   [[nodiscard]] FrontEndViewModel& Model() noexcept;                   // UI-334
   void Update() override;                                              // the per-frame order of UI-352
-  void Draw(Engine::DrawContext& _out, bool _hasFocus) const override; // UI-337
+  void Draw(Neuron::DrawContext& _out, bool _hasFocus) const override; // UI-337
 };
 
 // Recipe D (UI-460).
@@ -187,7 +187,7 @@ class HudPanel
 public:
   virtual ~HudPanel() = default;
   virtual void Advance(HudContext& _context) = 0;         // update phase: view-model and screen zones (UI-461)
-  virtual void Draw(Engine::DrawContext& _out) const = 0; // reads only what Advance left
+  virtual void Draw(Neuron::DrawContext& _out) const = 0; // reads only what Advance left
 };
 
 } // namespace Species
@@ -609,11 +609,11 @@ The random row is never taken.
 
 ### 4.10 Recipe A: a tool window
 
-A tool window is the pattern of the development windows ([diagnostics, test and performance](../diagnostics_test_and_performance/README.md)) and of the windows of a map editor, if the design phase builds one (DEC-045). The sketch below shows the shape of one; its names are examples. It is engine code in namespace `Engine`, as the development windows of the diagnostics component are; a tool window that names a game concept, such as a map-editor window, is the same code in namespace `Species`, with the `Engine::` names of the recipe qualified (`AGENTS.md` R9).
+A tool window is the pattern of the development windows ([diagnostics, test and performance](../diagnostics_test_and_performance/README.md)) and of the windows of a map editor, if the design phase builds one (DEC-045). The sketch below shows the shape of one; its names are examples. It is engine code in namespace `Engine`, as the development windows of the diagnostics component are; a tool window that names a game concept, such as a map-editor window, is the same code in namespace `Species`, with the `Neuron::` names of the recipe qualified (`AGENTS.md` R9).
 
 ```cpp
 // Recipe A sketch: a development tool window of the engine. The names are examples.
-namespace Engine
+namespace Neuron
 {
 
 inline constexpr float EXAMPLE_WIDTH_PIXELS = 320.0f;
@@ -651,7 +651,7 @@ void OpenExampleTool(UiCore& _ui, ExampleToolModel& _model, PanelId _parent)
   OpenToolOnce<ExampleToolWindow>(_ui, ToolPlacement{.width = EXAMPLE_WIDTH_PIXELS, .parent = _parent}, _model);
 }
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 **UI-430** (MUST) A tool window (`ToolWindow`) is a standard window that the opener creates and registers ([core_and_widgets.md](core_and_widgets.md) UI-022). It follows these rules:

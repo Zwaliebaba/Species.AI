@@ -75,7 +75,7 @@ Scope: Species implementation: the solo MVP scope. Back to the [requirements ind
 | MVP-086 | The MVP's meshes and textures are produced by development tools under `Tools/` (procedural shape kits and texture generators, or a digital | [mvp_scope.md](../implementation/mvp_scope.md#29-look-o52) |
 | MVP-087 | From M3 the MVP SHOULD play a first sound set through the audio engine (ADR-022 to ADR-027): | [mvp_scope.md](../implementation/mvp_scope.md#29-look-o52) |
 | MVP-090 | The client never reads or writes simulation state: | [mvp_scope.md](../implementation/mvp_scope.md#210-seams-kept-for-growth-o50) |
-| MVP-091 | The simulation is a headless library that reaches the operating system only through the platform layer and includes no graphics, audio or | [mvp_scope.md](../implementation/mvp_scope.md#210-seams-kept-for-growth-o50) |
+| MVP-091 | The simulation is the headless library GameLogic on NeuronServer (ADR-090), which reaches the operating system only through the platform | [mvp_scope.md](../implementation/mvp_scope.md#210-seams-kept-for-growth-o50) |
 | MVP-092 | The simulation advances in whole ticks of `ref.sim.tick_period` (0.1 s, 10 ticks per second) with the slices in order (ADR-079, R-SIM-500 | [mvp_scope.md](../implementation/mvp_scope.md#210-seams-kept-for-growth-o50) |
 | MVP-093 | Randomness comes from keyed draws (ADR-082), and one build reproduces a run from a snapshot and its commands bit for bit (ADR-081 Level 1, | [mvp_scope.md](../implementation/mvp_scope.md#210-seams-kept-for-growth-o50) |
 | MVP-094 | Every command, from the steward, the deputy or an AI settlement, takes the one validated command path of ADR-087: | [mvp_scope.md](../implementation/mvp_scope.md#210-seams-kept-for-growth-o50) |

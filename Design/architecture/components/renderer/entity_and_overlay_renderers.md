@@ -21,7 +21,7 @@ This document specifies how the renderer draws everything that moves or points: 
 The interface below is a C++23 declaration sketch, not an implementation. The quad records, the instanced batch (`CrowdRenderer`) and the development sphere are engine code in namespace `Engine`. The renderers of actors, effects and laser bolts, routes, world markers, the world cursor, the Power slots panel and the match HUD read the game's presentation snapshot and overlays and know game concepts by name, so they are game-layer presentation code in `Species`, built on those engine types, on the mesh batch (`MeshRenderer`, [world_renderers.md](world_renderers.md) §2) and on the pass context (`AGENTS.md` R9).
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 enum class OrientationMode : std::uint8_t // the quad orientation modes of ADR-009
@@ -80,7 +80,7 @@ struct DevSphereMesh // RND-330
 };
 DevSphereMesh BuildDevSphere();
 
-} // namespace Engine
+} // namespace Neuron
 
 namespace Species
 {
@@ -89,18 +89,18 @@ namespace Species
 class ActorRenderer
 {
 public:
-  void RecordGroups(Engine::PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const;   // 7a
-  void RecordOthers(Engine::PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const;   // 7b
-  void RecordCrawlers(Engine::PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const; // 7c
-  void RecordWorkers(Engine::PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const;  // 7d
+  void RecordGroups(Neuron::PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const;   // 7a
+  void RecordOthers(Neuron::PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const;   // 7b
+  void RecordCrawlers(Neuron::PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const; // 7c
+  void RecordWorkers(Neuron::PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const;  // 7d
   void OnTeamChanged(SimObjectId _worker, std::uint8_t _previousColorId, double _realNow);                 // RND-317
 };
 
 class EffectRenderer
 {
 public:
-  void RecordEffects(Engine::PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const;    // 10a
-  void RecordLaserBolts(Engine::PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const; // 10b
+  void RecordEffects(Neuron::PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const;    // 10a
+  void RecordLaserBolts(Neuron::PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const; // 10b
 };
 
 class RouteLineRenderer
@@ -108,29 +108,29 @@ class RouteLineRenderer
 public:
   void OnRouteHighlighted(RouteHandle _route, std::uint8_t _team);                        // RND-350
   void OnRouteIntensity(RouteHandle _route, float _intensity);                            // RND-351
-  void Record(Engine::PassContext& _pass, const RoutePreview& _preview, double _realNow); // pass 12
+  void Record(Neuron::PassContext& _pass, const RoutePreview& _preview, double _realNow); // pass 12
   [[nodiscard]] bool PreviewWalkable() const;                                             // read by the world cursor
 };
 
 class WorldMarkerRenderer // pass 16
 {
 public:
-  void Record(Engine::PassContext& _pass, const WorldMarkers& _markers);
+  void Record(Neuron::PassContext& _pass, const WorldMarkers& _markers);
 };
 class WorldCursorRenderer // pass 20
 {
 public:
-  void Record(Engine::PassContext& _pass, const WorldCursor& _cursor);
+  void Record(Neuron::PassContext& _pass, const WorldCursor& _cursor);
 };
 class PowerSlotsPanelRenderer // pass 23
 {
 public:
-  void Record(Engine::PassContext& _pass, const PowerSlotsPanel& _panel);
+  void Record(Neuron::PassContext& _pass, const PowerSlotsPanel& _panel);
 };
 class MatchHudRenderer // pass 28
 {
 public:
-  void Record(Engine::PassContext& _pass, const MatchHudView& _hud);
+  void Record(Neuron::PassContext& _pass, const MatchHudView& _hud);
 };
 
 } // namespace Species

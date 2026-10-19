@@ -97,7 +97,7 @@ Run-time state hashing for divergence detection is DEC-206; the per-tick state h
 ### 2.1 Interface sketch
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 // Logging (ADR-067). LogLevel is in severity order; LogCategory is fixed and extended only in code.
@@ -260,7 +260,7 @@ public:
 // TelemetrySessionRecord: generated from telemetry.session: data_schemas/test_and_telemetry_records.md §2
 void SubmitTelemetry(const TelemetrySessionRecord& _record); // queued; sent only with consent
 
-} // namespace Engine
+} // namespace Neuron
 
 namespace Species
 {
@@ -282,7 +282,7 @@ struct DebugCommand
 {
   DebugCommandKind kind;
   std::uint8_t teamSlot;
-  Engine::Vec3 point;
+  Neuron::Vec3 point;
   std::optional<std::uint16_t> forcedOutcome; // empty: normal choice
 };
 
