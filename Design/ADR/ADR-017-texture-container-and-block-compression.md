@@ -43,7 +43,7 @@ Chosen option: **1, DDS with the DX10 header and BC7, BC5 and BC4**, because it 
 | single-channel masks (glow, darkening, team tint, height, ambient occlusion) | `BC4_UNORM` |
 | data that needs exact values | `R8_UNORM` or `R8G8_UNORM`, uncompressed |
 | colour look-up tables read on the CPU (terrain colour ramps and gradients) | `R8G8B8A8_UNORM_SRGB`, uncompressed, one level, never uploaded to the GPU |
-| glyph atlases | `R8_UNORM`, built at run time, never block-compressed (ADR-034) |
+| glyph atlases | `R8_UNORM`, never block-compressed; cooked from the authored glyph sheets (ADR-034 as amended by O56), or built at run time under the DirectWrite upgrade |
 
   BC1 to BC3 are not used. BC6H is used only if HDR sky or light textures are added, by a new revision of this ADR.
 - **Sizes.** Textures are authored at the size at which they are used. Dimensions need not be powers of two; block-compressed textures must have top-level dimensions that are multiples of 4, and the content-build validator rejects sources that are not. The cooker never pads or resamples a source to reach a multiple of 4; the source art is authored at a conforming size. Nothing is resampled at load. The maximum dimension is 16384.
@@ -100,3 +100,4 @@ Chosen option: **1, DDS with the DX10 header and BC7, BC5 and BC4**, because it 
 - **Amendment 2026-10-17 (AGENTS.md, O21).** DirectXTex is a dependency of the content build tool only, restored by NuGet for that tool; the executable reads DDS with Species code (`AGENTS.md` R14).
 - **Amendment 2026-10-17.** The format table names the CPU colour look-up tables of the asset pipeline component (`CpuTable`, AST-072). The size rule states that the cooker never pads a block-compressed source to whole 4 × 4 blocks (AST-068); every block-compressed asset row states a size that is a multiple of 4 (GameAssets §2.4).
 * **Amendment 2026-10-18 (O26, owner decision O29).** The DirectXTex dependency is recorded with its NuGet package id, version and MIT licence, and with where its licence text is kept; the content build tool is a tool project of the one solution ([ADR-054](ADR-054-build-system-msbuild-solution.md)).
+* **Amendment 2026-10-19 (ADR-034; O56).** Glyph atlases are cooked from the owner's hand-drawn glyph sheets by default, uncompressed `R8_UNORM` as before; the row of the format table says so.

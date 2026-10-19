@@ -58,6 +58,7 @@ Table 1-A Record-type registry. "Sim" marks the record types whose cooked entrie
 | `input.binding_set` | the default binding set and each keyboard-layout layer | `content/records/input/` | `Record` | no | [input](../input/README.md) INP-070 to INP-073; [config_input_and_strings.md](config_input_and_strings.md) |
 | `input.keyboard_layouts` | the keyboard-layout table | `content/records/input/` | `Record` | no | [config_input_and_strings.md](config_input_and_strings.md) |
 | `text.string_table` | the string table of one language | `content/strings/<tag>.json` (assets `strings.en_gb`, `strings.fr_fr`, `strings.de_de`, `strings.it_it`, `strings.es_es`, `strings.pt_br`, `strings.ru_ru`, `strings.ja_jp`, `strings.ko_kr`) | `StringTable` | no | [config_input_and_strings.md](config_input_and_strings.md) |
+| `text.glyph_table` | the glyph table of one drawn bitmap face (ADR-034 as amended by O56) | `content/fonts/<face>.json`, beside its 1x and 2x glyph sheets | `Font` | no | [config_input_and_strings.md](config_input_and_strings.md) DAT-219 |
 | `actor.stats` | the actor stat table | `content/records/actors/` | `Record` | yes | [entity_audio_geometry_and_panel_schemas.md](entity_audio_geometry_and_panel_schemas.md) |
 | `crate.outcomes` | the Supply-crate outcome catalogue | `content/records/crates/` | `Record` | yes | [entity_audio_geometry_and_panel_schemas.md](entity_audio_geometry_and_panel_schemas.md) |
 | `sound.sources` | the sound-source definitions with their events and layers | `content/records/audio/` | `Record` | no | [entity_audio_geometry_and_panel_schemas.md](entity_audio_geometry_and_panel_schemas.md) |
@@ -94,7 +95,7 @@ The interface below is a C++23 declaration sketch, not an implementation (ADR-05
 Schema ids, keys and enumerator strings stay data names (CONVENTIONS §8): the generator derives identifiers from them and never renames them.
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 // ---- logical field types (§3.1); the order carries no meaning -------------------
@@ -278,7 +279,7 @@ public:
   template <class T> std::expected<RecordView<T>, LoadError> Load(const PackEntry& _entry) const;
 };
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 **Dependencies.** The code of this component builds on the asset pipeline's run-time vocabulary, `AssetId`, `VariantId`, `ContentType`, `PackEntry` and `Sha256Digest` ([asset pipeline](../asset_pipeline_and_resources.md) §2.1), and on the platform layer's file functions ([platform layer](../platform_layer.md) §2.1). The edge runs one way (`AGENTS.md` §2): the run-time interface of the asset pipeline, its mount set, pack reader, content reader and asset cache, names no declaration of this folder except generated records and their enumerations, such as the cooked mesh `MeshAsset` and the sampler set `SamplerId`, which depend on nothing of the parser, the validator, the registry or the loaders. The import records, their enumerations among them `MeshRole` and `SamplerId`, are generated from the `import.*` schemas and declared in [import_and_build_records.md](import_and_build_records.md) §2; the asset pipeline's cookers, which run in the content build tool, read them there.
@@ -532,11 +533,11 @@ Table 6-A Diagnostic classes.
 | DEC-073 | Resolved | typed defaults per record type (DAT-012) |
 | DEC-100 | Resolved | one defaults table, compiled in (DAT-012) |
 | DEC-120 | Resolved | absent, 0, a number and unlimited are distinct (DAT-008, DAT-041) |
-| DEC-204 | Open | content identity by hash; lists keyed by id and hash (DAT-047) |
-| DEC-207 | Open | no network message format, transport container or custom-map container format here (DAT-003, DAT-101) |
-| DEC-223 | Open | loaded records are immutable and shared by every state owner (DAT-005) |
-| DEC-240 | Open | the numeric model: simulation decimals keep their declared precision until it is decided (DAT-010) |
-| DEC-241 | Open | the reference parsing and rounding semantics as the default (DAT-010, DAT-023) |
+| DEC-204 | Resolved (ADR-088) | content identity by hash; lists keyed by id and hash (DAT-047) |
+| DEC-207 | Resolved (ADR-088) | no network message format, transport container or custom-map container format here (DAT-003, DAT-101) |
+| DEC-223 | Resolved (ADR-085) | loaded records are immutable and shared by every state owner (DAT-005) |
+| DEC-240 | Resolved (ADR-081) | the numeric model: simulation decimals keep their declared precision until it is decided (DAT-010) |
+| DEC-241 | Resolved (ADR-081) | the reference parsing and rounding semantics as the default (DAT-010, DAT-023) |
 | DEC-250 | Open | the settings file's versioning and migration (DAT-003, DAT-046) |
 | DEC-251 | Open | world-state persistence is not a schema of this folder (DAT-003, DAT-046) |
 | DEC-340 | Dropped | no reference data format, archive or tool output is imported (DAT-004) |

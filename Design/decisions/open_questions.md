@@ -327,7 +327,7 @@ This file records the open questions of the reference library: behaviours whose 
 
 ### DEC-332 Content that no reference match uses
 - Status: Dropped
-- Affects: reference/00_reference_overview.md (R-VIS), architecture/components/asset_pipeline_and_resources.md (AST), architecture/components/build_tooling_and_distribution.md (BLD)
+- Affects: reference/00_reference_overview.md (R-VIS), architecture/components/asset_pipeline_and_resources.md (AST), architecture/components/build_tooling_and_distribution/ (BLD)
 - Specified behaviour: Not specified.
 - Options: none.
 - Recommendation: Dropped: Species sets no parity target against any edition of the reference (DEC-005), and all of its content is authored new.
@@ -383,7 +383,7 @@ This file records the open questions of the reference library: behaviours whose 
 
 ### DEC-340 Data formats, archives and production tools
 - Status: Dropped
-- Affects: architecture/components/data_schemas/ (DAT), architecture/components/build_tooling_and_distribution.md (BLD), architecture/components/asset_pipeline_and_resources.md (AST)
+- Affects: architecture/components/data_schemas/ (DAT), architecture/components/build_tooling_and_distribution/ (BLD), architecture/components/asset_pipeline_and_resources.md (AST)
 - Specified behaviour: Not specified.
 - Options: none.
 - Recommendation: Dropped: Species defines its own pack files (ADR-058), data schemas (ADR-061), mesh and axis conventions (ADR-016, ADR-019, ADR-021), crash reporting (ADR-065) and tools; no reference data or tool output is imported.

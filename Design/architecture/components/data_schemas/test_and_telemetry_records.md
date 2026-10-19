@@ -1,6 +1,6 @@
 # Test and telemetry records
 
-> Status: Engine baseline · Prefix: DAT · ADRs: [ADR-057](../../../ADR/ADR-057-version-identity.md) · [ADR-060](../../../ADR/ADR-060-content-identity-by-hash.md) · [ADR-061](../../../ADR/ADR-061-data-schemas-and-versioning.md) · [ADR-062](../../../ADR/ADR-062-authoring-syntax-and-schema-language.md) · [ADR-066](../../../ADR/ADR-066-telemetry-with-consent.md) · [ADR-070](../../../ADR/ADR-070-continuous-integration.md) · Folder: [data schemas](README.md) · Related: [diagnostics, test and performance](../diagnostics_test_and_performance/README.md) · [build tooling and distribution](../build_tooling_and_distribution.md) · [platform layer](../platform_layer.md)
+> Status: Engine baseline · Prefix: DAT · ADRs: [ADR-057](../../../ADR/ADR-057-version-identity.md) · [ADR-060](../../../ADR/ADR-060-content-identity-by-hash.md) · [ADR-061](../../../ADR/ADR-061-data-schemas-and-versioning.md) · [ADR-062](../../../ADR/ADR-062-authoring-syntax-and-schema-language.md) · [ADR-066](../../../ADR/ADR-066-telemetry-with-consent.md) · [ADR-070](../../../ADR/ADR-070-continuous-integration.md) · Folder: [data schemas](README.md) · Related: [diagnostics, test and performance](../diagnostics_test_and_performance/README.md) · [build tooling and distribution](../build_tooling_and_distribution/README.md) · [platform layer](../platform_layer.md)
 
 This document specifies the schemas of the three record types of the soak test and of telemetry: the soak configuration, which an author writes and the soak runner reads; the soak report, which the soak runner writes as a CI artefact; and the telemetry session record, which the client forms once per session and sends only with the player's consent. The meaning of every field, the soak procedure and the telemetry rules belong to [diagnostics, test and performance](../diagnostics_test_and_performance/README.md) (DBG-025, DBG-026, DBG-160 to DBG-167, DBG-180 to DBG-183); this document gives the fields their keys, types, presence rules and checks.
 
@@ -15,7 +15,7 @@ This document specifies the schemas of the three record types of the soak test a
 The interface below is a C++23 declaration sketch, not an implementation. The record types and their readers and writers are generated from the schemas (README DAT-054, ADR-062), and this section holds their only declaration: the [diagnostics](../diagnostics_test_and_performance/README.md) component, whose soak runner reads the configuration and whose telemetry forms the session record, cites it (DBG §2.1). The records name no game concept: a soak entry's bot teams are an automated-participant count that the game layer fills with bot teams (DBG-161), so they are generated into `Engine`.
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 // ---- generated from test.soak_configuration: tables 3.1-A to 3.1-C ----
@@ -79,7 +79,7 @@ public:
 std::expected<std::string, std::vector<Diagnostic>> WriteTelemetrySession(const TelemetrySessionRecord& _session); // DAT-380
 std::expected<TelemetrySessionRecord, std::vector<Diagnostic>> ReadQueuedTelemetrySession(std::string_view _text); // DAT-385
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 **Data contracts.** The soak runner of the [diagnostics](../diagnostics_test_and_performance/README.md) component reads the cooked soak configuration and writes the soak report; CI publishes the report as an artefact (BLD-092, ADR-070). The diagnostics component forms the telemetry session record and hands it to the platform layer's HTTPS client (DBG-182, PLT-099). No simulation rule reads any of these records.
@@ -256,8 +256,8 @@ Caption: Figure 4-A, from the soak configuration to the soak report (DAT-372 to 
 
 | Reference | Status | Where it applies |
 |---|---|---|
-| DEC-200 | Open | soak passes with client participants (table 3.1-A, `clients`) |
-| DEC-206 | Open | the divergence whose first tick the match table records (table 3.2-A) |
+| DEC-200 | Resolved (ADR-084) | soak passes with client participants (table 3.1-A, `clients`) |
+| DEC-206 | Resolved (ADR-081) | the divergence whose first tick the match table records (table 3.2-A) |
 | DEC-250 | Open | whether the telemetry queue is kept across runs (DAT-385) |
 | DEC-801 | Resolved | unique configuration ids (table 3.1-A) |
 | DEC-802 | Open | test maps and configurations outside player editions (DAT-372) |

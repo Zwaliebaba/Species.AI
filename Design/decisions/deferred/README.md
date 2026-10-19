@@ -2,7 +2,7 @@
 
 > Status: Decision register, deferred to the design phase · Related: [Decision register](../README.md) · [Vision brief](../../../vision/species-vision-brief.md)
 
-These decisions belong to the Species world game rather than to the reference mechanics, so the Species design phase takes them. Every entry is Open. Its specified behaviour is what the library states today, and each entry lists the reference behaviour, the constraints and lessons any Species answer must respect, and the figures that size the design.
+These decisions belong to the Species world game rather than to the reference mechanics, so the Species design phase takes them. Every entry was written Open; design area A2 resolved DEC-200 to DEC-208, DEC-221 to DEC-228 and DEC-240 to DEC-242 on 2026-10-19, after owner gate B, and the others stay Open for the areas that the decision triage names. An entry's specified behaviour is what the library stated when it was written, and each entry lists the reference behaviour, the constraints and lessons any Species answer must respect, and the figures that size the design.
 
 | File | Ids | Topics |
 |---|---|---|

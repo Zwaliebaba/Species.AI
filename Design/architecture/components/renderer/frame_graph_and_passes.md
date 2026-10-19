@@ -21,7 +21,7 @@ This document holds the ordered pass table: the single source of truth for the o
 The interface below is a C++23 declaration sketch, not an implementation. The pass context is the seam between the engine renderer and every recorder, engine or game; game-layer recorders reach the instanced batches through it (`CrowdRenderer` and `MeshRenderer`, [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) §2 and [world_renderers.md](world_renderers.md) §2).
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 enum class BlendState : std::uint8_t
@@ -160,7 +160,7 @@ public:
   static std::expected<CompiledFrameGraph, FrameGraphError> Compile(std::span<const PassTableEntry> _table, const RenderConfig& _config);
 };
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 ## 3 Data model
@@ -269,7 +269,11 @@ Every blend result is clamped to [0, 1] per channel as it is written to the SDR 
 | poster tile | a screenshot with a poster resolution above 1 | a match or main-menu frame per tile, with the tile's sub-projection (RND-111) |
 | map-editor frame (`FrameKind::Editor`) | the map editor is open | the match frame plus the editor's overlays ([reference/08_maps_and_level_design/map_editor_hooks.md](../../../reference/08_maps_and_level_design/map_editor_hooks.md)); hooks only |
 
+> **Amendment 2026-10-18 (ADR-083; O55).** The world game adds a world frame, drawn while the client is in a world (the InWorld state of ADR-083 item 3) and the front end is not showing, with the passes of the match frame that the MVP's look uses (MVP-080 to MVP-084), drawn from the replica (ADR-084); the loading-view frame covers a world's load too. The match frame stays the skirmish's, which the MVP does not build (MVP-001). A pass that the world frame adds, for the territory lines of MVP-084 or the black fog of WLD-244, enters the pass table by amendment when it is specified.
+
 **RND-068** (MUST) The frame types of RND-067 are the only frame types (see DEC-059, DEC-052).
+
+> **Amendment 2026-10-18 (ADR-083; O55).** The world frame of the RND-067 amendment is added to them; no other frame type is added.
 
 ### 4.3 The ordered pass table of a match frame
 
@@ -314,6 +318,8 @@ Every blend result is clamped to [0, 1] per channel as it is written to the SDR 
 
 Pass numbers are stable ids; unused numbers stay unassigned. Passes 16 to 34 draw into `final_image` at the client area's native resolution, after the resolve of `scene_colour` and the final pass (RND-063).
 
+> **Amendment 2026-10-18 (O55; MVP-102).** In the world frame, pass 23 draws nothing, because the MVP has no Powers (MVP scope §5.1), and pass 28 draws the HUD of MVP-102 in place of the skirmish's scores, timers and mode HUD.
+
 **RND-071** (MUST) Only the passes of the pass table draw; nothing else is drawn in the sky or over the frame (see DEC-059, DEC-052).
 
 **RND-072** (MUST) Passes 3 to 15 are the only passes that write `scene_depth`, and they draw into `scene_colour` at the render size, in table order; the match message of pass 13 is therefore overdrawn by the debris and particles of passes 14 and 15. Passes 16 to 34 never use the hardware depth test, except that the 3-D parts of the world markers in pass 16 (the ground highlights of order markers and the local team's Leader banners, RND-358) and the world cursor's 3-D rings, ghost models and formation dots in pass 20 compare their depth in the pixel shader with `scene_depth_single` at the corresponding scene position and are discarded where they lie behind the scene (RND-309), which keeps their reference order after the UI windows.
@@ -336,15 +342,25 @@ Pass numbers are stable ids; unused numbers stay unassigned. Passes 16 to 34 dra
 
 **RND-079** (MUST) Every match, including matches against bots and the tutorials, takes the match path: the match frame of RND-067 is drawn, and the Essence orbs take their match sizes and alphas ([README.md](../animation_and_vfx/README.md)). Launch Race matches force the special lighting for structures (RND-229).
 
+> **Amendment 2026-10-18 (O55).** A world takes the world path: the world frame of the RND-067 amendment is drawn, and the Essence orbs take their match sizes and alphas there as well (MVP-082). The MVP builds no match (MVP-001).
+
 **RND-080** (MUST) A match draws the match frame of RND-067 with exactly the passes of RND-070 (see DEC-059, DEC-336, DEC-052).
+
+> **Amendment 2026-10-18 (O55).** A world draws the world frame of the RND-067 amendment with the passes that the RND-070 amendment states.
 
 ### 4.6 Render-time extrapolation
 
 **RND-081** (MUST) Every renderer draws an object at the extrapolated position and orientation of `reference/12_simulation_model/01_tick_timing_and_main_loop.md` R-SIM-562: position + velocity × *t*, and for a mesh node its orientation advanced by its angular velocity × *t*, where *t* is the extrapolation time of R-SIM-560 (0 while the world is held). This is extrapolation from the last tick, not interpolation between two stored states (R-SIM-563); the choice for Species is DEC-222 (R-SIM-565).
 
+> **Amendment 2026-10-18 (ADR-084).** Every renderer draws a replicated object at the interpolation between its two latest received states, at a display time one tick period plus a jitter allowance (0 on the integrated host, 30 ms for a remote client) behind the newest; a late state is held for up to 250 ms, and nothing is extrapolated (ADR-084 item 4). The directly controlled unit is drawn at its predicted position (item 6). Every other renderer rule that uses the extrapolation time *t* (RND-159, RND-333, RND-337) reads it as the interpolation fraction × `ref.sim.tick_period`, the display time's distance past the older of the two states.
+
 **RND-082** (MUST) The objects of a sliced pool are drawn with the slice-aware time of R-SIM-562: a slot the current tick has already advanced uses *t*, and a slot it has not yet advanced uses *t* + `ref.sim.tick_period` × *s*. This applies to the structures (passes 6 and 8), the laser bolts and effects (passes 10a and 10b), the Essence orbs (pass 11), each team's other actors (pass 7b), the Crawler groups (pass 7c) and the Workers (pass 7d). The particle pool (pass 15) is not a sliced pool: it is drawn at presentation time from its GPU state ([particles_shatter_and_screen_effects.md](../animation_and_vfx/particles_shatter_and_screen_effects.md) VFX-217). The Essence orbs and the Reaper Serpent are additionally drawn one tick behind, as [README.md](../animation_and_vfx/README.md) specifies.
 
+> **Amendment 2026-10-18 (ADR-084).** A client runs no update slice and replicates whole ticks (ADR-084 item 3), so no object is drawn with a slice-aware time: every object of these passes takes the interpolation of the RND-081 amendment. ADR-084 item 4 draws every replicated object at one display time, so the Essence orbs and the Reaper Serpent are drawn at that time too, without the further tick of R-UNIT-332 and VFX-136.
+
 **RND-083** (MUST) The sky offset uses the same rule with the update slice as its threshold: if the last processed update slice of the current tick is at or after `ref.sim.slice.sky` (slice 3), the sky is drawn with *t*, otherwise with *t* + `ref.sim.tick_period` × *s* ([world_renderers.md](world_renderers.md) RND-152).
+
+> **Amendment 2026-10-18 (ADR-084).** A client runs no update slice, so this threshold does not apply: the sky is drawn at the display time of the RND-152 amendment.
 
 ### 4.7 Fade, paused banner and screen transition
 
@@ -487,10 +503,10 @@ The golden-image tests compare with the default tolerance and on the pinned refe
 | DEC-040 | Open | the inverted style and its clear colour (pass 2) |
 | DEC-052 | Dropped | campaign frame types and overlays are not specified (RND-068, RND-071, RND-080) |
 | DEC-059 | Dropped | the frame types and passes that are not specified (RND-068, RND-071, RND-080) |
-| DEC-200 | Open | network-state banners (RND-076) |
-| DEC-222 | Open | extrapolation or interpolation (RND-081) |
-| DEC-224 | Open | parallel pass recording (RND-120) |
-| DEC-226 | Open | load progress (RND-118) |
+| DEC-200 | Resolved (ADR-084) | network-state banners (RND-076) |
+| DEC-222 | Resolved (ADR-084) | extrapolation or interpolation (RND-081) |
+| DEC-224 | Resolved (ADR-083) | parallel pass recording (RND-120) |
+| DEC-226 | Resolved (ADR-083) | load progress (RND-118) |
 | DEC-316 | Open | the screen transition and the captured frame (RND-095) |
 | ADR-004, ADR-005, ADR-007 | Proposed, Accepted, Proposed | the frame graph, the catalogue and the barrier model this document feeds |
 

@@ -2,7 +2,7 @@
 
 > Status: Asset overview · Related: [GameAssets.md](GameAssets.md) · [asset_manifest.csv](asset_manifest.csv) · [art_and_audio_briefs.md](art_and_audio_briefs.md)
 
-This folder lists what the reference mechanics need as Species content: every sprite, texture, mesh, sound, font, string table and map, newly authored to the technical role its reference counterpart plays. Nothing is traced, re-coloured or edited from the reference game's art, audio or text.
+This folder lists what the reference mechanics and the MVP need as Species content: every sprite, texture, mesh, sound, font, string table and map, newly authored to the technical role its reference counterpart plays. Nothing is traced, re-coloured or edited from the reference game's art, audio or text.
 
 | File | What it is |
 |---|---|
@@ -12,27 +12,27 @@ This folder lists what the reference mechanics need as Species content: every sp
 
 ## Counts by category and priority
 
-| Category | Asset ids | Files | first-playable | launch | post-launch |
-|---|---:|---:|---:|---:|---:|
-| Unit sprites | 13 | 16 | 6 | 9 | 1 |
-| VFX textures | 19 | 19 | 13 | 6 | 0 |
-| UI panels and title | 13 | 20 | 12 | 8 | 0 |
-| HUD, supply-crate and power icons | 28 | 30 | 15 | 15 | 0 |
-| Cursors and markers | 29 | 41 | 30 | 11 | 0 |
-| Input glyphs | 19 | 19 | 1 | 18 | 0 |
-| Terrain ramps, water and waves | 3 | 26 | 3 | 21 | 2 |
-| Meshes | 77 | 104 | 27 | 71 | 6 |
-| Help images and explainer animations | 6 | 59 | 1 | 58 | 0 |
-| Audio by source and event | 177 | 901 | 502 | 393 | 6 |
-| UI sounds | 13 | 16 | 16 | 0 | 0 |
-| Ambience | 4 | 21 | 11 | 10 | 0 |
-| Music | 4 | 6 | 0 | 2 | 4 |
-| Fonts | 5 | 5 | 1 | 4 | 0 |
-| String table | 10 | 10 | 2 | 8 | 0 |
-| Maps and thumbnails | 12 | 98 | 4 | 94 | 0 |
-| **Total** | **432** | **1391** | **644** | **728** | **19** |
+| Category | Asset ids | Files | mvp | first-playable | launch | post-launch |
+|---|---:|---:|---:|---:|---:|---:|
+| Unit sprites | 14 | 17 | 7 | 0 | 9 | 1 |
+| VFX textures | 19 | 19 | 9 | 5 | 5 | 0 |
+| UI panels and title | 13 | 20 | 5 | 7 | 8 | 0 |
+| HUD, supply-crate and power icons | 46 | 50 | 24 | 11 | 15 | 0 |
+| Cursors and markers | 29 | 41 | 25 | 5 | 11 | 0 |
+| Input glyphs | 19 | 19 | 0 | 1 | 18 | 0 |
+| Terrain ramps, water and waves | 3 | 26 | 3 | 0 | 21 | 2 |
+| Meshes | 85 | 114 | 20 | 17 | 71 | 6 |
+| Help images and explainer animations | 6 | 59 | 0 | 1 | 58 | 0 |
+| Audio by source and event | 178 | 902 | 23 | 480 | 393 | 6 |
+| UI sounds | 15 | 18 | 2 | 16 | 0 | 0 |
+| Ambience | 4 | 21 | 0 | 11 | 10 | 0 |
+| Music | 4 | 6 | 0 | 0 | 2 | 4 |
+| Fonts | 5 | 11 | 6 | 0 | 5 | 0 |
+| String table | 10 | 10 | 1 | 1 | 8 | 0 |
+| Maps and thumbnails | 12 | 98 | 0 | 4 | 94 | 0 |
+| **Total** | **462** | **1431** | **125** | **559** | **728** | **19** |
 
-The first-playable set is one skirmish mode, Spawn Control for 2 players, with the core Supply-crate pool ([GameAssets.md §2.5](GameAssets.md#25-priorities-and-the-first-playable-assumption)). 811 reference files and 281 reference text entries need no Species counterpart ([GameAssets.md §20](GameAssets.md#20-not-to-be-created)).
+The `mvp` set is what the MVP's milestones M1 to M4 need (O55): 125 files in 90 asset ids, 34 of the files new; [MVP assets](../implementation/mvp_assets.md) gives each one's milestone and how it is produced. The first-playable set is one skirmish mode, Spawn Control for 2 players, with the core Supply-crate pool, and it now follows the MVP ([GameAssets.md §2.5](GameAssets.md#25-priorities-and-the-first-playable-assumption)). 811 reference files and 281 reference text entries need no Species counterpart ([GameAssets.md §20](GameAssets.md#20-not-to-be-created)).
 
 ## Technical constraints per category
 
@@ -51,7 +51,7 @@ The first-playable set is one skirmish mode, Spawn Control for 2 players, with t
 | UI sounds | 2-D, short one-shots; mono or stereo |
 | Ambience | 2-D layered loops; a group streams, as MS-ADPCM decoded by XAudio2, when its longest member is over 20 s (AEN-072, ADR-025) |
 | Music | New; stereo 48 kHz; streamed as MS-ADPCM, decoded by XAudio2; slots proposed, final list set by the design phase |
-| Fonts | Licensed families; glyph cache at run time; coverage Latin-1, Cyrillic, currency, Japanese kana and ideographs, Hangul |
+| Fonts | Two bitmap faces drawn for Species in the condensed style, no licence needed (O56): per face a greyscale coverage glyph sheet at 1x and at 2x and a JSON glyph table, packed into `R8_UNORM` pages that are never block-compressed (ADR-034); MVP coverage U+0020-007E, U+00A0-00FF and eight punctuation marks; the Japanese and Korean companions are licensed font files for the DirectWrite upgrade, which also brings Cyrillic and the currency signs |
 | String table | New text only; ICU MessageFormat; one table per language; the reference set of nine languages; a development string table in development editions only |
 | Maps and thumbnails | New layouts; one slot per reference map by mode and player count; one auto-rendered 4:3 thumbnail per map |
 
@@ -74,7 +74,8 @@ The content build generates a stand-in for every manifest row that has no author
 | synthesised tone | sine or noise burst of the stated duration, looping where the row says loop |
 | text-to-speech line | synthetic voice line of the stated duration |
 | silence | silent file of the stated length, looping where the row says loop |
-| fallback font | an open-licence font with the same script coverage |
+| generated block font | a block-letter face that a tool draws from a glyph table written in the tool's own source, newly authored for Species, with the drawn face's sheets, glyph table and coverage, so a missing face never blocks a build |
+| fallback font | an open-licence font with the same script coverage (the companion font files of the DirectWrite upgrade only) |
 | pseudo-localised text | text generated from each string id, padded to test layout |
 | generated test map | flat map with the objects the mode needs for its player count |
 | full-weight mask | tint mask of weight 1 over the opaque area of its parent art |

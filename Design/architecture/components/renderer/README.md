@@ -41,6 +41,8 @@ Caption: the renderer reads presentation inputs only, builds every frame through
 
 **RND-002** (MUST) The renderer MUST NOT write simulation state. It reads an immutable presentation snapshot of the simulation (RND-018) and the extrapolation time of `reference/12_simulation_model/01_tick_timing_and_main_loop.md` (R-SIM-560 to R-SIM-564), and never stores an extrapolated value back (see DEC-007). How the snapshot is produced, and whether Species extrapolates or interpolates between two snapshots, is decided by the design phase (see DEC-222, R-SIM-565); until then the renderer extrapolates as R-SIM-562 specifies.
 
+> **Amendment 2026-10-18 (ADR-084; O55).** The renderer reads the presentation snapshot that the client session builds once per frame from its replica, the presentation events and the one predicted unit (ADR-084 items 3, 5 and 6), never simulation state, and it interpolates: every replicated object is drawn between its two latest received states, one tick period plus a jitter allowance behind the newest, and nothing is extrapolated (item 4, RND-081). The default of the last sentence no longer holds.
+
 **RND-003** (MUST) The renderer MUST NOT compute any value that feeds simulation state. GPU work serves presentation only (see DEC-654): rendering, particles, shatter debris and animation.
 
 **RND-004** (MUST) The renderer MUST NOT produce simulation data. Tree crown hit volumes and every other collision or hit volume are baked collision data from the content build (see DEC-012, R-SIM-651); the renderer's tree generator may be shared with the content build as code, but the renderer never writes a hit volume. Mesh hit tests are simulation queries on collision assets (R-SIM-123, R-SIM-327), never renderer calls.
@@ -77,7 +79,7 @@ Caption: the renderer reads presentation inputs only, builds every frame through
 The interface below is a C++23 declaration sketch, not an implementation. Everything in it is engine code in namespace `Engine`. The renderers of game objects, which read the game's presentation snapshot, are game-layer presentation code in `Species` ([world_renderers.md](world_renderers.md) §2, [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) §2; `AGENTS.md` R9).
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 enum class FrameKind : std::uint8_t
@@ -249,7 +251,7 @@ public:
   [[nodiscard]] std::uint32_t FramesPerSecond() const;                              // R-SIM-576
 };
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 **Events.** The renderer consumes the platform layer's resize, DPI, focus and output-change events (ADR-075) and raises one event of its own, `DeviceRebuilt`, after a device-removal rebuild (ADR-008), once the GPU resource factory has recreated every live resource without its data (RND-035), so that each owner fills its resources again.
@@ -315,6 +317,8 @@ public:
 
 **RND-018** (MUST) The presentation snapshot (`PresentationSnapshot`) is the baseline contract between the simulation and every presentation reader, the default under option A of DEC-222 until the design phase decides the boundary. The game layer produces one snapshot per rendered frame, from simulation state alone, after the update slices that the frame runs (R-SIM-531) and before the frame is rendered, and does not change it afterwards. The frame renderer and the renderers of game objects, the VFX runtime ([animation and VFX](../animation_and_vfx/README.md) §2), the match camera ([camera](../camera_and_sequences.md) CAM-004) and the audio bridge ([audio engine](../audio_engine/README.md) AEN-041) read the snapshot of the frame and keep no reference into it beyond that frame. The game layer owns the storage: the baseline keeps one snapshot and reuses it once the frame that read it has finished recording and the audio update of the frame has read it; a threading model that builds the next snapshot while a frame reads the current one keeps two (DEC-224); interpolation between two ticks keeps the snapshots of the last two ticks (DEC-222, R-SIM-565).
 
+> **Amendment 2026-10-18 (ADR-084; O55).** The client session builds the snapshot from its replica (the decoded state of its interest set for the two latest ticks received), the presentation events and the predicted unit (ADR-084 items 3 to 6), not from simulation state after update slices, which a client never runs; the replica's two ticks are the states that interpolation keeps. Where this names the match camera, the world game reads the camera of the settlement view (MVP-100).
+
 **RND-019** (MUST) The snapshot holds the records of table 3.5-A, and each reader reads only the fields that its documents name.
 
 Table 3.5-A The records of the presentation snapshot.
@@ -328,6 +332,8 @@ Table 3.5-A The records of the presentation snapshot.
 | history | the Crawler trail samples (R-UNIT-535), the Reaper Serpent's tail positions (R-UNIT-594), the centipede links and samples (R-UNIT-549, R-UNIT-551) | the VFX runtime |
 | route and world marker | per route its points and end point; per world marker its target, kind, icon, owner, persistence and progress fraction ([entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) §2) | the route-line and world-marker renderers |
 | emitter | per tracked emitter its position, velocity, height above the terrain, age and the counts of teams and of actors near it (AEN-041) | the audio bridge |
+
+> **Amendment 2026-10-18 (ADR-084; O55).** The frame record carries the two tick numbers of the interpolation pair and the interpolation fraction in place of the extrapolation time, the last update slice and the last command frame (ADR-084 item 4), and the sliced-pool record is not kept, because a replicated state is a whole tick. A world has no match setup ([skirmish maps and map tools](../../../gdd/01_world_and_regions/skirmish_maps_and_map_tools.md)), so in the world game the colours, the local settlement and the world extent of the setup record come from the replica.
 
 ```cpp
 namespace Species
@@ -345,7 +351,7 @@ struct MatchSetupView // the per-match part of the snapshot, fixed at match star
 
 // The game's snapshot: the only type behind FrameInputs::snapshot (RND-018, RND-054). Its accessors return the records
 // of table 3.5-A as read-only spans and views that stay valid until the frame that reads them has finished.
-class PresentationSnapshot final : public Engine::SceneSnapshot
+class PresentationSnapshot final : public Neuron::SceneSnapshot
 {
 public:
   [[nodiscard]] const MatchSetupView& Setup() const;
@@ -431,7 +437,7 @@ The golden-image tests of this folder compare with the default tolerance and on 
 
 | Test | Kind | Checks | Requirements |
 |---|---|---|---|
-| T1 boundary | checker fixture | a simulation-library source that includes a renderer header fails `Build\CheckProjectFiles.py` ([build tooling](../build_tooling_and_distribution.md) table 4.1-B row 13); the renderer has only const access to the snapshot; the dedicated-server link map has no Direct3D symbol, because the server project references and links none (row 11, BLD-045) | RND-002, RND-003, RND-008 |
+| T1 boundary | checker fixture | a simulation-library source that includes a renderer header fails `Build\CheckProjectFiles.py` ([build tooling](../build_tooling_and_distribution/README.md) table 4.1-B row 13); the renderer has only const access to the snapshot; the dedicated-server link map has no Direct3D symbol, because the server project references and links none (row 11, BLD-045) | RND-002, RND-003, RND-008 |
 | T2 headless conformance | golden-hash | a match run headless and the same match run with the full renderer produce identical per-tick state hashes | RND-002 to RND-006 |
 | T3 capability probe | unit | recorded capability results (all pass, each single failure, unknown Shader Model) give the expected adapter choice and message | RND-020 |
 | T4 first run | unit | with no stored render size, the desktop resolution is used and written back | RND-021 |
@@ -455,9 +461,9 @@ The golden-image tests of this folder compare with the default tolerance and on 
 | DEC-052 | Dropped | campaign content: its frame types, logo overlays and structures are not specified |
 | DEC-059 | Dropped | the pixel effect, the deform effect and the water reflection are not specified |
 | DEC-098 | Resolved | the texture cache is keyed by asset and variant (RND-007, RND-017) |
-| DEC-222 | Open | how the snapshot is produced, with the baseline contract of RND-018 and RND-019 as the default of option A; extrapolation or interpolation (RND-002) |
-| DEC-224 | Open | which threads record passes (§2 threading contract) |
-| DEC-226 | Open | loading and streaming of world content (RND-042) |
+| DEC-222 | Resolved (ADR-084) | how the snapshot is produced, with the baseline contract of RND-018 and RND-019 as the default of option A; extrapolation or interpolation (RND-002) |
+| DEC-224 | Resolved (ADR-083) | which threads record passes (§2 threading contract) |
+| DEC-226 | Resolved (ADR-083) | loading and streaming of world content (RND-042) |
 | DEC-247 | Open | terrain scale and level of detail ([world_renderers.md](world_renderers.md) RND-138) |
 | DEC-325 | Open | the one-frame light lag ([view_lighting_and_fog.md](view_lighting_and_fog.md) RND-227) |
 | DEC-326 | Open | the terrain grid overlay ([world_renderers.md](world_renderers.md) RND-135) |
@@ -494,6 +500,8 @@ The golden-image tests of this folder compare with the default tolerance and on 
 | screenshots | a read-back pass that copies the final image into a read-back buffer, encoded off the frame thread | ADR-004, ADR-076 | [frame_graph_and_passes.md](frame_graph_and_passes.md) §4.8 |
 | client GPU resources | one factory that creates, fills, releases and rebuilds every resource another component holds | ADR-078 | RND-009, RND-035 |
 | device removal | full device recreation | ADR-008 | RND-034 |
+
+> **Amendment 2026-10-19 (ADR-034; O56).** Text is drawn from two hand-drawn bitmap faces cooked into atlas pages, loaded from the pack rather than rasterised; shaping and the glyph cache of licensed fonts are the recorded upgrade. The glyph pages row above follows: pages are loaded, not filled at run time.
 
 ### 8.3 Design-phase inputs
 

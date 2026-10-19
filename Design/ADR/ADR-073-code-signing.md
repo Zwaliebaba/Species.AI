@@ -30,7 +30,7 @@ How, where and with what does Species sign its binaries and packages?
 
 Proposed option: "Azure Artifact Signing, with an OV certificate in a hardware-backed or cloud key store as the fallback". **Default while Proposed:** the release procedure signs this way. **Confirmed when:** the publishing entity's eligibility for Artifact Signing is known and the signature check of the release procedure passes on a release candidate, before the first external build. Which branch applies depends on whether the publishing entity meets Artifact Signing's eligibility (supported regions and, for organisations, a verifiable tax history of three years or more).
 
-* **What is signed:** `species.exe`, the dedicated server's Windows executable, every first-party DLL and tool executable distributed with the game, and every installer or publisher-signed package.
+* **What is signed:** `Species.exe`, the dedicated server's Windows executable, every first-party DLL and tool executable distributed with the game, and every installer or publisher-signed package.
 * **How:** `SignTool sign /fd SHA256 /tr <timestamp URL> /td SHA256 <certificate or signing-service options> <file>`, so every signature has an RFC 3161 timestamp.
 * **Where:** the signing step of the release procedure that whoever ships runs before a release (build tooling BLD-107, BLD-122), on the `Release|x64` builds of release candidates and releases only. CI builds `Debug|x64` only and signs nothing (`AGENTS.md` §6, [ADR-070](ADR-070-continuous-integration.md)); Debug builds and local builds are unsigned or self-signed for local testing.
 * **Keys:** held by the signing service or the key store; the signing step is the only path to them.
@@ -77,3 +77,4 @@ Proposed option: "Azure Artifact Signing, with an OV certificate in a hardware-b
 * Component: build tooling and distribution (`BLD`).
 * **Amendment 2026-10-17 (AGENTS.md, O21).** Signing applies to Release builds only, since CI builds Debug only and the build has no other configuration ([ADR-054](ADR-054-build-system-msbuild-solution.md), [ADR-070](ADR-070-continuous-integration.md)); the signing step runs where Release is built.
 * **Amendment 2026-10-17 (AGENTS.md §6, `build.yml`).** The committed workflow has no Release build and no signing step, and CI produces no release candidate. Signing is a step of the release procedure (build tooling BLD-107, BLD-122), and the signature check runs there (BLD-108). The title, the chosen option, "Where", "Keys" and the confirmation no longer name a CI signing step.
+* **Amendment 2026-10-19 (owner decision O60, ADR-090).** The programs are `Species.exe` and `SpeciesServer.exe` and the content build tool `SpeciesContentBuild.exe`, and engine code is in namespace `Neuron`; this record's names follow.

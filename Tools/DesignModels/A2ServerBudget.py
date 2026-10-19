@@ -3,8 +3,8 @@
 
 It implements the budgets of Design/architecture/04_solution_strategy.md §4.5 and of the records ADR-079 to ADR-088
 (tick rate, per-tick budgets and population caps, numeric model, random draws, process architecture, the client
-boundary, region partitioning, replication, commands and transport), revised after challenge round 1, and computes,
-at 16 and at 200 stewards:
+boundary, region partitioning, replication, commands and transport), revised after challenge round 1 and after owner
+gate B (O43 to O48; the QUIC datagram framing of MsQuic, O44 and ADR-088), and computes, at 16 and at 200 stewards:
 
   - server CPU per settlement (full and abstract fidelity) and per battle, per region and per world, at the evening
     peak of A1's planning and stress cases, with the seen layer, fidelity switches and keyed draws counted;
@@ -133,8 +133,16 @@ class Params:
   orb_bytes: float = 2.5
   group_bytes: float = 12.0
   fixed_bytes_per_s: float = 900.0
-  payload_bytes: int = 1200
-  datagram_overhead_bytes: int = 77       # IP and UDP 28, DTLS 1.2 AES-GCM record 37, Species header 12 (ADR-088)
+  # A state update's records per QUIC datagram: the DATAGRAM frame carries at most 1,200 bytes (Species' 8-byte
+  # header and 1,192 bytes of records), which fits MsQuic's largest datagram at its starting MTU of 1,288 bytes on
+  # IPv6 (1,207 bytes), so no state datagram depends on path MTU discovery (ADR-088 item 3).
+  payload_bytes: int = 1192
+  # Bytes per state datagram besides its records, computed from the framing, not measured (M4 measures it):
+  # IPv6 40 and UDP 8; the QUIC 1-RTT short header 14 (1 flags byte, the 9-byte connection id that MsQuic generates
+  # without a server-id prefix, the 4-byte packet number that MsQuic writes; RFC 9000 §17.3.1); the DATAGRAM frame's
+  # type and 2-byte length 3 (RFC 9221 §4); the AEAD tag 16 (RFC 9001 §5.3); Species' header 8 (the update's tick and
+  # its baseline tick; sequencing and acknowledgement are QUIC's). On IPv4 it is 69; the model takes IPv6's 89.
+  datagram_overhead_bytes: int = 89
   client_cap_bytes_per_s: float = 48000.0  # world client cap (ADR-086)
   skirmish_cap_bytes_per_s: float = 64000.0  # skirmish client cap (ADR-086)
   client_target_bytes_per_s: float = 32000.0
@@ -927,11 +935,11 @@ STATED = {
   'multiple_16vcpu_deadline': 4.46,
   'region_headroom_design_limit': 700,
   'pop_limit_x2': 450,
-  'bw_battle_kbs': 23.2,
-  'bw_skirmish_kbs': 50.5,
-  'upstream_kbs': 1.0,
+  'bw_battle_kbs': 23.4,
+  'bw_skirmish_kbs': 51.0,
+  'upstream_kbs': 1.1,
   'host_upload_15_mbits': 2.8,
-  'egress_200_gb_month': 584,
+  'egress_200_gb_month': 590,
   'join_terrain_200_s': 62,
   'storage_16_mb': 207,
   'storage_200_mb': 2052,
@@ -979,22 +987,22 @@ STATED_TABLES = {
     ('x6', '1.92', '71.3', '11.13', '293.6', '134.5', '150', '0'),
   ],
   'bandwidth': [
-    ('home view: own settlement', '400', '800', '17.3', '18.1', '25.0', '48', 'yes'),
-    ('battle view: 400 in battle', '600', '600', '23.2', '24.4', '36.9', '48', 'yes'),
-    ('battle at the side cap: 1,200 in battle', '1,200', '600', '42.5', '45.0', '68.4', '48', 'yes'),
-    ('valley war: 2 battles, 4 settlements', '1,500', '2,000', '63.2', '67.3', '97.6', '48', 'no: 771 stay at tier 1'),
-    ('skirmish, design population 2,000', '1,500', '500', '50.5', '54.5', '84.1', '64', 'yes'),
-    ('skirmish, stress population 4,000', '1,500', '2,500', '69.8', '73.0', '101.8', '64', 'no: 1,222 stay at tier 1'),
-    ('strategic view, 16 stewards', '0', '0', '2.1', '2.1', '2.9', '48', 'yes'),
-    ('strategic view, 200 stewards', '0', '0', '3.1', '3.1', '3.9', '48', 'yes'),
+    ('home view: own settlement', '400', '800', '17.6', '18.4', '25.2', '48', 'yes'),
+    ('battle view: 400 in battle', '600', '600', '23.4', '24.7', '37.4', '48', 'yes'),
+    ('battle at the side cap: 1,200 in battle', '1,200', '600', '42.9', '45.5', '69.1', '48', 'yes'),
+    ('valley war: 2 battles, 4 settlements', '1,500', '2,000', '63.8', '68.0', '98.6', '48', 'no: 747 stay at tier 1'),
+    ('skirmish, design population 2,000', '1,500', '500', '51.0', '55.1', '85.0', '64', 'yes'),
+    ('skirmish, stress population 4,000', '1,500', '2,500', '70.5', '73.7', '104.6', '64', 'no: 1,198 stay at tier 1'),
+    ('strategic view, 16 stewards', '0', '0', '2.3', '2.3', '3.2', '48', 'yes'),
+    ('strategic view, 200 stewards', '0', '0', '3.2', '3.2', '4.1', '48', 'yes'),
   ],
   'links': [
     ('integrated host, 3 remote stewards at the evening peak, battle views', '0.6', '0.9'),
-    ('integrated host, 15 remote stewards, battle views', '2.8', '4.4'),
+    ('integrated host, 15 remote stewards, battle views', '2.8', '4.5'),
     ('integrated host, 15 remote stewards, valley-war views at the cap', '5.8', '5.8'),
     ('integrated skirmish host, 1 remote player at the design population', '0.4', '0.5'),
-    ('community server of 16, all present, battle views', '3.0', '4.7'),
-    ('hosted world of 200, 47 present at the evening peak, battle views', '8.7', '13.9'),
+    ('community server of 16, all present, battle views', '3.0', '4.8'),
+    ('hosted world of 200, 47 present at the evening peak, battle views', '8.8', '14.1'),
     ('hosted world of 200, 47 present, valley-war views', '18.0', '18.0'),
   ],
   'storage': [

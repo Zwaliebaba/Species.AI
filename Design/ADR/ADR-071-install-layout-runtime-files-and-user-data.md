@@ -30,9 +30,9 @@ What does a Species client installation contain, and where does the client write
 Chosen option: "A relocatable, read-only install directory with user data in known folders".
 
 * **Install directory:**
-  * `species.exe` (the client, with its shaders compiled in, [ADR-003](ADR-003-shader-language-compiler-and-material-shaders.md)) and first-party DLLs; no shader file is installed;
+  * `Species.exe` (the client, with its shaders compiled in, [ADR-003](ADR-003-shader-language-compiler-and-material-shaders.md)) and first-party DLLs; no shader file is installed;
   * `WinPixEventRuntime.dll` from the pinned WinPixEventRuntime package, because the markers stay in Release builds ([ADR-068](ADR-068-profiling-and-gpu-timing.md));
-  * `D3D12\` with `D3D12Core.dll` from **Agility SDK 1.619.6** (chosen in [ADR-001](ADR-001-direct3d-12-renderer-on-the-agility-sdk.md)); `species.exe` exports `D3D12SDKVersion = 619` and `D3D12SDKPath = ".\\D3D12\\"`. `D3D12SDKLayers.dll` and preview SDKs are never distributed;
+  * `D3D12\` with `D3D12Core.dll` from **Agility SDK 1.619.6** (chosen in [ADR-001](ADR-001-direct3d-12-renderer-on-the-agility-sdk.md)); `Species.exe` exports `D3D12SDKVersion = 619` and `D3D12SDKPath = ".\\D3D12\\"`. `D3D12SDKLayers.dll` and preview SDKs are never distributed;
   * `packs\` with the pack files, the mount manifest and the content manifest of exactly one edition ([ADR-058](ADR-058-pack-files-and-mount-policy.md), [ADR-060](ADR-060-content-identity-by-hash.md));
   * `build_identity.json`, the full build identity written by packaging ([ADR-057](ADR-057-version-identity.md));
   * `channel_tag.txt`, the tag of the channel that delivered the install, written by the channel wrapper (channel packages only);
@@ -78,3 +78,5 @@ Chosen option: "A relocatable, read-only install directory with user data in kno
 * Component: build tooling and distribution (`BLD`); runtime paths belong to the platform layer (`PLT`).
 * **Amendment 2026-10-17.** The install list gains `build_identity.json` and `channel_tag.txt` and names the licence folder (BLD-020, BLD-021, BLD-023); the user-data root gains `maps\` (R-MAP-391) and `diagnostics\` (Debug builds only), as the platform layer specifies (PLT-017).
 * **Amendment 2026-10-17 (AGENTS.md, O21).** The install directory gains `WinPixEventRuntime.dll`, since the markers stay in Release, and holds no shader file, since shaders are compiled into the executable; the Agility SDK stays beside the executable; the GameInput redistributable runs from the installer; the licence notices cover the three allow-listed packages.
+* **Amendment 2026-10-19 (owner decision O44, ADR-089).** The allow-list holds four packages: `msquic.dll` of the pinned MsQuic package is installed beside the client and the headless server executables, and `licences\` holds its MIT notice beside the notices of the other three.
+* **Amendment 2026-10-19 (owner decision O60, ADR-090).** The programs are `Species.exe` and `SpeciesServer.exe` and the content build tool `SpeciesContentBuild.exe`, and engine code is in namespace `Neuron`; this record's names follow.

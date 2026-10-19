@@ -11,9 +11,9 @@ This repository is a greenfield C++23 game and a hobby project with one develope
 | Path | What it is |
 |---|---|
 | `CLAUDE.md` | The entry point for Claude Code: it imports this file and adds where things are and the current status. |
-| `vision/species-vision-brief.md` | The Species pitch and the owner's decisions O1–O30. |
-| `Design/` | The **Species reference library**: `reference/` (the reference mechanics of a skirmish match, engine-agnostic), `architecture/components/` (the engine baseline, one specification per component), `ADR/` (the baseline architecture decision records), `decisions/` (the decision register, `DEC-NNN`), `assets/` (every asset to create, `GameAssets.md`), `glossary/`, `CONVENTIONS.md` and `REQUIREMENTS_INDEX.md`. It is a reference for the design phase, not yet the Species game design. |
-| `prompts/species-design-phase.md` | The run that turns the reference library and the vision into the Species game design. |
+| `vision/species-vision-brief.md` | The Species pitch and the owner's decisions O1–O30; every later owner decision is in `Design/decisions/owner_decisions.md`. |
+| `Design/` | The **Species reference library**: `reference/` (the reference mechanics of a skirmish match, engine-agnostic), `architecture/components/` (the engine baseline, one specification per component), `ADR/` (the baseline architecture decision records), `decisions/` (the decision register, `DEC-NNN`), `assets/` (every asset to create, `GameAssets.md`), `glossary/`, `CONVENTIONS.md` and `REQUIREMENTS_INDEX.md`. Beside it, the **Species design** of wave A: `gdd/` (pillars and core loops, world and regions), `architecture/04_solution_strategy.md` with ADR-079 onward, and `implementation/` (the MVP scope and its assets, what is built next). |
+| `prompts/species-design-phase.md`, `species_design_work/` | The design-phase run and its working files; the run is paused after wave A (owner decision O51) and resumes from the MVP's playtest evidence. |
 | `Tools/DesignCheck/`, `Tools/DesignModels/` | The design gate checker (run on every change under `Design/`) and the design phase's quantitative models. They never ship and never link (R14). |
 
 **Where these rules come from.** They are carried over from two sibling repositories: `Outpost.Warzone`, where the formatter and linter settings were measured against roughly 223,000 lines, and `Nomad-Commander`. That lineage is why `.clang-format` and `.clang-tidy` are what they are, and it is why code can move between the trees without a rename or a reflow pass. **What did not come across is the other trees' design, their decisions or their plan.** A decision taken there binds nothing here.
@@ -79,7 +79,7 @@ clang-tidy can require an *absent* prefix but cannot see a *present* suffix, so 
 
 **R8 — `m_` marks encapsulated state, not every field.** A `class` with invariants prefixes private members `m_`. A public aggregate — a `Desc` config struct, a wire record, a POD handed to the renderer — uses plain `camelCase` fields so brace initialization reads naturally.
 
-**R9 — One namespace per layer, and the engine does not know the game.** Reusable engine code gets its own namespace, `Engine`; game code gets another, `Species`. The split is a rule rather than a filing preference: if an engine type has to know a game concept by name in order to do its job, it is in the wrong layer. Test suites use `namespace <Project>Tests`.
+**R9 — One namespace per layer, and the engine does not know the game.** Reusable engine code gets its own namespace, `Neuron` (the NeuronCore, NeuronClient and NeuronServer libraries); game code gets another, `Species` (GameShared, GameLogic, GameClient and the two programs; owner decision O60, ADR-090). The split is a rule rather than a filing preference: if an engine type has to know a game concept by name in order to do its job, it is in the wrong layer. Test suites use `namespace <Project>Tests`.
 
 **R10 — No `using namespace` at file scope in a header.** It leaks into every translation unit that includes it, and the failure it causes appears somewhere else. In a `.cpp` it is allowed for the unit-test framework and nothing else; otherwise qualify the name or write a local alias.
 
@@ -88,12 +88,12 @@ clang-tidy can require an *absent* prefix but cannot see a *present* suffix, so 
 ### Worked example — this is the target style
 
 ```cpp
-// Engine/SceneTarget.h
+// NeuronClient/SceneTarget.h
 #pragma once
 
 #include <cstdint>
 
-namespace Engine
+namespace Neuron
 {
 
 // R3: constant → UPPER_CASE. R6: the unit is in the name.
@@ -132,7 +132,7 @@ private:
   bool m_deviceRemoved = false;
 };
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 ### Enforcement
@@ -149,7 +149,7 @@ private:
 
 ## 2. Repository shape
 
-The concrete layout — the solution, the projects and the edges between them — is settled when the first project is created, and recorded here and in an ADR at that point. Until then, these are the standing constraints any layout has to satisfy.
+The concrete layout — the solution, the projects and the edges between them — is ADR-090 (owner decision O60): `Species.slnx` at the repository root; the static libraries NeuronCore (engine code that client and server share), NeuronClient (the engine's client side), NeuronServer (the engine's server side), GameShared (the game's types, messages, records and pure functions), GameLogic (the game simulation, server side only) and GameClient (the game's client side); the thin programs `Species.exe` and `SpeciesServer.exe`; a `<Project>Tests` project per library; and tool projects under `Tools/`. Edges run engine to game and never back, and the headless server never links NeuronClient or GameClient. Every layout change is an amendment of ADR-090, and it satisfies these standing constraints:
 
 **Project directories are flat, with exactly two sanctioned subdirectories.** C++ source — headers and `.cpp` alike — lives directly in its project's folder. **There is no `src/`, no `include/`**, and no other split of a project by file kind. This is not taste: `.clang-tidy`'s `HeaderFilterRegex` matches headers exactly one level in, so **a header in a subdirectory is silently unchecked** — no findings, no warning, and nobody notices for months. The two exceptions are the shader pipeline:
 
@@ -244,7 +244,7 @@ python Build\RunClangTidy.py          # needs a Developer PowerShell (INCLUDE mu
 | `Microsoft.Direct3D.D3D12` (DirectX Agility SDK) | the current Direct3D 12 runtime (`D3D12Core.dll`, installed beside the executable) and its headers | one, current Direct3D 12 runtime on every supported Windows build (ADR-001) |
 | `Microsoft.GameInput` | the GameInput header, library and the `GameInputRedist.msi` the installer runs | the supported controller API and its updated runtime (ADR-028) |
 | `WinPixEventRuntime` | `pix3.h` and `WinPixEventRuntime.dll` | PIX markers and captures (ADR-068) |
-| `Microsoft.Native.Quic.MsQuic.Schannel` (MsQuic) | the MsQuic API header and `msquic.dll`, installed beside the executable, on the operating system's Schannel TLS 1.3; MIT, its licence notice shipped with it | the client–server transport: reliable streams, unreliable datagrams and TLS 1.3, with no protocol of Species' own (owner decision O44, ADR-088) |
+| `Microsoft.Native.Quic.MsQuic.Schannel` (MsQuic) | the MsQuic API header and `msquic.dll`, installed beside the executable, on the operating system's Schannel TLS 1.3; MIT, its licence notice shipped with it | the client–server transport: reliable streams, unreliable datagrams and TLS 1.3, with no protocol of Species' own (owner decision O44; the package ADR-089, the transport ADR-088) |
 
 The pinned versions are in the technology baseline of `Design/ADR/README.md`. If you believe anything else is unavoidable, propose it in your report with what it buys and what it costs — do not add it. This is a closed list, not a high bar; adding to it is an owner decision recorded as an ADR.
 

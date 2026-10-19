@@ -16,5 +16,7 @@ Each component specification states what the component owns and must not do, its
 | [Camera and sequences](camera_and_sequences.md) | `CAM` | the camera rig, view state, timelines and scripted sequences |
 | [Data schemas](data_schemas/README.md) | `DAT` | the schema language and every authored and cooked record family |
 | [Platform layer](platform_layer.md) | `PLT` | process lifecycle, window, clock, user data, settings store, crash path and system services |
-| [Build tooling and distribution](build_tooling_and_distribution.md) | `BLD` | toolchain, the solutions and their configurations, content build, editions, CI, packaging and crash symbols |
+| [Build tooling and distribution](build_tooling_and_distribution/README.md) | `BLD` | toolchain, the solutions and their configurations, content build, editions, CI, packaging and crash symbols |
 | [Diagnostics, test and performance](diagnostics_test_and_performance/README.md) | `DBG` | logging, the black box, profiling, development overlays and commands, soak and performance tests |
+
+> **Amendment 2026-10-19 (owner decision O60, ADR-090).** The components are built into the libraries of ADR-090: the platform layer without a window, data schemas, terrain generation, the transport and diagnostics in NeuronCore; the renderer, the window, terrain rendering, animation and VFX, input, audio, the UI framework, the camera and the client's asset loading in NeuronClient; the server host in NeuronServer. Engine code is in namespace `Neuron`, so the sketches of every component, first written with `Engine::`, were renamed to `Neuron::`, and the programs are `Species.exe` and `SpeciesServer.exe`.

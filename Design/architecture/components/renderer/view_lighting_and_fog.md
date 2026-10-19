@@ -13,7 +13,7 @@ This document specifies how the renderer turns the camera's view parameters into
 ## 2 Interfaces
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 struct FrameView // built in pass 1
@@ -51,7 +51,7 @@ struct LitMaterial
 [[nodiscard]] bool PointInView(const FrameView& _view, const Vec3& _point);                  // RND-234
 [[nodiscard]] bool SphereInView(const FrameView& _view, const Vec3& _center, float _radius); // RND-234
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 ## 3 Data model
@@ -71,6 +71,10 @@ struct LitMaterial
 **RND-210** (MUST) The projection is a perspective projection with the camera's vertical field of view and an aspect ratio of render width ÷ render height, so the horizontal field of view follows the aspect ratio (Hor+). It uses the conventions of ADR-016: right-handed world and view space with +y up, the camera looking along −z in view space, reversed Z (the near plane maps to depth 1 and the far plane to depth 0), a finite far plane, and row-major matrices used with row vectors.
 
 **RND-211** (MUST) While a match world exists, the near and far planes are set at the start of every frame to `rnd.view.near_plane` (5 wu) and `rnd.view.far_plane` (15000 wu). Outside a match (the front end and the loading view) they are `rnd.view.menu_near_plane` (50 wu) and `rnd.view.menu_far_plane` (10000000 wu).
+
+> **Amendment 2026-10-18 (WLD-001; MVP-010).** In the world game the match planes apply while a world is drawn and the front-end planes outside it. The far plane of 15,000 wu holds for the MVP's one region of 5,120 wu: a camera above the region at the settlement view's highest height (5,000 wu, R-CTRL-461) is at most 8,800 wu from any point of it. The strategic view (WLD-240, up to 46,080 wu high) and worlds of more than one region need a far plane of their own, and so does the fog end of RND-222, which a world extent of 71,680 wu (WLD-001) would put at 72,680 wu; both are DEC-247's, with the camera-relative positions of WLD-246.
+
+> **Amendment 2026-10-19 (O59).** The fog end of RND-222 no longer grows with the world, so nothing is visible beyond 6,120 wu from the camera in a world of any size and the settlement view's far plane of 15,000 wu holds; only the strategic view's planes and fog remain DEC-247's.
 
 **RND-212** (MUST) Before every projection set-up, the camera's vertical field of view is clamped to [`rnd.view.fov_min` (1°), `rnd.view.fov_max` (180°)]. The field-of-view values themselves (the free camera, its zoom, turret aiming and scripted views) are the camera component's; the main-menu value is RND-077.
 
@@ -104,6 +108,8 @@ struct LitMaterial
 ### 4.3 Fog
 
 **RND-222** (MUST) Level fog is linear on the fog coordinate *c*, the view-space depth of the pixel (its distance along the view axis), evaluated per pixel (ADR-003). With the fog end *e* = max(`rnd.fog.min_end` (4000 wu), *X* + `rnd.fog.edge_margin` (1000 wu), *Z* + `rnd.fog.edge_margin`), where *X* and *Z* are the world's extents, and the fog start `rnd.fog.start_fraction` (1/3) × *e*, the fogged colour is lerp(fog colour, colour, *f*) with *f* = clamp((*e* − *c*) ÷ (*e* − start), 0, 1). Fog changes the colour only, never the alpha, and is applied before blending. The fog colour is the background colour `rnd.frame.clear_colour` (black), or `rnd.frame.clear_colour_inverted` (white) in the inverted style (see DEC-040). Because the background is black, distant terrain and structures fade to black: objects emerge from darkness.
+
+> **Amendment 2026-10-19 (O59).** In the world game *X* and *Z* are the side of one region, `wld.region.side` (5,120 wu), whatever the world's extent, so the fog end is *e* = 6,120 wu from the camera at every world size: distant terrain always fades to black, and the MVP's valley looks as the rule gives it today. The strategic view sets its own fog when it is designed (DEC-247).
 
 **RND-223** (MUST) Level fog is enabled for the terrain (pass 4), the flat sea layer and the waves (passes 5a and 5b) and the structures (passes 6 and 8).
 

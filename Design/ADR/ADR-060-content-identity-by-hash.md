@@ -46,7 +46,7 @@ Chosen option: "SHA-256 over cooked entries, combined in a content manifest".
 
 * A test reformats an authoring file (whitespace and line endings only), rebuilds, and expects an unchanged entry hash.
 * A test changes one statistic and expects a changed entry hash and a changed simulation content identity.
-* `Build\CheckProjectFiles.py` rejects source files that embed map content hashes ([build tooling](../architecture/components/build_tooling_and_distribution.md) table 4.1-B row 14, BLD-076).
+* `Build\CheckProjectFiles.py` rejects source files that embed map content hashes ([build tooling](../architecture/components/build_tooling_and_distribution/README.md) table 4.1-B row 14, BLD-076).
 
 ## Pros and Cons of the Options
 

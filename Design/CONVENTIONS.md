@@ -49,7 +49,7 @@ Every normative statement is a requirement with a stable ID, written as `**<PREF
 | `CAM` | Camera and sequences | `architecture/components/camera_and_sequences.md` |
 | `DAT` | Data schemas | `architecture/components/data_schemas/` |
 | `PLT` | Platform layer | `architecture/components/platform_layer.md` |
-| `BLD` | Build tooling and distribution | `architecture/components/build_tooling_and_distribution.md` |
+| `BLD` | Build tooling and distribution | `architecture/components/build_tooling_and_distribution/` |
 | `DBG` | Diagnostics, test and performance | `architecture/components/diagnostics_test_and_performance/` |
 | `PIL` | Species: vision, pillars and core loops | `gdd/00_vision_pillars_and_core_loops.md` |
 | `WLD` | Species: world and regions | `gdd/01_world_and_regions/` |
@@ -79,6 +79,7 @@ Every normative statement is a requirement with a stable ID, written as `**<PREF
 | `LWD` | Species component: large world | `architecture/components/large_world.md` |
 | `SEC` | Species component: security | `architecture/components/security.md` |
 | `TEL` | Species component: telemetry and privacy | `architecture/components/telemetry_and_privacy.md` |
+| `MVP` | Species implementation: the solo MVP scope | `implementation/mvp_scope.md` |
 
 Decisions use `DEC-NNN` (index: `decisions/README.md`), and architecture decisions use `ADR-NNN` (`ADR/ADR-NNN-<slug>.md`, AGENTS.md §6). Both are stable in the same way as requirement ids: never renumbered, never reused, and a decision that no longer applies becomes Dropped and keeps its id.
 
@@ -89,7 +90,7 @@ Decisions use `DEC-NNN` (index: `decisions/README.md`), and architecture decisio
 
 Every reference document has a **Tuning table** with the columns `key | value | unit | range or notes | requirement | DEC`. Keys are stable and dotted, for example `ref.unit.worker.move_speed`. Every number a rule uses appears exactly once in some tuning table; rules refer to the key and may repeat the value for readability.
 
-The Species design documents (the prefixes from `PIL` on) use the lower-case prefix of their document as the key root (`wld.region.size_max`, `dep.order.limit`, `srv.tick.budget_ms`) and add two columns to the tuning table: `status` (`final` or `provisional`) and a playtest note, required for a provisional value. A reference requirement that the Species design adopts keeps its `ref.` keys; one it adapts moves its numbers to Species keys (`gdd/adoption_ledger/`).
+The Species design documents (the prefixes from `PIL` on) use the lower-case prefix of their document as the key root (`wld.region.size_max`, `dep.order.limit`, `srv.tick.budget_ms`, and `mvp.` for the MVP scope) and add two columns to the tuning table: `status` (`final` or `provisional`) and a playtest note, required for a provisional value. A reference requirement that the Species design adopts keeps its `ref.` keys; one it adapts moves its numbers to Species keys (`gdd/adoption_ledger/`).
 
 ## 5 Units
 
@@ -650,7 +651,7 @@ Table 8.12-B Names by owner.
 | Platform layer (PLT) | — | data names | the settings file `settings.txt`; the user-data folders `maps\` and `diagnostics\` |
 | Build tooling and distribution (BLD) | `Engine` | types, files and macros | `BuildProduct` (`BuildProduct::Client`, `BuildProduct::Server`, `BuildProduct::ContentBuildTool`), `BuildConfiguration` (`Debug`, `Release`), `SemanticVersion`, `BuildIdentity`, `EditionId`, `ContentBuild`, `ContentBuildCommand` (`Build`, `Validate`, `Loose`, `StringsExport`, `StringsImport`), `ContentBuildStage` (`ResolveEditions`, `ReadInputs`, `CheckSources`, `Cook`, `Derive`, `Placeholders`, `CookRecordsAndGenerate`, `CheckReferences`, `SelectEditions`, `Localization`, `MapIdentities`, `WritePacks`, `WriteManifestsAndReports`, in stage order), `ContentBuildError`, `MapIdentityEntry`, `LanguageFindings`, `RunOptions`, `RunResult`; the generated header `BuildIdentityFields.h` (the build-identity constants, BLD-020; `BuildIdentity.h` is the hand-written header of `BuildIdentity`); the development switch `ENGINE_DEVELOPMENT` (ADR-056) |
 | Build tooling and distribution (BLD) | `Engine` | free functions | `CurrentBuildIdentity`, `DisplayVersion`, `FullIdentityText`, `VersionResourceQuad`, `ChannelTag` |
-| Build tooling and distribution (BLD) | — | data names | `species.exe`, `species_server.exe`, `species_contentbuild.exe`; `species_version.json`, `build_identity.json`, `channel_tag.txt`, `language_report.json`, `validation_report.json`, `placeholder_report.json`, `localisation_report.json`, `map_identities.json`; the product values `client`, `server` and `contentbuild` of the build identity; the edition ids `full`, `full_server`, `development`, `soak`; the feature flags `modes`, `crate_classes`, `tutorial`, `play_local_network`, `play_internet`, `map_editor`; the language groups `all`, `efigs`; the start-up switches `--write-build-identity`, `--verify-content` |
+| Build tooling and distribution (BLD) | — | data names | `Species.exe`, `SpeciesServer.exe`, `SpeciesContentBuild.exe`; `species_version.json`, `build_identity.json`, `channel_tag.txt`, `language_report.json`, `validation_report.json`, `placeholder_report.json`, `localisation_report.json`, `map_identities.json`; the product values `client`, `server` and `contentbuild` of the build identity; the edition ids `full`, `full_server`, `development`, `soak`; the feature flags `modes`, `crate_classes`, `tutorial`, `play_local_network`, `play_internet`, `map_editor`; the language groups `all`, `efigs`; the start-up switches `--write-build-identity`, `--verify-content` |
 | Diagnostics, test and performance (DBG) | `Engine` | types and macros | `LogLevel`, `LogCategory`, `LogStats`, `BlackBox`, `ProfileTree`, `ProfileNodeStats`, `ProfileNodeId`, `CounterProvider`, `CounterSink`, `DevDrawQueue`, `DevDrawItem`, `DevDrawItemId`, `SoakRunner`, `SoakEntry`, `SoakHost`, `SoakReport`; `ENGINE_ASSERT`, `ENGINE_CHECK`, `ENGINE_CHECK_INDEX`, `ENGINE_PROFILE_SCOPE`, `ENGINE_PROFILE_GPU_SCOPE`; the soak configuration records and `TelemetrySessionRecord` are the data schemas' |
 | Diagnostics, test and performance (DBG) | `Engine` | free functions | `Log`, `LogHexDump`, `LogValueDump`, `SetCategoryLevel`, `GetLogStats`, `FlushLogSynchronously`, `CheckFailed`, `FatalExit`, `RecentFrameTimesMs`, `RegisterCounterProvider`, `UnregisterCounterProvider`, `SubmitTelemetry` |
 | Diagnostics, test and performance (DBG) | `Species` | debug commands (game concepts, R9) | `DebugCommand`, `DebugCommandKind` (`KillAllEnemies`, `SpawnWorkers`, `SpawnTransport`, `SpawnCrawlers`, `SpawnEssenceOrbs`, `AllowArbitraryPlacement`, `SpawnAtStructurePorts`, `SpawnSupplyCrate`, in button order) |
@@ -703,10 +704,12 @@ The terms of the Species world game, which [the Species design](gdd/00_vision_pi
 | claim | relations | `Claim` | `relation.claim` |
 | core | world game | `SettlementCore` | `settlement.core` |
 | crossing | world object | `RegionCrossing` | `region.crossing` |
+| Crystal | world game | `ResourceKind::Crystal` | `resource.crystal` |
 | dedicated server | server | `ServerMode::Dedicated` | — |
 | defender's advantage | protection | `DefenderAdvantage` | `protection.defender_advantage` |
 | deputy | delegation | `Deputy` | `deputy` |
 | dormant | world game | `SettlementState::Dormant` | `settlement.dormant` |
+| dwelling | world object | `Dwelling` | `building.dwelling` |
 | expedition | world game | `Expedition` | `expedition` |
 | founding | world game | — (a player command; C1 names it) | `settlement.founding` |
 | frozen | world game | `WorldState::Frozen` | `world.frozen` |
@@ -734,6 +737,7 @@ The terms of the Species world game, which [the Species design](gdd/00_vision_pi
 | stand-in AI settlement | world game | `AiSettlementRole::StandIn` | `settlement.ai.stand_in` |
 | standing order | delegation | `StandingOrder` | `deputy.order` |
 | steward | role | `Steward` | `settlement.steward` |
+| storehouse | world object | `Storehouse` | `building.storehouse` |
 | strategic view | view | `StrategicView` | `view.strategic` |
 | strength | world game | `SettlementStrength` | — |
 | temperament | relations | `Temperament` | `cladan.temperament` |

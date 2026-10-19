@@ -50,7 +50,7 @@ Chosen option: "The Microsoft C++ Unit Test Framework, run by `vstest.console.ex
 
 * CI fails when a `<Project>Tests` project produced no DLL, and when `vstest.console.exe` reports a failure ([ADR-070](ADR-070-continuous-integration.md)).
 * `Build\CheckProjectFiles.py` checks that every library has a `<Project>Tests` project and that test projects use the `<Project>Tests` name and namespace.
-* `Build\CheckProjectFiles.py` checks that every test method carries an existing requirement id ([build tooling](../architecture/components/build_tooling_and_distribution.md) table 4.1-B row 14, DBG-140).
+* `Build\CheckProjectFiles.py` checks that every test method carries an existing requirement id ([build tooling](../architecture/components/build_tooling_and_distribution/README.md) table 4.1-B row 14, DBG-140).
 
 ## Pros and Cons of the Options
 

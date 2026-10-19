@@ -17,7 +17,7 @@ This document specifies the lower two layers of the UI framework and the widget 
 C++23 interface sketch (declarations only). Every type lives in namespace `Engine`; `StringId` is a Species string id, `ColorRgba` the RGBA colour of the engine types, and `DrawContext` the handle to the batched UI stream ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §2).
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 struct PanelId // UI-012
@@ -222,7 +222,7 @@ public:
   virtual bool ClampsOnSet() const = 0;
 };
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 **Events.** The UI core raises a tooltip request (panel, widget) every update while the tooltip delay has passed (UI-045), and a cleared tooltip (no panel, no widget) when hover ends. Widgets raise their own callbacks (a value refresh, a click). Front-end widgets request the screen transition from the renderer through `InitializeTransition(duration, direction)` ([frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-095) and trigger sound events of the match UI source ([reference/09](../../../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) R-META-018).
@@ -538,6 +538,8 @@ A percent sign is an ordinary character: no text path of the UI reads formatting
 3. the value text in the body role at size *m*(`ui.text.default_size` (12)), right-aligned: its draw point is x + w − *m*(measured width + `ui.field.box_padding` (7 px)) + `ui.field.value_offset` (2 px), y + `ui.field.value_baseline` (10 px), with the width measured by the text layout (ADR-034);
 4. while editing, the caret: a 1 px vertical line at the text's draw x + the measured advance of the text before the caret + `ui.field.value_offset`, from y + `ui.field.caret_margin` (2 px) to y + h − 2 px, visible while the fractional part of the time ÷ `ui.field.caret_blink_period` (1.0 s) is below `ui.field.caret_duty` (0.5).
 
+> **Amendment 2026-10-19 (ADR-034; O56).** By default the measured width of item 3 and the advance before the caret of item 4 come from the glyph tables of the drawn faces, not from a text layout ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-200).
+
 ### 4.17 Increment glyphs
 
 **UI-071** (MUST) An increment glyph (`UiIncrementGlyph`) steps its text field's value by its step while it is held:
@@ -789,7 +791,7 @@ The UI core counts, per frame, panels, widgets, clicks and cancelled presses for
 ## 8 Open decisions
 
 - **DEC-102** (Resolved): the corrections by construction stated in UI-024, UI-031, UI-034, UI-041, UI-042, UI-046, UI-048, UI-049, UI-051, UI-055, UI-059, UI-062, UI-064, UI-068, UI-071, UI-072, UI-075, UI-076, UI-077, UI-080, UI-083, UI-084, UI-085, UI-088, UI-089, UI-090, UI-106, UI-110, UI-111, UI-119 and UI-120.
-- **DEC-007** (Resolved) and **DEC-222** (Open): the UI never writes simulation state; a match-option binding only requests (UI-096; README UI-002).
+- **DEC-007** (Resolved) and **DEC-222** (Resolved, ADR-084): the UI never writes simulation state; a match-option binding only requests (UI-096; README UI-002).
 - **DEC-243** (Open): lobby authority; which participant confirms a match-option request (UI-097), and the host action that is disabled while hosting is not permitted (UI-055).
 - **DEC-244** (Open): the session password (UI-096).
 - **DEC-316** (Open): the transition that the page widgets start (UI-106).

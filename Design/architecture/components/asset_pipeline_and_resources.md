@@ -1,6 +1,6 @@
 # Asset pipeline and resources
 
-> Status: Engine baseline · Prefix: AST · ADRs: [ADR-017](../../ADR/ADR-017-texture-container-and-block-compression.md) · [ADR-018](../../ADR/ADR-018-texture-import-manifest.md) · [ADR-019](../../ADR/ADR-019-mesh-source-format-and-cooked-meshes.md) · [ADR-020](../../ADR/ADR-020-flat-shading-and-team-tint.md) · [ADR-021](../../ADR/ADR-021-mesh-socket-schema.md) · [ADR-025](../../ADR/ADR-025-audio-formats-codecs-and-residency.md) · [ADR-058](../../ADR/ADR-058-pack-files-and-mount-policy.md) · [ADR-059](../../ADR/ADR-059-content-build-and-validators.md) · [ADR-060](../../ADR/ADR-060-content-identity-by-hash.md) · [ADR-061](../../ADR/ADR-061-data-schemas-and-versioning.md) · also [ADR-003](../../ADR/ADR-003-shader-language-compiler-and-material-shaders.md), [ADR-006](../../ADR/ADR-006-root-signature-and-bindless-resource-access.md), [ADR-008](../../ADR/ADR-008-gpu-memory-uploads-and-device-removal.md), [ADR-013](../../ADR/ADR-013-working-colour-space-and-blending.md), [ADR-016](../../ADR/ADR-016-view-projection-and-depth-conventions.md), [ADR-034](../../ADR/ADR-034-text-rendering-and-glyph-cache.md), [ADR-056](../../ADR/ADR-056-products-configurations-and-feature-flags.md), [ADR-057](../../ADR/ADR-057-version-identity.md), [ADR-062](../../ADR/ADR-062-authoring-syntax-and-schema-language.md), [ADR-063](../../ADR/ADR-063-localisation.md), [ADR-071](../../ADR/ADR-071-install-layout-runtime-files-and-user-data.md), [ADR-078](../../ADR/ADR-078-gpu-resource-factory.md) · Related: [Renderer](renderer/README.md) · [Data schemas](data_schemas/README.md) · [Build tooling and distribution](build_tooling_and_distribution.md) · [Audio engine](audio_engine/README.md) · [Terrain](terrain/README.md) · [Game assets](../../assets/GameAssets.md) · [Asset manifest](../../assets/asset_manifest.csv) · [Assets README](../../assets/README.md)
+> Status: Engine baseline · Prefix: AST · ADRs: [ADR-017](../../ADR/ADR-017-texture-container-and-block-compression.md) · [ADR-018](../../ADR/ADR-018-texture-import-manifest.md) · [ADR-019](../../ADR/ADR-019-mesh-source-format-and-cooked-meshes.md) · [ADR-020](../../ADR/ADR-020-flat-shading-and-team-tint.md) · [ADR-021](../../ADR/ADR-021-mesh-socket-schema.md) · [ADR-025](../../ADR/ADR-025-audio-formats-codecs-and-residency.md) · [ADR-058](../../ADR/ADR-058-pack-files-and-mount-policy.md) · [ADR-059](../../ADR/ADR-059-content-build-and-validators.md) · [ADR-060](../../ADR/ADR-060-content-identity-by-hash.md) · [ADR-061](../../ADR/ADR-061-data-schemas-and-versioning.md) · also [ADR-003](../../ADR/ADR-003-shader-language-compiler-and-material-shaders.md), [ADR-006](../../ADR/ADR-006-root-signature-and-bindless-resource-access.md), [ADR-008](../../ADR/ADR-008-gpu-memory-uploads-and-device-removal.md), [ADR-013](../../ADR/ADR-013-working-colour-space-and-blending.md), [ADR-016](../../ADR/ADR-016-view-projection-and-depth-conventions.md), [ADR-034](../../ADR/ADR-034-text-rendering-and-glyph-cache.md), [ADR-056](../../ADR/ADR-056-products-configurations-and-feature-flags.md), [ADR-057](../../ADR/ADR-057-version-identity.md), [ADR-062](../../ADR/ADR-062-authoring-syntax-and-schema-language.md), [ADR-063](../../ADR/ADR-063-localisation.md), [ADR-071](../../ADR/ADR-071-install-layout-runtime-files-and-user-data.md), [ADR-078](../../ADR/ADR-078-gpu-resource-factory.md) · Related: [Renderer](renderer/README.md) · [Data schemas](data_schemas/README.md) · [Build tooling and distribution](build_tooling_and_distribution/README.md) · [Audio engine](audio_engine/README.md) · [Terrain](terrain/README.md) · [Game assets](../../assets/GameAssets.md) · [Asset manifest](../../assets/asset_manifest.csv) · [Assets README](../../assets/README.md)
 
 This component specifies how Species content travels from the authored source files under the content root `content/` to the resources a running client or server uses. At build time it covers the import records that fix every processing choice per asset (format, colour space, alpha mode, mip policy, sampler, team-tint mask); the texture, mesh, collision and audio cookers; derived assets and processing variants; the placeholder that the content build generates for every manifest row with no authored file; the build-time validators; the pack files with their table of contents; and content hashing. At run time it covers the mount set with its explicit override order, case-insensitive look-up and the loose-file mount of Debug builds; the asynchronous content reader over memory-mapped packs; the asset cache keyed by asset id and processing variant; the resident sound banks; and run-time generated textures. Its list of assets is [`assets/asset_manifest.csv`](../../assets/asset_manifest.csv), whose columns it consumes as §2.4 states.
 
@@ -19,7 +19,7 @@ Notation: a **key** is the canonical name of a pack entry (§3.1); an **asset id
 | content library | the pack file and its reader, the mount set and the asset index, the asynchronous content reader, content hashing and the simulation content identity, and the loads of data records, maps, collision assets and simulation data records (§4.10, §4.11, §4.13) | the client, the dedicated server and the tool projects |
 | client resource library | the asset cache with its textures, meshes and run-time textures, the sample cache, and the load groups (§4.12, §4.14, §4.15) | the client only; it builds on the content library and the renderer's GPU resource factory |
 
-The server therefore creates no GPU resource, sound bank or glyph page (AST-007, ADR-056); the projects that carry the two libraries are named in [build tooling and distribution](build_tooling_and_distribution.md).
+The server therefore creates no GPU resource, sound bank or glyph page (AST-007, ADR-056); the projects that carry the two libraries are named in [build tooling and distribution](build_tooling_and_distribution/README.md).
 
 **AST-003** (MUST NOT) No processing choice is made where an asset is requested. A requester names an asset id and, optionally, a variant that the asset's import record declares; it never passes processing flags, and no request changes what another requester receives (ADR-018, DEC-098).
 
@@ -36,7 +36,7 @@ Table 1-A Boundaries.
 | Neighbour | Gives the asset pipeline | Takes from it |
 |---|---|---|
 | [data schemas](data_schemas/README.md) (`DAT`) | the record schemas, the authoring parser, the import-record schemas, the map schema | cooked binary records with their schema id and version |
-| [build tooling and distribution](build_tooling_and_distribution.md) (`BLD`) | edition manifests, the solution's projects and its Debug and Release configurations (ADR-054, ADR-056), the CI jobs that run the content build | the packs, the mount manifest, the content manifest and the validation report |
+| [build tooling and distribution](build_tooling_and_distribution/README.md) (`BLD`) | edition manifests, the solution's projects and its Debug and Release configurations (ADR-054, ADR-056), the CI jobs that run the content build | the packs, the mount manifest, the content manifest and the validation report |
 | [renderer](renderer/README.md) (`RND`) | the GPU resource factory, through which the asset cache creates, uploads and releases its resources on the renderer's device and copy queue (RND-009, ADR-008, ADR-078); the tint function, the cut-out thresholds and the look constants that the cookers apply | cooked textures and meshes by (asset id, variant); texture views and their heap indices |
 | [audio engine](audio_engine/README.md) (`AEN`) | the streaming threshold, the samples per block of the streams and the memory budget of each bank (ADR-025); the bank loads that `LoadBank` requests (AEN-244) | resident sound banks and MS-ADPCM sound-stream entries |
 | [UI framework](ui_framework/README.md) (`UI`) | nothing | font files and string tables |
@@ -76,7 +76,7 @@ flowchart LR
 ### 2.1 Interface sketch
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 // ---- identity -------------------------------------------------------------------------
@@ -245,7 +245,7 @@ public:
   void Pump();                                                 // once per frame: completions and events
 };
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 **AST-008** (MUST) The interface is the one above in substance: requests take an asset id and an optional declared variant; every handle is reference counted; every result that can fail is a `std::expected` or carries `LoadState::Failed` with an `AssetError` that names the asset id, the key and the reason.
@@ -551,6 +551,8 @@ Table 3.11-A Other content types.
 | fonts `font.*` | OpenType fonts licensed for embedding | `Font`, stored unchanged; glyphs are rasterised at run time into `R8_UNORM` glyph-cache pages (ADR-034) | UI framework |
 | the asset index | generated by the pack writer (§3.13) | `AssetIndex`, one per pack | this component |
 
+> **Amendment 2026-10-19 (ADR-034; O56).** Fonts are hand-drawn glyph sheets and glyph tables, cooked into `R8_UNORM` atlas pages loaded from the pack and restored like textures; the OpenType rows of this file return with the DirectWrite upgrade.
+
 Shaders are not content: the solution build compiles them into the executable as byte arrays (ADR-003, AGENTS.md §2), so no pack holds a shader and the content build cooks none.
 
 **AST-052** (MUST) The cooked mesh is the versioned `MeshAsset` record of ADR-019, stored as a pack entry of content type `Mesh`; it has no file of its own and no container format other than the pack.
@@ -624,7 +626,7 @@ Table 3.13-A The baseline pack set.
 | Order | Pack id | Kind | Required | Contents |
 |---|---|---|---|---|
 | 1 | `startup` | base | yes | the art that the loading view draws before the other packs are mounted: `sprite.worker.front` and `uitex.studio_splash` |
-| 2 | `locale` | base | yes | the fonts and string tables of the edition's offered languages; a listed language that is not complete is withheld ([build tooling and distribution](build_tooling_and_distribution.md) BLD-081) |
+| 2 | `locale` | base | yes | the fonts and string tables of the edition's offered languages; a listed language that is not complete is withheld ([build tooling and distribution](build_tooling_and_distribution/README.md) BLD-081) |
 | 3 | `core` | base | yes | every other texture, mesh, collision asset, simulation data record, data record, map, thumbnail, explainer script and the map index |
 | 4 | `audio` | base | yes | the resident sounds and the sound streams |
 | 5 and later | `update_<nn>`, two-digit *nn* from 01 | update | as each update declares | entries that replace entries of the base packs that the update names, and new entries |
@@ -987,6 +989,8 @@ Table 5-A Baseline budgets.
 
 **AST-130** (SHOULD) A skirmish match is entered within `ast.load.match_entry_budget_s` (10 s), from the start of its match load to its first match frame, on the largest supported map: the terrain generation within its share `ter.perf.generation_budget_ms` ([terrain](terrain/README.md) TER-242), the pack reads, the GPU uploads and the match bank of the audio engine ([audio engine](audio_engine/README.md) AEN-102) included. The budget is provisional until DEC-226 sets the load targets; the load performance test T31 measures it, and until DEC-971 pins the reference test machine it reports the time and does not fail.
 
+> **Amendment 2026-10-18 (O55; MVP-011).** The MVP builds no skirmish (MVP-001); until it does, T31 reports the time to enter an MVP world, its terrain generation on the client included (MVP-011), and does not fail until DEC-226 sets the load targets.
+
 ## 6 Failure modes, diagnostics and telemetry
 
 | Failure | Detected | Behaviour | Requirement |
@@ -1060,9 +1064,9 @@ Golden-image tests use the default tolerance and reference configuration of the 
 | DEC-098 | Resolved | the cache keyed by asset id and variant (AST-003, AST-028, AST-031, AST-109) |
 | DEC-099 | Resolved | a language is offered only when complete (AST-088) |
 | DEC-100 | Resolved | settings defaults compiled into the build, so no pack is needed first (AST-057) |
-| DEC-204 | Open | how content identities are exchanged and what a mismatch does (AST-086, AST-100); custom-map identity (AST-063) |
-| DEC-224 | Open | the threads that run the asset jobs (AST-010, AST-011, AST-118) |
-| DEC-226 | Open | loading and streaming of world content (AST-009, AST-108, AST-112, AST-117, AST-118) |
+| DEC-204 | Resolved (ADR-088) | how content identities are exchanged and what a mismatch does (AST-086, AST-100); custom-map identity (AST-063) |
+| DEC-224 | Resolved (ADR-083) | the threads that run the asset jobs (AST-010, AST-011, AST-118) |
+| DEC-226 | Resolved (ADR-083) | loading and streaming of world content (AST-009, AST-108, AST-112, AST-117, AST-118) |
 | DEC-246 | Open | which terrain inputs a cooked map holds, and so what its hash covers (AST-099, table 3.11-A) |
 | DEC-317 | Open | one recording set, or one per language (AST-050) |
 | DEC-329 | Open | assets of objects that only rules create; the default counts them as referenced (AST-090) |
@@ -1072,7 +1076,7 @@ Golden-image tests use the default tolerance and reference configuration of the 
 | DEC-461 | Resolved | each turret type's sockets come from its own barrel mesh (AST-042) |
 | DEC-563 | Resolved | thumbnails and the map index are build outputs; no unreferenced asset is packaged (AST-086, AST-087, AST-090) |
 | DEC-801 | Resolved | duplicate keys and ids are build errors; declared maximum lengths (AST-014, AST-049, AST-092) |
-| DEC-971 | Open | the reference test machine of the budgets (AST-125) |
+| DEC-971 | Resolved (O58) | the reference test machine of the budgets (AST-125) |
 | ADR-017, ADR-018, ADR-019, ADR-020, ADR-021, ADR-025, ADR-058, ADR-059, ADR-060, ADR-061 | Accepted (ADR-025 Proposed) | the decisions this component implements |
 
 **Design-phase inputs.**

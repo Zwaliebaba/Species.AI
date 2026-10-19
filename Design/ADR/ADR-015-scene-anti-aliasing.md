@@ -80,3 +80,4 @@ Proposed option: **1, MSAA with Off, 2x and 4x settings**. **Default while Propo
 ## More Information
 
 - Related: ADR-003 (edge term), ADR-004 (resolve pass), ADR-005 (sample count in catalogue keys), ADR-012 (no multisampled back buffer), ADR-013 (per-layer clamping), ADR-014 (HDR scene format).
+- **Amendment 2026-10-18 (owner decision O55).** Since O55 the first playable of the "Confirmed when" line is the MVP's M3 build ([MVP scope](../implementation/mvp_scope.md) §3, §5.3), not the skirmish of O20, and the evidence is gathered on that build: the scene GPU time at 4x is measured in a battle of that build at the figure count of MVP-085 (1,500 figures on screen), on the minimum-capability GPU at 1080p.

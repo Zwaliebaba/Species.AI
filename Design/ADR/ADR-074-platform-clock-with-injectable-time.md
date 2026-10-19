@@ -43,7 +43,7 @@ Chosen option: "One process-relative monotonic clock behind an injectable time-s
 
 ### Confirmation
 
-* `Build\CheckProjectFiles.py` rejects direct calls to `QueryPerformanceCounter`, `GetTickCount64`, `timeGetTime` and `std::chrono` clocks outside the platform layer ([build tooling](../architecture/components/build_tooling_and_distribution.md) table 4.1-B row 14, PLT-003).
+* `Build\CheckProjectFiles.py` rejects direct calls to `QueryPerformanceCounter`, `GetTickCount64`, `timeGetTime` and `std::chrono` clocks outside the platform layer ([build tooling](../architecture/components/build_tooling_and_distribution/README.md) table 4.1-B row 14, PLT-003).
 * A test runs the frame loop on the manual source and checks the exact sequence of tick-scheduling decisions.
 * A test changes the system time-zone and calendar time during a run and checks that no timing behaviour changes.
 

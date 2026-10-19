@@ -4,7 +4,7 @@
 
 Entries live in the files listed below; add a decision to the file of its area, in the format of [CONVENTIONS](../CONVENTIONS.md) §7, and add its row to the index of that file and to the index below. **Open** decisions state the behaviour the documents specify now (the reference default), so implementation never blocks on them. **Resolved** decisions state the fixed rule. **Dropped** entries record out-of-scope items and what Species does instead. Decisions marked "Decide by: design phase" are answered by the Species design phase.
 
-Totals: **302** decisions: 139 Open, 135 Resolved, 28 Dropped.
+Totals: **302** decisions: 118 Open, 156 Resolved, 28 Dropped.
 
 The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner_decisions.md](owner_decisions.md).
 
@@ -164,28 +164,28 @@ The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner
 | DEC-122 | [Bot and deputy actions outside the player command catalogue](verdicts_and_fixes_2.md#dec-122-bot-and-deputy-actions-outside-the-player-command-catalogue) | Open | verdicts_and_fixes_2.md |
 | DEC-123 | [Tutorial for the first playable](verdicts_and_fixes_2.md#dec-123-tutorial-for-the-first-playable) | Open | verdicts_and_fixes_2.md |
 | DEC-124 | [Proportional Catch-up bonus curve](verdicts_and_fixes_2.md#dec-124-proportional-catch-up-bonus-curve) | Resolved | verdicts_and_fixes_2.md |
-| DEC-200 | [Replication and authority model](deferred/networking.md#dec-200-replication-and-authority-model) | Open | deferred/networking.md |
-| DEC-201 | [Replication bandwidth and population budget](deferred/networking.md#dec-201-replication-bandwidth-and-population-budget) | Open | deferred/networking.md |
-| DEC-202 | [Command validation and authority](deferred/networking.md#dec-202-command-validation-and-authority) | Open | deferred/networking.md |
-| DEC-203 | [Input timing, coalescing and latency](deferred/networking.md#dec-203-input-timing-coalescing-and-latency) | Open | deferred/networking.md |
-| DEC-204 | [Content and version identity](deferred/networking.md#dec-204-content-and-version-identity) | Open | deferred/networking.md |
-| DEC-205 | [Join, reconnect, leave and session continuity](deferred/networking.md#dec-205-join-reconnect-leave-and-session-continuity) | Open | deferred/networking.md |
-| DEC-206 | [Divergence detection and integrity checking](deferred/networking.md#dec-206-divergence-detection-and-integrity-checking) | Open | deferred/networking.md |
-| DEC-207 | [Transport, message format and robustness](deferred/networking.md#dec-207-transport-message-format-and-robustness) | Open | deferred/networking.md |
-| DEC-208 | [Network diagnostics and test tooling](deferred/networking.md#dec-208-network-diagnostics-and-test-tooling) | Open | deferred/networking.md |
+| DEC-200 | [Replication and authority model](deferred/networking.md#dec-200-replication-and-authority-model) | Resolved | deferred/networking.md |
+| DEC-201 | [Replication bandwidth and population budget](deferred/networking.md#dec-201-replication-bandwidth-and-population-budget) | Resolved | deferred/networking.md |
+| DEC-202 | [Command validation and authority](deferred/networking.md#dec-202-command-validation-and-authority) | Resolved | deferred/networking.md |
+| DEC-203 | [Input timing, coalescing and latency](deferred/networking.md#dec-203-input-timing-coalescing-and-latency) | Resolved | deferred/networking.md |
+| DEC-204 | [Content and version identity](deferred/networking.md#dec-204-content-and-version-identity) | Resolved | deferred/networking.md |
+| DEC-205 | [Join, reconnect, leave and session continuity](deferred/networking.md#dec-205-join-reconnect-leave-and-session-continuity) | Resolved | deferred/networking.md |
+| DEC-206 | [Divergence detection and integrity checking](deferred/networking.md#dec-206-divergence-detection-and-integrity-checking) | Resolved | deferred/networking.md |
+| DEC-207 | [Transport, message format and robustness](deferred/networking.md#dec-207-transport-message-format-and-robustness) | Resolved | deferred/networking.md |
+| DEC-208 | [Network diagnostics and test tooling](deferred/networking.md#dec-208-network-diagnostics-and-test-tooling) | Resolved | deferred/networking.md |
 | DEC-220 | [Process roles and the headless server build](deferred/process_tick_and_roadmap.md#dec-220-process-roles-and-the-headless-server-build) | Open | deferred/process_tick_and_roadmap.md |
-| DEC-221 | [Composition root, service lifetimes and the application state machine](deferred/process_tick_and_roadmap.md#dec-221-composition-root-service-lifetimes-and-the-application-state-machine) | Open | deferred/process_tick_and_roadmap.md |
-| DEC-222 | [Simulation and presentation boundary](deferred/process_tick_and_roadmap.md#dec-222-simulation-and-presentation-boundary) | Open | deferred/process_tick_and_roadmap.md |
-| DEC-223 | [World, region and match state ownership and reset](deferred/process_tick_and_roadmap.md#dec-223-world-region-and-match-state-ownership-and-reset) | Open | deferred/process_tick_and_roadmap.md |
-| DEC-224 | [Threading and job model](deferred/process_tick_and_roadmap.md#dec-224-threading-and-job-model) | Open | deferred/process_tick_and_roadmap.md |
-| DEC-225 | [Frame loop, simulation pacing and catch-up](deferred/process_tick_and_roadmap.md#dec-225-frame-loop-simulation-pacing-and-catch-up) | Open | deferred/process_tick_and_roadmap.md |
-| DEC-226 | [Loading, streaming and asynchronous work](deferred/process_tick_and_roadmap.md#dec-226-loading-streaming-and-asynchronous-work) | Open | deferred/process_tick_and_roadmap.md |
-| DEC-227 | [Simulation tick rate](deferred/process_tick_and_roadmap.md#dec-227-simulation-tick-rate) | Open | deferred/process_tick_and_roadmap.md |
-| DEC-228 | [Per-tick CPU budget, population caps and stress populations](deferred/process_tick_and_roadmap.md#dec-228-per-tick-cpu-budget-population-caps-and-stress-populations) | Open | deferred/process_tick_and_roadmap.md |
+| DEC-221 | [Composition root, service lifetimes and the application state machine](deferred/process_tick_and_roadmap.md#dec-221-composition-root-service-lifetimes-and-the-application-state-machine) | Resolved | deferred/process_tick_and_roadmap.md |
+| DEC-222 | [Simulation and presentation boundary](deferred/process_tick_and_roadmap.md#dec-222-simulation-and-presentation-boundary) | Resolved | deferred/process_tick_and_roadmap.md |
+| DEC-223 | [World, region and match state ownership and reset](deferred/process_tick_and_roadmap.md#dec-223-world-region-and-match-state-ownership-and-reset) | Resolved | deferred/process_tick_and_roadmap.md |
+| DEC-224 | [Threading and job model](deferred/process_tick_and_roadmap.md#dec-224-threading-and-job-model) | Resolved | deferred/process_tick_and_roadmap.md |
+| DEC-225 | [Frame loop, simulation pacing and catch-up](deferred/process_tick_and_roadmap.md#dec-225-frame-loop-simulation-pacing-and-catch-up) | Resolved | deferred/process_tick_and_roadmap.md |
+| DEC-226 | [Loading, streaming and asynchronous work](deferred/process_tick_and_roadmap.md#dec-226-loading-streaming-and-asynchronous-work) | Resolved | deferred/process_tick_and_roadmap.md |
+| DEC-227 | [Simulation tick rate](deferred/process_tick_and_roadmap.md#dec-227-simulation-tick-rate) | Resolved | deferred/process_tick_and_roadmap.md |
+| DEC-228 | [Per-tick CPU budget, population caps and stress populations](deferred/process_tick_and_roadmap.md#dec-228-per-tick-cpu-budget-population-caps-and-stress-populations) | Resolved | deferred/process_tick_and_roadmap.md |
 | DEC-229 | [Build order, milestones and work breakdown](deferred/process_tick_and_roadmap.md#dec-229-build-order-milestones-and-work-breakdown) | Open | deferred/process_tick_and_roadmap.md |
-| DEC-240 | [Simulation numeric model and determinism scope](deferred/numerics_lobby_terrain_services.md#dec-240-simulation-numeric-model-and-determinism-scope) | Open | deferred/numerics_lobby_terrain_services.md |
-| DEC-241 | [Numeric semantics that reference rules depend on](deferred/numerics_lobby_terrain_services.md#dec-241-numeric-semantics-that-reference-rules-depend-on) | Open | deferred/numerics_lobby_terrain_services.md |
-| DEC-242 | [Simulation random generator algorithm and stream derivation](deferred/numerics_lobby_terrain_services.md#dec-242-simulation-random-generator-algorithm-and-stream-derivation) | Open | deferred/numerics_lobby_terrain_services.md |
+| DEC-240 | [Simulation numeric model and determinism scope](deferred/numerics_lobby_terrain_services.md#dec-240-simulation-numeric-model-and-determinism-scope) | Resolved | deferred/numerics_lobby_terrain_services.md |
+| DEC-241 | [Numeric semantics that reference rules depend on](deferred/numerics_lobby_terrain_services.md#dec-241-numeric-semantics-that-reference-rules-depend-on) | Resolved | deferred/numerics_lobby_terrain_services.md |
+| DEC-242 | [Simulation random generator algorithm and stream derivation](deferred/numerics_lobby_terrain_services.md#dec-242-simulation-random-generator-algorithm-and-stream-derivation) | Resolved | deferred/numerics_lobby_terrain_services.md |
 | DEC-243 | [Lobby authority and the match-setup state](deferred/numerics_lobby_terrain_services.md#dec-243-lobby-authority-and-the-match-setup-state) | Open | deferred/numerics_lobby_terrain_services.md |
 | DEC-244 | [Session join, admission, reconnection and spectators](deferred/numerics_lobby_terrain_services.md#dec-244-session-join-admission-reconnection-and-spectators) | Open | deferred/numerics_lobby_terrain_services.md |
 | DEC-245 | [Session discovery, the advertised session record and the session browser](deferred/numerics_lobby_terrain_services.md#dec-245-session-discovery-the-advertised-session-record-and-the-session-browser) | Open | deferred/numerics_lobby_terrain_services.md |
@@ -340,5 +340,5 @@ The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner
 | DEC-968 | [Content-build validation of terrain, map and record data](engine_gap_rules.md#dec-968-content-build-validation-of-terrain-map-and-record-data) | Resolved | engine_gap_rules.md |
 | DEC-969 | [Co-op group lists in ascending position order](engine_gap_rules.md#dec-969-co-op-group-lists-in-ascending-position-order) | Open | engine_gap_rules.md |
 | DEC-970 | [System summary and crash-context records](engine_gap_rules.md#dec-970-system-summary-and-crash-context-records) | Resolved | engine_gap_rules.md |
-| DEC-971 | [Reference test machine and minimum-specification hardware](engine_gap_rules.md#dec-971-reference-test-machine-and-minimum-specification-hardware) | Open | engine_gap_rules.md |
+| DEC-971 | [Reference test machine and minimum-specification hardware](engine_gap_rules.md#dec-971-reference-test-machine-and-minimum-specification-hardware) | Resolved | engine_gap_rules.md |
 | DEC-972 | [What the cheats-used marker suppresses](engine_gap_rules.md#dec-972-what-the-cheats-used-marker-suppresses) | Open | engine_gap_rules.md |

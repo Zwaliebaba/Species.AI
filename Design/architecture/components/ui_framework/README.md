@@ -2,7 +2,7 @@
 
 > Status: Engine baseline · Prefix: UI · ADRs: [ADR-030](../../../ADR/ADR-030-ui-framework-build-or-buy.md), [ADR-031](../../../ADR/ADR-031-batched-ui-rendering.md), [ADR-032](../../../ADR/ADR-032-ui-focus-graph-page-stack-and-input.md), [ADR-033](../../../ADR/ADR-033-ui-layout-scaling-and-dpi.md), [ADR-034](../../../ADR/ADR-034-text-rendering-and-glyph-cache.md), [ADR-063](../../../ADR/ADR-063-localisation.md), [ADR-064](../../../ADR/ADR-064-accessibility-baseline-xag.md), [ADR-028](../../../ADR/ADR-028-input-device-back-ends.md), [ADR-029](../../../ADR/ADR-029-input-event-model-and-binding-contract.md), [ADR-075](../../../ADR/ADR-075-application-window-and-dpi-awareness.md)
 
-This folder specifies the Species UI framework: a retained, batched UI with typed widget handles, an explicit focus graph for gamepad and keyboard navigation, screen-fraction layout with DPI and UI scale, and text drawn from a glyph cache over licensed fonts. It is the engine baseline that every menu, dialog, options screen, lobby and HUD window of the reference library is built on.
+This folder specifies the Species UI framework: a retained, batched UI with typed widget handles, an explicit focus graph for gamepad and keyboard navigation, screen-fraction layout with DPI and UI scale, and text drawn from authored glyph atlases of two bitmap faces drawn for Species (ADR-034 as amended 2026-10-19, O56), with DirectWrite and a glyph cache as the recorded upgrade. It is the engine baseline that every menu, dialog, options screen, lobby and HUD window of the reference library is built on.
 
 ## Documents of this folder
 
@@ -29,7 +29,7 @@ The framework is engine code in namespace `Engine`, except what is typed by the 
 
 **UI-002** (MUST NOT) The UI framework never writes simulation state. It reads only the presentation state it is given (DEC-007), every player intent it produces leaves it as a player command of the command catalogue ([reference/12](../../../reference/12_simulation_model/06_teams_and_player_commands.md)), and an option widget bound to a shared match option only requests a change (§3, [core_and_widgets.md](core_and_widgets.md) §4.23). How the build enforces this boundary, and whether the UI reads per-tick snapshots, is the design phase's decision (DEC-222); until then the UI reads the read-only presentation view that DEC-222 option A describes and never includes a simulation header that grants write access.
 
-**UI-003** (MUST NOT) The UI framework draws nothing directly to the GPU and owns no GPU resource of its own except the glyph-cache atlas pages, which it creates through the renderer's `Engine::GpuResourceFactory` ([renderer](../renderer/README.md) §2, ADR-078) and never through the device: widgets emit quads, gradients, lines and glyph runs into the batched UI stream ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §4.6; ADR-031), which the renderer records in its UI passes.
+**UI-003** (MUST NOT) The UI framework draws nothing directly to the GPU and owns no GPU resource of its own except the glyph-cache atlas pages, which it creates through the renderer's `Neuron::GpuResourceFactory` ([renderer](../renderer/README.md) §2, ADR-078) and never through the device: widgets emit quads, gradients, lines and glyph runs into the batched UI stream ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §4.6; ADR-031), which the renderer records in its UI passes.
 
 **UI-004** (MUST NOT) The UI framework does not own the window, the swap chain, the binding system or the string-table file format. The platform layer owns the application window and reports size, DPI and focus changes (ADR-075); the renderer owns presentation and the screen transition ([frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-095); the input component owns devices, bindings and the input mode (ADR-029, [input](../input/README.md)); the data schemas own the string-table schema and its markup syntax ([data schemas](../data_schemas/README.md)).
 
@@ -149,10 +149,10 @@ The type, ownership and lifetime of every UI object are listed in [core_and_widg
 - **DEC-007** (Resolved): presentation never writes simulation state (UI-002).
 - **DEC-102** (Resolved): the framework corrections by construction (UI-014).
 - **DEC-099** (Resolved): per-id fallback to the base language (UI-018; [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §4.11).
-- **DEC-221** (Open): the composition root, service lifetimes and the application state machine; the UI core's owner and lifetime follow it (UI-005).
-- **DEC-222** (Open): the simulation and presentation boundary; how the UI's read-only view of the match is enforced and fed (UI-002).
+- **DEC-221** (Resolved, ADR-083): the composition root, service lifetimes and the application state machine; the UI core's owner and lifetime follow it (UI-005).
+- **DEC-222** (Resolved, ADR-084): the simulation and presentation boundary; how the UI's read-only view of the match is enforced and fed (UI-002).
 - **DEC-045** (Open): a map editor, whose windows would be tool windows of the UI window layer (UI-001).
-- ADR-030 is Accepted (an own retained framework); ADR-034 is Proposed, and the default it names is the baseline of this folder.
+- ADR-030 is Accepted (an own retained framework); ADR-034 is Proposed, and the default it names is the baseline of this folder: since the amendment of 2026-10-19 (O56), the authored glyph atlases of the two drawn faces, which the dated notes of [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §4.9 state, with DirectWrite as the recorded upgrade.
 
 **Design-phase inputs.**
 

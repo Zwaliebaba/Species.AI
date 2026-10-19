@@ -35,26 +35,26 @@
 | DEC-865 | Map data without a reference case | Resolved (A1, 2026-10-18) | A1 |  | Affects | decisions/gameplay_gap_rules.md |
 | DEC-866 | Population-cap values of a map | Resolved (A1, 2026-10-18) | A1 |  | Affects | decisions/gameplay_gap_rules.md |
 | DEC-966 | Terrain query edge cases | Resolved (A1, 2026-10-18) | A1 |  | Affects | decisions/engine_gap_rules.md |
-| DEC-200 | Replication and authority model | design phase | A2 | D2, B7, B9, D1, D10 | deferred topic: Networking model | decisions/deferred/networking.md |
-| DEC-201 | Replication bandwidth and population budget | design phase | A2 | B1, D2, D10 | deferred topic: Networking model | decisions/deferred/networking.md |
-| DEC-202 | Command validation and authority | design phase | A2 | D2, C1, C2, D10 | deferred topic: Networking model | decisions/deferred/networking.md |
-| DEC-203 | Input timing, coalescing and latency | design phase | A2 | D2, C1 | deferred topic: Networking model | decisions/deferred/networking.md |
-| DEC-204 | Content and version identity | design phase | A2 | A1, E2, D1, D4 | deferred topic: Networking model | decisions/deferred/networking.md |
-| DEC-205 | Join, reconnect, leave and session continuity | design phase | A2 | B9, C2 | deferred topic: Networking model | decisions/deferred/networking.md |
-| DEC-206 | Divergence detection and integrity checking | design phase | A2 | D2, D10 | deferred topic: Networking model | decisions/deferred/networking.md |
-| DEC-207 | Transport, message format and robustness | design phase | A2 | D1, D4, A1 | deferred topic: Networking model | decisions/deferred/networking.md |
-| DEC-208 | Network diagnostics and test tooling | design phase | A2 | D10 | deferred topic: Networking model | decisions/deferred/networking.md |
-| DEC-221 | Composition root, service lifetimes and the application state machine | design phase | A2 | D1, C2, C4, D2 | deferred topic: Simulation threading and process architecture | decisions/deferred/process_tick_and_roadmap.md |
-| DEC-222 | Simulation and presentation boundary | design phase | A2 | D2, D8, C4, C2, C1, D1 | deferred topic: Simulation threading and process architecture | decisions/deferred/process_tick_and_roadmap.md |
-| DEC-223 | World, region and match state ownership and reset | design phase | A2 | D2, D4 | deferred topic: Simulation threading and process architecture | decisions/deferred/process_tick_and_roadmap.md |
-| DEC-224 | Threading and job model | design phase | A2 | D2, D1, D8, C4, E2, D10 | deferred topic: Simulation threading and process architecture | decisions/deferred/process_tick_and_roadmap.md |
-| DEC-225 | Frame loop, simulation pacing and catch-up | design phase | A2 | D2, C2, D1, D10 | deferred topic: Simulation threading and process architecture | decisions/deferred/process_tick_and_roadmap.md |
-| DEC-226 | Loading, streaming and asynchronous work | design phase | A2 | E2, D8, C4, A1, C2 | deferred topic: Simulation threading and process architecture | decisions/deferred/process_tick_and_roadmap.md |
-| DEC-227 | Simulation tick rate | design phase | A2 | D2 | deferred topic: Tick rate | decisions/deferred/process_tick_and_roadmap.md |
-| DEC-228 | Per-tick CPU budget, population caps and stress populations | design phase | A2 | D10, D8, B1, D2, B9 | deferred topic: Tick rate | decisions/deferred/process_tick_and_roadmap.md |
-| DEC-240 | Simulation numeric model and determinism scope | design phase | A2 | D2, A1, D4, D1, D10 | deferred topic: Simulation numeric model | decisions/deferred/numerics_lobby_terrain_services.md |
-| DEC-241 | Numeric semantics that reference rules depend on | design phase | A2 | D2, B4, B3, D4, C2, D1 | deferred topic: Simulation numeric model | decisions/deferred/numerics_lobby_terrain_services.md |
-| DEC-242 | Simulation random generator algorithm and stream derivation | design phase | A2 | D2 | deferred topic: Simulation numeric model | decisions/deferred/numerics_lobby_terrain_services.md |
+| DEC-200 | Replication and authority model | Resolved (A2, 2026-10-19) | A2 | D2, B7, B9, D1, D10 | deferred topic: Networking model | decisions/deferred/networking.md |
+| DEC-201 | Replication bandwidth and population budget | Resolved (A2, 2026-10-19) | A2 | B1, D2, D10 | deferred topic: Networking model | decisions/deferred/networking.md |
+| DEC-202 | Command validation and authority | Resolved (A2, 2026-10-19) | A2 | D2, C1, C2, D10 | deferred topic: Networking model | decisions/deferred/networking.md |
+| DEC-203 | Input timing, coalescing and latency | Resolved (A2, 2026-10-19) | A2 | D2, C1 | deferred topic: Networking model | decisions/deferred/networking.md |
+| DEC-204 | Content and version identity | Resolved (A2, 2026-10-19) | A2 | A1, E2, D1, D4 | deferred topic: Networking model | decisions/deferred/networking.md |
+| DEC-205 | Join, reconnect, leave and session continuity | Resolved (A2, 2026-10-19) | A2 | B9, C2 | deferred topic: Networking model | decisions/deferred/networking.md |
+| DEC-206 | Divergence detection and integrity checking | Resolved (A2, 2026-10-19) | A2 | D2, D10 | deferred topic: Networking model | decisions/deferred/networking.md |
+| DEC-207 | Transport, message format and robustness | Resolved (A2, 2026-10-19) | A2 | D1, D4, A1 | deferred topic: Networking model | decisions/deferred/networking.md |
+| DEC-208 | Network diagnostics and test tooling | Resolved (A2, 2026-10-19) | A2 | D10 | deferred topic: Networking model | decisions/deferred/networking.md |
+| DEC-221 | Composition root, service lifetimes and the application state machine | Resolved (A2, 2026-10-19) | A2 | D1, C2, C4, D2 | deferred topic: Simulation threading and process architecture | decisions/deferred/process_tick_and_roadmap.md |
+| DEC-222 | Simulation and presentation boundary | Resolved (A2, 2026-10-19) | A2 | D2, D8, C4, C2, C1, D1 | deferred topic: Simulation threading and process architecture | decisions/deferred/process_tick_and_roadmap.md |
+| DEC-223 | World, region and match state ownership and reset | Resolved (A2, 2026-10-19) | A2 | D2, D4 | deferred topic: Simulation threading and process architecture | decisions/deferred/process_tick_and_roadmap.md |
+| DEC-224 | Threading and job model | Resolved (A2, 2026-10-19) | A2 | D2, D1, D8, C4, E2, D10 | deferred topic: Simulation threading and process architecture | decisions/deferred/process_tick_and_roadmap.md |
+| DEC-225 | Frame loop, simulation pacing and catch-up | Resolved (A2, 2026-10-19) | A2 | D2, C2, D1, D10 | deferred topic: Simulation threading and process architecture | decisions/deferred/process_tick_and_roadmap.md |
+| DEC-226 | Loading, streaming and asynchronous work | Resolved (A2, 2026-10-19) | A2 | E2, D8, C4, A1, C2 | deferred topic: Simulation threading and process architecture | decisions/deferred/process_tick_and_roadmap.md |
+| DEC-227 | Simulation tick rate | Resolved (A2, 2026-10-19) | A2 | D2 | deferred topic: Tick rate | decisions/deferred/process_tick_and_roadmap.md |
+| DEC-228 | Per-tick CPU budget, population caps and stress populations | Resolved (A2, 2026-10-19) | A2 | D10, D8, B1, D2, B9 | deferred topic: Tick rate | decisions/deferred/process_tick_and_roadmap.md |
+| DEC-240 | Simulation numeric model and determinism scope | Resolved (A2, 2026-10-19) | A2 | D2, A1, D4, D1, D10 | deferred topic: Simulation numeric model | decisions/deferred/numerics_lobby_terrain_services.md |
+| DEC-241 | Numeric semantics that reference rules depend on | Resolved (A2, 2026-10-19) | A2 | D2, B4, B3, D4, C2, D1 | deferred topic: Simulation numeric model | decisions/deferred/numerics_lobby_terrain_services.md |
+| DEC-242 | Simulation random generator algorithm and stream derivation | Resolved (A2, 2026-10-19) | A2 | D2 | deferred topic: Simulation numeric model | decisions/deferred/numerics_lobby_terrain_services.md |
 | DEC-084 | Hive Essence orbs and Hive ants | playtest | B1 | B4, B3 | Affects | decisions/verdicts_and_fixes_3.md |
 | DEC-453 | Population-cap enforcement points and uncapped sources | playtest | B1 | B4, B3 | Affects | decisions/units_buildings_crates_economy.md |
 | DEC-851 | Population-flow rule details | playtest | B1 |  | Affects | decisions/gameplay_gap_rules.md |
@@ -145,7 +145,7 @@
 | DEC-870 | Tutorial director details | design phase | C5 |  | Affects | decisions/gameplay_gap_rules.md |
 | DEC-220 | Process roles and the headless server build | design phase | D1 | D10, D2 | deferred topic: Hosting | decisions/deferred/process_tick_and_roadmap.md |
 | DEC-229 | Build order, milestones and work breakdown | design phase | D10 | D1 | Affects | decisions/deferred/process_tick_and_roadmap.md |
-| DEC-971 | Reference test machine and minimum-specification hardware | design phase | D10 | D8, E2, D1, C4, C1, C2, D4, A1 | Affects | decisions/engine_gap_rules.md |
+| DEC-971 | Reference test machine and minimum-specification hardware | Resolved (owner, O58, 2026-10-19) | D10 | D8, E2, D1, C4, C1, C2, D4, A1 | Affects | decisions/engine_gap_rules.md |
 | DEC-972 | What the cheats-used marker suppresses | design phase | D10 | C2 | Affects | decisions/engine_gap_rules.md |
 | DEC-003 | Mode-second length after playtest | playtest | D2 | B9, B1 | Affects | decisions/verdicts_and_fixes.md |
 | DEC-046 | Replays | design phase | D2 | C2, D10 | Affects | decisions/verdicts_and_fixes.md |

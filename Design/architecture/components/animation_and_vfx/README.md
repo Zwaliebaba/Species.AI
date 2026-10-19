@@ -46,6 +46,8 @@ Caption: the runtime reads the simulation's snapshot and events and feeds the re
 4. **effect objects**: the laser bolts and the effects of the match world (shockwave rings, lightning strikes, snowflakes and the others of [renderer/entity_and_overlay_renderers.md](../renderer/entity_and_overlay_renderers.md) RND-332), which the simulation advances and the renderer and this component draw ([particles](particles_shatter_and_screen_effects.md) §4.9);
 5. **2-D key-framed explainer animations** ([procedural animation](explainers_sprites_and_procedural_animation.md) §4.1) and **screen-space effects**: camera shake and full-screen flashes ([particles](particles_shatter_and_screen_effects.md) §4.11).
 
+> **Amendment 2026-10-18 (ADR-084).** Simulation motion is drawn at the interpolation of the renderer's RND-081 amendment, from the snapshot that the client session builds from its replica (ADR-084 items 3 and 4). Every extrapolated position and extrapolation time in this component's rules reads as that interpolated position and the interpolation fraction × `ref.sim.tick_period`, and the objects drawn one tick behind are drawn at the common display time (RND-082 amendment). Effect events are the server's presentation events, filtered by the client's interest, and a droppable one older than 500 ms is not played (item 5).
+
 **VFX-002** (MUST) The pass order, the blend, depth and cull state of every pass, and the catalogue entries of the passes that the renderer owns are those of [renderer/frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-070 and [renderer/entity_and_overlay_renderers.md](../renderer/entity_and_overlay_renderers.md) RND-308. This component owns the behaviour of the effects (what is spawned, when, how it moves, how it fades), the drawing of passes 11 (Essence orbs), 14 (shatter debris) and 15 (particles), the Worker ground-shadow values of pass 7d, the damage-flicker transform, the cloth-flag draws, and the catalogue entries of §3.5. The behaviour that drives an effect (states, targets, damage) belongs to the reference documents that [particles](particles_shatter_and_screen_effects.md) table 4.7-A names for each effect.
 
 ### 1.2 Ownership and neighbours
@@ -135,7 +137,7 @@ Caption: the runtime reads the simulation's snapshot and events and feeds the re
 The interface below is a C++23 declaration sketch, not an implementation. The clocks, the particle pool with its particle-type ids, the shatter effects and the screen effects are engine code in namespace `Engine`. The effect kinds and effect events, the particle kinds, the explainer player and the runtime that turns the game's snapshot and events into engine calls name game concepts (the simulation's objects and events, the team palette, the mode explainers), so they are game-layer presentation code in `Species`, built on those engine types (`AGENTS.md` R9). `TimeSource` is the platform layer's (ADR-074), `AssetId` the asset pipeline's, `PassContext`, `FrameView`, `ColorRgba`, `GpuResourceFactory` and the instanced batches `CrowdRenderer` and `MeshRenderer` the renderer's, `PresentationSnapshot` and its match-setup record `MatchSetupView` the game's presentation snapshot ([renderer/README.md](../renderer/README.md) §3.5, RND-018, RND-019), `DrawContext` the UI framework's handle to the batched UI stream, and `ExplainerAnimation` and `LoadError` the data schemas'; a pass is named by its id in the renderer's pass table (RND-070).
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 struct PresentationTime // §3.1
@@ -220,7 +222,7 @@ public:
   void RecordFlash(PassContext& _pass10a) const;
 };
 
-} // namespace Engine
+} // namespace Neuron
 
 namespace Species
 {
@@ -239,16 +241,16 @@ struct EffectEvent
   EffectKind kind;
   EffectEventId id;
   SimObjectId subject; // the object the effect follows or comes from
-  Engine::Vec3 position;
-  Engine::Vec3 velocity;
-  Engine::Vec3 direction;
+  Neuron::Vec3 position;
+  Neuron::Vec3 velocity;
+  Neuron::Vec3 direction;
   std::uint8_t colorId = 0xFF; // team colour id (RND-016); 0xFF = none
   float a = 0.0f;              // kind-specific scalars of particles table 4.7-A
   float b = 0.0f;
-  std::optional<Engine::ShatterPayload> shatter; // EffectKind::Shatter (particles §4.10)
+  std::optional<Neuron::ShatterPayload> shatter; // EffectKind::Shatter (particles §4.10)
 };
 
-// Particles table 4.2-A, in this order; each kind names one row of the pool's particle-type table (Engine::ParticleTypeId).
+// Particles table 4.2-A, in this order; each kind names one row of the pool's particle-type table (Neuron::ParticleTypeId).
 enum class ParticleKind : std::uint8_t
 {
   RocketTrail,
@@ -272,15 +274,15 @@ enum class ParticleKind : std::uint8_t
 
 struct ExplainerTeamColors // the colours that the friendly and enemy roles resolve to (R-META-227, VFX-109)
 {
-  Engine::ColorRgba friendly; // the local team's colour
-  Engine::ColorRgba enemy;    // the first team slot that is not a friend of the local team; white when none
+  Neuron::ColorRgba friendly; // the local team's colour
+  Neuron::ColorRgba enemy;    // the first team slot that is not a friend of the local team; white when none
 };
 
 class ExplainerPlayer // the explainer timeline, hosted by the UI framework
 {
 public:
-  static std::expected<ExplainerPlayer, Engine::LoadError> Load(const ExplainerAnimation& _data);
-  void Draw(Engine::DrawContext& _batch, const ExplainerLayout& _layout, double _realNow, const ExplainerTeamColors& _roles);
+  static std::expected<ExplainerPlayer, Neuron::LoadError> Load(const ExplainerAnimation& _data);
+  void Draw(Neuron::DrawContext& _batch, const ExplainerLayout& _layout, double _realNow, const ExplainerTeamColors& _roles);
 };
 
 class VfxRuntime // turns the game's snapshot and effect events into calls of the engine runtime above
@@ -288,8 +290,8 @@ class VfxRuntime // turns the game's snapshot and effect events into calls of th
 public:
   void OnMatchStart(const MatchSetupView& _setup); // seasonal state, team colour ids (RND-019)
   void ConsumeTick(std::uint32_t _tick, std::span<const EffectEvent> _events);
-  void Update(const PresentationSnapshot& _snap, const Engine::FrameView& _view);
-  void RecordPass(std::string_view _passId, Engine::PassContext& _context); // pass-table ids of 7b, 7d, 8, 10a, 11, 14, 15, 16
+  void Update(const PresentationSnapshot& _snap, const Neuron::FrameView& _view);
+  void RecordPass(std::string_view _passId, Neuron::PassContext& _context); // pass-table ids of 7b, 7d, 8, 10a, 11, 14, 15, 16
   void OnMatchEnd();
 };
 
@@ -473,7 +475,7 @@ Diagnostics: every compute dispatch and pass of this component carries a PIX mar
 
 | Test | Kind | Checks | Requirements |
 |---|---|---|---|
-| T1 boundary | checker fixture | no source of this component includes the simulation generator's interface (`Build\CheckProjectFiles.py`, [build tooling](../build_tooling_and_distribution.md) table 4.1-B rows 13 and 14) or takes non-const access to the snapshot; the dedicated-server link map holds none of its symbols (row 11, BLD-045) | VFX-004, VFX-005, VFX-011 |
+| T1 boundary | checker fixture | no source of this component includes the simulation generator's interface (`Build\CheckProjectFiles.py`, [build tooling](../build_tooling_and_distribution/README.md) table 4.1-B rows 13 and 14) or takes non-const access to the snapshot; the dedicated-server link map holds none of its symbols (row 11, BLD-045) | VFX-004, VFX-005, VFX-011 |
 | T2 headless conformance | golden-hash | a match run with this component replaced by a stub that discards every event and the same match with the full client give identical per-tick state hashes | VFX-004, VFX-005, VFX-006 |
 | T3 integrity cases | golden-hash | each of the 11 cases of VFX-006, forced on (for example 10 000 extra cosmetic particles, a seasonal client with a different local date, a pause during heavy effects), leaves the per-tick state hashes unchanged | VFX-006 |
 | T4 replay | property | a recorded match played twice produces the same emission sequence, shard set and shake offsets for every event, seeded from its identity | VFX-011, VFX-019 |
@@ -502,10 +504,10 @@ The tests of the explainer player, the sprite recipes and the procedural animati
 | DEC-101 | Open | whether Species keeps the seasonal theme and who chooses it (VFX-119) |
 | DEC-106 | Open | the performance envelope: effect caps, budgets and level of detail are set by measurement (VFX-023) |
 | DEC-118 | Resolved | the seasonal state is match state (VFX-006 row 10, VFX-119) |
-| DEC-222 | Open | how the snapshot and the effect events reach presentation (VFX-003) |
+| DEC-222 | Resolved (ADR-084) | how the snapshot and the effect events reach presentation (VFX-003) |
 | DEC-266 | Open | snowflakes, Wisps, muzzle flashes and shell casings stay in the simulated effect pool (VFX-006 row 5) |
-| DEC-228 | Open | the stress population and the fixed-capacity effect pools (VFX-023) |
-| DEC-242 | Open | the simulation generator's algorithm; one presentation generator per thread (VFX-011) |
+| DEC-228 | Resolved (ADR-080) | the stress population and the fixed-capacity effect pools (VFX-023) |
+| DEC-242 | Resolved (ADR-082) | the simulation generator's algorithm; one presentation generator per thread (VFX-011) |
 | DEC-328 | Open | saturated team colours on the Shield and Visitor bubbles (VFX-121) |
 | DEC-336 | Dropped | other renderers are not specified; Species has one renderer (ADR-001) (VFX-008) |
 | DEC-461 | Resolved | turret casings come from each turret's own sockets and use presentation draws (VFX-219) |

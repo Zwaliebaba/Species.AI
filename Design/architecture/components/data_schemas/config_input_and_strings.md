@@ -8,6 +8,8 @@ This document specifies three schema families of configuration and text: the set
 
 **DAT-190** (MUST) This document owns: the record type `settings.defaults` and its setting keys; the text form of the settings file, its reader rules and its writer rules; the record types `input.binding_set` and `input.keyboard_layouts`, with the field layout that [input](../input/README.md) INP-070 to INP-073 defines; and the record type `text.string_table` with the caption-markup syntax that [UI framework](../ui_framework/layout_rendering_input_and_localisation.md) UI-224 and [reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-468 leave to the data schemas.
 
+> **Amendment 2026-10-19 (ADR-034; O56).** This document also owns the record type `text.glyph_table` of the drawn bitmap faces (DAT-219).
+
 **DAT-191** (MUST NOT) This document does not define what a setting does, which page shows it or its default value (the owners of table 3.1-A do); the settings store, its notifications and its file location (the [platform layer](../platform_layer.md), ADR-071); the meaning of a binding node (INP-060); or the look-up, fallback and language selection of strings (UI-218 to UI-222, R-META-465, ADR-063).
 
 **DAT-192** (MUST NOT) No setting is a simulation input. No simulation rule reads a setting, and a value that would change simulation results exists only as a match option of the match setup (DEC-010, R-META-401).
@@ -17,7 +19,7 @@ This document specifies three schema families of configuration and text: the set
 The interface below is a C++23 declaration sketch, not an implementation.
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 enum class SettingType : std::uint8_t
@@ -69,9 +71,9 @@ public:
   static std::u8string Write(const SettingsFileContent& _loaded, const ValueMap& _current); // DAT-201
 };
 
-} // namespace Engine
+} // namespace Neuron
 
-namespace Engine
+namespace Neuron
 {
 
 // InputMode and BindingDescription are the input component's (INP-150, INP-178).
@@ -89,7 +91,7 @@ public:
 
 // At run time the UI framework's StringTable reads the cooked tables (UI-218 to UI-221); this folder declares no run-time view.
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 **Data contracts.** The settings store reads the settings file with `SettingsFile::Read` and the defaults with `SettingsDefaults`, and writes the file with `SettingsFile::Write` through the canonical writer's atomic replacement (README DAT-043). The input router reads the cooked binding sets and the keyboard-layout table (INP-162 to INP-164) and the user layer from the settings store (INP-070). The UI framework reads the cooked string tables (UI-218).
@@ -247,6 +249,34 @@ Table 3.6-A Caption markers.
 ### 3.7 Ids that code builds
 
 **DAT-214** (MUST) Code and data build string ids only from the fixed patterns that the owning documents state, among them `map.<map id>.name` (R-MAP-020), `match.options.<option>` and `ui.advanced_options.help.<option>.<mode>` ([map_schema.md](map_schema.md) DAT-099), `<prefix>.name` for a structure kind (R-BLDG-012) and `mode.<mode>.name` (R-MODE-029); every id of a pattern that content can reach must exist in the base language (README DAT-030). A count that comes from data, such as the help pages of a mode or the lines of the credits page, is decided by `Exists` (UI-220, R-META-471), never by a look-up that returns its id.
+
+### 3.8 Glyph tables
+
+**DAT-219** (MUST) A glyph table (`text.glyph_table`) describes one drawn bitmap face (ADR-034 as amended by O56): its authoring file sits beside the face's two glyph sheets in `content/fonts/`, holds the fields of table 3.8-A with the glyphs of table 3.8-B, and states every length in 1x pixels; on the 2x sheet every length doubles. The validator refuses a table whose code points repeat, whose cells lie outside its sheets, whose 2x sheet is not exactly twice the 1x sheet, or whose kerning names a code point that the table does not hold; the content build's coverage check walks the en-GB string table against it (UI-199 amendment). The cooked entry is the face's `Font`: its two `R8_UNORM` atlas pages and the glyph table sorted by code point.
+
+Table 3.8-A Fields of a glyph table.
+
+| Field | Key | Type | Presence | Rule |
+|---|---|---|---|---|
+| face | `face` | asset reference | required | the font asset of the face, of the category Fonts (`font.ui.primary`, `font.ui.compact`) |
+| design size | `design_size_px` | count | required | the face's pixel height at 1x |
+| line height | `line_height_px` | count | required | the distance between baselines |
+| baseline | `baseline_px` | count | required | from the top of a cell to the baseline |
+| cell width, cell height | `cell_width_px`, `cell_height_px` | count | required | the grid cell of the glyph sheets |
+| glyphs | `glyphs` | array of glyph entries | required | the glyphs of table 3.8-B, at least one |
+| missing glyph | `missing` | integer | defaulted: 63 | the code point drawn for a character the table does not hold (U+003F) |
+| kerning | `kerning` | array of `[left, right, adjust_px]` integers | defaulted: none | the adjustment of the advance between two code points |
+
+Table 3.8-B Fields of a glyph entry.
+
+| Field | Key | Type | Presence | Rule |
+|---|---|---|---|---|
+| code point | `cp` | integer | required | U+0020 to U+10FFFF |
+| cell | `col`, `row` | count | required | the glyph's cell on the sheets, counted from the top left |
+| ink width | `width_px` | count | required | the width of the drawn glyph inside its cell, at most the cell width |
+| bearing | `bearing_px` | integer | defaulted: 0 | the offset from the pen position to the ink's left edge |
+| advance | `advance_px` | count | required | the pen's move after the glyph |
+| vertical offset | `offset_y_px` | integer | defaulted: 0 | moves the glyph off the face's baseline |
 
 ## 4 Behaviour and algorithms
 

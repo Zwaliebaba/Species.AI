@@ -180,7 +180,7 @@ A press and a release within one frame therefore fire once, by step 1.
 
 **INP-142** (MUST) `setting` is true when the integer value of the named setting is above 0, and `setting:not` when it is not; the router reads the values of the named settings once per frame (INP-101 step 8). A setting that neither the settings store nor its defaults table holds when the binding loads is a load error (§6.1); the content build checks the setting nodes of every binding set against the keys of `settings.defaults` (DAT-195), and a doubled negation is rejected. No default binding uses it (R-META-455).
 
-**INP-143** (MUST) `value:always_true` is always true; `value:feature:<flag>` is true while the edition sets the runtime feature flag `<flag>` `on`, an on/off flag of [build tooling](../build_tooling_and_distribution.md) table 3.2-B. The router reads the flags from the edition's flag record when it loads the bindings; they never change while the process runs (BLD-016, ADR-056), so the node's result is fixed for the session. Both are `Boolean`. No default binding uses them.
+**INP-143** (MUST) `value:always_true` is always true; `value:feature:<flag>` is true while the edition sets the runtime feature flag `<flag>` `on`, an on/off flag of [build tooling](../build_tooling_and_distribution/README.md) table 3.2-B. The router reads the flags from the edition's flag record when it loads the bindings; they never change while the process runs (BLD-016, ADR-056), so the node's result is fixed for the session. Both are `Boolean`. No default binding uses them.
 
 ### 4.9 Evaluating a query
 

@@ -37,11 +37,11 @@ enum class LookScene : std::uint8_t
 struct LookCheck
 {
   LookScene scene;
-  Engine::RenderConfig config; // README §2; sample count 1 for the reference edge look
+  Neuron::RenderConfig config; // README §2; sample count 1 for the reference edge look
   std::uint8_t tolerance = 1;  // largest allowed difference per 8-bit channel
 };
 
-std::expected<Engine::ImageRgba8, LookError> RenderLookScene(Engine::FrameRenderer& _renderer, const LookCheck& _check);
+std::expected<Neuron::ImageRgba8, LookError> RenderLookScene(Neuron::FrameRenderer& _renderer, const LookCheck& _check);
 
 } // namespace Species
 ```

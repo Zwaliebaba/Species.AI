@@ -1,6 +1,6 @@
 # Diagnostics, test and performance
 
-> Status: Engine baseline · Prefix: DBG · ADRs: [ADR-067](../../../ADR/ADR-067-logging.md) · [ADR-068](../../../ADR/ADR-068-profiling-and-gpu-timing.md) · [ADR-069](../../../ADR/ADR-069-test-framework.md) · [ADR-070](../../../ADR/ADR-070-continuous-integration.md) · [ADR-066](../../../ADR/ADR-066-telemetry-with-consent.md) · [ADR-065](../../../ADR/ADR-065-crash-reporting.md) · [ADR-054](../../../ADR/ADR-054-build-system-msbuild-solution.md) · [ADR-056](../../../ADR/ADR-056-products-configurations-and-feature-flags.md) · [ADR-057](../../../ADR/ADR-057-version-identity.md) · [ADR-074](../../../ADR/ADR-074-platform-clock-with-injectable-time.md) · [ADR-059](../../../ADR/ADR-059-content-build-and-validators.md) · [ADR-060](../../../ADR/ADR-060-content-identity-by-hash.md) · [ADR-001](../../../ADR/ADR-001-direct3d-12-renderer-on-the-agility-sdk.md) · [ADR-008](../../../ADR/ADR-008-gpu-memory-uploads-and-device-removal.md) · Related: [tick timing and main loop](../../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) · [randomness and integrity](../../../reference/12_simulation_model/07_randomness_and_integrity.md) · [platform layer](../platform_layer.md) · [build tooling and distribution](../build_tooling_and_distribution.md) · [renderer options and budgets](../renderer/options_and_budgets.md)
+> Status: Engine baseline · Prefix: DBG · ADRs: [ADR-067](../../../ADR/ADR-067-logging.md) · [ADR-068](../../../ADR/ADR-068-profiling-and-gpu-timing.md) · [ADR-069](../../../ADR/ADR-069-test-framework.md) · [ADR-070](../../../ADR/ADR-070-continuous-integration.md) · [ADR-066](../../../ADR/ADR-066-telemetry-with-consent.md) · [ADR-065](../../../ADR/ADR-065-crash-reporting.md) · [ADR-054](../../../ADR/ADR-054-build-system-msbuild-solution.md) · [ADR-056](../../../ADR/ADR-056-products-configurations-and-feature-flags.md) · [ADR-057](../../../ADR/ADR-057-version-identity.md) · [ADR-074](../../../ADR/ADR-074-platform-clock-with-injectable-time.md) · [ADR-059](../../../ADR/ADR-059-content-build-and-validators.md) · [ADR-060](../../../ADR/ADR-060-content-identity-by-hash.md) · [ADR-001](../../../ADR/ADR-001-direct3d-12-renderer-on-the-agility-sdk.md) · [ADR-008](../../../ADR/ADR-008-gpu-memory-uploads-and-device-removal.md) · Related: [tick timing and main loop](../../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) · [randomness and integrity](../../../reference/12_simulation_model/07_randomness_and_integrity.md) · [platform layer](../platform_layer.md) · [build tooling and distribution](../build_tooling_and_distribution/README.md) · [renderer options and budgets](../renderer/options_and_budgets.md)
 
 This component is the Species engine's developer and quality infrastructure. It specifies the logging system, the assertion levels and the black-box record, the profiling layer and its in-game views, the development overlay, the development windows and debug commands that the engine keeps, the development drawing queue, the test harness with its headless simulation tests, the headless soak test and the opt-in telemetry data set. It also holds the **reference performance figures**: the population per map, the frame and tick structure, the hotspot catalogue, the stress populations and the budgets that the Species design phase starts from.
 
@@ -48,7 +48,7 @@ Section numbers are those of the whole component: a section cited as §4.8 is in
 | Part | Owner |
 |---|---|
 | crash capture: no top-level exception filter, the terminate, invalid-parameter and pure-call handlers, fail-fast termination, the files and memory blocks registered with Windows Error Reporting, thread naming and dump contents | [platform layer](../platform_layer.md), ADR-065 |
-| the symbol store, the CI workflow and its jobs, the release checks of binaries, the edition manifests and the server project | [build tooling and distribution](../build_tooling_and_distribution.md), ADR-070, ADR-056 |
+| the symbol store, the CI workflow and its jobs, the release checks of binaries, the edition manifests and the server project | [build tooling and distribution](../build_tooling_and_distribution/README.md), ADR-070, ADR-056 |
 | drawing of the development drawing pass (pass 24) and the text overlays (pass 29); the development sphere | [frame graph and passes](../renderer/frame_graph_and_passes.md) RND-076; [entity and overlay renderers](../renderer/entity_and_overlay_renderers.md) RND-330 |
 | the bot overlay's pass (pass 16) | [entity and overlay renderers](../renderer/entity_and_overlay_renderers.md) RND-359 |
 | tool-window chrome, close box, inset panel and layout | [UI framework](../ui_framework/README.md) UI-001, [core and widgets](../ui_framework/core_and_widgets.md) UI-060, UI-061, [layout](../ui_framework/layout_rendering_input_and_localisation.md) UI-166 |
@@ -90,12 +90,14 @@ This component composes those parts into one developer view and one test harness
 
 Run-time state hashing for divergence detection is DEC-206; the per-tick state hash of the test harness (DBG-144) is a test tool.
 
+> **Amendment 2026-10-18 (ADR-087; ADR-081; O55).** Item 1: a debug command takes the one command path and the server executes it once (ADR-087 items 1 and 8; DBG-118 amendment); no participant applies it. Item 2: the world game's regression tool is a snapshot replayed with its commands on one build (ADR-081 Level 1, MVP-093, the command journal of ADR-088 item 7), since a battle replay is a state stream (ADR-086 item 6) and the MVP builds no replay. Item 3 is the soak of the DBG-160 amendment, and item 5's frame queue gives way to the metrics of the DBG-105 amendment. The run-time state hash is ADR-081 item 8's.
+
 ## 2 Interfaces
 
 ### 2.1 Interface sketch
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 // Logging (ADR-067). LogLevel is in severity order; LogCategory is fixed and extended only in code.
@@ -258,7 +260,7 @@ public:
 // TelemetrySessionRecord: generated from telemetry.session: data_schemas/test_and_telemetry_records.md §2
 void SubmitTelemetry(const TelemetrySessionRecord& _record); // queued; sent only with consent
 
-} // namespace Engine
+} // namespace Neuron
 
 namespace Species
 {
@@ -280,7 +282,7 @@ struct DebugCommand
 {
   DebugCommandKind kind;
   std::uint8_t teamSlot;
-  Engine::Vec3 point;
+  Neuron::Vec3 point;
   std::optional<std::uint16_t> forcedOutcome; // empty: normal choice
 };
 
@@ -327,6 +329,8 @@ Caption: Listing 2.1-A, the diagnostics interface (declarations only). `ProfileN
 | network | the networking model | the metric set of DEC-208 |
 
 **DBG-024** (MUST) **Debug commands** travel as player commands of the command catalogue ([teams and player commands](../../../reference/12_simulation_model/06_teams_and_player_commands.md)) with the payload of `DebugCommand`: the sender's team, the command kind, the target team slot, the target point and the forced outcome. Who may send one and how it is validated is DBG-118 and DEC-202.
+
+> **Amendment 2026-10-18 (ADR-087).** A debug command is a typed command message of the debug operator's source on the one command path (ADR-087 item 1), sent through the transport, checked on arrival and on execution (items 2 and 3) and recorded in the world record, which carries the cheats-used marker (item 8). In the world game its target names a settlement by stable id (ADR-083 item 5) where this names a team slot.
 
 **DBG-025** (MUST) **Soak artefacts.** Each soak pass produces one soak report (`SoakReport`): one row per match (DBG-166) plus the pass totals, the crash dumps of the pass ([platform layer](../platform_layer.md)), the assertion failures, the simulation update-time percentiles and the peak population per match. Its rows and summary are the generated records of the schema `test.soak_report` ([test and telemetry records](../data_schemas/test_and_telemetry_records.md) DAT-375 to DAT-378), written to the report folder that the caller of `SoakRunner::Run` names and returned from it. The report is a CI artefact (ADR-070).
 
@@ -468,25 +472,25 @@ The tests of each topic are in its file: T1 to T6, T8, T9, T12 and T13 in [loggi
 | DEC-046 | Open | replay: the command-history hook only (§8.2) |
 | DEC-060 | Dropped | no benchmark recorder, no upload of it and no in-game video capture; consented telemetry (§4.10) and external capture tools replace them |
 | DEC-106 | Open | the reference caps; measured on the first prototype (DBG-205) |
-| DEC-200 | Open | the soak runs in one headless server process with no client participant until the networking model exists (DBG-160, DBG-164) |
-| DEC-201 | Open | no network budget stated (DBG-202) |
-| DEC-202 | Open | debug commands accepted only in cheat-enabled sessions from the host's participant (DBG-118) |
+| DEC-200 | Resolved (ADR-084) | the soak runs in one headless server process with no client participant until the networking model exists (DBG-160, DBG-164) |
+| DEC-201 | Resolved (ADR-086) | no network budget stated (DBG-202) |
+| DEC-202 | Resolved (ADR-087) | debug commands accepted only in cheat-enabled sessions from the host's participant (DBG-118) |
 | DEC-972 | Open | the cheats-used marker is shown and recorded, and nothing is suppressed (DBG-118) |
-| DEC-206 | Open | no run-time divergence check; the test-harness hash only (DBG-144) |
-| DEC-208 | Open | the reference metric set in the network statistics window (DBG-105) |
+| DEC-206 | Resolved (ADR-081) | no run-time divergence check; the test-harness hash only (DBG-144) |
+| DEC-208 | Resolved (ADR-081) | the reference metric set in the network statistics window (DBG-105) |
 | DEC-220 | Open | the headless server program runs the tests and the soak (DBG-142, DBG-160) |
-| DEC-224 | Open | diagnostics on their own threads, no fixed affinity (DBG-031, DBG-200) |
-| DEC-225 | Open | the reference pacing figures (DBG-201) |
-| DEC-227, DEC-228 | Open | tick budget guidance and stress populations as design-phase inputs (DBG-204, DBG-205) |
+| DEC-224 | Resolved (ADR-083) | diagnostics on their own threads, no fixed affinity (DBG-031, DBG-200) |
+| DEC-225 | Resolved (ADR-083) | the reference pacing figures (DBG-201) |
+| DEC-227, DEC-228 | Resolved (ADR-079, ADR-080) | tick budget guidance and stress populations as design-phase inputs (DBG-204, DBG-205) |
 | DEC-229 | Open | tick cost measured at the first simulation-core milestone (DBG-205) |
-| DEC-240, DEC-242 | Open | golden hashes agree across the CI agents of one build; the generator is opaque to the harness (DBG-146, DBG-147) |
+| DEC-240, DEC-242 | Resolved (ADR-081, ADR-082) | golden hashes agree across the CI agents of one build; the generator is opaque to the harness (DBG-146, DBG-147) |
 | DEC-250, DEC-251 | Open | round-trip tests once persistence is defined (DBG-149) |
 | DEC-334 | Dropped | the reference's sandbox, benchmark and stress maps are not reproduced (DBG-148) |
 | DEC-650, DEC-653 | Resolved | the per-tick grid and finiteness checks (DBG-143) |
 | DEC-802 | Open | soak and stress maps are test maps (DBG-148) |
 | DEC-804 | Resolved | the soak rules (DBG-161) |
 | DEC-970 | Resolved | the black box holds no Windows user name and writes paths relative to placeholders (DBG-047) |
-| DEC-971 | Open | the reference test machine is the first machine that meets the minima of ADR-050 and ADR-002 and runs the performance job, pinned and recorded; until then performance tests report and do not fail (DBG-209) |
+| DEC-971 | Resolved (O58) | the reference test machine is the first machine that meets the minima of ADR-050 and ADR-002 and runs the performance job, pinned and recorded; until then performance tests report and do not fail (DBG-209) |
 | ADR-054, ADR-056 | Accepted | Debug and Release only; development facilities in Debug only (DBG-004) |
 | ADR-068, ADR-069, ADR-070 | Accepted | markers in both configurations; the Microsoft C++ Unit Test Framework; the committed CI workflow, with the soak, GPU and performance jobs added by amendment; the fuzz harnesses run in the test step (ADR-069) (§4.3, §4.8, §4.9, DBG-208) |
 

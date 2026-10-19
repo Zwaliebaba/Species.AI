@@ -1,6 +1,6 @@
 # Performance baseline
 
-> Status: Engine baseline · Prefix: DBG · ADRs: [ADR-066](../../../ADR/ADR-066-telemetry-with-consent.md) · [ADR-068](../../../ADR/ADR-068-profiling-and-gpu-timing.md) · [ADR-070](../../../ADR/ADR-070-continuous-integration.md) · Folder: [diagnostics, test and performance](README.md) · Related: [tick timing and main loop](../../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) · [renderer options and budgets](../renderer/options_and_budgets.md) · [build tooling and distribution](../build_tooling_and_distribution.md)
+> Status: Engine baseline · Prefix: DBG · ADRs: [ADR-066](../../../ADR/ADR-066-telemetry-with-consent.md) · [ADR-068](../../../ADR/ADR-068-profiling-and-gpu-timing.md) · [ADR-070](../../../ADR/ADR-070-continuous-integration.md) · Folder: [diagnostics, test and performance](README.md) · Related: [tick timing and main loop](../../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) · [renderer options and budgets](../renderer/options_and_budgets.md) · [build tooling and distribution](../build_tooling_and_distribution/README.md)
 
 This document holds the **reference performance figures** of the engine: the frame and tick structure that they assume, the population per map, the hotspot catalogue, the stress populations, the Species budget baseline and the reference test machine. They are the starting point of the Species design phase.
 
@@ -96,11 +96,13 @@ The cost of one tick must fit, spread over its 10 slices, into the render frames
 | catch-up | bounded in ticks per frame and shown to the player as a catching-up state | DEC-225 |
 | logging | asynchronous and buffered, per-category levels, no file opened per line | ADR-067, §4.1 |
 
-**DBG-208** (MUST) Performance tests run in Release builds on the reference test machine in the performance job, a scheduled CI job that ADR-070 adds by amendment and that is guarded like the committed jobs, together with the build budgets of [build tooling](../build_tooling_and_distribution.md) table 5-A (BLD-117, ADR-070), and report against these budgets: the design-population scene (a 2,000-unit bot-only Spawn Control match, rendered and headless) against DBG-205 and RND-454; the stress scene against DBG-204 and RND-456; the logging and marker tests of DBG-206; and the components' own budgets: the asset budgets of table 5-A (AST-125), the audio update (AEN-303, test T27), the UI budgets (UI-240), the input budgets (INP-200), the camera budgets (CAM-120) and the data budgets (DAT-050). Once the reference test machine is pinned (DBG-209), a result above its budget fails the performance job; until then the job reports it and does not fail. A result never changes run-time behaviour.
+**DBG-208** (MUST) Performance tests run in Release builds on the reference test machine in the performance job, a scheduled CI job that ADR-070 adds by amendment and that is guarded like the committed jobs, together with the build budgets of [build tooling](../build_tooling_and_distribution/README.md) table 5-A (BLD-117, ADR-070), and report against these budgets: the design-population scene (a 2,000-unit bot-only Spawn Control match, rendered and headless) against DBG-205 and RND-454; the stress scene against DBG-204 and RND-456; the logging and marker tests of DBG-206; and the components' own budgets: the asset budgets of table 5-A (AST-125), the audio update (AEN-303, test T27), the UI budgets (UI-240), the input budgets (INP-200), the camera budgets (CAM-120) and the data budgets (DAT-050). Once the reference test machine is pinned (DBG-209), a result above its budget fails the performance job; until then the job reports it and does not fail. A result never changes run-time behaviour.
 
 ### 5.5 Reference test machine
 
 **DBG-209** (MUST) The reference test machine is one pinned and recorded configuration: a processor, memory size, graphics adapter, driver version, display mode and OS build that meet the minima of ADR-050 and ADR-002. Every performance budget of the component specifications refers to it, the data budgets `dat.perf.*` of the data schemas among them; a budget stated on the minimum CPU, on minimum-specification hardware or on the minimum-specification machine is stated on this machine. A change of the machine re-baselines every recorded result. Its named hardware is a design-phase input (DEC-228 items 6 and 7, DEC-971). Until the design phase names it, this interim rule applies (DEC-971): the first machine that meets the minima of ADR-050 and ADR-002 and runs the performance job is pinned and recorded as the reference test machine; until that machine is pinned, every performance test runs, reports its result with the build identity and the hardware of the agent that ran it, and does not fail. The reference developer machine, on which the build budgets of build tooling table 5-A are measured, is `dbg.machine.developer_class`: the reference test machine's processor and memory with a local solid-state disk.
+
+> **Amendment 2026-10-19 (O58; DEC-971).** The reference test machine is the owner's PC, pinned and recorded at the MVP's milestone M1 when the performance job first runs (MVP-085); a minimum-specification tier is decided before the first external build.
 
 ## 6 Failure modes, diagnostics and telemetry
 
@@ -115,7 +117,7 @@ Once the reference test machine is pinned, a result above its budget fails the p
 
 ## 8 Open decisions
 
-DEC-106, DEC-227, DEC-228, DEC-229 and DEC-971 (Open) apply to this document; their defaults are listed in the [README](README.md) §8.1, with the design-phase inputs of the whole component.
+DEC-106 and DEC-229 (Open), DEC-227 and DEC-228 (Resolved, ADR-079 and ADR-080) and DEC-971 (Resolved, O58) apply to this document; their defaults are listed in the [README](README.md) §8.1, with the design-phase inputs of the whole component.
 
 ## 9 Tuning table
 

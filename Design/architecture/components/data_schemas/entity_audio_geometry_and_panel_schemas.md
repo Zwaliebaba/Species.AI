@@ -80,7 +80,7 @@ struct ExplainerAnimation
 
 } // namespace Species
 
-namespace Engine
+namespace Neuron
 {
 
 // ---- generated from sound.effect_kinds: table 3.5-A, compiled into the audio engine (DAT-273) ----
@@ -177,7 +177,7 @@ struct SoundSourceDef
   std::span<const SoundEventDef> events;
 };
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 **Data contracts.** The simulation reads `actor.stats`, `crate.outcomes`, `geometry.collision` and `geometry.sim_record` (simulation-relevant, README table 1-A). The audio engine reads `sound.sources`, `sound.groups` and the compiled table of DSP filter kinds (AEN-060). The renderer reads `geometry.mesh` (ADR-019). The terrain component and the sea renderer read the colour ramps as CPU tables (TER-040, TER-041). The explainer player reads `panels.explainer` (VFX-103).
@@ -437,7 +437,7 @@ Caption: Figure 4.1-A, the sound data from its authoring file to the audio engin
 |---|---|---|
 | DEC-019 | Resolved | actor kinds as typed entries (DAT-262) |
 | DEC-090 | Resolved | floating-point stats (DAT-263) |
-| DEC-241 | Open | stat width and range rejected in validation (DAT-263) |
+| DEC-241 | Resolved (ADR-081) | stat width and range rejected in validation (DAT-263) |
 | DEC-567 | Open | omitted effect parameters take their declared default (DAT-271) |
 | DEC-568, DEC-570, DEC-042 | Resolved | weighted groups and new links; buses and per-event data; decibel levels (DAT-268, DAT-269, DAT-275) |
 | DEC-330 | Open | socket kinds without a confirmed consumer (DAT-277) |

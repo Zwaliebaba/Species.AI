@@ -31,6 +31,8 @@ Notation used throughout:
 
 **INP-004** (MUST) Player commands originate only in the input layer. The match input pump (`MatchInputPump`) and the sampler of the team command state (`TeamCommandState`) turn actions into members of `PlayerCommand` and into fields of the team command state, by the rules of [actions and bindings](../../../reference/06_controls_camera_and_commands/actions_and_bindings.md) (DEC-023); the router itself produces actions, never commands. Simulation code links no input interface, never queries an action, never reads the pointer, a device, the input mode or the camera, and never issues a player command (DEC-008, DEC-119, R-CTRL-003, R-CTRL-004). One click therefore yields one command on the sender and one effect on every participant.
 
+> **Amendment 2026-10-18 (ADR-084; ADR-087).** A command leaves the client only as a message through the transport (ADR-084 item 1); the server checks it on arrival and on execution and executes it once, in the first tick after it arrives (ADR-087 items 1 to 4), and its effect reaches each client whose interest set holds it by replication (ADR-086). One click therefore yields one command and one effect, in the server's simulation; the team command state is the control state of ADR-087 item 5.
+
 **INP-005** (MUST NOT) The input component never writes simulation state, never reads it, and never changes a Power, a selection or a unit locally. Local feedback (sounds, previews, camera modes) is the consumers' business (R-CTRL-022, DEC-007).
 
 **INP-006** (MUST) Text entry does not pass through the binding graph. Text characters and input-method composition go to the focused text field through the UI framework's text service, with the modifier state of each character (ADR-028, ADR-032).
@@ -48,7 +50,7 @@ Notation used throughout:
 ### 2.1 Interface sketch
 
 ```cpp
-namespace Engine
+namespace Neuron
 {
 
 enum class DeviceClass : std::uint8_t
@@ -197,7 +199,7 @@ public:
   virtual void Shutdown() = 0;
 };
 
-} // namespace Engine
+} // namespace Neuron
 ```
 
 ### 2.2 Router operations
@@ -296,7 +298,7 @@ No match rule of reference/06 uses the three axis helpers; the stateful hold-or-
 | `latch` | an `on` operand and an `off` operand, both `Boolean` and neither a `latch` | `Boolean` | §4.8 |
 | `idle` | `at_least` N, `reaches` N or `no_longer`; N a whole number of seconds of at least 1 | `Axis1` for `at_least` (x = the idle time), otherwise `Boolean` | §4.8 |
 | `setting` | a setting key (`<group>.<setting>`, [data schemas](../data_schemas/config_input_and_strings.md) table 3.1-A) and an optional negation | `Boolean` | the setting must exist in the settings store or its defaults when the binding loads; it can be negated once |
-| `value` | `always_true`, or `feature` with the name of an on/off runtime feature flag of [build tooling](../build_tooling_and_distribution.md) table 3.2-B | `Boolean` | `always_true` is always true; `feature` is true while the edition sets that flag `on` (INP-143); a flag that table 3.2-B does not list, or one whose values are not `on` and `off`, is rejected when the binding loads |
+| `value` | `always_true`, or `feature` with the name of an on/off runtime feature flag of [build tooling](../build_tooling_and_distribution/README.md) table 3.2-B | `Boolean` | `always_true` is always true; `feature` is true while the edition sets that flag `on` (INP-143); a flag that table 3.2-B does not list, or one whose values are not `on` and `off`, is rejected when the binding loads |
 
 **INP-061** (MUST) An action accepts a binding by the action's kind:
 
@@ -476,7 +478,7 @@ Input timings are seconds of real time and never simulation durations (R-CTRL-00
 
 **INP-201** (MUST) The router allocates its queue at `inp.queue.capacity` and its state tables in `Rebuild`, and performs no heap allocation in `AdvanceFrame` or in a query. Its whole state stays within `inp.budget.memory_kib`.
 
-**INP-202** (MUST) An event that a back-end receives before `AdvanceFrame` starts is visible to the queries of that frame, so the router adds no frame of latency; gamepad readings are read inside `AdvanceFrame`. Event timestamps are kept, so a later command model can stamp commands with the time of the input that caused them. The delay between a command and its execution, and the coalescing of continuous control, are the Open DEC-203; the router keeps every one-shot transition, and the team command state combines one-shot flags between sends (R-CTRL-021, R-SIM-441).
+**INP-202** (MUST) An event that a back-end receives before `AdvanceFrame` starts is visible to the queries of that frame, so the router adds no frame of latency; gamepad readings are read inside `AdvanceFrame`. Event timestamps are kept, so a later command model can stamp commands with the time of the input that caused them. The delay between a command and its execution, and the coalescing of continuous control, are DEC-203, resolved by ADR-087; the router keeps every one-shot transition, and the team command state combines one-shot flags between sends (R-CTRL-021, R-SIM-441).
 
 **INP-203** (MUST) The threading contract of §2.4 holds: one main-thread owner, an immutable frame state between advances, and a single-producer mailbox for GameInput's device notices. No file or network I/O runs inside `AdvanceFrame`; the settings store and the binding sets are read in `Rebuild`, which runs at start-up, on a layout change and on a binding change.
 
@@ -502,7 +504,7 @@ Table 6.1-A Load diagnostic classes.
 | `KindNotAccepted` | the binding's kind is not accepted by the action's kind (INP-061) |
 | `AliasCycle` | an alias chain leads back to an action already on the chain |
 | `UnknownSetting` | a setting node names a setting that does not exist, or negates twice |
-| `UnknownFlag` | a value node's `feature` names a flag that [build tooling](../build_tooling_and_distribution.md) table 3.2-B does not list, or one whose values are not `on` and `off` (INP-143) |
+| `UnknownFlag` | a value node's `feature` names a flag that [build tooling](../build_tooling_and_distribution/README.md) table 3.2-B does not list, or one whose values are not `on` and `off` (INP-143) |
 | `UnknownGlyph` | a glyph override names an asset id that is not in the asset manifest |
 | `DuplicateEntry` | a warning: a replacing layer sets one action twice (INP-163) |
 
@@ -619,11 +621,11 @@ Tests run under the test framework of ADR-069 with recorded or synthetic events 
 
 | Reference | Status | Where it applies |
 |---|---|---|
-| DEC-203 | Open | input timing, coalescing and latency: the router keeps timestamps and every transition (INP-202) |
+| DEC-203 | Resolved (ADR-087) | input timing, coalescing and latency: the router keeps timestamps and every transition (INP-202) |
 | DEC-250 | Open | the user layer in the client-local settings store and its versioning (INP-023, INP-070, INP-171) |
 | DEC-050 | Open | the rebinding page and the control-help panel are hooks (INP-167, §4.15) |
 | DEC-047 | Open | the leaderboard page, a hook with no bound action (INP-077) |
-| DEC-202 | Open | command validation and authority (table 6.3-A row 11) |
+| DEC-202 | Resolved (ADR-087) | command validation and authority (table 6.3-A row 11) |
 | DEC-046 | Open | replays record commands, not device events (INP-243) |
 | DEC-008, DEC-023, DEC-119 | Resolved | input produces actions, the input layer produces commands, and simulation code never issues or reads input (INP-004) |
 | DEC-096, DEC-553, DEC-554 | Resolved | the input corrections, stated as the rules of table 6.3-A |

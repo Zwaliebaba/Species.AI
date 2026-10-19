@@ -75,3 +75,4 @@ Engine features provided from the start:
 * Related: [ADR-063](ADR-063-localisation.md) (text and fonts).
 * Components: UI framework (`UI`), input (`INP`), renderer (`RND`), audio engine (`AEN`), animation and VFX (`VFX`, the flash and motion rules).
 * **Amendment 2026-10-17.** The minimum text size is defined for every client height by the rule of the UI framework (UI-171, `ui.access.min_text_1080p`, `ui.access.min_text_2160p`), which interpolates between the two XAG reference points.
+* **Amendment 2026-10-18 (owner decision O55).** Since O55 the first playable of the "Confirmed when" line is the MVP's M3 build ([MVP scope](../implementation/mvp_scope.md) §3, §5.3), not the skirmish of O20, and the evidence is gathered on that build: the conformance table and the contrast, text-size and flash tests cover its front-end page, its HUD and recorded battles of that build in place of the combat scenes of a match.
