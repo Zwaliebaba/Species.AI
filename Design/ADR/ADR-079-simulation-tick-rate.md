@@ -1,7 +1,7 @@
 ---
 status: proposed
 date: 2026-10-18
-decision-makers: Species technology lead (owner gate B); proposed by design-phase area A2
+decision-makers: Species technology lead; proposed by design-phase area A2, with owner gate B applied (O43, O48)
 ---
 
 # Simulation tick rate: 10 ticks per second for the world and for skirmish, run as whole ticks on the server
@@ -14,7 +14,7 @@ Which tick rate does Species simulate at, and how does the server execute a tick
 
 ## Decision Drivers
 
-* Skirmish is the first playable and the combat balance test bed, and it adopts the reference crowd rules as written (O8, O20, PIL-002); the reference values are the Species starting values (O13), and the mode second of O17 is stated in ticks.
+* Skirmish adopts the reference crowd rules as written (O8, PIL-002); the reference values are the Species starting values (O13), and the mode second of O17 is stated in ticks. Since O55 the first playable is the world MVP, whose battle sandbox (its M1) is the first combat test bed, at the same rate (MVP-092).
 * Server CPU at 200 stewards (O1) and on the integrated host's own machine (O10), and the host's home upload in stage 1.
 * Command-to-display latency for crowd orders and for the direct control of special units (PIL-010, DEC-203).
 * One tick for both forms of play (PIL-085), and an abstract economy that can be cheaper than the full simulation (O3).
@@ -40,7 +40,7 @@ Proposed option: "A — keep 10 ticks per second", with option D's lower cadence
 ### Consequences
 
 * Good, because every reference rule and tuning value binds as written, so skirmish tests the reference balance rather than a conversion of it, and the 11-tick mode second of O17 keeps its meaning.
-* Good, because the server costs half as much CPU as at 20 ticks per second: a world of 200 at its stress case takes 1.85 reference cores against 3.71 at 20 Hz, and on the 16-vCPU host of ADR-080 its tick reaches the 50 ms wall budget at 2.22 times the cost budgets, where 20 Hz reaches its 25 ms budget at 1.10 times; a battle view costs 23.2 KB/s against 36.9, and the integrated host's upload for 15 remote stewards is 2.8 Mbit/s against 4.4, above its 4 Mbit/s default.
+* Good, because the server costs half as much CPU as at 20 ticks per second: a world of 200 at its stress case takes 1.85 reference cores against 3.71 at 20 Hz, and on the 16-vCPU host of ADR-080 its tick reaches the 50 ms wall budget at 2.22 times the cost budgets, where 20 Hz reaches its 25 ms budget at 1.10 times; a battle view costs 23.4 KB/s against 37.4, and the integrated host's upload for 15 remote stewards is 2.8 Mbit/s against 4.5, above its 4 Mbit/s default.
 * Good, because the server, the integrated server and every test run execute whole ticks in one order, which keeps the step reproducible (ADR-081).
 * Bad, because an order's latency is higher than at 20 Hz. The model's Monte Carlo, with the client's input sampling, a queued frame and half a scan-out, network jitter of 5 ms each way and the server's step, gives mean / 95th percentile: on the integrated host 212 / 258 ms (127 / 152 at 20 Hz); for a remote client at a 50 ms round trip 302 / 350 ms (217 / 245); at 150 ms 402 / 450 ms. The integrated host feels as the reference does, whose steady state is a 0 to 100 ms wait for the next tick plus a 100 ms pacing delay (R-SIM-534).
 * Good, because the latency that a player feels most, steering a unit directly, does not depend on the tick: the predicted unit moves 42 / 53 ms after the input on every client, at either rate (ADR-084 item 6).
@@ -48,7 +48,7 @@ Proposed option: "A — keep 10 ticks per second", with option D's lower cadence
 
 ### Confirmation
 
-**Confirmed when:** the first playable (O20) on the integrated server, over a playtest of at least 6 players, measures at the 95th percentile at most 275 ms from an order to its display on the host and at most 375 ms for a remote client at a 50 ms round trip, at most 60 ms from a direct-control input to the predicted unit's movement on every client, and the effects of direct control (hits) within the order thresholds; the players rate crowd orders and the direct control of a Strike team as responsive; and the simulation-core milestone has measured the tick cost of ADR-080. If a criterion fails, a superseding ADR moves the full simulation to 20 ticks per second with the conversion rule of item 5, on the 20 Hz budgets that ADR-080 and ADR-086 state, before content is tuned beyond the reference values.
+**Confirmed when** (amended 2026-10-19: since O55 the first playable is the solo world MVP, which a playtest of at least 6 players cannot test, so the evidence is split over the milestones that can produce it): the MVP's M1 has measured the tick cost of ADR-080; the first playable, the MVP's M3 build on the integrated server, measures at the 95th percentile at most 275 ms from a crowd order to its display, and the steward rates crowd orders as responsive in Playtest 1's session log; its M4 build measures at most 375 ms for the client over MsQuic at a 50 ms round trip added by the link simulator (ADR-088 item 7); and the first milestone after the MVP that has at least 6 players and a directly controlled unit (the MVP has neither, its §5.1) measures at most 60 ms from a direct-control input to the predicted unit's movement on every client, the effects of direct control (hits) within the order thresholds, and its players rate crowd orders and the direct control of a Strike team as responsive. If a criterion fails, a superseding ADR moves the full simulation to 20 ticks per second with the conversion rule of item 5, on the 20 Hz budgets that ADR-080 and ADR-086 state, before content is tuned beyond the reference values.
 
 ## Pros and Cons of the Options
 
@@ -76,7 +76,8 @@ Proposed option: "A — keep 10 ticks per second", with option D's lower cadence
 
 ## More Information
 
-* Resolves DEC-227 when the owner confirms it at gate B. Related: [ADR-080](ADR-080-per-tick-budgets-and-population-caps.md) (budgets), [ADR-083](ADR-083-server-process-ownership-and-threading.md) (the tick loop), [ADR-084](ADR-084-client-boundary-through-the-transport.md) (interpolation and prediction), [ADR-087](ADR-087-command-path-validation-and-timing.md) (command timing).
+* Resolves DEC-227 (Resolved 2026-10-19). Related: [ADR-080](ADR-080-per-tick-budgets-and-population-caps.md) (budgets), [ADR-083](ADR-083-server-process-ownership-and-threading.md) (the tick loop), [ADR-084](ADR-084-client-boundary-through-the-transport.md) (interpolation and prediction), [ADR-087](ADR-087-command-path-validation-and-timing.md) (command timing).
 * The latency figures are `A2ServerBudget.py latency`: 100,000 samples from a seeded generator; the server's step is 20 ms at 16 stewards and the 16-vCPU host's 22.7 ms at 200 (a remote client at 50 ms in a world of 200: 304 / 352 ms).
 * World-game timers in world days convert to ticks by WLD-202 at this rate.
 * **Amendment 2026-10-18 (challenge round 1).** The latency model gained the client terms and percentiles (A2-F03); the confirmation splits its thresholds for orders and for direct control, and adds the prediction of ADR-084 (MB-1); the 20 Hz figures stand beside the budgets.
+* **Amendment 2026-10-19 (owner gate B; O51, O55).** Gate B asked nothing of the tick rate; its answers leave 10 ticks per second as the decision, with the 20 Hz figures beside the budgets that O43 made provisional and the host sizes that O48 fixed. The "Confirmed when" is re-pointed: the solo MVP cannot run the playtest of at least 6 players, so the cost measurement moves to the MVP's M1, the host's order latency to the first playable, now the M3 build, the remote order latency to M4 over MsQuic and the link simulator, and the direct-control thresholds and the 6-player playtest to the first milestone after the MVP that has more than one steward and a directly controlled unit. The record stays Proposed until then. The bandwidth figures follow ADR-088's QUIC datagram overhead.

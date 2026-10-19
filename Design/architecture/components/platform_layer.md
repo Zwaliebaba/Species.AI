@@ -861,6 +861,8 @@ Diagram 4-C: language choice at start-up (PLT-076).
 
 **PLT-100** (MUST) The baseline has no game transport, socket service, session discovery, online-service client or HTTP listener, and links no third-party HTTP or TLS library (ADR-077): the replication model, the transport, identity and the directory services are DEC-200, DEC-207, DEC-248 and DEC-249. Service endpoints, when they exist, are configuration with separate development and production values, never addresses built into the binary (DEC-249); credentials for such a service are passed per request by its client.
 
+*Amendment 2026-10-19 (O44, [ADR-089](../../ADR/ADR-089-msquic-transport-package.md)): the transport library reaches the network through MsQuic behind ADR-088's `Transport`, and MsQuic owns its sockets, so the platform layer stays socket-free.*
+
 ### 4.13 Clipboard and web addresses
 
 **PLT-101** (MUST) `ClipboardText` returns the clipboard's Unicode text converted to UTF-8, or nothing when the clipboard holds no text; `SetClipboardText` replaces it. Both run on the main thread for the text fields of the UI framework (ADR-032), whose fields set the length limits.

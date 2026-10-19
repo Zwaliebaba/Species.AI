@@ -1,7 +1,7 @@
 ---
 status: proposed
 date: 2026-10-18
-decision-makers: Species technology lead (owner gate B); proposed by design-phase area A2
+decision-makers: Species technology lead; proposed by design-phase area A2 (gate B asked no question of it)
 ---
 
 # Simulation random draws: counter-based values of a secret key, keyed by purpose, subject, tick and ordinal
@@ -50,7 +50,7 @@ Proposed option: "B — counter-based values", with a secret key and a keyed fun
 
 ### Confirmation
 
-**Confirmed when:** the SipHash-2-4 implementation passes its published test vectors; the quality test of item 8 passes; the simulation-core milestone's synthetic battle gives identical hashes at 1, 2 and 8 worker threads (ADR-081); a test adds a draw to one purpose and shows every other purpose's values unchanged; and a test client given everything a client receives cannot compute a later draw (it never receives the key).
+**Confirmed when** (amended 2026-10-19 for the MVP's milestones, O51 and O55): at the MVP's M1, the simulation-core milestone, the SipHash-2-4 implementation passes its published test vectors, the quality test of item 8 passes, the battle sandbox and the synthetic battle give identical hashes at 1, 2 and 8 worker threads (ADR-081), and a test adds a draw to one purpose and shows every other purpose's values unchanged (MVP-093); and on the M3 build a test client given everything the steward's client receives cannot compute a later draw (it never receives the key).
 
 ## Pros and Cons of the Options
 
@@ -71,6 +71,7 @@ Proposed option: "B — counter-based values", with a secret key and a keyed fun
 
 ## More Information
 
-* Resolves DEC-242 when the owner confirms it at gate B; answers A1's request for WLD-161. Related: [ADR-081](ADR-081-numeric-model-and-determinism-scope.md), [ADR-083](ADR-083-server-process-ownership-and-threading.md), [ADR-087](ADR-087-command-path-validation-and-timing.md).
+* Resolves DEC-242 (Resolved 2026-10-19); answers A1's request for WLD-161. Related: [ADR-081](ADR-081-numeric-model-and-determinism-scope.md), [ADR-083](ADR-083-server-process-ownership-and-threading.md), [ADR-087](ADR-087-command-path-validation-and-timing.md).
 * Golden hashes recorded under the default of DEC-242 (one PCG32 stream) are recorded again under this record, in a reviewed change (DBG-147).
 * **Amendment 2026-10-18 (challenge round 1).** Simulation draws use a secret simulation key and SipHash-2-4 instead of `Mix64` over the public seed, because `Mix64` is invertible and the seed is shown to the host (A2-F09); an owner-level draw uses its owner's id as its subject; a second context is an assertion; the command order of ADR-087 uses the same function.
+* **Amendment 2026-10-19 (after owner gate B; O51, O55).** Gate B changed nothing in this record. The "Confirmed when" is re-pointed from the simulation-core milestone to the MVP's M1, which builds the keyed draws (MVP-093), and to its M3 build for the client test; the record stays Proposed until that evidence exists.

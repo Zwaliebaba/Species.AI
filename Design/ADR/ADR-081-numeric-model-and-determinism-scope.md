@@ -1,21 +1,21 @@
 ---
 status: proposed
 date: 2026-10-18
-decision-makers: Species technology lead (owner gate B); proposed by design-phase area A2
+decision-makers: Species technology lead; proposed by design-phase area A2, with owner gate B applied (O41)
 ---
 
 # Simulation numeric model: strict binary64 with deterministic maths functions, a stated determinism scope and a canonical state hash
 
 ## Context and Problem Statement
 
-The reference holds simulation state in binary64, rounds every transcendental and square-root result to binary32, and relies on every participant running one build (DEC-240); a few of its rules depend on numeric semantics such as truncation, degenerate-vector fallbacks and accumulated timers (DEC-241). Species is server-authoritative (vision §5, ADR-086): no two processes simulate one world live, so bit-exact agreement between processes is not needed for play. It is needed elsewhere: tests and soak runs compare per-tick state hashes; an operator's reported defect is reproduced on a developer's machine from a checkpoint and the commands that followed it; the abstract economy is calibrated against the full simulation (O3); a region moves between server processes in stage 3 (O1); A1's world generator must give the same world on any server (WLD-161, AC-21); and whether a dedicated server for a second operating system, built with a second compiler, follows is an owner question at gate B. AGENTS.md fixes `/fp:precise` and `/arch:AVX2` in every project (R16) and asks for an ADR before a deterministic core. Two facts were checked on 2026-10-18 in Microsoft's documentation: since Visual Studio 2022, `/fp:precise` generates no floating-point contraction unless `/fp:contract` is given (https://learn.microsoft.com/cpp/build/reference/fp-specify-floating-point-behavior); and the Universal CRT selects among implementations of its transcendental functions by the CPU's instruction sets at run time, so their results can differ between computers and between Windows versions (https://learn.microsoft.com/cpp/c-runtime-library/floating-point-support, https://learn.microsoft.com/cpp/c-runtime-library/reference/get-fma3-enable-set-fma3-enable).
+The reference holds simulation state in binary64, rounds every transcendental and square-root result to binary32, and relies on every participant running one build (DEC-240); a few of its rules depend on numeric semantics such as truncation, degenerate-vector fallbacks and accumulated timers (DEC-241). Species is server-authoritative (vision §5, ADR-086): no two processes simulate one world live, so bit-exact agreement between processes is not needed for play. It is needed elsewhere: tests and soak runs compare per-tick state hashes; an operator's reported defect is reproduced on a developer's machine from a checkpoint and the commands that followed it; the abstract economy is calibrated against the full simulation (O3); a region moves between server processes in stage 3 (O1); A1's world generator must give the same world on any server (WLD-161, AC-21); and the owner decided at gate B on a Windows dedicated server with a portable core, so that a server for a second operating system, built with a second compiler, is a later ADR that replaces the platform layer only (O41). AGENTS.md fixes `/fp:precise` and `/arch:AVX2` in every project (R16) and asks for an ADR before a deterministic core. Two facts were checked on 2026-10-18 in Microsoft's documentation: since Visual Studio 2022, `/fp:precise` generates no floating-point contraction unless `/fp:contract` is given (https://learn.microsoft.com/cpp/build/reference/fp-specify-floating-point-behavior); and the Universal CRT selects among implementations of its transcendental functions by the CPU's instruction sets at run time, so their results can differ between computers and between Windows versions (https://learn.microsoft.com/cpp/c-runtime-library/floating-point-support, https://learn.microsoft.com/cpp/c-runtime-library/reference/get-fma3-enable-set-fma3-enable).
 
 Which number representation and floating-point rules does the simulation use, which results must agree between which builds, and how is a disagreement found?
 
 ## Decision Drivers
 
 * Reproducible tests, soak runs and defect reproduction from the first month (DEC-240 item 9).
-* A second server build of the same release, with a second compiler, kept possible without a numeric rewrite, whatever gate B decides about it.
+* A second server build of the same release, with a second compiler, kept possible without a numeric rewrite (O41).
 * The engine baseline is binary64 (PLT-134, PLT-135, TER-061); rewriting it to fixed point is a large cost for a small team.
 * No player-facing feature may stop working because two builds disagree in one bit.
 * The AGENTS.md settings stand as they are (R16, §3).
@@ -53,14 +53,14 @@ Proposed option: "B — strict binary64", scoped by the determinism levels below
 
 * Good, because Level 1 holds by construction: no CPU-dependent library path, no contraction, no unordered iteration, and one environment.
 * Good, because the engine baseline stays binary64, and the reference rules keep their arithmetic apart from the dropped binary32 rounding.
-* Good, because a second operating system's server build, if the owner wants one, needs no numeric rewrite: its cost for Level 2 is compiler flags, the rules of item 2 and a test.
+* Good, because a second operating system's server build, if a later ADR adds one (O41), needs no numeric rewrite: its cost for Level 2 is compiler flags, the rules of item 2 and a test.
 * Bad, because Species writes and tests its own transcendental functions, and every simulation call site uses them; the checker enforces it.
 * Bad, because dropping the binary32 rounding changes reference results in their last bits wherever a rule used a rounded function, so golden vectors are Species vectors, recorded once (DBG-147).
 * Neutral, because Level 3 is ruled out deliberately: a patch never re-simulates history.
 
 ### Confirmation
 
-**Confirmed when:** the simulation-core milestone (DEC-229) replays a synthetic battle of 2,000 figures with identical per-tick hashes on two CPU generations of each of two x64 vendors and with 1, 2 and 8 worker threads (Level 1); the deterministic functions pass their golden vectors on those machines; a test that adds a cosmetic effect leaves every hash unchanged; and, once a second build exists, the cross-build test replays the same corpus with identical hashes on both builds (Level 2).
+**Confirmed when** (amended 2026-10-19 for the MVP's milestones, O51 and O55): the simulation-core milestone, the MVP's M1 (DEC-229), replays its battle sandbox and a synthetic battle of 2,000 figures with identical per-tick hashes with 1, 2 and 8 worker threads on one machine, and a test that adds a cosmetic effect leaves every hash unchanged (MVP-093); the first milestone after the MVP that builds the deterministic functions of item 3, which MVP-093 defers, replays the same corpus with identical hashes on two CPU generations of each of two x64 vendors, and the functions pass their golden vectors on those machines (Level 1); and, once a second build exists, the cross-build test replays the corpus with identical hashes on both builds (Level 2).
 
 ## Pros and Cons of the Options
 
@@ -86,7 +86,8 @@ Proposed option: "B — strict binary64", scoped by the determinism levels below
 
 ## More Information
 
-* Resolves DEC-240, DEC-241 and DEC-206 when the owner confirms it at gate B. Related: [ADR-082](ADR-082-counter-based-simulation-random-draws.md) (random draws), [ADR-083](ADR-083-server-process-ownership-and-threading.md) (ownership and threads), [ADR-085](ADR-085-region-partitioned-world-simulation.md) (hand-over), [ADR-086](ADR-086-replication-and-interest-management.md) (replays as state streams).
+* Resolves DEC-240, DEC-241 and DEC-206 (Resolved 2026-10-19). Related: [ADR-082](ADR-082-counter-based-simulation-random-draws.md) (random draws), [ADR-083](ADR-083-server-process-ownership-and-threading.md) (ownership and threads), [ADR-085](ADR-085-region-partitioned-world-simulation.md) (hand-over), [ADR-086](ADR-086-replication-and-interest-management.md) (replays as state streams).
 * AGENTS.md R16 states that `/arch:AVX2` lets MSVC contract `a*b+c` into an FMA under `/fp:precise`; the Microsoft documentation cited above says that this stopped with Visual Studio 2022. The settings of R16 stand either way; the difference is reported to the owner for an amendment of R16's wording.
-* The deterministic-core rules of AGENTS.md R16 (integer ticks, ordered iteration, named random streams, no wall-clock time) apply to the simulation libraries; the design phase proposes them, with item 2's portability rules, as R18 candidates at gate C (O24).
+* The deterministic-core rules of AGENTS.md R16 (integer ticks, ordered iteration, named random streams, no wall-clock time) apply to the simulation libraries; the design phase proposes them, with item 2's portability rules, as R18 candidates at gate C (O24), when it resumes (O51).
 * **Amendment 2026-10-18 (challenge round 1).** Item 2 gains the rules on integer types, stable or total orders, hashes and pointers (A2-F13); item 6 states that Level 2 between the integrated and the Windows dedicated server holds by construction; the second operating system is an owner question (A2-F05). The challenger confirmed the `/fp:precise` contraction fact on Microsoft Learn.
+* **Amendment 2026-10-19 (owner gate B, O41; O51, O55).** The context and the drivers state O41's answer: a Windows dedicated server with a portable core, a second operating system a later ADR; item 2's portability rules are what O41 asks of the core. The "Confirmed when" is re-pointed: the MVP's M1 confirms Level 1 at any thread count on one machine; the MVP defers the deterministic functions of item 3 (MVP-093), so Level 1 across CPUs, which needs them, is confirmed at the first milestone after the MVP that builds them. Until then the MVP's simulation may call the CRT's functions, and its golden hashes hold on one machine only.

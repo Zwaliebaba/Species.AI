@@ -62,8 +62,10 @@ with status 1 when any differs; it runs in about 5 seconds. Python 3 with the st
 ## A2ServerBudget.py
 
 The server-budget model of area A2, written from `Design/architecture/04_solution_strategy.md` and the records
-ADR-079 to ADR-088 of `Design/ADR/`, revised after challenge round 1. From per-figure CPU cost budgets (ADR-080), the
-replication encoding (ADR-086), the persistence constraints (chapter §4.3.1) and area A1's world figures, which it
+ADR-079 to ADR-088 of `Design/ADR/`, revised after challenge round 1 and after owner gate B (O43 to O48, and the 89
+bytes of IPv6, UDP, QUIC and Species headers per state datagram that MsQuic's framing gives, O44). From per-figure CPU
+cost budgets (ADR-080), the replication encoding (ADR-086), the persistence constraints (chapter §4.3.1) and area A1's
+world figures, which it
 reads from `A1WorldDensity.py` in this folder by its path (settlements and regions per capacity, stewards present and
 settlements watched at the evening peak, the battles in progress of the planning and the stress case, the
 placeholder plateau population), it computes at 16 and at 200 stewards: server CPU per settlement (full and abstract
