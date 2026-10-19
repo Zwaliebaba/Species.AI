@@ -99,15 +99,15 @@ WarningsAsErrors: '*'
 # quietest way to lose a gate, which is why Build/CheckProjectFiles.py should be written to
 # compare this list against the solution rather than trusting anyone to remember.
 #
-# Only the `<Something>Tests` convention is seeded, because that is all this repository has agreed
-# on so far. The first project to be created adds its own name here, as `(<Project>|[A-Za-z0-9]+Tests)`.
+# The projects of ADR-090 table 1 are listed by name and every `<Project>Tests` project by its
+# suffix (ADR-090 item 8). A new project adds its own name here.
 #
 # [/\\], not '/'. On a Windows Clang build the paths arrive with backslashes, so a filter anchored
 # on a forward slash matches no header at all and silently suppresses every in-build diagnostic.
 # The pattern matches headers sitting DIRECTLY in a project folder, which is every hand-written
 # one (AGENTS.md §2's flat-directory rule). A bare `.*` would also match build output and the
 # Windows SDK, and most of what it reported would be from headers nobody here wrote.
-HeaderFilterRegex: '([A-Za-z0-9]+Tests)[/\\][A-Za-z0-9]+\.h$'
+HeaderFilterRegex: '(NeuronCore|NeuronClient|NeuronServer|GameShared|GameLogic|GameClient|Species|SpeciesServer|[A-Za-z0-9]+Tests)[/\\][A-Za-z0-9]+\.h$'
 
 # A `Resource.h` is written by the Visual Studio resource editor, not by hand. Its
 # `#define IDC_STATIC -1` trips bugprone-macro-parentheses, and the fix would be undone the next
