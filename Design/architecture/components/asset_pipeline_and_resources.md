@@ -2,7 +2,7 @@
 
 > Status: Engine baseline · Prefix: AST · ADRs: [ADR-017](../../ADR/ADR-017-texture-container-and-block-compression.md) · [ADR-018](../../ADR/ADR-018-texture-import-manifest.md) · [ADR-019](../../ADR/ADR-019-mesh-source-format-and-cooked-meshes.md) · [ADR-020](../../ADR/ADR-020-flat-shading-and-team-tint.md) · [ADR-021](../../ADR/ADR-021-mesh-socket-schema.md) · [ADR-025](../../ADR/ADR-025-audio-formats-codecs-and-residency.md) · [ADR-058](../../ADR/ADR-058-pack-files-and-mount-policy.md) · [ADR-059](../../ADR/ADR-059-content-build-and-validators.md) · [ADR-060](../../ADR/ADR-060-content-identity-by-hash.md) · [ADR-061](../../ADR/ADR-061-data-schemas-and-versioning.md) · also [ADR-003](../../ADR/ADR-003-shader-language-compiler-and-material-shaders.md), [ADR-006](../../ADR/ADR-006-root-signature-and-bindless-resource-access.md), [ADR-008](../../ADR/ADR-008-gpu-memory-uploads-and-device-removal.md), [ADR-013](../../ADR/ADR-013-working-colour-space-and-blending.md), [ADR-016](../../ADR/ADR-016-view-projection-and-depth-conventions.md), [ADR-034](../../ADR/ADR-034-text-rendering-and-glyph-cache.md), [ADR-056](../../ADR/ADR-056-products-configurations-and-feature-flags.md), [ADR-057](../../ADR/ADR-057-version-identity.md), [ADR-062](../../ADR/ADR-062-authoring-syntax-and-schema-language.md), [ADR-063](../../ADR/ADR-063-localisation.md), [ADR-071](../../ADR/ADR-071-install-layout-runtime-files-and-user-data.md), [ADR-078](../../ADR/ADR-078-gpu-resource-factory.md) · Related: [Renderer](renderer/README.md) · [Data schemas](data_schemas/README.md) · [Build tooling and distribution](build_tooling_and_distribution/README.md) · [Audio engine](audio_engine/README.md) · [Terrain](terrain/README.md) · [Game assets](../../assets/GameAssets.md) · [Asset manifest](../../assets/asset_manifest.csv) · [Assets README](../../assets/README.md)
 
-This component specifies how Species content travels from the authored source files under the content root `content/` to the resources a running client or server uses. At build time it covers the import records that fix every processing choice per asset (format, colour space, alpha mode, mip policy, sampler, team-tint mask); the texture, mesh, collision and audio cookers; derived assets and processing variants; the placeholder that the content build generates for every manifest row with no authored file; the build-time validators; the pack files with their table of contents; and content hashing. At run time it covers the mount set with its explicit override order, case-insensitive look-up and the loose-file mount of Debug builds; the asynchronous content reader over memory-mapped packs; the asset cache keyed by asset id and processing variant; the resident sound banks; and run-time generated textures. Its list of assets is [`assets/asset_manifest.csv`](../../assets/asset_manifest.csv), whose columns it consumes as §2.4 states.
+This component specifies how Species content travels from the authored source files under the content root `GameData/` to the resources a running client or server uses. At build time it covers the import records that fix every processing choice per asset (format, colour space, alpha mode, mip policy, sampler, team-tint mask); the texture, mesh, collision and audio cookers; derived assets and processing variants; the placeholder that the content build generates for every manifest row with no authored file; the build-time validators; the pack files with their table of contents; and content hashing. At run time it covers the mount set with its explicit override order, case-insensitive look-up and the loose-file mount of Debug builds; the asynchronous content reader over memory-mapped packs; the asset cache keyed by asset id and processing variant; the resident sound banks; and run-time generated textures. Its list of assets is [`assets/asset_manifest.csv`](../../assets/asset_manifest.csv), whose columns it consumes as §2.4 states.
 
 Notation: a **key** is the canonical name of a pack entry (§3.1); an **asset id** is the dotted id of a manifest row; a **member** is one file of a multi-file asset; a **variant** is a processing variant of an asset (a derived variant or a view, §3.5); KiB is 1024 bytes and MiB is 1024 KiB.
 
@@ -48,7 +48,7 @@ Table 1-A Boundaries.
 flowchart LR
   subgraph BUILD["Content build"]
     MAN["asset manifest"] --> VAL["validate sources, import records and references"]
-    SRC["content/ sources and import records"] --> VAL
+    SRC["GameData/ sources and import records"] --> VAL
     VAL --> COOK["cook textures, meshes, collision, audio and records"]
     COOK --> DER["derived variants and placeholders"]
     DER --> SEL["select entries per edition"]
@@ -291,16 +291,16 @@ Table 2.4-A The manifest columns and their use.
 | `priority` | a selection tag for edition manifests (ADR-059) and the grouping of the placeholder report (§4.7) |
 | `placeholder` | the placeholder generator for the row (table 4.7-A) |
 | `brief_ref` | documentation |
-| `species_filename` | the source path under `content/`; it also gives the member's key (§3.1) |
+| `species_filename` | the source path under `GameData/`; it also gives the member's key (§3.1) |
 | `source_format` | the decoder and the source checks of §4.8 |
 
 ## 3 Data model
 
 ### 3.1 Content root, keys and asset ids
 
-**AST-013** (MUST) Every authored source lives under the content root `content/`, in the folders of [GameAssets §2.1](../../assets/GameAssets.md#21-content-root-and-folders). The content build rejects a source outside the content root, and a file under it that belongs to no manifest row, no import record and no data record (a stray file).
+**AST-013** (MUST) Every authored source lives under the content root `GameData/`, in the folders of [GameAssets §2.1](../../assets/GameAssets.md#21-content-root-and-folders). The content build rejects a source outside the content root, and a file under it that belongs to no manifest row, no import record and no data record (a stray file); a parked file (GameAssets §2.7, O61) is not one.
 
-**AST-014** (MUST) The **key** of a member's cooked entry is its `species_filename` relative to the content root, with the file extension removed: the member `content/sprites/worker_front.png` has the key `sprites/worker_front`. A derived variant's key is its parent's key followed by `@` and the variant id (§3.5). Keys are UTF-8 and consist only of the lower-case ASCII letters, the digits and the characters `_`, `.`, `/` and `@`; they are at most `ast.pack.max_key_bytes` (255) bytes long (DEC-801). Data records, maps and string tables take their keys from their sources in the same way.
+**AST-014** (MUST) The **key** of a member's cooked entry is its `species_filename` relative to the content root, with the file extension removed and its letters lower-cased (O61): the member `GameData/Sprites/worker_front.png` has the key `sprites/worker_front`. A derived variant's key is its parent's key followed by `@` and the variant id (§3.5). Keys are UTF-8 and consist only of the lower-case ASCII letters, the digits and the characters `_`, `.`, `/` and `@`; they are at most `ast.pack.max_key_bytes` (255) bytes long (DEC-801). Data records, maps and string tables take their keys from their sources in the same way.
 
 **AST-015** (MUST) Asset ids and keys are case-insensitive for requesters and exact in storage. A request is canonicalised before the look-up: ASCII upper-case letters become lower case and `\` becomes `/`; the canonical key is then looked up exactly (ADR-058). The content build rejects two keys, or two asset ids, that differ only in case, and any key or id with a character outside the set of AST-014.
 
@@ -540,7 +540,7 @@ Table 3.10-A Audio asset classes.
 
 Table 3.11-A Other content types.
 
-| Content | Source under `content/` | Runtime entry | Schema owner |
+| Content | Source under `GameData/` | Runtime entry | Schema owner |
 |---|---|---|---|
 | data records of the record-type registry ([data schemas](data_schemas/README.md) table 1-A): actor statistics, Supply-crate outcomes, match options, sound sources and groups, effect definitions, input bindings, interface records and camera timelines | JSON validated by JSON Schema (ADR-062) | `Record` | [data schemas](data_schemas/README.md) |
 | maps `map.*` | a JSON map definition in the Species map schema (ADR-062) | `Map`: a header readable without the terrain, the placed records, the terrain inputs of the terrain runtime model (see DEC-246) and the baked collision data of AST-047 | data schemas, [terrain](terrain/README.md) |

@@ -339,7 +339,7 @@ Table 3.7-A Content of a cooked mesh.
 
 ### 3.10 Explainer animations
 
-**DAT-284** (MUST) An explainer animation (`ExplainerAnimation`, schema `panels.explainer`) is one authoring file under `content/ui/explainers/`, a member of the asset `anim.explainer`, with the fields of table 3.10-A; its objects and keys have the fields of table 3.10-B (R-META-226). The field `mode` names the mode whose explainer panel plays it (R-META-221), so the animation of a mode is found by its mode, never by its member number; two animations for one mode are a build error (DEC-801 item 2).
+**DAT-284** (MUST) An explainer animation (`ExplainerAnimation`, schema `panels.explainer`) is one authoring file under `GameData/Ui/explainers/`, a member of the asset `anim.explainer`, with the fields of table 3.10-A; its objects and keys have the fields of table 3.10-B (R-META-226). The field `mode` names the mode whose explainer panel plays it (R-META-221), so the animation of a mode is found by its mode, never by its member number; two animations for one mode are a build error (DEC-801 item 2).
 
 Table 3.10-A Fields of an explainer animation.
 

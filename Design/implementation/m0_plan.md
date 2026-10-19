@@ -1,6 +1,6 @@
 # M0 plan
 
-> Status: Draft · Related: [MVP scope](mvp_scope.md) §3 (M0) · [ADR-090](../ADR/ADR-090-solution-and-project-layout.md) (the project layout) · [MVP assets](mvp_assets.md) · [owner decisions](../decisions/owner_decisions.md) (O50 to O60) · [ADR index and technology baseline](../ADR/README.md)
+> Status: Draft · Related: [MVP scope](mvp_scope.md) §3 (M0) · [ADR-090](../ADR/ADR-090-solution-and-project-layout.md) (the project layout) · [MVP assets](mvp_assets.md) · [owner decisions](../decisions/owner_decisions.md) (O50 to O63) · [ADR index and technology baseline](../ADR/README.md)
 
 ## 1 Purpose
 
@@ -46,11 +46,11 @@ The engine components specify the whole engine. The MVP builds them in the order
 
 | Part | M0 | Later |
 |---|---|---|
-| Content loading | none | the Debug loose-content mount (AST-105) from M1; packs (ADR-058), editions (ADR-056 manifests) and content identity by hash (ADR-060) before the first build that leaves the owner's PC |
-| Content build tool | none | `SpeciesContentBuild.exe` at M1, with the texture cooker of ADR-017 (DirectXTex, a tool-only package that ADR-017 records) and the font packer of O56; the glTF importer and mesh cooker of ADR-019 at M2; the audio cooker at M3 |
+| Content loading | none | the Debug loose-content mount (AST-105) of `GameData/`, the content root (O61), from M1; packs (ADR-058), editions (ADR-056 manifests) and content identity by hash (ADR-060) before the first build that leaves the owner's PC |
+| Content build tool | none | `SpeciesContentBuild.exe` at M1, with the texture cooker of ADR-017 (DirectXTex, a tool-only package that ADR-017 records), the check that packs a DDS in its row's format as authored (O61) and the font packer of O56 and O63; the glTF importer and mesh cooker of ADR-019 at M2; the audio cooker at M3 |
 | Schema code generator | the tool project of ADR-062, for the schema subset that the first tuning record needs | the further record types as each milestone adds them |
 | Input | none | keyboard and mouse through window messages at M1 (ADR-028); GameInput when gamepads arrive, after the MVP |
-| Text | none | the generated placeholder face at M1 and the owner's two bitmap faces when drawn (ADR-034 as amended, O56) |
+| Text | none | the owner's two bitmap faces at M1, GameFont for the game and EditorFont for the development overlay, at whole-number scales (ADR-034 as amended, O62, O63); the generated placeholder face only for a face that is missing |
 | Audio | none | the first sound set at M3 (MVP-087) |
 | Transport | `InProcessTransport` | `QuicTransport` over MsQuic at M4 (ADR-089) |
 | Crash reporting, signing, installer | none | before the first external build (ADR-065, ADR-071, ADR-072, ADR-073) |
@@ -80,9 +80,9 @@ T3, T5 and T8 have no dependency on T4 and can run beside it; everything else fo
 
 ## 6 What the owner prepares for M1
 
-M1 starts on generated placeholders, so nothing here blocks M0. Its look exit criterion, a battle that is fun to watch, needs the owner's hand-made assets of [MVP assets](mvp_assets.md) §4, drawn while M0 is built:
+M1 starts on generated placeholders for whatever is missing, so nothing here blocks M0. The owner's 17 textures and two fonts are in `GameData/` already ([MVP assets](mvp_assets.md) §6). Its look exit criterion, a battle that is fun to watch, needs the owner's other hand-made assets of [MVP assets](mvp_assets.md) §4, drawn while M0 is built:
 - the Worker cards: front, side and the four hurt poses;
-- the body face's 1x and 2x glyph sheets and its glyph table (O56, DAT-219);
-- the 14 vector files that M1 uses: cursors, markers, the Leader banner states and the first icons.
+- the 14 vector files that M1 uses: cursors, markers, the Leader banner states and the first icons;
+- the four textures that differ from their rows, exported again or their rows amended ([MVP assets](mvp_assets.md) §6).
 
 The reference test machine is pinned at the start of M1 (O58).

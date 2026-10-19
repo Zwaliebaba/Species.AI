@@ -10,7 +10,7 @@ Notation used throughout:
 - A **configuration** is `Debug|x64` or `Release|x64`, the only two (ADR-054). **Debug builds** compile the development facilities in; **Release builds** are what players and testers run (ADR-056).
 - An **edition** is one selection of content with its runtime feature flags, described by one **edition manifest** (ADR-056, ADR-059). An edition **marked for release** is one whose manifest sets the release flag (§3.2).
 - A **channel** is a distribution channel, and a **channel wrapper** is the package that one channel delivers (ADR-072).
-- The **repository layout** is that of `AGENTS.md` §2 and ADR-054: the solution `<Solution>.slnx` at the repository root, with one flat folder per project and the shader subfolders `<Lib>/Shader/` and `<Lib>/CompiledShader/`; `content/`, the authoring sources of the content build (ADR-059); `Tools/`, the tool projects and the design tools; `Build/`, the checker scripts; and `.github/workflows/build.yml`, the CI workflow.
+- The **repository layout** is that of `AGENTS.md` §2 and ADR-054: the solution `<Solution>.slnx` at the repository root, with one flat folder per project and the shader subfolders `<Lib>/Shader/` and `<Lib>/CompiledShader/`; `GameData/`, the authoring sources of the content build (ADR-059); `Tools/`, the tool projects and the design tools; `Build/`, the checker scripts; and `.github/workflows/build.yml`, the CI workflow.
 - A **CI job** is a job of `.github/workflows/build.yml`, committed or added by amendment of ADR-070.
 - The **release procedure** is the Release build, the release checks, packaging, signing and symbol publication that whoever ships runs before a release (BLD-122).
 
@@ -132,7 +132,7 @@ Table 2.2-B Options of the content build.
 | Option | Meaning | Default |
 |---|---|---|
 | `--edition <id>` (repeatable) or `--all-editions` | the editions to build or validate | every edition |
-| `--content-root <dir>` | the content root | `content/` of the checkout |
+| `--content-root <dir>` | the content root | `GameData/` of the checkout |
 | `--out <dir>` | the output directory (§3.4) | `out\content\` under the repository root, which is build output |
 | `--clean` | removes the output directory first, so every output is rebuilt | off: incremental |
 | `--jobs <n>` | the number of worker threads | the hardware thread count |
@@ -340,7 +340,7 @@ Table 3.1-B Compile-time switches by configuration.
 
 ### 3.2 Edition manifests
 
-**BLD-015** (MUST) An edition manifest is a record of type `edition.manifest`, authored under `content/records/editions/` in the schema of the [data schemas](../data_schemas/README.md) (`import_and_build_records.md`, DAT table 1-A). Its fields have the meanings of table 3.2-A; this document owns those meanings, and the schema owns the field types.
+**BLD-015** (MUST) An edition manifest is a record of type `edition.manifest`, authored under `GameData/Records/editions/` in the schema of the [data schemas](../data_schemas/README.md) (`import_and_build_records.md`, DAT table 1-A). Its fields have the meanings of table 3.2-A; this document owns those meanings, and the schema owns the field types.
 
 Table 3.2-A Edition-manifest fields.
 
@@ -590,7 +590,7 @@ Table 4.9-B CI jobs that amendments of ADR-070 add.
 
 | Job | Runs | Guarded on | Requirements |
 |---|---|---|---|
-| content build | `SpeciesContentBuild build --all-editions`, incremental from the kept graph, with every validator; it publishes the reports | the content build tool and `content/` | §4.5, BLD-055 |
+| content build | `SpeciesContentBuild build --all-editions`, incremental from the kept graph, with every validator; it publishes the reports | the content build tool and `GameData/` | §4.5, BLD-055 |
 | reproducibility (scheduled) | two clean content builds of one revision on different agents, compared byte for byte | the content build job | BLD-067 |
 | soak (scheduled) | the headless bot soak of the diagnostics component: the server with the `soak` edition on every mode and map at maximum speed | the server project and the `soak` edition | DBG-160, DEC-804, DEC-220 item 3 |
 | performance (scheduled) | the performance tests in Release builds against the component budgets, and the budgets of §5 | the performance test projects | BLD-117, DBG-208 |

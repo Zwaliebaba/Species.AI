@@ -90,7 +90,7 @@ std::expected<TelemetrySessionRecord, std::vector<Diagnostic>> ReadQueuedTelemet
 
 ### 3.1 The soak configuration
 
-**DAT-372** (MUST) A soak configuration (`test.soak_configuration`) is authored under `content/records/test/` with the fields of table 3.1-A and the top-level `schema` and `version` fields of README DAT-016. It is selected by the test tag into the `development` and `soak` editions, as the test maps are, and never into a player edition (BLD-057, DBG-148, DEC-802). It is cooked as a `Record` (README table 1-A), so the soak runner reads it as a cooked record and never parses its text (README DAT-004); the runner is given the configuration's id (DBG-160).
+**DAT-372** (MUST) A soak configuration (`test.soak_configuration`) is authored under `GameData/Records/test/` with the fields of table 3.1-A and the top-level `schema` and `version` fields of README DAT-016. It is selected by the test tag into the `development` and `soak` editions, as the test maps are, and never into a player edition (BLD-057, DBG-148, DEC-802). It is cooked as a `Record` (README table 1-A), so the soak runner reads it as a cooked record and never parses its text (README DAT-004); the runner is given the configuration's id (DBG-160).
 
 Table 3.1-A Fields of a soak configuration.
 
@@ -204,7 +204,7 @@ Table 3.3-A Fields of a telemetry session record.
 
 ```mermaid
 flowchart LR
-  CFG["soak configuration, content/records/test/"] --> V["README DAT-024, then DAT-373 per edition"]
+  CFG["soak configuration, GameData/Records/test/"] --> V["README DAT-024, then DAT-373 per edition"]
   ED["edition manifests: development, soak"] --> V
   V -- "any error" --> F["build error"]
   V --> P["cooked Record in the edition's packs"]

@@ -6,7 +6,7 @@ This document specifies the schema of the map definition (`MapDefinition`, schem
 
 ## 1 Responsibilities and boundaries
 
-**DAT-070** (MUST) This document owns the record types `maps.definition`, `maps.index` and `mode.options`: their field keys, logical types, presence rules, ranges, the validation of every map and the cooked layout of the map entry. A map is one authoring file, `content/maps/<map id>.json`, a member of one of the map assets `mapfile.spawn_control`, `mapfile.zone_control`, `mapfile.relic_run`, `mapfile.siege`, `mapfile.launch_race` and `mapfile.flag_chain`, and one cooked `Map` entry flagged simulation-relevant (README table 1-A).
+**DAT-070** (MUST) This document owns the record types `maps.definition`, `maps.index` and `mode.options`: their field keys, logical types, presence rules, ranges, the validation of every map and the cooked layout of the map entry. A map is one authoring file, `GameData/Maps/<map id>.json`, a member of one of the map assets `mapfile.spawn_control`, `mapfile.zone_control`, `mapfile.relic_run`, `mapfile.siege`, `mapfile.launch_race` and `mapfile.flag_chain`, and one cooked `Map` entry flagged simulation-relevant (README table 1-A).
 
 **DAT-071** (MUST NOT) This document defines no map rule. The rules of maps and their per-mode conventions are [maps: rules and conventions](../../../reference/08_maps_and_level_design/rules_and_conventions.md)'s, the generator that reads the terrain records is [terrain](../terrain/README.md)'s, the camera that uses the camera views is [camera and sequences](../camera_and_sequences.md)'s, the meaning of the structure fields is [reference/03](../../../reference/03_buildings_and_world_objects/README.md)'s, and the match options' effects are [reference/01](../../../reference/01_skirmish_rules_and_modes/README.md)'s.
 
@@ -507,7 +507,7 @@ Table 3.12-B Fields of one option of a mode's option list.
 
 ```mermaid
 flowchart TD
-  A["map file content/maps/&lt;map id&gt;.json"] --> B["strict parse (README DAT-019)"]
+  A["map file GameData/Maps/&lt;map id&gt;.json"] --> B["strict parse (README DAT-019)"]
   B --> C["schema: header, options, effects, blocks, fields, ranges, lengths"]
   C --> D["map id, player count and start positions"]
   D --> E["references: string ids, assets, camera views, structure links, routes"]

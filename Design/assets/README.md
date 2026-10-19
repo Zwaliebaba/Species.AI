@@ -27,12 +27,12 @@ This folder lists what the reference mechanics and the MVP need as Species conte
 | UI sounds | 15 | 18 | 2 | 16 | 0 | 0 |
 | Ambience | 4 | 21 | 0 | 11 | 10 | 0 |
 | Music | 4 | 6 | 0 | 0 | 2 | 4 |
-| Fonts | 5 | 11 | 6 | 0 | 5 | 0 |
+| Fonts | 6 | 10 | 4 | 0 | 6 | 0 |
 | String table | 10 | 10 | 1 | 1 | 8 | 0 |
 | Maps and thumbnails | 12 | 98 | 0 | 4 | 94 | 0 |
-| **Total** | **462** | **1431** | **125** | **559** | **728** | **19** |
+| **Total** | **463** | **1430** | **123** | **559** | **729** | **19** |
 
-The `mvp` set is what the MVP's milestones M1 to M4 need (O55): 125 files in 90 asset ids, 34 of the files new; [MVP assets](../implementation/mvp_assets.md) gives each one's milestone and how it is produced. The first-playable set is one skirmish mode, Spawn Control for 2 players, with the core Supply-crate pool, and it now follows the MVP ([GameAssets.md §2.5](GameAssets.md#25-priorities-and-the-first-playable-assumption)). 811 reference files and 281 reference text entries need no Species counterpart ([GameAssets.md §20](GameAssets.md#20-not-to-be-created)).
+The `mvp` set is what the MVP's milestones M1 to M4 need (O55): 123 files in 90 asset ids, 36 of the files new, and 19 of them already made by the owner (O61); [MVP assets](../implementation/mvp_assets.md) gives each one's milestone and how it is produced. The first-playable set is one skirmish mode, Spawn Control for 2 players, with the core Supply-crate pool, and it now follows the MVP ([GameAssets.md §2.5](GameAssets.md#25-priorities-and-the-first-playable-assumption)). 811 reference files and 281 reference text entries need no Species counterpart ([GameAssets.md §20](GameAssets.md#20-not-to-be-created)).
 
 ## Technical constraints per category
 
@@ -51,13 +51,13 @@ The `mvp` set is what the MVP's milestones M1 to M4 need (O55): 125 files in 90 
 | UI sounds | 2-D, short one-shots; mono or stereo |
 | Ambience | 2-D layered loops; a group streams, as MS-ADPCM decoded by XAudio2, when its longest member is over 20 s (AEN-072, ADR-025) |
 | Music | New; stereo 48 kHz; streamed as MS-ADPCM, decoded by XAudio2; slots proposed, final list set by the design phase |
-| Fonts | Two bitmap faces drawn for Species in the condensed style, no licence needed (O56): per face a greyscale coverage glyph sheet at 1x and at 2x and a JSON glyph table, packed into `R8_UNORM` pages that are never block-compressed (ADR-034); MVP coverage U+0020-007E, U+00A0-00FF and eight punctuation marks; the Japanese and Korean companions are licensed font files for the DirectWrite upgrade, which also brings Cyrillic and the currency signs |
+| Fonts | The owner's two bitmap faces, no licence needed (O56, O62): GameFont for every player-facing text and EditorFont for the development tools, each one 16 px glyph sheet and a JSON glyph table, packed into one `R8_UNORM` page that is never block-compressed and drawn at whole-number scales with point sampling (ADR-034, O63); coverage U+0020-007E and U+00BF-00FF; the Japanese and Korean companions are licensed font files for the DirectWrite upgrade, which also brings Cyrillic and the currency signs |
 | String table | New text only; ICU MessageFormat; one table per language; the reference set of nine languages; a development string table in development editions only |
 | Maps and thumbnails | New layouts; one slot per reference map by mode and player count; one auto-rendered 4:3 thumbnail per map |
 
 ## Placeholder rule
 
-The content build generates a stand-in for every manifest row that has no authored file yet, at the same runtime path and with the same format, size, channel layout, sockets and loop flag as the row specifies. The game therefore always builds and runs, and every missing asset is visible in the build report. An authored file under `content/` replaces its stand-in; nothing else changes. The stand-in kinds:
+The content build generates a stand-in for every manifest row that has no authored file yet, at the same runtime path and with the same format, size, channel layout, sockets and loop flag as the row specifies. The game therefore always builds and runs, and every missing asset is visible in the build report. An authored file under `GameData/` replaces its stand-in; nothing else changes. The stand-in kinds:
 
 | Placeholder | What the content build generates |
 |---|---|
@@ -74,7 +74,7 @@ The content build generates a stand-in for every manifest row that has no author
 | synthesised tone | sine or noise burst of the stated duration, looping where the row says loop |
 | text-to-speech line | synthetic voice line of the stated duration |
 | silence | silent file of the stated length, looping where the row says loop |
-| generated block font | a block-letter face that a tool draws from a glyph table written in the tool's own source, newly authored for Species, with the drawn face's sheets, glyph table and coverage, so a missing face never blocks a build |
+| generated block font | a block-letter face that a tool draws from a glyph table written in the tool's own source, newly authored for Species, with the drawn face's sheet, glyph table and coverage, so a missing face never blocks a build |
 | fallback font | an open-licence font with the same script coverage (the companion font files of the DirectWrite upgrade only) |
 | pseudo-localised text | text generated from each string id, padded to test layout |
 | generated test map | flat map with the objects the mode needs for its player count |

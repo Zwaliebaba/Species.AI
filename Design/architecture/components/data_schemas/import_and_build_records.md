@@ -245,7 +245,7 @@ Table 3.4-A Fields of the engine asset table.
 
 ### 3.5 Edition manifests
 
-**DAT-358** (MUST) An edition manifest (`edition.manifest`) is authored under `content/records/editions/` with the fields of table 3.5-A, which are the fields of [build tooling and distribution](../build_tooling_and_distribution/README.md) table 3.2-A; their meanings, the release flag's among them, are BLD-015 to BLD-018, BLD-049 to BLD-055 and BLD-078, and this document owns their types.
+**DAT-358** (MUST) An edition manifest (`edition.manifest`) is authored under `GameData/Records/editions/` with the fields of table 3.5-A, which are the fields of [build tooling and distribution](../build_tooling_and_distribution/README.md) table 3.2-A; their meanings, the release flag's among them, are BLD-015 to BLD-018, BLD-049 to BLD-055 and BLD-078, and this document owns their types.
 
 Table 3.5-A Field types of an edition manifest.
 
