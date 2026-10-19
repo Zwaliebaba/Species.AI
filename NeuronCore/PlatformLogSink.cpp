@@ -35,7 +35,7 @@ PlatformLogState& State()
   return g_state;
 }
 
-void WriteToDebugger([[maybe_unused]] std::string_view _message) noexcept
+void WriteToDebugger([[maybe_unused]] std::string_view _message)
 {
 #if ENGINE_DEVELOPMENT
   std::wstring line = ToUtf16(_message);

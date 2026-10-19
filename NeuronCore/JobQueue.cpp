@@ -2,6 +2,8 @@
 
 #include "JobQueue.h"
 
+#include <exception>
+
 namespace Neuron
 {
 
@@ -12,7 +14,15 @@ JobQueue::JobQueue(std::string_view _threadName)
 
 JobQueue::~JobQueue()
 {
-  Stop();
+  try
+  {
+    Stop();
+  }
+  catch (...)
+  {
+    // A queue that cannot stop and join its worker can keep none of its futures' promises: the fatal path reports it.
+    std::terminate();
+  }
 }
 
 void JobQueue::Stop()

@@ -3,6 +3,7 @@
 #include "PlatformLogSink.h"
 #include "TestSupport.h"
 
+#include <atomic>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -21,14 +22,26 @@ class RecordingSink final : public Neuron::PlatformLogSink
 public:
   void Write(Neuron::PlatformLogLevel, std::string_view _message) noexcept override
   {
-    const std::lock_guard lock(m_mutex);
-    if (_message.starts_with("sink test"))
+    try
     {
-      m_messages.emplace_back(_message);
+      const std::lock_guard lock(m_mutex);
+      if (_message.starts_with("sink test"))
+      {
+        m_messages.emplace_back(_message);
+      }
+    }
+    catch (...)
+    {
+      m_lost.store(true, std::memory_order_relaxed);
     }
   }
 
   void RecordFatal(std::string_view) noexcept override {}
+
+  [[nodiscard]] bool LostRecords() const noexcept
+  {
+    return m_lost.load(std::memory_order_relaxed);
+  }
 
   [[nodiscard]] std::vector<std::string> Messages()
   {
@@ -38,6 +51,7 @@ public:
 
 private:
   std::mutex m_mutex;
+  std::atomic<bool> m_lost{false};
   std::vector<std::string> m_messages;
 };
 
@@ -69,6 +83,7 @@ public:
     Neuron::SetPlatformLogSink(&sink);
     Assert::IsTrue(Neuron::CurrentPlatformLogSink() == &sink, L"the sink is set");
     Neuron::PlatformLog(Neuron::PlatformLogLevel::Debug, "sink test 4");
+    Assert::IsFalse(sink.LostRecords(), L"every record was kept");
     const std::vector<std::string> messages = sink.Messages();
     ExpectEqual(4, static_cast<std::int64_t>(messages.size()), L"records received");
     for (std::size_t index = 0; index < messages.size(); ++index)

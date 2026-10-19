@@ -41,8 +41,16 @@ TemporaryFolder::TemporaryFolder()
 
 TemporaryFolder::~TemporaryFolder()
 {
-  std::error_code error;
-  (void)std::filesystem::remove_all(m_path, error);
+  try
+  {
+    std::error_code error;
+    (void)std::filesystem::remove_all(m_path, error);
+  }
+  catch (...)
+  {
+    // A folder left behind is harmless: the next run of this process id removes it first.
+    OutputDebugStringW(L"NeuronCoreTests: a temporary folder was not removed\n");
+  }
 }
 
 std::vector<std::string> TakeDevelopmentChecks()
