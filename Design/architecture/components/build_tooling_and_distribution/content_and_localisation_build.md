@@ -123,7 +123,7 @@ Table 4.6-A Uses of the map identity.
 
 ```mermaid
 flowchart LR
-  SRC["content/maps/map id source"] --> VAL["validate: schema, links, per-mode rules"]
+  SRC["GameData/Maps/map id source"] --> VAL["validate: schema, links, per-mode rules"]
   VAL --> COOK["cook the canonical map entry"]
   COOK --> H["SHA-256 of the cooked bytes"]
   H --> CM["content manifest: key, hash, simulation-relevant"]

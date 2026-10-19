@@ -6,14 +6,14 @@
 
 ## Where things are
 
-- **What to build next:** `Design/implementation/mvp_scope.md`, the solo MVP of the world game (owner decisions O50 to O56). It cites the requirements it implements and says where it narrows or defers them; `Design/implementation/mvp_assets.md` lists the assets it needs.
+- **What to build next:** `Design/implementation/mvp_scope.md`, the solo MVP of the world game (owner decisions O50 to O63). It cites the requirements it implements and says where it narrows or defers them; `Design/implementation/mvp_assets.md` lists the assets it needs.
 - **The design:** `vision/species-vision-brief.md` (the pitch; owner decisions O1–O30), `Design/decisions/owner_decisions.md` (every owner decision, O1 onwards), `Design/gdd/` (the Species game design: pillars and core loops, world and regions), `Design/architecture/04_solution_strategy.md` (Final) with ADR-079 to ADR-089, then the reference library.
 - **The reference library** (`Design/`): `README.md` (reading guide), `CONVENTIONS.md` (ids, units, naming, allowed terms), `REQUIREMENTS_INDEX.md`, `reference/` (reference mechanics), `architecture/components/` (the engine baseline), `ADR/` (architecture decision records, `ADR-NNN-<slug>.md`), `decisions/` (decision register, `DEC-NNN`; an Open entry states the behaviour to build until it is decided), `assets/GameAssets.md` (every asset to create).
 - **The paused design run:** `prompts/species-design-phase.md` and its working files in `species_design_work/` (`RUN_LOG.md`, area briefs, challenges).
 
 ## Current status (2026-10-18)
 
-- There is no code yet: no solution, no projects, no source.
+- There is no code yet: no solution, no projects, no source. `GameData/` is the content root (O61) and holds the owner's first assets: two bitmap fonts and 17 textures (`Design/implementation/mvp_assets.md` §6).
 - The design phase ran wave A and is paused (O51): A0 (pillars, loops, vocabulary) and A1 (world and regions) are Final; A2 (solution strategy, ADR-079 to ADR-088, and ADR-089 for MsQuic) is Final, with owner gate B (O41 to O49) applied; its ADRs stay Proposed until the MVP milestones confirm them. Waves B to E are not run.
 - The next step is the MVP's milestone M0: `Design/implementation/m0_plan.md`, task T1 first, in the project layout of ADR-090 (O60). Code is written here and compiled by CI; the owner runs it on their PC (m0_plan §2).
 
