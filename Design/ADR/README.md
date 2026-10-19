@@ -91,6 +91,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-088](ADR-088-transport-messages-identity-and-diagnostics.md) | Transport: one interface with an in-process implementation and one on MsQuic, with reliable streams, QUIC datagrams and TLS 1.3, schema-defined messages, player identity keys, build and content identity, and network diagnostics (DEC-204, DEC-207, DEC-208; A2) | Proposed | 2026-10-18 |
 | [ADR-089](ADR-089-msquic-transport-package.md) | MsQuic transport package: `Microsoft.Native.Quic.MsQuic.Schannel` 2.6.3, the fourth allow-listed Microsoft package, used only behind the transport interface (O44; A2) | Accepted | 2026-10-19 |
 | [ADR-090](ADR-090-solution-and-project-layout.md) | Solution and project layout: six Neuron and Game libraries, two thin programs, one MSBuild solution | Accepted | 2026-10-19 |
+| [ADR-091](ADR-091-log-pipeline-buffers-and-registration.md) | Log pipeline: two rings per thread, a drain thread, and the logger's registration | Proposed | 2026-10-19 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

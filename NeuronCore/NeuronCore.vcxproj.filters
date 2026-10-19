@@ -4,19 +4,106 @@
     <Filter Include="Build">
       <UniqueIdentifier>{5E598DB9-58CC-5702-B1D5-C4F66C274EF8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Diagnostics">
+      <UniqueIdentifier>{6D1C4C7B-138C-5352-B44B-BED8535A12F3}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Platform">
       <UniqueIdentifier>{24F9CD3C-9AA4-5819-A3A3-9DB045EF9081}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Profiling">
+      <UniqueIdentifier>{B4C6CBB4-C952-54DE-A67F-8184FB2545E1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="pch.h">
+    <ClInclude Include="Check.h">
+      <Filter>Diagnostics</Filter>
+    </ClInclude>
+    <ClInclude Include="Development.h">
       <Filter>Build</Filter>
+    </ClInclude>
+    <ClInclude Include="FatalPath.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Files.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="FloatEnvironment.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="JobQueue.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Log.h">
+      <Filter>Diagnostics</Filter>
+    </ClInclude>
+    <ClInclude Include="LogBuffer.h">
+      <Filter>Diagnostics</Filter>
+    </ClInclude>
+    <ClInclude Include="LogFile.h">
+      <Filter>Diagnostics</Filter>
+    </ClInclude>
+    <ClInclude Include="PlatformClock.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="PlatformLogSink.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="PlatformThread.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile.h">
+      <Filter>Profiling</Filter>
+    </ClInclude>
+    <ClInclude Include="TextEncoding.h">
+      <Filter>Platform</Filter>
     </ClInclude>
     <ClInclude Include="WindowsHeaders.h">
       <Filter>Platform</Filter>
     </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>Build</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Check.cpp">
+      <Filter>Diagnostics</Filter>
+    </ClCompile>
+    <ClCompile Include="FatalPath.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="Files.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="FloatEnvironment.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="JobQueue.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="Log.cpp">
+      <Filter>Diagnostics</Filter>
+    </ClCompile>
+    <ClCompile Include="LogBuffer.cpp">
+      <Filter>Diagnostics</Filter>
+    </ClCompile>
+    <ClCompile Include="LogFile.cpp">
+      <Filter>Diagnostics</Filter>
+    </ClCompile>
+    <ClCompile Include="PlatformClock.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="PlatformLogSink.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="PlatformThread.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile.cpp">
+      <Filter>Profiling</Filter>
+    </ClCompile>
+    <ClCompile Include="TextEncoding.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Build</Filter>
     </ClCompile>
