@@ -145,7 +145,7 @@ private:
 | R2 affixes, R7 file names and project registration, R11 spellings, §2 flat directories, shader names and functional filters | `Build/CheckProjectFiles.py`, gated in CI |
 | R4, R6, R9, R10 | Review. Check your own diff against the table before handing it back. |
 
-**Neither checker exists yet** (§6). `.clang-tidy` is configured and gates the moment there is a translation unit to run it over; `Build/CheckProjectFiles.py` has to be written, and until it is, the four rules in its row are review's problem and nothing else. A rule nobody can run is a rule that rots, so writing that checker is early work rather than housekeeping.
+**Both checkers gate in CI** (§6): `Build/RunClangTidy.py` runs clang-tidy over every translation unit, and `Build/CheckProjectFiles.py` the rules of table 4.1-B of the build tooling component, each rule proved by a fixture on every run. Rule 14's source rules for code that does not exist yet are listed in the checker and printed on every run; each is added in the change that brings its code.
 
 ---
 
@@ -278,7 +278,7 @@ The reference library already states rules of this kind, and the design phase de
 
 **Run the design checks on every change under `Design/`.** `python Tools/DesignCheck/CheckDesign.py Design` checks links, requirement ids, decision and ADR references, asset ids, tuning keys, sizes, templates and banned terms; it must pass before a design change is pushed.
 
-**Write the checkers early.** `Build/CheckFormat.py`, `Build/CheckProjectFiles.py` and `Build/RunClangTidy.py` are what §1, §2 and §3 lean on, and **none of them exists yet.** Until each one lands, the rules it would enforce are review's problem — which is exactly why they are early work rather than housekeeping.
+**Write the checkers early.** `Build/CheckFormat.py`, `Build/CheckProjectFiles.py` and `Build/RunClangTidy.py` are what §1, §2 and §3 lean on, and all three gate in CI since M0 task T2. A rule the checkers cannot see yet is review's problem until a checker learns it — which is why a checker grows with the code rather than after it.
 
 **What CI runs.** [`.github/workflows/build.yml`](.github/workflows/build.yml) has three jobs: a Windows job that checks the build shape, restores the NuGet packages R14 allows, builds **Debug|x64**, runs the test suites and then clang-tidy; a Linux job that checks formatting on a pinned clang-format; and a Linux job that runs the design checks over `Design/` (§6, "Run the design checks"). **Every step that has something to run blocks; a step whose input does not exist yet is skipped, not faked.** Each gate is guarded on the file it needs — the checker script, the solution, the built test DLLs — so the workflow is honest about today's empty tree and starts gating the moment that file lands. The guards are the only concession: nothing is `continue-on-error`, and a script that exists and fails still fails the build. Remove a guard once its input is permanently there, not before, and never add one to get past a red build.
 
