@@ -1,30 +1,26 @@
 <Solution>
   <Configurations>
-    <BuildType Name="Debug" />
-    <BuildType Name="Release" />
     <Platform Name="x64" />
   </Configurations>
   <Folder Name="/Neuron/">
-    <Project Path="NeuronCore/NeuronCore.vcxproj" />
-    <Project Path="NeuronClient/NeuronClient.vcxproj" />
-    <Project Path="NeuronServer/NeuronServer.vcxproj" />
+    <Project Path="NeuronCore/NeuronCore.vcxproj" Id="b741a81b-029e-5262-a9ea-1b5c1fc60fa5" />
+    <Project Path="NeuronClient/NeuronClient.vcxproj" Id="1ac87626-fe67-5dfe-9f03-e2df3d4d55ce" />
+    <Project Path="NeuronServer/NeuronServer.vcxproj" Id="4b5e0bee-fc50-5a88-b13e-7add0979038e" />
   </Folder>
   <Folder Name="/Game/">
-    <Project Path="GameShared/GameShared.vcxproj" />
-    <Project Path="GameLogic/GameLogic.vcxproj" />
-    <Project Path="GameClient/GameClient.vcxproj" />
-  </Folder>
-  <Folder Name="/Programs/">
-    <Project Path="Species/Species.vcxproj" />
-    <Project Path="SpeciesServer/SpeciesServer.vcxproj" />
+    <Project Path="GameShared/GameShared.vcxproj" Id="f980c2b8-3656-5fe0-b665-bfff326e4679" />
+    <Project Path="GameLogic/GameLogic.vcxproj" Id="079fdebc-c69e-5e9e-ad88-24897bb29606" />
+    <Project Path="GameClient/GameClient.vcxproj" Id="25da8fa7-c380-5870-9901-0c79b00ee7ee" />
   </Folder>
   <Folder Name="/Tests/">
-    <Project Path="NeuronCoreTests/NeuronCoreTests.vcxproj" />
-    <Project Path="NeuronClientTests/NeuronClientTests.vcxproj" />
-    <Project Path="NeuronServerTests/NeuronServerTests.vcxproj" />
-    <Project Path="GameSharedTests/GameSharedTests.vcxproj" />
-    <Project Path="GameLogicTests/GameLogicTests.vcxproj" />
-    <Project Path="GameClientTests/GameClientTests.vcxproj" />
+    <Project Path="NeuronCoreTests/NeuronCoreTests.vcxproj" Id="cba31174-7d31-59b4-8d40-126ba53261f1" />
+    <Project Path="NeuronClientTests/NeuronClientTests.vcxproj" Id="b1d70e4f-fef7-5e57-8360-926aee4a5ca3" />
+    <Project Path="NeuronServerTests/NeuronServerTests.vcxproj" Id="7fb72dfa-9259-5916-b477-b1aa821f98ae" />
+    <Project Path="GameSharedTests/GameSharedTests.vcxproj" Id="f9364ef7-fb18-5cc1-9f5c-eaf27294b98f" />
+    <Project Path="GameLogicTests/GameLogicTests.vcxproj" Id="c202a587-e340-5738-900b-5675f6105562" />
+    <Project Path="GameClientTests/GameClientTests.vcxproj" Id="631d1fb3-5a7a-5285-8aff-a50203088689" />
   </Folder>
   <Folder Name="/Tools/" />
+  <Project Path="Species/Species.vcxproj" Id="01ec7822-74c7-56d1-9d56-ed835e64f15d" />
+  <Project Path="SpeciesServer/SpeciesServer.vcxproj" Id="24cf16cb-a2cf-5ca3-9295-af229a58000c" />
 </Solution>
