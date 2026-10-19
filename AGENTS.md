@@ -4,9 +4,9 @@ Operating instructions for every agent (and human) writing code in this reposito
 
 This repository is a greenfield C++23 game and a hobby project with one developer: a Direct3D 12 game built on Windows with MSVC. This file is about **how code is written here** — naming, layout, build settings and the standing rules of the codebase. It is not the design: what the game *is* belongs in `Design/` and `vision/` (see "What is authoritative" below).
 
-**There is no code yet.** This repository holds this file, the root configuration files, `.gitignore`, `.github/`, the design material and the owner's first content in `GameData/` — no solution, no projects, no source. Nothing below is a target to migrate towards; it describes the code as it must be written from the first line. There is no legacy here and nothing is grandfathered, so a whole-tree run of any code checker comes back clean — trivially today, and by conformance from then on.
+**There is almost no code yet.** This repository holds this file, the root configuration files, `.gitignore`, `.github/`, the design material, the owner's first content in `GameData/` and the solution skeleton of ADR-090 — fourteen projects that hold precompiled headers, `WindowsHeaders.h`, two empty entry points and the `SuiteSmoke` placeholders, and no engine or game source. Nothing below is a target to migrate towards; it describes the code as it must be written from the first line. There is no legacy here and nothing is grandfathered, so a whole-tree run of any code checker comes back clean — trivially today, and by conformance from then on.
 
-**What the tree holds today (2026-10-18):**
+**What the tree holds today (2026-10-19):**
 
 | Path | What it is |
 |---|---|
@@ -14,6 +14,7 @@ This repository is a greenfield C++23 game and a hobby project with one develope
 | `vision/species-vision-brief.md` | The Species pitch and the owner's decisions O1–O30; every later owner decision is in `Design/decisions/owner_decisions.md`. |
 | `Design/` | The **Species reference library**: `reference/` (the reference mechanics of a skirmish match, engine-agnostic), `architecture/components/` (the engine baseline, one specification per component), `ADR/` (the baseline architecture decision records), `decisions/` (the decision register, `DEC-NNN`), `assets/` (every asset to create, `GameAssets.md`), `glossary/`, `CONVENTIONS.md` and `REQUIREMENTS_INDEX.md`. Beside it, the **Species design** of wave A: `gdd/` (pillars and core loops, world and regions), `architecture/04_solution_strategy.md` with ADR-079 onward, and `implementation/` (the MVP scope and its assets, what is built next). |
 | `prompts/species-design-phase.md`, `species_design_work/` | The design-phase run and its working files; the run is paused after wave A (owner decision O51) and resumes from the MVP's playtest evidence. |
+| `Species.slnx` and its project folders | The solution skeleton of ADR-090 (M0 task T1): the libraries `NeuronCore`, `NeuronClient`, `NeuronServer`, `GameShared`, `GameLogic` and `GameClient`, the programs `Species` and `SpeciesServer`, and one `<Project>Tests` project per library, each a flat folder at the repository root with its `.vcxproj`, `.filters` and `pch.h`. `NeuronCore` and `NeuronClient` restore `WinPixEventRuntime` and the Agility SDK from their `packages.config`. |
 | `GameData/` | The **content root** (owner decision O61): the authored assets that the content build reads, in PascalCase top-level folders (`Fonts/`, `Textures/`). Today the owner's two bitmap fonts with their generated glyph tables, 17 textures and one parked texture. Content, not code: no checker of §1 to §4 applies to it, and `Design/assets/` is its manifest. |
 | `Tools/DesignCheck/`, `Tools/DesignModels/` | The design gate checker (run on every change under `Design/`) and the design phase's quantitative models. They never ship and never link (R14). |
 
@@ -144,7 +145,7 @@ private:
 | R2 affixes, R7 file names and project registration, R11 spellings, §2 flat directories, shader names and functional filters | `Build/CheckProjectFiles.py`, gated in CI |
 | R4, R6, R9, R10 | Review. Check your own diff against the table before handing it back. |
 
-**Neither checker exists yet** (§6). `.clang-tidy` is configured and gates the moment there is a translation unit to run it over; `Build/CheckProjectFiles.py` has to be written, and until it is, the four rules in its row are review's problem and nothing else. A rule nobody can run is a rule that rots, so writing that checker is early work rather than housekeeping.
+**Both checkers gate in CI** (§6): `Build/RunClangTidy.py` runs clang-tidy over every translation unit, and `Build/CheckProjectFiles.py` the rules of table 4.1-B of the build tooling component, each rule proved by a fixture on every run. Rule 14's source rules for code that does not exist yet are listed in the checker and printed on every run; each is added in the change that brings its code.
 
 ---
 
@@ -277,7 +278,7 @@ The reference library already states rules of this kind, and the design phase de
 
 **Run the design checks on every change under `Design/`.** `python Tools/DesignCheck/CheckDesign.py Design` checks links, requirement ids, decision and ADR references, asset ids, tuning keys, sizes, templates and banned terms; it must pass before a design change is pushed.
 
-**Write the checkers early.** `Build/CheckFormat.py`, `Build/CheckProjectFiles.py` and `Build/RunClangTidy.py` are what §1, §2 and §3 lean on, and **none of them exists yet.** Until each one lands, the rules it would enforce are review's problem — which is exactly why they are early work rather than housekeeping.
+**Write the checkers early.** `Build/CheckFormat.py`, `Build/CheckProjectFiles.py` and `Build/RunClangTidy.py` are what §1, §2 and §3 lean on, and all three gate in CI since M0 task T2. A rule the checkers cannot see yet is review's problem until a checker learns it — which is why a checker grows with the code rather than after it.
 
 **What CI runs.** [`.github/workflows/build.yml`](.github/workflows/build.yml) has three jobs: a Windows job that checks the build shape, restores the NuGet packages R14 allows, builds **Debug|x64**, runs the test suites and then clang-tidy; a Linux job that checks formatting on a pinned clang-format; and a Linux job that runs the design checks over `Design/` (§6, "Run the design checks"). **Every step that has something to run blocks; a step whose input does not exist yet is skipped, not faked.** Each gate is guarded on the file it needs — the checker script, the solution, the built test DLLs — so the workflow is honest about today's empty tree and starts gating the moment that file lands. The guards are the only concession: nothing is `continue-on-error`, and a script that exists and fails still fails the build. Remove a guard once its input is permanently there, not before, and never add one to get past a red build.
 

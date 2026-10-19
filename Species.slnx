@@ -1,0 +1,30 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+    <Platform Name="x64" />
+  </Configurations>
+  <Folder Name="/Neuron/">
+    <Project Path="NeuronCore/NeuronCore.vcxproj" />
+    <Project Path="NeuronClient/NeuronClient.vcxproj" />
+    <Project Path="NeuronServer/NeuronServer.vcxproj" />
+  </Folder>
+  <Folder Name="/Game/">
+    <Project Path="GameShared/GameShared.vcxproj" />
+    <Project Path="GameLogic/GameLogic.vcxproj" />
+    <Project Path="GameClient/GameClient.vcxproj" />
+  </Folder>
+  <Folder Name="/Programs/">
+    <Project Path="Species/Species.vcxproj" />
+    <Project Path="SpeciesServer/SpeciesServer.vcxproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="NeuronCoreTests/NeuronCoreTests.vcxproj" />
+    <Project Path="NeuronClientTests/NeuronClientTests.vcxproj" />
+    <Project Path="NeuronServerTests/NeuronServerTests.vcxproj" />
+    <Project Path="GameSharedTests/GameSharedTests.vcxproj" />
+    <Project Path="GameLogicTests/GameLogicTests.vcxproj" />
+    <Project Path="GameClientTests/GameClientTests.vcxproj" />
+  </Folder>
+  <Folder Name="/Tools/" />
+</Solution>
