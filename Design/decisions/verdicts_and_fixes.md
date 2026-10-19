@@ -126,7 +126,7 @@ Sections 7 to 9 (DEC-064 to DEC-119) are in [verdicts_and_fixes_3.md](verdicts_a
 
 ### DEC-015 Content is validated at build time, and no load path is fatal
 - Status: Resolved
-- Affects: architecture/components/data_schemas/ (DAT), architecture/components/asset_pipeline_and_resources.md (AST), architecture/components/build_tooling_and_distribution.md (BLD), reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP)
+- Affects: architecture/components/data_schemas/ (DAT), architecture/components/asset_pipeline_and_resources.md (AST), architecture/components/build_tooling_and_distribution/ (BLD), reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP)
 - Specified behaviour: The content build validates every data file against its schema and every asset reference against the asset set. A missing mandatory field, an unterminated block, a stray blank line or a missing asset is a build error with a diagnostic, and so is a key listed twice, such as a second population-cap line in a map, where the reference takes the last line (DEC-801). At run time a loader never passes a missing token on as a value and never hangs on malformed text, and a missing asset is reported as a diagnostic with a fallback, never a fatal assertion. Loaders are fuzz-tested.
 - Options: A — schema validation at build time and fault-tolerant loaders; B — tolerate malformed authoring text at load and leave its effect to each loader.
 - Recommendation: A. Malformed content that reaches a loader can stop or hang the program; the content build rejects it with a diagnostic (ADR-059), so broken maps and data are caught before release.

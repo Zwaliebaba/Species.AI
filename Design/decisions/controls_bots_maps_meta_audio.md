@@ -129,7 +129,7 @@ This file holds the decisions on controls and powers, bots, maps and level data,
 
 ### DEC-561 Per-mode map validation
 - Status: Resolved
-- Affects: reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP), reference/08_maps_and_level_design/map_editor_hooks.md (R-MAP), reference/03_buildings_and_world_objects/mode_objects.md (R-BLDG), architecture/components/data_schemas/ (DAT), architecture/components/build_tooling_and_distribution.md (BLD)
+- Affects: reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP), reference/08_maps_and_level_design/map_editor_hooks.md (R-MAP), reference/03_buildings_and_world_objects/mode_objects.md (R-BLDG), architecture/components/data_schemas/ (DAT), architecture/components/build_tooling_and_distribution/ (BLD)
 - Specified behaviour: Mode objects are typed records with validated links, and Flag post adjacency is stored as one two-way relation. The content build, and any map tool when it saves, validates a map for every mode it offers and rejects it with a diagnostic when a rule fails:
   1. Relic Run: exactly one Relic Base per start position, and at least one Relic Spawn Zone;
   2. Flag Chain: one Home post per start position, and a connected Flag post graph;
@@ -148,7 +148,7 @@ This file holds the decisions on controls and powers, bots, maps and level data,
 
 ### DEC-563 Map thumbnails and the map index are content-build outputs
 - Status: Resolved
-- Affects: reference/08_maps_and_level_design/README.md (R-MAP), reference/09_front_end_and_match_flow/options_localisation_and_hooks.md (R-META), reference/00_reference_overview.md (R-VIS-041), architecture/components/asset_pipeline_and_resources.md (AST), architecture/components/build_tooling_and_distribution.md (BLD)
+- Affects: reference/08_maps_and_level_design/README.md (R-MAP), reference/09_front_end_and_match_flow/options_localisation_and_hooks.md (R-META), reference/00_reference_overview.md (R-VIS-041), architecture/components/asset_pipeline_and_resources.md (AST), architecture/components/build_tooling_and_distribution/ (BLD)
 - Specified behaviour: The content build renders each map's thumbnail with the engine, from a top-down view of the map at an aspect ratio of 4:3. It also generates the map index, the list of map ids that the Completionist achievement hook counts (DEC-047), and packages it with the maps it lists. Packaged data holds no asset that nothing references.
 - Options: A — build outputs; B — the reference behaviour, in which thumbnails are 400 × 300 images made outside the engine, the content build leaves the map index out of the packaged data, so the Completionist achievement has no list of maps to count, and the packaged data holds assets that nothing references.
 - Recommendation: A. A generated thumbnail always matches the map it shows, and a generated index cannot drift from the maps it lists.

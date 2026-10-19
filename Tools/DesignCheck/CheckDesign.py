@@ -99,7 +99,7 @@ SCALE_PATH_HEADING = (9, 'Scale path')
 # directly under architecture/components/. Every other component there is new and carries §9 Scale path.
 BASELINE_COMPONENTS = ('renderer', 'terrain', 'asset_pipeline_and_resources.md', 'animation_and_vfx', 'audio_engine',
                        'ui_framework', 'input', 'camera_and_sequences.md', 'data_schemas', 'platform_layer.md',
-                       'build_tooling_and_distribution.md', 'diagnostics_test_and_performance')
+                       'build_tooling_and_distribution', 'diagnostics_test_and_performance')
 MODEL_AREAS = ('A1', 'A2', 'B2', 'B4', 'B5', 'B6')   # "model required" in §5.2
 
 TRUNC = re.compile(r'\betc\b\.?|\band so on\b|\band others\b|\bvarious\b|\bsimilar to the above\b|…', re.I)

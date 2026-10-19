@@ -56,7 +56,7 @@ How the code is written and built (naming, the MSBuild solution, the dependency 
 | [Animation and VFX](architecture/components/animation_and_vfx/README.md) | 3 | 167 KB |
 | [Asset pipeline and resources](architecture/components/asset_pipeline_and_resources.md) | 1 | 119 KB |
 | [Audio engine](architecture/components/audio_engine/README.md) | 3 | 112 KB |
-| [Build tooling and distribution](architecture/components/build_tooling_and_distribution.md) | 1 | 120 KB |
+| [Build tooling and distribution](architecture/components/build_tooling_and_distribution/README.md) | 3 | 129 KB |
 | [Camera and sequences](architecture/components/camera_and_sequences.md) | 1 | 76 KB |
 | [Data schemas](architecture/components/data_schemas/README.md) | 7 | 268 KB |
 | [Diagnostics, test and performance](architecture/components/diagnostics_test_and_performance/README.md) | 5 | 143 KB |

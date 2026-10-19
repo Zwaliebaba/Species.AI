@@ -1,6 +1,6 @@
 # Logging, checks and profiling
 
-> Status: Engine baseline · Prefix: DBG · ADRs: [ADR-067](../../../ADR/ADR-067-logging.md) · [ADR-065](../../../ADR/ADR-065-crash-reporting.md) · [ADR-068](../../../ADR/ADR-068-profiling-and-gpu-timing.md) · [ADR-057](../../../ADR/ADR-057-version-identity.md) · [ADR-074](../../../ADR/ADR-074-platform-clock-with-injectable-time.md) · Folder: [diagnostics, test and performance](README.md) · Related: [platform layer](../platform_layer.md) · [frame graph and passes](../renderer/frame_graph_and_passes.md) · [build tooling and distribution](../build_tooling_and_distribution.md)
+> Status: Engine baseline · Prefix: DBG · ADRs: [ADR-067](../../../ADR/ADR-067-logging.md) · [ADR-065](../../../ADR/ADR-065-crash-reporting.md) · [ADR-068](../../../ADR/ADR-068-profiling-and-gpu-timing.md) · [ADR-057](../../../ADR/ADR-057-version-identity.md) · [ADR-074](../../../ADR/ADR-074-platform-clock-with-injectable-time.md) · Folder: [diagnostics, test and performance](README.md) · Related: [platform layer](../platform_layer.md) · [frame graph and passes](../renderer/frame_graph_and_passes.md) · [build tooling and distribution](../build_tooling_and_distribution/README.md)
 
 This document specifies the logging system, the check levels, the black box and the fatal path, and the profiling layer with its marker catalogue and its profile view. The responsibilities of the component, the interface sketch (Listing 2.1-A), the facilities per build configuration (DBG-004) and the threading contract are in the [README](README.md).
 
@@ -56,7 +56,7 @@ The logging, check, black-box and profiling declarations are those of Listing 2.
 
 It never holds chat text, account tokens, the names of other players or the Windows user name, and every path in it is written relative to the install directory or the user-data root, with the root shown as a placeholder (ADR-065, ADR-067; see DEC-970). It does not hold the channel tag, which reaches the log header only (BLD-021, BLD-120).
 
-**DBG-048** (MUST) A failed check is recorded with the build identity, the time, the message and the stack. The black-box record (DBG-047 item 7) holds the first three, and the stack is taken from the dump, symbolised through the symbol store of every distributed build ([build tooling and distribution](../build_tooling_and_distribution.md), ADR-065); no Species code walks frame pointers.
+**DBG-048** (MUST) A failed check is recorded with the build identity, the time, the message and the stack. The black-box record (DBG-047 item 7) holds the first three, and the stack is taken from the dump, symbolised through the symbol store of every distributed build ([build tooling and distribution](../build_tooling_and_distribution/README.md), ADR-065); no Species code walks frame pointers.
 
 ## 4 Behaviour and algorithms
 

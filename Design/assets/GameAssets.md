@@ -1189,7 +1189,7 @@ The reference documents and engine components cite 590 string ids and id pattern
 | `ui.player.*` | 1 | [data_schemas/config_input_and_strings](../architecture/components/data_schemas/config_input_and_strings.md) and 2 more |
 | `ui.player_options.*` | 5 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
 | `ui.power_slots.*` | 10 | [06_controls_camera_and_commands/selection_and_power_slots](../reference/06_controls_camera_and_commands/selection_and_power_slots.md) and 6 more |
-| `ui.repair.*` | 2 | [build_tooling_and_distribution](../architecture/components/build_tooling_and_distribution.md) and 1 more |
+| `ui.repair.*` | 2 | [build_tooling_and_distribution](../architecture/components/build_tooling_and_distribution/README.md) and 1 more |
 | `ui.settings.*` | 1 | [data_schemas/config_input_and_strings](../architecture/components/data_schemas/config_input_and_strings.md) and 2 more |
 | `ui.team.*` | 1 | [12_simulation_model/06_teams_and_player_commands](../reference/12_simulation_model/06_teams_and_player_commands.md) |
 | `ui.title.*` | 2 | [ui_framework/core_and_widgets](../architecture/components/ui_framework/core_and_widgets.md) and 3 more |
@@ -1200,7 +1200,7 @@ String ids added for the assets, with the documents that cite them:
 
 | String ids | Text | Main owner |
 |---|---|---|
-| `ui.repair.passed`, `ui.repair.failed` | the result of the installation repair check | [build_tooling_and_distribution](../architecture/components/build_tooling_and_distribution.md) and 1 more |
+| `ui.repair.passed`, `ui.repair.failed` | the result of the installation repair check | [build_tooling_and_distribution](../architecture/components/build_tooling_and_distribution/README.md) and 1 more |
 | `ui.error.os_unsupported`, `ui.error.user_data_unavailable`, `ui.error.user_data_inside_install`, `ui.error.language_missing`, `ui.error.internal` | start-up errors of the platform layer, also compiled into the executable | [platform_layer](../architecture/components/platform_layer.md) and 1 more |
 | `ui.error.content_missing`, `ui.error.content_damaged` | a game file is missing or damaged | [asset_pipeline_and_resources](../architecture/components/asset_pipeline_and_resources.md) and 2 more |
 | `ui.error.gpu_unsupported`, `ui.error.display_mode`, `ui.error.resolution_rejected` | graphics start-up and display-mode errors | [platform_layer](../architecture/components/platform_layer.md) and 2 more |

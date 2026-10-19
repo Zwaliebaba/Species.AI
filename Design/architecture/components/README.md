@@ -16,5 +16,5 @@ Each component specification states what the component owns and must not do, its
 | [Camera and sequences](camera_and_sequences.md) | `CAM` | the camera rig, view state, timelines and scripted sequences |
 | [Data schemas](data_schemas/README.md) | `DAT` | the schema language and every authored and cooked record family |
 | [Platform layer](platform_layer.md) | `PLT` | process lifecycle, window, clock, user data, settings store, crash path and system services |
-| [Build tooling and distribution](build_tooling_and_distribution.md) | `BLD` | toolchain, the solutions and their configurations, content build, editions, CI, packaging and crash symbols |
+| [Build tooling and distribution](build_tooling_and_distribution/README.md) | `BLD` | toolchain, the solutions and their configurations, content build, editions, CI, packaging and crash symbols |
 | [Diagnostics, test and performance](diagnostics_test_and_performance/README.md) | `DBG` | logging, the black box, profiling, development overlays and commands, soak and performance tests |

@@ -1,14 +1,14 @@
 # Import records and build records
 
-> Status: Engine baseline · Prefix: DAT · ADRs: [ADR-018](../../../ADR/ADR-018-texture-import-manifest.md) · [ADR-019](../../../ADR/ADR-019-mesh-source-format-and-cooked-meshes.md) · [ADR-020](../../../ADR/ADR-020-flat-shading-and-team-tint.md) · [ADR-025](../../../ADR/ADR-025-audio-formats-codecs-and-residency.md) · [ADR-056](../../../ADR/ADR-056-products-configurations-and-feature-flags.md) · [ADR-059](../../../ADR/ADR-059-content-build-and-validators.md) · [ADR-061](../../../ADR/ADR-061-data-schemas-and-versioning.md) · [ADR-062](../../../ADR/ADR-062-authoring-syntax-and-schema-language.md) · Folder: [data schemas](README.md) · Related: [asset pipeline and resources](../asset_pipeline_and_resources.md) · [build tooling and distribution](../build_tooling_and_distribution.md) · [asset manifest](../../../assets/asset_manifest.csv)
+> Status: Engine baseline · Prefix: DAT · ADRs: [ADR-018](../../../ADR/ADR-018-texture-import-manifest.md) · [ADR-019](../../../ADR/ADR-019-mesh-source-format-and-cooked-meshes.md) · [ADR-020](../../../ADR/ADR-020-flat-shading-and-team-tint.md) · [ADR-025](../../../ADR/ADR-025-audio-formats-codecs-and-residency.md) · [ADR-056](../../../ADR/ADR-056-products-configurations-and-feature-flags.md) · [ADR-059](../../../ADR/ADR-059-content-build-and-validators.md) · [ADR-061](../../../ADR/ADR-061-data-schemas-and-versioning.md) · [ADR-062](../../../ADR/ADR-062-authoring-syntax-and-schema-language.md) · Folder: [data schemas](README.md) · Related: [asset pipeline and resources](../asset_pipeline_and_resources.md) · [build tooling and distribution](../build_tooling_and_distribution/README.md) · [asset manifest](../../../assets/asset_manifest.csv)
 
-This document specifies the schemas of the records that the content build reads and that no runtime loads as such: the import record beside each texture, mesh and audio source, the engine asset table that the code contributes, and the edition manifests. The meaning of every field belongs to the [asset pipeline](../asset_pipeline_and_resources.md) for the import records and the engine asset table, and to [build tooling and distribution](../build_tooling_and_distribution.md) for the edition manifests; this document gives the fields their keys, types, presence rules and checks.
+This document specifies the schemas of the records that the content build reads and that no runtime loads as such: the import record beside each texture, mesh and audio source, the engine asset table that the code contributes, and the edition manifests. The meaning of every field belongs to the [asset pipeline](../asset_pipeline_and_resources.md) for the import records and the engine asset table, and to [build tooling and distribution](../build_tooling_and_distribution/README.md) for the edition manifests; this document gives the fields their keys, types, presence rules and checks.
 
 ## 1 Responsibilities and boundaries
 
 **DAT-350** (MUST) This document owns the record types `import.texture`, `import.mesh`, `import.audio`, `assets.engine_table` and `edition.manifest` (README table 1-A): their keys, logical types, presence rules, ranges and the checks that the content build applies to them.
 
-**DAT-351** (MUST NOT) This document defines no cooking step, no texture or audio format, no edition and no feature flag: those are the [asset pipeline](../asset_pipeline_and_resources.md)'s (AST-018 to AST-050), the texture and audio ADRs' (ADR-017, ADR-018, ADR-025) and [build tooling and distribution](../build_tooling_and_distribution.md)'s (BLD-015 to BLD-018).
+**DAT-351** (MUST NOT) This document defines no cooking step, no texture or audio format, no edition and no feature flag: those are the [asset pipeline](../asset_pipeline_and_resources.md)'s (AST-018 to AST-050), the texture and audio ADRs' (ADR-017, ADR-018, ADR-025) and [build tooling and distribution](../build_tooling_and_distribution/README.md)'s (BLD-015 to BLD-018).
 
 ## 2 Interfaces
 
@@ -245,7 +245,7 @@ Table 3.4-A Fields of the engine asset table.
 
 ### 3.5 Edition manifests
 
-**DAT-358** (MUST) An edition manifest (`edition.manifest`) is authored under `content/records/editions/` with the fields of table 3.5-A, which are the fields of [build tooling and distribution](../build_tooling_and_distribution.md) table 3.2-A; their meanings, the release flag's among them, are BLD-015 to BLD-018, BLD-049 to BLD-055 and BLD-078, and this document owns their types.
+**DAT-358** (MUST) An edition manifest (`edition.manifest`) is authored under `content/records/editions/` with the fields of table 3.5-A, which are the fields of [build tooling and distribution](../build_tooling_and_distribution/README.md) table 3.2-A; their meanings, the release flag's among them, are BLD-015 to BLD-018, BLD-049 to BLD-055 and BLD-078, and this document owns their types.
 
 Table 3.5-A Field types of an edition manifest.
 

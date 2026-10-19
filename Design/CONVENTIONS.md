@@ -49,7 +49,7 @@ Every normative statement is a requirement with a stable ID, written as `**<PREF
 | `CAM` | Camera and sequences | `architecture/components/camera_and_sequences.md` |
 | `DAT` | Data schemas | `architecture/components/data_schemas/` |
 | `PLT` | Platform layer | `architecture/components/platform_layer.md` |
-| `BLD` | Build tooling and distribution | `architecture/components/build_tooling_and_distribution.md` |
+| `BLD` | Build tooling and distribution | `architecture/components/build_tooling_and_distribution/` |
 | `DBG` | Diagnostics, test and performance | `architecture/components/diagnostics_test_and_performance/` |
 | `PIL` | Species: vision, pillars and core loops | `gdd/00_vision_pillars_and_core_loops.md` |
 | `WLD` | Species: world and regions | `gdd/01_world_and_regions/` |

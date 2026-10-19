@@ -298,7 +298,7 @@ No match rule of reference/06 uses the three axis helpers; the stateful hold-or-
 | `latch` | an `on` operand and an `off` operand, both `Boolean` and neither a `latch` | `Boolean` | §4.8 |
 | `idle` | `at_least` N, `reaches` N or `no_longer`; N a whole number of seconds of at least 1 | `Axis1` for `at_least` (x = the idle time), otherwise `Boolean` | §4.8 |
 | `setting` | a setting key (`<group>.<setting>`, [data schemas](../data_schemas/config_input_and_strings.md) table 3.1-A) and an optional negation | `Boolean` | the setting must exist in the settings store or its defaults when the binding loads; it can be negated once |
-| `value` | `always_true`, or `feature` with the name of an on/off runtime feature flag of [build tooling](../build_tooling_and_distribution.md) table 3.2-B | `Boolean` | `always_true` is always true; `feature` is true while the edition sets that flag `on` (INP-143); a flag that table 3.2-B does not list, or one whose values are not `on` and `off`, is rejected when the binding loads |
+| `value` | `always_true`, or `feature` with the name of an on/off runtime feature flag of [build tooling](../build_tooling_and_distribution/README.md) table 3.2-B | `Boolean` | `always_true` is always true; `feature` is true while the edition sets that flag `on` (INP-143); a flag that table 3.2-B does not list, or one whose values are not `on` and `off`, is rejected when the binding loads |
 
 **INP-061** (MUST) An action accepts a binding by the action's kind:
 
@@ -504,7 +504,7 @@ Table 6.1-A Load diagnostic classes.
 | `KindNotAccepted` | the binding's kind is not accepted by the action's kind (INP-061) |
 | `AliasCycle` | an alias chain leads back to an action already on the chain |
 | `UnknownSetting` | a setting node names a setting that does not exist, or negates twice |
-| `UnknownFlag` | a value node's `feature` names a flag that [build tooling](../build_tooling_and_distribution.md) table 3.2-B does not list, or one whose values are not `on` and `off` (INP-143) |
+| `UnknownFlag` | a value node's `feature` names a flag that [build tooling](../build_tooling_and_distribution/README.md) table 3.2-B does not list, or one whose values are not `on` and `off` (INP-143) |
 | `UnknownGlyph` | a glyph override names an asset id that is not in the asset manifest |
 | `DuplicateEntry` | a warning: a replacing layer sets one action twice (INP-163) |
 
