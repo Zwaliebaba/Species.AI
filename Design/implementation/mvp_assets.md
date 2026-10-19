@@ -230,7 +230,7 @@ MVP-087, from M3: one sample group per sound, the smallest that suits it. The wa
 
 The new rows rest on these readings of the MVP scope; each is a row's spec and changes with the scope.
 
-- **Construction ports.** Workers build a structure at ports on its own mesh: six on the dwelling and four on the storehouse; the turret is built at its four manning ports. MVP-033 does not state the count.
+- **Construction ports.** Workers build a structure at ports on its own mesh: six on the dwelling and four on the storehouse; the turret is built at its four manning ports, as MVP-033 states with `mvp.construction.ports_dwelling`, `mvp.construction.ports_storehouse` and `mvp.construction.ports_turret`.
 - **Sockets.** The Wellspring carries the Spawn Node's sockets (`door`, `essence_link`, three lights, five ports; R-BLDG-124) and an `entrance` for drop-off; the storehouse's drop-off point is its `entrance`. A resource site carries `mvp.resource.ports_per_unit` (4) ports per unit, so a change of that value changes the two resource-site meshes.
 - **Orb glow.** MVP-082 names `fx.glow_cloudy` for the Essence orbs, while the reference draws them with `fx.glow_round` (RND-418); both are `mvp`, and `fx.glow_cloudy` also gives the Wellspring its glow.
 - **Territory line.** The long beam strip `fx.beam_long` draws the territory line of MVP-084.
