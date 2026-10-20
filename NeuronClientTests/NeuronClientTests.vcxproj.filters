@@ -29,6 +29,9 @@
     <ClCompile Include="AppWindowTests.cpp">
       <Filter>Window</Filter>
     </ClCompile>
+    <ClCompile Include="FrameGraphTests.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
     <ClCompile Include="GpuResourceFactoryTests.cpp">
       <Filter>Resources</Filter>
     </ClCompile>
