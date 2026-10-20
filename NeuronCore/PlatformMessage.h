@@ -8,9 +8,6 @@
 namespace Neuron
 {
 
-// The window's handle, without <windows.h> (ADR-075).
-using NativeWindowHandle = struct HWND__*;
-
 enum class MessageSeverity : std::uint8_t
 {
   Notice,
@@ -46,10 +43,6 @@ struct PlatformMessageContext
 void SetPlatformMessageContext(const PlatformMessageContext* _context) noexcept;
 // The run id of the context, 0 while none is set.
 [[nodiscard]] std::uint64_t PlatformMessageRunId() noexcept;
-
-// The window that owns pre-UI messages while it exists (PLT-039); nullptr when there is none.
-void SetPlatformMessageOwner(NativeWindowHandle _window) noexcept;
-[[nodiscard]] NativeWindowHandle PlatformMessageOwner() noexcept;
 
 // A message's text: the compiled-in text of the id with every {name} replaced by the argument of that name, or the id
 // and its arguments when the id has no compiled-in text. Named arguments are the part of ICU MessageFormat that the

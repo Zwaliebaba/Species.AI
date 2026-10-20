@@ -127,9 +127,9 @@ WINDOWS_MACROS = ('NOMINMAX', 'WIN32_LEAN_AND_MEAN', 'NOMCX', 'NOSERVICE', 'NOHE
 # platform layer is NeuronCore (ADR-090 table 1); the window is NeuronClient's, so it may create one too.
 PLATFORM_PROJECT = 'NeuronCore'
 WINDOW_PROJECTS = {'NeuronCore', 'NeuronClient'}
-# ADR-083 item 1: no header of the server or simulation libraries includes a Windows header; they reach the system
-# through NeuronCore's platform layer only.
-HEADLESS_PROJECTS = {'NeuronServer', 'GameShared', 'GameLogic'}
+# ADR-083 item 1: no source of the server or simulation libraries, or of the headless server's program, includes a
+# Windows header; they reach the system through NeuronCore's platform layer only.
+HEADLESS_PROJECTS = {'NeuronServer', 'GameShared', 'GameLogic', 'SpeciesServer'}
 # R-SIM-019, R-SIM-730: simulation code holds no mutable static state. .clang-tidy names every mutable global and
 # static variable g_ and every mutable static member sm_, so such a name in a simulation source is such a variable.
 SIMULATION_PROJECTS = {'GameShared', 'GameLogic'}

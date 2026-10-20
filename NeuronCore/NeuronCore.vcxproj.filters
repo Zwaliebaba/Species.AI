@@ -36,6 +36,9 @@
     <ClInclude Include="Check.h">
       <Filter>Diagnostics</Filter>
     </ClInclude>
+    <ClInclude Include="ConsoleStop.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
     <ClInclude Include="ContentDiagnostic.h">
       <Filter>Records</Filter>
     </ClInclude>
@@ -68,6 +71,9 @@
     </ClInclude>
     <ClInclude Include="MessageCodec.h">
       <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="NativeWindowHandle.h">
+      <Filter>Platform</Filter>
     </ClInclude>
     <ClInclude Include="PlatformClock.h">
       <Filter>Platform</Filter>
@@ -130,6 +136,9 @@
     </ClCompile>
     <ClCompile Include="Check.cpp">
       <Filter>Diagnostics</Filter>
+    </ClCompile>
+    <ClCompile Include="ConsoleStop.cpp">
+      <Filter>Platform</Filter>
     </ClCompile>
     <ClCompile Include="ContentDiagnostic.cpp">
       <Filter>Records</Filter>

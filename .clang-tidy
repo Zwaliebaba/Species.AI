@@ -130,6 +130,8 @@ CheckOptions:
 
   # ── Functions: PascalCase ──────────────────────────────────────────────────────────
   - { key: readability-identifier-naming.FunctionCase,             value: CamelCase  }
+  # The C runtime's Unicode console entry point, whose name the CRT fixes (R4); wWinMain is declared by the SDK.
+  - { key: readability-identifier-naming.FunctionIgnoredRegexp,    value: '^wmain$'  }
   - { key: readability-identifier-naming.MethodCase,               value: CamelCase  }
 
   # ── Constants: UPPER_CASE (R3); enumerators stay PascalCase above ──────────────────

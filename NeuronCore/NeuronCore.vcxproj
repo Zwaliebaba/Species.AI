@@ -147,6 +147,7 @@
     <ClInclude Include="BitReader.h" />
     <ClInclude Include="BitWriter.h" />
     <ClInclude Include="Check.h" />
+    <ClInclude Include="ConsoleStop.h" />
     <ClInclude Include="ContentDiagnostic.h" />
     <ClInclude Include="Development.h" />
     <ClInclude Include="FatalPath.h" />
@@ -158,6 +159,7 @@
     <ClInclude Include="LogBuffer.h" />
     <ClInclude Include="LogFile.h" />
     <ClInclude Include="MessageCodec.h" />
+    <ClInclude Include="NativeWindowHandle.h" />
     <ClInclude Include="PlatformClock.h" />
     <ClInclude Include="PlatformError.h" />
     <ClInclude Include="PlatformLogSink.h" />
@@ -180,6 +182,7 @@
     <ClCompile Include="BitReader.cpp" />
     <ClCompile Include="BitWriter.cpp" />
     <ClCompile Include="Check.cpp" />
+    <ClCompile Include="ConsoleStop.cpp" />
     <ClCompile Include="ContentDiagnostic.cpp" />
     <ClCompile Include="FatalPath.cpp" />
     <ClCompile Include="Files.cpp" />

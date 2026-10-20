@@ -184,6 +184,14 @@ jobs:
             /m /nologo /v:minimal /warnaserror `
             /flp:LogFile=build.log`;Verbosity=normal
 
+      # ADR-090's confirmation and PLT-005: the headless server loads no Direct3D, DXGI, GameInput or
+      # audio library. Read from the built executable's import table with dumpbin, so a library that a
+      # static library pulls into the link is caught as well as one the program names.
+      - name: Check the headless server's libraries
+        if: steps.solution.outputs.path != ''
+        shell: pwsh
+        run: python Build\CheckServerImports.py
+
       # One suite per *Tests.vcxproj in the tree, and every one of them must have produced a DLL:
       # vstest reports "no tests found" as a pass, so a suite that did not build is not a suite
       # that passed. No suites at all is a state this repository is still legitimately in.

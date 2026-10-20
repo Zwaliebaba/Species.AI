@@ -2,6 +2,7 @@
 
 #include <CommCtrl.h>
 
+#include "NativeWindowHandle.h"
 #include "PlatformLogSink.h"
 #include "PlatformMessage.h"
 #include "TextEncoding.h"

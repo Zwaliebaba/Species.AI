@@ -1,5 +1,6 @@
 #pragma once
 
+#include "NativeWindowHandle.h"
 #include "PlatformClock.h"
 #include "PlatformError.h"
 #include "PlatformMessage.h"
