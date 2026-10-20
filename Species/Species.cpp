@@ -374,11 +374,11 @@ int Run()
 #if ENGINE_DEVELOPMENT
     if (checkFrames.has_value())
     {
-      const std::uint64_t messages = Neuron::FrameRenderer::DebugLayerMessages();
-      checkPassed = worldFrames >= *checkFrames && messages == 0;
+      const std::uint64_t layerMessages = Neuron::FrameRenderer::DebugLayerMessages();
+      checkPassed = worldFrames >= *checkFrames && layerMessages == 0;
       Neuron::Log(Neuron::LogCategory::Render, checkPassed ? Neuron::LogLevel::Info : Neuron::LogLevel::Error,
                   "render check {}: {} of {} world frames drawn, {} debug-layer messages", checkPassed ? "passed" : "failed", worldFrames,
-                  *checkFrames, messages);
+                  *checkFrames, layerMessages);
     }
 #endif
   }

@@ -148,9 +148,9 @@ struct RendererState
   std::array<ComPtr<ID3D12Resource>, BACK_BUFFER_COUNT> backBuffers;
 
   std::unique_ptr<ShaderVisibleHeaps> heaps;
-  std::optional<UploadRing> ring;
+  std::unique_ptr<UploadRing> ring;
   ComPtr<ID3D12RootSignature> rootSignature;
-  std::optional<PipelineCatalog> catalog;
+  std::unique_ptr<PipelineCatalog> catalog;
   std::optional<SceneTargets> targets;
   std::uint32_t sceneSamples = 1;
   std::uint32_t sceneReadSlot = 0;
@@ -398,11 +398,12 @@ std::expected<void, StartupFailure> CreateFrameObjects(RendererState& _state)
   {
     return std::unexpected(StartupFailure{StartupError::DeviceCreationFailed, adapter, "a copy queue"});
   }
-  _state.ring = UploadRing::Create(d3d, UPLOAD_SEGMENT_BYTES);
-  if (!_state.ring)
+  std::optional<UploadRing> ring = UploadRing::Create(d3d, UPLOAD_SEGMENT_BYTES);
+  if (!ring)
   {
     return std::unexpected(StartupFailure{StartupError::DeviceCreationFailed, adapter, "the upload ring"});
   }
+  _state.ring = std::make_unique<UploadRing>(std::move(*ring));
   _state.rootSignature = CreateGraphicsRootSignature(d3d);
   if (_state.rootSignature == nullptr)
   {
@@ -415,7 +416,7 @@ std::expected<void, StartupFailure> CreateFrameObjects(RendererState& _state)
   {
     return std::unexpected(StartupFailure{StartupError::PipelineCreationFailed, adapter, catalog.error()});
   }
-  _state.catalog = std::move(*catalog);
+  _state.catalog = std::make_unique<PipelineCatalog>(std::move(*catalog));
   // ADR-004: the table is validated and its barriers derived once, and every pass's catalogue key exists.
   WorldFrameTable table = WorldFrame(_state.sceneSamples > 1);
   std::expected<BarrierPlan, PassTableError> plan = PlanBarriers(table.targets, table.passes);
