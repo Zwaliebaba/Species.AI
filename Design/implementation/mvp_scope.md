@@ -57,6 +57,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-016** (MUST) A settlement sees its own territory and the area within `mvp.vision.unit_radius` (300 wu) of each of its Workers, Leaders and structures; this is its seen layer (WLD-242). Every settlement sees the public layer of WLD-242: terrain, sites, settlements and their Cladans, territories, cores, border areas and their holders, claims and battle results. AI settlements and the deputy act on these two layers only (PIL-084), and the server sends a client only what its settlement may see (MVP-097).
 
+**MVP-017** (MUST) Navigation nodes are generated with the terrain, in place of the nodes that a reference map places by hand (R-SIM-331, R-BOT-027; O70): a point of a square lattice of spacing `mvp.nav.node_spacing` (320 wu) over the region is a node where the terrain is dry and walkable by the path test of R-SIM-335 to R-SIM-337, and one node more stands at each settlement site's centre, at the central resource site and at the middle of each valley border area. The nodes are numbered in a stable order from the terrain alone, with no draw. The land route graph, its next-hop tables and route building (R-SIM-330 to R-SIM-359), the threat search (R-UNIT-098) and the AI (MVP-058) use them as the reference uses a map's nodes, and they are the routes that WLD-100 and check 8 of WLD-163 measure.
+
 ### 2.3 Settlement, Essence and growth (stands in for B1)
 
 **MVP-020** (MUST) A settlement starts with its Wellspring at its site's centre, `mvp.settlement.start_workers` (20) Workers, empty stores and its founding territory of radius `wld.territory.founding_radius` (500 wu) (WLD-060).
@@ -100,7 +102,7 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 ### 2.5 Battles (stands in for B4)
 
-**MVP-040** (MUST) Battles use the reference crowd rules for Workers and Leaders as written: movement and routes (R-UNIT-105 to R-UNIT-115, R-UNIT-040 to R-UNIT-042, R-SIM-305 to R-SIM-369), combat (R-UNIT-101 to R-UNIT-104, R-UNIT-011 to R-UNIT-033, with the laser bolt and grenade of R-CRATE-415 to R-CRATE-418 and R-CRATE-440 to R-CRATE-445, the grenade drawn as `mesh.projectile.thrown_weapon`), death (R-UNIT-134), and Leaders with formations (R-UNIT-152 to R-UNIT-189). Special units, Supply crates, powers, creatures and hazards are not built. Every battle runs at full fidelity (O3), as everything in the MVP does (MVP-096).
+**MVP-040** (MUST) Battles use the reference crowd rules for Workers and Leaders as written: movement and routes (R-UNIT-105 to R-UNIT-115, R-UNIT-040 to R-UNIT-042, R-SIM-300 to R-SIM-389, as they apply to Workers and Leaders), combat (R-UNIT-101 to R-UNIT-104, R-UNIT-011 to R-UNIT-033, with the laser bolt and grenade of R-CRATE-415 to R-CRATE-418 and R-CRATE-440 to R-CRATE-445, the grenade drawn as `mesh.projectile.thrown_weapon`), death (R-UNIT-134), and Leaders with formations (R-UNIT-152 to R-UNIT-189). Special units, Supply crates, powers, creatures and hazards are not built. Every battle runs at full fidelity (O3), as everything in the MVP does (MVP-096).
 
 **MVP-041** (MUST) An expedition is a Leader, the Workers following it (R-UNIT-096) and up to `mvp.expedition.size_max` (200) Workers in all. The steward forms one by promoting a Worker (R-UNIT-152) and drawing Workers from guard duty to it, and sends it by declaring an attack on a target: a raid on a settlement, or a claim battle at a claimed area (MVP-053).
 
@@ -258,6 +260,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.pace.session_factor` | 24 | times | — | provisional | MVP-070 | One hour of play is one world day; Playtest 1 judges whether a run of 8 hours feels like a week of a settlement's life |
 | `mvp.world.ai_count` | 3 | AI settlements | — | provisional | MVP-001 | Fixed by the four sites of one region |
 | `mvp.vision.unit_radius` | 300 | wu | — | provisional | MVP-016 | Raise if AI settlements miss obvious threats; lower if the fog never hides anything |
+| `mvp.nav.node_spacing` | 320 | wu | — | provisional | MVP-017 | About 200 lattice nodes on the valley's land; lower it if routes miss narrow passes, raise it if the next-hop tables cost too much |
 | `mvp.settlement.start_workers` | 20 | Workers | — | provisional | MVP-020 | The first minutes must show a busy settlement |
 | `mvp.settlement.population_base` | 40 | Workers | — | provisional | MVP-022 | — |
 | `mvp.settlement.population_max` | 300 | Workers | — | provisional | MVP-022 | Inside O43's range; M1's cost measurement may raise it |

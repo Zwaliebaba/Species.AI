@@ -1,6 +1,6 @@
 # MVP assets
 
-> Status: Draft · Related: [MVP scope](mvp_scope.md) (MVP-080 to MVP-087, MVP-102, MVP-103) · [GameAssets.md](../assets/GameAssets.md) · [asset manifest](../assets/asset_manifest.csv) · [art and audio briefs](../assets/art_and_audio_briefs.md) · [owner decisions](../decisions/owner_decisions.md) (O52, O55, O56, O61 to O64)
+> Status: Draft · Related: [MVP scope](mvp_scope.md) (MVP-080 to MVP-087, MVP-102, MVP-103) · [GameAssets.md](../assets/GameAssets.md) · [asset manifest](../assets/asset_manifest.csv) · [art and audio briefs](../assets/art_and_audio_briefs.md) · [owner decisions](../decisions/owner_decisions.md) (O52, O55, O56, O61 to O64, O70)
 
 ## 1 Purpose
 
@@ -108,8 +108,8 @@ MVP-102 and MVP-103: the HUD's panels are bodies of the two panel strips (UI-460
 
 | Asset id | What it is | Format and budget | New or existing | First needed | Produced by |
 |---|---|---|---|---|---|
-| `uitex.panel_accent` | Accent panel strip: window and HUD panel bodies | 64x510 px display, authored at 2x, one level | existing | M1 | made by the owner (§6) |
-| `uitex.panel_neutral` | Neutral panel strip: HUD panel bodies | 64x512 px display, authored at 2x, one level | existing | M1 | made by the owner (§6) |
+| `uitex.panel_accent` | Accent panel strip: window and HUD panel bodies | 64x510 px display, authored at 2x, one level | existing | M2 | made by the owner (§6) |
+| `uitex.panel_neutral` | Neutral panel strip: HUD panel bodies | 64x512 px display, authored at 2x, one level | existing | M2 | made by the owner (§6) |
 | `icon.hud.meter` | Meter strip of every HUD meter | 256x16 px display, authored at 2x | new | M2 | panel generator |
 | `icon.hud.notification_card` | Frame behind each notification line | 320x48 px display, authored at 2x | new | M2 | panel generator |
 | `icon.hud.result_card` | Frame of the battle result | 400x300 px display, authored at 2x | new | M3 | panel generator |
@@ -135,9 +135,9 @@ MVP-102 and MVP-103: the HUD's panels are bodies of the two panel strips (UI-460
 | `icon.hud.renown` | Renown standing and epilogue | 64x64 px display, white art | new | M3 | hand-drawn icon art |
 | `icon.hud.run_clock` | Time left in the run | 64x64 px display, white art | new | M3 | hand-drawn icon art |
 | `icon.hud.deputy` | Deputy actions in the away report | 64x64 px display, white art | new | M4 | hand-drawn icon art |
-| `font.ui.primary` | Game face GameFont: every text that a player sees, in the Title, Body and Caption roles (O62); its Japanese and Korean companions are not needed | 2 files: the 16 px glyph sheet and its glyph table; one R8_UNORM page, drawn at whole-number scales; U+0020-007E, U+00BF-00FF | existing | M1 | the owner's bitmap font sheet (§6) |
+| `font.ui.primary` | Game face GameFont: every text that a player sees, in the Title, Body and Caption roles (O62); its Japanese and Korean companions are not needed | 2 files: the 16 px glyph sheet and its glyph table; one R8_UNORM page, drawn at whole-number scales; U+0020-007E, U+00BF-00FF | existing | M2 | the owner's bitmap font sheet (§6) |
 | `font.dev.editor` | Development face EditorFont: the development overlay and windows, in Debug builds only (O62) | 2 files: the 16 px glyph sheet and its glyph table; one R8_UNORM page; U+0020-007E, U+00BF-00FF | new | M1 | the owner's bitmap font sheet (§6) |
-| `strings.en_gb` | English (United Kingdom) string table: HUD, notifications, reports and the front end | UTF-8 JSON, ICU MessageFormat | existing | M1 | written by hand |
+| `strings.en_gb` | English (United Kingdom) string table: HUD, notifications, reports and the front end | UTF-8 JSON, ICU MessageFormat | existing | M2 | written by hand |
 
 *Table 6 — The MVP's UI and text assets.*
 
@@ -191,17 +191,17 @@ MVP-087, from M3: one sample group per sound, the smallest that suits it. The wa
 | Units | 8 | 17 | 1 | 16 | 16 | 1 | 0 | 0 | 0 | 1 | 16 |
 | Structures and world objects | 16 | 18 | 10 | 8 | 0 | 18 | 0 | 0 | 18 | 0 | 0 |
 | Effects | 7 | 7 | 0 | 7 | 6 | 1 | 0 | 0 | 0 | 0 | 7 |
-| UI and text | 30 | 34 | 22 | 12 | 9 | 14 | 10 | 1 | 6 | 20 | 8 |
+| UI and text | 30 | 34 | 22 | 12 | 4 | 19 | 10 | 1 | 6 | 20 | 8 |
 | Cursors and markers | 17 | 17 | 0 | 17 | 14 | 3 | 0 | 0 | 0 | 3 | 14 |
 | Audio | 7 | 25 | 3 | 22 | 0 | 0 | 25 | 0 | 17 | 8 | 0 |
-| **Total** | **90** | **123** | **36** | **87** | **50** | **37** | **35** | **1** | **41** | **32** | **50** |
+| **Total** | **90** | **123** | **36** | **87** | **45** | **42** | **35** | **1** | **41** | **32** | **50** |
 
 *Table 9 — The MVP's assets by category, by the milestone that first needs them, and by how they are made; every count is of files except the asset ids. "Made by the owner" counts the files in `GameData/` (§6); "Hand-made" counts those the owner has still to make.*
 
 | Milestone | Asset ids | Files | New files | Generated files | Hand-made files | Made by the owner |
 |---|---:|---:|---:|---:|---:|---:|
-| M1 | 39 | 50 | 2 | 2 | 1 | 47 |
-| M2 | 33 | 37 | 20 | 21 | 13 | 3 |
+| M1 | 35 | 45 | 2 | 1 | 0 | 44 |
+| M2 | 37 | 42 | 20 | 22 | 14 | 6 |
 | M3 | 17 | 35 | 13 | 18 | 17 | 0 |
 | M4 | 1 | 1 | 1 | 0 | 1 | 0 |
 
@@ -218,7 +218,7 @@ MVP-087, from M3: one sample group per sound, the smallest that suits it. The wa
 **What the owner approves:**
 
 - **The generated glyph tables** of the two faces (§6), and **the recipes of the generated assets**: the panel palette, the mesh-kit silhouettes of the Wellspring, the dwelling, the storehouse, the resource sites and the turret, and the synthesiser patches.
-- **The likeness review** of PIL-027, by the owner or counsel outside the clean room: the Worker and Leader silhouettes and the game face at the end of M1, the structure silhouettes and the HUD layout at the end of M2, and the HUD's additions at the end of M3, each result recorded in the manifest.
+- **The likeness review** of PIL-027, by the owner or counsel outside the clean room: the Worker and Leader silhouettes at the end of M1, the game face, the structure silhouettes and the HUD layout at the end of M2 (O70), and the HUD's additions at the end of M3, each result recorded in the manifest.
 - **Each asset before it replaces its placeholder**, as the art lead signs off a new Species design ([art and audio briefs](../assets/art_and_audio_briefs.md) §2.8).
 - **Each third-party package that a tool project uses**, recorded in an ADR with its licence (`AGENTS.md` §2).
 
