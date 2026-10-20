@@ -107,6 +107,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-104](ADR-104-navigation-nodes-land-route-graph-and-routes.md) | Navigation nodes, the land route graph and routes | Proposed | 2026-10-20 |
 | [ADR-105](ADR-105-combat-weapons-and-essence-orbs.md) | Combat, weapons and Essence orbs | Proposed | 2026-10-20 |
 | [ADR-106](ADR-106-leaders-formations-and-battle-commands.md) | Leaders, formations and battle commands | Proposed | 2026-10-20 |
+| [ADR-107](ADR-107-simple-ai-bot-navigation-and-node-census.md) | The simple AI, its navigation graph and the node census | Proposed | 2026-10-20 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

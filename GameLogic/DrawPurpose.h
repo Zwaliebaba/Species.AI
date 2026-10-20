@@ -36,7 +36,13 @@ enum class DrawPurpose : std::uint64_t
   FollowDisc = 24,   // R-UNIT-074, R-UNIT-096 step 2: the disc point around a followed Leader
   SignpostPick = 25, // R-UNIT-096 step 3: the choice among the Leaders with a waypoint order
   ShoreFollow = 26,  // R-UNIT-074, R-UNIT-096 step 2: the shore search of the follow waypoint's push
-  ShoreLeader = 27   // R-UNIT-171 step 3: the shore search of a Leader's order position's push; the subject is the Leader
+  ShoreLeader = 27,  // R-UNIT-171 step 3: the shore search of a Leader's order position's push; the subject is the Leader
+  NodePhase = 28,    // R-BOT-028: a bot navigation node's first recount countdown; the subject is the node's index + 1
+  AiCyclePhase = 29, // R-BOT-009: an AI's first main-cycle countdown; the subject is the AI
+  AiRecall = 30,     // R-BOT-076: the stray recall's picks; the subject is the AI
+  AiSelect = 31,     // R-BOT-088: the random target selection; the subject is the AI
+  AiSend = 32,       // R-BOT-085: a dispatch candidate's send draw; the subject is the Worker
+  AiOffset = 33      // R-BOT-076, R-BOT-085, R-UNIT-188: an AI order point's offset; the subject is the figure ordered
 };
 
 [[nodiscard]] constexpr std::uint64_t PurposeOf(DrawPurpose _purpose) noexcept

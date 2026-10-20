@@ -21,6 +21,12 @@
     <ClInclude Include="ActorGridCache.h">
       <Filter>Space</Filter>
     </ClInclude>
+    <ClInclude Include="AiController.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="BotNavigation.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="Combat.h">
       <Filter>Simulation</Filter>
     </ClInclude>
@@ -100,6 +106,12 @@
     </ClCompile>
     <ClCompile Include="ActorGridCache.cpp">
       <Filter>Space</Filter>
+    </ClCompile>
+    <ClCompile Include="AiController.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="BotNavigation.cpp">
+      <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="Combat.cpp">
       <Filter>Simulation</Filter>

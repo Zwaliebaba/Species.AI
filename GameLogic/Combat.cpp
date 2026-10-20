@@ -131,6 +131,23 @@ bool ThreatSearch(Figure& _worker, const FigureContext& _context)
     _worker.threat = threat;
     return true;
   }
+  // Step 6, the bot census shortcut outside a formation: a navigation node whose range holds the Worker and whose last
+  // recount found no enemy of its team means no threat (R-BOT-045).
+  if (formationLeader == nullptr)
+  {
+    const BotGraph& graph = region.Bots();
+    const double nodeRange = static_cast<double>(region.Tuning().ref.bot.node.range);
+    for (std::uint32_t node = 0; node < graph.Size(); ++node)
+    {
+      const double dx = graph.Position(node).x - _worker.position.x;
+      const double dz = graph.Position(node).z - _worker.position.z;
+      if (dx * dx + dz * dz < nodeRange * nodeRange && region.BotNodes().At(node).EnemiesOf(team) == 0)
+      {
+        ClearThreat(_worker);
+        return false;
+      }
+    }
+  }
   // Steps 7 and 8: the enemies in the cells of the search circle, which a formation member centres ahead along its
   // Leader's front (DEC-031); the cached query's live candidates that are not burning, and the nearest to the Worker's
   // own position (DEC-094).

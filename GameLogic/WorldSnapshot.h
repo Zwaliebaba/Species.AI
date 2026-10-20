@@ -13,7 +13,7 @@ namespace Species
 // ADR-099, MVP-095: the version of the world's state as a snapshot holds it. A change to any owner's state layout
 // raises it, and adds the step that migrates the previous version; a version below the oldest that a step reaches is
 // refused.
-inline constexpr std::uint32_t WORLD_STATE_VERSION = 7;
+inline constexpr std::uint32_t WORLD_STATE_VERSION = 8;
 inline constexpr std::uint32_t WORLD_STATE_OLDEST_VERSION = 1;
 
 // The world's whole state: its simulation key, its region count, the world owner's state and each region's.
@@ -29,7 +29,8 @@ inline constexpr std::uint32_t WORLD_STATE_OLDEST_VERSION = 1;
 // region has none, and its Workers no threat. Version 7 added each region's commanders and each team's selection and
 // pointer, each Worker's Leader and each Leader's orders and formation, and the order markers' routes, and dropped the
 // figure's formation flag (M1 task T7); an older region has no commander, and its figures no Leader and no order.
-// _tuning outlives the world.
+// Version 8 added each region's AIs and its bot navigation nodes' counts, and each Worker's nearest node (M1 task T8);
+// an older region has no AI and makes its nodes as a new one does. _tuning outlives the world.
 [[nodiscard]] std::expected<std::unique_ptr<WorldSimulation>, Neuron::SnapshotError> RestoreWorld(const Neuron::SnapshotContents& _snapshot,
                                                                                                   const TuningMvp& _tuning);
 

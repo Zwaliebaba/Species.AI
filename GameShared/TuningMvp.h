@@ -1008,6 +1008,30 @@ struct TuningMvp
 
         // ref.unit.leader.trail_life_ticks, in ticks
         std::int64_t trailLifeTicks = 0;
+
+        // ref.unit.leader.bot_think_ticks, in ticks
+        std::int64_t botThinkTicks = 0;
+
+        // ref.unit.leader.bot_waypoint_think_ticks, in ticks
+        std::int64_t botWaypointThinkTicks = 0;
+
+        // ref.unit.leader.bot_reorder_distance, in wu
+        double botReorderDistance = 0.0;
+
+        // ref.unit.leader.bot_order_offset_base, in wu
+        double botOrderOffsetBase = 0.0;
+
+        // ref.unit.leader.bot_order_offset_spread, in wu
+        double botOrderOffsetSpread = 0.0;
+
+        // ref.unit.leader.bot_formation_ahead, in wu
+        double botFormationAhead = 0.0;
+
+        // ref.unit.leader.bot_enemy_count, in actors
+        std::int64_t botEnemyCount = 0;
+
+        // ref.unit.leader.bot_enemy_range, in wu
+        double botEnemyRange = 0.0;
       };
 
       struct Corpse
@@ -1254,11 +1278,123 @@ struct TuningMvp
       Leader leader;
     };
 
+    struct Bot
+    {
+      struct Link
+      {
+        // ref.bot.link.range, in wu
+        double range = 0.0;
+
+        // ref.bot.link.cull_ratio, in ratio
+        double cullRatio = 0.0;
+      };
+
+      struct Node
+      {
+        // ref.bot.node.recount_ticks, in ticks
+        std::int64_t recountTicks = 0;
+
+        // ref.bot.node.recount_phase, in ticks
+        std::int64_t recountPhase = 0;
+
+        // ref.bot.node.range, in wu
+        double range = 0.0;
+
+        // ref.bot.node.defend_enemy_threshold, in actors
+        std::int64_t defendEnemyThreshold = 0;
+
+        // ref.bot.node.defend_leader_radius, in wu
+        double defendLeaderRadius = 0.0;
+      };
+
+      struct Cycle
+      {
+        // ref.bot.cycle.period_easy, in ticks
+        std::int64_t periodEasy = 0;
+
+        // ref.bot.cycle.phase_easy, in ticks
+        std::int64_t phaseEasy = 0;
+      };
+
+      struct Recall
+      {
+        // ref.bot.recall.share, in picks per live ungrouped actor per tick
+        double share = 0.0;
+
+        // ref.bot.recall.min_picks, in picks per tick
+        std::int64_t minPicks = 0;
+
+        // ref.bot.recall.distance, in wu
+        double distance = 0.0;
+      };
+
+      struct Order
+      {
+        // ref.bot.order.offset_base, in wu
+        double offsetBase = 0.0;
+
+        // ref.bot.order.offset_spread, in wu
+        double offsetSpread = 0.0;
+      };
+
+      struct Dispatch
+      {
+        // ref.bot.dispatch.idle_limit, in Workers
+        std::int64_t idleLimit = 0;
+
+        // ref.bot.dispatch.calm_ratio, in ratio
+        double calmRatio = 0.0;
+
+        // ref.bot.dispatch.send_factor, in factor
+        double sendFactor = 0.0;
+
+        // ref.bot.dispatch.send_min, in probability
+        double sendMin = 0.0;
+
+        // ref.bot.dispatch.send_max, in probability
+        double sendMax = 0.0;
+
+        // ref.bot.dispatch.send_all, in probability
+        double sendAll = 0.0;
+
+        // ref.bot.dispatch.gather_radius, in wu
+        double gatherRadius = 0.0;
+      };
+
+      struct Select
+      {
+        // ref.bot.select.random_tries, in tries
+        std::int64_t randomTries = 0;
+      };
+
+      struct Leader
+      {
+        // ref.bot.leader.formation_friends, in actors
+        std::int64_t formationFriends = 0;
+
+        // ref.bot.leader.formation_leader_radius, in wu
+        double formationLeaderRadius = 0.0;
+
+        // ref.bot.leader.formation_candidate_radius, in wu
+        double formationCandidateRadius = 0.0;
+      };
+
+      Link link;
+      Node node;
+      Cycle cycle;
+      Recall recall;
+      Order order;
+      Dispatch dispatch;
+      Select select;
+      Leader leader;
+    };
+
     Sim sim;
     Unit unit;
     Weapon weapon;
     Econ econ;
     Ctrl ctrl;
+    Bot bot;
   };
 
   struct Wld
@@ -1962,6 +2098,14 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.markerFadeTicks = _reader.Integer(_object, "marker_fade_ticks", 0);
   _out.trailLift = _reader.Decimal(_object, "trail_lift", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.trailLifeTicks = _reader.Integer(_object, "trail_life_ticks", 0);
+  _out.botThinkTicks = _reader.Integer(_object, "bot_think_ticks", 1);
+  _out.botWaypointThinkTicks = _reader.Integer(_object, "bot_waypoint_think_ticks", 1);
+  _out.botReorderDistance = _reader.Decimal(_object, "bot_reorder_distance", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.botOrderOffsetBase = _reader.Decimal(_object, "bot_order_offset_base", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.botOrderOffsetSpread = _reader.Decimal(_object, "bot_order_offset_spread", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.botFormationAhead = _reader.Decimal(_object, "bot_formation_ahead", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.botEnemyCount = _reader.Integer(_object, "bot_enemy_count", 0);
+  _out.botEnemyRange = _reader.Decimal(_object, "bot_enemy_range", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -2120,6 +2264,84 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Bot::Link& _out)
+{
+  _out.range = _reader.Decimal(_object, "range", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.cullRatio = _reader.Decimal(_object, "cull_ratio", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Bot::Node& _out)
+{
+  _out.recountTicks = _reader.Integer(_object, "recount_ticks", 1);
+  _out.recountPhase = _reader.Integer(_object, "recount_phase", 0);
+  _out.range = _reader.Decimal(_object, "range", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.defendEnemyThreshold = _reader.Integer(_object, "defend_enemy_threshold", 0);
+  _out.defendLeaderRadius = _reader.Decimal(_object, "defend_leader_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Bot::Cycle& _out)
+{
+  _out.periodEasy = _reader.Integer(_object, "period_easy", 1);
+  _out.phaseEasy = _reader.Integer(_object, "phase_easy", 0);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Bot::Recall& _out)
+{
+  _out.share = _reader.Decimal(_object, "share", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.minPicks = _reader.Integer(_object, "min_picks", 0);
+  _out.distance = _reader.Decimal(_object, "distance", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Bot::Order& _out)
+{
+  _out.offsetBase = _reader.Decimal(_object, "offset_base", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.offsetSpread = _reader.Decimal(_object, "offset_spread", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Bot::Dispatch& _out)
+{
+  _out.idleLimit = _reader.Integer(_object, "idle_limit", 0);
+  _out.calmRatio = _reader.Decimal(_object, "calm_ratio", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.sendFactor = _reader.Decimal(_object, "send_factor", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.sendMin = _reader.Decimal(_object, "send_min", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.sendMax = _reader.Decimal(_object, "send_max", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.sendAll = _reader.Decimal(_object, "send_all", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.gatherRadius = _reader.Decimal(_object, "gather_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Bot::Select& _out)
+{
+  _out.randomTries = _reader.Integer(_object, "random_tries", 1);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Bot::Leader& _out)
+{
+  _out.formationFriends = _reader.Integer(_object, "formation_friends", 0);
+  _out.formationLeaderRadius = _reader.Decimal(_object, "formation_leader_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.formationCandidateRadius = _reader.Decimal(_object, "formation_candidate_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Bot& _out)
+{
+  ReadFields(_reader, _reader.Object(_object, "link"), _out.link);
+  ReadFields(_reader, _reader.Object(_object, "node"), _out.node);
+  ReadFields(_reader, _reader.Object(_object, "cycle"), _out.cycle);
+  ReadFields(_reader, _reader.Object(_object, "recall"), _out.recall);
+  ReadFields(_reader, _reader.Object(_object, "order"), _out.order);
+  ReadFields(_reader, _reader.Object(_object, "dispatch"), _out.dispatch);
+  ReadFields(_reader, _reader.Object(_object, "select"), _out.select);
+  ReadFields(_reader, _reader.Object(_object, "leader"), _out.leader);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "sim"), _out.sim);
@@ -2127,6 +2349,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "weapon"), _out.weapon);
   ReadFields(_reader, _reader.Object(_object, "econ"), _out.econ);
   ReadFields(_reader, _reader.Object(_object, "ctrl"), _out.ctrl);
+  ReadFields(_reader, _reader.Object(_object, "bot"), _out.bot);
   _reader.Close(_object);
 }
 

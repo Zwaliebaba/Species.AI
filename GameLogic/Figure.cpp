@@ -183,6 +183,7 @@ void WriteFigure(Neuron::BitWriter& _writer, const Figure& _figure)
     _writer.WriteBits(slot.member, 64);
     _writer.WriteSigned(slot.timerTicks, 32);
   }
+  _writer.WriteSigned(_figure.nearestNode, 32);
 }
 
 bool ReadFigure(Neuron::BitReader& _reader, Figure& _figure, std::uint32_t _stateVersion, const TuningMvp& _tuning)
@@ -278,7 +279,11 @@ bool ReadFigure(Neuron::BitReader& _reader, Figure& _figure, std::uint32_t _stat
     slot.timerTicks = static_cast<std::int32_t>(_reader.ReadSigned(32));
     _figure.slots.push_back(slot);
   }
-  return !_reader.Failed() && finite && _figure.id != 0;
+  if (_stateVersion >= FIGURE_STATE_VERSION_BOTS)
+  {
+    _figure.nearestNode = static_cast<std::int32_t>(_reader.ReadSigned(32));
+  }
+  return !_reader.Failed() && finite && _figure.id != 0 && _figure.nearestNode >= -1;
 }
 
 } // namespace Species

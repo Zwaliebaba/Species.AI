@@ -77,6 +77,10 @@ constexpr std::uint32_t STATE_VERSION_WITH_GRIDS = 4;
 constexpr std::uint32_t STATE_VERSION_WITH_ROUTES = 5;
 constexpr std::uint32_t STATE_VERSION_WITH_WEAPONS = 6;
 constexpr std::uint32_t STATE_VERSION_WITH_LEADERS = 7;
+// ... and the AIs and the bot navigation nodes' state (M1 task T8).
+constexpr std::uint32_t STATE_VERSION_WITH_BOTS = 8;
+// The node pool is made whole once, with every node of the graph, and never grows (ADR-107).
+constexpr std::uint32_t BOT_NODE_POOL_STEP = 1;
 
 } // namespace
 
@@ -97,11 +101,51 @@ RegionSimulation::RegionSimulation(std::uint16_t _index, const Neuron::SipHashKe
     m_obstacles(ObstacleGridDescOf(_tuning)),
     m_bolts(static_cast<std::uint32_t>(_tuning.ref.sim.container.laserBoltStep)),
     m_effects(static_cast<std::uint32_t>(_tuning.ref.sim.container.effectStep)),
-    m_orbs(static_cast<std::uint32_t>(_tuning.ref.sim.container.orbStep), static_cast<std::uint32_t>(_tuning.ref.sim.container.orbPresize))
+    m_orbs(static_cast<std::uint32_t>(_tuning.ref.sim.container.orbStep), static_cast<std::uint32_t>(_tuning.ref.sim.container.orbPresize)),
+    m_botNodes(BOT_NODE_POOL_STEP)
 {
   ENGINE_CHECK(_tuning.ref.sim.updateSlices > 0 && _tuning.ref.sim.container.ungroupedStep > 0);
   m_draws.SetTick(_nextTick);
   RegisterRegionCommands(*this);
+  if (m_terrain)
+  {
+    m_bots = BotGraph::Build(m_terrain->routes.Nodes(), m_terrain->field, _tuning);
+    EnsureBotNodes();
+  }
+}
+
+void RegionSimulation::AttachTerrain(std::shared_ptr<const RegionTerrain> _terrain)
+{
+  m_terrain = std::move(_terrain);
+  m_bots = m_terrain ? BotGraph::Build(m_terrain->routes.Nodes(), m_terrain->field, *m_tuning) : BotGraph{};
+  EnsureBotNodes();
+  ENGINE_CHECK(m_botNodes.Count() == m_bots.Size(), "region {} holds {} bot nodes for a graph of {}", m_index, m_botNodes.Count(),
+               m_bots.Size());
+}
+
+void RegionSimulation::EnsureBotNodes()
+{
+  if (m_botNodes.Count() != 0 || m_bots.Size() == 0)
+  {
+    return;
+  }
+  // R-BOT-028: each node draws its phase once, in the step that makes it: here the next tick's.
+  m_draws.SetTick(m_nextTick);
+  m_botNodes = SlicedPool<BotNode>(BOT_NODE_POOL_STEP, static_cast<std::uint32_t>(m_bots.Size()));
+  for (std::uint32_t node = 0; node < m_bots.Size(); ++node)
+  {
+    const std::uint32_t slot = m_botNodes.Take(MakeBotNode(*this, node));
+    ENGINE_ASSERT(slot == node);
+  }
+}
+
+StableId RegionSimulation::AddAi(std::uint8_t _team)
+{
+  const StableId id = m_ids.Issue();
+  m_draws.SetTick(m_nextTick);
+  m_ais.push_back(MakeAi(*this, id, _team));
+  SetCommander(_team, id, true);
+  return id;
 }
 
 RegionSimulation::Team& RegionSimulation::EnsureTeam(std::uint8_t _index)
@@ -409,6 +453,10 @@ void RegionSimulation::Step(std::uint64_t _tick)
   {
     StepSlice(slice);
   }
+  for (AiController& ai : m_ais)
+  {
+    StepAi(*this, ai);
+  }
   FreeUnheldRoutes();
   m_nextTick = _tick + 1;
 }
@@ -478,6 +526,12 @@ void RegionSimulation::StepSlice(std::uint32_t _slice)
   // Essence orbs.
   m_bolts.AdvanceSlice(_slice, slices, [&](std::uint32_t _slot) { return AdvanceLaserBolt(*this, m_bolts.At(_slot)); });
   m_effects.AdvanceSlice(_slice, slices, [&](std::uint32_t _slot) { return AdvanceEffect(*this, m_effects.At(_slot)); });
+  m_botNodes.AdvanceSlice(_slice, slices,
+                          [&](std::uint32_t _slot)
+                          {
+                            AdvanceBotNode(*this, _slot, m_botNodes.At(_slot));
+                            return false;
+                          });
   m_orbs.AdvanceSlice(_slice, slices, [&](std::uint32_t _slot) { return AdvanceOrb(*this, m_orbs.At(_slot)); });
   // R-SIM-218 step 8: the cache's eviction in its slice, after the teams.
   if (_slice == static_cast<std::uint32_t>(m_tuning->ref.sim.gridCache.evictSlice))
@@ -497,6 +551,11 @@ void RegionSimulation::WriteState(Neuron::BitWriter& _writer) const
     _writer.WriteBits(commander.sender, 64);
     _writer.WriteBool(commander.ai);
   }
+  _writer.WriteBounded(m_ais.size(), TEAM_SLOTS);
+  for (const AiController& ai : m_ais)
+  {
+    WriteAi(_writer, ai);
+  }
   m_commands.WriteState(_writer);
   _writer.WriteBounded(m_teams.size(), TEAM_SLOTS);
   for (const Team& team : m_teams)
@@ -513,6 +572,7 @@ void RegionSimulation::WriteState(Neuron::BitWriter& _writer) const
   m_bolts.WriteState(_writer, [](Neuron::BitWriter& _out, const LaserBolt& _bolt) { WriteLaserBolt(_out, _bolt); });
   m_effects.WriteState(_writer, [](Neuron::BitWriter& _out, const Effect& _effect) { WriteEffect(_out, _effect); });
   m_orbs.WriteState(_writer, [](Neuron::BitWriter& _out, const EssenceOrb& _orb) { WriteOrb(_out, _orb); });
+  m_botNodes.WriteState(_writer, [](Neuron::BitWriter& _out, const BotNode& _node) { WriteBotNode(_out, _node); });
 }
 
 bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stateVersion)
@@ -537,6 +597,18 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
       commander.ai = _reader.ReadBool();
     }
   }
+  m_ais.clear();
+  if (_stateVersion >= STATE_VERSION_WITH_BOTS)
+  {
+    const std::uint64_t ais = _reader.ReadBounded(TEAM_SLOTS);
+    for (std::uint64_t ai = 0; ai < ais && !_reader.Failed(); ++ai)
+    {
+      if (!ReadAi(_reader, m_ais.emplace_back()))
+      {
+        return false;
+      }
+    }
+  }
   if (_reader.Failed() || !m_commands.ReadState(_reader))
   {
     return false;
@@ -549,9 +621,11 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
   m_effects = SlicedPool<Effect>(static_cast<std::uint32_t>(m_tuning->ref.sim.container.effectStep));
   m_orbs = SlicedPool<EssenceOrb>(static_cast<std::uint32_t>(m_tuning->ref.sim.container.orbStep),
                                   static_cast<std::uint32_t>(m_tuning->ref.sim.container.orbPresize));
+  m_botNodes = SlicedPool<BotNode>(BOT_NODE_POOL_STEP);
   // ADR-099, MVP-095: a version-1 region migrates to one with no teams.
   if (_stateVersion == STATE_VERSION_WITHOUT_TEAMS)
   {
+    EnsureBotNodes();
     return true;
   }
   const std::uint64_t teamCount = _reader.ReadBounded(TEAM_SLOTS);
@@ -605,6 +679,13 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
   {
     return false;
   }
+  // The nodes' state is whole, every node in order, or none; with the terrain attached, one per node of its graph.
+  if (_stateVersion >= STATE_VERSION_WITH_BOTS &&
+      (!m_botNodes.ReadState(_reader, POOL_CAPACITY_MAX, [](Neuron::BitReader& _in, BotNode& _node) { return ReadBotNode(_in, _node); }) ||
+       m_botNodes.Count() != m_botNodes.Capacity() || (m_terrain && m_botNodes.Count() != 0 && m_botNodes.Count() != m_bots.Size())))
+  {
+    return false;
+  }
   // An order marker follows a route the region holds, from its first point to its last (R-UNIT-185).
   for (std::uint32_t slot = 0; slot < m_effects.Capacity(); ++slot)
   {
@@ -639,6 +720,10 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
       {
         return false;
       }
+      if (std::cmp_greater_equal(figure.nearestNode, m_botNodes.Capacity()))
+      {
+        return false; // a nearest node the region does not hold
+      }
       if (!withGrids && figure.enabled)
       {
         figure.cells = m_grid.SquareOf(figure.position.x, figure.position.z, figure.radius * m_tuning->ref.sim.actorGrid.footprintFactor);
@@ -654,6 +739,7 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
       m_grid.Register({figure.id, slot, static_cast<std::uint8_t>(team)}, figure.cells);
     }
   }
+  EnsureBotNodes(); // MVP-095: a region saved before M1 task T8 makes its nodes as a new one does
   return true;
 }
 

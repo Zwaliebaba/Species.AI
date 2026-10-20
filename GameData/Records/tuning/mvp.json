@@ -371,7 +371,15 @@
         "trail_period": 2,
         "marker_fade_ticks": 10,
         "trail_lift": 1,
-        "trail_life_ticks": 10
+        "trail_life_ticks": 10,
+        "bot_think_ticks": 11,
+        "bot_waypoint_think_ticks": 101,
+        "bot_reorder_distance": 60,
+        "bot_order_offset_base": 20,
+        "bot_order_offset_spread": 20,
+        "bot_formation_ahead": 50,
+        "bot_enemy_count": 10,
+        "bot_enemy_range": 270
       },
       "corpse": {
         "fade_start": 100,
@@ -461,6 +469,49 @@
     "ctrl": {
       "leader": {
         "face_pointer_speed": 5
+      }
+    },
+    "bot": {
+      "link": {
+        "range": 600,
+        "cull_ratio": 0.8
+      },
+      "node": {
+        "recount_ticks": 20,
+        "recount_phase": 20,
+        "range": 200,
+        "defend_enemy_threshold": 30,
+        "defend_leader_radius": 300
+      },
+      "cycle": {
+        "period_easy": 200,
+        "phase_easy": 200
+      },
+      "recall": {
+        "share": 0.02,
+        "min_picks": 1,
+        "distance": 70
+      },
+      "order": {
+        "offset_base": 20,
+        "offset_spread": 20
+      },
+      "dispatch": {
+        "idle_limit": 10,
+        "calm_ratio": 0.33,
+        "send_factor": 1.5,
+        "send_min": 0.6,
+        "send_max": 1.0,
+        "send_all": 1.1,
+        "gather_radius": 150
+      },
+      "select": {
+        "random_tries": 100
+      },
+      "leader": {
+        "formation_friends": 70,
+        "formation_leader_radius": 300,
+        "formation_candidate_radius": 100
       }
     }
   },

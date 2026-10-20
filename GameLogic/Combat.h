@@ -19,10 +19,9 @@ struct FigureContext
   ActorRef self;
 };
 
-// R-UNIT-098 for what the MVP builds: the range relaxation, the projectile threats (grenades of any team), the cached
-// enemy query with its filter, centred ahead of a formation member, and the found or cleared threat. Steps 2, 4 and 5
-// have nothing to find in the MVP, and the bot census shortcut of step 6 arrives with the bot's node census (M1 plan
-// T8). True when the Worker has a threat.
+// R-UNIT-098 for what the MVP builds: the range relaxation, the projectile threats (grenades of any team), the bot
+// census shortcut, the cached enemy query with its filter, centred ahead of a formation member, and the found or cleared
+// threat. Steps 2, 4 and 5 have nothing to find in the MVP. True when the Worker has a threat.
 bool ThreatSearch(Figure& _worker, const FigureContext& _context);
 
 // R-UNIT-101 to R-UNIT-104: one tick of Fighting: the threat resolved, or the fight's end back to the Worker's Leader;

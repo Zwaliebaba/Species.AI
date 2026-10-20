@@ -2,8 +2,10 @@
 
 #include "ActorGrid.h"
 #include "ActorGridCache.h"
+#include "AiController.h"
 #include "BitReader.h"
 #include "BitWriter.h"
+#include "BotNavigation.h"
 #include "CommandQueue.h"
 #include "EffectEvent.h"
 #include "EssenceOrb.h"
@@ -71,7 +73,8 @@ public:
 
   // One region job of tick _tick (R-SIM-510): its commands, then the update slices 0 to ref.sim.update_slices - 1
   // (R-SIM-511, R-SIM-218), each running the region's teams in index order (R-SIM-221), then its laser bolts, its
-  // effects and its Essence orbs (R-SIM-218 steps 3 and 5); the structures of step 4 arrive with M2.
+  // effects, its bot navigation nodes, the only structures before M2, and its Essence orbs (R-SIM-218 steps 3 to 5);
+  // then each AI, whose commands execute at the next tick (ADR-107).
   void Step(std::uint64_t _tick);
 
   // The team slots 0 to _index, made when they do not exist yet.
@@ -118,6 +121,23 @@ public:
   // ADR-106: _sender commands _team from now on; an AI commander may also send the AI's own commands. Called between
   // ticks, as a connection is (ADR-095).
   void SetCommander(std::uint8_t _team, Neuron::SenderId _sender, bool _ai);
+  // ADR-107: an AI of the region's own makes and commands _team from now on; its sender id is a new stable id of the
+  // region. Called between ticks.
+  StableId AddAi(std::uint8_t _team);
+  [[nodiscard]] const std::vector<AiController>& Ais() const noexcept
+  {
+    return m_ais;
+  }
+  // The bot navigation graph of the region's terrain (ADR-107), empty with no terrain, and the state of its nodes in
+  // node order.
+  [[nodiscard]] const BotGraph& Bots() const noexcept
+  {
+    return m_bots;
+  }
+  [[nodiscard]] const SlicedPool<BotNode>& BotNodes() const noexcept
+  {
+    return m_botNodes;
+  }
   // The arrival check of a battle command (ADR-087 item 2): _sender commands _team, and is an AI when _aiOnly.
   [[nodiscard]] bool MayCommand(Neuron::SenderId _sender, std::uint8_t _team, bool _aiOnly) const noexcept;
 
@@ -249,10 +269,8 @@ public:
   }
   // The region's terrain (ADR-102): built from the world seed outside every tick and never changed (MVP-011), and
   // derived rather than state, so neither the hash nor the snapshot holds it. None until the world server attaches it.
-  void AttachTerrain(std::shared_ptr<const RegionTerrain> _terrain) noexcept
-  {
-    m_terrain = std::move(_terrain);
-  }
+  // Attaching it builds the bot navigation graph, and makes the nodes' state when the region holds none (ADR-107).
+  void AttachTerrain(std::shared_ptr<const RegionTerrain> _terrain);
   [[nodiscard]] const RegionTerrain* Terrain() const noexcept
   {
     return m_terrain.get();
@@ -275,6 +293,8 @@ private:
   void Unregister(std::uint8_t _team, std::uint32_t _slot, Figure& _figure);
   // DEC-651 resolved by O71: at the end of the tick, the routes that no figure holds are freed.
   void FreeUnheldRoutes();
+  // ADR-107: the node states of the bot navigation graph, each with its phase draw, when the region holds none.
+  void EnsureBotNodes();
 
   std::uint16_t m_index;
   const TuningMvp* m_tuning;
@@ -295,6 +315,9 @@ private:
   SlicedPool<LaserBolt> m_bolts;
   SlicedPool<Effect> m_effects;
   SlicedPool<EssenceOrb> m_orbs;
+  BotGraph m_bots; // derived from the terrain, never state
+  SlicedPool<BotNode> m_botNodes;
+  std::vector<AiController> m_ais;
   std::vector<EffectEvent> m_events; // presentation, never state
 #if ENGINE_DEVELOPMENT
   AdvanceObserver m_advanceObserver;

@@ -3128,6 +3128,75 @@
                   "x-species-type": "ticks",
                   "x-species-unit": "ticks",
                   "x-species-presence": "required"
+                },
+                "bot_think_ticks": {
+                  "type": "integer",
+                  "description": "ref.unit.leader.bot_think_ticks (R-UNIT-188)",
+                  "minimum": 1,
+                  "x-species-type": "integer",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                },
+                "bot_waypoint_think_ticks": {
+                  "type": "integer",
+                  "description": "ref.unit.leader.bot_waypoint_think_ticks (R-UNIT-188)",
+                  "minimum": 1,
+                  "x-species-type": "integer",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                },
+                "bot_reorder_distance": {
+                  "type": "number",
+                  "description": "ref.unit.leader.bot_reorder_distance (R-UNIT-188)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "bot_order_offset_base": {
+                  "type": "number",
+                  "description": "ref.unit.leader.bot_order_offset_base (R-UNIT-188)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "bot_order_offset_spread": {
+                  "type": "number",
+                  "description": "ref.unit.leader.bot_order_offset_spread (R-UNIT-188)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "bot_formation_ahead": {
+                  "type": "number",
+                  "description": "ref.unit.leader.bot_formation_ahead (R-UNIT-188)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "bot_enemy_count": {
+                  "type": "integer",
+                  "description": "ref.unit.leader.bot_enemy_count (R-UNIT-188)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "actors",
+                  "x-species-presence": "required"
+                },
+                "bot_enemy_range": {
+                  "type": "number",
+                  "description": "ref.unit.leader.bot_enemy_range (R-UNIT-188)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
@@ -3168,7 +3237,15 @@
                 "trail_period",
                 "marker_fade_ticks",
                 "trail_lift",
-                "trail_life_ticks"
+                "trail_life_ticks",
+                "bot_think_ticks",
+                "bot_waypoint_think_ticks",
+                "bot_reorder_distance",
+                "bot_order_offset_base",
+                "bot_order_offset_spread",
+                "bot_formation_ahead",
+                "bot_enemy_count",
+                "bot_enemy_range"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -3936,6 +4013,354 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "bot": {
+          "type": "object",
+          "description": "the ref.bot.* keys",
+          "properties": {
+            "link": {
+              "type": "object",
+              "description": "the ref.bot.link.* keys",
+              "properties": {
+                "range": {
+                  "type": "number",
+                  "description": "ref.bot.link.range (R-BOT-030)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "cull_ratio": {
+                  "type": "number",
+                  "description": "ref.bot.link.cull_ratio (R-BOT-034)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "ratio",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "range",
+                "cull_ratio"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "node": {
+              "type": "object",
+              "description": "the ref.bot.node.* keys",
+              "properties": {
+                "recount_ticks": {
+                  "type": "integer",
+                  "description": "ref.bot.node.recount_ticks (R-BOT-041)",
+                  "minimum": 1,
+                  "x-species-type": "integer",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                },
+                "recount_phase": {
+                  "type": "integer",
+                  "description": "ref.bot.node.recount_phase (R-BOT-028)",
+                  "minimum": 0,
+                  "x-species-type": "ticks",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                },
+                "range": {
+                  "type": "number",
+                  "description": "ref.bot.node.range (R-BOT-040)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "defend_enemy_threshold": {
+                  "type": "integer",
+                  "description": "ref.bot.node.defend_enemy_threshold (R-BOT-051)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "actors",
+                  "x-species-presence": "required"
+                },
+                "defend_leader_radius": {
+                  "type": "number",
+                  "description": "ref.bot.node.defend_leader_radius (R-BOT-051)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "recount_ticks",
+                "recount_phase",
+                "range",
+                "defend_enemy_threshold",
+                "defend_leader_radius"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "cycle": {
+              "type": "object",
+              "description": "the ref.bot.cycle.* keys",
+              "properties": {
+                "period_easy": {
+                  "type": "integer",
+                  "description": "ref.bot.cycle.period_easy (R-BOT-075)",
+                  "minimum": 1,
+                  "x-species-type": "integer",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                },
+                "phase_easy": {
+                  "type": "integer",
+                  "description": "ref.bot.cycle.phase_easy (R-BOT-009)",
+                  "minimum": 0,
+                  "x-species-type": "ticks",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "period_easy",
+                "phase_easy"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "recall": {
+              "type": "object",
+              "description": "the ref.bot.recall.* keys",
+              "properties": {
+                "share": {
+                  "type": "number",
+                  "description": "ref.bot.recall.share (R-BOT-076)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "picks per live ungrouped actor per tick",
+                  "x-species-presence": "required"
+                },
+                "min_picks": {
+                  "type": "integer",
+                  "description": "ref.bot.recall.min_picks (R-BOT-076)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "picks per tick",
+                  "x-species-presence": "required"
+                },
+                "distance": {
+                  "type": "number",
+                  "description": "ref.bot.recall.distance (R-BOT-076)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "share",
+                "min_picks",
+                "distance"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "order": {
+              "type": "object",
+              "description": "the ref.bot.order.* keys",
+              "properties": {
+                "offset_base": {
+                  "type": "number",
+                  "description": "ref.bot.order.offset_base (R-BOT-076, R-BOT-085)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "offset_spread": {
+                  "type": "number",
+                  "description": "ref.bot.order.offset_spread (R-BOT-076, R-BOT-085)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "offset_base",
+                "offset_spread"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "dispatch": {
+              "type": "object",
+              "description": "the ref.bot.dispatch.* keys",
+              "properties": {
+                "idle_limit": {
+                  "type": "integer",
+                  "description": "ref.bot.dispatch.idle_limit (R-BOT-078)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "Workers",
+                  "x-species-presence": "required"
+                },
+                "calm_ratio": {
+                  "type": "number",
+                  "description": "ref.bot.dispatch.calm_ratio (R-BOT-079)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "ratio",
+                  "x-species-presence": "required"
+                },
+                "send_factor": {
+                  "type": "number",
+                  "description": "ref.bot.dispatch.send_factor (R-BOT-083)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "factor",
+                  "x-species-presence": "required"
+                },
+                "send_min": {
+                  "type": "number",
+                  "description": "ref.bot.dispatch.send_min (R-BOT-083)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "probability",
+                  "x-species-presence": "required"
+                },
+                "send_max": {
+                  "type": "number",
+                  "description": "ref.bot.dispatch.send_max (R-BOT-083)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "probability",
+                  "x-species-presence": "required"
+                },
+                "send_all": {
+                  "type": "number",
+                  "description": "ref.bot.dispatch.send_all (R-BOT-083)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "probability",
+                  "x-species-presence": "required"
+                },
+                "gather_radius": {
+                  "type": "number",
+                  "description": "ref.bot.dispatch.gather_radius (R-BOT-085)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "idle_limit",
+                "calm_ratio",
+                "send_factor",
+                "send_min",
+                "send_max",
+                "send_all",
+                "gather_radius"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "select": {
+              "type": "object",
+              "description": "the ref.bot.select.* keys",
+              "properties": {
+                "random_tries": {
+                  "type": "integer",
+                  "description": "ref.bot.select.random_tries (R-BOT-088)",
+                  "minimum": 1,
+                  "x-species-type": "integer",
+                  "x-species-unit": "tries",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "random_tries"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "leader": {
+              "type": "object",
+              "description": "the ref.bot.leader.* keys",
+              "properties": {
+                "formation_friends": {
+                  "type": "integer",
+                  "description": "ref.bot.leader.formation_friends (R-BOT-091)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "actors",
+                  "x-species-presence": "required"
+                },
+                "formation_leader_radius": {
+                  "type": "number",
+                  "description": "ref.bot.leader.formation_leader_radius (R-BOT-091)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "formation_candidate_radius": {
+                  "type": "number",
+                  "description": "ref.bot.leader.formation_candidate_radius (R-BOT-091)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "formation_friends",
+                "formation_leader_radius",
+                "formation_candidate_radius"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "link",
+            "node",
+            "cycle",
+            "recall",
+            "order",
+            "dispatch",
+            "select",
+            "leader"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
@@ -3943,7 +4368,8 @@
         "unit",
         "weapon",
         "econ",
-        "ctrl"
+        "ctrl",
+        "bot"
       ],
       "additionalProperties": false,
       "x-species-type": "object",

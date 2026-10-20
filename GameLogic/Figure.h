@@ -140,6 +140,8 @@ struct Figure
   bool formation = false;                // R-UNIT-164: the formation flag
   bool formationAngleSet = false;        // R-UNIT-166: the formation has turned towards its waypoint
   std::vector<FormationSlot> slots;      // R-UNIT-177: in index order, gaps included
+  // From state version 8 (M1 task T8):
+  std::int32_t nearestNode = -1; // R-BOT-043: a Worker's nearest bot navigation node, which only recounts write; −1 for none
 };
 
 // R-UNIT-011 and R-UNIT-015 (R-SIM-109): sets the kind, the stats of the stat table, the actor-grid radius
@@ -170,15 +172,16 @@ void WriteFigure(Neuron::BitWriter& _writer, const Figure& _figure);
 // figure of a version before 4 takes the fields that version 4 added at their spawn values, its waypoint at its
 // position and its radius from its kind, registered nowhere until its region registers it; one before 5 follows no route;
 // one before 6 has no threat, the full threat range, and the base of its first grenade timer; one before 7 follows no
-// Leader, and a Leader of one has no order and no formation.
+// Leader, and a Leader of one has no order and no formation; one before 8 has no nearest node.
 [[nodiscard]] bool ReadFigure(Neuron::BitReader& _reader, Figure& _figure, std::uint32_t _stateVersion, const TuningMvp& _tuning);
 
-// The first state versions whose figures hold the fields of M1 tasks T4, T5, T6 and T7. From version 7 a figure holds no
+// The first state versions whose figures hold the fields of M1 tasks T4, T5, T6, T7 and T8. From version 7 a figure holds no
 // formation flag of its own.
 inline constexpr std::uint32_t FIGURE_STATE_VERSION_MOVEMENT = 4;
 inline constexpr std::uint32_t FIGURE_STATE_VERSION_ROUTES = 5;
 inline constexpr std::uint32_t FIGURE_STATE_VERSION_COMBAT = 6;
 inline constexpr std::uint32_t FIGURE_STATE_VERSION_LEADERS = 7;
+inline constexpr std::uint32_t FIGURE_STATE_VERSION_BOTS = 8;
 // The most slots a saved formation holds: a bound for the reader, far above the formation size (R-UNIT-162).
 inline constexpr std::uint64_t FORMATION_SLOTS_STATE_MAX = 65'535;
 

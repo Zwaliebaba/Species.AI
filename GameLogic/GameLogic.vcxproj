@@ -146,6 +146,8 @@
   <ItemGroup>
     <ClInclude Include="ActorGrid.h" />
     <ClInclude Include="ActorGridCache.h" />
+    <ClInclude Include="AiController.h" />
+    <ClInclude Include="BotNavigation.h" />
     <ClInclude Include="Combat.h" />
     <ClInclude Include="DrawPurpose.h" />
     <ClInclude Include="EssenceOrb.h" />
@@ -174,6 +176,8 @@
   <ItemGroup>
     <ClCompile Include="ActorGrid.cpp" />
     <ClCompile Include="ActorGridCache.cpp" />
+    <ClCompile Include="AiController.cpp" />
+    <ClCompile Include="BotNavigation.cpp" />
     <ClCompile Include="Combat.cpp" />
     <ClCompile Include="EssenceOrb.cpp" />
     <ClCompile Include="Figure.cpp" />
