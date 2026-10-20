@@ -96,27 +96,32 @@ public:
     Assert::IsTrue(worker.route == 0, L"a route the store does not hold is cleared (R-SIM-354)");
   }
 
-  BEGIN_TEST_METHOD_ATTRIBUTE(RSim359RoutesAreNumberedKeptAndState)
+  BEGIN_TEST_METHOD_ATTRIBUTE(RSim359RoutesAreNumberedFreedAndState)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-SIM-359")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-SIM-357")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-095")
   END_TEST_METHOD_ATTRIBUTE()
-  TEST_METHOD(RSim359RoutesAreNumberedKeptAndState)
+  TEST_METHOD(RSim359RoutesAreNumberedFreedAndState)
   {
-    // Handles count from 1 and are never reused; every route stays (DEC-651's stated behaviour); a region's routes and
-    // its figures' routes read back to the same state.
+    // Handles count from 1; at the end of a step the region frees every route that no figure holds (DEC-651, O71), and a
+    // later route takes the next handle, never a freed one; a region's routes and its figures' routes read back to the
+    // same state.
     const auto terrain = SeedOneTerrain();
     Species::RegionSimulation region(0, ROUTE_TEST_KEY, 0, CommittedTuning(), terrain);
     const Neuron::Vec3 from = OnTerrain(*terrain, terrain->layout.sites[0]);
     const Neuron::Vec3 to = OnTerrain(*terrain, terrain->layout.sites[3]);
-    const Species::RouteHandle first = region.BuildRoute(from, to, false);
-    const Species::RouteHandle second = region.BuildRoute(to, from, true);
-    Assert::IsTrue(first == 1 && second == 2 && region.Routes().Count() == 2, L"1, then 2");
     Species::RegionSimulation::Spawn spawn;
     spawn.position = from;
     const std::uint32_t slot = region.SpawnFigures(spawn).front();
     region.Step(region.NextTick());
+    const Species::RouteHandle first = region.BuildRoute(from, to, false);
+    const Species::RouteHandle second = region.BuildRoute(to, from, true);
+    Assert::IsTrue(first == 1 && second == 2 && region.Routes().Count() == 2, L"1, then 2");
     Species::GiveWaypointOrder(region.TeamAt(0).figures.At(slot), to, first, region.Movement());
     region.Step(region.NextTick());
+    Assert::IsTrue(region.Routes().Find(first) != nullptr && region.Routes().Find(second) == nullptr && region.Routes().Count() == 1,
+                   L"the route no figure holds is freed");
+    Assert::IsTrue(region.BuildRoute(to, from, true) == 3 && region.Routes().LastHandle() == 3, L"never a freed handle");
     Neuron::BitWriter before;
     region.WriteState(before);
     Species::RegionSimulation copy(0, ROUTE_TEST_KEY, region.NextTick(), CommittedTuning(), terrain);
@@ -126,9 +131,10 @@ public:
     copy.WriteState(again);
     Assert::IsTrue(std::ranges::equal(before.Bytes(), again.Bytes()), L"the same state");
     Assert::IsTrue(copy.TeamAt(0).figures.At(slot).route == first && copy.Routes().Find(first) != nullptr, L"the route it follows");
-    // A damaged reference is refused: a route the store does not hold, a point past the route's end, a point of no route.
+    // A damaged reference is refused: a freed route, one never built, a point past the route's end, a point of no route.
     const auto pastTheEnd = static_cast<std::int32_t>(region.Routes().Find(first)->size());
-    for (const auto& [handle, point] : {std::pair<Species::RouteHandle, std::int32_t>{7, -1}, {first, pastTheEnd}, {first, -2}, {0, 0}})
+    for (const auto& [handle, point] :
+         {std::pair<Species::RouteHandle, std::int32_t>{second, -1}, {7, -1}, {first, pastTheEnd}, {first, -2}, {0, 0}})
     {
       Species::Figure& figure = region.TeamAt(0).figures.At(slot);
       figure.route = handle;
@@ -149,7 +155,8 @@ public:
   TEST_METHOD(Mvp040ACrowdFollowsOneRouteAcrossTheValley)
   {
     // 200 Workers around site 3 of seed 1's valley, one route to site 0 across the centre, which bends through a node
-    // on that side (the walk is clear the other way only): each follows it to its end and arrives, alive and dry.
+    // on that side (the walk is clear the other way only): each follows it to its end and arrives, alive and dry, and
+    // the region frees the route once no Worker holds it.
     const auto terrain = SeedOneTerrain();
     Species::RegionSimulation region(0, ROUTE_TEST_KEY, 0, CommittedTuning(), terrain);
     Species::RegionSimulation::Spawn spawn;
@@ -183,6 +190,7 @@ public:
       Assert::IsTrue(!worker.dead && worker.onGround && worker.position.y > 0.0 && worker.route == 0, L"alive, dry, its route done");
       Assert::IsTrue(Neuron::HorizontalDistance(worker.position, target) < 80.0, L"at site 0");
     }
+    Assert::IsTrue(region.Routes().Count() == 0, L"freed once no Worker follows it (DEC-651)");
   }
 };
 

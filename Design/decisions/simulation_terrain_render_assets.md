@@ -41,7 +41,7 @@ This file records the decisions on the simulation model, the random-draw discipl
 | ID | Title | Status | Affects |
 |---|---|---|---|
 | [DEC-650](#dec-650-actor-grid-registration-follows-the-recorded-footprint) | Actor-grid registration follows the recorded footprint | Resolved | R-SIM, DBG |
-| [DEC-651](#dec-651-lifetime-of-simulation-routes) | Lifetime of simulation routes | Open | R-SIM, R-UNIT, RND |
+| [DEC-651](#dec-651-lifetime-of-simulation-routes) | Lifetime of simulation routes | Resolved | R-SIM, R-UNIT, RND |
 | [DEC-652](#dec-652-random-draws-at-initialisation-happen-once-in-explicit-simulation-steps) | Random draws at initialisation happen once, in explicit simulation steps | Resolved | R-SIM, R-BLDG, R-CRATE, R-BOT |
 | [DEC-653](#dec-653-simulation-state-never-holds-a-non-finite-value) | Simulation state never holds a non-finite value | Resolved | R-SIM, R-UNIT, R-CRATE, R-BLDG, TER, DBG |
 | [DEC-654](#dec-654-gameplay-is-computed-only-by-the-cpu-simulation) | Gameplay is computed only by the CPU simulation | Resolved | R-SIM, VFX, RND |
@@ -56,12 +56,13 @@ This file records the decisions on the simulation model, the random-draw discipl
 - Recommendation: A. A grid that a radius change can corrupt returns query results that no rule specifies and that depend on when the change happened; with a recorded footprint the grid is a pure function of the registrations. The per-tick re-insertion of shaped actors costs time in proportion to their number times their cells, and A removes that cost without changing a result.
 
 ### DEC-651 Lifetime of simulation routes
-- Status: Open
+- Status: Resolved
 - Affects: reference/12_simulation_model/05_space_routing_and_physics.md (R-SIM), reference/02_units/transport.md (R-UNIT), architecture/components/renderer/entity_and_overlay_renderers.md (RND)
 - Specified behaviour: A route that simulation code generates stays in route storage until the match world is destroyed; only a Transport frees its sea routes. Route storage therefore grows for the whole match. Nothing reads a route that no actor or order holds, and the renderer fades drawn routes out on its own timer, so the growth costs memory only. Route previews that the UI draws live in a separate store (DEC-095), and route ids are generational handles that are never reused within a match (DEC-028). The reference does not define the moment at which a Transport frees one of its sea routes; the default is that a Transport frees its previous sea route when it creates a new route for itself, and its current sea route when it is removed.
 - Options: A — the reference behaviour: keep every simulation route until the match world is destroyed; B — free a route when the last actor or order that holds it releases it, and give the renderer a copy of a route's points for its fade (for example in the presentation event that announces the route), so freeing never cuts a fade short. For the Transport's trigger under A: A1 — free the previous sea route on each new route and the current one on removal (default); A2 — never free.
 - Recommendation: B. A skirmish match ends and frees its routes, but a persistent world never ends (vision O1, O4), so storage that only grows is unbounded there. Freeing a route that nothing holds changes no simulation result, because no rule reads it; the fade then depends only on presentation data, which the simulation and presentation boundary needs anyway (DEC-222).
 - Decide by: design phase
+- Resolution (2026-10-20, owner decision O71): option B. At the end of each tick a region frees every route that no figure or order holds; route handles still count up and are never reused (DEC-028, R-SIM-359), so every participant allocates the same handles, and a freed route is never read. The presentation that fades a drawn route keeps its own copy of the points (RND-352). A Transport's sea routes follow the same rule, so the A1 and A2 sub-options lapse. M1 task T5 builds it ([ADR-104](../ADR/ADR-104-navigation-nodes-land-route-graph-and-routes.md)).
 
 ## 2 Random draws and numeric robustness
 

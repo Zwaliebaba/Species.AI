@@ -11,7 +11,7 @@ decision-makers: Species technology lead (M1 task T5)
 Task T5 of the [M1 plan](../implementation/m1_plan.md) gives the region its routes. It covers:
 - the navigation nodes of MVP-017, which the generator places in place of a map's hand-placed nodes (O70);
 - the path tests, the land route graph, its next-hop tables and route building (R-SIM-330 to R-SIM-352);
-- the route store (R-SIM-357, R-SIM-359) and the Worker's route following (R-UNIT-110);
+- the route store (R-SIM-357, R-SIM-359, DEC-651) and the Worker's route following (R-UNIT-110);
 - check 8 of WLD-163, which measures the routes against the travel network of WLD-100.
 
 These decisions are open:
@@ -64,19 +64,20 @@ Chosen option: "1".
   
   The passes stop at the first that accepts nothing, since every later pass would make the same rejected offers. None of this depends on the sign of a cost, so it holds even where `WalkCost` gives an edge −1 (R-SIM-337). No node of seeds 1 to 100 has a negative total.
 * **Building a route** (`LandRouteGraph::BuildRoute`) follows R-SIM-345 to R-SIM-351 step by step: the corridor test, the node chain, the corner smoothing, the merge, the snap, and then the override, applied only after a corridor test (DEC-263's stated behaviour). It draws nothing.
-* **The route store** (`RouteStore`, in GameLogic) belongs to a region and holds every route the region's simulation builds, until the world ends (DEC-651's stated behaviour, R-SIM-357).
-  - A handle numbers the routes from 1 in the order they were built, and 0 is none. Nothing in the MVP frees a route, since the Transport is not built, so DEC-028's generation never advances and a counter is the whole handle (R-SIM-359).
+* **The route store** (`RouteStore`, in GameLogic) belongs to a region and holds the routes the region's simulation has built and something still holds (DEC-651, resolved by O71 as its option B; R-SIM-357 amendment).
+  - A handle numbers the routes from 1 in the order they were built, and 0 is none. The store keeps the last handle it gave, and a handle is never given twice, so a freed handle never resolves again (R-SIM-359). A counter that never goes back is DEC-028's generational handle with nothing to reuse, so it carries no generation of its own.
+  - At the end of each step, after the last slice, the region frees every route that no figure holds (`FreeUnheldRoutes`). The figures are the only holders the MVP builds so far; T7 adds the Leaders' orders, and every later holder joins the same sweep. No rule reads a route that nothing holds (R-SIM-357), so freeing changes no simulation result, and a snapshot, which is taken between ticks, holds only routes in use. The presentation that fades a drawn route keeps its own copy of the points (RND-352).
   - A route keeps its points only. No rule of the MVP reads R-SIM-334's status.
-  - At M1 nothing builds a route except tests; the commands of T7 build them (R-SIM-353). A world that runs for weeks grows its store with every crowd order. DEC-651 stays Open, and T10 measures the growth.
+  - At M1 nothing builds a route except tests; the commands of T7 build them (R-SIM-353).
 * **Route following** (`FollowRoute`). A Worker on a waypoint order follows its route before its movement step (R-UNIT-110). The FollowingLeader state comes with T7.
   - With no point yet, the Worker goes to point 1, since point 0 is the start. After that it moves to the next point once its horizontal distance from its waypoint is at most `ref.unit.worker.route_reach_radius`, that distance included, as ADR-103 reads "within".
   - Each new waypoint draws its jitter's radius and then its angle from the purpose `RouteJitter`, keyed by the Worker and the tick. The waypoint keeps the route point's height and passes through the Worker's push, whose shore search draws from `ShoreRoute`. With no Barrier Emitter, the kill is clear.
   - Past the last point, the route and its point index are cleared and the waypoint stays. A handle that the store does not hold is cleared too (R-SIM-354).
   - A waypoint order takes a route handle, possibly 0, and starts it before its first point (R-UNIT-111).
-* **State.** A region writes its route store after its cache: the count, then each route's point count and points as binary64 (ADR-081 item 7). Each figure writes its route handle and point index after T4's fields.
+* **State.** A region writes its route store after its cache: the last handle, the count, then each route's handle, point count and points as binary64 (ADR-081 item 7). A store whose handles do not ascend, or pass the last handle, is refused. Each figure writes its route handle and point index after T4's fields.
   - `WORLD_STATE_VERSION` becomes 5. A region of an older version reads with no routes, and its figures with none.
   - A region refuses a snapshot in which a figure holds a handle that the region's store does not, or a route point outside its route, as it refuses any damaged snapshot.
-  - The golden run of DBG-147 changes once, by each region's empty route store. An independent model of the layout computes the same values.
+  - The golden run of DBG-147 changes once, by each region's empty route store and its last handle, 0. An independent model of the layout computes the same values.
 * **Check 8** runs in `CheckRegionTerrain` with checks 1 and 3 to 6 (ADR-102). The edges of WLD-100 inside one region are the four valley-neighbour pairs, in the order above, and each site with the central resource site. The MVP's single region has no crossing.
   - Each edge's route is built once, from its first end to its second, since routes depend on direction (R-SIM-336).
   - Its length is the 3-D length of its polyline, which must not exceed the horizontal distance between the ends × `wld.travel.valley_path_factor`.
@@ -94,8 +95,8 @@ Chosen option: "1".
 * Good, because a route a figure follows survives a restore, and a damaged reference to one is refused rather than followed.
 * Bad, because the propagation's equivalence rests on an argument and on tests, not on the reference's literal text. A change to the offer rule of R-SIM-341, such as accepting ties, invalidates the argument and has to rerun the tests.
 * Bad, because the graph costs about 10 ms of every terrain attempt on both sides, and N² slots and up to N² entries in memory. At the largest valley of seeds 1 to 100, with 206 nodes, that is 42,436 slots of 4 bytes and 42,436 entries of 16 bytes: about 0.85 MB.
-* Bad, because the route store grows without bound in a persistent world until DEC-651 is decided.
-* It forecloses: a shortest-path algorithm with its own tie order; a graph that only the server builds; a route freed while a figure could still hold it.
+* Bad, because every step sweeps the region's figures for the routes they hold, a cost of the figure count that T10 measures against ADR-080's per-figure budget.
+* It forecloses: a shortest-path algorithm with its own tie order; a graph that only the server builds; a route freed while a figure could still hold it; a route kept after nothing holds it.
 
 ### Confirmation
 
@@ -113,10 +114,10 @@ Chosen option: "1".
   - check 8's failing fixture.
 * `GameLogicTests` checks:
   - a Worker's steps along a route with its keyed jitter;
-  - handles counting from 1, a region's routes and its figures' routes read back to the same state, and a damaged route reference refused;
-  - 200 Workers following one route with a corner from site 3 to site 0 of seed 1's valley, all arriving alive and dry, in 1,523 ticks in the local build;
+  - handles counting from 1, a route that no figure holds freed at the end of the step, a later route taking the next handle and never a freed one, a region's routes and its figures' routes read back to the same state, and a damaged route reference refused;
+  - 200 Workers following one route with a corner from site 3 to site 0 of seed 1's valley, all arriving alive and dry, in 1,523 ticks in the local build, and the route freed once none holds it;
   - the golden run's new values.
-* T10 confirms the graph's cost and the store's growth on the reference test machine.
+* T10 confirms the graph's cost and the sweep's on the reference test machine.
 
 ## Pros and Cons of the Options
 

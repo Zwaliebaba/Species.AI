@@ -530,7 +530,7 @@ The golden-image tests compare with the default tolerance and on the pinned refe
 | DEC-224 | Resolved (ADR-083) | parallel instance writing (RND-387) |
 | DEC-337 | Dropped | driver and pointer properties (RND-369) |
 | DEC-463 | Resolved | every tracked surge is drawn; one limit (RND-302) |
-| DEC-651 | Open | how the route fade gets its points (RND-352) |
+| DEC-651 | Resolved (O71) | how the route fade gets its points (RND-352): option B, the fade keeps a copy of the route's points |
 | ADR-005 | Accepted | the `Ghost` blend (one, source colour) of RND-365 is a blend state of the renderer's catalogue (RND-058) |
 | ADR-009 | Accepted | instancing, orientation modes and decal shadows |
 

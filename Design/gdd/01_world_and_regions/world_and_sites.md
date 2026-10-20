@@ -384,7 +384,7 @@ Values that this file cites and does not own keep their owners' keys: `pil.world
 | `wld.resource.own_units` | 11 | resource units every site holds by default | provisional | WLD-085 | — | B2's economy model |
 | `wld.resource.holdable_units_max` | 17 | resource units a settlement can hold at most | provisional | WLD-086 | — | The joint leader model of PIL-028 (B2, B4, B5) |
 | `wld.resource.wild_clearance` | 150 | wu between a territory and a central resource site | provisional | WLD-060, WLD-083 | — | Generator validation |
-| `wld.travel.valley_path_factor` | 1.15 | × the straight distance | provisional | WLD-100 | — | Measured on generated terrain with the land route graph over 100 seeds |
+| `wld.travel.valley_path_factor` | 1.15 | × the straight distance | provisional | WLD-100 | — | Set from the crowd's walking time over the valley's edges, which M1 measures (O71, M1 plan T10); the land routes' length is at most 1.0017 × over seeds 1 to 100 (WLD-163 amendment) |
 | `wld.travel.crossing_path_factor` | 1.20 | × the straight distance | provisional | WLD-100 | — | Measured on generated terrain with the land route graph over 100 seeds |
 | `wld.travel.march_speed` | 20 | wu/s, an expedition outside a battle | provisional | WLD-101, WLD-104 | — | B4 confirms; playtest of marching crowds |
 | `wld.travel.valley_minutes_max` | 2.5 | minutes at the march speed | provisional | WLD-101 | — | B4's speed; playtest of reinforcing a valley neighbour |

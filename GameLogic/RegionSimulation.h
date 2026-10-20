@@ -106,7 +106,7 @@ public:
     return m_obstacles;
   }
   // R-SIM-345 and R-SIM-352: a route over the region's land route graph, stored under the next handle (ADR-104). It
-  // needs the region's terrain.
+  // needs the region's terrain, and it is freed at the end of the next step that ends with no figure holding it.
   RouteHandle BuildRoute(const Neuron::Vec3& _from, const Neuron::Vec3& _to, bool _directRoute, bool _permitClimbing = true,
                          bool _noRounding = false);
   [[nodiscard]] const RouteStore& Routes() const noexcept
@@ -174,6 +174,8 @@ private:
   // removed or is disabled leaves the grid (R-SIM-114).
   void UpdateRegistration(std::uint8_t _team, std::uint32_t _slot, Figure& _figure);
   void Unregister(std::uint8_t _team, std::uint32_t _slot, Figure& _figure);
+  // DEC-651 resolved by O71: at the end of the tick, the routes that no figure holds are freed.
+  void FreeUnheldRoutes();
 
   std::uint16_t m_index;
   const TuningMvp* m_tuning;

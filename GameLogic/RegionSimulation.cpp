@@ -4,8 +4,10 @@
 #include "FigureAdvance.h"
 #include "RegionSimulation.h"
 
+#include <algorithm>
 #include <limits>
 #include <utility>
+#include <vector>
 
 namespace Species
 {
@@ -253,7 +255,28 @@ void RegionSimulation::Step(std::uint64_t _tick)
   {
     StepSlice(slice);
   }
+  FreeUnheldRoutes();
   m_nextTick = _tick + 1;
+}
+
+void RegionSimulation::FreeUnheldRoutes()
+{
+  // The holders the MVP builds so far are its figures; Leaders' orders and groups join them with M1 plan T7.
+  std::vector<RouteHandle> held;
+  for (const Team& team : m_teams)
+  {
+    for (std::uint32_t slot = 0; slot < team.figures.Capacity(); ++slot)
+    {
+      if (team.figures.Used(slot) && team.figures.At(slot).route != 0)
+      {
+        held.push_back(team.figures.At(slot).route);
+      }
+    }
+  }
+  std::ranges::sort(held);
+  const auto duplicates = std::ranges::unique(held);
+  held.erase(duplicates.begin(), duplicates.end());
+  m_routes.KeepOnly(held);
 }
 
 void RegionSimulation::StepSlice(std::uint32_t _slice)
