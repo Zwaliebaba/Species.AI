@@ -170,6 +170,16 @@ def build():
       sys.exit('RunPerformance: the build failed')
 
 
+def shown(path):
+  """A path as the script prints it: relative to the repository when it is inside it, else whole. On Windows a path on
+  another drive, a temporary folder on C: beside a checkout on D:, has no relative form at all."""
+  try:
+    relative = os.path.relpath(path, ROOT)
+  except ValueError:
+    return path
+  return path if relative.startswith('..') else relative
+
+
 def pinned_machine(text):
   m = PIN_MARK.search(text)
   return json.loads(m.group(1)) if m else None
@@ -219,7 +229,7 @@ def record(path, config, result, build_id, when):
   text = text.rstrip('\n') + '\n\n' + section
   with open(path, 'w', encoding='utf-8', newline='\n') as f:
     f.write(text)
-  print(f'RunPerformance: recorded in {os.path.relpath(path, ROOT)}' + ('; the machine is pinned by this run' if pinned is None else ''))
+  print(f'RunPerformance: recorded in {shown(path)}' + ('; the machine is pinned by this run' if pinned is None else ''))
   # The run that pins only reports; after it, a figure above its budget fails the run (DBG-208).
   return 1 if pinned is not None and above else 0
 

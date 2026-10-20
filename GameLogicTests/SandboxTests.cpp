@@ -20,6 +20,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <span>
@@ -161,13 +162,22 @@ public:
                   static_cast<std::int64_t>(synthetic->Region(0).TeamAt(1).figures.Count()),
                 L"the synthetic battle's figures");
     ExpectEqual(2, static_cast<std::int64_t>(synthetic->Region(0).Ais().size()), L"an AI on each side");
-    for (const auto& [isSynthetic, ticks] : {std::pair{false, std::uint64_t{300}}, std::pair{true, std::uint64_t{100}}})
+    // The eight runs are independent, so they run at once.
+    static_cast<void>(ValleyTerrain());
+    const std::vector<std::size_t> workerCounts{0, 1, 2, 8};
+    std::vector<std::uint64_t> chains(2 * workerCounts.size());
+    std::vector<std::function<void()>> jobs;
+    for (std::size_t index = 0; index < chains.size(); ++index)
     {
-      const std::uint64_t serial = run(isSynthetic, ticks, 0);
-      for (const std::size_t workers : {std::size_t{1}, std::size_t{2}, std::size_t{8}})
-      {
-        Assert::IsTrue(run(isSynthetic, ticks, workers) == serial, L"the same hashes on every tick");
-      }
+      const bool isSynthetic = index >= workerCounts.size();
+      jobs.emplace_back([&run, &chains, &workerCounts, index, isSynthetic]
+                        { chains[index] = run(isSynthetic, isSynthetic ? 100 : 300, workerCounts[index % workerCounts.size()]); });
+    }
+    RunConcurrently(jobs);
+    for (std::size_t index = 0; index < chains.size(); ++index)
+    {
+      const std::size_t serial = index < workerCounts.size() ? 0 : workerCounts.size();
+      Assert::IsTrue(chains[index] == chains[serial], L"the same hashes on every tick");
     }
   }
 

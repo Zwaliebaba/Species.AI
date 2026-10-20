@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -397,6 +398,7 @@ public:
   TEST_METHOD(Mvp093TheAiBattleHashesAgreeAtAnyWorkerCount)
   {
     // Three regions, each an AI battle on the valley, give the same hash every tick at 1, 2 and 8 workers as serially.
+    // The four runs are independent, so they run at once.
     const auto run = [](std::size_t _workers)
     {
       Neuron::WorkerPool pool(_workers);
@@ -414,10 +416,18 @@ public:
       }
       return Species::HashState(chain.Bytes());
     };
-    const std::uint64_t serial = run(0);
-    for (const std::size_t workers : {std::size_t{1}, std::size_t{2}, std::size_t{8}})
+    static_cast<void>(ValleyTerrain());
+    const std::vector<std::size_t> workerCounts{0, 1, 2, 8};
+    std::vector<std::uint64_t> chains(workerCounts.size());
+    std::vector<std::function<void()>> jobs;
+    for (std::size_t index = 0; index < workerCounts.size(); ++index)
     {
-      Assert::IsTrue(run(workers) == serial, L"the same hashes on every tick");
+      jobs.emplace_back([&run, &chains, &workerCounts, index] { chains[index] = run(workerCounts[index]); });
+    }
+    RunConcurrently(jobs);
+    for (std::size_t index = 1; index < chains.size(); ++index)
+    {
+      Assert::IsTrue(chains[index] == chains[0], L"the same hashes on every tick");
     }
   }
 

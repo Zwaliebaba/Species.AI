@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <format>
+#include <functional>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -51,6 +52,11 @@ private:
 
 // The valley of seed 1 (MVP-011), built once.
 [[nodiscard]] std::shared_ptr<const Species::RegionTerrain> ValleyTerrain();
+
+// Runs each job on a thread of its own and returns once all have ended, so that a test's independent runs share the
+// runner's cores. A job asserts nothing: it computes, and the test asserts on what the jobs computed. An exception a
+// job throws is thrown again here, the first job's first.
+void RunConcurrently(const std::vector<std::function<void()>>& _jobs);
 
 // The whole file as text, or an empty string; and a file written whole, its folders made.
 [[nodiscard]] std::string ReadText(const std::filesystem::path& _path);

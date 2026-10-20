@@ -2,13 +2,16 @@
 
 #include "Check.h"
 #include "Files.h"
+#include "PlatformThread.h"
 #include "TerrainField.h"
 #include "TestSupport.h"
 #include "Tuning.h"
 
 #include <atomic>
+#include <exception>
 #include <fstream>
 #include <mutex>
+#include <stop_token>
 #include <system_error>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -91,6 +94,39 @@ std::shared_ptr<const Species::RegionTerrain> FlatTerrain(double _height)
   auto terrain = std::make_shared<Species::RegionTerrain>();
   terrain->field = Neuron::TerrainField::Generate(definition, {}, {});
   return terrain;
+}
+
+void RunConcurrently(const std::vector<std::function<void()>>& _jobs)
+{
+  std::vector<std::exception_ptr> failures(_jobs.size());
+  std::vector<Neuron::PlatformThread> threads;
+  threads.reserve(_jobs.size());
+  for (std::size_t index = 0; index < _jobs.size(); ++index)
+  {
+    threads.push_back(Neuron::PlatformThread::Start("test.concurrent",
+                                                    [&_jobs, &failures, index](const std::stop_token&)
+                                                    {
+                                                      try
+                                                      {
+                                                        _jobs[index]();
+                                                      }
+                                                      catch (...)
+                                                      {
+                                                        failures[index] = std::current_exception();
+                                                      }
+                                                    }));
+  }
+  for (Neuron::PlatformThread& thread : threads)
+  {
+    thread.Join();
+  }
+  for (const std::exception_ptr& failure : failures)
+  {
+    if (failure)
+    {
+      std::rethrow_exception(failure);
+    }
+  }
 }
 
 std::shared_ptr<const Species::RegionTerrain> ValleyTerrain()

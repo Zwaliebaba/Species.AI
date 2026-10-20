@@ -15,6 +15,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <thread>
 #include <vector>
@@ -213,11 +214,31 @@ public:
   {
     Neuron::WorkerPool pool(0);
     const Neuron::SnapshotContents contents = Species::SnapshotOf(*SteppedWorld(pool));
-    for (std::size_t length = 0; length < contents.state.size(); ++length)
+    // Every length short of the whole, in four interleaved shares that run at once; each share keeps the lengths that
+    // were not refused.
+    constexpr std::size_t SHARES = 4;
+    std::vector<std::vector<std::size_t>> accepted(SHARES);
+    std::vector<std::function<void()>> jobs;
+    for (std::size_t share = 0; share < SHARES; ++share)
     {
-      Neuron::SnapshotContents shorter = contents;
-      shorter.state.resize(length);
-      Assert::IsTrue(RefusedAs(shorter, Neuron::SnapshotError::MalformedState), L"a state cut short");
+      jobs.emplace_back(
+        [&contents, &accepted, share]
+        {
+          for (std::size_t length = share; length < contents.state.size(); length += SHARES)
+          {
+            Neuron::SnapshotContents shorter = contents;
+            shorter.state.resize(length);
+            if (!RefusedAs(shorter, Neuron::SnapshotError::MalformedState))
+            {
+              accepted[share].push_back(length);
+            }
+          }
+        });
+    }
+    RunConcurrently(jobs);
+    for (const std::vector<std::size_t>& lengths : accepted)
+    {
+      Assert::IsTrue(lengths.empty(), L"a state cut short");
     }
     Neuron::SnapshotContents longer = contents;
     longer.state.push_back(std::byte{0xff});
