@@ -1,6 +1,6 @@
 #include "pch.h"
 
-#include <immintrin.h>
+#include <float.h>
 
 #include "FloatEnvironment.h"
 #include "PlatformThread.h"
@@ -13,13 +13,6 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace NeuronCoreTests
 {
-
-namespace
-{
-
-constexpr unsigned int MXCSR_FLUSH_TO_ZERO = 0x8000;
-
-} // namespace
 
 TEST_CLASS(PlatformThreadTests)
 {
@@ -65,14 +58,16 @@ public:
   TEST_METHOD(Plt087EveryThreadStartsInTheDefaultEnvironment)
   {
     // The starting thread flushes to zero; the new thread still starts in the default environment (PLT T26).
-    const unsigned int saved = _mm_getcsr();
-    _mm_setcsr(saved | MXCSR_FLUSH_TO_ZERO);
+    unsigned int saved = 0;
+    _controlfp_s(&saved, 0, 0);
+    unsigned int control = 0;
+    _controlfp_s(&control, _DN_FLUSH, _MCW_DN);
     std::atomic<bool> isDefault{false};
     {
       Neuron::PlatformThread thread = Neuron::PlatformThread::Start(
         "test.float", [&](const std::stop_token&) { isDefault.store(Neuron::IsDefaultFloatEnvironment(), std::memory_order_release); });
     }
-    _mm_setcsr(saved);
+    _controlfp_s(&control, saved, _MCW_DN);
     Assert::IsTrue(isDefault.load(std::memory_order_acquire), L"a new thread starts in the default environment");
   }
 
@@ -81,12 +76,14 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Plt087FlushToZeroIsNotTheDefaultEnvironment)
   {
-    const unsigned int saved = _mm_getcsr();
+    unsigned int saved = 0;
+    _controlfp_s(&saved, 0, 0);
     Neuron::ApplyDefaultFloatEnvironment();
     Assert::IsTrue(Neuron::IsDefaultFloatEnvironment(), L"the default environment");
-    _mm_setcsr(_mm_getcsr() | MXCSR_FLUSH_TO_ZERO);
+    unsigned int control = 0;
+    _controlfp_s(&control, _DN_FLUSH, _MCW_DN);
     const bool flushing = Neuron::IsDefaultFloatEnvironment();
-    _mm_setcsr(saved);
+    _controlfp_s(&control, saved, _MCW_DN);
     Assert::IsFalse(flushing, L"flush-to-zero fails the check");
   }
 };

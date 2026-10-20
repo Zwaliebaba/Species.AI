@@ -193,7 +193,9 @@ LRESULT CALLBACK WindowProcedure(HWND _window, UINT _message, WPARAM _wParam, LP
 {
   if (_message == WM_NCCREATE)
   {
+    // The creation messages arrive before CreateWindowExW returns the handle, and the state answers them with it.
     const auto* create = FromInteger<const CREATESTRUCTW*>(_lParam);
+    static_cast<WindowState*>(create->lpCreateParams)->window = _window;
     SetWindowLongPtrW(_window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(create->lpCreateParams));
   }
   auto* state = FromInteger<WindowState*>(GetWindowLongPtrW(_window, GWLP_USERDATA));

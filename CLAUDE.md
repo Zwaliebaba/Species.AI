@@ -11,11 +11,11 @@
 - **The reference library** (`Design/`): `README.md` (reading guide), `CONVENTIONS.md` (ids, units, naming, allowed terms), `REQUIREMENTS_INDEX.md`, `reference/` (reference mechanics), `architecture/components/` (the engine baseline), `ADR/` (architecture decision records, `ADR-NNN-<slug>.md`), `decisions/` (decision register, `DEC-NNN`; an Open entry states the behaviour to build until it is decided), `assets/GameAssets.md` (every asset to create).
 - **The paused design run:** `prompts/species-design-phase.md` and its working files in `species_design_work/` (`RUN_LOG.md`, area briefs, challenges).
 
-## Current status (2026-10-19)
+## Current status (2026-10-20)
 
-- The solution skeleton of ADR-090 exists (M0 task T1): `Species.slnx` with six libraries, two programs and six test projects; NeuronCore holds the platform basics and diagnostics of M0 task T3 and the transport of task T5, NeuronClient and `Species` the window, device and composition root of task T4, and the other projects no source yet. `GameData/` is the content root (O61) and holds the owner's first assets: two bitmap fonts, 46 textures in a folder per kind and two CMO meshes (O64; `Design/implementation/mvp_assets.md` §6).
+- The solution skeleton of ADR-090 exists (M0 task T1): `Species.slnx` with six libraries, two programs and six test projects, each built for x64 and, as the development build of O66 (ADR-094), for ARM64; NeuronCore holds the platform basics and diagnostics of M0 task T3 and the transport of task T5, NeuronClient and `Species` the window, device and composition root of task T4, and the other projects no source yet. `GameData/` is the content root (O61) and holds the owner's first assets: two bitmap fonts, 46 textures in a folder per kind and two CMO meshes (O64; `Design/implementation/mvp_assets.md` §6).
 - The design phase ran wave A and is paused (O51): A0 (pillars, loops, vocabulary) and A1 (world and regions) are Final; A2 (solution strategy, ADR-079 to ADR-088, and ADR-089 for MsQuic) is Final, with owner gate B (O41 to O49) applied; its ADRs stay Proposed until the MVP milestones confirm them. Waves B to E are not run.
-- The MVP's milestone M0 is under way: `Design/implementation/m0_plan.md`, T1 and T2 done, T3 (NeuronCore basics), T4 (window and device) and T5 (transport) in review, task T6 next, in the project layout of ADR-090 (O60). Code is written here and compiled by CI; the owner runs it on their PC (m0_plan §2).
+- The MVP's milestone M0 is under way: `Design/implementation/m0_plan.md`, T1 and T2 done, T3 (NeuronCore basics), T4 (window and device) and T5 (transport) in review, task T6 next (T4's first run on the owner's PC failed to create the window; the fix is ADR-092's amendment of 2026-10-20, and T4 waits for its run checklist again), in the project layout of ADR-090 (O60). Code is written here and compiled by CI; the owner runs it on their PC (m0_plan §2).
 
 ## Rules that are easy to miss
 

@@ -4,9 +4,10 @@ CheckProjectFiles.py and RunClangTidy.py read the build definition through this 
 .slnx and the .vcxproj files on its own, so the two cannot disagree about what a project holds.
 
 The evaluation of a project file is deliberately narrow. It understands what the projects of this repository write:
-unconditioned groups, and groups conditioned on exactly `'$(Configuration)|$(Platform)'=='<Configuration>|x64'`. Any
-other condition is recorded as unknown, and CheckProjectFiles.py fails on it, so a project cannot hide a setting
-behind a condition that the checkers do not evaluate.
+unconditioned groups, and groups conditioned on exactly `'$(Configuration)|$(Platform)'=='<Configuration>|<Platform>'`
+for the configurations and platforms below. Any other condition is recorded as unknown, and CheckProjectFiles.py fails
+on it, so a project cannot hide a setting behind a condition that the checkers do not evaluate. Settings are kept per
+configuration and platform; a query names the configuration and reads x64 unless it names the platform too.
 """
 import os
 import re
@@ -14,6 +15,8 @@ import xml.etree.ElementTree as ElementTree
 
 MSBUILD = '{http://schemas.microsoft.com/developer/msbuild/2003}'
 CONFIGURATIONS = ('Debug', 'Release')
+PLATFORMS = ('x64', 'ARM64')  # x64 ships; ARM64 is the development build of owner decision O66 (ADR-094)
+BUILDS = tuple((c, p) for p in PLATFORMS for c in CONFIGURATIONS)
 CONDITION = re.compile(r"^\s*'\$\(Configuration\)\|\$\(Platform\)'\s*==\s*'(\w+)\|(\w+)'\s*$")
 ITEM_KINDS = ('ClCompile', 'ClInclude', 'FXCompile', 'None', 'Text', 'ResourceCompile', 'Image', 'Manifest')
 TOOLS = ('ClCompile', 'Link', 'Lib', 'FXCompile')
@@ -58,7 +61,7 @@ class Project:
     self.items = []          # (kind, include, {metadata})
     self.references = []     # project names
     self.imports = []
-    self.settings = {c: {} for c in CONFIGURATIONS}
+    self.settings = {b: {} for b in BUILDS}  # (configuration, platform) -> {key: value}
     self.globals = {}
     self.filters = None      # include -> filter name, or None when there is no .filters file
     self.filter_names = []
@@ -70,20 +73,20 @@ class Project:
   # -- reading ----------------------------------------------------------------------------------------------------
 
   def _applies(self, element):
-    """The configurations an element applies to, from its Condition."""
+    """The (configuration, platform) pairs an element applies to, from its Condition."""
     condition = element.get('Condition')
     if condition is None:
-      return list(CONFIGURATIONS)
+      return list(BUILDS)
     m = CONDITION.match(condition)
     if not m:
       if not condition.strip().lower().startswith(('exists(', '!exists(')):
         self.unknown_conditions.append(condition)
       return []
     configuration, platform = m.groups()
-    if platform != 'x64' or configuration not in CONFIGURATIONS:
+    if platform not in PLATFORMS or configuration not in CONFIGURATIONS:
       self.unknown_conditions.append(condition)
       return []
-    return [configuration]
+    return [(configuration, platform)]
 
   def _read_project(self):
     tree = ElementTree.parse(self.absolute)
@@ -154,8 +157,8 @@ class Project:
 
   # -- queries ------------------------------------------------------------------------------------------------------
 
-  def setting(self, configuration, key):
-    return self.settings[configuration].get(key)
+  def setting(self, configuration, key, platform='x64'):
+    return self.settings[(configuration, platform)].get(key)
 
   def configuration_type(self):
     return self.setting('Debug', 'Property.ConfigurationType') or self.setting('Release', 'Property.ConfigurationType')
@@ -172,12 +175,12 @@ class Project:
   def sources(self, kinds=('ClCompile', 'ClInclude')):
     return [include for kind, include, _ in self.items if kind in kinds]
 
-  def include_directories(self, configuration='Debug'):
-    value = self.setting(configuration, 'ClCompile.AdditionalIncludeDirectories') or ''
+  def include_directories(self, configuration='Debug', platform='x64'):
+    value = self.setting(configuration, 'ClCompile.AdditionalIncludeDirectories', platform) or ''
     return [d.strip() for d in value.split(';') if d.strip()]
 
-  def preprocessor_definitions(self, configuration='Debug'):
-    value = self.setting(configuration, 'ClCompile.PreprocessorDefinitions') or ''
+  def preprocessor_definitions(self, configuration='Debug', platform='x64'):
+    value = self.setting(configuration, 'ClCompile.PreprocessorDefinitions', platform) or ''
     return [d.strip() for d in value.split(';') if d.strip()]
 
 

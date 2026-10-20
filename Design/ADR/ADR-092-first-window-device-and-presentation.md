@@ -99,6 +99,7 @@ Chosen option: "1". It is the only one that gives the owner, at M0, a window tha
 * `NeuronClientTests`:
   - `PresentationTests` checks the adapter choice (all pass, each single failure, a software adapter, an unknown shader model), the present-mode selection for every combination, the frame latency, and the fallback chain with each attempt failing in turn.
   - `WindowGeometryTests` checks the windowed placement, the minimum size, the DPI scale, and the resize coalescing of PLT T9.
+  - `AppWindowTests` creates the window, windowed and borderless full screen, and checks that it exists and is hidden (PLT-057). A window needs no GPU, so CI runs it (amendment 2026-10-20).
   - `GpuResourceFactoryTests` checks RND T11 on the in-memory factory.
 * `Build/CheckProjectFiles.py` fixtures fail on:
   - a `d3d12.h` include outside NeuronClient;
@@ -132,3 +133,9 @@ Chosen option: "1". It is the only one that gives the owner, at M0, a window tha
   - [ADR-075](ADR-075-application-window-and-dpi-awareness.md), [ADR-078](ADR-078-gpu-resource-factory.md), [ADR-090](ADR-090-solution-and-project-layout.md);
   - owner decision O65.
 * The code is in `NeuronClient`: `AppWindow`, `FrameRenderer`, `GraphicsDevice`, `AdapterChoice`, `PresentPolicy`, `DisplayAttempt`, `GpuResourceFactory` and `InMemoryGpuResourceFactory`. NeuronCore holds `PlatformMessage` and `RunId`, and `Species/Species.cpp` holds the composition root.
+* **Amendment 2026-10-20 (M0 task T4).** The owner's first run of `Species.exe` stopped at the window:
+  - every attempt of the fallback chain logged "the window was not created: error 1400", and the start-up ended with `ui.error.display_mode`;
+  - the cause: the window procedure stored the window's state at `WM_NCCREATE`, but the state learnt the window's handle only after `CreateWindowExW` returned;
+  - the creation messages therefore reached `DefWindowProcW` with a null handle, `WM_NCCREATE` returned `FALSE`, and the creation failed with `ERROR_INVALID_WINDOW_HANDLE`.
+
+  The procedure now gives the state the handle at `WM_NCCREATE`, before any message reaches it. No test had created a window, because the tests of the Confirmation covered only what the window computes. `AppWindowTests` now creates one in each mode, and both of its tests fail without the fix.

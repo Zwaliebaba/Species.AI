@@ -81,3 +81,4 @@ Chosen option: "Windows 11 x64, minimum version 24H2 (OS build 10.0.26100)", bec
 * Re-check trigger: any Windows 11 version leaving consumer service.
 * **Amendment 2026-10-17 (AGENTS.md, O21).** The client has an AVX2 CPU floor (Intel Haswell, AMD Excavator), set by `/arch:AVX2` (`AGENTS.md` R16).
 * **Amendment 2026-10-17.** The below-minimum message is a notice of the platform layer's start-up check, which continues afterwards (PLT-040, `plt.os.minimum_build`); the install directory has no launcher ([ADR-071](ADR-071-install-layout-runtime-files-and-user-data.md)).
+* **Amendment 2026-10-20 (owner decision O66, [ADR-094](ADR-094-arm64-development-build.md)).** The client stays x64 only for players. ARM64 is built as a development build for the owner's Windows on Arm PC, with `/arch:armv8.7`; it is not a target of this record, and no player receives it.

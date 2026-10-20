@@ -29,7 +29,9 @@ name: Build
 # directory or sit on an older language standard. Before a release, somebody builds Release for
 # real -- see AGENTS.md §3.
 #
-# X64 ONLY. There is no second platform to fall back on and nothing left to excuse a red x64.
+# X64 ONLY. ARM64 is a development build that the owner builds on their PC (ADR-094); x64 is the
+# only shipping platform, and nothing excuses a red x64. The build-shape step holds the ARM64
+# configurations to the x64 ones, as it holds Release to Debug.
 #
 # ── Why the toolchain is not pinned to an image ────────────────────────────────────────────
 #

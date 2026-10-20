@@ -38,6 +38,8 @@ The implementing sessions run in a cloud container without a Windows toolchain: 
 | Git, Python | Git; Python 3.12 for the checkers and the design tools | `AGENTS.md` §3 |
 | PIX on Windows | optional, for GPU captures and markers | ADR-068 |
 
+The owner's PC is Windows on Arm, a Snapdragon X with an Adreno X1-85 GPU. It builds `Debug|ARM64` natively, the development build of O66 ([ADR-094](../ADR/ADR-094-arm64-development-build.md)), and runs the x64 build under emulation.
+
 This PC becomes the reference test machine at M1, and its configuration is recorded then (O58). CI's image carries Visual Studio 18.10.1 while `bld.pin.visual_studio` names 18.11 as the developer minimum. Task T12 settles which number is the pin.
 
 ## 4 The order of the engine baseline

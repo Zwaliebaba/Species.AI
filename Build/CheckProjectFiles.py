@@ -94,16 +94,26 @@ ALLOWED_DIFFERENCES = {
 REQUIRED_COMPILE = {
   'PrecompiledHeader': 'Use', 'PrecompiledHeaderFile': 'pch.h', 'LanguageStandard': 'stdcpplatest',
   'ConformanceMode': 'true', 'WarningLevel': 'Level4', 'TreatWarningAsError': 'true', 'FloatingPointModel': 'Precise',
-  'EnableEnhancedInstructionSet': 'AdvancedVectorExtensions2', 'ExceptionHandling': 'Sync',
+  'ExceptionHandling': 'Sync',
   'DebugInformationFormat': 'ProgramDatabase', 'ControlFlowGuard': 'Guard', 'BufferSecurityCheck': 'true',
   'BasicRuntimeChecks': 'Default', 'SupportJustMyCode': 'false',
 }
 REQUIRED_COMPILE_OPTIONS = ('/Zc:__cplusplus', '/Zc:preprocessor', '/utf-8')
 REQUIRED_LINK = {
   'GenerateDebugInformation': 'DebugFull', 'RandomizedBaseAddress': 'true', 'DataExecutionPrevention': 'true',
-  'CETCompat': 'true',
 }
 REQUIRED_LINK_OPTIONS = ('/HIGHENTROPYVA', '/GUARD:CF')
+# R16 and ADR-094: the instruction set is stated per platform, and CET shadow stacks exist on x64 alone. These are the
+# only settings in which the x64 and ARM64 builds of one configuration differ.
+REQUIRED_COMPILE_BY_PLATFORM = {
+  'x64': {'EnableEnhancedInstructionSet': 'AdvancedVectorExtensions2'},
+  'ARM64': {'EnableEnhancedInstructionSet': 'CPUExtensionRequirementsARMv87'},
+}
+REQUIRED_LINK_BY_PLATFORM = {
+  'x64': {'CETCompat': 'true'},
+  'ARM64': {'CETCompat': 'false'},
+}
+PLATFORM_DIFFERENCES = {'ClCompile.EnableEnhancedInstructionSet', 'Link.CETCompat'}
 REQUIRED_BY_CONFIGURATION = {
   'Debug': {'ClCompile.RuntimeLibrary': 'MultiThreadedDebugDLL', 'Property.UseDebugLibraries': 'true'},
   'Release': {'ClCompile.RuntimeLibrary': 'MultiThreadedDLL', 'Property.UseDebugLibraries': 'false'},
@@ -215,7 +225,7 @@ def tree_files(root):
     return sorted(p for p in output.splitlines() if os.path.exists(os.path.join(root, p)))
   out = []
   for directory, folders, names in os.walk(root):
-    folders[:] = [f for f in folders if f not in ('.git', 'x64', 'packages', 'node_modules', 'CompiledShader')]
+    folders[:] = [f for f in folders if f not in ('.git', 'x64', 'ARM64', 'packages', 'node_modules', 'CompiledShader')]
     for name in names:
       out.append(os.path.relpath(os.path.join(directory, name), root).replace('\\', '/'))
   return sorted(out)
@@ -255,54 +265,65 @@ def rule_1(tree):
     return
   for p in tree.projects:
     configurations = sorted(p.configurations)
-    if configurations != ['Debug|x64', 'Release|x64']:
-      yield p.path, f'configurations {configurations}; exactly Debug|x64 and Release|x64'
-    for c in SolutionModel.CONFIGURATIONS:
-      toolset = p.setting(c, 'Property.PlatformToolset')
+    expected = sorted(f'{c}|{pl}' for c, pl in SolutionModel.BUILDS)
+    if configurations != expected:
+      yield p.path, f'configurations {configurations}; exactly {", ".join(expected)} (ADR-094)'
+    for c, pl in SolutionModel.BUILDS:
+      toolset = p.setting(c, 'Property.PlatformToolset', pl)
       if toolset != 'v145':
-        yield p.path, f'{c} uses the toolset {toolset!r}; v145 (bld.pin.msvc_toolset)'
+        yield p.path, f'{c}|{pl} uses the toolset {toolset!r}; v145 (bld.pin.msvc_toolset)'
 
 
 def rule_2(tree):
   for p in tree.projects:
     for condition in p.unknown_conditions:
       yield p.path, f'the condition {condition!r} is not one the checkers evaluate'
-    debug, release = p.settings['Debug'], p.settings['Release']
-    for key in sorted(set(debug) | set(release)):
-      if key in ALLOWED_DIFFERENCES or key.startswith('Property.Label'):
-        continue
-      if debug.get(key) != release.get(key):
-        yield p.path, f'{key} is {debug.get(key)!r} in Debug and {release.get(key)!r} in Release'
-    for c, values in (('Debug', debug), ('Release', release)):
-      defines = p.preprocessor_definitions(c)
+    for pl in SolutionModel.PLATFORMS:
+      debug, release = p.settings[('Debug', pl)], p.settings[('Release', pl)]
+      for key in sorted(set(debug) | set(release)):
+        if key in ALLOWED_DIFFERENCES or key.startswith('Property.Label'):
+          continue
+        if debug.get(key) != release.get(key):
+          yield p.path, f'{key} is {debug.get(key)!r} in Debug|{pl} and {release.get(key)!r} in Release|{pl}'
+    for c in SolutionModel.CONFIGURATIONS:
+      x64, arm64 = p.settings[(c, 'x64')], p.settings[(c, 'ARM64')]
+      for key in sorted(set(x64) | set(arm64)):
+        if key in PLATFORM_DIFFERENCES or key.startswith('Property.Label'):
+          continue
+        if x64.get(key) != arm64.get(key):
+          yield p.path, f'{key} is {x64.get(key)!r} in {c}|x64 and {arm64.get(key)!r} in {c}|ARM64 (ADR-094)'
+    for c, pl in SolutionModel.BUILDS:
+      values = p.settings[(c, pl)]
+      build = f'{c}|{pl}'
+      defines = p.preprocessor_definitions(c, pl)
       expected = '_DEBUG' if c == 'Debug' else 'NDEBUG'
       if expected not in defines or ({'_DEBUG', 'NDEBUG'} - {expected}) & set(defines):
-        yield p.path, f'{c} must define {expected} and not the other configuration\'s macro'
-      for name, value in REQUIRED_COMPILE.items():
+        yield p.path, f'{build} must define {expected} and not the other configuration\'s macro'
+      for name, value in {**REQUIRED_COMPILE, **REQUIRED_COMPILE_BY_PLATFORM[pl]}.items():
         if values.get('ClCompile.' + name) != value:
-          yield p.path, f'{c} lacks ClCompile {name} = {value} (BLD-030)'
+          yield p.path, f'{build} lacks ClCompile {name} = {value} (BLD-030, BLD-040)'
       options = values.get('ClCompile.AdditionalOptions', '')
       for option in REQUIRED_COMPILE_OPTIONS:
         if option not in options.split():
-          yield p.path, f'{c} lacks the compiler option {option} (BLD-030)'
+          yield p.path, f'{build} lacks the compiler option {option} (BLD-030)'
       for key, value in REQUIRED_BY_CONFIGURATION[c].items():
         if values.get(key) != value:
-          yield p.path, f'{c} lacks {key} = {value} (BLD-030)'
+          yield p.path, f'{build} lacks {key} = {value} (BLD-030)'
       if p.is_library():
         expected_lib = 'true' if c == 'Release' else 'false'
         if values.get('Lib.LinkTimeCodeGeneration') != expected_lib:
-          yield p.path, f'{c} lacks Lib LinkTimeCodeGeneration = {expected_lib} (BLD-030)'
+          yield p.path, f'{build} lacks Lib LinkTimeCodeGeneration = {expected_lib} (BLD-030)'
         continue
-      for name, value in REQUIRED_LINK.items():
+      for name, value in {**REQUIRED_LINK, **REQUIRED_LINK_BY_PLATFORM[pl]}.items():
         if values.get('Link.' + name) != value:
-          yield p.path, f'{c} lacks Link {name} = {value} (BLD-030)'
+          yield p.path, f'{build} lacks Link {name} = {value} (BLD-030)'
       link_options = values.get('Link.AdditionalOptions', '')
       for option in REQUIRED_LINK_OPTIONS:
         if option not in link_options.split():
-          yield p.path, f'{c} lacks the linker option {option} (BLD-030)'
+          yield p.path, f'{build} lacks the linker option {option} (BLD-030)'
       for key, value in REQUIRED_LINK_BY_CONFIGURATION[c].items():
         if values.get(key) != value:
-          yield p.path, f'{c} lacks {key} = {value} (BLD-030)'
+          yield p.path, f'{build} lacks {key} = {value} (BLD-030)'
 
 
 def rule_3(tree):
@@ -469,15 +490,15 @@ def rule_7(tree):
 
 def rule_8(tree):
   for p in tree.projects:
-    for c in SolutionModel.CONFIGURATIONS:
-      names = [d.split('=')[0].strip() for d in p.preprocessor_definitions(c)]
-      options = (p.setting(c, 'ClCompile.AdditionalOptions') or '').split()
+    for c, pl in SolutionModel.BUILDS:
+      names = [d.split('=')[0].strip() for d in p.preprocessor_definitions(c, pl)]
+      options = (p.setting(c, 'ClCompile.AdditionalOptions', pl) or '').split()
       names += [o[2:].split('=')[0] for o in options if o.startswith(('/D', '-D'))]
       for name in names:
         if name == 'ENGINE_DEVELOPMENT' or name.startswith('ENGINE_'):
-          yield p.path, f'{c} defines the switch {name}; switches follow from NDEBUG in one engine header (BLD-014)'
+          yield p.path, f'{c}|{pl} defines the switch {name}; switches follow from NDEBUG in one engine header (BLD-014)'
         if name in WINDOWS_MACROS:
-          yield p.path, f'{c} defines {name}; only {WINDOWS_HEADERS} defines the Windows macro family (AGENTS.md §4)'
+          yield p.path, f'{c}|{pl} defines {name}; only {WINDOWS_HEADERS} defines the Windows macro family (AGENTS.md §4)'
 
 
 def rule_9(tree):
@@ -518,15 +539,15 @@ def agility_exports(tree):
         yield AGILITY_EXPORTS, f'exports D3D12SDKVersion {exported}, and {p.name} restores {package} {version} (BLD-042)'
   if not re.search(r'\bAGILITY_SDK_PATH\s*=\s*' + re.escape(AGILITY_SDK_PATH) + r'\s*;', text):
     yield AGILITY_EXPORTS, 'AGILITY_SDK_PATH is not ".\\\\D3D12\\\\" (bld.pin.d3d12_sdk_path, BLD-042)'
-  for c in SolutionModel.CONFIGURATIONS:
-    options = client.setting(c, 'Link.AdditionalOptions') or ''
+  for c, pl in SolutionModel.BUILDS:
+    options = client.setting(c, 'Link.AdditionalOptions', pl) or ''
     for option in AGILITY_EXPORT_OPTIONS:
       if option not in options:
-        yield client.path, f'{c} lacks the linker option {option} (BLD-042)'
+        yield client.path, f'{c}|{pl} lacks the linker option {option} (BLD-042)'
   server = tree.by_name.get(SERVER)
-  for c in SolutionModel.CONFIGURATIONS:
-    if server and 'D3D12SDK' in (server.setting(c, 'Link.AdditionalOptions') or ''):
-      yield server.path, f'{c} exports an Agility SDK constant; the server exports neither (BLD-042)'
+  for c, pl in SolutionModel.BUILDS:
+    if server and 'D3D12SDK' in (server.setting(c, 'Link.AdditionalOptions', pl) or ''):
+      yield server.path, f'{c}|{pl} exports an Agility SDK constant; the server exports neither (BLD-042)'
 
 
 def read_pins(tree):
@@ -609,11 +630,11 @@ def rule_11(tree):
       for package, _ in project.packages if project else []:
         if package in PRESENTATION_PACKAGES:
           yield server.path, f'the server links {name}, which restores {package} (BLD-045)'
-    for c in SolutionModel.CONFIGURATIONS:
-      dependencies = (server.setting(c, 'Link.AdditionalDependencies') or '').lower()
+    for c, pl in SolutionModel.BUILDS:
+      dependencies = (server.setting(c, 'Link.AdditionalDependencies', pl) or '').lower()
       for library in PRESENTATION_LIBRARIES:
         if re.search(r'\b' + library + r'\.lib\b', dependencies):
-          yield server.path, f'{c} links {library}.lib (BLD-045)'
+          yield server.path, f'{c}|{pl} links {library}.lib (BLD-045)'
 
 
 def rule_12(tree):
@@ -754,7 +775,7 @@ def copy_tree(source, target):
     directory = os.path.dirname(path)
     if not os.path.exists(os.path.join(target, directory)):
       shutil.copytree(os.path.join(source, directory), os.path.join(target, directory),
-                      ignore=shutil.ignore_patterns('x64', 'CompiledShader'))
+                      ignore=shutil.ignore_patterns('x64', 'ARM64', 'CompiledShader'))
   for path in (PINS_DOCUMENT,):
     os.makedirs(os.path.dirname(os.path.join(target, path)), exist_ok=True)
     shutil.copy2(os.path.join(source, path), os.path.join(target, path))
@@ -788,12 +809,12 @@ def edit_project(root, path, change):
   tree.write(full, encoding='utf-8', xml_declaration=True)
 
 
-def group(element, ns, tag, configuration=None):
+def group(element, ns, tag, configuration=None, platform='x64'):
   for child in element.findall(ns + tag):
     condition = child.get('Condition')
     if configuration is None and condition is None:
       return child
-    if configuration and condition and f"'{configuration}|x64'" in condition:
+    if configuration and condition and f"'{configuration}|{platform}'" in condition:
       return child
   raise AssertionError(f'no {tag} for {configuration}')
 
@@ -811,6 +832,12 @@ def fixture_release_differs(root):
   edit_project(root, 'NeuronCore/NeuronCore.vcxproj',
                lambda e, ns: sub(sub(group(e, ns, 'ItemDefinitionGroup', 'Release'), ns, 'ClCompile'), ns, 'SDLCheck',
                                  'true'))
+
+
+def fixture_arm64_on_avx2(root):
+  edit_project(root, 'NeuronCore/NeuronCore.vcxproj',
+               lambda e, ns: sub(sub(group(e, ns, 'ItemDefinitionGroup', 'Debug', 'ARM64'), ns, 'ClCompile'), ns,
+                                 'EnableEnhancedInstructionSet', 'AdvancedVectorExtensions2'))
 
 
 def fixture_toolset(root):
@@ -844,6 +871,7 @@ FIXTURES = [
   (1, 'a second solution at the root', lambda r: write(r, 'Second.sln', '')),
   (1, 'a project on another toolset', fixture_toolset),
   (2, 'a setting that Release states and Debug does not', fixture_release_differs),
+  (2, 'an ARM64 build on the x64 instruction set (ADR-094)', fixture_arm64_on_avx2),
   (3, 'a source file that its project does not list', lambda r: write(r, 'NeuronCore/Stray.cpp', '')),
   (3, 'a file-kind filter',
    lambda r: edit(r, 'NeuronCore/NeuronCore.vcxproj.filters', '<ItemGroup>',

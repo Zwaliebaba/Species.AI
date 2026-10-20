@@ -103,6 +103,8 @@ Table 2.1-B Inputs that select a build.
 | `/t:<ProjectName>` | a project of the solution (`Tools\<ProjectName>` for a tool project), or none | the developer | builds that project and what it references; none builds the whole solution, tool projects included |
 | `EngineBuildNumber` | an integer from 0 to `bld.version.part_max` | CI, which passes `/p:EngineBuildNumber=${{ github.run_number }}` (ADR-070); 0 in a local build | the CI build number of the build identity (§4.4) |
 
+> **Amendment 2026-10-20 (owner decision O66, ADR-094).** `Platform` is also `ARM64`: a development build for the owner's Windows on Arm PC, which no player receives. CI and the release procedure build `x64` only.
+
 Table 2.1-C Build commands, from the repository root.
 
 | Purpose | Command |
@@ -497,6 +499,8 @@ Table 4.1-B Rules of the project-file checker.
 **BLD-039** (MUST) Packaging writes into `licences\` the licence notices of the four packages, taken from the restored packages, and of every licensed content file, whose licence text travels with its bytes; a release is not packaged when the licence notices name anything else or lack one of these (ADR-055, ADR-071). The GameInput redistributable's licence terms are read and recorded before the first external build (ADR-071).
 
 **BLD-040** (MUST) Every project states `/fp:precise` and `/arch:AVX2` in its project file, identical in Debug and Release, and never inherits either from a compiler default (`AGENTS.md` R16, ADR-051). `/arch:AVX2` sets the CPU floor of ADR-050 and lets MSVC contract a·b + c into a fused multiply-add even under `/fp:precise`, which can contract differently at different optimisation levels; no code that must give bit-identical results across builds relies on float arithmetic that may be contracted. The simulation's numeric model is DEC-240 and DEC-241.
+
+> **Amendment 2026-10-20 (owner decision O66, ADR-094).** The ARM64 development build keeps BLD-030 and BLD-040 with two differences, stated in the ARM64 configurations of every project: `/arch:armv8.7` in place of `/arch:AVX2`, and no `/CETCOMPAT`, which the linker refuses for ARM64. Every other setting is the x64 one, and `Build\CheckProjectFiles.py` rule 2 checks that.
 
 **BLD-041** (MUST) Each project lists the projects it references, and the build uses only declared references. A project includes the headers of another project only through `$(SolutionDir)<Project>` on its include path, `$(SolutionDir)Tools\<Project>` for a tool project, and never lists its own folder there (`AGENTS.md` §3). Edges run one way: engine projects never reference game projects, two libraries at one level share what is below them and never reference each other, the simulation and server libraries never reference the renderer, audio, input or UI projects, a tool project may reference the engine projects it shares code with, and no game or engine project references a tool project (`AGENTS.md` §2, ADR-054, ADR-056). `Build\CheckProjectFiles.py` can also check a project's includes against an allow-list; whether the simulation library uses one to enforce the simulation and presentation boundary is DEC-222 (item 3).
 

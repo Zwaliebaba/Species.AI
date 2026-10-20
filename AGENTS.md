@@ -170,7 +170,7 @@ The concrete layout — the solution, the projects and the edges between them �
 
 **Development tools are projects of the one solution, under `Tools/`.** C++ development tools that never ship — the content build tool and its importers — are projects in `Tools/<Project>/`, in a `Tools` solution folder of the one solution at the repository root, so they build with the same `$(SolutionDir)` paths as everything else and may reference the engine projects they share code with. They follow every rule in this file except R14: a tool project may use pinned third-party code (for example a BC7 texture encoder), each dependency recorded in an ADR with its licence and restored by NuGet for that project only. The edge runs one way: no game or engine project references a tool project or a tool-only package, and nothing from a tool project links into the executable. `Build/CheckProjectFiles.py` checks both.
 
-**Build and IDE output is never committed** — `x64/`, `.vs/`, `*.user`, and anything a build step generates.
+**Build and IDE output is never committed** — `x64/`, `ARM64/`, `.vs/`, `*.user`, and anything a build step generates.
 
 **Generated source is committed when a developer-run tool produces it.** The schema code generator, a tool project (ADR-062), is not a build step: a developer runs it when a schema changes, and it writes ordinary `.h` files in this file's style directly into the owning project folder. Each starts with a comment naming the schema it came from and saying it is generated; it is never edited by hand, and it is formatted, linted and registered in the `.vcxproj` like any other header. CI regenerates the files and fails on any difference (`Build/CheckGeneratedSchemas.py`), so no game or engine project needs a tool project to build.
 
@@ -178,9 +178,9 @@ The concrete layout — the solution, the projects and the edges between them �
 
 ## 3. Build and verify
 
-**x64 is the only platform.** No Win32/x86 configuration in any project or solution; do not add one, and do not write code that only works at 32 bits.
+**x64 is the only shipping platform; ARM64 is a development build.** Every project has `Debug|x64`, `Release|x64`, `Debug|ARM64` and `Release|ARM64`, so that the owner builds and runs natively on a Windows on Arm PC (owner decision O66, ADR-094). The ARM64 configurations state the x64 settings except two: the instruction set (R16), and `/CETCOMPAT`, which exists on x64 only. Each platform writes to its own `$(Platform)\$(Configuration)\` folder. CI builds x64, and `Build/CheckProjectFiles.py` holds the ARM64 configurations to the x64 ones. No Win32/x86 configuration in any project or solution; do not add one, and do not write code that only works at 32 bits or only compiles for one architecture (an x86 intrinsic header such as `<immintrin.h>` is such code).
 
-**The compiler settings are the settings.** Toolset `v145` (Visual Studio 2026), `/std:c++latest`, `/permissive-`, `/W4` with **warnings as errors**, `/fp:precise`, `/arch:AVX2` (R16). There is no CMake. If a build error tempts you to change the toolset, lower the language standard, turn off `/permissive-` or silence a warning — **stop and report instead.**
+**The compiler settings are the settings.** Toolset `v145` (Visual Studio 2026), `/std:c++latest`, `/permissive-`, `/W4` with **warnings as errors**, `/fp:precise`, `/arch:AVX2` on x64 and `/arch:armv8.7` on ARM64 (R16). There is no CMake. If a build error tempts you to change the toolset, lower the language standard, turn off `/permissive-` or silence a warning — **stop and report instead.**
 
 **Debug and Release are aligned by rule, not by luck.** Every setting that is not *about* optimisation reads identically in both configurations: language standard, conformance, warning level, include directories, precompiled header, floating-point model, instruction set. The two differ in exactly four things — `Optimization`, `_DEBUG` vs `NDEBUG`, `FunctionLevelLinking`/`IntrinsicFunctions`, and the linker's folding and LTCG switches. (MSBuild spells those four through a few more properties — `UseDebugLibraries`, `RuntimeLibrary` as the debug or release CRT, `LinkIncremental`, `WholeProgramOptimization`, `EnableCOMDATFolding`, `OptimizeReferences` — and that list is the whole of what may differ.)
 
@@ -200,6 +200,9 @@ msbuild <Solution>.slnx /t:<ProjectName> /p:Configuration=Debug /p:Platform=x64 
 
 # Release, before you claim anything about it.
 msbuild <Solution>.slnx /p:Configuration=Release /p:Platform=x64 /m /v:minimal /nologo
+
+# The ARM64 development build (ADR-094), natively on a Windows on Arm PC.
+msbuild <Solution>.slnx /p:Configuration=Debug /p:Platform=ARM64 /m /v:minimal /nologo
 ```
 
 **A project does not put its own directory on the include path.** `cl.exe` already searches the directory of the including file first for a quoted include, so `#include "FileSys.h"` from a `.cpp` in the same folder resolves without help. Only the directories of *other* projects are listed, as `$(SolutionDir)<Project>`.
@@ -256,9 +259,9 @@ For Direct3D the list means what the Windows SDK and the Agility SDK install: `d
 
 **R15 — Memory is plain C++.** `new`/`delete` where it must be, RAII everywhere, standard containers by default. No pool, slab or free-list allocator without a decision recorded in `Design/ADR/`.
 
-**R16 — The floating-point model and instruction set are stated, not inherited.** Every project compiles `/fp:precise` and **`/arch:AVX2`**, stated explicitly in the project file rather than inherited from an MSVC default — a default is not a decision, and the symptom of losing one is two builds of the same code disagreeing about the same sum with no line to blame. Both settings are identical in Debug and Release.
+**R16 — The floating-point model and instruction set are stated, not inherited.** Every project compiles `/fp:precise` and **`/arch:AVX2`** (on the ARM64 development build, **`/arch:armv8.7`** in its place; ADR-094), stated explicitly in the project file rather than inherited from an MSVC default — a default is not a decision, and the symptom of losing one is two builds of the same code disagreeing about the same sum with no line to blame. Both settings are identical in Debug and Release.
 
-**What `/arch:AVX2` costs is named rather than waved at.** It sets an AVX2 floor — Intel Haswell (2013) and AMD Excavator (2015); an older CPU meets an illegal instruction, not a message. And it lets MSVC contract `a*b+c` into an FMA even under `/fp:precise`, which changes float results, and may contract differently at different optimisation levels. Float code that must produce bit-identical results across builds cannot rely on it.
+**What `/arch:AVX2` costs is named rather than waved at.** It sets an AVX2 floor — Intel Haswell (2013) and AMD Excavator (2015); an older CPU meets an illegal instruction, not a message. And it lets MSVC contract `a*b+c` into an FMA even under `/fp:precise`, which changes float results, and may contract differently at different optimisation levels. Float code that must produce bit-identical results across builds cannot rely on it. `/arch:armv8.7` sets the same kind of floor, Armv8.7-A, for the development build alone.
 
 **If the game needs a deterministic core** — a simulation that replays, lockstep networking, a result that must reproduce from a seed — that is a decision recorded as an ADR, and inside that core: no `float` where a fixed-point or integer quantity will do (hold a fraction as integer hundredths and say so in the name, R6), no iteration over an unordered container whose order reaches the outcome, no wall-clock time (a tick is the clock, and wall time maps to ticks at one seam), and randomness from a pinned PRNG with a recorded seed — never `std::random_device`, never a hash of an address.
 

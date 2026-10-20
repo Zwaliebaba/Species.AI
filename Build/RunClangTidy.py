@@ -33,6 +33,7 @@ CONFIGURATION = 'Debug'                # CI builds Debug only (AGENTS.md §6)
 PACKAGE_INCLUDES = {
   'Microsoft.Direct3D.D3D12': ['build/native/include'],
   'WinPixEventRuntime': ['Include/WinPixEventRuntime'],
+  'Microsoft.Native.Quic.MsQuic.Schannel': ['build/native/include'],
 }
 
 FIXTURE = 'int badGlobal = 0;\n'

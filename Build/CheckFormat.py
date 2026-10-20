@@ -21,7 +21,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PINNED_MAJOR = 18                      # bld.pin.clang_format
 EXTENSIONS = ('.h', '.cpp')
-SKIPPED_PARTS = ('CompiledShader', 'packages', 'x64', 'node_modules')
+SKIPPED_PARTS = ('CompiledShader', 'packages', 'x64', 'ARM64', 'node_modules')
 BATCH = 64
 FIXTURE = 'namespace Fixture {\nint  Misformatted( int _a ){ return _a; }\n}\n'
 
