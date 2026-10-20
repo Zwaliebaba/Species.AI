@@ -119,12 +119,15 @@
     <ClCompile Include="JobQueueTests.cpp" />
     <ClCompile Include="LogBufferTests.cpp" />
     <ClCompile Include="LogTests.cpp" />
+    <ClCompile Include="MessageCodecTests.cpp" />
     <ClCompile Include="PlatformClockTests.cpp" />
     <ClCompile Include="PlatformLogSinkTests.cpp" />
+    <ClCompile Include="PlatformMessageTests.cpp" />
     <ClCompile Include="PlatformThreadTests.cpp" />
     <ClCompile Include="ProfileTests.cpp" />
     <ClCompile Include="TestSupport.cpp" />
     <ClCompile Include="TextEncodingTests.cpp" />
+    <ClCompile Include="TransportTests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

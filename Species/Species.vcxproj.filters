@@ -14,12 +14,20 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="pch.cpp">
-      <Filter>Build</Filter>
+    <ClCompile Include="AgilitySdkExports.cpp">
+      <Filter>Program</Filter>
     </ClCompile>
     <ClCompile Include="Species.cpp">
       <Filter>Program</Filter>
     </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>Build</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="Species.manifest">
+      <Filter>Build</Filter>
+    </Manifest>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config">

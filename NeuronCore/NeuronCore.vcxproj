@@ -95,36 +95,52 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="BitReader.h" />
+    <ClInclude Include="BitWriter.h" />
     <ClInclude Include="Check.h" />
     <ClInclude Include="Development.h" />
     <ClInclude Include="FatalPath.h" />
     <ClInclude Include="Files.h" />
     <ClInclude Include="FloatEnvironment.h" />
+    <ClInclude Include="InProcessTransport.h" />
     <ClInclude Include="JobQueue.h" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="LogBuffer.h" />
     <ClInclude Include="LogFile.h" />
+    <ClInclude Include="MessageCodec.h" />
     <ClInclude Include="PlatformClock.h" />
+    <ClInclude Include="PlatformError.h" />
     <ClInclude Include="PlatformLogSink.h" />
+    <ClInclude Include="PlatformMessage.h" />
     <ClInclude Include="PlatformThread.h" />
     <ClInclude Include="Profile.h" />
+    <ClInclude Include="RunId.h" />
+    <ClInclude Include="StreamFraming.h" />
     <ClInclude Include="TextEncoding.h" />
+    <ClInclude Include="Transport.h" />
     <ClInclude Include="WindowsHeaders.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BitReader.cpp" />
+    <ClCompile Include="BitWriter.cpp" />
     <ClCompile Include="Check.cpp" />
     <ClCompile Include="FatalPath.cpp" />
     <ClCompile Include="Files.cpp" />
     <ClCompile Include="FloatEnvironment.cpp" />
+    <ClCompile Include="InProcessTransport.cpp" />
     <ClCompile Include="JobQueue.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="LogBuffer.cpp" />
     <ClCompile Include="LogFile.cpp" />
+    <ClCompile Include="MessageCodec.cpp" />
     <ClCompile Include="PlatformClock.cpp" />
     <ClCompile Include="PlatformLogSink.cpp" />
+    <ClCompile Include="PlatformMessage.cpp" />
     <ClCompile Include="PlatformThread.cpp" />
     <ClCompile Include="Profile.cpp" />
+    <ClCompile Include="RunId.cpp" />
+    <ClCompile Include="StreamFraming.cpp" />
     <ClCompile Include="TextEncoding.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>

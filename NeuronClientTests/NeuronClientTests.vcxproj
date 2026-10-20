@@ -110,13 +110,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="TestSupport.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="GpuResourceFactoryTests.cpp" />
+    <ClCompile Include="PresentationTests.cpp" />
+    <ClCompile Include="WindowGeometryTests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="SuiteSmoke.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronClient\NeuronClient.vcxproj">

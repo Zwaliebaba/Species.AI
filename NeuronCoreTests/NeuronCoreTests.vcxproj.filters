@@ -7,6 +7,9 @@
     <Filter Include="Diagnostics">
       <UniqueIdentifier>{F05D831F-524E-533F-8B28-631DCFA00889}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Network">
+      <UniqueIdentifier>{2AAAB1D3-9A28-59AA-B770-AE069026F7C9}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Platform">
       <UniqueIdentifier>{2247C10B-9926-5A1D-BACB-8AF8411B661A}</UniqueIdentifier>
     </Filter>
@@ -41,10 +44,16 @@
     <ClCompile Include="LogTests.cpp">
       <Filter>Diagnostics</Filter>
     </ClCompile>
+    <ClCompile Include="MessageCodecTests.cpp">
+      <Filter>Network</Filter>
+    </ClCompile>
     <ClCompile Include="PlatformClockTests.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
     <ClCompile Include="PlatformLogSinkTests.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="PlatformMessageTests.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
     <ClCompile Include="PlatformThreadTests.cpp">
@@ -58,6 +67,9 @@
     </ClCompile>
     <ClCompile Include="TextEncodingTests.cpp">
       <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="TransportTests.cpp">
+      <Filter>Network</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Build</Filter>
