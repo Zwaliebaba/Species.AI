@@ -119,3 +119,20 @@ Chosen option: "1".
 * Related: [ADR-082](ADR-082-counter-based-simulation-random-draws.md), [ADR-085](ADR-085-region-partitioned-world-simulation.md), [ADR-087](ADR-087-command-path-validation-and-timing.md), [ADR-097](ADR-097-keyed-draws-and-state-hash.md), [ADR-099](ADR-099-world-snapshots.md), [ADR-104](ADR-104-navigation-nodes-land-route-graph-and-routes.md), [ADR-105](ADR-105-combat-weapons-and-essence-orbs.md), [ADR-106](ADR-106-leaders-formations-and-battle-commands.md).
 * The rules: R-BOT-025 to R-BOT-055 ([navigation graph](../reference/07_bots/01_navigation_graph.md)), R-BOT-072 to R-BOT-095 ([decision loop and Leaders](../reference/07_bots/03_decision_loop_and_leaders.md)), R-BOT-006 to R-BOT-024 ([bots](../reference/07_bots/README.md)), R-UNIT-188 ([Leader and formations](../reference/02_units/leader_and_formations.md)), R-UNIT-098 ([Worker](../reference/02_units/worker.md)).
 * The code is in GameLogic (`BotNavigation`, `AiController`, `Combat`, `RegionSimulation`).
+* **Amendment 2026-10-20 (the formation measurement, after M1 task T10).** Two measurements tested the stall that the Consequences describe, and the rules stay as they are. Both ran a probe program over `RegionSimulation` on seed 1's valley, built with g++ 13 on Linux. The outcomes are deterministic on that build, and another build may differ in detail.
+  - **The formation-Leader radius.** The sandbox battle, with the AI on both sides, ran for 30,000 ticks under two simulation keys, at five values of `ref.bot.leader.formation_leader_radius`. Losses of both sides together, under the two keys:
+    - 300 wu, the reference's: 28 and 21;
+    - 460 wu, above the 453 wu diagonal of MVP-017's 320 wu lattice: 46 and 35;
+    - 640 wu: 135 and 141;
+    - 800 wu: 177 and 155;
+    - 960 wu: 177 and 178.
+
+    At 460 wu each side still held 3 to 6 Leaders. A Leader with a waypoint order does not count for R-BOT-091, so a node whose Leader has walked away promotes another. No battle ended at any radius.
+  - **A full formation against a crowd.** A Leader and 90 Workers were formed up and filled by the steward's commands, then ordered at an idle crowd of 90 Workers 400 wu away. The run was repeated under 12 keys. The formation closed in every time.
+    - It won clearly in the 4 runs in which the crowd threw one grenade: 45 to 50 of its 91 were left, and the crowd was cut to 10 to 17.
+    - It was destroyed in the 7 runs in which the crowd threw 5 to 9 grenades: 0 to 7 were left.
+    - In one run, with 6 grenades, it came out about even: 18 against 22.
+  - **Why the grenades decide it.** A grenade's shockwave ring passes over everything 29 to 59 wu from it on 2 or 3 ticks, at about 40 damage each time (R-CRATE-471, R-CRATE-472). A member's explosive damage × 0.6 (R-UNIT-184) still kills a Worker of 50 health, and a packed formation holds dozens of members in that band. Two overlapping explosions killed 30 members in one tick.
+  - **The members' threat search.** Centring it nearer the Leader made the formation weaker: with `ref.unit.worker.formation_search_offset` at 0.33 or 0 instead of 0.66, it killed 19 and 18 instead of 28, under the first key.
+  - **A formation that the AI forms.** It took over 1,000 ticks to fill, and did not engage the crowd in 3,000 ticks.
+  - **So the radius stays the reference's 300 wu.** A larger radius gives the AI fuller formations, which lose to a crowd that throws grenades more often than they win, and it does not make a battle end. How formations fare against grenades is DEC-111's and DEC-112's question, decided by playtest.
