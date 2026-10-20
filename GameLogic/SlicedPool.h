@@ -4,8 +4,9 @@
 #include "BitWriter.h"
 #include "Check.h"
 
+#include <array>
 #include <cstdint>
-#include <deque>
+#include <memory>
 #include <vector>
 
 namespace Species
@@ -13,7 +14,8 @@ namespace Species
 
 /// A sliced pool of the simulation (`SlicedPool`, R-SIM-204): slots that never move (R-SIM-209), handed out
 /// last-freed-first and grown by a step (R-SIM-207), and advanced a share per update slice (R-SIM-213 to R-SIM-216). The
-/// values live in a deque, so an object created during another's advance never moves the one being advanced.
+/// values live in blocks that never move, so an object created during another's advance never moves the one being
+/// advanced, and the pool itself moves without allocating.
 template <class T> class SlicedPool
 {
 public:
@@ -33,7 +35,7 @@ public:
     }
     const std::uint32_t slot = m_free.back();
     m_free.pop_back();
-    m_values[slot] = _value;
+    Value(slot) = _value;
     m_used[slot] = 1;
     ++m_count;
     return slot;
@@ -43,7 +45,7 @@ public:
   void Free(std::uint32_t _slot)
   {
     ENGINE_CHECK(Used(_slot));
-    m_values[_slot] = T{};
+    Value(_slot) = T{};
     m_used[_slot] = 0;
     m_free.push_back(_slot);
     --m_count;
@@ -54,7 +56,7 @@ public:
   {
     for (std::uint32_t slot = 0; slot < Capacity(); ++slot)
     {
-      m_values[slot] = T{};
+      Value(slot) = T{};
       m_used[slot] = 0;
     }
     m_free.clear();
@@ -73,16 +75,16 @@ public:
   [[nodiscard]] T& At(std::uint32_t _slot)
   {
     ENGINE_CHECK(Used(_slot));
-    return m_values[_slot];
+    return Value(_slot);
   }
   [[nodiscard]] const T& At(std::uint32_t _slot) const
   {
     ENGINE_CHECK(Used(_slot));
-    return m_values[_slot];
+    return Value(_slot);
   }
   [[nodiscard]] std::uint32_t Capacity() const noexcept
   {
-    return static_cast<std::uint32_t>(m_values.size());
+    return static_cast<std::uint32_t>(m_used.size());
   }
   [[nodiscard]] std::uint32_t Count() const noexcept
   {
@@ -156,7 +158,7 @@ public:
       _writer.WriteBool(m_used[slot] != 0);
       if (m_used[slot] != 0)
       {
-        _write(_writer, m_values[slot]);
+        _write(_writer, Value(slot));
       }
     }
   }
@@ -172,8 +174,9 @@ public:
     {
       return false;
     }
-    m_values.assign(capacity, T{});
-    m_used.assign(capacity, 0);
+    m_blocks.clear();
+    m_used.clear();
+    Grow(capacity);
     m_free.clear();
     std::vector<std::uint8_t> listed(capacity, 0);
     for (std::uint32_t index = 0; index < freeCount; ++index)
@@ -196,7 +199,7 @@ public:
       }
       if (used)
       {
-        if (!_read(_reader, m_values[slot]))
+        if (!_read(_reader, Value(slot)))
         {
           return false;
         }
@@ -213,16 +216,32 @@ private:
   void Grow(std::uint32_t _slots)
   {
     const std::uint32_t first = Capacity();
-    m_values.resize(static_cast<std::size_t>(first) + _slots);
-    m_used.resize(static_cast<std::size_t>(first) + _slots, 0);
+    const std::size_t capacity = static_cast<std::size_t>(first) + _slots;
+    while (m_blocks.size() * BLOCK_SLOTS < capacity)
+    {
+      m_blocks.push_back(std::make_unique<Block>());
+    }
+    m_used.resize(capacity, 0);
     for (std::uint32_t slot = first + _slots; slot > first; --slot)
     {
       m_free.push_back(slot - 1);
     }
   }
 
+  static constexpr std::size_t BLOCK_SLOTS = 64;
+  using Block = std::array<T, BLOCK_SLOTS>;
+
+  [[nodiscard]] T& Value(std::uint32_t _slot) noexcept
+  {
+    return (*m_blocks[_slot / BLOCK_SLOTS])[_slot % BLOCK_SLOTS];
+  }
+  [[nodiscard]] const T& Value(std::uint32_t _slot) const noexcept
+  {
+    return (*m_blocks[_slot / BLOCK_SLOTS])[_slot % BLOCK_SLOTS];
+  }
+
   std::uint32_t m_growthStep;
-  std::deque<T> m_values;
+  std::vector<std::unique_ptr<Block>> m_blocks; // value-initialized; the slots beyond the capacity hold T{}
   std::vector<std::uint8_t> m_used;
   std::vector<std::uint32_t> m_free; // the head of the free list is the back
   std::uint32_t m_count = 0;
