@@ -41,6 +41,8 @@ The logging, check, black-box and profiling declarations are those of Listing 2.
 | overlays and UI | `render.world_cursor`; `render.world_markers`; `render.centre_message`; `render.mode_hud`; `render.hint_overlay`; `render.power_slots_panel`; `devtools.profile_view.render` |
 | audio | `audio.update`, with one marker per update step of AEN-123, named by the step; `audio.stream`, the stream task; `audio.bank_load`, one per bank load (AEN-322) |
 
+> **Amendment 2026-10-20 (M1 task T10; [ADR-110](../../../ADR/ADR-110-cost-measurement-marker-timing-and-performance-script.md)).** The MVP's region step adds markers that the catalogue lacks, so that the performance job divides the step by the objects it advances: `sim.region.commands` (the tick's commands), `sim.bot_nodes.advance` (the bot navigation nodes, in each slice), `sim.ai.step` with `sim.ai.stray_recall`, `sim.ai.leader_policies` and `sim.ai.main_cycle` (each AI of the region), and `sim.routes.free_unheld` (DEC-651). The world step's `sim.region.step` is ADR-085's region job. While marker timing is on, each marker's time is read in-process (DBG-080 amendment).
+
 **DBG-046** (MUST NOT) The catalogue has no marker for campaign-only systems (DEC-052), for the pixelation, deform and reflection effects (DEC-059) or for the gesture and icon Power interfaces (DEC-055), which Species does not specify.
 
 ### 3.5 Black-box contents
@@ -109,6 +111,8 @@ The handlers of PLT-118 reach steps 1 and 2 through the platform's log sink (`Pl
 ### 4.3 Profiling
 
 **DBG-080** (MUST) The profiling layer is ADR-068's: `ENGINE_PROFILE_SCOPE` and its GPU counterpart `ENGINE_PROFILE_GPU_SCOPE` emit PIX events through WinPixEventRuntime in Debug and Release builds alike, and no other code calls the PIX runtime; a GPU scope also writes a timestamp query pair, resolved into a readback buffer and read `dbg.profile.gpu_readback_latency` (2) or more frames later, so the CPU never waits for the GPU to measure it. System-wide problems are captured as ETW traces with the TraceLogging provider of DBG-064.
+
+> **Amendment 2026-10-20 (M1 task T10; [ADR-110](../../../ADR/ADR-110-cost-measurement-marker-timing-and-performance-script.md)).** A CPU scope also records its time inside its event while marker timing is on (`NeuronCore/MarkerTimings`): the performance tool turns it on to read per-object costs in-process, and nothing else does. Off, a scope costs one relaxed atomic load more.
 
 **DBG-081** (MUST) The same markers feed the profile tree. Each thread's tree is rooted at a root node. Entering a marker finds or creates the child of the current node with the marker's name and starts its timer; leaving it adds one call and the elapsed time to the node, updates the node's shortest and longest call, and makes the parent current again. Nesting follows call order only; a leave whose name differs from the current node's fails a development check (`ENGINE_ASSERT`). The trees exist in every Debug build, whether or not the profile view is open, and the profile view and the overlay read them; in Release builds the markers feed PIX only (DBG-004). Every node is timed whether or not the view shows it, so a collapsed subtree still shows its time.
 

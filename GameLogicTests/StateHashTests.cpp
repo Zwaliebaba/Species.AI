@@ -30,7 +30,7 @@ struct GoldenRun
 GoldenRun Run600Ticks(std::uint16_t _regions, std::size_t _workers)
 {
   Neuron::WorkerPool pool(_workers);
-  Species::WorldSimulation world({GOLDEN_KEY, 0, _regions});
+  Species::WorldSimulation world({GOLDEN_KEY, 0, _regions, &CommittedTuning()});
   Neuron::BitWriter chain;
   GoldenRun run;
   for (std::uint64_t tick = 0; tick < 600; ++tick)
@@ -61,13 +61,21 @@ public:
   TEST_METHOD(Dbg147TheHashOf600TicksFromOneSeedIsGolden)
   {
     // M0 task T8's done-when. The golden values change only with a reviewed change that names the rule it implements
-    // (DBG-147); an independent model of the state layout of ADR-096 computes the same values.
+    // (DBG-147); an independent model of the state layout of ADR-096 computes the same values. Changed by M1 task T2:
+    // each region writes its team slots after its commands (R-SIM-221), none in this empty world. Changed by M1 task
+    // T3: the world owner writes the world seed after the tick (ADR-102), seed 0 here. Changed by M1 task T4: each
+    // region writes its actor grid's capacities and its cache after its teams (ADR-103), none in this empty world.
+    // Changed by M1 task T5: each region writes its last route handle and its routes after its cache (ADR-104), none here.
+    // Changed by M1 task T6: each region writes its laser-bolt, effect and Essence-orb pools after its routes (ADR-105):
+    // two empty pools and the orb pool's 100 free slots, advanced to its last slot. Changed by M1 task T7: each region
+    // writes its commanders before its commands (ADR-106), none here. Changed by M1 task T8: each region writes its AIs
+    // after its commanders and its bot navigation nodes after its orbs (ADR-107), none in a region with no terrain.
     const GoldenRun one = Run600Ticks(1, 0);
-    Assert::IsTrue(one.last == 0xcc1ebf97b5b46606, L"the hash after 600 ticks of one region");
-    Assert::IsTrue(one.chain == 0xa45b080192b2d569, L"the chain of 600 tick hashes of one region");
+    Assert::IsTrue(one.last == 0xd755be6df2de34d4, L"the hash after 600 ticks of one region");
+    Assert::IsTrue(one.chain == 0x8966dc238fe21c8e, L"the chain of 600 tick hashes of one region");
     const GoldenRun three = Run600Ticks(3, 0);
-    Assert::IsTrue(three.last == 0x0777ce66e55a7e70, L"the hash after 600 ticks of three regions");
-    Assert::IsTrue(three.chain == 0x3b5a8f572d8aa082, L"the chain of 600 tick hashes of three regions");
+    Assert::IsTrue(three.last == 0xdc9f1feb7af26c72, L"the hash after 600 ticks of three regions");
+    Assert::IsTrue(three.chain == 0x33c8c8092e8a99ee, L"the chain of 600 tick hashes of three regions");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp093TheHashesAgreeAtAnyWorkerCount)
@@ -90,8 +98,8 @@ public:
   TEST_METHOD(Mvp093TheHashCoversTheStateAndNotTheKey)
   {
     Neuron::WorkerPool pool(0);
-    Species::WorldSimulation world({GOLDEN_KEY, 0, 2});
-    Species::WorldSimulation sameState({{9, 9}, 0, 2});
+    Species::WorldSimulation world({GOLDEN_KEY, 0, 2, &CommittedTuning()});
+    Species::WorldSimulation sameState({{9, 9}, 0, 2, &CommittedTuning()});
     world.Step(0, pool);
     sameState.Step(0, pool);
     const Species::WorldHashes before = Species::HashWorld(world);

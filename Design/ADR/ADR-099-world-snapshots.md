@@ -57,7 +57,7 @@ Chosen option: "1".
   - A file is `world-<tick in 20 digits>.snapshot`, so the names sort by tick. A name of any other form is not a snapshot, so the temporary file of an unfinished write is never listed.
   - `Save` writes the file through `ReplaceFileAtomically` (PLT-089), which writes a temporary file, flushes it and renames it over the target. It then removes all but the newest `kept`. A failed write leaves every earlier snapshot.
   - `Snapshots` lists them newest first; `Load` reads and decodes one.
-* **The world's state** (GameLogic, `WorldSnapshot.h`) is the game's own versioned encoding, at version 1 (`WORLD_STATE_VERSION`):
+* **The world's state** (GameLogic, `WorldSnapshot.h`) is the game's own versioned encoding, at version 2 since M1 task T2 (`WORLD_STATE_VERSION`):
   - the simulation key;
   - the region count;
   - then the world owner's state and each region's, in the canonical encoding that ADR-097's state hash covers.
@@ -66,7 +66,7 @@ Chosen option: "1".
 * **Versions and migration (MVP-095).** A change to any owner's state layout raises `WORLD_STATE_VERSION` and adds a step that migrates the previous version to it.
   - `RestoreWorld` runs the steps from the snapshot's version up to the current one.
   - A version below `WORLD_STATE_OLDEST_VERSION` or above the current one is refused.
-  - M0's world has one version, so there is no step yet.
+  - Version 2 adds each region's teams and figures (ADR-101); its step reads a region of version 1 as one with no teams.
   - The format version changes only when the file's framing does, and this build reads format 1 only.
 * **The world server.** Given a snapshot folder (`WorldServer::Desc::snapshotFolder`), the server:
   - opens the newest snapshot that validates;
@@ -97,7 +97,7 @@ Chosen option: "1".
   - that a torn newest snapshot is refused while the next older one loads.
 * `GameLogicTests` checks:
   - that a restored world of three regions has the saved key, state and tick, and hashes as the saved world after ten more ticks;
-  - that state versions 0 and 2 are refused;
+  - that state versions 0 and 3 are refused (0 and 2 at M0);
   - that every shortened state, a state with bytes after it and a header tick the state does not hold are refused;
   - that a world server that stops saves its world, and the next one opens it at the same tick with the same key and state and runs on;
   - that a folder with no valid snapshot opens a new world.
@@ -124,3 +124,10 @@ Chosen option: "1".
 
 * Related: [ADR-082](ADR-082-counter-based-simulation-random-draws.md), [ADR-083](ADR-083-server-process-ownership-and-threading.md), [ADR-085](ADR-085-region-partitioned-world-simulation.md), [ADR-095](ADR-095-server-host-tick-loop-and-command-queue.md), [ADR-096](ADR-096-game-skeleton-integrated-server-and-tick-report.md), [ADR-097](ADR-097-keyed-draws-and-state-hash.md).
 * The code is in NeuronCore (`ListFiles`, `RemoveFile`), NeuronServer (`Snapshot`) and GameLogic (`WorldSnapshot`, the owners' `ReadState`, `WorldServer`).
+* **Amendment 2026-10-20 (M1 task T2, [ADR-101](ADR-101-region-teams-figures-and-update-slices.md)).** `WORLD_STATE_VERSION` is 2: each region writes its teams and their figures after its queued commands, and the first migration step reads a version-1 region as one with no teams. Version 3 is refused.
+* **Amendment 2026-10-20 (M1 task T3, [ADR-102](ADR-102-region-terrain-and-the-terrain-check-at-connection.md)).** `WORLD_STATE_VERSION` is 3: the world owner writes the world seed after the world tick, and the migration step reads a world of version 1 or 2 as one of seed 0. The terrain is not state: the world server builds it again from the restored seed, and refuses a snapshot whose seed gives none as it refuses a damaged one. Version 4 is refused.
+* **Amendment 2026-10-20 (M1 task T4, [ADR-103](ADR-103-region-grids-draw-contexts-and-figure-movement.md)).** `WORLD_STATE_VERSION` is 4: each figure writes its movement state after T2's fields, and each region writes its actor grid's capacities and its cache after its teams. The migration step reads a figure of version 3 or older as Idle where it stood and registers it there, with no grid history. Version 5 is refused.
+* **Amendment 2026-10-20 (M1 task T5, [ADR-104](ADR-104-navigation-nodes-land-route-graph-and-routes.md)).** `WORLD_STATE_VERSION` is 5: each figure writes its route handle and route point after T4's fields, and each region writes its route store after its cache: its last handle and the routes still held (DEC-651, O71). The migration step reads a figure of version 4 or older as following no route, and a region as holding none. A region refuses a snapshot in which a figure holds a route that its store does not hold, or a route point outside its route. Version 6 is refused.
+* **Amendment 2026-10-20 (M1 task T6, [ADR-105](ADR-105-combat-weapons-and-essence-orbs.md)).** `WORLD_STATE_VERSION` is 6: each Worker writes its threat, threat range, scared flag, threat-sound latch and grenade timer after T5's fields; each team writes its kill counter after its figures; and each region writes its laser-bolt, effect and Essence-orb pools after its routes. The migration step reads a figure of version 5 or older with no threat, the full threat range and its first grenade timer's base, and a region as holding no bolt, effect or orb. Version 7 is refused.
+* **Amendment 2026-10-20 (M1 task T7, [ADR-106](ADR-106-leaders-formations-and-battle-commands.md)).** `WORLD_STATE_VERSION` is 7: each region writes its commanders before its queue and each team its selection and pointer; each figure writes its Leader, its follow timer and the Leader's orders and formation, and no longer its formation flag; each effect writes an order marker's route and a trail mark's creation tick. An older region reads with no commander, and its figures with no Leader and no order.
+* **Amendment 2026-10-20 (M1 task T8, [ADR-107](ADR-107-simple-ai-bot-navigation-and-node-census.md)).** `WORLD_STATE_VERSION` is 8: each region writes its AIs after its commanders and its bot navigation nodes' counts after its orbs, and each Worker its nearest node. An older region reads with no AI and makes its nodes as a new region does.

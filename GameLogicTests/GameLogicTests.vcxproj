@@ -168,8 +168,19 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ActorGridTests.cpp" />
+    <ClCompile Include="BotTests.cpp" />
+    <ClCompile Include="CombatTests.cpp" />
+    <ClCompile Include="CommandTests.cpp" />
+    <ClCompile Include="FormationTests.cpp" />
+    <ClCompile Include="MovementTests.cpp" />
+    <ClCompile Include="RegionSimulationTests.cpp" />
+    <ClCompile Include="RouteTests.cpp" />
+    <ClCompile Include="SandboxTests.cpp" />
+    <ClCompile Include="SlicedPoolTests.cpp" />
     <ClCompile Include="StateHashTests.cpp" />
     <ClCompile Include="TestSupport.cpp" />
+    <ClCompile Include="WeaponTests.cpp" />
     <ClCompile Include="WorldSnapshotTests.cpp" />
     <ClCompile Include="WorldTests.cpp" />
     <ClCompile Include="pch.cpp">

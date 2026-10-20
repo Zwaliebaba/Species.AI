@@ -89,8 +89,8 @@ struct Tumbler
 | type size | `vfx.particle.default.size` (1000) |
 | friction | 0 |
 | gravity | 0 |
-| colour 1 | `vfx.particle.default.colour_1` (0.5, 0.5, 0.5) |
-| colour 2 | `vfx.particle.default.colour_2` (0.95, 0.95, 0.95) |
+| colour 1 | `vfx.particle.default.color_1` (0.5, 0.5, 0.5) |
+| colour 2 | `vfx.particle.default.color_2` (0.95, 0.95, 0.95) |
 
 Particles have no spin, no fade-in and no type-specific fade-out: the fade of VFX-215 is common to every type.
 
@@ -249,15 +249,15 @@ Table 4.7-A Effect kinds.
 | `OrderMarkerStep` | each tick of an order marker (R-UNIT-185) | one muzzle flash of size `vfx.emit.order_marker.size` (30) in the team colour | this document |
 | `WorkerBurning` | each tick of a Burning Worker (R-UNIT-079) | k = `FxRng::NextUint` mod `vfx.emit.burning.count_mod` (8) particles: those with index below `vfx.emit.burning.fire_share` (5) Worker fire, the rest missile trails, at position + up × U[0, `vfx.emit.burning.lift` (5)), size `vfx.emit.burning.size` (20 + U[0, 30)), velocity v × `vfx.emit.burning.velocity_factor` (0.3) + up × `vfx.emit.burning.rise` (3 + U[0, 3)) | this document |
 | `WorkerSpeedBoost` | each tick of a Worker with Speed Boost (R-UNIT-123) | as `WorkerBurning`, with Speed Boost trails for the low indices, at ground level and with velocity v × `vfx.emit.burning.velocity_factor` only | this document |
-| `WorkerSick` | each tick of a sick Worker (R-UNIT-130) | with probability `vfx.emit.sick.chance` (0.5) one Sickness particle of size `vfx.emit.sick.size` (20 + U[0, 20)) in `vfx.emit.sick.colour` (140, 200, 5, 150) | this document |
+| `WorkerSick` | each tick of a sick Worker (R-UNIT-130) | with probability `vfx.emit.sick.chance` (0.5) one Sickness particle of size `vfx.emit.sick.size` (20 + U[0, 20)) in `vfx.emit.sick.color` (140, 200, 5, 150) | this document |
 | `PowerReachedWorker` | a Shield, Speed Boost, Convert or Fury Power reaching a Worker (R-CRATE-167, R-UNIT-149) | `vfx.emit.power_reached.count` (20) Worker-fire particles in the team colour | this document |
 | `WorkerOpeningCrate` | each tick of a Worker opening a Supply crate in range (R-UNIT-078) | one blue spark in the team colour | this document |
-| `WorkerAbducted` | each tick of a Worker in an Abductor's beam (R-UNIT-084) | with probability `vfx.emit.abducted.chance` (0.5) one blue spark of size `vfx.emit.abducted.size` (30) in `vfx.emit.abducted.colour` (150, 150, 255, 155) | this document |
+| `WorkerAbducted` | each tick of a Worker in an Abductor's beam (R-UNIT-084) | with probability `vfx.emit.abducted.chance` (0.5) one blue spark of size `vfx.emit.abducted.size` (30) in `vfx.emit.abducted.color` (150, 150, 255, 155) | this document |
 | `ActorHit` | a registered non-lethal hit on a Builder, a Collector or a Bomber (R-UNIT-461, R-UNIT-718) | one muzzle flash | reference/02 |
 | `Bite` | an ant's or a Crawler's bite (R-UNIT-564, R-UNIT-532) | `vfx.emit.bite.count` (3) muzzle flashes | this document |
 | `TransportExhaust` | each tick of a Transport (R-UNIT-409) | 1 + trunc(speed ÷ `ref.unit.transport.exhaust_speed_step`) missile trails of size `vfx.emit.transport_exhaust.size` (50 + U[0, 49)) | reference/02 and this document |
-| `CollectorEngine` | each tick of each Collector engine socket (R-UNIT-443) | `ref.unit.collector.exhaust_fire_count` missile fire of size `ref.unit.collector.exhaust_fire_size` in `ref.unit.collector.exhaust_colour`, and one missile trail | reference/02 |
-| `AbductorEngine` | each tick of each Abductor engine socket (R-UNIT-710) | `ref.unit.abductor.engine_sparks` blue spark of size `ref.unit.abductor.engine_spark_size_min` to `ref.unit.abductor.engine_spark_size_max` in `vfx.emit.abductor.spark_colour` (150, 150, 255), and `ref.unit.abductor.engine_fire_particles` missile fire of size `ref.unit.abductor.engine_fire_size` in `vfx.emit.abductor.fire_colour` (50, 50, 250) | reference/02 and this document |
+| `CollectorEngine` | each tick of each Collector engine socket (R-UNIT-443) | `ref.unit.collector.exhaust_fire_count` missile fire of size `ref.unit.collector.exhaust_fire_size` in `ref.unit.collector.exhaust_color`, and one missile trail | reference/02 |
+| `AbductorEngine` | each tick of each Abductor engine socket (R-UNIT-710) | `ref.unit.abductor.engine_sparks` blue spark of size `ref.unit.abductor.engine_spark_size_min` to `ref.unit.abductor.engine_spark_size_max` in `vfx.emit.abductor.spark_color` (150, 150, 255), and `ref.unit.abductor.engine_fire_particles` missile fire of size `ref.unit.abductor.engine_fire_size` in `vfx.emit.abductor.fire_color` (50, 50, 250) | reference/02 and this document |
 | `MeteorFire` | each tick of a meteor (R-UNIT-735) | `ref.hazard.meteor_shower.fire_particles` fire of size `ref.hazard.meteor_shower.fire_size` ± `ref.hazard.meteor_shower.fire_size_spread` ÷ 2 | reference/02 |
 | `TreeBurning` | each tick of a burning tree (R-BLDG-629) | the fire particles of R-BLDG-629 | reference/03 |
 | `TreeLeaf` | a tree's leaf drop (R-BLDG-615) | one leaf in the tree's leaf colour | reference/03 |
@@ -293,9 +293,9 @@ Every sound that accompanies these effects is a sound event of its owner's rule 
 
 **VFX-223** (MUST) A Core Device pulse wave (`CorePulseWave`, R-CRATE-480 to R-CRATE-483) is drawn in pass 10a, without a view test, as three cylinders around its centre at its radius r in its team colour, each at alpha × (1 − r ÷ the map's world size x): a ground outline `ref.weapon.pulse_wave.outline_height` (200 wu) high, a glow tube of `fx.beam_long` `ref.weapon.pulse_wave.tube_height` (400 wu) high and a faint sky tube `ref.weapon.pulse_wave.sky_height` (1000 wu) high. Each cylinder is a strip of segments of `vfx.pulse.segment_angle` (1 ÷ 3 rad) around the circle, 19 segments, whose start angle advances with the unscaled presentation time. Its flash and shake are those of §4.11.
 
-**VFX-224** (MUST) A snowflake is drawn in pass 10a as a white bottom-anchored billboard of `fx.starburst` of `ref.weapon.snow.sprite_size` (20 wu), and a dust object as a bottom-anchored billboard of `fx.glow_cloudy` in `ref.weapon.dust.colour` at its size (RND-329, R-CRATE-501, R-CRATE-505), both with `effect_additive`. Which weather effects a map switches on, one by one (snow, lightning strikes, dust vortices and the Essence-orb rain that no reference map enables), is map data; whether maps select named lighting and weather presets instead is the Open DEC-562, whose default is the reference's per-map switches.
+**VFX-224** (MUST) A snowflake is drawn in pass 10a as a white bottom-anchored billboard of `fx.starburst` of `ref.weapon.snow.sprite_size` (20 wu), and a dust object as a bottom-anchored billboard of `fx.glow_cloudy` in `ref.weapon.dust.color` at its size (RND-329, R-CRATE-501, R-CRATE-505), both with `effect_additive`. Which weather effects a map switches on, one by one (snow, lightning strikes, dust vortices and the Essence-orb rain that no reference map enables), is map data; whether maps select named lighting and weather presets instead is the Open DEC-562, whose default is the reference's per-map switches.
 
-**VFX-225** (MUST) Pass 11 draws the Essence orbs as two batches of camera-facing quads of `fx.glow_round` (R-UNIT-330 to R-UNIT-332): first the orbs of the Rogue faction slot with `orb_ink` in `rnd.crowd.rogue_orb_colour` (100, 100, 100, alpha 0), which darken (RND-327), then every other orb with `orb_additive` in its team colour, or white with no team. The sizes and alphas are the match values of R-UNIT-330, scaled at birth and during ascent by R-UNIT-331, and every orb is drawn one tick behind, at its position extrapolated to the extrapolation time − `ref.sim.tick_period` (R-UNIT-332, RND-082). A Reaper Serpent's carried orbs are drawn by RND-324.
+**VFX-225** (MUST) Pass 11 draws the Essence orbs as two batches of camera-facing quads of `fx.glow_round` (R-UNIT-330 to R-UNIT-332): first the orbs of the Rogue faction slot with `orb_ink` in `rnd.crowd.rogue_orb_color` (100, 100, 100, alpha 0), which darken (RND-327), then every other orb with `orb_additive` in its team colour, or white with no team. The sizes and alphas are the match values of R-UNIT-330, scaled at birth and during ascent by R-UNIT-331, and every orb is drawn one tick behind, at its position extrapolated to the extrapolation time − `ref.sim.tick_period` (R-UNIT-332, RND-082). A Reaper Serpent's carried orbs are drawn by RND-324.
 
 ### 4.10 Shatter effects
 
@@ -313,7 +313,7 @@ Every sound that accompanies these effects is a sound event of its owner's rule 
 | tumblers per explosion | `vfx.shatter.tumblers` | 5 |
 | smallest released perimeter | `vfx.shatter.min_perimeter` | 6.0 wu |
 | last source-triangle index before the cap | `vfx.shatter.triangle_cap_index` | 500 |
-| centre factor | `vfx.shatter.centre_factor` | 0.3333 |
+| centre factor | `vfx.shatter.center_factor` | 0.3333 |
 
 **VFX-227** (MUST) A shatter request is processed by this algorithm, with every draw from the event's presentation generator:
 
@@ -336,7 +336,7 @@ ShatterExplosion(node, T, fraction):
         v1, v2, v3 = the triangle's corners under total
         if any two corners are equal: continue
         if |v1 - v2| + |v2 - v3| + |v3 - v1| < vfx.shatter.min_perimeter: continue
-        c = (v1 + v2 + v3) * vfx.shatter.centre_factor
+        c = (v1 + v2 + v3) * vfx.shatter.center_factor
         store the corners minus c, the facet normal and the tinted facet colour (ADR-020)
         velocity = (c - nodeCenter) * vfx.shatter.initial_speed; velocity.y += vfx.shatter.rise
         position = c; tumbler = NextUint() mod 5
@@ -468,8 +468,8 @@ The design-phase inputs of this component are listed in the [folder README](READ
 |---|---|---|---|---|---|
 | `vfx.particle.default.life` | 10.0 | s of scaled presentation time | default of an unset life | VFX-203 | |
 | `vfx.particle.default.size` | 1000 | particle size | default of an unset type size | VFX-203 | |
-| `vfx.particle.default.colour_1` | 0.5, 0.5, 0.5 | RGB fraction | | VFX-203 | |
-| `vfx.particle.default.colour_2` | 0.95, 0.95, 0.95 | RGB fraction | | VFX-203 | |
+| `vfx.particle.default.color_1` | 0.5, 0.5, 0.5 | RGB fraction | | VFX-203 | |
+| `vfx.particle.default.color_2` | 0.95, 0.95, 0.95 | RGB fraction | | VFX-203 | |
 | `vfx.particle.size_divisor` | 16 | — | half-extent = size ÷ 16 | VFX-208 | |
 | `vfx.particle.sub_step` | 1/60 | s of scaled presentation time | particle integration step | VFX-209 | |
 | `vfx.particle.max_sub_steps` | 30 | per frame | covers a 0.25 s frame at game speed 2.0 | VFX-209 | |
@@ -489,87 +489,87 @@ The design-phase inputs of this component are listed in the [folder README](READ
 | `vfx.particle.rocket_trail.size` | 15 | particle size | | VFX-207 | |
 | `vfx.particle.rocket_trail.gravity` | 15.0 | wu/s² | | VFX-207 | |
 | `vfx.particle.rocket_trail.friction` | 0.6 | per s | | VFX-207 | |
-| `vfx.particle.rocket_trail.colours` | 128, 128, 128 to 200, 200, 200 | RGB | | VFX-207 | |
+| `vfx.particle.rocket_trail.colors` | 128, 128, 128 to 200, 200, 200 | RGB | | VFX-207 | |
 | `vfx.particle.explosion_core.life` | 2.0 | s | 20 ticks | VFX-207 | |
 | `vfx.particle.explosion_core.size` | 150 | particle size | | VFX-207 | |
 | `vfx.particle.explosion_core.gravity` | 10.0 | wu/s² | | VFX-207 | |
 | `vfx.particle.explosion_core.friction` | 0.2 | per s | | VFX-207 | |
-| `vfx.particle.explosion_core.colours` | 200, 100, 100 to 255, 120, 120 | RGB | | VFX-207 | |
+| `vfx.particle.explosion_core.colors` | 200, 100, 100 to 255, 120, 120 | RGB | | VFX-207 | |
 | `vfx.particle.explosion_debris.life` | 6.0 | s | 60 ticks | VFX-207 | |
 | `vfx.particle.explosion_debris.size` | 40 | particle size | | VFX-207 | |
 | `vfx.particle.explosion_debris.gravity` | 20.0 | wu/s² | | VFX-207 | |
 | `vfx.particle.explosion_debris.friction` | 0.2 | per s | | VFX-207 | |
-| `vfx.particle.explosion_debris.colours` | 200, 128, 128 to 250, 200, 200 | RGB | smoke | VFX-207 | |
+| `vfx.particle.explosion_debris.colors` | 200, 128, 128 to 250, 200, 200 | RGB | smoke | VFX-207 | |
 | `vfx.particle.muzzle_flash.life` | 1.0 | s | 10 ticks | VFX-207 | |
 | `vfx.particle.muzzle_flash.size` | 10 | particle size | | VFX-207 | |
 | `vfx.particle.muzzle_flash.gravity` | 0 | wu/s² | | VFX-207 | |
 | `vfx.particle.muzzle_flash.friction` | 0.2 | per s | | VFX-207 | |
-| `vfx.particle.muzzle_flash.colours` | 255, 128, 128 to 200, 100, 100 | RGB | | VFX-207 | |
+| `vfx.particle.muzzle_flash.colors` | 255, 128, 128 to 200, 100, 100 | RGB | | VFX-207 | |
 | `vfx.particle.fire.life` | 4.0 | s | 40 ticks | VFX-207 | |
 | `vfx.particle.fire.size` | 50 | particle size | | VFX-207 | |
 | `vfx.particle.fire.gravity` | −4.0 | wu/s² | rises | VFX-207 | |
 | `vfx.particle.fire.friction` | 0 | per s | | VFX-207 | |
-| `vfx.particle.fire.colours` | 150, 50, 50 to 150, 120, 50 | RGB | | VFX-207 | |
+| `vfx.particle.fire.colors` | 150, 50, 50 to 150, 120, 50 | RGB | | VFX-207 | |
 | `vfx.particle.control_flash.life` | 1.0 | s | 10 ticks | VFX-207 | |
 | `vfx.particle.control_flash.size` | 30 | particle size | | VFX-207 | |
 | `vfx.particle.control_flash.gravity` | −2.0 | wu/s² | rises | VFX-207 | |
 | `vfx.particle.control_flash.friction` | 0 | per s | | VFX-207 | |
-| `vfx.particle.control_flash.colours` | 50, 50, 150 to 50, 50, 250 | RGB | | VFX-207 | |
+| `vfx.particle.control_flash.colors` | 50, 50, 150 to 50, 50, 250 | RGB | | VFX-207 | |
 | `vfx.particle.spark.life` | 4.0 | s | 40 ticks | VFX-207 | |
 | `vfx.particle.spark.size` | 15 | particle size | | VFX-207 | |
 | `vfx.particle.spark.gravity` | 15.0 | wu/s² | | VFX-207 | |
 | `vfx.particle.spark.friction` | 1.5 | per s | × 0.85 per tick | VFX-207 | |
-| `vfx.particle.spark.colours` | 250, 200, 0 to 250, 200, 50 | RGB | | VFX-207 | |
+| `vfx.particle.spark.colors` | 250, 200, 0 to 250, 200, 50 | RGB | | VFX-207 | |
 | `vfx.particle.blue_spark.life` | 4.0 | s | 40 ticks | VFX-207 | |
 | `vfx.particle.blue_spark.size` | 15 | particle size | | VFX-207 | |
 | `vfx.particle.blue_spark.gravity` | 15.0 | wu/s² | | VFX-207 | |
 | `vfx.particle.blue_spark.friction` | 1.5 | per s | | VFX-207 | |
-| `vfx.particle.blue_spark.colours` | 50, 50, 200 to 50, 70, 255 | RGB | | VFX-207 | |
+| `vfx.particle.blue_spark.colors` | 50, 50, 200 to 50, 70, 255 | RGB | | VFX-207 | |
 | `vfx.particle.casing.life` | 2.0 | s | 20 ticks | VFX-207 | |
 | `vfx.particle.casing.size` | 4 | particle size | | VFX-207 | |
 | `vfx.particle.casing.gravity` | 30.0 | wu/s² | | VFX-207 | |
 | `vfx.particle.casing.friction` | 0.5 | per s | | VFX-207 | |
-| `vfx.particle.casing.colours` | 250, 200, 0 to 250, 200, 50 | RGB | | VFX-207 | |
+| `vfx.particle.casing.colors` | 250, 200, 0 to 250, 200, 50 | RGB | | VFX-207 | |
 | `vfx.particle.missile_trail.life` | 5.0 | s | 50 ticks | VFX-207 | |
 | `vfx.particle.missile_trail.size` | 200 | particle size | | VFX-207 | |
 | `vfx.particle.missile_trail.gravity` | 1.0 | wu/s² | | VFX-207 | |
 | `vfx.particle.missile_trail.friction` | 0 | per s | | VFX-207 | |
-| `vfx.particle.missile_trail.colours` | 100, 100, 100 to 200, 200, 200 | RGB | smoke | VFX-207 | |
+| `vfx.particle.missile_trail.colors` | 100, 100, 100 to 200, 200, 200 | RGB | smoke | VFX-207 | |
 | `vfx.particle.missile_fire.life` | 0.5 | s | 5 ticks | VFX-207 | |
 | `vfx.particle.missile_fire.size` | 300 | particle size | | VFX-207 | |
 | `vfx.particle.missile_fire.gravity` | 0 | wu/s² | | VFX-207 | |
 | `vfx.particle.missile_fire.friction` | 0 | per s | | VFX-207 | |
-| `vfx.particle.missile_fire.colours` | 150, 50, 50 to 150, 120, 50 | RGB | | VFX-207 | |
+| `vfx.particle.missile_fire.colors` | 150, 50, 50 to 150, 120, 50 | RGB | | VFX-207 | |
 | `vfx.particle.worker_fire.life` | 1.0 | s | 10 ticks | VFX-207 | |
 | `vfx.particle.worker_fire.size` | 25 | particle size | | VFX-207 | |
 | `vfx.particle.worker_fire.gravity` | −10.0 | wu/s² | rises fast | VFX-207 | |
 | `vfx.particle.worker_fire.friction` | 0 | per s | | VFX-207 | |
-| `vfx.particle.worker_fire.colours` | 150, 50, 50 to 150, 120, 50 | RGB | | VFX-207 | |
+| `vfx.particle.worker_fire.colors` | 150, 50, 50 to 150, 120, 50 | RGB | | VFX-207 | |
 | `vfx.particle.leaf.life` | 60.0 | s | 600 ticks | VFX-207 | |
 | `vfx.particle.leaf.size` | 25 | particle size | | VFX-207 | |
 | `vfx.particle.leaf.gravity` | 5.0 | wu/s² | | VFX-207 | |
 | `vfx.particle.leaf.friction` | 1.5 | per s | | VFX-207 | |
-| `vfx.particle.leaf.colours` | 50, 150, 50 to 50, 200, 50 | RGB | replaced by the tree's leaf colour | VFX-207 | |
+| `vfx.particle.leaf.colors` | 50, 150, 50 to 50, 200, 50 | RGB | replaced by the tree's leaf colour | VFX-207 | |
 | `vfx.particle.sickness.life` | 2.0 | s | 20 ticks | VFX-207 | |
 | `vfx.particle.sickness.size` | 25 | particle size | | VFX-207 | |
 | `vfx.particle.sickness.gravity` | −0.5 | wu/s² | rises slowly | VFX-207 | |
 | `vfx.particle.sickness.friction` | 0 | per s | | VFX-207 | |
-| `vfx.particle.sickness.colours` | 40, 200, 40 to 50, 200, 50 | RGB | | VFX-207 | |
+| `vfx.particle.sickness.colors` | 40, 200, 40 to 50, 200, 50 | RGB | | VFX-207 | |
 | `vfx.particle.speed_boost_trail.life` | 1.0 | s | 10 ticks | VFX-207 | |
 | `vfx.particle.speed_boost_trail.size` | 25 | particle size | | VFX-207 | |
 | `vfx.particle.speed_boost_trail.gravity` | 0 | wu/s² | | VFX-207 | |
 | `vfx.particle.speed_boost_trail.friction` | 0 | per s | | VFX-207 | |
-| `vfx.particle.speed_boost_trail.colours` | 150, 50, 50 to 150, 120, 50 | RGB | | VFX-207 | |
+| `vfx.particle.speed_boost_trail.colors` | 150, 50, 50 to 150, 120, 50 | RGB | | VFX-207 | |
 | `vfx.particle.fireball.life` | 1.0 | s | 10 ticks | VFX-207 | |
 | `vfx.particle.fireball.size` | 25 | particle size | | VFX-207 | |
 | `vfx.particle.fireball.gravity` | 0 | wu/s² | | VFX-207 | |
 | `vfx.particle.fireball.friction` | 0 | per s | | VFX-207 | |
-| `vfx.particle.fireball.colours` | 150, 50, 50 to 150, 120, 50 | RGB | dies on terrain contact | VFX-207 | |
+| `vfx.particle.fireball.colors` | 150, 50, 50 to 150, 120, 50 | RGB | dies on terrain contact | VFX-207 | |
 | `vfx.particle.volcano.life` | 12.0 | s | 120 ticks | VFX-207 | |
 | `vfx.particle.volcano.size` | 400 | particle size | | VFX-207 | |
 | `vfx.particle.volcano.gravity` | 10.0 | wu/s² | | VFX-207 | |
 | `vfx.particle.volcano.friction` | 0 | per s | | VFX-207 | |
-| `vfx.particle.volcano.colours` | 150, 50, 50 to 150, 120, 50 | RGB | dies on terrain contact | VFX-207 | |
+| `vfx.particle.volcano.colors` | 150, 50, 50 to 150, 120, 50 | RGB | dies on terrain contact | VFX-207 | |
 | `vfx.emit.explosion.core_size` | 120 + U[0, 120) | particle size | | VFX-219 | DEC-013 |
 | `vfx.emit.explosion.core_velocity` | ± 15, 10 + U[0, 10), ± 15 | wu/s | | VFX-219 | DEC-013 |
 | `vfx.emit.explosion.debris_lift` | 0.2 | × range | | VFX-219 | |
@@ -598,15 +598,15 @@ The design-phase inputs of this component are listed in the [folder README](READ
 | `vfx.emit.burning.rise` | 3 + U[0, 3) | wu/s along up | | VFX-219 | |
 | `vfx.emit.sick.chance` | 0.5 | per tick | | VFX-219 | |
 | `vfx.emit.sick.size` | 20 + U[0, 20) | particle size | | VFX-219 | |
-| `vfx.emit.sick.colour` | 140, 200, 5, 150 | RGBA | | VFX-219 | |
+| `vfx.emit.sick.color` | 140, 200, 5, 150 | RGBA | | VFX-219 | |
 | `vfx.emit.power_reached.count` | 20 | particles | | VFX-219 | |
 | `vfx.emit.abducted.chance` | 0.5 | per tick | | VFX-219 | |
 | `vfx.emit.abducted.size` | 30 | particle size | | VFX-219 | |
-| `vfx.emit.abducted.colour` | 150, 150, 255, 155 | RGBA | | VFX-219 | |
+| `vfx.emit.abducted.color` | 150, 150, 255, 155 | RGBA | | VFX-219 | |
 | `vfx.emit.bite.count` | 3 | particles | | VFX-219 | |
 | `vfx.emit.transport_exhaust.size` | 50 + U[0, 49) | particle size | | VFX-219 | |
-| `vfx.emit.abductor.spark_colour` | 150, 150, 255 | RGB | Abductor engine sparks | VFX-219 | |
-| `vfx.emit.abductor.fire_colour` | 50, 50, 250 | RGB | Abductor engine fire | VFX-219 | |
+| `vfx.emit.abductor.spark_color` | 150, 150, 255 | RGB | Abductor engine sparks | VFX-219 | |
+| `vfx.emit.abductor.fire_color` | 50, 50, 250 | RGB | Abductor engine fire | VFX-219 | |
 | `vfx.emit.booster.size` | 500 | particle size | Launch Vessel booster | VFX-219 | |
 | `vfx.emit.booster.split` | 11, 4 | particles | missile fire, then missile trails | VFX-219 | |
 | `vfx.emit.booster.offset` | ± 10, 10, ± 10 | wu | from the `thruster` socket | VFX-219 | |
@@ -627,7 +627,7 @@ The design-phase inputs of this component are listed in the [folder README](READ
 | `vfx.shatter.tumblers` | 5 | per explosion | | VFX-226 | |
 | `vfx.shatter.min_perimeter` | 6.0 | wu | | VFX-226 | |
 | `vfx.shatter.triangle_cap_index` | 500 | source index | at most 502 shards per node | VFX-226 | |
-| `vfx.shatter.centre_factor` | 0.3333 | — | as written, not exactly one third | VFX-226 | |
+| `vfx.shatter.center_factor` | 0.3333 | — | as written, not exactly one third | VFX-226 | |
 | `vfx.shatter.edge_width` | 1/64 | barycentric | edge line width; not recorded by the reference | VFX-229 | DEC-962 |
 | `vfx.shatter.max_explosions` | 1024 | explosions | engine baseline | VFX-230 | DEC-228 |
 | `vfx.shatter.max_shards` | 131 072 | shards | engine baseline | VFX-230 | DEC-228 |

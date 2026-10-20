@@ -18,6 +18,7 @@ Scope: Species implementation: the solo MVP scope. Back to the [requirements ind
 | MVP-014 | A world has no free settlement site, no founding after creation, no stand-in AI settlements and no keeper; | [mvp_scope.md](../implementation/mvp_scope.md#22-world) |
 | MVP-015 | At most `wld.scale.battles_per_region_max` (2) battles are in progress at once (WLD-285, O46); | [mvp_scope.md](../implementation/mvp_scope.md#22-world) |
 | MVP-016 | A settlement sees its own territory and the area within `mvp.vision.unit_radius` (300 wu) of each of its Workers, Leaders and structures; | [mvp_scope.md](../implementation/mvp_scope.md#22-world) |
+| MVP-017 | Navigation nodes are generated with the terrain, in place of the nodes that a reference map places by hand (R-SIM-331, R-BOT-027; | [mvp_scope.md](../implementation/mvp_scope.md#22-world) |
 | MVP-020 | A settlement starts with its Wellspring at its site's centre, `mvp.settlement.start_workers` (20) Workers, empty stores and its founding | [mvp_scope.md](../implementation/mvp_scope.md#23-settlement-essence-and-growth-stands-in-for-b1) |
 | MVP-021 | The Wellspring (`Wellspring`) can be neither destroyed nor captured (PIL-080). | [mvp_scope.md](../implementation/mvp_scope.md#23-settlement-essence-and-growth-stands-in-for-b1) |
 | MVP-022 | A settlement's population limit is `mvp.settlement.population_base` (40) plus `mvp.dwelling.population` (30) for each active dwelling, | [mvp_scope.md](../implementation/mvp_scope.md#23-settlement-essence-and-growth-stands-in-for-b1) |

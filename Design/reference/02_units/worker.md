@@ -20,7 +20,7 @@ The Worker's stats are in the actor stat table of [README.md](README.md) §4.1: 
 
 **R-UNIT-060** (MUST) A Worker's spawn step makes its draws in this order, each once per spawn (DEC-652): the initial reload timer, from `NextUnit(ref.unit.worker.rate)` (README R-UNIT-015, 0 to 30 ticks); the first grenade timer `ref.unit.worker.grenade_first_ticks`; the idle timer, `ref.unit.worker.idle_timer` (600 ticks) + ⌊`NextUnit(60)` ÷ `ref.sim.tick_period`⌋ ticks; then the spawn-position search and the front draw of R-UNIT-059.
 
-**R-UNIT-061** (MUST) The Worker's spawn hook raises `worker.spawn`, sets the Worker on the ground, sets its waypoint to its position, sets its centre to `ref.unit.worker.centre_height` (2 wu) above its position and its radius to `ref.unit.worker.radius` (4 wu), and sets its **Visitor flag** when its team is the Visitor faction or the map option that names a Visitor team position names this team's position. A creator that wants an airborne Worker clears the on-ground flag after the spawn step ([reference/05](../05_population_flow.md) states which creators do). The Worker's distance scale factor is presentation state, read from the player's display setting, and no simulation rule reads it (DEC-010).
+**R-UNIT-061** (MUST) The Worker's spawn hook raises `worker.spawn`, sets the Worker on the ground, sets its waypoint to its position, sets its centre to `ref.unit.worker.center_height` (2 wu) above its position and its radius to `ref.unit.worker.radius` (4 wu), and sets its **Visitor flag** when its team is the Visitor faction or the map option that names a Visitor team position names this team's position. A creator that wants an airborne Worker clears the on-ground flag after the spawn step ([reference/05](../05_population_flow.md) states which creators do). The Worker's distance scale factor is presentation state, read from the player's display setting, and no simulation rule reads it (DEC-010).
 
 ### 2.2 Combat class and constants
 
@@ -434,9 +434,9 @@ The rules of this section are presentation: they never write simulation state (D
 
 **R-UNIT-145** (MUST) A Burning Worker and every Rogue faction Worker are drawn with the hurt pose `sprite.worker.hurt` variant 04. A share `ref.unit.worker.air_corpse_hurt_share` (0.3) of airborne corpses, chosen by unit id, is drawn with variants 01 to 03. A Visitor faction Worker is drawn with `sprite.visitor.front` and the glow `fx.glow_round`.
 
-**R-UNIT-146** (MUST) A Worker's colour is team colour × (`ref.unit.worker.colour_base` + `ref.unit.worker.colour_health_weight` × health ÷ `ref.unit.worker.health`) (0.3 + 0.7 × health ÷ 50). After a conversion the colour blends from the previous team's colour over the convert fade (R-UNIT-126). A dead Worker is drawn in colour × `ref.unit.worker.corpse_colour` (0.2) at alpha `ref.unit.worker.corpse_alpha_per_health` × health (2.5 × health), as `ref.unit.worker.corpse_fragments` (3) drifting fragments. A paralysed Worker is drawn in `ref.unit.worker.paralysed_colour` (150, 150, 150).
+**R-UNIT-146** (MUST) A Worker's colour is team colour × (`ref.unit.worker.color_base` + `ref.unit.worker.color_health_weight` × health ÷ `ref.unit.worker.health`) (0.3 + 0.7 × health ÷ 50). After a conversion the colour blends from the previous team's colour over the convert fade (R-UNIT-126). A dead Worker is drawn in colour × `ref.unit.worker.corpse_color` (0.2) at alpha `ref.unit.worker.corpse_alpha_per_health` × health (2.5 × health), as `ref.unit.worker.corpse_fragments` (3) drifting fragments. A paralysed Worker is drawn in `ref.unit.worker.paralysed_color` (150, 150, 150).
 
-**R-UNIT-147** (MUST) Overlays on a Worker: a pulsing additive blue glow, never below `ref.unit.worker.control_glow_min` (0.3), while it is selected or controlled by the local team; a glow while it has Fury, together with the size pulse; the glow `fx.glow_round` in `ref.unit.worker.sickness_bubble_colour` (90, 130, 10) while it is sick; the bubble `fx.bubble_sphere` in its team colour while it has a Shield; the state overlay `sprite.worker.state_overlay` while it has a Convert link; the crate capture beam `fx.beam_short` while it opens a Supply crate; and its ground shadow, its own current card drawn flat on the terrain in black, not the blob shadow of README R-UNIT-050 ([animation and VFX](../../architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md) VFX-118), at alpha `ref.unit.worker.shadow_alpha` (150) × the high-detail factor of the Worker renderer ([renderer](../../architecture/components/renderer/entity_and_overlay_renderers.md) RND-314, RND-315) (× `ref.unit.worker.shadow_rogue_factor` (0.3) for the Rogue faction), while it is alive and not InAbductionBeam, within `ref.unit.worker.shadow_range` (2000 wu) of the camera.
+**R-UNIT-147** (MUST) Overlays on a Worker: a pulsing additive blue glow, never below `ref.unit.worker.control_glow_min` (0.3), while it is selected or controlled by the local team; a glow while it has Fury, together with the size pulse; the glow `fx.glow_round` in `ref.unit.worker.sickness_bubble_color` (90, 130, 10) while it is sick; the bubble `fx.bubble_sphere` in its team colour while it has a Shield; the state overlay `sprite.worker.state_overlay` while it has a Convert link; the crate capture beam `fx.beam_short` while it opens a Supply crate; and its ground shadow, its own current card drawn flat on the terrain in black, not the blob shadow of README R-UNIT-050 ([animation and VFX](../../architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md) VFX-118), at alpha `ref.unit.worker.shadow_alpha` (150) × the high-detail factor of the Worker renderer ([renderer](../../architecture/components/renderer/entity_and_overlay_renderers.md) RND-314, RND-315) (× `ref.unit.worker.shadow_rogue_factor` (0.3) for the Rogue faction), while it is alive and not InAbductionBeam, within `ref.unit.worker.shadow_range` (2000 wu) of the camera.
 
 **R-UNIT-148** (MUST) While the seasonal theme is on (DEC-101, DEC-118), every Worker whose unit id is divisible by `ref.unit.worker.seasonal_hat_period` (3) is drawn with `sprite.worker.seasonal_hat`.
 
@@ -609,7 +609,7 @@ Diagram 3-D Sickness on a Worker (R-UNIT-127 to R-UNIT-130).
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
-| `ref.unit.worker.centre_height` | 2 | wu | | R-UNIT-061 | — |
+| `ref.unit.worker.center_height` | 2 | wu | | R-UNIT-061 | — |
 | `ref.unit.worker.radius` | 4 | wu | actor-grid footprint | R-UNIT-061 | DEC-650 |
 | `ref.unit.worker.soldier_level` | 2 | research level | soldier above this level | R-UNIT-062 | DEC-030 |
 | `ref.unit.worker.grenade_level` | 3 | research level | grenades above this level | R-UNIT-062 | DEC-030 |
@@ -766,14 +766,14 @@ Diagram 3-D Sickness on a Worker (R-UNIT-127 to R-UNIT-130).
 | `ref.unit.worker.sway_angle` | 0.3 | rad | presentation | R-UNIT-143 | — |
 | `ref.unit.worker.side_view_threshold` | 0.95 | — | presentation | R-UNIT-144 | — |
 | `ref.unit.worker.air_corpse_hurt_share` | 0.3 | share | presentation | R-UNIT-145 | — |
-| `ref.unit.worker.colour_base` | 0.3 | × team colour | presentation | R-UNIT-146 | — |
-| `ref.unit.worker.colour_health_weight` | 0.7 | × team colour | presentation | R-UNIT-146 | — |
-| `ref.unit.worker.corpse_colour` | 0.2 | × colour | presentation | R-UNIT-146 | — |
+| `ref.unit.worker.color_base` | 0.3 | × team colour | presentation | R-UNIT-146 | — |
+| `ref.unit.worker.color_health_weight` | 0.7 | × team colour | presentation | R-UNIT-146 | — |
+| `ref.unit.worker.corpse_color` | 0.2 | × colour | presentation | R-UNIT-146 | — |
 | `ref.unit.worker.corpse_alpha_per_health` | 2.5 | alpha per health | presentation | R-UNIT-146 | — |
 | `ref.unit.worker.corpse_fragments` | 3 | fragments | presentation | R-UNIT-146 | — |
-| `ref.unit.worker.paralysed_colour` | 150, 150, 150 | RGB | presentation | R-UNIT-146 | — |
+| `ref.unit.worker.paralysed_color` | 150, 150, 150 | RGB | presentation | R-UNIT-146 | — |
 | `ref.unit.worker.control_glow_min` | 0.3 | alpha | presentation | R-UNIT-147 | — |
-| `ref.unit.worker.sickness_bubble_colour` | 90, 130, 10 | RGB | presentation | R-UNIT-147 | — |
+| `ref.unit.worker.sickness_bubble_color` | 90, 130, 10 | RGB | presentation | R-UNIT-147 | — |
 | `ref.unit.worker.shadow_alpha` | 150 | alpha | × detail level; presentation | R-UNIT-147 | — |
 | `ref.unit.worker.shadow_rogue_factor` | 0.3 | × alpha | presentation | R-UNIT-147 | — |
 | `ref.unit.worker.shadow_range` | 2000 | wu | presentation | R-UNIT-147 | — |

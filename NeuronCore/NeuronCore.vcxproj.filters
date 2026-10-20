@@ -4,6 +4,9 @@
     <Filter Include="Build">
       <UniqueIdentifier>{5E598DB9-58CC-5702-B1D5-C4F66C274EF8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Content">
+      <UniqueIdentifier>{472A0A4B-0507-585E-8D35-DFF101DB9E6B}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Diagnostics">
       <UniqueIdentifier>{6D1C4C7B-138C-5352-B44B-BED8535A12F3}</UniqueIdentifier>
     </Filter>
@@ -22,8 +25,14 @@
     <Filter Include="Records">
       <UniqueIdentifier>{8B5F8509-0985-5156-86DF-9A380AB51446}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Terrain">
+      <UniqueIdentifier>{5E502FD8-B9D6-5B75-A84D-F4BF84EF27D5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AssetError.h">
+      <Filter>Content</Filter>
+    </ClInclude>
     <ClInclude Include="AuthoringParser.h">
       <Filter>Records</Filter>
     </ClInclude>
@@ -42,6 +51,15 @@
     <ClInclude Include="ContentDiagnostic.h">
       <Filter>Records</Filter>
     </ClInclude>
+    <ClInclude Include="ContentKey.h">
+      <Filter>Content</Filter>
+    </ClInclude>
+    <ClInclude Include="CookedRecord.h">
+      <Filter>Records</Filter>
+    </ClInclude>
+    <ClInclude Include="DdsHeader.h">
+      <Filter>Content</Filter>
+    </ClInclude>
     <ClInclude Include="Development.h">
       <Filter>Build</Filter>
     </ClInclude>
@@ -53,6 +71,12 @@
     </ClInclude>
     <ClInclude Include="FloatEnvironment.h">
       <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="FontAsset.h">
+      <Filter>Content</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry.h">
+      <Filter>Maths</Filter>
     </ClInclude>
     <ClInclude Include="InProcessTransport.h">
       <Filter>Network</Filter>
@@ -68,6 +92,15 @@
     </ClInclude>
     <ClInclude Include="LogFile.h">
       <Filter>Diagnostics</Filter>
+    </ClInclude>
+    <ClInclude Include="LooseContent.h">
+      <Filter>Content</Filter>
+    </ClInclude>
+    <ClInclude Include="MarkerTimings.h">
+      <Filter>Profiling</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshAsset.h">
+      <Filter>Content</Filter>
     </ClInclude>
     <ClInclude Include="MessageCodec.h">
       <Filter>Network</Filter>
@@ -102,20 +135,32 @@
     <ClInclude Include="SecureRandom.h">
       <Filter>Platform</Filter>
     </ClInclude>
+    <ClInclude Include="Sha256.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
     <ClInclude Include="SimRng.h">
       <Filter>Maths</Filter>
     </ClInclude>
     <ClInclude Include="SipHash.h">
       <Filter>Maths</Filter>
     </ClInclude>
+    <ClInclude Include="StartupOptions.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
     <ClInclude Include="StreamFraming.h">
       <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="TerrainField.h">
+      <Filter>Terrain</Filter>
     </ClInclude>
     <ClInclude Include="TextEncoding.h">
       <Filter>Platform</Filter>
     </ClInclude>
     <ClInclude Include="Transport.h">
       <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="Vec3.h">
+      <Filter>Maths</Filter>
     </ClInclude>
     <ClInclude Include="WindowsHeaders.h">
       <Filter>Platform</Filter>
@@ -125,6 +170,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AssetError.cpp">
+      <Filter>Content</Filter>
+    </ClCompile>
     <ClCompile Include="AuthoringParser.cpp">
       <Filter>Records</Filter>
     </ClCompile>
@@ -143,6 +191,15 @@
     <ClCompile Include="ContentDiagnostic.cpp">
       <Filter>Records</Filter>
     </ClCompile>
+    <ClCompile Include="ContentKey.cpp">
+      <Filter>Content</Filter>
+    </ClCompile>
+    <ClCompile Include="CookedRecord.cpp">
+      <Filter>Records</Filter>
+    </ClCompile>
+    <ClCompile Include="DdsHeader.cpp">
+      <Filter>Content</Filter>
+    </ClCompile>
     <ClCompile Include="FatalPath.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
@@ -151,6 +208,12 @@
     </ClCompile>
     <ClCompile Include="FloatEnvironment.cpp">
       <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="FontAsset.cpp">
+      <Filter>Content</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry.cpp">
+      <Filter>Maths</Filter>
     </ClCompile>
     <ClCompile Include="InProcessTransport.cpp">
       <Filter>Network</Filter>
@@ -166,6 +229,15 @@
     </ClCompile>
     <ClCompile Include="LogFile.cpp">
       <Filter>Diagnostics</Filter>
+    </ClCompile>
+    <ClCompile Include="LooseContent.cpp">
+      <Filter>Content</Filter>
+    </ClCompile>
+    <ClCompile Include="MarkerTimings.cpp">
+      <Filter>Profiling</Filter>
+    </ClCompile>
+    <ClCompile Include="MeshAsset.cpp">
+      <Filter>Content</Filter>
     </ClCompile>
     <ClCompile Include="MessageCodec.cpp">
       <Filter>Network</Filter>
@@ -194,14 +266,23 @@
     <ClCompile Include="SecureRandom.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
+    <ClCompile Include="Sha256.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
     <ClCompile Include="SimRng.cpp">
       <Filter>Maths</Filter>
     </ClCompile>
     <ClCompile Include="SipHash.cpp">
       <Filter>Maths</Filter>
     </ClCompile>
+    <ClCompile Include="StartupOptions.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
     <ClCompile Include="StreamFraming.cpp">
       <Filter>Network</Filter>
+    </ClCompile>
+    <ClCompile Include="TerrainField.cpp">
+      <Filter>Terrain</Filter>
     </ClCompile>
     <ClCompile Include="TextEncoding.cpp">
       <Filter>Platform</Filter>

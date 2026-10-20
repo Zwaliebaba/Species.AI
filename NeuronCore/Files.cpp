@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <atomic>
 #include <format>
-#include <optional>
 #include <string>
 #include <system_error>
 #include <vector>
@@ -224,24 +223,6 @@ std::filesystem::path ExecutableFolder()
     }
     path.resize(path.size() * 2);
   }
-}
-
-std::optional<std::filesystem::path> FindInterimContentRoot(const std::filesystem::path& _start)
-{
-  std::error_code error;
-  for (std::filesystem::path folder = _start; !folder.empty(); folder = folder.parent_path())
-  {
-    std::filesystem::path candidate = folder / L"GameData";
-    if (std::filesystem::is_directory(candidate, error))
-    {
-      return candidate;
-    }
-    if (folder == folder.parent_path())
-    {
-      break;
-    }
-  }
-  return std::nullopt;
 }
 
 } // namespace Neuron

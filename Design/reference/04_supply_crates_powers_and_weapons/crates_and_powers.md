@@ -233,8 +233,8 @@ Every rule of this section is presentation: it reads simulation state and never 
 
 **R-CRATE-142** (MUST) The crate's glow is:
 
-1. while falling, a trail of `fx.starburst` cards: 10, 5 or 2 cards at structure-detail settings 1, 2 or 3 (`ref.crate.render.trail_cards`), of colour `ref.crate.render.trail_colour` (1.0, 0.4, 0.2) with alpha 0.6 × height ÷ `ref.crate.drop.start_height`, card i of size i × `ref.crate.render.trail_size_step` (15 wu);
-2. always, 20, 10 or 0 soft blobs of `fx.glow_cloudy` at structure-detail settings 1, 2 or 3 (`ref.crate.render.glow_blobs`), in the owner's team colour with alpha `ref.crate.render.glow_owned_alpha` (155), or in `ref.crate.render.glow_neutral_colour` (255, 155, 100, 55) when the crate has no owner.
+1. while falling, a trail of `fx.starburst` cards: 10, 5 or 2 cards at structure-detail settings 1, 2 or 3 (`ref.crate.render.trail_cards`), of colour `ref.crate.render.trail_color` (1.0, 0.4, 0.2) with alpha 0.6 × height ÷ `ref.crate.drop.start_height`, card i of size i × `ref.crate.render.trail_size_step` (15 wu);
+2. always, 20, 10 or 0 soft blobs of `fx.glow_cloudy` at structure-detail settings 1, 2 or 3 (`ref.crate.render.glow_blobs`), in the owner's team colour with alpha `ref.crate.render.glow_owned_alpha` (155), or in `ref.crate.render.glow_neutral_color` (255, 155, 100, 55) when the crate has no owner.
 
 **R-CRATE-143** (MUST) A crate counts as in view when its own bounds, the point above it at the camera's height or the ground point below it is in the view frustum, so that a falling crate is drawn while its landing point is on screen.
 
@@ -360,7 +360,7 @@ Every rule of this section is presentation: it reads simulation state and never 
 
 **R-CRATE-186** (MUST) The outcome plants `ref.crate.essence_grove.tree_count_base` (1) + (`SimRng::NextUint` mod `ref.crate.essence_grove.tree_count_spread` (2)) trees, 1 or 2, each at P + (`SimRng::NextSigned`(`ref.crate.grove.scatter`), 0, `SimRng::NextSigned`(`ref.crate.grove.scatter`)), within ±50 wu, on the ground, with no team.
 
-**R-CRATE-187** (MUST) Each tree copies a template: the first tree on the map that is not blighted; or, when there is none, a random template whose bud size, push-out and push-up are each `ref.crate.grove.shape_factor_max` (1.2) − `SimRng::NextUnit`(`ref.crate.grove.shape_factor_spread` (0.4)), whose eight colour channels (branch red, green, blue and alpha, then leaf red, green, blue and alpha) are each `ref.crate.grove.colour_base` (100) + (`SimRng::NextUint` mod `ref.crate.grove.colour_spread` (155)), drawn one statement at a time (`ref.sim.rng.crate_tree_draws`, 8, R-SIM-621), with height `ref.crate.grove.template_height` (80 wu) and `ref.crate.essence_grove.template_iterations` (6) iterations.
+**R-CRATE-187** (MUST) Each tree copies a template: the first tree on the map that is not blighted; or, when there is none, a random template whose bud size, push-out and push-up are each `ref.crate.grove.shape_factor_max` (1.2) − `SimRng::NextUnit`(`ref.crate.grove.shape_factor_spread` (0.4)), whose eight colour channels (branch red, green, blue and alpha, then leaf red, green, blue and alpha) are each `ref.crate.grove.color_base` (100) + (`SimRng::NextUint` mod `ref.crate.grove.color_spread` (155)), drawn one statement at a time (`ref.sim.rng.crate_tree_draws`, 8, R-SIM-621), with height `ref.crate.grove.template_height` (80 wu) and `ref.crate.essence_grove.template_iterations` (6) iterations.
 
 **R-CRATE-188** (MUST) Each tree then sets: its seed to ⌊`SimRng::NextUnit`(`ref.crate.grove.seed_range` (99999))⌋; its height to min(template height, `ref.crate.grove.height_cap` (100 wu)) × (`ref.crate.grove.shape_factor_max` − `SimRng::NextUnit`(`ref.crate.grove.shape_factor_spread`)); its burn phase to −1, so it starts as a stump that regrows ([trees and crate structures](../03_buildings_and_world_objects/trees_and_crate_structures.md) R-BLDG-602); its remaining offspring to ⌊`ref.crate.grove.offspring_base` (2) + `SimRng::NextUnit`(`ref.crate.grove.offspring_spread` (3))⌋, 2 to 4; its Essence-orb drop rate to ⌊`ref.crate.essence_grove.drop_rate_base` (15) + `SimRng::NextUnit`(`ref.crate.essence_grove.drop_rate_spread` (15))⌋, 15 to 29; and it becomes removable, so it is removed when it burns out. The obstacle grid is updated. The tree's growth, burning and offspring follow the tree rules of [trees and crate structures](../03_buildings_and_world_objects/trees_and_crate_structures.md) §2.2.
 
@@ -408,7 +408,7 @@ Every rule of this section is presentation: it reads simulation state and never 
 
 **R-CRATE-204** (MUST) **Delivery:** as a good outcome, a Blight Grove Power targeted anywhere outside an exclusion zone that blocks Powers; as a bad outcome, immediate at the crate for the Rogue faction.
 
-**R-CRATE-205** (MUST) The outcome plants `ref.crate.blight_grove.tree_count_base` (2) + (`SimRng::NextUint` mod `ref.crate.blight_grove.tree_count_spread` (3)) trees, 2 to 4, each at P ± 50 wu as in R-CRATE-186, with no team. Each copies the first tree on the map, blighted or not, or, when there is none, a random template with the shape factors of R-CRATE-187 and height `ref.crate.grove.template_height`; it then sets its seed, height, burn phase and offspring as in R-CRATE-188, becomes removable and **blighted**, with branch colour `ref.crate.blight_grove.branch_colour` (0, 0, 0, 255), leaf colour `ref.crate.blight_grove.leaf_colour` (0, 0, 0, 200) and `ref.crate.blight_grove.template_iterations` (5) iterations.
+**R-CRATE-205** (MUST) The outcome plants `ref.crate.blight_grove.tree_count_base` (2) + (`SimRng::NextUint` mod `ref.crate.blight_grove.tree_count_spread` (3)) trees, 2 to 4, each at P ± 50 wu as in R-CRATE-186, with no team. Each copies the first tree on the map, blighted or not, or, when there is none, a random template with the shape factors of R-CRATE-187 and height `ref.crate.grove.template_height`; it then sets its seed, height, burn phase and offspring as in R-CRATE-188, becomes removable and **blighted**, with branch colour `ref.crate.blight_grove.branch_color` (0, 0, 0, 255), leaf colour `ref.crate.blight_grove.leaf_color` (0, 0, 0, 200) and `ref.crate.blight_grove.template_iterations` (5) iterations.
 
 **R-CRATE-206** (MUST) A blight tree follows the blight rules of [trees and crate structures](../03_buildings_and_world_objects/trees_and_crate_structures.md) R-BLDG-620 to R-BLDG-623. Each tick, when a draw U[0, `ref.bldg.tree.blight_roll_range` (10)) falls below `ref.bldg.tree.blight_roll_below` (0.2), a 2 % chance per tick, it takes the nearest enemy of the Rogue faction within `ref.bldg.tree.blight_reach_factor` (0.5) × its actual height; when that actor is a Worker not operating a structure port, the Worker takes an unresistable health change of −`ref.bldg.tree.blight_kill_damage` (999), so a Shield does not help, the Essence orb its death releases is removed and a Wisp is released ([creatures](../02_units/creatures.md) §2.11). Once fully grown, a blighted tree corrupts one tree every `ref.bldg.tree.corruption_check_base_ticks` (100) + ⌈U[0, `ref.bldg.tree.corruption_check_spread_ticks` (50))⌉ ticks: the first tree in structure order that is not blighted, not already corrupted and within its actual height; the corrupted tree turns blighted `ref.bldg.tree.blight_delay_ticks` (101 ticks, nominal 10 s) later. A blighted tree drops no Essence orbs. Growth, burning and offspring follow the tree rules of [trees and crate structures](../03_buildings_and_world_objects/trees_and_crate_structures.md) §2.2.
 
@@ -638,8 +638,8 @@ Caption: Figure 3-4, from a majority of Workers to a placed Power (R-CRATE-114, 
 | `ref.crate.grove.scatter` | 100 | wu | NextSigned(100): ±50 wu; both groves | R-CRATE-186, R-CRATE-205 | — |
 | `ref.crate.grove.shape_factor_max` | 1.2 | × | bud size, push-out, push-up and height factor | R-CRATE-187, R-CRATE-188, R-CRATE-205 | — |
 | `ref.crate.grove.shape_factor_spread` | 0.4 | × | factor 0.8 to 1.2 | R-CRATE-187, R-CRATE-188, R-CRATE-205 | — |
-| `ref.crate.grove.colour_base` | 100 | colour value | per channel 100 to 254 | R-CRATE-187 | DEC-013 |
-| `ref.crate.grove.colour_spread` | 155 | colour value | modulus | R-CRATE-187 | — |
+| `ref.crate.grove.color_base` | 100 | colour value | per channel 100 to 254 | R-CRATE-187 | DEC-013 |
+| `ref.crate.grove.color_spread` | 155 | colour value | modulus | R-CRATE-187 | — |
 | `ref.crate.grove.template_height` | 80 | wu | random template | R-CRATE-187, R-CRATE-205 | — |
 | `ref.crate.grove.seed_range` | 99999 | — | tree seed ⌊NextUnit(99999)⌋ | R-CRATE-188 | — |
 | `ref.crate.grove.height_cap` | 100 | wu | before the height factor | R-CRATE-188 | — |
@@ -657,8 +657,8 @@ Caption: Figure 3-4, from a majority of Workers to a placed Power (R-CRATE-114, 
 | `ref.crate.brood.pod_roam_range` | 300 | wu | set on each pod; released creatures use fixed ranges | R-CRATE-199 | DEC-121 |
 | `ref.crate.blight_grove.tree_count_base` | 2 | trees | | R-CRATE-205 | — |
 | `ref.crate.blight_grove.tree_count_spread` | 3 | trees | 2 to 4 trees | R-CRATE-205 | — |
-| `ref.crate.blight_grove.branch_colour` | 0, 0, 0, 255 | RGBA | | R-CRATE-205 | — |
-| `ref.crate.blight_grove.leaf_colour` | 0, 0, 0, 200 | RGBA | | R-CRATE-205 | — |
+| `ref.crate.blight_grove.branch_color` | 0, 0, 0, 255 | RGBA | | R-CRATE-205 | — |
+| `ref.crate.blight_grove.leaf_color` | 0, 0, 0, 200 | RGBA | | R-CRATE-205 | — |
 | `ref.crate.blight_grove.template_iterations` | 5 | iterations | | R-CRATE-205 | — |
 | `ref.crate.supply_storm.drops_base` | 5 | drops | | R-CRATE-208 | — |
 | `ref.crate.supply_storm.drops_spread` | 5 | drops | 5 to 9 drop attempts | R-CRATE-208 | — |
@@ -689,12 +689,12 @@ Caption: Figure 3-4, from a majority of Workers to a placed Power (R-CRATE-114, 
 | `ref.crate.render.bubble_timer_start` | 100 | pop-timer units (presentation state) | start value of the bubble-pop timer, set when the crate lands; it starts the pop of the bubble into three quarter cards and falls by `ref.crate.render.bubble_pop_per_frame` per presentation step | R-CRATE-141 | DEC-007 |
 | `ref.crate.render.bubble_pop_per_frame` | 4 | per presentation step | one step of `vfx.emit.step_rate` stands for one reference frame | R-CRATE-141 | DEC-007, DEC-960 |
 | `ref.crate.render.trail_cards` | 10, 5, 2 | cards | structure-detail settings 1, 2, 3 | R-CRATE-142 | — |
-| `ref.crate.render.trail_colour` | 1.0, 0.4, 0.2 | RGB | | R-CRATE-142 | — |
+| `ref.crate.render.trail_color` | 1.0, 0.4, 0.2 | RGB | | R-CRATE-142 | — |
 | `ref.crate.render.trail_alpha` | 0.6 | × height ÷ start height | | R-CRATE-142 | — |
 | `ref.crate.render.trail_size_step` | 15 | wu | card i has size i × 15 | R-CRATE-142 | — |
 | `ref.crate.render.glow_blobs` | 20, 10, 0 | blobs | structure-detail settings 1, 2, 3 | R-CRATE-142 | — |
 | `ref.crate.render.glow_owned_alpha` | 155 | alpha (0–255) | owner's team colour | R-CRATE-142 | — |
-| `ref.crate.render.glow_neutral_colour` | 255, 155, 100, 55 | RGBA | with no owner | R-CRATE-142 | — |
+| `ref.crate.render.glow_neutral_color` | 255, 155, 100, 55 | RGBA | with no owner | R-CRATE-142 | — |
 
 The README's string table holds the announcement texts of every outcome.
 

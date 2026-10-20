@@ -57,6 +57,10 @@ The engine components specify the whole engine. The MVP builds them in the order
 | Transport | `InProcessTransport` | `QuicTransport` over MsQuic at M4 (ADR-089) |
 | Crash reporting, signing, installer | none | before the first external build (ADR-065, ADR-071, ADR-072, ADR-073) |
 
+**Amendment 2026-10-20 (O69, O70).** M1 builds the CMO importer and mesh cooker, which this table puts at M2, and no texture cooker: every texture is authored in its runtime format and packed as authored, so the content build restores no DirectXTex. M1 draws EditorFont only, and GameFont arrives with M2's HUD. The [M1 plan](m1_plan.md) states M1's order.
+
+**Amendment 2026-10-20 (O73).** The loose-content mount of M1 is in every configuration until packs exist, not in Debug builds only, and the solution build writes it beside the executables; the `--loose-content` option that names another folder stays a Debug build's ([ADR-108](../ADR/ADR-108-content-build-loose-content-and-cooked-formats.md)).
+
 ## 5 Tasks
 
 Each task is one pull request on a branch off `main`, in this order. Each one cites the requirements it implements.
@@ -85,3 +89,5 @@ T3, T5 and T8 have no dependency on T4 and can run beside it; everything else fo
 M1 starts on generated placeholders for whatever is missing, so nothing here blocks M0. The owner's 46 textures, two meshes and two fonts are in `GameData/` already ([MVP assets](mvp_assets.md) §6): with them, every hand-made asset that M1's look exit criterion, a battle that is fun to watch, needs is made, the Worker cards, the cursors, markers, Leader banners and first icons among them (O64). What the owner still prepares for M1 is the en-GB string table's first strings ([MVP assets](mvp_assets.md) §4); the hand-made assets of M2 to M4 can be drawn while M0 and M1 are built.
 
 The reference test machine is pinned at the start of M1 (O58).
+
+**Amendment 2026-10-20 (O69, O70).** GameFont first draws text at M2, so the en-GB string table's first strings are prepared for M2. The reference test machine is pinned by the first run of the performance script, task T10 of the [M1 plan](m1_plan.md), before any content is tuned (O43, O58), and it measures the `Release|ARM64` build.

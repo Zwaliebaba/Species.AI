@@ -48,14 +48,14 @@ Scope: Units, creatures, hazards, projectiles. Back to the [requirements index](
 | R-UNIT-040 | Actors follow the falling, water, world-clamp, obstacle-push, bounce and teleport-entry rules of reference/12. | [README.md](../reference/02_units/README.md#211-movement-obstacles-and-slopes) |
 | R-UNIT-041 | Actors never push each other apart and never push themselves away from cliffs; | [README.md](../reference/02_units/README.md#211-movement-obstacles-and-slopes) |
 | R-UNIT-042 | A walking actor of the kinds in table 2.11-A scales its speed by the slope factor f = 1 + (h_now − h_next) ÷ k, clamped to [f_min, f_max], | [README.md](../reference/02_units/README.md#211-movement-obstacles-and-slopes) |
-| R-UNIT-043 | An actor takes the colour of its team from the team colour table of reference/12 (`ref.sim.team_colour.*`). | [README.md](../reference/02_units/README.md#212-team-colouring) |
+| R-UNIT-043 | An actor takes the colour of its team from the team colour table of reference/12 (`ref.sim.team_color.*`). | [README.md](../reference/02_units/README.md#212-team-colouring) |
 | R-UNIT-044 | A team-tinted unit mesh is tinted in one of two ways, with the tint regions marked explicitly in the asset (ADR-020): | [README.md](../reference/02_units/README.md#212-team-colouring) |
 | R-UNIT-045 | When a team's lobby colour id is 0, the Worker figure mesh `mesh.unit.worker_figure` halves the team colour before it applies the tint. | [README.md](../reference/02_units/README.md#212-team-colouring) |
 | R-UNIT-046 | Each kind is coloured as table 2.12-A states. | [README.md](../reference/02_units/README.md#212-team-colouring) |
 | R-UNIT-047 | Units raise sounds as presentation events named by source and event, for example `worker.attack` (DEC-007; | [README.md](../reference/02_units/README.md#213-presentation-binding) |
 | R-UNIT-048 | Units create particles only as presentation, from the presentation generator (DEC-013). | [README.md](../reference/02_units/README.md#213-presentation-binding) |
 | R-UNIT-049 | A unit mesh that takes damage or dies may shatter: | [README.md](../reference/02_units/README.md#213-presentation-binding) |
-| R-UNIT-050 | A unit's ground shadow is a blob of `fx.glow_round` draped on the terrain, coloured `ref.unit.shadow.colour` (0.6, 0.6, 0.6, 0) and blended | [README.md](../reference/02_units/README.md#213-presentation-binding) |
+| R-UNIT-050 | A unit's ground shadow is a blob of `fx.glow_round` draped on the terrain, coloured `ref.unit.shadow.color` (0.6, 0.6, 0.6, 0) and blended | [README.md](../reference/02_units/README.md#213-presentation-binding) |
 | R-UNIT-051 | A unit flickers to show damage. | [README.md](../reference/02_units/README.md#213-presentation-binding) |
 | R-UNIT-052 | The base attack of an actor fires a laser bolt at a target point: | [README.md](../reference/02_units/README.md#214-weapons-used-by-units) |
 | R-UNIT-053 | The weapons that units use are those of table 2.14-A. | [README.md](../reference/02_units/README.md#214-weapons-used-by-units) |
@@ -151,7 +151,7 @@ Scope: Units, creatures, hazards, projectiles. Back to the [requirements index](
 | R-UNIT-143 | The card is oriented by the terrain normal and the Worker's front. | [worker.md](../reference/02_units/worker.md#214-colouring-rendering-and-effects) |
 | R-UNIT-144 | When the card is seen edge-on, that is \|front × direction to the camera\| > `ref.unit.worker.side_view_threshold` (0.95), the side card | [worker.md](../reference/02_units/worker.md#214-colouring-rendering-and-effects) |
 | R-UNIT-145 | A Burning Worker and every Rogue faction Worker are drawn with the hurt pose `sprite.worker.hurt` variant 04. | [worker.md](../reference/02_units/worker.md#214-colouring-rendering-and-effects) |
-| R-UNIT-146 | A Worker's colour is team colour × (`ref.unit.worker.colour_base` + `ref.unit.worker.colour_health_weight` × health ÷ | [worker.md](../reference/02_units/worker.md#214-colouring-rendering-and-effects) |
+| R-UNIT-146 | A Worker's colour is team colour × (`ref.unit.worker.color_base` + `ref.unit.worker.color_health_weight` × health ÷ | [worker.md](../reference/02_units/worker.md#214-colouring-rendering-and-effects) |
 | R-UNIT-147 | Overlays on a Worker: | [worker.md](../reference/02_units/worker.md#214-colouring-rendering-and-effects) |
 | R-UNIT-148 | While the seasonal theme is on (DEC-101, DEC-118), every Worker whose unit id is divisible by `ref.unit.worker.seasonal_hat_period` (3) is | [worker.md](../reference/02_units/worker.md#214-colouring-rendering-and-effects) |
 | R-UNIT-149 | A Worker emits these particles: | [worker.md](../reference/02_units/worker.md#214-colouring-rendering-and-effects) |
@@ -197,7 +197,7 @@ Scope: Units, creatures, hazards, projectiles. Back to the [requirements index](
 | R-UNIT-189 | A Leader uses the base health change (README R-UNIT-026): | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#29-damage-and-death) |
 | R-UNIT-190 | A Leader is drawn with `mesh.unit.leader_figure` under the whole-model team tint (README R-UNIT-044), scaled with camera distance and | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#210-team-colouring-rendering-and-sounds) |
 | R-UNIT-191 | A Leader's banner is a cloth flag (`ClothFlag`) of size `ref.unit.leader.banner_size` (20) at the mesh's flag socket. | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#210-team-colouring-rendering-and-sounds) |
-| R-UNIT-192 | A Leader's picking volume is a sphere centred `ref.unit.leader.pick_centre_lift` (4 wu) above its centre, of radius | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#210-team-colouring-rendering-and-sounds) |
+| R-UNIT-192 | A Leader's picking volume is a sphere centred `ref.unit.leader.pick_center_lift` (4 wu) above its centre, of radius | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#210-team-colouring-rendering-and-sounds) |
 | R-UNIT-193 | A Leader raises the presentation events of table 2.10-A (reference/10). | [leader_and_formations.md](../reference/02_units/leader_and_formations.md#210-team-colouring-rendering-and-sounds) |
 | R-UNIT-194 | Each actor kind provides the hooks of table 2.17-A; | [README.md](../reference/02_units/README.md#217-actor-hooks) |
 | R-UNIT-195 | Every explosion of this folder also creates presentation particles and a shockwave ring as reference/04 specifies: | [README.md](../reference/02_units/README.md#218-explosion-presentation-and-the-shockwave-ring) |
@@ -488,7 +488,7 @@ Scope: Units, creatures, hazards, projectiles. Back to the [requirements index](
 | R-UNIT-717 | Each tick a Bomber: (1) is removed if it is dead; | [hazards_and_projectiles.md](../reference/02_units/hazards_and_projectiles.md#23-airstrike-airstrike-flight-and-bomber) |
 | R-UNIT-718 | Only turret rounds hurt a Bomber; | [hazards_and_projectiles.md](../reference/02_units/hazards_and_projectiles.md#23-airstrike-airstrike-flight-and-bomber) |
 | R-UNIT-719 | On flat terrain and maps 1500 to 3000 wu wide, these timings follow from R-UNIT-714 to R-UNIT-717 (DEC-111): | [hazards_and_projectiles.md](../reference/02_units/hazards_and_projectiles.md#23-airstrike-airstrike-flight-and-bomber) |
-| R-UNIT-720 | Presentation: `mesh.unit.bomber_body` drawn at × `ref.hazard.airstrike.bomber_render_scale` (2), untinted in `ref.unit.bomber.colour`; | [hazards_and_projectiles.md](../reference/02_units/hazards_and_projectiles.md#23-airstrike-airstrike-flight-and-bomber) |
+| R-UNIT-720 | Presentation: `mesh.unit.bomber_body` drawn at × `ref.hazard.airstrike.bomber_render_scale` (2), untinted in `ref.unit.bomber.color`; | [hazards_and_projectiles.md](../reference/02_units/hazards_and_projectiles.md#23-airstrike-airstrike-flight-and-bomber) |
 | R-UNIT-721 | Only the Missile Barrage Power of an opened Supply crate creates barrage missiles: | [hazards_and_projectiles.md](../reference/02_units/hazards_and_projectiles.md#24-missile-barrage-barrage-missile) |
 | R-UNIT-722 | Each missile's launcher starts at a sea point: | [hazards_and_projectiles.md](../reference/02_units/hazards_and_projectiles.md#24-missile-barrage-barrage-missile) |
 | R-UNIT-723 | A barrage missile has the stats `ref.unit.barrage_missile.health` (255), `ref.unit.barrage_missile.speed` (100 wu/s) and | [hazards_and_projectiles.md](../reference/02_units/hazards_and_projectiles.md#24-missile-barrage-barrage-missile) |

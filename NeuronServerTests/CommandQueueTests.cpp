@@ -256,6 +256,7 @@ public:
     fixture.queue.Execute(3);
     ExpectEqual(1, static_cast<std::int64_t>(fixture.executed.size()), L"only the valid command executes");
     Assert::AreEqual(5u, fixture.executed[0].value, L"the first of the two with one sequence number");
+    Assert::IsTrue(fixture.queue.Handles(TestOrder::TYPE) && !fixture.queue.Handles(UnknownCommand::TYPE), L"the types it handles");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp094ACommandWhoseTargetHasGoneDoesNothing)

@@ -333,7 +333,7 @@ Table 2.12-B Structure meshes, their sockets and their collision assets (asset i
 
 **R-BLDG-047** (MUST) Drawing, the in-view test, the depth sort and every other presentation step read simulation state and never write it (DEC-007). In particular, a change of the structure-detail setting never re-snaps a structure to the terrain and never rebuilds its ports (R-SIM-367).
 
-**R-BLDG-048** (MUST) The no-team colour of structures is the opaque grey `ref.match.colour.no_group` (153, 153, 153, 255) of reference/01, the member shade of colour id none ([01 Skirmish rules and modes](../01_skirmish_rules_and_modes/README.md) R-MODE-017; DEC-078).
+**R-BLDG-048** (MUST) The no-team colour of structures is the opaque grey `ref.match.color.no_group` (153, 153, 153, 255) of reference/01, the member shade of colour id none ([01 Skirmish rules and modes](../01_skirmish_rules_and_modes/README.md) R-MODE-017; DEC-078).
 
 ### 2.14 Sound events
 
@@ -382,7 +382,7 @@ flowchart TD
 
 ## 4 Tuning table
 
-Every value is a reference tuning value that Species may adopt as its baseline (DEC-004). Values that another document owns are cited in the rules by that document's key and are not repeated here: `ref.sim.tick_period`, `ref.sim.update_slices`, `ref.sim.max_teams`, `ref.sim.team.rogue_slot`, `ref.sim.team.visitor_slot`, `ref.sim.structure.default_radius` and `ref.sim.explosion.structure_reach` (reference/12); `ref.mode.recount.one_second`, `ref.mode.recount.two_second` and `ref.match.colour.no_group` (reference/01); `ref.unit.worker.port_search_range` (reference/02); `ref.econ.start.operators_per_port`, `ref.econ.spawn_node.evaluation_interval_ticks` and `ref.econ.spawn_node.first_evaluation_ticks` (reference/05); `ref.bot.node.recount_ticks` and `ref.bot.marker.period_ticks` (reference/07). The keys of the other files of this folder that the rules cite (the turret, wall, Barrier Emitter and tree keys of R-BLDG-036 and table 2.12-A) are defined in [defences and props](defences_and_props.md), [trees and crate structures](trees_and_crate_structures.md) and [mode objects](mode_objects.md).
+Every value is a reference tuning value that Species may adopt as its baseline (DEC-004). Values that another document owns are cited in the rules by that document's key and are not repeated here: `ref.sim.tick_period`, `ref.sim.update_slices`, `ref.sim.max_teams`, `ref.sim.team.rogue_slot`, `ref.sim.team.visitor_slot`, `ref.sim.structure.default_radius` and `ref.sim.explosion.structure_reach` (reference/12); `ref.mode.recount.one_second`, `ref.mode.recount.two_second` and `ref.match.color.no_group` (reference/01); `ref.unit.worker.port_search_range` (reference/02); `ref.econ.start.operators_per_port`, `ref.econ.spawn_node.evaluation_interval_ticks` and `ref.econ.spawn_node.first_evaluation_ticks` (reference/05); `ref.bot.node.recount_ticks` and `ref.bot.marker.period_ticks` (reference/07). The keys of the other files of this folder that the rules cite (the turret, wall, Barrier Emitter and tree keys of R-BLDG-036 and table 2.12-A) are defined in [defences and props](defences_and_props.md), [trees and crate structures](trees_and_crate_structures.md) and [mode objects](mode_objects.md).
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|

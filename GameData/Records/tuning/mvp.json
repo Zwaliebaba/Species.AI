@@ -1,13 +1,14 @@
 {
   "schema": "tuning.mvp",
   "version": "1.0",
-  "notes": "The MVP tuning values of Design/implementation/mvp_scope.md table 3, and ref.sim.tick_period of ADR-079. All provisional (MVP-003).",
+  "notes": "The MVP tuning values of Design/implementation/mvp_scope.md table 3, and the reference keys the simulation reads (ADR-079, MVP-099), each at its reference value. All provisional (MVP-003).",
   "mvp": {
     "pace": {
       "session_factor": 24
     },
     "world": {
-      "ai_count": 3
+      "ai_count": 3,
+      "region_cell": 6
     },
     "vision": {
       "unit_radius": 300
@@ -73,7 +74,7 @@
       "attack_cost_ru": 300,
       "warning_minutes": 5
     },
-    "defence": {
+    "defense": {
       "damage_taken_factor": 0.75
     },
     "battle": {
@@ -117,7 +118,7 @@
       "quiet_minutes": 15
     },
     "renown": {
-      "defence_held": 3,
+      "defense_held": 3,
       "claim_won": 3,
       "grievance_eased": 1,
       "structure_per_100ru": 1
@@ -135,11 +136,433 @@
     "client": {
       "fps_target": 60,
       "figures_max": 1500
+    },
+    "terrain": {
+      "base_method": 1,
+      "base_fractal_dimension": 2.0,
+      "base_height_scale": 0.25,
+      "base_desired_height": 150,
+      "base_lowland_smoothing": 2.0,
+      "guide_rim": 70,
+      "guide_edge": 80,
+      "guide_center": 90,
+      "hill_method": 0,
+      "hill_fractal_dimension": 1.2,
+      "hill_height_scale": 1.0,
+      "hill_lowland_smoothing": 1.0,
+      "hill_desired_min": 260,
+      "hill_desired_max": 340,
+      "hill_inset": 300
+    },
+    "unit": {
+      "leader_mesh_radius": 6.7252
+    },
+    "nav": {
+      "node_spacing": 320
+    },
+    "sandbox": {
+      "side_workers": 200,
+      "side_spread": 60,
+      "steward_site": 0,
+      "ai_site": 3
+    },
+    "perf": {
+      "synthetic_figures": 2000,
+      "synthetic_gap": 200
     }
   },
   "ref": {
     "sim": {
-      "tick_period": 0.1
+      "tick_period": 0.1,
+      "update_slices": 10,
+      "container": {
+        "ungrouped_step": 100,
+        "laser_bolt_step": 100,
+        "effect_step": 100,
+        "orb_presize": 100,
+        "orb_step": 100
+      },
+      "spawn": {
+        "default_front": {
+          "x": 1,
+          "y": 0,
+          "z": 0
+        },
+        "search_attempts": 10,
+        "edge_margin": 20,
+        "orb_lift": 1
+      },
+      "physics": {
+        "sea_level": 0,
+        "gravity": 15,
+        "land_threshold": 0.1,
+        "land_offset": 0.1,
+        "thrown_gravity": 98,
+        "restitution": 0.85
+      },
+      "walk": {
+        "min_normal_y": 0.8,
+        "step": 20,
+        "wet_limit": 40,
+        "max_climb_gradient": 2.4,
+        "cost_step": 40,
+        "cost_wet_limit": 40,
+        "uphill_factor": 1.5
+      },
+      "actor_grid": {
+        "cell_size": 32,
+        "extra_cells": 1,
+        "initial_cell_capacity": 0,
+        "first_cell_capacity": 2,
+        "cell_growth_factor": 2,
+        "footprint_factor": 0.5
+      },
+      "grid_cache": {
+        "reuse_fraction": 0.5,
+        "max_age": 10,
+        "evict_slice": 7
+      },
+      "obstacle_grid": {
+        "cell_size": 32,
+        "cell_test_fraction": 0.5
+      },
+      "water": {
+        "drown_after": 100,
+        "drown_damage": 500,
+        "swim_speed": 5.0,
+        "bob_amplitude": 1,
+        "bob_rate": 3,
+        "bob_depth": 4,
+        "shore_height": 1.0,
+        "shore_search_radius": 50,
+        "shore_search_step": 1
+      },
+      "push": {
+        "contact_radius": 1.0,
+        "step": 4.0,
+        "clearance_radius": 2.0
+      },
+      "route": {
+        "link_range": 600,
+        "corridor_offset": 40,
+        "max_points": 100,
+        "smoothing_step": 50,
+        "merge_distance": 50
+      },
+      "explosion": {
+        "actor_reach": 2,
+        "actor_gain": 2
+      },
+      "command": {
+        "leader_toggle_offset": 1
+      },
+      "team": {
+        "formation_size_upgrade": 90
+      }
+    },
+    "unit": {
+      "health_max": 255,
+      "worker": {
+        "health": 50,
+        "speed": 20,
+        "rate": 3,
+        "formation_explosive_factor": 0.6,
+        "shore_height": 1,
+        "idle_speed_factor": 0.2,
+        "arrival_slow_radius": 10,
+        "snap_distance": 1,
+        "turn_blend": 0.4,
+        "slope_divisor": 3,
+        "slope_min": 0.3,
+        "slope_max": 2.0,
+        "retarget_ticks": {
+          "base": 11,
+          "spread_seconds": 1.0
+        },
+        "order_disc_radius": 20,
+        "wander_chance": 0.7,
+        "wander_distance": 20,
+        "drown_damage": 999,
+        "corpse_slide": 0.9,
+        "shore_search_start": 40,
+        "shore_search_end": 95,
+        "shore_search_step": 5,
+        "structure_push_range": 30,
+        "structure_push_step": 4,
+        "structure_clear_radius": 2,
+        "route_reach_radius": 20,
+        "route_jitter_radius": 40,
+        "threat_range": 90,
+        "threat_range_relax": 0.1,
+        "projectile_threat_range": 60,
+        "scared_enemy_count": 5,
+        "order_cancel_radius": 50,
+        "retreat_range": 100,
+        "retreat_height_diff": -25,
+        "combat_step": 30,
+        "standoff_base": 20,
+        "standoff_spread": 20,
+        "fear_range": 200,
+        "aim_height": 2,
+        "attack_divisor": 10,
+        "grenade_first_ticks": {
+          "base": 1,
+          "spread_seconds": 5
+        },
+        "grenade_interval_ticks": {
+          "base": 121,
+          "spread_seconds": 8
+        },
+        "grenade_min_distance": 75,
+        "grenade_normal_min": 0.7,
+        "grenade_height_diff_min": -50,
+        "grenade_crowd_radius": 50,
+        "grenade_crowd_enemies": 5,
+        "grenade_crowd_friends": 2,
+        "burn_wander": 100,
+        "burn_damage": 2,
+        "burn_chance": {
+          "threshold": 2.0,
+          "roll_range": 10
+        },
+        "follow_retarget_ticks": 51,
+        "follow_disc_radius": 40,
+        "leader_follow_range": 150,
+        "leader_signpost_range": 100,
+        "formation_search_offset": 0.66,
+        "volley_size_cap": 90,
+        "volley_divisor": 4
+      },
+      "leader": {
+        "health": 255,
+        "speed": 30,
+        "rate": 3,
+        "slope_divisor": 3,
+        "slope_min": 0.1,
+        "slope_max": 2.0,
+        "arrival_slow_radius": 10,
+        "arrival_distance": 10,
+        "turn_walk": 0.6,
+        "radius_factor": 2,
+        "corpse_sink_per_tick": 20,
+        "formation_speed_factor": 0.4,
+        "formation_arrival_distance": 3,
+        "turn_formation": 0.06,
+        "turn_pre_move": 0.06,
+        "turn_order": 0.3,
+        "turn_order_formation_factor": 0.2,
+        "turn_bot": 0.06,
+        "marker_period": 20,
+        "marker_lift": 2,
+        "route_regen_distance": 50,
+        "pre_turn_tolerance": 0.1,
+        "formation_face_distance": 100,
+        "follow_face_tolerance": 0.99,
+        "formation_toggle_radius": 50,
+        "gap_rule_fraction": 0.5,
+        "slot_timer_ticks": 51,
+        "slot_spacing": 6,
+        "first_rank_offset": 12,
+        "lateral_offset_factor": 3,
+        "row_size_table": {
+          "small_max": 24,
+          "small_row": 6,
+          "medium_max": 47,
+          "medium_row": 9,
+          "large_max": 89,
+          "large_row": 12,
+          "huge_max": 199,
+          "huge_row": 15,
+          "largest_row": 25
+        },
+        "marker_reach": 10,
+        "marker_speed_min": 30,
+        "marker_speed_max": 100,
+        "trail_period": 2,
+        "marker_fade_ticks": 10,
+        "trail_lift": 1,
+        "trail_life_ticks": 10,
+        "bot_think_ticks": 11,
+        "bot_waypoint_think_ticks": 101,
+        "bot_reorder_distance": 60,
+        "bot_order_offset_base": 20,
+        "bot_order_offset_spread": 20,
+        "bot_formation_ahead": 50,
+        "bot_enemy_count": 10,
+        "bot_enemy_range": 270
+      },
+      "corpse": {
+        "fade_start": 100,
+        "fade_ground_per_tick": 4,
+        "fade_air_per_tick": 2
+      },
+      "attack": {
+        "aim_jitter": 15,
+        "muzzle_height": 3,
+        "laser_speed": 150
+      },
+      "essence_orb": {
+        "wobble_phase_range": 10,
+        "birth_hover_max": 0.5,
+        "birth_pull_base": 10,
+        "birth_pull_range": 10,
+        "birth_pull_scale_height": 100,
+        "ascent_rise_min": 2,
+        "ascent_rise_range": 2,
+        "drag_per_tick": 0.9,
+        "phase_step": 0.1,
+        "wobble_rate_clamp": {
+          "min": 0,
+          "max": 2
+        },
+        "push_radius": 5,
+        "push_gain": 0.1,
+        "push_speed_max": 10,
+        "push_stop_speed": 1,
+        "floor_height": 2
+      }
+    },
+    "weapon": {
+      "laser": {
+        "damage_base": 20,
+        "damage_spread": 20,
+        "hit_radius": 5,
+        "hit_height": 5,
+        "push_spread": 10,
+        "push_lift_base": 7,
+        "push_lift_spread": 5,
+        "life_ticks": 6
+      },
+      "throwing": {
+        "force_factor": 8,
+        "max_force": 110,
+        "front_lift": 1
+      },
+      "thrown": {
+        "initial_force": 1.0,
+        "rest_force": 0.1,
+        "bounce_clearance": 1,
+        "bounce_force_factor": 0.75
+      },
+      "grenade": {
+        "fuse_ticks": 30,
+        "power": 25,
+        "range_factor": 0.5,
+        "damage_factor": 2
+      },
+      "shockwave": {
+        "size_divisor": 20,
+        "start_radius": 35,
+        "growth": 40,
+        "band": 10,
+        "damage": 40,
+        "ignite_draw_range": 4,
+        "ignite_threshold": 0.1,
+        "push_lift": 3,
+        "push": 25
+      }
+    },
+    "econ": {
+      "orb": {
+        "death_velocity_factor": 0.5,
+        "birth_ticks": 61,
+        "birth_max_height_wu": 10,
+        "floating_ticks": {
+          "center_seconds": 40,
+          "spread_seconds": 20
+        },
+        "ascent_ticks": 901,
+        "wobble_rate_range": 2,
+        "wobble_offset_range": 1
+      }
+    },
+    "ctrl": {
+      "leader": {
+        "face_pointer_speed": 5
+      }
+    },
+    "bot": {
+      "link": {
+        "range": 600,
+        "cull_ratio": 0.8
+      },
+      "node": {
+        "recount_ticks": 20,
+        "recount_phase": 20,
+        "range": 200,
+        "defend_enemy_threshold": 30,
+        "defend_leader_radius": 300
+      },
+      "cycle": {
+        "period_easy": 200,
+        "phase_easy": 200
+      },
+      "recall": {
+        "share": 0.02,
+        "min_picks": 1,
+        "distance": 70
+      },
+      "order": {
+        "offset_base": 20,
+        "offset_spread": 20
+      },
+      "dispatch": {
+        "idle_limit": 10,
+        "calm_ratio": 0.33,
+        "send_factor": 1.5,
+        "send_min": 0.6,
+        "send_max": 1.0,
+        "send_all": 1.1,
+        "gather_radius": 150
+      },
+      "select": {
+        "random_tries": 100
+      },
+      "leader": {
+        "formation_friends": 70,
+        "formation_leader_radius": 300,
+        "formation_candidate_radius": 100
+      }
+    }
+  },
+  "wld": {
+    "region": {
+      "side": 5120,
+      "channel_width": 256
+    },
+    "site": {
+      "spacing": 2080,
+      "valley_offset": 64,
+      "valley_rotation": 3,
+      "core_radius": 400,
+      "height_min": 20,
+      "height_max": 120,
+      "rim_step_max": 16,
+      "core_min_normal_y": 0.95,
+      "water_clearance": 600
+    },
+    "terrain": {
+      "cell_size": 16,
+      "chunk_side": 1024,
+      "outside_height": -10,
+      "hills_per_region": 2,
+      "hill_side": 640,
+      "peak_height_max": 400,
+      "core_feather": 320,
+      "center_half_size": 120,
+      "center_feather": 200,
+      "rim_samples": 16,
+      "tiles_per_region_max": 16,
+      "flatten_per_region_max": 32
+    },
+    "generation": {
+      "max_attempts": 8
+    },
+    "territory": {
+      "max_radius": 1400
+    },
+    "travel": {
+      "valley_path_factor": 1.05
     }
   }
 }

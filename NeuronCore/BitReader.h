@@ -34,6 +34,13 @@ public:
   [[nodiscard]] bool Enter(std::uint32_t _maxDepth) noexcept;
   void Leave() noexcept;
 
+  // A codec's own bound on a field it has read, such as a finite real or a nonzero id (ADR-087 item 2): fails the
+  // reader as a read beyond a stated limit does.
+  void Fail() noexcept
+  {
+    m_failed = true;
+  }
+
   // The end of a message: no read failed, nothing but zero padding is left, and every nested value is closed.
   [[nodiscard]] bool Finish() noexcept;
   [[nodiscard]] bool Failed() const noexcept

@@ -29,17 +29,21 @@ IntegratedServer::IntegratedServer(const Desc& _desc)
 
 IntegratedServer::~IntegratedServer() = default;
 
-std::expected<void, std::vector<Neuron::ContentDiagnostic>> IntegratedServer::Start()
+std::expected<void, Neuron::AssetError> IntegratedServer::Start()
 {
   ENGINE_CHECK(m_parts->host == nullptr, "the integrated server starts once");
-  // MVP-099: the tuning values come from data when the server starts, never from code.
-  Neuron::RecordResult<TuningMvp> tuning = LoadTuningMvp(m_desc.contentRoot);
+  ENGINE_CHECK(m_desc.content != nullptr, "the integrated server loads its tuning from mounted content");
+  // MVP-099: the tuning values come from data when the server starts, never from code; the content build cooked them
+  // (ADR-108).
+  std::expected<TuningMvp, Neuron::AssetError> tuning = LoadTuningMvp(*m_desc.content);
   if (!tuning)
   {
     return std::unexpected(std::move(tuning.error()));
   }
   WorldServer::Desc world;
   world.tuning = *tuning;
+  world.worldSeed = m_desc.worldSeed;
+  world.sandbox = m_desc.sandbox;
   m_parts->world = std::make_unique<WorldServer>(world);
   Neuron::ServerHost::Desc host;
   host.clock = m_desc.clock;

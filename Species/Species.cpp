@@ -1,28 +1,31 @@
 #include "pch.h"
 
 #include "AppWindow.h"
+#include "AssetError.h"
 #include "ClientSession.h"
-#include "ContentDiagnostic.h"
 #include "Development.h"
 #include "DisplayAttempt.h"
 #include "FatalPath.h"
-#include "Files.h"
 #include "FloatEnvironment.h"
 #include "FrameRenderer.h"
 #include "IntegratedServer.h"
 #include "Log.h"
+#include "LooseContent.h"
 #include "PlatformClock.h"
 #include "PlatformLogSink.h"
 #include "PlatformMessage.h"
 #include "PlatformThread.h"
 #include "RunId.h"
+#include "Sha256.h"
+#include "StartupOptions.h"
+#include "TextEncoding.h"
+#include "Tuning.h"
 
 #include <array>
 #include <cstdint>
 #include <expected>
 #include <filesystem>
 #include <memory>
-#include <optional>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -267,33 +270,52 @@ int Run()
   {
     Presentation presentation = CreatePresentation(clock);
 
-    // The integrated server is a child of this root (ADR-083 item 2): it runs on its own tick thread until the session
-    // ends, and stopping it freezes the world (O4).
-    // The tuning record is read from the content root when the server starts (MVP-099; ADR-098's interim root).
-    const std::optional<std::filesystem::path> contentRoot = Neuron::FindInterimContentRoot();
-    if (!contentRoot)
+    // Logs why the content cannot be loaded and ends with its message (AST-102); EndWithMessage does not return.
+    const auto endWithError = [](const Neuron::AssetError& _error)
     {
-      Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "no GameData folder beside the executable or above it");
-      Neuron::EndWithMessage("ui.error.content_missing", {});
+      Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "{}", Neuron::FormatAssetError(_error));
+      Neuron::EndWithMessage(_error.fault == Neuron::AssetFault::Missing ? "ui.error.content_missing" : "ui.error.content_damaged", {});
+    };
+    // The loose-content folder that the solution build's content build wrote beside the executable, or the one that
+    // --loose-content names in a Debug build, mounted once for the client and its integrated server (AST-105, ADR-108).
+    const Neuron::StartupOptions options = Neuron::ParseCommandLine();
+    for (const std::string& ignored : options.ignoredArguments)
+    {
+      Neuron::Log(Neuron::LogCategory::Platform, Neuron::LogLevel::Warning, "the start-up argument {} is unknown and ignored", ignored);
     }
+    const std::expected<Neuron::LooseContent, Neuron::AssetError> content = Neuron::LooseContent::Mount(Neuron::ContentDirectory(options));
+    if (!content)
+    {
+      endWithError(content.error());
+    }
+    Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Info,
+                "loose content of {} entries mounted from {}; simulation content identity {}, reported as modified (AST-105)",
+                content->Entries().size(), Neuron::ToUtf8(content->Folder().wstring()), Neuron::ShortHex(content->Identity()));
+    // The client loads its own copy of the record: it builds the world's terrain from the server's seed with its own
+    // data, as a client of a dedicated server does, and refuses a world whose digest differs (MVP-011).
+    const std::expected<TuningMvp, Neuron::AssetError> clientTuning = LoadTuningMvp(*content);
+    if (!clientTuning)
+    {
+      endWithError(clientTuning.error());
+    }
+    // The integrated server is a child of this root (ADR-083 item 2): it runs on its own tick thread until the session
+    // ends, and stopping it freezes the world (O4). It loads the tuning record when it starts (MVP-099).
     IntegratedServer::Desc serverDesc;
     serverDesc.clock = &clock;
-    serverDesc.contentRoot = contentRoot.value_or(std::filesystem::path{});
+    serverDesc.content = &*content;
+    // M1 plan §6: the battle sandbox, from the seed of --seed or one the server draws (MVP-005).
+    serverDesc.worldSeed = options.worldSeed;
+    serverDesc.sandbox = true;
     IntegratedServer server(serverDesc);
     if (const auto started = server.Start(); !started)
     {
-      bool missing = false;
-      for (const Neuron::ContentDiagnostic& diagnostic : started.error())
-      {
-        Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "{}", Neuron::FormatDiagnostic(diagnostic));
-        missing = missing || diagnostic.diagnosticClass == Neuron::DiagnosticClass::MissingRecord;
-      }
-      Neuron::EndWithMessage(missing ? "ui.error.content_missing" : "ui.error.content_damaged", {});
+      endWithError(started.error());
     }
     ClientSession::Desc sessionDesc;
     sessionDesc.transport = server.Connect();
     sessionDesc.showTitle = [&window = *presentation.window](std::string_view _title) { window.SetTitle(_title); };
     sessionDesc.productName = std::string(PRODUCT_NAME);
+    sessionDesc.tuning = &*clientTuning;
     ClientSession session(std::move(sessionDesc));
 
     presentation.window->Show();

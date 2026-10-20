@@ -113,7 +113,7 @@ A handle found in the obstacle cell of a point off the map is resolved like ever
 
 **R-UNIT-362** (MUST) Every damage type affects a Trooper alike. A Trooper whose health reaches 0 or below dies: its health becomes the corpse fade value `ref.unit.corpse.fade_start` (100) and it fades by the base corpse rule ([Units](README.md) R-UNIT-034), by `ref.unit.corpse.fade_ground_per_tick` (4) health per tick on the ground, so in 100 ÷ 4 = 25 ticks, and by `ref.unit.corpse.fade_air_per_tick` (2) in the air. It raises `trooper.die`, and its mesh shatters into debris ([animation and VFX](../../architecture/components/animation_and_vfx/README.md)). A Trooper releases **no** Essence orb, so a Strike team adds nothing to the essence economy ([essence_orbs.md](essence_orbs.md) R-UNIT-304).
 
-**R-UNIT-363** (MUST) A Trooper is not team-coloured. Its mesh keeps its authored colours, a sand colour `ref.unit.trooper.colour_primary` (228, 214, 153) and a rust colour `ref.unit.trooper.colour_secondary` (177, 88, 26) ([Units](README.md) R-UNIT-046), and carries no team tint weight (ADR-020). A Strike team's team is shown only by the selection interface and the world markers ([controls, camera and commands](../06_controls_camera_and_commands/README.md)).
+**R-UNIT-363** (MUST) A Trooper is not team-coloured. Its mesh keeps its authored colours, a sand colour `ref.unit.trooper.color_primary` (228, 214, 153) and a rust colour `ref.unit.trooper.color_secondary` (177, 88, 26) ([Units](README.md) R-UNIT-046), and carries no team tint weight (ADR-020). A Strike team's team is shown only by the selection interface and the world markers ([controls, camera and commands](../06_controls_camera_and_commands/README.md)).
 
 **R-UNIT-364** (MUST) A Trooper is drawn as a lit mesh. While damaged it flickers by the base damaged-flicker rule, which uses the presentation generator and the presentation clock ([Units](README.md), DEC-007).
 
@@ -221,7 +221,7 @@ Keys cited from other documents (their values are defined there):
 | [tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) | `ref.sim.tick_period` | R-UNIT-352 |
 | [space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) | `ref.sim.physics.sea_level`, `ref.sim.water.drown_after` | R-UNIT-349 |
 | [Units](README.md) §4.1 (the actor stat table) | `ref.unit.trooper.health`, `ref.unit.trooper.speed`, `ref.unit.trooper.rate`, `ref.unit.trooper.actor_rate` | R-UNIT-340, R-UNIT-341, R-UNIT-347, R-UNIT-352 |
-| [Units](README.md) §4.2 | `ref.unit.trooper.slope_divisor`, `ref.unit.trooper.slope_min`, `ref.unit.trooper.slope_max`, `ref.unit.trooper.slope_block_normal_y`, `ref.unit.trooper.colour_primary`, `ref.unit.trooper.colour_secondary`, `ref.unit.corpse.fade_start`, `ref.unit.corpse.fade_ground_per_tick`, `ref.unit.corpse.fade_air_per_tick` | R-UNIT-347, R-UNIT-362, R-UNIT-363 |
+| [Units](README.md) §4.2 | `ref.unit.trooper.slope_divisor`, `ref.unit.trooper.slope_min`, `ref.unit.trooper.slope_max`, `ref.unit.trooper.slope_block_normal_y`, `ref.unit.trooper.color_primary`, `ref.unit.trooper.color_secondary`, `ref.unit.corpse.fade_start`, `ref.unit.corpse.fade_ground_per_tick`, `ref.unit.corpse.fade_air_per_tick` | R-UNIT-347, R-UNIT-362, R-UNIT-363 |
 
 ## 5 Edge cases and interactions
 

@@ -45,7 +45,6 @@ RULES = {
 
 NOT_YET_CHECKED = [
   'BLD-076: an embedded map hash (no map code exists yet)',
-  'DAT-277: a mesh socket looked up by name text (no mesh code exists yet)',
   'AEN-025, AEN-003: allocator, lock, logger or voice calls in an audio callback; XAudio2 includes outside the voice '
   'back-end (no audio code exists yet)',
 ]
@@ -180,6 +179,7 @@ R2_AFFIX = re.compile(r'^(?:[ICSE][A-Z][a-z]|Base[A-Z]|Abstract[A-Z])|(?:Base|Ab
 R11_BRITISH = ('colour', 'initialis', 'serialis', 'normalis', 'quantis', 'synchronis', 'behaviour', 'neighbour',
                'centre', 'grey', 'cancell')
 IDENTIFIER = re.compile(r'[A-Za-z_]\w*')
+SOCKET_NAME_TEXT = re.compile(r'"socket_', re.IGNORECASE)
 REQUIREMENT_ATTRIBUTE = re.compile(r'TEST_METHOD_ATTRIBUTE\s*\(\s*L"Requirement"\s*,\s*L"([^"]*)"\s*\)')
 MODULE_LINE = re.compile(r'^\s*(?:export\s+)?(?:import\s+(?:std\b|<)|module\b)', re.MULTILINE)
 
@@ -751,6 +751,12 @@ def rule_14(tree):
         if any(re.fullmatch(name + r'(?:\.lib)?', library) for name in PRESENTATION_LIBRARIES):
           line = without_comments.count('\n', 0, m.start()) + 1
           yield f'{path}:{line}', f'links {m.group(1)} outside the client libraries (ADR-001, BLD-045)'
+    # DAT-277: code addresses a socket by its kind and index. Only the content build's importer reads socket names,
+    # because a CMO file spells its sockets as bones named socket_<kind> (ADR-019, AST-038).
+    if not path.startswith('Tools/'):
+      for m in SOCKET_NAME_TEXT.finditer(without_comments):
+        line = without_comments.count('\n', 0, m.start()) + 1
+        yield f'{path}:{line}', 'names a socket by its text; code addresses a socket by its kind and index (DAT-277)'
     for m in REQUIREMENT_ATTRIBUTE.finditer(without_comments):
       if m.group(1) not in requirements:
         line = without_comments.count('\n', 0, m.start()) + 1
@@ -955,6 +961,8 @@ FIXTURES = [
    lambda r: write(r, 'GameClient/pch.h', '\n#include "SimRng.h"\n', append=True)),
   (14, 'a mutable namespace-scope variable in the simulation (R-SIM-019)',
    lambda r: write(r, 'GameLogic/pch.h', '\ninline int g_ticksSeen = 0;\n', append=True)),
+  (14, 'a socket looked up by its name text (DAT-277)',
+   lambda r: write(r, 'NeuronClient/pch.h', '\ninline const char* g_flagSocket = "socket_flag";\n', append=True)),
   (14, 'a Windows header included by the server library (ADR-083 item 1)',
    lambda r: write(r, 'NeuronServer/pch.h', '\n#include "WindowsHeaders.h"\n', append=True)),
   (14, 'a Direct3D library linked by a pragma outside the client libraries (BLD-045)',

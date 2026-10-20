@@ -1,17 +1,21 @@
 #include "pch.h"
 
+#include "BitWriter.h"
+#include "CommandQueue.h"
 #include "InProcessTransport.h"
 #include "ServerHost.h"
 #include "Snapshot.h"
 #include "StateHash.h"
 #include "TestSupport.h"
 #include "WorkerPool.h"
+#include "RegionTerrain.h"
 #include "WorldServer.h"
 #include "WorldSimulation.h"
 #include "WorldSnapshot.h"
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <thread>
 #include <vector>
@@ -26,11 +30,13 @@ namespace
 
 constexpr Neuron::SipHashKey SNAPSHOT_TEST_KEY{0x0f0f0f0f0f0f0f0f, 0x7777777777777777};
 constexpr Neuron::Nanoseconds SNAPSHOT_TEST_TICK_PERIOD{100'000'000}; // `ref.sim.tick_period`
+constexpr std::uint64_t SNAPSHOT_TEST_SEED = 99;
 
 // A world of three regions after 25 ticks, with ids issued by the world owner, so its state differs from a new world's.
 std::unique_ptr<Species::WorldSimulation> SteppedWorld(Neuron::WorkerPool& _pool)
 {
-  auto world = std::make_unique<Species::WorldSimulation>(Species::WorldSimulation::Desc{SNAPSHOT_TEST_KEY, 0, 3});
+  auto world = std::make_unique<Species::WorldSimulation>(
+    Species::WorldSimulation::Desc{SNAPSHOT_TEST_KEY, 0, 3, &CommittedTuning(), SNAPSHOT_TEST_SEED});
   for (std::uint64_t tick = 0; tick < 25; ++tick)
   {
     world->Step(tick, _pool);
@@ -52,7 +58,7 @@ Neuron::SnapshotContents ThroughTheFile(const Neuron::SnapshotContents& _content
 
 bool RefusedAs(const Neuron::SnapshotContents& _contents, Neuron::SnapshotError _error)
 {
-  const auto restored = Species::RestoreWorld(_contents);
+  const auto restored = Species::RestoreWorld(_contents, CommittedTuning());
   return !restored.has_value() && restored.error() == _error;
 }
 
@@ -109,12 +115,13 @@ public:
     const Neuron::SnapshotContents contents = ThroughTheFile(Species::SnapshotOf(*saved));
     ExpectEqual(Species::WORLD_STATE_VERSION, contents.stateVersion, L"the current state version");
     ExpectEqual(25, static_cast<std::int64_t>(contents.tick), L"the first tick the restored world steps");
-    auto restored = Species::RestoreWorld(contents);
+    auto restored = Species::RestoreWorld(contents, CommittedTuning());
     Assert::IsTrue(restored.has_value(), L"the world restores");
     Species::WorldSimulation& world = **restored;
     Assert::IsTrue(world.SimulationKey().low == SNAPSHOT_TEST_KEY.low && world.SimulationKey().high == SNAPSHOT_TEST_KEY.high,
                    L"the simulation key is kept");
     ExpectEqual(3, static_cast<std::int64_t>(world.RegionCount()), L"the regions");
+    ExpectEqual(static_cast<std::int64_t>(SNAPSHOT_TEST_SEED), static_cast<std::int64_t>(world.WorldSeed()), L"the world seed is kept");
     Assert::IsTrue(Species::HashWorld(world).world == Species::HashWorld(*saved).world, L"the same state");
     for (std::uint64_t tick = 25; tick < 35; ++tick)
     {
@@ -123,6 +130,67 @@ public:
     }
     Assert::IsTrue(Species::HashWorld(world).world == Species::HashWorld(*saved).world, L"the same ticks after it");
     Assert::IsTrue(world.Ids().Issue() == saved->Ids().Issue(), L"the same next id");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp095AVersionOneWorldMigratesToOneWithNoTeams)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-095")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp095AVersionOneWorldMigratesToOneWithNoTeams)
+  {
+    // M0's layout (ADR-099): the key, the region count, the world owner's tick, id counter and empty queue, then each
+    // region's index, tick, id counter and empty queue. It restores as the same world with no teams in any region.
+    constexpr std::uint64_t TICK = 40;
+    Neuron::BitWriter state;
+    state.WriteBits(SNAPSHOT_TEST_KEY.low, 64);
+    state.WriteBits(SNAPSHOT_TEST_KEY.high, 64);
+    state.WriteBits(2, 16);
+    state.WriteBits(TICK, 64);
+    state.WriteBits(4, 64);
+    state.WriteBounded(0, Neuron::COMMAND_QUEUE_STATE_MAX);
+    for (std::uint16_t region = 0; region < 2; ++region)
+    {
+      state.WriteBits(region, 16);
+      state.WriteBits(TICK, 64);
+      state.WriteBits(1, 64);
+      state.WriteBounded(0, Neuron::COMMAND_QUEUE_STATE_MAX);
+    }
+    auto restored = Species::RestoreWorld(Neuron::SnapshotContents{1, TICK, state.Take()}, CommittedTuning());
+    Assert::IsTrue(restored.has_value(), L"a version-1 world restores");
+    Species::WorldSimulation fresh({SNAPSHOT_TEST_KEY, TICK, 2, &CommittedTuning()});
+    for (int n = 0; n < 3; ++n)
+    {
+      static_cast<void>(fresh.Ids().Issue());
+    }
+    ExpectEqual(0, static_cast<std::int64_t>((*restored)->Region(1).TeamCount()), L"no teams");
+    ExpectEqual(0, static_cast<std::int64_t>((*restored)->WorldSeed()), L"seed 0");
+    Assert::IsTrue(Species::HashWorld(**restored).world == Species::HashWorld(fresh).world, L"the world it was, in today's layout");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp095AVersionTwoWorldMigratesToSeedZero)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-095")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp095AVersionTwoWorldMigratesToSeedZero)
+  {
+    // M1 task T2's layout: version 1's with each region's team slots after its queue, here none. It restores as the
+    // same world with seed 0, from which the world server builds its terrain (ADR-102).
+    constexpr std::uint64_t TICK = 12;
+    Neuron::BitWriter state;
+    state.WriteBits(SNAPSHOT_TEST_KEY.low, 64);
+    state.WriteBits(SNAPSHOT_TEST_KEY.high, 64);
+    state.WriteBits(1, 16);
+    state.WriteBits(TICK, 64);
+    state.WriteBits(1, 64);
+    state.WriteBounded(0, Neuron::COMMAND_QUEUE_STATE_MAX);
+    state.WriteBits(0, 16);
+    state.WriteBits(TICK, 64);
+    state.WriteBits(1, 64);
+    state.WriteBounded(0, Neuron::COMMAND_QUEUE_STATE_MAX);
+    state.WriteBounded(0, Species::RegionSimulation::TEAM_SLOTS);
+    auto restored = Species::RestoreWorld(Neuron::SnapshotContents{2, TICK, state.Take()}, CommittedTuning());
+    Assert::IsTrue(restored.has_value(), L"a version-2 world restores");
+    ExpectEqual(0, static_cast<std::int64_t>((*restored)->WorldSeed()), L"seed 0");
+    const Species::WorldSimulation fresh({SNAPSHOT_TEST_KEY, TICK, 1, &CommittedTuning()});
+    Assert::IsTrue(Species::HashWorld(**restored).world == Species::HashWorld(fresh).world, L"the world it was, in today's layout");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp095AStateVersionItCannotMigrateIsRefused)
@@ -146,11 +214,32 @@ public:
   {
     Neuron::WorkerPool pool(0);
     const Neuron::SnapshotContents contents = Species::SnapshotOf(*SteppedWorld(pool));
-    for (std::size_t length = 0; length < contents.state.size(); ++length)
+    // Every length short of the whole, in four interleaved shares that run at once; each share keeps the lengths that
+    // were not refused.
+    constexpr std::size_t SHARES = 4;
+    std::vector<std::vector<std::size_t>> accepted(SHARES);
+    std::vector<std::function<void()>> jobs;
+    jobs.reserve(SHARES);
+    for (std::size_t share = 0; share < SHARES; ++share)
     {
-      Neuron::SnapshotContents shorter = contents;
-      shorter.state.resize(length);
-      Assert::IsTrue(RefusedAs(shorter, Neuron::SnapshotError::MalformedState), L"a state cut short");
+      jobs.emplace_back(
+        [&contents, &accepted, share]
+        {
+          for (std::size_t length = share; length < contents.state.size(); length += SHARES)
+          {
+            Neuron::SnapshotContents shorter = contents;
+            shorter.state.resize(length);
+            if (!RefusedAs(shorter, Neuron::SnapshotError::MalformedState))
+            {
+              accepted[share].push_back(length);
+            }
+          }
+        });
+    }
+    RunConcurrently(jobs);
+    for (const std::vector<std::size_t>& lengths : accepted)
+    {
+      Assert::IsTrue(lengths.empty(), L"a state cut short");
     }
     Neuron::SnapshotContents longer = contents;
     longer.state.push_back(std::byte{0xff});
@@ -169,6 +258,8 @@ public:
     // with the same key, and runs on from there.
     const TemporaryFolder folder;
     Species::WorldServer::Desc desc;
+    desc.tuning = CommittedTuning();
+    desc.worldSeed = 5;
     desc.snapshotFolder = folder.Path() / L"saves";
     Species::WorldServer first(desc);
     RunAndFreeze(first, 5);
@@ -185,6 +276,8 @@ public:
                      second.Simulation()->SimulationKey().high == key.high,
                    L"the same world's key");
     Assert::IsTrue(Species::HashWorld(*second.Simulation()).world == hash, L"the same state");
+    Assert::IsTrue(second.Terrain() != nullptr && second.Terrain()->seed == 5 && second.Terrain()->digest == first.Terrain()->digest,
+                   L"the same terrain, built again from the saved seed");
 
     Species::WorldServer third(desc);
     RunAndFreeze(third, 3);
@@ -199,6 +292,7 @@ public:
   {
     const TemporaryFolder folder;
     Species::WorldServer::Desc desc;
+    desc.tuning = CommittedTuning();
     desc.snapshotFolder = folder.Path() / L"saves";
     WriteText(desc.snapshotFolder / L"world-00000000000000000040.snapshot", "not a snapshot");
     Species::WorldServer world(desc);

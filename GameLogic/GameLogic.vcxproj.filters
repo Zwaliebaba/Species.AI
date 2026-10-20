@@ -10,18 +10,87 @@
     <Filter Include="Simulation">
       <UniqueIdentifier>{61E375F3-93A5-57F8-9423-76B544D53EA3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Space">
+      <UniqueIdentifier>{8E04B4A8-6D41-5023-AEA0-AC19FAC18860}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ActorGrid.h">
+      <Filter>Space</Filter>
+    </ClInclude>
+    <ClInclude Include="ActorGridCache.h">
+      <Filter>Space</Filter>
+    </ClInclude>
+    <ClInclude Include="AiController.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="BotNavigation.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="Combat.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="CommandJournal.h">
+      <Filter>Server</Filter>
+    </ClInclude>
+    <ClInclude Include="DrawPurpose.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="EssenceOrb.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="Figure.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="FigureAdvance.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="Formation.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="IntegratedServer.h">
       <Filter>Server</Filter>
     </ClInclude>
+    <ClInclude Include="LeaderOrders.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="Movement.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="ObstacleGrid.h">
+      <Filter>Space</Filter>
+    </ClInclude>
+    <ClInclude Include="OrderMarkers.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="RegionCommands.h">
+      <Filter>Server</Filter>
+    </ClInclude>
     <ClInclude Include="RegionSimulation.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="RouteStore.h">
+      <Filter>Space</Filter>
+    </ClInclude>
+    <ClInclude Include="Sandbox.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="SlicedPool.h">
       <Filter>Simulation</Filter>
     </ClInclude>
     <ClInclude Include="StableIdCounter.h">
       <Filter>Simulation</Filter>
     </ClInclude>
     <ClInclude Include="StateHash.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="StateValues.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="TickDraws.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="Weapons.h">
       <Filter>Simulation</Filter>
     </ClInclude>
     <ClInclude Include="WorldServer.h">
@@ -38,16 +107,73 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ActorGrid.cpp">
+      <Filter>Space</Filter>
+    </ClCompile>
+    <ClCompile Include="ActorGridCache.cpp">
+      <Filter>Space</Filter>
+    </ClCompile>
+    <ClCompile Include="AiController.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="BotNavigation.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Combat.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="CommandJournal.cpp">
+      <Filter>Server</Filter>
+    </ClCompile>
+    <ClCompile Include="EssenceOrb.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Figure.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="FigureAdvance.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Formation.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="IntegratedServer.cpp">
       <Filter>Server</Filter>
     </ClCompile>
+    <ClCompile Include="LeaderOrders.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Movement.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="ObstacleGrid.cpp">
+      <Filter>Space</Filter>
+    </ClCompile>
+    <ClCompile Include="OrderMarkers.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="RegionCommands.cpp">
+      <Filter>Server</Filter>
+    </ClCompile>
     <ClCompile Include="RegionSimulation.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="RouteStore.cpp">
+      <Filter>Space</Filter>
+    </ClCompile>
+    <ClCompile Include="Sandbox.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="StableIdCounter.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="StateHash.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="TickDraws.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Weapons.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="WorldServer.cpp">

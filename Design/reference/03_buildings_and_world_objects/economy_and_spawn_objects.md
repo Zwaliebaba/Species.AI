@@ -86,7 +86,7 @@ Table 2.1-A Spawn networks of the reference maps (one row per map).
 
 **R-BLDG-112** (MUST) Exactly the Spawn Node, the Relay and the Source Node are spawn-network structures.
 
-**R-BLDG-113** (MUST) The translucent pass of a spawn-network structure draws each edge as a textured beam of `fx.beam_short` between the two `essence_link` sockets, `ref.bldg.spawn_network.beam_inner_width_wu` (1 wu) wide inside and `ref.bldg.spawn_network.beam_outer_width_wu` (3 wu) outside, and each transit orb as a diamond, `ref.bldg.spawn_network.orb_inner_size_wu` (2 wu) inside and `ref.bldg.spawn_network.orb_outer_size_wu` (6 wu) outside, in the **current** team colour of its addressed Spawn Node, or the grey `ref.bldg.spawn_network.orb_no_team_grey` (120, 120, 120) when that node has no team. It then draws the base lights and ports (R-BLDG-045, R-BLDG-046). The structure-detail branches are DEC-327.
+**R-BLDG-113** (MUST) The translucent pass of a spawn-network structure draws each edge as a textured beam of `fx.beam_short` between the two `essence_link` sockets, `ref.bldg.spawn_network.beam_inner_width_wu` (1 wu) wide inside and `ref.bldg.spawn_network.beam_outer_width_wu` (3 wu) outside, and each transit orb as a diamond, `ref.bldg.spawn_network.orb_inner_size_wu` (2 wu) inside and `ref.bldg.spawn_network.orb_outer_size_wu` (6 wu) outside, in the **current** team colour of its addressed Spawn Node, or the grey `ref.bldg.spawn_network.orb_no_team_gray` (120, 120, 120) when that node has no team. It then draws the base lights and ports (R-BLDG-045, R-BLDG-046). The structure-detail branches are DEC-327.
 
 ### 2.3 Relay
 
@@ -470,7 +470,7 @@ Every value is a reference tuning value that Species may adopt as its baseline (
 | `ref.bldg.spawn_network.beam_outer_width_wu` | 3 | wu | edge beam, outer | R-BLDG-113 | — |
 | `ref.bldg.spawn_network.orb_inner_size_wu` | 2 | wu | transit-orb diamond, inner | R-BLDG-113 | — |
 | `ref.bldg.spawn_network.orb_outer_size_wu` | 6 | wu | transit-orb diamond, outer | R-BLDG-113 | — |
-| `ref.bldg.spawn_network.orb_no_team_grey` | (120, 120, 120) | RGB8 | orb colour while its Spawn Node has no team | R-BLDG-113 | DEC-078 |
+| `ref.bldg.spawn_network.orb_no_team_gray` | (120, 120, 120) | RGB8 | orb colour while its Spawn Node has no team | R-BLDG-113 | DEC-078 |
 | `ref.bldg.spawn_node.port_star_empty_rgb` | (150, 150, 150) | RGB8 | unoccupied port star | R-BLDG-131 | — |
 | `ref.bldg.spawn_node.glow_blobs_by_detail` | 20, 10, 3 | blobs | at structure-detail levels 1 (high), 2 (medium), 3 (low) | R-BLDG-131 | DEC-327 |
 | `ref.bldg.population_limiter.editor_sphere_wu` | 30 | wu | map-editor drawing only | R-BLDG-137 | DEC-045 |

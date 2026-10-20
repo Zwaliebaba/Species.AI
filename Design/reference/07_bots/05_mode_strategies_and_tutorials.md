@@ -72,8 +72,8 @@ w := 0;  D := 0
 for i from 0 to 5:
     if team i defends:
         D += c[i]
-        if D >= ref.bot.marker.defence_quorum or (a structure is bound and its team defends):  w := i;  stop   # 15
-    if c[i] > ref.bot.marker.defence_majority * c[w]:  w := i                                                  # 2
+        if D >= ref.bot.marker.defense_quorum or (a structure is bound and its team defends):  w := i;  stop   # 15
+    if c[i] > ref.bot.marker.defense_majority * c[w]:  w := i                                                  # 2
 team := w
 ```
 
@@ -207,8 +207,8 @@ Caption: Figure 3-2, the Siege objective logic of one main cycle (R-BOT-136).
 | `ref.bot.marker.bind_radius` | 20 | wu | structure binding at registration | R-BOT-132 | DEC-561 |
 | `ref.bot.marker.attack_majority` | 4 | factor | more than 4 × the current leader | R-BOT-134 | DEC-094 |
 | `ref.bot.marker.attack_leader_cap` | 10 | actors | only while the leader has fewer | R-BOT-134 | DEC-094 |
-| `ref.bot.marker.defence_quorum` | 15 | actors | cumulative defenders | R-BOT-135 | DEC-094 |
-| `ref.bot.marker.defence_majority` | 2 | factor | more than 2 × the current leader | R-BOT-135 | DEC-094 |
+| `ref.bot.marker.defense_quorum` | 15 | actors | cumulative defenders | R-BOT-135 | DEC-094 |
+| `ref.bot.marker.defense_majority` | 2 | factor | more than 2 × the current leader | R-BOT-135 | DEC-094 |
 | `ref.bot.siege.engage_radius` | 450 | wu | a defender's engagement test around markers | R-BOT-136 | DEC-094 |
 | `ref.bot.relic.unstick_carrier_radius` | 50 | wu | carriers ordered | R-BOT-140 | DEC-087 |
 | `ref.bot.relic.unstick_step` | 20 | wu | push of the order point | R-BOT-140 | — |

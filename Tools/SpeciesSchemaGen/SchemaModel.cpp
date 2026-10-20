@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <array>
 #include <charconv>
+#include <climits>
+#include <cstdint>
 #include <format>
 #include <set>
 #include <string_view>
@@ -17,6 +19,9 @@ namespace
 {
 
 constexpr std::string_view SCHEMA_DRAFT = "https://json-schema.org/draft/2020-12/schema"; // dat.schema.draft
+
+// A tool project's folder, whose generated code takes the namespace of the project's name after it (R9).
+constexpr std::string_view TOOL_PROJECT_PREFIX = "Tools/Species";
 
 // AGENTS.md R11: the stems an identifier never spells, as Build/CheckProjectFiles.py lists them.
 constexpr std::array<std::string_view, 11> BRITISH_STEMS{"colour",    "initialis", "serialis", "normalis", "quantis", "synchronis",
@@ -155,7 +160,27 @@ public:
     return value->number;
   }
 
-  // An object's properties, each listed in `required`, with no other property allowed.
+  // An integer bound or default, taken from its digits exactly (DAT-023).
+  std::optional<std::int64_t> IntegerValue(const Neuron::JsonValue& _property, std::string_view _key, std::string_view _path)
+  {
+    const Neuron::JsonValue* value = Member(_property, _key);
+    if (value == nullptr)
+    {
+      return std::nullopt;
+    }
+    std::int64_t result = 0;
+    const std::string& token = value->text;
+    if (value->kind != Neuron::JsonKind::Number ||
+        std::from_chars(token.data(), token.data() + token.size(), result).ptr != token.data() + token.size())
+    {
+      Fail(*value, _path, std::format("{} is an integer", _key));
+      return std::nullopt;
+    }
+    return result;
+  }
+
+  // An object's properties: a required field listed in `required` and a defaulted one not, with no other property
+  // allowed.
   std::vector<FieldModel> Properties(const Neuron::JsonValue& _object, std::string_view _path, bool _record)
   {
     std::vector<FieldModel> fields;
@@ -188,18 +213,25 @@ public:
     }
     for (const Neuron::JsonMember& member : properties->members)
     {
-      if (!listed.contains(member.key))
-      {
-        Fail(member.value, _path, std::format("{} is not required; M0's subset holds required fields only (ADR-098)", member.key));
-      }
       if (_record && (member.key == "schema" || member.key == "version"))
       {
+        if (!listed.contains(member.key))
+        {
+          Fail(member.value, _path, std::format("{} is required: it heads every record (DAT-016)", member.key));
+        }
         continue; // the record's header, read by SoleEnumerator
       }
       const std::string path = _path.empty() ? member.key : std::format("{}.{}", _path, member.key);
       if (CheckIdentifier(member.value, path, member.key))
       {
-        fields.push_back(Field(member.key, member.value, path));
+        FieldModel field = Field(member.key, member.value, path, false);
+        if (listed.contains(member.key) == field.defaulted)
+        {
+          Fail(member.value, _path,
+               field.defaulted ? std::format("{} is defaulted, so required does not list it (DAT-011)", member.key)
+                               : std::format("{} is required, so required lists it (DAT-011)", member.key));
+        }
+        fields.push_back(std::move(field));
       }
     }
     for (const std::string& key : listed)
@@ -212,7 +244,8 @@ public:
     return fields;
   }
 
-  FieldModel Field(const std::string& _key, const Neuron::JsonValue& _property, const std::string& _path)
+  // One property, or a list's element, which has no key and no presence of its own.
+  FieldModel Field(const std::string& _key, const Neuron::JsonValue& _property, const std::string& _path, bool _element)
   {
     FieldModel field;
     field.key = _key;
@@ -226,30 +259,91 @@ public:
     }
     const std::string type = Text(_property, "type", _path, true);
     const std::string logical = Text(_property, "x-species-type", _path, true);
-    const std::string presence = Text(_property, "x-species-presence", _path, true);
-    if (presence != "required")
+    if (_element)
     {
-      Fail(_property, _path, "x-species-presence is required: M0's subset reads required fields only (ADR-098)");
+      if (Member(_property, "x-species-presence") != nullptr)
+      {
+        Fail(_property, _path, "a list's element has no presence of its own");
+      }
+    }
+    else if (const std::string presence = Text(_property, "x-species-presence", _path, true); presence == "defaulted")
+    {
+      field.defaulted = true;
+    }
+    else if (presence != "required")
+    {
+      Fail(_property, _path, "x-species-presence is required or defaulted in the generator's subset (ADR-108)");
     }
     if (logical == "object")
     {
       OnlyKeys(_property, _path,
                {"type", "description", "properties", "required", "additionalProperties", "x-species-type", "x-species-presence"});
-      if (type != "object")
+      if (type != "object" || field.defaulted)
       {
-        Fail(_property, _path, "an object field has type object");
+        Fail(_property, _path, "an object field has type object and is required");
       }
       field.kind = FieldKind::Object;
       field.fields = Properties(_property, _path, false);
       return field;
     }
+    if (logical == "asset_ref")
+    {
+      OnlyKeys(_property, _path, {"type", "description", "x-species-type", "x-species-presence", "x-species-ref", "x-species-max-chars"});
+      field.kind = FieldKind::AssetRef;
+      field.refKind = Text(_property, "x-species-ref", _path, true);
+      const std::optional<std::int64_t> maxChars = IntegerValue(_property, "x-species-max-chars", _path);
+      if (type != "string" || field.defaulted || _element || maxChars.value_or(0) <= 0)
+      {
+        Fail(_property, _path, "an asset reference is a required text field with its x-species-max-chars (DAT-009)");
+      }
+      field.maxChars = static_cast<std::size_t>(std::max<std::int64_t>(0, maxChars.value_or(0)));
+      return field;
+    }
+    if (logical == "list")
+    {
+      OnlyKeys(
+        _property, _path,
+        {"type", "description", "items", "minItems", "maxItems", "default", "x-species-type", "x-species-presence", "x-species-order"});
+      field.kind = FieldKind::List;
+      const std::string order = Text(_property, "x-species-order", _path, true);
+      field.orderMeaningful = order == "meaningful";
+      const std::optional<std::int64_t> minItems = IntegerValue(_property, "minItems", _path);
+      const std::optional<std::int64_t> maxItems = IntegerValue(_property, "maxItems", _path);
+      const Neuron::JsonValue* fallback = Member(_property, "default");
+      const Neuron::JsonValue* items = Member(_property, "items");
+      if (type != "array" || _element || (order != "meaningful" && order != "none") || minItems.value_or(0) < 0 || maxItems.value_or(0) < 0)
+      {
+        Fail(_property, _path, "a list has type array, is no list's element and states x-species-order (DAT-013)");
+      }
+      if (field.defaulted != (fallback != nullptr) ||
+          (fallback != nullptr && (fallback->kind != Neuron::JsonKind::Array || !fallback->items.empty())))
+      {
+        Fail(_property, _path, "a defaulted list, and only one, declares the default [], the empty list");
+      }
+      field.minItems = static_cast<std::size_t>(std::max<std::int64_t>(0, minItems.value_or(0)));
+      if (maxItems)
+      {
+        field.maxItems = static_cast<std::size_t>(std::max<std::int64_t>(0, maxItems.value_or(0)));
+      }
+      if (items == nullptr)
+      {
+        Fail(_property, _path, "a list declares its items");
+        return field;
+      }
+      FieldModel element = Field({}, *items, _path + "[]", true);
+      element.typeName = PascalCase(_key) + "Item";
+      if (element.kind != FieldKind::Object && element.kind != FieldKind::Integer && element.kind != FieldKind::Count &&
+          element.kind != FieldKind::Ticks)
+      {
+        Fail(*items, _path, "a list's element is an object or an integer in the generator's subset (ADR-108)");
+      }
+      field.item.push_back(std::move(element));
+      return field;
+    }
     OnlyKeys(_property, _path,
-             {"type", "description", "minimum", "exclusiveMinimum", "maximum", "x-species-type", "x-species-unit", "x-species-precision",
-              "x-species-presence"});
+             {"type", "description", "minimum", "exclusiveMinimum", "maximum", "default", "x-species-type", "x-species-unit",
+              "x-species-precision", "x-species-presence"});
     field.unit = Text(_property, "x-species-unit", _path, true);
-    field.minimum = Bound(_property, "minimum", _path);
-    field.exclusiveMinimum = Bound(_property, "exclusiveMinimum", _path);
-    field.maximum = Bound(_property, "maximum", _path);
     if (logical == "integer" || logical == "count" || logical == "ticks")
     {
       field.kind = logical == "integer" ? FieldKind::Integer : (logical == "count" ? FieldKind::Count : FieldKind::Ticks);
@@ -257,26 +351,37 @@ public:
       {
         Fail(_property, _path, std::format("a {} field has type integer", logical));
       }
-      if (field.exclusiveMinimum || field.maximum || Member(_property, "x-species-precision") != nullptr)
+      if (Member(_property, "exclusiveMinimum") != nullptr || Member(_property, "x-species-precision") != nullptr)
       {
-        Fail(_property, _path, "an integer field of M0's subset declares a minimum only (ADR-098)");
+        Fail(_property, _path, "an integer field declares a minimum and a maximum only (ADR-098)");
       }
+      const std::optional<std::int64_t> minimum = IntegerValue(_property, "minimum", _path);
       // Table 3.1-A: a count and a duration in ticks are integers of at least 0.
-      const double minimum = field.minimum.value_or(field.kind == FieldKind::Integer ? -1.0 : 0.0);
-      if ((field.kind != FieldKind::Integer && minimum != 0.0) || (field.kind == FieldKind::Integer && !field.minimum))
+      if ((field.kind != FieldKind::Integer && minimum.value_or(0) != 0) || (field.kind == FieldKind::Integer && !minimum))
       {
         Fail(_property, _path,
              field.kind == FieldKind::Integer ? "an integer field declares its minimum" : "a count or ticks field has minimum 0");
       }
-      field.integerMinimum = static_cast<std::int64_t>(minimum);
+      field.integerMinimum = minimum.value_or(0);
+      field.integerMaximum = IntegerValue(_property, "maximum", _path);
+      const std::optional<std::int64_t> fallback = IntegerValue(_property, "default", _path);
+      if (field.defaulted != fallback.has_value() || fallback.value_or(field.integerMinimum) < field.integerMinimum ||
+          fallback.value_or(field.integerMinimum) > field.integerMaximum.value_or(INT64_MAX))
+      {
+        Fail(_property, _path, "a defaulted integer, and only one, declares a default within its range (DAT-012)");
+      }
+      field.integerDefault = fallback.value_or(0);
       return field;
     }
     if (logical == "sim_decimal")
     {
       field.kind = FieldKind::SimDecimal;
-      if (type != "number")
+      field.minimum = Bound(_property, "minimum", _path);
+      field.exclusiveMinimum = Bound(_property, "exclusiveMinimum", _path);
+      field.maximum = Bound(_property, "maximum", _path);
+      if (type != "number" || field.defaulted || _element || Member(_property, "default") != nullptr)
       {
-        Fail(_property, _path, "a simulation decimal has type number");
+        Fail(_property, _path, "a simulation decimal has type number and is a required field");
       }
       const std::string precision = Text(_property, "x-species-precision", _path, true);
       if (precision == "binary64")
@@ -293,7 +398,7 @@ public:
       }
       return field;
     }
-    Fail(_property, _path, std::format("the logical type {} is outside M0's subset (ADR-098)", logical));
+    Fail(_property, _path, std::format("the logical type {} is outside the generator's subset (ADR-108)", logical));
     return field;
   }
 
@@ -310,6 +415,12 @@ private:
   std::string m_file;
   std::vector<Neuron::ContentDiagnostic> m_diagnostics;
 };
+
+// A field whose cooked form has a fixed size: no text and no list, at any depth (DAT-014).
+bool HasFixedSize(const FieldModel& _field)
+{
+  return _field.kind != FieldKind::AssetRef && _field.kind != FieldKind::List && std::ranges::all_of(_field.fields, HasFixedSize);
+}
 
 std::vector<std::string_view> Words(std::string_view _name)
 {
@@ -407,7 +518,18 @@ std::expected<SchemaModel, std::vector<Neuron::ContentDiagnostic>> ReadSchema(co
   }
   model.typeName = PascalCase(model.id);
   model.constantName = UpperCase(model.id);
-  model.nameSpace = model.project.starts_with("Neuron") ? "Neuron" : "Species";
+  if (model.project.starts_with("Neuron"))
+  {
+    model.nameSpace = "Neuron";
+  }
+  else if (model.project.starts_with(TOOL_PROJECT_PREFIX))
+  {
+    model.nameSpace = model.project.substr(TOOL_PROJECT_PREFIX.size());
+  }
+  else
+  {
+    model.nameSpace = "Species";
+  }
 
   if (const Neuron::JsonValue* properties = reader.Member(root, "properties");
       properties != nullptr && properties->kind == Neuron::JsonKind::Object)
@@ -430,6 +552,7 @@ std::expected<SchemaModel, std::vector<Neuron::ContentDiagnostic>> ReadSchema(co
     model.version = Neuron::SchemaVersion{major, minor};
   }
   model.fields = reader.Properties(root, "", true);
+  model.cooked = std::ranges::all_of(model.fields, HasFixedSize);
   if (reader.Failed())
   {
     return std::unexpected(reader.TakeDiagnostics());

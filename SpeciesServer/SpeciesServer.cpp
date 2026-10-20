@@ -1,16 +1,19 @@
 #include "pch.h"
 
+#include "AssetError.h"
 #include "ConsoleStop.h"
-#include "ContentDiagnostic.h"
 #include "FatalPath.h"
 #include "Files.h"
 #include "FloatEnvironment.h"
 #include "Log.h"
+#include "LooseContent.h"
 #include "PlatformClock.h"
 #include "PlatformLogSink.h"
 #include "PlatformThread.h"
 #include "RunId.h"
 #include "ServerHost.h"
+#include "Sha256.h"
+#include "StartupOptions.h"
 #include "TextEncoding.h"
 #include "Tuning.h"
 #include "WorldServer.h"
@@ -23,7 +26,7 @@
 #include <filesystem>
 #include <format>
 #include <memory>
-#include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -64,7 +67,7 @@ std::filesystem::path InterimLogsFolder()
   return error ? std::filesystem::path{} : folder;
 }
 
-int Run()
+int Run(std::span<const std::wstring> _arguments)
 {
   // PLT-038's steps that a headless process has (PLT-005): the fatal handlers, the thread's name, the clock and the
   // floating-point environment. A failure is written to the log and the console, never shown as a dialog.
@@ -85,23 +88,30 @@ int Run()
 
   int exitCode = Neuron::EXIT_CODE_NORMAL;
   {
-    // The tuning record is read from the content root when the server starts (MVP-099; ADR-098's interim root).
-    const std::optional<std::filesystem::path> contentRoot = Neuron::FindInterimContentRoot();
-    Neuron::RecordResult<TuningMvp> tuning = std::unexpected(std::vector<Neuron::ContentDiagnostic>{});
-    if (contentRoot)
+    // The loose-content folder that the solution build's content build wrote beside the executable, or the one that
+    // --loose-content names in a Debug build (AST-105, ADR-108); the cooked tuning record is loaded from it when the
+    // server starts (MVP-099).
+    const Neuron::StartupOptions options = Neuron::ParseArguments(_arguments);
+    for (const std::string& ignored : options.ignoredArguments)
     {
-      tuning = LoadTuningMvp(*contentRoot);
+      Neuron::Log(Neuron::LogCategory::Platform, Neuron::LogLevel::Warning, "the start-up argument {} is unknown and ignored", ignored);
+      Print(stderr, std::format("the argument {} is unknown and ignored", ignored));
+    }
+    const std::expected<Neuron::LooseContent, Neuron::AssetError> content = Neuron::LooseContent::Mount(Neuron::ContentDirectory(options));
+    std::expected<TuningMvp, Neuron::AssetError> tuning = std::unexpected(content ? Neuron::AssetError{} : content.error());
+    if (content)
+    {
+      Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Info,
+                  "loose content of {} entries mounted from {}; simulation content identity {}, reported as modified (AST-105)",
+                  content->Entries().size(), Neuron::ToUtf8(content->Folder().wstring()), Neuron::ShortHex(content->Identity()));
+      tuning = LoadTuningMvp(*content);
     }
     if (!tuning)
     {
-      Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "the server cannot start: its game data is missing or damaged");
-      Print(stderr, contentRoot ? "the game data cannot be read:" : "no GameData folder beside the executable or above it");
-      for (const Neuron::ContentDiagnostic& diagnostic : tuning.error())
-      {
-        const std::string finding = Neuron::FormatDiagnostic(diagnostic);
-        Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "{}", finding);
-        Print(stderr, finding);
-      }
+      const std::string reason = Neuron::FormatAssetError(tuning.error());
+      Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "the server cannot start: {}", reason);
+      Print(stderr,
+            std::format("the game data is {}: {}", tuning.error().fault == Neuron::AssetFault::Missing ? "missing" : "damaged", reason));
       exitCode = Neuron::EXIT_CODE_FATAL;
     }
     else if (!Neuron::InstallConsoleStopHandler())
@@ -114,6 +124,9 @@ int Run()
     {
       WorldServer::Desc worldDesc;
       worldDesc.tuning = *tuning;
+      // M1 plan §6: the battle sandbox, from the seed of --seed or one the server draws (MVP-005).
+      worldDesc.worldSeed = options.worldSeed;
+      worldDesc.sandbox = true;
       WorldServer world(worldDesc);
       Neuron::ServerHost::Desc hostDesc;
       hostDesc.clock = &clock;
@@ -121,7 +134,8 @@ int Run()
       hostDesc.workers = SERVER_WORKERS;
       Neuron::ServerHost host(std::move(hostDesc), world);
       host.Start();
-      Print(stdout, std::format("the world runs, a tick every {} ms; Ctrl+C stops it",
+      // MVP-005: the seed that gives this world's terrain again.
+      Print(stdout, std::format("the world of seed {} runs, a tick every {} ms; Ctrl+C stops it", world.Terrain()->seed,
                                 std::chrono::duration_cast<std::chrono::milliseconds>(TickPeriodOf(world.Tuning())).count()));
       Neuron::WaitForConsoleStop();
       host.Stop();
@@ -141,7 +155,9 @@ int Run()
 
 // The Unicode console entry, the counterpart of the client's wWinMain. Like it, it catches nothing: an exception that
 // leaves the composition root reaches Windows Error Reporting untouched (PLT-117).
-int wmain()
+int wmain(int _argc, wchar_t** _argv)
 {
-  return Species::Run();
+  const std::span arguments(_argv, static_cast<std::size_t>(_argc));
+  const std::vector<std::wstring> options(arguments.begin() + (arguments.empty() ? 0 : 1), arguments.end());
+  return Species::Run(options);
 }

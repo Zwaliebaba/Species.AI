@@ -316,7 +316,7 @@ The development windows and the message dialog use this layout; no options scree
 | page-button birth flash, additive; its alpha is UI-107's | `ui.palette.fe_flash` |
 | second-style text field, with a white outline | `ui.palette.fe_text_box` |
 
-The backdrop's corner glow is `ref.meta.backdrop.glow_colour` of [reference/09](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-205.
+The backdrop's corner glow is `ref.meta.backdrop.glow_color` of [reference/09](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-205.
 
 ### 4.8 Text styles and blend modes
 
@@ -720,7 +720,7 @@ The palette tokens of UI-187 and UI-188 are the `ui.palette.*` rows; their value
 | key | owner |
 |---|---|
 | `ref.meta.layout.*` | [reference/09 front_end_presentation.md](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-200, R-META-201 |
-| `ref.meta.backdrop.glow_colour` | [reference/09 front_end_presentation.md](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-205 |
+| `ref.meta.backdrop.glow_color` | [reference/09 front_end_presentation.md](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-205 |
 | `ref.meta.option_controls.control_height`, `ref.meta.setup.small_control_height` | [reference/09 screen_flow_and_match_setup.md](../../../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
 | `ref.meta.lang.base` | [reference/09 options_localisation_and_hooks.md](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) |
 | `ref.ctrl.panel.canvas_height` (the HUD space of RND-377) | [reference/06 selection_and_power_slots.md](../../../reference/06_controls_camera_and_commands/selection_and_power_slots.md) R-CTRL-222 |

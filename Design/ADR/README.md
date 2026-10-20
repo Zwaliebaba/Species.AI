@@ -101,6 +101,16 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-098](ADR-098-tuning-in-data-and-the-schema-generator.md) | Tuning in data at M0: the tuning record, the schema generator's first subset and the server's interim read | Proposed | 2026-10-20 |
 | [ADR-099](ADR-099-world-snapshots.md) | World snapshots at M0: the file format, the store and the world's state version | Proposed | 2026-10-20 |
 | [ADR-100](ADR-100-headless-server-program.md) | The headless server program at M0: its composition root, its stop and the check of what it loads | Accepted | 2026-10-20 |
+| [ADR-101](ADR-101-region-teams-figures-and-update-slices.md) | Region teams, figures and the update slices: the region's first state | Proposed | 2026-10-20 |
+| [ADR-102](ADR-102-region-terrain-and-the-terrain-check-at-connection.md) | Region terrain: the terrain library, the region's generation and the terrain check at connection | Proposed | 2026-10-20 |
+| [ADR-103](ADR-103-region-grids-draw-contexts-and-figure-movement.md) | Region grids, draw contexts and figure movement | Proposed | 2026-10-20 |
+| [ADR-104](ADR-104-navigation-nodes-land-route-graph-and-routes.md) | Navigation nodes, the land route graph and routes | Proposed | 2026-10-20 |
+| [ADR-105](ADR-105-combat-weapons-and-essence-orbs.md) | Combat, weapons and Essence orbs | Proposed | 2026-10-20 |
+| [ADR-106](ADR-106-leaders-formations-and-battle-commands.md) | Leaders, formations and battle commands | Proposed | 2026-10-20 |
+| [ADR-107](ADR-107-simple-ai-bot-navigation-and-node-census.md) | The simple AI, its navigation graph and the node census | Proposed | 2026-10-20 |
+| [ADR-108](ADR-108-content-build-loose-content-and-cooked-formats.md) | The content build at M1: SpeciesContentBuild, the cooked formats and the loose-content mount | Proposed | 2026-10-20 |
+| [ADR-109](ADR-109-battle-sandbox-command-journal-and-seed-switch.md) | The battle sandbox, the command journal and the seed switch | Proposed | 2026-10-20 |
+| [ADR-110](ADR-110-cost-measurement-marker-timing-and-performance-script.md) | The cost measurement: marker timing, the performance tool and the performance script | Proposed | 2026-10-20 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

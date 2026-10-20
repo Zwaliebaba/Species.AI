@@ -39,7 +39,7 @@ The Leader's stats are in the actor stat table of [README.md](README.md) §4.1: 
 | facing its order target while it gives orders | 0.3 (3 × dt); × `ref.unit.leader.turn_order_formation_factor` (0.2) in formation mode, that is 0.06 | `ref.unit.leader.turn_order` |
 | facing its bot target front while it is not walking | 0.06 (0.6 × dt) | `ref.unit.leader.turn_bot` |
 
-**R-UNIT-159** (MUST) A Leader's actor-grid radius is its mesh radius × `ref.unit.leader.radius_factor` (2), and its centre is its mesh centre raised by `ref.unit.leader.centre_lift` (1 wu).
+**R-UNIT-159** (MUST) A Leader's actor-grid radius is its mesh radius × `ref.unit.leader.radius_factor` (2), and its centre is its mesh centre raised by `ref.unit.leader.center_lift` (1 wu).
 
 **R-UNIT-160** (MUST) A Leader moves with the obstacle push of [reference/12](../12_simulation_model/05_space_routing_and_physics.md), where it is tested as a sphere of radius `ref.sim.push.contact_radius` (1 wu) rather than by its mesh; an enabled enemy Barrier Emitter kills it outright (R-SIM-381). It enters a teleport at its waypoint (R-UNIT-163 step 7).
 
@@ -194,7 +194,7 @@ The rules of this section are presentation (DEC-007); their random choices draw 
 
 **R-UNIT-191** (MUST) A Leader's banner is a cloth flag (`ClothFlag`) of size `ref.unit.leader.banner_size` (20) at the mesh's flag socket. Its size grows with camera distance d by the factor 1 + scale factor × (d − 100) ÷ `ref.unit.leader.banner_growth_divisor` (1500), and it turns towards the camera by d ÷ `ref.unit.leader.banner_face_divisor` (200). It waves while the order is not None. It shows `marker.leader_banner` in the variant of the order: idle for None, PrepareWaypoint and Waypoint; follow for Follow; formation in formation mode. The banner's team colour is applied through its tint mask, which uses `marker.leader_banner_tint` (ADR-020). A Waypoint banner carries the pointer `marker.flag_pointer`, aimed at the first route waypoint after the start of the order route. The world markers draw the local team's banners ([cursor and markers](../06_controls_camera_and_commands/cursor_and_markers.md) R-CTRL-388), and the Leader renderer draws every other team's.
 
-**R-UNIT-192** (MUST) A Leader's picking volume is a sphere centred `ref.unit.leader.pick_centre_lift` (4 wu) above its centre, of radius `ref.unit.leader.pick_radius` (8 wu), scaled with camera distance. Picking is presentation and input ([reference/12](../12_simulation_model/05_space_routing_and_physics.md), R-SIM-387). The cursor badges near the pointer, `icon.power.leader` while a Leader is selected and `icon.power.workers` while Workers are selected, are drawn by [cursor and markers](../06_controls_camera_and_commands/cursor_and_markers.md) R-CTRL-366; `icon.power.leader` is also the promotion Power's icon.
+**R-UNIT-192** (MUST) A Leader's picking volume is a sphere centred `ref.unit.leader.pick_center_lift` (4 wu) above its centre, of radius `ref.unit.leader.pick_radius` (8 wu), scaled with camera distance. Picking is presentation and input ([reference/12](../12_simulation_model/05_space_routing_and_physics.md), R-SIM-387). The cursor badges near the pointer, `icon.power.leader` while a Leader is selected and `icon.power.workers` while Workers are selected, are drawn by [cursor and markers](../06_controls_camera_and_commands/cursor_and_markers.md) R-CTRL-366; `icon.power.leader` is also the promotion Power's icon.
 
 **R-UNIT-193** (MUST) A Leader raises the presentation events of table 2.10-A ([reference/10](../10_audio_design/README.md)). Cancelling a Leader's orders stops all its order events.
 
@@ -290,7 +290,7 @@ Diagram 3-D The signpost conveyor (R-UNIT-171, worker.md R-UNIT-096).
 | `ref.unit.leader.turn_order_formation_factor` | 0.2 | × factor | in formation mode | R-UNIT-158 | — |
 | `ref.unit.leader.turn_bot` | 0.06 | per tick | 0.6 × dt | R-UNIT-158, R-UNIT-163 | DEC-031 |
 | `ref.unit.leader.radius_factor` | 2 | × mesh radius | actor-grid footprint | R-UNIT-159 | DEC-650 |
-| `ref.unit.leader.centre_lift` | 1 | wu | | R-UNIT-159 | — |
+| `ref.unit.leader.center_lift` | 1 | wu | | R-UNIT-159 | — |
 | `ref.unit.leader.corpse_sink_per_tick` | 20 | wu/s per tick | | R-UNIT-163, README R-UNIT-037 | DEC-092 |
 | `ref.unit.leader.marker_period` | 20 | ticks | 2.0 s of match time | R-UNIT-163 | DEC-002 |
 | `ref.unit.leader.marker_lift` | 2 | wu | | R-UNIT-163 | — |
@@ -333,7 +333,7 @@ Diagram 3-D The signpost conveyor (R-UNIT-171, worker.md R-UNIT-096).
 | `ref.unit.leader.bot_node_reach` | 20 | wu | | R-UNIT-188 | — |
 | `ref.unit.leader.banner_growth_divisor` | 1500 | wu | presentation | R-UNIT-191 | — |
 | `ref.unit.leader.banner_face_divisor` | 200 | wu | presentation | R-UNIT-191 | — |
-| `ref.unit.leader.pick_centre_lift` | 4 | wu | presentation and input | R-UNIT-192 | — |
+| `ref.unit.leader.pick_center_lift` | 4 | wu | presentation and input | R-UNIT-192 | — |
 | `ref.unit.leader.pick_radius` | 8 | wu | presentation and input | R-UNIT-192 | — |
 
 ## 5 Edge cases and interactions

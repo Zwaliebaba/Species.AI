@@ -35,7 +35,7 @@ Scope: Terrain. Back to the [requirements index](../REQUIREMENTS_INDEX.md).
 | TER-037 | Guide cell (*x*, *z*) pins tile sample ((*x* + 1) × 2^(*k* − *p*), (*z* + 1) × 2^(*k* − *p*)) (TER-091 step 3); | [README.md](../architecture/components/terrain/README.md#34-guide-grid) |
 | TER-038 | A world surface grid (`SurfaceGrid<T>`) is built from a width, a height, an origin (*x*₀, *z*₀), cell sizes *c*ₓ and *c*_z and an outside | [README.md](../architecture/components/terrain/README.md#35-grids) |
 | TER-039 | A 2-D grid (`Grid2D<T>`) is a plain array of columns × rows elements without origin or cell size, with the index rules of TER-072; | [README.md](../architecture/components/terrain/README.md#35-grids) |
-| TER-040 | A land colour ramp, one file of `terrain.ramp`, is an image of `ter.colour.ramp_size` × `ter.colour.ramp_size` (64 × 64) texels, read on | [README.md](../architecture/components/terrain/README.md#36-rendering-inputs) |
+| TER-040 | A land colour ramp, one file of `terrain.ramp`, is an image of `ter.color.ramp_size` × `ter.color.ramp_size` (64 × 64) texels, read on the | [README.md](../architecture/components/terrain/README.md#36-rendering-inputs) |
 | TER-041 | A shore-wave gradient, one file of `terrain.shore_wave_gradient`, provides the wave colour table: | [README.md](../architecture/components/terrain/README.md#36-rendering-inputs) |
 | TER-042 | While the match's seasonal state is active, the renderer replaces the map's ramp, sea tile and shore-wave gradient by the seasonal files | [README.md](../architecture/components/terrain/README.md#36-rendering-inputs) |
 | TER-043 | The terrain sets the scale of the renderer's wire-grid overlay: | [README.md](../architecture/components/terrain/README.md#36-rendering-inputs) |

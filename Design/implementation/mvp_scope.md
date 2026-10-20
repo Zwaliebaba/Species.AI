@@ -57,6 +57,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-016** (MUST) A settlement sees its own territory and the area within `mvp.vision.unit_radius` (300 wu) of each of its Workers, Leaders and structures; this is its seen layer (WLD-242). Every settlement sees the public layer of WLD-242: terrain, sites, settlements and their Cladans, territories, cores, border areas and their holders, claims and battle results. AI settlements and the deputy act on these two layers only (PIL-084), and the server sends a client only what its settlement may see (MVP-097).
 
+**MVP-017** (MUST) Navigation nodes are generated with the terrain, in place of the nodes that a reference map places by hand (R-SIM-331, R-BOT-027; O70): a point of a square lattice of spacing `mvp.nav.node_spacing` (320 wu) over the region is a node where the terrain is dry and walkable by the path test of R-SIM-335 to R-SIM-337, and one node more stands at each settlement site's centre, at the central resource site and at the middle of each valley border area. The nodes are numbered in a stable order from the terrain alone, with no draw. The land route graph, its next-hop tables and route building (R-SIM-330 to R-SIM-359), the threat search (R-UNIT-098) and the AI (MVP-058) use them as the reference uses a map's nodes, and they are the routes that WLD-100 and check 8 of WLD-163 measure.
+
 ### 2.3 Settlement, Essence and growth (stands in for B1)
 
 **MVP-020** (MUST) A settlement starts with its Wellspring at its site's centre, `mvp.settlement.start_workers` (20) Workers, empty stores and its founding territory of radius `wld.territory.founding_radius` (500 wu) (WLD-060).
@@ -100,7 +102,7 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 ### 2.5 Battles (stands in for B4)
 
-**MVP-040** (MUST) Battles use the reference crowd rules for Workers and Leaders as written: movement and routes (R-UNIT-105 to R-UNIT-115, R-UNIT-040 to R-UNIT-042, R-SIM-305 to R-SIM-369), combat (R-UNIT-101 to R-UNIT-104, R-UNIT-011 to R-UNIT-033, with the laser bolt and grenade of R-CRATE-415 to R-CRATE-418 and R-CRATE-440 to R-CRATE-445, the grenade drawn as `mesh.projectile.thrown_weapon`), death (R-UNIT-134), and Leaders with formations (R-UNIT-152 to R-UNIT-189). Special units, Supply crates, powers, creatures and hazards are not built. Every battle runs at full fidelity (O3), as everything in the MVP does (MVP-096).
+**MVP-040** (MUST) Battles use the reference crowd rules for Workers and Leaders as written: movement and routes (R-UNIT-105 to R-UNIT-115, R-UNIT-040 to R-UNIT-042, R-SIM-300 to R-SIM-389, as they apply to Workers and Leaders), combat (R-UNIT-101 to R-UNIT-104, R-UNIT-011 to R-UNIT-033, with the laser bolt and grenade of R-CRATE-415 to R-CRATE-418 and R-CRATE-440 to R-CRATE-445, the grenade drawn as `mesh.projectile.thrown_weapon`), death (R-UNIT-134), and Leaders with formations (R-UNIT-152 to R-UNIT-189). Special units, Supply crates, powers, creatures and hazards are not built. Every battle runs at full fidelity (O3), as everything in the MVP does (MVP-096).
 
 **MVP-041** (MUST) An expedition is a Leader, the Workers following it (R-UNIT-096) and up to `mvp.expedition.size_max` (200) Workers in all. The steward forms one by promoting a Worker (R-UNIT-152) and drawing Workers from guard duty to it, and sends it by declaring an attack on a target: a raid on a settlement, or a claim battle at a claimed area (MVP-053).
 
@@ -108,7 +110,7 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-043** (MUST) A battle starts when a hostile expedition, released by the warning hold, enters the target's territory or the claimed area (PIL-041). The battlefield is the target's territory and `wld.view.settlement_margin` (800 wu) around it, or the claimed area and the same margin.
 
-**MVP-044** (MUST) Defender's advantage (O2): inside its own territory, a defending settlement's Workers and Leaders take `mvp.defence.damage_taken_factor` (0.75) of the damage the reference rules give; the defender's turrets fight; and the Essence of every death inside the defender's territory drifts to the defender's Wellspring (MVP-023), within the bound of MVP-046.
+**MVP-044** (MUST) Defender's advantage (O2): inside its own territory, a defending settlement's Workers and Leaders take `mvp.defense.damage_taken_factor` (0.75) of the damage the reference rules give; the defender's turrets fight; and the Essence of every death inside the defender's territory drifts to the defender's Wellspring (MVP-023), within the bound of MVP-046.
 
 **MVP-045** (MUST) A battle ends at the first of:
 - **Objective held**: the attacker has Workers within `mvp.battle.objective_radius` (150 wu) of the objective, and no defender there, for `mvp.battle.objective_hold_s` (30 s). The objective of a raid is the target's Wellspring; of a claim battle, the claimed area's resource site. The attacker wins.
@@ -159,7 +161,7 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-060** (MUST) A world is a run of `mvp.run.length_hours` (8 hours of play at the session pace; 8 world days at the always-on pace). The world shows the time left, and no attack may be declared in its last `mvp.run.quiet_minutes` (15 minutes); battles in progress finish (WLD-221 narrowed to a fixed lifetime).
 
-**MVP-061** (MUST) Settlements earn renown (PIL-125), never by stores taken: `mvp.renown.defence_held` (3) for each battle won as a defender; `mvp.renown.claim_won` (3) for each claim battle won as a claimant; `mvp.renown.grievance_eased` (1) for each 20 weight of grievance eased by tribute or by a withdrawn claim; and `mvp.renown.structure_per_100ru` (1) for each 100 ru of structures completed.
+**MVP-061** (MUST) Settlements earn renown (PIL-125), never by stores taken: `mvp.renown.defense_held` (3) for each battle won as a defender; `mvp.renown.claim_won` (3) for each claim battle won as a claimant; `mvp.renown.grievance_eased` (1) for each 20 weight of grievance eased by tribute or by a withdrawn claim; and `mvp.renown.structure_per_100ru` (1) for each 100 ru of structures completed.
 
 **MVP-062** (MUST) The standing of the four settlements by renown is visible throughout the run, with each settlement's renown broken down by source.
 
@@ -257,7 +259,31 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 |---|---|---|---|---|---|---|
 | `mvp.pace.session_factor` | 24 | times | — | provisional | MVP-070 | One hour of play is one world day; Playtest 1 judges whether a run of 8 hours feels like a week of a settlement's life |
 | `mvp.world.ai_count` | 3 | AI settlements | — | provisional | MVP-001 | Fixed by the four sites of one region |
+| `mvp.world.region_cell` | 6 | grid cells on each axis | — | provisional | MVP-010 | The region's cell of the extent of WLD-001, aligned with the chunks (WLD-020); 30,720 wu from the origin (ADR-102) |
+| `mvp.terrain.base_method` | 1 | `TileMethod` | — | provisional | MVP-011 | WLD-162's temperate set: the base tile averages a random opposite pair |
+| `mvp.terrain.base_fractal_dimension` | 2.0 | fractal dimension | — | provisional | MVP-011 | A larger value gives a smoother valley floor (WLD-268) |
+| `mvp.terrain.base_height_scale` | 0.25 | height scale | — | provisional | MVP-011 | — |
+| `mvp.terrain.base_desired_height` | 150 | wu | — | provisional | MVP-011 | The base tile's highest sample before the cores are levelled |
+| `mvp.terrain.base_lowland_smoothing` | 2.0 | lowland smoothing | — | provisional | MVP-011 | — |
+| `mvp.terrain.guide_rim` | 70 | guide height (of 255) | — | provisional | MVP-011 | The guide grid's rim, edge and centre values raise the floor towards the centre |
+| `mvp.terrain.guide_edge` | 80 | guide height (of 255) | — | provisional | MVP-011 | — |
+| `mvp.terrain.guide_center` | 90 | guide height (of 255) | — | provisional | MVP-011 | — |
+| `mvp.terrain.hill_method` | 0 | `TileMethod` | — | provisional | MVP-011 | The hill tiles average four parents |
+| `mvp.terrain.hill_fractal_dimension` | 1.2 | fractal dimension | — | provisional | MVP-011 | — |
+| `mvp.terrain.hill_height_scale` | 1.0 | height scale | — | provisional | MVP-011 | — |
+| `mvp.terrain.hill_lowland_smoothing` | 1.0 | lowland smoothing | — | provisional | MVP-011 | — |
+| `mvp.terrain.hill_desired_min` | 260 | wu | — | provisional | MVP-011 | A hill's desired height is drawn from this to the maximum (WLD-162) |
+| `mvp.terrain.hill_desired_max` | 340 | wu | — | provisional | MVP-011 | Below `wld.terrain.peak_height_max` (400 wu) |
+| `mvp.terrain.hill_inset` | 300 | wu | — | provisional | MVP-011 | WLD-162's distance of a hill tile inside the region border; see the WLD-162 amendment |
+| `mvp.unit.leader_mesh_radius` | 6.7252 | wu | — | provisional | MVP-040 | The bounding radius `LeaderFigure.cmo` records; the actor grid uses twice it (R-UNIT-159) until the cooked mesh gives it (M1 plan T11, ADR-103) |
 | `mvp.vision.unit_radius` | 300 | wu | — | provisional | MVP-016 | Raise if AI settlements miss obvious threats; lower if the fog never hides anything |
+| `mvp.nav.node_spacing` | 320 | wu | — | provisional | MVP-017 | About 200 lattice nodes on the valley's land; lower it if routes miss narrow passes, raise it if the next-hop tables cost too much |
+| `mvp.sandbox.side_workers` | 200 | Workers | — | provisional | MVP-005 | Each side of M1's battle sandbox at its start (M1 plan §6, ADR-109); a side of 200 needs at least three formations |
+| `mvp.sandbox.side_spread` | 60 | wu | — | provisional | MVP-005 | The radius each sandbox side spawns in around its site's centre |
+| `mvp.sandbox.steward_site` | 0 | site index | — | provisional | MVP-005 | The local site order of WLD-040: 0 and 3 are diagonally opposite (O70) |
+| `mvp.sandbox.ai_site` | 3 | site index | — | provisional | MVP-005 | The AI's side, opposite the steward's |
+| `mvp.perf.synthetic_figures` | 2000 | figures | — | provisional | MVP-093 | ADR-080 item 2's synthetic battle, in two halves with an AI on each; M1's determinism tests and T10 run it |
+| `mvp.perf.synthetic_gap` | 200 | wu | — | provisional | MVP-093 | The distance between the synthetic battle's halves, across the valley's centre, so that it is fought from its first ticks (ADR-110) |
 | `mvp.settlement.start_workers` | 20 | Workers | — | provisional | MVP-020 | The first minutes must show a busy settlement |
 | `mvp.settlement.population_base` | 40 | Workers | — | provisional | MVP-022 | — |
 | `mvp.settlement.population_max` | 300 | Workers | — | provisional | MVP-022 | Inside O43's range; M1's cost measurement may raise it |
@@ -291,7 +317,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.expedition.size_max` | 200 | Workers | — | provisional | MVP-041 | With the defenders, a battle of 300 to 450 figures (PIL-021) |
 | `mvp.conflict.attack_cost_ru` | 300 | ru | — | provisional | MVP-042 | An attack must cost a dwelling's worth |
 | `mvp.conflict.warning_minutes` | 5 | minutes of world time | tick | provisional | MVP-042 | Narrows WLD-102's 10; Playtest 2 checks it is enough when the deputy defends |
-| `mvp.defence.damage_taken_factor` | 0.75 | of reference damage | tick | provisional | MVP-044 | Defending should win most even fights |
+| `mvp.defense.damage_taken_factor` | 0.75 | of reference damage | tick | provisional | MVP-044 | Defending should win most even fights |
 | `mvp.battle.objective_radius` | 150 | wu | — | provisional | MVP-045 | — |
 | `mvp.battle.objective_hold_s` | 30 | seconds | tick | provisional | MVP-045 | — |
 | `mvp.battle.rout_share` | 0.25 | of Workers sent | — | provisional | MVP-045 | Battles of 4 to 12 minutes (PIL-047) |
@@ -316,7 +342,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.ai.decision_ticks` | 50 | ticks | tick | provisional | MVP-058 | ADR-080 item 2's cadence |
 | `mvp.run.length_hours` | 8 | hours of play | scaled | provisional | MVP-060 | 8 world days at the always-on pace; Playtest 1 judges the arc |
 | `mvp.run.quiet_minutes` | 15 | minutes | scaled | provisional | MVP-060 | — |
-| `mvp.renown.defence_held` | 3 | renown | — | provisional | MVP-061 | — |
+| `mvp.renown.defense_held` | 3 | renown | — | provisional | MVP-061 | — |
 | `mvp.renown.claim_won` | 3 | renown | — | provisional | MVP-061 | — |
 | `mvp.renown.grievance_eased` | 1 | renown per 20 weight | — | provisional | MVP-061 | Watch for tribute bought only for renown |
 | `mvp.renown.structure_per_100ru` | 1 | renown per 100 ru | — | provisional | MVP-061 | — |

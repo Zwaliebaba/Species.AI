@@ -12,14 +12,15 @@ namespace Species
 WorldSimulation::WorldSimulation(const Desc& _desc)
   : m_key(_desc.simulationKey),
     m_nextTick(_desc.nextTick),
+    m_worldSeed(_desc.worldSeed),
     m_ids(WORLD_OWNER_ID),
     m_commands(_desc.simulationKey, _desc.nextTick)
 {
-  ENGINE_CHECK(_desc.regionCount > 0);
+  ENGINE_CHECK(_desc.regionCount > 0 && _desc.tuning != nullptr);
   m_regions.reserve(_desc.regionCount);
   for (std::uint16_t index = 0; index < _desc.regionCount; ++index)
   {
-    m_regions.push_back(std::make_unique<RegionSimulation>(index, _desc.simulationKey, _desc.nextTick));
+    m_regions.push_back(std::make_unique<RegionSimulation>(index, _desc.simulationKey, _desc.nextTick, *_desc.tuning));
   }
 }
 
@@ -41,25 +42,29 @@ void WorldSimulation::Step(std::uint64_t _tick, Neuron::WorkerPool& _workers)
 void WorldSimulation::WriteState(Neuron::BitWriter& _writer) const
 {
   _writer.WriteBits(m_nextTick, 64);
+  _writer.WriteBits(m_worldSeed, 64);
   _writer.WriteBits(m_ids.Next(), 64);
   m_commands.WriteState(_writer);
 }
 
-bool WorldSimulation::ReadState(Neuron::BitReader& _reader)
+bool WorldSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stateVersion)
 {
   const std::uint64_t nextTick = _reader.ReadBits(64);
+  // Version 3 added the world seed (M1 task T3); an older world's terrain is built from seed 0.
+  const std::uint64_t worldSeed = _stateVersion >= STATE_VERSION_WITH_SEED ? _reader.ReadBits(64) : 0;
   const std::uint64_t nextId = _reader.ReadBits(64);
   if (_reader.Failed() || nextTick != m_nextTick || nextId == 0 || nextId > STABLE_ID_COUNTER_MAX + 1)
   {
     return false;
   }
+  m_worldSeed = worldSeed;
   m_ids = StableIdCounter(WORLD_OWNER_ID, nextId);
   if (!m_commands.ReadState(_reader))
   {
     return false;
   }
-  return std::ranges::all_of(m_regions,
-                             [&_reader](const std::unique_ptr<RegionSimulation>& _region) { return _region->ReadState(_reader); });
+  return std::ranges::all_of(m_regions, [&_reader, _stateVersion](const std::unique_ptr<RegionSimulation>& _region)
+                             { return _region->ReadState(_reader, _stateVersion); });
 }
 
 RegionSimulation& WorldSimulation::Region(std::size_t _index)

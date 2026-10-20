@@ -4,7 +4,7 @@
 
 Entries live in the files listed below; add a decision to the file of its area, in the format of [CONVENTIONS](../CONVENTIONS.md) §7, and add its row to the index of that file and to the index below. **Open** decisions state the behaviour the documents specify now (the reference default), so implementation never blocks on them. **Resolved** decisions state the fixed rule. **Dropped** entries record out-of-scope items and what Species does instead. Decisions marked "Decide by: design phase" are answered by the Species design phase.
 
-Totals: **302** decisions: 118 Open, 156 Resolved, 28 Dropped.
+Totals: **302** decisions: 117 Open, 157 Resolved, 28 Dropped.
 
 The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner_decisions.md](owner_decisions.md).
 
@@ -285,7 +285,7 @@ The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner
 | DEC-569 | [Game-speed pitch bend](controls_bots_maps_meta_audio.md#dec-569-game-speed-pitch-bend) | Resolved | controls_bots_maps_meta_audio.md |
 | DEC-570 | [Buses, priority classes and voice budgets](controls_bots_maps_meta_audio.md#dec-570-buses-priority-classes-and-voice-budgets) | Resolved | controls_bots_maps_meta_audio.md |
 | DEC-650 | [Actor-grid registration follows the recorded footprint](simulation_terrain_render_assets.md#dec-650-actor-grid-registration-follows-the-recorded-footprint) | Resolved | simulation_terrain_render_assets.md |
-| DEC-651 | [Lifetime of simulation routes](simulation_terrain_render_assets.md#dec-651-lifetime-of-simulation-routes) | Open | simulation_terrain_render_assets.md |
+| DEC-651 | [Lifetime of simulation routes](simulation_terrain_render_assets.md#dec-651-lifetime-of-simulation-routes) | Resolved | simulation_terrain_render_assets.md |
 | DEC-652 | [Random draws at initialisation happen once, in explicit simulation steps](simulation_terrain_render_assets.md#dec-652-random-draws-at-initialisation-happen-once-in-explicit-simulation-steps) | Resolved | simulation_terrain_render_assets.md |
 | DEC-653 | [Simulation state never holds a non-finite value](simulation_terrain_render_assets.md#dec-653-simulation-state-never-holds-a-non-finite-value) | Resolved | simulation_terrain_render_assets.md |
 | DEC-654 | [Gameplay is computed only by the CPU simulation](simulation_terrain_render_assets.md#dec-654-gameplay-is-computed-only-by-the-cpu-simulation) | Resolved | simulation_terrain_render_assets.md |

@@ -146,11 +146,11 @@ Caption: the explainer panel exists at most once per match and shows while the p
 |---|---|---|---|---|
 | ground shadow | *hd* > 0, alive, not InAbductionBeam, within `ref.unit.worker.shadow_range` (2000 wu) | current card | black at alpha `ref.unit.worker.shadow_alpha` (150) × *hd*, × `ref.unit.worker.shadow_rogue_factor` (0.3) for the Rogue faction, at most 255; `worker_ground_shadow`, no depth write (RND-221, RND-241, RND-315) | a flat quad `vfx.worker.shadow_lift` (0.3 wu) above the terrain, spanning the card's right vector and world +z by 2 × s |
 | body | every Worker except the Rogue and Visitor factions, alive or airborne | current card | the colour of RND-317; `worker_card` | the card |
-| Visitor body | Visitor faction | `sprite.visitor.front` | (0.5, 0.5, 0.5) (`vfx.worker.visitor_grey`) × the health factor of R-UNIT-146 | the card at s × `vfx.worker.visitor_scale` (1.3) |
+| Visitor body | Visitor faction | `sprite.visitor.front` | (0.5, 0.5, 0.5) (`vfx.worker.visitor_gray`) × the health factor of R-UNIT-146 | the card at s × `vfx.worker.visitor_scale` (1.3) |
 | Visitor glow | Visitor faction | `fx.glow_round` | the saturated team colour (§4.5), alpha \|sin(`vfx.worker.glow_pulse_slow` × t)\| × `vfx.worker.visitor_glow_alpha` (0.3) | camera billboard of half-extent 2 × s |
-| control glow | local team, controlled or selected, alive | current card | (0.1, 0.1, 1.0) (`vfx.worker.control_glow_colour`), alpha max(\|sin(`vfx.worker.glow_pulse_fast` × t)\|, `ref.unit.worker.control_glow_min` (0.3)) | `vfx.worker.control_glow_layers` (10) identical stacked cards, ten times the brightness of one |
+| control glow | local team, controlled or selected, alive | current card | (0.1, 0.1, 1.0) (`vfx.worker.control_glow_color`), alpha max(\|sin(`vfx.worker.glow_pulse_fast` × t)\|, `ref.unit.worker.control_glow_min` (0.3)) | `vfx.worker.control_glow_layers` (10) identical stacked cards, ten times the brightness of one |
 | Fury glow | Fury, alive | current card; for the Rogue faction `sprite.worker.hurt` variant 04 at s × `vfx.worker.rogue_scale` | white, alpha max(\|sin(`vfx.worker.glow_pulse_slow` × t)\|, `vfx.worker.fury_glow_min` (0.3)) | the card |
-| Sickness bubble | sick, alive | `fx.glow_round` | `ref.unit.worker.sickness_bubble_colour` (90, 130, 10), alpha \|sin(`vfx.worker.glow_pulse_slow` × t)\| × `vfx.worker.sickness_bubble_alpha` (0.8) | camera billboard of half-extent 2 × s, raised by s |
+| Sickness bubble | sick, alive | `fx.glow_round` | `ref.unit.worker.sickness_bubble_color` (90, 130, 10), alpha \|sin(`vfx.worker.glow_pulse_slow` × t)\| × `vfx.worker.sickness_bubble_alpha` (0.8) | camera billboard of half-extent 2 × s, raised by s |
 | Rogue body | Rogue faction | `sprite.worker.hurt` variant 04 | white, alpha blend with no cut-out, drawn twice | the card at s × `vfx.worker.rogue_scale` (1.5) |
 | Shield bubble | Shield, alive | `fx.bubble_sphere` | the saturated team colour (§4.5), alpha \|sin(`vfx.worker.glow_pulse_slow` × t)\| × `vfx.worker.shield_bubble_alpha` (0.5) | camera billboard of half-extent 2 × s |
 | side card | edge-on view, c = \|front × direction to the camera\| above `ref.unit.worker.side_view_threshold` (0.95) | `sprite.worker.side` | the team colour, alpha 255 × `vfx.worker.side_alpha_gain` (20) × (c − 0.95), at most 255 | a strip ± `vfx.worker.side_half_width` (0.25 wu) along the camera right vector, the card's height high |
@@ -159,7 +159,7 @@ Caption: the explainer panel exists at most once per match and shows while the p
 | crate-capture beam | OpeningCrate, within `ref.unit.worker.crate_spark_factor` (1.1) × the crate scan range | `fx.beam_short` | the team colour, alpha \|sin(`vfx.worker.capture_beam_pulse` × (t + unit id))\| × 255 | a `Segment` of half-width `vfx.worker.capture_beam_half_width` (0.5 wu) from the card position + `vfx.worker.capture_beam_lift` (4 wu) × up to the crate |
 | corpse fragments | dead | current card | black, alpha health × `vfx.worker.fragment_alpha` (2.55) | `ref.unit.worker.corpse_fragments` (3) cards of half the size, drifting apart along ±x and ±z by `vfx.worker.fragment_spread` (10) − h ÷ `vfx.worker.fragment_spread_divisor` (10) wu and rising with their height, where h is a display health that falls by `vfx.worker.fragment_fade_ground` (40) per s of scaled presentation time on the ground and `vfx.worker.fragment_fade_air` (20) per s airborne |
 
-A dead Worker's body is drawn in its colour × `ref.unit.worker.corpse_colour` (0.2) at alpha `ref.unit.worker.corpse_alpha_per_health` (2.5) × health (R-UNIT-146), and a paralysed Worker in `ref.unit.worker.paralysed_colour` (150, 150, 150). The glow pulse rates are `vfx.worker.glow_pulse_fast` (5 rad/s) and `vfx.worker.glow_pulse_slow` (2 rad/s). The launch-spectacle shadow of a watching Worker is never drawn: the spectacle is inactive in matches (DEC-009).
+A dead Worker's body is drawn in its colour × `ref.unit.worker.corpse_color` (0.2) at alpha `ref.unit.worker.corpse_alpha_per_health` (2.5) × health (R-UNIT-146), and a paralysed Worker in `ref.unit.worker.paralysed_color` (150, 150, 150). The glow pulse rates are `vfx.worker.glow_pulse_fast` (5 rad/s) and `vfx.worker.glow_pulse_slow` (2 rad/s). The launch-spectacle shadow of a watching Worker is never drawn: the spectacle is inactive in matches (DEC-009).
 
 ### 4.4 Seasonal theme
 
@@ -173,7 +173,7 @@ A dead Worker's body is drawn in its colour × `ref.unit.worker.corpse_colour` (
 | snow on every map, from the presentation generator | R-SIM-234, R-CRATE-500, [particles](particles_shatter_and_screen_effects.md) VFX-224 |
 | trees with branches of `ref.bldg.tree.seasonal_branch_rgb` (180, 100, 50) and no leaves | [trees_and_crate_structures.md](../../../reference/03_buildings_and_world_objects/trees_and_crate_structures.md), [renderer/world_renderers.md](../renderer/world_renderers.md) |
 | the seasonal terrain ramp, sea tile and shore-wave gradient | [terrain](../terrain/README.md) TER-042 |
-| every light colour replaced by `rnd.light.seasonal_colour` (1.3, 1.2, 1.2); the light's alpha keeps its map value | RND-013 |
+| every light colour replaced by `rnd.light.seasonal_color` (1.3, 1.2, 1.2); the light's alpha keeps its map value | RND-013 |
 
 No other seasonal theme exists.
 
@@ -193,7 +193,7 @@ The Rogue faction's colour is near black, so its additive figures are drawn inst
 
 ### 4.6 Other billboards and sprites
 
-**VFX-122** (MUST) Each live entry of a Reaper Serpent's eaten-orb display (R-UNIT-591) is drawn, while its age is below `ref.unit.reaper_serpent.eaten_display_ticks` (600 ticks of presentation time), at the head position + its offset, drawn when the entry is made as `FxRng::NextSigned`(2 × `vfx.serpent.eaten_offset`) per axis (± 10 wu, DEC-962 item 3), as two diamond billboards of `fx.glow_round` in `vfx.serpent.eaten_colour` (100, 50, 50) with a = 1 − age ÷ that span and d the camera distance: an inner one of half-extent `vfx.serpent.eaten_inner_size` (4) × a ÷ d^¼ at alpha `vfx.serpent.eaten_inner_alpha` (200) × a, and an outer one of half-extent `vfx.serpent.eaten_outer_size` (12) × a ÷ d^¼ at alpha `vfx.serpent.eaten_outer_alpha` (100) × a, additive with no depth test (`actor_glow_nodepth`). When the display is full, a new entry overwrites a slot chosen by `FxRng::NextUint` mod 50. An entry whose span has passed is removed by this component; the list is presentation state.
+**VFX-122** (MUST) Each live entry of a Reaper Serpent's eaten-orb display (R-UNIT-591) is drawn, while its age is below `ref.unit.reaper_serpent.eaten_display_ticks` (600 ticks of presentation time), at the head position + its offset, drawn when the entry is made as `FxRng::NextSigned`(2 × `vfx.serpent.eaten_offset`) per axis (± 10 wu, DEC-962 item 3), as two diamond billboards of `fx.glow_round` in `vfx.serpent.eaten_color` (100, 50, 50) with a = 1 − age ÷ that span and d the camera distance: an inner one of half-extent `vfx.serpent.eaten_inner_size` (4) × a ÷ d^¼ at alpha `vfx.serpent.eaten_inner_alpha` (200) × a, and an outer one of half-extent `vfx.serpent.eaten_outer_size` (12) × a ÷ d^¼ at alpha `vfx.serpent.eaten_outer_alpha` (100) × a, additive with no depth test (`actor_glow_nodepth`). When the display is full, a new entry overwrites a slot chosen by `FxRng::NextUint` mod 50. An entry whose span has passed is removed by this component; the list is presentation state.
 
 **VFX-123** (MUST) A Wisp's two cards (R-UNIT-597) are drawn along the Wisp's own right and up axes, not facing the camera.
 
@@ -336,7 +336,7 @@ with `vfx.cloth.wobble_phases` (1.5, 1.1, 1.3) and `vfx.cloth.lift_gain` (3). A 
 
 **VFX-140** (MUST) Each frame the flag's bounding sphere is recomputed: its centre is the mean of the 36 vertices and its radius the largest distance from the centre to a vertex. The local picking ray test of a Leader's or Transport's flag uses it as a pre-test before testing two triangles per cell (R-BLDG-273); picking is presentation and input, never simulation (DEC-008).
 
-**VFX-141** (MUST) A flag draws, with the entries of VFX-014 for its pass: its pole, a white quad of half-width `ref.bldg.cloth_flag.pole_width_wu` ÷ 2 (0.2 wu) turned perpendicular to up × the camera front and size × `ref.bldg.cloth_flag.pole_height_factor` (1.5) high; then its 5 × 5 cells as 25 textured quads, filtered linearly through all mip levels. The team area that the texture's companion tint mask marks (`marker.leader_banner_tint`, `marker.flag_post_state_tint`; AST-022) takes the team colour × `vfx.cloth.team_tint` (0.5), the full team colour while the owner is selected, and the grey `vfx.cloth.no_team_grey` (128, 128, 128) with no team (R-BLDG-273); the renderer's tint function applies that colour in the shader as the draw's tint, so no recoloured copy of the texture exists and each texture keeps one cache entry per declared variant (ADR-020, AST-030, DEC-098). When the owner has a target, the pointer `marker.flag_pointer` is drawn over the flag with `cloth_pointer`, its texture coordinates turned so that the arrow points from the flag towards the target's screen position (RND-216).
+**VFX-141** (MUST) A flag draws, with the entries of VFX-014 for its pass: its pole, a white quad of half-width `ref.bldg.cloth_flag.pole_width_wu` ÷ 2 (0.2 wu) turned perpendicular to up × the camera front and size × `ref.bldg.cloth_flag.pole_height_factor` (1.5) high; then its 5 × 5 cells as 25 textured quads, filtered linearly through all mip levels. The team area that the texture's companion tint mask marks (`marker.leader_banner_tint`, `marker.flag_post_state_tint`; AST-022) takes the team colour × `vfx.cloth.team_tint` (0.5), the full team colour while the owner is selected, and the grey `vfx.cloth.no_team_gray` (128, 128, 128) with no team (R-BLDG-273); the renderer's tint function applies that colour in the shader as the draw's tint, so no recoloured copy of the texture exists and each texture keeps one cache entry per declared variant (ADR-020, AST-030, DEC-098). When the owner has a target, the pointer `marker.flag_pointer` is drawn over the flag with `cloth_pointer`, its texture coordinates turned so that the arrow points from the flag towards the target's screen position (RND-216).
 
 **VFX-142** (MUST) The owners of cloth flags are:
 
@@ -433,12 +433,12 @@ The design-phase inputs of this component are listed in the [folder README](READ
 | `vfx.worker.carry_lean` | 0.3 | rad | lean towards a carried structure | VFX-117 | |
 | `vfx.worker.ant_carry_lift` | 4 | wu | card raised while carried by an ant | VFX-117 | |
 | `vfx.worker.shadow_lift` | 0.3 | wu | ground shadow above the terrain | VFX-118 | |
-| `vfx.worker.visitor_grey` | 0.5, 0.5, 0.5 | RGB factor | × the health factor | VFX-118 | |
+| `vfx.worker.visitor_gray` | 0.5, 0.5, 0.5 | RGB factor | × the health factor | VFX-118 | |
 | `vfx.worker.visitor_scale` | 1.3 | × card size | Visitor faction body | VFX-118 | |
 | `vfx.worker.visitor_glow_alpha` | 0.3 | alpha | × the pulse | VFX-118 | DEC-328 |
 | `vfx.worker.glow_pulse_fast` | 5 | rad/s of unscaled presentation time | control glow | VFX-118 | |
 | `vfx.worker.glow_pulse_slow` | 2 | rad/s of unscaled presentation time | Fury, Sickness, Shield and Visitor glows | VFX-118 | |
-| `vfx.worker.control_glow_colour` | 0.1, 0.1, 1.0 | RGB | | VFX-118 | |
+| `vfx.worker.control_glow_color` | 0.1, 0.1, 1.0 | RGB | | VFX-118 | |
 | `vfx.worker.control_glow_layers` | 10 | quads | identical stacked cards | VFX-118 | |
 | `vfx.worker.fury_glow_min` | 0.3 | alpha | floor of the Fury pulse | VFX-118 | |
 | `vfx.worker.sickness_bubble_alpha` | 0.8 | alpha | × the pulse | VFX-118 | |
@@ -460,7 +460,7 @@ The design-phase inputs of this component are listed in the [folder README](READ
 | `vfx.worker.fragment_fade_ground` | 40 | display health per s | on the ground | VFX-118 | |
 | `vfx.worker.fragment_fade_air` | 20 | display health per s | airborne | VFX-118 | |
 | `vfx.serpent.eaten_offset` | 10 | wu per axis | orbit offset range; the reference range is not recorded | VFX-122 | DEC-962 |
-| `vfx.serpent.eaten_colour` | 100, 50, 50 | RGB | eaten-orb display | VFX-122 | |
+| `vfx.serpent.eaten_color` | 100, 50, 50 | RGB | eaten-orb display | VFX-122 | |
 | `vfx.serpent.eaten_inner_size` | 4 | × a ÷ d^¼ | inner diamond half-extent | VFX-122 | |
 | `vfx.serpent.eaten_inner_alpha` | 200 | × a, of 255 | | VFX-122 | |
 | `vfx.serpent.eaten_outer_size` | 12 | × a ÷ d^¼ | outer diamond half-extent | VFX-122 | |
@@ -494,7 +494,7 @@ The design-phase inputs of this component are listed in the [folder README](READ
 | `vfx.cloth.wobble_phases` | 1.5, 1.1, 1.3 | rad per column | x, y and z wobble phases | VFX-139 | |
 | `vfx.cloth.lift_gain` | 3 | × | vertical wobble amplitude | VFX-139 | |
 | `vfx.cloth.team_tint` | 0.5 | × team colour | the team area of the tint mask | VFX-141 | DEC-098 |
-| `vfx.cloth.no_team_grey` | 128, 128, 128 | RGB | flag with no team | VFX-141 | |
+| `vfx.cloth.no_team_gray` | 128, 128, 128 | RGB | flag with no team | VFX-141 | |
 | `vfx.cloth.banner_wobble` | 0.4 | rad | Leader banner wobble | VFX-142 | |
 | `vfx.cloth.banner_wobble_rate` | 2 | rad/s of unscaled presentation time | | VFX-142 | |
 | `vfx.cloth.transport_size` | 20 | wu | Transport flags | VFX-142 | |

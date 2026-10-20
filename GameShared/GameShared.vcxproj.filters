@@ -13,10 +13,31 @@
     <Filter Include="Records">
       <UniqueIdentifier>{82AF2224-6502-5BE4-9A5D-2B4D337729DB}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Simulation">
+      <UniqueIdentifier>{0BF5669E-8E4F-5315-AFF9-9F3AFE17939F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="World">
+      <UniqueIdentifier>{88139AA6-722C-51DB-8637-94DFBBEE3C1A}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CommandMessages.h">
+      <Filter>Messages</Filter>
+    </ClInclude>
+    <ClInclude Include="EffectEvent.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="FigureKind.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="GameMessages.h">
       <Filter>Messages</Filter>
+    </ClInclude>
+    <ClInclude Include="Navigation.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="RegionTerrain.h">
+      <Filter>World</Filter>
     </ClInclude>
     <ClInclude Include="StableId.h">
       <Filter>Identity</Filter>
@@ -30,16 +51,31 @@
     <ClInclude Include="TuningMvp.h">
       <Filter>Records</Filter>
     </ClInclude>
+    <ClInclude Include="WorldTerrain.h">
+      <Filter>Messages</Filter>
+    </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Build</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CommandMessages.cpp">
+      <Filter>Messages</Filter>
+    </ClCompile>
+    <ClCompile Include="Navigation.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="RegionTerrain.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
     <ClCompile Include="TickReport.cpp">
       <Filter>Messages</Filter>
     </ClCompile>
     <ClCompile Include="Tuning.cpp">
       <Filter>Records</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldTerrain.cpp">
+      <Filter>Messages</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Build</Filter>

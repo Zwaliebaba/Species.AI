@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <expected>
 #include <filesystem>
-#include <optional>
 #include <span>
 #include <string_view>
 #include <vector>
@@ -37,9 +36,5 @@ enum class FileError : std::uint8_t
 
 // The folder of the running executable.
 [[nodiscard]] std::filesystem::path ExecutableFolder();
-
-// The content root at M0, until the Debug loose-content mount of AST-105 exists (ADR-098): the GameData folder in the
-// executable's folder or the nearest folder above it, so a build under x64\Debug or ARM64\Debug finds the repository's.
-[[nodiscard]] std::optional<std::filesystem::path> FindInterimContentRoot(const std::filesystem::path& _start = ExecutableFolder());
 
 } // namespace Neuron

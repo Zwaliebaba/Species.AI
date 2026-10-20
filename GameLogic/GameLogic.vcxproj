@@ -144,20 +144,61 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ActorGrid.h" />
+    <ClInclude Include="ActorGridCache.h" />
+    <ClInclude Include="AiController.h" />
+    <ClInclude Include="BotNavigation.h" />
+    <ClInclude Include="Combat.h" />
+    <ClInclude Include="CommandJournal.h" />
+    <ClInclude Include="DrawPurpose.h" />
+    <ClInclude Include="EssenceOrb.h" />
+    <ClInclude Include="Figure.h" />
+    <ClInclude Include="FigureAdvance.h" />
+    <ClInclude Include="Formation.h" />
     <ClInclude Include="IntegratedServer.h" />
+    <ClInclude Include="LeaderOrders.h" />
+    <ClInclude Include="Movement.h" />
+    <ClInclude Include="ObstacleGrid.h" />
+    <ClInclude Include="OrderMarkers.h" />
+    <ClInclude Include="RegionCommands.h" />
     <ClInclude Include="RegionSimulation.h" />
+    <ClInclude Include="RouteStore.h" />
+    <ClInclude Include="Sandbox.h" />
+    <ClInclude Include="SlicedPool.h" />
     <ClInclude Include="StableIdCounter.h" />
     <ClInclude Include="StateHash.h" />
+    <ClInclude Include="StateValues.h" />
+    <ClInclude Include="TickDraws.h" />
+    <ClInclude Include="Weapons.h" />
     <ClInclude Include="WorldServer.h" />
     <ClInclude Include="WorldSimulation.h" />
     <ClInclude Include="WorldSnapshot.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ActorGrid.cpp" />
+    <ClCompile Include="ActorGridCache.cpp" />
+    <ClCompile Include="AiController.cpp" />
+    <ClCompile Include="BotNavigation.cpp" />
+    <ClCompile Include="Combat.cpp" />
+    <ClCompile Include="CommandJournal.cpp" />
+    <ClCompile Include="EssenceOrb.cpp" />
+    <ClCompile Include="Figure.cpp" />
+    <ClCompile Include="FigureAdvance.cpp" />
+    <ClCompile Include="Formation.cpp" />
     <ClCompile Include="IntegratedServer.cpp" />
+    <ClCompile Include="LeaderOrders.cpp" />
+    <ClCompile Include="Movement.cpp" />
+    <ClCompile Include="ObstacleGrid.cpp" />
+    <ClCompile Include="OrderMarkers.cpp" />
+    <ClCompile Include="RegionCommands.cpp" />
     <ClCompile Include="RegionSimulation.cpp" />
+    <ClCompile Include="RouteStore.cpp" />
+    <ClCompile Include="Sandbox.cpp" />
     <ClCompile Include="StableIdCounter.cpp" />
     <ClCompile Include="StateHash.cpp" />
+    <ClCompile Include="TickDraws.cpp" />
+    <ClCompile Include="Weapons.cpp" />
     <ClCompile Include="WorldServer.cpp" />
     <ClCompile Include="WorldSimulation.cpp" />
     <ClCompile Include="WorldSnapshot.cpp" />

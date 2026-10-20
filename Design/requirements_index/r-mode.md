@@ -17,12 +17,12 @@ Scope: Skirmish match rules and modes. Back to the [requirements index](../REQUI
 | R-MODE-009 | Map-placed structures and actors name a start position. | [README.md](../reference/01_skirmish_rules_and_modes/README.md#22-teams-factions-and-start-positions) |
 | R-MODE-010 | The player slots of a match are 0 to (player count − 1) of the map, 2 to 4. | [README.md](../reference/01_skirmish_rules_and_modes/README.md#22-teams-factions-and-start-positions) |
 | R-MODE-011 | Outside Siege and co-op, a team's start position is drawn when the match first needs it, uniformly with the simulation generator from the | [README.md](../reference/01_skirmish_rules_and_modes/README.md#22-teams-factions-and-start-positions) |
-| R-MODE-012 | Team colours come from the colour table of reference/12 (R-SIM-415, keys `ref.sim.team_colour.<name>`). | [README.md](../reference/01_skirmish_rules_and_modes/README.md#23-team-colours) |
+| R-MODE-012 | Team colours come from the colour table of reference/12 (R-SIM-415, keys `ref.sim.team_color.<name>`). | [README.md](../reference/01_skirmish_rules_and_modes/README.md#23-team-colours) |
 | R-MODE-013 | When a slot is initialised for a match outside co-op and outside Siege, its colour id is set to its slot id. | [README.md](../reference/01_skirmish_rules_and_modes/README.md#23-team-colours) |
 | R-MODE-014 | A request to set slot t to colour id c, which a human's lobby choice issues as `PlayerCommand::SetColor` (R-SIM-416, R-SIM-451), is decided | [README.md](../reference/01_skirmish_rules_and_modes/README.md#23-team-colours) |
 | R-MODE-015 | Colour id c is a valid co-op colour unless at least `ref.match.coop.max_alliances` (2) distinct colours are already in use and no slot uses | [README.md](../reference/01_skirmish_rules_and_modes/README.md#23-team-colours) |
 | R-MODE-016 | At match-world initialisation each bot slot below the player count, in a match that is neither co-op nor Siege, chooses a colour from 0 to | [README.md](../reference/01_skirmish_rules_and_modes/README.md#23-team-colours) |
-| R-MODE-017 | The member shade of colour id none, which is the no-team colour, is `ref.match.colour.no_group`, an opaque grey (DEC-078). | [README.md](../reference/01_skirmish_rules_and_modes/README.md#23-team-colours) |
+| R-MODE-017 | The member shade of colour id none, which is the no-team colour, is `ref.match.color.no_group`, an opaque grey (DEC-078). | [README.md](../reference/01_skirmish_rules_and_modes/README.md#23-team-colours) |
 | R-MODE-018 | Co-op is on when the match setup's co-op flag is set. | [README.md](../reference/01_skirmish_rules_and_modes/README.md#24-co-op-alliances) |
 | R-MODE-019 | In co-op each player picks a colour for their alliance: | [README.md](../reference/01_skirmish_rules_and_modes/README.md#24-co-op-alliances) |
 | R-MODE-020 | At load, in a co-op match that is not Siege, alliance assignment runs `AssignAlliance(t)` for each slot t from 0 to (player count − 1) that | [README.md](../reference/01_skirmish_rules_and_modes/README.md#24-co-op-alliances) |
@@ -148,7 +148,7 @@ Scope: Skirmish match rules and modes. Back to the [requirements index](../REQUI
 | R-MODE-355 | A Solar Array that is captured from the team that held it at match start is knocked out: | [siege.md](../reference/01_skirmish_rules_and_modes/siege.md#21-sides-and-objects) |
 | R-MODE-356 | The options are the Catch-up bonus, which has no effect because no reference Siege map has a Spawn Node (DEC-124), and the crate drop | [siege.md](../reference/01_skirmish_rules_and_modes/siege.md#21-sides-and-objects) |
 | R-MODE-357 | On the first Siege step after the grace period the mode initialises once: | [siege.md](../reference/01_skirmish_rules_and_modes/siege.md#22-the-mode-step) |
-| R-MODE-358 | Every tick, once more than `ref.mode.siege.defence_check_delay` (100 ticks) have passed since post-grace tick 0, counted on the tick | [siege.md](../reference/01_skirmish_rules_and_modes/siege.md#22-the-mode-step) |
+| R-MODE-358 | Every tick, once more than `ref.mode.siege.defense_check_delay` (100 ticks) have passed since post-grace tick 0, counted on the tick | [siege.md](../reference/01_skirmish_rules_and_modes/siege.md#22-the-mode-step) |
 | R-MODE-359 | The Core Device advance (reference/03) links its consoles again and then: | [siege.md](../reference/01_skirmish_rules_and_modes/siege.md#22-the-mode-step) |
 | R-MODE-360 | Recording a defence time t for team d: | [siege.md](../reference/01_skirmish_rules_and_modes/siege.md#22-the-mode-step) |
 | R-MODE-361 | The victory timer decreases by 1 tick on every post-grace tick (README R-MODE-037 step 5). | [siege.md](../reference/01_skirmish_rules_and_modes/siege.md#22-the-mode-step) |

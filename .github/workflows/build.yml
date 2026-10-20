@@ -65,29 +65,6 @@ jobs:
       CONFIGURATION: Debug
       PLATFORM: x64
 
-      # ── Why clang-tidy is pinned and the rest of the toolchain is not ──────────────────────
-      #
-      # The clang-format job below pins clang-format 18 and says why: 18 and 22 break a long
-      # argument list in different places, so a floating version would flap. clang-tidy floated in
-      # the sibling tree and did exactly that -- the runner image moved to LLVM 20.1.8 and the
-      # build went red on code that had not changed, with two findings that were correct code:
-      #
-      #   clang-analyzer-optin.core.EnumCastOutOfRange on a BIT-FLAG enum, where an OR-ed pair of
-      #   enumerators names no enumerator of its own. Deliberate, and not reported by 22.
-      #
-      #   clang-analyzer-cplusplus.NewDeleteLeaks on a std::unique_ptr inside an aggregate
-      #   returned by value. Correct C++, and not reported by 22 either.
-      #
-      # A third finding from the same run was REAL -- an enum with no zero enumerator that the
-      # decoder cast one into -- and it was fixed in the code rather than pinned away. That is the
-      # distinction this pin is drawn on: a version change must not be able to turn main red on
-      # its own, and the way to bump it is to change the number here, run it, and fix what it says.
-      #
-      # From pip rather than from the image, because that is the only way a developer can run the
-      # same binary the gate runs. `python -m pip install clang-tidy==<this>` gets it on any
-      # machine; the runner's bundled LLVM cannot be asked for by version at all.
-      CLANG_TIDY_VERSION: 22.1.8
-
     steps:
       - uses: actions/checkout@v7
 
@@ -98,9 +75,9 @@ jobs:
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v3
 
-      # INCLUDE and LIB are what make the CRT and the Windows SDK visible to clang-tidy, which
-      # runs through clang's MSVC driver rather than being told about the SDK by hand. MSBuild
-      # does not need them -- it resolves the toolset itself -- so this exists for the linter.
+      # MSBuild resolves the toolset itself and does not need this. The later steps do: the headless
+      # server's check finds dumpbin through VCToolsInstallDir, and the test step finds the test
+      # platform through VSWHERE_INSTALL. The clang-tidy job imports the same for INCLUDE.
       - name: Import the MSVC environment
         shell: pwsh
         run: |
@@ -115,20 +92,12 @@ jobs:
           }
           "VSWHERE_INSTALL=$install" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
-      # PINNED, and not taken from the runner image. CLANG_TIDY_VERSION at the top of this job
-      # carries the version and the reason.
-      - name: Install the pinned clang-tidy
-        shell: pwsh
-        run: python -m pip install --disable-pip-version-check "clang-tidy==$env:CLANG_TIDY_VERSION"
-
       - name: Record the toolchain
         shell: pwsh
         run: |
           Write-Output "runner image : $env:ImageOS / $env:ImageVersion"
           Write-Output "visual studio: $env:VSWHERE_INSTALL"
           msbuild -version -nologo
-          Write-Output "--- clang-tidy (pinned to $env:CLANG_TIDY_VERSION) ---"
-          clang-tidy --version
           Write-Output "--- python ---"
           python --version
 
@@ -180,6 +149,22 @@ jobs:
         shell: pwsh
         run: python Build\CheckServerImports.py
 
+      # The content build (ADR-108) already ran in the build, as the post-build step of its tool project, and wrote
+      # x64\Debug\content; a fault in the content fails that step. This runs it twice more and fails unless the two
+      # folders are identical byte for byte (AST-066), then runs it on fixtures that each hold one fault -- a texture
+      # off its row, a damaged mesh for each check of the CMO importer, a damaged glyph table -- and fails unless each
+      # is refused with a message that names the file and the fault (AST-093, ADR-019, M1 plan T11).
+      - name: Check the content build
+        shell: pwsh
+        run: python Build\CheckContentBuild.py
+
+      # The performance job is the owner's script on the reference test machine (DBG-208, O69): CI's hosted runner
+      # cannot time anything. This runs the scenes of the performance tool for a few ticks each, to show that they run,
+      # and the script's record rules on fixtures: the pin, a changed machine and a figure above its budget (ADR-110).
+      - name: Check the performance script
+        shell: pwsh
+        run: python Build\RunPerformance.py --self-test --tool "x64\$env:CONFIGURATION\SpeciesPerformance.exe"
+
       # One suite per *Tests.vcxproj in the tree, and every one of them must have produced a DLL:
       # vstest reports "no tests found" as a pass, so a suite that did not build is not a suite
       # that passed, and a tree with no suites at all is a broken tree.
@@ -193,17 +178,16 @@ jobs:
             if (-not (Test-Path $dll)) { throw "$dll was not built. A suite that does not exist is not a suite that passed." }
             $dll
           }
-          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-          $vstest = & $vswhere -latest -products * -find '**\vstest.console.exe' | Select-Object -First 1
+          # The test platform's own folder in the installation the environment step found: a recursive vswhere -find
+          # over the whole installation took a minute, so it is only the fallback.
+          $vstest = Join-Path $env:VSWHERE_INSTALL 'Common7\IDE\Extensions\TestPlatform\vstest.console.exe'
+          if (-not (Test-Path $vstest)) {
+            $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+            $vstest = & $vswhere -latest -products * -find '**\vstest.console.exe' | Select-Object -First 1
+          }
           if (-not $vstest) { throw "vstest.console.exe not found." }
           & $vstest $suites /Platform:x64 /Logger:trx /ResultsDirectory:TestResults
           if ($LASTEXITCODE -ne 0) { throw "vstest reported failures." }
-
-      # After the build, so that a compile error is reported as a compile error rather than as
-      # forty linter findings about a file that does not parse.
-      - name: Run clang-tidy
-        shell: pwsh
-        run: python Build\RunClangTidy.py
 
       - name: Upload the build log
         if: always()
@@ -220,6 +204,92 @@ jobs:
           name: test-results
           path: TestResults
           if-no-files-found: ignore
+
+  # clang-tidy reads the sources, the restored packages and the MSVC environment, and nothing the
+  # build writes (no shader has compiled output yet), so it runs on its own runner at the same time
+  # as the build and the tests instead of after them. A file that does not compile fails both jobs;
+  # the build job's log shows the compile error.
+  tidy:
+    name: clang-tidy
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    env:
+      CONFIGURATION: Debug
+      PLATFORM: x64
+
+      # ── Why clang-tidy is pinned and the rest of the toolchain is not ──────────────────────
+      #
+      # The clang-format job below pins clang-format 18 and says why: 18 and 22 break a long
+      # argument list in different places, so a floating version would flap. clang-tidy floated in
+      # the sibling tree and did exactly that -- the runner image moved to LLVM 20.1.8 and the
+      # build went red on code that had not changed, with two findings that were correct code:
+      #
+      #   clang-analyzer-optin.core.EnumCastOutOfRange on a BIT-FLAG enum, where an OR-ed pair of
+      #   enumerators names no enumerator of its own. Deliberate, and not reported by 22.
+      #
+      #   clang-analyzer-cplusplus.NewDeleteLeaks on a std::unique_ptr inside an aggregate
+      #   returned by value. Correct C++, and not reported by 22 either.
+      #
+      # A third finding from the same run was REAL -- an enum with no zero enumerator that the
+      # decoder cast one into -- and it was fixed in the code rather than pinned away. That is the
+      # distinction this pin is drawn on: a version change must not be able to turn main red on
+      # its own, and the way to bump it is to change the number here, run it, and fix what it says.
+      #
+      # From pip rather than from the image, because that is the only way a developer can run the
+      # same binary the gate runs. `python -m pip install clang-tidy==<this>` gets it on any
+      # machine; the runner's bundled LLVM cannot be asked for by version at all.
+      CLANG_TIDY_VERSION: 22.1.8
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v3
+
+      # INCLUDE and LIB are what make the CRT and the Windows SDK visible to clang-tidy, which
+      # runs through clang's MSVC driver rather than being told about the SDK by hand.
+      - name: Import the MSVC environment
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $install = & $vswhere -latest -products * -property installationPath
+          if (-not $install) { throw "vswhere found no Visual Studio installation." }
+          $devcmd = Join-Path $install 'Common7\Tools\VsDevCmd.bat'
+          cmd /c "`"$devcmd`" -arch=amd64 -host_arch=amd64 -no_logo && set" | ForEach-Object {
+            if ($_ -match '^(INCLUDE|LIB|LIBPATH|VCINSTALLDIR|VCToolsInstallDir|VSINSTALLDIR)=(.*)$') {
+              "$($Matches[1])=$($Matches[2])" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+            }
+          }
+          "VSWHERE_INSTALL=$install" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      # PINNED, and not taken from the runner image. CLANG_TIDY_VERSION at the top of this job
+      # carries the version and the reason.
+      - name: Install the pinned clang-tidy
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check "clang-tidy==$env:CLANG_TIDY_VERSION"
+
+      - name: Record the toolchain
+        shell: pwsh
+        run: |
+          Write-Output "runner image : $env:ImageOS / $env:ImageVersion"
+          Write-Output "--- clang-tidy (pinned to $env:CLANG_TIDY_VERSION) ---"
+          clang-tidy --version
+
+      # The packages' headers (pix3.h, the Agility SDK's) are on the include path clang-tidy reads.
+      - name: Restore the NuGet packages
+        shell: pwsh
+        run: |
+          msbuild Species.slnx /t:Restore /p:RestorePackagesConfig=true `
+            /p:Configuration=$env:CONFIGURATION /p:Platform=$env:PLATFORM /nologo /v:minimal
+
+      - name: Run clang-tidy
+        shell: pwsh
+        run: python Build\RunClangTidy.py
 
   format:
     name: clang-format

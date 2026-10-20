@@ -125,7 +125,7 @@ Table 2.7-A Power kinds.
 
 **R-CTRL-176** (MUST) A request to create a Power of a kind that table 2.7-A does not list fails. No other Power kind is specified: the kinds with no targeting behaviour are outside the reference (DEC-552).
 
-**R-CTRL-177** (MUST) When a Strike team, Transport, Builder or Collector Power ends while it is the local player's current Power, the panel shows `ui.power_slots.cancelled` for `ref.ctrl.power.message.cancelled_s`.
+**R-CTRL-177** (MUST) When a Strike team, Transport, Builder or Collector Power ends while it is the local player's current Power, the panel shows `ui.power_slots.cancelled` for `ref.ctrl.power.message.canceled_s`.
 
 ### 2.8 Power states
 
@@ -186,7 +186,7 @@ Table 2.10-A Target areas.
 
 | Kind | Areas |
 |---|---|
-| Builder, Collector | a moving circle of `ref.power.target.group_centre_radius` around each actor group of the team whose members are Troopers or Builders, which in a match means every Strike team, because a Builder is an ungrouped actor; then also the Strike team areas |
+| Builder, Collector | a moving circle of `ref.power.target.group_center_radius` around each actor group of the team whose members are Troopers or Builders, which in a match means every Strike team, because a Builder is an ungrouped actor; then also the Strike team areas |
 | Transport | the Strike team areas |
 | Strike team | a fixed circle of `ref.power.target.unit_drop_radius` around every friendly Spawn Node, turret, Control Zone (the zone type that also serves Relic Bases, Relic Spawn Zones and Flag posts) and Transit Gate |
 | every other kind | one area centred at (0, 0, 0) with radius `ref.ctrl.power.area.anywhere_radius`: anywhere |
@@ -216,7 +216,7 @@ Table 2.10-A Target areas.
 1. when the team has no Power with that id, nothing happens (R-SIM-453);
 2. a turret Power under the turret-cap option is refused while its turret belongs to another team;
 3. in the first tutorial, and in the second tutorial until its bot may spawn, every cancel is refused, including the self-ending of one-shot Powers, which can therefore be fired again ([Tutorial and help](../11_tutorial_and_help.md); see DEC-550);
-4. for the local team the panel shows `ui.power_slots.cancelled` for `ref.ctrl.power.message.cancelled_s`;
+4. for the local team the panel shows `ui.power_slots.cancelled` for `ref.ctrl.power.message.canceled_s`;
 5. the Power is removed from its slot, its stop behaviour runs (table 2.7-A), and the current Power becomes none if it was this Power.
 
 **R-CTRL-211** (MUST) A stop behaviour may decline (a Transport in the tutorials; a turret that is no longer the team's), but the Power is removed all the same: the unit or structure stays in the world with no slot (see DEC-551).
@@ -225,7 +225,7 @@ Table 2.10-A Target areas.
 
 **R-CTRL-220** (MUST) The Power slots panel (`PowerSlotsPanel`) is always on screen in a match and has no overlay screen. Its elements are the power bar (R-CTRL-230), the cycling hint (R-CTRL-234), the placement sparkles (R-CTRL-235), the Power help tooltip (R-CTRL-236), the centre message (R-CTRL-222) and the Power-received pop-up (R-CTRL-238). The panel draws nothing in the map editor, without a match world, while any UI window is open, while the interface is hidden (row A9), during the grace period, after game over, or while the local team controls a turret.
 
-**R-CTRL-221** (MUST) The panel's messages are, in this order: Ready (`ui.power_slots.ready`), Not available (`ui.power_slots.not_available`) and Cancelled (`ui.power_slots.cancelled`); each shows with the name of the Power kind it concerns. The map editor shows its own caption `ui.power_slots.map_editor`, which is also the label of the main menu's map-editor entry ([map editor hooks](../08_maps_and_level_design/map_editor_hooks.md) R-MAP-305). A message expires `ref.ctrl.power.message.ready_s` (Ready), `ref.ctrl.power.message.not_available_s` (Not available) or `ref.ctrl.power.message.cancelled_s` (Cancelled) of real time after it is set.
+**R-CTRL-221** (MUST) The panel's messages are, in this order: Ready (`ui.power_slots.ready`), Not available (`ui.power_slots.not_available`) and Cancelled (`ui.power_slots.cancelled`); each shows with the name of the Power kind it concerns. The map editor shows its own caption `ui.power_slots.map_editor`, which is also the label of the main menu's map-editor entry ([map editor hooks](../08_maps_and_level_design/map_editor_hooks.md) R-MAP-305). A message expires `ref.ctrl.power.message.ready_s` (Ready), `ref.ctrl.power.message.not_available_s` (Not available) or `ref.ctrl.power.message.canceled_s` (Cancelled) of real time after it is set.
 
 **R-CTRL-222** (MUST) The centre message is drawn centred at (W ÷ 2, `ref.ctrl.panel.message_y`) on the panel's virtual canvas, which is `ref.ctrl.panel.canvas_height` (H) high and H × the aspect ratio (W) wide; its text size is `ref.ctrl.panel.message_size`, and in the last `ref.ctrl.panel.message_growth.window_s` (2 s) it grows by `ref.ctrl.panel.message_growth.size` (15) × √(2 − r), with r the remaining time; it is drawn as an outline pass with alpha a^`ref.ctrl.panel.message_fade.outline_exponent` (a³) before the fill with alpha a = clamp(r × `ref.ctrl.panel.message_fade.rate` (0.5), 0, 1).
 
@@ -246,7 +246,7 @@ Table 2.10-A Target areas.
 **R-CTRL-231** (MUST) Each occupied slot draws, with k = `ref.ctrl.bar.current_scale` for the current Power's slot and 1 ÷ `ref.ctrl.bar.current_scale` for every other:
 
 1. the shadow `marker.team_disc_shadow` in black with alpha `ref.ctrl.bar.disc.shadow_alpha` (0.81), alpha-blended, half-extent (size + `ref.ctrl.bar.disc.extent_pad` (10)) × k ÷ `ref.ctrl.bar.disc.shadow_divisor` (2.2);
-2. the colour disc `marker.team_disc`, additive, half-extent (size + 10) × k ÷ `ref.ctrl.bar.disc.disc_divisor` (2.4), in the team colour, or for a turret Power in the colour of the turret's current owner and not at all when the turret has no team; no disc while the Power is locked; its colour × `ref.ctrl.bar.disc.not_running_colour_factor` (0.1) while the Power is not Running; its alpha × max(`ref.ctrl.bar.disc.waiting_alpha_min` (0.5), |sin(`ref.ctrl.bar.disc.waiting_pulse_rate` (4) × game time)|) while it is Waiting;
+2. the colour disc `marker.team_disc`, additive, half-extent (size + 10) × k ÷ `ref.ctrl.bar.disc.disc_divisor` (2.4), in the team colour, or for a turret Power in the colour of the turret's current owner and not at all when the turret has no team; no disc while the Power is locked; its colour × `ref.ctrl.bar.disc.not_running_color_factor` (0.1) while the Power is not Running; its alpha × max(`ref.ctrl.bar.disc.waiting_alpha_min` (0.5), |sin(`ref.ctrl.bar.disc.waiting_pulse_rate` (4) × game time)|) while it is Waiting;
 3. the kind's icon `icon.power.<kind>` (for example `icon.power.strike_team` or `icon.power.leader`), additive, size × k, tinted `ref.ctrl.bar.icon_tint.locked` (0.5, 0.5, 0.5, 1) while locked, `ref.ctrl.bar.icon_tint.not_running` (1, 1, 1, 0.6) while not Running, else `ref.ctrl.bar.icon_tint.default` (white); its zone gets the tooltip `power.<kind>.select_hint`, or `power.<kind>.place_hint` while Waiting, and its screen position is kept for the pop-up;
 4. for the current Power while it is not Running, the highlight `cursor.highlight` around the icon, `ref.ctrl.bar.highlight_margin` larger on each side;
 5. the extra information of R-CTRL-232;
@@ -279,11 +279,11 @@ On a world marker that shows a Transport's order, the state icon follows the arr
 
 **R-CTRL-238** (MUST) Each grant event whose Power still exists shows a pop-up, except after game over. With t the time since the entry's timer started (R-CTRL-239), entry i of the queue is laid out at (W ÷ 2, H ÷ `ref.ctrl.popup.layout.first_y_divisor` (4.1) + i × box height × `ref.ctrl.popup.layout.row_step` (1.1)), with an overall scale of `ref.ctrl.popup.layout.scale` (0.4), icon size min(3t, 1) × (H ÷ `ref.ctrl.popup.layout.icon_divisor` (5)) × 0.4, box height min(3t, 1) × (H ÷ `ref.ctrl.popup.layout.box_height_divisor` (4.2)) × 0.4, box width the widest text + `ref.ctrl.popup.layout.box_width_icons` (1.5) × icon size, scale min(3t, 1) and alpha min(2t, 1), where 3 is `ref.ctrl.popup.layout.grow_rate` and 2 is `ref.ctrl.popup.layout.fade_in_rate`. While t < `ref.ctrl.popup.spin.duration_s` (3 s) the crate icon spins: rotation += frame delta × `ref.ctrl.popup.spin.rate` (20) × (3 − t)^`ref.ctrl.popup.spin.exponent` ((3 − t)⁴).
 
-1. **Showing** (the first `ref.ctrl.power.recent.show_s`): a black box with alpha `ref.ctrl.popup.box.fill_alpha` (0.9) under a vertical gradient from black to white, both with alpha `ref.ctrl.popup.box.gradient_alpha` (0.3), outlined white with alpha `ref.ctrl.popup.box.outline_alpha` (0.4); line 1 is the source caption (`ui.power_slots.source_crate`, `ui.power_slots.source_reinforcement` or `ui.power_slots.source_comeback`) at `ref.ctrl.popup.box.caption_size` (0.7) × the font height in grey `ref.ctrl.popup.box.caption_grey` (0.7); line 2 is the Power's name in capitals, at the font height (× `ref.ctrl.popup.box.name_scale_other_languages` (0.8) in languages other than English), with the font height `ref.ctrl.popup.box.font_height` (0.3) × the box height. A Supply crate source also draws a faint `marker.supply_crate` (alpha `ref.ctrl.popup.spin.crate_alpha` (0.15), additive) rotated by `ref.ctrl.popup.spin.crate_rotation_factor` (−0.02) × rotation, clipped to the box. The Power's name is the outcome name ([Supply crates and Powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md)): the Firebomb Run name for that variant, and the turret kind's name for a turret.
-2. **Minimising** (the next `ref.ctrl.power.recent.minimise_s`): the icon flies from the pop-up to its bar slot with the factor min(`ref.ctrl.popup.fly.rate` (2) × t, 1); its size goes from H ÷ `ref.ctrl.popup.fly.start_size_divisor` (6) to the slot's icon size; its alpha is × (1 − min(`ref.ctrl.popup.fly.fade_rate` (1) × t, 1)).
-3. **Always**: the halo `icon.hud.icon_halo` at `ref.ctrl.popup.halo.size_factor` (1.25) × size, darkening, grey `ref.ctrl.popup.halo.grey` (0.9) × alpha; the team-colour disc `marker.team_disc` at `ref.ctrl.popup.halo.disc_colour_factor` (0.6) × the team colour, additive; then the Power's icon, additive.
+1. **Showing** (the first `ref.ctrl.power.recent.show_s`): a black box with alpha `ref.ctrl.popup.box.fill_alpha` (0.9) under a vertical gradient from black to white, both with alpha `ref.ctrl.popup.box.gradient_alpha` (0.3), outlined white with alpha `ref.ctrl.popup.box.outline_alpha` (0.4); line 1 is the source caption (`ui.power_slots.source_crate`, `ui.power_slots.source_reinforcement` or `ui.power_slots.source_comeback`) at `ref.ctrl.popup.box.caption_size` (0.7) × the font height in grey `ref.ctrl.popup.box.caption_gray` (0.7); line 2 is the Power's name in capitals, at the font height (× `ref.ctrl.popup.box.name_scale_other_languages` (0.8) in languages other than English), with the font height `ref.ctrl.popup.box.font_height` (0.3) × the box height. A Supply crate source also draws a faint `marker.supply_crate` (alpha `ref.ctrl.popup.spin.crate_alpha` (0.15), additive) rotated by `ref.ctrl.popup.spin.crate_rotation_factor` (−0.02) × rotation, clipped to the box. The Power's name is the outcome name ([Supply crates and Powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md)): the Firebomb Run name for that variant, and the turret kind's name for a turret.
+2. **Minimising** (the next `ref.ctrl.power.recent.minimize_s`): the icon flies from the pop-up to its bar slot with the factor min(`ref.ctrl.popup.fly.rate` (2) × t, 1); its size goes from H ÷ `ref.ctrl.popup.fly.start_size_divisor` (6) to the slot's icon size; its alpha is × (1 − min(`ref.ctrl.popup.fly.fade_rate` (1) × t, 1)).
+3. **Always**: the halo `icon.hud.icon_halo` at `ref.ctrl.popup.halo.size_factor` (1.25) × size, darkening, grey `ref.ctrl.popup.halo.gray` (0.9) × alpha; the team-colour disc `marker.team_disc` at `ref.ctrl.popup.halo.disc_color_factor` (0.6) × the team colour, additive; then the Power's icon, additive.
 
-**R-CTRL-239** (MUST) A pop-up entry switches to minimising `ref.ctrl.power.recent.show_s` after its grant and is removed `ref.ctrl.power.recent.minimise_s` later; the most-recent-Power mark switches to minimising after `ref.ctrl.power.recent.show_s`. These timers are real time.
+**R-CTRL-239** (MUST) A pop-up entry switches to minimising `ref.ctrl.power.recent.show_s` after its grant and is removed `ref.ctrl.power.recent.minimize_s` later; the most-recent-Power mark switches to minimising after `ref.ctrl.power.recent.show_s`. These timers are real time.
 
 ## 3 States and flows
 
@@ -341,7 +341,7 @@ Caption: Diagram 3-C, granting a Power and the per-tick advance of the Power slo
 
 ## 4 Tuning table
 
-This file cites `ref.ctrl.promote_radius` ([actions and bindings](actions_and_bindings.md)); `ref.power.slots.capacity`, `ref.power.slots.capacity_eliminated`, `ref.power.effect_range`, `ref.power.target.unit_drop_radius`, `ref.power.target.group_centre_radius`, `ref.power.target.turret_clearance`, `ref.power.target.turret_gate_clearance`, `ref.power.target.turret_node_clearance`, `ref.power.lifetime.buff_ticks` and `ref.power.stop.damage` ([Supply crates, Powers and weapons](../04_supply_crates_powers_and_weapons/README.md) R-CRATE-014 to R-CRATE-025); `ref.bldg.turret.self_destruct_damage` ([defences and props](../03_buildings_and_world_objects/defences_and_props.md)); `ref.sim.slice.power_slots` ([Tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md)); `ref.sim.command.power_id_min_bits` ([Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md)); `ref.unit.strike_team.life_ticks`, `ref.unit.strike_team.spawn_spread`, `ref.unit.strike_team.stop_damage` ([Strike team](../02_units/strike_team.md)); `ref.unit.builder.spawn_height`, `ref.unit.builder.stop_damage` ([Builder](../02_units/builder.md)); `ref.unit.collector.spawn_height`, `ref.unit.collector.stop_damage` ([Collector](../02_units/collector.md)); and `ref.unit.worker.order_transport_radius` ([Worker](../02_units/worker.md)). The effects of the outcomes belong to [Supply crates and Powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md), and the starting-power lock to `ref.econ.start.power_lock_ticks` ([Population flow](../05_population_flow.md)).
+This file cites `ref.ctrl.promote_radius` ([actions and bindings](actions_and_bindings.md)); `ref.power.slots.capacity`, `ref.power.slots.capacity_eliminated`, `ref.power.effect_range`, `ref.power.target.unit_drop_radius`, `ref.power.target.group_center_radius`, `ref.power.target.turret_clearance`, `ref.power.target.turret_gate_clearance`, `ref.power.target.turret_node_clearance`, `ref.power.lifetime.buff_ticks` and `ref.power.stop.damage` ([Supply crates, Powers and weapons](../04_supply_crates_powers_and_weapons/README.md) R-CRATE-014 to R-CRATE-025); `ref.bldg.turret.self_destruct_damage` ([defences and props](../03_buildings_and_world_objects/defences_and_props.md)); `ref.sim.slice.power_slots` ([Tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md)); `ref.sim.command.power_id_min_bits` ([Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md)); `ref.unit.strike_team.life_ticks`, `ref.unit.strike_team.spawn_spread`, `ref.unit.strike_team.stop_damage` ([Strike team](../02_units/strike_team.md)); `ref.unit.builder.spawn_height`, `ref.unit.builder.stop_damage` ([Builder](../02_units/builder.md)); `ref.unit.collector.spawn_height`, `ref.unit.collector.stop_damage` ([Collector](../02_units/collector.md)); and `ref.unit.worker.order_transport_radius` ([Worker](../02_units/worker.md)). The effects of the outcomes belong to [Supply crates and Powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md), and the starting-power lock to `ref.econ.start.power_lock_ticks` ([Population flow](../05_population_flow.md)).
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
@@ -353,9 +353,9 @@ This file cites `ref.ctrl.promote_radius` ([actions and bindings](actions_and_bi
 | `ref.ctrl.power.area.anywhere_radius` | 99999.9 | wu | the "anywhere" area, centred at (0, 0, 0) | R-CTRL-192 | — |
 | `ref.ctrl.power.message.ready_s` | 2.5 | s of real time | Ready message, also kept alive while placing | R-CTRL-188, R-CTRL-221 | — |
 | `ref.ctrl.power.message.not_available_s` | 2.5 | s of real time | | R-CTRL-221 | — |
-| `ref.ctrl.power.message.cancelled_s` | 3.0 | s of real time | | R-CTRL-177, R-CTRL-210, R-CTRL-221 | — |
+| `ref.ctrl.power.message.canceled_s` | 3.0 | s of real time | | R-CTRL-177, R-CTRL-210, R-CTRL-221 | — |
 | `ref.ctrl.power.recent.show_s` | 3.0 | s of real time | pop-up showing phase; most-recent mark | R-CTRL-238, R-CTRL-239 | — |
-| `ref.ctrl.power.recent.minimise_s` | 1.0 | s of real time | pop-up minimising phase | R-CTRL-238, R-CTRL-239 | — |
+| `ref.ctrl.power.recent.minimize_s` | 1.0 | s of real time | pop-up minimising phase | R-CTRL-238, R-CTRL-239 | — |
 | `ref.ctrl.panel.canvas_height` | 600 | virtual pixels | H; the width W is H × the aspect ratio | R-CTRL-222 | — |
 | `ref.ctrl.panel.message_y` | 370 | virtual pixels | | R-CTRL-222 | — |
 | `ref.ctrl.panel.message_size` | 40 | text size | | R-CTRL-222 | — |
@@ -384,7 +384,7 @@ This file cites `ref.ctrl.promote_radius` ([actions and bindings](actions_and_bi
 | `ref.ctrl.bar.disc.extent_pad` | 10 | virtual pixels | added to the icon size before the shadow and disc half-extents are scaled | R-CTRL-231 | — |
 | `ref.ctrl.bar.disc.shadow_divisor` | 2.2 | divisor | shadow half-extent (size + pad) × k ÷ 2.2 | R-CTRL-231 | — |
 | `ref.ctrl.bar.disc.disc_divisor` | 2.4 | divisor | disc half-extent (size + pad) × k ÷ 2.4 | R-CTRL-231 | — |
-| `ref.ctrl.bar.disc.not_running_colour_factor` | 0.1 | × disc colour | while the Power is not Running | R-CTRL-231 | — |
+| `ref.ctrl.bar.disc.not_running_color_factor` | 0.1 | × disc colour | while the Power is not Running | R-CTRL-231 | — |
 | `ref.ctrl.bar.disc.waiting_alpha_min` | 0.5 | alpha factor | while Waiting the alpha is × max(0.5, \|sin(rate × game time)\|) | R-CTRL-231 | — |
 | `ref.ctrl.bar.disc.waiting_pulse_rate` | 4 | rad per second of game time | the Waiting pulse | R-CTRL-231 | — |
 | `ref.ctrl.bar.icon_tint.locked` | 0.5, 0.5, 0.5, 1 | RGBA | while the Power is locked | R-CTRL-231 | — |
@@ -439,14 +439,14 @@ This file cites `ref.ctrl.promote_radius` ([actions and bindings](actions_and_bi
 | `ref.ctrl.popup.box.outline_alpha` | 0.4 | alpha | the white outline | R-CTRL-238 | — |
 | `ref.ctrl.popup.box.font_height` | 0.3 | × box height | the height of line 2 | R-CTRL-238 | — |
 | `ref.ctrl.popup.box.caption_size` | 0.7 | × font height | line 1, the source caption | R-CTRL-238 | — |
-| `ref.ctrl.popup.box.caption_grey` | 0.7 | grey level | line 1 | R-CTRL-238 | — |
+| `ref.ctrl.popup.box.caption_gray` | 0.7 | grey level | line 1 | R-CTRL-238 | — |
 | `ref.ctrl.popup.box.name_scale_other_languages` | 0.8 | × font height | line 2 in languages other than English | R-CTRL-238 | — |
 | `ref.ctrl.popup.fly.rate` | 2 | per second of real time | the flight factor min(2t, 1) | R-CTRL-238 | — |
 | `ref.ctrl.popup.fly.start_size_divisor` | 6 | divisor | the icon starts at H ÷ 6 and ends at the slot's icon size | R-CTRL-238 | — |
 | `ref.ctrl.popup.fly.fade_rate` | 1 | per second of real time | alpha × (1 − min(t, 1)) | R-CTRL-238 | — |
 | `ref.ctrl.popup.halo.size_factor` | 1.25 | × icon size | the halo `icon.hud.icon_halo` | R-CTRL-238 | — |
-| `ref.ctrl.popup.halo.grey` | 0.9 | grey level × alpha | the darkening halo | R-CTRL-238 | — |
-| `ref.ctrl.popup.halo.disc_colour_factor` | 0.6 | × team colour | the additive team-colour disc | R-CTRL-238 | — |
+| `ref.ctrl.popup.halo.gray` | 0.9 | grey level × alpha | the darkening halo | R-CTRL-238 | — |
+| `ref.ctrl.popup.halo.disc_color_factor` | 0.6 | × team colour | the additive team-colour disc | R-CTRL-238 | — |
 
 String ids that this file uses, with their new text:
 

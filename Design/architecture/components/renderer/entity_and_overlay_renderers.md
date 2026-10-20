@@ -277,7 +277,7 @@ The procedure uses the high-detail distances `rnd.crowd.worker_detail_distance` 
 
 **RND-316** (MUST) The card texture is chosen per Worker, in this order of precedence: `sprite.visitor.front` for a Visitor faction Worker; `sprite.worker.side` when the card is seen edge-on (R-UNIT-144); `sprite.worker.hurt` variant 04 for a Burning Worker and every Rogue faction Worker, and variants 01 to 03 for the airborne corpses of R-UNIT-145; `sprite.worker.front` otherwise. The state overlay `sprite.worker.state_overlay` and, while the seasonal state is active, `sprite.worker.seasonal_hat` on every third Worker (R-UNIT-148) are further `worker_card` instances; the glows and the Shield bubble of R-UNIT-147 are `worker_glow` instances. The Visitor faction Worker's glow is `fx.glow_round` (R-UNIT-145).
 
-**RND-317** (MUST) A Worker's card colour is the colour of R-UNIT-146: team colour × (`ref.unit.worker.colour_base` + `ref.unit.worker.colour_health_weight` × health fraction); a dead Worker's RGB × `ref.unit.worker.corpse_colour` with alpha `ref.unit.worker.corpse_alpha_per_health` × health. After a team change the renderer starts a cross-fade record (§3.2) on the presentation team-change event and draws the team colour as lerp(previous team colour, new team colour, min(elapsed real time ÷ `ref.unit.worker.convert_fade`, 1)); it deletes the record when the fade completes. The cross-fade never changes a field of the simulated Worker (RND-301).
+**RND-317** (MUST) A Worker's card colour is the colour of R-UNIT-146: team colour × (`ref.unit.worker.color_base` + `ref.unit.worker.color_health_weight` × health fraction); a dead Worker's RGB × `ref.unit.worker.corpse_color` with alpha `ref.unit.worker.corpse_alpha_per_health` × health. After a team change the renderer starts a cross-fade record (§3.2) on the presentation team-change event and draws the team colour as lerp(previous team colour, new team colour, min(elapsed real time ÷ `ref.unit.worker.convert_fade`, 1)); it deletes the record when the fade completes. The cross-fade never changes a field of the simulated Worker (RND-301).
 
 **RND-318** (MUST) The Worker cards use the team palette through their vertex colour, not the mesh tint of ADR-020: the card art is white or light grey and the instance colour multiplies it ([visual_language.md](visual_language.md) RND-404).
 
@@ -331,7 +331,7 @@ The Builder draws no beam in a match: none of its match states (R-UNIT-453) draw
 
 **RND-326** (MUST) A centipede segment is lit with its mesh transform's uniform scale *σ* left in its normals: in the diffuse term of RND-233 its facet normal *n* is replaced by *n* ÷ *σ*, so a larger segment is lit darker and a smaller one brighter before the clamp (see DEC-958 item 3). Every other scaled actor mesh is lit with unit facet normals (RND-233).
 
-**RND-327** (MUST) An Essence orb whose team is the Rogue faction slot, which no producer creates (R-UNIT-305), would be drawn in `rnd.crowd.rogue_orb_colour` (100, 100, 100, alpha 0) in the first batch of pass 11, which darkens; every other orb is drawn in its team colour, or white with no team, with the sizes, alphas and timing of [essence_orbs.md](../../../reference/02_units/essence_orbs.md) R-UNIT-330 to R-UNIT-332 and the pass-11 drawing of [README.md](../animation_and_vfx/README.md).
+**RND-327** (MUST) An Essence orb whose team is the Rogue faction slot, which no producer creates (R-UNIT-305), would be drawn in `rnd.crowd.rogue_orb_color` (100, 100, 100, alpha 0) in the first batch of pass 11, which darkens; every other orb is drawn in its team colour, or white with no team, with the sizes, alphas and timing of [essence_orbs.md](../../../reference/02_units/essence_orbs.md) R-UNIT-330 to R-UNIT-332 and the pass-11 drawing of [README.md](../animation_and_vfx/README.md).
 
 **RND-328** (MUST) Passes 7a and 7b draw exactly the actor kinds of RND-323 and RND-324, the actors that a match creates (see DEC-062).
 
@@ -370,9 +370,9 @@ The Builder draws no beam in a match: none of its match states (R-UNIT-453) draw
 
 The order of this table carries no meaning. The spawn-network transit beams, the Beam Dish beams and the energy-grid power lines are structure layers of pass 8 ([world_renderers.md](world_renderers.md) RND-169, RND-171, RND-172). The full-screen flash and the camera shake of a shockwave are VFX screen effects (RND-246, [README.md](../animation_and_vfx/README.md)).
 
-**RND-333** (MUST) A shockwave ring (R-CRATE-470, R-CRATE-473) draws, during its whole life, a ground ring: a triangle-fan disc at its height + `ref.weapon.shockwave.disc_lift` (5 wu), of radius `ref.weapon.shockwave.start_radius` (35 wu) + `ref.weapon.shockwave.growth` (40 wu per s) × (size − *λ*), where size is the ring's size in seconds, which is also its life (R-CRATE-470), and *λ* = its remaining life − the extrapolation time *t* (RND-081). The fan's centre vertex has the colour `rnd.shockwave.centre_colour` (1, 1, 0, alpha 0) and its rim vertices `rnd.shockwave.rim_colour` (1, 0.5, 0.5) with alpha `ref.weapon.shockwave.disc_alpha` (0.6) × *λ* ÷ size, interpolated across each triangle, drawn with `effect_gradient_nodepth` (no depth test).
+**RND-333** (MUST) A shockwave ring (R-CRATE-470, R-CRATE-473) draws, during its whole life, a ground ring: a triangle-fan disc at its height + `ref.weapon.shockwave.disc_lift` (5 wu), of radius `ref.weapon.shockwave.start_radius` (35 wu) + `ref.weapon.shockwave.growth` (40 wu per s) × (size − *λ*), where size is the ring's size in seconds, which is also its life (R-CRATE-470), and *λ* = its remaining life − the extrapolation time *t* (RND-081). The fan's centre vertex has the colour `rnd.shockwave.center_color` (1, 1, 0, alpha 0) and its rim vertices `rnd.shockwave.rim_color` (1, 0.5, 0.5) with alpha `ref.weapon.shockwave.disc_alpha` (0.6) × *λ* ÷ size, interpolated across each triangle, drawn with `effect_gradient_nodepth` (no depth test).
 
-**RND-334** (MUST) During the first `ref.weapon.shockwave.billboard_time` (1 s) of its life, at camera distance *D*, a shockwave ring also draws its blast: `rnd.shockwave.blast_layers` (5) stacked `CameraFacing` quads of `fx.starburst` whose first half-size is size × `rnd.shockwave.blast_star_scale` (500) ÷ √*D* and each further one × `rnd.shockwave.blast_layer_growth` (1.2), in `rnd.shockwave.blast_colour` (1, 0.5, 0.2) with alpha 1 − age in seconds; then 5 stacked quads of `fx.glow_round` whose first half-size is size × `rnd.shockwave.blast_glow_scale` (1000) ÷ √*D*, growing likewise, in the same colour, all with `effect_additive`. Its full-screen flash and camera shake are those of R-CRATE-473, drawn and applied by the VFX screen effects (RND-246).
+**RND-334** (MUST) During the first `ref.weapon.shockwave.billboard_time` (1 s) of its life, at camera distance *D*, a shockwave ring also draws its blast: `rnd.shockwave.blast_layers` (5) stacked `CameraFacing` quads of `fx.starburst` whose first half-size is size × `rnd.shockwave.blast_star_scale` (500) ÷ √*D* and each further one × `rnd.shockwave.blast_layer_growth` (1.2), in `rnd.shockwave.blast_color` (1, 0.5, 0.2) with alpha 1 − age in seconds; then 5 stacked quads of `fx.glow_round` whose first half-size is size × `rnd.shockwave.blast_glow_scale` (1000) ÷ √*D*, growing likewise, in the same colour, all with `effect_additive`. Its full-screen flash and camera shake are those of R-CRATE-473, drawn and applied by the VFX screen effects (RND-246).
 
 **RND-335** (MUST) The ring's damaging radius is a simulation rule ([weapons_and_projectiles.md](../../../reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md)) and the drawn ring of RND-333 never feeds it; the drawn ring starts at radius 35 wu when the ring is created.
 
@@ -384,7 +384,7 @@ The order of this table carries no meaning. The spawn-network transit beams, the
 
 **RND-338** (MUST) Pass 10b draws every laser bolt of the match world as one instanced draw with the `laser_bolt` entry: additive, no culling, no depth write and the `bias_laser` variant (RND-219). Each bolt is drawn as `rnd.laser.layers` (5) identical `Segment` instances, so its additive brightness is five times one layer's before the clamp of RND-058.
 
-**RND-339** (MUST) A bolt's segment (R-CRATE-445) runs from its drawn position *p* (RND-081) to *p* + Normalize(velocity) × `ref.weapon.laser.billboard_length` (10 wu), with the half-width `rnd.laser.half_width` (0.8 wu) perpendicular to the camera ray (RND-306), in the team colour of the bolt's source team, or `rnd.laser.rogue_colour` (255, 255, 255) for the Rogue faction. A Convert bolt multiplies the half-width by `ref.weapon.laser.convert_width_factor` (2) and samples `fx.convert_beam`; every other bolt samples `fx.beam_short`. Both textures are read through a view of mip level 0 only, with linear clamp-to-edge filtering, *u* along the bolt and *v* across it.
+**RND-339** (MUST) A bolt's segment (R-CRATE-445) runs from its drawn position *p* (RND-081) to *p* + Normalize(velocity) × `ref.weapon.laser.billboard_length` (10 wu), with the half-width `rnd.laser.half_width` (0.8 wu) perpendicular to the camera ray (RND-306), in the team colour of the bolt's source team, or `rnd.laser.rogue_color` (255, 255, 255) for the Rogue faction. A Convert bolt multiplies the half-width by `ref.weapon.laser.convert_width_factor` (2) and samples `fx.convert_beam`; every other bolt samples `fx.beam_short`. Both textures are read through a view of mip level 0 only, with linear clamp-to-edge filtering, *u* along the bolt and *v* across it.
 
 **RND-340** (MUST) A laser bolt that passes within √`ref.weapon.laser.shake_range_sq` (about 14 wu) of the camera requests a camera shake of `ref.weapon.laser.shake` (0.5) through the VFX screen effects (R-CRATE-445, RND-246), unless the match is over or paused; the request is presentation-only and local, and the renderer issues it while it writes the bolt's instances, never from the simulation.
 
@@ -392,13 +392,13 @@ The order of this table carries no meaning. The spawn-network transit beams, the
 
 ### 4.8 Route lines (pass 12)
 
-**RND-350** (MUST) A route highlight is a presentation event naming a route and a team, raised for the routes that [reference/12_simulation_model/05_space_routing_and_physics.md](../../../reference/12_simulation_model/05_space_routing_and_physics.md) marks as highlighted for display and for the local route preview. On it the renderer emits, at every `rnd.route.highlight_step` (10 wu) along the route, two muzzle-flash particles of sizes `rnd.route.highlight_sizes` (75 and 60) with the velocity (0, `rnd.route.highlight_rise_speed` (10 wu/s), 0), in the team colour + `rnd.route.highlight_colour_offset` (100, 100, 100, alpha 100), each channel capped at 255, through the particle pool of [README.md](../animation_and_vfx/README.md).
+**RND-350** (MUST) A route highlight is a presentation event naming a route and a team, raised for the routes that [reference/12_simulation_model/05_space_routing_and_physics.md](../../../reference/12_simulation_model/05_space_routing_and_physics.md) marks as highlighted for display and for the local route preview. On it the renderer emits, at every `rnd.route.highlight_step` (10 wu) along the route, two muzzle-flash particles of sizes `rnd.route.highlight_sizes` (75 and 60) with the velocity (0, `rnd.route.highlight_rise_speed` (10 wu/s), 0), in the team colour + `rnd.route.highlight_color_offset` (100, 100, 100, alpha 100), each channel capped at 255, through the particle pool of [README.md](../animation_and_vfx/README.md).
 
 **RND-351** (MUST) A route intensity request with the value *a* sets the route's fade value to max(fade, *a*), creating the fade record (§3.2) when the route has none.
 
 **RND-352** (MUST) Each frame, for every route with a fade record whose end point lies inside the land rectangle, the fade value decreases by the presentation frame delta × `rnd.route.fade_rate` (0.25 per s), so a route fades from 1 to 0 in 4 s; at 0 or below, the record is deleted and the route is no longer drawn. A route whose end point lies outside the land rectangle is neither faded nor drawn. The fade is renderer state, never a field of the simulation's route storage (RND-301, R-SIM-357). Under option A of DEC-651, the renderer reads the route's points from the route store by handle while its fade record lives; under option B, the presentation event that announces a route carries a copy of its points, which the fade record keeps, so freeing the route never cuts its fade short.
 
-**RND-353** (MUST) While its fade value is above 0, each leg of a route is drawn as a dotted line of `CameraFacing` spots of `fx.particle_dot`, spot *i* (counted from the route's start) having the half-size |camera position − spot position| ÷ `rnd.route.spot_size_divisor` (100) and placed one spot size after the previous one, with arrow heads `marker.route_arrow` along the leg showing the route's direction, in the colour of its spots (see DEC-959 item 4). Every spot's colour is the local team's colour when the preview is walkable (RND-354), otherwise `rnd.route.blocked_colour` (0, 0, 0, alpha 100 of 255), with `rnd.route.grey_offset` (50) added to each RGB channel and capped at 255; its alpha is that colour's alpha × the fade value × (`rnd.route.pulse_base` (0.5) + `rnd.route.pulse_amplitude` (0.5) × sin(`rnd.route.pulse_rate` (10 rad per s) × *r* + `rnd.route.pulse_phase_step` (0.7 rad) × *i*)), with *r* the real clock.
+**RND-353** (MUST) While its fade value is above 0, each leg of a route is drawn as a dotted line of `CameraFacing` spots of `fx.particle_dot`, spot *i* (counted from the route's start) having the half-size |camera position − spot position| ÷ `rnd.route.spot_size_divisor` (100) and placed one spot size after the previous one, with arrow heads `marker.route_arrow` along the leg showing the route's direction, in the colour of its spots (see DEC-959 item 4). Every spot's colour is the local team's colour when the preview is walkable (RND-354), otherwise `rnd.route.blocked_color` (0, 0, 0, alpha 100 of 255), with `rnd.route.gray_offset` (50) added to each RGB channel and capped at 255; its alpha is that colour's alpha × the fade value × (`rnd.route.pulse_base` (0.5) + `rnd.route.pulse_amplitude` (0.5) × sin(`rnd.route.pulse_rate` (10 rad per s) × *r* + `rnd.route.pulse_phase_step` (0.7 rad) × *i*)), with *r* the real clock.
 
 **RND-354** (MUST) The route preview is walkable when the local team's selected actor is a Transport, a Builder or a Collector, which can cross water, or when every leg of the preview is walkable land ([05_space_routing_and_physics.md](../../../reference/12_simulation_model/05_space_routing_and_physics.md)). The flag is computed once per frame from the preview store (R-SIM-358, DEC-095), and the icon near the pointer reads it to show the unavailable sprite for a route that cannot be followed ([cursor_and_markers.md](../../../reference/06_controls_camera_and_commands/cursor_and_markers.md) R-CTRL-366).
 
@@ -530,7 +530,7 @@ The golden-image tests compare with the default tolerance and on the pinned refe
 | DEC-224 | Resolved (ADR-083) | parallel instance writing (RND-387) |
 | DEC-337 | Dropped | driver and pointer properties (RND-369) |
 | DEC-463 | Resolved | every tracked surge is drawn; one limit (RND-302) |
-| DEC-651 | Open | how the route fade gets its points (RND-352) |
+| DEC-651 | Resolved (O71) | how the route fade gets its points (RND-352): option B, the fade keeps a copy of the route's points |
 | ADR-005 | Accepted | the `Ghost` blend (one, source colour) of RND-365 is a blend state of the renderer's catalogue (RND-058) |
 | ADR-009 | Accepted | instancing, orientation modes and decal shadows |
 
@@ -548,7 +548,7 @@ The golden-image tests compare with the default tolerance and on the pinned refe
 |---|---|---|---|---|---|
 | `rnd.crowd.worker_detail_distance` | 99999.9, 1000, 500 | wu | at entity detail 1, 2, 3; high-detail factor 1 − d² ÷ D² | RND-314, RND-315 | DEC-029 |
 | `rnd.crowd.worker_fury_pulse` | 0.5 | × \|sin g\| | card size pulse with Fury | RND-314 | |
-| `rnd.crowd.rogue_orb_colour` | 100, 100, 100, 0 | of 255 | a Rogue faction orb, darkening batch | RND-327 | |
+| `rnd.crowd.rogue_orb_color` | 100, 100, 100, 0 | of 255 | a Rogue faction orb, darkening batch | RND-327 | |
 | `rnd.crawler.trail_column_width` | 32 | px | Crawler trail texture | RND-320 | |
 | `rnd.crawler.trail_column_height` | 512 | px | | RND-320 | |
 | `rnd.crawler.trail_copy_shrink` | 1 | px per two copies | copy *i* is 32 − ⌊*i* ÷ 2⌋ px square | RND-320 | |
@@ -562,28 +562,28 @@ The golden-image tests compare with the default tolerance and on the pinned refe
 | `rnd.sphere.ico_z` | 0.85065080835 | unit-sphere coordinate | icosahedron | RND-330 | |
 | `rnd.sphere.subdivisions` | 1 | levels | 80 triangles | RND-330 | |
 | `rnd.sphere.line_width` | 1 | px | wire drawing | RND-330 | |
-| `rnd.shockwave.centre_colour` | 1, 1, 0, 0 | RGBA | fan centre | RND-333 | |
-| `rnd.shockwave.rim_colour` | 1, 0.5, 0.5 | RGB | fan rim | RND-333 | |
+| `rnd.shockwave.center_color` | 1, 1, 0, 0 | RGBA | fan centre | RND-333 | |
+| `rnd.shockwave.rim_color` | 1, 0.5, 0.5 | RGB | fan rim | RND-333 | |
 | `rnd.shockwave.blast_layers` | 5 | quads | per texture | RND-334 | |
 | `rnd.shockwave.blast_star_scale` | 500 | × size ÷ √distance | first star half-size | RND-334 | |
 | `rnd.shockwave.blast_glow_scale` | 1000 | × size ÷ √distance | first glow half-size | RND-334 | |
 | `rnd.shockwave.blast_layer_growth` | 1.2 | × per layer | | RND-334 | |
-| `rnd.shockwave.blast_colour` | 1, 0.5, 0.2 | RGB | alpha 1 − age | RND-334 | |
+| `rnd.shockwave.blast_color` | 1, 0.5, 0.2 | RGB | alpha 1 − age | RND-334 | |
 | `rnd.lightning.cloud_pulse_rate` | 2 | rad per s of presentation frame time | alpha \|sin(2 g)\| | RND-336 | |
 | `rnd.lightning.bolt_layers` | 3 | quads | | RND-337 | |
 | `rnd.lightning.bolt_width_growth` | 1.2 | × per layer | | RND-337 | |
 | `rnd.lightning.bolt_alpha_falloff` | 0.5 | × per layer | | RND-337 | |
 | `rnd.laser.layers` | 5 | instances per bolt | five times the brightness | RND-338 | |
 | `rnd.laser.half_width` | 0.8 | wu | | RND-339 | |
-| `rnd.laser.rogue_colour` | 255, 255, 255 | RGB | Rogue faction bolts | RND-339 | |
+| `rnd.laser.rogue_color` | 255, 255, 255 | RGB | Rogue faction bolts | RND-339 | |
 | `rnd.route.highlight_step` | 10 | wu | particle spacing along a highlighted route | RND-350 | |
 | `rnd.route.highlight_sizes` | 75, 60 | particle size | two particles per step | RND-350 | |
 | `rnd.route.highlight_rise_speed` | 10 | wu/s | upward particle velocity | RND-350 | |
-| `rnd.route.highlight_colour_offset` | 100, 100, 100, 100 | of 255, added | capped at 255 | RND-350 | |
+| `rnd.route.highlight_color_offset` | 100, 100, 100, 100 | of 255, added | capped at 255 | RND-350 | |
 | `rnd.route.fade_rate` | 0.25 | fade per s of presentation frame delta | 4 s from 1 to 0 | RND-352 | DEC-651 |
 | `rnd.route.spot_size_divisor` | 100 | wu per wu of half-size | spot half-size = camera distance ÷ 100 | RND-353 | |
-| `rnd.route.blocked_colour` | 0, 0, 0, 100 | of 255 | preview not walkable | RND-353 | |
-| `rnd.route.grey_offset` | 50 | of 255, added to RGB | | RND-353 | |
+| `rnd.route.blocked_color` | 0, 0, 0, 100 | of 255 | preview not walkable | RND-353 | |
+| `rnd.route.gray_offset` | 50 | of 255, added to RGB | | RND-353 | |
 | `rnd.route.pulse_base` | 0.5 | alpha factor | | RND-353 | |
 | `rnd.route.pulse_amplitude` | 0.5 | alpha factor | | RND-353 | |
 | `rnd.route.pulse_rate` | 10 | rad per s of real time | | RND-353 | |

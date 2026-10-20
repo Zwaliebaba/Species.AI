@@ -2,11 +2,16 @@
 
 #include "Check.h"
 #include "Files.h"
+#include "PlatformThread.h"
+#include "TerrainField.h"
 #include "TestSupport.h"
+#include "Tuning.h"
 
 #include <atomic>
+#include <exception>
 #include <fstream>
 #include <mutex>
+#include <stop_token>
 #include <system_error>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -63,6 +68,72 @@ TemporaryFolder::~TemporaryFolder()
 std::filesystem::path RepositoryContentRoot()
 {
   return std::filesystem::path(__FILE__).parent_path().parent_path() / L"GameData";
+}
+
+const Species::TuningMvp& CommittedTuning()
+{
+  static const Species::TuningMvp COMMITTED_TUNING = []
+  {
+    const Neuron::RecordResult<Species::TuningMvp> tuning = Species::ReadTuningMvpSource(RepositoryContentRoot());
+    Assert::IsTrue(tuning.has_value(), L"the committed tuning record reads whole");
+    return tuning.value_or(Species::TuningMvp{});
+  }();
+  return COMMITTED_TUNING;
+}
+
+std::shared_ptr<const Species::RegionTerrain> FlatTerrain(double _height)
+{
+  const Species::TuningMvp& tuning = CommittedTuning();
+  Neuron::TerrainDefinition definition;
+  definition.cellSize = tuning.wld.terrain.cellSize;
+  definition.originX = static_cast<double>(tuning.mvp.world.regionCell) * tuning.wld.region.side;
+  definition.originZ = definition.originX;
+  definition.worldSizeX = static_cast<std::int32_t>(tuning.wld.region.side);
+  definition.worldSizeZ = definition.worldSizeX;
+  definition.outsideHeight = _height;
+  auto terrain = std::make_shared<Species::RegionTerrain>();
+  terrain->field = Neuron::TerrainField::Generate(definition, {}, {});
+  return terrain;
+}
+
+void RunConcurrently(const std::vector<std::function<void()>>& _jobs)
+{
+  std::vector<std::exception_ptr> failures(_jobs.size());
+  std::vector<Neuron::PlatformThread> threads;
+  threads.reserve(_jobs.size());
+  for (std::size_t index = 0; index < _jobs.size(); ++index)
+  {
+    threads.push_back(Neuron::PlatformThread::Start("test.concurrent",
+                                                    [&_jobs, &failures, index](const std::stop_token&)
+                                                    {
+                                                      try
+                                                      {
+                                                        _jobs[index]();
+                                                      }
+                                                      catch (...)
+                                                      {
+                                                        failures[index] = std::current_exception();
+                                                      }
+                                                    }));
+  }
+  for (Neuron::PlatformThread& thread : threads)
+  {
+    thread.Join();
+  }
+  for (const std::exception_ptr& failure : failures)
+  {
+    if (failure)
+    {
+      std::rethrow_exception(failure);
+    }
+  }
+}
+
+std::shared_ptr<const Species::RegionTerrain> ValleyTerrain()
+{
+  static const std::shared_ptr<const Species::RegionTerrain> VALLEY =
+    std::make_shared<const Species::RegionTerrain>(*Species::GenerateRegionTerrain(1, CommittedTuning()));
+  return VALLEY;
 }
 
 std::string ReadText(const std::filesystem::path& _path)

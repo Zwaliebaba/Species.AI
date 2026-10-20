@@ -312,6 +312,8 @@ Table 2.4-A The manifest columns and their use.
 
 **AST-018** (MUST) Every source has one **import record** beside it, sharing its stem, in the import-record schema that the data-schemas component defines (ADR-061, ADR-062). The content tools create the record from the manifest row and the defaults per kind (table 3.3-A); an author edits only the fields that the row leaves open (sampler, cut-out threshold, tint mask, derived variants, views, smooth primitives, loop points). A texture without an import record is a build error (ADR-018).
 
+> **Amendment 2026-10-20 (O73, [ADR-108](../../ADR/ADR-108-content-build-loose-content-and-cooked-formats.md)).** M1 has no import records: a texture is checked against its row, a mesh cooked at 1 wu per source unit. They arrive with T13.
+
 Table 3.2-A Cookers by manifest category.
 
 | `category` | Cooker | Content types written |
@@ -404,11 +406,11 @@ Table 3.5-A Derivations (the pseudocode is in §4.3).
 
 | Derivation | Parameters | Output |
 |---|---|---|
-| `BlurredShadow` | blur scale `rnd.shadow.icon_blur_radius` (10), normaliser `rnd.look.blur_normaliser` (0.0526), kernel `ast.derive.blur_kernel`, vertical gain `ast.derive.blur_vertical_gain` | a `Mask` texture of the parent's size, alpha mode `opaque`, drawn as a darkening layer under its parent ([view, lighting and fog](renderer/view_lighting_and_fog.md) RND-243, [visual language](renderer/visual_language.md) RND-422) |
+| `BlurredShadow` | blur scale `rnd.shadow.icon_blur_radius` (10), normaliser `rnd.look.blur_normalizer` (0.0526), kernel `ast.derive.blur_kernel`, vertical gain `ast.derive.blur_vertical_gain` | a `Mask` texture of the parent's size, alpha mode `opaque`, drawn as a darkening layer under its parent ([view, lighting and fog](renderer/view_lighting_and_fog.md) RND-243, [visual language](renderer/visual_language.md) RND-422) |
 | `StackedCopies` | column width `rnd.crawler.trail_column_width` (32 px), column height `rnd.crawler.trail_column_height` (512 px), shrink `rnd.crawler.trail_copy_shrink` (1 px per two copies) | a column of shrinking copies of the parent, of the parent's kind, alpha mode and mip policy ([entity and overlay renderers](renderer/entity_and_overlay_renderers.md) RND-320) |
 | `Grayscale` | none | the parent with each colour replaced by the mean of its red, green and blue values |
 | `ToColor` | a colour *C* and a threshold *t*: the keys `color` and `threshold` of [data schemas](data_schemas/import_and_build_records.md) table 3.1-B | the parent with every texel whose RGB mean is below *t* replaced by *C* × (255 − mean) ÷ 255 |
-| `ReplaceColor` | an old colour *O* and a new colour *N*: the keys `old_color` and `new_color` of data schemas table 3.1-B | the parent with every texel whose RGB distance from *O* is below `ast.derive.replace_colour_distance` (10) replaced by *N*, alpha kept |
+| `ReplaceColor` | an old colour *O* and a new colour *N*: the keys `old_color` and `new_color` of data schemas table 3.1-B | the parent with every texel whose RGB distance from *O* is below `ast.derive.replace_color_distance` (10) replaced by *N*, alpha kept |
 
 **AST-029** (MUST) The look requires these derived variants: a `BlurredShadow` of every cursor of [cursor and markers](../../reference/06_controls_camera_and_commands/cursor_and_markers.md) table 2.1-A that is shadowed (R-CTRL-350), which are `cursor.highlight.shadow`, `cursor.place.shadow`, `cursor.unavailable.shadow` and `cursor.world.shadow`, and of `marker.crate_landing` and `marker.barrage_target`, which are `marker.crate_landing.shadow` and `marker.barrage_target.shadow` (RND-243, RND-366, RND-422); and the `StackedCopies` Crawler trail `sprite.crawler.segment.trail` of `sprite.crawler.segment` (RND-320). An artist MAY instead author a shadow as greyscale art, as its own manifest row with the darkening profile (RND-422).
 
@@ -431,7 +433,7 @@ Table 3.6-A Texture usage conventions.
 | darkening by texel | `Mask` kind, `opaque`, drawn with the darkening or ink blend; white means full darkening | `icon.hud.icon_halo`, `sprite.missile_barrage.launcher_shadow`, `glyph.pad.face_shadow`, `glyph.pad.shoulder_left_shadow`, `glyph.pad.shoulder_right_shadow`, `glyph.pad.trigger_shadow`, the blurred shadow variants (AST-029) |
 | team colour of 2-D art | white or light-grey art modulated by the draw colour; cloth art with a companion tint mask (AST-022) | `sprite.worker.*`, `icon.*`, `cursor.*`, `marker.*`, `marker.leader_banner`, `marker.flag_post_state` |
 | team colour of meshes | an explicit tint weight per facet (AST-034), applied by the renderer's tint function ([world renderers](renderer/world_renderers.md) RND-161, RND-162) | every team-tinted mesh of RND-162 |
-| mesh colour attenuation | every facet colour × `rnd.mesh.colour_attenuation` (0.85), once, by the mesh cooker (RND-160, AST-076) | every mesh |
+| mesh colour attenuation | every facet colour × `rnd.mesh.color_attenuation` (0.85), once, by the mesh cooker (RND-160, AST-076) | every mesh |
 | look-up tables are not GPU textures | `CpuTable`, read on the CPU by the terrain component | `terrain.ramp`, `terrain.shore_wave_gradient` |
 | UI pictures | `Ui` kind with the linear clamp-to-edge sampler and the mip policy of their row; tiled strips keep their mips and use linear wrap | `help.*` pictures, `ui.*` panels and logos, `thumb.*` |
 | sizes | the size of the row's `spec`, checked by the validator (AST-068) | every texture row |
@@ -700,7 +702,7 @@ A source that fails a check is a build error naming the asset id, the member, th
 
 ### 4.3 Derived variants
 
-**AST-073** (MUST) A `BlurredShadow` variant is computed from its parent's decoded RGBA8 image *S* of width *W* and height *H*, with the weights *w*ₖ = `ast.derive.blur_kernel`[*k*] × `rnd.shadow.icon_blur_radius` × `rnd.look.blur_normaliser` for *k* = −2 to 2, in two passes that add into cleared images and saturate every channel at 255:
+**AST-073** (MUST) A `BlurredShadow` variant is computed from its parent's decoded RGBA8 image *S* of width *W* and height *H*, with the weights *w*ₖ = `ast.derive.blur_kernel`[*k*] × `rnd.shadow.icon_blur_radius` × `rnd.look.blur_normalizer` for *k* = −2 to 2, in two passes that add into cleared images and saturate every channel at 255:
 
 ```
 # pass 1: horizontal, from S into T
@@ -737,7 +739,7 @@ loop:
 
 With *s*₀ = 32 px this places 18 copies, of sides 32, 32, 31, 31, 30, 30, 29, 29, 28, 28, 27, 27, 26, 26, 25, 25, 24 and 24 px, filling 504 px of the 512 (RND-320).
 
-**AST-075** (MUST) The colour derivations of table 3.5-A use integer arithmetic on 8-bit channels: `Grayscale` sets each of red, green and blue to ⌊(*r* + *g* + *b*) ÷ 3⌋; `ToColor` computes the mean the same way and, for a mean below *t*, sets each channel *c* of red, green and blue to ⌊*C*.*c* × (255 − mean) ÷ 255⌋, leaving other texels unchanged; `ReplaceColor` replaces the red, green and blue of a texel whose Euclidean distance from *O* in 8-bit red, green and blue is below `ast.derive.replace_colour_distance` (10) by those of *N* and keeps its alpha. A derived variant is then cooked with its parent's import record, except where table 3.5-A states another output.
+**AST-075** (MUST) The colour derivations of table 3.5-A use integer arithmetic on 8-bit channels: `Grayscale` sets each of red, green and blue to ⌊(*r* + *g* + *b*) ÷ 3⌋; `ToColor` computes the mean the same way and, for a mean below *t*, sets each channel *c* of red, green and blue to ⌊*C*.*c* × (255 − mean) ÷ 255⌋, leaving other texels unchanged; `ReplaceColor` replaces the red, green and blue of a texel whose Euclidean distance from *O* in 8-bit red, green and blue is below `ast.derive.replace_color_distance` (10) by those of *N* and keeps its alpha. A derived variant is then cooked with its parent's import record, except where table 3.5-A states another output.
 
 ### 4.4 Mesh cooking
 
@@ -753,7 +755,7 @@ for each mesh node n, for each submesh p of n:
             require e(i0) = e(i1) = e(i2)                                     # else error: asset, node, triangle
             facet colour f := e(i0)
             facet normal m := Normalize(cross(P(i1) - P(i0), P(i2) - P(i0)))
-        f.rgb := Quantize8(f.rgb * rnd.mesh.colour_attenuation)               # alpha unchanged
+        f.rgb := Quantize8(f.rgb * rnd.mesh.color_attenuation)               # alpha unchanged
         tint weight t := per AST-034: 1 for the material `team`, 0 for every other
         emit three vertices, each with its position, f, m, t and the barycentric corner
              (1, 0, 0), (0, 1, 0), (0, 0, 1)
@@ -868,6 +870,8 @@ The asset indexes merge under the same rules; an update that replaces an asset's
 **AST-104** (MUST) A look-up canonicalises the requested key (AST-015) and then looks it up exactly. `MountSet::Contains` answers whether an asset id exists without loading anything, which is how a custom map without a thumbnail shows the outline alone (R-MAP-022). `MountSet::List` returns the effective keys under a prefix, each once, in byte-wise order.
 
 **AST-105** (MUST) In Debug builds, and only there, the start-up option `--loose-content <directory>` ([platform layer](platform_layer.md) PLT-026, table 3.3-A) mounts a **loose-content directory** last: a directory of cooked entries laid out by key, as the content build's incremental output writes them. A loose entry replaces any packed entry of the same key; every replacement is logged; and the session's simulation content identity is computed over the effective entries and reported as modified (ADR-058). Release builds contain no loose-file mount code (AST-006), which a check of the Release binaries confirms before a release (ADR-058).
+
+> **Amendment 2026-10-20 (O73, [ADR-108](../../ADR/ADR-108-content-build-loose-content-and-cooked-formats.md)).** Until packs exist, every configuration mounts the loose-content folder beside the executables, a departure from AST-006 that packs end; `--loose-content` stays Debug-only.
 
 **AST-106** (MUST NOT) No Species program writes into the install directory, into a pack or into the mount table while the game runs (ADR-071). Tools that save content, such as the map editor, write authoring files: under the content root of a development checkout, or into the player's map folder for custom maps ([map editor hooks](../../reference/08_maps_and_level_design/map_editor_hooks.md)), through the lossless and atomic writers of DEC-800.
 
@@ -1097,11 +1101,11 @@ Golden-image tests use the default tolerance and reference configuration of the 
 | `ast.texture.max_dimension` | 16384 | px | largest texture dimension | AST-068 | |
 | `ast.texture.block_dimension` | 4 | px | block-compressed top-level dimensions are multiples of it | AST-068 | |
 | `ast.texture.ui_authoring_scale` | 2 | × display size | rows whose `spec` says "author at 2x" | AST-019, AST-024 | |
-| `ast.derive.blur_kernel` | 2, 4, 7, 4, 2 | weights for the offsets −2 to 2 | they sum to 19; scaled by `rnd.shadow.icon_blur_radius` and `rnd.look.blur_normaliser` | AST-073 | |
+| `ast.derive.blur_kernel` | 2, 4, 7, 4, 2 | weights for the offsets −2 to 2 | they sum to 19; scaled by `rnd.shadow.icon_blur_radius` and `rnd.look.blur_normalizer` | AST-073 | |
 | `ast.derive.blur_vertical_gain` | 2 | × | applied in the vertical pass only | AST-073 | |
 | `ast.derive.blur_min_size` | 1 | px | smallest parent width or height | AST-073 | |
 | `ast.derive.blur_max_size` | 1024 | px | largest parent width or height | AST-073 | |
-| `ast.derive.replace_colour_distance` | 10 | 8-bit RGB distance | strictly below it is replaced | AST-075 | |
+| `ast.derive.replace_color_distance` | 10 | 8-bit RGB distance | strictly below it is replaced | AST-075 | |
 | `ast.mesh.socket_index_digits` | 2 | decimal digits | socket numbers | AST-038 | |
 | `ast.mesh.socket_first_number` | 1 | socket number | the cooked index is the number minus 1 | AST-038 | |
 | `ast.audio.sample_rate` | 48000 | Hz | sources and runtime | AST-048, AST-079, AST-080 | |
@@ -1114,4 +1118,4 @@ Golden-image tests use the default tolerance and reference configuration of the 
 | `ast.mount.budget_ms` | 200 | ms | mounting the baseline pack set | AST-125 | |
 | `ast.load.match_entry_budget_s` | 10 | s of real time | provisional: from the start of a skirmish match load to its first match frame, on the largest supported map | AST-130 | DEC-226, DEC-971 |
 
-Values that the rules above use and other documents own: `rnd.mesh.colour_attenuation`, `rnd.mesh.max_nodes`, `rnd.mesh.max_sockets` ([world renderers](renderer/world_renderers.md)); `rnd.shadow.icon_blur_radius` ([view, lighting and fog](renderer/view_lighting_and_fog.md)); `rnd.look.blur_normaliser` ([visual language](renderer/visual_language.md)); `rnd.crawler.trail_column_width`, `rnd.crawler.trail_column_height`, `rnd.crawler.trail_copy_shrink` ([entity and overlay renderers](renderer/entity_and_overlay_renderers.md)); the cut-out thresholds `rnd.pso.*_cutout` ([frame graph and passes](renderer/frame_graph_and_passes.md)); `ref.map.thumbnail.aspect` ([maps: rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md)); the streaming threshold `aen.residency.stream_threshold`, the samples per block `aen.stream.samples_per_block` and the bank budgets `aen.memory.interface_bank_budget`, `aen.memory.match_bank_budget` and `aen.memory.stream_budget` of the [audio engine](audio_engine/README.md).
+Values that the rules above use and other documents own: `rnd.mesh.color_attenuation`, `rnd.mesh.max_nodes`, `rnd.mesh.max_sockets` ([world renderers](renderer/world_renderers.md)); `rnd.shadow.icon_blur_radius` ([view, lighting and fog](renderer/view_lighting_and_fog.md)); `rnd.look.blur_normalizer` ([visual language](renderer/visual_language.md)); `rnd.crawler.trail_column_width`, `rnd.crawler.trail_column_height`, `rnd.crawler.trail_copy_shrink` ([entity and overlay renderers](renderer/entity_and_overlay_renderers.md)); the cut-out thresholds `rnd.pso.*_cutout` ([frame graph and passes](renderer/frame_graph_and_passes.md)); `ref.map.thumbnail.aspect` ([maps: rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md)); the streaming threshold `aen.residency.stream_threshold`, the samples per block `aen.stream.samples_per_block` and the bank budgets `aen.memory.interface_bank_budget`, `aen.memory.match_bank_budget` and `aen.memory.stream_budget` of the [audio engine](audio_engine/README.md).

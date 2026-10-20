@@ -1,7 +1,10 @@
 #include "pch.h"
 
+#include "CommandMessages.h"
 #include "InProcessTransport.h"
 #include "IntegratedServer.h"
+#include "LooseContent.h"
+#include "RegionTerrain.h"
 #include "ServerHost.h"
 #include "TestSupport.h"
 #include "TickReport.h"
@@ -9,14 +12,17 @@
 #include "WorkerPool.h"
 #include "WorldServer.h"
 #include "WorldSimulation.h"
+#include "WorldTerrain.h"
 
 #include <cstddef>
 #include <cstdint>
+#include <expected>
 #include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <thread>
+#include <utility>
 #include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -41,17 +47,46 @@ std::filesystem::path ContentRootWith(const TemporaryFolder& _folder, std::strin
   return _folder.Path();
 }
 
-// The tick reports a client end has received, in order.
-std::vector<std::uint64_t> TakeReports(Neuron::Transport& _client)
+// That record cooked as the content build cooks it, in a loose-content folder of its own, mounted (ADR-108).
+Neuron::LooseContent CookedContentWith(const TemporaryFolder& _folder, std::string_view _from, std::string_view _to)
 {
+  const auto tuning = Species::ReadTuningMvpSource(ContentRootWith(_folder, _from, _to));
+  Assert::IsTrue(tuning.has_value(), L"the changed record reads whole");
+  Neuron::CookedEntry cooked;
+  cooked.entry.key = std::string(Species::TUNING_MVP_KEY);
+  cooked.entry.type = Neuron::ContentType::Record;
+  cooked.entry.schemaId = std::string(Species::TUNING_MVP_SCHEMA_ID);
+  cooked.entry.schemaVersion = Species::TUNING_MVP_VERSION;
+  cooked.entry.simulationRelevant = Species::TUNING_MVP_SIMULATION_RELEVANT;
+  cooked.bytes = Species::CookTuningMvp(tuning.value_or(Species::TuningMvp{}));
+  std::vector<Neuron::CookedEntry> entries;
+  entries.push_back(std::move(cooked));
+  Assert::IsTrue(Neuron::WriteLooseContent(_folder.Path() / L"content", std::move(entries)).has_value(), L"the folder is written");
+  std::expected<Neuron::LooseContent, Neuron::AssetError> content = Neuron::LooseContent::Mount(_folder.Path() / L"content");
+  Assert::IsTrue(content.has_value(), L"the folder mounts");
+  return std::move(*content);
+}
+
+// What a client end has received, in order: the world's terrain, the tick reports and its commands' outcomes.
+struct Arrivals
+{
+  std::vector<Species::WorldTerrain> terrains;
   std::vector<std::uint64_t> ticks;
+  std::vector<Species::CommandReport> reports;
+};
+
+Arrivals TakeArrivals(Neuron::Transport& _client)
+{
+  Arrivals arrivals;
   Neuron::MessageDispatcher dispatcher;
-  dispatcher.Register<Species::TickReport>([&ticks](const Species::TickReport& _report) { ticks.push_back(_report.tick); });
+  dispatcher.Register<Species::WorldTerrain>([&arrivals](const Species::WorldTerrain& _terrain) { arrivals.terrains.push_back(_terrain); });
+  dispatcher.Register<Species::TickReport>([&arrivals](const Species::TickReport& _report) { arrivals.ticks.push_back(_report.tick); });
+  dispatcher.Register<Species::CommandReport>([&arrivals](const Species::CommandReport& _report) { arrivals.reports.push_back(_report); });
   while (std::optional<Neuron::ReceivedMessage> message = _client.Receive())
   {
-    Assert::IsTrue(dispatcher.Dispatch(message->bytes), L"only tick reports arrive");
+    Assert::IsTrue(dispatcher.Dispatch(message->bytes), L"only the terrain, tick reports and command reports arrive");
   }
-  return ticks;
+  return arrivals;
 }
 
 } // namespace
@@ -72,7 +107,7 @@ public:
     for (const std::size_t workers : {std::size_t{0}, std::size_t{2}})
     {
       Neuron::WorkerPool pool(workers);
-      Species::WorldSimulation world({TEST_KEY, 50, 3});
+      Species::WorldSimulation world({TEST_KEY, 50, 3, &CommittedTuning()});
       ExpectEqual(3, static_cast<std::int64_t>(world.RegionCount()), L"regions");
       for (std::uint64_t tick = 50; tick < 60; ++tick)
       {
@@ -92,7 +127,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp093OwnersIssueStableIdsInOrder)
   {
-    Species::WorldSimulation world({TEST_KEY, 0, 1});
+    Species::WorldSimulation world({TEST_KEY, 0, 1, &CommittedTuning()});
     const Species::StableId first = world.Ids().Issue();
     const Species::StableId second = world.Ids().Issue();
     Assert::IsTrue(first == Species::MakeStableId(Species::WORLD_OWNER_ID, 1), L"the world's first id");
@@ -106,7 +141,7 @@ public:
   TEST_METHOD(Mvp094WorldCommandsExecuteAfterTheRegions)
   {
     // A command for an unknown type is refused on arrival with its reason, in the world owner's queue.
-    Species::WorldSimulation world({TEST_KEY, 0, 1});
+    Species::WorldSimulation world({TEST_KEY, 0, 1, &CommittedTuning()});
     Assert::IsFalse(world.Commands().Submit(world.Ids().Issue(), 0, Neuron::EncodeMessage(Species::TickReport{1})));
     ExpectEqual(1, static_cast<std::int64_t>(world.Commands().Rejections().unknownType), L"a message that is no command");
   }
@@ -122,18 +157,19 @@ public:
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp090EveryConnectionReceivesEachTicksReport)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-090")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-011")
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp090EveryConnectionReceivesEachTicksReport)
   {
     // The headless library and host with the game's world, on a manual clock (PLT-048): two clients, each sent the
-    // report of every tick after it connected.
+    // world's terrain once and the report of every tick after it connected.
     auto source = std::make_unique<Neuron::ManualTimeSource>();
     Neuron::ManualTimeSource* manual = source.get();
     const Neuron::PlatformClock clock(std::move(source));
     Neuron::InProcessListener listener({});
     std::unique_ptr<Neuron::Transport> first = listener.Connect();
     std::unique_ptr<Neuron::Transport> second = listener.Connect();
-    Species::WorldServer world({});
+    Species::WorldServer world({.tuning = CommittedTuning()});
     Neuron::ServerHost::Desc desc;
     desc.clock = &clock;
     desc.tickPeriod = TEST_TICK_PERIOD;
@@ -159,9 +195,14 @@ public:
     }
     host.Stop();
 
+    Assert::IsTrue(world.Terrain() != nullptr, L"the world opened with its terrain");
     for (Neuron::Transport* client : {first.get(), second.get()})
     {
-      const std::vector<std::uint64_t> ticks = TakeReports(*client);
+      const Arrivals arrivals = TakeArrivals(*client);
+      Assert::IsTrue(arrivals.terrains.size() == 1 && arrivals.terrains[0].seed == world.Terrain()->seed &&
+                       arrivals.terrains[0].digest == world.Terrain()->digest,
+                     L"the terrain's seed and digest, once");
+      const std::vector<std::uint64_t>& ticks = arrivals.ticks;
       ExpectEqual(11, static_cast<std::int64_t>(ticks.size()), L"a report a tick, from the first");
       for (std::size_t n = 0; n < ticks.size(); ++n)
       {
@@ -171,20 +212,42 @@ public:
     Assert::IsTrue(world.Simulation() != nullptr && world.Simulation()->NextTick() == 11, L"the world froze before tick 11");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp005AWorldIsBuiltFromItsSeed)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-005")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-011")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp005AWorldIsBuiltFromItsSeed)
+  {
+    // A given seed builds its terrain when the world opens, outside every tick, and the world and its region hold it;
+    // with none, the server draws a seed of 32 bits, which a re-roll raises by at most seven.
+    Species::WorldServer given({.tuning = CommittedTuning(), .worldSeed = 1});
+    static_cast<void>(given.Open());
+    const auto expected = Species::GenerateRegionTerrain(1, CommittedTuning());
+    Assert::IsTrue(expected.has_value() && given.Terrain() != nullptr && given.Terrain()->digest == expected->digest, L"seed 1's terrain");
+    Assert::IsTrue(given.Simulation()->WorldSeed() == 1 && given.Simulation()->Region(0).Terrain() == given.Terrain(),
+                   L"the world holds the seed, and its region the terrain");
+    Species::WorldServer drawn({.tuning = CommittedTuning()});
+    static_cast<void>(drawn.Open());
+    Assert::IsTrue(drawn.Terrain() != nullptr && drawn.Simulation()->WorldSeed() == drawn.Terrain()->seed, L"a drawn seed's terrain");
+    Assert::IsTrue(drawn.Terrain()->seed < (std::uint64_t{1} << 32) + 8, L"a seed that can be typed again");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp094AClientsCommandEntersTheValidatedPath)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-094")
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp094AClientsCommandEntersTheValidatedPath)
   {
-    // M0 has no command types, so a client's message is refused as unknown by the world owner's queue: it took the
-    // one path, and nothing reached the simulation.
+    // A message that is no command is refused as unknown by the world owner's queue, and a battle command goes to the
+    // region's queue, which refuses it because the steward commands no team: each took the one path, and nothing
+    // reached the simulation. The client receives each outcome with its sequence number and tick (ADR-095, ADR-106).
     auto source = std::make_unique<Neuron::ManualTimeSource>();
     Neuron::ManualTimeSource* manual = source.get();
     const Neuron::PlatformClock clock(std::move(source));
     Neuron::InProcessListener listener({});
     std::unique_ptr<Neuron::Transport> client = listener.Connect();
     Assert::IsTrue(client->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(Species::TickReport{7})).has_value());
-    Species::WorldServer world({});
+    Assert::IsTrue(client->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(Species::SelectCommand{0, 0})).has_value());
+    Species::WorldServer world({.tuning = CommittedTuning()});
     Neuron::ServerHost::Desc desc;
     desc.clock = &clock;
     desc.tickPeriod = TEST_TICK_PERIOD;
@@ -199,6 +262,14 @@ public:
     host.Stop();
     Assert::IsTrue(world.Simulation() != nullptr);
     ExpectEqual(1, static_cast<std::int64_t>(world.Simulation()->Commands().Rejections().unknownType), L"refused as unknown");
+    ExpectEqual(1, static_cast<std::int64_t>(world.Simulation()->Region(0).Commands().Rejections().notPermitted), L"refused by the region");
+    const Arrivals arrivals = TakeArrivals(*client);
+    Assert::IsTrue(arrivals.reports.size() == 2, L"two outcomes");
+    Assert::IsTrue(arrivals.reports[0].sequence == 0 && arrivals.reports[0].result == Species::CommandResult::UnknownType,
+                   L"the first command's outcome");
+    Assert::IsTrue(arrivals.reports[1].sequence == 1 && arrivals.reports[1].result == Species::CommandResult::NotPermitted,
+                   L"the second command's outcome");
+    Assert::IsTrue(arrivals.reports[0].tick == arrivals.reports[1].tick && arrivals.reports[0].tick < 3, L"each with its tick");
   }
 };
 
@@ -216,20 +287,21 @@ public:
   TEST_METHOD(Mvp090TheClientSeesTheTickRiseThroughTheTransport)
   {
     // M0's exit criterion in a test: the client's end of the integrated server, on the real clock at a period of 10 ms
-    // that the tuning record states, receives rising ticks until the server stops.
+    // that the cooked tuning record states, receives rising ticks until the server stops.
     const TemporaryFolder folder;
+    const Neuron::LooseContent content = CookedContentWith(folder, "\"tick_period\": 0.1", "\"tick_period\": 0.01");
     const Neuron::PlatformClock clock;
     Species::IntegratedServer::Desc desc;
     desc.clock = &clock;
-    desc.contentRoot = ContentRootWith(folder, "\"tick_period\": 0.1", "\"tick_period\": 0.01");
+    desc.content = &content;
     Species::IntegratedServer server(desc);
     std::unique_ptr<Neuron::Transport> client = server.Connect();
     Assert::IsTrue(server.Start().has_value(), L"the server starts on the record");
     std::vector<std::uint64_t> ticks;
     while (ticks.size() < 20)
     {
-      const std::vector<std::uint64_t> arrived = TakeReports(*client);
-      ticks.insert(ticks.end(), arrived.begin(), arrived.end());
+      const Arrivals arrived = TakeArrivals(*client);
+      ticks.insert(ticks.end(), arrived.ticks.begin(), arrived.ticks.end());
       clock.WaitUntil(clock.Now() + Neuron::Nanoseconds{2'000'000});
     }
     server.Stop();
@@ -246,15 +318,18 @@ public:
   TEST_METHOD(Mvp099AServerWithoutItsTuningDoesNotStart)
   {
     const TemporaryFolder folder;
+    Assert::IsTrue(Neuron::WriteLooseContent(folder.Path(), {}).has_value(), L"a folder of no entry is written");
+    const auto content = Neuron::LooseContent::Mount(folder.Path());
+    Assert::IsTrue(content.has_value(), L"it mounts");
     const Neuron::PlatformClock clock;
     Species::IntegratedServer::Desc desc;
     desc.clock = &clock;
-    desc.contentRoot = folder.Path();
+    desc.content = &*content;
     Species::IntegratedServer server(desc);
     std::unique_ptr<Neuron::Transport> client = server.Connect();
     const auto started = server.Start();
     Assert::IsFalse(started.has_value(), L"no record, no server");
-    Assert::IsTrue(started.error().front().diagnosticClass == Neuron::DiagnosticClass::MissingRecord, L"a missing record");
+    Assert::IsTrue(started.error().fault == Neuron::AssetFault::Missing, L"a missing record");
     server.Stop();
     Assert::IsFalse(client->Receive().has_value(), L"no tick ran");
   }
@@ -267,8 +342,8 @@ public:
     // M0 task T9's done-when (owner decision O67): the same build, given 0.2 s in place of 0.1 s in the record, runs
     // its ticks 200 ms apart. The clock is manual, so the test measures the schedule exactly.
     const TemporaryFolder folder;
-    const auto tuning = Species::LoadTuningMvp(ContentRootWith(folder, "\"tick_period\": 0.1", "\"tick_period\": 0.2"));
-    Assert::IsTrue(tuning.has_value(), L"the changed record reads whole");
+    const auto tuning = Species::LoadTuningMvp(CookedContentWith(folder, "\"tick_period\": 0.1", "\"tick_period\": 0.2"));
+    Assert::IsTrue(tuning.has_value(), L"the changed record, cooked, loads");
     auto source = std::make_unique<Neuron::ManualTimeSource>();
     Neuron::ManualTimeSource* manual = source.get();
     const Neuron::PlatformClock clock(std::move(source));

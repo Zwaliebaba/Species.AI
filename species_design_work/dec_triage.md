@@ -158,7 +158,7 @@
 | DEC-267 | Barrier Emitter line in the obstacle grid | design phase | D2 | B3 | Affects | decisions/simulation_gap_rules.md |
 | DEC-313 | Dead airborne actors | design phase | D2 | B4 | Affects | decisions/open_questions.md |
 | DEC-455 | Same-tick advance of objects created or handed over during a tick | design phase | D2 | B1, B4, B3 | Affects | decisions/units_buildings_crates_economy.md |
-| DEC-651 | Lifetime of simulation routes | design phase | D2 | B4, D8 | Affects | decisions/simulation_terrain_render_assets.md |
+| DEC-651 | Lifetime of simulation routes | Resolved (owner, O71, 2026-10-20) | D2 | B4, D8 | Affects | decisions/simulation_terrain_render_assets.md |
 | DEC-250 | Persisted data inventory and client-local storage | design phase | D4 | C2, D2, D1, C1, D10 | deferred topic: Persistence | decisions/deferred/numerics_lobby_terrain_services.md |
 | DEC-251 | World-state persistence, schema migration and rollback | design phase | D4 | D2, D1, D10 | deferred topic: Persistence | decisions/deferred/numerics_lobby_terrain_services.md |
 | DEC-969 | Co-op group lists in ascending position order | design phase | D4 | B9 | Affects | decisions/engine_gap_rules.md |

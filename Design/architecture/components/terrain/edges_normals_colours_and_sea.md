@@ -97,16 +97,16 @@ Table 4.11-A Simulation normals and render normals.
 ```text
 (a, b, c) := the triangle's vertices: (p1, p2, q1) for the first triangle of a pair step,
              (p2, q1, q2) for the second                           # RND-132 notation
-center := (a + b + c) * ter.colour.centre_factor          # binary64, summed a, b, c; 0.33333, not 1/3
+center := (a + b + c) * ter.color.center_factor          # binary64, summed a, b, c; 0.33333, not 1/3
 g      := binary32(facet normal y)                         # 1 = flat, 0 = vertical
-u      := binary32(pow32(1 - g, ter.colour.slope_exponent))       # 0.4
+u      := binary32(pow32(1 - g, ter.color.slope_exponent))       # 0.4
 hgt    := binary32(center.y)
 v      := binary32(1 - hgt / highest)
 r0     := colorVariation.NextUint()                        # TER-185
 colorVariation.Seed(uint32(trunc(center.x)) OR (uint32(trunc(center.z)) + r0))
-v      := binary32(v + colorVariation.NextSigned(ter.colour.jitter_numerator / (max(hgt, 0) + ter.colour.jitter_offset)))
-px     := clamp(trunc(u * ter.colour.ramp_size), 0, ter.colour.ramp_size - 1)
-py     := clamp(trunc(v * ter.colour.ramp_size), 0, ter.colour.ramp_size - 1)
+v      := binary32(v + colorVariation.NextSigned(ter.color.jitter_numerator / (max(hgt, 0) + ter.color.jitter_offset)))
+px     := clamp(trunc(u * ter.color.ramp_size), 0, ter.color.ramp_size - 1)
+py     := clamp(trunc(v * ter.color.ramp_size), 0, ter.color.ramp_size - 1)
 color  := ramp texel (px, py), py counted from the bottom row as viewed      # TER-040
 ```
 
@@ -134,7 +134,7 @@ All of this section is presentation and is rebuilt from the height field (TER-00
 
 **TER-196** (MUST) The shore mask has `ter.sea.mask_size` (*S* = 128) × *S* pixels over the sea plane. With the pixel sizes *sX* = 2 *X* ÷ *S* and *sZ* = 2 *Z* ÷ *S* (binary32, exact because the division is by a power of two) and the offset *o* = `ter.sea.mask_land_offset` (32 pixels, the plane's margin of *X*/2), pixel (*x*, *z*) corresponds to the world point (*x* × *sX* − *o* × *sX*, *z* × *sZ* − *o* × *sZ*), so the plane [−*X*/2, 1.5 *X*) × [−*Z*/2, 1.5 *Z*) is covered. The land value of a pixel is 1 when *o* ≤ *x* < *S* − *o*, *o* ≤ *z* < *S* − *o* and `Height` at its world point is above `ref.sim.physics.sea_level`, and 0 otherwise. The mask is computed in binary32.
 
-**TER-197** (MUST) The land values are blurred by the kernel *k*[0 to 10] = `ter.sea.blur_taps` (0.2, 0.3, 0.4, 0.5, 0.8, 1.0, 0.8, 0.5, 0.4, 0.3, 0.2), each divided by `ter.sea.blur_normaliser` (5.4, the sum of the taps), in scatter form: first horizontally, every pixel whose value is not within `ter.sea.blur_skip_tolerance` (10⁻⁶) of 0 adds value × *k*[*i*] to pixel (*x* + *i* − 5, *z*) for *i* from 0 to 10, contributions outside the image being dropped; then vertically, in the same form along z, on the result of the horizontal pass. Each blurred value *V* gives the grey level trunc(min(`ter.sea.mask_max` (255), *V* × `ter.sea.mask_gain` (855))), stored as an opaque grey texel of the shore-mask image at (*x*, *S* − 1 − *z*): the image is **vertically flipped**, so its row 0 (texture *v* = 0) holds mask row 127, at the edge *z* = 1.5 *Z*, in the orientation that RND-142 samples. The image is registered with the asset cache as a run-time texture through an `ImageProducer`, which produces it again after device removal (AST-062). The result is a soft "distance to the coast" mask, saturated at 255 on and near land and reaching 0 six pixels from a straight coast (one pixel is *X* ÷ 64 wu, so about 0.094 *X*).
+**TER-197** (MUST) The land values are blurred by the kernel *k*[0 to 10] = `ter.sea.blur_taps` (0.2, 0.3, 0.4, 0.5, 0.8, 1.0, 0.8, 0.5, 0.4, 0.3, 0.2), each divided by `ter.sea.blur_normalizer` (5.4, the sum of the taps), in scatter form: first horizontally, every pixel whose value is not within `ter.sea.blur_skip_tolerance` (10⁻⁶) of 0 adds value × *k*[*i*] to pixel (*x* + *i* − 5, *z*) for *i* from 0 to 10, contributions outside the image being dropped; then vertically, in the same form along z, on the result of the horizontal pass. Each blurred value *V* gives the grey level trunc(min(`ter.sea.mask_max` (255), *V* × `ter.sea.mask_gain` (855))), stored as an opaque grey texel of the shore-mask image at (*x*, *S* − 1 − *z*): the image is **vertically flipped**, so its row 0 (texture *v* = 0) holds mask row 127, at the edge *z* = 1.5 *Z*, in the orientation that RND-142 samples. The image is registered with the asset cache as a run-time texture through an `ImageProducer`, which produces it again after device removal (AST-062). The result is a soft "distance to the coast" mask, saturated at 255 on and near land and reaching 0 six pixels from a straight coast (one pixel is *X* ÷ 64 wu, so about 0.094 *X*).
 
 **TER-198** (MUST) The depth map is a `SurfaceGrid<float>` of width 2 *X* and height 2 *Z*, with origin (−*X*/2, −*Z*/2), the cell size 2 *X* ÷ *S* on **both** axes (on a square terrain this gives *S* × *S* samples) and the outside value `ter.sea.depth_outside` (1.0). Its sample (*x*, *z*) is 1 − grey(*x*, *z*) ÷ 255, the grey level of mask pixel (*x*, *z*), read back from the flipped image: 1.0 is open sea and 0.0 is on or next to land.
 
@@ -159,7 +159,7 @@ for i := 0 .. tableZ - 1:  z := i * wc
 
 The spatial frequencies, temporal frequencies and amplitudes of the two x terms are `ter.sea.wave.x_terms` (0.01, 0.65, 1.2 and 0.03, 1.5, 0.9) and of the two z terms `ter.sea.wave.z_terms` (0.02, 0.75, 0.9 and 0.03, 1.85, 0.65).
 
-**TER-205** (MUST) The heights and colours of the pairs are, in build order, with the brightness scale *B* = `ter.sea.wave.brightness_scale` (4.0) and the mix weights `ter.sea.wave.colour_mix` (0.7 and 0.3):
+**TER-205** (MUST) The heights and colours of the pairs are, in build order, with the brightness scale *B* = `ter.sea.wave.brightness_scale` (4.0) and the mix weights `ter.sea.wave.color_mix` (0.7 and 0.3):
 
 ```text
 prevH1 := 0 ;  prevH2 := 0                    # before the first pair of the mesh

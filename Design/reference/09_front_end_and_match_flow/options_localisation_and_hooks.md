@@ -174,7 +174,7 @@ The reference page also offers an audio output, a mixing rate and a number of so
 | Setting | Default | Written by | Read by |
 |---|---|---|---|
 | player name | `ui.player.default_name` | every change of the name, from the name field or the chat rename command; every creation of the front-end screen; the name apply action ([screen_flow_and_match_setup.md](screen_flow_and_match_setup.md) R-META-008, R-META-052) | the front-end screen when it is created; the default session name |
-| preferred colour | `ref.meta.settings.preferred_colour.default` (none) | the colour picker of the player options page, except in Siege and in co-op | the match setup page when it assigns the local slot's colour |
+| preferred colour | `ref.meta.settings.preferred_color.default` (none) | the colour picker of the player options page, except in Siege and in co-op | the match setup page when it assigns the local slot's colour |
 | session name | the player name, or `ui.settings.default_session_name` when there is none | only an edit of the settings file | the advertised record of a hosted session (DEC-245) |
 
 **R-META-452** (MUST) The session browser stores these settings, whose use is the browser's (DEC-245):
@@ -511,7 +511,7 @@ The values of this document are the reference values, adopted as the starting ba
 | `ref.meta.settings.control_help.default` | on | switch | no visible effect | R-META-449 | DEC-050 |
 | `ref.meta.settings.difficulty.default` | 1 | level + 1 | inert in every match | R-META-449 | DEC-010 |
 | `ref.meta.settings.large_menus.default` | off | switch | small tool-style windows only | R-META-449 | — |
-| `ref.meta.settings.preferred_colour.default` | none | team colour | no preference | R-META-451 | — |
+| `ref.meta.settings.preferred_color.default` | none | team colour | no preference | R-META-451 | — |
 | `ref.meta.settings.browser_filter.default` | on | switch | each of the four stored filters | R-META-452 | DEC-245 |
 | `ref.meta.settings.manual_sessions` | 30 | entries | at most; numbered from 1 | R-META-452 | DEC-245 |
 | `ref.meta.settings.mouse_buttons.default` | 3 | buttons | read when the team controls are sent | R-META-455 | — |
@@ -578,7 +578,7 @@ Every setting that the client stores and reads, the two Species accessibility se
 | automatic camera | `camera.automatic` | hidden | automatic (`ref.ctrl.camera.automatic_setting`) | [reference/06](../06_controls_camera_and_commands/camera.md) |
 | seasonal theme | `interface.seasonal_theme` | hidden | inert entry (R-META-449 item 5) | — |
 | player name | `player.name` | player options | `ui.player.default_name` | [screen_flow_and_match_setup.md](screen_flow_and_match_setup.md) |
-| preferred colour | `player.preferred_colour` | player options | none (`ref.meta.settings.preferred_colour.default`) | this document |
+| preferred colour | `player.preferred_colour` | player options | none (`ref.meta.settings.preferred_color.default`) | this document |
 | session name | `network.session_name` | hidden | the player name, then `ui.settings.default_session_name` | this document |
 | four browser filters | `browser.show_incompatible`, `browser.show_full`, `browser.show_password`, `browser.show_custom_maps` | browser filter page (three) and hidden (one) | on (`ref.meta.settings.browser_filter.default`) | this document |
 | manual session entries | `browser.session.<n>.host`, `browser.session.<n>.port`, `browser.session.<n>.name` | hidden | none, up to `ref.meta.settings.manual_sessions` | this document |

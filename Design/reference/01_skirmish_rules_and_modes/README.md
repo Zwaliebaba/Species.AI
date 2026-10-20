@@ -73,14 +73,14 @@ A seventh, debug-only mode of the reference is not part of the catalogue (DEC-05
 
 ### 2.3 Team colours
 
-**R-MODE-012** (MUST) Team colours come from the colour table of [reference/12](../12_simulation_model/06_teams_and_player_commands.md) (R-SIM-415, keys `ref.sim.team_colour.<name>`). The lobby offers the `ref.sim.team.player_colour_count` (8) colour ids 0 to 7, named `team.colour.green`, `team.colour.red`, `team.colour.yellow`, `team.colour.blue`, `team.colour.orange`, `team.colour.purple`, `team.colour.cyan` and `team.colour.pink`.
+**R-MODE-012** (MUST) Team colours come from the colour table of [reference/12](../12_simulation_model/06_teams_and_player_commands.md) (R-SIM-415, keys `ref.sim.team_color.<name>`). The lobby offers the `ref.sim.team.player_color_count` (8) colour ids 0 to 7, named `team.colour.green`, `team.colour.red`, `team.colour.yellow`, `team.colour.blue`, `team.colour.orange`, `team.colour.purple`, `team.colour.cyan` and `team.colour.pink`.
 
 **R-MODE-013** (MUST) When a slot is initialised for a match outside co-op and outside Siege, its colour id is set to its slot id. Initialising a local-player slot makes it the local team, and initialising any slot that is not a bot clears its disconnected flag. A slot initialised after the match world has initialised its teams is initialised in the match world at once.
 
 **R-MODE-014** (MUST) A request to set slot t to colour id c, which a human's lobby choice issues as `PlayerCommand::SetColor` (R-SIM-416, R-SIM-451), is decided by the first of these rules that applies:
 
-1. c is none: the slot takes its slot default colour from `ref.match.colour.slot_defaults` and its colour id becomes none.
-2. Siege: the request needs the map's player count, and is refused while the count is unknown. Let n be the number of slots that already hold c. On a 3-player map the defender colour (`ref.sim.team.siege_defender_colour_id`) is full when n ≥ `ref.match.colour.siege_3p_defender_limit` (1), and the attacker colour (`ref.sim.team.siege_attacker_colour_id`) is full when n ≥ `ref.match.colour.siege_3p_attacker_limit` (2). On any other map a colour is full when n ≥ player count ÷ `ref.match.colour.siege_side_divisor` (2). A full colour is refused.
+1. c is none: the slot takes its slot default colour from `ref.match.color.slot_defaults` and its colour id becomes none.
+2. Siege: the request needs the map's player count, and is refused while the count is unknown. Let n be the number of slots that already hold c. On a 3-player map the defender colour (`ref.sim.team.siege_defender_color_id`) is full when n ≥ `ref.match.color.siege_3p_defender_limit` (1), and the attacker colour (`ref.sim.team.siege_attacker_color_id`) is full when n ≥ `ref.match.color.siege_3p_attacker_limit` (2). On any other map a colour is full when n ≥ player count ÷ `ref.match.color.siege_side_divisor` (2). A full colour is refused.
 3. Co-op: the request is refused unless c is a valid co-op colour (R-MODE-015).
 4. Otherwise: the request is refused when any other used slot holds c.
 
@@ -88,9 +88,9 @@ An accepted request sets the slot's colour id to c and its colour to the table c
 
 **R-MODE-015** (MUST) Colour id c is a valid co-op colour unless at least `ref.match.coop.max_alliances` (2) distinct colours are already in use and no slot uses c, or at least `ref.match.coop.members_per_alliance` (2) slots already use c. A colour is **taken** when any used slot holds it. The **next available colour** is the lowest colour id 0 to 7 that is not taken, or none.
 
-**R-MODE-016** (MUST) At match-world initialisation each bot slot below the player count, in a match that is neither co-op nor Siege, chooses a colour from 0 to `ref.sim.team.bot_colour_count` − 1 (0 to 3) that no other team holds, as a uniform choice from the list of free colours (DEC-014, R-SIM-416); in a tutorial a bot's colour is its slot id. Each unused slot at or above the player count draws a colour from 0 to 3 that no player slot holds, so that the effects that pick a random team colour, the Essence Grove and the Allegiance Scrambler, have a colour for every slot; a colour drawn for an unused slot is not reserved, so two unused slots can share one (R-SIM-422, DEC-450).
+**R-MODE-016** (MUST) At match-world initialisation each bot slot below the player count, in a match that is neither co-op nor Siege, chooses a colour from 0 to `ref.sim.team.bot_color_count` − 1 (0 to 3) that no other team holds, as a uniform choice from the list of free colours (DEC-014, R-SIM-416); in a tutorial a bot's colour is its slot id. Each unused slot at or above the player count draws a colour from 0 to 3 that no player slot holds, so that the effects that pick a random team colour, the Essence Grove and the Allegiance Scrambler, have a colour for every slot; a colour drawn for an unused slot is not reserved, so two unused slots can share one (R-SIM-422, DEC-450).
 
-**R-MODE-017** (MUST) The member shade of colour id none, which is the no-team colour, is `ref.match.colour.no_group`, an opaque grey (DEC-078). A shade request for a co-op group that has no colour returns white instead (R-SIM-421).
+**R-MODE-017** (MUST) The member shade of colour id none, which is the no-team colour, is `ref.match.color.no_group`, an opaque grey (DEC-078). A shade request for a co-op group that has no colour returns white instead (R-SIM-421).
 
 ### 2.4 Co-op alliances
 
@@ -130,7 +130,7 @@ The resulting colours apply inside this step on every participant; alliance assi
 
 **R-MODE-021** (MUST) `PlaceSoloMember(t, g)`: t keeps its colour id, or, when it has none, draws a colour from 0 to 3 that no used slot holds (DEC-014); t joins group g, takes the group's single position, and its co-op group position is 0.
 
-**R-MODE-022** (MUST) `PairAllianceMembers(t, g)` with fixed groups: t joins group g with co-op group position 1; its partner joins g with co-op group position 2 and moves to the group's other position. The partner is: when t has a colour, the first other used slot with the same colour, otherwise the **last** used slot with no colour, which then takes t's colour; when t has no colour, the first other used slot without a colour, and both then take a random colour, (simulation draw mod 8) ÷ `ref.sim.team.coop_colour_divisor`, drawn again while it is taken.
+**R-MODE-022** (MUST) `PairAllianceMembers(t, g)` with fixed groups: t joins group g with co-op group position 1; its partner joins g with co-op group position 2 and moves to the group's other position. The partner is: when t has a colour, the first other used slot with the same colour, otherwise the **last** used slot with no colour, which then takes t's colour; when t has no colour, the first other used slot without a colour, and both then take a random colour, (simulation draw mod 8) ÷ `ref.sim.team.coop_color_divisor`, drawn again while it is taken.
 
 **R-MODE-023** (MUST) `PairAllianceMembers(t)` without map groups pairs t, in slot order: with a slot of the same colour, joining that slot's group, or group 1 if it has none and group 1 is empty, or group 2 otherwise; else with a slot that has no colour, which takes t's colour, or a random free colour from 0 to 3 when t has none (colour 0, without a draw, when it is free); else, when t has no colour, with a coloured slot that has no partner, whose colour t takes.
 
@@ -140,7 +140,7 @@ The resulting colours apply inside this step on every participant; alliance assi
 
 ### 2.5 Siege sides
 
-**R-MODE-026** (MUST) In Siege the lobby colour is the side: the defender colour `ref.sim.team.siege_defender_colour_id` (0, green) and the attacker colour `ref.sim.team.siege_attacker_colour_id` (1, red). The player-options page offers random (colour none), attackers and defenders in place of colours.
+**R-MODE-026** (MUST) In Siege the lobby colour is the side: the defender colour `ref.sim.team.siege_defender_color_id` (0, green) and the attacker colour `ref.sim.team.siege_attacker_color_id` (1, red). The player-options page offers random (colour none), attackers and defenders in place of colours.
 
 **R-MODE-027** (MUST) At load Siege assigns sides and positions in place of R-MODE-011 and R-MODE-020 (R-SIM-419). For each slot below the player count whose colour is none, in slot order: it defends if every attacker position is taken, attacks if every defender position is taken, and otherwise takes the side (simulation draw mod 2). A defender then takes a random free defender position (a position not in the map's attacking list) and an attacker a random free attacker position, both with the simulation generator. Outside co-op the colours are the side colours. In a co-op Siege match the slot's group is 1 when its position is in the map's group-1 list and 2 otherwise, the group colour is the side colour, and the co-op group position is 1 or 2.
 
@@ -593,7 +593,7 @@ flowchart TD
 
 ## 4 Tuning table
 
-Keys cited here and defined elsewhere: `ref.sim.tick_period`, `ref.sim.slice.match_rules`, `ref.sim.speed.normal`, `ref.sim.speed.stopped` and `ref.sim.speed.game_over_rate` in [reference/12 tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md); `ref.sim.max_teams`, `ref.sim.team.*` and `ref.sim.team_colour.*` in [reference/12 teams](../12_simulation_model/06_teams_and_player_commands.md); `ref.sim.world.message_expiry` and `ref.sim.team.kill_milestones` in [reference/12 containers](../12_simulation_model/04_containers_and_update_order.md); `ref.econ.catch_up.option_percent`, `ref.econ.catch_up.curve`, `ref.econ.catch_up.max_multiplier`, `ref.econ.catch_up.modes`, `ref.econ.start.powers`, `ref.econ.comeback.*` and `ref.econ.gate.*` in [reference/05](../05_population_flow.md); `ref.crate.drop.period_default_s` and `ref.power.comeback.pool` in [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md); the mode keys `ref.mode.<mode>.*` in the mode files.
+Keys cited here and defined elsewhere: `ref.sim.tick_period`, `ref.sim.slice.match_rules`, `ref.sim.speed.normal`, `ref.sim.speed.stopped` and `ref.sim.speed.game_over_rate` in [reference/12 tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md); `ref.sim.max_teams`, `ref.sim.team.*` and `ref.sim.team_color.*` in [reference/12 teams](../12_simulation_model/06_teams_and_player_commands.md); `ref.sim.world.message_expiry` and `ref.sim.team.kill_milestones` in [reference/12 containers](../12_simulation_model/04_containers_and_update_order.md); `ref.econ.catch_up.option_percent`, `ref.econ.catch_up.curve`, `ref.econ.catch_up.max_multiplier`, `ref.econ.catch_up.modes`, `ref.econ.start.powers`, `ref.econ.comeback.*` and `ref.econ.gate.*` in [reference/05](../05_population_flow.md); `ref.crate.drop.period_default_s` and `ref.power.comeback.pool` in [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md); the mode keys `ref.mode.<mode>.*` in the mode files.
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
@@ -614,11 +614,11 @@ Keys cited here and defined elsewhere: `ref.sim.tick_period`, `ref.sim.slice.mat
 | `ref.mode.zone_control.option.time_limit` | 5 | minutes | 1 to 60 in steps of 1 | R-MODE-074 | — |
 | `ref.mode.relic_run.option.time_limit` | 10 | minutes | 1 to 60 in steps of 1 | R-MODE-074 | — |
 | `ref.mode.flag_chain.option.time_limit` | 15 | minutes | none (no limit), then 1 to 60 in steps of 1 | R-MODE-074 | DEC-073, DEC-120 |
-| `ref.match.colour.slot_defaults` | (100, 255, 100), (255, 50, 50), (255, 255, 50), (120, 180, 255), (255, 150, 0), (250, 250, 250) | RGB per slot 0 to 5 | a slot's colour while its colour id is none | R-MODE-014, R-MODE-071 | — |
-| `ref.match.colour.siege_3p_defender_limit` | 1 | slots | the defender colour is full at this count on a 3-player map | R-MODE-014 | — |
-| `ref.match.colour.siege_3p_attacker_limit` | 2 | slots | the attacker colour is full at this count on a 3-player map | R-MODE-014 | — |
-| `ref.match.colour.siege_side_divisor` | 2 | — | a side colour is full at player count ÷ 2 on other maps | R-MODE-014 | — |
-| `ref.match.colour.no_group` | (153, 153, 153, 255) | RGBA8 | 60 % grey, opaque; the no-team colour (member shade of colour id none) | R-MODE-017 | DEC-078 |
+| `ref.match.color.slot_defaults` | (100, 255, 100), (255, 50, 50), (255, 255, 50), (120, 180, 255), (255, 150, 0), (250, 250, 250) | RGB per slot 0 to 5 | a slot's colour while its colour id is none | R-MODE-014, R-MODE-071 | — |
+| `ref.match.color.siege_3p_defender_limit` | 1 | slots | the defender colour is full at this count on a 3-player map | R-MODE-014 | — |
+| `ref.match.color.siege_3p_attacker_limit` | 2 | slots | the attacker colour is full at this count on a 3-player map | R-MODE-014 | — |
+| `ref.match.color.siege_side_divisor` | 2 | — | a side colour is full at player count ÷ 2 on other maps | R-MODE-014 | — |
+| `ref.match.color.no_group` | (153, 153, 153, 255) | RGBA8 | 60 % grey, opaque; the no-team colour (member shade of colour id none) | R-MODE-017 | DEC-078 |
 | `ref.match.coop.max_alliances` | 2 | alliances | colours in use in co-op | R-MODE-015, R-MODE-019 | DEC-034 |
 | `ref.match.coop.members_per_alliance` | 2 | slots | | R-MODE-015, R-MODE-019 | DEC-034 |
 | `ref.match.grace_overlay.font_height` | 0.04 | × screen height | | R-MODE-042 | — |

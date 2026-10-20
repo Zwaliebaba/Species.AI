@@ -9,6 +9,7 @@ for the configurations and platforms below. Any other condition is recorded as u
 on it, so a project cannot hide a setting behind a condition that the checkers do not evaluate. Settings are kept per
 configuration and platform; a query names the configuration and reads x64 unless it names the platform too.
 """
+import functools
 import os
 import re
 import xml.etree.ElementTree as ElementTree
@@ -196,12 +197,25 @@ def load(root):
   return solutions[0], projects
 
 
+# Only these characters can start a comment or a literal; the text between them is copied whole.
+LEXICAL_START = re.compile(r'[/R"\']')
+
+
+@functools.lru_cache(maxsize=None)
 def strip_comments_and_strings(text):
-  """C++ source with comments, string literals and character literals blanked, line structure kept."""
+  """C++ source with comments, string literals and character literals blanked, line structure kept. The checkers strip
+  one file under several rules and in every fixture tree, so the result is kept for each text."""
   out = []
   i = 0
   n = len(text)
   while i < n:
+    m = LEXICAL_START.search(text, i)
+    j = m.start() if m else n
+    if j > i:
+      out.append(text[i:j])
+      i = j
+      if i >= n:
+        break
     c = text[i]
     if c == '/' and i + 1 < n and text[i + 1] == '/':
       j = text.find('\n', i)

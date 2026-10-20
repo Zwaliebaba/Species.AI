@@ -160,6 +160,13 @@ public:
                    L"nesting deeper than its limit");
     Assert::IsTrue(fails(Bytes({}), [](Neuron::BitReader& _r) { static_cast<void>(_r.Enter(2)); }), L"a nested value left open");
     Assert::IsTrue(fails(Bytes({}), [](Neuron::BitReader& _r) { _r.Leave(); }), L"a nested value closed twice");
+    Assert::IsTrue(fails(Bytes({0x00}),
+                         [](Neuron::BitReader& _r)
+                         {
+                           static_cast<void>(_r.ReadBits(8));
+                           _r.Fail();
+                         }),
+                   L"a field its codec bounds");
 
     Neuron::BitReader failed(Bytes({0xFF}));
     static_cast<void>(failed.ReadBits(16));
