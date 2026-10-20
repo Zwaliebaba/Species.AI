@@ -283,7 +283,7 @@ Every blend result is clamped to [0, 1] per channel as it is written to the SDR 
 |---|---|---|---|---|---|---|---|
 | 0 | frame constants | nothing; the per-frame constants are written: matrices, the two lights (RND-226), the fog parameters (RND-222) | this document | — | parameters set | lights set | — |
 | 1 | camera | nothing; the frame-rate counter advances (R-SIM-576); the projection and view are set up (RND-210, RND-211) | [view_lighting_and_fog.md](view_lighting_and_fog.md) | — | — | — | — |
-| 2 | clear | `scene_colour` to the background colour `rnd.frame.clear_colour` (0, 0, 0), `rnd.frame.clear_colour_inverted` (1, 1, 1) in the inverted style (see DEC-040); outside a match `rnd.frame.clear_colour_no_match` (0.05, 0, 0.05); `scene_depth` to 0 | this document | — | — | — | — |
+| 2 | clear | `scene_colour` to the background colour `rnd.frame.clear_color` (0, 0, 0), `rnd.frame.clear_color_inverted` (1, 1, 1) in the inverted style (see DEC-040); outside a match `rnd.frame.clear_color_no_match` (0.05, 0, 0.05); `scene_depth` to 0 | this document | — | — | — | — |
 | 3 | sky | the sky grid and the blobby and flat cloud layers, in one instanced draw | [world_renderers.md](world_renderers.md) §4.3 | `sky`: `Additive` · `None` · `Back` | per layer, black | unlit | unsorted |
 | 4 | terrain | the terrain surface and its wire-grid overlay, in one pass | [world_renderers.md](world_renderers.md) §4.1 | `terrain`: `Opaque` · `TestWrite` · `Back`; inverted: `Darkening` · `TestWrite` · `Back` | level | lit, terrain materials (RND-230) | chunks unsorted |
 | 5a | flat sea layer | the textured, shore-masked sea layer at its fixed depth | [world_renderers.md](world_renderers.md) §4.2 | `sea_flat`: `Opaque` · `Test` · `None`; inverted: `Darkening` · `Test` · `None` | level | unlit | unsorted |
@@ -519,9 +519,9 @@ The golden-image tests compare with the default tolerance and on the pinned refe
 | `rnd.pso.default_cutout` | 0.01 | alpha | a pixel is kept only if its alpha is greater | RND-055, RND-060 | |
 | `rnd.pso.strike_team_cutout` | 0.02 | alpha | pass 7a | RND-060 | |
 | `rnd.pso.worker_cutout` | 0.04 | alpha | pass 7d | RND-060 | |
-| `rnd.frame.clear_colour` | 0, 0, 0 | RGB | match background and level fog colour | RND-070 | |
-| `rnd.frame.clear_colour_inverted` | 1, 1, 1 | RGB | background and level fog colour in the inverted style | RND-070 | DEC-040 |
-| `rnd.frame.clear_colour_no_match` | 0.05, 0, 0.05 | RGB | background outside a match | RND-070 | |
+| `rnd.frame.clear_color` | 0, 0, 0 | RGB | match background and level fog colour | RND-070 | |
+| `rnd.frame.clear_color_inverted` | 1, 1, 1 | RGB | background and level fog colour in the inverted style | RND-070 | DEC-040 |
+| `rnd.frame.clear_color_no_match` | 0.05, 0, 0.05 | RGB | background outside a match | RND-070 | |
 | `rnd.frame.menu_camera_position` | 0, 600, 0 | wu | main-menu sky camera | RND-077 | |
 | `rnd.frame.menu_fov` | 90 | degrees, vertical | main-menu sky camera | RND-077 | |
 | `rnd.frame.menu_yaw` | −1.899 | rad about y | applied to the front vector (0, 0, 1) first | RND-077 | |

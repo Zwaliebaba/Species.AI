@@ -182,9 +182,9 @@ struct TuningMvp
       double warningMinutes = 0.0;
     };
 
-    struct Defence
+    struct Defense
     {
-      // mvp.defence.damage_taken_factor, in of reference damage
+      // mvp.defense.damage_taken_factor, in of reference damage
       double damageTakenFactor = 0.0;
     };
 
@@ -286,8 +286,8 @@ struct TuningMvp
 
     struct Renown
     {
-      // mvp.renown.defence_held, in renown
-      std::int64_t defenceHeld = 0;
+      // mvp.renown.defense_held, in renown
+      std::int64_t defenseHeld = 0;
 
       // mvp.renown.claim_won, in renown
       std::int64_t claimWon = 0;
@@ -406,7 +406,7 @@ struct TuningMvp
     Strength strength;
     Expedition expedition;
     Conflict conflict;
-    Defence defence;
+    Defense defense;
     Battle battle;
     Protection protection;
     Grievance grievance;
@@ -999,7 +999,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
-inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::Defence& _out)
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::Defense& _out)
 {
   _out.damageTakenFactor = _reader.Decimal(_object, "damage_taken_factor", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
@@ -1071,7 +1071,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::Renown& _out)
 {
-  _out.defenceHeld = _reader.Integer(_object, "defence_held", 0);
+  _out.defenseHeld = _reader.Integer(_object, "defense_held", 0);
   _out.claimWon = _reader.Integer(_object, "claim_won", 0);
   _out.grievanceEased = _reader.Decimal(_object, "grievance_eased", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.structurePer100ru = _reader.Decimal(_object, "structure_per_100ru", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
@@ -1155,7 +1155,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "strength"), _out.strength);
   ReadFields(_reader, _reader.Object(_object, "expedition"), _out.expedition);
   ReadFields(_reader, _reader.Object(_object, "conflict"), _out.conflict);
-  ReadFields(_reader, _reader.Object(_object, "defence"), _out.defence);
+  ReadFields(_reader, _reader.Object(_object, "defense"), _out.defense);
   ReadFields(_reader, _reader.Object(_object, "battle"), _out.battle);
   ReadFields(_reader, _reader.Object(_object, "protection"), _out.protection);
   ReadFields(_reader, _reader.Object(_object, "grievance"), _out.grievance);

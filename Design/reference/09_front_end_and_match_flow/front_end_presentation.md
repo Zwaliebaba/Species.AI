@@ -38,8 +38,8 @@ This document specifies how the front end of the reference game looks and how it
 
 **R-META-205** (MUST) The backdrop figure layer, which the options screens and the drop-down menus also draw, consists of:
 
-1. a full-screen additive quad, black at three corners and `ref.meta.backdrop.glow_colour` (RGB 1.0, 0.5, 0.1) at the bottom-left corner, smoothly shaded;
-2. the giant Worker figure, `sprite.worker.front`, with nearest filtering and tint `ref.meta.backdrop.figure_tint` (RGBA 1, 0, 0, 1), centred at `ref.meta.backdrop.figure_centre` (0.75 × W, 0.7 × H), of half-size `ref.meta.backdrop.figure_half_size` (0.3 × W) + `ref.meta.backdrop.figure_breath` (5 px) × sin(t), so that it breathes, and rotated by `ref.meta.backdrop.figure_angle` (0.2 rad);
+1. a full-screen additive quad, black at three corners and `ref.meta.backdrop.glow_color` (RGB 1.0, 0.5, 0.1) at the bottom-left corner, smoothly shaded;
+2. the giant Worker figure, `sprite.worker.front`, with nearest filtering and tint `ref.meta.backdrop.figure_tint` (RGBA 1, 0, 0, 1), centred at `ref.meta.backdrop.figure_center` (0.75 × W, 0.7 × H), of half-size `ref.meta.backdrop.figure_half_size` (0.3 × W) + `ref.meta.backdrop.figure_breath` (5 px) × sin(t), so that it breathes, and rotated by `ref.meta.backdrop.figure_angle` (0.2 rad);
 3. in high detail only, `ref.meta.backdrop.echo_count` (10) echo copies of the figure, copy i from 0 to 9: each copy's size is the previous size × `ref.meta.backdrop.echo_scale` (1.02) and its centre the previous centre shifted by `ref.meta.backdrop.echo_offset` (−6, −6) px, tinted `ref.meta.backdrop.echo_tint` (RGB 1, 0.2, 0.2) at alpha `ref.meta.backdrop.echo_alpha` (0.2) × (1 − i ÷ 10);
 4. the wheel, `uitex.backdrop_wheel`, of half-size `ref.meta.backdrop.wheel_half_size` (0.6 × W), centred on the screen, at angle `ref.meta.backdrop.wheel_spin` (0.2 rad per second) × t, additive white at alpha `ref.meta.backdrop.wheel_alpha` (0.06), drawn `ref.meta.backdrop.wheel_copies` (10) times in high detail, each copy rotated a further `ref.meta.backdrop.wheel_copy_step` (0.02 rad), and not at all in low detail.
 
@@ -95,11 +95,11 @@ When the loop ends it clears the showing flag and the start time.
 **R-META-219** (MUST) A loading frame draws this, in order:
 
 1. While the spinner picture is not available, the frame tries to obtain it; until it has it, the frame draws nothing and presents nothing, so the screen keeps its last frame.
-2. On the first frame drawn, the start time is recorded. The frame clears colour to `ref.meta.loading.clear_colour` (RGBA 0, 0, 0, 0) and clears depth.
+2. On the first frame drawn, the start time is recorded. The frame clears colour to `ref.meta.loading.clear_color` (RGBA 0, 0, 0, 0) and clears depth.
 3. **Menu backdrop variant.** When this is not the initial load, no match is loading, the participant is at the front end and the screen fade has completed, the frame draws the 3-D backdrop (R-META-210) and the UI, so that the menu stays visible under the spinner while thumbnails load.
 4. The frame switches to 2-D screen drawing.
 5. **Studio mark, on the initial load only.** It starts at `ref.meta.loading.mark_start` (0 s) and fades in over `ref.meta.loading.mark_fade_in` (1.0 s): alpha = min(elapsed ÷ 1.0 s, 1). Once the loader is idle and no graphics request is queued, the fade-out starts, from full opacity even when the fade-in has not finished (DEC-868 item 2): alpha = 1 − (now − fade-out start) ÷ `ref.meta.loading.mark_fade_out` (1.0 s); when alpha reaches 0 or less the mark fade-out flag clears, which lets the loop end. The mark `uitex.studio_splash` is centred and square, `ref.meta.loading.mark_size` (500 px) × H ÷ `ref.meta.loading.mark_reference_height` (1024) on a side, in white at that alpha. When the string `ui.loading.online_notice` exists, it is drawn centred at (W ÷ 2, `ref.meta.loading.notice_y` (0.95) × H) with a font of `ref.meta.loading.notice_font` (0.02) × H, in white at alpha − `ref.meta.loading.notice_alpha_offset` (0.5), so at most half opaque.
-6. **Spinner, always.** `sprite.worker.front`, `ref.meta.loading.spinner_size` (100 px) square, centred at (W − `ref.meta.loading.spinner_inset` (100 px), H − 100 px), in `ref.meta.loading.spinner_colour` (RGBA 0.2, 0.8, 0.2, 1), rotated about its centre by (t × `ref.meta.loading.spinner_speed` (90° per second)) mod 360°.
+6. **Spinner, always.** `sprite.worker.front`, `ref.meta.loading.spinner_size` (100 px) square, centred at (W − `ref.meta.loading.spinner_inset` (100 px), H − 100 px), in `ref.meta.loading.spinner_color` (RGBA 0.2, 0.8, 0.2, 1), rotated about its centre by (t × `ref.meta.loading.spinner_speed` (90° per second)) mod 360°.
 7. The frame is presented.
 
 ### 2.4 Explainer panel
@@ -132,7 +132,7 @@ When the loop ends it clears the showing flag and the start time.
 | time | s | `ref.meta.explainer.key_default.time` (0) | the key's position on the timeline |
 | picture | a `help.explainer_picture` role | `ref.meta.explainer.key_default.picture` (the Worker figure) | held: the earlier key's value |
 | x, y | canvas units | `ref.meta.explainer.key_default.position` (100, 100) | eased |
-| colour role | none, friendly, enemy, invisible | `ref.meta.explainer.key_default.colour_role` (none) | held |
+| colour role | none, friendly, enemy, invisible | `ref.meta.explainer.key_default.color_role` (none) | held |
 | scale | × the picture's pixel size | `ref.meta.explainer.key_default.scale` (0.3) | eased |
 | angle | degrees | `ref.meta.explainer.key_default.angle` (0) | linear |
 | horizontal flip | off, on | `ref.meta.explainer.key_default.flip` (off) | held |
@@ -260,9 +260,9 @@ All values are presentation; real-time values are seconds of the presentation cl
 | `ref.meta.layout.first_button_offset` | 0.5 × bh + 1.3 × bh + one button step | below lY | one button step = bh + button gap | R-META-201 | — |
 | `ref.meta.layout.back_offset` | 2 | × bh, above the left box's bottom | Back and the last button | R-META-201 | — |
 | `ref.meta.layout.picture_inset` | 0.1 | × rW | right-box pictures and the chat input | R-META-201 | — |
-| `ref.meta.backdrop.glow_colour` | 1.0, 0.5, 0.1 | RGB, 0 to 1 | bottom-left corner of the additive quad | R-META-205 | — |
+| `ref.meta.backdrop.glow_color` | 1.0, 0.5, 0.1 | RGB, 0 to 1 | bottom-left corner of the additive quad | R-META-205 | — |
 | `ref.meta.backdrop.figure_tint` | 1, 0, 0, 1 | RGBA, 0 to 1 | | R-META-205 | — |
-| `ref.meta.backdrop.figure_centre` | 0.75 × W, 0.7 × H | px | | R-META-205 | — |
+| `ref.meta.backdrop.figure_center` | 0.75 × W, 0.7 × H | px | | R-META-205 | — |
 | `ref.meta.backdrop.figure_half_size` | 0.3 | × W | before the breathing term | R-META-205 | — |
 | `ref.meta.backdrop.figure_breath` | 5 | px × sin(t) | | R-META-205 | — |
 | `ref.meta.backdrop.figure_angle` | 0.2 | rad | | R-META-205 | — |
@@ -294,7 +294,7 @@ All values are presentation; real-time values are seconds of the presentation cl
 | `ref.meta.blink.on_alpha` | 1.0 | alpha | | R-META-209 | — |
 | `ref.meta.blink.on_time` | 0.5 | s of each second | | R-META-209 | — |
 | `ref.meta.blink.off_alpha` | 0.5 | alpha | | R-META-209 | — |
-| `ref.meta.loading.clear_colour` | 0, 0, 0, 0 | RGBA | | R-META-219 | — |
+| `ref.meta.loading.clear_color` | 0, 0, 0, 0 | RGBA | | R-META-219 | — |
 | `ref.meta.loading.mark_start` | 0 | s | the studio mark starts at once | R-META-219 | — |
 | `ref.meta.loading.mark_fade_in` | 1.0 | s | | R-META-219 | — |
 | `ref.meta.loading.mark_fade_out` | 1.0 | s | | R-META-219 | — |
@@ -305,7 +305,7 @@ All values are presentation; real-time values are seconds of the presentation cl
 | `ref.meta.loading.notice_alpha_offset` | 0.5 | alpha subtracted | | R-META-219 | — |
 | `ref.meta.loading.spinner_size` | 100 | px | | R-META-219 | — |
 | `ref.meta.loading.spinner_inset` | 100 | px from the right and bottom edges | spinner centre | R-META-219 | — |
-| `ref.meta.loading.spinner_colour` | 0.2, 0.8, 0.2, 1 | RGBA, 0 to 1 | | R-META-219 | — |
+| `ref.meta.loading.spinner_color` | 0.2, 0.8, 0.2, 1 | RGBA, 0 to 1 | | R-META-219 | — |
 | `ref.meta.loading.spinner_speed` | 90 | degrees per second | | R-META-219 | — |
 | `ref.meta.explainer.reference_height` | 1300 | px | scale = H ÷ 1300 | R-META-224 | — |
 | `ref.meta.explainer.bottom_factor` | 1.15 | × the canvas height × scale | distance of the panel top from the bottom | R-META-224 | — |
@@ -329,7 +329,7 @@ All values are presentation; real-time values are seconds of the presentation cl
 | `ref.meta.explainer.key_default.time` | 0 | s | a key that omits its time | R-META-226 | — |
 | `ref.meta.explainer.key_default.picture` | the Worker figure | a `help.explainer_picture` role | | R-META-226 | — |
 | `ref.meta.explainer.key_default.position` | 100, 100 | canvas units | x, y | R-META-226 | — |
-| `ref.meta.explainer.key_default.colour_role` | none | colour role | | R-META-226 | — |
+| `ref.meta.explainer.key_default.color_role` | none | colour role | | R-META-226 | — |
 | `ref.meta.explainer.key_default.scale` | 0.3 | × the picture's pixel size | | R-META-226 | — |
 | `ref.meta.explainer.key_default.angle` | 0 | degrees | | R-META-226 | — |
 | `ref.meta.explainer.key_default.flip` | off | switch | horizontal flip | R-META-226 | — |

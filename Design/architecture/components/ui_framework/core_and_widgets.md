@@ -483,7 +483,7 @@ The scroll hook asks the cursor's own widget, and the search for the next active
 
 `RemoveValueControl(field)` removes the field and both glyphs. A bool binding is a bool field: it is stepped and clamped as a bool, never as a byte (DEC-102).
 
-**UI-063** (MUST) `AddColorControl(label, rgba, y, onChange, x, w)` creates a colour swatch widget bound to a colour, `ui.value_control.colour_reserve` (13 px) narrower than w (which defaults to the window width − x, with x defaulting to `ui.value_control.x`) and `ui.value_control.height` (15 px) high, a height that large menus do not scale for this widget. It serves tool windows; the colour-editing window that a swatch opens belongs to a map editor, which the design phase designs (DEC-045).
+**UI-063** (MUST) `AddColorControl(label, rgba, y, onChange, x, w)` creates a colour swatch widget bound to a colour, `ui.value_control.color_reserve` (13 px) narrower than w (which defaults to the window width − x, with x defaulting to `ui.value_control.x`) and `ui.value_control.height` (15 px) high, a height that large menus do not scale for this widget. It serves tool windows; the colour-editing window that a swatch opens belongs to a map editor, which the design phase designs (DEC-045).
 
 ### 4.16 Text field
 
@@ -617,7 +617,7 @@ The chat entry is the framework's free-text entry. The transport of chat lines a
 
 **UI-092** (MUST) On the match setup page the chat field is a widget of the front-end screen at the place R-META-044 gives; `action.match.chat` starts editing it when no text edit is active and the chat was not toggled in this update ([reference/09](../../../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) R-META-098).
 
-**UI-093** (MUST) The chat field draws a black box at alpha `ref.meta.chat.input_alpha` with a white outline `ref.meta.chat.input_outline` wide, clipped to its rectangle by the scissor stack ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-181); its text is `ref.meta.chat.text_height` × its height high. While it is not being edited (`IsTextEditing()` is false for it) it shows `ui.chat.prompt` in grey `ref.meta.chat.prompt_grey`. Text wider than the box is right-aligned, so its end stays visible, and the caret is a 1 px line after the text that blinks with `ref.meta.chat.caret_period` ([reference/09](../../../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) R-META-100).
+**UI-093** (MUST) The chat field draws a black box at alpha `ref.meta.chat.input_alpha` with a white outline `ref.meta.chat.input_outline` wide, clipped to its rectangle by the scissor stack ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-181); its text is `ref.meta.chat.text_height` × its height high. While it is not being edited (`IsTextEditing()` is false for it) it shows `ui.chat.prompt` in grey `ref.meta.chat.prompt_gray`. Text wider than the box is right-aligned, so its end stays visible, and the caret is a 1 px line after the text that blinks with `ref.meta.chat.caret_period` ([reference/09](../../../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) R-META-100).
 
 **UI-094** (MUST) The chat field handles characters as a text field (UI-066). On Enter, when the chat was not toggled in this update, it hands the text to its owner, which acts by R-META-101 (a rename command or a chat line), clears the field, restarts editing on the match setup page or closes the window in a match, and sets its owner's chat-toggled-this-update flag.
 
@@ -842,7 +842,7 @@ All values are presentation values. Lengths are pixels at a DPI scale of 1 and a
 | `ui.value_control.glyph_gap_decrease` | 5 | px right of the field | | UI-062 | — |
 | `ui.value_control.glyph_gap_increase` | 22 | px right of the field | | UI-062 | — |
 | `ui.value_control.glyph_size` | 15 | px | square | UI-062 | — |
-| `ui.value_control.colour_reserve` | 13 | px | colour swatch narrower than its width | UI-063 | — |
+| `ui.value_control.color_reserve` | 13 | px | colour swatch narrower than its width | UI-063 | — |
 | `ui.field.default_bounds` | 0 to 10 000 | value | numeric bindings without bounds | UI-065 | — |
 | `ui.field.float_decimals` | 2 | decimal places | float and double text | UI-065 | — |
 | `ui.field.well_fraction` | 0.4 | × the field width | right part | UI-070 | — |

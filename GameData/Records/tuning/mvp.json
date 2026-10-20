@@ -74,7 +74,7 @@
       "attack_cost_ru": 300,
       "warning_minutes": 5
     },
-    "defence": {
+    "defense": {
       "damage_taken_factor": 0.75
     },
     "battle": {
@@ -118,7 +118,7 @@
       "quiet_minutes": 15
     },
     "renown": {
-      "defence_held": 3,
+      "defense_held": 3,
       "claim_won": 3,
       "grievance_eased": 1,
       "structure_per_100ru": 1

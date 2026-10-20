@@ -124,7 +124,7 @@ The hover height is max(terrain height, `ref.sim.physics.sea_level`) + `ref.econ
 
 ### 2.9 Presentation and sound
 
-**R-UNIT-443** (MUST) A Collector's whole mesh takes its team colour: every facet has tint weight 1, with the team colour × `ref.unit.collector.tint_scale` (0.7) (ADR-020). Each tick each engine socket emits `ref.unit.collector.exhaust_fire_count` (5) blue fire particles of size `ref.unit.collector.exhaust_fire_size` (75) and colour `ref.unit.collector.exhaust_colour` (50, 50, 250) and one smoke trail particle, from the presentation generator ([animation and VFX](../../architecture/components/animation_and_vfx/README.md)).
+**R-UNIT-443** (MUST) A Collector's whole mesh takes its team colour: every facet has tint weight 1, with the team colour × `ref.unit.collector.tint_scale` (0.7) (ADR-020). Each tick each engine socket emits `ref.unit.collector.exhaust_fire_count` (5) blue fire particles of size `ref.unit.collector.exhaust_fire_size` (75) and colour `ref.unit.collector.exhaust_color` (50, 50, 250) and one smoke trail particle, from the presentation generator ([animation and VFX](../../architecture/components/animation_and_vfx/README.md)).
 
 **R-UNIT-444** (MUST) A Collector draws a collector bubble, `fx.bubble_sphere`, of size `ref.unit.collector.bubble_size` (16 wu), additive, at opacity `ref.unit.collector.bubble_alpha` (150 of 255), `ref.unit.collector.bubble_offset` (3 wu) above its collector point. While Harvesting it draws `ref.unit.collector.beam_ring_count` (5) animated rings in its team colour, each of radius `ref.econ.collector.collection_range_wu` × the funnel scale s at its height, cycling from the ground up to its hover height; and it casts the base blob shadow ([Units](README.md) R-UNIT-050) of half-size `rnd.shadow.blob.collector_size` (10 wu) ([renderer](../../architecture/components/renderer/entity_and_overlay_renderers.md) RND-324). These render paths read the presentation clock only (DEC-009, [randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md) R-SIM-701).
 
@@ -199,7 +199,7 @@ flowchart TD
 | `ref.unit.collector.tint_scale` | 0.7 | × team colour | whole-mesh tint | R-UNIT-443 | DEC-029 |
 | `ref.unit.collector.exhaust_fire_count` | 5 | particles per tick per engine socket | | R-UNIT-443 | DEC-013 |
 | `ref.unit.collector.exhaust_fire_size` | 75 | particle size | | R-UNIT-443 | — |
-| `ref.unit.collector.exhaust_colour` | (50, 50, 250) | RGB | | R-UNIT-443 | DEC-029 |
+| `ref.unit.collector.exhaust_color` | (50, 50, 250) | RGB | | R-UNIT-443 | DEC-029 |
 | `ref.unit.collector.bubble_size` | 16 | wu | | R-UNIT-444 | DEC-029 |
 | `ref.unit.collector.bubble_alpha` | 150 | of 255 | additive | R-UNIT-444 | DEC-029 |
 | `ref.unit.collector.bubble_offset` | 3 | wu | above the collector point | R-UNIT-444 | — |

@@ -255,7 +255,7 @@ Table 2.10-A Core Device state.
 
 **R-BLDG-318** (MUST) The Launch Vessel (`LaunchVessel`) is each team's Launch Race objective: it fills with fuel, boards `ref.bldg.launch_vessel.launch_passengers` (100) passengers and launches, and the first Launch Vessel above `ref.mode.launch_race.win_height` (600 wu) of reference/01 wins ([01 Launch Race](../01_skirmish_rules_and_modes/launch_race.md)). It is a fuel-chain structure (R-BLDG-192).
 
-**R-BLDG-319** (MUST) A Launch Vessel draws a per-instance copy of the mesh `mesh.structure.launch_vessel`, recoloured in a match to its team colour × `ref.bldg.launch_vessel.colour_factor` (0.3), with the `thruster`, `window_01` to `window_03` and `fuel_point` sockets. Its owner is fixed by its map record and never recomputed.
+**R-BLDG-319** (MUST) A Launch Vessel draws a per-instance copy of the mesh `mesh.structure.launch_vessel`, recoloured in a match to its team colour × `ref.bldg.launch_vessel.color_factor` (0.3), with the `thruster`, `window_01` to `window_03` and `fuel_point` sockets. Its owner is fixed by its map record and never recomputed.
 
 **R-BLDG-320** (MUST) A Launch Vessel holds: its state (R-BLDG-321); its fuel, 0 to `ref.bldg.launch_vessel.max_fuel` (100); its intake count; its passengers, 0 to `ref.bldg.launch_vessel.launch_passengers` (100); its countdown and its launch timer (R-BLDG-332 to R-BLDG-334); its damage; its refuel rate; its fuel before the explosion; its attack-warning flag; and its attacker timer.
 
@@ -501,7 +501,7 @@ Every value is a reference tuning value that Species may adopt as its baseline (
 | `ref.bldg.core_device.countdown_screen_height_wu` | 50 | wu | above the Core Device | R-BLDG-316 | — |
 | `ref.bldg.launch_vessel.launch_passengers` | 100 | passengers | needed for Ignition; the passenger maximum | R-BLDG-318, R-BLDG-320, R-BLDG-331 | — |
 | `ref.bldg.launch_vessel.max_fuel` | 100 | fuel | the fuel maximum; the glow alpha is fuel ÷ 100 | R-BLDG-320, R-BLDG-330, R-BLDG-338 | — |
-| `ref.bldg.launch_vessel.colour_factor` | 0.3 | × team colour | mesh recolour | R-BLDG-319 | — |
+| `ref.bldg.launch_vessel.color_factor` | 0.3 | × team colour | mesh recolour | R-BLDG-319 | — |
 | `ref.bldg.launch_vessel.intake_level_min` | 0.1 | level | intake calls counted above | R-BLDG-322 | — |
 | `ref.bldg.launch_vessel.damage_scale` | 0.2 | × incoming damage | | R-BLDG-323 | DEC-108 |
 | `ref.bldg.launch_vessel.wreck_damage` | 100 | damage | Wrecked above | R-BLDG-323 | DEC-108 |

@@ -242,7 +242,7 @@ Table 3.2-A Fields of the map header (`MatchOptions`).
 | population cap | `population_cap` | limit | required: `0`, a number of bodies or `"unlimited"`; a map without a cap states `"unlimited"` (R-MAP-061, DEC-079) | 0 or more |
 | defender population cap | `defender_population_cap` | count | absence-meaningful: absent, Siege uses the population cap ÷ the open slots for both sides (R-MAP-062) | 0 or more |
 | play time | `play_time` | integer, whole minutes | absence-meaningful: absent, the mode's default time limit applies; 0 also leaves it (R-MAP-021) | within the range of the time-limit option of [reference/01](../../../reference/01_skirmish_rules_and_modes/README.md) R-MODE-074 |
-| difficulty | `difficulty` | enumeration `basic`, `intermediate`, `advanced` | absence-meaningful: absent, rank `ref.map.catalogue.rank.none` (0) | R-MAP-016, R-MAP-023 |
+| difficulty | `difficulty` | enumeration `basic`, `intermediate`, `advanced` | absence-meaningful: absent, rank `ref.map.catalog.rank.none` (0) | R-MAP-016, R-MAP-023 |
 | map effects | `map_effects` | enumeration set of `MapEffect` (`snow`, `lightning`, `dust_vortices`, `essence_orb_rain`, `special_light_rig`) | defaulted: none | cooked in the canonical order of R-MAP-073 |
 | map options | `map_options` | object of table 3.3-A | defaulted: every option absent or off | each option at most once |
 | excluded outcomes | `excluded_outcomes` | enumeration set of Supply-crate outcome identifiers of [reference/04](../../../reference/04_supply_crates_powers_and_weapons/README.md) table 2.2-A, written in snake_case (`strike_team`, `turret_gun`, `meteor_shower`) | defaulted: none | an identifier outside the catalogue is a build error (R-CRATE-029); cooked in the canonical outcome order (R-CRATE-007) |
@@ -349,7 +349,7 @@ Table 3.5-A Fields of a map light (`MapLight`).
 | Field | Key | Type | Presence and default | Rules |
 |---|---|---|---|---|
 | direction | `front` | direction | defaulted: `rnd.light.default_front` of the [renderer](../renderer/README.md) | normalised at cook time; the light is directional, at an infinite distance |
-| colour | `color` | colour multiplier | defaulted: `rnd.light.default_colour` | unclamped |
+| colour | `color` | colour multiplier | defaulted: `rnd.light.default_color` | unclamped |
 
 ### 3.6 Start positions
 
@@ -540,7 +540,7 @@ Caption: Figure 4.1-A, the validation of one map (DAT-103, DAT-104; DEC-561).
 
 ## 5 Concurrency and performance budget
 
-**DAT-110** (MUST) The header section is small and has a bounded size: it holds no terrain and no structure data, so reading every header of the map catalogue costs one read of each header section, within the budget `dat.perf.catalogue_ms` of the [README](README.md). A whole map is read once per match entry on the loading thread; maps of world-region size stream their blocks instead of holding the file in one buffer (DEC-204 item 8).
+**DAT-110** (MUST) The header section is small and has a bounded size: it holds no terrain and no structure data, so reading every header of the map catalogue costs one read of each header section, within the budget `dat.perf.catalog_ms` of the [README](README.md). A whole map is read once per match entry on the loading thread; maps of world-region size stream their blocks instead of holding the file in one buffer (DEC-204 item 8).
 
 ## 6 Failure modes, diagnostics and telemetry
 
@@ -610,10 +610,10 @@ This document owns no tuning key; the defaults and limits of its fields are the 
 
 | owner | keys cited |
 |---|---|
-| [maps: rules and conventions](../../../reference/08_maps_and_level_design/rules_and_conventions.md) | `ref.map.header.name_max_chars`, `ref.map.header.author_max_chars`, `ref.map.header.description_max_chars`, `ref.map.players.min`, `ref.map.catalogue.rank.none`, `ref.map.terrain.world_size_default`, `ref.map.terrain.cell_size_default`, `ref.map.terrain.outside_height_default`, `ref.map.terrain.max_height_default`, `ref.map.terrain.flatten_threshold_default`, `ref.map.camera.view_name_max_chars`, `ref.map.camera.animation_duration_max_s`, `ref.map.starting_forces.spread_default`, `ref.map.route.id_limit` |
+| [maps: rules and conventions](../../../reference/08_maps_and_level_design/rules_and_conventions.md) | `ref.map.header.name_max_chars`, `ref.map.header.author_max_chars`, `ref.map.header.description_max_chars`, `ref.map.players.min`, `ref.map.catalog.rank.none`, `ref.map.terrain.world_size_default`, `ref.map.terrain.cell_size_default`, `ref.map.terrain.outside_height_default`, `ref.map.terrain.max_height_default`, `ref.map.terrain.flatten_threshold_default`, `ref.map.camera.view_name_max_chars`, `ref.map.camera.animation_duration_max_s`, `ref.map.starting_forces.spread_default`, `ref.map.route.id_limit` |
 | [reference/12 teams](../../../reference/12_simulation_model/06_teams_and_player_commands.md) | `ref.sim.team.player_slots`, `ref.sim.team.visitor_slot` |
 | [reference/01](../../../reference/01_skirmish_rules_and_modes/README.md) | `ref.mode.zone_control.option.time_limit` and the other option defaults of R-MODE-074 |
 | [reference/05](../../../reference/05_population_flow.md) | `ref.econ.gate.turret_frequency` |
 | [terrain](../terrain/README.md) | `ter.grid.max_samples_per_side` |
-| [renderer](../renderer/README.md) | `rnd.light.default_front`, `rnd.light.default_colour` |
-| [data schemas](README.md) | `dat.perf.catalogue_ms` |
+| [renderer](../renderer/README.md) | `rnd.light.default_front`, `rnd.light.default_color` |
+| [data schemas](README.md) | `dat.perf.catalog_ms` |

@@ -89,7 +89,7 @@ After bounce k its speed is 0.85 × 0.75^k of its incoming speed (0.64 after the
 
 ### 2.5 Grenade
 
-**R-CRATE-415** (MUST) A **grenade** (`GrenadeProjectile`) has a fuse of `ref.weapon.grenade.fuse_ticks` (30 ticks, 3.0 s), a power of `ref.weapon.grenade.power` (25), the colour `ref.weapon.thrown.colour` (255, 100, 100), an explode-on-impact flag (false) and a collected flag (false). Each tick:
+**R-CRATE-415** (MUST) A **grenade** (`GrenadeProjectile`) has a fuse of `ref.weapon.grenade.fuse_ticks` (30 ticks, 3.0 s), a power of `ref.weapon.grenade.power` (25), the colour `ref.weapon.thrown.color` (255, 100, 100), an explode-on-impact flag (false) and a collected flag (false). Each tick:
 
 1. when it is collected, it does nothing (a Collector carries it);
 2. otherwise its fuse counts down by one tick, before the throw physics; when the fuse is at or below 0, or when it explodes on impact and its height is below the terrain height + `ref.weapon.grenade.impact_clearance` (2 wu), it emits its explode sound, explodes with `Explode(position, power × 0.5, power × 2, its team)` (range 12.5 wu and damage 50 at power 25) and is removed;
@@ -115,7 +115,7 @@ Workers throw only at targets beyond their grenade minimum distance and flee eve
 
 ### 2.6 Firebomb canister
 
-**R-CRATE-420** (MUST) A **firebomb canister** (`FirebombCanister`) is a grenade kind with the colour `ref.weapon.thrown.colour`, fuse `ref.weapon.firebomb.fuse_ticks` (15 ticks, 1.5 s) and power `ref.weapon.firebomb.power` (50). Only a Bomber of a Firebomb Run creates it. It ignores the collected and explode-on-impact flags. Each tick its fuse counts down by one tick; when the fuse is at or below 0 it bursts, and otherwise it runs the thrown-weapon step.
+**R-CRATE-420** (MUST) A **firebomb canister** (`FirebombCanister`) is a grenade kind with the colour `ref.weapon.thrown.color`, fuse `ref.weapon.firebomb.fuse_ticks` (15 ticks, 1.5 s) and power `ref.weapon.firebomb.power` (50). Only a Bomber of a Firebomb Run creates it. It ignores the collected and explode-on-impact flags. Each tick its fuse counts down by one tick; when the fuse is at or below 0 it bursts, and otherwise it runs the thrown-weapon step.
 
 **R-CRATE-421** (MUST) A burst emits the explode sound and makes **no explosion**. Instead:
 
@@ -126,7 +126,7 @@ Workers throw only at targets beyond their grenade minimum distance and flee eve
 
 ### 2.7 Airstrike target marker
 
-**R-CRATE-422** (MUST) An **airstrike target marker** (`AirstrikeTargetMarker`) is a thrown weapon of the colour `ref.weapon.thrown.colour`, thrown by the airstrike Power ([crates and powers](crates_and_powers.md) R-CRATE-157). It carries the firebomb flag of its run and the handle of its airstrike flight, invalid until summoned. Each tick it runs the thrown-weapon step without a trail and emits one smoke particle of size `ref.weapon.marker.smoke_size` (100) with velocity v ÷ 4 plus presentation jitter, so that the run is visible (presentation).
+**R-CRATE-422** (MUST) An **airstrike target marker** (`AirstrikeTargetMarker`) is a thrown weapon of the colour `ref.weapon.thrown.color`, thrown by the airstrike Power ([crates and powers](crates_and_powers.md) R-CRATE-157). It carries the firebomb flag of its run and the handle of its airstrike flight, invalid until summoned. Each tick it runs the thrown-weapon step without a trail and emits one smoke particle of size `ref.weapon.marker.smoke_size` (100) with velocity v ÷ 4 plus presentation jitter, so that the run is visible (presentation).
 
 **R-CRATE-423** (MUST) When its age is at least `ref.hazard.airstrike.marker_summon_delay` (20 ticks) and its force is at most `ref.hazard.airstrike.marker_rest_force` (0.1), a marker that has not yet summoned creates one airstrike flight of `ref.sim.init.power_level.airstrike` (2) Bombers of its team at its position, holding the marker's handle and the firebomb flag ([hazards and projectiles](../02_units/hazards_and_projectiles.md) R-UNIT-713). Once it has summoned, it removes itself when its flight no longer exists or is Leaving.
 
@@ -178,7 +178,7 @@ The base attack's aim jitter and muzzle height are reference/02's (R-UNIT-052).
 
 **R-CRATE-444** (MUST) After its first hit a bolt is **harmless**: it keeps flying and drawing but cannot hit again. Laser bolts never hit friends. A Worker of 50 health dies to 2 or 3 hits.
 
-**R-CRATE-445** (MUST) Presentation: a bolt is drawn as a team-coloured billboard of `fx.beam_short`, `ref.weapon.laser.billboard_length` (10 wu) long, in `rnd.laser.rogue_colour` (white) for the Rogue faction ([renderer](../../architecture/components/renderer/entity_and_overlay_renderers.md) RND-339); a Convert bolt uses `fx.convert_beam` at `ref.weapon.laser.convert_width_factor` (2) × the width. A bolt passing within √`ref.weapon.laser.shake_range_sq` (√200, about 14 wu) of the camera shakes it by `ref.weapon.laser.shake` (0.5).
+**R-CRATE-445** (MUST) Presentation: a bolt is drawn as a team-coloured billboard of `fx.beam_short`, `ref.weapon.laser.billboard_length` (10 wu) long, in `rnd.laser.rogue_color` (white) for the Rogue faction ([renderer](../../architecture/components/renderer/entity_and_overlay_renderers.md) RND-339); a Convert bolt uses `fx.convert_beam` at `ref.weapon.laser.convert_width_factor` (2) × the width. A bolt passing within √`ref.weapon.laser.shake_range_sq` (√200, about 14 wu) of the camera shakes it by `ref.weapon.laser.shake` (0.5).
 
 ### 2.10 Turret round
 
@@ -277,7 +277,7 @@ The base attack's aim jitter and muzzle height are reference/02's (R-UNIT-052).
 
 ### 2.19 Dust object and dust vortex
 
-**R-CRATE-505** (MUST) A **dust object** (`DustVortex`) is created by the dust-storm spawner of a map with the dust effect ([reference/12](../12_simulation_model/04_containers_and_update_order.md) R-SIM-235) with no team; the spawner also holds the wind direction and the vortex, and both are reset at match start (DEC-011). A dust object moves at `ref.weapon.dust.speed` (500 wu/s): without a vortex it steers toward its position + wind × `ref.weapon.dust.wind_lookahead` (2000 wu) with a turn blend of `ref.weapon.dust.turn_blend` (3) × dt, starting with velocity wind × 500; with a vortex it heads for vortex + (cos τ, 0, sin τ) × 300 × its height ÷ 1000 at its own height (`ref.weapon.dust.vortex_orbit_factor` (300) per 1000 wu), with τ = match time + serial × `ref.weapon.dust.phase_step` (20). It is removed when it leaves the map. It is drawn as `fx.glow_cloudy` in `ref.weapon.dust.colour` (0.6, 0.46, 0.12, 0.2) at its size.
+**R-CRATE-505** (MUST) A **dust object** (`DustVortex`) is created by the dust-storm spawner of a map with the dust effect ([reference/12](../12_simulation_model/04_containers_and_update_order.md) R-SIM-235) with no team; the spawner also holds the wind direction and the vortex, and both are reset at match start (DEC-011). A dust object moves at `ref.weapon.dust.speed` (500 wu/s): without a vortex it steers toward its position + wind × `ref.weapon.dust.wind_lookahead` (2000 wu) with a turn blend of `ref.weapon.dust.turn_blend` (3) × dt, starting with velocity wind × 500; with a vortex it heads for vortex + (cos τ, 0, sin τ) × 300 × its height ÷ 1000 at its own height (`ref.weapon.dust.vortex_orbit_factor` (300) per 1000 wu), with τ = match time + serial × `ref.weapon.dust.phase_step` (20). It is removed when it leaves the map. It is drawn as `fx.glow_cloudy` in `ref.weapon.dust.color` (0.6, 0.46, 0.12, 0.2) at its size.
 
 **R-CRATE-506** (MUST) While a vortex exists, every Worker of any team on the ground within `ref.sim.weather.vortex_radius` (50 wu) of the vortex's ground point is caught and spirals up until the vortex clears, then falls ([worker.md](../02_units/worker.md) R-UNIT-083, CaughtInVortex). The vortex's land search is bounded (DEC-014).
 
@@ -425,7 +425,7 @@ Caption: Figure 3-5, an explosion and its shockwave ring (R-CRATE-406, R-CRATE-4
 | `ref.weapon.thrown.rest_force` | 0.1 | bounce force | at rest at or below | R-CRATE-411 | — |
 | `ref.weapon.thrown.bounce_clearance` | 1 | wu | above the terrain | R-CRATE-411 | — |
 | `ref.weapon.thrown.bounce_force_factor` | 0.75 | × force per bounce | | R-CRATE-411 | — |
-| `ref.weapon.thrown.colour` | 255, 100, 100 | RGB | grenade, firebomb canister, marker | R-CRATE-415, R-CRATE-420, R-CRATE-422 | — |
+| `ref.weapon.thrown.color` | 255, 100, 100 | RGB | grenade, firebomb canister, marker | R-CRATE-415, R-CRATE-420, R-CRATE-422 | — |
 | `ref.weapon.thrown.trail_size` | 60 | particle size | presentation | R-CRATE-414 | DEC-013 |
 | `ref.weapon.thrown.trail_jitter` | 5 | wu/s | presentation | R-CRATE-414 | DEC-013 |
 | `ref.weapon.thrown.trail_skip` | 0.1 | ÷ game speed | presentation | R-CRATE-414 | DEC-653 |
@@ -575,7 +575,7 @@ Caption: Figure 3-5, an explosion and its shockwave ring (R-CRATE-406, R-CRATE-4
 | `ref.weapon.dust.turn_blend` | 3 | × dt | | R-CRATE-505 | — |
 | `ref.weapon.dust.vortex_orbit_factor` | 300 | wu per 1000 wu of height | | R-CRATE-505 | — |
 | `ref.weapon.dust.phase_step` | 20 | s of phase per serial | | R-CRATE-505 | DEC-009 |
-| `ref.weapon.dust.colour` | 0.6, 0.46, 0.12, 0.2 | RGBA | presentation | R-CRATE-505 | — |
+| `ref.weapon.dust.color` | 0.6, 0.46, 0.12, 0.2 | RGBA | presentation | R-CRATE-505 | — |
 
 ### 4.5 Keys cited here and defined elsewhere
 
@@ -592,7 +592,7 @@ Caption: Figure 3-5, an explosion and its shockwave ring (R-CRATE-406, R-CRATE-4
 | [hazards and projectiles](../02_units/hazards_and_projectiles.md) | `ref.hazard.airstrike.marker_summon_delay`, `ref.hazard.airstrike.marker_rest_force` |
 | [defences and props](../03_buildings_and_world_objects/defences_and_props.md) | `ref.bldg.turret.gun.round_speed`, `ref.bldg.turret.rocket.life_ticks`, `ref.bldg.turret.flame.fireball_speed`, `ref.bldg.turret.flame.fireball_life_ticks`, `ref.bldg.turret.convert.bolt_speed` |
 | [mode objects](../03_buildings_and_world_objects/mode_objects.md) | `ref.bldg.core_device.pulse_radius_wu` |
-| [renderer](../../architecture/components/renderer/entity_and_overlay_renderers.md) | `rnd.laser.rogue_colour`, `rnd.lightning.cloud_pulse_rate`, `rnd.lightning.bolt_layers`, `rnd.lightning.bolt_width_growth`, `rnd.lightning.bolt_alpha_falloff` |
+| [renderer](../../architecture/components/renderer/entity_and_overlay_renderers.md) | `rnd.laser.rogue_color`, `rnd.lightning.cloud_pulse_rate`, `rnd.lightning.bolt_layers`, `rnd.lightning.bolt_width_growth`, `rnd.lightning.bolt_alpha_falloff` |
 | [particles, shatter and screen effects](../../architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md) | `vfx.emit.firebomb.split`, `vfx.emit.firebomb.size`, `vfx.emit.round_hit.structure_count`, `vfx.emit.round_hit.terrain_count`, `vfx.emit.fireball.count`, `vfx.emit.swarm_hit.count`, `vfx.emit.lightning.debris_count`, `vfx.emit.lightning.debris_size`, `vfx.emit.lightning.fire_count`, `vfx.emit.lightning.fire_size`; `vfx.emit.step_rate` ([animation and VFX](../../architecture/components/animation_and_vfx/README.md)) |
 | [reference/08 rules and conventions](../08_maps_and_level_design/rules_and_conventions.md) | the map option `MapOption::VisitorFactionPosition` |
 

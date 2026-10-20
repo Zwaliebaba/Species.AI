@@ -165,7 +165,7 @@ Table 2.5-A Valid target points.
 | Power | Valid target point |
 |---|---|
 | Strike team, Transport | within `ref.power.target.unit_drop_radius` (75 wu) of a structure of a friendly team (the team itself or an ally) of kind Spawn Node, turret, Control Zone (or a kind that shares its type: Relic Base, Relic Spawn Zone, Flag post, Home post) or Transit Gate |
-| Collector, Builder | within `ref.power.target.group_centre_radius` (100 wu) of the centre of one of the team's actor groups of the Strike team or Builder kind, or valid by the Strike team rule |
+| Collector, Builder | within `ref.power.target.group_center_radius` (100 wu) of the centre of one of the team's actor groups of the Strike team or Builder kind, or valid by the Strike team rule |
 | Shield, Speed Boost, Convert, Fury | at least one actor of the owner's team within `ref.power.effect_range` (70 wu) of the point |
 | turret (every type) | not inside an exclusion zone that blocks Powers (R-CRATE-034); no structure whose hit volume meets a sphere of `ref.power.target.turret_clearance` (10 wu) at the point; not within `ref.power.target.turret_gate_clearance` (400 wu) of a Transit Gate owned by a team that is not friendly; not within `ref.power.target.turret_node_clearance` (200 wu) of a Spawn Node owned by a team that is not friendly |
 | airstrike (both bomb kinds), Missile Barrage, Swarm, Essence Grove, Blight Grove, Hive, Brood, meteor shower | anywhere, except inside an exclusion zone that blocks Powers |
@@ -298,7 +298,7 @@ Caption: Figure 3-2, from grant to slot release (R-CRATE-015 to R-CRATE-020).
 | `ref.power.stop.damage` | 1000 | health | the Transport's health change when its Power stops | R-CRATE-020 | DEC-551 |
 | `ref.power.effect_range` | 70 | wu | horizontal; buff targeting and linking radius | R-CRATE-025, R-CRATE-026 | — |
 | `ref.power.target.unit_drop_radius` | 75 | wu | Strike team and Transport targeting | R-CRATE-025 | — |
-| `ref.power.target.group_centre_radius` | 100 | wu | Collector and Builder targeting | R-CRATE-025 | — |
+| `ref.power.target.group_center_radius` | 100 | wu | Collector and Builder targeting | R-CRATE-025 | — |
 | `ref.power.target.turret_clearance` | 10 | wu | sphere radius at the target point | R-CRATE-025 | — |
 | `ref.power.target.turret_gate_clearance` | 400 | wu | from a Transit Gate of a team that is not friendly | R-CRATE-025 | — |
 | `ref.power.target.turret_node_clearance` | 200 | wu | from a Spawn Node of a team that is not friendly | R-CRATE-025 | — |

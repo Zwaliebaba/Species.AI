@@ -315,7 +315,7 @@ Table 3.7-A Content of a cooked mesh.
 | Part | Fields | Rules |
 |---|---|---|
 | node table | for each mesh node (`MeshNode`): its name; the index of its parent node, or none for a root node; its rest transform; its draw range; its axis-aligned bounding box; its vertical extent; its bounding sphere | node names are unique within the mesh (AST-045); every parent exists, so no node is left unattached; at most `rnd.mesh.max_nodes` nodes (AST-076) |
-| vertex stream | for each triangle corner: position, facet colour, facet normal, tint weight, barycentric corner | the facet colour is the triangle's colour attenuated by `rnd.mesh.colour_attenuation` at cook time (AST-076); the facet normal is computed at cook time for a faceted primitive (ADR-020); the tint weight is explicit, never inferred from a colour (AST-034) |
+| vertex stream | for each triangle corner: position, facet colour, facet normal, tint weight, barycentric corner | the facet colour is the triangle's colour attenuated by `rnd.mesh.color_attenuation` at cook time (AST-076); the facet normal is computed at cook time for a faceted primitive (ADR-020); the tint weight is explicit, never inferred from a colour (AST-034) |
 | socket table | for each socket kind of AST table 3.8-A in table order, the sockets in index order, each with its parent node, its transform relative to that node and its chain of nodes up to the root | at most `rnd.mesh.max_sockets` sockets; the socket kinds are the closed enumeration of AST-039 (ADR-021) |
 | bounding sphere of a node | centre: the centre of its bounding box; radius: the largest distance from that centre to a vertex of the node | AST-076 |
 
@@ -331,7 +331,7 @@ Table 3.7-A Content of a cooked mesh.
 
 **DAT-281** (MUST) A cooked CPU table stores the image's rows from the top row as the image is viewed to the bottom row. A reader whose rule counts rows from the bottom row as viewed, as the land ramp's height axis (TER-040) and the wave table row `rnd.sea.wave_table_row` (TER-041, RND-144) do, converts its index i to the stored row (height − 1 − i), so the stored order of the source file format never changes which row is read. The land ramp's columns run from flat ground (column 0) to vertical (the last column) (TER-040).
 
-**DAT-282** (MUST) The content build rejects a land colour ramp whose size is not `ter.colour.ramp_size` × `ter.colour.ramp_size` (TER-040); it accepts a shore-wave gradient of any width, which gives the number of wave colours, and of at least two rows (TER-041). While the match's seasonal state is active, the seasonal members replace the map's choice (TER-042, DEC-118); the replacement is a rule of the renderer, not a field of the map.
+**DAT-282** (MUST) The content build rejects a land colour ramp whose size is not `ter.color.ramp_size` × `ter.color.ramp_size` (TER-040); it accepts a shore-wave gradient of any width, which gives the number of wave colours, and of at least two rows (TER-041). While the match's seasonal state is active, the seasonal members replace the map's choice (TER-042, DEC-118); the replacement is a rule of the renderer, not a field of the map.
 
 ### 3.9 Screenshot output
 
@@ -468,7 +468,7 @@ This document owns no tuning key.
 | [audio mix](../../../reference/10_audio_design/positional_priorities_and_mix.md) | `ref.aud.rank.copy_decay` |
 | [audio engine](../audio_engine/README.md) | `aen.spatial.max_distance_default`, `aen.spatial.doppler_factor_default`, `aen.spatial.filter_factor_default`, `aen.spatial.reverb_factor_default` |
 | [reference/12 tick timing](../../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) | `ref.sim.frame.audio_update_period`, `ref.sim.tick_period` |
-| [renderer](../renderer/README.md) | `rnd.mesh.colour_attenuation`, `rnd.mesh.max_nodes`, `rnd.mesh.max_sockets`, `rnd.sea.wave_table_row`, `rnd.option.poster_resolution.default` |
-| [terrain](../terrain/README.md) | `ter.colour.ramp_size` |
+| [renderer](../renderer/README.md) | `rnd.mesh.color_attenuation`, `rnd.mesh.max_nodes`, `rnd.mesh.max_sockets`, `rnd.sea.wave_table_row`, `rnd.option.poster_resolution.default` |
+| [terrain](../terrain/README.md) | `ter.color.ramp_size` |
 | [front-end presentation](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) | `ref.meta.explainer.default_canvas`, `ref.meta.explainer.default_loop`, and the `ref.meta.explainer.key_default.<field>` keys of R-META-226 |
 | [data schemas](README.md) | `dat.perf.records_ms` |

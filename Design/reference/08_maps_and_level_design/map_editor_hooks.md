@@ -212,7 +212,7 @@ Table 2.5-A Lights-panel operations.
 
 | Operation | Effect | Input range (informative) |
 |---|---|---|
-| new light | appends a map light with the renderer's defaults `rnd.light.default_colour` and `rnd.light.default_front` ([renderer](../../architecture/components/renderer/README.md) RND-012); rebuilds the panel | — |
+| new light | appends a map light with the renderer's defaults `rnd.light.default_color` and `rnd.light.default_front` ([renderer](../../architecture/components/renderer/README.md) RND-012); rebuilds the panel | — |
 | clear selection | clears the light selection; tool none | — |
 | select (one per light) | selects the light and the rotate tool; shown pressed while the light is selected | — |
 | darker, brighter (one pair per light) | multiply the light's red, green and blue by the first or the second factor of `ref.map.editor.light.brightness_factors` | — |
@@ -625,7 +625,7 @@ Caption: Figure 3.4, the two writers and the custom-map container (R-MAP-385 to 
 
 ## 4 Tuning table
 
-Every value of the tuning tables is a reference tuning value that Species may adopt as its baseline (DEC-004). The editor runs no simulation, so no value is in ticks. Values owned by another document are cited in the rules by that document's key and are not repeated here: `ref.map.terrain.world_size_default`, `ref.map.terrain.flatten_threshold_default`, `ref.map.starting_forces.spread_default`, `ref.map.header.description_max_chars`, `ref.map.header.name_max_chars`, `ref.map.camera.view_name_max_chars`, `ref.map.camera.animation_duration_max_s`, `ref.map.players.min` (rules and conventions); `ref.sim.init.power_level_default`, `ref.sim.team.player_slots`, `ref.sim.tick_period` (reference/12); `ref.match.option.time_limit_unit` (reference/01); `ref.econ.cap.editor_range`, `ref.econ.cap.defender_editor_range` (reference/05); `ref.crate.outcome.count` (reference/04); `ref.bldg.hive.map_ants_max` (reference/03); `ref.bot.link.range` (reference/07); `rnd.light.default_colour`, `rnd.light.default_front` (renderer). The input ranges of the reference editor's controls are given, as informative values, in the operation tables of §2, and its panel layout and drawing values in the informative table 4.5-A (R-MAP-300).
+Every value of the tuning tables is a reference tuning value that Species may adopt as its baseline (DEC-004). The editor runs no simulation, so no value is in ticks. Values owned by another document are cited in the rules by that document's key and are not repeated here: `ref.map.terrain.world_size_default`, `ref.map.terrain.flatten_threshold_default`, `ref.map.starting_forces.spread_default`, `ref.map.header.description_max_chars`, `ref.map.header.name_max_chars`, `ref.map.camera.view_name_max_chars`, `ref.map.camera.animation_duration_max_s`, `ref.map.players.min` (rules and conventions); `ref.sim.init.power_level_default`, `ref.sim.team.player_slots`, `ref.sim.tick_period` (reference/12); `ref.match.option.time_limit_unit` (reference/01); `ref.econ.cap.editor_range`, `ref.econ.cap.defender_editor_range` (reference/05); `ref.crate.outcome.count` (reference/04); `ref.bldg.hive.map_ants_max` (reference/03); `ref.bot.link.range` (reference/07); `rnd.light.default_color`, `rnd.light.default_front` (renderer). The input ranges of the reference editor's controls are given, as informative values, in the operation tables of §2, and its panel layout and drawing values in the informative table 4.5-A (R-MAP-300).
 
 ### 4.1 Picking
 

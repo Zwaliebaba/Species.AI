@@ -284,9 +284,9 @@ public:
 
 ### 3.2 The map light record
 
-**RND-012** (MUST) A map light (`MapLight`) is a plain record, not a simulated object: a colour (three channels, values above 1 allowed) and a direction vector `front`. Every map light is directional, at an infinite distance. A light built without data has the colour `rnd.light.default_colour` (1.3, 1.3, 1.3) and the direction `rnd.light.default_front` (0, 0, 1). Setting a direction from a vector stores it as directional; normalising a light normalises its direction to unit length.
+**RND-012** (MUST) A map light (`MapLight`) is a plain record, not a simulated object: a colour (three channels, values above 1 allowed) and a direction vector `front`. Every map light is directional, at an infinite distance. A light built without data has the colour `rnd.light.default_color` (1.3, 1.3, 1.3) and the direction `rnd.light.default_front` (0, 0, 1). Setting a direction from a vector stores it as directional; normalising a light normalises its direction to unit length.
 
-**RND-013** (MUST) Maps supply their lights in their map data ([reference/08_maps_and_level_design/rules_and_conventions.md](../../../reference/08_maps_and_level_design/rules_and_conventions.md), [README.md](../data_schemas/README.md)). At match-world initialisation the renderer copies them, normalising each direction; every frame it passes the first two to the shaders as the two directional lights (RND-226). While the match's seasonal state is active (see DEC-118, DEC-101), every light colour is replaced by `rnd.light.seasonal_colour` (1.3, 1.2, 1.2). Whether maps keep per-map light values or select named lighting presets is decided by the design phase (see DEC-562).
+**RND-013** (MUST) Maps supply their lights in their map data ([reference/08_maps_and_level_design/rules_and_conventions.md](../../../reference/08_maps_and_level_design/rules_and_conventions.md), [README.md](../data_schemas/README.md)). At match-world initialisation the renderer copies them, normalising each direction; every frame it passes the first two to the shaders as the two directional lights (RND-226). While the match's seasonal state is active (see DEC-118, DEC-101), every light colour is replaced by `rnd.light.seasonal_color` (1.3, 1.2, 1.2). Whether maps keep per-map light values or select named lighting presets is decided by the design phase (see DEC-562).
 
 ### 3.3 Per-frame and per-draw constants
 
@@ -294,7 +294,7 @@ public:
 
 **RND-015** (MUST) Per-draw data travels in root constants (ADR-006): a world transform (`Float3x4`, the transpose of the object's `Mat3x4`, [shaders.md](shaders.md) RND-262), a tint colour, a team palette index (ADR-020) and the heap indices of the draw's instance buffer, textures and material parameters. Instanced draws keep per-instance transforms (in the same layout), colours and palette indices in a structured buffer and pass only its index (ADR-009).
 
-**RND-016** (MUST) The team palette is one constant buffer with one entry per colour id of the colour table of `reference/12_simulation_model/06_teams_and_player_commands.md` (R-SIM-415, keys `ref.sim.team_colour.*`), written once per match by `FrameRenderer::SetPalette`, whose colours the game layer passes in colour-id order; the engine holds them as palette entries and never knows which team an entry belongs to (`AGENTS.md` R9). The ids 0 to `ref.sim.team.player_colour_count` − 1 are the player colours (green, red, yellow, blue, orange, purple, cyan and pink, in that order), id `ref.sim.team.rogue_colour_id` is the Rogue faction and id `ref.sim.team.visitor_colour_id` the Visitor faction.
+**RND-016** (MUST) The team palette is one constant buffer with one entry per colour id of the colour table of `reference/12_simulation_model/06_teams_and_player_commands.md` (R-SIM-415, keys `ref.sim.team_color.*`), written once per match by `FrameRenderer::SetPalette`, whose colours the game layer passes in colour-id order; the engine holds them as palette entries and never knows which team an entry belongs to (`AGENTS.md` R9). The ids 0 to `ref.sim.team.player_color_count` − 1 are the player colours (green, red, yellow, blue, orange, purple, cyan and pink, in that order), id `ref.sim.team.rogue_color_id` is the Rogue faction and id `ref.sim.team.visitor_color_id` the Visitor faction.
 
 ### 3.4 GPU resources and their lifetimes
 
@@ -518,9 +518,9 @@ The Species design phase must answer these questions for the renderer:
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
-| `rnd.light.default_colour` | 1.3, 1.3, 1.3 | RGB multiplier | colour of a light built without data; values above 1 over-brighten | RND-012 | DEC-562 |
+| `rnd.light.default_color` | 1.3, 1.3, 1.3 | RGB multiplier | colour of a light built without data; values above 1 over-brighten | RND-012 | DEC-562 |
 | `rnd.light.default_front` | 0, 0, 1 | unit vector | direction of a light built without data | RND-012 | |
-| `rnd.light.seasonal_colour` | 1.3, 1.2, 1.2 | RGB multiplier | replaces every light colour while the seasonal state is active | RND-013 | DEC-101, DEC-118 |
+| `rnd.light.seasonal_color` | 1.3, 1.2, 1.2 | RGB multiplier | replaces every light colour while the seasonal state is active | RND-013 | DEC-101, DEC-118 |
 | `rnd.init.fallback_window_size` | 800 × 600 | px | windowed fallback client area | RND-023 | |
 | `rnd.resources.staging_budget_mib` | 96 | MiB | staging memory of the GPU resource factory's queued uploads, shared by every client; the asset cache's own share is `ast.load.staging_budget_mib` | RND-009 | DEC-106 |
 | `rnd.init.min_render_width` | 640 | px | smallest offered render width | RND-026 | |

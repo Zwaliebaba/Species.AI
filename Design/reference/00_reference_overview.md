@@ -143,7 +143,7 @@ The 31 outcomes fall into the nine families of Table 2 (§2.14).
 
 **R-VIS-007** (MUST) Every rule and value that a reference document states is the reference behaviour, and no requirement depends on a comparison with another edition or build of the reference (DEC-005). Every reference tuning value is kept as the starting tuning baseline (DEC-004). A reference behaviour that looks accidental and that no Resolved decision corrects is specified as an explicit rule with a named tuning key or constant (DEC-006).
 
-**R-VIS-008** (MUST) The look is flat-shaded facets with additive glow on a black background, darkening layers and black fog, `ref.sim.team.player_colour_count` (8) team colours, and small figures drawn as camera-facing sprite cards that scale with distance. All art is authored new (renderer visual language RND-390, RND-411, RND-412, RND-418, RND-421, RND-426, RND-429; reference/12 R-SIM-415; DEC-029).
+**R-VIS-008** (MUST) The look is flat-shaded facets with additive glow on a black background, darkening layers and black fog, `ref.sim.team.player_color_count` (8) team colours, and small figures drawn as camera-facing sprite cards that scale with distance. All art is authored new (renderer visual language RND-390, RND-411, RND-412, RND-418, RND-421, RND-426, RND-429; reference/12 R-SIM-415; DEC-029).
 
 **R-VIS-009** (MUST) Game rules fire (source, event) pairs and data decides what plays: each pair resolves to layered sound blocks with friend and foe variants, sample groups, generative looping ambience and an ambience crossfade driven by camera altitude (DEC-027).
 
@@ -210,7 +210,7 @@ Table 1 summarises R-VIS-011 to R-VIS-016.
 
 **R-VIS-033** (MUST) A human who leaves during a match is replaced immediately by a bot that takes over the team. No mode treats a leaving player as eliminated (DEC-035).
 
-**R-VIS-034** (MUST) Players choose among `ref.sim.team.player_colour_count` (8) team colours. In Siege the colour is the side: green for the defenders and red for the attackers (reference/01 R-MODE-012, R-MODE-026; reference/12 R-SIM-415).
+**R-VIS-034** (MUST) Players choose among `ref.sim.team.player_color_count` (8) team colours. In Siege the colour is the side: green for the defenders and red for the attackers (reference/01 R-MODE-012, R-MODE-026; reference/12 R-SIM-415).
 
 ### 2.5 Scope: features present only as hooks
 
@@ -593,7 +593,7 @@ The rules of §2 cite the tuning keys of the documents that own the mechanics, n
 
 | Owning document | Keys | Used by |
 |---|---|---|
-| [teams and player commands](12_simulation_model/06_teams_and_player_commands.md) | `ref.sim.max_teams`, `ref.sim.team.rogue_slot`, `ref.sim.team.visitor_slot`, `ref.sim.team.player_colour_count` | R-VIS-008, R-VIS-030, R-VIS-034 |
+| [teams and player commands](12_simulation_model/06_teams_and_player_commands.md) | `ref.sim.max_teams`, `ref.sim.team.rogue_slot`, `ref.sim.team.visitor_slot`, `ref.sim.team.player_color_count` | R-VIS-008, R-VIS-030, R-VIS-034 |
 | [screen flow and match setup](09_front_end_and_match_flow/screen_flow_and_match_setup.md) | `ref.meta.front_end.live_pages` | R-VIS-170 |
 
 ### 4.5 Spawn Nodes, spawn network and population (owner: reference/05)

@@ -98,7 +98,7 @@ Generate():
     crownR = crownR * ref.sim.integrity.tree_crown_radius_factor   # 0.8
 ```
 
-The threshold 1e−10 is `ref.bldg.tree.normalise_epsilon`. For the trunk, d × to = 0, so A = (0, 0, 1) and B = (−1, 0, 0). At depth N there are 4^k segments at level k (k = 0 for the trunk to N − 1 for the leaves), 4^(N−1) leaf segments (1024 at N = 6) and (4^(N−1) − 1) ÷ 3 branch segments (341 at N = 6), two quads per segment, and each pass makes 4 draws per segment. The generator's arithmetic is bit-reproducible, so the content build and every participant compute the same crown volume for the same parameters (reference/12 R-SIM-651).
+The threshold 1e−10 is `ref.bldg.tree.normalize_epsilon`. For the trunk, d × to = 0, so A = (0, 0, 1) and B = (−1, 0, 0). At depth N there are 4^k segments at level k (k = 0 for the trunk to N − 1 for the leaves), 4^(N−1) leaf segments (1024 at N = 6) and (4^(N−1) − 1) ÷ 3 branch segments (341 at N = 6), two quads per segment, and each pass makes 4 draws per segment. The generator's arithmetic is bit-reproducible, so the content build and every participant compute the same crown volume for the same parameters (reference/12 R-SIM-651).
 
 **R-BLDG-606** (MUST) After generation a tree's structure centre is its position + crown centre × height, and its structure radius is crown radius × height × `ref.bldg.tree.radius_factor` (1.5). The in-view test is the sphere (position, height). Drawing may reduce the iteration count by (structure-detail level − 1), to at least `ref.bldg.tree.min_draw_iterations` (3), for its geometry only; the crown volume is always that of the full iteration count (R-BLDG-047).
 
@@ -138,14 +138,14 @@ With one burning neighbour adding 1 per tick against the decay of 0.1, a tree ig
 
 **R-BLDG-618** (MUST) Creating an offspring runs these steps in order:
 
-1. It takes the centroid of the positions of every other tree within `ref.bldg.tree.offspring_neighbour_radius` (100 wu).
+1. It takes the centroid of the positions of every other tree within `ref.bldg.tree.offspring_neighbor_radius` (100 wu).
 2. With H its actual height, it draws range = H + U[0, H); the draw is made whether or not it is used.
 3. With at least one neighbour, the offset is (position − centroid) scaled to length H and rotated about the vertical by U[−`ref.bldg.tree.offspring_turn` ÷ 2, `ref.bldg.tree.offspring_turn` ÷ 2) (±π/8); with none, the offset is (range, 0, 0) rotated about the vertical by U[0, 2π). The candidate point is position + offset.
 4. For each structure in the obstacle-grid cell of the candidate, while that structure's sphere test with radius `ref.bldg.tree.offspring_clearance` (1 wu) hits at the candidate, the candidate moves by the structure push of README table 2.9-A (`ref.bldg.structure.push_step_wu`, 2 wu, directly away from that structure's position). The push moves a fixed step away from a finite volume, so it ends; an implementation bounds it with a deterministic fallback that keeps the last candidate (DEC-014).
 5. The candidate's height is set to the terrain height there; when that height is below 0, the candidate lies under the sea and no offspring is created.
 6. Otherwise a tree is created with no team and a new serial, with every parameter of the parent copied (height, leaf width, push out, push up, iterations, seed, both colours, leaf drop rate, essence drop rate, blight flag, removable flag and the remaining offspring budget), and then, each its own draw in this order: its seed = ⌊U[0, `ref.bldg.tree.offspring_seed_max`)⌋ (99999) and its height = parent height × `ref.bldg.tree.offspring_height_factor` × (1 + U[−`ref.bldg.tree.offspring_height_spread` ÷ 2, `ref.bldg.tree.offspring_height_spread` ÷ 2)), that is 0.675 to 0.825 × the parent height. Its burn phase is set to −1, so it starts as a stump and regrows; its crown volume is computed (R-BLDG-603); it is initialised and the obstacle grid is updated incrementally (R-BLDG-030).
 
-**R-BLDG-619** (MUST) The offspring budget of a tree is set only by its creator: map trees have none, and the grove outcomes give their trees a budget of ⌊`ref.crate.grove.offspring_base` + U[0, `ref.crate.grove.offspring_spread`)⌋ (2 to 4) ([04 Crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) R-CRATE-188, R-CRATE-205). The grove outcomes set the other values of their trees with the keys of reference/04: `ref.crate.essence_grove.tree_count_base`, `ref.crate.essence_grove.tree_count_spread`, `ref.crate.essence_grove.template_iterations`, `ref.crate.essence_grove.drop_rate_base` and `ref.crate.essence_grove.drop_rate_spread`; `ref.crate.grove.scatter`, `ref.crate.grove.shape_factor_max`, `ref.crate.grove.shape_factor_spread`, `ref.crate.grove.colour_base`, `ref.crate.grove.colour_spread`, `ref.crate.grove.template_height`, `ref.crate.grove.seed_range` and `ref.crate.grove.height_cap`; and `ref.crate.blight_grove.tree_count_base`, `ref.crate.blight_grove.tree_count_spread`, `ref.crate.blight_grove.branch_colour`, `ref.crate.blight_grove.leaf_colour` and `ref.crate.blight_grove.template_iterations` (R-CRATE-186 to R-CRATE-188, R-CRATE-205). An offspring inherits the parent's remaining budget after the parent's decrement, so every tree of a grove spreads the grove further until the budgets run out.
+**R-BLDG-619** (MUST) The offspring budget of a tree is set only by its creator: map trees have none, and the grove outcomes give their trees a budget of ⌊`ref.crate.grove.offspring_base` + U[0, `ref.crate.grove.offspring_spread`)⌋ (2 to 4) ([04 Crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) R-CRATE-188, R-CRATE-205). The grove outcomes set the other values of their trees with the keys of reference/04: `ref.crate.essence_grove.tree_count_base`, `ref.crate.essence_grove.tree_count_spread`, `ref.crate.essence_grove.template_iterations`, `ref.crate.essence_grove.drop_rate_base` and `ref.crate.essence_grove.drop_rate_spread`; `ref.crate.grove.scatter`, `ref.crate.grove.shape_factor_max`, `ref.crate.grove.shape_factor_spread`, `ref.crate.grove.color_base`, `ref.crate.grove.color_spread`, `ref.crate.grove.template_height`, `ref.crate.grove.seed_range` and `ref.crate.grove.height_cap`; and `ref.crate.blight_grove.tree_count_base`, `ref.crate.blight_grove.tree_count_spread`, `ref.crate.blight_grove.branch_color`, `ref.crate.blight_grove.leaf_color` and `ref.crate.blight_grove.template_iterations` (R-CRATE-186 to R-CRATE-188, R-CRATE-205). An offspring inherits the parent's remaining budget after the parent's decrement, so every tree of a grove spreads the grove further until the budgets run out.
 
 #### 2.2.5 Blight trees and corruption
 
@@ -393,7 +393,7 @@ Every value is a reference tuning value that Species may adopt as its baseline (
 | `ref.bldg.tree.child_start_min` | 0.3 | × parent segment | | R-BLDG-605 | — |
 | `ref.bldg.tree.child_start_spread` | 0.6 | × parent segment | child start 0.3 to 0.9 | R-BLDG-605 | — |
 | `ref.bldg.tree.child_reach` | 0.4 | × parent length | × push out | R-BLDG-605 | — |
-| `ref.bldg.tree.normalise_epsilon` | 1e−10 | squared length | below it a direction is (0, 0, 1) | R-BLDG-605 | DEC-653 |
+| `ref.bldg.tree.normalize_epsilon` | 1e−10 | squared length | below it a direction is (0, 0, 1) | R-BLDG-605 | DEC-653 |
 | `ref.bldg.tree.radius_factor` | 1.5 | × crown radius | structure radius and fire reach | R-BLDG-606, R-BLDG-610 | — |
 | `ref.bldg.tree.min_draw_iterations` | 3 | levels | drawing only | R-BLDG-606 | DEC-007 |
 | `ref.bldg.tree.min_height_fraction` | 0.01 | × height | a stump | R-BLDG-607 | — |
@@ -417,7 +417,7 @@ Every value is a reference tuning value that Species may adopt as its baseline (
 | `ref.bldg.tree.leaf_spread_y_factor` | 0.25 | × height | vertical spread of a leaf | R-BLDG-615 | — |
 | `ref.bldg.tree.offspring_delay_base_ticks` | 50 | ticks | offspring after 50 to 100 ticks | R-BLDG-617 | DEC-002 |
 | `ref.bldg.tree.offspring_delay_spread_ticks` | 50 | ticks | | R-BLDG-617 | DEC-002 |
-| `ref.bldg.tree.offspring_neighbour_radius` | 100 | wu | | R-BLDG-618 | — |
+| `ref.bldg.tree.offspring_neighbor_radius` | 100 | wu | | R-BLDG-618 | — |
 | `ref.bldg.tree.offspring_turn` | π/4 | rad | ±π/8 | R-BLDG-618 | — |
 | `ref.bldg.tree.offspring_clearance` | 1 | wu | push probe radius | R-BLDG-618 | DEC-014 |
 | `ref.bldg.tree.offspring_seed_max` | 99999 | — | | R-BLDG-618 | — |

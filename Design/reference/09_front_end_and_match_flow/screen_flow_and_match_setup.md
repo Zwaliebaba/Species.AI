@@ -196,7 +196,7 @@ The order of this table carries no meaning.
 | Nav | Widget | Caption | Notes |
 |---|---|---|---|
 | — | title | `mode.<mode>.name` | |
-| — | column header | `ui.map_select.column.name`, `ui.map_select.column.play_time`, `ui.map_select.column.players` | a strip at (bx, lY + `ref.meta.map_select.header_offset` (10 px + 1.8 × bh), bw, 0.7 × bh), black at alpha `ref.meta.map_select.header_alpha` (0.5), its captions in grey `ref.meta.map_select.header_grey` (0.6) at the row columns (R-META-038) |
+| — | column header | `ui.map_select.column.name`, `ui.map_select.column.play_time`, `ui.map_select.column.players` | a strip at (bx, lY + `ref.meta.map_select.header_offset` (10 px + 1.8 × bh), bw, 0.7 × bh), black at alpha `ref.meta.map_select.header_alpha` (0.5), its captions in grey `ref.meta.map_select.header_gray` (0.6) at the row columns (R-META-038) |
 | 1 to n | map rows | R-META-038 | |
 | n + 1 | Back | `ui.common.back` | → mode-select page |
 | — | thumbnail | — | in the right box at (rX + `ref.meta.layout.picture_inset` (0.1) × rW, rY + 0.1 × rW), of the size of [reference/08](../08_maps_and_level_design/rules_and_conventions.md) R-MAP-022 (`ref.map.thumbnail.width_fraction` × rW wide, `ref.map.thumbnail.aspect` of that width high) |
@@ -204,7 +204,7 @@ The order of this table carries no meaning.
 
 **R-META-038** (MUST) A map row shows three columns, at x + `ref.meta.map_select.column_name` (0.025) × w, x + `ref.meta.map_select.column_play_time` (0.65) × w and x + `ref.meta.map_select.column_players` (0.83) × w, w the row width:
 
-1. **Name.** `map.<map id>.name`; a custom map shows the display name of its own header (R-MAP-020). The name is drawn in `ref.meta.map_select.name_colour` (RGB 0.65, 1, 0.4), or `ref.meta.map_select.name_focus_colour` (RGB 1, 0.3, 0.3) while focused; the row of the map that the match setup has chosen is drawn pressed.
+1. **Name.** `map.<map id>.name`; a custom map shows the display name of its own header (R-MAP-020). The name is drawn in `ref.meta.map_select.name_color` (RGB 0.65, 1, 0.4), or `ref.meta.map_select.name_focus_color` (RGB 1, 0.3, 0.3) while focused; the row of the map that the match setup has chosen is drawn pressed.
 2. **Play time.** The map's play time in minutes or, when the map sets none, the mode's default time limit, shown by `ui.map_select.play_time` as "0:" followed by the minutes in two digits, so that 10 reads 0:10 (R-MAP-021; DEC-868 item 3). When neither exists, because the mode has no time-limit option or its default is "no limit", the column shows `ui.map_select.no_play_time`.
 3. **Players.** One Worker badge (`uitex.worker_badge`) per player slot of the map, at most `ref.sim.team.player_slots` (4), each `ref.meta.map_select.badge_height` (0.9) × the row height high, `ref.meta.map_select.badge_spacing` (0.55) × the badge width apart and rotated by `ref.meta.map_select.badge_angle` (−π ÷ 8), coloured with team colour i for badge i ([reference/12](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-415). On a map that forces co-op, badge i takes colour i ÷ 2, except that on a 3-player map badge 1 takes colour 1.
 
@@ -285,7 +285,7 @@ The match setup page is one page for single-player set-up, the host's lobby and 
 |---|---|---|---|---|
 | — | title | `ui.player_options.title` | | |
 | 1 | name field | `ui.player_options.name` | always | the player's name, at most `ref.meta.player.name_max_length` (16) characters (R-META-052) |
-| 2 to 4 | side rows: random, attackers, defenders | `ui.player_options.side.random`, `ui.player_options.side.attackers`, `ui.player_options.side.defenders` | Siege | request the colour none, the attacker colour `ref.sim.team.siege_attacker_colour_id` (1) or the defender colour `ref.sim.team.siege_defender_colour_id` (0) ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-026) |
+| 2 to 4 | side rows: random, attackers, defenders | `ui.player_options.side.random`, `ui.player_options.side.attackers`, `ui.player_options.side.defenders` | Siege | request the colour none, the attacker colour `ref.sim.team.siege_attacker_color_id` (1) or the defender colour `ref.sim.team.siege_defender_color_id` (0) ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-026) |
 | 2 to 9 | colour rows, colour ids 0 to 7 in id order | `team.colour.green`, `team.colour.red`, `team.colour.yellow`, `team.colour.blue`, `team.colour.orange`, `team.colour.purple`, `team.colour.cyan`, `team.colour.pink` | every other mode | request that colour (§2.21) |
 | last | Back | `ui.common.back` | | applies the name (R-META-052), saves the settings file and returns to the match setup page |
 
@@ -465,21 +465,21 @@ Siege has no time limit, so a map's play time does not apply to it; its player o
 2. otherwise by the slot's kind ([reference/12](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-395): local player `ui.lobby.slot.local_player`; remote player `ui.lobby.slot.remote_player`; bot `ui.lobby.slot.bot`; spectator `ui.lobby.slot.spectator`; an unused slot that is closed `ui.lobby.slot.closed`; an unused open slot `ui.lobby.slot.bot` in single player and `ui.lobby.slot.open` in multiplayer;
 3. while focus is on this slot's kick control and the pointer is over it, `ui.lobby.kick_hint` replaces the caption; while focus is on its open-and-close control, `ui.lobby.slot.close_hint` or `ui.lobby.slot.open_hint` does.
 
-**R-META-079** (MUST) Bot rows and unused rows are inactive, so focus skips them, and are drawn with their colour × `ref.meta.slot.inactive_factor` (0.25) and their border at alpha `ref.meta.slot.inactive_border_alpha` (0.3). A slot whose colour id is none, for example in Siege or co-op before a side or alliance is chosen, is drawn in grey `ref.meta.slot.no_colour_grey` (0.7). The row background is a horizontal gradient from the slot colour at the left to black at the right, or, while focused, to `ref.meta.slot.focus_blend` (50 %) slot colour and 50 % white. When a slot's kind changes, its colour flashes from white back to the slot colour over `ref.meta.slot.flash_time` (1.0 s), linearly, except for the change from unused to bot. The text is white while the row is inactive, `ref.meta.slot.focus_text` (RGB 1, 0.3, 0.3) while it is focused and `ref.meta.slot.text` (RGB 0.6, 1, 0.4) otherwise.
+**R-META-079** (MUST) Bot rows and unused rows are inactive, so focus skips them, and are drawn with their colour × `ref.meta.slot.inactive_factor` (0.25) and their border at alpha `ref.meta.slot.inactive_border_alpha` (0.3). A slot whose colour id is none, for example in Siege or co-op before a side or alliance is chosen, is drawn in grey `ref.meta.slot.no_color_gray` (0.7). The row background is a horizontal gradient from the slot colour at the left to black at the right, or, while focused, to `ref.meta.slot.focus_blend` (50 %) slot colour and 50 % white. When a slot's kind changes, its colour flashes from white back to the slot colour over `ref.meta.slot.flash_time` (1.0 s), linearly, except for the change from unused to bot. The text is white while the row is inactive, `ref.meta.slot.focus_text` (RGB 1, 0.3, 0.3) while it is focused and `ref.meta.slot.text` (RGB 0.6, 1, 0.4) otherwise.
 
-**R-META-080** (MUST) The colours offered are colour ids 0 to 7 of the colour table ([reference/12](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-415, `ref.sim.team.player_colour_count`). A colour or side row is **taken** by this rule, computed once per update for drawing and pressing alike, in which only used slots other than the local one count (DEC-102; UI-416, UI-417):
+**R-META-080** (MUST) The colours offered are colour ids 0 to 7 of the colour table ([reference/12](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-415, `ref.sim.team.player_color_count`). A colour or side row is **taken** by this rule, computed once per update for drawing and pressing alike, in which only used slots other than the local one count (DEC-102; UI-416, UI-417):
 
-1. **Siege:** count the used slots other than the local one that are already on that side. On a 3-player map the defender side is taken at a count of at least `ref.match.colour.siege_3p_defender_limit` (1) and the attacker side at a count of `ref.match.colour.siege_3p_attacker_limit` (2); on any other map a side is taken at a count of at least player count ÷ `ref.match.colour.siege_side_divisor` (2). The random row is never taken.
+1. **Siege:** count the used slots other than the local one that are already on that side. On a 3-player map the defender side is taken at a count of at least `ref.match.color.siege_3p_defender_limit` (1) and the attacker side at a count of `ref.match.color.siege_3p_attacker_limit` (2); on any other map a side is taken at a count of at least player count ÷ `ref.match.color.siege_side_divisor` (2). The random row is never taken.
 2. **Co-op:** the colour is not a valid co-op colour ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-015).
 3. **Otherwise:** a used slot other than the local one already holds the colour.
 
-A taken row is inactive and drawn with a grey swatch of `ref.meta.colour_row.taken_grey` (0.5) and its caption in the inactive grey. The row of the local slot's current colour is drawn pressed, its caption in red.
+A taken row is inactive and drawn with a grey swatch of `ref.meta.color_row.taken_gray` (0.5) and its caption in the inactive grey. The row of the local slot's current colour is drawn pressed, its caption in red.
 
 **R-META-081** (MUST) Pressing a free colour or side row sets the requested colour to its colour id and, outside Siege and co-op, stores it in the preferred-colour setting and saves the settings file ([options_localisation_and_hooks.md](options_localisation_and_hooks.md) R-META-406); it then plays a backwards transition and returns to the match setup page.
 
 **R-META-082** (MUST) Every frame on the match setup, map-select, mode-select and player options pages the front end keeps its colour request current. When the local participant holds a team slot, a colour is requested, it differs from the slot's colour and another slot already holds it, outside co-op and Siege, the request falls back to the preferred-colour setting when that colour is free, and else to the next available colour. On the match setup and player options pages, and while a tutorial is starting, the front end then issues `SetColor` (R-SIM-451) when the request is not none, or in co-op, or in Siege; and it issues `SetTeamName` once when the name has not been sent yet. The authority accepts or refuses each colour request by [reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-014.
 
-**R-META-083** (MUST) A colour or side row has a background of white at alpha `ref.meta.colour_row.background_alpha` (0.1), or `ref.meta.colour_row.focus_background` (RGBA 0.75, 0.75, 1, 0.5) while focused or pressed; its caption starts at `ref.meta.colour_row.caption_x` (0.05) × w; its colour swatch fills the right quarter, starting at x = `ref.meta.colour_row.swatch_x` (3 ÷ 4) × w, `ref.meta.colour_row.swatch_width` (0.95) × w ÷ 4 wide and `ref.meta.colour_row.swatch_height` (0.8) × h high, with a gradient from the colour at the left to black at the right. Moving focus onto a row plays the menu-hover cue.
+**R-META-083** (MUST) A colour or side row has a background of white at alpha `ref.meta.color_row.background_alpha` (0.1), or `ref.meta.color_row.focus_background` (RGBA 0.75, 0.75, 1, 0.5) while focused or pressed; its caption starts at `ref.meta.color_row.caption_x` (0.05) × w; its colour swatch fills the right quarter, starting at x = `ref.meta.color_row.swatch_x` (3 ÷ 4) × w, `ref.meta.color_row.swatch_width` (0.95) × w ÷ 4 wide and `ref.meta.color_row.swatch_height` (0.8) × h high, with a gradient from the colour at the left to black at the right. Moving focus onto a row plays the menu-hover cue.
 
 **R-META-084** (MUST) The colours of bot slots and unused slots are assigned when the match world initialises, not on this page ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-016; DEC-450).
 
@@ -513,13 +513,13 @@ A taken row is inactive and drawn with a grey swatch of `ref.meta.colour_row.tak
 
 **R-META-096** (MUST) When a `Chat` command (R-SIM-450) executes while the participant is at the front end, the line is inserted at the front of the chat log with its arrival time, and with the sender's name and colour taken from the slot that the sender's participant owns; the chat-message cue plays. The join notice `ui.lobby.player_joined` is added when a name arrives for a slot whose name was empty (R-SIM-451), and the leave notice `ui.lobby.player_left` when a participant leaves (R-MODE-070); neither plays the cue.
 
-**R-META-097** (MUST) The chat log is a black box at alpha `ref.meta.chat.log_alpha` (200 ÷ 255) with a white outline at alpha `ref.meta.chat.log_outline_alpha` (0.5), its height the widget height − `ref.meta.chat.log_height_reduction` (1.5) × the font. The newest line is at the bottom and older lines go upwards. For every line the sender's current slot is looked up again each frame for the name and colour; when it has none the name is `ui.lobby.chat.sender_fallback` in grey `ref.meta.chat.fallback_grey` (RGB 150, 150, 150). A join notice shows `ui.lobby.player_joined`, a leave notice `ui.lobby.player_left`, and any other line `ui.lobby.chat.line` with the name and the text. Lines are word-wrapped at `ref.meta.chat.wrap_factor` (1.75) × the widget width, drawn in the sender's colour with an outline, and stop `ref.meta.chat.top_margin` (5 %) below the top of the box. Lines never expire; the log is cleared when the player leaves the match setup page, on an error and by every Back button of the session pages. The page shows no "press to talk" hint.
+**R-META-097** (MUST) The chat log is a black box at alpha `ref.meta.chat.log_alpha` (200 ÷ 255) with a white outline at alpha `ref.meta.chat.log_outline_alpha` (0.5), its height the widget height − `ref.meta.chat.log_height_reduction` (1.5) × the font. The newest line is at the bottom and older lines go upwards. For every line the sender's current slot is looked up again each frame for the name and colour; when it has none the name is `ui.lobby.chat.sender_fallback` in grey `ref.meta.chat.fallback_gray` (RGB 150, 150, 150). A join notice shows `ui.lobby.player_joined`, a leave notice `ui.lobby.player_left`, and any other line `ui.lobby.chat.line` with the name and the text. Lines are word-wrapped at `ref.meta.chat.wrap_factor` (1.75) × the widget width, drawn in the sender's colour with an outline, and stop `ref.meta.chat.top_margin` (5 %) below the top of the box. Lines never expire; the log is cleared when the player leaves the match setup page, on an error and by every Back button of the session pages. The page shows no "press to talk" hint.
 
 **R-META-098** (MUST) In a match, `action.match.chat` opens the chat input when the chat input is not visible, was not toggled in this update, the input mode is not gamepad and no UI window is open; opening it sets the chat-toggled-this-update flag. Switching the input mode to gamepad while it is open closes it ([reference/06](../06_controls_camera_and_commands/actions_and_bindings.md) row M2).
 
 **R-META-099** (MUST) The in-match chat input is a window with a font of `ref.meta.chat.match_font` (0.015) × H and a scale of W ÷ `ref.meta.chat.scale_reference_width` (1280), or W ÷ `ref.meta.chat.scale_small_width` (1024) when W ≤ `ref.meta.chat.small_screen_width` (800), or `ref.meta.chat.scale_tiny` (0.75) when W ≤ `ref.meta.chat.tiny_screen_width` (640). It sits at (`ref.meta.chat.margin` (10) × scale, H − 10 × scale − `ref.meta.chat.input_line_height` (1.5) × the font), `ref.meta.chat.match_width` (0.25) × W wide and 1.5 × the font high. It holds one text field of at most `ref.meta.chat.max_length` (255) characters, which in a match starts editing at once.
 
-**R-META-100** (MUST) The chat field is drawn as a black box at alpha `ref.meta.chat.input_alpha` (0.5) with a white outline `ref.meta.chat.input_outline` (2 px) wide; its text is `ref.meta.chat.text_height` (0.75) × its height high. While it is not being edited it shows `ui.chat.prompt` in grey `ref.meta.chat.prompt_grey` (0.4). Text wider than the box scrolls so that its end stays visible, and the caret blinks `ref.meta.chat.caret_period` (0.5 s) on and 0.5 s off. In a match the window closes as soon as it loses focus.
+**R-META-100** (MUST) The chat field is drawn as a black box at alpha `ref.meta.chat.input_alpha` (0.5) with a white outline `ref.meta.chat.input_outline` (2 px) wide; its text is `ref.meta.chat.text_height` (0.75) × its height high. While it is not being edited it shows `ui.chat.prompt` in grey `ref.meta.chat.prompt_gray` (0.4). Text wider than the box scrolls so that its end stays visible, and the caret blinks `ref.meta.chat.caret_period` (0.5 s) on and 0.5 s off. In a match the window closes as soon as it loses focus.
 
 **R-META-101** (MUST) Submitting the chat field (Enter, not in the update in which the chat opened) with a non-empty text does this:
 
@@ -783,7 +783,7 @@ stateDiagram-v2
 
 ### 4.1 Keys owned by this document
 
-Every value is presentation unless the notes say otherwise; real-time values are seconds of the presentation clock. The key families of this document are `ref.meta.front_end`, `ref.meta.nav`, `ref.meta.mode_select`, `ref.meta.map_select`, `ref.meta.setup`, `ref.meta.option_controls`, `ref.meta.player`, `ref.meta.connect`, `ref.meta.error`, `ref.meta.credits`, `ref.meta.help`, `ref.meta.slot`, `ref.meta.colour_row`, `ref.meta.chat` and `ref.meta.seasonal`; [front_end_presentation.md](front_end_presentation.md) owns `ref.meta.layout`, `ref.meta.backdrop`, `ref.meta.title`, `ref.meta.blink`, `ref.meta.loading` and `ref.meta.explainer`.
+Every value is presentation unless the notes say otherwise; real-time values are seconds of the presentation clock. The key families of this document are `ref.meta.front_end`, `ref.meta.nav`, `ref.meta.mode_select`, `ref.meta.map_select`, `ref.meta.setup`, `ref.meta.option_controls`, `ref.meta.player`, `ref.meta.connect`, `ref.meta.error`, `ref.meta.credits`, `ref.meta.help`, `ref.meta.slot`, `ref.meta.color_row`, `ref.meta.chat` and `ref.meta.seasonal`; [front_end_presentation.md](front_end_presentation.md) owns `ref.meta.layout`, `ref.meta.backdrop`, `ref.meta.title`, `ref.meta.blink`, `ref.meta.loading` and `ref.meta.explainer`.
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
@@ -800,13 +800,13 @@ Every value is presentation unless the notes say otherwise; real-time values are
 | `ref.meta.map_select.row_height` | 0.7 | × bh | also the row step, 0.7 × one button step | R-META-036 | — |
 | `ref.meta.map_select.header_offset` | 10 px + 1.8 × bh | below lY | the column header strip | R-META-037 | — |
 | `ref.meta.map_select.header_alpha` | 0.5 | alpha | black strip | R-META-037 | — |
-| `ref.meta.map_select.header_grey` | 0.6 | grey level, 0 to 1 | header captions | R-META-037 | — |
+| `ref.meta.map_select.header_gray` | 0.6 | grey level, 0 to 1 | header captions | R-META-037 | — |
 | `ref.meta.map_select.info_font_scale` | 1.1 | × the small font | the map description | R-META-037 | — |
 | `ref.meta.map_select.column_name` | 0.025 | × the row width | | R-META-038 | — |
 | `ref.meta.map_select.column_play_time` | 0.65 | × the row width | | R-META-038 | — |
 | `ref.meta.map_select.column_players` | 0.83 | × the row width | | R-META-038 | — |
-| `ref.meta.map_select.name_colour` | 0.65, 1, 0.4 | RGB, 0 to 1 | | R-META-038 | — |
-| `ref.meta.map_select.name_focus_colour` | 1, 0.3, 0.3 | RGB, 0 to 1 | | R-META-038 | — |
+| `ref.meta.map_select.name_color` | 0.65, 1, 0.4 | RGB, 0 to 1 | | R-META-038 | — |
+| `ref.meta.map_select.name_focus_color` | 1, 0.3, 0.3 | RGB, 0 to 1 | | R-META-038 | — |
 | `ref.meta.map_select.badge_height` | 0.9 | × the row height | Worker badges | R-META-038 | — |
 | `ref.meta.map_select.badge_spacing` | 0.55 | × the badge width | | R-META-038 | — |
 | `ref.meta.map_select.badge_angle` | −π ÷ 8 | rad | | R-META-038 | — |
@@ -842,18 +842,18 @@ Every value is presentation unless the notes say otherwise; real-time values are
 | `ref.meta.help.general_pages` | 5 | pages | general help | R-META-061 | — |
 | `ref.meta.slot.inactive_factor` | 0.25 | × the slot colour | bot and unused rows | R-META-079 | — |
 | `ref.meta.slot.inactive_border_alpha` | 0.3 | alpha | | R-META-079 | — |
-| `ref.meta.slot.no_colour_grey` | 0.7 | grey level | a slot without a colour id | R-META-079 | — |
+| `ref.meta.slot.no_color_gray` | 0.7 | grey level | a slot without a colour id | R-META-079 | — |
 | `ref.meta.slot.focus_blend` | 50 | % of the slot colour, the rest white | gradient end while focused | R-META-079 | — |
 | `ref.meta.slot.flash_time` | 1.0 | s | white flash when the slot kind changes | R-META-079 | — |
 | `ref.meta.slot.focus_text` | 1, 0.3, 0.3 | RGB, 0 to 1 | | R-META-079 | — |
 | `ref.meta.slot.text` | 0.6, 1, 0.4 | RGB, 0 to 1 | | R-META-079 | — |
-| `ref.meta.colour_row.taken_grey` | 0.5 | grey level | swatch of a taken row | R-META-080 | — |
-| `ref.meta.colour_row.background_alpha` | 0.1 | alpha of white | | R-META-083 | — |
-| `ref.meta.colour_row.focus_background` | 0.75, 0.75, 1, 0.5 | RGBA, 0 to 1 | focused or pressed | R-META-083 | — |
-| `ref.meta.colour_row.caption_x` | 0.05 | × the row width | | R-META-083 | — |
-| `ref.meta.colour_row.swatch_x` | 3 ÷ 4 | × the row width | | R-META-083 | — |
-| `ref.meta.colour_row.swatch_width` | 0.95 | × a quarter of the row width | | R-META-083 | — |
-| `ref.meta.colour_row.swatch_height` | 0.8 | × the row height | | R-META-083 | — |
+| `ref.meta.color_row.taken_gray` | 0.5 | grey level | swatch of a taken row | R-META-080 | — |
+| `ref.meta.color_row.background_alpha` | 0.1 | alpha of white | | R-META-083 | — |
+| `ref.meta.color_row.focus_background` | 0.75, 0.75, 1, 0.5 | RGBA, 0 to 1 | focused or pressed | R-META-083 | — |
+| `ref.meta.color_row.caption_x` | 0.05 | × the row width | | R-META-083 | — |
+| `ref.meta.color_row.swatch_x` | 3 ÷ 4 | × the row width | | R-META-083 | — |
+| `ref.meta.color_row.swatch_width` | 0.95 | × a quarter of the row width | | R-META-083 | — |
+| `ref.meta.color_row.swatch_height` | 0.8 | × the row height | | R-META-083 | — |
 | `ref.meta.chat.log_font_scale` | 0.8 | × the small font | match setup chat log | R-META-044 | — |
 | `ref.meta.chat.input_y` | 0.95 | × rH, below rY | match setup chat input | R-META-044 | — |
 | `ref.meta.chat.input_width` | 0.8 | × rW | | R-META-044 | — |
@@ -861,7 +861,7 @@ Every value is presentation unless the notes say otherwise; real-time values are
 | `ref.meta.chat.log_alpha` | 200 ÷ 255 | alpha | black log box | R-META-097 | — |
 | `ref.meta.chat.log_outline_alpha` | 0.5 | alpha | white outline | R-META-097 | — |
 | `ref.meta.chat.log_height_reduction` | 1.5 | × the font | | R-META-097 | — |
-| `ref.meta.chat.fallback_grey` | 150, 150, 150 | RGB8 | sender without a slot | R-META-097 | — |
+| `ref.meta.chat.fallback_gray` | 150, 150, 150 | RGB8 | sender without a slot | R-META-097 | — |
 | `ref.meta.chat.wrap_factor` | 1.75 | × the widget width | word-wrap width | R-META-097 | — |
 | `ref.meta.chat.top_margin` | 5 | % of the box height | lines stop below the top | R-META-097 | — |
 | `ref.meta.chat.match_font` | 0.015 | × H | in-match chat input | R-META-099 | — |
@@ -877,7 +877,7 @@ Every value is presentation unless the notes say otherwise; real-time values are
 | `ref.meta.chat.input_alpha` | 0.5 | alpha | black box | R-META-100 | — |
 | `ref.meta.chat.input_outline` | 2 | px | white outline | R-META-100 | — |
 | `ref.meta.chat.text_height` | 0.75 | × the field height | | R-META-100 | — |
-| `ref.meta.chat.prompt_grey` | 0.4 | grey level | | R-META-100 | — |
+| `ref.meta.chat.prompt_gray` | 0.4 | grey level | | R-META-100 | — |
 | `ref.meta.chat.caret_period` | 0.5 | s on, then 0.5 s off | | R-META-100 | — |
 | `ref.meta.chat.rename_long_offset` | 8 | characters | the name starts at this index after "/rename " | R-META-101 | DEC-006 |
 | `ref.meta.chat.rename_short_offset` | 6 | characters | the name starts at this index after "/name " | R-META-101 | DEC-006 |
@@ -987,8 +987,8 @@ String ids cited from other documents: `mode.<mode>.name`, `mode.<mode>.objectiv
 | key | owner |
 |---|---|
 | `ref.sim.lifetime.front_end_camera_position`, `ref.sim.lifetime.front_end_camera_direction` | [reference/12 match lifecycle](../12_simulation_model/02_match_lifecycle_and_state_reset.md) |
-| `ref.sim.team.player_slots`, `ref.sim.team.player_colour_count`, `ref.sim.team.siege_attacker_colour_id`, `ref.sim.team.siege_defender_colour_id` | [reference/12 teams](../12_simulation_model/06_teams_and_player_commands.md) |
-| `ref.match.grace_period`, `ref.match.grace_overlay.countdown_scale`, `ref.match.option.password_max_length`, `ref.match.colour.siege_3p_defender_limit`, `ref.match.colour.siege_3p_attacker_limit`, `ref.match.colour.siege_side_divisor`, and the option keys of R-MODE-074 (`ref.mode.<mode>.option.*`, `ref.match.option.*`, `ref.econ.catch_up.option_percent`, `ref.crate.drop.period_default_s` ([reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md)), `ref.econ.start.powers`, `ref.econ.gate.*`) | [reference/01](../01_skirmish_rules_and_modes/README.md) and the documents it names |
+| `ref.sim.team.player_slots`, `ref.sim.team.player_color_count`, `ref.sim.team.siege_attacker_color_id`, `ref.sim.team.siege_defender_color_id` | [reference/12 teams](../12_simulation_model/06_teams_and_player_commands.md) |
+| `ref.match.grace_period`, `ref.match.grace_overlay.countdown_scale`, `ref.match.option.password_max_length`, `ref.match.color.siege_3p_defender_limit`, `ref.match.color.siege_3p_attacker_limit`, `ref.match.color.siege_side_divisor`, and the option keys of R-MODE-074 (`ref.mode.<mode>.option.*`, `ref.match.option.*`, `ref.econ.catch_up.option_percent`, `ref.crate.drop.period_default_s` ([reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md)), `ref.econ.start.powers`, `ref.econ.gate.*`) | [reference/01](../01_skirmish_rules_and_modes/README.md) and the documents it names |
 | `ref.map.players.min`, `ref.map.thumbnail.width_fraction`, `ref.map.thumbnail.aspect` | [reference/08](../08_maps_and_level_design/rules_and_conventions.md) |
 | `ref.sim.weather.snow_*` | [reference/12 containers and update order](../12_simulation_model/04_containers_and_update_order.md) |
 | `ref.meta.layout.*` (`ref.meta.layout.picture_inset` among them) | [front_end_presentation.md](front_end_presentation.md) |

@@ -110,7 +110,7 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-043** (MUST) A battle starts when a hostile expedition, released by the warning hold, enters the target's territory or the claimed area (PIL-041). The battlefield is the target's territory and `wld.view.settlement_margin` (800 wu) around it, or the claimed area and the same margin.
 
-**MVP-044** (MUST) Defender's advantage (O2): inside its own territory, a defending settlement's Workers and Leaders take `mvp.defence.damage_taken_factor` (0.75) of the damage the reference rules give; the defender's turrets fight; and the Essence of every death inside the defender's territory drifts to the defender's Wellspring (MVP-023), within the bound of MVP-046.
+**MVP-044** (MUST) Defender's advantage (O2): inside its own territory, a defending settlement's Workers and Leaders take `mvp.defense.damage_taken_factor` (0.75) of the damage the reference rules give; the defender's turrets fight; and the Essence of every death inside the defender's territory drifts to the defender's Wellspring (MVP-023), within the bound of MVP-046.
 
 **MVP-045** (MUST) A battle ends at the first of:
 - **Objective held**: the attacker has Workers within `mvp.battle.objective_radius` (150 wu) of the objective, and no defender there, for `mvp.battle.objective_hold_s` (30 s). The objective of a raid is the target's Wellspring; of a claim battle, the claimed area's resource site. The attacker wins.
@@ -161,7 +161,7 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-060** (MUST) A world is a run of `mvp.run.length_hours` (8 hours of play at the session pace; 8 world days at the always-on pace). The world shows the time left, and no attack may be declared in its last `mvp.run.quiet_minutes` (15 minutes); battles in progress finish (WLD-221 narrowed to a fixed lifetime).
 
-**MVP-061** (MUST) Settlements earn renown (PIL-125), never by stores taken: `mvp.renown.defence_held` (3) for each battle won as a defender; `mvp.renown.claim_won` (3) for each claim battle won as a claimant; `mvp.renown.grievance_eased` (1) for each 20 weight of grievance eased by tribute or by a withdrawn claim; and `mvp.renown.structure_per_100ru` (1) for each 100 ru of structures completed.
+**MVP-061** (MUST) Settlements earn renown (PIL-125), never by stores taken: `mvp.renown.defense_held` (3) for each battle won as a defender; `mvp.renown.claim_won` (3) for each claim battle won as a claimant; `mvp.renown.grievance_eased` (1) for each 20 weight of grievance eased by tribute or by a withdrawn claim; and `mvp.renown.structure_per_100ru` (1) for each 100 ru of structures completed.
 
 **MVP-062** (MUST) The standing of the four settlements by renown is visible throughout the run, with each settlement's renown broken down by source.
 
@@ -311,7 +311,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.expedition.size_max` | 200 | Workers | — | provisional | MVP-041 | With the defenders, a battle of 300 to 450 figures (PIL-021) |
 | `mvp.conflict.attack_cost_ru` | 300 | ru | — | provisional | MVP-042 | An attack must cost a dwelling's worth |
 | `mvp.conflict.warning_minutes` | 5 | minutes of world time | tick | provisional | MVP-042 | Narrows WLD-102's 10; Playtest 2 checks it is enough when the deputy defends |
-| `mvp.defence.damage_taken_factor` | 0.75 | of reference damage | tick | provisional | MVP-044 | Defending should win most even fights |
+| `mvp.defense.damage_taken_factor` | 0.75 | of reference damage | tick | provisional | MVP-044 | Defending should win most even fights |
 | `mvp.battle.objective_radius` | 150 | wu | — | provisional | MVP-045 | — |
 | `mvp.battle.objective_hold_s` | 30 | seconds | tick | provisional | MVP-045 | — |
 | `mvp.battle.rout_share` | 0.25 | of Workers sent | — | provisional | MVP-045 | Battles of 4 to 12 minutes (PIL-047) |
@@ -336,7 +336,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.ai.decision_ticks` | 50 | ticks | tick | provisional | MVP-058 | ADR-080 item 2's cadence |
 | `mvp.run.length_hours` | 8 | hours of play | scaled | provisional | MVP-060 | 8 world days at the always-on pace; Playtest 1 judges the arc |
 | `mvp.run.quiet_minutes` | 15 | minutes | scaled | provisional | MVP-060 | — |
-| `mvp.renown.defence_held` | 3 | renown | — | provisional | MVP-061 | — |
+| `mvp.renown.defense_held` | 3 | renown | — | provisional | MVP-061 | — |
 | `mvp.renown.claim_won` | 3 | renown | — | provisional | MVP-061 | — |
 | `mvp.renown.grievance_eased` | 1 | renown per 20 weight | — | provisional | MVP-061 | Watch for tribute bought only for renown |
 | `mvp.renown.structure_per_100ru` | 1 | renown per 100 ru | — | provisional | MVP-061 | — |

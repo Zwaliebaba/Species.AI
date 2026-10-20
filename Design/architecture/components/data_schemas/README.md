@@ -467,7 +467,7 @@ Caption: Figure 4-A, the states of a record from authoring to loading (DAT-019 t
 
 **DAT-049** (MUST) Validation and cooking are incremental: a record is rebuilt when its authoring file, its schema version or a record that it references changes (ADR-059). Changing one record of a family rebuilds that record and its dependants, never the whole content set.
 
-**DAT-050** (MUST) Loading a cooked record does no parsing: a loader validates the header and the counts and returns a view onto the entry's bytes. These budgets are starting values that the performance tests confirm on the reference test machine of the [diagnostics](../diagnostics_test_and_performance/README.md) component: reading the headers of `dat.perf.catalogue_maps` (49) maps, one per map slot of the Species map set ([GameAssets §19](../../../assets/GameAssets.md#19-maps-and-thumbnails)), for the map catalogue in at most `dat.perf.catalogue_ms` (20 ms); loading every non-map record type of an edition in at most `dat.perf.records_ms` (50 ms); and validating and cooking a full edition from a clean state in at most `dat.perf.full_build_s` (120 s), with incremental rebuilds of one record in at most `dat.perf.incremental_s` (5 s).
+**DAT-050** (MUST) Loading a cooked record does no parsing: a loader validates the header and the counts and returns a view onto the entry's bytes. These budgets are starting values that the performance tests confirm on the reference test machine of the [diagnostics](../diagnostics_test_and_performance/README.md) component: reading the headers of `dat.perf.catalog_maps` (49) maps, one per map slot of the Species map set ([GameAssets §19](../../../assets/GameAssets.md#19-maps-and-thumbnails)), for the map catalogue in at most `dat.perf.catalog_ms` (20 ms); loading every non-map record type of an edition in at most `dat.perf.records_ms` (50 ms); and validating and cooking a full edition from a clean state in at most `dat.perf.full_build_s` (120 s), with incremental rebuilds of one record in at most `dat.perf.incremental_s` (5 s).
 
 ## 6 Failure modes, diagnostics and telemetry
 
@@ -574,8 +574,8 @@ Table 6-A Diagnostic classes.
 | `dat.schema.initial_version` | 1.0 | major.minor | first version of every record type | DAT-017 | — |
 | `dat.parse.max_depth` | 64 | nesting levels | deeper input is an error | DAT-021 | DEC-801 |
 | `dat.writer.indent_spaces` | 2 | spaces per level | canonical output | DAT-042 | DEC-800 |
-| `dat.perf.catalogue_maps` | 49 | maps | the map headers that the catalogue budget covers: one per map slot of GameAssets §19 | DAT-050 | — |
-| `dat.perf.catalogue_ms` | 20 | ms | starting value; reading `dat.perf.catalogue_maps` map headers | DAT-050 | — |
+| `dat.perf.catalog_maps` | 49 | maps | the map headers that the catalogue budget covers: one per map slot of GameAssets §19 | DAT-050 | — |
+| `dat.perf.catalog_ms` | 20 | ms | starting value; reading `dat.perf.catalog_maps` map headers | DAT-050 | — |
 | `dat.perf.records_ms` | 50 | ms | starting value; every non-map record type of an edition | DAT-050 | — |
 | `dat.perf.full_build_s` | 120 | s | starting value; clean validation and cooking of an edition | DAT-050 | — |
 | `dat.perf.incremental_s` | 5 | s | starting value; one changed record | DAT-050 | — |

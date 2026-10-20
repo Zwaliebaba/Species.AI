@@ -21,5 +21,6 @@
 ## Rules that are easy to miss
 
 - Requirement ids (`R-UNIT-014`, `TER-012`), tuning keys, DEC and ADR ids are stable: never renumber or reuse them, and cite them in commits and tests.
+- A tuning key is spelt in American English, because the record's fields are generated from it; a respelled key is retired, listed in `Design/CONVENTIONS.md` table 4.1-A and never reused (O72). Prose stays British.
 - A change under `Design/` passes `python Tools/DesignCheck/CheckDesign.py Design` before it is pushed.
 - Design questions go in the decision register; engineering decisions go in `Design/ADR/` (AGENTS.md §6). Ask the owner when neither the design nor a DEC answers a question.

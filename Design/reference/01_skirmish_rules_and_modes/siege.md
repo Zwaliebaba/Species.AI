@@ -28,7 +28,7 @@ Siege is one-sided. The defenders own the Core Device, a bomb whose countdown is
 
 **R-MODE-357** (MUST) On the first Siege step after the grace period the mode initialises once: the complete-defence flag becomes true, and for each Core Device its linked Command Consoles and then the Core Device itself are appended to the objectives list.
 
-**R-MODE-358** (MUST) Every tick, once more than `ref.mode.siege.defence_check_delay` (100 ticks) have passed since post-grace tick 0, counted on the tick counter (DEC-009), the complete-defence flag is cleared unless the owner of every objective defends; a neutral objective does not defend.
+**R-MODE-358** (MUST) Every tick, once more than `ref.mode.siege.defense_check_delay` (100 ticks) have passed since post-grace tick 0, counted on the tick counter (DEC-009), the complete-defence flag is cleared unless the owner of every objective defends; a neutral objective does not defend.
 
 **R-MODE-359** (MUST) The Core Device advance ([reference/03](../03_buildings_and_world_objects/mode_objects.md)) links its consoles again and then:
 
@@ -109,7 +109,7 @@ The Core Device, Command Console, pulse wave and explosion values are owned by [
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
-| `ref.mode.siege.defence_check_delay` | 100 | ticks | 10.0 s after post-grace tick 0, strictly more | R-MODE-358 | DEC-009 |
+| `ref.mode.siege.defense_check_delay` | 100 | ticks | 10.0 s after post-grace tick 0, strictly more | R-MODE-358 | DEC-009 |
 | `ref.mode.siege.victory_delay_single_ticks` | 101 | ticks | nominal 10 s | R-MODE-360, R-MODE-367 | DEC-002, DEC-066 |
 | `ref.mode.siege.victory_delay_multi_ticks` | 151 | ticks | nominal 15 s | R-MODE-360 | DEC-002, DEC-066 |
 | `ref.mode.siege.fade_out_ticks` | 10 | ticks | multi-round: the fade-out starts at this much victory delay left | R-MODE-362 | DEC-066, DEC-859 |

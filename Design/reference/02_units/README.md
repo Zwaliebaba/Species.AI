@@ -264,7 +264,7 @@ Table 2.11-A Slope speed factors.
 
 ### 2.12 Team colouring
 
-**R-UNIT-043** (MUST) An actor takes the colour of its team from the team colour table of [reference/12](../12_simulation_model/06_teams_and_player_commands.md) (`ref.sim.team_colour.*`). The Rogue faction is drawn in `ref.sim.team_colour.rogue.base` (10, 10, 10) and the Visitor faction in `ref.sim.team_colour.visitor.base` (200, 200, 200). An actor of the no-team value is drawn in its authored colours.
+**R-UNIT-043** (MUST) An actor takes the colour of its team from the team colour table of [reference/12](../12_simulation_model/06_teams_and_player_commands.md) (`ref.sim.team_color.*`). The Rogue faction is drawn in `ref.sim.team_color.rogue.base` (10, 10, 10) and the Visitor faction in `ref.sim.team_color.visitor.base` (200, 200, 200). An actor of the no-team value is drawn in its authored colours.
 
 **R-UNIT-044** (MUST) A team-tinted unit mesh is tinted in one of two ways, with the tint regions marked explicitly in the asset (ADR-020):
 
@@ -283,11 +283,11 @@ Table 2.12-A Colouring per kind.
 |---|---|---|
 | Worker | its card × team colour × (0.3 + 0.7 × health ÷ 50) | [worker.md](worker.md) |
 | Leader | whole-model tint of `mesh.unit.leader_figure` | [leader_and_formations.md](leader_and_formations.md) |
-| Trooper | no tint: authored colours `ref.unit.trooper.colour_primary` (228, 214, 153) and `ref.unit.trooper.colour_secondary` (177, 88, 26) | [strike_team.md](strike_team.md) |
+| Trooper | no tint: authored colours `ref.unit.trooper.color_primary` (228, 214, 153) and `ref.unit.trooper.color_secondary` (177, 88, 26) | [strike_team.md](strike_team.md) |
 | Transport | whole hull in team colour × `ref.unit.transport.hull_tint` (0.1) | [transport.md](transport.md) |
 | Collector | whole-model tint; tractor rings in team colour | [collector.md](collector.md) |
 | Builder | whole-model tint; a fixed blue beam | [builder.md](builder.md) |
-| Bomber | no tint: authored grey `ref.unit.bomber.colour` (128, 128, 128) | [hazards_and_projectiles.md](hazards_and_projectiles.md) |
+| Bomber | no tint: authored grey `ref.unit.bomber.color` (128, 128, 128) | [hazards_and_projectiles.md](hazards_and_projectiles.md) |
 | barrage missile | launcher and warhead cards in team colour; the Rogue faction's are white and subtractive | [hazards_and_projectiles.md](hazards_and_projectiles.md) |
 | ant, centipede, Reaper Serpent | region tint | [creatures.md](creatures.md) |
 | spider, Seed Pod | whole-model tint | [creatures.md](creatures.md) |
@@ -306,7 +306,7 @@ Cards, Essence orb quads, Crawler strips, laser bolts, barrage missile cards, Br
 
 **R-UNIT-049** (MUST) A unit mesh that takes damage or dies may shatter: the shatter effects (`ShatterEffects`) release a share of the mesh's facets as debris, given by the fraction the caller passes ([../../architecture/components/animation_and_vfx/README.md](../../architecture/components/animation_and_vfx/README.md)).
 
-**R-UNIT-050** (MUST) A unit's ground shadow is a blob of `fx.glow_round` draped on the terrain, coloured `ref.unit.shadow.colour` (0.6, 0.6, 0.6, 0) and blended with source factor source alpha and destination factor one minus source colour ([renderer](../../architecture/components/renderer/entity_and_overlay_renderers.md) RND-325).
+**R-UNIT-050** (MUST) A unit's ground shadow is a blob of `fx.glow_round` draped on the terrain, coloured `ref.unit.shadow.color` (0.6, 0.6, 0.6, 0) and blended with source factor source alpha and destination factor one minus source colour ([renderer](../../architecture/components/renderer/entity_and_overlay_renderers.md) RND-325).
 
 **R-UNIT-051** (MUST) A unit flickers to show damage. Its damaged flag is evaluated once per tick period of scaled presentation time, the reference cadence of one evaluation per simulation tick, and not every render frame ([animation and VFX](../../architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md) VFX-126; see DEC-963): the flag is set when FxRng `NextUnit(ref.unit.flicker.chance_scale)` × (1 − |sin(t + `ref.unit.flicker.phase_per_id` × unit id)| × `ref.unit.flicker.sine_weight`) > its health fraction, with t the unscaled presentation time, chance scale 0.75, phase 10 per unit id and sine weight 0.8. Every render frame draws the unit by its current flag. The flicker is presentation state: it draws only from the presentation generator, reads only the presentation clock, and no simulation rule reads it (DEC-007, DEC-013).
 
@@ -524,7 +524,7 @@ Speeds are at difficulty level 0 (DEC-010). Rates are the seconds between shots;
 | `ref.unit.attack.muzzle_height` | 3 | wu | above the shooter's position | R-UNIT-052 | — |
 | `ref.unit.attack.laser_speed` | 150 | wu/s | about 90 wu of range at a 0.6 s bolt life | R-UNIT-052 | DEC-111 |
 | `ref.unit.tint.attenuation` | 0.7 | × colour | applied after the team tint | R-UNIT-044 | — |
-| `ref.unit.shadow.colour` | 0.6, 0.6, 0.6, 0 | RGBA | the ground blob shadow; presentation only | R-UNIT-050 | DEC-007 |
+| `ref.unit.shadow.color` | 0.6, 0.6, 0.6, 0 | RGBA | the ground blob shadow; presentation only | R-UNIT-050 | DEC-007 |
 | `ref.unit.flicker.chance_scale` | 0.75 | — | presentation only; evaluated once per tick period | R-UNIT-051 | DEC-007, DEC-963 |
 | `ref.unit.flicker.phase_per_id` | 10 | rad per unit id | presentation only | R-UNIT-051 | DEC-007 |
 | `ref.unit.flicker.sine_weight` | 0.8 | — | presentation only | R-UNIT-051 | DEC-007 |
@@ -538,10 +538,10 @@ Speeds are at difficulty level 0 (DEC-010). Rates are the seconds between shots;
 | `ref.unit.centipede.slope_divisor` | 10 | wu | | R-UNIT-042 | — |
 | `ref.unit.centipede.slope_min` | 0.6 | × speed | | R-UNIT-042 | — |
 | `ref.unit.centipede.slope_max` | 1.0 | × speed | downhill never speeds a centipede up | R-UNIT-042 | — |
-| `ref.unit.trooper.colour_primary` | 228, 214, 153 | RGB | authored, untinted: the sand colour | R-UNIT-046, R-UNIT-363 | — |
-| `ref.unit.trooper.colour_secondary` | 177, 88, 26 | RGB | authored, untinted: the rust colour | R-UNIT-046, R-UNIT-363 | — |
+| `ref.unit.trooper.color_primary` | 228, 214, 153 | RGB | authored, untinted: the sand colour | R-UNIT-046, R-UNIT-363 | — |
+| `ref.unit.trooper.color_secondary` | 177, 88, 26 | RGB | authored, untinted: the rust colour | R-UNIT-046, R-UNIT-363 | — |
 | `ref.unit.transport.hull_tint` | 0.1 | × team colour | whole hull, every facet at tint weight 1 | R-UNIT-046, R-UNIT-408 | DEC-029 |
-| `ref.unit.bomber.colour` | 128, 128, 128 | RGB | authored, untinted | R-UNIT-046 | — |
+| `ref.unit.bomber.color` | 128, 128, 128 | RGB | authored, untinted | R-UNIT-046 | — |
 
 The Worker's slope factors and formation factor are keyed in [worker.md](worker.md) (`ref.unit.worker.slope_divisor`, `ref.unit.worker.slope_min`, `ref.unit.worker.slope_max`, `ref.unit.worker.formation_explosive_factor`), and the Leader's slope factors and corpse sink in [leader_and_formations.md](leader_and_formations.md) (`ref.unit.leader.slope_divisor`, `ref.unit.leader.slope_min`, `ref.unit.leader.slope_max`, `ref.unit.leader.corpse_sink_per_tick`).
 

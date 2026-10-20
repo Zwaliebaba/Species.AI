@@ -65,7 +65,7 @@ The base order is therefore nearly alphabetical: an id that sorts after every en
 
 **R-MAP-015** (MUST) A map whose definition does not come from a mounted content set, because it is read from the player's own map folder, is a **custom map**; its handling is [map editor hooks](map_editor_hooks.md). The catalogue counts the maps whose header sets the official flag, and the content build generates the **map index**: the list of the map ids of the official maps, which the Completionist achievement hook counts and which is packaged with the maps it lists (DEC-563).
 
-**R-MAP-016** (MUST) Within each mode's list the catalogue sorts the maps with a stable sort: by player count, ascending, then by difficulty rank, ascending, where the rank is `ref.map.catalogue.rank.none` (0) for a map that sets no difficulty, `ref.map.catalogue.rank.basic` (1) for basic, `ref.map.catalogue.rank.intermediate` (2) for intermediate and `ref.map.catalogue.rank.advanced` (3) for advanced. Maps that tie on both keys keep their base order (R-MAP-012; DEC-314).
+**R-MAP-016** (MUST) Within each mode's list the catalogue sorts the maps with a stable sort: by player count, ascending, then by difficulty rank, ascending, where the rank is `ref.map.catalog.rank.none` (0) for a map that sets no difficulty, `ref.map.catalog.rank.basic` (1) for basic, `ref.map.catalog.rank.intermediate` (2) for intermediate and `ref.map.catalog.rank.advanced` (3) for advanced. Maps that tie on both keys keep their base order (R-MAP-012; DEC-314).
 
 **R-MAP-017** (MUST) The header's mode list decides only where match setup lists the map. A match takes its mode from the match setup, and match setup offers a map only under the modes the map lists ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-084; [reference/09](../09_front_end_and_match_flow/screen_flow_and_match_setup.md)).
 
@@ -260,7 +260,7 @@ Table 2.8-B Terrain envelope of the reference maps. Each range bounds the values
 
 ### 2.9 Map lights
 
-**R-MAP-087** (MUST) Each map light record (`MapLight`) holds a direction (front x, y, z) and a colour (r, g, b). Every map light is directional, at an infinite distance; its direction is normalised at load, and its colour components are unclamped multipliers, so values above 1 brighten. A light record without values takes the renderer's defaults `rnd.light.default_colour` and `rnd.light.default_front` ([renderer](../../architecture/components/renderer/README.md) RND-012). The renderer uses the first two lights of the list (RND-013, RND-226); the simulation never reads a map light.
+**R-MAP-087** (MUST) Each map light record (`MapLight`) holds a direction (front x, y, z) and a colour (r, g, b). Every map light is directional, at an infinite distance; its direction is normalised at load, and its colour components are unclamped multipliers, so values above 1 brighten. A light record without values takes the renderer's defaults `rnd.light.default_color` and `rnd.light.default_front` ([renderer](../../architecture/components/renderer/README.md) RND-012). The renderer uses the first two lights of the list (RND-013, RND-226); the simulation never reads a map light.
 
 **R-MAP-088** (MUST) Every reference map has exactly `ref.map.light.count` (2) lights. Their colour components lie between 0.26 and 5.23 (red), 0.26 and 3.15 (green) and 0.00 and 2.07 (blue), and the normalised y component of their direction between 0.00 and 0.86. The two lights follow one pattern: a neutral grey fill light, with equal components between 0.33 and 1.25, and a warm key light whose red component exceeds its green, which exceeds its blue. The pattern is a level-design tool that the schema accepts (DEC-315). Whether maps keep per-map light values or select named lighting presets is DEC-562, whose default is the per-map values.
 
@@ -432,7 +432,7 @@ Table 2.16-A Spawn Control maps.
 
 **R-MAP-155** (MUST) Zone Control's hills are Control Zones, 1 to 15 per map, almost all with no team, with radii from 50 to 555.24 wu. Every Zone Control map except one has a spawn economy; the exception is a 3-player map with no Spawn Node, 2 Transit Gates per start position, the Transit Gate reinforcement count 100, 6 turrets with no team and a single central Control Zone of radius 86.2 wu. The mode rules are [reference/01 Zone Control](../01_skirmish_rules_and_modes/zone_control.md).
 
-**R-MAP-156** (MUST) **Concentric Control Zones** are several Control Zones whose centres lie within `ref.map.zone_control.concentric_centre_wu` (10 wu) of each other, with different radii, so that the centre counts as two or three zones, each of which scores separately. Four Zone Control maps use them: on a 3-player map one pair (radii 101.17 and 140 wu); on the 4-player maps one triple (200, 125 and 50 wu) with four pairs (100 and 50 wu); two large zones (233.01 and 220 wu) that each contain three zones of 90 wu, with two pairs (100 and 50 wu); and one central triple (555.24, 193.87 and 50 wu) with four pairs (122 and 50 wu) and four single zones of 50 wu. The pattern is a level-design tool (DEC-315).
+**R-MAP-156** (MUST) **Concentric Control Zones** are several Control Zones whose centres lie within `ref.map.zone_control.concentric_center_wu` (10 wu) of each other, with different radii, so that the centre counts as two or three zones, each of which scores separately. Four Zone Control maps use them: on a 3-player map one pair (radii 101.17 and 140 wu); on the 4-player maps one triple (200, 125 and 50 wu) with four pairs (100 and 50 wu); two large zones (233.01 and 220 wu) that each contain three zones of 90 wu, with two pairs (100 and 50 wu); and one central triple (555.24, 193.87 and 50 wu) with four pairs (122 and 50 wu) and four single zones of 50 wu. The pattern is a level-design tool (DEC-315).
 
 **R-MAP-157** (MUST) One 3-player Zone Control map gives three Control Zones of radius 150 wu the start positions 0, 1 and 2 as their team, so at load each becomes the team at that position (R-MAP-044) and those hills start owned; ownership then follows occupancy (DEC-315).
 
@@ -730,10 +730,10 @@ Figure 3.4 How map records receive their teams at load (R-MAP-044, R-MAP-045, R-
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
 | `ref.map.players.min` | 2 | player positions | the maximum is `ref.sim.team.player_slots` (4) of reference/12 | R-MAP-060 | DEC-025 |
-| `ref.map.catalogue.rank.none` | 0 | rank | a map that sets no difficulty | R-MAP-016 | DEC-314 |
-| `ref.map.catalogue.rank.basic` | 1 | rank | | R-MAP-016 | DEC-314 |
-| `ref.map.catalogue.rank.intermediate` | 2 | rank | | R-MAP-016 | DEC-314 |
-| `ref.map.catalogue.rank.advanced` | 3 | rank | | R-MAP-016 | DEC-314 |
+| `ref.map.catalog.rank.none` | 0 | rank | a map that sets no difficulty | R-MAP-016 | DEC-314 |
+| `ref.map.catalog.rank.basic` | 1 | rank | | R-MAP-016 | DEC-314 |
+| `ref.map.catalog.rank.intermediate` | 2 | rank | | R-MAP-016 | DEC-314 |
+| `ref.map.catalog.rank.advanced` | 3 | rank | | R-MAP-016 | DEC-314 |
 | `ref.map.thumbnail.width_fraction` | 0.8 | of the right-hand column width | presentation | R-MAP-022 | DEC-563 |
 | `ref.map.thumbnail.aspect` | 0.75 | height ÷ width | the 4:3 thumbnail | R-MAP-022 | DEC-563 |
 | `ref.map.header.name_max_chars` | 511 | characters | custom-map display name | R-MAP-060 | DEC-801 |
@@ -750,7 +750,7 @@ Figure 3.4 How map records receive their teams at load (R-MAP-044, R-MAP-045, R-
 | `ref.map.camera.view_name_max_chars` | 62 | characters | maximum camera-view name length; the schema enforces it (DEC-801) | R-MAP-125 | DEC-801 |
 | `ref.map.camera.animation_duration_max_s` | 60 | s of real time | exclusive upper bound of a step's duration; presentation | R-MAP-127 | DEC-015 |
 | `ref.map.starting_forces.spread_default` | 200 | wu | | R-MAP-130 | — |
-| `ref.map.zone_control.concentric_centre_wu` | 10 | wu | centre distance of concentric Control Zones | R-MAP-156 | DEC-315 |
+| `ref.map.zone_control.concentric_center_wu` | 10 | wu | centre distance of concentric Control Zones | R-MAP-156 | DEC-315 |
 | `ref.map.reference.map_count` | 49 | maps | the reference map set | R-MAP-180 | DEC-063 |
 | `ref.map.reference.count.spawn_control` | 9 | maps | 2-player 5, 3-player 2, 4-player 2 | R-MAP-180 | — |
 | `ref.map.reference.count.zone_control` | 9 | maps | 2, 4, 3 | R-MAP-180 | — |
@@ -784,7 +784,7 @@ Figure 3.4 How map records receive their teams at load (R-MAP-044, R-MAP-045, R-
 | [reference/11](../11_tutorial_and_help.md) | `ref.tut.first.map_population_cap`, `ref.tut.second.map_population_cap` |
 | [reference/04 crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) | `ref.crate.drop.map_width_per_crate` |
 | [reference/05](../05_population_flow.md) | `ref.econ.gate.count`, `ref.econ.gate.transport_cap`, `ref.econ.gate.turret_frequency`, `ref.econ.gate.turret_cap` |
-| [renderer](../../architecture/components/renderer/README.md) | `rnd.light.default_colour`, `rnd.light.default_front` |
+| [renderer](../../architecture/components/renderer/README.md) | `rnd.light.default_color`, `rnd.light.default_front` |
 
 ## 5 Edge cases and interactions
 

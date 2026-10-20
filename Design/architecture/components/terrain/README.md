@@ -240,7 +240,7 @@ Table 3.4-A Guide-grid sizes.
 
 ### 3.6 Rendering inputs
 
-**TER-040** (MUST) A land colour ramp, one file of `terrain.ramp`, is an image of `ter.colour.ramp_size` × `ter.colour.ramp_size` (64 × 64) texels, read on the CPU as a `CpuTable` entry of the asset cache, never uploaded to the GPU (AST-072, ADR-017). Its x axis is the slope: column 0 is flat ground and column 63 vertical. Its y axis is the height, with the look-up row index counted from the **bottom** row of the image as viewed: row 0, the bottom row, is the highest terrain, and row 63, the top row, is sea level and below. The content build rejects a ramp of another size (DEC-015).
+**TER-040** (MUST) A land colour ramp, one file of `terrain.ramp`, is an image of `ter.color.ramp_size` × `ter.color.ramp_size` (64 × 64) texels, read on the CPU as a `CpuTable` entry of the asset cache, never uploaded to the GPU (AST-072, ADR-017). Its x axis is the slope: column 0 is flat ground and column 63 vertical. Its y axis is the height, with the look-up row index counted from the **bottom** row of the image as viewed: row 0, the bottom row, is the highest terrain, and row 63, the top row, is sea level and below. The content build rejects a ramp of another size (DEC-015).
 
 **TER-041** (MUST) A shore-wave gradient, one file of `terrain.shore_wave_gradient`, provides the wave colour table: the pixel row `rnd.sea.wave_table_row` (1) of [world renderers](../renderer/world_renderers.md) RND-144, counted from the bottom row of the image as viewed (the second row from the bottom), one colour per pixel column. The number of colours is the image's width, 400 for the gradients of the asset manifest, and any width is accepted. Every colour is opaque (alpha 0 in the inverted style, RND-144, DEC-040). The gradient is read on the CPU as a `CpuTable` entry, like the ramp (AST-072). The land colour ramp and the shore-wave gradient embedded in a custom map take the place of these files for that map only and reach the terrain component as CPU tables in the same form (AST-063).
 
@@ -331,22 +331,22 @@ Every value is a reference value adopted as the Species engine baseline (DEC-004
 | `ter.tile.default_size` | 256 | wu | the record type's default size; every map field is mandatory | TER-032 | |
 | `ter.grid.index_bits` | 16 | bits | the reference index width; indices reduce modulo 2¹⁶ | TER-072, TER-073, TER-153 | DEC-246 |
 | `ter.grid.max_samples_per_side` | 32 768 | samples | the content-build limit on columns and rows | TER-072, TER-250 | DEC-247 |
-| `ter.math.normalise_min_length_sq` | 10⁻¹⁰ | wu² | below or at it, normalisation gives the fallback | TER-077 | DEC-241 |
-| `ter.math.normalise_fallback` | (0, 0, 1) | unit vector | | TER-077 | DEC-241 |
+| `ter.math.normalize_min_length_sq` | 10⁻¹⁰ | wu² | below or at it, normalisation gives the fallback | TER-077 | DEC-241 |
+| `ter.math.normalize_fallback` | (0, 0, 1) | unit vector | | TER-077 | DEC-241 |
 | `ter.normal.outside` | (0, 1, 0) | unit vector | the normal grid's outside value and the flat-neighbourhood normal | TER-013, TER-031, TER-170 | |
 | `ter.query.ungenerated_world_size` | 1 000 000 | wu | world size reported without a generated field | TER-014 | |
 | `ter.query.ungenerated_outside_height` | −20 | wu | outside height reported without a generated field | TER-014 | |
 | `ter.query.ray_tri_range` | 10¹⁰ | wu | range of the ray–triangle test in the grid walk | TER-017 | DEC-241 |
 | `ter.query.los_margin` | 20 | wu | at both ends of the line of sight | TER-019 | |
-| `ter.colour.ramp_size` | 64 | texels | the ramp's width and height; the look-up scale | TER-040, TER-181, TER-182 | |
-| `ter.colour.centre_factor` | 0.33333 | — | not 1/3 | TER-181 | |
-| `ter.colour.slope_exponent` | 0.4 | — | *u* = (1 − *g*)^0.4 | TER-181, TER-182 | |
-| `ter.colour.jitter_numerator` | 0.45 | ramp fraction × wu | jitter range 0.45 ÷ (max(*h*, 0) + 2), uniform about 0 | TER-181, TER-182 | |
-| `ter.colour.jitter_offset` | 2.0 | wu | | TER-181 | |
+| `ter.color.ramp_size` | 64 | texels | the ramp's width and height; the look-up scale | TER-040, TER-181, TER-182 | |
+| `ter.color.center_factor` | 0.33333 | — | not 1/3 | TER-181 | |
+| `ter.color.slope_exponent` | 0.4 | — | *u* = (1 − *g*)^0.4 | TER-181, TER-182 | |
+| `ter.color.jitter_numerator` | 0.45 | ramp fraction × wu | jitter range 0.45 ÷ (max(*h*, 0) + 2), uniform about 0 | TER-181, TER-182 | |
+| `ter.color.jitter_offset` | 2.0 | wu | | TER-181 | |
 | `ter.sea.mask_size` | 128 | pixels per side | shore mask and depth map | TER-196, TER-197, TER-198 | |
 | `ter.sea.mask_land_offset` | 32 | pixels | land window [32, 96) on both axes | TER-196 | |
 | `ter.sea.blur_taps` | 0.2, 0.3, 0.4, 0.5, 0.8, 1.0, 0.8, 0.5, 0.4, 0.3, 0.2 | — | 11 taps centred on tap 5 | TER-197 | |
-| `ter.sea.blur_normaliser` | 5.4 | — | the sum of the taps | TER-197 | |
+| `ter.sea.blur_normalizer` | 5.4 | — | the sum of the taps | TER-197 | |
 | `ter.sea.blur_skip_tolerance` | 10⁻⁶ | — | pixels this close to 0 scatter nothing | TER-197 | DEC-241 |
 | `ter.sea.mask_gain` | 855 | grey levels | × the blurred value | TER-197 | |
 | `ter.sea.mask_max` | 255 | grey level | | TER-197 | |
@@ -363,7 +363,7 @@ Every value is a reference value adopted as the Species engine baseline (DEC-004
 | `ter.sea.wave.z_terms` | (0.02, 0.75, 0.9), (0.03, 1.85, 0.65) | (per wu, per s, —) | | TER-204 | |
 | `ter.sea.wave.index_bias` | 0.1 | cells | added before truncation | TER-205 | |
 | `ter.sea.wave.brightness_scale` | 4.0 | — | | TER-205 | |
-| `ter.sea.wave.colour_mix` | 0.7, 0.3 | — | the other vertex's brightness weighs 0.7 | TER-205 | |
+| `ter.sea.wave.color_mix` | 0.7, 0.3 | — | the other vertex's brightness weighs 0.7 | TER-205 | |
 | `ter.test.log2_check_limit` | 70 000 | — | ceilLog2 is exact below it | TER-067 | |
 | `ter.perf.generation_budget_ms` | 2000 | ms | provisional Species budget, not a reference value: generation's share of `ast.load.match_entry_budget_s` | TER-242 | DEC-226 |
 

@@ -32,7 +32,7 @@ constexpr double MERGE_INDEX_ROUNDING = 0.5;                                    
 constexpr double MERGE_RANGE_EPSILON = 0.001;                                         // ter.merge.range_epsilon
 constexpr double SMOOTH_DIVISOR = 6.0;                                                // ter.flatten.smooth_divisor
 constexpr double SMOOTH_UNBIASED_DIVISOR = 5.0;                                       // WLD-268: the five terms divided by five
-constexpr double NORMALIZE_MIN_LENGTH_SQUARED = 1e-10;                                // ter.math.normalise_min_length_sq
+constexpr double NORMALIZE_MIN_LENGTH_SQUARED = 1e-10;                                // ter.math.normalize_min_length_sq
 
 // TER-065: the maths library's binary64 result rounded to binary32.
 double Pow32(double _x, double _y) noexcept

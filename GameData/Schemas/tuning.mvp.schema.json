@@ -568,13 +568,13 @@
           "x-species-type": "object",
           "x-species-presence": "required"
         },
-        "defence": {
+        "defense": {
           "type": "object",
-          "description": "the mvp.defence.* keys",
+          "description": "the mvp.defense.* keys",
           "properties": {
             "damage_taken_factor": {
               "type": "number",
-              "description": "mvp.defence.damage_taken_factor (MVP-044)",
+              "description": "mvp.defense.damage_taken_factor (MVP-044)",
               "minimum": 0,
               "x-species-precision": "binary64",
               "x-species-type": "sim_decimal",
@@ -919,9 +919,9 @@
           "type": "object",
           "description": "the mvp.renown.* keys",
           "properties": {
-            "defence_held": {
+            "defense_held": {
               "type": "integer",
-              "description": "mvp.renown.defence_held (MVP-061)",
+              "description": "mvp.renown.defense_held (MVP-061)",
               "minimum": 0,
               "x-species-type": "count",
               "x-species-unit": "renown",
@@ -955,7 +955,7 @@
             }
           },
           "required": [
-            "defence_held",
+            "defense_held",
             "claim_won",
             "grievance_eased",
             "structure_per_100ru"
@@ -1282,7 +1282,7 @@
         "strength",
         "expedition",
         "conflict",
-        "defence",
+        "defense",
         "battle",
         "protection",
         "grievance",

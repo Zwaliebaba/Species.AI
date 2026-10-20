@@ -30,8 +30,8 @@ Who may send which command, and how commands travel, is not part of the referenc
 | Team id | Role |
 |---|---|
 | 0 to `ref.sim.team.player_slots` − 1 (0 to 3) | player positions: a human on a local or remote participant, a Bot or a spectator. The map's start positions 0 to (player count − 1) are assigned to team ids at load (R-SIM-417). |
-| `ref.sim.team.rogue_slot` (4) | the **Rogue faction**, owner of hostile creatures: colour id `ref.sim.team.rogue_colour_id` (8); a bot team that no participant owns |
-| `ref.sim.team.visitor_slot` (5) | the **Visitor faction**: colour id `ref.sim.team.visitor_colour_id` (9); a bot team that no participant owns |
+| `ref.sim.team.rogue_slot` (4) | the **Rogue faction**, owner of hostile creatures: colour id `ref.sim.team.rogue_color_id` (8); a bot team that no participant owns |
+| `ref.sim.team.visitor_slot` (5) | the **Visitor faction**: colour id `ref.sim.team.visitor_color_id` (9); a bot team that no participant owns |
 | the no-team value | no team: unowned structures, weather effects, Supply crates and every other object without a team. It is never registered in the actor grid and is nobody's friend (R-SIM-412). One no-team value serves every field (DEC-464). |
 
 An effect that harms everyone, such as a fireball, carries the no-team value.
@@ -157,7 +157,7 @@ Outside co-op a team is a friend only of itself. In a co-op match the co-op grou
 
 ### 2.6 Colours, start positions and alliances
 
-**R-SIM-415** (MUST) The colour table has ten entries. Ids 0 to 7 are the `ref.sim.team.player_colour_count` player colours; each has a base colour and the two shades of a co-op pair (member 1 and member 2). The values are in §4 under `ref.sim.team_colour.<name>`:
+**R-SIM-415** (MUST) The colour table has ten entries. Ids 0 to 7 are the `ref.sim.team.player_color_count` player colours; each has a base colour and the two shades of a co-op pair (member 1 and member 2). The values are in §4 under `ref.sim.team_color.<name>`:
 
 | Colour id | Name string id | Base (RGB) | Shade, member 1 | Shade, member 2 |
 |---|---|---|---|---|
@@ -172,13 +172,13 @@ Outside co-op a team is a friend only of itself. In a co-op match the co-op grou
 | 8 | `faction.rogue.name` | 10, 10, 10 | 10, 10, 10 | 10, 10, 10 |
 | 9 | `faction.visitor.name` | 200, 200, 200 | 200, 200, 200 | 200, 200, 20 |
 
-**R-SIM-416** (MUST) Outside co-op and Siege a team's colour id starts equal to its team id; a human's own choice arrives through the `SetColor` command (R-SIM-451). At match-world initialisation every bot team chooses, with the simulation generator, a colour from 0 to `ref.sim.team.bot_colour_count` − 1 (0 to 3) that no other team holds, as a uniform choice from the list of free colours (DEC-014, DEC-450); in a tutorial a bot team's colour is its team index. A team that still has no colour after initialisation receives the first colour from 0 to 7 that no team holds.
+**R-SIM-416** (MUST) Outside co-op and Siege a team's colour id starts equal to its team id; a human's own choice arrives through the `SetColor` command (R-SIM-451). At match-world initialisation every bot team chooses, with the simulation generator, a colour from 0 to `ref.sim.team.bot_color_count` − 1 (0 to 3) that no other team holds, as a uniform choice from the list of free colours (DEC-014, DEC-450); in a tutorial a bot team's colour is its team index. A team that still has no colour after initialisation receives the first colour from 0 to 7 that no team holds.
 
 **R-SIM-417** (MUST) Outside Siege and co-op, a team's start position is assigned when the match first needs it: the team receives the free position at index (simulation draw mod number of free positions) of the list of positions 0 to (player count − 1) that no team holds, in ascending order, or none when no position is free. Match initialisation asks for the positions in team-slot order, so the draws happen in slot order. In a tutorial, and for the Rogue and Visitor factions, the position equals the team id. This reference behaviour is the default of the Open DEC-450.
 
 **R-SIM-418** (MUST) The team at a start position is the first team i below the player count whose start position, assigned by R-SIM-417 if it has none yet, equals that position; the no-team value when there is none. A rematch rotates the positions: new position[i] = old position[(i + 1) mod player count]. Map-placed structure owners and map-placed actors are matched to teams by position, and each team's opening camera view is `spawn_view_<position>`.
 
-**R-SIM-419** (MUST) Siege assigns sides and positions by its own procedure ([../01_skirmish_rules_and_modes/siege.md](../01_skirmish_rules_and_modes/siege.md)): all positions are cleared; then each player without a colour receives the defender colour `ref.sim.team.siege_defender_colour_id` (0, green) when the attacking side is full, the attacker colour `ref.sim.team.siege_attacker_colour_id` (1, red) when the defending side is full, and otherwise the colour (simulation draw mod 2); each player then takes a random free position of its side. In a co-op Siege match the team's co-op group is 1 when its position is one of the map's group-1 positions and 2 otherwise, and its shade follows R-SIM-421. A team attacks or defends according to the map's attacking flag for its position.
+**R-SIM-419** (MUST) Siege assigns sides and positions by its own procedure ([../01_skirmish_rules_and_modes/siege.md](../01_skirmish_rules_and_modes/siege.md)): all positions are cleared; then each player without a colour receives the defender colour `ref.sim.team.siege_defender_color_id` (0, green) when the attacking side is full, the attacker colour `ref.sim.team.siege_attacker_color_id` (1, red) when the defending side is full, and otherwise the colour (simulation draw mod 2); each player then takes a random free position of its side. In a co-op Siege match the team's co-op group is 1 when its position is one of the map's group-1 positions and 2 otherwise, and its shade follows R-SIM-421. A team attacks or defends according to the map's attacking flag for its position.
 
 **R-SIM-420** (MUST) Co-op (2 against 2) alliance assignment places each team as follows:
 
@@ -189,9 +189,9 @@ Outside co-op a team is a friend only of itself. In a co-op match the co-op grou
 
 Co-op setup applies the resulting colour inside the setup step on every participant, and the setup itself issues no command (DEC-119). After co-op setup the local participant's lobby sends a `SetColor` for its own team with the colour that setup applied; executing it changes nothing (R-SIM-451).
 
-**R-SIM-421** (MUST) The shade of a co-op group is chosen when it is first asked for: the first request for a group returns its member-1 shade and every later request its member-2 shade; a group without a colour returns `ref.sim.team_colour.no_group_shade` (white).
+**R-SIM-421** (MUST) The shade of a co-op group is chosen when it is first asked for: the first request for a group returns its member-1 shade and every later request its member-2 shade; a group without a colour returns `ref.sim.team_color.no_group_shade` (white).
 
-**R-SIM-422** (MUST) On a map with fewer than four players, each unused slot draws a colour from 0 to 3 that no player slot holds, by the free-colour draw: colour = (simulation draw mod `ref.sim.team.player_colour_count`) div `ref.sim.team.coop_colour_divisor`, which gives 0 to 3, and only the colour changes, so that the effects that pick a random team colour, such as the Essence Grove and the Allegiance Scrambler, have a colour for every slot. A colour drawn for an unused slot is not reserved, so two unused slots can share a colour (DEC-450).
+**R-SIM-422** (MUST) On a map with fewer than four players, each unused slot draws a colour from 0 to 3 that no player slot holds, by the free-colour draw: colour = (simulation draw mod `ref.sim.team.player_color_count`) div `ref.sim.team.coop_color_divisor`, which gives 0 to 3, and only the colour changes, so that the effects that pick a random team colour, such as the Essence Grove and the Allegiance Scrambler, have a colour for every slot. A colour drawn for an unused slot is not reserved, so two unused slots can share a colour (DEC-450).
 
 **R-SIM-423** (MUST) Every colour, position and alliance draw of §2.6 is a simulation draw made during match-world initialisation in team-index order, so every participant must start the match with identical lobby-slot state ([07_randomness_and_integrity.md](07_randomness_and_integrity.md)).
 
@@ -219,7 +219,7 @@ Rectangle:
     offset := (z, 0, x)                                     # the axes are swapped
 Airstrike:
     rowLen := ref.sim.group.airstrike_row_length            # 4
-    c := ref.sim.group.airstrike_centre                     # 2
+    c := ref.sim.group.airstrike_center                     # 2
     x := (i mod rowLen - c) * ref.sim.group.airstrike_spacing_x + j     # 24 wu
     y := (i div rowLen - c) * ref.sim.group.airstrike_spacing_y + j     # 12 wu
     z := (i div rowLen - c) * ref.sim.group.airstrike_spacing_z + j     # 24 wu
@@ -323,7 +323,7 @@ A participant's earlier `ControlState`, `Select` or `SetColor` of the same tick 
 |---|---|---|---|---|
 | `PlayerCommand::StartMatch` | none | starts loading the selected map as a match, resets the tick clock and leaves the lobby; command execution pauses until the map has loaded (R-SIM-460) | only the first per session (R-SIM-446) | the host's start action and quick start |
 | `PlayerCommand::SetTeamName` | team, name | sets the lobby slot's name; if the name was empty and the participants are at the main menu, adds the chat line `ui.lobby.player_joined` | — | the lobby, repeated while the name differs from the confirmed one (DEC-243 item 9) |
-| `PlayerCommand::SetColor` | team, colour id | if the colour id is below `ref.sim.team.player_colour_count` (8), sets the team's colour | latest per participant per tick | the lobby, repeated while the colour differs from the confirmed one; not in co-op or Siege, except at the main menu (DEC-243 item 9) |
+| `PlayerCommand::SetColor` | team, colour id | if the colour id is below `ref.sim.team.player_color_count` (8), sets the team's colour | latest per participant per tick | the lobby, repeated while the colour differs from the confirmed one; not in co-op or Siege, except at the main menu (DEC-243 item 9) |
 | `PlayerCommand::SetAchievementMask` | team, mask | sets the lobby slot's achievement mask | — | periodically, once the participant holds a team (DEC-243 item 9) |
 | `PlayerCommand::SetSlotOpen` | team slot, open flag | before the match starts, opens or closes the slot under the rules of R-SIM-461 | — | the host's open-and-close control beside a slot row ([../09_front_end_and_match_flow/screen_flow_and_match_setup.md](../09_front_end_and_match_flow/screen_flow_and_match_setup.md) R-META-090); a match-setup change under DEC-243 |
 | `PlayerCommand::SetMatchOption` | version, option, integer value | sets one integer option of the match setup under the version rule (DEC-243 item 5) | — | the lobby controls |
@@ -471,50 +471,50 @@ The tick period `ref.sim.tick_period` and the update slice count `ref.sim.update
 | `ref.sim.team.player_slots` | 4 | slots | team ids 0 to 3 | R-SIM-393 | — |
 | `ref.sim.team.rogue_slot` | 4 | team id | | R-SIM-393 | DEC-082 |
 | `ref.sim.team.visitor_slot` | 5 | team id | | R-SIM-393 | DEC-082 |
-| `ref.sim.team.rogue_colour_id` | 8 | colour id | | R-SIM-393, R-SIM-415 | — |
-| `ref.sim.team.visitor_colour_id` | 9 | colour id | | R-SIM-393, R-SIM-415 | — |
-| `ref.sim.team.player_colour_count` | 8 | colours | colour ids 0 to 7 | R-SIM-415, R-SIM-416, R-SIM-420, R-SIM-422, R-SIM-451 | — |
-| `ref.sim.team.bot_colour_count` | 4 | colours | colour ids 0 to 3, for bot teams, solo co-op teams and unused slots | R-SIM-416, R-SIM-420, R-SIM-422 | DEC-450 |
-| `ref.sim.team.siege_defender_colour_id` | 0 | colour id | green | R-SIM-419 | — |
-| `ref.sim.team.siege_attacker_colour_id` | 1 | colour id | red | R-SIM-419 | — |
-| `ref.sim.team.coop_colour_divisor` | 2 | — | the unused-slot colours: (draw mod 8) div 2 | R-SIM-422 | DEC-450 |
+| `ref.sim.team.rogue_color_id` | 8 | colour id | | R-SIM-393, R-SIM-415 | — |
+| `ref.sim.team.visitor_color_id` | 9 | colour id | | R-SIM-393, R-SIM-415 | — |
+| `ref.sim.team.player_color_count` | 8 | colours | colour ids 0 to 7 | R-SIM-415, R-SIM-416, R-SIM-420, R-SIM-422, R-SIM-451 | — |
+| `ref.sim.team.bot_color_count` | 4 | colours | colour ids 0 to 3, for bot teams, solo co-op teams and unused slots | R-SIM-416, R-SIM-420, R-SIM-422 | DEC-450 |
+| `ref.sim.team.siege_defender_color_id` | 0 | colour id | green | R-SIM-419 | — |
+| `ref.sim.team.siege_attacker_color_id` | 1 | colour id | red | R-SIM-419 | — |
+| `ref.sim.team.coop_color_divisor` | 2 | — | the unused-slot colours: (draw mod 8) div 2 | R-SIM-422 | DEC-450 |
 | `ref.sim.team.formation_size_upgrade` | 90 | members | initial Leader formation cap of every team | R-SIM-399 | DEC-031 |
 | `ref.sim.team.rocket_upgrade` | 0 | level | initial Rocket Troops upgrade | R-SIM-399 | — |
 | `ref.sim.team.turret_select_delay` | 6 | ticks | nominal 0.5 s | R-SIM-405 | DEC-002 |
 | `ref.sim.team.eliminate_damage_factor` | 2 | × current health | | R-SIM-407 | — |
-| `ref.sim.team_colour.green.base` | 100, 255, 100 | RGB | colour id 0 | R-SIM-415 | — |
-| `ref.sim.team_colour.green.shade_1` | 0, 150, 20 | RGB | | R-SIM-415, R-SIM-421 | — |
-| `ref.sim.team_colour.green.shade_2` | 90, 200, 100 | RGB | | R-SIM-415, R-SIM-421 | — |
-| `ref.sim.team_colour.red.base` | 255, 50, 50 | RGB | colour id 1 | R-SIM-415 | — |
-| `ref.sim.team_colour.red.shade_1` | 150, 0, 20 | RGB | | R-SIM-415, R-SIM-421 | — |
-| `ref.sim.team_colour.red.shade_2` | 255, 80, 80 | RGB | | R-SIM-415, R-SIM-421 | — |
-| `ref.sim.team_colour.yellow.base` | 255, 255, 50 | RGB | colour id 2 | R-SIM-415 | — |
-| `ref.sim.team_colour.yellow.shade_1` | 150, 150, 20 | RGB | | R-SIM-415, R-SIM-421 | — |
-| `ref.sim.team_colour.yellow.shade_2` | 200, 200, 90 | RGB | | R-SIM-415, R-SIM-421 | — |
-| `ref.sim.team_colour.blue.base` | 120, 180, 255 | RGB | colour id 3 | R-SIM-415 | — |
-| `ref.sim.team_colour.blue.shade_1` | 20, 0, 150 | RGB | | R-SIM-415, R-SIM-421 | — |
-| `ref.sim.team_colour.blue.shade_2` | 90, 90, 200 | RGB | | R-SIM-415, R-SIM-421 | — |
-| `ref.sim.team_colour.orange.base` | 255, 150, 0 | RGB | colour id 4 | R-SIM-415 | — |
-| `ref.sim.team_colour.orange.shade_1` | 150, 90, 0 | RGB | | R-SIM-415, R-SIM-421 | — |
-| `ref.sim.team_colour.orange.shade_2` | 200, 150, 60 | RGB | | R-SIM-415, R-SIM-421 | — |
-| `ref.sim.team_colour.purple.base` | 150, 0, 255 | RGB | colour id 5 | R-SIM-415 | — |
-| `ref.sim.team_colour.purple.shade_1` | 180, 120, 255 | RGB | | R-SIM-415, R-SIM-421 | — |
-| `ref.sim.team_colour.purple.shade_2` | 100, 60, 180 | RGB | | R-SIM-415, R-SIM-421 | — |
-| `ref.sim.team_colour.cyan.base` | 70, 200, 200 | RGB | colour id 6 | R-SIM-415 | — |
-| `ref.sim.team_colour.cyan.shade_1` | 0, 140, 140 | RGB | | R-SIM-415, R-SIM-421 | — |
-| `ref.sim.team_colour.cyan.shade_2` | 110, 210, 210 | RGB | | R-SIM-415, R-SIM-421 | — |
-| `ref.sim.team_colour.pink.base` | 255, 150, 255 | RGB | colour id 7 | R-SIM-415 | — |
-| `ref.sim.team_colour.pink.shade_1` | 255, 90, 255 | RGB | | R-SIM-415, R-SIM-421 | — |
-| `ref.sim.team_colour.pink.shade_2` | 255, 190, 255 | RGB | | R-SIM-415, R-SIM-421 | — |
-| `ref.sim.team_colour.rogue.base` | 10, 10, 10 | RGB | colour id 8; both shades equal the base | R-SIM-415 | — |
-| `ref.sim.team_colour.visitor.base` | 200, 200, 200 | RGB | colour id 9; shade 1 equals the base | R-SIM-415 | — |
-| `ref.sim.team_colour.visitor.shade_2` | 200, 200, 20 | RGB | | R-SIM-415 | — |
-| `ref.sim.team_colour.no_group_shade` | 255, 255, 255 | RGB | white, for a co-op group without a colour | R-SIM-421 | — |
+| `ref.sim.team_color.green.base` | 100, 255, 100 | RGB | colour id 0 | R-SIM-415 | — |
+| `ref.sim.team_color.green.shade_1` | 0, 150, 20 | RGB | | R-SIM-415, R-SIM-421 | — |
+| `ref.sim.team_color.green.shade_2` | 90, 200, 100 | RGB | | R-SIM-415, R-SIM-421 | — |
+| `ref.sim.team_color.red.base` | 255, 50, 50 | RGB | colour id 1 | R-SIM-415 | — |
+| `ref.sim.team_color.red.shade_1` | 150, 0, 20 | RGB | | R-SIM-415, R-SIM-421 | — |
+| `ref.sim.team_color.red.shade_2` | 255, 80, 80 | RGB | | R-SIM-415, R-SIM-421 | — |
+| `ref.sim.team_color.yellow.base` | 255, 255, 50 | RGB | colour id 2 | R-SIM-415 | — |
+| `ref.sim.team_color.yellow.shade_1` | 150, 150, 20 | RGB | | R-SIM-415, R-SIM-421 | — |
+| `ref.sim.team_color.yellow.shade_2` | 200, 200, 90 | RGB | | R-SIM-415, R-SIM-421 | — |
+| `ref.sim.team_color.blue.base` | 120, 180, 255 | RGB | colour id 3 | R-SIM-415 | — |
+| `ref.sim.team_color.blue.shade_1` | 20, 0, 150 | RGB | | R-SIM-415, R-SIM-421 | — |
+| `ref.sim.team_color.blue.shade_2` | 90, 90, 200 | RGB | | R-SIM-415, R-SIM-421 | — |
+| `ref.sim.team_color.orange.base` | 255, 150, 0 | RGB | colour id 4 | R-SIM-415 | — |
+| `ref.sim.team_color.orange.shade_1` | 150, 90, 0 | RGB | | R-SIM-415, R-SIM-421 | — |
+| `ref.sim.team_color.orange.shade_2` | 200, 150, 60 | RGB | | R-SIM-415, R-SIM-421 | — |
+| `ref.sim.team_color.purple.base` | 150, 0, 255 | RGB | colour id 5 | R-SIM-415 | — |
+| `ref.sim.team_color.purple.shade_1` | 180, 120, 255 | RGB | | R-SIM-415, R-SIM-421 | — |
+| `ref.sim.team_color.purple.shade_2` | 100, 60, 180 | RGB | | R-SIM-415, R-SIM-421 | — |
+| `ref.sim.team_color.cyan.base` | 70, 200, 200 | RGB | colour id 6 | R-SIM-415 | — |
+| `ref.sim.team_color.cyan.shade_1` | 0, 140, 140 | RGB | | R-SIM-415, R-SIM-421 | — |
+| `ref.sim.team_color.cyan.shade_2` | 110, 210, 210 | RGB | | R-SIM-415, R-SIM-421 | — |
+| `ref.sim.team_color.pink.base` | 255, 150, 255 | RGB | colour id 7 | R-SIM-415 | — |
+| `ref.sim.team_color.pink.shade_1` | 255, 90, 255 | RGB | | R-SIM-415, R-SIM-421 | — |
+| `ref.sim.team_color.pink.shade_2` | 255, 190, 255 | RGB | | R-SIM-415, R-SIM-421 | — |
+| `ref.sim.team_color.rogue.base` | 10, 10, 10 | RGB | colour id 8; both shades equal the base | R-SIM-415 | — |
+| `ref.sim.team_color.visitor.base` | 200, 200, 200 | RGB | colour id 9; shade 1 equals the base | R-SIM-415 | — |
+| `ref.sim.team_color.visitor.shade_2` | 200, 200, 20 | RGB | | R-SIM-415 | — |
+| `ref.sim.team_color.no_group_shade` | 255, 255, 255 | RGB | white, for a co-op group without a colour | R-SIM-421 | — |
 | `ref.sim.group.offset_table_size` | 100 | unit fractions | | R-SIM-430, R-SIM-431 | DEC-652 |
 | `ref.sim.group.rect_spacing` | 4.0 | wu | | R-SIM-430 | — |
 | `ref.sim.group.rect_min_row_length` | 1 | members | | R-SIM-430 | DEC-653 |
 | `ref.sim.group.airstrike_row_length` | 4 | members per row | | R-SIM-430 | — |
-| `ref.sim.group.airstrike_centre` | 2 | rows and columns | | R-SIM-430 | — |
+| `ref.sim.group.airstrike_center` | 2 | rows and columns | | R-SIM-430 | — |
 | `ref.sim.group.airstrike_spacing_x` | 24 | wu | | R-SIM-430 | — |
 | `ref.sim.group.airstrike_spacing_y` | 12 | wu | applied downwards | R-SIM-430 | — |
 | `ref.sim.group.airstrike_spacing_z` | 24 | wu | | R-SIM-430 | — |

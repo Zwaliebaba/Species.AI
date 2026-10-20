@@ -60,7 +60,7 @@ std::expected<Neuron::ImageRgba8, LookError> RenderLookScene(Neuron::FrameRender
 
 ### 3.1 The team palette
 
-**RND-400** (MUST) A match has the ten colours of the colour table of [reference/12_simulation_model/06_teams_and_player_commands.md](../../../reference/12_simulation_model/06_teams_and_player_commands.md) R-SIM-415, in this order, which carries meaning (colour ids): 0 green, 1 red, 2 yellow, 3 blue, 4 orange, 5 purple, 6 cyan, 7 pink, 8 the Rogue faction (near black, `ref.sim.team_colour.rogue.base`) and 9 the Visitor faction (light grey, `ref.sim.team_colour.visitor.base`). Each player colour has a base colour and the two co-op shades `ref.sim.team_colour.<name>.shade_1` and `shade_2`; a co-op group with no colour takes `ref.sim.team_colour.no_group_shade` (R-SIM-421). The palette is one constant buffer, written once per match (RND-016). The values are the encoded values of the tuning keys `ref.sim.team_colour.*`, used without conversion (RND-392).
+**RND-400** (MUST) A match has the ten colours of the colour table of [reference/12_simulation_model/06_teams_and_player_commands.md](../../../reference/12_simulation_model/06_teams_and_player_commands.md) R-SIM-415, in this order, which carries meaning (colour ids): 0 green, 1 red, 2 yellow, 3 blue, 4 orange, 5 purple, 6 cyan, 7 pink, 8 the Rogue faction (near black, `ref.sim.team_color.rogue.base`) and 9 the Visitor faction (light grey, `ref.sim.team_color.visitor.base`). Each player colour has a base colour and the two co-op shades `ref.sim.team_color.<name>.shade_1` and `shade_2`; a co-op group with no colour takes `ref.sim.team_color.no_group_shade` (R-SIM-421). The palette is one constant buffer, written once per match (RND-016). The values are the encoded values of the tuning keys `ref.sim.team_color.*`, used without conversion (RND-392).
 
 ### 3.2 The world palette
 
@@ -68,20 +68,20 @@ std::expected<Neuron::ImageRgba8, LookError> RenderLookScene(Neuron::FrameRender
 
 | Element | Colour | Key |
 |---|---|---|
-| background and fog of a match | black | `rnd.frame.clear_colour` |
-| background outside a match | (0.05, 0, 0.05) | `rnd.frame.clear_colour_no_match` |
-| sky grid | (0.5, 0.5, 1.0, alpha 0.3), additive | `rnd.sky.grid_colour` |
-| blobby and flat clouds | (0.7, 0.7, 0.9) with alphas 0.6 and 0.3, additive | `rnd.sky.blobby_colour`, `rnd.sky.flat_colour` |
+| background and fog of a match | black | `rnd.frame.clear_color` |
+| background outside a match | (0.05, 0, 0.05) | `rnd.frame.clear_color_no_match` |
+| sky grid | (0.5, 0.5, 1.0, alpha 0.3), additive | `rnd.sky.grid_color` |
+| blobby and flat clouds | (0.7, 0.7, 0.9) with alphas 0.6 and 0.3, additive | `rnd.sky.blobby_color`, `rnd.sky.flat_color` |
 | map lights | per map, up to 2.0 per channel, no ambient term | RND-226 |
-| special light | (2.0, 1.5, 0.75) | `rnd.lighting.special_colour` |
+| special light | (2.0, 1.5, 0.75) | `rnd.lighting.special_color` |
 | occupied and empty ports | (0.3, 1.0, 0.3) and (1.0, 0.3, 0.3) | `ref.bldg.port.status_occupied_rgb`, `ref.bldg.port.status_empty_rgb` (R-BLDG-046) |
-| burning-tree flames | (0.8, 0.2, 0.1), additive | `rnd.tree.burning.flame_colour` |
-| shockwave blast | (1, 0.5, 0.2) | `rnd.shockwave.blast_colour` |
+| burning-tree flames | (0.8, 0.2, 0.1), additive | `rnd.tree.burning.flame_color` |
+| shockwave blast | (1, 0.5, 0.2) | `rnd.shockwave.blast_color` |
 | no-team objects | an opaque grey | RND-405 |
 
 ### 3.3 The seasonal palette
 
-**RND-402** (MUST) While a match's seasonal state is active (see DEC-101, DEC-118), the look swaps palettes and accessories and keeps its geometry: the frost terrain ramp, sea tile and wave gradient (RND-134, RND-142, RND-144); warm white light colours `rnd.light.seasonal_colour` (RND-013); leafless trees with the branch colour `rnd.tree.seasonal_branch_colour` (RND-191); and the seasonal hat on every third Worker (R-UNIT-148).
+**RND-402** (MUST) While a match's seasonal state is active (see DEC-101, DEC-118), the look swaps palettes and accessories and keeps its geometry: the frost terrain ramp, sea tile and wave gradient (RND-134, RND-142, RND-144); warm white light colours `rnd.light.seasonal_color` (RND-013); leafless trees with the branch colour `rnd.tree.seasonal_branch_color` (RND-191); and the seasonal hat on every third Worker (R-UNIT-148).
 
 ### 3.4 The UI palette
 
@@ -93,11 +93,11 @@ std::expected<Neuron::ImageRgba8, LookError> RenderLookScene(Neuron::FrameRender
 
 **RND-404** (MUST) Team identity is applied by tint, never painted into art. Cards, glows, lights, laser bolts, Essence orbs, Crawler strips, markers and icons are white or light-grey art (or greyscale glow) whose texel is multiplied by the draw colour, the team colour where the element belongs to a team (README RND-015, [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) RND-318). World art in general is authored as greyscale or near-white textures that the vertex colour tints.
 
-**RND-405** (MUST) The colour of an object of no team is an opaque grey, `ref.match.colour.no_group` (153, 153, 153, alpha 255) of [reference/01_skirmish_rules_and_modes/README.md](../../../reference/01_skirmish_rules_and_modes/README.md) and R-BLDG-048 (see DEC-078); the specific no-team greys of individual elements stay their owners' (for example `rnd.structure.spawn.orb_neutral_grey`, `rnd.barrier.neutral_colour`).
+**RND-405** (MUST) The colour of an object of no team is an opaque grey, `ref.match.color.no_group` (153, 153, 153, alpha 255) of [reference/01_skirmish_rules_and_modes/README.md](../../../reference/01_skirmish_rules_and_modes/README.md) and R-BLDG-048 (see DEC-078); the specific no-team greys of individual elements stay their owners' (for example `rnd.structure.spawn.orb_neutral_gray`, `rnd.barrier.neutral_color`).
 
 **RND-406** (MUST) Meshes are tinted by the tint function of [shaders.md](shaders.md) RND-271 (ADR-020): team regions are marked per facet with an explicit tint weight, by the material named `team` ([asset_pipeline_and_resources.md](../asset_pipeline_and_resources.md) AST-034, ADR-020, O64), and key-colour art reaches the cooker only as `team` triangles marked by the authoring helper (RND-162); only the root node and its direct children are tinted (RND-161); the tinted colour keeps the facet's brightness and is scaled by the mesh's tint scale, `rnd.tint.factor` by default (RND-161). The special tint rules (convert-all meshes, the Transport hull, the Collector body, the Worker figure's palette entry 0) are those of RND-162. Cloth art carries the team area as grey levels with a companion tint mask (AST-022; [art_and_audio_briefs.md](../../../assets/art_and_audio_briefs.md) §2.5). The look is unchanged by the way the regions are marked.
 
-**RND-407** (MUST) The two factions have their own looks: the Rogue faction draws its laser bolts in white (`rnd.laser.rogue_colour`), its Crawlers, barrage missiles and any Essence orbs as darkening layers (RND-319, RND-324, RND-327), and its Workers with the hurt pose (R-UNIT-145); the Visitor faction draws its Workers with their own card and glow (RND-316) and takes the light grey of colour id 9 elsewhere.
+**RND-407** (MUST) The two factions have their own looks: the Rogue faction draws its laser bolts in white (`rnd.laser.rogue_color`), its Crawlers, barrage missiles and any Essence orbs as darkening layers (RND-319, RND-324, RND-327), and its Workers with the hurt pose (R-UNIT-145); the Visitor faction draws its Workers with their own card and glow (RND-316) and takes the light grey of colour id 9 elsewhere.
 
 **RND-408** (MUST) The Shield bubble and the Visitor faction bubble take a saturated team colour: each channel of the team colour, read as an 8-bit value, is fully on when that value is at least 1 and fully off when it is 0, so most team colours draw a white bubble, orange (255, 150, 0) a yellow one and purple (150, 0, 255) a magenta one. This is the reference look and the default of the Open DEC-328 ([README.md](../animation_and_vfx/README.md) draws the bubbles).
 
@@ -161,7 +161,7 @@ Caption: the pass order of RND-070 grouped by blend family; within an additive o
 
 **RND-421** (MUST) A darkening layer multiplies the destination by one minus its colour: with a source colour *c* and alpha 0, the result is *dst* × (1 − *c*). Its art is greyscale in which white means full darkening; the layer needs no sorting.
 
-**RND-422** (MUST) Shadows of cursors, crate landing markers and the barrage marker are blurred copies of their icons, derived offline by the cooker (`cursor.world.shadow`, `cursor.highlight.shadow`, `cursor.place.shadow`, `cursor.unavailable.shadow`, `marker.crate_landing.shadow`, `marker.barrage_target.shadow`; RND-243, ADR-018), with a separable five-tap kernel whose weights (2, 4, 7, 4, 2) are multiplied by `rnd.look.blur_normaliser` (0.0526, so that they sum to about 1) and by the blur gain `rnd.shadow.icon_blur_radius` (10), applied once horizontally and once vertically, with the vertical weights doubled (`ast.derive.blur_vertical_gain`, [asset_pipeline_and_resources.md](../asset_pipeline_and_resources.md) AST-073); an artist MAY author such a shadow instead as greyscale art ([art_and_audio_briefs.md](../../../assets/art_and_audio_briefs.md) §2.3), as the owner authors the cursors' shadows (O64). A shadow is drawn first with source alpha 0 and its icon over it (RND-366).
+**RND-422** (MUST) Shadows of cursors, crate landing markers and the barrage marker are blurred copies of their icons, derived offline by the cooker (`cursor.world.shadow`, `cursor.highlight.shadow`, `cursor.place.shadow`, `cursor.unavailable.shadow`, `marker.crate_landing.shadow`, `marker.barrage_target.shadow`; RND-243, ADR-018), with a separable five-tap kernel whose weights (2, 4, 7, 4, 2) are multiplied by `rnd.look.blur_normalizer` (0.0526, so that they sum to about 1) and by the blur gain `rnd.shadow.icon_blur_radius` (10), applied once horizontally and once vertically, with the vertical weights doubled (`ast.derive.blur_vertical_gain`, [asset_pipeline_and_resources.md](../asset_pipeline_and_resources.md) AST-073); an artist MAY author such a shadow instead as greyscale art ([art_and_audio_briefs.md](../../../assets/art_and_audio_briefs.md) §2.3), as the owner authors the cursors' shadows (O64). A shadow is drawn first with source alpha 0 and its icon over it (RND-366).
 
 **RND-423** (MUST) Icons, markers and cursors drawn with the `Additive` blend carry real alpha channels: the blend weights each texel by its alpha, so transparent texels add nothing and no black background stands in for transparency (ADR-018). Their look on screen is that of glowing art over a darkened halo.
 
@@ -175,7 +175,7 @@ Caption: the pass order of RND-070 grouped by blend family; within an additive o
 
 **RND-426** (MUST) Every lit triangle has one facet normal and one facet colour, baked by the cooker (ADR-020); terrain triangles take their facet colour from the map's ramp by slope and height (RND-134). No mesh is smooth-lit and none has a normal map, so the faceted image never depends on a vertex-ordering convention (RND-276). The gradients of the look (the shockwave ring, the highlight and area cylinders, the pop-up box) are unlit vertex-colour gradients, not smooth-lit meshes.
 
-**RND-427** (MUST) Meshes are low-poly, built from a few large shapes that read at a distance; each mesh's budget is its manifest row ([asset_manifest.csv](../../../assets/asset_manifest.csv)), and the cooked format supports the node and socket counts of RND-156. Authored colours are final colours as seen through the engine's attenuation (`rnd.mesh.colour_attenuation`), the mesh's tint scale (`rnd.tint.factor` by default) and the Worker-figure factor (RND-160 to RND-162).
+**RND-427** (MUST) Meshes are low-poly, built from a few large shapes that read at a distance; each mesh's budget is its manifest row ([asset_manifest.csv](../../../assets/asset_manifest.csv)), and the cooked format supports the node and socket counts of RND-156. Authored colours are final colours as seen through the engine's attenuation (`rnd.mesh.color_attenuation`), the mesh's tint scale (`rnd.tint.factor` by default) and the Worker-figure factor (RND-160 to RND-162).
 
 **RND-428** (MUST) Thin bright lines carry the wire look: the terrain wire grid, one outline per height-field cell drawn additively over the lit terrain (RND-135, `fx.terrain_grid`); the edge lines of shatter shards ([README.md](../animation_and_vfx/README.md), ADR-010); and the Barrier Emitter's top edge line (RND-201).
 
@@ -195,7 +195,7 @@ Caption: the pass order of RND-070 grouped by blend family; within an additive o
 
 ### 4.10 The inverted style
 
-**RND-434** (MUST) The inverted style is an alternative "ink on paper" look with no user interface in the reference (see DEC-040; the setting is in [options_and_budgets.md](options_and_budgets.md)): the background and the level fog are white (`rnd.frame.clear_colour_inverted`), and the terrain and the flat sea switch to darkening entries with zero vertex alpha, so they print dark on white (RND-137, RND-143); every other element keeps its blend state.
+**RND-434** (MUST) The inverted style is an alternative "ink on paper" look with no user interface in the reference (see DEC-040; the setting is in [options_and_budgets.md](options_and_budgets.md)): the background and the level fog are white (`rnd.frame.clear_color_inverted`), and the terrain and the flat sea switch to darkening entries with zero vertex alpha, so they print dark on white (RND-137, RND-143); every other element keeps its blend state.
 
 ### 4.11 Accessibility limits on the look
 
@@ -261,4 +261,4 @@ A development view of Debug builds toggles each element family of RND-416 off an
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
-| `rnd.look.blur_normaliser` | 0.0526 | × weight | the weights 2, 4, 7, 4, 2 sum to about 1 | RND-422 | |
+| `rnd.look.blur_normalizer` | 0.0526 | × weight | the weights 2, 4, 7, 4, 2 sum to about 1 | RND-422 | |
