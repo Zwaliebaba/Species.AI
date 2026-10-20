@@ -49,6 +49,9 @@ private:
 // tile and no flatten area, whose every sample is the outside height (TER-031).
 [[nodiscard]] std::shared_ptr<const Species::RegionTerrain> FlatTerrain(double _height = 50.0);
 
+// The valley of seed 1 (MVP-011), built once.
+[[nodiscard]] std::shared_ptr<const Species::RegionTerrain> ValleyTerrain();
+
 // The whole file as text, or an empty string; and a file written whole, its folders made.
 [[nodiscard]] std::string ReadText(const std::filesystem::path& _path);
 void WriteText(const std::filesystem::path& _path, std::string_view _text);

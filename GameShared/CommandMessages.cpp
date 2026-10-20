@@ -242,4 +242,14 @@ void AiLeaderFieldsCommand::Decode(Neuron::BitReader& _reader)
   front = hasFront ? ReadPoint(_reader) : GroundPoint{};
 }
 
+void SandboxRestartCommand::Encode(Neuron::BitWriter& _writer) const
+{
+  _writer.WriteBool(newSeed);
+}
+
+void SandboxRestartCommand::Decode(Neuron::BitReader& _reader)
+{
+  newSeed = _reader.ReadBool();
+}
+
 } // namespace Species

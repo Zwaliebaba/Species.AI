@@ -278,6 +278,11 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.unit.leader_mesh_radius` | 6.7252 | wu | — | provisional | MVP-040 | The bounding radius `LeaderFigure.cmo` records; the actor grid uses twice it (R-UNIT-159) until the cooked mesh gives it (M1 plan T11, ADR-103) |
 | `mvp.vision.unit_radius` | 300 | wu | — | provisional | MVP-016 | Raise if AI settlements miss obvious threats; lower if the fog never hides anything |
 | `mvp.nav.node_spacing` | 320 | wu | — | provisional | MVP-017 | About 200 lattice nodes on the valley's land; lower it if routes miss narrow passes, raise it if the next-hop tables cost too much |
+| `mvp.sandbox.side_workers` | 200 | Workers | — | provisional | MVP-005 | Each side of M1's battle sandbox at its start (M1 plan §6, ADR-109); a side of 200 needs at least three formations |
+| `mvp.sandbox.side_spread` | 60 | wu | — | provisional | MVP-005 | The radius each sandbox side spawns in around its site's centre |
+| `mvp.sandbox.steward_site` | 0 | site index | — | provisional | MVP-005 | The local site order of WLD-040: 0 and 3 are diagonally opposite (O70) |
+| `mvp.sandbox.ai_site` | 3 | site index | — | provisional | MVP-005 | The AI's side, opposite the steward's |
+| `mvp.perf.synthetic_figures` | 2000 | figures | — | provisional | MVP-093 | ADR-080 item 2's synthetic battle, in two halves at the sandbox's sites with an AI on each; M1's determinism tests and T10 run it |
 | `mvp.settlement.start_workers` | 20 | Workers | — | provisional | MVP-020 | The first minutes must show a busy settlement |
 | `mvp.settlement.population_base` | 40 | Workers | — | provisional | MVP-022 | — |
 | `mvp.settlement.population_max` | 300 | Workers | — | provisional | MVP-022 | Inside O43's range; M1's cost measurement may raise it |

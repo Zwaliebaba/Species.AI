@@ -46,14 +46,6 @@ std::shared_ptr<const Species::RegionTerrain> TerrainWithNodes(const std::vector
   return terrain;
 }
 
-// The valley of seed 1, built once.
-std::shared_ptr<const Species::RegionTerrain> ValleyTerrain()
-{
-  static const std::shared_ptr<const Species::RegionTerrain> VALLEY =
-    std::make_shared<const Species::RegionTerrain>(*Species::GenerateRegionTerrain(1, CommittedTuning()));
-  return VALLEY;
-}
-
 std::vector<std::uint32_t> SpawnCrowd(Species::RegionSimulation& _region, std::uint8_t _team, const Neuron::Vec3& _position,
                                       std::uint32_t _count, double _spread)
 {

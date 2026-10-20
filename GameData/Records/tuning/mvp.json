@@ -159,6 +159,15 @@
     },
     "nav": {
       "node_spacing": 320
+    },
+    "sandbox": {
+      "side_workers": 200,
+      "side_spread": 60,
+      "steward_site": 0,
+      "ai_site": 3
+    },
+    "perf": {
+      "synthetic_figures": 2000
     }
   },
   "ref": {

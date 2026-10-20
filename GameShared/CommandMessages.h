@@ -230,4 +230,19 @@ struct AiLeaderFieldsCommand
   void Decode(Neuron::BitReader& _reader);
 };
 
+/// The development command that restarts the M1 sandbox from its seed or a new one (M1 plan §6, ADR-109). It replaces
+/// the world between ticks rather than entering a queue, and a server that runs no sandbox, or a Release build, ignores
+/// it.
+struct SandboxRestartCommand
+{
+  static constexpr Neuron::MessageTypeId TYPE = TypeIdOf(GameMessageType::SandboxRestart);
+  static constexpr std::uint8_t VERSION = 1;
+  static constexpr std::size_t MAX_BYTES = 4; // the 3-byte header and a flag
+
+  bool newSeed = false;
+
+  void Encode(Neuron::BitWriter& _writer) const;
+  void Decode(Neuron::BitReader& _reader);
+};
+
 } // namespace Species

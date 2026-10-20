@@ -93,6 +93,13 @@ std::shared_ptr<const Species::RegionTerrain> FlatTerrain(double _height)
   return terrain;
 }
 
+std::shared_ptr<const Species::RegionTerrain> ValleyTerrain()
+{
+  static const std::shared_ptr<const Species::RegionTerrain> VALLEY =
+    std::make_shared<const Species::RegionTerrain>(*Species::GenerateRegionTerrain(1, CommittedTuning()));
+  return VALLEY;
+}
+
 std::string ReadText(const std::filesystem::path& _path)
 {
   const auto bytes = Neuron::ReadWholeFile(_path);

@@ -24,7 +24,9 @@ enum class GameMessageType : Neuron::MessageTypeId
   // The AI's own actions, which only an AI sender may send (DEC-122, R-BOT-015).
   AiOrderWorker,
   AiOrderLeader,
-  AiLeaderFields
+  AiLeaderFields,
+  // A development command of the M1 sandbox (M1 plan §6, ADR-109).
+  SandboxRestart
 };
 
 [[nodiscard]] constexpr Neuron::MessageTypeId TypeIdOf(GameMessageType _type) noexcept

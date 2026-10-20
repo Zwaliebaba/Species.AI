@@ -238,7 +238,7 @@ std::int32_t LeaderPolicy(Turn& _turn, const Figure& _leader)
 void LeaderPolicies(Turn& _turn)
 {
   const SlicedPool<Figure>& figures = _turn.region.TeamAt(_turn.ai.team).figures;
-  std::map<StableId, std::int32_t> timers;
+  std::vector<LeaderTimer> timers;
   for (std::uint32_t slot = 0; slot < figures.Capacity(); ++slot)
   {
     if (!figures.Used(slot))
@@ -250,15 +250,16 @@ void LeaderPolicies(Turn& _turn)
     {
       continue;
     }
-    const auto found = _turn.ai.leaderTimers.find(leader.id);
-    std::int32_t timer = found == _turn.ai.leaderTimers.end() ? 0 : found->second;
+    const auto found = std::ranges::lower_bound(_turn.ai.leaderTimers, leader.id, {}, &LeaderTimer::leader);
+    std::int32_t timer = found != _turn.ai.leaderTimers.end() && found->leader == leader.id ? found->ticks : 0;
     --timer;
     if (timer <= 0)
     {
       timer = LeaderPolicy(_turn, leader);
     }
-    timers.emplace(leader.id, timer);
+    timers.push_back({leader.id, timer});
   }
+  std::ranges::sort(timers, {}, &LeaderTimer::leader);
   _turn.ai.leaderTimers = std::move(timers);
 }
 
@@ -397,10 +398,10 @@ void WriteAi(Neuron::BitWriter& _writer, const AiController& _ai)
   _writer.WriteSigned(_ai.cycleTicks, 32);
   _writer.WriteBits(_ai.nextSequence, 64);
   _writer.WriteBounded(_ai.leaderTimers.size(), AI_LEADER_TIMERS_MAX);
-  for (const auto& [leader, timer] : _ai.leaderTimers)
+  for (const LeaderTimer& timer : _ai.leaderTimers)
   {
-    _writer.WriteBits(leader, 64);
-    _writer.WriteSigned(timer, 32);
+    _writer.WriteBits(timer.leader, 64);
+    _writer.WriteSigned(timer.ticks, 32);
   }
 }
 
@@ -421,7 +422,7 @@ bool ReadAi(Neuron::BitReader& _reader, AiController& _ai)
     {
       return false; // each Leader once, in id order
     }
-    _ai.leaderTimers.emplace_hint(_ai.leaderTimers.end(), leader, timer);
+    _ai.leaderTimers.push_back({leader, timer});
     previous = leader;
   }
   return !_reader.Failed() && _ai.id != 0;

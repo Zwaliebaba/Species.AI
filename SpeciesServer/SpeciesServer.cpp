@@ -124,6 +124,9 @@ int Run(std::span<const std::wstring> _arguments)
     {
       WorldServer::Desc worldDesc;
       worldDesc.tuning = *tuning;
+      // M1 plan §6: the battle sandbox, from the seed of --seed or one the server draws (MVP-005).
+      worldDesc.worldSeed = options.worldSeed;
+      worldDesc.sandbox = true;
       WorldServer world(worldDesc);
       Neuron::ServerHost::Desc hostDesc;
       hostDesc.clock = &clock;

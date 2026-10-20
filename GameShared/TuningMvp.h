@@ -394,6 +394,27 @@ struct TuningMvp
       double nodeSpacing = 0.0;
     };
 
+    struct Sandbox
+    {
+      // mvp.sandbox.side_workers, in Workers
+      std::int64_t sideWorkers = 0;
+
+      // mvp.sandbox.side_spread, in wu
+      double sideSpread = 0.0;
+
+      // mvp.sandbox.steward_site, in site index
+      std::int64_t stewardSite = 0;
+
+      // mvp.sandbox.ai_site, in site index
+      std::int64_t aiSite = 0;
+    };
+
+    struct Perf
+    {
+      // mvp.perf.synthetic_figures, in figures
+      std::int64_t syntheticFigures = 0;
+    };
+
     Pace pace;
     World world;
     Vision vision;
@@ -428,6 +449,8 @@ struct TuningMvp
     Terrain terrain;
     Unit unit;
     Nav nav;
+    Sandbox sandbox;
+    Perf perf;
   };
 
   struct Ref
@@ -1772,6 +1795,21 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::Sandbox& _out)
+{
+  _out.sideWorkers = _reader.Integer(_object, "side_workers", 0);
+  _out.sideSpread = _reader.Decimal(_object, "side_spread", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.stewardSite = _reader.Integer(_object, "steward_site", 0);
+  _out.aiSite = _reader.Integer(_object, "ai_site", 0);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::Perf& _out)
+{
+  _out.syntheticFigures = _reader.Integer(_object, "synthetic_figures", 0);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "pace"), _out.pace);
@@ -1808,6 +1846,8 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "terrain"), _out.terrain);
   ReadFields(_reader, _reader.Object(_object, "unit"), _out.unit);
   ReadFields(_reader, _reader.Object(_object, "nav"), _out.nav);
+  ReadFields(_reader, _reader.Object(_object, "sandbox"), _out.sandbox);
+  ReadFields(_reader, _reader.Object(_object, "perf"), _out.perf);
   _reader.Close(_object);
 }
 
@@ -2896,6 +2936,32 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Nav&
   _out.nodeSpacing = _reader.F64();
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Sandbox& _in)
+{
+  _writer.I64(_in.sideWorkers);
+  _writer.F64(_in.sideSpread);
+  _writer.I64(_in.stewardSite);
+  _writer.I64(_in.aiSite);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Sandbox& _out)
+{
+  _out.sideWorkers = _reader.I64();
+  _out.sideSpread = _reader.F64();
+  _out.stewardSite = _reader.I64();
+  _out.aiSite = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Perf& _in)
+{
+  _writer.I64(_in.syntheticFigures);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Perf& _out)
+{
+  _out.syntheticFigures = _reader.I64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp& _in)
 {
   CookFields(_writer, _in.pace);
@@ -2932,6 +2998,8 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp& _in)
   CookFields(_writer, _in.terrain);
   CookFields(_writer, _in.unit);
   CookFields(_writer, _in.nav);
+  CookFields(_writer, _in.sandbox);
+  CookFields(_writer, _in.perf);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp& _out)
@@ -2970,6 +3038,8 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp& _out
   ReadCookedFields(_reader, _out.terrain);
   ReadCookedFields(_reader, _out.unit);
   ReadCookedFields(_reader, _out.nav);
+  ReadCookedFields(_reader, _out.sandbox);
+  ReadCookedFields(_reader, _out.perf);
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Sim::Container& _in)

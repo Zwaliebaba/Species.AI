@@ -6,13 +6,32 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <initializer_list>
+#include <limits>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace NeuronCoreTests
 {
+
+namespace
+{
+
+Neuron::StartupOptions Parse(std::initializer_list<std::wstring_view> _arguments)
+{
+  const std::vector<std::wstring> arguments(_arguments.begin(), _arguments.end());
+  return Neuron::ParseArguments(arguments);
+}
+
+bool IgnoredAre(const Neuron::StartupOptions& _options, std::initializer_list<std::string_view> _expected)
+{
+  return std::vector<std::string>(_expected.begin(), _expected.end()) == _options.ignoredArguments;
+}
+
+} // namespace
 
 TEST_CLASS(StartupOptionsTests)
 {
@@ -38,6 +57,45 @@ public:
     ExpectEqual(4, static_cast<std::int64_t>(options.ignoredArguments.size()), L"every argument is ignored");
 #endif
     ExpectText("--verbose", options.ignoredArguments.front(), L"an ignored argument is kept as UTF-8, for the log");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Plt022TheSeedIsReadInAnyPosition)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"PLT-022")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"PLT-107")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-005")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Plt022TheSeedIsReadInAnyPosition)
+  {
+    // `--seed` takes the next argument as a decimal number of at most 64 bits; a Release build knows no `--seed`.
+    const Neuron::StartupOptions options = Parse({L"--verbose", L"--seed", L"4294967296", L"extra"});
+#if ENGINE_DEVELOPMENT
+    Assert::IsTrue(options.worldSeed == std::uint64_t{4294967296}, L"the seed");
+    Assert::IsTrue(IgnoredAre(options, {"--verbose", "extra"}), L"the ignored arguments, in order");
+    Assert::IsTrue(Parse({L"--seed", L"18446744073709551615"}).worldSeed == std::numeric_limits<std::uint64_t>::max(), L"64 bits");
+    Assert::IsTrue(Parse({L"--seed", L"0", L"--seed", L"9"}).worldSeed == std::uint64_t{9}, L"the last seed given");
+#else
+    Assert::IsFalse(options.worldSeed.has_value(), L"no seed in Release");
+    Assert::IsTrue(IgnoredAre(options, {"--verbose", "--seed", "4294967296", "extra"}), L"every argument is ignored");
+#endif
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Plt022ASeedWithoutANumberIsIgnored)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"PLT-022")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Plt022ASeedWithoutANumberIsIgnored)
+  {
+    // A value that is not a decimal number of at most 64 bits is ignored with the option, each as an argument of its own.
+    for (const std::wstring_view value : {std::wstring_view{L"12a"}, std::wstring_view{L"-1"}, std::wstring_view{L""},
+                                          std::wstring_view{L"18446744073709551616"}, std::wstring_view{L"0x10"}})
+    {
+      const Neuron::StartupOptions options = Parse({L"--seed", value});
+      Assert::IsFalse(options.worldSeed.has_value(), L"no seed");
+      ExpectEqual(2, static_cast<std::int64_t>(options.ignoredArguments.size()), L"both arguments ignored");
+    }
+    const Neuron::StartupOptions last = Parse({L"--seed"});
+    Assert::IsTrue(!last.worldSeed.has_value() && IgnoredAre(last, {"--seed"}), L"an option with no value is ignored");
+    const Neuron::StartupOptions spelled = Parse({L"--SEED", L"5", L"-seed", L"6"});
+    Assert::IsTrue(!spelled.worldSeed.has_value() && spelled.ignoredArguments.size() == 4, L"only the exact spelling");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Ast105TheContentFolderIsBesideTheExecutableByDefault)

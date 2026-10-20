@@ -47,6 +47,9 @@
     <ClCompile Include="RouteTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="SandboxTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="SlicedPoolTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>

@@ -1262,6 +1262,74 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "sandbox": {
+          "type": "object",
+          "description": "the mvp.sandbox.* keys",
+          "properties": {
+            "side_workers": {
+              "type": "integer",
+              "description": "mvp.sandbox.side_workers (MVP-005)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "Workers",
+              "x-species-presence": "required"
+            },
+            "side_spread": {
+              "type": "number",
+              "description": "mvp.sandbox.side_spread (MVP-005)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "steward_site": {
+              "type": "integer",
+              "description": "mvp.sandbox.steward_site (MVP-005)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "site index",
+              "x-species-presence": "required"
+            },
+            "ai_site": {
+              "type": "integer",
+              "description": "mvp.sandbox.ai_site (MVP-005)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "site index",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "side_workers",
+            "side_spread",
+            "steward_site",
+            "ai_site"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "perf": {
+          "type": "object",
+          "description": "the mvp.perf.* keys",
+          "properties": {
+            "synthetic_figures": {
+              "type": "integer",
+              "description": "mvp.perf.synthetic_figures (MVP-093)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "figures",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "synthetic_figures"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
@@ -1298,7 +1366,9 @@
         "client",
         "terrain",
         "unit",
-        "nav"
+        "nav",
+        "sandbox",
+        "perf"
       ],
       "additionalProperties": false,
       "x-species-type": "object",

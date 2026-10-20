@@ -1,5 +1,6 @@
 #pragma once
 
+#include "CommandJournal.h"
 #include "CommandMessages.h"
 #include "RegionTerrain.h"
 #include "ServerHost.h"
@@ -24,7 +25,9 @@ namespace Species
 /// tick to every connection. With a snapshot folder it opens the newest snapshot that validates and saves one when it
 /// freezes (MVP-075, ADR-099); without one, or with none that validates, the world opens new and empty. Opening builds
 /// the region's terrain from the world seed (MVP-011, ADR-102), outside every tick. Every connection is a steward; it
-/// receives the world's terrain once, then each tick's report, and the outcome of each command it sent (ADR-106).
+/// receives the world's terrain once, then each tick's report, and the outcome of each command it sent (ADR-106). A
+/// sandbox server makes each new world the M1 sandbox, gives its steward side to the latest steward, and restarts it on
+/// the development command (ADR-109). It journals a new world's connections and commands (MVP-076).
 class WorldServer final : public Neuron::ServerWorld
 {
 public:
@@ -35,7 +38,11 @@ public:
     std::optional<std::uint64_t> worldSeed; // MVP-005: the seed a new world is built from; none: a seed the server draws
     std::filesystem::path snapshotFolder;   // where the world is saved when it freezes and restored when it opens; none: a new
                                             // world each run (ADR-099)
+    bool sandbox = false;                   // M1 plan §6: a new world is the battle sandbox
   };
+
+  // The journal file a freezing world writes beside its snapshots (MVP-076).
+  static constexpr const wchar_t* JOURNAL_FILE_NAME = L"commands.journal";
 
   explicit WorldServer(const Desc& _desc);
 
@@ -68,12 +75,23 @@ public:
   {
     return m_terrain.get();
   }
+  // The journal of a world opened new or restarted in this run, which a restored world does not have (ADR-109).
+  [[nodiscard]] const std::optional<CommandJournal>& Journal() const noexcept
+  {
+    return m_journal;
+  }
 
 private:
   [[nodiscard]] std::size_t SnapshotsKept() const noexcept;
   // WLD-160 to WLD-163 from _seed; none, logged, when no seed that MVP-011's re-roll reaches passes every check.
   [[nodiscard]] std::shared_ptr<const RegionTerrain> BuildTerrain(std::uint64_t _seed) const;
   void Adopt(std::unique_ptr<WorldSimulation> _world, std::shared_ptr<const RegionTerrain> _terrain);
+  // A new world from _seed's terrain, starting at _firstTick, with a new key, and its journal; false when no seed that
+  // the re-roll reaches gives a region.
+  [[nodiscard]] bool StartNew(std::uint64_t _seed, std::uint64_t _firstTick);
+  // ADR-109: the sandbox again, from the next tick, from its seed or a drawn one; each steward is connected to it anew.
+  // False, logged, when no seed that the re-roll reaches gives a region, and the world stays.
+  bool RestartSandbox(bool _newSeed);
 
   struct Steward
   {
@@ -85,12 +103,15 @@ private:
 
   // Each queue's outcomes of the tick, to the steward that sent each command; an AI's are its own (ADR-106).
   void CollectReports(Neuron::CommandQueue& _queue);
+  // The outcomes of every queue of the world.
+  void CollectAllReports();
 
   Desc m_desc;
   std::unique_ptr<WorldSimulation> m_world;
   std::shared_ptr<const RegionTerrain> m_terrain;
   std::map<Neuron::ConnectionId, Steward> m_stewards;
   std::optional<WorldHashes> m_lastHashes;
+  std::optional<CommandJournal> m_journal;
 };
 
 } // namespace Species

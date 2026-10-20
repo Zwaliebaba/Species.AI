@@ -245,6 +245,50 @@ public:
     }
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp092AStallOfTwoSecondsIsCaughtUpWithinTwoSeconds)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-092")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp092AStallOfTwoSecondsIsCaughtUpWithinTwoSeconds)
+  {
+    // ADR-083's confirmation at M1 (O68), on the injected clock: tick 10 takes 2 s. The ticks it leaves owed run at most
+    // twice per period, none is given up, and the loop is back on its deadlines within 2 s of the stall's end.
+    ManualClock clock;
+    RecordingTarget target(clock);
+    target.duringTick = [&clock](std::uint64_t _tick)
+    {
+      if (_tick == 10)
+      {
+        clock.Advance(Nanoseconds{2'000'000'000});
+      }
+    };
+    std::vector<Neuron::ScheduleStall> stalls;
+    Neuron::TickLoop::Desc desc = LoopOn(clock, TEST_TICK_PERIOD);
+    desc.onStall = [&stalls](const Neuron::ScheduleStall& _stall) { stalls.push_back(_stall); };
+    Neuron::TickLoop loop(std::move(desc));
+    const Neuron::TickLoopStats stats = loop.Run(target, std::stop_token{}, 70);
+
+    Assert::IsTrue(stalls.empty() && stats.stalls == 0 && stats.freezes == 0, L"nothing given up");
+    const Nanoseconds stallEnd = target.starts[10] + Nanoseconds{2'000'000'000};
+    std::optional<std::size_t> caughtUp;
+    for (std::size_t n = 11; n < target.starts.size(); ++n)
+    {
+      Assert::IsTrue(target.starts[n] - target.starts[n - 1] >= TEST_TICK_PERIOD / 2, L"at most twice the rate");
+      const Nanoseconds deadline = target.starts[0] + TEST_TICK_PERIOD * static_cast<std::int64_t>(n);
+      if (!caughtUp && target.starts[n] == deadline)
+      {
+        caughtUp = n;
+      }
+      if (caughtUp)
+      {
+        ExpectEqual(deadline.count(), target.starts[n].count(), L"on its deadline once caught up");
+      }
+    }
+    Assert::IsTrue(caughtUp.has_value(), L"the loop catches up");
+    // Each start gains half a period on its deadline: tick 11 starts 1.9 s late and tick 49 is on time, 1.9 s later.
+    ExpectEqual(49, static_cast<std::int64_t>(caughtUp.value_or(0)), L"the first tick back on its deadline");
+    Assert::IsTrue(target.starts[caughtUp.value_or(0)] - stallEnd <= Nanoseconds{2'000'000'000}, L"within 2 s");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp092OnTheRealClockNoTickStartsBeforeItsDeadline)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-092")
   END_TEST_METHOD_ATTRIBUTE()

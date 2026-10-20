@@ -303,6 +303,9 @@ int Run()
     IntegratedServer::Desc serverDesc;
     serverDesc.clock = &clock;
     serverDesc.content = &*content;
+    // M1 plan §6: the battle sandbox, from the seed of --seed or one the server draws (MVP-005).
+    serverDesc.worldSeed = options.worldSeed;
+    serverDesc.sandbox = true;
     IntegratedServer server(serverDesc);
     if (const auto started = server.Start(); !started)
     {

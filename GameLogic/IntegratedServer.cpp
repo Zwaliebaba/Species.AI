@@ -43,6 +43,7 @@ std::expected<void, Neuron::AssetError> IntegratedServer::Start()
   WorldServer::Desc world;
   world.tuning = *tuning;
   world.worldSeed = m_desc.worldSeed;
+  world.sandbox = m_desc.sandbox;
   m_parts->world = std::make_unique<WorldServer>(world);
   Neuron::ServerHost::Desc host;
   host.clock = m_desc.clock;

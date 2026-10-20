@@ -30,6 +30,9 @@
     <ClInclude Include="Combat.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="CommandJournal.h">
+      <Filter>Server</Filter>
+    </ClInclude>
     <ClInclude Include="DrawPurpose.h">
       <Filter>Simulation</Filter>
     </ClInclude>
@@ -68,6 +71,9 @@
     </ClInclude>
     <ClInclude Include="RouteStore.h">
       <Filter>Space</Filter>
+    </ClInclude>
+    <ClInclude Include="Sandbox.h">
+      <Filter>Simulation</Filter>
     </ClInclude>
     <ClInclude Include="SlicedPool.h">
       <Filter>Simulation</Filter>
@@ -116,6 +122,9 @@
     <ClCompile Include="Combat.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="CommandJournal.cpp">
+      <Filter>Server</Filter>
+    </ClCompile>
     <ClCompile Include="EssenceOrb.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
@@ -151,6 +160,9 @@
     </ClCompile>
     <ClCompile Include="RouteStore.cpp">
       <Filter>Space</Filter>
+    </ClCompile>
+    <ClCompile Include="Sandbox.cpp">
+      <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="StableIdCounter.cpp">
       <Filter>Simulation</Filter>

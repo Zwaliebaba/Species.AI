@@ -176,6 +176,7 @@
     <ClCompile Include="MovementTests.cpp" />
     <ClCompile Include="RegionSimulationTests.cpp" />
     <ClCompile Include="RouteTests.cpp" />
+    <ClCompile Include="SandboxTests.cpp" />
     <ClCompile Include="SlicedPoolTests.cpp" />
     <ClCompile Include="StateHashTests.cpp" />
     <ClCompile Include="TestSupport.cpp" />

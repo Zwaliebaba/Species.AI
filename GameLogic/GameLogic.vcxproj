@@ -149,6 +149,7 @@
     <ClInclude Include="AiController.h" />
     <ClInclude Include="BotNavigation.h" />
     <ClInclude Include="Combat.h" />
+    <ClInclude Include="CommandJournal.h" />
     <ClInclude Include="DrawPurpose.h" />
     <ClInclude Include="EssenceOrb.h" />
     <ClInclude Include="Figure.h" />
@@ -162,6 +163,7 @@
     <ClInclude Include="RegionCommands.h" />
     <ClInclude Include="RegionSimulation.h" />
     <ClInclude Include="RouteStore.h" />
+    <ClInclude Include="Sandbox.h" />
     <ClInclude Include="SlicedPool.h" />
     <ClInclude Include="StableIdCounter.h" />
     <ClInclude Include="StateHash.h" />
@@ -179,6 +181,7 @@
     <ClCompile Include="AiController.cpp" />
     <ClCompile Include="BotNavigation.cpp" />
     <ClCompile Include="Combat.cpp" />
+    <ClCompile Include="CommandJournal.cpp" />
     <ClCompile Include="EssenceOrb.cpp" />
     <ClCompile Include="Figure.cpp" />
     <ClCompile Include="FigureAdvance.cpp" />
@@ -191,6 +194,7 @@
     <ClCompile Include="RegionCommands.cpp" />
     <ClCompile Include="RegionSimulation.cpp" />
     <ClCompile Include="RouteStore.cpp" />
+    <ClCompile Include="Sandbox.cpp" />
     <ClCompile Include="StableIdCounter.cpp" />
     <ClCompile Include="StateHash.cpp" />
     <ClCompile Include="TickDraws.cpp" />
