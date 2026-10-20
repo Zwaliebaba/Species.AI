@@ -15,12 +15,16 @@ namespace
 
 D3D12_SAMPLER_DESC SamplerOf(SamplerSlot _slot) noexcept
 {
-  D3D12_SAMPLER_DESC desc{};
   const bool wrap = _slot == SamplerSlot::LinearWrap;
   const D3D12_TEXTURE_ADDRESS_MODE address = wrap ? D3D12_TEXTURE_ADDRESS_MODE_WRAP : D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-  desc.AddressU = address;
-  desc.AddressV = address;
-  desc.AddressW = address;
+  // Every enumeration is named in the initialiser: D3D12_TEXTURE_ADDRESS_MODE has no zero value.
+  D3D12_SAMPLER_DESC desc{.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+                          .AddressU = address,
+                          .AddressV = address,
+                          .AddressW = address,
+                          .MipLODBias = 0.0f,
+                          .MaxAnisotropy = 1,
+                          .ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER};
   switch (_slot)
   {
   case SamplerSlot::LinearClamp:
@@ -34,9 +38,6 @@ D3D12_SAMPLER_DESC SamplerOf(SamplerSlot _slot) noexcept
     desc.Filter = D3D12_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR; // ADR-018: hard-edged blocks, smooth minification
     break;
   }
-  desc.MipLODBias = 0.0f;
-  desc.MaxAnisotropy = 1;
-  desc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
   desc.MinLOD = 0.0f;
   desc.MaxLOD = D3D12_FLOAT32_MAX;
   return desc;
@@ -75,6 +76,13 @@ std::unique_ptr<ShaderVisibleHeaps> ShaderVisibleHeaps::Create(ID3D12Device* _de
   }
   heaps->m_cpuStart = heaps->m_resources->GetCPUDescriptorHandleForHeapStart();
   heaps->m_stride = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+  // ADR-006: index 0 is a valid default, a null texture view that reads zero, so an unset index reads nothing undefined.
+  D3D12_SHADER_RESOURCE_VIEW_DESC nullView{};
+  nullView.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+  nullView.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+  nullView.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+  nullView.Texture2D.MipLevels = 1;
+  _device->CreateShaderResourceView(nullptr, &nullView, heaps->m_cpuStart);
   heaps->m_persistentCount = _persistent;
   heaps->m_transientPerFrame = _transientPerFrame;
   return heaps;

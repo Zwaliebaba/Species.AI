@@ -69,6 +69,9 @@
     <ClInclude Include="TuningMvp.h">
       <Filter>Records</Filter>
     </ClInclude>
+    <ClInclude Include="TuningPresentation.h">
+      <Filter>Records</Filter>
+    </ClInclude>
     <ClInclude Include="WorldTerrain.h">
       <Filter>Messages</Filter>
     </ClInclude>

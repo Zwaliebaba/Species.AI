@@ -86,6 +86,11 @@ public:
     m_state = m_state * MULTIPLIER + INCREMENT;
     return (m_state >> OUTPUT_SHIFT) & OUTPUT_MASK;
   }
+  // TER-080: uniform over [-_range / 2, _range / 2], with Next() = 0 giving +_range / 2.
+  [[nodiscard]] double Signed(double _range) noexcept
+  {
+    return (0.5 - static_cast<double>(Next()) / static_cast<double>(OUTPUT_MASK)) * _range;
+  }
 
 private:
   static constexpr std::uint32_t MULTIPLIER = 214013u;  // ter.generator.lcg.multiplier
@@ -175,7 +180,8 @@ public:
     const double w12 = (1 - fx) * fz;
     const double w21 = fx * (1 - fz);
     const double w22 = fx * fz;
-    return ((At(i1, j1) * w11 + At(i1, j2) * w12) + At(i2, j1) * w21) + At(i2, j2) * w22;
+    // The sum is binary64 whatever T is; a grid of binary32 samples (the sea depth map, TER-198) rounds it once.
+    return static_cast<T>(((At(i1, j1) * w11 + At(i1, j2) * w12) + At(i2, j1) * w21) + At(i2, j2) * w22);
   }
 
   // TER-074: trunc((r - origin) × inverse) as a signed integer.

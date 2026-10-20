@@ -22,8 +22,7 @@ ComPtr<ID3D12RootSignature> CreateGraphicsRootSignature(ID3D12Device* _device)
   parameters[ROOT_DRAW_CONSTANTS].Constants = {2, 0, DRAW_CONSTANT_DWORDS};
   parameters[ROOT_DRAW_CONSTANTS].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
-  D3D12_VERSIONED_ROOT_SIGNATURE_DESC desc{};
-  desc.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
+  D3D12_VERSIONED_ROOT_SIGNATURE_DESC desc{.Version = D3D_ROOT_SIGNATURE_VERSION_1_1};
   desc.Desc_1_1.NumParameters = static_cast<UINT>(parameters.size());
   desc.Desc_1_1.pParameters = parameters.data();
   desc.Desc_1_1.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |

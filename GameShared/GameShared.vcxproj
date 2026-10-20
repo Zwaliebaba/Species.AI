@@ -159,6 +159,7 @@
     <ClInclude Include="StateUpdate.h" />
     <ClInclude Include="Tuning.h" />
     <ClInclude Include="TuningMvp.h" />
+    <ClInclude Include="TuningPresentation.h" />
     <ClInclude Include="WorldTerrain.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>

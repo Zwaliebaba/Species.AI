@@ -200,3 +200,4 @@ Chosen option: "1".
   - the output of 889,451 bytes, of which the index is 3,926;
   - each face 59,946 bytes, the Leader figure 9,661 bytes (294 vertices) and the thrown weapon 13,621 bytes (420 vertices);
   - the tuning record 3,007 bytes, against the authoring file's 13,452.
+* **Amendment 2026-10-20 (M1 task T13, [ADR-114](ADR-114-gpu-resources-at-m1.md)).** T13 adds no import records: each pass names its sampler by the rule that states it, `fx.sky_cloud`'s `level0` view is the shader's read of level 0, and a BC4 mask is read through its red channel. The import records come with the asset cache. The record cooker's registry gains `tuning.presentation` ([ADR-116](ADR-116-presentation-tuning-record.md)).

@@ -352,6 +352,10 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.persist.snapshots_kept` | 3 | snapshots | — | provisional | MVP-075 | — |
 | `mvp.client.fps_target` | 60 | frames per second | tick | provisional | MVP-085 | — |
 | `mvp.client.figures_max` | 1500 | figures on screen | — | provisional | MVP-085 | Four settlements at plateau plus a battle |
+| `mvp.light.key.towards` | −0.04, 0.43, 0.90 | direction towards the light, normalised at load | — | provisional | MVP-081 | The key light of the one lighting preset (O75; DEC-562 stays Open): warm, from behind the development view; the owner tunes it after M1 task T13's run |
+| `mvp.light.key.color` | 2.0, 1.0, 0.4 | RGB multiplier | — | provisional | MVP-081 | — |
+| `mvp.light.fill.towards` | 0.07, 0.35, 0.93 | direction towards the light, normalised at load | — | provisional | MVP-081 | The fill light (O75), a neutral grey in the pattern of WLD-183 |
+| `mvp.light.fill.color` | 1.0, 1.0, 1.0 | RGB multiplier | — | provisional | MVP-081 | — |
 
 *Table 3 — The tuning values of the MVP.*
 

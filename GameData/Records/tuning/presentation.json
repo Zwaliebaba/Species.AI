@@ -1,0 +1,194 @@
+{
+  "schema": "tuning.presentation",
+  "version": "1.0",
+  "rnd": {
+    "frame": {
+      "clear_color": {
+        "r": 0,
+        "g": 0,
+        "b": 0
+      },
+      "clear_color_no_match": {
+        "r": 0.05,
+        "g": 0,
+        "b": 0.05
+      }
+    },
+    "view": {
+      "near_plane": 5,
+      "far_plane": 15000,
+      "fov_min": 1,
+      "fov_max": 180
+    },
+    "fog": {
+      "min_end": 4000,
+      "edge_margin": 1000,
+      "start_fraction": 0.3333333333333333
+    },
+    "terrain": {
+      "sink_threshold": 0.3,
+      "sink_height": -10,
+      "overlay_specular": 0.5,
+      "overlay_shininess": 40
+    },
+    "sea": {
+      "flat_height": -9,
+      "tile_repeats": 30,
+      "tile_scroll_period": 30,
+      "wave_table_row": 1
+    },
+    "sky": {
+      "grid_height": 1200,
+      "grid_spacing": 80,
+      "grid_min": -4000,
+      "grid_max": 6000,
+      "grid_line_half_width": 8,
+      "grid_color": {
+        "r": 0.5,
+        "g": 0.5,
+        "b": 1.0,
+        "a": 0.3
+      },
+      "grid_fog_start": 2000,
+      "grid_fog_end": 4000,
+      "initial_velocity": {
+        "x": 0.04,
+        "y": 0,
+        "z": 0
+      },
+      "velocity": {
+        "x": 0.03,
+        "y": 0,
+        "z": -0.01
+      },
+      "cloud_min": -8000,
+      "cloud_max": 9000,
+      "cloud_fog_start": 2000,
+      "cloud_fog_end": 5000,
+      "layer2_height": 1000,
+      "layer3_height": 800,
+      "blobby_color": {
+        "r": 0.7,
+        "g": 0.7,
+        "b": 0.9,
+        "a": 0.6
+      },
+      "flat_color": {
+        "r": 0.7,
+        "g": 0.7,
+        "b": 0.9,
+        "a": 0.3
+      },
+      "flat_alpha_low_detail": 0.5,
+      "layer1_repeats": 9,
+      "layer2_repeats": 4.5,
+      "layer3_repeats": 1.8
+    }
+  },
+  "ter": {
+    "color": {
+      "ramp_size": 64,
+      "center_factor": 0.33333,
+      "slope_exponent": 0.4,
+      "jitter_numerator": 0.45,
+      "jitter_offset": 2.0
+    },
+    "sea": {
+      "mask_size": 128,
+      "mask_land_offset": 32,
+      "blur_taps": {
+        "tap_0": 0.2,
+        "tap_1": 0.3,
+        "tap_2": 0.4,
+        "tap_3": 0.5,
+        "tap_4": 0.8,
+        "tap_5": 1.0,
+        "tap_6": 0.8,
+        "tap_7": 0.5,
+        "tap_8": 0.4,
+        "tap_9": 0.3,
+        "tap_10": 0.2
+      },
+      "blur_normalizer": 5.4,
+      "blur_skip_tolerance": 1e-06,
+      "mask_gain": 855,
+      "mask_max": 255,
+      "depth_outside": 1.0,
+      "flat_tile_ratio": 4,
+      "cell_divisor": 100,
+      "vertex_land_limit": 4.0,
+      "vertex_depth_limit": 0.999,
+      "wave": {
+        "shore_noise": 0.25,
+        "shore_brightening": 250.0,
+        "table_margin": 2,
+        "amplitude_scale": 7.0,
+        "x_terms": {
+          "first": {
+            "per_wu": 0.01,
+            "per_second": 0.65,
+            "amplitude": 1.2
+          },
+          "second": {
+            "per_wu": 0.03,
+            "per_second": 1.5,
+            "amplitude": 0.9
+          }
+        },
+        "z_terms": {
+          "first": {
+            "per_wu": 0.02,
+            "per_second": 0.75,
+            "amplitude": 0.9
+          },
+          "second": {
+            "per_wu": 0.03,
+            "per_second": 1.85,
+            "amplitude": 0.65
+          }
+        },
+        "index_bias": 0.1,
+        "brightness_scale": 4.0,
+        "color_mix": {
+          "other": 0.7,
+          "own": 0.3
+        }
+      }
+    }
+  },
+  "ref": {
+    "sim": {
+      "match": {
+        "presentation_seed": 1
+      }
+    }
+  },
+  "mvp": {
+    "light": {
+      "key": {
+        "towards": {
+          "x": -0.04,
+          "y": 0.43,
+          "z": 0.9
+        },
+        "color": {
+          "r": 2.0,
+          "g": 1.0,
+          "b": 0.4
+        }
+      },
+      "fill": {
+        "towards": {
+          "x": 0.07,
+          "y": 0.35,
+          "z": 0.93
+        },
+        "color": {
+          "r": 1.0,
+          "g": 1.0,
+          "b": 1.0
+        }
+      }
+    }
+  }
+}

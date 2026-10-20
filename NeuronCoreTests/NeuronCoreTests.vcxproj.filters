@@ -113,6 +113,9 @@
     <ClCompile Include="TerrainFieldTests.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
+    <ClCompile Include="TerrainSurfaceTests.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
     <ClCompile Include="TestSupport.cpp">
       <Filter>Tests</Filter>
     </ClCompile>

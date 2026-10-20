@@ -41,6 +41,9 @@
     <ClCompile Include="WindowGeometryTests.cpp">
       <Filter>Window</Filter>
     </ClCompile>
+    <ClCompile Include="WorldFrameTests.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Build</Filter>
     </ClCompile>

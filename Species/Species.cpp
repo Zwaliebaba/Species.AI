@@ -20,6 +20,7 @@
 #include "StartupOptions.h"
 #include "TextEncoding.h"
 #include "Tuning.h"
+#include "WorldPresentation.h"
 
 #include <array>
 #include <cstdint>
@@ -35,7 +36,8 @@
 
 // The client's entry point and composition root (ADR-090 item 2, DEC-221). It runs the start-up steps of PLT-038 that
 // exist in M0, composes the integrated server through IntegratedServer.h and the client session (M0 task T7), and runs
-// the frame loop of task T4; the application's states of ADR-083 item 3 come with the front end.
+// the frame loop of task T4, which draws the world frame of M1 task T13; the application's states of ADR-083 item 3 come
+// with the front end.
 namespace Species
 {
 
@@ -203,7 +205,8 @@ Presentation CreatePresentation(const Neuron::PlatformClock& _clock)
   return presentation;
 }
 
-void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neuron::FrameRenderer& _renderer, ClientSession& _session)
+void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neuron::FrameRenderer& _renderer, ClientSession& _session,
+                  WorldPresentation& _world)
 {
   InputStandIn input;
   _window.SetInputSink(&input);
@@ -225,6 +228,7 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
       break;
     }
     _session.Update();
+    _world.Update(_session);
     if (input.TakeModeToggle())
     {
       const bool windowed = _window.Mode() == Neuron::WindowMode::Windowed;
@@ -236,7 +240,7 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
       _renderer.DebugRemoveDevice();
     }
 #endif
-    if (_renderer.RenderFrame() == Neuron::FrameOutcome::Suspended)
+    if (_renderer.RenderFrame(_world.Frame(_session)) == Neuron::FrameOutcome::Suspended)
     {
       _clock.WaitUntil(_clock.Now() + SUSPENDED_POLL_PERIOD);
       continue;
@@ -298,6 +302,12 @@ int Run()
     {
       endWithError(clientTuning.error());
     }
+    // The client's presentation values (owner decision O75, ADR-116), which the server never reads.
+    const std::expected<TuningPresentation, Neuron::AssetError> presentationTuning = LoadTuningPresentation(*content);
+    if (!presentationTuning)
+    {
+      endWithError(presentationTuning.error());
+    }
     // The integrated server is a child of this root (ADR-083 item 2): it runs on its own tick thread until the session
     // ends, and stopping it freezes the world (O4). It loads the tuning record when it starts (MVP-099).
     IntegratedServer::Desc serverDesc;
@@ -318,9 +328,15 @@ int Run()
     sessionDesc.tuning = &*clientTuning;
     sessionDesc.clock = &clock;
     ClientSession session(std::move(sessionDesc));
+    WorldPresentation::Desc worldDesc;
+    worldDesc.tuning = &*clientTuning;
+    worldDesc.presentation = &*presentationTuning;
+    worldDesc.content = &*content;
+    worldDesc.clock = &clock;
+    WorldPresentation world(worldDesc);
 
     presentation.window->Show();
-    RunFrameLoop(clock, *presentation.window, *presentation.renderer, session);
+    RunFrameLoop(clock, *presentation.window, *presentation.renderer, session, world);
     session.Close();
     server.Stop();
     // PLT-043: the renderer releases its swap chain before the window is destroyed.

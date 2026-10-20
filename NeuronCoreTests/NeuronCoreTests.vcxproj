@@ -193,6 +193,7 @@
     <ClCompile Include="SipHashTests.cpp" />
     <ClCompile Include="StartupOptionsTests.cpp" />
     <ClCompile Include="TerrainFieldTests.cpp" />
+    <ClCompile Include="TerrainSurfaceTests.cpp" />
     <ClCompile Include="TestSupport.cpp" />
     <ClCompile Include="TextEncodingTests.cpp" />
     <ClCompile Include="TransportTests.cpp" />

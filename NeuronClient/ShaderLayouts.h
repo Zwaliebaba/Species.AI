@@ -43,23 +43,23 @@ LAYOUT_CONSTANT SAMPLER_POINT_MAGNIFY_CLAMP = 3;
 // ADR-006: index 0 of the resource heap holds a valid default view.
 LAYOUT_CONSTANT DEFAULT_RESOURCE_INDEX = 0;
 
-// ADR-006: the per-frame constants, register b0. Positions are relative to the camera (WLD-246), so the view matrix
-// holds the camera's rotation alone and the camera stands at the origin of the coordinates every shader sees.
+// ADR-006: the per-frame constants, register b0, written once at the start of the frame (RND-057). Positions are relative
+// to the camera (WLD-246, ADR-115): the view matrix holds the camera's rotation alone, the camera stands at the origin of
+// the coordinates every shader sees, and a pixel's view depth is the dot product of its position with cameraFront.
 struct FrameConstants
 {
   Float4x4 view;
   Float4x4 projection;
   Float4x4 viewProjection;
-  Float4 cameraPosition; // xyz: the camera's world position, wrapped into a float's range for effects that need it
-  Float4 fogColor;       // rgb, a: 1 when fog is on
-  Float4 fogRange;       // x: start, y: end, in world units from the camera
-  Float4 keyDirection;   // xyz: the direction the key light travels, normalised
-  Float4 keyColor;
-  Float4 fillDirection;
+  Float4 cameraFront; // xyz: the unit direction the camera looks along
+  Float4 fogColor;    // rgb: the level fog's colour (RND-222)
+  Float4 fogRange;    // x: start, y: end, in wu of view depth; z: 1 ÷ (end − start)
+  Float4 keyTowards;  // xyz: the unit direction towards the key light (RND-226)
+  Float4 keyColor;    // rgb: its diffuse and specular colour
+  Float4 fillTowards; // the fill light, as the key
   Float4 fillColor;
-  Float4 ambientColor;
-  Float4 time;     // x: presentation time in seconds, y: the displayed tick's fraction
-  Float4 viewport; // x, y: size in pixels; z, w: their reciprocals
+  Float4 time;     // x: the smooth presentation time in seconds (R-SIM-570)
+  Float4 viewport; // x, y: the render size in pixels; z, w: their reciprocals
 };
 
 // ADR-006: the per-pass constants, register b1, which a pass fills as it needs.
@@ -68,8 +68,9 @@ struct PassConstants
   Float4 values[8];
 };
 
-// ADR-006: the per-draw root constants, register b2: the draw's transform from model to camera-relative space, its tint,
-// and the heap indices of what it reads.
+// ADR-006: the per-draw root constants, register b2: the draw's transform from model to camera-relative space (the
+// transpose of the row-vector transform, applied as mul(world, float4(p, 1)); RND-262), its tint, and the heap indices
+// of what it reads.
 struct DrawConstants
 {
   Float3x4 world;
@@ -77,10 +78,27 @@ struct DrawConstants
   Uint4 indices;
 };
 
+// RND-150 to RND-154 and ADR-115: one quad of the sky, a grid line or a cloud layer, drawn as an instance of one draw.
+// The quad lies at a height over a rectangle, both relative to the camera, and faces downwards.
+struct SkyLayerInstance
+{
+  Float4 rectangle; // x, y: the minimum corner's x and z; z, w: the maximum corner's x and z
+  Float4 color;     // rgba: the layer's colour
+  Float4 uv;        // xy: the texture coordinate at the minimum corner; zw: its change across the rectangle
+  Float4 shape;     // x: the height; y, z: the layer's black fog start and end in wu of view depth
+  Uint4 sampling;   // x: the texture's heap index; y: the sampler's index; z: the SKY_* flags
+};
+
+// SkyLayerInstance.sampling.z: how a layer reads its texture.
+LAYOUT_CONSTANT SKY_WRAP_IN_SHADER = 1; // the coordinate wraps before a clamping sampler reads it (RND-154)
+LAYOUT_CONSTANT SKY_LEVEL_ZERO = 2;     // only the first mip level is read (RND-153)
+LAYOUT_CONSTANT SKY_ALONG_Z = 4;        // u runs along z and v along x: a grid line parallel to z (RND-151)
+
 #if !defined(__HLSL_VERSION)
-static_assert(sizeof(FrameConstants) == 3 * 64 + 10 * 16);
-static_assert(sizeof(PassConstants) == 8 * 16);
-static_assert(sizeof(DrawConstants) == 48 + 16 + 16);
+static_assert(sizeof(FrameConstants) == 3 * sizeof(Float4x4) + 9 * sizeof(Float4));
+static_assert(sizeof(PassConstants) == 8 * sizeof(Float4));
+static_assert(sizeof(DrawConstants) == sizeof(Float3x4) + sizeof(Float4) + sizeof(Uint4));
+static_assert(sizeof(SkyLayerInstance) == 4 * sizeof(Float4) + sizeof(Uint4));
 inline constexpr std::uint32_t DRAW_CONSTANT_DWORDS = sizeof(DrawConstants) / 4;
 } // namespace Neuron
 #endif

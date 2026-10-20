@@ -1,0 +1,1555 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tuning.presentation",
+  "title": "The presentation values the client reads: the renderer's and the terrain's look keys of M1 (owner decision O75, ADR-116).",
+  "description": "One record, GameData/Records/tuning/presentation.json, client-only and never simulation-relevant. Each field path is its tuning key (CONVENTIONS §4).",
+  "type": "object",
+  "x-species-sim": false,
+  "x-species-project": "GameShared",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "description": "the schema id (DAT-016)",
+      "enum": [
+        "tuning.presentation"
+      ]
+    },
+    "version": {
+      "type": "string",
+      "description": "the schema version (DAT-016, DAT-017)",
+      "enum": [
+        "1.0"
+      ]
+    },
+    "rnd": {
+      "type": "object",
+      "description": "the rnd.* keys",
+      "properties": {
+        "frame": {
+          "type": "object",
+          "description": "the rnd.frame.* keys",
+          "properties": {
+            "clear_color": {
+              "type": "object",
+              "description": "rnd.frame.clear_color (RND-070)",
+              "properties": {
+                "r": {
+                  "type": "number",
+                  "description": "rnd.frame.clear_color.r",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGB, encoded",
+                  "x-species-presence": "required"
+                },
+                "g": {
+                  "type": "number",
+                  "description": "rnd.frame.clear_color.g",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGB, encoded",
+                  "x-species-presence": "required"
+                },
+                "b": {
+                  "type": "number",
+                  "description": "rnd.frame.clear_color.b",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGB, encoded",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "r",
+                "g",
+                "b"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "clear_color_no_match": {
+              "type": "object",
+              "description": "rnd.frame.clear_color_no_match (RND-070)",
+              "properties": {
+                "r": {
+                  "type": "number",
+                  "description": "rnd.frame.clear_color_no_match.r",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGB, encoded",
+                  "x-species-presence": "required"
+                },
+                "g": {
+                  "type": "number",
+                  "description": "rnd.frame.clear_color_no_match.g",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGB, encoded",
+                  "x-species-presence": "required"
+                },
+                "b": {
+                  "type": "number",
+                  "description": "rnd.frame.clear_color_no_match.b",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGB, encoded",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "r",
+                "g",
+                "b"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "clear_color",
+            "clear_color_no_match"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "view": {
+          "type": "object",
+          "description": "the rnd.view.* keys",
+          "properties": {
+            "near_plane": {
+              "type": "number",
+              "description": "rnd.view.near_plane (RND-211)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "far_plane": {
+              "type": "number",
+              "description": "rnd.view.far_plane (RND-211)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "fov_min": {
+              "type": "number",
+              "description": "rnd.view.fov_min (RND-212)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "degrees",
+              "x-species-presence": "required"
+            },
+            "fov_max": {
+              "type": "number",
+              "description": "rnd.view.fov_max (RND-212)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "degrees",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "near_plane",
+            "far_plane",
+            "fov_min",
+            "fov_max"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "fog": {
+          "type": "object",
+          "description": "the rnd.fog.* keys",
+          "properties": {
+            "min_end": {
+              "type": "number",
+              "description": "rnd.fog.min_end (RND-222)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu, view depth",
+              "x-species-presence": "required"
+            },
+            "edge_margin": {
+              "type": "number",
+              "description": "rnd.fog.edge_margin (RND-222)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "start_fraction": {
+              "type": "number",
+              "description": "rnd.fog.start_fraction (RND-222)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times the fog end",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "min_end",
+            "edge_margin",
+            "start_fraction"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "terrain": {
+          "type": "object",
+          "description": "the rnd.terrain.* keys",
+          "properties": {
+            "sink_threshold": {
+              "type": "number",
+              "description": "rnd.terrain.sink_threshold (RND-133)",
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "sink_height": {
+              "type": "number",
+              "description": "rnd.terrain.sink_height (RND-133)",
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "overlay_specular": {
+              "type": "number",
+              "description": "rnd.terrain.overlay_specular (RND-136)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "per channel",
+              "x-species-presence": "required"
+            },
+            "overlay_shininess": {
+              "type": "number",
+              "description": "rnd.terrain.overlay_shininess (RND-136)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "exponent",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "sink_threshold",
+            "sink_height",
+            "overlay_specular",
+            "overlay_shininess"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "sea": {
+          "type": "object",
+          "description": "the rnd.sea.* keys",
+          "properties": {
+            "flat_height": {
+              "type": "number",
+              "description": "rnd.sea.flat_height (RND-141)",
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "tile_repeats": {
+              "type": "number",
+              "description": "rnd.sea.tile_repeats (RND-142)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "repeats across the plane",
+              "x-species-presence": "required"
+            },
+            "tile_scroll_period": {
+              "type": "number",
+              "description": "rnd.sea.tile_scroll_period (RND-142)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "s of smooth presentation time",
+              "x-species-presence": "required"
+            },
+            "wave_table_row": {
+              "type": "integer",
+              "description": "rnd.sea.wave_table_row (RND-144)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "row from the bottom",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "flat_height",
+            "tile_repeats",
+            "tile_scroll_period",
+            "wave_table_row"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "sky": {
+          "type": "object",
+          "description": "the rnd.sky.* keys",
+          "properties": {
+            "grid_height": {
+              "type": "number",
+              "description": "rnd.sky.grid_height (RND-151)",
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "grid_spacing": {
+              "type": "number",
+              "description": "rnd.sky.grid_spacing (RND-151)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "grid_min": {
+              "type": "number",
+              "description": "rnd.sky.grid_min (RND-151)",
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "grid_max": {
+              "type": "number",
+              "description": "rnd.sky.grid_max (RND-151)",
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu, exclusive",
+              "x-species-presence": "required"
+            },
+            "grid_line_half_width": {
+              "type": "number",
+              "description": "rnd.sky.grid_line_half_width (RND-151)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "grid_color": {
+              "type": "object",
+              "description": "rnd.sky.grid_color (RND-151)",
+              "properties": {
+                "r": {
+                  "type": "number",
+                  "description": "rnd.sky.grid_color.r",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGBA",
+                  "x-species-presence": "required"
+                },
+                "g": {
+                  "type": "number",
+                  "description": "rnd.sky.grid_color.g",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGBA",
+                  "x-species-presence": "required"
+                },
+                "b": {
+                  "type": "number",
+                  "description": "rnd.sky.grid_color.b",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGBA",
+                  "x-species-presence": "required"
+                },
+                "a": {
+                  "type": "number",
+                  "description": "rnd.sky.grid_color.a",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGBA",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "r",
+                "g",
+                "b",
+                "a"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "grid_fog_start": {
+              "type": "number",
+              "description": "rnd.sky.grid_fog_start (RND-151)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu, view depth",
+              "x-species-presence": "required"
+            },
+            "grid_fog_end": {
+              "type": "number",
+              "description": "rnd.sky.grid_fog_end (RND-151)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu, view depth",
+              "x-species-presence": "required"
+            },
+            "initial_velocity": {
+              "type": "object",
+              "description": "rnd.sky.initial_velocity (RND-152)",
+              "properties": {
+                "x": {
+                  "type": "number",
+                  "description": "rnd.sky.initial_velocity.x",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "offset units per s of game time",
+                  "x-species-presence": "required"
+                },
+                "y": {
+                  "type": "number",
+                  "description": "rnd.sky.initial_velocity.y",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "offset units per s of game time",
+                  "x-species-presence": "required"
+                },
+                "z": {
+                  "type": "number",
+                  "description": "rnd.sky.initial_velocity.z",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "offset units per s of game time",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "x",
+                "y",
+                "z"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "velocity": {
+              "type": "object",
+              "description": "rnd.sky.velocity (RND-152)",
+              "properties": {
+                "x": {
+                  "type": "number",
+                  "description": "rnd.sky.velocity.x",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "offset units per s of game time",
+                  "x-species-presence": "required"
+                },
+                "y": {
+                  "type": "number",
+                  "description": "rnd.sky.velocity.y",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "offset units per s of game time",
+                  "x-species-presence": "required"
+                },
+                "z": {
+                  "type": "number",
+                  "description": "rnd.sky.velocity.z",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "offset units per s of game time",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "x",
+                "y",
+                "z"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "cloud_min": {
+              "type": "number",
+              "description": "rnd.sky.cloud_min (RND-153)",
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "cloud_max": {
+              "type": "number",
+              "description": "rnd.sky.cloud_max (RND-153)",
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "cloud_fog_start": {
+              "type": "number",
+              "description": "rnd.sky.cloud_fog_start (RND-153)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu, view depth",
+              "x-species-presence": "required"
+            },
+            "cloud_fog_end": {
+              "type": "number",
+              "description": "rnd.sky.cloud_fog_end (RND-153)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu, view depth",
+              "x-species-presence": "required"
+            },
+            "layer2_height": {
+              "type": "number",
+              "description": "rnd.sky.layer2_height (RND-153)",
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "layer3_height": {
+              "type": "number",
+              "description": "rnd.sky.layer3_height (RND-153)",
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "blobby_color": {
+              "type": "object",
+              "description": "rnd.sky.blobby_color (RND-153)",
+              "properties": {
+                "r": {
+                  "type": "number",
+                  "description": "rnd.sky.blobby_color.r",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGBA",
+                  "x-species-presence": "required"
+                },
+                "g": {
+                  "type": "number",
+                  "description": "rnd.sky.blobby_color.g",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGBA",
+                  "x-species-presence": "required"
+                },
+                "b": {
+                  "type": "number",
+                  "description": "rnd.sky.blobby_color.b",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGBA",
+                  "x-species-presence": "required"
+                },
+                "a": {
+                  "type": "number",
+                  "description": "rnd.sky.blobby_color.a",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGBA",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "r",
+                "g",
+                "b",
+                "a"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "flat_color": {
+              "type": "object",
+              "description": "rnd.sky.flat_color (RND-153)",
+              "properties": {
+                "r": {
+                  "type": "number",
+                  "description": "rnd.sky.flat_color.r",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGBA",
+                  "x-species-presence": "required"
+                },
+                "g": {
+                  "type": "number",
+                  "description": "rnd.sky.flat_color.g",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGBA",
+                  "x-species-presence": "required"
+                },
+                "b": {
+                  "type": "number",
+                  "description": "rnd.sky.flat_color.b",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGBA",
+                  "x-species-presence": "required"
+                },
+                "a": {
+                  "type": "number",
+                  "description": "rnd.sky.flat_color.a",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGBA",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "r",
+                "g",
+                "b",
+                "a"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "flat_alpha_low_detail": {
+              "type": "number",
+              "description": "rnd.sky.flat_alpha_low_detail (RND-153)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "alpha",
+              "x-species-presence": "required"
+            },
+            "layer1_repeats": {
+              "type": "number",
+              "description": "rnd.sky.layer1_repeats (RND-153)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "repeats",
+              "x-species-presence": "required"
+            },
+            "layer2_repeats": {
+              "type": "number",
+              "description": "rnd.sky.layer2_repeats (RND-153)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "repeats",
+              "x-species-presence": "required"
+            },
+            "layer3_repeats": {
+              "type": "number",
+              "description": "rnd.sky.layer3_repeats (RND-153)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "repeats",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "grid_height",
+            "grid_spacing",
+            "grid_min",
+            "grid_max",
+            "grid_line_half_width",
+            "grid_color",
+            "grid_fog_start",
+            "grid_fog_end",
+            "initial_velocity",
+            "velocity",
+            "cloud_min",
+            "cloud_max",
+            "cloud_fog_start",
+            "cloud_fog_end",
+            "layer2_height",
+            "layer3_height",
+            "blobby_color",
+            "flat_color",
+            "flat_alpha_low_detail",
+            "layer1_repeats",
+            "layer2_repeats",
+            "layer3_repeats"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        }
+      },
+      "required": [
+        "frame",
+        "view",
+        "fog",
+        "terrain",
+        "sea",
+        "sky"
+      ],
+      "additionalProperties": false,
+      "x-species-type": "object",
+      "x-species-presence": "required"
+    },
+    "ter": {
+      "type": "object",
+      "description": "the ter.* keys",
+      "properties": {
+        "color": {
+          "type": "object",
+          "description": "the ter.color.* keys",
+          "properties": {
+            "ramp_size": {
+              "type": "integer",
+              "description": "ter.color.ramp_size (TER-181)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "texels",
+              "x-species-presence": "required"
+            },
+            "center_factor": {
+              "type": "number",
+              "description": "ter.color.center_factor (TER-181)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times the corner sum",
+              "x-species-presence": "required"
+            },
+            "slope_exponent": {
+              "type": "number",
+              "description": "ter.color.slope_exponent (TER-181)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "exponent",
+              "x-species-presence": "required"
+            },
+            "jitter_numerator": {
+              "type": "number",
+              "description": "ter.color.jitter_numerator (TER-181)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "ramp fraction times wu",
+              "x-species-presence": "required"
+            },
+            "jitter_offset": {
+              "type": "number",
+              "description": "ter.color.jitter_offset (TER-181)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "ramp_size",
+            "center_factor",
+            "slope_exponent",
+            "jitter_numerator",
+            "jitter_offset"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "sea": {
+          "type": "object",
+          "description": "the ter.sea.* keys",
+          "properties": {
+            "mask_size": {
+              "type": "integer",
+              "description": "ter.sea.mask_size (TER-196)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "pixels per side",
+              "x-species-presence": "required"
+            },
+            "mask_land_offset": {
+              "type": "integer",
+              "description": "ter.sea.mask_land_offset (TER-196)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "pixels",
+              "x-species-presence": "required"
+            },
+            "blur_taps": {
+              "type": "object",
+              "description": "ter.sea.blur_taps (TER-197)",
+              "properties": {
+                "tap_0": {
+                  "type": "number",
+                  "description": "ter.sea.blur_taps.tap_0",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "weight",
+                  "x-species-presence": "required"
+                },
+                "tap_1": {
+                  "type": "number",
+                  "description": "ter.sea.blur_taps.tap_1",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "weight",
+                  "x-species-presence": "required"
+                },
+                "tap_2": {
+                  "type": "number",
+                  "description": "ter.sea.blur_taps.tap_2",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "weight",
+                  "x-species-presence": "required"
+                },
+                "tap_3": {
+                  "type": "number",
+                  "description": "ter.sea.blur_taps.tap_3",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "weight",
+                  "x-species-presence": "required"
+                },
+                "tap_4": {
+                  "type": "number",
+                  "description": "ter.sea.blur_taps.tap_4",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "weight",
+                  "x-species-presence": "required"
+                },
+                "tap_5": {
+                  "type": "number",
+                  "description": "ter.sea.blur_taps.tap_5",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "weight",
+                  "x-species-presence": "required"
+                },
+                "tap_6": {
+                  "type": "number",
+                  "description": "ter.sea.blur_taps.tap_6",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "weight",
+                  "x-species-presence": "required"
+                },
+                "tap_7": {
+                  "type": "number",
+                  "description": "ter.sea.blur_taps.tap_7",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "weight",
+                  "x-species-presence": "required"
+                },
+                "tap_8": {
+                  "type": "number",
+                  "description": "ter.sea.blur_taps.tap_8",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "weight",
+                  "x-species-presence": "required"
+                },
+                "tap_9": {
+                  "type": "number",
+                  "description": "ter.sea.blur_taps.tap_9",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "weight",
+                  "x-species-presence": "required"
+                },
+                "tap_10": {
+                  "type": "number",
+                  "description": "ter.sea.blur_taps.tap_10",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "weight",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "tap_0",
+                "tap_1",
+                "tap_2",
+                "tap_3",
+                "tap_4",
+                "tap_5",
+                "tap_6",
+                "tap_7",
+                "tap_8",
+                "tap_9",
+                "tap_10"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "blur_normalizer": {
+              "type": "number",
+              "description": "ter.sea.blur_normalizer (TER-197)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "divisor",
+              "x-species-presence": "required"
+            },
+            "blur_skip_tolerance": {
+              "type": "number",
+              "description": "ter.sea.blur_skip_tolerance (TER-197)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "value",
+              "x-species-presence": "required"
+            },
+            "mask_gain": {
+              "type": "number",
+              "description": "ter.sea.mask_gain (TER-197)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "grey levels",
+              "x-species-presence": "required"
+            },
+            "mask_max": {
+              "type": "number",
+              "description": "ter.sea.mask_max (TER-197)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "grey level",
+              "x-species-presence": "required"
+            },
+            "depth_outside": {
+              "type": "number",
+              "description": "ter.sea.depth_outside (TER-198)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "depth",
+              "x-species-presence": "required"
+            },
+            "flat_tile_ratio": {
+              "type": "integer",
+              "description": "ter.sea.flat_tile_ratio (TER-199)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "depth samples per tile side",
+              "x-species-presence": "required"
+            },
+            "cell_divisor": {
+              "type": "number",
+              "description": "ter.sea.cell_divisor (TER-200)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "divisor",
+              "x-species-presence": "required"
+            },
+            "vertex_land_limit": {
+              "type": "number",
+              "description": "ter.sea.vertex_land_limit (TER-201)",
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "vertex_depth_limit": {
+              "type": "number",
+              "description": "ter.sea.vertex_depth_limit (TER-201)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "depth",
+              "x-species-presence": "required"
+            },
+            "wave": {
+              "type": "object",
+              "description": "the ter.sea.wave.* keys",
+              "properties": {
+                "shore_noise": {
+                  "type": "number",
+                  "description": "ter.sea.wave.shore_noise (TER-202)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "fraction",
+                  "x-species-presence": "required"
+                },
+                "shore_brightening": {
+                  "type": "number",
+                  "description": "ter.sea.wave.shore_brightening (TER-202)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "colour-table entries",
+                  "x-species-presence": "required"
+                },
+                "table_margin": {
+                  "type": "integer",
+                  "description": "ter.sea.wave.table_margin (TER-204)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "entries",
+                  "x-species-presence": "required"
+                },
+                "amplitude_scale": {
+                  "type": "number",
+                  "description": "ter.sea.wave.amplitude_scale (TER-204)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "x_terms": {
+                  "type": "object",
+                  "description": "ter.sea.wave.x_terms (TER-204)",
+                  "properties": {
+                    "first": {
+                      "type": "object",
+                      "description": "ter.sea.wave.x_terms.first",
+                      "properties": {
+                        "per_wu": {
+                          "type": "number",
+                          "description": "ter.sea.wave.x_terms.first.per_wu",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "per wu, per s, times",
+                          "x-species-presence": "required"
+                        },
+                        "per_second": {
+                          "type": "number",
+                          "description": "ter.sea.wave.x_terms.first.per_second",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "per wu, per s, times",
+                          "x-species-presence": "required"
+                        },
+                        "amplitude": {
+                          "type": "number",
+                          "description": "ter.sea.wave.x_terms.first.amplitude",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "per wu, per s, times",
+                          "x-species-presence": "required"
+                        }
+                      },
+                      "required": [
+                        "per_wu",
+                        "per_second",
+                        "amplitude"
+                      ],
+                      "additionalProperties": false,
+                      "x-species-type": "object",
+                      "x-species-presence": "required"
+                    },
+                    "second": {
+                      "type": "object",
+                      "description": "ter.sea.wave.x_terms.second",
+                      "properties": {
+                        "per_wu": {
+                          "type": "number",
+                          "description": "ter.sea.wave.x_terms.second.per_wu",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "per wu, per s, times",
+                          "x-species-presence": "required"
+                        },
+                        "per_second": {
+                          "type": "number",
+                          "description": "ter.sea.wave.x_terms.second.per_second",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "per wu, per s, times",
+                          "x-species-presence": "required"
+                        },
+                        "amplitude": {
+                          "type": "number",
+                          "description": "ter.sea.wave.x_terms.second.amplitude",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "per wu, per s, times",
+                          "x-species-presence": "required"
+                        }
+                      },
+                      "required": [
+                        "per_wu",
+                        "per_second",
+                        "amplitude"
+                      ],
+                      "additionalProperties": false,
+                      "x-species-type": "object",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "first",
+                    "second"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "z_terms": {
+                  "type": "object",
+                  "description": "ter.sea.wave.z_terms (TER-204)",
+                  "properties": {
+                    "first": {
+                      "type": "object",
+                      "description": "ter.sea.wave.z_terms.first",
+                      "properties": {
+                        "per_wu": {
+                          "type": "number",
+                          "description": "ter.sea.wave.z_terms.first.per_wu",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "per wu, per s, times",
+                          "x-species-presence": "required"
+                        },
+                        "per_second": {
+                          "type": "number",
+                          "description": "ter.sea.wave.z_terms.first.per_second",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "per wu, per s, times",
+                          "x-species-presence": "required"
+                        },
+                        "amplitude": {
+                          "type": "number",
+                          "description": "ter.sea.wave.z_terms.first.amplitude",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "per wu, per s, times",
+                          "x-species-presence": "required"
+                        }
+                      },
+                      "required": [
+                        "per_wu",
+                        "per_second",
+                        "amplitude"
+                      ],
+                      "additionalProperties": false,
+                      "x-species-type": "object",
+                      "x-species-presence": "required"
+                    },
+                    "second": {
+                      "type": "object",
+                      "description": "ter.sea.wave.z_terms.second",
+                      "properties": {
+                        "per_wu": {
+                          "type": "number",
+                          "description": "ter.sea.wave.z_terms.second.per_wu",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "per wu, per s, times",
+                          "x-species-presence": "required"
+                        },
+                        "per_second": {
+                          "type": "number",
+                          "description": "ter.sea.wave.z_terms.second.per_second",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "per wu, per s, times",
+                          "x-species-presence": "required"
+                        },
+                        "amplitude": {
+                          "type": "number",
+                          "description": "ter.sea.wave.z_terms.second.amplitude",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "per wu, per s, times",
+                          "x-species-presence": "required"
+                        }
+                      },
+                      "required": [
+                        "per_wu",
+                        "per_second",
+                        "amplitude"
+                      ],
+                      "additionalProperties": false,
+                      "x-species-type": "object",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "first",
+                    "second"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "index_bias": {
+                  "type": "number",
+                  "description": "ter.sea.wave.index_bias (TER-205)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "cells",
+                  "x-species-presence": "required"
+                },
+                "brightness_scale": {
+                  "type": "number",
+                  "description": "ter.sea.wave.brightness_scale (TER-205)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times",
+                  "x-species-presence": "required"
+                },
+                "color_mix": {
+                  "type": "object",
+                  "description": "ter.sea.wave.color_mix (TER-205)",
+                  "properties": {
+                    "other": {
+                      "type": "number",
+                      "description": "ter.sea.wave.color_mix.other",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "weight",
+                      "x-species-presence": "required"
+                    },
+                    "own": {
+                      "type": "number",
+                      "description": "ter.sea.wave.color_mix.own",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "weight",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "other",
+                    "own"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "shore_noise",
+                "shore_brightening",
+                "table_margin",
+                "amplitude_scale",
+                "x_terms",
+                "z_terms",
+                "index_bias",
+                "brightness_scale",
+                "color_mix"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "mask_size",
+            "mask_land_offset",
+            "blur_taps",
+            "blur_normalizer",
+            "blur_skip_tolerance",
+            "mask_gain",
+            "mask_max",
+            "depth_outside",
+            "flat_tile_ratio",
+            "cell_divisor",
+            "vertex_land_limit",
+            "vertex_depth_limit",
+            "wave"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        }
+      },
+      "required": [
+        "color",
+        "sea"
+      ],
+      "additionalProperties": false,
+      "x-species-type": "object",
+      "x-species-presence": "required"
+    },
+    "ref": {
+      "type": "object",
+      "description": "the ref.* keys",
+      "properties": {
+        "sim": {
+          "type": "object",
+          "description": "the ref.sim.* keys",
+          "properties": {
+            "match": {
+              "type": "object",
+              "description": "the ref.sim.match.* keys",
+              "properties": {
+                "presentation_seed": {
+                  "type": "integer",
+                  "description": "ref.sim.match.presentation_seed (R-SIM-016)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "seed",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "presentation_seed"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "match"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        }
+      },
+      "required": [
+        "sim"
+      ],
+      "additionalProperties": false,
+      "x-species-type": "object",
+      "x-species-presence": "required"
+    },
+    "mvp": {
+      "type": "object",
+      "description": "the mvp.* keys",
+      "properties": {
+        "light": {
+          "type": "object",
+          "description": "the mvp.light.* keys",
+          "properties": {
+            "key": {
+              "type": "object",
+              "description": "the mvp.light.key.* keys",
+              "properties": {
+                "towards": {
+                  "type": "object",
+                  "description": "mvp.light.key.towards (MVP-081)",
+                  "properties": {
+                    "x": {
+                      "type": "number",
+                      "description": "mvp.light.key.towards.x",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "direction towards the light, normalised at load",
+                      "x-species-presence": "required"
+                    },
+                    "y": {
+                      "type": "number",
+                      "description": "mvp.light.key.towards.y",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "direction towards the light, normalised at load",
+                      "x-species-presence": "required"
+                    },
+                    "z": {
+                      "type": "number",
+                      "description": "mvp.light.key.towards.z",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "direction towards the light, normalised at load",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "x",
+                    "y",
+                    "z"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "color": {
+                  "type": "object",
+                  "description": "mvp.light.key.color (MVP-081)",
+                  "properties": {
+                    "r": {
+                      "type": "number",
+                      "description": "mvp.light.key.color.r",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "RGB multiplier",
+                      "x-species-presence": "required"
+                    },
+                    "g": {
+                      "type": "number",
+                      "description": "mvp.light.key.color.g",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "RGB multiplier",
+                      "x-species-presence": "required"
+                    },
+                    "b": {
+                      "type": "number",
+                      "description": "mvp.light.key.color.b",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "RGB multiplier",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "r",
+                    "g",
+                    "b"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "towards",
+                "color"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "fill": {
+              "type": "object",
+              "description": "the mvp.light.fill.* keys",
+              "properties": {
+                "towards": {
+                  "type": "object",
+                  "description": "mvp.light.fill.towards (MVP-081)",
+                  "properties": {
+                    "x": {
+                      "type": "number",
+                      "description": "mvp.light.fill.towards.x",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "direction towards the light, normalised at load",
+                      "x-species-presence": "required"
+                    },
+                    "y": {
+                      "type": "number",
+                      "description": "mvp.light.fill.towards.y",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "direction towards the light, normalised at load",
+                      "x-species-presence": "required"
+                    },
+                    "z": {
+                      "type": "number",
+                      "description": "mvp.light.fill.towards.z",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "direction towards the light, normalised at load",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "x",
+                    "y",
+                    "z"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "color": {
+                  "type": "object",
+                  "description": "mvp.light.fill.color (MVP-081)",
+                  "properties": {
+                    "r": {
+                      "type": "number",
+                      "description": "mvp.light.fill.color.r",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "RGB multiplier",
+                      "x-species-presence": "required"
+                    },
+                    "g": {
+                      "type": "number",
+                      "description": "mvp.light.fill.color.g",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "RGB multiplier",
+                      "x-species-presence": "required"
+                    },
+                    "b": {
+                      "type": "number",
+                      "description": "mvp.light.fill.color.b",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "RGB multiplier",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "r",
+                    "g",
+                    "b"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "towards",
+                "color"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "key",
+            "fill"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        }
+      },
+      "required": [
+        "light"
+      ],
+      "additionalProperties": false,
+      "x-species-type": "object",
+      "x-species-presence": "required"
+    }
+  },
+  "required": [
+    "schema",
+    "version",
+    "rnd",
+    "ter",
+    "ref",
+    "mvp"
+  ],
+  "additionalProperties": false
+}

@@ -5,6 +5,7 @@
 #include "PlatformClock.h"
 #include "RecordReader.h"
 #include "TuningMvp.h"
+#include "TuningPresentation.h"
 
 #include <expected>
 #include <filesystem>
@@ -27,6 +28,17 @@ inline constexpr std::string_view TUNING_MVP_KEY = "records/tuning/mvp";
 // the tests' source of records the content build has not cooked. No program calls it (DAT-010, ADR-108). A file that
 // cannot be read is a missing_record finding; every other finding is the record's.
 [[nodiscard]] Neuron::RecordResult<TuningMvp> ReadTuningMvpSource(const std::filesystem::path& _contentRoot);
+
+// The client's presentation record (owner decision O75, ADR-116): its authoring file and the key of its cooked entry.
+// The server never reads it, and it is not part of the simulation content identity (AST-100).
+inline constexpr std::string_view TUNING_PRESENTATION_FILE = "Records/tuning/presentation.json";
+inline constexpr std::string_view TUNING_PRESENTATION_KEY = "records/tuning/presentation";
+
+// Loads the cooked presentation record from the mounted content, as LoadTuningMvp does the tuning record.
+[[nodiscard]] std::expected<TuningPresentation, Neuron::AssetError> LoadTuningPresentation(const Neuron::LooseContent& _content);
+
+// Reads the presentation record's authoring file as the content build does: the tests' source, as ReadTuningMvpSource.
+[[nodiscard]] Neuron::RecordResult<TuningPresentation> ReadTuningPresentationSource(const std::filesystem::path& _contentRoot);
 
 // `ref.sim.tick_period` as the server loop's period, to the nearest nanosecond (ADR-079).
 [[nodiscard]] Neuron::Nanoseconds TickPeriodOf(const TuningMvp& _tuning) noexcept;

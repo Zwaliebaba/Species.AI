@@ -112,6 +112,11 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-109](ADR-109-battle-sandbox-command-journal-and-seed-switch.md) | The battle sandbox, the command journal and the seed switch | Proposed | 2026-10-20 |
 | [ADR-110](ADR-110-cost-measurement-marker-timing-and-performance-script.md) | The cost measurement: marker timing, the performance tool and the performance script | Proposed | 2026-10-20 |
 | [ADR-111](ADR-111-replication-state-datagrams-and-the-client-replica.md) | Replication at M1: the state datagrams, the acknowledged baselines and the client's replica | Proposed | 2026-10-20 |
+| [ADR-112](ADR-112-shader-build-and-shared-layouts.md) | The shader build and the layouts C++ and HLSL share | Proposed | 2026-10-20 |
+| [ADR-113](ADR-113-the-frame-at-m1.md) | The frame at M1: the pass table, the catalogue, the barriers and the scene targets | Proposed | 2026-10-20 |
+| [ADR-114](ADR-114-gpu-resources-at-m1.md) | GPU resources at M1: the device factory, the heaps, the upload ring and textures without import records | Proposed | 2026-10-20 |
+| [ADR-115](ADR-115-the-world-frame-at-m1.md) | The world frame at M1: camera-relative surfaces, the region's terrain, sea and sky, fog and the two lights | Proposed | 2026-10-20 |
+| [ADR-116](ADR-116-presentation-tuning-record.md) | The presentation tuning record | Proposed | 2026-10-20 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

@@ -7,13 +7,11 @@ namespace Neuron
 
 D3D12_HEAP_PROPERTIES HeapProperties(D3D12_HEAP_TYPE _type) noexcept
 {
-  D3D12_HEAP_PROPERTIES properties{};
-  properties.Type = _type;
-  properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-  properties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-  properties.CreationNodeMask = 1;
-  properties.VisibleNodeMask = 1;
-  return properties;
+  return D3D12_HEAP_PROPERTIES{.Type = _type,
+                               .CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+                               .MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN,
+                               .CreationNodeMask = 1,
+                               .VisibleNodeMask = 1};
 }
 
 D3D12_RESOURCE_DESC BufferDescription(std::uint64_t _sizeBytes, D3D12_RESOURCE_FLAGS _flags) noexcept

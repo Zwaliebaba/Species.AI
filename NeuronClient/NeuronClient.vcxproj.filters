@@ -24,6 +24,9 @@
     <ClInclude Include="AppWindow.h">
       <Filter>Window</Filter>
     </ClInclude>
+    <ClInclude Include="DdsTexture.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
     <ClInclude Include="DescriptorHeaps.h">
       <Filter>Rendering</Filter>
     </ClInclude>
@@ -34,6 +37,9 @@
       <Filter>Rendering</Filter>
     </ClInclude>
     <ClInclude Include="FrameRenderer.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="FrameView.h">
       <Filter>Rendering</Filter>
     </ClInclude>
     <ClInclude Include="GpuDescriptions.h">
@@ -51,6 +57,9 @@
     <ClInclude Include="PassTable.h">
       <Filter>Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="PipelineCatalog.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
     <ClInclude Include="PresentPolicy.h">
       <Filter>Rendering</Filter>
     </ClInclude>
@@ -60,14 +69,26 @@
     <ClInclude Include="RootSignature.h">
       <Filter>Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="SceneTargets.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
     <ClInclude Include="ShaderLayouts.h">
       <Filter>Shader</Filter>
+    </ClInclude>
+    <ClInclude Include="SkyLayers.h">
+      <Filter>Rendering</Filter>
     </ClInclude>
     <ClInclude Include="UploadRing.h">
       <Filter>Rendering</Filter>
     </ClInclude>
     <ClInclude Include="WindowGeometry.h">
       <Filter>Window</Filter>
+    </ClInclude>
+    <ClInclude Include="WorldRenderer.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="WorldScene.h">
+      <Filter>Rendering</Filter>
     </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Build</Filter>
@@ -80,6 +101,9 @@
     <ClCompile Include="AppWindow.cpp">
       <Filter>Window</Filter>
     </ClCompile>
+    <ClCompile Include="DdsTexture.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
     <ClCompile Include="DescriptorHeaps.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
@@ -90,6 +114,9 @@
       <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="FrameRenderer.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="FrameView.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="GpuDescriptions.cpp">
@@ -107,6 +134,9 @@
     <ClCompile Include="PassTable.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="PipelineCatalog.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
     <ClCompile Include="PresentPolicy.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
@@ -116,11 +146,20 @@
     <ClCompile Include="RootSignature.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="SceneTargets.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="SkyLayers.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
     <ClCompile Include="UploadRing.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="WindowGeometry.cpp">
       <Filter>Window</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldRenderer.cpp">
+      <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Build</Filter>
@@ -132,12 +171,51 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <FXCompile Include="Shader\ScreenTriangleVS.hlsl">
+    <FXCompile Include="Shader\FinalPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\FinalVS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\SeaFlatPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\SeaFlatVS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\SeaWavesPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\SeaWavesVS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\SkyPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\SkyVS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\TerrainPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\TerrainVS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shader\ScreenTriangle.hlsli">
+    <None Include="Shader\Final.hlsli">
+      <Filter>Shader</Filter>
+    </None>
+    <None Include="Shader\SeaFlat.hlsli">
+      <Filter>Shader</Filter>
+    </None>
+    <None Include="Shader\SeaWaves.hlsli">
+      <Filter>Shader</Filter>
+    </None>
+    <None Include="Shader\Sky.hlsli">
+      <Filter>Shader</Filter>
+    </None>
+    <None Include="Shader\Terrain.hlsli">
       <Filter>Shader</Filter>
     </None>
   </ItemGroup>
