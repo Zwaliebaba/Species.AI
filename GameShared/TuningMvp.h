@@ -413,6 +413,9 @@ struct TuningMvp
     {
       // mvp.perf.synthetic_figures, in figures
       std::int64_t syntheticFigures = 0;
+
+      // mvp.perf.synthetic_gap, in wu
+      double syntheticGap = 0.0;
     };
 
     Pace pace;
@@ -1807,6 +1810,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::Perf& _out)
 {
   _out.syntheticFigures = _reader.Integer(_object, "synthetic_figures", 0);
+  _out.syntheticGap = _reader.Decimal(_object, "synthetic_gap", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -2955,11 +2959,13 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Sand
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Perf& _in)
 {
   _writer.I64(_in.syntheticFigures);
+  _writer.F64(_in.syntheticGap);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Perf& _out)
 {
   _out.syntheticFigures = _reader.I64();
+  _out.syntheticGap = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp& _in)

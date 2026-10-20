@@ -4,6 +4,7 @@
 #include "EssenceOrb.h"
 #include "FigureAdvance.h"
 #include "Formation.h"
+#include "Profile.h"
 #include "RegionCommands.h"
 #include "RegionSimulation.h"
 #include "StateValues.h"
@@ -447,17 +448,27 @@ void RegionSimulation::Step(std::uint64_t _tick)
   m_draws.SetTick(_tick);
   m_events.clear();
   // R-SIM-510: the tick's commands, the tick clock (the region's tick: the world has no game speed), then the slices.
-  m_commands.Execute(_tick);
+  // The markers divide the step by the objects it advances, for the cost measurement (DBG-045, ADR-110).
+  {
+    ENGINE_PROFILE_SCOPE("sim.region.commands");
+    m_commands.Execute(_tick);
+  }
   const auto slices = static_cast<std::uint32_t>(m_tuning->ref.sim.updateSlices);
   for (std::uint32_t slice = 0; slice < slices; ++slice)
   {
     StepSlice(slice);
   }
-  for (AiController& ai : m_ais)
   {
-    StepAi(*this, ai);
+    ENGINE_PROFILE_SCOPE("sim.ai.step");
+    for (AiController& ai : m_ais)
+    {
+      StepAi(*this, ai);
+    }
   }
-  FreeUnheldRoutes();
+  {
+    ENGINE_PROFILE_SCOPE("sim.routes.free_unheld");
+    FreeUnheldRoutes();
+  }
   m_nextTick = _tick + 1;
 }
 
@@ -493,11 +504,47 @@ void RegionSimulation::StepSlice(std::uint32_t _slice)
   const auto slices = static_cast<std::uint32_t>(m_tuning->ref.sim.updateSlices);
   const MovementContext context = Movement();
   // R-SIM-218 step 2 and R-SIM-221 step 5: each team in index order, its slice share of ungrouped figures in slot order.
+  {
+    ENGINE_PROFILE_SCOPE("sim.teams.advance_ungrouped");
+    AdvanceTeams(_slice, slices, context);
+  }
+  // R-SIM-218 step 3: the slice's laser bolts, then its effects; step 4, the structures, arrives with M2; step 5: its
+  // Essence orbs.
+  {
+    ENGINE_PROFILE_SCOPE("sim.laser_bolts.advance");
+    m_bolts.AdvanceSlice(_slice, slices, [&](std::uint32_t _slot) { return AdvanceLaserBolt(*this, m_bolts.At(_slot)); });
+  }
+  {
+    ENGINE_PROFILE_SCOPE("sim.effects.advance");
+    m_effects.AdvanceSlice(_slice, slices, [&](std::uint32_t _slot) { return AdvanceEffect(*this, m_effects.At(_slot)); });
+  }
+  {
+    ENGINE_PROFILE_SCOPE("sim.bot_nodes.advance");
+    m_botNodes.AdvanceSlice(_slice, slices,
+                            [&](std::uint32_t _slot)
+                            {
+                              AdvanceBotNode(*this, _slot, m_botNodes.At(_slot));
+                              return false;
+                            });
+  }
+  {
+    ENGINE_PROFILE_SCOPE("sim.essence_orbs.advance");
+    m_orbs.AdvanceSlice(_slice, slices, [&](std::uint32_t _slot) { return AdvanceOrb(*this, m_orbs.At(_slot)); });
+  }
+  // R-SIM-218 step 8: the cache's eviction in its slice, after the teams.
+  if (_slice == static_cast<std::uint32_t>(m_tuning->ref.sim.gridCache.evictSlice))
+  {
+    m_cache.Evict(m_nextTick);
+  }
+}
+
+void RegionSimulation::AdvanceTeams(std::uint32_t _slice, std::uint32_t _slices, const MovementContext& _context)
+{
   for (std::size_t index = 0; index < m_teams.size(); ++index)
   {
     const auto team = static_cast<std::uint8_t>(index);
     SlicedPool<Figure>& figures = m_teams[index].figures;
-    figures.AdvanceSlice(_slice, slices,
+    figures.AdvanceSlice(_slice, _slices,
                          [&](std::uint32_t _slot)
                          {
                            Figure& figure = figures.At(_slot);
@@ -512,7 +559,7 @@ void RegionSimulation::StepSlice(std::uint32_t _slice)
                              m_advanceObserver(team, _slot, _slice);
                            }
 #endif
-                           const FigureContext figureContext{this, &context, {figure.id, _slot, team}};
+                           const FigureContext figureContext{this, &_context, {figure.id, _slot, team}};
                            if (AdvanceFigure(figure, figureContext))
                            {
                              Unregister(team, _slot, figure);
@@ -521,22 +568,6 @@ void RegionSimulation::StepSlice(std::uint32_t _slice)
                            UpdateRegistration(team, _slot, figure);
                            return false;
                          });
-  }
-  // R-SIM-218 step 3: the slice's laser bolts, then its effects; step 4, the structures, arrives with M2; step 5: its
-  // Essence orbs.
-  m_bolts.AdvanceSlice(_slice, slices, [&](std::uint32_t _slot) { return AdvanceLaserBolt(*this, m_bolts.At(_slot)); });
-  m_effects.AdvanceSlice(_slice, slices, [&](std::uint32_t _slot) { return AdvanceEffect(*this, m_effects.At(_slot)); });
-  m_botNodes.AdvanceSlice(_slice, slices,
-                          [&](std::uint32_t _slot)
-                          {
-                            AdvanceBotNode(*this, _slot, m_botNodes.At(_slot));
-                            return false;
-                          });
-  m_orbs.AdvanceSlice(_slice, slices, [&](std::uint32_t _slot) { return AdvanceOrb(*this, m_orbs.At(_slot)); });
-  // R-SIM-218 step 8: the cache's eviction in its slice, after the teams.
-  if (_slice == static_cast<std::uint32_t>(m_tuning->ref.sim.gridCache.evictSlice))
-  {
-    m_cache.Evict(m_nextTick);
   }
 }
 

@@ -96,6 +96,9 @@
     <ClInclude Include="LooseContent.h">
       <Filter>Content</Filter>
     </ClInclude>
+    <ClInclude Include="MarkerTimings.h">
+      <Filter>Profiling</Filter>
+    </ClInclude>
     <ClInclude Include="MeshAsset.h">
       <Filter>Content</Filter>
     </ClInclude>
@@ -229,6 +232,9 @@
     </ClCompile>
     <ClCompile Include="LooseContent.cpp">
       <Filter>Content</Filter>
+    </ClCompile>
+    <ClCompile Include="MarkerTimings.cpp">
+      <Filter>Profiling</Filter>
     </ClCompile>
     <ClCompile Include="MeshAsset.cpp">
       <Filter>Content</Filter>

@@ -287,6 +287,8 @@ public:
 
 private:
   void StepSlice(std::uint32_t _slice);
+  // R-SIM-218 step 2: each team's share of slice _slice of _slices, in team order.
+  void AdvanceTeams(std::uint32_t _slice, std::uint32_t _slices, const MovementContext& _context);
   // R-SIM-308, DEC-650: after an advance that keeps the figure, its entries follow its cells; a figure that asks to be
   // removed or is disabled leaves the grid (R-SIM-114).
   void UpdateRegistration(std::uint8_t _team, std::uint32_t _slot, Figure& _figure);

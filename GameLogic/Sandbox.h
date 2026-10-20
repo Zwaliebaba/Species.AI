@@ -16,8 +16,9 @@ inline constexpr std::uint8_t SANDBOX_AI_TEAM = 1;
 // mvp.sandbox.ai_site, diagonally opposite), and the AI that commands its side (ADR-107). Called between ticks.
 void PopulateSandbox(RegionSimulation& _region);
 
-// ADR-080 item 2's synthetic battle: mvp.perf.synthetic_figures Workers in two halves at the sandbox's two sites, each
-// side commanded by an AI. Called between ticks, on a region with its terrain.
+// ADR-080 item 2's synthetic battle: mvp.perf.synthetic_figures Workers in two halves mvp.perf.synthetic_gap apart
+// across the valley's centre, each spread as a sandbox side and commanded by an AI (ADR-110). Called between ticks, on
+// a region with its terrain.
 void PopulateSyntheticBattle(RegionSimulation& _region);
 
 } // namespace Species

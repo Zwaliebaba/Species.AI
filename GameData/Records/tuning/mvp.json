@@ -167,7 +167,8 @@
       "ai_site": 3
     },
     "perf": {
-      "synthetic_figures": 2000
+      "synthetic_figures": 2000,
+      "synthetic_gap": 200
     }
   },
   "ref": {
@@ -561,7 +562,7 @@
       "max_radius": 1400
     },
     "travel": {
-      "valley_path_factor": 1.15
+      "valley_path_factor": 1.05
     }
   }
 }

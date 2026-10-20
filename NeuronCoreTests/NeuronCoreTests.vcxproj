@@ -179,6 +179,7 @@
     <ClCompile Include="LogBufferTests.cpp" />
     <ClCompile Include="LogTests.cpp" />
     <ClCompile Include="LooseContentTests.cpp" />
+    <ClCompile Include="MarkerTimingsTests.cpp" />
     <ClCompile Include="MeshAssetTests.cpp" />
     <ClCompile Include="MessageCodecTests.cpp" />
     <ClCompile Include="PlatformClockTests.cpp" />

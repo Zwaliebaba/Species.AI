@@ -6,6 +6,7 @@
 #include "DrawPurpose.h"
 #include "Formation.h"
 #include "LeaderOrders.h"
+#include "Profile.h"
 #include "RegionSimulation.h"
 
 #include <algorithm>
@@ -380,11 +381,18 @@ void StepAi(RegionSimulation& _region, AiController& _ai)
     return;
   }
   Turn turn{_region, _ai, {}, {}};
-  StrayRecall(turn);
+  {
+    ENGINE_PROFILE_SCOPE("sim.ai.stray_recall");
+    StrayRecall(turn);
+  }
   --_ai.cycleTicks;
-  LeaderPolicies(turn);
+  {
+    ENGINE_PROFILE_SCOPE("sim.ai.leader_policies");
+    LeaderPolicies(turn);
+  }
   if (_ai.cycleTicks <= 0)
   {
+    ENGINE_PROFILE_SCOPE("sim.ai.main_cycle");
     _ai.cycleTicks = static_cast<std::int32_t>(_region.Tuning().ref.bot.cycle.periodEasy);
     FormationLeaders(turn);
     Dispatch(turn);

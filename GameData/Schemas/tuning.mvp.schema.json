@@ -1322,10 +1322,20 @@
               "x-species-type": "count",
               "x-species-unit": "figures",
               "x-species-presence": "required"
+            },
+            "synthetic_gap": {
+              "type": "number",
+              "description": "mvp.perf.synthetic_gap (MVP-093)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
             }
           },
           "required": [
-            "synthetic_figures"
+            "synthetic_figures",
+            "synthetic_gap"
           ],
           "additionalProperties": false,
           "x-species-type": "object",

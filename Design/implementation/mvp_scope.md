@@ -282,7 +282,8 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.sandbox.side_spread` | 60 | wu | — | provisional | MVP-005 | The radius each sandbox side spawns in around its site's centre |
 | `mvp.sandbox.steward_site` | 0 | site index | — | provisional | MVP-005 | The local site order of WLD-040: 0 and 3 are diagonally opposite (O70) |
 | `mvp.sandbox.ai_site` | 3 | site index | — | provisional | MVP-005 | The AI's side, opposite the steward's |
-| `mvp.perf.synthetic_figures` | 2000 | figures | — | provisional | MVP-093 | ADR-080 item 2's synthetic battle, in two halves at the sandbox's sites with an AI on each; M1's determinism tests and T10 run it |
+| `mvp.perf.synthetic_figures` | 2000 | figures | — | provisional | MVP-093 | ADR-080 item 2's synthetic battle, in two halves with an AI on each; M1's determinism tests and T10 run it |
+| `mvp.perf.synthetic_gap` | 200 | wu | — | provisional | MVP-093 | The distance between the synthetic battle's halves, across the valley's centre, so that it is fought from its first ticks (ADR-110) |
 | `mvp.settlement.start_workers` | 20 | Workers | — | provisional | MVP-020 | The first minutes must show a busy settlement |
 | `mvp.settlement.population_base` | 40 | Workers | — | provisional | MVP-022 | — |
 | `mvp.settlement.population_max` | 300 | Workers | — | provisional | MVP-022 | Inside O43's range; M1's cost measurement may raise it |

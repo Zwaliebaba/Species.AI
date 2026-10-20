@@ -23,6 +23,9 @@
   </Folder>
   <Folder Name="/Tools/">
     <Project Path="Tools/SpeciesContentBuild/SpeciesContentBuild.vcxproj" Id="f814b69a-a845-5fe8-87b9-7ea11ed3cee3" />
+    <Project Path="Tools/SpeciesPerformance/SpeciesPerformance.vcxproj" Id="21d87f97-bd0b-5419-b93e-70fbf5e86edd">
+      <BuildDependency Project="Tools/SpeciesContentBuild/SpeciesContentBuild.vcxproj" />
+    </Project>
     <Project Path="Tools/SpeciesSchemaGen/SpeciesSchemaGen.vcxproj" Id="acac0570-f9cd-52a8-ae8e-651bfb181141" />
   </Folder>
   <Project Path="Species/Species.vcxproj" Id="01ec7822-74c7-56d1-9d56-ed835e64f15d">

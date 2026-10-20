@@ -1,10 +1,13 @@
 #pragma once
 
+#include <cstdint>
+
 namespace Neuron
 {
 
 /// One CPU marker: a PIX event from construction to destruction, in Debug and Release alike (ADR-068, DBG-080). Safe
-/// on any thread; the events nest per thread. The name is a marker of the catalogue (DBG-045), a string literal.
+/// on any thread; the events nest per thread. The name is a marker of the catalogue (DBG-045), a string literal. While
+/// marker timing is on, the scope's time inside its event is recorded too (MarkerTimings, ADR-110).
 class ProfileScope
 {
 public:
@@ -13,6 +16,10 @@ public:
 
   ProfileScope(const ProfileScope&) = delete;
   ProfileScope& operator=(const ProfileScope&) = delete;
+
+private:
+  const char* m_timedName = nullptr; // the name while marker timing records this scope
+  std::int64_t m_startNanoseconds = 0;
 };
 
 } // namespace Neuron

@@ -71,6 +71,9 @@
     <ClCompile Include="LooseContentTests.cpp">
       <Filter>Content</Filter>
     </ClCompile>
+    <ClCompile Include="MarkerTimingsTests.cpp">
+      <Filter>Profiling</Filter>
+    </ClCompile>
     <ClCompile Include="MeshAssetTests.cpp">
       <Filter>Content</Filter>
     </ClCompile>

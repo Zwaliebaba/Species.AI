@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Build">
+      <UniqueIdentifier>{C0FD4903-6FEB-5C7C-B002-38E81FE63B35}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Program">
+      <UniqueIdentifier>{B4BE4F1F-590B-52ED-A319-6DB7524B847E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Scenes">
+      <UniqueIdentifier>{C57D5EE2-2988-5CCC-B902-6AE8365FE720}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="SceneRun.h">
+      <Filter>Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="TravelScene.h">
+      <Filter>Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>Build</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <Filter>Build</Filter>
+    </ClCompile>
+    <ClCompile Include="SceneRun.cpp">
+      <Filter>Scenes</Filter>
+    </ClCompile>
+    <ClCompile Include="SpeciesPerformance.cpp">
+      <Filter>Program</Filter>
+    </ClCompile>
+    <ClCompile Include="TravelScene.cpp">
+      <Filter>Scenes</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config">
+      <Filter>Build</Filter>
+    </None>
+  </ItemGroup>
+</Project>
