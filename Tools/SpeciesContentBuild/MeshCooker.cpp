@@ -33,7 +33,9 @@ struct MeshSpec
   std::map<std::string, std::string> sockets; // name → its node, or empty
 };
 
-std::optional<MeshSpec> ReadSpec(std::string_view _spec)
+// Reads a row's spec into _outSpec, filled in place since a MeshSpec is never moved; false when the spec states no
+// triangle budget, node count, depth or socket list.
+bool ReadSpec(std::string_view _spec, MeshSpec& _outSpec)
 {
   const std::optional<std::uint64_t> budget = NumberAfter(_spec, "<= ");
   const std::optional<std::uint64_t> nodes = NumberBefore(_spec, " node");
@@ -41,17 +43,16 @@ std::optional<MeshSpec> ReadSpec(std::string_view _spec)
   const std::size_t clause = _spec.find("sockets: ");
   if (!budget || _spec.find("triangles budget") == std::string_view::npos || !nodes || !depth || clause == std::string_view::npos)
   {
-    return std::nullopt;
+    return false;
   }
-  MeshSpec spec;
-  spec.triangleBudget = budget.value_or(0);
-  spec.nodes = nodes.value_or(0);
-  spec.depth = depth.value_or(0);
+  _outSpec.triangleBudget = budget.value_or(0);
+  _outSpec.nodes = nodes.value_or(0);
+  _outSpec.depth = depth.value_or(0);
   std::string_view list = _spec.substr(clause + std::string_view{"sockets: "}.size());
   list = list.substr(0, list.find(';'));
   if (list == "none")
   {
-    return spec;
+    return true;
   }
   while (!list.empty())
   {
@@ -65,9 +66,9 @@ std::optional<MeshSpec> ReadSpec(std::string_view _spec)
       node = std::string(item.substr(from, item.size() - 1 - from));
       item = item.substr(0, on);
     }
-    spec.sockets.emplace(std::string(item), std::move(node));
+    _outSpec.sockets.emplace(std::string(item), std::move(node));
   }
-  return spec;
+  return true;
 }
 
 /// A socket bone's name read after the prefix (AST-038): its kind, its index and whether it was written with a number.
@@ -480,8 +481,8 @@ private:
   // The row's spec and the format's capacity (AST-035, AST-040, AST-076).
   void CheckRow()
   {
-    const std::optional<MeshSpec> spec = ReadSpec(m_row.spec);
-    if (!spec)
+    MeshSpec spec;
+    if (!ReadSpec(m_row.spec, spec))
     {
       Fail(std::format("its row {} (manifest line {}) states no triangle budget, node count, depth or socket list that the content build "
                        "can read (AST-012)",
@@ -489,9 +490,9 @@ private:
       return;
     }
     const std::size_t triangles = m_mesh.vertices.size() / 3;
-    if (triangles > spec->triangleBudget)
+    if (triangles > spec.triangleBudget)
     {
-      Fail(std::format("{} triangles pass the budget of {} of its row {} (AST-076)", triangles, spec->triangleBudget, m_row.assetId));
+      Fail(std::format("{} triangles pass the budget of {} of its row {} (AST-076)", triangles, spec.triangleBudget, m_row.assetId));
     }
     std::uint64_t depth = 0;
     for (std::size_t n = 0; n < m_mesh.nodes.size(); ++n)
@@ -505,13 +506,13 @@ private:
       }
       depth = std::max(depth, chain);
     }
-    if (m_mesh.nodes.size() != spec->nodes || depth != spec->depth)
+    if (m_mesh.nodes.size() != spec.nodes || depth != spec.depth)
     {
       Fail(std::format("{} nodes of depth {}; its row {} asks for {} of depth {} (AST-076)", m_mesh.nodes.size(), depth, m_row.assetId,
-                       spec->nodes, spec->depth));
+                       spec.nodes, spec.depth));
     }
     const bool sameSockets =
-      std::ranges::equal(m_socketNames, spec->sockets, [](const auto& _found, const auto& _listed)
+      std::ranges::equal(m_socketNames, spec.sockets, [](const auto& _found, const auto& _listed)
                          { return _found.first == _listed.first && (_listed.second.empty() || _found.second == _listed.second); });
     if (!sameSockets)
     {
