@@ -7,6 +7,9 @@
     <Filter Include="Diagnostics">
       <UniqueIdentifier>{6D1C4C7B-138C-5352-B44B-BED8535A12F3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Network">
+      <UniqueIdentifier>{0D52DB79-7744-5CE4-96EC-3467A98979EC}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Platform">
       <UniqueIdentifier>{24F9CD3C-9AA4-5819-A3A3-9DB045EF9081}</UniqueIdentifier>
     </Filter>
@@ -15,6 +18,12 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BitReader.h">
+      <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="BitWriter.h">
+      <Filter>Network</Filter>
+    </ClInclude>
     <ClInclude Include="Check.h">
       <Filter>Diagnostics</Filter>
     </ClInclude>
@@ -30,6 +39,9 @@
     <ClInclude Include="FloatEnvironment.h">
       <Filter>Platform</Filter>
     </ClInclude>
+    <ClInclude Include="InProcessTransport.h">
+      <Filter>Network</Filter>
+    </ClInclude>
     <ClInclude Include="JobQueue.h">
       <Filter>Platform</Filter>
     </ClInclude>
@@ -41,6 +53,9 @@
     </ClInclude>
     <ClInclude Include="LogFile.h">
       <Filter>Diagnostics</Filter>
+    </ClInclude>
+    <ClInclude Include="MessageCodec.h">
+      <Filter>Network</Filter>
     </ClInclude>
     <ClInclude Include="PlatformClock.h">
       <Filter>Platform</Filter>
@@ -63,8 +78,14 @@
     <ClInclude Include="RunId.h">
       <Filter>Platform</Filter>
     </ClInclude>
+    <ClInclude Include="StreamFraming.h">
+      <Filter>Network</Filter>
+    </ClInclude>
     <ClInclude Include="TextEncoding.h">
       <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Transport.h">
+      <Filter>Network</Filter>
     </ClInclude>
     <ClInclude Include="WindowsHeaders.h">
       <Filter>Platform</Filter>
@@ -74,6 +95,12 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BitReader.cpp">
+      <Filter>Network</Filter>
+    </ClCompile>
+    <ClCompile Include="BitWriter.cpp">
+      <Filter>Network</Filter>
+    </ClCompile>
     <ClCompile Include="Check.cpp">
       <Filter>Diagnostics</Filter>
     </ClCompile>
@@ -86,6 +113,9 @@
     <ClCompile Include="FloatEnvironment.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
+    <ClCompile Include="InProcessTransport.cpp">
+      <Filter>Network</Filter>
+    </ClCompile>
     <ClCompile Include="JobQueue.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
@@ -97,6 +127,9 @@
     </ClCompile>
     <ClCompile Include="LogFile.cpp">
       <Filter>Diagnostics</Filter>
+    </ClCompile>
+    <ClCompile Include="MessageCodec.cpp">
+      <Filter>Network</Filter>
     </ClCompile>
     <ClCompile Include="PlatformClock.cpp">
       <Filter>Platform</Filter>
@@ -115,6 +148,9 @@
     </ClCompile>
     <ClCompile Include="RunId.cpp">
       <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="StreamFraming.cpp">
+      <Filter>Network</Filter>
     </ClCompile>
     <ClCompile Include="TextEncoding.cpp">
       <Filter>Platform</Filter>

@@ -93,6 +93,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-090](ADR-090-solution-and-project-layout.md) | Solution and project layout: six Neuron and Game libraries, two thin programs, one MSBuild solution | Accepted | 2026-10-19 |
 | [ADR-091](ADR-091-log-pipeline-buffers-and-registration.md) | Log pipeline: two rings per thread, a drain thread, and the logger's registration | Proposed | 2026-10-19 |
 | [ADR-092](ADR-092-first-window-device-and-presentation.md) | First window, device and presentation: the choices M0 makes before settings, input and the frame graph | Proposed | 2026-10-20 |
+| [ADR-093](ADR-093-transport-interface-and-message-layout.md) | Transport interface, the in-process transport and the bit-packed message layout | Proposed | 2026-10-20 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 
