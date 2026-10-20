@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-10-20
 decision-makers: Species technology lead (M0 task T4)
 ---
@@ -139,3 +139,4 @@ Chosen option: "1". It is the only one that gives the owner, at M0, a window tha
   - the creation messages therefore reached `DefWindowProcW` with a null handle, `WM_NCCREATE` returned `FALSE`, and the creation failed with `ERROR_INVALID_WINDOW_HANDLE`.
 
   The procedure now gives the state the handle at `WM_NCCREATE`, before any message reaches it. No test had created a window, because the tests of the Confirmation covered only what the window computes. `AppWindowTests` now creates one in each mode, and both of its tests fail without the fix.
+* **Accepted 2026-10-20, at the end of M0.** Every item of the Confirmation is met. The tests and the fixtures pass in CI. The owner's run of T4's checklist passed every step, among them the device rebuilt after Ctrl+Shift+F11, the debug layer silent and the Agility SDK's exports in `Release|x64` (`playtests/M0.md`).

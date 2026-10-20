@@ -1,6 +1,6 @@
 # M0 plan
 
-> Status: Draft · Related: [MVP scope](mvp_scope.md) §3 (M0) · [ADR-090](../ADR/ADR-090-solution-and-project-layout.md) (the project layout) · [MVP assets](mvp_assets.md) · [owner decisions](../decisions/owner_decisions.md) (O50 to O64) · [ADR index and technology baseline](../ADR/README.md)
+> Status: Final; M0 ended on 2026-10-20, recorded in `playtests/M0.md` · Related: [MVP scope](mvp_scope.md) §3 (M0) · [ADR-090](../ADR/ADR-090-solution-and-project-layout.md) (the project layout) · [MVP assets](mvp_assets.md) · [owner decisions](../decisions/owner_decisions.md) (O50 to O64) · [ADR index and technology baseline](../ADR/README.md)
 
 ## 1 Purpose
 

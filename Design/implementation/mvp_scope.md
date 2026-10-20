@@ -247,7 +247,7 @@ The MVP builds only one region and one steward, but it keeps the seams that are 
 
 *Table 2 — The milestones of the MVP, their content and their exit criteria (MVP-002).*
 
-Each milestone is a series of pull requests that cite the MVP requirements they implement, as AGENTS.md §6 asks for requirement ids; a milestone's exit is recorded in the run log of the build (§7).
+Each milestone is a series of pull requests that cite the MVP requirements they implement, as AGENTS.md §6 asks for requirement ids; a milestone's exit is recorded in its milestone record in `playtests/` (§6.3).
 
 ## 4 Tuning table
 

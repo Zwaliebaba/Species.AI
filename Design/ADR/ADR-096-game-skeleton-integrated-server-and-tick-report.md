@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-10-20
 decision-makers: Species technology lead (M0 task T7)
 ---
@@ -111,3 +111,4 @@ Chosen option: "1".
 
 * Related: [ADR-079](ADR-079-simulation-tick-rate.md), [ADR-080](ADR-080-per-tick-budgets-and-population-caps.md), [ADR-082](ADR-082-counter-based-simulation-random-draws.md), [ADR-083](ADR-083-server-process-ownership-and-threading.md), [ADR-084](ADR-084-client-boundary-through-the-transport.md), [ADR-085](ADR-085-region-partitioned-world-simulation.md), [ADR-090](ADR-090-solution-and-project-layout.md), [ADR-092](ADR-092-first-window-device-and-presentation.md), [ADR-093](ADR-093-transport-interface-and-message-layout.md), [ADR-095](ADR-095-server-host-tick-loop-and-command-queue.md).
 * The code is in GameShared (`GameMessages`, `TickReport`, `StableId`), GameLogic (`WorldSimulation`, `RegionSimulation`, `StableIdCounter`, `WorldServer`, `IntegratedServer`), GameClient (`ClientSession`), NeuronClient (`AppWindow::SetTitle`) and `Species.cpp`.
+* **Accepted 2026-10-20, at the end of M0.** Every item of the Confirmation is met. The tests and the fixture pass in CI, and in the owner's run the title's tick rose by about 10 a second (`playtests/M0.md`).

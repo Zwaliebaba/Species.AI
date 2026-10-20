@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-10-20
 decision-makers: owner (O66); Species technology lead
 ---
@@ -105,3 +105,4 @@ Measured on the owner's PC on 2026-10-20, with Visual Studio 2026 18.11 and MSVC
 
 * Related: [ADR-050](ADR-050-client-platform-and-minimum-os.md), [ADR-051](ADR-051-windows-toolchain-and-compiler-policy.md), [ADR-054](ADR-054-build-system-msbuild-solution.md), [ADR-055](ADR-055-dependencies-three-nuget-packages.md), [ADR-070](ADR-070-continuous-integration.md), [ADR-081](ADR-081-numeric-model-and-determinism-scope.md); owner decision O66.
 * Component: build tooling and distribution (`BLD`), whose table 2.1-B, BLD-030 and BLD-040 carry an amendment note to this record.
+* **Accepted 2026-10-20, at the end of M0.** The Confirmation holds on `b8c4d2e`: the four configurations build with no warning, and 137 tests pass in Debug and 136 in Release on both platforms (`playtests/M0.md`).

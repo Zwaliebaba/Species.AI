@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-10-20
 decision-makers: Species technology lead (M0 task T11)
 ---
@@ -105,3 +105,4 @@ Chosen option: "1".
 
 * Related: [ADR-080](ADR-080-per-tick-budgets-and-population-caps.md), [ADR-083](ADR-083-server-process-ownership-and-threading.md), [ADR-088](ADR-088-transport-messages-identity-and-diagnostics.md), [ADR-089](ADR-089-msquic-transport-package.md), [ADR-090](ADR-090-solution-and-project-layout.md), [ADR-092](ADR-092-first-window-device-and-presentation.md), [ADR-098](ADR-098-tuning-in-data-and-the-schema-generator.md), [ADR-099](ADR-099-world-snapshots.md).
 * The code is in NeuronCore (`ConsoleStop`, `NativeWindowHandle.h`), `SpeciesServer` and `Build\CheckServerImports.py`.
+* **Accepted 2026-10-20, at the end of M0.** Every item of the Confirmation is met. CI's check of the headless server's libraries passed on `b8c4d2e` (run 39389449659). In the owner's run, `SpeciesServer.exe` printed its run id and period, froze on Ctrl+C with exit code 0 and on a closed console, and refused a `tick_period` of -1 (`playtests/M0.md`).
