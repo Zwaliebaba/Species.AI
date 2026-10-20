@@ -47,6 +47,9 @@
     <ClCompile Include="PlatformLogSinkTests.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
+    <ClCompile Include="PlatformMessageTests.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
     <ClCompile Include="PlatformThreadTests.cpp">
       <Filter>Platform</Filter>
     </ClCompile>

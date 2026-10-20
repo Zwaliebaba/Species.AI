@@ -45,7 +45,13 @@
     <ClInclude Include="PlatformClock.h">
       <Filter>Platform</Filter>
     </ClInclude>
+    <ClInclude Include="PlatformError.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
     <ClInclude Include="PlatformLogSink.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="PlatformMessage.h">
       <Filter>Platform</Filter>
     </ClInclude>
     <ClInclude Include="PlatformThread.h">
@@ -53,6 +59,9 @@
     </ClInclude>
     <ClInclude Include="Profile.h">
       <Filter>Profiling</Filter>
+    </ClInclude>
+    <ClInclude Include="RunId.h">
+      <Filter>Platform</Filter>
     </ClInclude>
     <ClInclude Include="TextEncoding.h">
       <Filter>Platform</Filter>
@@ -95,11 +104,17 @@
     <ClCompile Include="PlatformLogSink.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
+    <ClCompile Include="PlatformMessage.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
     <ClCompile Include="PlatformThread.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
     <ClCompile Include="Profile.cpp">
       <Filter>Profiling</Filter>
+    </ClCompile>
+    <ClCompile Include="RunId.cpp">
+      <Filter>Platform</Filter>
     </ClCompile>
     <ClCompile Include="TextEncoding.cpp">
       <Filter>Platform</Filter>

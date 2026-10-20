@@ -97,9 +97,29 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="AdapterChoice.h" />
+    <ClInclude Include="AppWindow.h" />
+    <ClInclude Include="DisplayAttempt.h" />
+    <ClInclude Include="FrameRenderer.h" />
+    <ClInclude Include="GpuResourceFactory.h" />
+    <ClInclude Include="GraphicsDevice.h" />
+    <ClInclude Include="InMemoryGpuResourceFactory.h" />
+    <ClInclude Include="PresentPolicy.h" />
+    <ClInclude Include="ResizeCoalescer.h" />
+    <ClInclude Include="WindowGeometry.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AdapterChoice.cpp" />
+    <ClCompile Include="AppWindow.cpp" />
+    <ClCompile Include="DisplayAttempt.cpp" />
+    <ClCompile Include="FrameRenderer.cpp" />
+    <ClCompile Include="GpuResourceFactory.cpp" />
+    <ClCompile Include="GraphicsDevice.cpp" />
+    <ClCompile Include="InMemoryGpuResourceFactory.cpp" />
+    <ClCompile Include="PresentPolicy.cpp" />
+    <ClCompile Include="ResizeCoalescer.cpp" />
+    <ClCompile Include="WindowGeometry.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

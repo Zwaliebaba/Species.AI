@@ -4,10 +4,15 @@
 
 #include "FatalPath.h"
 #include "PlatformLogSink.h"
+#include "PlatformMessage.h"
+#include "RunId.h"
 
+#include <array>
 #include <atomic>
 #include <cstdlib>
 #include <exception>
+#include <format>
+#include <string>
 
 namespace Neuron
 {
@@ -26,6 +31,21 @@ std::atomic<bool> g_inFatalPath{false};
 [[noreturn]] void OnPureCall() noexcept
 {
   EnterFatalPath("a pure virtual function was called");
+}
+
+// PLT-127 step 2. The message names the run id, never the reason, and a failure while composing it is ignored: the
+// process ends either way.
+void ShowInternalError() noexcept
+{
+  try
+  {
+    const std::array arguments{MessageArgument{"runId", FormatRunId(PlatformMessageRunId())}};
+    ShowPlatformMessage("ui.error.internal", arguments, MessageSeverity::Fatal);
+  }
+  catch (...)
+  {
+    return;
+  }
 }
 
 void OnInvalidParameter(const wchar_t*, const wchar_t*, const wchar_t*, unsigned int, std::uintptr_t) noexcept
@@ -57,12 +77,33 @@ void EnterFatalPath(std::string_view _reason) noexcept
 
 void FailFast([[maybe_unused]] std::string_view _reason) noexcept
 {
-  if (!g_failingFast.exchange(true, std::memory_order_acq_rel) && IsDebuggerPresent())
+  if (!g_failingFast.exchange(true, std::memory_order_acq_rel))
   {
-    __debugbreak();
+    if (IsDebuggerPresent())
+    {
+      __debugbreak();
+    }
+    else if (PlatformMessageOwner() != nullptr)
+    {
+      ShowInternalError();
+    }
   }
   RaiseFailFastException(nullptr, nullptr, FAIL_FAST_GENERATE_EXCEPTION_ADDRESS);
   __fastfail(FAST_FAIL_FATAL_APP_EXIT);
+}
+
+void FatalExit(std::string_view _stringId, std::span<const MessageArgument> _arguments)
+{
+  if (PlatformLogSink* sink = CurrentPlatformLogSink())
+  {
+    std::string record = std::format("fatal exit: {}", _stringId);
+    for (const MessageArgument& argument : _arguments)
+    {
+      record += std::format(" {}={}", argument.name, argument.value);
+    }
+    sink->RecordFatal(record);
+  }
+  EndWithMessage(_stringId, _arguments);
 }
 
 } // namespace Neuron

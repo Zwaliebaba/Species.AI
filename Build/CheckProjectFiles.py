@@ -131,6 +131,14 @@ PLATFORM_SERVICES = (
    'creates a thread other than through PlatformThread'),
 )
 WINDOW_CREATION = r'\bCreateWindow(?:Ex)?[AW]?\b'
+RENDERER_PROJECT = 'NeuronClient'                         # ADR-078: no other project includes Direct3D 12 or DXGI
+DIRECT3D_HEADER = re.compile(r'^(?:d3d12|dxgi|d3dx12)[a-z0-9_]*\.h$', re.IGNORECASE)
+CLIENT_FORMAT_HEADER = 'dxgiformat.h'                     # ADR-078: what the factory's clients see of DXGI
+PRAGMA_LIBRARY = re.compile(r'^\s*#\s*pragma\s+comment\s*\(\s*lib\s*,\s*"([^"]+)"', re.MULTILINE)
+AGILITY_PACKAGE = 'Microsoft.Direct3D.D3D12'
+AGILITY_EXPORTS = 'Species/AgilitySdkExports.cpp'         # BLD-042: the constants Species.exe exports
+AGILITY_EXPORT_OPTIONS = ('/EXPORT:D3D12SDKVersion=AGILITY_SDK_VERSION,DATA', '/EXPORT:D3D12SDKPath=AGILITY_SDK_PATH,DATA')
+AGILITY_SDK_PATH = r'".\\D3D12\\"'                     # bld.pin.d3d12_sdk_path, as a C++ literal
 PIX_FILE = 'NeuronCore/Profile.cpp'                       # ADR-068, DBG-080: no other code calls the PIX runtime
 WINDOWS_HEADERS = 'NeuronCore/WindowsHeaders.h'           # PLT-132
 FILE_KIND_DEFAULTS = {'Source Files', 'Header Files', 'Resource Files'}
@@ -139,6 +147,9 @@ SHADER_EXTENSIONS = ('.hlsl', '.hlsli')
 BANNED_EXTENSIONS = ('.hpp', '.hh', '.hxx', '.h++', '.cc', '.cxx', '.c++', '.c', '.inl', '.ipp', '.tpp', '.ixx',
                      '.cppm', '.mpp', '.mxx')
 R7_EXCEPTIONS = {'pch', 'framework', 'targetver', 'Resource'}
+# R7 (owner decision O65): a program project also holds its application manifest and, with an icon, its resource script,
+# each named for the program and registered as the item kind MSBuild compiles it with.
+PROGRAM_FILE_KINDS = {'.manifest': 'Manifest', '.rc': 'ResourceCompile'}
 PASCAL_CASE = re.compile(r'^[A-Z][A-Za-z0-9]*$')
 SHADER_NAME = re.compile(r'^[A-Z][A-Za-z0-9]*(VS|PS|CS)\.hlsl$')
 SHADER_INCLUDE_NAME = re.compile(r'^[A-Z][A-Za-z0-9]*\.hlsli$')
@@ -306,7 +317,7 @@ def rule_3(tree):
   owned = set()
   for p in tree.projects:
     owned.add(p.directory + '/')
-    on_disk = [f for f in tree.project_files(p) if f.endswith(SOURCE_EXTENSIONS + SHADER_EXTENSIONS)
+    on_disk = [f for f in tree.project_files(p) if f.endswith(SOURCE_EXTENSIONS + SHADER_EXTENSIONS + tuple(PROGRAM_FILE_KINDS))
                and not f.startswith('CompiledShader/')]
     registered = {include for _, include, _ in p.items}
     for f in on_disk:
@@ -386,11 +397,19 @@ def git_tracked(root):
 
 def rule_5(tree):
   for p in tree.projects:
+    kinds = {include: kind for kind, include, _ in p.items}
     for f in tree.project_files(p):
       name = os.path.basename(f)
       stem, extension = os.path.splitext(name)
       if extension.lower() in BANNED_EXTENSIONS:
         yield f'{p.directory}/{f}', f'the file kind {extension} is not used; sources are .h and .cpp (AGENTS.md R7)'
+      if extension.lower() in PROGRAM_FILE_KINDS:
+        if p.name not in PROGRAMS:
+          yield f'{p.directory}/{f}', f'a {extension} file belongs to a program project only (AGENTS.md R7)'
+        elif stem != p.name:
+          yield f'{p.directory}/{f}', f'a program\'s {extension} file is {p.name}{extension} (AGENTS.md R7)'
+        elif f in kinds and kinds[f] != PROGRAM_FILE_KINDS[extension.lower()]:
+          yield f'{p.directory}/{f}', f'is a {kinds[f]} item, not a {PROGRAM_FILE_KINDS[extension.lower()]} item (AGENTS.md R7)'
       if extension in SOURCE_EXTENSIONS and not f.startswith('CompiledShader/'):
         if stem not in R7_EXCEPTIONS and not PASCAL_CASE.match(stem):
           yield f'{p.directory}/{f}', 'not named in PascalCase for its primary type (AGENTS.md R7)'
@@ -476,6 +495,37 @@ def rule_9(tree):
   committed = [f for f in (git_tracked(tree.root) if tree.git else tree.files) if f.startswith('packages/')]
   if committed:
     yield 'packages/', 'restored packages are build output and are never committed (BLD-036)'
+  yield from agility_exports(tree)
+
+
+def agility_exports(tree):
+  """BLD-042 and BLD T7: the exported D3D12SDKVersion is the minor version of the restored Agility SDK package, and
+  the path is bld.pin.d3d12_sdk_path; the client exports both, and the server neither."""
+  client = tree.by_name.get('Species')
+  if client is None or not any(package == AGILITY_PACKAGE for package, _ in client.packages):
+    return
+  if not os.path.exists(os.path.join(tree.root, AGILITY_EXPORTS)):
+    yield AGILITY_EXPORTS, f'missing: Species restores {AGILITY_PACKAGE} and exports no D3D12SDKVersion (BLD-042)'
+    return
+  text = strip_comments_only(tree.read(AGILITY_EXPORTS))
+  m = re.search(r'\bAGILITY_SDK_VERSION\s*=\s*(\d+)\s*;', text)
+  exported = m.group(1) if m else None
+  for p in tree.projects:
+    for package, version in p.packages:
+      parts = version.split('.')
+      if package == AGILITY_PACKAGE and (len(parts) < 2 or parts[1] != exported):
+        yield AGILITY_EXPORTS, f'exports D3D12SDKVersion {exported}, and {p.name} restores {package} {version} (BLD-042)'
+  if not re.search(r'\bAGILITY_SDK_PATH\s*=\s*' + re.escape(AGILITY_SDK_PATH) + r'\s*;', text):
+    yield AGILITY_EXPORTS, 'AGILITY_SDK_PATH is not ".\\\\D3D12\\\\" (bld.pin.d3d12_sdk_path, BLD-042)'
+  for c in SolutionModel.CONFIGURATIONS:
+    options = client.setting(c, 'Link.AdditionalOptions') or ''
+    for option in AGILITY_EXPORT_OPTIONS:
+      if option not in options:
+        yield client.path, f'{c} lacks the linker option {option} (BLD-042)'
+  server = tree.by_name.get(SERVER)
+  for c in SolutionModel.CONFIGURATIONS:
+    if server and 'D3D12SDK' in (server.setting(c, 'Link.AdditionalOptions') or ''):
+      yield server.path, f'{c} exports an Agility SDK constant; the server exports neither (BLD-042)'
 
 
 def read_pins(tree):
@@ -642,7 +692,20 @@ def rule_14(tree):
       for line, _, header in SolutionModel.includes(text):
         if header.lower() in ('pix3.h', 'pix3_win.h', 'pixevents.h'):
           yield f'{path}:{line}', f'includes {header}; only {os.path.basename(PIX_FILE)} calls the PIX runtime (DBG-080)'
+    for line, _, header in SolutionModel.includes(text):
+      name = os.path.basename(header.replace('\\', '/')).lower()
+      if name.startswith('d3dx12'):
+        yield f'{path}:{line}', f'includes {header}; the d3dx12 helpers are not used, barriers are written by hand (R14)'
+      elif project != RENDERER_PROJECT and DIRECT3D_HEADER.match(name) and name != CLIENT_FORMAT_HEADER:
+        yield f'{path}:{line}', f'includes {header} outside {RENDERER_PROJECT}; the factory\'s clients see its interface ' \
+                                f'and <{CLIENT_FORMAT_HEADER}> (ADR-078)'
     without_comments = strip_comments_only(text)
+    if project not in PRESENTATION_PROJECTS:
+      for m in PRAGMA_LIBRARY.finditer(without_comments):
+        library = m.group(1).lower()
+        if any(re.fullmatch(name + r'(?:\.lib)?', library) for name in PRESENTATION_LIBRARIES):
+          line = without_comments.count('\n', 0, m.start()) + 1
+          yield f'{path}:{line}', f'links {m.group(1)} outside the client libraries (ADR-001, BLD-045)'
     for m in REQUIREMENT_ATTRIBUTE.finditer(without_comments):
       if m.group(1) not in requirements:
         line = without_comments.count('\n', 0, m.start()) + 1
@@ -826,6 +889,16 @@ FIXTURES = [
    lambda r: write(r, 'GameClient/pch.h', '\ninline auto g_create = CreateWindowExW;\n', append=True)),
   (14, 'pix3.h included outside Profile.cpp (DBG-080)',
    lambda r: write(r, 'NeuronCore/Log.cpp', '\n#include <pix3.h>\n', append=True)),
+  (5, 'an application manifest in a library project',
+   lambda r: write(r, 'NeuronCore/NeuronCore.manifest', '<assembly />\n')),
+  (9, 'an exported D3D12SDKVersion that is not the package\'s minor version (BLD T7)',
+   lambda r: edit(r, AGILITY_EXPORTS, 'AGILITY_SDK_VERSION = 619;', 'AGILITY_SDK_VERSION = 618;')),
+  (14, 'd3d12.h included outside the renderer project (ADR-078)',
+   lambda r: write(r, 'GameClient/pch.h', '\n#include <d3d12.h>\n', append=True)),
+  (14, 'the d3dx12 helpers included (R14)',
+   lambda r: write(r, 'NeuronClient/pch.h', '\n#include "d3dx12.h"\n', append=True)),
+  (14, 'a Direct3D library linked by a pragma outside the client libraries (BLD-045)',
+   lambda r: write(r, 'NeuronServer/pch.h', '\n#pragma comment(lib, "d3d12.lib")\n', append=True)),
 ]
 
 

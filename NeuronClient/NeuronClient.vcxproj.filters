@@ -4,13 +4,82 @@
     <Filter Include="Build">
       <UniqueIdentifier>{458D2A6A-799F-5CF6-8C0D-83E7B6BC7744}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Rendering">
+      <UniqueIdentifier>{973C9E00-DB4C-58CB-9F18-2E2760A616CE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{6F15A163-9039-5BC4-B0C1-613F3DE3D3E0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Window">
+      <UniqueIdentifier>{FDEA9914-1245-5A48-854A-ED82E59F6831}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AdapterChoice.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="AppWindow.h">
+      <Filter>Window</Filter>
+    </ClInclude>
+    <ClInclude Include="DisplayAttempt.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="FrameRenderer.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="GpuResourceFactory.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="GraphicsDevice.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="InMemoryGpuResourceFactory.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="PresentPolicy.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="ResizeCoalescer.h">
+      <Filter>Window</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowGeometry.h">
+      <Filter>Window</Filter>
+    </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Build</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AdapterChoice.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="AppWindow.cpp">
+      <Filter>Window</Filter>
+    </ClCompile>
+    <ClCompile Include="DisplayAttempt.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="FrameRenderer.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="GpuResourceFactory.cpp">
+      <Filter>Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="GraphicsDevice.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="InMemoryGpuResourceFactory.cpp">
+      <Filter>Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="PresentPolicy.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="ResizeCoalescer.cpp">
+      <Filter>Window</Filter>
+    </ClCompile>
+    <ClCompile Include="WindowGeometry.cpp">
+      <Filter>Window</Filter>
+    </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Build</Filter>
     </ClCompile>

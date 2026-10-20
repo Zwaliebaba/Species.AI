@@ -15,7 +15,7 @@ import xml.etree.ElementTree as ElementTree
 MSBUILD = '{http://schemas.microsoft.com/developer/msbuild/2003}'
 CONFIGURATIONS = ('Debug', 'Release')
 CONDITION = re.compile(r"^\s*'\$\(Configuration\)\|\$\(Platform\)'\s*==\s*'(\w+)\|(\w+)'\s*$")
-ITEM_KINDS = ('ClCompile', 'ClInclude', 'FXCompile', 'None', 'Text', 'ResourceCompile', 'Image')
+ITEM_KINDS = ('ClCompile', 'ClInclude', 'FXCompile', 'None', 'Text', 'ResourceCompile', 'Image', 'Manifest')
 TOOLS = ('ClCompile', 'Link', 'Lib', 'FXCompile')
 
 

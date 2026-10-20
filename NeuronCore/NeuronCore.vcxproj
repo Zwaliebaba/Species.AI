@@ -105,9 +105,12 @@
     <ClInclude Include="LogBuffer.h" />
     <ClInclude Include="LogFile.h" />
     <ClInclude Include="PlatformClock.h" />
+    <ClInclude Include="PlatformError.h" />
     <ClInclude Include="PlatformLogSink.h" />
+    <ClInclude Include="PlatformMessage.h" />
     <ClInclude Include="PlatformThread.h" />
     <ClInclude Include="Profile.h" />
+    <ClInclude Include="RunId.h" />
     <ClInclude Include="TextEncoding.h" />
     <ClInclude Include="WindowsHeaders.h" />
     <ClInclude Include="pch.h" />
@@ -123,8 +126,10 @@
     <ClCompile Include="LogFile.cpp" />
     <ClCompile Include="PlatformClock.cpp" />
     <ClCompile Include="PlatformLogSink.cpp" />
+    <ClCompile Include="PlatformMessage.cpp" />
     <ClCompile Include="PlatformThread.cpp" />
     <ClCompile Include="Profile.cpp" />
+    <ClCompile Include="RunId.cpp" />
     <ClCompile Include="TextEncoding.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>

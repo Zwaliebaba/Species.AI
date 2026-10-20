@@ -4,21 +4,39 @@
     <Filter Include="Build">
       <UniqueIdentifier>{09BAF622-B8AD-5470-821D-54C55E1726A8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Rendering">
+      <UniqueIdentifier>{9D8CED02-7794-54EF-BBF2-9A64E2924DC8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{A64D2D55-D3FA-5439-BEF1-69CD1DE3A09A}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Tests">
       <UniqueIdentifier>{5EC12362-1F0E-5CDB-8A1C-DEFAE883EAA2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Window">
+      <UniqueIdentifier>{97B8FA24-6C4C-50F2-AA43-9214A929851E}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="TestSupport.h">
+      <Filter>Tests</Filter>
+    </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Build</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="GpuResourceFactoryTests.cpp">
+      <Filter>Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="PresentationTests.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="WindowGeometryTests.cpp">
+      <Filter>Window</Filter>
+    </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Build</Filter>
-    </ClCompile>
-    <ClCompile Include="SuiteSmoke.cpp">
-      <Filter>Tests</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
