@@ -72,7 +72,7 @@ public:
     for (const std::size_t workers : {std::size_t{0}, std::size_t{2}})
     {
       Neuron::WorkerPool pool(workers);
-      Species::WorldSimulation world({TEST_KEY, 50, 3});
+      Species::WorldSimulation world({TEST_KEY, 50, 3, &CommittedTuning()});
       ExpectEqual(3, static_cast<std::int64_t>(world.RegionCount()), L"regions");
       for (std::uint64_t tick = 50; tick < 60; ++tick)
       {
@@ -92,7 +92,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp093OwnersIssueStableIdsInOrder)
   {
-    Species::WorldSimulation world({TEST_KEY, 0, 1});
+    Species::WorldSimulation world({TEST_KEY, 0, 1, &CommittedTuning()});
     const Species::StableId first = world.Ids().Issue();
     const Species::StableId second = world.Ids().Issue();
     Assert::IsTrue(first == Species::MakeStableId(Species::WORLD_OWNER_ID, 1), L"the world's first id");
@@ -106,7 +106,7 @@ public:
   TEST_METHOD(Mvp094WorldCommandsExecuteAfterTheRegions)
   {
     // A command for an unknown type is refused on arrival with its reason, in the world owner's queue.
-    Species::WorldSimulation world({TEST_KEY, 0, 1});
+    Species::WorldSimulation world({TEST_KEY, 0, 1, &CommittedTuning()});
     Assert::IsFalse(world.Commands().Submit(world.Ids().Issue(), 0, Neuron::EncodeMessage(Species::TickReport{1})));
     ExpectEqual(1, static_cast<std::int64_t>(world.Commands().Rejections().unknownType), L"a message that is no command");
   }
