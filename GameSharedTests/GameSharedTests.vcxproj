@@ -168,6 +168,7 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="RegionTerrainTests.cpp" />
     <ClCompile Include="TestSupport.cpp" />
     <ClCompile Include="TickReportTests.cpp" />
     <ClCompile Include="TuningTests.cpp" />

@@ -180,8 +180,10 @@
     <ClCompile Include="PlatformMessageTests.cpp" />
     <ClCompile Include="PlatformThreadTests.cpp" />
     <ClCompile Include="ProfileTests.cpp" />
+    <ClCompile Include="Sha256Tests.cpp" />
     <ClCompile Include="SimRngTests.cpp" />
     <ClCompile Include="SipHashTests.cpp" />
+    <ClCompile Include="TerrainFieldTests.cpp" />
     <ClCompile Include="TestSupport.cpp" />
     <ClCompile Include="TextEncodingTests.cpp" />
     <ClCompile Include="TransportTests.cpp" />

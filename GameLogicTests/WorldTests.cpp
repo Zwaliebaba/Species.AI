@@ -2,6 +2,7 @@
 
 #include "InProcessTransport.h"
 #include "IntegratedServer.h"
+#include "RegionTerrain.h"
 #include "ServerHost.h"
 #include "TestSupport.h"
 #include "TickReport.h"
@@ -9,6 +10,7 @@
 #include "WorkerPool.h"
 #include "WorldServer.h"
 #include "WorldSimulation.h"
+#include "WorldTerrain.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -41,17 +43,24 @@ std::filesystem::path ContentRootWith(const TemporaryFolder& _folder, std::strin
   return _folder.Path();
 }
 
-// The tick reports a client end has received, in order.
-std::vector<std::uint64_t> TakeReports(Neuron::Transport& _client)
+// What a client end has received, in order: the world's terrain and the tick reports.
+struct Arrivals
 {
+  std::vector<Species::WorldTerrain> terrains;
   std::vector<std::uint64_t> ticks;
+};
+
+Arrivals TakeArrivals(Neuron::Transport& _client)
+{
+  Arrivals arrivals;
   Neuron::MessageDispatcher dispatcher;
-  dispatcher.Register<Species::TickReport>([&ticks](const Species::TickReport& _report) { ticks.push_back(_report.tick); });
+  dispatcher.Register<Species::WorldTerrain>([&arrivals](const Species::WorldTerrain& _terrain) { arrivals.terrains.push_back(_terrain); });
+  dispatcher.Register<Species::TickReport>([&arrivals](const Species::TickReport& _report) { arrivals.ticks.push_back(_report.tick); });
   while (std::optional<Neuron::ReceivedMessage> message = _client.Receive())
   {
-    Assert::IsTrue(dispatcher.Dispatch(message->bytes), L"only tick reports arrive");
+    Assert::IsTrue(dispatcher.Dispatch(message->bytes), L"only the terrain and tick reports arrive");
   }
-  return ticks;
+  return arrivals;
 }
 
 } // namespace
@@ -122,11 +131,12 @@ public:
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp090EveryConnectionReceivesEachTicksReport)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-090")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-011")
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp090EveryConnectionReceivesEachTicksReport)
   {
     // The headless library and host with the game's world, on a manual clock (PLT-048): two clients, each sent the
-    // report of every tick after it connected.
+    // world's terrain once and the report of every tick after it connected.
     auto source = std::make_unique<Neuron::ManualTimeSource>();
     Neuron::ManualTimeSource* manual = source.get();
     const Neuron::PlatformClock clock(std::move(source));
@@ -159,9 +169,14 @@ public:
     }
     host.Stop();
 
+    Assert::IsTrue(world.Terrain() != nullptr, L"the world opened with its terrain");
     for (Neuron::Transport* client : {first.get(), second.get()})
     {
-      const std::vector<std::uint64_t> ticks = TakeReports(*client);
+      const Arrivals arrivals = TakeArrivals(*client);
+      Assert::IsTrue(arrivals.terrains.size() == 1 && arrivals.terrains[0].seed == world.Terrain()->seed &&
+                       arrivals.terrains[0].digest == world.Terrain()->digest,
+                     L"the terrain's seed and digest, once");
+      const std::vector<std::uint64_t>& ticks = arrivals.ticks;
       ExpectEqual(11, static_cast<std::int64_t>(ticks.size()), L"a report a tick, from the first");
       for (std::size_t n = 0; n < ticks.size(); ++n)
       {
@@ -169,6 +184,26 @@ public:
       }
     }
     Assert::IsTrue(world.Simulation() != nullptr && world.Simulation()->NextTick() == 11, L"the world froze before tick 11");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp005AWorldIsBuiltFromItsSeed)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-005")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-011")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp005AWorldIsBuiltFromItsSeed)
+  {
+    // A given seed builds its terrain when the world opens, outside every tick, and the world and its region hold it;
+    // with none, the server draws a seed of 32 bits, which a re-roll raises by at most seven.
+    Species::WorldServer given({.tuning = CommittedTuning(), .worldSeed = 1});
+    static_cast<void>(given.Open());
+    const auto expected = Species::GenerateRegionTerrain(1, CommittedTuning());
+    Assert::IsTrue(expected.has_value() && given.Terrain() != nullptr && given.Terrain()->digest == expected->digest, L"seed 1's terrain");
+    Assert::IsTrue(given.Simulation()->WorldSeed() == 1 && given.Simulation()->Region(0).Terrain() == given.Terrain(),
+                   L"the world holds the seed, and its region the terrain");
+    Species::WorldServer drawn({.tuning = CommittedTuning()});
+    static_cast<void>(drawn.Open());
+    Assert::IsTrue(drawn.Terrain() != nullptr && drawn.Simulation()->WorldSeed() == drawn.Terrain()->seed, L"a drawn seed's terrain");
+    Assert::IsTrue(drawn.Terrain()->seed < (std::uint64_t{1} << 32) + 8, L"a seed that can be typed again");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp094AClientsCommandEntersTheValidatedPath)
@@ -228,8 +263,8 @@ public:
     std::vector<std::uint64_t> ticks;
     while (ticks.size() < 20)
     {
-      const std::vector<std::uint64_t> arrived = TakeReports(*client);
-      ticks.insert(ticks.end(), arrived.begin(), arrived.end());
+      const Arrivals arrived = TakeArrivals(*client);
+      ticks.insert(ticks.end(), arrived.ticks.begin(), arrived.ticks.end());
       clock.WaitUntil(clock.Now() + Neuron::Nanoseconds{2'000'000});
     }
     server.Stop();

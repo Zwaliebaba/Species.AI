@@ -8,6 +8,7 @@
 #include "StateHash.h"
 #include "TestSupport.h"
 #include "WorkerPool.h"
+#include "RegionTerrain.h"
 #include "WorldServer.h"
 #include "WorldSimulation.h"
 #include "WorldSnapshot.h"
@@ -28,11 +29,13 @@ namespace
 
 constexpr Neuron::SipHashKey SNAPSHOT_TEST_KEY{0x0f0f0f0f0f0f0f0f, 0x7777777777777777};
 constexpr Neuron::Nanoseconds SNAPSHOT_TEST_TICK_PERIOD{100'000'000}; // `ref.sim.tick_period`
+constexpr std::uint64_t SNAPSHOT_TEST_SEED = 99;
 
 // A world of three regions after 25 ticks, with ids issued by the world owner, so its state differs from a new world's.
 std::unique_ptr<Species::WorldSimulation> SteppedWorld(Neuron::WorkerPool& _pool)
 {
-  auto world = std::make_unique<Species::WorldSimulation>(Species::WorldSimulation::Desc{SNAPSHOT_TEST_KEY, 0, 3, &CommittedTuning()});
+  auto world = std::make_unique<Species::WorldSimulation>(
+    Species::WorldSimulation::Desc{SNAPSHOT_TEST_KEY, 0, 3, &CommittedTuning(), SNAPSHOT_TEST_SEED});
   for (std::uint64_t tick = 0; tick < 25; ++tick)
   {
     world->Step(tick, _pool);
@@ -117,6 +120,7 @@ public:
     Assert::IsTrue(world.SimulationKey().low == SNAPSHOT_TEST_KEY.low && world.SimulationKey().high == SNAPSHOT_TEST_KEY.high,
                    L"the simulation key is kept");
     ExpectEqual(3, static_cast<std::int64_t>(world.RegionCount()), L"the regions");
+    ExpectEqual(static_cast<std::int64_t>(SNAPSHOT_TEST_SEED), static_cast<std::int64_t>(world.WorldSeed()), L"the world seed is kept");
     Assert::IsTrue(Species::HashWorld(world).world == Species::HashWorld(*saved).world, L"the same state");
     for (std::uint64_t tick = 25; tick < 35; ++tick)
     {
@@ -157,6 +161,34 @@ public:
       static_cast<void>(fresh.Ids().Issue());
     }
     ExpectEqual(0, static_cast<std::int64_t>((*restored)->Region(1).TeamCount()), L"no teams");
+    ExpectEqual(0, static_cast<std::int64_t>((*restored)->WorldSeed()), L"seed 0");
+    Assert::IsTrue(Species::HashWorld(**restored).world == Species::HashWorld(fresh).world, L"the world it was, in today's layout");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp095AVersionTwoWorldMigratesToSeedZero)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-095")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp095AVersionTwoWorldMigratesToSeedZero)
+  {
+    // M1 task T2's layout: version 1's with each region's team slots after its queue, here none. It restores as the
+    // same world with seed 0, from which the world server builds its terrain (ADR-102).
+    constexpr std::uint64_t TICK = 12;
+    Neuron::BitWriter state;
+    state.WriteBits(SNAPSHOT_TEST_KEY.low, 64);
+    state.WriteBits(SNAPSHOT_TEST_KEY.high, 64);
+    state.WriteBits(1, 16);
+    state.WriteBits(TICK, 64);
+    state.WriteBits(1, 64);
+    state.WriteBounded(0, Neuron::COMMAND_QUEUE_STATE_MAX);
+    state.WriteBits(0, 16);
+    state.WriteBits(TICK, 64);
+    state.WriteBits(1, 64);
+    state.WriteBounded(0, Neuron::COMMAND_QUEUE_STATE_MAX);
+    state.WriteBounded(0, Species::RegionSimulation::TEAM_SLOTS);
+    auto restored = Species::RestoreWorld(Neuron::SnapshotContents{2, TICK, state.Take()}, CommittedTuning());
+    Assert::IsTrue(restored.has_value(), L"a version-2 world restores");
+    ExpectEqual(0, static_cast<std::int64_t>((*restored)->WorldSeed()), L"seed 0");
+    const Species::WorldSimulation fresh({SNAPSHOT_TEST_KEY, TICK, 1, &CommittedTuning()});
     Assert::IsTrue(Species::HashWorld(**restored).world == Species::HashWorld(fresh).world, L"the world it was, in today's layout");
   }
 
@@ -205,6 +237,7 @@ public:
     const TemporaryFolder folder;
     Species::WorldServer::Desc desc;
     desc.tuning = CommittedTuning();
+    desc.worldSeed = 5;
     desc.snapshotFolder = folder.Path() / L"saves";
     Species::WorldServer first(desc);
     RunAndFreeze(first, 5);
@@ -221,6 +254,8 @@ public:
                      second.Simulation()->SimulationKey().high == key.high,
                    L"the same world's key");
     Assert::IsTrue(Species::HashWorld(*second.Simulation()).world == hash, L"the same state");
+    Assert::IsTrue(second.Terrain() != nullptr && second.Terrain()->seed == 5 && second.Terrain()->digest == first.Terrain()->digest,
+                   L"the same terrain, built again from the saved seed");
 
     Species::WorldServer third(desc);
     RunAndFreeze(third, 3);

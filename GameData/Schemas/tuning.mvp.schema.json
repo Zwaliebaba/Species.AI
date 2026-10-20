@@ -57,10 +57,19 @@
               "x-species-type": "count",
               "x-species-unit": "AI settlements",
               "x-species-presence": "required"
+            },
+            "region_cell": {
+              "type": "integer",
+              "description": "mvp.world.region_cell (MVP-010)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "region cells",
+              "x-species-presence": "required"
             }
           },
           "required": [
-            "ai_count"
+            "ai_count",
+            "region_cell"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -1055,6 +1064,162 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "terrain": {
+          "type": "object",
+          "description": "the mvp.terrain.* keys",
+          "properties": {
+            "base_method": {
+              "type": "integer",
+              "description": "mvp.terrain.base_method (MVP-011, WLD-162)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "TileMethod",
+              "x-species-presence": "required"
+            },
+            "base_fractal_dimension": {
+              "type": "number",
+              "description": "mvp.terrain.base_fractal_dimension (MVP-011, WLD-162)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "fractal dimension",
+              "x-species-presence": "required"
+            },
+            "base_height_scale": {
+              "type": "number",
+              "description": "mvp.terrain.base_height_scale (MVP-011, WLD-162)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "height scale",
+              "x-species-presence": "required"
+            },
+            "base_desired_height": {
+              "type": "number",
+              "description": "mvp.terrain.base_desired_height (MVP-011, WLD-162)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "base_lowland_smoothing": {
+              "type": "number",
+              "description": "mvp.terrain.base_lowland_smoothing (MVP-011, WLD-162)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "lowland smoothing",
+              "x-species-presence": "required"
+            },
+            "guide_rim": {
+              "type": "integer",
+              "description": "mvp.terrain.guide_rim (MVP-011, WLD-162)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "guide height",
+              "x-species-presence": "required"
+            },
+            "guide_edge": {
+              "type": "integer",
+              "description": "mvp.terrain.guide_edge (MVP-011, WLD-162)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "guide height",
+              "x-species-presence": "required"
+            },
+            "guide_center": {
+              "type": "integer",
+              "description": "mvp.terrain.guide_center (MVP-011, WLD-162)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "guide height",
+              "x-species-presence": "required"
+            },
+            "hill_method": {
+              "type": "integer",
+              "description": "mvp.terrain.hill_method (MVP-011, WLD-162)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "TileMethod",
+              "x-species-presence": "required"
+            },
+            "hill_fractal_dimension": {
+              "type": "number",
+              "description": "mvp.terrain.hill_fractal_dimension (MVP-011, WLD-162)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "fractal dimension",
+              "x-species-presence": "required"
+            },
+            "hill_height_scale": {
+              "type": "number",
+              "description": "mvp.terrain.hill_height_scale (MVP-011, WLD-162)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "height scale",
+              "x-species-presence": "required"
+            },
+            "hill_lowland_smoothing": {
+              "type": "number",
+              "description": "mvp.terrain.hill_lowland_smoothing (MVP-011, WLD-162)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "lowland smoothing",
+              "x-species-presence": "required"
+            },
+            "hill_desired_min": {
+              "type": "number",
+              "description": "mvp.terrain.hill_desired_min (MVP-011, WLD-162)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "hill_desired_max": {
+              "type": "number",
+              "description": "mvp.terrain.hill_desired_max (MVP-011, WLD-162)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "hill_inset": {
+              "type": "number",
+              "description": "mvp.terrain.hill_inset (MVP-011, WLD-162)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "base_method",
+            "base_fractal_dimension",
+            "base_height_scale",
+            "base_desired_height",
+            "base_lowland_smoothing",
+            "guide_rim",
+            "guide_edge",
+            "guide_center",
+            "hill_method",
+            "hill_fractal_dimension",
+            "hill_height_scale",
+            "hill_lowland_smoothing",
+            "hill_desired_min",
+            "hill_desired_max",
+            "hill_inset"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
@@ -1088,7 +1253,8 @@
         "stats",
         "presence",
         "persist",
-        "client"
+        "client",
+        "terrain"
       ],
       "additionalProperties": false,
       "x-species-type": "object",
@@ -1188,13 +1354,56 @@
               "additionalProperties": false,
               "x-species-type": "object",
               "x-species-presence": "required"
+            },
+            "physics": {
+              "type": "object",
+              "description": "the ref.sim.physics.* keys",
+              "properties": {
+                "sea_level": {
+                  "type": "number",
+                  "description": "ref.sim.physics.sea_level (TER-005, R-SIM-365)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "sea_level"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "walk": {
+              "type": "object",
+              "description": "the ref.sim.walk.* keys",
+              "properties": {
+                "min_normal_y": {
+                  "type": "number",
+                  "description": "ref.sim.walk.min_normal_y (R-SIM-335, WLD-163)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "normal y component",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "min_normal_y"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
             }
           },
           "required": [
             "tick_period",
             "update_slices",
             "container",
-            "spawn"
+            "spawn",
+            "physics",
+            "walk"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -1250,13 +1459,22 @@
                   "x-species-type": "sim_decimal",
                   "x-species-unit": "× damage",
                   "x-species-presence": "required"
+                },
+                "shore_height": {
+                  "type": "number",
+                  "description": "ref.unit.worker.shore_height (R-UNIT-112, WLD-163)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
                 "health",
                 "speed",
                 "rate",
-                "formation_explosive_factor"
+                "formation_explosive_factor",
+                "shore_height"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -1359,13 +1577,305 @@
       "additionalProperties": false,
       "x-species-type": "object",
       "x-species-presence": "required"
+    },
+    "wld": {
+      "type": "object",
+      "description": "the wld.* keys",
+      "properties": {
+        "region": {
+          "type": "object",
+          "description": "the wld.region.* keys",
+          "properties": {
+            "side": {
+              "type": "number",
+              "description": "wld.region.side (WLD-020)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "channel_width": {
+              "type": "number",
+              "description": "wld.region.channel_width (WLD-021)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "side",
+            "channel_width"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "site": {
+          "type": "object",
+          "description": "the wld.site.* keys",
+          "properties": {
+            "spacing": {
+              "type": "number",
+              "description": "wld.site.spacing (WLD-040)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "valley_offset": {
+              "type": "number",
+              "description": "wld.site.valley_offset (WLD-040)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "valley_rotation": {
+              "type": "number",
+              "description": "wld.site.valley_rotation (WLD-040)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "degrees",
+              "x-species-presence": "required"
+            },
+            "core_radius": {
+              "type": "number",
+              "description": "wld.site.core_radius (WLD-041)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "height_min": {
+              "type": "number",
+              "description": "wld.site.height_min (WLD-041)",
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "height_max": {
+              "type": "number",
+              "description": "wld.site.height_max (WLD-041)",
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "rim_step_max": {
+              "type": "number",
+              "description": "wld.site.rim_step_max (WLD-041)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "core_min_normal_y": {
+              "type": "number",
+              "description": "wld.site.core_min_normal_y (WLD-041)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "normal y component",
+              "x-species-presence": "required"
+            },
+            "water_clearance": {
+              "type": "number",
+              "description": "wld.site.water_clearance (WLD-041)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "spacing",
+            "valley_offset",
+            "valley_rotation",
+            "core_radius",
+            "height_min",
+            "height_max",
+            "rim_step_max",
+            "core_min_normal_y",
+            "water_clearance"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "terrain": {
+          "type": "object",
+          "description": "the wld.terrain.* keys",
+          "properties": {
+            "cell_size": {
+              "type": "number",
+              "description": "wld.terrain.cell_size (WLD-162)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "chunk_side": {
+              "type": "number",
+              "description": "wld.terrain.chunk_side (WLD-166)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "outside_height": {
+              "type": "number",
+              "description": "wld.terrain.outside_height (WLD-001, WLD-162)",
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "hills_per_region": {
+              "type": "integer",
+              "description": "wld.terrain.hills_per_region (WLD-162)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "hill tiles",
+              "x-species-presence": "required"
+            },
+            "hill_side": {
+              "type": "number",
+              "description": "wld.terrain.hill_side (WLD-162)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "peak_height_max": {
+              "type": "number",
+              "description": "wld.terrain.peak_height_max (WLD-162)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "core_feather": {
+              "type": "number",
+              "description": "wld.terrain.core_feather (WLD-162)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "center_half_size": {
+              "type": "number",
+              "description": "wld.terrain.center_half_size (WLD-162, WLD-083)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "center_feather": {
+              "type": "number",
+              "description": "wld.terrain.center_feather (WLD-162)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "rim_samples": {
+              "type": "integer",
+              "description": "wld.terrain.rim_samples (WLD-162)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "height samples",
+              "x-species-presence": "required"
+            },
+            "tiles_per_region_max": {
+              "type": "integer",
+              "description": "wld.terrain.tiles_per_region_max (WLD-162)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "tiles",
+              "x-species-presence": "required"
+            },
+            "flatten_per_region_max": {
+              "type": "integer",
+              "description": "wld.terrain.flatten_per_region_max (WLD-162)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "flatten areas",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "cell_size",
+            "chunk_side",
+            "outside_height",
+            "hills_per_region",
+            "hill_side",
+            "peak_height_max",
+            "core_feather",
+            "center_half_size",
+            "center_feather",
+            "rim_samples",
+            "tiles_per_region_max",
+            "flatten_per_region_max"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "generation": {
+          "type": "object",
+          "description": "the wld.generation.* keys",
+          "properties": {
+            "max_attempts": {
+              "type": "integer",
+              "description": "wld.generation.max_attempts (WLD-163)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "generations",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "max_attempts"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        }
+      },
+      "required": [
+        "region",
+        "site",
+        "terrain",
+        "generation"
+      ],
+      "additionalProperties": false,
+      "x-species-type": "object",
+      "x-species-presence": "required"
     }
   },
   "required": [
     "schema",
     "version",
     "mvp",
-    "ref"
+    "ref",
+    "wld"
   ],
   "additionalProperties": false
 }

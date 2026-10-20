@@ -40,6 +40,7 @@ std::expected<void, std::vector<Neuron::ContentDiagnostic>> IntegratedServer::St
   }
   WorldServer::Desc world;
   world.tuning = *tuning;
+  world.worldSeed = m_desc.worldSeed;
   m_parts->world = std::make_unique<WorldServer>(world);
   Neuron::ServerHost::Desc host;
   host.clock = m_desc.clock;

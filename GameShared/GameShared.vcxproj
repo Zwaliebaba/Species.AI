@@ -146,15 +146,19 @@
   <ItemGroup>
     <ClInclude Include="FigureKind.h" />
     <ClInclude Include="GameMessages.h" />
+    <ClInclude Include="RegionTerrain.h" />
     <ClInclude Include="StableId.h" />
     <ClInclude Include="TickReport.h" />
     <ClInclude Include="Tuning.h" />
     <ClInclude Include="TuningMvp.h" />
+    <ClInclude Include="WorldTerrain.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="RegionTerrain.cpp" />
     <ClCompile Include="TickReport.cpp" />
     <ClCompile Include="Tuning.cpp" />
+    <ClCompile Include="WorldTerrain.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

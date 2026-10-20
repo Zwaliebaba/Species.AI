@@ -213,6 +213,8 @@ Table 4.7-A Tile edge cases.
 
 **TER-112** (MUST) The content build rejects, with a diagnostic, a tile whose result the generator does not define (DEC-015; see DEC-968 item 1): a size below 2 cell sizes (*req* ≤ 1, where ceilLog2(0) is −∞ and its integer conversion is undefined); a generation method other than 0, 1 or 2 (the base value is never set); and a guide grid whose cell count is not *r*².
 
+> **Amendment 2026-10-20 (M1 task T3; WLD-268; [ADR-102](../../../ADR/ADR-102-region-terrain-and-the-terrain-check-at-connection.md)).** WLD-268 defines generation method 3, so the build rejects a generation method other than 0 to 3.
+
 ### 4.8 Composition of tiles
 
 **TER-120** (MUST) A generated tile is merged into the height grid by:

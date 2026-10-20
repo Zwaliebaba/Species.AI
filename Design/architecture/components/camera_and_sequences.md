@@ -614,6 +614,8 @@ Caption: Listing 4.8-B, camera-animation playback (CAM-065 to CAM-068).
 
 > **Amendment 2026-10-18 (WLD-001; WLD-246; ADR-081).** A world's coordinates lie in [0, 71,680] wu with its land at the centre (WLD-001), so even the MVP's one region lies 33,280 to 38,400 wu from the origin on both axes, beyond the arena extents assumed here. The renderer therefore transforms positions relative to the camera (WLD-246), and the camera supplies its position to that transform and to picking in binary64, as the simulation holds positions (ADR-081 item 1). Its bounds come from the steward's areas (CAM-060 amendment), and the strategic zoom waits for a world of more than one region (MVP scope §5.1).
 
+> **Amendment 2026-10-20 (M1 task T3; WLD-020; [ADR-102](../../ADR/ADR-102-region-terrain-and-the-terrain-check-at-connection.md)).** The MVP's region is grid cell `mvp.world.region_cell` (6) on both axes, 30,720 to 35,840 wu from the origin: a region is aligned with the terrain chunks (WLD-020), and the land of one region cannot stand at the exact centre of an extent of 14 cells, so the figure of 33,280 to 38,400 wu above is replaced. The conclusion is unchanged.
+
 ### 4.12 Presentation timeline baseline
 
 **CAM-100** (MUST) A presentation timeline exists only if the design phase adopts option A of DEC-051. Until then no match path runs a timeline, which is the reference behaviour: the reference has no script, cut-scene or narrator (DEC-053, DEC-052), its tutorials use the start-of-match camera of every match (R-TUT-001), and its only scripted camera operations in a match are the cuts of §4.7. The rules of this section are the baseline that such a timeline follows.

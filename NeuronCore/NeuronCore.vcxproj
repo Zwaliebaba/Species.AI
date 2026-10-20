@@ -169,9 +169,11 @@
     <ClInclude Include="RecordReader.h" />
     <ClInclude Include="RunId.h" />
     <ClInclude Include="SecureRandom.h" />
+    <ClInclude Include="Sha256.h" />
     <ClInclude Include="SimRng.h" />
     <ClInclude Include="SipHash.h" />
     <ClInclude Include="StreamFraming.h" />
+    <ClInclude Include="TerrainField.h" />
     <ClInclude Include="TextEncoding.h" />
     <ClInclude Include="Transport.h" />
     <ClInclude Include="Vec3.h" />
@@ -202,9 +204,11 @@
     <ClCompile Include="RecordReader.cpp" />
     <ClCompile Include="RunId.cpp" />
     <ClCompile Include="SecureRandom.cpp" />
+    <ClCompile Include="Sha256.cpp" />
     <ClCompile Include="SimRng.cpp" />
     <ClCompile Include="SipHash.cpp" />
     <ClCompile Include="StreamFraming.cpp" />
+    <ClCompile Include="TerrainField.cpp" />
     <ClCompile Include="TextEncoding.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>

@@ -4,6 +4,7 @@
 #include "StableId.h"
 #include "TestSupport.h"
 #include "TickReport.h"
+#include "WorldTerrain.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -55,6 +56,37 @@ public:
     Assert::IsFalse(dispatcher.Dispatch(bytes));
     Assert::IsFalse(called, L"a handler never sees a broken message");
     ExpectEqual(1, static_cast<std::int64_t>(dispatcher.Drops().malformed), L"malformed drops");
+  }
+};
+
+TEST_CLASS(WorldTerrainTests)
+{
+public:
+  TEST_METHOD_CLEANUP(Cleanup)
+  {
+    ExpectNoDevelopmentCheck();
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp011TheWorldTerrainRoundTrips)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-011")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp011TheWorldTerrainRoundTrips)
+  {
+    Species::WorldTerrain sent;
+    sent.seed = 0xfedcba9876543210;
+    for (std::size_t n = 0; n < sent.digest.size(); ++n)
+    {
+      sent.digest[n] = static_cast<std::byte>(n * 7 + 1);
+    }
+    const std::vector<std::byte> bytes = Neuron::EncodeMessage(sent);
+    ExpectEqual(static_cast<std::int64_t>(Species::WorldTerrain::MAX_BYTES), static_cast<std::int64_t>(bytes.size()),
+                L"its header, its seed and its digest");
+    Neuron::MessageDispatcher dispatcher;
+    std::optional<Species::WorldTerrain> received;
+    dispatcher.Register<Species::WorldTerrain>([&received](const Species::WorldTerrain& _terrain) { received = _terrain; });
+    Assert::IsTrue(dispatcher.Dispatch(bytes), L"it decodes whole");
+    Assert::IsTrue(received && received->seed == sent.seed && received->digest == sent.digest, L"the same seed and digest");
+    Assert::IsTrue(Species::WorldTerrain::TYPE != Species::TickReport::TYPE, L"its own type id");
   }
 };
 

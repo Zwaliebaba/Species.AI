@@ -28,14 +28,18 @@ public:
     std::uint64_t nextTick = 0;
     std::uint16_t regionCount = 1;
     const TuningMvp* tuning = nullptr; // MVP-099: read when the server started, and outliving the world
+    std::uint64_t worldSeed = 0;       // MVP-005, WLD-161: the public seed the world's terrain is built from
   };
+
+  // The world owner's state as a snapshot of WORLD_STATE_VERSION 3 and later holds it, with the world seed (ADR-102).
+  static constexpr std::uint32_t STATE_VERSION_WITH_SEED = 3;
 
   explicit WorldSimulation(const Desc& _desc);
 
   void Step(std::uint64_t _tick, Neuron::WorkerPool& _workers);
 
-  // The world owner's own mutable values, canonically: the world tick, its id counter and its queued commands. The
-  // simulation key is held apart: a snapshot saves it, and no hash covers it (ADR-082 item 1).
+  // The world owner's own values, canonically: the world tick, the world seed, its id counter and its queued commands.
+  // The simulation key is held apart: a snapshot saves it, and no hash covers it (ADR-082 item 1).
   void WriteState(Neuron::BitWriter& _writer) const;
   // The world owner's values and then each region's, as a snapshot of _stateVersion holds them (ADR-099), into a world
   // made with the same key, tick and region count; false when they do not read whole.
@@ -49,6 +53,11 @@ public:
   [[nodiscard]] const Neuron::SipHashKey& SimulationKey() const noexcept
   {
     return m_key;
+  }
+  // The seed the world's terrain is built from (ADR-102); public, unlike the key.
+  [[nodiscard]] std::uint64_t WorldSeed() const noexcept
+  {
+    return m_worldSeed;
   }
   [[nodiscard]] std::size_t RegionCount() const noexcept
   {
@@ -78,6 +87,7 @@ public:
 private:
   Neuron::SipHashKey m_key;
   std::uint64_t m_nextTick;
+  std::uint64_t m_worldSeed;
   StableIdCounter m_ids;
   Neuron::CommandQueue m_commands;
   std::vector<std::unique_ptr<RegionSimulation>> m_regions;

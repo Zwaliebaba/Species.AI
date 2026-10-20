@@ -259,6 +259,22 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 |---|---|---|---|---|---|---|
 | `mvp.pace.session_factor` | 24 | times | — | provisional | MVP-070 | One hour of play is one world day; Playtest 1 judges whether a run of 8 hours feels like a week of a settlement's life |
 | `mvp.world.ai_count` | 3 | AI settlements | — | provisional | MVP-001 | Fixed by the four sites of one region |
+| `mvp.world.region_cell` | 6 | grid cells on each axis | — | provisional | MVP-010 | The region's cell of the extent of WLD-001, aligned with the chunks (WLD-020); 30,720 wu from the origin (ADR-102) |
+| `mvp.terrain.base_method` | 1 | `TileMethod` | — | provisional | MVP-011 | WLD-162's temperate set: the base tile averages a random opposite pair |
+| `mvp.terrain.base_fractal_dimension` | 2.0 | fractal dimension | — | provisional | MVP-011 | A larger value gives a smoother valley floor (WLD-268) |
+| `mvp.terrain.base_height_scale` | 0.25 | height scale | — | provisional | MVP-011 | — |
+| `mvp.terrain.base_desired_height` | 150 | wu | — | provisional | MVP-011 | The base tile's highest sample before the cores are levelled |
+| `mvp.terrain.base_lowland_smoothing` | 2.0 | lowland smoothing | — | provisional | MVP-011 | — |
+| `mvp.terrain.guide_rim` | 70 | guide height (of 255) | — | provisional | MVP-011 | The guide grid's rim, edge and centre values raise the floor towards the centre |
+| `mvp.terrain.guide_edge` | 80 | guide height (of 255) | — | provisional | MVP-011 | — |
+| `mvp.terrain.guide_center` | 90 | guide height (of 255) | — | provisional | MVP-011 | — |
+| `mvp.terrain.hill_method` | 0 | `TileMethod` | — | provisional | MVP-011 | The hill tiles average four parents |
+| `mvp.terrain.hill_fractal_dimension` | 1.2 | fractal dimension | — | provisional | MVP-011 | — |
+| `mvp.terrain.hill_height_scale` | 1.0 | height scale | — | provisional | MVP-011 | — |
+| `mvp.terrain.hill_lowland_smoothing` | 1.0 | lowland smoothing | — | provisional | MVP-011 | — |
+| `mvp.terrain.hill_desired_min` | 260 | wu | — | provisional | MVP-011 | A hill's desired height is drawn from this to the maximum (WLD-162) |
+| `mvp.terrain.hill_desired_max` | 340 | wu | — | provisional | MVP-011 | Below `wld.terrain.peak_height_max` (400 wu) |
+| `mvp.terrain.hill_inset` | 300 | wu | — | provisional | MVP-011 | WLD-162's distance of a hill tile inside the region border; see the WLD-162 amendment |
 | `mvp.vision.unit_radius` | 300 | wu | — | provisional | MVP-016 | Raise if AI settlements miss obvious threats; lower if the fog never hides anything |
 | `mvp.nav.node_spacing` | 320 | wu | — | provisional | MVP-017 | About 200 lattice nodes on the valley's land; lower it if routes miss narrow passes, raise it if the next-hop tables cost too much |
 | `mvp.settlement.start_workers` | 20 | Workers | — | provisional | MVP-020 | The first minutes must show a busy settlement |

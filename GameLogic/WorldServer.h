@@ -1,5 +1,6 @@
 #pragma once
 
+#include "RegionTerrain.h"
 #include "ServerHost.h"
 #include "Snapshot.h"
 #include "StableId.h"
@@ -19,17 +20,19 @@ namespace Species
 /// The game's world as the server host runs it (ADR-083, ADR-095): it opens and freezes the world, turns each
 /// connection into a steward, passes their messages to the command queue of the owner they address, and publishes each
 /// tick to every connection. With a snapshot folder it opens the newest snapshot that validates and saves one when it
-/// freezes (MVP-075, ADR-099); without one, or with none that validates, the world opens new and empty. At M0 every
-/// connection is a steward, and the tick report is all it publishes.
+/// freezes (MVP-075, ADR-099); without one, or with none that validates, the world opens new and empty. Opening builds
+/// the region's terrain from the world seed (MVP-011, ADR-102), outside every tick. Every connection is a steward; it
+/// receives the world's terrain once and then each tick's report.
 class WorldServer final : public Neuron::ServerWorld
 {
 public:
   struct Desc
   {
     std::uint16_t regionCount = 1;
-    TuningMvp tuning;                     // read when the server started (MVP-099); the world reads it while it runs
-    std::filesystem::path snapshotFolder; // where the world is saved when it freezes and restored when it opens; none: a new
-                                          // world each run (ADR-099)
+    TuningMvp tuning;                       // read when the server started (MVP-099); the world reads it while it runs
+    std::optional<std::uint64_t> worldSeed; // MVP-005: the seed a new world is built from; none: a seed the server draws
+    std::filesystem::path snapshotFolder;   // where the world is saved when it freezes and restored when it opens; none: a new
+                                            // world each run (ADR-099)
   };
 
   explicit WorldServer(const Desc& _desc);
@@ -58,18 +61,28 @@ public:
   {
     return m_desc.tuning;
   }
+  // The region's terrain once the world has opened; its seed is the one the world shows (MVP-005).
+  [[nodiscard]] const RegionTerrain* Terrain() const noexcept
+  {
+    return m_terrain.get();
+  }
 
 private:
   [[nodiscard]] std::size_t SnapshotsKept() const noexcept;
+  // WLD-160 to WLD-163 from _seed; none, logged, when no seed that MVP-011's re-roll reaches passes every check.
+  [[nodiscard]] std::shared_ptr<const RegionTerrain> BuildTerrain(std::uint64_t _seed) const;
+  void Adopt(std::unique_ptr<WorldSimulation> _world, std::shared_ptr<const RegionTerrain> _terrain);
 
   struct Steward
   {
     StableId id = 0;
     std::uint64_t commandsReceived = 0; // the sequence number of the next command (ADR-095)
+    bool terrainSent = false;           // MVP-011: the world's terrain goes to each connection once
   };
 
   Desc m_desc;
   std::unique_ptr<WorldSimulation> m_world;
+  std::shared_ptr<const RegionTerrain> m_terrain;
   std::map<Neuron::ConnectionId, Steward> m_stewards;
   std::optional<WorldHashes> m_lastHashes;
 };

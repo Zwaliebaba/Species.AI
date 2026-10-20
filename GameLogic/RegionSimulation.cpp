@@ -11,9 +11,6 @@ namespace Species
 namespace
 {
 
-// A region's team slots are numbered by a byte.
-constexpr std::size_t TEAMS_MAX = std::numeric_limits<std::uint8_t>::max() + std::size_t{1};
-
 SlicedPool<Figure> MakeFigurePool(const TuningMvp& _tuning)
 {
   return SlicedPool<Figure>(static_cast<std::uint32_t>(_tuning.ref.sim.container.ungroupedStep));
@@ -130,7 +127,7 @@ void RegionSimulation::WriteState(Neuron::BitWriter& _writer) const
   _writer.WriteBits(m_nextTick, 64);
   _writer.WriteBits(m_ids.Next(), 64);
   m_commands.WriteState(_writer);
-  _writer.WriteBounded(m_teams.size(), TEAMS_MAX);
+  _writer.WriteBounded(m_teams.size(), TEAM_SLOTS);
   for (const Team& team : m_teams)
   {
     team.figures.WriteState(_writer, [](Neuron::BitWriter& _out, const Figure& _figure) { WriteFigure(_out, _figure); });
@@ -157,7 +154,7 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
   {
     return true;
   }
-  const std::uint64_t teamCount = _reader.ReadBounded(TEAMS_MAX);
+  const std::uint64_t teamCount = _reader.ReadBounded(TEAM_SLOTS);
   if (_reader.Failed())
   {
     return false;

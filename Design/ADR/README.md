@@ -102,6 +102,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-099](ADR-099-world-snapshots.md) | World snapshots at M0: the file format, the store and the world's state version | Proposed | 2026-10-20 |
 | [ADR-100](ADR-100-headless-server-program.md) | The headless server program at M0: its composition root, its stop and the check of what it loads | Accepted | 2026-10-20 |
 | [ADR-101](ADR-101-region-teams-figures-and-update-slices.md) | Region teams, figures and the update slices: the region's first state | Proposed | 2026-10-20 |
+| [ADR-102](ADR-102-region-terrain-and-the-terrain-check-at-connection.md) | Region terrain: the terrain library, the region's generation and the terrain check at connection | Proposed | 2026-10-20 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

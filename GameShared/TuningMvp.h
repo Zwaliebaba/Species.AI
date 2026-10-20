@@ -30,6 +30,9 @@ struct TuningMvp
     {
       // mvp.world.ai_count, in AI settlements
       std::int64_t aiCount = 0;
+
+      // mvp.world.region_cell, in region cells
+      std::int64_t regionCell = 0;
     };
 
     struct Vision
@@ -326,6 +329,54 @@ struct TuningMvp
       std::int64_t figuresMax = 0;
     };
 
+    struct Terrain
+    {
+      // mvp.terrain.base_method, in TileMethod
+      std::int64_t baseMethod = 0;
+
+      // mvp.terrain.base_fractal_dimension, in fractal dimension
+      double baseFractalDimension = 0.0;
+
+      // mvp.terrain.base_height_scale, in height scale
+      double baseHeightScale = 0.0;
+
+      // mvp.terrain.base_desired_height, in wu
+      double baseDesiredHeight = 0.0;
+
+      // mvp.terrain.base_lowland_smoothing, in lowland smoothing
+      double baseLowlandSmoothing = 0.0;
+
+      // mvp.terrain.guide_rim, in guide height
+      std::int64_t guideRim = 0;
+
+      // mvp.terrain.guide_edge, in guide height
+      std::int64_t guideEdge = 0;
+
+      // mvp.terrain.guide_center, in guide height
+      std::int64_t guideCenter = 0;
+
+      // mvp.terrain.hill_method, in TileMethod
+      std::int64_t hillMethod = 0;
+
+      // mvp.terrain.hill_fractal_dimension, in fractal dimension
+      double hillFractalDimension = 0.0;
+
+      // mvp.terrain.hill_height_scale, in height scale
+      double hillHeightScale = 0.0;
+
+      // mvp.terrain.hill_lowland_smoothing, in lowland smoothing
+      double hillLowlandSmoothing = 0.0;
+
+      // mvp.terrain.hill_desired_min, in wu
+      double hillDesiredMin = 0.0;
+
+      // mvp.terrain.hill_desired_max, in wu
+      double hillDesiredMax = 0.0;
+
+      // mvp.terrain.hill_inset, in wu
+      double hillInset = 0.0;
+    };
+
     Pace pace;
     World world;
     Vision vision;
@@ -357,6 +408,7 @@ struct TuningMvp
     Presence presence;
     Persist persist;
     Client client;
+    Terrain terrain;
   };
 
   struct Ref
@@ -386,6 +438,18 @@ struct TuningMvp
         DefaultFront defaultFront;
       };
 
+      struct Physics
+      {
+        // ref.sim.physics.sea_level, in wu
+        double seaLevel = 0.0;
+      };
+
+      struct Walk
+      {
+        // ref.sim.walk.min_normal_y, in normal y component
+        double minNormalY = 0.0;
+      };
+
       // ref.sim.tick_period, in s
       double tickPeriod = 0.0;
 
@@ -394,6 +458,8 @@ struct TuningMvp
 
       Container container;
       Spawn spawn;
+      Physics physics;
+      Walk walk;
     };
 
     struct Unit
@@ -411,6 +477,9 @@ struct TuningMvp
 
         // ref.unit.worker.formation_explosive_factor, in × damage
         double formationExplosiveFactor = 0.0;
+
+        // ref.unit.worker.shore_height, in wu
+        double shoreHeight = 0.0;
       };
 
       struct Leader
@@ -449,8 +518,101 @@ struct TuningMvp
     Unit unit;
   };
 
+  struct Wld
+  {
+    struct Region
+    {
+      // wld.region.side, in wu
+      double side = 0.0;
+
+      // wld.region.channel_width, in wu
+      double channelWidth = 0.0;
+    };
+
+    struct Site
+    {
+      // wld.site.spacing, in wu
+      double spacing = 0.0;
+
+      // wld.site.valley_offset, in wu
+      double valleyOffset = 0.0;
+
+      // wld.site.valley_rotation, in degrees
+      double valleyRotation = 0.0;
+
+      // wld.site.core_radius, in wu
+      double coreRadius = 0.0;
+
+      // wld.site.height_min, in wu
+      double heightMin = 0.0;
+
+      // wld.site.height_max, in wu
+      double heightMax = 0.0;
+
+      // wld.site.rim_step_max, in wu
+      double rimStepMax = 0.0;
+
+      // wld.site.core_min_normal_y, in normal y component
+      double coreMinNormalY = 0.0;
+
+      // wld.site.water_clearance, in wu
+      double waterClearance = 0.0;
+    };
+
+    struct Terrain
+    {
+      // wld.terrain.cell_size, in wu
+      double cellSize = 0.0;
+
+      // wld.terrain.chunk_side, in wu
+      double chunkSide = 0.0;
+
+      // wld.terrain.outside_height, in wu
+      double outsideHeight = 0.0;
+
+      // wld.terrain.hills_per_region, in hill tiles
+      std::int64_t hillsPerRegion = 0;
+
+      // wld.terrain.hill_side, in wu
+      double hillSide = 0.0;
+
+      // wld.terrain.peak_height_max, in wu
+      double peakHeightMax = 0.0;
+
+      // wld.terrain.core_feather, in wu
+      double coreFeather = 0.0;
+
+      // wld.terrain.center_half_size, in wu
+      double centerHalfSize = 0.0;
+
+      // wld.terrain.center_feather, in wu
+      double centerFeather = 0.0;
+
+      // wld.terrain.rim_samples, in height samples
+      std::int64_t rimSamples = 0;
+
+      // wld.terrain.tiles_per_region_max, in tiles
+      std::int64_t tilesPerRegionMax = 0;
+
+      // wld.terrain.flatten_per_region_max, in flatten areas
+      std::int64_t flattenPerRegionMax = 0;
+    };
+
+    struct Generation
+    {
+      // wld.generation.max_attempts, in generations
+      std::int64_t maxAttempts = 0;
+    };
+
+    Region region;
+    Site site;
+    Terrain terrain;
+    Generation generation;
+  };
+
   Mvp mvp;
   Ref ref;
+  Wld wld;
 };
 
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::Pace& _out)
@@ -462,6 +624,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::World& _out)
 {
   _out.aiCount = _reader.Integer(_object, "ai_count", 0);
+  _out.regionCell = _reader.Integer(_object, "region_cell", 0);
   _reader.Close(_object);
 }
 
@@ -679,6 +842,26 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::Terrain& _out)
+{
+  _out.baseMethod = _reader.Integer(_object, "base_method", 0);
+  _out.baseFractalDimension = _reader.Decimal(_object, "base_fractal_dimension", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.baseHeightScale = _reader.Decimal(_object, "base_height_scale", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.baseDesiredHeight = _reader.Decimal(_object, "base_desired_height", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.baseLowlandSmoothing = _reader.Decimal(_object, "base_lowland_smoothing", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.guideRim = _reader.Integer(_object, "guide_rim", 0);
+  _out.guideEdge = _reader.Integer(_object, "guide_edge", 0);
+  _out.guideCenter = _reader.Integer(_object, "guide_center", 0);
+  _out.hillMethod = _reader.Integer(_object, "hill_method", 0);
+  _out.hillFractalDimension = _reader.Decimal(_object, "hill_fractal_dimension", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.hillHeightScale = _reader.Decimal(_object, "hill_height_scale", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.hillLowlandSmoothing = _reader.Decimal(_object, "hill_lowland_smoothing", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.hillDesiredMin = _reader.Decimal(_object, "hill_desired_min", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.hillDesiredMax = _reader.Decimal(_object, "hill_desired_max", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.hillInset = _reader.Decimal(_object, "hill_inset", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "pace"), _out.pace);
@@ -712,6 +895,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "presence"), _out.presence);
   ReadFields(_reader, _reader.Object(_object, "persist"), _out.persist);
   ReadFields(_reader, _reader.Object(_object, "client"), _out.client);
+  ReadFields(_reader, _reader.Object(_object, "terrain"), _out.terrain);
   _reader.Close(_object);
 }
 
@@ -735,12 +919,26 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim::Physics& _out)
+{
+  _out.seaLevel = _reader.Decimal(_object, "sea_level", {}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim::Walk& _out)
+{
+  _out.minNormalY = _reader.Decimal(_object, "min_normal_y", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim& _out)
 {
   _out.tickPeriod = _reader.Decimal(_object, "tick_period", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.updateSlices = _reader.Integer(_object, "update_slices", 0);
   ReadFields(_reader, _reader.Object(_object, "container"), _out.container);
   ReadFields(_reader, _reader.Object(_object, "spawn"), _out.spawn);
+  ReadFields(_reader, _reader.Object(_object, "physics"), _out.physics);
+  ReadFields(_reader, _reader.Object(_object, "walk"), _out.walk);
   _reader.Close(_object);
 }
 
@@ -750,6 +948,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.speed = _reader.Decimal(_object, "speed", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.rate = _reader.Decimal(_object, "rate", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.formationExplosiveFactor = _reader.Decimal(_object, "formation_explosive_factor", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.shoreHeight = _reader.Decimal(_object, "shore_height", {}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -785,10 +984,64 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Wld::Region& _out)
+{
+  _out.side = _reader.Decimal(_object, "side", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.channelWidth = _reader.Decimal(_object, "channel_width", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Wld::Site& _out)
+{
+  _out.spacing = _reader.Decimal(_object, "spacing", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.valleyOffset = _reader.Decimal(_object, "valley_offset", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.valleyRotation = _reader.Decimal(_object, "valley_rotation", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.coreRadius = _reader.Decimal(_object, "core_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.heightMin = _reader.Decimal(_object, "height_min", {}, Neuron::SimPrecision::Binary64);
+  _out.heightMax = _reader.Decimal(_object, "height_max", {}, Neuron::SimPrecision::Binary64);
+  _out.rimStepMax = _reader.Decimal(_object, "rim_step_max", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.coreMinNormalY = _reader.Decimal(_object, "core_min_normal_y", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.waterClearance = _reader.Decimal(_object, "water_clearance", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Wld::Terrain& _out)
+{
+  _out.cellSize = _reader.Decimal(_object, "cell_size", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.chunkSide = _reader.Decimal(_object, "chunk_side", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.outsideHeight = _reader.Decimal(_object, "outside_height", {}, Neuron::SimPrecision::Binary64);
+  _out.hillsPerRegion = _reader.Integer(_object, "hills_per_region", 0);
+  _out.hillSide = _reader.Decimal(_object, "hill_side", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.peakHeightMax = _reader.Decimal(_object, "peak_height_max", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.coreFeather = _reader.Decimal(_object, "core_feather", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.centerHalfSize = _reader.Decimal(_object, "center_half_size", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.centerFeather = _reader.Decimal(_object, "center_feather", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.rimSamples = _reader.Integer(_object, "rim_samples", 0);
+  _out.tilesPerRegionMax = _reader.Integer(_object, "tiles_per_region_max", 0);
+  _out.flattenPerRegionMax = _reader.Integer(_object, "flatten_per_region_max", 0);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Wld::Generation& _out)
+{
+  _out.maxAttempts = _reader.Integer(_object, "max_attempts", 0);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Wld& _out)
+{
+  ReadFields(_reader, _reader.Object(_object, "region"), _out.region);
+  ReadFields(_reader, _reader.Object(_object, "site"), _out.site);
+  ReadFields(_reader, _reader.Object(_object, "terrain"), _out.terrain);
+  ReadFields(_reader, _reader.Object(_object, "generation"), _out.generation);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "mvp"), _out.mvp);
   ReadFields(_reader, _reader.Object(_object, "ref"), _out.ref);
+  ReadFields(_reader, _reader.Object(_object, "wld"), _out.wld);
   _reader.Close(_object);
 }
 

@@ -4,6 +4,7 @@
 #include "BitWriter.h"
 #include "CommandQueue.h"
 #include "Figure.h"
+#include "RegionTerrain.h"
 #include "SimRng.h"
 #include "SlicedPool.h"
 #include "StableId.h"
@@ -13,6 +14,8 @@
 
 #include <cstdint>
 #include <functional>
+#include <limits>
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -32,6 +35,8 @@ public:
     SlicedPool<Figure> figures;
   };
 
+  // A region's team slots are numbered by a byte (R-SIM-221).
+  static constexpr std::size_t TEAM_SLOTS = std::size_t{std::numeric_limits<std::uint8_t>::max()} + 1;
   // A region's state as a snapshot of WORLD_STATE_VERSION 1 holds it, before its teams existed (ADR-099).
   static constexpr std::uint32_t STATE_VERSION_WITHOUT_TEAMS = 1;
 
@@ -96,6 +101,16 @@ public:
   {
     return *m_tuning;
   }
+  // The region's terrain (ADR-102): built from the world seed outside every tick and never changed (MVP-011), and
+  // derived rather than state, so neither the hash nor the snapshot holds it. None until the world server attaches it.
+  void AttachTerrain(std::shared_ptr<const RegionTerrain> _terrain) noexcept
+  {
+    m_terrain = std::move(_terrain);
+  }
+  [[nodiscard]] const RegionTerrain* Terrain() const noexcept
+  {
+    return m_terrain.get();
+  }
 
 #if ENGINE_DEVELOPMENT
   // A test's view of the update order: called before each figure's advance with its team, slot and slice.
@@ -117,6 +132,7 @@ private:
   Neuron::CommandQueue m_commands;
   std::uint64_t m_nextTick;
   std::vector<Team> m_teams;
+  std::shared_ptr<const RegionTerrain> m_terrain;
 #if ENGINE_DEVELOPMENT
   Neuron::DrawLedger m_ledger;
   AdvanceObserver m_advanceObserver;

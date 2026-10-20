@@ -9,7 +9,8 @@ namespace Species
 // for another message, and a removed message keeps its id unused.
 enum class GameMessageType : Neuron::MessageTypeId
 {
-  TickReport = Neuron::GAME_MESSAGE_TYPE_FIRST
+  TickReport = Neuron::GAME_MESSAGE_TYPE_FIRST,
+  WorldTerrain
 };
 
 [[nodiscard]] constexpr Neuron::MessageTypeId TypeIdOf(GameMessageType _type) noexcept

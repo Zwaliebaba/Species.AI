@@ -121,7 +121,8 @@ int Run()
       hostDesc.workers = SERVER_WORKERS;
       Neuron::ServerHost host(std::move(hostDesc), world);
       host.Start();
-      Print(stdout, std::format("the world runs, a tick every {} ms; Ctrl+C stops it",
+      // MVP-005: the seed that gives this world's terrain again.
+      Print(stdout, std::format("the world of seed {} runs, a tick every {} ms; Ctrl+C stops it", world.Terrain()->seed,
                                 std::chrono::duration_cast<std::chrono::milliseconds>(TickPeriodOf(world.Tuning())).count()));
       Neuron::WaitForConsoleStop();
       host.Stop();

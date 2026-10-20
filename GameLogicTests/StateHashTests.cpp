@@ -62,13 +62,14 @@ public:
   {
     // M0 task T8's done-when. The golden values change only with a reviewed change that names the rule it implements
     // (DBG-147); an independent model of the state layout of ADR-096 computes the same values. Changed by M1 task T2:
-    // each region writes its team slots after its commands (R-SIM-221), none in this empty world.
+    // each region writes its team slots after its commands (R-SIM-221), none in this empty world. Changed by M1 task
+    // T3: the world owner writes the world seed after the tick (ADR-102), seed 0 here.
     const GoldenRun one = Run600Ticks(1, 0);
-    Assert::IsTrue(one.last == 0x01f1cc61fa1fbdfe, L"the hash after 600 ticks of one region");
-    Assert::IsTrue(one.chain == 0xd960ba998138db29, L"the chain of 600 tick hashes of one region");
+    Assert::IsTrue(one.last == 0x13104c82d4453e9b, L"the hash after 600 ticks of one region");
+    Assert::IsTrue(one.chain == 0xfce31f2a253b4449, L"the chain of 600 tick hashes of one region");
     const GoldenRun three = Run600Ticks(3, 0);
-    Assert::IsTrue(three.last == 0x964ba6481aea089b, L"the hash after 600 ticks of three regions");
-    Assert::IsTrue(three.chain == 0x5293affe4cbe2af5, L"the chain of 600 tick hashes of three regions");
+    Assert::IsTrue(three.last == 0xd079c80868424bca, L"the hash after 600 ticks of three regions");
+    Assert::IsTrue(three.chain == 0x2909515825ac1211, L"the chain of 600 tick hashes of three regions");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp093TheHashesAgreeAtAnyWorkerCount)

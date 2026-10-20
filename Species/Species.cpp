@@ -16,6 +16,7 @@
 #include "PlatformMessage.h"
 #include "PlatformThread.h"
 #include "RunId.h"
+#include "Tuning.h"
 
 #include <array>
 #include <cstdint>
@@ -276,24 +277,37 @@ int Run()
       Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "no GameData folder beside the executable or above it");
       Neuron::EndWithMessage("ui.error.content_missing", {});
     }
+    // Logs each finding about the record and ends with its message; EndWithMessage does not return.
+    const auto endWithFindings = [](const std::vector<Neuron::ContentDiagnostic>& _findings)
+    {
+      bool missing = false;
+      for (const Neuron::ContentDiagnostic& diagnostic : _findings)
+      {
+        Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "{}", Neuron::FormatDiagnostic(diagnostic));
+        missing = missing || diagnostic.diagnosticClass == Neuron::DiagnosticClass::MissingRecord;
+      }
+      Neuron::EndWithMessage(missing ? "ui.error.content_missing" : "ui.error.content_damaged", {});
+    };
+    // The client reads its own copy of the record: it builds the world's terrain from the server's seed with its own
+    // data, as a client of a dedicated server does, and refuses a world whose digest differs (MVP-011).
+    const Neuron::RecordResult<TuningMvp> clientTuning = LoadTuningMvp(contentRoot.value_or(std::filesystem::path{}));
+    if (!clientTuning)
+    {
+      endWithFindings(clientTuning.error());
+    }
     IntegratedServer::Desc serverDesc;
     serverDesc.clock = &clock;
     serverDesc.contentRoot = contentRoot.value_or(std::filesystem::path{});
     IntegratedServer server(serverDesc);
     if (const auto started = server.Start(); !started)
     {
-      bool missing = false;
-      for (const Neuron::ContentDiagnostic& diagnostic : started.error())
-      {
-        Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "{}", Neuron::FormatDiagnostic(diagnostic));
-        missing = missing || diagnostic.diagnosticClass == Neuron::DiagnosticClass::MissingRecord;
-      }
-      Neuron::EndWithMessage(missing ? "ui.error.content_missing" : "ui.error.content_damaged", {});
+      endWithFindings(started.error());
     }
     ClientSession::Desc sessionDesc;
     sessionDesc.transport = server.Connect();
     sessionDesc.showTitle = [&window = *presentation.window](std::string_view _title) { window.SetTitle(_title); };
     sessionDesc.productName = std::string(PRODUCT_NAME);
+    sessionDesc.tuning = &*clientTuning;
     ClientSession session(std::move(sessionDesc));
 
     presentation.window->Show();

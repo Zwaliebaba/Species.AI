@@ -71,11 +71,17 @@
     <ClCompile Include="ProfileTests.cpp">
       <Filter>Profiling</Filter>
     </ClCompile>
+    <ClCompile Include="Sha256Tests.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
     <ClCompile Include="SimRngTests.cpp">
       <Filter>Maths</Filter>
     </ClCompile>
     <ClCompile Include="SipHashTests.cpp">
       <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="TerrainFieldTests.cpp">
+      <Filter>Tests</Filter>
     </ClCompile>
     <ClCompile Include="TestSupport.cpp">
       <Filter>Tests</Filter>

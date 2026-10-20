@@ -22,6 +22,9 @@
     <Filter Include="Records">
       <UniqueIdentifier>{8B5F8509-0985-5156-86DF-9A380AB51446}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Terrain">
+      <UniqueIdentifier>{5E502FD8-B9D6-5B75-A84D-F4BF84EF27D5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AuthoringParser.h">
@@ -102,6 +105,9 @@
     <ClInclude Include="SecureRandom.h">
       <Filter>Platform</Filter>
     </ClInclude>
+    <ClInclude Include="Sha256.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
     <ClInclude Include="SimRng.h">
       <Filter>Maths</Filter>
     </ClInclude>
@@ -110,6 +116,9 @@
     </ClInclude>
     <ClInclude Include="StreamFraming.h">
       <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="TerrainField.h">
+      <Filter>Terrain</Filter>
     </ClInclude>
     <ClInclude Include="TextEncoding.h">
       <Filter>Platform</Filter>
@@ -197,6 +206,9 @@
     <ClCompile Include="SecureRandom.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
+    <ClCompile Include="Sha256.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
     <ClCompile Include="SimRng.cpp">
       <Filter>Maths</Filter>
     </ClCompile>
@@ -205,6 +217,9 @@
     </ClCompile>
     <ClCompile Include="StreamFraming.cpp">
       <Filter>Network</Filter>
+    </ClCompile>
+    <ClCompile Include="TerrainField.cpp">
+      <Filter>Terrain</Filter>
     </ClCompile>
     <ClCompile Include="TextEncoding.cpp">
       <Filter>Platform</Filter>

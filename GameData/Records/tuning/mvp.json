@@ -7,7 +7,8 @@
       "session_factor": 24
     },
     "world": {
-      "ai_count": 3
+      "ai_count": 3,
+      "region_cell": 6
     },
     "vision": {
       "unit_radius": 300
@@ -135,6 +136,23 @@
     "client": {
       "fps_target": 60,
       "figures_max": 1500
+    },
+    "terrain": {
+      "base_method": 1,
+      "base_fractal_dimension": 2.0,
+      "base_height_scale": 0.25,
+      "base_desired_height": 150,
+      "base_lowland_smoothing": 2.0,
+      "guide_rim": 70,
+      "guide_edge": 80,
+      "guide_center": 90,
+      "hill_method": 0,
+      "hill_fractal_dimension": 1.2,
+      "hill_height_scale": 1.0,
+      "hill_lowland_smoothing": 1.0,
+      "hill_desired_min": 260,
+      "hill_desired_max": 340,
+      "hill_inset": 300
     }
   },
   "ref": {
@@ -150,6 +168,12 @@
           "y": 0,
           "z": 0
         }
+      },
+      "physics": {
+        "sea_level": 0
+      },
+      "walk": {
+        "min_normal_y": 0.8
       }
     },
     "unit": {
@@ -158,7 +182,8 @@
         "health": 50,
         "speed": 20,
         "rate": 3,
-        "formation_explosive_factor": 0.6
+        "formation_explosive_factor": 0.6,
+        "shore_height": 1
       },
       "leader": {
         "health": 255,
@@ -170,6 +195,40 @@
         "fade_ground_per_tick": 4,
         "fade_air_per_tick": 2
       }
+    }
+  },
+  "wld": {
+    "region": {
+      "side": 5120,
+      "channel_width": 256
+    },
+    "site": {
+      "spacing": 2080,
+      "valley_offset": 64,
+      "valley_rotation": 3,
+      "core_radius": 400,
+      "height_min": 20,
+      "height_max": 120,
+      "rim_step_max": 16,
+      "core_min_normal_y": 0.95,
+      "water_clearance": 600
+    },
+    "terrain": {
+      "cell_size": 16,
+      "chunk_side": 1024,
+      "outside_height": -10,
+      "hills_per_region": 2,
+      "hill_side": 640,
+      "peak_height_max": 400,
+      "core_feather": 320,
+      "center_half_size": 120,
+      "center_feather": 200,
+      "rim_samples": 16,
+      "tiles_per_region_max": 16,
+      "flatten_per_region_max": 32
+    },
+    "generation": {
+      "max_attempts": 8
     }
   }
 }

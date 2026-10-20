@@ -24,6 +24,8 @@ Notation used throughout: *r32*(*x*) rounds a binary64 value to the nearest bina
 
 > **Amendment 2026-10-18 (WLD-160; MVP-011; O55).** In a world the field is generated at world creation (WLD-160, WLD-165) from the tile and flatten records that the world generator places, and in the MVP by the client as well, from the world's seed (MVP-011); it is immutable for the life of the world, and the match world's lifetime of TER-010 reads as the world's.
 
+> **Amendment 2026-10-20 (M1 task T3; WLD-162; [ADR-102](../../../ADR/ADR-102-region-terrain-and-the-terrain-check-at-connection.md)).** A region of a world is generated on its own square (WLD-162), so the terrain definition also holds its grid's origin (*ox*, *oz*): sample (*i*, *j*) stands at (*ox* + *i* × cell size, *oz* + *j* × cell size), the positions of tiles and flatten areas are world coordinates, and every index this component derives from a position subtracts the origin first. A skirmish map's origin is (0, 0), so its fields and the conformance vectors are unchanged.
+
 **TER-003** (MUST) A terrain is a list of tiles. Each tile is an independent square fractal height map, produced by midpoint displacement (square and diamond steps) with its own private generator (R-SIM-609) and optionally pinned by a coarse guide grid of 8-bit heights. Each tile's highest sample is linearly rescaled to the tile's desired height, and the tile is resampled onto the world grid with a per-sample maximum, so a later tile can only raise terrain (DEC-025).
 
 **TER-004** (MUST) Flatten areas, axis-aligned squares with five operations, are applied after all tiles; they are the only operation that can lower terrain. There is no smoothing pass between tiles: the only smoothing is the bilinear resampling of TER-121 and the smooth operation of TER-143.
@@ -39,6 +41,8 @@ Notation used throughout: *r32*(*x*) rounds a binary64 value to the nearest bina
 **TER-009** (MUST) The baseline runtime model is the reference's: every participant generates the height field when the map loads, from the tile records of its map definition, as TER-060 specifies. Whether Species generates at load, bakes the height field in the content build, streams it for a large world or identifies it by a content hash is decided by the design phase (DEC-246, DEC-247; §8.3). No reference terrain is reproduced: Species maps are authored new, and the generator specification also defines the look of a new map tool (DEC-025, DEC-063).
 
 > **Amendment 2026-10-18 (WLD-160; WLD-166; MVP-011).** In the world game the server generates the terrain from the world's seed and bakes it into chunks (WLD-160, WLD-166), which A1 gives D8 to deliver by digest (DEC-246). The MVP keeps generation on both ends: the server and the client generate from the seed with this library and compare a terrain hash at connection, and a client whose hash differs refuses the world with a message (MVP-011). Generation at map load stays the skirmish's.
+
+> **Amendment 2026-10-20 (M1 task T3; WLD-166; [ADR-102](../../../ADR/ADR-102-region-terrain-and-the-terrain-check-at-connection.md)).** The terrain hash compared at connection is WLD-166's form over the MVP's one region: TER-252's digest of each of its 25 chunks, z outer and x inner, and the SHA-256 of those digests in that order. The server sends it with the seed once to each connection; the client builds the region from that seed with its own tuning record and compares.
 
 ## 2 Interfaces
 
@@ -172,6 +176,8 @@ Table 3.1-A Terrain-definition fields as the generator reads them.
 
 **TER-032** (MUST) A terrain tile record (`TerrainTile`) holds the fields of table 3.2-A in this order (R-MAP-081). Every field is mandatory in a map definition. The tiles are kept, and generated, in record order. The record type's defaults equal the map editor's new-tile values ([map editor hooks](../../../reference/08_maps_and_level_design/map_editor_hooks.md) R-MAP-326), except its size, `ter.tile.default_size` (256 wu).
 
+> **Amendment 2026-10-20 (M1 task T3; WLD-268; [ADR-102](../../../ADR/ADR-102-region-terrain-and-the-terrain-check-at-connection.md)).** The generation method of table 3.2-A also takes 3, WLD-268's unbiased method (`TileMethod::UnbiasedParent`): method 2 with its parent chosen as ⌊`Next`() ÷ 8,192⌋.
+
 Table 3.2-A Terrain-tile fields.
 
 | # | Field | Type and rounding | Unit | Meaning |
@@ -207,6 +213,8 @@ Table 3.3-A Flatten-area fields.
 | 6 | threshold *T* | decimal, rounded to binary32 | wu | `ref.map.terrain.flatten_threshold_default` (40.0) | the threshold of types 2, 3 and 4 |
 
 **TER-035** (MUST) The flatten types are, by stored value: 0 Absolute, 1 Add, 2 Subtract, 3 Smooth, 4 Subtract2 (`FlattenOp`). The stored values carry meaning and keep this order; the map editor lists the types sorted by their display names (R-MAP-332).
+
+> **Amendment 2026-10-20 (M1 task T3; WLD-268; [ADR-102](../../../ADR/ADR-102-region-terrain-and-the-terrain-check-at-connection.md)).** The flatten types continue with 5 SmoothUnbiased and 6 Feathered, WLD-268's two variants, with those stored values; types 0 to 4 keep their values and their results. Type 6 reads the width of its band from the threshold field (TER-034).
 
 ### 3.4 Guide grid
 
@@ -372,6 +380,8 @@ Every value is a reference value adopted as the Species engine baseline (DEC-004
 ## 6 Failure modes, diagnostics and telemetry
 
 **TER-250** (MUST) The content build validates every map's terrain records against the map schema (DEC-015, ADR-059; see DEC-968 item 1) and rejects, with a diagnostic naming the map and the record: a cell size that is not finite and above 0; a world size below 1 wu; a grid of more than `ter.grid.max_samples_per_side` (32 768) columns or rows (TER-072); a decimal field that is not finite; a whole-number field outside the 32-bit signed range; a tile smaller than 2 cell sizes, a generation method other than 0, 1 or 2, or a guide grid whose cell count is not (2^*p* − 1)² (TER-112); a tile whose start index is −1 or below while its footprint overlaps the grid (TER-124); a flatten type outside 0 to 4; a ramp whose size is not 64 × 64 (TER-040); and a land colour ramp, shore-wave gradient or sea tile file number that the asset manifest does not hold. It warns, without rejecting, about a tile with *k* < *p* (TER-111) and a tile whose footprint lies wholly outside the grid (TER-124).
+
+> **Amendment 2026-10-20 (M1 task T3; WLD-268; [ADR-102](../../../ADR/ADR-102-region-terrain-and-the-terrain-check-at-connection.md)).** With WLD-268's variants the content build accepts generation methods 0 to 3 and flatten types 0 to 6 (TER-032 and TER-035 amendments).
 
 **TER-251** (MUST) At run time, a terrain loader never passes a missing token on as a value, never hangs on malformed data and never stops the process: a map that fails validation is refused with a diagnostic (DEC-015). A missing ramp, sea tile or gradient file falls back to the map default, file 1 of its asset, with a diagnostic ([world renderers](../renderer/world_renderers.md) §6).
 

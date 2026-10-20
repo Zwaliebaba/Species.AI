@@ -5,9 +5,11 @@
 #include "Transport.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <expected>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace Species
@@ -24,8 +26,9 @@ public:
   struct Desc
   {
     const Neuron::PlatformClock* clock = nullptr;
-    std::filesystem::path contentRoot; // where the tuning record is read from when the server starts (MVP-099)
-    std::size_t workers = 2;           // ADR-080 item 7: the tick thread and at most 2 workers
+    std::filesystem::path contentRoot;      // where the tuning record is read from when the server starts (MVP-099)
+    std::size_t workers = 2;                // ADR-080 item 7: the tick thread and at most 2 workers
+    std::optional<std::uint64_t> worldSeed; // MVP-005: the seed the world is built from; none: a seed the server draws
   };
 
   explicit IntegratedServer(const Desc& _desc);
