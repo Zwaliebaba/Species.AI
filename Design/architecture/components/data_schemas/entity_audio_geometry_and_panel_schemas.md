@@ -308,7 +308,7 @@ Table 3.5-A DSP filter kinds, the nine Species kinds of AEN-070, and their param
 
 ### 3.7 Meshes, collision assets and simulation data records
 
-**DAT-276** (MUST) The cooked mesh (`MeshAsset`, schema `geometry.mesh`) holds the data of table 3.7-A, which the mesh cooker writes (ADR-019, AST-076, AST-052). Its source is binary glTF with its import record ([import_and_build_records.md](import_and_build_records.md)); no runtime reads the source.
+**DAT-276** (MUST) The cooked mesh (`MeshAsset`, schema `geometry.mesh`) holds the data of table 3.7-A, which the mesh cooker writes (ADR-019, AST-076, AST-052). Its source is a binary CMO file with its import record (O64) ([import_and_build_records.md](import_and_build_records.md)); no runtime reads the source.
 
 Table 3.7-A Content of a cooked mesh.
 

@@ -23,7 +23,7 @@ The server therefore creates no GPU resource, sound bank or glyph page (AST-007,
 
 **AST-003** (MUST NOT) No processing choice is made where an asset is requested. A requester names an asset id and, optionally, a variant that the asset's import record declares; it never passes processing flags, and no request changes what another requester receives (ADR-018, DEC-098).
 
-**AST-004** (MUST NOT) The runtime never decodes an authoring format, never resamples, converts or re-encodes a texture, never parses glTF or authoring text, and never recolours art for a team when it loads it (ADR-017, ADR-019, ADR-020, ADR-061).
+**AST-004** (MUST NOT) The runtime never decodes an authoring format, never resamples, converts or re-encodes a texture, never parses a mesh source or authoring text, and never recolours art for a team when it loads it (ADR-017, ADR-019, ADR-020, ADR-061).
 
 **AST-005** (MUST NOT) No simulation data is derived from render geometry. Collision volumes and simulation-relevant socket positions come only from the collision assets and simulation data records that the content build writes and validates (DEC-012, ADR-019, ADR-021). The asset pipeline never writes simulation state (DEC-007) and never draws from the simulation random generator.
 
@@ -300,7 +300,7 @@ Table 2.4-A The manifest columns and their use.
 
 **AST-013** (MUST) Every authored source lives under the content root `GameData/`, in the folders of [GameAssets §2.1](../../assets/GameAssets.md#21-content-root-and-folders). The content build rejects a source outside the content root, and a file under it that belongs to no manifest row, no import record and no data record (a stray file); a parked file (GameAssets §2.7, O61) is not one.
 
-**AST-014** (MUST) The **key** of a member's cooked entry is its `species_filename` relative to the content root, with the file extension removed and its letters lower-cased (O61): the member `GameData/Sprites/worker_front.png` has the key `sprites/worker_front`. A derived variant's key is its parent's key followed by `@` and the variant id (§3.5). Keys are UTF-8 and consist only of the lower-case ASCII letters, the digits and the characters `_`, `.`, `/` and `@`; they are at most `ast.pack.max_key_bytes` (255) bytes long (DEC-801). Data records, maps and string tables take their keys from their sources in the same way.
+**AST-014** (MUST) The **key** of a member's cooked entry is its `species_filename` relative to the content root, with the file extension removed and its letters lower-cased (O61): the member `GameData/Textures/Sprite/WorkerFront.dds` has the key `textures/sprite/workerfront` (O64). A derived variant's key is its parent's key followed by `@` and the variant id (§3.5). Keys are UTF-8 and consist only of the lower-case ASCII letters, the digits and the characters `_`, `.`, `/` and `@`; they are at most `ast.pack.max_key_bytes` (255) bytes long (DEC-801). Data records, maps and string tables take their keys from their sources in the same way.
 
 **AST-015** (MUST) Asset ids and keys are case-insensitive for requesters and exact in storage. A request is canonicalised before the look-up: ASCII upper-case letters become lower case and `\` becomes `/`; the canonical key is then looked up exactly (ADR-058). The content build rejects two keys, or two asset ids, that differ only in case, and any key or id with a character outside the set of AST-014.
 
@@ -372,7 +372,7 @@ Table 3.3-C The manifest's `alpha_mode` values and the import-record alpha mode.
 | darkening layer (destination x (1 - texel)) | `Mask` | `opaque`: the single channel is the darkening weight | darkening or ink |
 | tint mask (team-tint weight read by the shader; never drawn on its own) | `Mask` | `opaque`: the single channel is the team-tint weight | none: read by the tint function of the material that draws its parent (AST-022) |
 | none (look-up table) | `CpuTable` | `opaque` | none: not drawn |
-| opaque; team regions, where the mesh has any, marked by explicit tint weights: the `_SPECIES_TINT` vertex attribute or the `species_team_tint` material flag (ADR-020) | not a texture: a mesh (§3.7, AST-034) | `opaque` | the material shaders of ADR-003 |
+| opaque; team regions, where the mesh has any, marked by the material named `team` (ADR-020, O64) | not a texture: a mesh (§3.7, AST-034) | `opaque` | the material shaders of ADR-003 |
 | opaque; no tint marking | not a texture: a mesh without team regions | `opaque` | the material shaders of ADR-003 |
 | coverage (premultiplied in the UI shader) | not a texture: a font (§3.11) | none | the glyph cache's states (ADR-034) |
 | straight alpha | not a texture: the application icon `uitex.app_icon`, a Windows icon resource built into the executable and never packed | none | none |
@@ -439,23 +439,19 @@ Table 3.6-A Texture usage conventions.
 
 ### 3.7 Mesh import record and the tint attribute
 
-**AST-033** (MUST) A mesh import record declares (ADR-019): the asset id and member; its role, `render` or `collision` (AST-077); for a `render` record the **asset class**, which selects the socket schema (§3.8); the unit scale from glTF metres to world units; the tint marking (AST-034) and the tint scale that the renderer's tint function reads (RND-161: absent means `rnd.tint.factor`; the Transport hull and the Collector body name their owners' keys); the primitives declared smooth-shaded, if any (AST-036); and, for a collidable mesh, the asset id of its collision asset (§3.9). The cooker converts glTF axes and units to Species world axes once, at cook time, with the conventions of ADR-016.
+**AST-033** (MUST) A mesh import record declares (ADR-019): the asset id and member; its role, `render` or `collision` (AST-077); for a `render` record the **asset class**, which selects the socket schema (§3.8); the unit scale from source units to world units; the tint marking (AST-034) and the tint scale that the renderer's tint function reads (RND-161: absent means `rnd.tint.factor`; the Transport hull and the Collector body name their owners' keys); the submeshes declared smooth-shaded, if any (AST-036); and, for a collidable mesh, the asset id of its collision asset (§3.9). The cooker converts source axes and units to Species world axes once, at cook time, with the conventions of ADR-016.
 
-**AST-034** (MUST) Team regions of a mesh are marked explicitly, in one of the two ways of ADR-020, and the import record names which:
-1. **vertex weight**: the application-specific glTF vertex attribute `_SPECIES_TINT`, a `SCALAR` accessor of `FLOAT`, or of normalised `UNSIGNED_BYTE` or `UNSIGNED_SHORT`, with values from 0 (keep the facet colour) to 1 (full team tint);
-2. **material flag**: the member `species_team_tint` with the value `true` in the `extras` object of a glTF material, which marks every triangle of the primitives that use the material with weight 1.
+**AST-034** (MUST) Team regions of a mesh are marked explicitly by the material named `team`, which marks every triangle that uses it with weight 1 (ADR-020 as amended by O64), and the import record declares the marking. The cooker bakes one tint weight per triangle (§4.4) and never infers a tint weight from colour values. The content tools MAY offer an authoring helper that proposes the `team` triangles of art made in the key-colour style (facets whose red channel exceeds twice each of the other two), which the artist reviews; the renderer makes no colour test at run time ([world renderers](renderer/world_renderers.md) RND-162).
 
-The cooker bakes one tint weight per triangle (§4.4) and never infers a tint weight from colour values. The content tools MAY offer an authoring helper that proposes `_SPECIES_TINT` values for art made in the key-colour style (facets whose red channel exceeds twice each of the other two) and writes them into the source as explicit weights, which the artist reviews; the renderer makes no colour test at run time ([world renderers](renderer/world_renderers.md) RND-162).
+**AST-035** (MUST) Every mesh that the renderer tints (the team-tinted meshes of RND-162) declares a tint marking and carries a weight above 0 on at least one triangle; a mesh whose record declares no tint marking has no `team` material. A violation of either rule is a build error naming the asset (ADR-020).
 
-**AST-035** (MUST) Every mesh that the renderer tints (the team-tinted meshes of RND-162) declares a tint marking and carries a weight above 0 on at least one triangle; a mesh whose record declares no tint marking carries neither the attribute nor the flag. A violation of either rule is a build error naming the asset (ADR-020).
+**AST-036** (MUST) A submesh is faceted: the cooker ignores its vertex normals and generates facet normals. A submesh keeps its normals only when the import record declares it smooth-shaded, as a documented exception of the visual-language requirements (ADR-020).
 
-**AST-036** (MUST) A primitive without `NORMAL` is faceted (implicit flat normals). A primitive with `NORMAL` is accepted only when the import record declares it smooth-shaded, as a documented exception of the visual-language requirements (ADR-020).
-
-**AST-037** (MUST) Mesh sources are binary glTF 2.0. The cooker accepts only the extensions `KHR_materials_unlit`, `KHR_materials_emissive_strength` and `KHR_mesh_quantization`, only triangle primitives, and only materials that map onto the material shader set of ADR-003; it rejects every other extension, glTF skins, morph targets and animation channels (ADR-019, ADR-035).
+**AST-037** (MUST) Mesh sources are binary CMO files of the Visual Studio mesh content pipeline (O64). The cooker accepts only materials that map onto the material shader set of ADR-003, and rejects skinning buffers and animation clips (ADR-019, ADR-035).
 
 ### 3.8 Socket names, kinds and schemas
 
-**AST-038** (MUST) A socket is a glTF node without a mesh, placed as a child of the node it moves with (ADR-021). Its name is the reserved prefix `socket_`, then the socket kind, then, for an indexed kind, `_` and a number of `ast.mesh.socket_index_digits` (2) decimal digits counting from `ast.mesh.socket_first_number` (1) without gaps, for example `socket_port_01` and `socket_door`. The cooked index of a socket is its number minus 1; an indexed kind written without a number is index 0, and a mesh that carries both forms of one kind is rejected. No node that is not a socket has a name starting with the prefix. The manifest's `spec` lists sockets without the prefix (`port_01`).
+**AST-038** (MUST) A socket is a CMO bone without a mesh, a child of the bone it moves with (ADR-021). Its name is the reserved prefix `socket_`, then the socket kind, then, for an indexed kind, `_` and a number of `ast.mesh.socket_index_digits` (2) decimal digits counting from `ast.mesh.socket_first_number` (1) without gaps, for example `socket_port_01` and `socket_door`. The cooked index of a socket is its number minus 1; an indexed kind written without a number is index 0, and a mesh that carries both forms of one kind is rejected. No node that is not a socket has a name starting with the prefix. The manifest's `spec` lists sockets without the prefix (`port_01`).
 
 **AST-039** (MUST) The socket kinds form the closed Species enumeration of table 3.8-A (the `MeshSocket` kind). Each kind states whether it is indexed, whether its order carries meaning and whether it is simulation-relevant, and names its consumers.
 
@@ -508,9 +504,9 @@ Table 3.8-A Socket kinds.
 
 ### 3.9 Collision assets and simulation data records
 
-**AST-044** (MUST) Every collidable mesh, that is every mesh that a structure's sphere, mesh or ray test reads ([buildings and world objects](../../reference/03_buildings_and_world_objects/README.md) R-BLDG-041, R-BLDG-042), has a **collision asset**: a separate asset with its own asset id and source, a glTF 2.0 file of triangle primitives with no materials, cooked into a `Collision` entry flagged simulation-relevant. A collidable mesh without a collision asset is a build error (ADR-019, DEC-012). Collision geometry is authored as its own source; render geometry never produces it. The collision assets are `mesh.collision.abductor_hull`, `mesh.collision.barrier_emitter`, `mesh.collision.beam_dish`, `mesh.collision.command_console`, `mesh.collision.command_console_linked`, `mesh.collision.core_device`, `mesh.collision.fuel_depot`, `mesh.collision.fuel_line_foot`, `mesh.collision.fuel_pump_housing`, `mesh.collision.grid_pylon`, `mesh.collision.hive_mound`, `mesh.collision.relay_mast`, `mesh.collision.scenery_prop`, `mesh.collision.solar_array`, `mesh.collision.source_node`, `mesh.collision.spawn_node`, `mesh.collision.spawn_node_alt`, `mesh.collision.spitter_plant_head`, `mesh.collision.transit_gate`, `mesh.collision.transit_gate_alt`, `mesh.collision.turret_barrel`, `mesh.collision.turret_head` and `mesh.collision.wall_section`, each named by the import record of the render mesh it belongs to (§3.7) and listed per structure mesh in table 2.12-B of [buildings and world objects](../../reference/03_buildings_and_world_objects/README.md).
+**AST-044** (MUST) Every collidable mesh, that is every mesh that a structure's sphere, mesh or ray test reads ([buildings and world objects](../../reference/03_buildings_and_world_objects/README.md) R-BLDG-041, R-BLDG-042), has a **collision asset**: a separate asset with its own asset id and source, a CMO file of triangles whose materials are ignored, cooked into a `Collision` entry flagged simulation-relevant. A collidable mesh without a collision asset is a build error (ADR-019, DEC-012). Collision geometry is authored as its own source; render geometry never produces it. The collision assets are `mesh.collision.abductor_hull`, `mesh.collision.barrier_emitter`, `mesh.collision.beam_dish`, `mesh.collision.command_console`, `mesh.collision.command_console_linked`, `mesh.collision.core_device`, `mesh.collision.fuel_depot`, `mesh.collision.fuel_line_foot`, `mesh.collision.fuel_pump_housing`, `mesh.collision.grid_pylon`, `mesh.collision.hive_mound`, `mesh.collision.relay_mast`, `mesh.collision.scenery_prop`, `mesh.collision.solar_array`, `mesh.collision.source_node`, `mesh.collision.spawn_node`, `mesh.collision.spawn_node_alt`, `mesh.collision.spitter_plant_head`, `mesh.collision.transit_gate`, `mesh.collision.transit_gate_alt`, `mesh.collision.turret_barrel`, `mesh.collision.turret_head` and `mesh.collision.wall_section`, each named by the import record of the render mesh it belongs to (§3.7) and listed per structure mesh in table 2.12-B of [buildings and world objects](../../reference/03_buildings_and_world_objects/README.md).
 
-**AST-045** (MUST) The mesh and collision validators reject a mesh with two nodes of the same name, and a primitive whose attribute accessors do not all have the same element count, which covers a hit-test mesh whose position count differs from its vertex count; they accept a socket-only mesh with no geometry node, such as `mesh.structure.turret_mount` (ADR-059, DEC-012).
+**AST-045** (MUST) The mesh and collision validators reject a mesh with two nodes of the same name, and a submesh whose index range leaves its buffers, which covers a hit-test mesh whose indices exceed its vertex count; they accept a socket-only mesh with no geometry node, such as `mesh.structure.turret_mount` (ADR-059, DEC-012).
 
 **AST-046** (MUST) Each mesh asset whose consumers read simulation-relevant data has a **simulation data record** (`SimRecord`), flagged simulation-relevant: the socket transforms of AST-043, the asset's member order where AST-016 makes it simulation-relevant, and the bounding sphere of each collision asset. The record carries the schema id and version of its record type (ADR-061).
 
@@ -745,21 +741,20 @@ With *s*₀ = 32 px this places 18 copies, of sides 32, 32, 31, 31, 30, 30, 29, 
 
 ### 4.4 Mesh cooking
 
-**AST-076** (MUST) The mesh cooker first validates each source against the glTF 2.0 specification with the importer's own checks of ADR-019 (no third-party validator, O30), then against the rules of AST-034 to AST-042 and AST-045, then cooks it as follows (ADR-019, ADR-020, ADR-013, RND-157, RND-160):
+**AST-076** (MUST) The mesh cooker first validates each source with the CMO importer's own checks of ADR-019 (no third-party reader, O64), then against the rules of AST-034 to AST-042 and AST-045, then cooks it as follows (ADR-019, ADR-020, ADR-013, RND-157, RND-160):
 
 ```
 convert every node transform and position to Species world axes and units (unit scale, ADR-016)
-for each mesh node n, for each primitive p of n:
+for each mesh node n, for each submesh p of n:
     for each triangle (i0, i1, i2) of p:
-        corner colour k(i) := baseColorFactor(p.material) * COLOR_0[i]      # linear glTF values; COLOR_0 absent = 1
+        corner colour k(i) := SrgbDecode(colour[i])                          # the CMO vertex colour, sRGB as authored
         e(i) := Quantize8(SrgbEncode(k(i)))                                  # exact sRGB curve, per channel
         if p is faceted:
             require e(i0) = e(i1) = e(i2)                                     # else error: asset, node, triangle
             facet colour f := e(i0)
             facet normal m := Normalize(cross(P(i1) - P(i0), P(i2) - P(i0)))
         f.rgb := Quantize8(f.rgb * rnd.mesh.colour_attenuation)               # alpha unchanged
-        tint weight t := per AST-034: the corners' _SPECIES_TINT values, which must be equal after
-                         quantisation to 8 bits; 1 for a flagged material; 0 for no marking
+        tint weight t := per AST-034: 1 for the material `team`, 0 for every other
         emit three vertices, each with its position, f, m, t and the barycentric corner
              (1, 0, 0), (0, 1, 0), (0, 0, 1)
     record n's rest transform, draw range, axis-aligned bounding box, vertical extent (lowest and
@@ -769,7 +764,7 @@ write the socket table: for each kind in table 3.8-A order, the sockets in index
     parent node, its transform relative to that node and its chain of nodes up to the root
 ```
 
-Smooth-shaded primitives (AST-036) keep their vertex normals and colours and take the same colour conversion and attenuation per vertex. A mesh whose node or socket count exceeds the capacity of the cooked format, which is at least `rnd.mesh.max_nodes` (100) nodes and `rnd.mesh.max_sockets` (100) sockets (RND-156), is a build error. A mesh whose triangle count exceeds the budget of its row's `spec` is a build error naming the budget and the count.
+Smooth-shaded submeshes (AST-036) keep their vertex normals and colours and take the same colour conversion and attenuation per vertex. A mesh whose node or socket count exceeds the capacity of the cooked format, which is at least `rnd.mesh.max_nodes` (100) nodes and `rnd.mesh.max_sockets` (100) sockets (RND-156), is a build error. A mesh whose triangle count exceeds the budget of its row's `spec` is a build error naming the budget and the count.
 
 ### 4.5 Collision assets and simulation data records
 
@@ -832,7 +827,7 @@ Table 4.7-A Placeholder generators.
 
 **AST-090** (MUST) The content build checks that **no unused file goes into a pack**: every file under the content root belongs to a manifest row (AST-013), and every asset that an edition selects is referenced from that edition's maps, records, scripts or engine asset table, directly or through other referenced assets. An unreferenced asset is an error for an edition marked for release and a warning for any other edition (ADR-059, DEC-563). Until DEC-329 is decided, an asset whose only consumer is an object that no map places but a rule may create during a match counts as referenced, through the record of that object.
 
-**AST-091** (MUST) The content build checks that **no undecodable format goes into a pack**: every source decodes with the decoder of its `source_format`, every glTF source passes the importer's checks of ADR-019, every audio source passes AST-079, and every cooked entry is read back by the runtime loader of its content type and compared with what the cooker wrote.
+**AST-091** (MUST) The content build checks that **no undecodable format goes into a pack**: every source decodes with the decoder of its `source_format`, every CMO source passes the importer's checks of ADR-019, every audio source passes AST-079, and every cooked entry is read back by the runtime loader of its content type and compared with what the cooker wrote.
 
 **AST-092** (MUST) The content build also rejects, each with a diagnostic naming the asset id, the member and the rule: an import record that disagrees with its row (AST-012); a texture that breaks AST-019 to AST-024 or AST-068; a material pairing that breaks AST-021; a mesh that breaks AST-034 to AST-045 or AST-076; a collidable mesh without a collision asset (AST-044); keys or ids that differ only in case or are not canonical (AST-015); a key listed twice in one authoring object and two records with the same stable id (DEC-801); an unknown id or flag in an edition manifest (ADR-056); and an edition marked for release that contains a placeholder (AST-085).
 
@@ -999,7 +994,7 @@ Table 5-A Baseline budgets.
 | an import record that disagrees with its manifest row | content build | build error naming the asset id, the member and the column | AST-012 |
 | a texture of the wrong size, too large, not a multiple of 4 in a block format, or without the alpha its mode needs | content build | build error naming the check | AST-068 |
 | a texture drawn with a blend that its alpha mode does not pair with | content build | build error naming the asset, the material and the pass | AST-021 |
-| a mesh that breaks the glTF or Species mesh rules, the socket schema or its triangle budget | content build | build error naming the asset, the node, the triangle or the socket | AST-034 to AST-045, AST-076 |
+| a mesh that breaks the CMO or Species mesh rules, the socket schema or its triangle budget | content build | build error naming the asset, the node, the triangle or the socket | AST-034 to AST-045, AST-076 |
 | a collidable mesh without a collision asset | content build | build error | AST-044 |
 | a missing or wrong-kind reference | content build | build error with the file, line and field | AST-089 |
 | an unreferenced asset | content build | error for an edition marked for release, warning otherwise | AST-090 |
@@ -1030,7 +1025,7 @@ Golden-image tests use the default tolerance and reference configuration of the 
 | T7 blurred shadow | unit | a one-texel white source and a 3 × 3 source give the outputs computed from AST-073; sources of 0 and 1025 px fail | AST-073 |
 | T8 Crawler trail | unit | a 32 px source gives 18 copies, of sides 32, 32, 31, 31 to 24, 24 px, at the x offsets of AST-074, filling 504 px | AST-074 |
 | T9 colour derivations | unit | vectors for `Grayscale`, `ToColor` and `ReplaceColor`, including a texel at distance exactly 10 that is kept | AST-075 |
-| T10 mesh cook | unit | a reference glTF mesh round-trips: hierarchy, transforms, facet colours encoded and × 0.85, facet normals, tint weights, bounds, vertical extents, socket table | AST-034, AST-076 |
+| T10 mesh cook | unit | a reference CMO mesh round-trips: hierarchy, transforms, facet colours encoded and × 0.85, facet normals, tint weights, bounds, vertical extents, socket table | AST-034, AST-076 |
 | T11 mesh fixtures | build fixture | differing corner colours, `NORMAL` without a smooth declaration, duplicate node names, unequal attribute counts, a disallowed extension, a socket gap, a socket under the wrong node, a team-tinted mesh without weights: each fails | AST-035 to AST-041, AST-045 |
 | T12 turret sockets | build fixture | a turret barrel member without its own `muzzle` sockets fails | AST-042 |
 | T13 simulation records | unit | the socket transforms of a record equal the render mesh's sockets in the rest pose; the Relic member order is in the record | AST-016, AST-043, AST-046 |
