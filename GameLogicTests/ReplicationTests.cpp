@@ -139,9 +139,9 @@ std::map<Species::StableId, Species::ReplicatedState> ServerView(const Species::
   const Species::RegionSimulation& region = _server.Simulation()->Region(0);
   const Species::StableId steward = region.CommanderOf(Species::SANDBOX_STEWARD_TEAM).sender;
   std::map<Species::StableId, Species::ReplicatedState> view;
-  for (Species::ReplicatedObject& object : Species::ViewForSteward(Species::CollectReplicatedObjects(region), region, steward))
+  for (const Species::ReplicatedObject& object : Species::ViewForSteward(Species::CollectReplicatedObjects(region), region, steward))
   {
-    view.emplace(object.id, std::move(object.state));
+    view.emplace(object.id, object.state);
   }
   return view;
 }
@@ -292,7 +292,7 @@ public:
       client.Read();
       Assert::IsTrue(client.replica.Latest() == ServerView(server), L"the replica holds the server's state, before and after");
     }
-    Assert::IsTrue(server.Journal().has_value() && server.Journal()->start.firstTick == first + 60, L"the world was replaced");
+    Assert::IsTrue(server.Journal().value_or(Species::CommandJournal{}).start.firstTick == first + 60, L"the world was replaced");
     ExpectEqual(0, static_cast<std::int64_t>(client.replica.Totals().missingBaselines), L"every baseline was there");
   }
 #endif

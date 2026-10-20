@@ -43,6 +43,14 @@ Species::ReplicatedFigure Worker(std::uint8_t _team, std::int32_t _x, std::int32
   return figure;
 }
 
+// The record MakeRecord makes, which the test expects to exist.
+Species::StateRecord RecordOf(Species::StableId _id, const Species::ReplicatedState& _state, const Species::ReplicatedState* _baseline)
+{
+  const std::optional<Species::StateRecord> record = Species::MakeRecord(_id, _state, _baseline);
+  Assert::IsTrue(record.has_value(), L"the state differs from its baseline");
+  return record.value_or(Species::StateRecord{});
+}
+
 // The record written and read back alone, after the bits it said it takes.
 Species::StateRecord RoundTrip(const Species::StateRecord& _record, std::optional<Species::StableId> _previous)
 {
@@ -112,10 +120,10 @@ public:
     for (const Species::ReplicatedState& state :
          {Species::ReplicatedState{leader}, Species::ReplicatedState{ring}, Species::ReplicatedState{orb}})
     {
-      const std::optional<Species::StateRecord> record = Species::MakeRecord(Id(counter), state, nullptr);
-      Assert::IsTrue(record.has_value() && record->kind == Species::RecordKind::Whole, L"no baseline: whole");
-      Assert::IsTrue(RoundTrip(*record, previous) == *record, L"the same record");
-      Assert::IsTrue(Species::ApplyRecord(*record, nullptr) == state, L"it gives its state alone");
+      const Species::StateRecord record = RecordOf(Id(counter), state, nullptr);
+      Assert::IsTrue(record.kind == Species::RecordKind::Whole, L"no baseline: whole");
+      Assert::IsTrue(RoundTrip(record, previous) == record, L"the same record");
+      Assert::IsTrue(Species::ApplyRecord(record, nullptr) == state, L"it gives its state alone");
       previous = Id(counter);
       counter += 1000;
     }
@@ -141,39 +149,37 @@ public:
     {
       Species::ReplicatedFigure moved = baseline;
       moved.position = to;
-      const std::optional<Species::StateRecord> record = Species::MakeRecord(Id(1), moved, &held);
-      Assert::IsTrue(record.has_value() && record->kind == Species::RecordKind::Delta && record->changed == Species::FIGURE_FIELD_POSITION,
-                     L"a move alone");
-      const Species::StateRecord read = RoundTrip(*record, std::nullopt);
-      Assert::IsTrue(read == *record, L"the same delta");
+      const Species::StateRecord record = RecordOf(Id(1), moved, &held);
+      Assert::IsTrue(record.kind == Species::RecordKind::Delta && record.changed == Species::FIGURE_FIELD_POSITION, L"a move alone");
+      const Species::StateRecord read = RoundTrip(record, std::nullopt);
+      Assert::IsTrue(read == record, L"the same delta");
       Assert::IsTrue(Species::ApplyRecord(read, &held) == Species::ReplicatedState{moved}, L"applied to its baseline, the new state");
     }
     Species::ReplicatedFigure hurt = baseline;
     hurt.health = 3;
     hurt.task = static_cast<std::uint8_t>(Species::WorkerState::Burning);
     hurt.underControl = true;
-    const std::optional<Species::StateRecord> record = Species::MakeRecord(Id(1), hurt, &held);
-    Assert::IsTrue(record && record->changed == (Species::FIGURE_FIELD_HEALTH | Species::FIGURE_FIELD_TASK | Species::FIGURE_FIELD_FLAGS),
+    const Species::StateRecord record = RecordOf(Id(1), hurt, &held);
+    Assert::IsTrue(record.changed == (Species::FIGURE_FIELD_HEALTH | Species::FIGURE_FIELD_TASK | Species::FIGURE_FIELD_FLAGS),
                    L"health, task and flags");
-    Assert::IsTrue(Species::ApplyRecord(RoundTrip(*record, std::nullopt), &held) == Species::ReplicatedState{hurt}, L"applied");
-    Assert::IsTrue(Species::RecordBits(*record, std::nullopt) <
-                     Species::RecordBits(*Species::MakeRecord(Id(1), hurt, nullptr), std::nullopt),
+    Assert::IsTrue(Species::ApplyRecord(RoundTrip(record, std::nullopt), &held) == Species::ReplicatedState{hurt}, L"applied");
+    Assert::IsTrue(Species::RecordBits(record, std::nullopt) < Species::RecordBits(RecordOf(Id(1), hurt, nullptr), std::nullopt),
                    L"a delta is smaller than the whole record");
 
     // A Leader's order and an orb's state and timer, each alone.
     Species::ReplicatedFigure ordered = baseline;
     ordered.order = static_cast<std::uint8_t>(Species::LeaderOrder::Follow);
-    const std::optional<Species::StateRecord> order = Species::MakeRecord(Id(1), ordered, &held);
-    Assert::IsTrue(order && order->changed == Species::FIGURE_FIELD_ORDER, L"the order alone");
-    Assert::IsTrue(Species::ApplyRecord(RoundTrip(*order, std::nullopt), &held) == Species::ReplicatedState{ordered}, L"applied");
+    const Species::StateRecord order = RecordOf(Id(1), ordered, &held);
+    Assert::IsTrue(order.changed == Species::FIGURE_FIELD_ORDER, L"the order alone");
+    Assert::IsTrue(Species::ApplyRecord(RoundTrip(order, std::nullopt), &held) == Species::ReplicatedState{ordered}, L"applied");
     const Species::ReplicatedState orb{Species::ReplicatedOrb{0, {1, 2, 3}, Species::OrbState::Birth, 4}};
     const Species::ReplicatedState rising{Species::ReplicatedOrb{0, {1, 2, 3}, Species::OrbState::Ascent, 30}};
-    const std::optional<Species::StateRecord> ascent = Species::MakeRecord(Id(2), rising, &orb);
-    Assert::IsTrue(ascent && ascent->changed == (Species::ORB_FIELD_STATE | Species::ORB_FIELD_TIMER), L"the orb's state and timer");
-    Assert::IsTrue(Species::ApplyRecord(RoundTrip(*ascent, std::nullopt), &orb) == rising, L"applied");
-    Assert::IsTrue(Species::MakeRecord(Id(1), orb, &held)->kind == Species::RecordKind::Whole, L"another class goes whole");
-    Assert::IsFalse(Species::ApplyRecord(*record, &orb).has_value(), L"and a delta never applies to another class");
-    Assert::IsFalse(Species::ApplyRecord(*record, nullptr).has_value(), L"nor to no baseline");
+    const Species::StateRecord ascent = RecordOf(Id(2), rising, &orb);
+    Assert::IsTrue(ascent.changed == (Species::ORB_FIELD_STATE | Species::ORB_FIELD_TIMER), L"the orb's state and timer");
+    Assert::IsTrue(Species::ApplyRecord(RoundTrip(ascent, std::nullopt), &orb) == rising, L"applied");
+    Assert::IsTrue(RecordOf(Id(1), orb, &held).kind == Species::RecordKind::Whole, L"another class goes whole");
+    Assert::IsFalse(Species::ApplyRecord(record, &orb).has_value(), L"and a delta never applies to another class");
+    Assert::IsFalse(Species::ApplyRecord(record, nullptr).has_value(), L"nor to no baseline");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Adr088AnUpdateFillsDatagramsToTheirLimit)
@@ -184,10 +190,10 @@ public:
     // 2,000 figures whole, as a join of ADR-080's synthetic battle: each datagram within 1,200 bytes, full but for the
     // last, and every record read back in order.
     std::vector<Species::StateRecord> records;
+    records.reserve(2000);
     for (std::uint64_t n = 0; n < 2000; ++n)
     {
-      records.push_back(
-        *Species::MakeRecord(Id(1 + n * 3), Worker(static_cast<std::uint8_t>(n % 2), static_cast<std::int32_t>(n * 17), 40), nullptr));
+      records.push_back(RecordOf(Id(1 + n * 3), Worker(static_cast<std::uint8_t>(n % 2), static_cast<std::int32_t>(n * 17), 40), nullptr));
     }
     const std::vector<Species::StateUpdate> updates = Species::PackStateUpdates(77, 0, records);
     Assert::IsTrue(updates.size() > 1, L"more than one datagram");
@@ -204,7 +210,8 @@ public:
       }
       const std::optional<Species::StateUpdate> decoded = Decoded(bytes);
       Assert::IsTrue(decoded.has_value() && decoded->tick == 77 && decoded->baselineAge == 0, L"each decodes alone");
-      back.insert(back.end(), decoded->records.begin(), decoded->records.end());
+      const Species::StateUpdate update = decoded.value_or(Species::StateUpdate{});
+      back.insert(back.end(), update.records.begin(), update.records.end());
     }
     Assert::IsTrue(back == records, L"every record, in order");
     const Species::StateUpdate empty{78, 0, {}};
@@ -217,7 +224,7 @@ public:
   TEST_METHOD(Adr088ABrokenUpdateIsDroppedAsMalformed)
   {
     const Species::ReplicatedState held{Worker(0, 0, 0)};
-    const Species::StateRecord delta = *Species::MakeRecord(Id(4), Worker(0, 16, 0), &held);
+    const Species::StateRecord delta = RecordOf(Id(4), Worker(0, 16, 0), &held);
     // A delta that names no baseline.
     Neuron::BitWriter writer;
     Neuron::WriteMessageHeader(writer, {Species::StateUpdate::TYPE, Species::StateUpdate::VERSION});
@@ -264,14 +271,14 @@ public:
     const Species::ReplicatedFigure a = Worker(0, 0, 0);
     const Species::ReplicatedFigure b = Worker(1, 160, 0);
     // The join: every object whole.
-    replica.Apply({10, 0, {*Species::MakeRecord(Id(1), a, nullptr), *Species::MakeRecord(Id(2), b, nullptr)}});
+    replica.Apply({10, 0, {RecordOf(Id(1), a, nullptr), RecordOf(Id(2), b, nullptr)}});
     Assert::IsTrue(replica.LatestTick() == 10 && !replica.PreviousTick().has_value(), L"one tick");
     ExpectEqual(2, static_cast<std::int64_t>(replica.Latest().size()), L"both figures");
     // Tick 11 against tick 10: a moves, b does not and has no record.
     Species::ReplicatedFigure a11 = a;
     a11.position.x = 32;
     const Species::ReplicatedState a10{a};
-    replica.Apply({11, 1, {*Species::MakeRecord(Id(1), a11, &a10)}});
+    replica.Apply({11, 1, {RecordOf(Id(1), a11, &a10)}});
     Assert::IsTrue(replica.LatestTick() == 11 && replica.PreviousTick() == 10, L"two ticks");
     Assert::IsTrue(replica.Latest().at(Id(1)) == Species::ReplicatedState{a11} && replica.Previous().at(Id(1)) == a10, L"a at both");
     Assert::IsTrue(replica.Latest().at(Id(2)) == Species::ReplicatedState{b}, L"b keeps its state");
@@ -279,22 +286,24 @@ public:
     // newest it knows the client holds; b leaves.
     Species::ReplicatedFigure a13 = a;
     a13.position.x = 96;
-    replica.Apply({13, 3, {*Species::MakeRecord(Id(1), a13, &a10), Species::RemovalRecord(Id(2))}});
+    replica.Apply({13, 3, {RecordOf(Id(1), a13, &a10), Species::RemovalRecord(Id(2))}});
     Assert::IsTrue(replica.Latest().at(Id(1)) == Species::ReplicatedState{a13}, L"decoded against tick 10");
     Assert::IsTrue(replica.Previous().at(Id(1)) == Species::ReplicatedState{a11}, L"the previous view is tick 11's");
     Assert::IsFalse(replica.Latest().contains(Id(2)) || replica.Previous().contains(Id(2)), L"b is gone");
     ExpectEqual(0, static_cast<std::int64_t>(replica.Totals().missingBaselines), L"every baseline was there");
 
     // A delta against a tick the replica never received is skipped and counted.
-    replica.Apply({14, 2, {*Species::MakeRecord(Id(1), a, &a10)}});
+    Species::ReplicatedFigure elsewhere = a;
+    elsewhere.position.x = 400;
+    replica.Apply({14, 2, {RecordOf(Id(1), elsewhere, &a10)}});
     ExpectEqual(1, static_cast<std::int64_t>(replica.Totals().missingBaselines), L"tick 12 never arrived");
     Assert::IsTrue(replica.Latest().at(Id(1)) == Species::ReplicatedState{a13}, L"a holds");
     // A late update is a baseline only.
-    replica.Apply({12, 2, {*Species::MakeRecord(Id(1), a, &a10)}});
+    replica.Apply({12, 2, {RecordOf(Id(1), elsewhere, &a10)}});
     ExpectEqual(1, static_cast<std::int64_t>(replica.Totals().lateUpdates), L"late");
     Assert::IsTrue(replica.LatestTick() == 14 && replica.Latest().at(Id(1)) == Species::ReplicatedState{a13}, L"the view stays");
     // An object that enters whole is drawn from its first state: the previous view does not hold it.
-    replica.Apply({15, 0, {*Species::MakeRecord(Id(1), a, nullptr)}});
+    replica.Apply({15, 0, {RecordOf(Id(1), a, nullptr)}});
     Assert::IsFalse(replica.Previous().contains(Id(1)), L"re-entered whole");
   }
 
@@ -306,7 +315,7 @@ public:
     Species::StateReplica replica;
     const Species::ReplicatedFigure a = Worker(0, 0, 0);
     const Species::ReplicatedState held{a};
-    replica.Apply({100, 0, {*Species::MakeRecord(Id(1), a, nullptr)}});
+    replica.Apply({100, 0, {RecordOf(Id(1), a, nullptr)}});
     Species::ReplicatedFigure moved = a;
     moved.position.z = 16;
     // Empty updates move the latest tick on; a delta against tick 100 still decodes 31 ticks later.
@@ -314,7 +323,7 @@ public:
     {
       replica.Apply({tick, 0, {}});
     }
-    replica.Apply({131, 31, {*Species::MakeRecord(Id(1), moved, &held)}});
+    replica.Apply({131, 31, {RecordOf(Id(1), moved, &held)}});
     Assert::IsTrue(replica.Latest().at(Id(1)) == Species::ReplicatedState{moved}, L"within the window");
     ExpectEqual(0, static_cast<std::int64_t>(replica.Totals().missingBaselines), L"no baseline missing");
   }
@@ -356,7 +365,8 @@ public:
       std::optional<Species::PresentationEvents> received;
       dispatcher.Register<Species::PresentationEvents>([&received](const Species::PresentationEvents& _events) { received = _events; });
       Assert::IsTrue(dispatcher.Dispatch(bytes) && received && received->tick == 9, L"each decodes alone");
-      back.insert(back.end(), received->events.begin(), received->events.end());
+      const Species::PresentationEvents decoded = received.value_or(Species::PresentationEvents{});
+      back.insert(back.end(), decoded.events.begin(), decoded.events.end());
     }
     Assert::IsTrue(back.size() == events.size(), L"every event");
     for (std::size_t n = 0; n < events.size(); ++n)

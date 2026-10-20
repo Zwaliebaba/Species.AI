@@ -111,6 +111,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-108](ADR-108-content-build-loose-content-and-cooked-formats.md) | The content build at M1: SpeciesContentBuild, the cooked formats and the loose-content mount | Proposed | 2026-10-20 |
 | [ADR-109](ADR-109-battle-sandbox-command-journal-and-seed-switch.md) | The battle sandbox, the command journal and the seed switch | Proposed | 2026-10-20 |
 | [ADR-110](ADR-110-cost-measurement-marker-timing-and-performance-script.md) | The cost measurement: marker timing, the performance tool and the performance script | Proposed | 2026-10-20 |
+| [ADR-111](ADR-111-replication-state-datagrams-and-the-client-replica.md) | Replication at M1: the state datagrams, the acknowledged baselines and the client's replica | Proposed | 2026-10-20 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

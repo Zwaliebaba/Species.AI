@@ -7,7 +7,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <map>
 #include <optional>
 #include <span>
 #include <utility>
@@ -68,18 +67,22 @@ public:
 private:
   struct Known
   {
+    StableId id = 0;
     std::optional<ReplicatedState> acked; // the state the client holds, by an acknowledged datagram
     std::uint64_t ackedTick = 0;
   };
 
   struct InFlight
   {
+    std::uint64_t datagram = 0;
     std::uint64_t tick = 0;
     std::vector<std::pair<StableId, std::optional<ReplicatedState>>> held;
   };
 
-  std::map<StableId, Known> m_known; // every object the client may hold
-  std::map<std::uint64_t, InFlight> m_inFlight;
+  // Sorted vectors rather than maps: the merge with each tick's objects walks them in order, and a vector's move
+  // allocates nothing (MSVC's debug map's does).
+  std::vector<Known> m_known;       // every object the client may hold, in stable-id order
+  std::vector<InFlight> m_inFlight; // in the order they were sent
 };
 
 } // namespace Species

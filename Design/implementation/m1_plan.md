@@ -47,13 +47,13 @@ So the tasks fall in two phases:
 - **Phase A, T2 to T10**, builds the battle as a headless simulation. CI tests every task, and T2 to T9 need no run checklist from the owner. It ends with the owner's first run of the performance script (T10), which pins the reference test machine and settles ADR-080.
 - **Phase B, T12 to T18**, makes the battle visible and steerable. Every task states a run checklist (M0 plan §2) and is not merged before the owner's answer.
 
-T11, the content build, depends on nothing in phase A and runs beside it. Phase B's tasks follow the table's order.
+T11, the content build, depends on nothing in phase A and runs beside it. Phase B's tasks follow the table's order, but for T15 (O75): its text part, T15a (the text, the frame-rate line and development dots for the figures), follows T13, and the rest, T15b (the toggle, the frame page and the restart), follows T14, whose input router it needs. Each phase B task is pushed with its run checklist as it is done, and the next starts while the owner runs it (O75).
 
 ## 4 The reference test machine and the performance script
 
 The owner's PC is the reference test machine (O58): a Windows on Arm PC with a Snapdragon X processor and an Adreno X1-85 GPU. It measures the `Release|ARM64` development build, natively (O69, [ADR-094](../ADR/ADR-094-arm64-development-build.md)). That machine does not meet ADR-050's x64 minimum, so its figures bind the MVP's budgets only. The x64 build that ships is not measured until the minimum-specification tier, decided before the first external build, re-baselines every result (DBG-209 amendment).
 
-The frame-rate scenes run on a display whose native mode is 1,920 × 1,080 at 60 Hz, so the borderless window (O65) is exactly MVP-085's target.
+The frame-rate scenes run on a display whose native mode is 1,920 × 1,080 at 60 Hz, so the borderless window (O65) is exactly MVP-085's target. They pin that display at their own first run, apart from the headless scenes' pin, and only a change of processor, memory, graphics adapter or display stops a run; the driver and the OS build are recorded with each run (O75). Their 60 frames per second is the 99th percentile of the frame interval, at most 17.7 ms (O75).
 
 The performance job of DBG-208 is, for the MVP, a script that the owner runs on that machine: `Build\RunPerformance.py` (O69). CI's hosted runner is a virtual machine and cannot time anything, and a self-hosted runner was not chosen. The script:
 - builds `Release|ARM64` through `Species.slnx`, as `AGENTS.md` §3 requires;

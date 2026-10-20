@@ -102,7 +102,7 @@ struct ReplicatedObject
   StableId id = 0;
   ReplicatedState state;
 
-  friend bool operator==(const ReplicatedObject& _a, const ReplicatedObject& _b) noexcept = default;
+  friend bool operator==(const ReplicatedObject& _a, const ReplicatedObject& _b) = default;
 };
 
 // What a record says of its object; the values are on the wire.
@@ -124,7 +124,7 @@ struct StateRecord
   std::uint8_t changed = 0; // a delta's changed fields, bit i for field i of its class
   QuantizedPosition move;   // a delta's new position minus its baseline's
 
-  friend bool operator==(const StateRecord& _a, const StateRecord& _b) noexcept = default;
+  friend bool operator==(const StateRecord& _a, const StateRecord& _b) = default;
 };
 
 // The fields of each class that a delta can carry, by bit.

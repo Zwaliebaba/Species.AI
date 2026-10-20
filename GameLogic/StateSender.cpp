@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iterator>
+#include <map>
 
 namespace Species
 {
@@ -122,43 +123,48 @@ std::vector<StateSender::Outgoing> StateSender::Build(std::uint64_t _tick, std::
   ENGINE_PROFILE_SCOPE("net.replication.build");
   std::map<std::uint64_t, std::vector<StateRecord>> deltas; // by baseline tick
   std::vector<StateRecord> loose;                           // whole records and removals, which name no baseline
+  std::vector<Known> known;                                 // what the client may hold after this tick, in id order
+  known.reserve(std::max(m_known.size(), _objects.size()));
   auto object = _objects.begin();
-  auto known = m_known.begin();
-  while (object != _objects.end() || known != m_known.end())
+  auto held = m_known.begin();
+  while (object != _objects.end() || held != m_known.end())
   {
-    if (known == m_known.end() || (object != _objects.end() && object->id < known->first))
+    if (held == m_known.end() || (object != _objects.end() && object->id < held->id))
     {
       // An object the client has never been sent: it enters whole.
       loose.push_back(StateRecord{object->id, RecordKind::Whole, object->state, 0, {}});
-      m_known.emplace_hint(known, object->id, Known{});
+      known.push_back(Known{object->id, std::nullopt, 0});
       ++object;
       continue;
     }
-    if (object == _objects.end() || known->first < object->id)
+    if (object == _objects.end() || held->id < object->id)
     {
       // An object that left: removed until the client acknowledges the removal.
-      loose.push_back(RemovalRecord(known->first));
-      ++known;
+      loose.push_back(RemovalRecord(held->id));
+      known.push_back(*held);
+      ++held;
       continue;
     }
-    Known& held = known->second;
-    if (!held.acked || *held.acked != object->state)
+    if (!held->acked || *held->acked != object->state)
     {
-      const bool baseline = held.acked && _tick - held.ackedTick < STATE_BASELINE_TICKS_MAX;
-      std::optional<StateRecord> record = MakeRecord(object->id, object->state, baseline ? &*held.acked : nullptr);
-      ENGINE_ASSERT(record.has_value());
-      if (record->kind == RecordKind::Delta)
+      const bool baseline = held->acked && _tick - held->ackedTick < STATE_BASELINE_TICKS_MAX;
+      if (const std::optional<StateRecord> record = MakeRecord(object->id, object->state, baseline ? &*held->acked : nullptr))
       {
-        deltas[held.ackedTick].push_back(std::move(*record));
-      }
-      else
-      {
-        loose.push_back(std::move(*record));
+        if (record->kind == RecordKind::Delta)
+        {
+          deltas[held->ackedTick].push_back(*record);
+        }
+        else
+        {
+          loose.push_back(*record);
+        }
       }
     }
+    known.push_back(*held);
     ++object;
-    ++known;
+    ++held;
   }
+  m_known = std::move(known);
 
   // The records that name no baseline ride with the largest group, so a tick takes as few datagrams as it can.
   if (!loose.empty())
@@ -195,7 +201,7 @@ std::vector<StateSender::Outgoing> StateSender::Build(std::uint64_t _tick, std::
           ENGINE_ASSERT(found != _objects.end() && found->id == record.id);
           state = found->state;
         }
-        out.held.emplace_back(record.id, std::move(state));
+        out.held.emplace_back(record.id, state);
       }
       out.update = std::move(update);
     }
@@ -210,25 +216,24 @@ std::vector<StateSender::Outgoing> StateSender::Build(std::uint64_t _tick, std::
 
 void StateSender::Sent(std::uint64_t _datagram, Outgoing&& _outgoing)
 {
-  m_inFlight.insert_or_assign(_datagram, InFlight{_outgoing.update.tick, std::move(_outgoing.held)});
+  m_inFlight.push_back(InFlight{_datagram, _outgoing.update.tick, std::move(_outgoing.held)});
 }
 
 void StateSender::Fates(std::span<const Neuron::DatagramOutcome> _outcomes, std::uint64_t _tick)
 {
   for (const Neuron::DatagramOutcome& outcome : _outcomes)
   {
-    const auto found = m_inFlight.find(outcome.datagram);
-    if (found == m_inFlight.end())
+    const auto sent = std::ranges::find(m_inFlight, outcome.datagram, &InFlight::datagram);
+    if (sent == m_inFlight.end())
     {
       continue; // an event datagram, or one sent before the world was replaced
     }
-    const InFlight& sent = found->second;
-    if (outcome.fate == Neuron::DatagramFate::Acknowledged && sent.tick + STATE_BASELINE_TICKS_MAX > _tick)
+    if (outcome.fate == Neuron::DatagramFate::Acknowledged && sent->tick + STATE_BASELINE_TICKS_MAX > _tick)
     {
-      for (const auto& [id, state] : sent.held)
+      for (const auto& [id, state] : sent->held)
       {
-        const auto known = m_known.find(id);
-        if (known == m_known.end())
+        const auto known = std::ranges::lower_bound(m_known, id, {}, &Known::id);
+        if (known == m_known.end() || known->id != id)
         {
           continue; // its removal was acknowledged already
         }
@@ -236,22 +241,22 @@ void StateSender::Fates(std::span<const Neuron::DatagramOutcome> _outcomes, std:
         {
           m_known.erase(known);
         }
-        else if (!known->second.acked || known->second.ackedTick < sent.tick)
+        else if (!known->acked || known->ackedTick < sent->tick)
         {
-          known->second.acked = *state;
-          known->second.ackedTick = sent.tick;
+          known->acked = state;
+          known->ackedTick = sent->tick;
         }
       }
     }
-    m_inFlight.erase(found);
+    m_inFlight.erase(sent);
   }
   // A datagram with no fate after the baseline window can no longer serve as a baseline: it counts as lost.
-  std::erase_if(m_inFlight, [_tick](const auto& _entry) { return _entry.second.tick + STATE_BASELINE_TICKS_MAX <= _tick; });
+  std::erase_if(m_inFlight, [_tick](const InFlight& _sent) { return _sent.tick + STATE_BASELINE_TICKS_MAX <= _tick; });
 }
 
 void StateSender::Forget()
 {
-  for (auto& [id, known] : m_known)
+  for (Known& known : m_known)
   {
     known.acked.reset();
   }

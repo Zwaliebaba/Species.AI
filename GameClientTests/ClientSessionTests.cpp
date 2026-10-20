@@ -78,13 +78,21 @@ struct Fixture
   std::unique_ptr<Species::ClientSession> session;
 };
 
+// The record MakeRecord makes, which the test expects to exist.
+Species::StateRecord RecordOf(Species::StableId _id, const Species::ReplicatedState& _state, const Species::ReplicatedState* _baseline)
+{
+  const std::optional<Species::StateRecord> record = Species::MakeRecord(_id, _state, _baseline);
+  Assert::IsTrue(record.has_value(), L"the state differs from its baseline");
+  return record.value_or(Species::StateRecord{});
+}
+
 Species::StateRecord WholeFigure(std::uint64_t _counter, std::uint8_t _team, std::int32_t _x, bool _dead = false)
 {
   Species::ReplicatedFigure figure;
   figure.team = _team;
   figure.position = {_x, 0, 0};
   figure.dead = _dead;
-  return *Species::MakeRecord(Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, _counter), figure, nullptr);
+  return RecordOf(Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, _counter), figure, nullptr);
 }
 
 } // namespace
@@ -179,7 +187,7 @@ public:
     const Species::ReplicatedState held{std::get<Species::ReplicatedFigure>(WholeFigure(1, 0, 0).state)};
     Species::ReplicatedFigure moved = std::get<Species::ReplicatedFigure>(held);
     moved.position.x = 16;
-    f.Send(Species::StateUpdate{2, 1, {*Species::MakeRecord(Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 1), moved, &held)}});
+    f.Send(Species::StateUpdate{2, 1, {RecordOf(Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 1), moved, &held)}});
     f.session->Update();
     const auto drawnX = [&f]
     {
@@ -249,10 +257,10 @@ public:
     Species::StateReplica replica;
     Species::ReplicatedFigure figure;
     figure.yaw = 1000;
-    replica.Apply({1, 0, {*Species::MakeRecord(1, figure, nullptr)}});
+    replica.Apply({1, 0, {RecordOf(1, figure, nullptr)}});
     const Species::ReplicatedState before{figure};
     figure.yaw = 20;
-    replica.Apply({2, 1, {*Species::MakeRecord(1, figure, &before)}});
+    replica.Apply({2, 1, {RecordOf(1, figure, &before)}});
     const std::vector<Species::InterpolatedFigure> drawn = Species::InterpolateFigures(replica, 0.5);
     Assert::IsTrue(drawn.size() == 1 && std::abs(drawn[0].yawRadians - Species::YawRadians(1022)) < 1e-9, L"through north, not south");
   }

@@ -89,7 +89,10 @@ void PresentationEvents::Decode(Neuron::BitReader& _reader)
     {
       _reader.Fail(); // the kinds start at 1
     }
-    event.kind = static_cast<EffectEventKind>(kind);
+    else
+    {
+      event.kind = static_cast<EffectEventKind>(kind);
+    }
     event.team = static_cast<std::uint8_t>(_reader.ReadBits(TEAM_BITS));
     if (_reader.ReadBool())
     {
