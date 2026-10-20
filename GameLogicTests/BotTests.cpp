@@ -420,6 +420,7 @@ public:
     const std::vector<std::size_t> workerCounts{0, 1, 2, 8};
     std::vector<std::uint64_t> chains(workerCounts.size());
     std::vector<std::function<void()>> jobs;
+    jobs.reserve(workerCounts.size());
     for (std::size_t index = 0; index < workerCounts.size(); ++index)
     {
       jobs.emplace_back([&run, &chains, &workerCounts, index] { chains[index] = run(workerCounts[index]); });

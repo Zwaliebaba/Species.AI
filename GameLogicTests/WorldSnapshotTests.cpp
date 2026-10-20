@@ -219,6 +219,7 @@ public:
     constexpr std::size_t SHARES = 4;
     std::vector<std::vector<std::size_t>> accepted(SHARES);
     std::vector<std::function<void()>> jobs;
+    jobs.reserve(SHARES);
     for (std::size_t share = 0; share < SHARES; ++share)
     {
       jobs.emplace_back(
