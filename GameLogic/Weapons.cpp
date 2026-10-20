@@ -16,7 +16,6 @@ namespace Species
 namespace
 {
 
-constexpr std::uint64_t EFFECT_KIND_MAX = static_cast<std::uint64_t>(EffectKind::OrderTrailMark);
 constexpr std::uint64_t EFFECT_KIND_MAX_BEFORE_MARKERS = static_cast<std::uint64_t>(EffectKind::ShockwaveRing);
 // The first state version whose effects hold a marker's route (M1 task T7).
 constexpr std::uint32_t EFFECT_STATE_VERSION_MARKERS = 7;

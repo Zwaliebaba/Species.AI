@@ -84,6 +84,9 @@
     <ClInclude Include="StateHash.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="StateSender.h">
+      <Filter>Server</Filter>
+    </ClInclude>
     <ClInclude Include="StateValues.h">
       <Filter>Simulation</Filter>
     </ClInclude>
@@ -169,6 +172,9 @@
     </ClCompile>
     <ClCompile Include="StateHash.cpp">
       <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="StateSender.cpp">
+      <Filter>Server</Filter>
     </ClCompile>
     <ClCompile Include="TickDraws.cpp">
       <Filter>Simulation</Filter>

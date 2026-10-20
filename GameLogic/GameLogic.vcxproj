@@ -167,6 +167,7 @@
     <ClInclude Include="SlicedPool.h" />
     <ClInclude Include="StableIdCounter.h" />
     <ClInclude Include="StateHash.h" />
+    <ClInclude Include="StateSender.h" />
     <ClInclude Include="StateValues.h" />
     <ClInclude Include="TickDraws.h" />
     <ClInclude Include="Weapons.h" />
@@ -197,6 +198,7 @@
     <ClCompile Include="Sandbox.cpp" />
     <ClCompile Include="StableIdCounter.cpp" />
     <ClCompile Include="StateHash.cpp" />
+    <ClCompile Include="StateSender.cpp" />
     <ClCompile Include="TickDraws.cpp" />
     <ClCompile Include="Weapons.cpp" />
     <ClCompile Include="WorldServer.cpp" />

@@ -4,10 +4,11 @@
 #include "InProcessTransport.h"
 #include "IntegratedServer.h"
 #include "LooseContent.h"
+#include "PresentationEvents.h"
 #include "RegionTerrain.h"
 #include "ServerHost.h"
+#include "StateUpdate.h"
 #include "TestSupport.h"
-#include "TickReport.h"
 #include "Tuning.h"
 #include "WorkerPool.h"
 #include "WorldServer.h"
@@ -67,7 +68,8 @@ Neuron::LooseContent CookedContentWith(const TemporaryFolder& _folder, std::stri
   return std::move(*content);
 }
 
-// What a client end has received, in order: the world's terrain, the tick reports and its commands' outcomes.
+// What a client end has received, in order: the world's terrain, the ticks of the state updates and its commands'
+// outcomes.
 struct Arrivals
 {
   std::vector<Species::WorldTerrain> terrains;
@@ -80,11 +82,19 @@ Arrivals TakeArrivals(Neuron::Transport& _client)
   Arrivals arrivals;
   Neuron::MessageDispatcher dispatcher;
   dispatcher.Register<Species::WorldTerrain>([&arrivals](const Species::WorldTerrain& _terrain) { arrivals.terrains.push_back(_terrain); });
-  dispatcher.Register<Species::TickReport>([&arrivals](const Species::TickReport& _report) { arrivals.ticks.push_back(_report.tick); });
+  dispatcher.Register<Species::StateUpdate>(
+    [&arrivals](const Species::StateUpdate& _update)
+    {
+      if (arrivals.ticks.empty() || arrivals.ticks.back() != _update.tick)
+      {
+        arrivals.ticks.push_back(_update.tick);
+      }
+    });
+  dispatcher.Register<Species::PresentationEvents>([](const Species::PresentationEvents&) {});
   dispatcher.Register<Species::CommandReport>([&arrivals](const Species::CommandReport& _report) { arrivals.reports.push_back(_report); });
   while (std::optional<Neuron::ReceivedMessage> message = _client.Receive())
   {
-    Assert::IsTrue(dispatcher.Dispatch(message->bytes), L"only the terrain, tick reports and command reports arrive");
+    Assert::IsTrue(dispatcher.Dispatch(message->bytes), L"only the terrain, state updates, events and command reports arrive");
   }
   return arrivals;
 }
@@ -142,7 +152,7 @@ public:
   {
     // A command for an unknown type is refused on arrival with its reason, in the world owner's queue.
     Species::WorldSimulation world({TEST_KEY, 0, 1, &CommittedTuning()});
-    Assert::IsFalse(world.Commands().Submit(world.Ids().Issue(), 0, Neuron::EncodeMessage(Species::TickReport{1})));
+    Assert::IsFalse(world.Commands().Submit(world.Ids().Issue(), 0, Neuron::EncodeMessage(Species::WorldTerrain{})));
     ExpectEqual(1, static_cast<std::int64_t>(world.Commands().Rejections().unknownType), L"a message that is no command");
   }
 };
@@ -155,14 +165,14 @@ public:
     ExpectNoDevelopmentCheck();
   }
 
-  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp090EveryConnectionReceivesEachTicksReport)
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp090EveryConnectionReceivesEachTicksState)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-090")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-011")
   END_TEST_METHOD_ATTRIBUTE()
-  TEST_METHOD(Mvp090EveryConnectionReceivesEachTicksReport)
+  TEST_METHOD(Mvp090EveryConnectionReceivesEachTicksState)
   {
     // The headless library and host with the game's world, on a manual clock (PLT-048): two clients, each sent the
-    // world's terrain once and the report of every tick after it connected.
+    // world's terrain once and the state of every tick after it connected, which names its tick when the world is empty.
     auto source = std::make_unique<Neuron::ManualTimeSource>();
     Neuron::ManualTimeSource* manual = source.get();
     const Neuron::PlatformClock clock(std::move(source));
@@ -177,7 +187,7 @@ public:
     std::uint64_t waits = 0;
     desc.waitUntil = [&](Neuron::Nanoseconds _deadline)
     {
-      // Ten ticks, then the loop waits on its own clock until the test has read the reports.
+      // Ten ticks, then the loop waits on its own clock until the test has read the updates.
       if (++waits <= 10)
       {
         manual->Advance(_deadline - clock.Now());
@@ -203,7 +213,7 @@ public:
                        arrivals.terrains[0].digest == world.Terrain()->digest,
                      L"the terrain's seed and digest, once");
       const std::vector<std::uint64_t>& ticks = arrivals.ticks;
-      ExpectEqual(11, static_cast<std::int64_t>(ticks.size()), L"a report a tick, from the first");
+      ExpectEqual(11, static_cast<std::int64_t>(ticks.size()), L"an update a tick, from the first");
       for (std::size_t n = 0; n < ticks.size(); ++n)
       {
         ExpectEqual(static_cast<std::int64_t>(n), static_cast<std::int64_t>(ticks[n]), L"in tick order");
@@ -245,7 +255,7 @@ public:
     const Neuron::PlatformClock clock(std::move(source));
     Neuron::InProcessListener listener({});
     std::unique_ptr<Neuron::Transport> client = listener.Connect();
-    Assert::IsTrue(client->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(Species::TickReport{7})).has_value());
+    Assert::IsTrue(client->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(Species::WorldTerrain{})).has_value());
     Assert::IsTrue(client->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(Species::SelectCommand{0, 0})).has_value());
     Species::WorldServer world({.tuning = CommittedTuning()});
     Neuron::ServerHost::Desc desc;
@@ -307,7 +317,7 @@ public:
     server.Stop();
     for (std::size_t n = 1; n < ticks.size(); ++n)
     {
-      Assert::IsTrue(ticks[n] == ticks[n - 1] + 1, L"one report a tick, in order");
+      Assert::IsTrue(ticks[n] == ticks[n - 1] + 1, L"one update a tick, in order");
     }
     Assert::IsTrue(client->State() == Neuron::ConnectionState::Closed, L"stopping the server closes the connection");
   }

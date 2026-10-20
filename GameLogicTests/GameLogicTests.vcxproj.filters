@@ -44,6 +44,9 @@
     <ClCompile Include="RegionSimulationTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="ReplicationTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="RouteTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>

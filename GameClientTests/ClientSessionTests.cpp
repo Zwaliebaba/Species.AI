@@ -2,17 +2,22 @@
 
 #include "ClientSession.h"
 #include "InProcessTransport.h"
+#include "PlatformClock.h"
+#include "PresentationEvents.h"
 #include "RegionTerrain.h"
+#include "ReplicaTiming.h"
+#include "StateUpdate.h"
 #include "TestSupport.h"
-#include "TickReport.h"
 #include "WorldTerrain.h"
 
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -22,6 +27,8 @@ namespace GameClientTests
 
 namespace
 {
+
+constexpr Neuron::Nanoseconds MILLISECOND{1'000'000};
 
 // The region of seed 1 as this client builds it: what an honest server sends.
 const Species::RegionTerrain& SeedOne()
@@ -35,6 +42,51 @@ const Species::RegionTerrain& SeedOne()
   return REGION;
 }
 
+/// A session on a manual clock (PLT-048) with the server's end of its transport, and the titles it showed.
+struct Fixture
+{
+  Fixture()
+    : clock(MakeSource())
+  {
+    auto [client, serverEnd] = Neuron::InProcessTransport::CreatePair({});
+    server = std::move(serverEnd);
+    Species::ClientSession::Desc desc;
+    desc.transport = std::move(client);
+    desc.showTitle = [this](std::string_view _title) { titles.emplace_back(_title); };
+    desc.productName = "Species";
+    desc.tuning = &CommittedTuning();
+    desc.clock = &clock;
+    session = std::make_unique<Species::ClientSession>(std::move(desc));
+  }
+
+  std::unique_ptr<Neuron::TimeSource> MakeSource()
+  {
+    auto source = std::make_unique<Neuron::ManualTimeSource>();
+    manual = source.get();
+    return source;
+  }
+
+  template <class T> void Send(const T& _message)
+  {
+    Assert::IsTrue(server->Send(Neuron::Channel::State, Neuron::EncodeMessage(_message)).has_value(), L"sent");
+  }
+
+  Neuron::ManualTimeSource* manual = nullptr;
+  Neuron::PlatformClock clock;
+  std::unique_ptr<Neuron::Transport> server;
+  std::vector<std::string> titles;
+  std::unique_ptr<Species::ClientSession> session;
+};
+
+Species::StateRecord WholeFigure(std::uint64_t _counter, std::uint8_t _team, std::int32_t _x, bool _dead = false)
+{
+  Species::ReplicatedFigure figure;
+  figure.team = _team;
+  figure.position = {_x, 0, 0};
+  figure.dead = _dead;
+  return *Species::MakeRecord(Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, _counter), figure, nullptr);
+}
+
 } // namespace
 
 TEST_CLASS(ClientSessionTests)
@@ -45,53 +97,164 @@ public:
     ExpectNoDevelopmentCheck();
   }
 
-  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp090TheSessionShowsTheServersLatestTick)
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp090TheSessionShowsTheReplicasLatestTick)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-090")
   END_TEST_METHOD_ATTRIBUTE()
-  TEST_METHOD(Mvp090TheSessionShowsTheServersLatestTick)
+  TEST_METHOD(Mvp090TheSessionShowsTheReplicasLatestTick)
   {
-    auto [client, server] = Neuron::InProcessTransport::CreatePair({});
-    std::vector<std::string> titles;
-    Species::ClientSession::Desc desc;
-    desc.transport = std::move(client);
-    desc.showTitle = [&titles](std::string_view _title) { titles.emplace_back(_title); };
-    desc.productName = "Species";
-    desc.tuning = &CommittedTuning();
-    Species::ClientSession session(std::move(desc));
-    session.Update();
-    Assert::IsFalse(session.ServerTick().has_value(), L"no report yet");
-    Assert::IsTrue(titles.empty(), L"the title waits for the first report");
-    Assert::IsTrue(session.Connected());
+    Fixture f;
+    f.session->Update();
+    Assert::IsFalse(f.session->ServerTick().has_value(), L"no state yet");
+    Assert::IsTrue(f.titles.empty(), L"the title waits for the first state");
+    Assert::IsTrue(f.session->Connected());
 
     for (std::uint64_t tick = 10; tick < 13; ++tick)
     {
-      Assert::IsTrue(server->Send(Neuron::Channel::State, Neuron::EncodeMessage(Species::TickReport{tick})).has_value());
+      f.Send(Species::StateUpdate{tick, 0, {}});
     }
-    session.Update();
-    Assert::IsTrue(session.ServerTick() == std::optional<std::uint64_t>{12}, L"the latest of the reports that arrived");
-    Assert::IsTrue(titles.size() == 1 && titles[0] == "Species \u2014 tick 12", L"one title a frame, with the latest tick");
+    f.session->Update();
+    Assert::IsTrue(f.session->ServerTick() == std::optional<std::uint64_t>{12}, L"the latest of the updates that arrived");
+    Assert::IsTrue(f.titles.size() == 1 && f.titles[0] == "Species — tick 12", L"one title a frame, with the latest tick");
 
     // A message the session cannot read is counted and changes nothing.
     const std::vector<std::byte> garbage{std::byte{0xff}, std::byte{0xff}, std::byte{0x01}};
-    Assert::IsTrue(server->Send(Neuron::Channel::Reliable, garbage).has_value());
-    session.Update();
-    Assert::IsTrue(session.ServerTick() == std::optional<std::uint64_t>{12});
-    ExpectEqual(1, static_cast<std::int64_t>(titles.size()), L"an unchanged tick leaves the title");
-    ExpectEqual(1, static_cast<std::int64_t>(session.Drops().Total()), L"drops");
+    Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, garbage).has_value());
+    f.session->Update();
+    Assert::IsTrue(f.session->ServerTick() == std::optional<std::uint64_t>{12});
+    ExpectEqual(1, static_cast<std::int64_t>(f.titles.size()), L"an unchanged tick leaves the title");
+    ExpectEqual(1, static_cast<std::int64_t>(f.session->Drops().Total()), L"drops");
 
-    session.Close();
-    Assert::IsFalse(session.Connected(), L"closed");
-    Assert::IsTrue(server->State() == Neuron::ConnectionState::Closed, L"the server's end sees the close");
+    f.session->Close();
+    Assert::IsFalse(f.session->Connected(), L"closed");
+    Assert::IsTrue(f.server->State() == Neuron::ConnectionState::Closed, L"the server's end sees the close");
   }
 
-  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp090TheTitleNamesTheTick)
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp090TheTitleNamesTheTickAndEachSidesFigures)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-090")
   END_TEST_METHOD_ATTRIBUTE()
-  TEST_METHOD(Mvp090TheTitleNamesTheTick)
+  TEST_METHOD(Mvp090TheTitleNamesTheTickAndEachSidesFigures)
   {
-    Assert::IsTrue(Species::SessionTitle("Species", std::nullopt, std::nullopt) == "Species", L"the product alone before a report");
+    Assert::IsTrue(Species::SessionTitle("Species", std::nullopt, std::nullopt) == "Species", L"the product alone before a state");
     Assert::IsTrue(Species::SessionTitle("Species", std::nullopt, 1234) == "Species — tick 1234", L"the product and the tick");
     Assert::IsTrue(Species::SessionTitle("Species", 7, 1234) == "Species — seed 7 — tick 1234", L"the seed of MVP-005 too");
+    const std::vector<std::uint32_t> sides = {200, 198};
+    Assert::IsTrue(Species::SessionTitle("Species", 7, 1234, sides) == "Species — seed 7 — tick 1234 — figures 200 : 198", L"each side");
+    Assert::IsTrue(Species::SessionTitle("Species", 7, 1234, sides, true) ==
+                     "Species — seed 7 — tick 1234 — figures 200 : 198 — waiting for the server",
+                   L"and the wait");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr084TheTitleCountsEachSidesFiguresFromTheReplica)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-090")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr084TheTitleCountsEachSidesFiguresFromTheReplica)
+  {
+    // M1 task T12's run check: each side's figures that are alive, from the replica; a side with none left shows 0.
+    Fixture f;
+    f.Send(Species::StateUpdate{
+      5, 0, {WholeFigure(1, 0, 0), WholeFigure(2, 0, 16), WholeFigure(3, 0, 32, true), WholeFigure(4, 1, 48), WholeFigure(5, 1, 64)}});
+    f.session->Update();
+    Assert::IsTrue(f.session->SideFigures() == std::vector<std::uint32_t>{2, 2}, L"two alive a side; a corpse does not count");
+    Assert::IsTrue(!f.titles.empty() && f.titles.back() == "Species — tick 5 — figures 2 : 2", L"the title");
+    f.Send(Species::StateUpdate{6,
+                                0,
+                                {Species::RemovalRecord(Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 4)),
+                                 Species::RemovalRecord(Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 5))}});
+    f.session->Update();
+    Assert::IsTrue(f.titles.back() == "Species — tick 6 — figures 2 : 0", L"a side with no figure left");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr084TheReplicaIsDrawnOneTickBehindAndHeld)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-085")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-090")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr084TheReplicaIsDrawnOneTickBehindAndHeld)
+  {
+    // A figure at x = 0 at tick 1 and x = 1 wu at tick 2, which arrives at 100 ms: the frame at its arrival draws tick
+    // 1's state, then moves to tick 2's over one tick period, holds it, and after 250 ms more shows the wait.
+    Fixture f;
+    f.Send(Species::StateUpdate{1, 0, {WholeFigure(1, 0, 0)}});
+    f.session->Update();
+    f.manual->Advance(100 * MILLISECOND);
+    const Species::ReplicatedState held{std::get<Species::ReplicatedFigure>(WholeFigure(1, 0, 0).state)};
+    Species::ReplicatedFigure moved = std::get<Species::ReplicatedFigure>(held);
+    moved.position.x = 16;
+    f.Send(Species::StateUpdate{2, 1, {*Species::MakeRecord(Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 1), moved, &held)}});
+    f.session->Update();
+    const auto drawnX = [&f]
+    {
+      const std::vector<Species::InterpolatedFigure> figures =
+        Species::InterpolateFigures(f.session->Replica(), f.session->InterpolationFraction());
+      Assert::IsTrue(figures.size() == 1, L"one figure");
+      return figures[0].position.x;
+    };
+    Assert::IsTrue(drawnX() == 0.0, L"at its arrival, the previous tick's state");
+    f.manual->Advance(50 * MILLISECOND);
+    Assert::IsTrue(std::abs(drawnX() - 0.5) < 1e-9, L"half a period on, half way");
+    f.manual->Advance(80 * MILLISECOND);
+    Assert::IsTrue(drawnX() == 1.0, L"held at the latest state, never beyond it");
+    Assert::IsFalse(f.session->WaitingForServer(), L"within the hold");
+    f.manual->Advance(221 * MILLISECOND);
+    Assert::IsTrue(f.session->WaitingForServer(), L"beyond the period and the hold");
+    f.session->Update();
+    Assert::IsTrue(f.titles.back().ends_with(" — waiting for the server"), L"the title says so");
+    f.Send(Species::StateUpdate{3, 0, {}});
+    f.session->Update();
+    Assert::IsFalse(f.session->WaitingForServer(), L"the next state ends the wait");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr084AnEventOlderThanItsLifeIsNotPlayed)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-090")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr084AnEventOlderThanItsLifeIsNotPlayed)
+  {
+    Fixture f;
+    Species::EffectEvent died;
+    died.kind = Species::EffectEventKind::FigureDied;
+    died.subject = 9;
+    f.Send(Species::StateUpdate{3, 0, {}});
+    f.Send(Species::PresentationEvents{3, {died, died}});
+    f.session->Update();
+    const std::vector<Species::ReceivedEvent> taken = f.session->TakeEvents();
+    Assert::IsTrue(taken.size() == 2 && taken[0].tick == 3 && taken[0].event.subject == 9, L"due as its tick arrives");
+    Assert::IsTrue(f.session->TakeEvents().empty(), L"taken once");
+    // Events nobody takes while the display moves on 0.6 s are dropped.
+    f.Send(Species::PresentationEvents{3, {died}});
+    f.session->Update();
+    for (std::uint64_t tick = 4; tick < 10; ++tick)
+    {
+      f.manual->Advance(100 * MILLISECOND);
+      f.Send(Species::StateUpdate{tick, 0, {}});
+      f.session->Update();
+    }
+    f.manual->Advance(100 * MILLISECOND);
+    Assert::IsTrue(f.session->TakeEvents().empty(), L"too old to play");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr084TimingAndInterpolationOfTheReplica)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-085")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr084TimingAndInterpolationOfTheReplica)
+  {
+    Species::ReplicaTiming timing(100 * MILLISECOND);
+    Assert::IsTrue(timing.Fraction(Neuron::Nanoseconds{0}) == 1.0 && !timing.Waiting(Neuron::Nanoseconds{0}), L"nothing received");
+    timing.Arrived(7, 1000 * MILLISECOND);
+    Assert::IsTrue(timing.Fraction(1025 * MILLISECOND) == 0.25, L"a quarter period");
+    Assert::IsTrue(timing.DisplayTick(1025 * MILLISECOND, 6) == 6.25, L"a quarter of the way from tick 6");
+    timing.Arrived(7, 1090 * MILLISECOND);
+    Assert::IsTrue(timing.Fraction(1100 * MILLISECOND) == 1.0, L"the same tick again is not a new arrival");
+    Assert::IsFalse(timing.Waiting(1350 * MILLISECOND) || !timing.Waiting(1351 * MILLISECOND), L"the hold ends 350 ms after the arrival");
+
+    // A turn interpolates the shorter way round.
+    Species::StateReplica replica;
+    Species::ReplicatedFigure figure;
+    figure.yaw = 1000;
+    replica.Apply({1, 0, {*Species::MakeRecord(1, figure, nullptr)}});
+    const Species::ReplicatedState before{figure};
+    figure.yaw = 20;
+    replica.Apply({2, 1, {*Species::MakeRecord(1, figure, &before)}});
+    const std::vector<Species::InterpolatedFigure> drawn = Species::InterpolateFigures(replica, 0.5);
+    Assert::IsTrue(drawn.size() == 1 && std::abs(drawn[0].yawRadians - Species::YawRadians(1022)) < 1e-9, L"through north, not south");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp011TheClientBuildsTheTerrainTheServerSent)
@@ -100,22 +263,20 @@ public:
   TEST_METHOD(Mvp011TheClientBuildsTheTerrainTheServerSent)
   {
     // The server's seed and digest; the client builds the region with its own library and data, and its digest matches.
-    auto [client, server] = Neuron::InProcessTransport::CreatePair({});
-    std::vector<std::string> titles;
-    Species::ClientSession::Desc desc;
-    desc.transport = std::move(client);
-    desc.showTitle = [&titles](std::string_view _title) { titles.emplace_back(_title); };
-    desc.productName = "Species";
-    desc.tuning = &CommittedTuning();
-    Species::ClientSession session(std::move(desc));
+    Fixture f;
     const Species::WorldTerrain sent{SeedOne().seed, SeedOne().digest};
-    Assert::IsTrue(server->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(sent)).has_value());
-    Assert::IsTrue(server->Send(Neuron::Channel::State, Neuron::EncodeMessage(Species::TickReport{3})).has_value());
-    session.Update();
-    Assert::IsTrue(session.Terrain() != nullptr && session.Terrain()->digest == SeedOne().digest, L"the client's terrain");
-    Assert::IsFalse(session.Refused(), L"accepted");
-    Assert::IsTrue(session.Connected(), L"still connected");
-    Assert::IsTrue(!titles.empty() && titles.back() == "Species — seed 1 — tick 3", L"the seed is shown");
+    Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(sent)).has_value());
+    f.Send(Species::StateUpdate{3, 0, {}});
+    f.session->Update();
+    Assert::IsTrue(f.session->Terrain() != nullptr && f.session->Terrain()->digest == SeedOne().digest, L"the client's terrain");
+    Assert::IsFalse(f.session->Refused(), L"accepted");
+    Assert::IsTrue(f.session->Connected(), L"still connected");
+    Assert::IsTrue(!f.titles.empty() && f.titles.back() == "Species — seed 1 — tick 3", L"the seed is shown");
+    // The same terrain again changes nothing.
+    const Species::RegionTerrain* built = f.session->Terrain();
+    Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(sent)).has_value());
+    f.session->Update();
+    Assert::IsTrue(f.session->Terrain() == built, L"not built again");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp011AClientRefusesATerrainWhoseDigestDiffers)
@@ -125,22 +286,15 @@ public:
   {
     // A server whose library or data differs sends another digest: the client refuses the world with a message, and
     // closes the connection.
-    auto [client, server] = Neuron::InProcessTransport::CreatePair({});
-    std::vector<std::string> titles;
-    Species::ClientSession::Desc desc;
-    desc.transport = std::move(client);
-    desc.showTitle = [&titles](std::string_view _title) { titles.emplace_back(_title); };
-    desc.productName = "Species";
-    desc.tuning = &CommittedTuning();
-    Species::ClientSession session(std::move(desc));
+    Fixture f;
     Species::WorldTerrain sent{SeedOne().seed, SeedOne().digest};
     sent.digest[0] ^= std::byte{1};
-    Assert::IsTrue(server->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(sent)).has_value());
-    session.Update();
-    Assert::IsTrue(session.Refused() && session.Terrain() == nullptr, L"refused");
-    Assert::IsFalse(session.Connected(), L"the client closed");
-    Assert::IsTrue(server->State() == Neuron::ConnectionState::Closed, L"the server's end sees the close");
-    Assert::IsTrue(!titles.empty() && titles.back() == Species::RefusedTitle("Species"), L"the refusal's message");
+    Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(sent)).has_value());
+    f.session->Update();
+    Assert::IsTrue(f.session->Refused() && f.session->Terrain() == nullptr, L"refused");
+    Assert::IsFalse(f.session->Connected(), L"the client closed");
+    Assert::IsTrue(f.server->State() == Neuron::ConnectionState::Closed, L"the server's end sees the close");
+    Assert::IsTrue(!f.titles.empty() && f.titles.back() == Species::RefusedTitle("Species"), L"the refusal's message");
   }
 };
 

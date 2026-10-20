@@ -316,6 +316,7 @@ int Run()
     sessionDesc.showTitle = [&window = *presentation.window](std::string_view _title) { window.SetTitle(_title); };
     sessionDesc.productName = std::string(PRODUCT_NAME);
     sessionDesc.tuning = &*clientTuning;
+    sessionDesc.clock = &clock;
     ClientSession session(std::move(sessionDesc));
 
     presentation.window->Show();

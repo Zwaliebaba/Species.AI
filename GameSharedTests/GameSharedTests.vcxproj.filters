@@ -29,14 +29,17 @@
     <ClCompile Include="RegionTerrainTests.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
+    <ClCompile Include="StateUpdateTests.cpp">
+      <Filter>Messages</Filter>
+    </ClCompile>
     <ClCompile Include="TestSupport.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
-    <ClCompile Include="TickReportTests.cpp">
-      <Filter>Messages</Filter>
-    </ClCompile>
     <ClCompile Include="TuningTests.cpp">
       <Filter>Records</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldTerrainTests.cpp">
+      <Filter>Messages</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Build</Filter>

@@ -6,6 +6,8 @@
 #include "ServerHost.h"
 
 #include <exception>
+#include <expected>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -105,10 +107,15 @@ void ServerHost::RunTick(std::uint64_t _tick)
   }
 }
 
-bool ServerHost::Send(ConnectionId _connection, Channel _channel, std::span<const std::byte> _message)
+std::optional<std::uint64_t> ServerHost::Send(ConnectionId _connection, Channel _channel, std::span<const std::byte> _message)
 {
   const auto found = m_connections.find(_connection);
-  return found != m_connections.end() && found->second->Send(_channel, _message).has_value();
+  if (found == m_connections.end())
+  {
+    return std::nullopt;
+  }
+  const std::expected<std::uint64_t, SendError> sent = found->second->Send(_channel, _message);
+  return sent ? std::optional<std::uint64_t>{*sent} : std::nullopt;
 }
 
 void ServerHost::AcceptConnections()

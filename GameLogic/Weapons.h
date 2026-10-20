@@ -2,6 +2,7 @@
 
 #include "BitReader.h"
 #include "BitWriter.h"
+#include "EffectKind.h"
 #include "RouteStore.h"
 #include "StableId.h"
 #include "Vec3.h"
@@ -24,17 +25,6 @@ struct LaserBolt
   std::int32_t movesLeft = 0; // R-CRATE-440: the moves still to make
   bool ricocheted = false;    // R-CRATE-441 step 4: its first ground contact is behind it
   bool harmless = false;      // R-CRATE-444: it has hit
-};
-
-// R-CRATE-400: the kinds of the region's effect pool that the MVP builds. Muzzle flashes, particles and the other
-// presentation of the weapons are effect events, not pool objects (ADR-105); order markers and their trail marks are
-// simulated objects (R-UNIT-187, ADR-106). The values are state, never renumbered.
-enum class EffectKind : std::uint8_t
-{
-  Grenade,
-  ShockwaveRing,
-  OrderMarker,
-  OrderTrailMark
 };
 
 /// An effect of the region's effect pool (R-CRATE-400): a grenade, a thrown weapon with a fuse (R-CRATE-410,

@@ -14,8 +14,6 @@ namespace Species
 namespace
 {
 
-constexpr std::uint64_t ORB_STATE_MAX = static_cast<std::uint64_t>(OrbState::Ascent);
-
 // R-UNIT-321: an orb inside a structure's hit volume is pushed out; once nothing holds it and it is slow, the push stops
 // for good. The MVP has no structure until M2, so only a test's shape pushes.
 void StructurePush(RegionSimulation& _region, EssenceOrb& _orb)

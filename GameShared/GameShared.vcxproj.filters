@@ -13,6 +13,9 @@
     <Filter Include="Records">
       <UniqueIdentifier>{82AF2224-6502-5BE4-9A5D-2B4D337729DB}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Replication">
+      <UniqueIdentifier>{E09B79FA-A057-5F24-A62E-C6400A460249}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Simulation">
       <UniqueIdentifier>{0BF5669E-8E4F-5315-AFF9-9F3AFE17939F}</UniqueIdentifier>
     </Filter>
@@ -27,6 +30,9 @@
     <ClInclude Include="EffectEvent.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="EffectKind.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="FigureKind.h">
       <Filter>Simulation</Filter>
     </ClInclude>
@@ -36,14 +42,26 @@
     <ClInclude Include="Navigation.h">
       <Filter>World</Filter>
     </ClInclude>
+    <ClInclude Include="OrbState.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="PresentationEvents.h">
+      <Filter>Replication</Filter>
+    </ClInclude>
     <ClInclude Include="RegionTerrain.h">
       <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="ReplicatedState.h">
+      <Filter>Replication</Filter>
     </ClInclude>
     <ClInclude Include="StableId.h">
       <Filter>Identity</Filter>
     </ClInclude>
-    <ClInclude Include="TickReport.h">
-      <Filter>Messages</Filter>
+    <ClInclude Include="StateReplica.h">
+      <Filter>Replication</Filter>
+    </ClInclude>
+    <ClInclude Include="StateUpdate.h">
+      <Filter>Replication</Filter>
     </ClInclude>
     <ClInclude Include="Tuning.h">
       <Filter>Records</Filter>
@@ -65,11 +83,20 @@
     <ClCompile Include="Navigation.cpp">
       <Filter>World</Filter>
     </ClCompile>
+    <ClCompile Include="PresentationEvents.cpp">
+      <Filter>Replication</Filter>
+    </ClCompile>
     <ClCompile Include="RegionTerrain.cpp">
       <Filter>World</Filter>
     </ClCompile>
-    <ClCompile Include="TickReport.cpp">
-      <Filter>Messages</Filter>
+    <ClCompile Include="ReplicatedState.cpp">
+      <Filter>Replication</Filter>
+    </ClCompile>
+    <ClCompile Include="StateReplica.cpp">
+      <Filter>Replication</Filter>
+    </ClCompile>
+    <ClCompile Include="StateUpdate.cpp">
+      <Filter>Replication</Filter>
     </ClCompile>
     <ClCompile Include="Tuning.cpp">
       <Filter>Records</Filter>

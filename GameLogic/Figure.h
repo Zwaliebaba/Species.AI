@@ -26,17 +26,6 @@ enum class DamageKind : std::uint8_t
   Fire
 };
 
-// R-UNIT-067: the Worker's behaviour states that the MVP builds; the values are state, never renumbered.
-enum class WorkerState : std::uint8_t
-{
-  Idle,
-  OnWaypointOrder,
-  Drowning,
-  Fighting,
-  Burning,
-  FollowingLeader
-};
-
 // R-UNIT-064, R-UNIT-101: what a Worker's threat is. The MVP's threats are actors and grenades.
 enum class ThreatKind : std::uint8_t
 {
@@ -55,23 +44,6 @@ struct Threat
   StableId id = 0;
 
   friend constexpr bool operator==(const Threat& _a, const Threat& _b) noexcept = default;
-};
-
-// R-UNIT-164: the Leader's behaviour states (§2.4); the values are state, never renumbered.
-enum class LeaderState : std::uint8_t
-{
-  Idle,
-  ToWaypoint,
-  GivingOrders
-};
-
-// R-UNIT-164: the Leader's order, the state machine of diagram 3-B, independent of its behaviour state.
-enum class LeaderOrder : std::uint8_t
-{
-  None,
-  PrepareWaypoint,
-  Waypoint,
-  Follow
 };
 
 /// One slot of a Leader's formation (R-UNIT-177): the stable id of its member Worker, 0 for a gap, and its timer.

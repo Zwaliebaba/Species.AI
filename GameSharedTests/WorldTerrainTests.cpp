@@ -3,7 +3,6 @@
 #include "MessageCodec.h"
 #include "StableId.h"
 #include "TestSupport.h"
-#include "TickReport.h"
 #include "WorldTerrain.h"
 
 #include <cstddef>
@@ -15,49 +14,6 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace GameSharedTests
 {
-
-TEST_CLASS(TickReportTests)
-{
-public:
-  TEST_METHOD_CLEANUP(Cleanup)
-  {
-    ExpectNoDevelopmentCheck();
-  }
-
-  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp090TheTickReportRoundTrips)
-  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-090")
-  END_TEST_METHOD_ATTRIBUTE()
-  TEST_METHOD(Mvp090TheTickReportRoundTrips)
-  {
-    for (const std::uint64_t tick : {std::uint64_t{0}, std::uint64_t{599}, std::uint64_t{0x0123456789abcdef}, ~std::uint64_t{0}})
-    {
-      const std::vector<std::byte> bytes = Neuron::EncodeMessage(Species::TickReport{tick});
-      ExpectEqual(static_cast<std::int64_t>(Species::TickReport::MAX_BYTES), static_cast<std::int64_t>(bytes.size()),
-                  L"a report is its header and its tick");
-      Neuron::MessageDispatcher dispatcher;
-      std::optional<std::uint64_t> received;
-      dispatcher.Register<Species::TickReport>([&received](const Species::TickReport& _report) { received = _report.tick; });
-      Assert::IsTrue(dispatcher.Dispatch(bytes), L"the report decodes whole");
-      Assert::IsTrue(received == tick, L"the same tick");
-    }
-    Assert::IsTrue(Species::TickReport::TYPE >= Neuron::GAME_MESSAGE_TYPE_FIRST, L"a game message's id is above the engine's");
-  }
-
-  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp090AShortReportIsDroppedAsMalformed)
-  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-090")
-  END_TEST_METHOD_ATTRIBUTE()
-  TEST_METHOD(Mvp090AShortReportIsDroppedAsMalformed)
-  {
-    std::vector<std::byte> bytes = Neuron::EncodeMessage(Species::TickReport{42});
-    bytes.pop_back();
-    Neuron::MessageDispatcher dispatcher;
-    bool called = false;
-    dispatcher.Register<Species::TickReport>([&called](const Species::TickReport&) { called = true; });
-    Assert::IsFalse(dispatcher.Dispatch(bytes));
-    Assert::IsFalse(called, L"a handler never sees a broken message");
-    ExpectEqual(1, static_cast<std::int64_t>(dispatcher.Drops().malformed), L"malformed drops");
-  }
-};
 
 TEST_CLASS(WorldTerrainTests)
 {
@@ -86,7 +42,7 @@ public:
     dispatcher.Register<Species::WorldTerrain>([&received](const Species::WorldTerrain& _terrain) { received = _terrain; });
     Assert::IsTrue(dispatcher.Dispatch(bytes), L"it decodes whole");
     Assert::IsTrue(received && received->seed == sent.seed && received->digest == sent.digest, L"the same seed and digest");
-    Assert::IsTrue(Species::WorldTerrain::TYPE != Species::TickReport::TYPE, L"its own type id");
+    Assert::IsTrue(Species::WorldTerrain::TYPE >= Neuron::GAME_MESSAGE_TYPE_FIRST, L"a game message's id is above the engine's");
   }
 };
 

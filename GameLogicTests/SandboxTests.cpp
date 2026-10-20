@@ -77,15 +77,17 @@ double GroundDistance(const Neuron::Vec3& _a, const Neuron::Vec3& _b)
 class RecordingSender final : public Neuron::ConnectionSender
 {
 public:
-  [[nodiscard]] bool Send(Neuron::ConnectionId, Neuron::Channel, std::span<const std::byte> _message) override
+  [[nodiscard]] std::optional<std::uint64_t> Send(Neuron::ConnectionId, Neuron::Channel _channel,
+                                                  std::span<const std::byte> _message) override
   {
     Neuron::MessageDispatcher dispatcher;
     dispatcher.Register<Species::CommandReport>([this](const Species::CommandReport& _report) { reports.push_back(_report); });
     static_cast<void>(dispatcher.Dispatch(_message));
-    return true;
+    return _channel == Neuron::Channel::State ? ++datagrams : 0;
   }
 
   std::vector<Species::CommandReport> reports;
+  std::uint64_t datagrams = 0;
 };
 
 // A command from the steward, as the transport delivers it.

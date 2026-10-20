@@ -2,6 +2,7 @@
 
 #include "BitReader.h"
 #include "BitWriter.h"
+#include "OrbState.h"
 #include "StableId.h"
 #include "Vec3.h"
 
@@ -11,15 +12,6 @@ namespace Species
 {
 
 class RegionSimulation;
-
-// R-UNIT-310: the states of an Essence orb that the MVP builds. M1 has no taker and no territory, so every orb follows
-// the reference's timed states and ascends (MVP-023). The values are state, never renumbered.
-enum class OrbState : std::uint8_t
-{
-  Birth,
-  Floating,
-  Ascent
-};
 
 /// An Essence orb of the region's orb pool (R-UNIT-301, R-UNIT-306): a simulated object that is not an actor, never in
 /// the actor grid.

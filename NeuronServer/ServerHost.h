@@ -12,6 +12,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <optional>
 #include <span>
 
 namespace Neuron
@@ -35,8 +36,10 @@ class ConnectionSender
 public:
   virtual ~ConnectionSender() = default;
 
-  // Queues a message to one connection; false when it cannot take it (closed, too large or backlogged).
-  [[nodiscard]] virtual bool Send(ConnectionId _connection, Channel _channel, std::span<const std::byte> _message) = 0;
+  // Queues a message to one connection: the number of its state datagram, whose fate DatagramFates reports (ADR-086),
+  // or 0 on the reliable channel; none when it cannot take it (closed, too large or backlogged).
+  [[nodiscard]] virtual std::optional<std::uint64_t> Send(ConnectionId _connection, Channel _channel,
+                                                          std::span<const std::byte> _message) = 0;
 };
 
 /// The world a server host runs: the game's state owners behind one interface, so that the engine knows no game
@@ -102,7 +105,7 @@ public:
 
 private:
   void RunTick(std::uint64_t _tick) override;
-  [[nodiscard]] bool Send(ConnectionId _connection, Channel _channel, std::span<const std::byte> _message) override;
+  [[nodiscard]] std::optional<std::uint64_t> Send(ConnectionId _connection, Channel _channel, std::span<const std::byte> _message) override;
 
   void AcceptConnections();
   void DeliverMessages();

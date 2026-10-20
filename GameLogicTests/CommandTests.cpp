@@ -6,8 +6,8 @@
 #include "Formation.h"
 #include "RegionSimulation.h"
 #include "TestSupport.h"
-#include "TickReport.h"
 #include "WorldSnapshot.h"
+#include "WorldTerrain.h"
 
 #include <cmath>
 #include <cstdint>
@@ -478,7 +478,7 @@ public:
       L"a point that is not finite", Neuron::CommandRejection::Malformed,
       [&] { return battle.Submit(STEWARD, Species::OrderWorkersCommand{0, false, {std::numeric_limits<double>::quiet_NaN(), MIDDLE.z}}); });
     refused(L"a message that is no command", Neuron::CommandRejection::UnknownType,
-            [&] { return battle.Submit(STEWARD, Species::TickReport{1}); });
+            [&] { return battle.Submit(STEWARD, Species::WorldTerrain{}); });
     Assert::IsTrue(battle.region.Commands().Submit(STEWARD, 1000, Neuron::EncodeMessage(Species::SelectCommand{0, 0})));
     refused(L"a sequence number used twice", Neuron::CommandRejection::Duplicate,
             [&] { return battle.region.Commands().Submit(STEWARD, 1000, Neuron::EncodeMessage(Species::SelectCommand{0, 0})); });
