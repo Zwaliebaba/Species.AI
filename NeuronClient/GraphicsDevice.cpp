@@ -6,6 +6,7 @@
 #include "TextEncoding.h"
 
 #include <array>
+#include <atomic>
 #include <cstddef>
 #include <optional>
 #include <string_view>
@@ -43,9 +44,12 @@ void EnableDred()
 }
 
 #if ENGINE_DEVELOPMENT
-// ADR-001: the debug layer in Debug builds, from D3D12SDKLayers.dll beside the runtime (BLD-042). GPU-based validation
-// stays off until a development setting can turn it on (ADR-092).
-bool EnableDebugLayer()
+// The debug layer's messages of warning severity or above since the process started (ADR-113's render check).
+std::atomic<std::uint64_t> g_debugLayerMessages{0};
+
+// ADR-001: the debug layer in Debug builds, from D3D12SDKLayers.dll beside the runtime (BLD-042), with GPU-based
+// validation when the render check asks for it (ADR-092, ADR-113).
+bool EnableDebugLayer(bool _gpuValidation)
 {
   ComPtr<ID3D12Debug> debug;
   if (FAILED(D3D12GetDebugInterface(IID_PPV_ARGS(&debug))))
@@ -54,7 +58,13 @@ bool EnableDebugLayer()
     return false;
   }
   debug->EnableDebugLayer();
-  Log(LogCategory::Render, LogLevel::Info, "the Direct3D 12 debug layer is on");
+  ComPtr<ID3D12Debug1> debug1;
+  const bool validating = _gpuValidation && SUCCEEDED(debug.As(&debug1));
+  if (validating)
+  {
+    debug1->SetEnableGPUBasedValidation(TRUE);
+  }
+  Log(LogCategory::Render, LogLevel::Info, "the Direct3D 12 debug layer is on, GPU-based validation {}", validating ? "on" : "off");
   return true;
 }
 
@@ -69,9 +79,11 @@ void __stdcall OnDebugMessage(D3D12_MESSAGE_CATEGORY, D3D12_MESSAGE_SEVERITY _se
     case D3D12_MESSAGE_SEVERITY_CORRUPTION:
     case D3D12_MESSAGE_SEVERITY_ERROR:
       level = LogLevel::Error;
+      g_debugLayerMessages.fetch_add(1, std::memory_order_relaxed);
       break;
     case D3D12_MESSAGE_SEVERITY_WARNING:
       level = LogLevel::Warning;
+      g_debugLayerMessages.fetch_add(1, std::memory_order_relaxed);
       break;
     case D3D12_MESSAGE_SEVERITY_INFO:
     case D3D12_MESSAGE_SEVERITY_MESSAGE:
@@ -158,16 +170,20 @@ bool IsDeviceRemoval(HRESULT _result) noexcept
   return _result == DXGI_ERROR_DEVICE_REMOVED || _result == DXGI_ERROR_DEVICE_RESET;
 }
 
-std::expected<GraphicsDevice, StartupFailure> GraphicsDevice::Create()
+std::expected<GraphicsDevice, StartupFailure> GraphicsDevice::Create(const RenderConfig& _config)
 {
   GraphicsDevice result;
   EnableDred();
   UINT factoryFlags = 0;
+  bool software = false;
 #if ENGINE_DEVELOPMENT
-  if (EnableDebugLayer())
+  if (EnableDebugLayer(_config.gpuValidation))
   {
     factoryFlags = DXGI_CREATE_FACTORY_DEBUG;
   }
+  software = _config.softwareAdapter;
+#else
+  (void)_config;
 #endif
   HRESULT created = CreateDXGIFactory2(factoryFlags, IID_PPV_ARGS(&result.m_factory));
   if (FAILED(created) && factoryFlags != 0)
@@ -189,11 +205,14 @@ std::expected<GraphicsDevice, StartupFailure> GraphicsDevice::Create()
   }
 
   // ADR-002: the adapters in the order of the high-performance preference; the first that passes every check is kept.
+  // The render check probes the WARP adapter alone, with the same checks but the hardware one (ADR-113).
   std::vector<AdapterCapabilities> probed;
   for (UINT index = 0;; ++index)
   {
     ComPtr<IDXGIAdapter1> adapter;
-    if (FAILED(result.m_factory->EnumAdapterByGpuPreference(index, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&adapter))))
+    if (software
+          ? index > 0 || FAILED(result.m_factory->EnumWarpAdapter(IID_PPV_ARGS(&adapter)))
+          : FAILED(result.m_factory->EnumAdapterByGpuPreference(index, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&adapter))))
     {
       break;
     }
@@ -201,7 +220,7 @@ std::expected<GraphicsDevice, StartupFailure> GraphicsDevice::Create()
     adapter->GetDesc1(&desc);
     AdapterCapabilities capabilities;
     capabilities.description = ToUtf8(desc.Description);
-    capabilities.software = (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) != 0;
+    capabilities.software = !software && (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) != 0;
     ComPtr<ID3D12Device> device;
     if (!capabilities.software && SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(&device))))
     {
@@ -319,6 +338,11 @@ void GraphicsDevice::LogRemoval() const
 }
 
 #if ENGINE_DEVELOPMENT
+std::uint64_t GraphicsDevice::DebugLayerMessages() noexcept
+{
+  return g_debugLayerMessages.load(std::memory_order_relaxed);
+}
+
 void GraphicsDevice::Remove() const
 {
   ComPtr<ID3D12Device5> device5;

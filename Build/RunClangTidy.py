@@ -12,6 +12,10 @@ major version fails rather than report findings CI would not. `python -m pip ins
 
 Before the tree, the gate checks itself: a fixture with a global variable that lacks its `g_` prefix must be
 reported, so a clang-tidy that silently ignores /.clang-tidy cannot pass the tree.
+
+The job runs without a build, so the shader headers that FXCompile writes into <Lib>/CompiledShader/ (AGENTS.md §2)
+do not exist: for each FXCompile item a stand-in header declares its byte array, in a system include folder of the
+run, so the translation unit that binds the pipeline states is checked like any other.
 """
 import argparse
 import concurrent.futures
@@ -83,6 +87,19 @@ def arguments(project):
   return args
 
 
+def write_shader_stand_ins(projects, folder):
+  """For each FXCompile item, CompiledShader/<Name>.h declaring the byte array g_<Name> that the build would write."""
+  written = 0
+  for project in projects:
+    for shader in project.sources(kinds=('FXCompile',)):
+      name = os.path.splitext(os.path.basename(shader.replace('\\', '/')))[0]
+      os.makedirs(os.path.join(folder, 'CompiledShader'), exist_ok=True)
+      with open(os.path.join(folder, 'CompiledShader', name + '.h'), 'w', encoding='utf-8') as fh:
+        fh.write(f'#pragma once\n// A stand-in for the header FXCompile writes (RunClangTidy.py).\nconst unsigned char g_{name}[] = {{0}};\n')
+      written += 1
+  return written
+
+
 def run(executable, path, args):
   command = [executable, '--quiet', '--config-file=' + os.path.join(ROOT, '.clang-tidy'), path, '--'] + args
   result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
@@ -113,17 +130,20 @@ def main():
   solution, projects = SolutionModel.load(ROOT)
   if solution is None:
     sys.exit('RunClangTidy: there is not exactly one solution at the root')
-  units = []
-  for project in projects:
-    project_args = arguments(project)
-    for include in project.sources(kinds=('ClCompile',)):
-      if include.endswith('.cpp') and not include.startswith('CompiledShader/'):
-        units.append((os.path.join(project.directory, include), project_args))
   failures = []
-  with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:
-    for path, code, output in pool.map(lambda unit: run(args.clang_tidy, *unit), units):
-      if code != 0 or output:
-        failures.append((path, output))
+  with tempfile.TemporaryDirectory(prefix='RunClangTidy.') as stand_ins:
+    shaders = write_shader_stand_ins(projects, stand_ins)
+    units = []
+    for project in projects:
+      project_args = arguments(project) + ['/imsvc', stand_ins]
+      for include in project.sources(kinds=('ClCompile',)):
+        if include.endswith('.cpp') and not include.startswith('CompiledShader/'):
+          units.append((os.path.join(project.directory, include), project_args))
+    print(f'RunClangTidy: {shaders} compiled-shader stand-ins')
+    with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:
+      for path, code, output in pool.map(lambda unit: run(args.clang_tidy, *unit), units):
+        if code != 0 or output:
+          failures.append((path, output))
   for path, output in sorted(failures):
     print(f'--- {path}\n{output}')
   print(f'RunClangTidy: {len(units)} translation units of {solution}, {len(failures)} with findings')

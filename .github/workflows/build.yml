@@ -165,6 +165,13 @@ jobs:
         shell: pwsh
         run: python Build\RunPerformance.py --self-test --tool "x64\$env:CONFIGURATION\SpeciesPerformance.exe"
 
+      # ADR-113's render check: the hosted runner has no GPU, so the client draws the battle sandbox's world frames on
+      # the WARP adapter with the debug layer and GPU-based validation, and fails on any debug-layer message of warning
+      # severity or above. The owner's run on the reference GPU is still the frame's confirmation (M1 plan T13).
+      - name: Check the world frame on WARP
+        shell: pwsh
+        run: python Build\CheckWorldFrame.py --exe "x64\$env:CONFIGURATION\Species.exe"
+
       # One suite per *Tests.vcxproj in the tree, and every one of them must have produced a DLL:
       # vstest reports "no tests found" as a pass, so a suite that did not build is not a suite
       # that passed, and a tree with no suites at all is a broken tree.

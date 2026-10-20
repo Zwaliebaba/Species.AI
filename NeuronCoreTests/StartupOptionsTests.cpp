@@ -98,6 +98,27 @@ public:
     Assert::IsTrue(!spelled.worldSeed.has_value() && spelled.ignoredArguments.size() == 4, L"only the exact spelling");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Plt022TheRenderCheckTakesItsFrameCount)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"PLT-022")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"PLT-107")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Plt022TheRenderCheckTakesItsFrameCount)
+  {
+    // ADR-113: `--render-check` takes a frame count from 1 to RENDER_CHECK_FRAMES_MAX; a Release build knows no such option.
+    const Neuron::StartupOptions options = Parse({L"--seed", L"1", L"--render-check", L"30"});
+#if ENGINE_DEVELOPMENT
+    Assert::IsTrue(options.renderCheckFrames == std::uint32_t{30}, L"the frame count");
+    Assert::IsTrue(options.ignoredArguments.empty());
+    for (const std::wstring_view value : {std::wstring_view{L"0"}, std::wstring_view{L"10001"}, std::wstring_view{L"x"}})
+    {
+      const Neuron::StartupOptions refused = Parse({L"--render-check", value});
+      Assert::IsTrue(!refused.renderCheckFrames.has_value() && refused.ignoredArguments.size() == 2, L"a count out of range is ignored");
+    }
+#else
+    Assert::IsFalse(options.renderCheckFrames.has_value(), L"no render check in Release");
+#endif
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Ast105TheContentFolderIsBesideTheExecutableByDefault)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"AST-105")
   END_TEST_METHOD_ATTRIBUTE()

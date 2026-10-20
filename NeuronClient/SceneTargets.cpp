@@ -52,6 +52,8 @@ std::optional<SceneTargets> SceneTargets::Create(ID3D12Device* _device, SizePx _
   {
     return std::nullopt;
   }
+  targets.m_colorView = targets.m_renderTargets->Handle(0);
+  targets.m_depthView = targets.m_depthTargets->Handle(0);
   const D3D12_HEAP_PROPERTIES heap = HeapProperties(D3D12_HEAP_TYPE_DEFAULT);
   const bool multisampled = targets.m_samples > 1;
 
@@ -99,11 +101,11 @@ std::optional<SceneTargets> SceneTargets::Create(ID3D12Device* _device, SizePx _
     read = targets.m_resolved.Get();
   }
 
-  _device->CreateRenderTargetView(targets.m_color.Get(), nullptr, targets.m_renderTargets->Handle(0));
+  _device->CreateRenderTargetView(targets.m_color.Get(), nullptr, targets.m_colorView);
   D3D12_DEPTH_STENCIL_VIEW_DESC depthView{};
   depthView.Format = SCENE_DEPTH_FORMAT;
   depthView.ViewDimension = multisampled ? D3D12_DSV_DIMENSION_TEXTURE2DMS : D3D12_DSV_DIMENSION_TEXTURE2D;
-  _device->CreateDepthStencilView(targets.m_depth.Get(), &depthView, targets.m_depthTargets->Handle(0));
+  _device->CreateDepthStencilView(targets.m_depth.Get(), &depthView, targets.m_depthView);
   D3D12_SHADER_RESOURCE_VIEW_DESC readView{};
   readView.Format = SCENE_COLOR_FORMAT;
   readView.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;

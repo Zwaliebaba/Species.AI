@@ -46,11 +46,11 @@ public:
   }
   [[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE ColorView() const noexcept
   {
-    return m_renderTargets->Handle(0);
+    return m_colorView;
   }
   [[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE DepthView() const noexcept
   {
-    return m_depthTargets->Handle(0);
+    return m_depthView;
   }
   [[nodiscard]] std::uint32_t ReadSlot() const noexcept
   {
@@ -77,6 +77,8 @@ private:
   ComPtr<ID3D12Resource> m_resolved;
   std::optional<CpuDescriptorHeap> m_renderTargets;
   std::optional<CpuDescriptorHeap> m_depthTargets;
+  D3D12_CPU_DESCRIPTOR_HANDLE m_colorView{};
+  D3D12_CPU_DESCRIPTOR_HANDLE m_depthView{};
   std::uint32_t m_readSlot = 0;
   std::uint32_t m_samples = 1;
   SizePx m_size;

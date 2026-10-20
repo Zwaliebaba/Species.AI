@@ -41,6 +41,12 @@ struct RenderConfig // a change triggers Reconfigure (RND-030)
   bool lowLatency = false; // ADR-012
   PresentMode presentMode = PresentMode::VerticalSync;
   std::optional<float> frameRateCap; // frames per second
+#if ENGINE_DEVELOPMENT
+  // The render check of ADR-113: the WARP adapter in place of the hardware one, and the debug layer's GPU-based
+  // validation (ADR-001, ADR-092). Both are fixed when the device is created.
+  bool softwareAdapter = false;
+  bool gpuValidation = false;
+#endif
 };
 
 enum class FrameOutcome : std::uint8_t
@@ -78,7 +84,14 @@ public:
   // DeviceRebuilt: raised after a device-removal rebuild, once presentation runs again (RND-035).
   void OnDeviceRebuilt(std::function<void()> _listener);
 
+  // The frames presented with the world drawn, since the renderer was created.
+  [[nodiscard]] std::uint64_t WorldFrames() const noexcept;
+
 #if ENGINE_DEVELOPMENT
+  // The debug layer's messages of warning severity or above since the process started: none is the render check's
+  // condition (ADR-113).
+  [[nodiscard]] static std::uint64_t DebugLayerMessages() noexcept;
+
   // Removes the device (ID3D12Device5::RemoveDevice), so that the next frame finds the removal and rebuilds. The stand-in
   // for the development command that forces a removal (ADR-008) until development commands exist (owner decision O65).
   void DebugRemoveDevice();

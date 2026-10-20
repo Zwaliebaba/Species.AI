@@ -47,7 +47,7 @@ Neuron::TerrainField Island()
 // A ramp whose texel at column x of memory row r is (x, r, 7), so a colour names the texel it came from.
 std::vector<std::uint8_t> NamingRamp()
 {
-  std::vector<std::uint8_t> texels(64 * 64 * 4);
+  std::vector<std::uint8_t> texels(std::size_t{64} * 64 * 4);
   for (std::uint32_t row = 0; row < 64; ++row)
   {
     for (std::uint32_t x = 0; x < 64; ++x)
@@ -249,7 +249,7 @@ public:
     const Neuron::TerrainField field = Island();
     const Neuron::SeaSurface sea = Neuron::BuildSeaSurface(field, {}, Neuron::TileRandom{}, {}, 1);
     Assert::IsTrue(!sea.flatVertices.empty() && sea.flatVertices.size() % 6 == 0);
-    Assert::IsTrue(sea.flatVertices.size() / 6 < 32u * 32u, L"open-sea tiles are not drawn");
+    Assert::IsTrue(sea.flatVertices.size() / 6 < std::size_t{32} * 32, L"open-sea tiles are not drawn");
     for (const Neuron::SeaVertex& vertex : sea.flatVertices)
     {
       Assert::AreEqual(-9.0f, vertex.position[1]);
@@ -267,7 +267,7 @@ public:
   TEST_METHOD(Ter200To205TheWaveMeshFollowsTheCoastAndMovesWithTime)
   {
     const Neuron::TerrainField field = Island();
-    std::vector<std::uint8_t> gradient(400 * 10 * 4, 0);
+    std::vector<std::uint8_t> gradient(std::size_t{400} * 10 * 4, 0);
     for (std::uint32_t x = 0; x < 400; ++x)
     {
       gradient[(std::size_t{8} * 400 + x) * 4] = static_cast<std::uint8_t>(x % 256); // memory row 8 is row 1 from the bottom

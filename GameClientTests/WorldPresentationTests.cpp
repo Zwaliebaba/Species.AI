@@ -65,8 +65,16 @@ public:
   }
   ~TextureContent()
   {
-    std::error_code error;
-    std::filesystem::remove_all(m_folder, error);
+    try
+    {
+      std::error_code error;
+      std::filesystem::remove_all(m_folder, error);
+    }
+    catch (...)
+    {
+      // A folder left behind is harmless: the next run removes it first.
+      return;
+    }
   }
   TextureContent(const TextureContent&) = delete;
   TextureContent& operator=(const TextureContent&) = delete;

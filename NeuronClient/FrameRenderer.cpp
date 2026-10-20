@@ -158,6 +158,7 @@ struct RendererState
   std::vector<WorldPass> passKinds;
 
   std::uint64_t frameNumber = 0;
+  std::uint64_t worldFrames = 0;
   bool occluded = false;
   bool rebuilding = false;
   std::optional<Nanoseconds> nextFrameStart;
@@ -450,7 +451,7 @@ std::expected<void, StartupFailure> CreateFrameObjects(RendererState& _state)
 
 std::expected<void, StartupFailure> CreateDeviceObjects(RendererState& _state)
 {
-  std::expected<GraphicsDevice, StartupFailure> device = GraphicsDevice::Create();
+  std::expected<GraphicsDevice, StartupFailure> device = GraphicsDevice::Create(_state.config);
   if (!device.has_value())
   {
     return std::unexpected(std::move(device.error()));
@@ -838,7 +839,8 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
   ID3D12Resource* backBuffer = state.backBuffers[backBufferIndex].Get();
   D3D12_CPU_DESCRIPTOR_HANDLE target = state.renderTargetHeap->GetCPUDescriptorHandleForHeapStart();
   target.ptr += static_cast<SIZE_T>(backBufferIndex) * state.renderTargetStride;
-  if (_inputs.world != nullptr && state.world->Ready() && state.targets.has_value())
+  const bool drawsWorld = _inputs.world != nullptr && state.world->Ready() && state.targets.has_value();
+  if (drawsWorld)
   {
     RecordWorldFrame(state, _inputs, backBuffer, target);
   }
@@ -880,6 +882,7 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
   {
     state.occluded = true;
   }
+  state.worldFrames += drawsWorld ? 1 : 0;
   return FrameOutcome::Presented;
 }
 
@@ -888,7 +891,17 @@ void FrameRenderer::OnDeviceRebuilt(std::function<void()> _listener)
   m_state->rebuiltListeners.push_back(std::move(_listener));
 }
 
+std::uint64_t FrameRenderer::WorldFrames() const noexcept
+{
+  return m_state->worldFrames;
+}
+
 #if ENGINE_DEVELOPMENT
+std::uint64_t FrameRenderer::DebugLayerMessages() noexcept
+{
+  return GraphicsDevice::DebugLayerMessages();
+}
+
 void FrameRenderer::DebugRemoveDevice()
 {
   m_state->device->Remove();

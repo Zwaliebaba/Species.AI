@@ -27,6 +27,7 @@
 #include <expected>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -147,7 +148,7 @@ struct Presentation
   std::unique_ptr<Neuron::FrameRenderer> renderer;
 };
 
-Presentation CreatePresentation(const Neuron::PlatformClock& _clock)
+Presentation CreatePresentation(const Neuron::PlatformClock& _clock, const Neuron::RenderConfig& _config)
 {
   const std::vector<Neuron::MonitorInfo> monitors = Neuron::EnumerateMonitors();
   Neuron::SizePx desktop = Neuron::FALLBACK_WINDOW_SIZE;
@@ -161,7 +162,6 @@ Presentation CreatePresentation(const Neuron::PlatformClock& _clock)
   // No settings store in M0: the stored mode is the default and no render size is stored (RND-021).
   const std::array attempts = Neuron::StartupDisplayAttempts(Neuron::WindowMode::BorderlessFullScreen, {}, desktop);
   Presentation presentation;
-  const Neuron::RenderConfig config;
   const Neuron::DisplayOutcome outcome =
     Neuron::RunDisplayAttempts(attempts,
                                [&](const Neuron::DisplayAttempt& _attempt)
@@ -180,7 +180,7 @@ Presentation CreatePresentation(const Neuron::PlatformClock& _clock)
                                  }
                                  presentation.window = std::make_unique<Neuron::AppWindow>(std::move(*window));
                                  std::expected<std::unique_ptr<Neuron::FrameRenderer>, Neuron::StartupFailure> renderer =
-                                   Neuron::FrameRenderer::Create(*presentation.window, _clock, config);
+                                   Neuron::FrameRenderer::Create(*presentation.window, _clock, _config);
                                  if (!renderer.has_value())
                                  {
                                    if (renderer.error().error != Neuron::StartupError::SwapChainFailed)
@@ -205,8 +205,13 @@ Presentation CreatePresentation(const Neuron::PlatformClock& _clock)
   return presentation;
 }
 
+// The render check's limit on its run: a check that has not drawn its frames by then fails (ADR-113).
+constexpr Neuron::Nanoseconds RENDER_CHECK_LIMIT{120'000'000'000};
+
+// The frame loop until the quit, or, for a render check, until it has drawn _checkFrames world frames or its limit has
+// passed.
 void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neuron::FrameRenderer& _renderer, ClientSession& _session,
-                  WorldPresentation& _world)
+                  WorldPresentation& _world, std::optional<std::uint32_t> _checkFrames)
 {
   InputStandIn input;
   _window.SetInputSink(&input);
@@ -220,10 +225,15 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
     });
   _renderer.OnDeviceRebuilt([] { Neuron::Log(Neuron::LogCategory::Render, Neuron::LogLevel::Info, "presentation resumed"); });
 
+  const Neuron::Nanoseconds start = _clock.Now();
   while (true)
   {
     _window.PumpMessages();
     if (input.QuitRequested())
+    {
+      break;
+    }
+    if (_checkFrames.has_value() && (_renderer.WorldFrames() >= *_checkFrames || _clock.Now() - start > RENDER_CHECK_LIMIT))
     {
       break;
     }
@@ -271,8 +281,25 @@ int Run()
   Neuron::Logger logger(std::move(logDesc));
   Neuron::SetPlatformLogSink(&logger);
 
+  // The start-up options come first, because a render check changes how the renderer starts (ADR-113).
+  const Neuron::StartupOptions options = Neuron::ParseCommandLine();
+  Neuron::RenderConfig renderConfig;
+  std::optional<std::uint32_t> checkFrames;
+#if ENGINE_DEVELOPMENT
+  checkFrames = options.renderCheckFrames;
+  if (checkFrames.has_value())
   {
-    Presentation presentation = CreatePresentation(clock);
+    // ADR-113: the WARP adapter with the debug layer's GPU-based validation, and no dialog that nobody would close.
+    Neuron::SetPlatformMessagesUnattended(true);
+    renderConfig.softwareAdapter = true;
+    renderConfig.gpuValidation = true;
+    Neuron::Log(Neuron::LogCategory::Render, Neuron::LogLevel::Info, "render check: {} world frames on the WARP adapter", *checkFrames);
+  }
+#endif
+
+  bool checkPassed = true;
+  {
+    Presentation presentation = CreatePresentation(clock, renderConfig);
 
     // Logs why the content cannot be loaded and ends with its message (AST-102); EndWithMessage does not return.
     const auto endWithError = [](const Neuron::AssetError& _error)
@@ -282,7 +309,6 @@ int Run()
     };
     // The loose-content folder that the solution build's content build wrote beside the executable, or the one that
     // --loose-content names in a Debug build, mounted once for the client and its integrated server (AST-105, ADR-108).
-    const Neuron::StartupOptions options = Neuron::ParseCommandLine();
     for (const std::string& ignored : options.ignoredArguments)
     {
       Neuron::Log(Neuron::LogCategory::Platform, Neuron::LogLevel::Warning, "the start-up argument {} is unknown and ignored", ignored);
@@ -336,17 +362,30 @@ int Run()
     WorldPresentation world(worldDesc);
 
     presentation.window->Show();
-    RunFrameLoop(clock, *presentation.window, *presentation.renderer, session, world);
+    RunFrameLoop(clock, *presentation.window, *presentation.renderer, session, world, checkFrames);
+#if ENGINE_DEVELOPMENT
+    const std::uint64_t worldFrames = presentation.renderer->WorldFrames();
+#endif
     session.Close();
     server.Stop();
     // PLT-043: the renderer releases its swap chain before the window is destroyed.
     presentation.renderer.reset();
     presentation.window.reset();
+#if ENGINE_DEVELOPMENT
+    if (checkFrames.has_value())
+    {
+      const std::uint64_t messages = Neuron::FrameRenderer::DebugLayerMessages();
+      checkPassed = worldFrames >= *checkFrames && messages == 0;
+      Neuron::Log(Neuron::LogCategory::Render, checkPassed ? Neuron::LogLevel::Info : Neuron::LogLevel::Error,
+                  "render check {}: {} of {} world frames drawn, {} debug-layer messages", checkPassed ? "passed" : "failed", worldFrames,
+                  *checkFrames, messages);
+    }
+#endif
   }
 
   Neuron::SetPlatformLogSink(nullptr);
   Neuron::SetPlatformMessageContext(nullptr);
-  return Neuron::EXIT_CODE_NORMAL;
+  return checkPassed ? Neuron::EXIT_CODE_NORMAL : Neuron::EXIT_CODE_FATAL;
 }
 
 } // namespace
