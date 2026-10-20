@@ -603,6 +603,12 @@ void AppWindow::Show()
   m_state->UpdateFocus();
 }
 
+void AppWindow::SetTitle(std::string_view _title)
+{
+  const std::wstring title = ToUtf16(_title);
+  SetWindowTextW(m_state->window, title.c_str());
+}
+
 void AppWindow::SetMode(WindowMode _mode, [[maybe_unused]] Permanence _permanence)
 {
   WindowState& state = *m_state;

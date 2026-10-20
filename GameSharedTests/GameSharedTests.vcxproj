@@ -164,13 +164,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="TestSupport.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="TestSupport.cpp" />
+    <ClCompile Include="TickReportTests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="SuiteSmoke.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\GameShared\GameShared.vcxproj">

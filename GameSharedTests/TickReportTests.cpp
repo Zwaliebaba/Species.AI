@@ -1,0 +1,77 @@
+#include "pch.h"
+
+#include "MessageCodec.h"
+#include "StableId.h"
+#include "TestSupport.h"
+#include "TickReport.h"
+
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <vector>
+
+using namespace Microsoft::VisualStudio::CppUnitTestFramework;
+
+namespace GameSharedTests
+{
+
+TEST_CLASS(TickReportTests)
+{
+public:
+  TEST_METHOD_CLEANUP(Cleanup)
+  {
+    ExpectNoDevelopmentCheck();
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp090TheTickReportRoundTrips)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-090")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp090TheTickReportRoundTrips)
+  {
+    for (const std::uint64_t tick : {std::uint64_t{0}, std::uint64_t{599}, std::uint64_t{0x0123456789abcdef}, ~std::uint64_t{0}})
+    {
+      const std::vector<std::byte> bytes = Neuron::EncodeMessage(Species::TickReport{tick});
+      ExpectEqual(static_cast<std::int64_t>(Species::TickReport::MAX_BYTES), static_cast<std::int64_t>(bytes.size()),
+                  L"a report is its header and its tick");
+      Neuron::MessageDispatcher dispatcher;
+      std::optional<std::uint64_t> received;
+      dispatcher.Register<Species::TickReport>([&received](const Species::TickReport& _report) { received = _report.tick; });
+      Assert::IsTrue(dispatcher.Dispatch(bytes), L"the report decodes whole");
+      Assert::IsTrue(received == tick, L"the same tick");
+    }
+    Assert::IsTrue(Species::TickReport::TYPE >= Neuron::GAME_MESSAGE_TYPE_FIRST, L"a game message's id is above the engine's");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp090AShortReportIsDroppedAsMalformed)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-090")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp090AShortReportIsDroppedAsMalformed)
+  {
+    std::vector<std::byte> bytes = Neuron::EncodeMessage(Species::TickReport{42});
+    bytes.pop_back();
+    Neuron::MessageDispatcher dispatcher;
+    bool called = false;
+    dispatcher.Register<Species::TickReport>([&called](const Species::TickReport&) { called = true; });
+    Assert::IsFalse(dispatcher.Dispatch(bytes));
+    Assert::IsFalse(called, L"a handler never sees a broken message");
+    ExpectEqual(1, static_cast<std::int64_t>(dispatcher.Drops().malformed), L"malformed drops");
+  }
+};
+
+TEST_CLASS(StableIdTests)
+{
+public:
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp093AStableIdIsItsOwnerAndCounter)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-093")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp093AStableIdIsItsOwnerAndCounter)
+  {
+    const Species::StableId id = Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 77);
+    Assert::IsTrue(id == ((std::uint64_t{0x0100} << 48) | 77), L"the owner in the high 16 bits");
+    Assert::IsTrue(Species::OwnerOf(id) == Species::REGION_OWNER_ID_FIRST, L"the owner");
+    Assert::IsTrue(Species::CounterOf(id) == 77, L"the counter");
+    Assert::IsTrue(Species::MakeStableId(Species::WORLD_OWNER_ID, 1) != 0, L"0 is never an id");
+  }
+};
+
+} // namespace GameSharedTests

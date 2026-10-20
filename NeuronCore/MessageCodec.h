@@ -21,6 +21,10 @@ inline constexpr std::uint32_t MESSAGE_TYPE_BITS = 16;
 inline constexpr std::uint32_t MESSAGE_VERSION_BITS = 8;
 inline constexpr std::size_t MESSAGE_MAX_BYTES = std::size_t{64} * 1024; // the largest reliable message; blobs travel on blob streams
 
+// ADR-096: the type ids below this one are the engine's own messages, and the game numbers its messages from it.
+// Type 0 is never a message.
+inline constexpr MessageTypeId GAME_MESSAGE_TYPE_FIRST = 0x0100;
+
 struct MessageHeader
 {
   MessageTypeId type = 0;

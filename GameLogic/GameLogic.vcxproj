@@ -144,9 +144,19 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="IntegratedServer.h" />
+    <ClInclude Include="RegionSimulation.h" />
+    <ClInclude Include="StableIdCounter.h" />
+    <ClInclude Include="WorldServer.h" />
+    <ClInclude Include="WorldSimulation.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="IntegratedServer.cpp" />
+    <ClCompile Include="RegionSimulation.cpp" />
+    <ClCompile Include="StableIdCounter.cpp" />
+    <ClCompile Include="WorldServer.cpp" />
+    <ClCompile Include="WorldSimulation.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

@@ -1,11 +1,13 @@
 #include "pch.h"
 
 #include "AppWindow.h"
+#include "ClientSession.h"
 #include "Development.h"
 #include "DisplayAttempt.h"
 #include "FatalPath.h"
 #include "FloatEnvironment.h"
 #include "FrameRenderer.h"
+#include "IntegratedServer.h"
 #include "Log.h"
 #include "PlatformClock.h"
 #include "PlatformLogSink.h"
@@ -27,8 +29,8 @@
 #include <vector>
 
 // The client's entry point and composition root (ADR-090 item 2, DEC-221). It runs the start-up steps of PLT-038 that
-// exist in M0 and the frame loop of M0 task T4; the client session, the integrated server and the application's states
-// (ADR-083) take the loop over at task T7.
+// exist in M0, composes the integrated server through IntegratedServer.h and the client session (M0 task T7), and runs
+// the frame loop of task T4; the application's states of ADR-083 item 3 come with the front end.
 namespace Species
 {
 
@@ -39,6 +41,9 @@ constexpr std::string_view PRODUCT_NAME = "Species";
 
 // RND-032's low rate while the window is minimised or occluded (ADR-092).
 constexpr Neuron::Nanoseconds SUSPENDED_POLL_PERIOD{100'000'000};
+
+// `ref.sim.tick_period`, until the tuning record brings it from data (M0 task T9).
+constexpr Neuron::Nanoseconds INTERIM_TICK_PERIOD{100'000'000};
 
 // The base-language texts of the pre-UI messages M0 can show, compiled in until the string table loads (PLT-039).
 constexpr std::array COMPILED_TEXTS{
@@ -194,7 +199,7 @@ Presentation CreatePresentation(const Neuron::PlatformClock& _clock)
   return presentation;
 }
 
-void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neuron::FrameRenderer& _renderer)
+void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neuron::FrameRenderer& _renderer, ClientSession& _session)
 {
   InputStandIn input;
   _window.SetInputSink(&input);
@@ -215,6 +220,7 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
     {
       break;
     }
+    _session.Update();
     if (input.TakeModeToggle())
     {
       const bool windowed = _window.Mode() == Neuron::WindowMode::Windowed;
@@ -259,8 +265,24 @@ int Run()
 
   {
     Presentation presentation = CreatePresentation(clock);
+
+    // The integrated server is a child of this root (ADR-083 item 2): it runs on its own tick thread until the session
+    // ends, and stopping it freezes the world (O4).
+    IntegratedServer::Desc serverDesc;
+    serverDesc.clock = &clock;
+    serverDesc.tickPeriod = INTERIM_TICK_PERIOD;
+    IntegratedServer server(serverDesc);
+    server.Start();
+    ClientSession::Desc sessionDesc;
+    sessionDesc.transport = server.Connect();
+    sessionDesc.showTitle = [&window = *presentation.window](std::string_view _title) { window.SetTitle(_title); };
+    sessionDesc.productName = std::string(PRODUCT_NAME);
+    ClientSession session(std::move(sessionDesc));
+
     presentation.window->Show();
-    RunFrameLoop(clock, *presentation.window, *presentation.renderer);
+    RunFrameLoop(clock, *presentation.window, *presentation.renderer, session);
+    session.Close();
+    server.Stop();
     // PLT-043: the renderer releases its swap chain before the window is destroyed.
     presentation.renderer.reset();
     presentation.window.reset();
