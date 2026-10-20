@@ -12,10 +12,19 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DrawPurpose.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="Figure.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="IntegratedServer.h">
       <Filter>Server</Filter>
     </ClInclude>
     <ClInclude Include="RegionSimulation.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="SlicedPool.h">
       <Filter>Simulation</Filter>
     </ClInclude>
     <ClInclude Include="StableIdCounter.h">
@@ -38,6 +47,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Figure.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="IntegratedServer.cpp">
       <Filter>Server</Filter>
     </ClCompile>

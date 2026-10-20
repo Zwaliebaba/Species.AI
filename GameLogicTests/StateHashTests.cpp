@@ -30,7 +30,7 @@ struct GoldenRun
 GoldenRun Run600Ticks(std::uint16_t _regions, std::size_t _workers)
 {
   Neuron::WorkerPool pool(_workers);
-  Species::WorldSimulation world({GOLDEN_KEY, 0, _regions});
+  Species::WorldSimulation world({GOLDEN_KEY, 0, _regions, &CommittedTuning()});
   Neuron::BitWriter chain;
   GoldenRun run;
   for (std::uint64_t tick = 0; tick < 600; ++tick)
@@ -61,13 +61,14 @@ public:
   TEST_METHOD(Dbg147TheHashOf600TicksFromOneSeedIsGolden)
   {
     // M0 task T8's done-when. The golden values change only with a reviewed change that names the rule it implements
-    // (DBG-147); an independent model of the state layout of ADR-096 computes the same values.
+    // (DBG-147); an independent model of the state layout of ADR-096 computes the same values. Changed by M1 task T2:
+    // each region writes its team slots after its commands (R-SIM-221), none in this empty world.
     const GoldenRun one = Run600Ticks(1, 0);
-    Assert::IsTrue(one.last == 0xcc1ebf97b5b46606, L"the hash after 600 ticks of one region");
-    Assert::IsTrue(one.chain == 0xa45b080192b2d569, L"the chain of 600 tick hashes of one region");
+    Assert::IsTrue(one.last == 0x01f1cc61fa1fbdfe, L"the hash after 600 ticks of one region");
+    Assert::IsTrue(one.chain == 0xd960ba998138db29, L"the chain of 600 tick hashes of one region");
     const GoldenRun three = Run600Ticks(3, 0);
-    Assert::IsTrue(three.last == 0x0777ce66e55a7e70, L"the hash after 600 ticks of three regions");
-    Assert::IsTrue(three.chain == 0x3b5a8f572d8aa082, L"the chain of 600 tick hashes of three regions");
+    Assert::IsTrue(three.last == 0x964ba6481aea089b, L"the hash after 600 ticks of three regions");
+    Assert::IsTrue(three.chain == 0x5293affe4cbe2af5, L"the chain of 600 tick hashes of three regions");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp093TheHashesAgreeAtAnyWorkerCount)
@@ -90,8 +91,8 @@ public:
   TEST_METHOD(Mvp093TheHashCoversTheStateAndNotTheKey)
   {
     Neuron::WorkerPool pool(0);
-    Species::WorldSimulation world({GOLDEN_KEY, 0, 2});
-    Species::WorldSimulation sameState({{9, 9}, 0, 2});
+    Species::WorldSimulation world({GOLDEN_KEY, 0, 2, &CommittedTuning()});
+    Species::WorldSimulation sameState({{9, 9}, 0, 2, &CommittedTuning()});
     world.Step(0, pool);
     sameState.Step(0, pool);
     const Species::WorldHashes before = Species::HashWorld(world);

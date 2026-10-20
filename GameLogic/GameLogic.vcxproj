@@ -144,8 +144,11 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="DrawPurpose.h" />
+    <ClInclude Include="Figure.h" />
     <ClInclude Include="IntegratedServer.h" />
     <ClInclude Include="RegionSimulation.h" />
+    <ClInclude Include="SlicedPool.h" />
     <ClInclude Include="StableIdCounter.h" />
     <ClInclude Include="StateHash.h" />
     <ClInclude Include="WorldServer.h" />
@@ -154,6 +157,7 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Figure.cpp" />
     <ClCompile Include="IntegratedServer.cpp" />
     <ClCompile Include="RegionSimulation.cpp" />
     <ClCompile Include="StableIdCounter.cpp" />

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "tuning.mvp",
-  "title": "The tuning values of the MVP: every key of its table 3 and ref.sim.tick_period (MVP-003, MVP-099).",
+  "title": "The tuning values of the MVP: every key of its table 3 and the reference keys the simulation reads (MVP-003, MVP-099).",
   "description": "One record, GameData/Records/tuning/mvp.json. Each field path is its tuning key (CONVENTIONS §4).",
   "type": "object",
   "x-species-sim": true,
@@ -1110,10 +1110,242 @@
               "x-species-type": "sim_decimal",
               "x-species-unit": "s",
               "x-species-presence": "required"
+            },
+            "update_slices": {
+              "type": "integer",
+              "description": "ref.sim.update_slices (R-SIM-510, R-SIM-514)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "slices",
+              "x-species-presence": "required"
+            },
+            "container": {
+              "type": "object",
+              "description": "the ref.sim.container.* keys",
+              "properties": {
+                "ungrouped_step": {
+                  "type": "integer",
+                  "description": "ref.sim.container.ungrouped_step (R-SIM-204, R-SIM-207)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "slots",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "ungrouped_step"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "spawn": {
+              "type": "object",
+              "description": "the ref.sim.spawn.* keys",
+              "properties": {
+                "default_front": {
+                  "type": "object",
+                  "description": "ref.sim.spawn.default_front (R-SIM-226): the front of a figure spawned at rest, by component",
+                  "properties": {
+                    "x": {
+                      "type": "number",
+                      "description": "ref.sim.spawn.default_front.x (R-SIM-226)",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "unit vector",
+                      "x-species-presence": "required"
+                    },
+                    "y": {
+                      "type": "number",
+                      "description": "ref.sim.spawn.default_front.y (R-SIM-226)",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "unit vector",
+                      "x-species-presence": "required"
+                    },
+                    "z": {
+                      "type": "number",
+                      "description": "ref.sim.spawn.default_front.z (R-SIM-226)",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "unit vector",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "x",
+                    "y",
+                    "z"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "default_front"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
             }
           },
           "required": [
-            "tick_period"
+            "tick_period",
+            "update_slices",
+            "container",
+            "spawn"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "unit": {
+          "type": "object",
+          "description": "the ref.unit.* keys",
+          "properties": {
+            "health_max": {
+              "type": "integer",
+              "description": "ref.unit.health_max (R-UNIT-012)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "health",
+              "x-species-presence": "required"
+            },
+            "worker": {
+              "type": "object",
+              "description": "the ref.unit.worker.* keys",
+              "properties": {
+                "health": {
+                  "type": "integer",
+                  "description": "ref.unit.worker.health (R-UNIT-011)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "health",
+                  "x-species-presence": "required"
+                },
+                "speed": {
+                  "type": "number",
+                  "description": "ref.unit.worker.speed (R-UNIT-011)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "rate": {
+                  "type": "number",
+                  "description": "ref.unit.worker.rate (R-UNIT-011, R-UNIT-015)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "s",
+                  "x-species-presence": "required"
+                },
+                "formation_explosive_factor": {
+                  "type": "number",
+                  "description": "ref.unit.worker.formation_explosive_factor (R-UNIT-027, R-UNIT-116)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "× damage",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "health",
+                "speed",
+                "rate",
+                "formation_explosive_factor"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "leader": {
+              "type": "object",
+              "description": "the ref.unit.leader.* keys",
+              "properties": {
+                "health": {
+                  "type": "integer",
+                  "description": "ref.unit.leader.health (R-UNIT-011)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "health",
+                  "x-species-presence": "required"
+                },
+                "speed": {
+                  "type": "number",
+                  "description": "ref.unit.leader.speed (R-UNIT-011)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "rate": {
+                  "type": "number",
+                  "description": "ref.unit.leader.rate (R-UNIT-011, R-UNIT-015)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "s",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "health",
+                "speed",
+                "rate"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "corpse": {
+              "type": "object",
+              "description": "the ref.unit.corpse.* keys",
+              "properties": {
+                "fade_start": {
+                  "type": "integer",
+                  "description": "ref.unit.corpse.fade_start (R-UNIT-026, R-UNIT-034)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "health",
+                  "x-species-presence": "required"
+                },
+                "fade_ground_per_tick": {
+                  "type": "integer",
+                  "description": "ref.unit.corpse.fade_ground_per_tick (R-UNIT-034)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "health per tick",
+                  "x-species-presence": "required"
+                },
+                "fade_air_per_tick": {
+                  "type": "integer",
+                  "description": "ref.unit.corpse.fade_air_per_tick (R-UNIT-034)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "health per tick",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "fade_start",
+                "fade_ground_per_tick",
+                "fade_air_per_tick"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "health_max",
+            "worker",
+            "leader",
+            "corpse"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -1121,7 +1353,8 @@
         }
       },
       "required": [
-        "sim"
+        "sim",
+        "unit"
       ],
       "additionalProperties": false,
       "x-species-type": "object",

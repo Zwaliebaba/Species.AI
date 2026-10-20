@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#include "BitWriter.h"
+#include "CommandQueue.h"
 #include "InProcessTransport.h"
 #include "ServerHost.h"
 #include "Snapshot.h"
@@ -30,7 +32,7 @@ constexpr Neuron::Nanoseconds SNAPSHOT_TEST_TICK_PERIOD{100'000'000}; // `ref.si
 // A world of three regions after 25 ticks, with ids issued by the world owner, so its state differs from a new world's.
 std::unique_ptr<Species::WorldSimulation> SteppedWorld(Neuron::WorkerPool& _pool)
 {
-  auto world = std::make_unique<Species::WorldSimulation>(Species::WorldSimulation::Desc{SNAPSHOT_TEST_KEY, 0, 3});
+  auto world = std::make_unique<Species::WorldSimulation>(Species::WorldSimulation::Desc{SNAPSHOT_TEST_KEY, 0, 3, &CommittedTuning()});
   for (std::uint64_t tick = 0; tick < 25; ++tick)
   {
     world->Step(tick, _pool);
@@ -52,7 +54,7 @@ Neuron::SnapshotContents ThroughTheFile(const Neuron::SnapshotContents& _content
 
 bool RefusedAs(const Neuron::SnapshotContents& _contents, Neuron::SnapshotError _error)
 {
-  const auto restored = Species::RestoreWorld(_contents);
+  const auto restored = Species::RestoreWorld(_contents, CommittedTuning());
   return !restored.has_value() && restored.error() == _error;
 }
 
@@ -109,7 +111,7 @@ public:
     const Neuron::SnapshotContents contents = ThroughTheFile(Species::SnapshotOf(*saved));
     ExpectEqual(Species::WORLD_STATE_VERSION, contents.stateVersion, L"the current state version");
     ExpectEqual(25, static_cast<std::int64_t>(contents.tick), L"the first tick the restored world steps");
-    auto restored = Species::RestoreWorld(contents);
+    auto restored = Species::RestoreWorld(contents, CommittedTuning());
     Assert::IsTrue(restored.has_value(), L"the world restores");
     Species::WorldSimulation& world = **restored;
     Assert::IsTrue(world.SimulationKey().low == SNAPSHOT_TEST_KEY.low && world.SimulationKey().high == SNAPSHOT_TEST_KEY.high,
@@ -123,6 +125,39 @@ public:
     }
     Assert::IsTrue(Species::HashWorld(world).world == Species::HashWorld(*saved).world, L"the same ticks after it");
     Assert::IsTrue(world.Ids().Issue() == saved->Ids().Issue(), L"the same next id");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp095AVersionOneWorldMigratesToOneWithNoTeams)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-095")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp095AVersionOneWorldMigratesToOneWithNoTeams)
+  {
+    // M0's layout (ADR-099): the key, the region count, the world owner's tick, id counter and empty queue, then each
+    // region's index, tick, id counter and empty queue. It restores as the same world with no teams in any region.
+    constexpr std::uint64_t TICK = 40;
+    Neuron::BitWriter state;
+    state.WriteBits(SNAPSHOT_TEST_KEY.low, 64);
+    state.WriteBits(SNAPSHOT_TEST_KEY.high, 64);
+    state.WriteBits(2, 16);
+    state.WriteBits(TICK, 64);
+    state.WriteBits(4, 64);
+    state.WriteBounded(0, Neuron::COMMAND_QUEUE_STATE_MAX);
+    for (std::uint16_t region = 0; region < 2; ++region)
+    {
+      state.WriteBits(region, 16);
+      state.WriteBits(TICK, 64);
+      state.WriteBits(1, 64);
+      state.WriteBounded(0, Neuron::COMMAND_QUEUE_STATE_MAX);
+    }
+    auto restored = Species::RestoreWorld(Neuron::SnapshotContents{1, TICK, state.Take()}, CommittedTuning());
+    Assert::IsTrue(restored.has_value(), L"a version-1 world restores");
+    Species::WorldSimulation fresh({SNAPSHOT_TEST_KEY, TICK, 2, &CommittedTuning()});
+    for (int n = 0; n < 3; ++n)
+    {
+      static_cast<void>(fresh.Ids().Issue());
+    }
+    ExpectEqual(0, static_cast<std::int64_t>((*restored)->Region(1).TeamCount()), L"no teams");
+    Assert::IsTrue(Species::HashWorld(**restored).world == Species::HashWorld(fresh).world, L"the world it was, in today's layout");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp095AStateVersionItCannotMigrateIsRefused)
@@ -169,6 +204,7 @@ public:
     // with the same key, and runs on from there.
     const TemporaryFolder folder;
     Species::WorldServer::Desc desc;
+    desc.tuning = CommittedTuning();
     desc.snapshotFolder = folder.Path() / L"saves";
     Species::WorldServer first(desc);
     RunAndFreeze(first, 5);
@@ -199,6 +235,7 @@ public:
   {
     const TemporaryFolder folder;
     Species::WorldServer::Desc desc;
+    desc.tuning = CommittedTuning();
     desc.snapshotFolder = folder.Path() / L"saves";
     WriteText(desc.snapshotFolder / L"world-00000000000000000040.snapshot", "not a snapshot");
     Species::WorldServer world(desc);

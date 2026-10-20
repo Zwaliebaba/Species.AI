@@ -23,6 +23,12 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="RegionSimulationTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="SlicedPoolTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="StateHashTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>

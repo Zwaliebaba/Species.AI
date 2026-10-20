@@ -6,6 +6,7 @@
 #include "RegionSimulation.h"
 #include "SipHash.h"
 #include "StableIdCounter.h"
+#include "TuningMvp.h"
 #include "WorkerPool.h"
 
 #include <cstdint>
@@ -17,7 +18,7 @@ namespace Species
 
 /// The owner of the world-level state (ADR-083 item 4, ADR-085 item 1) and of the world's regions. It holds the world
 /// tick and the simulation key, and steps a tick whole (ADR-079 item 2): every region as a job on the workers, then its
-/// own step. At M0 the world is one empty region (MVP-001, MVP-096).
+/// own step. The MVP's world is one region (MVP-001, MVP-096).
 class WorldSimulation
 {
 public:
@@ -26,6 +27,7 @@ public:
     Neuron::SipHashKey simulationKey; // ADR-082 item 1: never shown, sent or logged
     std::uint64_t nextTick = 0;
     std::uint16_t regionCount = 1;
+    const TuningMvp* tuning = nullptr; // MVP-099: read when the server started, and outliving the world
   };
 
   explicit WorldSimulation(const Desc& _desc);
@@ -35,9 +37,9 @@ public:
   // The world owner's own mutable values, canonically: the world tick, its id counter and its queued commands. The
   // simulation key is held apart: a snapshot saves it, and no hash covers it (ADR-082 item 1).
   void WriteState(Neuron::BitWriter& _writer) const;
-  // The world owner's values and then each region's, as a snapshot holds them (ADR-099), into a world made with the same
-  // key, tick and region count; false when they do not read whole.
-  [[nodiscard]] bool ReadState(Neuron::BitReader& _reader);
+  // The world owner's values and then each region's, as a snapshot of _stateVersion holds them (ADR-099), into a world
+  // made with the same key, tick and region count; false when they do not read whole.
+  [[nodiscard]] bool ReadState(Neuron::BitReader& _reader, std::uint32_t _stateVersion);
 
   // The world tick: the next tick to step.
   [[nodiscard]] std::uint64_t NextTick() const noexcept

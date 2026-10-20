@@ -21,9 +21,10 @@ Neuron::SnapshotContents SnapshotOf(const WorldSimulation& _world)
   return Neuron::SnapshotContents{WORLD_STATE_VERSION, _world.NextTick(), state.Take()};
 }
 
-std::expected<std::unique_ptr<WorldSimulation>, Neuron::SnapshotError> RestoreWorld(const Neuron::SnapshotContents& _snapshot)
+std::expected<std::unique_ptr<WorldSimulation>, Neuron::SnapshotError> RestoreWorld(const Neuron::SnapshotContents& _snapshot,
+                                                                                    const TuningMvp& _tuning)
 {
-  // MVP-095: each older version would be migrated here, step by step to the current one; M0's world has only one.
+  // MVP-095: each older version migrates here to the current one; the regions read their own older layout.
   if (_snapshot.stateVersion < WORLD_STATE_OLDEST_VERSION || _snapshot.stateVersion > WORLD_STATE_VERSION)
   {
     return std::unexpected(Neuron::SnapshotError::StateVersion);
@@ -34,12 +35,13 @@ std::expected<std::unique_ptr<WorldSimulation>, Neuron::SnapshotError> RestoreWo
   desc.simulationKey.high = reader.ReadBits(64);
   desc.regionCount = static_cast<std::uint16_t>(reader.ReadBits(16));
   desc.nextTick = _snapshot.tick;
+  desc.tuning = &_tuning;
   if (reader.Failed() || desc.regionCount == 0)
   {
     return std::unexpected(Neuron::SnapshotError::MalformedState);
   }
   auto world = std::make_unique<WorldSimulation>(desc);
-  if (!world->ReadState(reader) || !reader.Finish())
+  if (!world->ReadState(reader, _snapshot.stateVersion) || !reader.Finish())
   {
     return std::unexpected(Neuron::SnapshotError::MalformedState);
   }

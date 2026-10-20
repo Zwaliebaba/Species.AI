@@ -133,7 +133,7 @@ public:
     Neuron::InProcessListener listener({});
     std::unique_ptr<Neuron::Transport> first = listener.Connect();
     std::unique_ptr<Neuron::Transport> second = listener.Connect();
-    Species::WorldServer world({});
+    Species::WorldServer world({.tuning = CommittedTuning()});
     Neuron::ServerHost::Desc desc;
     desc.clock = &clock;
     desc.tickPeriod = TEST_TICK_PERIOD;
@@ -184,7 +184,7 @@ public:
     Neuron::InProcessListener listener({});
     std::unique_ptr<Neuron::Transport> client = listener.Connect();
     Assert::IsTrue(client->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(Species::TickReport{7})).has_value());
-    Species::WorldServer world({});
+    Species::WorldServer world({.tuning = CommittedTuning()});
     Neuron::ServerHost::Desc desc;
     desc.clock = &clock;
     desc.tickPeriod = TEST_TICK_PERIOD;

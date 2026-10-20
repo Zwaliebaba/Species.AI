@@ -2,6 +2,8 @@
 
 #include "CppUnitTest.h"
 
+#include "TuningMvp.h"
+
 #include <cstdint>
 #include <filesystem>
 #include <format>
@@ -37,6 +39,9 @@ private:
 // The repository's content root, found from this source file's own path, so a test reads the committed data
 // wherever its runner is.
 [[nodiscard]] std::filesystem::path RepositoryContentRoot();
+
+// The committed tuning record (MVP-099), read once: the values every world of the tests runs on.
+[[nodiscard]] const Species::TuningMvp& CommittedTuning();
 
 // The whole file as text, or an empty string; and a file written whole, its folders made.
 [[nodiscard]] std::string ReadText(const std::filesystem::path& _path);

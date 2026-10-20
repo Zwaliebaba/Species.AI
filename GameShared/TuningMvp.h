@@ -15,7 +15,7 @@ inline constexpr std::string_view TUNING_MVP_SCHEMA_ID = "tuning.mvp";
 inline constexpr Neuron::SchemaVersion TUNING_MVP_VERSION{1, 0};
 inline constexpr bool TUNING_MVP_SIMULATION_RELEVANT = true;
 
-/// The tuning values of the MVP: every key of its table 3 and ref.sim.tick_period (MVP-003, MVP-099).
+/// The tuning values of the MVP: every key of its table 3 and the reference keys the simulation reads (MVP-003, MVP-099).
 struct TuningMvp
 {
   struct Mvp
@@ -363,11 +363,90 @@ struct TuningMvp
   {
     struct Sim
     {
+      struct Container
+      {
+        // ref.sim.container.ungrouped_step, in slots
+        std::int64_t ungroupedStep = 0;
+      };
+
+      struct Spawn
+      {
+        struct DefaultFront
+        {
+          // ref.sim.spawn.default_front.x, in unit vector
+          double x = 0.0;
+
+          // ref.sim.spawn.default_front.y, in unit vector
+          double y = 0.0;
+
+          // ref.sim.spawn.default_front.z, in unit vector
+          double z = 0.0;
+        };
+
+        DefaultFront defaultFront;
+      };
+
       // ref.sim.tick_period, in s
       double tickPeriod = 0.0;
+
+      // ref.sim.update_slices, in slices
+      std::int64_t updateSlices = 0;
+
+      Container container;
+      Spawn spawn;
+    };
+
+    struct Unit
+    {
+      struct Worker
+      {
+        // ref.unit.worker.health, in health
+        std::int64_t health = 0;
+
+        // ref.unit.worker.speed, in wu/s
+        double speed = 0.0;
+
+        // ref.unit.worker.rate, in s
+        double rate = 0.0;
+
+        // ref.unit.worker.formation_explosive_factor, in × damage
+        double formationExplosiveFactor = 0.0;
+      };
+
+      struct Leader
+      {
+        // ref.unit.leader.health, in health
+        std::int64_t health = 0;
+
+        // ref.unit.leader.speed, in wu/s
+        double speed = 0.0;
+
+        // ref.unit.leader.rate, in s
+        double rate = 0.0;
+      };
+
+      struct Corpse
+      {
+        // ref.unit.corpse.fade_start, in health
+        std::int64_t fadeStart = 0;
+
+        // ref.unit.corpse.fade_ground_per_tick, in health per tick
+        std::int64_t fadeGroundPerTick = 0;
+
+        // ref.unit.corpse.fade_air_per_tick, in health per tick
+        std::int64_t fadeAirPerTick = 0;
+      };
+
+      // ref.unit.health_max, in health
+      std::int64_t healthMax = 0;
+
+      Worker worker;
+      Leader leader;
+      Corpse corpse;
     };
 
     Sim sim;
+    Unit unit;
   };
 
   Mvp mvp;
@@ -636,15 +715,73 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim::Container& _out)
+{
+  _out.ungroupedStep = _reader.Integer(_object, "ungrouped_step", 0);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim::Spawn::DefaultFront& _out)
+{
+  _out.x = _reader.Decimal(_object, "x", {}, Neuron::SimPrecision::Binary64);
+  _out.y = _reader.Decimal(_object, "y", {}, Neuron::SimPrecision::Binary64);
+  _out.z = _reader.Decimal(_object, "z", {}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim::Spawn& _out)
+{
+  ReadFields(_reader, _reader.Object(_object, "default_front"), _out.defaultFront);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim& _out)
 {
   _out.tickPeriod = _reader.Decimal(_object, "tick_period", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.updateSlices = _reader.Integer(_object, "update_slices", 0);
+  ReadFields(_reader, _reader.Object(_object, "container"), _out.container);
+  ReadFields(_reader, _reader.Object(_object, "spawn"), _out.spawn);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Unit::Worker& _out)
+{
+  _out.health = _reader.Integer(_object, "health", 0);
+  _out.speed = _reader.Decimal(_object, "speed", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.rate = _reader.Decimal(_object, "rate", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.formationExplosiveFactor = _reader.Decimal(_object, "formation_explosive_factor", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Unit::Leader& _out)
+{
+  _out.health = _reader.Integer(_object, "health", 0);
+  _out.speed = _reader.Decimal(_object, "speed", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.rate = _reader.Decimal(_object, "rate", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Unit::Corpse& _out)
+{
+  _out.fadeStart = _reader.Integer(_object, "fade_start", 0);
+  _out.fadeGroundPerTick = _reader.Integer(_object, "fade_ground_per_tick", 0);
+  _out.fadeAirPerTick = _reader.Integer(_object, "fade_air_per_tick", 0);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Unit& _out)
+{
+  _out.healthMax = _reader.Integer(_object, "health_max", 0);
+  ReadFields(_reader, _reader.Object(_object, "worker"), _out.worker);
+  ReadFields(_reader, _reader.Object(_object, "leader"), _out.leader);
+  ReadFields(_reader, _reader.Object(_object, "corpse"), _out.corpse);
   _reader.Close(_object);
 }
 
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "sim"), _out.sim);
+  ReadFields(_reader, _reader.Object(_object, "unit"), _out.unit);
   _reader.Close(_object);
 }
 

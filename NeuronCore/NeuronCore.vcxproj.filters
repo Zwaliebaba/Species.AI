@@ -117,6 +117,9 @@
     <ClInclude Include="Transport.h">
       <Filter>Network</Filter>
     </ClInclude>
+    <ClInclude Include="Vec3.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
     <ClInclude Include="WindowsHeaders.h">
       <Filter>Platform</Filter>
     </ClInclude>

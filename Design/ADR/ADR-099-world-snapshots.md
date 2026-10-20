@@ -57,7 +57,7 @@ Chosen option: "1".
   - A file is `world-<tick in 20 digits>.snapshot`, so the names sort by tick. A name of any other form is not a snapshot, so the temporary file of an unfinished write is never listed.
   - `Save` writes the file through `ReplaceFileAtomically` (PLT-089), which writes a temporary file, flushes it and renames it over the target. It then removes all but the newest `kept`. A failed write leaves every earlier snapshot.
   - `Snapshots` lists them newest first; `Load` reads and decodes one.
-* **The world's state** (GameLogic, `WorldSnapshot.h`) is the game's own versioned encoding, at version 1 (`WORLD_STATE_VERSION`):
+* **The world's state** (GameLogic, `WorldSnapshot.h`) is the game's own versioned encoding, at version 2 since M1 task T2 (`WORLD_STATE_VERSION`):
   - the simulation key;
   - the region count;
   - then the world owner's state and each region's, in the canonical encoding that ADR-097's state hash covers.
@@ -66,7 +66,7 @@ Chosen option: "1".
 * **Versions and migration (MVP-095).** A change to any owner's state layout raises `WORLD_STATE_VERSION` and adds a step that migrates the previous version to it.
   - `RestoreWorld` runs the steps from the snapshot's version up to the current one.
   - A version below `WORLD_STATE_OLDEST_VERSION` or above the current one is refused.
-  - M0's world has one version, so there is no step yet.
+  - Version 2 adds each region's teams and figures (ADR-101); its step reads a region of version 1 as one with no teams.
   - The format version changes only when the file's framing does, and this build reads format 1 only.
 * **The world server.** Given a snapshot folder (`WorldServer::Desc::snapshotFolder`), the server:
   - opens the newest snapshot that validates;
@@ -97,7 +97,7 @@ Chosen option: "1".
   - that a torn newest snapshot is refused while the next older one loads.
 * `GameLogicTests` checks:
   - that a restored world of three regions has the saved key, state and tick, and hashes as the saved world after ten more ticks;
-  - that state versions 0 and 2 are refused;
+  - that state versions 0 and 3 are refused (0 and 2 at M0);
   - that every shortened state, a state with bytes after it and a header tick the state does not hold are refused;
   - that a world server that stops saves its world, and the next one opens it at the same tick with the same key and state and runs on;
   - that a folder with no valid snapshot opens a new world.
@@ -124,3 +124,4 @@ Chosen option: "1".
 
 * Related: [ADR-082](ADR-082-counter-based-simulation-random-draws.md), [ADR-083](ADR-083-server-process-ownership-and-threading.md), [ADR-085](ADR-085-region-partitioned-world-simulation.md), [ADR-095](ADR-095-server-host-tick-loop-and-command-queue.md), [ADR-096](ADR-096-game-skeleton-integrated-server-and-tick-report.md), [ADR-097](ADR-097-keyed-draws-and-state-hash.md).
 * The code is in NeuronCore (`ListFiles`, `RemoveFile`), NeuronServer (`Snapshot`) and GameLogic (`WorldSnapshot`, the owners' `ReadState`, `WorldServer`).
+* **Amendment 2026-10-20 (M1 task T2, [ADR-101](ADR-101-region-teams-figures-and-update-slices.md)).** `WORLD_STATE_VERSION` is 2: each region writes its teams and their figures after its queued commands, and the first migration step reads a version-1 region as one with no teams. Version 3 is refused.

@@ -26,7 +26,8 @@ std::uint64_t WorldServer::Open()
     const Neuron::SnapshotStore store(m_desc.snapshotFolder, SnapshotsKept());
     for (const std::filesystem::path& snapshot : store.Snapshots())
     {
-      auto restored = Neuron::SnapshotStore::Load(snapshot).and_then(RestoreWorld);
+      auto restored = Neuron::SnapshotStore::Load(snapshot).and_then([this](const Neuron::SnapshotContents& _contents)
+                                                                     { return RestoreWorld(_contents, m_desc.tuning); });
       if (restored)
       {
         m_world = std::move(*restored);
@@ -43,6 +44,7 @@ std::uint64_t WorldServer::Open()
   desc.simulationKey = Neuron::DrawSecretKey();
   desc.nextTick = 0;
   desc.regionCount = m_desc.regionCount;
+  desc.tuning = &m_desc.tuning;
   m_world = std::make_unique<WorldSimulation>(desc);
   Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Info, "a new world opens with {} region(s)", m_desc.regionCount);
   return m_world->NextTick();

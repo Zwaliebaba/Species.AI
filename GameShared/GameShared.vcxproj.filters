@@ -13,8 +13,14 @@
     <Filter Include="Records">
       <UniqueIdentifier>{82AF2224-6502-5BE4-9A5D-2B4D337729DB}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Simulation">
+      <UniqueIdentifier>{0BF5669E-8E4F-5315-AFF9-9F3AFE17939F}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="FigureKind.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="GameMessages.h">
       <Filter>Messages</Filter>
     </ClInclude>

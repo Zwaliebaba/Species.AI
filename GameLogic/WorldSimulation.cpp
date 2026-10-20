@@ -15,11 +15,11 @@ WorldSimulation::WorldSimulation(const Desc& _desc)
     m_ids(WORLD_OWNER_ID),
     m_commands(_desc.simulationKey, _desc.nextTick)
 {
-  ENGINE_CHECK(_desc.regionCount > 0);
+  ENGINE_CHECK(_desc.regionCount > 0 && _desc.tuning != nullptr);
   m_regions.reserve(_desc.regionCount);
   for (std::uint16_t index = 0; index < _desc.regionCount; ++index)
   {
-    m_regions.push_back(std::make_unique<RegionSimulation>(index, _desc.simulationKey, _desc.nextTick));
+    m_regions.push_back(std::make_unique<RegionSimulation>(index, _desc.simulationKey, _desc.nextTick, *_desc.tuning));
   }
 }
 
@@ -45,7 +45,7 @@ void WorldSimulation::WriteState(Neuron::BitWriter& _writer) const
   m_commands.WriteState(_writer);
 }
 
-bool WorldSimulation::ReadState(Neuron::BitReader& _reader)
+bool WorldSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stateVersion)
 {
   const std::uint64_t nextTick = _reader.ReadBits(64);
   const std::uint64_t nextId = _reader.ReadBits(64);
@@ -58,8 +58,8 @@ bool WorldSimulation::ReadState(Neuron::BitReader& _reader)
   {
     return false;
   }
-  return std::ranges::all_of(m_regions,
-                             [&_reader](const std::unique_ptr<RegionSimulation>& _region) { return _region->ReadState(_reader); });
+  return std::ranges::all_of(m_regions, [&_reader, _stateVersion](const std::unique_ptr<RegionSimulation>& _region)
+                             { return _region->ReadState(_reader, _stateVersion); });
 }
 
 RegionSimulation& WorldSimulation::Region(std::size_t _index)

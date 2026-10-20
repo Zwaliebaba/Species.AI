@@ -144,6 +144,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="FigureKind.h" />
     <ClInclude Include="GameMessages.h" />
     <ClInclude Include="StableId.h" />
     <ClInclude Include="TickReport.h" />

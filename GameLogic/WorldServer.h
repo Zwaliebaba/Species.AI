@@ -27,7 +27,7 @@ public:
   struct Desc
   {
     std::uint16_t regionCount = 1;
-    TuningMvp tuning;                     // read when the server started (MVP-099); M1's rules are the first to read it
+    TuningMvp tuning;                     // read when the server started (MVP-099); the world reads it while it runs
     std::filesystem::path snapshotFolder; // where the world is saved when it freezes and restored when it opens; none: a new
                                           // world each run (ADR-099)
   };

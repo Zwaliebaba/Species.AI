@@ -53,6 +53,7 @@ Chosen option: "1".
   - `GameData/Schemas/` holds the JSON Schema documents, one per schema id. The generator reads them and authors' editors use them; the content build packs none of them.
   - A field's path is its tuning key: `mvp.pace.session_factor` is the field `session_factor` of the object `pace` of the object `mvp`.
   - The record holds every key of the MVP scope's table 3, 71 keys in 31 groups, at their table values, and `ref.sim.tick_period` at 0.1 s (ADR-079).
+  - From M1 it also holds, under `ref.*`, every reference key the simulation reads, at its reference table's value; each M1 task adds the keys it reads (ADR-101). A vector key is an object of three decimals, `x`, `y` and `z`, because the subset has no vector type.
 * **The schema subset of M0** is enforced by the generator, which refuses everything else (DAT-015):
   - `$schema` pinned to draft 2020-12;
   - `$id`, the schema id; `title` and `description`;
@@ -140,3 +141,4 @@ Chosen option: "1".
 
 * Related: [ADR-059](ADR-059-content-build-and-validators.md), [ADR-061](ADR-061-data-schemas-and-versioning.md), [ADR-062](ADR-062-authoring-syntax-and-schema-language.md), [ADR-079](ADR-079-simulation-tick-rate.md), [ADR-081](ADR-081-numeric-model-and-determinism-scope.md), [ADR-090](ADR-090-solution-and-project-layout.md), [ADR-096](ADR-096-game-skeleton-integrated-server-and-tick-report.md).
 * The code is in NeuronCore (`AuthoringParser`, `RecordReader`, `ContentDiagnostic`, `FindInterimContentRoot`), `Tools/SpeciesSchemaGen`, GameShared (`TuningMvp.h`, generated, and `Tuning`) and GameLogic (`IntegratedServer`).
+* **Amendment 2026-10-20 (M1 task T2, [ADR-101](ADR-101-region-teams-figures-and-update-slices.md)).** The record holds the `ref.*` keys the simulation reads beside table 3's, each M1 task adding its own, and a vector key is an object of three decimals.

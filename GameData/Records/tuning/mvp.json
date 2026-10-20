@@ -1,7 +1,7 @@
 {
   "schema": "tuning.mvp",
   "version": "1.0",
-  "notes": "The MVP tuning values of Design/implementation/mvp_scope.md table 3, and ref.sim.tick_period of ADR-079. All provisional (MVP-003).",
+  "notes": "The MVP tuning values of Design/implementation/mvp_scope.md table 3, and the reference keys the simulation reads (ADR-079, MVP-099), each at its reference value. All provisional (MVP-003).",
   "mvp": {
     "pace": {
       "session_factor": 24
@@ -139,7 +139,37 @@
   },
   "ref": {
     "sim": {
-      "tick_period": 0.1
+      "tick_period": 0.1,
+      "update_slices": 10,
+      "container": {
+        "ungrouped_step": 100
+      },
+      "spawn": {
+        "default_front": {
+          "x": 1,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
+    "unit": {
+      "health_max": 255,
+      "worker": {
+        "health": 50,
+        "speed": 20,
+        "rate": 3,
+        "formation_explosive_factor": 0.6
+      },
+      "leader": {
+        "health": 255,
+        "speed": 30,
+        "rate": 3
+      },
+      "corpse": {
+        "fade_start": 100,
+        "fade_ground_per_tick": 4,
+        "fade_air_per_tick": 2
+      }
     }
   }
 }
