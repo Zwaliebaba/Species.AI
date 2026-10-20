@@ -49,7 +49,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 - A second family of effects darkens instead of brightening: smoke, the hostile Crawlers and their orbs, text outlines and shadows, cursor and icon shadows, logo halos and blob shadows under units.
 - Darkening art is greyscale too: white means full darkening. The result is the destination multiplied by one minus the texel, so darkening needs no sorting either.
-- Shadows of cursors, of the crate landing marker and of the barrage marker are blurred copies of their art: derived variants that the cooker produces offline, never at load or at run time (RND-422, ADR-018), or greyscale darkening art that an artist authors instead. The compass and team-disc shadows and the glyph shadows are authored art.
+- Shadows of cursors, of the crate landing marker and of the barrage marker are blurred copies of their art: derived variants that the cooker produces offline, never at load or at run time (RND-422, ADR-018), or greyscale darkening art that an artist authors instead, as the owner authors the cursors' shadows (O64). The compass and team-disc shadows and the glyph shadows are authored art.
 
 ### 2.4 Crowds of small figures
 
@@ -61,7 +61,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 ### 2.5 Team tint and palette
 
 - Team identity is applied by tint, never painted into art. Worker cards, icons and markers are white or light grey and take the team colour from the vertex tint; lasers, glows and lights take it the same way.
-- Meshes mark team parts with explicit tint weights on the root node and its direct children: the `_SPECIES_TINT` vertex attribute or the `species_team_tint` material flag (AST-034, ADR-020). The renderer tints them in the shader while keeping their brightness; the cooker never infers a weight from a colour. An artist who works in the "mostly red" key-colour style (red more than twice green and twice blue) runs the authoring helper, which writes explicit weights for review.
+- Meshes mark team parts on the root node and its direct children with the material named `team` (AST-034, ADR-020, O64). The renderer tints them in the shader while keeping their brightness; the cooker never infers a weight from a colour. An artist who works in the "mostly red" key-colour style (red more than twice green and twice blue) runs the authoring helper, which assigns the `team` material for review.
 - Cloth banners and flags carry the team area as grey levels (its intensity) and a companion tint mask whose white marks full team tint (AST-022). Nothing is recoloured at load and no per-team copy exists; the look is unchanged.
 - A match has eight team colours (green, red, yellow, blue, orange, purple, cyan, pink). Art must read correctly under all eight, including next to each other.
 - Colour is never the only team cue (XAG 103): banners, flags and markers also differ in shape or pattern where the design phase asks for it.
@@ -163,7 +163,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 **114 files, 85 asset ids**: 76 render meshes in 57 asset ids (unit figures and bodies 7, projectiles 4, creatures 13, structures 37, eight Relics and seven scenery pieces), 37 collision assets in 27 asset ids, and the map editor's camera-view marker.
 
 - Flat-shaded low-poly, per-face colour in `COLOR_0`, no normals; metres, +Y up; triangle budgets are upper limits in the classes 100, 300, 1000, 3000, 10000 and 25000 (the low-poly look usually needs far fewer).
-- Team parts carry explicit tint weights (the `_SPECIES_TINT` attribute or the `species_team_tint` material flag) on the root node and its direct children; see §2.5.
+- Team parts use the material named `team` on the root node and its direct children (O64); see §2.5.
 - Indexed sockets are numbered from 01 without gaps (`port_01`, `leg_01` to `leg_08`).
 - Every collidable mesh has a collision asset: triangle-only geometry with no materials, authored as its own source at the render member's bounds. The hit tests read it, never the render mesh.
 - Sockets are empty named nodes; their names come from the socket vocabulary in [GameAssets.md §11](GameAssets.md#11-meshes) and must match exactly. Manning ports stand where a Worker operates the structure; muzzles sit at barrel ends; status lights pair with ports.

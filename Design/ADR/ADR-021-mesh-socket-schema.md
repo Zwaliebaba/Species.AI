@@ -74,3 +74,4 @@ Chosen option: **1, socket nodes, schema per asset class, cooked socket table**,
 
 - Related: ADR-019 (mesh source format and asset classes), ADR-035 (procedural animation of nodes), ADR-036 (effects attached to sockets), ADR-059 (content build), ADR-060 (content identity).
 - The asset pipeline component (`architecture/components/asset_pipeline_and_resources.md`) defines the socket kinds, the naming pattern and the schema of every asset class.
+- **Amendment 2026-10-19 (owner decision O64).** Mesh sources are CMO files (ADR-019 amendment). A socket is a bone of the CMO skeleton named with the socket prefix and carrying no mesh, a child of the bone it moves with, as `socket_flag` of `GameData/Meshes/LeaderFigure.cmo` is; the naming pattern, the schema and the cooked socket table stand.
