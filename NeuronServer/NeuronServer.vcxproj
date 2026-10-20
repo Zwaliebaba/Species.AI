@@ -146,6 +146,7 @@
   <ItemGroup>
     <ClInclude Include="CommandQueue.h" />
     <ClInclude Include="ServerHost.h" />
+    <ClInclude Include="Snapshot.h" />
     <ClInclude Include="TickLoop.h" />
     <ClInclude Include="TickSchedule.h" />
     <ClInclude Include="WorkerPool.h" />
@@ -154,6 +155,7 @@
   <ItemGroup>
     <ClCompile Include="CommandQueue.cpp" />
     <ClCompile Include="ServerHost.cpp" />
+    <ClCompile Include="Snapshot.cpp" />
     <ClCompile Include="TickLoop.cpp" />
     <ClCompile Include="TickSchedule.cpp" />
     <ClCompile Include="WorkerPool.cpp" />

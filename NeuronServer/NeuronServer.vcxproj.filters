@@ -10,6 +10,9 @@
     <Filter Include="Loop">
       <UniqueIdentifier>{FDFA154C-FF6D-514A-BBD0-08CB6CB77B76}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Persistence">
+      <UniqueIdentifier>{9A8AFF3A-882A-5193-9C07-1CDFC03D049A}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandQueue.h">
@@ -17,6 +20,9 @@
     </ClInclude>
     <ClInclude Include="ServerHost.h">
       <Filter>Loop</Filter>
+    </ClInclude>
+    <ClInclude Include="Snapshot.h">
+      <Filter>Persistence</Filter>
     </ClInclude>
     <ClInclude Include="TickLoop.h">
       <Filter>Loop</Filter>
@@ -37,6 +43,9 @@
     </ClCompile>
     <ClCompile Include="ServerHost.cpp">
       <Filter>Loop</Filter>
+    </ClCompile>
+    <ClCompile Include="Snapshot.cpp">
+      <Filter>Persistence</Filter>
     </ClCompile>
     <ClCompile Include="TickLoop.cpp">
       <Filter>Loop</Filter>

@@ -10,6 +10,9 @@
     <Filter Include="Loop">
       <UniqueIdentifier>{696B6E4E-D80C-58E1-A614-C43201434AE0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Persistence">
+      <UniqueIdentifier>{4B28A93E-7F5F-5382-94C8-85C1589212DE}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Tests">
       <UniqueIdentifier>{E3C4FCFA-0091-561A-A62F-E6DAC2242F89}</UniqueIdentifier>
     </Filter>
@@ -28,6 +31,9 @@
     </ClCompile>
     <ClCompile Include="ServerHostTests.cpp">
       <Filter>Loop</Filter>
+    </ClCompile>
+    <ClCompile Include="SnapshotTests.cpp">
+      <Filter>Persistence</Filter>
     </ClCompile>
     <ClCompile Include="TestSupport.cpp">
       <Filter>Tests</Filter>

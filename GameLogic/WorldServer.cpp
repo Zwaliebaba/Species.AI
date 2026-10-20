@@ -5,7 +5,9 @@
 #include "SecureRandom.h"
 #include "TickReport.h"
 #include "WorldServer.h"
+#include "WorldSnapshot.h"
 
+#include <algorithm>
 #include <utility>
 
 namespace Species
@@ -18,6 +20,24 @@ WorldServer::WorldServer(const Desc& _desc)
 
 std::uint64_t WorldServer::Open()
 {
+  if (!m_desc.snapshotFolder.empty())
+  {
+    // MVP-075: the newest snapshot that validates; a refused one is logged and the next older one tried.
+    const Neuron::SnapshotStore store(m_desc.snapshotFolder, SnapshotsKept());
+    for (const std::filesystem::path& snapshot : store.Snapshots())
+    {
+      auto restored = Neuron::SnapshotStore::Load(snapshot).and_then(RestoreWorld);
+      if (restored)
+      {
+        m_world = std::move(*restored);
+        Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Info, "the world opens from {} at tick {}",
+                    snapshot.filename().string(), m_world->NextTick());
+        return m_world->NextTick();
+      }
+      Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning, "the snapshot {} is refused: {}",
+                  snapshot.filename().string(), Neuron::SnapshotErrorText(restored.error()));
+    }
+  }
   // A new world draws its simulation key from the system's cryptographic generator (ADR-082 item 1).
   WorldSimulation::Desc desc;
   desc.simulationKey = Neuron::DrawSecretKey();
@@ -26,6 +46,12 @@ std::uint64_t WorldServer::Open()
   m_world = std::make_unique<WorldSimulation>(desc);
   Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Info, "a new world opens with {} region(s)", m_desc.regionCount);
   return m_world->NextTick();
+}
+
+std::size_t WorldServer::SnapshotsKept() const noexcept
+{
+  // mvp.persist.snapshots_kept; a value below 1 keeps the one snapshot a restart needs.
+  return static_cast<std::size_t>(std::max<std::int64_t>(1, m_desc.tuning.mvp.persist.snapshotsKept));
 }
 
 void WorldServer::Connect(Neuron::ConnectionId _connection)
@@ -92,6 +118,21 @@ void WorldServer::Freeze(std::uint64_t _nextTick)
 {
   ENGINE_ASSERT(m_world == nullptr || m_world->NextTick() == _nextTick);
   Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Info, "the world freezes before tick {}", _nextTick);
+  if (m_world == nullptr || m_desc.snapshotFolder.empty())
+  {
+    return;
+  }
+  // Freezing writes a final snapshot and loses nothing (ADR-083 item 9; MVP-075's snapshot stands in for the cut).
+  Neuron::SnapshotStore store(m_desc.snapshotFolder, SnapshotsKept());
+  if (const auto saved = store.Save(SnapshotOf(*m_world)); saved)
+  {
+    Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Info, "the world is saved in {}", saved->filename().string());
+  }
+  else
+  {
+    Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Error, "the world could not be saved in {}",
+                m_desc.snapshotFolder.string());
+  }
 }
 
 } // namespace Species

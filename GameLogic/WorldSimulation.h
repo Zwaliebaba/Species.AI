@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BitReader.h"
 #include "BitWriter.h"
 #include "CommandQueue.h"
 #include "RegionSimulation.h"
@@ -34,6 +35,9 @@ public:
   // The world owner's own mutable values, canonically: the world tick, its id counter and its queued commands. The
   // simulation key is held apart: a snapshot saves it, and no hash covers it (ADR-082 item 1).
   void WriteState(Neuron::BitWriter& _writer) const;
+  // The world owner's values and then each region's, as a snapshot holds them (ADR-099), into a world made with the same
+  // key, tick and region count; false when they do not read whole.
+  [[nodiscard]] bool ReadState(Neuron::BitReader& _reader);
 
   // The world tick: the next tick to step.
   [[nodiscard]] std::uint64_t NextTick() const noexcept

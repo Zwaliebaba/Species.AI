@@ -4,6 +4,8 @@
 #include "Profile.h"
 #include "WorldSimulation.h"
 
+#include <algorithm>
+
 namespace Species
 {
 
@@ -41,6 +43,23 @@ void WorldSimulation::WriteState(Neuron::BitWriter& _writer) const
   _writer.WriteBits(m_nextTick, 64);
   _writer.WriteBits(m_ids.Next(), 64);
   m_commands.WriteState(_writer);
+}
+
+bool WorldSimulation::ReadState(Neuron::BitReader& _reader)
+{
+  const std::uint64_t nextTick = _reader.ReadBits(64);
+  const std::uint64_t nextId = _reader.ReadBits(64);
+  if (_reader.Failed() || nextTick != m_nextTick || nextId == 0 || nextId > STABLE_ID_COUNTER_MAX + 1)
+  {
+    return false;
+  }
+  m_ids = StableIdCounter(WORLD_OWNER_ID, nextId);
+  if (!m_commands.ReadState(_reader))
+  {
+    return false;
+  }
+  return std::ranges::all_of(m_regions,
+                             [&_reader](const std::unique_ptr<RegionSimulation>& _region) { return _region->ReadState(_reader); });
 }
 
 RegionSimulation& WorldSimulation::Region(std::size_t _index)

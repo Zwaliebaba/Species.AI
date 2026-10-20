@@ -4,6 +4,7 @@
 #include "PlatformClock.h"
 
 #include <cstdint>
+#include <filesystem>
 #include <format>
 #include <memory>
 #include <string>
@@ -15,6 +16,25 @@ namespace NeuronServerTests
 
 // The failed development checks since the last call, which the module's check hook collects (DBG-072).
 [[nodiscard]] std::vector<std::string> TakeDevelopmentChecks();
+
+/// A folder of its own under the temporary directory, removed with everything in it when the test ends.
+class TemporaryFolder
+{
+public:
+  TemporaryFolder();
+  ~TemporaryFolder();
+
+  TemporaryFolder(const TemporaryFolder&) = delete;
+  TemporaryFolder& operator=(const TemporaryFolder&) = delete;
+
+  [[nodiscard]] const std::filesystem::path& Path() const noexcept
+  {
+    return m_path;
+  }
+
+private:
+  std::filesystem::path m_path;
+};
 
 // The framework's AreEqual needs a ToString for every type it compares; these compare and describe the values
 // themselves.

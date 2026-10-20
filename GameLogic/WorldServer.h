@@ -1,12 +1,14 @@
 #pragma once
 
 #include "ServerHost.h"
+#include "Snapshot.h"
 #include "StableId.h"
 #include "StateHash.h"
 #include "TuningMvp.h"
 #include "WorldSimulation.h"
 
 #include <cstdint>
+#include <filesystem>
 #include <map>
 #include <memory>
 #include <optional>
@@ -16,15 +18,18 @@ namespace Species
 
 /// The game's world as the server host runs it (ADR-083, ADR-095): it opens and freezes the world, turns each
 /// connection into a steward, passes their messages to the command queue of the owner they address, and publishes each
-/// tick to every connection. At M0 the world is created empty when it opens, every connection is a steward, and the
-/// tick report is all it publishes.
+/// tick to every connection. With a snapshot folder it opens the newest snapshot that validates and saves one when it
+/// freezes (MVP-075, ADR-099); without one, or with none that validates, the world opens new and empty. At M0 every
+/// connection is a steward, and the tick report is all it publishes.
 class WorldServer final : public Neuron::ServerWorld
 {
 public:
   struct Desc
   {
     std::uint16_t regionCount = 1;
-    TuningMvp tuning; // read when the server started (MVP-099); M1's rules are the first to read it
+    TuningMvp tuning;                     // read when the server started (MVP-099); M1's rules are the first to read it
+    std::filesystem::path snapshotFolder; // where the world is saved when it freezes and restored when it opens; none: a new
+                                          // world each run (ADR-099)
   };
 
   explicit WorldServer(const Desc& _desc);
@@ -55,6 +60,8 @@ public:
   }
 
 private:
+  [[nodiscard]] std::size_t SnapshotsKept() const noexcept;
+
   struct Steward
   {
     StableId id = 0;

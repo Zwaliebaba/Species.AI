@@ -170,6 +170,7 @@
   <ItemGroup>
     <ClCompile Include="StateHashTests.cpp" />
     <ClCompile Include="TestSupport.cpp" />
+    <ClCompile Include="WorldSnapshotTests.cpp" />
     <ClCompile Include="WorldTests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>

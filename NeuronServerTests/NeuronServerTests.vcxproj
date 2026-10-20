@@ -170,6 +170,7 @@
   <ItemGroup>
     <ClCompile Include="CommandQueueTests.cpp" />
     <ClCompile Include="ServerHostTests.cpp" />
+    <ClCompile Include="SnapshotTests.cpp" />
     <ClCompile Include="TestSupport.cpp" />
     <ClCompile Include="TickLoopTests.cpp" />
     <ClCompile Include="pch.cpp">

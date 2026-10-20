@@ -150,6 +150,7 @@
     <ClInclude Include="StateHash.h" />
     <ClInclude Include="WorldServer.h" />
     <ClInclude Include="WorldSimulation.h" />
+    <ClInclude Include="WorldSnapshot.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
@@ -159,6 +160,7 @@
     <ClCompile Include="StateHash.cpp" />
     <ClCompile Include="WorldServer.cpp" />
     <ClCompile Include="WorldSimulation.cpp" />
+    <ClCompile Include="WorldSnapshot.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

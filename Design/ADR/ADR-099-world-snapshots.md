@@ -1,0 +1,126 @@
+---
+status: proposed
+date: 2026-10-20
+decision-makers: Species technology lead (M0 task T10)
+---
+
+# World snapshots at M0: the file format, the store and the world's state version
+
+## Context and Problem Statement
+
+MVP-075 has the server save the world as a versioned snapshot every `mvp.persist.snapshot_seconds` and when it stops cleanly. It writes a temporary file, flushes it and puts it in place by an atomic rename, keeps the last `mvp.persist.snapshots_kept`, and at start loads the newest snapshot that validates. MVP-095 has the loader migrate every older version it accepts and refuse, with a message, a version it cannot migrate, never loading a snapshot in part. The snapshot stands in for the consistent cut of ADR-083 item 9 and for the journaled record store of O42, which the MVP defers. Saving starts at M2.
+
+M0 task T10 builds the versioned snapshot of an empty world: written, flushed and renamed atomically, loaded and validated, with a snapshot of an unknown version refused. Its done-when is unit tests of a round trip, a torn write and a refused version.
+
+The specifications leave open:
+- the file's layout and how a damaged file is told from a whole one;
+- where the engine's part ends and the game's begins;
+- how a version is numbered and migrated;
+- the files' names and folder;
+- what a server does when a snapshot is refused;
+- whether M0's composition roots save at all.
+
+## Decision Drivers
+
+* A snapshot is loaded whole or not at all (MVP-095), and a torn or changed file is found before any of it is decoded.
+* The engine does not know the game's state (R9): it frames a world's bytes, and the game encodes and migrates them.
+* A restored world is the world that was saved: the same state, key and tick, and from there the same ticks (ADR-085's "confirmed when" from M2).
+* The writes go through the platform layer's atomic replace (PLT-089), the same path as every other file the game writes.
+
+## Considered Options
+
+* 1 — one file per snapshot: a fixed header, the world's state in its own versioned encoding, and a SipHash-2-4 check value over everything before it; an engine store that names, lists, keeps and loads the files; the game's encoder and loader
+* 2 — the same file with a CRC-32 in place of SipHash
+* 3 — one file overwritten in place, with no history
+
+## Decision Outcome
+
+Chosen option: "1".
+- Option 2 adds a second checksum to the code for no gain: SipHash-2-4 is already NeuronCore's, and its 64 bits miss less than CRC-32's 32.
+- Option 3 has no older snapshot to fall back on when the newest is refused, which MVP-075's "the newest that validates" needs.
+
+* **The file** (NeuronServer, `Snapshot.h`). All integers are little-endian.
+  - Bytes 0 to 7 hold the magic `SPCSNAP` and 0x1A.
+  - Bytes 8 and 9 hold the format version, 1 (`SNAPSHOT_FORMAT_VERSION`); bytes 10 and 11 are reserved and 0.
+  - Bytes 12 to 15 hold the world's state version, bytes 16 to 23 the first tick the restored world steps, and bytes 24 to 31 the length of the state.
+  - Then the state, then 8 bytes of SipHash-2-4 of every byte before them under the public key `SNAPSHOT_CHECK_KEY`.
+  - The check finds a torn, truncated or changed file. It authenticates nothing: the file lives on the server's own disk.
+* **Decoding** refuses with one of seven reasons (`SnapshotError`), in this order, and decodes nothing of a refused file:
+  - a file that is not a snapshot;
+  - a file shorter than its header and check value;
+  - a format version other than 1, read before anything that depends on it;
+  - a length the file does not hold, as truncated or damaged;
+  - a check value that does not match, as damaged.
+  - The game's loader adds a state version it cannot migrate and a state that does not decode whole.
+  - The reason is logged with the file's name, and the next older snapshot is tried.
+* **The store** (`SnapshotStore`) keeps one world's snapshots in one folder.
+  - A file is `world-<tick in 20 digits>.snapshot`, so the names sort by tick. A name of any other form is not a snapshot, so the temporary file of an unfinished write is never listed.
+  - `Save` writes the file through `ReplaceFileAtomically` (PLT-089), which writes a temporary file, flushes it and renames it over the target. It then removes all but the newest `kept`. A failed write leaves every earlier snapshot.
+  - `Snapshots` lists them newest first; `Load` reads and decodes one.
+* **The world's state** (GameLogic, `WorldSnapshot.h`) is the game's own versioned encoding, at version 1 (`WORLD_STATE_VERSION`):
+  - the simulation key;
+  - the region count;
+  - then the world owner's state and each region's, in the canonical encoding that ADR-097's state hash covers.
+  - So a restored world hashes as the saved one did. The key is not in the hash, as ADR-082 item 1 requires, and is held in the snapshot because the snapshot is the world's own store at the MVP (ADR-082 item 1 allows the world's records to hold it).
+  - The loader checks that the header's tick is the world owner's tick and each region's index and tick, and that the state ends where its last owner's does.
+* **Versions and migration (MVP-095).** A change to any owner's state layout raises `WORLD_STATE_VERSION` and adds a step that migrates the previous version to it.
+  - `RestoreWorld` runs the steps from the snapshot's version up to the current one.
+  - A version below `WORLD_STATE_OLDEST_VERSION` or above the current one is refused.
+  - M0's world has one version, so there is no step yet.
+  - The format version changes only when the file's framing does, and this build reads format 1 only.
+* **The world server.** Given a snapshot folder (`WorldServer::Desc::snapshotFolder`), the server:
+  - opens the newest snapshot that validates;
+  - opens a new world when none validates;
+  - saves a snapshot when it freezes (ADR-083 item 9's final cut). The number kept is `mvp.persist.snapshots_kept`, at least 1.
+  - Without a folder, the world opens new each run.
+* **M0's composition roots give no folder.** MVP-075 starts saving at M2, so neither the integrated server nor `SpeciesServer.exe` saves at M0, and M0 never leaves a world that M2's loader would need to migrate or refuse. M2 adds:
+  - the saves folder, under the user-data root of PLT-016 for the integrated server;
+  - the save every `mvp.persist.snapshot_seconds` of world time;
+  - the freeze record of an unclean stop (PIL-131), which needs a marker of a clean stop.
+
+### Consequences
+
+* Good, because a torn or changed file is refused before any of it is decoded. A restored world hashes as the saved one did and steps the same ticks.
+* Good, because the engine frames bytes and knows no game type, and the game's version and migration live beside the state they describe.
+* Bad, because every snapshot is a whole world. That is right for one empty region at M0 and is measured at M2. ADR-083 item 9's incremental cut, writing only changed owners, comes with O42's store.
+* Bad, because a snapshot written at one version of the state can only be read by a build that keeps its migration step. Every step is kept for as long as the MVP's worlds live.
+* It forecloses: a snapshot loaded in part; a world state that the engine decodes; a snapshot file written other than by atomic replacement.
+
+### Confirmation
+
+* `NeuronServerTests` checks:
+  - a snapshot round trip;
+  - that every shorter file and every flipped bit is refused;
+  - that bytes after the check value, a torn header and another file are refused with their reasons;
+  - that format version 2 with a correct check value is refused;
+  - that the store keeps the newest three by tick and does not list a temporary file;
+  - that a torn newest snapshot is refused while the next older one loads.
+* `GameLogicTests` checks:
+  - that a restored world of three regions has the saved key, state and tick, and hashes as the saved world after ten more ticks;
+  - that state versions 0 and 2 are refused;
+  - that every shortened state, a state with bytes after it and a header tick the state does not hold are refused;
+  - that a world server that stops saves its world, and the next one opens it at the same tick with the same key and state and runs on;
+  - that a folder with no valid snapshot opens a new world.
+* ADR-085's "confirmed when" from M2 (a restored world gives the hashes of a world never stopped) and ADR-083's from M4 (the forced kill) confirm the rest.
+
+## Pros and Cons of the Options
+
+### 1 — a framed file with a SipHash check, an engine store, the game's encoding
+
+* Good, because one checksum serves the state hash, the draws and the files.
+* Bad, because a file holds the whole world.
+
+### 2 — CRC-32
+
+* Good, because a CRC-32 is the usual check of a file format.
+* Bad, because it is a second algorithm to carry, and weaker.
+
+### 3 — one file in place
+
+* Good, because there is one file.
+* Bad, because a refused file leaves nothing to load.
+
+## More Information
+
+* Related: [ADR-082](ADR-082-counter-based-simulation-random-draws.md), [ADR-083](ADR-083-server-process-ownership-and-threading.md), [ADR-085](ADR-085-region-partitioned-world-simulation.md), [ADR-095](ADR-095-server-host-tick-loop-and-command-queue.md), [ADR-096](ADR-096-game-skeleton-integrated-server-and-tick-report.md), [ADR-097](ADR-097-keyed-draws-and-state-hash.md).
+* The code is in NeuronCore (`ListFiles`, `RemoveFile`), NeuronServer (`Snapshot`) and GameLogic (`WorldSnapshot`, the owners' `ReadState`, `WorldServer`).

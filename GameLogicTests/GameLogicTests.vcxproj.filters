@@ -4,6 +4,9 @@
     <Filter Include="Build">
       <UniqueIdentifier>{77180BE4-89B7-5DB9-A092-F2213FDA70AB}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Persistence">
+      <UniqueIdentifier>{7EE28AF9-4F8D-569B-B593-51897625E937}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Simulation">
       <UniqueIdentifier>{DB696051-5B6D-59AA-8B95-C752E81E4380}</UniqueIdentifier>
     </Filter>
@@ -25,6 +28,9 @@
     </ClCompile>
     <ClCompile Include="TestSupport.cpp">
       <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldSnapshotTests.cpp">
+      <Filter>Persistence</Filter>
     </ClCompile>
     <ClCompile Include="WorldTests.cpp">
       <Filter>Simulation</Filter>

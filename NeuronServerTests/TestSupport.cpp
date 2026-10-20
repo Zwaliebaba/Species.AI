@@ -3,7 +3,10 @@
 #include "Check.h"
 #include "TestSupport.h"
 
+#include <atomic>
+#include <format>
 #include <mutex>
+#include <system_error>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -24,7 +27,32 @@ void OnDevelopmentCheck(std::string_view _message)
 }
 #endif
 
+std::atomic<std::uint64_t> g_folderCount{0};
+
 } // namespace
+
+TemporaryFolder::TemporaryFolder()
+{
+  std::error_code error;
+  m_path = std::filesystem::temp_directory_path(error) / L"NeuronServerTests" /
+           std::format(L"{}-{}", GetCurrentProcessId(), g_folderCount.fetch_add(1, std::memory_order_relaxed));
+  (void)std::filesystem::remove_all(m_path, error);
+  (void)std::filesystem::create_directories(m_path, error);
+}
+
+TemporaryFolder::~TemporaryFolder()
+{
+  try
+  {
+    std::error_code error;
+    (void)std::filesystem::remove_all(m_path, error);
+  }
+  catch (...)
+  {
+    // A folder left behind is harmless: the next run of this process id removes it first.
+    OutputDebugStringW(L"NeuronServerTests: a temporary folder was not removed\n");
+  }
+}
 
 std::vector<std::string> TakeDevelopmentChecks()
 {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BitReader.h"
 #include "BitWriter.h"
 #include "CommandQueue.h"
 #include "StableId.h"
@@ -23,6 +24,8 @@ public:
 
   // Every mutable value of the region, canonically (ADR-083 item 4): what its hash covers and its snapshot holds.
   void WriteState(Neuron::BitWriter& _writer) const;
+  // The values WriteState wrote, into a region made for the same index and tick; false when they do not read whole.
+  [[nodiscard]] bool ReadState(Neuron::BitReader& _reader);
 
   [[nodiscard]] std::uint16_t Index() const noexcept
   {

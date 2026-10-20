@@ -30,6 +30,9 @@
     <ClInclude Include="WorldSimulation.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="WorldSnapshot.h">
+      <Filter>Server</Filter>
+    </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Build</Filter>
     </ClInclude>
@@ -52,6 +55,9 @@
     </ClCompile>
     <ClCompile Include="WorldSimulation.cpp">
       <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldSnapshot.cpp">
+      <Filter>Server</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Build</Filter>

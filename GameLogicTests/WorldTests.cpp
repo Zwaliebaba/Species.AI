@@ -272,7 +272,9 @@ public:
     auto source = std::make_unique<Neuron::ManualTimeSource>();
     Neuron::ManualTimeSource* manual = source.get();
     const Neuron::PlatformClock clock(std::move(source));
-    Species::WorldServer world({1, tuning.value_or(Species::TuningMvp{})});
+    Species::WorldServer::Desc worldDesc;
+    worldDesc.tuning = tuning.value_or(Species::TuningMvp{});
+    Species::WorldServer world(worldDesc);
     Neuron::ServerHost::Desc desc;
     desc.clock = &clock;
     desc.tickPeriod = Species::TickPeriodOf(world.Tuning());
