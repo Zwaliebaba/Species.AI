@@ -135,6 +135,7 @@ RENDERER_PROJECT = 'NeuronClient'                         # ADR-078: no other pr
 DIRECT3D_HEADER = re.compile(r'^(?:d3d12|dxgi|d3dx12)[a-z0-9_]*\.h$', re.IGNORECASE)
 CLIENT_FORMAT_HEADER = 'dxgiformat.h'                     # ADR-078: what the factory's clients see of DXGI
 PRAGMA_LIBRARY = re.compile(r'^\s*#\s*pragma\s+comment\s*\(\s*lib\s*,\s*"([^"]+)"', re.MULTILINE)
+SOCKET_HEADERS = {'winsock.h', 'winsock2.h', 'ws2tcpip.h', 'mswsock.h', 'ws2def.h', 'afunix.h'}  # ADR-088 item 1, ADR-089
 AGILITY_PACKAGE = 'Microsoft.Direct3D.D3D12'
 AGILITY_EXPORTS = 'Species/AgilitySdkExports.cpp'         # BLD-042: the constants Species.exe exports
 AGILITY_EXPORT_OPTIONS = ('/EXPORT:D3D12SDKVersion=AGILITY_SDK_VERSION,DATA', '/EXPORT:D3D12SDKPath=AGILITY_SDK_PATH,DATA')
@@ -694,6 +695,8 @@ def rule_14(tree):
           yield f'{path}:{line}', f'includes {header}; only {os.path.basename(PIX_FILE)} calls the PIX runtime (DBG-080)'
     for line, _, header in SolutionModel.includes(text):
       name = os.path.basename(header.replace('\\', '/')).lower()
+      if name in SOCKET_HEADERS:
+        yield f'{path}:{line}', f'includes {header}; MsQuic owns the socket, and no Species code opens one (ADR-089)'
       if name.startswith('d3dx12'):
         yield f'{path}:{line}', f'includes {header}; the d3dx12 helpers are not used, barriers are written by hand (R14)'
       elif project != RENDERER_PROJECT and DIRECT3D_HEADER.match(name) and name != CLIENT_FORMAT_HEADER:
@@ -897,6 +900,8 @@ FIXTURES = [
    lambda r: write(r, 'GameClient/pch.h', '\n#include <d3d12.h>\n', append=True)),
   (14, 'the d3dx12 helpers included (R14)',
    lambda r: write(r, 'NeuronClient/pch.h', '\n#include "d3dx12.h"\n', append=True)),
+  (14, 'a socket header included (ADR-089)',
+   lambda r: write(r, 'NeuronCore/InProcessTransport.cpp', '\n#include <winsock2.h>\n', append=True)),
   (14, 'a Direct3D library linked by a pragma outside the client libraries (BLD-045)',
    lambda r: write(r, 'NeuronServer/pch.h', '\n#pragma comment(lib, "d3d12.lib")\n', append=True)),
 ]
