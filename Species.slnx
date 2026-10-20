@@ -21,7 +21,9 @@
     <Project Path="GameLogicTests/GameLogicTests.vcxproj" Id="c202a587-e340-5738-900b-5675f6105562" />
     <Project Path="GameClientTests/GameClientTests.vcxproj" Id="631d1fb3-5a7a-5285-8aff-a50203088689" />
   </Folder>
-  <Folder Name="/Tools/" />
+  <Folder Name="/Tools/">
+    <Project Path="Tools/SpeciesSchemaGen/SpeciesSchemaGen.vcxproj" Id="acac0570-f9cd-52a8-ae8e-651bfb181141" />
+  </Folder>
   <Project Path="Species/Species.vcxproj" Id="01ec7822-74c7-56d1-9d56-ed835e64f15d" />
   <Project Path="SpeciesServer/SpeciesServer.vcxproj" Id="24cf16cb-a2cf-5ca3-9295-af229a58000c" />
 </Solution>

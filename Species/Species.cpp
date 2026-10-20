@@ -2,9 +2,11 @@
 
 #include "AppWindow.h"
 #include "ClientSession.h"
+#include "ContentDiagnostic.h"
 #include "Development.h"
 #include "DisplayAttempt.h"
 #include "FatalPath.h"
+#include "Files.h"
 #include "FloatEnvironment.h"
 #include "FrameRenderer.h"
 #include "IntegratedServer.h"
@@ -42,9 +44,6 @@ constexpr std::string_view PRODUCT_NAME = "Species";
 // RND-032's low rate while the window is minimised or occluded (ADR-092).
 constexpr Neuron::Nanoseconds SUSPENDED_POLL_PERIOD{100'000'000};
 
-// `ref.sim.tick_period`, until the tuning record brings it from data (M0 task T9).
-constexpr Neuron::Nanoseconds INTERIM_TICK_PERIOD{100'000'000};
-
 // The base-language texts of the pre-UI messages M0 can show, compiled in until the string table loads (PLT-039).
 constexpr std::array COMPILED_TEXTS{
   Neuron::CompiledText{"ui.error.internal", "Species stopped because of an internal error. Please report it with the run id {runId}."},
@@ -53,6 +52,8 @@ constexpr std::array COMPILED_TEXTS{
     "Species cannot start: the graphics adapter does not support what the game needs.\n\nAdapter: {adapter}\nMissing: {capability}"},
   Neuron::CompiledText{"ui.error.display_mode", "Species cannot start: no window could be shown on this display."},
   Neuron::CompiledText{"ui.error.resolution_rejected", "The preferred screen size was rejected, so Species started with another one."},
+  Neuron::CompiledText{"ui.error.content_missing", "Species cannot start: its game data is missing."},
+  Neuron::CompiledText{"ui.error.content_damaged", "Species cannot start: its game data is damaged."},
 };
 
 constexpr std::intptr_t KEY_REPEAT_BIT = std::intptr_t{1} << 30; // WM_KEYDOWN lParam: the key was already down
@@ -268,11 +269,27 @@ int Run()
 
     // The integrated server is a child of this root (ADR-083 item 2): it runs on its own tick thread until the session
     // ends, and stopping it freezes the world (O4).
+    // The tuning record is read from the content root when the server starts (MVP-099; ADR-098's interim root).
+    const std::optional<std::filesystem::path> contentRoot = Neuron::FindInterimContentRoot();
+    if (!contentRoot)
+    {
+      Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "no GameData folder beside the executable or above it");
+      Neuron::EndWithMessage("ui.error.content_missing", {});
+    }
     IntegratedServer::Desc serverDesc;
     serverDesc.clock = &clock;
-    serverDesc.tickPeriod = INTERIM_TICK_PERIOD;
+    serverDesc.contentRoot = contentRoot.value_or(std::filesystem::path{});
     IntegratedServer server(serverDesc);
-    server.Start();
+    if (const auto started = server.Start(); !started)
+    {
+      bool missing = false;
+      for (const Neuron::ContentDiagnostic& diagnostic : started.error())
+      {
+        Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "{}", Neuron::FormatDiagnostic(diagnostic));
+        missing = missing || diagnostic.diagnosticClass == Neuron::DiagnosticClass::MissingRecord;
+      }
+      Neuron::EndWithMessage(missing ? "ui.error.content_missing" : "ui.error.content_damaged", {});
+    }
     ClientSession::Desc sessionDesc;
     sessionDesc.transport = server.Connect();
     sessionDesc.showTitle = [&window = *presentation.window](std::string_view _title) { window.SetTitle(_title); };

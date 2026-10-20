@@ -66,6 +66,8 @@ All assets live under the content root `GameData/`. The content build rejects an
 | `GameData/Records/ui/` | page layouts, palettes, text styles and the font-role map (`interface.page_layout`, `interface.palette`, `interface.text_style`, `interface.font_roles`) |
 | `GameData/Records/editions/` | the edition manifests (`edition.manifest`) |
 | `GameData/Records/test/` | the soak configurations, selected only into the development and soak editions (`test.soak_configuration`) |
+| `GameData/Records/tuning/` | the tuning records (`tuning.mvp`, MVP-099) |
+| `GameData/Schemas/` | the JSON Schema documents of the record types, one per schema id, which the schema code generator reads and authors' editors use; no pack holds them (ADR-062, [ADR-098](../ADR/ADR-098-tuning-in-data-and-the-schema-generator.md)) |
 
 The `GameData/Records/<family>/` folders hold the authored JSON data records of the record families of [data schemas](../architecture/components/data_schemas/README.md) table 1-A (DAT-006). They are content but not assets to create, so the manifest has no rows for them. A sample group's members are the members of its asset in the order of its `variants` column; a group whose members are not equally weighted lists its weights in `sound.groups` (DAT-275).
 

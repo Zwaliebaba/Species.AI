@@ -19,8 +19,14 @@
     <Filter Include="Profiling">
       <UniqueIdentifier>{B4C6CBB4-C952-54DE-A67F-8184FB2545E1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Records">
+      <UniqueIdentifier>{8B5F8509-0985-5156-86DF-9A380AB51446}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AuthoringParser.h">
+      <Filter>Records</Filter>
+    </ClInclude>
     <ClInclude Include="BitReader.h">
       <Filter>Network</Filter>
     </ClInclude>
@@ -29,6 +35,9 @@
     </ClInclude>
     <ClInclude Include="Check.h">
       <Filter>Diagnostics</Filter>
+    </ClInclude>
+    <ClInclude Include="ContentDiagnostic.h">
+      <Filter>Records</Filter>
     </ClInclude>
     <ClInclude Include="Development.h">
       <Filter>Build</Filter>
@@ -78,6 +87,9 @@
     <ClInclude Include="Profile.h">
       <Filter>Profiling</Filter>
     </ClInclude>
+    <ClInclude Include="RecordReader.h">
+      <Filter>Records</Filter>
+    </ClInclude>
     <ClInclude Include="RunId.h">
       <Filter>Platform</Filter>
     </ClInclude>
@@ -107,6 +119,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AuthoringParser.cpp">
+      <Filter>Records</Filter>
+    </ClCompile>
     <ClCompile Include="BitReader.cpp">
       <Filter>Network</Filter>
     </ClCompile>
@@ -115,6 +130,9 @@
     </ClCompile>
     <ClCompile Include="Check.cpp">
       <Filter>Diagnostics</Filter>
+    </ClCompile>
+    <ClCompile Include="ContentDiagnostic.cpp">
+      <Filter>Records</Filter>
     </ClCompile>
     <ClCompile Include="FatalPath.cpp">
       <Filter>Platform</Filter>
@@ -157,6 +175,9 @@
     </ClCompile>
     <ClCompile Include="Profile.cpp">
       <Filter>Profiling</Filter>
+    </ClCompile>
+    <ClCompile Include="RecordReader.cpp">
+      <Filter>Records</Filter>
     </ClCompile>
     <ClCompile Include="RunId.cpp">
       <Filter>Platform</Filter>

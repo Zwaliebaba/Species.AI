@@ -143,9 +143,11 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="AuthoringParser.h" />
     <ClInclude Include="BitReader.h" />
     <ClInclude Include="BitWriter.h" />
     <ClInclude Include="Check.h" />
+    <ClInclude Include="ContentDiagnostic.h" />
     <ClInclude Include="Development.h" />
     <ClInclude Include="FatalPath.h" />
     <ClInclude Include="Files.h" />
@@ -162,6 +164,7 @@
     <ClInclude Include="PlatformMessage.h" />
     <ClInclude Include="PlatformThread.h" />
     <ClInclude Include="Profile.h" />
+    <ClInclude Include="RecordReader.h" />
     <ClInclude Include="RunId.h" />
     <ClInclude Include="SecureRandom.h" />
     <ClInclude Include="SimRng.h" />
@@ -173,9 +176,11 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AuthoringParser.cpp" />
     <ClCompile Include="BitReader.cpp" />
     <ClCompile Include="BitWriter.cpp" />
     <ClCompile Include="Check.cpp" />
+    <ClCompile Include="ContentDiagnostic.cpp" />
     <ClCompile Include="FatalPath.cpp" />
     <ClCompile Include="Files.cpp" />
     <ClCompile Include="FloatEnvironment.cpp" />
@@ -190,6 +195,7 @@
     <ClCompile Include="PlatformMessage.cpp" />
     <ClCompile Include="PlatformThread.cpp" />
     <ClCompile Include="Profile.cpp" />
+    <ClCompile Include="RecordReader.cpp" />
     <ClCompile Include="RunId.cpp" />
     <ClCompile Include="SecureRandom.cpp" />
     <ClCompile Include="SimRng.cpp" />

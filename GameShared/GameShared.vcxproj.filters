@@ -10,6 +10,9 @@
     <Filter Include="Messages">
       <UniqueIdentifier>{F393933F-1392-551A-B944-807555395616}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Records">
+      <UniqueIdentifier>{82AF2224-6502-5BE4-9A5D-2B4D337729DB}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GameMessages.h">
@@ -21,6 +24,12 @@
     <ClInclude Include="TickReport.h">
       <Filter>Messages</Filter>
     </ClInclude>
+    <ClInclude Include="Tuning.h">
+      <Filter>Records</Filter>
+    </ClInclude>
+    <ClInclude Include="TuningMvp.h">
+      <Filter>Records</Filter>
+    </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Build</Filter>
     </ClInclude>
@@ -28,6 +37,9 @@
   <ItemGroup>
     <ClCompile Include="TickReport.cpp">
       <Filter>Messages</Filter>
+    </ClCompile>
+    <ClCompile Include="Tuning.cpp">
+      <Filter>Records</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Build</Filter>

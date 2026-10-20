@@ -5,6 +5,7 @@
 #include "ServerHost.h"
 #include "TestSupport.h"
 #include "TickReport.h"
+#include "Tuning.h"
 #include "WorkerPool.h"
 #include "WorldServer.h"
 #include "WorldSimulation.h"
@@ -13,6 +14,8 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <string>
+#include <string_view>
 #include <thread>
 #include <vector>
 
@@ -26,6 +29,17 @@ namespace
 
 constexpr Neuron::SipHashKey TEST_KEY{0x1111111111111111, 0x2222222222222222};
 constexpr Neuron::Nanoseconds TEST_TICK_PERIOD{100'000'000}; // `ref.sim.tick_period`
+
+// The repository's tuning record with one value's text replaced, under a temporary content root.
+std::filesystem::path ContentRootWith(const TemporaryFolder& _folder, std::string_view _from, std::string_view _to)
+{
+  std::string text = ReadText(RepositoryContentRoot() / Species::TUNING_MVP_FILE);
+  const std::size_t at = text.find(_from);
+  Assert::IsTrue(at != std::string::npos, L"the committed record holds the text to replace");
+  text.replace(at, _from.size(), _to);
+  WriteText(_folder.Path() / Species::TUNING_MVP_FILE, text);
+  return _folder.Path();
+}
 
 // The tick reports a client end has received, in order.
 std::vector<std::uint64_t> TakeReports(Neuron::Transport& _client)
@@ -201,15 +215,16 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp090TheClientSeesTheTickRiseThroughTheTransport)
   {
-    // M0's exit criterion in a test: the client's end of the integrated server, on the real clock at a 10 ms period,
-    // receives rising ticks until the server stops.
+    // M0's exit criterion in a test: the client's end of the integrated server, on the real clock at a period of 10 ms
+    // that the tuning record states, receives rising ticks until the server stops.
+    const TemporaryFolder folder;
     const Neuron::PlatformClock clock;
     Species::IntegratedServer::Desc desc;
     desc.clock = &clock;
-    desc.tickPeriod = Neuron::Nanoseconds{10'000'000};
+    desc.contentRoot = ContentRootWith(folder, "\"tick_period\": 0.1", "\"tick_period\": 0.01");
     Species::IntegratedServer server(desc);
     std::unique_ptr<Neuron::Transport> client = server.Connect();
-    server.Start();
+    Assert::IsTrue(server.Start().has_value(), L"the server starts on the record");
     std::vector<std::uint64_t> ticks;
     while (ticks.size() < 20)
     {
@@ -223,6 +238,62 @@ public:
       Assert::IsTrue(ticks[n] == ticks[n - 1] + 1, L"one report a tick, in order");
     }
     Assert::IsTrue(client->State() == Neuron::ConnectionState::Closed, L"stopping the server closes the connection");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp099AServerWithoutItsTuningDoesNotStart)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-099")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp099AServerWithoutItsTuningDoesNotStart)
+  {
+    const TemporaryFolder folder;
+    const Neuron::PlatformClock clock;
+    Species::IntegratedServer::Desc desc;
+    desc.clock = &clock;
+    desc.contentRoot = folder.Path();
+    Species::IntegratedServer server(desc);
+    std::unique_ptr<Neuron::Transport> client = server.Connect();
+    const auto started = server.Start();
+    Assert::IsFalse(started.has_value(), L"no record, no server");
+    Assert::IsTrue(started.error().front().diagnosticClass == Neuron::DiagnosticClass::MissingRecord, L"a missing record");
+    server.Stop();
+    Assert::IsFalse(client->Receive().has_value(), L"no tick ran");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp099ATickPeriodChangedInDataChangesTheServersTicks)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-099")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp099ATickPeriodChangedInDataChangesTheServersTicks)
+  {
+    // M0 task T9's done-when (owner decision O67): the same build, given 0.2 s in place of 0.1 s in the record, runs
+    // its ticks 200 ms apart. The clock is manual, so the test measures the schedule exactly.
+    const TemporaryFolder folder;
+    const auto tuning = Species::LoadTuningMvp(ContentRootWith(folder, "\"tick_period\": 0.1", "\"tick_period\": 0.2"));
+    Assert::IsTrue(tuning.has_value(), L"the changed record reads whole");
+    auto source = std::make_unique<Neuron::ManualTimeSource>();
+    Neuron::ManualTimeSource* manual = source.get();
+    const Neuron::PlatformClock clock(std::move(source));
+    Species::WorldServer world({1, tuning.value_or(Species::TuningMvp{})});
+    Neuron::ServerHost::Desc desc;
+    desc.clock = &clock;
+    desc.tickPeriod = Species::TickPeriodOf(world.Tuning());
+    std::vector<Neuron::Nanoseconds> waits;
+    desc.waitUntil = [&](Neuron::Nanoseconds _deadline)
+    {
+      waits.push_back(_deadline);
+      manual->Advance(_deadline - clock.Now());
+    };
+    Neuron::ServerHost host(std::move(desc), world);
+    host.Start();
+    while (host.CompletedTicks() < 10)
+    {
+      std::this_thread::yield();
+    }
+    host.Stop();
+    Assert::IsTrue(waits.size() >= 9, L"the loop slept to each deadline");
+    for (std::size_t n = 1; n < 9; ++n)
+    {
+      ExpectEqual(200'000'000, (waits[n] - waits[n - 1]).count(), L"the ticks are 0.2 s apart");
+    }
   }
 };
 

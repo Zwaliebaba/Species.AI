@@ -3,6 +3,7 @@
 #include "ServerHost.h"
 #include "StableId.h"
 #include "StateHash.h"
+#include "TuningMvp.h"
 #include "WorldSimulation.h"
 
 #include <cstdint>
@@ -23,6 +24,7 @@ public:
   struct Desc
   {
     std::uint16_t regionCount = 1;
+    TuningMvp tuning; // read when the server started (MVP-099); M1's rules are the first to read it
   };
 
   explicit WorldServer(const Desc& _desc);
@@ -46,6 +48,10 @@ public:
   [[nodiscard]] const std::optional<WorldHashes>& LastHashes() const noexcept
   {
     return m_lastHashes;
+  }
+  [[nodiscard]] const TuningMvp& Tuning() const noexcept
+  {
+    return m_desc.tuning;
   }
 
 private:

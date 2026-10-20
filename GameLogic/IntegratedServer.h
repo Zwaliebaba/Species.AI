@@ -1,10 +1,14 @@
 #pragma once
 
+#include "ContentDiagnostic.h"
 #include "PlatformClock.h"
 #include "Transport.h"
 
 #include <cstddef>
+#include <expected>
+#include <filesystem>
 #include <memory>
+#include <vector>
 
 namespace Species
 {
@@ -20,7 +24,7 @@ public:
   struct Desc
   {
     const Neuron::PlatformClock* clock = nullptr;
-    Neuron::Nanoseconds tickPeriod{0}; // `ref.sim.tick_period`
+    std::filesystem::path contentRoot; // where the tuning record is read from when the server starts (MVP-099)
     std::size_t workers = 2;           // ADR-080 item 7: the tick thread and at most 2 workers
   };
 
@@ -30,13 +34,16 @@ public:
   IntegratedServer(const IntegratedServer&) = delete;
   IntegratedServer& operator=(const IntegratedServer&) = delete;
 
-  void Start();
+  // Loads the tuning record, opens the world and starts the tick thread; every finding about the record when it
+  // cannot be read, and the server stays stopped.
+  [[nodiscard]] std::expected<void, std::vector<Neuron::ContentDiagnostic>> Start();
   void Stop();
   // The client's end of a new in-process connection; the server accepts it at the start of its next tick.
   [[nodiscard]] std::unique_ptr<Neuron::Transport> Connect();
 
 private:
   struct Parts;
+  Desc m_desc;
   std::unique_ptr<Parts> m_parts;
 };
 

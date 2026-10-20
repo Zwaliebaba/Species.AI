@@ -4,7 +4,10 @@
 
 #include <atomic>
 #include <format>
+#include <optional>
 #include <string>
+#include <system_error>
+#include <vector>
 
 namespace Neuron
 {
@@ -170,6 +173,42 @@ std::expected<void, FileError> ReplaceFileAtomically(const std::filesystem::path
   }
   DeleteFileW(temporary.c_str());
   return std::unexpected(ToFileError(error == ERROR_SUCCESS ? ERROR_GEN_FAILURE : error));
+}
+
+std::filesystem::path ExecutableFolder()
+{
+  std::vector<wchar_t> path(MAX_PATH);
+  while (true)
+  {
+    const DWORD length = GetModuleFileNameW(nullptr, path.data(), static_cast<DWORD>(path.size()));
+    if (length == 0)
+    {
+      return {};
+    }
+    if (length < path.size())
+    {
+      return std::filesystem::path(std::wstring(path.data(), length)).parent_path();
+    }
+    path.resize(path.size() * 2);
+  }
+}
+
+std::optional<std::filesystem::path> FindInterimContentRoot(const std::filesystem::path& _start)
+{
+  std::error_code error;
+  for (std::filesystem::path folder = _start; !folder.empty(); folder = folder.parent_path())
+  {
+    std::filesystem::path candidate = folder / L"GameData";
+    if (std::filesystem::is_directory(candidate, error))
+    {
+      return candidate;
+    }
+    if (folder == folder.parent_path())
+    {
+      break;
+    }
+  }
+  return std::nullopt;
 }
 
 } // namespace Neuron
