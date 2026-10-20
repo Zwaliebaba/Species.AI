@@ -95,6 +95,12 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-092](ADR-092-first-window-device-and-presentation.md) | First window, device and presentation: the choices M0 makes before settings, input and the frame graph | Proposed | 2026-10-20 |
 | [ADR-093](ADR-093-transport-interface-and-message-layout.md) | Transport interface, the in-process transport and the bit-packed message layout | Proposed | 2026-10-20 |
 | [ADR-094](ADR-094-arm64-development-build.md) | ARM64 development build: a second platform for the owner's PC, not a shipping target | Proposed | 2026-10-20 |
+| [ADR-095](ADR-095-server-host-tick-loop-and-command-queue.md) | Server host, tick loop and command queue: NeuronServer's first form | Proposed | 2026-10-20 |
+| [ADR-096](ADR-096-game-skeleton-integrated-server-and-tick-report.md) | Game skeleton: the world's owners, the integrated server and the tick report | Proposed | 2026-10-20 |
+| [ADR-097](ADR-097-keyed-draws-and-state-hash.md) | Keyed draws and the state hash: SimRng, the draw ledger and the owners' canonical state | Proposed | 2026-10-20 |
+| [ADR-098](ADR-098-tuning-in-data-and-the-schema-generator.md) | Tuning in data at M0: the tuning record, the schema generator's first subset and the server's interim read | Proposed | 2026-10-20 |
+| [ADR-099](ADR-099-world-snapshots.md) | World snapshots at M0: the file format, the store and the world's state version | Proposed | 2026-10-20 |
+| [ADR-100](ADR-100-headless-server-program.md) | The headless server program at M0: its composition root, its stop and the check of what it loads | Proposed | 2026-10-20 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

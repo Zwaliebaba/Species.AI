@@ -1,11 +1,15 @@
 #include "pch.h"
 
 #include "AppWindow.h"
+#include "ClientSession.h"
+#include "ContentDiagnostic.h"
 #include "Development.h"
 #include "DisplayAttempt.h"
 #include "FatalPath.h"
+#include "Files.h"
 #include "FloatEnvironment.h"
 #include "FrameRenderer.h"
+#include "IntegratedServer.h"
 #include "Log.h"
 #include "PlatformClock.h"
 #include "PlatformLogSink.h"
@@ -27,8 +31,8 @@
 #include <vector>
 
 // The client's entry point and composition root (ADR-090 item 2, DEC-221). It runs the start-up steps of PLT-038 that
-// exist in M0 and the frame loop of M0 task T4; the client session, the integrated server and the application's states
-// (ADR-083) take the loop over at task T7.
+// exist in M0, composes the integrated server through IntegratedServer.h and the client session (M0 task T7), and runs
+// the frame loop of task T4; the application's states of ADR-083 item 3 come with the front end.
 namespace Species
 {
 
@@ -48,6 +52,8 @@ constexpr std::array COMPILED_TEXTS{
     "Species cannot start: the graphics adapter does not support what the game needs.\n\nAdapter: {adapter}\nMissing: {capability}"},
   Neuron::CompiledText{"ui.error.display_mode", "Species cannot start: no window could be shown on this display."},
   Neuron::CompiledText{"ui.error.resolution_rejected", "The preferred screen size was rejected, so Species started with another one."},
+  Neuron::CompiledText{"ui.error.content_missing", "Species cannot start: its game data is missing."},
+  Neuron::CompiledText{"ui.error.content_damaged", "Species cannot start: its game data is damaged."},
 };
 
 constexpr std::intptr_t KEY_REPEAT_BIT = std::intptr_t{1} << 30; // WM_KEYDOWN lParam: the key was already down
@@ -194,7 +200,7 @@ Presentation CreatePresentation(const Neuron::PlatformClock& _clock)
   return presentation;
 }
 
-void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neuron::FrameRenderer& _renderer)
+void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neuron::FrameRenderer& _renderer, ClientSession& _session)
 {
   InputStandIn input;
   _window.SetInputSink(&input);
@@ -215,6 +221,7 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
     {
       break;
     }
+    _session.Update();
     if (input.TakeModeToggle())
     {
       const bool windowed = _window.Mode() == Neuron::WindowMode::Windowed;
@@ -259,8 +266,40 @@ int Run()
 
   {
     Presentation presentation = CreatePresentation(clock);
+
+    // The integrated server is a child of this root (ADR-083 item 2): it runs on its own tick thread until the session
+    // ends, and stopping it freezes the world (O4).
+    // The tuning record is read from the content root when the server starts (MVP-099; ADR-098's interim root).
+    const std::optional<std::filesystem::path> contentRoot = Neuron::FindInterimContentRoot();
+    if (!contentRoot)
+    {
+      Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "no GameData folder beside the executable or above it");
+      Neuron::EndWithMessage("ui.error.content_missing", {});
+    }
+    IntegratedServer::Desc serverDesc;
+    serverDesc.clock = &clock;
+    serverDesc.contentRoot = contentRoot.value_or(std::filesystem::path{});
+    IntegratedServer server(serverDesc);
+    if (const auto started = server.Start(); !started)
+    {
+      bool missing = false;
+      for (const Neuron::ContentDiagnostic& diagnostic : started.error())
+      {
+        Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "{}", Neuron::FormatDiagnostic(diagnostic));
+        missing = missing || diagnostic.diagnosticClass == Neuron::DiagnosticClass::MissingRecord;
+      }
+      Neuron::EndWithMessage(missing ? "ui.error.content_missing" : "ui.error.content_damaged", {});
+    }
+    ClientSession::Desc sessionDesc;
+    sessionDesc.transport = server.Connect();
+    sessionDesc.showTitle = [&window = *presentation.window](std::string_view _title) { window.SetTitle(_title); };
+    sessionDesc.productName = std::string(PRODUCT_NAME);
+    ClientSession session(std::move(sessionDesc));
+
     presentation.window->Show();
-    RunFrameLoop(clock, *presentation.window, *presentation.renderer);
+    RunFrameLoop(clock, *presentation.window, *presentation.renderer, session);
+    session.Close();
+    server.Stop();
     // PLT-043: the renderer releases its swap chain before the window is destroyed.
     presentation.renderer.reset();
     presentation.window.reset();

@@ -31,7 +31,7 @@ The implementing sessions run in a cloud container without a Windows toolchain: 
 | What | Needed | Source |
 |---|---|---|
 | Windows | Windows 11, version 24H2 (build 26100) or later | ADR-050 |
-| Visual Studio 2026 | version 18.11 or later, with the workload "Desktop development with C++": the MSVC v145 build tools (14.50 or later), the C++ unit-test components and MSBuild | ADR-051, `bld.pin.visual_studio` |
+| Visual Studio 2026 | version 18.10 or later, with the workload "Desktop development with C++": the MSVC v145 build tools (14.50 or later), the C++ unit-test components and MSBuild | ADR-051, `bld.pin.visual_studio` |
 | Windows SDK | 10.0.26100.9457, from the Visual Studio installer's individual components | `bld.pin.windows_sdk` |
 | Graphics Tools | the Windows optional feature "Graphics Tools", which installs the Direct3D 12 debug layer that Debug builds enable | [renderer](../architecture/components/renderer/README.md) |
 | Graphics adapter | feature level 12_1, Shader Model 6.6, resource binding tier 3 and wave operations, with a current driver; a DirectX 12 Ultimate adapter normally meets them, and M0's capability probe confirms it | ADR-002 |
@@ -40,7 +40,7 @@ The implementing sessions run in a cloud container without a Windows toolchain: 
 
 The owner's PC is Windows on Arm, a Snapdragon X with an Adreno X1-85 GPU. It builds `Debug|ARM64` natively, the development build of O66 ([ADR-094](../ADR/ADR-094-arm64-development-build.md)), and runs the x64 build under emulation.
 
-This PC becomes the reference test machine at M1, and its configuration is recorded then (O58). CI's image carries Visual Studio 18.10.1 while `bld.pin.visual_studio` names 18.11 as the developer minimum. Task T12 settles which number is the pin.
+This PC becomes the reference test machine at M1, and its configuration is recorded then (O58). The pin `bld.pin.visual_studio` is 18.10, the version CI's image carries (owner decision O67, task T12).
 
 ## 4 The order of the engine baseline
 

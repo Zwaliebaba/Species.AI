@@ -4,7 +4,9 @@
 #include <cstdint>
 #include <expected>
 #include <filesystem>
+#include <optional>
 #include <span>
+#include <string_view>
 #include <vector>
 
 namespace Neuron
@@ -25,5 +27,19 @@ enum class FileError : std::uint8_t
 // with it in one step; on any failure the target keeps its previous content and the temporary file is deleted
 // (PLT-089). Every writer of settings, custom maps and development outputs uses it.
 [[nodiscard]] std::expected<void, FileError> ReplaceFileAtomically(const std::filesystem::path& _path, std::span<const std::byte> _bytes);
+
+// The files in a folder whose names end with the suffix, an ASCII one, in the order of their names' UTF-16 code units;
+// none when the folder does not exist.
+[[nodiscard]] std::vector<std::filesystem::path> ListFiles(const std::filesystem::path& _folder, std::string_view _suffix);
+
+// Removes a file; a file that does not exist is already removed.
+[[nodiscard]] std::expected<void, FileError> RemoveFile(const std::filesystem::path& _path);
+
+// The folder of the running executable.
+[[nodiscard]] std::filesystem::path ExecutableFolder();
+
+// The content root at M0, until the Debug loose-content mount of AST-105 exists (ADR-098): the GameData folder in the
+// executable's folder or the nearest folder above it, so a build under x64\Debug or ARM64\Debug finds the repository's.
+[[nodiscard]] std::optional<std::filesystem::path> FindInterimContentRoot(const std::filesystem::path& _start = ExecutableFolder());
 
 } // namespace Neuron

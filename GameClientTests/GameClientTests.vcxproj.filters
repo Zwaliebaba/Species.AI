@@ -4,21 +4,30 @@
     <Filter Include="Build">
       <UniqueIdentifier>{8657A25F-2F60-5351-A022-DBA55339ADD7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Session">
+      <UniqueIdentifier>{A167963F-DF56-52F7-B34B-539640C43309}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Tests">
       <UniqueIdentifier>{1BFA3DA3-11BC-5C15-823B-4A380E3991FA}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="TestSupport.h">
+      <Filter>Tests</Filter>
+    </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Build</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ClientSessionTests.cpp">
+      <Filter>Session</Filter>
+    </ClCompile>
+    <ClCompile Include="TestSupport.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Build</Filter>
-    </ClCompile>
-    <ClCompile Include="SuiteSmoke.cpp">
-      <Filter>Tests</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

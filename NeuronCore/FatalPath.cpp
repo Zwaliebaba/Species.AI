@@ -3,6 +3,7 @@
 #include <intrin.h>
 
 #include "FatalPath.h"
+#include "NativeWindowHandle.h"
 #include "PlatformLogSink.h"
 #include "PlatformMessage.h"
 #include "RunId.h"

@@ -7,12 +7,12 @@ name: Build
 # Every step that has something to run BLOCKS. Nothing here is `continue-on-error`, and a script
 # that exists and fails fails the build.
 #
-# But this repository is a clean start: there is no solution, no project and no checker script in
-# it yet, and a gate that cannot run must not be dressed up as a gate that passed. So each step is
-# guarded on the file it needs -- the checker script, the solution, the built test binaries -- and
-# a step whose input is absent is SKIPPED and says so in the log. The moment the file lands, the
-# step starts gating with no edit here. Remove a guard once its input is permanently there; never
-# add one to get past a red build.
+# The repository started empty, and a gate that could not run was not dressed up as a gate that
+# passed: each step was guarded on the file it needed and skipped while that file was absent. M0
+# task T12 removed every guard whose input is now permanently there -- the solution, the packages,
+# the checker scripts, the test projects and the design -- so every step below runs on every build.
+# A gate added later for an input that does not exist yet is guarded the same way until the input
+# lands; no guard is ever added to get past a red build.
 #
 # Nothing is discovered by name. The solution is whatever single .slnx/.sln sits at the root, and
 # the test suites are whatever *Tests.vcxproj the tree contains -- so adding a project does not
@@ -132,22 +132,16 @@ jobs:
           Write-Output "--- python ---"
           python --version
 
-      # The solution is found, not named. Exactly one at the root, or none while the tree is still
-      # empty; two is a mistake worth failing on rather than picking between.
+      # The solution is found, not named. Exactly one at the root; none or two is a mistake worth
+      # failing on rather than picking between.
       - name: Locate the solution
         id: solution
         shell: pwsh
         run: |
           $found = @(Get-ChildItem -Path . -File | Where-Object { $_.Extension -in '.slnx', '.sln' })
-          if ($found.Count -gt 1) { throw "More than one solution at the repository root: $($found.Name -join ', ')." }
-          if ($found.Count -eq 0) {
-            Write-Output "::notice::No solution at the repository root yet. The build and test steps will be skipped."
-            "path=" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          }
-          else {
-            Write-Output "Solution: $($found[0].Name)"
-            "path=$($found[0].Name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          }
+          if ($found.Count -ne 1) { throw "Expected one solution at the repository root, found $($found.Count): $($found.Name -join ', ')." }
+          Write-Output "Solution: $($found[0].Name)"
+          "path=$($found[0].Name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       # First, because it is two seconds and it catches the class of mistake that would otherwise
       # surface as a confusing build failure: a file missing from a project, a header in a
@@ -156,26 +150,21 @@ jobs:
         shell: pwsh
         run: python Build\CheckProjectFiles.py
 
-      # The three NuGet packages AGENTS.md R14 allows, restored before the build. Guarded on a
-      # packages.config existing anywhere in the tree, so it starts running the day the first
-      # project references a package.
+      # The NuGet packages AGENTS.md R14 allows, restored before the build.
       - name: Restore the NuGet packages
-        if: steps.solution.outputs.path != '' && hashFiles('**/packages.config') != ''
         shell: pwsh
         run: |
           msbuild "${{ steps.solution.outputs.path }}" /t:Restore /p:RestorePackagesConfig=true `
             /p:Configuration=$env:CONFIGURATION /p:Platform=$env:PLATFORM /nologo /v:minimal
 
       # The schema code generator's output is committed source (AGENTS.md §2, ADR-062). This
-      # regenerates it and fails on any difference, once the checker exists.
+      # regenerates it and fails on any difference.
       - name: Check the generated schema code
-        if: hashFiles('Build/CheckGeneratedSchemas.py') != ''
         shell: pwsh
         run: python Build\CheckGeneratedSchemas.py
 
       # /warnaserror covers MSBuild's own warnings; /WX for the compiler is set in the projects.
       - name: Build
-        if: steps.solution.outputs.path != ''
         shell: pwsh
         run: |
           msbuild "${{ steps.solution.outputs.path }}" `
@@ -184,18 +173,21 @@ jobs:
             /m /nologo /v:minimal /warnaserror `
             /flp:LogFile=build.log`;Verbosity=normal
 
+      # ADR-090's confirmation and PLT-005: the headless server loads no Direct3D, DXGI, GameInput or
+      # audio library. Read from the built executable's import table with dumpbin, so a library that a
+      # static library pulls into the link is caught as well as one the program names.
+      - name: Check the headless server's libraries
+        shell: pwsh
+        run: python Build\CheckServerImports.py
+
       # One suite per *Tests.vcxproj in the tree, and every one of them must have produced a DLL:
       # vstest reports "no tests found" as a pass, so a suite that did not build is not a suite
-      # that passed. No suites at all is a state this repository is still legitimately in.
+      # that passed, and a tree with no suites at all is a broken tree.
       - name: Run the tests
-        if: steps.solution.outputs.path != ''
         shell: pwsh
         run: |
           $projects = @(Get-ChildItem -Path . -Recurse -Filter '*Tests.vcxproj' -File)
-          if ($projects.Count -eq 0) {
-            Write-Output "::notice::No *Tests.vcxproj in the tree yet. Nothing to run."
-            exit 0
-          }
+          if ($projects.Count -eq 0) { throw "No *Tests.vcxproj in the tree." }
           $suites = foreach ($project in $projects) {
             $dll = "x64\$env:CONFIGURATION\$($project.BaseName).dll"
             if (-not (Test-Path $dll)) { throw "$dll was not built. A suite that does not exist is not a suite that passed." }
@@ -256,14 +248,13 @@ jobs:
     timeout-minutes: 15
 
     # The design gates of AGENTS.md §6 over Design/: links, requirement ids, DEC and ADR references,
-    # asset ids, tuning keys, sizes, templates, banned terms and every Mermaid diagram. Guarded on
-    # the checker and on Design/ existing, like every other gate here. The Mermaid check runs a
-    # pinned mermaid build in headless Chromium; both are pinned in Tools/DesignCheck/package.json.
+    # asset ids, tuning keys, sizes, templates, banned terms and every Mermaid diagram. The Mermaid
+    # check runs a pinned mermaid build in headless Chromium; both are pinned in
+    # Tools/DesignCheck/package.json.
     steps:
       - uses: actions/checkout@v7
 
       - name: Install the pinned Mermaid checker
-        if: hashFiles('Tools/DesignCheck/CheckDesign.py') != '' && hashFiles('Design/README.md') != ''
         run: |
           npm ci --prefix Tools/DesignCheck
           npx --prefix Tools/DesignCheck playwright install --with-deps chromium
@@ -273,9 +264,7 @@ jobs:
       # also fails on pending ledger verdicts and undecided design-phase decisions, is the design
       # phase's own closing check and is not run here.
       - name: Self-test the design-phase checks
-        if: hashFiles('Tools/DesignCheck/SelfTestDesignPhase.py') != ''
         run: python3 -I Tools/DesignCheck/SelfTestDesignPhase.py
 
       - name: Check the design
-        if: hashFiles('Tools/DesignCheck/CheckDesign.py') != '' && hashFiles('Design/README.md') != ''
         run: python3 Tools/DesignCheck/CheckDesign.py Design --design-phase

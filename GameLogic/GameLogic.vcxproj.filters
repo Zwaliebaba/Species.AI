@@ -4,13 +4,61 @@
     <Filter Include="Build">
       <UniqueIdentifier>{C522B15C-BCA1-5E1B-8357-DDD6DF63556D}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Server">
+      <UniqueIdentifier>{A5E5B195-9AD2-5CA5-895F-59CD97AEC5D0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Simulation">
+      <UniqueIdentifier>{61E375F3-93A5-57F8-9423-76B544D53EA3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="IntegratedServer.h">
+      <Filter>Server</Filter>
+    </ClInclude>
+    <ClInclude Include="RegionSimulation.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="StableIdCounter.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="StateHash.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="WorldServer.h">
+      <Filter>Server</Filter>
+    </ClInclude>
+    <ClInclude Include="WorldSimulation.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="WorldSnapshot.h">
+      <Filter>Server</Filter>
+    </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Build</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="IntegratedServer.cpp">
+      <Filter>Server</Filter>
+    </ClCompile>
+    <ClCompile Include="RegionSimulation.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="StableIdCounter.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="StateHash.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldServer.cpp">
+      <Filter>Server</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldSimulation.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldSnapshot.cpp">
+      <Filter>Server</Filter>
+    </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Build</Filter>
     </ClCompile>

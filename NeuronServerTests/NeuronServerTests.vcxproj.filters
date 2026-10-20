@@ -4,21 +4,45 @@
     <Filter Include="Build">
       <UniqueIdentifier>{091B69EE-81AC-5B99-9D17-FECC32F8E2EB}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Commands">
+      <UniqueIdentifier>{8B79BAE9-6B18-5274-A9FC-AC3317441EC0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loop">
+      <UniqueIdentifier>{696B6E4E-D80C-58E1-A614-C43201434AE0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Persistence">
+      <UniqueIdentifier>{4B28A93E-7F5F-5382-94C8-85C1589212DE}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Tests">
       <UniqueIdentifier>{E3C4FCFA-0091-561A-A62F-E6DAC2242F89}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="TestSupport.h">
+      <Filter>Tests</Filter>
+    </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Build</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CommandQueueTests.cpp">
+      <Filter>Commands</Filter>
+    </ClCompile>
+    <ClCompile Include="ServerHostTests.cpp">
+      <Filter>Loop</Filter>
+    </ClCompile>
+    <ClCompile Include="SnapshotTests.cpp">
+      <Filter>Persistence</Filter>
+    </ClCompile>
+    <ClCompile Include="TestSupport.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="TickLoopTests.cpp">
+      <Filter>Loop</Filter>
+    </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Build</Filter>
-    </ClCompile>
-    <ClCompile Include="SuiteSmoke.cpp">
-      <Filter>Tests</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

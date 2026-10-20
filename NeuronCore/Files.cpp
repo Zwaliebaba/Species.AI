@@ -2,9 +2,13 @@
 
 #include "Files.h"
 
+#include <algorithm>
 #include <atomic>
 #include <format>
+#include <optional>
 #include <string>
+#include <system_error>
+#include <vector>
 
 namespace Neuron
 {
@@ -170,6 +174,74 @@ std::expected<void, FileError> ReplaceFileAtomically(const std::filesystem::path
   }
   DeleteFileW(temporary.c_str());
   return std::unexpected(ToFileError(error == ERROR_SUCCESS ? ERROR_GEN_FAILURE : error));
+}
+
+std::vector<std::filesystem::path> ListFiles(const std::filesystem::path& _folder, std::string_view _suffix)
+{
+  std::vector<std::filesystem::path> files;
+  std::error_code error;
+  // The names are compared as the system holds them, UTF-16, so a name the narrow code page cannot spell is no error.
+  const std::wstring suffix(_suffix.begin(), _suffix.end());
+  for (std::filesystem::directory_iterator entry(_folder, error), end; !error && entry != end; entry.increment(error))
+  {
+    if (entry->is_regular_file(error) && entry->path().filename().native().ends_with(suffix))
+    {
+      files.push_back(entry->path());
+    }
+  }
+  std::ranges::sort(files, [](const std::filesystem::path& _left, const std::filesystem::path& _right)
+                    { return _left.filename().native() < _right.filename().native(); });
+  return files;
+}
+
+std::expected<void, FileError> RemoveFile(const std::filesystem::path& _path)
+{
+  if (DeleteFileW(_path.c_str()))
+  {
+    return {};
+  }
+  const DWORD error = GetLastError();
+  if (error == ERROR_FILE_NOT_FOUND)
+  {
+    return {};
+  }
+  return std::unexpected(ToFileError(error));
+}
+
+std::filesystem::path ExecutableFolder()
+{
+  std::vector<wchar_t> path(MAX_PATH);
+  while (true)
+  {
+    const DWORD length = GetModuleFileNameW(nullptr, path.data(), static_cast<DWORD>(path.size()));
+    if (length == 0)
+    {
+      return {};
+    }
+    if (length < path.size())
+    {
+      return std::filesystem::path(std::wstring(path.data(), length)).parent_path();
+    }
+    path.resize(path.size() * 2);
+  }
+}
+
+std::optional<std::filesystem::path> FindInterimContentRoot(const std::filesystem::path& _start)
+{
+  std::error_code error;
+  for (std::filesystem::path folder = _start; !folder.empty(); folder = folder.parent_path())
+  {
+    std::filesystem::path candidate = folder / L"GameData";
+    if (std::filesystem::is_directory(candidate, error))
+    {
+      return candidate;
+    }
+    if (folder == folder.parent_path())
+    {
+      break;
+    }
+  }
+  return std::nullopt;
 }
 
 } // namespace Neuron

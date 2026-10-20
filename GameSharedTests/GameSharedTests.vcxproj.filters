@@ -4,21 +4,36 @@
     <Filter Include="Build">
       <UniqueIdentifier>{59C38AF7-0D32-5A6C-B872-CE5362A0EC2F}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Messages">
+      <UniqueIdentifier>{0054B87F-C935-558D-9B5E-758A4381F61D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Records">
+      <UniqueIdentifier>{BFDBA30C-BDD2-5E2B-A9F8-23A52C196681}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Tests">
       <UniqueIdentifier>{1F4F037A-5A74-5A5E-A79A-5F115703EC41}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="TestSupport.h">
+      <Filter>Tests</Filter>
+    </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Build</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="TestSupport.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="TickReportTests.cpp">
+      <Filter>Messages</Filter>
+    </ClCompile>
+    <ClCompile Include="TuningTests.cpp">
+      <Filter>Records</Filter>
+    </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Build</Filter>
-    </ClCompile>
-    <ClCompile Include="SuiteSmoke.cpp">
-      <Filter>Tests</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

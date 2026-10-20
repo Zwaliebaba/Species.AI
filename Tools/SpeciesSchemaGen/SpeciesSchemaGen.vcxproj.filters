@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Build">
+      <UniqueIdentifier>{B8C7A0E4-B22A-5BD7-858D-528B2D82672C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Generator">
+      <UniqueIdentifier>{8D7ACA94-DBD3-52CC-ADE1-4D6821383795}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Program">
+      <UniqueIdentifier>{C4ED3B1A-0C86-5258-A35B-E2BBFCA3DB7A}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="HeaderWriter.h">
+      <Filter>Generator</Filter>
+    </ClInclude>
+    <ClInclude Include="SchemaModel.h">
+      <Filter>Generator</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>Build</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="HeaderWriter.cpp">
+      <Filter>Generator</Filter>
+    </ClCompile>
+    <ClCompile Include="SchemaModel.cpp">
+      <Filter>Generator</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>Build</Filter>
+    </ClCompile>
+    <ClCompile Include="SpeciesSchemaGen.cpp">
+      <Filter>Program</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config">
+      <Filter>Build</Filter>
+    </None>
+  </ItemGroup>
+</Project>

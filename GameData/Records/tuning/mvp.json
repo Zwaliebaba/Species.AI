@@ -1,0 +1,145 @@
+{
+  "schema": "tuning.mvp",
+  "version": "1.0",
+  "notes": "The MVP tuning values of Design/implementation/mvp_scope.md table 3, and ref.sim.tick_period of ADR-079. All provisional (MVP-003).",
+  "mvp": {
+    "pace": {
+      "session_factor": 24
+    },
+    "world": {
+      "ai_count": 3
+    },
+    "vision": {
+      "unit_radius": 300
+    },
+    "settlement": {
+      "start_workers": 20,
+      "population_base": 40,
+      "population_max": 300
+    },
+    "dwelling": {
+      "population": 30
+    },
+    "essence": {
+      "orb_cost_ru": 20,
+      "wellspring_interval_s": 12,
+      "drift_speed": 30,
+      "wait_max": 20
+    },
+    "territory": {
+      "radius_per_worker": 4
+    },
+    "resource": {
+      "ports_per_unit": 4
+    },
+    "gather": {
+      "port_ticks": 100,
+      "load_ru": 1
+    },
+    "store": {
+      "wellspring_capacity_ru": 1500,
+      "storehouse_capacity_ru": 1500
+    },
+    "construction": {
+      "queue_max": 8,
+      "ports_dwelling": 6,
+      "ports_storehouse": 4,
+      "ports_turret": 4,
+      "work_per_ru": 1
+    },
+    "cost": {
+      "dwelling_ru": 300,
+      "dwelling_escalation": 1.15,
+      "storehouse_ru": 200,
+      "turret_ru": 400
+    },
+    "upkeep": {
+      "worker_ru_per_hour": 6,
+      "structure_ru_per_hour": 30,
+      "inactive_step_s": 30
+    },
+    "priority": {
+      "default_gather": 50,
+      "default_construct": 30,
+      "default_guard": 20
+    },
+    "strength": {
+      "worker_ru": 20
+    },
+    "expedition": {
+      "size_max": 200
+    },
+    "conflict": {
+      "attack_cost_ru": 300,
+      "warning_minutes": 5
+    },
+    "defence": {
+      "damage_taken_factor": 0.75
+    },
+    "battle": {
+      "objective_radius": 150,
+      "objective_hold_s": 30,
+      "rout_share": 0.25
+    },
+    "protection": {
+      "loss_cap_worker_share": 0.3,
+      "loss_cap_store_share": 0.25,
+      "worker_floor": 20,
+      "respite_minutes": 20,
+      "respite_min_loss_share": 0.1
+    },
+    "grievance": {
+      "pressure_per_hour": 30,
+      "claim_weight": 30,
+      "attack_weight": 40,
+      "unprovoked_factor": 2,
+      "fade_share_per_hour": 10,
+      "battle_relief_won": 50,
+      "battle_relief_lost": 25
+    },
+    "claim": {
+      "uncontested_minutes": 30
+    },
+    "relation": {
+      "tribute_ru_per_weight": 10
+    },
+    "temperament": {
+      "bold_threshold": 40,
+      "territorial_threshold": 70,
+      "wary_threshold": 100
+    },
+    "ai": {
+      "attack_min_share": 0.6,
+      "decision_ticks": 50
+    },
+    "run": {
+      "length_hours": 8,
+      "quiet_minutes": 15
+    },
+    "renown": {
+      "defence_held": 3,
+      "claim_won": 3,
+      "grievance_eased": 1,
+      "structure_per_100ru": 1
+    },
+    "stats": {
+      "sample_minutes": 5
+    },
+    "presence": {
+      "idle_minutes": 5
+    },
+    "persist": {
+      "snapshot_seconds": 60,
+      "snapshots_kept": 3
+    },
+    "client": {
+      "fps_target": 60,
+      "figures_max": 1500
+    }
+  },
+  "ref": {
+    "sim": {
+      "tick_period": 0.1
+    }
+  }
+}

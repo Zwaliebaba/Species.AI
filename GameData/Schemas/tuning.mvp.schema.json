@@ -1,0 +1,1138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tuning.mvp",
+  "title": "The tuning values of the MVP: every key of its table 3 and ref.sim.tick_period (MVP-003, MVP-099).",
+  "description": "One record, GameData/Records/tuning/mvp.json. Each field path is its tuning key (CONVENTIONS §4).",
+  "type": "object",
+  "x-species-sim": true,
+  "x-species-project": "GameShared",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "description": "the schema id (DAT-016)",
+      "enum": [
+        "tuning.mvp"
+      ]
+    },
+    "version": {
+      "type": "string",
+      "description": "the schema version (DAT-016, DAT-017)",
+      "enum": [
+        "1.0"
+      ]
+    },
+    "mvp": {
+      "type": "object",
+      "description": "the mvp.* keys of the MVP scope, table 3",
+      "properties": {
+        "pace": {
+          "type": "object",
+          "description": "the mvp.pace.* keys",
+          "properties": {
+            "session_factor": {
+              "type": "number",
+              "description": "mvp.pace.session_factor (MVP-070)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "session_factor"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "world": {
+          "type": "object",
+          "description": "the mvp.world.* keys",
+          "properties": {
+            "ai_count": {
+              "type": "integer",
+              "description": "mvp.world.ai_count (MVP-001)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "AI settlements",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "ai_count"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "vision": {
+          "type": "object",
+          "description": "the mvp.vision.* keys",
+          "properties": {
+            "unit_radius": {
+              "type": "number",
+              "description": "mvp.vision.unit_radius (MVP-016)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "unit_radius"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "settlement": {
+          "type": "object",
+          "description": "the mvp.settlement.* keys",
+          "properties": {
+            "start_workers": {
+              "type": "integer",
+              "description": "mvp.settlement.start_workers (MVP-020)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "Workers",
+              "x-species-presence": "required"
+            },
+            "population_base": {
+              "type": "integer",
+              "description": "mvp.settlement.population_base (MVP-022)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "Workers",
+              "x-species-presence": "required"
+            },
+            "population_max": {
+              "type": "integer",
+              "description": "mvp.settlement.population_max (MVP-022)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "Workers",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "start_workers",
+            "population_base",
+            "population_max"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "dwelling": {
+          "type": "object",
+          "description": "the mvp.dwelling.* keys",
+          "properties": {
+            "population": {
+              "type": "integer",
+              "description": "mvp.dwelling.population (MVP-022)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "Workers",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "population"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "essence": {
+          "type": "object",
+          "description": "the mvp.essence.* keys",
+          "properties": {
+            "orb_cost_ru": {
+              "type": "number",
+              "description": "mvp.essence.orb_cost_ru (MVP-024)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "ru",
+              "x-species-presence": "required"
+            },
+            "wellspring_interval_s": {
+              "type": "number",
+              "description": "mvp.essence.wellspring_interval_s (MVP-024)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "seconds",
+              "x-species-presence": "required"
+            },
+            "drift_speed": {
+              "type": "number",
+              "description": "mvp.essence.drift_speed (MVP-023)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu/s",
+              "x-species-presence": "required"
+            },
+            "wait_max": {
+              "type": "integer",
+              "description": "mvp.essence.wait_max (MVP-025)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "orbs",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "orb_cost_ru",
+            "wellspring_interval_s",
+            "drift_speed",
+            "wait_max"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "territory": {
+          "type": "object",
+          "description": "the mvp.territory.* keys",
+          "properties": {
+            "radius_per_worker": {
+              "type": "number",
+              "description": "mvp.territory.radius_per_worker (MVP-026)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu per Worker",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "radius_per_worker"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "resource": {
+          "type": "object",
+          "description": "the mvp.resource.* keys",
+          "properties": {
+            "ports_per_unit": {
+              "type": "integer",
+              "description": "mvp.resource.ports_per_unit (MVP-030)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "ports",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "ports_per_unit"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "gather": {
+          "type": "object",
+          "description": "the mvp.gather.* keys",
+          "properties": {
+            "port_ticks": {
+              "type": "integer",
+              "description": "mvp.gather.port_ticks (MVP-031)",
+              "minimum": 0,
+              "x-species-type": "ticks",
+              "x-species-unit": "ticks",
+              "x-species-presence": "required"
+            },
+            "load_ru": {
+              "type": "number",
+              "description": "mvp.gather.load_ru (MVP-031)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "ru per load",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "port_ticks",
+            "load_ru"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "store": {
+          "type": "object",
+          "description": "the mvp.store.* keys",
+          "properties": {
+            "wellspring_capacity_ru": {
+              "type": "number",
+              "description": "mvp.store.wellspring_capacity_ru (MVP-021)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "ru",
+              "x-species-presence": "required"
+            },
+            "storehouse_capacity_ru": {
+              "type": "number",
+              "description": "mvp.store.storehouse_capacity_ru (MVP-034)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "ru",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "wellspring_capacity_ru",
+            "storehouse_capacity_ru"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "construction": {
+          "type": "object",
+          "description": "the mvp.construction.* keys",
+          "properties": {
+            "queue_max": {
+              "type": "integer",
+              "description": "mvp.construction.queue_max (MVP-032)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "construction sites",
+              "x-species-presence": "required"
+            },
+            "ports_dwelling": {
+              "type": "integer",
+              "description": "mvp.construction.ports_dwelling (MVP-033)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "ports",
+              "x-species-presence": "required"
+            },
+            "ports_storehouse": {
+              "type": "integer",
+              "description": "mvp.construction.ports_storehouse (MVP-033)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "ports",
+              "x-species-presence": "required"
+            },
+            "ports_turret": {
+              "type": "integer",
+              "description": "mvp.construction.ports_turret (MVP-033)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "ports",
+              "x-species-presence": "required"
+            },
+            "work_per_ru": {
+              "type": "number",
+              "description": "mvp.construction.work_per_ru (MVP-033)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "Worker-seconds per ru",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "queue_max",
+            "ports_dwelling",
+            "ports_storehouse",
+            "ports_turret",
+            "work_per_ru"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "cost": {
+          "type": "object",
+          "description": "the mvp.cost.* keys",
+          "properties": {
+            "dwelling_ru": {
+              "type": "number",
+              "description": "mvp.cost.dwelling_ru (MVP-034)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "ru",
+              "x-species-presence": "required"
+            },
+            "dwelling_escalation": {
+              "type": "number",
+              "description": "mvp.cost.dwelling_escalation (MVP-034)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times per dwelling built",
+              "x-species-presence": "required"
+            },
+            "storehouse_ru": {
+              "type": "number",
+              "description": "mvp.cost.storehouse_ru (MVP-034)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "ru",
+              "x-species-presence": "required"
+            },
+            "turret_ru": {
+              "type": "number",
+              "description": "mvp.cost.turret_ru (MVP-034)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "ru",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "dwelling_ru",
+            "dwelling_escalation",
+            "storehouse_ru",
+            "turret_ru"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "upkeep": {
+          "type": "object",
+          "description": "the mvp.upkeep.* keys",
+          "properties": {
+            "worker_ru_per_hour": {
+              "type": "number",
+              "description": "mvp.upkeep.worker_ru_per_hour (MVP-035)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "ru per Worker per hour",
+              "x-species-presence": "required"
+            },
+            "structure_ru_per_hour": {
+              "type": "number",
+              "description": "mvp.upkeep.structure_ru_per_hour (MVP-035)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "ru per structure per hour",
+              "x-species-presence": "required"
+            },
+            "inactive_step_s": {
+              "type": "number",
+              "description": "mvp.upkeep.inactive_step_s (MVP-035)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "seconds",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "worker_ru_per_hour",
+            "structure_ru_per_hour",
+            "inactive_step_s"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "priority": {
+          "type": "object",
+          "description": "the mvp.priority.* keys",
+          "properties": {
+            "default_gather": {
+              "type": "number",
+              "description": "mvp.priority.default_gather (MVP-036)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "%",
+              "x-species-presence": "required"
+            },
+            "default_construct": {
+              "type": "number",
+              "description": "mvp.priority.default_construct (MVP-036)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "%",
+              "x-species-presence": "required"
+            },
+            "default_guard": {
+              "type": "number",
+              "description": "mvp.priority.default_guard (MVP-036)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "%",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "default_gather",
+            "default_construct",
+            "default_guard"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "strength": {
+          "type": "object",
+          "description": "the mvp.strength.* keys",
+          "properties": {
+            "worker_ru": {
+              "type": "number",
+              "description": "mvp.strength.worker_ru (MVP-038)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "ru per Worker",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "worker_ru"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "expedition": {
+          "type": "object",
+          "description": "the mvp.expedition.* keys",
+          "properties": {
+            "size_max": {
+              "type": "integer",
+              "description": "mvp.expedition.size_max (MVP-041)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "Workers",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "size_max"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "conflict": {
+          "type": "object",
+          "description": "the mvp.conflict.* keys",
+          "properties": {
+            "attack_cost_ru": {
+              "type": "number",
+              "description": "mvp.conflict.attack_cost_ru (MVP-042)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "ru",
+              "x-species-presence": "required"
+            },
+            "warning_minutes": {
+              "type": "number",
+              "description": "mvp.conflict.warning_minutes (MVP-042)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "minutes of world time",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "attack_cost_ru",
+            "warning_minutes"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "defence": {
+          "type": "object",
+          "description": "the mvp.defence.* keys",
+          "properties": {
+            "damage_taken_factor": {
+              "type": "number",
+              "description": "mvp.defence.damage_taken_factor (MVP-044)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "of reference damage",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "damage_taken_factor"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "battle": {
+          "type": "object",
+          "description": "the mvp.battle.* keys",
+          "properties": {
+            "objective_radius": {
+              "type": "number",
+              "description": "mvp.battle.objective_radius (MVP-045)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "objective_hold_s": {
+              "type": "number",
+              "description": "mvp.battle.objective_hold_s (MVP-045)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "seconds",
+              "x-species-presence": "required"
+            },
+            "rout_share": {
+              "type": "number",
+              "description": "mvp.battle.rout_share (MVP-045)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "of Workers sent",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "objective_radius",
+            "objective_hold_s",
+            "rout_share"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "protection": {
+          "type": "object",
+          "description": "the mvp.protection.* keys",
+          "properties": {
+            "loss_cap_worker_share": {
+              "type": "number",
+              "description": "mvp.protection.loss_cap_worker_share (MVP-046)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "of Workers at battle start",
+              "x-species-presence": "required"
+            },
+            "loss_cap_store_share": {
+              "type": "number",
+              "description": "mvp.protection.loss_cap_store_share (MVP-046)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "of stores",
+              "x-species-presence": "required"
+            },
+            "worker_floor": {
+              "type": "integer",
+              "description": "mvp.protection.worker_floor (MVP-046)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "Workers",
+              "x-species-presence": "required"
+            },
+            "respite_minutes": {
+              "type": "number",
+              "description": "mvp.protection.respite_minutes (MVP-047)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "minutes",
+              "x-species-presence": "required"
+            },
+            "respite_min_loss_share": {
+              "type": "number",
+              "description": "mvp.protection.respite_min_loss_share (MVP-047)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "of strength",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "loss_cap_worker_share",
+            "loss_cap_store_share",
+            "worker_floor",
+            "respite_minutes",
+            "respite_min_loss_share"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "grievance": {
+          "type": "object",
+          "description": "the mvp.grievance.* keys",
+          "properties": {
+            "pressure_per_hour": {
+              "type": "number",
+              "description": "mvp.grievance.pressure_per_hour (MVP-051)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "weight per hour of contact",
+              "x-species-presence": "required"
+            },
+            "claim_weight": {
+              "type": "number",
+              "description": "mvp.grievance.claim_weight (MVP-051)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "weight",
+              "x-species-presence": "required"
+            },
+            "attack_weight": {
+              "type": "number",
+              "description": "mvp.grievance.attack_weight (MVP-051)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "weight",
+              "x-species-presence": "required"
+            },
+            "unprovoked_factor": {
+              "type": "number",
+              "description": "mvp.grievance.unprovoked_factor (MVP-051)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times",
+              "x-species-presence": "required"
+            },
+            "fade_share_per_hour": {
+              "type": "number",
+              "description": "mvp.grievance.fade_share_per_hour (MVP-052)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "% of weight per hour",
+              "x-species-presence": "required"
+            },
+            "battle_relief_won": {
+              "type": "number",
+              "description": "mvp.grievance.battle_relief_won (MVP-052)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "% of the attacker's grievances",
+              "x-species-presence": "required"
+            },
+            "battle_relief_lost": {
+              "type": "number",
+              "description": "mvp.grievance.battle_relief_lost (MVP-052)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "% of the attacker's grievances",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "pressure_per_hour",
+            "claim_weight",
+            "attack_weight",
+            "unprovoked_factor",
+            "fade_share_per_hour",
+            "battle_relief_won",
+            "battle_relief_lost"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "claim": {
+          "type": "object",
+          "description": "the mvp.claim.* keys",
+          "properties": {
+            "uncontested_minutes": {
+              "type": "number",
+              "description": "mvp.claim.uncontested_minutes (MVP-053)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "minutes",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "uncontested_minutes"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "relation": {
+          "type": "object",
+          "description": "the mvp.relation.* keys",
+          "properties": {
+            "tribute_ru_per_weight": {
+              "type": "number",
+              "description": "mvp.relation.tribute_ru_per_weight (MVP-054)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "ru per weight",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "tribute_ru_per_weight"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "temperament": {
+          "type": "object",
+          "description": "the mvp.temperament.* keys",
+          "properties": {
+            "bold_threshold": {
+              "type": "number",
+              "description": "mvp.temperament.bold_threshold (MVP-057)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "anger",
+              "x-species-presence": "required"
+            },
+            "territorial_threshold": {
+              "type": "number",
+              "description": "mvp.temperament.territorial_threshold (MVP-057)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "anger",
+              "x-species-presence": "required"
+            },
+            "wary_threshold": {
+              "type": "number",
+              "description": "mvp.temperament.wary_threshold (MVP-057)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "anger",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "bold_threshold",
+            "territorial_threshold",
+            "wary_threshold"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "ai": {
+          "type": "object",
+          "description": "the mvp.ai.* keys",
+          "properties": {
+            "attack_min_share": {
+              "type": "number",
+              "description": "mvp.ai.attack_min_share (MVP-055)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "of the target's seen Workers",
+              "x-species-presence": "required"
+            },
+            "decision_ticks": {
+              "type": "integer",
+              "description": "mvp.ai.decision_ticks (MVP-058)",
+              "minimum": 0,
+              "x-species-type": "ticks",
+              "x-species-unit": "ticks",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "attack_min_share",
+            "decision_ticks"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "run": {
+          "type": "object",
+          "description": "the mvp.run.* keys",
+          "properties": {
+            "length_hours": {
+              "type": "number",
+              "description": "mvp.run.length_hours (MVP-060)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "hours of play",
+              "x-species-presence": "required"
+            },
+            "quiet_minutes": {
+              "type": "number",
+              "description": "mvp.run.quiet_minutes (MVP-060)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "minutes",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "length_hours",
+            "quiet_minutes"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "renown": {
+          "type": "object",
+          "description": "the mvp.renown.* keys",
+          "properties": {
+            "defence_held": {
+              "type": "integer",
+              "description": "mvp.renown.defence_held (MVP-061)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "renown",
+              "x-species-presence": "required"
+            },
+            "claim_won": {
+              "type": "integer",
+              "description": "mvp.renown.claim_won (MVP-061)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "renown",
+              "x-species-presence": "required"
+            },
+            "grievance_eased": {
+              "type": "number",
+              "description": "mvp.renown.grievance_eased (MVP-061)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "renown per 20 weight",
+              "x-species-presence": "required"
+            },
+            "structure_per_100ru": {
+              "type": "number",
+              "description": "mvp.renown.structure_per_100ru (MVP-061)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "renown per 100 ru",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "defence_held",
+            "claim_won",
+            "grievance_eased",
+            "structure_per_100ru"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "stats": {
+          "type": "object",
+          "description": "the mvp.stats.* keys",
+          "properties": {
+            "sample_minutes": {
+              "type": "number",
+              "description": "mvp.stats.sample_minutes (MVP-064)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "minutes",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "sample_minutes"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "presence": {
+          "type": "object",
+          "description": "the mvp.presence.* keys",
+          "properties": {
+            "idle_minutes": {
+              "type": "number",
+              "description": "mvp.presence.idle_minutes (MVP-072)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "minutes",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "idle_minutes"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "persist": {
+          "type": "object",
+          "description": "the mvp.persist.* keys",
+          "properties": {
+            "snapshot_seconds": {
+              "type": "number",
+              "description": "mvp.persist.snapshot_seconds (MVP-075)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "seconds of world time",
+              "x-species-presence": "required"
+            },
+            "snapshots_kept": {
+              "type": "integer",
+              "description": "mvp.persist.snapshots_kept (MVP-075)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "snapshots",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "snapshot_seconds",
+            "snapshots_kept"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "client": {
+          "type": "object",
+          "description": "the mvp.client.* keys",
+          "properties": {
+            "fps_target": {
+              "type": "integer",
+              "description": "mvp.client.fps_target (MVP-085)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "frames per second",
+              "x-species-presence": "required"
+            },
+            "figures_max": {
+              "type": "integer",
+              "description": "mvp.client.figures_max (MVP-085)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "figures on screen",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "fps_target",
+            "figures_max"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        }
+      },
+      "required": [
+        "pace",
+        "world",
+        "vision",
+        "settlement",
+        "dwelling",
+        "essence",
+        "territory",
+        "resource",
+        "gather",
+        "store",
+        "construction",
+        "cost",
+        "upkeep",
+        "priority",
+        "strength",
+        "expedition",
+        "conflict",
+        "defence",
+        "battle",
+        "protection",
+        "grievance",
+        "claim",
+        "relation",
+        "temperament",
+        "ai",
+        "run",
+        "renown",
+        "stats",
+        "presence",
+        "persist",
+        "client"
+      ],
+      "additionalProperties": false,
+      "x-species-type": "object",
+      "x-species-presence": "required"
+    },
+    "ref": {
+      "type": "object",
+      "description": "the reference keys the MVP reads from data",
+      "properties": {
+        "sim": {
+          "type": "object",
+          "description": "the ref.sim.* keys",
+          "properties": {
+            "tick_period": {
+              "type": "number",
+              "description": "ref.sim.tick_period (MVP-092, ADR-079): the period of one tick",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "s",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "tick_period"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        }
+      },
+      "required": [
+        "sim"
+      ],
+      "additionalProperties": false,
+      "x-species-type": "object",
+      "x-species-presence": "required"
+    }
+  },
+  "required": [
+    "schema",
+    "version",
+    "mvp",
+    "ref"
+  ],
+  "additionalProperties": false
+}

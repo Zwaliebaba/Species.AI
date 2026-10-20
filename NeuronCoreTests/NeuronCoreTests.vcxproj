@@ -168,6 +168,7 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AuthoringParserTests.cpp" />
     <ClCompile Include="CheckTests.cpp" />
     <ClCompile Include="FilesTests.cpp" />
     <ClCompile Include="JobQueueTests.cpp" />
@@ -179,6 +180,8 @@
     <ClCompile Include="PlatformMessageTests.cpp" />
     <ClCompile Include="PlatformThreadTests.cpp" />
     <ClCompile Include="ProfileTests.cpp" />
+    <ClCompile Include="SimRngTests.cpp" />
+    <ClCompile Include="SipHashTests.cpp" />
     <ClCompile Include="TestSupport.cpp" />
     <ClCompile Include="TextEncodingTests.cpp" />
     <ClCompile Include="TransportTests.cpp" />
