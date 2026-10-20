@@ -54,6 +54,9 @@
     <ClInclude Include="InMemoryGpuResourceFactory.h">
       <Filter>Resources</Filter>
     </ClInclude>
+    <ClInclude Include="OverlayRenderer.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
     <ClInclude Include="PassTable.h">
       <Filter>Rendering</Filter>
     </ClInclude>
@@ -76,6 +79,9 @@
       <Filter>Shader</Filter>
     </ClInclude>
     <ClInclude Include="SkyLayers.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="TextLayout.h">
       <Filter>Rendering</Filter>
     </ClInclude>
     <ClInclude Include="UploadRing.h">
@@ -131,6 +137,9 @@
     <ClCompile Include="InMemoryGpuResourceFactory.cpp">
       <Filter>Resources</Filter>
     </ClCompile>
+    <ClCompile Include="OverlayRenderer.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
     <ClCompile Include="PassTable.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
@@ -152,6 +161,9 @@
     <ClCompile Include="SkyLayers.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="TextLayout.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
     <ClCompile Include="UploadRing.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
@@ -171,6 +183,18 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <FXCompile Include="Shader\DevelopmentDotPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\DevelopmentDotVS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\DevelopmentTextPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\DevelopmentTextVS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
     <FXCompile Include="Shader\FinalPS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
@@ -203,6 +227,12 @@
     </FXCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Shader\DevelopmentDot.hlsli">
+      <Filter>Shader</Filter>
+    </None>
+    <None Include="Shader\DevelopmentText.hlsli">
+      <Filter>Shader</Filter>
+    </None>
     <None Include="Shader\Final.hlsli">
       <Filter>Shader</Filter>
     </None>

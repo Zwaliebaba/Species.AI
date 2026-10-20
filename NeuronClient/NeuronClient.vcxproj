@@ -169,6 +169,7 @@
     <ClInclude Include="GpuResourceFactory.h" />
     <ClInclude Include="GraphicsDevice.h" />
     <ClInclude Include="InMemoryGpuResourceFactory.h" />
+    <ClInclude Include="OverlayRenderer.h" />
     <ClInclude Include="PassTable.h" />
     <ClInclude Include="PipelineCatalog.h" />
     <ClInclude Include="PresentPolicy.h" />
@@ -177,6 +178,7 @@
     <ClInclude Include="SceneTargets.h" />
     <ClInclude Include="ShaderLayouts.h" />
     <ClInclude Include="SkyLayers.h" />
+    <ClInclude Include="TextLayout.h" />
     <ClInclude Include="UploadRing.h" />
     <ClInclude Include="WindowGeometry.h" />
     <ClInclude Include="WorldRenderer.h" />
@@ -196,6 +198,7 @@
     <ClCompile Include="GpuResourceFactory.cpp" />
     <ClCompile Include="GraphicsDevice.cpp" />
     <ClCompile Include="InMemoryGpuResourceFactory.cpp" />
+    <ClCompile Include="OverlayRenderer.cpp" />
     <ClCompile Include="PassTable.cpp" />
     <ClCompile Include="PipelineCatalog.cpp" />
     <ClCompile Include="PresentPolicy.cpp" />
@@ -203,6 +206,7 @@
     <ClCompile Include="RootSignature.cpp" />
     <ClCompile Include="SceneTargets.cpp" />
     <ClCompile Include="SkyLayers.cpp" />
+    <ClCompile Include="TextLayout.cpp" />
     <ClCompile Include="UploadRing.cpp" />
     <ClCompile Include="WindowGeometry.cpp" />
     <ClCompile Include="WorldRenderer.cpp" />
@@ -211,6 +215,18 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <FXCompile Include="Shader\DevelopmentDotPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\DevelopmentDotVS.hlsl">
+      <ShaderType>Vertex</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\DevelopmentTextPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\DevelopmentTextVS.hlsl">
+      <ShaderType>Vertex</ShaderType>
+    </FXCompile>
     <FXCompile Include="Shader\FinalPS.hlsl">
       <ShaderType>Pixel</ShaderType>
     </FXCompile>
@@ -243,6 +259,8 @@
     </FXCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Shader\DevelopmentDot.hlsli" />
+    <None Include="Shader\DevelopmentText.hlsli" />
     <None Include="Shader\Final.hlsli" />
     <None Include="Shader\SeaFlat.hlsli" />
     <None Include="Shader\SeaWaves.hlsli" />

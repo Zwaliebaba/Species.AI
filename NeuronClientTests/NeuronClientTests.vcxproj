@@ -172,6 +172,7 @@
     <ClCompile Include="FrameGraphTests.cpp" />
     <ClCompile Include="GpuResourceFactoryTests.cpp" />
     <ClCompile Include="PresentationTests.cpp" />
+    <ClCompile Include="TextLayoutTests.cpp" />
     <ClCompile Include="WindowGeometryTests.cpp" />
     <ClCompile Include="WorldFrameTests.cpp" />
     <ClCompile Include="pch.cpp">

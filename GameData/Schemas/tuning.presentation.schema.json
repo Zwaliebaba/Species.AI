@@ -1322,10 +1322,42 @@
               "additionalProperties": false,
               "x-species-type": "object",
               "x-species-presence": "required"
+            },
+            "frame": {
+              "type": "object",
+              "description": "the ref.sim.frame.* keys",
+              "properties": {
+                "fps_window": {
+                  "type": "number",
+                  "description": "ref.sim.frame.fps_window (R-SIM-576)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "s of real time",
+                  "x-species-presence": "required"
+                },
+                "fps_initial": {
+                  "type": "number",
+                  "description": "ref.sim.frame.fps_initial (R-SIM-576)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "frames per second",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "fps_window",
+                "fps_initial"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
             }
           },
           "required": [
-            "match"
+            "match",
+            "frame"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -1541,6 +1573,49 @@
       "additionalProperties": false,
       "x-species-type": "object",
       "x-species-presence": "required"
+    },
+    "dbg": {
+      "type": "object",
+      "description": "the dbg.* keys",
+      "properties": {
+        "overlay": {
+          "type": "object",
+          "description": "the dbg.overlay.* keys",
+          "properties": {
+            "frame_rate_right": {
+              "type": "number",
+              "description": "dbg.overlay.frame_rate_right (DBG-095)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "px, from the right edge, before the text scale",
+              "x-species-presence": "required"
+            },
+            "frame_rate_bottom": {
+              "type": "number",
+              "description": "dbg.overlay.frame_rate_bottom (DBG-095)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "px, from the bottom edge, before the text scale",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "frame_rate_right",
+            "frame_rate_bottom"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        }
+      },
+      "required": [
+        "overlay"
+      ],
+      "additionalProperties": false,
+      "x-species-type": "object",
+      "x-species-presence": "required"
     }
   },
   "required": [
@@ -1549,7 +1624,8 @@
     "rnd",
     "ter",
     "ref",
-    "mvp"
+    "mvp",
+    "dbg"
   ],
   "additionalProperties": false
 }

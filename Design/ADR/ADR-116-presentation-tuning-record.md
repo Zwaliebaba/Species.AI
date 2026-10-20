@@ -82,3 +82,4 @@ Chosen option: "1".
 
 * Related: [ADR-062](ADR-062-authoring-syntax-and-schema-language.md), [ADR-098](ADR-098-tuning-in-data-and-the-schema-generator.md), [ADR-108](ADR-108-content-build-loose-content-and-cooked-formats.md), [ADR-115](ADR-115-the-world-frame-at-m1.md).
 * Owner decision O75; DAT-016, AST-100; the MVP scope's table 3.
+* **Amendment 2026-10-20 (M1 task T15a, [ADR-118](ADR-118-development-overlay-at-m1.md)).** The record gains the development overlay's keys: `dbg.overlay.frame_rate_right` and `dbg.overlay.frame_rate_bottom` (DBG-095), the frame-rate counter's `ref.sim.frame.fps_window` and `ref.sim.frame.fps_initial` (R-SIM-576). The player colours `ref.sim.team_color.<name>.base` (R-SIM-415) that colour the figure dots stay out of it: their last part would generate a type named `Base`, which R2 refuses, so they are named constants that cite their keys. The renderer receives the counter's two values from the client once the record is loaded.

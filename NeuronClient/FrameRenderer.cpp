@@ -8,6 +8,7 @@
 #include "GpuDescriptions.h"
 #include "GraphicsDevice.h"
 #include "Log.h"
+#include "OverlayRenderer.h"
 #include "PassTable.h"
 #include "PipelineCatalog.h"
 #include "PlatformClock.h"
@@ -15,10 +16,15 @@
 #include "RootSignature.h"
 #include "SceneTargets.h"
 #include "ShaderLayouts.h"
+#include "TextLayout.h"
 #include "UploadRing.h"
 #include "WorldRenderer.h"
 
 // The compiled shaders (AGENTS.md §2, ADR-112): this file binds the pipeline states, and no other file includes them.
+#include "CompiledShader/DevelopmentDotPS.h"
+#include "CompiledShader/DevelopmentDotVS.h"
+#include "CompiledShader/DevelopmentTextPS.h"
+#include "CompiledShader/DevelopmentTextVS.h"
 #include "CompiledShader/FinalPS.h"
 #include "CompiledShader/FinalVS.h"
 #include "CompiledShader/SeaFlatPS.h"
@@ -33,6 +39,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <deque>
 #include <exception>
 #include <format>
 #include <memory>
@@ -116,8 +123,10 @@ enum class WorldPass : std::uint8_t
   Terrain,
   FlatSea,
   Waves,
+  Dots,
   Resolve,
   Final,
+  OverlayText,
   Present
 };
 
@@ -130,6 +139,7 @@ struct RendererState
   RenderConfig config;
   std::unique_ptr<DeviceGpuResourceFactory> factory;
   std::unique_ptr<WorldRenderer> world;
+  std::unique_ptr<OverlayRenderer> overlay;
 
   std::unique_ptr<GraphicsDevice> device;
   ComPtr<ID3D12Fence> fence;
@@ -159,6 +169,8 @@ struct RendererState
 
   std::uint64_t frameNumber = 0;
   std::uint64_t worldFrames = 0;
+  std::deque<Nanoseconds> presentTimes; // R-SIM-576: the frames presented within the counter's window
+  bool frameRateWindowFilled = false;
   bool occluded = false;
   bool rebuilding = false;
   std::optional<Nanoseconds> nextFrameStart;
@@ -270,7 +282,7 @@ bool CreateSwapChain(RendererState& _state)
 }
 
 // The world frame's pipeline states (RND-061, ADR-113): the entries its passes use, and the final pass's.
-const std::array<PipelineEntry, 5> WORLD_PIPELINES{{
+const std::array<PipelineEntry, 7> WORLD_PIPELINES{{
   {"sky", g_SkyVS, g_SkyPS, VertexLayout::SkyInstance, BlendState::Additive, DepthState::None, CullState::Back, PipelineTarget::Scene},
   {"terrain", g_TerrainVS, g_TerrainPS, VertexLayout::Terrain, BlendState::Opaque, DepthState::TestWrite, CullState::Back,
    PipelineTarget::Scene},
@@ -279,6 +291,11 @@ const std::array<PipelineEntry, 5> WORLD_PIPELINES{{
   {"sea_waves", g_SeaWavesVS, g_SeaWavesPS, VertexLayout::Sea, BlendState::Additive, DepthState::TestWrite, CullState::Back,
    PipelineTarget::Scene},
   {"final", g_FinalVS, g_FinalPS, VertexLayout::None, BlendState::Opaque, DepthState::None, CullState::None, PipelineTarget::BackBuffer},
+  // M1 task T15a: the development dots in the scene, and the overlay's text over the final image (DBG-095).
+  {"development_dots", g_DevelopmentDotVS, g_DevelopmentDotPS, VertexLayout::DotInstance, BlendState::Opaque, DepthState::Test,
+   CullState::None, PipelineTarget::Scene},
+  {"development_text", g_DevelopmentTextVS, g_DevelopmentTextPS, VertexLayout::TextGlyph, BlendState::Alpha, DepthState::None,
+   CullState::None, PipelineTarget::BackBuffer},
 }};
 
 // The world frame's targets, at these indices of its table (RND-063, ADR-113).
@@ -317,6 +334,9 @@ WorldFrameTable WorldFrame(bool _multisampled)
   add(WorldPass::Terrain, "pass_04_terrain", "terrain", scene);
   add(WorldPass::FlatSea, "pass_05a_flat_sea", "sea_flat", scene);
   add(WorldPass::Waves, "pass_05b_coastline_waves", "sea_waves", scene);
+#if ENGINE_DEVELOPMENT
+  add(WorldPass::Dots, "pass_24_development_drawing", "development_dots", scene); // RND-076: Debug builds only
+#endif
   if (_multisampled)
   {
     add(WorldPass::Resolve, "resolve", {},
@@ -325,6 +345,7 @@ WorldFrameTable WorldFrame(bool _multisampled)
   add(WorldPass::Final, "final", "final",
       {{_multisampled ? TARGET_SCENE_RESOLVED : TARGET_SCENE_COLOR, TargetAccess::ShaderRead},
        {TARGET_BACK_BUFFER, TargetAccess::RenderTarget}});
+  add(WorldPass::OverlayText, "pass_29_text_overlays", "development_text", {{TARGET_BACK_BUFFER, TargetAccess::RenderTarget}});
   add(WorldPass::Present, "pass_34_present", {}, {{TARGET_BACK_BUFFER, TargetAccess::Present}});
   return table;
 }
@@ -553,6 +574,7 @@ void Rebuild(RendererState& _state)
   }
   _state.rebuilding = false;
   _state.world->UploadAgain(); // RND-034: the same surfaces, from the unchanged world
+  _state.overlay->UploadAgain();
   Log(LogCategory::Render, LogLevel::Warning, "the device was rebuilt after its removal");
   for (const std::function<void()>& listener : _state.rebuiltListeners)
   {
@@ -689,6 +711,11 @@ void RecordWorldFrame(RendererState& _state, const FrameInputs& _inputs, ID3D12R
       _state.world->RecordWaves(pass);
       break;
     }
+    case WorldPass::Dots:
+    {
+      _state.overlay->RecordDots(commands, *_state.ring, *_state.catalog, frame, TextScaleFor(_state.window->DpiScale()), _inputs.dots);
+      break;
+    }
     case WorldPass::Resolve:
     {
       ENGINE_PROFILE_SCOPE("render.resolve");
@@ -715,6 +742,13 @@ void RecordWorldFrame(RendererState& _state, const FrameInputs& _inputs, ID3D12R
       commands->DrawInstanced(3, 1, 0, 0);
       break;
     }
+    case WorldPass::OverlayText:
+    {
+      ENGINE_PROFILE_SCOPE("render.development_text");
+      _state.overlay->RecordText(commands, *_state.ring, *_state.catalog, _state.swapChainSize, TextScaleFor(_state.window->DpiScale()),
+                                 _inputs.overlay);
+      break;
+    }
     case WorldPass::Present:
       break;
     }
@@ -733,6 +767,7 @@ std::expected<std::unique_ptr<FrameRenderer>, StartupFailure> FrameRenderer::Cre
   state->config = _config;
   state->factory = std::make_unique<DeviceGpuResourceFactory>(DeviceGpuResourceFactory::Desc{});
   state->world = std::make_unique<WorldRenderer>(*state->factory);
+  state->overlay = std::make_unique<OverlayRenderer>(*state->factory);
   if (std::expected<void, StartupFailure> created = CreateDeviceObjects(*state); !created.has_value())
   {
     ReleaseDeviceObjects(*state, TEARDOWN_WAIT_MILLISECONDS);
@@ -828,6 +863,7 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
   const std::uint64_t frameId = state.frameNumber + 1;
   const std::uint64_t completed = frameId > FRAMES_IN_FLIGHT ? frameId - FRAMES_IN_FLIGHT : 0;
   state.world->Show(_inputs.world);
+  state.overlay->Show(_inputs.overlayFont);
   state.factory->BeginFrame(frameId, completed);
   state.heaps->Reclaim(completed);
   state.heaps->BeginFrame(static_cast<std::uint32_t>(slot));
@@ -853,6 +889,20 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
     const D3D12_RESOURCE_BARRIER toTarget = TransitionBarrier(backBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
     commands->ResourceBarrier(1, &toTarget);
     commands->ClearRenderTargetView(target, background.data(), 0, nullptr);
+    if (!_inputs.overlay.empty())
+    {
+      // DBG-095: the frame-rate line is drawn without a world too.
+      const D3D12_VIEWPORT viewport{
+        0.0f, 0.0f, static_cast<float>(state.swapChainSize.width), static_cast<float>(state.swapChainSize.height), 0.0f, 1.0f};
+      const D3D12_RECT scissor{0, 0, static_cast<LONG>(state.swapChainSize.width), static_cast<LONG>(state.swapChainSize.height)};
+      commands->OMSetRenderTargets(1, &target, FALSE, nullptr);
+      commands->RSSetViewports(1, &viewport);
+      commands->RSSetScissorRects(1, &scissor);
+      // Every root parameter holds a value before the draw, the frame's too, which the text does not read.
+      commands->SetGraphicsRootConstantBufferView(ROOT_FRAME_CONSTANTS, state.ring->Write(FrameConstants{}));
+      state.overlay->RecordText(commands, *state.ring, *state.catalog, state.swapChainSize, TextScaleFor(state.window->DpiScale()),
+                                _inputs.overlay);
+    }
     const D3D12_RESOURCE_BARRIER toPresent =
       TransitionBarrier(backBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
     commands->ResourceBarrier(1, &toPresent);
@@ -884,6 +934,15 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
     state.occluded = true;
   }
   state.worldFrames += drawsWorld ? 1 : 0;
+  // R-SIM-576: the frames presented within the last window of real time.
+  const Nanoseconds now = state.clock->Now();
+  const Nanoseconds window{static_cast<std::int64_t>(std::llround(state.config.frameRateWindowSeconds * 1.0e9))};
+  state.presentTimes.push_back(now);
+  state.frameRateWindowFilled = state.frameRateWindowFilled || now - state.presentTimes.front() >= window;
+  while (now - state.presentTimes.front() > window)
+  {
+    state.presentTimes.pop_front();
+  }
   return FrameOutcome::Presented;
 }
 
@@ -895,6 +954,16 @@ void FrameRenderer::OnDeviceRebuilt(std::function<void()> _listener)
 std::uint64_t FrameRenderer::WorldFrames() const noexcept
 {
   return m_state->worldFrames;
+}
+
+double FrameRenderer::FramesPerSecond() const noexcept
+{
+  const RendererState& state = *m_state;
+  if (!state.frameRateWindowFilled)
+  {
+    return state.config.frameRateInitial;
+  }
+  return static_cast<double>(state.presentTimes.size()) / std::max(state.config.frameRateWindowSeconds, 1e-3);
 }
 
 #if ENGINE_DEVELOPMENT

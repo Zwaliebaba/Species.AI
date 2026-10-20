@@ -160,6 +160,10 @@
     "sim": {
       "match": {
         "presentation_seed": 1
+      },
+      "frame": {
+        "fps_window": 1.0,
+        "fps_initial": 60
       }
     }
   },
@@ -189,6 +193,12 @@
           "b": 1.0
         }
       }
+    }
+  },
+  "dbg": {
+    "overlay": {
+      "frame_rate_right": 10,
+      "frame_rate_bottom": 40
     }
   }
 }

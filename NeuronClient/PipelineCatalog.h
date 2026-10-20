@@ -36,13 +36,16 @@ enum class CullState : std::uint8_t
   None
 };
 
-// The vertex streams the input assembler reads (ADR-006): none, the terrain's corners, the sea's, or the sky's instances.
+// The vertex streams the input assembler reads (ADR-006): none, the terrain's corners, the sea's, or the instances of
+// the sky, the overlay's glyphs and the development dots.
 enum class VertexLayout : std::uint8_t
 {
   None,
   Terrain,
   Sea,
-  SkyInstance
+  SkyInstance,
+  TextGlyph,
+  DotInstance
 };
 
 // The targets an entry draws into: the scene targets at their sample count with the depth buffer bound, or the back
@@ -101,7 +104,8 @@ private:
   std::vector<Created> m_entries;
 };
 
-// The input layout of each vertex stream; its offsets match TerrainVertex, SeaVertex and SkyLayerInstance.
+// The input layout of each vertex stream; its offsets match TerrainVertex, SeaVertex, SkyLayerInstance, TextGlyphInstance
+// and DotInstance.
 [[nodiscard]] std::span<const D3D12_INPUT_ELEMENT_DESC> InputLayoutOf(VertexLayout _layout) noexcept;
 
 } // namespace Neuron

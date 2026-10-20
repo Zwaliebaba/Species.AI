@@ -4,6 +4,9 @@
     <Filter Include="Build">
       <UniqueIdentifier>{E06208B9-9F30-5042-85B8-4B7894380941}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Diagnostics">
+      <UniqueIdentifier>{0121E16E-B6F0-50DD-88CC-2327B50CD020}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Replication">
       <UniqueIdentifier>{D71091FB-EB6D-5227-A505-FCE57B772653}</UniqueIdentifier>
     </Filter>
@@ -14,6 +17,9 @@
   <ItemGroup>
     <ClInclude Include="ClientSession.h">
       <Filter>Session</Filter>
+    </ClInclude>
+    <ClInclude Include="DevelopmentOverlay.h">
+      <Filter>Diagnostics</Filter>
     </ClInclude>
     <ClInclude Include="ReplicaTiming.h">
       <Filter>Replication</Filter>
@@ -28,6 +34,9 @@
   <ItemGroup>
     <ClCompile Include="ClientSession.cpp">
       <Filter>Session</Filter>
+    </ClCompile>
+    <ClCompile Include="DevelopmentOverlay.cpp">
+      <Filter>Diagnostics</Filter>
     </ClCompile>
     <ClCompile Include="ReplicaTiming.cpp">
       <Filter>Replication</Filter>

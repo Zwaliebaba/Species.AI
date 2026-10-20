@@ -94,11 +94,28 @@ LAYOUT_CONSTANT SKY_WRAP_IN_SHADER = 1; // the coordinate wraps before a clampin
 LAYOUT_CONSTANT SKY_LEVEL_ZERO = 2;     // only the first mip level is read (RND-153)
 LAYOUT_CONSTANT SKY_ALONG_Z = 4;        // u runs along z and v along x: a grid line parallel to z (RND-151)
 
+// DBG-095 and O63: one glyph of the development overlay's text, drawn in pass 29 at a whole-number scale.
+struct TextGlyphInstance
+{
+  Float4 rectangle; // left, top, right and bottom on the target, in whole pixels
+  Float4 uv;        // the glyph's rectangle on the face's page, from 0 to 1
+  Float4 color;
+};
+
+// M1 task T15a: a development dot at a figure's position until its crowd is drawn (T16), relative to the camera.
+struct DotInstance
+{
+  Float4 center; // xyz: the position relative to the camera; w: the dot's side in pixels
+  Float4 color;
+};
+
 #if !defined(__HLSL_VERSION)
 static_assert(sizeof(FrameConstants) == 3 * sizeof(Float4x4) + 9 * sizeof(Float4));
 static_assert(sizeof(PassConstants) == 8 * sizeof(Float4));
 static_assert(sizeof(DrawConstants) == sizeof(Float3x4) + sizeof(Float4) + sizeof(Uint4));
 static_assert(sizeof(SkyLayerInstance) == 4 * sizeof(Float4) + sizeof(Uint4));
+static_assert(sizeof(TextGlyphInstance) == 3 * sizeof(Float4));
+static_assert(sizeof(DotInstance) == 2 * sizeof(Float4));
 inline constexpr std::uint32_t DRAW_CONSTANT_DWORDS = sizeof(DrawConstants) / 4;
 } // namespace Neuron
 #endif

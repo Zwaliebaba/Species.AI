@@ -1,5 +1,6 @@
 #pragma once
 
+#include "FontAsset.h"
 #include "FrameView.h"
 #include "SeaSurface.h"
 #include "TerrainSurface.h"
@@ -9,6 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace Neuron
@@ -79,6 +81,24 @@ struct WorldScene
   std::vector<std::byte> beamShort;
 };
 
+/// One line of the development overlay (DBG-095), drawn in EditorFont at the overlay's whole-number scale (O63) with
+/// its cell's bottom-right corner at the given distances, in unscaled pixels, from the target's bottom-right corner.
+struct OverlayLine
+{
+  std::string text; // UTF-8
+  float fromRight = 10.0f;
+  float fromBottom = 40.0f;
+  std::array<float, 4> color{1.0f, 1.0f, 1.0f, 1.0f};
+};
+
+/// A development dot (M1 task T15a): a figure's world position, its colour and its side in unscaled pixels.
+struct DevelopmentDot
+{
+  Vec3 position;
+  std::array<float, 4> color{1.0f, 1.0f, 1.0f, 1.0f};
+  float sidePixels = 3.0f;
+};
+
 /// What one frame shows (RND-053's snapshot as M1 has it).
 struct FrameInputs
 {
@@ -88,6 +108,10 @@ struct FrameInputs
   double presentationSeconds = 0.0; // the smooth presentation time (R-SIM-570)
   double skyTicks = 0.0;            // the ticks displayed since the world's first (RND-152)
   float brightness = 1.0f;          // rnd.option.brightness.default (RND-275)
+  // The development overlay (DBG-004, Debug builds): its face, its lines and the dots drawn in the world.
+  std::shared_ptr<const FontAsset> overlayFont;
+  std::vector<OverlayLine> overlay;
+  std::vector<DevelopmentDot> dots;
 };
 
 } // namespace Neuron

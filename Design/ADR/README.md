@@ -118,6 +118,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-115](ADR-115-the-world-frame-at-m1.md) | The world frame at M1: camera-relative surfaces, the region's terrain, sea and sky, fog and the two lights | Proposed | 2026-10-20 |
 | [ADR-116](ADR-116-presentation-tuning-record.md) | The presentation tuning record | Proposed | 2026-10-20 |
 | [ADR-117](ADR-117-render-check-on-warp.md) | The render check: the world frame on the WARP adapter in CI | Proposed | 2026-10-20 |
+| [ADR-118](ADR-118-development-overlay-at-m1.md) | The development overlay at M1: its text, the frame-rate line and the figure dots | Proposed | 2026-10-20 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

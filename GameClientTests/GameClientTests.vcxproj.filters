@@ -4,6 +4,9 @@
     <Filter Include="Build">
       <UniqueIdentifier>{8657A25F-2F60-5351-A022-DBA55339ADD7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Diagnostics">
+      <UniqueIdentifier>{79D4F300-B117-5FCD-9DC1-996450ECE042}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Session">
       <UniqueIdentifier>{A167963F-DF56-52F7-B34B-539640C43309}</UniqueIdentifier>
     </Filter>
@@ -22,6 +25,9 @@
   <ItemGroup>
     <ClCompile Include="ClientSessionTests.cpp">
       <Filter>Session</Filter>
+    </ClCompile>
+    <ClCompile Include="DevelopmentOverlayTests.cpp">
+      <Filter>Diagnostics</Filter>
     </ClCompile>
     <ClCompile Include="TestSupport.cpp">
       <Filter>Tests</Filter>

@@ -1,6 +1,8 @@
 #include "pch.h"
 
 #include "DdsTexture.h"
+#include "Development.h"
+#include "DevelopmentOverlay.h"
 #include "Log.h"
 #include "WorldPresentation.h"
 
@@ -223,6 +225,9 @@ WorldPresentation::WorldPresentation(Desc _desc)
   : m_desc(_desc),
     m_start(_desc.clock->Now())
 {
+#if ENGINE_DEVELOPMENT
+  m_developmentFace = LoadDevelopmentFace(*m_desc.content);
+#endif
 }
 
 void WorldPresentation::Update(const ClientSession& _session)
@@ -249,7 +254,7 @@ void WorldPresentation::Update(const ClientSession& _session)
   }
 }
 
-Neuron::FrameInputs WorldPresentation::Frame(const ClientSession& _session)
+Neuron::FrameInputs WorldPresentation::Frame(const ClientSession& _session, double _framesPerSecond)
 {
   const TuningPresentation::Rnd::Frame::ClearColorNoMatch& background = m_desc.presentation->rnd.frame.clearColorNoMatch;
   Neuron::FrameInputs inputs;
@@ -271,6 +276,22 @@ Neuron::FrameInputs WorldPresentation::Frame(const ClientSession& _session)
     }
     inputs.skyTicks = displayed - *m_firstDisplayTick;
   }
+#if ENGINE_DEVELOPMENT
+  // DBG-095, ADR-118: shown in a Debug build until T15b's toggle; the objects are counted while a world exists.
+  if (m_developmentFace != nullptr)
+  {
+    const bool world = m_terrain != nullptr && _session.ServerTick().has_value();
+    const std::optional<std::size_t> objects = world ? std::optional(_session.Replica().Latest().size()) : std::nullopt;
+    inputs.overlayFont = m_developmentFace;
+    inputs.overlay.push_back(FrameRateLine(*m_desc.presentation, _framesPerSecond, objects));
+  }
+  if (m_terrain != nullptr)
+  {
+    inputs.dots = FigureDots(InterpolateFigures(_session.Replica(), _session.InterpolationFraction()));
+  }
+#else
+  static_cast<void>(_framesPerSecond);
+#endif
   return inputs;
 }
 

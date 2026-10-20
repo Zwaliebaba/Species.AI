@@ -250,7 +250,7 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
       _renderer.DebugRemoveDevice();
     }
 #endif
-    if (_renderer.RenderFrame(_world.Frame(_session)) == Neuron::FrameOutcome::Suspended)
+    if (_renderer.RenderFrame(_world.Frame(_session, _renderer.FramesPerSecond())) == Neuron::FrameOutcome::Suspended)
     {
       _clock.WaitUntil(_clock.Now() + SUSPENDED_POLL_PERIOD);
       continue;
@@ -334,6 +334,10 @@ int Run()
     {
       endWithError(presentationTuning.error());
     }
+    // R-SIM-576: the frame-rate counter's window and first reading, once the record is read.
+    renderConfig.frameRateWindowSeconds = presentationTuning->ref.sim.frame.fpsWindow;
+    renderConfig.frameRateInitial = presentationTuning->ref.sim.frame.fpsInitial;
+    presentation.renderer->Reconfigure(renderConfig);
     // The integrated server is a child of this root (ADR-083 item 2): it runs on its own tick thread until the session
     // ends, and stopping it freezes the world (O4). It loads the tuning record when it starts (MVP-099).
     IntegratedServer::Desc serverDesc;

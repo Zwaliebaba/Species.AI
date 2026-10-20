@@ -451,7 +451,17 @@ struct TuningPresentation
         std::int64_t presentationSeed = 0;
       };
 
+      struct Frame
+      {
+        // ref.sim.frame.fps_window, in s of real time
+        double fpsWindow = 0.0;
+
+        // ref.sim.frame.fps_initial, in frames per second
+        double fpsInitial = 0.0;
+      };
+
       Match match;
+      Frame frame;
     };
 
     Sim sim;
@@ -528,10 +538,25 @@ struct TuningPresentation
     Light light;
   };
 
+  struct Dbg
+  {
+    struct Overlay
+    {
+      // dbg.overlay.frame_rate_right, in px, from the right edge, before the text scale
+      double frameRateRight = 0.0;
+
+      // dbg.overlay.frame_rate_bottom, in px, from the bottom edge, before the text scale
+      double frameRateBottom = 0.0;
+    };
+
+    Overlay overlay;
+  };
+
   Rnd rnd;
   Ter ter;
   Ref ref;
   Mvp mvp;
+  Dbg dbg;
 };
 
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Rnd::Frame::ClearColor& _out)
@@ -799,9 +824,17 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ref::Sim::Frame& _out)
+{
+  _out.fpsWindow = _reader.Decimal(_object, "fps_window", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.fpsInitial = _reader.Decimal(_object, "fps_initial", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ref::Sim& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "match"), _out.match);
+  ReadFields(_reader, _reader.Object(_object, "frame"), _out.frame);
   _reader.Close(_object);
 }
 
@@ -870,12 +903,26 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Dbg::Overlay& _out)
+{
+  _out.frameRateRight = _reader.Decimal(_object, "frame_rate_right", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.frameRateBottom = _reader.Decimal(_object, "frame_rate_bottom", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Dbg& _out)
+{
+  ReadFields(_reader, _reader.Object(_object, "overlay"), _out.overlay);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "rnd"), _out.rnd);
   ReadFields(_reader, _reader.Object(_object, "ter"), _out.ter);
   ReadFields(_reader, _reader.Object(_object, "ref"), _out.ref);
   ReadFields(_reader, _reader.Object(_object, "mvp"), _out.mvp);
+  ReadFields(_reader, _reader.Object(_object, "dbg"), _out.dbg);
   _reader.Close(_object);
 }
 
@@ -1364,14 +1411,28 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   _out.presentationSeed = _reader.I64();
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref::Sim::Frame& _in)
+{
+  _writer.F64(_in.fpsWindow);
+  _writer.F64(_in.fpsInitial);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ref::Sim::Frame& _out)
+{
+  _out.fpsWindow = _reader.F64();
+  _out.fpsInitial = _reader.F64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref::Sim& _in)
 {
   CookFields(_writer, _in.match);
+  CookFields(_writer, _in.frame);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ref::Sim& _out)
 {
   ReadCookedFields(_reader, _out.match);
+  ReadCookedFields(_reader, _out.frame);
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref& _in)
@@ -1486,12 +1547,35 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   ReadCookedFields(_reader, _out.light);
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Dbg::Overlay& _in)
+{
+  _writer.F64(_in.frameRateRight);
+  _writer.F64(_in.frameRateBottom);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Dbg::Overlay& _out)
+{
+  _out.frameRateRight = _reader.F64();
+  _out.frameRateBottom = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Dbg& _in)
+{
+  CookFields(_writer, _in.overlay);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Dbg& _out)
+{
+  ReadCookedFields(_reader, _out.overlay);
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation& _in)
 {
   CookFields(_writer, _in.rnd);
   CookFields(_writer, _in.ter);
   CookFields(_writer, _in.ref);
   CookFields(_writer, _in.mvp);
+  CookFields(_writer, _in.dbg);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation& _out)
@@ -1500,6 +1584,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation& 
   ReadCookedFields(_reader, _out.ter);
   ReadCookedFields(_reader, _out.ref);
   ReadCookedFields(_reader, _out.mvp);
+  ReadCookedFields(_reader, _out.dbg);
 }
 
 // Cooks a tuning.presentation record into the bytes of its entry (DAT-014): what the content build writes.

@@ -169,6 +169,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ClientSessionTests.cpp" />
+    <ClCompile Include="DevelopmentOverlayTests.cpp" />
     <ClCompile Include="TestSupport.cpp" />
     <ClCompile Include="WorldPresentationTests.cpp" />
     <ClCompile Include="pch.cpp">

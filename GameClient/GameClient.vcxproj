@@ -145,12 +145,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="ClientSession.h" />
+    <ClInclude Include="DevelopmentOverlay.h" />
     <ClInclude Include="ReplicaTiming.h" />
     <ClInclude Include="WorldPresentation.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ClientSession.cpp" />
+    <ClCompile Include="DevelopmentOverlay.cpp" />
     <ClCompile Include="ReplicaTiming.cpp" />
     <ClCompile Include="WorldPresentation.cpp" />
     <ClCompile Include="pch.cpp">

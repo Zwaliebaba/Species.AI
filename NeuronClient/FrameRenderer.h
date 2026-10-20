@@ -40,7 +40,9 @@ struct RenderConfig // a change triggers Reconfigure (RND-030)
   std::uint32_t renderHeight = 0;
   bool lowLatency = false; // ADR-012
   PresentMode presentMode = PresentMode::VerticalSync;
-  std::optional<float> frameRateCap; // frames per second
+  std::optional<float> frameRateCap;   // frames per second
+  double frameRateWindowSeconds = 1.0; // ref.sim.frame.fps_window: the frame-rate counter's window (R-SIM-576)
+  double frameRateInitial = 60.0;      // ref.sim.frame.fps_initial: what it reads until its first window completes
 #if ENGINE_DEVELOPMENT
   // The render check of ADR-113: the WARP adapter in place of the hardware one, and the debug layer's GPU-based
   // validation (ADR-001, ADR-092). Both are fixed when the device is created.
@@ -86,6 +88,8 @@ public:
 
   // The frames presented with the world drawn, since the renderer was created.
   [[nodiscard]] std::uint64_t WorldFrames() const noexcept;
+  // RND-011, R-SIM-576: the frames presented in the last window, per second of the window.
+  [[nodiscard]] double FramesPerSecond() const noexcept;
 
 #if ENGINE_DEVELOPMENT
   // The debug layer's messages of warning severity or above since the process started: none is the render check's
