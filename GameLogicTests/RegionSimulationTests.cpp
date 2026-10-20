@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "CommandQueue.h"
 #include "DrawPurpose.h"
 #include "Figure.h"
 #include "RegionSimulation.h"
@@ -7,8 +8,10 @@
 #include "TestSupport.h"
 #include "WorkerPool.h"
 #include "WorldSimulation.h"
+#include "WorldSnapshot.h"
 
 #include <algorithm>
+#include <bit>
 #include <cmath>
 #include <cstdint>
 #include <map>
@@ -24,10 +27,10 @@ namespace
 
 constexpr Neuron::SipHashKey FIGURE_TEST_KEY{0x1234567812345678, 0x0badc0de0badc0de};
 
-// A region of its own, at tick 0, on the committed tuning.
+// A region of its own, at tick 0, on the committed tuning and a level terrain 50 wu above the sea.
 Species::RegionSimulation MakeRegion()
 {
-  return Species::RegionSimulation(0, FIGURE_TEST_KEY, 0, CommittedTuning());
+  return Species::RegionSimulation(0, FIGURE_TEST_KEY, 0, CommittedTuning(), FlatTerrain());
 }
 
 std::vector<std::uint32_t> SpawnAt(Species::RegionSimulation& _region, std::uint8_t _team, Species::FigureKind _kind, std::uint32_t _count,
@@ -249,6 +252,59 @@ public:
   }
 #endif
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp095AFigureSavedBeforeT4RegistersWhereItStands)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-095")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp095AFigureSavedBeforeT4RegistersWhereItStands)
+  {
+    // M1 task T2's layout of a region with one Worker in slot 0 of team 0 (ADR-101): it restores Idle, with its waypoint
+    // at its position, and the actor grid registers it in the cell of its position, with no grid history before it.
+    constexpr std::uint64_t TICK = 30;
+    const Neuron::Vec3 position{33000.0, 50.2, 34000.0};
+    const auto writeVec3 = [](Neuron::BitWriter& _writer, const Neuron::Vec3& _value)
+    {
+      for (const double component : {_value.x, _value.y, _value.z})
+      {
+        _writer.WriteBits(std::bit_cast<std::uint64_t>(component), 64);
+      }
+    };
+    const Species::StableId id = Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 1);
+    Neuron::BitWriter state;
+    state.WriteBits(0, 16);
+    state.WriteBits(TICK, 64);
+    state.WriteBits(2, 64);
+    state.WriteBounded(0, Neuron::COMMAND_QUEUE_STATE_MAX);
+    state.WriteBounded(1, Species::RegionSimulation::TEAM_SLOTS);
+    state.WriteBits(1, 32); // the pool: capacity, last advanced slot and an empty free list
+    state.WriteBits(0, 32);
+    state.WriteBits(0, 32);
+    state.WriteBool(true);
+    state.WriteBits(id, 64); // the figure of version 3
+    state.WriteBounded(static_cast<std::uint64_t>(Species::FigureKind::Worker), Species::FIGURE_KIND_MAX);
+    writeVec3(state, position);
+    writeVec3(state, {});
+    writeVec3(state, {1.0, 0.0, 0.0});
+    writeVec3(state, position);
+    state.WriteBits(std::bit_cast<std::uint64_t>(0.0), 64);
+    state.WriteBits(std::bit_cast<std::uint64_t>(20.0), 64);
+    state.WriteSigned(50, 32);
+    state.WriteSigned(30, 32);
+    state.WriteSigned(0, 32);
+    for (const bool flag : {true, true, false, false, false})
+    {
+      state.WriteBool(flag);
+    }
+    Species::RegionSimulation region(0, FIGURE_TEST_KEY, TICK, CommittedTuning());
+    Neuron::BitReader reader(state.Bytes());
+    Assert::IsTrue(region.ReadState(reader, 3) && reader.Finish(), L"a version-3 region reads whole");
+    const Species::Figure& worker = region.TeamAt(0).figures.At(0);
+    Assert::IsTrue(worker.waypoint == position && worker.workerState == Species::WorkerState::Idle && worker.radius == 0.0,
+                   L"Idle in place");
+    Assert::IsTrue(worker.cells == region.Grid().FootprintOf(position.x, position.z, 0.0), L"registered where it stands");
+    Assert::IsTrue(region.Grid().EntriesAt(0, worker.cells.x0, worker.cells.z0) == std::vector<Species::ActorRef>{{id, 0, 0}},
+                   L"its entry");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp093FiguresAreStateTheHashAndTheSnapshotCover)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-093")
   END_TEST_METHOD_ATTRIBUTE()
@@ -262,6 +318,7 @@ public:
       Species::WorldSimulation world({FIGURE_TEST_KEY, 0, 3, &CommittedTuning()});
       for (std::uint16_t index = 0; index < 3; ++index)
       {
+        world.Region(index).AttachTerrain(FlatTerrain());
         static_cast<void>(SpawnAt(world.Region(index), 0, Species::FigureKind::Worker, 40u + index));
         static_cast<void>(SpawnAt(world.Region(index), 1, Species::FigureKind::Leader, 2));
       }
@@ -286,7 +343,7 @@ public:
     region.WriteState(before);
     Species::RegionSimulation copy(0, FIGURE_TEST_KEY, 1, CommittedTuning());
     Neuron::BitReader reader(before.Bytes());
-    Assert::IsTrue(copy.ReadState(reader, 2), L"the region reads whole");
+    Assert::IsTrue(copy.ReadState(reader, Species::WORLD_STATE_VERSION), L"the region reads whole");
     Neuron::BitWriter again;
     copy.WriteState(again);
     Assert::IsTrue(std::ranges::equal(before.Bytes(), again.Bytes()), L"the same state");

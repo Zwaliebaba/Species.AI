@@ -275,6 +275,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.terrain.hill_desired_min` | 260 | wu | — | provisional | MVP-011 | A hill's desired height is drawn from this to the maximum (WLD-162) |
 | `mvp.terrain.hill_desired_max` | 340 | wu | — | provisional | MVP-011 | Below `wld.terrain.peak_height_max` (400 wu) |
 | `mvp.terrain.hill_inset` | 300 | wu | — | provisional | MVP-011 | WLD-162's distance of a hill tile inside the region border; see the WLD-162 amendment |
+| `mvp.unit.leader_mesh_radius` | 6.7252 | wu | — | provisional | MVP-040 | The bounding radius `LeaderFigure.cmo` records; the actor grid uses twice it (R-UNIT-159) until the cooked mesh gives it (M1 plan T11, ADR-103) |
 | `mvp.vision.unit_radius` | 300 | wu | — | provisional | MVP-016 | Raise if AI settlements miss obvious threats; lower if the fog never hides anything |
 | `mvp.nav.node_spacing` | 320 | wu | — | provisional | MVP-017 | About 200 lattice nodes on the valley's land; lower it if routes miss narrow passes, raise it if the next-hop tables cost too much |
 | `mvp.settlement.start_workers` | 20 | Workers | — | provisional | MVP-020 | The first minutes must show a busy settlement |

@@ -10,16 +10,34 @@
     <Filter Include="Simulation">
       <UniqueIdentifier>{61E375F3-93A5-57F8-9423-76B544D53EA3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Space">
+      <UniqueIdentifier>{8E04B4A8-6D41-5023-AEA0-AC19FAC18860}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ActorGrid.h">
+      <Filter>Space</Filter>
+    </ClInclude>
+    <ClInclude Include="ActorGridCache.h">
+      <Filter>Space</Filter>
+    </ClInclude>
     <ClInclude Include="DrawPurpose.h">
       <Filter>Simulation</Filter>
     </ClInclude>
     <ClInclude Include="Figure.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="FigureAdvance.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="IntegratedServer.h">
       <Filter>Server</Filter>
+    </ClInclude>
+    <ClInclude Include="Movement.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="ObstacleGrid.h">
+      <Filter>Space</Filter>
     </ClInclude>
     <ClInclude Include="RegionSimulation.h">
       <Filter>Simulation</Filter>
@@ -31,6 +49,9 @@
       <Filter>Simulation</Filter>
     </ClInclude>
     <ClInclude Include="StateHash.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="TickDraws.h">
       <Filter>Simulation</Filter>
     </ClInclude>
     <ClInclude Include="WorldServer.h">
@@ -47,11 +68,26 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ActorGrid.cpp">
+      <Filter>Space</Filter>
+    </ClCompile>
+    <ClCompile Include="ActorGridCache.cpp">
+      <Filter>Space</Filter>
+    </ClCompile>
     <ClCompile Include="Figure.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="FigureAdvance.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="IntegratedServer.cpp">
       <Filter>Server</Filter>
+    </ClCompile>
+    <ClCompile Include="Movement.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="ObstacleGrid.cpp">
+      <Filter>Space</Filter>
     </ClCompile>
     <ClCompile Include="RegionSimulation.cpp">
       <Filter>Simulation</Filter>
@@ -60,6 +96,9 @@
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="StateHash.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="TickDraws.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="WorldServer.cpp">

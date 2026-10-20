@@ -1220,6 +1220,27 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "unit": {
+          "type": "object",
+          "description": "the mvp.unit.* keys",
+          "properties": {
+            "leader_mesh_radius": {
+              "type": "number",
+              "description": "mvp.unit.leader_mesh_radius (MVP-040, R-UNIT-159)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "leader_mesh_radius"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
@@ -1254,7 +1275,8 @@
         "presence",
         "persist",
         "client",
-        "terrain"
+        "terrain",
+        "unit"
       ],
       "additionalProperties": false,
       "x-species-type": "object",
@@ -1346,10 +1368,29 @@
                   "additionalProperties": false,
                   "x-species-type": "object",
                   "x-species-presence": "required"
+                },
+                "search_attempts": {
+                  "type": "integer",
+                  "description": "ref.sim.spawn.search_attempts (R-SIM-368)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "attempts",
+                  "x-species-presence": "required"
+                },
+                "edge_margin": {
+                  "type": "number",
+                  "description": "ref.sim.spawn.edge_margin (R-SIM-368)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
-                "default_front"
+                "default_front",
+                "search_attempts",
+                "edge_margin"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -1366,10 +1407,40 @@
                   "x-species-type": "sim_decimal",
                   "x-species-unit": "wu",
                   "x-species-presence": "required"
+                },
+                "gravity": {
+                  "type": "number",
+                  "description": "ref.sim.physics.gravity (R-SIM-370)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s²",
+                  "x-species-presence": "required"
+                },
+                "land_threshold": {
+                  "type": "number",
+                  "description": "ref.sim.physics.land_threshold (R-SIM-370)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "land_offset": {
+                  "type": "number",
+                  "description": "ref.sim.physics.land_offset (R-SIM-370)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
-                "sea_level"
+                "sea_level",
+                "gravity",
+                "land_threshold",
+                "land_offset"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -1395,6 +1466,282 @@
               "additionalProperties": false,
               "x-species-type": "object",
               "x-species-presence": "required"
+            },
+            "actor_grid": {
+              "type": "object",
+              "description": "the ref.sim.actor_grid.* keys",
+              "properties": {
+                "cell_size": {
+                  "type": "number",
+                  "description": "ref.sim.actor_grid.cell_size (R-SIM-302, R-SIM-305)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "extra_cells": {
+                  "type": "integer",
+                  "description": "ref.sim.actor_grid.extra_cells (R-SIM-305)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "cells per axis",
+                  "x-species-presence": "required"
+                },
+                "initial_cell_capacity": {
+                  "type": "integer",
+                  "description": "ref.sim.actor_grid.initial_cell_capacity (R-SIM-307)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "slots",
+                  "x-species-presence": "required"
+                },
+                "first_cell_capacity": {
+                  "type": "integer",
+                  "description": "ref.sim.actor_grid.first_cell_capacity (R-SIM-307)",
+                  "minimum": 1,
+                  "x-species-type": "integer",
+                  "x-species-unit": "slots",
+                  "x-species-presence": "required"
+                },
+                "cell_growth_factor": {
+                  "type": "integer",
+                  "description": "ref.sim.actor_grid.cell_growth_factor (R-SIM-307)",
+                  "minimum": 2,
+                  "x-species-type": "integer",
+                  "x-species-unit": "times capacity",
+                  "x-species-presence": "required"
+                },
+                "footprint_factor": {
+                  "type": "number",
+                  "description": "ref.sim.actor_grid.footprint_factor (R-SIM-308)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times radius",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "cell_size",
+                "extra_cells",
+                "initial_cell_capacity",
+                "first_cell_capacity",
+                "cell_growth_factor",
+                "footprint_factor"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "grid_cache": {
+              "type": "object",
+              "description": "the ref.sim.grid_cache.* keys",
+              "properties": {
+                "reuse_fraction": {
+                  "type": "number",
+                  "description": "ref.sim.grid_cache.reuse_fraction (R-SIM-315, R-SIM-316)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times range",
+                  "x-species-presence": "required"
+                },
+                "max_age": {
+                  "type": "integer",
+                  "description": "ref.sim.grid_cache.max_age (R-SIM-318)",
+                  "minimum": 0,
+                  "x-species-type": "ticks",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                },
+                "evict_slice": {
+                  "type": "integer",
+                  "description": "ref.sim.grid_cache.evict_slice (R-SIM-318)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "update slice",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "reuse_fraction",
+                "max_age",
+                "evict_slice"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "obstacle_grid": {
+              "type": "object",
+              "description": "the ref.sim.obstacle_grid.* keys",
+              "properties": {
+                "cell_size": {
+                  "type": "number",
+                  "description": "ref.sim.obstacle_grid.cell_size (R-SIM-302, R-SIM-320)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "cell_test_fraction": {
+                  "type": "number",
+                  "description": "ref.sim.obstacle_grid.cell_test_fraction (R-SIM-321)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times cell size",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "cell_size",
+                "cell_test_fraction"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "water": {
+              "type": "object",
+              "description": "the ref.sim.water.* keys",
+              "properties": {
+                "drown_after": {
+                  "type": "integer",
+                  "description": "ref.sim.water.drown_after (R-SIM-376)",
+                  "minimum": 0,
+                  "x-species-type": "ticks",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                },
+                "drown_damage": {
+                  "type": "integer",
+                  "description": "ref.sim.water.drown_damage (R-SIM-376)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "health",
+                  "x-species-presence": "required"
+                },
+                "swim_speed": {
+                  "type": "number",
+                  "description": "ref.sim.water.swim_speed (R-SIM-376)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "bob_amplitude": {
+                  "type": "number",
+                  "description": "ref.sim.water.bob_amplitude (R-SIM-376)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "bob_rate": {
+                  "type": "number",
+                  "description": "ref.sim.water.bob_rate (R-SIM-376)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "rad/s",
+                  "x-species-presence": "required"
+                },
+                "bob_depth": {
+                  "type": "number",
+                  "description": "ref.sim.water.bob_depth (R-SIM-376)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "shore_height": {
+                  "type": "number",
+                  "description": "ref.sim.water.shore_height (R-SIM-379)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "shore_search_radius": {
+                  "type": "number",
+                  "description": "ref.sim.water.shore_search_radius (R-SIM-379)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "shore_search_step": {
+                  "type": "number",
+                  "description": "ref.sim.water.shore_search_step (R-SIM-379)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "drown_after",
+                "drown_damage",
+                "swim_speed",
+                "bob_amplitude",
+                "bob_rate",
+                "bob_depth",
+                "shore_height",
+                "shore_search_radius",
+                "shore_search_step"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "push": {
+              "type": "object",
+              "description": "the ref.sim.push.* keys",
+              "properties": {
+                "contact_radius": {
+                  "type": "number",
+                  "description": "ref.sim.push.contact_radius (R-SIM-380)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "step": {
+                  "type": "number",
+                  "description": "ref.sim.push.step (R-SIM-380, R-SIM-382)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "clearance_radius": {
+                  "type": "number",
+                  "description": "ref.sim.push.clearance_radius (R-SIM-380, R-SIM-382)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "contact_radius",
+                "step",
+                "clearance_radius"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
             }
           },
           "required": [
@@ -1403,7 +1750,12 @@
             "container",
             "spawn",
             "physics",
-            "walk"
+            "walk",
+            "actor_grid",
+            "grid_cache",
+            "obstacle_grid",
+            "water",
+            "push"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -1467,6 +1819,197 @@
                   "x-species-type": "sim_decimal",
                   "x-species-unit": "wu",
                   "x-species-presence": "required"
+                },
+                "idle_speed_factor": {
+                  "type": "number",
+                  "description": "ref.unit.worker.idle_speed_factor (R-UNIT-063)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times speed",
+                  "x-species-presence": "required"
+                },
+                "arrival_slow_radius": {
+                  "type": "number",
+                  "description": "ref.unit.worker.arrival_slow_radius (R-UNIT-063, R-UNIT-105)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "snap_distance": {
+                  "type": "number",
+                  "description": "ref.unit.worker.snap_distance (R-UNIT-105)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "turn_blend": {
+                  "type": "number",
+                  "description": "ref.unit.worker.turn_blend (R-UNIT-105)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "per tick",
+                  "x-species-presence": "required"
+                },
+                "slope_divisor": {
+                  "type": "number",
+                  "description": "ref.unit.worker.slope_divisor (R-UNIT-042)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "slope_min": {
+                  "type": "number",
+                  "description": "ref.unit.worker.slope_min (R-UNIT-042)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times speed",
+                  "x-species-presence": "required"
+                },
+                "slope_max": {
+                  "type": "number",
+                  "description": "ref.unit.worker.slope_max (R-UNIT-042)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times speed",
+                  "x-species-presence": "required"
+                },
+                "retarget_ticks": {
+                  "type": "object",
+                  "description": "the ref.unit.worker.retarget_ticks.* keys",
+                  "properties": {
+                    "base": {
+                      "type": "integer",
+                      "description": "ref.unit.worker.retarget_ticks.base (R-UNIT-065)",
+                      "minimum": 0,
+                      "x-species-type": "ticks",
+                      "x-species-unit": "ticks",
+                      "x-species-presence": "required"
+                    },
+                    "spread_seconds": {
+                      "type": "number",
+                      "description": "ref.unit.worker.retarget_ticks.spread_seconds (R-UNIT-065)",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "seconds",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "base",
+                    "spread_seconds"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "order_disc_radius": {
+                  "type": "number",
+                  "description": "ref.unit.worker.order_disc_radius (R-UNIT-111)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "wander_chance": {
+                  "type": "number",
+                  "description": "ref.unit.worker.wander_chance (R-UNIT-097)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "probability",
+                  "x-species-presence": "required"
+                },
+                "wander_distance": {
+                  "type": "number",
+                  "description": "ref.unit.worker.wander_distance (R-UNIT-097)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "drown_damage": {
+                  "type": "integer",
+                  "description": "ref.unit.worker.drown_damage (R-UNIT-080)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "health",
+                  "x-species-presence": "required"
+                },
+                "corpse_slide": {
+                  "type": "number",
+                  "description": "ref.unit.worker.corpse_slide (R-UNIT-065)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times velocity per tick",
+                  "x-species-presence": "required"
+                },
+                "shore_search_start": {
+                  "type": "number",
+                  "description": "ref.unit.worker.shore_search_start (R-UNIT-112)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "shore_search_end": {
+                  "type": "number",
+                  "description": "ref.unit.worker.shore_search_end (R-UNIT-112)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "shore_search_step": {
+                  "type": "number",
+                  "description": "ref.unit.worker.shore_search_step (R-UNIT-112)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "structure_push_range": {
+                  "type": "number",
+                  "description": "ref.unit.worker.structure_push_range (R-UNIT-114)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "structure_push_step": {
+                  "type": "number",
+                  "description": "ref.unit.worker.structure_push_step (R-UNIT-114)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "structure_clear_radius": {
+                  "type": "number",
+                  "description": "ref.unit.worker.structure_clear_radius (R-UNIT-114)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
@@ -1474,7 +2017,26 @@
                 "speed",
                 "rate",
                 "formation_explosive_factor",
-                "shore_height"
+                "shore_height",
+                "idle_speed_factor",
+                "arrival_slow_radius",
+                "snap_distance",
+                "turn_blend",
+                "slope_divisor",
+                "slope_min",
+                "slope_max",
+                "retarget_ticks",
+                "order_disc_radius",
+                "wander_chance",
+                "wander_distance",
+                "drown_damage",
+                "corpse_slide",
+                "shore_search_start",
+                "shore_search_end",
+                "shore_search_step",
+                "structure_push_range",
+                "structure_push_step",
+                "structure_clear_radius"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -1509,12 +2071,92 @@
                   "x-species-type": "sim_decimal",
                   "x-species-unit": "s",
                   "x-species-presence": "required"
+                },
+                "slope_divisor": {
+                  "type": "number",
+                  "description": "ref.unit.leader.slope_divisor (R-UNIT-042, R-UNIT-156)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "slope_min": {
+                  "type": "number",
+                  "description": "ref.unit.leader.slope_min (R-UNIT-042, R-UNIT-156)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times speed",
+                  "x-species-presence": "required"
+                },
+                "slope_max": {
+                  "type": "number",
+                  "description": "ref.unit.leader.slope_max (R-UNIT-042, R-UNIT-156)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times speed",
+                  "x-species-presence": "required"
+                },
+                "arrival_slow_radius": {
+                  "type": "number",
+                  "description": "ref.unit.leader.arrival_slow_radius (R-UNIT-156)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "arrival_distance": {
+                  "type": "number",
+                  "description": "ref.unit.leader.arrival_distance (R-UNIT-157)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "turn_walk": {
+                  "type": "number",
+                  "description": "ref.unit.leader.turn_walk (R-UNIT-158)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "per tick",
+                  "x-species-presence": "required"
+                },
+                "radius_factor": {
+                  "type": "number",
+                  "description": "ref.unit.leader.radius_factor (R-UNIT-159)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times mesh radius",
+                  "x-species-presence": "required"
+                },
+                "corpse_sink_per_tick": {
+                  "type": "number",
+                  "description": "ref.unit.leader.corpse_sink_per_tick (R-UNIT-163)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s per tick",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
                 "health",
                 "speed",
-                "rate"
+                "rate",
+                "slope_divisor",
+                "slope_min",
+                "slope_max",
+                "arrival_slow_radius",
+                "arrival_distance",
+                "turn_walk",
+                "radius_factor",
+                "corpse_sink_per_tick"
               ],
               "additionalProperties": false,
               "x-species-type": "object",

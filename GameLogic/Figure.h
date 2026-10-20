@@ -1,10 +1,11 @@
 #pragma once
 
+#include "ActorGrid.h"
 #include "BitReader.h"
 #include "BitWriter.h"
 #include "FigureKind.h"
-#include "SimRng.h"
 #include "StableId.h"
+#include "TickDraws.h"
 #include "TuningMvp.h"
 #include "Vec3.h"
 
@@ -21,6 +22,21 @@ enum class DamageKind : std::uint8_t
   Explosive,
   TurretRound,
   Fire
+};
+
+// R-UNIT-067: the Worker's behaviour states that the MVP builds so far; the values are state, never renumbered.
+enum class WorkerState : std::uint8_t
+{
+  Idle,
+  OnWaypointOrder,
+  Drowning
+};
+
+// R-UNIT-164: the Leader's behaviour states that the MVP builds so far; GivingOrders comes with its orders (M1 plan T7).
+enum class LeaderState : std::uint8_t
+{
+  Idle,
+  ToWaypoint
 };
 
 /// One Worker or Leader of a region (R-SIM-101, R-SIM-105): the simulation state that the figure rules read and write.
@@ -44,24 +60,28 @@ struct Figure
   bool destroyed = false; // R-SIM-113: removed at its next advance, with no corpse
   bool dead = false;
   bool inFormation = false; // R-UNIT-116: a Worker in a Leader's formation
+  // From state version 4 (M1 task T4):
+  double radius = 0.0;   // R-SIM-308: 0 for a Worker, a sprite; a Leader's mesh radius × its radius factor
+  Neuron::Vec3 waypoint; // R-UNIT-064, R-UNIT-164: where it walks; the zero vector holds a Worker still
+  WorkerState workerState = WorkerState::Idle;
+  LeaderState leaderState = LeaderState::Idle;
+  std::int32_t retargetTimerTicks = 0; // R-UNIT-065: ticks to the Worker's next task search
+  std::int32_t inWaterTicks = -1;      // R-SIM-375: negative out of water
+  bool orderSet = false;               // R-UNIT-111: the pending order's set flag
+  bool playerOrders = false;           // R-UNIT-089: the player-orders flag
+  Neuron::Vec3 orderPosition;          // R-UNIT-111: the pending order's position
+  CellRect cells;                      // R-SIM-308, DEC-650: the cells it is registered over; empty when registered nowhere
 };
 
-// The rules' draws for one figure in one tick (ADR-082 item 3): its simulation key, the tick and, in development builds,
-// the owner's ledger of the tick's contexts.
-struct DrawScope
-{
-  const Neuron::SipHashKey* key = nullptr;
-  std::uint64_t tick = 0;
-  Neuron::DrawLedger* ledger = nullptr;
-};
-
-// R-UNIT-011 and R-UNIT-015 (R-SIM-109): sets the kind, the stats of the stat table, the reload interval and the
-// initial reload timer, from one draw of purpose ReloadTimer.
-void SetKind(Figure& _figure, FigureKind _kind, const TuningMvp& _tuning, const DrawScope& _draws);
+// R-UNIT-011 and R-UNIT-015 (R-SIM-109): sets the kind, the stats of the stat table, the actor-grid radius
+// (R-UNIT-159), the reload interval and the initial reload timer, from one draw of purpose ReloadTimer.
+void SetKind(Figure& _figure, FigureKind _kind, const TuningMvp& _tuning, TickDraws& _draws);
 
 // R-SIM-226 step 6, R-UNIT-019, R-UNIT-059: the front of a figure spawned with _velocity.
-[[nodiscard]] Neuron::Vec3 SpawnFront(const Figure& _figure, const Neuron::Vec3& _velocity, const TuningMvp& _tuning,
-                                      const DrawScope& _draws);
+[[nodiscard]] Neuron::Vec3 SpawnFront(const Figure& _figure, const Neuron::Vec3& _velocity, const TuningMvp& _tuning, TickDraws& _draws);
+
+// R-UNIT-159: a Leader's actor-grid radius; a Worker's is 0.
+[[nodiscard]] double GridRadiusOf(FigureKind _kind, const TuningMvp& _tuning) noexcept;
 
 struct HealthChange
 {
@@ -74,12 +94,14 @@ struct HealthChange
 // presentation events are the caller's, from the result.
 HealthChange ApplyHealthChange(Figure& _figure, std::int32_t _amount, DamageKind _kind, const TuningMvp& _tuning);
 
-// R-SIM-111 steps 1 to 3 and the corpse fade of R-UNIT-034: true when the figure asks to be removed.
-[[nodiscard]] bool BaseAdvance(Figure& _figure, const TuningMvp& _tuning);
-
 // The figure canonically (ADR-081 item 7): every field in declaration order, binary64 as its 64 bits.
 void WriteFigure(Neuron::BitWriter& _writer, const Figure& _figure);
-// The values WriteFigure wrote; false when they do not read whole or name no kind.
-[[nodiscard]] bool ReadFigure(Neuron::BitReader& _reader, Figure& _figure);
+// The values WriteFigure wrote in a snapshot of _stateVersion; false when they do not read whole or name no kind. A
+// figure of a version before 4 takes the fields that version 4 added at their spawn values, its waypoint at its
+// position and its radius from its kind, registered nowhere until its region registers it.
+[[nodiscard]] bool ReadFigure(Neuron::BitReader& _reader, Figure& _figure, std::uint32_t _stateVersion, const TuningMvp& _tuning);
+
+// The first state version whose figures hold the fields of M1 task T4.
+inline constexpr std::uint32_t FIGURE_STATE_VERSION_MOVEMENT = 4;
 
 } // namespace Species

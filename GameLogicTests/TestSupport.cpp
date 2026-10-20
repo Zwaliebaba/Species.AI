@@ -2,6 +2,7 @@
 
 #include "Check.h"
 #include "Files.h"
+#include "TerrainField.h"
 #include "TestSupport.h"
 #include "Tuning.h"
 
@@ -75,6 +76,21 @@ const Species::TuningMvp& CommittedTuning()
     return tuning.value_or(Species::TuningMvp{});
   }();
   return COMMITTED_TUNING;
+}
+
+std::shared_ptr<const Species::RegionTerrain> FlatTerrain(double _height)
+{
+  const Species::TuningMvp& tuning = CommittedTuning();
+  Neuron::TerrainDefinition definition;
+  definition.cellSize = tuning.wld.terrain.cellSize;
+  definition.originX = static_cast<double>(tuning.mvp.world.regionCell) * tuning.wld.region.side;
+  definition.originZ = definition.originX;
+  definition.worldSizeX = static_cast<std::int32_t>(tuning.wld.region.side);
+  definition.worldSizeZ = definition.worldSizeX;
+  definition.outsideHeight = _height;
+  auto terrain = std::make_shared<Species::RegionTerrain>();
+  terrain->field = Neuron::TerrainField::Generate(definition, {}, {});
+  return terrain;
 }
 
 std::string ReadText(const std::filesystem::path& _path)

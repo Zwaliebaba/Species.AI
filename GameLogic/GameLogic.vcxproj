@@ -144,24 +144,36 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ActorGrid.h" />
+    <ClInclude Include="ActorGridCache.h" />
     <ClInclude Include="DrawPurpose.h" />
     <ClInclude Include="Figure.h" />
+    <ClInclude Include="FigureAdvance.h" />
     <ClInclude Include="IntegratedServer.h" />
+    <ClInclude Include="Movement.h" />
+    <ClInclude Include="ObstacleGrid.h" />
     <ClInclude Include="RegionSimulation.h" />
     <ClInclude Include="SlicedPool.h" />
     <ClInclude Include="StableIdCounter.h" />
     <ClInclude Include="StateHash.h" />
+    <ClInclude Include="TickDraws.h" />
     <ClInclude Include="WorldServer.h" />
     <ClInclude Include="WorldSimulation.h" />
     <ClInclude Include="WorldSnapshot.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ActorGrid.cpp" />
+    <ClCompile Include="ActorGridCache.cpp" />
     <ClCompile Include="Figure.cpp" />
+    <ClCompile Include="FigureAdvance.cpp" />
     <ClCompile Include="IntegratedServer.cpp" />
+    <ClCompile Include="Movement.cpp" />
+    <ClCompile Include="ObstacleGrid.cpp" />
     <ClCompile Include="RegionSimulation.cpp" />
     <ClCompile Include="StableIdCounter.cpp" />
     <ClCompile Include="StateHash.cpp" />
+    <ClCompile Include="TickDraws.cpp" />
     <ClCompile Include="WorldServer.cpp" />
     <ClCompile Include="WorldSimulation.cpp" />
     <ClCompile Include="WorldSnapshot.cpp" />

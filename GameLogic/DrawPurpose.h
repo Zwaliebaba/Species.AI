@@ -10,8 +10,16 @@ namespace Species
 // draw of its family; a new family takes the next value.
 enum class DrawPurpose : std::uint64_t
 {
-  ReloadTimer = 1, // R-UNIT-015: an actor's initial reload timer when its kind is set
-  SpawnFront = 2   // R-UNIT-059: a Worker spawned at rest faces a random horizontal direction
+  ReloadTimer = 1,   // R-UNIT-015: an actor's initial reload timer when its kind is set
+  SpawnFront = 2,    // R-UNIT-059: a Worker spawned at rest faces a random horizontal direction
+  SpawnSearch = 3,   // R-SIM-368: the spawn-position search's distance and angle per attempt
+  RetargetTimer = 4, // R-UNIT-065: the Worker's retarget timer after its task search
+  Wander = 5,        // R-UNIT-097: the random-position search's chance and angle
+  OrderDisc = 6,     // R-UNIT-111: a waypoint order's disc point
+  ShoreMove = 7,     // R-SIM-379, R-UNIT-112: the shore search of the push of a figure's own move
+  ShoreFall = 8,     // R-SIM-371: the shore search of the airborne step's discarded push
+  ShoreWander = 9,   // R-UNIT-097: the shore search of the random-position search's push
+  ShoreOrder = 10    // R-UNIT-111: the shore search of a waypoint order's push
 };
 
 [[nodiscard]] constexpr std::uint64_t PurposeOf(DrawPurpose _purpose) noexcept

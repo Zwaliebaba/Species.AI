@@ -377,6 +377,12 @@ struct TuningMvp
       double hillInset = 0.0;
     };
 
+    struct Unit
+    {
+      // mvp.unit.leader_mesh_radius, in wu
+      double leaderMeshRadius = 0.0;
+    };
+
     Pace pace;
     World world;
     Vision vision;
@@ -409,6 +415,7 @@ struct TuningMvp
     Persist persist;
     Client client;
     Terrain terrain;
+    Unit unit;
   };
 
   struct Ref
@@ -436,18 +443,116 @@ struct TuningMvp
         };
 
         DefaultFront defaultFront;
+        // ref.sim.spawn.search_attempts, in attempts
+        std::int64_t searchAttempts = 0;
+
+        // ref.sim.spawn.edge_margin, in wu
+        double edgeMargin = 0.0;
       };
 
       struct Physics
       {
         // ref.sim.physics.sea_level, in wu
         double seaLevel = 0.0;
+
+        // ref.sim.physics.gravity, in wu/s²
+        double gravity = 0.0;
+
+        // ref.sim.physics.land_threshold, in wu
+        double landThreshold = 0.0;
+
+        // ref.sim.physics.land_offset, in wu
+        double landOffset = 0.0;
       };
 
       struct Walk
       {
         // ref.sim.walk.min_normal_y, in normal y component
         double minNormalY = 0.0;
+      };
+
+      struct ActorGrid
+      {
+        // ref.sim.actor_grid.cell_size, in wu
+        double cellSize = 0.0;
+
+        // ref.sim.actor_grid.extra_cells, in cells per axis
+        std::int64_t extraCells = 0;
+
+        // ref.sim.actor_grid.initial_cell_capacity, in slots
+        std::int64_t initialCellCapacity = 0;
+
+        // ref.sim.actor_grid.first_cell_capacity, in slots
+        std::int64_t firstCellCapacity = 0;
+
+        // ref.sim.actor_grid.cell_growth_factor, in times capacity
+        std::int64_t cellGrowthFactor = 0;
+
+        // ref.sim.actor_grid.footprint_factor, in times radius
+        double footprintFactor = 0.0;
+      };
+
+      struct GridCache
+      {
+        // ref.sim.grid_cache.reuse_fraction, in times range
+        double reuseFraction = 0.0;
+
+        // ref.sim.grid_cache.max_age, in ticks
+        std::int64_t maxAge = 0;
+
+        // ref.sim.grid_cache.evict_slice, in update slice
+        std::int64_t evictSlice = 0;
+      };
+
+      struct ObstacleGrid
+      {
+        // ref.sim.obstacle_grid.cell_size, in wu
+        double cellSize = 0.0;
+
+        // ref.sim.obstacle_grid.cell_test_fraction, in times cell size
+        double cellTestFraction = 0.0;
+      };
+
+      struct Water
+      {
+        // ref.sim.water.drown_after, in ticks
+        std::int64_t drownAfter = 0;
+
+        // ref.sim.water.drown_damage, in health
+        std::int64_t drownDamage = 0;
+
+        // ref.sim.water.swim_speed, in wu/s
+        double swimSpeed = 0.0;
+
+        // ref.sim.water.bob_amplitude, in wu
+        double bobAmplitude = 0.0;
+
+        // ref.sim.water.bob_rate, in rad/s
+        double bobRate = 0.0;
+
+        // ref.sim.water.bob_depth, in wu
+        double bobDepth = 0.0;
+
+        // ref.sim.water.shore_height, in wu
+        double shoreHeight = 0.0;
+
+        // ref.sim.water.shore_search_radius, in wu
+        double shoreSearchRadius = 0.0;
+
+        // ref.sim.water.shore_search_step, in wu
+        double shoreSearchStep = 0.0;
+      };
+
+      struct Push
+      {
+        // ref.sim.push.contact_radius, in wu
+        double contactRadius = 0.0;
+
+        // ref.sim.push.step, in wu
+        double step = 0.0;
+
+        // ref.sim.push.clearance_radius, in wu
+        double clearanceRadius = 0.0;
       };
 
       // ref.sim.tick_period, in s
@@ -460,12 +565,26 @@ struct TuningMvp
       Spawn spawn;
       Physics physics;
       Walk walk;
+      ActorGrid actorGrid;
+      GridCache gridCache;
+      ObstacleGrid obstacleGrid;
+      Water water;
+      Push push;
     };
 
     struct Unit
     {
       struct Worker
       {
+        struct RetargetTicks
+        {
+          // ref.unit.worker.retarget_ticks.base, in ticks
+          std::int64_t base = 0;
+
+          // ref.unit.worker.retarget_ticks.spread_seconds, in seconds
+          double spreadSeconds = 0.0;
+        };
+
         // ref.unit.worker.health, in health
         std::int64_t health = 0;
 
@@ -480,6 +599,61 @@ struct TuningMvp
 
         // ref.unit.worker.shore_height, in wu
         double shoreHeight = 0.0;
+
+        // ref.unit.worker.idle_speed_factor, in times speed
+        double idleSpeedFactor = 0.0;
+
+        // ref.unit.worker.arrival_slow_radius, in wu
+        double arrivalSlowRadius = 0.0;
+
+        // ref.unit.worker.snap_distance, in wu
+        double snapDistance = 0.0;
+
+        // ref.unit.worker.turn_blend, in per tick
+        double turnBlend = 0.0;
+
+        // ref.unit.worker.slope_divisor, in wu
+        double slopeDivisor = 0.0;
+
+        // ref.unit.worker.slope_min, in times speed
+        double slopeMin = 0.0;
+
+        // ref.unit.worker.slope_max, in times speed
+        double slopeMax = 0.0;
+
+        RetargetTicks retargetTicks;
+        // ref.unit.worker.order_disc_radius, in wu
+        double orderDiscRadius = 0.0;
+
+        // ref.unit.worker.wander_chance, in probability
+        double wanderChance = 0.0;
+
+        // ref.unit.worker.wander_distance, in wu
+        double wanderDistance = 0.0;
+
+        // ref.unit.worker.drown_damage, in health
+        std::int64_t drownDamage = 0;
+
+        // ref.unit.worker.corpse_slide, in times velocity per tick
+        double corpseSlide = 0.0;
+
+        // ref.unit.worker.shore_search_start, in wu
+        double shoreSearchStart = 0.0;
+
+        // ref.unit.worker.shore_search_end, in wu
+        double shoreSearchEnd = 0.0;
+
+        // ref.unit.worker.shore_search_step, in wu
+        double shoreSearchStep = 0.0;
+
+        // ref.unit.worker.structure_push_range, in wu
+        double structurePushRange = 0.0;
+
+        // ref.unit.worker.structure_push_step, in wu
+        double structurePushStep = 0.0;
+
+        // ref.unit.worker.structure_clear_radius, in wu
+        double structureClearRadius = 0.0;
       };
 
       struct Leader
@@ -492,6 +666,30 @@ struct TuningMvp
 
         // ref.unit.leader.rate, in s
         double rate = 0.0;
+
+        // ref.unit.leader.slope_divisor, in wu
+        double slopeDivisor = 0.0;
+
+        // ref.unit.leader.slope_min, in times speed
+        double slopeMin = 0.0;
+
+        // ref.unit.leader.slope_max, in times speed
+        double slopeMax = 0.0;
+
+        // ref.unit.leader.arrival_slow_radius, in wu
+        double arrivalSlowRadius = 0.0;
+
+        // ref.unit.leader.arrival_distance, in wu
+        double arrivalDistance = 0.0;
+
+        // ref.unit.leader.turn_walk, in per tick
+        double turnWalk = 0.0;
+
+        // ref.unit.leader.radius_factor, in times mesh radius
+        double radiusFactor = 0.0;
+
+        // ref.unit.leader.corpse_sink_per_tick, in wu/s per tick
+        double corpseSinkPerTick = 0.0;
       };
 
       struct Corpse
@@ -862,6 +1060,12 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::Unit& _out)
+{
+  _out.leaderMeshRadius = _reader.Decimal(_object, "leader_mesh_radius", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "pace"), _out.pace);
@@ -896,6 +1100,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "persist"), _out.persist);
   ReadFields(_reader, _reader.Object(_object, "client"), _out.client);
   ReadFields(_reader, _reader.Object(_object, "terrain"), _out.terrain);
+  ReadFields(_reader, _reader.Object(_object, "unit"), _out.unit);
   _reader.Close(_object);
 }
 
@@ -916,18 +1121,71 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim::Spawn& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "default_front"), _out.defaultFront);
+  _out.searchAttempts = _reader.Integer(_object, "search_attempts", 0);
+  _out.edgeMargin = _reader.Decimal(_object, "edge_margin", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim::Physics& _out)
 {
   _out.seaLevel = _reader.Decimal(_object, "sea_level", {}, Neuron::SimPrecision::Binary64);
+  _out.gravity = _reader.Decimal(_object, "gravity", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.landThreshold = _reader.Decimal(_object, "land_threshold", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.landOffset = _reader.Decimal(_object, "land_offset", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim::Walk& _out)
 {
   _out.minNormalY = _reader.Decimal(_object, "min_normal_y", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim::ActorGrid& _out)
+{
+  _out.cellSize = _reader.Decimal(_object, "cell_size", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.extraCells = _reader.Integer(_object, "extra_cells", 0);
+  _out.initialCellCapacity = _reader.Integer(_object, "initial_cell_capacity", 0);
+  _out.firstCellCapacity = _reader.Integer(_object, "first_cell_capacity", 1);
+  _out.cellGrowthFactor = _reader.Integer(_object, "cell_growth_factor", 2);
+  _out.footprintFactor = _reader.Decimal(_object, "footprint_factor", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim::GridCache& _out)
+{
+  _out.reuseFraction = _reader.Decimal(_object, "reuse_fraction", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.maxAge = _reader.Integer(_object, "max_age", 0);
+  _out.evictSlice = _reader.Integer(_object, "evict_slice", 0);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim::ObstacleGrid& _out)
+{
+  _out.cellSize = _reader.Decimal(_object, "cell_size", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.cellTestFraction = _reader.Decimal(_object, "cell_test_fraction", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim::Water& _out)
+{
+  _out.drownAfter = _reader.Integer(_object, "drown_after", 0);
+  _out.drownDamage = _reader.Integer(_object, "drown_damage", 0);
+  _out.swimSpeed = _reader.Decimal(_object, "swim_speed", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.bobAmplitude = _reader.Decimal(_object, "bob_amplitude", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.bobRate = _reader.Decimal(_object, "bob_rate", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.bobDepth = _reader.Decimal(_object, "bob_depth", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.shoreHeight = _reader.Decimal(_object, "shore_height", {}, Neuron::SimPrecision::Binary64);
+  _out.shoreSearchRadius = _reader.Decimal(_object, "shore_search_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.shoreSearchStep = _reader.Decimal(_object, "shore_search_step", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim::Push& _out)
+{
+  _out.contactRadius = _reader.Decimal(_object, "contact_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.step = _reader.Decimal(_object, "step", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.clearanceRadius = _reader.Decimal(_object, "clearance_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -939,6 +1197,18 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "spawn"), _out.spawn);
   ReadFields(_reader, _reader.Object(_object, "physics"), _out.physics);
   ReadFields(_reader, _reader.Object(_object, "walk"), _out.walk);
+  ReadFields(_reader, _reader.Object(_object, "actor_grid"), _out.actorGrid);
+  ReadFields(_reader, _reader.Object(_object, "grid_cache"), _out.gridCache);
+  ReadFields(_reader, _reader.Object(_object, "obstacle_grid"), _out.obstacleGrid);
+  ReadFields(_reader, _reader.Object(_object, "water"), _out.water);
+  ReadFields(_reader, _reader.Object(_object, "push"), _out.push);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Unit::Worker::RetargetTicks& _out)
+{
+  _out.base = _reader.Integer(_object, "base", 0);
+  _out.spreadSeconds = _reader.Decimal(_object, "spread_seconds", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -949,6 +1219,25 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.rate = _reader.Decimal(_object, "rate", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.formationExplosiveFactor = _reader.Decimal(_object, "formation_explosive_factor", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.shoreHeight = _reader.Decimal(_object, "shore_height", {}, Neuron::SimPrecision::Binary64);
+  _out.idleSpeedFactor = _reader.Decimal(_object, "idle_speed_factor", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.arrivalSlowRadius = _reader.Decimal(_object, "arrival_slow_radius", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.snapDistance = _reader.Decimal(_object, "snap_distance", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.turnBlend = _reader.Decimal(_object, "turn_blend", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.slopeDivisor = _reader.Decimal(_object, "slope_divisor", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.slopeMin = _reader.Decimal(_object, "slope_min", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.slopeMax = _reader.Decimal(_object, "slope_max", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  ReadFields(_reader, _reader.Object(_object, "retarget_ticks"), _out.retargetTicks);
+  _out.orderDiscRadius = _reader.Decimal(_object, "order_disc_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.wanderChance = _reader.Decimal(_object, "wander_chance", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.wanderDistance = _reader.Decimal(_object, "wander_distance", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.drownDamage = _reader.Integer(_object, "drown_damage", 0);
+  _out.corpseSlide = _reader.Decimal(_object, "corpse_slide", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.shoreSearchStart = _reader.Decimal(_object, "shore_search_start", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.shoreSearchEnd = _reader.Decimal(_object, "shore_search_end", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.shoreSearchStep = _reader.Decimal(_object, "shore_search_step", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.structurePushRange = _reader.Decimal(_object, "structure_push_range", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.structurePushStep = _reader.Decimal(_object, "structure_push_step", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.structureClearRadius = _reader.Decimal(_object, "structure_clear_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -957,6 +1246,14 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.health = _reader.Integer(_object, "health", 0);
   _out.speed = _reader.Decimal(_object, "speed", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.rate = _reader.Decimal(_object, "rate", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.slopeDivisor = _reader.Decimal(_object, "slope_divisor", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.slopeMin = _reader.Decimal(_object, "slope_min", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.slopeMax = _reader.Decimal(_object, "slope_max", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.arrivalSlowRadius = _reader.Decimal(_object, "arrival_slow_radius", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.arrivalDistance = _reader.Decimal(_object, "arrival_distance", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.turnWalk = _reader.Decimal(_object, "turn_walk", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.radiusFactor = _reader.Decimal(_object, "radius_factor", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.corpseSinkPerTick = _reader.Decimal(_object, "corpse_sink_per_tick", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 

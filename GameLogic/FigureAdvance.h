@@ -1,0 +1,34 @@
+#pragma once
+
+#include "Figure.h"
+#include "Movement.h"
+#include "Vec3.h"
+
+namespace Species
+{
+
+// R-SIM-111 with the region's movement context: steps 1 to 3, the water step of a figure that swims (step 5, never a
+// Worker's: R-SIM-377) and the world clamp (step 6); true when the figure asks to be removed. Route following, step 8,
+// comes with the routes (M1 plan T5); the flicker of step 4 is presentation, and no group exists for step 7.
+[[nodiscard]] bool BaseAdvance(Figure& _figure, const MovementContext& _context);
+
+// R-UNIT-065 for what the MVP builds so far: the base advance; on the ground and alive, the retarget timer, the task
+// search with its random-position search (R-UNIT-087, R-UNIT-097) and the state's behaviour (Idle, OnWaypointOrder);
+// the airborne step; drowning (R-UNIT-080) and its test; the corpse's slide. True when it asks to be removed.
+[[nodiscard]] bool WorkerAdvance(Figure& _figure, const MovementContext& _context);
+
+// R-UNIT-163 steps 1, 3 and 4: the airborne step, the base advance, the second water step (R-UNIT-161), the snap to the
+// terrain, the behaviour (Idle, ToWaypoint) and the corpse's sinking. True when it asks to be removed.
+[[nodiscard]] bool LeaderAdvance(Figure& _figure, const MovementContext& _context);
+
+// The advance of the figure's kind.
+[[nodiscard]] bool AdvanceFigure(Figure& _figure, const MovementContext& _context);
+
+// R-UNIT-111 for what the MVP builds so far: a waypoint order to _target, its disc point passed through the Worker's
+// push with kill clear (R-UNIT-115). Its route arrives with T5; the MVP has no Transport, carryable or Beam Dish.
+void GiveWaypointOrder(Figure& _worker, const Neuron::Vec3& _target, const MovementContext& _context);
+
+// R-UNIT-166: the Leader walks to _waypoint and becomes Idle there; its orders come with T7.
+void SendLeaderTo(Figure& _leader, const Neuron::Vec3& _waypoint) noexcept;
+
+} // namespace Species

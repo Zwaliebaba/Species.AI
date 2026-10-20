@@ -153,6 +153,9 @@
       "hill_desired_min": 260,
       "hill_desired_max": 340,
       "hill_inset": 300
+    },
+    "unit": {
+      "leader_mesh_radius": 6.7252
     }
   },
   "ref": {
@@ -167,13 +170,51 @@
           "x": 1,
           "y": 0,
           "z": 0
-        }
+        },
+        "search_attempts": 10,
+        "edge_margin": 20
       },
       "physics": {
-        "sea_level": 0
+        "sea_level": 0,
+        "gravity": 15,
+        "land_threshold": 0.1,
+        "land_offset": 0.1
       },
       "walk": {
         "min_normal_y": 0.8
+      },
+      "actor_grid": {
+        "cell_size": 32,
+        "extra_cells": 1,
+        "initial_cell_capacity": 0,
+        "first_cell_capacity": 2,
+        "cell_growth_factor": 2,
+        "footprint_factor": 0.5
+      },
+      "grid_cache": {
+        "reuse_fraction": 0.5,
+        "max_age": 10,
+        "evict_slice": 7
+      },
+      "obstacle_grid": {
+        "cell_size": 32,
+        "cell_test_fraction": 0.5
+      },
+      "water": {
+        "drown_after": 100,
+        "drown_damage": 500,
+        "swim_speed": 5.0,
+        "bob_amplitude": 1,
+        "bob_rate": 3,
+        "bob_depth": 4,
+        "shore_height": 1.0,
+        "shore_search_radius": 50,
+        "shore_search_step": 1
+      },
+      "push": {
+        "contact_radius": 1.0,
+        "step": 4.0,
+        "clearance_radius": 2.0
       }
     },
     "unit": {
@@ -183,12 +224,42 @@
         "speed": 20,
         "rate": 3,
         "formation_explosive_factor": 0.6,
-        "shore_height": 1
+        "shore_height": 1,
+        "idle_speed_factor": 0.2,
+        "arrival_slow_radius": 10,
+        "snap_distance": 1,
+        "turn_blend": 0.4,
+        "slope_divisor": 3,
+        "slope_min": 0.3,
+        "slope_max": 2.0,
+        "retarget_ticks": {
+          "base": 11,
+          "spread_seconds": 1.0
+        },
+        "order_disc_radius": 20,
+        "wander_chance": 0.7,
+        "wander_distance": 20,
+        "drown_damage": 999,
+        "corpse_slide": 0.9,
+        "shore_search_start": 40,
+        "shore_search_end": 95,
+        "shore_search_step": 5,
+        "structure_push_range": 30,
+        "structure_push_step": 4,
+        "structure_clear_radius": 2
       },
       "leader": {
         "health": 255,
         "speed": 30,
-        "rate": 3
+        "rate": 3,
+        "slope_divisor": 3,
+        "slope_min": 0.1,
+        "slope_max": 2.0,
+        "arrival_slow_radius": 10,
+        "arrival_distance": 10,
+        "turn_walk": 0.6,
+        "radius_factor": 2,
+        "corpse_sink_per_tick": 20
       },
       "corpse": {
         "fade_start": 100,

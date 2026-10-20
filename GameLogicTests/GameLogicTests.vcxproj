@@ -168,6 +168,8 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ActorGridTests.cpp" />
+    <ClCompile Include="MovementTests.cpp" />
     <ClCompile Include="RegionSimulationTests.cpp" />
     <ClCompile Include="SlicedPoolTests.cpp" />
     <ClCompile Include="StateHashTests.cpp" />

@@ -2,11 +2,13 @@
 
 #include "CppUnitTest.h"
 
+#include "RegionTerrain.h"
 #include "TuningMvp.h"
 
 #include <cstdint>
 #include <filesystem>
 #include <format>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -42,6 +44,10 @@ private:
 
 // The committed tuning record (MVP-099), read once: the values every world of the tests runs on.
 [[nodiscard]] const Species::TuningMvp& CommittedTuning();
+
+// A terrain over the MVP region's square that is level at _height everywhere, its border included: a field with no
+// tile and no flatten area, whose every sample is the outside height (TER-031).
+[[nodiscard]] std::shared_ptr<const Species::RegionTerrain> FlatTerrain(double _height = 50.0);
 
 // The whole file as text, or an empty string; and a file written whole, its folders made.
 [[nodiscard]] std::string ReadText(const std::filesystem::path& _path);
