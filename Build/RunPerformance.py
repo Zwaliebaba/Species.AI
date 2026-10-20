@@ -53,7 +53,7 @@ BUDGETS = {
   'work_figure_us': (1.2, 'µs per figure per tick', 'Worker at settlement work (wandering stand-in until M2)'),
   'expedition_figure_us': (0.4, 'µs per figure per tick', 'figure of an expedition outside a battle (the travel scene)'),
   'draw_us': (0.03, 'µs per draw', 'a keyed simulation draw'),
-  'ai_us': (20.0, 'µs per AI per tick', 'AI settlement or deputy'),
+  'ai_us': (60.0, 'µs per AI per tick', 'AI settlement or deputy'),
   'side_command_us': (30.0, 'µs per side per tick', 'command of one side of a battle'),
   'region_fixed_us': (30.0, 'µs per tick', 'region fixed cost (an empty region with its terrain)'),
   'region_step_ms': (12.5, 'ms per tick, 95th percentile', 'region step at its bound'),

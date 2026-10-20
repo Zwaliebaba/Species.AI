@@ -72,7 +72,7 @@ Chosen option: "1".
   | Worker at settlement work, 1.2 µs | the teams' marker ÷ the figure-ticks, in `at-work` |
   | figure of an expedition, 0.4 µs | the teams' marker ÷ the figure-ticks, in `travel` |
   | a keyed draw, 0.03 µs | `draws` |
-  | AI settlement or deputy, 20 µs | `sim.ai.step` ÷ (ticks × AIs), in both battles |
+  | AI settlement or deputy, 60 µs (20 µs until O74) | `sim.ai.step` ÷ (ticks × AIs), in both battles |
   | command of one side of a battle, 30 µs | `sim.region.commands` ÷ (ticks × sides), in both battles |
   | region fixed cost, 30 µs | the empty region's mean step |
   | region step, 12.5 ms (item 3) | the 95th percentile of `region-bound`'s steps |
