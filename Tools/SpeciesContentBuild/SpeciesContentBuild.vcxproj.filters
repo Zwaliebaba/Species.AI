@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Build">
+      <UniqueIdentifier>{A3CB131B-5D9C-5A84-B4FC-A43B7DF6A71C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fonts">
+      <UniqueIdentifier>{502186B4-FB14-51A0-A1A5-23B565D2369B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Manifest">
+      <UniqueIdentifier>{2EE12BA3-0DFD-5D10-8858-B5B4A8DE207A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Meshes">
+      <UniqueIdentifier>{44EDB578-3506-51D9-A0A0-A9542BAE5F39}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Records">
+      <UniqueIdentifier>{E6F81244-D748-59AF-84FB-31965F2D4530}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Textures">
+      <UniqueIdentifier>{E2C1214A-927D-56F6-9721-FD2FAF5AED3B}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="AssetManifest.h">
+      <Filter>Manifest</Filter>
+    </ClInclude>
+    <ClInclude Include="BuildReport.h">
+      <Filter>Build</Filter>
+    </ClInclude>
+    <ClInclude Include="CmoFile.h">
+      <Filter>Meshes</Filter>
+    </ClInclude>
+    <ClInclude Include="ContentBuild.h">
+      <Filter>Build</Filter>
+    </ClInclude>
+    <ClInclude Include="FontPacker.h">
+      <Filter>Fonts</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshCooker.h">
+      <Filter>Meshes</Filter>
+    </ClInclude>
+    <ClInclude Include="RecordCooker.h">
+      <Filter>Records</Filter>
+    </ClInclude>
+    <ClInclude Include="RowSpec.h">
+      <Filter>Manifest</Filter>
+    </ClInclude>
+    <ClInclude Include="TextGlyphTable.h">
+      <Filter>Fonts</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureCheck.h">
+      <Filter>Textures</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>Build</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <Filter>Build</Filter>
+    </ClCompile>
+    <ClCompile Include="AssetManifest.cpp">
+      <Filter>Manifest</Filter>
+    </ClCompile>
+    <ClCompile Include="BuildReport.cpp">
+      <Filter>Build</Filter>
+    </ClCompile>
+    <ClCompile Include="CmoFile.cpp">
+      <Filter>Meshes</Filter>
+    </ClCompile>
+    <ClCompile Include="ContentBuild.cpp">
+      <Filter>Build</Filter>
+    </ClCompile>
+    <ClCompile Include="FontPacker.cpp">
+      <Filter>Fonts</Filter>
+    </ClCompile>
+    <ClCompile Include="MeshCooker.cpp">
+      <Filter>Meshes</Filter>
+    </ClCompile>
+    <ClCompile Include="RecordCooker.cpp">
+      <Filter>Records</Filter>
+    </ClCompile>
+    <ClCompile Include="RowSpec.cpp">
+      <Filter>Manifest</Filter>
+    </ClCompile>
+    <ClCompile Include="SpeciesContentBuild.cpp">
+      <Filter>Build</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureCheck.cpp">
+      <Filter>Textures</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config">
+      <Filter>Build</Filter>
+    </None>
+  </ItemGroup>
+</Project>

@@ -180,6 +180,15 @@ jobs:
         shell: pwsh
         run: python Build\CheckServerImports.py
 
+      # The content build (ADR-108) already ran in the build, as the post-build step of its tool project, and wrote
+      # x64\Debug\content; a fault in the content fails that step. This runs it twice more and fails unless the two
+      # folders are identical byte for byte (AST-066), then runs it on fixtures that each hold one fault -- a texture
+      # off its row, a damaged mesh for each check of the CMO importer, a damaged glyph table -- and fails unless each
+      # is refused with a message that names the file and the fault (AST-093, ADR-019, M1 plan T11).
+      - name: Check the content build
+        shell: pwsh
+        run: python Build\CheckContentBuild.py
+
       # One suite per *Tests.vcxproj in the tree, and every one of them must have produced a DLL:
       # vstest reports "no tests found" as a pass, so a suite that did not build is not a suite
       # that passed, and a tree with no suites at all is a broken tree.

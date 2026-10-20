@@ -1,16 +1,15 @@
 #pragma once
 
-#include "ContentDiagnostic.h"
+#include "AssetError.h"
+#include "LooseContent.h"
 #include "PlatformClock.h"
 #include "Transport.h"
 
 #include <cstddef>
 #include <cstdint>
 #include <expected>
-#include <filesystem>
 #include <memory>
 #include <optional>
-#include <vector>
 
 namespace Species
 {
@@ -26,9 +25,9 @@ public:
   struct Desc
   {
     const Neuron::PlatformClock* clock = nullptr;
-    std::filesystem::path contentRoot;      // where the tuning record is read from when the server starts (MVP-099)
-    std::size_t workers = 2;                // ADR-080 item 7: the tick thread and at most 2 workers
-    std::optional<std::uint64_t> worldSeed; // MVP-005: the seed the world is built from; none: a seed the server draws
+    const Neuron::LooseContent* content = nullptr; // where the cooked tuning record is loaded from when the server starts (MVP-099)
+    std::size_t workers = 2;                       // ADR-080 item 7: the tick thread and at most 2 workers
+    std::optional<std::uint64_t> worldSeed;        // MVP-005: the seed the world is built from; none: a seed the server draws
   };
 
   explicit IntegratedServer(const Desc& _desc);
@@ -37,9 +36,9 @@ public:
   IntegratedServer(const IntegratedServer&) = delete;
   IntegratedServer& operator=(const IntegratedServer&) = delete;
 
-  // Loads the tuning record, opens the world and starts the tick thread; every finding about the record when it
-  // cannot be read, and the server stays stopped.
-  [[nodiscard]] std::expected<void, std::vector<Neuron::ContentDiagnostic>> Start();
+  // Loads the tuning record, opens the world and starts the tick thread; why the record cannot be loaded when it
+  // cannot, and the server stays stopped.
+  [[nodiscard]] std::expected<void, Neuron::AssetError> Start();
   void Stop();
   // The client's end of a new in-process connection; the server accepts it at the start of its next tick.
   [[nodiscard]] std::unique_ptr<Neuron::Transport> Connect();

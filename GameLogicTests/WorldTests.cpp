@@ -3,6 +3,7 @@
 #include "CommandMessages.h"
 #include "InProcessTransport.h"
 #include "IntegratedServer.h"
+#include "LooseContent.h"
 #include "RegionTerrain.h"
 #include "ServerHost.h"
 #include "TestSupport.h"
@@ -15,11 +16,13 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <expected>
 #include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <thread>
+#include <utility>
 #include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -42,6 +45,26 @@ std::filesystem::path ContentRootWith(const TemporaryFolder& _folder, std::strin
   text.replace(at, _from.size(), _to);
   WriteText(_folder.Path() / Species::TUNING_MVP_FILE, text);
   return _folder.Path();
+}
+
+// That record cooked as the content build cooks it, in a loose-content folder of its own, mounted (ADR-108).
+Neuron::LooseContent CookedContentWith(const TemporaryFolder& _folder, std::string_view _from, std::string_view _to)
+{
+  const auto tuning = Species::ReadTuningMvpSource(ContentRootWith(_folder, _from, _to));
+  Assert::IsTrue(tuning.has_value(), L"the changed record reads whole");
+  Neuron::CookedEntry cooked;
+  cooked.entry.key = std::string(Species::TUNING_MVP_KEY);
+  cooked.entry.type = Neuron::ContentType::Record;
+  cooked.entry.schemaId = std::string(Species::TUNING_MVP_SCHEMA_ID);
+  cooked.entry.schemaVersion = Species::TUNING_MVP_VERSION;
+  cooked.entry.simulationRelevant = Species::TUNING_MVP_SIMULATION_RELEVANT;
+  cooked.bytes = Species::CookTuningMvp(tuning.value_or(Species::TuningMvp{}));
+  std::vector<Neuron::CookedEntry> entries;
+  entries.push_back(std::move(cooked));
+  Assert::IsTrue(Neuron::WriteLooseContent(_folder.Path() / L"content", std::move(entries)).has_value(), L"the folder is written");
+  std::expected<Neuron::LooseContent, Neuron::AssetError> content = Neuron::LooseContent::Mount(_folder.Path() / L"content");
+  Assert::IsTrue(content.has_value(), L"the folder mounts");
+  return std::move(*content);
 }
 
 // What a client end has received, in order: the world's terrain, the tick reports and its commands' outcomes.
@@ -264,12 +287,13 @@ public:
   TEST_METHOD(Mvp090TheClientSeesTheTickRiseThroughTheTransport)
   {
     // M0's exit criterion in a test: the client's end of the integrated server, on the real clock at a period of 10 ms
-    // that the tuning record states, receives rising ticks until the server stops.
+    // that the cooked tuning record states, receives rising ticks until the server stops.
     const TemporaryFolder folder;
+    const Neuron::LooseContent content = CookedContentWith(folder, "\"tick_period\": 0.1", "\"tick_period\": 0.01");
     const Neuron::PlatformClock clock;
     Species::IntegratedServer::Desc desc;
     desc.clock = &clock;
-    desc.contentRoot = ContentRootWith(folder, "\"tick_period\": 0.1", "\"tick_period\": 0.01");
+    desc.content = &content;
     Species::IntegratedServer server(desc);
     std::unique_ptr<Neuron::Transport> client = server.Connect();
     Assert::IsTrue(server.Start().has_value(), L"the server starts on the record");
@@ -294,15 +318,18 @@ public:
   TEST_METHOD(Mvp099AServerWithoutItsTuningDoesNotStart)
   {
     const TemporaryFolder folder;
+    Assert::IsTrue(Neuron::WriteLooseContent(folder.Path(), {}).has_value(), L"a folder of no entry is written");
+    const auto content = Neuron::LooseContent::Mount(folder.Path());
+    Assert::IsTrue(content.has_value(), L"it mounts");
     const Neuron::PlatformClock clock;
     Species::IntegratedServer::Desc desc;
     desc.clock = &clock;
-    desc.contentRoot = folder.Path();
+    desc.content = &*content;
     Species::IntegratedServer server(desc);
     std::unique_ptr<Neuron::Transport> client = server.Connect();
     const auto started = server.Start();
     Assert::IsFalse(started.has_value(), L"no record, no server");
-    Assert::IsTrue(started.error().front().diagnosticClass == Neuron::DiagnosticClass::MissingRecord, L"a missing record");
+    Assert::IsTrue(started.error().fault == Neuron::AssetFault::Missing, L"a missing record");
     server.Stop();
     Assert::IsFalse(client->Receive().has_value(), L"no tick ran");
   }
@@ -315,8 +342,8 @@ public:
     // M0 task T9's done-when (owner decision O67): the same build, given 0.2 s in place of 0.1 s in the record, runs
     // its ticks 200 ms apart. The clock is manual, so the test measures the schedule exactly.
     const TemporaryFolder folder;
-    const auto tuning = Species::LoadTuningMvp(ContentRootWith(folder, "\"tick_period\": 0.1", "\"tick_period\": 0.2"));
-    Assert::IsTrue(tuning.has_value(), L"the changed record reads whole");
+    const auto tuning = Species::LoadTuningMvp(CookedContentWith(folder, "\"tick_period\": 0.1", "\"tick_period\": 0.2"));
+    Assert::IsTrue(tuning.has_value(), L"the changed record, cooked, loads");
     auto source = std::make_unique<Neuron::ManualTimeSource>();
     Neuron::ManualTimeSource* manual = source.get();
     const Neuron::PlatformClock clock(std::move(source));

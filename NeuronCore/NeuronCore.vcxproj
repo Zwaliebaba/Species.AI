@@ -143,22 +143,29 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="AssetError.h" />
     <ClInclude Include="AuthoringParser.h" />
     <ClInclude Include="BitReader.h" />
     <ClInclude Include="BitWriter.h" />
     <ClInclude Include="Check.h" />
     <ClInclude Include="ConsoleStop.h" />
     <ClInclude Include="ContentDiagnostic.h" />
+    <ClInclude Include="ContentKey.h" />
+    <ClInclude Include="CookedRecord.h" />
+    <ClInclude Include="DdsHeader.h" />
     <ClInclude Include="Development.h" />
     <ClInclude Include="FatalPath.h" />
     <ClInclude Include="Files.h" />
     <ClInclude Include="FloatEnvironment.h" />
+    <ClInclude Include="FontAsset.h" />
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="InProcessTransport.h" />
     <ClInclude Include="JobQueue.h" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="LogBuffer.h" />
     <ClInclude Include="LogFile.h" />
+    <ClInclude Include="LooseContent.h" />
+    <ClInclude Include="MeshAsset.h" />
     <ClInclude Include="MessageCodec.h" />
     <ClInclude Include="NativeWindowHandle.h" />
     <ClInclude Include="PlatformClock.h" />
@@ -173,6 +180,7 @@
     <ClInclude Include="Sha256.h" />
     <ClInclude Include="SimRng.h" />
     <ClInclude Include="SipHash.h" />
+    <ClInclude Include="StartupOptions.h" />
     <ClInclude Include="StreamFraming.h" />
     <ClInclude Include="TerrainField.h" />
     <ClInclude Include="TextEncoding.h" />
@@ -182,21 +190,28 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AssetError.cpp" />
     <ClCompile Include="AuthoringParser.cpp" />
     <ClCompile Include="BitReader.cpp" />
     <ClCompile Include="BitWriter.cpp" />
     <ClCompile Include="Check.cpp" />
     <ClCompile Include="ConsoleStop.cpp" />
     <ClCompile Include="ContentDiagnostic.cpp" />
+    <ClCompile Include="ContentKey.cpp" />
+    <ClCompile Include="CookedRecord.cpp" />
+    <ClCompile Include="DdsHeader.cpp" />
     <ClCompile Include="FatalPath.cpp" />
     <ClCompile Include="Files.cpp" />
     <ClCompile Include="FloatEnvironment.cpp" />
+    <ClCompile Include="FontAsset.cpp" />
     <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="InProcessTransport.cpp" />
     <ClCompile Include="JobQueue.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="LogBuffer.cpp" />
     <ClCompile Include="LogFile.cpp" />
+    <ClCompile Include="LooseContent.cpp" />
+    <ClCompile Include="MeshAsset.cpp" />
     <ClCompile Include="MessageCodec.cpp" />
     <ClCompile Include="PlatformClock.cpp" />
     <ClCompile Include="PlatformLogSink.cpp" />
@@ -209,6 +224,7 @@
     <ClCompile Include="Sha256.cpp" />
     <ClCompile Include="SimRng.cpp" />
     <ClCompile Include="SipHash.cpp" />
+    <ClCompile Include="StartupOptions.cpp" />
     <ClCompile Include="StreamFraming.cpp" />
     <ClCompile Include="TerrainField.cpp" />
     <ClCompile Include="TextEncoding.cpp" />

@@ -6,12 +6,28 @@
 
 #include <cmath>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace Species
 {
 
-Neuron::RecordResult<TuningMvp> LoadTuningMvp(const std::filesystem::path& _contentRoot)
+std::expected<TuningMvp, Neuron::AssetError> LoadTuningMvp(const Neuron::LooseContent& _content)
+{
+  auto entry = _content.Read(TUNING_MVP_KEY);
+  if (!entry)
+  {
+    return std::unexpected(std::move(entry.error()));
+  }
+  auto tuning = ReadCookedTuningMvp(*entry);
+  if (!tuning)
+  {
+    return std::unexpected(Neuron::AssetError{Neuron::AssetFault::Damaged, std::string(TUNING_MVP_KEY), std::move(tuning.error())});
+  }
+  return *tuning;
+}
+
+Neuron::RecordResult<TuningMvp> ReadTuningMvpSource(const std::filesystem::path& _contentRoot)
 {
   const std::string file = std::string(TUNING_MVP_FILE);
   const auto bytes = Neuron::ReadWholeFile(_contentRoot / TUNING_MVP_FILE);

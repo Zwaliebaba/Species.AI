@@ -312,6 +312,8 @@ Table 2.4-A The manifest columns and their use.
 
 **AST-018** (MUST) Every source has one **import record** beside it, sharing its stem, in the import-record schema that the data-schemas component defines (ADR-061, ADR-062). The content tools create the record from the manifest row and the defaults per kind (table 3.3-A); an author edits only the fields that the row leaves open (sampler, cut-out threshold, tint mask, derived variants, views, smooth primitives, loop points). A texture without an import record is a build error (ADR-018).
 
+> **Amendment 2026-10-20 (O73, [ADR-108](../../ADR/ADR-108-content-build-loose-content-and-cooked-formats.md)).** M1 has no import records: a texture is checked against its row, a mesh cooked at 1 wu per source unit. They arrive with T13.
+
 Table 3.2-A Cookers by manifest category.
 
 | `category` | Cooker | Content types written |
@@ -868,6 +870,8 @@ The asset indexes merge under the same rules; an update that replaces an asset's
 **AST-104** (MUST) A look-up canonicalises the requested key (AST-015) and then looks it up exactly. `MountSet::Contains` answers whether an asset id exists without loading anything, which is how a custom map without a thumbnail shows the outline alone (R-MAP-022). `MountSet::List` returns the effective keys under a prefix, each once, in byte-wise order.
 
 **AST-105** (MUST) In Debug builds, and only there, the start-up option `--loose-content <directory>` ([platform layer](platform_layer.md) PLT-026, table 3.3-A) mounts a **loose-content directory** last: a directory of cooked entries laid out by key, as the content build's incremental output writes them. A loose entry replaces any packed entry of the same key; every replacement is logged; and the session's simulation content identity is computed over the effective entries and reported as modified (ADR-058). Release builds contain no loose-file mount code (AST-006), which a check of the Release binaries confirms before a release (ADR-058).
+
+> **Amendment 2026-10-20 (O73, [ADR-108](../../ADR/ADR-108-content-build-loose-content-and-cooked-formats.md)).** Until packs exist, every configuration mounts the loose-content folder beside the executables, a departure from AST-006 that packs end; `--loose-content` stays Debug-only.
 
 **AST-106** (MUST NOT) No Species program writes into the install directory, into a pack or into the mount table while the game runs (ADR-071). Tools that save content, such as the map editor, write authoring files: under the content root of a development checkout, or into the player's map folder for custom maps ([map editor hooks](../../reference/08_maps_and_level_design/map_editor_hooks.md)), through the lossless and atomic writers of DEC-800.
 

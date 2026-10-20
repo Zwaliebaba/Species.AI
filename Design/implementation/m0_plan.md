@@ -59,6 +59,8 @@ The engine components specify the whole engine. The MVP builds them in the order
 
 **Amendment 2026-10-20 (O69, O70).** M1 builds the CMO importer and mesh cooker, which this table puts at M2, and no texture cooker: every texture is authored in its runtime format and packed as authored, so the content build restores no DirectXTex. M1 draws EditorFont only, and GameFont arrives with M2's HUD. The [M1 plan](m1_plan.md) states M1's order.
 
+**Amendment 2026-10-20 (O73).** The loose-content mount of M1 is in every configuration until packs exist, not in Debug builds only, and the solution build writes it beside the executables; the `--loose-content` option that names another folder stays a Debug build's ([ADR-108](../ADR/ADR-108-content-build-loose-content-and-cooked-formats.md)).
+
 ## 5 Tasks
 
 Each task is one pull request on a branch off `main`, in this order. Each one cites the requirements it implements.

@@ -22,8 +22,13 @@
     <Project Path="GameClientTests/GameClientTests.vcxproj" Id="631d1fb3-5a7a-5285-8aff-a50203088689" />
   </Folder>
   <Folder Name="/Tools/">
+    <Project Path="Tools/SpeciesContentBuild/SpeciesContentBuild.vcxproj" Id="f814b69a-a845-5fe8-87b9-7ea11ed3cee3" />
     <Project Path="Tools/SpeciesSchemaGen/SpeciesSchemaGen.vcxproj" Id="acac0570-f9cd-52a8-ae8e-651bfb181141" />
   </Folder>
-  <Project Path="Species/Species.vcxproj" Id="01ec7822-74c7-56d1-9d56-ed835e64f15d" />
-  <Project Path="SpeciesServer/SpeciesServer.vcxproj" Id="24cf16cb-a2cf-5ca3-9295-af229a58000c" />
+  <Project Path="Species/Species.vcxproj" Id="01ec7822-74c7-56d1-9d56-ed835e64f15d">
+    <BuildDependency Project="Tools/SpeciesContentBuild/SpeciesContentBuild.vcxproj" />
+  </Project>
+  <Project Path="SpeciesServer/SpeciesServer.vcxproj" Id="24cf16cb-a2cf-5ca3-9295-af229a58000c">
+    <BuildDependency Project="Tools/SpeciesContentBuild/SpeciesContentBuild.vcxproj" />
+  </Project>
 </Solution>

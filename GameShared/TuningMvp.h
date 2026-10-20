@@ -2,11 +2,16 @@
 // change the schema and run the generator (ADR-062, AGENTS.md §2).
 #pragma once
 
+#include "CookedRecord.h"
 #include "RecordReader.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <span>
+#include <string>
 #include <string_view>
+#include <vector>
 
 namespace Species
 {
@@ -2437,6 +2442,1686 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   if (reader.Failed())
   {
     return std::unexpected(reader.TakeDiagnostics());
+  }
+  return record;
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Pace& _in)
+{
+  _writer.F64(_in.sessionFactor);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Pace& _out)
+{
+  _out.sessionFactor = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::World& _in)
+{
+  _writer.I64(_in.aiCount);
+  _writer.I64(_in.regionCell);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::World& _out)
+{
+  _out.aiCount = _reader.I64();
+  _out.regionCell = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Vision& _in)
+{
+  _writer.F64(_in.unitRadius);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Vision& _out)
+{
+  _out.unitRadius = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Settlement& _in)
+{
+  _writer.I64(_in.startWorkers);
+  _writer.I64(_in.populationBase);
+  _writer.I64(_in.populationMax);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Settlement& _out)
+{
+  _out.startWorkers = _reader.I64();
+  _out.populationBase = _reader.I64();
+  _out.populationMax = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Dwelling& _in)
+{
+  _writer.I64(_in.population);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Dwelling& _out)
+{
+  _out.population = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Essence& _in)
+{
+  _writer.F64(_in.orbCostRu);
+  _writer.F64(_in.wellspringIntervalS);
+  _writer.F64(_in.driftSpeed);
+  _writer.I64(_in.waitMax);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Essence& _out)
+{
+  _out.orbCostRu = _reader.F64();
+  _out.wellspringIntervalS = _reader.F64();
+  _out.driftSpeed = _reader.F64();
+  _out.waitMax = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Territory& _in)
+{
+  _writer.F64(_in.radiusPerWorker);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Territory& _out)
+{
+  _out.radiusPerWorker = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Resource& _in)
+{
+  _writer.I64(_in.portsPerUnit);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Resource& _out)
+{
+  _out.portsPerUnit = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Gather& _in)
+{
+  _writer.I64(_in.portTicks);
+  _writer.F64(_in.loadRu);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Gather& _out)
+{
+  _out.portTicks = _reader.I64();
+  _out.loadRu = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Store& _in)
+{
+  _writer.F64(_in.wellspringCapacityRu);
+  _writer.F64(_in.storehouseCapacityRu);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Store& _out)
+{
+  _out.wellspringCapacityRu = _reader.F64();
+  _out.storehouseCapacityRu = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Construction& _in)
+{
+  _writer.I64(_in.queueMax);
+  _writer.I64(_in.portsDwelling);
+  _writer.I64(_in.portsStorehouse);
+  _writer.I64(_in.portsTurret);
+  _writer.F64(_in.workPerRu);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Construction& _out)
+{
+  _out.queueMax = _reader.I64();
+  _out.portsDwelling = _reader.I64();
+  _out.portsStorehouse = _reader.I64();
+  _out.portsTurret = _reader.I64();
+  _out.workPerRu = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Cost& _in)
+{
+  _writer.F64(_in.dwellingRu);
+  _writer.F64(_in.dwellingEscalation);
+  _writer.F64(_in.storehouseRu);
+  _writer.F64(_in.turretRu);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Cost& _out)
+{
+  _out.dwellingRu = _reader.F64();
+  _out.dwellingEscalation = _reader.F64();
+  _out.storehouseRu = _reader.F64();
+  _out.turretRu = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Upkeep& _in)
+{
+  _writer.F64(_in.workerRuPerHour);
+  _writer.F64(_in.structureRuPerHour);
+  _writer.F64(_in.inactiveStepS);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Upkeep& _out)
+{
+  _out.workerRuPerHour = _reader.F64();
+  _out.structureRuPerHour = _reader.F64();
+  _out.inactiveStepS = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Priority& _in)
+{
+  _writer.F64(_in.defaultGather);
+  _writer.F64(_in.defaultConstruct);
+  _writer.F64(_in.defaultGuard);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Priority& _out)
+{
+  _out.defaultGather = _reader.F64();
+  _out.defaultConstruct = _reader.F64();
+  _out.defaultGuard = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Strength& _in)
+{
+  _writer.F64(_in.workerRu);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Strength& _out)
+{
+  _out.workerRu = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Expedition& _in)
+{
+  _writer.I64(_in.sizeMax);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Expedition& _out)
+{
+  _out.sizeMax = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Conflict& _in)
+{
+  _writer.F64(_in.attackCostRu);
+  _writer.F64(_in.warningMinutes);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Conflict& _out)
+{
+  _out.attackCostRu = _reader.F64();
+  _out.warningMinutes = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Defense& _in)
+{
+  _writer.F64(_in.damageTakenFactor);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Defense& _out)
+{
+  _out.damageTakenFactor = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Battle& _in)
+{
+  _writer.F64(_in.objectiveRadius);
+  _writer.F64(_in.objectiveHoldS);
+  _writer.F64(_in.routShare);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Battle& _out)
+{
+  _out.objectiveRadius = _reader.F64();
+  _out.objectiveHoldS = _reader.F64();
+  _out.routShare = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Protection& _in)
+{
+  _writer.F64(_in.lossCapWorkerShare);
+  _writer.F64(_in.lossCapStoreShare);
+  _writer.I64(_in.workerFloor);
+  _writer.F64(_in.respiteMinutes);
+  _writer.F64(_in.respiteMinLossShare);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Protection& _out)
+{
+  _out.lossCapWorkerShare = _reader.F64();
+  _out.lossCapStoreShare = _reader.F64();
+  _out.workerFloor = _reader.I64();
+  _out.respiteMinutes = _reader.F64();
+  _out.respiteMinLossShare = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Grievance& _in)
+{
+  _writer.F64(_in.pressurePerHour);
+  _writer.F64(_in.claimWeight);
+  _writer.F64(_in.attackWeight);
+  _writer.F64(_in.unprovokedFactor);
+  _writer.F64(_in.fadeSharePerHour);
+  _writer.F64(_in.battleReliefWon);
+  _writer.F64(_in.battleReliefLost);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Grievance& _out)
+{
+  _out.pressurePerHour = _reader.F64();
+  _out.claimWeight = _reader.F64();
+  _out.attackWeight = _reader.F64();
+  _out.unprovokedFactor = _reader.F64();
+  _out.fadeSharePerHour = _reader.F64();
+  _out.battleReliefWon = _reader.F64();
+  _out.battleReliefLost = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Claim& _in)
+{
+  _writer.F64(_in.uncontestedMinutes);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Claim& _out)
+{
+  _out.uncontestedMinutes = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Relation& _in)
+{
+  _writer.F64(_in.tributeRuPerWeight);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Relation& _out)
+{
+  _out.tributeRuPerWeight = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Temperament& _in)
+{
+  _writer.F64(_in.boldThreshold);
+  _writer.F64(_in.territorialThreshold);
+  _writer.F64(_in.waryThreshold);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Temperament& _out)
+{
+  _out.boldThreshold = _reader.F64();
+  _out.territorialThreshold = _reader.F64();
+  _out.waryThreshold = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Ai& _in)
+{
+  _writer.F64(_in.attackMinShare);
+  _writer.I64(_in.decisionTicks);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Ai& _out)
+{
+  _out.attackMinShare = _reader.F64();
+  _out.decisionTicks = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Run& _in)
+{
+  _writer.F64(_in.lengthHours);
+  _writer.F64(_in.quietMinutes);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Run& _out)
+{
+  _out.lengthHours = _reader.F64();
+  _out.quietMinutes = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Renown& _in)
+{
+  _writer.I64(_in.defenseHeld);
+  _writer.I64(_in.claimWon);
+  _writer.F64(_in.grievanceEased);
+  _writer.F64(_in.structurePer100ru);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Renown& _out)
+{
+  _out.defenseHeld = _reader.I64();
+  _out.claimWon = _reader.I64();
+  _out.grievanceEased = _reader.F64();
+  _out.structurePer100ru = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Stats& _in)
+{
+  _writer.F64(_in.sampleMinutes);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Stats& _out)
+{
+  _out.sampleMinutes = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Presence& _in)
+{
+  _writer.F64(_in.idleMinutes);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Presence& _out)
+{
+  _out.idleMinutes = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Persist& _in)
+{
+  _writer.F64(_in.snapshotSeconds);
+  _writer.I64(_in.snapshotsKept);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Persist& _out)
+{
+  _out.snapshotSeconds = _reader.F64();
+  _out.snapshotsKept = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Client& _in)
+{
+  _writer.I64(_in.fpsTarget);
+  _writer.I64(_in.figuresMax);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Client& _out)
+{
+  _out.fpsTarget = _reader.I64();
+  _out.figuresMax = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Terrain& _in)
+{
+  _writer.I64(_in.baseMethod);
+  _writer.F64(_in.baseFractalDimension);
+  _writer.F64(_in.baseHeightScale);
+  _writer.F64(_in.baseDesiredHeight);
+  _writer.F64(_in.baseLowlandSmoothing);
+  _writer.I64(_in.guideRim);
+  _writer.I64(_in.guideEdge);
+  _writer.I64(_in.guideCenter);
+  _writer.I64(_in.hillMethod);
+  _writer.F64(_in.hillFractalDimension);
+  _writer.F64(_in.hillHeightScale);
+  _writer.F64(_in.hillLowlandSmoothing);
+  _writer.F64(_in.hillDesiredMin);
+  _writer.F64(_in.hillDesiredMax);
+  _writer.F64(_in.hillInset);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Terrain& _out)
+{
+  _out.baseMethod = _reader.I64();
+  _out.baseFractalDimension = _reader.F64();
+  _out.baseHeightScale = _reader.F64();
+  _out.baseDesiredHeight = _reader.F64();
+  _out.baseLowlandSmoothing = _reader.F64();
+  _out.guideRim = _reader.I64();
+  _out.guideEdge = _reader.I64();
+  _out.guideCenter = _reader.I64();
+  _out.hillMethod = _reader.I64();
+  _out.hillFractalDimension = _reader.F64();
+  _out.hillHeightScale = _reader.F64();
+  _out.hillLowlandSmoothing = _reader.F64();
+  _out.hillDesiredMin = _reader.F64();
+  _out.hillDesiredMax = _reader.F64();
+  _out.hillInset = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Unit& _in)
+{
+  _writer.F64(_in.leaderMeshRadius);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Unit& _out)
+{
+  _out.leaderMeshRadius = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Nav& _in)
+{
+  _writer.F64(_in.nodeSpacing);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Nav& _out)
+{
+  _out.nodeSpacing = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp& _in)
+{
+  CookFields(_writer, _in.pace);
+  CookFields(_writer, _in.world);
+  CookFields(_writer, _in.vision);
+  CookFields(_writer, _in.settlement);
+  CookFields(_writer, _in.dwelling);
+  CookFields(_writer, _in.essence);
+  CookFields(_writer, _in.territory);
+  CookFields(_writer, _in.resource);
+  CookFields(_writer, _in.gather);
+  CookFields(_writer, _in.store);
+  CookFields(_writer, _in.construction);
+  CookFields(_writer, _in.cost);
+  CookFields(_writer, _in.upkeep);
+  CookFields(_writer, _in.priority);
+  CookFields(_writer, _in.strength);
+  CookFields(_writer, _in.expedition);
+  CookFields(_writer, _in.conflict);
+  CookFields(_writer, _in.defense);
+  CookFields(_writer, _in.battle);
+  CookFields(_writer, _in.protection);
+  CookFields(_writer, _in.grievance);
+  CookFields(_writer, _in.claim);
+  CookFields(_writer, _in.relation);
+  CookFields(_writer, _in.temperament);
+  CookFields(_writer, _in.ai);
+  CookFields(_writer, _in.run);
+  CookFields(_writer, _in.renown);
+  CookFields(_writer, _in.stats);
+  CookFields(_writer, _in.presence);
+  CookFields(_writer, _in.persist);
+  CookFields(_writer, _in.client);
+  CookFields(_writer, _in.terrain);
+  CookFields(_writer, _in.unit);
+  CookFields(_writer, _in.nav);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp& _out)
+{
+  ReadCookedFields(_reader, _out.pace);
+  ReadCookedFields(_reader, _out.world);
+  ReadCookedFields(_reader, _out.vision);
+  ReadCookedFields(_reader, _out.settlement);
+  ReadCookedFields(_reader, _out.dwelling);
+  ReadCookedFields(_reader, _out.essence);
+  ReadCookedFields(_reader, _out.territory);
+  ReadCookedFields(_reader, _out.resource);
+  ReadCookedFields(_reader, _out.gather);
+  ReadCookedFields(_reader, _out.store);
+  ReadCookedFields(_reader, _out.construction);
+  ReadCookedFields(_reader, _out.cost);
+  ReadCookedFields(_reader, _out.upkeep);
+  ReadCookedFields(_reader, _out.priority);
+  ReadCookedFields(_reader, _out.strength);
+  ReadCookedFields(_reader, _out.expedition);
+  ReadCookedFields(_reader, _out.conflict);
+  ReadCookedFields(_reader, _out.defense);
+  ReadCookedFields(_reader, _out.battle);
+  ReadCookedFields(_reader, _out.protection);
+  ReadCookedFields(_reader, _out.grievance);
+  ReadCookedFields(_reader, _out.claim);
+  ReadCookedFields(_reader, _out.relation);
+  ReadCookedFields(_reader, _out.temperament);
+  ReadCookedFields(_reader, _out.ai);
+  ReadCookedFields(_reader, _out.run);
+  ReadCookedFields(_reader, _out.renown);
+  ReadCookedFields(_reader, _out.stats);
+  ReadCookedFields(_reader, _out.presence);
+  ReadCookedFields(_reader, _out.persist);
+  ReadCookedFields(_reader, _out.client);
+  ReadCookedFields(_reader, _out.terrain);
+  ReadCookedFields(_reader, _out.unit);
+  ReadCookedFields(_reader, _out.nav);
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Sim::Container& _in)
+{
+  _writer.I64(_in.ungroupedStep);
+  _writer.I64(_in.laserBoltStep);
+  _writer.I64(_in.effectStep);
+  _writer.I64(_in.orbPresize);
+  _writer.I64(_in.orbStep);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Sim::Container& _out)
+{
+  _out.ungroupedStep = _reader.I64();
+  _out.laserBoltStep = _reader.I64();
+  _out.effectStep = _reader.I64();
+  _out.orbPresize = _reader.I64();
+  _out.orbStep = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Sim::Spawn::DefaultFront& _in)
+{
+  _writer.F64(_in.x);
+  _writer.F64(_in.y);
+  _writer.F64(_in.z);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Sim::Spawn::DefaultFront& _out)
+{
+  _out.x = _reader.F64();
+  _out.y = _reader.F64();
+  _out.z = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Sim::Spawn& _in)
+{
+  CookFields(_writer, _in.defaultFront);
+  _writer.I64(_in.searchAttempts);
+  _writer.F64(_in.edgeMargin);
+  _writer.F64(_in.orbLift);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Sim::Spawn& _out)
+{
+  ReadCookedFields(_reader, _out.defaultFront);
+  _out.searchAttempts = _reader.I64();
+  _out.edgeMargin = _reader.F64();
+  _out.orbLift = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Sim::Physics& _in)
+{
+  _writer.F64(_in.seaLevel);
+  _writer.F64(_in.gravity);
+  _writer.F64(_in.landThreshold);
+  _writer.F64(_in.landOffset);
+  _writer.F64(_in.thrownGravity);
+  _writer.F64(_in.restitution);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Sim::Physics& _out)
+{
+  _out.seaLevel = _reader.F64();
+  _out.gravity = _reader.F64();
+  _out.landThreshold = _reader.F64();
+  _out.landOffset = _reader.F64();
+  _out.thrownGravity = _reader.F64();
+  _out.restitution = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Sim::Walk& _in)
+{
+  _writer.F64(_in.minNormalY);
+  _writer.F64(_in.step);
+  _writer.F64(_in.wetLimit);
+  _writer.F64(_in.maxClimbGradient);
+  _writer.F64(_in.costStep);
+  _writer.F64(_in.costWetLimit);
+  _writer.F64(_in.uphillFactor);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Sim::Walk& _out)
+{
+  _out.minNormalY = _reader.F64();
+  _out.step = _reader.F64();
+  _out.wetLimit = _reader.F64();
+  _out.maxClimbGradient = _reader.F64();
+  _out.costStep = _reader.F64();
+  _out.costWetLimit = _reader.F64();
+  _out.uphillFactor = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Sim::ActorGrid& _in)
+{
+  _writer.F64(_in.cellSize);
+  _writer.I64(_in.extraCells);
+  _writer.I64(_in.initialCellCapacity);
+  _writer.I64(_in.firstCellCapacity);
+  _writer.I64(_in.cellGrowthFactor);
+  _writer.F64(_in.footprintFactor);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Sim::ActorGrid& _out)
+{
+  _out.cellSize = _reader.F64();
+  _out.extraCells = _reader.I64();
+  _out.initialCellCapacity = _reader.I64();
+  _out.firstCellCapacity = _reader.I64();
+  _out.cellGrowthFactor = _reader.I64();
+  _out.footprintFactor = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Sim::GridCache& _in)
+{
+  _writer.F64(_in.reuseFraction);
+  _writer.I64(_in.maxAge);
+  _writer.I64(_in.evictSlice);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Sim::GridCache& _out)
+{
+  _out.reuseFraction = _reader.F64();
+  _out.maxAge = _reader.I64();
+  _out.evictSlice = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Sim::ObstacleGrid& _in)
+{
+  _writer.F64(_in.cellSize);
+  _writer.F64(_in.cellTestFraction);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Sim::ObstacleGrid& _out)
+{
+  _out.cellSize = _reader.F64();
+  _out.cellTestFraction = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Sim::Water& _in)
+{
+  _writer.I64(_in.drownAfter);
+  _writer.I64(_in.drownDamage);
+  _writer.F64(_in.swimSpeed);
+  _writer.F64(_in.bobAmplitude);
+  _writer.F64(_in.bobRate);
+  _writer.F64(_in.bobDepth);
+  _writer.F64(_in.shoreHeight);
+  _writer.F64(_in.shoreSearchRadius);
+  _writer.F64(_in.shoreSearchStep);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Sim::Water& _out)
+{
+  _out.drownAfter = _reader.I64();
+  _out.drownDamage = _reader.I64();
+  _out.swimSpeed = _reader.F64();
+  _out.bobAmplitude = _reader.F64();
+  _out.bobRate = _reader.F64();
+  _out.bobDepth = _reader.F64();
+  _out.shoreHeight = _reader.F64();
+  _out.shoreSearchRadius = _reader.F64();
+  _out.shoreSearchStep = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Sim::Push& _in)
+{
+  _writer.F64(_in.contactRadius);
+  _writer.F64(_in.step);
+  _writer.F64(_in.clearanceRadius);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Sim::Push& _out)
+{
+  _out.contactRadius = _reader.F64();
+  _out.step = _reader.F64();
+  _out.clearanceRadius = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Sim::Route& _in)
+{
+  _writer.F64(_in.linkRange);
+  _writer.F64(_in.corridorOffset);
+  _writer.I64(_in.maxPoints);
+  _writer.F64(_in.smoothingStep);
+  _writer.F64(_in.mergeDistance);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Sim::Route& _out)
+{
+  _out.linkRange = _reader.F64();
+  _out.corridorOffset = _reader.F64();
+  _out.maxPoints = _reader.I64();
+  _out.smoothingStep = _reader.F64();
+  _out.mergeDistance = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Sim::Explosion& _in)
+{
+  _writer.F64(_in.actorReach);
+  _writer.F64(_in.actorGain);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Sim::Explosion& _out)
+{
+  _out.actorReach = _reader.F64();
+  _out.actorGain = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Sim::Command& _in)
+{
+  _writer.F64(_in.leaderToggleOffset);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Sim::Command& _out)
+{
+  _out.leaderToggleOffset = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Sim::Team& _in)
+{
+  _writer.I64(_in.formationSizeUpgrade);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Sim::Team& _out)
+{
+  _out.formationSizeUpgrade = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Sim& _in)
+{
+  _writer.F64(_in.tickPeriod);
+  _writer.I64(_in.updateSlices);
+  CookFields(_writer, _in.container);
+  CookFields(_writer, _in.spawn);
+  CookFields(_writer, _in.physics);
+  CookFields(_writer, _in.walk);
+  CookFields(_writer, _in.actorGrid);
+  CookFields(_writer, _in.gridCache);
+  CookFields(_writer, _in.obstacleGrid);
+  CookFields(_writer, _in.water);
+  CookFields(_writer, _in.push);
+  CookFields(_writer, _in.route);
+  CookFields(_writer, _in.explosion);
+  CookFields(_writer, _in.command);
+  CookFields(_writer, _in.team);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Sim& _out)
+{
+  _out.tickPeriod = _reader.F64();
+  _out.updateSlices = _reader.I64();
+  ReadCookedFields(_reader, _out.container);
+  ReadCookedFields(_reader, _out.spawn);
+  ReadCookedFields(_reader, _out.physics);
+  ReadCookedFields(_reader, _out.walk);
+  ReadCookedFields(_reader, _out.actorGrid);
+  ReadCookedFields(_reader, _out.gridCache);
+  ReadCookedFields(_reader, _out.obstacleGrid);
+  ReadCookedFields(_reader, _out.water);
+  ReadCookedFields(_reader, _out.push);
+  ReadCookedFields(_reader, _out.route);
+  ReadCookedFields(_reader, _out.explosion);
+  ReadCookedFields(_reader, _out.command);
+  ReadCookedFields(_reader, _out.team);
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Unit::Worker::RetargetTicks& _in)
+{
+  _writer.I64(_in.base);
+  _writer.F64(_in.spreadSeconds);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Unit::Worker::RetargetTicks& _out)
+{
+  _out.base = _reader.I64();
+  _out.spreadSeconds = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Unit::Worker::GrenadeFirstTicks& _in)
+{
+  _writer.I64(_in.base);
+  _writer.F64(_in.spreadSeconds);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Unit::Worker::GrenadeFirstTicks& _out)
+{
+  _out.base = _reader.I64();
+  _out.spreadSeconds = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Unit::Worker::GrenadeIntervalTicks& _in)
+{
+  _writer.I64(_in.base);
+  _writer.F64(_in.spreadSeconds);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Unit::Worker::GrenadeIntervalTicks& _out)
+{
+  _out.base = _reader.I64();
+  _out.spreadSeconds = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Unit::Worker::BurnChance& _in)
+{
+  _writer.F64(_in.threshold);
+  _writer.F64(_in.rollRange);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Unit::Worker::BurnChance& _out)
+{
+  _out.threshold = _reader.F64();
+  _out.rollRange = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Unit::Worker& _in)
+{
+  _writer.I64(_in.health);
+  _writer.F64(_in.speed);
+  _writer.F64(_in.rate);
+  _writer.F64(_in.formationExplosiveFactor);
+  _writer.F64(_in.shoreHeight);
+  _writer.F64(_in.idleSpeedFactor);
+  _writer.F64(_in.arrivalSlowRadius);
+  _writer.F64(_in.snapDistance);
+  _writer.F64(_in.turnBlend);
+  _writer.F64(_in.slopeDivisor);
+  _writer.F64(_in.slopeMin);
+  _writer.F64(_in.slopeMax);
+  CookFields(_writer, _in.retargetTicks);
+  _writer.F64(_in.orderDiscRadius);
+  _writer.F64(_in.wanderChance);
+  _writer.F64(_in.wanderDistance);
+  _writer.I64(_in.drownDamage);
+  _writer.F64(_in.corpseSlide);
+  _writer.F64(_in.shoreSearchStart);
+  _writer.F64(_in.shoreSearchEnd);
+  _writer.F64(_in.shoreSearchStep);
+  _writer.F64(_in.structurePushRange);
+  _writer.F64(_in.structurePushStep);
+  _writer.F64(_in.structureClearRadius);
+  _writer.F64(_in.routeReachRadius);
+  _writer.F64(_in.routeJitterRadius);
+  _writer.F64(_in.threatRange);
+  _writer.F64(_in.threatRangeRelax);
+  _writer.F64(_in.projectileThreatRange);
+  _writer.I64(_in.scaredEnemyCount);
+  _writer.F64(_in.orderCancelRadius);
+  _writer.F64(_in.retreatRange);
+  _writer.F64(_in.retreatHeightDiff);
+  _writer.F64(_in.combatStep);
+  _writer.F64(_in.standoffBase);
+  _writer.F64(_in.standoffSpread);
+  _writer.F64(_in.fearRange);
+  _writer.F64(_in.aimHeight);
+  _writer.F64(_in.attackDivisor);
+  CookFields(_writer, _in.grenadeFirstTicks);
+  CookFields(_writer, _in.grenadeIntervalTicks);
+  _writer.F64(_in.grenadeMinDistance);
+  _writer.F64(_in.grenadeNormalMin);
+  _writer.F64(_in.grenadeHeightDiffMin);
+  _writer.F64(_in.grenadeCrowdRadius);
+  _writer.I64(_in.grenadeCrowdEnemies);
+  _writer.I64(_in.grenadeCrowdFriends);
+  _writer.F64(_in.burnWander);
+  _writer.I64(_in.burnDamage);
+  CookFields(_writer, _in.burnChance);
+  _writer.I64(_in.followRetargetTicks);
+  _writer.F64(_in.followDiscRadius);
+  _writer.F64(_in.leaderFollowRange);
+  _writer.F64(_in.leaderSignpostRange);
+  _writer.F64(_in.formationSearchOffset);
+  _writer.I64(_in.volleySizeCap);
+  _writer.I64(_in.volleyDivisor);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Unit::Worker& _out)
+{
+  _out.health = _reader.I64();
+  _out.speed = _reader.F64();
+  _out.rate = _reader.F64();
+  _out.formationExplosiveFactor = _reader.F64();
+  _out.shoreHeight = _reader.F64();
+  _out.idleSpeedFactor = _reader.F64();
+  _out.arrivalSlowRadius = _reader.F64();
+  _out.snapDistance = _reader.F64();
+  _out.turnBlend = _reader.F64();
+  _out.slopeDivisor = _reader.F64();
+  _out.slopeMin = _reader.F64();
+  _out.slopeMax = _reader.F64();
+  ReadCookedFields(_reader, _out.retargetTicks);
+  _out.orderDiscRadius = _reader.F64();
+  _out.wanderChance = _reader.F64();
+  _out.wanderDistance = _reader.F64();
+  _out.drownDamage = _reader.I64();
+  _out.corpseSlide = _reader.F64();
+  _out.shoreSearchStart = _reader.F64();
+  _out.shoreSearchEnd = _reader.F64();
+  _out.shoreSearchStep = _reader.F64();
+  _out.structurePushRange = _reader.F64();
+  _out.structurePushStep = _reader.F64();
+  _out.structureClearRadius = _reader.F64();
+  _out.routeReachRadius = _reader.F64();
+  _out.routeJitterRadius = _reader.F64();
+  _out.threatRange = _reader.F64();
+  _out.threatRangeRelax = _reader.F64();
+  _out.projectileThreatRange = _reader.F64();
+  _out.scaredEnemyCount = _reader.I64();
+  _out.orderCancelRadius = _reader.F64();
+  _out.retreatRange = _reader.F64();
+  _out.retreatHeightDiff = _reader.F64();
+  _out.combatStep = _reader.F64();
+  _out.standoffBase = _reader.F64();
+  _out.standoffSpread = _reader.F64();
+  _out.fearRange = _reader.F64();
+  _out.aimHeight = _reader.F64();
+  _out.attackDivisor = _reader.F64();
+  ReadCookedFields(_reader, _out.grenadeFirstTicks);
+  ReadCookedFields(_reader, _out.grenadeIntervalTicks);
+  _out.grenadeMinDistance = _reader.F64();
+  _out.grenadeNormalMin = _reader.F64();
+  _out.grenadeHeightDiffMin = _reader.F64();
+  _out.grenadeCrowdRadius = _reader.F64();
+  _out.grenadeCrowdEnemies = _reader.I64();
+  _out.grenadeCrowdFriends = _reader.I64();
+  _out.burnWander = _reader.F64();
+  _out.burnDamage = _reader.I64();
+  ReadCookedFields(_reader, _out.burnChance);
+  _out.followRetargetTicks = _reader.I64();
+  _out.followDiscRadius = _reader.F64();
+  _out.leaderFollowRange = _reader.F64();
+  _out.leaderSignpostRange = _reader.F64();
+  _out.formationSearchOffset = _reader.F64();
+  _out.volleySizeCap = _reader.I64();
+  _out.volleyDivisor = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Unit::Leader::RowSizeTable& _in)
+{
+  _writer.I64(_in.smallMax);
+  _writer.I64(_in.smallRow);
+  _writer.I64(_in.mediumMax);
+  _writer.I64(_in.mediumRow);
+  _writer.I64(_in.largeMax);
+  _writer.I64(_in.largeRow);
+  _writer.I64(_in.hugeMax);
+  _writer.I64(_in.hugeRow);
+  _writer.I64(_in.largestRow);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Unit::Leader::RowSizeTable& _out)
+{
+  _out.smallMax = _reader.I64();
+  _out.smallRow = _reader.I64();
+  _out.mediumMax = _reader.I64();
+  _out.mediumRow = _reader.I64();
+  _out.largeMax = _reader.I64();
+  _out.largeRow = _reader.I64();
+  _out.hugeMax = _reader.I64();
+  _out.hugeRow = _reader.I64();
+  _out.largestRow = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Unit::Leader& _in)
+{
+  _writer.I64(_in.health);
+  _writer.F64(_in.speed);
+  _writer.F64(_in.rate);
+  _writer.F64(_in.slopeDivisor);
+  _writer.F64(_in.slopeMin);
+  _writer.F64(_in.slopeMax);
+  _writer.F64(_in.arrivalSlowRadius);
+  _writer.F64(_in.arrivalDistance);
+  _writer.F64(_in.turnWalk);
+  _writer.F64(_in.radiusFactor);
+  _writer.F64(_in.corpseSinkPerTick);
+  _writer.F64(_in.formationSpeedFactor);
+  _writer.F64(_in.formationArrivalDistance);
+  _writer.F64(_in.turnFormation);
+  _writer.F64(_in.turnPreMove);
+  _writer.F64(_in.turnOrder);
+  _writer.F64(_in.turnOrderFormationFactor);
+  _writer.F64(_in.turnBot);
+  _writer.I64(_in.markerPeriod);
+  _writer.F64(_in.markerLift);
+  _writer.F64(_in.routeRegenDistance);
+  _writer.F64(_in.preTurnTolerance);
+  _writer.F64(_in.formationFaceDistance);
+  _writer.F64(_in.followFaceTolerance);
+  _writer.F64(_in.formationToggleRadius);
+  _writer.F64(_in.gapRuleFraction);
+  _writer.I64(_in.slotTimerTicks);
+  _writer.F64(_in.slotSpacing);
+  _writer.F64(_in.firstRankOffset);
+  _writer.F64(_in.lateralOffsetFactor);
+  CookFields(_writer, _in.rowSizeTable);
+  _writer.F64(_in.markerReach);
+  _writer.F64(_in.markerSpeedMin);
+  _writer.F64(_in.markerSpeedMax);
+  _writer.I64(_in.trailPeriod);
+  _writer.I64(_in.markerFadeTicks);
+  _writer.F64(_in.trailLift);
+  _writer.I64(_in.trailLifeTicks);
+  _writer.I64(_in.botThinkTicks);
+  _writer.I64(_in.botWaypointThinkTicks);
+  _writer.F64(_in.botReorderDistance);
+  _writer.F64(_in.botOrderOffsetBase);
+  _writer.F64(_in.botOrderOffsetSpread);
+  _writer.F64(_in.botFormationAhead);
+  _writer.I64(_in.botEnemyCount);
+  _writer.F64(_in.botEnemyRange);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Unit::Leader& _out)
+{
+  _out.health = _reader.I64();
+  _out.speed = _reader.F64();
+  _out.rate = _reader.F64();
+  _out.slopeDivisor = _reader.F64();
+  _out.slopeMin = _reader.F64();
+  _out.slopeMax = _reader.F64();
+  _out.arrivalSlowRadius = _reader.F64();
+  _out.arrivalDistance = _reader.F64();
+  _out.turnWalk = _reader.F64();
+  _out.radiusFactor = _reader.F64();
+  _out.corpseSinkPerTick = _reader.F64();
+  _out.formationSpeedFactor = _reader.F64();
+  _out.formationArrivalDistance = _reader.F64();
+  _out.turnFormation = _reader.F64();
+  _out.turnPreMove = _reader.F64();
+  _out.turnOrder = _reader.F64();
+  _out.turnOrderFormationFactor = _reader.F64();
+  _out.turnBot = _reader.F64();
+  _out.markerPeriod = _reader.I64();
+  _out.markerLift = _reader.F64();
+  _out.routeRegenDistance = _reader.F64();
+  _out.preTurnTolerance = _reader.F64();
+  _out.formationFaceDistance = _reader.F64();
+  _out.followFaceTolerance = _reader.F64();
+  _out.formationToggleRadius = _reader.F64();
+  _out.gapRuleFraction = _reader.F64();
+  _out.slotTimerTicks = _reader.I64();
+  _out.slotSpacing = _reader.F64();
+  _out.firstRankOffset = _reader.F64();
+  _out.lateralOffsetFactor = _reader.F64();
+  ReadCookedFields(_reader, _out.rowSizeTable);
+  _out.markerReach = _reader.F64();
+  _out.markerSpeedMin = _reader.F64();
+  _out.markerSpeedMax = _reader.F64();
+  _out.trailPeriod = _reader.I64();
+  _out.markerFadeTicks = _reader.I64();
+  _out.trailLift = _reader.F64();
+  _out.trailLifeTicks = _reader.I64();
+  _out.botThinkTicks = _reader.I64();
+  _out.botWaypointThinkTicks = _reader.I64();
+  _out.botReorderDistance = _reader.F64();
+  _out.botOrderOffsetBase = _reader.F64();
+  _out.botOrderOffsetSpread = _reader.F64();
+  _out.botFormationAhead = _reader.F64();
+  _out.botEnemyCount = _reader.I64();
+  _out.botEnemyRange = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Unit::Corpse& _in)
+{
+  _writer.I64(_in.fadeStart);
+  _writer.I64(_in.fadeGroundPerTick);
+  _writer.I64(_in.fadeAirPerTick);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Unit::Corpse& _out)
+{
+  _out.fadeStart = _reader.I64();
+  _out.fadeGroundPerTick = _reader.I64();
+  _out.fadeAirPerTick = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Unit::Attack& _in)
+{
+  _writer.F64(_in.aimJitter);
+  _writer.F64(_in.muzzleHeight);
+  _writer.F64(_in.laserSpeed);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Unit::Attack& _out)
+{
+  _out.aimJitter = _reader.F64();
+  _out.muzzleHeight = _reader.F64();
+  _out.laserSpeed = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Unit::EssenceOrb::WobbleRateClamp& _in)
+{
+  _writer.F64(_in.min);
+  _writer.F64(_in.max);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Unit::EssenceOrb::WobbleRateClamp& _out)
+{
+  _out.min = _reader.F64();
+  _out.max = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Unit::EssenceOrb& _in)
+{
+  _writer.F64(_in.wobblePhaseRange);
+  _writer.F64(_in.birthHoverMax);
+  _writer.F64(_in.birthPullBase);
+  _writer.F64(_in.birthPullRange);
+  _writer.F64(_in.birthPullScaleHeight);
+  _writer.F64(_in.ascentRiseMin);
+  _writer.F64(_in.ascentRiseRange);
+  _writer.F64(_in.dragPerTick);
+  _writer.F64(_in.phaseStep);
+  CookFields(_writer, _in.wobbleRateClamp);
+  _writer.F64(_in.pushRadius);
+  _writer.F64(_in.pushGain);
+  _writer.F64(_in.pushSpeedMax);
+  _writer.F64(_in.pushStopSpeed);
+  _writer.F64(_in.floorHeight);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Unit::EssenceOrb& _out)
+{
+  _out.wobblePhaseRange = _reader.F64();
+  _out.birthHoverMax = _reader.F64();
+  _out.birthPullBase = _reader.F64();
+  _out.birthPullRange = _reader.F64();
+  _out.birthPullScaleHeight = _reader.F64();
+  _out.ascentRiseMin = _reader.F64();
+  _out.ascentRiseRange = _reader.F64();
+  _out.dragPerTick = _reader.F64();
+  _out.phaseStep = _reader.F64();
+  ReadCookedFields(_reader, _out.wobbleRateClamp);
+  _out.pushRadius = _reader.F64();
+  _out.pushGain = _reader.F64();
+  _out.pushSpeedMax = _reader.F64();
+  _out.pushStopSpeed = _reader.F64();
+  _out.floorHeight = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Unit& _in)
+{
+  _writer.I64(_in.healthMax);
+  CookFields(_writer, _in.worker);
+  CookFields(_writer, _in.leader);
+  CookFields(_writer, _in.corpse);
+  CookFields(_writer, _in.attack);
+  CookFields(_writer, _in.essenceOrb);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Unit& _out)
+{
+  _out.healthMax = _reader.I64();
+  ReadCookedFields(_reader, _out.worker);
+  ReadCookedFields(_reader, _out.leader);
+  ReadCookedFields(_reader, _out.corpse);
+  ReadCookedFields(_reader, _out.attack);
+  ReadCookedFields(_reader, _out.essenceOrb);
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Weapon::Laser& _in)
+{
+  _writer.I64(_in.damageBase);
+  _writer.F64(_in.damageSpread);
+  _writer.F64(_in.hitRadius);
+  _writer.F64(_in.hitHeight);
+  _writer.F64(_in.pushSpread);
+  _writer.F64(_in.pushLiftBase);
+  _writer.F64(_in.pushLiftSpread);
+  _writer.I64(_in.lifeTicks);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Weapon::Laser& _out)
+{
+  _out.damageBase = _reader.I64();
+  _out.damageSpread = _reader.F64();
+  _out.hitRadius = _reader.F64();
+  _out.hitHeight = _reader.F64();
+  _out.pushSpread = _reader.F64();
+  _out.pushLiftBase = _reader.F64();
+  _out.pushLiftSpread = _reader.F64();
+  _out.lifeTicks = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Weapon::Throwing& _in)
+{
+  _writer.F64(_in.forceFactor);
+  _writer.F64(_in.maxForce);
+  _writer.F64(_in.frontLift);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Weapon::Throwing& _out)
+{
+  _out.forceFactor = _reader.F64();
+  _out.maxForce = _reader.F64();
+  _out.frontLift = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Weapon::Thrown& _in)
+{
+  _writer.F64(_in.initialForce);
+  _writer.F64(_in.restForce);
+  _writer.F64(_in.bounceClearance);
+  _writer.F64(_in.bounceForceFactor);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Weapon::Thrown& _out)
+{
+  _out.initialForce = _reader.F64();
+  _out.restForce = _reader.F64();
+  _out.bounceClearance = _reader.F64();
+  _out.bounceForceFactor = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Weapon::Grenade& _in)
+{
+  _writer.I64(_in.fuseTicks);
+  _writer.F64(_in.power);
+  _writer.F64(_in.rangeFactor);
+  _writer.F64(_in.damageFactor);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Weapon::Grenade& _out)
+{
+  _out.fuseTicks = _reader.I64();
+  _out.power = _reader.F64();
+  _out.rangeFactor = _reader.F64();
+  _out.damageFactor = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Weapon::Shockwave& _in)
+{
+  _writer.F64(_in.sizeDivisor);
+  _writer.F64(_in.startRadius);
+  _writer.F64(_in.growth);
+  _writer.F64(_in.band);
+  _writer.F64(_in.damage);
+  _writer.F64(_in.igniteDrawRange);
+  _writer.F64(_in.igniteThreshold);
+  _writer.F64(_in.pushLift);
+  _writer.F64(_in.push);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Weapon::Shockwave& _out)
+{
+  _out.sizeDivisor = _reader.F64();
+  _out.startRadius = _reader.F64();
+  _out.growth = _reader.F64();
+  _out.band = _reader.F64();
+  _out.damage = _reader.F64();
+  _out.igniteDrawRange = _reader.F64();
+  _out.igniteThreshold = _reader.F64();
+  _out.pushLift = _reader.F64();
+  _out.push = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Weapon& _in)
+{
+  CookFields(_writer, _in.laser);
+  CookFields(_writer, _in.throwing);
+  CookFields(_writer, _in.thrown);
+  CookFields(_writer, _in.grenade);
+  CookFields(_writer, _in.shockwave);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Weapon& _out)
+{
+  ReadCookedFields(_reader, _out.laser);
+  ReadCookedFields(_reader, _out.throwing);
+  ReadCookedFields(_reader, _out.thrown);
+  ReadCookedFields(_reader, _out.grenade);
+  ReadCookedFields(_reader, _out.shockwave);
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Econ::Orb::FloatingTicks& _in)
+{
+  _writer.F64(_in.centerSeconds);
+  _writer.F64(_in.spreadSeconds);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Econ::Orb::FloatingTicks& _out)
+{
+  _out.centerSeconds = _reader.F64();
+  _out.spreadSeconds = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Econ::Orb& _in)
+{
+  _writer.F64(_in.deathVelocityFactor);
+  _writer.I64(_in.birthTicks);
+  _writer.F64(_in.birthMaxHeightWu);
+  CookFields(_writer, _in.floatingTicks);
+  _writer.I64(_in.ascentTicks);
+  _writer.F64(_in.wobbleRateRange);
+  _writer.F64(_in.wobbleOffsetRange);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Econ::Orb& _out)
+{
+  _out.deathVelocityFactor = _reader.F64();
+  _out.birthTicks = _reader.I64();
+  _out.birthMaxHeightWu = _reader.F64();
+  ReadCookedFields(_reader, _out.floatingTicks);
+  _out.ascentTicks = _reader.I64();
+  _out.wobbleRateRange = _reader.F64();
+  _out.wobbleOffsetRange = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Econ& _in)
+{
+  CookFields(_writer, _in.orb);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Econ& _out)
+{
+  ReadCookedFields(_reader, _out.orb);
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Ctrl::Leader& _in)
+{
+  _writer.F64(_in.facePointerSpeed);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Ctrl::Leader& _out)
+{
+  _out.facePointerSpeed = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Ctrl& _in)
+{
+  CookFields(_writer, _in.leader);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Ctrl& _out)
+{
+  ReadCookedFields(_reader, _out.leader);
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Bot::Link& _in)
+{
+  _writer.F64(_in.range);
+  _writer.F64(_in.cullRatio);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Bot::Link& _out)
+{
+  _out.range = _reader.F64();
+  _out.cullRatio = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Bot::Node& _in)
+{
+  _writer.I64(_in.recountTicks);
+  _writer.I64(_in.recountPhase);
+  _writer.F64(_in.range);
+  _writer.I64(_in.defendEnemyThreshold);
+  _writer.F64(_in.defendLeaderRadius);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Bot::Node& _out)
+{
+  _out.recountTicks = _reader.I64();
+  _out.recountPhase = _reader.I64();
+  _out.range = _reader.F64();
+  _out.defendEnemyThreshold = _reader.I64();
+  _out.defendLeaderRadius = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Bot::Cycle& _in)
+{
+  _writer.I64(_in.periodEasy);
+  _writer.I64(_in.phaseEasy);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Bot::Cycle& _out)
+{
+  _out.periodEasy = _reader.I64();
+  _out.phaseEasy = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Bot::Recall& _in)
+{
+  _writer.F64(_in.share);
+  _writer.I64(_in.minPicks);
+  _writer.F64(_in.distance);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Bot::Recall& _out)
+{
+  _out.share = _reader.F64();
+  _out.minPicks = _reader.I64();
+  _out.distance = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Bot::Order& _in)
+{
+  _writer.F64(_in.offsetBase);
+  _writer.F64(_in.offsetSpread);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Bot::Order& _out)
+{
+  _out.offsetBase = _reader.F64();
+  _out.offsetSpread = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Bot::Dispatch& _in)
+{
+  _writer.I64(_in.idleLimit);
+  _writer.F64(_in.calmRatio);
+  _writer.F64(_in.sendFactor);
+  _writer.F64(_in.sendMin);
+  _writer.F64(_in.sendMax);
+  _writer.F64(_in.sendAll);
+  _writer.F64(_in.gatherRadius);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Bot::Dispatch& _out)
+{
+  _out.idleLimit = _reader.I64();
+  _out.calmRatio = _reader.F64();
+  _out.sendFactor = _reader.F64();
+  _out.sendMin = _reader.F64();
+  _out.sendMax = _reader.F64();
+  _out.sendAll = _reader.F64();
+  _out.gatherRadius = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Bot::Select& _in)
+{
+  _writer.I64(_in.randomTries);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Bot::Select& _out)
+{
+  _out.randomTries = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Bot::Leader& _in)
+{
+  _writer.I64(_in.formationFriends);
+  _writer.F64(_in.formationLeaderRadius);
+  _writer.F64(_in.formationCandidateRadius);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Bot::Leader& _out)
+{
+  _out.formationFriends = _reader.I64();
+  _out.formationLeaderRadius = _reader.F64();
+  _out.formationCandidateRadius = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Bot& _in)
+{
+  CookFields(_writer, _in.link);
+  CookFields(_writer, _in.node);
+  CookFields(_writer, _in.cycle);
+  CookFields(_writer, _in.recall);
+  CookFields(_writer, _in.order);
+  CookFields(_writer, _in.dispatch);
+  CookFields(_writer, _in.select);
+  CookFields(_writer, _in.leader);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Bot& _out)
+{
+  ReadCookedFields(_reader, _out.link);
+  ReadCookedFields(_reader, _out.node);
+  ReadCookedFields(_reader, _out.cycle);
+  ReadCookedFields(_reader, _out.recall);
+  ReadCookedFields(_reader, _out.order);
+  ReadCookedFields(_reader, _out.dispatch);
+  ReadCookedFields(_reader, _out.select);
+  ReadCookedFields(_reader, _out.leader);
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref& _in)
+{
+  CookFields(_writer, _in.sim);
+  CookFields(_writer, _in.unit);
+  CookFields(_writer, _in.weapon);
+  CookFields(_writer, _in.econ);
+  CookFields(_writer, _in.ctrl);
+  CookFields(_writer, _in.bot);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref& _out)
+{
+  ReadCookedFields(_reader, _out.sim);
+  ReadCookedFields(_reader, _out.unit);
+  ReadCookedFields(_reader, _out.weapon);
+  ReadCookedFields(_reader, _out.econ);
+  ReadCookedFields(_reader, _out.ctrl);
+  ReadCookedFields(_reader, _out.bot);
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld::Region& _in)
+{
+  _writer.F64(_in.side);
+  _writer.F64(_in.channelWidth);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Wld::Region& _out)
+{
+  _out.side = _reader.F64();
+  _out.channelWidth = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld::Site& _in)
+{
+  _writer.F64(_in.spacing);
+  _writer.F64(_in.valleyOffset);
+  _writer.F64(_in.valleyRotation);
+  _writer.F64(_in.coreRadius);
+  _writer.F64(_in.heightMin);
+  _writer.F64(_in.heightMax);
+  _writer.F64(_in.rimStepMax);
+  _writer.F64(_in.coreMinNormalY);
+  _writer.F64(_in.waterClearance);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Wld::Site& _out)
+{
+  _out.spacing = _reader.F64();
+  _out.valleyOffset = _reader.F64();
+  _out.valleyRotation = _reader.F64();
+  _out.coreRadius = _reader.F64();
+  _out.heightMin = _reader.F64();
+  _out.heightMax = _reader.F64();
+  _out.rimStepMax = _reader.F64();
+  _out.coreMinNormalY = _reader.F64();
+  _out.waterClearance = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld::Terrain& _in)
+{
+  _writer.F64(_in.cellSize);
+  _writer.F64(_in.chunkSide);
+  _writer.F64(_in.outsideHeight);
+  _writer.I64(_in.hillsPerRegion);
+  _writer.F64(_in.hillSide);
+  _writer.F64(_in.peakHeightMax);
+  _writer.F64(_in.coreFeather);
+  _writer.F64(_in.centerHalfSize);
+  _writer.F64(_in.centerFeather);
+  _writer.I64(_in.rimSamples);
+  _writer.I64(_in.tilesPerRegionMax);
+  _writer.I64(_in.flattenPerRegionMax);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Wld::Terrain& _out)
+{
+  _out.cellSize = _reader.F64();
+  _out.chunkSide = _reader.F64();
+  _out.outsideHeight = _reader.F64();
+  _out.hillsPerRegion = _reader.I64();
+  _out.hillSide = _reader.F64();
+  _out.peakHeightMax = _reader.F64();
+  _out.coreFeather = _reader.F64();
+  _out.centerHalfSize = _reader.F64();
+  _out.centerFeather = _reader.F64();
+  _out.rimSamples = _reader.I64();
+  _out.tilesPerRegionMax = _reader.I64();
+  _out.flattenPerRegionMax = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld::Generation& _in)
+{
+  _writer.I64(_in.maxAttempts);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Wld::Generation& _out)
+{
+  _out.maxAttempts = _reader.I64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld::Territory& _in)
+{
+  _writer.F64(_in.maxRadius);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Wld::Territory& _out)
+{
+  _out.maxRadius = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld::Travel& _in)
+{
+  _writer.F64(_in.valleyPathFactor);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Wld::Travel& _out)
+{
+  _out.valleyPathFactor = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld& _in)
+{
+  CookFields(_writer, _in.region);
+  CookFields(_writer, _in.site);
+  CookFields(_writer, _in.terrain);
+  CookFields(_writer, _in.generation);
+  CookFields(_writer, _in.territory);
+  CookFields(_writer, _in.travel);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Wld& _out)
+{
+  ReadCookedFields(_reader, _out.region);
+  ReadCookedFields(_reader, _out.site);
+  ReadCookedFields(_reader, _out.terrain);
+  ReadCookedFields(_reader, _out.generation);
+  ReadCookedFields(_reader, _out.territory);
+  ReadCookedFields(_reader, _out.travel);
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp& _in)
+{
+  CookFields(_writer, _in.mvp);
+  CookFields(_writer, _in.ref);
+  CookFields(_writer, _in.wld);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp& _out)
+{
+  ReadCookedFields(_reader, _out.mvp);
+  ReadCookedFields(_reader, _out.ref);
+  ReadCookedFields(_reader, _out.wld);
+}
+
+// Cooks a tuning.mvp record into the bytes of its entry (DAT-014): what the content build writes.
+[[nodiscard]] inline std::vector<std::byte> CookTuningMvp(const TuningMvp& _record)
+{
+  Neuron::CookedWriter payload;
+  CookFields(payload, _record);
+  return Neuron::CookRecordEntry(TUNING_MVP_SCHEMA_ID, TUNING_MVP_VERSION, 1, payload.View());
+}
+
+// Reads a cooked tuning.mvp entry with no parsing: the record, or why the bytes are not one (DAT-050).
+[[nodiscard]] inline std::expected<TuningMvp, std::string> ReadCookedTuningMvp(std::span<const std::byte> _entry)
+{
+  const auto payload = Neuron::OpenCookedRecord(_entry, TUNING_MVP_SCHEMA_ID, TUNING_MVP_VERSION, 1);
+  if (!payload)
+  {
+    return std::unexpected(payload.error());
+  }
+  Neuron::CookedReader reader(*payload);
+  TuningMvp record;
+  ReadCookedFields(reader, record);
+  if (!reader.Finished())
+  {
+    return std::unexpected(std::string("the payload is not the size of a tuning.mvp record"));
   }
   return record;
 }

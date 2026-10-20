@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "text.glyph_table",
+  "title": "The glyph table of one drawn bitmap face: its metrics and, per code point, its cell on the face's one glyph sheet (DAT-219, O63).",
+  "description": "GameData/Fonts/<Face>Glyphs.json, beside its sheet <Face>.dds; every length in pixels of the sheet. The kerning pairs of DAT-219 table 3.8-A join with the first face that kerns, as version 1.1 (DAT-017, ADR-108).",
+  "type": "object",
+  "x-species-sim": false,
+  "x-species-project": "Tools/SpeciesContentBuild",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "description": "the schema id (DAT-016)",
+      "enum": [
+        "text.glyph_table"
+      ]
+    },
+    "version": {
+      "type": "string",
+      "description": "the schema version (DAT-016, DAT-017)",
+      "enum": [
+        "1.0"
+      ]
+    },
+    "face": {
+      "type": "string",
+      "description": "the font asset of the face, a row of the category Fonts (DAT-219 table 3.8-A)",
+      "x-species-type": "asset_ref",
+      "x-species-ref": "Fonts",
+      "x-species-max-chars": 64,
+      "x-species-presence": "required"
+    },
+    "design_size_px": {
+      "type": "integer",
+      "description": "the face's pixel height",
+      "minimum": 0,
+      "x-species-type": "count",
+      "x-species-unit": "px",
+      "x-species-presence": "required"
+    },
+    "line_height_px": {
+      "type": "integer",
+      "description": "the distance between baselines",
+      "minimum": 0,
+      "x-species-type": "count",
+      "x-species-unit": "px",
+      "x-species-presence": "required"
+    },
+    "baseline_px": {
+      "type": "integer",
+      "description": "from the top of a cell to the baseline",
+      "minimum": 0,
+      "x-species-type": "count",
+      "x-species-unit": "px",
+      "x-species-presence": "required"
+    },
+    "cell_width_px": {
+      "type": "integer",
+      "description": "the width of the sheet's grid cell",
+      "minimum": 0,
+      "x-species-type": "count",
+      "x-species-unit": "px",
+      "x-species-presence": "required"
+    },
+    "cell_height_px": {
+      "type": "integer",
+      "description": "the height of the sheet's grid cell",
+      "minimum": 0,
+      "x-species-type": "count",
+      "x-species-unit": "px",
+      "x-species-presence": "required"
+    },
+    "missing": {
+      "type": "integer",
+      "description": "the code point drawn for a character the table does not hold; U+003F by default",
+      "minimum": 32,
+      "maximum": 1114111,
+      "default": 63,
+      "x-species-type": "integer",
+      "x-species-unit": "code points",
+      "x-species-presence": "defaulted"
+    },
+    "glyphs": {
+      "type": "array",
+      "description": "the glyphs of DAT-219 table 3.8-B, at least one; the font packer sorts them by code point",
+      "minItems": 1,
+      "x-species-type": "list",
+      "x-species-order": "none",
+      "x-species-presence": "required",
+      "items": {
+        "type": "object",
+        "description": "one glyph",
+        "properties": {
+          "cp": {
+            "type": "integer",
+            "description": "the code point, U+0020 to U+10FFFF",
+            "minimum": 32,
+            "maximum": 1114111,
+            "x-species-type": "integer",
+            "x-species-unit": "code points",
+            "x-species-presence": "required"
+          },
+          "col": {
+            "type": "integer",
+            "description": "the glyph's cell column, from the left",
+            "minimum": 0,
+            "x-species-type": "count",
+            "x-species-unit": "cells",
+            "x-species-presence": "required"
+          },
+          "row": {
+            "type": "integer",
+            "description": "the glyph's cell row, from the top",
+            "minimum": 0,
+            "x-species-type": "count",
+            "x-species-unit": "cells",
+            "x-species-presence": "required"
+          },
+          "width_px": {
+            "type": "integer",
+            "description": "the width of the drawn glyph inside its cell, at most the cell width",
+            "minimum": 0,
+            "x-species-type": "count",
+            "x-species-unit": "px",
+            "x-species-presence": "required"
+          },
+          "bearing_px": {
+            "type": "integer",
+            "description": "the offset from the pen position to the ink's left edge; 0 by default",
+            "minimum": -16384,
+            "maximum": 16384,
+            "default": 0,
+            "x-species-type": "integer",
+            "x-species-unit": "px",
+            "x-species-presence": "defaulted"
+          },
+          "advance_px": {
+            "type": "integer",
+            "description": "the pen's move after the glyph",
+            "minimum": 0,
+            "x-species-type": "count",
+            "x-species-unit": "px",
+            "x-species-presence": "required"
+          },
+          "offset_y_px": {
+            "type": "integer",
+            "description": "moves the glyph off the face's baseline; 0 by default",
+            "minimum": -16384,
+            "maximum": 16384,
+            "default": 0,
+            "x-species-type": "integer",
+            "x-species-unit": "px",
+            "x-species-presence": "defaulted"
+          }
+        },
+        "required": [
+          "cp",
+          "col",
+          "row",
+          "width_px",
+          "advance_px"
+        ],
+        "additionalProperties": false,
+        "x-species-type": "object"
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "version",
+    "face",
+    "design_size_px",
+    "line_height_px",
+    "baseline_px",
+    "cell_width_px",
+    "cell_height_px",
+    "glyphs"
+  ],
+  "additionalProperties": false
+}

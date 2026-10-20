@@ -1,0 +1,27 @@
+#pragma once
+
+#include "BuildReport.h"
+#include "LooseContent.h"
+
+#include <cstddef>
+#include <filesystem>
+#include <vector>
+
+namespace ContentBuild
+{
+
+/// What one run of the content build cooked, before it is written: every entry, and how many manifest rows have no
+/// authored file yet.
+struct BuildResult
+{
+  std::vector<Neuron::CookedEntry> entries;
+  std::size_t rowsWithoutFile = 0;
+};
+
+// The content build of ADR-108: reads the asset manifest and every source under the repository's GameData/ in name
+// order, and cooks each by its row or folder: a texture checked and packed as authored, a face packed by the font
+// packer, a CMO mesh cooked, a data record cooked. A file that belongs to no row and is no record is a stray (AST-013).
+// It writes nothing; every fault is in the report.
+[[nodiscard]] BuildResult CookContent(const std::filesystem::path& _root, BuildReport& _report);
+
+} // namespace ContentBuild

@@ -256,6 +256,8 @@ Table 3.6-A Caption markers.
 
 > **Amendment 2026-10-19 (O61, O63).** A face has **one** glyph sheet (O63), so the rule on the 2x sheet does not apply, and the cooked `Font` holds one `R8_UNORM` page. The glyph table is a member of its face's asset beside the sheet in `GameData/Fonts/`, named after the face with the suffix `Glyphs` (`GameFont.dds` and `GameFontGlyphs.json`), so that the two members have different keys (AST-014). A cell may hold the glyph of any code point the table names, and two code points may share a cell (U+00A0 and U+0020 share the blank cell); code points still never repeat. The owner's two faces have `design_size_px`, `line_height_px`, `cell_width_px` and `cell_height_px` of 16 and `baseline_px` of 13 (their capitals stand on rows 1 to 12 of a cell and their descenders reach row 14), and every glyph has `width_px` and `advance_px` of 16 and `bearing_px` of 0, so the whole cell is drawn: both faces are monospaced as drawn. The `face` field names `font.ui.primary` or `font.dev.editor`.
 
+> **Amendment 2026-10-20 ([ADR-108](../../../ADR/ADR-108-content-build-loose-content-and-cooked-formats.md), M1 task T11).** The schema `GameData/Schemas/text.glyph_table.schema.json`, version 1.0, holds every field of tables 3.8-A and 3.8-B but `kerning`, which no face has. A table that adds one is refused as an unknown field, and kerning joins as version 1.1 with the first face that kerns (DAT-017). The font packer checks the rules that the schema cannot state, and the cooked `Font` is the `FontAsset` of ADR-108: the metrics, the glyphs sorted by code point, and the face's one page.
+
 Table 3.8-A Fields of a glyph table.
 
 | Field | Key | Type | Presence | Rule |

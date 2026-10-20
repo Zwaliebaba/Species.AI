@@ -59,26 +59,63 @@ RecordObject RecordReader::Object(RecordObject& _parent, std::string_view _key)
 
 std::int64_t RecordReader::Integer(RecordObject& _object, std::string_view _key, std::int64_t _minimum)
 {
+  return IntegerValue(Take(_object, _key), Joined(_object.path, _key), _minimum, INTEGER_NO_MAXIMUM);
+}
+
+std::int64_t RecordReader::Integer(RecordObject& _object, std::string_view _key, std::int64_t _minimum, std::int64_t _maximum)
+{
+  return IntegerValue(Take(_object, _key), Joined(_object.path, _key), _minimum, _maximum);
+}
+
+std::int64_t RecordReader::DefaultedInteger(RecordObject& _object, std::string_view _key, std::int64_t _minimum, std::int64_t _maximum,
+                                            std::int64_t _default)
+{
+  const JsonValue* value = TakeIfPresent(_object, _key);
+  return value == nullptr ? _default : IntegerValue(value, Joined(_object.path, _key), _minimum, _maximum);
+}
+
+std::string RecordReader::Text(RecordObject& _object, std::string_view _key, std::size_t _maxChars)
+{
   const JsonValue* value = Take(_object, _key);
   if (value == nullptr)
   {
-    return 0;
+    return {};
   }
   const std::string path = Joined(_object.path, _key);
-  const std::string& token = value->text;
-  if (value->kind != JsonKind::Number || token.find_first_of(".eE") != std::string::npos)
+  if (value->kind != JsonKind::String)
   {
-    Report(DiagnosticClass::WrongType, value->line, value->column, path, "an integer is expected");
-    return 0;
+    Report(DiagnosticClass::WrongType, value->line, value->column, path, "a text is expected");
+    return {};
   }
-  std::int64_t result = 0;
-  const std::from_chars_result converted = std::from_chars(token.data(), token.data() + token.size(), result);
-  if (converted.ec != std::errc{} || converted.ptr != token.data() + token.size() || result < _minimum)
+  if (CodePoints(value->text) > _maxChars)
   {
-    Report(DiagnosticClass::OutOfRange, value->line, value->column, path, std::format("a value below {} or beyond 64 bits", _minimum));
-    return 0;
+    Report(DiagnosticClass::TooLong, value->line, value->column, path, std::format("a text longer than {} characters", _maxChars));
+    return {};
   }
-  return result;
+  return value->text;
+}
+
+RecordList RecordReader::List(RecordObject& _object, std::string_view _key, std::size_t _minItems, std::size_t _maxItems)
+{
+  return ListValue(Take(_object, _key), Joined(_object.path, _key), _minItems, _maxItems);
+}
+
+RecordList RecordReader::DefaultedList(RecordObject& _object, std::string_view _key, std::size_t _minItems, std::size_t _maxItems)
+{
+  const JsonValue* value = TakeIfPresent(_object, _key);
+  std::string path = Joined(_object.path, _key);
+  return value == nullptr ? RecordList{nullptr, std::move(path)} : ListValue(value, std::move(path), _minItems, _maxItems);
+}
+
+RecordObject RecordReader::Element(const RecordList& _list, std::size_t _index)
+{
+  return Open(_index < _list.Size() ? &_list.value->items[_index] : nullptr, std::format("{}[{}]", _list.path, _index));
+}
+
+std::int64_t RecordReader::ElementInteger(const RecordList& _list, std::size_t _index, std::int64_t _minimum, std::int64_t _maximum)
+{
+  return IntegerValue(_index < _list.Size() ? &_list.value->items[_index] : nullptr, std::format("{}[{}]", _list.path, _index), _minimum,
+                      _maximum);
 }
 
 double RecordReader::Decimal(RecordObject& _object, std::string_view _key, const DecimalRange& _range, SimPrecision _precision)
@@ -156,6 +193,70 @@ const JsonValue* RecordReader::Take(RecordObject& _object, std::string_view _key
   }
   _object.taken[static_cast<std::size_t>(found - members.begin())] = true;
   return &found->value;
+}
+
+const JsonValue* RecordReader::TakeIfPresent(RecordObject& _object, std::string_view _key)
+{
+  if (_object.value == nullptr)
+  {
+    return nullptr;
+  }
+  const auto& members = _object.value->members;
+  const auto found = std::ranges::find_if(members, [_key](const JsonMember& _member) { return _member.key == _key; });
+  if (found == members.end())
+  {
+    return nullptr;
+  }
+  _object.taken[static_cast<std::size_t>(found - members.begin())] = true;
+  return &found->value;
+}
+
+std::int64_t RecordReader::IntegerValue(const JsonValue* _value, const std::string& _path, std::int64_t _minimum, std::int64_t _maximum)
+{
+  if (_value == nullptr)
+  {
+    return 0;
+  }
+  const std::string& token = _value->text;
+  if (_value->kind != JsonKind::Number || token.find_first_of(".eE") != std::string::npos)
+  {
+    Report(DiagnosticClass::WrongType, _value->line, _value->column, _path, "an integer is expected");
+    return 0;
+  }
+  std::int64_t result = 0;
+  const std::from_chars_result converted = std::from_chars(token.data(), token.data() + token.size(), result);
+  if (converted.ec != std::errc{} || converted.ptr != token.data() + token.size() || result < _minimum || result > _maximum)
+  {
+    Report(DiagnosticClass::OutOfRange, _value->line, _value->column, _path,
+           _maximum == INTEGER_NO_MAXIMUM ? std::format("a value below {} or beyond 64 bits", _minimum)
+                                          : std::format("a value outside {} to {}", _minimum, _maximum));
+    return 0;
+  }
+  return result;
+}
+
+RecordList RecordReader::ListValue(const JsonValue* _value, std::string _path, std::size_t _minItems, std::size_t _maxItems)
+{
+  RecordList list;
+  list.path = std::move(_path);
+  if (_value == nullptr)
+  {
+    return list;
+  }
+  if (_value->kind != JsonKind::Array)
+  {
+    Report(DiagnosticClass::WrongType, _value->line, _value->column, list.path, "a list is expected");
+    return list;
+  }
+  if (_value->items.size() < _minItems || _value->items.size() > _maxItems)
+  {
+    Report(DiagnosticClass::OutOfRange, _value->line, _value->column, list.path,
+           _maxItems == LIST_NO_MAXIMUM ? std::format("a list of fewer than {} elements", _minItems)
+                                        : std::format("a list of other than {} to {} elements", _minItems, _maxItems));
+    return list;
+  }
+  list.value = _value;
+  return list;
 }
 
 RecordObject RecordReader::Open(const JsonValue* _value, std::string _path)

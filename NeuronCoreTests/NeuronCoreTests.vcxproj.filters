@@ -4,6 +4,9 @@
     <Filter Include="Build">
       <UniqueIdentifier>{7FBB8502-D92E-5973-B8E8-8CA9F063025F}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Content">
+      <UniqueIdentifier>{9025B5DF-5D64-5ECD-A419-471282792EA7}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Diagnostics">
       <UniqueIdentifier>{F05D831F-524E-533F-8B28-631DCFA00889}</UniqueIdentifier>
     </Filter>
@@ -41,8 +44,20 @@
     <ClCompile Include="CheckTests.cpp">
       <Filter>Diagnostics</Filter>
     </ClCompile>
+    <ClCompile Include="ContentKeyTests.cpp">
+      <Filter>Content</Filter>
+    </ClCompile>
+    <ClCompile Include="CookedRecordTests.cpp">
+      <Filter>Records</Filter>
+    </ClCompile>
+    <ClCompile Include="DdsHeaderTests.cpp">
+      <Filter>Content</Filter>
+    </ClCompile>
     <ClCompile Include="FilesTests.cpp">
       <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="FontAssetTests.cpp">
+      <Filter>Content</Filter>
     </ClCompile>
     <ClCompile Include="JobQueueTests.cpp">
       <Filter>Platform</Filter>
@@ -52,6 +67,12 @@
     </ClCompile>
     <ClCompile Include="LogTests.cpp">
       <Filter>Diagnostics</Filter>
+    </ClCompile>
+    <ClCompile Include="LooseContentTests.cpp">
+      <Filter>Content</Filter>
+    </ClCompile>
+    <ClCompile Include="MeshAssetTests.cpp">
+      <Filter>Content</Filter>
     </ClCompile>
     <ClCompile Include="MessageCodecTests.cpp">
       <Filter>Network</Filter>
@@ -71,6 +92,9 @@
     <ClCompile Include="ProfileTests.cpp">
       <Filter>Profiling</Filter>
     </ClCompile>
+    <ClCompile Include="RecordReaderTests.cpp">
+      <Filter>Records</Filter>
+    </ClCompile>
     <ClCompile Include="Sha256Tests.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
@@ -79,6 +103,9 @@
     </ClCompile>
     <ClCompile Include="SipHashTests.cpp">
       <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="StartupOptionsTests.cpp">
+      <Filter>Platform</Filter>
     </ClCompile>
     <ClCompile Include="TerrainFieldTests.cpp">
       <Filter>Tests</Filter>

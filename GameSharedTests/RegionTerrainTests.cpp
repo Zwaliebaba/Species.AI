@@ -25,7 +25,7 @@ const Species::TuningMvp& Tuning()
 {
   static const Species::TuningMvp COMMITTED = []
   {
-    const auto loaded = Species::LoadTuningMvp(RepositoryContentRoot());
+    const auto loaded = Species::ReadTuningMvpSource(RepositoryContentRoot());
     Assert::IsTrue(loaded.has_value(), L"the committed tuning record reads whole");
     return loaded.value_or(Species::TuningMvp{});
   }();

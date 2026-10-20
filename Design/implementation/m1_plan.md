@@ -114,6 +114,7 @@ The number of sides, their size and their sites are tuning keys under `mvp.sandb
 - **The x64 build is not measured** on the reference test machine (O69); the minimum-specification tier measures it before the first external build.
 - **DirectXTex.** The content build restores no DirectXTex while every texture is authored in its runtime format (O69, ADR-017 amendment). The pinned package ships x64 static libraries only, which the tool's ARM64 build cannot link; the first texture that needs cooking settles that in an ADR.
 - **CI builds `Debug|x64` only** (`AGENTS.md` §6). The `Release|ARM64` builds of T10 and T18 are the owner's, as is a Release build of any change that could break only under optimisation.
+- **Content (O73).** T11 lands ahead of T9 and T10. Until packs exist, every configuration mounts the loose-content folder that the solution build cooks beside the executables, so the `Release|ARM64` server of T10 and T18 reads the cooked tuning record. M1 has no import records: textures are checked against their rows and meshes cooked at one world unit per source unit ([ADR-108](../ADR/ADR-108-content-build-loose-content-and-cooked-formats.md)).
 
 ## 8 What the owner does during M1
 
