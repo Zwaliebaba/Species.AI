@@ -95,10 +95,37 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="pch.h" />
+    <ClInclude Include="Check.h" />
+    <ClInclude Include="Development.h" />
+    <ClInclude Include="FatalPath.h" />
+    <ClInclude Include="Files.h" />
+    <ClInclude Include="FloatEnvironment.h" />
+    <ClInclude Include="JobQueue.h" />
+    <ClInclude Include="Log.h" />
+    <ClInclude Include="LogBuffer.h" />
+    <ClInclude Include="LogFile.h" />
+    <ClInclude Include="PlatformClock.h" />
+    <ClInclude Include="PlatformLogSink.h" />
+    <ClInclude Include="PlatformThread.h" />
+    <ClInclude Include="Profile.h" />
+    <ClInclude Include="TextEncoding.h" />
     <ClInclude Include="WindowsHeaders.h" />
+    <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Check.cpp" />
+    <ClCompile Include="FatalPath.cpp" />
+    <ClCompile Include="Files.cpp" />
+    <ClCompile Include="FloatEnvironment.cpp" />
+    <ClCompile Include="JobQueue.cpp" />
+    <ClCompile Include="Log.cpp" />
+    <ClCompile Include="LogBuffer.cpp" />
+    <ClCompile Include="LogFile.cpp" />
+    <ClCompile Include="PlatformClock.cpp" />
+    <ClCompile Include="PlatformLogSink.cpp" />
+    <ClCompile Include="PlatformThread.cpp" />
+    <ClCompile Include="Profile.cpp" />
+    <ClCompile Include="TextEncoding.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

@@ -21,4 +21,9 @@
       <Filter>Program</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config">
+      <Filter>Build</Filter>
+    </None>
+  </ItemGroup>
 </Project>

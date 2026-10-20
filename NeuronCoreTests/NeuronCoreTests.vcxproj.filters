@@ -4,21 +4,68 @@
     <Filter Include="Build">
       <UniqueIdentifier>{7FBB8502-D92E-5973-B8E8-8CA9F063025F}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Diagnostics">
+      <UniqueIdentifier>{F05D831F-524E-533F-8B28-631DCFA00889}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Platform">
+      <UniqueIdentifier>{2247C10B-9926-5A1D-BACB-8AF8411B661A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Profiling">
+      <UniqueIdentifier>{807C10F2-1E4F-5CD3-A706-6C6F29815CC6}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Tests">
       <UniqueIdentifier>{24136293-B8B3-55DF-8A56-A98982AFA429}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="TestSupport.h">
+      <Filter>Tests</Filter>
+    </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Build</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CheckTests.cpp">
+      <Filter>Diagnostics</Filter>
+    </ClCompile>
+    <ClCompile Include="FilesTests.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="JobQueueTests.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="LogBufferTests.cpp">
+      <Filter>Diagnostics</Filter>
+    </ClCompile>
+    <ClCompile Include="LogTests.cpp">
+      <Filter>Diagnostics</Filter>
+    </ClCompile>
+    <ClCompile Include="PlatformClockTests.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="PlatformLogSinkTests.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="PlatformThreadTests.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="ProfileTests.cpp">
+      <Filter>Profiling</Filter>
+    </ClCompile>
+    <ClCompile Include="TestSupport.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="TextEncodingTests.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Build</Filter>
     </ClCompile>
-    <ClCompile Include="SuiteSmoke.cpp">
-      <Filter>Tests</Filter>
-    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config">
+      <Filter>Build</Filter>
+    </None>
   </ItemGroup>
 </Project>

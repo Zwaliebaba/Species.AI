@@ -44,7 +44,6 @@ RULES = {
 }
 
 NOT_YET_CHECKED = [
-  'PLT-003: a platform service used outside the platform layer (no platform service exists yet)',
   'BLD-076: an embedded map hash (no map code exists yet)',
   'DAT-277: a mesh socket looked up by name text (no mesh code exists yet)',
   'AEN-025, AEN-003: allocator, lock, logger or voice calls in an audio callback; XAudio2 includes outside the voice '
@@ -116,6 +115,23 @@ REQUIRED_LINK_BY_CONFIGURATION = {
 }
 
 WINDOWS_MACROS = ('NOMINMAX', 'WIN32_LEAN_AND_MEAN', 'NOMCX', 'NOSERVICE', 'NOHELP')
+
+# PLT-003: the operating-system services of the platform layer's table 1-A that no other project calls directly. The
+# platform layer is NeuronCore (ADR-090 table 1); the window is NeuronClient's, so it may create one too.
+PLATFORM_PROJECT = 'NeuronCore'
+WINDOW_PROJECTS = {'NeuronCore', 'NeuronClient'}
+PLATFORM_SERVICES = (
+  (r'\bQueryPerformance(?:Counter|Frequency)\b', 'reads the performance counter (ADR-074)'),
+  (r'\b(?:GetTickCount(?:64)?|timeGetTime|timeBeginPeriod)\b', 'reads a tick-count or multimedia timer (ADR-074)'),
+  (r'\b(?:steady_clock|system_clock|high_resolution_clock|utc_clock|tai_clock|gps_clock|file_clock)\s*::\s*now\b',
+   'reads a standard-library clock (ADR-074)'),
+  (r'\bSHGetKnownFolderPath\b|\bSHGetFolderPath[AW]?\b', 'looks up a known folder'),
+  (r'\bWer(?:Register|Unregister)\w*', 'registers with Windows Error Reporting'),
+  (r'\bstd::j?thread\b(?!\s*::)|\b(?:CreateThread|CreateRemoteThread|_beginthreadex|_beginthread)\b',
+   'creates a thread other than through PlatformThread'),
+)
+WINDOW_CREATION = r'\bCreateWindow(?:Ex)?[AW]?\b'
+PIX_FILE = 'NeuronCore/Profile.cpp'                       # ADR-068, DBG-080: no other code calls the PIX runtime
 WINDOWS_HEADERS = 'NeuronCore/WindowsHeaders.h'           # PLT-132
 FILE_KIND_DEFAULTS = {'Source Files', 'Header Files', 'Resource Files'}
 SOURCE_EXTENSIONS = ('.h', '.cpp')
@@ -612,6 +628,20 @@ def rule_14(tree):
       for m in re.finditer(r'^\s*#\s*define\s+(' + '|'.join(WINDOWS_MACROS) + r')\b', stripped, re.MULTILINE):
         line = stripped.count('\n', 0, m.start()) + 1
         yield f'{path}:{line}', f'defines {m.group(1)}; only {os.path.basename(WINDOWS_HEADERS)} does (PLT-132)'
+    project = path.split('/')[0]
+    if project != PLATFORM_PROJECT:
+      for pattern, what in PLATFORM_SERVICES:
+        for m in re.finditer(pattern, stripped):
+          line = stripped.count('\n', 0, m.start()) + 1
+          yield f'{path}:{line}', f'{what} outside the platform layer (PLT-003)'
+    if project not in WINDOW_PROJECTS:
+      for m in re.finditer(WINDOW_CREATION, stripped):
+        line = stripped.count('\n', 0, m.start()) + 1
+        yield f'{path}:{line}', 'creates a window outside the platform layer and the client engine (PLT-003, ADR-090)'
+    if path != PIX_FILE:
+      for line, _, header in SolutionModel.includes(text):
+        if header.lower() in ('pix3.h', 'pix3_win.h', 'pixevents.h'):
+          yield f'{path}:{line}', f'includes {header}; only {os.path.basename(PIX_FILE)} calls the PIX runtime (DBG-080)'
     without_comments = strip_comments_only(text)
     for m in REQUIREMENT_ATTRIBUTE.finditer(without_comments):
       if m.group(1) not in requirements:
@@ -767,7 +797,7 @@ FIXTURES = [
   (10, 'a project that lists its own folder as an include directory', fixture_own_include),
   (11, 'NeuronServer referencing NeuronClient (ADR-090 confirmation)', fixture_server_reaches_client),
   (12, 'test code outside namespace <Project>Tests',
-   lambda r: edit(r, 'NeuronCoreTests/SuiteSmoke.cpp', 'namespace NeuronCoreTests\n', 'namespace CoreTests\n')),
+   lambda r: edit(r, 'NeuronCoreTests/TestSupport.cpp', 'namespace NeuronCoreTests\n', 'namespace CoreTests\n')),
   (13, 'GameClient including a GameLogic header (ADR-090 confirmation)',
    lambda r: (write(r, 'GameLogic/IntegratedServer.h', '#pragma once\n'),
               edit_project(r, 'GameLogic/GameLogic.vcxproj',
@@ -777,9 +807,25 @@ FIXTURES = [
   (14, '<windows.h> included outside WindowsHeaders.h',
    lambda r: write(r, 'GameShared/pch.h', '\n#include <windows.h>\n', append=True)),
   (14, 'a Requirement attribute that names no requirement id',
-   lambda r: write(r, 'NeuronCoreTests/SuiteSmoke.cpp',
+   lambda r: write(r, 'NeuronCoreTests/TestSupport.cpp',
                    '\n// BEGIN_TEST_METHOD_ATTRIBUTE(SuiteRuns)\nTEST_METHOD_ATTRIBUTE(L"Requirement", L"XYZ-999")\n',
                    append=True)),
+  (14, 'the performance counter read outside the platform layer (PLT-003)',
+   lambda r: write(r, 'GameShared/pch.h', '\ninline long long Ticks() { LARGE_INTEGER t; QueryPerformanceCounter(&t); return 0; }\n', append=True)),
+  (14, 'a tick count read outside the platform layer (PLT-003)',
+   lambda r: write(r, 'GameLogic/pch.h', '\ninline auto g_start = GetTickCount64();\n', append=True)),
+  (14, 'a standard-library clock read outside the platform layer (PLT-003)',
+   lambda r: write(r, 'NeuronServer/pch.h', '\ninline auto g_start = std::chrono::steady_clock::now();\n', append=True)),
+  (14, 'a known folder looked up outside the platform layer (PLT-003)',
+   lambda r: write(r, 'GameClient/pch.h', '\ninline auto g_folder = SHGetKnownFolderPath;\n', append=True)),
+  (14, 'a Windows Error Reporting registration outside the platform layer (PLT-003)',
+   lambda r: write(r, 'Species/pch.h', '\ninline auto g_register = WerRegisterFile;\n', append=True)),
+  (14, 'a thread created other than through PlatformThread (PLT-003)',
+   lambda r: write(r, 'NeuronCoreTests/TestSupport.h', '\ninline std::jthread g_worker;\n', append=True)),
+  (14, 'a window created outside the platform layer and the client engine (PLT-003)',
+   lambda r: write(r, 'GameClient/pch.h', '\ninline auto g_create = CreateWindowExW;\n', append=True)),
+  (14, 'pix3.h included outside Profile.cpp (DBG-080)',
+   lambda r: write(r, 'NeuronCore/Log.cpp', '\n#include <pix3.h>\n', append=True)),
 ]
 
 
