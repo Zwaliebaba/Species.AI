@@ -97,6 +97,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-094](ADR-094-arm64-development-build.md) | ARM64 development build: a second platform for the owner's PC, not a shipping target | Proposed | 2026-10-20 |
 | [ADR-095](ADR-095-server-host-tick-loop-and-command-queue.md) | Server host, tick loop and command queue: NeuronServer's first form | Proposed | 2026-10-20 |
 | [ADR-096](ADR-096-game-skeleton-integrated-server-and-tick-report.md) | Game skeleton: the world's owners, the integrated server and the tick report | Proposed | 2026-10-20 |
+| [ADR-097](ADR-097-keyed-draws-and-state-hash.md) | Keyed draws and the state hash: SimRng, the draw ledger and the owners' canonical state | Proposed | 2026-10-20 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

@@ -36,6 +36,13 @@ void WorldSimulation::Step(std::uint64_t _tick, Neuron::WorkerPool& _workers)
   m_nextTick = _tick + 1;
 }
 
+void WorldSimulation::WriteState(Neuron::BitWriter& _writer) const
+{
+  _writer.WriteBits(m_nextTick, 64);
+  _writer.WriteBits(m_ids.Next(), 64);
+  m_commands.WriteState(_writer);
+}
+
 RegionSimulation& WorldSimulation::Region(std::size_t _index)
 {
   return *m_regions.at(_index);

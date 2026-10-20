@@ -6,6 +6,8 @@
 #include "TickReport.h"
 #include "WorldServer.h"
 
+#include <utility>
+
 namespace Species
 {
 
@@ -59,6 +61,12 @@ void WorldServer::DatagramFates(Neuron::ConnectionId, std::span<const Neuron::Da
 void WorldServer::Step(std::uint64_t _tick, Neuron::WorkerPool& _workers)
 {
   m_world->Step(_tick, _workers);
+#if ENGINE_DEVELOPMENT
+  // Debug and test runs hash every tick (ADR-081 item 8); a Release server hashes at its saves.
+  WorldHashes hashes = HashWorld(*m_world);
+  Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Trace, "tick {} hash {:016x}", _tick, hashes.world);
+  m_lastHashes = std::move(hashes);
+#endif
 }
 
 void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender)

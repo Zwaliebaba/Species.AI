@@ -2,6 +2,7 @@
 
 #include "ServerHost.h"
 #include "StableId.h"
+#include "StateHash.h"
 #include "WorldSimulation.h"
 
 #include <cstdint>
@@ -41,6 +42,11 @@ public:
   {
     return m_world.get();
   }
+  // The hashes at the end of the last tick, which development builds compute every tick (ADR-081 item 8, DBG-147).
+  [[nodiscard]] const std::optional<WorldHashes>& LastHashes() const noexcept
+  {
+    return m_lastHashes;
+  }
 
 private:
   struct Steward
@@ -52,6 +58,7 @@ private:
   Desc m_desc;
   std::unique_ptr<WorldSimulation> m_world;
   std::map<Neuron::ConnectionId, Steward> m_stewards;
+  std::optional<WorldHashes> m_lastHashes;
 };
 
 } // namespace Species

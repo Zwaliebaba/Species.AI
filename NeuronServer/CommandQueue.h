@@ -22,6 +22,8 @@ using SenderId = std::uint64_t;
 
 // ADR-082 item 5: the domain of the keyed value that orders the senders of a tick.
 inline constexpr std::uint64_t SENDER_ORDER_DOMAIN = 3;
+// The most commands an owner's queue holds in its saved state (ADR-096): a bound for the reader, far above a tick's.
+inline constexpr std::uint64_t COMMAND_QUEUE_STATE_MAX = 65'535;
 
 // The sender's place in the keyed order of a tick (ADR-087 item 4): a SipHash-2-4 value of the simulation key over the
 // domain, the tick and the sender, which no client can compute and which changes every tick.
@@ -101,6 +103,11 @@ public:
   {
     return m_pending.size();
   }
+  // The queued commands, in arrival order, as owner state (ADR-083 items 4 and 9): what a cut saves and the state hash
+  // covers. A tick's commands from the deputy or the AI are queued in it for the next.
+  void WriteState(BitWriter& _writer) const;
+  // Queues the commands that WriteState wrote, checked again on arrival; false when the state does not read whole.
+  [[nodiscard]] bool ReadState(BitReader& _reader);
   [[nodiscard]] std::vector<CommandOutcome> TakeOutcomes();
   [[nodiscard]] const CommandRejectionCounts& Rejections() const noexcept
   {

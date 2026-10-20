@@ -14,6 +14,14 @@ RegionSimulation::RegionSimulation(std::uint16_t _index, const Neuron::SipHashKe
 {
 }
 
+void RegionSimulation::WriteState(Neuron::BitWriter& _writer) const
+{
+  _writer.WriteBits(m_index, 16);
+  _writer.WriteBits(m_nextTick, 64);
+  _writer.WriteBits(m_ids.Next(), 64);
+  m_commands.WriteState(_writer);
+}
+
 void RegionSimulation::Step(std::uint64_t _tick)
 {
   ENGINE_ASSERT(_tick == m_nextTick);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BitWriter.h"
 #include "CommandQueue.h"
 #include "StableId.h"
 #include "StableIdCounter.h"
@@ -19,6 +20,9 @@ public:
 
   // One region job of tick _tick: its commands, then its update slices in order (ADR-079 item 2), of which M0 has none.
   void Step(std::uint64_t _tick);
+
+  // Every mutable value of the region, canonically (ADR-083 item 4): what its hash covers and its snapshot holds.
+  void WriteState(Neuron::BitWriter& _writer) const;
 
   [[nodiscard]] std::uint16_t Index() const noexcept
   {

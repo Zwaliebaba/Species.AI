@@ -48,8 +48,6 @@ NOT_YET_CHECKED = [
   'DAT-277: a mesh socket looked up by name text (no mesh code exists yet)',
   'AEN-025, AEN-003: allocator, lock, logger or voice calls in an audio callback; XAudio2 includes outside the voice '
   'back-end (no audio code exists yet)',
-  'VFX-005, UI-002, DEC-222: SimRng.h or a writable simulation header included outside the simulation (no such '
-  'header exists yet)',
 ]
 
 # ADR-090 table 1: the projects of the solution and the projects each may reference directly. A program may also
@@ -136,6 +134,10 @@ HEADLESS_PROJECTS = {'NeuronServer', 'GameShared', 'GameLogic'}
 # static variable g_ and every mutable static member sm_, so such a name in a simulation source is such a variable.
 SIMULATION_PROJECTS = {'GameShared', 'GameLogic'}
 MUTABLE_STATIC_NAME = re.compile(r'\b(?:g|sm)_[A-Za-z]\w*')
+# VFX-005, UI-002, DEC-222: the simulation's draws are its own. SimRng.h is NeuronCore's, and only the simulation and the
+# test projects include it; the simulation's other headers are GameLogic's, which rules 11 and 13 keep from the client.
+SIM_RNG_HEADER = 'SimRng.h'
+SIM_RNG_PROJECTS = {'NeuronCore', 'GameLogic'}
 PLATFORM_SERVICES = (
   (r'\bQueryPerformance(?:Counter|Frequency)\b', 'reads the performance counter (ADR-074)'),
   (r'\b(?:GetTickCount(?:64)?|timeGetTime|timeBeginPeriod)\b', 'reads a tick-count or multimedia timer (ADR-074)'),
@@ -716,6 +718,10 @@ def rule_14(tree):
       for m in re.finditer(WINDOW_CREATION, stripped):
         line = stripped.count('\n', 0, m.start()) + 1
         yield f'{path}:{line}', 'creates a window outside the platform layer and the client engine (PLT-003, ADR-090)'
+    if project not in SIM_RNG_PROJECTS and not project.endswith('Tests'):
+      for line, _, header in SolutionModel.includes(text):
+        if os.path.basename(header.replace('\\', '/')) == SIM_RNG_HEADER:
+          yield f'{path}:{line}', f'includes {header} in {project}; only the simulation draws (VFX-005, UI-002, DEC-222)'
     if project in SIMULATION_PROJECTS:
       for m in MUTABLE_STATIC_NAME.finditer(stripped):
         line = stripped.count('\n', 0, m.start()) + 1
@@ -945,6 +951,8 @@ FIXTURES = [
    lambda r: write(r, 'NeuronClient/pch.h', '\n#include "d3dx12.h"\n', append=True)),
   (14, 'a socket header included (ADR-089)',
    lambda r: write(r, 'NeuronCore/InProcessTransport.cpp', '\n#include <winsock2.h>\n', append=True)),
+  (14, 'SimRng.h included by the client (VFX-005, UI-002)',
+   lambda r: write(r, 'GameClient/pch.h', '\n#include "SimRng.h"\n', append=True)),
   (14, 'a mutable namespace-scope variable in the simulation (R-SIM-019)',
    lambda r: write(r, 'GameLogic/pch.h', '\ninline int g_ticksSeen = 0;\n', append=True)),
   (14, 'a Windows header included by the server library (ADR-083 item 1)',

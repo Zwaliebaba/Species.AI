@@ -21,6 +21,9 @@
     <ClInclude Include="StableIdCounter.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="StateHash.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="WorldServer.h">
       <Filter>Server</Filter>
     </ClInclude>
@@ -39,6 +42,9 @@
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="StableIdCounter.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="StateHash.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="WorldServer.cpp">

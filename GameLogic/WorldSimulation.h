@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BitWriter.h"
 #include "CommandQueue.h"
 #include "RegionSimulation.h"
 #include "SipHash.h"
@@ -29,6 +30,10 @@ public:
   explicit WorldSimulation(const Desc& _desc);
 
   void Step(std::uint64_t _tick, Neuron::WorkerPool& _workers);
+
+  // The world owner's own mutable values, canonically: the world tick, its id counter and its queued commands. The
+  // simulation key is held apart: a snapshot saves it, and no hash covers it (ADR-082 item 1).
+  void WriteState(Neuron::BitWriter& _writer) const;
 
   // The world tick: the next tick to step.
   [[nodiscard]] std::uint64_t NextTick() const noexcept

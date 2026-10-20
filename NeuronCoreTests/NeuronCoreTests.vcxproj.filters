@@ -65,6 +65,9 @@
     <ClCompile Include="ProfileTests.cpp">
       <Filter>Profiling</Filter>
     </ClCompile>
+    <ClCompile Include="SimRngTests.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
     <ClCompile Include="SipHashTests.cpp">
       <Filter>Maths</Filter>
     </ClCompile>

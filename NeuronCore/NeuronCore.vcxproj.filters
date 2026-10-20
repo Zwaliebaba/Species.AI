@@ -84,6 +84,9 @@
     <ClInclude Include="SecureRandom.h">
       <Filter>Platform</Filter>
     </ClInclude>
+    <ClInclude Include="SimRng.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
     <ClInclude Include="SipHash.h">
       <Filter>Maths</Filter>
     </ClInclude>
@@ -160,6 +163,9 @@
     </ClCompile>
     <ClCompile Include="SecureRandom.cpp">
       <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="SimRng.cpp">
+      <Filter>Maths</Filter>
     </ClCompile>
     <ClCompile Include="SipHash.cpp">
       <Filter>Maths</Filter>

@@ -87,6 +87,33 @@ void CommandQueue::Execute(std::uint64_t _tick)
   }
 }
 
+void CommandQueue::WriteState(BitWriter& _writer) const
+{
+  _writer.WriteBounded(m_pending.size(), COMMAND_QUEUE_STATE_MAX);
+  for (const Queued& queued : m_pending)
+  {
+    _writer.WriteBits(queued.sender, 64);
+    _writer.WriteBits(queued.sequence, 64);
+    _writer.WriteBytes(queued.message, MESSAGE_MAX_BYTES);
+  }
+}
+
+bool CommandQueue::ReadState(BitReader& _reader)
+{
+  const std::uint64_t count = _reader.ReadBounded(COMMAND_QUEUE_STATE_MAX);
+  for (std::uint64_t i = 0; i < count && !_reader.Failed(); ++i)
+  {
+    const SenderId sender = _reader.ReadBits(64);
+    const std::uint64_t sequence = _reader.ReadBits(64);
+    const std::span<const std::byte> message = _reader.ReadBytes(MESSAGE_MAX_BYTES);
+    if (_reader.Failed() || !Submit(sender, sequence, message))
+    {
+      return false;
+    }
+  }
+  return !_reader.Failed();
+}
+
 std::vector<CommandOutcome> CommandQueue::TakeOutcomes()
 {
   std::vector<CommandOutcome> outcomes;
