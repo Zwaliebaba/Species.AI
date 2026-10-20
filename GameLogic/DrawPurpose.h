@@ -21,7 +21,18 @@ enum class DrawPurpose : std::uint64_t
   ShoreWander = 9,   // R-UNIT-097: the shore search of the random-position search's push
   ShoreOrder = 10,   // R-UNIT-111: the shore search of a waypoint order's push
   RouteJitter = 11,  // R-UNIT-110: the jitter of a route's next waypoint
-  ShoreRoute = 12    // R-UNIT-110: the shore search of that waypoint's push
+  ShoreRoute = 12,   // R-UNIT-110: the shore search of that waypoint's push
+  GrenadeTimer = 13, // R-UNIT-060, R-UNIT-104: the Worker's first grenade timer and each later interval
+  CombatMove = 14,   // R-UNIT-102: the combat step's turn and stand-off
+  FireRoll = 15,     // R-UNIT-103: the fire roll outside a formation
+  AimJitter = 16,    // R-UNIT-052: the base attack's aim jitter, x then z
+  LaserHit = 17,     // R-CRATE-443: a bolt's damage and push; the subject is the bolt
+  RingIgnite = 18,   // R-CRATE-471: a shockwave ring's ignition rolls; the subject is the ring
+  OrbStart = 19,     // R-UNIT-307: an Essence orb's phase and axis rates; the subject is the orb
+  OrbStep = 20,      // R-UNIT-311, R-UNIT-315, R-UNIT-319: an orb's draws of one tick
+  BurnStep = 21,     // R-UNIT-079: the burning Worker's wander and damage roll
+  ShoreCombat = 22,  // R-UNIT-102: the shore search of the combat waypoint's push
+  ShoreBurn = 23     // R-UNIT-079: the shore search of the burning waypoint's push
 };
 
 [[nodiscard]] constexpr std::uint64_t PurposeOf(DrawPurpose _purpose) noexcept

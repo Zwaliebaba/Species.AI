@@ -57,6 +57,9 @@
     <ClInclude Include="FloatEnvironment.h">
       <Filter>Platform</Filter>
     </ClInclude>
+    <ClInclude Include="Geometry.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
     <ClInclude Include="InProcessTransport.h">
       <Filter>Network</Filter>
     </ClInclude>
@@ -163,6 +166,9 @@
     </ClCompile>
     <ClCompile Include="FloatEnvironment.cpp">
       <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry.cpp">
+      <Filter>Maths</Filter>
     </ClCompile>
     <ClCompile Include="InProcessTransport.cpp">
       <Filter>Network</Filter>

@@ -1,8 +1,10 @@
 #include "pch.h"
 
 #include "Check.h"
+#include "EssenceOrb.h"
 #include "FigureAdvance.h"
 #include "RegionSimulation.h"
+#include "Weapons.h"
 
 #include <algorithm>
 #include <limits>
@@ -65,10 +67,11 @@ template <class Teams> auto* ResolveIn(Teams& _teams, const ActorRef& _ref)
   return figure.id == _ref.id ? &figure : static_cast<Result>(nullptr);
 }
 
-// The first state versions whose regions hold the actor grid's capacities and the cache (M1 task T4), and the routes
-// (M1 task T5).
+// The first state versions whose regions hold the actor grid's capacities and the cache (M1 task T4), the routes (M1
+// task T5), and the kill counters with the laser-bolt, effect and Essence-orb pools (M1 task T6).
 constexpr std::uint32_t STATE_VERSION_WITH_GRIDS = 4;
 constexpr std::uint32_t STATE_VERSION_WITH_ROUTES = 5;
+constexpr std::uint32_t STATE_VERSION_WITH_WEAPONS = 6;
 
 } // namespace
 
@@ -86,7 +89,10 @@ RegionSimulation::RegionSimulation(std::uint16_t _index, const Neuron::SipHashKe
     m_draws(_simulationKey),
     m_grid(ActorGridDescOf(_tuning)),
     m_cache({_tuning.ref.sim.gridCache.reuseFraction, static_cast<std::uint64_t>(_tuning.ref.sim.gridCache.maxAge)}),
-    m_obstacles(ObstacleGridDescOf(_tuning))
+    m_obstacles(ObstacleGridDescOf(_tuning)),
+    m_bolts(static_cast<std::uint32_t>(_tuning.ref.sim.container.laserBoltStep)),
+    m_effects(static_cast<std::uint32_t>(_tuning.ref.sim.container.effectStep)),
+    m_orbs(static_cast<std::uint32_t>(_tuning.ref.sim.container.orbStep), static_cast<std::uint32_t>(_tuning.ref.sim.container.orbPresize))
 {
   ENGINE_CHECK(_tuning.ref.sim.updateSlices > 0 && _tuning.ref.sim.container.ungroupedStep > 0);
   m_draws.SetTick(_nextTick);
@@ -237,6 +243,49 @@ std::vector<ActorRef> RegionSimulation::CachedEnemies(double _x, double _z, doub
   return m_cache.CachedEnemies(_x, _z, _range, _team, m_nextTick, [&] { return InRange(_x, _z, _range, EnemiesOf(_team)); });
 }
 
+const Effect* RegionSimulation::GrenadeAt(std::uint32_t _slot, StableId _id) const
+{
+  if (!m_effects.Used(_slot))
+  {
+    return nullptr;
+  }
+  const Effect& effect = m_effects.At(_slot);
+  return effect.id == _id && effect.kind == EffectKind::Grenade ? &effect : nullptr;
+}
+
+HealthChange RegionSimulation::Damage(const ActorRef& _ref, std::int32_t _amount, DamageKind _kind)
+{
+  Figure* figure = Resolve(_ref);
+  if (figure == nullptr)
+  {
+    return {false, false};
+  }
+  const bool alive = !figure->dead;
+  const HealthChange change = ApplyHealthChange(*figure, _amount, _kind, *m_tuning);
+  if (alive && _amount < 0)
+  {
+    Emit({EffectEventKind::FigureHurt, _ref.team, figure->id, figure->position, {}, 0.0});
+  }
+  if (change.killed)
+  {
+    Emit({EffectEventKind::FigureDied, _ref.team, figure->id, figure->position, {}, 0.0});
+    // R-UNIT-038, R-ECON-067: one orb at the corpse, with half the corpse's velocity.
+    SpawnOrb(*this, figure->position, figure->velocity * m_tuning->ref.econ.orb.deathVelocityFactor, _ref.team, figure->id);
+  }
+  return change;
+}
+
+void RegionSimulation::SetOnFire(const ActorRef& _ref)
+{
+  Figure* figure = Resolve(_ref);
+  if (figure == nullptr || figure->kind != FigureKind::Worker || figure->dead || figure->workerState == WorkerState::Burning)
+  {
+    return;
+  }
+  figure->workerState = WorkerState::Burning;
+  Emit({EffectEventKind::WorkerIgnited, _ref.team, figure->id, figure->position, {}, 0.0});
+}
+
 RouteHandle RegionSimulation::BuildRoute(const Neuron::Vec3& _from, const Neuron::Vec3& _to, bool _directRoute, bool _permitClimbing,
                                          bool _noRounding)
 {
@@ -248,6 +297,7 @@ void RegionSimulation::Step(std::uint64_t _tick)
 {
   ENGINE_ASSERT(_tick == m_nextTick);
   m_draws.SetTick(_tick);
+  m_events.clear();
   // R-SIM-510: the tick's commands, the tick clock (the region's tick: the world has no game speed), then the slices.
   m_commands.Execute(_tick);
   const auto slices = static_cast<std::uint32_t>(m_tuning->ref.sim.updateSlices);
@@ -303,7 +353,8 @@ void RegionSimulation::StepSlice(std::uint32_t _slice)
                              m_advanceObserver(team, _slot, _slice);
                            }
 #endif
-                           if (AdvanceFigure(figure, context))
+                           const FigureContext figureContext{this, &context, {figure.id, _slot, team}};
+                           if (AdvanceFigure(figure, figureContext))
                            {
                              Unregister(team, _slot, figure);
                              return true;
@@ -312,6 +363,11 @@ void RegionSimulation::StepSlice(std::uint32_t _slice)
                            return false;
                          });
   }
+  // R-SIM-218 step 3: the slice's laser bolts, then its effects; step 4, the structures, arrives with M2; step 5: its
+  // Essence orbs.
+  m_bolts.AdvanceSlice(_slice, slices, [&](std::uint32_t _slot) { return AdvanceLaserBolt(*this, m_bolts.At(_slot)); });
+  m_effects.AdvanceSlice(_slice, slices, [&](std::uint32_t _slot) { return AdvanceEffect(*this, m_effects.At(_slot)); });
+  m_orbs.AdvanceSlice(_slice, slices, [&](std::uint32_t _slot) { return AdvanceOrb(*this, m_orbs.At(_slot)); });
   // R-SIM-218 step 8: the cache's eviction in its slice, after the teams.
   if (_slice == static_cast<std::uint32_t>(m_tuning->ref.sim.gridCache.evictSlice))
   {
@@ -329,10 +385,14 @@ void RegionSimulation::WriteState(Neuron::BitWriter& _writer) const
   for (const Team& team : m_teams)
   {
     team.figures.WriteState(_writer, [](Neuron::BitWriter& _out, const Figure& _figure) { WriteFigure(_out, _figure); });
+    _writer.WriteBits(team.kills, 32);
   }
   m_grid.WriteState(_writer);
   m_cache.WriteState(_writer);
   m_routes.WriteState(_writer);
+  m_bolts.WriteState(_writer, [](Neuron::BitWriter& _out, const LaserBolt& _bolt) { WriteLaserBolt(_out, _bolt); });
+  m_effects.WriteState(_writer, [](Neuron::BitWriter& _out, const Effect& _effect) { WriteEffect(_out, _effect); });
+  m_orbs.WriteState(_writer, [](Neuron::BitWriter& _out, const EssenceOrb& _orb) { WriteOrb(_out, _orb); });
 }
 
 bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stateVersion)
@@ -353,6 +413,10 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
   m_grid = ActorGrid(ActorGridDescOf(*m_tuning));
   m_cache = ActorGridCache({m_tuning->ref.sim.gridCache.reuseFraction, static_cast<std::uint64_t>(m_tuning->ref.sim.gridCache.maxAge)});
   m_routes = RouteStore();
+  m_bolts = SlicedPool<LaserBolt>(static_cast<std::uint32_t>(m_tuning->ref.sim.container.laserBoltStep));
+  m_effects = SlicedPool<Effect>(static_cast<std::uint32_t>(m_tuning->ref.sim.container.effectStep));
+  m_orbs = SlicedPool<EssenceOrb>(static_cast<std::uint32_t>(m_tuning->ref.sim.container.orbStep),
+                                  static_cast<std::uint32_t>(m_tuning->ref.sim.container.orbPresize));
   // ADR-099, MVP-095: a version-1 region migrates to one with no teams.
   if (_stateVersion == STATE_VERSION_WITHOUT_TEAMS)
   {
@@ -373,6 +437,10 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
     {
       return false;
     }
+    if (_stateVersion >= STATE_VERSION_WITH_WEAPONS)
+    {
+      added.kills = static_cast<std::uint32_t>(_reader.ReadBits(32));
+    }
   }
   const bool withGrids = _stateVersion >= STATE_VERSION_WITH_GRIDS;
   if (withGrids && (!m_grid.ReadState(_reader) || !m_cache.ReadState(_reader)))
@@ -380,6 +448,14 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
     return false;
   }
   if (_stateVersion >= STATE_VERSION_WITH_ROUTES && !m_routes.ReadState(_reader))
+  {
+    return false;
+  }
+  constexpr std::uint32_t POOL_CAPACITY_MAX = std::numeric_limits<std::uint32_t>::max();
+  if (_stateVersion >= STATE_VERSION_WITH_WEAPONS &&
+      (!m_bolts.ReadState(_reader, POOL_CAPACITY_MAX, [](Neuron::BitReader& _in, LaserBolt& _bolt) { return ReadLaserBolt(_in, _bolt); }) ||
+       !m_effects.ReadState(_reader, POOL_CAPACITY_MAX, [](Neuron::BitReader& _in, Effect& _effect) { return ReadEffect(_in, _effect); }) ||
+       !m_orbs.ReadState(_reader, POOL_CAPACITY_MAX, [](Neuron::BitReader& _in, EssenceOrb& _orb) { return ReadOrb(_in, _orb); })))
   {
     return false;
   }

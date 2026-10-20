@@ -21,6 +21,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="EffectEvent.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="FigureKind.h">
       <Filter>Simulation</Filter>
     </ClInclude>

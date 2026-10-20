@@ -2,6 +2,7 @@
 
 #include "DrawPurpose.h"
 #include "Figure.h"
+#include "StateValues.h"
 
 #include <algorithm>
 #include <bit>
@@ -13,28 +14,6 @@ namespace Species
 namespace
 {
 
-void WriteVec3(Neuron::BitWriter& _writer, const Neuron::Vec3& _value)
-{
-  _writer.WriteBits(std::bit_cast<std::uint64_t>(_value.x), 64);
-  _writer.WriteBits(std::bit_cast<std::uint64_t>(_value.y), 64);
-  _writer.WriteBits(std::bit_cast<std::uint64_t>(_value.z), 64);
-}
-
-// R-SIM-107: no simulation field holds NaN or an infinity, so a value that does is no state.
-bool ReadDouble(Neuron::BitReader& _reader, double& _value)
-{
-  _value = std::bit_cast<double>(_reader.ReadBits(64));
-  return std::isfinite(_value);
-}
-
-bool ReadVec3(Neuron::BitReader& _reader, Neuron::Vec3& _value)
-{
-  const bool x = ReadDouble(_reader, _value.x);
-  const bool y = ReadDouble(_reader, _value.y);
-  const bool z = ReadDouble(_reader, _value.z);
-  return x && y && z;
-}
-
 Neuron::Vec3 DefaultFront(const TuningMvp& _tuning) noexcept
 {
   const auto& front = _tuning.ref.sim.spawn.defaultFront;
@@ -42,7 +21,8 @@ Neuron::Vec3 DefaultFront(const TuningMvp& _tuning) noexcept
 }
 
 // The state's bounds of the enumerations it holds.
-constexpr std::uint64_t WORKER_STATE_MAX = static_cast<std::uint64_t>(WorkerState::Drowning);
+constexpr std::uint64_t WORKER_STATE_MAX = static_cast<std::uint64_t>(WorkerState::Burning);
+constexpr std::uint64_t THREAT_KIND_MAX = static_cast<std::uint64_t>(ThreatKind::Grenade);
 constexpr std::uint64_t LEADER_STATE_MAX = static_cast<std::uint64_t>(LeaderState::ToWaypoint);
 
 } // namespace
@@ -77,6 +57,19 @@ void SetKind(Figure& _figure, FigureKind _kind, const TuningMvp& _tuning, TickDr
   _figure.reloadIntervalTicks = static_cast<std::int32_t>(std::llround(rate / tickPeriod));
   const double seconds = _draws.For(DrawPurpose::ReloadTimer, _figure.id).NextUnit(rate);
   _figure.reloadTimerTicks = static_cast<std::int32_t>(std::ceil(seconds / tickPeriod));
+  if (_kind == FigureKind::Worker)
+  {
+    // R-UNIT-060: the first grenade timer, 1 + ⌊NextUnit(5) ÷ tick period⌋ ticks; R-UNIT-064: the full threat range.
+    const auto& first = unit.worker.grenadeFirstTicks;
+    _figure.grenadeTimerTicks =
+      TicksOf(first.base, _draws.For(DrawPurpose::GrenadeTimer, _figure.id).NextUnit(first.spreadSeconds), tickPeriod);
+    _figure.threatRange = unit.worker.threatRange;
+  }
+}
+
+std::int32_t TicksOf(std::int64_t _base, double _drawSeconds, double _tickPeriod) noexcept
+{
+  return static_cast<std::int32_t>(_base) + static_cast<std::int32_t>(std::floor(_drawSeconds / _tickPeriod));
 }
 
 Neuron::Vec3 SpawnFront(const Figure& _figure, const Neuron::Vec3& _velocity, const TuningMvp& _tuning, TickDraws& _draws)
@@ -161,6 +154,14 @@ void WriteFigure(Neuron::BitWriter& _writer, const Figure& _figure)
   _writer.WriteSigned(_figure.cells.z1, 32);
   _writer.WriteBits(_figure.route, 32);
   _writer.WriteSigned(_figure.routePoint, 32);
+  _writer.WriteBounded(static_cast<std::uint64_t>(_figure.threat.kind), THREAT_KIND_MAX);
+  _writer.WriteBits(_figure.threat.team, 8);
+  _writer.WriteBits(_figure.threat.slot, 32);
+  _writer.WriteBits(_figure.threat.id, 64);
+  WriteDouble(_writer, _figure.threatRange);
+  _writer.WriteBool(_figure.scared);
+  _writer.WriteBool(_figure.threatSound);
+  _writer.WriteSigned(_figure.grenadeTimerTicks, 32);
 }
 
 bool ReadFigure(Neuron::BitReader& _reader, Figure& _figure, std::uint32_t _stateVersion, const TuningMvp& _tuning)
@@ -206,6 +207,24 @@ bool ReadFigure(Neuron::BitReader& _reader, Figure& _figure, std::uint32_t _stat
     _figure.route = static_cast<RouteHandle>(_reader.ReadBits(32));
     _figure.routePoint = static_cast<std::int32_t>(_reader.ReadSigned(32));
   }
+  if (_stateVersion < FIGURE_STATE_VERSION_COMBAT)
+  {
+    // MVP-095: a figure saved before M1 task T6 has no threat, the full threat range and its first grenade timer's base.
+    if (_figure.kind == FigureKind::Worker)
+    {
+      _figure.threatRange = _tuning.ref.unit.worker.threatRange;
+      _figure.grenadeTimerTicks = static_cast<std::int32_t>(_tuning.ref.unit.worker.grenadeFirstTicks.base);
+    }
+    return !_reader.Failed() && finite && _figure.id != 0;
+  }
+  _figure.threat.kind = static_cast<ThreatKind>(_reader.ReadBounded(THREAT_KIND_MAX));
+  _figure.threat.team = static_cast<std::uint8_t>(_reader.ReadBits(8));
+  _figure.threat.slot = static_cast<std::uint32_t>(_reader.ReadBits(32));
+  _figure.threat.id = _reader.ReadBits(64);
+  finite = ReadDouble(_reader, _figure.threatRange) && finite;
+  _figure.scared = _reader.ReadBool();
+  _figure.threatSound = _reader.ReadBool();
+  _figure.grenadeTimerTicks = static_cast<std::int32_t>(_reader.ReadSigned(32));
   return !_reader.Failed() && finite && _figure.id != 0;
 }
 

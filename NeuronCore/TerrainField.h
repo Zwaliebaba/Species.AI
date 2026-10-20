@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <optional>
 #include <span>
 #include <vector>
 
@@ -265,6 +266,13 @@ public:
   {
     return m_normals.At(_i, _j);
   }
+
+  // TER-016 to TER-018: the terrain hit of the ray from _start along _direction, walking the grid's cells from the start
+  // cell, or from where the ray enters the grid, each cell's two triangles in order. Structures and actors are not
+  // tested. The hit may lie behind _start (DEC-241 item 10).
+  [[nodiscard]] std::optional<Vec3> CastRay(const Vec3& _start, const Vec3& _direction) const noexcept;
+  // ter.query.ray_tri_range: the bound on the length of a triangle hit's (t, u, v) vector (TER-017).
+  static constexpr double RAY_TRIANGLE_RANGE = 1e10;
 
   [[nodiscard]] const SurfaceGrid<double>& Heights() const noexcept
   {

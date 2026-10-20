@@ -26,6 +26,9 @@
     <ClCompile Include="ActorGridTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="CombatTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="MovementTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
@@ -43,6 +46,9 @@
     </ClCompile>
     <ClCompile Include="TestSupport.cpp">
       <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="WeaponTests.cpp">
+      <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="WorldSnapshotTests.cpp">
       <Filter>Persistence</Filter>

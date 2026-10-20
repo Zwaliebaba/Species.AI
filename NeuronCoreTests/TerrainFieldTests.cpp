@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "Geometry.h"
 #include "Sha256.h"
 #include "TerrainField.h"
 #include "TestSupport.h"
@@ -276,6 +277,48 @@ public:
     Assert::IsTrue(moved.Height(30720.0 + 99999.0, 30720.0 + 5 * 16.0) == moved.HeightAt(0, 5), L"east of it: column 0 too");
     const Neuron::Vec3 up = moved.NormalAt(-1, 3);
     Assert::IsTrue(up.x == 0.0 && up.y == 1.0 && up.z == 0.0, L"TER-013: off the grid, the outside normal");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Plt138TheRayTriangleTestReportsHitsBehindTheStart)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"PLT-138")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Plt138TheRayTriangleTestReportsHitsBehindTheStart)
+  {
+    // DEC-241 item 10: a hit inside, a miss outside, none for a parallel ray, a hit behind the start, and the range bound.
+    const Neuron::Vec3 a{0.0, 0.0, 0.0};
+    const Neuron::Vec3 b{0.0, 0.0, 10.0};
+    const Neuron::Vec3 c{10.0, 0.0, 0.0};
+    const auto below = Neuron::IntersectTriangle({2.0, 5.0, 2.0}, {0.0, -1.0, 0.0}, a, b, c, 1e10);
+    Assert::IsTrue(below && below->t == 5.0 && below->u == 0.2 && below->v == 0.2, L"t = 5, u = v = 0.2");
+    Assert::IsFalse(Neuron::IntersectTriangle({8.0, 5.0, 8.0}, {0.0, -1.0, 0.0}, a, b, c, 1e10).has_value(), L"outside the triangle");
+    Assert::IsFalse(Neuron::IntersectTriangle({2.0, 5.0, 2.0}, {1.0, 0.0, 0.0}, a, b, c, 1e10).has_value(), L"parallel to it");
+    const auto behind = Neuron::IntersectTriangle({2.0, 5.0, 2.0}, {0.0, 1.0, 0.0}, a, b, c, 1e10);
+    Assert::IsTrue(behind && behind->t == -5.0, L"behind the start");
+    Assert::IsFalse(Neuron::IntersectTriangle({2.0, 5.0, 2.0}, {0.0, -1.0, 0.0}, a, b, c, 4.0).has_value(), L"beyond the range");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Ter016CastRayWalksTheCellsAlongTheRay)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"TER-016")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"TER-017")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Ter016CastRayWalksTheCellsAlongTheRay)
+  {
+    // A level field at 10 wu over cells of 10 wu: straight down, slanting across cells, from outside the grid, parallel
+    // above it, and up from above it, which reports the hit behind the start (DEC-241 item 10).
+    Neuron::TerrainDefinition definition = Definition(1000, 10.0, 10.0);
+    const Neuron::TerrainField level = Neuron::TerrainField::Generate(definition, {}, {});
+    Assert::IsTrue(level.HeightAt(40, 40) == 10.0, L"level");
+    const auto down = level.CastRay({505.0, 50.0, 505.0}, {0.0, -1.0, 0.0});
+    Assert::IsTrue(down && *down == Neuron::Vec3{505.0, 10.0, 505.0}, L"straight down");
+    const auto slant = level.CastRay({100.0, 30.0, 100.0}, {1.0, -0.2, 0.5});
+    Assert::IsTrue(slant && std::abs(slant->y - 10.0) < 1e-9 && std::abs(slant->x - 200.0) < 1e-9 && std::abs(slant->z - 150.0) < 1e-9,
+                   L"100 wu along x, 50 along z");
+    const auto entering = level.CastRay({-100.0, 30.0, 500.0}, {1.0, -0.1, 0.0});
+    Assert::IsTrue(entering && std::abs(entering->x - 100.0) < 1e-9 && std::abs(entering->y - 10.0) < 1e-9, L"entering from the west");
+    Assert::IsFalse(level.CastRay({-100.0, 30.0, 500.0}, {-1.0, -0.1, 0.0}).has_value(), L"leaving to the west: no hit");
+    Assert::IsFalse(level.CastRay({500.0, 50.0, 500.0}, {1.0, 0.0, 0.0}).has_value(), L"parallel above it");
+    const auto up = level.CastRay({505.0, 50.0, 505.0}, {0.0, 1.0, 0.0});
+    Assert::IsTrue(up && *up == Neuron::Vec3{505.0, 10.0, 505.0}, L"up: the hit behind the start");
   }
 };
 

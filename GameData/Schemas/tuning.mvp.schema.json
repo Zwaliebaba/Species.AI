@@ -1340,10 +1340,46 @@
                   "x-species-type": "count",
                   "x-species-unit": "slots",
                   "x-species-presence": "required"
+                },
+                "laser_bolt_step": {
+                  "type": "integer",
+                  "description": "ref.sim.container.laser_bolt_step (R-SIM-204)",
+                  "minimum": 1,
+                  "x-species-type": "integer",
+                  "x-species-unit": "slots",
+                  "x-species-presence": "required"
+                },
+                "effect_step": {
+                  "type": "integer",
+                  "description": "ref.sim.container.effect_step (R-SIM-204)",
+                  "minimum": 1,
+                  "x-species-type": "integer",
+                  "x-species-unit": "slots",
+                  "x-species-presence": "required"
+                },
+                "orb_presize": {
+                  "type": "integer",
+                  "description": "ref.sim.container.orb_presize (R-SIM-202)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "slots",
+                  "x-species-presence": "required"
+                },
+                "orb_step": {
+                  "type": "integer",
+                  "description": "ref.sim.container.orb_step (R-SIM-204)",
+                  "minimum": 1,
+                  "x-species-type": "integer",
+                  "x-species-unit": "slots",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
-                "ungrouped_step"
+                "ungrouped_step",
+                "laser_bolt_step",
+                "effect_step",
+                "orb_presize",
+                "orb_step"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -1407,12 +1443,22 @@
                   "x-species-type": "sim_decimal",
                   "x-species-unit": "wu",
                   "x-species-presence": "required"
+                },
+                "orb_lift": {
+                  "type": "number",
+                  "description": "ref.sim.spawn.orb_lift (R-SIM-228, R-UNIT-303)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
                 "default_front",
                 "search_attempts",
-                "edge_margin"
+                "edge_margin",
+                "orb_lift"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -1456,13 +1502,33 @@
                   "x-species-type": "sim_decimal",
                   "x-species-unit": "wu",
                   "x-species-presence": "required"
+                },
+                "thrown_gravity": {
+                  "type": "number",
+                  "description": "ref.sim.physics.thrown_gravity (R-SIM-364, R-CRATE-403)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s²",
+                  "x-species-presence": "required"
+                },
+                "restitution": {
+                  "type": "number",
+                  "description": "ref.sim.physics.restitution (R-SIM-385)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times speed",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
                 "sea_level",
                 "gravity",
                 "land_threshold",
-                "land_offset"
+                "land_offset",
+                "thrown_gravity",
+                "restitution"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -1884,6 +1950,37 @@
               "additionalProperties": false,
               "x-species-type": "object",
               "x-species-presence": "required"
+            },
+            "explosion": {
+              "type": "object",
+              "description": "the ref.sim.explosion.* keys",
+              "properties": {
+                "actor_reach": {
+                  "type": "number",
+                  "description": "ref.sim.explosion.actor_reach (R-SIM-388)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times range",
+                  "x-species-presence": "required"
+                },
+                "actor_gain": {
+                  "type": "number",
+                  "description": "ref.sim.explosion.actor_gain (R-SIM-388)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "factor",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "actor_reach",
+                "actor_gain"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
             }
           },
           "required": [
@@ -1898,7 +1995,8 @@
             "obstacle_grid",
             "water",
             "push",
-            "route"
+            "route",
+            "explosion"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -2171,6 +2269,278 @@
                   "x-species-type": "sim_decimal",
                   "x-species-unit": "wu",
                   "x-species-presence": "required"
+                },
+                "threat_range": {
+                  "type": "number",
+                  "description": "ref.unit.worker.threat_range (R-UNIT-098)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "threat_range_relax": {
+                  "type": "number",
+                  "description": "ref.unit.worker.threat_range_relax (R-UNIT-098)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "per search",
+                  "x-species-presence": "required"
+                },
+                "projectile_threat_range": {
+                  "type": "number",
+                  "description": "ref.unit.worker.projectile_threat_range (R-UNIT-098)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "scared_enemy_count": {
+                  "type": "integer",
+                  "description": "ref.unit.worker.scared_enemy_count (R-UNIT-098)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "actors",
+                  "x-species-presence": "required"
+                },
+                "order_cancel_radius": {
+                  "type": "number",
+                  "description": "ref.unit.worker.order_cancel_radius (R-UNIT-098)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "retreat_range": {
+                  "type": "number",
+                  "description": "ref.unit.worker.retreat_range (R-UNIT-102)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "retreat_height_diff": {
+                  "type": "number",
+                  "description": "ref.unit.worker.retreat_height_diff (R-UNIT-102)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "combat_step": {
+                  "type": "number",
+                  "description": "ref.unit.worker.combat_step (R-UNIT-102)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "standoff_base": {
+                  "type": "number",
+                  "description": "ref.unit.worker.standoff_base (R-UNIT-102)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "standoff_spread": {
+                  "type": "number",
+                  "description": "ref.unit.worker.standoff_spread (R-UNIT-102)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "fear_range": {
+                  "type": "number",
+                  "description": "ref.unit.worker.fear_range (R-UNIT-102)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "aim_height": {
+                  "type": "number",
+                  "description": "ref.unit.worker.aim_height (R-UNIT-103)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "attack_divisor": {
+                  "type": "number",
+                  "description": "ref.unit.worker.attack_divisor (R-UNIT-103)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "factor",
+                  "x-species-presence": "required"
+                },
+                "grenade_first_ticks": {
+                  "type": "object",
+                  "description": "the ref.unit.worker.grenade_first_ticks.* keys",
+                  "properties": {
+                    "base": {
+                      "type": "integer",
+                      "description": "ref.unit.worker.grenade_first_ticks.base (R-UNIT-060)",
+                      "minimum": 0,
+                      "x-species-type": "ticks",
+                      "x-species-unit": "ticks",
+                      "x-species-presence": "required"
+                    },
+                    "spread_seconds": {
+                      "type": "number",
+                      "description": "ref.unit.worker.grenade_first_ticks.spread_seconds (R-UNIT-060)",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "seconds",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "base",
+                    "spread_seconds"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "grenade_interval_ticks": {
+                  "type": "object",
+                  "description": "the ref.unit.worker.grenade_interval_ticks.* keys",
+                  "properties": {
+                    "base": {
+                      "type": "integer",
+                      "description": "ref.unit.worker.grenade_interval_ticks.base (R-UNIT-104)",
+                      "minimum": 0,
+                      "x-species-type": "ticks",
+                      "x-species-unit": "ticks",
+                      "x-species-presence": "required"
+                    },
+                    "spread_seconds": {
+                      "type": "number",
+                      "description": "ref.unit.worker.grenade_interval_ticks.spread_seconds (R-UNIT-104)",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "seconds",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "base",
+                    "spread_seconds"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "grenade_min_distance": {
+                  "type": "number",
+                  "description": "ref.unit.worker.grenade_min_distance (R-UNIT-104)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "grenade_normal_min": {
+                  "type": "number",
+                  "description": "ref.unit.worker.grenade_normal_min (R-UNIT-104)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "normal y",
+                  "x-species-presence": "required"
+                },
+                "grenade_height_diff_min": {
+                  "type": "number",
+                  "description": "ref.unit.worker.grenade_height_diff_min (R-UNIT-104)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "grenade_crowd_radius": {
+                  "type": "number",
+                  "description": "ref.unit.worker.grenade_crowd_radius (R-UNIT-104)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "grenade_crowd_enemies": {
+                  "type": "integer",
+                  "description": "ref.unit.worker.grenade_crowd_enemies (R-UNIT-104)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "actors",
+                  "x-species-presence": "required"
+                },
+                "grenade_crowd_friends": {
+                  "type": "integer",
+                  "description": "ref.unit.worker.grenade_crowd_friends (R-UNIT-104)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "actors",
+                  "x-species-presence": "required"
+                },
+                "burn_wander": {
+                  "type": "number",
+                  "description": "ref.unit.worker.burn_wander (R-UNIT-079)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "burn_damage": {
+                  "type": "integer",
+                  "description": "ref.unit.worker.burn_damage (R-UNIT-079)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "health",
+                  "x-species-presence": "required"
+                },
+                "burn_chance": {
+                  "type": "object",
+                  "description": "the ref.unit.worker.burn_chance.* keys",
+                  "properties": {
+                    "threshold": {
+                      "type": "number",
+                      "description": "ref.unit.worker.burn_chance.threshold (R-UNIT-079)",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "roll",
+                      "x-species-presence": "required"
+                    },
+                    "roll_range": {
+                      "type": "number",
+                      "description": "ref.unit.worker.burn_chance.roll_range (R-UNIT-079)",
+                      "exclusiveMinimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "roll",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "threshold",
+                    "roll_range"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
@@ -2199,7 +2569,31 @@
                 "structure_push_step",
                 "structure_clear_radius",
                 "route_reach_radius",
-                "route_jitter_radius"
+                "route_jitter_radius",
+                "threat_range",
+                "threat_range_relax",
+                "projectile_threat_range",
+                "scared_enemy_count",
+                "order_cancel_radius",
+                "retreat_range",
+                "retreat_height_diff",
+                "combat_step",
+                "standoff_base",
+                "standoff_spread",
+                "fear_range",
+                "aim_height",
+                "attack_divisor",
+                "grenade_first_ticks",
+                "grenade_interval_ticks",
+                "grenade_min_distance",
+                "grenade_normal_min",
+                "grenade_height_diff_min",
+                "grenade_crowd_radius",
+                "grenade_crowd_enemies",
+                "grenade_crowd_friends",
+                "burn_wander",
+                "burn_damage",
+                "burn_chance"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -2362,13 +2756,694 @@
               "additionalProperties": false,
               "x-species-type": "object",
               "x-species-presence": "required"
+            },
+            "attack": {
+              "type": "object",
+              "description": "the ref.unit.attack.* keys",
+              "properties": {
+                "aim_jitter": {
+                  "type": "number",
+                  "description": "ref.unit.attack.aim_jitter (R-UNIT-052)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "muzzle_height": {
+                  "type": "number",
+                  "description": "ref.unit.attack.muzzle_height (R-UNIT-052)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "laser_speed": {
+                  "type": "number",
+                  "description": "ref.unit.attack.laser_speed (R-UNIT-052)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "aim_jitter",
+                "muzzle_height",
+                "laser_speed"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "essence_orb": {
+              "type": "object",
+              "description": "the ref.unit.essence_orb.* keys",
+              "properties": {
+                "wobble_phase_range": {
+                  "type": "number",
+                  "description": "ref.unit.essence_orb.wobble_phase_range (R-UNIT-307)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "rad",
+                  "x-species-presence": "required"
+                },
+                "birth_hover_max": {
+                  "type": "number",
+                  "description": "ref.unit.essence_orb.birth_hover_max (R-UNIT-311)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "birth_pull_base": {
+                  "type": "number",
+                  "description": "ref.unit.essence_orb.birth_pull_base (R-UNIT-311)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "birth_pull_range": {
+                  "type": "number",
+                  "description": "ref.unit.essence_orb.birth_pull_range (R-UNIT-311)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "birth_pull_scale_height": {
+                  "type": "number",
+                  "description": "ref.unit.essence_orb.birth_pull_scale_height (R-UNIT-311)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "ascent_rise_min": {
+                  "type": "number",
+                  "description": "ref.unit.essence_orb.ascent_rise_min (R-UNIT-315)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "ascent_rise_range": {
+                  "type": "number",
+                  "description": "ref.unit.essence_orb.ascent_rise_range (R-UNIT-315)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "drag_per_tick": {
+                  "type": "number",
+                  "description": "ref.unit.essence_orb.drag_per_tick (R-UNIT-319)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times velocity",
+                  "x-species-presence": "required"
+                },
+                "phase_step": {
+                  "type": "number",
+                  "description": "ref.unit.essence_orb.phase_step (R-UNIT-319)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "rad per tick",
+                  "x-species-presence": "required"
+                },
+                "wobble_rate_clamp": {
+                  "type": "object",
+                  "description": "the ref.unit.essence_orb.wobble_rate_clamp.* keys",
+                  "properties": {
+                    "min": {
+                      "type": "number",
+                      "description": "ref.unit.essence_orb.wobble_rate_clamp.min (R-UNIT-320)",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "wu/s",
+                      "x-species-presence": "required"
+                    },
+                    "max": {
+                      "type": "number",
+                      "description": "ref.unit.essence_orb.wobble_rate_clamp.max (R-UNIT-320)",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "wu/s",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "min",
+                    "max"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "push_radius": {
+                  "type": "number",
+                  "description": "ref.unit.essence_orb.push_radius (R-UNIT-321)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "push_gain": {
+                  "type": "number",
+                  "description": "ref.unit.essence_orb.push_gain (R-UNIT-321)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "per tick",
+                  "x-species-presence": "required"
+                },
+                "push_speed_max": {
+                  "type": "number",
+                  "description": "ref.unit.essence_orb.push_speed_max (R-UNIT-321)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "push_stop_speed": {
+                  "type": "number",
+                  "description": "ref.unit.essence_orb.push_stop_speed (R-UNIT-321)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "floor_height": {
+                  "type": "number",
+                  "description": "ref.unit.essence_orb.floor_height (R-UNIT-322)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "wobble_phase_range",
+                "birth_hover_max",
+                "birth_pull_base",
+                "birth_pull_range",
+                "birth_pull_scale_height",
+                "ascent_rise_min",
+                "ascent_rise_range",
+                "drag_per_tick",
+                "phase_step",
+                "wobble_rate_clamp",
+                "push_radius",
+                "push_gain",
+                "push_speed_max",
+                "push_stop_speed",
+                "floor_height"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
             }
           },
           "required": [
             "health_max",
             "worker",
             "leader",
-            "corpse"
+            "corpse",
+            "attack",
+            "essence_orb"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "weapon": {
+          "type": "object",
+          "description": "the ref.weapon.* keys",
+          "properties": {
+            "laser": {
+              "type": "object",
+              "description": "the ref.weapon.laser.* keys",
+              "properties": {
+                "damage_base": {
+                  "type": "integer",
+                  "description": "ref.weapon.laser.damage_base (R-CRATE-443)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "health",
+                  "x-species-presence": "required"
+                },
+                "damage_spread": {
+                  "type": "number",
+                  "description": "ref.weapon.laser.damage_spread (R-CRATE-443)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "health",
+                  "x-species-presence": "required"
+                },
+                "hit_radius": {
+                  "type": "number",
+                  "description": "ref.weapon.laser.hit_radius (R-CRATE-441)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "hit_height": {
+                  "type": "number",
+                  "description": "ref.weapon.laser.hit_height (R-CRATE-441)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "push_spread": {
+                  "type": "number",
+                  "description": "ref.weapon.laser.push_spread (R-CRATE-443)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "push_lift_base": {
+                  "type": "number",
+                  "description": "ref.weapon.laser.push_lift_base (R-CRATE-443)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "push_lift_spread": {
+                  "type": "number",
+                  "description": "ref.weapon.laser.push_lift_spread (R-CRATE-443)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "life_ticks": {
+                  "type": "integer",
+                  "description": "ref.weapon.laser.life_ticks (R-CRATE-440)",
+                  "minimum": 1,
+                  "x-species-type": "integer",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "damage_base",
+                "damage_spread",
+                "hit_radius",
+                "hit_height",
+                "push_spread",
+                "push_lift_base",
+                "push_lift_spread",
+                "life_ticks"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "throwing": {
+              "type": "object",
+              "description": "the ref.weapon.throwing.* keys",
+              "properties": {
+                "force_factor": {
+                  "type": "number",
+                  "description": "ref.weapon.throwing.force_factor (R-CRATE-405)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "per root wu",
+                  "x-species-presence": "required"
+                },
+                "max_force": {
+                  "type": "number",
+                  "description": "ref.weapon.throwing.max_force (R-CRATE-405, R-CRATE-412)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "front_lift": {
+                  "type": "number",
+                  "description": "ref.weapon.throwing.front_lift (R-CRATE-405)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "front y",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "force_factor",
+                "max_force",
+                "front_lift"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "thrown": {
+              "type": "object",
+              "description": "the ref.weapon.thrown.* keys",
+              "properties": {
+                "initial_force": {
+                  "type": "number",
+                  "description": "ref.weapon.thrown.initial_force (R-CRATE-410)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "factor",
+                  "x-species-presence": "required"
+                },
+                "rest_force": {
+                  "type": "number",
+                  "description": "ref.weapon.thrown.rest_force (R-CRATE-411)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "factor",
+                  "x-species-presence": "required"
+                },
+                "bounce_clearance": {
+                  "type": "number",
+                  "description": "ref.weapon.thrown.bounce_clearance (R-CRATE-411)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "bounce_force_factor": {
+                  "type": "number",
+                  "description": "ref.weapon.thrown.bounce_force_factor (R-CRATE-411)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "factor",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "initial_force",
+                "rest_force",
+                "bounce_clearance",
+                "bounce_force_factor"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "grenade": {
+              "type": "object",
+              "description": "the ref.weapon.grenade.* keys",
+              "properties": {
+                "fuse_ticks": {
+                  "type": "integer",
+                  "description": "ref.weapon.grenade.fuse_ticks (R-CRATE-415)",
+                  "minimum": 0,
+                  "x-species-type": "ticks",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                },
+                "power": {
+                  "type": "number",
+                  "description": "ref.weapon.grenade.power (R-CRATE-415)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "power",
+                  "x-species-presence": "required"
+                },
+                "range_factor": {
+                  "type": "number",
+                  "description": "ref.weapon.grenade.range_factor (R-CRATE-415)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times power",
+                  "x-species-presence": "required"
+                },
+                "damage_factor": {
+                  "type": "number",
+                  "description": "ref.weapon.grenade.damage_factor (R-CRATE-415)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times power",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "fuse_ticks",
+                "power",
+                "range_factor",
+                "damage_factor"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "shockwave": {
+              "type": "object",
+              "description": "the ref.weapon.shockwave.* keys",
+              "properties": {
+                "size_divisor": {
+                  "type": "number",
+                  "description": "ref.weapon.shockwave.size_divisor (R-CRATE-470)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu per s",
+                  "x-species-presence": "required"
+                },
+                "start_radius": {
+                  "type": "number",
+                  "description": "ref.weapon.shockwave.start_radius (R-CRATE-470)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "growth": {
+                  "type": "number",
+                  "description": "ref.weapon.shockwave.growth (R-CRATE-470)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "band": {
+                  "type": "number",
+                  "description": "ref.weapon.shockwave.band (R-CRATE-471)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "damage": {
+                  "type": "number",
+                  "description": "ref.weapon.shockwave.damage (R-CRATE-471)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "health",
+                  "x-species-presence": "required"
+                },
+                "ignite_draw_range": {
+                  "type": "number",
+                  "description": "ref.weapon.shockwave.ignite_draw_range (R-CRATE-471)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "roll",
+                  "x-species-presence": "required"
+                },
+                "ignite_threshold": {
+                  "type": "number",
+                  "description": "ref.weapon.shockwave.ignite_threshold (R-CRATE-471)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "roll",
+                  "x-species-presence": "required"
+                },
+                "push_lift": {
+                  "type": "number",
+                  "description": "ref.weapon.shockwave.push_lift (R-CRATE-471)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "push y",
+                  "x-species-presence": "required"
+                },
+                "push": {
+                  "type": "number",
+                  "description": "ref.weapon.shockwave.push (R-CRATE-471)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "size_divisor",
+                "start_radius",
+                "growth",
+                "band",
+                "damage",
+                "ignite_draw_range",
+                "ignite_threshold",
+                "push_lift",
+                "push"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "laser",
+            "throwing",
+            "thrown",
+            "grenade",
+            "shockwave"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "econ": {
+          "type": "object",
+          "description": "the ref.econ.* keys",
+          "properties": {
+            "orb": {
+              "type": "object",
+              "description": "the ref.econ.orb.* keys",
+              "properties": {
+                "death_velocity_factor": {
+                  "type": "number",
+                  "description": "ref.econ.orb.death_velocity_factor (R-ECON-067)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times velocity",
+                  "x-species-presence": "required"
+                },
+                "birth_ticks": {
+                  "type": "integer",
+                  "description": "ref.econ.orb.birth_ticks (R-ECON-066, R-UNIT-307)",
+                  "minimum": 0,
+                  "x-species-type": "ticks",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                },
+                "birth_max_height_wu": {
+                  "type": "number",
+                  "description": "ref.econ.orb.birth_max_height_wu (R-UNIT-311)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "floating_ticks": {
+                  "type": "object",
+                  "description": "the ref.econ.orb.floating_ticks.* keys",
+                  "properties": {
+                    "center_seconds": {
+                      "type": "number",
+                      "description": "ref.econ.orb.floating_ticks.center_seconds (R-UNIT-311, R-ECON-068)",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "seconds",
+                      "x-species-presence": "required"
+                    },
+                    "spread_seconds": {
+                      "type": "number",
+                      "description": "ref.econ.orb.floating_ticks.spread_seconds (R-UNIT-311, R-ECON-068)",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "seconds",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "center_seconds",
+                    "spread_seconds"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "ascent_ticks": {
+                  "type": "integer",
+                  "description": "ref.econ.orb.ascent_ticks (R-UNIT-312)",
+                  "minimum": 0,
+                  "x-species-type": "ticks",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                },
+                "wobble_rate_range": {
+                  "type": "number",
+                  "description": "ref.econ.orb.wobble_rate_range (R-UNIT-307)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "wobble_offset_range": {
+                  "type": "number",
+                  "description": "ref.econ.orb.wobble_offset_range (R-UNIT-319)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "death_velocity_factor",
+                "birth_ticks",
+                "birth_max_height_wu",
+                "floating_ticks",
+                "ascent_ticks",
+                "wobble_rate_range",
+                "wobble_offset_range"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "orb"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -2377,7 +3452,9 @@
       },
       "required": [
         "sim",
-        "unit"
+        "unit",
+        "weapon",
+        "econ"
       ],
       "additionalProperties": false,
       "x-species-type": "object",

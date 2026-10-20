@@ -92,11 +92,11 @@ Every reference document has a **Tuning table** with the columns `key | value | 
 
 The Species design documents (the prefixes from `PIL` on) use the lower-case prefix of their document as the key root (`wld.region.size_max`, `dep.order.limit`, `srv.tick.budget_ms`, and `mvp.` for the MVP scope) and add two columns to the tuning table: `status` (`final` or `provisional`) and a playtest note, required for a provisional value. A reference requirement that the Species design adopts keeps its `ref.` keys; one it adapts moves its numbers to Species keys (`gdd/adoption_ledger/`).
 
-A tuning key is spelt in American English in every segment, because the tuning record's fields are generated from it (DAT-054, `AGENTS.md` R11), while the prose around it stays British (§8). A respelled key is retired: it is never used again, for its value or any other, and table 4.1-A lists it with the key that replaces it (O72). Asset ids, string ids, setting keys and marker names are not tuning keys, and this rule does not respell them.
+A tuning key is spelt in American English in every segment, because the tuning record's fields are generated from it (DAT-054, `AGENTS.md` R11), while the prose around it stays British (§8). A respelled key is retired: it is never used again, for its value or any other, and table 4.1-A lists it with the key that replaces it (O72). So is a key with a segment that generates a C++ keyword, which the schema generator rejects (DAT-054): it is renamed the first time code reads it, and retired the same way. Asset ids, string ids, setting keys and marker names are not tuning keys, and this rule does not respell them.
 
 ### 4.1 Retired keys
 
-Table 4.1-A: the retired tuning keys, 183 in all: the two `centre` keys of M1 task T3 and the 181 that O72 respelled.
+Table 4.1-A: the retired tuning keys, 186 in all: the two `centre` keys of M1 task T3, the 181 that O72 respelled, and the three `ref.weapon.throw` keys of M1 task T6, whose segment `throw` is a C++ keyword.
 
 | Retired key | Replaced by |
 |---|---|
@@ -216,6 +216,9 @@ Table 4.1-A: the retired tuning keys, 183 in all: the two `centre` keys of M1 ta
 | `ref.unit.worker.paralysed_colour` | `ref.unit.worker.paralysed_color` |
 | `ref.unit.worker.sickness_bubble_colour` | `ref.unit.worker.sickness_bubble_color` |
 | `ref.weapon.dust.colour` | `ref.weapon.dust.color` |
+| `ref.weapon.throw.force_factor` | `ref.weapon.throwing.force_factor` |
+| `ref.weapon.throw.front_lift` | `ref.weapon.throwing.front_lift` |
+| `ref.weapon.throw.max_force` | `ref.weapon.throwing.max_force` |
 | `ref.weapon.thrown.colour` | `ref.weapon.thrown.color` |
 | `rnd.barrier.neutral_colour` | `rnd.barrier.neutral_color` |
 | `rnd.crowd.rogue_orb_colour` | `rnd.crowd.rogue_orb_color` |

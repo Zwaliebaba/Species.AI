@@ -433,6 +433,18 @@ struct TuningMvp
       {
         // ref.sim.container.ungrouped_step, in slots
         std::int64_t ungroupedStep = 0;
+
+        // ref.sim.container.laser_bolt_step, in slots
+        std::int64_t laserBoltStep = 0;
+
+        // ref.sim.container.effect_step, in slots
+        std::int64_t effectStep = 0;
+
+        // ref.sim.container.orb_presize, in slots
+        std::int64_t orbPresize = 0;
+
+        // ref.sim.container.orb_step, in slots
+        std::int64_t orbStep = 0;
       };
 
       struct Spawn
@@ -455,6 +467,9 @@ struct TuningMvp
 
         // ref.sim.spawn.edge_margin, in wu
         double edgeMargin = 0.0;
+
+        // ref.sim.spawn.orb_lift, in wu
+        double orbLift = 0.0;
       };
 
       struct Physics
@@ -470,6 +485,12 @@ struct TuningMvp
 
         // ref.sim.physics.land_offset, in wu
         double landOffset = 0.0;
+
+        // ref.sim.physics.thrown_gravity, in wu/s²
+        double thrownGravity = 0.0;
+
+        // ref.sim.physics.restitution, in times speed
+        double restitution = 0.0;
       };
 
       struct Walk
@@ -598,6 +619,15 @@ struct TuningMvp
         double mergeDistance = 0.0;
       };
 
+      struct Explosion
+      {
+        // ref.sim.explosion.actor_reach, in times range
+        double actorReach = 0.0;
+
+        // ref.sim.explosion.actor_gain, in factor
+        double actorGain = 0.0;
+      };
+
       // ref.sim.tick_period, in s
       double tickPeriod = 0.0;
 
@@ -614,6 +644,7 @@ struct TuningMvp
       Water water;
       Push push;
       Route route;
+      Explosion explosion;
     };
 
     struct Unit
@@ -627,6 +658,33 @@ struct TuningMvp
 
           // ref.unit.worker.retarget_ticks.spread_seconds, in seconds
           double spreadSeconds = 0.0;
+        };
+
+        struct GrenadeFirstTicks
+        {
+          // ref.unit.worker.grenade_first_ticks.base, in ticks
+          std::int64_t base = 0;
+
+          // ref.unit.worker.grenade_first_ticks.spread_seconds, in seconds
+          double spreadSeconds = 0.0;
+        };
+
+        struct GrenadeIntervalTicks
+        {
+          // ref.unit.worker.grenade_interval_ticks.base, in ticks
+          std::int64_t base = 0;
+
+          // ref.unit.worker.grenade_interval_ticks.spread_seconds, in seconds
+          double spreadSeconds = 0.0;
+        };
+
+        struct BurnChance
+        {
+          // ref.unit.worker.burn_chance.threshold, in roll
+          double threshold = 0.0;
+
+          // ref.unit.worker.burn_chance.roll_range, in roll
+          double rollRange = 0.0;
         };
 
         // ref.unit.worker.health, in health
@@ -704,6 +762,73 @@ struct TuningMvp
 
         // ref.unit.worker.route_jitter_radius, in wu
         double routeJitterRadius = 0.0;
+
+        // ref.unit.worker.threat_range, in wu
+        double threatRange = 0.0;
+
+        // ref.unit.worker.threat_range_relax, in per search
+        double threatRangeRelax = 0.0;
+
+        // ref.unit.worker.projectile_threat_range, in wu
+        double projectileThreatRange = 0.0;
+
+        // ref.unit.worker.scared_enemy_count, in actors
+        std::int64_t scaredEnemyCount = 0;
+
+        // ref.unit.worker.order_cancel_radius, in wu
+        double orderCancelRadius = 0.0;
+
+        // ref.unit.worker.retreat_range, in wu
+        double retreatRange = 0.0;
+
+        // ref.unit.worker.retreat_height_diff, in wu
+        double retreatHeightDiff = 0.0;
+
+        // ref.unit.worker.combat_step, in wu
+        double combatStep = 0.0;
+
+        // ref.unit.worker.standoff_base, in wu
+        double standoffBase = 0.0;
+
+        // ref.unit.worker.standoff_spread, in wu
+        double standoffSpread = 0.0;
+
+        // ref.unit.worker.fear_range, in wu
+        double fearRange = 0.0;
+
+        // ref.unit.worker.aim_height, in wu
+        double aimHeight = 0.0;
+
+        // ref.unit.worker.attack_divisor, in factor
+        double attackDivisor = 0.0;
+
+        GrenadeFirstTicks grenadeFirstTicks;
+        GrenadeIntervalTicks grenadeIntervalTicks;
+        // ref.unit.worker.grenade_min_distance, in wu
+        double grenadeMinDistance = 0.0;
+
+        // ref.unit.worker.grenade_normal_min, in normal y
+        double grenadeNormalMin = 0.0;
+
+        // ref.unit.worker.grenade_height_diff_min, in wu
+        double grenadeHeightDiffMin = 0.0;
+
+        // ref.unit.worker.grenade_crowd_radius, in wu
+        double grenadeCrowdRadius = 0.0;
+
+        // ref.unit.worker.grenade_crowd_enemies, in actors
+        std::int64_t grenadeCrowdEnemies = 0;
+
+        // ref.unit.worker.grenade_crowd_friends, in actors
+        std::int64_t grenadeCrowdFriends = 0;
+
+        // ref.unit.worker.burn_wander, in wu
+        double burnWander = 0.0;
+
+        // ref.unit.worker.burn_damage, in health
+        std::int64_t burnDamage = 0;
+
+        BurnChance burnChance;
       };
 
       struct Leader
@@ -754,16 +879,231 @@ struct TuningMvp
         std::int64_t fadeAirPerTick = 0;
       };
 
+      struct Attack
+      {
+        // ref.unit.attack.aim_jitter, in wu
+        double aimJitter = 0.0;
+
+        // ref.unit.attack.muzzle_height, in wu
+        double muzzleHeight = 0.0;
+
+        // ref.unit.attack.laser_speed, in wu/s
+        double laserSpeed = 0.0;
+      };
+
+      struct EssenceOrb
+      {
+        struct WobbleRateClamp
+        {
+          // ref.unit.essence_orb.wobble_rate_clamp.min, in wu/s
+          double min = 0.0;
+
+          // ref.unit.essence_orb.wobble_rate_clamp.max, in wu/s
+          double max = 0.0;
+        };
+
+        // ref.unit.essence_orb.wobble_phase_range, in rad
+        double wobblePhaseRange = 0.0;
+
+        // ref.unit.essence_orb.birth_hover_max, in wu/s
+        double birthHoverMax = 0.0;
+
+        // ref.unit.essence_orb.birth_pull_base, in wu/s
+        double birthPullBase = 0.0;
+
+        // ref.unit.essence_orb.birth_pull_range, in wu/s
+        double birthPullRange = 0.0;
+
+        // ref.unit.essence_orb.birth_pull_scale_height, in wu
+        double birthPullScaleHeight = 0.0;
+
+        // ref.unit.essence_orb.ascent_rise_min, in wu/s
+        double ascentRiseMin = 0.0;
+
+        // ref.unit.essence_orb.ascent_rise_range, in wu/s
+        double ascentRiseRange = 0.0;
+
+        // ref.unit.essence_orb.drag_per_tick, in times velocity
+        double dragPerTick = 0.0;
+
+        // ref.unit.essence_orb.phase_step, in rad per tick
+        double phaseStep = 0.0;
+
+        WobbleRateClamp wobbleRateClamp;
+        // ref.unit.essence_orb.push_radius, in wu
+        double pushRadius = 0.0;
+
+        // ref.unit.essence_orb.push_gain, in per tick
+        double pushGain = 0.0;
+
+        // ref.unit.essence_orb.push_speed_max, in wu/s
+        double pushSpeedMax = 0.0;
+
+        // ref.unit.essence_orb.push_stop_speed, in wu/s
+        double pushStopSpeed = 0.0;
+
+        // ref.unit.essence_orb.floor_height, in wu
+        double floorHeight = 0.0;
+      };
+
       // ref.unit.health_max, in health
       std::int64_t healthMax = 0;
 
       Worker worker;
       Leader leader;
       Corpse corpse;
+      Attack attack;
+      EssenceOrb essenceOrb;
+    };
+
+    struct Weapon
+    {
+      struct Laser
+      {
+        // ref.weapon.laser.damage_base, in health
+        std::int64_t damageBase = 0;
+
+        // ref.weapon.laser.damage_spread, in health
+        double damageSpread = 0.0;
+
+        // ref.weapon.laser.hit_radius, in wu
+        double hitRadius = 0.0;
+
+        // ref.weapon.laser.hit_height, in wu
+        double hitHeight = 0.0;
+
+        // ref.weapon.laser.push_spread, in wu/s
+        double pushSpread = 0.0;
+
+        // ref.weapon.laser.push_lift_base, in wu/s
+        double pushLiftBase = 0.0;
+
+        // ref.weapon.laser.push_lift_spread, in wu/s
+        double pushLiftSpread = 0.0;
+
+        // ref.weapon.laser.life_ticks, in ticks
+        std::int64_t lifeTicks = 0;
+      };
+
+      struct Throwing
+      {
+        // ref.weapon.throwing.force_factor, in per root wu
+        double forceFactor = 0.0;
+
+        // ref.weapon.throwing.max_force, in wu/s
+        double maxForce = 0.0;
+
+        // ref.weapon.throwing.front_lift, in front y
+        double frontLift = 0.0;
+      };
+
+      struct Thrown
+      {
+        // ref.weapon.thrown.initial_force, in factor
+        double initialForce = 0.0;
+
+        // ref.weapon.thrown.rest_force, in factor
+        double restForce = 0.0;
+
+        // ref.weapon.thrown.bounce_clearance, in wu
+        double bounceClearance = 0.0;
+
+        // ref.weapon.thrown.bounce_force_factor, in factor
+        double bounceForceFactor = 0.0;
+      };
+
+      struct Grenade
+      {
+        // ref.weapon.grenade.fuse_ticks, in ticks
+        std::int64_t fuseTicks = 0;
+
+        // ref.weapon.grenade.power, in power
+        double power = 0.0;
+
+        // ref.weapon.grenade.range_factor, in times power
+        double rangeFactor = 0.0;
+
+        // ref.weapon.grenade.damage_factor, in times power
+        double damageFactor = 0.0;
+      };
+
+      struct Shockwave
+      {
+        // ref.weapon.shockwave.size_divisor, in wu per s
+        double sizeDivisor = 0.0;
+
+        // ref.weapon.shockwave.start_radius, in wu
+        double startRadius = 0.0;
+
+        // ref.weapon.shockwave.growth, in wu/s
+        double growth = 0.0;
+
+        // ref.weapon.shockwave.band, in wu
+        double band = 0.0;
+
+        // ref.weapon.shockwave.damage, in health
+        double damage = 0.0;
+
+        // ref.weapon.shockwave.ignite_draw_range, in roll
+        double igniteDrawRange = 0.0;
+
+        // ref.weapon.shockwave.ignite_threshold, in roll
+        double igniteThreshold = 0.0;
+
+        // ref.weapon.shockwave.push_lift, in push y
+        double pushLift = 0.0;
+
+        // ref.weapon.shockwave.push, in wu/s
+        double push = 0.0;
+      };
+
+      Laser laser;
+      Throwing throwing;
+      Thrown thrown;
+      Grenade grenade;
+      Shockwave shockwave;
+    };
+
+    struct Econ
+    {
+      struct Orb
+      {
+        struct FloatingTicks
+        {
+          // ref.econ.orb.floating_ticks.center_seconds, in seconds
+          double centerSeconds = 0.0;
+
+          // ref.econ.orb.floating_ticks.spread_seconds, in seconds
+          double spreadSeconds = 0.0;
+        };
+
+        // ref.econ.orb.death_velocity_factor, in times velocity
+        double deathVelocityFactor = 0.0;
+
+        // ref.econ.orb.birth_ticks, in ticks
+        std::int64_t birthTicks = 0;
+
+        // ref.econ.orb.birth_max_height_wu, in wu
+        double birthMaxHeightWu = 0.0;
+
+        FloatingTicks floatingTicks;
+        // ref.econ.orb.ascent_ticks, in ticks
+        std::int64_t ascentTicks = 0;
+
+        // ref.econ.orb.wobble_rate_range, in wu/s
+        double wobbleRateRange = 0.0;
+
+        // ref.econ.orb.wobble_offset_range, in wu/s
+        double wobbleOffsetRange = 0.0;
+      };
+
+      Orb orb;
     };
 
     Sim sim;
     Unit unit;
+    Weapon weapon;
+    Econ econ;
   };
 
   struct Wld
@@ -1178,6 +1518,10 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim::Container& _out)
 {
   _out.ungroupedStep = _reader.Integer(_object, "ungrouped_step", 0);
+  _out.laserBoltStep = _reader.Integer(_object, "laser_bolt_step", 1);
+  _out.effectStep = _reader.Integer(_object, "effect_step", 1);
+  _out.orbPresize = _reader.Integer(_object, "orb_presize", 0);
+  _out.orbStep = _reader.Integer(_object, "orb_step", 1);
   _reader.Close(_object);
 }
 
@@ -1194,6 +1538,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "default_front"), _out.defaultFront);
   _out.searchAttempts = _reader.Integer(_object, "search_attempts", 0);
   _out.edgeMargin = _reader.Decimal(_object, "edge_margin", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.orbLift = _reader.Decimal(_object, "orb_lift", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -1203,6 +1548,8 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.gravity = _reader.Decimal(_object, "gravity", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.landThreshold = _reader.Decimal(_object, "land_threshold", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.landOffset = _reader.Decimal(_object, "land_offset", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.thrownGravity = _reader.Decimal(_object, "thrown_gravity", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.restitution = _reader.Decimal(_object, "restitution", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -1276,6 +1623,13 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim::Explosion& _out)
+{
+  _out.actorReach = _reader.Decimal(_object, "actor_reach", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.actorGain = _reader.Decimal(_object, "actor_gain", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim& _out)
 {
   _out.tickPeriod = _reader.Decimal(_object, "tick_period", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
@@ -1290,6 +1644,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "water"), _out.water);
   ReadFields(_reader, _reader.Object(_object, "push"), _out.push);
   ReadFields(_reader, _reader.Object(_object, "route"), _out.route);
+  ReadFields(_reader, _reader.Object(_object, "explosion"), _out.explosion);
   _reader.Close(_object);
 }
 
@@ -1297,6 +1652,28 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 {
   _out.base = _reader.Integer(_object, "base", 0);
   _out.spreadSeconds = _reader.Decimal(_object, "spread_seconds", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Unit::Worker::GrenadeFirstTicks& _out)
+{
+  _out.base = _reader.Integer(_object, "base", 0);
+  _out.spreadSeconds = _reader.Decimal(_object, "spread_seconds", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object,
+                       TuningMvp::Ref::Unit::Worker::GrenadeIntervalTicks& _out)
+{
+  _out.base = _reader.Integer(_object, "base", 0);
+  _out.spreadSeconds = _reader.Decimal(_object, "spread_seconds", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Unit::Worker::BurnChance& _out)
+{
+  _out.threshold = _reader.Decimal(_object, "threshold", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.rollRange = _reader.Decimal(_object, "roll_range", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -1328,6 +1705,30 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.structureClearRadius = _reader.Decimal(_object, "structure_clear_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.routeReachRadius = _reader.Decimal(_object, "route_reach_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.routeJitterRadius = _reader.Decimal(_object, "route_jitter_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.threatRange = _reader.Decimal(_object, "threat_range", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.threatRangeRelax = _reader.Decimal(_object, "threat_range_relax", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.projectileThreatRange = _reader.Decimal(_object, "projectile_threat_range", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.scaredEnemyCount = _reader.Integer(_object, "scared_enemy_count", 0);
+  _out.orderCancelRadius = _reader.Decimal(_object, "order_cancel_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.retreatRange = _reader.Decimal(_object, "retreat_range", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.retreatHeightDiff = _reader.Decimal(_object, "retreat_height_diff", {}, Neuron::SimPrecision::Binary64);
+  _out.combatStep = _reader.Decimal(_object, "combat_step", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.standoffBase = _reader.Decimal(_object, "standoff_base", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.standoffSpread = _reader.Decimal(_object, "standoff_spread", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.fearRange = _reader.Decimal(_object, "fear_range", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.aimHeight = _reader.Decimal(_object, "aim_height", {}, Neuron::SimPrecision::Binary64);
+  _out.attackDivisor = _reader.Decimal(_object, "attack_divisor", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  ReadFields(_reader, _reader.Object(_object, "grenade_first_ticks"), _out.grenadeFirstTicks);
+  ReadFields(_reader, _reader.Object(_object, "grenade_interval_ticks"), _out.grenadeIntervalTicks);
+  _out.grenadeMinDistance = _reader.Decimal(_object, "grenade_min_distance", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.grenadeNormalMin = _reader.Decimal(_object, "grenade_normal_min", {}, Neuron::SimPrecision::Binary64);
+  _out.grenadeHeightDiffMin = _reader.Decimal(_object, "grenade_height_diff_min", {}, Neuron::SimPrecision::Binary64);
+  _out.grenadeCrowdRadius = _reader.Decimal(_object, "grenade_crowd_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.grenadeCrowdEnemies = _reader.Integer(_object, "grenade_crowd_enemies", 0);
+  _out.grenadeCrowdFriends = _reader.Integer(_object, "grenade_crowd_friends", 0);
+  _out.burnWander = _reader.Decimal(_object, "burn_wander", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.burnDamage = _reader.Integer(_object, "burn_damage", 0);
+  ReadFields(_reader, _reader.Object(_object, "burn_chance"), _out.burnChance);
   _reader.Close(_object);
 }
 
@@ -1355,12 +1756,138 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Unit::Attack& _out)
+{
+  _out.aimJitter = _reader.Decimal(_object, "aim_jitter", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.muzzleHeight = _reader.Decimal(_object, "muzzle_height", {}, Neuron::SimPrecision::Binary64);
+  _out.laserSpeed = _reader.Decimal(_object, "laser_speed", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Unit::EssenceOrb::WobbleRateClamp& _out)
+{
+  _out.min = _reader.Decimal(_object, "min", {}, Neuron::SimPrecision::Binary64);
+  _out.max = _reader.Decimal(_object, "max", {}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Unit::EssenceOrb& _out)
+{
+  _out.wobblePhaseRange = _reader.Decimal(_object, "wobble_phase_range", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.birthHoverMax = _reader.Decimal(_object, "birth_hover_max", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.birthPullBase = _reader.Decimal(_object, "birth_pull_base", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.birthPullRange = _reader.Decimal(_object, "birth_pull_range", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.birthPullScaleHeight =
+    _reader.Decimal(_object, "birth_pull_scale_height", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.ascentRiseMin = _reader.Decimal(_object, "ascent_rise_min", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.ascentRiseRange = _reader.Decimal(_object, "ascent_rise_range", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.dragPerTick = _reader.Decimal(_object, "drag_per_tick", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.phaseStep = _reader.Decimal(_object, "phase_step", {}, Neuron::SimPrecision::Binary64);
+  ReadFields(_reader, _reader.Object(_object, "wobble_rate_clamp"), _out.wobbleRateClamp);
+  _out.pushRadius = _reader.Decimal(_object, "push_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.pushGain = _reader.Decimal(_object, "push_gain", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.pushSpeedMax = _reader.Decimal(_object, "push_speed_max", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.pushStopSpeed = _reader.Decimal(_object, "push_stop_speed", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.floorHeight = _reader.Decimal(_object, "floor_height", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Unit& _out)
 {
   _out.healthMax = _reader.Integer(_object, "health_max", 0);
   ReadFields(_reader, _reader.Object(_object, "worker"), _out.worker);
   ReadFields(_reader, _reader.Object(_object, "leader"), _out.leader);
   ReadFields(_reader, _reader.Object(_object, "corpse"), _out.corpse);
+  ReadFields(_reader, _reader.Object(_object, "attack"), _out.attack);
+  ReadFields(_reader, _reader.Object(_object, "essence_orb"), _out.essenceOrb);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Weapon::Laser& _out)
+{
+  _out.damageBase = _reader.Integer(_object, "damage_base", 0);
+  _out.damageSpread = _reader.Decimal(_object, "damage_spread", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.hitRadius = _reader.Decimal(_object, "hit_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.hitHeight = _reader.Decimal(_object, "hit_height", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.pushSpread = _reader.Decimal(_object, "push_spread", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.pushLiftBase = _reader.Decimal(_object, "push_lift_base", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.pushLiftSpread = _reader.Decimal(_object, "push_lift_spread", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.lifeTicks = _reader.Integer(_object, "life_ticks", 1);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Weapon::Throwing& _out)
+{
+  _out.forceFactor = _reader.Decimal(_object, "force_factor", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.maxForce = _reader.Decimal(_object, "max_force", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.frontLift = _reader.Decimal(_object, "front_lift", {}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Weapon::Thrown& _out)
+{
+  _out.initialForce = _reader.Decimal(_object, "initial_force", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.restForce = _reader.Decimal(_object, "rest_force", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.bounceClearance = _reader.Decimal(_object, "bounce_clearance", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.bounceForceFactor = _reader.Decimal(_object, "bounce_force_factor", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Weapon::Grenade& _out)
+{
+  _out.fuseTicks = _reader.Integer(_object, "fuse_ticks", 0);
+  _out.power = _reader.Decimal(_object, "power", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.rangeFactor = _reader.Decimal(_object, "range_factor", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.damageFactor = _reader.Decimal(_object, "damage_factor", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Weapon::Shockwave& _out)
+{
+  _out.sizeDivisor = _reader.Decimal(_object, "size_divisor", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.startRadius = _reader.Decimal(_object, "start_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.growth = _reader.Decimal(_object, "growth", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.band = _reader.Decimal(_object, "band", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.damage = _reader.Decimal(_object, "damage", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.igniteDrawRange = _reader.Decimal(_object, "ignite_draw_range", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.igniteThreshold = _reader.Decimal(_object, "ignite_threshold", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.pushLift = _reader.Decimal(_object, "push_lift", {}, Neuron::SimPrecision::Binary64);
+  _out.push = _reader.Decimal(_object, "push", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Weapon& _out)
+{
+  ReadFields(_reader, _reader.Object(_object, "laser"), _out.laser);
+  ReadFields(_reader, _reader.Object(_object, "throwing"), _out.throwing);
+  ReadFields(_reader, _reader.Object(_object, "thrown"), _out.thrown);
+  ReadFields(_reader, _reader.Object(_object, "grenade"), _out.grenade);
+  ReadFields(_reader, _reader.Object(_object, "shockwave"), _out.shockwave);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Econ::Orb::FloatingTicks& _out)
+{
+  _out.centerSeconds = _reader.Decimal(_object, "center_seconds", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.spreadSeconds = _reader.Decimal(_object, "spread_seconds", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Econ::Orb& _out)
+{
+  _out.deathVelocityFactor = _reader.Decimal(_object, "death_velocity_factor", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.birthTicks = _reader.Integer(_object, "birth_ticks", 0);
+  _out.birthMaxHeightWu = _reader.Decimal(_object, "birth_max_height_wu", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  ReadFields(_reader, _reader.Object(_object, "floating_ticks"), _out.floatingTicks);
+  _out.ascentTicks = _reader.Integer(_object, "ascent_ticks", 0);
+  _out.wobbleRateRange = _reader.Decimal(_object, "wobble_rate_range", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.wobbleOffsetRange = _reader.Decimal(_object, "wobble_offset_range", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Econ& _out)
+{
+  ReadFields(_reader, _reader.Object(_object, "orb"), _out.orb);
   _reader.Close(_object);
 }
 
@@ -1368,6 +1895,8 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 {
   ReadFields(_reader, _reader.Object(_object, "sim"), _out.sim);
   ReadFields(_reader, _reader.Object(_object, "unit"), _out.unit);
+  ReadFields(_reader, _reader.Object(_object, "weapon"), _out.weapon);
+  ReadFields(_reader, _reader.Object(_object, "econ"), _out.econ);
   _reader.Close(_object);
 }
 

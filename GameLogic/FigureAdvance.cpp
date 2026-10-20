@@ -2,6 +2,7 @@
 
 #include "DrawPurpose.h"
 #include "FigureAdvance.h"
+#include "RegionSimulation.h"
 
 #include <cmath>
 #include <cstdint>
@@ -16,31 +17,51 @@ namespace
 
 constexpr double TWO_PI = 2.0 * std::numbers::pi;
 
-// R-UNIT-087 for the searches the MVP builds so far: Idle ends in the random-position search (R-UNIT-097), which
-// always succeeds; OnWaypointOrder's searches (threats, ports, carryables) arrive with T6 or never.
-void TaskSearch(Figure& _figure, const MovementContext& _context)
+// R-UNIT-087 for the searches the MVP builds so far: the threat search in every state that searches (R-UNIT-089); then,
+// for an Idle Worker, R-UNIT-096 step 1, the pending order it resumes, and the random-position search (R-UNIT-097), which
+// always succeeds. The other searches have nothing to find in the MVP, and the Leaders of R-UNIT-096 come with T7.
+void TaskSearch(Figure& _figure, const FigureContext& _context)
 {
-  if (_figure.workerState != WorkerState::Idle)
+  if (ThreatSearch(_figure, _context) || _figure.workerState != WorkerState::Idle)
   {
     return;
   }
-  const auto& worker = _context.tuning->ref.unit.worker;
-  Neuron::SimRng& draw = _context.draws->For(DrawPurpose::Wander, _figure.id);
+  const MovementContext& movement = *_context.movement;
+  const auto& worker = movement.tuning->ref.unit.worker;
+  if (_figure.orderSet)
+  {
+    // The pending order's position, or its route's current point, plus a point of the order disc.
+    Neuron::Vec3 target = _figure.orderPosition;
+    const std::vector<Neuron::Vec3>* points = movement.routes != nullptr ? movement.routes->Find(_figure.route) : nullptr;
+    if (points != nullptr && _figure.routePoint >= 0 && static_cast<std::size_t>(_figure.routePoint) < points->size())
+    {
+      target = (*points)[static_cast<std::size_t>(_figure.routePoint)];
+    }
+    Neuron::SimRng& disc = movement.draws->For(DrawPurpose::OrderDisc, _figure.id);
+    const double radius = disc.NextUnit(worker.orderDiscRadius);
+    const double angle = disc.NextUnit(TWO_PI);
+    const Neuron::Vec3 point{target.x + std::cos(angle) * radius, target.y, target.z + std::sin(angle) * radius};
+    _figure.waypoint = WorkerPush(_figure, point, DrawPurpose::ShoreOrder, movement);
+    _figure.workerState = WorkerState::OnWaypointOrder;
+    return;
+  }
+  Neuron::SimRng& draw = movement.draws->For(DrawPurpose::Wander, _figure.id);
   const double chance = draw.NextUnit(1.0);
   if (chance < worker.wanderChance)
   {
     const double angle = draw.NextSigned(TWO_PI);
     const Neuron::Vec3 point{_figure.position.x + std::cos(angle) * worker.wanderDistance, _figure.position.y,
                              _figure.position.z + std::sin(angle) * worker.wanderDistance};
-    _figure.waypoint = WorkerPush(_figure, point, DrawPurpose::ShoreWander, _context);
+    _figure.waypoint = WorkerPush(_figure, point, DrawPurpose::ShoreWander, movement);
   }
 }
 
 } // namespace
 
-bool BaseAdvance(Figure& _figure, const MovementContext& _context)
+bool BaseAdvance(Figure& _figure, const FigureContext& _context)
 {
-  const TuningMvp& tuning = *_context.tuning;
+  const MovementContext& movement = *_context.movement;
+  const TuningMvp& tuning = *movement.tuning;
   if (!_figure.enabled)
   {
     return false;
@@ -63,18 +84,19 @@ bool BaseAdvance(Figure& _figure, const MovementContext& _context)
   {
     --_figure.reloadTimerTicks;
   }
-  if (_figure.kind != FigureKind::Worker && _figure.inWaterTicks >= 0 && SwimStep(_figure, _context))
+  if (_figure.kind != FigureKind::Worker && _figure.inWaterTicks >= 0 && SwimStep(_figure, movement))
   {
     static_cast<void>(
-      ApplyHealthChange(_figure, -static_cast<std::int32_t>(tuning.ref.sim.water.drownDamage), DamageKind::Unresistable, tuning));
+      _context.region->Damage(_context.self, -static_cast<std::int32_t>(tuning.ref.sim.water.drownDamage), DamageKind::Unresistable));
   }
-  WorldClamp(_figure, _context);
+  WorldClamp(_figure, movement);
   return false;
 }
 
-bool WorkerAdvance(Figure& _figure, const MovementContext& _context)
+bool WorkerAdvance(Figure& _figure, const FigureContext& _context)
 {
-  const TuningMvp& tuning = *_context.tuning;
+  const MovementContext& movement = *_context.movement;
+  const TuningMvp& tuning = *movement.tuning;
   const auto& worker = tuning.ref.unit.worker;
   const double dt = tuning.ref.sim.tickPeriod;
   if (BaseAdvance(_figure, _context))
@@ -85,25 +107,25 @@ bool WorkerAdvance(Figure& _figure, const MovementContext& _context)
   {
     return false;
   }
-  if (!_figure.dead && _figure.onGround)
+  if (!_figure.dead && _figure.onGround && _figure.workerState != WorkerState::Burning)
   {
     --_figure.retargetTimerTicks;
     if (_figure.retargetTimerTicks <= 0)
     {
       TaskSearch(_figure, _context);
-      // R-UNIT-065 step 3.1: 11 + ⌊NextUnit(1) ÷ tick period⌋ ticks, 11 to 20.
-      const double spread = _context.draws->For(DrawPurpose::RetargetTimer, _figure.id).NextUnit(worker.retargetTicks.spreadSeconds);
-      _figure.retargetTimerTicks =
-        static_cast<std::int32_t>(worker.retargetTicks.base) + static_cast<std::int32_t>(std::floor(spread / dt));
+      // R-UNIT-065 step 3.1: 11 + ⌊NextUnit(1) ÷ tick period⌋ ticks, 11 to 20. The victory celebration's draw of
+      // R-UNIT-088 starts nothing in a match, so with keyed draws it is not made (ADR-105).
+      const double spread = movement.draws->For(DrawPurpose::RetargetTimer, _figure.id).NextUnit(worker.retargetTicks.spreadSeconds);
+      _figure.retargetTimerTicks = TicksOf(worker.retargetTicks.base, spread, dt);
     }
     switch (_figure.workerState)
     {
     case WorkerState::Idle:
-      static_cast<void>(WorkerMoveToWaypoint(_figure, true, _context));
+      static_cast<void>(WorkerMoveToWaypoint(_figure, true, movement));
       break;
     case WorkerState::OnWaypointOrder:
-      FollowRoute(_figure, _context);
-      if (WorkerMoveToWaypoint(_figure, false, _context))
+      FollowRoute(_figure, movement);
+      if (WorkerMoveToWaypoint(_figure, false, movement))
       {
         // R-UNIT-073: arrival without a teleport structure.
         _figure.workerState = WorkerState::Idle;
@@ -112,18 +134,27 @@ bool WorkerAdvance(Figure& _figure, const MovementContext& _context)
         _figure.playerOrders = false;
       }
       break;
+    case WorkerState::Fighting:
+      FightingStep(_figure, _context);
+      break;
     case WorkerState::Drowning:
+    case WorkerState::Burning:
       break;
     }
   }
   if (!_figure.onGround)
   {
-    AirborneStep(_figure, _context);
+    AirborneStep(_figure, movement);
   }
-  if (_figure.workerState == WorkerState::Drowning && !_figure.dead)
+  // R-UNIT-065 step 6, for a Worker that is still alive.
+  if (!_figure.dead && _figure.workerState == WorkerState::Burning)
   {
-    // R-UNIT-080: an unresistable change that kills; its Essence orb comes with the orbs (M1 plan T6).
-    static_cast<void>(ApplyHealthChange(_figure, -static_cast<std::int32_t>(worker.drownDamage), DamageKind::Unresistable, tuning));
+    BurningStep(_figure, _context);
+  }
+  if (!_figure.dead && _figure.workerState == WorkerState::Drowning)
+  {
+    // R-UNIT-080: an unresistable change that kills and releases an Essence orb.
+    static_cast<void>(_context.region->Damage(_context.self, -static_cast<std::int32_t>(worker.drownDamage), DamageKind::Unresistable));
   }
   if (_figure.position.y < tuning.ref.sim.physics.seaLevel)
   {
@@ -139,12 +170,13 @@ bool WorkerAdvance(Figure& _figure, const MovementContext& _context)
   return false;
 }
 
-bool LeaderAdvance(Figure& _figure, const MovementContext& _context)
+bool LeaderAdvance(Figure& _figure, const FigureContext& _context)
 {
-  const TuningMvp& tuning = *_context.tuning;
+  const MovementContext& movement = *_context.movement;
+  const TuningMvp& tuning = *movement.tuning;
   if (_figure.enabled && !_figure.onGround)
   {
-    AirborneStep(_figure, _context);
+    AirborneStep(_figure, movement);
   }
   if (BaseAdvance(_figure, _context))
   {
@@ -154,14 +186,14 @@ bool LeaderAdvance(Figure& _figure, const MovementContext& _context)
   {
     return false;
   }
-  if (_figure.inWaterTicks >= 0 && SwimStep(_figure, _context))
+  if (_figure.inWaterTicks >= 0 && SwimStep(_figure, movement))
   {
     static_cast<void>(
-      ApplyHealthChange(_figure, -static_cast<std::int32_t>(tuning.ref.sim.water.drownDamage), DamageKind::Unresistable, tuning));
+      _context.region->Damage(_context.self, -static_cast<std::int32_t>(tuning.ref.sim.water.drownDamage), DamageKind::Unresistable));
   }
   if (_figure.onGround && !_figure.dead)
   {
-    _figure.position.y = _context.Height(_figure.position.x, _figure.position.z);
+    _figure.position.y = movement.Height(_figure.position.x, _figure.position.z);
   }
   if (!_figure.dead && _figure.onGround && _figure.inWaterTicks < 0)
   {
@@ -171,7 +203,7 @@ bool LeaderAdvance(Figure& _figure, const MovementContext& _context)
       _figure.velocity = {};
       break;
     case LeaderState::ToWaypoint:
-      if (LeaderMoveToWaypoint(_figure, _context))
+      if (LeaderMoveToWaypoint(_figure, movement))
       {
         _figure.leaderState = LeaderState::Idle;
       }
@@ -185,7 +217,7 @@ bool LeaderAdvance(Figure& _figure, const MovementContext& _context)
   return false;
 }
 
-bool AdvanceFigure(Figure& _figure, const MovementContext& _context)
+bool AdvanceFigure(Figure& _figure, const FigureContext& _context)
 {
   return _figure.kind == FigureKind::Worker ? WorkerAdvance(_figure, _context) : LeaderAdvance(_figure, _context);
 }

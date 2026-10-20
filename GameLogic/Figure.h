@@ -30,7 +30,29 @@ enum class WorkerState : std::uint8_t
 {
   Idle,
   OnWaypointOrder,
-  Drowning
+  Drowning,
+  Fighting,
+  Burning
+};
+
+// R-UNIT-064, R-UNIT-101: what a Worker's threat is. The MVP's threats are actors and grenades.
+enum class ThreatKind : std::uint8_t
+{
+  None,
+  Actor,
+  Grenade
+};
+
+/// A Worker's current threat: an actor by its actor-grid entry, or a grenade by its slot in the region's effects and its
+/// id. Either resolves only while the object still holds that slot.
+struct Threat
+{
+  ThreatKind kind = ThreatKind::None;
+  std::uint8_t team = 0;
+  std::uint32_t slot = 0;
+  StableId id = 0;
+
+  friend constexpr bool operator==(const Threat& _a, const Threat& _b) noexcept = default;
 };
 
 // R-UNIT-164: the Leader's behaviour states that the MVP builds so far; GivingOrders comes with its orders (M1 plan T7).
@@ -75,10 +97,17 @@ struct Figure
   // From state version 5 (M1 task T5):
   RouteHandle route = 0;        // R-UNIT-110: the route it follows; 0 for none
   std::int32_t routePoint = -1; // the route point it walks to; −1 before the start
+  // From state version 6 (M1 task T6):
+  Threat threat;                      // R-UNIT-064, R-UNIT-098
+  double threatRange = 0.0;           // R-UNIT-098: the adaptive threat search radius
+  bool scared = true;                 // R-UNIT-098: flee rather than fight
+  bool threatSound = false;           // R-UNIT-064: the threat-sound latch
+  std::int32_t grenadeTimerTicks = 0; // R-UNIT-104: ticks to the next grenade decision
 };
 
 // R-UNIT-011 and R-UNIT-015 (R-SIM-109): sets the kind, the stats of the stat table, the actor-grid radius
-// (R-UNIT-159), the reload interval and the initial reload timer, from one draw of purpose ReloadTimer.
+// (R-UNIT-159), the reload interval and the initial reload timer, from one draw of purpose ReloadTimer; a Worker also
+// takes its threat range and its first grenade timer (R-UNIT-060, R-UNIT-064).
 void SetKind(Figure& _figure, FigureKind _kind, const TuningMvp& _tuning, TickDraws& _draws);
 
 // R-SIM-226 step 6, R-UNIT-019, R-UNIT-059: the front of a figure spawned with _velocity.
@@ -102,11 +131,17 @@ HealthChange ApplyHealthChange(Figure& _figure, std::int32_t _amount, DamageKind
 void WriteFigure(Neuron::BitWriter& _writer, const Figure& _figure);
 // The values WriteFigure wrote in a snapshot of _stateVersion; false when they do not read whole or name no kind. A
 // figure of a version before 4 takes the fields that version 4 added at their spawn values, its waypoint at its
-// position and its radius from its kind, registered nowhere until its region registers it; one before 5 follows no route.
+// position and its radius from its kind, registered nowhere until its region registers it; one before 5 follows no route;
+// one before 6 has no threat, the full threat range, and the base of its first grenade timer.
 [[nodiscard]] bool ReadFigure(Neuron::BitReader& _reader, Figure& _figure, std::uint32_t _stateVersion, const TuningMvp& _tuning);
 
-// The first state versions whose figures hold the fields of M1 tasks T4 and T5.
+// The first state versions whose figures hold the fields of M1 tasks T4, T5 and T6.
 inline constexpr std::uint32_t FIGURE_STATE_VERSION_MOVEMENT = 4;
 inline constexpr std::uint32_t FIGURE_STATE_VERSION_ROUTES = 5;
+inline constexpr std::uint32_t FIGURE_STATE_VERSION_COMBAT = 6;
+
+// R-UNIT-104: ticks from a draw of the spread in seconds, base + ⌊draw ÷ tick period⌋ (R-UNIT-060's first timer and each
+// interval).
+[[nodiscard]] std::int32_t TicksOf(std::int64_t _base, double _drawSeconds, double _tickPeriod) noexcept;
 
 } // namespace Species

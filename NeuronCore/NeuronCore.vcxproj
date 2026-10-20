@@ -153,6 +153,7 @@
     <ClInclude Include="FatalPath.h" />
     <ClInclude Include="Files.h" />
     <ClInclude Include="FloatEnvironment.h" />
+    <ClInclude Include="Geometry.h" />
     <ClInclude Include="InProcessTransport.h" />
     <ClInclude Include="JobQueue.h" />
     <ClInclude Include="Log.h" />
@@ -190,6 +191,7 @@
     <ClCompile Include="FatalPath.cpp" />
     <ClCompile Include="Files.cpp" />
     <ClCompile Include="FloatEnvironment.cpp" />
+    <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="InProcessTransport.cpp" />
     <ClCompile Include="JobQueue.cpp" />
     <ClCompile Include="Log.cpp" />

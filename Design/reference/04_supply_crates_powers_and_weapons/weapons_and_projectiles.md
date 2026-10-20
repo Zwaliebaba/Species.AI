@@ -28,7 +28,7 @@ Weapons are where the crowd battle becomes visible. Workers trade team-coloured 
 
 | Helper | Arguments (defaults) | Behaviour |
 |---|---|---|
-| throw a weapon | position, target, kind (grenade or airstrike target marker), team, force (none), fuse (none), explode on impact (false) | force = `ref.weapon.throw.force_factor` (8) × √|target − position|, capped at the maximum force of R-CRATE-412 for the team's grenade level; a force given by the caller replaces it, uncapped. The front is Normalize(target − position) with its y then set to `ref.weapon.throw.front_lift` (1) and normalised again, 45° up on level ground and steeper toward a higher target. The object takes the team's handle and raises its spawn event; a fuse given by the caller replaces a grenade's fuse. Muzzle flash `ref.weapon.muzzle_flash.throw_size` (20), life `ref.weapon.muzzle_flash.throw_life` (3) |
+| throw a weapon | position, target, kind (grenade or airstrike target marker), team, force (none), fuse (none), explode on impact (false) | force = `ref.weapon.throwing.force_factor` (8) × √|target − position|, capped at the maximum force of R-CRATE-412 for the team's grenade level; a force given by the caller replaces it, uncapped. The front is Normalize(target − position) with its y then set to `ref.weapon.throwing.front_lift` (1) and normalised again, 45° up on level ground and steeper toward a higher target. The object takes the team's handle and raises its spawn event; a fuse given by the caller replaces a grenade's fuse. Muzzle flash `ref.weapon.muzzle_flash.throw_size` (20), life `ref.weapon.muzzle_flash.throw_life` (3) |
 | fire a rocket | position, target, team, life (the rocket level's), source structure (none), spiral flag (false) | a rocket (R-CRATE-430) for the team; a life given by the caller replaces the level's; spawn event; muzzle flash as for a throw |
 | fire a turret round | position, velocity, team, source structure | a turret round (R-CRATE-450) with the match lifetime; muzzle flash at position + velocity × dt ÷ 2, size `ref.weapon.muzzle_flash.round_size` (60), life `ref.weapon.muzzle_flash.round_life` (2), with no team |
 | launch a fireball | position, velocity, life (`ref.bldg.turret.flame.fireball_life_ticks`), source structure (none) | a fireball (R-CRATE-460) with **no team**, so it harms every team |
@@ -81,7 +81,7 @@ if p.y < TerrainHeight(p) + ref.weapon.thrown.bounce_clearance:          # 1 wu
 
 After bounce k its speed is 0.85 × 0.75^k of its incoming speed (0.64 after the first bounce, 0.48 after the second, 0.36 after the third); it comes to rest after its 9th bounce, because 0.75⁹ ≈ 0.075 < 0.1. A thrown weapon never removes itself; its kinds decide when it ends. At rest it stays where it lies.
 
-**R-CRATE-412** (MUST) The maximum throw force by grenade level is `ref.weapon.throw.max_force`: 50, 80, 110, 140 and 170 at levels 0 to 4; in a match the grenade level is `ref.sim.init.power_level.grenade` (2), so the cap is 110. With F the force, the approximate maximum range on flat ground is F × `ref.unit.strike_team.bot_range_factor` (2.3125), about 254 wu for F = 110; bots use it ([strike_team.md](../02_units/strike_team.md), DEC-111).
+**R-CRATE-412** (MUST) The maximum throw force by grenade level is `ref.weapon.throwing.max_force`: 50, 80, 110, 140 and 170 at levels 0 to 4; in a match the grenade level is `ref.sim.init.power_level.grenade` (2), so the cap is 110. With F the force, the approximate maximum range on flat ground is F × `ref.unit.strike_team.bot_range_factor` (2.3125), about 254 wu for F = 110; bots use it ([strike_team.md](../02_units/strike_team.md), DEC-111).
 
 **R-CRATE-413** (MUST) A Collector that captures a grenade sets its force to 0, which freezes it in place, and releases it with force 1 ([collector.md](../02_units/collector.md) R-UNIT-434).
 
@@ -414,9 +414,9 @@ Caption: Figure 3-5, an explosion and its shockwave ring (R-CRATE-406, R-CRATE-4
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
-| `ref.weapon.throw.force_factor` | 8 | force per √wu | force = 8 × √distance | R-CRATE-405 | — |
-| `ref.weapon.throw.front_lift` | 1 | — | y of the throw front before normalising | R-CRATE-405 | — |
-| `ref.weapon.throw.max_force` | 50, 80, 110, 140, 170 | force | by grenade level 0 to 4; 110 in a match | R-CRATE-405, R-CRATE-412 | DEC-115 |
+| `ref.weapon.throwing.force_factor` | 8 | force per √wu | force = 8 × √distance | R-CRATE-405 | — |
+| `ref.weapon.throwing.front_lift` | 1 | — | y of the throw front before normalising | R-CRATE-405 | — |
+| `ref.weapon.throwing.max_force` | 50, 80, 110, 140, 170 | force | by grenade level 0 to 4; 110 in a match | R-CRATE-405, R-CRATE-412 | DEC-115 |
 | `ref.weapon.explosion.particle_factor` | 0.01 | cores per r × D | presentation | R-CRATE-406 | DEC-013 |
 | `ref.weapon.explosion.core_lift` | 0.3 | × r | presentation | R-CRATE-406 | — |
 | `ref.weapon.explosion.debris_min` | 2 | particles | presentation | R-CRATE-406 | — |

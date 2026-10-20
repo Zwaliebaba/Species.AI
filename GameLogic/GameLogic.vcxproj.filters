@@ -21,7 +21,13 @@
     <ClInclude Include="ActorGridCache.h">
       <Filter>Space</Filter>
     </ClInclude>
+    <ClInclude Include="Combat.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="DrawPurpose.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="EssenceOrb.h">
       <Filter>Simulation</Filter>
     </ClInclude>
     <ClInclude Include="Figure.h">
@@ -54,7 +60,13 @@
     <ClInclude Include="StateHash.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="StateValues.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="TickDraws.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="Weapons.h">
       <Filter>Simulation</Filter>
     </ClInclude>
     <ClInclude Include="WorldServer.h">
@@ -76,6 +88,12 @@
     </ClCompile>
     <ClCompile Include="ActorGridCache.cpp">
       <Filter>Space</Filter>
+    </ClCompile>
+    <ClCompile Include="Combat.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="EssenceOrb.cpp">
+      <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="Figure.cpp">
       <Filter>Simulation</Filter>
@@ -105,6 +123,9 @@
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="TickDraws.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Weapons.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="WorldServer.cpp">

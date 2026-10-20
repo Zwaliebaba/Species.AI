@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "Check.h"
+#include "Geometry.h"
 #include "TerrainField.h"
 
 #include <algorithm>
@@ -362,11 +363,6 @@ Vec3 NormalizeTerrain(const Vec3& _v) noexcept
   return {0.0, 0.0, 1.0};
 }
 
-Vec3 Cross(const Vec3& _a, const Vec3& _b) noexcept
-{
-  return {_a.y * _b.z - _a.z * _b.y, _a.z * _b.x - _a.x * _b.z, _a.x * _b.y - _a.y * _b.x};
-}
-
 } // namespace
 
 std::int32_t CeilLog2(double _value) noexcept
@@ -431,6 +427,94 @@ TerrainField TerrainField::Generate(const TerrainDefinition& _definition, std::s
 Vec3 TerrainField::Normal(double _x, double _z) const noexcept
 {
   return m_normals.Sample(_x, _z);
+}
+
+std::optional<Vec3> TerrainField::CastRay(const Vec3& _start, const Vec3& _direction) const noexcept
+{
+  const Vec3 direction = Normalized(_direction); // TER-077
+  const std::int64_t columns = m_heights.Columns();
+  const std::int64_t rows = m_heights.Rows();
+  const auto inside = [&](std::int64_t _i, std::int64_t _j) { return _i >= 0 && _i < columns && _j >= 0 && _j <= rows; };
+  Vec3 origin = _start;
+  std::int64_t i = m_heights.IndexX(origin.x);
+  std::int64_t j = m_heights.IndexZ(origin.z);
+  if (!inside(i, j))
+  {
+    // TER-016: the horizontal ray against the two grid edges that face it; the nearer hit is the entry point, whose
+    // height follows from the x components, or from z when the ray has no x component.
+    const double minX = m_heights.OriginX();
+    const double minZ = m_heights.OriginZ();
+    const double maxX = minX + ExtentX();
+    const double maxZ = minZ + ExtentZ();
+    std::optional<double> lambda;
+    if (direction.x != 0.0)
+    {
+      const double edge = direction.x > 0.0 ? minX : maxX;
+      const double at = (edge - origin.x) / direction.x;
+      const double z = origin.z + at * direction.z;
+      if (at >= 0.0 && z >= minZ && z <= maxZ)
+      {
+        lambda = at;
+      }
+    }
+    if (direction.z != 0.0)
+    {
+      const double edge = direction.z > 0.0 ? minZ : maxZ;
+      const double at = (edge - origin.z) / direction.z;
+      const double x = origin.x + at * direction.x;
+      if (at >= 0.0 && x >= minX && x <= maxX && (!lambda || at < *lambda))
+      {
+        lambda = at;
+      }
+    }
+    if (!lambda)
+    {
+      return std::nullopt;
+    }
+    origin = origin + direction * *lambda;
+    // An entry on a far edge lies in the last cell before it.
+    i = std::clamp<std::int64_t>(m_heights.IndexX(origin.x), 0, columns - 1);
+    j = std::clamp<std::int64_t>(m_heights.IndexZ(origin.z), 0, rows);
+  }
+  const auto corner = [&](std::int64_t _i, std::int64_t _j)
+  { return Vec3{m_heights.PositionX(_i), HeightAt(_i, _j), m_heights.PositionZ(_j)}; };
+  const std::int64_t stepX = direction.x > 0.0 ? 1 : -1;
+  const std::int64_t stepZ = direction.z > 0.0 ? 1 : -1;
+  while (inside(i, j))
+  {
+    // TER-017: the cell's two triangles, (c00, c01, c10) then (c01, c10, c11).
+    const Vec3 c00 = corner(i, j);
+    const Vec3 c01 = corner(i, j + 1);
+    const Vec3 c10 = corner(i + 1, j);
+    const Vec3 c11 = corner(i + 1, j + 1);
+    std::optional<TriangleHit> hit = IntersectTriangle(origin, direction, c00, c01, c10, RAY_TRIANGLE_RANGE);
+    if (!hit)
+    {
+      hit = IntersectTriangle(origin, direction, c01, c10, c11, RAY_TRIANGLE_RANGE);
+    }
+    if (hit)
+    {
+      return origin + direction * hit->t;
+    }
+    // The cell's far edges along the ray; with no component on an axis the ray never leaves through that axis's edge.
+    const bool movesX = direction.x != 0.0;
+    const bool movesZ = direction.z != 0.0;
+    if (!movesX && !movesZ)
+    {
+      return std::nullopt;
+    }
+    const double toX = movesX ? (m_heights.PositionX(i + (stepX > 0 ? 1 : 0)) - origin.x) / direction.x : 0.0;
+    const double toZ = movesZ ? (m_heights.PositionZ(j + (stepZ > 0 ? 1 : 0)) - origin.z) / direction.z : 0.0;
+    if (movesZ && (!movesX || toZ < toX))
+    {
+      j += stepZ;
+    }
+    else
+    {
+      i += stepX;
+    }
+  }
+  return std::nullopt;
 }
 
 Sha256Digest TerrainField::Digest() const noexcept

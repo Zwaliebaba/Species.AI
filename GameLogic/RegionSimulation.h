@@ -5,6 +5,8 @@
 #include "BitReader.h"
 #include "BitWriter.h"
 #include "CommandQueue.h"
+#include "EffectEvent.h"
+#include "EssenceOrb.h"
 #include "Figure.h"
 #include "Movement.h"
 #include "ObstacleGrid.h"
@@ -16,6 +18,7 @@
 #include "TickDraws.h"
 #include "TuningMvp.h"
 #include "Vec3.h"
+#include "Weapons.h"
 
 #include <cstdint>
 #include <functional>
@@ -35,10 +38,12 @@ namespace Species
 class RegionSimulation
 {
 public:
-  /// One team slot of the region (R-SIM-221): its ungrouped figures, the only actors of the MVP (R-UNIT-022).
+  /// One team slot of the region (R-SIM-221): its ungrouped figures, the only actors of the MVP (R-UNIT-022), and its
+  /// kill counter (R-UNIT-032).
   struct Team
   {
     SlicedPool<Figure> figures;
+    std::uint32_t kills = 0;
   };
 
   // A region's team slots are numbered by a byte (R-SIM-221).
@@ -53,8 +58,8 @@ public:
   RegionSimulation& operator=(const RegionSimulation&) = delete;
 
   // One region job of tick _tick (R-SIM-510): its commands, then the update slices 0 to ref.sim.update_slices - 1
-  // (R-SIM-511, R-SIM-218), each running the region's teams in index order (R-SIM-221). The weapons, structures and
-  // Essence orbs of the slice follow the teams when they exist (R-SIM-512).
+  // (R-SIM-511, R-SIM-218), each running the region's teams in index order (R-SIM-221), then its laser bolts, its
+  // effects and its Essence orbs (R-SIM-218 steps 3 and 5); the structures of step 4 arrive with M2.
   void Step(std::uint64_t _tick);
 
   // The team slots 0 to _index, made when they do not exist yet.
@@ -115,6 +120,60 @@ public:
   }
   // The movement rules' view of the region at its next tick: inside a step, the tick being stepped (ADR-103).
   [[nodiscard]] MovementContext Movement();
+
+  // The laser-bolt, effect and Essence-orb pools (R-SIM-125, R-SIM-124, R-SIM-126), which the weapon and orb rules
+  // create into and the region advances after its teams in each slice (ADR-105).
+  [[nodiscard]] SlicedPool<LaserBolt>& LaserBolts() noexcept
+  {
+    return m_bolts;
+  }
+  [[nodiscard]] const SlicedPool<LaserBolt>& LaserBolts() const noexcept
+  {
+    return m_bolts;
+  }
+  [[nodiscard]] SlicedPool<Effect>& Effects() noexcept
+  {
+    return m_effects;
+  }
+  [[nodiscard]] const SlicedPool<Effect>& Effects() const noexcept
+  {
+    return m_effects;
+  }
+  [[nodiscard]] SlicedPool<EssenceOrb>& Orbs() noexcept
+  {
+    return m_orbs;
+  }
+  [[nodiscard]] const SlicedPool<EssenceOrb>& Orbs() const noexcept
+  {
+    return m_orbs;
+  }
+  // The grenade in effect slot _slot while it still holds that slot with id _id (a Worker's grenade threat), or null.
+  [[nodiscard]] const Effect* GrenadeAt(std::uint32_t _slot, StableId _id) const;
+  // A new stable id of the region's counter, for a bolt, an effect or an orb (ADR-083 item 5).
+  [[nodiscard]] StableId IssueId()
+  {
+    return m_ids.Issue();
+  }
+  // The draws of the tick being stepped (ADR-103).
+  [[nodiscard]] TickDraws& Draws() noexcept
+  {
+    return m_draws;
+  }
+  // R-UNIT-026 and R-UNIT-038 for the figure an entry names: its health change with its hurt and death events, and on a
+  // kill its one Essence orb (MVP-023). Kill credit is the caller's. A figure that no longer resolves takes nothing.
+  HealthChange Damage(const ActorRef& _ref, std::int32_t _amount, DamageKind _kind);
+  // R-UNIT-121: sets the Worker an entry names on fire; the MVP has no Transport, Shield or Rogue faction to refuse it.
+  void SetOnFire(const ActorRef& _ref);
+  // ADR-036, ADR-105: a presentation event of the tick being stepped.
+  void Emit(const EffectEvent& _event)
+  {
+    m_events.push_back(_event);
+  }
+  // The presentation events of the last step, in the order the rules emitted them; a step clears the list first.
+  [[nodiscard]] const std::vector<EffectEvent>& Events() const noexcept
+  {
+    return m_events;
+  }
 
   // Every mutable value of the region, canonically (ADR-083 item 4): what its hash covers and its snapshot holds.
   void WriteState(Neuron::BitWriter& _writer) const;
@@ -192,6 +251,10 @@ private:
   ActorGridCache m_cache;
   ObstacleGrid m_obstacles;
   RouteStore m_routes;
+  SlicedPool<LaserBolt> m_bolts;
+  SlicedPool<Effect> m_effects;
+  SlicedPool<EssenceOrb> m_orbs;
+  std::vector<EffectEvent> m_events; // presentation, never state
 #if ENGINE_DEVELOPMENT
   AdvanceObserver m_advanceObserver;
 #endif

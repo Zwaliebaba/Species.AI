@@ -166,7 +166,11 @@
       "tick_period": 0.1,
       "update_slices": 10,
       "container": {
-        "ungrouped_step": 100
+        "ungrouped_step": 100,
+        "laser_bolt_step": 100,
+        "effect_step": 100,
+        "orb_presize": 100,
+        "orb_step": 100
       },
       "spawn": {
         "default_front": {
@@ -175,13 +179,16 @@
           "z": 0
         },
         "search_attempts": 10,
-        "edge_margin": 20
+        "edge_margin": 20,
+        "orb_lift": 1
       },
       "physics": {
         "sea_level": 0,
         "gravity": 15,
         "land_threshold": 0.1,
-        "land_offset": 0.1
+        "land_offset": 0.1,
+        "thrown_gravity": 98,
+        "restitution": 0.85
       },
       "walk": {
         "min_normal_y": 0.8,
@@ -231,6 +238,10 @@
         "max_points": 100,
         "smoothing_step": 50,
         "merge_distance": 50
+      },
+      "explosion": {
+        "actor_reach": 2,
+        "actor_gain": 2
       }
     },
     "unit": {
@@ -264,7 +275,40 @@
         "structure_push_step": 4,
         "structure_clear_radius": 2,
         "route_reach_radius": 20,
-        "route_jitter_radius": 40
+        "route_jitter_radius": 40,
+        "threat_range": 90,
+        "threat_range_relax": 0.1,
+        "projectile_threat_range": 60,
+        "scared_enemy_count": 5,
+        "order_cancel_radius": 50,
+        "retreat_range": 100,
+        "retreat_height_diff": -25,
+        "combat_step": 30,
+        "standoff_base": 20,
+        "standoff_spread": 20,
+        "fear_range": 200,
+        "aim_height": 2,
+        "attack_divisor": 10,
+        "grenade_first_ticks": {
+          "base": 1,
+          "spread_seconds": 5
+        },
+        "grenade_interval_ticks": {
+          "base": 121,
+          "spread_seconds": 8
+        },
+        "grenade_min_distance": 75,
+        "grenade_normal_min": 0.7,
+        "grenade_height_diff_min": -50,
+        "grenade_crowd_radius": 50,
+        "grenade_crowd_enemies": 5,
+        "grenade_crowd_friends": 2,
+        "burn_wander": 100,
+        "burn_damage": 2,
+        "burn_chance": {
+          "threshold": 2.0,
+          "roll_range": 10
+        }
       },
       "leader": {
         "health": 255,
@@ -283,6 +327,85 @@
         "fade_start": 100,
         "fade_ground_per_tick": 4,
         "fade_air_per_tick": 2
+      },
+      "attack": {
+        "aim_jitter": 15,
+        "muzzle_height": 3,
+        "laser_speed": 150
+      },
+      "essence_orb": {
+        "wobble_phase_range": 10,
+        "birth_hover_max": 0.5,
+        "birth_pull_base": 10,
+        "birth_pull_range": 10,
+        "birth_pull_scale_height": 100,
+        "ascent_rise_min": 2,
+        "ascent_rise_range": 2,
+        "drag_per_tick": 0.9,
+        "phase_step": 0.1,
+        "wobble_rate_clamp": {
+          "min": 0,
+          "max": 2
+        },
+        "push_radius": 5,
+        "push_gain": 0.1,
+        "push_speed_max": 10,
+        "push_stop_speed": 1,
+        "floor_height": 2
+      }
+    },
+    "weapon": {
+      "laser": {
+        "damage_base": 20,
+        "damage_spread": 20,
+        "hit_radius": 5,
+        "hit_height": 5,
+        "push_spread": 10,
+        "push_lift_base": 7,
+        "push_lift_spread": 5,
+        "life_ticks": 6
+      },
+      "throwing": {
+        "force_factor": 8,
+        "max_force": 110,
+        "front_lift": 1
+      },
+      "thrown": {
+        "initial_force": 1.0,
+        "rest_force": 0.1,
+        "bounce_clearance": 1,
+        "bounce_force_factor": 0.75
+      },
+      "grenade": {
+        "fuse_ticks": 30,
+        "power": 25,
+        "range_factor": 0.5,
+        "damage_factor": 2
+      },
+      "shockwave": {
+        "size_divisor": 20,
+        "start_radius": 35,
+        "growth": 40,
+        "band": 10,
+        "damage": 40,
+        "ignite_draw_range": 4,
+        "ignite_threshold": 0.1,
+        "push_lift": 3,
+        "push": 25
+      }
+    },
+    "econ": {
+      "orb": {
+        "death_velocity_factor": 0.5,
+        "birth_ticks": 61,
+        "birth_max_height_wu": 10,
+        "floating_ticks": {
+          "center_seconds": 40,
+          "spread_seconds": 20
+        },
+        "ascent_ticks": 901,
+        "wobble_rate_range": 2,
+        "wobble_offset_range": 1
       }
     }
   },

@@ -63,6 +63,19 @@ public:
     m_text += line + "\n";
   }
 
+  // An assignment past the column limit breaks after its = and continues one level in, as clang-format lays it out.
+  void Assignment(std::size_t _indent, std::string_view _target, std::string_view _value)
+  {
+    const std::string whole = std::format("{} = {};", _target, _value);
+    if (_indent * 2 + whole.size() <= GENERATED_COLUMN_LIMIT)
+    {
+      Line(_indent, whole);
+      return;
+    }
+    Line(_indent, std::format("{} =", _target));
+    Line(_indent + 1, std::format("{};", _value));
+  }
+
   // A struct and, before its members, the structs of its object fields.
   void Struct(const std::string& _name, const std::vector<FieldModel>& _fields, std::size_t _indent)
   {
@@ -116,7 +129,19 @@ public:
         Readers(std::format("{}::{}", _type, field.typeName), field.fields);
       }
     }
-    Line(0, std::format("inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, {}& _out)", _type));
+    // A signature past the column limit breaks after the second parameter, aligned after the open bracket, as
+    // clang-format lays it out.
+    const std::string head = "inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object,";
+    const std::string last = std::format("{}& _out)", _type);
+    if (head.size() + 1 + last.size() <= GENERATED_COLUMN_LIMIT)
+    {
+      Line(0, head + " " + last);
+    }
+    else
+    {
+      Line(0, head);
+      Line(0, std::string(head.find('(') + 1, ' ') + last);
+    }
     Line(0, "{");
     for (const FieldModel& field : _fields)
     {
@@ -128,11 +153,13 @@ public:
       case FieldKind::Integer:
       case FieldKind::Count:
       case FieldKind::Ticks:
-        Line(1, std::format("_out.{} = _reader.Integer(_object, \"{}\", {});", field.identifier, field.key, field.integerMinimum));
+        Assignment(1, std::format("_out.{}", field.identifier),
+                   std::format("_reader.Integer(_object, \"{}\", {})", field.key, field.integerMinimum));
         break;
       case FieldKind::SimDecimal:
-        Line(1, std::format("_out.{} = _reader.Decimal(_object, \"{}\", {}, Neuron::SimPrecision::{});", field.identifier, field.key,
-                            RangeLiteral(field), field.precision == Neuron::SimPrecision::Binary64 ? "Binary64" : "Binary32Rounded"));
+        Assignment(1, std::format("_out.{}", field.identifier),
+                   std::format("_reader.Decimal(_object, \"{}\", {}, Neuron::SimPrecision::{})", field.key, RangeLiteral(field),
+                               field.precision == Neuron::SimPrecision::Binary64 ? "Binary64" : "Binary32Rounded"));
         break;
       }
     }
