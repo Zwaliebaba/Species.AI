@@ -231,8 +231,8 @@ public:
                    L"a clear corridor");
     Assert::IsTrue(graph.BuildRoute(from, to, true, true, false, level, Tuning()) == std::vector<Neuron::Vec3>{from, to},
                    L"a direct route");
-    const Neuron::Vec3 near = On(level, 430.0, 400.0);
-    const std::vector<Neuron::Vec3> merged = graph.BuildRoute(from, near, true, true, false, level, Tuning());
+    const Neuron::Vec3 beside = On(level, 430.0, 400.0);
+    const std::vector<Neuron::Vec3> merged = graph.BuildRoute(from, beside, true, true, false, level, Tuning());
     Assert::IsTrue(merged.size() == 1 && merged[0] == Neuron::Vec3{415.0, 10.0, 400.0}, L"under 50 wu: the midpoint alone");
   }
 

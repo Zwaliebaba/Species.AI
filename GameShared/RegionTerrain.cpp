@@ -95,10 +95,10 @@ std::vector<Neuron::TerrainTile> TilesOf(const RegionLayout& _layout, std::uint6
     const auto pick = static_cast<std::size_t>(draw * static_cast<double>(corners.size()));
     const std::uint32_t corner = corners[pick];
     corners.erase(corners.begin() + static_cast<std::ptrdiff_t>(pick));
-    const double far = _layout.side - parameters.hillInset - terrain.hillSide;
+    const double farInset = _layout.side - parameters.hillInset - terrain.hillSide;
     Neuron::TerrainTile hill;
-    hill.positionX = Whole(_layout.originX + ((corner & 1u) == 0 ? parameters.hillInset : far));
-    hill.positionZ = Whole(_layout.originZ + ((corner & 2u) == 0 ? parameters.hillInset : far));
+    hill.positionX = Whole(_layout.originX + ((corner & 1u) == 0 ? parameters.hillInset : farInset));
+    hill.positionZ = Whole(_layout.originZ + ((corner & 2u) == 0 ? parameters.hillInset : farInset));
     hill.size = Whole(terrain.hillSide);
     hill.method = static_cast<Neuron::TileMethod>(parameters.hillMethod);
     hill.fractalDimension = parameters.hillFractalDimension;
