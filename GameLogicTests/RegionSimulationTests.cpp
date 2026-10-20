@@ -128,15 +128,15 @@ public:
     const Species::TuningMvp& tuning = CommittedTuning();
     Species::RegionSimulation region = MakeRegion();
     Species::Figure& worker = FigureAt(region, 0, SpawnAt(region, 0, Species::FigureKind::Worker, 1).front());
-    Species::HealthChange change = Species::ApplyHealthChange(worker, -20, Species::DamageKind::Laser, tuning);
+    Species::HealthChange change = Species::ApplyHealthChange(worker, -20, Species::DamageKind::Laser, tuning, false);
     Assert::IsTrue(change.registered && !change.killed, L"a hit that does not kill");
     ExpectEqual(30, worker.health, L"50 - 20");
-    change = Species::ApplyHealthChange(worker, 1000, Species::DamageKind::Unresistable, tuning);
+    change = Species::ApplyHealthChange(worker, 1000, Species::DamageKind::Unresistable, tuning, false);
     ExpectEqual(255, worker.health, L"R-UNIT-012: never above ref.unit.health_max");
-    change = Species::ApplyHealthChange(worker, -255, Species::DamageKind::Fire, tuning);
+    change = Species::ApplyHealthChange(worker, -255, Species::DamageKind::Fire, tuning, false);
     Assert::IsTrue(change.registered && change.killed && worker.dead, L"0 or below kills");
     ExpectEqual(100, worker.health, L"the health field becomes the corpse fade");
-    change = Species::ApplyHealthChange(worker, -10, Species::DamageKind::Laser, tuning);
+    change = Species::ApplyHealthChange(worker, -10, Species::DamageKind::Laser, tuning, false);
     Assert::IsTrue(change.registered && !change.killed, L"a dead figure's change registers and does nothing");
     ExpectEqual(100, worker.health, L"the fade is untouched");
   }
@@ -150,14 +150,12 @@ public:
     const Species::TuningMvp& tuning = CommittedTuning();
     Species::RegionSimulation region = MakeRegion();
     Species::Figure& worker = FigureAt(region, 0, SpawnAt(region, 0, Species::FigureKind::Worker, 1).front());
-    worker.inFormation = true;
-    static_cast<void>(Species::ApplyHealthChange(worker, -31, Species::DamageKind::Explosive, tuning));
+    static_cast<void>(Species::ApplyHealthChange(worker, -31, Species::DamageKind::Explosive, tuning, true));
     ExpectEqual(50 - 18, worker.health, L"-31 × 0.6 is -18.6, truncated to -18");
-    static_cast<void>(Species::ApplyHealthChange(worker, -10, Species::DamageKind::Laser, tuning));
+    static_cast<void>(Species::ApplyHealthChange(worker, -10, Species::DamageKind::Laser, tuning, true));
     ExpectEqual(32 - 10, worker.health, L"a laser in full");
     Species::Figure& leader = FigureAt(region, 0, SpawnAt(region, 0, Species::FigureKind::Leader, 1).front());
-    leader.inFormation = true;
-    static_cast<void>(Species::ApplyHealthChange(leader, -31, Species::DamageKind::Explosive, tuning));
+    static_cast<void>(Species::ApplyHealthChange(leader, -31, Species::DamageKind::Explosive, tuning, true));
     ExpectEqual(255 - 31, leader.health, L"a Leader in full");
   }
 
@@ -171,8 +169,9 @@ public:
     const std::vector<std::uint32_t> slots = SpawnAt(region, 0, Species::FigureKind::Worker, 3);
     Species::Figure& onGround = FigureAt(region, 0, slots[0]);
     onGround.onGround = true;
-    static_cast<void>(Species::ApplyHealthChange(onGround, -100, Species::DamageKind::Laser, CommittedTuning()));
-    static_cast<void>(Species::ApplyHealthChange(FigureAt(region, 0, slots[1]), -100, Species::DamageKind::Laser, CommittedTuning()));
+    static_cast<void>(Species::ApplyHealthChange(onGround, -100, Species::DamageKind::Laser, CommittedTuning(), false));
+    static_cast<void>(
+      Species::ApplyHealthChange(FigureAt(region, 0, slots[1]), -100, Species::DamageKind::Laser, CommittedTuning(), false));
     FigureAt(region, 0, slots[2]).destroyed = true;
     region.Step(0);
     Assert::IsFalse(region.TeamAt(0).figures.Used(slots[2]), L"the destroyed figure went at once");

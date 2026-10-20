@@ -2,6 +2,7 @@
 
 #include "Combat.h"
 #include "DrawPurpose.h"
+#include "Formation.h"
 #include "RegionSimulation.h"
 #include "Weapons.h"
 
@@ -59,7 +60,7 @@ void GrenadeDecision(Figure& _worker, const Neuron::Vec3& _threat, const FigureC
   RegionSimulation& region = *_context.region;
   const TuningMvp& tuning = region.Tuning();
   const auto& worker = tuning.ref.unit.worker;
-  if (_worker.inFormation || _worker.threat.kind != ThreatKind::Actor)
+  if (region.InFormation(_worker, _context.self.team) || _worker.threat.kind != ThreatKind::Actor)
   {
     return; // a formation member never throws, and the MVP throws only at actors (ADR-105)
   }
@@ -96,7 +97,8 @@ bool ThreatSearch(Figure& _worker, const FigureContext& _context)
   const auto& worker = region.Tuning().ref.unit.worker;
   const std::uint8_t team = _context.self.team;
   // Step 1: the range relaxes towards the threat range at every search; a formation member takes it whole.
-  _worker.threatRange = _worker.inFormation
+  const Figure* formationLeader = region.InFormation(_worker, team) ? region.LeaderOf(_worker, team) : nullptr;
+  _worker.threatRange = formationLeader != nullptr
                           ? worker.threatRange
                           : worker.threatRange * worker.threatRangeRelax + _worker.threatRange * (1.0 - worker.threatRangeRelax);
   // Step 3: the nearest grenade of any team within the projectile threat range, in effect slot order (no Fury exists).
@@ -129,10 +131,12 @@ bool ThreatSearch(Figure& _worker, const FigureContext& _context)
     _worker.threat = threat;
     return true;
   }
-  // Steps 7 and 8: the enemies in the cells of the search circle; the cached query's live candidates that are not
-  // burning, and the nearest to the Worker's own position (DEC-094).
-  const Neuron::Vec3 center = _worker.position;
+  // Steps 7 and 8: the enemies in the cells of the search circle, which a formation member centres ahead along its
+  // Leader's front (DEC-031); the cached query's live candidates that are not burning, and the nearest to the Worker's
+  // own position (DEC-094).
   const double range = _worker.threatRange;
+  const Neuron::Vec3 center =
+    formationLeader != nullptr ? _worker.position + formationLeader->front * (worker.formationSearchOffset * range) : _worker.position;
   std::optional<ActorRef> nearest;
   std::uint32_t enemies = 0;
   if (region.Grid().AnyInCells(center.x, center.z, range, RegionSimulation::EnemiesOf(team)))
@@ -186,20 +190,35 @@ void FightingStep(Figure& _worker, const FigureContext& _context)
   RegionSimulation& region = *_context.region;
   const TuningMvp& tuning = region.Tuning();
   const auto& worker = tuning.ref.unit.worker;
-  // R-UNIT-101: a threat that is gone or dead ends the fight; the Leader of FollowingLeader comes with T7.
+  const std::uint8_t team = _context.self.team;
+  // R-UNIT-101: a threat that is gone or dead ends the fight, back to the Leader that still leads the Worker, or Idle.
   const std::optional<Neuron::Vec3> threat = ThreatPosition(_worker, region);
   if (!threat)
   {
-    _worker.workerState = WorkerState::Idle;
+    if (LeaderLeads(_worker, region.LeaderOf(_worker, team), tuning))
+    {
+      _worker.workerState = WorkerState::FollowingLeader;
+    }
+    else
+    {
+      StopFollowing(_worker);
+    }
     _worker.retargetTimerTicks = 0;
     ClearThreat(_worker);
     return;
   }
-  // R-UNIT-102: the movement, each waypoint turned by a draw within ±π/4, pushed with kill set and snapped to the ground.
-  Neuron::SimRng& draw = region.Draws().For(DrawPurpose::CombatMove, _worker.id);
+  // R-UNIT-102: a formation member's waypoint is its slot, and it registers with the formation every tick (R-UNIT-101);
+  // any other Worker's is turned by a draw within ±π/4. Each is pushed with kill set and snapped to the ground.
+  const MovementContext& movement = *_context.movement;
+  Figure* formationLeader = region.InFormation(_worker, team) ? region.LeaderOf(_worker, team) : nullptr;
   const double distance = Neuron::Length(*threat - _worker.position);
   std::optional<Neuron::Vec3> waypoint;
-  if (_worker.scared)
+  if (formationLeader != nullptr)
+  {
+    waypoint = SlotPositionFor(*formationLeader, _worker.id, *movement.terrain, tuning);
+    RefreshSlot(*formationLeader, _worker.id);
+  }
+  else if (_worker.scared)
   {
     if (distance > worker.fearRange)
     {
@@ -208,19 +227,21 @@ void FightingStep(Figure& _worker, const FigureContext& _context)
     }
     else
     {
+      Neuron::SimRng& draw = region.Draws().For(DrawPurpose::CombatMove, _worker.id);
       waypoint = _worker.position + TurnedDirection(*threat, _worker.position, draw.NextSigned(std::numbers::pi / 2.0)) * worker.combatStep;
     }
   }
   else if (distance < worker.retreatRange && _worker.position.y - threat->y > worker.retreatHeightDiff)
   {
+    Neuron::SimRng& draw = region.Draws().For(DrawPurpose::CombatMove, _worker.id);
     waypoint = _worker.position + TurnedDirection(*threat, _worker.position, draw.NextSigned(std::numbers::pi / 2.0)) * worker.combatStep;
   }
   else
   {
+    Neuron::SimRng& draw = region.Draws().For(DrawPurpose::CombatMove, _worker.id);
     const Neuron::Vec3 towards = TurnedDirection(_worker.position, *threat, draw.NextSigned(std::numbers::pi / 2.0));
     waypoint = _worker.position + towards * (distance - (worker.standoffBase + draw.NextUnit(worker.standoffSpread)));
   }
-  const MovementContext& movement = *_context.movement;
   if (waypoint)
   {
     Neuron::Vec3 pushed = WorkerPush(_worker, *waypoint, DrawPurpose::ShoreCombat, movement);
@@ -232,11 +253,22 @@ void FightingStep(Figure& _worker, const FigureContext& _context)
   {
     return; // only an actor threat is shot at, and the MVP throws only at actors
   }
-  // R-UNIT-103 outside a formation: one fire roll in ⌊attack divisor ÷ s⌋ per tick, the region's s being 1.
+  // R-UNIT-103: in a formation, the volley rhythm of the member's index; outside one, one fire roll in ⌊attack divisor ÷ s⌋
+  // per tick, the region's s being 1.
+  const Neuron::Vec3 aim = *threat + Neuron::Vec3{0.0, worker.aimHeight, 0.0};
+  if (formationLeader != nullptr)
+  {
+    const std::optional<std::uint32_t> index = SlotOf(*formationLeader, _worker.id);
+    if (index && VolleyFires(region.Draws().Tick(), *index, formationLeader->slots.size(), tuning))
+    {
+      FireAtPoint(_worker, aim, _context);
+    }
+    return; // and it throws no grenade (R-UNIT-104)
+  }
   const auto divisor = static_cast<std::uint32_t>(std::floor(worker.attackDivisor));
   if (divisor >= 1 && region.Draws().For(DrawPurpose::FireRoll, _worker.id).NextUint() % divisor == 0)
   {
-    FireAtPoint(_worker, *threat + Neuron::Vec3{0.0, worker.aimHeight, 0.0}, _context);
+    FireAtPoint(_worker, aim, _context);
   }
   GrenadeDecision(_worker, *threat, _context);
 }

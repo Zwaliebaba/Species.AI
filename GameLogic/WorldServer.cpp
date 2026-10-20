@@ -12,11 +12,42 @@
 #include <algorithm>
 #include <array>
 #include <bit>
+#include <cstddef>
 #include <stdexcept>
 #include <utility>
 
 namespace Species
 {
+
+namespace
+{
+
+// ADR-106: the outcome as the client reads it.
+CommandResult ResultOf(const Neuron::CommandOutcome& _outcome) noexcept
+{
+  if (!_outcome.rejection)
+  {
+    return _outcome.effect == Neuron::CommandEffect::Applied ? CommandResult::Applied : CommandResult::NoEffect;
+  }
+  switch (*_outcome.rejection)
+  {
+  case Neuron::CommandRejection::UnknownType:
+    return CommandResult::UnknownType;
+  case Neuron::CommandRejection::WrongVersion:
+    return CommandResult::WrongVersion;
+  case Neuron::CommandRejection::Oversized:
+    return CommandResult::Oversized;
+  case Neuron::CommandRejection::Malformed:
+    return CommandResult::Malformed;
+  case Neuron::CommandRejection::NotPermitted:
+    return CommandResult::NotPermitted;
+  case Neuron::CommandRejection::Duplicate:
+    break;
+  }
+  return CommandResult::Duplicate;
+}
+
+} // namespace
 
 WorldServer::WorldServer(const Desc& _desc)
   : m_desc(_desc)
@@ -133,10 +164,28 @@ void WorldServer::Receive(Neuron::ConnectionId _connection, const Neuron::Receiv
   {
     return; // the control states of the state channel arrive with M1's input (ADR-087 item 5)
   }
-  // A command enters the queue of the owner it addresses (ADR-087 item 1). M0 registers no command, so the world
-  // owner's queue refuses each one as unknown, with its counter.
+  // A command enters the queue of the owner it addresses (ADR-087 item 1): a battle command the queue of the MVP's one
+  // region (MVP-001, ADR-106), any other the world owner's, which refuses a type it does not know with its counter.
+  Neuron::BitReader reader(_message.bytes);
+  const Neuron::MessageHeader header = Neuron::ReadMessageHeader(reader);
+  Neuron::CommandQueue& region = m_world->Region(0).Commands();
+  Neuron::CommandQueue& queue = !reader.Failed() && region.Handles(header.type) ? region : m_world->Commands();
   Steward& steward = found->second;
-  static_cast<void>(m_world->Commands().Submit(steward.id, steward.commandsReceived++, _message.bytes));
+  static_cast<void>(queue.Submit(steward.id, steward.commandsReceived++, _message.bytes));
+}
+
+void WorldServer::CollectReports(Neuron::CommandQueue& _queue)
+{
+  for (const Neuron::CommandOutcome& outcome : _queue.TakeOutcomes())
+  {
+    for (auto& [connection, steward] : m_stewards)
+    {
+      if (steward.id == outcome.sender)
+      {
+        steward.reports.push_back({outcome.sequence, outcome.tick, ResultOf(outcome)});
+      }
+    }
+  }
 }
 
 void WorldServer::DatagramFates(Neuron::ConnectionId, std::span<const Neuron::DatagramOutcome>)
@@ -157,9 +206,22 @@ void WorldServer::Step(std::uint64_t _tick, Neuron::WorkerPool& _workers)
 
 void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender)
 {
+  CollectReports(m_world->Commands());
+  for (std::size_t region = 0; region < m_world->RegionCount(); ++region)
+  {
+    CollectReports(m_world->Region(region).Commands());
+  }
   const std::vector<std::byte> report = Neuron::EncodeMessage(TickReport{_tick});
   for (auto& [connection, steward] : m_stewards)
   {
+    // ADR-095: each outcome on the reliable channel, in order; one the backlog refuses waits with those after it.
+    std::size_t sent = 0;
+    while (sent < steward.reports.size() &&
+           _sender.Send(connection, Neuron::Channel::Reliable, Neuron::EncodeMessage(steward.reports[sent])))
+    {
+      ++sent;
+    }
+    steward.reports.erase(steward.reports.begin(), steward.reports.begin() + static_cast<std::ptrdiff_t>(sent));
     if (!steward.terrainSent && m_terrain)
     {
       // MVP-011: the seed and digest go once on the reliable channel; a send the backlog refuses is tried next tick.

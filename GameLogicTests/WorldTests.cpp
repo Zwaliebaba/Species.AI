@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "CommandMessages.h"
 #include "InProcessTransport.h"
 #include "IntegratedServer.h"
 #include "RegionTerrain.h"
@@ -43,11 +44,12 @@ std::filesystem::path ContentRootWith(const TemporaryFolder& _folder, std::strin
   return _folder.Path();
 }
 
-// What a client end has received, in order: the world's terrain and the tick reports.
+// What a client end has received, in order: the world's terrain, the tick reports and its commands' outcomes.
 struct Arrivals
 {
   std::vector<Species::WorldTerrain> terrains;
   std::vector<std::uint64_t> ticks;
+  std::vector<Species::CommandReport> reports;
 };
 
 Arrivals TakeArrivals(Neuron::Transport& _client)
@@ -56,9 +58,10 @@ Arrivals TakeArrivals(Neuron::Transport& _client)
   Neuron::MessageDispatcher dispatcher;
   dispatcher.Register<Species::WorldTerrain>([&arrivals](const Species::WorldTerrain& _terrain) { arrivals.terrains.push_back(_terrain); });
   dispatcher.Register<Species::TickReport>([&arrivals](const Species::TickReport& _report) { arrivals.ticks.push_back(_report.tick); });
+  dispatcher.Register<Species::CommandReport>([&arrivals](const Species::CommandReport& _report) { arrivals.reports.push_back(_report); });
   while (std::optional<Neuron::ReceivedMessage> message = _client.Receive())
   {
-    Assert::IsTrue(dispatcher.Dispatch(message->bytes), L"only the terrain and tick reports arrive");
+    Assert::IsTrue(dispatcher.Dispatch(message->bytes), L"only the terrain, tick reports and command reports arrive");
   }
   return arrivals;
 }
@@ -211,14 +214,16 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Mvp094AClientsCommandEntersTheValidatedPath)
   {
-    // M0 has no command types, so a client's message is refused as unknown by the world owner's queue: it took the
-    // one path, and nothing reached the simulation.
+    // A message that is no command is refused as unknown by the world owner's queue, and a battle command goes to the
+    // region's queue, which refuses it because the steward commands no team: each took the one path, and nothing
+    // reached the simulation. The client receives each outcome with its sequence number and tick (ADR-095, ADR-106).
     auto source = std::make_unique<Neuron::ManualTimeSource>();
     Neuron::ManualTimeSource* manual = source.get();
     const Neuron::PlatformClock clock(std::move(source));
     Neuron::InProcessListener listener({});
     std::unique_ptr<Neuron::Transport> client = listener.Connect();
     Assert::IsTrue(client->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(Species::TickReport{7})).has_value());
+    Assert::IsTrue(client->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(Species::SelectCommand{0, 0})).has_value());
     Species::WorldServer world({.tuning = CommittedTuning()});
     Neuron::ServerHost::Desc desc;
     desc.clock = &clock;
@@ -234,6 +239,14 @@ public:
     host.Stop();
     Assert::IsTrue(world.Simulation() != nullptr);
     ExpectEqual(1, static_cast<std::int64_t>(world.Simulation()->Commands().Rejections().unknownType), L"refused as unknown");
+    ExpectEqual(1, static_cast<std::int64_t>(world.Simulation()->Region(0).Commands().Rejections().notPermitted), L"refused by the region");
+    const Arrivals arrivals = TakeArrivals(*client);
+    Assert::IsTrue(arrivals.reports.size() == 2, L"two outcomes");
+    Assert::IsTrue(arrivals.reports[0].sequence == 0 && arrivals.reports[0].result == Species::CommandResult::UnknownType,
+                   L"the first command's outcome");
+    Assert::IsTrue(arrivals.reports[1].sequence == 1 && arrivals.reports[1].result == Species::CommandResult::NotPermitted,
+                   L"the second command's outcome");
+    Assert::IsTrue(arrivals.reports[0].tick == arrivals.reports[1].tick && arrivals.reports[0].tick < 3, L"each with its tick");
   }
 };
 

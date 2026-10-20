@@ -1981,6 +1981,47 @@
               "additionalProperties": false,
               "x-species-type": "object",
               "x-species-presence": "required"
+            },
+            "command": {
+              "type": "object",
+              "description": "the ref.sim.command.* keys",
+              "properties": {
+                "leader_toggle_offset": {
+                  "type": "number",
+                  "description": "ref.sim.command.leader_toggle_offset (R-SIM-450)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "leader_toggle_offset"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "team": {
+              "type": "object",
+              "description": "the ref.sim.team.* keys",
+              "properties": {
+                "formation_size_upgrade": {
+                  "type": "integer",
+                  "description": "ref.sim.team.formation_size_upgrade (R-SIM-399, R-UNIT-162)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "members",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "formation_size_upgrade"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
             }
           },
           "required": [
@@ -1996,7 +2037,9 @@
             "water",
             "push",
             "route",
-            "explosion"
+            "explosion",
+            "command",
+            "team"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -2541,6 +2584,66 @@
                   "additionalProperties": false,
                   "x-species-type": "object",
                   "x-species-presence": "required"
+                },
+                "follow_retarget_ticks": {
+                  "type": "integer",
+                  "description": "ref.unit.worker.follow_retarget_ticks (R-UNIT-074, R-UNIT-096)",
+                  "minimum": 0,
+                  "x-species-type": "ticks",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                },
+                "follow_disc_radius": {
+                  "type": "number",
+                  "description": "ref.unit.worker.follow_disc_radius (R-UNIT-074, R-UNIT-096)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "leader_follow_range": {
+                  "type": "number",
+                  "description": "ref.unit.worker.leader_follow_range (R-UNIT-096)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "leader_signpost_range": {
+                  "type": "number",
+                  "description": "ref.unit.worker.leader_signpost_range (R-UNIT-096)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "formation_search_offset": {
+                  "type": "number",
+                  "description": "ref.unit.worker.formation_search_offset (R-UNIT-098)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times range",
+                  "x-species-presence": "required"
+                },
+                "volley_size_cap": {
+                  "type": "integer",
+                  "description": "ref.unit.worker.volley_size_cap (R-UNIT-103)",
+                  "minimum": 1,
+                  "x-species-type": "integer",
+                  "x-species-unit": "slots",
+                  "x-species-presence": "required"
+                },
+                "volley_divisor": {
+                  "type": "integer",
+                  "description": "ref.unit.worker.volley_divisor (R-UNIT-103)",
+                  "minimum": 1,
+                  "x-species-type": "integer",
+                  "x-species-unit": "factor",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
@@ -2593,7 +2696,14 @@
                 "grenade_crowd_friends",
                 "burn_wander",
                 "burn_damage",
-                "burn_chance"
+                "burn_chance",
+                "follow_retarget_ticks",
+                "follow_disc_radius",
+                "leader_follow_range",
+                "leader_signpost_range",
+                "formation_search_offset",
+                "volley_size_cap",
+                "volley_divisor"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -2700,6 +2810,324 @@
                   "x-species-type": "sim_decimal",
                   "x-species-unit": "wu/s per tick",
                   "x-species-presence": "required"
+                },
+                "formation_speed_factor": {
+                  "type": "number",
+                  "description": "ref.unit.leader.formation_speed_factor (R-UNIT-156)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times speed",
+                  "x-species-presence": "required"
+                },
+                "formation_arrival_distance": {
+                  "type": "number",
+                  "description": "ref.unit.leader.formation_arrival_distance (R-UNIT-157)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "turn_formation": {
+                  "type": "number",
+                  "description": "ref.unit.leader.turn_formation (R-UNIT-158)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "per tick",
+                  "x-species-presence": "required"
+                },
+                "turn_pre_move": {
+                  "type": "number",
+                  "description": "ref.unit.leader.turn_pre_move (R-UNIT-158, R-UNIT-166)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "per tick",
+                  "x-species-presence": "required"
+                },
+                "turn_order": {
+                  "type": "number",
+                  "description": "ref.unit.leader.turn_order (R-UNIT-158, R-UNIT-167)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "per tick",
+                  "x-species-presence": "required"
+                },
+                "turn_order_formation_factor": {
+                  "type": "number",
+                  "description": "ref.unit.leader.turn_order_formation_factor (R-UNIT-158)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times factor",
+                  "x-species-presence": "required"
+                },
+                "turn_bot": {
+                  "type": "number",
+                  "description": "ref.unit.leader.turn_bot (R-UNIT-158, R-UNIT-163)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "per tick",
+                  "x-species-presence": "required"
+                },
+                "marker_period": {
+                  "type": "integer",
+                  "description": "ref.unit.leader.marker_period (R-UNIT-163)",
+                  "minimum": 0,
+                  "x-species-type": "ticks",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                },
+                "marker_lift": {
+                  "type": "number",
+                  "description": "ref.unit.leader.marker_lift (R-UNIT-163)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "route_regen_distance": {
+                  "type": "number",
+                  "description": "ref.unit.leader.route_regen_distance (R-UNIT-163)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "pre_turn_tolerance": {
+                  "type": "number",
+                  "description": "ref.unit.leader.pre_turn_tolerance (R-UNIT-166)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "cross-product length",
+                  "x-species-presence": "required"
+                },
+                "formation_face_distance": {
+                  "type": "number",
+                  "description": "ref.unit.leader.formation_face_distance (R-UNIT-166)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "follow_face_tolerance": {
+                  "type": "number",
+                  "description": "ref.unit.leader.follow_face_tolerance (R-UNIT-167)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "dot product",
+                  "x-species-presence": "required"
+                },
+                "formation_toggle_radius": {
+                  "type": "number",
+                  "description": "ref.unit.leader.formation_toggle_radius (R-UNIT-170)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "gap_rule_fraction": {
+                  "type": "number",
+                  "description": "ref.unit.leader.gap_rule_fraction (R-UNIT-178)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times array size",
+                  "x-species-presence": "required"
+                },
+                "slot_timer_ticks": {
+                  "type": "integer",
+                  "description": "ref.unit.leader.slot_timer_ticks (R-UNIT-180)",
+                  "minimum": 0,
+                  "x-species-type": "ticks",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                },
+                "slot_spacing": {
+                  "type": "number",
+                  "description": "ref.unit.leader.slot_spacing (R-UNIT-182)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "first_rank_offset": {
+                  "type": "number",
+                  "description": "ref.unit.leader.first_rank_offset (R-UNIT-182)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "lateral_offset_factor": {
+                  "type": "number",
+                  "description": "ref.unit.leader.lateral_offset_factor (R-UNIT-182)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu per row slot",
+                  "x-species-presence": "required"
+                },
+                "row_size_table": {
+                  "type": "object",
+                  "description": "the ref.unit.leader.row_size_table.* keys",
+                  "properties": {
+                    "small_max": {
+                      "type": "integer",
+                      "description": "ref.unit.leader.row_size_table.small_max (R-UNIT-182)",
+                      "minimum": 0,
+                      "x-species-type": "count",
+                      "x-species-unit": "slots",
+                      "x-species-presence": "required"
+                    },
+                    "small_row": {
+                      "type": "integer",
+                      "description": "ref.unit.leader.row_size_table.small_row (R-UNIT-182)",
+                      "minimum": 1,
+                      "x-species-type": "integer",
+                      "x-species-unit": "members per row",
+                      "x-species-presence": "required"
+                    },
+                    "medium_max": {
+                      "type": "integer",
+                      "description": "ref.unit.leader.row_size_table.medium_max (R-UNIT-182)",
+                      "minimum": 0,
+                      "x-species-type": "count",
+                      "x-species-unit": "slots",
+                      "x-species-presence": "required"
+                    },
+                    "medium_row": {
+                      "type": "integer",
+                      "description": "ref.unit.leader.row_size_table.medium_row (R-UNIT-182)",
+                      "minimum": 1,
+                      "x-species-type": "integer",
+                      "x-species-unit": "members per row",
+                      "x-species-presence": "required"
+                    },
+                    "large_max": {
+                      "type": "integer",
+                      "description": "ref.unit.leader.row_size_table.large_max (R-UNIT-182)",
+                      "minimum": 0,
+                      "x-species-type": "count",
+                      "x-species-unit": "slots",
+                      "x-species-presence": "required"
+                    },
+                    "large_row": {
+                      "type": "integer",
+                      "description": "ref.unit.leader.row_size_table.large_row (R-UNIT-182)",
+                      "minimum": 1,
+                      "x-species-type": "integer",
+                      "x-species-unit": "members per row",
+                      "x-species-presence": "required"
+                    },
+                    "huge_max": {
+                      "type": "integer",
+                      "description": "ref.unit.leader.row_size_table.huge_max (R-UNIT-182)",
+                      "minimum": 0,
+                      "x-species-type": "count",
+                      "x-species-unit": "slots",
+                      "x-species-presence": "required"
+                    },
+                    "huge_row": {
+                      "type": "integer",
+                      "description": "ref.unit.leader.row_size_table.huge_row (R-UNIT-182)",
+                      "minimum": 1,
+                      "x-species-type": "integer",
+                      "x-species-unit": "members per row",
+                      "x-species-presence": "required"
+                    },
+                    "largest_row": {
+                      "type": "integer",
+                      "description": "ref.unit.leader.row_size_table.largest_row (R-UNIT-182)",
+                      "minimum": 1,
+                      "x-species-type": "integer",
+                      "x-species-unit": "members per row",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "small_max",
+                    "small_row",
+                    "medium_max",
+                    "medium_row",
+                    "large_max",
+                    "large_row",
+                    "huge_max",
+                    "huge_row",
+                    "largest_row"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "marker_reach": {
+                  "type": "number",
+                  "description": "ref.unit.leader.marker_reach (R-UNIT-185)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "marker_speed_min": {
+                  "type": "number",
+                  "description": "ref.unit.leader.marker_speed_min (R-UNIT-185)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "marker_speed_max": {
+                  "type": "number",
+                  "description": "ref.unit.leader.marker_speed_max (R-UNIT-185)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "trail_period": {
+                  "type": "integer",
+                  "description": "ref.unit.leader.trail_period (R-UNIT-185)",
+                  "minimum": 1,
+                  "x-species-type": "integer",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                },
+                "marker_fade_ticks": {
+                  "type": "integer",
+                  "description": "ref.unit.leader.marker_fade_ticks (R-UNIT-185)",
+                  "minimum": 0,
+                  "x-species-type": "ticks",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                },
+                "trail_lift": {
+                  "type": "number",
+                  "description": "ref.unit.leader.trail_lift (R-UNIT-186)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "trail_life_ticks": {
+                  "type": "integer",
+                  "description": "ref.unit.leader.trail_life_ticks (R-UNIT-186)",
+                  "minimum": 0,
+                  "x-species-type": "ticks",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
@@ -2713,7 +3141,34 @@
                 "arrival_distance",
                 "turn_walk",
                 "radius_factor",
-                "corpse_sink_per_tick"
+                "corpse_sink_per_tick",
+                "formation_speed_factor",
+                "formation_arrival_distance",
+                "turn_formation",
+                "turn_pre_move",
+                "turn_order",
+                "turn_order_formation_factor",
+                "turn_bot",
+                "marker_period",
+                "marker_lift",
+                "route_regen_distance",
+                "pre_turn_tolerance",
+                "formation_face_distance",
+                "follow_face_tolerance",
+                "formation_toggle_radius",
+                "gap_rule_fraction",
+                "slot_timer_ticks",
+                "slot_spacing",
+                "first_rank_offset",
+                "lateral_offset_factor",
+                "row_size_table",
+                "marker_reach",
+                "marker_speed_min",
+                "marker_speed_max",
+                "trail_period",
+                "marker_fade_ticks",
+                "trail_lift",
+                "trail_life_ticks"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -3448,13 +3903,47 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "ctrl": {
+          "type": "object",
+          "description": "the ref.ctrl.* keys",
+          "properties": {
+            "leader": {
+              "type": "object",
+              "description": "the ref.ctrl.leader.* keys",
+              "properties": {
+                "face_pointer_speed": {
+                  "type": "number",
+                  "description": "ref.ctrl.leader.face_pointer_speed (R-UNIT-168, R-CTRL-104)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "face_pointer_speed"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "leader"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
         "sim",
         "unit",
         "weapon",
-        "econ"
+        "econ",
+        "ctrl"
       ],
       "additionalProperties": false,
       "x-species-type": "object",

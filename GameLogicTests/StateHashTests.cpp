@@ -67,13 +67,14 @@ public:
     // region writes its actor grid's capacities and its cache after its teams (ADR-103), none in this empty world.
     // Changed by M1 task T5: each region writes its last route handle and its routes after its cache (ADR-104), none here.
     // Changed by M1 task T6: each region writes its laser-bolt, effect and Essence-orb pools after its routes (ADR-105):
-    // two empty pools and the orb pool's 100 free slots, advanced to its last slot.
+    // two empty pools and the orb pool's 100 free slots, advanced to its last slot. Changed by M1 task T7: each region
+    // writes its commanders before its commands (ADR-106), none here.
     const GoldenRun one = Run600Ticks(1, 0);
-    Assert::IsTrue(one.last == 0x8074aa6972299642, L"the hash after 600 ticks of one region");
-    Assert::IsTrue(one.chain == 0x7bdbadf6730e96f5, L"the chain of 600 tick hashes of one region");
+    Assert::IsTrue(one.last == 0xe6773df46414f09f, L"the hash after 600 ticks of one region");
+    Assert::IsTrue(one.chain == 0x9403894070f00e95, L"the chain of 600 tick hashes of one region");
     const GoldenRun three = Run600Ticks(3, 0);
-    Assert::IsTrue(three.last == 0x731326a61576e1b5, L"the hash after 600 ticks of three regions");
-    Assert::IsTrue(three.chain == 0xd37267b37558371a, L"the chain of 600 tick hashes of three regions");
+    Assert::IsTrue(three.last == 0x14634c20a5eed716, L"the hash after 600 ticks of three regions");
+    Assert::IsTrue(three.chain == 0xa4385c2a7db63d5b, L"the chain of 600 tick hashes of three regions");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp093TheHashesAgreeAtAnyWorkerCount)

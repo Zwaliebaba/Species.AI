@@ -32,7 +32,11 @@ enum class DrawPurpose : std::uint64_t
   OrbStep = 20,      // R-UNIT-311, R-UNIT-315, R-UNIT-319: an orb's draws of one tick
   BurnStep = 21,     // R-UNIT-079: the burning Worker's wander and damage roll
   ShoreCombat = 22,  // R-UNIT-102: the shore search of the combat waypoint's push
-  ShoreBurn = 23     // R-UNIT-079: the shore search of the burning waypoint's push
+  ShoreBurn = 23,    // R-UNIT-079: the shore search of the burning waypoint's push
+  FollowDisc = 24,   // R-UNIT-074, R-UNIT-096 step 2: the disc point around a followed Leader
+  SignpostPick = 25, // R-UNIT-096 step 3: the choice among the Leaders with a waypoint order
+  ShoreFollow = 26,  // R-UNIT-074, R-UNIT-096 step 2: the shore search of the follow waypoint's push
+  ShoreLeader = 27   // R-UNIT-171 step 3: the shore search of a Leader's order position's push; the subject is the Leader
 };
 
 [[nodiscard]] constexpr std::uint64_t PurposeOf(DrawPurpose _purpose) noexcept

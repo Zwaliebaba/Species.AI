@@ -254,21 +254,22 @@ bool WorkerMoveToWaypoint(Figure& _figure, bool _idle, const MovementContext& _c
   return false;
 }
 
-bool LeaderMoveToWaypoint(Figure& _figure, const MovementContext& _context)
+bool LeaderMoveToWaypoint(Figure& _figure, bool _formationMode, const MovementContext& _context)
 {
   const TuningMvp& tuning = *_context.tuning;
   const auto& leader = tuning.ref.unit.leader;
   const double dt = tuning.ref.sim.tickPeriod;
   const double distance = Neuron::HorizontalDistance(_figure.waypoint, _figure.position);
-  if (distance <= leader.arrivalDistance)
+  if (distance <= (_formationMode ? leader.formationArrivalDistance : leader.arrivalDistance))
   {
     _figure.velocity = {};
     return true;
   }
   // R-UNIT-158: the front blends towards the waypoint and is renormalised; the Leader walks along it.
+  const double turn = _formationMode ? leader.turnFormation : leader.turnWalk;
   const Neuron::Vec3 toWaypoint = Neuron::Normalized(_figure.waypoint - _figure.position);
-  _figure.front = Neuron::Normalized(_figure.front * (1.0 - leader.turnWalk) + toWaypoint * leader.turnWalk);
-  double speed = _figure.speed;
+  _figure.front = Neuron::Normalized(_figure.front * (1.0 - turn) + toWaypoint * turn);
+  double speed = _formationMode ? _figure.speed * leader.formationSpeedFactor : _figure.speed;
   const Neuron::Vec3 next = _figure.position + _figure.front * (speed * dt);
   speed *=
     SlopeFactor(FigureKind::Leader, _context.Height(_figure.position.x, _figure.position.z), _context.Height(next.x, next.z), tuning);

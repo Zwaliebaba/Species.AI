@@ -242,6 +242,12 @@
       "explosion": {
         "actor_reach": 2,
         "actor_gain": 2
+      },
+      "command": {
+        "leader_toggle_offset": 1
+      },
+      "team": {
+        "formation_size_upgrade": 90
       }
     },
     "unit": {
@@ -308,7 +314,14 @@
         "burn_chance": {
           "threshold": 2.0,
           "roll_range": 10
-        }
+        },
+        "follow_retarget_ticks": 51,
+        "follow_disc_radius": 40,
+        "leader_follow_range": 150,
+        "leader_signpost_range": 100,
+        "formation_search_offset": 0.66,
+        "volley_size_cap": 90,
+        "volley_divisor": 4
       },
       "leader": {
         "health": 255,
@@ -321,7 +334,44 @@
         "arrival_distance": 10,
         "turn_walk": 0.6,
         "radius_factor": 2,
-        "corpse_sink_per_tick": 20
+        "corpse_sink_per_tick": 20,
+        "formation_speed_factor": 0.4,
+        "formation_arrival_distance": 3,
+        "turn_formation": 0.06,
+        "turn_pre_move": 0.06,
+        "turn_order": 0.3,
+        "turn_order_formation_factor": 0.2,
+        "turn_bot": 0.06,
+        "marker_period": 20,
+        "marker_lift": 2,
+        "route_regen_distance": 50,
+        "pre_turn_tolerance": 0.1,
+        "formation_face_distance": 100,
+        "follow_face_tolerance": 0.99,
+        "formation_toggle_radius": 50,
+        "gap_rule_fraction": 0.5,
+        "slot_timer_ticks": 51,
+        "slot_spacing": 6,
+        "first_rank_offset": 12,
+        "lateral_offset_factor": 3,
+        "row_size_table": {
+          "small_max": 24,
+          "small_row": 6,
+          "medium_max": 47,
+          "medium_row": 9,
+          "large_max": 89,
+          "large_row": 12,
+          "huge_max": 199,
+          "huge_row": 15,
+          "largest_row": 25
+        },
+        "marker_reach": 10,
+        "marker_speed_min": 30,
+        "marker_speed_max": 100,
+        "trail_period": 2,
+        "marker_fade_ticks": 10,
+        "trail_lift": 1,
+        "trail_life_ticks": 10
       },
       "corpse": {
         "fade_start": 100,
@@ -406,6 +456,11 @@
         "ascent_ticks": 901,
         "wobble_rate_range": 2,
         "wobble_offset_range": 1
+      }
+    },
+    "ctrl": {
+      "leader": {
+        "face_pointer_speed": 5
       }
     }
   },

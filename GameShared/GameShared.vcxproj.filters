@@ -21,6 +21,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CommandMessages.h">
+      <Filter>Messages</Filter>
+    </ClInclude>
     <ClInclude Include="EffectEvent.h">
       <Filter>Simulation</Filter>
     </ClInclude>
@@ -56,6 +59,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CommandMessages.cpp">
+      <Filter>Messages</Filter>
+    </ClCompile>
     <ClCompile Include="Navigation.cpp">
       <Filter>World</Filter>
     </ClCompile>

@@ -628,6 +628,18 @@ struct TuningMvp
         double actorGain = 0.0;
       };
 
+      struct Command
+      {
+        // ref.sim.command.leader_toggle_offset, in wu
+        double leaderToggleOffset = 0.0;
+      };
+
+      struct Team
+      {
+        // ref.sim.team.formation_size_upgrade, in members
+        std::int64_t formationSizeUpgrade = 0;
+      };
+
       // ref.sim.tick_period, in s
       double tickPeriod = 0.0;
 
@@ -645,6 +657,8 @@ struct TuningMvp
       Push push;
       Route route;
       Explosion explosion;
+      Command command;
+      Team team;
     };
 
     struct Unit
@@ -829,10 +843,60 @@ struct TuningMvp
         std::int64_t burnDamage = 0;
 
         BurnChance burnChance;
+        // ref.unit.worker.follow_retarget_ticks, in ticks
+        std::int64_t followRetargetTicks = 0;
+
+        // ref.unit.worker.follow_disc_radius, in wu
+        double followDiscRadius = 0.0;
+
+        // ref.unit.worker.leader_follow_range, in wu
+        double leaderFollowRange = 0.0;
+
+        // ref.unit.worker.leader_signpost_range, in wu
+        double leaderSignpostRange = 0.0;
+
+        // ref.unit.worker.formation_search_offset, in times range
+        double formationSearchOffset = 0.0;
+
+        // ref.unit.worker.volley_size_cap, in slots
+        std::int64_t volleySizeCap = 0;
+
+        // ref.unit.worker.volley_divisor, in factor
+        std::int64_t volleyDivisor = 0;
       };
 
       struct Leader
       {
+        struct RowSizeTable
+        {
+          // ref.unit.leader.row_size_table.small_max, in slots
+          std::int64_t smallMax = 0;
+
+          // ref.unit.leader.row_size_table.small_row, in members per row
+          std::int64_t smallRow = 0;
+
+          // ref.unit.leader.row_size_table.medium_max, in slots
+          std::int64_t mediumMax = 0;
+
+          // ref.unit.leader.row_size_table.medium_row, in members per row
+          std::int64_t mediumRow = 0;
+
+          // ref.unit.leader.row_size_table.large_max, in slots
+          std::int64_t largeMax = 0;
+
+          // ref.unit.leader.row_size_table.large_row, in members per row
+          std::int64_t largeRow = 0;
+
+          // ref.unit.leader.row_size_table.huge_max, in slots
+          std::int64_t hugeMax = 0;
+
+          // ref.unit.leader.row_size_table.huge_row, in members per row
+          std::int64_t hugeRow = 0;
+
+          // ref.unit.leader.row_size_table.largest_row, in members per row
+          std::int64_t largestRow = 0;
+        };
+
         // ref.unit.leader.health, in health
         std::int64_t health = 0;
 
@@ -865,6 +929,85 @@ struct TuningMvp
 
         // ref.unit.leader.corpse_sink_per_tick, in wu/s per tick
         double corpseSinkPerTick = 0.0;
+
+        // ref.unit.leader.formation_speed_factor, in times speed
+        double formationSpeedFactor = 0.0;
+
+        // ref.unit.leader.formation_arrival_distance, in wu
+        double formationArrivalDistance = 0.0;
+
+        // ref.unit.leader.turn_formation, in per tick
+        double turnFormation = 0.0;
+
+        // ref.unit.leader.turn_pre_move, in per tick
+        double turnPreMove = 0.0;
+
+        // ref.unit.leader.turn_order, in per tick
+        double turnOrder = 0.0;
+
+        // ref.unit.leader.turn_order_formation_factor, in times factor
+        double turnOrderFormationFactor = 0.0;
+
+        // ref.unit.leader.turn_bot, in per tick
+        double turnBot = 0.0;
+
+        // ref.unit.leader.marker_period, in ticks
+        std::int64_t markerPeriod = 0;
+
+        // ref.unit.leader.marker_lift, in wu
+        double markerLift = 0.0;
+
+        // ref.unit.leader.route_regen_distance, in wu
+        double routeRegenDistance = 0.0;
+
+        // ref.unit.leader.pre_turn_tolerance, in cross-product length
+        double preTurnTolerance = 0.0;
+
+        // ref.unit.leader.formation_face_distance, in wu
+        double formationFaceDistance = 0.0;
+
+        // ref.unit.leader.follow_face_tolerance, in dot product
+        double followFaceTolerance = 0.0;
+
+        // ref.unit.leader.formation_toggle_radius, in wu
+        double formationToggleRadius = 0.0;
+
+        // ref.unit.leader.gap_rule_fraction, in times array size
+        double gapRuleFraction = 0.0;
+
+        // ref.unit.leader.slot_timer_ticks, in ticks
+        std::int64_t slotTimerTicks = 0;
+
+        // ref.unit.leader.slot_spacing, in wu
+        double slotSpacing = 0.0;
+
+        // ref.unit.leader.first_rank_offset, in wu
+        double firstRankOffset = 0.0;
+
+        // ref.unit.leader.lateral_offset_factor, in wu per row slot
+        double lateralOffsetFactor = 0.0;
+
+        RowSizeTable rowSizeTable;
+        // ref.unit.leader.marker_reach, in wu
+        double markerReach = 0.0;
+
+        // ref.unit.leader.marker_speed_min, in wu/s
+        double markerSpeedMin = 0.0;
+
+        // ref.unit.leader.marker_speed_max, in wu/s
+        double markerSpeedMax = 0.0;
+
+        // ref.unit.leader.trail_period, in ticks
+        std::int64_t trailPeriod = 0;
+
+        // ref.unit.leader.marker_fade_ticks, in ticks
+        std::int64_t markerFadeTicks = 0;
+
+        // ref.unit.leader.trail_lift, in wu
+        double trailLift = 0.0;
+
+        // ref.unit.leader.trail_life_ticks, in ticks
+        std::int64_t trailLifeTicks = 0;
       };
 
       struct Corpse
@@ -1100,10 +1243,22 @@ struct TuningMvp
       Orb orb;
     };
 
+    struct Ctrl
+    {
+      struct Leader
+      {
+        // ref.ctrl.leader.face_pointer_speed, in wu/s
+        double facePointerSpeed = 0.0;
+      };
+
+      Leader leader;
+    };
+
     Sim sim;
     Unit unit;
     Weapon weapon;
     Econ econ;
+    Ctrl ctrl;
   };
 
   struct Wld
@@ -1630,6 +1785,18 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim::Command& _out)
+{
+  _out.leaderToggleOffset = _reader.Decimal(_object, "leader_toggle_offset", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim::Team& _out)
+{
+  _out.formationSizeUpgrade = _reader.Integer(_object, "formation_size_upgrade", 0);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim& _out)
 {
   _out.tickPeriod = _reader.Decimal(_object, "tick_period", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
@@ -1645,6 +1812,8 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "push"), _out.push);
   ReadFields(_reader, _reader.Object(_object, "route"), _out.route);
   ReadFields(_reader, _reader.Object(_object, "explosion"), _out.explosion);
+  ReadFields(_reader, _reader.Object(_object, "command"), _out.command);
+  ReadFields(_reader, _reader.Object(_object, "team"), _out.team);
   _reader.Close(_object);
 }
 
@@ -1729,6 +1898,27 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.burnWander = _reader.Decimal(_object, "burn_wander", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.burnDamage = _reader.Integer(_object, "burn_damage", 0);
   ReadFields(_reader, _reader.Object(_object, "burn_chance"), _out.burnChance);
+  _out.followRetargetTicks = _reader.Integer(_object, "follow_retarget_ticks", 0);
+  _out.followDiscRadius = _reader.Decimal(_object, "follow_disc_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.leaderFollowRange = _reader.Decimal(_object, "leader_follow_range", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.leaderSignpostRange = _reader.Decimal(_object, "leader_signpost_range", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.formationSearchOffset = _reader.Decimal(_object, "formation_search_offset", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.volleySizeCap = _reader.Integer(_object, "volley_size_cap", 1);
+  _out.volleyDivisor = _reader.Integer(_object, "volley_divisor", 1);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Unit::Leader::RowSizeTable& _out)
+{
+  _out.smallMax = _reader.Integer(_object, "small_max", 0);
+  _out.smallRow = _reader.Integer(_object, "small_row", 1);
+  _out.mediumMax = _reader.Integer(_object, "medium_max", 0);
+  _out.mediumRow = _reader.Integer(_object, "medium_row", 1);
+  _out.largeMax = _reader.Integer(_object, "large_max", 0);
+  _out.largeRow = _reader.Integer(_object, "large_row", 1);
+  _out.hugeMax = _reader.Integer(_object, "huge_max", 0);
+  _out.hugeRow = _reader.Integer(_object, "huge_row", 1);
+  _out.largestRow = _reader.Integer(_object, "largest_row", 1);
   _reader.Close(_object);
 }
 
@@ -1745,6 +1935,33 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.turnWalk = _reader.Decimal(_object, "turn_walk", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.radiusFactor = _reader.Decimal(_object, "radius_factor", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.corpseSinkPerTick = _reader.Decimal(_object, "corpse_sink_per_tick", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.formationSpeedFactor = _reader.Decimal(_object, "formation_speed_factor", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.formationArrivalDistance = _reader.Decimal(_object, "formation_arrival_distance", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.turnFormation = _reader.Decimal(_object, "turn_formation", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.turnPreMove = _reader.Decimal(_object, "turn_pre_move", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.turnOrder = _reader.Decimal(_object, "turn_order", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.turnOrderFormationFactor = _reader.Decimal(_object, "turn_order_formation_factor", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.turnBot = _reader.Decimal(_object, "turn_bot", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.markerPeriod = _reader.Integer(_object, "marker_period", 0);
+  _out.markerLift = _reader.Decimal(_object, "marker_lift", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.routeRegenDistance = _reader.Decimal(_object, "route_regen_distance", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.preTurnTolerance = _reader.Decimal(_object, "pre_turn_tolerance", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.formationFaceDistance = _reader.Decimal(_object, "formation_face_distance", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.followFaceTolerance = _reader.Decimal(_object, "follow_face_tolerance", {}, Neuron::SimPrecision::Binary64);
+  _out.formationToggleRadius = _reader.Decimal(_object, "formation_toggle_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.gapRuleFraction = _reader.Decimal(_object, "gap_rule_fraction", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.slotTimerTicks = _reader.Integer(_object, "slot_timer_ticks", 0);
+  _out.slotSpacing = _reader.Decimal(_object, "slot_spacing", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.firstRankOffset = _reader.Decimal(_object, "first_rank_offset", {}, Neuron::SimPrecision::Binary64);
+  _out.lateralOffsetFactor = _reader.Decimal(_object, "lateral_offset_factor", {}, Neuron::SimPrecision::Binary64);
+  ReadFields(_reader, _reader.Object(_object, "row_size_table"), _out.rowSizeTable);
+  _out.markerReach = _reader.Decimal(_object, "marker_reach", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.markerSpeedMin = _reader.Decimal(_object, "marker_speed_min", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.markerSpeedMax = _reader.Decimal(_object, "marker_speed_max", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.trailPeriod = _reader.Integer(_object, "trail_period", 1);
+  _out.markerFadeTicks = _reader.Integer(_object, "marker_fade_ticks", 0);
+  _out.trailLift = _reader.Decimal(_object, "trail_lift", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.trailLifeTicks = _reader.Integer(_object, "trail_life_ticks", 0);
   _reader.Close(_object);
 }
 
@@ -1891,12 +2108,25 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Ctrl::Leader& _out)
+{
+  _out.facePointerSpeed = _reader.Decimal(_object, "face_pointer_speed", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Ctrl& _out)
+{
+  ReadFields(_reader, _reader.Object(_object, "leader"), _out.leader);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "sim"), _out.sim);
   ReadFields(_reader, _reader.Object(_object, "unit"), _out.unit);
   ReadFields(_reader, _reader.Object(_object, "weapon"), _out.weapon);
   ReadFields(_reader, _reader.Object(_object, "econ"), _out.econ);
+  ReadFields(_reader, _reader.Object(_object, "ctrl"), _out.ctrl);
   _reader.Close(_object);
 }
 

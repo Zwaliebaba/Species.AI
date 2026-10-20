@@ -38,12 +38,24 @@ namespace Species
 class RegionSimulation
 {
 public:
-  /// One team slot of the region (R-SIM-221): its ungrouped figures, the only actors of the MVP (R-UNIT-022), and its
-  /// kill counter (R-UNIT-032).
+  /// One team slot of the region (R-SIM-221): its ungrouped figures, the only actors of the MVP (R-UNIT-022), its kill
+  /// counter (R-UNIT-032), its selection, a Leader by stable id and slot that resolves only while the Leader holds the
+  /// slot (R-SIM-401), and the pointer position of its latest control state (R-SIM-442).
   struct Team
   {
     SlicedPool<Figure> figures;
     std::uint32_t kills = 0;
+    StableId selectedId = 0; // 0: nothing selected
+    std::uint32_t selectedSlot = 0;
+    Neuron::Vec3 pointer;
+  };
+
+  /// Who commands a team (ADR-087 item 2, ADR-106): the sender whose commands for the team are permitted, and whether
+  /// that sender is an AI, which alone may send the AI's own command types (DEC-122).
+  struct Commander
+  {
+    Neuron::SenderId sender = 0; // 0: nobody
+    bool ai = false;
   };
 
   // A region's team slots are numbered by a byte (R-SIM-221).
@@ -89,6 +101,26 @@ public:
   // The figure an actor-grid entry names, or null when it no longer resolves (R-SIM-325's rule for handles).
   [[nodiscard]] const Figure* Resolve(const ActorRef& _ref) const;
   [[nodiscard]] Figure* Resolve(const ActorRef& _ref);
+  // The figure of _team whose stable id is _id, found by a scan of the team's slots, or none (R-SIM-449: a command
+  // names a figure by stable id).
+  [[nodiscard]] std::optional<ActorRef> FindFigure(std::uint8_t _team, StableId _id) const;
+  // R-SIM-405 for the MVP's selections: _leader, or nothing, becomes the team's selected actor, and every Worker of the
+  // team leaves the crowd selection (R-UNIT-137). Selecting a Leader raises leader.selected.
+  void Select(std::uint8_t _team, const std::optional<ActorRef>& _leader);
+  // The team's selected Leader while it resolves and is alive, or null.
+  [[nodiscard]] Figure* SelectedLeader(std::uint8_t _team);
+  [[nodiscard]] std::optional<ActorRef> SelectedLeaderRef(std::uint8_t _team) const;
+  // The live Leader that _worker of _team follows, or null.
+  [[nodiscard]] Figure* LeaderOf(const Figure& _worker, std::uint8_t _team);
+  [[nodiscard]] const Figure* LeaderOf(const Figure& _worker, std::uint8_t _team) const;
+  // R-UNIT-183: _worker of _team holds a slot of the Leader it follows, and that Leader is in formation mode (ADR-106).
+  [[nodiscard]] bool InFormation(const Figure& _worker, std::uint8_t _team) const;
+  // ADR-106: _sender commands _team from now on; an AI commander may also send the AI's own commands. Called between
+  // ticks, as a connection is (ADR-095).
+  void SetCommander(std::uint8_t _team, Neuron::SenderId _sender, bool _ai);
+  // The arrival check of a battle command (ADR-087 item 2): _sender commands _team, and is an AI when _aiOnly.
+  [[nodiscard]] bool MayCommand(Neuron::SenderId _sender, std::uint8_t _team, bool _aiOnly) const noexcept;
+
   // R-SIM-311: a team's friends and enemies. The MVP has no alliance, so each team is its own only friend.
   [[nodiscard]] static TeamMask FriendsOf(std::uint8_t _team) noexcept;
   [[nodiscard]] static TeamMask EnemiesOf(std::uint8_t _team) noexcept;
@@ -159,6 +191,10 @@ public:
   {
     return m_draws;
   }
+  [[nodiscard]] const TickDraws& Draws() const noexcept
+  {
+    return m_draws;
+  }
   // R-UNIT-026 and R-UNIT-038 for the figure an entry names: its health change with its hurt and death events, and on a
   // kill its one Essence orb (MVP-023). Kill credit is the caller's. A figure that no longer resolves takes nothing.
   HealthChange Damage(const ActorRef& _ref, std::int32_t _amount, DamageKind _kind);
@@ -196,6 +232,10 @@ public:
     return m_nextTick;
   }
   [[nodiscard]] Neuron::CommandQueue& Commands() noexcept
+  {
+    return m_commands;
+  }
+  [[nodiscard]] const Neuron::CommandQueue& Commands() const noexcept
   {
     return m_commands;
   }
@@ -239,6 +279,7 @@ private:
   std::uint16_t m_index;
   const TuningMvp* m_tuning;
   StableIdCounter m_ids;
+  std::vector<Commander> m_commanders; // by team index; state, read before the queue that the commanders permit
   Neuron::CommandQueue m_commands;
   std::uint64_t m_nextTick;
   std::vector<Team> m_teams;

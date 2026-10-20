@@ -2,6 +2,7 @@
 
 #include "DrawPurpose.h"
 #include "FigureAdvance.h"
+#include "LeaderOrders.h"
 #include "Movement.h"
 #include "RegionSimulation.h"
 #include "RegionTerrain.h"
@@ -261,7 +262,7 @@ public:
     Species::Figure& leader = Spawn1(region, Species::FigureKind::Leader, MIDDLE);
     region.Step(region.NextTick());
     const Neuron::Vec3 target{MIDDLE.x - 60.0, 50.0, MIDDLE.z + 80.0};
-    Species::SendLeaderTo(leader, target);
+    Species::AssignWaypoint(leader, target);
     static_cast<void>(StepUntil(region, [&] { return leader.leaderState == Species::LeaderState::Idle; }, 300));
     Assert::IsTrue(leader.leaderState == Species::LeaderState::Idle, L"arrived");
     Assert::IsTrue(Neuron::HorizontalDistance(leader.position, target) <= 10.0 && leader.position.y == 50.0,

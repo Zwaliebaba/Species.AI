@@ -99,6 +99,13 @@ public:
   // The start of tick _tick: executes every command queued before it, in the keyed order of the tick.
   void Execute(std::uint64_t _tick);
 
+  // Whether a handler for _type is registered: what a server that holds several owners' queues reads to pass a message
+  // to the owner it addresses (ADR-087 item 1).
+  [[nodiscard]] bool Handles(MessageTypeId _type) const noexcept
+  {
+    return m_entries.contains(_type);
+  }
+
   [[nodiscard]] std::size_t Pending() const noexcept
   {
     return m_pending.size();

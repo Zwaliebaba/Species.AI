@@ -2,6 +2,7 @@
 
 #include "BitReader.h"
 #include "BitWriter.h"
+#include "RouteStore.h"
 #include "StableId.h"
 #include "Vec3.h"
 
@@ -26,27 +27,36 @@ struct LaserBolt
 };
 
 // R-CRATE-400: the kinds of the region's effect pool that the MVP builds. Muzzle flashes, particles and the other
-// presentation of the weapons are effect events, not pool objects (ADR-105). The values are state, never renumbered.
+// presentation of the weapons are effect events, not pool objects (ADR-105); order markers and their trail marks are
+// simulated objects (R-UNIT-187, ADR-106). The values are state, never renumbered.
 enum class EffectKind : std::uint8_t
 {
   Grenade,
-  ShockwaveRing
+  ShockwaveRing,
+  OrderMarker,
+  OrderTrailMark
 };
 
 /// An effect of the region's effect pool (R-CRATE-400): a grenade, a thrown weapon with a fuse (R-CRATE-410,
-/// R-CRATE-415), or the shockwave ring of an explosion (R-CRATE-470).
+/// R-CRATE-415), the shockwave ring of an explosion (R-CRATE-470), a Leader's order marker (R-UNIT-185), or the trail
+/// mark one drops (R-UNIT-186).
 struct Effect
 {
   StableId id = 0;
   EffectKind kind = EffectKind::Grenade;
   std::uint8_t team = 0;
   Neuron::Vec3 position;
-  Neuron::Vec3 velocity;
+  Neuron::Vec3 velocity;       // a trail mark's front, its marker's velocity when dropped
   double force = 0.0;          // R-CRATE-410: a thrown weapon's bounce force
   double power = 0.0;          // R-CRATE-415: a grenade's power
-  std::int32_t fuseTicks = 0;  // R-CRATE-415: a grenade's fuse
+  std::int32_t fuseTicks = 0;  // R-CRATE-415: a grenade's fuse; a marker's fade once it has arrived
   double sizeSeconds = 0.0;    // R-CRATE-470: a ring's size s
-  std::int32_t activeTick = 0; // R-CRATE-470: the ring's advances so far, its active tick k
+  std::int32_t activeTick = 0; // R-CRATE-470: the ring's advances so far, its active tick k; a marker's advances
+  // From state version 7 (M1 task T7):
+  RouteHandle route = 0;         // R-UNIT-185: the order route a marker follows; 0 for every other kind
+  std::int32_t routePoint = -1;  // the route point a marker walks to
+  bool arrived = false;          // a marker past its route's end, which fades
+  std::uint64_t createdTick = 0; // R-UNIT-186: a trail mark's tick of creation, which its life counts from
 };
 
 // R-CRATE-405, fire a laser: a bolt of _team from _position with _velocity, for the laser level's life (DEC-115).
@@ -69,10 +79,11 @@ std::uint32_t Explode(RegionSimulation& _region, const Neuron::Vec3& _position, 
 // R-CRATE-411, R-CRATE-415, R-CRATE-470, R-CRATE-471: one advance of an effect; true when it asks to be removed.
 [[nodiscard]] bool AdvanceEffect(RegionSimulation& _region, Effect& _effect);
 
-// The objects canonically (ADR-081 item 7), and the values the writers wrote; false when they do not read whole.
+// The objects canonically (ADR-081 item 7), and the values the writers wrote; false when they do not read whole. An
+// effect of a state version before 7 follows no route.
 void WriteLaserBolt(Neuron::BitWriter& _writer, const LaserBolt& _bolt);
 [[nodiscard]] bool ReadLaserBolt(Neuron::BitReader& _reader, LaserBolt& _bolt);
 void WriteEffect(Neuron::BitWriter& _writer, const Effect& _effect);
-[[nodiscard]] bool ReadEffect(Neuron::BitReader& _reader, Effect& _effect);
+[[nodiscard]] bool ReadEffect(Neuron::BitReader& _reader, Effect& _effect, std::uint32_t _stateVersion);
 
 } // namespace Species

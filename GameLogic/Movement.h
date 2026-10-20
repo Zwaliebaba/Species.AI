@@ -74,7 +74,8 @@ void AirborneStep(Figure& _figure, const MovementContext& _context);
 // R-UNIT-105 and R-UNIT-108: the Worker's movement step at its speed, the Idle factor when _idle; true on arrival.
 [[nodiscard]] bool WorkerMoveToWaypoint(Figure& _figure, bool _idle, const MovementContext& _context);
 
-// R-UNIT-156 to R-UNIT-158 and R-UNIT-160: the Leader walking to its waypoint, out of formation; true on arrival.
-[[nodiscard]] bool LeaderMoveToWaypoint(Figure& _figure, const MovementContext& _context);
+// R-UNIT-156 to R-UNIT-158 and R-UNIT-160: the Leader walking to its waypoint, at the formation's speed factor, turn and
+// arrival distance when _formationMode; true on arrival.
+[[nodiscard]] bool LeaderMoveToWaypoint(Figure& _figure, bool _formationMode, const MovementContext& _context);
 
 } // namespace Species

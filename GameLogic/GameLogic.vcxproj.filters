@@ -36,14 +36,26 @@
     <ClInclude Include="FigureAdvance.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="Formation.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="IntegratedServer.h">
       <Filter>Server</Filter>
+    </ClInclude>
+    <ClInclude Include="LeaderOrders.h">
+      <Filter>Simulation</Filter>
     </ClInclude>
     <ClInclude Include="Movement.h">
       <Filter>Simulation</Filter>
     </ClInclude>
     <ClInclude Include="ObstacleGrid.h">
       <Filter>Space</Filter>
+    </ClInclude>
+    <ClInclude Include="OrderMarkers.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="RegionCommands.h">
+      <Filter>Server</Filter>
     </ClInclude>
     <ClInclude Include="RegionSimulation.h">
       <Filter>Simulation</Filter>
@@ -101,14 +113,26 @@
     <ClCompile Include="FigureAdvance.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="Formation.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="IntegratedServer.cpp">
       <Filter>Server</Filter>
+    </ClCompile>
+    <ClCompile Include="LeaderOrders.cpp">
+      <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="Movement.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="ObstacleGrid.cpp">
       <Filter>Space</Filter>
+    </ClCompile>
+    <ClCompile Include="OrderMarkers.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="RegionCommands.cpp">
+      <Filter>Server</Filter>
     </ClCompile>
     <ClCompile Include="RegionSimulation.cpp">
       <Filter>Simulation</Filter>

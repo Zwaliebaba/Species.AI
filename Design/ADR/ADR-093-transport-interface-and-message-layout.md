@@ -119,3 +119,4 @@ Chosen option: "1".
 
 * Related: [ADR-062](ADR-062-authoring-syntax-and-schema-language.md), [ADR-069](ADR-069-test-framework.md), [ADR-084](ADR-084-client-boundary-through-the-transport.md), [ADR-086](ADR-086-replication-and-interest-management.md), [ADR-087](ADR-087-command-path-validation-and-timing.md), [ADR-088](ADR-088-transport-messages-identity-and-diagnostics.md), [ADR-089](ADR-089-msquic-transport-package.md), [ADR-090](ADR-090-solution-and-project-layout.md).
 * The code is in NeuronCore: `Transport`, `InProcessTransport`, `BitWriter`, `BitReader`, `MessageCodec` and `StreamFraming`.
+* **Amendment 2026-10-20 (M1 task T7, [ADR-106](ADR-106-leaders-formations-and-battle-commands.md)).** `BitReader::Fail` lets a codec fail its reader for a field out of the bounds its schema states, such as a real that is not finite or an id of 0, as a read beyond a stated limit fails it; the message is then dropped as malformed.

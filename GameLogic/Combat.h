@@ -20,12 +20,14 @@ struct FigureContext
 };
 
 // R-UNIT-098 for what the MVP builds: the range relaxation, the projectile threats (grenades of any team), the cached
-// enemy query with its filter, and the found or cleared threat. Steps 2, 4 and 5 have nothing to find in the MVP, and the
-// bot census shortcut of step 6 arrives with the bot's node census (M1 plan T8). True when the Worker has a threat.
+// enemy query with its filter, centred ahead of a formation member, and the found or cleared threat. Steps 2, 4 and 5
+// have nothing to find in the MVP, and the bot census shortcut of step 6 arrives with the bot's node census (M1 plan
+// T8). True when the Worker has a threat.
 bool ThreatSearch(Figure& _worker, const FigureContext& _context);
 
-// R-UNIT-101 to R-UNIT-104: one tick of Fighting, outside a formation: the threat resolved, the movement, the shot and the
-// grenade decision.
+// R-UNIT-101 to R-UNIT-104: one tick of Fighting: the threat resolved, or the fight's end back to the Worker's Leader;
+// the movement, a formation member's to its slot; the shot, a formation member's by the volley rhythm; and the grenade
+// decision outside a formation.
 void FightingStep(Figure& _worker, const FigureContext& _context);
 
 // R-UNIT-079: the burning step, on the ground: the panicked wander, run at full speed, and the damage roll.

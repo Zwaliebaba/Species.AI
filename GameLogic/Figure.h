@@ -11,6 +11,7 @@
 #include "Vec3.h"
 
 #include <cstdint>
+#include <vector>
 
 namespace Species
 {
@@ -25,14 +26,15 @@ enum class DamageKind : std::uint8_t
   Fire
 };
 
-// R-UNIT-067: the Worker's behaviour states that the MVP builds so far; the values are state, never renumbered.
+// R-UNIT-067: the Worker's behaviour states that the MVP builds; the values are state, never renumbered.
 enum class WorkerState : std::uint8_t
 {
   Idle,
   OnWaypointOrder,
   Drowning,
   Fighting,
-  Burning
+  Burning,
+  FollowingLeader
 };
 
 // R-UNIT-064, R-UNIT-101: what a Worker's threat is. The MVP's threats are actors and grenades.
@@ -55,16 +57,37 @@ struct Threat
   friend constexpr bool operator==(const Threat& _a, const Threat& _b) noexcept = default;
 };
 
-// R-UNIT-164: the Leader's behaviour states that the MVP builds so far; GivingOrders comes with its orders (M1 plan T7).
+// R-UNIT-164: the Leader's behaviour states (§2.4); the values are state, never renumbered.
 enum class LeaderState : std::uint8_t
 {
   Idle,
-  ToWaypoint
+  ToWaypoint,
+  GivingOrders
+};
+
+// R-UNIT-164: the Leader's order, the state machine of diagram 3-B, independent of its behaviour state.
+enum class LeaderOrder : std::uint8_t
+{
+  None,
+  PrepareWaypoint,
+  Waypoint,
+  Follow
+};
+
+/// One slot of a Leader's formation (R-UNIT-177): the stable id of its member Worker, 0 for a gap, and its timer.
+struct FormationSlot
+{
+  StableId member = 0;
+  std::int32_t timerTicks = 0;
+
+  friend constexpr bool operator==(const FormationSlot& _a, const FormationSlot& _b) noexcept = default;
 };
 
 /// One Worker or Leader of a region (R-SIM-101, R-SIM-105): the simulation state that the figure rules read and write.
 /// Its team, pool and slot are its container's (R-SIM-131); its stable id stands for the reference's serial (ADR-083
-/// item 5). A dead figure's health is its corpse fade (R-UNIT-026).
+/// item 5). A dead figure's health is its corpse fade (R-UNIT-026). A Leader's order position and order route
+/// (table 2.3-A) are its orderPosition and its route. Whether a Worker is in a formation is not a field: it holds a slot
+/// of the Leader it follows while that Leader is in formation mode (R-UNIT-183, ADR-106).
 struct Figure
 {
   StableId id = 0;
@@ -82,7 +105,6 @@ struct Figure
   bool enabled = true;
   bool destroyed = false; // R-SIM-113: removed at its next advance, with no corpse
   bool dead = false;
-  bool inFormation = false; // R-UNIT-116: a Worker in a Leader's formation
   // From state version 4 (M1 task T4):
   double radius = 0.0;   // R-SIM-308: 0 for a Worker, a sprite; a Leader's mesh radius × its radius factor
   Neuron::Vec3 waypoint; // R-UNIT-064, R-UNIT-164: where it walks; the zero vector holds a Worker still
@@ -103,6 +125,21 @@ struct Figure
   bool scared = true;                 // R-UNIT-098: flee rather than fight
   bool threatSound = false;           // R-UNIT-064: the threat-sound latch
   std::int32_t grenadeTimerTicks = 0; // R-UNIT-104: ticks to the next grenade decision
+  // From state version 7 (M1 task T7):
+  bool promoted = false;                 // R-UNIT-065 step 1: its next advance removes it, with no Essence orb
+  bool underControl = false;             // R-UNIT-136: a member of its team's crowd selection
+  StableId leaderId = 0;                 // R-UNIT-064: the Leader it follows, a figure of its team; 0 for none
+  std::uint32_t leaderSlot = 0;          // that Leader's slot, which resolves only while the Leader holds it
+  std::int32_t followTimerTicks = 0;     // R-UNIT-074
+  LeaderOrder order = LeaderOrder::None; // R-UNIT-164
+  bool demoted = false;                  // R-UNIT-154: its next advance removes it, with no Essence orb
+  bool noFormations = false;             // R-UNIT-170: set by the AI
+  bool botTurn = false;                  // table 2.3-A: the bot target front is set; never cleared once set
+  Neuron::Vec3 botFront;                 // table 2.3-A: the facing the AI gives the Leader (R-UNIT-163 step 8)
+  std::uint64_t lastMarkerTick = 0;      // R-UNIT-163 step 5: the tick of its last order marker
+  bool formation = false;                // R-UNIT-164: the formation flag
+  bool formationAngleSet = false;        // R-UNIT-166: the formation has turned towards its waypoint
+  std::vector<FormationSlot> slots;      // R-UNIT-177: in index order, gaps included
 };
 
 // R-UNIT-011 and R-UNIT-015 (R-SIM-109): sets the kind, the stats of the stat table, the actor-grid radius
@@ -123,22 +160,27 @@ struct HealthChange
 };
 
 // R-UNIT-026, R-UNIT-027 and R-UNIT-116 for the Worker and the Leader: an integer change of health of one damage
-// kind. A kill makes the figure dead with its health at the corpse fade start; the Essence orb of R-UNIT-038 and the
-// presentation events are the caller's, from the result.
-HealthChange ApplyHealthChange(Figure& _figure, std::int32_t _amount, DamageKind _kind, const TuningMvp& _tuning);
+// kind, for a Worker that is _inFormation or not. A kill makes the figure dead with its health at the corpse fade start;
+// the Essence orb of R-UNIT-038 and the presentation events are the caller's, from the result.
+HealthChange ApplyHealthChange(Figure& _figure, std::int32_t _amount, DamageKind _kind, const TuningMvp& _tuning, bool _inFormation);
 
 // The figure canonically (ADR-081 item 7): every field in declaration order, binary64 as its 64 bits.
 void WriteFigure(Neuron::BitWriter& _writer, const Figure& _figure);
 // The values WriteFigure wrote in a snapshot of _stateVersion; false when they do not read whole or name no kind. A
 // figure of a version before 4 takes the fields that version 4 added at their spawn values, its waypoint at its
 // position and its radius from its kind, registered nowhere until its region registers it; one before 5 follows no route;
-// one before 6 has no threat, the full threat range, and the base of its first grenade timer.
+// one before 6 has no threat, the full threat range, and the base of its first grenade timer; one before 7 follows no
+// Leader, and a Leader of one has no order and no formation.
 [[nodiscard]] bool ReadFigure(Neuron::BitReader& _reader, Figure& _figure, std::uint32_t _stateVersion, const TuningMvp& _tuning);
 
-// The first state versions whose figures hold the fields of M1 tasks T4, T5 and T6.
+// The first state versions whose figures hold the fields of M1 tasks T4, T5, T6 and T7. From version 7 a figure holds no
+// formation flag of its own.
 inline constexpr std::uint32_t FIGURE_STATE_VERSION_MOVEMENT = 4;
 inline constexpr std::uint32_t FIGURE_STATE_VERSION_ROUTES = 5;
 inline constexpr std::uint32_t FIGURE_STATE_VERSION_COMBAT = 6;
+inline constexpr std::uint32_t FIGURE_STATE_VERSION_LEADERS = 7;
+// The most slots a saved formation holds: a bound for the reader, far above the formation size (R-UNIT-162).
+inline constexpr std::uint64_t FORMATION_SLOTS_STATE_MAX = 65'535;
 
 // R-UNIT-104: ticks from a draw of the spread in seconds, base + ⌊draw ÷ tick period⌋ (R-UNIT-060's first timer and each
 // interval).

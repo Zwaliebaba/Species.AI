@@ -3,7 +3,10 @@
 #include "Check.h"
 #include "EssenceOrb.h"
 #include "FigureAdvance.h"
+#include "Formation.h"
+#include "RegionCommands.h"
 #include "RegionSimulation.h"
+#include "StateValues.h"
 #include "Weapons.h"
 
 #include <algorithm>
@@ -68,10 +71,12 @@ template <class Teams> auto* ResolveIn(Teams& _teams, const ActorRef& _ref)
 }
 
 // The first state versions whose regions hold the actor grid's capacities and the cache (M1 task T4), the routes (M1
-// task T5), and the kill counters with the laser-bolt, effect and Essence-orb pools (M1 task T6).
+// task T5), the kill counters with the laser-bolt, effect and Essence-orb pools (M1 task T6), and the commanders with
+// each team's selection and pointer (M1 task T7).
 constexpr std::uint32_t STATE_VERSION_WITH_GRIDS = 4;
 constexpr std::uint32_t STATE_VERSION_WITH_ROUTES = 5;
 constexpr std::uint32_t STATE_VERSION_WITH_WEAPONS = 6;
+constexpr std::uint32_t STATE_VERSION_WITH_LEADERS = 7;
 
 } // namespace
 
@@ -96,6 +101,7 @@ RegionSimulation::RegionSimulation(std::uint16_t _index, const Neuron::SipHashKe
 {
   ENGINE_CHECK(_tuning.ref.sim.updateSlices > 0 && _tuning.ref.sim.container.ungroupedStep > 0);
   m_draws.SetTick(_nextTick);
+  RegisterRegionCommands(*this);
 }
 
 RegionSimulation::Team& RegionSimulation::EnsureTeam(std::uint8_t _index)
@@ -197,6 +203,104 @@ Figure* RegionSimulation::Resolve(const ActorRef& _ref)
   return ResolveIn(m_teams, _ref);
 }
 
+std::optional<ActorRef> RegionSimulation::FindFigure(std::uint8_t _team, StableId _id) const
+{
+  if (_team >= m_teams.size() || _id == 0)
+  {
+    return std::nullopt;
+  }
+  const SlicedPool<Figure>& figures = m_teams[_team].figures;
+  for (std::uint32_t slot = 0; slot < figures.Capacity(); ++slot)
+  {
+    if (figures.Used(slot) && figures.At(slot).id == _id)
+    {
+      return ActorRef{_id, slot, _team};
+    }
+  }
+  return std::nullopt;
+}
+
+void RegionSimulation::Select(std::uint8_t _team, const std::optional<ActorRef>& _leader)
+{
+  Team& team = EnsureTeam(_team);
+  team.selectedId = _leader ? _leader->id : 0;
+  team.selectedSlot = _leader ? _leader->slot : 0;
+  for (std::uint32_t slot = 0; slot < team.figures.Capacity(); ++slot)
+  {
+    if (team.figures.Used(slot))
+    {
+      team.figures.At(slot).underControl = false;
+    }
+  }
+  if (const Figure* leader = _leader ? Resolve(*_leader) : nullptr)
+  {
+    Emit({EffectEventKind::LeaderSelected, _team, leader->id, leader->position, {}, 0.0});
+  }
+}
+
+std::optional<ActorRef> RegionSimulation::SelectedLeaderRef(std::uint8_t _team) const
+{
+  if (_team >= m_teams.size() || m_teams[_team].selectedId == 0)
+  {
+    return std::nullopt;
+  }
+  const ActorRef ref{m_teams[_team].selectedId, m_teams[_team].selectedSlot, _team};
+  const Figure* leader = Resolve(ref);
+  return leader != nullptr && leader->kind == FigureKind::Leader && !leader->dead ? std::optional<ActorRef>(ref) : std::nullopt;
+}
+
+Figure* RegionSimulation::SelectedLeader(std::uint8_t _team)
+{
+  const std::optional<ActorRef> ref = SelectedLeaderRef(_team);
+  return ref ? Resolve(*ref) : nullptr;
+}
+
+const Figure* RegionSimulation::LeaderOf(const Figure& _worker, std::uint8_t _team) const
+{
+  if (_worker.leaderId == 0)
+  {
+    return nullptr;
+  }
+  const Figure* leader = Resolve({_worker.leaderId, _worker.leaderSlot, _team});
+  return leader != nullptr && leader->kind == FigureKind::Leader && !leader->dead ? leader : nullptr;
+}
+
+Figure* RegionSimulation::LeaderOf(const Figure& _worker, std::uint8_t _team)
+{
+  if (_worker.leaderId == 0)
+  {
+    return nullptr;
+  }
+  Figure* leader = Resolve({_worker.leaderId, _worker.leaderSlot, _team});
+  return leader != nullptr && leader->kind == FigureKind::Leader && !leader->dead ? leader : nullptr;
+}
+
+bool RegionSimulation::InFormation(const Figure& _worker, std::uint8_t _team) const
+{
+  const Figure* leader = _worker.kind == FigureKind::Worker ? LeaderOf(_worker, _team) : nullptr;
+  return leader != nullptr && InFormationMode(*leader) && SlotOf(*leader, _worker.id).has_value();
+}
+
+void RegionSimulation::SetCommander(std::uint8_t _team, Neuron::SenderId _sender, bool _ai)
+{
+  EnsureTeam(_team);
+  if (m_commanders.size() <= _team)
+  {
+    m_commanders.resize(std::size_t{_team} + 1);
+  }
+  m_commanders[_team] = {_sender, _ai};
+}
+
+bool RegionSimulation::MayCommand(Neuron::SenderId _sender, std::uint8_t _team, bool _aiOnly) const noexcept
+{
+  if (_sender == 0 || _team >= m_commanders.size())
+  {
+    return false;
+  }
+  const Commander& commander = m_commanders[_team];
+  return commander.sender == _sender && (commander.ai || !_aiOnly);
+}
+
 TeamMask RegionSimulation::FriendsOf(std::uint8_t _team) noexcept
 {
   TeamMask friends;
@@ -261,7 +365,7 @@ HealthChange RegionSimulation::Damage(const ActorRef& _ref, std::int32_t _amount
     return {false, false};
   }
   const bool alive = !figure->dead;
-  const HealthChange change = ApplyHealthChange(*figure, _amount, _kind, *m_tuning);
+  const HealthChange change = ApplyHealthChange(*figure, _amount, _kind, *m_tuning, InFormation(*figure, _ref.team));
   if (alive && _amount < 0)
   {
     Emit({EffectEventKind::FigureHurt, _ref.team, figure->id, figure->position, {}, 0.0});
@@ -311,7 +415,7 @@ void RegionSimulation::Step(std::uint64_t _tick)
 
 void RegionSimulation::FreeUnheldRoutes()
 {
-  // The holders the MVP builds so far are its figures; Leaders' orders and groups join them with M1 plan T7.
+  // The holders the MVP builds: its figures, a Leader's being its order route, and its order markers (R-UNIT-185).
   std::vector<RouteHandle> held;
   for (const Team& team : m_teams)
   {
@@ -321,6 +425,13 @@ void RegionSimulation::FreeUnheldRoutes()
       {
         held.push_back(team.figures.At(slot).route);
       }
+    }
+  }
+  for (std::uint32_t slot = 0; slot < m_effects.Capacity(); ++slot)
+  {
+    if (m_effects.Used(slot) && m_effects.At(slot).route != 0)
+    {
+      held.push_back(m_effects.At(slot).route);
     }
   }
   std::ranges::sort(held);
@@ -380,12 +491,21 @@ void RegionSimulation::WriteState(Neuron::BitWriter& _writer) const
   _writer.WriteBits(m_index, 16);
   _writer.WriteBits(m_nextTick, 64);
   _writer.WriteBits(m_ids.Next(), 64);
+  _writer.WriteBounded(m_commanders.size(), TEAM_SLOTS);
+  for (const Commander& commander : m_commanders)
+  {
+    _writer.WriteBits(commander.sender, 64);
+    _writer.WriteBool(commander.ai);
+  }
   m_commands.WriteState(_writer);
   _writer.WriteBounded(m_teams.size(), TEAM_SLOTS);
   for (const Team& team : m_teams)
   {
     team.figures.WriteState(_writer, [](Neuron::BitWriter& _out, const Figure& _figure) { WriteFigure(_out, _figure); });
     _writer.WriteBits(team.kills, 32);
+    _writer.WriteBits(team.selectedId, 64);
+    _writer.WriteBits(team.selectedSlot, 32);
+    WriteVec3(_writer, team.pointer);
   }
   m_grid.WriteState(_writer);
   m_cache.WriteState(_writer);
@@ -405,7 +525,19 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
     return false;
   }
   m_ids = StableIdCounter(m_ids.Owner(), nextId);
-  if (!m_commands.ReadState(_reader))
+  // The commanders come before the queue, whose commands are checked again against them as they are queued.
+  m_commanders.clear();
+  if (_stateVersion >= STATE_VERSION_WITH_LEADERS)
+  {
+    const std::uint64_t commanders = _reader.ReadBounded(TEAM_SLOTS);
+    for (std::uint64_t team = 0; team < commanders && !_reader.Failed(); ++team)
+    {
+      Commander& commander = m_commanders.emplace_back();
+      commander.sender = _reader.ReadBits(64);
+      commander.ai = _reader.ReadBool();
+    }
+  }
+  if (_reader.Failed() || !m_commands.ReadState(_reader))
   {
     return false;
   }
@@ -441,6 +573,19 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
     {
       added.kills = static_cast<std::uint32_t>(_reader.ReadBits(32));
     }
+    if (_stateVersion >= STATE_VERSION_WITH_LEADERS)
+    {
+      added.selectedId = _reader.ReadBits(64);
+      added.selectedSlot = static_cast<std::uint32_t>(_reader.ReadBits(32));
+      if (!ReadVec3(_reader, added.pointer))
+      {
+        return false;
+      }
+    }
+  }
+  if (m_commanders.size() > m_teams.size())
+  {
+    return false; // a commander of a team the region does not hold
   }
   const bool withGrids = _stateVersion >= STATE_VERSION_WITH_GRIDS;
   if (withGrids && (!m_grid.ReadState(_reader) || !m_cache.ReadState(_reader)))
@@ -454,10 +599,26 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
   constexpr std::uint32_t POOL_CAPACITY_MAX = std::numeric_limits<std::uint32_t>::max();
   if (_stateVersion >= STATE_VERSION_WITH_WEAPONS &&
       (!m_bolts.ReadState(_reader, POOL_CAPACITY_MAX, [](Neuron::BitReader& _in, LaserBolt& _bolt) { return ReadLaserBolt(_in, _bolt); }) ||
-       !m_effects.ReadState(_reader, POOL_CAPACITY_MAX, [](Neuron::BitReader& _in, Effect& _effect) { return ReadEffect(_in, _effect); }) ||
+       !m_effects.ReadState(_reader, POOL_CAPACITY_MAX,
+                            [&](Neuron::BitReader& _in, Effect& _effect) { return ReadEffect(_in, _effect, _stateVersion); }) ||
        !m_orbs.ReadState(_reader, POOL_CAPACITY_MAX, [](Neuron::BitReader& _in, EssenceOrb& _orb) { return ReadOrb(_in, _orb); })))
   {
     return false;
+  }
+  // An order marker follows a route the region holds, from its first point to its last (R-UNIT-185).
+  for (std::uint32_t slot = 0; slot < m_effects.Capacity(); ++slot)
+  {
+    if (!m_effects.Used(slot))
+    {
+      continue;
+    }
+    const Effect& effect = m_effects.At(slot);
+    const std::vector<Neuron::Vec3>* route = m_routes.Find(effect.route);
+    if (effect.route == 0 ? effect.routePoint != -1
+                          : route == nullptr || effect.routePoint < 0 || std::cmp_greater_equal(effect.routePoint, route->size()))
+    {
+      return false;
+    }
   }
   // The entries follow from the figures: their recorded cells from version 4, their positions before it.
   const std::int32_t cells = m_grid.CellsPerAxis();

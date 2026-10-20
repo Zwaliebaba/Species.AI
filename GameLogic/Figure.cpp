@@ -21,9 +21,12 @@ Neuron::Vec3 DefaultFront(const TuningMvp& _tuning) noexcept
 }
 
 // The state's bounds of the enumerations it holds.
-constexpr std::uint64_t WORKER_STATE_MAX = static_cast<std::uint64_t>(WorkerState::Burning);
+constexpr std::uint64_t WORKER_STATE_MAX = static_cast<std::uint64_t>(WorkerState::FollowingLeader);
+constexpr std::uint64_t WORKER_STATE_MAX_BEFORE_LEADERS = static_cast<std::uint64_t>(WorkerState::Burning);
 constexpr std::uint64_t THREAT_KIND_MAX = static_cast<std::uint64_t>(ThreatKind::Grenade);
-constexpr std::uint64_t LEADER_STATE_MAX = static_cast<std::uint64_t>(LeaderState::ToWaypoint);
+constexpr std::uint64_t LEADER_STATE_MAX = static_cast<std::uint64_t>(LeaderState::GivingOrders);
+constexpr std::uint64_t LEADER_STATE_MAX_BEFORE_ORDERS = static_cast<std::uint64_t>(LeaderState::ToWaypoint);
+constexpr std::uint64_t LEADER_ORDER_MAX = static_cast<std::uint64_t>(LeaderOrder::Follow);
 
 } // namespace
 
@@ -89,12 +92,12 @@ Neuron::Vec3 SpawnFront(const Figure& _figure, const Neuron::Vec3& _velocity, co
   return Neuron::NormalizedOr({x, 0.0, z}, fallback);
 }
 
-HealthChange ApplyHealthChange(Figure& _figure, std::int32_t _amount, DamageKind _kind, const TuningMvp& _tuning)
+HealthChange ApplyHealthChange(Figure& _figure, std::int32_t _amount, DamageKind _kind, const TuningMvp& _tuning, bool _inFormation)
 {
   const auto& unit = _tuning.ref.unit;
   std::int32_t amount = _amount;
   // R-UNIT-116 step 3; the Shield, the Transport, Fury and the Visitor faction of steps 1, 2 and 4 are not built.
-  if (_figure.kind == FigureKind::Worker && _figure.inFormation && _kind == DamageKind::Explosive)
+  if (_figure.kind == FigureKind::Worker && _inFormation && _kind == DamageKind::Explosive)
   {
     amount = static_cast<std::int32_t>(static_cast<double>(amount) * unit.worker.formationExplosiveFactor);
   }
@@ -138,7 +141,6 @@ void WriteFigure(Neuron::BitWriter& _writer, const Figure& _figure)
   _writer.WriteBool(_figure.enabled);
   _writer.WriteBool(_figure.destroyed);
   _writer.WriteBool(_figure.dead);
-  _writer.WriteBool(_figure.inFormation);
   _writer.WriteBits(std::bit_cast<std::uint64_t>(_figure.radius), 64);
   WriteVec3(_writer, _figure.waypoint);
   _writer.WriteBounded(static_cast<std::uint64_t>(_figure.workerState), WORKER_STATE_MAX);
@@ -162,6 +164,25 @@ void WriteFigure(Neuron::BitWriter& _writer, const Figure& _figure)
   _writer.WriteBool(_figure.scared);
   _writer.WriteBool(_figure.threatSound);
   _writer.WriteSigned(_figure.grenadeTimerTicks, 32);
+  _writer.WriteBool(_figure.promoted);
+  _writer.WriteBool(_figure.underControl);
+  _writer.WriteBits(_figure.leaderId, 64);
+  _writer.WriteBits(_figure.leaderSlot, 32);
+  _writer.WriteSigned(_figure.followTimerTicks, 32);
+  _writer.WriteBounded(static_cast<std::uint64_t>(_figure.order), LEADER_ORDER_MAX);
+  _writer.WriteBool(_figure.demoted);
+  _writer.WriteBool(_figure.noFormations);
+  _writer.WriteBool(_figure.botTurn);
+  WriteVec3(_writer, _figure.botFront);
+  _writer.WriteBits(_figure.lastMarkerTick, 64);
+  _writer.WriteBool(_figure.formation);
+  _writer.WriteBool(_figure.formationAngleSet);
+  _writer.WriteBounded(_figure.slots.size(), FORMATION_SLOTS_STATE_MAX);
+  for (const FormationSlot& slot : _figure.slots)
+  {
+    _writer.WriteBits(slot.member, 64);
+    _writer.WriteSigned(slot.timerTicks, 32);
+  }
 }
 
 bool ReadFigure(Neuron::BitReader& _reader, Figure& _figure, std::uint32_t _stateVersion, const TuningMvp& _tuning)
@@ -181,7 +202,10 @@ bool ReadFigure(Neuron::BitReader& _reader, Figure& _figure, std::uint32_t _stat
   _figure.enabled = _reader.ReadBool();
   _figure.destroyed = _reader.ReadBool();
   _figure.dead = _reader.ReadBool();
-  _figure.inFormation = _reader.ReadBool();
+  if (_stateVersion < FIGURE_STATE_VERSION_LEADERS)
+  {
+    static_cast<void>(_reader.ReadBool()); // the formation flag, which nothing set before M1 task T7
+  }
   if (_stateVersion < FIGURE_STATE_VERSION_MOVEMENT)
   {
     // MVP-095: a figure saved before M1 task T4 stands where it was, Idle, with its kind's radius, registered nowhere.
@@ -191,8 +215,10 @@ bool ReadFigure(Neuron::BitReader& _reader, Figure& _figure, std::uint32_t _stat
   }
   finite = ReadDouble(_reader, _figure.radius) && finite;
   finite = ReadVec3(_reader, _figure.waypoint) && finite;
-  _figure.workerState = static_cast<WorkerState>(_reader.ReadBounded(WORKER_STATE_MAX));
-  _figure.leaderState = static_cast<LeaderState>(_reader.ReadBounded(LEADER_STATE_MAX));
+  _figure.workerState = static_cast<WorkerState>(
+    _reader.ReadBounded(_stateVersion < FIGURE_STATE_VERSION_LEADERS ? WORKER_STATE_MAX_BEFORE_LEADERS : WORKER_STATE_MAX));
+  _figure.leaderState = static_cast<LeaderState>(
+    _reader.ReadBounded(_stateVersion < FIGURE_STATE_VERSION_LEADERS ? LEADER_STATE_MAX_BEFORE_ORDERS : LEADER_STATE_MAX));
   _figure.retargetTimerTicks = static_cast<std::int32_t>(_reader.ReadSigned(32));
   _figure.inWaterTicks = static_cast<std::int32_t>(_reader.ReadSigned(32));
   _figure.orderSet = _reader.ReadBool();
@@ -225,6 +251,33 @@ bool ReadFigure(Neuron::BitReader& _reader, Figure& _figure, std::uint32_t _stat
   _figure.scared = _reader.ReadBool();
   _figure.threatSound = _reader.ReadBool();
   _figure.grenadeTimerTicks = static_cast<std::int32_t>(_reader.ReadSigned(32));
+  if (_stateVersion < FIGURE_STATE_VERSION_LEADERS)
+  {
+    return !_reader.Failed() && finite && _figure.id != 0; // MVP-095: no Leader followed, no order and no formation
+  }
+  _figure.promoted = _reader.ReadBool();
+  _figure.underControl = _reader.ReadBool();
+  _figure.leaderId = _reader.ReadBits(64);
+  _figure.leaderSlot = static_cast<std::uint32_t>(_reader.ReadBits(32));
+  _figure.followTimerTicks = static_cast<std::int32_t>(_reader.ReadSigned(32));
+  _figure.order = static_cast<LeaderOrder>(_reader.ReadBounded(LEADER_ORDER_MAX));
+  _figure.demoted = _reader.ReadBool();
+  _figure.noFormations = _reader.ReadBool();
+  _figure.botTurn = _reader.ReadBool();
+  finite = ReadVec3(_reader, _figure.botFront) && finite;
+  _figure.lastMarkerTick = _reader.ReadBits(64);
+  _figure.formation = _reader.ReadBool();
+  _figure.formationAngleSet = _reader.ReadBool();
+  const std::uint64_t slots = _reader.ReadBounded(FORMATION_SLOTS_STATE_MAX);
+  _figure.slots.clear();
+  _figure.slots.reserve(static_cast<std::size_t>(slots));
+  for (std::uint64_t index = 0; index < slots && !_reader.Failed(); ++index)
+  {
+    FormationSlot slot;
+    slot.member = _reader.ReadBits(64);
+    slot.timerTicks = static_cast<std::int32_t>(_reader.ReadSigned(32));
+    _figure.slots.push_back(slot);
+  }
   return !_reader.Failed() && finite && _figure.id != 0;
 }
 

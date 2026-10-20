@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "DrawPurpose.h"
+#include "OrderMarkers.h"
 #include "RegionSimulation.h"
 #include "StateValues.h"
 #include "Weapons.h"
@@ -15,7 +16,10 @@ namespace Species
 namespace
 {
 
-constexpr std::uint64_t EFFECT_KIND_MAX = static_cast<std::uint64_t>(EffectKind::ShockwaveRing);
+constexpr std::uint64_t EFFECT_KIND_MAX = static_cast<std::uint64_t>(EffectKind::OrderTrailMark);
+constexpr std::uint64_t EFFECT_KIND_MAX_BEFORE_MARKERS = static_cast<std::uint64_t>(EffectKind::ShockwaveRing);
+// The first state version whose effects hold a marker's route (M1 task T7).
+constexpr std::uint32_t EFFECT_STATE_VERSION_MARKERS = 7;
 
 // The horizontal distance from _point to the segment from _a to _b (R-CRATE-441 step 7's 2-D distance).
 double SegmentDistance2D(const Neuron::Vec3& _point, const Neuron::Vec3& _a, const Neuron::Vec3& _b) noexcept
@@ -282,9 +286,16 @@ bool AdvanceLaserBolt(RegionSimulation& _region, LaserBolt& _bolt)
 
 bool AdvanceEffect(RegionSimulation& _region, Effect& _effect)
 {
-  if (_effect.kind == EffectKind::ShockwaveRing)
+  switch (_effect.kind)
   {
+  case EffectKind::ShockwaveRing:
     return RingStep(_region, _effect);
+  case EffectKind::OrderMarker:
+    return AdvanceOrderMarker(_region, _effect);
+  case EffectKind::OrderTrailMark:
+    return AdvanceTrailMark(_region, _effect);
+  case EffectKind::Grenade:
+    break;
   }
   // R-CRATE-415: the fuse counts down before the throw physics; at 0 the grenade explodes and is removed.
   --_effect.fuseTicks;
@@ -334,12 +345,17 @@ void WriteEffect(Neuron::BitWriter& _writer, const Effect& _effect)
   _writer.WriteSigned(_effect.fuseTicks, 32);
   WriteDouble(_writer, _effect.sizeSeconds);
   _writer.WriteSigned(_effect.activeTick, 32);
+  _writer.WriteBits(_effect.route, 32);
+  _writer.WriteSigned(_effect.routePoint, 32);
+  _writer.WriteBool(_effect.arrived);
+  _writer.WriteBits(_effect.createdTick, 64);
 }
 
-bool ReadEffect(Neuron::BitReader& _reader, Effect& _effect)
+bool ReadEffect(Neuron::BitReader& _reader, Effect& _effect, std::uint32_t _stateVersion)
 {
+  const bool markers = _stateVersion >= EFFECT_STATE_VERSION_MARKERS;
   _effect.id = _reader.ReadBits(64);
-  _effect.kind = static_cast<EffectKind>(_reader.ReadBounded(EFFECT_KIND_MAX));
+  _effect.kind = static_cast<EffectKind>(_reader.ReadBounded(markers ? EFFECT_KIND_MAX : EFFECT_KIND_MAX_BEFORE_MARKERS));
   _effect.team = static_cast<std::uint8_t>(_reader.ReadBits(8));
   bool finite = ReadVec3(_reader, _effect.position);
   finite = ReadVec3(_reader, _effect.velocity) && finite;
@@ -348,6 +364,13 @@ bool ReadEffect(Neuron::BitReader& _reader, Effect& _effect)
   _effect.fuseTicks = static_cast<std::int32_t>(_reader.ReadSigned(32));
   finite = ReadDouble(_reader, _effect.sizeSeconds) && finite;
   _effect.activeTick = static_cast<std::int32_t>(_reader.ReadSigned(32));
+  if (markers)
+  {
+    _effect.route = static_cast<RouteHandle>(_reader.ReadBits(32));
+    _effect.routePoint = static_cast<std::int32_t>(_reader.ReadSigned(32));
+    _effect.arrived = _reader.ReadBool();
+    _effect.createdTick = _reader.ReadBits(64);
+  }
   // A ring's size divides its strength.
   return !_reader.Failed() && finite && _effect.id != 0 && (_effect.kind != EffectKind::ShockwaveRing || _effect.sizeSeconds > 0.0);
 }
