@@ -65,12 +65,13 @@ public:
     // each region writes its team slots after its commands (R-SIM-221), none in this empty world. Changed by M1 task
     // T3: the world owner writes the world seed after the tick (ADR-102), seed 0 here. Changed by M1 task T4: each
     // region writes its actor grid's capacities and its cache after its teams (ADR-103), none in this empty world.
+    // Changed by M1 task T5: each region writes its routes after its cache (ADR-104), none here.
     const GoldenRun one = Run600Ticks(1, 0);
-    Assert::IsTrue(one.last == 0x19145cd398e0d991, L"the hash after 600 ticks of one region");
-    Assert::IsTrue(one.chain == 0x5dfec24a57a206fb, L"the chain of 600 tick hashes of one region");
+    Assert::IsTrue(one.last == 0x178e033c40d88d2d, L"the hash after 600 ticks of one region");
+    Assert::IsTrue(one.chain == 0xec9b8f8bcba40b4f, L"the chain of 600 tick hashes of one region");
     const GoldenRun three = Run600Ticks(3, 0);
-    Assert::IsTrue(three.last == 0xbb9d9f9c8d1ead6c, L"the hash after 600 ticks of three regions");
-    Assert::IsTrue(three.chain == 0x63d78142872aa94a, L"the chain of 600 tick hashes of three regions");
+    Assert::IsTrue(three.last == 0xec1dd87ec7a898f2, L"the hash after 600 ticks of three regions");
+    Assert::IsTrue(three.chain == 0x05f38f132348dcbd, L"the chain of 600 tick hashes of three regions");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp093TheHashesAgreeAtAnyWorkerCount)

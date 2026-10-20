@@ -4,6 +4,7 @@
 #include "BitReader.h"
 #include "BitWriter.h"
 #include "FigureKind.h"
+#include "RouteStore.h"
 #include "StableId.h"
 #include "TickDraws.h"
 #include "TuningMvp.h"
@@ -71,6 +72,9 @@ struct Figure
   bool playerOrders = false;           // R-UNIT-089: the player-orders flag
   Neuron::Vec3 orderPosition;          // R-UNIT-111: the pending order's position
   CellRect cells;                      // R-SIM-308, DEC-650: the cells it is registered over; empty when registered nowhere
+  // From state version 5 (M1 task T5):
+  RouteHandle route = 0;        // R-UNIT-110: the route it follows; 0 for none
+  std::int32_t routePoint = -1; // the route point it walks to; −1 before the start
 };
 
 // R-UNIT-011 and R-UNIT-015 (R-SIM-109): sets the kind, the stats of the stat table, the actor-grid radius
@@ -98,10 +102,11 @@ HealthChange ApplyHealthChange(Figure& _figure, std::int32_t _amount, DamageKind
 void WriteFigure(Neuron::BitWriter& _writer, const Figure& _figure);
 // The values WriteFigure wrote in a snapshot of _stateVersion; false when they do not read whole or name no kind. A
 // figure of a version before 4 takes the fields that version 4 added at their spawn values, its waypoint at its
-// position and its radius from its kind, registered nowhere until its region registers it.
+// position and its radius from its kind, registered nowhere until its region registers it; one before 5 follows no route.
 [[nodiscard]] bool ReadFigure(Neuron::BitReader& _reader, Figure& _figure, std::uint32_t _stateVersion, const TuningMvp& _tuning);
 
-// The first state version whose figures hold the fields of M1 task T4.
+// The first state versions whose figures hold the fields of M1 tasks T4 and T5.
 inline constexpr std::uint32_t FIGURE_STATE_VERSION_MOVEMENT = 4;
+inline constexpr std::uint32_t FIGURE_STATE_VERSION_ROUTES = 5;
 
 } // namespace Species

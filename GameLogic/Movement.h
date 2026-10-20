@@ -3,6 +3,7 @@
 #include "DrawPurpose.h"
 #include "Figure.h"
 #include "ObstacleGrid.h"
+#include "RouteStore.h"
 #include "TerrainField.h"
 #include "TickDraws.h"
 #include "TuningMvp.h"
@@ -12,13 +13,15 @@ namespace Species
 {
 
 /// What the movement rules read of their region (R-SIM-360 to R-SIM-389, ADR-103): the tuning record, the region's
-/// terrain and obstacle grid, the tick's draws and the region's square, which is the map of R-SIM-366 and R-SIM-368.
+/// terrain and obstacle grid, the tick's draws, its routes (ADR-104) and the region's square, which is the map of
+/// R-SIM-366 and R-SIM-368.
 struct MovementContext
 {
   const TuningMvp* tuning = nullptr;
   const Neuron::TerrainField* terrain = nullptr;
   const ObstacleGrid* obstacles = nullptr;
   TickDraws* draws = nullptr;
+  const RouteStore* routes = nullptr;
   double minX = 0.0;
   double minZ = 0.0;
   double maxX = 0.0;

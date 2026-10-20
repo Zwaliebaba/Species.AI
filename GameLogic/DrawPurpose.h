@@ -19,7 +19,9 @@ enum class DrawPurpose : std::uint64_t
   ShoreMove = 7,     // R-SIM-379, R-UNIT-112: the shore search of the push of a figure's own move
   ShoreFall = 8,     // R-SIM-371: the shore search of the airborne step's discarded push
   ShoreWander = 9,   // R-UNIT-097: the shore search of the random-position search's push
-  ShoreOrder = 10    // R-UNIT-111: the shore search of a waypoint order's push
+  ShoreOrder = 10,   // R-UNIT-111: the shore search of a waypoint order's push
+  RouteJitter = 11,  // R-UNIT-110: the jitter of a route's next waypoint
+  ShoreRoute = 12    // R-UNIT-110: the shore search of that waypoint's push
 };
 
 [[nodiscard]] constexpr std::uint64_t PurposeOf(DrawPurpose _purpose) noexcept

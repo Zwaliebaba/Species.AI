@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdint>
 #include <numbers>
+#include <vector>
 
 namespace Species
 {
@@ -101,6 +102,7 @@ bool WorkerAdvance(Figure& _figure, const MovementContext& _context)
       static_cast<void>(WorkerMoveToWaypoint(_figure, true, _context));
       break;
     case WorkerState::OnWaypointOrder:
+      FollowRoute(_figure, _context);
       if (WorkerMoveToWaypoint(_figure, false, _context))
       {
         // R-UNIT-073: arrival without a teleport structure.
@@ -188,7 +190,47 @@ bool AdvanceFigure(Figure& _figure, const MovementContext& _context)
   return _figure.kind == FigureKind::Worker ? WorkerAdvance(_figure, _context) : LeaderAdvance(_figure, _context);
 }
 
-void GiveWaypointOrder(Figure& _worker, const Neuron::Vec3& _target, const MovementContext& _context)
+void FollowRoute(Figure& _worker, const MovementContext& _context)
+{
+  if (_worker.route == 0)
+  {
+    return;
+  }
+  const std::vector<Neuron::Vec3>* points = _context.routes != nullptr ? _context.routes->Find(_worker.route) : nullptr;
+  const auto& worker = _context.tuning->ref.unit.worker;
+  std::int32_t next = 0;
+  if (points == nullptr)
+  {
+    next = -1;
+  }
+  else if (_worker.routePoint < 0)
+  {
+    next = 1;
+  }
+  else if (Neuron::HorizontalDistance(_worker.position, _worker.waypoint) <= worker.routeReachRadius)
+  {
+    next = _worker.routePoint + 1;
+  }
+  else
+  {
+    return;
+  }
+  if (points == nullptr || static_cast<std::size_t>(next) >= points->size())
+  {
+    _worker.route = 0;
+    _worker.routePoint = -1;
+    return;
+  }
+  _worker.routePoint = next;
+  Neuron::SimRng& draw = _context.draws->For(DrawPurpose::RouteJitter, _worker.id);
+  const double radius = draw.NextUnit(worker.routeJitterRadius);
+  const double angle = draw.NextUnit(TWO_PI);
+  const Neuron::Vec3& point = (*points)[static_cast<std::size_t>(next)];
+  _worker.waypoint = WorkerPush(_worker, {point.x + std::cos(angle) * radius, point.y, point.z + std::sin(angle) * radius},
+                                DrawPurpose::ShoreRoute, _context);
+}
+
+void GiveWaypointOrder(Figure& _worker, const Neuron::Vec3& _target, RouteHandle _route, const MovementContext& _context)
 {
   const auto& worker = _context.tuning->ref.unit.worker;
   _worker.orderPosition = _target;
@@ -198,6 +240,8 @@ void GiveWaypointOrder(Figure& _worker, const Neuron::Vec3& _target, const Movem
   const double angle = draw.NextUnit(TWO_PI);
   const Neuron::Vec3 point{_target.x + std::cos(angle) * radius, _target.y, _target.z + std::sin(angle) * radius};
   _worker.waypoint = WorkerPush(_worker, point, DrawPurpose::ShoreOrder, _context);
+  _worker.route = _route;
+  _worker.routePoint = -1;
   _worker.workerState = WorkerState::OnWaypointOrder;
 }
 

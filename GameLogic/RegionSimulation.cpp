@@ -63,8 +63,10 @@ template <class Teams> auto* ResolveIn(Teams& _teams, const ActorRef& _ref)
   return figure.id == _ref.id ? &figure : static_cast<Result>(nullptr);
 }
 
-// The first state version whose regions hold the actor grid's capacities and the cache (M1 task T4).
+// The first state versions whose regions hold the actor grid's capacities and the cache (M1 task T4), and the routes
+// (M1 task T5).
 constexpr std::uint32_t STATE_VERSION_WITH_GRIDS = 4;
+constexpr std::uint32_t STATE_VERSION_WITH_ROUTES = 5;
 
 } // namespace
 
@@ -117,6 +119,7 @@ MovementContext RegionSimulation::Movement()
   context.terrain = m_terrain ? &m_terrain->field : nullptr;
   context.obstacles = &m_obstacles;
   context.draws = &m_draws;
+  context.routes = &m_routes;
   context.minX = m_originX;
   context.minZ = m_originZ;
   context.maxX = m_originX + m_side;
@@ -232,6 +235,13 @@ std::vector<ActorRef> RegionSimulation::CachedEnemies(double _x, double _z, doub
   return m_cache.CachedEnemies(_x, _z, _range, _team, m_nextTick, [&] { return InRange(_x, _z, _range, EnemiesOf(_team)); });
 }
 
+RouteHandle RegionSimulation::BuildRoute(const Neuron::Vec3& _from, const Neuron::Vec3& _to, bool _directRoute, bool _permitClimbing,
+                                         bool _noRounding)
+{
+  ENGINE_CHECK(m_terrain != nullptr, "region {} builds a route with no terrain", m_index);
+  return m_routes.Add(m_terrain->routes.BuildRoute(_from, _to, _directRoute, _permitClimbing, _noRounding, m_terrain->field, *m_tuning));
+}
+
 void RegionSimulation::Step(std::uint64_t _tick)
 {
   ENGINE_ASSERT(_tick == m_nextTick);
@@ -299,6 +309,7 @@ void RegionSimulation::WriteState(Neuron::BitWriter& _writer) const
   }
   m_grid.WriteState(_writer);
   m_cache.WriteState(_writer);
+  m_routes.WriteState(_writer);
 }
 
 bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stateVersion)
@@ -318,6 +329,7 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
   m_teams.clear();
   m_grid = ActorGrid(ActorGridDescOf(*m_tuning));
   m_cache = ActorGridCache({m_tuning->ref.sim.gridCache.reuseFraction, static_cast<std::uint64_t>(m_tuning->ref.sim.gridCache.maxAge)});
+  m_routes = RouteStore();
   // ADR-099, MVP-095: a version-1 region migrates to one with no teams.
   if (_stateVersion == STATE_VERSION_WITHOUT_TEAMS)
   {
@@ -344,6 +356,10 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
   {
     return false;
   }
+  if (_stateVersion >= STATE_VERSION_WITH_ROUTES && !m_routes.ReadState(_reader))
+  {
+    return false;
+  }
   // The entries follow from the figures: their recorded cells from version 4, their positions before it.
   const std::int32_t cells = m_grid.CellsPerAxis();
   for (std::size_t team = 0; team < m_teams.size(); ++team)
@@ -356,6 +372,13 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
         continue;
       }
       Figure& figure = figures.At(slot);
+      // A figure follows a route the region holds, from before its first point to its last, or follows none.
+      const std::vector<Neuron::Vec3>* route = m_routes.Find(figure.route);
+      if (figure.route == 0 ? figure.routePoint != -1
+                            : route == nullptr || figure.routePoint < -1 || std::cmp_greater_equal(figure.routePoint, route->size()))
+      {
+        return false;
+      }
       if (!withGrids && figure.enabled)
       {
         figure.cells = m_grid.SquareOf(figure.position.x, figure.position.z, figure.radius * m_tuning->ref.sim.actorGrid.footprintFactor);

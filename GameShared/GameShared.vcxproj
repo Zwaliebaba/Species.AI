@@ -146,6 +146,7 @@
   <ItemGroup>
     <ClInclude Include="FigureKind.h" />
     <ClInclude Include="GameMessages.h" />
+    <ClInclude Include="Navigation.h" />
     <ClInclude Include="RegionTerrain.h" />
     <ClInclude Include="StableId.h" />
     <ClInclude Include="TickReport.h" />
@@ -155,6 +156,7 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Navigation.cpp" />
     <ClCompile Include="RegionTerrain.cpp" />
     <ClCompile Include="TickReport.cpp" />
     <ClCompile Include="Tuning.cpp" />

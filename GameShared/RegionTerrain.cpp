@@ -206,6 +206,7 @@ RegionTerrain BuildRegionTerrain(std::uint64_t _seed, std::uint32_t _attempt, co
     }
   }
   region.digest = all.Finish();
+  region.routes = LandRouteGraph::Build(PlaceNavigationNodes(region.layout, region.field, _tuning), region.field, _tuning);
   return region;
 }
 
@@ -359,6 +360,35 @@ std::vector<TerrainCheck> CheckRegionTerrain(const RegionTerrain& _terrain, cons
   if (!reachable)
   {
     failed.push_back(TerrainCheck::Reachability);
+  }
+
+  // 8: the land route between the two ends of every edge of the travel network inside the region, each pair of valley
+  // neighbours and each site with the central resource site (WLD-100), is no longer than the edge (ADR-104).
+  const auto onTerrain = [&](const Neuron::Vec3& _p) { return Neuron::Vec3{_p.x, field.Height(_p.x, _p.z), _p.z}; };
+  std::vector<std::pair<Neuron::Vec3, Neuron::Vec3>> edges;
+  for (const auto& [a, b] : {std::pair<std::size_t, std::size_t>{0, 1}, {2, 3}, {0, 2}, {1, 3}})
+  {
+    edges.emplace_back(layout.sites[a], layout.sites[b]);
+  }
+  for (const Neuron::Vec3& center : layout.sites)
+  {
+    edges.emplace_back(center, layout.valleyCenter);
+  }
+  const double factor = _tuning.wld.travel.valleyPathFactor;
+  bool routes = true;
+  for (const auto& [from, to] : edges)
+  {
+    const std::vector<Neuron::Vec3> route = _terrain.routes.BuildRoute(onTerrain(from), onTerrain(to), false, true, false, field, _tuning);
+    double length = 0.0;
+    for (std::size_t n = 1; n < route.size(); ++n)
+    {
+      length += Neuron::Length(route[n] - route[n - 1]);
+    }
+    routes = routes && length <= Neuron::HorizontalDistance(from, to) * factor;
+  }
+  if (!routes)
+  {
+    failed.push_back(TerrainCheck::Routes);
   }
   return failed;
 }

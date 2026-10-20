@@ -9,6 +9,7 @@
 #include "Movement.h"
 #include "ObstacleGrid.h"
 #include "RegionTerrain.h"
+#include "RouteStore.h"
 #include "SlicedPool.h"
 #include "StableId.h"
 #include "StableIdCounter.h"
@@ -104,6 +105,14 @@ public:
   {
     return m_obstacles;
   }
+  // R-SIM-345 and R-SIM-352: a route over the region's land route graph, stored under the next handle (ADR-104). It
+  // needs the region's terrain.
+  RouteHandle BuildRoute(const Neuron::Vec3& _from, const Neuron::Vec3& _to, bool _directRoute, bool _permitClimbing = true,
+                         bool _noRounding = false);
+  [[nodiscard]] const RouteStore& Routes() const noexcept
+  {
+    return m_routes;
+  }
   // The movement rules' view of the region at its next tick: inside a step, the tick being stepped (ADR-103).
   [[nodiscard]] MovementContext Movement();
 
@@ -180,6 +189,7 @@ private:
   ActorGrid m_grid;
   ActorGridCache m_cache;
   ObstacleGrid m_obstacles;
+  RouteStore m_routes;
 #if ENGINE_DEVELOPMENT
   AdvanceObserver m_advanceObserver;
 #endif

@@ -1241,6 +1241,27 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "nav": {
+          "type": "object",
+          "description": "the mvp.nav.* keys",
+          "properties": {
+            "node_spacing": {
+              "type": "number",
+              "description": "mvp.nav.node_spacing (MVP-017)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "node_spacing"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
@@ -1276,7 +1297,8 @@
         "persist",
         "client",
         "terrain",
-        "unit"
+        "unit",
+        "nav"
       ],
       "additionalProperties": false,
       "x-species-type": "object",
@@ -1458,10 +1480,70 @@
                   "x-species-type": "sim_decimal",
                   "x-species-unit": "normal y component",
                   "x-species-presence": "required"
+                },
+                "step": {
+                  "type": "number",
+                  "description": "ref.sim.walk.step (R-SIM-335)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "wet_limit": {
+                  "type": "number",
+                  "description": "ref.sim.walk.wet_limit (R-SIM-335, R-SIM-378)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "max_climb_gradient": {
+                  "type": "number",
+                  "description": "ref.sim.walk.max_climb_gradient (R-SIM-335, R-SIM-336)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "rise per step",
+                  "x-species-presence": "required"
+                },
+                "cost_step": {
+                  "type": "number",
+                  "description": "ref.sim.walk.cost_step (R-SIM-338)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "cost_wet_limit": {
+                  "type": "number",
+                  "description": "ref.sim.walk.cost_wet_limit (R-SIM-338, R-SIM-378)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "uphill_factor": {
+                  "type": "number",
+                  "description": "ref.sim.walk.uphill_factor (R-SIM-338)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times gradient",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
-                "min_normal_y"
+                "min_normal_y",
+                "step",
+                "wet_limit",
+                "max_climb_gradient",
+                "cost_step",
+                "cost_wet_limit",
+                "uphill_factor"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -1742,6 +1824,66 @@
               "additionalProperties": false,
               "x-species-type": "object",
               "x-species-presence": "required"
+            },
+            "route": {
+              "type": "object",
+              "description": "the ref.sim.route.* keys",
+              "properties": {
+                "link_range": {
+                  "type": "number",
+                  "description": "ref.sim.route.link_range (R-SIM-339)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "corridor_offset": {
+                  "type": "number",
+                  "description": "ref.sim.route.corridor_offset (R-SIM-347, R-SIM-349)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "max_points": {
+                  "type": "integer",
+                  "description": "ref.sim.route.max_points (R-SIM-348)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "points",
+                  "x-species-presence": "required"
+                },
+                "smoothing_step": {
+                  "type": "number",
+                  "description": "ref.sim.route.smoothing_step (R-SIM-349)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "merge_distance": {
+                  "type": "number",
+                  "description": "ref.sim.route.merge_distance (R-SIM-350)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "link_range",
+                "corridor_offset",
+                "max_points",
+                "smoothing_step",
+                "merge_distance"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
             }
           },
           "required": [
@@ -1755,7 +1897,8 @@
             "grid_cache",
             "obstacle_grid",
             "water",
-            "push"
+            "push",
+            "route"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -2010,6 +2153,24 @@
                   "x-species-type": "sim_decimal",
                   "x-species-unit": "wu",
                   "x-species-presence": "required"
+                },
+                "route_reach_radius": {
+                  "type": "number",
+                  "description": "ref.unit.worker.route_reach_radius (R-UNIT-110)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "route_jitter_radius": {
+                  "type": "number",
+                  "description": "ref.unit.worker.route_jitter_radius (R-UNIT-110)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
@@ -2036,7 +2197,9 @@
                 "shore_search_step",
                 "structure_push_range",
                 "structure_push_step",
-                "structure_clear_radius"
+                "structure_clear_radius",
+                "route_reach_radius",
+                "route_jitter_radius"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -2499,13 +2662,57 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "territory": {
+          "type": "object",
+          "description": "the wld.territory.* keys",
+          "properties": {
+            "max_radius": {
+              "type": "number",
+              "description": "wld.territory.max_radius (WLD-060, WLD-062)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "max_radius"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "travel": {
+          "type": "object",
+          "description": "the wld.travel.* keys",
+          "properties": {
+            "valley_path_factor": {
+              "type": "number",
+              "description": "wld.travel.valley_path_factor (WLD-100)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times the straight distance",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "valley_path_factor"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
         "region",
         "site",
         "terrain",
-        "generation"
+        "generation",
+        "territory",
+        "travel"
       ],
       "additionalProperties": false,
       "x-species-type": "object",

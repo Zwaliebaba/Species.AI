@@ -25,8 +25,14 @@ namespace Species
 [[nodiscard]] bool AdvanceFigure(Figure& _figure, const MovementContext& _context);
 
 // R-UNIT-111 for what the MVP builds so far: a waypoint order to _target, its disc point passed through the Worker's
-// push with kill clear (R-UNIT-115). Its route arrives with T5; the MVP has no Transport, carryable or Beam Dish.
-void GiveWaypointOrder(Figure& _worker, const Neuron::Vec3& _target, const MovementContext& _context);
+// push with kill clear (R-UNIT-115), and the route to follow, before its start; the MVP has no Transport, carryable or
+// Beam Dish.
+void GiveWaypointOrder(Figure& _worker, const Neuron::Vec3& _target, RouteHandle _route, const MovementContext& _context);
+
+// R-UNIT-110: the Worker's route following in OnWaypointOrder; the first step jumps to route point 1, and each later
+// one comes within the reach radius, each new waypoint jittered and pushed with kill clear; past the end the route is
+// cleared and the waypoint keeps its last point. A route the store does not hold is cleared (R-SIM-354).
+void FollowRoute(Figure& _worker, const MovementContext& _context);
 
 // R-UNIT-166: the Leader walks to _waypoint and becomes Idle there; its orders come with T7.
 void SendLeaderTo(Figure& _leader, const Neuron::Vec3& _waypoint) noexcept;

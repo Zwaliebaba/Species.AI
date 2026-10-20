@@ -159,6 +159,8 @@ void WriteFigure(Neuron::BitWriter& _writer, const Figure& _figure)
   _writer.WriteSigned(_figure.cells.z0, 32);
   _writer.WriteSigned(_figure.cells.x1, 32);
   _writer.WriteSigned(_figure.cells.z1, 32);
+  _writer.WriteBits(_figure.route, 32);
+  _writer.WriteSigned(_figure.routePoint, 32);
 }
 
 bool ReadFigure(Neuron::BitReader& _reader, Figure& _figure, std::uint32_t _stateVersion, const TuningMvp& _tuning)
@@ -199,6 +201,11 @@ bool ReadFigure(Neuron::BitReader& _reader, Figure& _figure, std::uint32_t _stat
   _figure.cells.z0 = static_cast<std::int32_t>(_reader.ReadSigned(32));
   _figure.cells.x1 = static_cast<std::int32_t>(_reader.ReadSigned(32));
   _figure.cells.z1 = static_cast<std::int32_t>(_reader.ReadSigned(32));
+  if (_stateVersion >= FIGURE_STATE_VERSION_ROUTES)
+  {
+    _figure.route = static_cast<RouteHandle>(_reader.ReadBits(32));
+    _figure.routePoint = static_cast<std::int32_t>(_reader.ReadSigned(32));
+  }
   return !_reader.Failed() && finite && _figure.id != 0;
 }
 

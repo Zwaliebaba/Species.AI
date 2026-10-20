@@ -131,6 +131,7 @@ public:
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Wld163EachCheckRefusesWhatItGuards)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"WLD-163")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"WLD-100")
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Wld163EachCheckRefusesWhatItGuards)
   {
@@ -149,6 +150,7 @@ public:
     failsOnly(Species::TerrainCheck::Rims, [](Species::TuningMvp& _t) { _t.wld.site.rimStepMax = -1.0; });
     failsOnly(Species::TerrainCheck::DrySites, [](Species::TuningMvp& _t) { _t.wld.site.waterClearance = 2500.0; });
     failsOnly(Species::TerrainCheck::Reachability, [](Species::TuningMvp& _t) { _t.ref.sim.walk.minNormalY = 2.0; });
+    failsOnly(Species::TerrainCheck::Routes, [](Species::TuningMvp& _t) { _t.wld.travel.valleyPathFactor = 0.5; });
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Wld166TheDigestIsTheDigestOfItsChunks)

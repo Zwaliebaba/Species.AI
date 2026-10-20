@@ -156,6 +156,9 @@
     },
     "unit": {
       "leader_mesh_radius": 6.7252
+    },
+    "nav": {
+      "node_spacing": 320
     }
   },
   "ref": {
@@ -181,7 +184,13 @@
         "land_offset": 0.1
       },
       "walk": {
-        "min_normal_y": 0.8
+        "min_normal_y": 0.8,
+        "step": 20,
+        "wet_limit": 40,
+        "max_climb_gradient": 2.4,
+        "cost_step": 40,
+        "cost_wet_limit": 40,
+        "uphill_factor": 1.5
       },
       "actor_grid": {
         "cell_size": 32,
@@ -215,6 +224,13 @@
         "contact_radius": 1.0,
         "step": 4.0,
         "clearance_radius": 2.0
+      },
+      "route": {
+        "link_range": 600,
+        "corridor_offset": 40,
+        "max_points": 100,
+        "smoothing_step": 50,
+        "merge_distance": 50
       }
     },
     "unit": {
@@ -246,7 +262,9 @@
         "shore_search_step": 5,
         "structure_push_range": 30,
         "structure_push_step": 4,
-        "structure_clear_radius": 2
+        "structure_clear_radius": 2,
+        "route_reach_radius": 20,
+        "route_jitter_radius": 40
       },
       "leader": {
         "health": 255,
@@ -300,6 +318,12 @@
     },
     "generation": {
       "max_attempts": 8
+    },
+    "territory": {
+      "max_radius": 1400
+    },
+    "travel": {
+      "valley_path_factor": 1.15
     }
   }
 }

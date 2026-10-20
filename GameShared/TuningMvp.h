@@ -383,6 +383,12 @@ struct TuningMvp
       double leaderMeshRadius = 0.0;
     };
 
+    struct Nav
+    {
+      // mvp.nav.node_spacing, in wu
+      double nodeSpacing = 0.0;
+    };
+
     Pace pace;
     World world;
     Vision vision;
@@ -416,6 +422,7 @@ struct TuningMvp
     Client client;
     Terrain terrain;
     Unit unit;
+    Nav nav;
   };
 
   struct Ref
@@ -469,6 +476,24 @@ struct TuningMvp
       {
         // ref.sim.walk.min_normal_y, in normal y component
         double minNormalY = 0.0;
+
+        // ref.sim.walk.step, in wu
+        double step = 0.0;
+
+        // ref.sim.walk.wet_limit, in wu
+        double wetLimit = 0.0;
+
+        // ref.sim.walk.max_climb_gradient, in rise per step
+        double maxClimbGradient = 0.0;
+
+        // ref.sim.walk.cost_step, in wu
+        double costStep = 0.0;
+
+        // ref.sim.walk.cost_wet_limit, in wu
+        double costWetLimit = 0.0;
+
+        // ref.sim.walk.uphill_factor, in times gradient
+        double uphillFactor = 0.0;
       };
 
       struct ActorGrid
@@ -555,6 +580,24 @@ struct TuningMvp
         double clearanceRadius = 0.0;
       };
 
+      struct Route
+      {
+        // ref.sim.route.link_range, in wu
+        double linkRange = 0.0;
+
+        // ref.sim.route.corridor_offset, in wu
+        double corridorOffset = 0.0;
+
+        // ref.sim.route.max_points, in points
+        std::int64_t maxPoints = 0;
+
+        // ref.sim.route.smoothing_step, in wu
+        double smoothingStep = 0.0;
+
+        // ref.sim.route.merge_distance, in wu
+        double mergeDistance = 0.0;
+      };
+
       // ref.sim.tick_period, in s
       double tickPeriod = 0.0;
 
@@ -570,6 +613,7 @@ struct TuningMvp
       ObstacleGrid obstacleGrid;
       Water water;
       Push push;
+      Route route;
     };
 
     struct Unit
@@ -654,6 +698,12 @@ struct TuningMvp
 
         // ref.unit.worker.structure_clear_radius, in wu
         double structureClearRadius = 0.0;
+
+        // ref.unit.worker.route_reach_radius, in wu
+        double routeReachRadius = 0.0;
+
+        // ref.unit.worker.route_jitter_radius, in wu
+        double routeJitterRadius = 0.0;
       };
 
       struct Leader
@@ -802,10 +852,24 @@ struct TuningMvp
       std::int64_t maxAttempts = 0;
     };
 
+    struct Territory
+    {
+      // wld.territory.max_radius, in wu
+      double maxRadius = 0.0;
+    };
+
+    struct Travel
+    {
+      // wld.travel.valley_path_factor, in times the straight distance
+      double valleyPathFactor = 0.0;
+    };
+
     Region region;
     Site site;
     Terrain terrain;
     Generation generation;
+    Territory territory;
+    Travel travel;
   };
 
   Mvp mvp;
@@ -1066,6 +1130,12 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::Nav& _out)
+{
+  _out.nodeSpacing = _reader.Decimal(_object, "node_spacing", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "pace"), _out.pace);
@@ -1101,6 +1171,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "client"), _out.client);
   ReadFields(_reader, _reader.Object(_object, "terrain"), _out.terrain);
   ReadFields(_reader, _reader.Object(_object, "unit"), _out.unit);
+  ReadFields(_reader, _reader.Object(_object, "nav"), _out.nav);
   _reader.Close(_object);
 }
 
@@ -1138,6 +1209,12 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim::Walk& _out)
 {
   _out.minNormalY = _reader.Decimal(_object, "min_normal_y", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.step = _reader.Decimal(_object, "step", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.wetLimit = _reader.Decimal(_object, "wet_limit", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.maxClimbGradient = _reader.Decimal(_object, "max_climb_gradient", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.costStep = _reader.Decimal(_object, "cost_step", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.costWetLimit = _reader.Decimal(_object, "cost_wet_limit", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.uphillFactor = _reader.Decimal(_object, "uphill_factor", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -1189,6 +1266,16 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim::Route& _out)
+{
+  _out.linkRange = _reader.Decimal(_object, "link_range", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.corridorOffset = _reader.Decimal(_object, "corridor_offset", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.maxPoints = _reader.Integer(_object, "max_points", 0);
+  _out.smoothingStep = _reader.Decimal(_object, "smoothing_step", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.mergeDistance = _reader.Decimal(_object, "merge_distance", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Sim& _out)
 {
   _out.tickPeriod = _reader.Decimal(_object, "tick_period", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
@@ -1202,6 +1289,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "obstacle_grid"), _out.obstacleGrid);
   ReadFields(_reader, _reader.Object(_object, "water"), _out.water);
   ReadFields(_reader, _reader.Object(_object, "push"), _out.push);
+  ReadFields(_reader, _reader.Object(_object, "route"), _out.route);
   _reader.Close(_object);
 }
 
@@ -1238,6 +1326,8 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.structurePushRange = _reader.Decimal(_object, "structure_push_range", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.structurePushStep = _reader.Decimal(_object, "structure_push_step", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.structureClearRadius = _reader.Decimal(_object, "structure_clear_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.routeReachRadius = _reader.Decimal(_object, "route_reach_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.routeJitterRadius = _reader.Decimal(_object, "route_jitter_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -1325,12 +1415,26 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Wld::Territory& _out)
+{
+  _out.maxRadius = _reader.Decimal(_object, "max_radius", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Wld::Travel& _out)
+{
+  _out.valleyPathFactor = _reader.Decimal(_object, "valley_path_factor", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Wld& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "region"), _out.region);
   ReadFields(_reader, _reader.Object(_object, "site"), _out.site);
   ReadFields(_reader, _reader.Object(_object, "terrain"), _out.terrain);
   ReadFields(_reader, _reader.Object(_object, "generation"), _out.generation);
+  ReadFields(_reader, _reader.Object(_object, "territory"), _out.territory);
+  ReadFields(_reader, _reader.Object(_object, "travel"), _out.travel);
   _reader.Close(_object);
 }
 

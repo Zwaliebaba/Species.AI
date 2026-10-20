@@ -42,6 +42,9 @@
     <ClInclude Include="RegionSimulation.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="RouteStore.h">
+      <Filter>Space</Filter>
+    </ClInclude>
     <ClInclude Include="SlicedPool.h">
       <Filter>Simulation</Filter>
     </ClInclude>
@@ -91,6 +94,9 @@
     </ClCompile>
     <ClCompile Include="RegionSimulation.cpp">
       <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="RouteStore.cpp">
+      <Filter>Space</Filter>
     </ClCompile>
     <ClCompile Include="StableIdCounter.cpp">
       <Filter>Simulation</Filter>

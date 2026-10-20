@@ -27,6 +27,9 @@
     <ClInclude Include="GameMessages.h">
       <Filter>Messages</Filter>
     </ClInclude>
+    <ClInclude Include="Navigation.h">
+      <Filter>World</Filter>
+    </ClInclude>
     <ClInclude Include="RegionTerrain.h">
       <Filter>World</Filter>
     </ClInclude>
@@ -50,6 +53,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Navigation.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
     <ClCompile Include="RegionTerrain.cpp">
       <Filter>World</Filter>
     </ClCompile>

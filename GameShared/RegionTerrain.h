@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Navigation.h"
 #include "Sha256.h"
 #include "TerrainField.h"
 #include "TuningMvp.h"
@@ -32,14 +33,15 @@ enum class WorldDrawPurpose : std::uint64_t
                                std::uint64_t _index) noexcept;
 
 // The checks of WLD-163 that the MVP's one region runs (MVP-011): it has no crossing, so check 2 has nothing to check;
-// check 7 waits for M2's yields and check 8 for the land routes (M1 plan T5).
+// check 7 waits for M2's yields.
 enum class TerrainCheck : std::uint8_t
 {
   Channels = 1,
   Plateaus = 3,
   Rims = 4,
   DrySites = 5,
-  Reachability = 6
+  Reachability = 6,
+  Routes = 8
 };
 
 /// Where a region's valley stands (WLD-022, WLD-040): its square, the valley's centre, the rotation of its site pattern,
@@ -71,13 +73,16 @@ struct RegionTerrain
   Neuron::TerrainField field;
   std::vector<Neuron::Sha256Digest> chunkDigests; // WLD-166: TER-252 per chunk, z outer and x inner
   Neuron::Sha256Digest digest{};                  // SHA-256 of the chunk digests in that order
+  LandRouteGraph routes;                          // MVP-017: the region's nodes and their route tables (ADR-104)
 };
 
 // One attempt of WLD-160 to WLD-162 for the MVP's one region: its layout, its tiles, the first pass and the levels it
-// reads, the flatten areas, the second pass and the chunk digests. It runs no check.
+// reads, the flatten areas, the second pass, the chunk digests, and the navigation nodes and land route graph of MVP-017.
+// It runs no check.
 [[nodiscard]] RegionTerrain BuildRegionTerrain(std::uint64_t _seed, std::uint32_t _attempt, const TuningMvp& _tuning);
 
-// WLD-163 checks 1 and 3 to 6 on the region's samples: the checks that fail, in order; none when it passes.
+// WLD-163 checks 1 and 3 to 6 on the region's samples and check 8 on its routes: the checks that fail, in order; none
+// when it passes.
 [[nodiscard]] std::vector<TerrainCheck> CheckRegionTerrain(const RegionTerrain& _terrain, const TuningMvp& _tuning);
 
 struct TerrainFailure

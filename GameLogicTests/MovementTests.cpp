@@ -233,7 +233,7 @@ public:
     region.Step(region.NextTick());
     Assert::IsTrue(worker.onGround, L"landed");
     const Neuron::Vec3 target{MIDDLE.x + 100.0, 50.0, MIDDLE.z + 20.0};
-    Species::GiveWaypointOrder(worker, target, region.Movement());
+    Species::GiveWaypointOrder(worker, target, 0, region.Movement());
     Assert::IsTrue(worker.workerState == Species::WorkerState::OnWaypointOrder && worker.orderSet, L"the order");
     Assert::IsTrue(Neuron::HorizontalDistance(worker.waypoint, target) < 20.0 && worker.waypoint.y == 50.0, L"in the disc, on the terrain");
     double longest = 0.0;
@@ -291,7 +291,7 @@ public:
     const Neuron::Vec3 center = terrain->layout.valleyCenter;
     for (const std::uint32_t slot : slots)
     {
-      Species::GiveWaypointOrder(region.TeamAt(0).figures.At(slot), center, region.Movement());
+      Species::GiveWaypointOrder(region.TeamAt(0).figures.At(slot), center, 0, region.Movement());
     }
     const auto walking = [&]
     {
