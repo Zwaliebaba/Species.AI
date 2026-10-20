@@ -7,6 +7,9 @@
     <Filter Include="Diagnostics">
       <UniqueIdentifier>{F05D831F-524E-533F-8B28-631DCFA00889}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Maths">
+      <UniqueIdentifier>{8F1AE2BF-E94D-53E0-8066-99B9563E6156}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Network">
       <UniqueIdentifier>{2AAAB1D3-9A28-59AA-B770-AE069026F7C9}</UniqueIdentifier>
     </Filter>
@@ -61,6 +64,9 @@
     </ClCompile>
     <ClCompile Include="ProfileTests.cpp">
       <Filter>Profiling</Filter>
+    </ClCompile>
+    <ClCompile Include="SipHashTests.cpp">
+      <Filter>Maths</Filter>
     </ClCompile>
     <ClCompile Include="TestSupport.cpp">
       <Filter>Tests</Filter>

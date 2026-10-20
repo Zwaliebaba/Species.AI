@@ -7,6 +7,9 @@
     <Filter Include="Diagnostics">
       <UniqueIdentifier>{6D1C4C7B-138C-5352-B44B-BED8535A12F3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Maths">
+      <UniqueIdentifier>{3C146967-FEDC-5E79-95CC-6BA9C5B82D9A}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Network">
       <UniqueIdentifier>{0D52DB79-7744-5CE4-96EC-3467A98979EC}</UniqueIdentifier>
     </Filter>
@@ -78,6 +81,12 @@
     <ClInclude Include="RunId.h">
       <Filter>Platform</Filter>
     </ClInclude>
+    <ClInclude Include="SecureRandom.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="SipHash.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
     <ClInclude Include="StreamFraming.h">
       <Filter>Network</Filter>
     </ClInclude>
@@ -148,6 +157,12 @@
     </ClCompile>
     <ClCompile Include="RunId.cpp">
       <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="SecureRandom.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="SipHash.cpp">
+      <Filter>Maths</Filter>
     </ClCompile>
     <ClCompile Include="StreamFraming.cpp">
       <Filter>Network</Filter>

@@ -4,13 +4,49 @@
     <Filter Include="Build">
       <UniqueIdentifier>{E264322E-9D7E-512C-858B-7950EDED23DC}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Commands">
+      <UniqueIdentifier>{74C9DBAC-447F-5258-9D40-0DDDE4DAC080}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loop">
+      <UniqueIdentifier>{FDFA154C-FF6D-514A-BBD0-08CB6CB77B76}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CommandQueue.h">
+      <Filter>Commands</Filter>
+    </ClInclude>
+    <ClInclude Include="ServerHost.h">
+      <Filter>Loop</Filter>
+    </ClInclude>
+    <ClInclude Include="TickLoop.h">
+      <Filter>Loop</Filter>
+    </ClInclude>
+    <ClInclude Include="TickSchedule.h">
+      <Filter>Loop</Filter>
+    </ClInclude>
+    <ClInclude Include="WorkerPool.h">
+      <Filter>Loop</Filter>
+    </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Build</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CommandQueue.cpp">
+      <Filter>Commands</Filter>
+    </ClCompile>
+    <ClCompile Include="ServerHost.cpp">
+      <Filter>Loop</Filter>
+    </ClCompile>
+    <ClCompile Include="TickLoop.cpp">
+      <Filter>Loop</Filter>
+    </ClCompile>
+    <ClCompile Include="TickSchedule.cpp">
+      <Filter>Loop</Filter>
+    </ClCompile>
+    <ClCompile Include="WorkerPool.cpp">
+      <Filter>Loop</Filter>
+    </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Build</Filter>
     </ClCompile>

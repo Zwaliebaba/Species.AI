@@ -179,6 +179,7 @@
     <ClCompile Include="PlatformMessageTests.cpp" />
     <ClCompile Include="PlatformThreadTests.cpp" />
     <ClCompile Include="ProfileTests.cpp" />
+    <ClCompile Include="SipHashTests.cpp" />
     <ClCompile Include="TestSupport.cpp" />
     <ClCompile Include="TextEncodingTests.cpp" />
     <ClCompile Include="TransportTests.cpp" />

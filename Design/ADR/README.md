@@ -95,6 +95,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-092](ADR-092-first-window-device-and-presentation.md) | First window, device and presentation: the choices M0 makes before settings, input and the frame graph | Proposed | 2026-10-20 |
 | [ADR-093](ADR-093-transport-interface-and-message-layout.md) | Transport interface, the in-process transport and the bit-packed message layout | Proposed | 2026-10-20 |
 | [ADR-094](ADR-094-arm64-development-build.md) | ARM64 development build: a second platform for the owner's PC, not a shipping target | Proposed | 2026-10-20 |
+| [ADR-095](ADR-095-server-host-tick-loop-and-command-queue.md) | Server host, tick loop and command queue: NeuronServer's first form | Proposed | 2026-10-20 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 
