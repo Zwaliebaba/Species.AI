@@ -442,7 +442,7 @@ Table 3.5-A Install-directory contents.
 
 ### 4.1 Toolchain and dependencies
 
-**BLD-027** (MUST) Every project names the platform toolset `bld.pin.msvc_toolset` (`v145`, Visual Studio 2026) as its `PlatformToolset`, for the platform x64 only (ADR-051, ADR-054). Developers use Visual Studio 2026, version `bld.pin.visual_studio` (18.11) or later; CI uses the Visual Studio of its runner image. The MSVC minor version under the toolset is not pinned: every CI run prints the toolchain it got (BLD-091), so that a pin can be taken from that record when one is needed, and a build error is never solved by changing the toolset (ADR-051, ADR-070).
+**BLD-027** (MUST) Every project names the platform toolset `bld.pin.msvc_toolset` (`v145`, Visual Studio 2026) as its `PlatformToolset`, for the platform x64 only (ADR-051, ADR-054). Developers use Visual Studio 2026, version `bld.pin.visual_studio` (18.10) or later, the version CI's runner image carries and so proves builds the tree (owner decision O67); CI uses the Visual Studio of its runner image. The MSVC minor version under the toolset is not pinned: every CI run prints the toolchain it got (BLD-091), so that a pin can be taken from that record when one is needed, and a build error is never solved by changing the toolset (ADR-051, ADR-070).
 
 **BLD-028** (MUST) Every project compiles with the language switch `bld.pin.cxx_switch` (`/std:c++latest`), stated in the project file and identical in both configurations, and the code is written to C++23; a facility of a newer standard needs an amendment of ADR-052 before it is used. No extended floating-point type is used (ADR-052).
 
@@ -634,7 +634,7 @@ Every value that a rule of this document owns. The pins restate the technology b
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
 | `bld.pin.msvc_toolset` | `v145` | MSBuild platform toolset | Visual Studio 2026, MSVC Build Tools 14.50 or later; the minor version is printed by CI, not pinned (ADR-051) | BLD-027 | — |
-| `bld.pin.visual_studio` | 18.11 | Visual Studio 2026 version | minimum for developers | BLD-027 | — |
+| `bld.pin.visual_studio` | 18.10 | Visual Studio 2026 version | minimum for developers; CI's runner image carries it (O67) | BLD-027 | — |
 | `bld.pin.windows_sdk` | 10.0.26100.9457 | Windows SDK release | September 2026, the latest release of the 10.0.26100 series; technology baseline item 2.4 (ADR-051) | BLD-029 | — |
 | `bld.pin.cxx_switch` | `/std:c++latest` | compiler switch | every project and configuration; code written to C++23 (ADR-052) | BLD-028 | — |
 | `bld.pin.msbuild_min` | 17.12 | MSBuild version | the first version that builds `.slnx` (ADR-054) | BLD-035 | — |
