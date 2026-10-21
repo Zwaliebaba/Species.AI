@@ -75,6 +75,9 @@
     <ClInclude Include="KeyboardMouseBackEnd.h">
       <Filter>Input</Filter>
     </ClInclude>
+    <ClInclude Include="MeshRenderer.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
     <ClInclude Include="OverlayRenderer.h">
       <Filter>Rendering</Filter>
     </ClInclude>
@@ -182,6 +185,9 @@
     <ClCompile Include="KeyboardMouseBackEnd.cpp">
       <Filter>Input</Filter>
     </ClCompile>
+    <ClCompile Include="MeshRenderer.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
     <ClCompile Include="OverlayRenderer.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
@@ -240,6 +246,12 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <FXCompile Include="Shader\ClothPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\ClothVS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
     <FXCompile Include="Shader\CursorPS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
@@ -265,6 +277,12 @@
       <Filter>Shader</Filter>
     </FXCompile>
     <FXCompile Include="Shader\FinalVS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\MeshLitPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\MeshLitVS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
     <FXCompile Include="Shader\SeaFlatPS.hlsl">
@@ -300,11 +318,17 @@
     <FXCompile Include="Shader\UnlitTexturedPS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
+    <FXCompile Include="Shader\UnlitTexturedSolidPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
     <FXCompile Include="Shader\UnlitTexturedVS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Shader\Cloth.hlsli">
+      <Filter>Shader</Filter>
+    </None>
     <None Include="Shader\Cursor.hlsli">
       <Filter>Shader</Filter>
     </None>
@@ -315,6 +339,9 @@
       <Filter>Shader</Filter>
     </None>
     <None Include="Shader\Final.hlsli">
+      <Filter>Shader</Filter>
+    </None>
+    <None Include="Shader\MeshLit.hlsli">
       <Filter>Shader</Filter>
     </None>
     <None Include="Shader\SeaFlat.hlsli">

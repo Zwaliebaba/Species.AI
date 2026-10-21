@@ -148,6 +148,7 @@
     <ClInclude Include="CrowdLook.h" />
     <ClInclude Include="DevelopmentOverlay.h" />
     <ClInclude Include="InputBindings.h" />
+    <ClInclude Include="LeaderLook.h" />
     <ClInclude Include="ReplicaTiming.h" />
     <ClInclude Include="SettlementCamera.h" />
     <ClInclude Include="SettlementView.h" />
@@ -159,6 +160,7 @@
     <ClCompile Include="CrowdLook.cpp" />
     <ClCompile Include="DevelopmentOverlay.cpp" />
     <ClCompile Include="InputBindings.cpp" />
+    <ClCompile Include="LeaderLook.cpp" />
     <ClCompile Include="ReplicaTiming.cpp" />
     <ClCompile Include="SettlementCamera.cpp" />
     <ClCompile Include="SettlementView.cpp" />

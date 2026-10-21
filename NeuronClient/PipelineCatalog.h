@@ -46,7 +46,9 @@ enum class VertexLayout : std::uint8_t
   SkyInstance,
   TextGlyph,
   DotInstance,
-  QuadInstance
+  QuadInstance,
+  MeshInstanced, // a cooked mesh's vertices in slot 0 and MeshInstance in slot 1
+  TriangleVertex
 };
 
 // The targets an entry draws into: the scene targets at their sample count with the depth buffer bound, or the back

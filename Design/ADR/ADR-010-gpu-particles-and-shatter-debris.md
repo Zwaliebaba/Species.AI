@@ -83,3 +83,4 @@ Chosen option: **1, a GPU-simulated particle pool with shard buffers for debris*
 - The animation and VFX component (`architecture/components/animation_and_vfx/`) specifies the particle types and their parameter sets, the caps, priorities and LOD distances, and the shatter parameters.
 - **Amendment 2026-10-17 (AGENTS.md, O21).** Third-party VFX middleware is excluded by `AGENTS.md` R14.
 - **Amendment 2026-10-17.** "One instanced draw per explosion" is realised as one `ExecuteIndirect` call with one argument record per live explosion (VFX-237, RND-455).
+- **Amendment 2026-10-21 (M1 task T16, owner decision O77, [ADR-122](ADR-122-leaders-and-banners-drawn-at-m1.md)).** M1 builds no shatter: a dead Leader's figure is drawn while its corpse sinks, as the server replicates it. The shards of pass 14 come with this ADR's GPU particle pool, whose milestone builds them.

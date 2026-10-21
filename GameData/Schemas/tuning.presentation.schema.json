@@ -791,6 +791,27 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "tint": {
+          "type": "object",
+          "description": "the rnd.tint.* keys",
+          "properties": {
+            "factor": {
+              "type": "number",
+              "description": "rnd.tint.factor (RND-161)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times the team colour",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "factor"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
@@ -802,7 +823,8 @@
         "sky",
         "budget",
         "crowd",
-        "pso"
+        "pso",
+        "tint"
       ],
       "additionalProperties": false,
       "x-species-type": "object",
@@ -1941,11 +1963,41 @@
                   "x-species-type": "sim_decimal",
                   "x-species-unit": "wu",
                   "x-species-presence": "required"
+                },
+                "banner_size": {
+                  "type": "number",
+                  "description": "ref.unit.leader.banner_size (R-UNIT-191)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "banner_growth_divisor": {
+                  "type": "number",
+                  "description": "ref.unit.leader.banner_growth_divisor (R-UNIT-191)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "banner_face_divisor": {
+                  "type": "number",
+                  "description": "ref.unit.leader.banner_face_divisor (R-UNIT-191)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
                 "pick_center_lift",
-                "pick_radius"
+                "pick_radius",
+                "banner_size",
+                "banner_growth_divisor",
+                "banner_face_divisor"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -2201,12 +2253,145 @@
               "additionalProperties": false,
               "x-species-type": "object",
               "x-species-presence": "required"
+            },
+            "flicker": {
+              "type": "object",
+              "description": "the ref.unit.flicker.* keys",
+              "properties": {
+                "chance_scale": {
+                  "type": "number",
+                  "description": "ref.unit.flicker.chance_scale (R-UNIT-051)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "range of the draw",
+                  "x-species-presence": "required"
+                },
+                "phase_per_id": {
+                  "type": "number",
+                  "description": "ref.unit.flicker.phase_per_id (R-UNIT-051)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "rad per unit id",
+                  "x-species-presence": "required"
+                },
+                "sine_weight": {
+                  "type": "number",
+                  "description": "ref.unit.flicker.sine_weight (R-UNIT-051)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "chance_scale",
+                "phase_per_id",
+                "sine_weight"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
             }
           },
           "required": [
             "leader",
             "worker",
-            "essence_orb"
+            "essence_orb",
+            "flicker"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "bldg": {
+          "type": "object",
+          "description": "the ref.bldg.* keys",
+          "properties": {
+            "cloth_flag": {
+              "type": "object",
+              "description": "the ref.bldg.cloth_flag.* keys",
+              "properties": {
+                "resolution": {
+                  "type": "integer",
+                  "description": "ref.bldg.cloth_flag.resolution (VFX-139)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "vertices a side",
+                  "x-species-presence": "required"
+                },
+                "relax_rate": {
+                  "type": "number",
+                  "description": "ref.bldg.cloth_flag.relax_rate (VFX-139)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "per second",
+                  "x-species-presence": "required"
+                },
+                "damped_factor": {
+                  "type": "number",
+                  "description": "ref.bldg.cloth_flag.damped_factor (VFX-139)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "per 60 Hz step",
+                  "x-species-presence": "required"
+                },
+                "damped_size_wu": {
+                  "type": "number",
+                  "description": "ref.bldg.cloth_flag.damped_size_wu (VFX-139)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "highlight_wobble": {
+                  "type": "number",
+                  "description": "ref.bldg.cloth_flag.highlight_wobble (VFX-139)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times",
+                  "x-species-presence": "required"
+                },
+                "pole_width_wu": {
+                  "type": "number",
+                  "description": "ref.bldg.cloth_flag.pole_width_wu (VFX-141)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "pole_height_factor": {
+                  "type": "number",
+                  "description": "ref.bldg.cloth_flag.pole_height_factor (VFX-141)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times the flag size",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "resolution",
+                "relax_rate",
+                "damped_factor",
+                "damped_size_wu",
+                "highlight_wobble",
+                "pole_width_wu",
+                "pole_height_factor"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "cloth_flag"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -2216,7 +2401,8 @@
       "required": [
         "sim",
         "ctrl",
-        "unit"
+        "unit",
+        "bldg"
       ],
       "additionalProperties": false,
       "x-species-type": "object",
@@ -2936,10 +3122,204 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "cloth": {
+          "type": "object",
+          "description": "the vfx.cloth.* keys",
+          "properties": {
+            "wobble_phases": {
+              "type": "object",
+              "description": "vfx.cloth.wobble_phases (VFX-139)",
+              "properties": {
+                "first": {
+                  "type": "number",
+                  "description": "vfx.cloth.wobble_phases.first",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "rad per column",
+                  "x-species-presence": "required"
+                },
+                "second": {
+                  "type": "number",
+                  "description": "vfx.cloth.wobble_phases.second",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "rad per column",
+                  "x-species-presence": "required"
+                },
+                "third": {
+                  "type": "number",
+                  "description": "vfx.cloth.wobble_phases.third",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "rad per column",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "first",
+                "second",
+                "third"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "lift_gain": {
+              "type": "number",
+              "description": "vfx.cloth.lift_gain (VFX-139)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times",
+              "x-species-presence": "required"
+            },
+            "team_tint": {
+              "type": "number",
+              "description": "vfx.cloth.team_tint (VFX-141)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times the team colour",
+              "x-species-presence": "required"
+            },
+            "banner_wobble": {
+              "type": "number",
+              "description": "vfx.cloth.banner_wobble (VFX-142)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "rad",
+              "x-species-presence": "required"
+            },
+            "banner_wobble_rate": {
+              "type": "number",
+              "description": "vfx.cloth.banner_wobble_rate (VFX-142)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "rad/s",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "wobble_phases",
+            "lift_gain",
+            "team_tint",
+            "banner_wobble",
+            "banner_wobble_rate"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "flicker": {
+          "type": "object",
+          "description": "the vfx.flicker.* keys",
+          "properties": {
+            "step": {
+              "type": "number",
+              "description": "vfx.flicker.step (VFX-126)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "s of scaled presentation time",
+              "x-species-presence": "required"
+            },
+            "axis_shares": {
+              "type": "object",
+              "description": "vfx.flicker.axis_shares (VFX-126)",
+              "properties": {
+                "front": {
+                  "type": "number",
+                  "description": "vfx.flicker.axis_shares.front",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "share",
+                  "x-species-presence": "required"
+                },
+                "up": {
+                  "type": "number",
+                  "description": "vfx.flicker.axis_shares.up",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "share",
+                  "x-species-presence": "required"
+                },
+                "right": {
+                  "type": "number",
+                  "description": "vfx.flicker.axis_shares.right",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "share",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "front",
+                "up",
+                "right"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "gain": {
+              "type": "number",
+              "description": "vfx.flicker.gain (VFX-126)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times",
+              "x-species-presence": "required"
+            },
+            "up_gain": {
+              "type": "number",
+              "description": "vfx.flicker.up_gain (VFX-126)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "step",
+            "axis_shares",
+            "gain",
+            "up_gain"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "emit": {
+          "type": "object",
+          "description": "the vfx.emit.* keys",
+          "properties": {
+            "step_rate": {
+              "type": "number",
+              "description": "vfx.emit.step_rate (VFX-018)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "steps per second of unscaled presentation time",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "step_rate"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
-        "worker"
+        "worker",
+        "cloth",
+        "flicker",
+        "emit"
       ],
       "additionalProperties": false,
       "x-species-type": "object",

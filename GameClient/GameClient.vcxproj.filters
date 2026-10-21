@@ -33,6 +33,9 @@
     <ClInclude Include="InputBindings.h">
       <Filter>Input</Filter>
     </ClInclude>
+    <ClInclude Include="LeaderLook.h">
+      <Filter>View</Filter>
+    </ClInclude>
     <ClInclude Include="ReplicaTiming.h">
       <Filter>Replication</Filter>
     </ClInclude>
@@ -61,6 +64,9 @@
     </ClCompile>
     <ClCompile Include="InputBindings.cpp">
       <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="LeaderLook.cpp">
+      <Filter>View</Filter>
     </ClCompile>
     <ClCompile Include="ReplicaTiming.cpp">
       <Filter>Replication</Filter>

@@ -26,11 +26,26 @@ enum class SceneTexture : std::uint16_t
   WorkerHurt03,
   WorkerHurt04, // sprite.worker.hurt variant 04, the fixed hurt pose
   GlowRound,    // fx.glow_round
+  BannerIdle,   // marker.leader_banner and marker.leader_banner_tint, by R-UNIT-191's variant (ADR-122)
+  BannerFollow,
+  BannerFormation,
+  BannerTintIdle,
+  BannerTintFollow,
+  BannerTintFormation,
+  Count
+};
+
+// ADR-122: the scene's meshes, by their index in SceneMeshes::meshes.
+enum class SceneMesh : std::uint16_t
+{
+  LeaderFigure, // mesh.unit.leader_figure
   Count
 };
 
 // The scene's textures from the content: none when one is missing or damaged, which is logged.
 [[nodiscard]] std::shared_ptr<const Neuron::SceneTextures> LoadSceneTextures(const Neuron::LooseContent& _content);
+// The scene's cooked meshes from the content: none when one is missing or damaged, which is logged.
+[[nodiscard]] std::shared_ptr<const Neuron::SceneMeshes> LoadSceneMeshes(const Neuron::LooseContent& _content);
 
 /// What the crowd's look reads of the frame (ADR-121).
 struct CrowdView

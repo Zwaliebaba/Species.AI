@@ -4,6 +4,7 @@
 #include "DdsTexture.h"
 #include "Development.h"
 #include "DevelopmentOverlay.h"
+#include "LeaderLook.h"
 #include "Log.h"
 #include "WorldPresentation.h"
 
@@ -221,6 +222,7 @@ WorldPresentation::WorldPresentation(Desc _desc)
 {
   m_cursorImages = LoadCursorImages(*m_desc.content);
   m_sceneTextures = LoadSceneTextures(*m_desc.content);
+  m_sceneMeshes = LoadSceneMeshes(*m_desc.content);
 #if ENGINE_DEVELOPMENT
   m_developmentFace = LoadDevelopmentFace(*m_desc.content);
 #endif
@@ -285,9 +287,21 @@ Neuron::FrameInputs WorldPresentation::Frame(const ClientSession& _session, cons
     crowd.unscaledSeconds = m_presentationClock.UnscaledSeconds();
     crowd.localTeam = _session.CommandedTeam();
     const double fraction = _session.InterpolationFraction();
+    const std::vector<InterpolatedFigure> figures = InterpolateFigures(_session.Replica(), fraction);
     inputs.sceneTextures = m_sceneTextures;
-    AppendWorkerBatches(InterpolateFigures(_session.Replica(), fraction), m_terrain->field, crowd, *m_desc.presentation, *m_desc.tuning,
-                        inputs.quadBatches);
+    AppendWorkerBatches(figures, m_terrain->field, crowd, *m_desc.presentation, *m_desc.tuning, inputs.quadBatches);
+    // M1 task T16b (ADR-122): the Leaders' figures and banners in pass 7b.
+    if (m_sceneMeshes != nullptr && !m_sceneMeshes->meshes.empty())
+    {
+      LeaderDraws leaders;
+      m_leaders.Draw(figures, *m_sceneMeshes->meshes[static_cast<std::size_t>(SceneMesh::LeaderFigure)], crowd,
+                     m_presentationClock.UnscaledStepSeconds(), *m_desc.presentation, *m_desc.tuning, leaders);
+      inputs.sceneMeshes = m_sceneMeshes;
+      inputs.meshBatches = std::move(leaders.meshes);
+      inputs.quadBatches.insert(inputs.quadBatches.end(), std::make_move_iterator(leaders.quads.begin()),
+                                std::make_move_iterator(leaders.quads.end()));
+      inputs.triangleBatches = std::move(leaders.triangles);
+    }
     AppendOrbBatches(InterpolateOrbs(_session.Replica(), fraction), *m_desc.presentation, inputs.quadBatches);
   }
 #if ENGINE_DEVELOPMENT

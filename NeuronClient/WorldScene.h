@@ -2,6 +2,7 @@
 
 #include "FontAsset.h"
 #include "FrameView.h"
+#include "MeshAsset.h"
 #include "SeaSurface.h"
 #include "TerrainSurface.h"
 #include "Vec3.h"
@@ -164,9 +165,10 @@ struct SceneQuad
   QuadAnchor anchor = QuadAnchor::Center;
 };
 
-// The world passes that draw quads (RND-070), in their order.
-enum class QuadPass : std::uint8_t
+// The world passes that draw the scene's quads, meshes and triangles (RND-070), in their order.
+enum class ScenePass : std::uint8_t
 {
+  Actors,  // pass 7b
   Workers, // pass 7d
   Orbs,    // pass 11
   Count
@@ -177,12 +179,62 @@ enum class QuadPass : std::uint8_t
 /// only the quads that pass the view test into the upload ring and draws them with one instanced call.
 struct QuadBatch
 {
-  QuadPass pass = QuadPass::Workers;
+  ScenePass pass = ScenePass::Workers;
   std::string_view entry;    // the catalogue key, a literal
   std::uint16_t texture = 0; // an index of SceneTextures::files
   float cullRadius = 0.0f;   // wu; 0: no view test
   float cutout = 0.0f;       // the cut-out threshold of a cut-out entry (RND-060)
   std::vector<SceneQuad> quads;
+};
+
+/// The meshes the scene's passes draw (ADR-019, ADR-122), cooked, by the index a MeshBatch names. They are uploaded once
+/// and kept across device rebuilds (RND-035).
+struct SceneMeshes
+{
+  std::vector<std::shared_ptr<const MeshAsset>> meshes;
+};
+
+/// One instance of a scene mesh (RND-324): its origin and the model's axes in world units and binary64, their lengths
+/// its scale, and its team tint (RND-271).
+struct SceneMeshInstance
+{
+  Vec3 position;
+  Vec3 axisX{1.0, 0.0, 0.0};
+  Vec3 axisY{0.0, 1.0, 0.0};
+  Vec3 axisZ{0.0, 0.0, 1.0};
+  std::array<float, 3> tint{1.0f, 1.0f, 1.0f}; // the tinted colour T × f
+  float tintWeight = 0.0f;                     // the instance's weight: 0 for an instance of no team
+};
+
+/// One draw of a scene mesh (ADR-122): its catalogue entry, its mesh, the view test's radius about each instance's
+/// position and its instances, drawn with one instanced call.
+struct MeshBatch
+{
+  ScenePass pass = ScenePass::Actors;
+  std::string_view entry;
+  std::uint16_t mesh = 0;
+  float cullRadius = 0.0f;
+  std::vector<SceneMeshInstance> instances;
+};
+
+/// A vertex of a textured triangle list (the cloth flags of VFX-141), in world units and binary64: its texture
+/// coordinate, and its colour, which tints the texture where the batch's mask is set.
+struct SceneVertex
+{
+  Vec3 position;
+  std::array<float, 2> uv{0.0f, 0.0f};
+  std::array<float, 4> color{1.0f, 1.0f, 1.0f, 1.0f};
+};
+
+/// One draw of textured triangles (ADR-122): its catalogue entry, its texture and tint mask of SceneTextures, and its
+/// vertices, three a triangle.
+struct TriangleBatch
+{
+  ScenePass pass = ScenePass::Actors;
+  std::string_view entry;
+  std::uint16_t texture = 0;
+  std::uint16_t mask = 0;
+  std::vector<SceneVertex> vertices;
 };
 
 /// The game cursors' art (RND-366, ADR-119): each cursor's mask and its authored darkening shadow, as DDS files, by the
@@ -221,6 +273,9 @@ struct FrameInputs
   // The scene's quads (ADR-121): their textures, and the batches of each quad pass in the order drawn.
   std::shared_ptr<const SceneTextures> sceneTextures;
   std::vector<QuadBatch> quadBatches;
+  std::shared_ptr<const SceneMeshes> sceneMeshes;
+  std::vector<MeshBatch> meshBatches;
+  std::vector<TriangleBatch> triangleBatches;
   // The game cursor (ADR-119): its art, and the quad of this frame; none draws no cursor.
   std::shared_ptr<const CursorImages> cursorImages;
   std::optional<CursorQuad> cursor;

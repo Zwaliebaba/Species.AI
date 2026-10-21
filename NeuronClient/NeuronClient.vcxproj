@@ -174,6 +174,7 @@
     <ClInclude Include="InputEvents.h" />
     <ClInclude Include="InputRouter.h" />
     <ClInclude Include="KeyboardMouseBackEnd.h" />
+    <ClInclude Include="MeshRenderer.h" />
     <ClInclude Include="OverlayRenderer.h" />
     <ClInclude Include="PassTable.h" />
     <ClInclude Include="Picking.h" />
@@ -211,6 +212,7 @@
     <ClCompile Include="InMemoryGpuResourceFactory.cpp" />
     <ClCompile Include="InputRouter.cpp" />
     <ClCompile Include="KeyboardMouseBackEnd.cpp" />
+    <ClCompile Include="MeshRenderer.cpp" />
     <ClCompile Include="OverlayRenderer.cpp" />
     <ClCompile Include="PassTable.cpp" />
     <ClCompile Include="Picking.cpp" />
@@ -232,6 +234,12 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <FXCompile Include="Shader\ClothPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\ClothVS.hlsl">
+      <ShaderType>Vertex</ShaderType>
+    </FXCompile>
     <FXCompile Include="Shader\CursorPS.hlsl">
       <ShaderType>Pixel</ShaderType>
     </FXCompile>
@@ -257,6 +265,12 @@
       <ShaderType>Pixel</ShaderType>
     </FXCompile>
     <FXCompile Include="Shader\FinalVS.hlsl">
+      <ShaderType>Vertex</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\MeshLitPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\MeshLitVS.hlsl">
       <ShaderType>Vertex</ShaderType>
     </FXCompile>
     <FXCompile Include="Shader\SeaFlatPS.hlsl">
@@ -292,15 +306,20 @@
     <FXCompile Include="Shader\UnlitTexturedPS.hlsl">
       <ShaderType>Pixel</ShaderType>
     </FXCompile>
+    <FXCompile Include="Shader\UnlitTexturedSolidPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
     <FXCompile Include="Shader\UnlitTexturedVS.hlsl">
       <ShaderType>Vertex</ShaderType>
     </FXCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Shader\Cloth.hlsli" />
     <None Include="Shader\Cursor.hlsli" />
     <None Include="Shader\DevelopmentDot.hlsli" />
     <None Include="Shader\DevelopmentText.hlsli" />
     <None Include="Shader\Final.hlsli" />
+    <None Include="Shader\MeshLit.hlsli" />
     <None Include="Shader\SeaFlat.hlsli" />
     <None Include="Shader\SeaWaves.hlsli" />
     <None Include="Shader\Sky.hlsli" />

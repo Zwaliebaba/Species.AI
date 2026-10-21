@@ -9,6 +9,7 @@
 #include "GraphicsDevice.h"
 #include "Log.h"
 #include "CursorRenderer.h"
+#include "MeshRenderer.h"
 #include "OverlayRenderer.h"
 #include "PassTable.h"
 #include "PipelineCatalog.h"
@@ -23,6 +24,8 @@
 #include "WorldRenderer.h"
 
 // The compiled shaders (AGENTS.md §2, ADR-112): this file binds the pipeline states, and no other file includes them.
+#include "CompiledShader/ClothPS.h"
+#include "CompiledShader/ClothVS.h"
 #include "CompiledShader/CursorPS.h"
 #include "CompiledShader/CursorVS.h"
 #include "CompiledShader/DevelopmentDotPS.h"
@@ -32,6 +35,8 @@
 #include "CompiledShader/DevelopmentTextVS.h"
 #include "CompiledShader/FinalPS.h"
 #include "CompiledShader/FinalVS.h"
+#include "CompiledShader/MeshLitPS.h"
+#include "CompiledShader/MeshLitVS.h"
 #include "CompiledShader/SeaFlatPS.h"
 #include "CompiledShader/SeaFlatVS.h"
 #include "CompiledShader/SeaWavesPS.h"
@@ -43,6 +48,7 @@
 #include "CompiledShader/UnlitTexturedCutoutPS.h"
 #include "CompiledShader/UnlitTexturedMaskPS.h"
 #include "CompiledShader/UnlitTexturedPS.h"
+#include "CompiledShader/UnlitTexturedSolidPS.h"
 #include "CompiledShader/UnlitTexturedVS.h"
 
 #include <algorithm>
@@ -132,6 +138,7 @@ enum class WorldPass : std::uint8_t
   Terrain,
   FlatSea,
   Waves,
+  Actors,
   Workers,
   Orbs,
   Dots,
@@ -154,6 +161,7 @@ struct RendererState
   std::unique_ptr<OverlayRenderer> overlay;
   std::unique_ptr<CursorRenderer> cursor;
   std::unique_ptr<QuadRenderer> quads;
+  std::unique_ptr<MeshRenderer> meshes;
 
   std::unique_ptr<GraphicsDevice> device;
   ComPtr<ID3D12Fence> fence;
@@ -297,7 +305,7 @@ bool CreateSwapChain(RendererState& _state)
 }
 
 // The world frame's pipeline states (RND-061, ADR-113): the entries its passes use, and the final pass's.
-const std::array<PipelineEntry, 14> WORLD_PIPELINES{{
+const std::array<PipelineEntry, 18> WORLD_PIPELINES{{
   {"sky", g_SkyVS, g_SkyPS, VertexLayout::SkyInstance, BlendState::Additive, DepthState::None, CullState::Back, PipelineTarget::Scene},
   {"terrain", g_TerrainVS, g_TerrainPS, VertexLayout::Terrain, BlendState::Opaque, DepthState::TestWrite, CullState::Back,
    PipelineTarget::Scene},
@@ -319,6 +327,16 @@ const std::array<PipelineEntry, 14> WORLD_PIPELINES{{
    PipelineTarget::BackBuffer},
   {"cursor_art", g_CursorVS, g_CursorPS, VertexLayout::TextGlyph, BlendState::Additive, DepthState::None, CullState::None,
    PipelineTarget::BackBuffer},
+  // M1 task T16b (ADR-122): the Leaders' figures, their damage flicker and their cloth banners in pass 7b (RND-308,
+  // RND-324, VFX-014).
+  {"actor_mesh_lit", g_MeshLitVS, g_MeshLitPS, VertexLayout::MeshInstanced, BlendState::Opaque, DepthState::TestWrite, CullState::Back,
+   PipelineTarget::Scene},
+  {"actor_flicker_additive", g_MeshLitVS, g_MeshLitPS, VertexLayout::MeshInstanced, BlendState::Additive, DepthState::TestWrite,
+   CullState::Back, PipelineTarget::Scene},
+  {"cloth_cells", g_ClothVS, g_ClothPS, VertexLayout::TriangleVertex, BlendState::Alpha, DepthState::Test, CullState::None,
+   PipelineTarget::Scene},
+  {"cloth_pole", g_UnlitTexturedVS, g_UnlitTexturedSolidPS, VertexLayout::QuadInstance, BlendState::Alpha, DepthState::Test,
+   CullState::None, PipelineTarget::Scene},
   // M1 task T16 (ADR-121): the Worker cards, their ground shadows and their glows in pass 7d (RND-308), and the Essence
   // orbs in pass 11 (VFX-225).
   {"worker_card", g_UnlitTexturedVS, g_UnlitTexturedCutoutPS, VertexLayout::QuadInstance, BlendState::Alpha, DepthState::TestWrite,
@@ -367,6 +385,7 @@ WorldFrameTable WorldFrame(bool _multisampled)
   add(WorldPass::Terrain, "pass_04_terrain", "terrain", scene);
   add(WorldPass::FlatSea, "pass_05a_flat_sea", "sea_flat", scene);
   add(WorldPass::Waves, "pass_05b_coastline_waves", "sea_waves", scene);
+  add(WorldPass::Actors, "pass_07b_other_actors", "actor_mesh_lit", scene);
   add(WorldPass::Workers, "pass_07d_workers", "worker_card", scene);
   add(WorldPass::Orbs, "pass_11_essence_orbs", "orb_additive", scene);
 #if ENGINE_DEVELOPMENT
@@ -613,6 +632,7 @@ void Rebuild(RendererState& _state)
   _state.overlay->UploadAgain();
   _state.cursor->UploadAgain();
   _state.quads->UploadAgain();
+  _state.meshes->UploadAgain();
   Log(LogCategory::Render, LogLevel::Warning, "the device was rebuilt after its removal");
   for (const std::function<void()>& listener : _state.rebuiltListeners)
   {
@@ -749,16 +769,25 @@ void RecordWorldFrame(RendererState& _state, const FrameInputs& _inputs, ID3D12R
       _state.world->RecordWaves(pass);
       break;
     }
+    case WorldPass::Actors:
+    {
+      // RND-324: the Leaders' figures, then their poles and cloth (VFX-141).
+      ENGINE_PROFILE_SCOPE("render.ungrouped_actors");
+      _state.meshes->Record(commands, *_state.ring, *_state.catalog, frame, ScenePass::Actors, _inputs.meshBatches);
+      _state.quads->Record(commands, *_state.ring, *_state.catalog, frame, ScenePass::Actors, _inputs.quadBatches);
+      _state.quads->RecordTriangles(commands, *_state.ring, *_state.catalog, frame, ScenePass::Actors, _inputs.triangleBatches);
+      break;
+    }
     case WorldPass::Workers:
     {
       ENGINE_PROFILE_SCOPE("render.workers");
-      _state.quads->Record(commands, *_state.ring, *_state.catalog, frame, QuadPass::Workers, _inputs.quadBatches);
+      _state.quads->Record(commands, *_state.ring, *_state.catalog, frame, ScenePass::Workers, _inputs.quadBatches);
       break;
     }
     case WorldPass::Orbs:
     {
       ENGINE_PROFILE_SCOPE("render.essence_orbs");
-      _state.quads->Record(commands, *_state.ring, *_state.catalog, frame, QuadPass::Orbs, _inputs.quadBatches);
+      _state.quads->Record(commands, *_state.ring, *_state.catalog, frame, ScenePass::Orbs, _inputs.quadBatches);
       break;
     }
     case WorldPass::Dots:
@@ -829,6 +858,7 @@ std::expected<std::unique_ptr<FrameRenderer>, StartupFailure> FrameRenderer::Cre
   state->overlay = std::make_unique<OverlayRenderer>(*state->factory);
   state->cursor = std::make_unique<CursorRenderer>(*state->factory);
   state->quads = std::make_unique<QuadRenderer>(*state->factory);
+  state->meshes = std::make_unique<MeshRenderer>(*state->factory);
   if (std::expected<void, StartupFailure> created = CreateDeviceObjects(*state); !created.has_value())
   {
     ReleaseDeviceObjects(*state, TEARDOWN_WAIT_MILLISECONDS);
@@ -930,6 +960,7 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
   state.overlay->Show(_inputs.overlayFont);
   state.cursor->Show(_inputs.cursorImages);
   state.quads->Show(_inputs.sceneTextures);
+  state.meshes->Show(_inputs.sceneMeshes);
   state.factory->BeginFrame(frameId, completed);
   state.heaps->Reclaim(completed);
   state.heaps->BeginFrame(static_cast<std::uint32_t>(slot));

@@ -123,6 +123,24 @@ struct QuadInstance
   Uint4 shape;      // x: the orientation mode; y: the anchor; z: the rotation in radians, as its float's bits; w: QUAD_* flags
 };
 
+// RND-262, RND-324 (ADR-122): one instance of a mesh, its model-to-camera-relative transform in the form of
+// DrawConstants::world, and its team tint (RND-271).
+struct MeshInstance
+{
+  Float4 row0;
+  Float4 row1;
+  Float4 row2;
+  Float4 tint; // rgb: the tinted colour T × f; a: the instance's tint weight
+};
+
+// ADR-122: a vertex of the scene's textured triangles, relative to the camera.
+struct TriangleVertex
+{
+  Float4 position; // xyz
+  Float4 uv;       // xy
+  Float4 color;
+};
+
 // QuadInstance.shape.x: the orientation modes of RND-306.
 LAYOUT_CONSTANT QUAD_CAMERA_FACING = 0;
 LAYOUT_CONSTANT QUAD_UPRIGHT_CARD = 1;
@@ -143,6 +161,8 @@ static_assert(sizeof(SkyLayerInstance) == 4 * sizeof(Float4) + sizeof(Uint4));
 static_assert(sizeof(TextGlyphInstance) == 3 * sizeof(Float4));
 static_assert(sizeof(DotInstance) == 2 * sizeof(Float4));
 static_assert(sizeof(QuadInstance) == 7 * sizeof(Float4) + sizeof(Uint4));
+static_assert(sizeof(MeshInstance) == 4 * sizeof(Float4));
+static_assert(sizeof(TriangleVertex) == 3 * sizeof(Float4));
 inline constexpr std::uint32_t DRAW_CONSTANT_DWORDS = sizeof(DrawConstants) / 4;
 } // namespace Neuron
 #endif

@@ -106,7 +106,7 @@ void QuadRenderer::Release()
 }
 
 void QuadRenderer::Record(ID3D12GraphicsCommandList* _commands, UploadRing& _ring, const PipelineCatalog& _catalog, const FrameView& _frame,
-                          QuadPass _pass, std::span<const QuadBatch> _batches)
+                          ScenePass _pass, std::span<const QuadBatch> _batches)
 {
   if (!Ready())
   {
@@ -151,6 +151,45 @@ void QuadRenderer::Record(ID3D12GraphicsCommandList* _commands, UploadRing& _rin
     _commands->IASetVertexBuffers(0, 1, &view);
     _commands->DrawInstanced(6, static_cast<UINT>(m_instances.size()), 0, 0);
     m_drawnQuads += static_cast<std::uint32_t>(m_instances.size());
+  }
+}
+
+void QuadRenderer::RecordTriangles(ID3D12GraphicsCommandList* _commands, UploadRing& _ring, const PipelineCatalog& _catalog,
+                                   const FrameView& _frame, ScenePass _pass, std::span<const TriangleBatch> _batches)
+{
+  if (!Ready())
+  {
+    return;
+  }
+  const auto usable = [this](std::uint16_t _texture) { return _texture < m_resources.size() && m_resources[_texture] != GpuResourceId{}; };
+  for (const TriangleBatch& batch : _batches)
+  {
+    ID3D12PipelineState* pipeline = batch.pass == _pass ? _catalog.Find(batch.entry) : nullptr;
+    if (pipeline == nullptr || !usable(batch.texture) || !usable(batch.mask) || batch.vertices.empty())
+    {
+      continue;
+    }
+    m_vertices.clear();
+    for (const SceneVertex& vertex : batch.vertices)
+    {
+      m_vertices.push_back(MakeTriangleVertex(vertex, _frame.camera));
+    }
+    const std::uint64_t bytes = m_vertices.size() * sizeof(TriangleVertex);
+    const UploadAllocation allocation = _ring.Allocate(bytes, sizeof(Float4));
+    if (allocation.cpu == nullptr)
+    {
+      continue;
+    }
+    std::memcpy(allocation.cpu, m_vertices.data(), static_cast<std::size_t>(bytes));
+    const DrawConstants draw{Float3x4(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f),
+                             Float4(1.0f, 1.0f, 1.0f, 1.0f),
+                             Uint4{m_factory.HeapIndex(m_resources[batch.texture]), m_factory.HeapIndex(m_resources[batch.mask]), 0, 0}};
+    const D3D12_VERTEX_BUFFER_VIEW view{allocation.gpu, static_cast<UINT>(bytes), static_cast<UINT>(sizeof(TriangleVertex))};
+    _commands->SetPipelineState(pipeline);
+    _commands->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    _commands->SetGraphicsRoot32BitConstants(ROOT_DRAW_CONSTANTS, DRAW_CONSTANT_DWORDS, &draw, 0);
+    _commands->IASetVertexBuffers(0, 1, &view);
+    _commands->DrawInstanced(static_cast<UINT>(m_vertices.size()), 1, 0, 0);
   }
 }
 

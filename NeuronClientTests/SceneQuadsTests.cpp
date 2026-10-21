@@ -54,6 +54,27 @@ public:
                    L"the mode, the anchor, the rotation and the flag");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Rnd324AMeshInstanceIsTheTransposeOfItsAxes)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"RND-262")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"WLD-246")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Rnd324AMeshInstanceIsTheTransposeOfItsAxes)
+  {
+    Neuron::SceneMeshInstance mesh;
+    mesh.position = FAR_CAMERA + Neuron::Vec3{2.0, 3.0, 4.0};
+    mesh.axisX = {0.0, 0.0, -2.0};
+    mesh.axisY = {0.0, 2.0, 0.0};
+    mesh.axisZ = {2.0, 0.0, 0.0};
+    mesh.tint = {0.5f, 0.25f, 0.125f};
+    mesh.tintWeight = 1.0f;
+    const Neuron::MeshInstance instance = Neuron::MakeMeshInstance(mesh, FAR_CAMERA);
+    // Row r is the r-th component of each axis, then of the camera-relative origin: mul(world, float4(p, 1)).
+    Assert::IsTrue(instance.row0.x == 0.0f && instance.row0.y == 0.0f && instance.row0.z == 2.0f && instance.row0.w == 2.0f, L"row 0");
+    Assert::IsTrue(instance.row1.y == 2.0f && instance.row1.w == 3.0f, L"row 1");
+    Assert::IsTrue(instance.row2.x == -2.0f && instance.row2.w == 4.0f, L"row 2");
+    Assert::IsTrue(instance.tint.x == 0.5f && instance.tint.w == 1.0f, L"the tint and its weight");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Rnd236TheViewTestIsConservative)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"RND-236")
   END_TEST_METHOD_ATTRIBUTE()

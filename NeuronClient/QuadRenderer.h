@@ -16,7 +16,7 @@ namespace Neuron
 
 /// The quads of the actor, effect, orb and particle passes (ADR-009's M1 form, ADR-121): the scene's textures on the GPU,
 /// and each pass's batches, of which only the quads that pass the CPU view test are written into the upload ring and
-/// drawn, one instanced call per batch. Frame thread only.
+/// drawn, one instanced call per batch; and the scene's textured triangles, the cloth flags of ADR-122. Frame thread only.
 class QuadRenderer
 {
 public:
@@ -33,7 +33,11 @@ public:
 
   // The batches of _pass in their order, into the scene targets that are bound, with the frame constants bound.
   void Record(ID3D12GraphicsCommandList* _commands, UploadRing& _ring, const PipelineCatalog& _catalog, const FrameView& _frame,
-              QuadPass _pass, std::span<const QuadBatch> _batches);
+              ScenePass _pass, std::span<const QuadBatch> _batches);
+
+  // The triangle batches of _pass in their order.
+  void RecordTriangles(ID3D12GraphicsCommandList* _commands, UploadRing& _ring, const PipelineCatalog& _catalog, const FrameView& _frame,
+                       ScenePass _pass, std::span<const TriangleBatch> _batches);
 
   // The quads drawn since the last call, of every pass.
   [[nodiscard]] std::uint32_t TakeDrawnQuads() noexcept;
@@ -55,6 +59,7 @@ private:
   std::vector<Upload> m_uploads;          // every upload, for a rebuild
   std::vector<Upload> m_pending;
   std::vector<QuadInstance> m_instances; // the frame's scratch
+  std::vector<TriangleVertex> m_vertices;
   std::uint64_t m_lastFence = 0;
   std::uint32_t m_drawnQuads = 0;
 };

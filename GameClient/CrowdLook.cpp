@@ -23,9 +23,21 @@ namespace
 
 // The content keys of the scene's textures, in SceneTexture's order (AST-014; Design/implementation/mvp_assets.md).
 constexpr std::array<std::string_view, static_cast<std::size_t>(SceneTexture::Count)> SCENE_TEXTURE_KEYS{
-  "textures/sprite/workerfront",  "textures/sprite/workerside",   "textures/sprite/workerhurt01", "textures/sprite/workerhurt02",
-  "textures/sprite/workerhurt03", "textures/sprite/workerhurt04", "textures/fx/glowround",
+  "textures/sprite/workerfront",
+  "textures/sprite/workerside",
+  "textures/sprite/workerhurt01",
+  "textures/sprite/workerhurt02",
+  "textures/sprite/workerhurt03",
+  "textures/sprite/workerhurt04",
+  "textures/fx/glowround",
+  "textures/marker/leaderbanneridle",
+  "textures/marker/leaderbannerfollow",
+  "textures/marker/leaderbannerformation",
+  "textures/marker/leaderbannertintidle",
+  "textures/marker/leaderbannertintfollow",
+  "textures/marker/leaderbannertintformation",
 };
+constexpr std::array<std::string_view, static_cast<std::size_t>(SceneMesh::Count)> SCENE_MESH_KEYS{"meshes/leaderfigure"};
 
 constexpr double FULL_ALPHA = 255.0;
 // ADR-121: R-UNIT-142's (slot index × unit id) mod 10 reads the unit id's counter times this prime, since a figure's
@@ -104,7 +116,7 @@ public:
       for (std::size_t texture = 0; texture < static_cast<std::size_t>(SceneTexture::GlowRound); ++texture)
       {
         Neuron::QuadBatch batch;
-        batch.pass = Neuron::QuadPass::Workers;
+        batch.pass = Neuron::ScenePass::Workers;
         batch.entry = WORKER_LAYER_ENTRIES[layer];
         batch.texture = static_cast<std::uint16_t>(texture);
         batch.cutout = layer == static_cast<std::size_t>(WorkerLayer::Glow) ? 0.0f : static_cast<float>(_cutout);
@@ -155,6 +167,28 @@ std::shared_ptr<const Neuron::SceneTextures> LoadSceneTextures(const Neuron::Loo
     textures->files.push_back(std::move(*bytes));
   }
   return textures;
+}
+
+std::shared_ptr<const Neuron::SceneMeshes> LoadSceneMeshes(const Neuron::LooseContent& _content)
+{
+  auto meshes = std::make_shared<Neuron::SceneMeshes>();
+  for (const std::string_view key : SCENE_MESH_KEYS)
+  {
+    const auto bytes = _content.Read(key);
+    if (!bytes)
+    {
+      Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "a scene mesh: {}", Neuron::FormatAssetError(bytes.error()));
+      return nullptr;
+    }
+    auto mesh = Neuron::ReadMeshAsset(*bytes);
+    if (!mesh)
+    {
+      Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "the scene mesh {} is damaged: {}", key, mesh.error());
+      return nullptr;
+    }
+    meshes->meshes.push_back(std::make_shared<const Neuron::MeshAsset>(std::move(*mesh)));
+  }
+  return meshes;
 }
 
 double WorkerDetail(const TuningPresentation& _presentation, double _distance) noexcept
@@ -319,7 +353,7 @@ void AppendOrbBatches(std::span<const InterpolatedOrb> _orbs, const TuningPresen
 {
   const auto& orb = _presentation.ref.unit.essenceOrb;
   Neuron::QuadBatch batch;
-  batch.pass = Neuron::QuadPass::Orbs;
+  batch.pass = Neuron::ScenePass::Orbs;
   batch.entry = "orb_additive";
   batch.texture = static_cast<std::uint16_t>(SceneTexture::GlowRound);
   for (const InterpolatedOrb& drawn : _orbs)

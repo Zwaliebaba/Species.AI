@@ -35,6 +35,9 @@
     <ClCompile Include="DevelopmentOverlayTests.cpp">
       <Filter>Diagnostics</Filter>
     </ClCompile>
+    <ClCompile Include="LeaderLookTests.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
     <ClCompile Include="SettlementCameraTests.cpp">
       <Filter>View</Filter>
     </ClCompile>

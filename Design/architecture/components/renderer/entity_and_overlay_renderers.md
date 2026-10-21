@@ -327,6 +327,8 @@ A higher level draws fewer samples, and level 4 draws no glow strip.
 
 The Builder draws no beam in a match: none of its match states (R-UNIT-453) draws one. The Leader and the meteor are flat-shaded like every mesh (ADR-020).
 
+> **Amendment 2026-10-21 (M1 task T16, [ADR-122](../../../ADR/ADR-122-leaders-and-banners-drawn-at-m1.md)).** Until T17's world markers (pass 16) exist, pass 7b draws every Leader's banner, the local team's too, and a Waypoint banner's pointer waits for the order route T17 brings to the client. At M1 a dead Leader is drawn while its corpse sinks, with no shatter (O77).
+
 **RND-325** (MUST) A blob shadow of half-size *s* under a caster at *p* is one quad of `fx.glow_round` whose four corners lie at (*p.x* ± *s*, *y*, *p.z* ± *s*), each at *y* = max(terrain height at the corner + `rnd.shadow.blob.lift` (0.9 wu), `rnd.shadow.blob.min_height` (1.0 wu)), in the colour of [reference/02_units/README.md](../../../reference/02_units/README.md) R-UNIT-050, with the `blob_shadow` entry (RND-242). The shadow is skipped when all four corner heights are above *p.y*.
 
 **RND-326** (MUST) A centipede segment is lit with its mesh transform's uniform scale *σ* left in its normals: in the diffuse term of RND-233 its facet normal *n* is replaced by *n* ÷ *σ*, so a larger segment is lit darker and a smaller one brighter before the clamp (see DEC-958 item 3). Every other scaled actor mesh is lit with unit facet normals (RND-233).

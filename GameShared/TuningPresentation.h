@@ -269,6 +269,12 @@ struct TuningPresentation
       double workerCutout = 0.0;
     };
 
+    struct Tint
+    {
+      // rnd.tint.factor, in times the team colour
+      double factor = 0.0;
+    };
+
     Frame frame;
     View view;
     Fog fog;
@@ -278,6 +284,7 @@ struct TuningPresentation
     Budget budget;
     Crowd crowd;
     Pso pso;
+    Tint tint;
   };
 
   struct Ter
@@ -655,6 +662,15 @@ struct TuningPresentation
 
         // ref.unit.leader.pick_radius, in wu
         double pickRadius = 0.0;
+
+        // ref.unit.leader.banner_size, in wu
+        double bannerSize = 0.0;
+
+        // ref.unit.leader.banner_growth_divisor, in wu
+        double bannerGrowthDivisor = 0.0;
+
+        // ref.unit.leader.banner_face_divisor, in wu
+        double bannerFaceDivisor = 0.0;
       };
 
       struct Worker
@@ -732,14 +748,57 @@ struct TuningPresentation
         double ascentFadeTicks = 0.0;
       };
 
+      struct Flicker
+      {
+        // ref.unit.flicker.chance_scale, in range of the draw
+        double chanceScale = 0.0;
+
+        // ref.unit.flicker.phase_per_id, in rad per unit id
+        double phasePerId = 0.0;
+
+        // ref.unit.flicker.sine_weight, in times
+        double sineWeight = 0.0;
+      };
+
       Leader leader;
       Worker worker;
       EssenceOrb essenceOrb;
+      Flicker flicker;
+    };
+
+    struct Bldg
+    {
+      struct ClothFlag
+      {
+        // ref.bldg.cloth_flag.resolution, in vertices a side
+        std::int64_t resolution = 0;
+
+        // ref.bldg.cloth_flag.relax_rate, in per second
+        double relaxRate = 0.0;
+
+        // ref.bldg.cloth_flag.damped_factor, in per 60 Hz step
+        double dampedFactor = 0.0;
+
+        // ref.bldg.cloth_flag.damped_size_wu, in wu
+        double dampedSizeWu = 0.0;
+
+        // ref.bldg.cloth_flag.highlight_wobble, in times
+        double highlightWobble = 0.0;
+
+        // ref.bldg.cloth_flag.pole_width_wu, in wu
+        double poleWidthWu = 0.0;
+
+        // ref.bldg.cloth_flag.pole_height_factor, in times the flag size
+        double poleHeightFactor = 0.0;
+      };
+
+      ClothFlag clothFlag;
     };
 
     Sim sim;
     Ctrl ctrl;
     Unit unit;
+    Bldg bldg;
   };
 
   struct Mvp
@@ -983,7 +1042,69 @@ struct TuningPresentation
       double walkBobFullSpeed = 0.0;
     };
 
+    struct Cloth
+    {
+      struct WobblePhases
+      {
+        // vfx.cloth.wobble_phases.first, in rad per column
+        double first = 0.0;
+
+        // vfx.cloth.wobble_phases.second, in rad per column
+        double second = 0.0;
+
+        // vfx.cloth.wobble_phases.third, in rad per column
+        double third = 0.0;
+      };
+
+      WobblePhases wobblePhases;
+      // vfx.cloth.lift_gain, in times
+      double liftGain = 0.0;
+
+      // vfx.cloth.team_tint, in times the team colour
+      double teamTint = 0.0;
+
+      // vfx.cloth.banner_wobble, in rad
+      double bannerWobble = 0.0;
+
+      // vfx.cloth.banner_wobble_rate, in rad/s
+      double bannerWobbleRate = 0.0;
+    };
+
+    struct Flicker
+    {
+      struct AxisShares
+      {
+        // vfx.flicker.axis_shares.front, in share
+        double front = 0.0;
+
+        // vfx.flicker.axis_shares.up, in share
+        double up = 0.0;
+
+        // vfx.flicker.axis_shares.right, in share
+        double right = 0.0;
+      };
+
+      // vfx.flicker.step, in s of scaled presentation time
+      double step = 0.0;
+
+      AxisShares axisShares;
+      // vfx.flicker.gain, in times
+      double gain = 0.0;
+
+      // vfx.flicker.up_gain, in times
+      double upGain = 0.0;
+    };
+
+    struct Emit
+    {
+      // vfx.emit.step_rate, in steps per second of unscaled presentation time
+      double stepRate = 0.0;
+    };
+
     Worker worker;
+    Cloth cloth;
+    Flicker flicker;
+    Emit emit;
   };
 
   Rnd rnd;
@@ -1150,6 +1271,12 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Rnd::Tint& _out)
+{
+  _out.factor = _reader.Decimal(_object, "factor", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Rnd& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "frame"), _out.frame);
@@ -1161,6 +1288,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "budget"), _out.budget);
   ReadFields(_reader, _reader.Object(_object, "crowd"), _out.crowd);
   ReadFields(_reader, _reader.Object(_object, "pso"), _out.pso);
+  ReadFields(_reader, _reader.Object(_object, "tint"), _out.tint);
   _reader.Close(_object);
 }
 
@@ -1416,6 +1544,9 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 {
   _out.pickCenterLift = _reader.Decimal(_object, "pick_center_lift", {}, Neuron::SimPrecision::Binary64);
   _out.pickRadius = _reader.Decimal(_object, "pick_radius", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.bannerSize = _reader.Decimal(_object, "banner_size", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.bannerGrowthDivisor = _reader.Decimal(_object, "banner_growth_divisor", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.bannerFaceDivisor = _reader.Decimal(_object, "banner_face_divisor", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -1452,11 +1583,38 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ref::Unit::Flicker& _out)
+{
+  _out.chanceScale = _reader.Decimal(_object, "chance_scale", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.phasePerId = _reader.Decimal(_object, "phase_per_id", {}, Neuron::SimPrecision::Binary64);
+  _out.sineWeight = _reader.Decimal(_object, "sine_weight", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ref::Unit& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "leader"), _out.leader);
   ReadFields(_reader, _reader.Object(_object, "worker"), _out.worker);
   ReadFields(_reader, _reader.Object(_object, "essence_orb"), _out.essenceOrb);
+  ReadFields(_reader, _reader.Object(_object, "flicker"), _out.flicker);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ref::Bldg::ClothFlag& _out)
+{
+  _out.resolution = _reader.Integer(_object, "resolution", 0);
+  _out.relaxRate = _reader.Decimal(_object, "relax_rate", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.dampedFactor = _reader.Decimal(_object, "damped_factor", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.dampedSizeWu = _reader.Decimal(_object, "damped_size_wu", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.highlightWobble = _reader.Decimal(_object, "highlight_wobble", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.poleWidthWu = _reader.Decimal(_object, "pole_width_wu", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.poleHeightFactor = _reader.Decimal(_object, "pole_height_factor", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ref::Bldg& _out)
+{
+  ReadFields(_reader, _reader.Object(_object, "cloth_flag"), _out.clothFlag);
   _reader.Close(_object);
 }
 
@@ -1465,6 +1623,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "sim"), _out.sim);
   ReadFields(_reader, _reader.Object(_object, "ctrl"), _out.ctrl);
   ReadFields(_reader, _reader.Object(_object, "unit"), _out.unit);
+  ReadFields(_reader, _reader.Object(_object, "bldg"), _out.bldg);
   _reader.Close(_object);
 }
 
@@ -1646,9 +1805,53 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Vfx::Cloth::WobblePhases& _out)
+{
+  _out.first = _reader.Decimal(_object, "first", {}, Neuron::SimPrecision::Binary64);
+  _out.second = _reader.Decimal(_object, "second", {}, Neuron::SimPrecision::Binary64);
+  _out.third = _reader.Decimal(_object, "third", {}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Vfx::Cloth& _out)
+{
+  ReadFields(_reader, _reader.Object(_object, "wobble_phases"), _out.wobblePhases);
+  _out.liftGain = _reader.Decimal(_object, "lift_gain", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.teamTint = _reader.Decimal(_object, "team_tint", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.bannerWobble = _reader.Decimal(_object, "banner_wobble", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.bannerWobbleRate = _reader.Decimal(_object, "banner_wobble_rate", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Vfx::Flicker::AxisShares& _out)
+{
+  _out.front = _reader.Decimal(_object, "front", {}, Neuron::SimPrecision::Binary64);
+  _out.up = _reader.Decimal(_object, "up", {}, Neuron::SimPrecision::Binary64);
+  _out.right = _reader.Decimal(_object, "right", {}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Vfx::Flicker& _out)
+{
+  _out.step = _reader.Decimal(_object, "step", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  ReadFields(_reader, _reader.Object(_object, "axis_shares"), _out.axisShares);
+  _out.gain = _reader.Decimal(_object, "gain", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.upGain = _reader.Decimal(_object, "up_gain", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Vfx::Emit& _out)
+{
+  _out.stepRate = _reader.Decimal(_object, "step_rate", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Vfx& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "worker"), _out.worker);
+  ReadFields(_reader, _reader.Object(_object, "cloth"), _out.cloth);
+  ReadFields(_reader, _reader.Object(_object, "flicker"), _out.flicker);
+  ReadFields(_reader, _reader.Object(_object, "emit"), _out.emit);
   _reader.Close(_object);
 }
 
@@ -1951,6 +2154,16 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   _out.workerCutout = _reader.F64();
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Rnd::Tint& _in)
+{
+  _writer.F64(_in.factor);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Rnd::Tint& _out)
+{
+  _out.factor = _reader.F64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Rnd& _in)
 {
   CookFields(_writer, _in.frame);
@@ -1962,6 +2175,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::
   CookFields(_writer, _in.budget);
   CookFields(_writer, _in.crowd);
   CookFields(_writer, _in.pso);
+  CookFields(_writer, _in.tint);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Rnd& _out)
@@ -1975,6 +2189,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   ReadCookedFields(_reader, _out.budget);
   ReadCookedFields(_reader, _out.crowd);
   ReadCookedFields(_reader, _out.pso);
+  ReadCookedFields(_reader, _out.tint);
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ter::Color& _in)
@@ -2411,12 +2626,18 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::
 {
   _writer.F64(_in.pickCenterLift);
   _writer.F64(_in.pickRadius);
+  _writer.F64(_in.bannerSize);
+  _writer.F64(_in.bannerGrowthDivisor);
+  _writer.F64(_in.bannerFaceDivisor);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ref::Unit::Leader& _out)
 {
   _out.pickCenterLift = _reader.F64();
   _out.pickRadius = _reader.F64();
+  _out.bannerSize = _reader.F64();
+  _out.bannerGrowthDivisor = _reader.F64();
+  _out.bannerFaceDivisor = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref::Unit::Worker& _in)
@@ -2481,11 +2702,26 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   _out.ascentFadeTicks = _reader.F64();
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref::Unit::Flicker& _in)
+{
+  _writer.F64(_in.chanceScale);
+  _writer.F64(_in.phasePerId);
+  _writer.F64(_in.sineWeight);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ref::Unit::Flicker& _out)
+{
+  _out.chanceScale = _reader.F64();
+  _out.phasePerId = _reader.F64();
+  _out.sineWeight = _reader.F64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref::Unit& _in)
 {
   CookFields(_writer, _in.leader);
   CookFields(_writer, _in.worker);
   CookFields(_writer, _in.essenceOrb);
+  CookFields(_writer, _in.flicker);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ref::Unit& _out)
@@ -2493,6 +2729,39 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   ReadCookedFields(_reader, _out.leader);
   ReadCookedFields(_reader, _out.worker);
   ReadCookedFields(_reader, _out.essenceOrb);
+  ReadCookedFields(_reader, _out.flicker);
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref::Bldg::ClothFlag& _in)
+{
+  _writer.I64(_in.resolution);
+  _writer.F64(_in.relaxRate);
+  _writer.F64(_in.dampedFactor);
+  _writer.F64(_in.dampedSizeWu);
+  _writer.F64(_in.highlightWobble);
+  _writer.F64(_in.poleWidthWu);
+  _writer.F64(_in.poleHeightFactor);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ref::Bldg::ClothFlag& _out)
+{
+  _out.resolution = _reader.I64();
+  _out.relaxRate = _reader.F64();
+  _out.dampedFactor = _reader.F64();
+  _out.dampedSizeWu = _reader.F64();
+  _out.highlightWobble = _reader.F64();
+  _out.poleWidthWu = _reader.F64();
+  _out.poleHeightFactor = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref::Bldg& _in)
+{
+  CookFields(_writer, _in.clothFlag);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ref::Bldg& _out)
+{
+  ReadCookedFields(_reader, _out.clothFlag);
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref& _in)
@@ -2500,6 +2769,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::
   CookFields(_writer, _in.sim);
   CookFields(_writer, _in.ctrl);
   CookFields(_writer, _in.unit);
+  CookFields(_writer, _in.bldg);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ref& _out)
@@ -2507,6 +2777,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   ReadCookedFields(_reader, _out.sim);
   ReadCookedFields(_reader, _out.ctrl);
   ReadCookedFields(_reader, _out.unit);
+  ReadCookedFields(_reader, _out.bldg);
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Mvp::Light::Key::Towards& _in)
@@ -2817,14 +3088,92 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   _out.walkBobFullSpeed = _reader.F64();
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Vfx::Cloth::WobblePhases& _in)
+{
+  _writer.F64(_in.first);
+  _writer.F64(_in.second);
+  _writer.F64(_in.third);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Vfx::Cloth::WobblePhases& _out)
+{
+  _out.first = _reader.F64();
+  _out.second = _reader.F64();
+  _out.third = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Vfx::Cloth& _in)
+{
+  CookFields(_writer, _in.wobblePhases);
+  _writer.F64(_in.liftGain);
+  _writer.F64(_in.teamTint);
+  _writer.F64(_in.bannerWobble);
+  _writer.F64(_in.bannerWobbleRate);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Vfx::Cloth& _out)
+{
+  ReadCookedFields(_reader, _out.wobblePhases);
+  _out.liftGain = _reader.F64();
+  _out.teamTint = _reader.F64();
+  _out.bannerWobble = _reader.F64();
+  _out.bannerWobbleRate = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Vfx::Flicker::AxisShares& _in)
+{
+  _writer.F64(_in.front);
+  _writer.F64(_in.up);
+  _writer.F64(_in.right);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Vfx::Flicker::AxisShares& _out)
+{
+  _out.front = _reader.F64();
+  _out.up = _reader.F64();
+  _out.right = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Vfx::Flicker& _in)
+{
+  _writer.F64(_in.step);
+  CookFields(_writer, _in.axisShares);
+  _writer.F64(_in.gain);
+  _writer.F64(_in.upGain);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Vfx::Flicker& _out)
+{
+  _out.step = _reader.F64();
+  ReadCookedFields(_reader, _out.axisShares);
+  _out.gain = _reader.F64();
+  _out.upGain = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Vfx::Emit& _in)
+{
+  _writer.F64(_in.stepRate);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Vfx::Emit& _out)
+{
+  _out.stepRate = _reader.F64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Vfx& _in)
 {
   CookFields(_writer, _in.worker);
+  CookFields(_writer, _in.cloth);
+  CookFields(_writer, _in.flicker);
+  CookFields(_writer, _in.emit);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Vfx& _out)
 {
   ReadCookedFields(_reader, _out.worker);
+  ReadCookedFields(_reader, _out.cloth);
+  ReadCookedFields(_reader, _out.flicker);
+  ReadCookedFields(_reader, _out.emit);
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation& _in)
