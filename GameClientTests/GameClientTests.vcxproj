@@ -168,8 +168,17 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BattleVerbsTests.cpp" />
     <ClCompile Include="ClientSessionTests.cpp" />
+    <ClCompile Include="CrowdLookTests.cpp" />
+    <ClCompile Include="DevelopmentOverlayTests.cpp" />
+    <ClCompile Include="EffectsLookTests.cpp" />
+    <ClCompile Include="LeaderLookTests.cpp" />
+    <ClCompile Include="RoutePreviewTests.cpp" />
+    <ClCompile Include="SettlementCameraTests.cpp" />
     <ClCompile Include="TestSupport.cpp" />
+    <ClCompile Include="WorldMarkersTests.cpp" />
+    <ClCompile Include="WorldPresentationTests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

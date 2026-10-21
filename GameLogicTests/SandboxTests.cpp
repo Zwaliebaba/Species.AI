@@ -16,6 +16,7 @@
 #include "WorkerPool.h"
 #include "WorldServer.h"
 #include "WorldSimulation.h"
+#include "WorldTerrain.h"
 
 #include <cmath>
 #include <cstddef>
@@ -77,15 +78,19 @@ double GroundDistance(const Neuron::Vec3& _a, const Neuron::Vec3& _b)
 class RecordingSender final : public Neuron::ConnectionSender
 {
 public:
-  [[nodiscard]] bool Send(Neuron::ConnectionId, Neuron::Channel, std::span<const std::byte> _message) override
+  [[nodiscard]] std::optional<std::uint64_t> Send(Neuron::ConnectionId, Neuron::Channel _channel,
+                                                  std::span<const std::byte> _message) override
   {
     Neuron::MessageDispatcher dispatcher;
     dispatcher.Register<Species::CommandReport>([this](const Species::CommandReport& _report) { reports.push_back(_report); });
+    dispatcher.Register<Species::WorldTerrain>([this](const Species::WorldTerrain& _terrain) { terrains.push_back(_terrain); });
     static_cast<void>(dispatcher.Dispatch(_message));
-    return true;
+    return _channel == Neuron::Channel::State ? ++datagrams : 0;
   }
 
   std::vector<Species::CommandReport> reports;
+  std::vector<Species::WorldTerrain> terrains;
+  std::uint64_t datagrams = 0;
 };
 
 // A command from the steward, as the transport delivers it.
@@ -136,6 +141,23 @@ public:
     Assert::IsFalse(region.MayCommand(steward, Species::SANDBOX_AI_TEAM, false), L"and not the AI's");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp005AWatchedSandboxHasAnAiOnEachSide)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-005")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp005AWatchedSandboxHasAnAiOnEachSide)
+  {
+    // O77: --watch gives the steward's side the AI too, and the steward commands neither side.
+    const Species::WorldStart start{SANDBOX_TEST_KEY, 1, 0, 1, true, true};
+    const std::unique_ptr<Species::WorldSimulation> world = Species::StartWorld(start, ValleyTerrain(), CommittedTuning());
+    const Species::RegionSimulation& region = world->Region(0);
+    Assert::IsTrue(region.Ais().size() == 2, L"an AI on each side");
+    Assert::IsTrue(region.Ais()[0].team != region.Ais()[1].team, L"one per side");
+    const Species::StableId steward = Species::ConnectSteward(*world, true, true);
+    Assert::IsFalse(region.MayCommand(steward, Species::SANDBOX_STEWARD_TEAM, false), L"the steward commands neither side");
+    Assert::IsFalse(region.MayCommand(steward, Species::SANDBOX_AI_TEAM, false));
+    Assert::IsFalse(region.TeamCommandedBy(steward).has_value(), L"so its terrain message names no team");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp093TheSandboxAndTheSyntheticBattleHashAlikeAtAnyWorkerCount)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-093")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-094")
@@ -162,6 +184,15 @@ public:
                   static_cast<std::int64_t>(synthetic->Region(0).TeamAt(1).figures.Count()),
                 L"the synthetic battle's figures");
     ExpectEqual(2, static_cast<std::int64_t>(synthetic->Region(0).Ais().size()), L"an AI on each side");
+    // ADR-126: a world start that names the battle's figures, as the frame bench's scene of mvp.client.figures_max does.
+    const Species::WorldStart start{
+      SANDBOX_TEST_KEY, 1, 0, 1, true, true, static_cast<std::uint32_t>(CommittedTuning().mvp.client.figuresMax)};
+    const std::unique_ptr<Species::WorldSimulation> figuresMax = Species::StartWorld(start, ValleyTerrain(), CommittedTuning());
+    ExpectEqual(CommittedTuning().mvp.client.figuresMax,
+                static_cast<std::int64_t>(figuresMax->Region(0).TeamAt(0).figures.Count()) +
+                  static_cast<std::int64_t>(figuresMax->Region(0).TeamAt(1).figures.Count()),
+                L"the figures it names");
+    ExpectEqual(2, static_cast<std::int64_t>(figuresMax->Region(0).Ais().size()), L"and an AI on each side");
     // The eight runs are independent, so they run at once.
     static_cast<void>(ValleyTerrain());
     const std::vector<std::size_t> workerCounts{0, 1, 2, 8};
@@ -277,7 +308,7 @@ public:
   TEST_METHOD(Mvp076AJournalReadsBackAsItWasWritten)
   {
     Species::CommandJournal journal;
-    journal.start = {SANDBOX_TEST_KEY, 77, 40, 1, true};
+    journal.start = {SANDBOX_TEST_KEY, 77, 40, 1, true, true, 1'500};
     journal.entries.push_back({40, true, Species::JOURNAL_WORLD_OWNER, 9, 0, {}});
     journal.entries.push_back({40, false, 1, 9, 0, Neuron::EncodeMessage(Species::PromoteWorkerCommand{0, 12})});
     journal.entries.push_back({52, false, Species::JOURNAL_WORLD_OWNER, 9, 1, Neuron::EncodeMessage(Species::SelectCommand{0, 0})});
@@ -286,8 +317,9 @@ public:
     Assert::IsTrue(read.has_value(), L"the journal reads");
     const Species::CommandJournal back = read.value_or(Species::CommandJournal{});
     Assert::IsTrue(back.start.key.low == SANDBOX_TEST_KEY.low && back.start.key.high == SANDBOX_TEST_KEY.high && back.start.seed == 77 &&
-                     back.start.firstTick == 40 && back.start.regions == 1 && back.start.sandbox,
-                   L"its start");
+                     back.start.firstTick == 40 && back.start.regions == 1 && back.start.sandbox && back.start.watched &&
+                     back.start.syntheticFigures == 1'500,
+                   L"its start, watched (O77), with the synthetic battle's figures (ADR-126)");
     Assert::IsTrue(back.entries == journal.entries, L"its entries");
 
     Assert::IsFalse(Species::ReadJournal(std::span(bytes).first(bytes.size() - 1)).has_value(), L"a short file does not read");
@@ -430,6 +462,9 @@ public:
       server.Publish(tick, sender);
     }
     const std::uint64_t seed = server.Simulation()->WorldSeed();
+    // ADR-119: the terrain names the side the steward commands.
+    Assert::IsTrue(sender.terrains.size() == 1 && sender.terrains[0].commandedTeam == Species::SANDBOX_STEWARD_TEAM,
+                   L"the steward's side with the terrain");
     Assert::IsTrue(server.Journal().has_value(), L"a new world has its journal");
     const Neuron::SipHashKey key = server.Journal().value_or(Species::CommandJournal{}).start.key;
     server.Receive(STEWARD_CONNECTION, CommandFrom(Species::SandboxRestartCommand{false}));
@@ -449,6 +484,8 @@ public:
     Assert::IsTrue(!sender.reports.empty() && sender.reports.back().sequence == 0 &&
                      sender.reports.back().result == Species::CommandResult::Applied,
                    L"the restart's outcome");
+    Assert::IsTrue(sender.terrains.size() == 2 && sender.terrains[1].commandedTeam == Species::SANDBOX_STEWARD_TEAM,
+                   L"the new world's terrain, with the side again");
 
     server.Receive(STEWARD_CONNECTION, CommandFrom(Species::SandboxRestartCommand{true}));
     Assert::IsTrue(server.Simulation()->NextTick() == first + 51 &&

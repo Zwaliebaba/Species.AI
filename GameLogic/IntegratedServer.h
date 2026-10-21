@@ -29,6 +29,8 @@ public:
     std::size_t workers = 2;                       // ADR-080 item 7: the tick thread and at most 2 workers
     std::optional<std::uint64_t> worldSeed;        // MVP-005: the seed the world is built from; none: a seed the server draws
     bool sandbox = false;                          // M1 plan §6: a new world is the battle sandbox
+    bool watched = false;                          // O77: the sandbox's AI commands both sides, and the client none
+    std::uint32_t syntheticFigures = 0;            // ADR-126: the sandbox's sides are a synthetic battle of this many figures
   };
 
   explicit IntegratedServer(const Desc& _desc);

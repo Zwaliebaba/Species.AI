@@ -80,7 +80,7 @@ public:
     {
       if (!message.echoed)
       {
-        Assert::IsTrue(_sender.Send(message.connection, Neuron::Channel::State, message.bytes));
+        Assert::IsTrue(_sender.Send(message.connection, Neuron::Channel::State, message.bytes).has_value());
       }
     }
     for (Received& message : received)

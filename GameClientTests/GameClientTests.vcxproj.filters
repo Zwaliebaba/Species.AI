@@ -4,11 +4,20 @@
     <Filter Include="Build">
       <UniqueIdentifier>{8657A25F-2F60-5351-A022-DBA55339ADD7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Diagnostics">
+      <UniqueIdentifier>{79D4F300-B117-5FCD-9DC1-996450ECE042}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Input">
+      <UniqueIdentifier>{23C8ACAB-3C70-57C3-80E6-350B82243995}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Session">
       <UniqueIdentifier>{A167963F-DF56-52F7-B34B-539640C43309}</UniqueIdentifier>
     </Filter>
     <Filter Include="Tests">
       <UniqueIdentifier>{1BFA3DA3-11BC-5C15-823B-4A380E3991FA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="View">
+      <UniqueIdentifier>{8642E99D-0A1E-5413-A8A6-546FA52B559B}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -20,11 +29,38 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BattleVerbsTests.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
     <ClCompile Include="ClientSessionTests.cpp">
       <Filter>Session</Filter>
     </ClCompile>
+    <ClCompile Include="CrowdLookTests.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="DevelopmentOverlayTests.cpp">
+      <Filter>Diagnostics</Filter>
+    </ClCompile>
+    <ClCompile Include="EffectsLookTests.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="LeaderLookTests.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="RoutePreviewTests.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="SettlementCameraTests.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
     <ClCompile Include="TestSupport.cpp">
       <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldMarkersTests.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldPresentationTests.cpp">
+      <Filter>Session</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Build</Filter>

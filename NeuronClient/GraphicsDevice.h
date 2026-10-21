@@ -25,7 +25,8 @@ template <class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 class GraphicsDevice
 {
 public:
-  [[nodiscard]] static std::expected<GraphicsDevice, StartupFailure> Create();
+  // RND-020 with ADR-002's checks on the hardware adapters, or, for the render check, on the WARP adapter alone.
+  [[nodiscard]] static std::expected<GraphicsDevice, StartupFailure> Create(const RenderConfig& _config);
 
   GraphicsDevice(GraphicsDevice&& _other) noexcept = default;
   GraphicsDevice& operator=(GraphicsDevice&& _other) noexcept = default;
@@ -62,6 +63,8 @@ public:
 
 #if ENGINE_DEVELOPMENT
   void Remove() const;
+  // The debug layer's messages of warning severity or above, counted by its callback for the whole process.
+  [[nodiscard]] static std::uint64_t DebugLayerMessages() noexcept;
 #endif
 
 private:

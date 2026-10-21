@@ -3,6 +3,7 @@
 #include "AuthoringParser.h"
 #include "RecordCooker.h"
 #include "TuningMvp.h"
+#include "TuningPresentation.h"
 
 #include <algorithm>
 #include <array>
@@ -31,26 +32,31 @@ struct RecordType
   bool (*readsBack)(std::span<const std::byte>) = nullptr;
 };
 
-CookedBytes CookTuning(const Neuron::JsonDocument& _document)
+// The generated reader and cooker of one record type, and AST-091's check that the cooked entry reads back through the
+// program's loader as the record the cooker wrote.
+template <auto Read, auto Cook> CookedBytes CookWith(const Neuron::JsonDocument& _document)
 {
-  auto record = Species::ReadTuningMvp(_document);
+  auto record = Read(_document);
   if (!record)
   {
     return std::unexpected(std::move(record.error()));
   }
-  return Species::CookTuningMvp(*record);
+  return Cook(*record);
 }
 
-// AST-091: the cooked entry reads back through the server's loader as the record the cooker wrote.
-bool TuningReadsBack(std::span<const std::byte> _entry)
+template <auto Cook, auto ReadCooked> bool ReadsBackWith(std::span<const std::byte> _entry)
 {
-  const auto record = Species::ReadCookedTuningMvp(_entry);
-  return record && std::ranges::equal(Species::CookTuningMvp(*record), _entry);
+  const auto record = ReadCooked(_entry);
+  return record && std::ranges::equal(Cook(*record), _entry);
 }
 
-constexpr std::array<RecordType, 1> RECORD_TYPES{{
-  {Species::TUNING_MVP_SCHEMA_ID, Species::TUNING_MVP_VERSION, "Records/tuning/", Species::TUNING_MVP_SIMULATION_RELEVANT, &CookTuning,
-   &TuningReadsBack},
+constexpr std::array<RecordType, 2> RECORD_TYPES{{
+  {Species::TUNING_MVP_SCHEMA_ID, Species::TUNING_MVP_VERSION, "Records/tuning/", Species::TUNING_MVP_SIMULATION_RELEVANT,
+   &CookWith<&Species::ReadTuningMvp, &Species::CookTuningMvp>, &ReadsBackWith<&Species::CookTuningMvp, &Species::ReadCookedTuningMvp>},
+  // The client's presentation values (owner decision O75, ADR-116): cooked like the tuning record, never simulation-relevant.
+  {Species::TUNING_PRESENTATION_SCHEMA_ID, Species::TUNING_PRESENTATION_VERSION, "Records/tuning/",
+   Species::TUNING_PRESENTATION_SIMULATION_RELEVANT, &CookWith<&Species::ReadTuningPresentation, &Species::CookTuningPresentation>,
+   &ReadsBackWith<&Species::CookTuningPresentation, &Species::ReadCookedTuningPresentation>},
 }};
 
 } // namespace

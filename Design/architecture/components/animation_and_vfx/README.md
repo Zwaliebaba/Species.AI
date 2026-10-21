@@ -542,3 +542,4 @@ The tests of the explainer player, the sprite recipes and the procedural animati
 | `vfx.emit.step_rate` | 60 | steps per s of unscaled presentation time | the rate at which reference per-frame behaviour runs; the renderer's target frame rate | VFX-018 | |
 | `vfx.cloth.pointer_slope_bias` | 1.0 | slope-scaled depth bias | `bias_flag_pointer`, towards the camera | VFX-014 | |
 | `vfx.cloth.pointer_constant_bias` | 5 | depth-bias units | `bias_flag_pointer`, towards the camera | VFX-014 | |
+| `vfx.cloth.pointer_size_factor` | 0.25 | × the banner's size | Species, provisional (ADR-125); the pointer's half-size over a Waypoint banner | VFX-141 | |

@@ -1,0 +1,767 @@
+{
+  "schema": "tuning.presentation",
+  "version": "1.0",
+  "rnd": {
+    "frame": {
+      "clear_color": {
+        "r": 0,
+        "g": 0,
+        "b": 0
+      },
+      "clear_color_no_match": {
+        "r": 0.05,
+        "g": 0,
+        "b": 0.05
+      }
+    },
+    "view": {
+      "near_plane": 5,
+      "far_plane": 15000,
+      "fov_min": 1,
+      "fov_max": 180
+    },
+    "fog": {
+      "min_end": 4000,
+      "edge_margin": 1000,
+      "start_fraction": 0.3333333333333333
+    },
+    "terrain": {
+      "sink_threshold": 0.3,
+      "sink_height": -10,
+      "overlay_specular": 0.5,
+      "overlay_shininess": 40
+    },
+    "sea": {
+      "flat_height": -9,
+      "tile_repeats": 30,
+      "tile_scroll_period": 30,
+      "wave_table_row": 1
+    },
+    "sky": {
+      "grid_height": 1200,
+      "grid_spacing": 80,
+      "grid_min": -4000,
+      "grid_max": 6000,
+      "grid_line_half_width": 8,
+      "grid_color": {
+        "r": 0.5,
+        "g": 0.5,
+        "b": 1.0,
+        "a": 0.3
+      },
+      "grid_fog_start": 2000,
+      "grid_fog_end": 4000,
+      "initial_velocity": {
+        "x": 0.04,
+        "y": 0,
+        "z": 0
+      },
+      "velocity": {
+        "x": 0.03,
+        "y": 0,
+        "z": -0.01
+      },
+      "cloud_min": -8000,
+      "cloud_max": 9000,
+      "cloud_fog_start": 2000,
+      "cloud_fog_end": 5000,
+      "layer2_height": 1000,
+      "layer3_height": 800,
+      "blobby_color": {
+        "r": 0.7,
+        "g": 0.7,
+        "b": 0.9,
+        "a": 0.6
+      },
+      "flat_color": {
+        "r": 0.7,
+        "g": 0.7,
+        "b": 0.9,
+        "a": 0.3
+      },
+      "flat_alpha_low_detail": 0.5,
+      "layer1_repeats": 9,
+      "layer2_repeats": 4.5,
+      "layer3_repeats": 1.8
+    },
+    "budget": {
+      "target_frame_rate": 60
+    },
+    "crowd": {
+      "worker_detail_distance": {
+        "first": 99999.9,
+        "second": 1000,
+        "third": 500
+      }
+    },
+    "pso": {
+      "worker_cutout": 0.04
+    },
+    "tint": {
+      "factor": 0.7
+    },
+    "depth_bias": {
+      "laser": 1.2,
+      "unit_scale": 16777216
+    },
+    "frustum": {
+      "point_tolerance": 0.2
+    },
+    "laser": {
+      "layers": 5,
+      "half_width": 0.8
+    },
+    "shockwave": {
+      "center_color": {
+        "r": 1,
+        "g": 1,
+        "b": 0,
+        "a": 0
+      },
+      "rim_color": {
+        "r": 1,
+        "g": 0.5,
+        "b": 0.5
+      },
+      "disc_segments": 32,
+      "blast_layers": 5,
+      "blast_star_scale": 500,
+      "blast_glow_scale": 1000,
+      "blast_layer_growth": 1.2,
+      "blast_color": {
+        "r": 1,
+        "g": 0.5,
+        "b": 0.2
+      }
+    },
+    "route": {
+      "spot_size_divisor": 100,
+      "blocked_color": {
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "a": 100
+      },
+      "gray_offset": 50,
+      "pulse_base": 0.5,
+      "pulse_amplitude": 0.5,
+      "pulse_rate": 10,
+      "pulse_phase_step": 0.7,
+      "arrow_size_factor": 2,
+      "preview_rebuild_distance": 1
+    }
+  },
+  "ter": {
+    "color": {
+      "ramp_size": 64,
+      "center_factor": 0.33333,
+      "slope_exponent": 0.4,
+      "jitter_numerator": 0.45,
+      "jitter_offset": 2.0
+    },
+    "sea": {
+      "mask_size": 128,
+      "mask_land_offset": 32,
+      "blur_taps": {
+        "tap_0": 0.2,
+        "tap_1": 0.3,
+        "tap_2": 0.4,
+        "tap_3": 0.5,
+        "tap_4": 0.8,
+        "tap_5": 1.0,
+        "tap_6": 0.8,
+        "tap_7": 0.5,
+        "tap_8": 0.4,
+        "tap_9": 0.3,
+        "tap_10": 0.2
+      },
+      "blur_normalizer": 5.4,
+      "blur_skip_tolerance": 1e-06,
+      "mask_gain": 855,
+      "mask_max": 255,
+      "depth_outside": 1.0,
+      "flat_tile_ratio": 4,
+      "cell_divisor": 100,
+      "vertex_land_limit": 4.0,
+      "vertex_depth_limit": 0.999,
+      "wave": {
+        "shore_noise": 0.25,
+        "shore_brightening": 250.0,
+        "table_margin": 2,
+        "amplitude_scale": 7.0,
+        "x_terms": {
+          "first": {
+            "per_wu": 0.01,
+            "per_second": 0.65,
+            "amplitude": 1.2
+          },
+          "second": {
+            "per_wu": 0.03,
+            "per_second": 1.5,
+            "amplitude": 0.9
+          }
+        },
+        "z_terms": {
+          "first": {
+            "per_wu": 0.02,
+            "per_second": 0.75,
+            "amplitude": 0.9
+          },
+          "second": {
+            "per_wu": 0.03,
+            "per_second": 1.85,
+            "amplitude": 0.65
+          }
+        },
+        "index_bias": 0.1,
+        "brightness_scale": 4.0,
+        "color_mix": {
+          "other": 0.7,
+          "own": 0.3
+        }
+      }
+    }
+  },
+  "ref": {
+    "sim": {
+      "match": {
+        "presentation_seed": 1
+      },
+      "frame": {
+        "fps_window": 1.0,
+        "fps_initial": 60,
+        "delta_clamp": 0.25
+      },
+      "match_entry": {
+        "camera_border": 200,
+        "fallback_camera_height": 1000,
+        "fallback_camera_direction": {
+          "x": -1,
+          "y": -0.7,
+          "z": -1
+        }
+      },
+      "command": {
+        "control_state_period": 1
+      }
+    },
+    "ctrl": {
+      "camera": {
+        "fov_base": 60,
+        "zoom_divisor": 4,
+        "zoom_rates": {
+          "normal": 30,
+          "zooming": 100,
+          "scripted": 1,
+          "blend_factor": 0.1
+        },
+        "height_key_rate": 7,
+        "height_scale": 2,
+        "min_height": 10,
+        "ground_clearance": 10,
+        "max_height": 5000,
+        "pan_speed": 250,
+        "fast_pan_factor": 4,
+        "cliff_probe": {
+          "length": 100,
+          "samples": 40,
+          "slow_start": 30
+        },
+        "ground_samples": 10,
+        "position_smoothing": 4,
+        "shake": {
+          "yaw_factor": 0.05,
+          "roll_factor": 0.3,
+          "decay": 1
+        }
+      },
+      "pointer": {
+        "miss_ray_start": 4,
+        "miss_sphere_factor": 40
+      },
+      "cursor": {
+        "set": {
+          "highlight_hotspot": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "unavailable_hotspot": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "unavailable_color": {
+            "r": 255,
+            "g": 0,
+            "b": 0
+          }
+        },
+        "circle_particles": 30,
+        "circle_spin": 0.5,
+        "circle_lift": 10,
+        "icon_offset": 5,
+        "icon_divisor": 24,
+        "icon_center_offset": 50
+      },
+      "promote": {
+        "flash_count": {
+          "base": 5,
+          "modulus": 5
+        },
+        "flash_velocity": {
+          "x_range": 5,
+          "y_range": 15,
+          "z_range": 5
+        }
+      },
+      "select": {
+        "circle_growth": 100,
+        "circle_max_radius": 100
+      },
+      "order": {
+        "crowd_interval_ticks": 10
+      },
+      "promote_radius": 10,
+      "marker": {
+        "lift": 20,
+        "own_sort_offset": 50,
+        "new_age": 3,
+        "smoothing": 5,
+        "edge_probe": 100,
+        "edge_probe_ahead": 1000,
+        "edge_inset": 50,
+        "alpha": {
+          "seen_after_s": 1
+        },
+        "size": {
+          "icon_divisor": 20,
+          "shadow_pad": 10,
+          "compass_divisor": 30,
+          "near_distance": 500,
+          "hover_scale": 1.2
+        },
+        "shadow_alpha": 0.9
+      }
+    },
+    "unit": {
+      "leader": {
+        "pick_center_lift": 4,
+        "pick_radius": 8,
+        "banner_size": 20,
+        "banner_growth_divisor": 1500,
+        "banner_face_divisor": 200,
+        "trail_size_min": 5,
+        "trail_size_scale": 20,
+        "trail_size_divisor": 2000,
+        "trail_alpha": 0.6
+      },
+      "worker": {
+        "card_scale_start": 100,
+        "card_scale_divisor": 1000,
+        "card_half_width": 3.0,
+        "card_variation": 0.03,
+        "card_face_start": 300,
+        "tumble_rate": 0.1,
+        "side_view_threshold": 0.95,
+        "air_corpse_hurt_share": 0.3,
+        "color_base": 0.3,
+        "color_health_weight": 0.7,
+        "corpse_color": 0.2,
+        "corpse_alpha_per_health": 2.5,
+        "corpse_fragments": 3,
+        "control_glow_min": 0.3,
+        "shadow_alpha": 150,
+        "shadow_range": 2000
+      },
+      "essence_orb": {
+        "inner_size": 0.5,
+        "inner_alpha": 127,
+        "outer_size": 1.5,
+        "outer_alpha": 50,
+        "birth_scale_offset": 1.2,
+        "birth_scale_ticks": 60,
+        "ascent_fade_ticks": 900
+      },
+      "flicker": {
+        "chance_scale": 0.75,
+        "phase_per_id": 10,
+        "sine_weight": 0.8
+      }
+    },
+    "bldg": {
+      "cloth_flag": {
+        "resolution": 6,
+        "relax_rate": 10,
+        "damped_factor": 0.7,
+        "damped_size_wu": 40,
+        "highlight_wobble": 0.3,
+        "pole_width_wu": 0.4,
+        "pole_height_factor": 1.5
+      }
+    },
+    "weapon": {
+      "laser": {
+        "billboard_length": 10,
+        "shake_range_sq": 200,
+        "shake": 0.5
+      },
+      "muzzle_flash": {
+        "laser_size_factor": 25,
+        "laser_life": 1.5,
+        "throw_size": 20,
+        "throw_life": 3,
+        "speed": 10,
+        "decay": 10,
+        "quads": 5,
+        "shrink": 0.8,
+        "alpha_factor": 0.75,
+        "depth_test_size": 50
+      },
+      "thrown": {
+        "color": {
+          "r": 255,
+          "g": 100,
+          "b": 100
+        },
+        "trail_size": 60,
+        "trail_jitter": 5,
+        "trail_skip": 0.1,
+        "flash_alpha": 200,
+        "inner_flash_fraction": 0.2,
+        "flash_size_factor": 1000
+      },
+      "explosion": {
+        "particle_factor": 0.01,
+        "core_lift": 0.3,
+        "debris_min": 2,
+        "debris_max": 30
+      },
+      "shockwave": {
+        "disc_lift": 5,
+        "disc_alpha": 0.6,
+        "flash_time": 0.1,
+        "flash_range": 500,
+        "billboard_time": 1
+      }
+    }
+  },
+  "mvp": {
+    "light": {
+      "key": {
+        "towards": {
+          "x": -0.04,
+          "y": 0.43,
+          "z": 0.9
+        },
+        "color": {
+          "r": 2.0,
+          "g": 1.0,
+          "b": 0.4
+        }
+      },
+      "fill": {
+        "towards": {
+          "x": 0.07,
+          "y": 0.35,
+          "z": 0.93
+        },
+        "color": {
+          "r": 1.0,
+          "g": 1.0,
+          "b": 1.0
+        }
+      }
+    },
+    "cursor": {
+      "world_size": 48,
+      "highlight_size": 48,
+      "unavailable_size": 60,
+      "world_hotspot": {
+        "x": 0.113,
+        "y": 0.082
+      }
+    }
+  },
+  "dbg": {
+    "overlay": {
+      "frame_rate_right": 10,
+      "frame_rate_bottom": 40,
+      "warning_rgb": {
+        "r": 255,
+        "g": 64,
+        "b": 64
+      }
+    },
+    "profile": {
+      "rollup_period_ms": 1000,
+      "frame_history": 200,
+      "view": {
+        "graph_height": 100,
+        "graph_full_ms": 200,
+        "graph_marks_ms": {
+          "first": 200,
+          "second": 100,
+          "third": 50
+        }
+      }
+    },
+    "telemetry": {
+      "percentiles": {
+        "first": 50,
+        "second": 95,
+        "third": 99
+      }
+    }
+  },
+  "cam": {
+    "pick": {
+      "row_offset": 1
+    }
+  },
+  "vfx": {
+    "worker": {
+      "airborne_lift": 3,
+      "shadow_lift": 0.3,
+      "glow_pulse_fast": 5,
+      "control_glow_color": {
+        "r": 0.1,
+        "g": 0.1,
+        "b": 1.0
+      },
+      "control_glow_layers": 10,
+      "side_alpha_gain": 20,
+      "side_half_width": 0.25,
+      "fragment_alpha": 2.55,
+      "fragment_spread": 10,
+      "fragment_spread_divisor": 10,
+      "walk_bob_height": 0.4,
+      "walk_bob_rate": 6,
+      "walk_bob_full_speed": 20,
+      "recoil_distance": 0.5,
+      "recoil_time": 0.15,
+      "recoil_match_range": 3
+    },
+    "cloth": {
+      "wobble_phases": {
+        "first": 1.5,
+        "second": 1.1,
+        "third": 1.3
+      },
+      "lift_gain": 3,
+      "team_tint": 0.5,
+      "banner_wobble": 0.4,
+      "banner_wobble_rate": 2,
+      "pointer_slope_bias": 1.0,
+      "pointer_constant_bias": 5,
+      "pointer_size_factor": 0.25
+    },
+    "flicker": {
+      "step": 0.1,
+      "axis_shares": {
+        "front": 0.3,
+        "up": 0.3,
+        "right": 0.4
+      },
+      "gain": 0.5,
+      "up_gain": 0.2
+    },
+    "emit": {
+      "step_rate": 60,
+      "explosion": {
+        "core_size": {
+          "base": 120,
+          "spread": 120
+        },
+        "core_velocity": {
+          "x_spread": 15,
+          "y_base": 10,
+          "y_spread": 10,
+          "z_spread": 15
+        },
+        "debris_lift": 0.2,
+        "debris_rise": {
+          "base": 2,
+          "spread": 2
+        },
+        "debris_speed": {
+          "base": 20,
+          "spread": 30
+        },
+        "debris_size": {
+          "base": 20,
+          "spread": 20
+        }
+      },
+      "burning": {
+        "count_mod": 8,
+        "fire_share": 5,
+        "lift": 5,
+        "size": {
+          "base": 20,
+          "spread": 30
+        },
+        "velocity_factor": 0.3,
+        "rise": {
+          "base": 3,
+          "spread": 3
+        }
+      },
+      "control": {
+        "count": 1
+      },
+      "order": {
+        "sizes": {
+          "first": 75,
+          "second": 60
+        }
+      },
+      "order_marker": {
+        "size": 30
+      }
+    },
+    "thrown": {
+      "tumble_rate": 10,
+      "inner_flash_scale": 0.5
+    },
+    "screen": {
+      "flash_count_threshold": 0.1,
+      "flash_onsets": 3,
+      "flash_window": 1
+    },
+    "particle": {
+      "size_divisor": 16,
+      "sub_step": 0.016666666666666666,
+      "max_sub_steps": 30,
+      "debris": {
+        "puff_rate": 5,
+        "puff_velocity_divisor": 5,
+        "puff_size_divisor": 1.5
+      },
+      "pool_capacity": 65536,
+      "type_cap": 16384,
+      "class_fill_limits": {
+        "class_0": 1.0,
+        "class_1": 0.95,
+        "class_2": 0.9,
+        "class_3": 0.8
+      },
+      "lod": {
+        "full_distance": 4000,
+        "cutoff_distance": 8000
+      },
+      "alpha": 90,
+      "fade_start": 0.75,
+      "smoke_shade_divisor": 100,
+      "explosion_core": {
+        "life": 2.0,
+        "size": 150,
+        "gravity": 10.0,
+        "friction": 0.2,
+        "colors": {
+          "first": {
+            "r": 200,
+            "g": 100,
+            "b": 100
+          },
+          "second": {
+            "r": 255,
+            "g": 120,
+            "b": 120
+          }
+        }
+      },
+      "explosion_debris": {
+        "life": 6.0,
+        "size": 40,
+        "gravity": 20.0,
+        "friction": 0.2,
+        "colors": {
+          "first": {
+            "r": 200,
+            "g": 128,
+            "b": 128
+          },
+          "second": {
+            "r": 250,
+            "g": 200,
+            "b": 200
+          }
+        }
+      },
+      "muzzle_flash": {
+        "life": 1.0,
+        "size": 10,
+        "gravity": 0,
+        "friction": 0.2,
+        "colors": {
+          "first": {
+            "r": 255,
+            "g": 128,
+            "b": 128
+          },
+          "second": {
+            "r": 200,
+            "g": 100,
+            "b": 100
+          }
+        }
+      },
+      "control_flash": {
+        "life": 1.0,
+        "size": 30,
+        "gravity": -2.0,
+        "friction": 0,
+        "colors": {
+          "first": {
+            "r": 50,
+            "g": 50,
+            "b": 150
+          },
+          "second": {
+            "r": 50,
+            "g": 50,
+            "b": 250
+          }
+        }
+      },
+      "missile_trail": {
+        "life": 5.0,
+        "size": 200,
+        "gravity": 1.0,
+        "friction": 0,
+        "colors": {
+          "first": {
+            "r": 100,
+            "g": 100,
+            "b": 100
+          },
+          "second": {
+            "r": 200,
+            "g": 200,
+            "b": 200
+          }
+        }
+      },
+      "worker_fire": {
+        "life": 1.0,
+        "size": 25,
+        "gravity": -10.0,
+        "friction": 0,
+        "colors": {
+          "first": {
+            "r": 150,
+            "g": 50,
+            "b": 50
+          },
+          "second": {
+            "r": 150,
+            "g": 120,
+            "b": 50
+          }
+        }
+      }
+    },
+    "motion": {
+      "order_marker_flare": 15
+    }
+  }
+}

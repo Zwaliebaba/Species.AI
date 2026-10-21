@@ -18,6 +18,7 @@ namespace
 
 std::atomic<const PlatformMessageContext*> g_context{nullptr};
 std::atomic<NativeWindowHandle> g_owner{nullptr};
+std::atomic<bool> g_unattended{false};
 
 using TaskDialogFunction = HRESULT(WINAPI*)(HWND, HINSTANCE, PCWSTR, PCWSTR, PCWSTR, TASKDIALOG_COMMON_BUTTON_FLAGS, PCWSTR, int*);
 
@@ -92,6 +93,11 @@ void ShowDialog(HWND _owner, const std::wstring& _title, const std::wstring& _te
 
 } // namespace
 
+void SetPlatformMessagesUnattended(bool _unattended) noexcept
+{
+  g_unattended.store(_unattended, std::memory_order_release);
+}
+
 void SetPlatformMessageContext(const PlatformMessageContext* _context) noexcept
 {
   g_context.store(_context, std::memory_order_release);
@@ -138,7 +144,7 @@ void ShowPlatformMessage(std::string_view _stringId, std::span<const MessageArgu
   const std::string text = ComposePlatformMessage(texts, _stringId, _arguments);
   PlatformLog(_severity == MessageSeverity::Notice ? PlatformLogLevel::Warning : PlatformLogLevel::Error, "pre-UI message {}: {}",
               _stringId, text);
-  if (!HasInteractiveDesktop())
+  if (g_unattended.load(std::memory_order_acquire) || !HasInteractiveDesktop())
   {
     return;
   }

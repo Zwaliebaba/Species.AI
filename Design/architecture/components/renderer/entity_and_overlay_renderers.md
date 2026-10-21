@@ -215,6 +215,8 @@ The corners of the first three modes are centre − right·w − up·h, centre +
 | `cursor_dots` | `WorldOverlay`, `SOURCE` = `TEXTURED` | `Alpha` | in-shader, with `bias_cursor` | `None` | `bias_cursor` | 20 | formation-preview diamonds |
 | `cursor_ghost` | `WorldOverlay`, `SOURCE` = `MESH` | `Ghost` | in-shader | `Back` | — | 20 | placement ghost models |
 
+> **Amendment 2026-10-21 (M1 task T17b, [ADR-125](../../../ADR/ADR-125-battle-marks-route-preview-and-world-markers-at-m1.md)).** At M1 `route_line` draws the route spots, and the new entry `route_arrow` (`UnlitTextured` with the linearly filtered mask, `Alpha`, `None`, `None`, pass 12) the arrows, which are drawn larger than their art. `overlay_alpha` and `overlay_additive` are drawn by the `OverlayQuad` shader with the `OverlayQuadInstance` stream: a single-channel mask in the overlay's physical pixels, turned on the screen and averaged over each pixel's footprint.
+
 **RND-309** (MUST) An in-shader depth test of the `WorldOverlay` shader keeps a fragment only when its reversed-Z depth, multiplied by the factor *k* of its depth-bias variant (1 without one), is at least the value of `scene_depth_single` at the fragment's scene position; this is the in-shader form of the depth-bias rule of RND-220 and lets these 3-D overlays keep their place after the UI windows (RND-072). None of these entries writes depth.
 
 ### 3.4 Shaders owned by this document
@@ -327,6 +329,10 @@ A higher level draws fewer samples, and level 4 draws no glow strip.
 
 The Builder draws no beam in a match: none of its match states (R-UNIT-453) draws one. The Leader and the meteor are flat-shaded like every mesh (ADR-020).
 
+> **Amendment 2026-10-21 (M1 task T16, [ADR-122](../../../ADR/ADR-122-leaders-and-banners-drawn-at-m1.md)).** Until T17's world markers (pass 16) exist, pass 7b draws every Leader's banner, the local team's too, and a Waypoint banner's pointer waits for the order route T17 brings to the client. At M1 a dead Leader is drawn while its corpse sinks, with no shatter (O77).
+
+> **Amendment 2026-10-21 (M1 task T17b, owner decision O78, [ADR-125](../../../ADR/ADR-125-battle-marks-route-preview-and-world-markers-at-m1.md)).** Pass 7b keeps drawing the local team's banners at M1. A Waypoint banner with a replicated target draws its pointer after the cloth with `cloth_pointer`, turned to point at the target on the screen.
+
 **RND-325** (MUST) A blob shadow of half-size *s* under a caster at *p* is one quad of `fx.glow_round` whose four corners lie at (*p.x* ± *s*, *y*, *p.z* ± *s*), each at *y* = max(terrain height at the corner + `rnd.shadow.blob.lift` (0.9 wu), `rnd.shadow.blob.min_height` (1.0 wu)), in the colour of [reference/02_units/README.md](../../../reference/02_units/README.md) R-UNIT-050, with the `blob_shadow` entry (RND-242). The shadow is skipped when all four corner heights are above *p.y*.
 
 **RND-326** (MUST) A centipede segment is lit with its mesh transform's uniform scale *σ* left in its normals: in the diffuse term of RND-233 its facet normal *n* is replaced by *n* ÷ *σ*, so a larger segment is lit darker and a smaller one brighter before the clamp (see DEC-958 item 3). Every other scaled actor mesh is lit with unit facet normals (RND-233).
@@ -374,6 +380,8 @@ The order of this table carries no meaning. The spawn-network transit beams, the
 
 **RND-334** (MUST) During the first `ref.weapon.shockwave.billboard_time` (1 s) of its life, at camera distance *D*, a shockwave ring also draws its blast: `rnd.shockwave.blast_layers` (5) stacked `CameraFacing` quads of `fx.starburst` whose first half-size is size × `rnd.shockwave.blast_star_scale` (500) ÷ √*D* and each further one × `rnd.shockwave.blast_layer_growth` (1.2), in `rnd.shockwave.blast_color` (1, 0.5, 0.2) with alpha 1 − age in seconds; then 5 stacked quads of `fx.glow_round` whose first half-size is size × `rnd.shockwave.blast_glow_scale` (1000) ÷ √*D*, growing likewise, in the same colour, all with `effect_additive`. Its full-screen flash and camera shake are those of R-CRATE-473, drawn and applied by the VFX screen effects (RND-246).
 
+> **Amendment 2026-10-21 (M1 task T16c, [ADR-123](../../../ADR/ADR-123-weapons-effects-and-particles-at-m1.md)).** At M1, pass 10a draws the grenades' meshes first with `effect_mesh_lit` (`MeshLit`, `Opaque`, `TestWrite`, `Back`), then its additive quads, then the rings' discs and last the full-screen flash. The disc's fan has `rnd.shockwave.disc_segments` (32, provisional) triangles. A ring's blast is drawn from a presentation copy made when the ring is first met, so it lasts its first second although the grenade's ring lives 0.625 s. The quads' view test is ADR-121's sphere test.
+
 **RND-335** (MUST) The ring's damaging radius is a simulation rule ([weapons_and_projectiles.md](../../../reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md)) and the drawn ring of RND-333 never feeds it; the drawn ring starts at radius 35 wu when the ring is created.
 
 **RND-336** (MUST) A lightning strike (R-CRATE-497) that is not striking draws its cloud glow: one quad of `fx.glow_round` at its position with the half-size `ref.weapon.lightning.glow_size` (200 wu), right axis = the camera right vector and up axis = (0, 1, 0) × right, with alpha |sin(`rnd.lightning.cloud_pulse_rate` (2 rad per s) × *g*)|, *g* the presentation frame time.
@@ -385,6 +393,8 @@ The order of this table carries no meaning. The spawn-network transit beams, the
 **RND-338** (MUST) Pass 10b draws every laser bolt of the match world as one instanced draw with the `laser_bolt` entry: additive, no culling, no depth write and the `bias_laser` variant (RND-219). Each bolt is drawn as `rnd.laser.layers` (5) identical `Segment` instances, so its additive brightness is five times one layer's before the clamp of RND-058.
 
 **RND-339** (MUST) A bolt's segment (R-CRATE-445) runs from its drawn position *p* (RND-081) to *p* + Normalize(velocity) × `ref.weapon.laser.billboard_length` (10 wu), with the half-width `rnd.laser.half_width` (0.8 wu) perpendicular to the camera ray (RND-306), in the team colour of the bolt's source team, or `rnd.laser.rogue_color` (255, 255, 255) for the Rogue faction. A Convert bolt multiplies the half-width by `ref.weapon.laser.convert_width_factor` (2) and samples `fx.convert_beam`; every other bolt samples `fx.beam_short`. Both textures are read through a view of mip level 0 only, with linear clamp-to-edge filtering, *u* along the bolt and *v* across it.
+
+> **Amendment 2026-10-21 (M1 task T16c, [ADR-123](../../../ADR/ADR-123-weapons-effects-and-particles-at-m1.md)).** The client rebuilds each bolt from its `LaserFired` and `LaserRicochet` events, since bolts are not replicated (ADR-111). It draws the bolt from the display time of its event's tick less one, until its life, its second ground contact or the region's edge ends it. Its beam is read at mip level 0 by `SampleLevel` in `UnlitTexturedLevelZeroPS`, which stands in for AST-026's level-0 view. M1 has no Convert or Rogue bolt.
 
 **RND-340** (MUST) A laser bolt that passes within √`ref.weapon.laser.shake_range_sq` (about 14 wu) of the camera requests a camera shake of `ref.weapon.laser.shake` (0.5) through the VFX screen effects (R-CRATE-445, RND-246), unless the match is over or paused; the request is presentation-only and local, and the renderer issues it while it writes the bolt's instances, never from the simulation.
 
@@ -417,6 +427,8 @@ stateDiagram-v2
 
 Caption: the fade record of one drawn route; a held route keeps its fade value and is not drawn.
 
+> **Amendment 2026-10-21 (M1 task T17b, owner decision O78, [ADR-125](../../../ADR/ADR-125-battle-marks-route-preview-and-world-markers-at-m1.md)).** M1 draws the local route preview alone: it raises no route highlight and keeps no fade record. The preview is shown while it exists, and it is built again only when an end moves more than `rnd.route.preview_rebuild_distance` (1 wu, provisional) or the straight flag changes. The spots lie one spot's size, twice their half-size, apart. One arrow lies at each leg's middle, `rnd.route.arrow_size_factor` (2, provisional) × the spot half-size there, in the colour of the spot there; a leg shorter than its arrow has none.
+
 ### 4.9 World markers (pass 16)
 
 **RND-356** (MUST) Pass 16 draws the world markers (`WorldMarkers`) of [reference/06_controls_camera_and_commands/cursor_and_markers.md](../../../reference/06_controls_camera_and_commands/cursor_and_markers.md) R-CTRL-380 to R-CTRL-388, whose types, screen positions, edge clamping, sort order, alpha, sizes and layers that document specifies, in the 2-D overlay space of RND-215, in the order of R-CTRL-382 (the nearest marker last). "Screen height" in those rules is the height of the overlay target in pixels, which equals the render height at a render scale of 1 (RND-028). The marker list is presentation state of the world markers, never simulation state (RND-301).
@@ -424,6 +436,8 @@ Caption: the fade record of one drawn route; a held route keeps its fade value a
 **RND-357** (MUST) The marker layers of R-CTRL-386 use these entries: the shadow `marker.team_disc_shadow` and the compass shadow `marker.edge_compass_shadow` with `overlay_alpha`; the compass arrow `marker.edge_compass`, the colour disc `marker.team_disc` and the icon with `overlay_additive`. On screen the compass layer draws the empty compass `marker.edge_compass_empty` instead of the arrow. A layer's alpha is the marker alpha of R-CTRL-384 × the layer's own alpha.
 
 **RND-358** (MUST) The 3-D parts of the markers are drawn in pass 16 with the in-shader depth test of RND-309: the ground highlight of a Transport order marker is the highlight effect of R-CTRL-363 with the `cursor_ring` entry, and a local Leader's marker draws the Leader's banner (R-CTRL-388, R-UNIT-191) with the cloth-flag entries of [README.md](../animation_and_vfx/README.md).
+
+> **Amendment 2026-10-21 (M1 task T17b, owner decision O78, [ADR-125](../../../ADR/ADR-125-battle-marks-route-preview-and-world-markers-at-m1.md)).** At M1 the world markers are the Leader markers alone, and their sizes are physical pixels. Pass 16 draws a Leader marker's 2-D layers off screen until it is seen, with `icon.power.leader` in place of the banner. Pass 7b draws every banner, the local team's included, since M1 has no in-shader depth test (RND-309), so an on-screen Leader marker draws nothing in pass 16.
 
 **RND-359** (MUST) The bot priority overlay (per-team target priorities as text and team-coloured arrows) is a development overlay of [developer_tools.md](../diagnostics_test_and_performance/developer_tools.md#47-development-drawing), drawn in pass 16 in Debug builds only, when its development setting is on.
 
@@ -434,6 +448,8 @@ Caption: the fade record of one drawn route; a held route keeps its fade value a
 **RND-366** (MUST) Every cursor of table 2.1-A of R-CTRL-350 is a 2-D quad placed and rotated as R-CTRL-352 states; none is drawn as a 3-D object. A shadowed cursor first draws its shadow, the blurred variant of its art produced offline by the cooker (`cursor.world.shadow`, `cursor.highlight.shadow`, `cursor.place.shadow`, `cursor.unavailable.shadow`; R-CTRL-350) with the blur of `ref.ctrl.cursor.shadow_blur` (RND-243, ADR-018), over the same quad in colour (1, 1, 1, alpha 0) with `overlay_ink`, which with alpha 0 darkens the destination by the shadow texel (RND-058); then its art in its colour with `overlay_additive`, or with `overlay_alpha` for the crosshair. The icon near the pointer (R-CTRL-366) and the entering effect (R-CTRL-371) use the marker layers and entries of RND-357.
 
 **RND-367** (MUST) Cursor sizes are physical pixels at every render size: the standard pointer is 35 px (`ref.ctrl.cursor.set.world_size`) whatever the resolution. Under per-monitor DPI scaling, a cursor's art is chosen at the source size closest to its final pixel size (ADR-033), and the size itself is not scaled by the render size.
+
+> **Amendment 2026-10-21 (O64, O76; M1 task T14, [ADR-119](../../../ADR/ADR-119-input-camera-picking-and-cursor-at-m1.md)).** The MVP's cursors are the owner's one-level 128 px single-channel masks (O64), drawn at `mvp.cursor.world_size`, `mvp.cursor.highlight_size` and `mvp.cursor.unavailable_size` physical pixels (48, 48 and 60), the pointer's hotspot at the art's tip (`mvp.cursor.world_hotspot`). A mask's texel is its intensity: the art adds its colour × the mask, the authored shadow multiplies the destination by one minus the mask, and the pixel shader averages the texels a pixel covers. At M1, `cursor.highlight` is the pointer over the client's own Leader, and `cursor.unavailable` the pointer whose ray misses the terrain or whose ground point lies outside the region.
 
 **RND-368** (MUST) The rings and the glow cylinder of the highlight effect are generated each frame as vertex-colour strips from the rule of R-CTRL-363, draped on the terrain heights of `terrain_heights` (RND-063), and drawn with the `bias_cursor` variant factor `ref.ctrl.cursor.depth_bias` applied in the shader (RND-309).
 
@@ -564,6 +580,7 @@ The golden-image tests compare with the default tolerance and on the pinned refe
 | `rnd.sphere.line_width` | 1 | px | wire drawing | RND-330 | |
 | `rnd.shockwave.center_color` | 1, 1, 0, 0 | RGBA | fan centre | RND-333 | |
 | `rnd.shockwave.rim_color` | 1, 0.5, 0.5 | RGB | fan rim | RND-333 | |
+| `rnd.shockwave.disc_segments` | 32 | triangles | Species, provisional (ADR-123); the fan's | RND-333 | |
 | `rnd.shockwave.blast_layers` | 5 | quads | per texture | RND-334 | |
 | `rnd.shockwave.blast_star_scale` | 500 | × size ÷ √distance | first star half-size | RND-334 | |
 | `rnd.shockwave.blast_glow_scale` | 1000 | × size ÷ √distance | first glow half-size | RND-334 | |
@@ -588,3 +605,5 @@ The golden-image tests compare with the default tolerance and on the pinned refe
 | `rnd.route.pulse_amplitude` | 0.5 | alpha factor | | RND-353 | |
 | `rnd.route.pulse_rate` | 10 | rad per s of real time | | RND-353 | |
 | `rnd.route.pulse_phase_step` | 0.7 | rad per spot | | RND-353 | |
+| `rnd.route.arrow_size_factor` | 2 | × the spot half-size | Species, provisional (ADR-125); an arrow at each leg's middle (DEC-959 item 4) | RND-353 | DEC-959 |
+| `rnd.route.preview_rebuild_distance` | 1 | wu | Species, provisional (ADR-125); the preview is built again when an end moves further | RND-354 | |

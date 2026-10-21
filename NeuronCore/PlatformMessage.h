@@ -54,6 +54,9 @@ void SetPlatformMessageContext(const PlatformMessageContext* _context) noexcept;
 // window when one exists. A run without an interactive desktop, such as a test or a service, writes the log only.
 void ShowPlatformMessage(std::string_view _stringId, std::span<const MessageArgument> _arguments, MessageSeverity _severity);
 
+// A run that nobody watches, such as the render check of ADR-113, writes its messages to the log only.
+void SetPlatformMessagesUnattended(bool _unattended) noexcept;
+
 // The platform's part of a fatal exit (PLT-044, DBG-074): the message, then the end of the process with
 // plt.lifecycle.exit_code.fatal and no crash report.
 [[noreturn]] void EndWithMessage(std::string_view _stringId, std::span<const MessageArgument> _arguments);

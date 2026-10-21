@@ -43,6 +43,10 @@ The logging, check, black-box and profiling declarations are those of Listing 2.
 
 > **Amendment 2026-10-20 (M1 task T10; [ADR-110](../../../ADR/ADR-110-cost-measurement-marker-timing-and-performance-script.md)).** The MVP's region step adds markers that the catalogue lacks, so that the performance job divides the step by the objects it advances: `sim.region.commands` (the tick's commands), `sim.bot_nodes.advance` (the bot navigation nodes, in each slice), `sim.ai.step` with `sim.ai.stray_recall`, `sim.ai.leader_policies` and `sim.ai.main_cycle` (each AI of the region), and `sim.routes.free_unheld` (DEC-651). The world step's `sim.region.step` is ADR-085's region job. While marker timing is on, each marker's time is read in-process (DBG-080 amendment).
 
+> **Amendment 2026-10-20 (M1 task T12; [ADR-111](../../../ADR/ADR-111-replication-state-datagrams-and-the-client-replica.md)).** Replication adds `net.replication.collect` (the battle's replicated state, once a tick), `net.replication.build` (each client's update) and, on the client, `client.replica.apply` (each state datagram applied to the replica).
+
+> **Amendment 2026-10-20 (M1 task T13; [ADR-113](../../../ADR/ADR-113-the-frame-at-m1.md), [ADR-115](../../../ADR/ADR-115-the-world-frame-at-m1.md)).** The world frame adds `render.camera` (pass 1), `render.frame_constants` (pass 0), `render.resolve` and `render.final`. Species draws the terrain's grid in the surface pass (ADR-011), so pass 4 is `render.terrain.surface` and `render.terrain.wire_overlay` has no pass. At M1 the waves are evaluated on the CPU: `render.sea.advance` is their evaluation and `render.sea.wave_build` the pass that draws them. `render.sky.advance` is the sky's instances for the frame.
+
 **DBG-046** (MUST NOT) The catalogue has no marker for campaign-only systems (DEC-052), for the pixelation, deform and reflection effects (DEC-059) or for the gesture and icon Power interfaces (DEC-055), which Species does not specify.
 
 ### 3.5 Black-box contents

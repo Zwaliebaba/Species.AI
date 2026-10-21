@@ -193,6 +193,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-082** (MUST) Workers are camera-facing sprite cards drawn as instanced crowds (ADR-009; `sprite.worker.front`, `sprite.worker.side`, `sprite.worker.hurt`) with their glow and blob shadows (`fx.glow_round`, RND-424), animated procedurally (ADR-035) so that a viewer sees them walk, carry a load, gather, build, fight and fall; a carried load is visible on the card (`sprite.worker.carry_load`). Leaders are drawn with their figure and banner (`mesh.unit.leader_figure`, `marker.leader_banner`, `marker.leader_banner_tint`). Laser bolts, muzzle flashes, deaths and corpse fades follow the reference look (`fx.beam_short`, `fx.muzzle_flash`, `fx.particle_dot`), and Essence orbs glow and drift (`fx.glow_round`, RND-418).
 
+> **Amendment 2026-10-21 (O75, O77; M1 task T16, [ADR-121](../ADR/ADR-121-workers-and-orbs-drawn-at-m1.md)).** A Worker is drawn with the reference's layers (VFX-118, R-UNIT-147): its own card laid flat on the terrain as its ground shadow, not a blob shadow, and the glow of stacked cards while it is under the local team's control, with a provisional walk bob and firing recoil held in data (O75). The Essence orbs glow with `fx.glow_round` alone (R-UNIT-330, O77); `fx.glow_cloudy` waits for M2's orbs drifting home (MVP-023).
+
 **MVP-083** (MUST) The Wellspring (`mesh.structure.wellspring`), the dwelling (`mesh.structure.dwelling`), the storehouse (`mesh.structure.storehouse`) and the turret (`mesh.structure.turret_mount`, `mesh.structure.turret_head`, `mesh.structure.turret_barrel`, firing `mesh.projectile.turret_round`) are low-poly flat-shaded meshes with their collision assets, standing on the port pad `mesh.structure.structure_default`, with glow accents tinted in their Cladan's colour (ADR-020); a construction site shows the structure rising with its progress, an inactive structure is dark, and a completed structure flashes once (`fx.starburst`). Resource sites have a mesh of their own (`mesh.structure.resource_site`) that shows how many of their ports are manned. Every new asset is newly authored (O9) and carries its authorship record (PIL-027).
 
 **MVP-084** (MUST) A settlement's territory is drawn as a glowing line on the terrain in its Cladan's colour (`fx.beam_long`), border areas and claims are marked on it, and the area outside the steward's areas lies under black fog with the public layer drawn on it (WLD-244).
@@ -352,6 +354,14 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.persist.snapshots_kept` | 3 | snapshots | — | provisional | MVP-075 | — |
 | `mvp.client.fps_target` | 60 | frames per second | tick | provisional | MVP-085 | — |
 | `mvp.client.figures_max` | 1500 | figures on screen | — | provisional | MVP-085 | Four settlements at plateau plus a battle |
+| `mvp.light.key.towards` | −0.04, 0.43, 0.90 | direction towards the light, normalised at load | — | provisional | MVP-081 | The key light of the one lighting preset (O75; DEC-562 stays Open): warm, from behind the development view; the owner tunes it after M1 task T13's run |
+| `mvp.light.key.color` | 2.0, 1.0, 0.4 | RGB multiplier | — | provisional | MVP-081 | — |
+| `mvp.light.fill.towards` | 0.07, 0.35, 0.93 | direction towards the light, normalised at load | — | provisional | MVP-081 | The fill light (O75), a neutral grey in the pattern of WLD-183 |
+| `mvp.light.fill.color` | 1.0, 1.0, 1.0 | RGB multiplier | — | provisional | MVP-081 | — |
+| `mvp.cursor.world_size` | 48 | physical px | — | provisional | MVP-101 | The pointer `cursor.world` (O76, ADR-119), in place of R-CTRL-350's 35 px for the owner's 128 px art; the owner tunes it at M1 task T14's run |
+| `mvp.cursor.highlight_size` | 48 | physical px | — | provisional | MVP-101 | The pointer over a selectable Leader, `cursor.highlight` (O76) |
+| `mvp.cursor.unavailable_size` | 60 | physical px | — | provisional | MVP-101 | `cursor.unavailable` (O76), R-CTRL-350's size |
+| `mvp.cursor.world_hotspot` | 0.113, 0.082 | fraction of the size (x, y) | — | provisional | MVP-101 | The tip of the owner's arrow, in place of `ref.ctrl.cursor.set.world_hotspot` (0.055, 0.070), which misses it by 7 texels (ADR-119) |
 
 *Table 3 — The tuning values of the MVP.*
 

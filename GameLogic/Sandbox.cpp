@@ -25,20 +25,24 @@ void SpawnSide(RegionSimulation& _region, std::uint8_t _team, std::int64_t _site
 
 } // namespace
 
-void PopulateSandbox(RegionSimulation& _region)
+void PopulateSandbox(RegionSimulation& _region, bool _watched)
 {
   const auto& sandbox = _region.Tuning().mvp.sandbox;
   const auto workers = static_cast<std::uint32_t>(sandbox.sideWorkers);
   SpawnSide(_region, SANDBOX_STEWARD_TEAM, sandbox.stewardSite, workers);
   SpawnSide(_region, SANDBOX_AI_TEAM, sandbox.aiSite, workers);
+  if (_watched)
+  {
+    static_cast<void>(_region.AddAi(SANDBOX_STEWARD_TEAM)); // O77: two AI sides, which the steward watches
+  }
   static_cast<void>(_region.AddAi(SANDBOX_AI_TEAM));
 }
 
-void PopulateSyntheticBattle(RegionSimulation& _region)
+void PopulateSyntheticBattle(RegionSimulation& _region, std::optional<std::uint32_t> _figures)
 {
   const auto& tuning = _region.Tuning();
   const RegionTerrain& terrain = *_region.Terrain();
-  const auto half = static_cast<std::uint32_t>(tuning.mvp.perf.syntheticFigures / 2);
+  const std::uint32_t half = _figures.value_or(static_cast<std::uint32_t>(tuning.mvp.perf.syntheticFigures)) / 2;
   // The halves face each other across the valley's centre, so that the battle is fought from its first ticks.
   for (const std::uint8_t team : {SANDBOX_STEWARD_TEAM, SANDBOX_AI_TEAM})
   {

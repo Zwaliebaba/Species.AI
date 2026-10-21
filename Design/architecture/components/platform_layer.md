@@ -542,8 +542,14 @@ Table 3.3-A: start-up options.
 | `--verify-content` | runs the repair check of the install's packs and exits ([build tooling](build_tooling_and_distribution/README.md) BLD-103) | Debug and Release | build tooling |
 | `--loose-content <directory>` | mounts a loose-content directory last ([asset pipeline](asset_pipeline_and_resources.md) AST-105) | Debug | asset pipeline |
 | `--seed <number>` | a new world's seed, a decimal number of at most 64 bits, in place of one the server draws (MVP-005); at M1 the battle sandbox's ([ADR-109](../../ADR/ADR-109-battle-sandbox-command-journal-and-seed-switch.md)) | Debug | the game |
+| `--render-check <frames>` | draws that many world frames of the battle sandbox on the WARP adapter with the debug layer and GPU-based validation, shows no dialog, and ends with `plt.lifecycle.exit_code.normal` only when every frame was drawn and the debug layer raised no warning or error, else with `plt.lifecycle.exit_code.fatal`; 1 to 10,000 frames ([ADR-117](../../ADR/ADR-117-render-check-on-warp.md)) | Debug | renderer |
+| `--watch` | the battle sandbox's AI commands both sides and the session commands neither, so a run watches two AI sides fight (O77, [ADR-121](../../ADR/ADR-121-workers-and-orbs-drawn-at-m1.md)); takes no value | Debug | the game |
 
 *Amendment 2026-10-20 (M1 task T9, [ADR-109](../../ADR/ADR-109-battle-sandbox-command-journal-and-seed-switch.md)): `--seed` is added. `ParseArguments` reads it with `--loose-content` ([ADR-108](../../ADR/ADR-108-content-build-loose-content-and-cooked-formats.md)), in Debug builds only (PLT-107).*
+
+*Amendment 2026-10-20 (M1 task T13, [ADR-117](../../ADR/ADR-117-render-check-on-warp.md)): `--render-check` is added, in Debug builds only (PLT-107), for CI's render check.*
+
+*Amendment 2026-10-21 (M1 task T16, owner decision O77, [ADR-121](../../ADR/ADR-121-workers-and-orbs-drawn-at-m1.md)): `--watch` is added, in Debug builds only (PLT-107).*
 
 **PLT-023** (MUST) `--write-build-identity` is handled before the clock, the user-data root, the logger or any other service is created: the process writes the file in the form of [build tooling](build_tooling_and_distribution/README.md) BLD-063, ends with `plt.lifecycle.exit_code.normal` (0) and leaves no log file, window or user-data folder behind. A failed write ends the process with `plt.lifecycle.exit_code.fatal`.
 

@@ -368,6 +368,7 @@ The [register index](README.md) lists every entry of this file with its title, s
 - Options: A — adopt the formulas and tune by playtest; B — derive new values before use.
 - Recommendation: A, validating the most important values in the first prototype.
 - Decide by: playtest
+- Evidence (2026-10-20, [ADR-107](../ADR/ADR-107-simple-ai-bot-navigation-and-node-census.md) amendment): measured on the MVP's build, a full formation of 90 ordered at an idle crowd of 90 won in 4 of 12 runs, each of them with a single grenade thrown by the crowd. A grenade's shockwave ring (R-CRATE-471, R-CRATE-472) kills the members of a packed formation through their explosive damage × 0.6. A member engages up to about 150 wu ahead of its Leader, while a laser bolt reaches about 90 wu.
 
 ### DEC-112 Bot strength calibration
 - Status: Open
@@ -376,6 +377,7 @@ The [register index](README.md) lists every entry of this file with its title, s
 - Options: A — keep the reference difficulty parameters after the corrections; B — re-calibrate the parameters by playtest, per mode.
 - Recommendation: B. Apply the corrections first, then calibrate each difficulty by playtest rather than by parity, in every mode; Siege attack and Siege defence are calibrated explicitly, because the corrections above change them most.
 - Decide by: playtest
+- Evidence (2026-10-20, [ADR-107](../ADR/ADR-107-simple-ai-bot-navigation-and-node-census.md) amendment): in the MVP's sandbox, two easy bots on MVP-017's 320 wu node lattice did not take a battle of 200 a side to its end in 30,000 ticks, at any formation-Leader radius from 300 to 960 wu. A radius of 640 wu or more raised the losses about five-fold. A full formation lost to an equal crowd that threw grenades in most runs, so a bot that builds fuller formations is not a stronger bot.
 
 ### DEC-113 Abductor wander-target area
 - Status: Open

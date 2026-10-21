@@ -190,6 +190,44 @@ public:
                      L"no file is a missing record");
     }
   }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp081ThePresentationRecordReadsWholeAndCooksAsAuthored)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-081")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp081ThePresentationRecordReadsWholeAndCooksAsAuthored)
+  {
+    // O75, ADR-116: the client-only record reads whole, holds the look's values and is not simulation-relevant.
+    const Neuron::RecordResult<Species::TuningPresentation> source = Species::ReadTuningPresentationSource(RepositoryContentRoot());
+    Assert::IsTrue(source.has_value(), L"the authoring record reads whole");
+    const Species::TuningPresentation values = source.value_or(Species::TuningPresentation{});
+    Assert::IsFalse(Species::TUNING_PRESENTATION_SIMULATION_RELEVANT);
+    Assert::AreEqual(15'000.0, values.rnd.view.farPlane);
+    Assert::AreEqual(1.0 / 3.0, values.rnd.fog.startFraction, L"the binary64 nearest 1/3 (RND-222)");
+    Assert::AreEqual(0.33333, values.ter.color.centerFactor, L"not 1/3 (TER-181)");
+    Assert::AreEqual(0.2, values.ter.sea.blurTaps.tap10);
+    Assert::AreEqual(1.85, values.ter.sea.wave.zTerms.second.perSecond);
+    Assert::AreEqual(2.0, values.mvp.light.key.color.r);
+
+    Neuron::CookedEntry cooked;
+    cooked.entry.key = std::string(Species::TUNING_PRESENTATION_KEY);
+    cooked.entry.type = Neuron::ContentType::Record;
+    cooked.entry.schemaId = std::string(Species::TUNING_PRESENTATION_SCHEMA_ID);
+    cooked.entry.schemaVersion = Species::TUNING_PRESENTATION_VERSION;
+    cooked.entry.simulationRelevant = Species::TUNING_PRESENTATION_SIMULATION_RELEVANT;
+    cooked.bytes = Species::CookTuningPresentation(values);
+    std::vector<Neuron::CookedEntry> entries;
+    entries.push_back(std::move(cooked));
+    const TemporaryFolder folder;
+    const std::filesystem::path content = folder.Path() / L"content";
+    Assert::IsTrue(Neuron::WriteLooseContent(content, std::move(entries)).has_value());
+    const auto mounted = Neuron::LooseContent::Mount(content);
+    Assert::IsTrue(mounted.has_value());
+    const auto loaded = Species::LoadTuningPresentation(*mounted);
+    Assert::IsTrue(loaded.has_value(), L"the cooked record loads");
+    Assert::IsTrue(Species::CookTuningPresentation(loaded.value_or(Species::TuningPresentation{})) ==
+                     Species::CookTuningPresentation(values),
+                   L"the cooked record reads as the authored record (DAT-050)");
+  }
 };
 
 } // namespace GameSharedTests

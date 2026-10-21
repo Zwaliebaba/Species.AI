@@ -248,6 +248,8 @@ The group offset of a member is its formation offset; it takes no account of obs
 
 **R-SIM-438** (MUST) Player control splits into the discrete commands of §2.11 and a continuous control state sampled at the simulation rate (DEC-023). The team command state (`TeamCommandState`) is the continuous control state of one team. Each participant samples it for its own team and sends it once every `ref.sim.command.control_state_period` (1 tick, 0.1 s) while a match is running; it is executed as the `ControlState` command (R-SIM-450). Bot teams send none: a bot issues its catalogue commands inside its own bot step and applies its bot-only operations directly (R-SIM-435).
 
+> **Amendment 2026-10-21 (M1 task T17a, [ADR-124](../../ADR/ADR-124-battle-verbs-at-m1.md)).** At M1 the control state holds only the pointer, which only a selected Leader reads (R-UNIT-168), and each one is journaled and reported. So the client sends it while one of its Leaders is selected and the pointer has moved, at most once a `ref.sim.command.control_state_period`. A state that is not sent leaves the last one in force (R-SIM-443).
+
 **R-SIM-439** (MUST) The team command state, a public aggregate, holds these fields. The input layer decides when each is set ([../06_controls_camera_and_commands/README.md](../06_controls_camera_and_commands/README.md), [../../architecture/components/input/README.md](../../architecture/components/input/README.md)); the summary below gives the meaning.
 
 | Field | Kind | Meaning |

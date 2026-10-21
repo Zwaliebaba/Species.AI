@@ -4,12 +4,63 @@
     <Filter Include="Build">
       <UniqueIdentifier>{E06208B9-9F30-5042-85B8-4B7894380941}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Diagnostics">
+      <UniqueIdentifier>{0121E16E-B6F0-50DD-88CC-2327B50CD020}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Input">
+      <UniqueIdentifier>{D0A05E7E-F988-525B-8E8B-C4D544440A60}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Presentation">
+      <UniqueIdentifier>{CDAEF812-68C0-5AFF-9E82-94845EF78BDA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Replication">
+      <UniqueIdentifier>{D71091FB-EB6D-5227-A505-FCE57B772653}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Session">
       <UniqueIdentifier>{43BD3C93-1EF4-5370-B749-3C7F30FE1FD0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="View">
+      <UniqueIdentifier>{A9A76B23-54A6-5277-B429-4BBEE186520F}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BattleVerbs.h">
+      <Filter>Input</Filter>
+    </ClInclude>
     <ClInclude Include="ClientSession.h">
+      <Filter>Session</Filter>
+    </ClInclude>
+    <ClInclude Include="CrowdLook.h">
+      <Filter>View</Filter>
+    </ClInclude>
+    <ClInclude Include="DevelopmentOverlay.h">
+      <Filter>Diagnostics</Filter>
+    </ClInclude>
+    <ClInclude Include="EffectsLook.h">
+      <Filter>View</Filter>
+    </ClInclude>
+    <ClInclude Include="InputBindings.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="LeaderLook.h">
+      <Filter>View</Filter>
+    </ClInclude>
+    <ClInclude Include="ReplicaTiming.h">
+      <Filter>Replication</Filter>
+    </ClInclude>
+    <ClInclude Include="RoutePreview.h">
+      <Filter>View</Filter>
+    </ClInclude>
+    <ClInclude Include="SettlementCamera.h">
+      <Filter>View</Filter>
+    </ClInclude>
+    <ClInclude Include="SettlementView.h">
+      <Filter>View</Filter>
+    </ClInclude>
+    <ClInclude Include="WorldMarkers.h">
+      <Filter>View</Filter>
+    </ClInclude>
+    <ClInclude Include="WorldPresentation.h">
       <Filter>Session</Filter>
     </ClInclude>
     <ClInclude Include="pch.h">
@@ -17,7 +68,43 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BattleVerbs.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
     <ClCompile Include="ClientSession.cpp">
+      <Filter>Session</Filter>
+    </ClCompile>
+    <ClCompile Include="CrowdLook.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="DevelopmentOverlay.cpp">
+      <Filter>Diagnostics</Filter>
+    </ClCompile>
+    <ClCompile Include="EffectsLook.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="InputBindings.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="LeaderLook.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="ReplicaTiming.cpp">
+      <Filter>Replication</Filter>
+    </ClCompile>
+    <ClCompile Include="RoutePreview.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="SettlementCamera.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="SettlementView.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldMarkers.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldPresentation.cpp">
       <Filter>Session</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">

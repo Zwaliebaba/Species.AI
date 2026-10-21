@@ -5,9 +5,10 @@
 #include "CommandMessages.h"
 #include "Formation.h"
 #include "RegionSimulation.h"
+#include "StateSender.h"
 #include "TestSupport.h"
-#include "TickReport.h"
 #include "WorldSnapshot.h"
+#include "WorldTerrain.h"
 
 #include <cmath>
 #include <cstdint>
@@ -15,6 +16,7 @@
 #include <map>
 #include <optional>
 #include <set>
+#include <variant>
 #include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -198,6 +200,7 @@ public:
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-UNIT-171")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-UNIT-172")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-UNIT-175")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-UNIT-191")
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(RUnit171ANearClickFormsUpAndAFarOneGivesAWaypointOrder)
   {
@@ -220,6 +223,22 @@ public:
     Assert::IsTrue(ordering.order == Species::LeaderOrder::Waypoint && !ordering.formation && ordering.route != 0, L"a waypoint order");
     Assert::IsTrue(Neuron::HorizontalDistance(ordering.orderPosition, target) < 1e-9, L"its order position");
     Assert::IsFalse(battle.region.SelectedLeaderRef(0).has_value(), L"the selection cleared");
+    // ADR-125: the replicated state aims the flag pointer at the route's first point after its start, and a Leader in
+    // formation has none.
+    const std::vector<Neuron::Vec3>* points = battle.region.Routes().Find(ordering.route);
+    Assert::IsTrue(points != nullptr && points->size() > 1, L"a route of two points or more");
+    for (const Species::ReplicatedObject& object : Species::CollectReplicatedObjects(battle.region))
+    {
+      if (object.id == distant.id)
+      {
+        const auto& state = std::get<Species::ReplicatedFigure>(object.state);
+        Assert::IsTrue(state.target == Species::QuantizePosition((*points)[1]), L"the waypoint Leader's target");
+      }
+      if (object.id == nearby.id)
+      {
+        Assert::IsFalse(std::get<Species::ReplicatedFigure>(object.state).target.has_value(), L"no target in formation");
+      }
+    }
     battle.Step(30);
     Assert::IsTrue(Neuron::HorizontalDistance(battle.At(distant).position, from) < 1e-9, L"the Leader does not walk");
     Assert::IsTrue(battle.At(distant).leaderState == Species::LeaderState::GivingOrders, L"it gives orders");
@@ -423,6 +442,33 @@ public:
     ExpectOutcome(battle.Outcome(), Neuron::CommandEffect::NoEffect, tick, L"nobody under control");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(RCtrl158TheCircleAddsWorkersAndASelectReleasesThem)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-156")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-158")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-161")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(RCtrl158TheCircleAddsWorkersAndASelectReleasesThem)
+  {
+    // A second circle that no longer holds the first Worker adds the second and keeps the first; a Select releases both.
+    Battle battle;
+    const Species::ActorRef first = battle.Spawn(0, Species::FigureKind::Worker, MIDDLE);
+    const Species::ActorRef second = battle.Spawn(0, Species::FigureKind::Worker, MIDDLE + Neuron::Vec3{80.0, 0.0, 0.0});
+    Assert::IsTrue(battle.Submit(STEWARD, Species::SelectWorkersCommand{0, Ground(MIDDLE), 20.0}));
+    std::uint64_t tick = battle.ExecuteCommands();
+    ExpectOutcome(battle.Outcome(), Neuron::CommandEffect::Applied, tick, L"the first circle");
+    Assert::IsTrue(battle.At(first).underControl && !battle.At(second).underControl, L"the first Worker");
+    battle.Step();
+    Assert::IsTrue(battle.Submit(STEWARD, Species::SelectWorkersCommand{0, Ground(MIDDLE + Neuron::Vec3{80.0, 0.0, 0.0}), 20.0}));
+    tick = battle.ExecuteCommands();
+    ExpectOutcome(battle.Outcome(), Neuron::CommandEffect::Applied, tick, L"the second circle");
+    Assert::IsTrue(battle.At(first).underControl && battle.At(second).underControl, L"added, none removed");
+    battle.Step();
+    Assert::IsTrue(battle.Submit(STEWARD, Species::SelectCommand{0, 0}));
+    tick = battle.ExecuteCommands();
+    ExpectOutcome(battle.Outcome(), Neuron::CommandEffect::Applied, tick, L"selected nothing");
+    Assert::IsFalse(battle.At(first).underControl || battle.At(second).underControl, L"the group released");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(RUnit168ASelectedLeaderFacesThePointer)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-UNIT-168")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-UNIT-167")
@@ -478,7 +524,7 @@ public:
       L"a point that is not finite", Neuron::CommandRejection::Malformed,
       [&] { return battle.Submit(STEWARD, Species::OrderWorkersCommand{0, false, {std::numeric_limits<double>::quiet_NaN(), MIDDLE.z}}); });
     refused(L"a message that is no command", Neuron::CommandRejection::UnknownType,
-            [&] { return battle.Submit(STEWARD, Species::TickReport{1}); });
+            [&] { return battle.Submit(STEWARD, Species::WorldTerrain{}); });
     Assert::IsTrue(battle.region.Commands().Submit(STEWARD, 1000, Neuron::EncodeMessage(Species::SelectCommand{0, 0})));
     refused(L"a sequence number used twice", Neuron::CommandRejection::Duplicate,
             [&] { return battle.region.Commands().Submit(STEWARD, 1000, Neuron::EncodeMessage(Species::SelectCommand{0, 0})); });

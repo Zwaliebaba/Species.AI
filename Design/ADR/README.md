@@ -111,6 +111,22 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-108](ADR-108-content-build-loose-content-and-cooked-formats.md) | The content build at M1: SpeciesContentBuild, the cooked formats and the loose-content mount | Proposed | 2026-10-20 |
 | [ADR-109](ADR-109-battle-sandbox-command-journal-and-seed-switch.md) | The battle sandbox, the command journal and the seed switch | Proposed | 2026-10-20 |
 | [ADR-110](ADR-110-cost-measurement-marker-timing-and-performance-script.md) | The cost measurement: marker timing, the performance tool and the performance script | Proposed | 2026-10-20 |
+| [ADR-111](ADR-111-replication-state-datagrams-and-the-client-replica.md) | Replication at M1: the state datagrams, the acknowledged baselines and the client's replica | Proposed | 2026-10-20 |
+| [ADR-112](ADR-112-shader-build-and-shared-layouts.md) | The shader build and the layouts C++ and HLSL share | Proposed | 2026-10-20 |
+| [ADR-113](ADR-113-the-frame-at-m1.md) | The frame at M1: the pass table, the catalogue, the barriers and the scene targets | Proposed | 2026-10-20 |
+| [ADR-114](ADR-114-gpu-resources-at-m1.md) | GPU resources at M1: the device factory, the heaps, the upload ring and textures without import records | Proposed | 2026-10-20 |
+| [ADR-115](ADR-115-the-world-frame-at-m1.md) | The world frame at M1: camera-relative surfaces, the region's terrain, sea and sky, fog and the two lights | Proposed | 2026-10-20 |
+| [ADR-116](ADR-116-presentation-tuning-record.md) | The presentation tuning record | Proposed | 2026-10-20 |
+| [ADR-117](ADR-117-render-check-on-warp.md) | The render check: the world frame on the WARP adapter in CI | Proposed | 2026-10-20 |
+| [ADR-118](ADR-118-development-overlay-at-m1.md) | The development overlay at M1: its text, the frame-rate line and the figure dots | Proposed | 2026-10-20 |
+| [ADR-119](ADR-119-input-camera-picking-and-cursor-at-m1.md) | Input, the player camera, picking and the game cursor at M1 | Proposed | 2026-10-21 |
+| [ADR-120](ADR-120-frame-page-toggle-and-sandbox-restart-at-m1.md) | The development overlay's frame page, its toggle and the sandbox restart at M1 | Proposed | 2026-10-21 |
+| [ADR-121](ADR-121-workers-and-orbs-drawn-at-m1.md) | The Workers and the Essence orbs drawn at M1 | Proposed | 2026-10-21 |
+| [ADR-122](ADR-122-leaders-and-banners-drawn-at-m1.md) | The Leaders and their banners drawn at M1 | Proposed | 2026-10-21 |
+| [ADR-123](ADR-123-weapons-effects-and-particles-at-m1.md) | The weapons' effects, the screen effects and the particles at M1 | Proposed | 2026-10-21 |
+| [ADR-124](ADR-124-battle-verbs-at-m1.md) | The battle verbs at M1 | Proposed | 2026-10-21 |
+| [ADR-125](ADR-125-battle-marks-route-preview-and-world-markers-at-m1.md) | The battle marks, the route preview and the world markers at M1 | Proposed | 2026-10-21 |
+| [ADR-126](ADR-126-frame-bench-and-rendered-scenes.md) | The frame bench and the rendered performance scenes | Proposed | 2026-10-21 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

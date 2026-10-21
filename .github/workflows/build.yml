@@ -159,11 +159,19 @@ jobs:
         run: python Build\CheckContentBuild.py
 
       # The performance job is the owner's script on the reference test machine (DBG-208, O69): CI's hosted runner
-      # cannot time anything. This runs the scenes of the performance tool for a few ticks each, to show that they run,
-      # and the script's record rules on fixtures: the pin, a changed machine and a figure above its budget (ADR-110).
+      # cannot time anything. This runs the scenes of the performance tool for a few ticks each and the frame bench's
+      # rendered scenes briefly on the WARP adapter, to show that they run, and the script's record rules on fixtures: the
+      # pins, a changed machine or display, and a figure above its budget (ADR-110, ADR-126).
       - name: Check the performance script
         shell: pwsh
-        run: python Build\RunPerformance.py --self-test --tool "x64\$env:CONFIGURATION\SpeciesPerformance.exe"
+        run: python Build\RunPerformance.py --self-test --tool "x64\$env:CONFIGURATION\SpeciesPerformance.exe" --bench "x64\$env:CONFIGURATION\SpeciesFrameBench.exe" --warp
+
+      # ADR-113's render check: the hosted runner has no GPU, so the client draws the battle sandbox's world frames on
+      # the WARP adapter with the debug layer and GPU-based validation, and fails on any debug-layer message of warning
+      # severity or above. The owner's run on the reference GPU is still the frame's confirmation (M1 plan T13).
+      - name: Check the world frame on WARP
+        shell: pwsh
+        run: python Build\CheckWorldFrame.py --exe "x64\$env:CONFIGURATION\Species.exe"
 
       # One suite per *Tests.vcxproj in the tree, and every one of them must have produced a DLL:
       # vstest reports "no tests found" as a pass, so a suite that did not build is not a suite

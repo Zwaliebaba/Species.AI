@@ -26,7 +26,6 @@ constexpr std::uint64_t WORKER_STATE_MAX_BEFORE_LEADERS = static_cast<std::uint6
 constexpr std::uint64_t THREAT_KIND_MAX = static_cast<std::uint64_t>(ThreatKind::Grenade);
 constexpr std::uint64_t LEADER_STATE_MAX = static_cast<std::uint64_t>(LeaderState::GivingOrders);
 constexpr std::uint64_t LEADER_STATE_MAX_BEFORE_ORDERS = static_cast<std::uint64_t>(LeaderState::ToWaypoint);
-constexpr std::uint64_t LEADER_ORDER_MAX = static_cast<std::uint64_t>(LeaderOrder::Follow);
 
 } // namespace
 

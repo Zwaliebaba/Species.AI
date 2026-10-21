@@ -161,6 +161,10 @@ Caption: the explainer panel exists at most once per match and shows while the p
 
 A dead Worker's body is drawn in its colour × `ref.unit.worker.corpse_color` (0.2) at alpha `ref.unit.worker.corpse_alpha_per_health` (2.5) × health (R-UNIT-146), and a paralysed Worker in `ref.unit.worker.paralysed_color` (150, 150, 150). The glow pulse rates are `vfx.worker.glow_pulse_fast` (5 rad/s) and `vfx.worker.glow_pulse_slow` (2 rad/s). The launch-spectacle shadow of a watching Worker is never drawn: the spectacle is inactive in matches (DEC-009).
 
+> **Amendment 2026-10-21 (O75; M1 task T16, [ADR-121](../../../ADR/ADR-121-workers-and-orbs-drawn-at-m1.md)).** A walking Worker bobs: its foot point rises along its up axis by `vfx.worker.walk_bob_height` (0.4 wu) × min(its speed over the latest tick ÷ `vfx.worker.walk_bob_full_speed` (20 wu/s), 1) × |sin(`vfx.worker.walk_bob_rate` (6 rad/s) × T + (unit id mod 10))|, T the scaled presentation time. The values are provisional, for the owner to tune (O75). The body layer is drawn for a living or an airborne Worker only, so a corpse on the ground shows its fragments alone. The fragments' display health h is the corpse fade of R-UNIT-034 interpolated between the replica's two latest states, which falls at the rates `vfx.worker.fragment_fade_ground` and `vfx.worker.fragment_fade_air` state; the three fragments drift 120° apart in the horizontal plane and rise by the same distance. The side strip's width scales with the card. The glows take the depth test of RND-308's `worker_glow`, which states it. The firing recoil of O75 arrives with the laser bolts (M1 task T16c).
+
+> **Amendment 2026-10-21 (O75; M1 task T16c, [ADR-123](../../../ADR/ADR-123-weapons-effects-and-particles-at-m1.md)).** A Worker that fires recoils. Its shot's shooter is the nearest living Worker of the shot's team whose foot lies within `vfx.worker.recoil_match_range` (3 wu) of the muzzle's, since `LaserFired` names the bolt and not its shooter. Its card is drawn pushed back along the shot's horizontal direction by `vfx.worker.recoil_distance` (0.5 wu), falling linearly to 0 over `vfx.worker.recoil_time` (0.15 s of scaled presentation time). The values are provisional, for the owner to tune (O75).
+
 ### 4.4 Seasonal theme
 
 **VFX-119** (MUST) Whether the seasonal theme is active is match state, decided once in the match setup and identical for every participant (DEC-118, R-SIM-726); whether Species keeps it and who chooses it is the Open DEC-101, whose default is that the host's match setup applies the reference date window `ref.meta.seasonal.first_day` to `ref.meta.seasonal.last_day` of `ref.meta.seasonal.month` once. This component reads the state from the match setup and never from a local date. While it is active:
@@ -200,6 +204,8 @@ The Rogue faction's colour is near black, so its additive figures are drawn inst
 **VFX-124** (removed: no rule of a match breaks an Essence orb, so no orb is drawn broken; DEC-871)
 
 **VFX-125** (MUST) The thrown weapon's tumble and fuse-blink flash (R-CRATE-414), the barrage missile's warhead, launcher and ground marker ([hazards_and_projectiles.md](../../../reference/02_units/hazards_and_projectiles.md), RND-324), the dust object (R-CRATE-505) and the snowflake (R-CRATE-501) are drawn as their owners state; the fuse blink's sound is a presentation event of the blink, never a sound started by drawing (DEC-007).
+
+> **Amendment 2026-10-21 (M1 task T16c, [ADR-123](../../../ADR/ADR-123-weapons-effects-and-particles-at-m1.md)).** R-CRATE-414 gives no tumble rate and no length for the fuse blink. At M1 the grenade tumbles about its right axis at `vfx.thrown.tumble_rate` (10 rad/s of scaled presentation time), from a phase of its id. Its blink shows during the last `ref.weapon.thrown.inner_flash_fraction` (20 %) of each second of its age, as a starburst in its colour and a white inner starburst of `vfx.thrown.inner_flash_scale` (0.5) × its size. Both values are provisional, for the owner to tune.
 
 ### 4.7 Damage flicker
 
@@ -338,6 +344,8 @@ with `vfx.cloth.wobble_phases` (1.5, 1.1, 1.3) and `vfx.cloth.lift_gain` (3). A 
 
 **VFX-141** (MUST) A flag draws, with the entries of VFX-014 for its pass: its pole, a white quad of half-width `ref.bldg.cloth_flag.pole_width_wu` ÷ 2 (0.2 wu) turned perpendicular to up × the camera front and size × `ref.bldg.cloth_flag.pole_height_factor` (1.5) high; then its 5 × 5 cells as 25 textured quads, filtered linearly through all mip levels. The team area that the texture's companion tint mask marks (`marker.leader_banner_tint`, `marker.flag_post_state_tint`; AST-022) takes the team colour × `vfx.cloth.team_tint` (0.5), the full team colour while the owner is selected, and the grey `vfx.cloth.no_team_gray` (128, 128, 128) with no team (R-BLDG-273); the renderer's tint function applies that colour in the shader as the draw's tint, so no recoloured copy of the texture exists and each texture keeps one cache entry per declared variant (ADR-020, AST-030, DEC-098). When the owner has a target, the pointer `marker.flag_pointer` is drawn over the flag with `cloth_pointer`, its texture coordinates turned so that the arrow points from the flag towards the target's screen position (RND-216).
 
+> **Amendment 2026-10-21 (M1 task T17b, owner decision O78, [ADR-125](../../../ADR/ADR-125-battle-marks-route-preview-and-world-markers-at-m1.md)).** At M1 the pointer is a camera-facing quad at the centre of the flag's vertices, of half-size `vfx.cloth.pointer_size_factor` (0.25, provisional) × the flag's size, drawn at the end of pass 7b after the cloth. Its art points down, and the quad is turned so that the arrow points at the target's screen position; a Leader's target is the first point after the start of its Waypoint order route, which the server replicates.
+
 **VFX-142** (MUST) The owners of cloth flags are:
 
 | Owner | Size | Rules |
@@ -446,6 +454,12 @@ The design-phase inputs of this component are listed in the [folder README](READ
 | `vfx.worker.shield_bubble_alpha` | 0.5 | alpha | × the pulse | VFX-118 | DEC-328 |
 | `vfx.worker.side_alpha_gain` | 20 | × (c − 0.95) | side-card alpha ramp, × 255 | VFX-118 | |
 | `vfx.worker.side_half_width` | 0.25 | wu | side-card strip | VFX-118 | |
+| `vfx.worker.walk_bob_height` | 0.4 | wu | Species, provisional (O75); the walk bob's lift at full speed | VFX-118 | |
+| `vfx.worker.walk_bob_rate` | 6 | rad/s of scaled presentation time | Species, provisional (O75) | VFX-118 | |
+| `vfx.worker.walk_bob_full_speed` | 20 | wu/s | Species, provisional (O75); the speed of a full bob, a Worker's walk | VFX-118 | |
+| `vfx.worker.recoil_distance` | 0.5 | wu | Species, provisional (O75, ADR-123); the recoil's push at the shot | VFX-118 | |
+| `vfx.worker.recoil_time` | 0.15 | s of scaled presentation time | Species, provisional (O75, ADR-123) | VFX-118 | |
+| `vfx.worker.recoil_match_range` | 3 | wu | Species, provisional (ADR-123); a shooter's foot from the muzzle's | VFX-118 | |
 | `vfx.worker.hat_scale` | 0.65 | × card size | seasonal hat | VFX-118 | DEC-101 |
 | `vfx.worker.hat_raise` | 0.95 | × up extent | seasonal hat | VFX-118 | DEC-101 |
 | `vfx.worker.hat_forward` | 0.01 | × front | seasonal hat | VFX-118 | DEC-101 |
@@ -499,3 +513,5 @@ The design-phase inputs of this component are listed in the [folder README](READ
 | `vfx.cloth.banner_wobble_rate` | 2 | rad/s of unscaled presentation time | | VFX-142 | |
 | `vfx.cloth.transport_size` | 20 | wu | Transport flags | VFX-142 | |
 | `vfx.motion.order_marker_flare` | 15 | wu | order-marker card | VFX-143 | |
+| `vfx.thrown.tumble_rate` | 10 | rad/s of scaled presentation time | Species, provisional (ADR-123); the grenade's tumble | VFX-125 | |
+| `vfx.thrown.inner_flash_scale` | 0.5 | × the blink's size | Species, provisional (ADR-123); the white inner flash | VFX-125 | |

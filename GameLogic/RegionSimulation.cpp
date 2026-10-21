@@ -336,6 +336,18 @@ void RegionSimulation::SetCommander(std::uint8_t _team, Neuron::SenderId _sender
   m_commanders[_team] = {_sender, _ai};
 }
 
+std::optional<std::uint8_t> RegionSimulation::TeamCommandedBy(Neuron::SenderId _sender) const noexcept
+{
+  for (std::size_t team = 0; team < m_commanders.size(); ++team)
+  {
+    if (_sender != 0 && m_commanders[team].sender == _sender && !m_commanders[team].ai)
+    {
+      return static_cast<std::uint8_t>(team);
+    }
+  }
+  return std::nullopt;
+}
+
 bool RegionSimulation::MayCommand(Neuron::SenderId _sender, std::uint8_t _team, bool _aiOnly) const noexcept
 {
   if (_sender == 0 || _team >= m_commanders.size())

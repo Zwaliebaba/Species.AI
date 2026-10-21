@@ -72,7 +72,7 @@ Chosen option: "1".
   | Worker at settlement work, 1.2 µs | the teams' marker ÷ the figure-ticks, in `at-work` |
   | figure of an expedition, 0.4 µs | the teams' marker ÷ the figure-ticks, in `travel` |
   | a keyed draw, 0.03 µs | `draws` |
-  | AI settlement or deputy, 20 µs | `sim.ai.step` ÷ (ticks × AIs), in both battles |
+  | AI settlement or deputy, 60 µs (20 µs until O74) | `sim.ai.step` ÷ (ticks × AIs), in both battles |
   | command of one side of a battle, 30 µs | `sim.region.commands` ÷ (ticks × sides), in both battles |
   | region fixed cost, 30 µs | the empty region's mean step |
   | region step, 12.5 ms (item 3) | the 95th percentile of `region-bound`'s steps |
@@ -147,3 +147,4 @@ Chosen option: "1".
 * Related: [ADR-068](ADR-068-profiling-and-gpu-timing.md), [ADR-070](ADR-070-continuous-integration.md), [ADR-080](ADR-080-per-tick-budgets-and-population-caps.md), [ADR-082](ADR-082-counter-based-simulation-random-draws.md), [ADR-090](ADR-090-solution-and-project-layout.md), [ADR-094](ADR-094-arm64-development-build.md), [ADR-107](ADR-107-simple-ai-bot-navigation-and-node-census.md), [ADR-108](ADR-108-content-build-loose-content-and-cooked-formats.md), [ADR-109](ADR-109-battle-sandbox-command-journal-and-seed-switch.md).
 * The rules: DBG-045, DBG-080, DBG-206, DBG-208 and DBG-209 ([diagnostics](../architecture/components/diagnostics_test_and_performance/README.md)), WLD-100 ([world and sites](../gdd/01_world_and_regions/world_and_sites.md)), the [M1 plan](../implementation/m1_plan.md) §4 and T10.
 * The code is in NeuronCore (`MarkerTimings`, `Profile`), GameLogic (`RegionSimulation`, `AiController`, `Sandbox`), `Tools/SpeciesPerformance` and `Build/RunPerformance.py`.
+* **Amendment 2026-10-21 (M1 task T18, owner decisions O75 and O79, [ADR-126](ADR-126-frame-bench-and-rendered-scenes.md)).** The script runs the frame bench's rendered scenes after the tool, unless `--headless-only` is given, and adds their rows to each run: the sandbox's battle drawn is judged by the 99th percentile of its frame interval against 1000 ÷ `mvp.client.fps_target` + 1 ms at 1,920 × 1,080, and its missed frames and the scene of `mvp.client.figures_max` figures are reported. Only the hardware stops a run: a processor, memory size or graphics adapter that differs from the pinned one stops it, and so T10's pin stays valid; the rendered scenes pin their display at their first run and stop when it differs; the driver, the OS build and the display are written with each run. CI's self-test runs the bench's quick run on WARP and proves eleven record rules on fixtures.

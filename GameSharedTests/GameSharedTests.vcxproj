@@ -170,9 +170,10 @@
   <ItemGroup>
     <ClCompile Include="NavigationTests.cpp" />
     <ClCompile Include="RegionTerrainTests.cpp" />
+    <ClCompile Include="StateUpdateTests.cpp" />
     <ClCompile Include="TestSupport.cpp" />
-    <ClCompile Include="TickReportTests.cpp" />
     <ClCompile Include="TuningTests.cpp" />
+    <ClCompile Include="WorldTerrainTests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

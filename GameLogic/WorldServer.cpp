@@ -4,9 +4,11 @@
 #include "Development.h"
 #include "Files.h"
 #include "Log.h"
+#include "MarkerTimings.h"
 #include "Profile.h"
 #include "SecureRandom.h"
-#include "TickReport.h"
+#include "PresentationEvents.h"
+#include "ServerStats.h"
 #include "WorldServer.h"
 #include "WorldSnapshot.h"
 #include "WorldTerrain.h"
@@ -14,6 +16,7 @@
 #include <algorithm>
 #include <array>
 #include <bit>
+#include <cmath>
 #include <cstddef>
 #include <stdexcept>
 #include <utility>
@@ -62,6 +65,12 @@ CommandResult ResultOf(const Neuron::CommandOutcome& _outcome) noexcept
 WorldServer::WorldServer(const Desc& _desc)
   : m_desc(_desc)
 {
+  // ADR-126: a synthetic battle is a sandbox whose two sides the AI commands.
+  if (m_desc.syntheticFigures > 0)
+  {
+    m_desc.sandbox = true;
+    m_desc.watched = true;
+  }
 }
 
 std::uint64_t WorldServer::Open()
@@ -115,7 +124,8 @@ bool WorldServer::StartNew(std::uint64_t _seed, std::uint64_t _firstTick)
   // A new world draws its simulation key from the system's cryptographic generator (ADR-082 item 1), and holds the
   // seed that passed (MVP-011), which gives the same terrain at its first attempt. Its journal starts with it.
   CommandJournal journal;
-  journal.start = WorldStart{Neuron::DrawSecretKey(), terrain->seed, _firstTick, m_desc.regionCount, m_desc.sandbox};
+  journal.start = WorldStart{Neuron::DrawSecretKey(),          terrain->seed,          _firstTick, m_desc.regionCount, m_desc.sandbox,
+                             m_desc.sandbox && m_desc.watched, m_desc.syntheticFigures};
   std::unique_ptr<WorldSimulation> world = StartWorld(journal.start, terrain, m_desc.tuning);
   Adopt(std::move(world), std::move(terrain));
   m_journal = std::move(journal);
@@ -137,8 +147,9 @@ bool WorldServer::RestartSandbox(bool _newSeed)
   // Each steward is connected to the new world, in connection order, and receives its terrain.
   for (auto& [connection, steward] : m_stewards)
   {
-    steward.id = ConnectSteward(*m_world, m_desc.sandbox);
+    steward.id = ConnectSteward(*m_world, m_desc.sandbox, m_desc.watched);
     steward.terrainSent = false;
+    steward.state.Forget(); // the new world's ids start again (ADR-111)
     if (m_journal)
     {
       m_journal->entries.push_back({tick, true, JOURNAL_WORLD_OWNER, steward.id, 0, {}});
@@ -182,8 +193,8 @@ std::size_t WorldServer::SnapshotsKept() const noexcept
 void WorldServer::Connect(Neuron::ConnectionId _connection)
 {
   // ADR-109: the next id of the world owner and, in the sandbox, the steward's side.
-  const StableId steward = ConnectSteward(*m_world, m_desc.sandbox);
-  m_stewards.emplace(_connection, Steward{steward, 0, false, {}});
+  const StableId steward = ConnectSteward(*m_world, m_desc.sandbox, m_desc.watched);
+  m_stewards.emplace(_connection, Steward{steward, 0, false, {}, {}});
   if (m_journal)
   {
     m_journal->entries.push_back({m_world->NextTick(), true, JOURNAL_WORLD_OWNER, steward, 0, {}});
@@ -267,13 +278,21 @@ void WorldServer::CollectReports(Neuron::CommandQueue& _queue)
   }
 }
 
-void WorldServer::DatagramFates(Neuron::ConnectionId, std::span<const Neuron::DatagramOutcome>)
+void WorldServer::DatagramFates(Neuron::ConnectionId _connection, std::span<const Neuron::DatagramOutcome> _outcomes)
 {
-  // The replication baseline of ADR-086 reads the fates from M1; the tick report needs none.
+  // ADR-086 item 3: an acknowledged state datagram makes its records the client's baselines.
+  if (const auto found = m_stewards.find(_connection); found != m_stewards.end())
+  {
+    found->second.state.Fates(_outcomes, m_world->NextTick());
+  }
 }
 
 void WorldServer::Step(std::uint64_t _tick, Neuron::WorkerPool& _workers)
 {
+#if ENGINE_DEVELOPMENT
+  // ADR-120: the tick's wall time starts here, for the overlay; a measurement the simulated state never reads.
+  m_statsTickStart = Neuron::MarkerClockNanoseconds();
+#endif
   m_world->Step(_tick, _workers);
 #if ENGINE_DEVELOPMENT
   // Debug and test runs hash every tick (ADR-081 item 8); a Release server hashes at its saves.
@@ -286,26 +305,79 @@ void WorldServer::Step(std::uint64_t _tick, Neuron::WorkerPool& _workers)
 void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender)
 {
   CollectAllReports();
-  const std::vector<std::byte> report = Neuron::EncodeMessage(TickReport{_tick});
+  // ADR-111: the whole battle of the MVP's one region, until the seen layer of M3 narrows it (MVP-097).
+  const RegionSimulation& region = m_world->Region(0);
+  const std::vector<ReplicatedObject> objects = CollectReplicatedObjects(region);
   for (auto& [connection, steward] : m_stewards)
   {
     // ADR-095: each outcome on the reliable channel, in order; one the backlog refuses waits with those after it.
     std::size_t sent = 0;
     while (sent < steward.reports.size() &&
-           _sender.Send(connection, Neuron::Channel::Reliable, Neuron::EncodeMessage(steward.reports[sent])))
+           _sender.Send(connection, Neuron::Channel::Reliable, Neuron::EncodeMessage(steward.reports[sent])).has_value())
     {
       ++sent;
     }
     steward.reports.erase(steward.reports.begin(), steward.reports.begin() + static_cast<std::ptrdiff_t>(sent));
     if (!steward.terrainSent && m_terrain)
     {
-      // MVP-011: the seed and digest go once on the reliable channel; a send the backlog refuses is tried next tick.
-      steward.terrainSent =
-        _sender.Send(connection, Neuron::Channel::Reliable, Neuron::EncodeMessage(WorldTerrain{m_terrain->seed, m_terrain->digest}));
+      // MVP-011: the seed and digest go once on the reliable channel, with the team the steward commands (ADR-119); a
+      // send the backlog refuses is tried next tick.
+      const WorldTerrain terrain{m_terrain->seed, m_terrain->digest, region.TeamCommandedBy(steward.id)};
+      steward.terrainSent = _sender.Send(connection, Neuron::Channel::Reliable, Neuron::EncodeMessage(terrain)).has_value();
     }
-    // A report that cannot be sent is replaced by the next tick's.
-    static_cast<void>(_sender.Send(connection, Neuron::Channel::State, report));
+    // ADR-086 item 3: the tick's state datagrams against what the client has acknowledged; one the transport refuses
+    // is lost, and its records go again next tick.
+    for (StateSender::Outgoing& outgoing : steward.state.Build(_tick, ViewForSteward(objects, region, steward.id)))
+    {
+      if (const std::optional<std::uint64_t> datagram =
+            _sender.Send(connection, Neuron::Channel::State, Neuron::EncodeMessage(outgoing.update)))
+      {
+        steward.state.Sent(*datagram, std::move(outgoing));
+      }
+    }
+    // ADR-084 item 5: the tick's droppable events, a team's selections and orders to its commander only (ADR-106).
+    std::vector<EffectEvent> events;
+    for (const EffectEvent& event : region.Events())
+    {
+      if (!IsCommandersEvent(event.kind) || region.CommanderOf(event.team).sender == steward.id)
+      {
+        events.push_back(event);
+      }
+    }
+    for (const PresentationEvents& message : PackPresentationEvents(_tick, events))
+    {
+      static_cast<void>(_sender.Send(connection, Neuron::Channel::State, Neuron::EncodeMessage(message)));
+    }
   }
+#if ENGINE_DEVELOPMENT
+  // ADR-120: the tick's wall time from its step to the end of its replication, and once a second of ticks their
+  // statistics to every steward.
+  if (m_statsTickStart != 0)
+  {
+    const std::int64_t tickNanoseconds = Neuron::MarkerClockNanoseconds() - std::exchange(m_statsTickStart, 0);
+    ++m_statsTicks;
+    m_statsTickNanoseconds += tickNanoseconds;
+    m_statsTickMaxNanoseconds = std::max(m_statsTickMaxNanoseconds, tickNanoseconds);
+  }
+  const auto ticksPerSecond = static_cast<std::uint32_t>(std::max(1.0, std::round(1.0 / m_desc.tuning.ref.sim.tickPeriod)));
+  if (m_statsTicks >= ticksPerSecond)
+  {
+    ServerStats stats;
+    stats.worldSeed = m_world->WorldSeed();
+    stats.tick = _tick;
+    stats.ticks = m_statsTicks;
+    stats.tickMeanMicroseconds = static_cast<std::uint32_t>(m_statsTickNanoseconds / m_statsTicks / 1'000);
+    stats.tickMaxMicroseconds = static_cast<std::uint32_t>(m_statsTickMaxNanoseconds / 1'000);
+    const std::vector<std::byte> bytes = Neuron::EncodeMessage(stats);
+    for (const auto& [connection, steward] : m_stewards)
+    {
+      static_cast<void>(_sender.Send(connection, Neuron::Channel::Reliable, bytes));
+    }
+    m_statsTicks = 0;
+    m_statsTickNanoseconds = 0;
+    m_statsTickMaxNanoseconds = 0;
+  }
+#endif
 }
 
 void WorldServer::Stalled(const Neuron::ScheduleStall& _stall)

@@ -158,6 +158,7 @@
     <ClInclude Include="Files.h" />
     <ClInclude Include="FloatEnvironment.h" />
     <ClInclude Include="FontAsset.h" />
+    <ClInclude Include="FrameProfile.h" />
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="InProcessTransport.h" />
     <ClInclude Include="JobQueue.h" />
@@ -177,6 +178,7 @@
     <ClInclude Include="Profile.h" />
     <ClInclude Include="RecordReader.h" />
     <ClInclude Include="RunId.h" />
+    <ClInclude Include="SeaSurface.h" />
     <ClInclude Include="SecureRandom.h" />
     <ClInclude Include="Sha256.h" />
     <ClInclude Include="SimRng.h" />
@@ -184,6 +186,7 @@
     <ClInclude Include="StartupOptions.h" />
     <ClInclude Include="StreamFraming.h" />
     <ClInclude Include="TerrainField.h" />
+    <ClInclude Include="TerrainSurface.h" />
     <ClInclude Include="TextEncoding.h" />
     <ClInclude Include="Transport.h" />
     <ClInclude Include="Vec3.h" />
@@ -205,6 +208,7 @@
     <ClCompile Include="Files.cpp" />
     <ClCompile Include="FloatEnvironment.cpp" />
     <ClCompile Include="FontAsset.cpp" />
+    <ClCompile Include="FrameProfile.cpp" />
     <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="InProcessTransport.cpp" />
     <ClCompile Include="JobQueue.cpp" />
@@ -222,6 +226,7 @@
     <ClCompile Include="Profile.cpp" />
     <ClCompile Include="RecordReader.cpp" />
     <ClCompile Include="RunId.cpp" />
+    <ClCompile Include="SeaSurface.cpp" />
     <ClCompile Include="SecureRandom.cpp" />
     <ClCompile Include="Sha256.cpp" />
     <ClCompile Include="SimRng.cpp" />
@@ -229,6 +234,7 @@
     <ClCompile Include="StartupOptions.cpp" />
     <ClCompile Include="StreamFraming.cpp" />
     <ClCompile Include="TerrainField.cpp" />
+    <ClCompile Include="TerrainSurface.cpp" />
     <ClCompile Include="TextEncoding.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>

@@ -121,6 +121,13 @@ public:
   // ADR-106: _sender commands _team from now on; an AI commander may also send the AI's own commands. Called between
   // ticks, as a connection is (ADR-095).
   void SetCommander(std::uint8_t _team, Neuron::SenderId _sender, bool _ai);
+  // Who commands _team; nobody for a team that has no commander.
+  [[nodiscard]] Commander CommanderOf(std::uint8_t _team) const noexcept
+  {
+    return _team < m_commanders.size() ? m_commanders[_team] : Commander{};
+  }
+  // The lowest team that _sender commands as a steward, not an AI; none when it commands none.
+  [[nodiscard]] std::optional<std::uint8_t> TeamCommandedBy(Neuron::SenderId _sender) const noexcept;
   // ADR-107: an AI of the region's own makes and commands _team from now on; its sender id is a new stable id of the
   // region. Called between ticks.
   StableId AddAi(std::uint8_t _team);

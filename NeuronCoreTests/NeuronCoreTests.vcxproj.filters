@@ -59,6 +59,9 @@
     <ClCompile Include="FontAssetTests.cpp">
       <Filter>Content</Filter>
     </ClCompile>
+    <ClCompile Include="FrameProfileTests.cpp">
+      <Filter>Profiling</Filter>
+    </ClCompile>
     <ClCompile Include="JobQueueTests.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
@@ -111,6 +114,9 @@
       <Filter>Platform</Filter>
     </ClCompile>
     <ClCompile Include="TerrainFieldTests.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="TerrainSurfaceTests.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
     <ClCompile Include="TestSupport.cpp">

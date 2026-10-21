@@ -146,22 +146,33 @@
   <ItemGroup>
     <ClInclude Include="CommandMessages.h" />
     <ClInclude Include="EffectEvent.h" />
+    <ClInclude Include="EffectKind.h" />
     <ClInclude Include="FigureKind.h" />
     <ClInclude Include="GameMessages.h" />
     <ClInclude Include="Navigation.h" />
+    <ClInclude Include="OrbState.h" />
+    <ClInclude Include="PresentationEvents.h" />
     <ClInclude Include="RegionTerrain.h" />
+    <ClInclude Include="ReplicatedState.h" />
+    <ClInclude Include="ServerStats.h" />
     <ClInclude Include="StableId.h" />
-    <ClInclude Include="TickReport.h" />
+    <ClInclude Include="StateReplica.h" />
+    <ClInclude Include="StateUpdate.h" />
     <ClInclude Include="Tuning.h" />
     <ClInclude Include="TuningMvp.h" />
+    <ClInclude Include="TuningPresentation.h" />
     <ClInclude Include="WorldTerrain.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CommandMessages.cpp" />
     <ClCompile Include="Navigation.cpp" />
+    <ClCompile Include="PresentationEvents.cpp" />
     <ClCompile Include="RegionTerrain.cpp" />
-    <ClCompile Include="TickReport.cpp" />
+    <ClCompile Include="ReplicatedState.cpp" />
+    <ClCompile Include="ServerStats.cpp" />
+    <ClCompile Include="StateReplica.cpp" />
+    <ClCompile Include="StateUpdate.cpp" />
     <ClCompile Include="Tuning.cpp" />
     <ClCompile Include="WorldTerrain.cpp" />
     <ClCompile Include="pch.cpp">

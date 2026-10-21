@@ -7,6 +7,7 @@
 #include "Snapshot.h"
 #include "StableId.h"
 #include "StateHash.h"
+#include "StateSender.h"
 #include "TuningMvp.h"
 #include "WorldSimulation.h"
 
@@ -25,7 +26,8 @@ namespace Species
 /// tick to every connection. With a snapshot folder it opens the newest snapshot that validates and saves one when it
 /// freezes (MVP-075, ADR-099); without one, or with none that validates, the world opens new and empty. Opening builds
 /// the region's terrain from the world seed (MVP-011, ADR-102), outside every tick. Every connection is a steward; it
-/// receives the world's terrain once, then each tick's report, and the outcome of each command it sent (ADR-106). A
+/// receives the world's terrain once, the outcome of each command it sent (ADR-106), and each tick the state of the
+/// whole battle against what it has acknowledged, with the tick's presentation events (ADR-111). A
 /// sandbox server makes each new world the M1 sandbox, gives its steward side to the latest steward, and restarts it on
 /// the development command (ADR-109). It journals a new world's connections and commands (MVP-076).
 class WorldServer final : public Neuron::ServerWorld
@@ -39,6 +41,8 @@ public:
     std::filesystem::path snapshotFolder;   // where the world is saved when it freezes and restored when it opens; none: a new
                                             // world each run (ADR-099)
     bool sandbox = false;                   // M1 plan §6: a new world is the battle sandbox
+    bool watched = false;                   // O77: the sandbox's AI commands both sides, and its stewards none
+    std::uint32_t syntheticFigures = 0;     // ADR-126: the sandbox's sides are a synthetic battle of this many figures, watched
   };
 
   // The journal file a freezing world writes beside its snapshots (MVP-076).
@@ -99,6 +103,7 @@ private:
     std::uint64_t commandsReceived = 0; // the sequence number of the next command (ADR-095)
     bool terrainSent = false;           // MVP-011: the world's terrain goes to each connection once
     std::vector<CommandReport> reports; // the outcomes not yet sent, in the order they were made
+    StateSender state;                  // ADR-111: what its client holds of the replicated state
   };
 
   // Each queue's outcomes of the tick, to the steward that sent each command; an AI's are its own (ADR-106).
@@ -112,6 +117,12 @@ private:
   std::map<Neuron::ConnectionId, Steward> m_stewards;
   std::optional<WorldHashes> m_lastHashes;
   std::optional<CommandJournal> m_journal;
+  // ADR-120: the ticks of the current second, for the development overlay's statistics (Debug builds): when the tick
+  // being measured started its step, none outside a tick, and the ticks' summed and longest wall time.
+  std::int64_t m_statsTickStart = 0;
+  std::uint32_t m_statsTicks = 0;
+  std::int64_t m_statsTickNanoseconds = 0;
+  std::int64_t m_statsTickMaxNanoseconds = 0;
 };
 
 } // namespace Species

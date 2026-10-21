@@ -75,6 +75,9 @@
     <ClInclude Include="FontAsset.h">
       <Filter>Content</Filter>
     </ClInclude>
+    <ClInclude Include="FrameProfile.h">
+      <Filter>Profiling</Filter>
+    </ClInclude>
     <ClInclude Include="Geometry.h">
       <Filter>Maths</Filter>
     </ClInclude>
@@ -132,6 +135,9 @@
     <ClInclude Include="RunId.h">
       <Filter>Platform</Filter>
     </ClInclude>
+    <ClInclude Include="SeaSurface.h">
+      <Filter>Terrain</Filter>
+    </ClInclude>
     <ClInclude Include="SecureRandom.h">
       <Filter>Platform</Filter>
     </ClInclude>
@@ -151,6 +157,9 @@
       <Filter>Network</Filter>
     </ClInclude>
     <ClInclude Include="TerrainField.h">
+      <Filter>Terrain</Filter>
+    </ClInclude>
+    <ClInclude Include="TerrainSurface.h">
       <Filter>Terrain</Filter>
     </ClInclude>
     <ClInclude Include="TextEncoding.h">
@@ -212,6 +221,9 @@
     <ClCompile Include="FontAsset.cpp">
       <Filter>Content</Filter>
     </ClCompile>
+    <ClCompile Include="FrameProfile.cpp">
+      <Filter>Profiling</Filter>
+    </ClCompile>
     <ClCompile Include="Geometry.cpp">
       <Filter>Maths</Filter>
     </ClCompile>
@@ -263,6 +275,9 @@
     <ClCompile Include="RunId.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
+    <ClCompile Include="SeaSurface.cpp">
+      <Filter>Terrain</Filter>
+    </ClCompile>
     <ClCompile Include="SecureRandom.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
@@ -282,6 +297,9 @@
       <Filter>Network</Filter>
     </ClCompile>
     <ClCompile Include="TerrainField.cpp">
+      <Filter>Terrain</Filter>
+    </ClCompile>
+    <ClCompile Include="TerrainSurface.cpp">
       <Filter>Terrain</Filter>
     </ClCompile>
     <ClCompile Include="TextEncoding.cpp">

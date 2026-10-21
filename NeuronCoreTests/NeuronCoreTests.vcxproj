@@ -175,6 +175,7 @@
     <ClCompile Include="DdsHeaderTests.cpp" />
     <ClCompile Include="FilesTests.cpp" />
     <ClCompile Include="FontAssetTests.cpp" />
+    <ClCompile Include="FrameProfileTests.cpp" />
     <ClCompile Include="JobQueueTests.cpp" />
     <ClCompile Include="LogBufferTests.cpp" />
     <ClCompile Include="LogTests.cpp" />
@@ -193,6 +194,7 @@
     <ClCompile Include="SipHashTests.cpp" />
     <ClCompile Include="StartupOptionsTests.cpp" />
     <ClCompile Include="TerrainFieldTests.cpp" />
+    <ClCompile Include="TerrainSurfaceTests.cpp" />
     <ClCompile Include="TestSupport.cpp" />
     <ClCompile Include="TextEncodingTests.cpp" />
     <ClCompile Include="TransportTests.cpp" />

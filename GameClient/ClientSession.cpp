@@ -2,27 +2,91 @@
 
 #include "Check.h"
 #include "ClientSession.h"
+#include "CommandMessages.h"
 #include "Log.h"
+#include "PresentationEvents.h"
 #include "Profile.h"
-#include "TickReport.h"
 #include "WorldTerrain.h"
 
+#include <algorithm>
+#include <chrono>
+#include <cmath>
 #include <format>
 #include <utility>
+#include <variant>
 
 namespace Species
 {
+
+namespace
+{
+
+// The tick period of the client's own record, which the server's equals.
+Neuron::Nanoseconds TickPeriodOf(const TuningMvp* _tuning) noexcept
+{
+  const double seconds = _tuning != nullptr ? _tuning->ref.sim.tickPeriod : 0.0;
+  return std::isfinite(seconds) && seconds > 0.0 ? Neuron::Nanoseconds{static_cast<std::int64_t>(std::llround(seconds * 1e9))}
+                                                 : Neuron::Nanoseconds{0};
+}
+
+} // namespace
 
 ClientSession::ClientSession(Desc _desc)
   : m_transport(std::move(_desc.transport)),
     m_showTitle(std::move(_desc.showTitle)),
     m_productName(std::move(_desc.productName)),
     m_tuning(_desc.tuning),
+    m_clock(_desc.clock),
+    m_timing(TickPeriodOf(_desc.tuning)),
     m_shownTitle(m_productName)
 {
   ENGINE_CHECK(m_tuning != nullptr, "the session builds the terrain from the client's own tuning record");
-  m_dispatcher.Register<TickReport>([this](const TickReport& _report) { m_serverTick = _report.tick; });
-  m_dispatcher.Register<WorldTerrain>([this](const WorldTerrain& _terrain) { ReceiveTerrain(_terrain.seed, _terrain.digest); });
+  ENGINE_CHECK(m_clock != nullptr, "the session times the replica's ticks on the client's clock");
+  m_dispatcher.Register<StateUpdate>([this](const StateUpdate& _update) { ReceiveState(_update); });
+  m_dispatcher.Register<PresentationEvents>(
+    [this](const PresentationEvents& _events)
+    {
+      for (const EffectEvent& event : _events.events)
+      {
+        m_events.push_back({_events.tick, event});
+      }
+    });
+  m_dispatcher.Register<WorldTerrain>(
+    [this](const WorldTerrain& _terrain)
+    {
+      m_commandedTeam = _terrain.commandedTeam;
+      ReceiveTerrain(_terrain.seed, _terrain.digest);
+    });
+  m_dispatcher.Register<ServerStats>([this](const ServerStats& _stats) { m_serverStats = _stats; });
+  m_dispatcher.Register<CommandReport>(
+    [this](const CommandReport& _report)
+    {
+      // ADR-124: a refused command is a defect of the client's or a stale request; an executed one with no effect is
+      // the ordinary outcome of a command the server found nothing to do for.
+      if (_report.result != CommandResult::Applied && _report.result != CommandResult::NoEffect)
+      {
+        Neuron::Log(Neuron::LogCategory::Network, Neuron::LogLevel::Warning, "command {} was refused at tick {}: result {}",
+                    _report.sequence, _report.tick, static_cast<int>(_report.result));
+      }
+      m_reports.push_back(_report);
+    });
+}
+
+std::vector<CommandReport> ClientSession::TakeReports()
+{
+  return std::exchange(m_reports, {});
+}
+
+bool ClientSession::RequestSandboxRestart(bool _newSeed)
+{
+  if (!m_transport || m_refused)
+  {
+    return false;
+  }
+  const bool sent = SendCommand(SandboxRestartCommand{_newSeed}).has_value();
+  Neuron::Log(Neuron::LogCategory::Network, sent ? Neuron::LogLevel::Info : Neuron::LogLevel::Warning, "sandbox restart {}: {}",
+              _newSeed ? "with a new seed" : "from its seed", sent ? "requested" : "not sent");
+  return sent;
 }
 
 void ClientSession::Update()
@@ -40,13 +104,15 @@ void ClientSession::Update()
     }
     static_cast<void>(m_dispatcher.Dispatch(message->bytes));
   }
+  CountSides();
+  DropOldEvents();
   if (!m_showTitle)
   {
     return;
   }
-  std::string title =
-    m_refused ? RefusedTitle(m_productName)
-              : SessionTitle(m_productName, m_terrain ? std::optional<std::uint64_t>{m_terrain->seed} : std::nullopt, m_serverTick);
+  std::string title = m_refused ? RefusedTitle(m_productName)
+                                : SessionTitle(m_productName, m_terrain ? std::optional<std::uint64_t>{m_terrain->seed} : std::nullopt,
+                                               ServerTick(), m_sideFigures, WaitingForServer());
   if (title != m_shownTitle)
   {
     m_showTitle(title);
@@ -54,12 +120,74 @@ void ClientSession::Update()
   }
 }
 
+void ClientSession::ReceiveState(const StateUpdate& _update)
+{
+  ENGINE_PROFILE_SCOPE("client.replica.apply");
+  m_replica.Apply(_update);
+  if (const std::optional<std::uint64_t> latest = m_replica.LatestTick())
+  {
+    m_timing.Arrived(*latest, m_clock->Now());
+  }
+}
+
+void ClientSession::CountSides()
+{
+  std::ranges::fill(m_sideFigures, 0u);
+  for (const auto& [id, state] : m_replica.Latest())
+  {
+    const auto* figure = std::get_if<ReplicatedFigure>(&state);
+    if (figure == nullptr)
+    {
+      continue;
+    }
+    if (figure->team >= m_sideFigures.size())
+    {
+      m_sideFigures.resize(std::size_t{figure->team} + 1, 0u); // a side once seen stays, at 0 when it has no figure left
+    }
+    m_sideFigures[figure->team] += figure->dead ? 0u : 1u;
+  }
+}
+
+void ClientSession::DropOldEvents()
+{
+  const std::optional<double> display = m_timing.DisplayTick(m_clock->Now(), m_replica.PreviousTick());
+  const double period = std::chrono::duration<double>(m_timing.TickPeriod()).count();
+  if (!display || period <= 0.0)
+  {
+    return;
+  }
+  // An event of tick t happens between the states of ticks t − 1 and t, so it is due as the display leaves t − 1.
+  const double lifeTicks = PRESENTATION_EVENT_LIFE_SECONDS / period;
+  std::erase_if(m_events,
+                [&](const ReceivedEvent& _received) { return *display - (static_cast<double>(_received.tick) - 1.0) > lifeTicks; });
+}
+
+std::vector<ReceivedEvent> ClientSession::TakeEvents()
+{
+  DropOldEvents();
+  std::vector<ReceivedEvent> events(m_events.begin(), m_events.end());
+  m_events.clear();
+  return events;
+}
+
+double ClientSession::InterpolationFraction() const noexcept
+{
+  return m_timing.Fraction(m_clock->Now());
+}
+
+bool ClientSession::WaitingForServer() const noexcept
+{
+  return m_timing.Waiting(m_clock->Now());
+}
+
 void ClientSession::ReceiveTerrain(std::uint64_t _seed, const Neuron::Sha256Digest& _digest)
 {
-  if (m_terrain || m_refused)
+  if (m_refused || (m_terrain && m_terrain->seed == _seed && m_terrain->digest == _digest))
   {
-    return; // MVP-011: a world's terrain never changes, so a second message changes nothing
+    return; // MVP-011: a world's terrain never changes, so the same terrain again changes nothing
   }
+  // A sandbox that restarts from another seed is another world (ADR-109), whose terrain the client builds again; the
+  // replica follows by the server's records (ADR-111).
   // The client's own library and data, from the seed the server shows; the seed that passed gives its terrain at its
   // first passing attempt, so a client that agrees with the server agrees on the seed too.
   ENGINE_PROFILE_SCOPE("client.terrain.build");
@@ -84,8 +212,10 @@ void ClientSession::Close()
   {
     m_transport->Close();
     const Neuron::MessageDropCounts& drops = m_dispatcher.Drops();
-    Neuron::Log(Neuron::LogCategory::Network, Neuron::LogLevel::Info, "the session closed at server tick {}, {} messages dropped",
-                m_serverTick.value_or(0), drops.Total());
+    const StateReplica::Counts& replica = m_replica.Totals();
+    Neuron::Log(Neuron::LogCategory::Network, Neuron::LogLevel::Info,
+                "the session closed at server tick {}, {} messages dropped; {} state updates, {} records, {} without their baseline",
+                ServerTick().value_or(0), drops.Total(), replica.updates, replica.records, replica.missingBaselines);
   }
 }
 
@@ -94,7 +224,8 @@ bool ClientSession::Connected() const
   return m_transport && m_transport->State() == Neuron::ConnectionState::Open;
 }
 
-std::string SessionTitle(std::string_view _productName, std::optional<std::uint64_t> _worldSeed, std::optional<std::uint64_t> _serverTick)
+std::string SessionTitle(std::string_view _productName, std::optional<std::uint64_t> _worldSeed, std::optional<std::uint64_t> _serverTick,
+                         std::span<const std::uint32_t> _sideFigures, bool _waiting)
 {
   std::string title(_productName);
   if (_worldSeed)
@@ -104,6 +235,14 @@ std::string SessionTitle(std::string_view _productName, std::optional<std::uint6
   if (_serverTick)
   {
     title += std::format(" — tick {}", *_serverTick);
+  }
+  for (std::size_t side = 0; side < _sideFigures.size(); ++side)
+  {
+    title += std::format("{}{}", side == 0 ? " — figures " : " : ", _sideFigures[side]);
+  }
+  if (_waiting)
+  {
+    title += " — waiting for the server";
   }
   return title;
 }

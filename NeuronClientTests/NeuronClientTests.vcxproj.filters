@@ -4,6 +4,12 @@
     <Filter Include="Build">
       <UniqueIdentifier>{09BAF622-B8AD-5470-821D-54C55E1726A8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Effects">
+      <UniqueIdentifier>{A6DC91FA-618E-5B36-9262-7070D144EC11}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Input">
+      <UniqueIdentifier>{D8A252E2-0D5A-5857-B68D-02FB915BCCDC}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Rendering">
       <UniqueIdentifier>{9D8CED02-7794-54EF-BBF2-9A64E2924DC8}</UniqueIdentifier>
     </Filter>
@@ -29,14 +35,35 @@
     <ClCompile Include="AppWindowTests.cpp">
       <Filter>Window</Filter>
     </ClCompile>
+    <ClCompile Include="FrameGraphTests.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
     <ClCompile Include="GpuResourceFactoryTests.cpp">
       <Filter>Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="InputRouterTests.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="ParticlePoolTests.cpp">
+      <Filter>Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="PickingTests.cpp">
+      <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="PresentationTests.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="SceneQuadsTests.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="TextLayoutTests.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
     <ClCompile Include="WindowGeometryTests.cpp">
       <Filter>Window</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldFrameTests.cpp">
+      <Filter>Tests</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Build</Filter>
