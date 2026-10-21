@@ -380,6 +380,28 @@ public:
     Assert::IsFalse(client->Receive().has_value(), L"no tick ran");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp030AServerWhoseResourceSiteMeshDisagreesWithItsTuningDoesNotStart)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-030")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-099")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp030AServerWhoseResourceSiteMeshDisagreesWithItsTuningDoesNotStart)
+  {
+    // ADR-130: a resource site's gathering ports are the port sockets of its mesh, so a tuning record that gives it 5 per
+    // unit against a mesh of 4 starts no server, and names the resource site's record.
+    const TemporaryFolder folder;
+    const Neuron::LooseContent content = CookedContentWith(folder, "\"ports_per_unit\": 4", "\"ports_per_unit\": 5");
+    const Neuron::PlatformClock clock;
+    Species::IntegratedServer::Desc desc;
+    desc.clock = &clock;
+    desc.content = &content;
+    Species::IntegratedServer server(desc);
+    const auto started = server.Start();
+    Assert::IsFalse(started.has_value(), L"no server");
+    Assert::IsTrue(started.error().fault == Neuron::AssetFault::Damaged && started.error().key == "meshes/resourcesite@sim",
+                   L"the resource site's record");
+    server.Stop();
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp099ATickPeriodChangedInDataChangesTheServersTicks)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-099")
   END_TEST_METHOD_ATTRIBUTE()

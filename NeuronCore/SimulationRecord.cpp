@@ -201,4 +201,21 @@ std::array<double, 3> RestPositionOf(const SimulationRecord& _record, const Simu
   return position;
 }
 
+std::array<double, 3> RestFrontOf(const SimulationRecord& _record, const SimulationSocket& _socket)
+{
+  std::array<double, 3> direction{double{_socket.transform[8]}, double{_socket.transform[9]}, double{_socket.transform[10]}};
+  std::optional<std::uint32_t> node = _socket.node < _record.nodes.size() ? std::optional(_socket.node) : std::nullopt;
+  while (node)
+  {
+    const std::array<float, 16>& m = _record.nodes[node.value_or(0)].restTransform;
+    const std::array<double, 3> d = direction;
+    for (std::size_t axis = 0; axis < 3; ++axis)
+    {
+      direction[axis] = d[0] * double{m[axis]} + d[1] * double{m[4 + axis]} + d[2] * double{m[8 + axis]};
+    }
+    node = _record.nodes[node.value_or(0)].parent;
+  }
+  return direction;
+}
+
 } // namespace Neuron

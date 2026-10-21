@@ -70,5 +70,8 @@ struct SimulationRecord
 
 // A socket's position in the mesh's space at rest: its translation carried through its node's rest chain.
 [[nodiscard]] std::array<double, 3> RestPositionOf(const SimulationRecord& _record, const SimulationSocket& _socket);
+// A socket's front in the mesh's space at rest: its +z axis, its transform's third row, carried through its node's rest
+// chain without the translations.
+[[nodiscard]] std::array<double, 3> RestFrontOf(const SimulationRecord& _record, const SimulationSocket& _socket);
 
 } // namespace Neuron

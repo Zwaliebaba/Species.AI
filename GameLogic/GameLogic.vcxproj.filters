@@ -75,6 +75,9 @@
     <ClInclude Include="Sandbox.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="Settlement.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="SlicedPool.h">
       <Filter>Simulation</Filter>
     </ClInclude>
@@ -88,6 +91,9 @@
       <Filter>Server</Filter>
     </ClInclude>
     <ClInclude Include="StateValues.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="Structure.h">
       <Filter>Simulation</Filter>
     </ClInclude>
     <ClInclude Include="TickDraws.h">
@@ -167,6 +173,9 @@
     <ClCompile Include="Sandbox.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="Settlement.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="StableIdCounter.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
@@ -175,6 +184,9 @@
     </ClCompile>
     <ClCompile Include="StateSender.cpp">
       <Filter>Server</Filter>
+    </ClCompile>
+    <ClCompile Include="Structure.cpp">
+      <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="TickDraws.cpp">
       <Filter>Simulation</Filter>

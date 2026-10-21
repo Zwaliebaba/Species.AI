@@ -2,6 +2,7 @@
 
 #include "StructureRecords.h"
 
+#include <format>
 #include <string>
 #include <utility>
 
@@ -50,6 +51,30 @@ std::expected<StructureRecords, Neuron::AssetError> LoadStructureRecords(const N
     RecordAt(records, place) = std::move(*record);
   }
   return records;
+}
+
+std::optional<Neuron::AssetError> CheckStructureRecords(const StructureRecords& _records, const TuningMvp& _tuning)
+{
+  if (Neuron::SocketsOf(_records.wellspring, Neuron::SocketKind::Door).empty())
+  {
+    return Neuron::AssetError{Neuron::AssetFault::Damaged, std::string(STRUCTURE_RECORD_KEYS[0]),
+                              "the Wellspring's mesh has no door socket, where its new Workers appear (MVP-021)"};
+  }
+  const std::int64_t perUnit = _tuning.mvp.resource.portsPerUnit;
+  const std::array<std::pair<const Neuron::SimulationRecord*, std::int64_t>, 2> sites{
+    {{&_records.resourceSite, perUnit}, {&_records.resourceSiteCentral, perUnit * _tuning.wld.resource.centralFactor}}};
+  for (std::size_t index = 0; index < sites.size(); ++index)
+  {
+    const auto [record, ports] = sites[index];
+    const auto found = static_cast<std::int64_t>(Neuron::SocketsOf(*record, Neuron::SocketKind::Port).size());
+    if (found != ports)
+    {
+      return Neuron::AssetError{
+        Neuron::AssetFault::Damaged, std::string(STRUCTURE_RECORD_KEYS[3 + index]),
+        std::format("the mesh has {} port sockets where the tuning gives it {} gathering ports (MVP-030)", found, ports)};
+    }
+  }
+  return std::nullopt;
 }
 
 } // namespace Species

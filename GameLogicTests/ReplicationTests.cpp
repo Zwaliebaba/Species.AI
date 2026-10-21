@@ -168,7 +168,7 @@ std::vector<std::uint64_t> ReplayedHashes(const Species::WorldServer& _server, s
   const auto terrain =
     std::make_shared<const Species::RegionTerrain>(*Species::GenerateRegionTerrain(journal.start.seed, CommittedTuning()));
   std::vector<std::uint64_t> hashes;
-  static_cast<void>(Species::ReplayJournal(journal, terrain, CommittedTuning(), _endTick, _pool,
+  static_cast<void>(Species::ReplayJournal(journal, terrain, CommittedTuning(), nullptr, _endTick, _pool,
                                            [&hashes](const Species::WorldSimulation& _world)
                                            { hashes.push_back(Species::HashWorld(_world).world); }));
   return hashes;

@@ -20,7 +20,8 @@ WorldSimulation::WorldSimulation(const Desc& _desc)
   m_regions.reserve(_desc.regionCount);
   for (std::uint16_t index = 0; index < _desc.regionCount; ++index)
   {
-    m_regions.push_back(std::make_unique<RegionSimulation>(index, _desc.simulationKey, _desc.nextTick, *_desc.tuning));
+    m_regions.push_back(
+      std::make_unique<RegionSimulation>(index, _desc.simulationKey, _desc.nextTick, *_desc.tuning, nullptr, _desc.structures));
   }
 }
 

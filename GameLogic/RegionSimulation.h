@@ -14,9 +14,12 @@
 #include "ObstacleGrid.h"
 #include "RegionTerrain.h"
 #include "RouteStore.h"
+#include "Settlement.h"
 #include "SlicedPool.h"
 #include "StableId.h"
 #include "StableIdCounter.h"
+#include "Structure.h"
+#include "StructureRecords.h"
 #include "TickDraws.h"
 #include "TuningMvp.h"
 #include "Vec3.h"
@@ -36,7 +39,7 @@ namespace Species
 /// The owner of one region (ADR-083 item 4, ADR-085 item 1): every mutable value inside the region's square. It steps
 /// as one region job and reads no other owner's state (ADR-085 item 2). It holds its teams with their figures, its
 /// command queue, its id counter, its tick, and the actor grid, its cache and the obstacle grid over its square
-/// (ADR-103); the settlements, structures and battles of M2 and M3 move in here (MVP-096).
+/// (ADR-103); its settlements and its structures (MVP-096, ADR-130), and the battles of M3.
 class RegionSimulation
 {
 public:
@@ -65,9 +68,11 @@ public:
   // A region's state as a snapshot of WORLD_STATE_VERSION 1 holds it, before its teams existed (ADR-099).
   static constexpr std::uint32_t STATE_VERSION_WITHOUT_TEAMS = 1;
 
-  // _terrain may follow later through AttachTerrain. A region is never copied or moved: its owner holds it in place.
+  // _terrain may follow later through AttachTerrain. _structures, which outlive the region, are the records it builds
+  // structures from (ADR-130); a region made without them founds no settlement and places no resource site. A region is
+  // never copied or moved: its owner holds it in place.
   RegionSimulation(std::uint16_t _index, const Neuron::SipHashKey& _simulationKey, std::uint64_t _nextTick, const TuningMvp& _tuning,
-                   std::shared_ptr<const RegionTerrain> _terrain = nullptr);
+                   std::shared_ptr<const RegionTerrain> _terrain = nullptr, const StructureRecords* _structures = nullptr);
   RegionSimulation(const RegionSimulation&) = delete;
   RegionSimulation& operator=(const RegionSimulation&) = delete;
 
@@ -213,6 +218,50 @@ public:
   {
     return m_ids.Issue();
   }
+  // The region's structures (R-SIM-218 step 4), in slot order, and its settlements in the order they were founded
+  // (MVP-096, ADR-130).
+  [[nodiscard]] const SlicedPool<Structure>& Structures() const noexcept
+  {
+    return m_structures;
+  }
+  [[nodiscard]] SlicedPool<Structure>& Structures() noexcept
+  {
+    return m_structures;
+  }
+  [[nodiscard]] const std::vector<Settlement>& Settlements() const noexcept
+  {
+    return m_settlements;
+  }
+  [[nodiscard]] std::vector<Settlement>& Settlements() noexcept
+  {
+    return m_settlements;
+  }
+  // The settlement at local site _site, or null while the site is free.
+  [[nodiscard]] const Settlement* SettlementAt(std::uint8_t _site) const noexcept;
+  // The records the region builds structures from, or null (ADR-130).
+  [[nodiscard]] const StructureRecords* Records() const noexcept
+  {
+    return m_records;
+  }
+  // R-BLDG-029 and R-BLDG-030 for a structure that a rule creates: made at (_x, _z) facing _front from its kind's record
+  // on the region's terrain (MakeStructure), given the next stable id of the region and inserted into the structure
+  // pool; returns its slot. It needs the terrain and the records. M2 task T5 adds it to the obstacle grid.
+  std::uint32_t AddStructure(StructureKind _kind, std::optional<std::uint8_t> _owner, std::optional<std::uint32_t> _resourceSite, double _x,
+                             double _z, const Neuron::Vec3& _front);
+  // WLD-080 to WLD-085: a structure for each resource site of the region's terrain, in its order, belonging to no
+  // settlement (WLD-084).
+  void PlaceResourceSites();
+  // MVP-012, MVP-013 and MVP-020: a settlement at the free local site _site, run by a steward or an AI. Its team slot is
+  // its site and its Cladan's colour too; its Wellspring stands at the site's centre facing out along the site's
+  // outward diagonal; its stores are empty, its territory has the founding radius, and its first
+  // mvp.settlement.start_workers Workers leave the Wellspring's door one after another (R-ECON-043). Its draws are the
+  // next tick's. It needs the terrain and the records.
+  const Settlement& FoundSettlement(std::uint8_t _site, bool _stewarded);
+  // R-ECON-043 for a Wellspring (MVP-021): one Worker of the settlement appears at its Wellspring's door socket with no
+  // position spread and the velocity (door front + j) × ref.econ.spawn_node.door_speed, each component of j drawn from
+  // U[-ref.econ.spawn_node.door_jitter, +ref.econ.spawn_node.door_jitter), and airborne. Returns its slot.
+  std::uint32_t SpawnAtDoor(const Settlement& _settlement);
+
   // The draws of the tick being stepped (ADR-103).
   [[nodiscard]] TickDraws& Draws() noexcept
   {
@@ -327,6 +376,9 @@ private:
   BotGraph m_bots; // derived from the terrain, never state
   SlicedPool<BotNode> m_botNodes;
   std::vector<AiController> m_ais;
+  const StructureRecords* m_records;
+  SlicedPool<Structure> m_structures;
+  std::vector<Settlement> m_settlements;
   std::vector<EffectEvent> m_events; // presentation, never state
 #if ENGINE_DEVELOPMENT
   AdvanceObserver m_advanceObserver;

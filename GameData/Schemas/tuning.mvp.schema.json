@@ -1452,6 +1452,14 @@
                   "x-species-type": "integer",
                   "x-species-unit": "slots",
                   "x-species-presence": "required"
+                },
+                "structure_step": {
+                  "type": "integer",
+                  "description": "ref.sim.container.structure_step (R-SIM-204, R-SIM-207)",
+                  "minimum": 1,
+                  "x-species-type": "integer",
+                  "x-species-unit": "slots",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
@@ -1459,7 +1467,29 @@
                 "laser_bolt_step",
                 "effect_step",
                 "orb_presize",
-                "orb_step"
+                "orb_step",
+                "structure_step"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "structure": {
+              "type": "object",
+              "description": "the ref.sim.structure.* keys",
+              "properties": {
+                "default_radius": {
+                  "type": "number",
+                  "description": "ref.sim.structure.default_radius (R-SIM-118, R-BLDG-014)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "default_radius"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -2119,7 +2149,8 @@
             "route",
             "explosion",
             "command",
-            "team"
+            "team",
+            "structure"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -4052,10 +4083,97 @@
               "additionalProperties": false,
               "x-species-type": "object",
               "x-species-presence": "required"
+            },
+            "spawn_node": {
+              "type": "object",
+              "description": "the ref.econ.spawn_node.* keys",
+              "properties": {
+                "door_speed": {
+                  "type": "number",
+                  "description": "ref.econ.spawn_node.door_speed (R-ECON-043)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "door_jitter": {
+                  "type": "number",
+                  "description": "ref.econ.spawn_node.door_jitter (R-ECON-043)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "unit vectors",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "door_speed",
+                "door_jitter"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
             }
           },
           "required": [
-            "orb"
+            "orb",
+            "spawn_node"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "bldg": {
+          "type": "object",
+          "description": "the ref.bldg.* keys",
+          "properties": {
+            "port": {
+              "type": "object",
+              "description": "the ref.bldg.port.* keys",
+              "properties": {
+                "clearance_wu": {
+                  "type": "number",
+                  "description": "ref.bldg.port.clearance_wu (R-BLDG-020)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "clearance_wu"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "structure": {
+              "type": "object",
+              "description": "the ref.bldg.structure.* keys",
+              "properties": {
+                "push_step_wu": {
+                  "type": "number",
+                  "description": "ref.bldg.structure.push_step_wu (R-BLDG-020, R-BLDG-033)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "push_step_wu"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "port",
+            "structure"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -4449,7 +4567,8 @@
         "weapon",
         "econ",
         "ctrl",
-        "bot"
+        "bot",
+        "bldg"
       ],
       "additionalProperties": false,
       "x-species-type": "object",
@@ -4747,10 +4866,118 @@
               "x-species-type": "sim_decimal",
               "x-species-unit": "wu",
               "x-species-presence": "required"
+            },
+            "founding_radius": {
+              "type": "number",
+              "description": "wld.territory.founding_radius (WLD-060, MVP-020)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
             }
           },
           "required": [
-            "max_radius"
+            "max_radius",
+            "founding_radius"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "resource": {
+          "type": "object",
+          "description": "the wld.resource.* keys",
+          "properties": {
+            "home_inner": {
+              "type": "integer",
+              "description": "wld.resource.home_inner (WLD-082)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "home resource sites",
+              "x-species-presence": "required"
+            },
+            "home_outer": {
+              "type": "integer",
+              "description": "wld.resource.home_outer (WLD-082)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "home resource sites",
+              "x-species-presence": "required"
+            },
+            "inner_radius": {
+              "type": "number",
+              "description": "wld.resource.inner_radius (WLD-082)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "outer_radius": {
+              "type": "number",
+              "description": "wld.resource.outer_radius (WLD-082)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "extra_radius": {
+              "type": "number",
+              "description": "wld.resource.extra_radius (WLD-082)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "extra_bearing": {
+              "type": "number",
+              "description": "wld.resource.extra_bearing (WLD-082, DEC-1000)",
+              "minimum": -180,
+              "maximum": 180,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "degrees",
+              "x-species-presence": "required"
+            },
+            "home_yield_tolerance": {
+              "type": "number",
+              "description": "wld.resource.home_yield_tolerance (WLD-081, WLD-163)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "%",
+              "x-species-presence": "required"
+            },
+            "border_factor": {
+              "type": "integer",
+              "description": "wld.resource.border_factor (WLD-081, WLD-085)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "units",
+              "x-species-presence": "required"
+            },
+            "central_factor": {
+              "type": "integer",
+              "description": "wld.resource.central_factor (WLD-081, MVP-030)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "units",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "home_inner",
+            "home_outer",
+            "inner_radius",
+            "outer_radius",
+            "extra_radius",
+            "extra_bearing",
+            "home_yield_tolerance",
+            "border_factor",
+            "central_factor"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -4784,7 +5011,8 @@
         "terrain",
         "generation",
         "territory",
-        "travel"
+        "travel",
+        "resource"
       ],
       "additionalProperties": false,
       "x-species-type": "object",

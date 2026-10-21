@@ -6,6 +6,7 @@
 #include "RegionSimulation.h"
 #include "SipHash.h"
 #include "StableIdCounter.h"
+#include "StructureRecords.h"
 #include "TuningMvp.h"
 #include "WorkerPool.h"
 
@@ -27,8 +28,9 @@ public:
     Neuron::SipHashKey simulationKey; // ADR-082 item 1: never shown, sent or logged
     std::uint64_t nextTick = 0;
     std::uint16_t regionCount = 1;
-    const TuningMvp* tuning = nullptr; // MVP-099: read when the server started, and outliving the world
-    std::uint64_t worldSeed = 0;       // MVP-005, WLD-161: the public seed the world's terrain is built from
+    const TuningMvp* tuning = nullptr;            // MVP-099: read when the server started, and outliving the world
+    std::uint64_t worldSeed = 0;                  // MVP-005, WLD-161: the public seed the world's terrain is built from
+    const StructureRecords* structures = nullptr; // ADR-130: what its regions build structures from, outliving the world
   };
 
   // The world owner's state as a snapshot of WORLD_STATE_VERSION 3 and later holds it, with the world seed (ADR-102).

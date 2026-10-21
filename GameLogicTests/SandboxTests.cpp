@@ -321,6 +321,14 @@ public:
                      back.start.syntheticFigures == 1'500,
                    L"its start, watched (O77), with the synthetic battle's figures (ADR-126)");
     Assert::IsTrue(back.entries == journal.entries, L"its entries");
+    Assert::IsFalse(back.start.stewardSite.has_value(), L"no steward's site in the sandbox");
+    Species::CommandJournal settled = journal;
+    settled.start.sandbox = false;
+    settled.start.watched = false;
+    settled.start.stewardSite = 2;
+    const std::optional<Species::CommandJournal> settledBack = Species::ReadJournal(Species::WriteJournal(settled));
+    Assert::IsTrue(settledBack.has_value() && settledBack->start.stewardSite == std::optional<std::uint8_t>(2),
+                   L"a world's steward's site (MVP-012, ADR-130)");
 
     Assert::IsFalse(Species::ReadJournal(std::span(bytes).first(bytes.size() - 1)).has_value(), L"a short file does not read");
     std::vector<std::byte> otherFormat = bytes;
@@ -395,7 +403,7 @@ public:
       std::make_shared<const Species::RegionTerrain>(*Species::GenerateRegionTerrain(back.start.seed, CommittedTuning()));
     std::vector<std::uint64_t> replayed;
     const std::unique_ptr<Species::WorldSimulation> replay =
-      Species::ReplayJournal(back, terrain, CommittedTuning(), first + 300, pool,
+      Species::ReplayJournal(back, terrain, CommittedTuning(), nullptr, first + 300, pool,
                              [&replayed](const Species::WorldSimulation& _world) { replayed.push_back(Species::HashWorld(_world).world); });
     Assert::IsTrue(replayed == hashes, L"the same hash on every tick");
     Assert::IsTrue(replay->NextTick() == server.Simulation()->NextTick(), L"to the same tick");

@@ -190,7 +190,7 @@ MeshModel DwellingCollision()
 
 // The storehouse (MVP-031, MVP-034): a long slate-roofed hall with a loading platform at its entrance, the drop-off
 // point, and two lights over the door; built at four ports.
-constexpr double STOREHOUSE_PORT_RADIUS_WU = 20.0;
+constexpr double STOREHOUSE_PORT_RADIUS_WU = 24.0;
 
 MeshModel Storehouse()
 {
@@ -248,7 +248,7 @@ void AddCrystals(ModelNode& _node, const Point& _center, double _height, double 
 
 // A home or border resource site of one unit (MVP-030, WLD-080): a neutral mound of Crystal ringed by its gathering
 // ports, `mvp.resource.ports_per_unit` (4) of them.
-constexpr double SITE_PORT_RADIUS_WU = 16.0;
+constexpr double SITE_PORT_RADIUS_WU = 18.0;
 
 MeshModel ResourceSite()
 {

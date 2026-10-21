@@ -54,6 +54,9 @@
     <ClInclude Include="ReplicatedState.h">
       <Filter>Replication</Filter>
     </ClInclude>
+    <ClInclude Include="ResourceSites.h">
+      <Filter>World</Filter>
+    </ClInclude>
     <ClInclude Include="ServerStats.h">
       <Filter>Messages</Filter>
     </ClInclude>
@@ -100,6 +103,9 @@
     </ClCompile>
     <ClCompile Include="ReplicatedState.cpp">
       <Filter>Replication</Filter>
+    </ClCompile>
+    <ClCompile Include="ResourceSites.cpp">
+      <Filter>World</Filter>
     </ClCompile>
     <ClCompile Include="ServerStats.cpp">
       <Filter>Messages</Filter>

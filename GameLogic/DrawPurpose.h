@@ -42,7 +42,8 @@ enum class DrawPurpose : std::uint64_t
   AiRecall = 30,     // R-BOT-076: the stray recall's picks; the subject is the AI
   AiSelect = 31,     // R-BOT-088: the random target selection; the subject is the AI
   AiSend = 32,       // R-BOT-085: a dispatch candidate's send draw; the subject is the Worker
-  AiOffset = 33      // R-BOT-076, R-BOT-085, R-UNIT-188: an AI order point's offset; the subject is the figure ordered
+  AiOffset = 33,     // R-BOT-076, R-BOT-085, R-UNIT-188: an AI order point's offset; the subject is the figure ordered
+  DoorJitter = 34    // R-ECON-043, MVP-021: a Worker's jitter at its Wellspring's door, x, y then z; the subject is the Worker
 };
 
 [[nodiscard]] constexpr std::uint64_t PurposeOf(DrawPurpose _purpose) noexcept

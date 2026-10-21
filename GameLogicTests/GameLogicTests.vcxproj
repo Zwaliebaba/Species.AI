@@ -178,6 +178,7 @@
     <ClCompile Include="ReplicationTests.cpp" />
     <ClCompile Include="RouteTests.cpp" />
     <ClCompile Include="SandboxTests.cpp" />
+    <ClCompile Include="SettlementTests.cpp" />
     <ClCompile Include="SlicedPoolTests.cpp" />
     <ClCompile Include="StateHashTests.cpp" />
     <ClCompile Include="TestSupport.cpp" />

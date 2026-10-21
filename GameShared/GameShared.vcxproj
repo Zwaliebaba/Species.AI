@@ -154,6 +154,7 @@
     <ClInclude Include="PresentationEvents.h" />
     <ClInclude Include="RegionTerrain.h" />
     <ClInclude Include="ReplicatedState.h" />
+    <ClInclude Include="ResourceSites.h" />
     <ClInclude Include="ServerStats.h" />
     <ClInclude Include="StableId.h" />
     <ClInclude Include="StateReplica.h" />
@@ -171,6 +172,7 @@
     <ClCompile Include="PresentationEvents.cpp" />
     <ClCompile Include="RegionTerrain.cpp" />
     <ClCompile Include="ReplicatedState.cpp" />
+    <ClCompile Include="ResourceSites.cpp" />
     <ClCompile Include="ServerStats.cpp" />
     <ClCompile Include="StateReplica.cpp" />
     <ClCompile Include="StateUpdate.cpp" />

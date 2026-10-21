@@ -47,6 +47,10 @@ std::expected<void, Neuron::AssetError> IntegratedServer::Start()
   {
     return std::unexpected(std::move(structures.error()));
   }
+  if (std::optional<Neuron::AssetError> fault = CheckStructureRecords(*structures, *tuning))
+  {
+    return std::unexpected(std::move(*fault));
+  }
   WorldServer::Desc world;
   world.tuning = *tuning;
   world.structures = std::move(*structures);

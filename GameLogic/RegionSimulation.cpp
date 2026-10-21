@@ -80,13 +80,18 @@ constexpr std::uint32_t STATE_VERSION_WITH_WEAPONS = 6;
 constexpr std::uint32_t STATE_VERSION_WITH_LEADERS = 7;
 // ... and the AIs and the bot navigation nodes' state (M1 task T8).
 constexpr std::uint32_t STATE_VERSION_WITH_BOTS = 8;
+// ... and the settlements and the structures (M2 task T4).
+constexpr std::uint32_t STATE_VERSION_WITH_SETTLEMENTS = 9;
+// A region holds at most one settlement on each of its four sites (MVP-010).
+constexpr std::uint64_t SETTLEMENTS_MAX = std::tuple_size_v<decltype(RegionLayout::sites)>;
 // The node pool is made whole once, with every node of the graph, and never grows (ADR-107).
 constexpr std::uint32_t BOT_NODE_POOL_STEP = 1;
 
 } // namespace
 
 RegionSimulation::RegionSimulation(std::uint16_t _index, const Neuron::SipHashKey& _simulationKey, std::uint64_t _nextTick,
-                                   const TuningMvp& _tuning, std::shared_ptr<const RegionTerrain> _terrain)
+                                   const TuningMvp& _tuning, std::shared_ptr<const RegionTerrain> _terrain,
+                                   const StructureRecords* _structures)
   : m_index(_index),
     m_tuning(&_tuning),
     m_ids(static_cast<OwnerId>(REGION_OWNER_ID_FIRST + _index)),
@@ -103,7 +108,9 @@ RegionSimulation::RegionSimulation(std::uint16_t _index, const Neuron::SipHashKe
     m_bolts(static_cast<std::uint32_t>(_tuning.ref.sim.container.laserBoltStep)),
     m_effects(static_cast<std::uint32_t>(_tuning.ref.sim.container.effectStep)),
     m_orbs(static_cast<std::uint32_t>(_tuning.ref.sim.container.orbStep), static_cast<std::uint32_t>(_tuning.ref.sim.container.orbPresize)),
-    m_botNodes(BOT_NODE_POOL_STEP)
+    m_botNodes(BOT_NODE_POOL_STEP),
+    m_records(_structures),
+    m_structures(static_cast<std::uint32_t>(_tuning.ref.sim.container.structureStep))
 {
   ENGINE_CHECK(_tuning.ref.sim.updateSlices > 0 && _tuning.ref.sim.container.ungroupedStep > 0);
   m_draws.SetTick(_nextTick);
@@ -454,6 +461,83 @@ RouteHandle RegionSimulation::BuildRoute(const Neuron::Vec3& _from, const Neuron
   return m_routes.Add(m_terrain->routes.BuildRoute(_from, _to, _directRoute, _permitClimbing, _noRounding, m_terrain->field, *m_tuning));
 }
 
+const Settlement* RegionSimulation::SettlementAt(std::uint8_t _site) const noexcept
+{
+  const auto found = std::ranges::find(m_settlements, _site, &Settlement::site);
+  return found == m_settlements.end() ? nullptr : &*found;
+}
+
+std::uint32_t RegionSimulation::AddStructure(StructureKind _kind, std::optional<std::uint8_t> _owner,
+                                             std::optional<std::uint32_t> _resourceSite, double _x, double _z, const Neuron::Vec3& _front)
+{
+  ENGINE_CHECK(m_terrain != nullptr && m_records != nullptr, "region {} builds a structure with no terrain or no records", m_index);
+  Structure structure =
+    MakeStructure(_kind, _owner, _resourceSite, _x, _z, _front, RecordOf(*m_records, _kind), m_terrain->field, *m_tuning);
+  structure.id = m_ids.Issue();
+  return m_structures.Take(structure);
+}
+
+void RegionSimulation::PlaceResourceSites()
+{
+  ENGINE_CHECK(m_terrain != nullptr, "region {} places resource sites with no terrain", m_index);
+  const std::vector<ResourceSitePlace>& places = m_terrain->resourceSites;
+  for (std::size_t index = 0; index < places.size(); ++index)
+  {
+    const ResourceSitePlace& place = places[index];
+    const StructureKind kind =
+      place.siteClass == ResourceSiteClass::Central ? StructureKind::ResourceSiteCentral : StructureKind::ResourceSite;
+    static_cast<void>(AddStructure(kind, std::nullopt, static_cast<std::uint32_t>(index), place.position.x, place.position.z, place.front));
+  }
+}
+
+const Settlement& RegionSimulation::FoundSettlement(std::uint8_t _site, bool _stewarded)
+{
+  ENGINE_CHECK(m_terrain != nullptr && m_records != nullptr, "region {} founds a settlement with no terrain or no records", m_index);
+  const RegionLayout& layout = m_terrain->layout;
+  ENGINE_CHECK(_site < layout.sites.size() && SettlementAt(_site) == nullptr, "site {} of region {} is not a free site", _site, m_index);
+  const Neuron::Vec3& center = layout.sites[_site];
+  Settlement settlement;
+  settlement.site = _site;
+  settlement.team = _site;
+  settlement.stewarded = _stewarded;
+  settlement.cladan.color = _site;
+  settlement.territoryRadius = m_tuning->wld.territory.foundingRadius;
+  const Neuron::Vec3 outward{center.x - layout.valleyCenter.x, 0.0, center.z - layout.valleyCenter.z};
+  settlement.wellspringSlot = AddStructure(StructureKind::Wellspring, settlement.team, std::nullopt, center.x, center.z, outward);
+  settlement.wellspringId = m_structures.At(settlement.wellspringSlot).id;
+  EnsureTeam(settlement.team);
+  const Settlement& founded = m_settlements.emplace_back(std::move(settlement));
+  for (std::int64_t worker = 0; worker < m_tuning->mvp.settlement.startWorkers; ++worker)
+  {
+    static_cast<void>(SpawnAtDoor(founded));
+  }
+  return founded;
+}
+
+std::uint32_t RegionSimulation::SpawnAtDoor(const Settlement& _settlement)
+{
+  ENGINE_CHECK(m_records != nullptr && m_structures.Used(_settlement.wellspringSlot) &&
+                 m_structures.At(_settlement.wellspringSlot).id == _settlement.wellspringId,
+               "the settlement at site {} of region {} has no Wellspring", _settlement.site, m_index);
+  const Structure& wellspring = m_structures.At(_settlement.wellspringSlot);
+  const Neuron::SimulationRecord& record = RecordOf(*m_records, StructureKind::Wellspring);
+  const std::vector<const Neuron::SimulationSocket*> doors = Neuron::SocketsOf(record, Neuron::SocketKind::Door);
+  ENGINE_CHECK(!doors.empty(), "the Wellspring's record has no door socket");
+  // R-ECON-043: the jitter's subject is the Worker, whose id is the region's next.
+  m_draws.SetTick(m_nextTick);
+  const auto& door = m_tuning->ref.econ.spawnNode;
+  Neuron::SimRng& draw = m_draws.For(DrawPurpose::DoorJitter, m_ids.Next());
+  const double x = draw.NextSigned(2.0 * door.doorJitter);
+  const double y = draw.NextSigned(2.0 * door.doorJitter);
+  const double z = draw.NextSigned(2.0 * door.doorJitter);
+  Spawn spawn;
+  spawn.team = _settlement.team;
+  spawn.kind = FigureKind::Worker;
+  spawn.position = StructurePoint(wellspring, Neuron::RestPositionOf(record, *doors.front()));
+  spawn.velocity = (StructureDirection(wellspring, Neuron::RestFrontOf(record, *doors.front())) + Neuron::Vec3{x, y, z}) * door.doorSpeed;
+  return SpawnFigures(spawn).front();
+}
+
 void RegionSimulation::Step(std::uint64_t _tick)
 {
   ENGINE_ASSERT(_tick == m_nextTick);
@@ -616,6 +700,12 @@ void RegionSimulation::WriteState(Neuron::BitWriter& _writer) const
   m_effects.WriteState(_writer, [](Neuron::BitWriter& _out, const Effect& _effect) { WriteEffect(_out, _effect); });
   m_orbs.WriteState(_writer, [](Neuron::BitWriter& _out, const EssenceOrb& _orb) { WriteOrb(_out, _orb); });
   m_botNodes.WriteState(_writer, [](Neuron::BitWriter& _out, const BotNode& _node) { WriteBotNode(_out, _node); });
+  _writer.WriteBounded(m_settlements.size(), SETTLEMENTS_MAX);
+  for (const Settlement& settlement : m_settlements)
+  {
+    WriteSettlement(_writer, settlement);
+  }
+  m_structures.WriteState(_writer, [](Neuron::BitWriter& _out, const Structure& _structure) { WriteStructure(_out, _structure); });
 }
 
 bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stateVersion)
@@ -665,6 +755,8 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
   m_orbs = SlicedPool<EssenceOrb>(static_cast<std::uint32_t>(m_tuning->ref.sim.container.orbStep),
                                   static_cast<std::uint32_t>(m_tuning->ref.sim.container.orbPresize));
   m_botNodes = SlicedPool<BotNode>(BOT_NODE_POOL_STEP);
+  m_settlements.clear();
+  m_structures = SlicedPool<Structure>(static_cast<std::uint32_t>(m_tuning->ref.sim.container.structureStep));
   // ADR-099, MVP-095: a version-1 region migrates to one with no teams.
   if (_stateVersion == STATE_VERSION_WITHOUT_TEAMS)
   {
@@ -728,6 +820,39 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
        m_botNodes.Count() != m_botNodes.Capacity() || (m_terrain && m_botNodes.Count() != 0 && m_botNodes.Count() != m_bots.Size())))
   {
     return false;
+  }
+  // A region before version 9 has no settlement and no structure. A settlement stands on its own site and has its team
+  // and its Wellspring; a structure belongs to a team the region holds, or to none.
+  if (_stateVersion >= STATE_VERSION_WITH_SETTLEMENTS)
+  {
+    const std::uint64_t settlements = _reader.ReadBounded(SETTLEMENTS_MAX);
+    for (std::uint64_t index = 0; index < settlements && !_reader.Failed(); ++index)
+    {
+      Settlement settlement;
+      if (!ReadSettlement(_reader, settlement) || settlement.site >= SETTLEMENTS_MAX || SettlementAt(settlement.site) != nullptr ||
+          settlement.team >= m_teams.size())
+      {
+        return false;
+      }
+      m_settlements.push_back(std::move(settlement));
+    }
+    if (_reader.Failed() || !m_structures.ReadState(_reader, POOL_CAPACITY_MAX,
+                                                    [&](Neuron::BitReader& _in, Structure& _structure) {
+                                                      return ReadStructure(_in, _structure) &&
+                                                             _structure.owner.value_or(0) < std::max<std::size_t>(m_teams.size(), 1);
+                                                    }))
+    {
+      return false;
+    }
+    for (const Settlement& settlement : m_settlements)
+    {
+      const std::uint32_t slot = settlement.wellspringSlot;
+      if (!m_structures.Used(slot) || m_structures.At(slot).id != settlement.wellspringId ||
+          m_structures.At(slot).kind != StructureKind::Wellspring)
+      {
+        return false;
+      }
+    }
   }
   // An order marker follows a route the region holds, from its first point to its last (R-UNIT-185).
   for (std::uint32_t slot = 0; slot < m_effects.Capacity(); ++slot)

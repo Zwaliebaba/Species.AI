@@ -111,7 +111,8 @@ int Run(std::span<const std::wstring> _arguments)
       structures = LoadStructureRecords(*content); // ADR-129
     }
     const std::optional<Neuron::AssetError> fault =
-      !tuning ? std::optional(tuning.error()) : (!structures ? std::optional(structures.error()) : std::nullopt);
+      !tuning ? std::optional(tuning.error())
+              : (!structures ? std::optional(structures.error()) : CheckStructureRecords(*structures, *tuning)); // ADR-130
     if (fault)
     {
       const std::string reason = Neuron::FormatAssetError(*fault);

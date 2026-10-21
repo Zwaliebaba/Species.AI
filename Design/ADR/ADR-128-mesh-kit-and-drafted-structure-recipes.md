@@ -55,8 +55,8 @@ Chosen option: 1. The CMO files stay the authored source that every other mesh i
   |---|---|---|---|---|
   | `Wellspring.cmo` | 2 | 11 | 188 | stepped octagonal plinth of 30 wu radius, a pool, three pylons whose caps are its lights, the arch of its door, and a floating crystal as its second node; its five ports at 38 wu, at 36° + 72° k from +x; its door at +z, its entrance at −z, 33 wu out |
   | `Dwelling.cmo` | 1 | 10 | 84 | a gabled house of 18 × 14 wu with four windows in the team's colour; six construction ports at 18 wu |
-  | `Storehouse.cmo` | 1 | 7 | 60 | a slate-roofed hall of 26 × 18 wu with a loading platform, its entrance at 14 wu on +z and two lights over the door; four construction ports at 20 wu on the diagonals |
-  | `ResourceSite.cmo` | 1 | 4 | 38 | a hexagonal mound with a cluster of Crystal (O57); four gathering ports at 16 wu |
+  | `Storehouse.cmo` | 1 | 7 | 60 | a slate-roofed hall of 26 × 18 wu with a loading platform, its entrance at 14 wu on +z and two lights over the door; four construction ports at 24 wu on the diagonals |
+  | `ResourceSite.cmo` | 1 | 4 | 38 | a hexagonal mound with a cluster of Crystal (O57); four gathering ports at 18 wu |
   | `ResourceSiteCentral.cmo` | 1 | 12 | 106 | a broad mound with three clusters and a spire; twelve gathering ports at 34 wu |
   | `TurretMount.cmo` | 1 | 8 | 0 | a socket carrier: four manning ports at 34 wu on the diagonals and their status lights at 24 wu |
   | `TurretHead.cmo` | 2 | 2 | 96 | a pedestal with a band in the team's colour, and the turning body with its shield and sight; its barrel mount at (0, 10, 7.5) |

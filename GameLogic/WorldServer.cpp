@@ -81,8 +81,8 @@ std::uint64_t WorldServer::Open()
     const Neuron::SnapshotStore store(m_desc.snapshotFolder, SnapshotsKept());
     for (const std::filesystem::path& snapshot : store.Snapshots())
     {
-      auto restored = Neuron::SnapshotStore::Load(snapshot).and_then([this](const Neuron::SnapshotContents& _contents)
-                                                                     { return RestoreWorld(_contents, m_desc.tuning); });
+      auto restored = Neuron::SnapshotStore::Load(snapshot).and_then(
+        [this](const Neuron::SnapshotContents& _contents) { return RestoreWorld(_contents, m_desc.tuning, &m_desc.structures); });
       if (!restored)
       {
         Neuron::Log(Neuron::LogCategory::Simulation, Neuron::LogLevel::Warning, "the snapshot {} is refused: {}",
@@ -124,9 +124,10 @@ bool WorldServer::StartNew(std::uint64_t _seed, std::uint64_t _firstTick)
   // A new world draws its simulation key from the system's cryptographic generator (ADR-082 item 1), and holds the
   // seed that passed (MVP-011), which gives the same terrain at its first attempt. Its journal starts with it.
   CommandJournal journal;
-  journal.start = WorldStart{Neuron::DrawSecretKey(),          terrain->seed,          _firstTick, m_desc.regionCount, m_desc.sandbox,
-                             m_desc.sandbox && m_desc.watched, m_desc.syntheticFigures};
-  std::unique_ptr<WorldSimulation> world = StartWorld(journal.start, terrain, m_desc.tuning);
+  journal.start =
+    WorldStart{Neuron::DrawSecretKey(),          terrain->seed,           _firstTick,        m_desc.regionCount, m_desc.sandbox,
+               m_desc.sandbox && m_desc.watched, m_desc.syntheticFigures, m_desc.stewardSite};
+  std::unique_ptr<WorldSimulation> world = StartWorld(journal.start, terrain, m_desc.tuning, &m_desc.structures);
   Adopt(std::move(world), std::move(terrain));
   m_journal = std::move(journal);
   return true;
