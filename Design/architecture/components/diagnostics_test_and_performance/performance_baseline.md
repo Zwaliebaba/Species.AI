@@ -108,6 +108,8 @@ The cost of one tick must fit, spread over its 10 slices, into the render frames
 
 > **Amendment 2026-10-21 (O75, O79; M1 task T18, [ADR-126](../../../ADR/ADR-126-frame-bench-and-rendered-scenes.md)).** Only the hardware stops a run of the MVP's performance job: a processor, memory size or graphics adapter that differs from the pinned one stops it; the driver version, the OS build and the display mode are recorded with each run. The frame-rate scenes pin their own display at their first run, apart from the headless scenes' pin, and a run whose display differs from it stops before they are recorded. The frame bench `Tools/SpeciesFrameBench` draws them: the sandbox's battle of 400 passes at a 99th-percentile frame interval of at most 1000 ÷ `mvp.client.fps_target` + 1 ms, and its missed frames and a synthetic battle of `mvp.client.figures_max` figures are reported.
 
+> **Amendment 2026-10-22 (O85; [ADR-126](../../../ADR/ADR-126-frame-bench-and-rendered-scenes.md) amendment).** The reference test machine has no 1,920 × 1,080 monitor, so the frame-rate scenes of the O69 amendment run on its own 2,880 × 1,920, 60 Hz panel, with the battle drawn in a window of 1,920 × 1,080 (MVP-085), and their first run pins that panel's display mode.
+
 ## 6 Failure modes, diagnostics and telemetry
 
 Once the reference test machine is pinned, a result above its budget fails the performance job; until then it is reported and does not fail (DBG-208, DBG-209). A result never changes run-time behaviour.

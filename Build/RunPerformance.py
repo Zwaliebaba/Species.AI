@@ -15,7 +15,8 @@ driver version, display mode and OS build) and writes the configuration, the bui
 its budget into the performance section of playtests/M1.md.
 
 The first run pins the machine, and the first run of the rendered scenes pins the display they drew on, as the bench
-reports its primary display (O75); that display must be 1,920 x 1,080 at 60 Hz, and a first rendered run on another one
+reports its primary display (O75); that display must run at 60 Hz with the battle drawn at 1,920 x 1,080, borderless on
+a display of that size or in a window of that size on a larger one (O85), and a first rendered run that drew otherwise
 stops and records nothing. A later run whose processor, memory or graphics adapter differs from the pinned ones, or whose
 display differs for the rendered scenes, stops and records nothing, because a change of the hardware re-baselines every
 result (DBG-209); the driver and the OS build are recorded with each run and stop nothing. Once pinned, a figure above
@@ -57,8 +58,7 @@ PIN_MARK = re.compile(r'<!-- reference-machine (\{.*?\}) -->')
 DISPLAY_MARK = re.compile(r'<!-- reference-display (\{.*?\}) -->')  # O75: the rendered scenes' own pin
 FRAME_TOLERANCE_MS = 1.0  # O75: 60 frames per second is a 99th-percentile frame interval of 16.7 ms and 1 ms of tolerance
 RENDERED_SIZE = (1920, 1080)  # MVP-085
-RENDERED_REFRESH_HZ = 60  # O75: the rendered scenes run on a 1,920 x 1,080, 60 Hz display
-RENDERED_DISPLAY = f'{RENDERED_SIZE[0]} x {RENDERED_SIZE[1]} at {RENDERED_REFRESH_HZ} Hz'
+RENDERED_REFRESH_HZ = 60  # O75: the rendered scenes run on a 60 Hz display, at 1,920 x 1,080 (O85)
 SECTION = '## Performance'
 
 # ADR-080 item 2's cost budgets, item 3's region step budget and item 7's integrated server budget, and the travel
@@ -300,6 +300,13 @@ def rendered_display(frames, config):
   return f'{display["width"]} x {display["height"]} at {display["refresh_hz"]} Hz'
 
 
+def drawn_at_target(frames, drawn_on):
+  """Whether the rendered scenes may pin the display they drew on: a 60 Hz display on which the sandbox's battle was
+  drawn at 1,920 x 1,080, borderless on a display of that size (O75) or in a window of that size on a larger one (O85)."""
+  sizes = [(s['window']['width'], s['window']['height']) for s in frames['scenes'] if s['name'] == 'sandbox-drawn']
+  return (drawn_on or '').endswith(f' at {RENDERED_REFRESH_HZ} Hz') and sizes == [RENDERED_SIZE]
+
+
 def run_section(when, build_id, config, result, frames):
   """The run's section, and whether a headless and a rendered figure is above its budget."""
   drawn_on = f', the rendered scenes on {rendered_display(frames, config)}' if frames is not None else ''
@@ -357,11 +364,12 @@ def record(path, config, result, frames, build_id, when):
     print(f'RunPerformance: the rendered scenes drew on {drawn_on}, and they pinned {display.get("display")} (O75). '
           'A change of the display re-baselines the rendered results (DBG-209); nothing was recorded.')
     return 2
-  if frames is not None and display is None and drawn_on != RENDERED_DISPLAY:
-    # The first rendered run pins the display, so a run on another display would pin the wrong one (O75, MVP-085).
-    print(f'RunPerformance: the rendered scenes drew on {drawn_on}, and their first run pins the display, which must be '
-          f'{RENDERED_DISPLAY} (O75, MVP-085). Make that monitor the primary display and run again, or run with '
-          '--headless-only; nothing was recorded.')
+  if frames is not None and display is None and not drawn_at_target(frames, drawn_on):
+    # The first rendered run pins the display, so a run that did not draw the battle as MVP-085 asks would pin the wrong one.
+    print(f'RunPerformance: the rendered scenes drew on {drawn_on}, and their first run pins the display, which must run at '
+          f'{RENDERED_REFRESH_HZ} Hz with the battle drawn at {RENDERED_SIZE[0]} x {RENDERED_SIZE[1]} (O75, O85, MVP-085). '
+          'Make a 60 Hz display of at least that size the primary display and run again, or run with --headless-only; '
+          'nothing was recorded.')
     return 2
   if pinned is None:
     text = text.rstrip('\n') + (f'\n\n### Reference test machine\n\nPinned by the run of {when}, build {build_id} (DBG-209).\n\n'
@@ -445,6 +453,9 @@ def self_test(tool, tuning_source, bench=None, warp=False):
       text = open(path, encoding='utf-8').read()
       return all(phrase in text for phrase in phrases)
 
+    # O85: a record of its own, whose first rendered run draws a 1,920 x 1,080 window on a larger 60 Hz panel.
+    panel = os.path.join(folder, 'M1-panel.md')
+
     checks = [
       ('the first run pins the machine and only reports', lambda: record(path, reference, result, None, 'fixture', 'pin') == 0 and
        pinned_machine(open(path, encoding='utf-8').read()) == reference),
@@ -457,12 +468,18 @@ def self_test(tool, tuning_source, bench=None, warp=False):
        lambda: record(path, reference, dict(within, log=dict(within['log'], call_ns_mean=5000.0)), None, 'fixture', 'log') == 1),
       ('a run reports the generation, the route graph, the route sweep and the log flood',
        lambda: recorded('a valley generated', 'the land route graph', 'route sweep', 'the slowest thread\'s log call')),
-      ('a first rendered run on another display pins nothing',
+      ('a first rendered run drawn at another size pins nothing',
        lambda: record(path, reference, within, frames_like(frames, 16.0, (2880, 1920), (2880, 1920, 60)), 'fixture', 'panel') == 2 and
        pinned_display(open(path, encoding='utf-8').read()) is None),
+      ('a first rendered run on a display not at 60 Hz pins nothing',
+       lambda: record(path, reference, within, frames_like(frames, 16.0, display=(1920, 1080, 144)), 'fixture', 'fast') == 2 and
+       pinned_display(open(path, encoding='utf-8').read()) is None),
+      ('a first rendered run in a 1,920 x 1,080 window on a larger 60 Hz display pins it (O85)',
+       lambda: record(panel, reference, within, frames_like(frames, 16.0, display=(2880, 1920, 60)), 'fixture', 'window') == 0 and
+       pinned_display(open(panel, encoding='utf-8').read()) == {'display': '2880 x 1920 at 60 Hz'}),
       ('the first rendered run pins the display and only reports',
        lambda: record(path, reference, within, slow, 'fixture', 'display') == 0 and
-       pinned_display(open(path, encoding='utf-8').read()) == {'display': RENDERED_DISPLAY}),
+       pinned_display(open(path, encoding='utf-8').read()) == {'display': '1920 x 1080 at 60 Hz'}),
       ('a rendered run reports the server\'s tick rate', lambda: recorded('server ticks per second while drawn')),
       ('a rendered run on another display stops',
        lambda: record(path, reference, within, frames_like(frames, 16.0, display=(1920, 1080, 144)), 'fixture', 'other display') == 2),

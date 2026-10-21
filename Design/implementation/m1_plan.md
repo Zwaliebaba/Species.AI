@@ -53,7 +53,7 @@ T11, the content build, depends on nothing in phase A and runs beside it. Phase 
 
 The owner's PC is the reference test machine (O58): a Windows on Arm PC with a Snapdragon X processor and an Adreno X1-85 GPU. It measures the `Release|ARM64` development build, natively (O69, [ADR-094](../ADR/ADR-094-arm64-development-build.md)). That machine does not meet ADR-050's x64 minimum, so its figures bind the MVP's budgets only. The x64 build that ships is not measured until the minimum-specification tier, decided before the first external build, re-baselines every result (DBG-209 amendment).
 
-The frame-rate scenes run on a display whose native mode is 1,920 × 1,080 at 60 Hz, so the borderless window (O65) is exactly MVP-085's target. They pin that display at their own first run, apart from the headless scenes' pin, and only a change of processor, memory, graphics adapter or display stops a run; the driver and the OS build are recorded with each run (O75). Their 60 frames per second is the 99th percentile of the frame interval, at most 17.7 ms (O75).
+The frame-rate scenes draw the battle at MVP-085's 1,920 × 1,080 on a 60 Hz display: on the reference test machine's own 2,880 × 1,920 panel, in a centred window of that size, because the machine has no 1,920 × 1,080 monitor (O85, which replaces O75's external monitor), and on a display of exactly that size in the borderless window (O65). They pin that display at their own first run, apart from the headless scenes' pin, and only a change of processor, memory, graphics adapter or display stops a run; the driver and the OS build are recorded with each run (O75). Their 60 frames per second is the 99th percentile of the frame interval, at most 17.7 ms (O75).
 
 The performance job of DBG-208 is, for the MVP, a script that the owner runs on that machine: `Build\RunPerformance.py` (O69). CI's hosted runner is a virtual machine and cannot time anything, and a self-hosted runner was not chosen. The script:
 - builds `Release|ARM64` through `Species.slnx`, as `AGENTS.md` §3 requires;
@@ -118,7 +118,7 @@ The number of sides, their size and their sites are tuning keys under `mvp.sandb
 
 ## 8 What the owner does during M1
 
-- **Runs the checklists** of T12 to T18 on Debug builds, as M0's were, and the performance script at T10 and T18 on `Release|ARM64` with the 1,920 × 1,080, 60 Hz display (O69).
+- **Runs the checklists** of T12 to T18 on Debug builds, as M0's were, and the performance script at T10 and T18 on `Release|ARM64`, the T18 run on the 60 Hz panel with the battle drawn at 1,920 × 1,080 (O69, O85).
 - **Plays the sandbox** at T18 and writes the session log's three lines in `playtests/M1.md` after each session, in the format of the playtest README.
 - **Reviews the likeness** of the Worker and Leader silhouettes (PIL-027), with the result recorded in the manifest.
 - **Prepares M2:** the en-GB string table's first strings, which GameFont first draws at M2 (O70), and the hand-made assets of M2 ([MVP assets](mvp_assets.md) §4): the carried-load overlay and the M2 icons.

@@ -49,7 +49,7 @@
 #include <vector>
 
 // The frame bench (M1 task T18, ADR-126, O79): a development tool that never ships. It composes the client and the
-// integrated server as Species.exe does, in the borderless window, and draws the rendered measurement scenes, each from
+// integrated server as Species.exe does, in a window of 1,920 x 1,080, and draws the rendered measurement scenes, each from
 // seed 1 with both sides under the AI and the camera fixed on the fight. After a warm-up it records each frame's
 // interval and work for a number of ticks, and writes them as JSON for Build/RunPerformance.py.
 //
@@ -86,6 +86,8 @@ constexpr Neuron::Nanoseconds WARM_UP{10'000'000'000};
 constexpr Neuron::Nanoseconds WARM_UP_QUICK{1'000'000'000};
 constexpr std::uint64_t MEASURED_TICKS = 1'200;
 constexpr std::uint64_t MEASURED_TICKS_QUICK = 20;
+// MVP-085: the size the scenes are drawn at.
+constexpr Neuron::SizePx SCENE_SIZE{1920, 1080};
 // A scene that has not drawn its world by then has failed.
 constexpr Neuron::Nanoseconds LOAD_LIMIT{120'000'000'000};
 // RND-032's low rate while the window is minimised or occluded (ADR-092).
@@ -501,7 +503,8 @@ int Run(const Options& _options)
     return 1;
   }
 
-  // MVP-085: the borderless window over the primary display, which the scenes measure at its native mode (O75).
+  // MVP-085: the scenes are drawn at SCENE_SIZE on the primary display. On a display of that size the borderless window
+  // covers it at its native mode (O75); on a larger one, a window of that client size is centred on it (O85).
   Neuron::SizePx desktop = Neuron::FALLBACK_WINDOW_SIZE;
   Neuron::DesktopMode display; // the primary display's mode, which the performance script pins (O75)
   for (const Neuron::MonitorInfo& monitor : Neuron::EnumerateMonitors())
@@ -512,7 +515,11 @@ int Run(const Options& _options)
       display = monitor.desktop;
     }
   }
-  const Neuron::DisplayAttempt attempt = Neuron::StartupDisplayAttempts(Neuron::WindowMode::BorderlessFullScreen, {}, desktop).front();
+  const bool windowed = desktop.width > SCENE_SIZE.width && desktop.height > SCENE_SIZE.height;
+  const Neuron::DisplayAttempt attempt =
+    Neuron::StartupDisplayAttempts(windowed ? Neuron::WindowMode::Windowed : Neuron::WindowMode::BorderlessFullScreen,
+                                   windowed ? SCENE_SIZE : Neuron::SizePx{}, desktop)
+      .front();
   Neuron::AppWindow::Desc windowDesc;
   windowDesc.clock = &clock;
   windowDesc.title = std::string(PRODUCT_NAME);
