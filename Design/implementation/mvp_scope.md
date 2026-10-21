@@ -235,6 +235,8 @@ The MVP builds only one region and one steward, but it keeps the seams that are 
 
 **MVP-101** (MUST) The steward's controls are those of the reference where the reference has them: the player camera (R-CTRL-450 to R-CTRL-497) for the settlement view, selection, and Leader orders and formations (R-UNIT-169 to R-UNIT-187). The MVP adds: placing a structure, setting the three priorities, promoting a Worker and forming an expedition, declaring an attack (with its cost and whether it is unprovoked shown before it is confirmed), withdrawing an expedition, making and withdrawing a claim, and sending tribute. Every one of them is a command of MVP-094.
 
+> **Amendment 2026-10-21 (O82; M1 task T17c, [ADR-127](../ADR/ADR-127-left-button-verbs-and-order-feedback-at-m1.md)).** The buttons are Species' own, not the reference's: the primary button selects and gives the orders of the crowd and of the selected Leader, and the secondary button releases a selection, toggles a Leader and promotes a Worker (R-CTRL-041, R-CTRL-042 and R-CTRL-050 as amended). The selection circle takes the pointer's drag as well as its growth (R-CTRL-156), and the badge near the pointer counts the selected Workers (R-CTRL-366).
+
 **MVP-102** (MUST) The HUD shows: the stores and their capacity, the Workers and the population limit, growth and the cause when it stops (MVP-035, MVP-037), the priorities, the construction bar and queue, a relations panel (each Cladan's anger toward the steward's settlement, every grievance with its cause, weight and fade, every claim), notifications (contact, claims, the warning with its countdown, battle start and end, structures completed), the battle result, the renown standing (MVP-062), the time left in the run, the away report (MVP-074) and the epilogue (MVP-063). Its icons, panels, fonts and strings are the UI rows of the [MVP assets](mvp_assets.md).
 
 **MVP-103** (MUST) The front end of the MVP is one page: continue a world, start a new run (pace, seed, site), open the epilogue of an ended world, options for display and volume, and quit.
@@ -366,6 +368,9 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.cursor.highlight_size` | 48 | physical px | — | provisional | MVP-101 | The pointer over a selectable Leader, `cursor.highlight` (O76) |
 | `mvp.cursor.unavailable_size` | 60 | physical px | — | provisional | MVP-101 | `cursor.unavailable` (O76), R-CTRL-350's size |
 | `mvp.cursor.world_hotspot` | 0.113, 0.082 | fraction of the size (x, y) | — | provisional | MVP-101 | The tip of the owner's arrow, in place of `ref.ctrl.cursor.set.world_hotspot` (0.055, 0.070), which misses it by 7 texels (ADR-119) |
+| `mvp.selection.disc_size_factor` | 0.8 | × the Worker card's half-size | — | provisional | MVP-101 | The disc on the ground under a selected Worker (O82, ADR-127) |
+| `mvp.selection.disc_alpha` | 0.35 | alpha, 0 to 1 | — | provisional | MVP-101 | The disc's strength in the control glow's colour |
+| `mvp.selection.circle_fade_seconds` | 0.4 | s of real time | — | provisional | MVP-101 | The released selection circle's fade |
 
 *Table 3 — The tuning values of the MVP.*
 

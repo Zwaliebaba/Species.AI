@@ -148,7 +148,8 @@
       "pulse_rate": 10,
       "pulse_phase_step": 0.7,
       "arrow_size_factor": 2,
-      "preview_rebuild_distance": 1
+      "preview_rebuild_distance": 1,
+      "fade_rate": 0.25
     }
   },
   "ter": {
@@ -479,6 +480,11 @@
         "x": 0.113,
         "y": 0.082
       }
+    },
+    "selection": {
+      "disc_size_factor": 0.8,
+      "disc_alpha": 0.35,
+      "circle_fade_seconds": 0.4
     }
   },
   "dbg": {

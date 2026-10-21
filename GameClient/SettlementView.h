@@ -13,6 +13,7 @@
 #include "WorldMarkers.h"
 #include "WorldScene.h"
 
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <span>
@@ -52,8 +53,9 @@ inline constexpr double WORKER_DISTANCE_SCALE_FACTOR = 2.0;
 /// when the session's terrain arrives, advanced by the router's camera actions while the window has focus, the hover
 /// over the client's own Leaders, the battle verbs that follow the camera (M1 task T17, ADR-124), whose commands it
 /// sends through the session, and the cursor it shows; with T17b (ADR-125), the route preview of the selection, the
-/// world markers, whose marker under the pointer the verbs read as a Leader under it, and the badge near the pointer.
-/// Frame thread only.
+/// world markers, whose marker under the pointer the verbs read as a Leader under it, and the badge near the pointer;
+/// with O82 (ADR-127), the primary button's orders, the ordered route kept fading, and the badge's count. Frame thread
+/// only.
 class SettlementView
 {
 public:
@@ -113,6 +115,11 @@ public:
   {
     return m_badge;
   }
+  // ADR-127: the badge's text, the selected Workers' count, drawn in GameFont; none while no Worker is selected.
+  [[nodiscard]] const std::vector<Neuron::OverlayLine>& BadgeText() const noexcept
+  {
+    return m_badgeText;
+  }
 
 private:
   // The preview's start and end (O78): a selected Leader's position, unless a press would form it up (R-UNIT-170), or
@@ -130,6 +137,8 @@ private:
   RoutePreview m_preview;
   WorldMarkers m_markers;
   std::vector<Neuron::OverlayQuad> m_badge;
+  std::vector<Neuron::OverlayLine> m_badgeText;
+  std::size_t m_selectedWorkers = 0; // the local team's living Workers under control in this frame's figures
   CursorKind m_cursor = CursorKind::World;
   std::optional<StableId> m_hovered;
   Neuron::PointPx m_pointer;

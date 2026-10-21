@@ -87,8 +87,10 @@ struct WorldScene
 /// The corner of the target that an overlay line is anchored to (ADR-120).
 enum class OverlayCorner : std::uint8_t
 {
-  BottomRight, // the line's cell ends there: right-aligned, as the frame-rate line is (DBG-095)
-  TopLeft      // the line's cell starts there, as a page's lines do (DBG-096)
+  BottomRight,    // the line's cell ends there: right-aligned, as the frame-rate line is (DBG-095)
+  TopLeft,        // the line's cell starts there, as a page's lines do (DBG-096)
+  PixelLeftMiddle // ADR-127: the cell's left edge and vertical middle lie at the insets, physical pixels from the
+                  // target's top-left corner that do not scale with the text, as the cursor's badge count does
 };
 
 /// One line of the development overlay (DBG-095), drawn in EditorFont at the overlay's whole-number scale (O63) with
@@ -310,6 +312,9 @@ struct FrameInputs
   // scene's textures in a world frame only.
   std::vector<OverlayQuad> markers;
   std::vector<OverlayQuad> cursorBadge;
+  // ADR-127: the badge's text over it in pass 20, in its face at the text scale: the selected Workers' count in GameFont.
+  std::shared_ptr<const FontAsset> badgeFont;
+  std::vector<OverlayLine> badgeText;
   // The game cursor (ADR-119): its art, and the quad of this frame; none draws no cursor.
   std::shared_ptr<const CursorImages> cursorImages;
   std::optional<CursorQuad> cursor;

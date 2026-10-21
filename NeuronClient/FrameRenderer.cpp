@@ -173,6 +173,7 @@ struct RendererState
   std::unique_ptr<DeviceGpuResourceFactory> factory;
   std::unique_ptr<WorldRenderer> world;
   std::unique_ptr<OverlayRenderer> overlay;
+  std::unique_ptr<OverlayRenderer> badgeText; // ADR-127: the cursor's badge count, in its own face
   std::unique_ptr<CursorRenderer> cursor;
   std::unique_ptr<QuadRenderer> quads;
   std::unique_ptr<MeshRenderer> meshes;
@@ -679,6 +680,7 @@ void Rebuild(RendererState& _state)
   _state.rebuilding = false;
   _state.world->UploadAgain(); // RND-034: the same surfaces, from the unchanged world
   _state.overlay->UploadAgain();
+  _state.badgeText->UploadAgain();
   _state.cursor->UploadAgain();
   _state.quads->UploadAgain();
   _state.meshes->UploadAgain();
@@ -910,9 +912,11 @@ void RecordWorldFrame(RendererState& _state, const FrameInputs& _inputs, ID3D12R
     }
     case WorldPass::Cursor:
     {
-      // R-CTRL-366: the badge near the pointer, then the pointer over it.
+      // R-CTRL-366: the badge near the pointer, its count (ADR-127), then the pointer over them.
       ENGINE_PROFILE_SCOPE("render.world_cursor");
       _state.quads->RecordOverlay(commands, *_state.ring, *_state.catalog, _state.swapChainSize, _inputs.cursorBadge);
+      _state.badgeText->RecordText(commands, *_state.ring, *_state.catalog, _state.swapChainSize, TextScaleFor(_state.window->DpiScale()),
+                                   _inputs.badgeText, {});
       if (_inputs.cursor)
       {
         _state.cursor->Record(commands, *_state.ring, *_state.catalog, _state.swapChainSize, *_inputs.cursor);
@@ -945,6 +949,7 @@ std::expected<std::unique_ptr<FrameRenderer>, StartupFailure> FrameRenderer::Cre
   state->factory = std::make_unique<DeviceGpuResourceFactory>(DeviceGpuResourceFactory::Desc{});
   state->world = std::make_unique<WorldRenderer>(*state->factory);
   state->overlay = std::make_unique<OverlayRenderer>(*state->factory);
+  state->badgeText = std::make_unique<OverlayRenderer>(*state->factory, "font.ui.primary");
   state->cursor = std::make_unique<CursorRenderer>(*state->factory);
   state->quads = std::make_unique<QuadRenderer>(*state->factory);
   state->meshes = std::make_unique<MeshRenderer>(*state->factory);
@@ -1047,6 +1052,7 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
   const std::uint64_t completed = frameId > FRAMES_IN_FLIGHT ? frameId - FRAMES_IN_FLIGHT : 0;
   state.world->Show(_inputs.world);
   state.overlay->Show(_inputs.overlayFont);
+  state.badgeText->Show(_inputs.badgeFont);
   state.cursor->Show(_inputs.cursorImages);
   state.quads->Show(_inputs.sceneTextures);
   state.meshes->Show(_inputs.sceneMeshes);

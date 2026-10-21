@@ -201,6 +201,8 @@ Only steps 2 and 3 can both apply to one press, and step 2 wins (DEC-863). A pre
 
 **R-CTRL-051** (MUST) Whenever `action.order.special` fires, it also sets the `specialOrders` flag of the team command state (R-CTRL-101), whatever meaning the resolver gives the press.
 
+> **Amendment 2026-10-21 (M1 task T17c, owner decision O82, [ADR-127](../../ADR/ADR-127-left-button-verbs-and-order-feedback-at-m1.md)).** In Species the orders are on the primary button. A primary press resolves to one meaning, tried in this order: an own Leader under the pointer is selected (row S1; it is never an order's target, so R-CTRL-057's Leader target is not used); a selected Leader gives O6 or O7; selected Workers give O1; with nothing selected, row S1's `Select` of nothing and row S4's circle. A secondary press resolves to one meaning: O3 for an own Leader under the pointer while no Workers are selected and nothing or that Leader is selected; with anything else selected, row S3's effect; with nothing selected, O2. Row S2 does not arise with Workers or a Leader selected, since the press orders them. `action.order.crowd` and `action.order.special` are bound to the primary button and `action.order.promote` to the secondary.
+
 ### 2.4 The object under the pointer
 
 **R-CTRL-055** (MUST) Every frame, the match input pump resolves the object under the pointer for the local team as follows:

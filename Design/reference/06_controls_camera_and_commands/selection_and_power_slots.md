@@ -43,6 +43,8 @@ This file specifies the selection model, the selection circle and crowd orders (
 
 **R-CTRL-157** (MUST) Row S6 ends the circle: the centre and radius are cleared, and the recorded crowd-order time is reset to none, so the first crowd order after a circle is never held back by the crowd-order interval.
 
+> **Amendment 2026-10-21 (M1 task T17c, owner decision O82, [ADR-127](../../ADR/ADR-127-left-button-verbs-and-order-feedback-at-m1.md)).** In Species the circle's radius is the larger of its growth by R-CTRL-156 and the farthest the pointer ground point has been dragged from its centre, up to `ref.ctrl.select.circle_max_radius`, and it never shrinks. Since the primary press also gives the orders, only a release that ends a circle resets the crowd-order time. The released circle stays drawn, its flashes shrinking to nothing over `mvp.selection.circle_fade_seconds`.
+
 **R-CTRL-158** (MUST) Executing `SelectWorkers` sets the under-control flag on every Worker of exactly that team within the radius, found through the actor grid, that is not Manning, not Burning, not InTransport and not already controlled; `worker.selected` plays for the local team only ([Worker](../02_units/worker.md) R-UNIT-136, DEC-564).
 
 ### 2.4 Crowd orders

@@ -11,6 +11,7 @@
 #include <cmath>
 #include <iterator>
 #include <limits>
+#include <string>
 #include <utility>
 
 namespace Species
@@ -222,6 +223,22 @@ std::vector<Neuron::OverlayQuad> CursorBadge(bool _leaderSelected, bool _workers
   quads.push_back(
     QuadOf(_leaderSelected ? SceneTexture::IconLeader : SceneTexture::IconWorkers, Neuron::OverlayBlend::Additive, x, y, icon, 0.0, WHITE));
   return quads;
+}
+
+std::optional<Neuron::OverlayLine> BadgeCount(std::span<const Neuron::OverlayQuad> _badge, std::size_t _workers)
+{
+  if (_badge.empty() || _workers == 0)
+  {
+    return std::nullopt;
+  }
+  const Neuron::OverlayQuad& shadow = _badge.front();
+  Neuron::OverlayLine line;
+  line.text = std::to_string(_workers);
+  line.insetX = shadow.centerX + shadow.halfSize;
+  line.insetY = shadow.centerY;
+  line.corner = Neuron::OverlayCorner::PixelLeftMiddle;
+  line.color = WHITE;
+  return line;
 }
 
 } // namespace Species

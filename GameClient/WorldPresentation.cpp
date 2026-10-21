@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "AssetError.h"
 #include "CrowdLook.h"
 #include "DdsTexture.h"
 #include "Development.h"
@@ -11,6 +12,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <memory>
 #include <numbers>
 #include <span>
 #include <string_view>
@@ -29,6 +31,26 @@ constexpr std::string_view SEA_TILE_KEY = "textures/terrain/seatile01";
 constexpr std::string_view TERRAIN_GRID_KEY = "textures/fx/terraingrid";
 constexpr std::string_view SKY_CLOUD_KEY = "textures/fx/skycloud";
 constexpr std::string_view BEAM_SHORT_KEY = "textures/fx/beamshort";
+// ADR-127: GameFont, the player-facing face (MVP-100, O62), for the badge's count.
+constexpr std::string_view GAME_FACE_KEY = "fonts/gamefont";
+
+// GameFont from the content: none when it is missing or damaged, which is logged.
+std::shared_ptr<const Neuron::FontAsset> LoadGameFace(const Neuron::LooseContent& _content)
+{
+  const auto bytes = _content.Read(GAME_FACE_KEY);
+  if (!bytes)
+  {
+    Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "the game's face: {}", Neuron::FormatAssetError(bytes.error()));
+    return nullptr;
+  }
+  auto face = Neuron::ReadFontAsset(*bytes);
+  if (!face)
+  {
+    Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "the game's face {} is damaged: {}", GAME_FACE_KEY, face.error());
+    return nullptr;
+  }
+  return std::make_shared<const Neuron::FontAsset>(std::move(*face));
+}
 
 std::array<float, 3> Rgb(double _r, double _g, double _b) noexcept
 {
@@ -224,6 +246,7 @@ WorldPresentation::WorldPresentation(Desc _desc)
   m_cursorImages = LoadCursorImages(*m_desc.content);
   m_sceneTextures = LoadSceneTextures(*m_desc.content);
   m_sceneMeshes = LoadSceneMeshes(*m_desc.content);
+  m_gameFace = LoadGameFace(*m_desc.content);
 #if ENGINE_DEVELOPMENT
   m_developmentFace = LoadDevelopmentFace(*m_desc.content);
 #endif
@@ -307,10 +330,12 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
     if (displayTick.has_value())
     {
       m_effects.Update(events, _session.Replica(), figures, effectsView);
-      m_effects.EmitCircle(_view.Verbs().Circle(), m_terrain->field, effectsView);
+      m_effects.EmitCircle(_view.Verbs().ShownCircle(), m_terrain->field, effectsView);
       m_effects.ApplyRecoil(figures, effectsView);
     }
     inputs.sceneTextures = m_sceneTextures;
+    // ADR-127: the selection discs under the Worker layers of pass 7d.
+    AppendSelectionDiscs(figures, m_terrain->field, crowd, *m_desc.presentation, inputs.quadBatches);
     AppendWorkerBatches(figures, m_terrain->field, crowd, *m_desc.presentation, *m_desc.tuning, inputs.quadBatches);
     // M1 task T16b (ADR-122): the Leaders' figures and banners in pass 7b.
     if (m_sceneMeshes != nullptr && !m_sceneMeshes->meshes.empty())
@@ -333,6 +358,8 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
     }
     inputs.markers = _view.Markers().Quads();
     inputs.cursorBadge = _view.Badge();
+    inputs.badgeFont = m_gameFace;
+    inputs.badgeText = _view.BadgeText();
     if (displayTick.has_value())
     {
       // Passes 10a, 10b and 15, and the camera shake as an offset of the frame's view alone (VFX-232).
