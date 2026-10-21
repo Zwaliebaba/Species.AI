@@ -108,7 +108,13 @@ int main(int _argc, char** _argv)
   }
   catch (const std::exception& error)
   {
-    Print(stderr, std::format("SpeciesMeshKit: {}", error.what()));
-    return 1;
+    std::fputs("SpeciesMeshKit: ", stderr);
+    std::fputs(error.what(), stderr);
+    std::fputc('\n', stderr);
   }
+  catch (...)
+  {
+    std::fputs("SpeciesMeshKit: an unknown exception\n", stderr);
+  }
+  return 1;
 }
