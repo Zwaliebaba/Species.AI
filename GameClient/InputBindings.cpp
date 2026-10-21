@@ -33,6 +33,22 @@ std::vector<Neuron::ActionBindings> DefaultBindings()
   bind(GameAction::CameraZoom, "action.camera.zoom", Neuron::ValueKind::Boolean,
        {KeyBinding(KeyCode::Z, Held), MouseBinding(MouseControl::Middle, Held)});
   bind(GameAction::CameraLookAround, "action.camera.look_around", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::F2, Held)});
+  // Rows 19 to 24 (reference/06 rows S1, S3 to S6): the primary button picks, and on the ground begins the circle.
+  bind(GameAction::SelectPick, "action.select.pick", Neuron::ValueKind::Boolean, {MouseBinding(MouseControl::Primary, Down)});
+  bind(GameAction::SelectPickIdle, "action.select.pick_idle", Neuron::ValueKind::Boolean, {MouseBinding(MouseControl::Primary, Down)});
+  bind(GameAction::SelectClear, "action.select.clear", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::Space, Down)});
+  bind(GameAction::SelectCircleBegin, "action.select.circle_begin", Neuron::ValueKind::Boolean,
+       {MouseBinding(MouseControl::Primary, Down)});
+  bind(GameAction::SelectCircleGrow, "action.select.circle_grow", Neuron::ValueKind::Boolean, {MouseBinding(MouseControl::Primary, Held)});
+  bind(GameAction::SelectCircleEnd, "action.select.circle_end", Neuron::ValueKind::Boolean, {MouseBinding(MouseControl::Primary, Up)});
+  // Rows 40 to 45 (rows O1 to O3, O6, O7 and T5): the secondary button's orders, which the resolver of R-CTRL-050
+  // gives one meaning a press; Ctrl and Shift held modify them.
+  bind(GameAction::OrderCrowd, "action.order.crowd", Neuron::ValueKind::Boolean, {MouseBinding(MouseControl::Secondary, Down)});
+  bind(GameAction::OrderStraightRoute, "action.order.straight_route", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::Control, Held)});
+  bind(GameAction::OrderPromote, "action.order.promote", Neuron::ValueKind::Boolean, {MouseBinding(MouseControl::Secondary, Down)});
+  bind(GameAction::OrderSpecial, "action.order.special", Neuron::ValueKind::Boolean, {MouseBinding(MouseControl::Secondary, Down)});
+  bind(GameAction::OrderMoveModifier, "action.order.move_modifier", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::Shift, Held)});
+  bind(GameAction::OrderDemote, "action.order.demote", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::C, Down)});
   bind(GameAction::WindowToggleMode, "action.window.toggle_mode", Neuron::ValueKind::Boolean,
        {Neuron::AllOf({KeyBinding(KeyCode::Alt, Held), KeyBinding(KeyCode::Enter, Down)})});
 #if ENGINE_DEVELOPMENT

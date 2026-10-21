@@ -614,9 +614,16 @@ struct TuningPresentation
         FallbackCameraDirection fallbackCameraDirection;
       };
 
+      struct Command
+      {
+        // ref.sim.command.control_state_period, in ticks
+        std::int64_t controlStatePeriod = 0;
+      };
+
       Match match;
       Frame frame;
       MatchEntry matchEntry;
+      Command command;
     };
 
     struct Ctrl
@@ -749,6 +756,14 @@ struct TuningPresentation
         };
 
         Set set;
+        // ref.ctrl.cursor.circle_particles, in particles per step
+        std::int64_t circleParticles = 0;
+
+        // ref.ctrl.cursor.circle_spin, in rad per real s
+        double circleSpin = 0.0;
+
+        // ref.ctrl.cursor.circle_lift, in wu
+        double circleLift = 0.0;
       };
 
       struct Promote
@@ -778,10 +793,29 @@ struct TuningPresentation
         FlashVelocity flashVelocity;
       };
 
+      struct Select
+      {
+        // ref.ctrl.select.circle_growth, in wu per real s
+        double circleGrowth = 0.0;
+
+        // ref.ctrl.select.circle_max_radius, in wu
+        double circleMaxRadius = 0.0;
+      };
+
+      struct Order
+      {
+        // ref.ctrl.order.crowd_interval_ticks, in ticks
+        std::int64_t crowdIntervalTicks = 0;
+      };
+
       Camera camera;
       Pointer pointer;
       Cursor cursor;
       Promote promote;
+      Select select;
+      Order order;
+      // ref.ctrl.promote_radius, in wu
+      double promoteRadius = 0.0;
     };
 
     struct Unit
@@ -2284,11 +2318,18 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ref::Sim::Command& _out)
+{
+  _out.controlStatePeriod = _reader.Integer(_object, "control_state_period", 0);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ref::Sim& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "match"), _out.match);
   ReadFields(_reader, _reader.Object(_object, "frame"), _out.frame);
   ReadFields(_reader, _reader.Object(_object, "match_entry"), _out.matchEntry);
+  ReadFields(_reader, _reader.Object(_object, "command"), _out.command);
   _reader.Close(_object);
 }
 
@@ -2379,6 +2420,9 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ref::Ctrl::Cursor& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "set"), _out.set);
+  _out.circleParticles = _reader.Integer(_object, "circle_particles", 0);
+  _out.circleSpin = _reader.Decimal(_object, "circle_spin", {}, Neuron::SimPrecision::Binary64);
+  _out.circleLift = _reader.Decimal(_object, "circle_lift", {}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -2406,12 +2450,28 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ref::Ctrl::Select& _out)
+{
+  _out.circleGrowth = _reader.Decimal(_object, "circle_growth", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.circleMaxRadius = _reader.Decimal(_object, "circle_max_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ref::Ctrl::Order& _out)
+{
+  _out.crowdIntervalTicks = _reader.Integer(_object, "crowd_interval_ticks", 0);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ref::Ctrl& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "camera"), _out.camera);
   ReadFields(_reader, _reader.Object(_object, "pointer"), _out.pointer);
   ReadFields(_reader, _reader.Object(_object, "cursor"), _out.cursor);
   ReadFields(_reader, _reader.Object(_object, "promote"), _out.promote);
+  ReadFields(_reader, _reader.Object(_object, "select"), _out.select);
+  ReadFields(_reader, _reader.Object(_object, "order"), _out.order);
+  _out.promoteRadius = _reader.Decimal(_object, "promote_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -3914,11 +3974,22 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   ReadCookedFields(_reader, _out.fallbackCameraDirection);
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref::Sim::Command& _in)
+{
+  _writer.I64(_in.controlStatePeriod);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ref::Sim::Command& _out)
+{
+  _out.controlStatePeriod = _reader.I64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref::Sim& _in)
 {
   CookFields(_writer, _in.match);
   CookFields(_writer, _in.frame);
   CookFields(_writer, _in.matchEntry);
+  CookFields(_writer, _in.command);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ref::Sim& _out)
@@ -3926,6 +3997,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   ReadCookedFields(_reader, _out.match);
   ReadCookedFields(_reader, _out.frame);
   ReadCookedFields(_reader, _out.matchEntry);
+  ReadCookedFields(_reader, _out.command);
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref::Ctrl::Camera::ZoomRates& _in)
@@ -4075,11 +4147,17 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref::Ctrl::Cursor& _in)
 {
   CookFields(_writer, _in.set);
+  _writer.I64(_in.circleParticles);
+  _writer.F64(_in.circleSpin);
+  _writer.F64(_in.circleLift);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ref::Ctrl::Cursor& _out)
 {
   ReadCookedFields(_reader, _out.set);
+  _out.circleParticles = _reader.I64();
+  _out.circleSpin = _reader.F64();
+  _out.circleLift = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref::Ctrl::Promote::FlashCount& _in)
@@ -4120,12 +4198,37 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   ReadCookedFields(_reader, _out.flashVelocity);
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref::Ctrl::Select& _in)
+{
+  _writer.F64(_in.circleGrowth);
+  _writer.F64(_in.circleMaxRadius);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ref::Ctrl::Select& _out)
+{
+  _out.circleGrowth = _reader.F64();
+  _out.circleMaxRadius = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref::Ctrl::Order& _in)
+{
+  _writer.I64(_in.crowdIntervalTicks);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ref::Ctrl::Order& _out)
+{
+  _out.crowdIntervalTicks = _reader.I64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref::Ctrl& _in)
 {
   CookFields(_writer, _in.camera);
   CookFields(_writer, _in.pointer);
   CookFields(_writer, _in.cursor);
   CookFields(_writer, _in.promote);
+  CookFields(_writer, _in.select);
+  CookFields(_writer, _in.order);
+  _writer.F64(_in.promoteRadius);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ref::Ctrl& _out)
@@ -4134,6 +4237,9 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   ReadCookedFields(_reader, _out.pointer);
   ReadCookedFields(_reader, _out.cursor);
   ReadCookedFields(_reader, _out.promote);
+  ReadCookedFields(_reader, _out.select);
+  ReadCookedFields(_reader, _out.order);
+  _out.promoteRadius = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ref::Unit::Leader& _in)

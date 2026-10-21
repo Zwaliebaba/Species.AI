@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BattleVerbs.h"
 #include "ClientSession.h"
 #include "FxRng.h"
 #include "ParticlePool.h"
@@ -80,6 +81,8 @@ public:
               const EffectsView& _view);
   // O75, ADR-123: each Worker that fired within vfx.worker.recoil_time is drawn pushed back from its shot.
   void ApplyRecoil(std::vector<InterpolatedFigure>& _figures, const EffectsView& _view);
+  // R-CTRL-370, VFX-220 row 1 (ADR-124): while the selection circle is held, its control flashes at each fixed effect step.
+  void EmitCircle(const std::optional<SelectionCircle>& _circle, const Neuron::TerrainField& _field, const EffectsView& _view);
   // The frame's draws, after Update; _effects are the replica's effect objects at the frame's fraction.
   void Draw(std::span<const InterpolatedEffect> _effects, const Neuron::TerrainField& _field, const EffectsView& _view,
             EffectDraws& _draws);
@@ -176,6 +179,7 @@ private:
   std::vector<Recoil> m_recoils;
   std::map<StableId, bool> m_controlled; // each Worker's crowd control at the last tick seen (VFX-219's ControlGained)
   std::optional<std::uint64_t> m_lastTick;
+  double m_circleCarry = 0.0; // the unscaled time not yet stepped by the circle's emitter
   // The screen effects (VFX-232 to VFX-235).
   Neuron::FxRng m_screenRng;
   double m_shake = 0.0;

@@ -224,6 +224,9 @@
           "y": -0.7,
           "z": -1
         }
+      },
+      "command": {
+        "control_state_period": 1
       }
     },
     "ctrl": {
@@ -275,7 +278,10 @@
             "g": 0,
             "b": 0
           }
-        }
+        },
+        "circle_particles": 30,
+        "circle_spin": 0.5,
+        "circle_lift": 10
       },
       "promote": {
         "flash_count": {
@@ -287,7 +293,15 @@
           "y_range": 15,
           "z_range": 5
         }
-      }
+      },
+      "select": {
+        "circle_growth": 100,
+        "circle_max_radius": 100
+      },
+      "order": {
+        "crowd_interval_ticks": 10
+      },
+      "promote_radius": 10
     },
     "unit": {
       "leader": {

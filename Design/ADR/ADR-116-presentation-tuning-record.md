@@ -93,3 +93,4 @@ Chosen option: "1".
   - the provisional `vfx.thrown.*`, `vfx.worker.recoil_*` and `rnd.shockwave.disc_segments`.
 
   A draw "a + U[0, b)" is an object with the fields `base` and `spread`. A velocity of signed and unsigned draws is an object of each axis's range. A particle type's two colours are an object with the fields `first` and `second`. The keys `vfx.particle.default.*` stay out: their segment `default` is a C++ keyword, and no type of M1 leaves a field unset.
+* **Amendment 2026-10-21 (M1 task T17a, [ADR-124](ADR-124-battle-verbs-at-m1.md)).** The record gains the battle verbs' input-layer keys: `ref.ctrl.select.circle_growth` and `ref.ctrl.select.circle_max_radius` (R-CTRL-156), `ref.ctrl.order.crowd_interval_ticks` (R-CTRL-160), `ref.ctrl.promote_radius` (R-CTRL-042), `ref.sim.command.control_state_period` (R-SIM-438), and the selection circle's `ref.ctrl.cursor.circle_particles`, `circle_spin` and `circle_lift` (R-CTRL-370).

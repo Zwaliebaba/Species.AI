@@ -58,6 +58,23 @@ ClientSession::ClientSession(Desc _desc)
       ReceiveTerrain(_terrain.seed, _terrain.digest);
     });
   m_dispatcher.Register<ServerStats>([this](const ServerStats& _stats) { m_serverStats = _stats; });
+  m_dispatcher.Register<CommandReport>(
+    [this](const CommandReport& _report)
+    {
+      // ADR-124: a refused command is a defect of the client's or a stale request; an executed one with no effect is
+      // the ordinary outcome of a command the server found nothing to do for.
+      if (_report.result != CommandResult::Applied && _report.result != CommandResult::NoEffect)
+      {
+        Neuron::Log(Neuron::LogCategory::Network, Neuron::LogLevel::Warning, "command {} was refused at tick {}: result {}",
+                    _report.sequence, _report.tick, static_cast<int>(_report.result));
+      }
+      m_reports.push_back(_report);
+    });
+}
+
+std::vector<CommandReport> ClientSession::TakeReports()
+{
+  return std::exchange(m_reports, {});
 }
 
 bool ClientSession::RequestSandboxRestart(bool _newSeed)
@@ -66,7 +83,7 @@ bool ClientSession::RequestSandboxRestart(bool _newSeed)
   {
     return false;
   }
-  const bool sent = m_transport->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(SandboxRestartCommand{_newSeed})).has_value();
+  const bool sent = SendCommand(SandboxRestartCommand{_newSeed}).has_value();
   Neuron::Log(Neuron::LogCategory::Network, sent ? Neuron::LogLevel::Info : Neuron::LogLevel::Warning, "sandbox restart {}: {}",
               _newSeed ? "with a new seed" : "from its seed", sent ? "requested" : "not sent");
   return sent;

@@ -1,6 +1,6 @@
 # M3 plan
 
-> Status: Draft (O78); its phases and tasks are set, and it is finished on M2's exit evidence, when the owner answers the questions of §7 · Related: [MVP scope](mvp_scope.md) §3 (M3) and §6.1 (Playtest 1) · [M2 plan](m2_plan.md) · [M1 plan](m1_plan.md) · [MVP assets](mvp_assets.md) · [owner decisions](../decisions/owner_decisions.md) (O53, O55, O70, O74, O78) · [ADR index and technology baseline](../ADR/README.md)
+> Status: Draft (O79); its phases and tasks are set, and it is finished on M2's exit evidence, when the owner answers the questions of §7 · Related: [MVP scope](mvp_scope.md) §3 (M3) and §6.1 (Playtest 1) · [M2 plan](m2_plan.md) · [M1 plan](m1_plan.md) · [MVP assets](mvp_assets.md) · [owner decisions](../decisions/owner_decisions.md) (O53, O55, O70, O74, O79) · [ADR index and technology baseline](../ADR/README.md)
 
 ## 1 Purpose
 
@@ -66,7 +66,7 @@ The tasks as they stand; T1 finishes them on M2's evidence.
 
 | Task | Builds | Done when | Ids |
 |---|---|---|---|
-| **T1 Plan** | this plan made Final; the answers of §7 | the design checks pass | O78, MVP-002 |
+| **T1 Plan** | this plan made Final; the answers of §7 | the design checks pass | O79, MVP-002 |
 | **T2 Four settlements** | the three AI settlements at the other sites, each with its Cladan's colour and one of the three temperaments, no two alike (MVP-013, MVP-057); each running the settlement rules through the command path (MVP-056), with the M2 scripted steward grown into an AI settlement's economy | the four settlements grow side by side headless with the same hashes at 1, 2 and 8 worker threads | MVP-013, MVP-056, MVP-057, MVP-094 |
 | **T3 The seen layer and its readers** | each settlement's seen layer computed once per update (MVP-016, MVP-097), if M2 did not build it; the AI's navigation graph and priority field fed only from it (MVP-058, R-BOT-025 to R-BOT-071); the replication narrowed to it (ADR-111) | table 1's ADR-082 and ADR-084 rows pass | MVP-016, MVP-058, MVP-097, ADR-082, ADR-084, ADR-086 |
 | **T4 Relations** | grievances and anger (MVP-050) from the three causes (MVP-051), their fade and the battle relief (MVP-052) | unit tests of each cause, fade and relief | MVP-027, MVP-050 to MVP-052 |
@@ -79,7 +79,7 @@ The tasks as they stand; T1 finishes them on M2's evidence.
 | **T11 Relations panel and notifications** | MVP-102's M3 part: the relations panel with each Cladan's anger, every grievance with its cause, weight and fade, and every claim; the notifications of contact, claims, the warning with its countdown and battles starting and ending; the respite; the M3 icons | the owner runs it: writes an attack's cause before opening the panel, and checks it | MVP-050, MVP-102, PIL-024 |
 | **T12 Conflict verbs** | forming an expedition, declaring an attack with its cost and whether it is unprovoked shown before it is confirmed, withdrawing it, making and withdrawing a claim, and sending tribute (MVP-101); the edge compass for attacks and claims and their world markers | the owner runs it: raids an AI settlement, claims an area and eases a grievance | MVP-041, MVP-042, MVP-053, MVP-054, MVP-101 |
 | **T13 Battle results** | the battle result of every battle the steward's settlement is a side of, and the public line of every other (MVP-048), on the result card (`icon.hud.result_card`) | the owner runs it: a result agrees with the server's statistics | MVP-048 |
-| **T14 Renown, the run and the epilogue** | the renown standing by source, the time left in the run, the epilogue page, and the front end's run and epilogue entries (O78) | the owner runs it: ends a run, reads its epilogue, and reopens it from the front end | MVP-060 to MVP-063, MVP-103 |
+| **T14 Renown, the run and the epilogue** | the renown standing by source, the time left in the run, the epilogue page, and the front end's run and epilogue entries (O79) | the owner runs it: ends a run, reads its epilogue, and reopens it from the front end | MVP-060 to MVP-063, MVP-103 |
 | **T15 Audio and the first sound set** | the audio engine at the MVP's size (ADR-022 to ADR-027) and the sound set of MVP-087, from the synthesiser and the recorded or synthesised death group; the volume option heard | the owner runs it: each sound plays on its event, at its bus's volume | MVP-087, ADR-022 to ADR-027 |
 | **T16 The first-playable confirmations** | table 1's rows not produced by an earlier task, on the M3 build | each ADR is confirmed or amended with its evidence | the ADRs of table 1 |
 | **T17 Exit** | Playtest 1 (§6); the likeness review of the HUD's additions (PIL-027); the M3 record | the exit criteria of the scope's §3 hold, with Playtest 1's record in `playtests/` | MVP-002, PIL-027 |

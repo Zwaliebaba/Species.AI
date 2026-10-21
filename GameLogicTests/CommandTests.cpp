@@ -423,6 +423,33 @@ public:
     ExpectOutcome(battle.Outcome(), Neuron::CommandEffect::NoEffect, tick, L"nobody under control");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(RCtrl158TheCircleAddsWorkersAndASelectReleasesThem)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-156")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-158")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-161")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(RCtrl158TheCircleAddsWorkersAndASelectReleasesThem)
+  {
+    // A second circle that no longer holds the first Worker adds the second and keeps the first; a Select releases both.
+    Battle battle;
+    const Species::ActorRef first = battle.Spawn(0, Species::FigureKind::Worker, MIDDLE);
+    const Species::ActorRef second = battle.Spawn(0, Species::FigureKind::Worker, MIDDLE + Neuron::Vec3{80.0, 0.0, 0.0});
+    Assert::IsTrue(battle.Submit(STEWARD, Species::SelectWorkersCommand{0, Ground(MIDDLE), 20.0}));
+    std::uint64_t tick = battle.ExecuteCommands();
+    ExpectOutcome(battle.Outcome(), Neuron::CommandEffect::Applied, tick, L"the first circle");
+    Assert::IsTrue(battle.At(first).underControl && !battle.At(second).underControl, L"the first Worker");
+    battle.Step();
+    Assert::IsTrue(battle.Submit(STEWARD, Species::SelectWorkersCommand{0, Ground(MIDDLE + Neuron::Vec3{80.0, 0.0, 0.0}), 20.0}));
+    tick = battle.ExecuteCommands();
+    ExpectOutcome(battle.Outcome(), Neuron::CommandEffect::Applied, tick, L"the second circle");
+    Assert::IsTrue(battle.At(first).underControl && battle.At(second).underControl, L"added, none removed");
+    battle.Step();
+    Assert::IsTrue(battle.Submit(STEWARD, Species::SelectCommand{0, 0}));
+    tick = battle.ExecuteCommands();
+    ExpectOutcome(battle.Outcome(), Neuron::CommandEffect::Applied, tick, L"selected nothing");
+    Assert::IsFalse(battle.At(first).underControl || battle.At(second).underControl, L"the group released");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(RUnit168ASelectedLeaderFacesThePointer)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-UNIT-168")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-UNIT-167")

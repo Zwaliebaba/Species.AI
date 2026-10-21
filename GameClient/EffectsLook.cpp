@@ -40,6 +40,8 @@ enum class TickPurpose : std::uint64_t
 };
 // The new ticks that run the per-tick emitters at most in one frame, when the replica jumps.
 constexpr std::uint64_t MAX_TICK_EMITTER_RUNS = 3;
+// The rounding of a sum of frame steps that a fixed step tolerates, s.
+constexpr double STEP_TOLERANCE_SECONDS = 1e-9;
 // The grenade's view-test radius, wu: mesh.projectile.thrown_weapon fits within it (AST-076).
 constexpr float GRENADE_CULL_RADIUS = 4.0f;
 
@@ -193,6 +195,7 @@ void EffectsLook::Clear()
   m_recoils.clear();
   m_controlled.clear();
   m_lastTick.reset();
+  m_circleCarry = 0.0;
   m_shake = 0.0;
   m_shakeYaw = 0.0;
   m_shakeRoll = 0.0;
@@ -427,6 +430,35 @@ void EffectsLook::RunTickEmitters(std::uint64_t _tick, const StateReplica& _repl
     controlled.emplace(figure.id, figure.state.underControl);
   }
   m_controlled = std::move(controlled);
+}
+
+void EffectsLook::EmitCircle(const std::optional<SelectionCircle>& _circle, const Neuron::TerrainField& _field, const EffectsView& _view)
+{
+  if (!_circle.has_value())
+  {
+    m_circleCarry = 0.0;
+    return;
+  }
+  // Each step of vfx.emit.step_rate on the unscaled clock emits the circle's control flashes of its radius's size, evenly
+  // spaced on it and turning with the real clock, lifted above the terrain; a presentation emitter is not thinned (VFX-213).
+  const auto& cursor = m_presentation->ref.ctrl.cursor;
+  const double step = 1.0 / std::max(m_presentation->vfx.emit.stepRate, 1.0);
+  const auto count = static_cast<std::size_t>(std::max<std::int64_t>(cursor.circleParticles, 0));
+  m_circleCarry += _view.unscaledStep;
+  // A step due within rounding of the frames' sum is taken, so the rate does not depend on the frame rate (VFX-220).
+  for (int steps = 0; m_circleCarry >= step - STEP_TOLERANCE_SECONDS && steps < 30; ++steps)
+  {
+    m_circleCarry -= step;
+    for (std::size_t n = 0; n < count; ++n)
+    {
+      const double angle =
+        _view.realSeconds * cursor.circleSpin + static_cast<double>(n) * 2.0 * std::numbers::pi / static_cast<double>(count);
+      Neuron::Vec3 at = _circle->center + Neuron::Vec3{std::cos(angle) * _circle->radius, 0.0, std::sin(angle) * _circle->radius};
+      at.y = _field.Height(at.x, at.z) + cursor.circleLift;
+      Emit(ParticleKind::ControlFlash, at, {}, _circle->radius, std::nullopt, _view);
+    }
+  }
+  m_circleCarry = std::clamp(m_circleCarry, 0.0, step);
 }
 
 void EffectsLook::ApplyRecoil(std::vector<InterpolatedFigure>& _figures, const EffectsView& _view)

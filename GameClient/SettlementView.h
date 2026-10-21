@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BattleVerbs.h"
 #include "ClientSession.h"
 #include "InputRouter.h"
 #include "LooseContent.h"
@@ -45,7 +46,8 @@ inline constexpr double WORKER_DISTANCE_SCALE_FACTOR = 2.0;
 
 /// The settlement view of M1 (WLD-240, MVP-101; M1 task T14, ADR-119): the player camera entered over the steward's site
 /// when the session's terrain arrives, advanced by the router's camera actions while the window has focus, the hover
-/// over the client's own Leaders, and the cursor it shows. Frame thread only.
+/// over the client's own Leaders, the battle verbs that follow the camera (M1 task T17, ADR-124), whose commands it
+/// sends through the session, and the cursor it shows. Frame thread only.
 class SettlementView
 {
 public:
@@ -58,9 +60,9 @@ public:
 
   explicit SettlementView(const Desc& _desc);
 
-  // Once per frame, after the session's and the world presentation's updates: _dtSeconds is the real frame step, _view
-  // the client area the pointer is in.
-  void Update(const ClientSession& _session, Neuron::InputRouter& _router, double _dtSeconds, Neuron::SizePx _view, bool _focused);
+  // Once per frame, before the session's update: _dtSeconds is the real frame step, _view the client area the pointer is
+  // in. The verbs read the outcomes the session received since the last frame and send their commands through it.
+  void Update(ClientSession& _session, Neuron::InputRouter& _router, double _dtSeconds, Neuron::SizePx _view, bool _focused);
 
   [[nodiscard]] bool InWorld() const noexcept
   {
@@ -84,12 +86,17 @@ public:
   }
   // The cursor of this frame at the router's pointer.
   [[nodiscard]] Neuron::CursorQuad CursorDraw() const noexcept;
+  [[nodiscard]] const BattleVerbs& Verbs() const noexcept
+  {
+    return m_verbs;
+  }
 
 private:
   Desc m_desc;
   SettlementCamera m_camera;
   const RegionTerrain* m_terrain = nullptr; // the terrain the camera entered
   CameraBounds m_region;
+  BattleVerbs m_verbs;
   CursorKind m_cursor = CursorKind::World;
   std::optional<StableId> m_hovered;
   Neuron::PointPx m_pointer;

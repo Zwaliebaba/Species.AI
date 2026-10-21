@@ -156,17 +156,17 @@ CommandEffect ToggleUnit(RegionSimulation& _region, const ToggleUnitCommand& _co
   return CommandEffect::Applied;
 }
 
-// R-UNIT-136: the team's Workers within the circle that are alive and not Burning come under control; the selection
-// before it is cleared first (R-UNIT-137).
+// R-UNIT-136, R-CTRL-158: the team's Workers within the circle that are alive, not Burning and not already controlled
+// come under control. The selection is additive while the circle grows (R-CTRL-156): only a Select releases the group
+// (R-UNIT-137, R-CTRL-161; ADR-124).
 CommandEffect SelectWorkers(RegionSimulation& _region, const SelectWorkersCommand& _command)
 {
-  _region.Select(_command.team, std::nullopt);
   const Neuron::Vec3 center = OnGround(_region, _command.center);
   std::uint32_t selected = 0;
   for (const ActorRef& ref : _region.InRange(center.x, center.z, _command.radius, RegionSimulation::FriendsOf(_command.team)))
   {
     Figure* worker = _region.Resolve(ref);
-    if (worker != nullptr && worker->kind == FigureKind::Worker && !worker->dead && !worker->promoted &&
+    if (worker != nullptr && worker->kind == FigureKind::Worker && !worker->dead && !worker->promoted && !worker->underControl &&
         worker->workerState != WorkerState::Burning)
     {
       worker->underControl = true;
