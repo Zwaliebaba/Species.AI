@@ -164,6 +164,32 @@ public:
 #endif
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Dbg062DropsOfAnEndedThreadStayCounted)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"DBG-062")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Dbg062DropsOfAnEndedThreadStayCounted)
+  {
+    // The drain retires the buffer of a thread that has ended once it is empty; its drops stay in the statistics.
+#if ENGINE_DEVELOPMENT
+    constexpr int RECORDS = 40;
+    TestLogger logger(4096);
+    const auto logRecords = [](const std::stop_token&)
+    {
+      for (int index = 0; index < RECORDS; ++index)
+      {
+        Neuron::Log(Neuron::LogCategory::Test, Neuron::LogLevel::Debug, "{:100}", index);
+      }
+    };
+    {
+      Neuron::PlatformThread thread = Neuron::PlatformThread::Start("test.dropper", logRecords);
+    }
+    logger.Get().Flush();
+    const Neuron::LogStats stats = logger.Get().Stats();
+    Assert::IsTrue(stats.droppedDebug > 0, L"the ended thread's drops are counted");
+    ExpectEqual(RECORDS, static_cast<std::int64_t>(stats.written + stats.droppedDebug), L"each record is written or dropped");
+#endif
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Plt133LoggerWritesPlatformRecordsInThePlatformCategory)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"PLT-133")
   END_TEST_METHOD_ATTRIBUTE()

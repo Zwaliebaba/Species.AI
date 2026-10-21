@@ -167,6 +167,7 @@ private:
 
   mutable std::mutex m_buffersMutex;
   std::vector<std::shared_ptr<LogBuffer>> m_buffers;
+  std::array<std::uint64_t, 2> m_retiredDropped{}; // the trace and debug drops of the buffers retired, under m_buffersMutex
 
   std::mutex m_drainMutex;
   std::atomic<std::uint64_t> m_written{0};

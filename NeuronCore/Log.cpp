@@ -343,6 +343,8 @@ LogStats Logger::Stats() const
 {
   LogStats stats{m_written.load(std::memory_order_relaxed), 0, 0};
   const std::lock_guard lock(m_buffersMutex);
+  stats.droppedTrace = m_retiredDropped[0];
+  stats.droppedDebug = m_retiredDropped[1];
   for (const std::shared_ptr<LogBuffer>& buffer : m_buffers)
   {
     for (std::size_t category = 0; category < LOG_CATEGORY_COUNT; ++category)
@@ -473,8 +475,23 @@ void Logger::Drain()
   }
   m_entries.clear();
 
+  // A buffer whose thread has ended is retired once it is empty, and its drops stay in the statistics: no record can
+  // be written into it, or dropped from it, any more.
   const std::lock_guard lock(m_buffersMutex);
-  std::erase_if(m_buffers, [](const std::shared_ptr<LogBuffer>& _buffer) { return _buffer->ThreadEnded() && _buffer->IsEmpty(); });
+  std::erase_if(m_buffers,
+                [this](const std::shared_ptr<LogBuffer>& _buffer)
+                {
+                  if (!_buffer->ThreadEnded() || !_buffer->IsEmpty())
+                  {
+                    return false;
+                  }
+                  for (std::size_t category = 0; category < LOG_CATEGORY_COUNT; ++category)
+                  {
+                    m_retiredDropped[0] += _buffer->Dropped(static_cast<LogCategory>(category), LogLevel::Trace);
+                    m_retiredDropped[1] += _buffer->Dropped(static_cast<LogCategory>(category), LogLevel::Debug);
+                  }
+                  return true;
+                });
 }
 
 void Logger::WriteToSinks(const LogEntry& _entry)
