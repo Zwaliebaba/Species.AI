@@ -30,6 +30,9 @@
     <ClInclude Include="CmoFile.h">
       <Filter>Meshes</Filter>
     </ClInclude>
+    <ClInclude Include="CollisionCooker.h">
+      <Filter>Meshes</Filter>
+    </ClInclude>
     <ClInclude Include="ContentBuild.h">
       <Filter>Build</Filter>
     </ClInclude>
@@ -44,6 +47,9 @@
     </ClInclude>
     <ClInclude Include="RowSpec.h">
       <Filter>Manifest</Filter>
+    </ClInclude>
+    <ClInclude Include="SimulationRecordCooker.h">
+      <Filter>Meshes</Filter>
     </ClInclude>
     <ClInclude Include="TextGlyphTable.h">
       <Filter>Fonts</Filter>
@@ -68,6 +74,9 @@
     <ClCompile Include="CmoFile.cpp">
       <Filter>Meshes</Filter>
     </ClCompile>
+    <ClCompile Include="CollisionCooker.cpp">
+      <Filter>Meshes</Filter>
+    </ClCompile>
     <ClCompile Include="ContentBuild.cpp">
       <Filter>Build</Filter>
     </ClCompile>
@@ -82,6 +91,9 @@
     </ClCompile>
     <ClCompile Include="RowSpec.cpp">
       <Filter>Manifest</Filter>
+    </ClCompile>
+    <ClCompile Include="SimulationRecordCooker.cpp">
+      <Filter>Meshes</Filter>
     </ClCompile>
     <ClCompile Include="SpeciesContentBuild.cpp">
       <Filter>Build</Filter>

@@ -14,6 +14,7 @@
 #include "ServerHost.h"
 #include "Sha256.h"
 #include "StartupOptions.h"
+#include "StructureRecords.h"
 #include "TextEncoding.h"
 #include "Tuning.h"
 #include "WorldServer.h"
@@ -26,6 +27,7 @@
 #include <filesystem>
 #include <format>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -99,19 +101,22 @@ int Run(std::span<const std::wstring> _arguments)
     }
     const std::expected<Neuron::LooseContent, Neuron::AssetError> content = Neuron::LooseContent::Mount(Neuron::ContentDirectory(options));
     std::expected<TuningMvp, Neuron::AssetError> tuning = std::unexpected(content ? Neuron::AssetError{} : content.error());
+    std::expected<StructureRecords, Neuron::AssetError> structures = std::unexpected(Neuron::AssetError{});
     if (content)
     {
       Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Info,
                   "loose content of {} entries mounted from {}; simulation content identity {}, reported as modified (AST-105)",
                   content->Entries().size(), Neuron::ToUtf8(content->Folder().wstring()), Neuron::ShortHex(content->Identity()));
       tuning = LoadTuningMvp(*content);
+      structures = LoadStructureRecords(*content); // ADR-129
     }
-    if (!tuning)
+    const std::optional<Neuron::AssetError> fault =
+      !tuning ? std::optional(tuning.error()) : (!structures ? std::optional(structures.error()) : std::nullopt);
+    if (fault)
     {
-      const std::string reason = Neuron::FormatAssetError(tuning.error());
+      const std::string reason = Neuron::FormatAssetError(*fault);
       Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "the server cannot start: {}", reason);
-      Print(stderr,
-            std::format("the game data is {}: {}", tuning.error().fault == Neuron::AssetFault::Missing ? "missing" : "damaged", reason));
+      Print(stderr, std::format("the game data is {}: {}", fault->fault == Neuron::AssetFault::Missing ? "missing" : "damaged", reason));
       exitCode = Neuron::EXIT_CODE_FATAL;
     }
     else if (!Neuron::InstallConsoleStopHandler())
@@ -124,6 +129,7 @@ int Run(std::span<const std::wstring> _arguments)
     {
       WorldServer::Desc worldDesc;
       worldDesc.tuning = *tuning;
+      worldDesc.structures = std::move(*structures);
       // M1 plan §6: the battle sandbox, from the seed of --seed or one the server draws (MVP-005).
       worldDesc.worldSeed = options.worldSeed;
       worldDesc.sandbox = true;

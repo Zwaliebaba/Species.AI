@@ -45,6 +45,9 @@
     <ClInclude Include="Check.h">
       <Filter>Diagnostics</Filter>
     </ClInclude>
+    <ClInclude Include="CollisionAsset.h">
+      <Filter>Content</Filter>
+    </ClInclude>
     <ClInclude Include="ConsoleStop.h">
       <Filter>Platform</Filter>
     </ClInclude>
@@ -147,6 +150,9 @@
     <ClInclude Include="SimRng.h">
       <Filter>Maths</Filter>
     </ClInclude>
+    <ClInclude Include="SimulationRecord.h">
+      <Filter>Content</Filter>
+    </ClInclude>
     <ClInclude Include="SipHash.h">
       <Filter>Maths</Filter>
     </ClInclude>
@@ -193,6 +199,9 @@
     </ClCompile>
     <ClCompile Include="Check.cpp">
       <Filter>Diagnostics</Filter>
+    </ClCompile>
+    <ClCompile Include="CollisionAsset.cpp">
+      <Filter>Content</Filter>
     </ClCompile>
     <ClCompile Include="ConsoleStop.cpp">
       <Filter>Platform</Filter>
@@ -286,6 +295,9 @@
     </ClCompile>
     <ClCompile Include="SimRng.cpp">
       <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="SimulationRecord.cpp">
+      <Filter>Content</Filter>
     </ClCompile>
     <ClCompile Include="SipHash.cpp">
       <Filter>Maths</Filter>

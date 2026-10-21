@@ -128,6 +128,8 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-125](ADR-125-battle-marks-route-preview-and-world-markers-at-m1.md) | The battle marks, the route preview and the world markers at M1 | Proposed | 2026-10-21 |
 | [ADR-126](ADR-126-frame-bench-and-rendered-scenes.md) | The frame bench and the rendered performance scenes | Proposed | 2026-10-21 |
 | [ADR-127](ADR-127-left-button-verbs-and-order-feedback-at-m1.md) | The left-button verbs and the order feedback at M1 | Proposed | 2026-10-21 |
+| [ADR-128](ADR-128-mesh-kit-and-drafted-structure-recipes.md) | The mesh kit and the drafted structure recipes | Proposed | 2026-10-21 |
+| [ADR-129](ADR-129-simulation-data-records-and-collision-cooker.md) | The simulation data records and the collision cooker | Proposed | 2026-10-21 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

@@ -23,6 +23,7 @@
   </Folder>
   <Folder Name="/Tools/">
     <Project Path="Tools/SpeciesContentBuild/SpeciesContentBuild.vcxproj" Id="f814b69a-a845-5fe8-87b9-7ea11ed3cee3" />
+    <Project Path="Tools/SpeciesMeshKit/SpeciesMeshKit.vcxproj" Id="087f23ea-9bf7-5e28-83e0-8884522c0b8b" />
     <Project Path="Tools/SpeciesPerformance/SpeciesPerformance.vcxproj" Id="21d87f97-bd0b-5419-b93e-70fbf5e86edd">
       <BuildDependency Project="Tools/SpeciesContentBuild/SpeciesContentBuild.vcxproj" />
     </Project>

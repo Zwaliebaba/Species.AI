@@ -4,6 +4,7 @@
 #include "InProcessTransport.h"
 #include "IntegratedServer.h"
 #include "ServerHost.h"
+#include "StructureRecords.h"
 #include "Tuning.h"
 #include "WorldServer.h"
 
@@ -40,8 +41,15 @@ std::expected<void, Neuron::AssetError> IntegratedServer::Start()
   {
     return std::unexpected(std::move(tuning.error()));
   }
+  // ADR-129: the structures' ports and spheres come from their meshes' simulation data records, never from a mesh.
+  std::expected<StructureRecords, Neuron::AssetError> structures = LoadStructureRecords(*m_desc.content);
+  if (!structures)
+  {
+    return std::unexpected(std::move(structures.error()));
+  }
   WorldServer::Desc world;
   world.tuning = *tuning;
+  world.structures = std::move(*structures);
   world.worldSeed = m_desc.worldSeed;
   world.sandbox = m_desc.sandbox;
   world.watched = m_desc.watched;

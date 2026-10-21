@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Build">
+      <UniqueIdentifier>{49D6CBB0-6C74-561B-B8D0-1FFE0AE38AD1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Geometry">
+      <UniqueIdentifier>{7DF1B610-1000-5A40-AF03-6B8316C3A69E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Recipes">
+      <UniqueIdentifier>{8528B330-5142-5494-8D60-E998A341250F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Program">
+      <UniqueIdentifier>{AC550C9F-C57D-5FC1-AC89-4403FB93F32A}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CmoWriter.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshModel.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Recipes.h">
+      <Filter>Recipes</Filter>
+    </ClInclude>
+    <ClInclude Include="Shapes.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="UnitCircle.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>Build</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <Filter>Build</Filter>
+    </ClCompile>
+    <ClCompile Include="CmoWriter.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="MeshModel.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Shapes.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="SpeciesMeshKit.cpp">
+      <Filter>Program</Filter>
+    </ClCompile>
+    <ClCompile Include="StructureRecipes.cpp">
+      <Filter>Recipes</Filter>
+    </ClCompile>
+    <ClCompile Include="TurretRecipes.cpp">
+      <Filter>Recipes</Filter>
+    </ClCompile>
+    <ClCompile Include="UnitCircle.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

@@ -3,11 +3,14 @@
 #include "Check.h"
 #include "Files.h"
 #include "PlatformThread.h"
+#include "SimulationRecord.h"
 #include "TerrainField.h"
 #include "TestSupport.h"
 #include "Tuning.h"
 
+#include <array>
 #include <atomic>
+#include <cmath>
 #include <exception>
 #include <fstream>
 #include <mutex>
@@ -175,6 +178,73 @@ TEST_MODULE_CLEANUP(ModuleCleanup)
 #if ENGINE_DEVELOPMENT
   Neuron::SetDevelopmentCheckHook(nullptr);
 #endif
+}
+
+namespace
+{
+
+// A record of one root node at the identity, its ports on a ring, its entrance and door where it has them.
+Neuron::SimulationRecord TestRecord(std::uint32_t _ports, bool _entrance, bool _door)
+{
+  constexpr double RING_WU = 20.0;
+  constexpr double ENTRANCE_WU = 25.0;
+  constexpr std::array<float, 16> IDENTITY{1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F};
+  Neuron::SimulationRecord record;
+  record.nodes.push_back(Neuron::SimulationNode{"body", std::nullopt, IDENTITY});
+  const auto at = [&](Neuron::SocketKind _kind, std::uint32_t _index, double _x, double _z)
+  {
+    Neuron::SimulationSocket socket{_kind, _index, 0, IDENTITY};
+    socket.transform[12] = static_cast<float>(_x);
+    socket.transform[14] = static_cast<float>(_z);
+    record.sockets.push_back(socket);
+  };
+  for (std::uint32_t port = 0; port < _ports; ++port)
+  {
+    const double angle = 6.283185307179586 * static_cast<double>(port) / static_cast<double>(_ports);
+    at(Neuron::SocketKind::Port, port, RING_WU * std::cos(angle), RING_WU * std::sin(angle));
+  }
+  if (_door)
+  {
+    at(Neuron::SocketKind::Door, 0, 0.0, ENTRANCE_WU);
+  }
+  if (_entrance)
+  {
+    at(Neuron::SocketKind::Entrance, 0, 0.0, -ENTRANCE_WU);
+  }
+  record.bounds = Neuron::BoundingSphere{{0.0F, 5.0F, 0.0F}, 15.0F};
+  return record;
+}
+
+} // namespace
+
+Species::StructureRecords TestStructureRecords()
+{
+  Species::StructureRecords records;
+  records.wellspring = TestRecord(5, true, true);
+  records.dwelling = TestRecord(6, false, false);
+  records.storehouse = TestRecord(4, true, false);
+  records.resourceSite = TestRecord(4, false, false);
+  records.resourceSiteCentral = TestRecord(12, false, false);
+  records.turretMount = TestRecord(4, false, false);
+  records.turretHead = TestRecord(0, false, false);
+  records.turretBarrel = TestRecord(0, false, false);
+  return records;
+}
+
+std::vector<Neuron::CookedEntry> StructureRecordEntries()
+{
+  Species::StructureRecords records = TestStructureRecords();
+  std::vector<Neuron::CookedEntry> entries;
+  for (std::size_t place = 0; place < Species::STRUCTURE_RECORD_KEYS.size(); ++place)
+  {
+    Neuron::CookedEntry entry;
+    entry.entry.key = std::string(Species::STRUCTURE_RECORD_KEYS[place]);
+    entry.entry.type = Neuron::ContentType::SimRecord;
+    entry.entry.simulationRelevant = true;
+    entry.bytes = Neuron::WriteSimulationRecord(Species::RecordAt(records, place));
+    entries.push_back(std::move(entry));
+  }
+  return entries;
 }
 
 } // namespace GameLogicTests

@@ -50,8 +50,10 @@ std::filesystem::path ContentRootWith(const TemporaryFolder& _folder, std::strin
   return _folder.Path();
 }
 
-// That record cooked as the content build cooks it, in a loose-content folder of its own, mounted (ADR-108).
-Neuron::LooseContent CookedContentWith(const TemporaryFolder& _folder, std::string_view _from, std::string_view _to)
+// That record cooked as the content build cooks it, in a loose-content folder of its own, mounted (ADR-108), with the
+// structure records the tests write unless _structures is false (ADR-129).
+Neuron::LooseContent CookedContentWith(const TemporaryFolder& _folder, std::string_view _from, std::string_view _to,
+                                       bool _structures = true)
 {
   const auto tuning = Species::ReadTuningMvpSource(ContentRootWith(_folder, _from, _to));
   Assert::IsTrue(tuning.has_value(), L"the changed record reads whole");
@@ -62,7 +64,7 @@ Neuron::LooseContent CookedContentWith(const TemporaryFolder& _folder, std::stri
   cooked.entry.schemaVersion = Species::TUNING_MVP_VERSION;
   cooked.entry.simulationRelevant = Species::TUNING_MVP_SIMULATION_RELEVANT;
   cooked.bytes = Species::CookTuningMvp(tuning.value_or(Species::TuningMvp{}));
-  std::vector<Neuron::CookedEntry> entries;
+  std::vector<Neuron::CookedEntry> entries = _structures ? StructureRecordEntries() : std::vector<Neuron::CookedEntry>{};
   entries.push_back(std::move(cooked));
   Assert::IsTrue(Neuron::WriteLooseContent(_folder.Path() / L"content", std::move(entries)).has_value(), L"the folder is written");
   std::expected<Neuron::LooseContent, Neuron::AssetError> content = Neuron::LooseContent::Mount(_folder.Path() / L"content");
@@ -350,6 +352,30 @@ public:
     const auto started = server.Start();
     Assert::IsFalse(started.has_value(), L"no record, no server");
     Assert::IsTrue(started.error().fault == Neuron::AssetFault::Missing, L"a missing record");
+    server.Stop();
+    Assert::IsFalse(client->Receive().has_value(), L"no tick ran");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Ast046AServerWithoutItsStructureRecordsDoesNotStart)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"AST-046")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"AST-043")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Ast046AServerWithoutItsStructureRecordsDoesNotStart)
+  {
+    // M2 task T3's done-when (ADR-129): the server starts from the cooked simulation data records, and content that
+    // lacks them starts no server.
+    const TemporaryFolder folder;
+    const Neuron::LooseContent content = CookedContentWith(folder, "\"tick_period\": 0.1", "\"tick_period\": 0.1", false);
+    const Neuron::PlatformClock clock;
+    Species::IntegratedServer::Desc desc;
+    desc.clock = &clock;
+    desc.content = &content;
+    Species::IntegratedServer server(desc);
+    std::unique_ptr<Neuron::Transport> client = server.Connect();
+    const auto started = server.Start();
+    Assert::IsFalse(started.has_value(), L"no structure records, no server");
+    Assert::IsTrue(started.error().fault == Neuron::AssetFault::Missing && started.error().key == "meshes/wellspring@sim",
+                   L"the first missing record");
     server.Stop();
     Assert::IsFalse(client->Receive().has_value(), L"no tick ran");
   }

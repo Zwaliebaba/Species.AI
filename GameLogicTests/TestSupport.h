@@ -2,7 +2,9 @@
 
 #include "CppUnitTest.h"
 
+#include "LooseContent.h"
 #include "RegionTerrain.h"
+#include "StructureRecords.h"
 #include "TuningMvp.h"
 
 #include <cstdint>
@@ -52,6 +54,13 @@ private:
 
 // The valley of seed 1 (MVP-011), built once.
 [[nodiscard]] std::shared_ptr<const Species::RegionTerrain> ValleyTerrain();
+
+// Simulation data records for the MVP's structures written by the tests (M2 plan §4: T4 and T5 test on records the
+// tests write): each a root node at the identity with its kind's ports on a ring of radius 20 wu, its entrance and door
+// at 25 wu on -z and +z where its kind has them, and a bounding sphere of radius 15 wu. TestStructureRecords holds them;
+// StructureRecordEntries cooks them under their keys (ADR-129).
+[[nodiscard]] Species::StructureRecords TestStructureRecords();
+[[nodiscard]] std::vector<Neuron::CookedEntry> StructureRecordEntries();
 
 // Runs each job on a thread of its own and returns once all have ended, so that a test's independent runs share the
 // runner's cores. A job asserts nothing: it computes, and the test asserts on what the jobs computed. An exception a

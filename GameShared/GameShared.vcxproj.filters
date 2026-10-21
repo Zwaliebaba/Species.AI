@@ -66,6 +66,9 @@
     <ClInclude Include="StateUpdate.h">
       <Filter>Replication</Filter>
     </ClInclude>
+    <ClInclude Include="StructureRecords.h">
+      <Filter>Records</Filter>
+    </ClInclude>
     <ClInclude Include="Tuning.h">
       <Filter>Records</Filter>
     </ClInclude>
@@ -106,6 +109,9 @@
     </ClCompile>
     <ClCompile Include="StateUpdate.cpp">
       <Filter>Replication</Filter>
+    </ClCompile>
+    <ClCompile Include="StructureRecords.cpp">
+      <Filter>Records</Filter>
     </ClCompile>
     <ClCompile Include="Tuning.cpp">
       <Filter>Records</Filter>

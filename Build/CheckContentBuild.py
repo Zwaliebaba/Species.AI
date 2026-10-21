@@ -6,8 +6,9 @@ Runs the content build twice on the repository, each run into a temporary folder
 folders are identical byte for byte (AST-066). Then it runs the build on fixtures: each a copy of GameData/ and of the
 asset manifest with one fault in it, and each must fail with a message that names the faulty file and the fault
 (AST-093, ADR-019's confirmation): a texture off its row, a damaged mesh (one fixture per check of the CMO importer,
-built here from the owner's meshes by a small CMO reader and writer, so no binary fixture is committed), a damaged
-glyph table and glyph sheet, a stray file and a damaged record. The tool is the Debug|x64 build's unless --tool names
+built here from the owner's meshes by a small CMO reader and writer, so no binary fixture is committed), a misnumbered
+port, a collidable mesh without its collision asset and the reverse, a collision node of no render node (ADR-129), a
+damaged glyph table and glyph sheet, a glyph table naming another face, a stray file and a damaged record. The tool is the Debug|x64 build's unless --tool names
 another; the check writes nothing into the checkout.
 """
 import argparse
@@ -23,6 +24,9 @@ TOOL = os.path.join(ROOT, 'x64', 'Debug', 'SpeciesContentBuild.exe')
 MANIFEST = os.path.join('Design', 'assets', 'asset_manifest.csv')
 LEADER = 'GameData/Meshes/LeaderFigure.cmo'
 WEAPON = 'GameData/Meshes/ThrownWeapon.cmo'
+DWELLING = 'GameData/Meshes/Dwelling.cmo'
+STOREHOUSE_COLLISION = 'GameData/Meshes/StorehouseCollision.cmo'
+WELLSPRING_COLLISION = 'GameData/Meshes/WellspringCollision.cmo'
 
 
 # ── A CMO file of the Visual Studio mesh content pipeline, read and written whole ──────────────────────────────────
@@ -195,6 +199,22 @@ def with_skinning(meshes):
   meshes[0]['skinning'].append(b'')
 
 
+def rename_bone(old, new):
+  """Renames a bone, and the mesh that carries its name (ADR-019 check 7)."""
+  def apply(meshes):
+    for mesh in meshes:
+      if mesh['name'] == text(old):
+        mesh['name'] = text(new)
+      for bone in mesh['bones']:
+        if bone['name'] == text(old):
+          bone['name'] = text(new)
+  return apply
+
+
+def remove(path):
+  return lambda root: os.remove(os.path.join(root, path))
+
+
 def coverage(root):
   data = bytearray(read(root, 'GameData/Fonts/GameFont.dds'))
   data[128 + 4 * 1000 + 3] = 128
@@ -239,6 +259,16 @@ FIXTURES = [
    replace_text('GameData/Fonts/GameFontGlyphs.json', '"missing": 63,', '"missing": 63, "kerning": [],'),
    'GameData/Fonts/GameFontGlyphs.json', 'unknown_field'),
   ('a glyph sheet with partial coverage (O63)', coverage, 'GameData/Fonts/GameFont.dds', 'coverage of 0 or 255'),
+  ('a misnumbered port socket (AST-038)', mesh_change(DWELLING, rename_bone('socket_port_06', 'socket_port_07')), DWELLING,
+   'gap before number 07'),
+  ('a collidable mesh without its collision asset (AST-044)', remove('GameData/Meshes/DwellingCollision.cmo'), DWELLING, 'AST-044'),
+  ('a collision asset whose render member is missing (AST-090)', remove('GameData/Meshes/Storehouse.cmo'), STOREHOUSE_COLLISION,
+   'AST-090'),
+  ('a collision node that is no node of its render member (AST-077)',
+   mesh_change(WELLSPRING_COLLISION, rename_bone('wellspring_core', 'wellspring_crystal')), WELLSPRING_COLLISION, 'AST-077'),
+  ('a glyph table that names another face (AST-089)',
+   replace_text('GameData/Fonts/GameFontGlyphs.json', '"face": "font.ui.primary"', '"face": "font.ui.missing"'),
+   'GameData/Fonts/GameFontGlyphs.json', 'AST-089'),
   ('a stray file (AST-013)', lambda r: write(r, 'GameData/Textures/Fx/Notes.txt', b'x'), 'GameData/Textures/Fx/Notes.txt', 'stray'),
   ('a record value of the wrong type (DAT-024)', replace_text('GameData/Records/tuning/mvp.json', '"ai_count": 3', '"ai_count": "3"'),
    'GameData/Records/tuning/mvp.json', 'wrong_type'),

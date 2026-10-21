@@ -37,7 +37,9 @@ struct MeshSpec
 // triangle budget, node count, depth or socket list.
 bool ReadSpec(std::string_view _spec, MeshSpec& _outSpec)
 {
-  const std::optional<std::uint64_t> budget = NumberAfter(_spec, "<= ");
+  // A socket carrier's row states "no triangles budget": it may hold no triangle (AST-045, ADR-129).
+  const bool noTriangles = _spec.starts_with("no triangles budget");
+  const std::optional<std::uint64_t> budget = noTriangles ? std::optional<std::uint64_t>(0) : NumberAfter(_spec, "<= ");
   const std::optional<std::uint64_t> nodes = NumberBefore(_spec, " node");
   const std::optional<std::uint64_t> depth = NumberAfter(_spec, "depth ");
   const std::size_t clause = _spec.find("sockets: ");
@@ -451,12 +453,6 @@ private:
       socket.transform = Scaled(bone.localTransform);
       m_mesh.sockets.push_back(socket);
       m_socketNames.emplace(std::string(spelled), m_mesh.nodes[socket.node].name);
-      if (Neuron::SocketKindInfoOf(name->kind).simulationRelevant)
-      {
-        Fail(std::format("the socket {} is simulation-relevant, and simulation data records arrive with M2's structures (AST-043, "
-                         "ADR-108)",
-                         bone.name));
-      }
     }
     for (const auto& [kind, written] : forms)
     {
@@ -546,11 +542,6 @@ private:
 std::optional<Neuron::CookedEntry> CookMesh(const ManifestRow& _row, std::string_view _file, std::span<const std::byte> _bytes,
                                             BuildReport& _report)
 {
-  if (_row.subcategory == "collision")
-  {
-    _report.Fail(_file, "collision assets are cooked from the first collidable structure, at M2 (AST-044, ADR-108)");
-    return std::nullopt;
-  }
   const auto cmo = ReadCmoFile(_bytes);
   if (!cmo)
   {

@@ -201,3 +201,10 @@ Chosen option: "1".
   - each face 59,946 bytes, the Leader figure 9,661 bytes (294 vertices) and the thrown weapon 13,621 bytes (420 vertices);
   - the tuning record 3,007 bytes, against the authoring file's 13,452.
 * **Amendment 2026-10-20 (M1 task T13, [ADR-114](ADR-114-gpu-resources-at-m1.md)).** T13 adds no import records: each pass names its sampler by the rule that states it, `fx.sky_cloud`'s `level0` view is the shader's read of level 0, and a BC4 mask is read through its red channel. The import records come with the asset cache. The record cooker's registry gains `tuning.presentation` ([ADR-116](ADR-116-presentation-tuning-record.md)).
+* **Amendment 2026-10-21 (M2 tasks T2 and T3, [ADR-128](ADR-128-mesh-kit-and-drafted-structure-recipes.md), [ADR-129](ADR-129-simulation-data-records-and-collision-cooker.md)).** Two of M1's three refusals end, and the deferred checks begin:
+  - The mesh cooker accepts a simulation-relevant socket, and the content build sends a collision row to the collision cooker.
+  - The pairing pass checks each collidable mesh against its collision asset (AST-044, AST-090) and writes each mesh's simulation data record, keyed `<mesh key>@sim`.
+  - The refusal of a node with geometry and another rest transform stays: every mesh of M2 rests at the identity.
+  - A row's "no triangles budget" is a budget of 0, for a socket carrier.
+  - NeuronCore gains `CollisionAsset` and `SimulationRecord`, and GameShared `StructureRecords`, which the server loads when it starts.
+  - `Build\CheckContentBuild.py` gains five fixtures, and `Build\CheckMeshKit.py` checks the mesh kit's committed output.
