@@ -1,5 +1,6 @@
 #pragma once
 
+#include "CommandMessages.h"
 #include "EffectEvent.h"
 #include "MessageCodec.h"
 #include "PlatformClock.h"
@@ -97,6 +98,18 @@ public:
   // ADR-109, ADR-120: asks the server to restart its sandbox from its seed or a new one; a server that runs no sandbox,
   // or a Release server, ignores it. False when the request was not sent.
   bool RequestSandboxRestart(bool _newSeed);
+  // ADR-095, ADR-124: sends a command on the reliable channel and returns the sequence number the server gives it, since
+  // the server numbers every reliable message of the connection in order; none when it was not sent.
+  template <class T> std::optional<std::uint64_t> SendCommand(const T& _command)
+  {
+    if (!m_transport || m_refused || !m_transport->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(_command)).has_value())
+    {
+      return std::nullopt;
+    }
+    return m_commandsSent++;
+  }
+  // ADR-095: the commands' outcomes received and not yet taken, in the order they arrived.
+  [[nodiscard]] std::vector<CommandReport> TakeReports();
   // MVP-011: the client refused the world, because the terrain it built from the server's seed differs, and closed.
   [[nodiscard]] bool Refused() const noexcept
   {
@@ -127,6 +140,8 @@ private:
   std::shared_ptr<const RegionTerrain> m_terrain;
   std::optional<std::uint8_t> m_commandedTeam;
   std::optional<ServerStats> m_serverStats;
+  std::vector<CommandReport> m_reports;
+  std::uint64_t m_commandsSent = 0; // the reliable messages sent, which the server numbers from 0
   bool m_refused = false;
   std::string m_shownTitle;
 };

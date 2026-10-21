@@ -24,6 +24,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BattleVerbs.h">
+      <Filter>Input</Filter>
+    </ClInclude>
     <ClInclude Include="ClientSession.h">
       <Filter>Session</Filter>
     </ClInclude>
@@ -59,6 +62,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BattleVerbs.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
     <ClCompile Include="ClientSession.cpp">
       <Filter>Session</Filter>
     </ClCompile>

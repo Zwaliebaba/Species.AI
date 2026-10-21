@@ -306,6 +306,33 @@ public:
     Assert::IsTrue(f.server->State() == Neuron::ConnectionState::Closed, L"the server's end sees the close");
     Assert::IsTrue(!f.titles.empty() && f.titles.back() == Species::RefusedTitle("Species"), L"the refusal's message");
   }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr095CommandsAreNumberedAsTheServerCountsThemAndTheirReportsArrive)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-101")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr095CommandsAreNumberedAsTheServerCountsThemAndTheirReportsArrive)
+  {
+    // ADR-124: every reliable message counts, the sandbox restart's too, so each sequence is the one the server gives.
+    Fixture f;
+    Assert::IsTrue(f.session->SendCommand(Species::SelectCommand{0, 0}) == std::uint64_t{0}, L"the first command");
+    Assert::IsTrue(f.session->RequestSandboxRestart(false), L"the restart");
+    Assert::IsTrue(f.session->SendCommand(Species::ControlStateCommand{0, {1.0, 2.0}}) == std::uint64_t{2}, L"the third");
+    std::size_t received = 0;
+    while (std::optional<Neuron::ReceivedMessage> message = f.server->Receive())
+    {
+      Assert::IsTrue(message->channel == Neuron::Channel::Reliable, L"on the reliable channel");
+      ++received;
+    }
+    ExpectEqual(3, static_cast<std::int64_t>(received), L"each arrived");
+    const Species::CommandReport report{2, 41, Species::CommandResult::Applied};
+    Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(report)).has_value());
+    f.session->Update();
+    const std::vector<Species::CommandReport> reports = f.session->TakeReports();
+    Assert::IsTrue(reports.size() == 1 && reports[0].sequence == 2 && reports[0].tick == 41 &&
+                     reports[0].result == Species::CommandResult::Applied,
+                   L"the report, decoded");
+    Assert::IsTrue(f.session->TakeReports().empty(), L"taken once");
+  }
 };
 
 } // namespace GameClientTests

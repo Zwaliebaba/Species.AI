@@ -11,6 +11,8 @@
 #include <limits>
 #include <string>
 #include <utility>
+#include <variant>
+#include <vector>
 
 namespace Species
 {
@@ -119,12 +121,12 @@ Neuron::CursorQuad CursorAt(CursorKind _kind, Neuron::PointPx _pointer, const Tu
 
 SettlementView::SettlementView(const Desc& _desc)
   : m_desc(_desc),
-    m_camera(*_desc.presentation, _desc.planes)
+    m_camera(*_desc.presentation, _desc.planes),
+    m_verbs(*_desc.presentation)
 {
 }
 
-void SettlementView::Update(const ClientSession& _session, Neuron::InputRouter& _router, double _dtSeconds, Neuron::SizePx _view,
-                            bool _focused)
+void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _router, double _dtSeconds, Neuron::SizePx _view, bool _focused)
 {
   // CAM-060 and CAM-063 as amended: a new terrain is a world entered, over the steward's site (mvp.sandbox.steward_site
   // while the sandbox is the only world, ADR-109).
@@ -133,6 +135,7 @@ void SettlementView::Update(const ClientSession& _session, Neuron::InputRouter& 
   {
     m_terrain = terrain;
     m_camera.LeaveWorld();
+    m_verbs.Reset();
     if (terrain != nullptr)
     {
       const RegionLayout& layout = terrain->layout;
@@ -182,19 +185,57 @@ void SettlementView::Update(const ClientSession& _session, Neuron::InputRouter& 
   // The hover over the client's own Leaders (R-CTRL-055), and the cursor it gives.
   m_hovered.reset();
   const std::optional<std::uint8_t> ownTeam = _session.CommandedTeam();
+  std::vector<InterpolatedFigure> figures;
   if (m_camera.InWorld() && ownTeam.has_value())
   {
     const Neuron::FrameView frame = m_camera.View(_view);
     const Neuron::Ray ray = Neuron::PickRayAt(static_cast<double>(m_pointer.x), static_cast<double>(m_pointer.y), frame, _view,
                                               m_desc.presentation->cam.pick.rowOffset);
-    const std::vector<InterpolatedFigure> figures = InterpolateFigures(_session.Replica(), _session.InterpolationFraction());
+    figures = InterpolateFigures(_session.Replica(), _session.InterpolationFraction());
     m_hovered = LeaderUnderRay(figures, *ownTeam, ray, frame, _view, *m_desc.presentation);
   }
   // ADR-119 (O76): unavailable while the pointer's ray misses the terrain or its ground point lies outside the region.
   const auto& ground = m_camera.PointerGround();
   const bool onRegion = ground.has_value() && ground->onTerrain && ground->position.x >= m_region.minX &&
                         ground->position.x <= m_region.maxX && ground->position.z >= m_region.minZ && ground->position.z <= m_region.maxZ;
-  if (m_hovered.has_value())
+  // M1 task T17 (ADR-124): the battle verbs follow the camera (R-CTRL-020 step 8), with the outcomes of their commands.
+  for (const CommandReport& report : _session.TakeReports())
+  {
+    m_verbs.Reported(report);
+  }
+  VerbFrame verbs;
+  verbs.realStepSeconds = _dtSeconds;
+  verbs.leaderUnderPointer = m_hovered;
+  if (onRegion)
+  {
+    verbs.ground = ground->position;
+  }
+  if (advancing)
+  {
+    VerbControls& controls = verbs.controls;
+    controls.primaryDown = _router.Query(ActionOf(GameAction::SelectPick)) || _router.Query(ActionOf(GameAction::SelectPickIdle)) ||
+                           _router.Query(ActionOf(GameAction::SelectCircleBegin));
+    controls.primaryHeld = _router.Query(ActionOf(GameAction::SelectCircleGrow));
+    controls.primaryUp = _router.Query(ActionOf(GameAction::SelectCircleEnd));
+    controls.clear = _router.Query(ActionOf(GameAction::SelectClear));
+    controls.secondaryDown = _router.Query(ActionOf(GameAction::OrderCrowd)) || _router.Query(ActionOf(GameAction::OrderPromote)) ||
+                             _router.Query(ActionOf(GameAction::OrderSpecial));
+    controls.straight = _router.Query(ActionOf(GameAction::OrderStraightRoute));
+    controls.moveOnly = _router.Query(ActionOf(GameAction::OrderMoveModifier));
+    controls.demote = _router.Query(ActionOf(GameAction::OrderDemote));
+  }
+  const std::optional<std::uint8_t> verbTeam = m_camera.InWorld() ? ownTeam : std::nullopt;
+  for (const BattleCommand& command : m_verbs.Update(verbs, verbTeam, _session.Replica(), figures))
+  {
+    const std::optional<std::uint64_t> sequence =
+      std::visit([&_session](const auto& _command) { return _session.SendCommand(_command); }, command);
+    if (sequence.has_value())
+    {
+      m_verbs.Sent(*sequence, command);
+    }
+  }
+  // O78: the highlight also marks the Worker a secondary press would promote.
+  if (m_hovered.has_value() || m_verbs.PromotableWorker().has_value())
   {
     m_cursor = CursorKind::Highlight;
   }

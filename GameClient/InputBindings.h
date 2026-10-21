@@ -10,8 +10,8 @@ namespace Species
 {
 
 // The client's actions, in the order of the router's action ids (INP-067). M1's set is compiled in (O75, ADR-119):
-// the camera's rows of reference/06 table 2.1-A, the M1 stand-in for the window mode, and in Debug builds the
-// development layer's entries that M1 binds (O76).
+// the camera's rows and the battle verbs of reference/06 table 2.1-A, the M1 stand-in for the window mode, and in Debug
+// builds the development layer's entries that M1 binds (O76).
 enum class GameAction : std::uint16_t
 {
   CameraPanLeft,
@@ -25,6 +25,19 @@ enum class GameAction : std::uint16_t
   CameraAim,
   CameraZoom,
   CameraLookAround,
+  // M1 task T17 (ADR-124): the battle verbs of table 3.6-A rows 19 to 24 and 40 to 45.
+  SelectPick,
+  SelectPickIdle,
+  SelectClear,
+  SelectCircleBegin,
+  SelectCircleGrow,
+  SelectCircleEnd,
+  OrderCrowd,
+  OrderStraightRoute,
+  OrderPromote,
+  OrderSpecial,
+  OrderMoveModifier,
+  OrderDemote,
   WindowToggleMode, // O65, O76: Alt+Enter until the screen options exist (RND-442)
 #if ENGINE_DEVELOPMENT
   DebugRemoveDevice,          // O65, O76: Ctrl+Shift+F11 until the debug-command window exists (DBG-117 row 16)

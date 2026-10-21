@@ -1820,12 +1820,33 @@
               "additionalProperties": false,
               "x-species-type": "object",
               "x-species-presence": "required"
+            },
+            "command": {
+              "type": "object",
+              "description": "the ref.sim.command.* keys",
+              "properties": {
+                "control_state_period": {
+                  "type": "integer",
+                  "description": "ref.sim.command.control_state_period (R-SIM-438)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "control_state_period"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
             }
           },
           "required": [
             "match",
             "frame",
-            "match_entry"
+            "match_entry",
+            "command"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -2230,10 +2251,37 @@
                   "additionalProperties": false,
                   "x-species-type": "object",
                   "x-species-presence": "required"
+                },
+                "circle_particles": {
+                  "type": "integer",
+                  "description": "ref.ctrl.cursor.circle_particles (R-CTRL-370)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "particles per step",
+                  "x-species-presence": "required"
+                },
+                "circle_spin": {
+                  "type": "number",
+                  "description": "ref.ctrl.cursor.circle_spin (R-CTRL-370)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "rad per real s",
+                  "x-species-presence": "required"
+                },
+                "circle_lift": {
+                  "type": "number",
+                  "description": "ref.ctrl.cursor.circle_lift (R-CTRL-370)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
-                "set"
+                "set",
+                "circle_particles",
+                "circle_spin",
+                "circle_lift"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -2318,13 +2366,76 @@
               "additionalProperties": false,
               "x-species-type": "object",
               "x-species-presence": "required"
+            },
+            "select": {
+              "type": "object",
+              "description": "the ref.ctrl.select.* keys",
+              "properties": {
+                "circle_growth": {
+                  "type": "number",
+                  "description": "ref.ctrl.select.circle_growth (R-CTRL-156)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu per real s",
+                  "x-species-presence": "required"
+                },
+                "circle_max_radius": {
+                  "type": "number",
+                  "description": "ref.ctrl.select.circle_max_radius (R-CTRL-156)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "circle_growth",
+                "circle_max_radius"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "order": {
+              "type": "object",
+              "description": "the ref.ctrl.order.* keys",
+              "properties": {
+                "crowd_interval_ticks": {
+                  "type": "integer",
+                  "description": "ref.ctrl.order.crowd_interval_ticks (R-CTRL-160)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "crowd_interval_ticks"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "promote_radius": {
+              "type": "number",
+              "description": "ref.ctrl.promote_radius (R-CTRL-042)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
             }
           },
           "required": [
             "camera",
             "pointer",
             "cursor",
-            "promote"
+            "promote",
+            "select",
+            "order",
+            "promote_radius"
           ],
           "additionalProperties": false,
           "x-species-type": "object",

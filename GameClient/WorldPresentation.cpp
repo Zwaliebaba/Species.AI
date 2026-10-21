@@ -307,6 +307,7 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
     if (displayTick.has_value())
     {
       m_effects.Update(events, _session.Replica(), figures, effectsView);
+      m_effects.EmitCircle(_view.Verbs().Circle(), m_terrain->field, effectsView);
       m_effects.ApplyRecoil(figures, effectsView);
     }
     inputs.sceneTextures = m_sceneTextures;

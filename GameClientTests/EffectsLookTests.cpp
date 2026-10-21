@@ -409,6 +409,30 @@ public:
     Assert::IsTrue(figures[0].position.x == Ground().x + 0.5, L"over once the recoil time has passed");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Vfx220TheCirclesFlashesKeepTheirRateAtEveryFrameRate)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"VFX-220")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-370")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Vfx220TheCirclesFlashesKeepTheirRateAtEveryFrameRate)
+  {
+    // VFX T10: half a second of the circle gives 30 steps of 30 flashes at 30 and at 144 frames a second.
+    const std::optional<Species::SelectionCircle> circle = Species::SelectionCircle{Ground(), 50.0};
+    for (const int rate : {30, 144})
+    {
+      Species::EffectsLook look(CommittedPresentation(), CommittedTuning());
+      Species::EffectsView view = ViewAt(Ground(), 9.0);
+      view.unscaledStep = 1.0 / static_cast<double>(rate);
+      for (int frame = 0; frame < rate / 2; ++frame)
+      {
+        look.EmitCircle(circle, SeedOneTerrain().field, view);
+      }
+      ExpectEqual(std::int64_t{30} * 30, static_cast<std::int64_t>(look.Particles().Live()), L"the same flashes");
+    }
+    Species::EffectsLook look(CommittedPresentation(), CommittedTuning());
+    look.EmitCircle(std::nullopt, SeedOneTerrain().field, ViewAt(Ground(), 9.0));
+    Assert::IsTrue(look.Particles().Live() == 0, L"none without a circle");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Vfx219ABurningWorkerAndAControlChangeEmitPerTick)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"VFX-219")
   END_TEST_METHOD_ATTRIBUTE()

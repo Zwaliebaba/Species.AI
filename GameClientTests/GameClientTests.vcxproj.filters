@@ -7,6 +7,9 @@
     <Filter Include="Diagnostics">
       <UniqueIdentifier>{79D4F300-B117-5FCD-9DC1-996450ECE042}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Input">
+      <UniqueIdentifier>{23C8ACAB-3C70-57C3-80E6-350B82243995}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Session">
       <UniqueIdentifier>{A167963F-DF56-52F7-B34B-539640C43309}</UniqueIdentifier>
     </Filter>
@@ -26,6 +29,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BattleVerbsTests.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
     <ClCompile Include="ClientSessionTests.cpp">
       <Filter>Session</Filter>
     </ClCompile>
