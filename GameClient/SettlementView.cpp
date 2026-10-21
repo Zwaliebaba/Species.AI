@@ -400,6 +400,14 @@ void SettlementView::ScriptVerbs(VerbFrame& _frame, std::span<const Interpolated
 }
 #endif
 
+void SettlementView::EnterAt(const Neuron::Vec3& _ground)
+{
+  if (m_terrain != nullptr && m_camera.InWorld())
+  {
+    m_camera.EnterWorld(m_terrain->field, _ground, m_region);
+  }
+}
+
 Neuron::CursorQuad SettlementView::CursorDraw() const noexcept
 {
   return CursorAt(m_cursor, m_pointer, *m_desc.presentation);

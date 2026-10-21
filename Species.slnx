@@ -26,6 +26,9 @@
     <Project Path="Tools/SpeciesPerformance/SpeciesPerformance.vcxproj" Id="21d87f97-bd0b-5419-b93e-70fbf5e86edd">
       <BuildDependency Project="Tools/SpeciesContentBuild/SpeciesContentBuild.vcxproj" />
     </Project>
+    <Project Path="Tools/SpeciesFrameBench/SpeciesFrameBench.vcxproj" Id="b9c3142e-3b75-5509-ad58-862d087eddfb">
+      <BuildDependency Project="Tools/SpeciesContentBuild/SpeciesContentBuild.vcxproj" />
+    </Project>
     <Project Path="Tools/SpeciesSchemaGen/SpeciesSchemaGen.vcxproj" Id="acac0570-f9cd-52a8-ae8e-651bfb181141" />
   </Folder>
   <Project Path="Species/Species.vcxproj" Id="01ec7822-74c7-56d1-9d56-ed835e64f15d">

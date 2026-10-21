@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 
 namespace Species
 {
@@ -17,9 +18,10 @@ inline constexpr std::uint8_t SANDBOX_AI_TEAM = 1;
 // the steward's side an AI too. Called between ticks.
 void PopulateSandbox(RegionSimulation& _region, bool _watched = false);
 
-// ADR-080 item 2's synthetic battle: mvp.perf.synthetic_figures Workers in two halves mvp.perf.synthetic_gap apart
-// across the valley's centre, each spread as a sandbox side and commanded by an AI (ADR-110). Called between ticks, on
-// a region with its terrain.
-void PopulateSyntheticBattle(RegionSimulation& _region);
+// ADR-080 item 2's synthetic battle: _figures Workers, mvp.perf.synthetic_figures when none is given, in two halves
+// mvp.perf.synthetic_gap apart across the valley's centre, each spread as a sandbox side and commanded by an AI
+// (ADR-110); the frame bench's scene of mvp.client.figures_max figures is one (O79, ADR-126). Called between ticks, on a
+// region with its terrain.
+void PopulateSyntheticBattle(RegionSimulation& _region, std::optional<std::uint32_t> _figures = std::nullopt);
 
 } // namespace Species

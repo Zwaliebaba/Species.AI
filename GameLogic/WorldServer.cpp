@@ -65,6 +65,12 @@ CommandResult ResultOf(const Neuron::CommandOutcome& _outcome) noexcept
 WorldServer::WorldServer(const Desc& _desc)
   : m_desc(_desc)
 {
+  // ADR-126: a synthetic battle is a sandbox whose two sides the AI commands.
+  if (m_desc.syntheticFigures > 0)
+  {
+    m_desc.sandbox = true;
+    m_desc.watched = true;
+  }
 }
 
 std::uint64_t WorldServer::Open()
@@ -118,8 +124,8 @@ bool WorldServer::StartNew(std::uint64_t _seed, std::uint64_t _firstTick)
   // A new world draws its simulation key from the system's cryptographic generator (ADR-082 item 1), and holds the
   // seed that passed (MVP-011), which gives the same terrain at its first attempt. Its journal starts with it.
   CommandJournal journal;
-  journal.start =
-    WorldStart{Neuron::DrawSecretKey(), terrain->seed, _firstTick, m_desc.regionCount, m_desc.sandbox, m_desc.sandbox && m_desc.watched};
+  journal.start = WorldStart{Neuron::DrawSecretKey(),          terrain->seed,          _firstTick, m_desc.regionCount, m_desc.sandbox,
+                             m_desc.sandbox && m_desc.watched, m_desc.syntheticFigures};
   std::unique_ptr<WorldSimulation> world = StartWorld(journal.start, terrain, m_desc.tuning);
   Adopt(std::move(world), std::move(terrain));
   m_journal = std::move(journal);

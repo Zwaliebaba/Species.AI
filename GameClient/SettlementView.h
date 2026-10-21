@@ -70,6 +70,9 @@ public:
   // Once per frame, before the session's update: _dtSeconds is the real frame step, _view the client area the pointer is
   // in. The verbs read the outcomes the session received since the last frame and send their commands through it.
   void Update(ClientSession& _session, Neuron::InputRouter& _router, double _dtSeconds, Neuron::SizePx _view, bool _focused);
+  // CAM-060's entry pose about the ground point _ground in place of the steward's site, in the world entered: the frame
+  // bench aims its fixed camera at a scene's fight this way (O79, ADR-126). Nothing while no world is entered.
+  void EnterAt(const Neuron::Vec3& _ground);
 
   [[nodiscard]] bool InWorld() const noexcept
   {
