@@ -115,6 +115,7 @@ Neuron::TerrainLook TerrainLookOf(const TuningMvp& _tuning, const TuningPresenta
   look.jitterOffset = _presentation.ter.color.jitterOffset;
   look.presentationSeed = static_cast<std::uint32_t>(_presentation.ref.sim.match.presentationSeed);
   look.chunkSide = _tuning.wld.terrain.chunkSide;
+  look.gridCellsPerRepeat = _presentation.rnd.terrain.gridCellsPerRepeat;
   return look;
 }
 

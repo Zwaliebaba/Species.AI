@@ -243,13 +243,23 @@
               "x-species-type": "sim_decimal",
               "x-species-unit": "exponent",
               "x-species-presence": "required"
+            },
+            "grid_cells_per_repeat": {
+              "type": "number",
+              "description": "rnd.terrain.grid_cells_per_repeat (RND-135)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "height-field cells per repeat of fx.terrain_grid",
+              "x-species-presence": "required"
             }
           },
           "required": [
             "sink_threshold",
             "sink_height",
             "overlay_specular",
-            "overlay_shininess"
+            "overlay_shininess",
+            "grid_cells_per_repeat"
           ],
           "additionalProperties": false,
           "x-species-type": "object",

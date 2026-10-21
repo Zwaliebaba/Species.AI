@@ -96,6 +96,8 @@ public:
 
 **RND-135** (MUST) The wire-grid overlay is drawn in the same pass as the surface (ADR-011). Its pattern is the stylised grid texture `fx.terrain_grid` (a 2 × 2 block of sub-cells, three of them with a diagonal), mapped once onto each height-field cell with grid coordinates (*u*, *v*) = (world *x* ÷ *cs*, world *z* ÷ *cs*), sampled with the linear-wrap sampler through all mip levels, so its lines do not follow the triangle edges (see DEC-326). The barycentric edge term of ADR-011 is the terrain shader's alternative permutation for DEC-326 option B ([shaders.md](shaders.md) RND-266).
 
+> **Amendment 2026-10-21 (owner decision O83, DEC-326 resolved; [ADR-115](../../../ADR/ADR-115-the-world-frame-at-m1.md)).** `fx.terrain_grid` is mapped once onto every `rnd.terrain.grid_cells_per_repeat` (2) height-field cells: the grid coordinates are (world *x* ÷ *cs*, world *z* ÷ *cs*) ÷ that value, so the texture's sub-cells are a cell's side.
+
 **RND-136** (MUST) Pass 4 uses the `terrain` entry (`Opaque`, `TestWrite`, `Back`), level fog (RND-222) and the two directional lights (RND-226). The surface term is lit with the facet colour as its ambient and diffuse colour and no specular term. The overlay term is lit with the facet colour as its ambient and diffuse colour and a specular term of `rnd.terrain.overlay_specular` (0.5) per channel with a shininess of `rnd.terrain.overlay_shininess` (40), whose light specular colours equal the light colours, so grid lines catch highlights; it is multiplied by the grid texel and added to the surface term. The exact combination, including fog and clamping, is RND-266 in [shaders.md](shaders.md).
 
 **RND-137** (MUST) In the inverted style (see DEC-040) pass 4 uses the `terrain_inverted` entry: both terms darken the destination (the `Darkening` blend), the surface term with depth write on, and fog runs towards the inverted fog colour (RND-222).
@@ -339,7 +341,7 @@ The golden-image tests compare with the default tolerance and on the pinned refe
 | DEC-040 | Open | the inverted style (RND-134, RND-137) |
 | DEC-118, DEC-101 | Resolved, Open | the seasonal ramp, sea tile, gradient and trees (RND-134, RND-142, RND-144, RND-191) |
 | DEC-247 | Open | terrain level of detail and world scale (RND-138) |
-| DEC-326 | Open | the terrain grid overlay pattern (RND-135) |
+| DEC-326 | Resolved (O83) | the terrain grid overlay pattern (RND-135) |
 | DEC-309 | Open | the Source Node's global flag, which only changes its drawing (RND-169) |
 | DEC-327 | Open | structure render-detail variants (RND-163) |
 
@@ -354,6 +356,7 @@ The jump-pad and tree values that [defences and props](../../../reference/03_bui
 | `rnd.terrain.sink_threshold` | 0.3 | wu | vertices below this are sunk | RND-133 | |
 | `rnd.terrain.sink_height` | −10 | wu | height of sunk vertices | RND-133 | |
 | `rnd.terrain.overlay_specular` | 0.5 | per channel | specular colour of the grid term | RND-136 | DEC-326 |
+| `rnd.terrain.grid_cells_per_repeat` | 2 | height-field cells per repeat of `fx.terrain_grid` | Species, provisional (O83); the grid coordinates are the cell coordinates ÷ this | RND-135 | DEC-326 |
 | `rnd.terrain.overlay_shininess` | 40 | exponent | | RND-136 | |
 | `rnd.sea.flat_height` | −9 | wu | flat sea layer | RND-140, RND-141 | |
 | `rnd.sea.tile_repeats` | 30 | repeats across the plane | sea tile | RND-142 | |

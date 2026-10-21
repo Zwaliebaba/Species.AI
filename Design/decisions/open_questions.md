@@ -35,7 +35,7 @@ This file records the open questions of the reference library: behaviours whose 
 | [DEC-323](#dec-323-loop-keep-alive-polling) | Loop keep-alive polling | Resolved | R-AUD, AEN, R-MODE |
 | [DEC-324](#dec-324-terrain-generator-parameter-semantics-and-biases) | Terrain generator parameter semantics and biases | Resolved | TER, R-MAP |
 | [DEC-325](#dec-325-light-direction-and-the-camera-transform) | Light direction and the camera transform | Open | RND |
-| [DEC-326](#dec-326-terrain-grid-overlay) | Terrain grid overlay | Open | RND, TER |
+| [DEC-326](#dec-326-terrain-grid-overlay) | Terrain grid overlay | Resolved | RND, TER |
 | [DEC-327](#dec-327-structure-render-detail-variants) | Structure render-detail variants | Open | RND, R-BLDG |
 | [DEC-328](#dec-328-saturated-team-colours-on-effect-bubbles) | Saturated team colours on effect bubbles | Open | VFX, RND |
 | [DEC-329](#dec-329-assets-of-objects-spawned-only-at-run-time) | Assets of objects spawned only at run time | Open | AST |
@@ -275,12 +275,13 @@ This file records the open questions of the reference library: behaviours whose 
 - Decide by: design phase
 
 ### DEC-326 Terrain grid overlay
-- Status: Open
+- Status: Resolved
 - Affects: architecture/components/renderer/world_renderers.md (RND), architecture/components/terrain/ (TER)
 - Specified behaviour: The terrain grid overlay maps a texture of 2 × 2 sub-cells with three diagonals once onto each height-field cell, so its lines do not coincide with the edges of the terrain triangles. Its design intent is not recorded.
 - Options: A — keep the stylised overlay as drawn; B — draw the overlay along the actual triangle edges.
 - Recommendation: A. The overlay reads as a stylised grid, not as a wireframe; confirm the look visually.
 - Decide by: design phase
+- Resolution (2026-10-21, owner decision O83): option A's stylised grid, drawn at twice its scale. `fx.terrain_grid` repeats once every `rnd.terrain.grid_cells_per_repeat` (2) height-field cells, so its sub-cells are a cell's side; its lines still do not follow the triangle edges, and option B is not built. The look was confirmed on an offline reproduction of the terrain pass at the owner's display density ([ADR-115](../ADR/ADR-115-the-world-frame-at-m1.md) amendment).
 
 ### DEC-327 Structure render-detail variants
 - Status: Open

@@ -29,7 +29,8 @@
       "sink_threshold": 0.3,
       "sink_height": -10,
       "overlay_specular": 0.5,
-      "overlay_shininess": 40
+      "overlay_shininess": 40,
+      "grid_cells_per_repeat": 2
     },
     "sea": {
       "flat_height": -9,

@@ -215,7 +215,7 @@ The golden-image tests compare with the default tolerance and on the pinned refe
 
 | Reference | Status | Where it applies |
 |---|---|---|
-| DEC-326 | Open | the terrain shader's grid source (RND-266) |
+| DEC-326 | Resolved (O83) | the terrain shader's grid source (RND-266) |
 | DEC-040 | Open | the `INVERTED` permutations (RND-263, RND-266, RND-267) |
 | ADR-003 | Accepted | the language, compiler and material set |
 | ADR-011 | Accepted | the single-pass terrain and the GPU sea |

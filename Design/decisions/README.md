@@ -4,7 +4,7 @@
 
 Entries live in the files listed below; add a decision to the file of its area, in the format of [CONVENTIONS](../CONVENTIONS.md) §7, and add its row to the index of that file and to the index below. **Open** decisions state the behaviour the documents specify now (the reference default), so implementation never blocks on them. **Resolved** decisions state the fixed rule. **Dropped** entries record out-of-scope items and what Species does instead. Decisions marked "Decide by: design phase" are answered by the Species design phase.
 
-Totals: **302** decisions: 117 Open, 157 Resolved, 28 Dropped.
+Totals: **302** decisions: 116 Open, 158 Resolved, 28 Dropped.
 
 The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner_decisions.md](owner_decisions.md).
 
@@ -229,7 +229,7 @@ The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner
 | DEC-323 | [Loop keep-alive polling](open_questions.md#dec-323-loop-keep-alive-polling) | Resolved | open_questions.md |
 | DEC-324 | [Terrain generator parameter semantics and biases](open_questions.md#dec-324-terrain-generator-parameter-semantics-and-biases) | Resolved | open_questions.md |
 | DEC-325 | [Light direction and the camera transform](open_questions.md#dec-325-light-direction-and-the-camera-transform) | Open | open_questions.md |
-| DEC-326 | [Terrain grid overlay](open_questions.md#dec-326-terrain-grid-overlay) | Open | open_questions.md |
+| DEC-326 | [Terrain grid overlay](open_questions.md#dec-326-terrain-grid-overlay) | Resolved | open_questions.md |
 | DEC-327 | [Structure render-detail variants](open_questions.md#dec-327-structure-render-detail-variants) | Open | open_questions.md |
 | DEC-328 | [Saturated team colours on effect bubbles](open_questions.md#dec-328-saturated-team-colours-on-effect-bubbles) | Open | open_questions.md |
 | DEC-329 | [Assets of objects spawned only at run time](open_questions.md#dec-329-assets-of-objects-spawned-only-at-run-time) | Open | open_questions.md |

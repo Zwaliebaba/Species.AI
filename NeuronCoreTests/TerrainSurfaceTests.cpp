@@ -216,6 +216,31 @@ public:
       }
     }
   }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Rnd135TheGridRepeatsOnceEveryItsCells)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"RND-135")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Rnd135TheGridRepeatsOnceEveryItsCells)
+  {
+    // O83: with two cells per repeat, the grid coordinates are half the cell coordinates, so fx.terrain_grid spans two
+    // cells.
+    const Neuron::TerrainField field = Island();
+    const std::vector<std::uint8_t> ramp = NamingRamp();
+    Neuron::TerrainLook look;
+    look.gridCellsPerRepeat = 2.0;
+    const Neuron::TerrainSurface surface = Neuron::BuildTerrainSurface(field, {64, 64, ramp}, look);
+    Assert::IsTrue(!surface.chunks.empty() && !surface.chunks.front().vertices.empty(), L"a surface");
+    for (const Neuron::TerrainChunk& chunk : surface.chunks)
+    {
+      for (const Neuron::TerrainVertex& vertex : chunk.vertices)
+      {
+        const double x = chunk.origin.x + vertex.position[0];
+        const double z = chunk.origin.z + vertex.position[2];
+        Assert::AreEqual(static_cast<float>((x - ORIGIN) / CELL / 2.0), vertex.grid[0], 1e-5f, L"half the cell coordinate in x");
+        Assert::AreEqual(static_cast<float>((z - ORIGIN) / CELL / 2.0), vertex.grid[1], 1e-5f, L"and in z");
+      }
+    }
+  }
 };
 
 TEST_CLASS(SeaSurfaceTests)

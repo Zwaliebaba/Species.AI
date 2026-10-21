@@ -95,6 +95,9 @@ struct TuningPresentation
 
       // rnd.terrain.overlay_shininess, in exponent
       double overlayShininess = 0.0;
+
+      // rnd.terrain.grid_cells_per_repeat, in height-field cells per repeat of fx.terrain_grid
+      double gridCellsPerRepeat = 0.0;
     };
 
     struct Sea
@@ -2120,6 +2123,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.sinkHeight = _reader.Decimal(_object, "sink_height", {}, Neuron::SimPrecision::Binary64);
   _out.overlaySpecular = _reader.Decimal(_object, "overlay_specular", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.overlayShininess = _reader.Decimal(_object, "overlay_shininess", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.gridCellsPerRepeat = _reader.Decimal(_object, "grid_cells_per_repeat", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -3585,6 +3589,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::
   _writer.F64(_in.sinkHeight);
   _writer.F64(_in.overlaySpecular);
   _writer.F64(_in.overlayShininess);
+  _writer.F64(_in.gridCellsPerRepeat);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Rnd::Terrain& _out)
@@ -3593,6 +3598,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   _out.sinkHeight = _reader.F64();
   _out.overlaySpecular = _reader.F64();
   _out.overlayShininess = _reader.F64();
+  _out.gridCellsPerRepeat = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Rnd::Sea& _in)

@@ -24,6 +24,7 @@ struct TerrainLook
   double jitterOffset = 2.0;          // ter.color.jitter_offset, wu
   std::uint32_t presentationSeed = 1; // ref.sim.match.presentation_seed
   double chunkSide = 1024.0;          // wld.terrain.chunk_side, wu: the side of a culled chunk (ADR-115)
+  double gridCellsPerRepeat = 1.0;    // rnd.terrain.grid_cells_per_repeat: the cells one repeat of fx.terrain_grid spans (O83)
 };
 
 /// An image read on the CPU as its texture stores it (AST-072's CPU table): R8G8B8A8 texels, rows top-down. The land
@@ -42,7 +43,8 @@ struct TerrainVertex
   std::array<float, 3> position; // wu, relative to the chunk's origin
   std::uint32_t color = 0;       // the ramp texel as encoded, red in the lowest byte (ADR-013)
   std::array<float, 3> normal;
-  std::array<float, 2> grid; // cell coordinates from the region's origin: the wire grid's texture coordinates (RND-135)
+  std::array<float, 2> grid; // cell coordinates from the region's origin ÷ the grid's cells per repeat: the wire grid's
+                             // texture coordinates (RND-135, O83)
 };
 static_assert(sizeof(TerrainVertex) == 36);
 

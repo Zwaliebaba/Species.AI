@@ -466,7 +466,7 @@ The golden-image tests of this folder compare with the default tolerance and on 
 | DEC-226 | Resolved (ADR-083) | loading and streaming of world content (RND-042) |
 | DEC-247 | Open | terrain scale and level of detail ([world_renderers.md](world_renderers.md) RND-138) |
 | DEC-325 | Open | the one-frame light lag ([view_lighting_and_fog.md](view_lighting_and_fog.md) RND-227) |
-| DEC-326 | Open | the terrain grid overlay ([world_renderers.md](world_renderers.md) RND-135) |
+| DEC-326 | Resolved (O83) | the terrain grid overlay ([world_renderers.md](world_renderers.md) RND-135) |
 | DEC-327 | Open | structure render-detail variants ([world_renderers.md](world_renderers.md) RND-163) |
 | DEC-336 | Dropped | other renderers are not specified; Species has one renderer (ADR-001) |
 | DEC-337 | Dropped | driver-specific cursor, glyph-atlas and texture-filtering behaviour is not specified |
