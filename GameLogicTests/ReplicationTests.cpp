@@ -9,6 +9,7 @@
 #include "RegionSimulation.h"
 #include "Sandbox.h"
 #include "ServerHost.h"
+#include "ServerStats.h"
 #include "StateHash.h"
 #include "StateReplica.h"
 #include "StateSender.h"
@@ -64,6 +65,7 @@ public:
                                                        { events += _events.events.size(); });
     m_dispatcher.Register<Species::CommandReport>([this](const Species::CommandReport&) { ++reports; });
     m_dispatcher.Register<Species::WorldTerrain>([](const Species::WorldTerrain&) {});
+    m_dispatcher.Register<Species::ServerStats>([](const Species::ServerStats&) {});
     m_server.Connect(CLIENT_CONNECTION);
   }
 

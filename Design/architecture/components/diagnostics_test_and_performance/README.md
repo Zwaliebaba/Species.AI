@@ -312,6 +312,8 @@ Caption: Listing 2.1-A, the diagnostics interface (declarations only). `ProfileN
 
 > **Amendment 2026-10-21 (O65, O76; M1 task T14, [ADR-119](../../../ADR/ADR-119-input-camera-picking-and-cursor-at-m1.md)).** Until the debug-command window exists, a Debug build's development layer also binds `action.debug.remove_device`, `chord(key:control, key:shift, key:f11)`, the device-removal path of DBG-117 row 16, and T15b adds the sandbox restart's entry; each ends when the window's command exists.
 
+> **Amendment 2026-10-21 (M1 task T15b, [ADR-120](../../../ADR/ADR-120-frame-page-toggle-and-sandbox-restart-at-m1.md)).** The sandbox restart's entries are `action.debug.restart_sandbox`, `chord(key:control, key:shift, key:f7)`, from the sandbox's seed, and `action.debug.restart_sandbox_new_seed`, `chord(key:control, key:shift, key:f8)`, from a new one (ADR-109). The development layer also binds `action.debug.overlay` (row 6).
+
 ### 2.3 Events and data contracts
 
 **DBG-023** (MUST) **Counter providers.** A component publishes its development counters through one `CounterProvider` per overlay page. `Publish` runs on the presentation thread at the start of each frame while the page is shown, reads only the component's own counters, and allocates no memory. The pages and their providers are:

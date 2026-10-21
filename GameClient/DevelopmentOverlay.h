@@ -1,8 +1,12 @@
 #pragma once
 
 #include "FontAsset.h"
+#include "FrameProfile.h"
 #include "LooseContent.h"
 #include "ReplicaTiming.h"
+#include "ServerStats.h"
+#include "StateReplica.h"
+#include "TuningMvp.h"
 #include "TuningPresentation.h"
 #include "WorldScene.h"
 
@@ -44,5 +48,65 @@ inline constexpr double DOT_LIFT_WU = 3.0;
 // M1 task T15a, ADR-118: a dot for each living figure at its interpolated position, in its team's colour, until its
 // crowd is drawn (T16).
 [[nodiscard]] std::vector<Neuron::DevelopmentDot> FigureDots(std::span<const InterpolatedFigure> _figures);
+
+// ADR-120: the root steps of the client's frame loop that the frame page shares out (DBG-096), by their index in the
+// frame profile; the wait is the renderer's, for the latency object, the cap, the fence and the present.
+enum class ClientStep : std::uint8_t
+{
+  Input,
+  Session,
+  Presentation,
+  Render,
+  Wait,
+  Count
+};
+inline constexpr std::array<std::string_view, 5> CLIENT_STEP_NAMES{"input", "session", "presentation", "render", "wait"};
+// ADR-120: the statistics line goes to the log every tenth roll-up period.
+inline constexpr std::uint64_t STATISTICS_LOG_PERIODS = 10;
+
+/// DBG-096 as M1 has it: the living figures of a team by actor kind; M1 has no structures.
+struct SideCount
+{
+  std::uint32_t workers = 0;
+  std::uint32_t leaders = 0;
+};
+
+/// The live objects of the replica's latest view (DBG-096): each team's figures, from slot 0 to the highest seen, and the
+/// Essence orbs and effects. M1 has no laser bolts and no particles.
+struct ReplicaCounts
+{
+  std::vector<SideCount> sides;
+  std::size_t orbs = 0;
+  std::size_t effects = 0;
+};
+
+[[nodiscard]] ReplicaCounts CountReplica(const StateReplica& _replica);
+
+/// What the frame page shows (DBG-096, DBG-097; ADR-120).
+struct FramePageInputs
+{
+  const Neuron::FrameProfile* profile = nullptr; // the frame loop's; none shows no figures of it
+  double framesPerSecond = 0.0;
+  std::optional<std::size_t> objects; // the frame-rate line's count, while a world exists
+  ReplicaCounts counts;
+  std::optional<ServerStats> server; // the latest of a Debug server's statistics
+};
+
+/// The frame page's lines and the frame-time graph's rectangles, laid out at the target's top-left corner.
+struct FramePage
+{
+  std::vector<Neuron::OverlayLine> lines;
+  std::vector<Neuron::OverlayRect> rects;
+};
+
+// DBG-096, DBG-097, DBG-089: the frame page, besides the frame-rate line: the percentiles of the frame time, and of the
+// frame's work against its budget (rnd.budget.target_frame_rate); each step's share; the counts; the server's tick
+// against half the tick period (ADR-080 item 6); and the frame-time graph. A row over its budget is drawn in
+// dbg.overlay.warning_rgb. _cellHeightPixels is the face's, unscaled.
+[[nodiscard]] FramePage BuildFramePage(const FramePageInputs& _inputs, const TuningPresentation& _presentation, const TuningMvp& _tuning,
+                                       float _cellHeightPixels);
+// ADR-120: the frame page's figures as one line of the log, written every tenth roll-up period so that the overlay can
+// be checked against it.
+[[nodiscard]] std::string StatisticsLine(const FramePageInputs& _inputs, const TuningPresentation& _presentation);
 
 } // namespace Species

@@ -173,10 +173,23 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
     });
   _renderer.OnDeviceRebuilt([] { Neuron::Log(Neuron::LogCategory::Render, Neuron::LogLevel::Info, "presentation resumed"); });
 
+  // ADR-120: each root step's time joins the frame profile, the renderer's waits apart from its work, and every tenth
+  // roll-up period the frame page's figures go to the log.
+  Neuron::FrameProfile& profile = _world.Profile();
   const Neuron::Nanoseconds start = _clock.Now();
   Neuron::Nanoseconds previousFrame = start;
+#if ENGINE_DEVELOPMENT
+  std::uint64_t loggedPeriods = 0;
+#endif
   while (true)
   {
+    Neuron::Nanoseconds stepStart = _clock.Now();
+    const auto endStep = [&](ClientStep _step)
+    {
+      const Neuron::Nanoseconds now = _clock.Now();
+      profile.AddStep(static_cast<std::size_t>(_step), now - stepStart);
+      stepStart = now;
+    };
     _window.PumpMessages();
     router.AdvanceFrame({.windowFocused = _window.HasFocus()}, _window.ClientSize());
     if (keyboardMouse.TakeCloseRequest())
@@ -187,8 +200,6 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
     {
       break;
     }
-    _session.Update();
-    _world.Update(_session);
     if (router.Query(ActionOf(GameAction::WindowToggleMode)))
     {
       const bool windowed = _window.Mode() == Neuron::WindowMode::Windowed;
@@ -199,18 +210,47 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
     {
       _renderer.DebugRemoveDevice();
     }
+    if (router.Query(ActionOf(GameAction::DebugOverlay)))
+    {
+      _world.ToggleOverlay();
+    }
+    const bool newSeed = router.Query(ActionOf(GameAction::DebugRestartSandboxNewSeed));
+    if (newSeed || router.Query(ActionOf(GameAction::DebugRestartSandbox)))
+    {
+      static_cast<void>(_session.RequestSandboxRestart(newSeed));
+    }
 #endif
     // The camera's step is the real time since the previous frame (CAM-030), clamped by the camera.
     const Neuron::Nanoseconds now = _clock.Now();
-    const double frameSeconds = std::chrono::duration<double>(now - previousFrame).count();
+    const Neuron::Nanoseconds frameTime = now - previousFrame;
     previousFrame = now;
-    _view.Update(_session, router, frameSeconds, _window.ClientSize(), _window.HasFocus());
-    if (_renderer.RenderFrame(_world.Frame(_session, _view, _renderer.FramesPerSecond())) == Neuron::FrameOutcome::Suspended)
+    _view.Update(_session, router, std::chrono::duration<double>(frameTime).count(), _window.ClientSize(), _window.HasFocus());
+    endStep(ClientStep::Input);
+    _session.Update();
+    endStep(ClientStep::Session);
+    _world.Update(_session);
+    const Neuron::FrameInputs inputs = _world.Frame(_session, _view, _renderer.FramesPerSecond());
+    endStep(ClientStep::Presentation);
+    const Neuron::FrameOutcome outcome = _renderer.RenderFrame(inputs);
+    const Neuron::Nanoseconds waits = outcome == Neuron::FrameOutcome::Suspended ? Neuron::Nanoseconds{0} : _renderer.LastFrameWaits();
+    profile.AddStep(static_cast<std::size_t>(ClientStep::Wait), waits);
+    stepStart += waits;
+    endStep(ClientStep::Render);
+    if (outcome == Neuron::FrameOutcome::Suspended)
     {
       _clock.WaitUntil(_clock.Now() + SUSPENDED_POLL_PERIOD);
       continue;
     }
     _clock.FrameBoundary();
+    profile.EndFrame(_clock.Now(), frameTime, waits);
+#if ENGINE_DEVELOPMENT
+    if (profile.Periods() != loggedPeriods && profile.Periods() % STATISTICS_LOG_PERIODS == 0)
+    {
+      loggedPeriods = profile.Periods();
+      Neuron::Log(Neuron::LogCategory::Diagnostics, Neuron::LogLevel::Info, "{}",
+                  StatisticsLine(_world.FramePageOf(_session, _renderer.FramesPerSecond()), _world.Presentation()));
+    }
+#endif
   }
 
   router.ConfinePointer(false);
@@ -325,6 +365,12 @@ int Run()
     viewDesc.presentation = &*presentationTuning;
     viewDesc.planes = WorldLookOf(*clientTuning, *presentationTuning, {}).planes;
     SettlementView view(viewDesc);
+#if ENGINE_DEVELOPMENT
+    if (checkFrames.has_value())
+    {
+      world.ToggleOverlay(); // ADR-120: the render check draws the overlay, so that the debug layer sees its draws
+    }
+#endif
 
     presentation.window->Show();
     RunFrameLoop(clock, *presentation.window, *presentation.renderer, session, world, view, checkFrames);

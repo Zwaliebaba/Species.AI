@@ -69,6 +69,14 @@ std::optional<Neuron::CpuImage> CpuImageOf(const std::vector<std::byte>& _file, 
                           std::span(reinterpret_cast<const std::uint8_t*>(texels.data()), texels.size())};
 }
 
+// ADR-120: the frame loop's profile of the record's history and roll-up period, with a step for each of ClientStep's.
+Neuron::FrameProfile::Desc ProfileDescOf(const TuningPresentation& _presentation)
+{
+  const TuningPresentation::Dbg::Profile& profile = _presentation.dbg.profile;
+  return {static_cast<std::size_t>(ClientStep::Count), static_cast<std::size_t>(std::max<std::int64_t>(profile.frameHistory, 1)),
+          Neuron::Nanoseconds{std::max<std::int64_t>(std::llround(profile.rollupPeriodMs * 1.0e6), 1)}};
+}
+
 } // namespace
 
 Neuron::TerrainLook TerrainLookOf(const TuningMvp& _tuning, const TuningPresentation& _presentation) noexcept
@@ -206,7 +214,8 @@ std::shared_ptr<const Neuron::WorldScene> BuildWorldScene(const RegionTerrain& _
 
 WorldPresentation::WorldPresentation(Desc _desc)
   : m_desc(_desc),
-    m_start(_desc.clock->Now())
+    m_start(_desc.clock->Now()),
+    m_profile(ProfileDescOf(*_desc.presentation))
 {
   m_cursorImages = LoadCursorImages(*m_desc.content);
 #if ENGINE_DEVELOPMENT
@@ -263,14 +272,18 @@ Neuron::FrameInputs WorldPresentation::Frame(const ClientSession& _session, cons
     inputs.skyTicks = displayed - *m_firstDisplayTick;
   }
 #if ENGINE_DEVELOPMENT
-  // DBG-095, ADR-118: shown in a Debug build until T15b's toggle; the objects are counted while a world exists.
-  if (m_developmentFace != nullptr)
+  // DBG-095, DBG-096, ADR-120: while the overlay is shown, the frame-rate line, whose objects are counted while a world
+  // exists, and the frame page.
+  if (m_developmentFace != nullptr && m_overlayShown)
   {
-    const bool world = m_terrain != nullptr && _session.ServerTick().has_value();
-    const std::optional<std::size_t> objects = world ? std::optional(_session.Replica().Latest().size()) : std::nullopt;
+    const FramePageInputs figures = FramePageOf(_session, _framesPerSecond);
     inputs.overlayFont = m_developmentFace;
-    inputs.overlay.push_back(FrameRateLine(*m_desc.presentation, _framesPerSecond, objects));
+    inputs.overlay.push_back(FrameRateLine(*m_desc.presentation, _framesPerSecond, figures.objects));
+    FramePage page = BuildFramePage(figures, *m_desc.presentation, *m_desc.tuning, static_cast<float>(m_developmentFace->cellHeightPixels));
+    inputs.overlay.insert(inputs.overlay.end(), std::make_move_iterator(page.lines.begin()), std::make_move_iterator(page.lines.end()));
+    inputs.overlayRects = std::move(page.rects);
   }
+  // ADR-118, ADR-120: the dots stand in for the crowds until T16, so they are drawn whether the overlay is shown or not.
   if (m_terrain != nullptr)
   {
     inputs.dots = FigureDots(InterpolateFigures(_session.Replica(), _session.InterpolationFraction()));
@@ -279,6 +292,20 @@ Neuron::FrameInputs WorldPresentation::Frame(const ClientSession& _session, cons
   static_cast<void>(_framesPerSecond);
 #endif
   return inputs;
+}
+
+FramePageInputs WorldPresentation::FramePageOf(const ClientSession& _session, double _framesPerSecond) const
+{
+  FramePageInputs figures;
+  figures.profile = &m_profile;
+  figures.framesPerSecond = _framesPerSecond;
+  if (m_terrain != nullptr && _session.ServerTick().has_value())
+  {
+    figures.objects = _session.Replica().Latest().size();
+    figures.counts = CountReplica(_session.Replica());
+  }
+  figures.server = _session.ServerStatistics();
+  return figures;
 }
 
 } // namespace Species

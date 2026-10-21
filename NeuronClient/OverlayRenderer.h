@@ -14,8 +14,8 @@
 namespace Neuron
 {
 
-/// The development overlay's drawing (DBG-004, DBG-095; M1 task T15a): its face's page on the GPU, its lines in pass 29
-/// over the final image, and the development dots in the scene. Every call is made from the frame thread.
+/// The development overlay's drawing (DBG-004, DBG-095; M1 tasks T15a and T15b): its face's page on the GPU, its
+/// rectangles and lines in pass 29 over the final image, and the development dots in the scene. Every call is made from the frame thread.
 class OverlayRenderer
 {
 public:
@@ -31,9 +31,10 @@ public:
   void UploadAgain();
   [[nodiscard]] bool Ready() const;
 
-  // Pass 29: _lines over the target of _size, whose render target, viewport and scissor are set, at _scale (O63).
+  // Pass 29: _rects, then _lines over them, over the target of _size, whose render target, viewport and scissor are set,
+  // at _scale (O63).
   void RecordText(ID3D12GraphicsCommandList* _commands, UploadRing& _ring, const PipelineCatalog& _catalog, SizePx _size,
-                  std::uint32_t _scale, std::span<const OverlayLine> _lines);
+                  std::uint32_t _scale, std::span<const OverlayLine> _lines, std::span<const OverlayRect> _rects);
   // The dots in the scene, depth-tested; the frame constants are bound.
   void RecordDots(ID3D12GraphicsCommandList* _commands, UploadRing& _ring, const PipelineCatalog& _catalog, const FrameView& _frame,
                   std::uint32_t _scale, std::span<const DevelopmentDot> _dots);

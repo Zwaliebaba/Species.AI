@@ -228,6 +228,9 @@
     <FXCompile Include="Shader\DevelopmentTextPS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
+    <FXCompile Include="Shader\DevelopmentTextSolidPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
     <FXCompile Include="Shader\DevelopmentTextVS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>

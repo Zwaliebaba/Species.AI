@@ -75,6 +75,9 @@
     <ClInclude Include="FontAsset.h">
       <Filter>Content</Filter>
     </ClInclude>
+    <ClInclude Include="FrameProfile.h">
+      <Filter>Profiling</Filter>
+    </ClInclude>
     <ClInclude Include="Geometry.h">
       <Filter>Maths</Filter>
     </ClInclude>
@@ -217,6 +220,9 @@
     </ClCompile>
     <ClCompile Include="FontAsset.cpp">
       <Filter>Content</Filter>
+    </ClCompile>
+    <ClCompile Include="FrameProfile.cpp">
+      <Filter>Profiling</Filter>
     </ClCompile>
     <ClCompile Include="Geometry.cpp">
       <Filter>Maths</Filter>

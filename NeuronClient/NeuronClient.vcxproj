@@ -239,6 +239,9 @@
     <FXCompile Include="Shader\DevelopmentTextPS.hlsl">
       <ShaderType>Pixel</ShaderType>
     </FXCompile>
+    <FXCompile Include="Shader\DevelopmentTextSolidPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
     <FXCompile Include="Shader\DevelopmentTextVS.hlsl">
       <ShaderType>Vertex</ShaderType>
     </FXCompile>

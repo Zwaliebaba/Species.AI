@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "MessageCodec.h"
+#include "ServerStats.h"
 #include "StableId.h"
 #include "TestSupport.h"
 #include "WorldTerrain.h"
@@ -47,6 +48,27 @@ public:
     sent.commandedTeam = std::uint8_t{3};
     Assert::IsTrue(dispatcher.Dispatch(Neuron::EncodeMessage(sent)) && received && received->commandedTeam == std::uint8_t{3}, L"team 3");
     Assert::IsTrue(Species::WorldTerrain::TYPE >= Neuron::GAME_MESSAGE_TYPE_FIRST, L"a game message's id is above the engine's");
+  }
+};
+
+TEST_CLASS(ServerStatsTests)
+{
+public:
+  BEGIN_TEST_METHOD_ATTRIBUTE(Dbg096TheServerStatisticsRoundTrip)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"DBG-096")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Dbg096TheServerStatisticsRoundTrip)
+  {
+    const Species::ServerStats sent{0xfedcba9876543210, 123'456, 10, 1'850, 3'100};
+    const std::vector<std::byte> bytes = Neuron::EncodeMessage(sent);
+    ExpectEqual(static_cast<std::int64_t>(Species::ServerStats::MAX_BYTES), static_cast<std::int64_t>(bytes.size()), L"its fields");
+    Neuron::MessageDispatcher dispatcher;
+    std::optional<Species::ServerStats> received;
+    dispatcher.Register<Species::ServerStats>([&received](const Species::ServerStats& _stats) { received = _stats; });
+    Assert::IsTrue(dispatcher.Dispatch(bytes), L"it decodes whole");
+    Assert::IsTrue(received && received->worldSeed == sent.worldSeed && received->tick == sent.tick && received->ticks == 10 &&
+                     received->tickMeanMicroseconds == 1'850 && received->tickMaxMicroseconds == 3'100,
+                   L"every field");
   }
 };
 

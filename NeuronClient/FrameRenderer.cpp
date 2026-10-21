@@ -27,6 +27,7 @@
 #include "CompiledShader/DevelopmentDotPS.h"
 #include "CompiledShader/DevelopmentDotVS.h"
 #include "CompiledShader/DevelopmentTextPS.h"
+#include "CompiledShader/DevelopmentTextSolidPS.h"
 #include "CompiledShader/DevelopmentTextVS.h"
 #include "CompiledShader/FinalPS.h"
 #include "CompiledShader/FinalVS.h"
@@ -179,6 +180,7 @@ struct RendererState
   bool occluded = false;
   bool rebuilding = false;
   std::optional<Nanoseconds> nextFrameStart;
+  Nanoseconds lastWaits{}; // ADR-120: the last frame's waits for the latency object, the cap, the fence and the present
   std::vector<std::function<void()>> rebuiltListeners;
 };
 
@@ -287,7 +289,7 @@ bool CreateSwapChain(RendererState& _state)
 }
 
 // The world frame's pipeline states (RND-061, ADR-113): the entries its passes use, and the final pass's.
-const std::array<PipelineEntry, 9> WORLD_PIPELINES{{
+const std::array<PipelineEntry, 10> WORLD_PIPELINES{{
   {"sky", g_SkyVS, g_SkyPS, VertexLayout::SkyInstance, BlendState::Additive, DepthState::None, CullState::Back, PipelineTarget::Scene},
   {"terrain", g_TerrainVS, g_TerrainPS, VertexLayout::Terrain, BlendState::Opaque, DepthState::TestWrite, CullState::Back,
    PipelineTarget::Scene},
@@ -300,6 +302,9 @@ const std::array<PipelineEntry, 9> WORLD_PIPELINES{{
   {"development_dots", g_DevelopmentDotVS, g_DevelopmentDotPS, VertexLayout::DotInstance, BlendState::Opaque, DepthState::Test,
    CullState::None, PipelineTarget::Scene},
   {"development_text", g_DevelopmentTextVS, g_DevelopmentTextPS, VertexLayout::TextGlyph, BlendState::Alpha, DepthState::None,
+   CullState::None, PipelineTarget::BackBuffer},
+  // M1 task T15b: the overlay's filled rectangles under its text (ADR-120).
+  {"development_solid", g_DevelopmentTextVS, g_DevelopmentTextSolidPS, VertexLayout::TextGlyph, BlendState::Alpha, DepthState::None,
    CullState::None, PipelineTarget::BackBuffer},
   // M1 task T14: the game cursor's shadow and art (RND-366, ADR-119).
   {"cursor_shadow", g_CursorVS, g_CursorPS, VertexLayout::TextGlyph, BlendState::Darkening, DepthState::None, CullState::None,
@@ -767,7 +772,7 @@ void RecordWorldFrame(RendererState& _state, const FrameInputs& _inputs, ID3D12R
     {
       ENGINE_PROFILE_SCOPE("render.development_text");
       _state.overlay->RecordText(commands, *_state.ring, *_state.catalog, _state.swapChainSize, TextScaleFor(_state.window->DpiScale()),
-                                 _inputs.overlay);
+                                 _inputs.overlay, _inputs.overlayRects);
       break;
     }
     case WorldPass::Present:
@@ -850,6 +855,8 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
   }
 
   // ADR-012: the frame-latency object before recording, then the optional frame-rate cap.
+  const Nanoseconds waitsStart = state.clock->Now();
+  state.lastWaits = Nanoseconds{0};
   if (WaitForSingleObjectEx(state.frameLatencyWaitable.Get(), GPU_CHECK_MILLISECONDS, TRUE) == WAIT_TIMEOUT && state.device->IsRemoved())
   {
     Rebuild(state);
@@ -872,6 +879,7 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
     Rebuild(state);
     return FrameOutcome::Suspended;
   }
+  state.lastWaits = state.clock->Now() - waitsStart;
   ID3D12CommandAllocator* allocator = state.allocators[slot].Get();
   ID3D12GraphicsCommandList* commands = state.commands.Get();
   if (IsDeviceRemoval(allocator->Reset()) || IsDeviceRemoval(commands->Reset(allocator, nullptr)))
@@ -928,7 +936,7 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
         state.cursor->Record(commands, *state.ring, *state.catalog, state.swapChainSize, *_inputs.cursor);
       }
       state.overlay->RecordText(commands, *state.ring, *state.catalog, state.swapChainSize, TextScaleFor(state.window->DpiScale()),
-                                _inputs.overlay);
+                                _inputs.overlay, _inputs.overlayRects);
     }
     const D3D12_RESOURCE_BARRIER toPresent =
       TransitionBarrier(backBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
@@ -946,7 +954,9 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
   HRESULT presented = S_OK;
   {
     ENGINE_PROFILE_SCOPE("render.present");
+    const Nanoseconds presentStart = state.clock->Now();
     presented = state.swapChain->Present(policy.syncInterval, policy.allowTearing ? DXGI_PRESENT_ALLOW_TEARING : 0);
+    state.lastWaits += state.clock->Now() - presentStart;
   }
   state.frameFenceValues[slot] = ++state.fenceValue;
   const HRESULT signalled = state.device->Queue()->Signal(state.fence.Get(), state.fenceValue);
@@ -981,6 +991,11 @@ void FrameRenderer::OnDeviceRebuilt(std::function<void()> _listener)
 std::uint64_t FrameRenderer::WorldFrames() const noexcept
 {
   return m_state->worldFrames;
+}
+
+Nanoseconds FrameRenderer::LastFrameWaits() const noexcept
+{
+  return m_state->lastWaits;
 }
 
 double FrameRenderer::FramesPerSecond() const noexcept

@@ -29,7 +29,9 @@ enum class GameMessageType : Neuron::MessageTypeId
   SandboxRestart,
   // Replication (M1 task T12, ADR-111): the state datagrams and the droppable presentation events of a tick.
   StateUpdate,
-  PresentationEvents
+  PresentationEvents,
+  // The server's tick statistics for the development overlay, Debug builds only (M1 task T15b, ADR-120).
+  ServerStats
 };
 
 [[nodiscard]] constexpr Neuron::MessageTypeId TypeIdOf(GameMessageType _type) noexcept

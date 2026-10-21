@@ -699,6 +699,27 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "budget": {
+          "type": "object",
+          "description": "the rnd.budget.* keys",
+          "properties": {
+            "target_frame_rate": {
+              "type": "number",
+              "description": "rnd.budget.target_frame_rate (RND-454)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "frames per second",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "target_frame_rate"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
@@ -707,7 +728,8 @@
         "fog",
         "terrain",
         "sea",
-        "sky"
+        "sky",
+        "budget"
       ],
       "additionalProperties": false,
       "x-species-type": "object",
@@ -2206,11 +2228,201 @@
               "x-species-type": "sim_decimal",
               "x-species-unit": "px, from the bottom edge, before the text scale",
               "x-species-presence": "required"
+            },
+            "warning_rgb": {
+              "type": "object",
+              "description": "dbg.overlay.warning_rgb (DBG-097)",
+              "properties": {
+                "r": {
+                  "type": "number",
+                  "description": "dbg.overlay.warning_rgb.r",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGB, 0 to 255",
+                  "x-species-presence": "required"
+                },
+                "g": {
+                  "type": "number",
+                  "description": "dbg.overlay.warning_rgb.g",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGB, 0 to 255",
+                  "x-species-presence": "required"
+                },
+                "b": {
+                  "type": "number",
+                  "description": "dbg.overlay.warning_rgb.b",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGB, 0 to 255",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "r",
+                "g",
+                "b"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
             }
           },
           "required": [
             "frame_rate_right",
-            "frame_rate_bottom"
+            "frame_rate_bottom",
+            "warning_rgb"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "profile": {
+          "type": "object",
+          "description": "the dbg.profile.* keys",
+          "properties": {
+            "rollup_period_ms": {
+              "type": "number",
+              "description": "dbg.profile.rollup_period_ms (DBG-082)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "ms of the platform clock",
+              "x-species-presence": "required"
+            },
+            "frame_history": {
+              "type": "integer",
+              "description": "dbg.profile.frame_history (DBG-085)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "frames",
+              "x-species-presence": "required"
+            },
+            "view": {
+              "type": "object",
+              "description": "the dbg.profile.view.* keys",
+              "properties": {
+                "graph_height": {
+                  "type": "number",
+                  "description": "dbg.profile.view.graph_height (DBG-089)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "px, before the text scale",
+                  "x-species-presence": "required"
+                },
+                "graph_full_ms": {
+                  "type": "number",
+                  "description": "dbg.profile.view.graph_full_ms (DBG-089)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "ms of frame time at the full height",
+                  "x-species-presence": "required"
+                },
+                "graph_marks_ms": {
+                  "type": "object",
+                  "description": "dbg.profile.view.graph_marks_ms (DBG-089)",
+                  "properties": {
+                    "first": {
+                      "type": "number",
+                      "description": "dbg.profile.view.graph_marks_ms.first",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "ms of frame time",
+                      "x-species-presence": "required"
+                    },
+                    "second": {
+                      "type": "number",
+                      "description": "dbg.profile.view.graph_marks_ms.second",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "ms of frame time",
+                      "x-species-presence": "required"
+                    },
+                    "third": {
+                      "type": "number",
+                      "description": "dbg.profile.view.graph_marks_ms.third",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "ms of frame time",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "first",
+                    "second",
+                    "third"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "graph_height",
+                "graph_full_ms",
+                "graph_marks_ms"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "rollup_period_ms",
+            "frame_history",
+            "view"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "telemetry": {
+          "type": "object",
+          "description": "the dbg.telemetry.* keys",
+          "properties": {
+            "percentiles": {
+              "type": "object",
+              "description": "dbg.telemetry.percentiles (DBG-096)",
+              "properties": {
+                "first": {
+                  "type": "number",
+                  "description": "dbg.telemetry.percentiles.first",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "percentile",
+                  "x-species-presence": "required"
+                },
+                "second": {
+                  "type": "number",
+                  "description": "dbg.telemetry.percentiles.second",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "percentile",
+                  "x-species-presence": "required"
+                },
+                "third": {
+                  "type": "number",
+                  "description": "dbg.telemetry.percentiles.third",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "percentile",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "first",
+                "second",
+                "third"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "percentiles"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -2218,7 +2430,9 @@
         }
       },
       "required": [
-        "overlay"
+        "overlay",
+        "profile",
+        "telemetry"
       ],
       "additionalProperties": false,
       "x-species-type": "object",

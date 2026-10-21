@@ -54,6 +54,9 @@
     <ClInclude Include="ReplicatedState.h">
       <Filter>Replication</Filter>
     </ClInclude>
+    <ClInclude Include="ServerStats.h">
+      <Filter>Messages</Filter>
+    </ClInclude>
     <ClInclude Include="StableId.h">
       <Filter>Identity</Filter>
     </ClInclude>
@@ -94,6 +97,9 @@
     </ClCompile>
     <ClCompile Include="ReplicatedState.cpp">
       <Filter>Replication</Filter>
+    </ClCompile>
+    <ClCompile Include="ServerStats.cpp">
+      <Filter>Messages</Filter>
     </ClCompile>
     <ClCompile Include="StateReplica.cpp">
       <Filter>Replication</Filter>

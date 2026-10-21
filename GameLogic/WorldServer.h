@@ -115,6 +115,12 @@ private:
   std::map<Neuron::ConnectionId, Steward> m_stewards;
   std::optional<WorldHashes> m_lastHashes;
   std::optional<CommandJournal> m_journal;
+  // ADR-120: the ticks of the current second, for the development overlay's statistics (Debug builds): when the tick
+  // being measured started its step, none outside a tick, and the ticks' summed and longest wall time.
+  std::int64_t m_statsTickStart = 0;
+  std::uint32_t m_statsTicks = 0;
+  std::int64_t m_statsTickNanoseconds = 0;
+  std::int64_t m_statsTickMaxNanoseconds = 0;
 };
 
 } // namespace Species

@@ -4,9 +4,11 @@
 #include "Development.h"
 #include "Files.h"
 #include "Log.h"
+#include "MarkerTimings.h"
 #include "Profile.h"
 #include "SecureRandom.h"
 #include "PresentationEvents.h"
+#include "ServerStats.h"
 #include "WorldServer.h"
 #include "WorldSnapshot.h"
 #include "WorldTerrain.h"
@@ -14,6 +16,7 @@
 #include <algorithm>
 #include <array>
 #include <bit>
+#include <cmath>
 #include <cstddef>
 #include <stdexcept>
 #include <utility>
@@ -279,6 +282,10 @@ void WorldServer::DatagramFates(Neuron::ConnectionId _connection, std::span<cons
 
 void WorldServer::Step(std::uint64_t _tick, Neuron::WorkerPool& _workers)
 {
+#if ENGINE_DEVELOPMENT
+  // ADR-120: the tick's wall time starts here, for the overlay; a measurement the simulated state never reads.
+  m_statsTickStart = Neuron::MarkerClockNanoseconds();
+#endif
   m_world->Step(_tick, _workers);
 #if ENGINE_DEVELOPMENT
   // Debug and test runs hash every tick (ADR-081 item 8); a Release server hashes at its saves.
@@ -335,6 +342,35 @@ void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender
       static_cast<void>(_sender.Send(connection, Neuron::Channel::State, Neuron::EncodeMessage(message)));
     }
   }
+#if ENGINE_DEVELOPMENT
+  // ADR-120: the tick's wall time from its step to the end of its replication, and once a second of ticks their
+  // statistics to every steward.
+  if (m_statsTickStart != 0)
+  {
+    const std::int64_t tickNanoseconds = Neuron::MarkerClockNanoseconds() - std::exchange(m_statsTickStart, 0);
+    ++m_statsTicks;
+    m_statsTickNanoseconds += tickNanoseconds;
+    m_statsTickMaxNanoseconds = std::max(m_statsTickMaxNanoseconds, tickNanoseconds);
+  }
+  const auto ticksPerSecond = static_cast<std::uint32_t>(std::max(1.0, std::round(1.0 / m_desc.tuning.ref.sim.tickPeriod)));
+  if (m_statsTicks >= ticksPerSecond)
+  {
+    ServerStats stats;
+    stats.worldSeed = m_world->WorldSeed();
+    stats.tick = _tick;
+    stats.ticks = m_statsTicks;
+    stats.tickMeanMicroseconds = static_cast<std::uint32_t>(m_statsTickNanoseconds / m_statsTicks / 1'000);
+    stats.tickMaxMicroseconds = static_cast<std::uint32_t>(m_statsTickMaxNanoseconds / 1'000);
+    const std::vector<std::byte> bytes = Neuron::EncodeMessage(stats);
+    for (const auto& [connection, steward] : m_stewards)
+    {
+      static_cast<void>(_sender.Send(connection, Neuron::Channel::Reliable, bytes));
+    }
+    m_statsTicks = 0;
+    m_statsTickNanoseconds = 0;
+    m_statsTickMaxNanoseconds = 0;
+  }
+#endif
 }
 
 void WorldServer::Stalled(const Neuron::ScheduleStall& _stall)

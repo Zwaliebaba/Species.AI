@@ -5,6 +5,7 @@
 #include "PlatformClock.h"
 #include "RegionTerrain.h"
 #include "ReplicaTiming.h"
+#include "ServerStats.h"
 #include "StateReplica.h"
 #include "Transport.h"
 #include "TuningMvp.h"
@@ -87,6 +88,15 @@ public:
   {
     return m_commandedTeam;
   }
+  // ADR-120: the latest of the server's tick statistics, which a Debug server sends once a second of ticks; none from a
+  // Release server.
+  [[nodiscard]] const std::optional<ServerStats>& ServerStatistics() const noexcept
+  {
+    return m_serverStats;
+  }
+  // ADR-109, ADR-120: asks the server to restart its sandbox from its seed or a new one; a server that runs no sandbox,
+  // or a Release server, ignores it. False when the request was not sent.
+  bool RequestSandboxRestart(bool _newSeed);
   // MVP-011: the client refused the world, because the terrain it built from the server's seed differs, and closed.
   [[nodiscard]] bool Refused() const noexcept
   {
@@ -116,6 +126,7 @@ private:
   std::vector<std::uint32_t> m_sideFigures;
   std::shared_ptr<const RegionTerrain> m_terrain;
   std::optional<std::uint8_t> m_commandedTeam;
+  std::optional<ServerStats> m_serverStats;
   bool m_refused = false;
   std::string m_shownTitle;
 };

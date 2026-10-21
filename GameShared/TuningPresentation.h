@@ -240,12 +240,19 @@ struct TuningPresentation
       double layer3Repeats = 0.0;
     };
 
+    struct Budget
+    {
+      // rnd.budget.target_frame_rate, in frames per second
+      double targetFrameRate = 0.0;
+    };
+
     Frame frame;
     View view;
     Fog fog;
     Terrain terrain;
     Sea sea;
     Sky sky;
+    Budget budget;
   };
 
   struct Ter
@@ -742,14 +749,81 @@ struct TuningPresentation
   {
     struct Overlay
     {
+      struct WarningRgb
+      {
+        // dbg.overlay.warning_rgb.r, in RGB, 0 to 255
+        double r = 0.0;
+
+        // dbg.overlay.warning_rgb.g, in RGB, 0 to 255
+        double g = 0.0;
+
+        // dbg.overlay.warning_rgb.b, in RGB, 0 to 255
+        double b = 0.0;
+      };
+
       // dbg.overlay.frame_rate_right, in px, from the right edge, before the text scale
       double frameRateRight = 0.0;
 
       // dbg.overlay.frame_rate_bottom, in px, from the bottom edge, before the text scale
       double frameRateBottom = 0.0;
+
+      WarningRgb warningRgb;
+    };
+
+    struct Profile
+    {
+      struct View
+      {
+        struct GraphMarksMs
+        {
+          // dbg.profile.view.graph_marks_ms.first, in ms of frame time
+          double first = 0.0;
+
+          // dbg.profile.view.graph_marks_ms.second, in ms of frame time
+          double second = 0.0;
+
+          // dbg.profile.view.graph_marks_ms.third, in ms of frame time
+          double third = 0.0;
+        };
+
+        // dbg.profile.view.graph_height, in px, before the text scale
+        double graphHeight = 0.0;
+
+        // dbg.profile.view.graph_full_ms, in ms of frame time at the full height
+        double graphFullMs = 0.0;
+
+        GraphMarksMs graphMarksMs;
+      };
+
+      // dbg.profile.rollup_period_ms, in ms of the platform clock
+      double rollupPeriodMs = 0.0;
+
+      // dbg.profile.frame_history, in frames
+      std::int64_t frameHistory = 0;
+
+      View view;
+    };
+
+    struct Telemetry
+    {
+      struct Percentiles
+      {
+        // dbg.telemetry.percentiles.first, in percentile
+        double first = 0.0;
+
+        // dbg.telemetry.percentiles.second, in percentile
+        double second = 0.0;
+
+        // dbg.telemetry.percentiles.third, in percentile
+        double third = 0.0;
+      };
+
+      Percentiles percentiles;
     };
 
     Overlay overlay;
+    Profile profile;
+    Telemetry telemetry;
   };
 
   struct Cam
@@ -899,6 +973,12 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Rnd::Budget& _out)
+{
+  _out.targetFrameRate = _reader.Decimal(_object, "target_frame_rate", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Rnd& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "frame"), _out.frame);
@@ -907,6 +987,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "terrain"), _out.terrain);
   ReadFields(_reader, _reader.Object(_object, "sea"), _out.sea);
   ReadFields(_reader, _reader.Object(_object, "sky"), _out.sky);
+  ReadFields(_reader, _reader.Object(_object, "budget"), _out.budget);
   _reader.Close(_object);
 }
 
@@ -1263,16 +1344,66 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Dbg::Overlay::WarningRgb& _out)
+{
+  _out.r = _reader.Decimal(_object, "r", {}, Neuron::SimPrecision::Binary64);
+  _out.g = _reader.Decimal(_object, "g", {}, Neuron::SimPrecision::Binary64);
+  _out.b = _reader.Decimal(_object, "b", {}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Dbg::Overlay& _out)
 {
   _out.frameRateRight = _reader.Decimal(_object, "frame_rate_right", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.frameRateBottom = _reader.Decimal(_object, "frame_rate_bottom", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  ReadFields(_reader, _reader.Object(_object, "warning_rgb"), _out.warningRgb);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object,
+                       TuningPresentation::Dbg::Profile::View::GraphMarksMs& _out)
+{
+  _out.first = _reader.Decimal(_object, "first", {}, Neuron::SimPrecision::Binary64);
+  _out.second = _reader.Decimal(_object, "second", {}, Neuron::SimPrecision::Binary64);
+  _out.third = _reader.Decimal(_object, "third", {}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Dbg::Profile::View& _out)
+{
+  _out.graphHeight = _reader.Decimal(_object, "graph_height", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.graphFullMs = _reader.Decimal(_object, "graph_full_ms", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  ReadFields(_reader, _reader.Object(_object, "graph_marks_ms"), _out.graphMarksMs);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Dbg::Profile& _out)
+{
+  _out.rollupPeriodMs = _reader.Decimal(_object, "rollup_period_ms", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.frameHistory = _reader.Integer(_object, "frame_history", 0);
+  ReadFields(_reader, _reader.Object(_object, "view"), _out.view);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Dbg::Telemetry::Percentiles& _out)
+{
+  _out.first = _reader.Decimal(_object, "first", {}, Neuron::SimPrecision::Binary64);
+  _out.second = _reader.Decimal(_object, "second", {}, Neuron::SimPrecision::Binary64);
+  _out.third = _reader.Decimal(_object, "third", {}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Dbg::Telemetry& _out)
+{
+  ReadFields(_reader, _reader.Object(_object, "percentiles"), _out.percentiles);
   _reader.Close(_object);
 }
 
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Dbg& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "overlay"), _out.overlay);
+  ReadFields(_reader, _reader.Object(_object, "profile"), _out.profile);
+  ReadFields(_reader, _reader.Object(_object, "telemetry"), _out.telemetry);
   _reader.Close(_object);
 }
 
@@ -1542,6 +1673,16 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   _out.layer3Repeats = _reader.F64();
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Rnd::Budget& _in)
+{
+  _writer.F64(_in.targetFrameRate);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Rnd::Budget& _out)
+{
+  _out.targetFrameRate = _reader.F64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Rnd& _in)
 {
   CookFields(_writer, _in.frame);
@@ -1550,6 +1691,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::
   CookFields(_writer, _in.terrain);
   CookFields(_writer, _in.sea);
   CookFields(_writer, _in.sky);
+  CookFields(_writer, _in.budget);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Rnd& _out)
@@ -1560,6 +1702,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   ReadCookedFields(_reader, _out.terrain);
   ReadCookedFields(_reader, _out.sea);
   ReadCookedFields(_reader, _out.sky);
+  ReadCookedFields(_reader, _out.budget);
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ter::Color& _in)
@@ -2174,26 +2317,112 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   ReadCookedFields(_reader, _out.cursor);
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Dbg::Overlay::WarningRgb& _in)
+{
+  _writer.F64(_in.r);
+  _writer.F64(_in.g);
+  _writer.F64(_in.b);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Dbg::Overlay::WarningRgb& _out)
+{
+  _out.r = _reader.F64();
+  _out.g = _reader.F64();
+  _out.b = _reader.F64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Dbg::Overlay& _in)
 {
   _writer.F64(_in.frameRateRight);
   _writer.F64(_in.frameRateBottom);
+  CookFields(_writer, _in.warningRgb);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Dbg::Overlay& _out)
 {
   _out.frameRateRight = _reader.F64();
   _out.frameRateBottom = _reader.F64();
+  ReadCookedFields(_reader, _out.warningRgb);
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Dbg::Profile::View::GraphMarksMs& _in)
+{
+  _writer.F64(_in.first);
+  _writer.F64(_in.second);
+  _writer.F64(_in.third);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Dbg::Profile::View::GraphMarksMs& _out)
+{
+  _out.first = _reader.F64();
+  _out.second = _reader.F64();
+  _out.third = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Dbg::Profile::View& _in)
+{
+  _writer.F64(_in.graphHeight);
+  _writer.F64(_in.graphFullMs);
+  CookFields(_writer, _in.graphMarksMs);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Dbg::Profile::View& _out)
+{
+  _out.graphHeight = _reader.F64();
+  _out.graphFullMs = _reader.F64();
+  ReadCookedFields(_reader, _out.graphMarksMs);
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Dbg::Profile& _in)
+{
+  _writer.F64(_in.rollupPeriodMs);
+  _writer.I64(_in.frameHistory);
+  CookFields(_writer, _in.view);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Dbg::Profile& _out)
+{
+  _out.rollupPeriodMs = _reader.F64();
+  _out.frameHistory = _reader.I64();
+  ReadCookedFields(_reader, _out.view);
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Dbg::Telemetry::Percentiles& _in)
+{
+  _writer.F64(_in.first);
+  _writer.F64(_in.second);
+  _writer.F64(_in.third);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Dbg::Telemetry::Percentiles& _out)
+{
+  _out.first = _reader.F64();
+  _out.second = _reader.F64();
+  _out.third = _reader.F64();
+}
+
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Dbg::Telemetry& _in)
+{
+  CookFields(_writer, _in.percentiles);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Dbg::Telemetry& _out)
+{
+  ReadCookedFields(_reader, _out.percentiles);
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Dbg& _in)
 {
   CookFields(_writer, _in.overlay);
+  CookFields(_writer, _in.profile);
+  CookFields(_writer, _in.telemetry);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Dbg& _out)
 {
   ReadCookedFields(_reader, _out.overlay);
+  ReadCookedFields(_reader, _out.profile);
+  ReadCookedFields(_reader, _out.telemetry);
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Cam::Pick& _in)

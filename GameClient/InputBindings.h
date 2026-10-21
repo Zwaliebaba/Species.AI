@@ -27,7 +27,10 @@ enum class GameAction : std::uint16_t
   CameraLookAround,
   WindowToggleMode, // O65, O76: Alt+Enter until the screen options exist (RND-442)
 #if ENGINE_DEVELOPMENT
-  DebugRemoveDevice, // O65, O76: Ctrl+Shift+F11 until the debug-command window exists (DBG-117 row 16)
+  DebugRemoveDevice,          // O65, O76: Ctrl+Shift+F11 until the debug-command window exists (DBG-117 row 16)
+  DebugOverlay,               // DBG-020: F5 shows and hides the development overlay (table 3.11-A row 6)
+  DebugRestartSandbox,        // ADR-120: Ctrl+Shift+F7 restarts the sandbox from its seed, until the debug-command window
+  DebugRestartSandboxNewSeed, // ADR-120: Ctrl+Shift+F8 restarts it from a new seed
 #endif
   Count
 };

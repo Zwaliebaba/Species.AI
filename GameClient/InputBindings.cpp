@@ -38,6 +38,11 @@ std::vector<Neuron::ActionBindings> DefaultBindings()
 #if ENGINE_DEVELOPMENT
   bind(GameAction::DebugRemoveDevice, "action.debug.remove_device", Neuron::ValueKind::Boolean,
        {Neuron::ChordOf({KeyCode::Control, KeyCode::Shift, KeyCode::F11})});
+  bind(GameAction::DebugOverlay, "action.debug.overlay", Neuron::ValueKind::Boolean, {KeyBinding(KeyCode::F5, Down)});
+  bind(GameAction::DebugRestartSandbox, "action.debug.restart_sandbox", Neuron::ValueKind::Boolean,
+       {Neuron::ChordOf({KeyCode::Control, KeyCode::Shift, KeyCode::F7})});
+  bind(GameAction::DebugRestartSandboxNewSeed, "action.debug.restart_sandbox_new_seed", Neuron::ValueKind::Boolean,
+       {Neuron::ChordOf({KeyCode::Control, KeyCode::Shift, KeyCode::F8})});
 #endif
   return actions;
 }

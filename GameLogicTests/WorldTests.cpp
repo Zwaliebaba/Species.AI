@@ -1,12 +1,14 @@
 #include "pch.h"
 
 #include "CommandMessages.h"
+#include "Development.h"
 #include "InProcessTransport.h"
 #include "IntegratedServer.h"
 #include "LooseContent.h"
 #include "PresentationEvents.h"
 #include "RegionTerrain.h"
 #include "ServerHost.h"
+#include "ServerStats.h"
 #include "StateUpdate.h"
 #include "TestSupport.h"
 #include "Tuning.h"
@@ -75,6 +77,7 @@ struct Arrivals
   std::vector<Species::WorldTerrain> terrains;
   std::vector<std::uint64_t> ticks;
   std::vector<Species::CommandReport> reports;
+  std::vector<Species::ServerStats> stats;
 };
 
 Arrivals TakeArrivals(Neuron::Transport& _client)
@@ -92,9 +95,10 @@ Arrivals TakeArrivals(Neuron::Transport& _client)
     });
   dispatcher.Register<Species::PresentationEvents>([](const Species::PresentationEvents&) {});
   dispatcher.Register<Species::CommandReport>([&arrivals](const Species::CommandReport& _report) { arrivals.reports.push_back(_report); });
+  dispatcher.Register<Species::ServerStats>([&arrivals](const Species::ServerStats& _stats) { arrivals.stats.push_back(_stats); });
   while (std::optional<Neuron::ReceivedMessage> message = _client.Receive())
   {
-    Assert::IsTrue(dispatcher.Dispatch(message->bytes), L"only the terrain, state updates, events and command reports arrive");
+    Assert::IsTrue(dispatcher.Dispatch(message->bytes), L"only the terrain, state updates, events, reports and statistics arrive");
   }
   return arrivals;
 }
@@ -213,6 +217,11 @@ public:
                        arrivals.terrains[0].digest == world.Terrain()->digest,
                      L"the terrain's seed and digest, once");
       Assert::IsFalse(arrivals.terrains[0].commandedTeam.has_value(), L"a world that is no sandbox gives a steward no team yet");
+#if ENGINE_DEVELOPMENT
+      // ADR-120: a second of ticks, ten at 100 ms, gives one statistics message in a Debug build.
+      Assert::IsTrue(arrivals.stats.size() == 1 && arrivals.stats[0].ticks == 10 && arrivals.stats[0].tick == 9,
+                     L"the statistics of the first ten ticks");
+#endif
       const std::vector<std::uint64_t>& ticks = arrivals.ticks;
       ExpectEqual(11, static_cast<std::int64_t>(ticks.size()), L"an update a tick, from the first");
       for (std::size_t n = 0; n < ticks.size(); ++n)

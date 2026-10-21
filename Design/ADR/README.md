@@ -120,6 +120,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-117](ADR-117-render-check-on-warp.md) | The render check: the world frame on the WARP adapter in CI | Proposed | 2026-10-20 |
 | [ADR-118](ADR-118-development-overlay-at-m1.md) | The development overlay at M1: its text, the frame-rate line and the figure dots | Proposed | 2026-10-20 |
 | [ADR-119](ADR-119-input-camera-picking-and-cursor-at-m1.md) | Input, the player camera, picking and the game cursor at M1 | Proposed | 2026-10-21 |
+| [ADR-120](ADR-120-frame-page-toggle-and-sandbox-restart-at-m1.md) | The development overlay's frame page, its toggle and the sandbox restart at M1 | Proposed | 2026-10-21 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

@@ -1,10 +1,13 @@
 #include "pch.h"
 
 #include "DevelopmentOverlay.h"
+#include "StableId.h"
+#include "StateUpdate.h"
 #include "TestSupport.h"
 #include "Tuning.h"
 
 #include <array>
+#include <chrono>
 #include <cstddef>
 #include <optional>
 #include <string>
@@ -28,6 +31,44 @@ Species::InterpolatedFigure Figure(std::uint8_t _team, Species::FigureKind _kind
   return figure;
 }
 
+Species::StateRecord Record(std::uint64_t _counter, const Species::ReplicatedState& _state)
+{
+  return Species::MakeRecord(Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, _counter), _state, nullptr)
+    .value_or(Species::StateRecord{});
+}
+
+Species::ReplicatedFigure ReplicatedOf(std::uint8_t _team, Species::FigureKind _kind, bool _dead)
+{
+  Species::ReplicatedFigure figure;
+  figure.team = _team;
+  figure.kind = _kind;
+  figure.dead = _dead;
+  return figure;
+}
+
+bool Contains(const std::string& _text, std::string_view _part)
+{
+  return _text.find(_part) != std::string::npos;
+}
+
+// A profile of 200 frames of _frameMs each, _waitMs of it the renderer's, over one roll-up period of the record.
+Neuron::FrameProfile ProfileOf(double _frameMs, double _waitMs)
+{
+  using Ms = std::chrono::duration<double, std::milli>;
+  Neuron::FrameProfile profile({static_cast<std::size_t>(Species::ClientStep::Count), 200, std::chrono::milliseconds(1000)});
+  const auto frame = std::chrono::duration_cast<Neuron::Nanoseconds>(Ms(_frameMs));
+  const auto wait = std::chrono::duration_cast<Neuron::Nanoseconds>(Ms(_waitMs));
+  Neuron::Nanoseconds now{0};
+  for (int n = 0; n < 200; ++n)
+  {
+    profile.AddStep(static_cast<std::size_t>(Species::ClientStep::Render), frame - wait);
+    profile.AddStep(static_cast<std::size_t>(Species::ClientStep::Wait), wait);
+    profile.EndFrame(now, frame, wait);
+    now += frame;
+  }
+  return profile;
+}
+
 } // namespace
 
 TEST_CLASS(DevelopmentOverlayTests)
@@ -45,8 +86,9 @@ public:
     // The anchor is the record's, in unscaled pixels from the bottom-right corner.
     const Neuron::OverlayLine line = Species::FrameRateLine(CommittedPresentation(), 144.0, std::nullopt);
     Assert::AreEqual(std::string("144 fps"), line.text);
-    Assert::AreEqual(10.0f, line.fromRight);
-    Assert::AreEqual(40.0f, line.fromBottom);
+    Assert::AreEqual(10.0f, line.insetX);
+    Assert::AreEqual(40.0f, line.insetY);
+    Assert::IsTrue(line.corner == Neuron::OverlayCorner::BottomRight, L"right-aligned at the bottom-right corner");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(RSim415ATeamsColorIsItsBaseColorByItsSlot)
@@ -86,6 +128,111 @@ public:
     Assert::AreEqual(120.0, dots[1].position.x);
     Assert::AreEqual(Species::LEADER_DOT_PIXELS, dots[1].sidePixels, L"a Leader's dot is larger");
     Assert::IsTrue(dots[1].color == Species::TeamColor(1));
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Dbg096TheCountsAreOfTheLivingFiguresByKind)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"DBG-096")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Dbg096TheCountsAreOfTheLivingFiguresByKind)
+  {
+    Species::StateReplica replica;
+    Species::ReplicatedOrb orb;
+    Species::ReplicatedEffect effect;
+    replica.Apply(
+      {1,
+       0,
+       {Record(1, ReplicatedOf(0, Species::FigureKind::Worker, false)), Record(2, ReplicatedOf(0, Species::FigureKind::Worker, false)),
+        Record(3, ReplicatedOf(0, Species::FigureKind::Leader, false)), Record(4, ReplicatedOf(1, Species::FigureKind::Worker, true)),
+        Record(5, ReplicatedOf(1, Species::FigureKind::Leader, false)), Record(6, orb), Record(7, effect)}});
+    const Species::ReplicaCounts counts = Species::CountReplica(replica);
+    Assert::AreEqual(std::size_t{2}, counts.sides.size(), L"slots 0 and 1");
+    Assert::IsTrue(counts.sides[0].workers == 2 && counts.sides[0].leaders == 1, L"team 0: two Workers and a Leader");
+    Assert::IsTrue(counts.sides[1].workers == 0 && counts.sides[1].leaders == 1, L"team 1: its dead Worker is not counted");
+    Assert::IsTrue(counts.orbs == 1 && counts.effects == 1, L"an orb and an effect");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Dbg096TheFramePageShowsItsRowsAndTheGraph)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"DBG-096")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"DBG-089")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Dbg096TheFramePageShowsItsRowsAndTheGraph)
+  {
+    const Neuron::FrameProfile profile = ProfileOf(100.0, 90.0);
+    Species::FramePageInputs inputs;
+    inputs.profile = &profile;
+    inputs.counts.sides = {{300, 1}, {299, 1}};
+    inputs.counts.orbs = 4;
+    const Species::FramePage page = Species::BuildFramePage(inputs, CommittedPresentation(), CommittedTuning(), 16.0f);
+    Assert::IsTrue(page.lines.size() >= 7, L"frame, work, steps, two teams, orbs and server, and the graph's labels");
+    Assert::IsTrue(Contains(page.lines[0].text, "frame p50 100.0") && Contains(page.lines[0].text, "p99 100.0 ms"), L"the percentiles");
+    Assert::IsTrue(Contains(page.lines[1].text, "work p50 10.0") && Contains(page.lines[1].text, "of 16.7"),
+                   L"the work against a frame at 60 per second");
+    Assert::IsTrue(Contains(page.lines[2].text, "render 10.0%") && Contains(page.lines[2].text, "wait 90.0%"),
+                   L"each step's share of the period");
+    Assert::IsTrue(Contains(page.lines[3].text, "team 0 300 Workers") && Contains(page.lines[4].text, "team 1 299 Workers"),
+                   L"a line per team");
+    Assert::IsTrue(Contains(page.lines[5].text, "orbs 4") && Contains(page.lines[6].text, "no statistics"), L"the counts and the server");
+    Assert::IsTrue(page.lines[0].corner == Neuron::OverlayCorner::TopLeft && page.lines[0].insetX == 10.0f &&
+                     page.lines[0].insetY == 10.0f && page.lines[1].insetY == 28.0f,
+                   L"from the top-left corner, a cell and two pixels apart");
+    // DBG-089: a backdrop, a line per frame of the history and a guide line per mark.
+    Assert::AreEqual(std::size_t{1 + 200 + 3}, page.rects.size());
+    const Neuron::OverlayRect& newest = page.rects[1];
+    Assert::IsTrue(newest.left == 10.0f + 199.0f && newest.width == 1.0f && newest.height == 50.0f,
+                   L"the newest frame at the right, 0.5 px per ms");
+    Assert::IsTrue(page.rects[200].left == 10.0f, L"the oldest at the left");
+    const Neuron::OverlayRect& guide = page.rects[201];
+    Assert::IsTrue(guide.height == 1.0f && guide.top == page.rects[0].top, L"the 200 ms guide at the graph's top");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Dbg097ARowOverItsBudgetIsInTheWarningColor)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"DBG-097")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Dbg097ARowOverItsBudgetIsInTheWarningColor)
+  {
+    const std::array<float, 4> white{1.0f, 1.0f, 1.0f, 1.0f};
+    const std::array<float, 4> warning{1.0f, 64.0f / 255.0f, 64.0f / 255.0f, 1.0f};
+    Species::FramePageInputs inputs;
+    Species::ServerStats server;
+    server.tickMeanMicroseconds = 2'000;
+    server.tickMaxMicroseconds = 49'000;
+    inputs.server = server;
+    const Neuron::FrameProfile within = ProfileOf(16.7, 10.0);
+    inputs.profile = &within;
+    Species::FramePage page = Species::BuildFramePage(inputs, CommittedPresentation(), CommittedTuning(), 16.0f);
+    Assert::IsTrue(page.lines[1].color == white, L"6.7 ms of work is within 16.7 ms");
+    Assert::IsTrue(Contains(page.lines[4].text, "49.00 ms max of 50.0"), L"the tick's longest against half the tick period");
+    Assert::IsTrue(page.lines[4].color == white, L"a 49 ms tick is within half the tick period");
+    const Neuron::FrameProfile over = ProfileOf(20.0, 2.0);
+    inputs.profile = &over;
+    server.tickMaxMicroseconds = 51'000;
+    inputs.server = server;
+    page = Species::BuildFramePage(inputs, CommittedPresentation(), CommittedTuning(), 16.0f);
+    Assert::IsTrue(page.lines[1].color == warning, L"18 ms of work is over its budget");
+    Assert::IsTrue(page.lines[0].color == white, L"the frame time's own row has no budget");
+    Assert::IsTrue(page.lines[4].color == warning, L"a 51 ms tick is over its budget");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Dbg096TheStatisticsLineCarriesThePagesFigures)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"DBG-096")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Dbg096TheStatisticsLineCarriesThePagesFigures)
+  {
+    const Neuron::FrameProfile profile = ProfileOf(16.0, 8.0);
+    Species::FramePageInputs inputs;
+    inputs.profile = &profile;
+    inputs.framesPerSecond = 62.4;
+    inputs.counts.sides = {{300, 1}, {290, 1}};
+    inputs.counts.orbs = 9;
+    Species::ServerStats server;
+    server.tick = 600;
+    server.tickMeanMicroseconds = 1'850;
+    server.tickMaxMicroseconds = 3'100;
+    inputs.server = server;
+    const std::string line = Species::StatisticsLine(inputs, CommittedPresentation());
+    Assert::IsTrue(Contains(line, "overlay: 62 fps") && Contains(line, "frame p50 16.0") && Contains(line, "work p50 8.0"), L"the frame");
+    Assert::IsTrue(Contains(line, "figures 300+1 : 290+1") && Contains(line, "orbs 9"), L"the counts");
+    Assert::IsTrue(Contains(line, "server tick 600: 1.85 ms mean, 3.10 ms max"), L"the server");
   }
 };
 

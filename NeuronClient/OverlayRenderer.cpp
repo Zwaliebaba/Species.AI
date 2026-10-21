@@ -119,24 +119,56 @@ void OverlayRenderer::Schedule()
 }
 
 void OverlayRenderer::RecordText(ID3D12GraphicsCommandList* _commands, UploadRing& _ring, const PipelineCatalog& _catalog, SizePx _size,
-                                 std::uint32_t _scale, std::span<const OverlayLine> _lines)
+                                 std::uint32_t _scale, std::span<const OverlayLine> _lines, std::span<const OverlayRect> _rects)
 {
   ID3D12PipelineState* pipeline = _catalog.Find("development_text");
+  ID3D12PipelineState* solidPipeline = _catalog.Find("development_solid");
+  const auto width = static_cast<float>(std::max(_size.width, 1u));
+  const auto height = static_cast<float>(std::max(_size.height, 1u));
+  const auto scale = static_cast<float>(_scale);
+  PassConstants target{};
+  target.values[0] = Float4(width, height, 1.0f / width, 1.0f / height);
+  const D3D12_GPU_VIRTUAL_ADDRESS targetConstants = _ring.Write(target);
+  if (solidPipeline != nullptr && !_rects.empty())
+  {
+    // ADR-120: the rectangles in whole pixels at the text's scale, under the text; the solid shader reads no texture.
+    std::vector<TextGlyphInstance> rectangles;
+    rectangles.reserve(_rects.size());
+    for (const OverlayRect& rect : _rects)
+    {
+      const float left = std::round(rect.left * scale);
+      const float top = std::round(rect.top * scale);
+      rectangles.push_back({Float4(left, top, left + std::round(rect.width * scale), top + std::round(rect.height * scale)),
+                            Float4(0.0f, 0.0f, 0.0f, 0.0f), Float4(rect.color[0], rect.color[1], rect.color[2], rect.color[3])});
+    }
+    const DrawConstants none{Float3x4(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f),
+                             Float4(1.0f, 1.0f, 1.0f, 1.0f), Uint4{0, 0, 0, 0}};
+    _commands->SetPipelineState(solidPipeline);
+    _commands->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    _commands->SetGraphicsRootConstantBufferView(ROOT_PASS_CONSTANTS, targetConstants);
+    _commands->SetGraphicsRoot32BitConstants(ROOT_DRAW_CONSTANTS, DRAW_CONSTANT_DWORDS, &none, 0);
+    if (UploadInstances(_commands, _ring, rectangles))
+    {
+      _commands->DrawInstanced(6, static_cast<UINT>(rectangles.size()), 0, 0);
+    }
+  }
   if (!Ready() || pipeline == nullptr || _lines.empty())
   {
     return;
   }
-  const auto width = static_cast<float>(std::max(_size.width, 1u));
-  const auto height = static_cast<float>(std::max(_size.height, 1u));
-  const auto scale = static_cast<float>(_scale);
+  const float cellHeight = static_cast<float>(m_font->cellHeightPixels) * scale;
   std::vector<TextGlyphInstance> glyphs;
   for (const OverlayLine& line : _lines)
   {
-    // DBG-095: right-aligned, the anchor's distances scaled with the text.
-    const float right = width - std::round(line.fromRight * scale);
-    const float bottom = height - std::round(line.fromBottom * scale);
-    const float left = right - TextWidth(*m_font, line.text, _scale);
-    const float top = bottom - static_cast<float>(m_font->cellHeightPixels) * scale;
+    // DBG-095: a bottom-right line is right-aligned; DBG-096: a page's line starts at its top-left corner. The anchor's
+    // distances scale with the text.
+    float left = std::round(line.insetX * scale);
+    float top = std::round(line.insetY * scale);
+    if (line.corner == OverlayCorner::BottomRight)
+    {
+      left = width - left - TextWidth(*m_font, line.text, _scale);
+      top = height - top - cellHeight;
+    }
     const Float4 color(line.color[0], line.color[1], line.color[2], line.color[3]);
     for (const GlyphQuad& quad : LayoutText(*m_font, line.text, _scale, left, top))
     {
@@ -148,11 +180,9 @@ void OverlayRenderer::RecordText(ID3D12GraphicsCommandList* _commands, UploadRin
   {
     return;
   }
-  PassConstants target{};
-  target.values[0] = Float4(width, height, 1.0f / width, 1.0f / height);
   _commands->SetPipelineState(pipeline);
   _commands->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-  _commands->SetGraphicsRootConstantBufferView(ROOT_PASS_CONSTANTS, _ring.Write(target));
+  _commands->SetGraphicsRootConstantBufferView(ROOT_PASS_CONSTANTS, targetConstants);
   const DrawConstants page{Float3x4(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f), Float4(1.0f, 1.0f, 1.0f, 1.0f),
                            Uint4{m_factory.HeapIndex(m_page), 0, 0, 0}};
   _commands->SetGraphicsRoot32BitConstants(ROOT_DRAW_CONSTANTS, DRAW_CONSTANT_DWORDS, &page, 0);

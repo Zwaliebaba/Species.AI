@@ -2,6 +2,7 @@
 
 #include "AppWindow.h"
 #include "Development.h"
+#include "PlatformClock.h"
 #include "PresentPolicy.h"
 #include "WorldScene.h"
 
@@ -90,6 +91,9 @@ public:
   [[nodiscard]] std::uint64_t WorldFrames() const noexcept;
   // RND-011, R-SIM-576: the frames presented in the last window, per second of the window.
   [[nodiscard]] double FramesPerSecond() const noexcept;
+  // ADR-120: the time the last RenderFrame spent waiting for the frame-latency object, the frame-rate cap, its slot's
+  // fence and the present, which the frame page leaves out of the frame's work.
+  [[nodiscard]] Nanoseconds LastFrameWaits() const noexcept;
 
 #if ENGINE_DEVELOPMENT
   // The debug layer's messages of warning severity or above since the process started: none is the render check's

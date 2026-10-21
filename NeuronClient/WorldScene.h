@@ -82,13 +82,32 @@ struct WorldScene
   std::vector<std::byte> beamShort;
 };
 
+/// The corner of the target that an overlay line is anchored to (ADR-120).
+enum class OverlayCorner : std::uint8_t
+{
+  BottomRight, // the line's cell ends there: right-aligned, as the frame-rate line is (DBG-095)
+  TopLeft      // the line's cell starts there, as a page's lines do (DBG-096)
+};
+
 /// One line of the development overlay (DBG-095), drawn in EditorFont at the overlay's whole-number scale (O63) with
-/// its cell's bottom-right corner at the given distances, in unscaled pixels, from the target's bottom-right corner.
+/// the matching corner of its cell at the given distances, in unscaled pixels, from the target's corner.
 struct OverlayLine
 {
   std::string text; // UTF-8
-  float fromRight = 10.0f;
-  float fromBottom = 40.0f;
+  float insetX = 10.0f;
+  float insetY = 40.0f;
+  OverlayCorner corner = OverlayCorner::BottomRight;
+  std::array<float, 4> color{1.0f, 1.0f, 1.0f, 1.0f};
+};
+
+/// A filled rectangle of the development overlay (the frame-time graph of DBG-089; ADR-120), in unscaled pixels from the
+/// target's top-left corner, drawn under the overlay's text at the same scale.
+struct OverlayRect
+{
+  float left = 0.0f;
+  float top = 0.0f;
+  float width = 0.0f;
+  float height = 0.0f;
   std::array<float, 4> color{1.0f, 1.0f, 1.0f, 1.0f};
 };
 
@@ -128,9 +147,10 @@ struct FrameInputs
   double presentationSeconds = 0.0; // the smooth presentation time (R-SIM-570)
   double skyTicks = 0.0;            // the ticks displayed since the world's first (RND-152)
   float brightness = 1.0f;          // rnd.option.brightness.default (RND-275)
-  // The development overlay (DBG-004, Debug builds): its face, its lines and the dots drawn in the world.
+  // The development overlay (DBG-004, Debug builds): its face, its lines and rectangles, and the dots drawn in the world.
   std::shared_ptr<const FontAsset> overlayFont;
   std::vector<OverlayLine> overlay;
+  std::vector<OverlayRect> overlayRects;
   std::vector<DevelopmentDot> dots;
   // The game cursor (ADR-119): its art, and the quad of this frame; none draws no cursor.
   std::shared_ptr<const CursorImages> cursorImages;

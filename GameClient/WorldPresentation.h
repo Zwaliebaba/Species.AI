@@ -1,6 +1,8 @@
 #pragma once
 
 #include "ClientSession.h"
+#include "DevelopmentOverlay.h"
+#include "FrameProfile.h"
 #include "LooseContent.h"
 #include "PlatformClock.h"
 #include "SettlementView.h"
@@ -17,8 +19,9 @@ namespace Species
 
 /// The client's world frame (M1 task T13, ADR-115): the world's surfaces, built from the session's terrain with the
 /// client's presentation record and the content's textures once the terrain arrives, and each frame's inputs from the
-/// settlement view's camera and cursor (M1 task T14, ADR-119). In a Debug build each frame also carries the development
-/// overlay's frame-rate line and a dot for each living figure (M1 task T15a, ADR-118).
+/// settlement view's camera and cursor (M1 task T14, ADR-119). In a Debug build each frame also carries a dot for each
+/// living figure (M1 task T15a, ADR-118) and, while the overlay is shown, its frame-rate line and frame page from the frame
+/// loop's profile (M1 task T15b, ADR-120).
 class WorldPresentation
 {
 public:
@@ -43,6 +46,27 @@ public:
     return m_world;
   }
 
+  [[nodiscard]] const TuningPresentation& Presentation() const noexcept
+  {
+    return *m_desc.presentation;
+  }
+  // ADR-120: the frame loop's profile, whose steps are ClientStep's (dbg.profile.frame_history, dbg.profile.rollup_period_ms).
+  [[nodiscard]] Neuron::FrameProfile& Profile() noexcept
+  {
+    return m_profile;
+  }
+  // DBG-095, DBG-098: action.debug.overlay shows and hides the overlay, which starts hidden; Release builds draw none.
+  void ToggleOverlay() noexcept
+  {
+    m_overlayShown = !m_overlayShown;
+  }
+  [[nodiscard]] bool OverlayShown() const noexcept
+  {
+    return m_overlayShown;
+  }
+  // ADR-120: the frame page's figures, for the log line of every tenth roll-up period.
+  [[nodiscard]] FramePageInputs FramePageOf(const ClientSession& _session, double _framesPerSecond) const;
+
 private:
   Desc m_desc;
   const RegionTerrain* m_terrain = nullptr; // the terrain the world was built from
@@ -51,6 +75,8 @@ private:
   std::optional<double> m_firstDisplayTick;
   std::shared_ptr<const Neuron::FontAsset> m_developmentFace; // a Debug build's overlay face; none in Release
   std::shared_ptr<const Neuron::CursorImages> m_cursorImages; // ADR-119; none when the content lacks one
+  Neuron::FrameProfile m_profile;
+  bool m_overlayShown = false;
 };
 
 // The world's surfaces from a region's terrain, the records and the textures of the content: none when a texture is

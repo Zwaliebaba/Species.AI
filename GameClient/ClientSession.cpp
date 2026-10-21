@@ -2,6 +2,7 @@
 
 #include "Check.h"
 #include "ClientSession.h"
+#include "CommandMessages.h"
 #include "Log.h"
 #include "PresentationEvents.h"
 #include "Profile.h"
@@ -56,6 +57,19 @@ ClientSession::ClientSession(Desc _desc)
       m_commandedTeam = _terrain.commandedTeam;
       ReceiveTerrain(_terrain.seed, _terrain.digest);
     });
+  m_dispatcher.Register<ServerStats>([this](const ServerStats& _stats) { m_serverStats = _stats; });
+}
+
+bool ClientSession::RequestSandboxRestart(bool _newSeed)
+{
+  if (!m_transport || m_refused)
+  {
+    return false;
+  }
+  const bool sent = m_transport->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(SandboxRestartCommand{_newSeed})).has_value();
+  Neuron::Log(Neuron::LogCategory::Network, sent ? Neuron::LogLevel::Info : Neuron::LogLevel::Warning, "sandbox restart {}: {}",
+              _newSeed ? "with a new seed" : "from its seed", sent ? "requested" : "not sent");
+  return sent;
 }
 
 void ClientSession::Update()

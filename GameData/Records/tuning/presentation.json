@@ -83,6 +83,9 @@
       "layer1_repeats": 9,
       "layer2_repeats": 4.5,
       "layer3_repeats": 1.8
+    },
+    "budget": {
+      "target_frame_rate": 60
     }
   },
   "ter": {
@@ -274,7 +277,32 @@
   "dbg": {
     "overlay": {
       "frame_rate_right": 10,
-      "frame_rate_bottom": 40
+      "frame_rate_bottom": 40,
+      "warning_rgb": {
+        "r": 255,
+        "g": 64,
+        "b": 64
+      }
+    },
+    "profile": {
+      "rollup_period_ms": 1000,
+      "frame_history": 200,
+      "view": {
+        "graph_height": 100,
+        "graph_full_ms": 200,
+        "graph_marks_ms": {
+          "first": 200,
+          "second": 100,
+          "third": 50
+        }
+      }
+    },
+    "telemetry": {
+      "percentiles": {
+        "first": 50,
+        "second": 95,
+        "third": 99
+      }
     }
   },
   "cam": {
