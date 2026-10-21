@@ -10,7 +10,7 @@ decision-makers: Species technology lead (M1 task T17), owner (O75, O78)
 
 M1 task T17 gives the steward the battle verbs (M1 plan table 2 row T17; MVP-101). The server has executed T7's commands since ADR-106. T17 lands in two steps:
 - T17a, this record: the client's side of the verbs, the selection circle and the outcomes;
-- T17b: the markers, the route preview, the flag pointer, the world markers and the cursor badges, in its own record.
+- T17b: the markers, the route preview, the flag pointer, the world markers and the cursor badges, in its own record, [ADR-125](ADR-125-battle-marks-route-preview-and-world-markers-at-m1.md).
 
 Six things in the design do not hold as written at M1:
 1. **No command path.** The client has no way to send a battle command, and it drops every `CommandReport` the server sends.

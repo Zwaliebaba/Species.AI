@@ -27,7 +27,7 @@ def newest_log(folder, before):
 def main():
   parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
   parser.add_argument('--exe', default=CLIENT_EXE, help='the client to run, relative to the repository root')
-  parser.add_argument('--frames', type=int, default=10, help='the world frames to draw')
+  parser.add_argument('--frames', type=int, default=40, help='the world frames to draw')
   parser.add_argument('--seed', default='1', help='the battle sandbox\'s seed')
   parser.add_argument('--timeout', type=int, default=900, help='seconds before the run is stopped')
   args = parser.parse_args()

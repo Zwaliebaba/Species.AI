@@ -113,6 +113,7 @@ public:
     leader.formation = true;
     leader.selected = true;
     leader.dead = true;
+    leader.target = Species::QuantizedPosition{(1 << 23) - 1, -(1 << 19), 12};
     const Species::ReplicatedEffect ring{2, Species::EffectKind::ShockwaveRing, {1, -2, 3}, 1023, 7, 640};
     const Species::ReplicatedOrb orb{3, {(1 << 23) - 1, (1 << 19) - 1, -(1 << 23)}, Species::OrbState::Floating, 65'535};
     std::optional<Species::StableId> previous;
@@ -172,6 +173,17 @@ public:
     const Species::StateRecord order = RecordOf(Id(1), ordered, &held);
     Assert::IsTrue(order.changed == Species::FIGURE_FIELD_ORDER, L"the order alone");
     Assert::IsTrue(Species::ApplyRecord(RoundTrip(order, std::nullopt), &held) == Species::ReplicatedState{ordered}, L"applied");
+    // ADR-125: the flag pointer's target alone, set and then cleared.
+    Species::ReplicatedFigure aimed = baseline;
+    aimed.target = Species::QuantizedPosition{-5000, 120, 7000};
+    const Species::StateRecord target = RecordOf(Id(1), aimed, &held);
+    Assert::IsTrue(target.changed == Species::FIGURE_FIELD_TARGET, L"the target alone");
+    Assert::IsTrue(Species::ApplyRecord(RoundTrip(target, std::nullopt), &held) == Species::ReplicatedState{aimed}, L"applied");
+    const Species::ReplicatedState aimedHeld{aimed};
+    const Species::StateRecord cleared = RecordOf(Id(1), baseline, &aimedHeld);
+    Assert::IsTrue(cleared.changed == Species::FIGURE_FIELD_TARGET, L"its clearing alone");
+    Assert::IsTrue(Species::ApplyRecord(RoundTrip(cleared, std::nullopt), &aimedHeld) == held, L"and the target is gone");
+    Assert::IsTrue(Species::RecordBits(cleared, std::nullopt) < Species::RecordBits(target, std::nullopt), L"a cleared target is one bit");
     const Species::ReplicatedState orb{Species::ReplicatedOrb{0, {1, 2, 3}, Species::OrbState::Birth, 4}};
     const Species::ReplicatedState rising{Species::ReplicatedOrb{0, {1, 2, 3}, Species::OrbState::Ascent, 30}};
     const Species::StateRecord ascent = RecordOf(Id(2), rising, &orb);

@@ -40,6 +40,16 @@ constexpr std::array<std::string_view, static_cast<std::size_t>(SceneTexture::Co
   "textures/fx/starburst",
   "textures/fx/beamshort",
   "textures/fx/particledot",
+  "textures/marker/ordertrail",
+  "textures/marker/routearrow",
+  "textures/marker/flagpointer",
+  "textures/marker/edgecompass",
+  "textures/marker/edgecompassempty",
+  "textures/marker/edgecompassshadow",
+  "textures/marker/teamdisc",
+  "textures/marker/teamdiscshadow",
+  "textures/icon/power/leader",
+  "textures/icon/power/workers",
 };
 constexpr std::array<std::string_view, static_cast<std::size_t>(SceneMesh::Count)> SCENE_MESH_KEYS{"meshes/leaderfigure",
                                                                                                    "meshes/thrownweapon"};
@@ -52,6 +62,7 @@ constexpr std::uint64_t VARIATION_STEPS = 10;
 constexpr std::size_t HURT_AIR_VARIANTS = 3; // sprite.worker.hurt variants 01 to 03 (R-UNIT-145)
 constexpr Neuron::Vec3 WORLD_UP{0.0, 1.0, 0.0};
 constexpr Neuron::Vec3 WORLD_Z{0.0, 0.0, 1.0};
+constexpr double SCREEN_DEPTH_MIN = 1e-3; // wu: a point nearer the camera's plane than this has no screen position
 
 // The Worker layers of VFX-118, in their order, each with its catalogue entry.
 enum class WorkerLayer : std::uint8_t
@@ -194,6 +205,26 @@ std::shared_ptr<const Neuron::SceneMeshes> LoadSceneMeshes(const Neuron::LooseCo
     meshes->meshes.push_back(std::make_shared<const Neuron::MeshAsset>(std::move(*mesh)));
   }
   return meshes;
+}
+
+std::array<double, 2> ScreenDirection(const Neuron::Vec3& _from, const Neuron::Vec3& _to, const Neuron::Vec3& _camera,
+                                      const Neuron::Vec3& _cameraFront) noexcept
+{
+  // The camera's right and up, level with the ground as the frame's view is when it does not roll (ADR-119).
+  const Neuron::Vec3 right = Neuron::NormalizedOr(Cross(_cameraFront, WORLD_UP), {1.0, 0.0, 0.0});
+  const Neuron::Vec3 up = Cross(right, _cameraFront);
+  const Neuron::Vec3 from = _from - _camera;
+  const Neuron::Vec3 to = _to - _camera;
+  const double fromDepth = Neuron::Dot(from, _cameraFront);
+  const double toDepth = Neuron::Dot(to, _cameraFront);
+  std::array<double, 2> direction{Neuron::Dot(to - from, right), Neuron::Dot(to - from, up)};
+  if (fromDepth > SCREEN_DEPTH_MIN && toDepth > SCREEN_DEPTH_MIN)
+  {
+    direction = {Neuron::Dot(to, right) / toDepth - Neuron::Dot(from, right) / fromDepth,
+                 Neuron::Dot(to, up) / toDepth - Neuron::Dot(from, up) / fromDepth};
+  }
+  const double length = std::hypot(direction[0], direction[1]);
+  return length > 0.0 ? std::array<double, 2>{direction[0] / length, direction[1] / length} : std::array<double, 2>{0.0, 0.0};
 }
 
 double WorkerDetail(const TuningPresentation& _presentation, double _distance) noexcept

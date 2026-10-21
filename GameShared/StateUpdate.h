@@ -25,7 +25,7 @@ inline constexpr std::uint64_t STATE_HISTORY_TICKS = 2 * STATE_BASELINE_TICKS_MA
 struct StateUpdate
 {
   static constexpr Neuron::MessageTypeId TYPE = TypeIdOf(GameMessageType::StateUpdate);
-  static constexpr std::uint8_t VERSION = 1;
+  static constexpr std::uint8_t VERSION = 2; // 2: a Leader's flag-pointer target (ADR-125)
   static constexpr std::size_t MAX_BYTES = Neuron::STATE_DATAGRAM_MAX_BYTES;
   static constexpr std::uint32_t TICK_BITS = 48;
   static constexpr std::uint32_t BASELINE_AGE_BITS = 16;

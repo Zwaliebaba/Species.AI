@@ -5,6 +5,7 @@
 #include "CommandMessages.h"
 #include "Formation.h"
 #include "RegionSimulation.h"
+#include "StateSender.h"
 #include "TestSupport.h"
 #include "WorldSnapshot.h"
 #include "WorldTerrain.h"
@@ -15,6 +16,7 @@
 #include <map>
 #include <optional>
 #include <set>
+#include <variant>
 #include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -198,6 +200,7 @@ public:
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-UNIT-171")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-UNIT-172")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-UNIT-175")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-UNIT-191")
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(RUnit171ANearClickFormsUpAndAFarOneGivesAWaypointOrder)
   {
@@ -220,6 +223,22 @@ public:
     Assert::IsTrue(ordering.order == Species::LeaderOrder::Waypoint && !ordering.formation && ordering.route != 0, L"a waypoint order");
     Assert::IsTrue(Neuron::HorizontalDistance(ordering.orderPosition, target) < 1e-9, L"its order position");
     Assert::IsFalse(battle.region.SelectedLeaderRef(0).has_value(), L"the selection cleared");
+    // ADR-125: the replicated state aims the flag pointer at the route's first point after its start, and a Leader in
+    // formation has none.
+    const std::vector<Neuron::Vec3>* points = battle.region.Routes().Find(ordering.route);
+    Assert::IsTrue(points != nullptr && points->size() > 1, L"a route of two points or more");
+    for (const Species::ReplicatedObject& object : Species::CollectReplicatedObjects(battle.region))
+    {
+      if (object.id == distant.id)
+      {
+        const auto& state = std::get<Species::ReplicatedFigure>(object.state);
+        Assert::IsTrue(state.target == Species::QuantizePosition((*points)[1]), L"the waypoint Leader's target");
+      }
+      if (object.id == nearby.id)
+      {
+        Assert::IsFalse(std::get<Species::ReplicatedFigure>(object.state).target.has_value(), L"no target in formation");
+      }
+    }
     battle.Step(30);
     Assert::IsTrue(Neuron::HorizontalDistance(battle.At(distant).position, from) < 1e-9, L"the Leader does not walk");
     Assert::IsTrue(battle.At(distant).leaderState == Species::LeaderState::GivingOrders, L"it gives orders");

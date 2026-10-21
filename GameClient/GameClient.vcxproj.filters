@@ -48,10 +48,16 @@
     <ClInclude Include="ReplicaTiming.h">
       <Filter>Replication</Filter>
     </ClInclude>
+    <ClInclude Include="RoutePreview.h">
+      <Filter>View</Filter>
+    </ClInclude>
     <ClInclude Include="SettlementCamera.h">
       <Filter>View</Filter>
     </ClInclude>
     <ClInclude Include="SettlementView.h">
+      <Filter>View</Filter>
+    </ClInclude>
+    <ClInclude Include="WorldMarkers.h">
       <Filter>View</Filter>
     </ClInclude>
     <ClInclude Include="WorldPresentation.h">
@@ -86,10 +92,16 @@
     <ClCompile Include="ReplicaTiming.cpp">
       <Filter>Replication</Filter>
     </ClCompile>
+    <ClCompile Include="RoutePreview.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
     <ClCompile Include="SettlementCamera.cpp">
       <Filter>View</Filter>
     </ClCompile>
     <ClCompile Include="SettlementView.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldMarkers.cpp">
       <Filter>View</Filter>
     </ClCompile>
     <ClCompile Include="WorldPresentation.cpp">

@@ -7,6 +7,7 @@
 #include "SceneQuads.h"
 #include "ShaderLayouts.h"
 
+#include <algorithm>
 #include <cstring>
 #include <format>
 #include <utility>
@@ -193,6 +194,56 @@ void QuadRenderer::RecordTriangles(ID3D12GraphicsCommandList* _commands, UploadR
     _commands->SetGraphicsRoot32BitConstants(ROOT_DRAW_CONSTANTS, DRAW_CONSTANT_DWORDS, &draw, 0);
     _commands->IASetVertexBuffers(0, 1, &view);
     _commands->DrawInstanced(static_cast<UINT>(m_vertices.size()), 1, 0, 0);
+  }
+}
+
+void QuadRenderer::RecordOverlay(ID3D12GraphicsCommandList* _commands, UploadRing& _ring, const PipelineCatalog& _catalog, SizePx _size,
+                                 std::span<const OverlayQuad> _quads)
+{
+  ID3D12PipelineState* alpha = _catalog.Find("overlay_alpha");
+  ID3D12PipelineState* additive = _catalog.Find("overlay_additive");
+  if (!Ready() || _quads.empty() || alpha == nullptr || additive == nullptr)
+  {
+    return;
+  }
+  const auto width = static_cast<float>(std::max(_size.width, 1u));
+  const auto height = static_cast<float>(std::max(_size.height, 1u));
+  PassConstants target{};
+  target.values[0] = Float4(width, height, 1.0f / width, 1.0f / height);
+  _commands->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  _commands->SetGraphicsRootConstantBufferView(ROOT_PASS_CONSTANTS, _ring.Write(target));
+  for (std::size_t first = 0; first < _quads.size();)
+  {
+    // A run of the same texture and blend, in order.
+    std::size_t end = first + 1;
+    while (end < _quads.size() && _quads[end].texture == _quads[first].texture && _quads[end].blend == _quads[first].blend)
+    {
+      ++end;
+    }
+    const OverlayQuad& run = _quads[first];
+    const bool usable = run.texture < m_resources.size() && m_resources[run.texture] != GpuResourceId{};
+    m_overlay.clear();
+    for (std::size_t n = first; n < end && usable; ++n)
+    {
+      const OverlayQuad& quad = _quads[n];
+      m_overlay.push_back({Float4(quad.centerX, quad.centerY, quad.halfSize, quad.rotationRadians),
+                           Float4(quad.color[0], quad.color[1], quad.color[2], quad.color[3])});
+    }
+    first = end;
+    const std::uint64_t bytes = m_overlay.size() * sizeof(OverlayQuadInstance);
+    const UploadAllocation allocation = m_overlay.empty() ? UploadAllocation{} : _ring.Allocate(bytes, sizeof(Float4));
+    if (allocation.cpu == nullptr)
+    {
+      continue;
+    }
+    std::memcpy(allocation.cpu, m_overlay.data(), static_cast<std::size_t>(bytes));
+    const DrawConstants draw{Float3x4(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f),
+                             Float4(1.0f, 1.0f, 1.0f, 1.0f), Uint4{m_factory.HeapIndex(m_resources[run.texture]), 0, 0, 0}};
+    const D3D12_VERTEX_BUFFER_VIEW view{allocation.gpu, static_cast<UINT>(bytes), static_cast<UINT>(sizeof(OverlayQuadInstance))};
+    _commands->SetPipelineState(run.blend == OverlayBlend::Alpha ? alpha : additive);
+    _commands->SetGraphicsRoot32BitConstants(ROOT_DRAW_CONSTANTS, DRAW_CONSTANT_DWORDS, &draw, 0);
+    _commands->IASetVertexBuffers(0, 1, &view);
+    _commands->DrawInstanced(6, static_cast<UINT>(m_overlay.size()), 0, 0);
   }
 }
 

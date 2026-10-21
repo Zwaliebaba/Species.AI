@@ -165,6 +165,8 @@ private:
   void DrawGrenades(std::span<const InterpolatedEffect> _effects, const EffectsView& _view, EffectDraws& _draws);
   void DrawRings(const EffectsView& _view, EffectDraws& _draws, double& _flashAlpha, double& _shakeRequest);
   void DrawMarkers(std::span<const InterpolatedEffect> _effects, const EffectsView& _view, EffectDraws& _draws) const;
+  void DrawTrailMarks(std::span<const InterpolatedEffect> _effects, const Neuron::TerrainField& _field, const EffectsView& _view,
+                      EffectDraws& _draws);
   void DrawScreen(double _flashAlpha, double _shakeRequest, const EffectsView& _view, EffectDraws& _draws);
 
   const TuningPresentation* m_presentation;
@@ -177,7 +179,8 @@ private:
   std::vector<Flash> m_flashes;
   std::vector<Ring> m_rings;
   std::vector<Recoil> m_recoils;
-  std::map<StableId, bool> m_controlled; // each Worker's crowd control at the last tick seen (VFX-219's ControlGained)
+  std::map<StableId, bool> m_controlled;  // each Worker's crowd control at the last tick seen (VFX-219's ControlGained)
+  std::map<StableId, double> m_trailBorn; // each order trail mark's display tick when first seen, from which its age runs
   std::optional<std::uint64_t> m_lastTick;
   double m_circleCarry = 0.0; // the unscaled time not yet stepped by the circle's emitter
   // The screen effects (VFX-232 to VFX-235).

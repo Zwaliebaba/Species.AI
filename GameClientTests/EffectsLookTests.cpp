@@ -389,6 +389,36 @@ public:
     }
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(RUnit186ATrailMarkLiesOnTheGroundAndFadesWithItsAge)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-UNIT-186")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(RUnit186ATrailMarkLiesOnTheGroundAndFadesWithItsAge)
+  {
+    // ADR-125: its age runs from the display tick it was first seen; alpha 0.6 × (1 − age), half-size
+    // max(5, 20 × distance ÷ 2000), lowered 1 wu, its front the carrier's heading.
+    Species::EffectsLook look(CommittedPresentation(), CommittedTuning());
+    Species::InterpolatedEffect mark = EffectAt(1, Species::EffectKind::OrderTrailMark, Ground(), 0);
+    mark.state.team = 1;
+    mark.state.yaw = 256; // a quarter turn: +x
+    for (int tick = 0; tick < 10; ++tick)
+    {
+      Species::EffectDraws draws;
+      look.Draw(std::vector{mark}, SeedOneTerrain().field, ViewAt(Ground(), 9.0 + tick), draws);
+      Assert::IsTrue(QuadsOf(draws.quads, "effect_additive_nodepth", Species::SceneTexture::OrderTrail) == 1, L"one marker.order_trail");
+      const Neuron::SceneQuad& quad = BatchOf(draws.quads, "effect_additive_nodepth")->quads[0];
+      Assert::AreEqual(0.6f * (1.0f - 0.1f * static_cast<float>(tick)), quad.color[3], 1e-5f, L"fading over its second");
+      Assert::AreEqual(5.0f, quad.halfWidth, 1e-6f, L"the least size near the camera");
+      Assert::AreEqual(Ground().y - 1.0, quad.position.y, 1e-9, L"lowered by ref.unit.leader.trail_lift");
+      Assert::IsTrue(quad.orientation == Neuron::QuadOrientation::WorldOriented && quad.axisUp.x > 0.999, L"its front along +x");
+      Assert::IsTrue(std::abs(quad.axisRight.y) < 0.5 && std::abs(Neuron::Dot(quad.axisRight, quad.axisUp)) < 1e-9, L"on the ground");
+    }
+    Species::EffectsView distant = ViewAt(Ground(), 20.0);
+    distant.camera = Ground() + Neuron::Vec3{0.0, 0.0, 4'000.0};
+    Species::EffectDraws draws;
+    look.Draw(std::vector{EffectAt(2, Species::EffectKind::OrderTrailMark, Ground(), 0)}, SeedOneTerrain().field, distant, draws);
+    Assert::AreEqual(40.0f, BatchOf(draws.quads, "effect_additive_nodepth")->quads[0].halfWidth, 0.01f, L"20 × 4,000 ÷ 2,000");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(O75AShooterRecoilsFromItsShot)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"VFX-118")
   END_TEST_METHOD_ATTRIBUTE()

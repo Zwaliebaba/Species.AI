@@ -1,10 +1,12 @@
 #include "pch.h"
 
+#include "DepthBias.h"
 #include "DevelopmentOverlay.h"
 #include "LeaderLook.h"
 #include "StableId.h"
 #include "TestSupport.h"
 
+#include <algorithm>
 #include <cmath>
 #include <string_view>
 
@@ -123,6 +125,37 @@ public:
     const Neuron::TriangleBatch* plain = BannerOf(draws, Species::SceneTexture::BannerIdle);
     Assert::IsTrue(plain != nullptr && plain->vertices[0].color[0] == Species::TeamColor(1)[0] * 0.5f, L"else × vfx.cloth.team_tint");
     Assert::IsTrue(plain != nullptr && plain->mask == static_cast<std::uint16_t>(Species::SceneTexture::BannerTintIdle), L"its tint mask");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Vfx141AWaypointBannerPointsAtItsTarget)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"VFX-141")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"VFX-014")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-UNIT-191")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Vfx141AWaypointBannerPointsAtItsTarget)
+  {
+    // ADR-125: the compiled-in bias_flag_pointer is the record's.
+    const auto& cloth = CommittedPresentation().vfx.cloth;
+    ExpectEqual(Neuron::DEPTH_BIAS_FLAG_POINTER, static_cast<std::int64_t>(cloth.pointerConstantBias), L"the constant bias");
+    Assert::AreEqual(static_cast<double>(Neuron::SLOPE_DEPTH_BIAS_FLAG_POINTER), cloth.pointerSlopeBias, L"the slope-scaled bias");
+    // The view looks along −x, so −z is to the camera's right: a target 200 wu along −z lies right of the banner.
+    Species::InterpolatedFigure waypoint = LeaderAt(5, 1);
+    waypoint.state.order = static_cast<std::uint8_t>(Species::LeaderOrder::Waypoint);
+    waypoint.state.target = Species::QuantizePosition(PLACE + Neuron::Vec3{0.0, 0.0, -200.0});
+    Species::InterpolatedFigure untargeted = LeaderAt(6, 1);
+    untargeted.state.order = static_cast<std::uint8_t>(Species::LeaderOrder::Waypoint);
+    Species::LeaderLook look;
+    Species::LeaderDraws draws;
+    look.Draw(std::vector{waypoint, untargeted, LeaderAt(7, 1)}, Figure(), View(), 0.0, CommittedPresentation(), CommittedTuning(), draws);
+    const auto pointers = std::ranges::find(draws.quads, Neuron::ScenePass::Pointers, &Neuron::QuadBatch::pass);
+    Assert::IsTrue(pointers != draws.quads.end() && pointers->entry == "cloth_pointer" &&
+                     pointers->texture == static_cast<std::uint16_t>(Species::SceneTexture::FlagPointer) && pointers->quads.size() == 1,
+                   L"one marker.flag_pointer, after the cloth, for the Leader with a target");
+    const Neuron::SceneQuad& pointer = pointers->quads[0];
+    Assert::AreEqual(5.0f, pointer.halfWidth, 1e-6f, L"vfx.cloth.pointer_size_factor × the banner's size of 20");
+    // Its art points down; turned by r it points along (sin r, −cos r) on the screen, here to the right.
+    Assert::IsTrue(std::sin(pointer.rotationRadians) > 0.95f, L"turned to point right, towards the target");
+    Assert::IsTrue(pointer.orientation == Neuron::QuadOrientation::CameraFacing, L"facing the camera");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Vfx139TheClothKeepsItsLinksAndFollowsItsPole)

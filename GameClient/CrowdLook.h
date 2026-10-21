@@ -7,6 +7,7 @@
 #include "TuningPresentation.h"
 #include "WorldScene.h"
 
+#include <array>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -36,6 +37,16 @@ enum class SceneTexture : std::uint16_t
   Starburst,   // fx.starburst
   BeamShort,   // fx.beam_short
   ParticleDot, // fx.particle_dot
+  OrderTrail,  // marker.order_trail, and the masks of ADR-125
+  RouteArrow,  // marker.route_arrow
+  FlagPointer, // marker.flag_pointer
+  EdgeCompass, // marker.edge_compass
+  EdgeCompassEmpty,
+  EdgeCompassShadow,
+  TeamDisc, // marker.team_disc
+  TeamDiscShadow,
+  IconLeader,  // icon.power.leader
+  IconWorkers, // icon.power.workers
   Count
 };
 
@@ -61,6 +72,12 @@ struct CrowdView
   double unscaledSeconds = 0.0;
   std::optional<std::uint8_t> localTeam; // the team the client commands
 };
+
+// RND-216 (ADR-125): the direction from _from to _to on the screen, x to the camera's right and y up, from the points'
+// projections when both lie ahead of the camera and from their difference on the view plane otherwise; (0, 0) when they
+// coincide on the screen.
+[[nodiscard]] std::array<double, 2> ScreenDirection(const Neuron::Vec3& _from, const Neuron::Vec3& _to, const Neuron::Vec3& _camera,
+                                                    const Neuron::Vec3& _cameraFront) noexcept;
 
 // RND-314: the high-detail factor of a Worker _distance wu from the camera, at entity detail 1, the option's default.
 [[nodiscard]] double WorkerDetail(const TuningPresentation& _presentation, double _distance) noexcept;

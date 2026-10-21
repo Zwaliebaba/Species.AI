@@ -294,6 +294,15 @@
     <FXCompile Include="Shader\MeshLitVS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
+    <FXCompile Include="Shader\OverlayQuadAlphaPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\OverlayQuadPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\OverlayQuadVS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
     <FXCompile Include="Shader\SeaFlatPS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
@@ -366,6 +375,9 @@
       <Filter>Shader</Filter>
     </None>
     <None Include="Shader\MeshLit.hlsli">
+      <Filter>Shader</Filter>
+    </None>
+    <None Include="Shader\OverlayQuad.hlsli">
       <Filter>Shader</Filter>
     </None>
     <None Include="Shader\SeaFlat.hlsli">

@@ -47,11 +47,17 @@
     <ClCompile Include="LeaderLookTests.cpp">
       <Filter>View</Filter>
     </ClCompile>
+    <ClCompile Include="RoutePreviewTests.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
     <ClCompile Include="SettlementCameraTests.cpp">
       <Filter>View</Filter>
     </ClCompile>
     <ClCompile Include="TestSupport.cpp">
       <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldMarkersTests.cpp">
+      <Filter>View</Filter>
     </ClCompile>
     <ClCompile Include="WorldPresentationTests.cpp">
       <Filter>Session</Filter>

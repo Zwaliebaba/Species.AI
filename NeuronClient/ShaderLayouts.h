@@ -141,6 +141,14 @@ struct TriangleVertex
   Float4 color;
 };
 
+// ADR-125: one textured quad of the 2-D overlay, the world markers of pass 16 and the cursor's badge of pass 20, in
+// physical pixels of the target from its top-left corner.
+struct OverlayQuadInstance
+{
+  Float4 placement; // xy: the centre; z: the half-size; w: the turn in radians, clockwise on the screen
+  Float4 color;     // rgba
+};
+
 // QuadInstance.shape.x: the orientation modes of RND-306.
 LAYOUT_CONSTANT QUAD_CAMERA_FACING = 0;
 LAYOUT_CONSTANT QUAD_UPRIGHT_CARD = 1;
@@ -166,6 +174,7 @@ static_assert(sizeof(DotInstance) == 2 * sizeof(Float4));
 static_assert(sizeof(QuadInstance) == 7 * sizeof(Float4) + sizeof(Uint4));
 static_assert(sizeof(MeshInstance) == 4 * sizeof(Float4));
 static_assert(sizeof(TriangleVertex) == 3 * sizeof(Float4));
+static_assert(sizeof(OverlayQuadInstance) == 2 * sizeof(Float4));
 inline constexpr std::uint32_t DRAW_CONSTANT_DWORDS = sizeof(DrawConstants) / 4;
 } // namespace Neuron
 #endif

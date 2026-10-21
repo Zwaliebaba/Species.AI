@@ -62,6 +62,9 @@ struct ReplicatedFigure
   bool underControl = false; // R-UNIT-136: a member of its team's crowd selection
   bool formation = false;    // R-UNIT-164: a Leader in formation mode
   bool selected = false;     // R-SIM-405: its team's selected Leader
+  // O78, ADR-125: a Leader's flag-pointer target, the first point after the start of its Waypoint order's route
+  // (R-UNIT-191); none for any other figure or order.
+  std::optional<QuantizedPosition> target;
 
   friend bool operator==(const ReplicatedFigure& _a, const ReplicatedFigure& _b) noexcept = default;
 };
@@ -134,6 +137,7 @@ inline constexpr std::uint8_t FIGURE_FIELD_HEALTH = 4;
 inline constexpr std::uint8_t FIGURE_FIELD_TASK = 8;
 inline constexpr std::uint8_t FIGURE_FIELD_FLAGS = 16;
 inline constexpr std::uint8_t FIGURE_FIELD_ORDER = 32;
+inline constexpr std::uint8_t FIGURE_FIELD_TARGET = 64;
 inline constexpr std::uint8_t EFFECT_FIELD_POSITION = 1;
 inline constexpr std::uint8_t EFFECT_FIELD_YAW = 2;
 inline constexpr std::uint8_t EFFECT_FIELD_TIMER = 4;

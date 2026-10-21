@@ -48,7 +48,8 @@ enum class VertexLayout : std::uint8_t
   DotInstance,
   QuadInstance,
   MeshInstanced, // a cooked mesh's vertices in slot 0 and MeshInstance in slot 1
-  TriangleVertex
+  TriangleVertex,
+  OverlayQuadInstance
 };
 
 // The targets an entry draws into: the scene targets at their sample count with the depth buffer bound, or the back
@@ -70,7 +71,8 @@ struct PipelineEntry
   DepthState depth = DepthState::TestWrite;
   CullState cull = CullState::Back;
   PipelineTarget target = PipelineTarget::Scene;
-  std::int32_t depthBias = 0; // RND-219's bias variant, in the units of RND-220 (DepthBias.h); 0 for none
+  std::int32_t depthBias = 0;  // RND-219's bias variant, in the units of RND-220 (DepthBias.h); 0 for none
+  float slopeDepthBias = 0.0f; // the slope-scaled part of a variant that has one (`bias_flag_pointer`, ADR-125)
 };
 
 /// The pipeline-state catalogue (ADR-005, RND-055, RND-062): every entry a complete pipeline state, built from the

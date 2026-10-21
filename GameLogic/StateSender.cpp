@@ -21,7 +21,7 @@ std::uint16_t ClampToU16(double _value) noexcept
   return static_cast<std::uint16_t>(std::clamp(_value, 0.0, 65'535.0));
 }
 
-ReplicatedFigure FigureState(const Figure& _figure, std::uint8_t _team, StableId _selected)
+ReplicatedFigure FigureState(const Figure& _figure, std::uint8_t _team, StableId _selected, const RouteStore& _routes)
 {
   ReplicatedFigure state;
   state.team = _team;
@@ -37,6 +37,15 @@ ReplicatedFigure FigureState(const Figure& _figure, std::uint8_t _team, StableId
   state.underControl = _figure.underControl;
   state.formation = _figure.formation;
   state.selected = _figure.id == _selected;
+  // O78, ADR-125: the flag pointer aims at the first point after the start of a Waypoint order's route (R-UNIT-191).
+  if (_figure.kind == FigureKind::Leader && _figure.order == LeaderOrder::Waypoint)
+  {
+    const std::vector<Neuron::Vec3>* points = _routes.Find(_figure.route);
+    if (points != nullptr && points->size() > 1)
+    {
+      state.target = QuantizePosition((*points)[1]);
+    }
+  }
   return state;
 }
 
@@ -72,7 +81,7 @@ std::vector<ReplicatedObject> CollectReplicatedObjects(const RegionSimulation& _
       if (slot.figures.Used(n))
       {
         const Figure& figure = slot.figures.At(n);
-        objects.push_back({figure.id, FigureState(figure, static_cast<std::uint8_t>(team), slot.selectedId)});
+        objects.push_back({figure.id, FigureState(figure, static_cast<std::uint8_t>(team), slot.selectedId, _region.Routes())});
       }
     }
   }

@@ -174,8 +174,10 @@
     <ClCompile Include="DevelopmentOverlayTests.cpp" />
     <ClCompile Include="EffectsLookTests.cpp" />
     <ClCompile Include="LeaderLookTests.cpp" />
+    <ClCompile Include="RoutePreviewTests.cpp" />
     <ClCompile Include="SettlementCameraTests.cpp" />
     <ClCompile Include="TestSupport.cpp" />
+    <ClCompile Include="WorldMarkersTests.cpp" />
     <ClCompile Include="WorldPresentationTests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
