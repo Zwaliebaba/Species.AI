@@ -152,6 +152,9 @@ LAYOUT_CONSTANT QUAD_ANCHOR_BOTTOM = 1;
 // QuadInstance.shape.w: a world-oriented quad blends towards the camera's left rather than its right, so that a card
 // seen from behind is not drawn mirrored (VFX-117).
 LAYOUT_CONSTANT QUAD_BLEND_LEFT = 1;
+// DrawConstants.indices.z of a vertex-coloured triangle batch (ADR-123): its corners are in clip space, not relative to
+// the camera, as the full-screen flash's are (VFX-234).
+LAYOUT_CONSTANT TRIANGLE_SCREEN_SPACE = 1;
 
 #if !defined(__HLSL_VERSION)
 static_assert(sizeof(FrameConstants) == 3 * sizeof(Float4x4) + 9 * sizeof(Float4));

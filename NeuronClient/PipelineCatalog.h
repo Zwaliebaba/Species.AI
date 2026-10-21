@@ -70,6 +70,7 @@ struct PipelineEntry
   DepthState depth = DepthState::TestWrite;
   CullState cull = CullState::Back;
   PipelineTarget target = PipelineTarget::Scene;
+  std::int32_t depthBias = 0; // RND-219's bias variant, in the units of RND-220 (DepthBias.h); 0 for none
 };
 
 /// The pipeline-state catalogue (ADR-005, RND-055, RND-062): every entry a complete pipeline state, built from the

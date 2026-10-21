@@ -99,6 +99,40 @@
     },
     "tint": {
       "factor": 0.7
+    },
+    "depth_bias": {
+      "laser": 1.2,
+      "unit_scale": 16777216
+    },
+    "frustum": {
+      "point_tolerance": 0.2
+    },
+    "laser": {
+      "layers": 5,
+      "half_width": 0.8
+    },
+    "shockwave": {
+      "center_color": {
+        "r": 1,
+        "g": 1,
+        "b": 0,
+        "a": 0
+      },
+      "rim_color": {
+        "r": 1,
+        "g": 0.5,
+        "b": 0.5
+      },
+      "disc_segments": 32,
+      "blast_layers": 5,
+      "blast_star_scale": 500,
+      "blast_glow_scale": 1000,
+      "blast_layer_growth": 1.2,
+      "blast_color": {
+        "r": 1,
+        "g": 0.5,
+        "b": 0.2
+      }
     }
   },
   "ter": {
@@ -215,7 +249,12 @@
           "slow_start": 30
         },
         "ground_samples": 10,
-        "position_smoothing": 4
+        "position_smoothing": 4,
+        "shake": {
+          "yaw_factor": 0.05,
+          "roll_factor": 0.3,
+          "decay": 1
+        }
       },
       "pointer": {
         "miss_ray_start": 4,
@@ -236,6 +275,17 @@
             "g": 0,
             "b": 0
           }
+        }
+      },
+      "promote": {
+        "flash_count": {
+          "base": 5,
+          "modulus": 5
+        },
+        "flash_velocity": {
+          "x_range": 5,
+          "y_range": 15,
+          "z_range": 5
         }
       }
     },
@@ -289,6 +339,51 @@
         "highlight_wobble": 0.3,
         "pole_width_wu": 0.4,
         "pole_height_factor": 1.5
+      }
+    },
+    "weapon": {
+      "laser": {
+        "billboard_length": 10,
+        "shake_range_sq": 200,
+        "shake": 0.5
+      },
+      "muzzle_flash": {
+        "laser_size_factor": 25,
+        "laser_life": 1.5,
+        "throw_size": 20,
+        "throw_life": 3,
+        "speed": 10,
+        "decay": 10,
+        "quads": 5,
+        "shrink": 0.8,
+        "alpha_factor": 0.75,
+        "depth_test_size": 50
+      },
+      "thrown": {
+        "color": {
+          "r": 255,
+          "g": 100,
+          "b": 100
+        },
+        "trail_size": 60,
+        "trail_jitter": 5,
+        "trail_skip": 0.1,
+        "flash_alpha": 200,
+        "inner_flash_fraction": 0.2,
+        "flash_size_factor": 1000
+      },
+      "explosion": {
+        "particle_factor": 0.01,
+        "core_lift": 0.3,
+        "debris_min": 2,
+        "debris_max": 30
+      },
+      "shockwave": {
+        "disc_lift": 5,
+        "disc_alpha": 0.6,
+        "flash_time": 0.1,
+        "flash_range": 500,
+        "billboard_time": 1
       }
     }
   },
@@ -383,7 +478,10 @@
       "fragment_spread_divisor": 10,
       "walk_bob_height": 0.4,
       "walk_bob_rate": 6,
-      "walk_bob_full_speed": 20
+      "walk_bob_full_speed": 20,
+      "recoil_distance": 0.5,
+      "recoil_time": 0.15,
+      "recoil_match_range": 3
     },
     "cloth": {
       "wobble_phases": {
@@ -407,7 +505,203 @@
       "up_gain": 0.2
     },
     "emit": {
-      "step_rate": 60
+      "step_rate": 60,
+      "explosion": {
+        "core_size": {
+          "base": 120,
+          "spread": 120
+        },
+        "core_velocity": {
+          "x_spread": 15,
+          "y_base": 10,
+          "y_spread": 10,
+          "z_spread": 15
+        },
+        "debris_lift": 0.2,
+        "debris_rise": {
+          "base": 2,
+          "spread": 2
+        },
+        "debris_speed": {
+          "base": 20,
+          "spread": 30
+        },
+        "debris_size": {
+          "base": 20,
+          "spread": 20
+        }
+      },
+      "burning": {
+        "count_mod": 8,
+        "fire_share": 5,
+        "lift": 5,
+        "size": {
+          "base": 20,
+          "spread": 30
+        },
+        "velocity_factor": 0.3,
+        "rise": {
+          "base": 3,
+          "spread": 3
+        }
+      },
+      "control": {
+        "count": 1
+      },
+      "order": {
+        "sizes": {
+          "first": 75,
+          "second": 60
+        }
+      },
+      "order_marker": {
+        "size": 30
+      }
+    },
+    "thrown": {
+      "tumble_rate": 10,
+      "inner_flash_scale": 0.5
+    },
+    "screen": {
+      "flash_count_threshold": 0.1,
+      "flash_onsets": 3,
+      "flash_window": 1
+    },
+    "particle": {
+      "size_divisor": 16,
+      "sub_step": 0.016666666666666666,
+      "max_sub_steps": 30,
+      "debris": {
+        "puff_rate": 5,
+        "puff_velocity_divisor": 5,
+        "puff_size_divisor": 1.5
+      },
+      "pool_capacity": 65536,
+      "type_cap": 16384,
+      "class_fill_limits": {
+        "class_0": 1.0,
+        "class_1": 0.95,
+        "class_2": 0.9,
+        "class_3": 0.8
+      },
+      "lod": {
+        "full_distance": 4000,
+        "cutoff_distance": 8000
+      },
+      "alpha": 90,
+      "fade_start": 0.75,
+      "smoke_shade_divisor": 100,
+      "explosion_core": {
+        "life": 2.0,
+        "size": 150,
+        "gravity": 10.0,
+        "friction": 0.2,
+        "colors": {
+          "first": {
+            "r": 200,
+            "g": 100,
+            "b": 100
+          },
+          "second": {
+            "r": 255,
+            "g": 120,
+            "b": 120
+          }
+        }
+      },
+      "explosion_debris": {
+        "life": 6.0,
+        "size": 40,
+        "gravity": 20.0,
+        "friction": 0.2,
+        "colors": {
+          "first": {
+            "r": 200,
+            "g": 128,
+            "b": 128
+          },
+          "second": {
+            "r": 250,
+            "g": 200,
+            "b": 200
+          }
+        }
+      },
+      "muzzle_flash": {
+        "life": 1.0,
+        "size": 10,
+        "gravity": 0,
+        "friction": 0.2,
+        "colors": {
+          "first": {
+            "r": 255,
+            "g": 128,
+            "b": 128
+          },
+          "second": {
+            "r": 200,
+            "g": 100,
+            "b": 100
+          }
+        }
+      },
+      "control_flash": {
+        "life": 1.0,
+        "size": 30,
+        "gravity": -2.0,
+        "friction": 0,
+        "colors": {
+          "first": {
+            "r": 50,
+            "g": 50,
+            "b": 150
+          },
+          "second": {
+            "r": 50,
+            "g": 50,
+            "b": 250
+          }
+        }
+      },
+      "missile_trail": {
+        "life": 5.0,
+        "size": 200,
+        "gravity": 1.0,
+        "friction": 0,
+        "colors": {
+          "first": {
+            "r": 100,
+            "g": 100,
+            "b": 100
+          },
+          "second": {
+            "r": 200,
+            "g": 200,
+            "b": 200
+          }
+        }
+      },
+      "worker_fire": {
+        "life": 1.0,
+        "size": 25,
+        "gravity": -10.0,
+        "friction": 0,
+        "colors": {
+          "first": {
+            "r": 150,
+            "g": 50,
+            "b": 50
+          },
+          "second": {
+            "r": 150,
+            "g": 120,
+            "b": 50
+          }
+        }
+      }
+    },
+    "motion": {
+      "order_marker_flare": 15
     }
   }
 }

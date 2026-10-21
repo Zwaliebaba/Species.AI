@@ -165,14 +165,15 @@ void QuadRenderer::RecordTriangles(ID3D12GraphicsCommandList* _commands, UploadR
   for (const TriangleBatch& batch : _batches)
   {
     ID3D12PipelineState* pipeline = batch.pass == _pass ? _catalog.Find(batch.entry) : nullptr;
-    if (pipeline == nullptr || !usable(batch.texture) || !usable(batch.mask) || batch.vertices.empty())
+    if (pipeline == nullptr || (batch.textured && (!usable(batch.texture) || !usable(batch.mask))) || batch.vertices.empty())
     {
       continue;
     }
     m_vertices.clear();
     for (const SceneVertex& vertex : batch.vertices)
     {
-      m_vertices.push_back(MakeTriangleVertex(vertex, _frame.camera));
+      // A screen-space corner is already in clip space, so the camera is not taken from it.
+      m_vertices.push_back(MakeTriangleVertex(vertex, batch.screenSpace ? Vec3{} : _frame.camera));
     }
     const std::uint64_t bytes = m_vertices.size() * sizeof(TriangleVertex);
     const UploadAllocation allocation = _ring.Allocate(bytes, sizeof(Float4));
@@ -181,9 +182,11 @@ void QuadRenderer::RecordTriangles(ID3D12GraphicsCommandList* _commands, UploadR
       continue;
     }
     std::memcpy(allocation.cpu, m_vertices.data(), static_cast<std::size_t>(bytes));
+    const Uint4 indices = batch.textured
+                            ? Uint4{m_factory.HeapIndex(m_resources[batch.texture]), m_factory.HeapIndex(m_resources[batch.mask]), 0, 0}
+                            : Uint4{DEFAULT_RESOURCE_INDEX, DEFAULT_RESOURCE_INDEX, batch.screenSpace ? TRIANGLE_SCREEN_SPACE : 0u, 0};
     const DrawConstants draw{Float3x4(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f),
-                             Float4(1.0f, 1.0f, 1.0f, 1.0f),
-                             Uint4{m_factory.HeapIndex(m_resources[batch.texture]), m_factory.HeapIndex(m_resources[batch.mask]), 0, 0}};
+                             Float4(1.0f, 1.0f, 1.0f, 1.0f), indices};
     const D3D12_VERTEX_BUFFER_VIEW view{allocation.gpu, static_cast<UINT>(bytes), static_cast<UINT>(sizeof(TriangleVertex))};
     _commands->SetPipelineState(pipeline);
     _commands->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);

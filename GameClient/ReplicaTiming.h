@@ -75,4 +75,17 @@ struct InterpolatedOrb
 
 [[nodiscard]] std::vector<InterpolatedOrb> InterpolateOrbs(const StateReplica& _replica, double _fraction);
 
+/// An object of the effect pool as a frame draws it (ADR-123): its latest state, its position between its two latest
+/// states at the frame's fraction, and its movement over the latest tick, from which a grenade's flight is read.
+struct InterpolatedEffect
+{
+  StableId id = 0;
+  ReplicatedEffect state;
+  Neuron::Vec3 position;
+  Neuron::Vec3 tickMotion;
+  bool entered = false; // it entered at the latest tick, with no previous state
+};
+
+[[nodiscard]] std::vector<InterpolatedEffect> InterpolateEffects(const StateReplica& _replica, double _fraction);
+
 } // namespace Species

@@ -32,6 +32,10 @@ enum class SceneTexture : std::uint16_t
   BannerTintIdle,
   BannerTintFollow,
   BannerTintFormation,
+  MuzzleFlash, // fx.muzzle_flash, and the effects of ADR-123
+  Starburst,   // fx.starburst
+  BeamShort,   // fx.beam_short
+  ParticleDot, // fx.particle_dot
   Count
 };
 
@@ -39,6 +43,7 @@ enum class SceneTexture : std::uint16_t
 enum class SceneMesh : std::uint16_t
 {
   LeaderFigure, // mesh.unit.leader_figure
+  ThrownWeapon, // mesh.projectile.thrown_weapon (ADR-123)
   Count
 };
 

@@ -10,11 +10,13 @@ namespace Neuron
 
 /// Where a frame looks from (ADR-016): a position in world units, kept in binary64, and the yaw and pitch of the view.
 /// A yaw of 0 looks along −Z, a positive yaw turns towards −X (right-handed, +Y up), and a negative pitch looks down.
+/// The roll turns the view's up vector about its front, as the camera shake's offset does (VFX-232, ADR-123).
 struct CameraPose
 {
   Vec3 position;
   double yawRadians = 0.0;
   double pitchRadians = 0.0;
+  double rollRadians = 0.0;
   double verticalFovRadians = 1.0; // the camera's (ADR-016: Hor+, the horizontal field grows with the aspect ratio)
 };
 

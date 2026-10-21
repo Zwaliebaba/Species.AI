@@ -2,6 +2,7 @@
 
 #include "ClientSession.h"
 #include "DevelopmentOverlay.h"
+#include "EffectsLook.h"
 #include "FrameProfile.h"
 #include "LeaderLook.h"
 #include "LooseContent.h"
@@ -21,7 +22,8 @@ namespace Species
 
 /// The client's world frame (M1 task T13, ADR-115): the world's surfaces, built from the session's terrain with the
 /// client's presentation record and the content's textures once the terrain arrives, and each frame's inputs from the
-/// settlement view's camera and cursor (M1 task T14, ADR-119), and the crowds (M1 task T16, ADR-121). In a Debug build,
+/// settlement view's camera and cursor (M1 task T14, ADR-119), the crowds (M1 task T16, ADR-121, ADR-122) and the weapons'
+/// effects, particles and screen effects (ADR-123). In a Debug build,
 /// while the overlay is shown, each frame also carries a dot for each living figure (ADR-118) and the frame-rate line and
 /// frame page from the frame loop's profile (M1 task T15b, ADR-120).
 class WorldPresentation
@@ -40,8 +42,9 @@ public:
   // Once per frame, after the session's update: builds the world's surfaces when the session's terrain is new.
   void Update(const ClientSession& _session);
   // The inputs of the frame drawn now, seen through _view; _framesPerSecond is the renderer's counter (R-SIM-576), which a
-  // Debug build's development overlay shows (DBG-095, ADR-118).
-  [[nodiscard]] Neuron::FrameInputs Frame(const ClientSession& _session, const SettlementView& _view, double _framesPerSecond);
+  // Debug build's development overlay shows (DBG-095, ADR-118). The frame takes the session's presentation events, which
+  // its effects play (ADR-123).
+  [[nodiscard]] Neuron::FrameInputs Frame(ClientSession& _session, const SettlementView& _view, double _framesPerSecond);
 
   [[nodiscard]] const std::shared_ptr<const Neuron::WorldScene>& World() const noexcept
   {
@@ -80,6 +83,7 @@ private:
   std::shared_ptr<const Neuron::SceneTextures> m_sceneTextures; // ADR-121; none when the content lacks one
   std::shared_ptr<const Neuron::SceneMeshes> m_sceneMeshes;     // ADR-122; none when the content lacks one
   LeaderLook m_leaders;
+  EffectsLook m_effects;
   Neuron::FrameProfile m_profile;
   Neuron::PresentationClock m_presentationClock;
   bool m_overlayShown = false;

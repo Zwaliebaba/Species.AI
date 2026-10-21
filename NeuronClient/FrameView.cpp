@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "FrameView.h"
+#include "Geometry.h"
 
 #include <algorithm>
 #include <cmath>
@@ -29,7 +30,13 @@ FrameView MakeFrameView(const CameraPose& _pose, double _aspect, const Projectio
   const XMVECTOR eye = XMVectorZero();
   const XMVECTOR forward =
     XMVectorSet(static_cast<float>(direction.x), static_cast<float>(direction.y), static_cast<float>(direction.z), 0.0f);
-  const XMMATRIX view = XMMatrixLookToRH(eye, forward, XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+  // VFX-232: the roll turns the world's up about the front (Rodrigues' rotation), and the view re-orthogonalises it.
+  const Vec3 worldUp{0.0, 1.0, 0.0};
+  const double cosRoll = std::cos(_pose.rollRadians);
+  const double sinRoll = std::sin(_pose.rollRadians);
+  const Vec3 up = worldUp * cosRoll + Cross(direction, worldUp) * sinRoll + direction * (Dot(direction, worldUp) * (1.0 - cosRoll));
+  const XMMATRIX view =
+    XMMatrixLookToRH(eye, forward, XMVectorSet(static_cast<float>(up.x), static_cast<float>(up.y), static_cast<float>(up.z), 0.0f));
   // RND-212: the field of view is clamped before every projection, and kept within what a projection can take.
   const double fov = std::min(
     std::clamp(_pose.verticalFovRadians, _planes.fovMinRadians, std::max(_planes.fovMinRadians, _planes.fovMaxRadians)), FOV_LIMIT_RADIANS);

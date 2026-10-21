@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "DepthBias.h"
 #include "DescriptorHeaps.h"
 #include "DeviceGpuResourceFactory.h"
 #include "FatalPath.h"
@@ -46,10 +47,15 @@
 #include "CompiledShader/TerrainPS.h"
 #include "CompiledShader/TerrainVS.h"
 #include "CompiledShader/UnlitTexturedCutoutPS.h"
+#include "CompiledShader/UnlitTexturedLevelZeroPS.h"
 #include "CompiledShader/UnlitTexturedMaskPS.h"
 #include "CompiledShader/UnlitTexturedPS.h"
+#include "CompiledShader/UnlitTexturedParticleGlowPS.h"
+#include "CompiledShader/UnlitTexturedParticleSmokePS.h"
 #include "CompiledShader/UnlitTexturedSolidPS.h"
 #include "CompiledShader/UnlitTexturedVS.h"
+#include "CompiledShader/UnlitVertexColorPS.h"
+#include "CompiledShader/UnlitVertexColorVS.h"
 
 #include <algorithm>
 #include <array>
@@ -140,7 +146,10 @@ enum class WorldPass : std::uint8_t
   Waves,
   Actors,
   Workers,
+  Effects,
+  Lasers,
   Orbs,
+  Particles,
   Dots,
   Resolve,
   Final,
@@ -305,7 +314,7 @@ bool CreateSwapChain(RendererState& _state)
 }
 
 // The world frame's pipeline states (RND-061, ADR-113): the entries its passes use, and the final pass's.
-const std::array<PipelineEntry, 18> WORLD_PIPELINES{{
+const std::array<PipelineEntry, 25> WORLD_PIPELINES{{
   {"sky", g_SkyVS, g_SkyPS, VertexLayout::SkyInstance, BlendState::Additive, DepthState::None, CullState::Back, PipelineTarget::Scene},
   {"terrain", g_TerrainVS, g_TerrainPS, VertexLayout::Terrain, BlendState::Opaque, DepthState::TestWrite, CullState::Back,
    PipelineTarget::Scene},
@@ -347,6 +356,23 @@ const std::array<PipelineEntry, 18> WORLD_PIPELINES{{
    PipelineTarget::Scene},
   {"orb_additive", g_UnlitTexturedVS, g_UnlitTexturedMaskPS, VertexLayout::QuadInstance, BlendState::Additive, DepthState::Test,
    CullState::None, PipelineTarget::Scene},
+  // M1 task T16c (ADR-123): the effects of pass 10a (RND-308, RND-331 to RND-334, VFX-222, VFX-234), the grenade's mesh
+  // lit as the actors' are; the laser bolts of pass 10b with the bias variant `bias_laser` (RND-219, RND-338); and the
+  // particles' smoke and glow batches of pass 15 (VFX-217).
+  {"effect_additive", g_UnlitTexturedVS, g_UnlitTexturedMaskPS, VertexLayout::QuadInstance, BlendState::Additive, DepthState::Test,
+   CullState::None, PipelineTarget::Scene},
+  {"effect_additive_nodepth", g_UnlitTexturedVS, g_UnlitTexturedMaskPS, VertexLayout::QuadInstance, BlendState::Additive, DepthState::None,
+   CullState::None, PipelineTarget::Scene},
+  {"effect_gradient_nodepth", g_UnlitVertexColorVS, g_UnlitVertexColorPS, VertexLayout::TriangleVertex, BlendState::Additive,
+   DepthState::None, CullState::None, PipelineTarget::Scene},
+  {"effect_mesh_lit", g_MeshLitVS, g_MeshLitPS, VertexLayout::MeshInstanced, BlendState::Opaque, DepthState::TestWrite, CullState::Back,
+   PipelineTarget::Scene},
+  {"laser_bolt", g_UnlitTexturedVS, g_UnlitTexturedLevelZeroPS, VertexLayout::QuadInstance, BlendState::Additive, DepthState::Test,
+   CullState::None, PipelineTarget::Scene, DEPTH_BIAS_LASER},
+  {"particle_darkening", g_UnlitTexturedVS, g_UnlitTexturedParticleSmokePS, VertexLayout::QuadInstance, BlendState::Darkening,
+   DepthState::Test, CullState::None, PipelineTarget::Scene},
+  {"particle_additive", g_UnlitTexturedVS, g_UnlitTexturedParticleGlowPS, VertexLayout::QuadInstance, BlendState::Additive,
+   DepthState::Test, CullState::None, PipelineTarget::Scene},
 }};
 
 // The world frame's targets, at these indices of its table (RND-063, ADR-113).
@@ -387,7 +413,10 @@ WorldFrameTable WorldFrame(bool _multisampled)
   add(WorldPass::Waves, "pass_05b_coastline_waves", "sea_waves", scene);
   add(WorldPass::Actors, "pass_07b_other_actors", "actor_mesh_lit", scene);
   add(WorldPass::Workers, "pass_07d_workers", "worker_card", scene);
+  add(WorldPass::Effects, "pass_10a_effects", "effect_additive", scene);
+  add(WorldPass::Lasers, "pass_10b_laser_bolts", "laser_bolt", scene);
   add(WorldPass::Orbs, "pass_11_essence_orbs", "orb_additive", scene);
+  add(WorldPass::Particles, "pass_15_particles", "particle_additive", scene);
 #if ENGINE_DEVELOPMENT
   add(WorldPass::Dots, "pass_24_development_drawing", "development_dots", scene); // RND-076: Debug builds only
 #endif
@@ -784,10 +813,33 @@ void RecordWorldFrame(RendererState& _state, const FrameInputs& _inputs, ID3D12R
       _state.quads->Record(commands, *_state.ring, *_state.catalog, frame, ScenePass::Workers, _inputs.quadBatches);
       break;
     }
+    case WorldPass::Effects:
+    {
+      // RND-331: the grenades' meshes, which write depth, then the additive quads, and last the rings' discs and the
+      // full-screen flash (VFX-234).
+      ENGINE_PROFILE_SCOPE("render.weapons"); // the DBG-045 marker of the weapons' effects
+      _state.meshes->Record(commands, *_state.ring, *_state.catalog, frame, ScenePass::Effects, _inputs.meshBatches);
+      _state.quads->Record(commands, *_state.ring, *_state.catalog, frame, ScenePass::Effects, _inputs.quadBatches);
+      _state.quads->RecordTriangles(commands, *_state.ring, *_state.catalog, frame, ScenePass::Effects, _inputs.triangleBatches);
+      break;
+    }
+    case WorldPass::Lasers:
+    {
+      ENGINE_PROFILE_SCOPE("render.weapons");
+      _state.quads->Record(commands, *_state.ring, *_state.catalog, frame, ScenePass::Lasers, _inputs.quadBatches);
+      break;
+    }
     case WorldPass::Orbs:
     {
       ENGINE_PROFILE_SCOPE("render.essence_orbs");
       _state.quads->Record(commands, *_state.ring, *_state.catalog, frame, ScenePass::Orbs, _inputs.quadBatches);
+      break;
+    }
+    case WorldPass::Particles:
+    {
+      // VFX-217: the smoke batch, then the glow batch, in the order the game wrote them.
+      ENGINE_PROFILE_SCOPE("effects.particles.render");
+      _state.quads->Record(commands, *_state.ring, *_state.catalog, frame, ScenePass::Particles, _inputs.quadBatches);
       break;
     }
     case WorldPass::Dots:

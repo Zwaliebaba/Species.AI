@@ -161,6 +161,7 @@
     <ClInclude Include="AppWindow.h" />
     <ClInclude Include="CursorRenderer.h" />
     <ClInclude Include="DdsTexture.h" />
+    <ClInclude Include="DepthBias.h" />
     <ClInclude Include="DescriptorHeaps.h" />
     <ClInclude Include="DeviceGpuResourceFactory.h" />
     <ClInclude Include="DisplayAttempt.h" />
@@ -176,6 +177,7 @@
     <ClInclude Include="KeyboardMouseBackEnd.h" />
     <ClInclude Include="MeshRenderer.h" />
     <ClInclude Include="OverlayRenderer.h" />
+    <ClInclude Include="ParticlePool.h" />
     <ClInclude Include="PassTable.h" />
     <ClInclude Include="Picking.h" />
     <ClInclude Include="PipelineCatalog.h" />
@@ -214,6 +216,7 @@
     <ClCompile Include="KeyboardMouseBackEnd.cpp" />
     <ClCompile Include="MeshRenderer.cpp" />
     <ClCompile Include="OverlayRenderer.cpp" />
+    <ClCompile Include="ParticlePool.cpp" />
     <ClCompile Include="PassTable.cpp" />
     <ClCompile Include="Picking.cpp" />
     <ClCompile Include="PipelineCatalog.cpp" />
@@ -300,7 +303,16 @@
     <FXCompile Include="Shader\UnlitTexturedCutoutPS.hlsl">
       <ShaderType>Pixel</ShaderType>
     </FXCompile>
+    <FXCompile Include="Shader\UnlitTexturedLevelZeroPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
     <FXCompile Include="Shader\UnlitTexturedMaskPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\UnlitTexturedParticleGlowPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\UnlitTexturedParticleSmokePS.hlsl">
       <ShaderType>Pixel</ShaderType>
     </FXCompile>
     <FXCompile Include="Shader\UnlitTexturedPS.hlsl">
@@ -310,6 +322,12 @@
       <ShaderType>Pixel</ShaderType>
     </FXCompile>
     <FXCompile Include="Shader\UnlitTexturedVS.hlsl">
+      <ShaderType>Vertex</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\UnlitVertexColorPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\UnlitVertexColorVS.hlsl">
       <ShaderType>Vertex</ShaderType>
     </FXCompile>
   </ItemGroup>
@@ -325,6 +343,7 @@
     <None Include="Shader\Sky.hlsli" />
     <None Include="Shader\Terrain.hlsli" />
     <None Include="Shader\UnlitTextured.hlsli" />
+    <None Include="Shader\UnlitVertexColor.hlsli" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

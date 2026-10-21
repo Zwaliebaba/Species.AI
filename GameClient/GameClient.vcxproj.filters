@@ -10,6 +10,9 @@
     <Filter Include="Input">
       <UniqueIdentifier>{D0A05E7E-F988-525B-8E8B-C4D544440A60}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Presentation">
+      <UniqueIdentifier>{CDAEF812-68C0-5AFF-9E82-94845EF78BDA}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Replication">
       <UniqueIdentifier>{D71091FB-EB6D-5227-A505-FCE57B772653}</UniqueIdentifier>
     </Filter>
@@ -29,6 +32,9 @@
     </ClInclude>
     <ClInclude Include="DevelopmentOverlay.h">
       <Filter>Diagnostics</Filter>
+    </ClInclude>
+    <ClInclude Include="EffectsLook.h">
+      <Filter>View</Filter>
     </ClInclude>
     <ClInclude Include="InputBindings.h">
       <Filter>Input</Filter>
@@ -61,6 +67,9 @@
     </ClCompile>
     <ClCompile Include="DevelopmentOverlay.cpp">
       <Filter>Diagnostics</Filter>
+    </ClCompile>
+    <ClCompile Include="EffectsLook.cpp">
+      <Filter>View</Filter>
     </ClCompile>
     <ClCompile Include="InputBindings.cpp">
       <Filter>Input</Filter>

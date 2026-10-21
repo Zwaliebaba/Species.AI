@@ -105,6 +105,8 @@ Particles have no spin, no fade-in and no type-specific fade-out: the fade of VF
 
 **VFX-205** (MUST) One particle pool (`ParticlePool`) exists per client process. It is created at start-up and emptied at match teardown, so it holds particles of the current match only (R-SIM-005). It is simulated on the GPU (ADR-010): every live particle sits in one structured buffer with a free list and a live list managed by compute work, and every particle's type parameters come from one parameter buffer built from the effect definitions ([README.md](README.md) VFX-013). The pool creates these buffers through the renderer's GPU resource factory and no other way ([renderer/README.md](../renderer/README.md) RND-009, ADR-078), and its compute passes write them as resources that the frame graph imports (RND-063).
 
+> **Amendment 2026-10-21 (M1 task T16c, [ADR-123](../../../ADR/ADR-123-weapons-effects-and-particles-at-m1.md); ADR-010 amendment).** M1's pool is CPU code, `NeuronClient/ParticlePool`, with this section's capacities, caps, class limits, distance thinning and integration. It holds the six types M1 emits: explosion core, explosion debris, muzzle flare, control flash, missile trail and Worker fire. None of them has a terrain rule, so no terrain is sampled. Pass 15 draws its two batches with one instanced draw each. The GPU pool replaces it when a measured frame's effect passes exceed `rnd.budget.effects_ms` (RND-454).
+
 **VFX-206** (MUST) Each frame the runtime writes the frame's emission requests into an upload buffer (ADR-008); an emit pass allocates their slots from the free list, and a request that finds no slot under the caps of §4.4 is dropped. No simulation code can read particle state: the pool offers only emission, simulation, drawing, emptying and a development read-back of its counts.
 
 ```mermaid
@@ -273,6 +275,13 @@ Table 4.7-A Effect kinds.
 
 Every sound that accompanies these effects is a sound event of its owner's rule ([reference/10](../../../reference/10_audio_design/README.md)), not of the effect.
 
+> **Amendment 2026-10-21 (M1 task T16c, [ADR-123](../../../ADR/ADR-123-weapons-effects-and-particles-at-m1.md)).** At M1 the client raises these kinds from what it receives:
+> - **From events.** `Explosion`, `LeaderPromoted` (`WorkerPromoted`), `CrowdOrder` (`WorkersOrderedByPlayer`) and `LeaderOrder` (`LeaderOrderWaypoint`) come from the presentation events; the last three reach only the commanding team's client (ADR-106).
+> - **Once for each new tick of the replica.** `ThrownWeaponTrail` for each grenade that moved; `WorkerBurning` for each Burning Worker; `ControlGained` and `ControlLost` for each Worker whose `underControl` flag changed (DEC-962 item 1); `OrderMarkerStep` for each travelling order marker.
+> - **Not at M1.** `LeaderFormUp` waits for the formation slots, which the client does not hold.
+>
+> Each burst is thinned by VFX-213.
+
 ### 4.8 Presentation emitters
 
 **VFX-220** (MUST) These emitters run in presentation from the snapshot and the local interface state, at the fixed step rate of [README.md](README.md) VFX-018 (DEC-960); each step emits what the reference emits in one frame:
@@ -290,6 +299,8 @@ Every sound that accompanies these effects is a sound event of its owner's rule 
 **VFX-221** (MUST) Laser bolts and Convert bolts are drawn by the renderer (RND-338 to RND-341). Shockwave rings and lightning strikes draw their geometry by RND-333 to RND-337; their full-screen flash and camera shake are those of §4.11. Their timings and ground effects are simulation rules ([weapons_and_projectiles.md](../../../reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md)).
 
 **VFX-222** (MUST) A muzzle flash (`MuzzleFlashEffect`) is drawn in pass 10a as `ref.weapon.muzzle_flash.quads` (5) nested camera-facing quads of `fx.muzzle_flash` at its extrapolated position, each `ref.weapon.muzzle_flash.shrink` (0.8) × the size of the previous, at alpha clamp(life × `ref.weapon.muzzle_flash.alpha_factor` (0.75), 0, 1), with the sizes and lives that the shot helpers of R-CRATE-405 give and the motion and decay of R-CRATE-475. It is additive; while its size is below `ref.weapon.muzzle_flash.depth_test_size` (50) it is drawn with no depth test by `effect_additive_nodepth`, otherwise with the depth test of `effect_additive` (RND-308).
+
+> **Amendment 2026-10-21 (M1 task T16c, [ADR-123](../../../ADR/ADR-123-weapons-effects-and-particles-at-m1.md)).** A muzzle flash's size is the half-size of its first quad, as R-UNIT-330's and RND-334's sizes are. The client makes each flash from the `LaserFired` or `GrenadeThrown` event that brings it, and draws it from that event's display time.
 
 **VFX-223** (MUST) A Core Device pulse wave (`CorePulseWave`, R-CRATE-480 to R-CRATE-483) is drawn in pass 10a, without a view test, as three cylinders around its centre at its radius r in its team colour, each at alpha × (1 − r ÷ the map's world size x): a ground outline `ref.weapon.pulse_wave.outline_height` (200 wu) high, a glow tube of `fx.beam_long` `ref.weapon.pulse_wave.tube_height` (400 wu) high and a faint sky tube `ref.weapon.pulse_wave.sky_height` (1000 wu) high. Each cylinder is a strip of segments of `vfx.pulse.segment_angle` (1 ÷ 3 rad) around the circle, 19 segments, whose start angle advances with the unscaled presentation time. Its flash and shake are those of §4.11.
 
@@ -397,6 +408,12 @@ Table 4.10-A Shatter sources.
 | the Core Device pulse wave | its first `ref.weapon.pulse_wave.flash_time` (0.3 s) of unscaled presentation time | `vfx.screen.pulse_flash_alpha` (1); the distance factor is not applied | not game over |
 
 **VFX-235** (MUST) Flashes obey the photosensitivity rule (ADR-064, RND-248, DEC-964): a flash whose alpha reaches `vfx.screen.flash_count_threshold` (0.1), a luminance change of 10 %, counts as a flash onset; at most `vfx.screen.flash_onsets` (3) onsets are shown in any `vfx.screen.flash_window` (1 s) of real time, and a further onset inside the window is not drawn. The reduced-flash setting multiplies every flash alpha by `vfx.screen.reduced_flash_scale` (0.25). The settings themselves are stored by the settings store, and this component reads them (RND-440).
+
+> **Amendment 2026-10-21 (M1 task T16c, owner decision O77, [ADR-123](../../../ADR/ADR-123-weapons-effects-and-particles-at-m1.md)).** At M1:
+> - **The flash** is two triangles of `effect_gradient_nodepth` whose corners are given in clip space (`TRIANGLE_SCREEN_SPACE`), drawn last in pass 10a.
+> - **The shake** is added to the frame's camera pose, its yaw to the pose's yaw and its roll to `CameraPose::rollRadians`, and never to the settlement view's camera.
+> - **The onset limit** of VFX-235 holds, on the real presentation clock.
+> - **No settings store** exists at M1, so the reduced-motion and reduced-flash scales are not applied (DEC-964).
 
 ### 4.12 Other screen-space effects
 

@@ -58,13 +58,14 @@ D3D12_BLEND_DESC BlendOf(BlendState _blend) noexcept
                           .RenderTarget = {target, target, target, target, target, target, target, target}};
 }
 
-// RND-055: solid fill, counter-clockwise front faces (ADR-016), depth clip on, no depth bias.
-D3D12_RASTERIZER_DESC RasterizerOf(CullState _cull, bool _multisampled) noexcept
+// RND-055: solid fill, counter-clockwise front faces (ADR-016), depth clip on, and the entry's depth bias, none by default.
+// Under reversed Z a positive bias draws nearer the camera (RND-219).
+D3D12_RASTERIZER_DESC RasterizerOf(CullState _cull, bool _multisampled, std::int32_t _depthBias) noexcept
 {
   return D3D12_RASTERIZER_DESC{.FillMode = D3D12_FILL_MODE_SOLID,
                                .CullMode = _cull == CullState::Back ? D3D12_CULL_MODE_BACK : D3D12_CULL_MODE_NONE,
                                .FrontCounterClockwise = TRUE,
-                               .DepthBias = 0,
+                               .DepthBias = _depthBias,
                                .DepthBiasClamp = 0.0f,
                                .SlopeScaledDepthBias = 0.0f,
                                .DepthClipEnable = TRUE,
@@ -175,7 +176,7 @@ std::expected<PipelineCatalog, std::string> PipelineCatalog::Create(ID3D12Device
                                             .PS = {entry.pixelShader.data(), entry.pixelShader.size()},
                                             .BlendState = BlendOf(entry.blend),
                                             .SampleMask = UINT_MAX,
-                                            .RasterizerState = RasterizerOf(entry.cull, samples > 1),
+                                            .RasterizerState = RasterizerOf(entry.cull, samples > 1, entry.depthBias),
                                             .DepthStencilState = DepthOf(scene ? entry.depth : DepthState::None),
                                             .InputLayout = {elements.data(), static_cast<UINT>(elements.size())},
                                             .IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,

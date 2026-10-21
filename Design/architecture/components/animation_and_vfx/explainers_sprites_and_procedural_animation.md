@@ -163,6 +163,8 @@ A dead Worker's body is drawn in its colour × `ref.unit.worker.corpse_color` (0
 
 > **Amendment 2026-10-21 (O75; M1 task T16, [ADR-121](../../../ADR/ADR-121-workers-and-orbs-drawn-at-m1.md)).** A walking Worker bobs: its foot point rises along its up axis by `vfx.worker.walk_bob_height` (0.4 wu) × min(its speed over the latest tick ÷ `vfx.worker.walk_bob_full_speed` (20 wu/s), 1) × |sin(`vfx.worker.walk_bob_rate` (6 rad/s) × T + (unit id mod 10))|, T the scaled presentation time. The values are provisional, for the owner to tune (O75). The body layer is drawn for a living or an airborne Worker only, so a corpse on the ground shows its fragments alone. The fragments' display health h is the corpse fade of R-UNIT-034 interpolated between the replica's two latest states, which falls at the rates `vfx.worker.fragment_fade_ground` and `vfx.worker.fragment_fade_air` state; the three fragments drift 120° apart in the horizontal plane and rise by the same distance. The side strip's width scales with the card. The glows take the depth test of RND-308's `worker_glow`, which states it. The firing recoil of O75 arrives with the laser bolts (M1 task T16c).
 
+> **Amendment 2026-10-21 (O75; M1 task T16c, [ADR-123](../../../ADR/ADR-123-weapons-effects-and-particles-at-m1.md)).** A Worker that fires recoils. Its shot's shooter is the nearest living Worker of the shot's team whose foot lies within `vfx.worker.recoil_match_range` (3 wu) of the muzzle's, since `LaserFired` names the bolt and not its shooter. Its card is drawn pushed back along the shot's horizontal direction by `vfx.worker.recoil_distance` (0.5 wu), falling linearly to 0 over `vfx.worker.recoil_time` (0.15 s of scaled presentation time). The values are provisional, for the owner to tune (O75).
+
 ### 4.4 Seasonal theme
 
 **VFX-119** (MUST) Whether the seasonal theme is active is match state, decided once in the match setup and identical for every participant (DEC-118, R-SIM-726); whether Species keeps it and who chooses it is the Open DEC-101, whose default is that the host's match setup applies the reference date window `ref.meta.seasonal.first_day` to `ref.meta.seasonal.last_day` of `ref.meta.seasonal.month` once. This component reads the state from the match setup and never from a local date. While it is active:
@@ -202,6 +204,8 @@ The Rogue faction's colour is near black, so its additive figures are drawn inst
 **VFX-124** (removed: no rule of a match breaks an Essence orb, so no orb is drawn broken; DEC-871)
 
 **VFX-125** (MUST) The thrown weapon's tumble and fuse-blink flash (R-CRATE-414), the barrage missile's warhead, launcher and ground marker ([hazards_and_projectiles.md](../../../reference/02_units/hazards_and_projectiles.md), RND-324), the dust object (R-CRATE-505) and the snowflake (R-CRATE-501) are drawn as their owners state; the fuse blink's sound is a presentation event of the blink, never a sound started by drawing (DEC-007).
+
+> **Amendment 2026-10-21 (M1 task T16c, [ADR-123](../../../ADR/ADR-123-weapons-effects-and-particles-at-m1.md)).** R-CRATE-414 gives no tumble rate and no length for the fuse blink. At M1 the grenade tumbles about its right axis at `vfx.thrown.tumble_rate` (10 rad/s of scaled presentation time), from a phase of its id. Its blink shows during the last `ref.weapon.thrown.inner_flash_fraction` (20 %) of each second of its age, as a starburst in its colour and a white inner starburst of `vfx.thrown.inner_flash_scale` (0.5) × its size. Both values are provisional, for the owner to tune.
 
 ### 4.7 Damage flicker
 
@@ -451,6 +455,9 @@ The design-phase inputs of this component are listed in the [folder README](READ
 | `vfx.worker.walk_bob_height` | 0.4 | wu | Species, provisional (O75); the walk bob's lift at full speed | VFX-118 | |
 | `vfx.worker.walk_bob_rate` | 6 | rad/s of scaled presentation time | Species, provisional (O75) | VFX-118 | |
 | `vfx.worker.walk_bob_full_speed` | 20 | wu/s | Species, provisional (O75); the speed of a full bob, a Worker's walk | VFX-118 | |
+| `vfx.worker.recoil_distance` | 0.5 | wu | Species, provisional (O75, ADR-123); the recoil's push at the shot | VFX-118 | |
+| `vfx.worker.recoil_time` | 0.15 | s of scaled presentation time | Species, provisional (O75, ADR-123) | VFX-118 | |
+| `vfx.worker.recoil_match_range` | 3 | wu | Species, provisional (ADR-123); a shooter's foot from the muzzle's | VFX-118 | |
 | `vfx.worker.hat_scale` | 0.65 | × card size | seasonal hat | VFX-118 | DEC-101 |
 | `vfx.worker.hat_raise` | 0.95 | × up extent | seasonal hat | VFX-118 | DEC-101 |
 | `vfx.worker.hat_forward` | 0.01 | × front | seasonal hat | VFX-118 | DEC-101 |
@@ -504,3 +511,5 @@ The design-phase inputs of this component are listed in the [folder README](READ
 | `vfx.cloth.banner_wobble_rate` | 2 | rad/s of unscaled presentation time | | VFX-142 | |
 | `vfx.cloth.transport_size` | 20 | wu | Transport flags | VFX-142 | |
 | `vfx.motion.order_marker_flare` | 15 | wu | order-marker card | VFX-143 | |
+| `vfx.thrown.tumble_rate` | 10 | rad/s of scaled presentation time | Species, provisional (ADR-123); the grenade's tumble | VFX-125 | |
+| `vfx.thrown.inner_flash_scale` | 0.5 | × the blink's size | Species, provisional (ADR-123); the white inner flash | VFX-125 | |

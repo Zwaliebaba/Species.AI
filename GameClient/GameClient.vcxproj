@@ -147,6 +147,7 @@
     <ClInclude Include="ClientSession.h" />
     <ClInclude Include="CrowdLook.h" />
     <ClInclude Include="DevelopmentOverlay.h" />
+    <ClInclude Include="EffectsLook.h" />
     <ClInclude Include="InputBindings.h" />
     <ClInclude Include="LeaderLook.h" />
     <ClInclude Include="ReplicaTiming.h" />
@@ -159,6 +160,7 @@
     <ClCompile Include="ClientSession.cpp" />
     <ClCompile Include="CrowdLook.cpp" />
     <ClCompile Include="DevelopmentOverlay.cpp" />
+    <ClCompile Include="EffectsLook.cpp" />
     <ClCompile Include="InputBindings.cpp" />
     <ClCompile Include="LeaderLook.cpp" />
     <ClCompile Include="ReplicaTiming.cpp" />

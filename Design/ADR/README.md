@@ -123,6 +123,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-120](ADR-120-frame-page-toggle-and-sandbox-restart-at-m1.md) | The development overlay's frame page, its toggle and the sandbox restart at M1 | Proposed | 2026-10-21 |
 | [ADR-121](ADR-121-workers-and-orbs-drawn-at-m1.md) | The Workers and the Essence orbs drawn at M1 | Proposed | 2026-10-21 |
 | [ADR-122](ADR-122-leaders-and-banners-drawn-at-m1.md) | The Leaders and their banners drawn at M1 | Proposed | 2026-10-21 |
+| [ADR-123](ADR-123-weapons-effects-and-particles-at-m1.md) | The weapons' effects, the screen effects and the particles at M1 | Proposed | 2026-10-21 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

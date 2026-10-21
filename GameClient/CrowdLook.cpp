@@ -36,8 +36,13 @@ constexpr std::array<std::string_view, static_cast<std::size_t>(SceneTexture::Co
   "textures/marker/leaderbannertintidle",
   "textures/marker/leaderbannertintfollow",
   "textures/marker/leaderbannertintformation",
+  "textures/fx/muzzleflash",
+  "textures/fx/starburst",
+  "textures/fx/beamshort",
+  "textures/fx/particledot",
 };
-constexpr std::array<std::string_view, static_cast<std::size_t>(SceneMesh::Count)> SCENE_MESH_KEYS{"meshes/leaderfigure"};
+constexpr std::array<std::string_view, static_cast<std::size_t>(SceneMesh::Count)> SCENE_MESH_KEYS{"meshes/leaderfigure",
+                                                                                                   "meshes/thrownweapon"};
 
 constexpr double FULL_ALPHA = 255.0;
 // ADR-121: R-UNIT-142's (slot index × unit id) mod 10 reads the unit id's counter times this prime, since a figure's

@@ -171,6 +171,7 @@
     <ClCompile Include="ClientSessionTests.cpp" />
     <ClCompile Include="CrowdLookTests.cpp" />
     <ClCompile Include="DevelopmentOverlayTests.cpp" />
+    <ClCompile Include="EffectsLookTests.cpp" />
     <ClCompile Include="LeaderLookTests.cpp" />
     <ClCompile Include="SettlementCameraTests.cpp" />
     <ClCompile Include="TestSupport.cpp" />

@@ -117,4 +117,34 @@ std::vector<InterpolatedOrb> InterpolateOrbs(const StateReplica& _replica, doubl
   return orbs;
 }
 
+std::vector<InterpolatedEffect> InterpolateEffects(const StateReplica& _replica, double _fraction)
+{
+  const double f = std::clamp(_fraction, 0.0, 1.0);
+  std::vector<InterpolatedEffect> effects;
+  const StateReplica::View& previous = _replica.Previous();
+  auto before = previous.begin();
+  for (const auto& [id, state] : _replica.Latest())
+  {
+    const auto* effect = std::get_if<ReplicatedEffect>(&state);
+    if (effect == nullptr)
+    {
+      continue;
+    }
+    InterpolatedEffect& drawn = effects.emplace_back(InterpolatedEffect{id, *effect, PositionOf(effect->position), {}, true});
+    while (before != previous.end() && before->first < id)
+    {
+      ++before;
+    }
+    const auto* was = before != previous.end() && before->first == id ? std::get_if<ReplicatedEffect>(&before->second) : nullptr;
+    if (was != nullptr)
+    {
+      const Neuron::Vec3 from = PositionOf(was->position);
+      drawn.tickMotion = drawn.position - from;
+      drawn.position = from + drawn.tickMotion * f;
+      drawn.entered = false;
+    }
+  }
+  return effects;
+}
+
 } // namespace Species

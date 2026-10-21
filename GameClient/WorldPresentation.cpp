@@ -217,6 +217,7 @@ std::shared_ptr<const Neuron::WorldScene> BuildWorldScene(const RegionTerrain& _
 WorldPresentation::WorldPresentation(Desc _desc)
   : m_desc(_desc),
     m_start(_desc.clock->Now()),
+    m_effects(*_desc.presentation, *_desc.tuning),
     m_profile(ProfileDescOf(*_desc.presentation)),
     m_presentationClock(_desc.presentation->ref.sim.frame.deltaClamp)
 {
@@ -237,6 +238,7 @@ void WorldPresentation::Update(const ClientSession& _session)
   }
   m_terrain = terrain;
   m_firstDisplayTick.reset();
+  m_effects.Clear();
   if (terrain == nullptr)
   {
     m_world.reset();
@@ -252,7 +254,7 @@ void WorldPresentation::Update(const ClientSession& _session)
   }
 }
 
-Neuron::FrameInputs WorldPresentation::Frame(const ClientSession& _session, const SettlementView& _view, double _framesPerSecond)
+Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const SettlementView& _view, double _framesPerSecond)
 {
   const TuningPresentation::Rnd::Frame::ClearColorNoMatch& background = m_desc.presentation->rnd.frame.clearColorNoMatch;
   Neuron::FrameInputs inputs;
@@ -267,15 +269,18 @@ Neuron::FrameInputs WorldPresentation::Frame(const ClientSession& _session, cons
     inputs.cursor = _view.CursorDraw();
   }
   // RND-152: the sky moves one tick's worth per displayed tick, the displayed tick standing one behind the latest.
+  std::optional<double> displayTick;
   if (const std::optional<std::uint64_t> latest = _session.ServerTick(); latest.has_value() && *latest > 0)
   {
-    const double displayed = static_cast<double>(*latest - 1) + _session.InterpolationFraction();
+    displayTick = static_cast<double>(*latest - 1) + _session.InterpolationFraction();
     if (!m_firstDisplayTick)
     {
-      m_firstDisplayTick = displayed;
+      m_firstDisplayTick = displayTick;
     }
-    inputs.skyTicks = displayed - *m_firstDisplayTick;
+    inputs.skyTicks = *displayTick - *m_firstDisplayTick;
   }
+  // ADR-123: the presentation events are taken every frame, and dropped while no world is drawn.
+  const std::vector<ReceivedEvent> events = _session.TakeEvents();
   // M1 task T16 (ADR-121): the crowds, on the presentation clock (VFX-016; no world is held at M1, at game speed 1).
   m_presentationClock.Advance(m_desc.clock->Now(), false, 1.0);
   if (m_terrain != nullptr && m_sceneTextures != nullptr)
@@ -287,7 +292,23 @@ Neuron::FrameInputs WorldPresentation::Frame(const ClientSession& _session, cons
     crowd.unscaledSeconds = m_presentationClock.UnscaledSeconds();
     crowd.localTeam = _session.CommandedTeam();
     const double fraction = _session.InterpolationFraction();
-    const std::vector<InterpolatedFigure> figures = InterpolateFigures(_session.Replica(), fraction);
+    std::vector<InterpolatedFigure> figures = InterpolateFigures(_session.Replica(), fraction);
+    // M1 task T16c (ADR-123): the events and per-tick emitters first, then the shooters' recoil on the figures drawn.
+    EffectsView effectsView;
+    effectsView.camera = crowd.camera;
+    effectsView.cameraFront = crowd.cameraFront;
+    effectsView.verticalFovRadians = inputs.camera.verticalFovRadians;
+    effectsView.displayTick = displayTick.value_or(0.0);
+    effectsView.fraction = fraction;
+    effectsView.scaledSeconds = m_presentationClock.ScaledSeconds();
+    effectsView.unscaledSeconds = m_presentationClock.UnscaledSeconds();
+    effectsView.unscaledStep = m_presentationClock.UnscaledStepSeconds();
+    effectsView.realSeconds = m_presentationClock.RealSeconds();
+    if (displayTick.has_value())
+    {
+      m_effects.Update(events, _session.Replica(), figures, effectsView);
+      m_effects.ApplyRecoil(figures, effectsView);
+    }
     inputs.sceneTextures = m_sceneTextures;
     AppendWorkerBatches(figures, m_terrain->field, crowd, *m_desc.presentation, *m_desc.tuning, inputs.quadBatches);
     // M1 task T16b (ADR-122): the Leaders' figures and banners in pass 7b.
@@ -303,6 +324,24 @@ Neuron::FrameInputs WorldPresentation::Frame(const ClientSession& _session, cons
       inputs.triangleBatches = std::move(leaders.triangles);
     }
     AppendOrbBatches(InterpolateOrbs(_session.Replica(), fraction), *m_desc.presentation, inputs.quadBatches);
+    if (displayTick.has_value())
+    {
+      // Passes 10a, 10b and 15, and the camera shake as an offset of the frame's view alone (VFX-232).
+      EffectDraws effects;
+      m_effects.Draw(InterpolateEffects(_session.Replica(), fraction), m_terrain->field, effectsView, effects);
+      if (m_sceneMeshes != nullptr && m_sceneMeshes->meshes.size() == static_cast<std::size_t>(SceneMesh::Count))
+      {
+        inputs.sceneMeshes = m_sceneMeshes;
+        inputs.meshBatches.insert(inputs.meshBatches.end(), std::make_move_iterator(effects.meshes.begin()),
+                                  std::make_move_iterator(effects.meshes.end()));
+      }
+      inputs.quadBatches.insert(inputs.quadBatches.end(), std::make_move_iterator(effects.quads.begin()),
+                                std::make_move_iterator(effects.quads.end()));
+      inputs.triangleBatches.insert(inputs.triangleBatches.end(), std::make_move_iterator(effects.triangles.begin()),
+                                    std::make_move_iterator(effects.triangles.end()));
+      inputs.camera.yawRadians += effects.shakeYawRadians;
+      inputs.camera.rollRadians += effects.shakeRollRadians;
+    }
   }
 #if ENGINE_DEVELOPMENT
   // DBG-095, DBG-096, ADR-120: while the overlay is shown, the frame-rate line, whose objects are counted while a world

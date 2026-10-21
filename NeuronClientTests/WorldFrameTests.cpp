@@ -97,6 +97,22 @@ public:
     Assert::AreEqual(1.0, Project(Neuron::MakeFrameView(pose, 1.0, {}), {0.0, edge, -1'000.0})[1], 1e-4);
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Vfx232TheRollTurnsTheViewsUpAboutItsFront)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"VFX-232")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Vfx232TheRollTurnsTheViewsUpAboutItsFront)
+  {
+    Neuron::CameraPose pose;
+    pose.verticalFovRadians = std::numbers::pi / 3.0;
+    const std::array<double, 3> level = Project(Neuron::MakeFrameView(pose, 1.0, {}), {100.0, 0.0, -1'000.0});
+    Assert::IsTrue(level[0] > 0.0 && std::abs(level[1]) < 1e-6, L"unrolled, +x is to the right");
+    // Rolled a quarter turn, the view's up is the world's +x, so a point to the right is at the top of the image.
+    pose.rollRadians = std::numbers::pi / 2.0;
+    const std::array<double, 3> rolled = Project(Neuron::MakeFrameView(pose, 1.0, {}), {100.0, 0.0, -1'000.0});
+    Assert::IsTrue(std::abs(rolled[0]) < 1e-5 && rolled[1] > 0.0, L"rolled, it is at the top");
+    Assert::AreEqual(level[0], rolled[1], 1e-5, L"at the same distance from the centre");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Wld246ACameraRelativeOffsetIsExactToAHundredthAtTheFarCorner)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"WLD-246")
   END_TEST_METHOD_ATTRIBUTE()

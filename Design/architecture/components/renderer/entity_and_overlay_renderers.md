@@ -376,6 +376,8 @@ The order of this table carries no meaning. The spawn-network transit beams, the
 
 **RND-334** (MUST) During the first `ref.weapon.shockwave.billboard_time` (1 s) of its life, at camera distance *D*, a shockwave ring also draws its blast: `rnd.shockwave.blast_layers` (5) stacked `CameraFacing` quads of `fx.starburst` whose first half-size is size × `rnd.shockwave.blast_star_scale` (500) ÷ √*D* and each further one × `rnd.shockwave.blast_layer_growth` (1.2), in `rnd.shockwave.blast_color` (1, 0.5, 0.2) with alpha 1 − age in seconds; then 5 stacked quads of `fx.glow_round` whose first half-size is size × `rnd.shockwave.blast_glow_scale` (1000) ÷ √*D*, growing likewise, in the same colour, all with `effect_additive`. Its full-screen flash and camera shake are those of R-CRATE-473, drawn and applied by the VFX screen effects (RND-246).
 
+> **Amendment 2026-10-21 (M1 task T16c, [ADR-123](../../../ADR/ADR-123-weapons-effects-and-particles-at-m1.md)).** At M1, pass 10a draws the grenades' meshes first with `effect_mesh_lit` (`MeshLit`, `Opaque`, `TestWrite`, `Back`), then its additive quads, then the rings' discs and last the full-screen flash. The disc's fan has `rnd.shockwave.disc_segments` (32, provisional) triangles. A ring's blast is drawn from a presentation copy made when the ring is first met, so it lasts its first second although the grenade's ring lives 0.625 s. The quads' view test is ADR-121's sphere test.
+
 **RND-335** (MUST) The ring's damaging radius is a simulation rule ([weapons_and_projectiles.md](../../../reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md)) and the drawn ring of RND-333 never feeds it; the drawn ring starts at radius 35 wu when the ring is created.
 
 **RND-336** (MUST) A lightning strike (R-CRATE-497) that is not striking draws its cloud glow: one quad of `fx.glow_round` at its position with the half-size `ref.weapon.lightning.glow_size` (200 wu), right axis = the camera right vector and up axis = (0, 1, 0) × right, with alpha |sin(`rnd.lightning.cloud_pulse_rate` (2 rad per s) × *g*)|, *g* the presentation frame time.
@@ -387,6 +389,8 @@ The order of this table carries no meaning. The spawn-network transit beams, the
 **RND-338** (MUST) Pass 10b draws every laser bolt of the match world as one instanced draw with the `laser_bolt` entry: additive, no culling, no depth write and the `bias_laser` variant (RND-219). Each bolt is drawn as `rnd.laser.layers` (5) identical `Segment` instances, so its additive brightness is five times one layer's before the clamp of RND-058.
 
 **RND-339** (MUST) A bolt's segment (R-CRATE-445) runs from its drawn position *p* (RND-081) to *p* + Normalize(velocity) × `ref.weapon.laser.billboard_length` (10 wu), with the half-width `rnd.laser.half_width` (0.8 wu) perpendicular to the camera ray (RND-306), in the team colour of the bolt's source team, or `rnd.laser.rogue_color` (255, 255, 255) for the Rogue faction. A Convert bolt multiplies the half-width by `ref.weapon.laser.convert_width_factor` (2) and samples `fx.convert_beam`; every other bolt samples `fx.beam_short`. Both textures are read through a view of mip level 0 only, with linear clamp-to-edge filtering, *u* along the bolt and *v* across it.
+
+> **Amendment 2026-10-21 (M1 task T16c, [ADR-123](../../../ADR/ADR-123-weapons-effects-and-particles-at-m1.md)).** The client rebuilds each bolt from its `LaserFired` and `LaserRicochet` events, since bolts are not replicated (ADR-111). It draws the bolt from the display time of its event's tick less one, until its life, its second ground contact or the region's edge ends it. Its beam is read at mip level 0 by `SampleLevel` in `UnlitTexturedLevelZeroPS`, which stands in for AST-026's level-0 view. M1 has no Convert or Rogue bolt.
 
 **RND-340** (MUST) A laser bolt that passes within √`ref.weapon.laser.shake_range_sq` (about 14 wu) of the camera requests a camera shake of `ref.weapon.laser.shake` (0.5) through the VFX screen effects (R-CRATE-445, RND-246), unless the match is over or paused; the request is presentation-only and local, and the renderer issues it while it writes the bolt's instances, never from the simulation.
 
@@ -568,6 +572,7 @@ The golden-image tests compare with the default tolerance and on the pinned refe
 | `rnd.sphere.line_width` | 1 | px | wire drawing | RND-330 | |
 | `rnd.shockwave.center_color` | 1, 1, 0, 0 | RGBA | fan centre | RND-333 | |
 | `rnd.shockwave.rim_color` | 1, 0.5, 0.5 | RGB | fan rim | RND-333 | |
+| `rnd.shockwave.disc_segments` | 32 | triangles | Species, provisional (ADR-123); the fan's | RND-333 | |
 | `rnd.shockwave.blast_layers` | 5 | quads | per texture | RND-334 | |
 | `rnd.shockwave.blast_star_scale` | 500 | × size ÷ √distance | first star half-size | RND-334 | |
 | `rnd.shockwave.blast_glow_scale` | 1000 | × size ÷ √distance | first glow half-size | RND-334 | |

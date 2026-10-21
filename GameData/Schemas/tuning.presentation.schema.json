@@ -812,6 +812,273 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "depth_bias": {
+          "type": "object",
+          "description": "the rnd.depth_bias.* keys",
+          "properties": {
+            "laser": {
+              "type": "number",
+              "description": "rnd.depth_bias.laser (RND-219)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "bias factor k",
+              "x-species-presence": "required"
+            },
+            "unit_scale": {
+              "type": "number",
+              "description": "rnd.depth_bias.unit_scale (RND-220)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "2^24",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "laser",
+            "unit_scale"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "frustum": {
+          "type": "object",
+          "description": "the rnd.frustum.* keys",
+          "properties": {
+            "point_tolerance": {
+              "type": "number",
+              "description": "rnd.frustum.point_tolerance (RND-234)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "cosine",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "point_tolerance"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "laser": {
+          "type": "object",
+          "description": "the rnd.laser.* keys",
+          "properties": {
+            "layers": {
+              "type": "integer",
+              "description": "rnd.laser.layers (RND-338)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "instances per bolt",
+              "x-species-presence": "required"
+            },
+            "half_width": {
+              "type": "number",
+              "description": "rnd.laser.half_width (RND-339)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "layers",
+            "half_width"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "shockwave": {
+          "type": "object",
+          "description": "the rnd.shockwave.* keys",
+          "properties": {
+            "center_color": {
+              "type": "object",
+              "description": "rnd.shockwave.center_color (RND-333)",
+              "properties": {
+                "r": {
+                  "type": "number",
+                  "description": "rnd.shockwave.center_color.r",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGBA",
+                  "x-species-presence": "required"
+                },
+                "g": {
+                  "type": "number",
+                  "description": "rnd.shockwave.center_color.g",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGBA",
+                  "x-species-presence": "required"
+                },
+                "b": {
+                  "type": "number",
+                  "description": "rnd.shockwave.center_color.b",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGBA",
+                  "x-species-presence": "required"
+                },
+                "a": {
+                  "type": "number",
+                  "description": "rnd.shockwave.center_color.a",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGBA",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "r",
+                "g",
+                "b",
+                "a"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "rim_color": {
+              "type": "object",
+              "description": "rnd.shockwave.rim_color (RND-333)",
+              "properties": {
+                "r": {
+                  "type": "number",
+                  "description": "rnd.shockwave.rim_color.r",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGB",
+                  "x-species-presence": "required"
+                },
+                "g": {
+                  "type": "number",
+                  "description": "rnd.shockwave.rim_color.g",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGB",
+                  "x-species-presence": "required"
+                },
+                "b": {
+                  "type": "number",
+                  "description": "rnd.shockwave.rim_color.b",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGB",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "r",
+                "g",
+                "b"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "disc_segments": {
+              "type": "integer",
+              "description": "rnd.shockwave.disc_segments (RND-333)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "triangles of the fan",
+              "x-species-presence": "required"
+            },
+            "blast_layers": {
+              "type": "integer",
+              "description": "rnd.shockwave.blast_layers (RND-334)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "quads per texture",
+              "x-species-presence": "required"
+            },
+            "blast_star_scale": {
+              "type": "number",
+              "description": "rnd.shockwave.blast_star_scale (RND-334)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "size per root of distance",
+              "x-species-presence": "required"
+            },
+            "blast_glow_scale": {
+              "type": "number",
+              "description": "rnd.shockwave.blast_glow_scale (RND-334)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "size per root of distance",
+              "x-species-presence": "required"
+            },
+            "blast_layer_growth": {
+              "type": "number",
+              "description": "rnd.shockwave.blast_layer_growth (RND-334)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times per layer",
+              "x-species-presence": "required"
+            },
+            "blast_color": {
+              "type": "object",
+              "description": "rnd.shockwave.blast_color (RND-334)",
+              "properties": {
+                "r": {
+                  "type": "number",
+                  "description": "rnd.shockwave.blast_color.r",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGB",
+                  "x-species-presence": "required"
+                },
+                "g": {
+                  "type": "number",
+                  "description": "rnd.shockwave.blast_color.g",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGB",
+                  "x-species-presence": "required"
+                },
+                "b": {
+                  "type": "number",
+                  "description": "rnd.shockwave.blast_color.b",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGB",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "r",
+                "g",
+                "b"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "center_color",
+            "rim_color",
+            "disc_segments",
+            "blast_layers",
+            "blast_star_scale",
+            "blast_glow_scale",
+            "blast_layer_growth",
+            "blast_color"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
@@ -824,7 +1091,11 @@
         "budget",
         "crowd",
         "pso",
-        "tint"
+        "tint",
+        "depth_bias",
+        "frustum",
+        "laser",
+        "shockwave"
       ],
       "additionalProperties": false,
       "x-species-type": "object",
@@ -1755,6 +2026,44 @@
                   "x-species-type": "sim_decimal",
                   "x-species-unit": "per second",
                   "x-species-presence": "required"
+                },
+                "shake": {
+                  "type": "object",
+                  "description": "ref.ctrl.camera.shake (R-CTRL-463)",
+                  "properties": {
+                    "yaw_factor": {
+                      "type": "number",
+                      "description": "ref.ctrl.camera.shake.yaw_factor",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "rad per shake, decay per s",
+                      "x-species-presence": "required"
+                    },
+                    "roll_factor": {
+                      "type": "number",
+                      "description": "ref.ctrl.camera.shake.roll_factor",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "rad per shake, decay per s",
+                      "x-species-presence": "required"
+                    },
+                    "decay": {
+                      "type": "number",
+                      "description": "ref.ctrl.camera.shake.decay",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "rad per shake, decay per s",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "yaw_factor",
+                    "roll_factor",
+                    "decay"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
@@ -1770,7 +2079,8 @@
                 "fast_pan_factor",
                 "cliff_probe",
                 "ground_samples",
-                "position_smoothing"
+                "position_smoothing",
+                "shake"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -1928,12 +2238,93 @@
               "additionalProperties": false,
               "x-species-type": "object",
               "x-species-presence": "required"
+            },
+            "promote": {
+              "type": "object",
+              "description": "the ref.ctrl.promote.* keys",
+              "properties": {
+                "flash_count": {
+                  "type": "object",
+                  "description": "ref.ctrl.promote.flash_count (R-CTRL-071)",
+                  "properties": {
+                    "base": {
+                      "type": "number",
+                      "description": "ref.ctrl.promote.flash_count.base",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "particles",
+                      "x-species-presence": "required"
+                    },
+                    "modulus": {
+                      "type": "number",
+                      "description": "ref.ctrl.promote.flash_count.modulus",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "particles",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "base",
+                    "modulus"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "flash_velocity": {
+                  "type": "object",
+                  "description": "ref.ctrl.promote.flash_velocity (R-CTRL-071)",
+                  "properties": {
+                    "x_range": {
+                      "type": "number",
+                      "description": "ref.ctrl.promote.flash_velocity.x_range",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "wu/s, x and z signed",
+                      "x-species-presence": "required"
+                    },
+                    "y_range": {
+                      "type": "number",
+                      "description": "ref.ctrl.promote.flash_velocity.y_range",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "wu/s, x and z signed",
+                      "x-species-presence": "required"
+                    },
+                    "z_range": {
+                      "type": "number",
+                      "description": "ref.ctrl.promote.flash_velocity.z_range",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "wu/s, x and z signed",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "x_range",
+                    "y_range",
+                    "z_range"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "flash_count",
+                "flash_velocity"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
             }
           },
           "required": [
             "camera",
             "pointer",
-            "cursor"
+            "cursor",
+            "promote"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -2396,13 +2787,402 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "weapon": {
+          "type": "object",
+          "description": "the ref.weapon.* keys",
+          "properties": {
+            "laser": {
+              "type": "object",
+              "description": "the ref.weapon.laser.* keys",
+              "properties": {
+                "billboard_length": {
+                  "type": "number",
+                  "description": "ref.weapon.laser.billboard_length (R-CRATE-445)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "shake_range_sq": {
+                  "type": "number",
+                  "description": "ref.weapon.laser.shake_range_sq (R-CRATE-445)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu squared",
+                  "x-species-presence": "required"
+                },
+                "shake": {
+                  "type": "number",
+                  "description": "ref.weapon.laser.shake (R-CRATE-445)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "shake",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "billboard_length",
+                "shake_range_sq",
+                "shake"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "muzzle_flash": {
+              "type": "object",
+              "description": "the ref.weapon.muzzle_flash.* keys",
+              "properties": {
+                "laser_size_factor": {
+                  "type": "number",
+                  "description": "ref.weapon.muzzle_flash.laser_size_factor (R-CRATE-405)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "size per s of bolt life",
+                  "x-species-presence": "required"
+                },
+                "laser_life": {
+                  "type": "number",
+                  "description": "ref.weapon.muzzle_flash.laser_life (R-CRATE-405)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "tenths of a second",
+                  "x-species-presence": "required"
+                },
+                "throw_size": {
+                  "type": "number",
+                  "description": "ref.weapon.muzzle_flash.throw_size (R-CRATE-405)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "size",
+                  "x-species-presence": "required"
+                },
+                "throw_life": {
+                  "type": "number",
+                  "description": "ref.weapon.muzzle_flash.throw_life (R-CRATE-405)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "tenths of a second",
+                  "x-species-presence": "required"
+                },
+                "speed": {
+                  "type": "number",
+                  "description": "ref.weapon.muzzle_flash.speed (R-CRATE-475)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "decay": {
+                  "type": "number",
+                  "description": "ref.weapon.muzzle_flash.decay (R-CRATE-475)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "life per s",
+                  "x-species-presence": "required"
+                },
+                "quads": {
+                  "type": "integer",
+                  "description": "ref.weapon.muzzle_flash.quads (R-CRATE-475)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "quads",
+                  "x-species-presence": "required"
+                },
+                "shrink": {
+                  "type": "number",
+                  "description": "ref.weapon.muzzle_flash.shrink (R-CRATE-475)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times per quad",
+                  "x-species-presence": "required"
+                },
+                "alpha_factor": {
+                  "type": "number",
+                  "description": "ref.weapon.muzzle_flash.alpha_factor (R-CRATE-475)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times life",
+                  "x-species-presence": "required"
+                },
+                "depth_test_size": {
+                  "type": "number",
+                  "description": "ref.weapon.muzzle_flash.depth_test_size (R-CRATE-475)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "size",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "laser_size_factor",
+                "laser_life",
+                "throw_size",
+                "throw_life",
+                "speed",
+                "decay",
+                "quads",
+                "shrink",
+                "alpha_factor",
+                "depth_test_size"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "thrown": {
+              "type": "object",
+              "description": "the ref.weapon.thrown.* keys",
+              "properties": {
+                "color": {
+                  "type": "object",
+                  "description": "ref.weapon.thrown.color (R-CRATE-415)",
+                  "properties": {
+                    "r": {
+                      "type": "number",
+                      "description": "ref.weapon.thrown.color.r",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "RGB, 0 to 255",
+                      "x-species-presence": "required"
+                    },
+                    "g": {
+                      "type": "number",
+                      "description": "ref.weapon.thrown.color.g",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "RGB, 0 to 255",
+                      "x-species-presence": "required"
+                    },
+                    "b": {
+                      "type": "number",
+                      "description": "ref.weapon.thrown.color.b",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "RGB, 0 to 255",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "r",
+                    "g",
+                    "b"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "trail_size": {
+                  "type": "number",
+                  "description": "ref.weapon.thrown.trail_size (R-CRATE-414)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "particle size",
+                  "x-species-presence": "required"
+                },
+                "trail_jitter": {
+                  "type": "number",
+                  "description": "ref.weapon.thrown.trail_jitter (R-CRATE-414)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "trail_skip": {
+                  "type": "number",
+                  "description": "ref.weapon.thrown.trail_skip (R-CRATE-414)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "divided by the game speed",
+                  "x-species-presence": "required"
+                },
+                "flash_alpha": {
+                  "type": "number",
+                  "description": "ref.weapon.thrown.flash_alpha (R-CRATE-414)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "alpha of 255",
+                  "x-species-presence": "required"
+                },
+                "inner_flash_fraction": {
+                  "type": "number",
+                  "description": "ref.weapon.thrown.inner_flash_fraction (R-CRATE-414)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "of each second",
+                  "x-species-presence": "required"
+                },
+                "flash_size_factor": {
+                  "type": "number",
+                  "description": "ref.weapon.thrown.flash_size_factor (R-CRATE-414)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "per root of the distance",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "color",
+                "trail_size",
+                "trail_jitter",
+                "trail_skip",
+                "flash_alpha",
+                "inner_flash_fraction",
+                "flash_size_factor"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "explosion": {
+              "type": "object",
+              "description": "the ref.weapon.explosion.* keys",
+              "properties": {
+                "particle_factor": {
+                  "type": "number",
+                  "description": "ref.weapon.explosion.particle_factor (R-CRATE-406)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "cores per range times damage",
+                  "x-species-presence": "required"
+                },
+                "core_lift": {
+                  "type": "number",
+                  "description": "ref.weapon.explosion.core_lift (R-CRATE-406)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times the range",
+                  "x-species-presence": "required"
+                },
+                "debris_min": {
+                  "type": "number",
+                  "description": "ref.weapon.explosion.debris_min (R-CRATE-406)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "particles",
+                  "x-species-presence": "required"
+                },
+                "debris_max": {
+                  "type": "number",
+                  "description": "ref.weapon.explosion.debris_max (R-CRATE-406)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "particles",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "particle_factor",
+                "core_lift",
+                "debris_min",
+                "debris_max"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "shockwave": {
+              "type": "object",
+              "description": "the ref.weapon.shockwave.* keys",
+              "properties": {
+                "disc_lift": {
+                  "type": "number",
+                  "description": "ref.weapon.shockwave.disc_lift (R-CRATE-473)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "disc_alpha": {
+                  "type": "number",
+                  "description": "ref.weapon.shockwave.disc_alpha (R-CRATE-473)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "alpha",
+                  "x-species-presence": "required"
+                },
+                "flash_time": {
+                  "type": "number",
+                  "description": "ref.weapon.shockwave.flash_time (R-CRATE-473)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "s of presentation time",
+                  "x-species-presence": "required"
+                },
+                "flash_range": {
+                  "type": "number",
+                  "description": "ref.weapon.shockwave.flash_range (R-CRATE-473)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "billboard_time": {
+                  "type": "number",
+                  "description": "ref.weapon.shockwave.billboard_time (R-CRATE-473)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "s of presentation time",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "disc_lift",
+                "disc_alpha",
+                "flash_time",
+                "flash_range",
+                "billboard_time"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "laser",
+            "muzzle_flash",
+            "thrown",
+            "explosion",
+            "shockwave"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
         "sim",
         "ctrl",
         "unit",
-        "bldg"
+        "bldg",
+        "weapon"
       ],
       "additionalProperties": false,
       "x-species-type": "object",
@@ -3102,6 +3882,33 @@
               "x-species-type": "sim_decimal",
               "x-species-unit": "wu/s",
               "x-species-presence": "required"
+            },
+            "recoil_distance": {
+              "type": "number",
+              "description": "vfx.worker.recoil_distance (VFX-118)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "recoil_time": {
+              "type": "number",
+              "description": "vfx.worker.recoil_time (VFX-118)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "s of scaled presentation time",
+              "x-species-presence": "required"
+            },
+            "recoil_match_range": {
+              "type": "number",
+              "description": "vfx.worker.recoil_match_range (VFX-118)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
             }
           },
           "required": [
@@ -3117,7 +3924,10 @@
             "fragment_spread_divisor",
             "walk_bob_height",
             "walk_bob_rate",
-            "walk_bob_full_speed"
+            "walk_bob_full_speed",
+            "recoil_distance",
+            "recoil_time",
+            "recoil_match_range"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -3305,10 +4115,1543 @@
               "x-species-type": "sim_decimal",
               "x-species-unit": "steps per second of unscaled presentation time",
               "x-species-presence": "required"
+            },
+            "explosion": {
+              "type": "object",
+              "description": "the vfx.emit.explosion.* keys",
+              "properties": {
+                "core_size": {
+                  "type": "object",
+                  "description": "vfx.emit.explosion.core_size (VFX-219)",
+                  "properties": {
+                    "base": {
+                      "type": "number",
+                      "description": "vfx.emit.explosion.core_size.base",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "particle size",
+                      "x-species-presence": "required"
+                    },
+                    "spread": {
+                      "type": "number",
+                      "description": "vfx.emit.explosion.core_size.spread",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "particle size",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "base",
+                    "spread"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "core_velocity": {
+                  "type": "object",
+                  "description": "vfx.emit.explosion.core_velocity (VFX-219)",
+                  "properties": {
+                    "x_spread": {
+                      "type": "number",
+                      "description": "vfx.emit.explosion.core_velocity.x_spread",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "wu/s, x and z signed",
+                      "x-species-presence": "required"
+                    },
+                    "y_base": {
+                      "type": "number",
+                      "description": "vfx.emit.explosion.core_velocity.y_base",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "wu/s, x and z signed",
+                      "x-species-presence": "required"
+                    },
+                    "y_spread": {
+                      "type": "number",
+                      "description": "vfx.emit.explosion.core_velocity.y_spread",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "wu/s, x and z signed",
+                      "x-species-presence": "required"
+                    },
+                    "z_spread": {
+                      "type": "number",
+                      "description": "vfx.emit.explosion.core_velocity.z_spread",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "wu/s, x and z signed",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "x_spread",
+                    "y_base",
+                    "y_spread",
+                    "z_spread"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "debris_lift": {
+                  "type": "number",
+                  "description": "vfx.emit.explosion.debris_lift (VFX-219)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times the range",
+                  "x-species-presence": "required"
+                },
+                "debris_rise": {
+                  "type": "object",
+                  "description": "vfx.emit.explosion.debris_rise (VFX-219)",
+                  "properties": {
+                    "base": {
+                      "type": "number",
+                      "description": "vfx.emit.explosion.debris_rise.base",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "before normalisation",
+                      "x-species-presence": "required"
+                    },
+                    "spread": {
+                      "type": "number",
+                      "description": "vfx.emit.explosion.debris_rise.spread",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "before normalisation",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "base",
+                    "spread"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "debris_speed": {
+                  "type": "object",
+                  "description": "vfx.emit.explosion.debris_speed (VFX-219)",
+                  "properties": {
+                    "base": {
+                      "type": "number",
+                      "description": "vfx.emit.explosion.debris_speed.base",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "wu/s",
+                      "x-species-presence": "required"
+                    },
+                    "spread": {
+                      "type": "number",
+                      "description": "vfx.emit.explosion.debris_speed.spread",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "wu/s",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "base",
+                    "spread"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "debris_size": {
+                  "type": "object",
+                  "description": "vfx.emit.explosion.debris_size (VFX-219)",
+                  "properties": {
+                    "base": {
+                      "type": "number",
+                      "description": "vfx.emit.explosion.debris_size.base",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "particle size",
+                      "x-species-presence": "required"
+                    },
+                    "spread": {
+                      "type": "number",
+                      "description": "vfx.emit.explosion.debris_size.spread",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "particle size",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "base",
+                    "spread"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "core_size",
+                "core_velocity",
+                "debris_lift",
+                "debris_rise",
+                "debris_speed",
+                "debris_size"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "burning": {
+              "type": "object",
+              "description": "the vfx.emit.burning.* keys",
+              "properties": {
+                "count_mod": {
+                  "type": "integer",
+                  "description": "vfx.emit.burning.count_mod (VFX-219)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "divisor",
+                  "x-species-presence": "required"
+                },
+                "fire_share": {
+                  "type": "integer",
+                  "description": "vfx.emit.burning.fire_share (VFX-219)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "index",
+                  "x-species-presence": "required"
+                },
+                "lift": {
+                  "type": "number",
+                  "description": "vfx.emit.burning.lift (VFX-219)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu along up",
+                  "x-species-presence": "required"
+                },
+                "size": {
+                  "type": "object",
+                  "description": "vfx.emit.burning.size (VFX-219)",
+                  "properties": {
+                    "base": {
+                      "type": "number",
+                      "description": "vfx.emit.burning.size.base",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "particle size",
+                      "x-species-presence": "required"
+                    },
+                    "spread": {
+                      "type": "number",
+                      "description": "vfx.emit.burning.size.spread",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "particle size",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "base",
+                    "spread"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "velocity_factor": {
+                  "type": "number",
+                  "description": "vfx.emit.burning.velocity_factor (VFX-219)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times the velocity",
+                  "x-species-presence": "required"
+                },
+                "rise": {
+                  "type": "object",
+                  "description": "vfx.emit.burning.rise (VFX-219)",
+                  "properties": {
+                    "base": {
+                      "type": "number",
+                      "description": "vfx.emit.burning.rise.base",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "wu/s along up",
+                      "x-species-presence": "required"
+                    },
+                    "spread": {
+                      "type": "number",
+                      "description": "vfx.emit.burning.rise.spread",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "wu/s along up",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "base",
+                    "spread"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "count_mod",
+                "fire_share",
+                "lift",
+                "size",
+                "velocity_factor",
+                "rise"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "control": {
+              "type": "object",
+              "description": "the vfx.emit.control.* keys",
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "description": "vfx.emit.control.count (VFX-219)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "particles",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "count"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "order": {
+              "type": "object",
+              "description": "the vfx.emit.order.* keys",
+              "properties": {
+                "sizes": {
+                  "type": "object",
+                  "description": "vfx.emit.order.sizes (VFX-219)",
+                  "properties": {
+                    "first": {
+                      "type": "number",
+                      "description": "vfx.emit.order.sizes.first",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "particle size",
+                      "x-species-presence": "required"
+                    },
+                    "second": {
+                      "type": "number",
+                      "description": "vfx.emit.order.sizes.second",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "particle size",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "first",
+                    "second"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "sizes"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "order_marker": {
+              "type": "object",
+              "description": "the vfx.emit.order_marker.* keys",
+              "properties": {
+                "size": {
+                  "type": "number",
+                  "description": "vfx.emit.order_marker.size (VFX-219)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "particle size",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "size"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
             }
           },
           "required": [
-            "step_rate"
+            "step_rate",
+            "explosion",
+            "burning",
+            "control",
+            "order",
+            "order_marker"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "thrown": {
+          "type": "object",
+          "description": "the vfx.thrown.* keys",
+          "properties": {
+            "tumble_rate": {
+              "type": "number",
+              "description": "vfx.thrown.tumble_rate (VFX-125)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "rad/s of scaled presentation time",
+              "x-species-presence": "required"
+            },
+            "inner_flash_scale": {
+              "type": "number",
+              "description": "vfx.thrown.inner_flash_scale (VFX-125)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times the flash size",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "tumble_rate",
+            "inner_flash_scale"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "screen": {
+          "type": "object",
+          "description": "the vfx.screen.* keys",
+          "properties": {
+            "flash_count_threshold": {
+              "type": "number",
+              "description": "vfx.screen.flash_count_threshold (VFX-235)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "alpha",
+              "x-species-presence": "required"
+            },
+            "flash_onsets": {
+              "type": "integer",
+              "description": "vfx.screen.flash_onsets (VFX-235)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "onsets per window",
+              "x-species-presence": "required"
+            },
+            "flash_window": {
+              "type": "number",
+              "description": "vfx.screen.flash_window (VFX-235)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "s of real time",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "flash_count_threshold",
+            "flash_onsets",
+            "flash_window"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "particle": {
+          "type": "object",
+          "description": "the vfx.particle.* keys",
+          "properties": {
+            "size_divisor": {
+              "type": "number",
+              "description": "vfx.particle.size_divisor (VFX-208)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "divisor",
+              "x-species-presence": "required"
+            },
+            "sub_step": {
+              "type": "number",
+              "description": "vfx.particle.sub_step (VFX-209)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "s of scaled presentation time",
+              "x-species-presence": "required"
+            },
+            "max_sub_steps": {
+              "type": "integer",
+              "description": "vfx.particle.max_sub_steps (VFX-209)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "per frame",
+              "x-species-presence": "required"
+            },
+            "debris": {
+              "type": "object",
+              "description": "the vfx.particle.debris.* keys",
+              "properties": {
+                "puff_rate": {
+                  "type": "number",
+                  "description": "vfx.particle.debris.puff_rate (VFX-210)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "puffs per s of scaled time",
+                  "x-species-presence": "required"
+                },
+                "puff_velocity_divisor": {
+                  "type": "number",
+                  "description": "vfx.particle.debris.puff_velocity_divisor (VFX-210)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "divisor",
+                  "x-species-presence": "required"
+                },
+                "puff_size_divisor": {
+                  "type": "number",
+                  "description": "vfx.particle.debris.puff_size_divisor (VFX-210)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "divisor",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "puff_rate",
+                "puff_velocity_divisor",
+                "puff_size_divisor"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "pool_capacity": {
+              "type": "integer",
+              "description": "vfx.particle.pool_capacity (VFX-212)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "particles",
+              "x-species-presence": "required"
+            },
+            "type_cap": {
+              "type": "integer",
+              "description": "vfx.particle.type_cap (VFX-212)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "particles",
+              "x-species-presence": "required"
+            },
+            "class_fill_limits": {
+              "type": "object",
+              "description": "vfx.particle.class_fill_limits (VFX-212)",
+              "properties": {
+                "class_0": {
+                  "type": "number",
+                  "description": "vfx.particle.class_fill_limits.class_0",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times the capacity",
+                  "x-species-presence": "required"
+                },
+                "class_1": {
+                  "type": "number",
+                  "description": "vfx.particle.class_fill_limits.class_1",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times the capacity",
+                  "x-species-presence": "required"
+                },
+                "class_2": {
+                  "type": "number",
+                  "description": "vfx.particle.class_fill_limits.class_2",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times the capacity",
+                  "x-species-presence": "required"
+                },
+                "class_3": {
+                  "type": "number",
+                  "description": "vfx.particle.class_fill_limits.class_3",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times the capacity",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "class_0",
+                "class_1",
+                "class_2",
+                "class_3"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "lod": {
+              "type": "object",
+              "description": "the vfx.particle.lod.* keys",
+              "properties": {
+                "full_distance": {
+                  "type": "number",
+                  "description": "vfx.particle.lod.full_distance (VFX-213)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "cutoff_distance": {
+                  "type": "number",
+                  "description": "vfx.particle.lod.cutoff_distance (VFX-213)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "full_distance",
+                "cutoff_distance"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "alpha": {
+              "type": "number",
+              "description": "vfx.particle.alpha (VFX-215)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "alpha of 255",
+              "x-species-presence": "required"
+            },
+            "fade_start": {
+              "type": "number",
+              "description": "vfx.particle.fade_start (VFX-215)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times the life",
+              "x-species-presence": "required"
+            },
+            "smoke_shade_divisor": {
+              "type": "number",
+              "description": "vfx.particle.smoke_shade_divisor (VFX-217)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "divisor",
+              "x-species-presence": "required"
+            },
+            "explosion_core": {
+              "type": "object",
+              "description": "the vfx.particle.explosion_core.* keys",
+              "properties": {
+                "life": {
+                  "type": "number",
+                  "description": "vfx.particle.explosion_core.life (VFX-207)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "s of scaled presentation time",
+                  "x-species-presence": "required"
+                },
+                "size": {
+                  "type": "number",
+                  "description": "vfx.particle.explosion_core.size (VFX-207)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "particle size",
+                  "x-species-presence": "required"
+                },
+                "gravity": {
+                  "type": "number",
+                  "description": "vfx.particle.explosion_core.gravity (VFX-207)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s², positive falling",
+                  "x-species-presence": "required"
+                },
+                "friction": {
+                  "type": "number",
+                  "description": "vfx.particle.explosion_core.friction (VFX-207)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "per s",
+                  "x-species-presence": "required"
+                },
+                "colors": {
+                  "type": "object",
+                  "description": "vfx.particle.explosion_core.colors (VFX-207)",
+                  "properties": {
+                    "first": {
+                      "type": "object",
+                      "description": "vfx.particle.explosion_core.colors.first",
+                      "properties": {
+                        "r": {
+                          "type": "number",
+                          "description": "vfx.particle.explosion_core.colors.first.r",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "g": {
+                          "type": "number",
+                          "description": "vfx.particle.explosion_core.colors.first.g",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "b": {
+                          "type": "number",
+                          "description": "vfx.particle.explosion_core.colors.first.b",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        }
+                      },
+                      "required": [
+                        "r",
+                        "g",
+                        "b"
+                      ],
+                      "additionalProperties": false,
+                      "x-species-type": "object",
+                      "x-species-presence": "required"
+                    },
+                    "second": {
+                      "type": "object",
+                      "description": "vfx.particle.explosion_core.colors.second",
+                      "properties": {
+                        "r": {
+                          "type": "number",
+                          "description": "vfx.particle.explosion_core.colors.second.r",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "g": {
+                          "type": "number",
+                          "description": "vfx.particle.explosion_core.colors.second.g",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "b": {
+                          "type": "number",
+                          "description": "vfx.particle.explosion_core.colors.second.b",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        }
+                      },
+                      "required": [
+                        "r",
+                        "g",
+                        "b"
+                      ],
+                      "additionalProperties": false,
+                      "x-species-type": "object",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "first",
+                    "second"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "life",
+                "size",
+                "gravity",
+                "friction",
+                "colors"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "explosion_debris": {
+              "type": "object",
+              "description": "the vfx.particle.explosion_debris.* keys",
+              "properties": {
+                "life": {
+                  "type": "number",
+                  "description": "vfx.particle.explosion_debris.life (VFX-207)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "s of scaled presentation time",
+                  "x-species-presence": "required"
+                },
+                "size": {
+                  "type": "number",
+                  "description": "vfx.particle.explosion_debris.size (VFX-207)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "particle size",
+                  "x-species-presence": "required"
+                },
+                "gravity": {
+                  "type": "number",
+                  "description": "vfx.particle.explosion_debris.gravity (VFX-207)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s², positive falling",
+                  "x-species-presence": "required"
+                },
+                "friction": {
+                  "type": "number",
+                  "description": "vfx.particle.explosion_debris.friction (VFX-207)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "per s",
+                  "x-species-presence": "required"
+                },
+                "colors": {
+                  "type": "object",
+                  "description": "vfx.particle.explosion_debris.colors (VFX-207)",
+                  "properties": {
+                    "first": {
+                      "type": "object",
+                      "description": "vfx.particle.explosion_debris.colors.first",
+                      "properties": {
+                        "r": {
+                          "type": "number",
+                          "description": "vfx.particle.explosion_debris.colors.first.r",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "g": {
+                          "type": "number",
+                          "description": "vfx.particle.explosion_debris.colors.first.g",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "b": {
+                          "type": "number",
+                          "description": "vfx.particle.explosion_debris.colors.first.b",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        }
+                      },
+                      "required": [
+                        "r",
+                        "g",
+                        "b"
+                      ],
+                      "additionalProperties": false,
+                      "x-species-type": "object",
+                      "x-species-presence": "required"
+                    },
+                    "second": {
+                      "type": "object",
+                      "description": "vfx.particle.explosion_debris.colors.second",
+                      "properties": {
+                        "r": {
+                          "type": "number",
+                          "description": "vfx.particle.explosion_debris.colors.second.r",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "g": {
+                          "type": "number",
+                          "description": "vfx.particle.explosion_debris.colors.second.g",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "b": {
+                          "type": "number",
+                          "description": "vfx.particle.explosion_debris.colors.second.b",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        }
+                      },
+                      "required": [
+                        "r",
+                        "g",
+                        "b"
+                      ],
+                      "additionalProperties": false,
+                      "x-species-type": "object",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "first",
+                    "second"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "life",
+                "size",
+                "gravity",
+                "friction",
+                "colors"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "muzzle_flash": {
+              "type": "object",
+              "description": "the vfx.particle.muzzle_flash.* keys",
+              "properties": {
+                "life": {
+                  "type": "number",
+                  "description": "vfx.particle.muzzle_flash.life (VFX-207)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "s of scaled presentation time",
+                  "x-species-presence": "required"
+                },
+                "size": {
+                  "type": "number",
+                  "description": "vfx.particle.muzzle_flash.size (VFX-207)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "particle size",
+                  "x-species-presence": "required"
+                },
+                "gravity": {
+                  "type": "number",
+                  "description": "vfx.particle.muzzle_flash.gravity (VFX-207)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s², positive falling",
+                  "x-species-presence": "required"
+                },
+                "friction": {
+                  "type": "number",
+                  "description": "vfx.particle.muzzle_flash.friction (VFX-207)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "per s",
+                  "x-species-presence": "required"
+                },
+                "colors": {
+                  "type": "object",
+                  "description": "vfx.particle.muzzle_flash.colors (VFX-207)",
+                  "properties": {
+                    "first": {
+                      "type": "object",
+                      "description": "vfx.particle.muzzle_flash.colors.first",
+                      "properties": {
+                        "r": {
+                          "type": "number",
+                          "description": "vfx.particle.muzzle_flash.colors.first.r",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "g": {
+                          "type": "number",
+                          "description": "vfx.particle.muzzle_flash.colors.first.g",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "b": {
+                          "type": "number",
+                          "description": "vfx.particle.muzzle_flash.colors.first.b",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        }
+                      },
+                      "required": [
+                        "r",
+                        "g",
+                        "b"
+                      ],
+                      "additionalProperties": false,
+                      "x-species-type": "object",
+                      "x-species-presence": "required"
+                    },
+                    "second": {
+                      "type": "object",
+                      "description": "vfx.particle.muzzle_flash.colors.second",
+                      "properties": {
+                        "r": {
+                          "type": "number",
+                          "description": "vfx.particle.muzzle_flash.colors.second.r",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "g": {
+                          "type": "number",
+                          "description": "vfx.particle.muzzle_flash.colors.second.g",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "b": {
+                          "type": "number",
+                          "description": "vfx.particle.muzzle_flash.colors.second.b",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        }
+                      },
+                      "required": [
+                        "r",
+                        "g",
+                        "b"
+                      ],
+                      "additionalProperties": false,
+                      "x-species-type": "object",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "first",
+                    "second"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "life",
+                "size",
+                "gravity",
+                "friction",
+                "colors"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "control_flash": {
+              "type": "object",
+              "description": "the vfx.particle.control_flash.* keys",
+              "properties": {
+                "life": {
+                  "type": "number",
+                  "description": "vfx.particle.control_flash.life (VFX-207)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "s of scaled presentation time",
+                  "x-species-presence": "required"
+                },
+                "size": {
+                  "type": "number",
+                  "description": "vfx.particle.control_flash.size (VFX-207)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "particle size",
+                  "x-species-presence": "required"
+                },
+                "gravity": {
+                  "type": "number",
+                  "description": "vfx.particle.control_flash.gravity (VFX-207)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s², positive falling",
+                  "x-species-presence": "required"
+                },
+                "friction": {
+                  "type": "number",
+                  "description": "vfx.particle.control_flash.friction (VFX-207)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "per s",
+                  "x-species-presence": "required"
+                },
+                "colors": {
+                  "type": "object",
+                  "description": "vfx.particle.control_flash.colors (VFX-207)",
+                  "properties": {
+                    "first": {
+                      "type": "object",
+                      "description": "vfx.particle.control_flash.colors.first",
+                      "properties": {
+                        "r": {
+                          "type": "number",
+                          "description": "vfx.particle.control_flash.colors.first.r",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "g": {
+                          "type": "number",
+                          "description": "vfx.particle.control_flash.colors.first.g",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "b": {
+                          "type": "number",
+                          "description": "vfx.particle.control_flash.colors.first.b",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        }
+                      },
+                      "required": [
+                        "r",
+                        "g",
+                        "b"
+                      ],
+                      "additionalProperties": false,
+                      "x-species-type": "object",
+                      "x-species-presence": "required"
+                    },
+                    "second": {
+                      "type": "object",
+                      "description": "vfx.particle.control_flash.colors.second",
+                      "properties": {
+                        "r": {
+                          "type": "number",
+                          "description": "vfx.particle.control_flash.colors.second.r",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "g": {
+                          "type": "number",
+                          "description": "vfx.particle.control_flash.colors.second.g",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "b": {
+                          "type": "number",
+                          "description": "vfx.particle.control_flash.colors.second.b",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        }
+                      },
+                      "required": [
+                        "r",
+                        "g",
+                        "b"
+                      ],
+                      "additionalProperties": false,
+                      "x-species-type": "object",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "first",
+                    "second"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "life",
+                "size",
+                "gravity",
+                "friction",
+                "colors"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "missile_trail": {
+              "type": "object",
+              "description": "the vfx.particle.missile_trail.* keys",
+              "properties": {
+                "life": {
+                  "type": "number",
+                  "description": "vfx.particle.missile_trail.life (VFX-207)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "s of scaled presentation time",
+                  "x-species-presence": "required"
+                },
+                "size": {
+                  "type": "number",
+                  "description": "vfx.particle.missile_trail.size (VFX-207)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "particle size",
+                  "x-species-presence": "required"
+                },
+                "gravity": {
+                  "type": "number",
+                  "description": "vfx.particle.missile_trail.gravity (VFX-207)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s², positive falling",
+                  "x-species-presence": "required"
+                },
+                "friction": {
+                  "type": "number",
+                  "description": "vfx.particle.missile_trail.friction (VFX-207)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "per s",
+                  "x-species-presence": "required"
+                },
+                "colors": {
+                  "type": "object",
+                  "description": "vfx.particle.missile_trail.colors (VFX-207)",
+                  "properties": {
+                    "first": {
+                      "type": "object",
+                      "description": "vfx.particle.missile_trail.colors.first",
+                      "properties": {
+                        "r": {
+                          "type": "number",
+                          "description": "vfx.particle.missile_trail.colors.first.r",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "g": {
+                          "type": "number",
+                          "description": "vfx.particle.missile_trail.colors.first.g",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "b": {
+                          "type": "number",
+                          "description": "vfx.particle.missile_trail.colors.first.b",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        }
+                      },
+                      "required": [
+                        "r",
+                        "g",
+                        "b"
+                      ],
+                      "additionalProperties": false,
+                      "x-species-type": "object",
+                      "x-species-presence": "required"
+                    },
+                    "second": {
+                      "type": "object",
+                      "description": "vfx.particle.missile_trail.colors.second",
+                      "properties": {
+                        "r": {
+                          "type": "number",
+                          "description": "vfx.particle.missile_trail.colors.second.r",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "g": {
+                          "type": "number",
+                          "description": "vfx.particle.missile_trail.colors.second.g",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "b": {
+                          "type": "number",
+                          "description": "vfx.particle.missile_trail.colors.second.b",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        }
+                      },
+                      "required": [
+                        "r",
+                        "g",
+                        "b"
+                      ],
+                      "additionalProperties": false,
+                      "x-species-type": "object",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "first",
+                    "second"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "life",
+                "size",
+                "gravity",
+                "friction",
+                "colors"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "worker_fire": {
+              "type": "object",
+              "description": "the vfx.particle.worker_fire.* keys",
+              "properties": {
+                "life": {
+                  "type": "number",
+                  "description": "vfx.particle.worker_fire.life (VFX-207)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "s of scaled presentation time",
+                  "x-species-presence": "required"
+                },
+                "size": {
+                  "type": "number",
+                  "description": "vfx.particle.worker_fire.size (VFX-207)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "particle size",
+                  "x-species-presence": "required"
+                },
+                "gravity": {
+                  "type": "number",
+                  "description": "vfx.particle.worker_fire.gravity (VFX-207)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s², positive falling",
+                  "x-species-presence": "required"
+                },
+                "friction": {
+                  "type": "number",
+                  "description": "vfx.particle.worker_fire.friction (VFX-207)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "per s",
+                  "x-species-presence": "required"
+                },
+                "colors": {
+                  "type": "object",
+                  "description": "vfx.particle.worker_fire.colors (VFX-207)",
+                  "properties": {
+                    "first": {
+                      "type": "object",
+                      "description": "vfx.particle.worker_fire.colors.first",
+                      "properties": {
+                        "r": {
+                          "type": "number",
+                          "description": "vfx.particle.worker_fire.colors.first.r",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "g": {
+                          "type": "number",
+                          "description": "vfx.particle.worker_fire.colors.first.g",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "b": {
+                          "type": "number",
+                          "description": "vfx.particle.worker_fire.colors.first.b",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        }
+                      },
+                      "required": [
+                        "r",
+                        "g",
+                        "b"
+                      ],
+                      "additionalProperties": false,
+                      "x-species-type": "object",
+                      "x-species-presence": "required"
+                    },
+                    "second": {
+                      "type": "object",
+                      "description": "vfx.particle.worker_fire.colors.second",
+                      "properties": {
+                        "r": {
+                          "type": "number",
+                          "description": "vfx.particle.worker_fire.colors.second.r",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "g": {
+                          "type": "number",
+                          "description": "vfx.particle.worker_fire.colors.second.g",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "b": {
+                          "type": "number",
+                          "description": "vfx.particle.worker_fire.colors.second.b",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        }
+                      },
+                      "required": [
+                        "r",
+                        "g",
+                        "b"
+                      ],
+                      "additionalProperties": false,
+                      "x-species-type": "object",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "first",
+                    "second"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "life",
+                "size",
+                "gravity",
+                "friction",
+                "colors"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "size_divisor",
+            "sub_step",
+            "max_sub_steps",
+            "debris",
+            "pool_capacity",
+            "type_cap",
+            "class_fill_limits",
+            "lod",
+            "alpha",
+            "fade_start",
+            "smoke_shade_divisor",
+            "explosion_core",
+            "explosion_debris",
+            "muzzle_flash",
+            "control_flash",
+            "missile_trail",
+            "worker_fire"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "motion": {
+          "type": "object",
+          "description": "the vfx.motion.* keys",
+          "properties": {
+            "order_marker_flare": {
+              "type": "number",
+              "description": "vfx.motion.order_marker_flare (VFX-143)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu, half-size",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "order_marker_flare"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -3319,7 +5662,11 @@
         "worker",
         "cloth",
         "flicker",
-        "emit"
+        "emit",
+        "thrown",
+        "screen",
+        "particle",
+        "motion"
       ],
       "additionalProperties": false,
       "x-species-type": "object",

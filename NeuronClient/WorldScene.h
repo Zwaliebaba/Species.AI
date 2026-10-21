@@ -168,9 +168,12 @@ struct SceneQuad
 // The world passes that draw the scene's quads, meshes and triangles (RND-070), in their order.
 enum class ScenePass : std::uint8_t
 {
-  Actors,  // pass 7b
-  Workers, // pass 7d
-  Orbs,    // pass 11
+  Actors,    // pass 7b
+  Workers,   // pass 7d
+  Effects,   // pass 10a
+  Lasers,    // pass 10b
+  Orbs,      // pass 11
+  Particles, // pass 15
   Count
 };
 
@@ -226,14 +229,17 @@ struct SceneVertex
   std::array<float, 4> color{1.0f, 1.0f, 1.0f, 1.0f};
 };
 
-/// One draw of textured triangles (ADR-122): its catalogue entry, its texture and tint mask of SceneTextures, and its
-/// vertices, three a triangle.
+/// One draw of triangles (ADR-122, ADR-123): its catalogue entry, its texture and tint mask of SceneTextures, and its
+/// vertices, three a triangle. A batch of vertex colours alone reads no texture; a screen-space batch gives its corners'
+/// x and y in clip space, as the full-screen flash does (VFX-234).
 struct TriangleBatch
 {
   ScenePass pass = ScenePass::Actors;
   std::string_view entry;
   std::uint16_t texture = 0;
   std::uint16_t mask = 0;
+  bool textured = true;
+  bool screenSpace = false;
   std::vector<SceneVertex> vertices;
 };
 

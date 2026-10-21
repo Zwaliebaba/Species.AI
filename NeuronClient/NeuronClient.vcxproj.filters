@@ -36,6 +36,9 @@
     <ClInclude Include="DdsTexture.h">
       <Filter>Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="DepthBias.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
     <ClInclude Include="DescriptorHeaps.h">
       <Filter>Rendering</Filter>
     </ClInclude>
@@ -80,6 +83,9 @@
     </ClInclude>
     <ClInclude Include="OverlayRenderer.h">
       <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticlePool.h">
+      <Filter>Effects</Filter>
     </ClInclude>
     <ClInclude Include="PassTable.h">
       <Filter>Rendering</Filter>
@@ -190,6 +196,9 @@
     </ClCompile>
     <ClCompile Include="OverlayRenderer.cpp">
       <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="ParticlePool.cpp">
+      <Filter>Effects</Filter>
     </ClCompile>
     <ClCompile Include="PassTable.cpp">
       <Filter>Rendering</Filter>
@@ -312,7 +321,16 @@
     <FXCompile Include="Shader\UnlitTexturedCutoutPS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
+    <FXCompile Include="Shader\UnlitTexturedLevelZeroPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
     <FXCompile Include="Shader\UnlitTexturedMaskPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\UnlitTexturedParticleGlowPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\UnlitTexturedParticleSmokePS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
     <FXCompile Include="Shader\UnlitTexturedPS.hlsl">
@@ -322,6 +340,12 @@
       <Filter>Shader</Filter>
     </FXCompile>
     <FXCompile Include="Shader\UnlitTexturedVS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\UnlitVertexColorPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\UnlitVertexColorVS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
   </ItemGroup>
@@ -357,6 +381,9 @@
       <Filter>Shader</Filter>
     </None>
     <None Include="Shader\UnlitTextured.hlsli">
+      <Filter>Shader</Filter>
+    </None>
+    <None Include="Shader\UnlitVertexColor.hlsli">
       <Filter>Shader</Filter>
     </None>
   </ItemGroup>
