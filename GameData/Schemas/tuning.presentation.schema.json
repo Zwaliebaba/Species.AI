@@ -720,6 +720,77 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "crowd": {
+          "type": "object",
+          "description": "the rnd.crowd.* keys",
+          "properties": {
+            "worker_detail_distance": {
+              "type": "object",
+              "description": "rnd.crowd.worker_detail_distance (RND-314)",
+              "properties": {
+                "first": {
+                  "type": "number",
+                  "description": "rnd.crowd.worker_detail_distance.first",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu, by entity detail",
+                  "x-species-presence": "required"
+                },
+                "second": {
+                  "type": "number",
+                  "description": "rnd.crowd.worker_detail_distance.second",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu, by entity detail",
+                  "x-species-presence": "required"
+                },
+                "third": {
+                  "type": "number",
+                  "description": "rnd.crowd.worker_detail_distance.third",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu, by entity detail",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "first",
+                "second",
+                "third"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "worker_detail_distance"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "pso": {
+          "type": "object",
+          "description": "the rnd.pso.* keys",
+          "properties": {
+            "worker_cutout": {
+              "type": "number",
+              "description": "rnd.pso.worker_cutout (RND-060)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "alpha",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "worker_cutout"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
@@ -729,7 +800,9 @@
         "terrain",
         "sea",
         "sky",
-        "budget"
+        "budget",
+        "crowd",
+        "pso"
       ],
       "additionalProperties": false,
       "x-species-type": "object",
@@ -1899,11 +1972,231 @@
                   "x-species-type": "sim_decimal",
                   "x-species-unit": "wu",
                   "x-species-presence": "required"
+                },
+                "card_half_width": {
+                  "type": "number",
+                  "description": "ref.unit.worker.card_half_width (R-UNIT-142)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "card_variation": {
+                  "type": "number",
+                  "description": "ref.unit.worker.card_variation (R-UNIT-142)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "per step",
+                  "x-species-presence": "required"
+                },
+                "card_face_start": {
+                  "type": "number",
+                  "description": "ref.unit.worker.card_face_start (R-UNIT-142)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "tumble_rate": {
+                  "type": "number",
+                  "description": "ref.unit.worker.tumble_rate (R-UNIT-143)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "rad/s per step of the unit id",
+                  "x-species-presence": "required"
+                },
+                "side_view_threshold": {
+                  "type": "number",
+                  "description": "ref.unit.worker.side_view_threshold (R-UNIT-144)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "sine of the view angle",
+                  "x-species-presence": "required"
+                },
+                "air_corpse_hurt_share": {
+                  "type": "number",
+                  "description": "ref.unit.worker.air_corpse_hurt_share (R-UNIT-145)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "share",
+                  "x-species-presence": "required"
+                },
+                "color_base": {
+                  "type": "number",
+                  "description": "ref.unit.worker.color_base (R-UNIT-146)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times the team colour",
+                  "x-species-presence": "required"
+                },
+                "color_health_weight": {
+                  "type": "number",
+                  "description": "ref.unit.worker.color_health_weight (R-UNIT-146)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times the health fraction",
+                  "x-species-presence": "required"
+                },
+                "corpse_color": {
+                  "type": "number",
+                  "description": "ref.unit.worker.corpse_color (R-UNIT-146)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times the colour",
+                  "x-species-presence": "required"
+                },
+                "corpse_alpha_per_health": {
+                  "type": "number",
+                  "description": "ref.unit.worker.corpse_alpha_per_health (R-UNIT-146)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "alpha of 255 per health",
+                  "x-species-presence": "required"
+                },
+                "corpse_fragments": {
+                  "type": "integer",
+                  "description": "ref.unit.worker.corpse_fragments (R-UNIT-146)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "cards",
+                  "x-species-presence": "required"
+                },
+                "control_glow_min": {
+                  "type": "number",
+                  "description": "ref.unit.worker.control_glow_min (R-UNIT-147)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "alpha",
+                  "x-species-presence": "required"
+                },
+                "shadow_alpha": {
+                  "type": "number",
+                  "description": "ref.unit.worker.shadow_alpha (R-UNIT-147)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "alpha of 255",
+                  "x-species-presence": "required"
+                },
+                "shadow_range": {
+                  "type": "number",
+                  "description": "ref.unit.worker.shadow_range (R-UNIT-147)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
                 "card_scale_start",
-                "card_scale_divisor"
+                "card_scale_divisor",
+                "card_half_width",
+                "card_variation",
+                "card_face_start",
+                "tumble_rate",
+                "side_view_threshold",
+                "air_corpse_hurt_share",
+                "color_base",
+                "color_health_weight",
+                "corpse_color",
+                "corpse_alpha_per_health",
+                "corpse_fragments",
+                "control_glow_min",
+                "shadow_alpha",
+                "shadow_range"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "essence_orb": {
+              "type": "object",
+              "description": "the ref.unit.essence_orb.* keys",
+              "properties": {
+                "inner_size": {
+                  "type": "number",
+                  "description": "ref.unit.essence_orb.inner_size (R-UNIT-330)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu, half-size",
+                  "x-species-presence": "required"
+                },
+                "inner_alpha": {
+                  "type": "number",
+                  "description": "ref.unit.essence_orb.inner_alpha (R-UNIT-330)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "alpha of 255",
+                  "x-species-presence": "required"
+                },
+                "outer_size": {
+                  "type": "number",
+                  "description": "ref.unit.essence_orb.outer_size (R-UNIT-330)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu, half-size",
+                  "x-species-presence": "required"
+                },
+                "outer_alpha": {
+                  "type": "number",
+                  "description": "ref.unit.essence_orb.outer_alpha (R-UNIT-330)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "alpha of 255",
+                  "x-species-presence": "required"
+                },
+                "birth_scale_offset": {
+                  "type": "number",
+                  "description": "ref.unit.essence_orb.birth_scale_offset (R-UNIT-331)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times",
+                  "x-species-presence": "required"
+                },
+                "birth_scale_ticks": {
+                  "type": "number",
+                  "description": "ref.unit.essence_orb.birth_scale_ticks (R-UNIT-331)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                },
+                "ascent_fade_ticks": {
+                  "type": "number",
+                  "description": "ref.unit.essence_orb.ascent_fade_ticks (R-UNIT-331)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "inner_size",
+                "inner_alpha",
+                "outer_size",
+                "outer_alpha",
+                "birth_scale_offset",
+                "birth_scale_ticks",
+                "ascent_fade_ticks"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -1912,7 +2205,8 @@
           },
           "required": [
             "leader",
-            "worker"
+            "worker",
+            "essence_orb"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -2469,6 +2763,187 @@
       "additionalProperties": false,
       "x-species-type": "object",
       "x-species-presence": "required"
+    },
+    "vfx": {
+      "type": "object",
+      "description": "the vfx.* keys",
+      "properties": {
+        "worker": {
+          "type": "object",
+          "description": "the vfx.worker.* keys",
+          "properties": {
+            "airborne_lift": {
+              "type": "number",
+              "description": "vfx.worker.airborne_lift (VFX-117)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "shadow_lift": {
+              "type": "number",
+              "description": "vfx.worker.shadow_lift (VFX-118)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "glow_pulse_fast": {
+              "type": "number",
+              "description": "vfx.worker.glow_pulse_fast (VFX-118)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "rad/s",
+              "x-species-presence": "required"
+            },
+            "control_glow_color": {
+              "type": "object",
+              "description": "vfx.worker.control_glow_color (VFX-118)",
+              "properties": {
+                "r": {
+                  "type": "number",
+                  "description": "vfx.worker.control_glow_color.r",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGB, encoded",
+                  "x-species-presence": "required"
+                },
+                "g": {
+                  "type": "number",
+                  "description": "vfx.worker.control_glow_color.g",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGB, encoded",
+                  "x-species-presence": "required"
+                },
+                "b": {
+                  "type": "number",
+                  "description": "vfx.worker.control_glow_color.b",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "RGB, encoded",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "r",
+                "g",
+                "b"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "control_glow_layers": {
+              "type": "integer",
+              "description": "vfx.worker.control_glow_layers (VFX-118)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "cards",
+              "x-species-presence": "required"
+            },
+            "side_alpha_gain": {
+              "type": "number",
+              "description": "vfx.worker.side_alpha_gain (VFX-118)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times",
+              "x-species-presence": "required"
+            },
+            "side_half_width": {
+              "type": "number",
+              "description": "vfx.worker.side_half_width (VFX-118)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "fragment_alpha": {
+              "type": "number",
+              "description": "vfx.worker.fragment_alpha (VFX-118)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "alpha of 255 per health",
+              "x-species-presence": "required"
+            },
+            "fragment_spread": {
+              "type": "number",
+              "description": "vfx.worker.fragment_spread (VFX-118)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "fragment_spread_divisor": {
+              "type": "number",
+              "description": "vfx.worker.fragment_spread_divisor (VFX-118)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "health per wu",
+              "x-species-presence": "required"
+            },
+            "walk_bob_height": {
+              "type": "number",
+              "description": "vfx.worker.walk_bob_height (VFX-118)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "walk_bob_rate": {
+              "type": "number",
+              "description": "vfx.worker.walk_bob_rate (VFX-118)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "rad/s",
+              "x-species-presence": "required"
+            },
+            "walk_bob_full_speed": {
+              "type": "number",
+              "description": "vfx.worker.walk_bob_full_speed (VFX-118)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu/s",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "airborne_lift",
+            "shadow_lift",
+            "glow_pulse_fast",
+            "control_glow_color",
+            "control_glow_layers",
+            "side_alpha_gain",
+            "side_half_width",
+            "fragment_alpha",
+            "fragment_spread",
+            "fragment_spread_divisor",
+            "walk_bob_height",
+            "walk_bob_rate",
+            "walk_bob_full_speed"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        }
+      },
+      "required": [
+        "worker"
+      ],
+      "additionalProperties": false,
+      "x-species-type": "object",
+      "x-species-presence": "required"
     }
   },
   "required": [
@@ -2479,7 +2954,8 @@
     "ref",
     "mvp",
     "dbg",
-    "cam"
+    "cam",
+    "vfx"
   ],
   "additionalProperties": false
 }

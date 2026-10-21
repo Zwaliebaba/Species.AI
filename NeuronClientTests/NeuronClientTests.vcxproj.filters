@@ -47,6 +47,9 @@
     <ClCompile Include="PresentationTests.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="SceneQuadsTests.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
     <ClCompile Include="TextLayoutTests.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>

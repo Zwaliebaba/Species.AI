@@ -12,6 +12,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace Neuron
@@ -119,6 +120,71 @@ struct DevelopmentDot
   float sidePixels = 3.0f;
 };
 
+/// The textures the actor, effect, orb and particle passes read (ADR-009, ADR-121): each the bytes of a DDS file of the
+/// content, by the index a QuadBatch names. They are uploaded once and kept across device rebuilds (RND-035).
+struct SceneTextures
+{
+  std::vector<std::vector<std::byte>> files;
+};
+
+// RND-306: a quad's orientation mode.
+enum class QuadOrientation : std::uint8_t
+{
+  CameraFacing,
+  UprightCard,
+  WorldOriented,
+  Segment
+};
+
+// RND-305: where a quad's position lies on it.
+enum class QuadAnchor : std::uint8_t
+{
+  Center,
+  BottomCenter
+};
+
+/// One quad of the scene's passes (RND-305, RND-306), in world units and binary64: the renderer makes it relative to the
+/// camera (WLD-246). Sizes are half-sizes.
+struct SceneQuad
+{
+  Vec3 position; // the centre, the bottom-centre anchor, or a segment's start
+  Vec3 endPoint; // a segment's end
+  Vec3 axisRight{1.0, 0.0, 0.0};
+  Vec3 axisUp{0.0, 1.0, 0.0};
+  float halfWidth = 1.0f;
+  float halfHeight = 1.0f;
+  float blendStart = 0.0f;  // a world-oriented quad's billboard blend: from this camera distance, wu
+  float blendLength = 0.0f; // over this distance; 0: no blend
+  float rotationRadians = 0.0f;
+  bool blendLeft = false; // the blend turns towards the camera's left (VFX-117)
+  std::array<float, 4> color{1.0f, 1.0f, 1.0f, 1.0f};
+  std::array<float, 4> endColor{1.0f, 1.0f, 1.0f, 1.0f};
+  std::array<float, 4> uv{0.0f, 0.0f, 1.0f, 1.0f};
+  QuadOrientation orientation = QuadOrientation::CameraFacing;
+  QuadAnchor anchor = QuadAnchor::Center;
+};
+
+// The world passes that draw quads (RND-070), in their order.
+enum class QuadPass : std::uint8_t
+{
+  Workers, // pass 7d
+  Orbs,    // pass 11
+  Count
+};
+
+/// One draw of a quad pass (ADR-009's M1 form, ADR-121): its catalogue entry, the texture of SceneTextures it reads,
+/// the view test's radius about each quad's position, and its quads in the order they are drawn. The renderer writes
+/// only the quads that pass the view test into the upload ring and draws them with one instanced call.
+struct QuadBatch
+{
+  QuadPass pass = QuadPass::Workers;
+  std::string_view entry;    // the catalogue key, a literal
+  std::uint16_t texture = 0; // an index of SceneTextures::files
+  float cullRadius = 0.0f;   // wu; 0: no view test
+  float cutout = 0.0f;       // the cut-out threshold of a cut-out entry (RND-060)
+  std::vector<SceneQuad> quads;
+};
+
 /// The game cursors' art (RND-366, ADR-119): each cursor's mask and its authored darkening shadow, as DDS files, by the
 /// index a CursorQuad names. Single-channel masks at their display size with one level (O64).
 struct CursorImages
@@ -152,6 +218,9 @@ struct FrameInputs
   std::vector<OverlayLine> overlay;
   std::vector<OverlayRect> overlayRects;
   std::vector<DevelopmentDot> dots;
+  // The scene's quads (ADR-121): their textures, and the batches of each quad pass in the order drawn.
+  std::shared_ptr<const SceneTextures> sceneTextures;
+  std::vector<QuadBatch> quadBatches;
   // The game cursor (ADR-119): its art, and the quad of this frame; none draws no cursor.
   std::shared_ptr<const CursorImages> cursorImages;
   std::optional<CursorQuad> cursor;

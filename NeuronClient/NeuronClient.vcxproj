@@ -166,6 +166,7 @@
     <ClInclude Include="DisplayAttempt.h" />
     <ClInclude Include="FrameRenderer.h" />
     <ClInclude Include="FrameView.h" />
+    <ClInclude Include="FxRng.h" />
     <ClInclude Include="GpuDescriptions.h" />
     <ClInclude Include="GpuResourceFactory.h" />
     <ClInclude Include="GraphicsDevice.h" />
@@ -177,9 +178,12 @@
     <ClInclude Include="PassTable.h" />
     <ClInclude Include="Picking.h" />
     <ClInclude Include="PipelineCatalog.h" />
+    <ClInclude Include="PresentationClock.h" />
     <ClInclude Include="PresentPolicy.h" />
+    <ClInclude Include="QuadRenderer.h" />
     <ClInclude Include="ResizeCoalescer.h" />
     <ClInclude Include="RootSignature.h" />
+    <ClInclude Include="SceneQuads.h" />
     <ClInclude Include="SceneTargets.h" />
     <ClInclude Include="ShaderLayouts.h" />
     <ClInclude Include="SkyLayers.h" />
@@ -200,6 +204,7 @@
     <ClCompile Include="DisplayAttempt.cpp" />
     <ClCompile Include="FrameRenderer.cpp" />
     <ClCompile Include="FrameView.cpp" />
+    <ClCompile Include="FxRng.cpp" />
     <ClCompile Include="GpuDescriptions.cpp" />
     <ClCompile Include="GpuResourceFactory.cpp" />
     <ClCompile Include="GraphicsDevice.cpp" />
@@ -210,9 +215,12 @@
     <ClCompile Include="PassTable.cpp" />
     <ClCompile Include="Picking.cpp" />
     <ClCompile Include="PipelineCatalog.cpp" />
+    <ClCompile Include="PresentationClock.cpp" />
     <ClCompile Include="PresentPolicy.cpp" />
+    <ClCompile Include="QuadRenderer.cpp" />
     <ClCompile Include="ResizeCoalescer.cpp" />
     <ClCompile Include="RootSignature.cpp" />
+    <ClCompile Include="SceneQuads.cpp" />
     <ClCompile Include="SceneTargets.cpp" />
     <ClCompile Include="SkyLayers.cpp" />
     <ClCompile Include="TextLayout.cpp" />
@@ -275,6 +283,18 @@
     <FXCompile Include="Shader\TerrainVS.hlsl">
       <ShaderType>Vertex</ShaderType>
     </FXCompile>
+    <FXCompile Include="Shader\UnlitTexturedCutoutPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\UnlitTexturedMaskPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\UnlitTexturedPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\UnlitTexturedVS.hlsl">
+      <ShaderType>Vertex</ShaderType>
+    </FXCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shader\Cursor.hlsli" />
@@ -285,6 +305,7 @@
     <None Include="Shader\SeaWaves.hlsli" />
     <None Include="Shader\Sky.hlsli" />
     <None Include="Shader\Terrain.hlsli" />
+    <None Include="Shader\UnlitTextured.hlsli" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

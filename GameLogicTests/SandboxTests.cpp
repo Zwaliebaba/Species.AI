@@ -141,6 +141,23 @@ public:
     Assert::IsFalse(region.MayCommand(steward, Species::SANDBOX_AI_TEAM, false), L"and not the AI's");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp005AWatchedSandboxHasAnAiOnEachSide)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-005")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp005AWatchedSandboxHasAnAiOnEachSide)
+  {
+    // O77: --watch gives the steward's side the AI too, and the steward commands neither side.
+    const Species::WorldStart start{SANDBOX_TEST_KEY, 1, 0, 1, true, true};
+    const std::unique_ptr<Species::WorldSimulation> world = Species::StartWorld(start, ValleyTerrain(), CommittedTuning());
+    const Species::RegionSimulation& region = world->Region(0);
+    Assert::IsTrue(region.Ais().size() == 2, L"an AI on each side");
+    Assert::IsTrue(region.Ais()[0].team != region.Ais()[1].team, L"one per side");
+    const Species::StableId steward = Species::ConnectSteward(*world, true, true);
+    Assert::IsFalse(region.MayCommand(steward, Species::SANDBOX_STEWARD_TEAM, false), L"the steward commands neither side");
+    Assert::IsFalse(region.MayCommand(steward, Species::SANDBOX_AI_TEAM, false));
+    Assert::IsFalse(region.TeamCommandedBy(steward).has_value(), L"so its terrain message names no team");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp093TheSandboxAndTheSyntheticBattleHashAlikeAtAnyWorkerCount)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-093")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-094")
@@ -282,7 +299,7 @@ public:
   TEST_METHOD(Mvp076AJournalReadsBackAsItWasWritten)
   {
     Species::CommandJournal journal;
-    journal.start = {SANDBOX_TEST_KEY, 77, 40, 1, true};
+    journal.start = {SANDBOX_TEST_KEY, 77, 40, 1, true, true};
     journal.entries.push_back({40, true, Species::JOURNAL_WORLD_OWNER, 9, 0, {}});
     journal.entries.push_back({40, false, 1, 9, 0, Neuron::EncodeMessage(Species::PromoteWorkerCommand{0, 12})});
     journal.entries.push_back({52, false, Species::JOURNAL_WORLD_OWNER, 9, 1, Neuron::EncodeMessage(Species::SelectCommand{0, 0})});
@@ -291,8 +308,8 @@ public:
     Assert::IsTrue(read.has_value(), L"the journal reads");
     const Species::CommandJournal back = read.value_or(Species::CommandJournal{});
     Assert::IsTrue(back.start.key.low == SANDBOX_TEST_KEY.low && back.start.key.high == SANDBOX_TEST_KEY.high && back.start.seed == 77 &&
-                     back.start.firstTick == 40 && back.start.regions == 1 && back.start.sandbox,
-                   L"its start");
+                     back.start.firstTick == 40 && back.start.regions == 1 && back.start.sandbox && back.start.watched,
+                   L"its start, watched (O77)");
     Assert::IsTrue(back.entries == journal.entries, L"its entries");
 
     Assert::IsFalse(Species::ReadJournal(std::span(bytes).first(bytes.size() - 1)).has_value(), L"a short file does not read");

@@ -5,6 +5,7 @@
 #include "FrameProfile.h"
 #include "LooseContent.h"
 #include "PlatformClock.h"
+#include "PresentationClock.h"
 #include "SettlementView.h"
 #include "TuningMvp.h"
 #include "TuningPresentation.h"
@@ -19,9 +20,9 @@ namespace Species
 
 /// The client's world frame (M1 task T13, ADR-115): the world's surfaces, built from the session's terrain with the
 /// client's presentation record and the content's textures once the terrain arrives, and each frame's inputs from the
-/// settlement view's camera and cursor (M1 task T14, ADR-119). In a Debug build each frame also carries a dot for each
-/// living figure (M1 task T15a, ADR-118) and, while the overlay is shown, its frame-rate line and frame page from the frame
-/// loop's profile (M1 task T15b, ADR-120).
+/// settlement view's camera and cursor (M1 task T14, ADR-119), and the crowds (M1 task T16, ADR-121). In a Debug build,
+/// while the overlay is shown, each frame also carries a dot for each living figure (ADR-118) and the frame-rate line and
+/// frame page from the frame loop's profile (M1 task T15b, ADR-120).
 class WorldPresentation
 {
 public:
@@ -73,9 +74,11 @@ private:
   std::shared_ptr<const Neuron::WorldScene> m_world;
   Neuron::Nanoseconds m_start{};
   std::optional<double> m_firstDisplayTick;
-  std::shared_ptr<const Neuron::FontAsset> m_developmentFace; // a Debug build's overlay face; none in Release
-  std::shared_ptr<const Neuron::CursorImages> m_cursorImages; // ADR-119; none when the content lacks one
+  std::shared_ptr<const Neuron::FontAsset> m_developmentFace;   // a Debug build's overlay face; none in Release
+  std::shared_ptr<const Neuron::CursorImages> m_cursorImages;   // ADR-119; none when the content lacks one
+  std::shared_ptr<const Neuron::SceneTextures> m_sceneTextures; // ADR-121; none when the content lacks one
   Neuron::FrameProfile m_profile;
+  Neuron::PresentationClock m_presentationClock;
   bool m_overlayShown = false;
 };
 

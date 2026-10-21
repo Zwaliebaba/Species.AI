@@ -29,6 +29,9 @@
     <ClCompile Include="ClientSessionTests.cpp">
       <Filter>Session</Filter>
     </ClCompile>
+    <ClCompile Include="CrowdLookTests.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
     <ClCompile Include="DevelopmentOverlayTests.cpp">
       <Filter>Diagnostics</Filter>
     </ClCompile>

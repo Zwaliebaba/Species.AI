@@ -21,6 +21,7 @@ namespace
 constexpr std::wstring_view LOOSE_CONTENT_OPTION = L"--loose-content";
 constexpr std::wstring_view SEED_OPTION = L"--seed";
 constexpr std::wstring_view RENDER_CHECK_OPTION = L"--render-check";
+constexpr std::wstring_view WATCH_OPTION = L"--watch";
 
 // A decimal number of digits only that fits 64 bits, or none.
 std::optional<std::uint64_t> DecimalOf(std::wstring_view _text) noexcept
@@ -87,6 +88,11 @@ StartupOptions ParseArguments(std::span<const std::wstring> _arguments)
         ++i;
         continue;
       }
+    }
+    if (_arguments[i] == WATCH_OPTION)
+    {
+      options.watch = true;
+      continue;
     }
     if (_arguments[i] == RENDER_CHECK_OPTION && i + 1 < _arguments.size())
     {

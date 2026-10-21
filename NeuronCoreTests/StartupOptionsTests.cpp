@@ -119,6 +119,22 @@ public:
 #endif
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Plt022TheWatchOptionTakesNoValue)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"PLT-022")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"PLT-107")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Plt022TheWatchOptionTakesNoValue)
+  {
+    // O77: `--watch` stands alone, so the argument after it is read on its own; a Release build knows no such option.
+    const Neuron::StartupOptions options = Parse({L"--watch", L"--seed", L"4"});
+#if ENGINE_DEVELOPMENT
+    Assert::IsTrue(options.watch && options.worldSeed == std::uint64_t{4} && options.ignoredArguments.empty(), L"watched, with its seed");
+#else
+    Assert::IsFalse(options.watch, L"no watching in Release");
+#endif
+    Assert::IsFalse(Parse({L"--seed", L"4"}).watch, L"not watched unless asked");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Ast105TheContentFolderIsBesideTheExecutableByDefault)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"AST-105")
   END_TEST_METHOD_ATTRIBUTE()

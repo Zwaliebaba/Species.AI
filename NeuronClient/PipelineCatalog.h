@@ -45,7 +45,8 @@ enum class VertexLayout : std::uint8_t
   Sea,
   SkyInstance,
   TextGlyph,
-  DotInstance
+  DotInstance,
+  QuadInstance
 };
 
 // The targets an entry draws into: the scene targets at their sample count with the depth buffer bound, or the back

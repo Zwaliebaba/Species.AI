@@ -118,7 +118,8 @@ bool WorldServer::StartNew(std::uint64_t _seed, std::uint64_t _firstTick)
   // A new world draws its simulation key from the system's cryptographic generator (ADR-082 item 1), and holds the
   // seed that passed (MVP-011), which gives the same terrain at its first attempt. Its journal starts with it.
   CommandJournal journal;
-  journal.start = WorldStart{Neuron::DrawSecretKey(), terrain->seed, _firstTick, m_desc.regionCount, m_desc.sandbox};
+  journal.start =
+    WorldStart{Neuron::DrawSecretKey(), terrain->seed, _firstTick, m_desc.regionCount, m_desc.sandbox, m_desc.sandbox && m_desc.watched};
   std::unique_ptr<WorldSimulation> world = StartWorld(journal.start, terrain, m_desc.tuning);
   Adopt(std::move(world), std::move(terrain));
   m_journal = std::move(journal);
@@ -140,7 +141,7 @@ bool WorldServer::RestartSandbox(bool _newSeed)
   // Each steward is connected to the new world, in connection order, and receives its terrain.
   for (auto& [connection, steward] : m_stewards)
   {
-    steward.id = ConnectSteward(*m_world, m_desc.sandbox);
+    steward.id = ConnectSteward(*m_world, m_desc.sandbox, m_desc.watched);
     steward.terrainSent = false;
     steward.state.Forget(); // the new world's ids start again (ADR-111)
     if (m_journal)
@@ -186,7 +187,7 @@ std::size_t WorldServer::SnapshotsKept() const noexcept
 void WorldServer::Connect(Neuron::ConnectionId _connection)
 {
   // ADR-109: the next id of the world owner and, in the sandbox, the steward's side.
-  const StableId steward = ConnectSteward(*m_world, m_desc.sandbox);
+  const StableId steward = ConnectSteward(*m_world, m_desc.sandbox, m_desc.watched);
   m_stewards.emplace(_connection, Steward{steward, 0, false, {}, {}});
   if (m_journal)
   {

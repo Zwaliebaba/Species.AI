@@ -20,7 +20,8 @@ namespace Species
 {
 
 /// What a new world is made from (ADR-109): its simulation key, the seed of its terrain, its first tick, its region
-/// count, and whether it is the sandbox of M1 (MVP-005).
+/// count, whether it is the sandbox of M1 (MVP-005), and whether that sandbox is watched (O77): an AI on each side, and
+/// a steward who commands none.
 struct WorldStart
 {
   Neuron::SipHashKey key;
@@ -28,6 +29,7 @@ struct WorldStart
   std::uint64_t firstTick = 0;
   std::uint16_t regions = 1;
   bool sandbox = false;
+  bool watched = false;
 };
 
 // A new world: made, its terrain attached to region 0 (ADR-102), and populated as the sandbox when it is one (M1 plan
@@ -77,6 +79,6 @@ struct CommandJournal
 
 // A steward's connection to _world (ADR-095, ADR-109): the next id of the world owner and, in the sandbox, the
 // steward's side to command. Returns the steward's id.
-StableId ConnectSteward(WorldSimulation& _world, bool _sandbox);
+StableId ConnectSteward(WorldSimulation& _world, bool _sandbox, bool _watched = false);
 
 } // namespace Species

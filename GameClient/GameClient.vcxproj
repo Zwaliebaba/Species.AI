@@ -145,6 +145,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="ClientSession.h" />
+    <ClInclude Include="CrowdLook.h" />
     <ClInclude Include="DevelopmentOverlay.h" />
     <ClInclude Include="InputBindings.h" />
     <ClInclude Include="ReplicaTiming.h" />
@@ -155,6 +156,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ClientSession.cpp" />
+    <ClCompile Include="CrowdLook.cpp" />
     <ClCompile Include="DevelopmentOverlay.cpp" />
     <ClCompile Include="InputBindings.cpp" />
     <ClCompile Include="ReplicaTiming.cpp" />

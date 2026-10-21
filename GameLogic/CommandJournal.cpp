@@ -15,7 +15,7 @@ namespace
 {
 
 // The journal's file version, raised with every change of its layout.
-constexpr std::uint64_t JOURNAL_FORMAT = 1;
+constexpr std::uint64_t JOURNAL_FORMAT = 2; // 2: the watched sandbox (O77)
 constexpr std::uint32_t JOURNAL_FORMAT_BITS = 32;
 // The most entries a journal file holds: a bound for the reader.
 constexpr std::uint64_t JOURNAL_ENTRIES_MAX = std::uint64_t{1} << 32;
@@ -42,16 +42,16 @@ std::unique_ptr<WorldSimulation> StartWorld(const WorldStart& _start, std::share
     world->Region(0).AttachTerrain(std::move(_terrain));
     if (_start.sandbox)
     {
-      PopulateSandbox(world->Region(0));
+      PopulateSandbox(world->Region(0), _start.watched);
     }
   }
   return world;
 }
 
-StableId ConnectSteward(WorldSimulation& _world, bool _sandbox)
+StableId ConnectSteward(WorldSimulation& _world, bool _sandbox, bool _watched)
 {
   const StableId steward = _world.Ids().Issue();
-  if (_sandbox)
+  if (_sandbox && !_watched)
   {
     _world.Region(0).SetCommander(SANDBOX_STEWARD_TEAM, steward, false);
   }
@@ -68,6 +68,7 @@ std::vector<std::byte> WriteJournal(const CommandJournal& _journal)
   writer.WriteBits(_journal.start.firstTick, 64);
   writer.WriteBits(_journal.start.regions, 16);
   writer.WriteBool(_journal.start.sandbox);
+  writer.WriteBool(_journal.start.watched);
   writer.WriteBounded(_journal.entries.size(), JOURNAL_ENTRIES_MAX);
   for (const JournalEntry& entry : _journal.entries)
   {
@@ -95,6 +96,7 @@ std::optional<CommandJournal> ReadJournal(std::span<const std::byte> _bytes)
   journal.start.firstTick = reader.ReadBits(64);
   journal.start.regions = static_cast<std::uint16_t>(reader.ReadBits(16));
   journal.start.sandbox = reader.ReadBool();
+  journal.start.watched = reader.ReadBool();
   const std::uint64_t entries = reader.ReadBounded(JOURNAL_ENTRIES_MAX);
   std::uint64_t previousTick = journal.start.firstTick;
   for (std::uint64_t index = 0; index < entries && !reader.Failed(); ++index)
@@ -136,7 +138,7 @@ std::unique_ptr<WorldSimulation> ReplayJournal(const CommandJournal& _journal, s
       const JournalEntry& entry = _journal.entries[next];
       if (entry.connection)
       {
-        static_cast<void>(ConnectSteward(*world, _journal.start.sandbox));
+        static_cast<void>(ConnectSteward(*world, _journal.start.sandbox, _journal.start.watched));
       }
       else
       {

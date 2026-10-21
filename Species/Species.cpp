@@ -342,6 +342,7 @@ int Run()
     // M1 plan §6: the battle sandbox, from the seed of --seed or one the server draws (MVP-005).
     serverDesc.worldSeed = options.worldSeed;
     serverDesc.sandbox = true;
+    serverDesc.watched = options.watch; // O77: a Debug build's --watch, both sides under the AI
     IntegratedServer server(serverDesc);
     if (const auto started = server.Start(); !started)
     {

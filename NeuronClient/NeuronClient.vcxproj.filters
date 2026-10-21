@@ -4,6 +4,9 @@
     <Filter Include="Build">
       <UniqueIdentifier>{458D2A6A-799F-5CF6-8C0D-83E7B6BC7744}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Effects">
+      <UniqueIdentifier>{CA0D894A-6D8A-54C4-A258-2AD90B716133}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Input">
       <UniqueIdentifier>{6DC232A3-EC8B-5416-A90A-E10AE99806B0}</UniqueIdentifier>
     </Filter>
@@ -48,6 +51,9 @@
     <ClInclude Include="FrameView.h">
       <Filter>Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="FxRng.h">
+      <Filter>Effects</Filter>
+    </ClInclude>
     <ClInclude Include="GpuDescriptions.h">
       <Filter>Rendering</Filter>
     </ClInclude>
@@ -81,13 +87,22 @@
     <ClInclude Include="PipelineCatalog.h">
       <Filter>Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="PresentationClock.h">
+      <Filter>Effects</Filter>
+    </ClInclude>
     <ClInclude Include="PresentPolicy.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="QuadRenderer.h">
       <Filter>Rendering</Filter>
     </ClInclude>
     <ClInclude Include="ResizeCoalescer.h">
       <Filter>Window</Filter>
     </ClInclude>
     <ClInclude Include="RootSignature.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="SceneQuads.h">
       <Filter>Rendering</Filter>
     </ClInclude>
     <ClInclude Include="SceneTargets.h">
@@ -146,6 +161,9 @@
     <ClCompile Include="FrameView.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="FxRng.cpp">
+      <Filter>Effects</Filter>
+    </ClCompile>
     <ClCompile Include="GpuDescriptions.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
@@ -176,13 +194,22 @@
     <ClCompile Include="PipelineCatalog.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="PresentationClock.cpp">
+      <Filter>Effects</Filter>
+    </ClCompile>
     <ClCompile Include="PresentPolicy.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="QuadRenderer.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="ResizeCoalescer.cpp">
       <Filter>Window</Filter>
     </ClCompile>
     <ClCompile Include="RootSignature.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="SceneQuads.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="SceneTargets.cpp">
@@ -264,6 +291,18 @@
     <FXCompile Include="Shader\TerrainVS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
+    <FXCompile Include="Shader\UnlitTexturedCutoutPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\UnlitTexturedMaskPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\UnlitTexturedPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\UnlitTexturedVS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shader\Cursor.hlsli">
@@ -288,6 +327,9 @@
       <Filter>Shader</Filter>
     </None>
     <None Include="Shader\Terrain.hlsli">
+      <Filter>Shader</Filter>
+    </None>
+    <None Include="Shader\UnlitTextured.hlsli">
       <Filter>Shader</Filter>
     </None>
   </ItemGroup>

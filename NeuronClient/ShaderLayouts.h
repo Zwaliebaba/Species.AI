@@ -109,6 +109,32 @@ struct DotInstance
   Float4 color;
 };
 
+// RND-262, RND-305 and RND-306 (ADR-009): one quad of the actor, effect, orb and particle passes, expanded in the vertex
+// shader from its orientation mode. Positions are relative to the camera (WLD-246); sizes are half-sizes in wu.
+struct QuadInstance
+{
+  Float4 position;  // xyz: the centre, the anchor of a QUAD_ANCHOR_BOTTOM quad, or a segment's start; w: the half-width
+  Float4 endPoint;  // xyz: a segment's end; w: the half-height
+  Float4 axisRight; // xyz: a world-oriented quad's right axis; w: its billboard blend's start, wu from the camera
+  Float4 axisUp;    // xyz: its up axis; w: the blend's length in wu, 0 for no blend
+  Float4 color;     // rgba; a segment's colour at its start
+  Float4 endColor;  // a segment's colour at its end
+  Float4 uv;        // the texture's rectangle: u and v at the left and top, then at the right and bottom
+  Uint4 shape;      // x: the orientation mode; y: the anchor; z: the rotation in radians, as its float's bits; w: QUAD_* flags
+};
+
+// QuadInstance.shape.x: the orientation modes of RND-306.
+LAYOUT_CONSTANT QUAD_CAMERA_FACING = 0;
+LAYOUT_CONSTANT QUAD_UPRIGHT_CARD = 1;
+LAYOUT_CONSTANT QUAD_WORLD_ORIENTED = 2;
+LAYOUT_CONSTANT QUAD_SEGMENT = 3;
+// QuadInstance.shape.y: the anchors of RND-305.
+LAYOUT_CONSTANT QUAD_ANCHOR_CENTER = 0;
+LAYOUT_CONSTANT QUAD_ANCHOR_BOTTOM = 1;
+// QuadInstance.shape.w: a world-oriented quad blends towards the camera's left rather than its right, so that a card
+// seen from behind is not drawn mirrored (VFX-117).
+LAYOUT_CONSTANT QUAD_BLEND_LEFT = 1;
+
 #if !defined(__HLSL_VERSION)
 static_assert(sizeof(FrameConstants) == 3 * sizeof(Float4x4) + 9 * sizeof(Float4));
 static_assert(sizeof(PassConstants) == 8 * sizeof(Float4));
@@ -116,6 +142,7 @@ static_assert(sizeof(DrawConstants) == sizeof(Float3x4) + sizeof(Float4) + sizeo
 static_assert(sizeof(SkyLayerInstance) == 4 * sizeof(Float4) + sizeof(Uint4));
 static_assert(sizeof(TextGlyphInstance) == 3 * sizeof(Float4));
 static_assert(sizeof(DotInstance) == 2 * sizeof(Float4));
+static_assert(sizeof(QuadInstance) == 7 * sizeof(Float4) + sizeof(Uint4));
 inline constexpr std::uint32_t DRAW_CONSTANT_DWORDS = sizeof(DrawConstants) / 4;
 } // namespace Neuron
 #endif

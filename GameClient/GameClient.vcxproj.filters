@@ -24,6 +24,9 @@
     <ClInclude Include="ClientSession.h">
       <Filter>Session</Filter>
     </ClInclude>
+    <ClInclude Include="CrowdLook.h">
+      <Filter>View</Filter>
+    </ClInclude>
     <ClInclude Include="DevelopmentOverlay.h">
       <Filter>Diagnostics</Filter>
     </ClInclude>
@@ -49,6 +52,9 @@
   <ItemGroup>
     <ClCompile Include="ClientSession.cpp">
       <Filter>Session</Filter>
+    </ClCompile>
+    <ClCompile Include="CrowdLook.cpp">
+      <Filter>View</Filter>
     </ClCompile>
     <ClCompile Include="DevelopmentOverlay.cpp">
       <Filter>Diagnostics</Filter>

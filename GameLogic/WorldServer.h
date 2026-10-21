@@ -41,6 +41,7 @@ public:
     std::filesystem::path snapshotFolder;   // where the world is saved when it freezes and restored when it opens; none: a new
                                             // world each run (ADR-099)
     bool sandbox = false;                   // M1 plan §6: a new world is the battle sandbox
+    bool watched = false;                   // O77: the sandbox's AI commands both sides, and its stewards none
   };
 
   // The journal file a freezing world writes beside its snapshots (MVP-076).

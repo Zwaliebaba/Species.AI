@@ -13,8 +13,9 @@ inline constexpr std::uint8_t SANDBOX_AI_TEAM = 1;
 
 // M1 plan §6: a new sandbox in a region with its terrain: the steward's side and the AI's side, each
 // mvp.sandbox.side_workers Workers with no Leader spawned around a site centre (mvp.sandbox.steward_site and
-// mvp.sandbox.ai_site, diagonally opposite), and the AI that commands its side (ADR-107). Called between ticks.
-void PopulateSandbox(RegionSimulation& _region);
+// mvp.sandbox.ai_site, diagonally opposite), and the AI that commands its side (ADR-107). A watched sandbox (O77) gives
+// the steward's side an AI too. Called between ticks.
+void PopulateSandbox(RegionSimulation& _region, bool _watched = false);
 
 // ADR-080 item 2's synthetic battle: mvp.perf.synthetic_figures Workers in two halves mvp.perf.synthetic_gap apart
 // across the valley's centre, each spread as a sandbox side and commanded by an AI (ADR-110). Called between ticks, on

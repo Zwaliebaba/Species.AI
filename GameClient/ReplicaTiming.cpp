@@ -56,8 +56,8 @@ std::vector<InterpolatedFigure> InterpolateFigures(const StateReplica& _replica,
     {
       continue;
     }
-    InterpolatedFigure& drawn =
-      figures.emplace_back(InterpolatedFigure{id, *figure, PositionOf(figure->position), YawRadians(figure->yaw)});
+    InterpolatedFigure& drawn = figures.emplace_back(
+      InterpolatedFigure{id, *figure, PositionOf(figure->position), YawRadians(figure->yaw), static_cast<double>(figure->health), {}});
     // Both views are in id order, so one walk finds each figure's previous state.
     while (before != previous.end() && before->first < id)
     {
@@ -69,8 +69,10 @@ std::vector<InterpolatedFigure> InterpolateFigures(const StateReplica& _replica,
       continue;
     }
     const Neuron::Vec3 from = PositionOf(was->position);
+    drawn.tickMotion = drawn.position - from;
     drawn.position = {from.x + (drawn.position.x - from.x) * f, from.y + (drawn.position.y - from.y) * f,
                       from.z + (drawn.position.z - from.z) * f};
+    drawn.health = static_cast<double>(was->health) + (drawn.health - static_cast<double>(was->health)) * f;
     // The shorter way round.
     const double start = YawRadians(was->yaw);
     double turn = drawn.yawRadians - start;
@@ -85,6 +87,34 @@ std::vector<InterpolatedFigure> InterpolateFigures(const StateReplica& _replica,
     drawn.yawRadians = start + turn * f;
   }
   return figures;
+}
+
+std::vector<InterpolatedOrb> InterpolateOrbs(const StateReplica& _replica, double _fraction)
+{
+  const double f = std::clamp(_fraction, 0.0, 1.0);
+  std::vector<InterpolatedOrb> orbs;
+  const StateReplica::View& previous = _replica.Previous();
+  auto before = previous.begin();
+  for (const auto& [id, state] : _replica.Latest())
+  {
+    const auto* orb = std::get_if<ReplicatedOrb>(&state);
+    if (orb == nullptr)
+    {
+      continue;
+    }
+    InterpolatedOrb& drawn = orbs.emplace_back(InterpolatedOrb{id, *orb, PositionOf(orb->position)});
+    while (before != previous.end() && before->first < id)
+    {
+      ++before;
+    }
+    const auto* was = before != previous.end() && before->first == id ? std::get_if<ReplicatedOrb>(&before->second) : nullptr;
+    if (was != nullptr)
+    {
+      const Neuron::Vec3 from = PositionOf(was->position);
+      drawn.position = from + (drawn.position - from) * f;
+    }
+  }
+  return orbs;
 }
 
 } // namespace Species

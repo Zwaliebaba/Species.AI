@@ -49,16 +49,30 @@ private:
   Neuron::Nanoseconds m_arrived{0};
 };
 
-/// A figure of the replica as a frame draws it: its latest replicated state, and its position and facing between its
-/// two latest states at the frame's fraction. A figure that entered at the latest tick is drawn from its first state.
+/// A figure of the replica as a frame draws it: its latest replicated state, and its position, facing and health between
+/// its two latest states at the frame's fraction, with its movement over the latest tick (ADR-121's walk bob). A figure
+/// that entered at the latest tick is drawn from its first state, with no movement.
 struct InterpolatedFigure
 {
   StableId id = 0;
   ReplicatedFigure state;
   Neuron::Vec3 position;
   double yawRadians = 0.0;
+  double health = 0.0;     // a dead figure's is its corpse fade (R-UNIT-034)
+  Neuron::Vec3 tickMotion; // the latest state's position less the previous one's, wu
 };
 
 [[nodiscard]] std::vector<InterpolatedFigure> InterpolateFigures(const StateReplica& _replica, double _fraction);
+
+/// An Essence orb of the replica as a frame draws it (RND-082): its latest state, and its position between its two
+/// latest states at the frame's fraction.
+struct InterpolatedOrb
+{
+  StableId id = 0;
+  ReplicatedOrb state;
+  Neuron::Vec3 position;
+};
+
+[[nodiscard]] std::vector<InterpolatedOrb> InterpolateOrbs(const StateReplica& _replica, double _fraction);
 
 } // namespace Species

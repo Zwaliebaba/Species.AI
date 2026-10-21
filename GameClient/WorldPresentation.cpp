@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "CrowdLook.h"
 #include "DdsTexture.h"
 #include "Development.h"
 #include "DevelopmentOverlay.h"
@@ -215,9 +216,11 @@ std::shared_ptr<const Neuron::WorldScene> BuildWorldScene(const RegionTerrain& _
 WorldPresentation::WorldPresentation(Desc _desc)
   : m_desc(_desc),
     m_start(_desc.clock->Now()),
-    m_profile(ProfileDescOf(*_desc.presentation))
+    m_profile(ProfileDescOf(*_desc.presentation)),
+    m_presentationClock(_desc.presentation->ref.sim.frame.deltaClamp)
 {
   m_cursorImages = LoadCursorImages(*m_desc.content);
+  m_sceneTextures = LoadSceneTextures(*m_desc.content);
 #if ENGINE_DEVELOPMENT
   m_developmentFace = LoadDevelopmentFace(*m_desc.content);
 #endif
@@ -271,6 +274,22 @@ Neuron::FrameInputs WorldPresentation::Frame(const ClientSession& _session, cons
     }
     inputs.skyTicks = displayed - *m_firstDisplayTick;
   }
+  // M1 task T16 (ADR-121): the crowds, on the presentation clock (VFX-016; no world is held at M1, at game speed 1).
+  m_presentationClock.Advance(m_desc.clock->Now(), false, 1.0);
+  if (m_terrain != nullptr && m_sceneTextures != nullptr)
+  {
+    CrowdView crowd;
+    crowd.camera = inputs.camera.position;
+    crowd.cameraFront = Neuron::ViewDirection(inputs.camera);
+    crowd.scaledSeconds = m_presentationClock.ScaledSeconds();
+    crowd.unscaledSeconds = m_presentationClock.UnscaledSeconds();
+    crowd.localTeam = _session.CommandedTeam();
+    const double fraction = _session.InterpolationFraction();
+    inputs.sceneTextures = m_sceneTextures;
+    AppendWorkerBatches(InterpolateFigures(_session.Replica(), fraction), m_terrain->field, crowd, *m_desc.presentation, *m_desc.tuning,
+                        inputs.quadBatches);
+    AppendOrbBatches(InterpolateOrbs(_session.Replica(), fraction), *m_desc.presentation, inputs.quadBatches);
+  }
 #if ENGINE_DEVELOPMENT
   // DBG-095, DBG-096, ADR-120: while the overlay is shown, the frame-rate line, whose objects are counted while a world
   // exists, and the frame page.
@@ -283,8 +302,8 @@ Neuron::FrameInputs WorldPresentation::Frame(const ClientSession& _session, cons
     inputs.overlay.insert(inputs.overlay.end(), std::make_move_iterator(page.lines.begin()), std::make_move_iterator(page.lines.end()));
     inputs.overlayRects = std::move(page.rects);
   }
-  // ADR-118, ADR-120: the dots stand in for the crowds until T16, so they are drawn whether the overlay is shown or not.
-  if (m_terrain != nullptr)
+  // ADR-121: with the crowds drawn, the figure dots are a world layer of the overlay (DBG-099), shown with it.
+  if (m_terrain != nullptr && m_overlayShown)
   {
     inputs.dots = FigureDots(InterpolateFigures(_session.Replica(), _session.InterpolationFraction()));
   }
