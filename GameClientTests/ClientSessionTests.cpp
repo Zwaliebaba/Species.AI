@@ -272,10 +272,12 @@ public:
   {
     // The server's seed and digest; the client builds the region with its own library and data, and its digest matches.
     Fixture f;
-    const Species::WorldTerrain sent{SeedOne().seed, SeedOne().digest};
+    const Species::WorldTerrain sent{SeedOne().seed, SeedOne().digest, std::uint8_t{0}};
+    Assert::IsFalse(f.session->CommandedTeam().has_value(), L"no team before the terrain");
     Assert::IsTrue(f.server->Send(Neuron::Channel::Reliable, Neuron::EncodeMessage(sent)).has_value());
     f.Send(Species::StateUpdate{3, 0, {}});
     f.session->Update();
+    Assert::IsTrue(f.session->CommandedTeam() == std::uint8_t{0}, L"the team the server names (ADR-119)");
     Assert::IsTrue(f.session->Terrain() != nullptr && f.session->Terrain()->digest == SeedOne().digest, L"the client's terrain");
     Assert::IsFalse(f.session->Refused(), L"accepted");
     Assert::IsTrue(f.session->Connected(), L"still connected");

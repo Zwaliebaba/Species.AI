@@ -163,7 +163,74 @@
       },
       "frame": {
         "fps_window": 1.0,
-        "fps_initial": 60
+        "fps_initial": 60,
+        "delta_clamp": 0.25
+      },
+      "match_entry": {
+        "camera_border": 200,
+        "fallback_camera_height": 1000,
+        "fallback_camera_direction": {
+          "x": -1,
+          "y": -0.7,
+          "z": -1
+        }
+      }
+    },
+    "ctrl": {
+      "camera": {
+        "fov_base": 60,
+        "zoom_divisor": 4,
+        "zoom_rates": {
+          "normal": 30,
+          "zooming": 100,
+          "scripted": 1,
+          "blend_factor": 0.1
+        },
+        "height_key_rate": 7,
+        "height_scale": 2,
+        "min_height": 10,
+        "ground_clearance": 10,
+        "max_height": 5000,
+        "pan_speed": 250,
+        "fast_pan_factor": 4,
+        "cliff_probe": {
+          "length": 100,
+          "samples": 40,
+          "slow_start": 30
+        },
+        "ground_samples": 10,
+        "position_smoothing": 4
+      },
+      "pointer": {
+        "miss_ray_start": 4,
+        "miss_sphere_factor": 40
+      },
+      "cursor": {
+        "set": {
+          "highlight_hotspot": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "unavailable_hotspot": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "unavailable_color": {
+            "r": 255,
+            "g": 0,
+            "b": 0
+          }
+        }
+      }
+    },
+    "unit": {
+      "leader": {
+        "pick_center_lift": 4,
+        "pick_radius": 8
+      },
+      "worker": {
+        "card_scale_start": 100,
+        "card_scale_divisor": 1000
       }
     }
   },
@@ -193,12 +260,26 @@
           "b": 1.0
         }
       }
+    },
+    "cursor": {
+      "world_size": 48,
+      "highlight_size": 48,
+      "unavailable_size": 60,
+      "world_hotspot": {
+        "x": 0.113,
+        "y": 0.082
+      }
     }
   },
   "dbg": {
     "overlay": {
       "frame_rate_right": 10,
       "frame_rate_bottom": 40
+    }
+  },
+  "cam": {
+    "pick": {
+      "row_offset": 1
     }
   }
 }

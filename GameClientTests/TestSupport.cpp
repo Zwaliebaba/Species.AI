@@ -51,6 +51,17 @@ const Species::TuningMvp& CommittedTuning()
   return COMMITTED_TUNING;
 }
 
+const Species::TuningPresentation& CommittedPresentation()
+{
+  static const Species::TuningPresentation COMMITTED_PRESENTATION = []
+  {
+    const auto presentation = Species::ReadTuningPresentationSource(RepositoryContentRoot());
+    Assert::IsTrue(presentation.has_value(), L"the committed presentation record reads whole");
+    return presentation.value_or(Species::TuningPresentation{});
+  }();
+  return COMMITTED_PRESENTATION;
+}
+
 // Development checks become test failures (DBG-072): the hook records them, and every test class checks the record.
 TEST_MODULE_INITIALIZE(ModuleInitialize)
 {

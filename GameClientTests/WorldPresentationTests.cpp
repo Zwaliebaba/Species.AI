@@ -24,17 +24,6 @@ namespace GameClientTests
 namespace
 {
 
-const Species::TuningPresentation& CommittedPresentation()
-{
-  static const Species::TuningPresentation PRESENTATION = []
-  {
-    const auto presentation = Species::ReadTuningPresentationSource(RepositoryContentRoot());
-    Assert::IsTrue(presentation.has_value(), L"the committed presentation record reads whole");
-    return presentation.value_or(Species::TuningPresentation{});
-  }();
-  return PRESENTATION;
-}
-
 // A loose-content folder holding every texture of the content root under its key, as the content build packs the
 // textures as authored (ADR-108), removed again at the end of the test.
 class TextureContent
@@ -108,20 +97,6 @@ public:
     // The sky's clouds are anchored at the region's centre and its grid on the region's lattice (ADR-115).
     Assert::AreEqual(30'720.0 + 2'560.0, look.sky.regionCenter.x);
     Assert::AreEqual(30'720.0, look.sky.regionOriginZ);
-  }
-
-  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp081TheDevelopmentViewLooksAcrossTheValleyFromBeyondTheCoast)
-  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-081")
-  END_TEST_METHOD_ATTRIBUTE()
-  TEST_METHOD(Mvp081TheDevelopmentViewLooksAcrossTheValleyFromBeyondTheCoast)
-  {
-    const Neuron::CameraPose pose = Species::DevelopmentView({30'720.0, 0.0, 30'720.0}, 5'120.0);
-    Assert::AreEqual(33'280.0, pose.position.x);
-    Assert::AreEqual(36'240.0, pose.position.z, L"400 wu beyond the region's +z coast");
-    Assert::IsTrue(pose.position.y < 800.0, L"below the lowest cloud layer, so every sky layer faces it");
-    const Neuron::Vec3 front = Neuron::ViewDirection(pose);
-    Assert::AreEqual(-0.4472135955, front.y, 1e-9);
-    Assert::AreEqual(-0.894427191, front.z, 1e-9);
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp081TheWorldIsBuiltFromTheRegionAndTheContentsTextures)

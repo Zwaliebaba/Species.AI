@@ -18,17 +18,6 @@ namespace GameClientTests
 namespace
 {
 
-const Species::TuningPresentation& CommittedPresentation()
-{
-  static const Species::TuningPresentation PRESENTATION = []
-  {
-    const auto presentation = Species::ReadTuningPresentationSource(RepositoryContentRoot());
-    Assert::IsTrue(presentation.has_value(), L"the committed presentation record reads whole");
-    return presentation.value_or(Species::TuningPresentation{});
-  }();
-  return PRESENTATION;
-}
-
 Species::InterpolatedFigure Figure(std::uint8_t _team, Species::FigureKind _kind, bool _dead, const Neuron::Vec3& _position)
 {
   Species::InterpolatedFigure figure;

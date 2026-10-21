@@ -82,6 +82,11 @@ public:
   {
     return m_terrain.get();
   }
+  // ADR-119: the team this client commands, as the server's terrain message names it; none before it arrives.
+  [[nodiscard]] std::optional<std::uint8_t> CommandedTeam() const noexcept
+  {
+    return m_commandedTeam;
+  }
   // MVP-011: the client refused the world, because the terrain it built from the server's seed differs, and closed.
   [[nodiscard]] bool Refused() const noexcept
   {
@@ -110,6 +115,7 @@ private:
   std::deque<ReceivedEvent> m_events;
   std::vector<std::uint32_t> m_sideFigures;
   std::shared_ptr<const RegionTerrain> m_terrain;
+  std::optional<std::uint8_t> m_commandedTeam;
   bool m_refused = false;
   std::string m_shownTitle;
 };

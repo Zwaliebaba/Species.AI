@@ -171,6 +171,8 @@
     <ClCompile Include="AppWindowTests.cpp" />
     <ClCompile Include="FrameGraphTests.cpp" />
     <ClCompile Include="GpuResourceFactoryTests.cpp" />
+    <ClCompile Include="InputRouterTests.cpp" />
+    <ClCompile Include="PickingTests.cpp" />
     <ClCompile Include="PresentationTests.cpp" />
     <ClCompile Include="TextLayoutTests.cpp" />
     <ClCompile Include="WindowGeometryTests.cpp" />

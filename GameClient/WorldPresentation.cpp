@@ -28,13 +28,6 @@ constexpr std::string_view TERRAIN_GRID_KEY = "textures/fx/terraingrid";
 constexpr std::string_view SKY_CLOUD_KEY = "textures/fx/skycloud";
 constexpr std::string_view BEAM_SHORT_KEY = "textures/fx/beamshort";
 
-// The development view's stand-in pose (ADR-115): 400 wu beyond the region's +z coast at a height of 700 wu, looking
-// along ref.ctrl.camera.initial_pose.front, normalize(0, -0.5, -1), with its 60° field of view.
-constexpr double VIEW_HEIGHT = 700.0;
-constexpr double VIEW_BEYOND_COAST = 400.0;
-constexpr double VIEW_FRONT_Y = -0.5;
-constexpr double VIEW_FIELD_DEGREES = 60.0;
-
 std::array<float, 3> Rgb(double _r, double _g, double _b) noexcept
 {
   return {static_cast<float>(_r), static_cast<float>(_g), static_cast<float>(_b)};
@@ -177,16 +170,6 @@ Neuron::WorldLook WorldLookOf(const TuningMvp& _tuning, const TuningPresentation
   return look;
 }
 
-Neuron::CameraPose DevelopmentView(const Neuron::Vec3& _regionOrigin, double _regionSide) noexcept
-{
-  Neuron::CameraPose pose;
-  pose.position = {_regionOrigin.x + _regionSide / 2.0, VIEW_HEIGHT, _regionOrigin.z + _regionSide + VIEW_BEYOND_COAST};
-  pose.yawRadians = 0.0; // along -z
-  pose.pitchRadians = std::atan2(VIEW_FRONT_Y, 1.0);
-  pose.verticalFovRadians = Radians(VIEW_FIELD_DEGREES);
-  return pose;
-}
-
 std::shared_ptr<const Neuron::WorldScene> BuildWorldScene(const RegionTerrain& _terrain, const TuningMvp& _tuning,
                                                           const TuningPresentation& _presentation, const Neuron::LooseContent& _content)
 {
@@ -225,6 +208,7 @@ WorldPresentation::WorldPresentation(Desc _desc)
   : m_desc(_desc),
     m_start(_desc.clock->Now())
 {
+  m_cursorImages = LoadCursorImages(*m_desc.content);
 #if ENGINE_DEVELOPMENT
   m_developmentFace = LoadDevelopmentFace(*m_desc.content);
 #endif
@@ -254,17 +238,19 @@ void WorldPresentation::Update(const ClientSession& _session)
   }
 }
 
-Neuron::FrameInputs WorldPresentation::Frame(const ClientSession& _session, double _framesPerSecond)
+Neuron::FrameInputs WorldPresentation::Frame(const ClientSession& _session, const SettlementView& _view, double _framesPerSecond)
 {
   const TuningPresentation::Rnd::Frame::ClearColorNoMatch& background = m_desc.presentation->rnd.frame.clearColorNoMatch;
   Neuron::FrameInputs inputs;
   inputs.world = m_world;
   inputs.background = Rgb(background.r, background.g, background.b);
   inputs.presentationSeconds = std::chrono::duration<double>(m_desc.clock->Now() - m_start).count();
-  if (m_terrain != nullptr)
+  // The player camera's pose (ADR-119), and the game cursor in every frame, since the system pointer is hidden (O65).
+  inputs.camera = _view.Pose();
+  if (m_cursorImages != nullptr)
   {
-    const Neuron::SurfaceGrid<double>& heights = m_terrain->field.Heights();
-    inputs.camera = DevelopmentView({heights.OriginX(), 0.0, heights.OriginZ()}, m_desc.tuning->wld.region.side);
+    inputs.cursorImages = m_cursorImages;
+    inputs.cursor = _view.CursorDraw();
   }
   // RND-152: the sky moves one tick's worth per displayed tick, the displayed tick standing one behind the latest.
   if (const std::optional<std::uint64_t> latest = _session.ServerTick(); latest.has_value() && *latest > 0)

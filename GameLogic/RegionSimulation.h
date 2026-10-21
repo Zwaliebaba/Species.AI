@@ -126,6 +126,8 @@ public:
   {
     return _team < m_commanders.size() ? m_commanders[_team] : Commander{};
   }
+  // The lowest team that _sender commands as a steward, not an AI; none when it commands none.
+  [[nodiscard]] std::optional<std::uint8_t> TeamCommandedBy(Neuron::SenderId _sender) const noexcept;
   // ADR-107: an AI of the region's own makes and commands _team from now on; its sender id is a new stable id of the
   // region. Called between ticks.
   StableId AddAi(std::uint8_t _team);

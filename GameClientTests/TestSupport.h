@@ -2,6 +2,7 @@
 
 #include "CppUnitTest.h"
 #include "TuningMvp.h"
+#include "TuningPresentation.h"
 
 #include <cstdint>
 #include <filesystem>
@@ -22,6 +23,8 @@ namespace GameClientTests
 
 // The committed tuning record (MVP-099), read once: the client's own data in every test.
 [[nodiscard]] const Species::TuningMvp& CommittedTuning();
+// The committed presentation record (ADR-116), read once.
+[[nodiscard]] const Species::TuningPresentation& CommittedPresentation();
 
 // The framework's AreEqual needs a ToString for every type it compares; these compare and describe the values
 // themselves.

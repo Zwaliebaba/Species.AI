@@ -159,6 +159,7 @@
   <ItemGroup>
     <ClInclude Include="AdapterChoice.h" />
     <ClInclude Include="AppWindow.h" />
+    <ClInclude Include="CursorRenderer.h" />
     <ClInclude Include="DdsTexture.h" />
     <ClInclude Include="DescriptorHeaps.h" />
     <ClInclude Include="DeviceGpuResourceFactory.h" />
@@ -169,8 +170,12 @@
     <ClInclude Include="GpuResourceFactory.h" />
     <ClInclude Include="GraphicsDevice.h" />
     <ClInclude Include="InMemoryGpuResourceFactory.h" />
+    <ClInclude Include="InputEvents.h" />
+    <ClInclude Include="InputRouter.h" />
+    <ClInclude Include="KeyboardMouseBackEnd.h" />
     <ClInclude Include="OverlayRenderer.h" />
     <ClInclude Include="PassTable.h" />
+    <ClInclude Include="Picking.h" />
     <ClInclude Include="PipelineCatalog.h" />
     <ClInclude Include="PresentPolicy.h" />
     <ClInclude Include="ResizeCoalescer.h" />
@@ -188,6 +193,7 @@
   <ItemGroup>
     <ClCompile Include="AdapterChoice.cpp" />
     <ClCompile Include="AppWindow.cpp" />
+    <ClCompile Include="CursorRenderer.cpp" />
     <ClCompile Include="DdsTexture.cpp" />
     <ClCompile Include="DescriptorHeaps.cpp" />
     <ClCompile Include="DeviceGpuResourceFactory.cpp" />
@@ -198,8 +204,11 @@
     <ClCompile Include="GpuResourceFactory.cpp" />
     <ClCompile Include="GraphicsDevice.cpp" />
     <ClCompile Include="InMemoryGpuResourceFactory.cpp" />
+    <ClCompile Include="InputRouter.cpp" />
+    <ClCompile Include="KeyboardMouseBackEnd.cpp" />
     <ClCompile Include="OverlayRenderer.cpp" />
     <ClCompile Include="PassTable.cpp" />
+    <ClCompile Include="Picking.cpp" />
     <ClCompile Include="PipelineCatalog.cpp" />
     <ClCompile Include="PresentPolicy.cpp" />
     <ClCompile Include="ResizeCoalescer.cpp" />
@@ -215,6 +224,12 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <FXCompile Include="Shader\CursorPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\CursorVS.hlsl">
+      <ShaderType>Vertex</ShaderType>
+    </FXCompile>
     <FXCompile Include="Shader\DevelopmentDotPS.hlsl">
       <ShaderType>Pixel</ShaderType>
     </FXCompile>
@@ -259,6 +274,7 @@
     </FXCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Shader\Cursor.hlsli" />
     <None Include="Shader\DevelopmentDot.hlsli" />
     <None Include="Shader\DevelopmentText.hlsli" />
     <None Include="Shader\Final.hlsli" />

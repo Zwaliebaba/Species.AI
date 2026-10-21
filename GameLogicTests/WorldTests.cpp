@@ -212,6 +212,7 @@ public:
       Assert::IsTrue(arrivals.terrains.size() == 1 && arrivals.terrains[0].seed == world.Terrain()->seed &&
                        arrivals.terrains[0].digest == world.Terrain()->digest,
                      L"the terrain's seed and digest, once");
+      Assert::IsFalse(arrivals.terrains[0].commandedTeam.has_value(), L"a world that is no sandbox gives a steward no team yet");
       const std::vector<std::uint64_t>& ticks = arrivals.ticks;
       ExpectEqual(11, static_cast<std::int64_t>(ticks.size()), L"an update a tick, from the first");
       for (std::size_t n = 0; n < ticks.size(); ++n)

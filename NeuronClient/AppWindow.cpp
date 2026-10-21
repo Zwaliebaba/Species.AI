@@ -169,6 +169,8 @@ struct WindowState
   std::optional<RectPx> windowedClientRect;
   ResizeCoalescer sizes{SizePx{}};
   bool hasFocus = false;
+  bool confine = false; // ConfinePointer's request
+  bool clipped = false; // the clip is applied
   std::string keyboardLayoutTag;
   WindowInputSink* sink = nullptr;
   std::vector<std::pair<WindowListenerId, std::function<void(const WindowEvent&)>>> listeners;
@@ -179,6 +181,7 @@ struct WindowState
   LRESULT Handle(UINT _message, WPARAM _wParam, LPARAM _lParam);
   void Forward(UINT _message, WPARAM _wParam, LPARAM _lParam);
   void UpdateFocus();
+  void ApplyConfinement();
   void UpdateMonitor();
   void FollowDisplayChange();
   void RememberWindowedRect();
@@ -274,10 +277,12 @@ LRESULT WindowState::Handle(UINT _message, WPARAM _wParam, LPARAM _lParam)
   case WM_MOVE:
     UpdateMonitor();
     RememberWindowedRect();
+    ApplyConfinement();
     return 0;
   case WM_WINDOWPOSCHANGED:
     UpdateMonitor();
     RememberWindowedRect();
+    ApplyConfinement();
     break; // the default procedure sends WM_SIZE and WM_MOVE
   case WM_SETCURSOR:
     if (LOWORD(_lParam) == HTCLIENT)
@@ -317,6 +322,11 @@ LRESULT WindowState::Handle(UINT _message, WPARAM _wParam, LPARAM _lParam)
     break;
   case WM_CANCELMODE:
     ReleaseCapture();
+    if (clipped)
+    {
+      ClipCursor(nullptr); // PLT-066: the confinement is suspended until the next move, resize or return of focus
+      clipped = false;
+    }
     break;
   case WM_ERASEBKGND:
     return 1; // the renderer fills the client area
@@ -356,6 +366,27 @@ void WindowState::UpdateFocus()
   {
     hasFocus = focus;
     pending.emplace_back(FocusChanged{focus});
+    ApplyConfinement();
+  }
+}
+
+void WindowState::ApplyConfinement()
+{
+  RECT client{};
+  if (confine && hasFocus && !IsIconic(window) && GetClientRect(window, &client) != FALSE && client.right > client.left &&
+      client.bottom > client.top)
+  {
+    POINT topLeft{client.left, client.top};
+    POINT bottomRight{client.right, client.bottom};
+    ClientToScreen(window, &topLeft);
+    ClientToScreen(window, &bottomRight);
+    const RECT screen{topLeft.x, topLeft.y, bottomRight.x, bottomRight.y};
+    clipped = ClipCursor(&screen) != FALSE;
+  }
+  else if (clipped)
+  {
+    ClipCursor(nullptr);
+    clipped = false;
   }
 }
 
@@ -548,6 +579,10 @@ AppWindow::~AppWindow()
   {
     SetPlatformMessageOwner(nullptr);
   }
+  if (m_state->clipped)
+  {
+    ClipCursor(nullptr);
+  }
   DestroyWindow(m_state->window);
 }
 
@@ -652,6 +687,23 @@ void AppWindow::PumpMessages()
 void AppWindow::SetInputSink(WindowInputSink* _sink) noexcept
 {
   m_state->sink = _sink;
+}
+
+void AppWindow::ConfinePointer(bool _on)
+{
+  m_state->confine = _on;
+  m_state->ApplyConfinement();
+}
+
+void AppWindow::WarpPointer(PointPx _clientPosition)
+{
+  const SizePx client = ClientSize();
+  POINT point{std::clamp<LONG>(_clientPosition.x, 0, std::max<LONG>(0, static_cast<LONG>(client.width) - 1)),
+              std::clamp<LONG>(_clientPosition.y, 0, std::max<LONG>(0, static_cast<LONG>(client.height) - 1))};
+  if (ClientToScreen(m_state->window, &point) != FALSE)
+  {
+    SetCursorPos(point.x, point.y);
+  }
 }
 
 WindowListenerId AppWindow::AddListener(std::function<void(const WindowEvent&)> _listener)

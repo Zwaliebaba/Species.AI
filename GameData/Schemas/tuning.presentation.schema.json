@@ -1344,11 +1344,90 @@
                   "x-species-type": "sim_decimal",
                   "x-species-unit": "frames per second",
                   "x-species-presence": "required"
+                },
+                "delta_clamp": {
+                  "type": "number",
+                  "description": "ref.sim.frame.delta_clamp (R-SIM-570)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "s of real time",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
                 "fps_window",
-                "fps_initial"
+                "fps_initial",
+                "delta_clamp"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "match_entry": {
+              "type": "object",
+              "description": "the ref.sim.match_entry.* keys",
+              "properties": {
+                "camera_border": {
+                  "type": "number",
+                  "description": "ref.sim.match_entry.camera_border (R-SIM-014)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu, about the region (ADR-119)",
+                  "x-species-presence": "required"
+                },
+                "fallback_camera_height": {
+                  "type": "number",
+                  "description": "ref.sim.match_entry.fallback_camera_height (R-SIM-014)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "fallback_camera_direction": {
+                  "type": "object",
+                  "description": "ref.sim.match_entry.fallback_camera_direction (R-SIM-014)",
+                  "properties": {
+                    "x": {
+                      "type": "number",
+                      "description": "ref.sim.match_entry.fallback_camera_direction.x",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "direction, not normalised",
+                      "x-species-presence": "required"
+                    },
+                    "y": {
+                      "type": "number",
+                      "description": "ref.sim.match_entry.fallback_camera_direction.y",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "direction, not normalised",
+                      "x-species-presence": "required"
+                    },
+                    "z": {
+                      "type": "number",
+                      "description": "ref.sim.match_entry.fallback_camera_direction.z",
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "direction, not normalised",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "x",
+                    "y",
+                    "z"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "camera_border",
+                "fallback_camera_height",
+                "fallback_camera_direction"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -1357,7 +1436,461 @@
           },
           "required": [
             "match",
-            "frame"
+            "frame",
+            "match_entry"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "ctrl": {
+          "type": "object",
+          "description": "the ref.ctrl.* keys",
+          "properties": {
+            "camera": {
+              "type": "object",
+              "description": "the ref.ctrl.camera.* keys",
+              "properties": {
+                "fov_base": {
+                  "type": "number",
+                  "description": "ref.ctrl.camera.fov_base (R-CTRL-460)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "degrees, vertical",
+                  "x-species-presence": "required"
+                },
+                "zoom_divisor": {
+                  "type": "number",
+                  "description": "ref.ctrl.camera.zoom_divisor (R-CTRL-460)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "divisor",
+                  "x-species-presence": "required"
+                },
+                "zoom_rates": {
+                  "type": "object",
+                  "description": "the ref.ctrl.camera.zoom_rates.* keys",
+                  "properties": {
+                    "normal": {
+                      "type": "number",
+                      "description": "ref.ctrl.camera.zoom_rates.normal (R-CTRL-460)",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "rate",
+                      "x-species-presence": "required"
+                    },
+                    "zooming": {
+                      "type": "number",
+                      "description": "ref.ctrl.camera.zoom_rates.zooming (R-CTRL-460)",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "rate",
+                      "x-species-presence": "required"
+                    },
+                    "scripted": {
+                      "type": "number",
+                      "description": "ref.ctrl.camera.zoom_rates.scripted (R-CTRL-460)",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "rate",
+                      "x-species-presence": "required"
+                    },
+                    "blend_factor": {
+                      "type": "number",
+                      "description": "ref.ctrl.camera.zoom_rates.blend_factor (R-CTRL-460)",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "per second per unit of rate",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "normal",
+                    "zooming",
+                    "scripted",
+                    "blend_factor"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "height_key_rate": {
+                  "type": "number",
+                  "description": "ref.ctrl.camera.height_key_rate (R-CTRL-461)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wheel notches per second",
+                  "x-species-presence": "required"
+                },
+                "height_scale": {
+                  "type": "number",
+                  "description": "ref.ctrl.camera.height_scale (R-CTRL-461)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times the square root of wu per notch",
+                  "x-species-presence": "required"
+                },
+                "min_height": {
+                  "type": "number",
+                  "description": "ref.ctrl.camera.min_height (R-CTRL-461)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "ground_clearance": {
+                  "type": "number",
+                  "description": "ref.ctrl.camera.ground_clearance (R-CTRL-461)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "max_height": {
+                  "type": "number",
+                  "description": "ref.ctrl.camera.max_height (R-CTRL-461)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "pan_speed": {
+                  "type": "number",
+                  "description": "ref.ctrl.camera.pan_speed (R-CTRL-471)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu/s",
+                  "x-species-presence": "required"
+                },
+                "fast_pan_factor": {
+                  "type": "number",
+                  "description": "ref.ctrl.camera.fast_pan_factor (R-CTRL-471)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times",
+                  "x-species-presence": "required"
+                },
+                "cliff_probe": {
+                  "type": "object",
+                  "description": "the ref.ctrl.camera.cliff_probe.* keys",
+                  "properties": {
+                    "length": {
+                      "type": "number",
+                      "description": "ref.ctrl.camera.cliff_probe.length (R-CTRL-471)",
+                      "exclusiveMinimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "wu",
+                      "x-species-presence": "required"
+                    },
+                    "samples": {
+                      "type": "integer",
+                      "description": "ref.ctrl.camera.cliff_probe.samples (R-CTRL-471)",
+                      "minimum": 0,
+                      "x-species-type": "count",
+                      "x-species-unit": "samples",
+                      "x-species-presence": "required"
+                    },
+                    "slow_start": {
+                      "type": "number",
+                      "description": "ref.ctrl.camera.cliff_probe.slow_start (R-CTRL-471)",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "wu",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "length",
+                    "samples",
+                    "slow_start"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "ground_samples": {
+                  "type": "number",
+                  "description": "ref.ctrl.camera.ground_samples (R-CTRL-471)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu, the four points about the target",
+                  "x-species-presence": "required"
+                },
+                "position_smoothing": {
+                  "type": "number",
+                  "description": "ref.ctrl.camera.position_smoothing (R-CTRL-471)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "per second",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "fov_base",
+                "zoom_divisor",
+                "zoom_rates",
+                "height_key_rate",
+                "height_scale",
+                "min_height",
+                "ground_clearance",
+                "max_height",
+                "pan_speed",
+                "fast_pan_factor",
+                "cliff_probe",
+                "ground_samples",
+                "position_smoothing"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "pointer": {
+              "type": "object",
+              "description": "the ref.ctrl.pointer.* keys",
+              "properties": {
+                "miss_ray_start": {
+                  "type": "number",
+                  "description": "ref.ctrl.pointer.miss_ray_start (R-CTRL-058)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "sphere radii",
+                  "x-species-presence": "required"
+                },
+                "miss_sphere_factor": {
+                  "type": "number",
+                  "description": "ref.ctrl.pointer.miss_sphere_factor (R-CTRL-058)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "times the region side (ADR-119)",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "miss_ray_start",
+                "miss_sphere_factor"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "cursor": {
+              "type": "object",
+              "description": "the ref.ctrl.cursor.* keys",
+              "properties": {
+                "set": {
+                  "type": "object",
+                  "description": "the ref.ctrl.cursor.set.* keys",
+                  "properties": {
+                    "highlight_hotspot": {
+                      "type": "object",
+                      "description": "ref.ctrl.cursor.set.highlight_hotspot (R-CTRL-350)",
+                      "properties": {
+                        "x": {
+                          "type": "number",
+                          "description": "ref.ctrl.cursor.set.highlight_hotspot.x",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "fraction of the size",
+                          "x-species-presence": "required"
+                        },
+                        "y": {
+                          "type": "number",
+                          "description": "ref.ctrl.cursor.set.highlight_hotspot.y",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "fraction of the size",
+                          "x-species-presence": "required"
+                        }
+                      },
+                      "required": [
+                        "x",
+                        "y"
+                      ],
+                      "additionalProperties": false,
+                      "x-species-type": "object",
+                      "x-species-presence": "required"
+                    },
+                    "unavailable_hotspot": {
+                      "type": "object",
+                      "description": "ref.ctrl.cursor.set.unavailable_hotspot (R-CTRL-350)",
+                      "properties": {
+                        "x": {
+                          "type": "number",
+                          "description": "ref.ctrl.cursor.set.unavailable_hotspot.x",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "fraction of the size",
+                          "x-species-presence": "required"
+                        },
+                        "y": {
+                          "type": "number",
+                          "description": "ref.ctrl.cursor.set.unavailable_hotspot.y",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "fraction of the size",
+                          "x-species-presence": "required"
+                        }
+                      },
+                      "required": [
+                        "x",
+                        "y"
+                      ],
+                      "additionalProperties": false,
+                      "x-species-type": "object",
+                      "x-species-presence": "required"
+                    },
+                    "unavailable_color": {
+                      "type": "object",
+                      "description": "ref.ctrl.cursor.set.unavailable_color (R-CTRL-350)",
+                      "properties": {
+                        "r": {
+                          "type": "number",
+                          "description": "ref.ctrl.cursor.set.unavailable_color.r",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "g": {
+                          "type": "number",
+                          "description": "ref.ctrl.cursor.set.unavailable_color.g",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        },
+                        "b": {
+                          "type": "number",
+                          "description": "ref.ctrl.cursor.set.unavailable_color.b",
+                          "x-species-precision": "binary64",
+                          "x-species-type": "sim_decimal",
+                          "x-species-unit": "RGB, 0 to 255",
+                          "x-species-presence": "required"
+                        }
+                      },
+                      "required": [
+                        "r",
+                        "g",
+                        "b"
+                      ],
+                      "additionalProperties": false,
+                      "x-species-type": "object",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "highlight_hotspot",
+                    "unavailable_hotspot",
+                    "unavailable_color"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "set"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "camera",
+            "pointer",
+            "cursor"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "unit": {
+          "type": "object",
+          "description": "the ref.unit.* keys",
+          "properties": {
+            "leader": {
+              "type": "object",
+              "description": "the ref.unit.leader.* keys",
+              "properties": {
+                "pick_center_lift": {
+                  "type": "number",
+                  "description": "ref.unit.leader.pick_center_lift (R-UNIT-192)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "pick_radius": {
+                  "type": "number",
+                  "description": "ref.unit.leader.pick_radius (R-UNIT-192)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "pick_center_lift",
+                "pick_radius"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "worker": {
+              "type": "object",
+              "description": "the ref.unit.worker.* keys",
+              "properties": {
+                "card_scale_start": {
+                  "type": "number",
+                  "description": "ref.unit.worker.card_scale_start (R-UNIT-142)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "card_scale_divisor": {
+                  "type": "number",
+                  "description": "ref.unit.worker.card_scale_divisor (R-UNIT-142)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "card_scale_start",
+                "card_scale_divisor"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "leader",
+            "worker"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -1365,7 +1898,9 @@
         }
       },
       "required": [
-        "sim"
+        "sim",
+        "ctrl",
+        "unit"
       ],
       "additionalProperties": false,
       "x-species-type": "object",
@@ -1565,10 +2100,82 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "cursor": {
+          "type": "object",
+          "description": "the mvp.cursor.* keys",
+          "properties": {
+            "world_size": {
+              "type": "number",
+              "description": "mvp.cursor.world_size (MVP-101)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "physical px",
+              "x-species-presence": "required"
+            },
+            "highlight_size": {
+              "type": "number",
+              "description": "mvp.cursor.highlight_size (MVP-101)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "physical px",
+              "x-species-presence": "required"
+            },
+            "unavailable_size": {
+              "type": "number",
+              "description": "mvp.cursor.unavailable_size (MVP-101)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "physical px",
+              "x-species-presence": "required"
+            },
+            "world_hotspot": {
+              "type": "object",
+              "description": "mvp.cursor.world_hotspot (MVP-101)",
+              "properties": {
+                "x": {
+                  "type": "number",
+                  "description": "mvp.cursor.world_hotspot.x",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "fraction of the size",
+                  "x-species-presence": "required"
+                },
+                "y": {
+                  "type": "number",
+                  "description": "mvp.cursor.world_hotspot.y",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "fraction of the size",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "world_size",
+            "highlight_size",
+            "unavailable_size",
+            "world_hotspot"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
-        "light"
+        "light",
+        "cursor"
       ],
       "additionalProperties": false,
       "x-species-type": "object",
@@ -1616,6 +2223,38 @@
       "additionalProperties": false,
       "x-species-type": "object",
       "x-species-presence": "required"
+    },
+    "cam": {
+      "type": "object",
+      "description": "the cam.* keys",
+      "properties": {
+        "pick": {
+          "type": "object",
+          "description": "the cam.pick.* keys",
+          "properties": {
+            "row_offset": {
+              "type": "number",
+              "description": "cam.pick.row_offset (CAM-090)",
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "px",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "row_offset"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        }
+      },
+      "required": [
+        "pick"
+      ],
+      "additionalProperties": false,
+      "x-species-type": "object",
+      "x-species-presence": "required"
     }
   },
   "required": [
@@ -1625,7 +2264,8 @@
     "ter",
     "ref",
     "mvp",
-    "dbg"
+    "dbg",
+    "cam"
   ],
   "additionalProperties": false
 }

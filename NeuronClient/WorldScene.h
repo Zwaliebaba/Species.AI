@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -99,6 +100,25 @@ struct DevelopmentDot
   float sidePixels = 3.0f;
 };
 
+/// The game cursors' art (RND-366, ADR-119): each cursor's mask and its authored darkening shadow, as DDS files, by the
+/// index a CursorQuad names. Single-channel masks at their display size with one level (O64).
+struct CursorImages
+{
+  std::vector<std::vector<std::byte>> art;
+  std::vector<std::vector<std::byte>> shadows; // one per art; empty for a cursor without a shadow
+};
+
+/// The cursor drawn in pass 20 (R-CTRL-352, RND-366): an image of CursorImages, its top-left corner and side in
+/// physical pixels, and its colour; its shadow first, then the art.
+struct CursorQuad
+{
+  std::uint8_t image = 0;
+  float left = 0.0f;
+  float top = 0.0f;
+  float sidePixels = 0.0f;
+  std::array<float, 4> color{1.0f, 1.0f, 1.0f, 1.0f};
+};
+
 /// What one frame shows (RND-053's snapshot as M1 has it).
 struct FrameInputs
 {
@@ -112,6 +132,9 @@ struct FrameInputs
   std::shared_ptr<const FontAsset> overlayFont;
   std::vector<OverlayLine> overlay;
   std::vector<DevelopmentDot> dots;
+  // The game cursor (ADR-119): its art, and the quad of this frame; none draws no cursor.
+  std::shared_ptr<const CursorImages> cursorImages;
+  std::optional<CursorQuad> cursor;
 };
 
 } // namespace Neuron

@@ -306,10 +306,10 @@ void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender
     steward.reports.erase(steward.reports.begin(), steward.reports.begin() + static_cast<std::ptrdiff_t>(sent));
     if (!steward.terrainSent && m_terrain)
     {
-      // MVP-011: the seed and digest go once on the reliable channel; a send the backlog refuses is tried next tick.
-      steward.terrainSent =
-        _sender.Send(connection, Neuron::Channel::Reliable, Neuron::EncodeMessage(WorldTerrain{m_terrain->seed, m_terrain->digest}))
-          .has_value();
+      // MVP-011: the seed and digest go once on the reliable channel, with the team the steward commands (ADR-119); a
+      // send the backlog refuses is tried next tick.
+      const WorldTerrain terrain{m_terrain->seed, m_terrain->digest, region.TeamCommandedBy(steward.id)};
+      steward.terrainSent = _sender.Send(connection, Neuron::Channel::Reliable, Neuron::EncodeMessage(terrain)).has_value();
     }
     // ADR-086 item 3: the tick's state datagrams against what the client has acknowledged; one the transport refuses
     // is lost, and its records go again next tick.

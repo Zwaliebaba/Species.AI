@@ -4,6 +4,9 @@
     <Filter Include="Build">
       <UniqueIdentifier>{458D2A6A-799F-5CF6-8C0D-83E7B6BC7744}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Input">
+      <UniqueIdentifier>{6DC232A3-EC8B-5416-A90A-E10AE99806B0}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Rendering">
       <UniqueIdentifier>{973C9E00-DB4C-58CB-9F18-2E2760A616CE}</UniqueIdentifier>
     </Filter>
@@ -23,6 +26,9 @@
     </ClInclude>
     <ClInclude Include="AppWindow.h">
       <Filter>Window</Filter>
+    </ClInclude>
+    <ClInclude Include="CursorRenderer.h">
+      <Filter>Rendering</Filter>
     </ClInclude>
     <ClInclude Include="DdsTexture.h">
       <Filter>Rendering</Filter>
@@ -54,10 +60,22 @@
     <ClInclude Include="InMemoryGpuResourceFactory.h">
       <Filter>Resources</Filter>
     </ClInclude>
+    <ClInclude Include="InputEvents.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputRouter.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="KeyboardMouseBackEnd.h">
+      <Filter>Input</Filter>
+    </ClInclude>
     <ClInclude Include="OverlayRenderer.h">
       <Filter>Rendering</Filter>
     </ClInclude>
     <ClInclude Include="PassTable.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Picking.h">
       <Filter>Rendering</Filter>
     </ClInclude>
     <ClInclude Include="PipelineCatalog.h">
@@ -107,6 +125,9 @@
     <ClCompile Include="AppWindow.cpp">
       <Filter>Window</Filter>
     </ClCompile>
+    <ClCompile Include="CursorRenderer.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
     <ClCompile Include="DdsTexture.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
@@ -137,10 +158,19 @@
     <ClCompile Include="InMemoryGpuResourceFactory.cpp">
       <Filter>Resources</Filter>
     </ClCompile>
+    <ClCompile Include="InputRouter.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="KeyboardMouseBackEnd.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
     <ClCompile Include="OverlayRenderer.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="PassTable.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="Picking.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="PipelineCatalog.cpp">
@@ -183,6 +213,12 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <FXCompile Include="Shader\CursorPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\CursorVS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
     <FXCompile Include="Shader\DevelopmentDotPS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
@@ -227,6 +263,9 @@
     </FXCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Shader\Cursor.hlsli">
+      <Filter>Shader</Filter>
+    </None>
     <None Include="Shader\DevelopmentDot.hlsli">
       <Filter>Shader</Filter>
     </None>

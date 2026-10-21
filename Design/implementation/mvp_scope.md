@@ -356,6 +356,10 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.light.key.color` | 2.0, 1.0, 0.4 | RGB multiplier | — | provisional | MVP-081 | — |
 | `mvp.light.fill.towards` | 0.07, 0.35, 0.93 | direction towards the light, normalised at load | — | provisional | MVP-081 | The fill light (O75), a neutral grey in the pattern of WLD-183 |
 | `mvp.light.fill.color` | 1.0, 1.0, 1.0 | RGB multiplier | — | provisional | MVP-081 | — |
+| `mvp.cursor.world_size` | 48 | physical px | — | provisional | MVP-101 | The pointer `cursor.world` (O76, ADR-119), in place of R-CTRL-350's 35 px for the owner's 128 px art; the owner tunes it at M1 task T14's run |
+| `mvp.cursor.highlight_size` | 48 | physical px | — | provisional | MVP-101 | The pointer over a selectable Leader, `cursor.highlight` (O76) |
+| `mvp.cursor.unavailable_size` | 60 | physical px | — | provisional | MVP-101 | `cursor.unavailable` (O76), R-CTRL-350's size |
+| `mvp.cursor.world_hotspot` | 0.113, 0.082 | fraction of the size (x, y) | — | provisional | MVP-101 | The tip of the owner's arrow, in place of `ref.ctrl.cursor.set.world_hotspot` (0.055, 0.070), which misses it by 7 texels (ADR-119) |
 
 *Table 3 — The tuning values of the MVP.*
 

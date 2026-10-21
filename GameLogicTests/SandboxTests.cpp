@@ -16,6 +16,7 @@
 #include "WorkerPool.h"
 #include "WorldServer.h"
 #include "WorldSimulation.h"
+#include "WorldTerrain.h"
 
 #include <cmath>
 #include <cstddef>
@@ -82,11 +83,13 @@ public:
   {
     Neuron::MessageDispatcher dispatcher;
     dispatcher.Register<Species::CommandReport>([this](const Species::CommandReport& _report) { reports.push_back(_report); });
+    dispatcher.Register<Species::WorldTerrain>([this](const Species::WorldTerrain& _terrain) { terrains.push_back(_terrain); });
     static_cast<void>(dispatcher.Dispatch(_message));
     return _channel == Neuron::Channel::State ? ++datagrams : 0;
   }
 
   std::vector<Species::CommandReport> reports;
+  std::vector<Species::WorldTerrain> terrains;
   std::uint64_t datagrams = 0;
 };
 
@@ -432,6 +435,9 @@ public:
       server.Publish(tick, sender);
     }
     const std::uint64_t seed = server.Simulation()->WorldSeed();
+    // ADR-119: the terrain names the side the steward commands.
+    Assert::IsTrue(sender.terrains.size() == 1 && sender.terrains[0].commandedTeam == Species::SANDBOX_STEWARD_TEAM,
+                   L"the steward's side with the terrain");
     Assert::IsTrue(server.Journal().has_value(), L"a new world has its journal");
     const Neuron::SipHashKey key = server.Journal().value_or(Species::CommandJournal{}).start.key;
     server.Receive(STEWARD_CONNECTION, CommandFrom(Species::SandboxRestartCommand{false}));
@@ -451,6 +457,8 @@ public:
     Assert::IsTrue(!sender.reports.empty() && sender.reports.back().sequence == 0 &&
                      sender.reports.back().result == Species::CommandResult::Applied,
                    L"the restart's outcome");
+    Assert::IsTrue(sender.terrains.size() == 2 && sender.terrains[1].commandedTeam == Species::SANDBOX_STEWARD_TEAM,
+                   L"the new world's terrain, with the side again");
 
     server.Receive(STEWARD_CONNECTION, CommandFrom(Species::SandboxRestartCommand{true}));
     Assert::IsTrue(server.Simulation()->NextTick() == first + 51 &&

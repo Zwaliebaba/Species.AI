@@ -13,6 +13,9 @@
     <Filter Include="Tests">
       <UniqueIdentifier>{1BFA3DA3-11BC-5C15-823B-4A380E3991FA}</UniqueIdentifier>
     </Filter>
+    <Filter Include="View">
+      <UniqueIdentifier>{8642E99D-0A1E-5413-A8A6-546FA52B559B}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TestSupport.h">
@@ -28,6 +31,9 @@
     </ClCompile>
     <ClCompile Include="DevelopmentOverlayTests.cpp">
       <Filter>Diagnostics</Filter>
+    </ClCompile>
+    <ClCompile Include="SettlementCameraTests.cpp">
+      <Filter>View</Filter>
     </ClCompile>
     <ClCompile Include="TestSupport.cpp">
       <Filter>Tests</Filter>

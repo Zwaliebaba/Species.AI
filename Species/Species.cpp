@@ -8,7 +8,10 @@
 #include "FatalPath.h"
 #include "FloatEnvironment.h"
 #include "FrameRenderer.h"
+#include "InputBindings.h"
+#include "InputRouter.h"
 #include "IntegratedServer.h"
+#include "KeyboardMouseBackEnd.h"
 #include "Log.h"
 #include "LooseContent.h"
 #include "PlatformClock.h"
@@ -16,6 +19,7 @@
 #include "PlatformMessage.h"
 #include "PlatformThread.h"
 #include "RunId.h"
+#include "SettlementView.h"
 #include "Sha256.h"
 #include "StartupOptions.h"
 #include "TextEncoding.h"
@@ -23,6 +27,7 @@
 #include "WorldPresentation.h"
 
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <expected>
 #include <filesystem>
@@ -60,67 +65,6 @@ constexpr std::array COMPILED_TEXTS{
   Neuron::CompiledText{"ui.error.resolution_rejected", "The preferred screen size was rejected, so Species started with another one."},
   Neuron::CompiledText{"ui.error.content_missing", "Species cannot start: its game data is missing."},
   Neuron::CompiledText{"ui.error.content_damaged", "Species cannot start: its game data is damaged."},
-};
-
-constexpr std::intptr_t KEY_REPEAT_BIT = std::intptr_t{1} << 30; // WM_KEYDOWN lParam: the key was already down
-constexpr std::intptr_t ALT_DOWN_BIT = std::intptr_t{1} << 29;   // WM_SYSKEYDOWN lParam: Alt is held
-
-/// The stand-in for the input router in M0 (owner decision O65): the close request becomes the quit (PLT-009),
-/// Alt+Enter switches between windowed and borderless full screen in place of the screen options, and in Debug builds
-/// Ctrl+Shift+F11 removes the device in place of the development command of ADR-008. It goes when the input router
-/// and the development commands exist.
-class InputStandIn final : public Neuron::WindowInputSink
-{
-public:
-  void OnWindowMessage(const Neuron::WindowMessage& _message) override
-  {
-    const bool firstPress = (_message.lParam & KEY_REPEAT_BIT) == 0;
-    switch (_message.id)
-    {
-    case WM_CLOSE:
-      m_quit = true;
-      break;
-    case WM_SYSKEYDOWN:
-      if (_message.wParam == VK_RETURN && (_message.lParam & ALT_DOWN_BIT) != 0 && firstPress)
-      {
-        m_toggleMode = true;
-      }
-      break;
-#if ENGINE_DEVELOPMENT
-    case WM_KEYDOWN:
-      // F12 is the system's debugger key, which breaks into an attached debugger, so the removal key is F11.
-      if (_message.wParam == VK_F11 && firstPress && GetKeyState(VK_CONTROL) < 0 && GetKeyState(VK_SHIFT) < 0)
-      {
-        m_removeDevice = true;
-      }
-      break;
-#endif
-    default:
-      break;
-    }
-  }
-
-  void RequestQuit() noexcept
-  {
-    m_quit = true;
-  }
-  [[nodiscard]] bool QuitRequested() const noexcept
-  {
-    return m_quit;
-  }
-  [[nodiscard]] bool TakeModeToggle() noexcept
-  {
-    return std::exchange(m_toggleMode, false);
-  }
-  [[nodiscard]] bool TakeDeviceRemoval() noexcept
-  {
-    return std::exchange(m_removeDevice, false);
-  }
-
-private:
-  bool m_quit = false;
-  bool m_toggleMode = false;
-  bool m_removeDevice = false;
 };
 
 // The logs folder beside the executable, until the locations of PLT-015 and PLT-016 exist (ADR-092). An empty path, when
@@ -211,25 +155,31 @@ constexpr Neuron::Nanoseconds RENDER_CHECK_LIMIT{120'000'000'000};
 // The frame loop until the quit, or, for a render check, until it has drawn _checkFrames world frames or its limit has
 // passed.
 void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neuron::FrameRenderer& _renderer, ClientSession& _session,
-                  WorldPresentation& _world, std::optional<std::uint32_t> _checkFrames)
+                  WorldPresentation& _world, SettlementView& _view, std::optional<std::uint32_t> _checkFrames)
 {
-  InputStandIn input;
-  _window.SetInputSink(&input);
+  // M1 task T14 (ADR-119): the keyboard and mouse back-end and the input router with the compiled-in bindings replace
+  // O65's stand-in; the window's close request is the quit (PLT-009).
+  Neuron::KeyboardMouseBackEnd keyboardMouse(_window);
+  const std::vector<Neuron::ActionBindings> bindings = DefaultBindings();
+  Neuron::InputRouter router(bindings, keyboardMouse, &keyboardMouse);
+  _window.SetInputSink(&keyboardMouse);
   const Neuron::WindowListenerId listener = _window.AddListener(
-    [&input](const Neuron::WindowEvent& _event)
+    [&keyboardMouse](const Neuron::WindowEvent& _event)
     {
       if (std::holds_alternative<Neuron::EndOfSession>(_event))
       {
-        input.RequestQuit(); // PLT-042
+        keyboardMouse.RequestClose(); // PLT-042
       }
     });
   _renderer.OnDeviceRebuilt([] { Neuron::Log(Neuron::LogCategory::Render, Neuron::LogLevel::Info, "presentation resumed"); });
 
   const Neuron::Nanoseconds start = _clock.Now();
+  Neuron::Nanoseconds previousFrame = start;
   while (true)
   {
     _window.PumpMessages();
-    if (input.QuitRequested())
+    router.AdvanceFrame({.windowFocused = _window.HasFocus()}, _window.ClientSize());
+    if (keyboardMouse.TakeCloseRequest())
     {
       break;
     }
@@ -239,18 +189,23 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
     }
     _session.Update();
     _world.Update(_session);
-    if (input.TakeModeToggle())
+    if (router.Query(ActionOf(GameAction::WindowToggleMode)))
     {
       const bool windowed = _window.Mode() == Neuron::WindowMode::Windowed;
       _window.SetMode(windowed ? Neuron::WindowMode::BorderlessFullScreen : Neuron::WindowMode::Windowed, Neuron::Permanence::Temporary);
     }
 #if ENGINE_DEVELOPMENT
-    if (input.TakeDeviceRemoval())
+    if (router.Query(ActionOf(GameAction::DebugRemoveDevice)))
     {
       _renderer.DebugRemoveDevice();
     }
 #endif
-    if (_renderer.RenderFrame(_world.Frame(_session, _renderer.FramesPerSecond())) == Neuron::FrameOutcome::Suspended)
+    // The camera's step is the real time since the previous frame (CAM-030), clamped by the camera.
+    const Neuron::Nanoseconds now = _clock.Now();
+    const double frameSeconds = std::chrono::duration<double>(now - previousFrame).count();
+    previousFrame = now;
+    _view.Update(_session, router, frameSeconds, _window.ClientSize(), _window.HasFocus());
+    if (_renderer.RenderFrame(_world.Frame(_session, _view, _renderer.FramesPerSecond())) == Neuron::FrameOutcome::Suspended)
     {
       _clock.WaitUntil(_clock.Now() + SUSPENDED_POLL_PERIOD);
       continue;
@@ -258,6 +213,7 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
     _clock.FrameBoundary();
   }
 
+  router.ConfinePointer(false);
   _window.RemoveListener(listener);
   _window.SetInputSink(nullptr);
 }
@@ -364,9 +320,14 @@ int Run()
     worldDesc.content = &*content;
     worldDesc.clock = &clock;
     WorldPresentation world(worldDesc);
+    SettlementView::Desc viewDesc;
+    viewDesc.tuning = &*clientTuning;
+    viewDesc.presentation = &*presentationTuning;
+    viewDesc.planes = WorldLookOf(*clientTuning, *presentationTuning, {}).planes;
+    SettlementView view(viewDesc);
 
     presentation.window->Show();
-    RunFrameLoop(clock, *presentation.window, *presentation.renderer, session, world, checkFrames);
+    RunFrameLoop(clock, *presentation.window, *presentation.renderer, session, world, view, checkFrames);
 #if ENGINE_DEVELOPMENT
     const std::uint64_t worldFrames = presentation.renderer->WorldFrames();
 #endif

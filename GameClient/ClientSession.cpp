@@ -50,7 +50,12 @@ ClientSession::ClientSession(Desc _desc)
         m_events.push_back({_events.tick, event});
       }
     });
-  m_dispatcher.Register<WorldTerrain>([this](const WorldTerrain& _terrain) { ReceiveTerrain(_terrain.seed, _terrain.digest); });
+  m_dispatcher.Register<WorldTerrain>(
+    [this](const WorldTerrain& _terrain)
+    {
+      m_commandedTeam = _terrain.commandedTeam;
+      ReceiveTerrain(_terrain.seed, _terrain.digest);
+    });
 }
 
 void ClientSession::Update()

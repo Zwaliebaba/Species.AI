@@ -42,6 +42,11 @@ public:
     dispatcher.Register<Species::WorldTerrain>([&received](const Species::WorldTerrain& _terrain) { received = _terrain; });
     Assert::IsTrue(dispatcher.Dispatch(bytes), L"it decodes whole");
     Assert::IsTrue(received && received->seed == sent.seed && received->digest == sent.digest, L"the same seed and digest");
+    Assert::IsTrue(received && !received->commandedTeam.has_value(), L"no team");
+    // ADR-119: the commanded team goes with it.
+    sent.commandedTeam = 3;
+    Assert::IsTrue(dispatcher.Dispatch(Neuron::EncodeMessage(sent)) && received && received->commandedTeam == std::uint8_t{3},
+                   L"team 3");
     Assert::IsTrue(Species::WorldTerrain::TYPE >= Neuron::GAME_MESSAGE_TYPE_FIRST, L"a game message's id is above the engine's");
   }
 };

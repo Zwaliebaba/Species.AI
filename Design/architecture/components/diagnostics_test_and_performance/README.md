@@ -310,6 +310,8 @@ Caption: Listing 2.1-A, the diagnostics interface (declarations only). `ProfileN
 
 **DBG-022** (MUST NOT) No debug binding exists other than those of DBG-020: the network statistics key has no second toggle, the debug-command window has no gamepad binding, and there is no debug quit action.
 
+> **Amendment 2026-10-21 (O65, O76; M1 task T14, [ADR-119](../../../ADR/ADR-119-input-camera-picking-and-cursor-at-m1.md)).** Until the debug-command window exists, a Debug build's development layer also binds `action.debug.remove_device`, `chord(key:control, key:shift, key:f11)`, the device-removal path of DBG-117 row 16, and T15b adds the sandbox restart's entry; each ends when the window's command exists.
+
 ### 2.3 Events and data contracts
 
 **DBG-023** (MUST) **Counter providers.** A component publishes its development counters through one `CounterProvider` per overlay page. `Publish` runs on the presentation thread at the start of each frame while the page is shown, reads only the component's own counters, and allocates no memory. The pages and their providers are:

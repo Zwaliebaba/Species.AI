@@ -165,6 +165,12 @@ public:
   void SetMode(WindowMode _mode, Permanence _permanence);
   void PumpMessages(); // once per frame; never blocks (PLT-067)
   void SetInputSink(WindowInputSink* _sink) noexcept;
+  // PLT-068 item 3 (INP-159): while on, the system pointer is clipped to the client area, applied again after every
+  // move, resize and return of focus, and suspended while the window has no focus.
+  void ConfinePointer(bool _on);
+  // PLT-068 item 4 (INP-158): the system pointer moves to the client position, clamped to the client area. The movement
+  // message it causes carries the position the input back-end already holds, so it makes no movement event.
+  void WarpPointer(PointPx _clientPosition);
 
   // A listener of the window's events; it is removed before what it calls is destroyed.
   WindowListenerId AddListener(std::function<void(const WindowEvent&)> _listener);
