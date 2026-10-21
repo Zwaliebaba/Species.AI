@@ -388,7 +388,8 @@ std::string JsonOf(const Summary& _summary)
                      _summary.p99, _summary.max, _summary.mean);
 }
 
-std::string JsonOf(const std::vector<SceneResult>& _results, const Options& _options, const Species::TuningMvp& _tuning)
+std::string JsonOf(const std::vector<SceneResult>& _results, const Options& _options, const Species::TuningMvp& _tuning,
+                   const Neuron::DesktopMode& _display)
 {
   const auto fpsTarget = std::max<std::int64_t>(_tuning.mvp.client.fpsTarget, 1);
   const double periodMs = 1000.0 / static_cast<double>(fpsTarget);
@@ -405,9 +406,10 @@ std::string JsonOf(const std::vector<SceneResult>& _results, const Options& _opt
                           result.aliveMax == 0 ? 0U : result.aliveMin, result.aliveMax, result.onScreenSum / frames, result.onScreenMax);
   }
   return std::format("{{\n  \"tool\": \"{}\", \"configuration\": \"{}\", \"platform\": \"{}\", \"quick\": {}, \"fps_target\": {}, "
-                     "\"figures_max\": {},\n  \"scenes\": [\n{}\n  ]\n}}\n",
+                     "\"figures_max\": {},\n  \"display\": {{\"width\": {}, \"height\": {}, \"refresh_hz\": {}}},\n"
+                     "  \"scenes\": [\n{}\n  ]\n}}\n",
                      PRODUCT_NAME, CONFIGURATION, PLATFORM, _options.quick ? "true" : "false", fpsTarget, _tuning.mvp.client.figuresMax,
-                     scenes);
+                     _display.width, _display.height, _display.refreshHz, scenes);
 }
 
 std::optional<Options> ParseOptions(std::span<const std::string_view> _arguments)
@@ -501,11 +503,13 @@ int Run(const Options& _options)
 
   // MVP-085: the borderless window over the primary display, which the scenes measure at its native mode (O75).
   Neuron::SizePx desktop = Neuron::FALLBACK_WINDOW_SIZE;
+  Neuron::DesktopMode display; // the primary display's mode, which the performance script pins (O75)
   for (const Neuron::MonitorInfo& monitor : Neuron::EnumerateMonitors())
   {
     if (monitor.primary)
     {
       desktop = {monitor.desktop.width, monitor.desktop.height};
+      display = monitor.desktop;
     }
   }
   const Neuron::DisplayAttempt attempt = Neuron::StartupDisplayAttempts(Neuron::WindowMode::BorderlessFullScreen, {}, desktop).front();
@@ -576,7 +580,7 @@ int Run(const Options& _options)
   renderer->reset(); // PLT-043: the swap chain goes before the window
   if (code == 0)
   {
-    const std::string json = JsonOf(results, _options, *tuning);
+    const std::string json = JsonOf(results, _options, *tuning, display);
     if (_options.out.empty())
     {
       std::fwrite(json.data(), 1, json.size(), stdout);

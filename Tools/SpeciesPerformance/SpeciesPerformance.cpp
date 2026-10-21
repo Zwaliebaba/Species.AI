@@ -3,6 +3,8 @@
 #include "AssetError.h"
 #include "Development.h"
 #include "Files.h"
+#include "GenerationScene.h"
+#include "LogFloodScene.h"
 #include "LooseContent.h"
 #include "MarkerTimings.h"
 #include "RegionSimulation.h"
@@ -31,7 +33,9 @@
 
 // The performance tool (M1 plan T10, ADR-110): a development tool that never ships. It runs the headless measurement
 // scenes, each from a fixed seed and key with a recorded command stream, on one thread of the build it was built in,
-// and writes what each step cost, read from the profile markers, as JSON for Build/RunPerformance.py.
+// and writes what each step cost, read from the profile markers, as JSON for Build/RunPerformance.py. Beside the
+// scenes it times the generation of a corpus of valleys with their land route graphs (WLD-165, ADR-104), and a log call
+// while eight threads flood the logger (DBG T2, ADR-091).
 //
 //   SpeciesPerformance.exe [--quick] [--scenes <name,...>] [--out <file.json>] [--content <folder> | --tuning-source <GameData>]
 //
@@ -76,6 +80,14 @@ constexpr std::uint64_t TRAVEL_TICKS_MAX = 6000; // 10 minutes: a crowd that has
 
 constexpr std::uint64_t DRAW_VALUES = 10'000'000;
 constexpr std::uint64_t DRAW_VALUES_QUICK = 100'000;
+
+// The generation corpus: the valleys of seeds 1 to 100, the corpus of ADR-104's local measurements.
+constexpr std::uint64_t GENERATION_SEED_FIRST = 1;
+constexpr std::uint64_t GENERATION_SEED_COUNT = 100;
+
+// DBG T2: 10⁶ debug records between the flood's threads.
+constexpr std::uint64_t LOG_FLOOD_RECORDS = 1'000'000;
+constexpr std::uint64_t LOG_FLOOD_RECORDS_QUICK = 8'000;
 
 void Print(std::FILE* _stream, std::string_view _text)
 {
@@ -238,6 +250,42 @@ std::string TravelJson(const std::vector<Performance::TravelEdge>& _edges)
   return std::format("[{}\n    ]", edges);
 }
 
+std::string GenerationJson(const std::vector<Performance::GenerationSample>& _samples)
+{
+  std::string samples;
+  for (const Performance::GenerationSample& sample : _samples)
+  {
+    samples +=
+      std::format("{}\n      {{\"seed\": {}, \"passed_seed\": {}, \"attempt\": {}, \"generate_ms\": {:.3f}, \"graph_ms\": {:.3f}, "
+                  "\"nodes\": {}}}",
+                  samples.empty() ? "" : ",", sample.seed, sample.passedSeed, sample.attempt,
+                  static_cast<double>(sample.generateNanoseconds) / 1e6, static_cast<double>(sample.graphNanoseconds) / 1e6, sample.nodes);
+  }
+  return std::format("[{}\n    ]", samples);
+}
+
+// A log call's mean cost over every thread's calls, and the slowest thread's mean.
+std::string LogFloodJson(const std::optional<Performance::LogFlood>& _flood)
+{
+  if (!_flood || _flood->records == 0)
+  {
+    return "null";
+  }
+  std::int64_t total = 0;
+  std::int64_t slowest = 0;
+  for (const std::int64_t nanoseconds : _flood->threadNanoseconds)
+  {
+    total += nanoseconds;
+    slowest = std::max(slowest, nanoseconds);
+  }
+  const auto records = static_cast<double>(_flood->records);
+  const auto perThread = records / static_cast<double>(_flood->threadNanoseconds.size());
+  return std::format("{{\"threads\": {}, \"records\": {}, \"call_ns_mean\": {:.2f}, \"call_ns_slowest_thread\": {:.2f}, \"written\": {}, "
+                     "\"dropped\": {}}}",
+                     _flood->threadNanoseconds.size(), _flood->records, static_cast<double>(total) / records,
+                     static_cast<double>(slowest) / perThread, _flood->written, _flood->dropped);
+}
+
 int Run(const Options& _options)
 {
   const auto tuning = LoadTuning(_options);
@@ -313,6 +361,18 @@ int Run(const Options& _options)
       travel.insert(travel.end(), edges.begin(), edges.end());
     }
   }
+  std::vector<Performance::GenerationSample> generation;
+  if (Wanted(_options, "generation"))
+  {
+    // WLD-165's generation and ADR-104's land route graph, valley by valley.
+    generation = Performance::MeasureGeneration(GENERATION_SEED_FIRST, _options.quick ? 1 : GENERATION_SEED_COUNT, *tuning);
+  }
+  std::optional<Performance::LogFlood> logFlood;
+  if (Wanted(_options, "log-flood"))
+  {
+    // ADR-091 and DBG-206: a log call's cost on the calling thread while eight threads flood the logger.
+    logFlood = Performance::MeasureLogFlood(_options.quick ? LOG_FLOOD_RECORDS_QUICK : LOG_FLOOD_RECORDS);
+  }
 
   std::string scenes;
   for (const Performance::SceneRun& run : runs)
@@ -322,10 +382,10 @@ int Run(const Options& _options)
   const std::string json =
     std::format("{{\n  \"tool\": \"{}\",\n  \"configuration\": \"{}\",\n  \"platform\": \"{}\",\n  \"quick\": {},\n"
                 "  \"seed\": {},\n  \"tick_period_s\": {},\n  \"valley_path_factor\": {},\n  \"draw_ns\": {},\n  \"scenes\": [{}\n  ],\n"
-                "  \"travel\": {}\n}}\n",
+                "  \"travel\": {},\n  \"generation\": {},\n  \"log\": {}\n}}\n",
                 PRODUCT_NAME, CONFIGURATION, PLATFORM, _options.quick ? "true" : "false", SCENE_SEED, tuning->ref.sim.tickPeriod,
                 tuning->wld.travel.valleyPathFactor, drawNanoseconds ? std::format("{:.4f}", *drawNanoseconds) : std::string("null"),
-                scenes, TravelJson(travel));
+                scenes, TravelJson(travel), GenerationJson(generation), LogFloodJson(logFlood));
   if (_options.out.empty())
   {
     std::fwrite(json.data(), 1, json.size(), stdout);
@@ -338,7 +398,8 @@ int Run(const Options& _options)
     Print(stderr, std::format("{} cannot be written", _options.out.string()));
     return 1;
   }
-  Print(stdout, std::format("{} scenes and {} travel edges into {}", runs.size(), travel.size(), _options.out.string()));
+  Print(stdout, std::format("{} scenes, {} travel edges and {} valleys generated into {}", runs.size(), travel.size(), generation.size(),
+                            _options.out.string()));
   return 0;
 }
 

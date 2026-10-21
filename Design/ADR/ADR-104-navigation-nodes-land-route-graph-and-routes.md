@@ -146,3 +146,8 @@ Chosen option: "1".
 * Related: [ADR-081](ADR-081-numeric-model-and-determinism-scope.md), [ADR-082](ADR-082-counter-based-simulation-random-draws.md), [ADR-085](ADR-085-region-partitioned-world-simulation.md), [ADR-097](ADR-097-keyed-draws-and-state-hash.md), [ADR-099](ADR-099-world-snapshots.md), [ADR-102](ADR-102-region-terrain-and-the-terrain-check-at-connection.md), [ADR-103](ADR-103-region-grids-draw-contexts-and-figure-movement.md).
 * The rules: R-SIM-330 to R-SIM-359 ([space, routing and physics](../reference/12_simulation_model/05_space_routing_and_physics.md)), R-UNIT-110 and R-UNIT-111 ([Worker](../reference/02_units/worker.md)), MVP-017 and MVP-040 ([MVP scope](../implementation/mvp_scope.md)), WLD-062 and WLD-100 ([world and sites](../gdd/01_world_and_regions/world_and_sites.md)), WLD-163 ([terrain, time and views](../gdd/01_world_and_regions/terrain_time_and_views.md)).
 * The code is in GameShared (`Navigation`, `RegionTerrain`) and GameLogic (`RouteStore`, `FigureAdvance`, `RegionSimulation`).
+* **Amendment 2026-10-22 (M1's exit, [ADR-110](ADR-110-cost-measurement-marker-timing-and-performance-script.md) amendment).** T10 measured neither the graph nor the sweep, so the performance tool now measures both.
+  * The graph: the tool builds each graph of seeds 1 to 100 again on its own, from the nodes its valley placed, and the script reports the worst and the mean time.
+  * The sweep: the script reports its cost per figure per tick in the sandbox's battle and at the region's bound, read from the marker `sim.routes.free_unheld`.
+
+  Both figures are reported, not judged, because ADR-080 sets no budget for either. The owner's next run on the reference test machine gives the figures the confirmation asks for.

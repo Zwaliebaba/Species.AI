@@ -14,15 +14,18 @@ ADR-126) unless --headless-only is given, reads the machine's configuration (pro
 driver version, display mode and OS build) and writes the configuration, the build's identity and each figure against
 its budget into the performance section of playtests/M1.md.
 
-The first run pins the machine, and the first run of the rendered scenes pins its display (O75). A later run whose
-processor, memory or graphics adapter differs from the pinned ones, or whose display differs for the rendered scenes,
-stops and records nothing, because a change of the hardware re-baselines every result (DBG-209); the driver and the OS
-build are recorded with each run and stop nothing. Once pinned, a figure above its budget fails the run (exit code 1);
-the run that pins only reports. The sandbox's battle drawn passes when the 99th percentile of its frame interval is at
-most 1000 ÷ mvp.client.fps_target + 1 ms (O75); its missed frames and the scene of mvp.client.figures_max figures are
-reported. --quick runs every scene briefly to show that it runs, and records nothing. --self-test is CI's: it runs the
-given tool with --quick, and the bench too when one is given (--warp draws it on the WARP adapter), then proves the
-record's rules on fixtures in a temporary folder, and writes nothing into the checkout.
+The first run pins the machine, and the first run of the rendered scenes pins the display they drew on, as the bench
+reports its primary display (O75); that display must be 1,920 x 1,080 at 60 Hz, and a first rendered run on another one
+stops and records nothing. A later run whose processor, memory or graphics adapter differs from the pinned ones, or whose
+display differs for the rendered scenes, stops and records nothing, because a change of the hardware re-baselines every
+result (DBG-209); the driver and the OS build are recorded with each run and stop nothing. Once pinned, a figure above
+its budget fails the run (exit code 1); the run that pins only reports. The sandbox's battle drawn passes when the 99th
+percentile of its frame interval is at most 1000 ÷ mvp.client.fps_target + 1 ms (O75); its missed frames, the server's
+tick rate while drawn and the scene of mvp.client.figures_max figures are reported, as are a valley's generation and its
+land route graph, the route sweep and the log flood's detail (ADR-091, ADR-102, ADR-104). --quick runs every scene
+briefly to show that it runs, and records nothing. --self-test is CI's: it runs the given tool with --quick, and the
+bench too when one is given (--warp draws it on the WARP adapter), then proves the record's rules on fixtures in a
+temporary folder, and writes nothing into the checkout.
 """
 import argparse
 import datetime
@@ -54,6 +57,8 @@ PIN_MARK = re.compile(r'<!-- reference-machine (\{.*?\}) -->')
 DISPLAY_MARK = re.compile(r'<!-- reference-display (\{.*?\}) -->')  # O75: the rendered scenes' own pin
 FRAME_TOLERANCE_MS = 1.0  # O75: 60 frames per second is a 99th-percentile frame interval of 16.7 ms and 1 ms of tolerance
 RENDERED_SIZE = (1920, 1080)  # MVP-085
+RENDERED_REFRESH_HZ = 60  # O75: the rendered scenes run on a 1,920 x 1,080, 60 Hz display
+RENDERED_DISPLAY = f'{RENDERED_SIZE[0]} x {RENDERED_SIZE[1]} at {RENDERED_REFRESH_HZ} Hz'
 SECTION = '## Performance'
 
 # ADR-080 item 2's cost budgets, item 3's region step budget and item 7's integrated server budget, and the travel
@@ -68,8 +73,15 @@ BUDGETS = {
   'region_fixed_us': (30.0, 'µs per tick', 'region fixed cost (an empty region with its terrain)'),
   'region_step_ms': (12.5, 'ms per tick, 95th percentile', 'region step at its bound'),
   'integrated_cores': (1.0, 'reference cores', 'integrated server (the sandbox battle\'s mean step over the tick period)'),
+  # DBG-206's dbg.budget.log_call_us, measured as DBG T2 states it (ADR-091).
+  'log_call_us': (1.0, 'µs per call', 'a log call on the calling thread while 8 threads log 10⁶ debug records'),
 }
 BATTLE_MARKERS = ['sim.teams.advance_ungrouped', 'sim.laser_bolts.advance', 'sim.effects.advance', 'sim.essence_orbs.advance']
+SWEEP_MARKERS = ['sim.routes.free_unheld']  # ADR-104, DEC-651: every step frees the routes that no figure holds
+# WLD-165's budgets for a world's generation, wld.generation.budget_16_s and budget_200_s, with the regions of those
+# worlds (WLD-004, table 3): (seconds, steward capacity, regions). A valley's generation is reported against the smaller
+# share per region; the bake that WLD-165 includes is not built yet.
+GENERATION_BUDGETS = ((20.0, 16, 8), (120.0, 200, 77))
 
 
 def marker_us(scene, name):
@@ -108,7 +120,44 @@ def figures_of(result):
     out.append(('travel', 'expedition_figure_us', sum(e['advance_us'] for e in edges) / figure_ticks))
   if result.get('draw_ns') is not None:
     out.append(('draws', 'draw_us', result['draw_ns'] / 1000.0))
+  if result.get('log'):
+    out.append(('log-flood', 'log_call_us', result['log']['call_ns_mean'] / 1000.0))
   return [f for f in out if f[2] is not None]
+
+
+def reported_rows(result):
+  """The headless figures that are reported rather than judged (scene, figure, measured, budget, result): a valley's
+  generation (WLD-165, ADR-102), its land route graph and the route sweep (ADR-104), and the log flood's detail
+  (ADR-091). A result from an older tool has none of them."""
+  rows = []
+  samples = result.get('generation') or []
+  if samples:
+    generate = [s['generate_ms'] / 1000.0 for s in samples]
+    graph = [s['graph_ms'] for s in samples]
+    share = min(seconds / regions for seconds, _, regions in GENERATION_BUDGETS)
+    shares = ' and '.join(f'{seconds:g} s for {regions} regions at {capacity}' for seconds, capacity, regions in GENERATION_BUDGETS)
+    retried = sum(1 for s in samples if s['passed_seed'] != s['seed'] or s['attempt'] > 0)
+    rows += [
+      ('generation', f'a valley generated with every attempt, check and re-roll, worst and mean of {len(samples)} seeds (WLD-165; '
+       f'the share per region of {shares}; no bake yet)', f'{max(generate):.3f} s, {sum(generate) / len(generate):.3f} s',
+       f'{share:.2f} s', 'reported: within the share' if max(generate) <= share else 'reported: above the share'),
+      ('generation', 'valleys that passed only at a later attempt or seed (MVP-011)', f'{retried} of {len(samples)}', '—', 'reported'),
+      ('generation', f'the land route graph of a valley alone, worst and mean (ADR-104), at most {max(s["nodes"] for s in samples)} '
+       'nodes', f'{max(graph):.1f} ms, {sum(graph) / len(graph):.1f} ms', '—', 'reported'),
+    ]
+  scenes = {s['name']: s for s in result['scenes']}
+  for name in ('sandbox-battle', 'region-bound'):
+    if name in scenes:
+      sweep = per_figure_tick(scenes[name], SWEEP_MARKERS)
+      if sweep is not None:
+        rows.append((name, 'route sweep, the routes no figure holds freed (ADR-104, DEC-651)', f'{sweep:.4g} µs per figure per tick',
+                     '—', 'reported'))
+  flood = result.get('log')
+  if flood:
+    rows.append(('log-flood', 'the slowest thread\'s log call, and the records written and dropped (DBG T2)',
+                 f'{flood["call_ns_slowest_thread"] / 1000.0:.4g} µs per call; {flood["written"]} written, '
+                 f'{flood["dropped"]} dropped of {flood["records"]}', '—', 'reported'))
+  return rows
 
 
 def status_of(value, budget):
@@ -205,9 +254,10 @@ def frame_budget_ms(frames):
   return 1000.0 / max(frames['fps_target'], 1) + FRAME_TOLERANCE_MS
 
 
-def rendered_rows(frames):
+def rendered_rows(frames, tick_period_s=None):
   """The rendered scenes' rows (scene, figure, measured, budget, result), and whether a judged figure is above its budget.
-  Only the sandbox's battle at 1,920 x 1,080 is judged; the rest is reported (O75)."""
+  Only the sandbox's battle at 1,920 x 1,080 is judged; the rest is reported (O75). The server's tick rate while drawn
+  is the ticks measured over the frames' intervals, against the tick period of the headless result when it is given."""
   budget = frame_budget_ms(frames)
   rows = []
   above = False
@@ -234,13 +284,28 @@ def rendered_rows(frames):
       (name, 'figures alive and on screen', f'{scene["figures_alive"]["max"]} alive at most; {scene["figures_on_screen"]["mean"]:.0f} '
        f'on screen on average, {scene["figures_on_screen"]["max"]} at most', '—', 'reported'),
     ]
+    seconds = scene['interval_ms']['mean'] * scene['frames'] / 1000.0
+    if seconds > 0:
+      rows.append((name, 'server ticks per second while drawn (MVP-085)', f'{scene["ticks"] / seconds:.2f}',
+                   f'{1.0 / tick_period_s:g}' if tick_period_s else '—', 'reported'))
   return rows, above
+
+
+def rendered_display(frames, config):
+  """The display the rendered scenes drew on, as the bench reports its primary display's mode, in the form the machine's
+  reading takes. A result from an older bench reports none, and the machine's reading stands in."""
+  display = frames.get('display')
+  if not display:
+    return config.get('display')
+  return f'{display["width"]} x {display["height"]} at {display["refresh_hz"]} Hz'
 
 
 def run_section(when, build_id, config, result, frames):
   """The run's section, and whether a headless and a rendered figure is above its budget."""
+  drawn_on = f', the rendered scenes on {rendered_display(frames, config)}' if frames is not None else ''
   lines = [f'### Run {when}, build {build_id}, {result["configuration"]}|{result["platform"]}', '',
-           f'Driver {config.get("driver", "")}, OS build {config.get("os_build", "")}, display {config.get("display", "")} (O75).', '',
+           f'Driver {config.get("driver", "")}, OS build {config.get("os_build", "")}, display {config.get("display", "")}{drawn_on} '
+           '(O75).', '',
            '| Scene | Figure | Measured | Budget | Result |', '|---|---|---|---|---|']
   failed = False
   for scene, key, value in figures_of(result):
@@ -254,9 +319,11 @@ def run_section(when, build_id, config, result, frames):
     lines.append(f'| travel | `wld.travel.valley_path_factor` (WLD-100): the largest per-edge median of walking time × speed ÷ '
                  f'straight distance | {factor:.4f} | {current_factor:g} in the record | '
                  f'{"within the record" if factor <= current_factor else "above the record"} |')
+  lines += [f'| {scene} | {figure} | {measured} | {budget} | {status} |'
+            for scene, figure, measured, budget, status in reported_rows(result)]
   rendered_above = False
   if frames is not None:
-    rows, rendered_above = rendered_rows(frames)
+    rows, rendered_above = rendered_rows(frames, result.get('tick_period_s'))
     lines += [f'| {scene} | {figure} | {measured} | {budget} | {status} |' for scene, figure, measured, budget, status in rows]
   return '\n'.join(lines) + '\n', failed, rendered_above
 
@@ -285,17 +352,24 @@ def record(path, config, result, frames, build_id, when):
             're-baselines every result (DBG-209); nothing was recorded.')
       return 2
   display = pinned_display(text)
-  if frames is not None and display is not None and display.get('display') != config.get('display'):
-    print(f'RunPerformance: the display is {config.get("display")}, and the rendered scenes pinned {display.get("display")} (O75). '
+  drawn_on = rendered_display(frames, config) if frames is not None else None
+  if frames is not None and display is not None and display.get('display') != drawn_on:
+    print(f'RunPerformance: the rendered scenes drew on {drawn_on}, and they pinned {display.get("display")} (O75). '
           'A change of the display re-baselines the rendered results (DBG-209); nothing was recorded.')
+    return 2
+  if frames is not None and display is None and drawn_on != RENDERED_DISPLAY:
+    # The first rendered run pins the display, so a run on another display would pin the wrong one (O75, MVP-085).
+    print(f'RunPerformance: the rendered scenes drew on {drawn_on}, and their first run pins the display, which must be '
+          f'{RENDERED_DISPLAY} (O75, MVP-085). Make that monitor the primary display and run again, or run with '
+          '--headless-only; nothing was recorded.')
     return 2
   if pinned is None:
     text = text.rstrip('\n') + (f'\n\n### Reference test machine\n\nPinned by the run of {when}, build {build_id} (DBG-209).\n\n'
                                 f'{machine_table(config)}\n<!-- reference-machine {json.dumps(config, sort_keys=True)} -->\n')
   if frames is not None and display is None:
-    pin = {'display': config.get('display')}
+    pin = {'display': drawn_on}
     text = text.rstrip('\n') + (f'\n\n### Reference display\n\nPinned for the rendered scenes by the run of {when}, build '
-                                f'{build_id} (O75, DBG-209): {config.get("display")}.\n\n'
+                                f'{build_id} (O75, DBG-209): {drawn_on}.\n\n'
                                 f'<!-- reference-display {json.dumps(pin, sort_keys=True)} -->\n')
   section, above, rendered_above = run_section(when, build_id, config, result, frames)
   text = text.rstrip('\n') + '\n\n' + section
@@ -317,15 +391,18 @@ def run_bench(bench, quick, out, warp=False):
     return json.load(f)
 
 
-def frames_like(frames, p99, size=RENDERED_SIZE):
-  """A copy of the bench's result with every scene's 99th-percentile interval and window set: the self-test's fixtures."""
-  return dict(frames, scenes=[dict(scene, interval_ms=dict(scene['interval_ms'], p99=p99), window={'width': size[0], 'height': size[1]})
-                              for scene in frames['scenes']])
+def frames_like(frames, p99, size=RENDERED_SIZE, display=(*RENDERED_SIZE, RENDERED_REFRESH_HZ)):
+  """A copy of the bench's result with every scene's 99th-percentile interval and window, and the display it drew on,
+  set: the self-test's fixtures."""
+  return dict(frames, display={'width': display[0], 'height': display[1], 'refresh_hz': display[2]},
+              scenes=[dict(scene, interval_ms=dict(scene['interval_ms'], p99=p99), window={'width': size[0], 'height': size[1]})
+                      for scene in frames['scenes']])
 
 
 # The bench's result when the self-test runs none: the shape SpeciesFrameBench writes, its figures made up.
 FRAMES_FIXTURE = {
   'tool': 'SpeciesFrameBench', 'configuration': 'Debug', 'platform': 'x64', 'quick': True, 'fps_target': 60, 'figures_max': 1500,
+  'display': {'width': 1920, 'height': 1080, 'refresh_hz': 60},
   'scenes': [{'name': name, 'seed': 1, 'figures': figures, 'ticks': 20, 'frames': 120, 'suspended_frames': 0,
               'window': {'width': 1920, 'height': 1080},
               'interval_ms': {'p50': 16.6, 'p95': 16.7, 'p99': 16.8, 'max': 33.4, 'mean': 16.7},
@@ -359,9 +436,15 @@ def self_test(tool, tuning_source, bench=None, warp=False):
     for e in within['travel']:
       e['advance_us'] = 0.0
     within['draw_ns'] = 1.0
+    within['log'] = dict(within['log'], call_ns_mean=100.0)
     above = dict(within, draw_ns=1000.0)
     smooth = frames_like(frames, 16.0)
     slow = frames_like(frames, 25.0)
+
+    def recorded(*phrases):
+      text = open(path, encoding='utf-8').read()
+      return all(phrase in text for phrase in phrases)
+
     checks = [
       ('the first run pins the machine and only reports', lambda: record(path, reference, result, None, 'fixture', 'pin') == 0 and
        pinned_machine(open(path, encoding='utf-8').read()) == reference),
@@ -370,11 +453,21 @@ def self_test(tool, tuning_source, bench=None, warp=False):
        lambda: record(path, dict(reference, driver='other', os_build='other'), within, None, 'fixture', 'driver') == 0),
       ('a pinned run within every budget passes', lambda: record(path, reference, within, None, 'fixture', 'within') == 0),
       ('a pinned run above a budget fails', lambda: record(path, reference, above, None, 'fixture', 'above') == 1),
+      ('a log call above its budget fails',
+       lambda: record(path, reference, dict(within, log=dict(within['log'], call_ns_mean=5000.0)), None, 'fixture', 'log') == 1),
+      ('a run reports the generation, the route graph, the route sweep and the log flood',
+       lambda: recorded('a valley generated', 'the land route graph', 'route sweep', 'the slowest thread\'s log call')),
+      ('a first rendered run on another display pins nothing',
+       lambda: record(path, reference, within, frames_like(frames, 16.0, (2880, 1920), (2880, 1920, 60)), 'fixture', 'panel') == 2 and
+       pinned_display(open(path, encoding='utf-8').read()) is None),
       ('the first rendered run pins the display and only reports',
        lambda: record(path, reference, within, slow, 'fixture', 'display') == 0 and
-       pinned_display(open(path, encoding='utf-8').read()) == {'display': reference['display']}),
+       pinned_display(open(path, encoding='utf-8').read()) == {'display': RENDERED_DISPLAY}),
+      ('a rendered run reports the server\'s tick rate', lambda: recorded('server ticks per second while drawn')),
       ('a rendered run on another display stops',
-       lambda: record(path, dict(reference, display='other'), within, smooth, 'fixture', 'other display') == 2),
+       lambda: record(path, reference, within, frames_like(frames, 16.0, display=(1920, 1080, 144)), 'fixture', 'other display') == 2),
+      ('a rendered run is judged by the display the bench drew on, not the machine\'s reading',
+       lambda: record(path, dict(reference, display='other'), within, smooth, 'fixture', 'reading') == 0),
       ('a headless run on another display is recorded',
        lambda: record(path, dict(reference, display='other'), within, None, 'fixture', 'headless') == 0),
       ('a rendered run within its frame budget passes', lambda: record(path, reference, within, smooth, 'fixture', 'smooth') == 0),
@@ -424,8 +517,10 @@ def main():
   if factor is not None:
     print(f'RunPerformance: travel: the largest per-edge median walking factor is {factor:.4f} '
           f'(wld.travel.valley_path_factor is {result["valley_path_factor"]:g})')
+  for scene, figure, measured, budget, status in reported_rows(result):
+    print(f'RunPerformance: {scene}: {figure}: {measured} against {budget}: {status}')
   if frames is not None:
-    for scene, figure, measured, budget, status in rendered_rows(frames)[0]:
+    for scene, figure, measured, budget, status in rendered_rows(frames, result.get('tick_period_s'))[0]:
       print(f'RunPerformance: {scene}: {figure}: {measured} against {budget}: {status}')
   if args.quick:
     print('RunPerformance: a quick run measures nothing and records nothing')
