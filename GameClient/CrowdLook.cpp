@@ -77,6 +77,8 @@ enum class WorkerLayer : std::uint8_t
 
 constexpr std::array<std::string_view, static_cast<std::size_t>(WorkerLayer::Count)> WORKER_LAYER_ENTRIES{
   "worker_ground_shadow", "worker_card", "worker_card", "worker_card", "worker_glow"};
+// ADR-127: the selection discs' entry, the masked additive quad with no depth test of pass 10a's trail marks.
+constexpr std::string_view SELECTION_DISC_ENTRY = "effect_additive_nodepth";
 
 Neuron::Vec3 Cross(const Neuron::Vec3& _a, const Neuron::Vec3& _b) noexcept
 {
@@ -382,6 +384,51 @@ void AppendWorkerBatches(std::span<const InterpolatedFigure> _figures, const Neu
   }
   // The view test's sphere holds a card's whole height and its fragments' drift.
   batches.Finish(static_cast<float>(2.0 * largestHalf + look.fragmentSpread * 2.0));
+}
+
+void AppendSelectionDiscs(std::span<const InterpolatedFigure> _figures, const Neuron::TerrainField& _field, const CrowdView& _view,
+                          const TuningPresentation& _presentation, std::vector<Neuron::QuadBatch>& _batches)
+{
+  if (!_view.localTeam.has_value())
+  {
+    return;
+  }
+  const auto& selection = _presentation.mvp.selection;
+  const auto& glow = _presentation.vfx.worker.controlGlowColor;
+  Neuron::QuadBatch batch;
+  batch.pass = Neuron::ScenePass::Workers;
+  batch.entry = SELECTION_DISC_ENTRY;
+  batch.texture = static_cast<std::uint16_t>(SceneTexture::TeamDisc);
+  for (const InterpolatedFigure& figure : _figures)
+  {
+    const ReplicatedFigure& state = figure.state;
+    if (state.kind != FigureKind::Worker || state.dead || !state.underControl || state.team != *_view.localTeam)
+    {
+      continue;
+    }
+    // On the terrain under the Worker, turned into its slope; marker.team_disc is round, so its turn about the normal
+    // does not show.
+    const Neuron::Vec3 at{figure.position.x, _field.Height(figure.position.x, figure.position.z), figure.position.z};
+    const Neuron::Vec3 normal = Neuron::NormalizedOr(_field.Normal(at.x, at.z), WORLD_UP);
+    const Neuron::Vec3 right = Neuron::NormalizedOr(Cross(normal, WORLD_Z), {1.0, 0.0, 0.0});
+    const double half = selection.discSizeFactor * WorkerCardHalfSize(_presentation, figure.id, Neuron::Length(at - _view.camera));
+    Neuron::SceneQuad disc;
+    disc.position = at;
+    disc.halfWidth = static_cast<float>(half);
+    disc.halfHeight = disc.halfWidth;
+    disc.color = {static_cast<float>(glow.r), static_cast<float>(glow.g), static_cast<float>(glow.b),
+                  static_cast<float>(selection.discAlpha)};
+    disc.endColor = disc.color;
+    disc.orientation = Neuron::QuadOrientation::WorldOriented;
+    disc.axisRight = right;
+    disc.axisUp = Cross(right, normal);
+    batch.cullRadius = std::max(batch.cullRadius, static_cast<float>(half * std::numbers::sqrt2));
+    batch.quads.push_back(disc);
+  }
+  if (!batch.quads.empty())
+  {
+    _batches.push_back(std::move(batch));
+  }
 }
 
 void AppendOrbBatches(std::span<const InterpolatedOrb> _orbs, const TuningPresentation& _presentation,

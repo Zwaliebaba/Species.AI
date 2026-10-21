@@ -144,7 +144,7 @@ The spins, fills and sizes of this table are the keys `ref.ctrl.marker.fixed_spi
 **R-CTRL-388** (MUST) The world markers draw the banners of the local team's Leaders; the Leader renderer draws those of every other team (R-UNIT-191).
 
 > **Amendment 2026-10-21 (M1 task T17b, owner decisions O76 and O78, [ADR-125](../../ADR/ADR-125-battle-marks-route-preview-and-world-markers-at-m1.md)).** At M1:
-> - **The badge.** The icon near the pointer is R-CTRL-366's rows 2 and 3 without the count. A route preview that cannot be walked shows the unavailable pointer (O76) rather than the badge's red sprite.
+> - **The badge.** The icon near the pointer is R-CTRL-366's rows 2 and 3 without the count. A route preview that cannot be walked shows the unavailable pointer (O76) rather than the badge's red sprite. With M1 task T17c (O82, [ADR-127](../../ADR/ADR-127-left-button-verbs-and-order-feedback-at-m1.md)) the count of selected Workers is drawn in white GameFont at the right edge of the badge's shadow.
 > - **The markers.** The world markers are the Leader markers alone, one for each of the local team's living Leaders, made when the Leader is first seen rather than at its promotion.
 > - **On screen.** The banner, which the Leader renderer draws for every team (R-CTRL-388 as amended), stands for a marker's icon.
 > - **Off screen.** Until it is seen, a marker draws R-CTRL-386's layers with `icon.power.leader` in place of the banner, its compass pointing out towards its Leader.

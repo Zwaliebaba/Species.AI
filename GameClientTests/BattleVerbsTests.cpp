@@ -118,28 +118,60 @@ Species::VerbFrame FrameAt(const Neuron::Vec3& _ground, double _step = 1.0 / 60.
 TEST_CLASS(BattleVerbsTests)
 {
 public:
-  BEGIN_TEST_METHOD_ATTRIBUTE(RCtrl050AToggleOfTheSelectedLeaderPrecedesItsOrder)
+  BEGIN_TEST_METHOD_ATTRIBUTE(RCtrl050TheSecondaryPressTogglesOrClearsTheSelection)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-050")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-073")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-101")
   END_TEST_METHOD_ATTRIBUTE()
-  TEST_METHOD(RCtrl050AToggleOfTheSelectedLeaderPrecedesItsOrder)
+  TEST_METHOD(RCtrl050TheSecondaryPressTogglesOrClearsTheSelection)
   {
-    // AC-CTRL-AB-01: with a Leader selected and the pointer on it, the secondary press toggles it and gives no order.
+    // AC-CTRL-AB-01 as O82 resolves it: with a Leader selected and the pointer on it, the secondary press toggles it and
+    // gives no order.
     Pump pump;
     Fill(pump.replica, 5, {{1, Species::FigureKind::Leader, GROUND, true}});
     Species::VerbFrame frame = FrameAt(GROUND);
     frame.leaderUnderPointer = IdOf(1);
     frame.controls.secondaryDown = true;
-    const std::vector<Species::BattleCommand> commands = pump.Frame(frame);
+    std::vector<Species::BattleCommand> commands = pump.Frame(frame);
     const std::vector<Species::ToggleUnitCommand> toggles = CommandsOf<Species::ToggleUnitCommand>(commands);
     Assert::IsTrue(toggles.size() == 1 && toggles[0].actor == IdOf(1) && toggles[0].team == OWN, L"the toggle");
-    Assert::IsTrue(CommandsOf<Species::OrderUnitCommand>(commands).empty(), L"and no order");
-    // Another Leader under the pointer while one is selected is its order's target, not a toggle.
+    Assert::IsTrue(CommandsOf<Species::OrderUnitCommand>(commands).empty() && CommandsOf<Species::SelectCommand>(commands).empty(),
+                   L"and no order or clear");
+    // Another Leader under the pointer while one is selected: the selection is cleared, and nothing is toggled.
     Fill(pump.replica, 6,
          {{1, Species::FigureKind::Leader, GROUND, true}, {2, Species::FigureKind::Leader, GROUND + Neuron::Vec3{50.0, 0.0, 0.0}}});
     frame.leaderUnderPointer = IdOf(2);
-    const std::vector<Species::OrderUnitCommand> orders = CommandsOf<Species::OrderUnitCommand>(pump.Frame(frame));
-    Assert::IsTrue(orders.size() == 1 && orders[0].position.x == GROUND.x + 50.0, L"ordered to the other Leader's position");
+    commands = pump.Frame(frame);
+    std::vector<Species::SelectCommand> selects = CommandsOf<Species::SelectCommand>(commands);
+    Assert::IsTrue(selects.size() == 1 && selects[0].actor == 0 && CommandsOf<Species::ToggleUnitCommand>(commands).empty(),
+                   L"a Select of nothing");
+    // On the ground with Workers selected, the secondary press clears them too, and promotes nobody.
+    Fill(pump.replica, 7, {{3, Species::FigureKind::Worker, GROUND, false, true}});
+    frame.leaderUnderPointer.reset();
+    commands = pump.Frame(frame);
+    selects = CommandsOf<Species::SelectCommand>(commands);
+    Assert::IsTrue(selects.size() == 1 && selects[0].actor == 0 && CommandsOf<Species::PromoteWorkerCommand>(commands).empty() &&
+                     CommandsOf<Species::OrderWorkersCommand>(commands).empty(),
+                   L"the Workers released");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(RCtrl062APrimaryPressOnAnotherLeaderSelectsIt)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-062")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-101")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(RCtrl062APrimaryPressOnAnotherLeaderSelectsIt)
+  {
+    // O82: an own Leader under the pointer is selected by the primary press, never an order's target.
+    Pump pump;
+    Fill(pump.replica, 5,
+         {{1, Species::FigureKind::Leader, GROUND, true}, {2, Species::FigureKind::Leader, GROUND + Neuron::Vec3{50.0, 0.0, 0.0}}});
+    Species::VerbFrame frame = FrameAt(GROUND + Neuron::Vec3{50.0, 0.0, 0.0});
+    frame.leaderUnderPointer = IdOf(2);
+    frame.controls.primaryDown = true;
+    const std::vector<Species::BattleCommand> commands = pump.Frame(frame);
+    const std::vector<Species::SelectCommand> selects = CommandsOf<Species::SelectCommand>(commands);
+    Assert::IsTrue(selects.size() == 1 && selects[0].actor == IdOf(2), L"the other Leader selected");
+    Assert::IsTrue(CommandsOf<Species::OrderUnitCommand>(commands).empty(), L"and no order");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(RCtrl043ShiftSendsTheLeaderAloneAndCtrlStraight)
@@ -148,14 +180,15 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(RCtrl043ShiftSendsTheLeaderAloneAndCtrlStraight)
   {
-    // AC-CTRL-AB-02, the keyboard-and-mouse Leader rows: move-only with Shift, a straight route with Ctrl.
+    // AC-CTRL-AB-02, the keyboard-and-mouse Leader rows on the primary button (O82): move-only with Shift, a straight
+    // route with Ctrl.
     Pump pump;
     Fill(pump.replica, 5, {{1, Species::FigureKind::Leader, GROUND, true}});
     const Neuron::Vec3 target = GROUND + Neuron::Vec3{300.0, 0.0, 0.0};
     for (const auto& [moveOnly, straight] : {std::pair{false, false}, std::pair{true, false}, std::pair{false, true}})
     {
       Species::VerbFrame frame = FrameAt(target);
-      frame.controls.secondaryDown = true;
+      frame.controls.primaryDown = true;
       frame.controls.moveOnly = moveOnly;
       frame.controls.straight = straight;
       const std::vector<Species::OrderUnitCommand> orders = CommandsOf<Species::OrderUnitCommand>(pump.Frame(frame));
@@ -244,6 +277,46 @@ public:
     Assert::IsTrue(sends == ticks, L"one selection for each tick");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(RCtrl156TheCircleTakesThePointersFarthestDrag)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-156")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-157")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(RCtrl156TheCircleTakesThePointersFarthestDrag)
+  {
+    // O82: the radius is the larger of the growth on the real clock and the pointer's farthest drag, never shrinking, up
+    // to 100 wu; released, the circle fades over mvp.selection.circle_fade_seconds (0.4 s).
+    Pump pump;
+    Fill(pump.replica, 1, {});
+    Species::VerbFrame frame = FrameAt(GROUND, 0.01);
+    frame.controls.primaryDown = true;
+    frame.controls.primaryHeld = true;
+    static_cast<void>(pump.Frame(frame));
+    Assert::AreEqual(1.0, pump.verbs.Circle().value_or(Species::SelectionCircle{}).radius, 1e-9, L"grown 1 wu in 0.01 s");
+    frame.controls.primaryDown = false;
+    frame.ground = GROUND + Neuron::Vec3{60.0, 0.0, 0.0};
+    static_cast<void>(pump.Frame(frame));
+    Assert::AreEqual(60.0, pump.verbs.Circle().value_or(Species::SelectionCircle{}).radius, 1e-9, L"dragged 60 wu");
+    frame.ground = GROUND;
+    static_cast<void>(pump.Frame(frame));
+    Assert::AreEqual(60.0, pump.verbs.Circle().value_or(Species::SelectionCircle{}).radius, 1e-9, L"and kept when the pointer returns");
+    frame.ground = GROUND + Neuron::Vec3{0.0, 0.0, 250.0};
+    static_cast<void>(pump.Frame(frame));
+    Assert::AreEqual(100.0, pump.verbs.Circle().value_or(Species::SelectionCircle{}).radius, 1e-9, L"up to the limit");
+    frame.controls = {};
+    frame.controls.primaryUp = true;
+    frame.realStepSeconds = 0.0;
+    static_cast<void>(pump.Frame(frame));
+    Assert::IsFalse(pump.verbs.Circle().has_value(), L"released");
+    const std::optional<Species::SelectionCircle> shown = pump.verbs.ShownCircle();
+    Assert::IsTrue(shown.has_value() && shown->strength == 1.0, L"and shown");
+    frame.controls = {};
+    frame.realStepSeconds = 0.2;
+    static_cast<void>(pump.Frame(frame));
+    Assert::AreEqual(0.5, pump.verbs.ShownCircle().value_or(Species::SelectionCircle{}).strength, 1e-9, L"half faded after 0.2 s");
+    static_cast<void>(pump.Frame(frame));
+    Assert::IsFalse(pump.verbs.ShownCircle().has_value(), L"gone after 0.4 s");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(RCtrl160CrowdOrdersKeepTheirInterval)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-160")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-157")
@@ -255,7 +328,7 @@ public:
     Pump pump;
     const std::vector<Figure> controlled{{1, Species::FigureKind::Worker, GROUND, false, true}};
     Species::VerbFrame frame = FrameAt(GROUND + Neuron::Vec3{200.0, 0.0, 0.0});
-    frame.controls.secondaryDown = true;
+    frame.controls.primaryDown = true;
     frame.controls.straight = true;
     Fill(pump.replica, 10, controlled);
     const std::vector<Species::OrderWorkersCommand> first = CommandsOf<Species::OrderWorkersCommand>(pump.Frame(frame));
@@ -264,8 +337,17 @@ public:
     Assert::IsTrue(CommandsOf<Species::OrderWorkersCommand>(pump.Frame(frame)).empty(), L"9 ticks later, none");
     Fill(pump.replica, 20, controlled);
     Assert::IsTrue(CommandsOf<Species::OrderWorkersCommand>(pump.Frame(frame)).size() == 1, L"10 ticks later, sent");
+    // ADR-127: the release of an order's own press resets nothing; only a circle's end does.
     Species::VerbFrame release = FrameAt(GROUND);
     release.controls.primaryUp = true;
+    static_cast<void>(pump.Frame(release));
+    Fill(pump.replica, 21, controlled);
+    Assert::IsTrue(CommandsOf<Species::OrderWorkersCommand>(pump.Frame(frame)).empty(), L"an order's release keeps the interval");
+    Fill(pump.replica, 21, {});
+    Species::VerbFrame circle = FrameAt(GROUND);
+    circle.controls.primaryDown = true;
+    circle.controls.primaryHeld = true;
+    static_cast<void>(pump.Frame(circle));
     static_cast<void>(pump.Frame(release));
     Fill(pump.replica, 21, controlled);
     Assert::IsTrue(CommandsOf<Species::OrderWorkersCommand>(pump.Frame(frame)).size() == 1, L"after a circle's end, at once");
@@ -277,19 +359,21 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Adr125ARouteThatCannotBeWalkedHoldsTheOrdersBack)
   {
-    // While the unavailable cursor shows for the preview, neither the crowd nor the selected Leader is ordered; a toggle
-    // of the Leader under the pointer still goes.
+    // While the unavailable cursor shows for the preview, neither the crowd nor the selected Leader is ordered, and the
+    // press does nothing else; a toggle of the Leader under the pointer still goes.
     Pump pump;
     Species::VerbFrame frame = FrameAt(GROUND + Neuron::Vec3{200.0, 0.0, 0.0});
-    frame.controls.secondaryDown = true;
+    frame.controls.primaryDown = true;
     frame.routeBlocked = true;
     Fill(pump.replica, 10, {{1, Species::FigureKind::Worker, GROUND, false, true}});
-    Assert::IsTrue(CommandsOf<Species::OrderWorkersCommand>(pump.Frame(frame)).empty(), L"no crowd order");
+    Assert::IsTrue(pump.Frame(frame).empty() && !pump.verbs.Circle().has_value(), L"no crowd order, and no circle");
     Fill(pump.replica, 11, {{2, Species::FigureKind::Leader, GROUND, true}});
     Assert::IsTrue(CommandsOf<Species::OrderUnitCommand>(pump.Frame(frame)).empty(), L"no order to the selected Leader");
-    frame.leaderUnderPointer = IdOf(2);
-    Assert::IsTrue(CommandsOf<Species::ToggleUnitCommand>(pump.Frame(frame)).size() == 1, L"the toggle still goes");
-    frame.leaderUnderPointer.reset();
+    Species::VerbFrame toggle = frame;
+    toggle.controls = {};
+    toggle.controls.secondaryDown = true;
+    toggle.leaderUnderPointer = IdOf(2);
+    Assert::IsTrue(CommandsOf<Species::ToggleUnitCommand>(pump.Frame(toggle)).size() == 1, L"the toggle still goes");
     frame.routeBlocked = false;
     Assert::IsTrue(CommandsOf<Species::OrderUnitCommand>(pump.Frame(frame)).size() == 1, L"and with a walkable route, the order");
   }
@@ -310,9 +394,16 @@ public:
     Species::VerbFrame frame = FrameAt(GROUND);
     static_cast<void>(pump.Frame(frame));
     Assert::IsTrue(pump.verbs.PromotableWorker() == IdOf(2), L"the nearest own Worker that is not Burning");
+    frame.controls.primaryDown = true;
+    Assert::IsTrue(CommandsOf<Species::PromoteWorkerCommand>(pump.Frame(frame)).empty() && pump.verbs.Circle().has_value(),
+                   L"the primary press begins the circle and promotes nobody");
+    frame.controls = {};
+    frame.controls.primaryUp = true;
+    static_cast<void>(pump.Frame(frame));
+    frame.controls = {};
     frame.controls.secondaryDown = true;
     const std::vector<Species::PromoteWorkerCommand> promotions = CommandsOf<Species::PromoteWorkerCommand>(pump.Frame(frame));
-    Assert::IsTrue(promotions.size() == 1 && promotions[0].actor == IdOf(2), L"promoted");
+    Assert::IsTrue(promotions.size() == 1 && promotions[0].actor == IdOf(2), L"the secondary press promotes");
     frame.ground = GROUND + Neuron::Vec3{100.0, 0.0, 0.0};
     frame.controls = {};
     static_cast<void>(pump.Frame(frame));
@@ -338,12 +429,12 @@ public:
     static_cast<void>(pump.FrameSent(frame, sequence));
     Assert::IsTrue(pump.verbs.WorkersSelected(), L"the circle's Workers, predicted");
     frame.controls = {};
-    frame.controls.secondaryDown = true;
+    frame.controls.primaryDown = true;
     frame.ground = GROUND + Neuron::Vec3{300.0, 0.0, 0.0};
     std::vector<Species::BattleCommand> commands = pump.FrameSent(frame, sequence);
-    Assert::IsTrue(CommandsOf<Species::OrderWorkersCommand>(commands).size() == 1 &&
-                     CommandsOf<Species::PromoteWorkerCommand>(commands).empty(),
-                   L"a crowd order, not a promotion");
+    Assert::IsTrue(CommandsOf<Species::OrderWorkersCommand>(commands).size() == 1 && CommandsOf<Species::SelectCommand>(commands).empty() &&
+                     !pump.verbs.Circle().has_value(),
+                   L"a crowd order, not a new circle");
     // Each report's tick arrives with no Worker under control: the replica stands again.
     for (std::uint64_t reported = 0; reported < sequence; ++reported)
     {

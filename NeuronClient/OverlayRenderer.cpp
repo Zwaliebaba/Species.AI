@@ -10,6 +10,7 @@
 #include <array>
 #include <cmath>
 #include <cstring>
+#include <string>
 #include <vector>
 
 namespace Neuron
@@ -34,8 +35,9 @@ template <class T> bool UploadInstances(ID3D12GraphicsCommandList* _commands, Up
 
 } // namespace
 
-OverlayRenderer::OverlayRenderer(DeviceGpuResourceFactory& _factory) noexcept
-  : m_factory(_factory)
+OverlayRenderer::OverlayRenderer(DeviceGpuResourceFactory& _factory, std::string_view _pageName) noexcept
+  : m_factory(_factory),
+    m_pageName(_pageName)
 {
 }
 
@@ -54,7 +56,8 @@ void OverlayRenderer::Show(const std::shared_ptr<const FontAsset>& _font)
         m_font->page.size() == std::size_t{m_font->pageWidth} * m_font->pageHeight)
     {
       // ADR-034, O63: the face's one R8_UNORM coverage page, never block-compressed.
-      const auto created = m_factory.CreateTexture({m_font->pageWidth, m_font->pageHeight, 1, DXGI_FORMAT_R8_UNORM, "font.dev.editor"});
+      const auto created =
+        m_factory.CreateTexture({m_font->pageWidth, m_font->pageHeight, 1, DXGI_FORMAT_R8_UNORM, std::string(m_pageName)});
       if (created)
       {
         m_page = *created;
@@ -62,7 +65,7 @@ void OverlayRenderer::Show(const std::shared_ptr<const FontAsset>& _font)
       }
       else
       {
-        Log(LogCategory::Render, LogLevel::Error, "the development face's page was not created");
+        Log(LogCategory::Render, LogLevel::Error, "the face's page {} was not created", m_pageName);
       }
     }
   }
@@ -168,6 +171,11 @@ void OverlayRenderer::RecordText(ID3D12GraphicsCommandList* _commands, UploadRin
     {
       left = width - left - TextWidth(*m_font, line.text, _scale);
       top = height - top - cellHeight;
+    }
+    else if (line.corner == OverlayCorner::PixelLeftMiddle)
+    {
+      left = std::round(line.insetX);
+      top = std::round(line.insetY - cellHeight * 0.5f);
     }
     const Float4 color(line.color[0], line.color[1], line.color[2], line.color[3]);
     for (const GlyphQuad& quad : LayoutText(*m_font, line.text, _scale, left, top))

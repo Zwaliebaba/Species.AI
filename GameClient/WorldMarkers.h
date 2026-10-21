@@ -86,9 +86,13 @@ private:
 
 // R-CTRL-366 rows 2 and 3 (ADR-125): the badge near the pointer while a Leader or Workers are selected, icon.power.leader
 // or icon.power.workers on the team's disc over its shadow, the icon's centre down and to the right of the pointer;
-// none while nothing is selected. The selected Workers' count is not drawn at M1.
+// none while nothing is selected.
 [[nodiscard]] std::vector<Neuron::OverlayQuad> CursorBadge(bool _leaderSelected, bool _workersSelected, std::uint8_t _team,
                                                            Neuron::PointPx _pointer, Neuron::SizePx _size,
                                                            const TuningPresentation& _presentation);
+
+// R-CTRL-366's count (ADR-127): the selected Workers' count in white, its cell's left edge at the right edge of the
+// badge's shadow, its first layer, and its middle level with the badge's centre; none for no badge or no Worker.
+[[nodiscard]] std::optional<Neuron::OverlayLine> BadgeCount(std::span<const Neuron::OverlayQuad> _badge, std::size_t _workers);
 
 } // namespace Species

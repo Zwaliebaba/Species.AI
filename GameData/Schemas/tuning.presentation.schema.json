@@ -243,13 +243,23 @@
               "x-species-type": "sim_decimal",
               "x-species-unit": "exponent",
               "x-species-presence": "required"
+            },
+            "grid_cells_per_repeat": {
+              "type": "number",
+              "description": "rnd.terrain.grid_cells_per_repeat (RND-135)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "height-field cells per repeat of fx.terrain_grid",
+              "x-species-presence": "required"
             }
           },
           "required": [
             "sink_threshold",
             "sink_height",
             "overlay_specular",
-            "overlay_shininess"
+            "overlay_shininess",
+            "grid_cells_per_repeat"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -1198,6 +1208,15 @@
               "x-species-type": "sim_decimal",
               "x-species-unit": "wu",
               "x-species-presence": "required"
+            },
+            "fade_rate": {
+              "type": "number",
+              "description": "rnd.route.fade_rate (RND-352)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "fade per s of presentation frame delta",
+              "x-species-presence": "required"
             }
           },
           "required": [
@@ -1209,7 +1228,8 @@
             "pulse_rate",
             "pulse_phase_step",
             "arrow_size_factor",
-            "preview_rebuild_distance"
+            "preview_rebuild_distance",
+            "fade_rate"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -3942,11 +3962,54 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "selection": {
+          "type": "object",
+          "description": "the mvp.selection.* keys",
+          "properties": {
+            "disc_size_factor": {
+              "type": "number",
+              "description": "mvp.selection.disc_size_factor (MVP-101)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "× the Worker card's half-size",
+              "x-species-presence": "required"
+            },
+            "disc_alpha": {
+              "type": "number",
+              "description": "mvp.selection.disc_alpha (MVP-101)",
+              "minimum": 0,
+              "maximum": 1,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "alpha, 0 to 1",
+              "x-species-presence": "required"
+            },
+            "circle_fade_seconds": {
+              "type": "number",
+              "description": "mvp.selection.circle_fade_seconds (MVP-101)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "s of real time",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "disc_size_factor",
+            "disc_alpha",
+            "circle_fade_seconds"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
         "light",
-        "cursor"
+        "cursor",
+        "selection"
       ],
       "additionalProperties": false,
       "x-species-type": "object",

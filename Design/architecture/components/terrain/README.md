@@ -248,6 +248,8 @@ Table 3.4-A Guide-grid sizes.
 
 **TER-043** (MUST) The terrain sets the scale of the renderer's wire-grid overlay: the stylised grid texture `fx.terrain_grid` is mapped once onto each height-field cell, with the grid coordinates (world *x* ÷ cell size, world *z* ÷ cell size), so its lines do not follow the triangle diagonals of TER-017 (RND-135). Whether the overlay is drawn along the triangle edges instead is DEC-326; the terrain data is the same either way.
 
+> **Amendment 2026-10-21 (owner decision O83, DEC-326 resolved).** The grid texture is mapped once onto every `rnd.terrain.grid_cells_per_repeat` (2) height-field cells, not onto each one: the grid coordinates are divided by that value (RND-135 as amended). The overlay stays the stylised texture, not the triangle edges.
+
 ### 3.7 Data products
 
 **TER-044** (MUST) Generation and the presentation builds produce the data of table 3.7-A, with these lifetimes.
@@ -450,7 +452,7 @@ The vector sets that tests T7 to T13 use are [§7.2](height_field_generation.md#
 | DEC-226 | Resolved (ADR-083) | loading, streaming and the load budget (TER-222, TER-242) |
 | DEC-971 | Resolved (O58) | the reference test machine on which T26 is timed; until it is pinned, T26 reports and does not fail (TER-242) |
 | DEC-324 | Open | the parameter semantics, the method-2 bias and the smooth divisor; unbiased variants in the editor (TER-032, TER-101, TER-106, TER-144) |
-| DEC-326 | Open | the grid overlay's pattern relative to the triangle edges (TER-043) |
+| DEC-326 | Resolved (O83) | the grid overlay's pattern relative to the triangle edges (TER-043) |
 | DEC-113 | Open | the off-map reads that make negative coordinates sea restrict the Abductor wander area (TER-153) |
 | DEC-224 | Resolved (ADR-083) | the numeric environment of the thread that generates (TER-222) |
 | DEC-040 | Open | the inverted style's alpha (TER-041, TER-181) |

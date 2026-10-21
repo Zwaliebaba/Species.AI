@@ -442,6 +442,7 @@ void EffectsLook::EmitCircle(const std::optional<SelectionCircle>& _circle, cons
   }
   // Each step of vfx.emit.step_rate on the unscaled clock emits the circle's control flashes of its radius's size, evenly
   // spaced on it and turning with the real clock, lifted above the terrain; a presentation emitter is not thinned (VFX-213).
+  // ADR-127: a released circle's flashes shrink with its strength as it fades.
   const auto& cursor = m_presentation->ref.ctrl.cursor;
   const double step = 1.0 / std::max(m_presentation->vfx.emit.stepRate, 1.0);
   const auto count = static_cast<std::size_t>(std::max<std::int64_t>(cursor.circleParticles, 0));
@@ -456,7 +457,7 @@ void EffectsLook::EmitCircle(const std::optional<SelectionCircle>& _circle, cons
         _view.realSeconds * cursor.circleSpin + static_cast<double>(n) * 2.0 * std::numbers::pi / static_cast<double>(count);
       Neuron::Vec3 at = _circle->center + Neuron::Vec3{std::cos(angle) * _circle->radius, 0.0, std::sin(angle) * _circle->radius};
       at.y = _field.Height(at.x, at.z) + cursor.circleLift;
-      Emit(ParticleKind::ControlFlash, at, {}, _circle->radius, std::nullopt, _view);
+      Emit(ParticleKind::ControlFlash, at, {}, _circle->radius * std::clamp(_circle->strength, 0.0, 1.0), std::nullopt, _view);
     }
   }
   m_circleCarry = std::clamp(m_circleCarry, 0.0, step);

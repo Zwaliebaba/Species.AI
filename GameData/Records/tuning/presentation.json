@@ -29,7 +29,8 @@
       "sink_threshold": 0.3,
       "sink_height": -10,
       "overlay_specular": 0.5,
-      "overlay_shininess": 40
+      "overlay_shininess": 40,
+      "grid_cells_per_repeat": 2
     },
     "sea": {
       "flat_height": -9,
@@ -148,7 +149,8 @@
       "pulse_rate": 10,
       "pulse_phase_step": 0.7,
       "arrow_size_factor": 2,
-      "preview_rebuild_distance": 1
+      "preview_rebuild_distance": 1,
+      "fade_rate": 0.25
     }
   },
   "ter": {
@@ -449,25 +451,25 @@
       "key": {
         "towards": {
           "x": -0.04,
-          "y": 0.43,
-          "z": 0.9
+          "y": 0.6,
+          "z": 0.8
         },
         "color": {
-          "r": 2.0,
+          "r": 1.2,
           "g": 1.0,
-          "b": 0.4
+          "b": 0.65
         }
       },
       "fill": {
         "towards": {
-          "x": 0.07,
-          "y": 0.35,
-          "z": 0.93
+          "x": 0.6,
+          "y": 0.4,
+          "z": -0.6
         },
         "color": {
-          "r": 1.0,
-          "g": 1.0,
-          "b": 1.0
+          "r": 0.25,
+          "g": 0.25,
+          "b": 0.25
         }
       }
     },
@@ -479,6 +481,11 @@
         "x": 0.113,
         "y": 0.082
       }
+    },
+    "selection": {
+      "disc_size_factor": 0.8,
+      "disc_alpha": 0.35,
+      "circle_fade_seconds": 0.4
     }
   },
   "dbg": {

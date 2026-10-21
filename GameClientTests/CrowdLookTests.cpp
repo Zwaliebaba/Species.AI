@@ -180,6 +180,43 @@ public:
     Assert::AreEqual(0.3f, BatchesOf(batches, "worker_glow").front()->quads.front().color[3], 1e-6f, L"never below 0.3 (at t = 0)");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(RUnit147ASelectedWorkerHasADiscOnTheGround)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-UNIT-147")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-101")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(RUnit147ASelectedWorkerHasADiscOnTheGround)
+  {
+    // ADR-127: marker.team_disc on the terrain under the local team's controlled Worker, in the control glow's colour at
+    // mvp.selection.disc_alpha, 0.8 × its card's half-size; none for another team's, an uncontrolled or a dead Worker.
+    const Neuron::Vec3 ground = Ground();
+    Species::InterpolatedFigure controlled = WorkerAt(10, 0, ground + Neuron::Vec3{0.0, 3.0, 0.0});
+    controlled.state.underControl = true;
+    Species::InterpolatedFigure theirs = WorkerAt(11, 1, ground);
+    theirs.state.underControl = true;
+    Species::InterpolatedFigure dead = WorkerAt(12, 0, ground);
+    dead.state.underControl = true;
+    dead.state.dead = true;
+    const Species::InterpolatedFigure idle = WorkerAt(13, 0, ground);
+    Species::CrowdView view = ViewOf(ground);
+    view.localTeam = std::uint8_t{0};
+    std::vector<Neuron::QuadBatch> batches;
+    Species::AppendSelectionDiscs(std::vector{controlled, theirs, dead, idle}, SeedOneTerrain().field, view, CommittedPresentation(),
+                                  batches);
+    Assert::IsTrue(batches.size() == 1 && batches[0].pass == Neuron::ScenePass::Workers && batches[0].entry == "effect_additive_nodepth" &&
+                     batches[0].texture == static_cast<std::uint16_t>(Species::SceneTexture::TeamDisc) && batches[0].quads.size() == 1,
+                   L"one disc of marker.team_disc in pass 7d");
+    const Neuron::SceneQuad& disc = batches[0].quads[0];
+    Assert::AreEqual(SeedOneTerrain().field.Height(ground.x, ground.z), disc.position.y, 1e-9, L"on the terrain, not at the figure");
+    Assert::IsTrue(disc.orientation == Neuron::QuadOrientation::WorldOriented, L"lying on the ground");
+    const double card = Species::WorkerCardHalfSize(CommittedPresentation(), controlled.id, Neuron::Length(disc.position - view.camera));
+    Assert::AreEqual(0.8 * card, static_cast<double>(disc.halfWidth), 1e-4, L"mvp.selection.disc_size_factor");
+    Assert::AreEqual(0.35f, disc.color[3], 1e-6f, L"mvp.selection.disc_alpha");
+    view.localTeam.reset();
+    batches.clear();
+    Species::AppendSelectionDiscs(std::vector{controlled}, SeedOneTerrain().field, view, CommittedPresentation(), batches);
+    Assert::IsTrue(batches.empty(), L"none while the client commands no team");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(RUnit144AnEdgeOnCardGainsItsSideStrip)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-UNIT-144")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"VFX-118")

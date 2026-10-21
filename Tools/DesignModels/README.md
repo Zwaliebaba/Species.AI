@@ -101,6 +101,31 @@ implementation must meet, not measurements. `check` prints one line per figure (
 and exits with status 1 when any differs; it runs in about 2 s, most of it the latency Monte Carlo. Python 3 with the
 standard library only; no input files besides A1's model.
 
+## M2Economy.py
+
+The economy model of the MVP's milestone M2, written from `Design/implementation/mvp_scope.md` §2.3 and §2.4
+(MVP-020 to MVP-038) and its table 3, on the resource-site layout of `Design/gdd/01_world_and_regions/` (WLD-060,
+WLD-062, WLD-064, WLD-080 to WLD-085, MVP-010). One settlement with no neighbours, stepped one second at a time at the
+session pace under a greedy scripted steward, judged against M2's first exit criterion (a growth step at least every 20
+minutes of play in the first 5 hours, the plateau after 4 to 6 hours, with O81's growth step) and against M3's first
+contact in hour 2 to 3, which the same territory growth times. It is the estimate of the M2 plan §3, written down; M2's
+task T10 measures the same things on the game's libraries.
+
+```
+python3 -I Tools/DesignModels/M2Economy.py              # check: every figure the M2 plan §3 states
+python3 -I Tools/DesignModels/M2Economy.py report       # the site's resource sites, the run every 30 minutes, verdict
+python3 -I Tools/DesignModels/M2Economy.py steps        # every growth step of the run with the gap before it
+python3 -I Tools/DesignModels/M2Economy.py sweep        # O81's levers over their ranges, with a margin
+python3 -I Tools/DesignModels/M2Economy.py variants     # a rule variant outside the levers
+```
+
+Inputs are class `Params`, each field naming its key or requirement; the steward's policy (`dwelling_margin`,
+`build_distance_wu`, `storehouse_spots`) and the plateau's definition are the model's own and are marked so. It leaves
+out walking contention, the port search's draw, pathing round structures, the orbs' drift and every battle, and
+`gather_slowdown` stands in for them: the sweep asks a set to meet the exit as modelled and with every gathering cycle
+1.25 times longer. `check` prints one line per figure and exits with status 1 when any differs; it runs in about 2 s,
+and `sweep` in a few minutes. Python 3 with the standard library only; no input files.
+
 ## Adding a model
 
 The design phase adds its quantitative models here: economy and pacing curves, population and spawn models,

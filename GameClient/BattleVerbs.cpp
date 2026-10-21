@@ -16,13 +16,6 @@ GroundPoint GroundOf(const Neuron::Vec3& _point) noexcept
   return {_point.x, _point.z};
 }
 
-// The drawn position of a figure of the frame.
-std::optional<Neuron::Vec3> DrawnPosition(std::span<const InterpolatedFigure> _figures, StableId _id)
-{
-  const auto found = std::ranges::lower_bound(_figures, _id, {}, &InterpolatedFigure::id);
-  return found != _figures.end() && found->id == _id ? std::optional<Neuron::Vec3>{found->position} : std::nullopt;
-}
-
 } // namespace
 
 BattleVerbs::BattleVerbs(const TuningPresentation& _presentation) noexcept
@@ -33,6 +26,8 @@ BattleVerbs::BattleVerbs(const TuningPresentation& _presentation) noexcept
 void BattleVerbs::Reset() noexcept
 {
   m_circle.reset();
+  m_fadingCircle.reset();
+  m_circleGrown = 0.0;
   m_crowdOrderTick.reset();
   m_controlStateTick.reset();
   m_controlStatePointer.reset();
@@ -152,39 +147,76 @@ void BattleVerbs::Primary(std::uint8_t _team, const VerbFrame& _frame, std::uint
   const auto& select = m_presentation->ref.ctrl.select;
   if (controls.primaryDown)
   {
+    // O82 (ADR-127): the primary press resolves to one meaning, tried in this order.
     if (_frame.leaderUnderPointer.has_value())
     {
-      // Row S1: an own Leader under the pointer is selected, unless it is selected already (R-CTRL-062).
+      // Row S1: an own Leader under the pointer is selected, unless it is selected already (R-CTRL-062); it is no
+      // order's target.
       if (m_selectedLeader != _frame.leaderUnderPointer)
       {
         _commands.emplace_back(SelectCommand{_team, *_frame.leaderUnderPointer});
       }
     }
-    else if (!m_leaderSelected)
+    else if (m_leaderSelected)
+    {
+      // Rows O6 and O7: the selected Leader's order to the pointer ground point, move-only with Shift and straight with
+      // Ctrl (R-CTRL-043); none off the region or while the route cannot be walked (ADR-125).
+      if (_frame.ground.has_value() && !_frame.routeBlocked)
+      {
+        _commands.emplace_back(OrderUnitCommand{_team, controls.straight, controls.moveOnly, GroundOf(*_frame.ground)});
+      }
+    }
+    else if (m_workersSelected)
+    {
+      // Row O1: no circle, a target on the region, a route that can be walked, and the crowd-order interval since the
+      // last (R-CTRL-160).
+      const auto interval = static_cast<std::uint64_t>(std::max<std::int64_t>(m_presentation->ref.ctrl.order.crowdIntervalTicks, 0));
+      if (!m_circle.has_value() && _frame.ground.has_value() && !_frame.routeBlocked &&
+          (!m_crowdOrderTick.has_value() || _tick >= *m_crowdOrderTick + interval))
+      {
+        _commands.emplace_back(OrderWorkersCommand{_team, controls.straight, GroundOf(*_frame.ground)});
+        m_crowdOrderTick = _tick;
+      }
+    }
+    else
     {
       // Rows S1 and S4 on empty ground with nothing selected: one Select of nothing (R-CTRL-048, edge case 1), and the
-      // circle begins when no Workers are selected. With a Leader selected the press is row S2, which has only a sound.
-      const bool workers = m_workersSelected;
+      // circle begins.
       _commands.emplace_back(SelectCommand{_team, 0});
-      if (!workers && !m_circle.has_value() && _frame.ground.has_value())
+      if (!m_circle.has_value() && _frame.ground.has_value())
       {
-        m_circle = SelectionCircle{*_frame.ground, 0.0};
+        m_circle = SelectionCircle{*_frame.ground, 0.0, 1.0};
+        m_fadingCircle.reset();
+        m_circleGrown = 0.0;
       }
     }
   }
   if (controls.primaryHeld && m_circle.has_value())
   {
-    // Row S5 (R-CTRL-156): the circle grows on the real clock, and its selection goes at most once a tick, additive.
-    m_circle->radius = std::min(m_circle->radius + select.circleGrowth * _frame.realStepSeconds, select.circleMaxRadius);
+    // Row S5 (R-CTRL-156) as O82 amends it: the radius is the larger of its growth on the real clock and the farthest
+    // the pointer ground point has been dragged from the centre, up to the limit, and it never shrinks. Its selection
+    // goes at most once a tick, additive.
+    m_circleGrown = std::min(m_circleGrown + select.circleGrowth * _frame.realStepSeconds, select.circleMaxRadius);
+    double radius = std::max(m_circle->radius, m_circleGrown);
+    if (_frame.ground.has_value())
+    {
+      radius = std::max(radius, Neuron::HorizontalDistance(*_frame.ground, m_circle->center));
+    }
+    m_circle->radius = std::min(radius, select.circleMaxRadius);
     if (!m_crowdOrderTick.has_value() || _tick > *m_crowdOrderTick)
     {
       _commands.emplace_back(SelectWorkersCommand{_team, GroundOf(m_circle->center), m_circle->radius});
       m_crowdOrderTick = _tick;
     }
   }
-  if (controls.primaryUp)
+  if (controls.primaryUp && m_circle.has_value())
   {
-    // Row S6 (R-CTRL-157): the circle ends, and the crowd-order time is reset, so an order may follow at once.
+    // Row S6 (R-CTRL-157): the circle ends, and the crowd-order time is reset, so an order may follow at once. ADR-127:
+    // only a release that ends a circle resets it, since the primary press also orders; the circle released fades.
+    if (m_circle->radius > 0.0)
+    {
+      m_fadingCircle = m_circle;
+    }
     m_circle.reset();
     m_crowdOrderTick.reset();
   }
@@ -194,50 +226,43 @@ void BattleVerbs::Primary(std::uint8_t _team, const VerbFrame& _frame, std::uint
   }
 }
 
-void BattleVerbs::Secondary(std::uint8_t _team, const VerbFrame& _frame, std::span<const InterpolatedFigure> _figures, std::uint64_t _tick,
-                            std::vector<BattleCommand>& _commands)
+void BattleVerbs::Secondary(std::uint8_t _team, const VerbFrame& _frame, std::vector<BattleCommand>& _commands)
 {
   const VerbControls& controls = _frame.controls;
   if (controls.secondaryDown)
   {
-    // R-CTRL-057: the order target is the position of an own Leader under the pointer, or the pointer ground point.
-    std::optional<Neuron::Vec3> target = _frame.ground;
-    if (_frame.leaderUnderPointer.has_value())
-    {
-      target = DrawnPosition(_figures, *_frame.leaderUnderPointer);
-    }
-    // R-CTRL-050, tried in order; the MVP places nothing, so step 1 never applies.
+    // O82 (ADR-127): the secondary press resolves to one meaning, tried in this order.
     if (_frame.leaderUnderPointer.has_value() && !m_workersSelected && (!m_leaderSelected || m_selectedLeader == _frame.leaderUnderPointer))
     {
-      _commands.emplace_back(ToggleUnitCommand{_team, *_frame.leaderUnderPointer}); // step 2, row O3
+      _commands.emplace_back(ToggleUnitCommand{_team, *_frame.leaderUnderPointer}); // row O3
     }
-    else if (m_leaderSelected)
+    else if (m_leaderSelected || m_workersSelected)
     {
-      // ADR-125: no order while the unavailable cursor shows for a route that cannot be walked.
-      if (target.has_value() && !_frame.routeBlocked)
-      {
-        _commands.emplace_back(OrderUnitCommand{_team, controls.straight, controls.moveOnly, GroundOf(*target)}); // step 3, O6, O7
-      }
-    }
-    else if (m_workersSelected)
-    {
-      // Step 4, row O1: no circle, a target on the region, and the crowd-order interval since the last (R-CTRL-160).
-      const auto interval = static_cast<std::uint64_t>(std::max<std::int64_t>(m_presentation->ref.ctrl.order.crowdIntervalTicks, 0));
-      if (!m_circle.has_value() && target.has_value() && !_frame.routeBlocked &&
-          (!m_crowdOrderTick.has_value() || _tick >= *m_crowdOrderTick + interval))
-      {
-        _commands.emplace_back(OrderWorkersCommand{_team, controls.straight, GroundOf(*target)});
-        m_crowdOrderTick = _tick;
-      }
+      _commands.emplace_back(SelectCommand{_team, 0}); // row S3's effect: the selection cleared, the group released
     }
     else if (m_promotable.has_value())
     {
-      _commands.emplace_back(PromoteWorkerCommand{_team, *m_promotable}); // step 5, row O2
+      _commands.emplace_back(PromoteWorkerCommand{_team, *m_promotable}); // row O2
     }
   }
   if (controls.demote && m_selectedLeader.has_value())
   {
     _commands.emplace_back(DemoteLeaderCommand{_team, *m_selectedLeader}); // row T5 (R-CTRL-044)
+  }
+}
+
+void BattleVerbs::FadeCircle(double _realStepSeconds) noexcept
+{
+  // ADR-127: the released circle's strength falls to 0 over mvp.selection.circle_fade_seconds of real time.
+  if (!m_fadingCircle.has_value())
+  {
+    return;
+  }
+  const double fadeSeconds = m_presentation->mvp.selection.circleFadeSeconds;
+  m_fadingCircle->strength = fadeSeconds > 0.0 ? m_fadingCircle->strength - _realStepSeconds / fadeSeconds : 0.0;
+  if (m_fadingCircle->strength <= 0.0)
+  {
+    m_fadingCircle.reset();
   }
 }
 
@@ -250,6 +275,7 @@ std::vector<BattleCommand> BattleVerbs::Update(const VerbFrame& _frame, std::opt
   {
     // O77: a client that commands no team, or holds no state yet, has no verbs.
     m_circle.reset();
+    m_fadingCircle.reset();
     m_promotable.reset();
     return commands;
   }
@@ -268,8 +294,9 @@ std::vector<BattleCommand> BattleVerbs::Update(const VerbFrame& _frame, std::opt
     }
   }
   m_promotable = FindPromotable(*_team, _frame, _figures);
+  FadeCircle(_frame.realStepSeconds);
   Primary(*_team, _frame, tick, commands);
-  Secondary(*_team, _frame, _figures, tick, commands);
+  Secondary(*_team, _frame, commands);
   // R-SIM-438, ADR-124: the pointer, which only a selected Leader reads (R-UNIT-168), at most once a period and when it
   // moved.
   const auto period = static_cast<std::uint64_t>(std::max<std::int64_t>(m_presentation->ref.sim.command.controlStatePeriod, 1));

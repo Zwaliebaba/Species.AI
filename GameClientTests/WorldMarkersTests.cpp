@@ -10,6 +10,7 @@
 
 #include <cmath>
 #include <numbers>
+#include <optional>
 #include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -196,6 +197,25 @@ public:
     const std::vector<Neuron::OverlayQuad> workers = Species::CursorBadge(false, true, OWN, {100, 100}, TARGET, CommittedPresentation());
     Assert::IsTrue(workers.size() == 3 && workers[2].texture == static_cast<std::uint16_t>(Species::SceneTexture::IconWorkers),
                    L"selected Workers: icon.power.workers");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(RCtrl366TheBadgeCountsTheSelectedWorkers)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-366")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-100")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(RCtrl366TheBadgeCountsTheSelectedWorkers)
+  {
+    // ADR-127: the count's cell starts at the right edge of the badge's shadow, level with the badge's centre, in physical
+    // pixels; none with no badge or no Worker.
+    const std::vector<Neuron::OverlayQuad> badge = Species::CursorBadge(false, true, OWN, {100, 100}, TARGET, CommittedPresentation());
+    const std::optional<Neuron::OverlayLine> count = Species::BadgeCount(badge, 18);
+    Assert::IsTrue(count.has_value(), L"a count");
+    const Neuron::OverlayLine line = count.value_or(Neuron::OverlayLine{});
+    Assert::IsTrue(line.text == "18" && line.corner == Neuron::OverlayCorner::PixelLeftMiddle, L"18, anchored");
+    Assert::AreEqual(badge[0].centerX + badge[0].halfSize, line.insetX, 1e-4f, L"at the shadow's right edge");
+    Assert::AreEqual(badge[0].centerY, line.insetY, 1e-4f, L"level with the badge");
+    Assert::IsFalse(Species::BadgeCount(badge, 0).has_value(), L"none for no Worker");
+    Assert::IsFalse(Species::BadgeCount({}, 5).has_value(), L"none without a badge");
   }
 };
 

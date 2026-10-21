@@ -83,6 +83,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-031** (MUST) Gathering is a Worker task of its own task search (R-UNIT-087 to R-UNIT-097, extended): a Worker whose settlement priority is gathering looks for a free gathering port at a resource site inside its territory, or at the central resource site while its settlement holds it, within `ref.unit.worker.port_search_range`; it walks there, mans the port for `mvp.gather.port_ticks` (100 ticks), picks up a load of `mvp.gather.load_ru` (1 ru), carries it visibly to the nearest drop-off point (its Wellspring or a storehouse) and returns. A full store refuses the load and the Worker waits at the drop-off point.
 
+> **Amendment 2026-10-21 (O84).** The gathering search is not bounded by `ref.unit.worker.port_search_range`: a gathering Worker takes the nearest free gathering port anywhere in its territory, or at the central resource site while its settlement holds it, because the nearest resource sites lie 350 wu from the Wellspring (WLD-082). The 100 wu stays the range of the idle Worker's port search (R-UNIT-090).
+
 **MVP-032** (MUST) The steward places a structure in its territory, outside the core's centre ring that keeps the Wellspring's ports clear, on ground whose slope the walkability rules allow (R-SIM-335 to R-SIM-338), not overlapping another structure, a resource site or a port. Placing pays its cost from the stores at once and queues a construction site; the queue holds at most `mvp.construction.queue_max` (8) sites, which are built in order.
 
 **MVP-033** (MUST) Construction is a Worker task of the task search: a Worker whose priority is construction mans one of the ports of the first queued construction site (`mvp.construction.ports_dwelling` (6) on a dwelling, `mvp.construction.ports_storehouse` (4) on a storehouse, `mvp.construction.ports_turret` (4) on a turret), and the site completes when its Workers have given `mvp.construction.work_per_ru` (1 Worker-second per resource unit of its cost). The structure rises visibly as it progresses (MVP-083).
@@ -235,6 +237,8 @@ The MVP builds only one region and one steward, but it keeps the seams that are 
 
 **MVP-101** (MUST) The steward's controls are those of the reference where the reference has them: the player camera (R-CTRL-450 to R-CTRL-497) for the settlement view, selection, and Leader orders and formations (R-UNIT-169 to R-UNIT-187). The MVP adds: placing a structure, setting the three priorities, promoting a Worker and forming an expedition, declaring an attack (with its cost and whether it is unprovoked shown before it is confirmed), withdrawing an expedition, making and withdrawing a claim, and sending tribute. Every one of them is a command of MVP-094.
 
+> **Amendment 2026-10-21 (O82; M1 task T17c, [ADR-127](../ADR/ADR-127-left-button-verbs-and-order-feedback-at-m1.md)).** The buttons are Species' own, not the reference's: the primary button selects and gives the orders of the crowd and of the selected Leader, and the secondary button releases a selection, toggles a Leader and promotes a Worker (R-CTRL-041, R-CTRL-042 and R-CTRL-050 as amended). The selection circle takes the pointer's drag as well as its growth (R-CTRL-156), and the badge near the pointer counts the selected Workers (R-CTRL-366).
+
 **MVP-102** (MUST) The HUD shows: the stores and their capacity, the Workers and the population limit, growth and the cause when it stops (MVP-035, MVP-037), the priorities, the construction bar and queue, a relations panel (each Cladan's anger toward the steward's settlement, every grievance with its cause, weight and fade, every claim), notifications (contact, claims, the warning with its countdown, battle start and end, structures completed), the battle result, the renown standing (MVP-062), the time left in the run, the away report (MVP-074) and the epilogue (MVP-063). Its icons, panels, fonts and strings are the UI rows of the [MVP assets](mvp_assets.md).
 
 **MVP-103** (MUST) The front end of the MVP is one page: continue a world, start a new run (pace, seed, site), open the epilogue of an ended world, options for display and volume, and quit.
@@ -254,6 +258,8 @@ The MVP builds only one region and one steward, but it keeps the seams that are 
 > **Amendment 2026-10-21 (O80).** The front end of MVP-103 grows with the milestones: M2 builds its page with continue, a new world (seed and site), the display and volume options and quit; M3 adds the run and the epilogue of an ended world; M4 adds the choice of pace. M2 also builds the server's statistics of MVP-064 for one settlement (its strength, its Worker count and every growth step), because the evidence of M2's exit is measured with them; M3 adds the battles, claims and grievances. The plans of the two milestones are the [M2 plan](m2_plan.md) and the [M3 plan](m3_plan.md).
 
 > **Amendment 2026-10-21 (O81).** M2 also builds the seen layer of MVP-016 on the server, computed once per update (MVP-097), and draws MVP-084's fog from it. Its readers, the AI settlements (MVP-058) and the replication narrowed to it, stay M3's.
+
+> **Amendment 2026-10-21 (O84).** M2's exit is judged on the growth scene's own measurement (the [M2 plan](m2_plan.md) §5). Where that measurement cannot hold all three of a growth step at least every 20 minutes of play, a plateau after 4 to 6 hours and M3's first contact in hour 2 to 3, the plateau window yields first: the step and the contact hold, and the plateau may fall outside hours 4 to 6, though within the run. A plateau at `mvp.settlement.population_max` meets the exit.
 
 Each milestone is a series of pull requests that cite the MVP requirements they implement, as AGENTS.md §6 asks for requirement ids; a milestone's exit is recorded in its milestone record in `playtests/` (§6.3).
 
@@ -358,18 +364,23 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.persist.snapshots_kept` | 3 | snapshots | — | provisional | MVP-075 | — |
 | `mvp.client.fps_target` | 60 | frames per second | tick | provisional | MVP-085 | — |
 | `mvp.client.figures_max` | 1500 | figures on screen | — | provisional | MVP-085 | Four settlements at plateau plus a battle |
-| `mvp.light.key.towards` | −0.04, 0.43, 0.90 | direction towards the light, normalised at load | — | provisional | MVP-081 | The key light of the one lighting preset (O75; DEC-562 stays Open): warm, from behind the development view; the owner tunes it after M1 task T13's run |
-| `mvp.light.key.color` | 2.0, 1.0, 0.4 | RGB multiplier | — | provisional | MVP-081 | — |
-| `mvp.light.fill.towards` | 0.07, 0.35, 0.93 | direction towards the light, normalised at load | — | provisional | MVP-081 | The fill light (O75), a neutral grey in the pattern of WLD-183 |
-| `mvp.light.fill.color` | 1.0, 1.0, 1.0 | RGB multiplier | — | provisional | MVP-081 | — |
+| `mvp.light.key.towards` | −0.04, 0.60, 0.80 | direction towards the light, normalised at load | — | provisional | MVP-081 | The key light of the one lighting preset (O75; DEC-562 stays Open): warm, from behind the development view; the owner tunes it after M1 task T13's run. Raised from 0.43 after the T17 run (ADR-115 amendment): the low key lit the terrain's facets at a grazing angle in stair-step blocks |
+| `mvp.light.key.color` | 1.2, 1.0, 0.65 | RGB multiplier | — | provisional | MVP-081 | Softened from 2.0, 1.0, 0.4 after the T17 run, still warm (WLD-183): the strong key turned the ramp's pale shore rows orange and the valley olive |
+| `mvp.light.fill.towards` | 0.60, 0.40, −0.60 | direction towards the light, normalised at load | — | provisional | MVP-081 | The fill light (O75), a neutral grey in the pattern of WLD-183, from the side opposite the key, where 0.07, 0.35, 0.93 doubled the key |
+| `mvp.light.fill.color` | 0.25, 0.25, 0.25 | RGB multiplier | — | provisional | MVP-081 | Dimmed from 1.0, 1.0, 1.0, so the ground sits darker than the crowds |
 | `mvp.cursor.world_size` | 48 | physical px | — | provisional | MVP-101 | The pointer `cursor.world` (O76, ADR-119), in place of R-CTRL-350's 35 px for the owner's 128 px art; the owner tunes it at M1 task T14's run |
 | `mvp.cursor.highlight_size` | 48 | physical px | — | provisional | MVP-101 | The pointer over a selectable Leader, `cursor.highlight` (O76) |
 | `mvp.cursor.unavailable_size` | 60 | physical px | — | provisional | MVP-101 | `cursor.unavailable` (O76), R-CTRL-350's size |
 | `mvp.cursor.world_hotspot` | 0.113, 0.082 | fraction of the size (x, y) | — | provisional | MVP-101 | The tip of the owner's arrow, in place of `ref.ctrl.cursor.set.world_hotspot` (0.055, 0.070), which misses it by 7 texels (ADR-119) |
+| `mvp.selection.disc_size_factor` | 0.8 | × the Worker card's half-size | — | provisional | MVP-101 | The disc on the ground under a selected Worker (O82, ADR-127) |
+| `mvp.selection.disc_alpha` | 0.35 | alpha, 0 to 1 | — | provisional | MVP-101 | The disc's strength in the control glow's colour |
+| `mvp.selection.circle_fade_seconds` | 0.4 | s of real time | — | provisional | MVP-101 | The released selection circle's fade |
 
 *Table 3 — The tuning values of the MVP.*
 
 The first guesses were set against two targets, which M2 and Playtest 1 check. One is a plateau near 280 Workers on a settlement's own 11 units: about 44 gatherers bring about 2,640 ru per hour of play, which pays the upkeep of about 280 Workers and 14 structures. The other is a first contact in hour 2 to 3, with 4 to 10 battles involving the steward's settlement in a run.
+
+> **Amendment 2026-10-21 (O84).** The economy model of the [M2 plan](m2_plan.md) §3 (`Tools/DesignModels/M2Economy.py`) finds the first target unmet as stated: with storehouses near the outer resource sites, 44 gatherers bring about 4,000 ru per hour, twice the upkeep, so the plateau is `mvp.settlement.population_max` and not where income and upkeep meet. The owner accepts a plateau at the cap for the MVP; an upkeep that brings the plateau below it is B2's.
 
 ## 5 What the MVP does not build, narrows or defers
 

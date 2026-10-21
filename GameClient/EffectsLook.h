@@ -81,7 +81,8 @@ public:
               const EffectsView& _view);
   // O75, ADR-123: each Worker that fired within vfx.worker.recoil_time is drawn pushed back from its shot.
   void ApplyRecoil(std::vector<InterpolatedFigure>& _figures, const EffectsView& _view);
-  // R-CTRL-370, VFX-220 row 1 (ADR-124): while the selection circle is held, its control flashes at each fixed effect step.
+  // R-CTRL-370, VFX-220 row 1 (ADR-124): while the selection circle is held, its control flashes at each fixed effect step;
+  // ADR-127: and while a released circle fades.
   void EmitCircle(const std::optional<SelectionCircle>& _circle, const Neuron::TerrainField& _field, const EffectsView& _view);
   // The frame's draws, after Update; _effects are the replica's effect objects at the frame's fraction.
   void Draw(std::span<const InterpolatedEffect> _effects, const Neuron::TerrainField& _field, const EffectsView& _view,

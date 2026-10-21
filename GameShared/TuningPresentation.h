@@ -95,6 +95,9 @@ struct TuningPresentation
 
       // rnd.terrain.overlay_shininess, in exponent
       double overlayShininess = 0.0;
+
+      // rnd.terrain.grid_cells_per_repeat, in height-field cells per repeat of fx.terrain_grid
+      double gridCellsPerRepeat = 0.0;
     };
 
     struct Sea
@@ -401,6 +404,9 @@ struct TuningPresentation
 
       // rnd.route.preview_rebuild_distance, in wu
       double previewRebuildDistance = 0.0;
+
+      // rnd.route.fade_rate, in fade per s of presentation frame delta
+      double fadeRate = 0.0;
     };
 
     Frame frame;
@@ -1299,8 +1305,21 @@ struct TuningPresentation
       WorldHotspot worldHotspot;
     };
 
+    struct Selection
+    {
+      // mvp.selection.disc_size_factor, in × the Worker card's half-size
+      double discSizeFactor = 0.0;
+
+      // mvp.selection.disc_alpha, in alpha, 0 to 1
+      double discAlpha = 0.0;
+
+      // mvp.selection.circle_fade_seconds, in s of real time
+      double circleFadeSeconds = 0.0;
+    };
+
     Light light;
     Cursor cursor;
+    Selection selection;
   };
 
   struct Dbg
@@ -2104,6 +2123,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.sinkHeight = _reader.Decimal(_object, "sink_height", {}, Neuron::SimPrecision::Binary64);
   _out.overlaySpecular = _reader.Decimal(_object, "overlay_specular", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.overlayShininess = _reader.Decimal(_object, "overlay_shininess", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.gridCellsPerRepeat = _reader.Decimal(_object, "grid_cells_per_repeat", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -2297,6 +2317,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.pulsePhaseStep = _reader.Decimal(_object, "pulse_phase_step", {}, Neuron::SimPrecision::Binary64);
   _out.arrowSizeFactor = _reader.Decimal(_object, "arrow_size_factor", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.previewRebuildDistance = _reader.Decimal(_object, "preview_rebuild_distance", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.fadeRate = _reader.Decimal(_object, "fade_rate", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -2896,10 +2917,19 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Mvp::Selection& _out)
+{
+  _out.discSizeFactor = _reader.Decimal(_object, "disc_size_factor", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.discAlpha = _reader.Decimal(_object, "disc_alpha", {.minimum = 0.0, .maximum = 1.0}, Neuron::SimPrecision::Binary64);
+  _out.circleFadeSeconds = _reader.Decimal(_object, "circle_fade_seconds", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Mvp& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "light"), _out.light);
   ReadFields(_reader, _reader.Object(_object, "cursor"), _out.cursor);
+  ReadFields(_reader, _reader.Object(_object, "selection"), _out.selection);
   _reader.Close(_object);
 }
 
@@ -3559,6 +3589,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::
   _writer.F64(_in.sinkHeight);
   _writer.F64(_in.overlaySpecular);
   _writer.F64(_in.overlayShininess);
+  _writer.F64(_in.gridCellsPerRepeat);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Rnd::Terrain& _out)
@@ -3567,6 +3598,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   _out.sinkHeight = _reader.F64();
   _out.overlaySpecular = _reader.F64();
   _out.overlayShininess = _reader.F64();
+  _out.gridCellsPerRepeat = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Rnd::Sea& _in)
@@ -3896,6 +3928,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::
   _writer.F64(_in.pulsePhaseStep);
   _writer.F64(_in.arrowSizeFactor);
   _writer.F64(_in.previewRebuildDistance);
+  _writer.F64(_in.fadeRate);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Rnd::Route& _out)
@@ -3909,6 +3942,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   _out.pulsePhaseStep = _reader.F64();
   _out.arrowSizeFactor = _reader.F64();
   _out.previewRebuildDistance = _reader.F64();
+  _out.fadeRate = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Rnd& _in)
@@ -4963,16 +4997,32 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   ReadCookedFields(_reader, _out.worldHotspot);
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Mvp::Selection& _in)
+{
+  _writer.F64(_in.discSizeFactor);
+  _writer.F64(_in.discAlpha);
+  _writer.F64(_in.circleFadeSeconds);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Mvp::Selection& _out)
+{
+  _out.discSizeFactor = _reader.F64();
+  _out.discAlpha = _reader.F64();
+  _out.circleFadeSeconds = _reader.F64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Mvp& _in)
 {
   CookFields(_writer, _in.light);
   CookFields(_writer, _in.cursor);
+  CookFields(_writer, _in.selection);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Mvp& _out)
 {
   ReadCookedFields(_reader, _out.light);
   ReadCookedFields(_reader, _out.cursor);
+  ReadCookedFields(_reader, _out.selection);
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Dbg::Overlay::WarningRgb& _in)

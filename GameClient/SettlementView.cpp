@@ -134,8 +134,9 @@ SettlementView::SettlementView(const Desc& _desc)
 
 void SettlementView::UpdatePreview(const VerbFrame& _frame, std::span<const InterpolatedFigure> _figures, std::uint8_t _team)
 {
-  // R-CTRL-057: the order target is the position of an own Leader under the pointer, or the pointer ground point.
-  std::optional<Neuron::Vec3> to = _frame.ground;
+  // O82 (ADR-127): the order target is the pointer ground point; a primary press on an own Leader under the pointer
+  // selects it, so it shows no route.
+  const std::optional<Neuron::Vec3> to = _frame.leaderUnderPointer.has_value() ? std::nullopt : _frame.ground;
   std::optional<Neuron::Vec3> from;
   Neuron::Vec3 sum{};
   std::size_t workers = 0;
@@ -144,10 +145,6 @@ void SettlementView::UpdatePreview(const VerbFrame& _frame, std::span<const Inte
     if (figure.state.team != _team || figure.state.dead)
     {
       continue;
-    }
-    if (figure.id == _frame.leaderUnderPointer)
-    {
-      to = figure.position;
     }
     if (figure.state.kind == FigureKind::Leader && figure.id == m_verbs.SelectedLeader())
     {
@@ -159,6 +156,7 @@ void SettlementView::UpdatePreview(const VerbFrame& _frame, std::span<const Inte
       ++workers;
     }
   }
+  m_selectedWorkers = workers;
   if (m_verbs.LeaderSelected())
   {
     // R-UNIT-170: a press nearer the Leader than the toggle radius forms it up, and walks no route.
@@ -192,7 +190,7 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
     m_terrain = terrain;
     m_camera.LeaveWorld();
     m_verbs.Reset();
-    m_preview.Clear();
+    m_preview.Reset();
     m_markers.Clear();
 #if ENGINE_DEVELOPMENT
     m_scriptStep = 0;
@@ -278,12 +276,12 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
   {
     VerbControls& controls = verbs.controls;
     controls.primaryDown = _router.Query(ActionOf(GameAction::SelectPick)) || _router.Query(ActionOf(GameAction::SelectPickIdle)) ||
-                           _router.Query(ActionOf(GameAction::SelectCircleBegin));
+                           _router.Query(ActionOf(GameAction::SelectCircleBegin)) || _router.Query(ActionOf(GameAction::OrderCrowd)) ||
+                           _router.Query(ActionOf(GameAction::OrderSpecial));
     controls.primaryHeld = _router.Query(ActionOf(GameAction::SelectCircleGrow));
     controls.primaryUp = _router.Query(ActionOf(GameAction::SelectCircleEnd));
     controls.clear = _router.Query(ActionOf(GameAction::SelectClear));
-    controls.secondaryDown = _router.Query(ActionOf(GameAction::OrderCrowd)) || _router.Query(ActionOf(GameAction::OrderPromote)) ||
-                             _router.Query(ActionOf(GameAction::OrderSpecial));
+    controls.secondaryDown = _router.Query(ActionOf(GameAction::OrderPromote));
     controls.straight = _router.Query(ActionOf(GameAction::OrderStraightRoute));
     controls.moveOnly = _router.Query(ActionOf(GameAction::OrderMoveModifier));
     controls.demote = _router.Query(ActionOf(GameAction::OrderDemote));
@@ -295,6 +293,7 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
     ScriptVerbs(verbs, figures, *verbTeam);
   }
 #endif
+  bool ordered = false;
   for (const BattleCommand& command : m_verbs.Update(verbs, verbTeam, _session.Replica(), figures))
   {
     const std::optional<std::uint64_t> sequence =
@@ -302,13 +301,24 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
     if (sequence.has_value())
     {
       m_verbs.Sent(*sequence, command);
+      ordered = ordered || std::holds_alternative<OrderWorkersCommand>(command) || std::holds_alternative<OrderUnitCommand>(command);
     }
   }
-  // M1 task T17b (ADR-125): the route preview, the world markers and the badge near the pointer.
+  // ADR-127 (RND-351): an order sent keeps the route its preview showed, which then fades.
+  if (ordered)
+  {
+    m_preview.Commit();
+  }
+  m_preview.Advance(_dtSeconds);
+  // M1 task T17b (ADR-125): the route preview, the world markers and the badge near the pointer, with its count
+  // (ADR-127).
   m_badge.clear();
+  m_badgeText.clear();
+  m_selectedWorkers = 0;
   if (verbTeam.has_value())
   {
-    UpdatePreview(verbs, figures, *verbTeam);
+    const std::uint8_t team = verbTeam.value_or(0);
+    UpdatePreview(verbs, figures, team);
     MarkerView markers;
     markers.frame = m_camera.View(_view);
     markers.camera = m_camera.Pose().position;
@@ -317,11 +327,16 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
     markers.pointer = m_pointer;
     markers.realStepSeconds = _dtSeconds;
     m_markers.Update(figures, verbTeam, m_verbs.SelectedLeader(), markers);
-    m_badge = CursorBadge(m_verbs.LeaderSelected(), m_verbs.WorkersSelected(), *verbTeam, m_pointer, _view, *m_desc.presentation);
+    m_badge = CursorBadge(m_verbs.LeaderSelected(), m_verbs.WorkersSelected(), team, m_pointer, _view, *m_desc.presentation);
+    if (const std::optional<Neuron::OverlayLine> count =
+          BadgeCount(m_badge, !m_verbs.LeaderSelected() && m_verbs.WorkersSelected() ? m_selectedWorkers : 0))
+    {
+      m_badgeText.push_back(*count);
+    }
   }
   else
   {
-    m_preview.Clear();
+    m_preview.Reset();
     m_markers.Clear();
   }
   // ADR-119, O76: unavailable off the region and, from T17, while the preview finds no walkable route; the highlight
@@ -345,7 +360,8 @@ void SettlementView::ScriptVerbs(VerbFrame& _frame, std::span<const Interpolated
 {
   // ADR-125: a render check (ADR-117) draws what the verbs draw. It promotes a Worker, orders the new Leader towards the
   // region's centre, then holds a selection circle over a Worker with the ground point beyond it, so that the order
-  // trail, the flag pointer, the route preview and the badge reach the GPU on the WARP adapter.
+  // trail, the flag pointer, the route preview and the badge reach the GPU on the WARP adapter; with ADR-127, the
+  // ordered route, the selection discs and the badge's count too.
   _frame.controls = {};
   _frame.leaderUnderPointer.reset();
   const InterpolatedFigure* worker = nullptr;
@@ -378,8 +394,8 @@ void SettlementView::ScriptVerbs(VerbFrame& _frame, std::span<const Interpolated
   }
   else if (m_scriptStep == 1 && leader != nullptr)
   {
-    _frame.ground = beyond(leader->position); // a waypoint order
-    _frame.controls.secondaryDown = true;
+    _frame.ground = beyond(leader->position); // a waypoint order, on the primary button (O82)
+    _frame.controls.primaryDown = true;
     m_scriptStep = 2;
   }
   else if (m_scriptStep == 2 && worker != nullptr && !m_verbs.LeaderSelected())

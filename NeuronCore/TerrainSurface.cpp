@@ -109,6 +109,7 @@ TerrainSurface BuildTerrainSurface(const TerrainField& _field, const CpuImage& _
   }
 
   const std::int64_t chunkCells = std::max<std::int64_t>(1, std::llround(_look.chunkSide / cell));
+  const double gridRepeat = _look.gridCellsPerRepeat > 0.0 ? _look.gridCellsPerRepeat : 1.0;
   const std::int64_t chunksX = (columns + chunkCells - 1) / chunkCells;
   const std::int64_t chunksZ = (rows + chunkCells - 1) / chunkCells;
   std::vector<TerrainChunk> chunks(static_cast<std::size_t>(chunksX * chunksZ));
@@ -167,10 +168,12 @@ TerrainSurface BuildTerrainSurface(const TerrainField& _field, const CpuImage& _
         return Vec3{chunk.origin.x + static_cast<double>(_corner[0]), static_cast<double>(_corner[1]),
                     chunk.origin.z + static_cast<double>(_corner[2])};
       };
+      // RND-135 as O83 amends it: fx.terrain_grid repeats once every gridCellsPerRepeat cells.
       const auto gridOf = [&](const Float3& _corner)
       {
-        return std::array<float, 2>{static_cast<float>((chunk.origin.x - originX) / cell + static_cast<double>(_corner[0]) / cell),
-                                    static_cast<float>((chunk.origin.z - originZ) / cell + static_cast<double>(_corner[2]) / cell)};
+        return std::array<float, 2>{
+          static_cast<float>(((chunk.origin.x - originX) / cell + static_cast<double>(_corner[0]) / cell) / gridRepeat),
+          static_cast<float>(((chunk.origin.z - originZ) / cell + static_cast<double>(_corner[2]) / cell) / gridRepeat)};
       };
 
       const Float3 firstNormal = Normalize(Cross(Subtract(q1, p2), Subtract(p1, p2)));

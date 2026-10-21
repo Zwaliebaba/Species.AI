@@ -79,6 +79,7 @@ private:
   Neuron::Nanoseconds m_start{};
   std::optional<double> m_firstDisplayTick;
   std::shared_ptr<const Neuron::FontAsset> m_developmentFace;   // a Debug build's overlay face; none in Release
+  std::shared_ptr<const Neuron::FontAsset> m_gameFace;          // ADR-127: GameFont, for the badge's count; none when missing
   std::shared_ptr<const Neuron::CursorImages> m_cursorImages;   // ADR-119; none when the content lacks one
   std::shared_ptr<const Neuron::SceneTextures> m_sceneTextures; // ADR-121; none when the content lacks one
   std::shared_ptr<const Neuron::SceneMeshes> m_sceneMeshes;     // ADR-122; none when the content lacks one

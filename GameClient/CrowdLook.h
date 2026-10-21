@@ -89,6 +89,12 @@ struct CrowdView
 // card texture. _field gives the terrain's height and normal.
 void AppendWorkerBatches(std::span<const InterpolatedFigure> _figures, const Neuron::TerrainField& _field, const CrowdView& _view,
                          const TuningPresentation& _presentation, const TuningMvp& _tuning, std::vector<Neuron::QuadBatch>& _batches);
+// ADR-127: a disc of marker.team_disc on the ground under each of the local team's living Workers under control, in
+// vfx.worker.control_glow_color at mvp.selection.disc_alpha, of mvp.selection.disc_size_factor × its card's half-size,
+// in pass 7d before the Worker layers and with no depth test, so that the cards drawn after cover it and no other card
+// hides it.
+void AppendSelectionDiscs(std::span<const InterpolatedFigure> _figures, const Neuron::TerrainField& _field, const CrowdView& _view,
+                          const TuningPresentation& _presentation, std::vector<Neuron::QuadBatch>& _batches);
 
 // R-UNIT-330, R-UNIT-331, VFX-225, O77: the Essence orbs of pass 11, an inner and an outer quad of fx.glow_round each.
 void AppendOrbBatches(std::span<const InterpolatedOrb> _orbs, const TuningPresentation& _presentation,
