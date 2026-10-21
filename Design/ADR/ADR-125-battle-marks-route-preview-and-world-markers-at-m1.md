@@ -70,7 +70,7 @@ Chosen option: 1, because every T17 mark is drawn without the in-shader depth ma
   - **The colours.** The team's colour while walkable, otherwise `rnd.route.blocked_color`, plus `rnd.route.gray_offset` and the pulse of RND-353 on the real clock.
   - **The arrows.** One `marker.route_arrow` at each leg's middle, in the colour of the spot there. Its half-size is `rnd.route.arrow_size_factor` (2, provisional) × the spot half-size there, and a leg shorter than the arrow gets none. Its art points right, and it is turned along the leg on the screen.
   - **The arrows' entry.** The new entry `route_arrow`: `route_line`'s state with the linearly filtered mask shader, since the arrow is magnified.
-  - **No route.** A preview that is not walkable shows the unavailable cursor (O76), which then outranks the highlight.
+  - **No route.** A preview that is not walkable shows the unavailable cursor (O76), which then outranks the highlight. As off the region (ADR-124), a secondary press then orders neither the crowd nor the selected Leader; a toggle still goes. The verbs read the last frame's preview.
 * **The world markers** (R-CTRL-380 to R-CTRL-388):
   - **Which.** One Leader marker for each living Leader of the local team, made when the Leader is first seen rather than at its promotion, so a Leader present at the join has one. It is removed with its Leader.
   - **Tracking and order.** It tracks the Leader lifted by `ref.ctrl.marker.lift`, smoothed by min(1, `ref.ctrl.marker.smoothing` × the real step). One bubble-sort pass a frame puts the farthest first; a marker younger than `ref.ctrl.marker.new_age` takes its age as its key.
@@ -111,6 +111,7 @@ Chosen option: 1, because every T17 mark is drawn without the in-shader depth ma
   - the trail mark's size, fade, lowering and heading (`EffectsLookTests`, R-UNIT-186);
   - the pointer after the cloth, its size, its turn and its compiled-in bias (`LeaderLookTests`, VFX-141, VFX-014);
   - the preview's spots, colours, pulse and arrows, a route into the sea not walkable, and its rebuilding (`RoutePreviewTests`);
+  - the orders held back while the route cannot be walked (`BattleVerbsTests`);
   - the markers' making and removal, the edge placement, the layers and sizes, the marker under the pointer, the seen rule and the drawing order (`WorldMarkersTests`);
   - the badge (`WorldMarkersTests`, R-CTRL-366).
 * CI's render check with the scripted verbs (`Build\CheckWorldFrame.py`).

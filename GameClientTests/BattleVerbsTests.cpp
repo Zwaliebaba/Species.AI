@@ -271,6 +271,29 @@ public:
     Assert::IsTrue(CommandsOf<Species::OrderWorkersCommand>(pump.Frame(frame)).size() == 1, L"after a circle's end, at once");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr125ARouteThatCannotBeWalkedHoldsTheOrdersBack)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"RND-354")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-366")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr125ARouteThatCannotBeWalkedHoldsTheOrdersBack)
+  {
+    // While the unavailable cursor shows for the preview, neither the crowd nor the selected Leader is ordered; a toggle
+    // of the Leader under the pointer still goes.
+    Pump pump;
+    Species::VerbFrame frame = FrameAt(GROUND + Neuron::Vec3{200.0, 0.0, 0.0});
+    frame.controls.secondaryDown = true;
+    frame.routeBlocked = true;
+    Fill(pump.replica, 10, {{1, Species::FigureKind::Worker, GROUND, false, true}});
+    Assert::IsTrue(CommandsOf<Species::OrderWorkersCommand>(pump.Frame(frame)).empty(), L"no crowd order");
+    Fill(pump.replica, 11, {{2, Species::FigureKind::Leader, GROUND, true}});
+    Assert::IsTrue(CommandsOf<Species::OrderUnitCommand>(pump.Frame(frame)).empty(), L"no order to the selected Leader");
+    frame.leaderUnderPointer = IdOf(2);
+    Assert::IsTrue(CommandsOf<Species::ToggleUnitCommand>(pump.Frame(frame)).size() == 1, L"the toggle still goes");
+    frame.leaderUnderPointer.reset();
+    frame.routeBlocked = false;
+    Assert::IsTrue(CommandsOf<Species::OrderUnitCommand>(pump.Frame(frame)).size() == 1, L"and with a walkable route, the order");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(RCtrl042APromotionNamesTheNearestSelectableWorker)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-042")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-050")

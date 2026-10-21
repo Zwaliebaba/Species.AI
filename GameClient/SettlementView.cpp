@@ -266,8 +266,10 @@ void SettlementView::Update(ClientSession& _session, Neuron::InputRouter& _route
   }
   VerbFrame verbs;
   verbs.realStepSeconds = _dtSeconds;
-  // R-CTRL-387: the marker under the pointer at the end of the last frame stands for its Leader.
+  // R-CTRL-387: the marker under the pointer at the end of the last frame stands for its Leader; and the last frame's
+  // preview that found no walkable route holds the orders back, as its unavailable cursor shows (ADR-125).
   verbs.leaderUnderPointer = m_hovered.has_value() ? m_hovered : m_markers.UnderPointer();
+  verbs.routeBlocked = m_preview.Shown() && !m_preview.Walkable();
   if (onRegion)
   {
     verbs.ground = ground->position;
