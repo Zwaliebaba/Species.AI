@@ -3,6 +3,8 @@
 #include "AssetError.h"
 #include "DevelopmentOverlay.h"
 #include "Log.h"
+#include "TuningMvp.h"
+#include "TuningPresentation.h"
 
 #include <algorithm>
 #include <array>

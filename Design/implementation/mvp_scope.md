@@ -35,7 +35,7 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-002** (MUST) The MVP is built in four steps whose content and exit criteria §3 states: M0 foundations, M1 battle sandbox, M2 settlement, M3 neighbours and the run (Playtest 1), and M4 away play (Playtest 2). Each milestone ends with a build the steward can run and play, and no milestone starts before the previous one meets its exit criteria.
 
-> **Amendment 2026-10-21 (O85).** M2's phase A, the headless settlement (tasks T2 to T10 of the [M2 plan](m2_plan.md)), starts before M1 meets its exit criteria, on a pull request of its own stacked on M1's last. Its phase B, which makes the settlement visible and playable, still waits for M1's exit, and the M2 plan stays a Draft until then.
+> **Amendment 2026-10-21 (O86).** M2's phase A, the headless settlement (tasks T2 to T10 of the [M2 plan](m2_plan.md)), starts before M1 meets its exit criteria, on a pull request of its own stacked on M1's last. Its phase B, which makes the settlement visible and playable, still waits for M1's exit, and the M2 plan stays a Draft until then.
 
 **MVP-003** (MUST) Every number of an MVP rule is a tuning value with a stable key in data (MVP-099); the values of §4 are first guesses that the milestones and playtests retune, and a retuned value changes the data and the table, never code.
 

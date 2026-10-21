@@ -1,7 +1,7 @@
 ---
 status: proposed
 date: 2026-10-21
-decision-makers: Species technology lead (M2 task T2), owner (O81, O85)
+decision-makers: Species technology lead (M2 task T2), owner (O81, O86)
 ---
 
 # The mesh kit and the drafted structure recipes
@@ -10,7 +10,7 @@ decision-makers: Species technology lead (M2 task T2), owner (O81, O85)
 
 M2 needs the MVP's structure meshes: the Wellspring, the dwelling, the storehouse, the two resource sites, the turret's mount, head and gun barrel set, the turret round, the shell casing and the port pad, and a collision asset for each collidable one ([MVP assets](../implementation/mvp_assets.md) table 1, MVP-083). The simulation reads the structures' ports from their meshes' sockets (AST-043), so the port positions have to be exact and repeatable.
 
-O81 has a parametric low-poly mesh kit make these meshes from recipes, rather than the owner drawing them in a modelling tool. O85 has the implementing session draft the recipes, and the owner approve or redesign each silhouette before T2 merges.
+O81 has a parametric low-poly mesh kit make these meshes from recipes, rather than the owner drawing them in a modelling tool. O86 has the implementing session draft the recipes, and the owner approve or redesign each silhouette before T2 merges.
 
 ## Decision Drivers
 
@@ -73,7 +73,7 @@ Chosen option: 1. The CMO files stay the authored source that every other mesh i
 * Good, because the content build cooks the kit's files with no special case, and the owner may replace any of them by hand.
 * Bad, because the recipes are code: a silhouette is changed by editing numbers, and seen only once it is drawn (M2's T12) or in a preview.
 * Bad, because the kit's circles are limited to the step counts with closed forms; a ring of 7 or 9 needs a new closed form or a rounding pinned in data.
-* Neutral, because the drafts wait for the owner's approval (O85). A redesign may move ports, which then moves only the simulation data records the content build writes (ADR-129).
+* Neutral, because the drafts wait for the owner's approval (O86). A redesign may move ports, which then moves only the simulation data records the content build writes (ADR-129).
 
 ### Confirmation
 
@@ -101,6 +101,6 @@ Chosen option: 1. The CMO files stay the authored source that every other mesh i
 ## More Information
 
 * Related: [ADR-019](ADR-019-mesh-source-format-and-cooked-meshes.md), [ADR-020](ADR-020-flat-shading-and-team-tint.md), [ADR-021](ADR-021-mesh-socket-schema.md), [ADR-108](ADR-108-content-build-loose-content-and-cooked-formats.md), [ADR-129](ADR-129-simulation-data-records-and-collision-cooker.md).
-* Owner decisions O64, O81, O85; MVP-083; AST-038 to AST-040, AST-043, AST-044; R-BLDG-017, R-BLDG-020, R-BLDG-405, R-BLDG-407.
+* Owner decisions O64, O81, O86; MVP-083; AST-038 to AST-040, AST-043, AST-044; R-BLDG-017, R-BLDG-020, R-BLDG-405, R-BLDG-407.
 * The code: `Tools/SpeciesMeshKit` (`UnitCircle`, `Shapes`, `MeshModel`, `CmoWriter`, `StructureRecipes`, `TurretRecipes`, `SpeciesMeshKit`) and `Build/CheckMeshKit.py`.
 * Measured on 2026-10-21, with a Linux build of the kit on this session's container: the 18 files total 252,174 bytes of CMO. A Linux build of the content build cooks them, with the rest of `GameData/`, in 0.04 to 0.05 s over three runs of an optimised build. The `--out` of two runs compares equal.

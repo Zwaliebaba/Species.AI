@@ -3,8 +3,6 @@
 #include "LooseContent.h"
 #include "ReplicaTiming.h"
 #include "TerrainField.h"
-#include "TuningMvp.h"
-#include "TuningPresentation.h"
 #include "WorldScene.h"
 
 #include <array>
@@ -16,6 +14,9 @@
 
 namespace Species
 {
+
+struct TuningMvp;
+struct TuningPresentation;
 
 // ADR-121: the scene's textures, by their index in SceneTextures::files, in the order LoadSceneTextures reads them.
 enum class SceneTexture : std::uint16_t

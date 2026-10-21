@@ -7,6 +7,8 @@
 #include "Log.h"
 #include "SettlementView.h"
 #include "StableId.h"
+#include "TuningMvp.h"
+#include "TuningPresentation.h"
 
 #include <algorithm>
 #include <array>
