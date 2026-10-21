@@ -18,16 +18,26 @@
 namespace Species
 {
 
-// The MVP's structure kinds (MVP-021, MVP-030), a state value that is never renumbered; M2 task T5 adds the dwelling,
-// the storehouse and the turret (MVP-034).
+// The MVP's structure kinds (MVP-021, MVP-030, MVP-034), a state value that is never renumbered.
 enum class StructureKind : std::uint8_t
 {
   Wellspring = 0,
   ResourceSite = 1,
-  ResourceSiteCentral = 2
+  ResourceSiteCentral = 2,
+  Dwelling = 3,
+  Storehouse = 4
 };
 
-inline constexpr std::uint64_t STRUCTURE_KIND_MAX = 2;
+inline constexpr std::uint64_t STRUCTURE_KIND_MAX = 4;
+
+// A structure by stable id and slot, which resolves only while the structure holds the slot (R-SIM-325's rule).
+struct StructureRef
+{
+  StableId id = 0;
+  std::uint32_t slot = 0;
+
+  friend constexpr bool operator==(const StructureRef& _a, const StructureRef& _b) noexcept = default;
+};
 
 /// A structure port (R-BLDG-019): the port socket it was made from, the Worker operating it, its world transform, and
 /// one reservation count for each team slot. The counts are held for the slots up to the highest that has reserved it;
@@ -44,7 +54,8 @@ struct StructurePort
 /// A structure of a region (R-BLDG-014, R-BLDG-029, ADR-130): its stable id and kind, the team of the settlement it
 /// belongs to (none for a resource site, which is world data, WLD-084), the resource site of the region's terrain it
 /// stands for, its position on the terrain and its horizontal front, the bounding sphere of its collision asset at its
-/// transform, which is its hit volume (ADR-103), and its ports in socket order.
+/// transform, its ports in socket order, and, from M2 task T5 (ADR-132), whether it is built or still a construction
+/// site, the Worker-ticks given to it, what it cost and whether it is active (MVP-033 to MVP-035).
 struct Structure
 {
   StableId id = 0;
@@ -56,6 +67,10 @@ struct Structure
   Neuron::Vec3 center;
   double radius = 0.0;
   std::vector<StructurePort> ports;
+  bool built = true;
+  std::int64_t workTicks = 0;
+  std::int64_t costMilliRu = 0;
+  bool active = true;
 };
 
 // The place of a kind's mesh among the structure records (STRUCTURE_RECORD_KEYS), its simulation data record (ADR-129)

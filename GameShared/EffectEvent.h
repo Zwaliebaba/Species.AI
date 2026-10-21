@@ -32,7 +32,8 @@ enum class EffectEventKind : std::uint8_t
   WorkerOrdered = 16,          // R-UNIT-096 step 3: worker.ordered, a Worker that took a Leader's order; subject the Worker
   WorkersOrderedByPlayer = 17, // R-UNIT-140 step 5: worker.ordered_by_player; position the target
   // From M2 task T5 (ADR-131):
-  LaserHitStructure = 18 // R-CRATE-441 step 6: the spark and laser_bolt.hit_structure; position where the bolt ended
+  LaserHitStructure = 18, // R-CRATE-441 step 6: the spark and laser_bolt.hit_structure; position where the bolt ended
+  StructureCompleted = 19 // MVP-033, MVP-083: a construction site is built; subject the structure (ADR-132)
 };
 
 /// One presentation event, in the order the region's rules emitted it within its tick (ADR-036's stable identity is the

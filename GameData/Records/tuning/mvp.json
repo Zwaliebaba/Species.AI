@@ -46,7 +46,8 @@
       "ports_dwelling": 6,
       "ports_storehouse": 4,
       "ports_turret": 4,
-      "work_per_ru": 1
+      "work_per_ru": 1,
+      "center_ring_radius": 60
     },
     "cost": {
       "dwelling_ru": 300,

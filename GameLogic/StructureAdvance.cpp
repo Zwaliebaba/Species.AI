@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "Construction.h"
 #include "RegionSimulation.h"
 #include "StructureAdvance.h"
 
@@ -11,12 +12,19 @@ namespace Species
 bool AdvanceStructure(RegionSimulation& _region, Structure& _structure)
 {
   const auto& port = _region.Tuning().ref.bldg.port;
+  const bool mannable = PortsMannable(_structure);
   TeamMask everyTeam;
   everyTeam.set();
+  std::int64_t occupied = 0;
   for (std::uint32_t index = 0; index < _structure.ports.size(); ++index)
   {
     StructurePort& evaluated = _structure.ports[index];
     evaluated.occupant.reset();
+    if (!mannable)
+    {
+      evaluated.reservations.clear();
+      continue;
+    }
     // ActorGrid::InRange is the strict horizontal test, in result order (DEC-016, DEC-260).
     for (const ActorRef& ref : _region.InRange(evaluated.position.x, evaluated.position.z, port.radiusWu, everyTeam))
     {
@@ -31,11 +39,26 @@ bool AdvanceStructure(RegionSimulation& _region, Structure& _structure)
     if (evaluated.occupant)
     {
       evaluated.reservations.clear();
+      ++occupied;
       continue;
     }
     for (std::uint8_t& count : evaluated.reservations)
     {
       count = static_cast<std::uint8_t>(std::max<std::int64_t>(0, std::int64_t{count} - port.reservationDecayPerTick));
+    }
+  }
+  if (!_structure.built)
+  {
+    _structure.workTicks += occupied;
+    if (_structure.workTicks >= RequiredWorkTicks(_structure, _region.Tuning()))
+    {
+      // MVP-033: built; its Workers find their ports no longer manned at their next advance, and become Idle.
+      _structure.built = true;
+      for (Settlement& settlement : _region.Settlements())
+      {
+        std::erase_if(settlement.queue, [&](const StructureRef& _site) { return _site.id == _structure.id; });
+      }
+      _region.Emit({EffectEventKind::StructureCompleted, _structure.owner.value_or(0), _structure.id, _structure.position, {}, 0.0});
     }
   }
   return false;

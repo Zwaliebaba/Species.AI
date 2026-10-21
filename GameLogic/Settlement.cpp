@@ -15,6 +15,8 @@ namespace
 // Bounds for the reader of a Cladan's modifiers: more than a later stage defines, and a tuning key's length.
 constexpr std::uint64_t MODIFIERS_MAX = 255;
 constexpr std::size_t MODIFIER_KEY_MAX_BYTES = 128;
+// A bound for the reader of a settlement's construction queue, above any mvp.construction.queue_max.
+constexpr std::uint64_t QUEUE_MAX = 255;
 
 } // namespace
 
@@ -74,6 +76,12 @@ void WriteSettlement(Neuron::BitWriter& _writer, const Settlement& _settlement)
   _writer.WriteBits(_settlement.wellspringSlot, 32);
   _writer.WriteSigned(_settlement.storesMilliRu, 64);
   WriteDouble(_writer, _settlement.territoryRadius);
+  _writer.WriteBounded(_settlement.queue.size(), QUEUE_MAX);
+  for (const StructureRef& site : _settlement.queue)
+  {
+    _writer.WriteBits(site.id, 64);
+    _writer.WriteBits(site.slot, 32);
+  }
 }
 
 bool ReadSettlement(Neuron::BitReader& _reader, Settlement& _settlement)
@@ -97,6 +105,12 @@ bool ReadSettlement(Neuron::BitReader& _reader, Settlement& _settlement)
   _settlement.wellspringSlot = static_cast<std::uint32_t>(_reader.ReadBits(32));
   _settlement.storesMilliRu = _reader.ReadSigned(64);
   finite = ReadDouble(_reader, _settlement.territoryRadius) && finite;
+  _settlement.queue.resize(_reader.ReadBounded(QUEUE_MAX));
+  for (StructureRef& site : _settlement.queue)
+  {
+    site.id = _reader.ReadBits(64);
+    site.slot = static_cast<std::uint32_t>(_reader.ReadBits(32));
+  }
   return !_reader.Failed() && finite && _settlement.wellspringId != 0 && _settlement.storesMilliRu >= 0 &&
          _settlement.territoryRadius >= 0.0;
 }

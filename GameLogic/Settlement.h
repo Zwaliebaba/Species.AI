@@ -3,6 +3,7 @@
 #include "BitReader.h"
 #include "BitWriter.h"
 #include "StableId.h"
+#include "Structure.h"
 #include "TuningMvp.h"
 
 #include <cstdint>
@@ -50,7 +51,8 @@ struct Cladan
 
 /// A settlement, owned by the job of its region (MVP-096, ADR-130): its site, the team slot of its Workers, which is its
 /// site, whether a steward runs it or it is an AI settlement (PIL-007), its Cladan, its fidelity, its Wellspring, its
-/// stores in integer thousandths of a resource unit (MVP-030) and its territory's radius, which never shrinks (MVP-026).
+/// stores in integer thousandths of a resource unit (MVP-030), its territory's radius, which never shrinks (MVP-026),
+/// and its construction sites in the order they are built (MVP-032, ADR-132).
 struct Settlement
 {
   std::uint8_t site = 0;
@@ -62,6 +64,7 @@ struct Settlement
   std::uint32_t wellspringSlot = 0;
   std::int64_t storesMilliRu = 0;
   double territoryRadius = 0.0; // wu
+  std::vector<StructureRef> queue;
 };
 
 // MVP-030: a tuning amount of resource units in thousandths, rounded once to the nearest.

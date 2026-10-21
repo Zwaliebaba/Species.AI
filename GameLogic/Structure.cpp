@@ -56,6 +56,10 @@ std::size_t RecordPlaceOf(StructureKind _kind) noexcept
     return 3;
   case StructureKind::ResourceSiteCentral:
     return 4;
+  case StructureKind::Dwelling:
+    return 1;
+  case StructureKind::Storehouse:
+    return 2;
   case StructureKind::Wellspring:
     break;
   }
@@ -186,6 +190,10 @@ void WriteStructure(Neuron::BitWriter& _writer, const Structure& _structure)
       _writer.WriteBits(count, 8);
     }
   }
+  _writer.WriteBool(_structure.built);
+  _writer.WriteSigned(_structure.workTicks, 64);
+  _writer.WriteSigned(_structure.costMilliRu, 64);
+  _writer.WriteBool(_structure.active);
 }
 
 bool ReadStructure(Neuron::BitReader& _reader, Structure& _structure)
@@ -224,7 +232,12 @@ bool ReadStructure(Neuron::BitReader& _reader, Structure& _structure)
       count = static_cast<std::uint8_t>(_reader.ReadBits(8));
     }
   }
-  return !_reader.Failed() && finite && _structure.id != 0 && _structure.radius >= 0.0;
+  _structure.built = _reader.ReadBool();
+  _structure.workTicks = _reader.ReadSigned(64);
+  _structure.costMilliRu = _reader.ReadSigned(64);
+  _structure.active = _reader.ReadBool();
+  return !_reader.Failed() && finite && _structure.id != 0 && _structure.radius >= 0.0 && _structure.workTicks >= 0 &&
+         _structure.costMilliRu >= 0;
 }
 
 } // namespace Species

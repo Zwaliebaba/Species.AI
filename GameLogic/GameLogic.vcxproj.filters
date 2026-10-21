@@ -33,6 +33,9 @@
     <ClInclude Include="CommandJournal.h">
       <Filter>Server</Filter>
     </ClInclude>
+    <ClInclude Include="Construction.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="DrawPurpose.h">
       <Filter>Simulation</Filter>
     </ClInclude>
@@ -136,6 +139,9 @@
     </ClCompile>
     <ClCompile Include="CommandJournal.cpp">
       <Filter>Server</Filter>
+    </ClCompile>
+    <ClCompile Include="Construction.cpp">
+      <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="EssenceOrb.cpp">
       <Filter>Simulation</Filter>

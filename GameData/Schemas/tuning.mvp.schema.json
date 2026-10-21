@@ -350,6 +350,15 @@
               "x-species-type": "sim_decimal",
               "x-species-unit": "Worker-seconds per ru",
               "x-species-presence": "required"
+            },
+            "center_ring_radius": {
+              "type": "number",
+              "description": "mvp.construction.center_ring_radius (MVP-032)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
             }
           },
           "required": [
@@ -357,7 +366,8 @@
             "ports_dwelling",
             "ports_storehouse",
             "ports_turret",
-            "work_per_ru"
+            "work_per_ru",
+            "center_ring_radius"
           ],
           "additionalProperties": false,
           "x-species-type": "object",

@@ -125,6 +125,9 @@ struct TuningMvp
 
       // mvp.construction.work_per_ru, in Worker-seconds per ru
       double workPerRu = 0.0;
+
+      // mvp.construction.center_ring_radius, in wu
+      double centerRingRadius = 0.0;
     };
 
     struct Cost
@@ -1702,6 +1705,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.portsStorehouse = _reader.Integer(_object, "ports_storehouse", 0);
   _out.portsTurret = _reader.Integer(_object, "ports_turret", 0);
   _out.workPerRu = _reader.Decimal(_object, "work_per_ru", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.centerRingRadius = _reader.Decimal(_object, "center_ring_radius", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -2758,6 +2762,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Cons
   _writer.I64(_in.portsStorehouse);
   _writer.I64(_in.portsTurret);
   _writer.F64(_in.workPerRu);
+  _writer.F64(_in.centerRingRadius);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Construction& _out)
@@ -2767,6 +2772,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Cons
   _out.portsStorehouse = _reader.I64();
   _out.portsTurret = _reader.I64();
   _out.workPerRu = _reader.F64();
+  _out.centerRingRadius = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Cost& _in)

@@ -503,10 +503,14 @@ std::uint32_t RegionSimulation::AddStructure(StructureKind _kind, std::optional<
                                              std::optional<std::uint32_t> _resourceSite, double _x, double _z, const Neuron::Vec3& _front)
 {
   ENGINE_CHECK(m_terrain != nullptr && m_records != nullptr, "region {} builds a structure with no terrain or no records", m_index);
-  Structure structure = MakeStructure(_kind, _owner, _resourceSite, _x, _z, _front, RecordOf(*m_records, _kind),
-                                      CollisionOf(*m_records, _kind), m_terrain->field, *m_tuning);
-  structure.id = m_ids.Issue();
-  const std::uint32_t slot = m_structures.Take(structure);
+  return InsertStructure(MakeStructure(_kind, _owner, _resourceSite, _x, _z, _front, RecordOf(*m_records, _kind),
+                                       CollisionOf(*m_records, _kind), m_terrain->field, *m_tuning));
+}
+
+std::uint32_t RegionSimulation::InsertStructure(Structure _structure)
+{
+  _structure.id = m_ids.Issue();
+  const std::uint32_t slot = m_structures.Take(_structure);
   RebuildObstacles(); // R-BLDG-030: the obstacle grid is updated
   return slot;
 }

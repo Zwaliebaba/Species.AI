@@ -1,6 +1,8 @@
 #include "pch.h"
 
 #include "BotNavigation.h"
+#include "CommandJournal.h"
+#include "Construction.h"
 #include "ObstacleGrid.h"
 #include "StructureAdvance.h"
 #include "TestSupport.h"
@@ -9,6 +11,8 @@
 #include "WorldSimulation.h"
 
 #include <algorithm>
+#include <cmath>
+#include <numbers>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -51,6 +55,15 @@ std::vector<std::uint32_t> WorkersOf(const Species::RegionSimulation& _region)
     }
   }
   return slots;
+}
+
+// The point _distance from the settlement's Wellspring at _degrees from +x.
+Neuron::Vec3 AroundWellspring(const Species::RegionSimulation& _region, double _distance, double _degrees)
+{
+  const Species::Settlement& settlement = _region.Settlements().front();
+  const Neuron::Vec3& center = _region.Structures().At(settlement.wellspringSlot).position;
+  const double radians = _degrees * std::numbers::pi / 180.0;
+  return {center.x + _distance * std::cos(radians), center.y, center.z + _distance * std::sin(radians)};
 }
 
 // The Worker in _slot moved on to the ground at _position, still, as if it had walked there.
@@ -201,6 +214,206 @@ public:
     }
     Assert::IsTrue(stopped, L"the structure-hit event");
     ExpectEqual(0, region.LaserBolts().Count(), L"the bolt is removed");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp032EveryPlacementRefusalHasItsReason)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-032")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-034")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp032EveryPlacementRefusalHasItsReason)
+  {
+    // A placement is refused at a site with no settlement and for a kind the steward does not place; outside the
+    // territory of 500 wu; inside the centre ring of 60 wu; on a footprint that meets a resource site's or a queued
+    // site's; when the stores do not hold the cost; and when 8 sites are queued. A placement that passes pays 300 ru for
+    // the first dwelling, 345 for the second (× 1.15) and 200 for a storehouse, and queues a construction site.
+    const std::unique_ptr<Species::WorldSimulation> world = SettledWorld();
+    Species::RegionSimulation& region = world->Region(0);
+    Species::Settlement& settlement = region.Settlements().front();
+    using Species::PlacementRefusal;
+    using Species::StructureKind;
+    const auto refusal = [&](std::uint8_t _site, StructureKind _kind, const Neuron::Vec3& _at)
+    {
+      const auto placed = Species::PlaceStructure(region, _site, _kind, _at.x, _at.z);
+      return placed ? std::optional<PlacementRefusal>() : std::optional<PlacementRefusal>(placed.error());
+    };
+    const Neuron::Vec3 good = AroundWellspring(region, 150.0, 0.0);
+    Assert::IsTrue(refusal(0, StructureKind::Dwelling, good) == PlacementRefusal::NotBuildable, L"no settlement at site 0");
+    Assert::IsTrue(refusal(2, StructureKind::Wellspring, good) == PlacementRefusal::NotBuildable, L"not a placeable kind");
+    Assert::IsTrue(refusal(2, StructureKind::Dwelling, AroundWellspring(region, 600.0, 0.0)) == PlacementRefusal::OutsideTerritory,
+                   L"outside the territory");
+    Assert::IsTrue(refusal(2, StructureKind::Dwelling, AroundWellspring(region, 50.0, 0.0)) == PlacementRefusal::InCenterRing,
+                   L"in the centre ring");
+    // An inner home resource site of the settlement's own, 350 wu from its Wellspring.
+    std::optional<Neuron::Vec3> inner;
+    for (std::uint32_t slot = 0; slot < region.Structures().Capacity() && !inner; ++slot)
+    {
+      const Species::Structure& structure = region.Structures().At(slot);
+      if (region.Structures().Used(slot) && structure.kind == StructureKind::ResourceSite &&
+          Neuron::HorizontalDistance(structure.position, AroundWellspring(region, 0.0, 0.0)) < 400.0)
+      {
+        inner = structure.position;
+      }
+    }
+    Assert::IsTrue(inner.has_value(), L"an inner resource site");
+    Assert::IsTrue(refusal(2, StructureKind::Dwelling, inner.value_or(good)) == PlacementRefusal::Overlaps, L"on a resource site");
+    Assert::IsTrue(refusal(2, StructureKind::Dwelling, good) == PlacementRefusal::CannotAfford, L"empty stores");
+    ExpectEqual(0, settlement.storesMilliRu, L"nothing paid");
+
+    settlement.storesMilliRu = 10'000'000;
+    const auto first = Species::PlaceStructure(region, 2, StructureKind::Dwelling, good.x, good.z);
+    Assert::IsTrue(first.has_value(), L"the first dwelling is placed");
+    ExpectEqual(10'000'000 - 300'000, settlement.storesMilliRu, L"for 300 ru");
+    const Species::Structure& queued = region.Structures().At(first.value_or(0));
+    Assert::IsTrue(!queued.built && queued.workTicks == 0 && queued.costMilliRu == 300'000, L"a construction site");
+    Assert::IsTrue(settlement.queue.size() == 1 && settlement.queue.front().id == queued.id, L"queued");
+    Assert::IsTrue(refusal(2, StructureKind::Dwelling, good) == PlacementRefusal::Overlaps, L"on a queued site");
+    const Neuron::Vec3 second = AroundWellspring(region, 150.0, 45.0);
+    Assert::IsTrue(Species::PlaceStructure(region, 2, StructureKind::Dwelling, second.x, second.z).has_value(), L"the second");
+    ExpectEqual(10'000'000 - 300'000 - 345'000, settlement.storesMilliRu, L"for 345 ru");
+    const Neuron::Vec3 store = AroundWellspring(region, 150.0, 90.0);
+    Assert::IsTrue(Species::PlaceStructure(region, 2, StructureKind::Storehouse, store.x, store.z).has_value(), L"a storehouse");
+    ExpectEqual(10'000'000 - 845'000, settlement.storesMilliRu, L"for 200 ru");
+    for (const double degrees : {135.0, 180.0, 225.0, 270.0, 315.0})
+    {
+      const Neuron::Vec3 at = AroundWellspring(region, 150.0, degrees);
+      Assert::IsTrue(Species::PlaceStructure(region, 2, StructureKind::Storehouse, at.x, at.z).has_value(), L"up to 8 queued");
+    }
+    Assert::IsTrue(refusal(2, StructureKind::Storehouse, AroundWellspring(region, 260.0, 0.0)) == PlacementRefusal::QueueFull,
+                   L"the ninth is refused");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp032ASiteOnUnwalkableGroundIsRefused)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-032")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp032ASiteOnUnwalkableGroundIsRefused)
+  {
+    // With the walkable slope tightened past any ground, every place is refused as not walkable, before the stores.
+    Species::TuningMvp steep = CommittedTuning();
+    steep.ref.sim.walk.minNormalY = 1.01;
+    Species::WorldStart start;
+    start.key = SETTLED_TEST_KEY;
+    start.seed = ValleyTerrain()->seed;
+    start.stewardSite = 2;
+    const std::unique_ptr<Species::WorldSimulation> world = Species::StartWorld(start, ValleyTerrain(), steep, &TestRecords());
+    Species::RegionSimulation& region = world->Region(0);
+    const Neuron::Vec3 at = AroundWellspring(region, 150.0, 0.0);
+    const auto placed = Species::PlaceStructure(region, 2, Species::StructureKind::Dwelling, at.x, at.z);
+    Assert::IsTrue(!placed.has_value() && placed.error() == Species::PlacementRefusal::NotWalkable, L"not walkable");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp033ConstructionProgressesByWorkerSeconds)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-033")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-022")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-034")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp033ConstructionProgressesByWorkerSeconds)
+  {
+    // A dwelling of 300 ru needs 300 Worker-seconds, 3,000 Worker-ticks. Six Workers at its six ports give 6 a tick; one
+    // gives 1. When it has them it is built, leaves the queue and raises its event, its Workers go Idle, and the
+    // population limit rises from 40 to 70. A built dwelling's ports are no longer manned.
+    Neuron::WorkerPool pool(0);
+    const std::unique_ptr<Species::WorldSimulation> world = SettledWorld();
+    Species::RegionSimulation& region = world->Region(0);
+    Species::Settlement& settlement = region.Settlements().front();
+    std::uint64_t tick = 0;
+    for (; tick < 60; ++tick)
+    {
+      world->Step(tick, pool);
+    }
+    settlement.storesMilliRu = 1'000'000;
+    const Neuron::Vec3 at = AroundWellspring(region, 150.0, 30.0);
+    const auto placed = Species::PlaceStructure(region, 2, Species::StructureKind::Dwelling, at.x, at.z);
+    Assert::IsTrue(placed.has_value(), L"placed");
+    const std::uint32_t slot = placed.value_or(0);
+    ExpectEqual(3000, Species::RequiredWorkTicks(region.Structures().At(slot), CommittedTuning()), L"300 Worker-seconds");
+    const std::vector<std::uint32_t> workers = WorkersOf(region);
+    for (std::uint32_t port = 0; port < 6; ++port)
+    {
+      const Neuron::Vec3 position = region.Structures().At(slot).ports[port].position;
+      const Neuron::Vec3 out = Neuron::NormalizedOr(position - region.Structures().At(slot).position, {1.0, 0.0, 0.0});
+      StandAt(region, workers[port], position + out * 6.0);
+      Species::SendToPort(region.TeamAt(SETTLED_TEAM).figures.At(workers[port]), region.Structures().At(slot), slot, port);
+    }
+    for (int step = 0; step < 20; ++step)
+    {
+      world->Step(tick++, pool);
+    }
+    const std::int64_t before = region.Structures().At(slot).workTicks;
+    Assert::IsTrue(before > 0, L"the work has begun");
+    for (int step = 0; step < 10; ++step)
+    {
+      world->Step(tick++, pool);
+    }
+    ExpectEqual(before + 60, region.Structures().At(slot).workTicks, L"six Worker-ticks a tick");
+    ExpectEqual(40,
+                Species::PopulationLimit(CommittedTuning(), Species::ActiveCount(region, SETTLED_TEAM, Species::StructureKind::Dwelling)),
+                L"no dwelling yet");
+
+    region.Structures().At(slot).workTicks = 3000 - 6;
+    world->Step(tick++, pool);
+    const Species::Structure& dwelling = region.Structures().At(slot);
+    Assert::IsTrue(dwelling.built && settlement.queue.empty(), L"built and out of the queue");
+    Assert::IsTrue(
+      std::ranges::any_of(region.Events(), [&](const Species::EffectEvent& _event)
+                          { return _event.kind == Species::EffectEventKind::StructureCompleted && _event.subject == dwelling.id; }),
+      L"its event");
+    ExpectEqual(70,
+                Species::PopulationLimit(CommittedTuning(), Species::ActiveCount(region, SETTLED_TEAM, Species::StructureKind::Dwelling)),
+                L"the limit rises");
+    world->Step(tick++, pool);
+    world->Step(tick++, pool);
+    for (std::uint32_t port = 0; port < 6; ++port)
+    {
+      Assert::IsTrue(region.TeamAt(SETTLED_TEAM).figures.At(workers[port]).workerState == Species::WorkerState::Idle, L"its Workers go");
+      Assert::IsFalse(dwelling.ports[port].occupant.has_value(), L"and its ports are not manned");
+    }
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp034AStorehouseBuiltAddsToTheStoresCapacity)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-034")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-021")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp034AStorehouseBuiltAddsToTheStoresCapacity)
+  {
+    // A queued storehouse adds nothing; built, it adds 1,500 ru to the Wellspring's 1,500.
+    Neuron::WorkerPool pool(0);
+    const std::unique_ptr<Species::WorldSimulation> world = SettledWorld();
+    Species::RegionSimulation& region = world->Region(0);
+    region.Settlements().front().storesMilliRu = 500'000;
+    const Neuron::Vec3 at = AroundWellspring(region, 200.0, 200.0);
+    const auto placed = Species::PlaceStructure(region, 2, Species::StructureKind::Storehouse, at.x, at.z);
+    Assert::IsTrue(placed.has_value(), L"placed");
+    const auto capacity = [&]
+    {
+      return Species::StoreCapacityMilliRu(CommittedTuning(),
+                                           Species::ActiveCount(region, SETTLED_TEAM, Species::StructureKind::Storehouse));
+    };
+    ExpectEqual(1'500'000, capacity(), L"queued, nothing more");
+    region.Structures().At(placed.value_or(0)).workTicks = 2000;
+    world->Step(0, pool);
+    ExpectEqual(3'000'000, capacity(), L"built, 1,500 ru more");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(RSim343AStructureChangesNoRouteOfTheMvp)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-SIM-343")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-SIM-335")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(RSim343AStructureChangesNoRouteOfTheMvp)
+  {
+    // Only walls and Barrier Emitters block a route edge, and the MVP has neither, so a route across the place of a new
+    // dwelling is the same before and after it is placed (ADR-131).
+    const std::unique_ptr<Species::WorldSimulation> world = SettledWorld();
+    Species::RegionSimulation& region = world->Region(0);
+    region.Settlements().front().storesMilliRu = 500'000;
+    const Neuron::Vec3 from = AroundWellspring(region, 300.0, 100.0);
+    const Neuron::Vec3 to = AroundWellspring(region, 300.0, 260.0);
+    const Species::RouteHandle before = region.BuildRoute(from, to, false);
+    const Neuron::Vec3 across = AroundWellspring(region, 120.0, 180.0);
+    Assert::IsTrue(Species::PlaceStructure(region, 2, Species::StructureKind::Dwelling, across.x, across.z).has_value(), L"placed");
+    const Species::RouteHandle after = region.BuildRoute(from, to, false);
+    const std::vector<Neuron::Vec3>* a = region.Routes().Find(before);
+    const std::vector<Neuron::Vec3>* b = region.Routes().Find(after);
+    Assert::IsTrue(a != nullptr && b != nullptr && *a == *b, L"the same route");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(RBot049ANodeNearAStructureWithPortsIsImportant)

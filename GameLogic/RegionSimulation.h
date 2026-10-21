@@ -251,6 +251,9 @@ public:
   // the structure pool and added to the obstacle grid; returns its slot. It needs the terrain and the records.
   std::uint32_t AddStructure(StructureKind _kind, std::optional<std::uint8_t> _owner, std::optional<std::uint32_t> _resourceSite, double _x,
                              double _z, const Neuron::Vec3& _front);
+  // R-BLDG-030 for a structure already made: the next stable id of the region, the structure pool and the obstacle grid;
+  // returns its slot.
+  std::uint32_t InsertStructure(Structure _structure);
   // WLD-080 to WLD-085: a structure for each resource site of the region's terrain, in its order, belonging to no
   // settlement (WLD-084).
   void PlaceResourceSites();

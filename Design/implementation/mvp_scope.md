@@ -91,6 +91,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-032** (MUST) The steward places a structure in its territory, outside the core's centre ring that keeps the Wellspring's ports clear, on ground whose slope the walkability rules allow (R-SIM-335 to R-SIM-338), not overlapping another structure, a resource site or a port. Placing pays its cost from the stores at once and queues a construction site; the queue holds at most `mvp.construction.queue_max` (8) sites, which are built in order.
 
+> **Amendment 2026-10-21 (M2 task T5; [ADR-132](../ADR/ADR-132-placement-and-construction-at-m2.md)).** The core's centre ring has the radius `mvp.construction.center_ring_radius` (60 wu) about the Wellspring: a structure lies wholly outside it. Until T6 builds the territory's bounds (WLD-060), a structure lies wholly inside the disc of the territory's radius about the Wellspring; ground is walkable where the terrain is above the shore height and its normal's y component is at least `ref.sim.walk.min_normal_y` at the structure's position and at every one of its ports; and two structures overlap when their bounding spheres' footprints do, or when a port lies within its 5 wu radius of a footprint.
+
 **MVP-033** (MUST) Construction is a Worker task of the task search: a Worker whose priority is construction mans one of the ports of the first queued construction site (`mvp.construction.ports_dwelling` (6) on a dwelling, `mvp.construction.ports_storehouse` (4) on a storehouse, `mvp.construction.ports_turret` (4) on a turret), and the site completes when its Workers have given `mvp.construction.work_per_ru` (1 Worker-second per resource unit of its cost). The structure rises visibly as it progresses (MVP-083).
 
 **MVP-034** (MUST) The MVP has three structures besides the Wellspring:
@@ -315,6 +317,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.store.wellspring_capacity_ru` | 1500 | ru | — | provisional | MVP-021 | — |
 | `mvp.store.storehouse_capacity_ru` | 1500 | ru | — | provisional | MVP-034 | — |
 | `mvp.construction.queue_max` | 8 | construction sites | — | provisional | MVP-032 | — |
+| `mvp.construction.center_ring_radius` | 60 | wu from the Wellspring | — | provisional | MVP-032 | Clears the Wellspring's ports at 38 wu and their 5 wu radius, with room to stand |
 | `mvp.construction.ports_dwelling` | 6 | ports | — | provisional | MVP-033 | Matches the dwelling mesh |
 | `mvp.construction.ports_storehouse` | 4 | ports | — | provisional | MVP-033 | Matches the storehouse mesh |
 | `mvp.construction.ports_turret` | 4 | ports | — | provisional | MVP-033 | The turret's four manning ports (R-BLDG-405 to R-BLDG-423) |
