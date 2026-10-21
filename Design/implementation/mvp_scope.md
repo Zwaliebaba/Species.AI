@@ -83,6 +83,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-031** (MUST) Gathering is a Worker task of its own task search (R-UNIT-087 to R-UNIT-097, extended): a Worker whose settlement priority is gathering looks for a free gathering port at a resource site inside its territory, or at the central resource site while its settlement holds it, within `ref.unit.worker.port_search_range`; it walks there, mans the port for `mvp.gather.port_ticks` (100 ticks), picks up a load of `mvp.gather.load_ru` (1 ru), carries it visibly to the nearest drop-off point (its Wellspring or a storehouse) and returns. A full store refuses the load and the Worker waits at the drop-off point.
 
+> **Amendment 2026-10-21 (O84).** The gathering search is not bounded by `ref.unit.worker.port_search_range`: a gathering Worker takes the nearest free gathering port anywhere in its territory, or at the central resource site while its settlement holds it, because the nearest resource sites lie 350 wu from the Wellspring (WLD-082). The 100 wu stays the range of the idle Worker's port search (R-UNIT-090).
+
 **MVP-032** (MUST) The steward places a structure in its territory, outside the core's centre ring that keeps the Wellspring's ports clear, on ground whose slope the walkability rules allow (R-SIM-335 to R-SIM-338), not overlapping another structure, a resource site or a port. Placing pays its cost from the stores at once and queues a construction site; the queue holds at most `mvp.construction.queue_max` (8) sites, which are built in order.
 
 **MVP-033** (MUST) Construction is a Worker task of the task search: a Worker whose priority is construction mans one of the ports of the first queued construction site (`mvp.construction.ports_dwelling` (6) on a dwelling, `mvp.construction.ports_storehouse` (4) on a storehouse, `mvp.construction.ports_turret` (4) on a turret), and the site completes when its Workers have given `mvp.construction.work_per_ru` (1 Worker-second per resource unit of its cost). The structure rises visibly as it progresses (MVP-083).
@@ -257,6 +259,8 @@ The MVP builds only one region and one steward, but it keeps the seams that are 
 
 > **Amendment 2026-10-21 (O81).** M2 also builds the seen layer of MVP-016 on the server, computed once per update (MVP-097), and draws MVP-084's fog from it. Its readers, the AI settlements (MVP-058) and the replication narrowed to it, stay M3's.
 
+> **Amendment 2026-10-21 (O84).** M2's exit is judged on the growth scene's own measurement (the [M2 plan](m2_plan.md) §5). Where that measurement cannot hold all three of a growth step at least every 20 minutes of play, a plateau after 4 to 6 hours and M3's first contact in hour 2 to 3, the plateau window yields first: the step and the contact hold, and the plateau may fall outside hours 4 to 6, though within the run. A plateau at `mvp.settlement.population_max` meets the exit.
+
 Each milestone is a series of pull requests that cite the MVP requirements they implement, as AGENTS.md §6 asks for requirement ids; a milestone's exit is recorded in its milestone record in `playtests/` (§6.3).
 
 ## 4 Tuning table
@@ -375,6 +379,8 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 *Table 3 — The tuning values of the MVP.*
 
 The first guesses were set against two targets, which M2 and Playtest 1 check. One is a plateau near 280 Workers on a settlement's own 11 units: about 44 gatherers bring about 2,640 ru per hour of play, which pays the upkeep of about 280 Workers and 14 structures. The other is a first contact in hour 2 to 3, with 4 to 10 battles involving the steward's settlement in a run.
+
+> **Amendment 2026-10-21 (O84).** The economy model of the [M2 plan](m2_plan.md) §3 (`Tools/DesignModels/M2Economy.py`) finds the first target unmet as stated: with storehouses near the outer resource sites, 44 gatherers bring about 4,000 ru per hour, twice the upkeep, so the plateau is `mvp.settlement.population_max` and not where income and upkeep meet. The owner accepts a plateau at the cap for the MVP; an upkeep that brings the plateau below it is B2's.
 
 ## 5 What the MVP does not build, narrows or defers
 
