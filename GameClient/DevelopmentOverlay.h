@@ -6,8 +6,6 @@
 #include "ReplicaTiming.h"
 #include "ServerStats.h"
 #include "StateReplica.h"
-#include "TuningMvp.h"
-#include "TuningPresentation.h"
 #include "WorldScene.h"
 
 #include <array>
@@ -22,6 +20,9 @@
 
 namespace Species
 {
+
+struct TuningMvp;
+struct TuningPresentation;
 
 // The content key of the development overlay's face, EditorFont (O62, O64; AST-014).
 inline constexpr std::string_view DEVELOPMENT_FACE_KEY = "fonts/editorfont";
