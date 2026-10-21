@@ -156,7 +156,7 @@ public:
   TEST_METHOD(Vfx210DebrisPuffsIntoItsPuffType)
   {
     std::vector<Neuron::ParticleType> types = TwoTypes();
-    types[0].puffType = 1;
+    types[0].puffType = std::uint8_t{1};
     Neuron::ParticleLook look;
     look.puffRate = 120.0; // twice a sub-step: every sub-step puffs
     Neuron::ParticlePool pool(types, look, 1);
