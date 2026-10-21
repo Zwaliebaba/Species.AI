@@ -286,7 +286,7 @@ public:
     look.Draw(ring, SeedOneTerrain().field, ViewAt(Ground(), 9.0), draws);
     Assert::IsTrue(!draws.triangles.empty() && !draws.triangles[0].screenSpace && !draws.triangles[0].textured, L"the disc's fan");
     const Neuron::TriangleBatch& disc = draws.triangles[0];
-    Assert::IsTrue(disc.entry == "effect_gradient_nodepth" && disc.vertices.size() == 3 * 32, L"32 triangles");
+    Assert::IsTrue(disc.entry == "effect_gradient_nodepth" && disc.vertices.size() == std::size_t{3} * 32, L"32 triangles");
     const Neuron::SceneVertex& center = disc.vertices[0];
     const Neuron::SceneVertex& rim = disc.vertices[1];
     Assert::IsTrue(std::abs(center.position.y - (Ground().y + 5.0)) < 1e-9 && center.color[3] == 0.0f, L"the centre, 5 wu up, alpha 0");
