@@ -58,6 +58,7 @@ Chosen option: 1, because a press of the primary button already means a selectio
 * **The destination mark.** The preview and each ordered route end in `marker.order_trail` on the terrain at their last point, turned into its slope, in the colour of their last spot, of the trail marks' size (R-UNIT-186), with `route_arrow` in pass 12.
 * **The arrows' place** (DEC-959 item 4). An arrow lies at the point of its leg whose projection is the middle of the leg's projection: the fraction w₀ ÷ (w₀ + w₁) of the leg, from its ends' depths ahead of the camera; the leg's middle while an end lies behind it.
 * **The keys** in the presentation record: `mvp.selection.disc_size_factor`, `disc_alpha` and `circle_fade_seconds`, and `rnd.route.fade_rate`.
+* **The lights** are retuned in the same task, so that the ground sits darker and calmer than the crowds: a softer warm key from higher and a dim grey fill from the opposite side, in WLD-183's pattern ([ADR-115](ADR-115-the-world-frame-at-m1.md) amendment).
 * **The render check** (ADR-117) orders its Leader with the primary press, so the ordered route, the discs and the count reach the WARP adapter.
 
 ### Consequences
