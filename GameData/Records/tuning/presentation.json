@@ -133,6 +133,22 @@
         "g": 0.5,
         "b": 0.2
       }
+    },
+    "route": {
+      "spot_size_divisor": 100,
+      "blocked_color": {
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "a": 100
+      },
+      "gray_offset": 50,
+      "pulse_base": 0.5,
+      "pulse_amplitude": 0.5,
+      "pulse_rate": 10,
+      "pulse_phase_step": 0.7,
+      "arrow_size_factor": 2,
+      "preview_rebuild_distance": 1
     }
   },
   "ter": {
@@ -281,7 +297,10 @@
         },
         "circle_particles": 30,
         "circle_spin": 0.5,
-        "circle_lift": 10
+        "circle_lift": 10,
+        "icon_offset": 5,
+        "icon_divisor": 24,
+        "icon_center_offset": 50
       },
       "promote": {
         "flash_count": {
@@ -301,7 +320,27 @@
       "order": {
         "crowd_interval_ticks": 10
       },
-      "promote_radius": 10
+      "promote_radius": 10,
+      "marker": {
+        "lift": 20,
+        "own_sort_offset": 50,
+        "new_age": 3,
+        "smoothing": 5,
+        "edge_probe": 100,
+        "edge_probe_ahead": 1000,
+        "edge_inset": 50,
+        "alpha": {
+          "seen_after_s": 1
+        },
+        "size": {
+          "icon_divisor": 20,
+          "shadow_pad": 10,
+          "compass_divisor": 30,
+          "near_distance": 500,
+          "hover_scale": 1.2
+        },
+        "shadow_alpha": 0.9
+      }
     },
     "unit": {
       "leader": {
@@ -309,7 +348,11 @@
         "pick_radius": 8,
         "banner_size": 20,
         "banner_growth_divisor": 1500,
-        "banner_face_divisor": 200
+        "banner_face_divisor": 200,
+        "trail_size_min": 5,
+        "trail_size_scale": 20,
+        "trail_size_divisor": 2000,
+        "trail_alpha": 0.6
       },
       "worker": {
         "card_scale_start": 100,
@@ -506,7 +549,10 @@
       "lift_gain": 3,
       "team_tint": 0.5,
       "banner_wobble": 0.4,
-      "banner_wobble_rate": 2
+      "banner_wobble_rate": 2,
+      "pointer_slope_bias": 1.0,
+      "pointer_constant_bias": 5,
+      "pointer_size_factor": 0.25
     },
     "flicker": {
       "step": 0.1,

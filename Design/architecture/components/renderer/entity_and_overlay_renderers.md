@@ -215,6 +215,8 @@ The corners of the first three modes are centre − right·w − up·h, centre +
 | `cursor_dots` | `WorldOverlay`, `SOURCE` = `TEXTURED` | `Alpha` | in-shader, with `bias_cursor` | `None` | `bias_cursor` | 20 | formation-preview diamonds |
 | `cursor_ghost` | `WorldOverlay`, `SOURCE` = `MESH` | `Ghost` | in-shader | `Back` | — | 20 | placement ghost models |
 
+> **Amendment 2026-10-21 (M1 task T17b, [ADR-125](../../../ADR/ADR-125-battle-marks-route-preview-and-world-markers-at-m1.md)).** At M1 `route_line` draws the route spots, and the new entry `route_arrow` (`UnlitTextured` with the linearly filtered mask, `Alpha`, `None`, `None`, pass 12) the arrows, which are drawn larger than their art. `overlay_alpha` and `overlay_additive` are drawn by the `OverlayQuad` shader with the `OverlayQuadInstance` stream: a single-channel mask in the overlay's physical pixels, turned on the screen and averaged over each pixel's footprint.
+
 **RND-309** (MUST) An in-shader depth test of the `WorldOverlay` shader keeps a fragment only when its reversed-Z depth, multiplied by the factor *k* of its depth-bias variant (1 without one), is at least the value of `scene_depth_single` at the fragment's scene position; this is the in-shader form of the depth-bias rule of RND-220 and lets these 3-D overlays keep their place after the UI windows (RND-072). None of these entries writes depth.
 
 ### 3.4 Shaders owned by this document
@@ -329,6 +331,8 @@ The Builder draws no beam in a match: none of its match states (R-UNIT-453) draw
 
 > **Amendment 2026-10-21 (M1 task T16, [ADR-122](../../../ADR/ADR-122-leaders-and-banners-drawn-at-m1.md)).** Until T17's world markers (pass 16) exist, pass 7b draws every Leader's banner, the local team's too, and a Waypoint banner's pointer waits for the order route T17 brings to the client. At M1 a dead Leader is drawn while its corpse sinks, with no shatter (O77).
 
+> **Amendment 2026-10-21 (M1 task T17b, owner decision O78, [ADR-125](../../../ADR/ADR-125-battle-marks-route-preview-and-world-markers-at-m1.md)).** Pass 7b keeps drawing the local team's banners at M1. A Waypoint banner with a replicated target draws its pointer after the cloth with `cloth_pointer`, turned to point at the target on the screen.
+
 **RND-325** (MUST) A blob shadow of half-size *s* under a caster at *p* is one quad of `fx.glow_round` whose four corners lie at (*p.x* ± *s*, *y*, *p.z* ± *s*), each at *y* = max(terrain height at the corner + `rnd.shadow.blob.lift` (0.9 wu), `rnd.shadow.blob.min_height` (1.0 wu)), in the colour of [reference/02_units/README.md](../../../reference/02_units/README.md) R-UNIT-050, with the `blob_shadow` entry (RND-242). The shadow is skipped when all four corner heights are above *p.y*.
 
 **RND-326** (MUST) A centipede segment is lit with its mesh transform's uniform scale *σ* left in its normals: in the diffuse term of RND-233 its facet normal *n* is replaced by *n* ÷ *σ*, so a larger segment is lit darker and a smaller one brighter before the clamp (see DEC-958 item 3). Every other scaled actor mesh is lit with unit facet normals (RND-233).
@@ -423,6 +427,8 @@ stateDiagram-v2
 
 Caption: the fade record of one drawn route; a held route keeps its fade value and is not drawn.
 
+> **Amendment 2026-10-21 (M1 task T17b, owner decision O78, [ADR-125](../../../ADR/ADR-125-battle-marks-route-preview-and-world-markers-at-m1.md)).** M1 draws the local route preview alone: it raises no route highlight and keeps no fade record. The preview is shown while it exists, and it is built again only when an end moves more than `rnd.route.preview_rebuild_distance` (1 wu, provisional) or the straight flag changes. The spots lie one spot's size, twice their half-size, apart. One arrow lies at each leg's middle, `rnd.route.arrow_size_factor` (2, provisional) × the spot half-size there, in the colour of the spot there; a leg shorter than its arrow has none.
+
 ### 4.9 World markers (pass 16)
 
 **RND-356** (MUST) Pass 16 draws the world markers (`WorldMarkers`) of [reference/06_controls_camera_and_commands/cursor_and_markers.md](../../../reference/06_controls_camera_and_commands/cursor_and_markers.md) R-CTRL-380 to R-CTRL-388, whose types, screen positions, edge clamping, sort order, alpha, sizes and layers that document specifies, in the 2-D overlay space of RND-215, in the order of R-CTRL-382 (the nearest marker last). "Screen height" in those rules is the height of the overlay target in pixels, which equals the render height at a render scale of 1 (RND-028). The marker list is presentation state of the world markers, never simulation state (RND-301).
@@ -430,6 +436,8 @@ Caption: the fade record of one drawn route; a held route keeps its fade value a
 **RND-357** (MUST) The marker layers of R-CTRL-386 use these entries: the shadow `marker.team_disc_shadow` and the compass shadow `marker.edge_compass_shadow` with `overlay_alpha`; the compass arrow `marker.edge_compass`, the colour disc `marker.team_disc` and the icon with `overlay_additive`. On screen the compass layer draws the empty compass `marker.edge_compass_empty` instead of the arrow. A layer's alpha is the marker alpha of R-CTRL-384 × the layer's own alpha.
 
 **RND-358** (MUST) The 3-D parts of the markers are drawn in pass 16 with the in-shader depth test of RND-309: the ground highlight of a Transport order marker is the highlight effect of R-CTRL-363 with the `cursor_ring` entry, and a local Leader's marker draws the Leader's banner (R-CTRL-388, R-UNIT-191) with the cloth-flag entries of [README.md](../animation_and_vfx/README.md).
+
+> **Amendment 2026-10-21 (M1 task T17b, owner decision O78, [ADR-125](../../../ADR/ADR-125-battle-marks-route-preview-and-world-markers-at-m1.md)).** At M1 the world markers are the Leader markers alone, and their sizes are physical pixels. Pass 16 draws a Leader marker's 2-D layers off screen until it is seen, with `icon.power.leader` in place of the banner. Pass 7b draws every banner, the local team's included, since M1 has no in-shader depth test (RND-309), so an on-screen Leader marker draws nothing in pass 16.
 
 **RND-359** (MUST) The bot priority overlay (per-team target priorities as text and team-coloured arrows) is a development overlay of [developer_tools.md](../diagnostics_test_and_performance/developer_tools.md#47-development-drawing), drawn in pass 16 in Debug builds only, when its development setting is on.
 
@@ -597,3 +605,5 @@ The golden-image tests compare with the default tolerance and on the pinned refe
 | `rnd.route.pulse_amplitude` | 0.5 | alpha factor | | RND-353 | |
 | `rnd.route.pulse_rate` | 10 | rad per s of real time | | RND-353 | |
 | `rnd.route.pulse_phase_step` | 0.7 | rad per spot | | RND-353 | |
+| `rnd.route.arrow_size_factor` | 2 | × the spot half-size | Species, provisional (ADR-125); an arrow at each leg's middle (DEC-959 item 4) | RND-353 | DEC-959 |
+| `rnd.route.preview_rebuild_distance` | 1 | wu | Species, provisional (ADR-125); the preview is built again when an end moves further | RND-354 | |

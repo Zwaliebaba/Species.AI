@@ -184,6 +184,15 @@ public:
                   static_cast<std::int64_t>(synthetic->Region(0).TeamAt(1).figures.Count()),
                 L"the synthetic battle's figures");
     ExpectEqual(2, static_cast<std::int64_t>(synthetic->Region(0).Ais().size()), L"an AI on each side");
+    // ADR-126: a world start that names the battle's figures, as the frame bench's scene of mvp.client.figures_max does.
+    const Species::WorldStart start{
+      SANDBOX_TEST_KEY, 1, 0, 1, true, true, static_cast<std::uint32_t>(CommittedTuning().mvp.client.figuresMax)};
+    const std::unique_ptr<Species::WorldSimulation> figuresMax = Species::StartWorld(start, ValleyTerrain(), CommittedTuning());
+    ExpectEqual(CommittedTuning().mvp.client.figuresMax,
+                static_cast<std::int64_t>(figuresMax->Region(0).TeamAt(0).figures.Count()) +
+                  static_cast<std::int64_t>(figuresMax->Region(0).TeamAt(1).figures.Count()),
+                L"the figures it names");
+    ExpectEqual(2, static_cast<std::int64_t>(figuresMax->Region(0).Ais().size()), L"and an AI on each side");
     // The eight runs are independent, so they run at once.
     static_cast<void>(ValleyTerrain());
     const std::vector<std::size_t> workerCounts{0, 1, 2, 8};
@@ -299,7 +308,7 @@ public:
   TEST_METHOD(Mvp076AJournalReadsBackAsItWasWritten)
   {
     Species::CommandJournal journal;
-    journal.start = {SANDBOX_TEST_KEY, 77, 40, 1, true, true};
+    journal.start = {SANDBOX_TEST_KEY, 77, 40, 1, true, true, 1'500};
     journal.entries.push_back({40, true, Species::JOURNAL_WORLD_OWNER, 9, 0, {}});
     journal.entries.push_back({40, false, 1, 9, 0, Neuron::EncodeMessage(Species::PromoteWorkerCommand{0, 12})});
     journal.entries.push_back({52, false, Species::JOURNAL_WORLD_OWNER, 9, 1, Neuron::EncodeMessage(Species::SelectCommand{0, 0})});
@@ -308,8 +317,9 @@ public:
     Assert::IsTrue(read.has_value(), L"the journal reads");
     const Species::CommandJournal back = read.value_or(Species::CommandJournal{});
     Assert::IsTrue(back.start.key.low == SANDBOX_TEST_KEY.low && back.start.key.high == SANDBOX_TEST_KEY.high && back.start.seed == 77 &&
-                     back.start.firstTick == 40 && back.start.regions == 1 && back.start.sandbox && back.start.watched,
-                   L"its start, watched (O77)");
+                     back.start.firstTick == 40 && back.start.regions == 1 && back.start.sandbox && back.start.watched &&
+                     back.start.syntheticFigures == 1'500,
+                   L"its start, watched (O77), with the synthetic battle's figures (ADR-126)");
     Assert::IsTrue(back.entries == journal.entries, L"its entries");
 
     Assert::IsFalse(Species::ReadJournal(std::span(bytes).first(bytes.size() - 1)).has_value(), L"a short file does not read");

@@ -194,6 +194,7 @@ void EffectsLook::Clear()
   m_rings.clear();
   m_recoils.clear();
   m_controlled.clear();
+  m_trailBorn.clear();
   m_lastTick.reset();
   m_circleCarry = 0.0;
   m_shake = 0.0;
@@ -714,6 +715,49 @@ void EffectsLook::DrawMarkers(std::span<const InterpolatedEffect> _effects, cons
   }
 }
 
+void EffectsLook::DrawTrailMarks(std::span<const InterpolatedEffect> _effects, const Neuron::TerrainField& _field, const EffectsView& _view,
+                                 EffectDraws& _draws)
+{
+  // R-UNIT-186 (ADR-125): a ground-aligned marker.order_trail in the team colour, lowered below its carrier, its front
+  // the carrier's velocity and its right front × the terrain normal, sized by the camera's distance and fading with its
+  // age, which runs from the display tick it was first seen. The server sends only the local team's (ADR-106). Drawn
+  // with no depth test, since it lies on the terrain.
+  const auto& leader = m_presentation->ref.unit.leader;
+  const double tick = m_tuning->ref.sim.tickPeriod;
+  std::map<StableId, double> born;
+  for (const InterpolatedEffect& effect : _effects)
+  {
+    if (effect.state.kind != EffectKind::OrderTrailMark)
+    {
+      continue;
+    }
+    const auto kept = m_trailBorn.find(effect.id);
+    const double first = kept != m_trailBorn.end() ? kept->second : _view.displayTick - _view.fraction;
+    born.emplace(effect.id, first);
+    const double age = std::max(0.0, (_view.displayTick - first) * tick);
+    const double alpha = leader.trailAlpha * (1.0 - age);
+    if (alpha <= 0.0)
+    {
+      continue;
+    }
+    const Neuron::Vec3 at = effect.position - UP * m_tuning->ref.unit.leader.trailLift;
+    const double yaw = YawRadians(effect.state.yaw);
+    const Neuron::Vec3 front{std::sin(yaw), 0.0, std::cos(yaw)};
+    const Neuron::Vec3 right = Neuron::NormalizedOr(Neuron::Cross(front, _field.Normal(at.x, at.z)), {1.0, 0.0, 0.0});
+    const double halfSize =
+      std::max(leader.trailSizeMin, leader.trailSizeScale * Neuron::Length(at - _view.camera) / leader.trailSizeDivisor);
+    std::array<float, 4> color = TeamColor(effect.state.team);
+    color[3] = static_cast<float>(alpha);
+    Neuron::SceneQuad quad = Facing(at, halfSize, color);
+    quad.orientation = Neuron::QuadOrientation::WorldOriented;
+    quad.axisRight = right;
+    quad.axisUp = front;
+    BatchOf(_draws.quads, Neuron::ScenePass::Effects, EFFECT_ADDITIVE_NODEPTH, SceneTexture::OrderTrail, static_cast<float>(halfSize))
+      .quads.push_back(quad);
+  }
+  m_trailBorn = std::move(born);
+}
+
 void EffectsLook::DrawScreen(double _flashAlpha, double _shakeRequest, const EffectsView& _view, EffectDraws& _draws)
 {
   const TuningPresentation& presentation = *m_presentation;
@@ -793,6 +837,7 @@ void EffectsLook::Draw(std::span<const InterpolatedEffect> _effects, const Neuro
   DrawFlashes(_view, _draws);
   DrawRings(_view, _draws, flashAlpha, shakeRequest);
   DrawMarkers(_effects, _view, _draws);
+  DrawTrailMarks(_effects, _field, _view, _draws);
   DrawBolts(_field, _view, _draws, shakeRequest);
   m_particles.AppendBatches(_view.scaledSeconds, TextureOf(SceneTexture::ParticleDot), _draws.quads);
   DrawScreen(flashAlpha, shakeRequest, _view, _draws);

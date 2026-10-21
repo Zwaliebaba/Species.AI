@@ -325,6 +325,14 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
       inputs.triangleBatches = std::move(leaders.triangles);
     }
     AppendOrbBatches(InterpolateOrbs(_session.Replica(), fraction), *m_desc.presentation, inputs.quadBatches);
+    // M1 task T17b (ADR-125): the route preview in pass 12, the world markers in pass 16 and the badge in pass 20.
+    if (crowd.localTeam.has_value())
+    {
+      _view.Preview().AppendBatches(crowd.camera, crowd.cameraFront, m_presentationClock.RealSeconds(), TeamColor(*crowd.localTeam),
+                                    inputs.quadBatches);
+    }
+    inputs.markers = _view.Markers().Quads();
+    inputs.cursorBadge = _view.Badge();
     if (displayTick.has_value())
     {
       // Passes 10a, 10b and 15, and the camera shake as an offset of the frame's view alone (VFX-232).

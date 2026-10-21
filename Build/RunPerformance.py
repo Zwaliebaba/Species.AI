@@ -1,23 +1,28 @@
 """RunPerformance.py: the MVP's performance job (DBG-208, DBG-209; M1 plan §4, ADR-110), which the owner runs on the
 reference test machine.
 
-  python Build/RunPerformance.py [--skip-build] [--tool <SpeciesPerformance.exe>] [--record <file>] [--quick]
-  python Build/RunPerformance.py --self-test --tool <SpeciesPerformance.exe>
+  python Build/RunPerformance.py [--skip-build] [--tool <SpeciesPerformance.exe>] [--bench <SpeciesFrameBench.exe>]
+                                 [--headless-only] [--record <file>] [--quick]
+  python Build/RunPerformance.py --self-test --tool <SpeciesPerformance.exe> [--bench <SpeciesFrameBench.exe> --warp]
 
 --tuning-source <GameData> makes the tool read the authored tuning record instead of the cooked one beside it, for a
 tool built without its content folder.
 
-Builds Release|ARM64 through Species.slnx (AGENTS.md §3), runs the measurement scenes of SpeciesPerformance, each from a
-fixed seed with a recorded command stream, reads the machine's configuration (processor, memory size, graphics adapter,
+Builds Release|ARM64 through Species.slnx (AGENTS.md §3), runs the headless measurement scenes of SpeciesPerformance,
+each from a fixed seed with a recorded command stream, then the rendered scenes of SpeciesFrameBench (M1 plan T18,
+ADR-126) unless --headless-only is given, reads the machine's configuration (processor, memory size, graphics adapter,
 driver version, display mode and OS build) and writes the configuration, the build's identity and each figure against
 its budget into the performance section of playtests/M1.md.
 
-The first run pins the machine. Every later run compares the configuration with the pinned one and stops on a
-difference, because a change of the machine re-baselines every result (DBG-209). Once the machine is pinned, a figure
-above its budget fails the run (exit code 1); the run that pins only reports. --quick runs every scene for a few ticks
-to show that it runs, and records nothing. --self-test is CI's: it runs the given tool with --quick, then proves the
-record's rules on fixtures in a temporary folder (the pin, a changed machine, a figure above its budget), and writes
-nothing into the checkout.
+The first run pins the machine, and the first run of the rendered scenes pins its display (O75). A later run whose
+processor, memory or graphics adapter differs from the pinned ones, or whose display differs for the rendered scenes,
+stops and records nothing, because a change of the hardware re-baselines every result (DBG-209); the driver and the OS
+build are recorded with each run and stop nothing. Once pinned, a figure above its budget fails the run (exit code 1);
+the run that pins only reports. The sandbox's battle drawn passes when the 99th percentile of its frame interval is at
+most 1000 ÷ mvp.client.fps_target + 1 ms (O75); its missed frames and the scene of mvp.client.figures_max figures are
+reported. --quick runs every scene briefly to show that it runs, and records nothing. --self-test is CI's: it runs the
+given tool with --quick, and the bench too when one is given (--warp draws it on the WARP adapter), then proves the
+record's rules on fixtures in a temporary folder, and writes nothing into the checkout.
 """
 import argparse
 import datetime
@@ -43,7 +48,12 @@ MACHINE_ITEMS = [
   ('display', 'Display mode'),
   ('os_build', 'OS build'),
 ]
+# O75: only the hardware stops a run; the driver and the OS build are recorded with each one.
+HARDWARE_ITEMS = ('processor', 'memory', 'adapter')
 PIN_MARK = re.compile(r'<!-- reference-machine (\{.*?\}) -->')
+DISPLAY_MARK = re.compile(r'<!-- reference-display (\{.*?\}) -->')  # O75: the rendered scenes' own pin
+FRAME_TOLERANCE_MS = 1.0  # O75: 60 frames per second is a 99th-percentile frame interval of 16.7 ms and 1 ms of tolerance
+RENDERED_SIZE = (1920, 1080)  # MVP-085
 SECTION = '## Performance'
 
 # ADR-080 item 2's cost budgets, item 3's region step budget and item 7's integrated server budget, and the travel
@@ -190,24 +200,75 @@ def machine_table(config):
   return f'| Item | Value |\n|---|---|\n{rows}\n'
 
 
-def run_section(when, build_id, configuration, platform, figures, factor, current_factor):
-  lines = [f'### Run {when}, build {build_id}, {configuration}|{platform}', '',
+def frame_budget_ms(frames):
+  """O75: the sandbox's battle drawn passes at a 99th-percentile frame interval of 1000 ÷ mvp.client.fps_target + 1 ms."""
+  return 1000.0 / max(frames['fps_target'], 1) + FRAME_TOLERANCE_MS
+
+
+def rendered_rows(frames):
+  """The rendered scenes' rows (scene, figure, measured, budget, result), and whether a judged figure is above its budget.
+  Only the sandbox's battle at 1,920 x 1,080 is judged; the rest is reported (O75)."""
+  budget = frame_budget_ms(frames)
+  rows = []
+  above = False
+  for scene in frames['scenes']:
+    name = scene['name']
+    size = (scene['window']['width'], scene['window']['height'])
+    p99 = scene['interval_ms']['p99']
+    if name == 'sandbox-drawn' and size == RENDERED_SIZE:
+      status = 'within budget' if p99 <= budget else 'above budget'
+      above = above or p99 > budget
+    elif name == 'sandbox-drawn':
+      status = f'not judged: drawn at {size[0]} x {size[1]}, not 1,920 x 1,080 (MVP-085)'
+    else:
+      status = 'reported (O75)'
+    count = max(scene['frames'], 1)
+    rows += [
+      (name, 'frame interval, 99th percentile (MVP-085)', f'{p99:.2f} ms', f'{budget:.1f} ms', status),
+      (name, 'frame interval, median and longest', f'{scene["interval_ms"]["p50"]:.2f} ms, {scene["interval_ms"]["max"]:.1f} ms', '—',
+       'reported'),
+      (name, "frame's work (its interval less the renderer's waits), 99th percentile", f'{scene["work_ms"]["p99"]:.2f} ms', '—',
+       'reported'),
+      (name, 'missed frames (O75)', f'{scene["missed_frames"]} of {scene["frames"]} ({scene["missed_frames"] / count:.2%})', '—',
+       'reported'),
+      (name, 'figures alive and on screen', f'{scene["figures_alive"]["max"]} alive at most; {scene["figures_on_screen"]["mean"]:.0f} '
+       f'on screen on average, {scene["figures_on_screen"]["max"]} at most', '—', 'reported'),
+    ]
+  return rows, above
+
+
+def run_section(when, build_id, config, result, frames):
+  """The run's section, and whether a headless and a rendered figure is above its budget."""
+  lines = [f'### Run {when}, build {build_id}, {result["configuration"]}|{result["platform"]}', '',
+           f'Driver {config.get("driver", "")}, OS build {config.get("os_build", "")}, display {config.get("display", "")} (O75).', '',
            '| Scene | Figure | Measured | Budget | Result |', '|---|---|---|---|---|']
   failed = False
-  for scene, key, value in figures:
+  for scene, key, value in figures_of(result):
     budget, unit, label = BUDGETS[key]
     status = status_of(value, budget)
     failed = failed or status == 'above budget'
     lines.append(f'| {scene} | {label} | {value:.4g} {unit} | {budget:g} | {status} |')
+  factor = travel_factor(result)
+  current_factor = result['valley_path_factor']
   if factor is not None:
     lines.append(f'| travel | `wld.travel.valley_path_factor` (WLD-100): the largest per-edge median of walking time × speed ÷ '
                  f'straight distance | {factor:.4f} | {current_factor:g} in the record | '
                  f'{"within the record" if factor <= current_factor else "above the record"} |')
-  return '\n'.join(lines) + '\n', failed
+  rendered_above = False
+  if frames is not None:
+    rows, rendered_above = rendered_rows(frames)
+    lines += [f'| {scene} | {figure} | {measured} | {budget} | {status} |' for scene, figure, measured, budget, status in rows]
+  return '\n'.join(lines) + '\n', failed, rendered_above
 
 
-def record(path, config, result, build_id, when):
-  """Writes the run into the record's performance section; returns its exit code (0, 1 above budget, 2 machine changed)."""
+def pinned_display(text):
+  m = DISPLAY_MARK.search(text)
+  return json.loads(m.group(1)) if m else None
+
+
+def record(path, config, result, frames, build_id, when):
+  """Writes the run into the record's performance section; returns its exit code (0, 1 above budget, 2 hardware changed).
+  _frames is the bench's result, or None for a headless run."""
   text = open(path, encoding='utf-8').read() if os.path.exists(path) else (
     '# M1\n\nThe record of milestone M1 (README, "A milestone record"). Its exit criteria are added when the milestone '
     'ends.\n')
@@ -216,25 +277,65 @@ def record(path, config, result, build_id, when):
                                 'the reference test machine, pinned by the first run, and each run with every figure '
                                 'against its budget.\n')
   pinned = pinned_machine(text)
-  if pinned is not None and pinned != config:
-    changed = [label for key, label in MACHINE_ITEMS if pinned.get(key) != config.get(key)]
-    print(f'RunPerformance: the machine differs from the pinned one in: {", ".join(changed)}. A change of the machine '
-          're-baselines every result (DBG-209); nothing was recorded.')
+  if pinned is not None:
+    # O75: only the hardware stops a run.
+    changed = [label for key, label in MACHINE_ITEMS if key in HARDWARE_ITEMS and pinned.get(key) != config.get(key)]
+    if changed:
+      print(f'RunPerformance: the machine differs from the pinned one in: {", ".join(changed)}. A change of the hardware '
+            're-baselines every result (DBG-209); nothing was recorded.')
+      return 2
+  display = pinned_display(text)
+  if frames is not None and display is not None and display.get('display') != config.get('display'):
+    print(f'RunPerformance: the display is {config.get("display")}, and the rendered scenes pinned {display.get("display")} (O75). '
+          'A change of the display re-baselines the rendered results (DBG-209); nothing was recorded.')
     return 2
   if pinned is None:
     text = text.rstrip('\n') + (f'\n\n### Reference test machine\n\nPinned by the run of {when}, build {build_id} (DBG-209).\n\n'
                                 f'{machine_table(config)}\n<!-- reference-machine {json.dumps(config, sort_keys=True)} -->\n')
-  section, above = run_section(when, build_id, result['configuration'], result['platform'], figures_of(result), travel_factor(result),
-                               result['valley_path_factor'])
+  if frames is not None and display is None:
+    pin = {'display': config.get('display')}
+    text = text.rstrip('\n') + (f'\n\n### Reference display\n\nPinned for the rendered scenes by the run of {when}, build '
+                                f'{build_id} (O75, DBG-209): {config.get("display")}.\n\n'
+                                f'<!-- reference-display {json.dumps(pin, sort_keys=True)} -->\n')
+  section, above, rendered_above = run_section(when, build_id, config, result, frames)
   text = text.rstrip('\n') + '\n\n' + section
   with open(path, 'w', encoding='utf-8', newline='\n') as f:
     f.write(text)
-  print(f'RunPerformance: recorded in {shown(path)}' + ('; the machine is pinned by this run' if pinned is None else ''))
+  print(f'RunPerformance: recorded in {shown(path)}' + ('; the machine is pinned by this run' if pinned is None else '') +
+        ('; the display is pinned by this run' if frames is not None and display is None else ''))
   # The run that pins only reports; after it, a figure above its budget fails the run (DBG-208).
-  return 1 if pinned is not None and above else 0
+  return 1 if (pinned is not None and above) or (display is not None and rendered_above) else 0
 
 
-def self_test(tool, tuning_source):
+def run_bench(bench, quick, out, warp=False):
+  args = [bench, '--out', out] + (['--quick'] if quick else []) + (['--warp'] if warp else [])
+  completed = subprocess.run(args, capture_output=True, text=True)
+  if completed.returncode != 0:
+    raise SystemExit(f'RunPerformance: {os.path.basename(bench)} failed (exit code {completed.returncode}):\n'
+                     f'{completed.stdout}{completed.stderr}')
+  with open(out, encoding='utf-8') as f:
+    return json.load(f)
+
+
+def frames_like(frames, p99, size=RENDERED_SIZE):
+  """A copy of the bench's result with every scene's 99th-percentile interval and window set: the self-test's fixtures."""
+  return dict(frames, scenes=[dict(scene, interval_ms=dict(scene['interval_ms'], p99=p99), window={'width': size[0], 'height': size[1]})
+                              for scene in frames['scenes']])
+
+
+# The bench's result when the self-test runs none: the shape SpeciesFrameBench writes, its figures made up.
+FRAMES_FIXTURE = {
+  'tool': 'SpeciesFrameBench', 'configuration': 'Debug', 'platform': 'x64', 'quick': True, 'fps_target': 60, 'figures_max': 1500,
+  'scenes': [{'name': name, 'seed': 1, 'figures': figures, 'ticks': 20, 'frames': 120, 'suspended_frames': 0,
+              'window': {'width': 1920, 'height': 1080},
+              'interval_ms': {'p50': 16.6, 'p95': 16.7, 'p99': 16.8, 'max': 33.4, 'mean': 16.7},
+              'work_ms': {'p50': 6.0, 'p95': 7.0, 'p99': 8.0, 'max': 12.0, 'mean': 6.2}, 'missed_frames': 1,
+              'figures_alive': {'min': figures, 'max': figures}, 'figures_on_screen': {'mean': figures * 0.8, 'max': figures}}
+             for name, figures in (('sandbox-drawn', 400), ('figures-max-drawn', 1500))],
+}
+
+
+def self_test(tool, tuning_source, bench=None, warp=False):
   with tempfile.TemporaryDirectory() as folder:
     result = run_tool(tool, True, os.path.join(folder, 'quick.json'), tuning_source)
     figures = figures_of(result)
@@ -242,6 +343,13 @@ def self_test(tool, tuning_source):
     missing = set(BUDGETS) - keys
     if missing:
       sys.exit(f'RunPerformance: the quick run gives no figure for {sorted(missing)}')
+    frames = FRAMES_FIXTURE
+    if bench:
+      frames = run_bench(bench, True, os.path.join(folder, 'frames.json'), warp)
+      drawn = {scene['name']: scene['frames'] for scene in frames['scenes']}
+      if sorted(drawn) != ['figures-max-drawn', 'sandbox-drawn'] or min(drawn.values()) == 0:
+        sys.exit(f'RunPerformance: the bench\'s quick run drew {drawn}')
+      print(f'RunPerformance: the bench\'s quick run drew {drawn}')
     path = os.path.join(folder, 'M1.md')
     reference = {key: f'fixture {key}' for key, _ in MACHINE_ITEMS}
     within = dict(result, scenes=[dict(s, step_us=dict(s['step_us'])) for s in result['scenes']])
@@ -251,18 +359,33 @@ def self_test(tool, tuning_source):
     for e in within['travel']:
       e['advance_us'] = 0.0
     within['draw_ns'] = 1.0
-    checks = [
-      ('the first run pins the machine and only reports', record(path, reference, result, 'fixture', 'pin') == 0 and
-       pinned_machine(open(path, encoding='utf-8').read()) == reference),
-      ('a run on another machine stops', record(path, dict(reference, driver='other'), result, 'fixture', 'moved') == 2),
-      ('a pinned run within every budget passes', record(path, reference, within, 'fixture', 'within') == 0),
-    ]
     above = dict(within, draw_ns=1000.0)
-    checks.append(('a pinned run above a budget fails', record(path, reference, above, 'fixture', 'above') == 1))
-    failed = [name for name, ok in checks if not ok]
-    for name, ok in checks:
+    smooth = frames_like(frames, 16.0)
+    slow = frames_like(frames, 25.0)
+    checks = [
+      ('the first run pins the machine and only reports', lambda: record(path, reference, result, None, 'fixture', 'pin') == 0 and
+       pinned_machine(open(path, encoding='utf-8').read()) == reference),
+      ('a run on another processor stops', lambda: record(path, dict(reference, processor='other'), result, None, 'fixture', 'moved') == 2),
+      ('a run with another driver and OS build is recorded (O75)',
+       lambda: record(path, dict(reference, driver='other', os_build='other'), within, None, 'fixture', 'driver') == 0),
+      ('a pinned run within every budget passes', lambda: record(path, reference, within, None, 'fixture', 'within') == 0),
+      ('a pinned run above a budget fails', lambda: record(path, reference, above, None, 'fixture', 'above') == 1),
+      ('the first rendered run pins the display and only reports',
+       lambda: record(path, reference, within, slow, 'fixture', 'display') == 0 and
+       pinned_display(open(path, encoding='utf-8').read()) == {'display': reference['display']}),
+      ('a rendered run on another display stops',
+       lambda: record(path, dict(reference, display='other'), within, smooth, 'fixture', 'other display') == 2),
+      ('a headless run on another display is recorded',
+       lambda: record(path, dict(reference, display='other'), within, None, 'fixture', 'headless') == 0),
+      ('a rendered run within its frame budget passes', lambda: record(path, reference, within, smooth, 'fixture', 'smooth') == 0),
+      ('a rendered run above its frame budget fails', lambda: record(path, reference, within, slow, 'fixture', 'slow') == 1),
+      ('a rendered run at another size is not judged',
+       lambda: record(path, reference, within, frames_like(frames, 25.0, (1280, 720)), 'fixture', 'small') == 0),
+    ]
+    results = [(name, check()) for name, check in checks]
+    for name, ok in results:
       print(f'RunPerformance: fixture: {name}: {"ok" if ok else "FAILED"}')
-    if failed:
+    if not all(ok for _, ok in results):
       sys.exit(1)
     print(f'RunPerformance: the quick run gave {len(figures)} figures over {len(result["scenes"])} scenes and '
           f'{len(result["travel"])} travel edges')
@@ -272,6 +395,9 @@ def main():
   parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
   parser.add_argument('--skip-build', action='store_true')
   parser.add_argument('--tool', help='the SpeciesPerformance.exe to run (default: the Release|ARM64 build)')
+  parser.add_argument('--bench', help='the SpeciesFrameBench.exe to run (default: the Release|ARM64 build)')
+  parser.add_argument('--headless-only', action='store_true', help='run the headless scenes alone')
+  parser.add_argument('--warp', action='store_true', help='with --self-test: draw the bench on the WARP adapter (a Debug build)')
   parser.add_argument('--record', default=RECORD)
   parser.add_argument('--quick', action='store_true')
   parser.add_argument('--self-test', action='store_true')
@@ -280,13 +406,17 @@ def main():
   if args.self_test:
     if not args.tool:
       sys.exit('RunPerformance: --self-test needs --tool')
-    self_test(args.tool, args.tuning_source)
+    self_test(args.tool, args.tuning_source, args.bench, args.warp)
     return 0
   if not args.skip_build:
     build()
   tool = args.tool or os.path.join(ROOT, PLATFORM, CONFIGURATION, 'SpeciesPerformance.exe')
   with tempfile.TemporaryDirectory() as folder:
     result = run_tool(tool, args.quick, os.path.join(folder, 'result.json'), args.tuning_source)
+    frames = None
+    if not args.headless_only:
+      bench = args.bench or os.path.join(ROOT, PLATFORM, CONFIGURATION, 'SpeciesFrameBench.exe')
+      frames = run_bench(bench, args.quick, os.path.join(folder, 'frames.json'))
   for scene, key, value in figures_of(result):
     budget, unit, label = BUDGETS[key]
     print(f'RunPerformance: {scene}: {label}: {value:.4g} {unit} against {budget:g}: {status_of(value, budget)}')
@@ -294,15 +424,19 @@ def main():
   if factor is not None:
     print(f'RunPerformance: travel: the largest per-edge median walking factor is {factor:.4f} '
           f'(wld.travel.valley_path_factor is {result["valley_path_factor"]:g})')
+  if frames is not None:
+    for scene, figure, measured, budget, status in rendered_rows(frames)[0]:
+      print(f'RunPerformance: {scene}: {figure}: {measured} against {budget}: {status}')
   if args.quick:
     print('RunPerformance: a quick run measures nothing and records nothing')
     return 0
-  if (result['configuration'], result['platform']) != (CONFIGURATION, PLATFORM):
-    print(f'RunPerformance: the tool is a {result["configuration"]}|{result["platform"]} build; only {CONFIGURATION}|{PLATFORM} '
-          'is recorded (O69)')
-    return 0
+  for name, built in (('tool', result), ('bench', frames)):
+    if built is not None and (built['configuration'], built['platform']) != (CONFIGURATION, PLATFORM):
+      print(f'RunPerformance: the {name} is a {built["configuration"]}|{built["platform"]} build; only {CONFIGURATION}|{PLATFORM} '
+            'is recorded (O69)')
+      return 0
   when = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
-  return record(args.record, machine(), result, identity(), when)
+  return record(args.record, machine(), result, frames, identity(), when)
 
 
 if __name__ == '__main__':

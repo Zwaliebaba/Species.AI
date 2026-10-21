@@ -20,6 +20,7 @@ namespace
 constexpr Neuron::Vec3 WORLD_UP{0.0, 1.0, 0.0};
 constexpr std::int64_t MAX_CLOTH_STEPS = 30; // a frame's cloth steps at most; a clamped frame of 0.25 s holds 15 (VFX-016)
 constexpr double BANNER_PHASE_PER_ID = 10.0; // VFX-142: t + unit id × 10
+constexpr float SQRT_TWO = 1.41421356f;      // a turned square's half-diagonal over its half-side
 
 Neuron::Vec3 Cross(const Neuron::Vec3& _a, const Neuron::Vec3& _b) noexcept
 {
@@ -93,6 +94,10 @@ void LeaderLook::Draw(std::span<const InterpolatedFigure> _figures, const Neuron
   poles.pass = Neuron::ScenePass::Actors;
   poles.entry = "cloth_pole";
   poles.texture = static_cast<std::uint16_t>(SceneTexture::GlowRound); // the pole reads no texture (VFX-141)
+  Neuron::QuadBatch pointers;
+  pointers.pass = Neuron::ScenePass::Pointers;
+  pointers.entry = "cloth_pointer";
+  pointers.texture = static_cast<std::uint16_t>(SceneTexture::FlagPointer);
   std::array<Neuron::TriangleBatch, 3> banners{};
   for (std::size_t n = 0; n < banners.size(); ++n)
   {
@@ -279,6 +284,25 @@ void LeaderLook::Draw(std::span<const InterpolatedFigure> _figures, const Neuron
         }
       }
     }
+    // VFX-141, R-UNIT-191 (ADR-125): a Waypoint banner carries the pointer over its cloth, turned so that its arrow, which
+    // points down in its art, points towards the screen position of its order route's first waypoint (O78).
+    if (state.order == static_cast<std::uint8_t>(LeaderOrder::Waypoint) && state.target.has_value())
+    {
+      Neuron::Vec3 center{};
+      for (const Neuron::Vec3& vertex : kept.cloth)
+      {
+        center = center + vertex;
+      }
+      center = center * (1.0 / static_cast<double>(kept.cloth.size()));
+      const std::array<double, 2> towards = ScreenDirection(center, PositionOf(*state.target), _view.camera, _view.cameraFront);
+      Neuron::SceneQuad pointer;
+      pointer.position = center;
+      pointer.halfWidth = static_cast<float>(size * cloth.pointerSizeFactor);
+      pointer.halfHeight = pointer.halfWidth;
+      pointer.rotationRadians = static_cast<float>(std::atan2(towards[0], -towards[1]));
+      pointers.quads.push_back(pointer);
+      pointers.cullRadius = std::max(pointers.cullRadius, pointer.halfWidth * SQRT_TWO);
+    }
   }
   std::erase_if(m_leaders, [](const auto& _entry) { return !_entry.second.drawn; });
 
@@ -302,6 +326,10 @@ void LeaderLook::Draw(std::span<const InterpolatedFigure> _figures, const Neuron
     {
       _draws.triangles.push_back(std::move(batch));
     }
+  }
+  if (!pointers.quads.empty())
+  {
+    _draws.quads.push_back(std::move(pointers));
   }
 }
 

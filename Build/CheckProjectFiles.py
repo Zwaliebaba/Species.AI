@@ -155,6 +155,7 @@ PRAGMA_LIBRARY = re.compile(r'^\s*#\s*pragma\s+comment\s*\(\s*lib\s*,\s*"([^"]+)
 SOCKET_HEADERS = {'winsock.h', 'winsock2.h', 'ws2tcpip.h', 'mswsock.h', 'ws2def.h', 'afunix.h'}  # ADR-088 item 1, ADR-089
 AGILITY_PACKAGE = 'Microsoft.Direct3D.D3D12'
 AGILITY_EXPORTS = 'Species/AgilitySdkExports.cpp'         # BLD-042: the constants Species.exe exports
+AGILITY_EXPORTS_FILE = 'AgilitySdkExports.cpp'            # and every other program that restores the SDK (ADR-126)
 AGILITY_EXPORT_OPTIONS = ('/EXPORT:D3D12SDKVersion=AGILITY_SDK_VERSION,DATA', '/EXPORT:D3D12SDKPath=AGILITY_SDK_PATH,DATA')
 AGILITY_SDK_PATH = r'".\\D3D12\\"'                     # bld.pin.d3d12_sdk_path, as a C++ literal
 PIX_FILE = 'NeuronCore/Profile.cpp'                       # ADR-068, DBG-080: no other code calls the PIX runtime
@@ -166,7 +167,8 @@ BANNED_EXTENSIONS = ('.hpp', '.hh', '.hxx', '.h++', '.cc', '.cxx', '.c++', '.c',
                      '.cppm', '.mpp', '.mxx')
 R7_EXCEPTIONS = {'pch', 'framework', 'targetver', 'Resource'}
 # R7 (owner decision O65): a program project also holds its application manifest and, with an icon, its resource script,
-# each named for the program and registered as the item kind MSBuild compiles it with.
+# each named for the program and registered as the item kind MSBuild compiles it with. A tool that is an application is
+# a program too, as the frame bench's window needs the game's manifest (ADR-126).
 PROGRAM_FILE_KINDS = {'.manifest': 'Manifest', '.rc': 'ResourceCompile'}
 PASCAL_CASE = re.compile(r'^[A-Z][A-Za-z0-9]*$')
 SHADER_NAME = re.compile(r'^[A-Z][A-Za-z0-9]*(VS|PS|CS)\.hlsl$')
@@ -434,7 +436,7 @@ def rule_5(tree):
       if extension.lower() in BANNED_EXTENSIONS:
         yield f'{p.directory}/{f}', f'the file kind {extension} is not used; sources are .h and .cpp (AGENTS.md R7)'
       if extension.lower() in PROGRAM_FILE_KINDS:
-        if p.name not in PROGRAMS:
+        if p.name not in PROGRAMS and not (p.is_tool() and p.configuration_type() == 'Application'):
           yield f'{p.directory}/{f}', f'a {extension} file belongs to a program project only (AGENTS.md R7)'
         elif stem != p.name:
           yield f'{p.directory}/{f}', f'a program\'s {extension} file is {p.name}{extension} (AGENTS.md R7)'
@@ -530,28 +532,30 @@ def rule_9(tree):
 
 def agility_exports(tree):
   """BLD-042 and BLD T7: the exported D3D12SDKVersion is the minor version of the restored Agility SDK package, and
-  the path is bld.pin.d3d12_sdk_path; the client exports both, and the server neither."""
-  client = tree.by_name.get('Species')
-  if client is None or not any(package == AGILITY_PACKAGE for package, _ in client.packages):
-    return
-  if not os.path.exists(os.path.join(tree.root, AGILITY_EXPORTS)):
-    yield AGILITY_EXPORTS, f'missing: Species restores {AGILITY_PACKAGE} and exports no D3D12SDKVersion (BLD-042)'
-    return
-  text = strip_comments_only(tree.read(AGILITY_EXPORTS))
-  m = re.search(r'\bAGILITY_SDK_VERSION\s*=\s*(\d+)\s*;', text)
-  exported = m.group(1) if m else None
-  for p in tree.projects:
-    for package, version in p.packages:
-      parts = version.split('.')
-      if package == AGILITY_PACKAGE and (len(parts) < 2 or parts[1] != exported):
-        yield AGILITY_EXPORTS, f'exports D3D12SDKVersion {exported}, and {p.name} restores {package} {version} (BLD-042)'
-  if not re.search(r'\bAGILITY_SDK_PATH\s*=\s*' + re.escape(AGILITY_SDK_PATH) + r'\s*;', text):
-    yield AGILITY_EXPORTS, 'AGILITY_SDK_PATH is not ".\\\\D3D12\\\\" (bld.pin.d3d12_sdk_path, BLD-042)'
-  for c, pl in SolutionModel.BUILDS:
-    options = client.setting(c, 'Link.AdditionalOptions', pl) or ''
-    for option in AGILITY_EXPORT_OPTIONS:
-      if option not in options:
-        yield client.path, f'{c}|{pl} lacks the linker option {option} (BLD-042)'
+  the path is bld.pin.d3d12_sdk_path; every program that restores the package exports both (the client and the frame
+  bench, ADR-126), and the server neither."""
+  for client in tree.projects:
+    if client.configuration_type() != 'Application' or not any(package == AGILITY_PACKAGE for package, _ in client.packages):
+      continue
+    exports = f'{client.directory}/{AGILITY_EXPORTS_FILE}'
+    if not os.path.exists(os.path.join(tree.root, exports)):
+      yield exports, f'missing: {client.name} restores {AGILITY_PACKAGE} and exports no D3D12SDKVersion (BLD-042)'
+      continue
+    text = strip_comments_only(tree.read(exports))
+    m = re.search(r'\bAGILITY_SDK_VERSION\s*=\s*(\d+)\s*;', text)
+    exported = m.group(1) if m else None
+    for p in tree.projects:
+      for package, version in p.packages:
+        parts = version.split('.')
+        if package == AGILITY_PACKAGE and (len(parts) < 2 or parts[1] != exported):
+          yield exports, f'exports D3D12SDKVersion {exported}, and {p.name} restores {package} {version} (BLD-042)'
+    if not re.search(r'\bAGILITY_SDK_PATH\s*=\s*' + re.escape(AGILITY_SDK_PATH) + r'\s*;', text):
+      yield exports, 'AGILITY_SDK_PATH is not ".\\\\D3D12\\\\" (bld.pin.d3d12_sdk_path, BLD-042)'
+    for c, pl in SolutionModel.BUILDS:
+      options = client.setting(c, 'Link.AdditionalOptions', pl) or ''
+      for option in AGILITY_EXPORT_OPTIONS:
+        if option not in options:
+          yield client.path, f'{c}|{pl} lacks the linker option {option} (BLD-042)'
   server = tree.by_name.get(SERVER)
   for c, pl in SolutionModel.BUILDS:
     if server and 'D3D12SDK' in (server.setting(c, 'Link.AdditionalOptions', pl) or ''):

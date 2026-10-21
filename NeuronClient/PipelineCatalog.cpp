@@ -58,16 +58,17 @@ D3D12_BLEND_DESC BlendOf(BlendState _blend) noexcept
                           .RenderTarget = {target, target, target, target, target, target, target, target}};
 }
 
-// RND-055: solid fill, counter-clockwise front faces (ADR-016), depth clip on, and the entry's depth bias, none by default.
+// RND-055: solid fill, counter-clockwise front faces (ADR-016), depth clip on, and the entry's depth bias and slope-scaled
+// bias, none by default.
 // Under reversed Z a positive bias draws nearer the camera (RND-219).
-D3D12_RASTERIZER_DESC RasterizerOf(CullState _cull, bool _multisampled, std::int32_t _depthBias) noexcept
+D3D12_RASTERIZER_DESC RasterizerOf(CullState _cull, bool _multisampled, std::int32_t _depthBias, float _slopeDepthBias) noexcept
 {
   return D3D12_RASTERIZER_DESC{.FillMode = D3D12_FILL_MODE_SOLID,
                                .CullMode = _cull == CullState::Back ? D3D12_CULL_MODE_BACK : D3D12_CULL_MODE_NONE,
                                .FrontCounterClockwise = TRUE,
                                .DepthBias = _depthBias,
                                .DepthBiasClamp = 0.0f,
-                               .SlopeScaledDepthBias = 0.0f,
+                               .SlopeScaledDepthBias = _slopeDepthBias,
                                .DepthClipEnable = TRUE,
                                .MultisampleEnable = _multisampled ? TRUE : FALSE,
                                .AntialiasedLineEnable = FALSE,
@@ -151,13 +152,26 @@ constexpr std::array<D3D12_INPUT_ELEMENT_DESC, 2> DOT_ELEMENTS{{
   {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
 }};
 
+constexpr std::array<D3D12_INPUT_ELEMENT_DESC, 2> OVERLAY_QUAD_ELEMENTS{{
+  {"PLACEMENT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
+  {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
+}};
+
 } // namespace
 
 std::span<const D3D12_INPUT_ELEMENT_DESC> InputLayoutOf(VertexLayout _layout) noexcept
 {
   // In the order of VertexLayout.
-  const std::array<std::span<const D3D12_INPUT_ELEMENT_DESC>, 9> layouts{
-    {{}, TERRAIN_ELEMENTS, SEA_ELEMENTS, SKY_ELEMENTS, TEXT_ELEMENTS, DOT_ELEMENTS, QUAD_ELEMENTS, MESH_ELEMENTS, TRIANGLE_ELEMENTS}};
+  const std::array<std::span<const D3D12_INPUT_ELEMENT_DESC>, 10> layouts{{{},
+                                                                           TERRAIN_ELEMENTS,
+                                                                           SEA_ELEMENTS,
+                                                                           SKY_ELEMENTS,
+                                                                           TEXT_ELEMENTS,
+                                                                           DOT_ELEMENTS,
+                                                                           QUAD_ELEMENTS,
+                                                                           MESH_ELEMENTS,
+                                                                           TRIANGLE_ELEMENTS,
+                                                                           OVERLAY_QUAD_ELEMENTS}};
   const auto index = static_cast<std::size_t>(_layout);
   return index < layouts.size() ? layouts[index] : std::span<const D3D12_INPUT_ELEMENT_DESC>{};
 }
@@ -176,7 +190,7 @@ std::expected<PipelineCatalog, std::string> PipelineCatalog::Create(ID3D12Device
                                             .PS = {entry.pixelShader.data(), entry.pixelShader.size()},
                                             .BlendState = BlendOf(entry.blend),
                                             .SampleMask = UINT_MAX,
-                                            .RasterizerState = RasterizerOf(entry.cull, samples > 1, entry.depthBias),
+                                            .RasterizerState = RasterizerOf(entry.cull, samples > 1, entry.depthBias, entry.slopeDepthBias),
                                             .DepthStencilState = DepthOf(scene ? entry.depth : DepthState::None),
                                             .InputLayout = {elements.data(), static_cast<UINT>(elements.size())},
                                             .IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,

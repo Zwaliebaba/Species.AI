@@ -30,10 +30,11 @@ struct WorldStart
   std::uint16_t regions = 1;
   bool sandbox = false;
   bool watched = false;
+  std::uint32_t syntheticFigures = 0; // ADR-126: a sandbox whose sides are a synthetic battle of this many figures; 0: none
 };
 
 // A new world: made, its terrain attached to region 0 (ADR-102), and populated as the sandbox when it is one (M1 plan
-// §6). The world server and the journal's replay make every new world through this one function. _tuning outlives it.
+// §6), or as a synthetic battle when it names one (ADR-126). The world server and the journal's replay make every new world through this one function. _tuning outlives it.
 [[nodiscard]] std::unique_ptr<WorldSimulation> StartWorld(const WorldStart& _start, std::shared_ptr<const RegionTerrain> _terrain,
                                                           const TuningMvp& _tuning);
 

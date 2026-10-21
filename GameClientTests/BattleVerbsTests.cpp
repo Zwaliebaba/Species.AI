@@ -43,8 +43,9 @@ struct Figure
   std::uint8_t team = OWN;
 };
 
-// A replica whose latest tick is _tick and holds _figures whole.
-Species::StateReplica ReplicaOf(std::uint64_t _tick, const std::vector<Figure>& _figures)
+// _replica, emptied, with _tick its latest tick and _figures whole in it. It is filled in place: a StateReplica's maps
+// may allocate as they move.
+void Fill(Species::StateReplica& _replica, std::uint64_t _tick, const std::vector<Figure>& _figures)
 {
   std::vector<Species::StateRecord> records;
   for (const Figure& figure : _figures)
@@ -63,9 +64,8 @@ Species::StateReplica ReplicaOf(std::uint64_t _tick, const std::vector<Figure>& 
     Assert::IsTrue(record.has_value(), L"a whole record");
     records.push_back(record.value_or(Species::StateRecord{}));
   }
-  Species::StateReplica replica;
-  replica.Apply({_tick, 0, std::move(records)});
-  return replica;
+  _replica.Clear();
+  _replica.Apply({_tick, 0, std::move(records)});
 }
 
 /// The verbs of the committed record over one replica at a time, with the frame's drawn figures taken from it.
@@ -126,7 +126,7 @@ public:
   {
     // AC-CTRL-AB-01: with a Leader selected and the pointer on it, the secondary press toggles it and gives no order.
     Pump pump;
-    pump.replica = ReplicaOf(5, {{1, Species::FigureKind::Leader, GROUND, true}});
+    Fill(pump.replica, 5, {{1, Species::FigureKind::Leader, GROUND, true}});
     Species::VerbFrame frame = FrameAt(GROUND);
     frame.leaderUnderPointer = IdOf(1);
     frame.controls.secondaryDown = true;
@@ -135,8 +135,8 @@ public:
     Assert::IsTrue(toggles.size() == 1 && toggles[0].actor == IdOf(1) && toggles[0].team == OWN, L"the toggle");
     Assert::IsTrue(CommandsOf<Species::OrderUnitCommand>(commands).empty(), L"and no order");
     // Another Leader under the pointer while one is selected is its order's target, not a toggle.
-    pump.replica = ReplicaOf(
-      6, {{1, Species::FigureKind::Leader, GROUND, true}, {2, Species::FigureKind::Leader, GROUND + Neuron::Vec3{50.0, 0.0, 0.0}}});
+    Fill(pump.replica, 6,
+         {{1, Species::FigureKind::Leader, GROUND, true}, {2, Species::FigureKind::Leader, GROUND + Neuron::Vec3{50.0, 0.0, 0.0}}});
     frame.leaderUnderPointer = IdOf(2);
     const std::vector<Species::OrderUnitCommand> orders = CommandsOf<Species::OrderUnitCommand>(pump.Frame(frame));
     Assert::IsTrue(orders.size() == 1 && orders[0].position.x == GROUND.x + 50.0, L"ordered to the other Leader's position");
@@ -150,7 +150,7 @@ public:
   {
     // AC-CTRL-AB-02, the keyboard-and-mouse Leader rows: move-only with Shift, a straight route with Ctrl.
     Pump pump;
-    pump.replica = ReplicaOf(5, {{1, Species::FigureKind::Leader, GROUND, true}});
+    Fill(pump.replica, 5, {{1, Species::FigureKind::Leader, GROUND, true}});
     const Neuron::Vec3 target = GROUND + Neuron::Vec3{300.0, 0.0, 0.0};
     for (const auto& [moveOnly, straight] : {std::pair{false, false}, std::pair{true, false}, std::pair{false, true}})
     {
@@ -172,12 +172,12 @@ public:
   {
     // AC-CTRL-AB-05: C with a Leader selected demotes it; with none selected it sends nothing.
     Pump pump;
-    pump.replica = ReplicaOf(5, {{1, Species::FigureKind::Leader, GROUND, true}});
+    Fill(pump.replica, 5, {{1, Species::FigureKind::Leader, GROUND, true}});
     Species::VerbFrame frame = FrameAt(GROUND);
     frame.controls.demote = true;
     const std::vector<Species::DemoteLeaderCommand> demotes = CommandsOf<Species::DemoteLeaderCommand>(pump.Frame(frame));
     Assert::IsTrue(demotes.size() == 1 && demotes[0].actor == IdOf(1), L"the selected Leader");
-    pump.replica = ReplicaOf(6, {{1, Species::FigureKind::Leader, GROUND, false}});
+    Fill(pump.replica, 6, {{1, Species::FigureKind::Leader, GROUND, false}});
     Assert::IsTrue(CommandsOf<Species::DemoteLeaderCommand>(pump.Frame(frame)).empty(), L"nothing selected, nothing demoted");
   }
 
@@ -191,7 +191,7 @@ public:
     // Edge case 1 and input T21: one press on empty ground with nothing selected is one Select of nothing, and the circle
     // begins; one press on an own Leader is one Select of it; a press on the selected Leader is ignored.
     Pump pump;
-    pump.replica = ReplicaOf(5, {{1, Species::FigureKind::Leader, GROUND + Neuron::Vec3{80.0, 0.0, 0.0}}});
+    Fill(pump.replica, 5, {{1, Species::FigureKind::Leader, GROUND + Neuron::Vec3{80.0, 0.0, 0.0}}});
     Species::VerbFrame frame = FrameAt(GROUND);
     frame.controls.primaryDown = true;
     std::vector<Species::BattleCommand> commands = pump.Frame(frame);
@@ -210,7 +210,7 @@ public:
     selects = CommandsOf<Species::SelectCommand>(pump.Frame(frame));
     Assert::IsTrue(selects.size() == 1 && selects[0].actor == IdOf(1), L"one Select of the Leader");
     Assert::IsFalse(pump.verbs.Circle().has_value(), L"and no circle over a Leader");
-    pump.replica = ReplicaOf(6, {{1, Species::FigureKind::Leader, GROUND + Neuron::Vec3{80.0, 0.0, 0.0}, true}});
+    Fill(pump.replica, 6, {{1, Species::FigureKind::Leader, GROUND + Neuron::Vec3{80.0, 0.0, 0.0}, true}});
     Assert::IsTrue(CommandsOf<Species::SelectCommand>(pump.Frame(frame)).empty(), L"the selected Leader is not selected again");
   }
 
@@ -222,7 +222,7 @@ public:
   {
     // AC-CTRL-SP-09: held 1.5 s of real time, the circle reaches its 100 wu limit, sending at most one selection a tick.
     Pump pump;
-    pump.replica = ReplicaOf(1, {});
+    Fill(pump.replica, 1, {});
     Species::VerbFrame frame = FrameAt(GROUND);
     frame.controls.primaryDown = true;
     frame.controls.primaryHeld = true;
@@ -232,7 +232,7 @@ public:
     {
       if (index % 6 == 0)
       {
-        pump.replica = ReplicaOf(static_cast<std::uint64_t>(index / 6) + 1, {});
+        Fill(pump.replica, static_cast<std::uint64_t>(index / 6) + 1, {});
         ++ticks;
       }
       const std::vector<Species::SelectWorkersCommand> circles = CommandsOf<Species::SelectWorkersCommand>(pump.Frame(frame));
@@ -257,18 +257,41 @@ public:
     Species::VerbFrame frame = FrameAt(GROUND + Neuron::Vec3{200.0, 0.0, 0.0});
     frame.controls.secondaryDown = true;
     frame.controls.straight = true;
-    pump.replica = ReplicaOf(10, controlled);
+    Fill(pump.replica, 10, controlled);
     const std::vector<Species::OrderWorkersCommand> first = CommandsOf<Species::OrderWorkersCommand>(pump.Frame(frame));
     Assert::IsTrue(first.size() == 1 && first[0].straight && first[0].position.x == GROUND.x + 200.0, L"the first order");
-    pump.replica = ReplicaOf(19, controlled);
+    Fill(pump.replica, 19, controlled);
     Assert::IsTrue(CommandsOf<Species::OrderWorkersCommand>(pump.Frame(frame)).empty(), L"9 ticks later, none");
-    pump.replica = ReplicaOf(20, controlled);
+    Fill(pump.replica, 20, controlled);
     Assert::IsTrue(CommandsOf<Species::OrderWorkersCommand>(pump.Frame(frame)).size() == 1, L"10 ticks later, sent");
     Species::VerbFrame release = FrameAt(GROUND);
     release.controls.primaryUp = true;
     static_cast<void>(pump.Frame(release));
-    pump.replica = ReplicaOf(21, controlled);
+    Fill(pump.replica, 21, controlled);
     Assert::IsTrue(CommandsOf<Species::OrderWorkersCommand>(pump.Frame(frame)).size() == 1, L"after a circle's end, at once");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr125ARouteThatCannotBeWalkedHoldsTheOrdersBack)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"RND-354")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-CTRL-366")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr125ARouteThatCannotBeWalkedHoldsTheOrdersBack)
+  {
+    // While the unavailable cursor shows for the preview, neither the crowd nor the selected Leader is ordered; a toggle
+    // of the Leader under the pointer still goes.
+    Pump pump;
+    Species::VerbFrame frame = FrameAt(GROUND + Neuron::Vec3{200.0, 0.0, 0.0});
+    frame.controls.secondaryDown = true;
+    frame.routeBlocked = true;
+    Fill(pump.replica, 10, {{1, Species::FigureKind::Worker, GROUND, false, true}});
+    Assert::IsTrue(CommandsOf<Species::OrderWorkersCommand>(pump.Frame(frame)).empty(), L"no crowd order");
+    Fill(pump.replica, 11, {{2, Species::FigureKind::Leader, GROUND, true}});
+    Assert::IsTrue(CommandsOf<Species::OrderUnitCommand>(pump.Frame(frame)).empty(), L"no order to the selected Leader");
+    frame.leaderUnderPointer = IdOf(2);
+    Assert::IsTrue(CommandsOf<Species::ToggleUnitCommand>(pump.Frame(frame)).size() == 1, L"the toggle still goes");
+    frame.leaderUnderPointer.reset();
+    frame.routeBlocked = false;
+    Assert::IsTrue(CommandsOf<Species::OrderUnitCommand>(pump.Frame(frame)).size() == 1, L"and with a walkable route, the order");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(RCtrl042APromotionNamesTheNearestSelectableWorker)
@@ -279,10 +302,11 @@ public:
   {
     // Row O2 and O78: the nearest own Worker within 10 wu that is not Burning, which the highlight cursor marks.
     Pump pump;
-    pump.replica = ReplicaOf(5, {{1, Species::FigureKind::Worker, GROUND + Neuron::Vec3{8.0, 0.0, 0.0}},
-                                 {2, Species::FigureKind::Worker, GROUND + Neuron::Vec3{0.0, 0.0, 4.0}},
-                                 {3, Species::FigureKind::Worker, GROUND + Neuron::Vec3{1.0, 0.0, 0.0}, false, false, false, true},
-                                 {4, Species::FigureKind::Worker, GROUND, false, false, false, false, 1}});
+    Fill(pump.replica, 5,
+         {{1, Species::FigureKind::Worker, GROUND + Neuron::Vec3{8.0, 0.0, 0.0}},
+          {2, Species::FigureKind::Worker, GROUND + Neuron::Vec3{0.0, 0.0, 4.0}},
+          {3, Species::FigureKind::Worker, GROUND + Neuron::Vec3{1.0, 0.0, 0.0}, false, false, false, true},
+          {4, Species::FigureKind::Worker, GROUND, false, false, false, false, 1}});
     Species::VerbFrame frame = FrameAt(GROUND);
     static_cast<void>(pump.Frame(frame));
     Assert::IsTrue(pump.verbs.PromotableWorker() == IdOf(2), L"the nearest own Worker that is not Burning");
@@ -304,7 +328,7 @@ public:
     // A crowd order right after a circle resolves as the circle left the selection, before the replica shows it.
     Pump pump;
     std::uint64_t sequence = 0;
-    pump.replica = ReplicaOf(5, {{1, Species::FigureKind::Worker, GROUND}});
+    Fill(pump.replica, 5, {{1, Species::FigureKind::Worker, GROUND}});
     Species::VerbFrame frame = FrameAt(GROUND);
     frame.controls.primaryDown = true;
     frame.controls.primaryHeld = true;
@@ -325,7 +349,7 @@ public:
     {
       pump.verbs.Reported({reported, 6, Species::CommandResult::Applied});
     }
-    pump.replica = ReplicaOf(6, {{1, Species::FigureKind::Worker, GROUND}});
+    Fill(pump.replica, 6, {{1, Species::FigureKind::Worker, GROUND}});
     frame.controls = {};
     static_cast<void>(pump.Frame(frame));
     Assert::IsFalse(pump.verbs.WorkersSelected() || pump.verbs.LeaderSelected(), L"the replica's selection");
@@ -337,7 +361,7 @@ public:
   TEST_METHOD(RCtrl109ADeadSelectedLeaderIsReleasedOnce)
   {
     Pump pump;
-    pump.replica = ReplicaOf(5, {{1, Species::FigureKind::Leader, GROUND, true, false, true}});
+    Fill(pump.replica, 5, {{1, Species::FigureKind::Leader, GROUND, true, false, true}});
     const Species::VerbFrame frame = FrameAt(GROUND + Neuron::Vec3{0.0, 0.0, 500.0});
     const std::vector<Species::SelectCommand> selects = CommandsOf<Species::SelectCommand>(pump.Frame(frame));
     Assert::IsTrue(selects.size() == 1 && selects[0].actor == 0, L"one Select of nothing");
@@ -352,17 +376,17 @@ public:
   TEST_METHOD(RSim438ThePointerGoesOnceAPeriodWhileALeaderIsSelected)
   {
     Pump pump;
-    pump.replica = ReplicaOf(5, {{1, Species::FigureKind::Leader, GROUND, true}});
+    Fill(pump.replica, 5, {{1, Species::FigureKind::Leader, GROUND, true}});
     Assert::IsTrue(CommandsOf<Species::ControlStateCommand>(pump.Frame(FrameAt(GROUND))).size() == 1, L"the pointer");
     Assert::IsTrue(CommandsOf<Species::ControlStateCommand>(pump.Frame(FrameAt(GROUND + Neuron::Vec3{5.0, 0.0, 0.0}))).empty(),
                    L"not again within the tick");
-    pump.replica = ReplicaOf(6, {{1, Species::FigureKind::Leader, GROUND, true}});
+    Fill(pump.replica, 6, {{1, Species::FigureKind::Leader, GROUND, true}});
     Assert::IsTrue(CommandsOf<Species::ControlStateCommand>(pump.Frame(FrameAt(GROUND + Neuron::Vec3{5.0, 0.0, 0.0}))).size() == 1,
                    L"the next tick, moved");
-    pump.replica = ReplicaOf(7, {{1, Species::FigureKind::Leader, GROUND, true}});
+    Fill(pump.replica, 7, {{1, Species::FigureKind::Leader, GROUND, true}});
     Assert::IsTrue(CommandsOf<Species::ControlStateCommand>(pump.Frame(FrameAt(GROUND + Neuron::Vec3{5.0, 0.0, 0.0}))).empty(),
                    L"unmoved, none");
-    pump.replica = ReplicaOf(8, {{1, Species::FigureKind::Leader, GROUND, false}});
+    Fill(pump.replica, 8, {{1, Species::FigureKind::Leader, GROUND, false}});
     Assert::IsTrue(CommandsOf<Species::ControlStateCommand>(pump.Frame(FrameAt(GROUND))).empty(), L"nothing selected, none");
   }
 
@@ -372,7 +396,7 @@ public:
   TEST_METHOD(O77AClientOfNoTeamSendsNothing)
   {
     Pump pump;
-    pump.replica = ReplicaOf(5, {{1, Species::FigureKind::Worker, GROUND}});
+    Fill(pump.replica, 5, {{1, Species::FigureKind::Worker, GROUND}});
     Species::VerbFrame frame = FrameAt(GROUND);
     frame.controls.primaryDown = true;
     frame.controls.secondaryDown = true;

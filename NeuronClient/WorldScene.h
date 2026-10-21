@@ -169,10 +169,12 @@ struct SceneQuad
 enum class ScenePass : std::uint8_t
 {
   Actors,    // pass 7b
+  Pointers,  // pass 7b after the cloth: the flag pointers over the banners (ADR-125)
   Workers,   // pass 7d
   Effects,   // pass 10a
   Lasers,    // pass 10b
   Orbs,      // pass 11
+  Routes,    // pass 12
   Particles, // pass 15
   Count
 };
@@ -262,6 +264,28 @@ struct CursorQuad
   std::array<float, 4> color{1.0f, 1.0f, 1.0f, 1.0f};
 };
 
+// RND-357: the blend of an overlay quad, `overlay_alpha` or `overlay_additive`.
+enum class OverlayBlend : std::uint8_t
+{
+  Alpha,
+  Additive
+};
+
+/// A textured quad of the 2-D overlay (ADR-125): a world marker's layer in pass 16 (RND-356, RND-357) or a layer of the
+/// cursor's badge in pass 20 (R-CTRL-366). Its mask is a texture of SceneTextures; its centre and half-size are in
+/// physical pixels of the target from its top-left corner, and it turns clockwise on the screen by its rotation. Quads
+/// are drawn in their order, and a run of the same texture and blend with one call.
+struct OverlayQuad
+{
+  std::uint16_t texture = 0;
+  OverlayBlend blend = OverlayBlend::Additive;
+  float centerX = 0.0f;
+  float centerY = 0.0f;
+  float halfSize = 0.0f;
+  float rotationRadians = 0.0f;
+  std::array<float, 4> color{1.0f, 1.0f, 1.0f, 1.0f};
+};
+
 /// What one frame shows (RND-053's snapshot as M1 has it).
 struct FrameInputs
 {
@@ -282,6 +306,10 @@ struct FrameInputs
   std::shared_ptr<const SceneMeshes> sceneMeshes;
   std::vector<MeshBatch> meshBatches;
   std::vector<TriangleBatch> triangleBatches;
+  // The world markers' layers of pass 16 and the cursor's badge, under the cursor in pass 20 (ADR-125), drawn with the
+  // scene's textures in a world frame only.
+  std::vector<OverlayQuad> markers;
+  std::vector<OverlayQuad> cursorBadge;
   // The game cursor (ADR-119): its art, and the quad of this frame; none draws no cursor.
   std::shared_ptr<const CursorImages> cursorImages;
   std::optional<CursorQuad> cursor;

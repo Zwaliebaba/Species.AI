@@ -276,6 +276,15 @@
     <FXCompile Include="Shader\MeshLitVS.hlsl">
       <ShaderType>Vertex</ShaderType>
     </FXCompile>
+    <FXCompile Include="Shader\OverlayQuadAlphaPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\OverlayQuadPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\OverlayQuadVS.hlsl">
+      <ShaderType>Vertex</ShaderType>
+    </FXCompile>
     <FXCompile Include="Shader\SeaFlatPS.hlsl">
       <ShaderType>Pixel</ShaderType>
     </FXCompile>
@@ -338,6 +347,7 @@
     <None Include="Shader\DevelopmentText.hlsli" />
     <None Include="Shader\Final.hlsli" />
     <None Include="Shader\MeshLit.hlsli" />
+    <None Include="Shader\OverlayQuad.hlsli" />
     <None Include="Shader\SeaFlat.hlsli" />
     <None Include="Shader\SeaWaves.hlsli" />
     <None Include="Shader\Sky.hlsli" />

@@ -365,6 +365,9 @@ int Run()
     viewDesc.tuning = &*clientTuning;
     viewDesc.presentation = &*presentationTuning;
     viewDesc.planes = WorldLookOf(*clientTuning, *presentationTuning, {}).planes;
+#if ENGINE_DEVELOPMENT
+    viewDesc.scriptedVerbs = checkFrames.has_value(); // ADR-125: the render check draws the verbs' marks
+#endif
     SettlementView view(viewDesc);
 #if ENGINE_DEVELOPMENT
     if (checkFrames.has_value())

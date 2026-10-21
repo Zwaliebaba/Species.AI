@@ -17,4 +17,9 @@ namespace Neuron
 // reads its records, so the variant is compiled in, and a test holds it to the record's factor.
 inline constexpr std::int32_t DEPTH_BIAS_LASER = DepthBiasOf(1.2, 16'777'216.0);
 
+// VFX-014, ADR-125: the `bias_flag_pointer` variant, vfx.cloth.pointer_constant_bias (5) depth-bias units and
+// vfx.cloth.pointer_slope_bias (1.0) towards the camera; compiled in for the same reason, and held to the record.
+inline constexpr std::int32_t DEPTH_BIAS_FLAG_POINTER = 5;
+inline constexpr float SLOPE_DEPTH_BIAS_FLAG_POINTER = 1.0f;
+
 } // namespace Neuron

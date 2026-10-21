@@ -26,7 +26,7 @@ constexpr std::uint32_t HEALTH_BITS = 16;
 constexpr std::uint32_t TIMER_BITS = 16;
 constexpr std::uint32_t SIZE_BITS = 16;
 constexpr std::uint32_t FIGURE_FLAG_BITS = 5;
-constexpr std::uint32_t FIGURE_FIELD_BITS = 6;
+constexpr std::uint32_t FIGURE_FIELD_BITS = 7;
 constexpr std::uint32_t EFFECT_FIELD_BITS = 3;
 constexpr std::uint32_t ORB_FIELD_BITS = 3;
 constexpr std::uint64_t RECORD_KIND_MAX = static_cast<std::uint64_t>(RecordKind::Removed);
@@ -156,6 +156,7 @@ std::uint8_t FigureChanges(const ReplicatedFigure& _state, const ReplicatedFigur
   changed |= _state.task != _baseline.task ? FIGURE_FIELD_TASK : 0u;
   changed |= FigureFlags(_state) != FigureFlags(_baseline) ? FIGURE_FIELD_FLAGS : 0u;
   changed |= _state.order != _baseline.order ? FIGURE_FIELD_ORDER : 0u;
+  changed |= _state.target != _baseline.target ? FIGURE_FIELD_TARGET : 0u;
   return static_cast<std::uint8_t>(changed);
 }
 
@@ -222,6 +223,7 @@ std::optional<StateRecord> MakeRecord(StableId _id, const ReplicatedState& _stat
     delta.health = (record.changed & FIGURE_FIELD_HEALTH) != 0 ? figure->health : std::uint16_t{0};
     delta.task = (record.changed & FIGURE_FIELD_TASK) != 0 ? figure->task : std::uint8_t{0};
     delta.order = (record.changed & FIGURE_FIELD_ORDER) != 0 ? figure->order : std::uint8_t{0};
+    delta.target = (record.changed & FIGURE_FIELD_TARGET) != 0 ? figure->target : std::nullopt;
     if ((record.changed & FIGURE_FIELD_FLAGS) != 0)
     {
       SetFigureFlags(delta, FigureFlags(*figure));
@@ -284,6 +286,7 @@ std::optional<ReplicatedState> ApplyRecord(const StateRecord& _record, const Rep
     figure->health = (_record.changed & FIGURE_FIELD_HEALTH) != 0 ? delta.health : figure->health;
     figure->task = (_record.changed & FIGURE_FIELD_TASK) != 0 ? delta.task : figure->task;
     figure->order = (_record.changed & FIGURE_FIELD_ORDER) != 0 ? delta.order : figure->order;
+    figure->target = (_record.changed & FIGURE_FIELD_TARGET) != 0 ? delta.target : figure->target;
     if ((_record.changed & FIGURE_FIELD_FLAGS) != 0)
     {
       SetFigureFlags(*figure, FigureFlags(delta));
@@ -324,10 +327,13 @@ std::size_t RecordBits(const StateRecord& _record, std::optional<StableId> _prev
   const bool whole = _record.kind == RecordKind::Whole;
   if (std::holds_alternative<ReplicatedFigure>(_record.state))
   {
+    // A target is a presence bit and, when present, a whole position.
+    const auto& figure = std::get<ReplicatedFigure>(_record.state);
+    const std::size_t targetBits = 1 + (figure.target.has_value() ? WHOLE_POSITION_BITS : 0);
     if (whole)
     {
       return bits + TEAM_BITS + Neuron::BitsFor(FIGURE_KIND_MAX) + WHOLE_POSITION_BITS + YAW_BITS + HEALTH_BITS +
-             Neuron::BitsFor(FIGURE_TASK_MAX) + FIGURE_FLAG_BITS + Neuron::BitsFor(LEADER_ORDER_MAX);
+             Neuron::BitsFor(FIGURE_TASK_MAX) + FIGURE_FLAG_BITS + Neuron::BitsFor(LEADER_ORDER_MAX) + targetBits;
     }
     bits += FIGURE_FIELD_BITS;
     bits += (_record.changed & FIGURE_FIELD_POSITION) != 0 ? MoveBits(_record.move) : 0;
@@ -336,6 +342,7 @@ std::size_t RecordBits(const StateRecord& _record, std::optional<StableId> _prev
     bits += (_record.changed & FIGURE_FIELD_TASK) != 0 ? Neuron::BitsFor(FIGURE_TASK_MAX) : 0;
     bits += (_record.changed & FIGURE_FIELD_FLAGS) != 0 ? FIGURE_FLAG_BITS : 0;
     bits += (_record.changed & FIGURE_FIELD_ORDER) != 0 ? Neuron::BitsFor(LEADER_ORDER_MAX) : 0;
+    bits += (_record.changed & FIGURE_FIELD_TARGET) != 0 ? targetBits : 0;
     return bits;
   }
   if (std::holds_alternative<ReplicatedEffect>(_record.state))
@@ -416,6 +423,14 @@ void WriteRecord(Neuron::BitWriter& _writer, const StateRecord& _record, std::op
     if (whole || (_record.changed & FIGURE_FIELD_ORDER) != 0)
     {
       _writer.WriteBounded(figure->order, LEADER_ORDER_MAX);
+    }
+    if (whole || (_record.changed & FIGURE_FIELD_TARGET) != 0)
+    {
+      _writer.WriteBits(figure->target.has_value() ? 1u : 0u, 1);
+      if (figure->target.has_value())
+      {
+        WritePosition(_writer, *figure->target);
+      }
     }
     return;
   }
@@ -538,6 +553,10 @@ bool ReadRecord(Neuron::BitReader& _reader, StateRecord& _record, std::optional<
     if (whole || (_record.changed & FIGURE_FIELD_ORDER) != 0)
     {
       figure.order = static_cast<std::uint8_t>(_reader.ReadBounded(LEADER_ORDER_MAX));
+    }
+    if ((whole || (_record.changed & FIGURE_FIELD_TARGET) != 0) && _reader.ReadBits(1) != 0)
+    {
+      figure.target = ReadPosition(_reader);
     }
     _record.state = figure;
   }

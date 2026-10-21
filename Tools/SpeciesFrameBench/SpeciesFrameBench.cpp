@@ -1,0 +1,633 @@
+#include "pch.h"
+
+#include "AppWindow.h"
+#include "AssetError.h"
+#include "ClientSession.h"
+#include "Development.h"
+#include "DisplayAttempt.h"
+#include "FatalPath.h"
+#include "Files.h"
+#include "FloatEnvironment.h"
+#include "FrameProfile.h"
+#include "FrameRenderer.h"
+#include "InputBindings.h"
+#include "InputRouter.h"
+#include "IntegratedServer.h"
+#include "KeyboardMouseBackEnd.h"
+#include "Log.h"
+#include "LooseContent.h"
+#include "Picking.h"
+#include "PlatformClock.h"
+#include "PlatformLogSink.h"
+#include "PlatformMessage.h"
+#include "PlatformThread.h"
+#include "RunId.h"
+#include "SettlementView.h"
+#include "Tuning.h"
+#include "WorldPresentation.h"
+
+#include <algorithm>
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <exception>
+#include <expected>
+#include <filesystem>
+#include <format>
+#include <fstream>
+#include <limits>
+#include <memory>
+#include <optional>
+#include <span>
+#include <string>
+#include <string_view>
+#include <system_error>
+#include <utility>
+#include <variant>
+#include <vector>
+
+// The frame bench (M1 task T18, ADR-126, O79): a development tool that never ships. It composes the client and the
+// integrated server as Species.exe does, in the borderless window, and draws the rendered measurement scenes, each from
+// seed 1 with both sides under the AI and the camera fixed on the fight. After a warm-up it records each frame's
+// interval and work for a number of ticks, and writes them as JSON for Build/RunPerformance.py.
+//
+//   SpeciesFrameBench.exe [--quick] [--scenes <name,...>] [--out <file.json>] [--warp]
+//
+// --quick warms up for 1 s and measures 20 ticks, to show that the scenes run; its figures measure nothing. --warp, in a
+// Debug build, draws on the WARP adapter, since CI's runner has no GPU.
+
+namespace FrameBench
+{
+
+namespace
+{
+
+constexpr std::string_view PRODUCT_NAME = "SpeciesFrameBench";
+
+#if defined(_M_ARM64)
+constexpr std::string_view PLATFORM = "ARM64";
+#elif defined(_M_X64)
+constexpr std::string_view PLATFORM = "x64";
+#else
+constexpr std::string_view PLATFORM = "other";
+#endif
+#if ENGINE_DEVELOPMENT
+constexpr std::string_view CONFIGURATION = "Debug";
+#else
+constexpr std::string_view CONFIGURATION = "Release";
+#endif
+
+// Every scene's world: the valley of seed 1 that the headless scenes measure (ADR-110).
+constexpr std::uint64_t SCENE_SEED = 1;
+// O79: a warm-up of 10 s from the first world frame, then 1,200 ticks measured; a quick run's are 1 s and 20 ticks.
+constexpr Neuron::Nanoseconds WARM_UP{10'000'000'000};
+constexpr Neuron::Nanoseconds WARM_UP_QUICK{1'000'000'000};
+constexpr std::uint64_t MEASURED_TICKS = 1'200;
+constexpr std::uint64_t MEASURED_TICKS_QUICK = 20;
+// A scene that has not drawn its world by then has failed.
+constexpr Neuron::Nanoseconds LOAD_LIMIT{120'000'000'000};
+// RND-032's low rate while the window is minimised or occluded (ADR-092).
+constexpr Neuron::Nanoseconds SUSPENDED_POLL_PERIOD{100'000'000};
+constexpr double NANOSECONDS_PER_MILLISECOND = 1.0e6;
+
+// The pre-UI messages a failed start can show, as Species.exe has them (PLT-039); the bench runs unattended, so they are
+// logged rather than shown.
+constexpr std::array COMPILED_TEXTS{
+  Neuron::CompiledText{"ui.error.internal", "The frame bench stopped because of an internal error (run id {runId})."},
+  Neuron::CompiledText{"ui.error.gpu_unsupported",
+                       "The frame bench cannot start: the graphics adapter does not support what the game needs.\n\nAdapter: "
+                       "{adapter}\nMissing: {capability}"},
+  Neuron::CompiledText{"ui.error.display_mode", "The frame bench cannot start: no window could be shown on this display."},
+  Neuron::CompiledText{"ui.error.resolution_rejected", "The preferred screen size was rejected."},
+  Neuron::CompiledText{"ui.error.content_missing", "The frame bench cannot start: its game data is missing."},
+  Neuron::CompiledText{"ui.error.content_damaged", "The frame bench cannot start: its game data is damaged."},
+};
+
+// The rendered scenes of the M1 plan's T18 row (O79): the sandbox's battle of 400, judged against mvp.client.fps_target,
+// and a synthetic battle of mvp.client.figures_max figures, reported.
+enum class SceneKind : std::uint8_t
+{
+  Sandbox,
+  FiguresMax
+};
+
+struct Scene
+{
+  std::string_view name;
+  SceneKind kind = SceneKind::Sandbox;
+};
+
+constexpr std::array<Scene, 2> SCENES{{{"sandbox-drawn", SceneKind::Sandbox}, {"figures-max-drawn", SceneKind::FiguresMax}}};
+
+struct Options
+{
+  bool quick = false;
+  bool warp = false;
+  std::vector<std::string> scenes; // none: every scene
+  std::filesystem::path out;       // none: standard output
+};
+
+struct Summary
+{
+  double p50 = 0.0;
+  double p95 = 0.0;
+  double p99 = 0.0;
+  double max = 0.0;
+  double mean = 0.0;
+};
+
+/// What one rendered scene drew: every measured frame's interval and work, in milliseconds, and its figures.
+struct SceneResult
+{
+  std::string name;
+  std::uint32_t figures = 0;         // the battle's figures at its start
+  std::uint64_t ticks = 0;           // the server ticks measured
+  std::vector<double> intervals;     // from one frame boundary to the next
+  std::vector<double> works;         // each interval less the renderer's waits (ADR-120)
+  std::uint64_t suspendedFrames = 0; // frames not presented, minimised or occluded
+  std::uint32_t aliveMin = std::numeric_limits<std::uint32_t>::max();
+  std::uint32_t aliveMax = 0;
+  double onScreenSum = 0.0;
+  std::uint32_t onScreenMax = 0;
+  Neuron::SizePx window;
+};
+
+void Print(std::FILE* _stream, std::string_view _text)
+{
+  std::fwrite(_text.data(), 1, _text.size(), _stream);
+  std::fputc('\n', _stream);
+}
+
+Summary SummaryOf(const std::vector<double>& _values)
+{
+  Summary summary;
+  if (_values.empty())
+  {
+    return summary;
+  }
+  // The frame page's rule (ADR-120), so the bench and the overlay agree.
+  summary.p50 = Neuron::LowerIndexPercentile(_values, 50.0);
+  summary.p95 = Neuron::LowerIndexPercentile(_values, 95.0);
+  summary.p99 = Neuron::LowerIndexPercentile(_values, 99.0);
+  summary.max = *std::ranges::max_element(_values);
+  double sum = 0.0;
+  for (const double value : _values)
+  {
+    sum += value;
+  }
+  summary.mean = sum / static_cast<double>(_values.size());
+  return summary;
+}
+
+// O75: the display's refresh periods that frames missed: an interval of n periods, rounded, misses n − 1 of them.
+std::uint64_t MissedFrames(std::span<const double> _intervals, double _periodMs)
+{
+  std::uint64_t missed = 0;
+  for (const double interval : _intervals)
+  {
+    const auto periods = static_cast<std::uint64_t>(std::max(std::llround(interval / _periodMs), 1LL));
+    missed += periods - 1;
+  }
+  return missed;
+}
+
+// The scene's fight (O79): the sandbox's sides meet between their sites, the synthetic battle stands about the
+// valley's centre; either on the terrain.
+Neuron::Vec3 FightOf(SceneKind _kind, const Species::RegionTerrain& _terrain, const Species::TuningMvp& _tuning)
+{
+  const Species::RegionLayout& layout = _terrain.layout;
+  Neuron::Vec3 fight = layout.valleyCenter;
+  if (_kind == SceneKind::Sandbox)
+  {
+    const auto& sandbox = _tuning.mvp.sandbox;
+    const Neuron::Vec3& steward = layout.sites[static_cast<std::size_t>(sandbox.stewardSite) % layout.sites.size()];
+    const Neuron::Vec3& ai = layout.sites[static_cast<std::size_t>(sandbox.aiSite) % layout.sites.size()];
+    fight = (steward + ai) * 0.5;
+  }
+  fight.y = _terrain.field.Height(fight.x, fight.z);
+  return fight;
+}
+
+// The replica's living figures, and those whose positions lie on the screen of _frame.
+std::pair<std::uint32_t, std::uint32_t> FiguresOf(const Species::StateReplica& _replica, const Neuron::FrameView& _frame,
+                                                  Neuron::SizePx _size)
+{
+  std::uint32_t alive = 0;
+  std::uint32_t onScreen = 0;
+  for (const auto& [id, state] : _replica.Latest())
+  {
+    const auto* figure = std::get_if<Species::ReplicatedFigure>(&state);
+    if (figure == nullptr || figure->dead)
+    {
+      continue;
+    }
+    ++alive;
+    const std::optional<Neuron::ScreenPoint> screen = Neuron::ProjectToScreen(Species::PositionOf(figure->position), _frame, _size);
+    if (screen.has_value() && screen->x >= 0.0 && screen->y >= 0.0 && screen->x <= static_cast<double>(_size.width) &&
+        screen->y <= static_cast<double>(_size.height))
+    {
+      ++onScreen;
+    }
+  }
+  return {alive, onScreen};
+}
+
+/// The client's parts that every scene shares: the clock, the window, the renderer, the content and the records, and the
+/// input router that reads the window's close request.
+struct Bench
+{
+  Neuron::PlatformClock* clock = nullptr;
+  Neuron::AppWindow* window = nullptr;
+  Neuron::FrameRenderer* renderer = nullptr;
+  Neuron::InputRouter* router = nullptr;
+  Neuron::KeyboardMouseBackEnd* keyboardMouse = nullptr;
+  const Neuron::LooseContent* content = nullptr;
+  const Species::TuningMvp* tuning = nullptr;
+  const Species::TuningPresentation* presentation = nullptr;
+};
+
+enum class SceneEnd : std::uint8_t
+{
+  Measured,
+  Closed,  // the window was closed
+  Stalled, // the world was not drawn within the load limit
+  ServerFailed
+};
+
+// One scene: its world started on the integrated server, the session drawn until the world is in view, the camera aimed
+// at the fight, the warm-up, then every frame of the measured ticks.
+SceneEnd RunScene(const Scene& _scene, const Options& _options, const Bench& _bench, SceneResult& _result)
+{
+  _result.name = std::string(_scene.name);
+  const Species::TuningMvp& tuning = *_bench.tuning;
+  Species::IntegratedServer::Desc serverDesc;
+  serverDesc.clock = _bench.clock;
+  serverDesc.content = _bench.content;
+  serverDesc.worldSeed = SCENE_SEED;
+  serverDesc.sandbox = true;
+  serverDesc.watched = true; // O77, O79: both sides under the AI
+  _result.figures = static_cast<std::uint32_t>(2 * tuning.mvp.sandbox.sideWorkers);
+  if (_scene.kind == SceneKind::FiguresMax)
+  {
+    serverDesc.syntheticFigures = static_cast<std::uint32_t>(tuning.mvp.client.figuresMax);
+    _result.figures = serverDesc.syntheticFigures;
+  }
+  Species::IntegratedServer server(serverDesc);
+  if (const auto started = server.Start(); !started)
+  {
+    Neuron::Log(Neuron::LogCategory::Content, Neuron::LogLevel::Error, "{}", Neuron::FormatAssetError(started.error()));
+    return SceneEnd::ServerFailed;
+  }
+  Species::ClientSession::Desc sessionDesc;
+  sessionDesc.transport = server.Connect();
+  sessionDesc.showTitle = [&window = *_bench.window](std::string_view _title) { window.SetTitle(_title); };
+  sessionDesc.productName = std::string(PRODUCT_NAME);
+  sessionDesc.tuning = &tuning;
+  sessionDesc.clock = _bench.clock;
+  Species::ClientSession session(std::move(sessionDesc));
+  Species::WorldPresentation::Desc worldDesc;
+  worldDesc.tuning = &tuning;
+  worldDesc.presentation = _bench.presentation;
+  worldDesc.content = _bench.content;
+  worldDesc.clock = _bench.clock;
+  Species::WorldPresentation world(worldDesc);
+  Species::SettlementView::Desc viewDesc;
+  viewDesc.tuning = &tuning;
+  viewDesc.presentation = _bench.presentation;
+  viewDesc.planes = Species::WorldLookOf(tuning, *_bench.presentation, {}).planes;
+  Species::SettlementView view(viewDesc);
+
+  const Neuron::Nanoseconds warmUp = _options.quick ? WARM_UP_QUICK : WARM_UP;
+  const std::uint64_t measuredTicks = _options.quick ? MEASURED_TICKS_QUICK : MEASURED_TICKS;
+  const Neuron::Nanoseconds start = _bench.clock->Now();
+  Neuron::Nanoseconds boundary = start;
+  bool aimed = false;
+  std::optional<Neuron::Nanoseconds> warmStart;
+  std::optional<std::uint64_t> firstTick;
+  SceneEnd end = SceneEnd::Measured;
+  while (true)
+  {
+    _bench.window->PumpMessages();
+    _bench.router->AdvanceFrame({.windowFocused = _bench.window->HasFocus()}, _bench.window->ClientSize());
+    if (_bench.keyboardMouse->TakeCloseRequest())
+    {
+      end = SceneEnd::Closed;
+      break;
+    }
+    if (!warmStart.has_value() && _bench.clock->Now() - start > LOAD_LIMIT)
+    {
+      end = SceneEnd::Stalled;
+      break;
+    }
+    const Neuron::SizePx size = _bench.window->ClientSize();
+    // The camera never moves: the view is updated without focus, and aimed at the fight once the world is entered.
+    view.Update(session, *_bench.router, std::chrono::duration<double>(_bench.clock->Now() - boundary).count(), size, false);
+    if (!aimed && view.InWorld() && session.Terrain() != nullptr)
+    {
+      view.EnterAt(FightOf(_scene.kind, *session.Terrain(), tuning));
+      aimed = true;
+    }
+    session.Update();
+    world.Update(session);
+    const Neuron::FrameInputs inputs = world.Frame(session, view, _bench.renderer->FramesPerSecond());
+    const std::uint64_t worldFrames = _bench.renderer->WorldFrames();
+    const Neuron::FrameOutcome outcome = _bench.renderer->RenderFrame(inputs);
+    const bool measuring = firstTick.has_value();
+    if (outcome == Neuron::FrameOutcome::Suspended)
+    {
+      _result.suspendedFrames += measuring ? 1 : 0;
+      _bench.clock->WaitUntil(_bench.clock->Now() + SUSPENDED_POLL_PERIOD);
+      boundary = _bench.clock->Now();
+      continue;
+    }
+    _bench.clock->FrameBoundary();
+    const Neuron::Nanoseconds now = _bench.clock->Now();
+    const double interval = static_cast<double>((now - boundary).count()) / NANOSECONDS_PER_MILLISECOND;
+    boundary = now;
+    if (measuring)
+    {
+      _result.intervals.push_back(interval);
+      _result.works.push_back(interval - static_cast<double>(_bench.renderer->LastFrameWaits().count()) / NANOSECONDS_PER_MILLISECOND);
+      const auto [alive, onScreen] = FiguresOf(session.Replica(), view.Camera().View(size), size);
+      _result.aliveMin = std::min(_result.aliveMin, alive);
+      _result.aliveMax = std::max(_result.aliveMax, alive);
+      _result.onScreenSum += onScreen;
+      _result.onScreenMax = std::max(_result.onScreenMax, onScreen);
+      _result.window = size;
+      if (session.ServerTick().value_or(0) >= *firstTick + measuredTicks)
+      {
+        _result.ticks = session.ServerTick().value_or(0) - *firstTick;
+        break;
+      }
+    }
+    else if (aimed && worldFrames > 0)
+    {
+      // The warm-up runs from the first world frame drawn after the camera was aimed.
+      if (!warmStart.has_value())
+      {
+        warmStart = now;
+      }
+      else if (now - *warmStart >= warmUp && session.ServerTick().has_value())
+      {
+        firstTick = *session.ServerTick();
+        Neuron::Log(Neuron::LogCategory::Diagnostics, Neuron::LogLevel::Info, "frame bench: {} measures from tick {} for {} ticks",
+                    _scene.name, *firstTick, measuredTicks);
+      }
+    }
+  }
+  session.Close();
+  server.Stop();
+  return end;
+}
+
+std::string JsonOf(const Summary& _summary)
+{
+  return std::format(R"({{"p50": {:.4f}, "p95": {:.4f}, "p99": {:.4f}, "max": {:.4f}, "mean": {:.4f}}})", _summary.p50, _summary.p95,
+                     _summary.p99, _summary.max, _summary.mean);
+}
+
+std::string JsonOf(const std::vector<SceneResult>& _results, const Options& _options, const Species::TuningMvp& _tuning)
+{
+  const auto fpsTarget = std::max<std::int64_t>(_tuning.mvp.client.fpsTarget, 1);
+  const double periodMs = 1000.0 / static_cast<double>(fpsTarget);
+  std::string scenes;
+  for (const SceneResult& result : _results)
+  {
+    const double frames = static_cast<double>(std::max<std::size_t>(result.intervals.size(), 1));
+    scenes += std::format(R"({}    {{"name": "{}", "seed": {}, "figures": {}, "ticks": {}, "frames": {}, "suspended_frames": {}, )"
+                          R"("window": {{"width": {}, "height": {}}}, "interval_ms": {}, "work_ms": {}, "missed_frames": {}, )"
+                          R"("figures_alive": {{"min": {}, "max": {}}}, "figures_on_screen": {{"mean": {:.1f}, "max": {}}}}})",
+                          scenes.empty() ? "" : ",\n", result.name, SCENE_SEED, result.figures, result.ticks, result.intervals.size(),
+                          result.suspendedFrames, result.window.width, result.window.height, JsonOf(SummaryOf(result.intervals)),
+                          JsonOf(SummaryOf(result.works)), MissedFrames(result.intervals, periodMs),
+                          result.aliveMax == 0 ? 0U : result.aliveMin, result.aliveMax, result.onScreenSum / frames, result.onScreenMax);
+  }
+  return std::format("{{\n  \"tool\": \"{}\", \"configuration\": \"{}\", \"platform\": \"{}\", \"quick\": {}, \"fps_target\": {}, "
+                     "\"figures_max\": {},\n  \"scenes\": [\n{}\n  ]\n}}\n",
+                     PRODUCT_NAME, CONFIGURATION, PLATFORM, _options.quick ? "true" : "false", fpsTarget, _tuning.mvp.client.figuresMax,
+                     scenes);
+}
+
+std::optional<Options> ParseOptions(std::span<const std::string_view> _arguments)
+{
+  Options options;
+  for (std::size_t i = 0; i < _arguments.size(); ++i)
+  {
+    const std::string_view argument = _arguments[i];
+    const bool hasValue = i + 1 < _arguments.size();
+    if (argument == "--quick")
+    {
+      options.quick = true;
+    }
+    else if (argument == "--warp")
+    {
+      options.warp = true;
+    }
+    else if (argument == "--scenes" && hasValue)
+    {
+      std::string_view list = _arguments[++i];
+      while (!list.empty())
+      {
+        const std::size_t comma = list.find(',');
+        options.scenes.emplace_back(list.substr(0, comma));
+        list = comma == std::string_view::npos ? std::string_view{} : list.substr(comma + 1);
+      }
+    }
+    else if (argument == "--out" && hasValue)
+    {
+      options.out = std::filesystem::path(_arguments[++i]);
+    }
+    else
+    {
+      Print(stderr, std::format("unknown option {}", argument));
+      return std::nullopt;
+    }
+  }
+  for (const std::string& name : options.scenes)
+  {
+    if (std::ranges::find(SCENES, std::string_view(name), &Scene::name) == SCENES.end())
+    {
+      Print(stderr, std::format("unknown scene {}", name));
+      return std::nullopt;
+    }
+  }
+  return options;
+}
+
+// The logs folder beside the executable, as Species.exe's until the locations of PLT-015 and PLT-016 exist.
+std::filesystem::path LogsFolder()
+{
+  std::filesystem::path folder = Neuron::ExecutableFolder() / L"logs";
+  std::error_code error;
+  std::filesystem::create_directories(folder, error);
+  return error ? std::filesystem::path{} : folder;
+}
+
+int Run(const Options& _options)
+{
+  Neuron::InstallFatalHandlers();
+  Neuron::NameCurrentThread("main");
+  Neuron::PlatformClock clock(std::make_unique<Neuron::CounterTimeSource>());
+  Neuron::ApplyDefaultFloatEnvironment();
+  const std::uint64_t runId = Neuron::DrawRunId();
+  const Neuron::PlatformMessageContext messages{PRODUCT_NAME, runId, COMPILED_TEXTS};
+  Neuron::SetPlatformMessageContext(&messages);
+  Neuron::SetPlatformMessagesUnattended(true); // the performance script runs it; nobody would close a dialog
+  Neuron::Logger::Desc logDesc;
+  logDesc.clock = &clock;
+  logDesc.directory = LogsFolder();
+  logDesc.runId = runId;
+  logDesc.header = {{"product", std::string(PRODUCT_NAME)}, {"milestone", "M1"}};
+  Neuron::Logger logger(std::move(logDesc));
+  Neuron::SetPlatformLogSink(&logger);
+
+  // The cooked records of the loose-content folder beside the executable, as the programs read them (ADR-108).
+  const std::expected<Neuron::LooseContent, Neuron::AssetError> content =
+    Neuron::LooseContent::Mount(Neuron::ExecutableFolder() / L"content");
+  if (!content)
+  {
+    Print(stderr, std::format("the content cannot be mounted: {}", Neuron::FormatAssetError(content.error())));
+    return 1;
+  }
+  const std::expected<Species::TuningMvp, Neuron::AssetError> tuning = Species::LoadTuningMvp(*content);
+  const std::expected<Species::TuningPresentation, Neuron::AssetError> presentation = Species::LoadTuningPresentation(*content);
+  if (!tuning || !presentation)
+  {
+    Print(stderr, std::format("the records cannot be read: {}", Neuron::FormatAssetError(!tuning ? tuning.error() : presentation.error())));
+    return 1;
+  }
+
+  // MVP-085: the borderless window over the primary display, which the scenes measure at its native mode (O75).
+  Neuron::SizePx desktop = Neuron::FALLBACK_WINDOW_SIZE;
+  for (const Neuron::MonitorInfo& monitor : Neuron::EnumerateMonitors())
+  {
+    if (monitor.primary)
+    {
+      desktop = {monitor.desktop.width, monitor.desktop.height};
+    }
+  }
+  const Neuron::DisplayAttempt attempt = Neuron::StartupDisplayAttempts(Neuron::WindowMode::BorderlessFullScreen, {}, desktop).front();
+  Neuron::AppWindow::Desc windowDesc;
+  windowDesc.clock = &clock;
+  windowDesc.title = std::string(PRODUCT_NAME);
+  windowDesc.placement.mode = attempt.mode;
+  windowDesc.renderSize = attempt.renderSize;
+  std::expected<Neuron::AppWindow, Neuron::PlatformError> window = Neuron::AppWindow::Create(windowDesc);
+  if (!window)
+  {
+    Print(stderr, "the window cannot be made");
+    return 1;
+  }
+  Neuron::RenderConfig renderConfig;
+  renderConfig.frameRateWindowSeconds = presentation->ref.sim.frame.fpsWindow;
+  renderConfig.frameRateInitial = presentation->ref.sim.frame.fpsInitial;
+#if ENGINE_DEVELOPMENT
+  renderConfig.softwareAdapter = _options.warp;
+#endif
+  std::expected<std::unique_ptr<Neuron::FrameRenderer>, Neuron::StartupFailure> renderer =
+    Neuron::FrameRenderer::Create(*window, clock, renderConfig);
+  if (!renderer)
+  {
+    Print(stderr, std::format("the renderer cannot start on {}: {}", renderer.error().adapter, renderer.error().capability));
+    return 1;
+  }
+  window->Show();
+
+  Neuron::KeyboardMouseBackEnd keyboardMouse(*window);
+  const std::vector<Neuron::ActionBindings> bindings = Species::DefaultBindings();
+  Neuron::InputRouter router(bindings, keyboardMouse, &keyboardMouse);
+  window->SetInputSink(&keyboardMouse);
+  const Neuron::WindowListenerId listener = window->AddListener(
+    [&keyboardMouse](const Neuron::WindowEvent& _event)
+    {
+      if (std::holds_alternative<Neuron::EndOfSession>(_event))
+      {
+        keyboardMouse.RequestClose();
+      }
+    });
+  const Bench bench{&clock, &*window, renderer->get(), &router, &keyboardMouse, &*content, &*tuning, &*presentation};
+  std::vector<SceneResult> results;
+  int code = 0;
+  for (const Scene& scene : SCENES)
+  {
+    if (!_options.scenes.empty() && std::ranges::find(_options.scenes, scene.name) == _options.scenes.end())
+    {
+      continue;
+    }
+    SceneResult result;
+    const SceneEnd end = RunScene(scene, _options, bench, result);
+    if (end != SceneEnd::Measured)
+    {
+      Print(stderr, std::format("{} {}", scene.name,
+                                end == SceneEnd::Closed    ? "was ended by closing the window"
+                                : end == SceneEnd::Stalled ? "drew no world within the load limit"
+                                                           : "could not start its server"));
+      code = end == SceneEnd::Closed ? 3 : 1;
+      break;
+    }
+    Print(stdout, std::format("{}: {} frames over {} ticks", scene.name, result.intervals.size(), result.ticks));
+    results.push_back(std::move(result));
+  }
+  router.ConfinePointer(false);
+  window->RemoveListener(listener);
+  window->SetInputSink(nullptr);
+  renderer->reset(); // PLT-043: the swap chain goes before the window
+  if (code == 0)
+  {
+    const std::string json = JsonOf(results, _options, *tuning);
+    if (_options.out.empty())
+    {
+      std::fwrite(json.data(), 1, json.size(), stdout);
+    }
+    else
+    {
+      std::ofstream file(_options.out, std::ios::binary);
+      file << json;
+      if (!file)
+      {
+        Print(stderr, std::format("{} cannot be written", _options.out.string()));
+        code = 1;
+      }
+    }
+  }
+  Neuron::SetPlatformLogSink(nullptr);
+  Neuron::SetPlatformMessageContext(nullptr);
+  return code;
+}
+
+} // namespace
+
+} // namespace FrameBench
+
+int main(int _argc, char** _argv)
+{
+  try
+  {
+    const std::span arguments(_argv, static_cast<std::size_t>(_argc));
+    std::vector<std::string_view> values;
+    for (const char* argument : arguments.subspan(1))
+    {
+      values.emplace_back(argument);
+    }
+    const std::optional<FrameBench::Options> options = FrameBench::ParseOptions(values);
+    if (!options)
+    {
+      FrameBench::Print(stderr, "usage: SpeciesFrameBench.exe [--quick] [--scenes <name,...>] [--out <file>] [--warp]");
+      return 2;
+    }
+    return FrameBench::Run(*options);
+  }
+  catch (const std::exception& error)
+  {
+    std::fputs("SpeciesFrameBench: ", stderr);
+    std::fputs(error.what(), stderr);
+    std::fputc('\n', stderr);
+  }
+  catch (...)
+  {
+    std::fputs("SpeciesFrameBench: an unknown exception\n", stderr);
+  }
+  return 1;
+}

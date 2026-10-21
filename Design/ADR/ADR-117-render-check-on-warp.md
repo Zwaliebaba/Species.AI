@@ -73,3 +73,4 @@ Chosen option: "1".
 
 * Related: [ADR-001](ADR-001-direct3d-12-renderer-on-the-agility-sdk.md), [ADR-002](ADR-002-minimum-gpu-capability.md), [ADR-092](ADR-092-first-window-device-and-presentation.md), [ADR-113](ADR-113-the-frame-at-m1.md).
 * The code: `Species/Species.cpp`, `NeuronClient/GraphicsDevice`, `NeuronCore/StartupOptions`, `NeuronCore/PlatformMessage`, `Build/CheckWorldFrame.py`.
+* **Amendment 2026-10-21 (M1 task T17b, [ADR-125](ADR-125-battle-marks-route-preview-and-world-markers-at-m1.md)).** The render check drives the battle verbs by script, so that what they draw reaches the WARP adapter: it promotes a Worker, orders the new Leader towards the region's centre, then holds a selection circle with the ground point beyond the Workers. Each step is logged. `Build\CheckWorldFrame.py` draws 40 world frames by default, so the script has the ticks it needs.

@@ -15,7 +15,7 @@ namespace
 {
 
 // The journal's file version, raised with every change of its layout.
-constexpr std::uint64_t JOURNAL_FORMAT = 2; // 2: the watched sandbox (O77)
+constexpr std::uint64_t JOURNAL_FORMAT = 3; // 2: the watched sandbox (O77); 3: the synthetic battle's figures (ADR-126)
 constexpr std::uint32_t JOURNAL_FORMAT_BITS = 32;
 // The most entries a journal file holds: a bound for the reader.
 constexpr std::uint64_t JOURNAL_ENTRIES_MAX = std::uint64_t{1} << 32;
@@ -40,7 +40,11 @@ std::unique_ptr<WorldSimulation> StartWorld(const WorldStart& _start, std::share
   if (_terrain)
   {
     world->Region(0).AttachTerrain(std::move(_terrain));
-    if (_start.sandbox)
+    if (_start.sandbox && _start.syntheticFigures > 0)
+    {
+      PopulateSyntheticBattle(world->Region(0), _start.syntheticFigures);
+    }
+    else if (_start.sandbox)
     {
       PopulateSandbox(world->Region(0), _start.watched);
     }
@@ -69,6 +73,7 @@ std::vector<std::byte> WriteJournal(const CommandJournal& _journal)
   writer.WriteBits(_journal.start.regions, 16);
   writer.WriteBool(_journal.start.sandbox);
   writer.WriteBool(_journal.start.watched);
+  writer.WriteBits(_journal.start.syntheticFigures, 32);
   writer.WriteBounded(_journal.entries.size(), JOURNAL_ENTRIES_MAX);
   for (const JournalEntry& entry : _journal.entries)
   {
@@ -97,6 +102,7 @@ std::optional<CommandJournal> ReadJournal(std::span<const std::byte> _bytes)
   journal.start.regions = static_cast<std::uint16_t>(reader.ReadBits(16));
   journal.start.sandbox = reader.ReadBool();
   journal.start.watched = reader.ReadBool();
+  journal.start.syntheticFigures = static_cast<std::uint32_t>(reader.ReadBits(32));
   const std::uint64_t entries = reader.ReadBounded(JOURNAL_ENTRIES_MAX);
   std::uint64_t previousTick = journal.start.firstTick;
   for (std::uint64_t index = 0; index < entries && !reader.Failed(); ++index)

@@ -38,6 +38,9 @@
 #include "CompiledShader/FinalVS.h"
 #include "CompiledShader/MeshLitPS.h"
 #include "CompiledShader/MeshLitVS.h"
+#include "CompiledShader/OverlayQuadAlphaPS.h"
+#include "CompiledShader/OverlayQuadPS.h"
+#include "CompiledShader/OverlayQuadVS.h"
 #include "CompiledShader/SeaFlatPS.h"
 #include "CompiledShader/SeaFlatVS.h"
 #include "CompiledShader/SeaWavesPS.h"
@@ -149,10 +152,12 @@ enum class WorldPass : std::uint8_t
   Effects,
   Lasers,
   Orbs,
+  Routes,
   Particles,
   Dots,
   Resolve,
   Final,
+  Markers,
   Cursor,
   OverlayText,
   Present
@@ -314,7 +319,7 @@ bool CreateSwapChain(RendererState& _state)
 }
 
 // The world frame's pipeline states (RND-061, ADR-113): the entries its passes use, and the final pass's.
-const std::array<PipelineEntry, 25> WORLD_PIPELINES{{
+const std::array<PipelineEntry, 30> WORLD_PIPELINES{{
   {"sky", g_SkyVS, g_SkyPS, VertexLayout::SkyInstance, BlendState::Additive, DepthState::None, CullState::Back, PipelineTarget::Scene},
   {"terrain", g_TerrainVS, g_TerrainPS, VertexLayout::Terrain, BlendState::Opaque, DepthState::TestWrite, CullState::Back,
    PipelineTarget::Scene},
@@ -373,6 +378,19 @@ const std::array<PipelineEntry, 25> WORLD_PIPELINES{{
    DepthState::Test, CullState::None, PipelineTarget::Scene},
   {"particle_additive", g_UnlitTexturedVS, g_UnlitTexturedParticleGlowPS, VertexLayout::QuadInstance, BlendState::Additive,
    DepthState::Test, CullState::None, PipelineTarget::Scene},
+  // M1 task T17 (ADR-125): the flag pointer over a Waypoint banner in pass 7b with the bias variant `bias_flag_pointer`
+  // (VFX-141); the route preview's spots and arrows in pass 12 (RND-353, RND-355); and the overlay's masks of the world
+  // markers in pass 16 and the cursor's badge in pass 20 (RND-357, R-CTRL-366).
+  {"cloth_pointer", g_UnlitTexturedVS, g_UnlitTexturedMaskPS, VertexLayout::QuadInstance, BlendState::Alpha, DepthState::Test,
+   CullState::None, PipelineTarget::Scene, DEPTH_BIAS_FLAG_POINTER, SLOPE_DEPTH_BIAS_FLAG_POINTER},
+  {"route_line", g_UnlitTexturedVS, g_UnlitTexturedParticleGlowPS, VertexLayout::QuadInstance, BlendState::Alpha, DepthState::None,
+   CullState::None, PipelineTarget::Scene},
+  {"route_arrow", g_UnlitTexturedVS, g_UnlitTexturedMaskPS, VertexLayout::QuadInstance, BlendState::Alpha, DepthState::None,
+   CullState::None, PipelineTarget::Scene},
+  {"overlay_alpha", g_OverlayQuadVS, g_OverlayQuadAlphaPS, VertexLayout::OverlayQuadInstance, BlendState::Alpha, DepthState::None,
+   CullState::None, PipelineTarget::BackBuffer},
+  {"overlay_additive", g_OverlayQuadVS, g_OverlayQuadPS, VertexLayout::OverlayQuadInstance, BlendState::Additive, DepthState::None,
+   CullState::None, PipelineTarget::BackBuffer},
 }};
 
 // The world frame's targets, at these indices of its table (RND-063, ADR-113).
@@ -416,6 +434,7 @@ WorldFrameTable WorldFrame(bool _multisampled)
   add(WorldPass::Effects, "pass_10a_effects", "effect_additive", scene);
   add(WorldPass::Lasers, "pass_10b_laser_bolts", "laser_bolt", scene);
   add(WorldPass::Orbs, "pass_11_essence_orbs", "orb_additive", scene);
+  add(WorldPass::Routes, "pass_12_route_lines", "route_line", scene);
   add(WorldPass::Particles, "pass_15_particles", "particle_additive", scene);
 #if ENGINE_DEVELOPMENT
   add(WorldPass::Dots, "pass_24_development_drawing", "development_dots", scene); // RND-076: Debug builds only
@@ -428,6 +447,7 @@ WorldFrameTable WorldFrame(bool _multisampled)
   add(WorldPass::Final, "final", "final",
       {{_multisampled ? TARGET_SCENE_RESOLVED : TARGET_SCENE_COLOR, TargetAccess::ShaderRead},
        {TARGET_BACK_BUFFER, TargetAccess::RenderTarget}});
+  add(WorldPass::Markers, "pass_16_world_markers", "overlay_additive", {{TARGET_BACK_BUFFER, TargetAccess::RenderTarget}});
   add(WorldPass::Cursor, "pass_20_world_cursor", "cursor_art", {{TARGET_BACK_BUFFER, TargetAccess::RenderTarget}});
   add(WorldPass::OverlayText, "pass_29_text_overlays", "development_text", {{TARGET_BACK_BUFFER, TargetAccess::RenderTarget}});
   add(WorldPass::Present, "pass_34_present", {}, {{TARGET_BACK_BUFFER, TargetAccess::Present}});
@@ -800,11 +820,12 @@ void RecordWorldFrame(RendererState& _state, const FrameInputs& _inputs, ID3D12R
     }
     case WorldPass::Actors:
     {
-      // RND-324: the Leaders' figures, then their poles and cloth (VFX-141).
+      // RND-324: the Leaders' figures, then their poles and cloth (VFX-141), and the flag pointers over the cloth.
       ENGINE_PROFILE_SCOPE("render.ungrouped_actors");
       _state.meshes->Record(commands, *_state.ring, *_state.catalog, frame, ScenePass::Actors, _inputs.meshBatches);
       _state.quads->Record(commands, *_state.ring, *_state.catalog, frame, ScenePass::Actors, _inputs.quadBatches);
       _state.quads->RecordTriangles(commands, *_state.ring, *_state.catalog, frame, ScenePass::Actors, _inputs.triangleBatches);
+      _state.quads->Record(commands, *_state.ring, *_state.catalog, frame, ScenePass::Pointers, _inputs.quadBatches);
       break;
     }
     case WorldPass::Workers:
@@ -833,6 +854,13 @@ void RecordWorldFrame(RendererState& _state, const FrameInputs& _inputs, ID3D12R
     {
       ENGINE_PROFILE_SCOPE("render.essence_orbs");
       _state.quads->Record(commands, *_state.ring, *_state.catalog, frame, ScenePass::Orbs, _inputs.quadBatches);
+      break;
+    }
+    case WorldPass::Routes:
+    {
+      // RND-353: the route preview's spots, then its arrows.
+      ENGINE_PROFILE_SCOPE("render.route_lines");
+      _state.quads->Record(commands, *_state.ring, *_state.catalog, frame, ScenePass::Routes, _inputs.quadBatches);
       break;
     }
     case WorldPass::Particles:
@@ -873,9 +901,18 @@ void RecordWorldFrame(RendererState& _state, const FrameInputs& _inputs, ID3D12R
       commands->DrawInstanced(3, 1, 0, 0);
       break;
     }
+    case WorldPass::Markers:
+    {
+      // RND-356: in the overlay's pixels, nearest last.
+      ENGINE_PROFILE_SCOPE("render.world_markers");
+      _state.quads->RecordOverlay(commands, *_state.ring, *_state.catalog, _state.swapChainSize, _inputs.markers);
+      break;
+    }
     case WorldPass::Cursor:
     {
+      // R-CTRL-366: the badge near the pointer, then the pointer over it.
       ENGINE_PROFILE_SCOPE("render.world_cursor");
+      _state.quads->RecordOverlay(commands, *_state.ring, *_state.catalog, _state.swapChainSize, _inputs.cursorBadge);
       if (_inputs.cursor)
       {
         _state.cursor->Record(commands, *_state.ring, *_state.catalog, _state.swapChainSize, *_inputs.cursor);

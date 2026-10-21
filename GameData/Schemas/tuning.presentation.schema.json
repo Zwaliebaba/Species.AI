@@ -1079,6 +1079,141 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "route": {
+          "type": "object",
+          "description": "the rnd.route.* keys",
+          "properties": {
+            "spot_size_divisor": {
+              "type": "number",
+              "description": "rnd.route.spot_size_divisor (RND-353)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu per wu of half-size",
+              "x-species-presence": "required"
+            },
+            "blocked_color": {
+              "type": "object",
+              "description": "rnd.route.blocked_color (RND-353)",
+              "properties": {
+                "r": {
+                  "type": "number",
+                  "description": "rnd.route.blocked_color.r",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "of 255",
+                  "x-species-presence": "required"
+                },
+                "g": {
+                  "type": "number",
+                  "description": "rnd.route.blocked_color.g",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "of 255",
+                  "x-species-presence": "required"
+                },
+                "b": {
+                  "type": "number",
+                  "description": "rnd.route.blocked_color.b",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "of 255",
+                  "x-species-presence": "required"
+                },
+                "a": {
+                  "type": "number",
+                  "description": "rnd.route.blocked_color.a",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "of 255",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "r",
+                "g",
+                "b",
+                "a"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "gray_offset": {
+              "type": "number",
+              "description": "rnd.route.gray_offset (RND-353)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "of 255",
+              "x-species-presence": "required"
+            },
+            "pulse_base": {
+              "type": "number",
+              "description": "rnd.route.pulse_base (RND-353)",
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "alpha factor",
+              "x-species-presence": "required"
+            },
+            "pulse_amplitude": {
+              "type": "number",
+              "description": "rnd.route.pulse_amplitude (RND-353)",
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "alpha factor",
+              "x-species-presence": "required"
+            },
+            "pulse_rate": {
+              "type": "number",
+              "description": "rnd.route.pulse_rate (RND-353)",
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "rad per real s",
+              "x-species-presence": "required"
+            },
+            "pulse_phase_step": {
+              "type": "number",
+              "description": "rnd.route.pulse_phase_step (RND-353)",
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "rad per spot",
+              "x-species-presence": "required"
+            },
+            "arrow_size_factor": {
+              "type": "number",
+              "description": "rnd.route.arrow_size_factor (RND-353)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times the spot half-size",
+              "x-species-presence": "required"
+            },
+            "preview_rebuild_distance": {
+              "type": "number",
+              "description": "rnd.route.preview_rebuild_distance (RND-354)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "spot_size_divisor",
+            "blocked_color",
+            "gray_offset",
+            "pulse_base",
+            "pulse_amplitude",
+            "pulse_rate",
+            "pulse_phase_step",
+            "arrow_size_factor",
+            "preview_rebuild_distance"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
@@ -1095,7 +1230,8 @@
         "depth_bias",
         "frustum",
         "laser",
-        "shockwave"
+        "shockwave",
+        "route"
       ],
       "additionalProperties": false,
       "x-species-type": "object",
@@ -2275,13 +2411,41 @@
                   "x-species-type": "sim_decimal",
                   "x-species-unit": "wu",
                   "x-species-presence": "required"
+                },
+                "icon_offset": {
+                  "type": "number",
+                  "description": "ref.ctrl.cursor.icon_offset (R-CTRL-366)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "physical px",
+                  "x-species-presence": "required"
+                },
+                "icon_divisor": {
+                  "type": "number",
+                  "description": "ref.ctrl.cursor.icon_divisor (R-CTRL-366)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "divisor",
+                  "x-species-presence": "required"
+                },
+                "icon_center_offset": {
+                  "type": "number",
+                  "description": "ref.ctrl.cursor.icon_center_offset (R-CTRL-366)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "physical px",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
                 "set",
                 "circle_particles",
                 "circle_spin",
-                "circle_lift"
+                "circle_lift",
+                "icon_offset",
+                "icon_divisor",
+                "icon_center_offset"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -2426,6 +2590,179 @@
               "x-species-type": "sim_decimal",
               "x-species-unit": "wu",
               "x-species-presence": "required"
+            },
+            "marker": {
+              "type": "object",
+              "description": "the ref.ctrl.marker.* keys",
+              "properties": {
+                "lift": {
+                  "type": "number",
+                  "description": "ref.ctrl.marker.lift (R-CTRL-381)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "own_sort_offset": {
+                  "type": "number",
+                  "description": "ref.ctrl.marker.own_sort_offset (R-CTRL-382)",
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu of sort key",
+                  "x-species-presence": "required"
+                },
+                "new_age": {
+                  "type": "number",
+                  "description": "ref.ctrl.marker.new_age (R-CTRL-382)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "s",
+                  "x-species-presence": "required"
+                },
+                "smoothing": {
+                  "type": "number",
+                  "description": "ref.ctrl.marker.smoothing (R-CTRL-382)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "per s",
+                  "x-species-presence": "required"
+                },
+                "edge_probe": {
+                  "type": "number",
+                  "description": "ref.ctrl.marker.edge_probe (R-CTRL-383)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "edge_probe_ahead": {
+                  "type": "number",
+                  "description": "ref.ctrl.marker.edge_probe_ahead (R-CTRL-383)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "edge_inset": {
+                  "type": "number",
+                  "description": "ref.ctrl.marker.edge_inset (R-CTRL-383)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "physical px",
+                  "x-species-presence": "required"
+                },
+                "alpha": {
+                  "type": "object",
+                  "description": "the ref.ctrl.marker.alpha.* keys",
+                  "properties": {
+                    "seen_after_s": {
+                      "type": "number",
+                      "description": "ref.ctrl.marker.alpha.seen_after_s (R-CTRL-384)",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "s on screen",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "seen_after_s"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "size": {
+                  "type": "object",
+                  "description": "the ref.ctrl.marker.size.* keys",
+                  "properties": {
+                    "icon_divisor": {
+                      "type": "number",
+                      "description": "ref.ctrl.marker.size.icon_divisor (R-CTRL-385)",
+                      "exclusiveMinimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "divisor",
+                      "x-species-presence": "required"
+                    },
+                    "shadow_pad": {
+                      "type": "number",
+                      "description": "ref.ctrl.marker.size.shadow_pad (R-CTRL-385)",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "physical px",
+                      "x-species-presence": "required"
+                    },
+                    "compass_divisor": {
+                      "type": "number",
+                      "description": "ref.ctrl.marker.size.compass_divisor (R-CTRL-385)",
+                      "exclusiveMinimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "divisor",
+                      "x-species-presence": "required"
+                    },
+                    "near_distance": {
+                      "type": "number",
+                      "description": "ref.ctrl.marker.size.near_distance (R-CTRL-385)",
+                      "exclusiveMinimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "wu",
+                      "x-species-presence": "required"
+                    },
+                    "hover_scale": {
+                      "type": "number",
+                      "description": "ref.ctrl.marker.size.hover_scale (R-CTRL-385)",
+                      "exclusiveMinimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "times",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "icon_divisor",
+                    "shadow_pad",
+                    "compass_divisor",
+                    "near_distance",
+                    "hover_scale"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "shadow_alpha": {
+                  "type": "number",
+                  "description": "ref.ctrl.marker.shadow_alpha (R-CTRL-386)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "alpha",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "lift",
+                "own_sort_offset",
+                "new_age",
+                "smoothing",
+                "edge_probe",
+                "edge_probe_ahead",
+                "edge_inset",
+                "alpha",
+                "size",
+                "shadow_alpha"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
             }
           },
           "required": [
@@ -2435,7 +2772,8 @@
             "promote",
             "select",
             "order",
-            "promote_radius"
+            "promote_radius",
+            "marker"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -2492,6 +2830,42 @@
                   "x-species-type": "sim_decimal",
                   "x-species-unit": "wu",
                   "x-species-presence": "required"
+                },
+                "trail_size_min": {
+                  "type": "number",
+                  "description": "ref.unit.leader.trail_size_min (R-UNIT-186)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu, half-size",
+                  "x-species-presence": "required"
+                },
+                "trail_size_scale": {
+                  "type": "number",
+                  "description": "ref.unit.leader.trail_size_scale (R-UNIT-186)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "trail_size_divisor": {
+                  "type": "number",
+                  "description": "ref.unit.leader.trail_size_divisor (R-UNIT-186)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "trail_alpha": {
+                  "type": "number",
+                  "description": "ref.unit.leader.trail_alpha (R-UNIT-186)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "alpha",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
@@ -2499,7 +2873,11 @@
                 "pick_radius",
                 "banner_size",
                 "banner_growth_divisor",
-                "banner_face_divisor"
+                "banner_face_divisor",
+                "trail_size_min",
+                "trail_size_scale",
+                "trail_size_divisor",
+                "trail_alpha"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -4121,6 +4499,33 @@
               "x-species-type": "sim_decimal",
               "x-species-unit": "rad/s",
               "x-species-presence": "required"
+            },
+            "pointer_slope_bias": {
+              "type": "number",
+              "description": "vfx.cloth.pointer_slope_bias (VFX-014)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "slope-scaled depth bias",
+              "x-species-presence": "required"
+            },
+            "pointer_constant_bias": {
+              "type": "number",
+              "description": "vfx.cloth.pointer_constant_bias (VFX-014)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "depth-bias units",
+              "x-species-presence": "required"
+            },
+            "pointer_size_factor": {
+              "type": "number",
+              "description": "vfx.cloth.pointer_size_factor (VFX-141)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "times the banner size",
+              "x-species-presence": "required"
             }
           },
           "required": [
@@ -4128,7 +4533,10 @@
             "lift_gain",
             "team_tint",
             "banner_wobble",
-            "banner_wobble_rate"
+            "banner_wobble_rate",
+            "pointer_slope_bias",
+            "pointer_constant_bias",
+            "pointer_size_factor"
           ],
           "additionalProperties": false,
           "x-species-type": "object",

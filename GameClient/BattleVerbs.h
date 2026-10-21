@@ -35,13 +35,15 @@ struct VerbControls
 };
 
 /// What the verbs read of a frame: its controls, the pointer's ground point while it lies on the region (none while the
-/// unavailable cursor shows), the client's own living Leader under the pointer (R-CTRL-055), and the real frame step.
+/// unavailable cursor shows), the client's own living Leader under the pointer (R-CTRL-055), the real frame step, and
+/// whether the route preview finds no walkable route, when the unavailable cursor shows too (ADR-125).
 struct VerbFrame
 {
   VerbControls controls;
   std::optional<Neuron::Vec3> ground;
   std::optional<StableId> leaderUnderPointer;
   double realStepSeconds = 0.0;
+  bool routeBlocked = false;
 };
 
 /// The local selection circle (R-CTRL-155 to R-CTRL-157): its centre on the ground and its radius, in wu.

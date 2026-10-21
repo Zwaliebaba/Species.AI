@@ -213,7 +213,8 @@ void BattleVerbs::Secondary(std::uint8_t _team, const VerbFrame& _frame, std::sp
     }
     else if (m_leaderSelected)
     {
-      if (target.has_value())
+      // ADR-125: no order while the unavailable cursor shows for a route that cannot be walked.
+      if (target.has_value() && !_frame.routeBlocked)
       {
         _commands.emplace_back(OrderUnitCommand{_team, controls.straight, controls.moveOnly, GroundOf(*target)}); // step 3, O6, O7
       }
@@ -222,7 +223,8 @@ void BattleVerbs::Secondary(std::uint8_t _team, const VerbFrame& _frame, std::sp
     {
       // Step 4, row O1: no circle, a target on the region, and the crowd-order interval since the last (R-CTRL-160).
       const auto interval = static_cast<std::uint64_t>(std::max<std::int64_t>(m_presentation->ref.ctrl.order.crowdIntervalTicks, 0));
-      if (!m_circle.has_value() && target.has_value() && (!m_crowdOrderTick.has_value() || _tick >= *m_crowdOrderTick + interval))
+      if (!m_circle.has_value() && target.has_value() && !_frame.routeBlocked &&
+          (!m_crowdOrderTick.has_value() || _tick >= *m_crowdOrderTick + interval))
       {
         _commands.emplace_back(OrderWorkersCommand{_team, controls.straight, GroundOf(*target)});
         m_crowdOrderTick = _tick;
