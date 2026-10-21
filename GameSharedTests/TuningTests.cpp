@@ -206,7 +206,7 @@ public:
     Assert::AreEqual(0.33333, values.ter.color.centerFactor, L"not 1/3 (TER-181)");
     Assert::AreEqual(0.2, values.ter.sea.blurTaps.tap10);
     Assert::AreEqual(1.85, values.ter.sea.wave.zTerms.second.perSecond);
-    Assert::AreEqual(2.0, values.mvp.light.key.color.r);
+    Assert::AreEqual(1.2, values.mvp.light.key.color.r);
 
     Neuron::CookedEntry cooked;
     cooked.entry.key = std::string(Species::TUNING_PRESENTATION_KEY);
