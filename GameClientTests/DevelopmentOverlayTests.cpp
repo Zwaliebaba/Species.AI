@@ -51,22 +51,26 @@ bool Contains(const std::string& _text, std::string_view _part)
   return _text.find(_part) != std::string::npos;
 }
 
-// A profile of 200 frames of _frameMs each, _waitMs of it the renderer's, over one roll-up period of the record.
-Neuron::FrameProfile ProfileOf(double _frameMs, double _waitMs)
+// The frame loop's profile, with the record's history and roll-up period.
+Neuron::FrameProfile::Desc ProfileDesc()
+{
+  return {static_cast<std::size_t>(Species::ClientStep::Count), 200, std::chrono::milliseconds(1000)};
+}
+
+// 200 frames of _frameMs each, _waitMs of it the renderer's, into _profile.
+void FillProfile(Neuron::FrameProfile& _profile, double _frameMs, double _waitMs)
 {
   using Ms = std::chrono::duration<double, std::milli>;
-  Neuron::FrameProfile profile({static_cast<std::size_t>(Species::ClientStep::Count), 200, std::chrono::milliseconds(1000)});
   const auto frame = std::chrono::duration_cast<Neuron::Nanoseconds>(Ms(_frameMs));
   const auto wait = std::chrono::duration_cast<Neuron::Nanoseconds>(Ms(_waitMs));
   Neuron::Nanoseconds now{0};
   for (int n = 0; n < 200; ++n)
   {
-    profile.AddStep(static_cast<std::size_t>(Species::ClientStep::Render), frame - wait);
-    profile.AddStep(static_cast<std::size_t>(Species::ClientStep::Wait), wait);
-    profile.EndFrame(now, frame, wait);
+    _profile.AddStep(static_cast<std::size_t>(Species::ClientStep::Render), frame - wait);
+    _profile.AddStep(static_cast<std::size_t>(Species::ClientStep::Wait), wait);
+    _profile.EndFrame(now, frame, wait);
     now += frame;
   }
-  return profile;
 }
 
 } // namespace
@@ -157,7 +161,8 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Dbg096TheFramePageShowsItsRowsAndTheGraph)
   {
-    const Neuron::FrameProfile profile = ProfileOf(100.0, 90.0);
+    Neuron::FrameProfile profile(ProfileDesc());
+    FillProfile(profile, 100.0, 90.0);
     Species::FramePageInputs inputs;
     inputs.profile = &profile;
     inputs.counts.sides = {{300, 1}, {299, 1}};
@@ -197,13 +202,15 @@ public:
     server.tickMeanMicroseconds = 2'000;
     server.tickMaxMicroseconds = 49'000;
     inputs.server = server;
-    const Neuron::FrameProfile within = ProfileOf(16.7, 10.0);
+    Neuron::FrameProfile within(ProfileDesc());
+    FillProfile(within, 16.7, 10.0);
     inputs.profile = &within;
     Species::FramePage page = Species::BuildFramePage(inputs, CommittedPresentation(), CommittedTuning(), 16.0f);
     Assert::IsTrue(page.lines[1].color == white, L"6.7 ms of work is within 16.7 ms");
     Assert::IsTrue(Contains(page.lines[4].text, "49.00 ms max of 50.0"), L"the tick's longest against half the tick period");
     Assert::IsTrue(page.lines[4].color == white, L"a 49 ms tick is within half the tick period");
-    const Neuron::FrameProfile over = ProfileOf(20.0, 2.0);
+    Neuron::FrameProfile over(ProfileDesc());
+    FillProfile(over, 20.0, 2.0);
     inputs.profile = &over;
     server.tickMaxMicroseconds = 51'000;
     inputs.server = server;
@@ -218,7 +225,8 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Dbg096TheStatisticsLineCarriesThePagesFigures)
   {
-    const Neuron::FrameProfile profile = ProfileOf(16.0, 8.0);
+    Neuron::FrameProfile profile(ProfileDesc());
+    FillProfile(profile, 16.0, 8.0);
     Species::FramePageInputs inputs;
     inputs.profile = &profile;
     inputs.framesPerSecond = 62.4;

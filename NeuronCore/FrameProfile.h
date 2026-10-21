@@ -25,6 +25,9 @@ public:
 
   explicit FrameProfile(const Desc& _desc);
 
+  FrameProfile(const FrameProfile&) = delete;
+  FrameProfile& operator=(const FrameProfile&) = delete;
+
   // A root step's time, added to the current period.
   void AddStep(std::size_t _step, Nanoseconds _time);
   // After every frame: its time, and its work, the time less _waitTime, join the front of the history (DBG-085), and the
