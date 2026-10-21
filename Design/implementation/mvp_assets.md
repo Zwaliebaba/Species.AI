@@ -93,7 +93,7 @@ MVP-082 to MVP-084: laser bolts, muzzle flashes, deaths, Essence orbs, port star
 | Asset id | What it is | Format and budget | New or existing | First needed | Produced by |
 |---|---|---|---|---|---|
 | `fx.glow_round` | Round glow: Worker glow, blob shadows, Essence orbs, shockwave halos | 128x128 px, BC4 additive | existing | M1 | made by the owner (§6) |
-| `fx.glow_cloudy` | Cloudy glow: Essence orbs drifting home (MVP-082) and the Wellspring's glow | 128x128 px, BC4 additive | existing | M1 | made by the owner (§6) |
+| `fx.glow_cloudy` | Cloudy glow: Essence orbs drifting home (MVP-082) and the Wellspring's glow | 128x128 px, BC4 additive | existing | M2 | made by the owner (§6) |
 | `fx.beam_short` | Beam strip: laser bolts and the sky grid lines | 128x32 px, BC4 additive | existing | M1 | made by the owner (§6) |
 | `fx.muzzle_flash` | Muzzle flash of Workers and turrets | 64x64 px, BC4 additive | existing | M1 | made by the owner (§6) |
 | `fx.particle_dot` | Particle dot: deaths, smoke, the formation preview and route lines | 16x16 px, BC4, point-magnify sampler | existing | M1 | made by the owner (§6) |
@@ -190,18 +190,18 @@ MVP-087, from M3: one sample group per sound, the smallest that suits it. The wa
 | Terrain | 5 | 5 | 0 | 5 | 5 | 0 | 0 | 0 | 0 | 0 | 5 |
 | Units | 8 | 17 | 1 | 16 | 16 | 1 | 0 | 0 | 0 | 1 | 16 |
 | Structures and world objects | 16 | 18 | 10 | 8 | 0 | 18 | 0 | 0 | 18 | 0 | 0 |
-| Effects | 7 | 7 | 0 | 7 | 6 | 1 | 0 | 0 | 0 | 0 | 7 |
+| Effects | 7 | 7 | 0 | 7 | 5 | 2 | 0 | 0 | 0 | 0 | 7 |
 | UI and text | 30 | 34 | 22 | 12 | 4 | 19 | 10 | 1 | 6 | 20 | 8 |
 | Cursors and markers | 17 | 17 | 0 | 17 | 14 | 3 | 0 | 0 | 0 | 3 | 14 |
 | Audio | 7 | 25 | 3 | 22 | 0 | 0 | 25 | 0 | 17 | 8 | 0 |
-| **Total** | **90** | **123** | **36** | **87** | **45** | **42** | **35** | **1** | **41** | **32** | **50** |
+| **Total** | **90** | **123** | **36** | **87** | **44** | **43** | **35** | **1** | **41** | **32** | **50** |
 
 *Table 9 — The MVP's assets by category, by the milestone that first needs them, and by how they are made; every count is of files except the asset ids. "Made by the owner" counts the files in `GameData/` (§6); "Hand-made" counts those the owner has still to make.*
 
 | Milestone | Asset ids | Files | New files | Generated files | Hand-made files | Made by the owner |
 |---|---:|---:|---:|---:|---:|---:|
-| M1 | 35 | 45 | 2 | 1 | 0 | 44 |
-| M2 | 37 | 42 | 20 | 22 | 14 | 6 |
+| M1 | 34 | 44 | 2 | 1 | 0 | 43 |
+| M2 | 38 | 43 | 20 | 22 | 14 | 7 |
 | M3 | 17 | 35 | 13 | 18 | 17 | 0 |
 | M4 | 1 | 1 | 1 | 0 | 1 | 0 |
 
@@ -228,7 +228,7 @@ The new rows rest on these readings of the MVP scope; each is a row's spec and c
 
 - **Construction ports.** Workers build a structure at ports on its own mesh: six on the dwelling and four on the storehouse; the turret is built at its four manning ports, as MVP-033 states with `mvp.construction.ports_dwelling`, `mvp.construction.ports_storehouse` and `mvp.construction.ports_turret`.
 - **Sockets.** The Wellspring carries the Spawn Node's sockets (`door`, `essence_link`, three lights, five ports; R-BLDG-124) and an `entrance` for drop-off; the storehouse's drop-off point is its `entrance`. A resource site carries `mvp.resource.ports_per_unit` (4) ports per unit, so a change of that value changes the two resource-site meshes.
-- **Orb glow.** MVP-082 names `fx.glow_cloudy` for the Essence orbs, while the reference draws them with `fx.glow_round` (RND-418); both are `mvp`, and `fx.glow_cloudy` also gives the Wellspring its glow.
+- **Orb glow.** Confirmed by O77: the Essence orbs glow with `fx.glow_round` alone at M1, as the reference draws them (R-UNIT-330, RND-418), and `fx.glow_cloudy` is first drawn at M2, for the orbs drifting home (MVP-023, MVP-082 as amended) and the Wellspring's glow.
 - **Territory line.** The long beam strip `fx.beam_long` draws the territory line of MVP-084.
 - **Font scale.** Both faces are drawn at 16 px and the UI draws them at whole-number scales (O63): the reference layout's 12 px body text draws at 16 px, and titles of 24 px or more at 32 px; a face that should draw smaller than 16 px would need a sheet of its own.
 - **Left out.** The title wordmark (the front end sets its title in the game face), the application icon, the turret-aim cursor, the Worker 3-D figure, every reference sound beyond the four groups of §3.7, ambience and the development string table keep their priorities.

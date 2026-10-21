@@ -251,6 +251,8 @@ The MVP builds only one region and one steward, but it keeps the seams that are 
 
 *Table 2 — The milestones of the MVP, their content and their exit criteria (MVP-002).*
 
+> **Amendment 2026-10-21 (O80).** The front end of MVP-103 grows with the milestones: M2 builds its page with continue, a new world (seed and site), the display and volume options and quit; M3 adds the run and the epilogue of an ended world; M4 adds the choice of pace. M2 also builds the server's statistics of MVP-064 for one settlement (its strength, its Worker count and every growth step), because the evidence of M2's exit is measured with them; M3 adds the battles, claims and grievances. The plans of the two milestones are the [M2 plan](m2_plan.md) and the [M3 plan](m3_plan.md).
+
 Each milestone is a series of pull requests that cite the MVP requirements they implement, as AGENTS.md §6 asks for requirement ids; a milestone's exit is recorded in its milestone record in `playtests/` (§6.3).
 
 ## 4 Tuning table
