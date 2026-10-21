@@ -24,13 +24,15 @@ enum class EffectEventKind : std::uint8_t
   WorkerIgnited = 9,  // R-UNIT-121: the Worker is set on fire
   ThreatBark = 10,    // R-UNIT-098 step 9: a new threat; value 1 for the flee bark, 0 for the attack bark
   // From M1 task T7 (ADR-106); the client shows a selection or order event to the commanding team only.
-  WorkerPromoted = 11,        // R-UNIT-153: the control flash and leader.spawn; subject the new Leader
-  LeaderSelected = 12,        // R-UNIT-193: leader.selected; subject the Leader
-  LeaderOrderWaypoint = 13,   // R-UNIT-171 step 3: leader.order_waypoint; position the order position
-  LeaderOrderFormation = 14,  // R-UNIT-172: leader.order_formation and the preview; position the target
-  WorkersSelected = 15,       // R-UNIT-136: worker.selected; value the number of Workers selected
-  WorkerOrdered = 16,         // R-UNIT-096 step 3: worker.ordered, a Worker that took a Leader's order; subject the Worker
-  WorkersOrderedByPlayer = 17 // R-UNIT-140 step 5: worker.ordered_by_player; position the target
+  WorkerPromoted = 11,         // R-UNIT-153: the control flash and leader.spawn; subject the new Leader
+  LeaderSelected = 12,         // R-UNIT-193: leader.selected; subject the Leader
+  LeaderOrderWaypoint = 13,    // R-UNIT-171 step 3: leader.order_waypoint; position the order position
+  LeaderOrderFormation = 14,   // R-UNIT-172: leader.order_formation and the preview; position the target
+  WorkersSelected = 15,        // R-UNIT-136: worker.selected; value the number of Workers selected
+  WorkerOrdered = 16,          // R-UNIT-096 step 3: worker.ordered, a Worker that took a Leader's order; subject the Worker
+  WorkersOrderedByPlayer = 17, // R-UNIT-140 step 5: worker.ordered_by_player; position the target
+  // From M2 task T5 (ADR-131):
+  LaserHitStructure = 18 // R-CRATE-441 step 6: the spark and laser_bolt.hit_structure; position where the bolt ended
 };
 
 /// One presentation event, in the order the region's rules emitted it within its tick (ADR-036's stable identity is the

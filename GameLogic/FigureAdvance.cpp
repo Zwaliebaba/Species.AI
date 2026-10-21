@@ -6,6 +6,7 @@
 #include "LeaderOrders.h"
 #include "Navigation.h"
 #include "RegionSimulation.h"
+#include "StructureAdvance.h"
 
 #include <cmath>
 #include <cstdint>
@@ -140,9 +141,14 @@ void FollowingLeaderStep(Figure& _worker, const FigureContext& _context)
 
 // R-UNIT-087 for the searches the MVP builds: the threat search in every state that searches (R-UNIT-089); then, for
 // an Idle Worker, the Leader search (R-UNIT-096) and the random-position search (R-UNIT-097), which always succeeds. The
-// other searches have nothing to find in the MVP.
+// other searches have nothing to find in the MVP. A manning Worker searches nothing, unless the player-orders flag lets
+// it search for threats (table 2.5-A, R-UNIT-089).
 void TaskSearch(Figure& _figure, const FigureContext& _context)
 {
+  if (_figure.workerState == WorkerState::Manning && !_figure.playerOrders)
+  {
+    return;
+  }
   if (ThreatSearch(_figure, _context) || _figure.workerState != WorkerState::Idle)
   {
     return;
@@ -179,6 +185,39 @@ void TaskSearch(Figure& _figure, const FigureContext& _context)
                              _figure.position.z + std::sin(angle) * worker.wanderDistance};
     _figure.waypoint = WorkerPush(_figure, point, DrawPurpose::ShoreWander, movement);
   }
+}
+
+// R-UNIT-069: a Worker walking to its port operates it for its team every tick and becomes Manning on arrival, facing
+// the port's front and still; it becomes Idle when its structure is gone or another Worker occupies the port.
+void ToPortStep(Figure& _worker, const FigureContext& _context)
+{
+  StructurePort* port = TargetPort(*_context.region, _worker);
+  if (port == nullptr || (port->occupant.has_value() && port->occupant.value_or(ActorRef{}).id != _worker.id))
+  {
+    _worker.workerState = WorkerState::Idle;
+    return;
+  }
+  OperatePort(*port, _context.self.team, *_context.movement->tuning);
+  _worker.waypoint = port->position;
+  if (WorkerMoveToWaypoint(_worker, false, *_context.movement))
+  {
+    _worker.front = port->front;
+    _worker.velocity = {};
+    _worker.workerState = WorkerState::Manning;
+  }
+}
+
+// R-UNIT-070: a manning Worker stands still while it is its port's occupant, and becomes Idle when its structure is
+// gone or the port's occupant is not this Worker.
+void ManningStep(Figure& _worker, const FigureContext& _context)
+{
+  const StructurePort* port = TargetPort(*_context.region, _worker);
+  if (port == nullptr || port->occupant.value_or(ActorRef{}).id != _worker.id)
+  {
+    _worker.workerState = WorkerState::Idle;
+    return;
+  }
+  _worker.velocity = {};
 }
 
 } // namespace
@@ -268,6 +307,12 @@ bool WorkerAdvance(Figure& _figure, const FigureContext& _context)
       break;
     case WorkerState::FollowingLeader:
       FollowingLeaderStep(_figure, _context);
+      break;
+    case WorkerState::ToPort:
+      ToPortStep(_figure, _context);
+      break;
+    case WorkerState::Manning:
+      ManningStep(_figure, _context);
       break;
     case WorkerState::Drowning:
     case WorkerState::Burning:

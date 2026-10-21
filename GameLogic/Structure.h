@@ -58,9 +58,11 @@ struct Structure
   std::vector<StructurePort> ports;
 };
 
-// The simulation data record of a kind's mesh (ADR-129): the Wellspring's, the resource site's or the central
-// resource site's.
+// The place of a kind's mesh among the structure records (STRUCTURE_RECORD_KEYS), its simulation data record (ADR-129)
+// and the collision asset that record names, or null.
+[[nodiscard]] std::size_t RecordPlaceOf(StructureKind _kind) noexcept;
 [[nodiscard]] const Neuron::SimulationRecord& RecordOf(const StructureRecords& _records, StructureKind _kind) noexcept;
+[[nodiscard]] const Neuron::CollisionAsset* CollisionOf(const StructureRecords& _records, StructureKind _kind) noexcept;
 
 // A point of a structure's mesh at rest in the world: the mesh's +z along the structure's front, +y up and +x to the
 // front's right (ADR-130); and a direction of the mesh in the world the same way.
@@ -69,14 +71,16 @@ struct Structure
 
 // R-SIM-118 and R-BLDG-029 for a structure that a rule creates: at (_x, _z) on the terrain, facing _front, its centre
 // and radius from its record's bounding sphere at that transform (ref.sim.structure.default_radius when its record has
-// none), and its ports built once from its record's port sockets, each pushed clear of the structure and set on the
-// terrain (R-BLDG-020). Its id is the caller's.
+// none), and its ports built once from its record's port sockets, each pushed clear of its shape (_collision's
+// triangles, or its sphere without one) and set on the terrain (R-BLDG-020). Its id is the caller's.
 [[nodiscard]] Structure MakeStructure(StructureKind _kind, std::optional<std::uint8_t> _owner, std::optional<std::uint32_t> _resourceSite,
                                       double _x, double _z, const Neuron::Vec3& _front, const Neuron::SimulationRecord& _record,
-                                      const Neuron::TerrainField& _field, const TuningMvp& _tuning);
+                                      const Neuron::CollisionAsset* _collision, const Neuron::TerrainField& _field,
+                                      const TuningMvp& _tuning);
 
-// The structure's hit volume as the obstacle grid and the pushes test it (ADR-103): its bounding sphere.
-[[nodiscard]] ObstacleShape ShapeOf(const Structure& _structure) noexcept;
+// The structure's hit volume as the obstacle grid and the pushes test it (ADR-103, ADR-131): its bounding sphere, and
+// _collision's triangles at its transform when it has one (R-SIM-123).
+[[nodiscard]] ObstacleShape ShapeOf(const Structure& _structure, const Neuron::CollisionAsset* _collision);
 
 // A structure canonically, as the region's state holds it (ADR-081 item 7), and the values Write wrote; Read is false
 // when they do not read whole or name a kind this build does not have.

@@ -8,6 +8,7 @@
 #include "RegionCommands.h"
 #include "RegionSimulation.h"
 #include "StateValues.h"
+#include "StructureAdvance.h"
 #include "Weapons.h"
 
 #include <algorithm>
@@ -127,6 +128,10 @@ void RegionSimulation::AttachTerrain(std::shared_ptr<const RegionTerrain> _terra
   m_terrain = std::move(_terrain);
   m_bots = m_terrain ? BotGraph::Build(m_terrain->routes.Nodes(), m_terrain->field, *m_tuning) : BotGraph{};
   EnsureBotNodes();
+  if (m_terrain && m_structures.Count() != 0)
+  {
+    RebuildObstacles();
+  }
   ENGINE_CHECK(m_botNodes.Count() == m_bots.Size(), "region {} holds {} bot nodes for a graph of {}", m_index, m_botNodes.Count(),
                m_bots.Size());
 }
@@ -467,14 +472,43 @@ const Settlement* RegionSimulation::SettlementAt(std::uint8_t _site) const noexc
   return found == m_settlements.end() ? nullptr : &*found;
 }
 
+Structure* RegionSimulation::ResolveStructure(std::uint32_t _slot, StableId _id) noexcept
+{
+  return _id != 0 && m_structures.Used(_slot) && m_structures.At(_slot).id == _id ? &m_structures.At(_slot) : nullptr;
+}
+
+const Structure* RegionSimulation::ResolveStructure(std::uint32_t _slot, StableId _id) const noexcept
+{
+  return _id != 0 && m_structures.Used(_slot) && m_structures.At(_slot).id == _id ? &m_structures.At(_slot) : nullptr;
+}
+
+void RegionSimulation::RebuildObstacles()
+{
+  m_obstacles = ObstacleGrid(ObstacleGridDescOf(*m_tuning));
+  const auto height = [this](double _x, double _z) { return m_terrain ? m_terrain->field.Height(_x, _z) : 0.0; };
+  for (std::uint32_t slot = 0; slot < m_structures.Capacity(); ++slot)
+  {
+    if (!m_structures.Used(slot))
+    {
+      continue;
+    }
+    const Structure& structure = m_structures.At(slot);
+    ObstacleShape shape = ShapeOf(structure, m_records != nullptr ? CollisionOf(*m_records, structure.kind) : nullptr);
+    shape.structure = slot;
+    static_cast<void>(m_obstacles.Add(shape, height));
+  }
+}
+
 std::uint32_t RegionSimulation::AddStructure(StructureKind _kind, std::optional<std::uint8_t> _owner,
                                              std::optional<std::uint32_t> _resourceSite, double _x, double _z, const Neuron::Vec3& _front)
 {
   ENGINE_CHECK(m_terrain != nullptr && m_records != nullptr, "region {} builds a structure with no terrain or no records", m_index);
-  Structure structure =
-    MakeStructure(_kind, _owner, _resourceSite, _x, _z, _front, RecordOf(*m_records, _kind), m_terrain->field, *m_tuning);
+  Structure structure = MakeStructure(_kind, _owner, _resourceSite, _x, _z, _front, RecordOf(*m_records, _kind),
+                                      CollisionOf(*m_records, _kind), m_terrain->field, *m_tuning);
   structure.id = m_ids.Issue();
-  return m_structures.Take(structure);
+  const std::uint32_t slot = m_structures.Take(structure);
+  RebuildObstacles(); // R-BLDG-030: the obstacle grid is updated
+  return slot;
 }
 
 void RegionSimulation::PlaceResourceSites()
@@ -604,8 +638,7 @@ void RegionSimulation::StepSlice(std::uint32_t _slice)
     ENGINE_PROFILE_SCOPE("sim.teams.advance_ungrouped");
     AdvanceTeams(_slice, slices, context);
   }
-  // R-SIM-218 step 3: the slice's laser bolts, then its effects; step 4, the structures, arrives with M2; step 5: its
-  // Essence orbs.
+  // R-SIM-218 step 3: the slice's laser bolts, then its effects; step 5: its Essence orbs.
   {
     ENGINE_PROFILE_SCOPE("sim.laser_bolts.advance");
     m_bolts.AdvanceSlice(_slice, slices, [&](std::uint32_t _slot) { return AdvanceLaserBolt(*this, m_bolts.At(_slot)); });
@@ -613,6 +646,23 @@ void RegionSimulation::StepSlice(std::uint32_t _slice)
   {
     ENGINE_PROFILE_SCOPE("sim.effects.advance");
     m_effects.AdvanceSlice(_slice, slices, [&](std::uint32_t _slot) { return AdvanceEffect(*this, m_effects.At(_slot)); });
+  }
+  // Step 4: the slice's structures; the obstacle grid follows a removal (DEC-095). The bot navigation nodes advance after
+  // them, in step 4 as ADR-107 placed them.
+  {
+    ENGINE_PROFILE_SCOPE("sim.structures.advance");
+    bool removed = false;
+    m_structures.AdvanceSlice(_slice, slices,
+                              [&](std::uint32_t _slot)
+                              {
+                                const bool remove = AdvanceStructure(*this, m_structures.At(_slot));
+                                removed = removed || remove;
+                                return remove;
+                              });
+    if (removed)
+    {
+      RebuildObstacles();
+    }
   }
   {
     ENGINE_PROFILE_SCOPE("sim.bot_nodes.advance");
@@ -826,7 +876,7 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
   if (_stateVersion >= STATE_VERSION_WITH_SETTLEMENTS)
   {
     const std::uint64_t settlements = _reader.ReadBounded(SETTLEMENTS_MAX);
-    for (std::uint64_t index = 0; index < settlements && !_reader.Failed(); ++index)
+    for (std::uint64_t place = 0; place < settlements && !_reader.Failed(); ++place)
     {
       Settlement settlement;
       if (!ReadSettlement(_reader, settlement) || settlement.site >= SETTLEMENTS_MAX || SettlementAt(settlement.site) != nullptr ||
@@ -908,6 +958,10 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
     }
   }
   EnsureBotNodes(); // MVP-095: a region saved before M1 task T8 makes its nodes as a new one does
+  if (m_terrain && m_structures.Count() != 0)
+  {
+    RebuildObstacles();
+  }
   return true;
 }
 

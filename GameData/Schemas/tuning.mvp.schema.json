@@ -4140,10 +4140,47 @@
                   "x-species-type": "sim_decimal",
                   "x-species-unit": "wu",
                   "x-species-presence": "required"
+                },
+                "radius_wu": {
+                  "type": "number",
+                  "description": "ref.bldg.port.radius_wu (R-BLDG-021)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "reservation_limit": {
+                  "type": "integer",
+                  "description": "ref.bldg.port.reservation_limit (R-BLDG-023)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "reservations",
+                  "x-species-presence": "required"
+                },
+                "reservation_cap": {
+                  "type": "integer",
+                  "description": "ref.bldg.port.reservation_cap (R-BLDG-019, R-BLDG-023)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "reservations",
+                  "x-species-presence": "required"
+                },
+                "reservation_decay_per_tick": {
+                  "type": "integer",
+                  "description": "ref.bldg.port.reservation_decay_per_tick (R-BLDG-022)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "reservations per tick",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
-                "clearance_wu"
+                "clearance_wu",
+                "radius_wu",
+                "reservation_limit",
+                "reservation_cap",
+                "reservation_decay_per_tick"
               ],
               "additionalProperties": false,
               "x-species-type": "object",
@@ -4292,6 +4329,15 @@
                   "x-species-type": "sim_decimal",
                   "x-species-unit": "wu",
                   "x-species-presence": "required"
+                },
+                "important_radius": {
+                  "type": "number",
+                  "description": "ref.bot.node.important_radius (R-BOT-049)",
+                  "exclusiveMinimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
                 }
               },
               "required": [
@@ -4299,7 +4345,8 @@
                 "recount_phase",
                 "range",
                 "defend_enemy_threshold",
-                "defend_leader_radius"
+                "defend_leader_radius",
+                "important_radius"
               ],
               "additionalProperties": false,
               "x-species-type": "object",

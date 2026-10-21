@@ -32,6 +32,29 @@ Neuron::SimulationRecord& RecordAt(StructureRecords& _records, std::size_t _plac
   }
 }
 
+const Neuron::SimulationRecord& RecordAt(const StructureRecords& _records, std::size_t _place) noexcept
+{
+  switch (_place)
+  {
+  case 0:
+    return _records.wellspring;
+  case 1:
+    return _records.dwelling;
+  case 2:
+    return _records.storehouse;
+  case 3:
+    return _records.resourceSite;
+  case 4:
+    return _records.resourceSiteCentral;
+  case 5:
+    return _records.turretMount;
+  case 6:
+    return _records.turretHead;
+  default:
+    return _records.turretBarrel;
+  }
+}
+
 std::expected<StructureRecords, Neuron::AssetError> LoadStructureRecords(const Neuron::LooseContent& _content)
 {
   StructureRecords records;
@@ -47,6 +70,20 @@ std::expected<StructureRecords, Neuron::AssetError> LoadStructureRecords(const N
     if (!record)
     {
       return std::unexpected(Neuron::AssetError{Neuron::AssetFault::Damaged, std::string(key), std::move(record.error())});
+    }
+    if (!record->collision.empty())
+    {
+      auto collisionEntry = _content.Read(record->collision);
+      if (!collisionEntry)
+      {
+        return std::unexpected(std::move(collisionEntry.error()));
+      }
+      auto collision = Neuron::ReadCollisionAsset(*collisionEntry);
+      if (!collision)
+      {
+        return std::unexpected(Neuron::AssetError{Neuron::AssetFault::Damaged, record->collision, std::move(collision.error())});
+      }
+      records.collisions[place] = std::move(*collision);
     }
     RecordAt(records, place) = std::move(*record);
   }

@@ -260,7 +260,21 @@ bool AdvanceLaserBolt(RegionSimulation& _region, LaserBolt& _bolt)
   {
     return true; // R-CRATE-441 step 5
   }
-  // Step 6: the MVP has no structure until M2, so no structure stops a bolt.
+  // Step 6: the step's ray meeting a structure of its obstacle-grid cell ends the bolt, with its spark and sound and no
+  // damage to the structure.
+  const double length = Neuron::Length(next - legStart);
+  if (length > 0.0)
+  {
+    const Neuron::Vec3 direction = (next - legStart) * (1.0 / length);
+    for (const std::uint32_t index : _region.Obstacles().StructuresAt(next.x, next.z))
+    {
+      if (RayHits(_region.Obstacles().Shape(index), legStart, direction, length))
+      {
+        _region.Emit({EffectEventKind::LaserHitStructure, _bolt.team, _bolt.id, next, _bolt.velocity, 0.0});
+        return true;
+      }
+    }
+  }
   if (_bolt.harmless)
   {
     return false;

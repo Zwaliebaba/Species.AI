@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "Check.h"
+#include "CommandJournal.h"
 #include "Files.h"
 #include "PlatformThread.h"
 #include "SimulationRecord.h"
@@ -229,6 +230,21 @@ Species::StructureRecords TestStructureRecords()
   records.turretHead = TestRecord(0, false, false);
   records.turretBarrel = TestRecord(0, false, false);
   return records;
+}
+
+const Species::StructureRecords& TestRecords()
+{
+  static const Species::StructureRecords RECORDS = TestStructureRecords();
+  return RECORDS;
+}
+
+std::unique_ptr<Species::WorldSimulation> SettledWorld(std::uint8_t _site)
+{
+  Species::WorldStart start;
+  start.key = SETTLED_TEST_KEY;
+  start.seed = ValleyTerrain()->seed;
+  start.stewardSite = _site;
+  return Species::StartWorld(start, ValleyTerrain(), CommittedTuning(), &TestRecords());
 }
 
 std::vector<Neuron::CookedEntry> StructureRecordEntries()

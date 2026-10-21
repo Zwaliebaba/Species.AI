@@ -131,6 +131,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-128](ADR-128-mesh-kit-and-drafted-structure-recipes.md) | The mesh kit and the drafted structure recipes | Proposed | 2026-10-21 |
 | [ADR-129](ADR-129-simulation-data-records-and-collision-cooker.md) | The simulation data records and the collision cooker | Proposed | 2026-10-21 |
 | [ADR-130](ADR-130-settlements-structures-and-resource-sites-at-m2.md) | Settlements, structures and resource sites at M2 | Proposed | 2026-10-21 |
+| [ADR-131](ADR-131-structure-step-collision-shapes-and-ports-at-m2.md) | The structure step, collision shapes and manned ports at M2 | Proposed | 2026-10-21 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

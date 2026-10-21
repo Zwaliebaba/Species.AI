@@ -24,7 +24,9 @@ enum class WorkerState : std::uint8_t
   Drowning,
   Fighting,
   Burning,
-  FollowingLeader
+  FollowingLeader,
+  ToPort, // R-UNIT-069, from M2 task T5
+  Manning // R-UNIT-070
 };
 
 // R-UNIT-164: the Leader's behaviour states (§2.4); the values are state, never renumbered.

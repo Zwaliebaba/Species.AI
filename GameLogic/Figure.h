@@ -114,6 +114,10 @@ struct Figure
   std::vector<FormationSlot> slots;      // R-UNIT-177: in index order, gaps included
   // From state version 8 (M1 task T8):
   std::int32_t nearestNode = -1; // R-BOT-043: a Worker's nearest bot navigation node, which only recounts write; −1 for none
+  // From state version 9 (M2 task T5):
+  StableId portStructureId = 0;        // R-UNIT-090: the structure whose port it walks to or operates; 0 for none
+  std::uint32_t portStructureSlot = 0; // that structure's slot, which resolves only while the structure holds it
+  std::uint32_t portIndex = 0;         // the port, in its structure's port order
 };
 
 // R-UNIT-011 and R-UNIT-015 (R-SIM-109): sets the kind, the stats of the stat table, the actor-grid radius
@@ -154,6 +158,7 @@ inline constexpr std::uint32_t FIGURE_STATE_VERSION_ROUTES = 5;
 inline constexpr std::uint32_t FIGURE_STATE_VERSION_COMBAT = 6;
 inline constexpr std::uint32_t FIGURE_STATE_VERSION_LEADERS = 7;
 inline constexpr std::uint32_t FIGURE_STATE_VERSION_BOTS = 8;
+inline constexpr std::uint32_t FIGURE_STATE_VERSION_PORTS = 9;
 // The most slots a saved formation holds: a bound for the reader, far above the formation size (R-UNIT-162).
 inline constexpr std::uint64_t FORMATION_SLOTS_STATE_MAX = 65'535;
 

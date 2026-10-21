@@ -486,7 +486,11 @@
     },
     "bldg": {
       "port": {
-        "clearance_wu": 5
+        "clearance_wu": 5,
+        "radius_wu": 5,
+        "reservation_limit": 1,
+        "reservation_cap": 50,
+        "reservation_decay_per_tick": 4
       },
       "structure": {
         "push_step_wu": 2
@@ -507,7 +511,8 @@
         "recount_phase": 20,
         "range": 200,
         "defend_enemy_threshold": 30,
-        "defend_leader_radius": 300
+        "defend_leader_radius": 300,
+        "important_radius": 100
       },
       "cycle": {
         "period_easy": 200,

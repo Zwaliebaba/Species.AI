@@ -89,11 +89,9 @@ struct BotNode
 // Worker's nearest node, and the owner. The MVP has no priority to recalculate.
 void AdvanceBotNode(RegionSimulation& _region, std::uint32_t _index, BotNode& _node);
 
-// R-BOT-049: no node of the MVP is important until its structures exist (M2).
-[[nodiscard]] constexpr bool Important(std::uint32_t) noexcept
-{
-  return false;
-}
+// R-BOT-049: node _index is important when the scan of the structures in slot order finds one with at least one port
+// strictly within ref.bot.node.important_radius of it; the MVP has no other kind that makes a node important.
+[[nodiscard]] bool Important(const RegionSimulation& _region, std::uint32_t _index);
 
 // R-BOT-050: the live Leaders of _team within _range of _point: every one, or only those with a waypoint order or
 // without one.

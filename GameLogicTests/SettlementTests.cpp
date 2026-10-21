@@ -23,23 +23,11 @@ namespace GameLogicTests
 namespace
 {
 
-constexpr Neuron::SipHashKey SETTLEMENT_TEST_KEY{0x5e771e5e771e5e77, 0x0a0b0c0d0e0f1011};
 constexpr std::uint8_t STEWARD_SITE = 2;
 
 const Species::StructureRecords& Records()
 {
-  static const Species::StructureRecords RECORDS = TestStructureRecords();
-  return RECORDS;
-}
-
-// A new world on the valley of seed 1 with the steward's settlement at site 2 (MVP-012).
-std::unique_ptr<Species::WorldSimulation> SettledWorld()
-{
-  Species::WorldStart start;
-  start.key = SETTLEMENT_TEST_KEY;
-  start.seed = ValleyTerrain()->seed;
-  start.stewardSite = STEWARD_SITE;
-  return Species::StartWorld(start, ValleyTerrain(), CommittedTuning(), &Records());
+  return TestRecords();
 }
 
 } // namespace
@@ -229,7 +217,7 @@ public:
     const double x = origin + 1000.0;
     const double z = origin + 1000.0;
     const Species::Structure structure = Species::MakeStructure(Species::StructureKind::ResourceSite, std::nullopt, std::nullopt, x, z,
-                                                                {0.0, 0.0, 1.0}, record, flat->field, CommittedTuning());
+                                                                {0.0, 0.0, 1.0}, record, nullptr, flat->field, CommittedTuning());
     ExpectEqual(2, static_cast<std::int64_t>(structure.ports.size()), L"both ports");
     const Neuron::Vec3& pushed = structure.ports[0].position;
     Assert::IsTrue(std::abs(pushed.x - (x + 20.0)) < 1e-9 && std::abs(pushed.z - z) < 1e-9 && pushed.y == 50.0, L"pushed to 20 wu");
@@ -265,11 +253,7 @@ public:
       Assert::IsTrue(Species::HashWorld(*back).world == Species::HashWorld(*world).world, L"the same hash on every tick");
     }
 
-    Species::WorldStart other;
-    other.key = SETTLEMENT_TEST_KEY;
-    other.seed = ValleyTerrain()->seed;
-    other.stewardSite = 1;
-    const std::unique_ptr<Species::WorldSimulation> elsewhere = Species::StartWorld(other, ValleyTerrain(), CommittedTuning(), &Records());
+    const std::unique_ptr<Species::WorldSimulation> elsewhere = SettledWorld(1);
     Assert::IsTrue(Species::HashWorld(*elsewhere).world != Species::HashWorld(*SettledWorld()).world, L"another site, another hash");
   }
 

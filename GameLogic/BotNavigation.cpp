@@ -267,4 +267,20 @@ bool ReadBotNode(Neuron::BitReader& _reader, BotNode& _node)
   return !_reader.Failed() && _node.owner >= -1 && _node.owner < static_cast<std::int32_t>(BOT_NODE_TEAMS_MAX);
 }
 
+bool Important(const RegionSimulation& _region, std::uint32_t _index)
+{
+  const Neuron::Vec3& node = _region.Bots().Position(_index);
+  const double radius = _region.Tuning().ref.bot.node.importantRadius;
+  const SlicedPool<Structure>& structures = _region.Structures();
+  for (std::uint32_t slot = 0; slot < structures.Capacity(); ++slot)
+  {
+    if (structures.Used(slot) && !structures.At(slot).ports.empty() &&
+        Neuron::LengthSquared(structures.At(slot).position - node) < radius * radius)
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
 } // namespace Species

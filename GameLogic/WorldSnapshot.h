@@ -31,7 +31,7 @@ inline constexpr std::uint32_t WORLD_STATE_OLDEST_VERSION = 1;
 // figure's formation flag (M1 task T7); an older region has no commander, and its figures no Leader and no order.
 // Version 8 added each region's AIs and its bot navigation nodes' counts, and each Worker's nearest node (M1 task T8);
 // an older region has no AI and makes its nodes as a new one does. Version 9 added each region's settlements and its
-// structures (M2 task T4); an older region has neither. _tuning and _structures outlive the world.
+// structures (M2 task T4), and each figure's port (M2 task T5); an older region has neither, and its figures no port. _tuning and _structures outlive the world.
 [[nodiscard]] std::expected<std::unique_ptr<WorldSimulation>, Neuron::SnapshotError>
 RestoreWorld(const Neuron::SnapshotContents& _snapshot, const TuningMvp& _tuning, const StructureRecords* _structures = nullptr);
 

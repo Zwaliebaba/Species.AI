@@ -48,18 +48,29 @@ std::optional<std::uint8_t> ReadOptionalTeam(Neuron::BitReader& _reader)
 
 } // namespace
 
-const Neuron::SimulationRecord& RecordOf(const StructureRecords& _records, StructureKind _kind) noexcept
+std::size_t RecordPlaceOf(StructureKind _kind) noexcept
 {
   switch (_kind)
   {
   case StructureKind::ResourceSite:
-    return _records.resourceSite;
+    return 3;
   case StructureKind::ResourceSiteCentral:
-    return _records.resourceSiteCentral;
+    return 4;
   case StructureKind::Wellspring:
     break;
   }
-  return _records.wellspring;
+  return 0;
+}
+
+const Neuron::SimulationRecord& RecordOf(const StructureRecords& _records, StructureKind _kind) noexcept
+{
+  return RecordAt(_records, RecordPlaceOf(_kind));
+}
+
+const Neuron::CollisionAsset* CollisionOf(const StructureRecords& _records, StructureKind _kind) noexcept
+{
+  const std::optional<Neuron::CollisionAsset>& collision = _records.collisions[RecordPlaceOf(_kind)];
+  return collision ? &*collision : nullptr;
 }
 
 Neuron::Vec3 StructurePoint(const Structure& _structure, const std::array<double, 3>& _meshPoint) noexcept
@@ -74,8 +85,8 @@ Neuron::Vec3 StructureDirection(const Structure& _structure, const std::array<do
 }
 
 Structure MakeStructure(StructureKind _kind, std::optional<std::uint8_t> _owner, std::optional<std::uint32_t> _resourceSite, double _x,
-                        double _z, const Neuron::Vec3& _front, const Neuron::SimulationRecord& _record, const Neuron::TerrainField& _field,
-                        const TuningMvp& _tuning)
+                        double _z, const Neuron::Vec3& _front, const Neuron::SimulationRecord& _record,
+                        const Neuron::CollisionAsset* _collision, const Neuron::TerrainField& _field, const TuningMvp& _tuning)
 {
   Structure structure;
   structure.kind = _kind;
@@ -97,7 +108,7 @@ Structure MakeStructure(StructureKind _kind, std::optional<std::uint8_t> _owner,
   }
   // R-BLDG-016 and R-BLDG-020: a port per port socket, in index order, pushed clear by the structure push of R-BLDG-033
   // (while the port's sphere hits the structure, a step directly away from its position) and set on the terrain.
-  const ObstacleShape shape = ShapeOf(structure);
+  const ObstacleShape shape = ShapeOf(structure, _collision);
   const double clearance = _tuning.ref.bldg.port.clearanceWu;
   const double step = _tuning.ref.bldg.structure.pushStepWu;
   const auto pushesMax = static_cast<std::int64_t>(
@@ -119,9 +130,26 @@ Structure MakeStructure(StructureKind _kind, std::optional<std::uint8_t> _owner,
   return structure;
 }
 
-ObstacleShape ShapeOf(const Structure& _structure) noexcept
+ObstacleShape ShapeOf(const Structure& _structure, const Neuron::CollisionAsset* _collision)
 {
-  return {_structure.center, _structure.radius};
+  ObstacleShape shape{_structure.center, _structure.radius, {}, std::nullopt};
+  if (_collision != nullptr)
+  {
+    for (const Neuron::CollisionNode& node : _collision->nodes)
+    {
+      for (std::size_t corner = 0; corner + 2 < node.corners.size(); corner += 3)
+      {
+        std::array<Neuron::Vec3, 3> triangle;
+        for (std::size_t k = 0; k < 3; ++k)
+        {
+          const std::array<float, 3>& point = node.corners[corner + k];
+          triangle[k] = StructurePoint(_structure, {double{point[0]}, double{point[1]}, double{point[2]}});
+        }
+        shape.triangles.push_back(triangle);
+      }
+    }
+  }
+  return shape;
 }
 
 void WriteStructure(Neuron::BitWriter& _writer, const Structure& _structure)

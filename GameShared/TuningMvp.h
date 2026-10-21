@@ -1324,6 +1324,18 @@ struct TuningMvp
       {
         // ref.bldg.port.clearance_wu, in wu
         double clearanceWu = 0.0;
+
+        // ref.bldg.port.radius_wu, in wu
+        double radiusWu = 0.0;
+
+        // ref.bldg.port.reservation_limit, in reservations
+        std::int64_t reservationLimit = 0;
+
+        // ref.bldg.port.reservation_cap, in reservations
+        std::int64_t reservationCap = 0;
+
+        // ref.bldg.port.reservation_decay_per_tick, in reservations per tick
+        std::int64_t reservationDecayPerTick = 0;
       };
 
       struct Structure
@@ -1374,6 +1386,9 @@ struct TuningMvp
 
         // ref.bot.node.defend_leader_radius, in wu
         double defendLeaderRadius = 0.0;
+
+        // ref.bot.node.important_radius, in wu
+        double importantRadius = 0.0;
       };
 
       struct Cycle
@@ -2393,6 +2408,10 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Ref::Bldg::Port& _out)
 {
   _out.clearanceWu = _reader.Decimal(_object, "clearance_wu", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.radiusWu = _reader.Decimal(_object, "radius_wu", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.reservationLimit = _reader.Integer(_object, "reservation_limit", 0);
+  _out.reservationCap = _reader.Integer(_object, "reservation_cap", 0);
+  _out.reservationDecayPerTick = _reader.Integer(_object, "reservation_decay_per_tick", 0);
   _reader.Close(_object);
 }
 
@@ -2435,6 +2454,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.range = _reader.Decimal(_object, "range", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.defendEnemyThreshold = _reader.Integer(_object, "defend_enemy_threshold", 0);
   _out.defendLeaderRadius = _reader.Decimal(_object, "defend_leader_radius", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.importantRadius = _reader.Decimal(_object, "important_radius", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -4020,11 +4040,19 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Econ
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Bldg::Port& _in)
 {
   _writer.F64(_in.clearanceWu);
+  _writer.F64(_in.radiusWu);
+  _writer.I64(_in.reservationLimit);
+  _writer.I64(_in.reservationCap);
+  _writer.I64(_in.reservationDecayPerTick);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Bldg::Port& _out)
 {
   _out.clearanceWu = _reader.F64();
+  _out.radiusWu = _reader.F64();
+  _out.reservationLimit = _reader.I64();
+  _out.reservationCap = _reader.I64();
+  _out.reservationDecayPerTick = _reader.I64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Bldg::Structure& _in)
@@ -4088,6 +4116,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Bot:
   _writer.F64(_in.range);
   _writer.I64(_in.defendEnemyThreshold);
   _writer.F64(_in.defendLeaderRadius);
+  _writer.F64(_in.importantRadius);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Bot::Node& _out)
@@ -4097,6 +4126,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Ref::Bot:
   _out.range = _reader.F64();
   _out.defendEnemyThreshold = _reader.I64();
   _out.defendLeaderRadius = _reader.F64();
+  _out.importantRadius = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Ref::Bot::Cycle& _in)

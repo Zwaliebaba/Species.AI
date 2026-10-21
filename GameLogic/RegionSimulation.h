@@ -78,7 +78,7 @@ public:
 
   // One region job of tick _tick (R-SIM-510): its commands, then the update slices 0 to ref.sim.update_slices - 1
   // (R-SIM-511, R-SIM-218), each running the region's teams in index order (R-SIM-221), then its laser bolts, its
-  // effects, its bot navigation nodes, the only structures before M2, and its Essence orbs (R-SIM-218 steps 3 to 5);
+  // effects, its structures and then its bot navigation nodes, and its Essence orbs (R-SIM-218 steps 3 to 5);
   // then each AI, whose commands execute at the next tick (ADR-107).
   void Step(std::uint64_t _tick);
 
@@ -238,14 +238,17 @@ public:
   }
   // The settlement at local site _site, or null while the site is free.
   [[nodiscard]] const Settlement* SettlementAt(std::uint8_t _site) const noexcept;
+  // The structure in _slot while it still holds that slot with id _id, or null (R-SIM-325's rule for handles).
+  [[nodiscard]] Structure* ResolveStructure(std::uint32_t _slot, StableId _id) noexcept;
+  [[nodiscard]] const Structure* ResolveStructure(std::uint32_t _slot, StableId _id) const noexcept;
   // The records the region builds structures from, or null (ADR-130).
   [[nodiscard]] const StructureRecords* Records() const noexcept
   {
     return m_records;
   }
   // R-BLDG-029 and R-BLDG-030 for a structure that a rule creates: made at (_x, _z) facing _front from its kind's record
-  // on the region's terrain (MakeStructure), given the next stable id of the region and inserted into the structure
-  // pool; returns its slot. It needs the terrain and the records. M2 task T5 adds it to the obstacle grid.
+  // and collision asset on the region's terrain (MakeStructure), given the next stable id of the region, inserted into
+  // the structure pool and added to the obstacle grid; returns its slot. It needs the terrain and the records.
   std::uint32_t AddStructure(StructureKind _kind, std::optional<std::uint8_t> _owner, std::optional<std::uint32_t> _resourceSite, double _x,
                              double _z, const Neuron::Vec3& _front);
   // WLD-080 to WLD-085: a structure for each resource site of the region's terrain, in its order, belonging to no
@@ -353,6 +356,10 @@ private:
   void FreeUnheldRoutes();
   // ADR-107: the node states of the bot navigation graph, each with its phase draw, when the region holds none.
   void EnsureBotNodes();
+  // R-SIM-321, DEC-095, ADR-131: the obstacle grid made again from every structure in slot order, its shape its collision
+  // asset's triangles at its transform; derived data, so made whenever a structure is added or removed and when a
+  // restored region's terrain is attached.
+  void RebuildObstacles();
 
   std::uint16_t m_index;
   const TuningMvp* m_tuning;

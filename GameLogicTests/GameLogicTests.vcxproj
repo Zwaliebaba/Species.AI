@@ -181,6 +181,7 @@
     <ClCompile Include="SettlementTests.cpp" />
     <ClCompile Include="SlicedPoolTests.cpp" />
     <ClCompile Include="StateHashTests.cpp" />
+    <ClCompile Include="StructureTests.cpp" />
     <ClCompile Include="TestSupport.cpp" />
     <ClCompile Include="WeaponTests.cpp" />
     <ClCompile Include="WorldSnapshotTests.cpp" />
