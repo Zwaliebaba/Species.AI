@@ -33,6 +33,9 @@
     <ClInclude Include="AppWindow.h">
       <Filter>Window</Filter>
     </ClInclude>
+    <ClInclude Include="BindingNotation.h">
+      <Filter>Input</Filter>
+    </ClInclude>
     <ClInclude Include="CursorRenderer.h">
       <Filter>Rendering</Filter>
     </ClInclude>
@@ -76,6 +79,9 @@
       <Filter>Resources</Filter>
     </ClInclude>
     <ClInclude Include="InputEvents.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputNames.h">
       <Filter>Input</Filter>
     </ClInclude>
     <ClInclude Include="InputRouter.h">
@@ -176,6 +182,9 @@
     <ClCompile Include="AppWindow.cpp">
       <Filter>Window</Filter>
     </ClCompile>
+    <ClCompile Include="BindingNotation.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
     <ClCompile Include="CursorRenderer.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
@@ -214,6 +223,9 @@
     </ClCompile>
     <ClCompile Include="InMemoryGpuResourceFactory.cpp">
       <Filter>Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="InputNames.cpp">
+      <Filter>Input</Filter>
     </ClCompile>
     <ClCompile Include="InputRouter.cpp">
       <Filter>Input</Filter>

@@ -50,6 +50,9 @@
     <ClCompile Include="GameUiTests.cpp">
       <Filter>View</Filter>
     </ClCompile>
+    <ClCompile Include="InputBindingsTests.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
     <ClCompile Include="LeaderLookTests.cpp">
       <Filter>View</Filter>
     </ClCompile>

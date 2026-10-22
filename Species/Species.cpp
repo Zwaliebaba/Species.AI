@@ -169,21 +169,31 @@ constexpr Neuron::Nanoseconds RENDER_CHECK_LIMIT{120'000'000'000};
 // The frame loop until the quit, or, for a render check, until it has drawn _checkFrames world frames or its limit has
 // passed.
 void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neuron::FrameRenderer& _renderer, ClientSession& _session,
-                  WorldPresentation& _world, SettlementView& _view, std::optional<std::uint32_t> _checkFrames)
+                  WorldPresentation& _world, SettlementView& _view, const Neuron::SettingsStore& _settings,
+                  std::optional<std::uint32_t> _checkFrames)
 {
   // M1 task T14 (ADR-119): the keyboard and mouse back-end and the input router with the compiled-in bindings replace
   // O65's stand-in; the window's close request is the quit (PLT-009).
   Neuron::KeyboardMouseBackEnd keyboardMouse(_window);
+  // ADR-151: the default set, then the active layout's layer and the user layer of binding.<action id> settings
+  // (INP-162), built again when the keyboard layout changes (INP-166). A user binding takes effect at the next start
+  // (INP-203, O94).
   const std::vector<Neuron::ActionBindings> bindings = DefaultBindings();
-  Neuron::InputRouter router(bindings, keyboardMouse, &keyboardMouse);
+  Neuron::InputRouter router(bindings, keyboardMouse, &keyboardMouse, SettingAccessOf(_settings));
+  std::string layoutTag = ActiveLayoutTag(_settings, _window.ActiveKeyboardLayoutTag());
+  const std::size_t replaced = router.Rebuild(BindingLayers(_settings, _window.ActiveKeyboardLayoutTag()));
+  Neuron::Log(Neuron::LogCategory::Input, Neuron::LogLevel::Info, "bindings built for the keyboard layout {}: {} replaced", layoutTag,
+              replaced);
+  bool layoutChanged = false;
   _window.SetInputSink(&keyboardMouse);
   const Neuron::WindowListenerId listener = _window.AddListener(
-    [&keyboardMouse](const Neuron::WindowEvent& _event)
+    [&keyboardMouse, &layoutChanged](const Neuron::WindowEvent& _event)
     {
       if (std::holds_alternative<Neuron::EndOfSession>(_event))
       {
         keyboardMouse.RequestClose(); // PLT-042
       }
+      layoutChanged = layoutChanged || std::holds_alternative<Neuron::KeyboardLayoutChanged>(_event);
     });
   _renderer.OnDeviceRebuilt([] { Neuron::Log(Neuron::LogCategory::Render, Neuron::LogLevel::Info, "presentation resumed"); });
 
@@ -210,6 +220,16 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
       stepStart = now;
     };
     _window.PumpMessages();
+    if (std::exchange(layoutChanged, false))
+    {
+      // INP-166: a change of the system's layout rebuilds the bindings when the active layout changed with it.
+      if (std::string active = ActiveLayoutTag(_settings, _window.ActiveKeyboardLayoutTag()); active != layoutTag)
+      {
+        layoutTag = std::move(active);
+        static_cast<void>(router.Rebuild(BindingLayers(_settings, _window.ActiveKeyboardLayoutTag())));
+        Neuron::Log(Neuron::LogCategory::Input, Neuron::LogLevel::Info, "bindings rebuilt for the keyboard layout {}", layoutTag);
+      }
+    }
     router.AdvanceFrame({.windowFocused = _window.HasFocus()}, _window.ClientSize(), _clock.Now());
     if (keyboardMouse.TakeCloseRequest())
     {
@@ -453,7 +473,7 @@ int Run()
 #endif
 
     presentation.window->Show();
-    RunFrameLoop(clock, *presentation.window, *presentation.renderer, session, world, view, checkFrames);
+    RunFrameLoop(clock, *presentation.window, *presentation.renderer, session, world, view, settings, checkFrames);
 #if ENGINE_DEVELOPMENT
     const std::uint64_t worldFrames = presentation.renderer->WorldFrames();
 #endif

@@ -75,6 +75,7 @@ std::vector<Neuron::SettingSpec> ClientSettingSpecs()
   specs.push_back(Spec(SETTING_REDUCED_FLASH, SettingType::Boolean, false));
   specs.push_back(Spec(SETTING_REDUCED_MOTION, SettingType::Boolean, false));
   specs.push_back(Spec(SETTING_MASTER_VOLUME, SettingType::Integer, VOLUME_DEFAULT, 0.0, static_cast<double>(VOLUME_MAX)));
+  specs.push_back(Spec(SETTING_KEYBOARD_LAYOUT, SettingType::Text, std::nullopt));
   specs.push_back(Spec(SETTING_BINDING_FAMILY, SettingType::Binding, std::nullopt));
   return specs;
 }

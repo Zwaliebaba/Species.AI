@@ -43,6 +43,11 @@ public:
     return m_file;
   }
 
+  // Whether the schema holds the key, by its own entry or its family (INP-142: a setting a binding may name).
+  [[nodiscard]] bool Knows(std::string_view _key) const noexcept
+  {
+    return SpecOf(_key) != nullptr;
+  }
   // The value of a key the schema holds; none while the setting is absent.
   [[nodiscard]] std::optional<SettingValue> Get(std::string_view _key) const;
   // PLT-033: the value with the schema's type. A key the schema does not hold, or another type, is a development check

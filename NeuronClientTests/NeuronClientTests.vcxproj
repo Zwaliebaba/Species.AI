@@ -169,6 +169,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AppWindowTests.cpp" />
+    <ClCompile Include="BindingNotationTests.cpp" />
     <ClCompile Include="FrameGraphTests.cpp" />
     <ClCompile Include="GlyphAtlasTests.cpp" />
     <ClCompile Include="GpuResourceFactoryTests.cpp" />

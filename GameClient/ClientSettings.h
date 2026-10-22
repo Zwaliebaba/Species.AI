@@ -30,7 +30,8 @@ inline constexpr std::string_view SETTING_TEXT_SCALE = "interface.text_scale";
 inline constexpr std::string_view SETTING_REDUCED_FLASH = "interface.reduced_flash";
 inline constexpr std::string_view SETTING_REDUCED_MOTION = "interface.reduced_motion";
 inline constexpr std::string_view SETTING_MASTER_VOLUME = "audio.master_volume";
-inline constexpr std::string_view SETTING_BINDING_FAMILY = "binding."; // INP-070: binding.<action id>
+inline constexpr std::string_view SETTING_KEYBOARD_LAYOUT = "input.keyboard_layout"; // INP-164: absent, the system's layout
+inline constexpr std::string_view SETTING_BINDING_FAMILY = "binding.";               // INP-070: binding.<action id>
 
 // The enumerators of the enumerations, as the file spells them (DAT-197).
 inline constexpr std::string_view WINDOW_MODE_WINDOWED = "windowed";

@@ -175,6 +175,7 @@
     <ClCompile Include="EffectsLookTests.cpp" />
     <ClCompile Include="ClientSettingsTests.cpp" />
     <ClCompile Include="GameUiTests.cpp" />
+    <ClCompile Include="InputBindingsTests.cpp" />
     <ClCompile Include="LeaderLookTests.cpp" />
     <ClCompile Include="RoutePreviewTests.cpp" />
     <ClCompile Include="SettlementCameraTests.cpp" />

@@ -159,6 +159,7 @@
   <ItemGroup>
     <ClInclude Include="AdapterChoice.h" />
     <ClInclude Include="AppWindow.h" />
+    <ClInclude Include="BindingNotation.h" />
     <ClInclude Include="CursorRenderer.h" />
     <ClInclude Include="DdsTexture.h" />
     <ClInclude Include="DepthBias.h" />
@@ -174,6 +175,7 @@
     <ClInclude Include="GraphicsDevice.h" />
     <ClInclude Include="InMemoryGpuResourceFactory.h" />
     <ClInclude Include="InputEvents.h" />
+    <ClInclude Include="InputNames.h" />
     <ClInclude Include="InputRouter.h" />
     <ClInclude Include="KeyboardMouseBackEnd.h" />
     <ClInclude Include="MeshRenderer.h" />
@@ -208,6 +210,7 @@
   <ItemGroup>
     <ClCompile Include="AdapterChoice.cpp" />
     <ClCompile Include="AppWindow.cpp" />
+    <ClCompile Include="BindingNotation.cpp" />
     <ClCompile Include="CursorRenderer.cpp" />
     <ClCompile Include="DdsTexture.cpp" />
     <ClCompile Include="DescriptorHeaps.cpp" />
@@ -221,6 +224,7 @@
     <ClCompile Include="GpuResourceFactory.cpp" />
     <ClCompile Include="GraphicsDevice.cpp" />
     <ClCompile Include="InMemoryGpuResourceFactory.cpp" />
+    <ClCompile Include="InputNames.cpp" />
     <ClCompile Include="InputRouter.cpp" />
     <ClCompile Include="KeyboardMouseBackEnd.cpp" />
     <ClCompile Include="MeshRenderer.cpp" />

@@ -50,6 +50,8 @@ This document specifies what the player can set and what the client remembers be
 6. user profiles and mods, which the library does not specify (DEC-061);
 7. the command-history record of the replay hook, which is a development file (DEC-046; [reference/12](../12_simulation_model/07_randomness_and_integrity.md) R-SIM-740).
 
+> **Amendment 2026-10-22 (owner decision O94, [ADR-151](../../ADR/ADR-151-the-rest-of-the-input-router-at-m2.md)).** Item 2 does not apply to Species: the user layer of bindings is kept in the settings store as `binding.<action id>` entries, as INP-070 has it, and the player edits them in the settings file. The router reads them when the client starts.
+
 **R-META-409** (MUST) The settings file carries no schema version and is never migrated: it is the client-local store of the reference. Versioning, forward migration and synchronisation of settings are the design phase's (DEC-250).
 
 ### 2.2 Settings navigation and the shared page pattern
