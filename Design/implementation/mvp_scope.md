@@ -79,6 +79,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-026** (MUST) The territory radius is `wld.territory.founding_radius` plus `mvp.territory.radius_per_worker` (4 wu) for each Worker above the starting count, up to `wld.territory.max_radius` (1,400 wu), and grows inside the bounds of WLD-060: it stops at the coast, at the halfway line of each valley border area (WLD-062, WLD-063) and at the edge of the home cell. Territory never shrinks in the MVP, except that a border area lost by a claim leaves it (WLD-086).
 
+> **Amendment 2026-10-22 (M2 task T6; [ADR-134](../ADR/ADR-134-territory-essence-growth-contact-and-the-seen-layer-at-m2.md)).** The territory is held as a raster of cells of `mvp.territory.cell_size` (16 wu): the cells within its radius of the Wellspring and inside the bounds, joined to the Wellspring's cell. The bounds are the coast bands, the halfway lines of the valley border areas, the edge of the home cell, `wld.territory.site_clearance` outside every other site's core, `wld.resource.wild_clearance` outside the central resource site and dry ground. A structure lies inside it when the cells its footprint covers are held (MVP-032), so it may overhang the edge by less than a cell.
+
 **MVP-027** (MUST) Two settlements are in contact while their territories touch at a valley border area's halfway line; the server records each contact event as WLD-066 states, and contact is the territory-pressure cause of MVP-051.
 
 ### 2.4 Gathering, stores, construction and upkeep (stands in for B2 and B3)
@@ -313,6 +315,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.essence.drift_speed` | 30 | wu/s | tick | provisional | MVP-023 | Orbs drifting home should be seen, not missed |
 | `mvp.essence.wait_max` | 20 | orbs | — | provisional | MVP-025 | — |
 | `mvp.territory.radius_per_worker` | 4 | wu per Worker | — | provisional | MVP-026 | Contact between neighbours at about 150 Workers, in hour 2 to 3 of a run |
+| `mvp.territory.cell_size` | 16 | wu | — | provisional | MVP-026 | The territory's raster: a height-field cell's side (O83), fine enough that a structure's footprint test reads its edge |
 | `mvp.resource.ports_per_unit` | 4 | ports | — | provisional | MVP-030 | 44 gatherers at full territory; sets the plateau with the upkeep |
 | `mvp.gather.port_ticks` | 100 | ticks | tick | provisional | MVP-031 | — |
 | `mvp.gather.load_ru` | 1 | ru per load | scaled | provisional | MVP-031 | About 60 ru per gatherer per hour of play |

@@ -173,6 +173,7 @@
     <ClInclude Include="StateValues.h" />
     <ClInclude Include="Structure.h" />
     <ClInclude Include="StructureAdvance.h" />
+    <ClInclude Include="Territory.h" />
     <ClInclude Include="TickDraws.h" />
     <ClInclude Include="Turret.h" />
     <ClInclude Include="Weapons.h" />
@@ -208,6 +209,7 @@
     <ClCompile Include="StateSender.cpp" />
     <ClCompile Include="Structure.cpp" />
     <ClCompile Include="StructureAdvance.cpp" />
+    <ClCompile Include="Territory.cpp" />
     <ClCompile Include="TickDraws.cpp" />
     <ClCompile Include="Turret.cpp" />
     <ClCompile Include="Weapons.cpp" />

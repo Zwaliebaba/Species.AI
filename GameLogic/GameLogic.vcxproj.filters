@@ -102,6 +102,9 @@
     <ClInclude Include="StructureAdvance.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="Territory.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="TickDraws.h">
       <Filter>Simulation</Filter>
     </ClInclude>
@@ -201,6 +204,9 @@
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="StructureAdvance.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Territory.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="TickDraws.cpp">

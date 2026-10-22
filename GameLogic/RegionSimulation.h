@@ -20,6 +20,7 @@
 #include "StableIdCounter.h"
 #include "Structure.h"
 #include "StructureRecords.h"
+#include "Territory.h"
 #include "TickDraws.h"
 #include "TuningMvp.h"
 #include "Vec3.h"
@@ -242,6 +243,10 @@ public:
   }
   // The settlement at local site _site, or null while the site is free.
   [[nodiscard]] const Settlement* SettlementAt(std::uint8_t _site) const noexcept;
+  // MVP-026: the territory of the settlement at local site _site, or null while the site is free (ADR-134).
+  [[nodiscard]] const TerritoryMap* TerritoryOf(std::uint8_t _site) const noexcept;
+  // The territory of the settlement at _site made again from its radius, as when its radius grows (ADR-134).
+  void RecomputeTerritory(std::uint8_t _site);
   // The structure in _slot while it still holds that slot with id _id, or null (R-SIM-325's rule for handles).
   [[nodiscard]] Structure* ResolveStructure(std::uint32_t _slot, StableId _id) noexcept;
   [[nodiscard]] const Structure* ResolveStructure(std::uint32_t _slot, StableId _id) const noexcept;
@@ -367,6 +372,9 @@ private:
   // asset's triangles at its transform; derived data, so made whenever a structure is added or removed and when a
   // restored region's terrain is attached.
   void RebuildObstacles();
+  // ADR-134: every settlement's territory made again; derived data, made when a settlement is founded, when a restored
+  // region's terrain is attached and after a snapshot is read.
+  void RecomputeTerritories();
 
   std::uint16_t m_index;
   const TuningMvp* m_tuning;
@@ -393,7 +401,8 @@ private:
   const StructureRecords* m_records;
   SlicedPool<Structure> m_structures;
   std::vector<Settlement> m_settlements;
-  std::vector<EffectEvent> m_events; // presentation, never state
+  std::vector<TerritoryMap> m_territories; // by settlement, derived, never state
+  std::vector<EffectEvent> m_events;       // presentation, never state
 #if ENGINE_DEVELOPMENT
   AdvanceObserver m_advanceObserver;
 #endif

@@ -28,7 +28,8 @@
       "wait_max": 20
     },
     "territory": {
-      "radius_per_worker": 4
+      "radius_per_worker": 4,
+      "cell_size": 16
     },
     "resource": {
       "ports_per_unit": 4
@@ -591,7 +592,8 @@
   "wld": {
     "region": {
       "side": 5120,
-      "channel_width": 256
+      "channel_width": 256,
+      "coast_band": 320
     },
     "site": {
       "spacing": 2080,
@@ -623,7 +625,8 @@
     },
     "territory": {
       "max_radius": 1400,
-      "founding_radius": 500
+      "founding_radius": 500,
+      "site_clearance": 200
     },
     "resource": {
       "home_inner": 3,
@@ -634,7 +637,8 @@
       "extra_bearing": 84,
       "home_yield_tolerance": 5,
       "border_factor": 1,
-      "central_factor": 3
+      "central_factor": 3,
+      "wild_clearance": 150
     },
     "travel": {
       "valley_path_factor": 1.05

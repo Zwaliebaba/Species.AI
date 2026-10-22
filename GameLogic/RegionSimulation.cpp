@@ -132,6 +132,7 @@ void RegionSimulation::AttachTerrain(std::shared_ptr<const RegionTerrain> _terra
   {
     RebuildObstacles();
   }
+  RecomputeTerritories();
   ENGINE_CHECK(m_botNodes.Count() == m_bots.Size(), "region {} holds {} bot nodes for a graph of {}", m_index, m_botNodes.Count(),
                m_bots.Size());
 }
@@ -466,6 +467,42 @@ RouteHandle RegionSimulation::BuildRoute(const Neuron::Vec3& _from, const Neuron
   return m_routes.Add(m_terrain->routes.BuildRoute(_from, _to, _directRoute, _permitClimbing, _noRounding, m_terrain->field, *m_tuning));
 }
 
+const TerritoryMap* RegionSimulation::TerritoryOf(std::uint8_t _site) const noexcept
+{
+  for (std::size_t index = 0; index < m_settlements.size() && index < m_territories.size(); ++index)
+  {
+    if (m_settlements[index].site == _site)
+    {
+      return &m_territories[index];
+    }
+  }
+  return nullptr;
+}
+
+void RegionSimulation::RecomputeTerritory(std::uint8_t _site)
+{
+  for (std::size_t index = 0; index < m_settlements.size() && index < m_territories.size(); ++index)
+  {
+    if (m_settlements[index].site == _site)
+    {
+      m_territories[index] = ComputeTerritory(*this, m_settlements[index]);
+    }
+  }
+}
+
+void RegionSimulation::RecomputeTerritories()
+{
+  m_territories.clear();
+  if (m_terrain == nullptr)
+  {
+    return;
+  }
+  for (const Settlement& settlement : m_settlements)
+  {
+    m_territories.push_back(ComputeTerritory(*this, settlement));
+  }
+}
+
 const Settlement* RegionSimulation::SettlementAt(std::uint8_t _site) const noexcept
 {
   const auto found = std::ranges::find(m_settlements, _site, &Settlement::site);
@@ -545,6 +582,7 @@ const Settlement& RegionSimulation::FoundSettlement(std::uint8_t _site, bool _st
   settlement.wellspringId = m_structures.At(settlement.wellspringSlot).id;
   EnsureTeam(settlement.team);
   const Settlement& founded = m_settlements.emplace_back(std::move(settlement));
+  m_territories.push_back(ComputeTerritory(*this, founded));
   for (std::int64_t worker = 0; worker < m_tuning->mvp.settlement.startWorkers; ++worker)
   {
     static_cast<void>(SpawnAtDoor(founded));
@@ -966,6 +1004,7 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
   {
     RebuildObstacles();
   }
+  RecomputeTerritories();
   return true;
 }
 

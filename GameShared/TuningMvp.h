@@ -83,6 +83,9 @@ struct TuningMvp
     {
       // mvp.territory.radius_per_worker, in wu per Worker
       double radiusPerWorker = 0.0;
+
+      // mvp.territory.cell_size, in wu
+      double cellSize = 0.0;
     };
 
     struct Resource
@@ -1610,6 +1613,9 @@ struct TuningMvp
 
       // wld.region.channel_width, in wu
       double channelWidth = 0.0;
+
+      // wld.region.coast_band, in wu
+      double coastBand = 0.0;
     };
 
     struct Site
@@ -1694,6 +1700,9 @@ struct TuningMvp
 
       // wld.territory.founding_radius, in wu
       double foundingRadius = 0.0;
+
+      // wld.territory.site_clearance, in wu
+      double siteClearance = 0.0;
     };
 
     struct Resource
@@ -1724,6 +1733,9 @@ struct TuningMvp
 
       // wld.resource.central_factor, in units
       std::int64_t centralFactor = 0;
+
+      // wld.resource.wild_clearance, in wu
+      double wildClearance = 0.0;
     };
 
     struct Travel
@@ -1791,6 +1803,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::Territory& _out)
 {
   _out.radiusPerWorker = _reader.Decimal(_object, "radius_per_worker", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.cellSize = _reader.Decimal(_object, "cell_size", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -2712,6 +2725,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 {
   _out.side = _reader.Decimal(_object, "side", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.channelWidth = _reader.Decimal(_object, "channel_width", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.coastBand = _reader.Decimal(_object, "coast_band", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -2756,6 +2770,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 {
   _out.maxRadius = _reader.Decimal(_object, "max_radius", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.foundingRadius = _reader.Decimal(_object, "founding_radius", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.siteClearance = _reader.Decimal(_object, "site_clearance", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -2770,6 +2785,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.homeYieldTolerance = _reader.Decimal(_object, "home_yield_tolerance", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.borderFactor = _reader.Integer(_object, "border_factor", 0);
   _out.centralFactor = _reader.Integer(_object, "central_factor", 0);
+  _out.wildClearance = _reader.Decimal(_object, "wild_clearance", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -2887,11 +2903,13 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Esse
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Territory& _in)
 {
   _writer.F64(_in.radiusPerWorker);
+  _writer.F64(_in.cellSize);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Territory& _out)
 {
   _out.radiusPerWorker = _reader.F64();
+  _out.cellSize = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Resource& _in)
@@ -4548,12 +4566,14 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld::Regi
 {
   _writer.F64(_in.side);
   _writer.F64(_in.channelWidth);
+  _writer.F64(_in.coastBand);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Wld::Region& _out)
 {
   _out.side = _reader.F64();
   _out.channelWidth = _reader.F64();
+  _out.coastBand = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld::Site& _in)
@@ -4628,12 +4648,14 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld::Terr
 {
   _writer.F64(_in.maxRadius);
   _writer.F64(_in.foundingRadius);
+  _writer.F64(_in.siteClearance);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Wld::Territory& _out)
 {
   _out.maxRadius = _reader.F64();
   _out.foundingRadius = _reader.F64();
+  _out.siteClearance = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld::Resource& _in)
@@ -4647,6 +4669,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld::Reso
   _writer.F64(_in.homeYieldTolerance);
   _writer.I64(_in.borderFactor);
   _writer.I64(_in.centralFactor);
+  _writer.F64(_in.wildClearance);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Wld::Resource& _out)
@@ -4660,6 +4683,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Wld::Reso
   _out.homeYieldTolerance = _reader.F64();
   _out.borderFactor = _reader.I64();
   _out.centralFactor = _reader.I64();
+  _out.wildClearance = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld::Travel& _in)

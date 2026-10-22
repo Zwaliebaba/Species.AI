@@ -65,6 +65,9 @@
     <ClCompile Include="StructureTests.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="TerritoryTests.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="TestSupport.cpp">
       <Filter>Tests</Filter>
     </ClCompile>

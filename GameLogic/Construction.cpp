@@ -93,8 +93,8 @@ std::uint32_t ActiveCount(const RegionSimulation& _region, std::uint8_t _team, S
 
 bool InTerritory(const RegionSimulation& _region, const Settlement& _settlement, const Neuron::Vec3& _point, double _radius)
 {
-  const Structure* wellspring = _region.ResolveStructure(_settlement.wellspringSlot, _settlement.wellspringId);
-  return wellspring != nullptr && Neuron::HorizontalDistance(_point, wellspring->position) + _radius <= _settlement.territoryRadius;
+  const TerritoryMap* territory = _region.TerritoryOf(_settlement.site);
+  return territory != nullptr && territory->HoldsDisc(_point.x, _point.z, _radius);
 }
 
 bool Queued(const RegionSimulation& _region, const Structure& _structure)

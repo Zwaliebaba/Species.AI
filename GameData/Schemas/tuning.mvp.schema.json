@@ -216,10 +216,20 @@
               "x-species-type": "sim_decimal",
               "x-species-unit": "wu per Worker",
               "x-species-presence": "required"
+            },
+            "cell_size": {
+              "type": "number",
+              "description": "mvp.territory.cell_size (MVP-026)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
             }
           },
           "required": [
-            "radius_per_worker"
+            "radius_per_worker",
+            "cell_size"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -5027,11 +5037,21 @@
               "x-species-type": "sim_decimal",
               "x-species-unit": "wu",
               "x-species-presence": "required"
+            },
+            "coast_band": {
+              "type": "number",
+              "description": "wld.region.coast_band (WLD-021, WLD-061)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
             }
           },
           "required": [
             "side",
-            "channel_width"
+            "channel_width",
+            "coast_band"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -5303,11 +5323,21 @@
               "x-species-type": "sim_decimal",
               "x-species-unit": "wu",
               "x-species-presence": "required"
+            },
+            "site_clearance": {
+              "type": "number",
+              "description": "wld.territory.site_clearance (WLD-060)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
             }
           },
           "required": [
             "max_radius",
-            "founding_radius"
+            "founding_radius",
+            "site_clearance"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -5394,6 +5424,15 @@
               "x-species-type": "count",
               "x-species-unit": "units",
               "x-species-presence": "required"
+            },
+            "wild_clearance": {
+              "type": "number",
+              "description": "wld.resource.wild_clearance (WLD-060, WLD-083)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
             }
           },
           "required": [
@@ -5405,7 +5444,8 @@
             "extra_bearing",
             "home_yield_tolerance",
             "border_factor",
-            "central_factor"
+            "central_factor",
+            "wild_clearance"
           ],
           "additionalProperties": false,
           "x-species-type": "object",

@@ -55,8 +55,8 @@ enum class PlacementRefusal : std::uint8_t
 // storehouses that add to the stores' capacity (MVP-022, MVP-034).
 [[nodiscard]] std::uint32_t ActiveCount(const RegionSimulation& _region, std::uint8_t _team, StructureKind _kind);
 
-// MVP-032 until M2 task T6 builds the territory's bounds: a disc of _radius at _point lies wholly inside the disc of the
-// territory's radius about the settlement's Wellspring (ADR-132).
+// MVP-032: a disc of _radius at _point lies wholly inside the settlement's territory, its centre's cell and every cell
+// whose centre it covers held (ADR-134).
 [[nodiscard]] bool InTerritory(const RegionSimulation& _region, const Settlement& _settlement, const Neuron::Vec3& _point, double _radius);
 
 // A dwelling's and a storehouse's ports are construction ports, which a Worker mans only while it is a construction

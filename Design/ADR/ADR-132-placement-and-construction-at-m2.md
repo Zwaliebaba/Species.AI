@@ -39,7 +39,7 @@ Chosen option: 1. A site already has the ports its Workers man and the footprint
 * **Placement** (`PlaceStructure`) places a dwelling, a storehouse or a turret ([ADR-133](ADR-133-the-gun-turret-at-m2.md)) for the settlement at a site. The structure is centred at the point the steward gives and faces away from the Wellspring. The checks run in this order, and the first that fails is the refusal (`PlacementRefusal`):
   1. no settlement at the site, or a kind the steward does not place;
   2. the queue is full;
-  3. the structure does not lie wholly inside the territory: its footprint, the horizontal disc of its bounding sphere, inside the disc of the territory's radius about the Wellspring. T6 replaces the disc with the territory's bounds (WLD-060).
+  3. the structure does not lie wholly inside the territory: its footprint, the horizontal disc of its bounding sphere, inside the territory. Until T6 the territory was the disc of its radius about the Wellspring; from T6 it is ADR-134's territory within the bounds of WLD-060.
   4. the footprint reaches into the core's centre ring, of `mvp.construction.center_ring_radius` (60 wu) about the Wellspring. The Wellspring's ports stand at 38 wu with their 5 wu radius, so 60 wu leaves room to stand beside them.
   5. its position or one of its ports stands on ground at or below the shore height, or steeper than `ref.sim.walk.min_normal_y`, the walkable ground of R-SIM-335 and WLD-163 check 6;
   6. its footprint meets another structure's (resource sites included), or one of its ports comes within `ref.bldg.port.radius_wu` of another's footprint, or one of the other's ports of its own;
