@@ -130,6 +130,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-041** (MUST) An expedition is a Leader, the Workers following it (R-UNIT-096) and up to `mvp.expedition.size_max` (200) Workers in all. The steward forms one by promoting a Worker (R-UNIT-152) and drawing Workers from guard duty to it, and sends it by declaring an attack on a target: a raid on a settlement, or a claim battle at a claimed area (MVP-053).
 
+> **Amendment 2026-10-22 (O98).** An expedition is up to three Leaders, each with the Workers following it and its reference formation of `ref.sim.team.formation_size_upgrade` (90, R-UNIT-162), and up to `mvp.expedition.size_max` (200) Workers in all. The steward promotes each Leader and draws Workers from guard duty to them, and orders and declares the three as one; an AI settlement fields its expeditions the same way.
+
 **MVP-042** (MUST) Declaring an attack pays `mvp.conflict.attack_cost_ru` (300 ru), or `pil.conflict.unprovoked_cost_factor` (2) times as much for an unprovoked attack (PIL-063), warns the target at once, and holds the expedition at the target's territory edge until `mvp.conflict.warning_minutes` (5 minutes of world time) have passed since the warning (WLD-102, with the duration narrowed). No attack may be declared on a settlement under a respite (MVP-047).
 
 **MVP-043** (MUST) A battle starts when a hostile expedition, released by the warning hold, enters the target's territory or the claimed area (PIL-041). The battlefield is the target's territory and `wld.view.settlement_margin` (800 wu) around it, or the claimed area and the same margin.
@@ -195,6 +197,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 > **Amendment 2026-10-22 (M2 task T8; [ADR-136](../ADR/ADR-136-settlement-commands-status-and-statistics-at-m2.md)).** The statistics are part of the world's state, saved and replayed with it. A growth step is a structure of the settlement built, its population reaching a new multiple of `mvp.stats.population_step` (10 Workers), or its territory taking in a resource site (the [M2 plan](m2_plan.md) §9, question 1). Each entry records the tick, the Worker count and the strength. Samples fall on the world ticks that are multiples of the sample period.
 
+> **Amendment 2026-10-22 (M2 task T19; [ADR-156](../ADR/ADR-156-the-settlement-drawn-at-its-plateau-and-the-owners-growth-run.md)).** A saved world's statistics are read from its newest snapshot by `SpeciesPerformance.exe --saved-world`, which judges them as the growth scene's, so the owner's growth run of M2 is measured from the run itself (the [M2 plan](m2_plan.md) §5).
+
 ### 2.8 World clock, presence and the deputy (O54)
 
 **MVP-070** (MUST) In M0 to M3 the world runs at the session pace (PIL-100, PIL-104) while the client runs it, on the integrated server in the client's process behind the in-process transport (O10, ADR-084, ADR-088 item 1); closing the client saves the world (MVP-075) and freezes it (O4). The session factor is `mvp.pace.session_factor` (24), so one hour of play is one world day of the economy, relations and protection timers (PIL-101 and WLD-200 narrowed from 12).
@@ -208,6 +212,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 **MVP-074** (MUST) A steward who returns sees the away report first (PIL-073): its summary (battles and their results, Workers and stores lost and gained, construction finished, grievances recorded, claims moved, freezes) on one page, readable in `pil.session.report_read_minutes` (2 minutes), and the list of every deputy action with the standing order that permitted it (PIL-026). The away report and the settlement status are server messages, not client logic (PIL-075, O6).
 
 **MVP-075** (MUST) The server saves the world as a versioned snapshot every `mvp.persist.snapshot_seconds` (60 seconds of world time) and when it stops cleanly: it writes a temporary file, flushes it and replaces the previous snapshot by an atomic rename through the platform layer, keeping the last `mvp.persist.snapshots_kept` (3). At start it loads the newest snapshot that validates and records the time since that snapshot as a freeze of cause "unclean stop" when the previous stop was not clean (PIL-131). Saving starts at M2, because a session-paced world is continued across sessions. The journaled record store of O42 is deferred (§5.2).
+
+> **Amendment 2026-10-22 (M2 task T18; [ADR-155](../ADR/ADR-155-the-front-end-and-saved-worlds-at-m2.md)).** The client saves each world in a folder of its own under the user-data root, `saves\world-NNNN`. A world continued from the front end opens only from a snapshot that validates: with none, its folder is left as it was and the front end shows why (MVP-095).
 
 **MVP-076** (SHOULD) The server SHOULD write the commands it executes since the last snapshot to a command journal beside it, so that a defect is reproduced from the snapshot and the journal on the same build (ADR-081 Level 1, ADR-088's journal).
 
@@ -232,6 +238,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 > **Amendment 2026-10-22 (O90; M2 task T13, [ADR-143](../ADR/ADR-143-territory-lines-and-border-areas-drawn-at-m2.md); DEC-1002, Open).** Every settlement's territory line runs halfway between the cells it holds and the cells it does not, as the replica holds them, at a lift over the terrain. Each valley border area's halfway line and edge are marked with spots of `fx.particle_dot`, in a neutral colour while no holder is replicated (WLD-063); the holders and the claims are marked with M3's claims (MVP-053). Outside the steward's areas the terrain and the sea are darkened towards black by a mask of the areas, and no Worker, Leader, orb or structure is drawn there ([ADR-144](../ADR/ADR-144-black-fog-outside-the-stewards-areas-at-m2.md)); the lines and spots lie over the fog. The line's width, lift and alpha, the spots' size, spacing and colour and the fog's strength and edge are the provisional presentation keys of table 3, which the owner tunes after T13's run (DEC-1002).
 
 **MVP-085** (MUST) The client draws at `mvp.client.fps_target` (60 frames per second) at 1,920 × 1,080 with up to `mvp.client.figures_max` (1,500) figures on screen on the reference test machine (DBG-209), which is the owner's PC, pinned at M1 (O58), and draws the replica one tick behind with interpolation (ADR-084).
+
+> **Amendment 2026-10-22 (M2 task T19; [ADR-156](../ADR/ADR-156-the-settlement-drawn-at-its-plateau-and-the-owners-growth-run.md)).** From M2 the performance script also draws the steward's settlement at its plateau with the HUD, and judges it against the same 99th-percentile frame interval as the sandbox's battle (O75).
 
 **MVP-086** (MUST) The MVP's meshes and textures are produced by development tools under `Tools/` (procedural shape kits and texture generators, or a digital content creation tool with an exporter) and written in the cooked formats the runtime loads (ADR-017, ADR-019), so that the runtime path is the one later content takes. The tools may use pinned third-party code restored by NuGet (O29, O30); nothing of them ships (R14).
 
@@ -286,6 +294,8 @@ The MVP builds only one region and one steward, but it keeps the seams that are 
 > Its measures and colours are `mvp.hud.*`.
 
 **MVP-103** (MUST) The front end of the MVP is one page: continue a world, start a new run (pace, seed, site), open the epilogue of an ended world, options for display and volume, and quit.
+
+> **Amendment 2026-10-22 (O80, O96; M2 task T18; [ADR-155](../ADR/ADR-155-the-front-end-and-saved-worlds-at-m2.md)).** M2's page continues the latest world, starts a new one on a seed typed or drawn and a site chosen, opens the options of O96 and quits; the pace is M4's and the epilogue M3's. A Debug build's `--sandbox` starts the battle sandbox in place of the page, and the client returns to the page only by starting again until ADR-083's Leaving state is built.
 
 ## 3 Milestones
 
@@ -519,6 +529,7 @@ The first guesses were set against two targets, which M2 and Playtest 1 check. O
 | PIL-125 | Renown and the epilogue in the MVP | O53 |
 | PIL-068, WLD-004, WLD-120 to WLD-127 | One region, three AI settlements, no free site | One steward, no late joiner |
 | PIL-110 (Table 10, stage 1) | The MVP is stage 1's smallest world game in one region, with renown and a lifetime added | O50, O53 |
+| WLD-244 | An expedition outside a battle is followed by markers of its Leaders over the fog and at the screen's edge, not in the strategic view; no figure is drawn and the settlement view is not widened | The MVP builds no strategic view (§5.1); O98 |
 | O42 | Versioned snapshots instead of the journaled store | A solo world loses at most a minute; the store follows when worlds are shared |
 
 *Table 4 — The Final requirements that the MVP narrows.*
