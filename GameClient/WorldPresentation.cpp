@@ -231,7 +231,8 @@ WorldPresentation::WorldPresentation(Desc _desc)
     m_profile(ProfileDescOf(*_desc.presentation)),
     m_presentationClock(_desc.presentation->ref.sim.frame.deltaClamp),
     m_text(std::make_unique<Neuron::TextSystem>(TextSystemDesc(*_desc.presentation))),
-    m_ui(std::make_unique<GameUi>(*_desc.presentation))
+    m_ui(std::make_unique<GameUi>(*_desc.presentation)),
+    m_hud(std::make_unique<SettlementHud>(*_desc.presentation, *_desc.tuning))
 {
   m_ui->SetScales(m_desc.display.uiScale, m_desc.display.textScale);
   m_cursorImages = LoadCursorImages(*m_desc.content);
@@ -255,6 +256,12 @@ void WorldPresentation::SetDisplay(const DisplayOptions& _display)
 {
   m_desc.display = _display;
   m_ui->SetScales(_display.uiScale, _display.textScale);
+}
+
+void WorldPresentation::UpdateHud(ClientSession& _session, Neuron::SizePx _client, float _dpiScale)
+{
+  const double seconds = std::chrono::duration<double>(m_desc.clock->Now() - m_start).count();
+  m_hud->Update(_session, seconds, UiMetricsOf(*m_desc.presentation, _client, _dpiScale, m_desc.display.uiScale, m_desc.display.textScale));
 }
 
 void WorldPresentation::Update(const ClientSession& _session)
@@ -430,6 +437,8 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
     }
   }
   // ADR-149: the UI's windows in pass 19, over the world.
+  // ADR-152: the settlement HUD in pass 19 under the UI's windows (UI-460).
+  m_hud->Draw(*m_text, *m_strings, *m_locale, inputs.ui);
   m_ui->Draw(*m_text, inputs.presentationSeconds, inputs.ui);
 #if ENGINE_DEVELOPMENT
   if (const std::optional<Neuron::UiRect> area = m_ui->TestSampleArea(); area.has_value())

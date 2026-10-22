@@ -22,8 +22,15 @@ namespace
 
 // The content keys of the UI's images (AST-014; Design/implementation/mvp_assets.md), in UiImage's order.
 constexpr std::array<std::string_view, static_cast<std::size_t>(UiImage::Count)> UI_IMAGE_KEYS{
-  "textures/uitex/panelaccent", "textures/uitex/panelneutral", "textures/uitex/menuhighlight",
-  "textures/uitex/fillblur",    "textures/fx/glowcloudy",      "textures/uitex/iconcheck"};
+  "textures/uitex/panelaccent",       "textures/uitex/panelneutral",
+  "textures/uitex/menuhighlight",     "textures/uitex/fillblur",
+  "textures/fx/glowcloudy",           "textures/uitex/iconcheck",
+  "textures/icon/hud/meter",          "textures/icon/hud/notificationcard",
+  "textures/icon/hud/resource",       "textures/icon/hud/growth",
+  "textures/icon/hud/prioritygather", "textures/icon/hud/priorityconstruct",
+  "textures/icon/hud/priorityguard",  "textures/icon/hud/dwelling",
+  "textures/icon/hud/storehouse",     "textures/icon/power/workers",
+  "textures/icon/power/gunturret"};
 
 // The test page's measures, in pixels; its own, not the game's.
 constexpr float PAGE_MARGIN = 24.0f;

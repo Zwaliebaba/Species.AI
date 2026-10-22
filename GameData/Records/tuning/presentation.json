@@ -586,6 +586,68 @@
     "view_fog": {
       "strength": 0.85,
       "edge_width": 64
+    },
+    "hud": {
+      "status_period": 1,
+      "notice_seconds": 6,
+      "notice_fade": 1,
+      "notices_max": 5,
+      "margin": 8,
+      "padding": 6,
+      "panel_width": 236,
+      "row_height": 17,
+      "icon_size": 13,
+      "meter_height": 4,
+      "text_size": 11,
+      "card_width": 200,
+      "card_height": 20,
+      "bar_button_width": 96,
+      "bar_height": 34,
+      "queue_size": 26,
+      "palette": {
+        "accent": {
+          "r": 0.55,
+          "g": 0.6,
+          "b": 1.0,
+          "a": 0.85
+        },
+        "neutral": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.75,
+          "a": 0.75
+        },
+        "text": {
+          "r": 1.0,
+          "g": 1.0,
+          "b": 1.0,
+          "a": 1.0
+        },
+        "positive": {
+          "r": 0.6,
+          "g": 1.0,
+          "b": 0.4,
+          "a": 1.0
+        },
+        "negative": {
+          "r": 1.0,
+          "g": 0.3,
+          "b": 0.3,
+          "a": 1.0
+        },
+        "meter_track": {
+          "r": 1.0,
+          "g": 1.0,
+          "b": 1.0,
+          "a": 0.15
+        },
+        "meter_fill": {
+          "r": 0.3,
+          "g": 0.6,
+          "b": 0.9,
+          "a": 0.9
+        }
+      }
     }
   },
   "dbg": {

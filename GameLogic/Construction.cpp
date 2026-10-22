@@ -2,6 +2,7 @@
 
 #include "Construction.h"
 #include "RegionSimulation.h"
+#include "StructureCost.h"
 
 #include <algorithm>
 #include <cmath>
@@ -101,14 +102,9 @@ std::expected<Structure, PlacementRefusal> Candidate(const RegionSimulation& _re
 
 std::int64_t CostMilliRu(const RegionSimulation& _region, const Settlement& _settlement, StructureKind _kind)
 {
-  const auto& cost = _region.Tuning().mvp.cost;
-  if (_kind != StructureKind::Dwelling)
-  {
-    return MilliRuOf(_kind == StructureKind::Storehouse ? cost.storehouseRu : _kind == StructureKind::Turret ? cost.turretRu : 0.0);
-  }
   std::int64_t dwellings = 0;
   const SlicedPool<Structure>& structures = _region.Structures();
-  for (std::uint32_t slot = 0; slot < structures.Capacity(); ++slot)
+  for (std::uint32_t slot = 0; _kind == StructureKind::Dwelling && slot < structures.Capacity(); ++slot)
   {
     if (structures.Used(slot) && structures.At(slot).kind == StructureKind::Dwelling &&
         structures.At(slot).owner == std::optional<std::uint8_t>(_settlement.team))
@@ -116,7 +112,7 @@ std::int64_t CostMilliRu(const RegionSimulation& _region, const Settlement& _set
       ++dwellings;
     }
   }
-  return MilliRuOf(cost.dwellingRu * std::pow(cost.dwellingEscalation, static_cast<double>(dwellings)));
+  return StructureCostMilliRu(_region.Tuning(), _kind, dwellings);
 }
 
 std::int64_t RequiredWorkTicks(const Structure& _structure, const TuningMvp& _tuning) noexcept

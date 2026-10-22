@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ClientSettings.h"
+#include "SettlementHud.h"
 #include "ClientSession.h"
 #include "DevelopmentOverlay.h"
 #include "EffectsLook.h"
@@ -52,6 +53,13 @@ public:
 
   // Once per frame, after the session's update: builds the world's surfaces when the session's terrain is new.
   void Update(const ClientSession& _session);
+  // ADR-152: once per frame, after the session's update: the settlement HUD's model, its status requests and its layout
+  // for a client area of _client at _dpiScale.
+  void UpdateHud(ClientSession& _session, Neuron::SizePx _client, float _dpiScale);
+  [[nodiscard]] const SettlementHud& Hud() const noexcept
+  {
+    return *m_hud;
+  }
   // ADR-149: once per frame, before the camera and the verbs read _router: the UI's update, which withholds from the
   // world the actions that a focused window takes (UI-006).
   void UpdateUi(Neuron::InputRouter& _router, Neuron::SizePx _client, float _dpiScale, bool _windowFocused)
@@ -122,6 +130,7 @@ private:
   Neuron::PresentationClock m_presentationClock;
   std::unique_ptr<Neuron::TextSystem> m_text; // ADR-147: DirectWrite's layouts and the glyph atlas
   std::unique_ptr<GameUi> m_ui;               // ADR-149: the UI core with the game's pages
+  std::unique_ptr<SettlementHud> m_hud;       // ADR-152: the settlement's HUD
   std::uint64_t m_frames = 0;
   bool m_overlayShown = false;
 };

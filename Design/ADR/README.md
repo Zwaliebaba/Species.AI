@@ -152,6 +152,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-149](ADR-149-the-ui-core-pages-focus-and-layout-at-m2.md) | The UI core: pages, focus and layout at M2 | Proposed | 2026-10-22 |
 | [ADR-150](ADR-150-the-settings-store-and-user-data-root-at-m2.md) | The settings store and the user-data root at M2 | Proposed | 2026-10-22 |
 | [ADR-151](ADR-151-the-rest-of-the-input-router-at-m2.md) | The rest of the input router at M2 | Proposed | 2026-10-22 |
+| [ADR-152](ADR-152-the-settlement-hud-at-m2.md) | The settlement HUD at M2 | Proposed | 2026-10-22 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

@@ -4841,6 +4841,552 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "hud": {
+          "type": "object",
+          "description": "the mvp.hud.* keys",
+          "properties": {
+            "status_period": {
+              "type": "number",
+              "description": "mvp.hud.status_period (MVP-098, MVP-102)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "s",
+              "x-species-presence": "required"
+            },
+            "notice_seconds": {
+              "type": "number",
+              "description": "mvp.hud.notice_seconds (MVP-102)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "s",
+              "x-species-presence": "required"
+            },
+            "notice_fade": {
+              "type": "number",
+              "description": "mvp.hud.notice_fade (MVP-102)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "s",
+              "x-species-presence": "required"
+            },
+            "notices_max": {
+              "type": "integer",
+              "description": "mvp.hud.notices_max (MVP-102)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "notices",
+              "x-species-presence": "required"
+            },
+            "margin": {
+              "type": "number",
+              "description": "mvp.hud.margin (MVP-102)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "HUD units",
+              "x-species-presence": "required"
+            },
+            "padding": {
+              "type": "number",
+              "description": "mvp.hud.padding (MVP-102)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "HUD units",
+              "x-species-presence": "required"
+            },
+            "panel_width": {
+              "type": "number",
+              "description": "mvp.hud.panel_width (MVP-102)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "HUD units",
+              "x-species-presence": "required"
+            },
+            "row_height": {
+              "type": "number",
+              "description": "mvp.hud.row_height (MVP-102)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "HUD units",
+              "x-species-presence": "required"
+            },
+            "icon_size": {
+              "type": "number",
+              "description": "mvp.hud.icon_size (MVP-102)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "HUD units",
+              "x-species-presence": "required"
+            },
+            "meter_height": {
+              "type": "number",
+              "description": "mvp.hud.meter_height (MVP-102)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "HUD units",
+              "x-species-presence": "required"
+            },
+            "text_size": {
+              "type": "number",
+              "description": "mvp.hud.text_size (MVP-102)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "HUD units",
+              "x-species-presence": "required"
+            },
+            "card_width": {
+              "type": "number",
+              "description": "mvp.hud.card_width (MVP-102)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "HUD units",
+              "x-species-presence": "required"
+            },
+            "card_height": {
+              "type": "number",
+              "description": "mvp.hud.card_height (MVP-102)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "HUD units",
+              "x-species-presence": "required"
+            },
+            "bar_button_width": {
+              "type": "number",
+              "description": "mvp.hud.bar_button_width (MVP-101, MVP-102)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "HUD units",
+              "x-species-presence": "required"
+            },
+            "bar_height": {
+              "type": "number",
+              "description": "mvp.hud.bar_height (MVP-102)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "HUD units",
+              "x-species-presence": "required"
+            },
+            "queue_size": {
+              "type": "number",
+              "description": "mvp.hud.queue_size (MVP-102)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "HUD units",
+              "x-species-presence": "required"
+            },
+            "palette": {
+              "type": "object",
+              "description": "the mvp.hud.palette.* keys",
+              "properties": {
+                "accent": {
+                  "type": "object",
+                  "description": "mvp.hud.palette.accent (MVP-102, RND-403)",
+                  "properties": {
+                    "r": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.accent.r",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "tint",
+                      "x-species-presence": "required"
+                    },
+                    "g": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.accent.g",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "tint",
+                      "x-species-presence": "required"
+                    },
+                    "b": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.accent.b",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "tint",
+                      "x-species-presence": "required"
+                    },
+                    "a": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.accent.a",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "tint",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "r",
+                    "g",
+                    "b",
+                    "a"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "neutral": {
+                  "type": "object",
+                  "description": "mvp.hud.palette.neutral (MVP-102, RND-403)",
+                  "properties": {
+                    "r": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.neutral.r",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "tint",
+                      "x-species-presence": "required"
+                    },
+                    "g": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.neutral.g",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "tint",
+                      "x-species-presence": "required"
+                    },
+                    "b": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.neutral.b",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "tint",
+                      "x-species-presence": "required"
+                    },
+                    "a": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.neutral.a",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "tint",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "r",
+                    "g",
+                    "b",
+                    "a"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "text": {
+                  "type": "object",
+                  "description": "mvp.hud.palette.text (MVP-102, RND-403)",
+                  "properties": {
+                    "r": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.text.r",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "color",
+                      "x-species-presence": "required"
+                    },
+                    "g": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.text.g",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "color",
+                      "x-species-presence": "required"
+                    },
+                    "b": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.text.b",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "color",
+                      "x-species-presence": "required"
+                    },
+                    "a": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.text.a",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "color",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "r",
+                    "g",
+                    "b",
+                    "a"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "positive": {
+                  "type": "object",
+                  "description": "mvp.hud.palette.positive (MVP-102, RND-403)",
+                  "properties": {
+                    "r": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.positive.r",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "color",
+                      "x-species-presence": "required"
+                    },
+                    "g": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.positive.g",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "color",
+                      "x-species-presence": "required"
+                    },
+                    "b": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.positive.b",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "color",
+                      "x-species-presence": "required"
+                    },
+                    "a": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.positive.a",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "color",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "r",
+                    "g",
+                    "b",
+                    "a"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "negative": {
+                  "type": "object",
+                  "description": "mvp.hud.palette.negative (MVP-102, RND-403)",
+                  "properties": {
+                    "r": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.negative.r",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "color",
+                      "x-species-presence": "required"
+                    },
+                    "g": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.negative.g",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "color",
+                      "x-species-presence": "required"
+                    },
+                    "b": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.negative.b",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "color",
+                      "x-species-presence": "required"
+                    },
+                    "a": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.negative.a",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "color",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "r",
+                    "g",
+                    "b",
+                    "a"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "meter_track": {
+                  "type": "object",
+                  "description": "mvp.hud.palette.meter_track (MVP-102, RND-403)",
+                  "properties": {
+                    "r": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.meter_track.r",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "tint",
+                      "x-species-presence": "required"
+                    },
+                    "g": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.meter_track.g",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "tint",
+                      "x-species-presence": "required"
+                    },
+                    "b": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.meter_track.b",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "tint",
+                      "x-species-presence": "required"
+                    },
+                    "a": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.meter_track.a",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "tint",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "r",
+                    "g",
+                    "b",
+                    "a"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "meter_fill": {
+                  "type": "object",
+                  "description": "mvp.hud.palette.meter_fill (MVP-102, RND-403)",
+                  "properties": {
+                    "r": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.meter_fill.r",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "tint",
+                      "x-species-presence": "required"
+                    },
+                    "g": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.meter_fill.g",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "tint",
+                      "x-species-presence": "required"
+                    },
+                    "b": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.meter_fill.b",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "tint",
+                      "x-species-presence": "required"
+                    },
+                    "a": {
+                      "type": "number",
+                      "description": "mvp.hud.palette.meter_fill.a",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "tint",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "r",
+                    "g",
+                    "b",
+                    "a"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "accent",
+                "neutral",
+                "text",
+                "positive",
+                "negative",
+                "meter_track",
+                "meter_fill"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "status_period",
+            "notice_seconds",
+            "notice_fade",
+            "notices_max",
+            "margin",
+            "padding",
+            "panel_width",
+            "row_height",
+            "icon_size",
+            "meter_height",
+            "text_size",
+            "card_width",
+            "card_height",
+            "bar_button_width",
+            "bar_height",
+            "queue_size",
+            "palette"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
@@ -4853,7 +5399,8 @@
         "worker",
         "territory_line",
         "border_mark",
-        "view_fog"
+        "view_fog",
+        "hud"
       ],
       "additionalProperties": false,
       "x-species-type": "object",

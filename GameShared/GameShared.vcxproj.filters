@@ -75,6 +75,9 @@
     <ClInclude Include="StateUpdate.h">
       <Filter>Replication</Filter>
     </ClInclude>
+    <ClInclude Include="StructureCost.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="StructureKind.h">
       <Filter>Simulation</Filter>
     </ClInclude>
@@ -127,6 +130,9 @@
     </ClCompile>
     <ClCompile Include="StateUpdate.cpp">
       <Filter>Replication</Filter>
+    </ClCompile>
+    <ClCompile Include="StructureCost.cpp">
+      <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="StructureRecords.cpp">
       <Filter>Records</Filter>

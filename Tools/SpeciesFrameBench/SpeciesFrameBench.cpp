@@ -401,6 +401,7 @@ SceneEnd RunScene(const Scene& _scene, const Options& _options, const Bench& _be
     }
     session.Update();
     world.Update(session);
+    world.UpdateHud(session, size, _bench.window->DpiScale()); // ADR-152: drawn as the client draws it, where a settlement exists
     const Neuron::FrameInputs inputs = world.Frame(session, view, _bench.renderer->FramesPerSecond(), _bench.window->DpiScale());
     const std::uint64_t worldFrames = _bench.renderer->WorldFrames();
     const Neuron::FrameOutcome outcome =

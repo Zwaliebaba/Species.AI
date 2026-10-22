@@ -3,6 +3,19 @@
   "version": "1.0",
   "language": "en-US",
   "strings": {
-    "ui.title.game_name": "Species"
+    "ui.title.game_name": "Species",
+    "ui.hud.stores": "{stores, number, integer} of {capacity, number, integer}",
+    "ui.hud.workers": "{population, plural, one {# Worker} other {# Workers}} of {limit, number, integer}",
+    "ui.hud.growth": "{state, select, growing {Next Worker in {seconds, number, integer} s} at_limit {Growth stopped: at the population limit} stores_short {Growth stopped: the stores are short} other {Growth stopped}}",
+    "ui.hud.upkeep": "Upkeep {upkeep, number, integer} an hour",
+    "ui.hud.inactive": "{count, number, integer} inactive",
+    "ui.hud.priority": "{task, select, gather {Gathering} construct {Construction} guard {Guard duty} other {Task}} {share, number, integer}%, {workers, plural, one {# Worker} other {# Workers}}",
+    "ui.hud.idle": "{count, plural, =0 {No idle Workers} one {# idle Worker} other {# idle Workers}}",
+    "ui.hud.idle_reason": "{reason, select, no_free_port {{count, number, integer} with no free port} queue_empty {{count, number, integer} with nothing to build} store_full {{count, number, integer} waiting at a full store} share_met {{count, number, integer} with their share met} other {{count, number, integer} idle}}",
+    "ui.hud.waiting": "Waiting for the settlement status",
+    "ui.hud.build": "{kind, select, dwelling {Dwelling} storehouse {Storehouse} turret {Turret} other {Structure}}",
+    "ui.hud.cost": "{cost, number, integer}",
+    "ui.hud.completed": "{kind, select, dwelling {Dwelling completed} storehouse {Storehouse completed} turret {Turret completed} other {Structure completed}}",
+    "ui.hud.seed": "World seed {seed}"
   }
 }

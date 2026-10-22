@@ -28,6 +28,18 @@ enum class UiImage : std::uint16_t
   FillBlur,      // uitex.fill_blur: a fill box's body (UI-115)
   GlowCloudy,    // fx.glow_cloudy: a fill box's drifting glow (UI-115)
   IconCheck,     // uitex.icon_check: a check box's tick (UI-081)
+  // ADR-152: the settlement HUD's images (MVP-102; the MVP assets' HUD rows).
+  HudMeter,              // icon.hud.meter: the track and fill of every HUD meter
+  NotificationCard,      // icon.hud.notification_card: the frame behind a notification
+  IconResource,          // icon.hud.resource: the stores, their capacity and the costs
+  IconGrowth,            // icon.hud.growth: growth and its cause when it stops
+  IconPriorityGather,    // icon.hud.priority, in member order: gathering,
+  IconPriorityConstruct, // construction
+  IconPriorityGuard,     // and guard duty
+  IconDwelling,          // icon.hud.dwelling
+  IconStorehouse,        // icon.hud.storehouse
+  IconWorkers,           // icon.power.workers: the Workers and the population limit
+  IconTurret,            // icon.power.gun_turret: the turret on the construction bar
   Count
 };
 

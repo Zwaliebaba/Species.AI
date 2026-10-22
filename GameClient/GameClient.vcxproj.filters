@@ -60,6 +60,9 @@
     <ClInclude Include="SettlementCamera.h">
       <Filter>View</Filter>
     </ClInclude>
+    <ClInclude Include="SettlementHud.h">
+      <Filter>View</Filter>
+    </ClInclude>
     <ClInclude Include="SettlementView.h">
       <Filter>View</Filter>
     </ClInclude>
@@ -120,6 +123,9 @@
       <Filter>View</Filter>
     </ClCompile>
     <ClCompile Include="SettlementCamera.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="SettlementHud.cpp">
       <Filter>View</Filter>
     </ClCompile>
     <ClCompile Include="SettlementView.cpp">
