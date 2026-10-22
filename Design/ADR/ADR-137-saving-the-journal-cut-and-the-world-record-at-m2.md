@@ -136,3 +136,4 @@ GameLogicTests (`SandboxTests`): a freezing world's journal written under its st
 ## More Information
 
 * **Amendment 2026-10-22 (M2 task T18, [ADR-155](ADR-155-the-front-end-and-saved-worlds-at-m2.md)).** The client's worlds are saved in a folder each under `saves\` of the user-data root, which the front end starts. A world opened only to continue (`WorldServer::Desc::restoreOnly`) never writes over a folder whose snapshots it refused: with none that validates, it opens new without the folder, saves nothing, keeps the marker, and the integrated server stops it and gives the refusal's reason, which the front end shows (MVP-095). `WorldServer::Opened()` gives whether the world was restored and each snapshot refused.
+* **Amendment 2026-10-22 (M3 task T2, [ADR-157](ADR-157-the-four-settlements-and-their-peace-at-m3.md)).** The command journal is format 6, whose start holds the count of AI settlements; a journal of format 5 reads as one with none.

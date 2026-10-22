@@ -165,9 +165,11 @@ public:
   // The arrival check of a battle command (ADR-087 item 2): _sender commands _team, and is an AI when _aiOnly.
   [[nodiscard]] bool MayCommand(Neuron::SenderId _sender, std::uint8_t _team, bool _aiOnly) const noexcept;
 
-  // R-SIM-311: a team's friends and enemies. The MVP has no alliance, so each team is its own only friend.
+  // R-SIM-311: a team's friends and enemies. The MVP has no alliance, so each team is its own only friend. A team's
+  // enemies are every other team, except that a settlement's team has no other settlement's for one: the settlements
+  // are at peace outside battles (PIL-041, ADR-157).
   [[nodiscard]] static TeamMask FriendsOf(std::uint8_t _team) noexcept;
-  [[nodiscard]] static TeamMask EnemiesOf(std::uint8_t _team) noexcept;
+  [[nodiscard]] TeamMask EnemiesOf(std::uint8_t _team) const noexcept;
   // R-SIM-309 and R-SIM-311: the exact query over the teams of _teams.
   [[nodiscard]] std::vector<ActorRef> InRange(double _x, double _z, double _range, const TeamMask& _teams) const;
   // R-SIM-311: the nearest live enemy of _team with _minRange² ≤ d² < the best so far, within _maxRange.
@@ -297,12 +299,12 @@ public:
   // WLD-080 to WLD-085: a structure for each resource site of the region's terrain, in its order, belonging to no
   // settlement (WLD-084).
   void PlaceResourceSites();
-  // MVP-012, MVP-013 and MVP-020: a settlement at the free local site _site, run by a steward or an AI. Its team slot is
-  // its site and its Cladan's colour too; its Wellspring stands at the site's centre facing out along the site's
+  // MVP-012, MVP-013 and MVP-020: a settlement at the free local site _site, run by a steward or an AI with the temperament
+  // _temperament (MVP-057). Its team slot is its site and its Cladan's colour too; its Wellspring stands at the site's centre facing out along the site's
   // outward diagonal; its stores are empty, its territory has the founding radius, and its first
   // mvp.settlement.start_workers Workers leave the Wellspring's door one after another (R-ECON-043). Its draws are the
   // next tick's. It needs the terrain and the records.
-  const Settlement& FoundSettlement(std::uint8_t _site, bool _stewarded);
+  const Settlement& FoundSettlement(std::uint8_t _site, bool _stewarded, Temperament _temperament = Temperament::None);
   // R-ECON-043 for a Wellspring (MVP-021): one Worker of the settlement appears at its Wellspring's door socket with no
   // position spread and the velocity (door front + j) × ref.econ.spawn_node.door_speed, each component of j drawn from
   // U[-ref.econ.spawn_node.door_jitter, +ref.econ.spawn_node.door_jitter), and airborne. Returns its slot.

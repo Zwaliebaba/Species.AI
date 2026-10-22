@@ -53,6 +53,7 @@ public:
                                              // world's steward settlement is run by the scripted steward
     std::uint32_t syntheticFigures = 0;      // ADR-126: the sandbox's sides are a synthetic battle of this many figures, watched
     std::optional<std::uint8_t> stewardSite; // MVP-012: a new world that is no sandbox has the steward's settlement here
+    std::uint8_t aiSettlements = 0;          // MVP-013 (ADR-157): a new world's AI settlements at the other sites
     bool restoreOnly = false;                // ADR-155: a world the steward continues: when no snapshot validates, the world
                                              // opens new without its folder, so that it saves and removes nothing there
     // The calendar time, for the world record alone (ADR-137, PLT-053); none: the record holds no wall times.

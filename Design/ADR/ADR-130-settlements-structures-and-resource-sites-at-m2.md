@@ -115,3 +115,4 @@ Chosen option: 1. MVP-096 makes the region job the owner of its settlements, so 
 * DEC-1000 holds the owner's question on the ninth home resource site: on M1's terrain its place on the diagonal is in the sea or on a slope on 93 of seeds 1 to 100.
 * ADR-099's state version, ADR-102's check 7 and ADR-109's journal format are amended with this record.
 * **Amendment 2026-10-22 (owner decision O87, DEC-1000 resolved).** The owner chose option A: the ninth home resource site stays at `wld.resource.extra_bearing` (84°), which is now final. Nothing in the generator, check 7 or the state changes.
+* **Amendment 2026-10-22 (M3 task T2, [ADR-157](ADR-157-the-four-settlements-and-their-peace-at-m3.md)).** A world's start may found AI settlements after the steward's, at the free sites in site order, each with one of MVP-057's temperaments dealt by a keyed draw and run by a scripted steward; settlement teams are at peace with each other outside battles.

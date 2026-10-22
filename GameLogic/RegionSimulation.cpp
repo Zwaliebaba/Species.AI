@@ -406,9 +406,17 @@ TeamMask RegionSimulation::FriendsOf(std::uint8_t _team) noexcept
   return friends;
 }
 
-TeamMask RegionSimulation::EnemiesOf(std::uint8_t _team) noexcept
+TeamMask RegionSimulation::EnemiesOf(std::uint8_t _team) const noexcept
 {
-  return ~FriendsOf(_team);
+  TeamMask enemies = ~FriendsOf(_team);
+  if (std::ranges::any_of(m_settlements, [_team](const Settlement& _settlement) { return _settlement.team == _team; }))
+  {
+    for (const Settlement& settlement : m_settlements)
+    {
+      enemies.reset(settlement.team);
+    }
+  }
+  return enemies;
 }
 
 std::vector<ActorRef> RegionSimulation::InRange(double _x, double _z, double _range, const TeamMask& _teams) const
@@ -645,7 +653,7 @@ void RegionSimulation::PlaceResourceSites()
   }
 }
 
-const Settlement& RegionSimulation::FoundSettlement(std::uint8_t _site, bool _stewarded)
+const Settlement& RegionSimulation::FoundSettlement(std::uint8_t _site, bool _stewarded, Temperament _temperament)
 {
   ENGINE_CHECK(m_terrain != nullptr && m_records != nullptr, "region {} founds a settlement with no terrain or no records", m_index);
   const RegionLayout& layout = m_terrain->layout;
@@ -656,6 +664,7 @@ const Settlement& RegionSimulation::FoundSettlement(std::uint8_t _site, bool _st
   settlement.team = _site;
   settlement.stewarded = _stewarded;
   settlement.cladan.color = _site;
+  settlement.cladan.temperament = _temperament;
   settlement.territoryRadius = m_tuning->wld.territory.foundingRadius;
   settlement.growthTicks = GrowthIntervalTicks(*m_tuning);
   const std::int64_t step = m_tuning->mvp.stats.populationStep;

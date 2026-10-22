@@ -169,8 +169,7 @@ std::int32_t LeaderPolicy(Turn& _turn, const Figure& _leader)
   }
   std::uint32_t enemies = 0;
   Neuron::Vec3 sum;
-  for (const ActorRef& ref :
-       region.InRange(_leader.position.x, _leader.position.z, policy.botEnemyRange, RegionSimulation::EnemiesOf(team)))
+  for (const ActorRef& ref : region.InRange(_leader.position.x, _leader.position.z, policy.botEnemyRange, region.EnemiesOf(team)))
   {
     const Figure* enemy = region.Resolve(ref);
     if (enemy != nullptr && !enemy->dead)

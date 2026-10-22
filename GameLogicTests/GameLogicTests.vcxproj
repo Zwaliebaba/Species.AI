@@ -193,6 +193,7 @@
     <ClCompile Include="TestSupport.cpp" />
     <ClCompile Include="TurretTests.cpp" />
     <ClCompile Include="UpkeepTests.cpp" />
+    <ClCompile Include="ValleyTests.cpp" />
     <ClCompile Include="WeaponTests.cpp" />
     <ClCompile Include="WorldSnapshotTests.cpp" />
     <ClCompile Include="WorldTests.cpp" />
