@@ -161,7 +161,7 @@ void AppendUiTestPage(Neuron::TextSystem& _text, const TuningPresentation& _pres
   over.blend = Neuron::UiBlend::Alpha;
   over.color = {1.0f, 0.85f, 0.4f, 1.0f};
   line("Alpha fill", Neuron::FontRole::Body, STYLE_SIZE, over);
-  line("Fallback: Ł ж Ω ★, none: 漢", Neuron::FontRole::Body, STYLE_SIZE, outlined);
+  line("Fallback: Ł ж Ω €, none: 漢", Neuron::FontRole::Body, STYLE_SIZE, outlined);
 
   // ADR-146: a string the table holds, one it does not, which a Debug build shows as its id, and a plural formatted in
   // the language's forms through ICU.
