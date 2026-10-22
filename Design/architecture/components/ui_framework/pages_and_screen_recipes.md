@@ -539,6 +539,8 @@ The text is word-wrapped at the wrap width with the widths that the glyph cache 
 
 > **Amendment 2026-10-19 (ADR-034; O56).** By default the widths are those that the glyph tables of the drawn faces give, and the lines break by the rule of the UI-201 amendment ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-200, UI-201).
 
+> **Amendment 2026-10-22 (O92, [ADR-147](../../../ADR/ADR-147-the-directwrite-text-system-at-m2.md)).** The base text holds again: DirectWrite measures the widths and breaks the lines (UI-200 and UI-201 amendments of O92), and the amendment above lapses.
+
 **UI-402** (MUST) The wrapped lines are cached and wrapped again only when the text, the wrap width, the font size or the language changes. The mode description, the map description and the option details set their text from the view-model in every update; an unchanged text keeps its wrapping.
 
 **UI-403** (MUST) A line whose text starts with "-" is a heading: it is drawn without the dash at `ref.meta.credits.heading_scale` (1.25) × s.

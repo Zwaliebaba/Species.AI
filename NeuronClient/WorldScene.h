@@ -1,6 +1,6 @@
 #pragma once
 
-#include "FontAsset.h"
+#include "GlyphAtlas.h"
 #include "FrameView.h"
 #include "MeshAsset.h"
 #include "SeaSurface.h"
@@ -91,8 +91,9 @@ enum class OverlayCorner : std::uint8_t
   TopLeft      // the line's cell starts there, as a page's lines do (DBG-096)
 };
 
-/// One line of the development overlay (DBG-095), drawn in EditorFont at the overlay's whole-number scale (O63) with
-/// the matching corner of its cell at the given distances, in unscaled pixels, from the target's corner.
+/// One line of the development overlay (DBG-095), drawn in the development font role at `dbg.overlay.text_size` × the
+/// DPI scale (ADR-147), with the matching corner of its line at the given distances, in pixels at a DPI scale of 1, from
+/// the target's corner.
 struct OverlayLine
 {
   std::string text; // UTF-8
@@ -102,8 +103,8 @@ struct OverlayLine
   std::array<float, 4> color{1.0f, 1.0f, 1.0f, 1.0f};
 };
 
-/// A filled rectangle of the development overlay (the frame-time graph of DBG-089; ADR-120), in unscaled pixels from the
-/// target's top-left corner, drawn under the overlay's text at the same scale.
+/// A filled rectangle of the development overlay (the frame-time graph of DBG-089; ADR-120), in pixels at a DPI scale of
+/// 1 from the target's top-left corner, drawn under the overlay's text at the DPI scale.
 struct OverlayRect
 {
   float left = 0.0f;
@@ -314,7 +315,7 @@ enum class UiBlend : std::uint8_t
 enum class UiSource : std::uint8_t
 {
   Solid,  // nothing: the quad's colour
-  Glyphs, // the UI face's coverage page, with the point sampler (O63)
+  Glyphs, // a page of the glyph atlas, with the point sampler (ADR-147)
   Image   // an image of the UI's set, its colour times the quad's, with the linear wrapping sampler (UI-054)
 };
 
@@ -344,7 +345,7 @@ struct UiBatch
 {
   UiSource source = UiSource::Solid;
   UiBlend blend = UiBlend::Alpha;
-  std::uint16_t image = 0; // an index of UiImages::files
+  std::uint16_t image = 0; // an index of UiImages::files, or the glyph atlas's page that glyphs read
   std::optional<UiScissor> scissor;
   std::vector<UiQuad> quads;
 };
@@ -366,10 +367,10 @@ struct FrameInputs
   double presentationSeconds = 0.0; // the smooth presentation time (R-SIM-570)
   double skyTicks = 0.0;            // the ticks displayed since the world's first (RND-152)
   float brightness = 1.0f;          // rnd.option.brightness.default (RND-275)
-  // The development overlay (DBG-004, Debug builds): its face, its lines and rectangles, and the dots drawn in the world.
-  std::shared_ptr<const FontAsset> overlayFont;
-  std::vector<OverlayLine> overlay;
+  // The development overlay (DBG-004, Debug builds): its rectangles and its text, in the UI's batches over them (ADR-147),
+  // and the dots drawn in the world.
   std::vector<OverlayRect> overlayRects;
+  std::vector<UiBatch> overlayText;
   std::vector<DevelopmentDot> dots;
   // The scene's quads (ADR-121): their textures, and the batches of each quad pass in the order drawn.
   std::shared_ptr<const SceneTextures> sceneTextures;
@@ -381,9 +382,9 @@ struct FrameInputs
   // scene's textures in a world frame only.
   std::vector<OverlayQuad> markers;
   std::vector<OverlayQuad> cursorBadge;
-  // The UI (ADR-145): its face, GameFont, and its images; its batches drawn in pass 19 over the world's markers, and
-  // those drawn in pass 20 with the cursor, the badge's count among them.
-  std::shared_ptr<const FontAsset> uiFace;
+  // The UI (ADR-145): the glyph atlas that its text and the overlay's read (ADR-147), and its images; its batches drawn
+  // in pass 19 over the world's markers, and those drawn in pass 20 with the cursor, the badge's count among them.
+  std::shared_ptr<const GlyphAtlas> glyphs;
   std::shared_ptr<const UiImages> uiImages;
   std::vector<UiBatch> ui;
   std::vector<UiBatch> uiCursor;

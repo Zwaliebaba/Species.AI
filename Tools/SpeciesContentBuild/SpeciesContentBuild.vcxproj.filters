@@ -4,9 +4,6 @@
     <Filter Include="Build">
       <UniqueIdentifier>{A3CB131B-5D9C-5A84-B4FC-A43B7DF6A71C}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Fonts">
-      <UniqueIdentifier>{502186B4-FB14-51A0-A1A5-23B565D2369B}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Manifest">
       <UniqueIdentifier>{2EE12BA3-0DFD-5D10-8858-B5B4A8DE207A}</UniqueIdentifier>
     </Filter>
@@ -39,8 +36,8 @@
     <ClInclude Include="ContentBuild.h">
       <Filter>Build</Filter>
     </ClInclude>
-    <ClInclude Include="FontPacker.h">
-      <Filter>Fonts</Filter>
+    <ClInclude Include="FontCoverage.h">
+      <Filter>Strings</Filter>
     </ClInclude>
     <ClInclude Include="MeshCooker.h">
       <Filter>Meshes</Filter>
@@ -59,9 +56,6 @@
     </ClInclude>
     <ClInclude Include="StringTableCooker.h">
       <Filter>Strings</Filter>
-    </ClInclude>
-    <ClInclude Include="TextGlyphTable.h">
-      <Filter>Fonts</Filter>
     </ClInclude>
     <ClInclude Include="TextureCheck.h">
       <Filter>Textures</Filter>
@@ -89,8 +83,8 @@
     <ClCompile Include="ContentBuild.cpp">
       <Filter>Build</Filter>
     </ClCompile>
-    <ClCompile Include="FontPacker.cpp">
-      <Filter>Fonts</Filter>
+    <ClCompile Include="FontCoverage.cpp">
+      <Filter>Strings</Filter>
     </ClCompile>
     <ClCompile Include="MeshCooker.cpp">
       <Filter>Meshes</Filter>

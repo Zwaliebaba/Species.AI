@@ -121,7 +121,7 @@ public:
   {
     return m_badge;
   }
-  // ADR-127, ADR-145: the badge's count of the selected Workers, which the UI draws in GameFont; none while no Worker is
+  // ADR-127, ADR-145: the badge's count of the selected Workers, which the UI draws in the body role (ADR-147); none while no Worker is
   // selected.
   [[nodiscard]] const std::optional<BadgeLabel>& BadgeCountLabel() const noexcept
   {

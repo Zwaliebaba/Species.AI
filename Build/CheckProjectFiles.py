@@ -66,6 +66,9 @@ PROGRAMS = {'Species', 'SpeciesServer'}
 SERVER = 'SpeciesServer'
 PRESENTATION_PROJECTS = {'NeuronClient', 'GameClient'}
 PRESENTATION_LIBRARIES = ('d3d12', 'dxgi', 'xaudio2', 'x3daudio', 'gameinput', 'd2d1', 'dwrite')
+# ADR-147: the one source outside the client libraries that links a presentation library: the content build checks the
+# string tables against the system fonts that the client draws them with. The tool never ships and no server links it.
+PRESENTATION_LIBRARY_EXCEPTIONS = {('Tools/SpeciesContentBuild/FontCoverage.cpp', 'dwrite')}
 SHADER_PROJECT = 'NeuronClient'                           # ADR-090 item 1
 
 # R14 and BLD-038: the packages a game or engine project may restore, with the tuning key of each pin.
@@ -765,7 +768,8 @@ def rule_14(tree):
     if project not in PRESENTATION_PROJECTS:
       for m in PRAGMA_LIBRARY.finditer(without_comments):
         library = m.group(1).lower()
-        if any(re.fullmatch(name + r'(?:\.lib)?', library) for name in PRESENTATION_LIBRARIES):
+        if any(re.fullmatch(name + r'(?:\.lib)?', library) and (path, name) not in PRESENTATION_LIBRARY_EXCEPTIONS
+               for name in PRESENTATION_LIBRARIES):
           line = without_comments.count('\n', 0, m.start()) + 1
           yield f'{path}:{line}', f'links {m.group(1)} outside the client libraries (ADR-001, BLD-045)'
     # DAT-277: code addresses a socket by its kind and index. Only the content build's importer reads socket names,
@@ -984,6 +988,8 @@ FIXTURES = [
    lambda r: write(r, 'NeuronServer/pch.h', '\n#include "WindowsHeaders.h"\n', append=True)),
   (14, 'a Direct3D library linked by a pragma outside the client libraries (BLD-045)',
    lambda r: write(r, 'NeuronServer/pch.h', '\n#pragma comment(lib, "d3d12.lib")\n', append=True)),
+  (14, 'DirectWrite linked by a tool source other than the content build\'s coverage check (ADR-147)',
+   lambda r: write(r, 'Tools/SpeciesMeshKit/pch.h', '\n#pragma comment(lib, "dwrite.lib")\n', append=True)),
 ]
 
 

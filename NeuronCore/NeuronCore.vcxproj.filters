@@ -75,9 +75,6 @@
     <ClInclude Include="FloatEnvironment.h">
       <Filter>Platform</Filter>
     </ClInclude>
-    <ClInclude Include="FontAsset.h">
-      <Filter>Content</Filter>
-    </ClInclude>
     <ClInclude Include="FrameProfile.h">
       <Filter>Profiling</Filter>
     </ClInclude>
@@ -232,9 +229,6 @@
     </ClCompile>
     <ClCompile Include="FloatEnvironment.cpp">
       <Filter>Platform</Filter>
-    </ClCompile>
-    <ClCompile Include="FontAsset.cpp">
-      <Filter>Content</Filter>
     </ClCompile>
     <ClCompile Include="FrameProfile.cpp">
       <Filter>Profiling</Filter>

@@ -57,6 +57,9 @@
     <ClInclude Include="FxRng.h">
       <Filter>Effects</Filter>
     </ClInclude>
+    <ClInclude Include="GlyphAtlas.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
     <ClInclude Include="GpuDescriptions.h">
       <Filter>Rendering</Filter>
     </ClInclude>
@@ -132,7 +135,7 @@
     <ClInclude Include="StringTable.h">
       <Filter>Resources</Filter>
     </ClInclude>
-    <ClInclude Include="TextLayout.h">
+    <ClInclude Include="TextSystem.h">
       <Filter>Rendering</Filter>
     </ClInclude>
     <ClInclude Include="UiRenderer.h">
@@ -187,6 +190,9 @@
     </ClCompile>
     <ClCompile Include="FxRng.cpp">
       <Filter>Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="GlyphAtlas.cpp">
+      <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="GpuDescriptions.cpp">
       <Filter>Rendering</Filter>
@@ -257,7 +263,7 @@
     <ClCompile Include="StringTable.cpp">
       <Filter>Resources</Filter>
     </ClCompile>
-    <ClCompile Include="TextLayout.cpp">
+    <ClCompile Include="TextSystem.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="UiRenderer.cpp">
@@ -303,13 +309,10 @@
     <FXCompile Include="Shader\DevelopmentDotVS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
-    <FXCompile Include="Shader\DevelopmentTextPS.hlsl">
+    <FXCompile Include="Shader\DevelopmentRectPS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
-    <FXCompile Include="Shader\DevelopmentTextSolidPS.hlsl">
-      <Filter>Shader</Filter>
-    </FXCompile>
-    <FXCompile Include="Shader\DevelopmentTextVS.hlsl">
+    <FXCompile Include="Shader\DevelopmentRectVS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
     <FXCompile Include="Shader\FinalPS.hlsl">
@@ -416,7 +419,7 @@
     <None Include="Shader\DevelopmentDot.hlsli">
       <Filter>Shader</Filter>
     </None>
-    <None Include="Shader\DevelopmentText.hlsli">
+    <None Include="Shader\DevelopmentRect.hlsli">
       <Filter>Shader</Filter>
     </None>
     <None Include="Shader\Final.hlsli">

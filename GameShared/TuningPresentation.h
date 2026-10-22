@@ -1545,13 +1545,15 @@ struct TuningPresentation
         double b = 0.0;
       };
 
-      // dbg.overlay.frame_rate_right, in px, from the right edge, before the text scale
+      // dbg.overlay.frame_rate_right, in px at a DPI scale of 1, from the right edge
       double frameRateRight = 0.0;
 
-      // dbg.overlay.frame_rate_bottom, in px, from the bottom edge, before the text scale
+      // dbg.overlay.frame_rate_bottom, in px at a DPI scale of 1, from the bottom edge
       double frameRateBottom = 0.0;
 
       WarningRgb warningRgb;
+      // dbg.overlay.text_size, in px at a DPI scale of 1
+      double textSize = 0.0;
     };
 
     struct Profile
@@ -1570,7 +1572,7 @@ struct TuningPresentation
           double third = 0.0;
         };
 
-        // dbg.profile.view.graph_height, in px, before the text scale
+        // dbg.profile.view.graph_height, in px at a DPI scale of 1
         double graphHeight = 0.0;
 
         // dbg.profile.view.graph_full_ms, in ms of frame time at the full height
@@ -2402,10 +2404,23 @@ struct TuningPresentation
       TextOutline textOutline;
     };
 
+    struct Glyph
+    {
+      // ui.glyph.page_size, in px per side
+      std::int64_t pageSize = 0;
+
+      // ui.glyph.page_count, in pages
+      std::int64_t pageCount = 0;
+
+      // ui.glyph.subpixel_steps, in steps per pixel
+      std::int64_t subpixelSteps = 0;
+    };
+
     Text text;
     Access access;
     Chrome chrome;
     Palette palette;
+    Glyph glyph;
   };
 
   Rnd rnd;
@@ -3432,6 +3447,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _out.frameRateRight = _reader.Decimal(_object, "frame_rate_right", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _out.frameRateBottom = _reader.Decimal(_object, "frame_rate_bottom", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   ReadFields(_reader, _reader.Object(_object, "warning_rgb"), _out.warningRgb);
+  _out.textSize = _reader.Decimal(_object, "text_size", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -4070,12 +4086,21 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ui::Glyph& _out)
+{
+  _out.pageSize = _reader.Integer(_object, "page_size", 0);
+  _out.pageCount = _reader.Integer(_object, "page_count", 0);
+  _out.subpixelSteps = _reader.Integer(_object, "subpixel_steps", 0);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningPresentation::Ui& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "text"), _out.text);
   ReadFields(_reader, _reader.Object(_object, "access"), _out.access);
   ReadFields(_reader, _reader.Object(_object, "chrome"), _out.chrome);
   ReadFields(_reader, _reader.Object(_object, "palette"), _out.palette);
+  ReadFields(_reader, _reader.Object(_object, "glyph"), _out.glyph);
   _reader.Close(_object);
 }
 
@@ -5890,6 +5915,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::
   _writer.F64(_in.frameRateRight);
   _writer.F64(_in.frameRateBottom);
   CookFields(_writer, _in.warningRgb);
+  _writer.F64(_in.textSize);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Dbg::Overlay& _out)
@@ -5897,6 +5923,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   _out.frameRateRight = _reader.F64();
   _out.frameRateBottom = _reader.F64();
   ReadCookedFields(_reader, _out.warningRgb);
+  _out.textSize = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Dbg::Profile::View::GraphMarksMs& _in)
@@ -6967,12 +6994,27 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   ReadCookedFields(_reader, _out.textOutline);
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ui::Glyph& _in)
+{
+  _writer.I64(_in.pageSize);
+  _writer.I64(_in.pageCount);
+  _writer.I64(_in.subpixelSteps);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ui::Glyph& _out)
+{
+  _out.pageSize = _reader.I64();
+  _out.pageCount = _reader.I64();
+  _out.subpixelSteps = _reader.I64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation::Ui& _in)
 {
   CookFields(_writer, _in.text);
   CookFields(_writer, _in.access);
   CookFields(_writer, _in.chrome);
   CookFields(_writer, _in.palette);
+  CookFields(_writer, _in.glyph);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::Ui& _out)
@@ -6981,6 +7023,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningPresentation::
   ReadCookedFields(_reader, _out.access);
   ReadCookedFields(_reader, _out.chrome);
   ReadCookedFields(_reader, _out.palette);
+  ReadCookedFields(_reader, _out.glyph);
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningPresentation& _in)

@@ -174,7 +174,6 @@
     <ClCompile Include="CookedRecordTests.cpp" />
     <ClCompile Include="DdsHeaderTests.cpp" />
     <ClCompile Include="FilesTests.cpp" />
-    <ClCompile Include="FontAssetTests.cpp" />
     <ClCompile Include="FrameProfileTests.cpp" />
     <ClCompile Include="JobQueueTests.cpp" />
     <ClCompile Include="LogBufferTests.cpp" />

@@ -177,14 +177,13 @@
     <ClInclude Include="CmoFile.h" />
     <ClInclude Include="CollisionCooker.h" />
     <ClInclude Include="ContentBuild.h" />
-    <ClInclude Include="FontPacker.h" />
+    <ClInclude Include="FontCoverage.h" />
     <ClInclude Include="MeshCooker.h" />
     <ClInclude Include="PlaceholderTexture.h" />
     <ClInclude Include="RecordCooker.h" />
     <ClInclude Include="RowSpec.h" />
     <ClInclude Include="SimulationRecordCooker.h" />
     <ClInclude Include="StringTableCooker.h" />
-    <ClInclude Include="TextGlyphTable.h" />
     <ClInclude Include="TextureCheck.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
@@ -197,7 +196,7 @@
     <ClCompile Include="CmoFile.cpp" />
     <ClCompile Include="CollisionCooker.cpp" />
     <ClCompile Include="ContentBuild.cpp" />
-    <ClCompile Include="FontPacker.cpp" />
+    <ClCompile Include="FontCoverage.cpp" />
     <ClCompile Include="MeshCooker.cpp" />
     <ClCompile Include="PlaceholderTexture.cpp" />
     <ClCompile Include="RecordCooker.cpp" />

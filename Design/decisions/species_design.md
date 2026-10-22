@@ -11,6 +11,7 @@ This file records the decisions of the Species design and of the MVP built from 
 | [DEC-1000](#dec-1000-the-place-of-the-ninth-home-resource-site-on-the-mvps-terrain) | The place of the ninth home resource site on the MVP's terrain | Resolved | WLD, MVP |
 | [DEC-1001](#dec-1001-the-provisional-looks-of-the-settlement) | The provisional looks of the settlement | Open | MVP |
 | [DEC-1002](#dec-1002-the-provisional-looks-of-the-territories) | The provisional looks of the territories | Open | MVP |
+| [DEC-1003](#dec-1003-the-weight-and-width-of-the-text-in-bahnschrift) | The weight and width of the text in Bahnschrift | Open | UI, MVP |
 
 ## 1 World and sites
 
@@ -62,3 +63,17 @@ This file records the decisions of the Species design and of the MVP built from 
   - B — values that the owner sets before the run.
 - Recommendation: A. Each look is one key of the client's presentation record, so a retune changes no code and nothing the simulation computes.
 - Decide by: the owner's run of M2 task T13; the likeness review of PIL-027 at M2's end judges the result.
+
+### DEC-1003 The weight and width of the text in Bahnschrift
+- Status: Open
+- Affects: architecture/components/ui_framework/layout_rendering_input_and_localisation.md (UI-195, UI-196, UI-197; `ui.font.spacing_*`, `ui.text.horizontal_scale_latin`); implementation/mvp_scope.md (MVP-100, MVP-102, MVP-103); ADR-147
+- Specified behaviour: Since owner decision O92 the player's text is set in Bahnschrift, a font Windows installs. UI-196 and UI-197 were written for the reference's fonts: they give each role a spacing factor (body 0.91, title 1.03) and condense Latin text to 0.6 of its width. The client builds the following until the owner decides.
+  - Every font role is set at Bahnschrift's normal weight.
+  - The spacing factors and the horizontal scale are 1.0, so the text keeps Bahnschrift's own widths, which are already narrow.
+  - The badge's count is `ui.text.default_size` (12 px) and the development overlay `dbg.overlay.text_size` (14 px), each × the DPI scale and never below the accessibility minimum of UI-171.
+- Options:
+  - A — as stated, with the HUD's weights and sizes set at M2 task T16 from the owner's view of T14's test page;
+  - B — the reference's factors and condensation applied to Bahnschrift (ADR-034's base text);
+  - C — Bahnschrift's own narrower widths (SemiCondensed or Condensed) for some roles, in place of a horizontal scale.
+- Recommendation: A. Bahnschrift is drawn narrow already, and condensing it again to 0.6 would make small text hard to read. A width or weight per role is one family name or one key, so a later choice changes no code.
+- Decide by: the owner's run of M2 task T14's DirectWrite step; the HUD of T16 uses the answer.

@@ -6,6 +6,7 @@
 #include "UiRenderer.h"
 
 #include <algorithm>
+#include <array>
 #include <cstring>
 #include <format>
 #include <string>
@@ -41,31 +42,21 @@ UiRenderer::UiRenderer(DeviceGpuResourceFactory& _factory) noexcept
 
 UiRenderer::~UiRenderer()
 {
-  Release();
+  ReleaseImages();
+  ReleasePages();
 }
 
-void UiRenderer::Show(const std::shared_ptr<const FontAsset>& _face, const std::shared_ptr<const UiImages>& _images)
+void UiRenderer::Show(const std::shared_ptr<const GlyphAtlas>& _atlas, const std::shared_ptr<const UiImages>& _images)
 {
-  if (_face != m_face || _images != m_images)
+  if (_atlas != m_atlas)
   {
-    Release();
-    m_face = _face;
+    ReleasePages();
+    m_atlas = _atlas;
+  }
+  if (_images != m_images)
+  {
+    ReleaseImages();
     m_images = _images;
-    if (m_face != nullptr && m_face->pageWidth > 0 && m_face->pageHeight > 0 &&
-        m_face->page.size() == std::size_t{m_face->pageWidth} * m_face->pageHeight)
-    {
-      // ADR-034, O63: the face's one R8_UNORM coverage page, never block-compressed.
-      const auto created = m_factory.CreateTexture({m_face->pageWidth, m_face->pageHeight, 1, DXGI_FORMAT_R8_UNORM, "font.ui.primary"});
-      if (created)
-      {
-        m_page = *created;
-        m_uploads.push_back({m_page, {GpuSubresourceData{std::as_bytes(std::span(m_face->page)), m_face->pageWidth}}});
-      }
-      else
-      {
-        Log(LogCategory::Render, LogLevel::Error, "the UI face's page was not created");
-      }
-    }
     if (m_images != nullptr)
     {
       for (std::size_t n = 0; n < m_images->files.size(); ++n)
@@ -91,17 +82,21 @@ void UiRenderer::Show(const std::shared_ptr<const FontAsset>& _face, const std::
     }
     m_pending = m_uploads;
   }
-  Pump();
+  PumpImages();
+  PumpPages();
 }
 
 void UiRenderer::UploadAgain()
 {
   m_pending = m_uploads;
   m_lastFence = 0;
-  Pump();
+  PumpImages();
+  // ADR-147: the pages' textures lost their contents, so each page is uploaded anew from the atlas, which keeps them.
+  ReleasePages();
+  PumpPages();
 }
 
-void UiRenderer::Pump()
+void UiRenderer::PumpImages()
 {
   while (!m_pending.empty())
   {
@@ -120,17 +115,85 @@ void UiRenderer::Pump()
   }
 }
 
-bool UiRenderer::Ready() const
+void UiRenderer::PumpPages()
 {
-  return (m_face != nullptr || m_images != nullptr) && m_pending.empty() && m_factory.IsUploadComplete(m_lastFence);
+  if (m_atlas == nullptr)
+  {
+    return;
+  }
+  const std::span<const GlyphPage> pages = m_atlas->Pages();
+  const std::uint32_t side = m_atlas->PageSide();
+  m_pages.resize(std::max(m_pages.size(), pages.size()));
+  for (std::size_t n = 0; n < pages.size(); ++n)
+  {
+    GlyphTexture& texture = m_pages[n];
+    if (texture.incomingScheduled && m_factory.IsUploadComplete(texture.incomingFence))
+    {
+      // The later revision is on the GPU: it replaces the one drawn, which the factory keeps until no frame reads it.
+      if (texture.shown != GpuResourceId{})
+      {
+        m_factory.Release(texture.shown);
+      }
+      texture.shown = texture.incoming;
+      texture.shownRevision = texture.incomingRevision;
+      texture.incoming = {};
+      texture.incomingScheduled = false;
+    }
+    if (texture.incoming == GpuResourceId{} && pages[n].revision != texture.shownRevision)
+    {
+      // ADR-034, ADR-147: an R8_UNORM coverage page, never block-compressed; a new texture, since the one drawn may be
+      // read by a frame in flight while the copy queue writes.
+      const auto created = m_factory.CreateTexture({side, side, 1, DXGI_FORMAT_R8_UNORM, "ui.glyph_page"});
+      if (!created)
+      {
+        continue; // tried again next frame
+      }
+      texture.incoming = *created;
+      texture.incomingScheduled = false;
+    }
+    if (texture.incoming != GpuResourceId{} && !texture.incomingScheduled)
+    {
+      const std::array data{GpuSubresourceData{std::as_bytes(std::span(pages[n].texels)), side}};
+      const auto fence = m_factory.ScheduleUpload(texture.incoming, data);
+      if (fence)
+      {
+        texture.incomingFence = *fence;
+        texture.incomingRevision = pages[n].revision;
+        texture.incomingScheduled = true;
+      }
+      else if (fence.error() != GpuResourceError::StagingFull && fence.error() != GpuResourceError::DeviceRebuilding)
+      {
+        Log(LogCategory::Render, LogLevel::Error, "glyph page {} was not uploaded", n);
+        m_factory.Release(texture.incoming);
+        texture.incoming = {};
+      }
+    }
+  }
 }
 
-void UiRenderer::Release()
+bool UiRenderer::ImagesReady() const
 {
-  if (m_page != GpuResourceId{})
+  return m_images != nullptr && m_pending.empty() && m_factory.IsUploadComplete(m_lastFence);
+}
+
+std::optional<std::uint32_t> UiRenderer::GlyphHeapIndex(std::uint16_t _page) const
+{
+  if (m_atlas == nullptr || _page >= m_pages.size() || _page >= m_atlas->Pages().size())
   {
-    m_factory.Release(m_page);
+    return std::nullopt;
   }
+  const GlyphTexture& texture = m_pages[_page];
+  // ADR-147: a texture from before the page's last clear holds other glyphs where this frame's are, so the page waits
+  // for its new texture; one from after it lacks at most the glyphs added since, which show on its next upload.
+  if (texture.shown == GpuResourceId{} || texture.shownRevision < m_atlas->Pages()[_page].clearedRevision)
+  {
+    return std::nullopt;
+  }
+  return m_factory.HeapIndex(texture.shown);
+}
+
+void UiRenderer::ReleaseImages()
+{
   for (const GpuResourceId resource : m_imageResources)
   {
     if (resource != GpuResourceId{})
@@ -138,13 +201,26 @@ void UiRenderer::Release()
       m_factory.Release(resource);
     }
   }
-  m_page = {};
   m_imageResources.clear();
   m_uploads.clear();
   m_pending.clear();
-  m_face.reset();
   m_images.reset();
   m_lastFence = 0;
+}
+
+void UiRenderer::ReleasePages()
+{
+  for (const GlyphTexture& texture : m_pages)
+  {
+    for (const GpuResourceId resource : {texture.shown, texture.incoming})
+    {
+      if (resource != GpuResourceId{})
+      {
+        m_factory.Release(resource);
+      }
+    }
+  }
+  m_pages.clear();
 }
 
 void UiRenderer::Record(ID3D12GraphicsCommandList* _commands, UploadRing& _ring, const PipelineCatalog& _catalog, SizePx _size,
@@ -154,7 +230,7 @@ void UiRenderer::Record(ID3D12GraphicsCommandList* _commands, UploadRing& _ring,
   {
     return;
   }
-  const bool ready = Ready();
+  const bool imagesReady = ImagesReady();
   const auto width = static_cast<float>(std::max(_size.width, 1u));
   const auto height = static_cast<float>(std::max(_size.height, 1u));
   PassConstants target{};
@@ -169,15 +245,16 @@ void UiRenderer::Record(ID3D12GraphicsCommandList* _commands, UploadRing& _ring,
     std::uint32_t texture = 0;
     if (batch.source == UiSource::Glyphs)
     {
-      if (!ready || m_page == GpuResourceId{})
+      const std::optional<std::uint32_t> page = GlyphHeapIndex(batch.image);
+      if (!page)
       {
         continue;
       }
-      texture = m_factory.HeapIndex(m_page);
+      texture = *page;
     }
     else if (batch.source == UiSource::Image)
     {
-      if (!ready || batch.image >= m_imageResources.size() || m_imageResources[batch.image] == GpuResourceId{})
+      if (!imagesReady || batch.image >= m_imageResources.size() || m_imageResources[batch.image] == GpuResourceId{})
       {
         continue;
       }

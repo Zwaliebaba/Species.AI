@@ -151,3 +151,4 @@ Chosen options: 1 and 4.
   - `GameData/Strings/en_gb.json`.
 * ADR-063 is amended with this record.
 * **Amendment 2026-10-22 (O91).** The table is American English: `GameData/Strings/en_us.json`, the asset `strings.en_us`, the content key `strings/en_us` and the ICU locale `en-US`. Every en-GB in this record reads en-US. Number grouping and plural categories are the same in both.
+* **Amendment 2026-10-22 (owner decision O92, [ADR-147](ADR-147-the-directwrite-text-system-at-m2.md)).** The coverage check reads the system fonts of the player's roles, Bahnschrift and Segoe UI, through DirectWrite, instead of GameFont's glyph table. Its fixture uses U+6F22. The fixture of an upper-cased form is dropped, since Segoe UI draws every capital of Latin-1, and the check itself stays. The currency signs that AST-088 names are covered by that chain.

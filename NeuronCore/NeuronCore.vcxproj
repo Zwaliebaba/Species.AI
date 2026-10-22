@@ -158,7 +158,6 @@
     <ClInclude Include="FatalPath.h" />
     <ClInclude Include="Files.h" />
     <ClInclude Include="FloatEnvironment.h" />
-    <ClInclude Include="FontAsset.h" />
     <ClInclude Include="FrameProfile.h" />
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="InProcessTransport.h" />
@@ -212,7 +211,6 @@
     <ClCompile Include="FatalPath.cpp" />
     <ClCompile Include="Files.cpp" />
     <ClCompile Include="FloatEnvironment.cpp" />
-    <ClCompile Include="FontAsset.cpp" />
     <ClCompile Include="FrameProfile.cpp" />
     <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="InProcessTransport.cpp" />

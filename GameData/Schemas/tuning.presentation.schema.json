@@ -4687,7 +4687,7 @@
               "minimum": 0,
               "x-species-precision": "binary64",
               "x-species-type": "sim_decimal",
-              "x-species-unit": "px, from the right edge, before the text scale",
+              "x-species-unit": "px at a DPI scale of 1, from the right edge",
               "x-species-presence": "required"
             },
             "frame_rate_bottom": {
@@ -4696,7 +4696,7 @@
               "minimum": 0,
               "x-species-precision": "binary64",
               "x-species-type": "sim_decimal",
-              "x-species-unit": "px, from the bottom edge, before the text scale",
+              "x-species-unit": "px at a DPI scale of 1, from the bottom edge",
               "x-species-presence": "required"
             },
             "warning_rgb": {
@@ -4736,12 +4736,22 @@
               "additionalProperties": false,
               "x-species-type": "object",
               "x-species-presence": "required"
+            },
+            "text_size": {
+              "type": "number",
+              "description": "dbg.overlay.text_size (DBG-095)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "px at a DPI scale of 1",
+              "x-species-presence": "required"
             }
           },
           "required": [
             "frame_rate_right",
             "frame_rate_bottom",
-            "warning_rgb"
+            "warning_rgb",
+            "text_size"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -4778,7 +4788,7 @@
                   "exclusiveMinimum": 0,
                   "x-species-precision": "binary64",
                   "x-species-type": "sim_decimal",
-                  "x-species-unit": "px, before the text scale",
+                  "x-species-unit": "px at a DPI scale of 1",
                   "x-species-presence": "required"
                 },
                 "graph_full_ms": {
@@ -7304,13 +7314,52 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "glyph": {
+          "type": "object",
+          "description": "the ui.glyph.* keys",
+          "properties": {
+            "page_size": {
+              "type": "integer",
+              "description": "ui.glyph.page_size (UI-198)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "px per side",
+              "x-species-presence": "required"
+            },
+            "page_count": {
+              "type": "integer",
+              "description": "ui.glyph.page_count (UI-198)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "pages",
+              "x-species-presence": "required"
+            },
+            "subpixel_steps": {
+              "type": "integer",
+              "description": "ui.glyph.subpixel_steps (UI-198)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "steps per pixel",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "page_size",
+            "page_count",
+            "subpixel_steps"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
         "text",
         "access",
         "chrome",
-        "palette"
+        "palette",
+        "glyph"
       ],
       "additionalProperties": false,
       "x-species-type": "object",

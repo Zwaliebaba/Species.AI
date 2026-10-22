@@ -1,9 +1,9 @@
 #include "pch.h"
 
-#include "FontAsset.h"
 #include "MessageLocale.h"
 #include "StringTable.h"
 #include "TestSupport.h"
+#include "TextSystem.h"
 #include "UiLook.h"
 #include "WorldMarkers.h"
 
@@ -18,54 +18,22 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 namespace GameClientTests
 {
 
-namespace
-{
-
-// A face as GameFont is drawn: 16 px cells, every glyph from U+0020 to U+007E the whole cell, '?' the missing glyph.
-Neuron::FontAsset GameLikeFace()
-{
-  Neuron::FontAsset face;
-  face.designSizePixels = 16;
-  face.lineHeightPixels = 16;
-  face.baselinePixels = 13;
-  face.cellWidthPixels = 16;
-  face.cellHeightPixels = 16;
-  face.missingCodePoint = '?';
-  face.pageWidth = 256;
-  face.pageHeight = 128;
-  for (std::uint32_t code = 0x20; code < 0x7F; ++code)
-  {
-    const std::uint32_t cell = code - 0x20;
-    face.glyphs.push_back({.codePoint = code,
-                           .x = static_cast<std::uint16_t>(cell % 16 * 16),
-                           .y = static_cast<std::uint16_t>(cell / 16 * 16),
-                           .widthPixels = 16,
-                           .bearingPixels = 0,
-                           .advancePixels = 16,
-                           .offsetYPixels = 0});
-  }
-  face.page.assign(std::size_t{face.pageWidth} * face.pageHeight, 0);
-  return face;
-}
-
-} // namespace
-
 TEST_CLASS(UiLookTests)
 {
 public:
-  BEGIN_TEST_METHOD_ATTRIBUTE(Ui171TheDefaultTextDrawsAtTheScaleItsMinimumAllows)
+  BEGIN_TEST_METHOD_ATTRIBUTE(Ui171TheDefaultTextTakesTheDpiScaleAndItsMinimum)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"UI-171")
-  TEST_METHOD_ATTRIBUTE(L"Requirement", L"UI-198")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"UI-170")
   END_TEST_METHOD_ATTRIBUTE()
-  TEST_METHOD(Ui171TheDefaultTextDrawsAtTheScaleItsMinimumAllows)
+  TEST_METHOD(Ui171TheDefaultTextTakesTheDpiScaleAndItsMinimum)
   {
-    // The record's 12 px default in a 16 px face: 16 px up to the height whose minimum passes 16 px, then 32 px.
-    const Neuron::FontAsset face = GameLikeFace();
-    const double size = CommittedPresentation().ui.text.defaultSize;
-    Assert::AreEqual(1u, Species::UiTextScale(CommittedPresentation(), face, size, 720));
-    Assert::AreEqual(1u, Species::UiTextScale(CommittedPresentation(), face, size, 1080));
-    Assert::AreEqual(1u, Species::UiTextScale(CommittedPresentation(), face, size, 1440));
-    Assert::AreEqual(2u, Species::UiTextScale(CommittedPresentation(), face, size, 2160), L"19 px is above 16 px");
+    // The record's 12 px default: as it is at 720 and 1080, raised to 19 px at 2160, and 18 px at a DPI scale of 1.5.
+    const Species::TuningPresentation& presentation = CommittedPresentation();
+    const double size = presentation.ui.text.defaultSize;
+    Assert::AreEqual(12.0f, Species::UiTextPixels(presentation, size, 720, 1.0f));
+    Assert::AreEqual(12.0f, Species::UiTextPixels(presentation, size, 1080, 1.0f));
+    Assert::AreEqual(19.0f, Species::UiTextPixels(presentation, size, 2160, 1.0f), L"the minimum at 2160");
+    Assert::AreEqual(18.0f, Species::UiTextPixels(presentation, size, 1080, 1.5f), L"times the DPI scale");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(RCtrl366TheBadgeCountIsAdditiveTextBesideTheBadge)
@@ -74,19 +42,25 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(RCtrl366TheBadgeCountIsAdditiveTextBesideTheBadge)
   {
-    // ADR-145: the count's line starts at the label's left edge, its cell's middle at the label's middle, on whole pixels.
-    const Neuron::FontAsset face = GameLikeFace();
+    // ADR-145, ADR-147: the count's line starts at the label's left edge, its middle at the label's middle.
+    Neuron::TextSystem text(Species::TextSystemDesc(CommittedPresentation()));
     std::vector<Neuron::UiBatch> batches;
-    Species::AppendBadgeCount({"18", 100.4f, 50.0f}, face, CommittedPresentation(), 1080, batches);
+    Species::AppendBadgeCount({"18", 100.4f, 50.0f}, text, CommittedPresentation(), 1080, 1.0f, batches);
     Assert::AreEqual(std::size_t{1}, batches.size(), L"one batch, no outline");
     Assert::IsTrue(batches[0].source == Neuron::UiSource::Glyphs && batches[0].blend == Neuron::UiBlend::Additive, L"additive glyphs");
     Assert::AreEqual(std::size_t{2}, batches[0].quads.size(), L"two digits");
-    Assert::AreEqual(100.0f, batches[0].quads[0].rectangle[0]);
-    Assert::AreEqual(42.0f, batches[0].quads[0].rectangle[1], L"its 16 px cell centred on the label's middle");
-    Assert::AreEqual(58.0f, batches[0].quads[0].rectangle[3]);
+    const float height = text.Metrics(Neuron::FontRole::Body, 12.0f).heightPixels;
+    for (const Neuron::UiQuad& quad : batches[0].quads)
+    {
+      Assert::IsTrue(quad.rectangle[0] >= 99.0f, L"from the label's left edge");
+      Assert::IsTrue(quad.rectangle[1] >= 50.0f - height / 2.0f - 1.0f && quad.rectangle[3] <= 50.0f + height / 2.0f + 1.0f,
+                     L"inside its line, centered on the label's middle");
+    }
     std::vector<Neuron::UiBatch> large;
-    Species::AppendBadgeCount({"18", 100.0f, 50.0f}, face, CommittedPresentation(), 2160, large);
-    Assert::AreEqual(34.0f, large[0].quads[0].rectangle[1], L"at 2160 the cell is 32 px");
+    Species::AppendBadgeCount({"18", 100.0f, 50.0f}, text, CommittedPresentation(), 2160, 1.0f, large);
+    const float smallHeight = batches[0].quads[0].rectangle[3] - batches[0].quads[0].rectangle[1];
+    const float largeHeight = large[0].quads[0].rectangle[3] - large[0].quads[0].rectangle[1];
+    Assert::IsTrue(largeHeight > smallHeight * 1.3f, L"at 2160 the digits are drawn at 19 px");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Ui054TheTestPageDrawsEveryPipelineOfTheUiPass)
@@ -96,11 +70,11 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Ui054TheTestPageDrawsEveryPipelineOfTheUiPass)
   {
-    const Neuron::FontAsset face = GameLikeFace();
+    Neuron::TextSystem text(Species::TextSystemDesc(CommittedPresentation()));
     std::vector<Neuron::UiBatch> batches;
     const Neuron::StringTable strings;
     const Neuron::MessageLocale locale("en-US");
-    Species::AppendUiTestPage(face, CommittedPresentation(), strings, locale, {1280, 720}, batches);
+    Species::AppendUiTestPage(text, CommittedPresentation(), strings, locale, {1280, 720}, 1.0f, batches);
     Assert::IsFalse(batches.empty(), L"a page");
     // The window body first: the accent strip, u to the repeat across and v once down, tinted and laid over.
     const Neuron::UiBatch& body = batches.front();

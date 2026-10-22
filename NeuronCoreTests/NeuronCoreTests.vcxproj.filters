@@ -56,9 +56,6 @@
     <ClCompile Include="FilesTests.cpp">
       <Filter>Platform</Filter>
     </ClCompile>
-    <ClCompile Include="FontAssetTests.cpp">
-      <Filter>Content</Filter>
-    </ClCompile>
     <ClCompile Include="FrameProfileTests.cpp">
       <Filter>Profiling</Filter>
     </ClCompile>

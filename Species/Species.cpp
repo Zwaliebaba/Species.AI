@@ -230,7 +230,7 @@ void RunFrameLoop(Neuron::PlatformClock& _clock, Neuron::AppWindow& _window, Neu
     _session.Update();
     endStep(ClientStep::Session);
     _world.Update(_session);
-    const Neuron::FrameInputs inputs = _world.Frame(_session, _view, _renderer.FramesPerSecond());
+    const Neuron::FrameInputs inputs = _world.Frame(_session, _view, _renderer.FramesPerSecond(), _window.DpiScale());
     endStep(ClientStep::Presentation);
     const Neuron::FrameOutcome outcome = _renderer.RenderFrame(inputs);
     const Neuron::Nanoseconds waits = outcome == Neuron::FrameOutcome::Suspended ? Neuron::Nanoseconds{0} : _renderer.LastFrameWaits();

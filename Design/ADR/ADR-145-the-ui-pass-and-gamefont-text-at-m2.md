@@ -148,3 +148,4 @@ Chosen option: 1.
   - `NeuronCore/StartupOptions` (`--ui-test`);
   - the presentation record's `ui.*`.
 * ADR-031 and ADR-127 are amended with this record.
+* **Amendment 2026-10-22 (owner decision O92, [ADR-147](ADR-147-the-directwrite-text-system-at-m2.md)).** GameFont and the whole-number scale are retired. The glyph source reads the pages of the glyph atlas, and a glyph batch names its page as an image batch names its image. The badge's count is laid out in the body role at `ui.text.default_size` × the DPI scale, centered on the label's middle. The test page shows the body role from 12 to 32 px, the development role and a fallback line in place of the scales 1 to 4 and the missing glyph. `UiTextScale` gives way to `UiTextPixels`.

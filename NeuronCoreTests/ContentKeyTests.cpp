@@ -25,7 +25,7 @@ public:
   {
     ExpectText("textures/sprite/workerfront", Neuron::KeyOfSource("Textures/Sprite/WorkerFront.dds"), L"a texture's key");
     ExpectText("records/tuning/mvp", Neuron::KeyOfSource("Records/tuning/mvp.json"), L"a record's key");
-    ExpectText("fonts/editorfontglyphs", Neuron::KeyOfSource("Fonts/EditorFontGlyphs.json"), L"the second member of a face");
+    ExpectText("strings/en_us", Neuron::KeyOfSource("Strings/en_us.json"), L"a string table's key");
     ExpectText("meshes/noextension", Neuron::KeyOfSource("Meshes/NoExtension"), L"a file without an extension");
     ExpectText("a.b/c", Neuron::KeyOfSource("A.B/C.dds"), L"only the last segment's extension goes");
   }

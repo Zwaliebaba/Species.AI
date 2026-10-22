@@ -36,7 +36,7 @@ void Print(std::FILE* _stream, std::string_view _text)
   std::fflush(_stream);
 }
 
-// "texture 44, font 2": the entries of each content type, for the summary line.
+// "texture 44, string_table 1": the entries of each content type, for the summary line.
 std::string Census(std::span<const Neuron::ContentEntry> _entries)
 {
   std::array<std::size_t, Neuron::CONTENT_TYPE_COUNT> counts{};

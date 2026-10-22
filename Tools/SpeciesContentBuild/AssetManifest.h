@@ -43,7 +43,7 @@ public:
   // content build reads missing from the header.
   [[nodiscard]] static std::expected<AssetManifest, std::string> Read(std::span<const std::byte> _csv);
 
-  // The row of a source, by its path from the repository root ("GameData/Fonts/GameFont.dds"); null when no row names it.
+  // The row of a source, by its path from the repository root ("GameData/Meshes/Dwelling.cmo"); null when no row names it.
   [[nodiscard]] const ManifestRow* RowOf(std::string_view _speciesFilename) const;
   // The rows of one asset, in member order (AST-016).
   [[nodiscard]] std::vector<const ManifestRow*> MembersOf(std::string_view _assetId) const;

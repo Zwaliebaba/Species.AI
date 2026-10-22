@@ -1,10 +1,10 @@
 #include "pch.h"
 
 #include "AssetError.h"
+#include "GameFonts.h"
 #include "Log.h"
 #include "MessageFormat.h"
 #include "MessagePattern.h"
-#include "TextLayout.h"
 #include "UiLook.h"
 #include "UiText.h"
 
@@ -31,8 +31,8 @@ constexpr float PAGE_GAP = 8.0f;
 constexpr float NEUTRAL_WIDTH = 160.0f;
 constexpr float PANEL_WIDTH_MAX = 960.0f;
 constexpr float SWATCH_SIZE = 48.0f;
-constexpr std::uint32_t STYLE_SCALE = 2;
-constexpr std::uint32_t SCALE_LINES = 4;
+constexpr float STYLE_SIZE = 24.0f;
+constexpr float BODY_SIZE = 16.0f;
 // The test page's strings (ADR-146): the game's name, which the table holds, an id no table holds, and a plural.
 constexpr std::string_view TEST_PAGE_TITLE_ID = "ui.title.game_name";
 constexpr std::string_view TEST_PAGE_UNWRITTEN_ID = "ui.test_page.unwritten";
@@ -74,25 +74,41 @@ std::shared_ptr<const Neuron::UiImages> LoadUiImages(const Neuron::LooseContent&
   return images;
 }
 
-std::uint32_t UiTextScale(const TuningPresentation& _presentation, const Neuron::FontAsset& _face, double _sizePixels,
-                          std::uint32_t _clientHeight) noexcept
+Neuron::TextSystem::Desc TextSystemDesc(const TuningPresentation& _presentation)
+{
+  Neuron::TextSystem::Desc desc;
+  const std::vector<std::string> game(GAME_FONT_FAMILIES.begin(), GAME_FONT_FAMILIES.end());
+  for (const Neuron::FontRole role : {Neuron::FontRole::Title, Neuron::FontRole::Body, Neuron::FontRole::Caption})
+  {
+    desc.families[static_cast<std::size_t>(role)] = game;
+  }
+  desc.families[static_cast<std::size_t>(Neuron::FontRole::Development)].assign(DEVELOPMENT_FONT_FAMILIES.begin(),
+                                                                                DEVELOPMENT_FONT_FAMILIES.end());
+  const TuningPresentation::Ui::Glyph& glyph = _presentation.ui.glyph;
+  desc.atlas.pageSide = static_cast<std::uint32_t>(std::clamp<std::int64_t>(glyph.pageSize, 64, 4096));
+  desc.atlas.pageCount = static_cast<std::uint32_t>(std::clamp<std::int64_t>(glyph.pageCount, 1, 64));
+  desc.subpixelSteps = static_cast<std::uint32_t>(std::clamp<std::int64_t>(glyph.subpixelSteps, 1, 16));
+  desc.languageTag = "en-US";
+  return desc;
+}
+
+float UiTextPixels(const TuningPresentation& _presentation, double _sizePixels, std::uint32_t _clientHeight, float _dpiScale) noexcept
 {
   const TuningPresentation::Ui::Access& access = _presentation.ui.access;
-  return Neuron::TextScaleForSize(_sizePixels, _face.designSizePixels,
-                                  Neuron::MinimumTextPixels(_clientHeight, access.minText1080p, access.minText2160p));
+  return Neuron::FinalTextPixels(_sizePixels, 1.0, _dpiScale,
+                                 Neuron::MinimumTextPixels(_clientHeight, access.minText1080p, access.minText2160p));
 }
 
-void AppendBadgeCount(const BadgeLabel& _label, const Neuron::FontAsset& _face, const TuningPresentation& _presentation,
-                      std::uint32_t _clientHeight, std::vector<Neuron::UiBatch>& _out)
+void AppendBadgeCount(const BadgeLabel& _label, Neuron::TextSystem& _text, const TuningPresentation& _presentation,
+                      std::uint32_t _clientHeight, float _dpiScale, std::vector<Neuron::UiBatch>& _out)
 {
-  Neuron::TextStyle style;
-  style.scale = UiTextScale(_presentation, _face, _presentation.ui.text.defaultSize, _clientHeight);
-  const float cellHeight = static_cast<float>(_face.cellHeightPixels) * static_cast<float>(style.scale);
-  Neuron::AppendText(_out, _face, _label.text, _label.left, _label.middle - cellHeight * 0.5f, style);
+  const float size = UiTextPixels(_presentation, _presentation.ui.text.defaultSize, _clientHeight, _dpiScale);
+  const Neuron::TextLine line = _text.Layout(_label.text, Neuron::FontRole::Body, size);
+  Neuron::AppendText(_out, line, _label.left, _label.middle - line.heightPixels * 0.5f, Neuron::TextStyle{});
 }
 
-void AppendUiTestPage(const Neuron::FontAsset& _face, const TuningPresentation& _presentation, const Neuron::StringTable& _strings,
-                      const Neuron::MessageLocale& _locale, Neuron::SizePx _size, std::vector<Neuron::UiBatch>& _out)
+void AppendUiTestPage(Neuron::TextSystem& _text, const TuningPresentation& _presentation, const Neuron::StringTable& _strings,
+                      const Neuron::MessageLocale& _locale, Neuron::SizePx _size, float _dpiScale, std::vector<Neuron::UiBatch>& _out)
 {
   const TuningPresentation::Ui& ui = _presentation.ui;
   const std::array<float, 4> bodyTint =
@@ -100,7 +116,6 @@ void AppendUiTestPage(const Neuron::FontAsset& _face, const TuningPresentation& 
   const std::array<float, 4> outline =
     Rgba(ui.palette.textOutline.r, ui.palette.textOutline.g, ui.palette.textOutline.b, ui.palette.textOutline.a);
   const auto repeat = static_cast<float>(ui.chrome.bodyRepeat);
-  const float cell = static_cast<float>(_face.cellHeightPixels);
 
   // UI-054: the window body, the accent strip with u from 0 to the repeat across and v from 0 to 1 down, tinted and laid
   // over; the neutral strip beside it in the same form.
@@ -114,52 +129,45 @@ void AppendUiTestPage(const Neuron::FontAsset& _face, const TuningPresentation& 
   Neuron::AppendQuad(_out, Neuron::UiSource::Image, Neuron::UiBlend::Alpha, static_cast<std::uint16_t>(UiImage::PanelNeutral),
                      Quad(neutralLeft, top, neutralLeft + NEUTRAL_WIDTH, top + panelHeight, {0.0f, 0.0f, repeat, 1.0f}, bodyTint));
 
-  // GameFont at the scales 1 to 4, outlined and filled as the framework's text is (UI-192).
+  // The body role at four sizes and the development role at one, outlined and filled as the framework's text is
+  // (UI-192), each line below the last by its height.
   Neuron::TextStyle outlined;
   outlined.outline = outline;
-  outlined.outlineOffsetPixels = static_cast<std::int32_t>(std::max<std::int64_t>(ui.text.outlineOffset, 1));
-  constexpr std::array<std::string_view, SCALE_LINES> SCALE_TEXTS{"k=1 The quick brown fox jumps over the lazy dog 0123456789",
-                                                                  "k=2 Àéîõü ¿×÷ 0123456789", "k=3 Species", "k=4 Essence"};
+  outlined.outlineOffsetPixels =
+    static_cast<std::int32_t>(std::max<std::int64_t>(std::lround(static_cast<double>(ui.text.outlineOffset) * _dpiScale), 1));
   float y = top + PAGE_PADDING;
   const float x = left + PAGE_PADDING;
-  for (std::uint32_t k = 1; k <= SCALE_LINES; ++k)
+  const auto line = [&](std::string_view _utf8, Neuron::FontRole _role, float _sizePixels, const Neuron::TextStyle& _style)
   {
-    outlined.scale = k;
-    Neuron::AppendText(_out, _face, SCALE_TEXTS[k - 1], x, y, outlined);
-    y += cell * static_cast<float>(k) + PAGE_GAP;
-  }
+    const Neuron::TextLine laid = _text.Layout(_utf8, _role, _sizePixels * _dpiScale);
+    Neuron::AppendText(_out, laid, x, y, _style);
+    y += std::ceil(laid.heightPixels) + PAGE_GAP;
+  };
+  line("12 px The quick brown fox jumps over the lazy dog 0123456789", Neuron::FontRole::Body, 12.0f, outlined);
+  line("16 px Àéîõü ¿×÷ £€° “quotes” – and — dashes…", Neuron::FontRole::Body, BODY_SIZE, outlined);
+  line("24 px Species", Neuron::FontRole::Title, STYLE_SIZE, outlined);
+  line("32 px Essence", Neuron::FontRole::Title, 32.0f, outlined);
+  line("Development 14 px: frame 16.67 ms {0x1F} [ok]", Neuron::FontRole::Development, 14.0f, outlined);
 
-  // The four ways a line is drawn, at one scale: filled additive (UI-190), outlined and filled, inked alone, and laid
-  // over; then a line of characters GameFont does not hold, each drawn as its missing glyph.
-  Neuron::TextStyle additive;
-  additive.scale = STYLE_SCALE;
-  Neuron::AppendText(_out, _face, "Additive fill", x, y, additive);
-  y += cell * STYLE_SCALE + PAGE_GAP;
-  outlined.scale = STYLE_SCALE;
-  Neuron::AppendText(_out, _face, "Outline and fill", x, y, outlined);
-  y += cell * STYLE_SCALE + PAGE_GAP;
+  // The four ways a line is drawn: filled additive (UI-190), outlined and filled, inked alone, and laid over; then
+  // characters the face lacks, which its fallback draws, and one no family of the chain draws.
+  line("Additive fill", Neuron::FontRole::Body, STYLE_SIZE, Neuron::TextStyle{});
+  line("Outline and fill", Neuron::FontRole::Body, STYLE_SIZE, outlined);
   Neuron::TextStyle ink;
-  ink.scale = STYLE_SCALE;
   ink.blend = Neuron::UiBlend::Ink;
   ink.color = outline;
-  Neuron::AppendText(_out, _face, "Ink alone", x, y, ink);
-  y += cell * STYLE_SCALE + PAGE_GAP;
+  line("Ink alone", Neuron::FontRole::Body, STYLE_SIZE, ink);
   Neuron::TextStyle over;
-  over.scale = STYLE_SCALE;
   over.blend = Neuron::UiBlend::Alpha;
   over.color = {1.0f, 0.85f, 0.4f, 1.0f};
-  Neuron::AppendText(_out, _face, "Alpha fill", x, y, over);
-  y += cell * STYLE_SCALE + PAGE_GAP;
-  Neuron::AppendText(_out, _face, "Missing: € Ł ж 漢", x, y, outlined);
-  y += cell * STYLE_SCALE + PAGE_GAP;
+  line("Alpha fill", Neuron::FontRole::Body, STYLE_SIZE, over);
+  line("Fallback: Ł ж Ω ★, none: 漢", Neuron::FontRole::Body, STYLE_SIZE, outlined);
 
   // ADR-146: a string the table holds, one it does not, which a Debug build shows as its id, and a plural formatted in
   // the language's forms through ICU.
-  Neuron::TextStyle plain;
-  Neuron::AppendText(_out, _face, _strings.Lookup(TEST_PAGE_TITLE_ID), x, y, plain);
-  y += cell + PAGE_GAP;
-  Neuron::AppendText(_out, _face, _strings.Lookup(TEST_PAGE_UNWRITTEN_ID), x, y, plain);
-  y += cell + PAGE_GAP;
+  const Neuron::TextStyle plain;
+  line(_strings.Lookup(TEST_PAGE_TITLE_ID), Neuron::FontRole::Body, BODY_SIZE, plain);
+  line(_strings.Lookup(TEST_PAGE_UNWRITTEN_ID), Neuron::FontRole::Body, BODY_SIZE, plain);
   if (const auto workers = Neuron::ParseMessage(TEST_PAGE_PLURAL))
   {
     std::string counts;
@@ -168,9 +176,8 @@ void AppendUiTestPage(const Neuron::FontAsset& _face, const TuningPresentation& 
       const std::array arguments{Neuron::FormatArgument{"count", count}};
       counts += (counts.empty() ? "" : ", ") + Neuron::FormatPattern(*workers, arguments, _locale);
     }
-    Neuron::AppendText(_out, _face, counts, x, y, plain);
+    line(counts, Neuron::FontRole::Body, BODY_SIZE, plain);
   }
-  y += cell + PAGE_GAP;
 
   // A swatch in each blend the UI draws solid and image quads in.
   const std::array<float, 4> whole{0.0f, 0.0f, 1.0f, 1.0f};

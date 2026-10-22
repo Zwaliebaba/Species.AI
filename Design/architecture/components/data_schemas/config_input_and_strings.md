@@ -264,6 +264,8 @@ Table 3.6-A Caption markers.
 
 > **Amendment 2026-10-20 ([ADR-108](../../../ADR/ADR-108-content-build-loose-content-and-cooked-formats.md), M1 task T11).** The schema `GameData/Schemas/text.glyph_table.schema.json`, version 1.0, holds every field of tables 3.8-A and 3.8-B but `kerning`, which no face has. A table that adds one is refused as an unknown field, and kerning joins as version 1.1 with the first face that kerns (DAT-017). The font packer checks the rules that the schema cannot state, and the cooked `Font` is the `FontAsset` of ADR-108: the metrics, the glyphs sorted by code point, and the face's one page.
 
+> **Amendment 2026-10-22 (O92, [ADR-147](../../../ADR/ADR-147-the-directwrite-text-system-at-m2.md)).** This rule and table 3.8-A are retired with the bitmap faces. No glyph table, glyph sheet or cooked `Font` exists: the schema `text.glyph_table` and its generated header are removed, and DirectWrite reads the system fonts of the roles. The id DAT-219 stays reserved.
+
 Table 3.8-A Fields of a glyph table.
 
 | Field | Key | Type | Presence | Rule |

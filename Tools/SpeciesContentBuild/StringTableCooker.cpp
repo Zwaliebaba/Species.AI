@@ -78,8 +78,8 @@ std::size_t CharacterCount(std::string_view _utf8)
   return static_cast<std::size_t>(std::ranges::count_if(_utf8, [](char _c) { return (static_cast<std::uint8_t>(_c) & 0xC0u) != 0x80u; }));
 }
 
-// UI-233 for the characters GameFont can draw: the upper-cased form of Latin-1 text as ICU's en-US mapping gives it. A
-// character outside Latin-1 is kept, since the coverage check has already refused it.
+// UI-233 for the en-US table: the upper-cased form of Latin-1 text as ICU's en-US mapping gives it. A character outside
+// Latin-1 is kept as it is, so its upper-cased form is checked only when a later language needs it (ADR-147).
 std::vector<std::uint32_t> UpperCased(const std::vector<std::uint32_t>& _points)
 {
   std::vector<std::uint32_t> upper;
@@ -321,7 +321,7 @@ const Neuron::JsonValue* Member(const Neuron::JsonValue& _object, std::string_vi
 } // namespace
 
 std::optional<Neuron::CookedEntry> CookStringTable(const ManifestRow& _row, std::string_view _file, std::span<const std::byte> _bytes,
-                                                   const Neuron::FontAsset& _face, BuildReport& _report)
+                                                   const FontCoverage& _coverage, BuildReport& _report)
 {
   const std::size_t findings = _report.Findings().size();
   const auto fail = [&](std::string_view _message) { _report.Fail(_file, _message); };
@@ -428,11 +428,6 @@ std::optional<Neuron::CookedEntry> CookStringTable(const ManifestRow& _row, std:
   }
 
   // DAT-211 to DAT-213, UI-225, ADR-063 and UI-199: each entry's text in each mode.
-  std::set<std::uint32_t> drawn;
-  for (const Neuron::FontGlyph& glyph : _face.glyphs)
-  {
-    drawn.insert(glyph.codePoint);
-  }
   Neuron::StringTableAsset table;
   table.language = tag;
   Expander expander(entries);
@@ -468,7 +463,7 @@ std::optional<Neuron::CookedEntry> CookStringTable(const ManifestRow& _row, std:
       {
         for (const std::uint32_t point : form)
         {
-          if (!drawn.contains(point))
+          if (!_coverage.Covers(point))
           {
             missing.insert(point);
           }
@@ -478,7 +473,7 @@ std::optional<Neuron::CookedEntry> CookStringTable(const ManifestRow& _row, std:
     }
     for (const std::uint32_t point : missing)
     {
-      fail(std::format("{}: U+{:04X} is in its text or its upper-cased form, and the face of {}'s font roles does not draw it "
+      fail(std::format("{}: U+{:04X} is in its text or its upper-cased form, and no system font of {}'s font roles draws it "
                        "(UI-199, UI-233)",
                        id, point, tag));
       valid = false;

@@ -575,7 +575,8 @@
         "r": 255,
         "g": 64,
         "b": 64
-      }
+      },
+      "text_size": 14
     },
     "profile": {
       "rollup_period_ms": 1000,
@@ -900,6 +901,11 @@
         "b": 1,
         "a": 0
       }
+    },
+    "glyph": {
+      "page_size": 1024,
+      "page_count": 8,
+      "subpixel_steps": 4
     }
   }
 }

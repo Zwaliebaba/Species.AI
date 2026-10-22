@@ -148,6 +148,7 @@
     <ClInclude Include="EffectEvent.h" />
     <ClInclude Include="EffectKind.h" />
     <ClInclude Include="FigureKind.h" />
+    <ClInclude Include="GameFonts.h" />
     <ClInclude Include="GameMessages.h" />
     <ClInclude Include="Navigation.h" />
     <ClInclude Include="OrbState.h" />

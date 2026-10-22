@@ -52,7 +52,7 @@ All assets live under the content root `GameData/`. The content build rejects an
 | `GameData/Audio/ui/` | interface sounds |
 | `GameData/Audio/ambience/` | ambience beds |
 | `GameData/Audio/music/` | music (new) |
-| `GameData/Fonts/` | the glyph sheets and glyph tables of the faces drawn for Species (O56), and the font files of the Japanese and Korean companions for the DirectWrite upgrade of ADR-034 |
+| `GameData/Fonts/` | font files, when an optional face or the Japanese and Korean companions bring them (ADR-034); empty at the MVP, whose text is set in Windows fonts (O92) |
 | `GameData/Strings/` | string tables, one per language, and the development string table (development editions only) |
 | `GameData/Maps/` | map definitions, one per map slot |
 | `GameData/Thumbnails/` | map thumbnails, one per map |
@@ -217,10 +217,10 @@ No file is parked: `GameData/Textures/Particle.dds`, parked on 2026-10-19 (O61),
 | [UI sounds](#14-ui-sounds) | 15 | 18 | 2 | 16 | 0 | 0 | 16 |
 | [Ambience](#15-ambience) | 4 | 21 | 0 | 11 | 10 | 0 | 21 |
 | [Music](#16-music) | 4 | 6 | 0 | 0 | 2 | 4 | 0 |
-| [Fonts](#17-fonts) | 6 | 10 | 4 | 0 | 6 | 0 | 138 |
+| [Fonts](#17-fonts) | 6 | 6 | 2 | 0 | 4 | 0 | 138 |
 | [String table](#18-string-table) | 10 | 10 | 1 | 1 | 8 | 0 | 0 |
 | [Maps and thumbnails](#19-maps-and-thumbnails) | 12 | 98 | 0 | 4 | 94 | 0 | 98 |
-| **Total** | **463** | **1430** | **123** | **559** | **729** | **19** | **1436** |
+| **Total** | **463** | **1426** | **121** | **559** | **727** | **19** | **1436** |
 
 "Reference files replaced" counts the in-scope reference files whose role each category takes over; one Species file may replace several (138 bitmap font pages become the glyph sheets and glyph tables of four drawn faces, two of them the owner's, and two companion font files, 10 files). The `mvp` column counts the files that the MVP needs (§2.5): 87 files of rows that the list already had (86 of them from the skirmish first playable, 1 from `launch`; amendments of O55, O56 and O62) and the MVP's 36 new rows, the development face's two files among them. Music, string tables, some help pictures and every row with no reference counterpart (the application icon, the MVP's new rows, the new glyphs, markers and the Abductor beam ring, the tint masks, the collision assets, the derived variants, the Trooper grenade throw and the six outcome stings that wait for DEC-565) have no one-to-one counterpart. "Files" counts manifest rows: the 7 derived-variant rows have no authored file, because the cooker produces them from their parents.
 
@@ -1080,10 +1080,10 @@ Species draws its text from **bitmap faces drawn for Species** (O56), and since 
 
 | Files | Asset id | Role | Coverage | Priority |
 |---|---|---|---|---|
-| `GameData/Fonts/GameFont.dds`, `GameData/Fonts/GameFontGlyphs.json` | `font.ui.primary` | Game face GameFont: the Title, Body and Caption roles (UI-195), every player-facing text | U+0020-007E, U+00BF-00FF; U+00A0 as the blank cell | mvp |
-| `GameData/Fonts/EditorFont.dds`, `GameData/Fonts/EditorFontGlyphs.json` | `font.dev.editor` | Development face EditorFont: the Development role, in Debug builds only (DBG-095 amendment) | U+0020-007E, U+00BF-00FF; U+00A0 as the blank cell | mvp |
-| `GameData/Fonts/ui_compact.png`, `GameData/Fonts/ui_compact_glyphs.json` | `font.ui.compact` | An optional later body face (`FontRole::Body`); until it exists the role uses `font.ui.primary` | at least that of `font.ui.primary` | launch |
-| `GameData/Fonts/ui_stylised.png`, `GameData/Fonts/ui_stylised_glyphs.json` | `font.ui.stylised` | An optional later caption face (`FontRole::Caption`: tool-window titles, the session-browser header, player names in rows, overlays); until it exists the role uses `font.ui.primary` | at least that of `font.ui.primary` | launch |
+| none: the Windows fonts Bahnschrift and Segoe UI | `font.ui.primary` | Game font: the Title, Body and Caption roles (UI-195 as amended by O92), every player-facing text, in Bahnschrift with Segoe UI for what it lacks | the chain's: Latin, Greek, Cyrillic, punctuation and the currency signs | mvp |
+| none: the Windows fonts Cascadia Mono and Consolas | `font.dev.editor` | Development font: the Development role, in Debug builds only (DBG-095 amendment of O92) | the chain's | mvp |
+| `GameData/Fonts/ui_compact.otf` | `font.ui.compact` | An optional later body face (`FontRole::Body`), a font file or a Windows family; until it exists the role uses the chain of `font.ui.primary` | at least that of `font.ui.primary` | launch |
+| `GameData/Fonts/ui_stylised.otf` | `font.ui.stylised` | An optional later caption face (`FontRole::Caption`: tool-window titles, the session-browser header, player names in rows, overlays), a font file or a Windows family; until it exists the role uses the chain of `font.ui.primary` | at least that of `font.ui.primary` | launch |
 | `GameData/Fonts/ui_primary_ja.otf` | `font.ui.primary_ja` | Japanese companion of the primary face (kana and CJK ideographs), for the DirectWrite upgrade | U+3000-30FF, U+4E00-9EFF | launch |
 | `GameData/Fonts/ui_primary_ko.otf` | `font.ui.primary_ko` | Korean companion of the primary face (Hangul syllables), for the DirectWrite upgrade | U+AC00-D7FF | launch |
 
@@ -1098,6 +1098,8 @@ Species draws its text from **bitmap faces drawn for Species** (O56), and since 
 **Sizes.** A text is drawn at the whole-number scale k nearest its final size ÷ 16 px, rounded half up, at least 1, and raised until it meets the accessibility minimum: 16 px covers the minimum of 9 px at 1080p, and at 2160p, whose minimum is 19 px, text draws at 32 px or more (ADR-064, UI-171). The darkening outline pass draws behind the glyphs at every scale.
 
 **Amendment 2026-10-19 (owner decisions O62 and O63).** This section replaces the two faces that O56 asked the owner to draw, a 24 px title face and a 12 px body face of a 1x and a 2x sheet each, with the owner's GameFont and EditorFont, one 16 px sheet each at whole-number scales; the coverage of 199 glyphs becomes what the owner's sheets hold.
+
+**Amendment 2026-10-22 (owner decision O92, [ADR-147](../ADR/ADR-147-the-directwrite-text-system-at-m2.md)).** GameFont and EditorFont are retired. DirectWrite draws all of Species' text in Windows fonts, so no font file is delivered and no license is needed. The game's text is in Bahnschrift, with Segoe UI for what Bahnschrift lacks, and the development tools' text is in Cascadia Mono, or Consolas where that is not installed. Text is rasterized in grayscale at its exact final size. The table above lists the rows as they now stand. The glyph sheet, the glyph table, the coverage of the glyph tables and the whole-number sizes that the paragraphs above describe all lapse, together with the naming rule of §2.2 for a face's sheet and table, the drawn-face format of §2.4 and the placeholder kind "generated block font" of §2.6. The coverage is now the chain's, which the content build checks against the en-US table, and the sizes are those of UI-171.
 
 ## 18 String table
 

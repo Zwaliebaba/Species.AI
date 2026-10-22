@@ -20,7 +20,6 @@
 #include "RootSignature.h"
 #include "SceneTargets.h"
 #include "ShaderLayouts.h"
-#include "TextLayout.h"
 #include "UploadRing.h"
 #include "UiRenderer.h"
 #include "WorldRenderer.h"
@@ -32,9 +31,8 @@
 #include "CompiledShader/CursorVS.h"
 #include "CompiledShader/DevelopmentDotPS.h"
 #include "CompiledShader/DevelopmentDotVS.h"
-#include "CompiledShader/DevelopmentTextPS.h"
-#include "CompiledShader/DevelopmentTextSolidPS.h"
-#include "CompiledShader/DevelopmentTextVS.h"
+#include "CompiledShader/DevelopmentRectPS.h"
+#include "CompiledShader/DevelopmentRectVS.h"
 #include "CompiledShader/FinalPS.h"
 #include "CompiledShader/FinalVS.h"
 #include "CompiledShader/MeshLitFogPS.h"
@@ -183,7 +181,7 @@ struct RendererState
   std::unique_ptr<DeviceGpuResourceFactory> factory;
   std::unique_ptr<WorldRenderer> world;
   std::unique_ptr<OverlayRenderer> overlay;
-  std::unique_ptr<UiRenderer> ui; // ADR-145: the UI's face, images and batches
+  std::unique_ptr<UiRenderer> ui; // ADR-145, ADR-147: the glyph atlas's pages, the UI's images and its batches
   std::unique_ptr<CursorRenderer> cursor;
   std::unique_ptr<QuadRenderer> quads;
   std::unique_ptr<MeshRenderer> meshes;
@@ -339,13 +337,11 @@ const std::array<PipelineEntry, 40> WORLD_PIPELINES{{
   {"sea_waves", g_SeaWavesVS, g_SeaWavesPS, VertexLayout::Sea, BlendState::Additive, DepthState::TestWrite, CullState::Back,
    PipelineTarget::Scene},
   {"final", g_FinalVS, g_FinalPS, VertexLayout::None, BlendState::Opaque, DepthState::None, CullState::None, PipelineTarget::BackBuffer},
-  // M1 task T15a: the development dots in the scene, and the overlay's text over the final image (DBG-095).
+  // M1 task T15a: the development dots in the scene (DBG-099).
   {"development_dots", g_DevelopmentDotVS, g_DevelopmentDotPS, VertexLayout::DotInstance, BlendState::Opaque, DepthState::Test,
    CullState::None, PipelineTarget::Scene},
-  {"development_text", g_DevelopmentTextVS, g_DevelopmentTextPS, VertexLayout::TextGlyph, BlendState::Alpha, DepthState::None,
-   CullState::None, PipelineTarget::BackBuffer},
-  // M1 task T15b: the overlay's filled rectangles under its text (ADR-120).
-  {"development_solid", g_DevelopmentTextVS, g_DevelopmentTextSolidPS, VertexLayout::TextGlyph, BlendState::Alpha, DepthState::None,
+  // M1 task T15b: the overlay's filled rectangles under its text (ADR-120), which the UI's glyph pipelines draw (ADR-147).
+  {"development_solid", g_DevelopmentRectVS, g_DevelopmentRectPS, VertexLayout::TextGlyph, BlendState::Alpha, DepthState::None,
    CullState::None, PipelineTarget::BackBuffer},
   // M1 task T14: the game cursor's shadow and art (RND-366, ADR-119).
   {"cursor_shadow", g_CursorVS, g_CursorPS, VertexLayout::TextGlyph, BlendState::Darkening, DepthState::None, CullState::None,
@@ -487,7 +483,7 @@ WorldFrameTable WorldFrame(bool _multisampled)
   add(WorldPass::Markers, "pass_16_world_markers", "overlay_additive", {{TARGET_BACK_BUFFER, TargetAccess::RenderTarget}});
   add(WorldPass::Ui, "pass_19_ui", "ui_glyphs_additive", {{TARGET_BACK_BUFFER, TargetAccess::RenderTarget}});
   add(WorldPass::Cursor, "pass_20_world_cursor", "cursor_art", {{TARGET_BACK_BUFFER, TargetAccess::RenderTarget}});
-  add(WorldPass::OverlayText, "pass_29_text_overlays", "development_text", {{TARGET_BACK_BUFFER, TargetAccess::RenderTarget}});
+  add(WorldPass::OverlayText, "pass_29_text_overlays", "development_solid", {{TARGET_BACK_BUFFER, TargetAccess::RenderTarget}});
   add(WorldPass::Present, "pass_34_present", {}, {{TARGET_BACK_BUFFER, TargetAccess::Present}});
   return table;
 }
@@ -716,7 +712,6 @@ void Rebuild(RendererState& _state)
   }
   _state.rebuilding = false;
   _state.world->UploadAgain(); // RND-034: the same surfaces, from the unchanged world
-  _state.overlay->UploadAgain();
   _state.ui->UploadAgain();
   _state.cursor->UploadAgain();
   _state.quads->UploadAgain();
@@ -927,7 +922,7 @@ void RecordWorldFrame(RendererState& _state, const FrameInputs& _inputs, ID3D12R
     }
     case WorldPass::Dots:
     {
-      _state.overlay->RecordDots(commands, *_state.ring, *_state.catalog, frame, TextScaleFor(_state.window->DpiScale()), _inputs.dots);
+      _state.overlay->RecordDots(commands, *_state.ring, *_state.catalog, frame, _state.window->DpiScale(), _inputs.dots);
       break;
     }
     case WorldPass::Resolve:
@@ -984,9 +979,11 @@ void RecordWorldFrame(RendererState& _state, const FrameInputs& _inputs, ID3D12R
     }
     case WorldPass::OverlayText:
     {
+      // DBG-095, ADR-120: the overlay's rectangles, then its text over them in the UI's glyph pipelines (ADR-147).
       ENGINE_PROFILE_SCOPE("render.development_text");
-      _state.overlay->RecordText(commands, *_state.ring, *_state.catalog, _state.swapChainSize, TextScaleFor(_state.window->DpiScale()),
-                                 _inputs.overlay, _inputs.overlayRects);
+      _state.overlay->RecordRects(commands, *_state.ring, *_state.catalog, _state.swapChainSize, _state.window->DpiScale(),
+                                  _inputs.overlayRects);
+      _state.ui->Record(commands, *_state.ring, *_state.catalog, _state.swapChainSize, _inputs.overlayText);
       break;
     }
     case WorldPass::Present:
@@ -1007,7 +1004,7 @@ std::expected<std::unique_ptr<FrameRenderer>, StartupFailure> FrameRenderer::Cre
   state->config = _config;
   state->factory = std::make_unique<DeviceGpuResourceFactory>(DeviceGpuResourceFactory::Desc{});
   state->world = std::make_unique<WorldRenderer>(*state->factory);
-  state->overlay = std::make_unique<OverlayRenderer>(*state->factory);
+  state->overlay = std::make_unique<OverlayRenderer>();
   state->ui = std::make_unique<UiRenderer>(*state->factory);
   state->cursor = std::make_unique<CursorRenderer>(*state->factory);
   state->quads = std::make_unique<QuadRenderer>(*state->factory);
@@ -1111,8 +1108,7 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
   const std::uint64_t completed = frameId > FRAMES_IN_FLIGHT ? frameId - FRAMES_IN_FLIGHT : 0;
   state.world->Show(_inputs.world);
   state.world->ShowMask(_inputs.viewMask);
-  state.overlay->Show(_inputs.overlayFont);
-  state.ui->Show(_inputs.uiFace, _inputs.uiImages);
+  state.ui->Show(_inputs.glyphs, _inputs.uiImages);
   state.cursor->Show(_inputs.cursorImages);
   state.quads->Show(_inputs.sceneTextures);
   state.meshes->Show(_inputs.sceneMeshes);
@@ -1141,7 +1137,7 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
     const D3D12_RESOURCE_BARRIER toTarget = TransitionBarrier(backBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
     commands->ResourceBarrier(1, &toTarget);
     commands->ClearRenderTargetView(target, background.data(), 0, nullptr);
-    if (!_inputs.overlay.empty() || _inputs.cursor || !_inputs.ui.empty() || !_inputs.uiCursor.empty())
+    if (!_inputs.overlayText.empty() || !_inputs.overlayRects.empty() || _inputs.cursor || !_inputs.ui.empty() || !_inputs.uiCursor.empty())
     {
       // DBG-095, O65 and ADR-145: the UI, the frame-rate line and the game cursor are drawn without a world too.
       const D3D12_VIEWPORT viewport{
@@ -1158,8 +1154,9 @@ FrameOutcome FrameRenderer::RenderFrame(const FrameInputs& _inputs)
       {
         state.cursor->Record(commands, *state.ring, *state.catalog, state.swapChainSize, *_inputs.cursor);
       }
-      state.overlay->RecordText(commands, *state.ring, *state.catalog, state.swapChainSize, TextScaleFor(state.window->DpiScale()),
-                                _inputs.overlay, _inputs.overlayRects);
+      state.overlay->RecordRects(commands, *state.ring, *state.catalog, state.swapChainSize, state.window->DpiScale(),
+                                 _inputs.overlayRects);
+      state.ui->Record(commands, *state.ring, *state.catalog, state.swapChainSize, _inputs.overlayText);
     }
     const D3D12_RESOURCE_BARRIER toPresent =
       TransitionBarrier(backBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);

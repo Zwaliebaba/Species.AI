@@ -93,7 +93,7 @@ private:
                                                            const TuningPresentation& _presentation);
 
 /// R-CTRL-366's count (ADR-127, ADR-145): its text, and the point in physical pixels where its line's left edge and
-/// vertical middle lie; the UI lays it out in GameFont.
+/// vertical middle lie; the UI lays it out in the body role (ADR-147).
 struct BadgeLabel
 {
   std::string text;

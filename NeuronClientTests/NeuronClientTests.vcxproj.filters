@@ -38,6 +38,9 @@
     <ClCompile Include="FrameGraphTests.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
+    <ClCompile Include="GlyphAtlasTests.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
     <ClCompile Include="GpuResourceFactoryTests.cpp">
       <Filter>Resources</Filter>
     </ClCompile>
@@ -62,7 +65,7 @@
     <ClCompile Include="StringTableTests.cpp">
       <Filter>Resources</Filter>
     </ClCompile>
-    <ClCompile Include="TextLayoutTests.cpp">
+    <ClCompile Include="TextSystemTests.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="UiTextTests.cpp">

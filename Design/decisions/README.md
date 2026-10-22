@@ -35,7 +35,7 @@ The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner
 | [gameplay_gap_rules.md](gameplay_gap_rules.md) | Gap rules: gameplay | DEC-850–899 | 22 |
 | — | Reserved: no register file numbers into this block | DEC-900–949 | 0 |
 | [engine_gap_rules.md](engine_gap_rules.md) | Gap rules: engine | DEC-950–999 | 23 |
-| [species_design.md](species_design.md) | Species design decisions: questions that building the MVP raises about a Final requirement | DEC-1000–1999 | 2 |
+| [species_design.md](species_design.md) | Species design decisions: questions that building the MVP raises about a Final requirement | DEC-1000–1999 | 4 |
 
 ## Index
 
@@ -346,3 +346,4 @@ The owner's decisions (O1 and up) are kept apart from the DEC entries, in [owner
 | DEC-1000 | [The place of the ninth home resource site on the MVP's terrain](species_design.md#dec-1000-the-place-of-the-ninth-home-resource-site-on-the-mvps-terrain) | Resolved | species_design.md |
 | DEC-1001 | [The provisional looks of the settlement](species_design.md#dec-1001-the-provisional-looks-of-the-settlement) | Open | species_design.md |
 | DEC-1002 | [The provisional looks of the territories](species_design.md#dec-1002-the-provisional-looks-of-the-territories) | Open | species_design.md |
+| DEC-1003 | [The weight and width of the text in Bahnschrift](species_design.md#dec-1003-the-weight-and-width-of-the-text-in-bahnschrift) | Open | species_design.md |

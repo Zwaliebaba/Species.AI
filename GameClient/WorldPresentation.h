@@ -13,6 +13,7 @@
 #include "StringTable.h"
 #include "StructureLook.h"
 #include "TerritoryLook.h"
+#include "TextSystem.h"
 #include "TuningMvp.h"
 #include "TuningPresentation.h"
 #include "WorldScene.h"
@@ -48,9 +49,9 @@ public:
   // Once per frame, after the session's update: builds the world's surfaces when the session's terrain is new.
   void Update(const ClientSession& _session);
   // The inputs of the frame drawn now, seen through _view; _framesPerSecond is the renderer's counter (R-SIM-576), which a
-  // Debug build's development overlay shows (DBG-095, ADR-118). The frame takes the session's presentation events, which
-  // its effects play (ADR-123).
-  [[nodiscard]] Neuron::FrameInputs Frame(ClientSession& _session, const SettlementView& _view, double _framesPerSecond);
+  // Debug build's development overlay shows (DBG-095, ADR-118), and _dpiScale the window's, which text sizes take
+  // (UI-170, ADR-147). The frame takes the session's presentation events, which its effects play (ADR-123).
+  [[nodiscard]] Neuron::FrameInputs Frame(ClientSession& _session, const SettlementView& _view, double _framesPerSecond, float _dpiScale);
 
   [[nodiscard]] const std::shared_ptr<const Neuron::WorldScene>& World() const noexcept
   {
@@ -84,8 +85,6 @@ private:
   std::shared_ptr<const Neuron::WorldScene> m_world;
   Neuron::Nanoseconds m_start{};
   std::optional<double> m_firstDisplayTick;
-  std::shared_ptr<const Neuron::FontAsset> m_developmentFace;   // a Debug build's overlay face; none in Release
-  std::shared_ptr<const Neuron::FontAsset> m_gameFace;          // ADR-145: GameFont, the UI's face; none when missing
   std::shared_ptr<const Neuron::UiImages> m_uiImages;           // ADR-145: the UI's images, each empty when missing
   std::shared_ptr<const Neuron::StringTable> m_strings;         // ADR-146: the en-US strings (O91); empty when missing
   std::unique_ptr<Neuron::MessageLocale> m_locale;              // ADR-146: en-US's number forms and plural rules
@@ -100,6 +99,8 @@ private:
   std::optional<std::uint64_t> m_viewMaskRevision;    // the areas' revision it was built from
   Neuron::FrameProfile m_profile;
   Neuron::PresentationClock m_presentationClock;
+  std::unique_ptr<Neuron::TextSystem> m_text; // ADR-147: DirectWrite's layouts and the glyph atlas
+  std::uint64_t m_frames = 0;
   bool m_overlayShown = false;
 };
 

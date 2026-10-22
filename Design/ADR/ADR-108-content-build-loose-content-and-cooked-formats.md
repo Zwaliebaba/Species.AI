@@ -209,3 +209,9 @@ Chosen option: "1".
   - NeuronCore gains `CollisionAsset` and `SimulationRecord`, and GameShared `StructureRecords`, which the server loads when it starts.
   - `Build\CheckContentBuild.py` gains five fixtures, and `Build\CheckMeshKit.py` checks the mesh kit's committed output.
 * **Amendment 2026-10-22 (M2 task T12, owner decision O88, [ADR-140](ADR-140-structures-drawn-and-the-stand-ins-at-m2.md)).** The content build generates stand-ins, which this record left to packs: a texture row of the MVP's priority with no authored file, in BC7 sRGB or BC4, whose `placeholder` column names a figure, a glyph, a panel, a gradient or a cooker's variant, gets one at its key, in its format, size and levels. It passes the row's texture check, takes part in the key check and carries the placeholder flag in the index (AST-082, AST-083). The manifest reader gains the `priority` and `placeholder` columns. Every other row still has no stand-in, and the placeholder report waits for packs.
+* **Amendment 2026-10-22 (M2 task T14, owner decision O92, [ADR-147](ADR-147-the-directwrite-text-system-at-m2.md)).** The content build cooks no faces. With the bitmap faces go:
+  - the font packer and the cooked font format (`FontAsset` version 1);
+  - the glyph tables and their schema;
+  - `GameData/Fonts/`.
+
+  The content type `font` stays in the cooked index's list, unused, so the list keeps its numbering. The string tables' coverage is checked against the system fonts of their roles.
