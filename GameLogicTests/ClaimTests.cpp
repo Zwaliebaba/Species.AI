@@ -279,8 +279,8 @@ public:
     const double ruPerWeight = CommittedTuning().mvp.relation.tributeRuPerWeight;
     const std::int64_t attack = std::llround(CommittedTuning().mvp.grievance.attackWeight * 1e6);
     std::uint64_t subject = 100;
-    for (const auto [temperament, rate] : {std::pair{Species::Temperament::Bold, 1.0}, std::pair{Species::Temperament::Territorial, 0.5},
-                                           std::pair{Species::Temperament::Wary, 2.0}})
+    for (const auto& [temperament, rate] : {std::pair{Species::Temperament::Bold, 1.0}, std::pair{Species::Temperament::Territorial, 0.5},
+                                            std::pair{Species::Temperament::Wary, 2.0}})
     {
       const std::uint8_t site = SiteOf(region, temperament);
       Species::AddGrievance(region, site, STEWARD_SITE, Species::GrievanceCause::Attack, ++subject);

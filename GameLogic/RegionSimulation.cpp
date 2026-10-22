@@ -1154,13 +1154,13 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
   if (_stateVersion >= STATE_VERSION_WITH_GRIEVANCES)
   {
     m_grievances.resize(_reader.ReadBounded(GRIEVANCES_MAX));
-    for (std::size_t index = 0; index < m_grievances.size(); ++index)
+    for (std::size_t place = 0; place < m_grievances.size(); ++place)
     {
-      const Grievance& grievance = m_grievances[index];
-      if (!ReadGrievance(_reader, m_grievances[index]) || SettlementAt(grievance.holder) == nullptr ||
+      const Grievance& grievance = m_grievances[place];
+      if (!ReadGrievance(_reader, m_grievances[place]) || SettlementAt(grievance.holder) == nullptr ||
           SettlementAt(grievance.against) == nullptr ||
-          (index > 0 && std::tuple{m_grievances[index - 1].holder, m_grievances[index - 1].against, m_grievances[index - 1].cause,
-                                   m_grievances[index - 1].subject} >=
+          (place > 0 && std::tuple{m_grievances[place - 1].holder, m_grievances[place - 1].against, m_grievances[place - 1].cause,
+                                   m_grievances[place - 1].subject} >=
                           std::tuple{grievance.holder, grievance.against, grievance.cause, grievance.subject}))
       {
         return false;
@@ -1174,23 +1174,23 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
   if (_stateVersion >= STATE_VERSION_WITH_CLAIMS)
   {
     m_claims.resize(_reader.ReadBounded(CLAIMS_MAX));
-    for (std::size_t index = 0; index < m_claims.size(); ++index)
+    for (std::size_t place = 0; place < m_claims.size(); ++place)
     {
-      const Claim& claim = m_claims[index];
-      if (!ReadClaim(_reader, m_claims[index]) || SettlementAt(claim.claimant) == nullptr ||
-          (index > 0 && m_claims[index - 1].id >= claim.id) ||
-          std::any_of(m_claims.begin(), m_claims.begin() + static_cast<std::ptrdiff_t>(index),
+      const Claim& claim = m_claims[place];
+      if (!ReadClaim(_reader, m_claims[place]) || SettlementAt(claim.claimant) == nullptr ||
+          (place > 0 && m_claims[place - 1].id >= claim.id) ||
+          std::any_of(m_claims.begin(), m_claims.begin() + static_cast<std::ptrdiff_t>(place),
                       [&](const Claim& _earlier) { return _earlier.claimant == claim.claimant && _earlier.area == claim.area; }))
       {
         return false;
       }
     }
     m_holdings.resize(_reader.ReadBounded(HOLDINGS_MAX));
-    for (std::size_t index = 0; index < m_holdings.size(); ++index)
+    for (std::size_t place = 0; place < m_holdings.size(); ++place)
     {
-      const AreaHolding& holding = m_holdings[index];
-      if (!ReadAreaHolding(_reader, m_holdings[index]) || SettlementAt(holding.holder) == nullptr ||
-          (index > 0 && m_holdings[index - 1].area >= holding.area) ||
+      const AreaHolding& holding = m_holdings[place];
+      if (!ReadAreaHolding(_reader, m_holdings[place]) || SettlementAt(holding.holder) == nullptr ||
+          (place > 0 && m_holdings[place - 1].area >= holding.area) ||
           (holding.area != CLAIM_AREA_CENTRAL &&
            (OwnSiteOfArea(holding.area) == holding.holder ||
             std::ranges::find(VALLEY_PAIRS[PairOfArea(holding.area)], holding.holder) == VALLEY_PAIRS[PairOfArea(holding.area)].end())))
