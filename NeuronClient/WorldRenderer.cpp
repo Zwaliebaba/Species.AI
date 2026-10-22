@@ -77,7 +77,7 @@ void WorldRenderer::ReleaseMask(MaskTexture& _mask)
 {
   if (_mask.texture.has_value())
   {
-    m_factory.Release(_mask.texture.value()); // destroyed after the frames in flight that may read it
+    m_factory.Release(*_mask.texture); // destroyed after the frames in flight that may read it
   }
   _mask = {};
 }
@@ -122,7 +122,7 @@ void WorldRenderer::PumpMask()
   {
     return;
   }
-  const GpuResourceId texture = m_nextMask.texture.value();
+  const GpuResourceId texture = *m_nextMask.texture;
   std::uint64_t fence = m_nextMask.fence.value_or(0);
   if (!m_nextMask.fence.has_value())
   {
@@ -157,7 +157,7 @@ void WorldRenderer::MaskConstants(const Vec3& _camera, Float4& _place, Uint4& _i
   {
     return;
   }
-  const GpuResourceId texture = m_shownMask.texture.value();
+  const GpuResourceId texture = *m_shownMask.texture;
   const ViewMask& mask = *m_shownMask.mask;
   const double extent = mask.cellSize * static_cast<double>(mask.side);
   _place = Float4(static_cast<float>(mask.originX - _camera.x), static_cast<float>(mask.originZ - _camera.z),
