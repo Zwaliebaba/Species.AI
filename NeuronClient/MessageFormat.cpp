@@ -15,14 +15,14 @@ namespace Neuron
 namespace
 {
 
-const MessageArgument* Find(std::span<const MessageArgument> _arguments, std::string_view _name) noexcept
+const FormatArgument* Find(std::span<const FormatArgument> _arguments, std::string_view _name) noexcept
 {
-  const auto found = std::ranges::find(_arguments, _name, &MessageArgument::name);
+  const auto found = std::ranges::find(_arguments, _name, &FormatArgument::name);
   return found == _arguments.end() ? nullptr : &*found;
 }
 
 // An argument's number; none for a text.
-std::optional<double> NumberOf(const MessageArgument& _argument) noexcept
+std::optional<double> NumberOf(const FormatArgument& _argument) noexcept
 {
   if (const auto* whole = std::get_if<std::int64_t>(&_argument.value))
   {
@@ -46,7 +46,7 @@ std::string NumberText(double _value, const MessageLocale& _locale)
   return _locale.FormatDecimal(_value);
 }
 
-std::string ValueText(const MessageArgument& _argument, const MessageLocale& _locale)
+std::string ValueText(const FormatArgument& _argument, const MessageLocale& _locale)
 {
   if (const auto* whole = std::get_if<std::int64_t>(&_argument.value))
   {
@@ -86,7 +86,7 @@ const MessageCase* PluralCase(const MessagePart& _part, std::optional<double> _n
   return chosen != nullptr ? chosen : CaseOf(_part, "other");
 }
 
-void Append(std::string& _out, const std::vector<MessagePart>& _parts, std::span<const MessageArgument> _arguments,
+void Append(std::string& _out, const std::vector<MessagePart>& _parts, std::span<const FormatArgument> _arguments,
             const MessageLocale& _locale, std::optional<double> _pound)
 {
   for (const MessagePart& part : _parts)
@@ -101,7 +101,7 @@ void Append(std::string& _out, const std::vector<MessagePart>& _parts, std::span
       _out += _pound.has_value() ? NumberText(*_pound, _locale) : std::string("#");
       continue;
     }
-    const MessageArgument* argument = Find(_arguments, part.text);
+    const FormatArgument* argument = Find(_arguments, part.text);
     if (argument == nullptr)
     {
       _out += std::format("{{{}}}", part.text);
@@ -158,7 +158,7 @@ void Append(std::string& _out, const std::vector<MessagePart>& _parts, std::span
 
 } // namespace
 
-std::string FormatPattern(const MessagePattern& _pattern, std::span<const MessageArgument> _arguments, const MessageLocale& _locale)
+std::string FormatPattern(const MessagePattern& _pattern, std::span<const FormatArgument> _arguments, const MessageLocale& _locale)
 {
   std::string out;
   Append(out, _pattern.parts, _arguments, _locale, std::nullopt);

@@ -80,8 +80,8 @@ public:
   {
     const Neuron::StringTable table(SmallTable());
     const Neuron::MessageLocale locale("en-GB");
-    const std::array one{Neuron::MessageArgument{"count", std::int64_t{1}}};
-    const std::array many{Neuron::MessageArgument{"count", std::int64_t{2400}}};
+    const std::array one{Neuron::FormatArgument{"count", std::int64_t{1}}};
+    const std::array many{Neuron::FormatArgument{"count", std::int64_t{2400}}};
     Assert::AreEqual(std::string("1 Worker"), table.Format("ui.hud.workers", one, locale));
     Assert::AreEqual(std::string("2,400 Workers"), table.Format("ui.hud.workers", many, locale));
     Assert::AreEqual(std::string(table.Lookup("ui.hud.idle")), table.Format("ui.hud.idle", one, locale), L"a miss is the look-up's");

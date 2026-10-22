@@ -14,7 +14,7 @@ namespace Neuron
 
 /// A named argument of a message (UI-227): its name and its value, a whole number, a number or a text. A text is
 /// inserted literally, so none of its characters is read as message syntax (DEC-102).
-struct MessageArgument
+struct FormatArgument
 {
   std::string_view name;
   std::variant<std::int64_t, double, std::string_view> value;
@@ -27,7 +27,7 @@ struct MessageArgument
 //   category of its number less the offset, else other; # in that case writes the number less the offset.
 // * A select argument takes the case of its text, else other.
 // An argument the call does not give is written as {name}, as ICU writes it.
-[[nodiscard]] std::string FormatPattern(const MessagePattern& _pattern, std::span<const MessageArgument> _arguments,
+[[nodiscard]] std::string FormatPattern(const MessagePattern& _pattern, std::span<const FormatArgument> _arguments,
                                         const MessageLocale& _locale);
 
 } // namespace Neuron

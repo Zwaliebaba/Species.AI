@@ -20,7 +20,7 @@ namespace
 {
 
 // The message _text with _arguments inserted in en-GB's forms, as the in-box ICU gives them.
-std::string Formatted(std::string_view _text, std::span<const Neuron::MessageArgument> _arguments)
+std::string Formatted(std::string_view _text, std::span<const Neuron::FormatArgument> _arguments)
 {
   static const Neuron::MessageLocale EN_GB("en-GB");
   const auto pattern = Neuron::ParseMessage(_text);
@@ -30,7 +30,7 @@ std::string Formatted(std::string_view _text, std::span<const Neuron::MessageArg
 
 std::string Workers(std::int64_t _count)
 {
-  const std::array arguments{Neuron::MessageArgument{"count", _count}};
+  const std::array arguments{Neuron::FormatArgument{"count", _count}};
   return Formatted("{count, plural, =0 {No Workers} one {# Worker} other {# Workers}}", arguments);
 }
 
@@ -48,7 +48,7 @@ public:
     Assert::AreEqual(std::string("1 Worker"), Workers(1), L"en's one");
     Assert::AreEqual(std::string("2 Workers"), Workers(2), L"en's other");
     Assert::AreEqual(std::string("1,500 Workers"), Workers(1500), L"# in en-GB's grouping");
-    const std::array offset{Neuron::MessageArgument{"count", std::int64_t{2}}};
+    const std::array offset{Neuron::FormatArgument{"count", std::int64_t{2}}};
     Assert::AreEqual(std::string("you and 1 other"),
                      Formatted("{count, plural, offset:1 =1 {you} one {you and # other} other {you and # others}}", offset),
                      L"the category and # of the number less the offset");
@@ -59,8 +59,8 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Adr063NumbersTakeTheLanguagesForm)
   {
-    const std::array arguments{Neuron::MessageArgument{"stores", std::int64_t{12345}}, Neuron::MessageArgument{"share", 2.5},
-                               Neuron::MessageArgument{"rate", 1234.5678}};
+    const std::array arguments{Neuron::FormatArgument{"stores", std::int64_t{12345}}, Neuron::FormatArgument{"share", 2.5},
+                               Neuron::FormatArgument{"rate", 1234.5678}};
     Assert::AreEqual(std::string("12,345 / 2.5 / 1,235 / 1,234.568"),
                      Formatted("{stores} / {share, number} / {rate, number, integer} / {rate}", arguments),
                      L"grouped, rounded in the integer style, and three fractional digits at most");
@@ -72,14 +72,14 @@ public:
   TEST_METHOD(Adr063SelectAndOrdinalChooseTheirCases)
   {
     const std::string_view text = "{kind, select, dwelling {a dwelling} storehouse {a storehouse} other {a structure}}";
-    const std::array dwelling{Neuron::MessageArgument{"kind", std::string_view("dwelling")}};
-    const std::array turret{Neuron::MessageArgument{"kind", std::string_view("turret")}};
+    const std::array dwelling{Neuron::FormatArgument{"kind", std::string_view("dwelling")}};
+    const std::array turret{Neuron::FormatArgument{"kind", std::string_view("turret")}};
     Assert::AreEqual(std::string("a dwelling"), Formatted(text, dwelling));
     Assert::AreEqual(std::string("a structure"), Formatted(text, turret), L"other for a key no case names");
     const std::string_view ordinal = "{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}";
     const auto nth = [&](std::int64_t _n)
     {
-      const std::array arguments{Neuron::MessageArgument{"n", _n}};
+      const std::array arguments{Neuron::FormatArgument{"n", _n}};
       return Formatted(ordinal, arguments);
     };
     Assert::IsTrue(nth(1) == "1st" && nth(2) == "2nd" && nth(3) == "3rd" && nth(4) == "4th" && nth(11) == "11th" && nth(22) == "22nd",
@@ -92,7 +92,7 @@ public:
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(Ui227ATextArgumentIsInsertedLiterally)
   {
-    const std::array arguments{Neuron::MessageArgument{"file", std::string_view("{count} 100% 'x' #")}};
+    const std::array arguments{Neuron::FormatArgument{"file", std::string_view("{count} 100% 'x' #")}};
     Assert::AreEqual(std::string("Saved {count} 100% 'x' #."), Formatted("Saved {file}.", arguments), L"no character of it is syntax");
     Assert::AreEqual(std::string("Saved {file}."), Formatted("Saved {file}.", {}), L"an argument not given shows its name, as ICU does");
   }

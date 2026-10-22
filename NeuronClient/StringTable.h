@@ -44,7 +44,7 @@ public:
   [[nodiscard]] bool Exists(std::string_view _id) const noexcept;
   // UI-227: the text of _id in _mode with _arguments inserted, in _locale's forms (ADR-063). A miss gives the look-up's
   // text, unformatted.
-  [[nodiscard]] std::string Format(std::string_view _id, std::span<const MessageArgument> _arguments, const MessageLocale& _locale,
+  [[nodiscard]] std::string Format(std::string_view _id, std::span<const FormatArgument> _arguments, const MessageLocale& _locale,
                                    InputMode _mode = InputMode::KeyboardMouse) const;
 
 private:

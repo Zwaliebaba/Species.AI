@@ -165,7 +165,7 @@ void AppendUiTestPage(const Neuron::FontAsset& _face, const TuningPresentation& 
     std::string counts;
     for (const std::int64_t count : TEST_PAGE_COUNTS)
     {
-      const std::array arguments{Neuron::MessageArgument{"count", count}};
+      const std::array arguments{Neuron::FormatArgument{"count", count}};
       counts += (counts.empty() ? "" : ", ") + Neuron::FormatPattern(*workers, arguments, _locale);
     }
     Neuron::AppendText(_out, _face, counts, x, y, plain);

@@ -82,7 +82,7 @@ bool StringTable::Exists(std::string_view _id) const noexcept
   return IndexOf(_id) != m_asset.entries.size();
 }
 
-std::string StringTable::Format(std::string_view _id, std::span<const MessageArgument> _arguments, const MessageLocale& _locale,
+std::string StringTable::Format(std::string_view _id, std::span<const FormatArgument> _arguments, const MessageLocale& _locale,
                                 InputMode _mode) const
 {
   const std::size_t index = IndexOf(_id);
