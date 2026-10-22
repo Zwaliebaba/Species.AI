@@ -1037,10 +1037,19 @@
               "x-species-type": "sim_decimal",
               "x-species-unit": "minutes",
               "x-species-presence": "required"
+            },
+            "population_step": {
+              "type": "integer",
+              "description": "mvp.stats.population_step (MVP-064)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "Workers",
+              "x-species-presence": "required"
             }
           },
           "required": [
-            "sample_minutes"
+            "sample_minutes",
+            "population_step"
           ],
           "additionalProperties": false,
           "x-species-type": "object",

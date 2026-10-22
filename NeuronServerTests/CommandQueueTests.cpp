@@ -137,6 +137,30 @@ public:
     ExpectEqual(5, static_cast<std::int64_t>(outcomes[0].tick), L"the outcome's tick");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp094AnExecutedCommandReportsWhyItDidNothing)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-094")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp094AnExecutedCommandReportsWhyItDidNothing)
+  {
+    // ADR-136: the reason a handler gives passes to the outcome unread; a refusal on arrival has none.
+    Neuron::CommandQueue queue(TEST_KEY, 3);
+    queue.Register<TestOrder>([](Neuron::SenderId _sender, const TestOrder&) { return _sender != 99; },
+                              [](Neuron::SenderId, const TestOrder& _order, std::uint64_t) {
+                                return Neuron::CommandExecution{Neuron::CommandEffect::NoEffect, static_cast<std::uint8_t>(_order.value)};
+                              });
+    Assert::IsTrue(queue.Submit(1, 0, Order(7)));
+    Assert::IsFalse(queue.Submit(99, 0, Order(5)));
+    queue.Execute(3);
+    const std::vector<Neuron::CommandOutcome> outcomes = queue.TakeOutcomes();
+    ExpectEqual(2, static_cast<std::int64_t>(outcomes.size()), L"count");
+    for (const Neuron::CommandOutcome& outcome : outcomes)
+    {
+      Assert::IsTrue(outcome.effect == Neuron::CommandEffect::NoEffect, L"neither had an effect");
+      ExpectEqual(outcome.sender == 1 ? 7 : 0, static_cast<std::int64_t>(outcome.reason), L"the handler's reason, and none on arrival");
+      ExpectEqual(3, static_cast<std::int64_t>(outcome.tick), L"the tick");
+    }
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp094ACommandIssuedDuringATickExecutesInTheNext)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-094")
   END_TEST_METHOD_ATTRIBUTE()

@@ -13,19 +13,6 @@ namespace Species
 
 class RegionSimulation;
 
-// Why a placement is refused (MVP-032, MVP-101), checked in this order; a wire value from M2 task T8 that is never
-// renumbered.
-enum class PlacementRefusal : std::uint8_t
-{
-  NotBuildable = 1,     // no settlement at the site, or a kind the steward does not place
-  QueueFull = 2,        // mvp.construction.queue_max construction sites are queued
-  OutsideTerritory = 3, // the structure does not lie wholly inside the territory
-  InCenterRing = 4,     // the structure reaches into the core's centre ring
-  NotWalkable = 5,      // its position or a port of it stands on ground that is wet or too steep
-  Overlaps = 6,         // its footprint meets another structure's, or a port and a footprint meet
-  CannotAfford = 7      // the stores do not hold its cost
-};
-
 // MVP-034: a kind's cost in thousandths of a resource unit; a dwelling's grows by mvp.cost.dwelling_escalation for every
 // dwelling the settlement already has, built or queued; a storehouse costs mvp.cost.storehouse_ru and a turret
 // mvp.cost.turret_ru.

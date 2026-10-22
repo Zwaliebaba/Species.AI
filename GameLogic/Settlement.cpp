@@ -89,6 +89,7 @@ void WriteSettlement(Neuron::BitWriter& _writer, const Settlement& _settlement)
   }
   _writer.WriteSigned(_settlement.upkeepCarry, 64);
   _writer.WriteSigned(_settlement.inactiveTicks, 32);
+  _writer.WriteBits(_settlement.populationMark, 32);
 }
 
 bool ReadSettlement(Neuron::BitReader& _reader, Settlement& _settlement)
@@ -127,6 +128,7 @@ bool ReadSettlement(Neuron::BitReader& _reader, Settlement& _settlement)
   }
   _settlement.upkeepCarry = _reader.ReadSigned(64);
   _settlement.inactiveTicks = static_cast<std::int32_t>(_reader.ReadSigned(32));
+  _settlement.populationMark = static_cast<std::uint32_t>(_reader.ReadBits(32));
   return !_reader.Failed() && shares == 100 && finite && _settlement.wellspringId != 0 && _settlement.storesMilliRu >= 0 &&
          _settlement.territoryRadius >= 0.0;
 }

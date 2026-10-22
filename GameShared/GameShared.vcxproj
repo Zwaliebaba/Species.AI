@@ -156,9 +156,11 @@
     <ClInclude Include="ReplicatedState.h" />
     <ClInclude Include="ResourceSites.h" />
     <ClInclude Include="ServerStats.h" />
+    <ClInclude Include="SettlementMessages.h" />
     <ClInclude Include="StableId.h" />
     <ClInclude Include="StateReplica.h" />
     <ClInclude Include="StateUpdate.h" />
+    <ClInclude Include="StructureKind.h" />
     <ClInclude Include="StructureRecords.h" />
     <ClInclude Include="Tuning.h" />
     <ClInclude Include="TuningMvp.h" />
@@ -174,6 +176,7 @@
     <ClCompile Include="ReplicatedState.cpp" />
     <ClCompile Include="ResourceSites.cpp" />
     <ClCompile Include="ServerStats.cpp" />
+    <ClCompile Include="SettlementMessages.cpp" />
     <ClCompile Include="StateReplica.cpp" />
     <ClCompile Include="StateUpdate.cpp" />
     <ClCompile Include="StructureRecords.cpp" />

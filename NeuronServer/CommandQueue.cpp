@@ -82,8 +82,8 @@ void CommandQueue::Execute(std::uint64_t _tick)
     BitReader reader(queued.message);
     const MessageHeader header = ReadMessageHeader(reader);
     ENGINE_ASSERT(header.type == queued.type);
-    const CommandEffect effect = m_entries.at(queued.type).execute(queued.sender, reader, _tick);
-    m_outcomes.push_back(CommandOutcome{queued.sender, queued.sequence, _tick, std::nullopt, effect});
+    const CommandExecution execution = m_entries.at(queued.type).execute(queued.sender, reader, _tick);
+    m_outcomes.push_back(CommandOutcome{queued.sender, queued.sequence, _tick, std::nullopt, execution.effect, execution.reason});
   }
 }
 
@@ -144,7 +144,7 @@ void CommandQueue::Reject(SenderId _sender, std::uint64_t _sequence, CommandReje
     ++m_rejections.duplicate;
     break;
   }
-  m_outcomes.push_back(CommandOutcome{_sender, _sequence, m_nextTick, _reason, CommandEffect::NoEffect});
+  m_outcomes.push_back(CommandOutcome{_sender, _sequence, m_nextTick, _reason, CommandEffect::NoEffect, 0});
 }
 
 } // namespace Neuron

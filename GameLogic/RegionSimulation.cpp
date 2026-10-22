@@ -9,6 +9,7 @@
 #include "RegionCommands.h"
 #include "RegionSimulation.h"
 #include "SeenLayer.h"
+#include "SettlementCommands.h"
 #include "StateValues.h"
 #include "StructureAdvance.h"
 #include "Weapons.h"
@@ -90,6 +91,9 @@ constexpr std::uint32_t STATE_VERSION_WITH_SETTLEMENTS = 9;
 constexpr std::uint64_t SETTLEMENTS_MAX = std::tuple_size_v<decltype(RegionLayout::sites)>;
 // WLD-066: the territory events a region holds; the MVP records one contact for each valley border pair at most.
 constexpr std::uint64_t CONTACT_EVENTS_MAX = 4095;
+// MVP-064: the statistics a region holds, far above a run's: four settlements sampled every 5 minutes for 8 hours, with
+// their growth steps, record under 2,000 (ADR-136).
+constexpr std::uint64_t STATISTICS_MAX = 65'535;
 // The node pool is made whole once, with every node of the graph, and never grows (ADR-107).
 constexpr std::uint32_t BOT_NODE_POOL_STEP = 1;
 
@@ -121,6 +125,7 @@ RegionSimulation::RegionSimulation(std::uint16_t _index, const Neuron::SipHashKe
   ENGINE_CHECK(_tuning.ref.sim.updateSlices > 0 && _tuning.ref.sim.container.ungroupedStep > 0);
   m_draws.SetTick(_nextTick);
   RegisterRegionCommands(*this);
+  RegisterSettlementCommands(*this);
   if (m_terrain)
   {
     m_bots = BotGraph::Build(m_terrain->routes.Nodes(), m_terrain->field, _tuning);
@@ -507,6 +512,14 @@ const CellRaster* RegionSimulation::SeenLayerOf(std::uint8_t _site) const noexce
   return nullptr;
 }
 
+void RegionSimulation::RecordStatistic(const StatisticEntry& _entry)
+{
+  if (m_statistics.size() < STATISTICS_MAX)
+  {
+    m_statistics.push_back(_entry);
+  }
+}
+
 void RegionSimulation::RecordContacts()
 {
   for (std::size_t pair = 0; pair < VALLEY_PAIRS.size(); ++pair)
@@ -627,6 +640,8 @@ const Settlement& RegionSimulation::FoundSettlement(std::uint8_t _site, bool _st
   settlement.cladan.color = _site;
   settlement.territoryRadius = m_tuning->wld.territory.foundingRadius;
   settlement.growthTicks = GrowthIntervalTicks(*m_tuning);
+  const std::int64_t step = m_tuning->mvp.stats.populationStep;
+  settlement.populationMark = step > 0 ? static_cast<std::uint32_t>(m_tuning->mvp.settlement.startWorkers / step * step) : 0;
   const auto& priority = m_tuning->mvp.priority;
   settlement.priorities = {static_cast<std::uint8_t>(std::lround(priority.defaultGather)),
                            static_cast<std::uint8_t>(std::lround(priority.defaultConstruct)),
@@ -870,6 +885,11 @@ void RegionSimulation::WriteState(Neuron::BitWriter& _writer) const
   {
     WriteContactEvent(_writer, event);
   }
+  _writer.WriteBounded(m_statistics.size(), STATISTICS_MAX);
+  for (const StatisticEntry& entry : m_statistics)
+  {
+    WriteStatisticEntry(_writer, entry);
+  }
 }
 
 bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stateVersion)
@@ -1024,6 +1044,15 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
     {
       if (!ReadContactEvent(_reader, event) || VALLEY_PAIRS[event.pair][0] != event.first || VALLEY_PAIRS[event.pair][1] != event.second ||
           SettlementAt(event.first) == nullptr || SettlementAt(event.second) == nullptr)
+      {
+        return false;
+      }
+    }
+    // A statistics entry names a settled site.
+    m_statistics.resize(_reader.ReadBounded(STATISTICS_MAX));
+    for (StatisticEntry& entry : m_statistics)
+    {
+      if (!ReadStatisticEntry(_reader, entry) || SettlementAt(entry.site) == nullptr)
       {
         return false;
       }

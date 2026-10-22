@@ -87,6 +87,9 @@
     <ClInclude Include="Settlement.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="SettlementCommands.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="SettlementTasks.h">
       <Filter>Simulation</Filter>
     </ClInclude>
@@ -103,6 +106,9 @@
       <Filter>Server</Filter>
     </ClInclude>
     <ClInclude Include="StateValues.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="Statistics.h">
       <Filter>Simulation</Filter>
     </ClInclude>
     <ClInclude Include="Structure.h">
@@ -209,6 +215,9 @@
     <ClCompile Include="Settlement.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="SettlementCommands.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
     <ClCompile Include="SettlementTasks.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
@@ -220,6 +229,9 @@
     </ClCompile>
     <ClCompile Include="StateSender.cpp">
       <Filter>Server</Filter>
+    </ClCompile>
+    <ClCompile Include="Statistics.cpp">
+      <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="Structure.cpp">
       <Filter>Simulation</Filter>

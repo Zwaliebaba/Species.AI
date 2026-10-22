@@ -31,20 +31,6 @@ double ReadReal(Neuron::BitReader& _reader) noexcept
   return value;
 }
 
-void WritePoint(Neuron::BitWriter& _writer, const GroundPoint& _point)
-{
-  WriteReal(_writer, _point.x);
-  WriteReal(_writer, _point.z);
-}
-
-GroundPoint ReadPoint(Neuron::BitReader& _reader) noexcept
-{
-  GroundPoint point;
-  point.x = ReadReal(_reader);
-  point.z = ReadReal(_reader);
-  return point;
-}
-
 // A stable id; 0 is never one (ADR-096), so it fails the reader.
 StableId ReadId(Neuron::BitReader& _reader) noexcept
 {
@@ -63,11 +49,26 @@ std::uint8_t ReadTeam(Neuron::BitReader& _reader) noexcept
 
 } // namespace
 
+void WriteGroundPoint(Neuron::BitWriter& _writer, const GroundPoint& _point)
+{
+  WriteReal(_writer, _point.x);
+  WriteReal(_writer, _point.z);
+}
+
+GroundPoint ReadGroundPoint(Neuron::BitReader& _reader) noexcept
+{
+  GroundPoint point;
+  point.x = ReadReal(_reader);
+  point.z = ReadReal(_reader);
+  return point;
+}
+
 void CommandReport::Encode(Neuron::BitWriter& _writer) const
 {
   _writer.WriteBits(sequence, 64);
   _writer.WriteBits(tick, 64);
   _writer.WriteBounded(static_cast<std::uint64_t>(result), COMMAND_RESULT_MAX);
+  _writer.WriteBits(reason, 8);
 }
 
 void CommandReport::Decode(Neuron::BitReader& _reader)
@@ -75,6 +76,7 @@ void CommandReport::Decode(Neuron::BitReader& _reader)
   sequence = _reader.ReadBits(64);
   tick = _reader.ReadBits(64);
   result = static_cast<CommandResult>(_reader.ReadBounded(COMMAND_RESULT_MAX));
+  reason = static_cast<std::uint8_t>(_reader.ReadBits(8));
 }
 
 void SelectCommand::Encode(Neuron::BitWriter& _writer) const
@@ -122,7 +124,7 @@ void OrderUnitCommand::Encode(Neuron::BitWriter& _writer) const
   _writer.WriteBits(team, 8);
   _writer.WriteBool(straight);
   _writer.WriteBool(moveOnly);
-  WritePoint(_writer, position);
+  WriteGroundPoint(_writer, position);
 }
 
 void OrderUnitCommand::Decode(Neuron::BitReader& _reader)
@@ -130,7 +132,7 @@ void OrderUnitCommand::Decode(Neuron::BitReader& _reader)
   team = ReadTeam(_reader);
   straight = _reader.ReadBool();
   moveOnly = _reader.ReadBool();
-  position = ReadPoint(_reader);
+  position = ReadGroundPoint(_reader);
 }
 
 void ToggleUnitCommand::Encode(Neuron::BitWriter& _writer) const
@@ -148,14 +150,14 @@ void ToggleUnitCommand::Decode(Neuron::BitReader& _reader)
 void SelectWorkersCommand::Encode(Neuron::BitWriter& _writer) const
 {
   _writer.WriteBits(team, 8);
-  WritePoint(_writer, center);
+  WriteGroundPoint(_writer, center);
   WriteReal(_writer, radius);
 }
 
 void SelectWorkersCommand::Decode(Neuron::BitReader& _reader)
 {
   team = ReadTeam(_reader);
-  center = ReadPoint(_reader);
+  center = ReadGroundPoint(_reader);
   radius = ReadReal(_reader);
   if (radius < 0.0)
   {
@@ -167,40 +169,40 @@ void OrderWorkersCommand::Encode(Neuron::BitWriter& _writer) const
 {
   _writer.WriteBits(team, 8);
   _writer.WriteBool(straight);
-  WritePoint(_writer, position);
+  WriteGroundPoint(_writer, position);
 }
 
 void OrderWorkersCommand::Decode(Neuron::BitReader& _reader)
 {
   team = ReadTeam(_reader);
   straight = _reader.ReadBool();
-  position = ReadPoint(_reader);
+  position = ReadGroundPoint(_reader);
 }
 
 void ControlStateCommand::Encode(Neuron::BitWriter& _writer) const
 {
   _writer.WriteBits(team, 8);
-  WritePoint(_writer, pointer);
+  WriteGroundPoint(_writer, pointer);
 }
 
 void ControlStateCommand::Decode(Neuron::BitReader& _reader)
 {
   team = ReadTeam(_reader);
-  pointer = ReadPoint(_reader);
+  pointer = ReadGroundPoint(_reader);
 }
 
 void AiOrderWorkerCommand::Encode(Neuron::BitWriter& _writer) const
 {
   _writer.WriteBits(team, 8);
   _writer.WriteBits(worker, 64);
-  WritePoint(_writer, position);
+  WriteGroundPoint(_writer, position);
 }
 
 void AiOrderWorkerCommand::Decode(Neuron::BitReader& _reader)
 {
   team = ReadTeam(_reader);
   worker = ReadId(_reader);
-  position = ReadPoint(_reader);
+  position = ReadGroundPoint(_reader);
 }
 
 void AiOrderLeaderCommand::Encode(Neuron::BitWriter& _writer) const
@@ -209,7 +211,7 @@ void AiOrderLeaderCommand::Encode(Neuron::BitWriter& _writer) const
   _writer.WriteBits(leader, 64);
   _writer.WriteBounded(static_cast<std::uint64_t>(operation), LEADER_OPERATION_MAX);
   _writer.WriteBool(straight);
-  WritePoint(_writer, position);
+  WriteGroundPoint(_writer, position);
 }
 
 void AiOrderLeaderCommand::Decode(Neuron::BitReader& _reader)
@@ -218,7 +220,7 @@ void AiOrderLeaderCommand::Decode(Neuron::BitReader& _reader)
   leader = ReadId(_reader);
   operation = static_cast<LeaderOperation>(_reader.ReadBounded(LEADER_OPERATION_MAX));
   straight = _reader.ReadBool();
-  position = ReadPoint(_reader);
+  position = ReadGroundPoint(_reader);
 }
 
 void AiLeaderFieldsCommand::Encode(Neuron::BitWriter& _writer) const
@@ -229,7 +231,7 @@ void AiLeaderFieldsCommand::Encode(Neuron::BitWriter& _writer) const
   _writer.WriteBool(hasFront);
   if (hasFront)
   {
-    WritePoint(_writer, front);
+    WriteGroundPoint(_writer, front);
   }
 }
 
@@ -239,7 +241,7 @@ void AiLeaderFieldsCommand::Decode(Neuron::BitReader& _reader)
   leader = ReadId(_reader);
   noFormations = _reader.ReadBool();
   hasFront = _reader.ReadBool();
-  front = hasFront ? ReadPoint(_reader) : GroundPoint{};
+  front = hasFront ? ReadGroundPoint(_reader) : GroundPoint{};
 }
 
 void SandboxRestartCommand::Encode(Neuron::BitWriter& _writer) const

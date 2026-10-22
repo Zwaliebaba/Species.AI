@@ -15,6 +15,7 @@
 #include "RegionTerrain.h"
 #include "RouteStore.h"
 #include "Settlement.h"
+#include "Statistics.h"
 #include "SlicedPool.h"
 #include "StableId.h"
 #include "StableIdCounter.h"
@@ -260,6 +261,13 @@ public:
   {
     return m_contacts;
   }
+  // MVP-064: the server's statistics of the region's settlements in the order they were recorded (ADR-136).
+  [[nodiscard]] const std::vector<StatisticEntry>& Statistics() const noexcept
+  {
+    return m_statistics;
+  }
+  // An entry appended to the statistics while they hold fewer than STATISTICS_MAX; a full record takes no more.
+  void RecordStatistic(const StatisticEntry& _entry);
   // The structure in _slot while it still holds that slot with id _id, or null (R-SIM-325's rule for handles).
   [[nodiscard]] Structure* ResolveStructure(std::uint32_t _slot, StableId _id) noexcept;
   [[nodiscard]] const Structure* ResolveStructure(std::uint32_t _slot, StableId _id) const noexcept;
@@ -419,11 +427,12 @@ private:
   const StructureRecords* m_records;
   SlicedPool<Structure> m_structures;
   std::vector<Settlement> m_settlements;
-  std::vector<CellRaster> m_territories; // by settlement, derived, never state
-  std::vector<CellRaster> m_seen;        // by settlement, derived, never state
-  std::uint64_t m_seenUpdates = 0;       // never state
-  std::vector<ContactEvent> m_contacts;  // WLD-066, state from version 9
-  std::vector<EffectEvent> m_events;     // presentation, never state
+  std::vector<CellRaster> m_territories;    // by settlement, derived, never state
+  std::vector<CellRaster> m_seen;           // by settlement, derived, never state
+  std::uint64_t m_seenUpdates = 0;          // never state
+  std::vector<ContactEvent> m_contacts;     // WLD-066, state from version 9
+  std::vector<StatisticEntry> m_statistics; // MVP-064, state from version 9
+  std::vector<EffectEvent> m_events;        // presentation, never state
 #if ENGINE_DEVELOPMENT
   AdvanceObserver m_advanceObserver;
 #endif

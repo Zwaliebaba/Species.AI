@@ -54,7 +54,8 @@ struct Cladan
 /// site, whether a steward runs it or it is an AI settlement (PIL-007), its Cladan, its fidelity, its Wellspring, its
 /// stores in integer thousandths of a resource unit (MVP-030), its territory's radius, which never shrinks (MVP-026),
 /// its construction sites in the order they are built (MVP-032, ADR-132), its Wellspring's growth timer (MVP-024,
-/// ADR-134) and its priorities (MVP-036, ADR-135).
+/// ADR-134), its priorities and its upkeep's state (MVP-035, MVP-036, ADR-135), and its population's mark for the
+/// statistics (MVP-064, ADR-136).
 struct Settlement
 {
   std::uint8_t site = 0;
@@ -75,6 +76,9 @@ struct Settlement
   // ticks to its next step of inactive structures, one way or the other.
   std::int64_t upkeepCarry = 0;
   std::int32_t inactiveTicks = 0;
+  // MVP-064 (ADR-136): the highest multiple of mvp.stats.population_step its population has reached, each new one a
+  // growth step of the statistics.
+  std::uint32_t populationMark = 0;
 };
 
 // MVP-030: a tuning amount of resource units in thousandths, rounded once to the nearest.

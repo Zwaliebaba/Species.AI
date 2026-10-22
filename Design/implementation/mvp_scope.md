@@ -189,6 +189,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-064** (MUST) The server records, for every settlement, its strength (MVP-038) and its Worker count every `mvp.stats.sample_minutes` (5 minutes), and every growth step, battle, claim and grievance, so that the epilogue and the playtest measures of §6 come from the run itself.
 
+> **Amendment 2026-10-22 (M2 task T8; [ADR-136](../ADR/ADR-136-settlement-commands-status-and-statistics-at-m2.md)).** The statistics are part of the world's state, saved and replayed with it. A growth step is a structure of the settlement built, its population reaching a new multiple of `mvp.stats.population_step` (10 Workers), or its territory taking in a resource site (the [M2 plan](m2_plan.md) §9, question 1). Each entry records the tick, the Worker count and the strength. Samples fall on the world ticks that are multiples of the sample period.
+
 ### 2.8 World clock, presence and the deputy (O54)
 
 **MVP-070** (MUST) In M0 to M3 the world runs at the session pace (PIL-100, PIL-104) while the client runs it, on the integrated server in the client's process behind the in-process transport (O10, ADR-084, ADR-088 item 1); closing the client saves the world (MVP-075) and freezes it (O4). The session factor is `mvp.pace.session_factor` (24), so one hour of play is one world day of the economy, relations and protection timers (PIL-101 and WLD-200 narrowed from 12).
@@ -246,6 +248,8 @@ The MVP builds only one region and one steward, but it keeps the seams that are 
 **MVP-097** (MUST) The server computes each settlement's seen layer (MVP-016) once per update, and the AI, the deputy and the replication to the client all read that one seen layer (ADR-086 item 1); the client receives no state outside it (PIL-084).
 
 **MVP-098** (MUST) The away report, the settlement status and the default orders are server data, read and written through server messages (O6; PIL-075).
+
+> **Amendment 2026-10-22 (M2 task T8; [ADR-136](../ADR/ADR-136-settlement-commands-status-and-statistics-at-m2.md)).** The settlement status is read by a request that the server answers itself, for a steward who commands the settlement. Its outcome comes at once, and the status of the next tick follows. The status holds the stores and their capacity, the population and its limit, the growth state and its cause, the priorities and the task counts, the idle Workers by reason, the inactive structures, the upkeep, the strength and the construction queue with its progress. A placement or rebuild that a check refuses reports the refusal as its outcome's reason (MVP-032, MVP-101).
 
 **MVP-099** (MUST) Every tuning value lives in data with its stable key and is loaded at server start, never written as a literal in code (CONVENTIONS §4); the records follow the authoring syntax and schemas of ADR-062. The data model of a Cladan has a place for the modifiers that later stages add (PIL-007, O7, O11), empty in the MVP.
 
@@ -382,6 +386,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.renown.grievance_eased` | 1 | renown per 20 weight | — | provisional | MVP-061 | Watch for tribute bought only for renown |
 | `mvp.renown.structure_per_100ru` | 1 | renown per 100 ru | — | provisional | MVP-061 | — |
 | `mvp.stats.sample_minutes` | 5 | minutes | scaled | provisional | MVP-064 | — |
+| `mvp.stats.population_step` | 10 | Workers | — | provisional | MVP-064 | A growth step at each new multiple (M2 plan §9, question 1); fixed before T10 and not one of its levers |
 | `mvp.presence.idle_minutes` | 5 | minutes | tick | provisional | MVP-072 | — |
 | `mvp.persist.snapshot_seconds` | 60 | seconds of world time | tick | provisional | MVP-075 | At most a minute lost on a crash |
 | `mvp.persist.snapshots_kept` | 3 | snapshots | — | provisional | MVP-075 | — |

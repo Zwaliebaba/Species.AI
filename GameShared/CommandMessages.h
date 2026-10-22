@@ -22,6 +22,10 @@ struct GroundPoint
   double z = 0.0;
 };
 
+// A ground point as two binary64 values; one that is not finite fails the reader.
+void WriteGroundPoint(Neuron::BitWriter& _writer, const GroundPoint& _point);
+[[nodiscard]] GroundPoint ReadGroundPoint(Neuron::BitReader& _reader) noexcept;
+
 // What became of one command (ADR-087 item 4): it executed, with an effect or none, or the queue refused it on arrival
 // for one of the six reasons of ADR-095. The values travel to the client, so they are never renumbered.
 enum class CommandResult : std::uint8_t
@@ -38,15 +42,18 @@ enum class CommandResult : std::uint8_t
 
 /// The outcome of one command, sent to its sender on the reliable channel after the tick that executed or refused it
 /// (ADR-095): the command's sequence number, as the server counted it and the client counts the same, and its tick.
+/// From version 2, the reason a command that executed had no effect, by its type's own values: a placement's
+/// PlacementRefusal, or 0 for none (ADR-136).
 struct CommandReport
 {
   static constexpr Neuron::MessageTypeId TYPE = TypeIdOf(GameMessageType::CommandReport);
-  static constexpr std::uint8_t VERSION = 1;
-  static constexpr std::size_t MAX_BYTES = 20; // the 3-byte header, two 64-bit values and a 3-bit result
+  static constexpr std::uint8_t VERSION = 2;
+  static constexpr std::size_t MAX_BYTES = 21; // the 3-byte header, two 64-bit values, a 3-bit result and an 8-bit reason
 
   std::uint64_t sequence = 0;
   std::uint64_t tick = 0;
   CommandResult result = CommandResult::Applied;
+  std::uint8_t reason = 0;
 
   void Encode(Neuron::BitWriter& _writer) const;
   void Decode(Neuron::BitReader& _reader);

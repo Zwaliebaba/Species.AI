@@ -168,12 +168,14 @@
     <ClInclude Include="Sandbox.h" />
     <ClInclude Include="SeenLayer.h" />
     <ClInclude Include="Settlement.h" />
+    <ClInclude Include="SettlementCommands.h" />
     <ClInclude Include="SettlementTasks.h" />
     <ClInclude Include="SlicedPool.h" />
     <ClInclude Include="StableIdCounter.h" />
     <ClInclude Include="StateHash.h" />
     <ClInclude Include="StateSender.h" />
     <ClInclude Include="StateValues.h" />
+    <ClInclude Include="Statistics.h" />
     <ClInclude Include="Structure.h" />
     <ClInclude Include="StructureAdvance.h" />
     <ClInclude Include="Territory.h" />
@@ -210,10 +212,12 @@
     <ClCompile Include="Sandbox.cpp" />
     <ClCompile Include="SeenLayer.cpp" />
     <ClCompile Include="Settlement.cpp" />
+    <ClCompile Include="SettlementCommands.cpp" />
     <ClCompile Include="SettlementTasks.cpp" />
     <ClCompile Include="StableIdCounter.cpp" />
     <ClCompile Include="StateHash.cpp" />
     <ClCompile Include="StateSender.cpp" />
+    <ClCompile Include="Statistics.cpp" />
     <ClCompile Include="Structure.cpp" />
     <ClCompile Include="StructureAdvance.cpp" />
     <ClCompile Include="Territory.cpp" />

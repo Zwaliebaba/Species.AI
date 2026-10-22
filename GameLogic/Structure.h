@@ -6,6 +6,7 @@
 #include "ObstacleGrid.h"
 #include "SimulationRecord.h"
 #include "StableId.h"
+#include "StructureKind.h"
 #include "StructureRecords.h"
 #include "TerrainField.h"
 #include "TuningMvp.h"
@@ -17,19 +18,6 @@
 
 namespace Species
 {
-
-// The MVP's structure kinds (MVP-021, MVP-030, MVP-034), a state value that is never renumbered.
-enum class StructureKind : std::uint8_t
-{
-  Wellspring = 0,
-  ResourceSite = 1,
-  ResourceSiteCentral = 2,
-  Dwelling = 3,
-  Storehouse = 4,
-  Turret = 5 // the reference gun turret (R-BLDG-405, ADR-133)
-};
-
-inline constexpr std::uint64_t STRUCTURE_KIND_MAX = 5;
 
 // A structure by stable id and slot, which resolves only while the structure holds the slot (R-SIM-325's rule).
 struct StructureRef

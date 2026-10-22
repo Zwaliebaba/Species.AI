@@ -131,7 +131,8 @@
       "structure_per_100ru": 1
     },
     "stats": {
-      "sample_minutes": 5
+      "sample_minutes": 5,
+      "population_step": 10
     },
     "presence": {
       "idle_minutes": 5

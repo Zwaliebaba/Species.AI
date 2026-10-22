@@ -326,6 +326,9 @@ struct TuningMvp
     {
       // mvp.stats.sample_minutes, in minutes
       double sampleMinutes = 0.0;
+
+      // mvp.stats.population_step, in Workers
+      std::int64_t populationStep = 0;
     };
 
     struct Presence
@@ -1982,6 +1985,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::Stats& _out)
 {
   _out.sampleMinutes = _reader.Decimal(_object, "sample_minutes", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.populationStep = _reader.Integer(_object, "population_step", 0);
   _reader.Close(_object);
 }
 
@@ -3215,11 +3219,13 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Reno
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Stats& _in)
 {
   _writer.F64(_in.sampleMinutes);
+  _writer.I64(_in.populationStep);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Stats& _out)
 {
   _out.sampleMinutes = _reader.F64();
+  _out.populationStep = _reader.I64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Presence& _in)

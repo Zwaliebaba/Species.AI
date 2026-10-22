@@ -9,6 +9,7 @@
 #include "SecureRandom.h"
 #include "PresentationEvents.h"
 #include "ServerStats.h"
+#include "SettlementCommands.h"
 #include "WorldServer.h"
 #include "WorldSnapshot.h"
 #include "WorldTerrain.h"
@@ -58,6 +59,23 @@ CommandResult ResultOf(const Neuron::CommandOutcome& _outcome) noexcept
     break;
   }
   return CommandResult::Duplicate;
+}
+
+// A message the server answers itself rather than queueing (ADR-109, ADR-136): the checks of ADR-087 item 2 that need
+// no state, and the message decoded when they pass.
+template <Neuron::MessageCodec T>
+CommandResult CheckAnswered(const Neuron::MessageHeader& _header, Neuron::BitReader& _reader, std::size_t _bytes, T& _message)
+{
+  if (_header.version != T::VERSION)
+  {
+    return CommandResult::WrongVersion;
+  }
+  if (_bytes > T::MAX_BYTES)
+  {
+    return CommandResult::Oversized;
+  }
+  _message.Decode(_reader);
+  return _reader.Finish() ? CommandResult::Applied : CommandResult::Malformed;
 }
 
 } // namespace
@@ -195,7 +213,7 @@ void WorldServer::Connect(Neuron::ConnectionId _connection)
 {
   // ADR-109: the next id of the world owner and, in the sandbox, the steward's side.
   const StableId steward = ConnectSteward(*m_world, m_desc.sandbox, m_desc.watched);
-  m_stewards.emplace(_connection, Steward{steward, 0, false, {}, {}});
+  m_stewards.emplace(_connection, Steward{steward, 0, false, {}, {}, {}});
   if (m_journal)
   {
     m_journal->entries.push_back({m_world->NextTick(), true, JOURNAL_WORLD_OWNER, steward, 0, {}});
@@ -227,24 +245,38 @@ void WorldServer::Receive(Neuron::ConnectionId _connection, const Neuron::Receiv
   if (!reader.Failed() && header.type == SandboxRestartCommand::TYPE && m_desc.sandbox)
   {
     SandboxRestartCommand restart;
-    restart.Decode(reader);
-    CommandResult result = CommandResult::Malformed;
-    if (header.version != SandboxRestartCommand::VERSION)
-    {
-      result = CommandResult::WrongVersion;
-    }
-    else if (_message.bytes.size() > SandboxRestartCommand::MAX_BYTES)
-    {
-      result = CommandResult::Oversized;
-    }
-    else if (reader.Finish())
+    CommandResult result = CheckAnswered(header, reader, _message.bytes.size(), restart);
+    if (result == CommandResult::Applied)
     {
       result = RestartSandbox(restart.newSeed) ? CommandResult::Applied : CommandResult::NoEffect;
     }
-    steward.reports.push_back({sequence, m_world->NextTick(), result});
+    steward.reports.push_back({sequence, m_world->NextTick(), result, 0});
     return;
   }
 #endif
+  // MVP-098 (ADR-136): a status request is read, not queued, by a steward who commands the settlement's team; the status
+  // goes after the next tick, which the outcome names.
+  if (!reader.Failed() && header.type == ReadSettlementStatusCommand::TYPE)
+  {
+    ReadSettlementStatusCommand request;
+    CommandResult result = CheckAnswered(header, reader, _message.bytes.size(), request);
+    const RegionSimulation& region = m_world->Region(0);
+    if (result == CommandResult::Applied && !region.MayCommand(steward.id, request.team, false))
+    {
+      result = CommandResult::NotPermitted;
+    }
+    else if (result == CommandResult::Applied &&
+             std::ranges::find(region.Settlements(), request.team, &Settlement::team) == region.Settlements().end())
+    {
+      result = CommandResult::NoEffect;
+    }
+    if (result == CommandResult::Applied)
+    {
+      steward.statusTeams.push_back(request.team);
+    }
+    steward.reports.push_back({sequence, m_world->NextTick(), result, 0});
+    return;
+  }
   Neuron::CommandQueue& region = m_world->Region(0).Commands();
   const bool regional = !reader.Failed() && region.Handles(header.type);
   Neuron::CommandQueue& queue = regional ? region : m_world->Commands();
@@ -273,7 +305,7 @@ void WorldServer::CollectReports(Neuron::CommandQueue& _queue)
     {
       if (steward.id == outcome.sender)
       {
-        steward.reports.push_back({outcome.sequence, outcome.tick, ResultOf(outcome)});
+        steward.reports.push_back({outcome.sequence, outcome.tick, ResultOf(outcome), outcome.reason});
       }
     }
   }
@@ -319,6 +351,19 @@ void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender
       ++sent;
     }
     steward.reports.erase(steward.reports.begin(), steward.reports.begin() + static_cast<std::ptrdiff_t>(sent));
+    // MVP-098: each status requested, after the reports; one the backlog refuses goes after a later tick.
+    std::size_t answered = 0;
+    while (answered < steward.statusTeams.size())
+    {
+      const auto settlement = std::ranges::find(region.Settlements(), steward.statusTeams[answered], &Settlement::team);
+      if (settlement != region.Settlements().end() &&
+          !_sender.Send(connection, Neuron::Channel::Reliable, Neuron::EncodeMessage(StatusOf(region, *settlement, _tick))).has_value())
+      {
+        break;
+      }
+      ++answered;
+    }
+    steward.statusTeams.erase(steward.statusTeams.begin(), steward.statusTeams.begin() + static_cast<std::ptrdiff_t>(answered));
     if (!steward.terrainSent && m_terrain)
     {
       // MVP-011: the seed and digest go once on the reliable channel, with the team the steward commands (ADR-119); a

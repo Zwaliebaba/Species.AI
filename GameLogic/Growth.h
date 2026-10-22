@@ -14,7 +14,8 @@ class RegionSimulation;
 //   grows makes its territory again;
 // - MVP-024: while it is below its population limit and its stores hold mvp.essence.orb_cost_ru, its growth timer
 //   counts down, and at 0 its Wellspring pays that cost for one orb at its centre and the timer restarts at
-//   mvp.essence.wellspring_interval_s.
+//   mvp.essence.wellspring_interval_s;
+// - MVP-064: its statistics of the tick (RecordStatistics, ADR-136), with each resource site its territory took in.
 void AdvanceSettlement(RegionSimulation& _region, Settlement& _settlement);
 
 // MVP-024: the growth timer's period in ticks, mvp.essence.wellspring_interval_s at ref.sim.tick_period, rounded once.

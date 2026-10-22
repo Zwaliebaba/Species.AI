@@ -56,20 +56,35 @@ std::int64_t TicksPerHour(const TuningMvp& _tuning) noexcept
   return std::llround(SECONDS_PER_HOUR / _tuning.ref.sim.tickPeriod);
 }
 
-void PayUpkeep(RegionSimulation& _region, Settlement& _settlement)
+std::int64_t UpkeepMilliRuPerHour(const RegionSimulation& _region, const Settlement& _settlement)
 {
-  const TuningMvp& tuning = _region.Tuning();
-  const auto& upkeep = tuning.mvp.upkeep;
+  const auto& upkeep = _region.Tuning().mvp.upkeep;
   std::int64_t structures = 0;
   const SlicedPool<Structure>& pool = _region.Structures();
   for (std::uint32_t slot = 0; slot < pool.Capacity(); ++slot)
   {
     structures += pool.Used(slot) && PaysUpkeep(pool.At(slot), _settlement.team) && pool.At(slot).active ? 1 : 0;
   }
-  const std::int64_t perHour =
-    std::int64_t{Population(_region, _settlement)} * MilliRuOf(upkeep.workerRuPerHour) + structures * MilliRuOf(upkeep.structureRuPerHour);
+  return std::int64_t{Population(_region, _settlement)} * MilliRuOf(upkeep.workerRuPerHour) +
+         structures * MilliRuOf(upkeep.structureRuPerHour);
+}
+
+std::uint32_t InactiveStructures(const RegionSimulation& _region, const Settlement& _settlement)
+{
+  std::uint32_t inactive = 0;
+  const SlicedPool<Structure>& pool = _region.Structures();
+  for (std::uint32_t slot = 0; slot < pool.Capacity(); ++slot)
+  {
+    inactive += pool.Used(slot) && PaysUpkeep(pool.At(slot), _settlement.team) && !pool.At(slot).active ? 1 : 0;
+  }
+  return inactive;
+}
+
+void PayUpkeep(RegionSimulation& _region, Settlement& _settlement)
+{
+  const TuningMvp& tuning = _region.Tuning();
   const std::int64_t ticksPerHour = TicksPerHour(tuning);
-  _settlement.upkeepCarry += perHour;
+  _settlement.upkeepCarry += UpkeepMilliRuPerHour(_region, _settlement);
   const std::int64_t due = _settlement.upkeepCarry / ticksPerHour;
   _settlement.upkeepCarry %= ticksPerHour;
   if (!Withdraw(_settlement, due))
@@ -87,7 +102,7 @@ void PayUpkeep(RegionSimulation& _region, Settlement& _settlement)
   }
   if (_settlement.inactiveTicks <= 0)
   {
-    _settlement.inactiveTicks = static_cast<std::int32_t>(std::llround(upkeep.inactiveStepS / tuning.ref.sim.tickPeriod));
+    _settlement.inactiveTicks = static_cast<std::int32_t>(std::llround(tuning.mvp.upkeep.inactiveStepS / tuning.ref.sim.tickPeriod));
   }
   if (--_settlement.inactiveTicks <= 0)
   {

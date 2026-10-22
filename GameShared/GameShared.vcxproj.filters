@@ -60,6 +60,9 @@
     <ClInclude Include="ServerStats.h">
       <Filter>Messages</Filter>
     </ClInclude>
+    <ClInclude Include="SettlementMessages.h">
+      <Filter>Messages</Filter>
+    </ClInclude>
     <ClInclude Include="StableId.h">
       <Filter>Identity</Filter>
     </ClInclude>
@@ -68,6 +71,9 @@
     </ClInclude>
     <ClInclude Include="StateUpdate.h">
       <Filter>Replication</Filter>
+    </ClInclude>
+    <ClInclude Include="StructureKind.h">
+      <Filter>Simulation</Filter>
     </ClInclude>
     <ClInclude Include="StructureRecords.h">
       <Filter>Records</Filter>
@@ -108,6 +114,9 @@
       <Filter>World</Filter>
     </ClCompile>
     <ClCompile Include="ServerStats.cpp">
+      <Filter>Messages</Filter>
+    </ClCompile>
+    <ClCompile Include="SettlementMessages.cpp">
       <Filter>Messages</Filter>
     </ClCompile>
     <ClCompile Include="StateReplica.cpp">

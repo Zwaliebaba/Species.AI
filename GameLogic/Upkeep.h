@@ -17,6 +17,13 @@ class RegionSimulation;
 // earliest becomes active again.
 void PayUpkeep(RegionSimulation& _region, Settlement& _settlement);
 
+// MVP-035: the upkeep the settlement accrues an hour, in thousandths of a resource unit: its population and its built,
+// active structures other than its Wellspring.
+[[nodiscard]] std::int64_t UpkeepMilliRuPerHour(const RegionSimulation& _region, const Settlement& _settlement);
+
+// MVP-035: the settlement's structures that are inactive.
+[[nodiscard]] std::uint32_t InactiveStructures(const RegionSimulation& _region, const Settlement& _settlement);
+
 // MVP-035: the ticks of an hour of play, 3,600 s at ref.sim.tick_period, rounded once.
 [[nodiscard]] std::int64_t TicksPerHour(const TuningMvp& _tuning) noexcept;
 
