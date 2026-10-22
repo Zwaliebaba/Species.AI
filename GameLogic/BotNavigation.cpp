@@ -3,6 +3,7 @@
 #include "BotNavigation.h"
 #include "DrawPurpose.h"
 #include "RegionSimulation.h"
+#include "SeenLayer.h"
 
 #include <algorithm>
 #include <cmath>
@@ -17,6 +18,8 @@ namespace
 
 // The most team slots a saved node counts: the region's bound.
 constexpr std::uint64_t BOT_NODE_TEAMS_MAX = RegionSimulation::TEAM_SLOTS;
+// What an AI reads of a node its sight does not see (ADR-158): no team owns it and none is counted there.
+const BotNode UNSEEN_NODE{};
 
 void WriteCounts(Neuron::BitWriter& _writer, const std::vector<std::uint32_t>& _counts)
 {
@@ -148,15 +151,15 @@ void AdvanceBotNode(RegionSimulation& _region, std::uint32_t _index, BotNode& _n
     return;
   }
   _node.recountTicks = static_cast<std::int32_t>(tuning.recountTicks);
-  // R-BOT-042: every actor of every team in range, in result order; the MVP has no alliance, so every other team is an
-  // enemy. R-BOT-043: each Worker takes the node as its nearest node when it is nearer than the one it has.
+  // R-BOT-042: every actor of every team in range, in result order, each team's enemies the teams the region makes its
+  // enemies (ADR-157, ADR-158). R-BOT-043: each Worker takes the node as its nearest node when it is nearer than the
+  // one it has.
   const BotGraph& graph = _region.Bots();
   const Neuron::Vec3& position = graph.Position(_index);
   const std::size_t teams = _region.TeamCount();
   _node.friends.assign(teams, 0);
   _node.enemies.assign(teams, 0);
   _node.idle.assign(teams, 0);
-  std::uint32_t total = 0;
   TeamMask every;
   every.set();
   for (const ActorRef& ref : _region.InRange(position.x, position.z, static_cast<double>(tuning.range), every))
@@ -167,7 +170,6 @@ void AdvanceBotNode(RegionSimulation& _region, std::uint32_t _index, BotNode& _n
       continue;
     }
     ++_node.friends[ref.team];
-    ++total;
     if (figure->kind != FigureKind::Worker)
     {
       continue;
@@ -184,7 +186,14 @@ void AdvanceBotNode(RegionSimulation& _region, std::uint32_t _index, BotNode& _n
   }
   for (std::size_t team = 0; team < teams; ++team)
   {
-    _node.enemies[team] = total - _node.friends[team];
+    const TeamMask enemies = _region.EnemiesOf(static_cast<std::uint8_t>(team));
+    for (std::size_t other = 0; other < teams; ++other)
+    {
+      if (enemies.test(other))
+      {
+        _node.enemies[team] += _node.friends[other];
+      }
+    }
   }
   // R-BOT-047: the strictly highest friend count, from 0, so a tie goes to the lowest slot and an empty node has none.
   _node.owner = -1;
@@ -226,9 +235,9 @@ std::uint32_t LeaderCount(const RegionSimulation& _region, std::uint8_t _team, c
   return count;
 }
 
-bool NeedsDefending(const RegionSimulation& _region, std::uint32_t _index, std::uint8_t _team)
+bool NeedsDefending(const RegionSimulation& _region, const Sight& _sight, std::uint32_t _index, std::uint8_t _team)
 {
-  const BotNode& node = _region.BotNodes().At(_index);
+  const BotNode& node = SeenBotNode(_region, _sight, _index);
   if (node.owner != _team)
   {
     return false;
@@ -237,15 +246,27 @@ bool NeedsDefending(const RegionSimulation& _region, std::uint32_t _index, std::
   const BotGraph& graph = _region.Bots();
   for (const std::uint32_t linked : graph.Links(_index))
   {
-    const BotNode& neighbor = _region.BotNodes().At(linked);
-    if (neighbor.owner >= 0 && neighbor.owner != _team &&
-        neighbor.EnemiesOf(_team) > static_cast<std::uint32_t>(tuning.defendEnemyThreshold) &&
+    const BotNode& neighbor = SeenBotNode(_region, _sight, linked);
+    if (HeldByEnemy(_region, neighbor, _team) && neighbor.EnemiesOf(_team) > static_cast<std::uint32_t>(tuning.defendEnemyThreshold) &&
         LeaderCount(_region, _team, graph.Position(_index), tuning.defendLeaderRadius, LeaderCountKind::Every) == 0)
     {
       return true;
     }
   }
   return false;
+}
+
+const BotNode& SeenBotNode(const RegionSimulation& _region, const Sight& _sight, std::uint32_t _index)
+{
+  // The node's census counts every actor within its range, so the whole disc must be seen.
+  const Neuron::Vec3& position = _region.Bots().Position(_index);
+  return _sight.SeesDisc(position.x, position.z, static_cast<double>(_region.Tuning().ref.bot.node.range)) ? _region.BotNodes().At(_index)
+                                                                                                           : UNSEEN_NODE;
+}
+
+bool HeldByEnemy(const RegionSimulation& _region, const BotNode& _node, std::uint8_t _team)
+{
+  return _node.owner >= 0 && _node.owner != _team && _region.EnemiesOf(_team).test(static_cast<std::size_t>(_node.owner));
 }
 
 void WriteBotNode(Neuron::BitWriter& _writer, const BotNode& _node)

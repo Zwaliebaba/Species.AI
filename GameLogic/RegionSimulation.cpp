@@ -727,13 +727,6 @@ void RegionSimulation::Step(std::uint64_t _tick)
     StepSlice(slice);
   }
   {
-    ENGINE_PROFILE_SCOPE("sim.ai.step");
-    for (AiController& ai : m_ais)
-    {
-      StepAi(*this, ai);
-    }
-  }
-  {
     // ADR-134: each settlement's own step, in founding order.
     ENGINE_PROFILE_SCOPE("sim.settlements.advance");
     for (Settlement& settlement : m_settlements)
@@ -745,6 +738,15 @@ void RegionSimulation::Step(std::uint64_t _tick)
   {
     ENGINE_PROFILE_SCOPE("sim.settlements.seen");
     UpdateSeenLayers();
+  }
+  {
+    // ADR-158: each AI looks after the seen layers are made, so that it reads the step's own, which a restored region
+    // makes again at its first step.
+    ENGINE_PROFILE_SCOPE("sim.ai.step");
+    for (AiController& ai : m_ais)
+    {
+      StepAi(*this, ai);
+    }
   }
   {
     // ADR-138: each scripted steward looks at the tick's end, as the AIs do, and its commands execute at the next.

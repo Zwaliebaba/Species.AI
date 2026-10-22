@@ -15,6 +15,7 @@ namespace Species
 {
 
 class RegionSimulation;
+class Sight;
 
 /// The bot navigation graph of a region (R-BOT-025 to R-BOT-037, ADR-107): its nodes are the navigation nodes of
 /// MVP-017 in their order, which stands for the reference's structure order (O70), and its links are built once from the
@@ -59,7 +60,8 @@ private:
 
 /// The counts and owner of one node at its last recount, and its recount countdown (table 2.1-A): simulation state,
 /// which the bot rules and every Worker's census shortcut read (R-BOT-042, R-BOT-045). The counts hold one entry per team
-/// slot the region had at the recount; a later team counts 0.
+/// slot the region had at the recount; a later team counts 0. A team's enemies are those of the region's enemy rule
+/// (ADR-157), so settlements at peace do not count each other (ADR-158).
 struct BotNode
 {
   std::int32_t recountTicks = 0;
@@ -104,8 +106,15 @@ enum class LeaderCountKind : std::uint8_t
 [[nodiscard]] std::uint32_t LeaderCount(const RegionSimulation& _region, std::uint8_t _team, const Neuron::Vec3& _point, double _range,
                                         LeaderCountKind _kind);
 
-// R-BOT-051: node _index needs defending by _team. The MVP has no tagged zone, so only item 2 can hold.
-[[nodiscard]] bool NeedsDefending(const RegionSimulation& _region, std::uint32_t _index, std::uint8_t _team);
+// MVP-058 (ADR-158): node _index as an AI with _sight reads it: its counts and owner where the sight sees every place
+// its census counts, ref.bot.node.range about it, and a node no team owns and none is counted at elsewhere.
+[[nodiscard]] const BotNode& SeenBotNode(const RegionSimulation& _region, const Sight& _sight, std::uint32_t _index);
+// R-BOT-047 with the region's enemies (ADR-158): _node is owned by a team that is _team's enemy.
+[[nodiscard]] bool HeldByEnemy(const RegionSimulation& _region, const BotNode& _node, std::uint8_t _team);
+
+// R-BOT-051: node _index needs defending by _team, as an AI with _sight reads the nodes. The MVP has no tagged zone, so
+// only item 2 can hold.
+[[nodiscard]] bool NeedsDefending(const RegionSimulation& _region, const Sight& _sight, std::uint32_t _index, std::uint8_t _team);
 
 // The node canonically (ADR-081 item 7), and the values the writer wrote; false when they do not read whole.
 void WriteBotNode(Neuron::BitWriter& _writer, const BotNode& _node);

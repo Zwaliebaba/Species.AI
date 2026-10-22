@@ -1,5 +1,6 @@
 #pragma once
 
+#include "EffectEvent.h"
 #include "ReplicatedState.h"
 #include "StableId.h"
 #include "StateUpdate.h"
@@ -17,15 +18,23 @@ namespace Species
 
 class RegionSimulation;
 
-// The whole battle of _region as a client sees it until the seen layer of M3 (M1 plan T12, ADR-111): every figure,
-// effect and Essence orb, and from M2 task T11 every structure, settlement and chunk of a settlement's territory and seen
-// layer (ADR-139), in stable-id order, with every team's own fields.
+// Every object of _region a client may be sent (M1 plan T12, ADR-111): every figure, effect and Essence orb, and from
+// M2 task T11 every structure, settlement and chunk of a settlement's territory and seen layer (ADR-139), in stable-id
+// order, with every team's own fields. ViewForSteward narrows it for each client.
 [[nodiscard]] std::vector<ReplicatedObject> CollectReplicatedObjects(const RegionSimulation& _region);
 // _objects as the client of steward _steward sees them: a team it does not command shows it neither its order markers
 // nor its trail marks (R-UNIT-185, R-UNIT-186), nor which of its figures are selected (ADR-106), and a settlement it does
-// not command neither its seen layer nor its stores and population (MVP-097, ADR-139).
+// not command neither its seen layer nor its stores and population (MVP-097, ADR-139). From M3 (ADR-158) a steward who
+// commands a settlement is sent another team's figures, effects, orbs and structures only where the seen layers of its
+// settlements hold them, except the Wellsprings and resource sites of the public layer, which show no manned port
+// there; one who commands none, as in the sandbox, is sent them all.
 [[nodiscard]] std::vector<ReplicatedObject> ViewForSteward(std::span<const ReplicatedObject> _objects, const RegionSimulation& _region,
                                                            StableId _steward);
+// The tick's droppable presentation events as the client of steward _steward sees them (ADR-084 item 5): every event of
+// a team it commands, and another team's only where ViewForSteward's seen layers hold its position and it is no
+// selection or order (ADR-106, ADR-158).
+[[nodiscard]] std::vector<EffectEvent> EventsForSteward(std::span<const EffectEvent> _events, const RegionSimulation& _region,
+                                                        StableId _steward);
 
 /// What one client holds of the replicated state, as the server knows it from the datagrams the transport reported
 /// acknowledged, and the updates that bring it to the server's state (ADR-086 item 3, ADR-111). Each tick an object

@@ -517,7 +517,7 @@ void WorldServer::Step(std::uint64_t _tick, Neuron::WorkerPool& _workers)
 void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender)
 {
   CollectAllReports();
-  // ADR-111: the whole battle of the MVP's one region, until the seen layer of M3 narrows it (MVP-097).
+  // ADR-111: the MVP's one region, which ViewForSteward narrows to each steward's seen layers (MVP-097, ADR-158).
   const RegionSimulation& region = m_world->Region(0);
   const std::vector<ReplicatedObject> objects = CollectReplicatedObjects(region);
   for (auto& [connection, steward] : m_stewards)
@@ -576,16 +576,9 @@ void WorldServer::Publish(std::uint64_t _tick, Neuron::ConnectionSender& _sender
         steward.state.Sent(*datagram, std::move(outgoing));
       }
     }
-    // ADR-084 item 5: the tick's droppable events, a team's selections and orders to its commander only (ADR-106).
-    std::vector<EffectEvent> events;
-    for (const EffectEvent& event : region.Events())
-    {
-      if (!IsCommandersEvent(event.kind) || region.CommanderOf(event.team).sender == steward.id)
-      {
-        events.push_back(event);
-      }
-    }
-    for (const PresentationEvents& message : PackPresentationEvents(_tick, events))
+    // ADR-084 item 5: the tick's droppable events, a team's selections and orders to its commander only (ADR-106), and
+    // another team's only where the steward's settlements see (ADR-158).
+    for (const PresentationEvents& message : PackPresentationEvents(_tick, EventsForSteward(region.Events(), region, steward.id)))
     {
       static_cast<void>(_sender.Send(connection, Neuron::Channel::State, Neuron::EncodeMessage(message)));
     }

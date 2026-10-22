@@ -2,8 +2,10 @@
 
 #include "Check.h"
 #include "Construction.h"
+#include "PresentationEvents.h"
 #include "Profile.h"
 #include "RegionSimulation.h"
+#include "SeenLayer.h"
 #include "StateSender.h"
 
 #include <algorithm>
@@ -68,6 +70,12 @@ ReplicatedEffect EffectState(const Effect& _effect)
 bool IsTeamsOwn(const ReplicatedEffect& _effect) noexcept
 {
   return _effect.kind == EffectKind::OrderMarker || _effect.kind == EffectKind::OrderTrailMark;
+}
+
+// WLD-242's public layer (ADR-158): the sites and the settlements' cores, which every client sees wherever they are.
+bool IsPublic(StructureKind _kind) noexcept
+{
+  return _kind == StructureKind::Wellspring || _kind == StructureKind::ResourceSite || _kind == StructureKind::ResourceSiteCentral;
 }
 
 // ADR-139: a structure as a client sees it.
@@ -215,12 +223,36 @@ std::vector<ReplicatedObject> CollectReplicatedObjects(const RegionSimulation& _
 std::vector<ReplicatedObject> ViewForSteward(std::span<const ReplicatedObject> _objects, const RegionSimulation& _region, StableId _steward)
 {
   const auto commands = [&_region, _steward](std::uint8_t _team) { return _region.CommanderOf(_team).sender == _steward; };
+  // MVP-097 (ADR-158): another team's figures, effects and orbs, and another's structures, only where the seen layers of
+  // the steward's settlements hold them; the settlements, their territories and Wellsprings and the resource sites are
+  // the public layer (MVP-016, WLD-242).
+  const Sight sight = Sight::OfSteward(_region, _steward);
+  const auto sees = [&sight](const QuantizedPosition& _position)
+  {
+    const Neuron::Vec3 position = PositionOf(_position);
+    return sight.Sees(position.x, position.z);
+  };
   std::vector<ReplicatedObject> view;
   view.reserve(_objects.size());
   for (const ReplicatedObject& object : _objects)
   {
     if (const auto* effect = std::get_if<ReplicatedEffect>(&object.state);
-        effect != nullptr && IsTeamsOwn(*effect) && !commands(effect->team))
+        effect != nullptr && !commands(effect->team) && (IsTeamsOwn(*effect) || !sees(effect->position)))
+    {
+      continue;
+    }
+    if (const auto* figure = std::get_if<ReplicatedFigure>(&object.state);
+        figure != nullptr && !commands(figure->team) && !sees(figure->position))
+    {
+      continue;
+    }
+    if (const auto* orb = std::get_if<ReplicatedOrb>(&object.state); orb != nullptr && !commands(orb->team) && !sees(orb->position))
+    {
+      continue;
+    }
+    const auto* structure = std::get_if<ReplicatedStructure>(&object.state);
+    const bool hidden = structure != nullptr && !(structure->owner && commands(*structure->owner)) && !sees(structure->position);
+    if (hidden && !IsPublic(structure->kind))
     {
       continue;
     }
@@ -234,6 +266,11 @@ std::vector<ReplicatedObject> ViewForSteward(std::span<const ReplicatedObject> _
       }
     }
     ReplicatedObject& seen = view.emplace_back(object);
+    if (hidden)
+    {
+      // A site outside the seen layers shows its place and kind, not the Workers at its ports (WLD-242).
+      std::get<ReplicatedStructure>(seen.state).mannedPorts = 0;
+    }
     if (auto* figure = std::get_if<ReplicatedFigure>(&seen.state); figure != nullptr && !commands(figure->team))
     {
       figure->underControl = false;
@@ -249,6 +286,21 @@ std::vector<ReplicatedObject> ViewForSteward(std::span<const ReplicatedObject> _
     }
   }
   return view;
+}
+
+std::vector<EffectEvent> EventsForSteward(std::span<const EffectEvent> _events, const RegionSimulation& _region, StableId _steward)
+{
+  const Sight sight = Sight::OfSteward(_region, _steward);
+  std::vector<EffectEvent> events;
+  for (const EffectEvent& event : _events)
+  {
+    const bool commanded = _region.CommanderOf(event.team).sender == _steward;
+    if (commanded || (!IsCommandersEvent(event.kind) && sight.Sees(event.position.x, event.position.z)))
+    {
+      events.push_back(event);
+    }
+  }
+  return events;
 }
 
 std::vector<StateSender::Outgoing> StateSender::Build(std::uint64_t _tick, std::span<const ReplicatedObject> _objects)
