@@ -13,6 +13,7 @@
 #include "WorldSnapshot.h"
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -270,6 +271,58 @@ public:
     Assert::IsTrue(aloneStore.Save(later).has_value(), L"saved alone");
     Species::WorldServer fresh(SettledDesc(alone.Path()));
     ExpectEqual(0, static_cast<std::int64_t>(fresh.Open()), L"a new world");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp075AWorldThatIsOnlyContinuedTouchesNothingItCannotContinue)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-075")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-095")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp075AWorldThatIsOnlyContinuedTouchesNothingItCannotContinue)
+  {
+    // ADR-155: the front end continues a world only from a snapshot that validates. With none, the world opens new
+    // without its folder: every snapshot it refused and the marker of its clean stop stay, and the freeze saves nothing.
+    const TemporaryFolder folder;
+    Neuron::WorkerPool pool(0);
+    {
+      Species::WorldServer server(SettledDesc(folder.Path()));
+      static_cast<void>(server.Open());
+      static_cast<void>(Run(server, 0, 60, pool));
+      server.Freeze(60);
+    }
+    Species::WorldServer::Desc continuing = SettledDesc(folder.Path());
+    continuing.restoreOnly = true;
+    {
+      Species::WorldServer server(continuing);
+      ExpectEqual(60, static_cast<std::int64_t>(server.Open()), L"a snapshot that validates is continued");
+      Assert::IsTrue(server.Opened().restored && server.Opened().refusals.empty(), L"restored, with nothing refused");
+      server.Freeze(60);
+    }
+    // A later version than this build's, alone in its folder with the marker of its clean stop.
+    const auto valid = Neuron::SnapshotStore::Load(folder.Path() / L"world-00000000000000000060.snapshot");
+    Assert::IsTrue(valid.has_value(), L"the snapshot of tick 60 loads");
+    Neuron::SnapshotContents later = valid.value_or(Neuron::SnapshotContents{});
+    later.stateVersion = Species::WORLD_STATE_VERSION + 1;
+    later.tick = 500;
+    const TemporaryFolder alone;
+    Neuron::SnapshotStore store(alone.Path(), 3);
+    Assert::IsTrue(store.Save(later).has_value(), L"saved alone");
+    const std::filesystem::path marker = alone.Path() / Species::WorldServer::CLEAN_STOP_FILE_NAME;
+    const std::array<std::byte, 8> tick{};
+    Assert::IsTrue(Neuron::ReplaceFileAtomically(marker, tick).has_value(), L"a marker beside it");
+    continuing.snapshotFolder = alone.Path();
+    {
+      Species::WorldServer server(continuing);
+      ExpectEqual(0, static_cast<std::int64_t>(server.Open()), L"nothing continues, so a world opens new");
+      const Species::WorldServer::OpenOutcome& opened = server.Opened();
+      Assert::IsTrue(!opened.restored && opened.refusals.size() == 1 && opened.refusals[0].error == Neuron::SnapshotError::StateVersion,
+                     L"the later version refused, with its reason");
+      static_cast<void>(Run(server, 0, 60, pool));
+      server.Freeze(60);
+    }
+    const std::vector<std::filesystem::path> files = Neuron::ListFiles(alone.Path(), Neuron::SNAPSHOT_SUFFIX);
+    Assert::IsTrue(files.size() == 1 && TicksOf(files) == std::vector<std::uint64_t>{500},
+                   L"the refused snapshot stays, and none is added");
+    Assert::IsTrue(std::filesystem::exists(marker), L"and so does the marker");
   }
 };
 

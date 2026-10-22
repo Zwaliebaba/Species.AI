@@ -53,8 +53,25 @@ public:
                                              // world's steward settlement is run by the scripted steward
     std::uint32_t syntheticFigures = 0;      // ADR-126: the sandbox's sides are a synthetic battle of this many figures, watched
     std::optional<std::uint8_t> stewardSite; // MVP-012: a new world that is no sandbox has the steward's settlement here
+    bool restoreOnly = false;                // ADR-155: a world the steward continues: when no snapshot validates, the world
+                                             // opens new without its folder, so that it saves and removes nothing there
     // The calendar time, for the world record alone (ADR-137, PLT-053); none: the record holds no wall times.
     std::function<std::chrono::system_clock::time_point()> calendar;
+  };
+
+  // ADR-155: a snapshot that opening the world refused, and why; none: the snapshot decoded, but its seed gives no terrain.
+  struct SnapshotRefusal
+  {
+    std::filesystem::path file;
+    std::optional<Neuron::SnapshotError> error;
+  };
+
+  // ADR-155: what opening the world found in its snapshot folder: whether it continued a snapshot, and each snapshot it
+  // refused before, newest first.
+  struct OpenOutcome
+  {
+    bool restored = false;
+    std::vector<SnapshotRefusal> refusals;
   };
 
   // The marker a world that froze cleanly leaves beside its snapshots, naming its final snapshot's tick (ADR-137).
@@ -97,6 +114,11 @@ public:
   [[nodiscard]] const RegionTerrain* Terrain() const noexcept
   {
     return m_terrain.get();
+  }
+  // ADR-155: what Open found; the tick thread never changes it.
+  [[nodiscard]] const OpenOutcome& Opened() const noexcept
+  {
+    return m_opened;
   }
   // The journal since the world opened or since its last snapshot (ADR-109, ADR-137).
   [[nodiscard]] const std::optional<CommandJournal>& Journal() const noexcept
@@ -147,6 +169,7 @@ private:
   std::shared_ptr<const RegionTerrain> m_terrain;
   std::map<Neuron::ConnectionId, Steward> m_stewards;
   std::optional<WorldHashes> m_lastHashes;
+  OpenOutcome m_opened;
   std::optional<CommandJournal> m_journal;
   // ADR-120: the ticks of the current second, for the development overlay's statistics (Debug builds): when the tick
   // being measured started its step, none outside a tick, and the ticks' summed and longest wall time.

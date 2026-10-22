@@ -176,6 +176,11 @@ StableId RegionSimulation::AddScriptedSteward(std::uint8_t _team)
   return id;
 }
 
+void RegionSimulation::RemoveScriptedStewards(std::uint8_t _team)
+{
+  std::erase_if(m_scripted, [_team](const ScriptedSteward& _steward) { return _steward.team == _team; });
+}
+
 StableId RegionSimulation::AddAi(std::uint8_t _team)
 {
   const StableId id = m_ids.Issue();

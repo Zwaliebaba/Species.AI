@@ -148,6 +148,15 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-145](ADR-145-the-ui-pass-and-gamefont-text-at-m2.md) | The UI pass and GameFont's text at M2 | Proposed | 2026-10-22 |
 | [ADR-146](ADR-146-the-string-table-and-its-formatting-at-m2.md) | The string table and its formatting at M2 | Proposed | 2026-10-22 |
 | [ADR-147](ADR-147-the-directwrite-text-system-at-m2.md) | The DirectWrite text system at M2 | Proposed | 2026-10-22 |
+| [ADR-148](ADR-148-the-frame-starts-at-the-latency-wait.md) | The frame starts at the latency wait | Proposed | 2026-10-22 |
+| [ADR-149](ADR-149-the-ui-core-pages-focus-and-layout-at-m2.md) | The UI core: pages, focus and layout at M2 | Proposed | 2026-10-22 |
+| [ADR-150](ADR-150-the-settings-store-and-user-data-root-at-m2.md) | The settings store and the user-data root at M2 | Proposed | 2026-10-22 |
+| [ADR-151](ADR-151-the-rest-of-the-input-router-at-m2.md) | The rest of the input router at M2 | Proposed | 2026-10-22 |
+| [ADR-152](ADR-152-the-settlement-hud-at-m2.md) | The settlement HUD at M2 | Proposed | 2026-10-22 |
+| [ADR-153](ADR-153-the-settlement-verbs-at-m2.md) | The settlement verbs at M2 | Proposed | 2026-10-22 |
+| [ADR-154](ADR-154-text-input-and-the-page-text-field-at-m2.md) | Text input and the page text field at M2 | Proposed | 2026-10-22 |
+| [ADR-155](ADR-155-the-front-end-and-saved-worlds-at-m2.md) | The front end and saved worlds at M2 | Proposed | 2026-10-22 |
+| [ADR-156](ADR-156-the-settlement-drawn-at-its-plateau-and-the-owners-growth-run.md) | The settlement drawn at its plateau and the owner's growth run | Proposed | 2026-10-22 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

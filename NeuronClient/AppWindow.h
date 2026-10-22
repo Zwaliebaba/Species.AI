@@ -160,8 +160,8 @@ public:
   void Show();
   // The caption text, UTF-8; the game supplies it as it does the first title (PLT-057, AGENTS.md R9).
   void SetTitle(std::string_view _title);
-  // PLT-061. A permanent change is meant to be saved with the window-mode setting; until the settings store exists
-  // (PLT-038 step 10) both kinds leave nothing stored.
+  // PLT-061. A permanent change is the caller's to store in the window-mode setting (ADR-150); a temporary one is
+  // never stored.
   void SetMode(WindowMode _mode, Permanence _permanence);
   void PumpMessages(); // once per frame; never blocks (PLT-067)
   void SetInputSink(WindowInputSink* _sink) noexcept;

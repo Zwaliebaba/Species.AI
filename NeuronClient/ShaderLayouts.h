@@ -106,6 +106,17 @@ struct TextGlyphInstance
   Float4 color;
 };
 
+// ADR-145, ADR-149: one quad of the UI in passes 19, 20 and 29 (UI-184), its color running from its first edge's to its
+// second's, which are equal but in a gradient: the top and bottom edges, or the left and right ones across.
+struct UiQuadInstance
+{
+  Float4 rectangle; // left, top, right and bottom on the target, in pixels
+  Float4 uv;        // the texture's rectangle, from 0 to 1, in the same order
+  Float4 colorFrom;
+  Float4 colorTo;
+  Uint4 shape; // x: UI_GRADIENT_ACROSS for a gradient from the left edge to the right
+};
+
 // M1 task T15a: a development dot at a figure's position until its crowd is drawn (T16), relative to the camera.
 struct DotInstance
 {
@@ -154,6 +165,8 @@ struct OverlayQuadInstance
   Float4 color;     // rgba
 };
 
+// UiQuadInstance.shape.x: a gradient from the left edge to the right, not from the top edge to the bottom (ADR-149).
+LAYOUT_CONSTANT UI_GRADIENT_ACROSS = 1;
 // QuadInstance.shape.x: the orientation modes of RND-306.
 LAYOUT_CONSTANT QUAD_CAMERA_FACING = 0;
 LAYOUT_CONSTANT QUAD_UPRIGHT_CARD = 1;
@@ -175,6 +188,7 @@ static_assert(sizeof(PassConstants) == 8 * sizeof(Float4));
 static_assert(sizeof(DrawConstants) == sizeof(Float3x4) + sizeof(Float4) + sizeof(Uint4));
 static_assert(sizeof(SkyLayerInstance) == 4 * sizeof(Float4) + sizeof(Uint4));
 static_assert(sizeof(TextGlyphInstance) == 3 * sizeof(Float4));
+static_assert(sizeof(UiQuadInstance) == 4 * sizeof(Float4) + sizeof(Uint4));
 static_assert(sizeof(DotInstance) == 2 * sizeof(Float4));
 static_assert(sizeof(QuadInstance) == 7 * sizeof(Float4) + sizeof(Uint4));
 static_assert(sizeof(MeshInstance) == 5 * sizeof(Float4));

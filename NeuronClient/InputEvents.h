@@ -181,6 +181,25 @@ public:
   virtual void ReleaseAll(std::vector<InputEvent>& _queue) = 0;
 };
 
+/// A character of text input (UI-007, INP-112): a Unicode scalar value, with the modifiers held when it arrived. The
+/// editing keys Backspace, Enter and Escape arrive as characters too (UI-066).
+struct TextCharacter
+{
+  char32_t codePoint = 0;
+  bool shift = false;
+  bool control = false;
+  bool alt = false;
+};
+
+/// A source of text input (INP-112, ADR-154): the characters the window received since the previous call, in order. They
+/// never enter the event queue.
+class TextSource
+{
+public:
+  virtual ~TextSource() = default;
+  virtual void TakeText(std::vector<TextCharacter>& _out) = 0;
+};
+
 /// The window's pointer services that input uses (PLT-068 items 3 and 4, INP-158, INP-159).
 class PointerHost
 {

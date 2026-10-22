@@ -19,6 +19,9 @@
     <Filter Include="Shader">
       <UniqueIdentifier>{DF10F09B-A8F5-5887-B01D-F0E323A6A7DA}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Ui">
+      <UniqueIdentifier>{3DB17815-0F70-5D73-B14D-D12C00B89DB9}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Window">
       <UniqueIdentifier>{FDEA9914-1245-5A48-854A-ED82E59F6831}</UniqueIdentifier>
     </Filter>
@@ -29,6 +32,9 @@
     </ClInclude>
     <ClInclude Include="AppWindow.h">
       <Filter>Window</Filter>
+    </ClInclude>
+    <ClInclude Include="BindingNotation.h">
+      <Filter>Input</Filter>
     </ClInclude>
     <ClInclude Include="CursorRenderer.h">
       <Filter>Rendering</Filter>
@@ -73,6 +79,9 @@
       <Filter>Resources</Filter>
     </ClInclude>
     <ClInclude Include="InputEvents.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="InputNames.h">
       <Filter>Input</Filter>
     </ClInclude>
     <ClInclude Include="InputRouter.h">
@@ -138,6 +147,12 @@
     <ClInclude Include="TextSystem.h">
       <Filter>Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="UiCore.h">
+      <Filter>Ui</Filter>
+    </ClInclude>
+    <ClInclude Include="UiLayout.h">
+      <Filter>Ui</Filter>
+    </ClInclude>
     <ClInclude Include="UiRenderer.h">
       <Filter>Rendering</Filter>
     </ClInclude>
@@ -166,6 +181,9 @@
     </ClCompile>
     <ClCompile Include="AppWindow.cpp">
       <Filter>Window</Filter>
+    </ClCompile>
+    <ClCompile Include="BindingNotation.cpp">
+      <Filter>Input</Filter>
     </ClCompile>
     <ClCompile Include="CursorRenderer.cpp">
       <Filter>Rendering</Filter>
@@ -205,6 +223,9 @@
     </ClCompile>
     <ClCompile Include="InMemoryGpuResourceFactory.cpp">
       <Filter>Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="InputNames.cpp">
+      <Filter>Input</Filter>
     </ClCompile>
     <ClCompile Include="InputRouter.cpp">
       <Filter>Input</Filter>
@@ -265,6 +286,12 @@
     </ClCompile>
     <ClCompile Include="TextSystem.cpp">
       <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="UiCore.cpp">
+      <Filter>Ui</Filter>
+    </ClCompile>
+    <ClCompile Include="UiLayout.cpp">
+      <Filter>Ui</Filter>
     </ClCompile>
     <ClCompile Include="UiRenderer.cpp">
       <Filter>Rendering</Filter>

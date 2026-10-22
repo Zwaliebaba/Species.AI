@@ -117,6 +117,14 @@ public:
   // ADR-139: the settlement of the team this client commands in the replica's latest view; none in the sandbox, or
   // before it arrives.
   [[nodiscard]] std::optional<ReplicatedSettlement> OwnSettlement() const;
+  // MVP-098 (ADR-152): the latest settlement status the server answered a ReadSettlementStatusCommand with; none before
+  // the first.
+  [[nodiscard]] const std::optional<SettlementStatus>& LatestStatus() const noexcept
+  {
+    return m_status;
+  }
+  // MVP-005: the seed of the world whose terrain the client built; none before it.
+  [[nodiscard]] std::optional<std::uint64_t> WorldSeed() const noexcept;
   // MVP-011: the client refused the world, because the terrain it built from the server's seed differs, and closed.
   [[nodiscard]] bool Refused() const noexcept
   {
@@ -149,6 +157,7 @@ private:
   std::optional<ServerStats> m_serverStats;
   std::vector<CommandReport> m_reports;
   std::vector<SettlementNotice> m_notices;
+  std::optional<SettlementStatus> m_status;
   std::uint64_t m_commandsSent = 0; // the reliable messages sent, which the server numbers from 0
   bool m_refused = false;
   std::string m_shownTitle;

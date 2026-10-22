@@ -79,4 +79,20 @@ struct SnapshotCost
 // _world's snapshot, encoded and saved into _folder, which keeps one; none when the save fails.
 [[nodiscard]] std::optional<SnapshotCost> MeasureSnapshot(const Species::WorldSimulation& _world, const std::filesystem::path& _folder);
 
+/// A saved world's growth (the M2 plan §5, ADR-156): the steward's own run, read from the server's statistics (MVP-064)
+/// in the newest snapshot of its folder that restores, so that the owner's play is judged as the growth scene is. Its
+/// run holds the world's seed, the ticks played, the steward's settlement's growth steps and largest Worker count; the
+/// halfway line is not recorded, so it has none.
+struct SavedWorldRun
+{
+  std::filesystem::path snapshot;
+  GrowthRun run;
+  std::vector<Species::StatisticEntry> samples; // every mvp.stats.sample_minutes: the Worker count and the strength
+};
+
+// The newest snapshot of _folder that restores, read for the settlement a steward runs; none when no snapshot restores
+// or no settlement is the steward's.
+[[nodiscard]] std::optional<SavedWorldRun> ReadSavedWorld(const std::filesystem::path& _folder, const Species::TuningMvp& _tuning,
+                                                          const Species::StructureRecords& _records);
+
 } // namespace Performance

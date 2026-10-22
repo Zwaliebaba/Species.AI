@@ -145,6 +145,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="CommandMessages.h" />
+    <ClInclude Include="ContinueFault.h" />
     <ClInclude Include="EffectEvent.h" />
     <ClInclude Include="EffectKind.h" />
     <ClInclude Include="FigureKind.h" />
@@ -161,6 +162,7 @@
     <ClInclude Include="StableId.h" />
     <ClInclude Include="StateReplica.h" />
     <ClInclude Include="StateUpdate.h" />
+    <ClInclude Include="StructureCost.h" />
     <ClInclude Include="StructureKind.h" />
     <ClInclude Include="StructureRecords.h" />
     <ClInclude Include="Tuning.h" />
@@ -180,6 +182,7 @@
     <ClCompile Include="SettlementMessages.cpp" />
     <ClCompile Include="StateReplica.cpp" />
     <ClCompile Include="StateUpdate.cpp" />
+    <ClCompile Include="StructureCost.cpp" />
     <ClCompile Include="StructureRecords.cpp" />
     <ClCompile Include="Tuning.cpp" />
     <ClCompile Include="WorldTerrain.cpp" />

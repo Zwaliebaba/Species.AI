@@ -171,6 +171,9 @@
     <ClInclude Include="MessageCodec.h" />
     <ClInclude Include="MessagePattern.h" />
     <ClInclude Include="NativeWindowHandle.h" />
+    <ClInclude Include="SettingsFile.h" />
+    <ClInclude Include="SettingsStore.h" />
+    <ClInclude Include="UserData.h" />
     <ClInclude Include="PlatformClock.h" />
     <ClInclude Include="PlatformError.h" />
     <ClInclude Include="PlatformLogSink.h" />
@@ -223,6 +226,9 @@
     <ClCompile Include="MeshAsset.cpp" />
     <ClCompile Include="MessageCodec.cpp" />
     <ClCompile Include="MessagePattern.cpp" />
+    <ClCompile Include="SettingsFile.cpp" />
+    <ClCompile Include="SettingsStore.cpp" />
+    <ClCompile Include="UserData.cpp" />
     <ClCompile Include="PlatformClock.cpp" />
     <ClCompile Include="PlatformLogSink.cpp" />
     <ClCompile Include="PlatformMessage.cpp" />

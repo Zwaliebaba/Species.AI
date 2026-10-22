@@ -21,6 +21,23 @@ inline void ExpectEqual(std::int64_t _expected, std::int64_t _actual, std::wstri
   }
 }
 
+inline void ExpectText(std::string_view _expected, std::string_view _actual, std::wstring_view _what)
+{
+  if (_expected != _actual)
+  {
+    Microsoft::VisualStudio::CppUnitTestFramework::Assert::Fail(
+      std::format(L"{}: expected {} bytes, found {} bytes", _what, _expected.size(), _actual.size()).c_str());
+  }
+}
+
+inline void ExpectContains(std::string_view _text, std::string_view _part, std::wstring_view _what)
+{
+  if (_text.find(_part) == std::string_view::npos)
+  {
+    Microsoft::VisualStudio::CppUnitTestFramework::Assert::Fail(std::format(L"{}: the text lacks a part", _what).c_str());
+  }
+}
+
 inline void ExpectRect(const Neuron::RectPx& _expected, const Neuron::RectPx& _actual, std::wstring_view _what)
 {
   if (_expected != _actual)

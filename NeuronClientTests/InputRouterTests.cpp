@@ -1,9 +1,13 @@
 #include "pch.h"
 
 #include "InputRouter.h"
+#include "KeyboardMouseBackEnd.h"
 #include "TestSupport.h"
 
+#include <chrono>
 #include <cstdint>
+#include <optional>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -93,6 +97,19 @@ private:
   Neuron::PointPx m_pointer;
 };
 
+// A text source whose characters the test queues (ADR-154).
+class ScriptedText final : public Neuron::TextSource
+{
+public:
+  void TakeText(std::vector<Neuron::TextCharacter>& _out) override
+  {
+    _out.insert(_out.end(), pending.begin(), pending.end());
+    pending.clear();
+  }
+
+  std::vector<Neuron::TextCharacter> pending;
+};
+
 class RecordingPointer final : public Neuron::PointerHost
 {
 public:
@@ -167,6 +184,37 @@ public:
     Assert::IsFalse(router.Query(FORWARD), L"suppressed for the rest of the frame");
     router.AdvanceFrame({}, CLIENT);
     Assert::IsTrue(router.Query(FORWARD), L"and back in the next");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Inp133ARepeatFiresOnThePressThenAfterTheDelayAndEveryPeriod)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"INP-133")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Inp133ARepeatFiresOnThePressThenAfterTheDelayAndEveryPeriod)
+  {
+    using Ms = std::chrono::milliseconds;
+    ScriptedBackEnd keys;
+    const std::vector<Neuron::ActionBindings> actions{
+      {"action.menu.down", Neuron::ValueKind::Boolean, {Neuron::KeyBinding(Neuron::KeyCode::Down, Neuron::Condition::Repeat)}}};
+    const Neuron::ActionId down{0};
+    Neuron::InputRouter router(actions, keys, nullptr);
+    router.SetRepeatTiming({Ms(300), Ms(300)});
+    Neuron::ActionValue value;
+    keys.Key(Neuron::KeyCode::Down, true);
+    router.AdvanceFrame({}, CLIENT, Ms(1000));
+    Assert::IsTrue(router.Query(down, &value) && value.x == 1.0f, L"once on the press");
+    router.AdvanceFrame({}, CLIENT, Ms(1200));
+    Assert::IsFalse(router.Query(down), L"not before the initial delay");
+    router.AdvanceFrame({}, CLIENT, Ms(1300));
+    Assert::IsTrue(router.Query(down, &value) && value.x == 1.0f, L"at the press + the initial delay");
+    router.AdvanceFrame({}, CLIENT, Ms(1950));
+    Assert::IsTrue(router.Query(down, &value) && value.x == 2.0f, L"INP-134: the firings of a long frame are its value");
+    keys.Key(Neuron::KeyCode::Down, false);
+    router.AdvanceFrame({}, CLIENT, Ms(2500));
+    Assert::IsFalse(router.Query(down), L"the timer clears on the release");
+    keys.Key(Neuron::KeyCode::Down, true);
+    keys.Key(Neuron::KeyCode::Down, true, true); // the system's own auto-repeat presses nothing (INP-053)
+    router.AdvanceFrame({}, CLIENT, Ms(2600));
+    Assert::IsTrue(router.Query(down, &value) && value.x == 1.0f, L"a new press fires once");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Inp053AnAutoRepeatNeverPresses)
@@ -293,6 +341,206 @@ public:
     keys.Key(Neuron::KeyCode::W, true);
     router.AdvanceFrame({}, CLIENT);
     Assert::IsTrue(router.Query({0}), L"the valid binding stays");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Inp162AReplacingLayerReplacesThePrimaryBindingOnly)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"INP-162")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"INP-065")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"INP-171")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Inp162AReplacingLayerReplacesThePrimaryBindingOnly)
+  {
+    ScriptedBackEnd keys;
+    const std::vector<Neuron::ActionBindings> actions = Actions();
+    Neuron::InputRouter router(actions, keys, nullptr);
+    const std::vector<Neuron::BindingReplacement> layers{
+      {"action.camera.pan_forward", Neuron::KeyBinding(Neuron::KeyCode::Z, Neuron::Condition::Held), "the layout layer fr-FR"},
+      {"action.camera.aim", Neuron::KeyBinding(Neuron::KeyCode::A, Neuron::Condition::Held), "binding.action.camera.aim"},
+      {"action.nothing", Neuron::KeyBinding(Neuron::KeyCode::A, Neuron::Condition::Held), "binding.action.nothing"},
+      {"action.select.pick", Neuron::KeyBinding(Neuron::KeyCode::P, Neuron::Condition::Down), "binding.action.select.pick"},
+    };
+    ExpectEqual(2, static_cast<std::int64_t>(router.Rebuild(layers)),
+                L"INP-171: an analogue action's Boolean and an unknown action are skipped");
+    keys.Key(Neuron::KeyCode::Z, true);
+    router.AdvanceFrame({}, CLIENT);
+    Assert::IsTrue(router.Query(FORWARD), L"the new primary binding");
+    keys.Key(Neuron::KeyCode::Z, false);
+    keys.Key(Neuron::KeyCode::W, true);
+    router.AdvanceFrame({}, CLIENT);
+    Assert::IsFalse(router.Query(FORWARD), L"the old primary is gone");
+    keys.Key(Neuron::KeyCode::W, false);
+    keys.Key(Neuron::KeyCode::Up, true);
+    router.AdvanceFrame({}, CLIENT);
+    Assert::IsTrue(router.Query(FORWARD), L"INP-165: the arrow key stays");
+    Assert::IsTrue(router.BindingsOf(AIM).size() == 1 && router.BindingsOf(AIM)[0].kind == Neuron::InputBinding::Kind::Leaf &&
+                     router.BindingsOf(AIM)[0].leaf.device == Neuron::InputDevice::Mouse,
+                   L"the aim keeps its motion");
+    ExpectEqual(0, static_cast<std::int64_t>(router.Rebuild({})), L"rebuilt without layers");
+    Assert::IsTrue(router.BindingsOf(PICK)[0] == Neuron::MouseBinding(Neuron::MouseControl::Primary, Neuron::Condition::Down),
+                   L"the defaults again");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Inp139AnAliasIsItsTargetsQuery)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"INP-139")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"INP-138")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"INP-143")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Inp139AnAliasIsItsTargetsQuery)
+  {
+    ScriptedBackEnd keys;
+    const std::vector<Neuron::ActionBindings> actions = Actions();
+    Neuron::InputRouter router(actions, keys, nullptr);
+    const std::vector<Neuron::BindingReplacement> layers{
+      {"forward down", Neuron::AliasOf("action.select.pick"), "test"},
+      {"forward up", Neuron::NotOf(Neuron::AliasOf("action.camera.pan_forward")), "test"},
+      {"mode", Neuron::AlwaysTrue(), "test"},
+    };
+    ExpectEqual(3, static_cast<std::int64_t>(router.Rebuild(layers)), L"every replacement applies");
+    keys.Button(Neuron::MouseControl::Primary, true);
+    router.AdvanceFrame({}, CLIENT);
+    Assert::IsTrue(router.Query(FORWARD_DOWN), L"the alias fires with its target");
+    Assert::IsTrue(router.Query(FORWARD_UP), L"not: W is not held");
+    Assert::IsTrue(router.Query(MODE), L"value:always_true");
+    router.Suppress(PICK);
+    Assert::IsFalse(router.Query(FORWARD_DOWN), L"the target's suppression included");
+
+    // DEC-554: a chain back to its own action is refused.
+    const std::vector<Neuron::BindingReplacement> cycle{
+      {"action.select.pick", Neuron::AliasOf("forward down"), "binding.action.select.pick"},
+    };
+    ExpectEqual(1, static_cast<std::int64_t>(router.Rebuild(std::vector<Neuron::BindingReplacement>{layers[0], cycle[0]})),
+                L"the second link, which closes the cycle, is skipped");
+    Assert::IsTrue(router.CheckBinding(FORWARD_DOWN, Neuron::AliasOf("forward down")).has_value(), L"an alias of itself");
+    Assert::IsTrue(router.CheckBinding(PICK, Neuron::AliasOf("action.missing")).has_value(), L"an alias of no action");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Inp140ALatchTogglesOncePerFrame)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"INP-140")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"INP-066")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Inp140ALatchTogglesOncePerFrame)
+  {
+    // ADR-064's hold-or-toggle: W's press turns the latch on and S's press turns it off.
+    ScriptedBackEnd keys;
+    const std::vector<Neuron::ActionBindings> actions = Actions();
+    Neuron::InputRouter router(actions, keys, nullptr);
+    const std::vector<Neuron::BindingReplacement> layers{
+      {"mode",
+       Neuron::LatchOf(Neuron::KeyBinding(Neuron::KeyCode::W, Neuron::Condition::Down),
+                       Neuron::KeyBinding(Neuron::KeyCode::S, Neuron::Condition::Down)),
+       "test"},
+    };
+    ExpectEqual(1, static_cast<std::int64_t>(router.Rebuild(layers)), L"the latch applies");
+    router.AdvanceFrame({}, CLIENT);
+    Assert::IsFalse(router.Query(MODE), L"it starts false");
+    keys.Key(Neuron::KeyCode::W, true);
+    router.AdvanceFrame({}, CLIENT);
+    Assert::IsTrue(router.Query(MODE), L"on");
+    keys.Key(Neuron::KeyCode::W, false);
+    router.AdvanceFrame({}, CLIENT);
+    Assert::IsTrue(router.Query(MODE), L"and held on after the release");
+    keys.Key(Neuron::KeyCode::S, true);
+    router.AdvanceFrame({}, CLIENT);
+    Assert::IsFalse(router.Query(MODE), L"off");
+    keys.Key(Neuron::KeyCode::S, false);
+    keys.Key(Neuron::KeyCode::W, true);
+    router.AdvanceFrame({}, CLIENT);
+    Assert::IsTrue(router.Query(MODE), L"on again");
+    static_cast<void>(router.Rebuild(layers));
+    Assert::IsFalse(router.Query(MODE), L"Rebuild resets it");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Inp153TheIdleTimeGrowsWhileNoDeviceIsActive)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"INP-153")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"INP-141")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"INP-150")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Inp153TheIdleTimeGrowsWhileNoDeviceIsActive)
+  {
+    ScriptedBackEnd keys;
+    const std::vector<Neuron::ActionBindings> actions = Actions();
+    Neuron::InputRouter router(actions, keys, nullptr);
+    const std::vector<Neuron::BindingReplacement> layers{
+      {"forward down", Neuron::IdleOf(Neuron::IdleTest::Reaches, 2), "test"},
+      {"forward up", Neuron::IdleOf(Neuron::IdleTest::NoLonger), "test"},
+      {"action.camera.height_wheel", Neuron::IdleOf(Neuron::IdleTest::AtLeast, 1), "test"},
+    };
+    ExpectEqual(3, static_cast<std::int64_t>(router.Rebuild(layers)), L"the idle nodes apply");
+    keys.Key(Neuron::KeyCode::W, true);
+    router.AdvanceFrame({}, CLIENT, std::chrono::seconds(10));
+    Assert::IsFalse(router.IsIdle(), L"a key held is active");
+    keys.Key(Neuron::KeyCode::W, false);
+    router.AdvanceFrame({}, CLIENT, std::chrono::milliseconds(10'500));
+    Assert::IsFalse(router.IsIdle(), L"its release is an event");
+    router.AdvanceFrame({}, CLIENT, std::chrono::seconds(11));
+    Assert::IsTrue(router.IsIdle() && router.IdleSeconds() == 0.0, L"idle, from 0");
+    Assert::IsTrue(router.Query(FORWARD_UP), L"no_longer while the idle time is 0");
+    router.AdvanceFrame({}, CLIENT, std::chrono::milliseconds(12'500));
+    Neuron::ActionValue value;
+    Assert::IsTrue(router.Query(HEIGHT, &value) && value.x == 1.5f, L"at_least 1, with the idle time as its value");
+    Assert::IsFalse(router.Query(FORWARD_DOWN), L"not yet 2 s");
+    router.AdvanceFrame({}, CLIENT, std::chrono::seconds(13));
+    Assert::IsTrue(router.Query(FORWARD_DOWN), L"reaches 2 in the frame it passes 2 s");
+    router.AdvanceFrame({}, CLIENT, std::chrono::seconds(14));
+    Assert::IsFalse(router.Query(FORWARD_DOWN), L"and only then");
+    Assert::IsTrue(router.Mode() == Neuron::InputMode::KeyboardMouse, L"INP-150: the keyboard and mouse's mode");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Inp142ASettingNodeReadsItsSettingOnceAFrame)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"INP-142")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Inp142ASettingNodeReadsItsSettingOnceAFrame)
+  {
+    ScriptedBackEnd keys;
+    const std::vector<Neuron::ActionBindings> actions = Actions();
+    double tips = 0.0;
+    Neuron::SettingAccess access;
+    access.exists = [](std::string_view _key) { return _key == "interface.tips"; };
+    access.number = [&tips](std::string_view) -> std::optional<double> { return tips; };
+    Neuron::InputRouter router(actions, keys, nullptr, access);
+    const std::vector<Neuron::BindingReplacement> layers{
+      {"forward down", Neuron::SettingOf("interface.tips"), "test"},
+      {"forward up", Neuron::SettingOf("interface.tips", true), "test"},
+      {"mode", Neuron::SettingOf("interface.missing"), "test"},
+    };
+    ExpectEqual(2, static_cast<std::int64_t>(router.Rebuild(layers)), L"a setting the store does not hold is refused");
+    router.AdvanceFrame({}, CLIENT);
+    Assert::IsTrue(!router.Query(FORWARD_DOWN) && router.Query(FORWARD_UP), L"off, and its negation");
+    tips = 1.0;
+    Assert::IsFalse(router.Query(FORWARD_DOWN), L"read once a frame, in AdvanceFrame");
+    router.AdvanceFrame({}, CLIENT);
+    Assert::IsTrue(router.Query(FORWARD_DOWN) && !router.Query(FORWARD_UP), L"on");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Inp112CharactersReachTheUiAndNeverABinding)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"INP-112")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"UI-007")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Inp112CharactersReachTheUiAndNeverABinding)
+  {
+    ScriptedBackEnd keys;
+    ScriptedText text;
+    const std::vector<Neuron::ActionBindings> actions = Actions();
+    Neuron::InputRouter router(actions, keys, nullptr);
+    router.SetTextSource(&text);
+    text.pending = {{U'w'}, {U'4', true}};
+    router.AdvanceFrame({}, CLIENT);
+    Assert::IsTrue(router.Text().size() == 2 && router.Text()[0].codePoint == U'w' && router.Text()[1].shift, L"in order, with Shift");
+    Assert::IsFalse(router.Query(FORWARD_DOWN), L"a character satisfies no binding");
+    router.AdvanceFrame({}, CLIENT);
+    Assert::IsTrue(router.Text().empty(), L"each frame's own");
+    text.pending = {{U'x'}};
+    router.AdvanceFrame({.windowFocused = false}, CLIENT);
+    Assert::IsTrue(router.Text().empty(), L"an unfocused window's are dropped");
+
+    // UI-007: UTF-16 at the boundary, scalar values inside; a lone half is dropped.
+    char16_t pending = 0;
+    Assert::IsTrue(Neuron::JoinUtf16(pending, u'A') == std::optional<char32_t>(U'A'), L"a unit of the basic plane");
+    Assert::IsFalse(Neuron::JoinUtf16(pending, char16_t{0xD83D}).has_value(), L"a high half waits");
+    Assert::IsTrue(Neuron::JoinUtf16(pending, char16_t{0xDE00}) == std::optional<char32_t>(U'\U0001F600'), L"for its low half");
+    Assert::IsFalse(Neuron::JoinUtf16(pending, char16_t{0xDE00}).has_value(), L"a low half alone gives nothing");
+    static_cast<void>(Neuron::JoinUtf16(pending, char16_t{0xD83D}));
+    Assert::IsTrue(Neuron::JoinUtf16(pending, u'B') == std::optional<char32_t>(U'B') && pending == 0, L"a high half then another unit");
   }
 };
 

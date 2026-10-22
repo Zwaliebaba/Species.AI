@@ -94,18 +94,20 @@ public:
   BEGIN_TEST_METHOD_ATTRIBUTE(RUnit142ACardGrowsWithItsDistance)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-UNIT-142")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"RND-314")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"RND-446")
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(RUnit142ACardGrowsWithItsDistance)
   {
     const Species::TuningPresentation& presentation = CommittedPresentation();
     // Unit counter 10 is variation step 0 (ADR-121); RND T3: 3.0 × (1 + 2 × 1,900 ÷ 1,000) = 14.4 wu at 2,000 wu.
     const Species::StableId plain = Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 10);
-    Assert::AreEqual(3.0, Species::WorkerCardHalfSize(presentation, plain, 50.0), 1e-12, L"near: the card's half-width");
-    Assert::AreEqual(14.4, Species::WorkerCardHalfSize(presentation, plain, 2'000.0), 1e-9, L"far: grown with the distance");
+    Assert::AreEqual(3.0, Species::WorkerCardHalfSize(presentation, 2.0, plain, 50.0), 1e-12, L"near: the card's half-width");
+    Assert::AreEqual(14.4, Species::WorkerCardHalfSize(presentation, 2.0, plain, 2'000.0), 1e-9, L"far: grown with the distance");
     // Unit counter 1 is step 9: 3.0 × (1 + 0.03 × 9).
     const Species::StableId varied = Species::MakeStableId(Species::REGION_OWNER_ID_FIRST, 1);
-    Assert::AreEqual(3.81, Species::WorkerCardHalfSize(presentation, varied, 50.0), 1e-12, L"the individual variation");
-    Assert::AreEqual(1.0, Species::WorkerDetail(presentation, 0.0), 1e-12, L"full detail at the camera");
+    Assert::AreEqual(3.81, Species::WorkerCardHalfSize(presentation, 2.0, varied, 50.0), 1e-12, L"the individual variation");
+    Assert::AreEqual(1.0, Species::WorkerDetail(presentation, 1, 0.0), 1e-12, L"full detail at the camera");
+    Assert::AreEqual(0.0, Species::WorkerDetail(presentation, 3, 500.0), 1e-12, L"RND-446: entity detail 3 ends it at 500 wu");
   }
 
   BEGIN_TEST_METHOD_ATTRIBUTE(Vfx118ALivingWorkerHasItsShadowAndBody)
@@ -208,7 +210,8 @@ public:
     const Neuron::SceneQuad& disc = batches[0].quads[0];
     Assert::AreEqual(SeedOneTerrain().field.Height(ground.x, ground.z), disc.position.y, 1e-9, L"on the terrain, not at the figure");
     Assert::IsTrue(disc.orientation == Neuron::QuadOrientation::WorldOriented, L"lying on the ground");
-    const double card = Species::WorkerCardHalfSize(CommittedPresentation(), controlled.id, Neuron::Length(disc.position - view.camera));
+    const double card =
+      Species::WorkerCardHalfSize(CommittedPresentation(), 2.0, controlled.id, Neuron::Length(disc.position - view.camera));
     Assert::AreEqual(0.8 * card, static_cast<double>(disc.halfWidth), 1e-4, L"mvp.selection.disc_size_factor");
     Assert::AreEqual(0.35f, disc.color[3], 1e-6f, L"mvp.selection.disc_alpha");
     view.localTeam.reset();

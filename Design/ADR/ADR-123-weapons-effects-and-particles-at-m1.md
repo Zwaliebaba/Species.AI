@@ -137,6 +137,8 @@ Chosen option: 1, because it needs no change to the wire. Option 2 adds tens of 
 * Good, because the CPU cost of the particles is fixed.
 * Bad, because it adds three compute passes and indirect draws before M1 has measured the need.
 
+* **Amendment 2026-10-22 (M2 task T15, [ADR-150](ADR-150-the-settings-store-and-user-data-root-at-m2.md)).** DEC-964's settings are applied. With `interface.reduced_flash`, the full-screen flash's alpha is multiplied by `vfx.screen.reduced_flash_scale` before its onsets are counted (VFX-235). With `interface.reduced_motion`, the shake's yaw and roll offsets are multiplied by `vfx.screen.reduced_motion_scale`, while the shake's value, decay and draws are unchanged (VFX-232).
+
 ## More Information
 
 * Related: [ADR-005](ADR-005-pipeline-state-catalogue.md), [ADR-010](ADR-010-gpu-particles-and-shatter-debris.md), [ADR-036](ADR-036-effect-events-and-presentation-clock.md), [ADR-106](ADR-106-leaders-formations-and-battle-commands.md), [ADR-111](ADR-111-replication-state-datagrams-and-the-client-replica.md), [ADR-116](ADR-116-presentation-tuning-record.md), [ADR-121](ADR-121-workers-and-orbs-drawn-at-m1.md), [ADR-122](ADR-122-leaders-and-banners-drawn-at-m1.md).

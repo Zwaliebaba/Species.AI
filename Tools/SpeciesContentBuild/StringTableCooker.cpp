@@ -294,7 +294,8 @@ private:
       else if (marker.starts_with("binding:"))
       {
         return std::unexpected(std::format(
-          "the binding argument [[{}]]: binding nouns arrive with the settings store's rebinding (M2 task T15, ADR-146)", marker));
+          "the binding argument [[{}]]: binding nouns arrive with INP-178's descriptions and the controls' names (ADR-146, ADR-151)",
+          marker));
       }
       else
       {

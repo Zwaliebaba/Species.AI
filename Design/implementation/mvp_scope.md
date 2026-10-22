@@ -275,7 +275,15 @@ The MVP builds only one region and one steward, but it keeps the seams that are 
 
 > **Amendment 2026-10-22 (O90; M2 task T13, [ADR-142](../ADR/ADR-142-the-camera-flies-along-the-view-within-the-stewards-areas.md)).** The camera's forward and back keys fly it along its view, and its side keys pan it level (R-CTRL-471 as amended); the pointer stays free and the view turns towards it. In a world with the steward's settlement the camera's ground point stays in the steward's areas (WLD-244) as well as in the region's bounds.
 
-**MVP-102** (MUST) The HUD shows: the stores and their capacity, the Workers and the population limit, growth and the cause when it stops (MVP-035, MVP-037), the priorities, the construction bar and queue, a relations panel (each Cladan's anger toward the steward's settlement, every grievance with its cause, weight and fade, every claim), notifications (contact, claims, the warning with its countdown, battle start and end, structures completed), the battle result, the renown standing (MVP-062), the time left in the run, the away report (MVP-074) and the epilogue (MVP-063). Its icons, panels, fonts and strings are the UI rows of the [MVP assets](mvp_assets.md).
+**MVP-102** (MUST) The HUD shows: the stores and their capacity, the Workers and the population limit, growth and the cause when it stops (MVP-035, MVP-037), the priorities, the construction bar and queue, a relations panel (each Cladan's anger toward the steward's settlement, every grievance with its cause, weight and fade, every claim), notifications (contact, claims, the warning with its countdown, battle start and end, structures completed), the battle result, the renown standing (MVP-062), the time left in the run, the away report (MVP-074) and the epilogue (MVP-063). Its icons, panels, fonts and strings are the UI rows of the [MVP assets](mvp_assets.md). Its layout and palette are provisional until the owner judges them (O95, DEC-1005).
+
+> **Amendment 2026-10-22 (O95; M2 task T16, [ADR-152](../ADR/ADR-152-the-settlement-hud-at-m2.md); DEC-1005, Open).** M2 builds the settlement's part:
+> - **The settlement panel**, top left: the stores and their capacity, the Workers and the limit, growth or its stopping cause, the upkeep with the inactive structures, each priority with its share and its Workers, and the idle Workers by reason.
+> - **The construction bar and queue**, bottom centre: each structure with its cost.
+> - **The notification cards**, top right: the structures completed.
+> - **The world panel**, bottom left: the seed.
+>
+> Its measures and colours are `mvp.hud.*`.
 
 **MVP-103** (MUST) The front end of the MVP is one page: continue a world, start a new run (pace, seed, site), open the epilogue of an ended world, options for display and volume, and quit.
 
@@ -423,6 +431,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.cursor.highlight_size` | 48 | physical px | — | provisional | MVP-101 | The pointer over a selectable Leader, `cursor.highlight` (O76) |
 | `mvp.cursor.unavailable_size` | 60 | physical px | — | provisional | MVP-101 | `cursor.unavailable` (O76), R-CTRL-350's size |
 | `mvp.cursor.world_hotspot` | 0.113, 0.082 | fraction of the size (x, y) | — | provisional | MVP-101 | The tip of the owner's arrow, in place of `ref.ctrl.cursor.set.world_hotspot` (0.055, 0.070), which misses it by 7 texels (ADR-119) |
+| `mvp.cursor.place_size` | 48 | physical px | — | provisional | MVP-101 | The placement cursor `cursor.place` (ADR-153), the size of the owner's other cursors in place of R-CTRL-350's 40 px; centred on `ref.ctrl.cursor.set.place_hotspot` |
 | `mvp.selection.disc_size_factor` | 0.8 | × the Worker card's half-size | — | provisional | MVP-101 | The disc on the ground under a selected Worker (O82, ADR-127) |
 | `mvp.selection.disc_alpha` | 0.35 | alpha, 0 to 1 | — | provisional | MVP-101 | The disc's strength in the control glow's colour |
 | `mvp.selection.circle_fade_seconds` | 0.4 | s of real time | — | provisional | MVP-101 | The released selection circle's fade |
@@ -430,6 +439,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.structure.inactive_brightness` | 0.35 | × the lit colour | — | provisional | MVP-083 | An inactive structure is dark (MVP-035) |
 | `mvp.structure.flash_size` | 40 | wu, half-size | — | provisional | MVP-083 | The completion flash of `fx.starburst` in the team colour |
 | `mvp.structure.flash_seconds` | 0.5 | s | — | provisional | MVP-083 | The flash fades over this time from its event |
+| `mvp.structure.ghost_brightness` | 0.5 | × the lit colour | — | provisional | MVP-101 | The placement ghost of R-CTRL-366 row 1b, drawn in RND-365's ghost blend (ADR-153); the owner tunes it at M2 task T17's run |
 | `mvp.wellspring.glow_blobs` | 5 | quads | — | provisional | MVP-083 | The Wellspring's cloudy glow, `fx.glow_cloudy` blobs circling its crystal in the team colour (O77) |
 | `mvp.wellspring.glow_radius` | 12 | wu | — | provisional | MVP-083 | The circle the blobs ride |
 | `mvp.wellspring.glow_size` | 22 | wu, half-size | — | provisional | MVP-083 | — |
@@ -447,6 +457,31 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.border_mark.alpha` | 0.6 | alpha, 0 to 1 | — | provisional | MVP-084 | — |
 | `mvp.view_fog.strength` | 0.85 | share darkened, 0 to 1 | — | provisional | MVP-084 | The black fog outside the steward's areas (WLD-244, ADR-144); the terrain and the sea keep the rest of their colour |
 | `mvp.view_fog.edge_width` | 64 | wu | — | provisional | MVP-084 | The fog's edge, a ramp centred on the areas' edge |
+| `mvp.hud.status_period` | 1 | s, real time | — | provisional | MVP-098 | How often the HUD asks for its settlement's status (O95, DEC-1005, ADR-152); the stores and Workers come from the replica every tick |
+| `mvp.hud.notice_seconds` | 6 | s, real time | — | provisional | MVP-102 | How long a notification card stays |
+| `mvp.hud.notice_fade` | 1 | s, real time | — | provisional | MVP-102 | Its fade at the end |
+| `mvp.hud.notices_max` | 5 | cards | — | provisional | MVP-102 | The newest are kept |
+| `mvp.hud.margin` | 8 | HUD units (RND-377) | — | provisional | MVP-102 | The HUD's measures, in the 600-unit-high HUD space, times the UI scale (UI-168); the owner judges the layout at T16's run |
+| `mvp.hud.padding` | 6 | HUD units | — | provisional | MVP-102 | — |
+| `mvp.hud.panel_width` | 236 | HUD units | — | provisional | MVP-102 | The settlement and world panels |
+| `mvp.hud.row_height` | 17 | HUD units | — | provisional | MVP-102 | — |
+| `mvp.hud.icon_size` | 13 | HUD units | — | provisional | MVP-102 | — |
+| `mvp.hud.meter_height` | 4 | HUD units | — | provisional | MVP-102 | `icon.hud.meter`'s track and fill |
+| `mvp.hud.text_size` | 11 | HUD units | — | provisional | MVP-102 | Times the text scale, never below UI-171's minimum |
+| `mvp.hud.card_width` | 200 | HUD units | — | provisional | MVP-102 | `icon.hud.notification_card` |
+| `mvp.hud.card_height` | 20 | HUD units | — | provisional | MVP-102 | — |
+| `mvp.hud.bar_button_width` | 96 | HUD units | — | provisional | MVP-101 | The construction bar's entries |
+| `mvp.hud.bar_height` | 34 | HUD units | — | provisional | MVP-101 | — |
+| `mvp.hud.queue_size` | 26 | HUD units | — | provisional | MVP-102 | A queued site's square |
+| `mvp.hud.priority_step` | 10 | % | — | provisional | MVP-036 | A priority's arrow moves its share by this much, the other two shares the other way (ADR-153) |
+| `mvp.hud.disabled_alpha` | 0.35 | opacity | — | provisional | MVP-102 | An arrow that cannot move its share |
+| `mvp.hud.palette.accent` | 0.55, 0.6, 1.0, 0.85 | linear RGBA | — | provisional | MVP-102 | O95's provisional palette for RND-403's roles: the accent panel's tint |
+| `mvp.hud.palette.neutral` | 0.7, 0.7, 0.75, 0.75 | linear RGBA | — | provisional | MVP-102 | The neutral panel's tint |
+| `mvp.hud.palette.text` | 1.0, 1.0, 1.0, 1.0 | linear RGBA | — | provisional | MVP-102 | — |
+| `mvp.hud.palette.positive` | 0.6, 1.0, 0.4, 1.0 | linear RGBA | — | provisional | MVP-102 | Positive captions: growth, an affordable cost, a notice |
+| `mvp.hud.palette.negative` | 1.0, 0.3, 0.3, 1.0 | linear RGBA | — | provisional | MVP-102 | Negative captions: growth stopped, idle Workers, a cost the stores cannot pay |
+| `mvp.hud.palette.meter_track` | 1.0, 1.0, 1.0, 0.15 | linear RGBA | — | provisional | MVP-102 | — |
+| `mvp.hud.palette.meter_fill` | 0.3, 0.6, 0.9, 0.9 | linear RGBA | — | provisional | MVP-102 | — |
 
 *Table 3 — The tuning values of the MVP.*
 

@@ -1,0 +1,146 @@
+#pragma once
+
+#include "CommandMessages.h"
+#include "Development.h"
+#include "SettlementHud.h"
+#include "SettlementMessages.h"
+#include "StateReplica.h"
+#include "StewardAreas.h"
+#include "StructureLook.h"
+#include "TuningMvp.h"
+#include "TuningPresentation.h"
+#include "Vec3.h"
+
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <variant>
+#include <vector>
+
+namespace Species
+{
+
+// A command of the settlement verbs (MVP-101), as the client sends it.
+using SettlementCommand = std::variant<PlaceStructureCommand, SetPrioritiesCommand>;
+
+// MVP-036: _shares, which sum to 100, with _task's share moved by _deltaPercent and the others moved the other way so
+// that they still sum to 100. A raise takes half the step from each other task, the larger giving the odd point; a lower
+// gives half to each, the smaller taking the odd point; a tie goes to the earlier task. No share passes 0 or 100: a
+// raise beyond what the others hold takes what they hold, and a lower beyond the task's share gives what it holds.
+[[nodiscard]] std::array<std::uint8_t, 3> ShiftPriority(std::array<std::uint8_t, 3> _shares, std::size_t _task,
+                                                        std::int64_t _deltaPercent) noexcept;
+
+/// What the client holds of its settlement for a placement (ADR-153), from the replica's latest tick and the latest status.
+struct PlacementView
+{
+  std::optional<ReplicatedSettlement> settlement; // the client's own; none: it places nothing
+  std::optional<Neuron::Vec3> wellspring;         // its Wellspring's position
+  std::int64_t dwellings = 0;                     // its dwellings, built or queued (MVP-034)
+  std::optional<SettlementStatus> status;         // its latest status (MVP-098)
+};
+
+// The view of the client's settlement of team _team in _latest, with _status when it is that team's.
+[[nodiscard]] PlacementView PlacementViewOf(const StateReplica::View& _latest, std::optional<std::uint8_t> _team,
+                                            const std::optional<SettlementStatus>& _status);
+
+// ADR-153: the refusal the client foresees for placing _kind at _point, in MVP-032's order, from what it holds: the
+// latest status's queue (QueueFull), the territory's cell under the point (OutsideTerritory), the point inside the
+// centre ring about the Wellspring (InCenterRing), and the stores against the cost (CannotAfford). None when it foresees
+// none. It never decides: the server's checks, which read the structure's footprint, have the last word.
+[[nodiscard]] std::optional<PlacementRefusal> PredictPlacement(const PlacementView& _view, const StewardAreas& _areas, StructureKind _kind,
+                                                               const Neuron::Vec3& _point, const TuningMvp& _tuning);
+
+/// What the settlement verbs read of a frame: the primary and secondary presses of the battle verbs' controls (O82), the
+/// HUD's zone under the pointer in the last frame's layout (UI-461), the pointer's ground point while it lies on the
+/// region, and the real frame step.
+struct SettlementFrame
+{
+  bool primaryDown = false;
+  bool secondaryDown = false;
+  std::optional<HudZoneRect> hudZone;
+  std::optional<Neuron::Vec3> ground;
+  double realStepSeconds = 0.0;
+};
+
+/// A frame's commands of the settlement verbs, and the presses they took, which reach no battle verb.
+struct SettlementVerbResult
+{
+  std::vector<SettlementCommand> commands;
+  bool tookPrimary = false;
+  bool tookSecondary = false;
+};
+
+/// The client's settlement verbs (M2 task T17, ADR-153; MVP-032, MVP-036, MVP-101):
+/// - **The HUD.** A press over the HUD reaches no world verb. The primary press on a construction bar entry enters
+///   placing that structure, or leaves it when it is the one being placed; on a priority's arrow it raises or lowers that
+///   share by mvp.hud.priority_step and sends the shares, which the HUD shows until a status holds them.
+/// - **Placing** is a mode that takes the primary and secondary presses before the battle verbs: the primary press on the
+///   region sends the placement at the pointer ground point and stays in the mode; the secondary press leaves it, as it
+///   releases a selection (O82). The mode shows the ghost and the cursor of what the client foresees at the pointer.
+/// - **Refusals.** The server's refusal of a placement is kept mvp.hud.notice_seconds for the HUD with its reason.
+/// Nothing is sent while the client commands no settlement. Frame thread only.
+class SettlementVerbs
+{
+public:
+  // _tuning and _presentation outlive the verbs.
+  SettlementVerbs(const TuningMvp& _tuning, const TuningPresentation& _presentation) noexcept;
+
+  // Once per frame, after the camera: the commands of the frame and the presses taken. _team is the team the client
+  // commands, _view its settlement as PlacementViewOf gives it, and _areas the steward's areas of the frame.
+  [[nodiscard]] SettlementVerbResult Update(const SettlementFrame& _frame, std::optional<std::uint8_t> _team, const PlacementView& _view,
+                                            const StewardAreas& _areas);
+  // A command of Update that was sent, with the sequence number the server gives it; and a command's outcome, which
+  // the verbs ignore when it is not one of theirs.
+  void Sent(std::uint64_t _sequence, const SettlementCommand& _command);
+  void Reported(const CommandReport& _report);
+  // A new world: the mode, the refusal and the shares sent are dropped.
+  void Reset() noexcept;
+
+  [[nodiscard]] std::optional<StructureKind> Placing() const noexcept
+  {
+    return m_placing;
+  }
+  // The refusal the client foresees at the pointer this frame while placing (PredictPlacement).
+  [[nodiscard]] std::optional<PlacementRefusal> Foreseen() const noexcept
+  {
+    return m_foreseen;
+  }
+  // The ghost of this frame while placing with the pointer on the region.
+  [[nodiscard]] const std::optional<StructureGhost>& Ghost() const noexcept
+  {
+    return m_ghost;
+  }
+  // What the HUD shows of the verbs.
+  [[nodiscard]] HudVerbs ForHud() const;
+#if ENGINE_DEVELOPMENT
+  // ADR-153: a Debug render check's ghost for this frame, drawn without the mode, so that the scripted battle verbs keep
+  // their presses (ADR-125).
+  void ScriptGhost(const StructureGhost& _ghost) noexcept
+  {
+    m_ghost = _ghost;
+  }
+#endif
+
+private:
+  struct SentShares
+  {
+    std::array<std::uint8_t, 3> shares{};
+    std::uint64_t sequence = 0;
+    std::optional<std::uint64_t> tick; // its report's tick, once applied
+  };
+
+  void PressHud(const HudZoneRect& _zone, std::uint8_t _team, const PlacementView& _view, SettlementVerbResult& _result);
+
+  const TuningMvp& m_tuning;
+  const TuningPresentation& m_presentation;
+  std::optional<StructureKind> m_placing;
+  std::optional<PlacementRefusal> m_foreseen;
+  std::optional<StructureGhost> m_ghost;
+  std::vector<std::uint64_t> m_placements; // the sequences of the placements sent and not yet reported
+  std::optional<PlacementRefusal> m_refusal;
+  double m_refusalAgeSeconds = 0.0;
+  std::optional<SentShares> m_shares;
+};
+
+} // namespace Species

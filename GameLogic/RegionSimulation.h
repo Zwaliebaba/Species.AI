@@ -142,6 +142,8 @@ public:
   // ADR-138: a scripted steward runs the settlement of _team from now on as its AI commander; its sender id is a new
   // stable id of the region. Called between ticks.
   StableId AddScriptedSteward(std::uint8_t _team);
+  // ADR-156: the scripted stewards of _team stop, as a steward takes its settlement. Called between ticks.
+  void RemoveScriptedStewards(std::uint8_t _team);
   [[nodiscard]] const std::vector<ScriptedSteward>& ScriptedStewards() const noexcept
   {
     return m_scripted;

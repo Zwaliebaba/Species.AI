@@ -186,6 +186,11 @@ jobs:
         shell: pwsh
         run: python Build\CheckWorldFrame.py --exe "x64\$env:CONFIGURATION\Species.exe" --world --ui-test
 
+      # The front end (ADR-155): the new world's page with its page text field and cycler, and no world under it.
+      - name: Check the front end's frame on WARP
+        shell: pwsh
+        run: python Build\CheckWorldFrame.py --exe "x64\$env:CONFIGURATION\Species.exe" --front-end
+
       # One suite per *Tests.vcxproj in the tree, and every one of them must have produced a DLL:
       # vstest reports "no tests found" as a pass, so a suite that did not build is not a suite
       # that passed, and a tree with no suites at all is a broken tree.

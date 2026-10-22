@@ -149,6 +149,8 @@ Table 3.1-A Settings (`settings.defaults`). Scope: "renderer" is a renderer reco
 | telemetry installation id | `telemetry.installation_id` | text, 32 lower-case hexadecimal digits, a random id that the player can reset ([test_and_telemetry_records.md](test_and_telemetry_records.md) DAT-381) | absent: created when consent is first given | immediate | DBG-182 |
 | user bindings | `binding.<action id>`, one per action of INP-067 | binding node in canonical form (INP-072) | absent: the action keeps the bindings of the earlier layers | immediate, with a binding rebuild | INP-070, INP-171 |
 
+> **Amendment 2026-10-22 (M2 task T15, [ADR-150](../../../ADR/ADR-150-the-settings-store-and-user-data-root-at-m2.md)).** The table gains R-META-511's two accessibility settings, which the reference does not have: `interface.reduced_flash` and `interface.reduced_motion`, each a boolean, off by default, with immediate scope, owned by [particles and screen effects](../animation_and_vfx/particles_shatter_and_screen_effects.md) VFX-235 and VFX-232. The M2 client stores the subset that ADR-150 lists, with the ranges it chooses where no requirement states one; every other row arrives with its owner.
+
 **DAT-195** (MUST) A setting key is lower-case ASCII letters, digits, `_` and `.`, at most `dat.id.max_chars` characters, and unique in the schema. A setting that a binding node names with `setting` must be a key of this schema; the content build rejects a binding that names any other key (INP-060, R-META-455 item 4).
 
 ### 3.2 The settings file
