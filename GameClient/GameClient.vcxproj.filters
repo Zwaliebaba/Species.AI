@@ -57,6 +57,9 @@
     <ClInclude Include="SettlementView.h">
       <Filter>View</Filter>
     </ClInclude>
+    <ClInclude Include="StructureLook.h">
+      <Filter>View</Filter>
+    </ClInclude>
     <ClInclude Include="WorldMarkers.h">
       <Filter>View</Filter>
     </ClInclude>
@@ -99,6 +102,9 @@
       <Filter>View</Filter>
     </ClCompile>
     <ClCompile Include="SettlementView.cpp">
+      <Filter>View</Filter>
+    </ClCompile>
+    <ClCompile Include="StructureLook.cpp">
       <Filter>View</Filter>
     </ClCompile>
     <ClCompile Include="WorldMarkers.cpp">

@@ -3,7 +3,8 @@
   python Build/CheckContentBuild.py [--tool <SpeciesContentBuild.exe>]
 
 Runs the content build twice on the repository, each run into a temporary folder of its own, and fails unless the two
-folders are identical byte for byte (AST-066). Then it runs the build on fixtures: each a copy of GameData/ and of the
+folders are identical byte for byte (AST-066), and unless every texture row of the MVP's priority without an authored file
+has its stand-in at its key, in its row's format (AST-082, ADR-140). Then it runs the build on fixtures: each a copy of GameData/ and of the
 asset manifest with one fault in it, and each must fail with a message that names the faulty file and the fault
 (AST-093, ADR-019's confirmation): a texture off its row, a damaged mesh (one fixture per check of the CMO importer,
 built here from the owner's meshes by a small CMO reader and writer, so no binary fixture is committed), a misnumbered
@@ -12,6 +13,7 @@ damaged glyph table and glyph sheet, a glyph table naming another face, a stray 
 another; the check writes nothing into the checkout.
 """
 import argparse
+import csv
 import os
 import shutil
 import struct
@@ -275,6 +277,36 @@ FIXTURES = [
 ]
 
 
+# AST-082 (ADR-140): the placeholder kinds the content build draws, and the DXGI formats it writes.
+STAND_IN_KINDS = ('generated figure', 'generated glyph', 'generated panel', 'generated gradient', 'derived by the cooker')
+STAND_IN_FORMATS = (('BC7_UNORM_SRGB', 99), ('BC4_UNORM', 80))
+BC7_MODE_6 = 0x40 # a BC7 block's first seven bits when it is of mode 6, the one the stand-ins use
+
+
+def stand_ins(files):
+  """The rows that should have a stand-in, and the faults of their stand-ins in a run's files."""
+  rows, faults = 0, []
+  with open(os.path.join(ROOT, MANIFEST), encoding='utf-8-sig', newline='') as fh:
+    for row in csv.DictReader(fh):
+      source = row['species_filename']
+      formats = [code for name, code in STAND_IN_FORMATS if name in row['target_format']]
+      if (row['priority'] != 'mvp' or not source.startswith('GameData/') or not source.endswith('.dds')
+          or os.path.exists(os.path.join(ROOT, source)) or row['placeholder'] not in STAND_IN_KINDS or len(formats) != 1):
+        continue
+      rows += 1
+      key = source[len('GameData/'):-len('.dds')].lower()
+      data = files.get(key)
+      if data is None:
+        faults.append(f'{source} has no stand-in at {key} (AST-082)')
+        continue
+      magic, fourcc, dxgi = data[:4], data[84:88], struct.unpack_from('<I', data, 128)[0]
+      if magic != b'DDS ' or fourcc != b'DX10' or dxgi != formats[0]:
+        faults.append(f'{key} is not a DDS file of DXGI format {formats[0]} with a DX10 header')
+      elif dxgi == 99 and data[148] & 0x7F != BC7_MODE_6:
+        faults.append(f'{key}\'s first block is not of BC7 mode 6')
+  return rows, faults
+
+
 def run(tool, root, out):
   return subprocess.run([tool, '--root', root, '--out', out], capture_output=True, text=True, encoding='utf-8', errors='replace')
 
@@ -319,6 +351,9 @@ def main():
       differing = sorted(k for k in set(outputs[0]) | set(outputs[1]) if outputs[0].get(k) != outputs[1].get(k))
       failures.append(f'two runs differ in {", ".join(differing)} (AST-066)')
     print(f'CheckContentBuild: two runs wrote the same {len(outputs[0])} files, byte for byte')
+    rows, faults = stand_ins(outputs[0])
+    failures += faults
+    print(f'CheckContentBuild: {rows} texture rows of the MVP have no authored file, {rows - len(faults)} with their stand-in')
     for name, change, file, part in FIXTURES:
       case = os.path.join(work, 'case')
       root = copy_tree(case)

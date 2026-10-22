@@ -42,6 +42,9 @@
     <ClInclude Include="MeshCooker.h">
       <Filter>Meshes</Filter>
     </ClInclude>
+    <ClInclude Include="PlaceholderTexture.h">
+      <Filter>Textures</Filter>
+    </ClInclude>
     <ClInclude Include="RecordCooker.h">
       <Filter>Records</Filter>
     </ClInclude>
@@ -85,6 +88,9 @@
     </ClCompile>
     <ClCompile Include="MeshCooker.cpp">
       <Filter>Meshes</Filter>
+    </ClCompile>
+    <ClCompile Include="PlaceholderTexture.cpp">
+      <Filter>Textures</Filter>
     </ClCompile>
     <ClCompile Include="RecordCooker.cpp">
       <Filter>Records</Filter>

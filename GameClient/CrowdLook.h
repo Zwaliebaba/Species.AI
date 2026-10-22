@@ -26,9 +26,10 @@ enum class SceneTexture : std::uint16_t
   WorkerHurt01,
   WorkerHurt02,
   WorkerHurt03,
-  WorkerHurt04, // sprite.worker.hurt variant 04, the fixed hurt pose
-  GlowRound,    // fx.glow_round
-  BannerIdle,   // marker.leader_banner and marker.leader_banner_tint, by R-UNIT-191's variant (ADR-122)
+  WorkerHurt04,    // sprite.worker.hurt variant 04, the fixed hurt pose
+  WorkerCarryLoad, // sprite.worker.carry_load (ADR-140), a stand-in until the owner's art (O88)
+  GlowRound,       // fx.glow_round
+  BannerIdle,      // marker.leader_banner and marker.leader_banner_tint, by R-UNIT-191's variant (ADR-122)
   BannerFollow,
   BannerFormation,
   BannerTintIdle,
@@ -48,6 +49,7 @@ enum class SceneTexture : std::uint16_t
   TeamDiscShadow,
   IconLeader,  // icon.power.leader
   IconWorkers, // icon.power.workers
+  GlowCloudy,  // fx.glow_cloudy (ADR-140): the orbs drifting home and the Wellspring's glow
   Count
 };
 
@@ -56,6 +58,19 @@ enum class SceneMesh : std::uint16_t
 {
   LeaderFigure, // mesh.unit.leader_figure
   ThrownWeapon, // mesh.projectile.thrown_weapon (ADR-123)
+  // M2 task T12 (ADR-140): the structures' meshes of the mesh kit (ADR-128), in StructureKind's order, then the turret's
+  // parts, its round and casing, and the port pad.
+  Wellspring,          // mesh.structure.wellspring
+  ResourceSite,        // mesh.structure.resource_site, member 1
+  ResourceSiteCentral, // mesh.structure.resource_site, member 2
+  Dwelling,            // mesh.structure.dwelling
+  Storehouse,          // mesh.structure.storehouse
+  TurretMount,         // mesh.structure.turret_mount: sockets only
+  TurretHead,          // mesh.structure.turret_head
+  TurretBarrelGun,     // mesh.structure.turret_barrel, member 1
+  TurretRound,         // mesh.projectile.turret_round
+  ShellCasing,         // mesh.projectile.shell_casing
+  PortPad,             // mesh.structure.structure_default
   Count
 };
 
@@ -97,7 +112,8 @@ void AppendWorkerBatches(std::span<const InterpolatedFigure> _figures, const Neu
 void AppendSelectionDiscs(std::span<const InterpolatedFigure> _figures, const Neuron::TerrainField& _field, const CrowdView& _view,
                           const TuningPresentation& _presentation, std::vector<Neuron::QuadBatch>& _batches);
 
-// R-UNIT-330, R-UNIT-331, VFX-225, O77: the Essence orbs of pass 11, an inner and an outer quad of fx.glow_round each.
+// R-UNIT-330, R-UNIT-331, VFX-225, O77: the Essence orbs of pass 11, an inner and an outer quad of fx.glow_round each;
+// ADR-140: and an orb drifting home or waiting at the Wellspring a quad of fx.glow_cloudy about them.
 void AppendOrbBatches(std::span<const InterpolatedOrb> _orbs, const TuningPresentation& _presentation,
                       std::vector<Neuron::QuadBatch>& _batches);
 

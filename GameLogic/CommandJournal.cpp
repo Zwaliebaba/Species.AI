@@ -59,7 +59,12 @@ std::unique_ptr<WorldSimulation> StartWorld(const WorldStart& _start, std::share
       world->Region(0).PlaceResourceSites();
       if (_start.stewardSite)
       {
-        static_cast<void>(world->Region(0).FoundSettlement(_start.stewardSite.value_or(0), true));
+        const Settlement& settlement = world->Region(0).FoundSettlement(_start.stewardSite.value_or(0), true);
+        if (_start.watched)
+        {
+          // ADR-140: a Debug build's --watch hands the steward's settlement to the scripted steward of ADR-138.
+          static_cast<void>(world->Region(0).AddScriptedSteward(settlement.team));
+        }
       }
     }
   }
@@ -73,7 +78,7 @@ StableId ConnectSteward(WorldSimulation& _world, bool _sandbox, bool _watched)
   {
     _world.Region(0).SetCommander(SANDBOX_STEWARD_TEAM, steward, false);
   }
-  else if (!_sandbox)
+  else if (!_sandbox && !_watched)
   {
     // The MVP's world has one steward; each settlement a steward runs is the latest steward's.
     RegionSimulation& region = _world.Region(0);

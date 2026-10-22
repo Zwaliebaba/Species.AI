@@ -16,6 +16,7 @@ struct BuildResult
 {
   std::vector<Neuron::CookedEntry> entries;
   std::size_t rowsWithoutFile = 0;
+  std::size_t placeholders = 0; // the rows without a file that a stand-in fills (ADR-140)
 };
 
 // The content build of ADR-108: reads the asset manifest and every source under the repository's GameData/ in name

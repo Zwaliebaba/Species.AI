@@ -11,4 +11,5 @@ struct QuadVertex
   float4 position : SV_Position;
   float2 uv : TEXCOORD0;
   float4 color : COLOR0;
+  float depth : TEXCOORD1; // view depth, the level fog's coordinate (RND-222), which the structures' glows read
 };

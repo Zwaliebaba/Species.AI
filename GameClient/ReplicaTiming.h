@@ -88,4 +88,16 @@ struct InterpolatedEffect
 
 [[nodiscard]] std::vector<InterpolatedEffect> InterpolateEffects(const StateReplica& _replica, double _fraction);
 
+/// A structure of the replica as a frame draws it (ADR-140): its latest state, and a turret's aim between its two latest
+/// states at the frame's fraction, the shorter way round.
+struct InterpolatedStructure
+{
+  StableId id = 0;
+  ReplicatedStructure state;
+  double aimYawRadians = 0.0;   // the head's front: 0 faces +z
+  double aimPitchRadians = 0.0; // the barrels' up vector's tilt towards the head's front
+};
+
+[[nodiscard]] std::vector<InterpolatedStructure> InterpolateStructures(const StateReplica& _replica, double _fraction);
+
 } // namespace Species

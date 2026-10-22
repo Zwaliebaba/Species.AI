@@ -288,6 +288,9 @@
     <FXCompile Include="Shader\FinalVS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
+    <FXCompile Include="Shader\MeshLitFogPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
     <FXCompile Include="Shader\MeshLitPS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
@@ -328,6 +331,9 @@
       <Filter>Shader</Filter>
     </FXCompile>
     <FXCompile Include="Shader\UnlitTexturedCutoutPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\UnlitTexturedGlowFogPS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
     <FXCompile Include="Shader\UnlitTexturedLevelZeroPS.hlsl">

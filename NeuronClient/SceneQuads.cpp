@@ -56,6 +56,7 @@ MeshInstance MakeMeshInstance(const SceneMeshInstance& _instance, const Vec3& _c
   instance.row1 = row(_instance.axisX.y, _instance.axisY.y, _instance.axisZ.y, origin.y);
   instance.row2 = row(_instance.axisX.z, _instance.axisY.z, _instance.axisZ.z, origin.z);
   instance.tint = Float4(_instance.tint[0], _instance.tint[1], _instance.tint[2], _instance.tintWeight);
+  instance.shade = Float4(_instance.brightness, 0.0f, 0.0f, 0.0f);
   return instance;
 }
 

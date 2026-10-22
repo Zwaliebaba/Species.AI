@@ -130,7 +130,8 @@ struct MeshInstance
   Float4 row0;
   Float4 row1;
   Float4 row2;
-  Float4 tint; // rgb: the tinted colour T × f; a: the instance's tint weight
+  Float4 tint;  // rgb: the tinted colour T × f; a: the instance's tint weight
+  Float4 shade; // x: the instance's brightness, which an inactive structure lowers (ADR-140)
 };
 
 // ADR-122: a vertex of the scene's textured triangles, relative to the camera.
@@ -172,7 +173,7 @@ static_assert(sizeof(SkyLayerInstance) == 4 * sizeof(Float4) + sizeof(Uint4));
 static_assert(sizeof(TextGlyphInstance) == 3 * sizeof(Float4));
 static_assert(sizeof(DotInstance) == 2 * sizeof(Float4));
 static_assert(sizeof(QuadInstance) == 7 * sizeof(Float4) + sizeof(Uint4));
-static_assert(sizeof(MeshInstance) == 4 * sizeof(Float4));
+static_assert(sizeof(MeshInstance) == 5 * sizeof(Float4));
 static_assert(sizeof(TriangleVertex) == 3 * sizeof(Float4));
 static_assert(sizeof(OverlayQuadInstance) == 2 * sizeof(Float4));
 inline constexpr std::uint32_t DRAW_CONSTANT_DWORDS = sizeof(DrawConstants) / 4;

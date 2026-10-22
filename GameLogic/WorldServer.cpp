@@ -218,9 +218,8 @@ bool WorldServer::StartNew(std::uint64_t _seed, std::uint64_t _firstTick)
   // A new world draws its simulation key from the system's cryptographic generator (ADR-082 item 1), and holds the
   // seed that passed (MVP-011), which gives the same terrain at its first attempt. Its journal starts with it.
   CommandJournal journal;
-  journal.start =
-    WorldStart{Neuron::DrawSecretKey(),          terrain->seed,           _firstTick,        m_desc.regionCount, m_desc.sandbox,
-               m_desc.sandbox && m_desc.watched, m_desc.syntheticFigures, m_desc.stewardSite};
+  journal.start = WorldStart{Neuron::DrawSecretKey(), terrain->seed,           _firstTick,        m_desc.regionCount, m_desc.sandbox,
+                             m_desc.watched,          m_desc.syntheticFigures, m_desc.stewardSite};
   std::unique_ptr<WorldSimulation> world = StartWorld(journal.start, terrain, m_desc.tuning, &m_desc.structures);
   Adopt(std::move(world), std::move(terrain));
   m_journal = std::move(journal);
@@ -302,10 +301,9 @@ std::optional<std::int64_t> WorldServer::CalendarSeconds() const
 CommandJournal WorldServer::RestoredJournal() const
 {
   CommandJournal journal;
-  journal.start = WorldStart{m_world->SimulationKey(), m_world->WorldSeed(),
-                             m_world->NextTick(),      static_cast<std::uint16_t>(m_world->RegionCount()),
-                             m_desc.sandbox,           m_desc.sandbox && m_desc.watched,
-                             m_desc.syntheticFigures,  m_desc.stewardSite};
+  journal.start =
+    WorldStart{m_world->SimulationKey(), m_world->WorldSeed(), m_world->NextTick(),     static_cast<std::uint16_t>(m_world->RegionCount()),
+               m_desc.sandbox,           m_desc.watched,       m_desc.syntheticFigures, m_desc.stewardSite};
   journal.restored = true;
   return journal;
 }

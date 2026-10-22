@@ -140,7 +140,9 @@ int Run(std::span<const std::wstring> _arguments)
       {
         worldDesc.stewardSite = static_cast<std::uint8_t>(std::clamp<std::int64_t>(tuning->mvp.sandbox.stewardSite, 0, 3));
       }
-      worldDesc.watched = options.watch;                             // O77: a Debug build's --watch, both sides under the AI
+      // O77: a Debug build's --watch, both sides under the AI; with --world, the steward's settlement under the scripted
+      // steward (ADR-140).
+      worldDesc.watched = options.watch;
       worldDesc.calendar = [&clock] { return clock.CalendarUtc(); }; // ADR-137: the world record's wall times
       WorldServer world(worldDesc);
       Neuron::ServerHost::Desc hostDesc;

@@ -37,8 +37,9 @@ struct WorldStart
 
 // A new world: made, its terrain attached to region 0 (ADR-102), and populated as the sandbox when it is one (M1 plan
 // §6), or as a synthetic battle when it names one (ADR-126); a world that is no sandbox has its resource sites placed and,
-// when the start names the steward's site, the steward's settlement founded there (MVP-012, ADR-130). The world server and
-// the journal's replay make every new world through this one function. _tuning and _structures outlive it; a world with
+// when the start names the steward's site, the steward's settlement founded there (MVP-012, ADR-130), run by a scripted
+// steward when the start is watched (ADR-140). The world server and the journal's replay make every new world through
+// this one function. _tuning and _structures outlive it; a world with
 // a settlement needs _structures.
 [[nodiscard]] std::unique_ptr<WorldSimulation> StartWorld(const WorldStart& _start, std::shared_ptr<const RegionTerrain> _terrain,
                                                           const TuningMvp& _tuning, const StructureRecords* _structures = nullptr);
@@ -94,7 +95,7 @@ struct CommandJournal
 
 // A steward's connection to _world (ADR-095, ADR-109): the next id of the world owner and, in the sandbox, the
 // steward's side to command; in a world that is no sandbox, the team of each settlement that a steward runs (ADR-130).
-// Returns the steward's id.
+// A watched world's steward commands nothing (O77, ADR-140). Returns the steward's id.
 StableId ConnectSteward(WorldSimulation& _world, bool _sandbox, bool _watched = false);
 
 } // namespace Species

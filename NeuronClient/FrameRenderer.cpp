@@ -36,6 +36,7 @@
 #include "CompiledShader/DevelopmentTextVS.h"
 #include "CompiledShader/FinalPS.h"
 #include "CompiledShader/FinalVS.h"
+#include "CompiledShader/MeshLitFogPS.h"
 #include "CompiledShader/MeshLitPS.h"
 #include "CompiledShader/MeshLitVS.h"
 #include "CompiledShader/OverlayQuadAlphaPS.h"
@@ -50,6 +51,7 @@
 #include "CompiledShader/TerrainPS.h"
 #include "CompiledShader/TerrainVS.h"
 #include "CompiledShader/UnlitTexturedCutoutPS.h"
+#include "CompiledShader/UnlitTexturedGlowFogPS.h"
 #include "CompiledShader/UnlitTexturedLevelZeroPS.h"
 #include "CompiledShader/UnlitTexturedMaskPS.h"
 #include "CompiledShader/UnlitTexturedPS.h"
@@ -147,8 +149,10 @@ enum class WorldPass : std::uint8_t
   Terrain,
   FlatSea,
   Waves,
+  Structures,
   Actors,
   Workers,
+  StructureAlpha,
   Effects,
   Lasers,
   Orbs,
@@ -320,7 +324,7 @@ bool CreateSwapChain(RendererState& _state)
 }
 
 // The world frame's pipeline states (RND-061, ADR-113): the entries its passes use, and the final pass's.
-const std::array<PipelineEntry, 30> WORLD_PIPELINES{{
+const std::array<PipelineEntry, 33> WORLD_PIPELINES{{
   {"sky", g_SkyVS, g_SkyPS, VertexLayout::SkyInstance, BlendState::Additive, DepthState::None, CullState::Back, PipelineTarget::Scene},
   {"terrain", g_TerrainVS, g_TerrainPS, VertexLayout::Terrain, BlendState::Opaque, DepthState::TestWrite, CullState::Back,
    PipelineTarget::Scene},
@@ -392,6 +396,14 @@ const std::array<PipelineEntry, 30> WORLD_PIPELINES{{
    CullState::None, PipelineTarget::BackBuffer},
   {"overlay_additive", g_OverlayQuadVS, g_OverlayQuadPS, VertexLayout::OverlayQuadInstance, BlendState::Additive, DepthState::None,
    CullState::None, PipelineTarget::BackBuffer},
+  // M2 task T12 (ADR-140): the structures' meshes of pass 6 (RND-163), and in pass 8 the port pads (RND-168) and the
+  // additive glows of the stars, the lights, the Wellspring and the completion flash (RND-167), each with level fog.
+  {"mesh_lit_fog", g_MeshLitVS, g_MeshLitFogPS, VertexLayout::MeshInstanced, BlendState::Opaque, DepthState::TestWrite, CullState::Back,
+   PipelineTarget::Scene},
+  {"port_pad", g_MeshLitVS, g_MeshLitFogPS, VertexLayout::MeshInstanced, BlendState::Opaque, DepthState::Test, CullState::None,
+   PipelineTarget::Scene},
+  {"glow_additive_fog", g_UnlitTexturedVS, g_UnlitTexturedGlowFogPS, VertexLayout::QuadInstance, BlendState::Additive, DepthState::Test,
+   CullState::None, PipelineTarget::Scene},
 }};
 
 // The world frame's targets, at these indices of its table (RND-063, ADR-113).
@@ -430,8 +442,10 @@ WorldFrameTable WorldFrame(bool _multisampled)
   add(WorldPass::Terrain, "pass_04_terrain", "terrain", scene);
   add(WorldPass::FlatSea, "pass_05a_flat_sea", "sea_flat", scene);
   add(WorldPass::Waves, "pass_05b_coastline_waves", "sea_waves", scene);
+  add(WorldPass::Structures, "pass_06_structures_solid", "mesh_lit_fog", scene);
   add(WorldPass::Actors, "pass_07b_other_actors", "actor_mesh_lit", scene);
   add(WorldPass::Workers, "pass_07d_workers", "worker_card", scene);
+  add(WorldPass::StructureAlpha, "pass_08_structures_alpha", "glow_additive_fog", scene);
   add(WorldPass::Effects, "pass_10a_effects", "effect_additive", scene);
   add(WorldPass::Lasers, "pass_10b_laser_bolts", "laser_bolt", scene);
   add(WorldPass::Orbs, "pass_11_essence_orbs", "orb_additive", scene);
@@ -820,6 +834,13 @@ void RecordWorldFrame(RendererState& _state, const FrameInputs& _inputs, ID3D12R
       _state.world->RecordWaves(pass);
       break;
     }
+    case WorldPass::Structures:
+    {
+      // RND-163 (ADR-140): every structure's solid parts, the turret's head and barrels with them.
+      ENGINE_PROFILE_SCOPE("render.structures");
+      _state.meshes->Record(commands, *_state.ring, *_state.catalog, frame, ScenePass::Structures, _inputs.meshBatches);
+      break;
+    }
     case WorldPass::Actors:
     {
       // RND-324: the Leaders' figures, then their poles and cloth (VFX-141), and the flag pointers over the cloth.
@@ -834,6 +855,14 @@ void RecordWorldFrame(RendererState& _state, const FrameInputs& _inputs, ID3D12R
     {
       ENGINE_PROFILE_SCOPE("render.workers");
       _state.quads->Record(commands, *_state.ring, *_state.catalog, frame, ScenePass::Workers, _inputs.quadBatches);
+      break;
+    }
+    case WorldPass::StructureAlpha:
+    {
+      // RND-164, RND-165: each structure's lights, then its ports' pads and stars, and the structures' glows.
+      ENGINE_PROFILE_SCOPE("render.structures.transparent");
+      _state.meshes->Record(commands, *_state.ring, *_state.catalog, frame, ScenePass::StructureAlpha, _inputs.meshBatches);
+      _state.quads->Record(commands, *_state.ring, *_state.catalog, frame, ScenePass::StructureAlpha, _inputs.quadBatches);
       break;
     }
     case WorldPass::Effects:

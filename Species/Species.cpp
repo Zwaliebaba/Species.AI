@@ -344,7 +344,9 @@ int Run()
     // starts a new world with the steward's settlement in its place, until T18's front end starts worlds (ADR-139).
     serverDesc.worldSeed = options.worldSeed;
     serverDesc.sandbox = !options.world;
-    serverDesc.watched = options.watch; // O77: a Debug build's --watch, both sides under the AI
+    // O77: a Debug build's --watch, both sides under the AI; with --world, the steward's settlement under the scripted
+    // steward (ADR-140).
+    serverDesc.watched = options.watch;
     if (options.world)
     {
       serverDesc.stewardSite = static_cast<std::uint8_t>(std::clamp<std::int64_t>(clientTuning->mvp.sandbox.stewardSite, 0, 3));

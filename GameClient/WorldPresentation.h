@@ -9,6 +9,7 @@
 #include "PlatformClock.h"
 #include "PresentationClock.h"
 #include "SettlementView.h"
+#include "StructureLook.h"
 #include "TuningMvp.h"
 #include "TuningPresentation.h"
 #include "WorldScene.h"
@@ -22,8 +23,8 @@ namespace Species
 
 /// The client's world frame (M1 task T13, ADR-115): the world's surfaces, built from the session's terrain with the
 /// client's presentation record and the content's textures once the terrain arrives, and each frame's inputs from the
-/// settlement view's camera and cursor (M1 task T14, ADR-119), the crowds (M1 task T16, ADR-121, ADR-122) and the weapons'
-/// effects, particles and screen effects (ADR-123). In a Debug build,
+/// settlement view's camera and cursor (M1 task T14, ADR-119), the crowds (M1 task T16, ADR-121, ADR-122), the weapons'
+/// effects, particles and screen effects (ADR-123) and the structures (M2 task T12, ADR-140). In a Debug build,
 /// while the overlay is shown, each frame also carries a dot for each living figure (ADR-118) and the frame-rate line and
 /// frame page from the frame loop's profile (M1 task T15b, ADR-120).
 class WorldPresentation
@@ -85,6 +86,7 @@ private:
   std::shared_ptr<const Neuron::SceneMeshes> m_sceneMeshes;     // ADR-122; none when the content lacks one
   LeaderLook m_leaders;
   EffectsLook m_effects;
+  StructureLook m_structures;
   Neuron::FrameProfile m_profile;
   Neuron::PresentationClock m_presentationClock;
   bool m_overlayShown = false;

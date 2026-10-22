@@ -223,7 +223,9 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 > **Amendment 2026-10-21 (O75, O77; M1 task T16, [ADR-121](../ADR/ADR-121-workers-and-orbs-drawn-at-m1.md)).** A Worker is drawn with the reference's layers (VFX-118, R-UNIT-147): its own card laid flat on the terrain as its ground shadow, not a blob shadow, and the glow of stacked cards while it is under the local team's control, with a provisional walk bob and firing recoil held in data (O75). The Essence orbs glow with `fx.glow_round` alone (R-UNIT-330, O77); `fx.glow_cloudy` waits for M2's orbs drifting home (MVP-023).
 
-**MVP-083** (MUST) The Wellspring (`mesh.structure.wellspring`), the dwelling (`mesh.structure.dwelling`), the storehouse (`mesh.structure.storehouse`) and the turret (`mesh.structure.turret_mount`, `mesh.structure.turret_head`, `mesh.structure.turret_barrel`, firing `mesh.projectile.turret_round`) are low-poly flat-shaded meshes with their collision assets, standing on the port pad `mesh.structure.structure_default`, with glow accents tinted in their Cladan's colour (ADR-020); a construction site shows the structure rising with its progress, an inactive structure is dark, and a completed structure flashes once (`fx.starburst`). Resource sites have a mesh of their own (`mesh.structure.resource_site`) that shows how many of their ports are manned. Every new asset is newly authored (O9) and carries its authorship record (PIL-027).
+**MVP-083** (MUST) The Wellspring (`mesh.structure.wellspring`), the dwelling (`mesh.structure.dwelling`), the storehouse (`mesh.structure.storehouse`) and the turret (`mesh.structure.turret_mount`, `mesh.structure.turret_head`, `mesh.structure.turret_barrel`, firing `mesh.projectile.turret_round`) are low-poly flat-shaded meshes with their collision assets, standing on the port pad `mesh.structure.structure_default`, with glow accents tinted in their Cladan's colour (ADR-020); a construction site shows the structure rising with its progress, an inactive structure is dark, and a completed structure flashes once (`fx.starburst`). Resource sites have a mesh of their own (`mesh.structure.resource_site`) that shows how many of their ports are manned. Every new asset is newly authored (O9) and carries its authorship record (PIL-027). How far a site is sunk, how dark an inactive structure is and how the flash and the glows look is DEC-1001.
+
+> **Amendment 2026-10-22 (O89; M2 task T12, [ADR-140](../ADR/ADR-140-structures-drawn-and-the-stand-ins-at-m2.md); DEC-1001, Open).** A dwelling's and a storehouse's ports, which serve their construction alone at M2, show their pads and status stars only while the structure is a construction site; a resource site's and a turret's ports are drawn always. How far a site is sunk, how dark an inactive structure is and how the completion flash and the Wellspring's glow look are the provisional presentation keys of table 3, which the owner tunes after T12's run (DEC-1001).
 
 **MVP-084** (MUST) A settlement's territory is drawn as a glowing line on the terrain in its Cladan's colour (`fx.beam_long`), border areas and claims are marked on it, and the area outside the steward's areas lies under black fog with the public layer drawn on it (WLD-244).
 
@@ -418,6 +420,18 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.selection.disc_size_factor` | 0.8 | × the Worker card's half-size | — | provisional | MVP-101 | The disc on the ground under a selected Worker (O82, ADR-127) |
 | `mvp.selection.disc_alpha` | 0.35 | alpha, 0 to 1 | — | provisional | MVP-101 | The disc's strength in the control glow's colour |
 | `mvp.selection.circle_fade_seconds` | 0.4 | s of real time | — | provisional | MVP-101 | The released selection circle's fade |
+| `mvp.structure.rise_depth_factor` | 1.0 | × the structure's height | — | provisional | MVP-083 | A construction site is sunk by this share of its height times the work still to come, so it rises out of the ground as it is built (O89, DEC-1001, ADR-140); the owner tunes the structures' looks after M2 task T12's run |
+| `mvp.structure.inactive_brightness` | 0.35 | × the lit colour | — | provisional | MVP-083 | An inactive structure is dark (MVP-035) |
+| `mvp.structure.flash_size` | 40 | wu, half-size | — | provisional | MVP-083 | The completion flash of `fx.starburst` in the team colour |
+| `mvp.structure.flash_seconds` | 0.5 | s | — | provisional | MVP-083 | The flash fades over this time from its event |
+| `mvp.wellspring.glow_blobs` | 5 | quads | — | provisional | MVP-083 | The Wellspring's cloudy glow, `fx.glow_cloudy` blobs circling its crystal in the team colour (O77) |
+| `mvp.wellspring.glow_radius` | 12 | wu | — | provisional | MVP-083 | The circle the blobs ride |
+| `mvp.wellspring.glow_size` | 22 | wu, half-size | — | provisional | MVP-083 | — |
+| `mvp.wellspring.glow_alpha` | 0.45 | alpha, 0 to 1 | — | provisional | MVP-083 | — |
+| `mvp.wellspring.glow_turn_seconds` | 24 | s of real time per turn | — | provisional | MVP-083 | — |
+| `mvp.orb.cloudy_size` | 16 | wu, half-size | — | provisional | MVP-082 | The cloudy glow of `fx.glow_cloudy` about an orb drifting home or waiting at its Wellspring (MVP-023, MVP-025) |
+| `mvp.orb.cloudy_alpha` | 0.5 | alpha, 0 to 1 | — | provisional | MVP-082 | — |
+| `mvp.worker.load_color` | 0.6, 0.9, 1.0 | linear RGB | — | provisional | MVP-082 | The carried load's card `sprite.worker.carry_load` over the Worker's body (MVP-031) |
 
 *Table 3 — The tuning values of the MVP.*
 

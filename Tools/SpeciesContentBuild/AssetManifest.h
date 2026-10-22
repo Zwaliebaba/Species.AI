@@ -28,6 +28,8 @@ struct ManifestRow
   std::string variants;
   std::string speciesFilename; // the source under GameData/, which gives the member's key (AST-014)
   std::string sourceFormat;
+  std::string priority;    // the stage that first ships it (AST table 2.4-A)
+  std::string placeholder; // what stands in for it until its file is authored (GameAssets.md §2.6)
   std::uint32_t line = 0;
 };
 

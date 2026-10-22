@@ -241,6 +241,7 @@ WorldPresentation::WorldPresentation(Desc _desc)
   : m_desc(_desc),
     m_start(_desc.clock->Now()),
     m_effects(*_desc.presentation, *_desc.tuning),
+    m_structures(*_desc.presentation),
     m_profile(ProfileDescOf(*_desc.presentation)),
     m_presentationClock(_desc.presentation->ref.sim.frame.deltaClamp)
 {
@@ -263,6 +264,7 @@ void WorldPresentation::Update(const ClientSession& _session)
   m_terrain = terrain;
   m_firstDisplayTick.reset();
   m_effects.Clear();
+  m_structures.Clear();
   if (terrain == nullptr)
   {
     m_world.reset();
@@ -349,6 +351,19 @@ Neuron::FrameInputs WorldPresentation::Frame(ClientSession& _session, const Sett
       inputs.quadBatches.insert(inputs.quadBatches.end(), std::make_move_iterator(leaders.quads.begin()),
                                 std::make_move_iterator(leaders.quads.end()));
       inputs.triangleBatches = std::move(leaders.triangles);
+    }
+    // M2 task T12 (ADR-140): the structures' solid parts in pass 6 and their pads, stars, lights and glows in pass 8.
+    m_structures.Update(events);
+    if (displayTick.has_value() && m_sceneMeshes != nullptr && m_sceneMeshes->meshes.size() == static_cast<std::size_t>(SceneMesh::Count))
+    {
+      const StructureView structureView{*displayTick, m_desc.tuning->ref.sim.tickPeriod, m_presentationClock.RealSeconds()};
+      StructureDraws structures;
+      m_structures.Draw(InterpolateStructures(_session.Replica(), fraction), *m_sceneMeshes, m_terrain->field, structureView, structures);
+      inputs.sceneMeshes = m_sceneMeshes;
+      inputs.meshBatches.insert(inputs.meshBatches.end(), std::make_move_iterator(structures.meshes.begin()),
+                                std::make_move_iterator(structures.meshes.end()));
+      inputs.quadBatches.insert(inputs.quadBatches.end(), std::make_move_iterator(structures.quads.begin()),
+                                std::make_move_iterator(structures.quads.end()));
     }
     AppendOrbBatches(InterpolateOrbs(_session.Replica(), fraction), *m_desc.presentation, inputs.quadBatches);
     // M1 task T17b (ADR-125): the route preview in pass 12, the world markers in pass 16 and the badge in pass 20.

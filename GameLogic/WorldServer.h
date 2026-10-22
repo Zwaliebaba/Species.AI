@@ -49,7 +49,8 @@ public:
     std::filesystem::path snapshotFolder;    // where the world is saved when it freezes and restored when it opens; none: a new
                                              // world each run (ADR-099)
     bool sandbox = false;                    // M1 plan §6: a new world is the battle sandbox
-    bool watched = false;                    // O77: the sandbox's AI commands both sides, and its stewards none
+    bool watched = false;                    // O77: the sandbox's AI commands both sides, and its stewards none; ADR-140: a
+                                             // world's steward settlement is run by the scripted steward
     std::uint32_t syntheticFigures = 0;      // ADR-126: the sandbox's sides are a synthetic battle of this many figures, watched
     std::optional<std::uint8_t> stewardSite; // MVP-012: a new world that is no sandbox has the steward's settlement here
     // The calendar time, for the world record alone (ADR-137, PLT-053); none: the record holds no wall times.

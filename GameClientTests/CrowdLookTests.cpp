@@ -237,6 +237,63 @@ public:
     Assert::AreEqual(1.0f, side->quads.front().color[3], 1e-6f, L"fully faded in when wholly edge-on: 20 × (1 − 0.95)");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp082ACarriedLoadIsVisibleOnTheCard)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-082")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-031")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp082ACarriedLoadIsVisibleOnTheCard)
+  {
+    const Neuron::Vec3 ground = Ground();
+    const Species::CrowdView view = ViewOf(ground);
+    Species::InterpolatedFigure carrier = WorkerAt(10, 1, ground);
+    carrier.state.loaded = true;
+    std::vector<Neuron::QuadBatch> batches;
+    Species::AppendWorkerBatches(std::vector{carrier}, SeedOneTerrain().field, view, CommittedPresentation(), CommittedTuning(), batches);
+    ExpectEqual(2, static_cast<std::int64_t>(QuadsOf(batches, "worker_card")), L"the body and its load");
+    const auto load =
+      std::ranges::find(batches, static_cast<std::uint16_t>(Species::SceneTexture::WorkerCarryLoad), &Neuron::QuadBatch::texture);
+    Assert::IsTrue(load != batches.end() && load->quads.size() == 1, L"the load's card");
+    const Neuron::SceneQuad& body = BatchesOf(batches, "worker_card").front()->quads.front();
+    const Neuron::SceneQuad& carried = load->quads.front();
+    Assert::IsTrue(carried.halfWidth == body.halfWidth && carried.axisRight == body.axisRight && carried.axisUp == body.axisUp,
+                   L"scaled and turned with the card");
+    Assert::AreEqual(Neuron::Length(view.camera - body.position) - 0.05, Neuron::Length(view.camera - carried.position), 1e-9,
+                     L"just in front of it");
+    const auto& color = CommittedPresentation().mvp.worker.loadColor;
+    Assert::AreEqual(static_cast<float>(color.b), carried.color[2], 1e-6f, L"in the load's colour");
+
+    carrier.state.dead = true;
+    batches.clear();
+    Species::AppendWorkerBatches(std::vector{carrier}, SeedOneTerrain().field, view, CommittedPresentation(), CommittedTuning(), batches);
+    Assert::IsTrue(std::ranges::find(batches, static_cast<std::uint16_t>(Species::SceneTexture::WorkerCarryLoad),
+                                     &Neuron::QuadBatch::texture) == batches.end(),
+                   L"a corpse carries nothing");
+  }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp025AnOrbDriftingHomeOrWaitingIsWrappedInACloudyGlow)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-023")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-025")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp025AnOrbDriftingHomeOrWaitingIsWrappedInACloudyGlow)
+  {
+    const auto& orb = CommittedPresentation().mvp.orb;
+    std::vector<Species::InterpolatedOrb> orbs(3);
+    orbs[0].state.state = Species::OrbState::Floating;
+    orbs[1].state.state = Species::OrbState::Drifting;
+    orbs[1].state.team = 2;
+    orbs[2].state.state = Species::OrbState::Waiting;
+    orbs[2].state.team = 2;
+    std::vector<Neuron::QuadBatch> batches;
+    Species::AppendOrbBatches(orbs, CommittedPresentation(), batches);
+    Assert::IsTrue(batches.size() == 2 && batches[0].quads.size() == 6, L"two quads an orb, then the clouds");
+    const Neuron::QuadBatch& clouds = batches[1];
+    Assert::IsTrue(clouds.texture == static_cast<std::uint16_t>(Species::SceneTexture::GlowCloudy) && clouds.quads.size() == 2,
+                   L"a cloud about each orb on its way home or waiting, and none about a floating one");
+    Assert::AreEqual(static_cast<float>(orb.cloudySize), clouds.quads[0].halfWidth, 1e-6f, L"its size");
+    Assert::AreEqual(static_cast<float>(orb.cloudyAlpha), clouds.quads[1].color[3], 1e-6f, L"its alpha");
+    Assert::AreEqual(Species::TeamColor(2)[0], clouds.quads[1].color[0], 1e-6f, L"in its settlement's colour");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(RUnit331AnOrbGrowsAtBirthAndFadesInAscent)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-UNIT-330")
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"R-UNIT-331")

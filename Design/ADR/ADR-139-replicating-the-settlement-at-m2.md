@@ -142,3 +142,4 @@ The plateau's 15.9 KB/s is within ADR-086's 64 KB/s skirmish cap, which the in-p
 * The rules: MVP-016, MVP-022, MVP-026, MVP-030, MVP-031, MVP-033 to MVP-035, MVP-090, MVP-097, MVP-102, R-BLDG-017, R-BLDG-408, R-BLDG-416, R-BLDG-422; owner decisions O81 and O88.
 * The code: GameShared (`ReplicatedState`, `StateUpdate`, `SettlementMessages`), GameLogic (`StateSender`, `Territory`, `WorldServer`, `IntegratedServer`), GameClient (`ClientSession`), NeuronCore (`StartupOptions`) and the two programs.
 * ADR-111 is amended with this record.
+* **Amendment 2026-10-22 (M2 task T12, [ADR-140](ADR-140-structures-drawn-and-the-stand-ins-at-m2.md)).** A Debug build's `--watch` with `--world` gives the steward's settlement to the scripted steward of ADR-138 from the world's start, and the steward commands nothing; the journal's start keeps the watched flag for a world as for the sandbox.

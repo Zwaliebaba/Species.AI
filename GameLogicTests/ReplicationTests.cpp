@@ -406,6 +406,50 @@ public:
     ExpectEqual(0, static_cast<std::int64_t>(client.replica.Totals().missingBaselines), L"every baseline was there");
     Assert::IsTrue(ReplayedHashes(server, tick, pool, tuning, &TestRecords()) == hashes, L"the same hash on every tick, headless");
   }
+
+  BEGIN_TEST_METHOD_ATTRIBUTE(Adr140AWatchedWorldsSettlementIsTheScriptedStewards)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-056")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-076")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Adr140AWatchedWorldsSettlementIsTheScriptedStewards)
+  {
+    // ADR-140: a Debug build's --watch in a settlement world hands the steward's settlement to the scripted steward of
+    // ADR-138, and the attached steward commands nothing; the journal holds it, so the replay gives the same hashes.
+    Species::WorldServer::Desc desc;
+    desc.tuning = CommittedTuning();
+    desc.structures = TestRecords();
+    desc.worldSeed = ValleyTerrain()->seed;
+    desc.stewardSite = SETTLED_TEAM;
+    desc.watched = true;
+    Species::WorldServer server(desc);
+    const std::uint64_t first = server.Open();
+    AttachedClient client(server);
+    Neuron::WorkerPool pool(2);
+    std::vector<std::uint64_t> hashes;
+    std::uint64_t tick = first;
+    for (; tick < first + 300; ++tick)
+    {
+      client.Deliver();
+      server.Step(tick, pool);
+      hashes.push_back(Species::HashWorld(*server.Simulation()).world);
+      client.Publish(tick);
+      client.Read();
+    }
+    const Species::RegionSimulation& region = server.Simulation()->Region(0);
+    Assert::IsTrue(region.ScriptedStewards().size() == 1 && region.ScriptedStewards().front().team == SETTLED_TEAM,
+                   L"the steward's settlement has its scripted steward");
+    const Species::RegionSimulation::Commander commander = region.CommanderOf(SETTLED_TEAM);
+    Assert::IsTrue(commander.sender == region.ScriptedStewards().front().id && commander.ai, L"which commands it, as an AI");
+    Assert::IsTrue(std::ranges::any_of(client.replica.Latest(),
+                                       [](const auto& _object)
+                                       {
+                                         const auto* structure = std::get_if<Species::ReplicatedStructure>(&_object.second);
+                                         return structure != nullptr && structure->kind == Species::StructureKind::Wellspring;
+                                       }),
+                   L"the client still sees the settlement");
+    Assert::IsTrue(ReplayedHashes(server, tick, pool, CommittedTuning(), &TestRecords()) == hashes,
+                   L"the same hash on every tick, headless");
+  }
 };
 
 TEST_CLASS(StateSenderTests)

@@ -7,6 +7,7 @@
 #include "Files.h"
 #include "FontPacker.h"
 #include "MeshCooker.h"
+#include "PlaceholderTexture.h"
 #include "RecordCooker.h"
 #include "SimulationRecordCooker.h"
 #include "TextEncoding.h"
@@ -220,12 +221,30 @@ BuildResult CookContent(const std::filesystem::path& _root, BuildReport& _report
       _report.Fail(file, std::format("its key {} is the key of {} too (AST-015)", entry.entry.key, at->second));
     }
   }
+  // AST-082 (O88, ADR-140): a row of the MVP's with no authored file takes a stand-in at its key, when the build makes one.
   for (const ManifestRow& row : manifest->Rows())
   {
     const bool authored = std::ranges::any_of(sources, [&](const Source& _source) { return _source.file == row.speciesFilename; });
-    if (!authored)
+    if (authored)
     {
-      ++result.rowsWithoutFile;
+      continue;
+    }
+    ++result.rowsWithoutFile;
+    if (std::optional<Neuron::CookedEntry> standIn = MakePlaceholderTexture(row))
+    {
+      // A stand-in meets its row as an authored file must, or the build fails with the ways it does not.
+      if (!CheckTexture(row, row.speciesFilename, standIn->bytes, _report))
+      {
+        continue;
+      }
+      if (const auto [at, added] = keys.emplace(standIn->entry.key, row.speciesFilename); !added)
+      {
+        _report.Fail(row.speciesFilename,
+                     std::format("its stand-in's key {} is the key of {} too (AST-015)", standIn->entry.key, at->second));
+        continue;
+      }
+      result.entries.push_back(std::move(*standIn));
+      ++result.placeholders;
     }
   }
   return result;

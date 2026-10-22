@@ -170,14 +170,16 @@ struct SceneQuad
 // The world passes that draw the scene's quads, meshes and triangles (RND-070), in their order.
 enum class ScenePass : std::uint8_t
 {
-  Actors,    // pass 7b
-  Pointers,  // pass 7b after the cloth: the flag pointers over the banners (ADR-125)
-  Workers,   // pass 7d
-  Effects,   // pass 10a
-  Lasers,    // pass 10b
-  Orbs,      // pass 11
-  Routes,    // pass 12
-  Particles, // pass 15
+  Structures,     // pass 6: the structures' solid parts (RND-163, ADR-140)
+  Actors,         // pass 7b
+  Pointers,       // pass 7b after the cloth: the flag pointers over the banners (ADR-125)
+  Workers,        // pass 7d
+  StructureAlpha, // pass 8: the port pads, the stars, the lights and the structures' glows (RND-164 to RND-168, ADR-140)
+  Effects,        // pass 10a
+  Lasers,         // pass 10b
+  Orbs,           // pass 11
+  Routes,         // pass 12
+  Particles,      // pass 15
   Count
 };
 
@@ -211,6 +213,7 @@ struct SceneMeshInstance
   Vec3 axisZ{0.0, 0.0, 1.0};
   std::array<float, 3> tint{1.0f, 1.0f, 1.0f}; // the tinted colour T × f
   float tintWeight = 0.0f;                     // the instance's weight: 0 for an instance of no team
+  float brightness = 1.0f;                     // ADR-140: what its lit colour is multiplied by, lower for an inactive structure
 };
 
 /// One draw of a scene mesh (ADR-122): its catalogue entry, its mesh, the view test's radius about each instance's

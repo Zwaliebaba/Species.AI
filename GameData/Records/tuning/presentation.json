@@ -398,6 +398,29 @@
         "highlight_wobble": 0.3,
         "pole_width_wu": 0.4,
         "pole_height_factor": 1.5
+      },
+      "port": {
+        "pad_height_wu": 0.5,
+        "status_star_size_wu": 6,
+        "status_occupied_rgb": {
+          "r": 0.3,
+          "g": 1.0,
+          "b": 0.3
+        },
+        "status_empty_rgb": {
+          "r": 1.0,
+          "g": 0.3,
+          "b": 0.3
+        }
+      },
+      "structure": {
+        "light_cycle_ticks": 10,
+        "light_ticks_per_team": 2,
+        "light_quads": 10,
+        "light_size_wu": 6
+      },
+      "turret": {
+        "tint_weight": 0.2
       }
     },
     "weapon": {
@@ -486,6 +509,30 @@
       "disc_size_factor": 0.8,
       "disc_alpha": 0.35,
       "circle_fade_seconds": 0.4
+    },
+    "structure": {
+      "rise_depth_factor": 1.0,
+      "inactive_brightness": 0.35,
+      "flash_size": 40,
+      "flash_seconds": 0.5
+    },
+    "wellspring": {
+      "glow_blobs": 5,
+      "glow_radius": 12,
+      "glow_size": 22,
+      "glow_alpha": 0.45,
+      "glow_turn_seconds": 24
+    },
+    "orb": {
+      "cloudy_size": 16,
+      "cloudy_alpha": 0.5
+    },
+    "worker": {
+      "load_color": {
+        "r": 0.6,
+        "g": 0.9,
+        "b": 1.0
+      }
     }
   },
   "dbg": {

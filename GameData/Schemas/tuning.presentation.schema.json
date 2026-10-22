@@ -3288,10 +3288,197 @@
               "additionalProperties": false,
               "x-species-type": "object",
               "x-species-presence": "required"
+            },
+            "port": {
+              "type": "object",
+              "description": "the ref.bldg.port.* keys",
+              "properties": {
+                "pad_height_wu": {
+                  "type": "number",
+                  "description": "ref.bldg.port.pad_height_wu (R-BLDG-046)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu above the terrain",
+                  "x-species-presence": "required"
+                },
+                "status_star_size_wu": {
+                  "type": "number",
+                  "description": "ref.bldg.port.status_star_size_wu (R-BLDG-046)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                },
+                "status_occupied_rgb": {
+                  "type": "object",
+                  "description": "ref.bldg.port.status_occupied_rgb (R-BLDG-046)",
+                  "properties": {
+                    "r": {
+                      "type": "number",
+                      "description": "ref.bldg.port.status_occupied_rgb.r",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "linear RGB",
+                      "x-species-presence": "required"
+                    },
+                    "g": {
+                      "type": "number",
+                      "description": "ref.bldg.port.status_occupied_rgb.g",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "linear RGB",
+                      "x-species-presence": "required"
+                    },
+                    "b": {
+                      "type": "number",
+                      "description": "ref.bldg.port.status_occupied_rgb.b",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "linear RGB",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "r",
+                    "g",
+                    "b"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                },
+                "status_empty_rgb": {
+                  "type": "object",
+                  "description": "ref.bldg.port.status_empty_rgb (R-BLDG-046)",
+                  "properties": {
+                    "r": {
+                      "type": "number",
+                      "description": "ref.bldg.port.status_empty_rgb.r",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "linear RGB",
+                      "x-species-presence": "required"
+                    },
+                    "g": {
+                      "type": "number",
+                      "description": "ref.bldg.port.status_empty_rgb.g",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "linear RGB",
+                      "x-species-presence": "required"
+                    },
+                    "b": {
+                      "type": "number",
+                      "description": "ref.bldg.port.status_empty_rgb.b",
+                      "minimum": 0,
+                      "x-species-precision": "binary64",
+                      "x-species-type": "sim_decimal",
+                      "x-species-unit": "linear RGB",
+                      "x-species-presence": "required"
+                    }
+                  },
+                  "required": [
+                    "r",
+                    "g",
+                    "b"
+                  ],
+                  "additionalProperties": false,
+                  "x-species-type": "object",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "pad_height_wu",
+                "status_star_size_wu",
+                "status_occupied_rgb",
+                "status_empty_rgb"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "structure": {
+              "type": "object",
+              "description": "the ref.bldg.structure.* keys",
+              "properties": {
+                "light_cycle_ticks": {
+                  "type": "integer",
+                  "description": "ref.bldg.structure.light_cycle_ticks (R-BLDG-045)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                },
+                "light_ticks_per_team": {
+                  "type": "integer",
+                  "description": "ref.bldg.structure.light_ticks_per_team (R-BLDG-045)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "ticks",
+                  "x-species-presence": "required"
+                },
+                "light_quads": {
+                  "type": "integer",
+                  "description": "ref.bldg.structure.light_quads (R-BLDG-045)",
+                  "minimum": 0,
+                  "x-species-type": "count",
+                  "x-species-unit": "quads",
+                  "x-species-presence": "required"
+                },
+                "light_size_wu": {
+                  "type": "number",
+                  "description": "ref.bldg.structure.light_size_wu (R-BLDG-045)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "wu",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "light_cycle_ticks",
+                "light_ticks_per_team",
+                "light_quads",
+                "light_size_wu"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            },
+            "turret": {
+              "type": "object",
+              "description": "the ref.bldg.turret.* keys",
+              "properties": {
+                "tint_weight": {
+                  "type": "number",
+                  "description": "ref.bldg.turret.tint_weight (R-BLDG-428)",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "weight",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "tint_weight"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
             }
           },
           "required": [
-            "cloth_flag"
+            "cloth_flag",
+            "port",
+            "structure",
+            "turret"
           ],
           "additionalProperties": false,
           "x-species-type": "object",
@@ -4004,12 +4191,211 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "structure": {
+          "type": "object",
+          "description": "the mvp.structure.* keys",
+          "properties": {
+            "rise_depth_factor": {
+              "type": "number",
+              "description": "mvp.structure.rise_depth_factor (MVP-033, MVP-083)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "of the structure's height",
+              "x-species-presence": "required"
+            },
+            "inactive_brightness": {
+              "type": "number",
+              "description": "mvp.structure.inactive_brightness (MVP-035, MVP-083)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "brightness multiplier",
+              "x-species-presence": "required"
+            },
+            "flash_size": {
+              "type": "number",
+              "description": "mvp.structure.flash_size (MVP-083)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu, half-size",
+              "x-species-presence": "required"
+            },
+            "flash_seconds": {
+              "type": "number",
+              "description": "mvp.structure.flash_seconds (MVP-083)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "s",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "rise_depth_factor",
+            "inactive_brightness",
+            "flash_size",
+            "flash_seconds"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "wellspring": {
+          "type": "object",
+          "description": "the mvp.wellspring.* keys",
+          "properties": {
+            "glow_blobs": {
+              "type": "integer",
+              "description": "mvp.wellspring.glow_blobs (MVP-083)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "quads",
+              "x-species-presence": "required"
+            },
+            "glow_radius": {
+              "type": "number",
+              "description": "mvp.wellspring.glow_radius (MVP-083)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            },
+            "glow_size": {
+              "type": "number",
+              "description": "mvp.wellspring.glow_size (MVP-083)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu, half-size",
+              "x-species-presence": "required"
+            },
+            "glow_alpha": {
+              "type": "number",
+              "description": "mvp.wellspring.glow_alpha (MVP-083)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "alpha",
+              "x-species-presence": "required"
+            },
+            "glow_turn_seconds": {
+              "type": "number",
+              "description": "mvp.wellspring.glow_turn_seconds (MVP-083)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "s per turn",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "glow_blobs",
+            "glow_radius",
+            "glow_size",
+            "glow_alpha",
+            "glow_turn_seconds"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "orb": {
+          "type": "object",
+          "description": "the mvp.orb.* keys",
+          "properties": {
+            "cloudy_size": {
+              "type": "number",
+              "description": "mvp.orb.cloudy_size (MVP-082)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu, half-size",
+              "x-species-presence": "required"
+            },
+            "cloudy_alpha": {
+              "type": "number",
+              "description": "mvp.orb.cloudy_alpha (MVP-082)",
+              "minimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "alpha",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "cloudy_size",
+            "cloudy_alpha"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
+        "worker": {
+          "type": "object",
+          "description": "the mvp.worker.* keys",
+          "properties": {
+            "load_color": {
+              "type": "object",
+              "description": "mvp.worker.load_color (MVP-082)",
+              "properties": {
+                "r": {
+                  "type": "number",
+                  "description": "mvp.worker.load_color.r",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "linear RGB",
+                  "x-species-presence": "required"
+                },
+                "g": {
+                  "type": "number",
+                  "description": "mvp.worker.load_color.g",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "linear RGB",
+                  "x-species-presence": "required"
+                },
+                "b": {
+                  "type": "number",
+                  "description": "mvp.worker.load_color.b",
+                  "minimum": 0,
+                  "x-species-precision": "binary64",
+                  "x-species-type": "sim_decimal",
+                  "x-species-unit": "linear RGB",
+                  "x-species-presence": "required"
+                }
+              },
+              "required": [
+                "r",
+                "g",
+                "b"
+              ],
+              "additionalProperties": false,
+              "x-species-type": "object",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "load_color"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
         "light",
         "cursor",
-        "selection"
+        "selection",
+        "structure",
+        "wellspring",
+        "orb",
+        "worker"
       ],
       "additionalProperties": false,
       "x-species-type": "object",

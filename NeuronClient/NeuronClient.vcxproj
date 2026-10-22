@@ -270,6 +270,9 @@
     <FXCompile Include="Shader\FinalVS.hlsl">
       <ShaderType>Vertex</ShaderType>
     </FXCompile>
+    <FXCompile Include="Shader\MeshLitFogPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
     <FXCompile Include="Shader\MeshLitPS.hlsl">
       <ShaderType>Pixel</ShaderType>
     </FXCompile>
@@ -310,6 +313,9 @@
       <ShaderType>Vertex</ShaderType>
     </FXCompile>
     <FXCompile Include="Shader\UnlitTexturedCutoutPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FXCompile>
+    <FXCompile Include="Shader\UnlitTexturedGlowFogPS.hlsl">
       <ShaderType>Pixel</ShaderType>
     </FXCompile>
     <FXCompile Include="Shader\UnlitTexturedLevelZeroPS.hlsl">
