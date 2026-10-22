@@ -83,6 +83,10 @@ void WriteSettlement(Neuron::BitWriter& _writer, const Settlement& _settlement)
     _writer.WriteBits(site.slot, 32);
   }
   _writer.WriteSigned(_settlement.growthTicks, 32);
+  for (const std::uint8_t share : _settlement.priorities)
+  {
+    _writer.WriteBits(share, 8);
+  }
 }
 
 bool ReadSettlement(Neuron::BitReader& _reader, Settlement& _settlement)
@@ -113,7 +117,13 @@ bool ReadSettlement(Neuron::BitReader& _reader, Settlement& _settlement)
     site.slot = static_cast<std::uint32_t>(_reader.ReadBits(32));
   }
   _settlement.growthTicks = static_cast<std::int32_t>(_reader.ReadSigned(32));
-  return !_reader.Failed() && finite && _settlement.wellspringId != 0 && _settlement.storesMilliRu >= 0 &&
+  std::uint32_t shares = 0;
+  for (std::uint8_t& share : _settlement.priorities)
+  {
+    share = static_cast<std::uint8_t>(_reader.ReadBits(8));
+    shares += share;
+  }
+  return !_reader.Failed() && shares == 100 && finite && _settlement.wellspringId != 0 && _settlement.storesMilliRu >= 0 &&
          _settlement.territoryRadius >= 0.0;
 }
 

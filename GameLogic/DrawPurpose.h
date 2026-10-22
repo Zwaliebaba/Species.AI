@@ -45,7 +45,8 @@ enum class DrawPurpose : std::uint64_t
   AiOffset = 33,     // R-BOT-076, R-BOT-085, R-UNIT-188: an AI order point's offset; the subject is the figure ordered
   DoorJitter = 34,   // R-ECON-043, MVP-021: a Worker's jitter at its Wellspring's door, x, y then z; the subject is the Worker
   TurretSweep = 35,  // R-BLDG-412: a turret's idle aim point, first or turned; the subject is the turret
-  RoundPush = 36     // R-CRATE-451 step 3: a turret round's knock-back jitter, x, y then z per actor; the subject is the round
+  RoundPush = 36,    // R-CRATE-451 step 3: a turret round's knock-back jitter, x, y then z per actor; the subject is the round
+  GuardPoint = 37    // MVP-036: a guard's point near its Wellspring, angle then distance; the subject is the Worker
 };
 
 [[nodiscard]] constexpr std::uint64_t PurposeOf(DrawPurpose _purpose) noexcept

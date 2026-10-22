@@ -21,7 +21,7 @@ Neuron::Vec3 DefaultFront(const TuningMvp& _tuning) noexcept
 }
 
 // The state's bounds of the enumerations it holds.
-constexpr std::uint64_t WORKER_STATE_MAX = static_cast<std::uint64_t>(WorkerState::Manning);
+constexpr std::uint64_t WORKER_STATE_MAX = static_cast<std::uint64_t>(WorkerState::Carrying);
 constexpr std::uint64_t WORKER_STATE_MAX_BEFORE_PORTS = static_cast<std::uint64_t>(WorkerState::FollowingLeader);
 constexpr std::uint64_t WORKER_STATE_MAX_BEFORE_LEADERS = static_cast<std::uint64_t>(WorkerState::Burning);
 constexpr std::uint64_t THREAT_KIND_MAX = static_cast<std::uint64_t>(ThreatKind::Grenade);
@@ -187,6 +187,10 @@ void WriteFigure(Neuron::BitWriter& _writer, const Figure& _figure)
   _writer.WriteBits(_figure.portStructureId, 64);
   _writer.WriteBits(_figure.portStructureSlot, 32);
   _writer.WriteBits(_figure.portIndex, 32);
+  _writer.WriteBounded(static_cast<std::uint64_t>(_figure.task), WORKER_TASK_MAX);
+  _writer.WriteBounded(static_cast<std::uint64_t>(_figure.idleReason), IDLE_REASON_MAX);
+  _writer.WriteSigned(_figure.taskTicks, 32);
+  _writer.WriteSigned(_figure.carriedMilliRu, 64);
 }
 
 bool ReadFigure(Neuron::BitReader& _reader, Figure& _figure, std::uint32_t _stateVersion, const TuningMvp& _tuning)
@@ -293,8 +297,12 @@ bool ReadFigure(Neuron::BitReader& _reader, Figure& _figure, std::uint32_t _stat
     _figure.portStructureId = _reader.ReadBits(64);
     _figure.portStructureSlot = static_cast<std::uint32_t>(_reader.ReadBits(32));
     _figure.portIndex = static_cast<std::uint32_t>(_reader.ReadBits(32));
+    _figure.task = static_cast<WorkerTask>(_reader.ReadBounded(WORKER_TASK_MAX));
+    _figure.idleReason = static_cast<IdleReason>(_reader.ReadBounded(IDLE_REASON_MAX));
+    _figure.taskTicks = static_cast<std::int32_t>(_reader.ReadSigned(32));
+    _figure.carriedMilliRu = _reader.ReadSigned(64);
   }
-  return !_reader.Failed() && finite && _figure.id != 0 && _figure.nearestNode >= -1;
+  return !_reader.Failed() && finite && _figure.id != 0 && _figure.nearestNode >= -1 && _figure.carriedMilliRu >= 0;
 }
 
 } // namespace Species

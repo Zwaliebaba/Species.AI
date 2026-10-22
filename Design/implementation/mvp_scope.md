@@ -91,6 +91,8 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 > **Amendment 2026-10-21 (O84).** The gathering search is not bounded by `ref.unit.worker.port_search_range`: a gathering Worker takes the nearest free gathering port anywhere in its territory, or at the central resource site while its settlement holds it, because the nearest resource sites lie 350 wu from the Wellspring (WLD-082). The 100 wu stays the range of the idle Worker's port search (R-UNIT-090).
 
+> **Amendment 2026-10-22 (M2 task T7; [ADR-135](../ADR/ADR-135-settlement-tasks-gathering-and-upkeep-at-m2.md)).** A gatherer walks to its port and to its drop-off point along routes of the land route graph. It puts its load down at the Wellspring's door or a built, active storehouse's entrance, whichever is nearest. The central resource site is gathered only while its settlement holds it by a claim, so not at M2.
+
 **MVP-032** (MUST) The steward places a structure in its territory, outside the core's centre ring that keeps the Wellspring's ports clear, on ground whose slope the walkability rules allow (R-SIM-335 to R-SIM-338), not overlapping another structure, a resource site or a port. Placing pays its cost from the stores at once and queues a construction site; the queue holds at most `mvp.construction.queue_max` (8) sites, which are built in order.
 
 > **Amendment 2026-10-21 (M2 task T5; [ADR-132](../ADR/ADR-132-placement-and-construction-at-m2.md)).** The core's centre ring has the radius `mvp.construction.center_ring_radius` (60 wu) about the Wellspring: a structure lies wholly outside it. Until T6 builds the territory's bounds (WLD-060), a structure lies wholly inside the disc of the territory's radius about the Wellspring; ground is walkable where the terrain is above the shore height and its normal's y component is at least `ref.sim.walk.min_normal_y` at the structure's position and at every one of its ports; and two structures overlap when their bounding spheres' footprints do, or when a port lies within its 5 wu radius of a footprint.
@@ -108,7 +110,11 @@ A no to the first question stops the MVP at M3 for a redesign; M4 is built only 
 
 **MVP-036** (MUST) The steward's settlement priorities are three shares that sum to 100 %: gathering, construction and guard duty, by default `mvp.priority.default_gather` (50 %), `mvp.priority.default_construct` (30 %) and `mvp.priority.default_guard` (20 %) (PIL-052). The task search assigns tasks so that the shares of Workers that are not following a Leader approach the set shares; a task with no work (no free port, an empty queue) releases its share to the others. Guard duty mans turret ports and otherwise gathers Workers near the Wellspring, from where the threat search of R-UNIT-098 and R-UNIT-099 sends them to fight.
 
+> **Amendment 2026-10-22 (M2 task T7; [ADR-135](../ADR/ADR-135-settlement-tasks-gathering-and-upkeep-at-m2.md)).** Each Worker holds its task. An idle Worker that follows no Leader takes, at its own task search, the task with work furthest below its share of the settlement's Workers, once the tasks with no work have released their shares in proportion. Guard duty always has work: with no free turret port, a guard stands within `mvp.guard.gather_radius` (100 wu) of the Wellspring.
+
 **MVP-037** (MUST) A Worker with no task wanders as the reference Worker does (R-UNIT-087 to R-UNIT-097), so that a settlement never stands still on screen. The settlement panel shows, for every Worker that is idle, why: no free port, the queue is empty, the store is full, or its share is met (PIL-054, PIL-020).
+
+> **Amendment 2026-10-22 (M2 task T7; [ADR-135](../ADR/ADR-135-settlement-tasks-gathering-and-upkeep-at-m2.md)).** As guard duty always has work, a Worker has no task only when guard duty has no share and every task with a share has no work. It then gives that task's reason: the queue is empty for construction, otherwise no free port. A carrier at a full store gives "the store is full". "Its share is met" cannot arise from MVP-036's rule as built.
 
 **MVP-038** (MUST) A settlement's strength (PIL-058) for the MVP's statistics is its Workers at `mvp.strength.worker_ru` (20 ru) each, plus its stores, plus each structure at its cost.
 
@@ -339,6 +345,7 @@ All values are provisional first guesses, stated at the session pace (§1.3). **
 | `mvp.priority.default_gather` | 50 | % | — | provisional | MVP-036 | — |
 | `mvp.priority.default_construct` | 30 | % | — | provisional | MVP-036 | — |
 | `mvp.priority.default_guard` | 20 | % | — | provisional | MVP-036 | — |
+| `mvp.guard.gather_radius` | 100 | wu from the Wellspring | — | provisional | MVP-036 | Guard duty with no turret port gathers here, near enough that the threat search of R-UNIT-098 covers the core |
 | `mvp.strength.worker_ru` | 20 | ru per Worker | — | provisional | MVP-038 | Equal to the orb cost |
 | `mvp.expedition.size_max` | 200 | Workers | — | provisional | MVP-041 | With the defenders, a battle of 300 to 450 figures (PIL-021) |
 | `mvp.conflict.attack_cost_ru` | 300 | ru | — | provisional | MVP-042 | An attack must cost a dwelling's worth |

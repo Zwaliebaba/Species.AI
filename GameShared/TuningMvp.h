@@ -178,6 +178,12 @@ struct TuningMvp
       double defaultGuard = 0.0;
     };
 
+    struct Guard
+    {
+      // mvp.guard.gather_radius, in wu
+      double gatherRadius = 0.0;
+    };
+
     struct Strength
     {
       // mvp.strength.worker_ru, in ru per Worker
@@ -444,6 +450,7 @@ struct TuningMvp
     Cost cost;
     Upkeep upkeep;
     Priority priority;
+    Guard guard;
     Strength strength;
     Expedition expedition;
     Conflict conflict;
@@ -1868,6 +1875,12 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::Guard& _out)
+{
+  _out.gatherRadius = _reader.Decimal(_object, "gather_radius", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Mvp::Strength& _out)
 {
   _out.workerRu = _reader.Decimal(_object, "worker_ru", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
@@ -2056,6 +2069,7 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "cost"), _out.cost);
   ReadFields(_reader, _reader.Object(_object, "upkeep"), _out.upkeep);
   ReadFields(_reader, _reader.Object(_object, "priority"), _out.priority);
+  ReadFields(_reader, _reader.Object(_object, "guard"), _out.guard);
   ReadFields(_reader, _reader.Object(_object, "strength"), _out.strength);
   ReadFields(_reader, _reader.Object(_object, "expedition"), _out.expedition);
   ReadFields(_reader, _reader.Object(_object, "conflict"), _out.conflict);
@@ -3018,6 +3032,16 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Prio
   _out.defaultGuard = _reader.F64();
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Guard& _in)
+{
+  _writer.F64(_in.gatherRadius);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp::Guard& _out)
+{
+  _out.gatherRadius = _reader.F64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp::Strength& _in)
 {
   _writer.F64(_in.workerRu);
@@ -3334,6 +3358,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Mvp& _in)
   CookFields(_writer, _in.cost);
   CookFields(_writer, _in.upkeep);
   CookFields(_writer, _in.priority);
+  CookFields(_writer, _in.guard);
   CookFields(_writer, _in.strength);
   CookFields(_writer, _in.expedition);
   CookFields(_writer, _in.conflict);
@@ -3374,6 +3399,7 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Mvp& _out
   ReadCookedFields(_reader, _out.cost);
   ReadCookedFields(_reader, _out.upkeep);
   ReadCookedFields(_reader, _out.priority);
+  ReadCookedFields(_reader, _out.guard);
   ReadCookedFields(_reader, _out.strength);
   ReadCookedFields(_reader, _out.expedition);
   ReadCookedFields(_reader, _out.conflict);

@@ -68,6 +68,9 @@
       "default_construct": 30,
       "default_guard": 20
     },
+    "guard": {
+      "gather_radius": 100
+    },
     "strength": {
       "worker_ru": 20
     },

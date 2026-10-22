@@ -79,6 +79,7 @@ public:
     Species::Settlement& settlement = region.Settlements().front();
     const std::int64_t stores = Species::MilliRuOf(1000.0);
     settlement.storesMilliRu = stores;
+    settlement.priorities = {0, 0, 100}; // guard duty alone, so that nothing is gathered
     const std::int32_t interval = Species::GrowthIntervalTicks(CommittedTuning());
     std::vector<std::uint64_t> grown;
     std::vector<std::uint64_t> paid;

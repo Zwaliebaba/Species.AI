@@ -135,6 +135,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-132](ADR-132-placement-and-construction-at-m2.md) | Placement and construction at M2 | Proposed | 2026-10-21 |
 | [ADR-133](ADR-133-the-gun-turret-at-m2.md) | The gun turret at M2 | Proposed | 2026-10-22 |
 | [ADR-134](ADR-134-territory-essence-growth-contact-and-the-seen-layer-at-m2.md) | Territory, Essence growth, contact and the seen layer at M2 | Proposed | 2026-10-22 |
+| [ADR-135](ADR-135-settlement-tasks-gathering-and-upkeep-at-m2.md) | Settlement tasks, gathering and upkeep at M2 | Proposed | 2026-10-22 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

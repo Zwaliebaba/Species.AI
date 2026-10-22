@@ -118,6 +118,12 @@ struct Figure
   StableId portStructureId = 0;        // R-UNIT-090: the structure whose port it walks to or operates; 0 for none
   std::uint32_t portStructureSlot = 0; // that structure's slot, which resolves only while the structure holds it
   std::uint32_t portIndex = 0;         // the port, in its structure's port order
+  // From state version 9 (M2 task T7), a Worker of a settlement (ADR-135); while Carrying, the port structure above is
+  // its drop-off point:
+  WorkerTask task = WorkerTask::None;       // MVP-036
+  IdleReason idleReason = IdleReason::None; // MVP-037
+  std::int32_t taskTicks = 0;               // MVP-031: the ticks it has manned its gathering port
+  std::int64_t carriedMilliRu = 0;          // MVP-031: the load it carries
 };
 
 // R-UNIT-011 and R-UNIT-015 (R-SIM-109): sets the kind, the stats of the stat table, the actor-grid radius

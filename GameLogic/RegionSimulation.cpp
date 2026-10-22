@@ -14,6 +14,7 @@
 #include "Weapons.h"
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <utility>
 #include <vector>
@@ -626,6 +627,10 @@ const Settlement& RegionSimulation::FoundSettlement(std::uint8_t _site, bool _st
   settlement.cladan.color = _site;
   settlement.territoryRadius = m_tuning->wld.territory.foundingRadius;
   settlement.growthTicks = GrowthIntervalTicks(*m_tuning);
+  const auto& priority = m_tuning->mvp.priority;
+  settlement.priorities = {static_cast<std::uint8_t>(std::lround(priority.defaultGather)),
+                           static_cast<std::uint8_t>(std::lround(priority.defaultConstruct)),
+                           static_cast<std::uint8_t>(std::lround(priority.defaultGuard))};
   const Neuron::Vec3 outward{center.x - layout.valleyCenter.x, 0.0, center.z - layout.valleyCenter.z};
   settlement.wellspringSlot = AddStructure(StructureKind::Wellspring, settlement.team, std::nullopt, center.x, center.z, outward);
   settlement.wellspringId = m_structures.At(settlement.wellspringSlot).id;

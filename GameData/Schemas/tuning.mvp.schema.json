@@ -536,6 +536,27 @@
           "x-species-type": "object",
           "x-species-presence": "required"
         },
+        "guard": {
+          "type": "object",
+          "description": "the mvp.guard.* keys",
+          "properties": {
+            "gather_radius": {
+              "type": "number",
+              "description": "mvp.guard.gather_radius (MVP-036)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "wu",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "gather_radius"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
+        },
         "strength": {
           "type": "object",
           "description": "the mvp.strength.* keys",
@@ -1418,7 +1439,8 @@
         "unit",
         "nav",
         "sandbox",
-        "perf"
+        "perf",
+        "guard"
       ],
       "additionalProperties": false,
       "x-species-type": "object",

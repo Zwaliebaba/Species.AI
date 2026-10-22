@@ -168,6 +168,7 @@
     <ClInclude Include="Sandbox.h" />
     <ClInclude Include="SeenLayer.h" />
     <ClInclude Include="Settlement.h" />
+    <ClInclude Include="SettlementTasks.h" />
     <ClInclude Include="SlicedPool.h" />
     <ClInclude Include="StableIdCounter.h" />
     <ClInclude Include="StateHash.h" />
@@ -208,6 +209,7 @@
     <ClCompile Include="Sandbox.cpp" />
     <ClCompile Include="SeenLayer.cpp" />
     <ClCompile Include="Settlement.cpp" />
+    <ClCompile Include="SettlementTasks.cpp" />
     <ClCompile Include="StableIdCounter.cpp" />
     <ClCompile Include="StateHash.cpp" />
     <ClCompile Include="StateSender.cpp" />

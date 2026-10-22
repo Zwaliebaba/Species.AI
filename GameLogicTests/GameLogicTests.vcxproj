@@ -183,6 +183,7 @@
     <ClCompile Include="SlicedPoolTests.cpp" />
     <ClCompile Include="StateHashTests.cpp" />
     <ClCompile Include="StructureTests.cpp" />
+    <ClCompile Include="TaskTests.cpp" />
     <ClCompile Include="TerritoryTests.cpp" />
     <ClCompile Include="TestSupport.cpp" />
     <ClCompile Include="TurretTests.cpp" />

@@ -6,6 +6,7 @@
 #include "LeaderOrders.h"
 #include "Navigation.h"
 #include "RegionSimulation.h"
+#include "SettlementTasks.h"
 #include "StructureAdvance.h"
 
 #include <cmath>
@@ -145,7 +146,8 @@ void FollowingLeaderStep(Figure& _worker, const FigureContext& _context)
 // it search for threats (table 2.5-A, R-UNIT-089).
 void TaskSearch(Figure& _figure, const FigureContext& _context)
 {
-  if (_figure.workerState == WorkerState::Manning && !_figure.playerOrders)
+  // Table 2.5-A: a manning or carrying Worker searches for nothing (MVP-031 for the carrier).
+  if ((_figure.workerState == WorkerState::Manning || _figure.workerState == WorkerState::Carrying) && !_figure.playerOrders)
   {
     return;
   }
@@ -172,7 +174,7 @@ void TaskSearch(Figure& _figure, const FigureContext& _context)
     _figure.workerState = WorkerState::OnWaypointOrder;
     return;
   }
-  if (LeaderSearch(_figure, _context))
+  if (LeaderSearch(_figure, _context) || SettlementTaskSearch(_figure, _context))
   {
     return;
   }
@@ -198,7 +200,15 @@ void ToPortStep(Figure& _worker, const FigureContext& _context)
     return;
   }
   OperatePort(*port, _context.self.team, *_context.movement->tuning);
-  _worker.waypoint = port->position;
+  // A settlement's task gives the walk a route (ADR-135); its end is the port itself.
+  if (_worker.route != 0)
+  {
+    FollowRoute(_worker, *_context.movement);
+  }
+  if (_worker.route == 0)
+  {
+    _worker.waypoint = port->position;
+  }
   if (WorkerMoveToWaypoint(_worker, false, *_context.movement))
   {
     _worker.front = port->front;
@@ -208,7 +218,7 @@ void ToPortStep(Figure& _worker, const FigureContext& _context)
 }
 
 // R-UNIT-070: a manning Worker stands still while it is its port's occupant, and becomes Idle when its structure is
-// gone or the port's occupant is not this Worker.
+// gone or the port's occupant is not this Worker; a gatherer counts its time at the port (MVP-031).
 void ManningStep(Figure& _worker, const FigureContext& _context)
 {
   const StructurePort* port = TargetPort(*_context.region, _worker);
@@ -218,6 +228,7 @@ void ManningStep(Figure& _worker, const FigureContext& _context)
     return;
   }
   _worker.velocity = {};
+  GatherAtPort(_worker, _context);
 }
 
 } // namespace
@@ -313,6 +324,9 @@ bool WorkerAdvance(Figure& _figure, const FigureContext& _context)
       break;
     case WorkerState::Manning:
       ManningStep(_figure, _context);
+      break;
+    case WorkerState::Carrying:
+      CarryingStep(_figure, _context);
       break;
     case WorkerState::Drowning:
     case WorkerState::Burning:
