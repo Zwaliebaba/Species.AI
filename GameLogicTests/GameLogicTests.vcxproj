@@ -169,6 +169,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ActorGridTests.cpp" />
+    <ClCompile Include="BattleTests.cpp" />
     <ClCompile Include="BotTests.cpp" />
     <ClCompile Include="ClaimTests.cpp" />
     <ClCompile Include="CombatTests.cpp" />

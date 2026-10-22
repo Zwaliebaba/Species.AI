@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "Battles.h"
 #include "Claims.h"
 #include "Construction.h"
 #include "RegionSimulation.h"
@@ -107,6 +108,29 @@ CommandExecution SendTributeCommanded(RegionSimulation& _region, const SendTribu
               : CommandExecution{CommandEffect::NoEffect, static_cast<std::uint8_t>(paid.error())};
 }
 
+// MVP-041 and MVP-042 (ADR-161): the team's settlement declares an attack.
+CommandExecution DeclareAttackCommanded(RegionSimulation& _region, const DeclareAttackCommand& _command)
+{
+  const Settlement* settlement = SettlementOfTeam(_region, _command.team);
+  if (settlement == nullptr)
+  {
+    return {CommandEffect::NoEffect, static_cast<std::uint8_t>(AttackRefusal::NoSettlement)};
+  }
+  const auto declared = DeclareAttack(_region, settlement->site, _command.leaders, _command.target, _command.claim);
+  return declared ? CommandExecution{CommandEffect::Applied, 0}
+                  : CommandExecution{CommandEffect::NoEffect, static_cast<std::uint8_t>(declared.error())};
+}
+
+// MVP-045 (ADR-161): the team's settlement withdraws its expedition.
+CommandExecution WithdrawAttackCommanded(RegionSimulation& _region, const WithdrawAttackCommand& _command)
+{
+  const Settlement* settlement = SettlementOfTeam(_region, _command.team);
+  const std::optional<AttackRefusal> refusal =
+    settlement != nullptr ? WithdrawAttack(_region, settlement->site) : std::optional<AttackRefusal>(AttackRefusal::NoSettlement);
+  return refusal ? CommandExecution{CommandEffect::NoEffect, static_cast<std::uint8_t>(*refusal)}
+                 : CommandExecution{CommandEffect::Applied, 0};
+}
+
 // One command type, permitted when its sender commands the team it names, a steward or an AI alike (DEC-122).
 template <class T, class R> void Add(RegionSimulation& _region, R (*_execute)(RegionSimulation&, const T&))
 {
@@ -126,6 +150,8 @@ void RegisterSettlementCommands(RegionSimulation& _region)
   Add<MakeClaimCommand>(_region, &MakeClaimCommanded);
   Add<WithdrawClaimCommand>(_region, &WithdrawClaimCommanded);
   Add<SendTributeCommand>(_region, &SendTributeCommanded);
+  Add<DeclareAttackCommand>(_region, &DeclareAttackCommanded);
+  Add<WithdrawAttackCommand>(_region, &WithdrawAttackCommanded);
 }
 
 SettlementStatus StatusOf(const RegionSimulation& _region, const Settlement& _settlement, std::uint64_t _tick)

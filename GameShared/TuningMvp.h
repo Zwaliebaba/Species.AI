@@ -1794,6 +1794,12 @@ struct TuningMvp
       double valleyPathFactor = 0.0;
     };
 
+    struct Scale
+    {
+      // wld.scale.battles_per_region_max, in battles in progress in one region
+      std::int64_t battlesPerRegionMax = 0;
+    };
+
     Region region;
     Site site;
     Terrain terrain;
@@ -1802,6 +1808,7 @@ struct TuningMvp
     View view;
     Resource resource;
     Travel travel;
+    Scale scale;
   };
 
   struct Pil
@@ -1810,6 +1817,9 @@ struct TuningMvp
     {
       // pil.battle.min_respite_minutes, in minutes from a battle's start
       double minRespiteMinutes = 0.0;
+
+      // pil.battle.max_minutes, in minutes of world time
+      double maxMinutes = 0.0;
     };
 
     struct Conflict
@@ -2898,6 +2908,12 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   _reader.Close(_object);
 }
 
+inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Wld::Scale& _out)
+{
+  _out.battlesPerRegionMax = _reader.Integer(_object, "battles_per_region_max", 0);
+  _reader.Close(_object);
+}
+
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Wld& _out)
 {
   ReadFields(_reader, _reader.Object(_object, "region"), _out.region);
@@ -2908,12 +2924,14 @@ inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _obje
   ReadFields(_reader, _reader.Object(_object, "view"), _out.view);
   ReadFields(_reader, _reader.Object(_object, "resource"), _out.resource);
   ReadFields(_reader, _reader.Object(_object, "travel"), _out.travel);
+  ReadFields(_reader, _reader.Object(_object, "scale"), _out.scale);
   _reader.Close(_object);
 }
 
 inline void ReadFields(Neuron::RecordReader& _reader, Neuron::RecordObject _object, TuningMvp::Pil::Battle& _out)
 {
   _out.minRespiteMinutes = _reader.Decimal(_object, "min_respite_minutes", {.minimum = 0.0}, Neuron::SimPrecision::Binary64);
+  _out.maxMinutes = _reader.Decimal(_object, "max_minutes", {.exclusiveMinimum = 0.0}, Neuron::SimPrecision::Binary64);
   _reader.Close(_object);
 }
 
@@ -4875,6 +4893,16 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Wld::Trav
   _out.valleyPathFactor = _reader.F64();
 }
 
+inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld::Scale& _in)
+{
+  _writer.I64(_in.battlesPerRegionMax);
+}
+
+inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Wld::Scale& _out)
+{
+  _out.battlesPerRegionMax = _reader.I64();
+}
+
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld& _in)
 {
   CookFields(_writer, _in.region);
@@ -4885,6 +4913,7 @@ inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Wld& _in)
   CookFields(_writer, _in.view);
   CookFields(_writer, _in.resource);
   CookFields(_writer, _in.travel);
+  CookFields(_writer, _in.scale);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Wld& _out)
@@ -4897,16 +4926,19 @@ inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Wld& _out
   ReadCookedFields(_reader, _out.view);
   ReadCookedFields(_reader, _out.resource);
   ReadCookedFields(_reader, _out.travel);
+  ReadCookedFields(_reader, _out.scale);
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Pil::Battle& _in)
 {
   _writer.F64(_in.minRespiteMinutes);
+  _writer.F64(_in.maxMinutes);
 }
 
 inline void ReadCookedFields(Neuron::CookedReader& _reader, TuningMvp::Pil::Battle& _out)
 {
   _out.minRespiteMinutes = _reader.F64();
+  _out.maxMinutes = _reader.F64();
 }
 
 inline void CookFields(Neuron::CookedWriter& _writer, const TuningMvp::Pil::Conflict& _in)

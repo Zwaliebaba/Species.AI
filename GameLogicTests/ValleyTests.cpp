@@ -30,8 +30,8 @@ namespace
 // The steward's site and the AI settlements of TestSupport's valley.
 constexpr std::uint8_t STEWARD_SITE = 2;
 constexpr std::uint8_t AI_SETTLEMENTS = 3;
-// A team that is no settlement's, as the sandbox's are.
-constexpr std::uint8_t WILD_TEAM = 7;
+// A team that is no settlement's nor its expedition's, as the sandbox's are (ADR-161).
+constexpr std::uint8_t WILD_TEAM = 9;
 
 // The hurt and death events of _ticks steps of _world from _first.
 std::size_t HarmOver(Species::WorldSimulation& _world, std::uint64_t _first, std::uint64_t _ticks)

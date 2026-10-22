@@ -43,7 +43,10 @@ enum class GameMessageType : Neuron::MessageTypeId
   // The relations' commands (M3 task T5, ADR-160).
   MakeClaim,
   WithdrawClaim,
-  SendTribute
+  SendTribute,
+  // The attacks (M3 task T6, ADR-161).
+  DeclareAttack,
+  WithdrawAttack
 };
 
 [[nodiscard]] constexpr Neuron::MessageTypeId TypeIdOf(GameMessageType _type) noexcept

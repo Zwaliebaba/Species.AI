@@ -43,6 +43,38 @@ void WithdrawClaimCommand::Decode(Neuron::BitReader& _reader)
   }
 }
 
+void DeclareAttackCommand::Encode(Neuron::BitWriter& _writer) const
+{
+  _writer.WriteBits(team, 8);
+  for (const StableId leader : leaders)
+  {
+    _writer.WriteBits(leader, 64);
+  }
+  _writer.WriteBounded(target, LOCAL_SITE_MAX);
+  _writer.WriteBits(claim, 64);
+}
+
+void DeclareAttackCommand::Decode(Neuron::BitReader& _reader)
+{
+  team = static_cast<std::uint8_t>(_reader.ReadBits(8));
+  for (StableId& leader : leaders)
+  {
+    leader = _reader.ReadBits(64);
+  }
+  target = static_cast<std::uint8_t>(_reader.ReadBounded(LOCAL_SITE_MAX));
+  claim = _reader.ReadBits(64);
+}
+
+void WithdrawAttackCommand::Encode(Neuron::BitWriter& _writer) const
+{
+  _writer.WriteBits(team, 8);
+}
+
+void WithdrawAttackCommand::Decode(Neuron::BitReader& _reader)
+{
+  team = static_cast<std::uint8_t>(_reader.ReadBits(8));
+}
+
 void SendTributeCommand::Encode(Neuron::BitWriter& _writer) const
 {
   _writer.WriteBits(team, 8);

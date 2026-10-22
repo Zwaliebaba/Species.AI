@@ -24,6 +24,9 @@
     <ClInclude Include="AiController.h">
       <Filter>Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="Battles.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
     <ClInclude Include="BotNavigation.h">
       <Filter>Simulation</Filter>
     </ClInclude>
@@ -165,6 +168,9 @@
       <Filter>Space</Filter>
     </ClCompile>
     <ClCompile Include="AiController.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Battles.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="BotNavigation.cpp">

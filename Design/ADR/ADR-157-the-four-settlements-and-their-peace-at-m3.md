@@ -105,3 +105,4 @@ The whole GameLogic suite passes unchanged, the turret tests against a wild team
   - `Turret` (`OwnershipOf`), `Combat`, `Weapons`, `AiController`;
   - `WorldServer`, `IntegratedServer`;
   - `GameLogicTests/ValleyTests`.
+* **Amendment 2026-10-22 (M3 task T6, [ADR-161](ADR-161-expeditions-battles-the-loss-cap-and-the-respite-at-m3.md)).** A settlement's expedition is a team of its own, at peace as its settlement is, and a battle in progress makes its expedition's team and its defender's team enemies of each other and of no other team. The actor grid's cache forgets its queries when a battle starts or ends.

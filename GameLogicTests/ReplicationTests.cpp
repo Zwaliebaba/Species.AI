@@ -753,8 +753,8 @@ public:
     const Species::StableId steward = world->Ids().Issue();
     region.SetCommander(SETTLED_TEAM, steward, false);
     Neuron::WorkerPool pool(0);
-    world->Step(0, pool); // the seen layers are made in the region's step
-    constexpr std::uint8_t OTHER_TEAM = 7;
+    world->Step(0, pool);                  // the seen layers are made in the region's step
+    constexpr std::uint8_t OTHER_TEAM = 9; // no settlement's nor its expedition's (ADR-161)
     const Neuron::Vec3 home = region.Terrain()->layout.sites[SETTLED_TEAM];
     const Neuron::Vec3 distant = region.Terrain()->layout.sites[(SETTLED_TEAM + 2) % 4];
     const std::vector<Species::EffectEvent> events = {{Species::EffectEventKind::LaserFired, OTHER_TEAM, 0, home, {}, 0.0},

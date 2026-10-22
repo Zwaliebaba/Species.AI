@@ -142,15 +142,19 @@ std::uint32_t ActiveCount(const RegionSimulation& _region, std::uint8_t _team, S
 
 std::uint32_t Population(const RegionSimulation& _region, const Settlement& _settlement)
 {
-  if (_settlement.team >= _region.TeamCount())
-  {
-    return 0;
-  }
+  // ADR-161: the figures of its expedition are still its own.
   std::uint32_t population = 0;
-  const SlicedPool<Figure>& figures = _region.TeamAt(_settlement.team).figures;
-  for (std::uint32_t slot = 0; slot < figures.Capacity(); ++slot)
+  for (const std::uint8_t team : {_settlement.team, ExpeditionTeamOf(_settlement.site)})
   {
-    population += figures.Used(slot) && !figures.At(slot).dead ? 1U : 0U;
+    if (team >= _region.TeamCount())
+    {
+      continue;
+    }
+    const SlicedPool<Figure>& figures = _region.TeamAt(team).figures;
+    for (std::uint32_t slot = 0; slot < figures.Capacity(); ++slot)
+    {
+      population += figures.Used(slot) && !figures.At(slot).dead ? 1U : 0U;
+    }
   }
   return population;
 }

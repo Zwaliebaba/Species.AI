@@ -87,8 +87,8 @@ bool IsDropOff(const Structure& _structure, std::uint8_t _team) noexcept
          _structure.owner == std::optional<std::uint8_t>(_team) && _structure.built && _structure.active;
 }
 
-// MVP-031: the carrier's nearest drop-off point of its settlement becomes its target, along a route; with none it is
-// Idle.
+} // namespace
+
 void StartCarrying(RegionSimulation& _region, Figure& _worker, std::uint8_t _team)
 {
   std::optional<std::uint32_t> nearest;
@@ -120,8 +120,6 @@ void StartCarrying(RegionSimulation& _region, Figure& _worker, std::uint8_t _tea
   _worker.routePoint = -1;
   _worker.workerState = WorkerState::Carrying;
 }
-
-} // namespace
 
 Settlement* SettlementOfTeam(RegionSimulation& _region, std::uint8_t _team)
 {

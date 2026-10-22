@@ -15,7 +15,8 @@ class RegionSimulation;
 // each is permitted when its sender, a steward or an AI, commands the team it names (MVP-094, DEC-122); on execution a
 // team with no settlement, or a placement or rebuild that a check refuses, does nothing, and the outcome's reason is
 // the PlacementRefusal (MVP-101). From M3 task T5 (ADR-160) the claims, their withdrawals and tribute are commands
-// of the same path, whose refusals give the ClaimRefusal or the TributeRefusal.
+// of the same path, whose refusals give the ClaimRefusal or the TributeRefusal, and from task T6 (ADR-161) the attacks
+// and their withdrawals, whose refusals give the AttackRefusal.
 void RegisterSettlementCommands(RegionSimulation& _region);
 
 // MVP-098 (ADR-136): the settlement's status after the tick _tick, as the server sends it to the sender of a

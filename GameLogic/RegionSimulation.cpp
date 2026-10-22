@@ -101,6 +101,12 @@ constexpr std::uint64_t CLAIMS_MAX = 36;
 constexpr std::uint64_t HOLDINGS_MAX = CLAIM_AREA_MAX + 1;
 // A region holds at most one settlement on each of its four sites (MVP-010).
 constexpr std::uint64_t SETTLEMENTS_MAX = std::tuple_size_v<decltype(RegionLayout::sites)>;
+// A region's expeditions, one for each settlement, its battles in progress, far above wld.scale.battles_per_region_max,
+// its battle results, and its respites, one for each settlement (ADR-161): bounds for the reader.
+constexpr std::uint64_t EXPEDITIONS_MAX = SETTLEMENTS_MAX;
+constexpr std::uint64_t BATTLES_MAX = SETTLEMENTS_MAX;
+constexpr std::uint64_t BATTLE_RESULTS_MAX = 65'535;
+constexpr std::uint64_t RESPITES_MAX = SETTLEMENTS_MAX;
 // WLD-066: the territory events a region holds; the MVP records one contact for each valley border pair at most.
 constexpr std::uint64_t CONTACT_EVENTS_MAX = 4095;
 // MVP-064: the statistics a region holds, far above a run's: four settlements sampled every 5 minutes for 8 hours, with
@@ -418,14 +424,42 @@ TeamMask RegionSimulation::FriendsOf(std::uint8_t _team) noexcept
 TeamMask RegionSimulation::EnemiesOf(std::uint8_t _team) const noexcept
 {
   TeamMask enemies = ~FriendsOf(_team);
-  if (std::ranges::any_of(m_settlements, [_team](const Settlement& _settlement) { return _settlement.team == _team; }))
+  if (IsSettlementSide(*this, _team))
   {
+    // ADR-157 and ADR-161: a settlement and its expedition are at peace with every settlement and expedition, but for
+    // the two sides of a battle in progress.
     for (const Settlement& settlement : m_settlements)
     {
       enemies.reset(settlement.team);
+      enemies.reset(ExpeditionTeamOf(settlement.site));
+    }
+    for (const Battle& battle : m_battles)
+    {
+      const std::uint8_t attacker = ExpeditionTeamOf(battle.attacker);
+      if (_team == attacker || _team == battle.defender)
+      {
+        enemies.set(_team == attacker ? battle.defender : attacker);
+      }
     }
   }
   return enemies;
+}
+
+std::uint32_t RegionSimulation::MoveFigure(std::uint8_t _from, std::uint32_t _slot, std::uint8_t _to)
+{
+  ENGINE_CHECK(_from < m_teams.size() && m_teams[_from].figures.Used(_slot) && _from != _to, "a figure of team {} to move", _from);
+  static_cast<void>(EnsureTeam(_to));
+  const Figure figure = m_teams[_from].figures.At(_slot);
+  m_grid.Unregister({figure.id, _slot, _from}, figure.cells);
+  m_teams[_from].figures.Free(_slot);
+  if (m_teams[_from].selectedId == figure.id)
+  {
+    m_teams[_from].selectedId = 0;
+    m_teams[_from].selectedSlot = 0;
+  }
+  const std::uint32_t slot = m_teams[_to].figures.Take(figure);
+  m_grid.Register({figure.id, slot, _to}, figure.cells);
+  return slot;
 }
 
 std::vector<ActorRef> RegionSimulation::InRange(double _x, double _z, double _range, const TeamMask& _teams) const
@@ -480,16 +514,26 @@ HealthChange RegionSimulation::Damage(const ActorRef& _ref, std::int32_t _amount
     return {false, false};
   }
   const bool alive = !figure->dead;
-  const HealthChange change = ApplyHealthChange(*figure, _amount, _kind, *m_tuning, InFormation(*figure, _ref.team));
-  if (alive && _amount < 0)
+  // MVP-044 and MVP-046 (ADR-161): a defender's advantage in its territory, and no loss beyond its loss cap.
+  const std::int32_t amount = _amount < 0 ? BattleDamage(*this, _ref.team, figure->position, _amount) : _amount;
+  if (amount == 0 && _amount != 0)
+  {
+    return {false, false};
+  }
+  const HealthChange change = ApplyHealthChange(*figure, amount, _kind, *m_tuning, InFormation(*figure, _ref.team));
+  if (alive && amount < 0)
   {
     Emit({EffectEventKind::FigureHurt, _ref.team, figure->id, figure->position, {}, 0.0});
   }
   if (change.killed)
   {
     Emit({EffectEventKind::FigureDied, _ref.team, figure->id, figure->position, {}, 0.0});
-    // R-UNIT-038, R-ECON-067: one orb at the corpse, with half the corpse's velocity.
-    SpawnOrb(*this, figure->position, figure->velocity * m_tuning->ref.econ.orb.deathVelocityFactor, _ref.team, figure->id);
+    // R-UNIT-038, R-ECON-067: one orb at the corpse, with half the corpse's velocity, unless a battle's bound lets it
+    // ascend (PIL-045, ADR-161).
+    if (BattleDeath(*this, _ref.team, figure->position))
+    {
+      SpawnOrb(*this, figure->position, figure->velocity * m_tuning->ref.econ.orb.deathVelocityFactor, _ref.team, figure->id);
+    }
   }
   return change;
 }
@@ -745,6 +789,7 @@ void RegionSimulation::Step(std::uint64_t _tick)
     RecordContacts();
     AdvanceRelations(*this, _tick);
     AdvanceClaims(*this, _tick);
+    AdvanceBattles(*this, _tick);
   }
   {
     ENGINE_PROFILE_SCOPE("sim.settlements.seen");
@@ -957,6 +1002,26 @@ void RegionSimulation::WriteState(Neuron::BitWriter& _writer) const
   for (const AreaHolding& holding : m_holdings)
   {
     WriteAreaHolding(_writer, holding);
+  }
+  _writer.WriteBounded(m_expeditions.size(), EXPEDITIONS_MAX);
+  for (const Expedition& expedition : m_expeditions)
+  {
+    WriteExpedition(_writer, expedition);
+  }
+  _writer.WriteBounded(m_battles.size(), BATTLES_MAX);
+  for (const Battle& battle : m_battles)
+  {
+    WriteBattle(_writer, battle);
+  }
+  _writer.WriteBounded(m_results.size(), BATTLE_RESULTS_MAX);
+  for (const BattleResult& result : m_results)
+  {
+    WriteBattleResult(_writer, result);
+  }
+  _writer.WriteBounded(m_respites.size(), RESPITES_MAX);
+  for (const Respite& respite : m_respites)
+  {
+    WriteRespite(_writer, respite);
   }
 }
 
@@ -1194,6 +1259,53 @@ bool RegionSimulation::ReadState(Neuron::BitReader& _reader, std::uint32_t _stat
           (holding.area != CLAIM_AREA_CENTRAL &&
            (OwnSiteOfArea(holding.area) == holding.holder ||
             std::ranges::find(VALLEY_PAIRS[PairOfArea(holding.area)], holding.holder) == VALLEY_PAIRS[PairOfArea(holding.area)].end())))
+      {
+        return false;
+      }
+    }
+  }
+  // An expedition is a settled site's, one for each, in the order declared, against another settled site; a battle is an
+  // expedition's, one for each; a result and a respite name settled sites; a region before version 13 has none of them
+  // (ADR-161).
+  m_expeditions.clear();
+  m_battles.clear();
+  m_results.clear();
+  m_respites.clear();
+  if (_stateVersion >= STATE_VERSION_WITH_BATTLES)
+  {
+    m_expeditions.resize(_reader.ReadBounded(EXPEDITIONS_MAX));
+    for (std::size_t place = 0; place < m_expeditions.size(); ++place)
+    {
+      const Expedition& expedition = m_expeditions[place];
+      if (!ReadExpedition(_reader, m_expeditions[place]) || SettlementAt(expedition.attacker) == nullptr ||
+          SettlementAt(expedition.target) == nullptr || (place > 0 && m_expeditions[place - 1].id >= expedition.id) ||
+          std::any_of(m_expeditions.begin(), m_expeditions.begin() + static_cast<std::ptrdiff_t>(place),
+                      [&](const Expedition& _earlier) { return _earlier.attacker == expedition.attacker; }))
+      {
+        return false;
+      }
+    }
+    m_battles.resize(_reader.ReadBounded(BATTLES_MAX));
+    for (Battle& battle : m_battles)
+    {
+      if (!ReadBattle(_reader, battle) || SettlementAt(battle.attacker) == nullptr || SettlementAt(battle.defender) == nullptr ||
+          std::ranges::find(m_expeditions, battle.expedition, &Expedition::id) == m_expeditions.end())
+      {
+        return false;
+      }
+    }
+    m_results.resize(_reader.ReadBounded(BATTLE_RESULTS_MAX));
+    for (BattleResult& result : m_results)
+    {
+      if (!ReadBattleResult(_reader, result) || SettlementAt(result.attacker) == nullptr || SettlementAt(result.defender) == nullptr)
+      {
+        return false;
+      }
+    }
+    m_respites.resize(_reader.ReadBounded(RESPITES_MAX));
+    for (Respite& respite : m_respites)
+    {
+      if (!ReadRespite(_reader, respite) || SettlementAt(respite.site) == nullptr)
       {
         return false;
       }

@@ -1,7 +1,6 @@
 #include "pch.h"
 
 #include "BitReader.h"
-#include "BitWriter.h"
 #include "RegionSimulation.h"
 #include "Relations.h"
 #include "StateHash.h"
@@ -296,22 +295,11 @@ public:
     }
     Assert::IsTrue(Species::HashWorld(*back).world == Species::HashWorld(*world).world, L"and steps alike");
 
-    // Version 10's layout, with no territory event, is the current one without the counts that end the region's state:
-    // the grievances' of version 11 and the claims' and the moved areas' of version 12 (ADR-160).
+    // Version 10's layout, with no territory event: the current one without the counts of the later sections.
     const std::unique_ptr<Species::WorldSimulation> plain = ValleyWorld();
-    Neuron::BitWriter current;
-    plain->Region(0).WriteState(current);
-    const std::size_t bits = current.BitCount() - Neuron::BitsFor(65'535) - Neuron::BitsFor(36) - Neuron::BitsFor(9);
-    Neuron::BitReader whole(current.Bytes());
-    Neuron::BitWriter older;
-    for (std::size_t done = 0; done < bits;)
-    {
-      const auto chunk = static_cast<std::uint32_t>(std::min<std::size_t>(64, bits - done));
-      older.WriteBits(whole.ReadBits(chunk), chunk);
-      done += chunk;
-    }
+    const std::vector<std::byte> older = RegionStateOf(plain->Region(0), 10);
     Species::RegionSimulation copy(0, SETTLED_TEST_KEY, plain->Region(0).NextTick(), CommittedTuning(), ValleyTerrain(), &TestRecords());
-    Neuron::BitReader reader(older.Bytes());
+    Neuron::BitReader reader(older);
     Assert::IsTrue(copy.ReadState(reader, 10) && reader.Finish(), L"a version-10 region reads whole");
     Assert::IsTrue(copy.Grievances().empty() && copy.Settlements().size() == 4, L"with its settlements and no grievance");
   }

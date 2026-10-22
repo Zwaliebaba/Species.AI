@@ -128,3 +128,4 @@ GameLogicTests `RelationTests`:
   - `GameShared/TuningMvp` (the `pil` keys);
   - `GameLogicTests/RelationTests`, `StateHashTests`, `TestSupport` (`ValleyWorld`).
 * **Amendment 2026-10-22 (M3 task T5, [ADR-160](ADR-160-claims-moved-areas-and-tribute-at-m3.md)).** Contact is two valley neighbours whose territories meet, a cell of each sharing a side or a corner within the lens of their sites' discs, so that it holds across a half a claim has moved; before any move this is the halfway line.
+* **Amendment 2026-10-22 (M3 task T6, [ADR-161](ADR-161-expeditions-battles-the-loss-cap-and-the-respite-at-m3.md)).** The attack's grievance is given by the declaration (`DeclareAttack`), its subject the expedition's stable id, and its cause is removed when the expedition ends; every battle's end relieves the attacker's grievances against the defender.

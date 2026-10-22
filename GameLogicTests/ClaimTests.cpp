@@ -384,21 +384,11 @@ public:
     ExpectEqual(static_cast<std::int64_t>(CellsIn(region, STEWARD_SITE, NEIGHBORS_HALF)),
                 static_cast<std::int64_t>(CellsIn(copy, STEWARD_SITE, NEIGHBORS_HALF)), L"the restored territory keeps the moved half");
 
-    // Version 11's layout, with no territory event, is the current one without the claims' and moved areas' counts.
+    // Version 11's layout, with no territory event: the current one without the counts of the later sections.
     const std::unique_ptr<Species::WorldSimulation> plain = ValleyWorld();
-    Neuron::BitWriter current;
-    plain->Region(0).WriteState(current);
-    const std::size_t bits = current.BitCount() - Neuron::BitsFor(36) - Neuron::BitsFor(9);
-    Neuron::BitReader whole(current.Bytes());
-    Neuron::BitWriter older;
-    for (std::size_t done = 0; done < bits;)
-    {
-      const auto chunk = static_cast<std::uint32_t>(std::min<std::size_t>(64, bits - done));
-      older.WriteBits(whole.ReadBits(chunk), chunk);
-      done += chunk;
-    }
+    const std::vector<std::byte> older = RegionStateOf(plain->Region(0), 11);
     Species::RegionSimulation eleven(0, SETTLED_TEST_KEY, plain->Region(0).NextTick(), CommittedTuning(), ValleyTerrain(), &TestRecords());
-    Neuron::BitReader reader(older.Bytes());
+    Neuron::BitReader reader(older);
     Assert::IsTrue(eleven.ReadState(reader, 11) && reader.Finish(), L"a version-11 region reads whole");
     Assert::IsTrue(eleven.Claims().empty() && eleven.Holdings().empty() && eleven.Settlements().size() == 4, L"with no claim");
   }

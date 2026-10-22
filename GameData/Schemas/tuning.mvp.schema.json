@@ -5632,6 +5632,26 @@
           "additionalProperties": false,
           "x-species-type": "object",
           "x-species-presence": "required"
+        },
+        "scale": {
+          "type": "object",
+          "description": "the wld.scale.* keys",
+          "properties": {
+            "battles_per_region_max": {
+              "type": "integer",
+              "description": "wld.scale.battles_per_region_max (WLD-285, MVP-015)",
+              "minimum": 0,
+              "x-species-type": "count",
+              "x-species-unit": "battles in progress in one region",
+              "x-species-presence": "required"
+            }
+          },
+          "required": [
+            "battles_per_region_max"
+          ],
+          "additionalProperties": false,
+          "x-species-type": "object",
+          "x-species-presence": "required"
         }
       },
       "required": [
@@ -5642,7 +5662,8 @@
         "territory",
         "travel",
         "resource",
-        "view"
+        "view",
+        "scale"
       ],
       "additionalProperties": false,
       "x-species-type": "object",
@@ -5664,10 +5685,20 @@
               "x-species-type": "sim_decimal",
               "x-species-unit": "minutes from a battle's start",
               "x-species-presence": "required"
+            },
+            "max_minutes": {
+              "type": "number",
+              "description": "pil.battle.max_minutes (PIL-047)",
+              "exclusiveMinimum": 0,
+              "x-species-precision": "binary64",
+              "x-species-type": "sim_decimal",
+              "x-species-unit": "minutes of world time",
+              "x-species-presence": "required"
             }
           },
           "required": [
-            "min_respite_minutes"
+            "min_respite_minutes",
+            "max_minutes"
           ],
           "additionalProperties": false,
           "x-species-type": "object",

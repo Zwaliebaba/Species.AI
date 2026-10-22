@@ -120,3 +120,4 @@ The whole GameLogic suite passes unchanged.
   - `AiController`, `RegionSimulation` (the step's order);
   - `StateSender` (`ViewForSteward`, `EventsForSteward`), `WorldServer`;
   - `GameLogicTests/ReplicationTests`, `GameLogicTests/ValleyTests`.
+* **Amendment 2026-10-22 (M3 task T6, [ADR-161](ADR-161-expeditions-battles-the-loss-cap-and-the-respite-at-m3.md)).** `Sight::OfTeam` reads a settlement's expedition's team as the settlement's, so the expedition sees with its settlement's seen layer.

@@ -82,6 +82,35 @@ public:
                    L"its fields");
   }
 
+  BEGIN_TEST_METHOD_ATTRIBUTE(Mvp041TheAttackCommandsRoundTripAtTheirBounds)
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-041")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-045")
+  TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-094")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(Mvp041TheAttackCommandsRoundTripAtTheirBounds)
+  {
+    // ADR-161: a declaration of three Leaders at the largest values of its fields, and a withdrawal, are exactly their
+    // bounds and read back as they were written; a declaration cut short does not decode.
+    constexpr std::uint64_t LARGEST = std::numeric_limits<std::uint64_t>::max();
+    const Species::DeclareAttackCommand declaration{255, {LARGEST, LARGEST - 1, LARGEST - 2}, 3, LARGEST};
+    const std::vector<std::byte> declarationBytes = Neuron::EncodeMessage(declaration);
+    ExpectEqual(static_cast<std::int64_t>(Species::DeclareAttackCommand::MAX_BYTES), static_cast<std::int64_t>(declarationBytes.size()),
+                L"a declaration");
+    const auto declarationRead = Decoded<Species::DeclareAttackCommand>(declarationBytes);
+    Assert::IsTrue(declarationRead && declarationRead->team == 255 && declarationRead->leaders == declaration.leaders &&
+                     declarationRead->target == 3 && declarationRead->claim == LARGEST,
+                   L"its fields");
+    const Species::WithdrawAttackCommand withdrawal{255};
+    const std::vector<std::byte> withdrawalBytes = Neuron::EncodeMessage(withdrawal);
+    ExpectEqual(static_cast<std::int64_t>(Species::WithdrawAttackCommand::MAX_BYTES), static_cast<std::int64_t>(withdrawalBytes.size()),
+                L"a withdrawal");
+    const auto withdrawalRead = Decoded<Species::WithdrawAttackCommand>(withdrawalBytes);
+    Assert::IsTrue(withdrawalRead && withdrawalRead->team == 255, L"its team");
+    std::vector<std::byte> cut = declarationBytes;
+    cut.resize(cut.size() - 2);
+    Assert::IsFalse(Decoded<Species::DeclareAttackCommand>(cut).has_value(), L"a declaration cut short");
+  }
+
   BEGIN_TEST_METHOD_ATTRIBUTE(Mvp094ARelationsCommandOutOfItsBoundsIsMalformed)
   TEST_METHOD_ATTRIBUTE(L"Requirement", L"MVP-094")
   END_TEST_METHOD_ATTRIBUTE()

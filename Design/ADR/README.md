@@ -161,6 +161,7 @@ The baseline holds ADR-001 to ADR-036, the engine runtime (renderer, textures, m
 | [ADR-158](ADR-158-the-seen-layer-and-its-readers-at-m3.md) | The seen layer and its readers at M3 | Proposed | 2026-10-22 |
 | [ADR-159](ADR-159-grievances-anger-and-their-fade-at-m3.md) | Grievances, anger and their fade at M3 | Proposed | 2026-10-22 |
 | [ADR-160](ADR-160-claims-moved-areas-and-tribute-at-m3.md) | Claims, moved areas and tribute at M3 | Proposed | 2026-10-22 |
+| [ADR-161](ADR-161-expeditions-battles-the-loss-cap-and-the-respite-at-m3.md) | Expeditions, battles, the loss cap and the respite at M3 | Proposed | 2026-10-22 |
 
 A change to a record is an amendment note under *More Information*, dated and naming its source, and the record's body states the amended decision (`AGENTS.md` §6).
 

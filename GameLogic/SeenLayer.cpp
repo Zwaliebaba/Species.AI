@@ -29,9 +29,14 @@ CellRaster ComputeSeenLayer(const RegionSimulation& _region, const Settlement& _
     }
   }
   const double radius = tuning.mvp.vision.unitRadius;
-  if (_settlement.team < _region.TeamCount())
+  // ADR-161: and about the figures of its expedition.
+  for (const std::uint8_t team : {_settlement.team, ExpeditionTeamOf(_settlement.site)})
   {
-    const SlicedPool<Figure>& figures = _region.TeamAt(_settlement.team).figures;
+    if (team >= _region.TeamCount())
+    {
+      continue;
+    }
+    const SlicedPool<Figure>& figures = _region.TeamAt(team).figures;
     for (std::uint32_t slot = 0; slot < figures.Capacity(); ++slot)
     {
       if (figures.Used(slot) && !figures.At(slot).dead)
@@ -56,7 +61,7 @@ Sight Sight::OfTeam(const RegionSimulation& _region, std::uint8_t _team)
   Sight sight;
   for (const Settlement& settlement : _region.Settlements())
   {
-    if (settlement.team == _team)
+    if (settlement.team == _team || ExpeditionTeamOf(settlement.site) == _team)
     {
       sight.m_narrowed = true;
       if (const CellRaster* seen = _region.SeenLayerOf(settlement.site); seen != nullptr)

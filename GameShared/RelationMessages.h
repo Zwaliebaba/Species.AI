@@ -3,6 +3,7 @@
 #include "GameMessages.h"
 #include "StableId.h"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 
@@ -45,6 +46,23 @@ enum class TributeRefusal : std::uint8_t
 
 inline constexpr std::uint8_t TRIBUTE_REFUSAL_MAX = static_cast<std::uint8_t>(TributeRefusal::CannotAfford);
 
+// MVP-041 and MVP-042 (ADR-161): why a declared attack or its withdrawal is refused, checked in this order; the reason
+// of its command's outcome, a wire value that is never renumbered.
+enum class AttackRefusal : std::uint8_t
+{
+  NoSettlement = 1, // the team is no settlement's
+  Underway = 2,     // the settlement already has an expedition out; for a withdrawal, it has none
+  NoTarget = 3,     // a target that is no settlement or the attacker's own, or a claim that is not the attacker's open one
+  UnderRespite = 4, // the target is under a respite (MVP-047)
+  NoLeader = 5,     // no live Leader of the settlement among those named
+  TooLarge = 6,     // the Leaders' Workers are more than mvp.expedition.size_max
+  CannotAfford = 7  // the stores do not hold the attack's cost
+};
+
+inline constexpr std::uint8_t ATTACK_REFUSAL_MAX = static_cast<std::uint8_t>(AttackRefusal::CannotAfford);
+// O98: an expedition's Leaders, at most.
+inline constexpr std::size_t EXPEDITION_LEADERS_MAX = 3;
+
 /// MVP-053: the settlement claims an area: a half of a valley border area that its valley neighbour holds, or the
 /// valley's central resource site. A claim refused when it executes has no effect, and its outcome's reason is the
 /// ClaimRefusal.
@@ -70,6 +88,39 @@ struct WithdrawClaimCommand
 
   std::uint8_t team = 0;
   StableId claim = 0;
+
+  void Encode(Neuron::BitWriter& _writer) const;
+  void Decode(Neuron::BitReader& _reader);
+};
+
+/// MVP-041 and MVP-042 (O98, ADR-161): the settlement declares an attack with up to three of its Leaders and the Workers
+/// following them, as one expedition: a raid on the settlement at site `target`, or, when `claim` names one of its
+/// claims, the claim battle that settles it. A Leader id of 0 names none. A declaration refused when it executes has no
+/// effect, and its outcome's reason is the AttackRefusal.
+struct DeclareAttackCommand
+{
+  static constexpr Neuron::MessageTypeId TYPE = TypeIdOf(GameMessageType::DeclareAttack);
+  static constexpr std::uint8_t VERSION = 1;
+  static constexpr std::size_t MAX_BYTES = 37; // the header, the team, three 64-bit Leaders, a 2-bit site and a 64-bit claim
+
+  std::uint8_t team = 0;
+  std::array<StableId, EXPEDITION_LEADERS_MAX> leaders{};
+  std::uint8_t target = 0;
+  StableId claim = 0;
+
+  void Encode(Neuron::BitWriter& _writer) const;
+  void Decode(Neuron::BitReader& _reader);
+};
+
+/// MVP-045 and PIL-087 (ADR-161): the settlement withdraws its expedition: before its battle the attack ends with no
+/// battle; in its battle, the battle ends as a rout.
+struct WithdrawAttackCommand
+{
+  static constexpr Neuron::MessageTypeId TYPE = TypeIdOf(GameMessageType::WithdrawAttack);
+  static constexpr std::uint8_t VERSION = 1;
+  static constexpr std::size_t MAX_BYTES = 4; // the header and the team
+
+  std::uint8_t team = 0;
 
   void Encode(Neuron::BitWriter& _writer) const;
   void Decode(Neuron::BitReader& _reader);

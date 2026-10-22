@@ -126,6 +126,11 @@ StableId ConnectSteward(WorldSimulation& _world, bool _sandbox, bool _watched)
     {
       region.RemoveScriptedStewards(team);
       region.SetCommander(team, steward, false);
+      // ADR-161: and its expedition, while one is out.
+      if (ExpeditionOf(region, team) != nullptr)
+      {
+        region.SetCommander(ExpeditionTeamOf(team), steward, false);
+      }
     }
   }
   return steward;

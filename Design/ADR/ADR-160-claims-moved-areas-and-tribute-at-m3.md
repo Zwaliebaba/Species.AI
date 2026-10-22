@@ -139,3 +139,4 @@ GameSharedTests `RelationMessageTests`: the commands round-trip at their bounds,
   - `Territory` (`InBorderHalf`, `TerritoriesMeet`, the bounds and the events);
   - `Relations` (`InContact`), `SettlementCommands`, `SettlementTasks`, `Statistics`, `RegionSimulation`, `WorldSnapshot`;
   - `GameLogicTests/ClaimTests`, `RelationTests`, `StateHashTests`; `GameSharedTests/RelationMessageTests`.
+* **Amendment 2026-10-22 (M3 task T6, [ADR-161](ADR-161-expeditions-battles-the-loss-cap-and-the-respite-at-m3.md)).** A claim battle's end settles its claim (`SettleClaim`); an attack is declared for an Open or a Contested claim, never a Waiting one, on the area's holder or the rival claimant.

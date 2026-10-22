@@ -124,3 +124,4 @@ Chosen options: 1 and 4.
   - `Tools/SpeciesPerformance` (`ReadSavedWorld`, `--saved-world`);
   - `Build/RunPerformance.py`;
   - `GameLogic/CommandJournal` (`ConnectSteward`) and `RegionSimulation` (`RemoveScriptedStewards`).
+* **Amendment 2026-10-22 (M3 task T6, [ADR-161](ADR-161-expeditions-battles-the-loss-cap-and-the-respite-at-m3.md)).** A steward who connects also commands its settlement's expedition while one is out.

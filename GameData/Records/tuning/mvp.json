@@ -661,11 +661,15 @@
     },
     "travel": {
       "valley_path_factor": 1.05
+    },
+    "scale": {
+      "battles_per_region_max": 2
     }
   },
   "pil": {
     "battle": {
-      "min_respite_minutes": 2
+      "min_respite_minutes": 2,
+      "max_minutes": 20
     },
     "conflict": {
       "unprovoked_cost_factor": 2,

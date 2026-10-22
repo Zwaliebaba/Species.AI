@@ -3,6 +3,7 @@
 #include "ActorGrid.h"
 #include "ActorGridCache.h"
 #include "AiController.h"
+#include "Battles.h"
 #include "BitReader.h"
 #include "BitWriter.h"
 #include "BotNavigation.h"
@@ -306,6 +307,48 @@ public:
   {
     m_contacts.push_back(_event);
   }
+  // MVP-041 to MVP-048 (ADR-161): the region's expeditions in the order declared, its battles in progress in the order
+  // started, its battle results in the order they ended, and its respites in the order started.
+  [[nodiscard]] const std::vector<Expedition>& Expeditions() const noexcept
+  {
+    return m_expeditions;
+  }
+  [[nodiscard]] std::vector<Expedition>& Expeditions() noexcept
+  {
+    return m_expeditions;
+  }
+  [[nodiscard]] const std::vector<Battle>& Battles() const noexcept
+  {
+    return m_battles;
+  }
+  [[nodiscard]] std::vector<Battle>& Battles() noexcept
+  {
+    return m_battles;
+  }
+  [[nodiscard]] const std::vector<BattleResult>& BattleResults() const noexcept
+  {
+    return m_results;
+  }
+  [[nodiscard]] std::vector<BattleResult>& BattleResults() noexcept
+  {
+    return m_results;
+  }
+  [[nodiscard]] const std::vector<Respite>& Respites() const noexcept
+  {
+    return m_respites;
+  }
+  [[nodiscard]] std::vector<Respite>& Respites() noexcept
+  {
+    return m_respites;
+  }
+  // ADR-161: the figure at slot _slot of team _from moves to team _to, registered in the actor grid there, and leaves
+  // its old team's selection; returns its new slot. The caller remaps what named its old slot.
+  std::uint32_t MoveFigure(std::uint8_t _from, std::uint32_t _slot, std::uint8_t _to);
+  // ADR-161: the actor grid cache forgets every query, when the teams' enemies change.
+  void ForgetCachedEnemies() noexcept
+  {
+    m_cache.Clear();
+  }
   // MVP-064: the server's statistics of the region's settlements in the order they were recorded (ADR-136).
   [[nodiscard]] const std::vector<StatisticEntry>& Statistics() const noexcept
   {
@@ -482,6 +525,10 @@ private:
   std::vector<Grievance> m_grievances;      // MVP-050 (ADR-159), state from version 11
   std::vector<Claim> m_claims;              // MVP-053 (ADR-160), state from version 12
   std::vector<AreaHolding> m_holdings;      // MVP-053 (ADR-160), state from version 12
+  std::vector<Expedition> m_expeditions;    // MVP-041 (ADR-161), state from version 13
+  std::vector<Battle> m_battles;            // MVP-043 (ADR-161), state from version 13
+  std::vector<BattleResult> m_results;      // MVP-048 (ADR-161), state from version 13
+  std::vector<Respite> m_respites;          // MVP-047 (ADR-161), state from version 13
   std::vector<EffectEvent> m_events;        // presentation, never state
 #if ENGINE_DEVELOPMENT
   AdvanceObserver m_advanceObserver;
