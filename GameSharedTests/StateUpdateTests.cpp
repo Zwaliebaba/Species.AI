@@ -204,7 +204,7 @@ public:
     // M2 task T11: a structure, a settlement and a chunk of cells each go whole with every field at its bound, and as a
     // delta of the fields that changed; a Worker's load is one of its flags.
     Species::ReplicatedStructure turret;
-    turret.owner = 3;
+    turret.owner = std::uint8_t{3};
     turret.kind = Species::StructureKind::Turret;
     turret.position = {(1 << 23) - 1, -(1 << 19), 17};
     turret.yaw = 1023;
@@ -212,7 +212,7 @@ public:
     turret.active = false;
     turret.progress = Species::PROGRESS_PERMILLE_MAX;
     turret.mannedPorts = 0xFFFF;
-    turret.turretTeam = 255;
+    turret.turretTeam = std::uint8_t{255};
     turret.turretHealth = 65'535;
     turret.aimYaw = 1023;
     turret.aimPitch = -512;
