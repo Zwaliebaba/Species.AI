@@ -104,3 +104,4 @@ Chosen option: 1. The CMO files stay the authored source that every other mesh i
 * Owner decisions O64, O81, O86; MVP-083; AST-038 to AST-040, AST-043, AST-044; R-BLDG-017, R-BLDG-020, R-BLDG-405, R-BLDG-407.
 * The code: `Tools/SpeciesMeshKit` (`UnitCircle`, `Shapes`, `MeshModel`, `CmoWriter`, `StructureRecipes`, `TurretRecipes`, `SpeciesMeshKit`) and `Build/CheckMeshKit.py`.
 * Measured on 2026-10-21, with a Linux build of the kit on this session's container: the 18 files total 252,174 bytes of CMO. A Linux build of the content build cooks them, with the rest of `GameData/`, in 0.04 to 0.05 s over three runs of an optimised build. The `--out` of two runs compares equal.
+* **Amendment 2026-10-22 (owner decision O87).** The owner approved every silhouette as drafted, after phase A's pull request merged; the approval is recorded in `playtests/M2.md`. No recipe, socket or port moves.
