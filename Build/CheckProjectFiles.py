@@ -181,7 +181,9 @@ R2_AFFIX = re.compile(r'^(?:[ICSE][A-Z][a-z]|Base[A-Z]|Abstract[A-Z])|(?:Base|Ab
 R11_BRITISH = ('colour', 'initialis', 'serialis', 'normalis', 'quantis', 'synchronis', 'behaviour', 'neighbour',
                'centre', 'grey', 'cancell')
 IDENTIFIER = re.compile(r'[A-Za-z_]\w*')
-SOCKET_NAME_TEXT = re.compile(r'"socket_', re.IGNORECASE)
+# DAT-277: the socket kinds of AST table 3.8-A, as the cooked-mesh reader lists them; a string socket_<kind> names one.
+SOCKET_KINDS_FILE = 'NeuronCore/MeshAsset.cpp'
+SOCKET_KIND_ENTRY = re.compile(r'\{"([a-z_]+)",\s*(?:true|false),\s*(?:true|false)\}')
 REQUIREMENT_ATTRIBUTE = re.compile(r'TEST_METHOD_ATTRIBUTE\s*\(\s*L"Requirement"\s*,\s*L"([^"]*)"\s*\)')
 MODULE_LINE = re.compile(r'^\s*(?:export\s+)?(?:import\s+(?:std\b|<)|module\b)', re.MULTILINE)
 
@@ -701,8 +703,19 @@ def rule_13(tree):
                      '(ADR-090 item 4)'
 
 
+def socket_name_text(tree):
+  """DAT-277: a string that spells a socket, socket_<kind> with a kind of AST table 3.8-A, so that a record's key that
+  merely starts with socket_ (ref.weapon.shell_casing.socket_offset) is no socket. Without the table, any socket_ text."""
+  path = os.path.join(tree.root, SOCKET_KINDS_FILE)
+  kinds = SOCKET_KIND_ENTRY.findall(tree.read(SOCKET_KINDS_FILE)) if os.path.exists(path) else []
+  if not kinds:
+    return re.compile(r'"socket_', re.IGNORECASE)
+  return re.compile(r'"socket_(?:' + '|'.join(sorted(kinds, key=len, reverse=True)) + r')(?=["_\d])', re.IGNORECASE)
+
+
 def rule_14(tree):
   requirements = read_requirement_ids(tree)
+  socket_text = socket_name_text(tree)
   for path, text in hand_written_sources(tree):
     stripped = SolutionModel.strip_comments_and_strings(text)
     if path != WINDOWS_HEADERS:
@@ -758,7 +771,7 @@ def rule_14(tree):
     # DAT-277: code addresses a socket by its kind and index. Only the content build's importer reads socket names,
     # because a CMO file spells its sockets as bones named socket_<kind> (ADR-019, AST-038).
     if not path.startswith('Tools/'):
-      for m in SOCKET_NAME_TEXT.finditer(without_comments):
+      for m in socket_text.finditer(without_comments):
         line = without_comments.count('\n', 0, m.start()) + 1
         yield f'{path}:{line}', 'names a socket by its text; code addresses a socket by its kind and index (DAT-277)'
     for m in REQUIREMENT_ATTRIBUTE.finditer(without_comments):

@@ -114,4 +114,5 @@ Chosen options: 1 and 4.
 * Related: [ADR-010](ADR-010-gpu-particles-and-shatter-debris.md), [ADR-123](ADR-123-weapons-effects-and-particles-at-m1.md), [ADR-128](ADR-128-mesh-kit-and-drafted-structure-recipes.md), [ADR-133](ADR-133-the-gun-turret-at-m2.md), [ADR-139](ADR-139-replicating-the-settlement-at-m2.md), [ADR-140](ADR-140-structures-drawn-and-the-stand-ins-at-m2.md).
 * The rules: R-BLDG-418, R-BLDG-423, R-BLDG-425; R-CRATE-405, R-CRATE-441, R-CRATE-450, R-CRATE-451, R-CRATE-453, R-CRATE-455, R-CRATE-456; RND-331, RND-338; VFX-011, VFX-207, VFX-219, VFX-222; DEC-461, DEC-962.
 * The code: GameClient (`EffectsLook`, `WorldPresentation`), and the presentation record's new keys.
+* `Build/CheckProjectFiles.py`'s check of DAT-277 reads a socket name as `socket_<kind>` with a kind of AST table 3.8-A, from the table in `NeuronCore/MeshAsset.cpp`. Its earlier test, any string starting `socket_`, refused the generated reader of `ref.weapon.shell_casing.socket_offset`, which is a record's key and no socket.
 * ADR-010 and ADR-140 are amended with this record.
